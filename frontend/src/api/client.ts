@@ -7,13 +7,17 @@ export class ApiError extends Error {
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  // Content-Type nur setzen, wenn wirklich ein Body gesendet wird – sonst parst Fastify
+  // den (nicht vorhandenen) JSON-Body und lehnt mit 400 Bad Request ab (z. B. bei DELETE).
+  const headers: HeadersInit = {
+    ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+    ...options.headers,
+  };
+
   const res = await fetch(`/api${path}`, {
     credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
     ...options,
+    headers,
   });
 
   if (!res.ok) {

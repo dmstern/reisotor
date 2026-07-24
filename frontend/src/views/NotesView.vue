@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
-import { api } from '../api/client';
+import { api, ApiError } from '../api/client';
 import type { Note, User } from '../api/types';
 import { useAuthStore } from '../stores/auth';
 import { renderRichText } from '../utils/richText';
@@ -10,6 +10,7 @@ const notes = ref<Note[]>([]);
 const users = ref<User[]>([]);
 const loading = ref(true);
 const showForm = ref(false);
+const error = ref('');
 
 const form = ref({ title: '', content: '' });
 const editingId = ref<number | null>(null);
@@ -62,8 +63,13 @@ async function submit() {
 }
 
 async function remove(id: number) {
-  await api.delete(`/notes/${id}`);
-  notes.value = notes.value.filter((n) => n.id !== id);
+  error.value = '';
+  try {
+    await api.delete(`/notes/${id}`);
+    notes.value = notes.value.filter((n) => n.id !== id);
+  } catch (err) {
+    error.value = err instanceof ApiError ? err.message : 'Notiz konnte nicht gelöscht werden.';
+  }
 }
 </script>
 
@@ -81,6 +87,8 @@ async function remove(id: number) {
       </button>
     </div>
 
+    <p v-if="error" class="error">{{ error }}</p>
+
     <form v-if="showForm" class="card add-form" @submit.prevent="submit">
       <input v-model="form.title" type="text" placeholder="Titel (optional)" />
       <textarea v-model="form.content" placeholder="Inhalt" rows="4" required></textarea>
@@ -96,7 +104,7 @@ async function remove(id: number) {
         <div class="note-head">
           <h3 v-if="note.title">{{ note.title }}</h3>
           <button class="secondary" @click="startEdit(note)">✎</button>
-          <button class="secondary" @click="remove(note.id)">✕</button>
+          <button class="secondary" @click="remove(note.id)">🗑️</button>
         </div>
         <div class="content" v-html="renderRichText(note.content)"></div>
         <p class="meta">{{ authorLabel(note.created_by) }} · {{ formatDate(note.updated_at ?? note.created_at) }}</p>
@@ -147,6 +155,11 @@ async function remove(id: number) {
 .note-head button {
   padding: 4px 8px;
   font-size: 0.8rem;
+}
+
+.error {
+  color: var(--color-danger);
+  margin: 0 0 var(--space-3);
 }
 
 .syntax-hint {
