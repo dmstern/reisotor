@@ -39,14 +39,16 @@ app.register(
   async (api) => {
     await api.register(authRoutes, { prefix: '/auth' });
 
-    api.addHook('preHandler', requireAuth);
-    await api.register(tripRoutes);
-    await api.register(scheduleRoutes);
-    await api.register(packingRoutes);
-    await api.register(ideasRoutes);
-    await api.register(spotsRoutes);
-    await api.register(accommodationRoutes);
-    await api.register(budgetRoutes);
+    await api.register(async (protectedApi) => {
+      protectedApi.addHook('preHandler', requireAuth);
+      await protectedApi.register(tripRoutes);
+      await protectedApi.register(scheduleRoutes);
+      await protectedApi.register(packingRoutes);
+      await protectedApi.register(ideasRoutes);
+      await protectedApi.register(spotsRoutes);
+      await protectedApi.register(accommodationRoutes);
+      await protectedApi.register(budgetRoutes);
+    });
   },
   { prefix: '/api' },
 );
