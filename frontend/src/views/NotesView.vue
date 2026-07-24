@@ -3,6 +3,7 @@ import { onMounted, ref } from 'vue';
 import { api } from '../api/client';
 import type { Note, User } from '../api/types';
 import { useAuthStore } from '../stores/auth';
+import { renderRichText } from '../utils/richText';
 
 const auth = useAuthStore();
 const notes = ref<Note[]>([]);
@@ -83,6 +84,10 @@ async function remove(id: number) {
     <form v-if="showForm" class="card add-form" @submit.prevent="submit">
       <input v-model="form.title" type="text" placeholder="Titel (optional)" />
       <textarea v-model="form.content" placeholder="Inhalt" rows="4" required></textarea>
+      <p class="syntax-hint">
+        <code>**fett**</code> · <code>_kursiv_</code> · <code>* Punkt</code> für Listen · Links werden
+        automatisch erkannt
+      </p>
       <button type="submit">{{ editingId ? 'Speichern' : 'Hinzufügen' }}</button>
     </form>
 
@@ -93,7 +98,7 @@ async function remove(id: number) {
           <button class="secondary" @click="startEdit(note)">✎</button>
           <button class="secondary" @click="remove(note.id)">✕</button>
         </div>
-        <p class="content">{{ note.content }}</p>
+        <div class="content" v-html="renderRichText(note.content)"></div>
         <p class="meta">{{ authorLabel(note.created_by) }} · {{ formatDate(note.updated_at ?? note.created_at) }}</p>
       </div>
     </div>
@@ -144,10 +149,36 @@ async function remove(id: number) {
   font-size: 0.8rem;
 }
 
+.syntax-hint {
+  margin: -4px 0 0;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+
+.syntax-hint code {
+  background: var(--color-bg);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 0.78rem;
+}
+
 .content {
-  white-space: pre-wrap;
   margin: 0;
   color: var(--color-text);
+  overflow-wrap: anywhere;
+}
+
+.content :deep(a) {
+  color: var(--color-primary);
+}
+
+.content :deep(ul) {
+  margin: 4px 0;
+  padding-left: 1.3em;
+}
+
+.content :deep(br:last-child) {
+  display: none;
 }
 
 .meta {
