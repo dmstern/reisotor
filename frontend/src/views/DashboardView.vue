@@ -1,25 +1,30 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { api } from '../api/client';
-import type { BudgetItem, PackingItem, ScheduleItem, Trip } from '../api/types';
+import type { BudgetItem, PackingItem, ScheduleItem, Trip, User } from '../api/types';
+import { useAuthStore } from '../stores/auth';
 
+const auth = useAuthStore();
 const trip = ref<Trip | null>(null);
 const schedule = ref<ScheduleItem[]>([]);
 const packing = ref<PackingItem[]>([]);
 const budget = ref<BudgetItem[]>([]);
+const users = ref<User[]>([]);
 const loading = ref(true);
 
 onMounted(async () => {
-  const [tripRes, scheduleRes, packingRes, budgetRes] = await Promise.all([
+  const [tripRes, scheduleRes, packingRes, budgetRes, usersRes] = await Promise.all([
     api.get<Trip>('/trip'),
     api.get<ScheduleItem[]>('/schedule'),
     api.get<PackingItem[]>('/packing'),
     api.get<BudgetItem[]>('/budget'),
+    api.get<User[]>('/users'),
   ]);
   trip.value = tripRes;
   schedule.value = scheduleRes;
   packing.value = packingRes;
   budget.value = budgetRes;
+  users.value = usersRes;
   loading.value = false;
 });
 
@@ -39,10 +44,24 @@ const nextItem = computed(() => {
     .sort((a, b) => (a.date + (a.time ?? '')).localeCompare(b.date + (b.time ?? '')))[0];
 });
 
-const packingProgress = computed(() => {
-  const total = packing.value.length;
-  const checked = packing.value.filter((p) => p.checked).length;
+function progressOf(listItems: PackingItem[]) {
+  const total = listItems.length;
+  const checked = listItems.filter((p) => p.checked).length;
   return { total, checked };
+}
+
+const packingLists = computed(() => {
+  const shared = {
+    key: 'shared',
+    title: 'Gemeinsam',
+    ...progressOf(packing.value.filter((p) => p.owner_id == null)),
+  };
+  const perUser = users.value.map((u) => ({
+    key: `user-${u.id}`,
+    title: u.id === auth.user?.id ? `Meine Liste ${u.avatar}` : `${u.username} ${u.avatar}`,
+    ...progressOf(packing.value.filter((p) => p.owner_id === u.id)),
+  }));
+  return [...perUser, shared];
 });
 
 const budgetSummary = computed(() => {
@@ -75,9 +94,9 @@ function formatDate(d: string) {
         <p v-else>Noch nichts geplant</p>
       </router-link>
 
-      <router-link to="/packing" class="card tile">
-        <h3>Packliste</h3>
-        <p>{{ packingProgress.checked }}/{{ packingProgress.total }} gepackt</p>
+      <router-link to="/packing" class="card tile" v-for="list in packingLists" :key="list.key">
+        <h3>Packliste: {{ list.title }}</h3>
+        <p>{{ list.checked }}/{{ list.total }} gepackt</p>
       </router-link>
 
       <router-link to="/budget" class="card tile">

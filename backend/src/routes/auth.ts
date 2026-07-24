@@ -6,6 +6,7 @@ interface UserRow {
   id: number;
   username: string;
   password_hash: string;
+  avatar: string;
 }
 
 export const authRoutes: FastifyPluginAsync = async (app) => {
@@ -16,7 +17,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     }
 
     const user = db
-      .prepare('SELECT id, username, password_hash FROM users WHERE username = ?')
+      .prepare('SELECT id, username, password_hash, avatar FROM users WHERE username = ?')
       .get(username) as UserRow | undefined;
 
     if (!user || !bcrypt.compareSync(password, user.password_hash)) {
@@ -25,7 +26,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 
     req.session.userId = user.id;
     req.session.username = user.username;
-    return { id: user.id, username: user.username };
+    return { id: user.id, username: user.username, avatar: user.avatar };
   });
 
   app.post('/logout', async (req, reply) => {
@@ -37,6 +38,12 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     if (!req.session.userId) {
       return reply.code(401).send({ error: 'Nicht eingeloggt' });
     }
-    return { id: req.session.userId, username: req.session.username };
+    const user = db
+      .prepare('SELECT id, username, avatar FROM users WHERE id = ?')
+      .get(req.session.userId) as Pick<UserRow, 'id' | 'username' | 'avatar'> | undefined;
+    if (!user) {
+      return reply.code(401).send({ error: 'Nicht eingeloggt' });
+    }
+    return user;
   });
 };

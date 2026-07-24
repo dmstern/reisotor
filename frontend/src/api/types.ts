@@ -1,6 +1,7 @@
 export interface User {
   id: number;
   username: string;
+  avatar: string;
 }
 
 export interface Trip {
@@ -17,6 +18,7 @@ export interface ScheduleItem {
   time: string | null;
   title: string;
   note: string | null;
+  idea_id: number | null;
 }
 
 export interface PackingItem {
@@ -24,6 +26,7 @@ export interface PackingItem {
   category: string | null;
   label: string;
   checked: 0 | 1;
+  owner_id: number | null;
 }
 
 export interface Idea {
@@ -31,8 +34,11 @@ export interface Idea {
   title: string;
   image_url: string | null;
   link: string | null;
+  maps_link: string | null;
   note: string | null;
   status: 'idea' | 'planned';
+  lat: number | null;
+  lng: number | null;
 }
 
 export interface Spot {
@@ -50,6 +56,9 @@ export interface Accommodation {
   name: string;
   address: string | null;
   link: string | null;
+  maps_link: string | null;
+  start_date: string | null;
+  end_date: string | null;
   checkin: string | null;
   checkout: string | null;
   contact: string | null;

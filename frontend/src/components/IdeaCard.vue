@@ -18,6 +18,12 @@ const emit = defineEmits<{
       <h3>{{ idea.title }}</h3>
       <p v-if="idea.note">{{ idea.note }}</p>
       <a v-if="idea.link" :href="idea.link" target="_blank" rel="noopener">Link öffnen ↗</a>
+      <a v-if="idea.maps_link" :href="idea.maps_link" target="_blank" rel="noopener">
+        📍 {{ idea.lat != null ? 'Auf Karte' : 'Maps öffnen' }} ↗
+      </a>
+      <router-link v-if="idea.status === 'planned'" to="/schedule" class="schedule-hint">
+        📅 Im Kalender einplanen
+      </router-link>
       <div class="actions">
         <button class="secondary" @click="emit('toggle-status', idea)">
           {{ idea.status === 'planned' ? 'Als Idee markieren' : 'Als geplant markieren' }}
@@ -87,5 +93,11 @@ const emit = defineEmits<{
 .actions button {
   font-size: 0.8rem;
   padding: 6px 10px;
+}
+
+.schedule-hint {
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
 }
 </style>

@@ -12,12 +12,14 @@ import { ideasRoutes } from './routes/ideas.js';
 import { spotsRoutes } from './routes/spots.js';
 import { accommodationRoutes } from './routes/accommodation.js';
 import { budgetRoutes } from './routes/budget.js';
+import { usersRoutes } from './routes/users.js';
+import { backupRoutes } from './routes/backup.js';
 
 const isProd = process.env.NODE_ENV === 'production';
 const port = Number(process.env.PORT ?? 3000);
 const sessionSecret = process.env.SESSION_SECRET ?? 'dev-secret-please-change-me-32chars';
 
-const app = Fastify({ logger: true });
+const app = Fastify({ logger: true, bodyLimit: 10 * 1024 * 1024 });
 
 await app.register(cors, {
   origin: isProd ? false : ['http://localhost:5173'],
@@ -48,6 +50,8 @@ app.register(
       await protectedApi.register(spotsRoutes);
       await protectedApi.register(accommodationRoutes);
       await protectedApi.register(budgetRoutes);
+      await protectedApi.register(usersRoutes);
+      await protectedApi.register(backupRoutes);
     });
   },
   { prefix: '/api' },

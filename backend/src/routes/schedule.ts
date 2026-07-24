@@ -6,6 +6,7 @@ interface ScheduleBody {
   time?: string;
   title: string;
   note?: string;
+  idea_id?: number | null;
 }
 
 export const scheduleRoutes: FastifyPluginAsync = async (app) => {
@@ -14,19 +15,19 @@ export const scheduleRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.post<{ Body: ScheduleBody }>('/schedule', async (req, reply) => {
-    const { date, time, title, note } = req.body;
+    const { date, time, title, note, idea_id } = req.body;
     const result = db
-      .prepare('INSERT INTO schedule_items (date, time, title, note) VALUES (?, ?, ?, ?)')
-      .run(date, time ?? null, title, note ?? null);
+      .prepare('INSERT INTO schedule_items (date, time, title, note, idea_id) VALUES (?, ?, ?, ?, ?)')
+      .run(date, time ?? null, title, note ?? null, idea_id ?? null);
     reply.code(201);
     return db.prepare('SELECT * FROM schedule_items WHERE id = ?').get(result.lastInsertRowid);
   });
 
   app.put<{ Params: { id: string }; Body: ScheduleBody }>('/schedule/:id', async (req, reply) => {
-    const { date, time, title, note } = req.body;
+    const { date, time, title, note, idea_id } = req.body;
     const result = db
-      .prepare('UPDATE schedule_items SET date = ?, time = ?, title = ?, note = ? WHERE id = ?')
-      .run(date, time ?? null, title, note ?? null, req.params.id);
+      .prepare('UPDATE schedule_items SET date = ?, time = ?, title = ?, note = ?, idea_id = ? WHERE id = ?')
+      .run(date, time ?? null, title, note ?? null, idea_id ?? null, req.params.id);
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
     return db.prepare('SELECT * FROM schedule_items WHERE id = ?').get(req.params.id);
   });

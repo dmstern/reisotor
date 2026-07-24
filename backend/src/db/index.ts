@@ -80,3 +80,22 @@ CREATE TABLE IF NOT EXISTS budget_items (
   is_paid INTEGER DEFAULT 0
 );
 `);
+
+// Additive Migrationen (idempotent): erlaubt, das Schema weiterzuentwickeln,
+// ohne bestehende Daten in data.sqlite zu verlieren.
+function ensureColumn(table: string, column: string, definition: string) {
+  const existing = db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
+  if (!existing.some((c) => c.name === column)) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+  }
+}
+
+ensureColumn('users', 'avatar', "TEXT DEFAULT '🙂'");
+ensureColumn('ideas', 'lat', 'REAL');
+ensureColumn('ideas', 'lng', 'REAL');
+ensureColumn('ideas', 'maps_link', 'TEXT');
+ensureColumn('packing_items', 'owner_id', 'INTEGER REFERENCES users(id)');
+ensureColumn('schedule_items', 'idea_id', 'INTEGER REFERENCES ideas(id)');
+ensureColumn('accommodation', 'start_date', 'TEXT');
+ensureColumn('accommodation', 'end_date', 'TEXT');
+ensureColumn('accommodation', 'maps_link', 'TEXT');

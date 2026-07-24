@@ -10,7 +10,6 @@ const links = [
   { to: '/schedule', label: 'Ablauf', icon: '📅' },
   { to: '/packing', label: 'Packliste', icon: '🧳' },
   { to: '/ideas', label: 'Ideen', icon: '💡' },
-  { to: '/spots', label: 'Spots', icon: '📍' },
   { to: '/accommodation', label: 'Unterkunft', icon: '🛏️' },
   { to: '/budget', label: 'Budget', icon: '💶' },
   { to: '/map', label: 'Karte', icon: '🗺️' },
@@ -24,11 +23,14 @@ async function onLogout() {
 
 <template>
   <nav class="navbar">
-    <div class="brand">Reisotor</div>
     <div class="links">
       <router-link v-for="link in links" :key="link.to" :to="link.to" class="link">
         <span class="icon">{{ link.icon }}</span>
         <span class="label">{{ link.label }}</span>
+      </router-link>
+      <router-link to="/profile" class="link">
+        <span class="icon">{{ auth.user?.avatar || '👤' }}</span>
+        <span class="label">Profil</span>
       </router-link>
     </div>
     <button class="secondary logout" @click="onLogout">Abmelden</button>
@@ -49,10 +51,6 @@ async function onLogout() {
   padding: var(--space-2) var(--space-3);
   overflow-x: auto;
   z-index: 10;
-}
-
-.brand {
-  display: none;
 }
 
 .links {
@@ -90,18 +88,10 @@ async function onLogout() {
 @media (min-width: 800px) {
   .navbar {
     position: sticky;
-    top: 0;
+    top: 56px;
     bottom: auto;
     border-top: none;
     border-bottom: 1px solid var(--color-border);
-  }
-
-  .brand {
-    display: block;
-    font-weight: 700;
-    color: var(--color-primary-dark);
-    margin-right: var(--space-4);
-    font-size: 1.1rem;
   }
 
   .link {

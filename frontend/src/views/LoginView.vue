@@ -29,6 +29,7 @@ async function onSubmit() {
 <template>
   <div class="login-page">
     <form class="card login-card" @submit.prevent="onSubmit">
+      <img src="/reisotor_logo.svg" alt="Reisotor Logo" class="logo" />
       <h1>Reisotor</h1>
       <p>Melde dich an, um eure Reise zu planen.</p>
 
@@ -64,11 +65,33 @@ async function onSubmit() {
   max-width: 360px;
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: var(--space-3);
+  text-align: center;
+}
+
+.logo {
+  width: 140px;
+  height: 140px;
+  margin-bottom: var(--space-1);
 }
 
 .login-card h1 {
   color: var(--color-primary-dark);
+  margin: 0;
+}
+
+.login-card p {
+  margin: 0;
+}
+
+.login-card label {
+  width: 100%;
+  text-align: left;
+}
+
+.login-card button {
+  width: 100%;
 }
 
 label {

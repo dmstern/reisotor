@@ -2,68 +2,83 @@
 import { onMounted, ref } from 'vue';
 import { api } from '../api/client';
 import type { Accommodation } from '../api/types';
+import { parseLatLngFromMapsLink } from '../utils/googleMaps';
 
+const accommodations = ref<Accommodation[]>([]);
 const loading = ref(true);
-const saving = ref(false);
-const saved = ref(false);
+const showForm = ref(false);
+const mapsLinkResolved = ref<boolean | null>(null);
 
-const form = ref({
+const emptyForm = () => ({
   name: '',
   address: '',
   link: '',
+  maps_link: '',
+  start_date: '',
+  end_date: '',
   checkin: '',
   checkout: '',
   contact: '',
   note: '',
-  lat: '',
-  lng: '',
 });
 
+const form = ref(emptyForm());
+
 onMounted(async () => {
-  const acc = await api.get<Accommodation | null>('/accommodation');
-  if (acc) {
-    form.value = {
-      name: acc.name ?? '',
-      address: acc.address ?? '',
-      link: acc.link ?? '',
-      checkin: acc.checkin ?? '',
-      checkout: acc.checkout ?? '',
-      contact: acc.contact ?? '',
-      note: acc.note ?? '',
-      lat: acc.lat != null ? String(acc.lat) : '',
-      lng: acc.lng != null ? String(acc.lng) : '',
-    };
-  }
+  accommodations.value = await api.get<Accommodation[]>('/accommodation');
   loading.value = false;
 });
 
-async function save() {
-  saving.value = true;
-  saved.value = false;
-  try {
-    await api.put<Accommodation>('/accommodation', {
-      name: form.value.name.trim(),
-      address: form.value.address || undefined,
-      link: form.value.link || undefined,
-      checkin: form.value.checkin || undefined,
-      checkout: form.value.checkout || undefined,
-      contact: form.value.contact || undefined,
-      note: form.value.note || undefined,
-      lat: form.value.lat ? Number(form.value.lat) : undefined,
-      lng: form.value.lng ? Number(form.value.lng) : undefined,
-    });
-    saved.value = true;
-  } finally {
-    saving.value = false;
+function checkMapsLink() {
+  if (!form.value.maps_link) {
+    mapsLinkResolved.value = null;
+    return;
   }
+  mapsLinkResolved.value = parseLatLngFromMapsLink(form.value.maps_link) != null;
+}
+
+async function addAccommodation() {
+  if (!form.value.name.trim()) return;
+  const parsed = parseLatLngFromMapsLink(form.value.maps_link);
+  const created = await api.post<Accommodation>('/accommodation', {
+    name: form.value.name.trim(),
+    address: form.value.address || undefined,
+    link: form.value.link || undefined,
+    maps_link: form.value.maps_link || undefined,
+    start_date: form.value.start_date || undefined,
+    end_date: form.value.end_date || undefined,
+    checkin: form.value.checkin || undefined,
+    checkout: form.value.checkout || undefined,
+    contact: form.value.contact || undefined,
+    note: form.value.note || undefined,
+    lat: parsed?.lat,
+    lng: parsed?.lng,
+  });
+  accommodations.value.push(created);
+  form.value = emptyForm();
+  mapsLinkResolved.value = null;
+  showForm.value = false;
+}
+
+async function remove(id: number) {
+  await api.delete(`/accommodation/${id}`);
+  accommodations.value = accommodations.value.filter((a) => a.id !== id);
+}
+
+function formatDate(d: string | null) {
+  if (!d) return null;
+  return new Date(d).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 </script>
 
 <template>
   <div class="page" v-if="!loading">
-    <h1>Unterkunft</h1>
+    <div class="header">
+      <h1>Unterkunft</h1>
+      <button @click="showForm = !showForm">{{ showForm ? 'Abbrechen' : '+ Neue Unterkunft' }}</button>
+    </div>
 
-    <form class="card form" @submit.prevent="save">
+    <form v-if="showForm" class="card form" @submit.prevent="addAccommodation">
       <label>
         Name
         <input v-model="form.name" type="text" required />
@@ -72,10 +87,16 @@ async function save() {
         Adresse
         <input v-model="form.address" type="text" />
       </label>
-      <label>
-        Link (Buchungsseite o. Ä.)
-        <input v-model="form.link" type="url" />
-      </label>
+      <div class="row">
+        <label>
+          Von
+          <input v-model="form.start_date" type="date" />
+        </label>
+        <label>
+          Bis
+          <input v-model="form.end_date" type="date" />
+        </label>
+      </div>
       <div class="row">
         <label>
           Check-in
@@ -87,6 +108,16 @@ async function save() {
         </label>
       </div>
       <label>
+        Link (Buchungsseite o. Ä.)
+        <input v-model="form.link" type="url" />
+      </label>
+      <label>
+        Google-Maps-Link
+        <input v-model="form.maps_link" type="url" @blur="checkMapsLink" />
+      </label>
+      <p v-if="mapsLinkResolved === true" class="hint success">📍 Standort erkannt – erscheint auf der Karte</p>
+      <p v-if="mapsLinkResolved === false" class="hint">Standort konnte nicht automatisch erkannt werden.</p>
+      <label>
         Kontakt
         <input v-model="form.contact" type="text" />
       </label>
@@ -94,29 +125,49 @@ async function save() {
         Notizen
         <textarea v-model="form.note" rows="3"></textarea>
       </label>
-      <div class="row">
-        <label>
-          Lat
-          <input v-model="form.lat" type="number" step="any" />
-        </label>
-        <label>
-          Lng
-          <input v-model="form.lng" type="number" step="any" />
-        </label>
-      </div>
 
-      <button type="submit" :disabled="saving">{{ saving ? 'Speichern…' : 'Speichern' }}</button>
-      <p v-if="saved" class="saved">Gespeichert ✓</p>
+      <button type="submit">Speichern</button>
     </form>
+
+    <div class="grid cards">
+      <div class="card acc-card" v-for="acc in accommodations" :key="acc.id">
+        <div class="acc-head">
+          <h3>{{ acc.name }}</h3>
+          <button class="secondary" @click="remove(acc.id)">✕</button>
+        </div>
+        <p v-if="acc.start_date || acc.end_date">
+          🗓️ {{ formatDate(acc.start_date) || '?' }} – {{ formatDate(acc.end_date) || '?' }}
+        </p>
+        <p v-if="acc.address">{{ acc.address }}</p>
+        <p v-if="acc.checkin || acc.checkout">
+          Check-in {{ acc.checkin || '–' }} · Check-out {{ acc.checkout || '–' }}
+        </p>
+        <p v-if="acc.contact">📞 {{ acc.contact }}</p>
+        <p v-if="acc.note">{{ acc.note }}</p>
+        <div class="links">
+          <a v-if="acc.link" :href="acc.link" target="_blank" rel="noopener">Buchung ↗</a>
+          <a v-if="acc.maps_link" :href="acc.maps_link" target="_blank" rel="noopener">📍 Maps ↗</a>
+        </div>
+      </div>
+    </div>
+    <p v-if="!accommodations.length" class="empty">Noch keine Unterkunft eingetragen.</p>
   </div>
 </template>
 
 <style scoped>
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-3);
+}
+
 .form {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
   max-width: 520px;
+  margin-bottom: var(--space-4);
 }
 
 label {
@@ -133,8 +184,49 @@ label {
   gap: var(--space-3);
 }
 
-.saved {
-  color: var(--color-success);
+.hint {
   margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.hint.success {
+  color: var(--color-success);
+}
+
+.cards {
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+
+.acc-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.acc-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.acc-head h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.acc-head button {
+  font-size: 0.8rem;
+  padding: 4px 10px;
+}
+
+.links {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.empty {
+  color: var(--color-text-muted);
 }
 </style>

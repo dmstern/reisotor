@@ -9,7 +9,6 @@ const router = createRouter({
     { path: '/schedule', name: 'schedule', component: () => import('../views/ScheduleView.vue') },
     { path: '/packing', name: 'packing', component: () => import('../views/PackingListView.vue') },
     { path: '/ideas', name: 'ideas', component: () => import('../views/IdeasView.vue') },
-    { path: '/spots', name: 'spots', component: () => import('../views/SpotsView.vue') },
     {
       path: '/accommodation',
       name: 'accommodation',
@@ -17,6 +16,8 @@ const router = createRouter({
     },
     { path: '/budget', name: 'budget', component: () => import('../views/BudgetView.vue') },
     { path: '/map', name: 'map', component: () => import('../views/MapView.vue') },
+    { path: '/spots', redirect: '/map' },
+    { path: '/profile', name: 'profile', component: () => import('../views/ProfileView.vue') },
   ],
 });
 

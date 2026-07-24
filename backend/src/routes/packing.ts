@@ -5,6 +5,7 @@ interface PackingBody {
   category?: string;
   label: string;
   checked?: boolean;
+  owner_id?: number | null;
 }
 
 export const packingRoutes: FastifyPluginAsync = async (app) => {
@@ -13,19 +14,19 @@ export const packingRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.post<{ Body: PackingBody }>('/packing', async (req, reply) => {
-    const { category, label, checked } = req.body;
+    const { category, label, checked, owner_id } = req.body;
     const result = db
-      .prepare('INSERT INTO packing_items (category, label, checked) VALUES (?, ?, ?)')
-      .run(category ?? null, label, checked ? 1 : 0);
+      .prepare('INSERT INTO packing_items (category, label, checked, owner_id) VALUES (?, ?, ?, ?)')
+      .run(category ?? null, label, checked ? 1 : 0, owner_id ?? null);
     reply.code(201);
     return db.prepare('SELECT * FROM packing_items WHERE id = ?').get(result.lastInsertRowid);
   });
 
   app.put<{ Params: { id: string }; Body: PackingBody }>('/packing/:id', async (req, reply) => {
-    const { category, label, checked } = req.body;
+    const { category, label, checked, owner_id } = req.body;
     const result = db
-      .prepare('UPDATE packing_items SET category = ?, label = ?, checked = ? WHERE id = ?')
-      .run(category ?? null, label, checked ? 1 : 0, req.params.id);
+      .prepare('UPDATE packing_items SET category = ?, label = ?, checked = ?, owner_id = ? WHERE id = ?')
+      .run(category ?? null, label, checked ? 1 : 0, owner_id ?? null, req.params.id);
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
     return db.prepare('SELECT * FROM packing_items WHERE id = ?').get(req.params.id);
   });
