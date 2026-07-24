@@ -1,1 +1,9 @@
 .claude
+
+# Private Planungs-/Arbeitsdokumente – nicht fuers oeffentliche Repo bestimmt
+bauanleitung.md
+feature-reuqests.txt
+
+# Persoenliches Deploy-Skript: enthaelt echte Domain, SSH-User und lokalen
+# Fritzbox-Hostnamen des Pi. Bei Bedarf lokal kopieren/anpassen.
+deploy.sh
