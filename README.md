@@ -99,6 +99,15 @@ Das Backend lauscht nur auf `localhost:3000`; nur Caddy ist öffentlich erreichb
 - **Zentrale Icons/Edit-UX:** `components/DeleteButton.vue` und `EditButton.vue` sind die einzige Stelle, an der die Icons (🗑️/✎) definiert sind – überall sonst wird die Komponente eingebunden. „Bearbeiten" öffnet konsistent ein `Modal.vue`-Popup (eigener Formular-State, getrennt vom Hinzufügen-Formular); nur sehr leichte Inline-Edits (z. B. Käufer:in-Zuweisung per Dropdown, Kategorie-Zielbudget-Betrag) bleiben bewusst inline, da dafür ein Popup unverhältnismäßig wäre.
 - **Ideen-Status:** Drei Zustände (💡 Idee, ✅ Geplant, ❌ Verworfen), manuell per Button setzbar. „Geplant" wird zusätzlich automatisch gesetzt, sobald für die Idee ein Kalendereintrag angelegt wird (serverseitig in `POST/PUT /schedule`) – dadurch muss man eine Idee nicht mehr manuell als „geplant" markieren, bevor man sie in den Kalender ziehen kann. Die Ideen-Liste ist nach Status sortiert (Idee → Geplant → Verworfen).
 
+### deploy.sh: zwei Bugs gefunden und behoben
+
+1. **Netzwerk-Erreichbarkeit:** `deine-domain.de` ist von einem Gerät im selben Heimnetz wie der Pi aus nicht erreichbar (NAT-Hairpin – die Fritzbox routet von innen kommende Anfragen an die eigene öffentliche IP nicht zuverlässig zurück). Das Skript prüft jetzt zuerst per SSH, ob der Pi über die lokale Fritzbox-Adresse `dein-pi.fritz.box` erreichbar ist (funktioniert stabil über IPv6, unabhängig von der jeweils per DHCP vergebenen lokalen IP), und nutzt sonst die öffentliche Domain als Fallback. Damit funktioniert `./deploy.sh` unverändert sowohl von zuhause als auch unterwegs.
+2. **Pfad-Mismatch Backend:** Der systemd-Service erwartet den kompilierten Code unter `~/reisotor/backend/dist/server.js` (`ExecStart=/usr/bin/node dist/server.js`), das Skript hat den Inhalt von `backend/dist/` bisher aber direkt nach `~/reisotor/backend/` synchronisiert (ohne `dist/`-Unterordner) – der Service fand `dist/server.js` dadurch nicht (`MODULE_NOT_FOUND`) und crashte im Restart-Loop. Jetzt wird `dist/` als eigener Rsync-Zielordner behandelt, getrennt von `package.json`/`package-lock.json`.
+
+**Offene manuelle Schritte** (bewusst nicht von mir automatisiert, da sicherheitsrelevant):
+- Auf dem Pi wurde noch nie `npm run seed` ausgeführt – die Produktions-DB hat aktuell keine Nutzer. Siehe Abschnitt „Deployment auf dem Raspberry Pi 2" oben für die Kommandozeile mit echten Zugangsdaten.
+- Der systemd-Service setzt kein `SESSION_SECRET` (`/etc/systemd/system/reisotor.service`), läuft also aktuell mit dem unsicheren Dev-Fallback-Wert aus `server.ts`. Vor dem ersten echten Login sollte dort ein zufälliges Secret ergänzt und der Service neu gestartet werden.
+- Caddy hatte beim ersten Check noch eine veraltete Konfiguration geladen (Testantwort statt Reverse Proxy) – mit `sudo systemctl reload caddy` behoben. Nach künftigen manuellen Caddyfile-Änderungen immer `reload` nicht vergessen.
 - **Profil-Icon:** lebt jetzt im `AppHeader` oben rechts (statt in der Navigationsleiste), auf gleicher Höhe wie das Logo.
 
 ### Bugfix: kaputte Kartenmarker ("leeres Quadrat mit 'mark'")
