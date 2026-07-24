@@ -7,7 +7,7 @@ interface IdeaBody {
   link?: string;
   maps_link?: string;
   note?: string;
-  status?: 'idea' | 'planned';
+  status?: 'idea' | 'planned' | 'discarded';
   lat?: number;
   lng?: number;
 }

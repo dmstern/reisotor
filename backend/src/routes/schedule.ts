@@ -19,6 +19,9 @@ export const scheduleRoutes: FastifyPluginAsync = async (app) => {
     const result = db
       .prepare('INSERT INTO schedule_items (date, time, title, note, idea_id) VALUES (?, ?, ?, ?, ?)')
       .run(date, time ?? null, title, note ?? null, idea_id ?? null);
+    if (idea_id) {
+      db.prepare("UPDATE ideas SET status = 'planned' WHERE id = ?").run(idea_id);
+    }
     reply.code(201);
     return db.prepare('SELECT * FROM schedule_items WHERE id = ?').get(result.lastInsertRowid);
   });
@@ -29,6 +32,9 @@ export const scheduleRoutes: FastifyPluginAsync = async (app) => {
       .prepare('UPDATE schedule_items SET date = ?, time = ?, title = ?, note = ?, idea_id = ? WHERE id = ?')
       .run(date, time ?? null, title, note ?? null, idea_id ?? null, req.params.id);
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
+    if (idea_id) {
+      db.prepare("UPDATE ideas SET status = 'planned' WHERE id = ?").run(idea_id);
+    }
     return db.prepare('SELECT * FROM schedule_items WHERE id = ?').get(req.params.id);
   });
 

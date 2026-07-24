@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { api } from '../api/client';
 import type { Idea } from '../api/types';
 import IdeaCard from '../components/IdeaCard.vue';
@@ -48,14 +48,20 @@ async function addIdea() {
   showForm.value = false;
 }
 
-async function toggleStatus(idea: Idea) {
+const STATUS_ORDER: Record<Idea['status'], number> = { idea: 0, planned: 1, discarded: 2 };
+
+const sortedIdeas = computed(() =>
+  [...ideas.value].sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]),
+);
+
+async function setStatus(idea: Idea, status: Idea['status']) {
   const updated = await api.put<Idea>(`/ideas/${idea.id}`, {
     title: idea.title,
     image_url: idea.image_url ?? undefined,
     link: idea.link ?? undefined,
     maps_link: idea.maps_link ?? undefined,
     note: idea.note ?? undefined,
-    status: idea.status === 'planned' ? 'idea' : 'planned',
+    status,
     lat: idea.lat ?? undefined,
     lng: idea.lng ?? undefined,
   });
@@ -135,10 +141,10 @@ async function submitEdit() {
 
     <div class="grid cards">
       <IdeaCard
-        v-for="idea in ideas"
+        v-for="idea in sortedIdeas"
         :key="idea.id"
         :idea="idea"
-        @toggle-status="toggleStatus"
+        @set-status="setStatus"
         @remove="remove"
         @edit="startEdit"
       />

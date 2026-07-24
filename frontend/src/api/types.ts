@@ -36,7 +36,7 @@ export interface Idea {
   link: string | null;
   maps_link: string | null;
   note: string | null;
-  status: 'idea' | 'planned';
+  status: 'idea' | 'planned' | 'discarded';
   lat: number | null;
   lng: number | null;
 }

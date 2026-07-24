@@ -47,7 +47,7 @@ function toIso(d: Date) {
 const scheduledIdeaIds = computed(() => new Set(items.value.map((i) => i.idea_id).filter(Boolean)));
 
 const unscheduledPlannedIdeas = computed(() =>
-  ideas.value.filter((i) => i.status === 'planned' && !scheduledIdeaIds.value.has(i.id)),
+  ideas.value.filter((i) => i.status !== 'discarded' && !scheduledIdeaIds.value.has(i.id)),
 );
 
 function accommodationsForDate(date: string) {
@@ -186,8 +186,11 @@ function formatDay(date: string) {
     <h1>Ablauf</h1>
 
     <div class="card ideas-pool" v-if="unscheduledPlannedIdeas.length">
-      <h2>Geplante Ideen einplanen</h2>
-      <p class="hint">Auf einen Tag ziehen oder unten per Formular einplanen.</p>
+      <h2>Ideen einplanen</h2>
+      <p class="hint">
+        💡 Diese <strong>gelb hinterlegten Ideen</strong> kannst du direkt auf einen Tag im Kalender
+        ziehen, um sie einzuplanen. Alternativ geht es auch über das Dropdown-Menü unten.
+      </p>
       <div class="pool-items">
         <div
           v-for="idea in unscheduledPlannedIdeas"

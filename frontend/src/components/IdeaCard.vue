@@ -5,10 +5,16 @@ import DeleteButton from './DeleteButton.vue';
 
 defineProps<{ idea: Idea }>();
 const emit = defineEmits<{
-  (e: 'toggle-status', idea: Idea): void;
+  (e: 'set-status', idea: Idea, status: Idea['status']): void;
   (e: 'remove', id: number): void;
   (e: 'edit', idea: Idea): void;
 }>();
+
+const STATUS_LABELS: Record<Idea['status'], string> = {
+  idea: 'Idee',
+  planned: 'Geplant',
+  discarded: 'Verworfen',
+};
 </script>
 
 <template>
@@ -16,7 +22,7 @@ const emit = defineEmits<{
     <div class="image" :style="idea.image_url ? { backgroundImage: `url(${idea.image_url})` } : {}">
       <span v-if="!idea.image_url" class="placeholder">🏞️</span>
       <EditButton floating @click="emit('edit', idea)" />
-      <span class="status" :class="idea.status">{{ idea.status === 'planned' ? 'Geplant' : 'Idee' }}</span>
+      <span class="status" :class="idea.status">{{ STATUS_LABELS[idea.status] }}</span>
     </div>
     <div class="body">
       <h3>{{ idea.title }}</h3>
@@ -29,9 +35,35 @@ const emit = defineEmits<{
         📅 Im Kalender einplanen
       </router-link>
       <div class="actions">
-        <button class="secondary" @click="emit('toggle-status', idea)">
-          {{ idea.status === 'planned' ? 'Als Idee markieren' : 'Als geplant markieren' }}
-        </button>
+        <div class="status-buttons">
+          <button
+            type="button"
+            class="secondary status-btn"
+            :class="{ active: idea.status === 'idea' }"
+            title="Als Idee markieren"
+            @click="emit('set-status', idea, 'idea')"
+          >
+            💡
+          </button>
+          <button
+            type="button"
+            class="secondary status-btn"
+            :class="{ active: idea.status === 'planned' }"
+            title="Als geplant markieren"
+            @click="emit('set-status', idea, 'planned')"
+          >
+            ✅
+          </button>
+          <button
+            type="button"
+            class="secondary status-btn"
+            :class="{ active: idea.status === 'discarded' }"
+            title="Als verworfen markieren"
+            @click="emit('set-status', idea, 'discarded')"
+          >
+            ❌
+          </button>
+        </div>
         <DeleteButton small @click="emit('remove', idea.id)" />
       </div>
     </div>
@@ -75,6 +107,10 @@ const emit = defineEmits<{
   color: var(--color-success);
 }
 
+.status.discarded {
+  color: var(--color-danger);
+}
+
 .body {
   padding: var(--space-3);
   display: flex;
@@ -89,14 +125,29 @@ const emit = defineEmits<{
 
 .actions {
   display: flex;
+  justify-content: space-between;
+  align-items: center;
   gap: var(--space-2);
   margin-top: var(--space-2);
   flex-wrap: wrap;
 }
 
-.actions button {
-  font-size: 0.8rem;
-  padding: 6px 10px;
+.status-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+.status-btn {
+  padding: 4px 8px;
+  font-size: 0.9rem;
+  line-height: 1;
+  opacity: 0.45;
+}
+
+.status-btn.active {
+  opacity: 1;
+  border-color: var(--color-primary);
+  background: #eaf3f1;
 }
 
 .schedule-hint {
