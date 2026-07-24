@@ -4,6 +4,9 @@ import { api, ApiError } from '../api/client';
 import type { Note, User } from '../api/types';
 import { useAuthStore } from '../stores/auth';
 import { renderRichText } from '../utils/richText';
+import Modal from '../components/Modal.vue';
+import EditButton from '../components/EditButton.vue';
+import DeleteButton from '../components/DeleteButton.vue';
 
 const auth = useAuthStore();
 const notes = ref<Note[]>([]);
@@ -12,8 +15,11 @@ const loading = ref(true);
 const showForm = ref(false);
 const error = ref('');
 
-const form = ref({ title: '', content: '' });
-const editingId = ref<number | null>(null);
+const emptyForm = () => ({ title: '', content: '' });
+const form = ref(emptyForm());
+
+const editingNote = ref<Note | null>(null);
+const editForm = ref(emptyForm());
 
 onMounted(async () => {
   const [notesRes, usersRes] = await Promise.all([
@@ -35,31 +41,31 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
-function startEdit(note: Note) {
-  editingId.value = note.id;
-  form.value = { title: note.title ?? '', content: note.content };
-  showForm.value = true;
-}
-
-function resetForm() {
-  form.value = { title: '', content: '' };
-  editingId.value = null;
-}
-
 async function submit() {
   if (!form.value.content.trim()) return;
-  const body = { title: form.value.title || undefined, content: form.value.content.trim() };
-
-  if (editingId.value) {
-    const updated = await api.put<Note>(`/notes/${editingId.value}`, body);
-    const idx = notes.value.findIndex((n) => n.id === updated.id);
-    if (idx !== -1) notes.value[idx] = updated;
-  } else {
-    const created = await api.post<Note>('/notes', body);
-    notes.value.unshift(created);
-  }
-  resetForm();
+  const created = await api.post<Note>('/notes', {
+    title: form.value.title || undefined,
+    content: form.value.content.trim(),
+  });
+  notes.value.unshift(created);
+  form.value = emptyForm();
   showForm.value = false;
+}
+
+function startEdit(note: Note) {
+  editingNote.value = note;
+  editForm.value = { title: note.title ?? '', content: note.content };
+}
+
+async function submitEdit() {
+  if (!editingNote.value || !editForm.value.content.trim()) return;
+  const updated = await api.put<Note>(`/notes/${editingNote.value.id}`, {
+    title: editForm.value.title || undefined,
+    content: editForm.value.content.trim(),
+  });
+  const idx = notes.value.findIndex((n) => n.id === updated.id);
+  if (idx !== -1) notes.value[idx] = updated;
+  editingNote.value = null;
 }
 
 async function remove(id: number) {
@@ -80,7 +86,7 @@ async function remove(id: number) {
       <button
         @click="
           showForm = !showForm;
-          if (!showForm) resetForm();
+          if (!showForm) form = emptyForm();
         "
       >
         {{ showForm ? 'Abbrechen' : '+ Neue Notiz' }}
@@ -96,21 +102,39 @@ async function remove(id: number) {
         <code>**fett**</code> · <code>_kursiv_</code> · <code>* Punkt</code> für Listen · Links werden
         automatisch erkannt
       </p>
-      <button type="submit">{{ editingId ? 'Speichern' : 'Hinzufügen' }}</button>
+      <button type="submit">Hinzufügen</button>
     </form>
 
     <div class="grid cards">
       <div class="card note-card" v-for="note in notes" :key="note.id">
         <div class="note-head">
           <h3 v-if="note.title">{{ note.title }}</h3>
-          <button class="secondary" @click="startEdit(note)">✎</button>
-          <button class="secondary" @click="remove(note.id)">🗑️</button>
+          <div class="note-actions">
+            <EditButton small @click="startEdit(note)" />
+            <DeleteButton small @click="remove(note.id)" />
+          </div>
         </div>
         <div class="content" v-html="renderRichText(note.content)"></div>
         <p class="meta">{{ authorLabel(note.created_by) }} · {{ formatDate(note.updated_at ?? note.created_at) }}</p>
       </div>
     </div>
     <p v-if="!notes.length" class="empty">Noch keine Notizen.</p>
+
+    <Modal
+      :model-value="editingNote !== null"
+      title="Notiz bearbeiten"
+      @update:model-value="(v) => !v && (editingNote = null)"
+    >
+      <form class="add-form" @submit.prevent="submitEdit">
+        <input v-model="editForm.title" type="text" placeholder="Titel (optional)" />
+        <textarea v-model="editForm.content" rows="4" required></textarea>
+        <p class="syntax-hint">
+          <code>**fett**</code> · <code>_kursiv_</code> · <code>* Punkt</code> für Listen · Links werden
+          automatisch erkannt
+        </p>
+        <button type="submit">Speichern</button>
+      </form>
+    </Modal>
   </div>
 </template>
 
@@ -152,9 +176,10 @@ async function remove(id: number) {
   color: var(--color-primary-dark);
 }
 
-.note-head button {
-  padding: 4px 8px;
-  font-size: 0.8rem;
+.note-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
 }
 
 .error {

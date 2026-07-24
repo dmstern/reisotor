@@ -194,6 +194,9 @@ ensureColumn('budget_items', 'note', 'TEXT');
 dropColumnIfExists('budget_items', 'paid_by');
 dropColumnIfExists('budget_items', 'is_paid');
 ensureColumn('shopping_items', 'link', 'TEXT');
+ensureColumn('accommodation', 'amount', 'REAL');
+ensureColumn('accommodation', 'paid_by_user_id', 'INTEGER REFERENCES users(id)');
+ensureColumn('accommodation', 'budget_expense_id', 'INTEGER REFERENCES budget_items(id)');
 
 const DEFAULT_BUDGET_CATEGORIES = [
   'Essen & Trinken',

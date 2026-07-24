@@ -2,6 +2,9 @@
 import { computed, onMounted, ref } from 'vue';
 import { api } from '../api/client';
 import type { ShoppingItem, User } from '../api/types';
+import Modal from '../components/Modal.vue';
+import EditButton from '../components/EditButton.vue';
+import DeleteButton from '../components/DeleteButton.vue';
 
 const items = ref<ShoppingItem[]>([]);
 const users = ref<User[]>([]);
@@ -13,10 +16,8 @@ const newBuyer = ref('');
 const newLink = ref('');
 const newNote = ref('');
 
-const editingId = ref<number | null>(null);
-const editLabel = ref('');
-const editLink = ref('');
-const editNote = ref('');
+const editingItem = ref<ShoppingItem | null>(null);
+const editForm = ref({ label: '', link: '', note: '' });
 
 onMounted(async () => {
   const [itemsRes, usersRes] = await Promise.all([
@@ -67,28 +68,22 @@ async function reassign(item: ShoppingItem, event: Event) {
 }
 
 function startEdit(item: ShoppingItem) {
-  editingId.value = item.id;
-  editLabel.value = item.label;
-  editLink.value = item.link ?? '';
-  editNote.value = item.note ?? '';
+  editingItem.value = item;
+  editForm.value = { label: item.label, link: item.link ?? '', note: item.note ?? '' };
 }
 
-function cancelEdit() {
-  editingId.value = null;
-}
-
-async function saveEdit(item: ShoppingItem) {
-  if (!editLabel.value.trim()) return;
-  const updated = await api.put<ShoppingItem>(`/shopping/${item.id}`, {
-    label: editLabel.value.trim(),
-    assigned_to_user_id: item.assigned_to_user_id,
-    checked: !!item.checked,
-    link: editLink.value || undefined,
-    note: editNote.value || undefined,
+async function submitEdit() {
+  if (!editingItem.value || !editForm.value.label.trim()) return;
+  const updated = await api.put<ShoppingItem>(`/shopping/${editingItem.value.id}`, {
+    label: editForm.value.label.trim(),
+    assigned_to_user_id: editingItem.value.assigned_to_user_id,
+    checked: !!editingItem.value.checked,
+    link: editForm.value.link || undefined,
+    note: editForm.value.note || undefined,
   });
-  const idx = items.value.findIndex((i) => i.id === item.id);
+  const idx = items.value.findIndex((i) => i.id === updated.id);
   if (idx !== -1) items.value[idx] = updated;
-  editingId.value = null;
+  editingItem.value = null;
 }
 
 async function remove(id: number) {
@@ -138,32 +133,38 @@ async function addItem() {
 
     <div class="card">
       <ul class="list">
-        <template v-for="item in filteredItems" :key="item.id">
-          <li v-if="editingId !== item.id" class="row">
-            <label class="check">
-              <input type="checkbox" :checked="!!item.checked" @change="toggle(item)" />
-              <span :class="{ done: item.checked }">{{ item.label }}</span>
-            </label>
-            <a v-if="item.link" :href="item.link" target="_blank" rel="noopener" class="link">🔗 Link</a>
-            <span v-if="item.note" class="note">{{ item.note }}</span>
-            <select class="buyer-select" :value="item.assigned_to_user_id ?? ''" @change="reassign(item, $event)">
-              <option value="">Nicht zugewiesen</option>
-              <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
-            </select>
-            <button class="secondary" @click="startEdit(item)">✎</button>
-            <button class="secondary" @click="remove(item.id)">✕</button>
-          </li>
-          <li v-else class="row edit-row">
-            <input v-model="editLabel" type="text" class="edit-input" placeholder="Artikel" />
-            <input v-model="editLink" type="url" class="edit-input" placeholder="Link (optional)" />
-            <input v-model="editNote" type="text" class="edit-input" placeholder="Notiz (optional)" />
-            <button @click="saveEdit(item)">Speichern</button>
-            <button class="secondary" @click="cancelEdit">Abbrechen</button>
-          </li>
-        </template>
+        <li v-for="item in filteredItems" :key="item.id" class="row">
+          <label class="check">
+            <input type="checkbox" :checked="!!item.checked" @change="toggle(item)" />
+            <span :class="{ done: item.checked }">{{ item.label }}</span>
+          </label>
+          <a v-if="item.link" :href="item.link" target="_blank" rel="noopener" class="link">🔗 Link</a>
+          <span v-if="item.note" class="note">{{ item.note }}</span>
+          <select class="buyer-select" :value="item.assigned_to_user_id ?? ''" @change="reassign(item, $event)">
+            <option value="">Nicht zugewiesen</option>
+            <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
+          </select>
+          <div class="row-actions">
+            <EditButton small @click="startEdit(item)" />
+            <DeleteButton small @click="remove(item.id)" />
+          </div>
+        </li>
         <li v-if="!filteredItems.length" class="empty">Keine Einträge.</li>
       </ul>
     </div>
+
+    <Modal
+      :model-value="editingItem !== null"
+      title="Artikel bearbeiten"
+      @update:model-value="(v) => !v && (editingItem = null)"
+    >
+      <form class="edit-form" @submit.prevent="submitEdit">
+        <input v-model="editForm.label" type="text" placeholder="Artikel" required />
+        <input v-model="editForm.link" type="url" placeholder="Link (optional)" />
+        <input v-model="editForm.note" type="text" placeholder="Notiz (optional)" />
+        <button type="submit">Speichern</button>
+      </form>
+    </Modal>
   </div>
 </template>
 
@@ -236,18 +237,16 @@ async function addItem() {
   padding: 4px 6px;
 }
 
-.row > button {
-  padding: 4px 8px;
-  font-size: 0.8rem;
+.row-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
 }
 
-.edit-row {
+.edit-form {
+  display: flex;
+  flex-direction: column;
   gap: var(--space-2);
-}
-
-.edit-input {
-  flex: 1;
-  min-width: 120px;
 }
 
 .empty {

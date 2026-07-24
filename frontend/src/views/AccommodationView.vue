@@ -1,13 +1,18 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import { api } from '../api/client';
-import type { Accommodation } from '../api/types';
+import type { Accommodation, User } from '../api/types';
 import { parseLatLngFromMapsLink } from '../utils/googleMaps';
+import Modal from '../components/Modal.vue';
+import EditButton from '../components/EditButton.vue';
+import DeleteButton from '../components/DeleteButton.vue';
 
 const accommodations = ref<Accommodation[]>([]);
+const users = ref<User[]>([]);
 const loading = ref(true);
 const showForm = ref(false);
 const mapsLinkResolved = ref<boolean | null>(null);
+const editMapsLinkResolved = ref<boolean | null>(null);
 
 const emptyForm = () => ({
   name: '',
@@ -20,44 +25,94 @@ const emptyForm = () => ({
   checkout: '',
   contact: '',
   note: '',
+  amount: '',
+  paid_by_user_id: '',
 });
 
 const form = ref(emptyForm());
+const editingItem = ref<Accommodation | null>(null);
+const editForm = ref(emptyForm());
 
 onMounted(async () => {
-  accommodations.value = await api.get<Accommodation[]>('/accommodation');
+  const [accRes, usersRes] = await Promise.all([
+    api.get<Accommodation[]>('/accommodation'),
+    api.get<User[]>('/users'),
+  ]);
+  accommodations.value = accRes;
+  users.value = usersRes;
   loading.value = false;
 });
 
-function checkMapsLink() {
-  if (!form.value.maps_link) {
-    mapsLinkResolved.value = null;
-    return;
-  }
-  mapsLinkResolved.value = parseLatLngFromMapsLink(form.value.maps_link) != null;
+function userLabel(id: number | null) {
+  if (id == null) return '';
+  const u = users.value.find((u) => u.id === id);
+  return u ? `${u.avatar} ${u.username}` : '';
 }
 
-async function addAccommodation() {
-  if (!form.value.name.trim()) return;
-  const parsed = parseLatLngFromMapsLink(form.value.maps_link);
-  const created = await api.post<Accommodation>('/accommodation', {
-    name: form.value.name.trim(),
-    address: form.value.address || undefined,
-    link: form.value.link || undefined,
-    maps_link: form.value.maps_link || undefined,
-    start_date: form.value.start_date || undefined,
-    end_date: form.value.end_date || undefined,
-    checkin: form.value.checkin || undefined,
-    checkout: form.value.checkout || undefined,
-    contact: form.value.contact || undefined,
-    note: form.value.note || undefined,
+function checkMapsLink() {
+  mapsLinkResolved.value = form.value.maps_link ? parseLatLngFromMapsLink(form.value.maps_link) != null : null;
+}
+
+function checkEditMapsLink() {
+  editMapsLinkResolved.value = editForm.value.maps_link
+    ? parseLatLngFromMapsLink(editForm.value.maps_link) != null
+    : null;
+}
+
+function toBody(f: ReturnType<typeof emptyForm>) {
+  const parsed = parseLatLngFromMapsLink(f.maps_link);
+  return {
+    name: f.name.trim(),
+    address: f.address || undefined,
+    link: f.link || undefined,
+    maps_link: f.maps_link || undefined,
+    start_date: f.start_date || undefined,
+    end_date: f.end_date || undefined,
+    checkin: f.checkin || undefined,
+    checkout: f.checkout || undefined,
+    contact: f.contact || undefined,
+    note: f.note || undefined,
     lat: parsed?.lat,
     lng: parsed?.lng,
-  });
+    amount: f.amount ? Number(f.amount) : undefined,
+    paid_by_user_id: f.paid_by_user_id ? Number(f.paid_by_user_id) : undefined,
+  };
+}
+
+async function submit() {
+  if (!form.value.name.trim()) return;
+  const created = await api.post<Accommodation>('/accommodation', toBody(form.value));
   accommodations.value.push(created);
   form.value = emptyForm();
   mapsLinkResolved.value = null;
   showForm.value = false;
+}
+
+function startEdit(acc: Accommodation) {
+  editingItem.value = acc;
+  editForm.value = {
+    name: acc.name,
+    address: acc.address ?? '',
+    link: acc.link ?? '',
+    maps_link: acc.maps_link ?? '',
+    start_date: acc.start_date ?? '',
+    end_date: acc.end_date ?? '',
+    checkin: acc.checkin ?? '',
+    checkout: acc.checkout ?? '',
+    contact: acc.contact ?? '',
+    note: acc.note ?? '',
+    amount: acc.amount != null ? String(acc.amount) : '',
+    paid_by_user_id: acc.paid_by_user_id != null ? String(acc.paid_by_user_id) : '',
+  };
+  editMapsLinkResolved.value = null;
+}
+
+async function submitEdit() {
+  if (!editingItem.value || !editForm.value.name.trim()) return;
+  const updated = await api.put<Accommodation>(`/accommodation/${editingItem.value.id}`, toBody(editForm.value));
+  const idx = accommodations.value.findIndex((a) => a.id === updated.id);
+  if (idx !== -1) accommodations.value[idx] = updated;
+  editingItem.value = null;
 }
 
 async function remove(id: number) {
@@ -75,10 +130,17 @@ function formatDate(d: string | null) {
   <div class="page" v-if="!loading">
     <div class="header">
       <h1>Unterkunft</h1>
-      <button @click="showForm = !showForm">{{ showForm ? 'Abbrechen' : '+ Neue Unterkunft' }}</button>
+      <button
+        @click="
+          showForm = !showForm;
+          if (!showForm) form = emptyForm();
+        "
+      >
+        {{ showForm ? 'Abbrechen' : '+ Neue Unterkunft' }}
+      </button>
     </div>
 
-    <form v-if="showForm" class="card form" @submit.prevent="addAccommodation">
+    <form v-if="showForm" class="card form" @submit.prevent="submit">
       <label>
         Name
         <input v-model="form.name" type="text" required />
@@ -121,19 +183,38 @@ function formatDate(d: string | null) {
         Kontakt
         <input v-model="form.contact" type="text" />
       </label>
+      <div class="row">
+        <label>
+          Kosten (€)
+          <input v-model="form.amount" type="number" step="0.01" placeholder="optional" />
+        </label>
+        <label>
+          Bezahlt von
+          <select v-model="form.paid_by_user_id">
+            <option value="">–</option>
+            <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
+          </select>
+        </label>
+      </div>
+      <p v-if="form.amount && !form.paid_by_user_id" class="hint">
+        Ohne Zahler:in wird der Betrag nicht in der Budgetplanung berücksichtigt.
+      </p>
       <label>
         Notizen
         <textarea v-model="form.note" rows="3"></textarea>
       </label>
 
-      <button type="submit">Speichern</button>
+      <button type="submit">Hinzufügen</button>
     </form>
 
     <div class="grid cards">
       <div class="card acc-card" v-for="acc in accommodations" :key="acc.id">
         <div class="acc-head">
           <h3>{{ acc.name }}</h3>
-          <button class="secondary" @click="remove(acc.id)">✕</button>
+          <div class="actions">
+            <EditButton small @click="startEdit(acc)" />
+            <DeleteButton small @click="remove(acc.id)" />
+          </div>
         </div>
         <p v-if="acc.start_date || acc.end_date">
           🗓️ {{ formatDate(acc.start_date) || '?' }} – {{ formatDate(acc.end_date) || '?' }}
@@ -143,6 +224,10 @@ function formatDate(d: string | null) {
           Check-in {{ acc.checkin || '–' }} · Check-out {{ acc.checkout || '–' }}
         </p>
         <p v-if="acc.contact">📞 {{ acc.contact }}</p>
+        <p v-if="acc.amount != null">
+          💶 {{ acc.amount.toFixed(2) }} €
+          <span v-if="acc.paid_by_user_id"> · bezahlt von {{ userLabel(acc.paid_by_user_id) }}</span>
+        </p>
         <p v-if="acc.note">{{ acc.note }}</p>
         <div class="links">
           <a v-if="acc.link" :href="acc.link" target="_blank" rel="noopener">Buchung ↗</a>
@@ -151,6 +236,78 @@ function formatDate(d: string | null) {
       </div>
     </div>
     <p v-if="!accommodations.length" class="empty">Noch keine Unterkunft eingetragen.</p>
+
+    <Modal
+      :model-value="editingItem !== null"
+      title="Unterkunft bearbeiten"
+      @update:model-value="(v) => !v && (editingItem = null)"
+    >
+      <form class="form" @submit.prevent="submitEdit">
+        <label>
+          Name
+          <input v-model="editForm.name" type="text" required />
+        </label>
+        <label>
+          Adresse
+          <input v-model="editForm.address" type="text" />
+        </label>
+        <div class="row">
+          <label>
+            Von
+            <input v-model="editForm.start_date" type="date" />
+          </label>
+          <label>
+            Bis
+            <input v-model="editForm.end_date" type="date" />
+          </label>
+        </div>
+        <div class="row">
+          <label>
+            Check-in
+            <input v-model="editForm.checkin" type="text" />
+          </label>
+          <label>
+            Check-out
+            <input v-model="editForm.checkout" type="text" />
+          </label>
+        </div>
+        <label>
+          Link (Buchungsseite o. Ä.)
+          <input v-model="editForm.link" type="url" />
+        </label>
+        <label>
+          Google-Maps-Link
+          <input v-model="editForm.maps_link" type="url" @blur="checkEditMapsLink" />
+        </label>
+        <p v-if="editMapsLinkResolved === true" class="hint success">📍 Standort erkannt</p>
+        <p v-if="editMapsLinkResolved === false" class="hint">Standort konnte nicht automatisch erkannt werden.</p>
+        <label>
+          Kontakt
+          <input v-model="editForm.contact" type="text" />
+        </label>
+        <div class="row">
+          <label>
+            Kosten (€)
+            <input v-model="editForm.amount" type="number" step="0.01" />
+          </label>
+          <label>
+            Bezahlt von
+            <select v-model="editForm.paid_by_user_id">
+              <option value="">–</option>
+              <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
+            </select>
+          </label>
+        </div>
+        <p v-if="editForm.amount && !editForm.paid_by_user_id" class="hint">
+          Ohne Zahler:in wird der Betrag nicht in der Budgetplanung berücksichtigt.
+        </p>
+        <label>
+          Notizen
+          <textarea v-model="editForm.note" rows="3"></textarea>
+        </label>
+        <button type="submit">Speichern</button>
+      </form>
+    </Modal>
   </div>
 </template>
 
@@ -215,9 +372,10 @@ label {
   font-size: 1rem;
 }
 
-.acc-head button {
-  font-size: 0.8rem;
-  padding: 4px 10px;
+.actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
 }
 
 .links {

@@ -2,12 +2,14 @@
 import { onMounted, ref } from 'vue';
 import { api } from '../api/client';
 import type { TravelItem, User } from '../api/types';
+import Modal from '../components/Modal.vue';
+import EditButton from '../components/EditButton.vue';
+import DeleteButton from '../components/DeleteButton.vue';
 
 const items = ref<TravelItem[]>([]);
 const users = ref<User[]>([]);
 const loading = ref(true);
 const showForm = ref(false);
-const editingId = ref<number | null>(null);
 
 const TYPE_OPTIONS = ['Flug', 'Zug', 'Bus', 'Auto', 'Fähre', 'Sonstiges'];
 
@@ -29,6 +31,9 @@ const emptyForm = () => ({
 
 const form = ref(emptyForm());
 
+const editingItem = ref<TravelItem | null>(null);
+const editForm = ref(emptyForm());
+
 onMounted(async () => {
   const [itemsRes, usersRes] = await Promise.all([
     api.get<TravelItem[]>('/travel'),
@@ -45,14 +50,35 @@ function userLabel(id: number | null) {
   return u ? `${u.avatar} ${u.username}` : '';
 }
 
-function resetForm() {
+function toBody(f: ReturnType<typeof emptyForm>) {
+  return {
+    title: f.title.trim(),
+    type: f.type || undefined,
+    from_location: f.from_location || undefined,
+    to_location: f.to_location || undefined,
+    date: f.date || undefined,
+    departure_time: f.departure_time || undefined,
+    checkin_info: f.checkin_info || undefined,
+    amount: f.amount ? Number(f.amount) : undefined,
+    paid_by_user_id: f.paid_by_user_id ? Number(f.paid_by_user_id) : undefined,
+    luggage: f.luggage || undefined,
+    seat: f.seat || undefined,
+    link: f.link || undefined,
+    note: f.note || undefined,
+  };
+}
+
+async function submit() {
+  if (!form.value.title.trim()) return;
+  const created = await api.post<TravelItem>('/travel', toBody(form.value));
+  items.value.push(created);
   form.value = emptyForm();
-  editingId.value = null;
+  showForm.value = false;
 }
 
 function startEdit(item: TravelItem) {
-  editingId.value = item.id;
-  form.value = {
+  editingItem.value = item;
+  editForm.value = {
     title: item.title,
     type: item.type ?? 'Flug',
     from_location: item.from_location ?? '',
@@ -67,37 +93,14 @@ function startEdit(item: TravelItem) {
     link: item.link ?? '',
     note: item.note ?? '',
   };
-  showForm.value = true;
 }
 
-async function submit() {
-  if (!form.value.title.trim()) return;
-  const body = {
-    title: form.value.title.trim(),
-    type: form.value.type || undefined,
-    from_location: form.value.from_location || undefined,
-    to_location: form.value.to_location || undefined,
-    date: form.value.date || undefined,
-    departure_time: form.value.departure_time || undefined,
-    checkin_info: form.value.checkin_info || undefined,
-    amount: form.value.amount ? Number(form.value.amount) : undefined,
-    paid_by_user_id: form.value.paid_by_user_id ? Number(form.value.paid_by_user_id) : undefined,
-    luggage: form.value.luggage || undefined,
-    seat: form.value.seat || undefined,
-    link: form.value.link || undefined,
-    note: form.value.note || undefined,
-  };
-
-  if (editingId.value) {
-    const updated = await api.put<TravelItem>(`/travel/${editingId.value}`, body);
-    const idx = items.value.findIndex((i) => i.id === updated.id);
-    if (idx !== -1) items.value[idx] = updated;
-  } else {
-    const created = await api.post<TravelItem>('/travel', body);
-    items.value.push(created);
-  }
-  resetForm();
-  showForm.value = false;
+async function submitEdit() {
+  if (!editingItem.value || !editForm.value.title.trim()) return;
+  const updated = await api.put<TravelItem>(`/travel/${editingItem.value.id}`, toBody(editForm.value));
+  const idx = items.value.findIndex((i) => i.id === updated.id);
+  if (idx !== -1) items.value[idx] = updated;
+  editingItem.value = null;
 }
 
 async function remove(id: number) {
@@ -122,7 +125,7 @@ function typeIcon(type: string | null) {
       <button
         @click="
           showForm = !showForm;
-          if (!showForm) resetForm();
+          if (!showForm) form = emptyForm();
         "
       >
         {{ showForm ? 'Abbrechen' : '+ Neuer Eintrag' }}
@@ -199,7 +202,7 @@ function typeIcon(type: string | null) {
         <textarea v-model="form.note" rows="2"></textarea>
       </label>
 
-      <button type="submit">{{ editingId ? 'Speichern' : 'Hinzufügen' }}</button>
+      <button type="submit">Hinzufügen</button>
     </form>
 
     <div class="grid cards">
@@ -207,8 +210,8 @@ function typeIcon(type: string | null) {
         <div class="travel-head">
           <h3>{{ typeIcon(item.type) }} {{ item.title }}</h3>
           <div class="actions">
-            <button class="secondary" @click="startEdit(item)">✎</button>
-            <button class="secondary" @click="remove(item.id)">✕</button>
+            <EditButton small @click="startEdit(item)" />
+            <DeleteButton small @click="remove(item.id)" />
           </div>
         </div>
         <p v-if="item.from_location || item.to_location">
@@ -229,6 +232,84 @@ function typeIcon(type: string | null) {
       </div>
     </div>
     <p v-if="!items.length" class="empty">Noch keine Reise-Infos eingetragen.</p>
+
+    <Modal
+      :model-value="editingItem !== null"
+      title="Reise-Eintrag bearbeiten"
+      @update:model-value="(v) => !v && (editingItem = null)"
+    >
+      <form class="form" @submit.prevent="submitEdit">
+        <label>
+          Titel
+          <input v-model="editForm.title" type="text" required />
+        </label>
+        <label>
+          Art
+          <select v-model="editForm.type">
+            <option v-for="t in TYPE_OPTIONS" :key="t" :value="t">{{ typeIcon(t) }} {{ t }}</option>
+          </select>
+        </label>
+        <div class="row">
+          <label>
+            Von
+            <input v-model="editForm.from_location" type="text" />
+          </label>
+          <label>
+            Nach
+            <input v-model="editForm.to_location" type="text" />
+          </label>
+        </div>
+        <div class="row">
+          <label>
+            Datum
+            <input v-model="editForm.date" type="date" />
+          </label>
+          <label>
+            Abflug/Abfahrt
+            <input v-model="editForm.departure_time" type="time" />
+          </label>
+        </div>
+        <label>
+          Vorher da sein
+          <input v-model="editForm.checkin_info" type="text" />
+        </label>
+        <div class="row">
+          <label>
+            Kosten (€)
+            <input v-model="editForm.amount" type="number" step="0.01" />
+          </label>
+          <label>
+            Bezahlt von
+            <select v-model="editForm.paid_by_user_id">
+              <option value="">–</option>
+              <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
+            </select>
+          </label>
+        </div>
+        <p v-if="editForm.amount && !editForm.paid_by_user_id" class="hint">
+          Ohne Zahler:in wird der Betrag nicht in der Budgetplanung berücksichtigt.
+        </p>
+        <div class="row">
+          <label>
+            Gepäck
+            <input v-model="editForm.luggage" type="text" />
+          </label>
+          <label>
+            Sitzplatz
+            <input v-model="editForm.seat" type="text" />
+          </label>
+        </div>
+        <label>
+          Link (Buchung/Check-in)
+          <input v-model="editForm.link" type="url" />
+        </label>
+        <label>
+          Weitere Infos
+          <textarea v-model="editForm.note" rows="2"></textarea>
+        </label>
+        <button type="submit">Speichern</button>
+      </form>
+    </Modal>
   </div>
 </template>
 
@@ -293,11 +374,6 @@ label {
   display: flex;
   gap: 4px;
   flex-shrink: 0;
-}
-
-.actions button {
-  padding: 4px 8px;
-  font-size: 0.8rem;
 }
 
 .empty {

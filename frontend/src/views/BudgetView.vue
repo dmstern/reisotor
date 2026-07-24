@@ -10,6 +10,9 @@ import type {
 } from '../api/types';
 import { assignCategoryColors } from '../utils/categoryColors';
 import BudgetMeter from '../components/BudgetMeter.vue';
+import Modal from '../components/Modal.vue';
+import EditButton from '../components/EditButton.vue';
+import DeleteButton from '../components/DeleteButton.vue';
 
 const users = ref<User[]>([]);
 const expenses = ref<BudgetExpense[]>([]);
@@ -115,8 +118,7 @@ const expenseCategories = computed(() => {
 });
 
 const showExpenseForm = ref(false);
-const editingExpenseId = ref<number | null>(null);
-const expenseForm = ref({
+const emptyExpenseForm = () => ({
   title: '',
   category: '',
   amount: '',
@@ -124,15 +126,33 @@ const expenseForm = ref({
   date: today(),
   note: '',
 });
+const expenseForm = ref(emptyExpenseForm());
 
-function resetExpenseForm() {
-  expenseForm.value = { title: '', category: '', amount: '', paid_by_user_id: '', date: today(), note: '' };
-  editingExpenseId.value = null;
+const editingExpense = ref<BudgetExpense | null>(null);
+const editExpenseForm = ref(emptyExpenseForm());
+
+function expenseToBody(f: ReturnType<typeof emptyExpenseForm>) {
+  return {
+    title: f.title.trim(),
+    category: f.category || undefined,
+    amount: Number(f.amount),
+    paid_by_user_id: f.paid_by_user_id ? Number(f.paid_by_user_id) : undefined,
+    date: f.date || undefined,
+    note: f.note || undefined,
+  };
+}
+
+async function submitExpense() {
+  if (!expenseForm.value.title.trim() || !expenseForm.value.amount) return;
+  const created = await api.post<BudgetExpense>('/budget', expenseToBody(expenseForm.value));
+  expenses.value.unshift(created);
+  expenseForm.value = emptyExpenseForm();
+  showExpenseForm.value = false;
 }
 
 function startEditExpense(expense: BudgetExpense) {
-  editingExpenseId.value = expense.id;
-  expenseForm.value = {
+  editingExpense.value = expense;
+  editExpenseForm.value = {
     title: expense.title,
     category: expense.category ?? '',
     amount: String(expense.amount),
@@ -140,30 +160,17 @@ function startEditExpense(expense: BudgetExpense) {
     date: expense.date ?? today(),
     note: expense.note ?? '',
   };
-  showExpenseForm.value = true;
 }
 
-async function submitExpense() {
-  if (!expenseForm.value.title.trim() || !expenseForm.value.amount) return;
-  const body = {
-    title: expenseForm.value.title.trim(),
-    category: expenseForm.value.category || undefined,
-    amount: Number(expenseForm.value.amount),
-    paid_by_user_id: expenseForm.value.paid_by_user_id ? Number(expenseForm.value.paid_by_user_id) : undefined,
-    date: expenseForm.value.date || undefined,
-    note: expenseForm.value.note || undefined,
-  };
-
-  if (editingExpenseId.value) {
-    const updated = await api.put<BudgetExpense>(`/budget/${editingExpenseId.value}`, body);
-    const idx = expenses.value.findIndex((e) => e.id === updated.id);
-    if (idx !== -1) expenses.value[idx] = updated;
-  } else {
-    const created = await api.post<BudgetExpense>('/budget', body);
-    expenses.value.unshift(created);
-  }
-  resetExpenseForm();
-  showExpenseForm.value = false;
+async function submitEditExpense() {
+  if (!editingExpense.value || !editExpenseForm.value.title.trim() || !editExpenseForm.value.amount) return;
+  const updated = await api.put<BudgetExpense>(
+    `/budget/${editingExpense.value.id}`,
+    expenseToBody(editExpenseForm.value),
+  );
+  const idx = expenses.value.findIndex((e) => e.id === updated.id);
+  if (idx !== -1) expenses.value[idx] = updated;
+  editingExpense.value = null;
 }
 
 async function removeExpense(id: number) {
@@ -321,7 +328,7 @@ const categoryBreakdown = computed(() => {
           :value="c.amount"
           @change="saveCategoryTarget(c.category, ($event.target as HTMLInputElement).value)"
         />
-        <button class="secondary" @click="removeCategoryTarget(c.id)">✕</button>
+        <DeleteButton small @click="removeCategoryTarget(c.id)" />
       </div>
       <form class="target-row" @submit.prevent="addCategoryTarget">
         <input v-model="newCategoryForm.category" type="text" placeholder="Neue Kategorie" />
@@ -337,19 +344,20 @@ const categoryBreakdown = computed(() => {
         <button
           @click="
             showExpenseForm = !showExpenseForm;
-            if (!showExpenseForm) resetExpenseForm();
+            if (!showExpenseForm) expenseForm = emptyExpenseForm();
           "
         >
           {{ showExpenseForm ? 'Abbrechen' : '+ Bezahlung eintragen' }}
         </button>
       </div>
 
+      <datalist id="budget-categories">
+        <option v-for="c in expenseCategories" :key="c" :value="c" />
+      </datalist>
+
       <form v-if="showExpenseForm" class="add-form" @submit.prevent="submitExpense">
         <input v-model="expenseForm.title" type="text" placeholder="Titel" required />
         <input v-model="expenseForm.category" type="text" list="budget-categories" placeholder="Kategorie" />
-        <datalist id="budget-categories">
-          <option v-for="c in expenseCategories" :key="c" :value="c" />
-        </datalist>
         <input v-model="expenseForm.amount" type="number" step="0.01" placeholder="Betrag" required />
         <select v-model="expenseForm.paid_by_user_id" required>
           <option value="" disabled>Bezahlt von…</option>
@@ -357,7 +365,7 @@ const categoryBreakdown = computed(() => {
         </select>
         <input v-model="expenseForm.date" type="date" />
         <input v-model="expenseForm.note" type="text" placeholder="Notiz (optional)" />
-        <button type="submit">{{ editingExpenseId ? 'Speichern' : 'Hinzufügen' }}</button>
+        <button type="submit">Hinzufügen</button>
       </form>
 
       <table class="data-table">
@@ -379,8 +387,8 @@ const categoryBreakdown = computed(() => {
             <td>{{ userAvatar(e.paid_by_user_id) }} {{ userName(e.paid_by_user_id) }}</td>
             <td>{{ e.amount.toFixed(2) }} €</td>
             <td class="actions">
-              <button class="secondary" @click="startEditExpense(e)">✎</button>
-              <button class="secondary" @click="removeExpense(e.id)">✕</button>
+              <EditButton small @click="startEditExpense(e)" />
+              <DeleteButton small @click="removeExpense(e.id)" />
             </td>
           </tr>
           <tr v-if="!expenses.length">
@@ -431,7 +439,7 @@ const categoryBreakdown = computed(() => {
             <td>{{ userAvatar(t.to_user_id) }} {{ userName(t.to_user_id) }}</td>
             <td>{{ t.amount.toFixed(2) }} €</td>
             <td class="actions">
-              <button class="secondary" @click="removeTransfer(t.id)">✕</button>
+              <DeleteButton small @click="removeTransfer(t.id)" />
             </td>
           </tr>
           <tr v-if="!transfers.length">
@@ -440,6 +448,25 @@ const categoryBreakdown = computed(() => {
         </tbody>
       </table>
     </div>
+
+    <Modal
+      :model-value="editingExpense !== null"
+      title="Bezahlung bearbeiten"
+      @update:model-value="(v) => !v && (editingExpense = null)"
+    >
+      <form class="add-form" @submit.prevent="submitEditExpense">
+        <input v-model="editExpenseForm.title" type="text" placeholder="Titel" required />
+        <input v-model="editExpenseForm.category" type="text" list="budget-categories" placeholder="Kategorie" />
+        <input v-model="editExpenseForm.amount" type="number" step="0.01" placeholder="Betrag" required />
+        <select v-model="editExpenseForm.paid_by_user_id" required>
+          <option value="" disabled>Bezahlt von…</option>
+          <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
+        </select>
+        <input v-model="editExpenseForm.date" type="date" />
+        <input v-model="editExpenseForm.note" type="text" placeholder="Notiz (optional)" />
+        <button type="submit">Speichern</button>
+      </form>
+    </Modal>
   </div>
 </template>
 
@@ -596,11 +623,6 @@ const categoryBreakdown = computed(() => {
 .actions {
   display: flex;
   gap: 4px;
-}
-
-.actions button {
-  padding: 4px 8px;
-  font-size: 0.8rem;
 }
 
 .empty {

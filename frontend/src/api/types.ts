@@ -65,6 +65,9 @@ export interface Accommodation {
   note: string | null;
   lat: number | null;
   lng: number | null;
+  amount: number | null;
+  paid_by_user_id: number | null;
+  budget_expense_id: number | null;
 }
 
 export interface TravelItem {

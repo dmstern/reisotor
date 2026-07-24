@@ -4,6 +4,7 @@ import { api } from '../api/client';
 import type { PackingItem, User } from '../api/types';
 import { useAuthStore } from '../stores/auth';
 import PackingItemRow from '../components/PackingItem.vue';
+import Modal from '../components/Modal.vue';
 
 const auth = useAuthStore();
 const items = ref<PackingItem[]>([]);
@@ -13,6 +14,9 @@ const loading = ref(true);
 const newLabel = ref('');
 const newCategory = ref('');
 const newOwner = ref<string>('me');
+
+const editingItem = ref<PackingItem | null>(null);
+const editForm = ref({ label: '', category: '' });
 
 onMounted(async () => {
   const [itemsRes, usersRes] = await Promise.all([
@@ -83,15 +87,22 @@ async function toggle(item: PackingItem) {
   if (idx !== -1) items.value[idx] = updated;
 }
 
-async function update(item: PackingItem, changes: { label: string; category: string }) {
-  const updated = await api.put<PackingItem>(`/packing/${item.id}`, {
-    label: changes.label,
-    category: changes.category || undefined,
-    checked: !!item.checked,
-    owner_id: item.owner_id,
+function startEdit(item: PackingItem) {
+  editingItem.value = item;
+  editForm.value = { label: item.label, category: item.category ?? '' };
+}
+
+async function submitEdit() {
+  if (!editingItem.value || !editForm.value.label.trim()) return;
+  const updated = await api.put<PackingItem>(`/packing/${editingItem.value.id}`, {
+    label: editForm.value.label.trim(),
+    category: editForm.value.category.trim() || undefined,
+    checked: !!editingItem.value.checked,
+    owner_id: editingItem.value.owner_id,
   });
-  const idx = items.value.findIndex((i) => i.id === item.id);
+  const idx = items.value.findIndex((i) => i.id === updated.id);
   if (idx !== -1) items.value[idx] = updated;
+  editingItem.value = null;
 }
 
 async function remove(id: number) {
@@ -147,12 +158,24 @@ async function addItem() {
             :item="item"
             @toggle="toggle"
             @remove="remove"
-            @update="update"
+            @edit="startEdit"
           />
         </ul>
       </div>
       <p v-if="!list.items.length" class="empty">Noch nichts auf dieser Liste.</p>
     </section>
+
+    <Modal
+      :model-value="editingItem !== null"
+      title="Gegenstand bearbeiten"
+      @update:model-value="(v) => !v && (editingItem = null)"
+    >
+      <form class="edit-form" @submit.prevent="submitEdit">
+        <input v-model="editForm.label" type="text" placeholder="Gegenstand" required />
+        <input v-model="editForm.category" type="text" list="packing-categories" placeholder="Kategorie" />
+        <button type="submit">Speichern</button>
+      </form>
+    </Modal>
   </div>
 </template>
 
@@ -167,6 +190,12 @@ async function addItem() {
 .add-form input[type='text'] {
   flex: 1;
   min-width: 140px;
+}
+
+.edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
 }
 
 .list-section {

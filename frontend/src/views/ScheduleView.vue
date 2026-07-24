@@ -3,6 +3,9 @@ import { computed, onMounted, ref } from 'vue';
 import { api } from '../api/client';
 import type { Accommodation, Idea, ScheduleItem, Trip } from '../api/types';
 import CalendarWeek from '../components/CalendarWeek.vue';
+import Modal from '../components/Modal.vue';
+import EditButton from '../components/EditButton.vue';
+import DeleteButton from '../components/DeleteButton.vue';
 
 const trip = ref<Trip | null>(null);
 const items = ref<ScheduleItem[]>([]);
@@ -17,6 +20,9 @@ const newNote = ref('');
 
 const formIdeaId = ref('');
 const formDate = ref('');
+
+const editingItem = ref<ScheduleItem | null>(null);
+const editForm = ref({ time: '', title: '', note: '' });
 
 onMounted(async () => {
   const [tripRes, scheduleRes, ideasRes, accommodationRes] = await Promise.all([
@@ -147,6 +153,25 @@ async function removeItem(id: number) {
   items.value = items.value.filter((i) => i.id !== id);
 }
 
+function startEdit(item: ScheduleItem) {
+  editingItem.value = item;
+  editForm.value = { time: item.time ?? '', title: item.title, note: item.note ?? '' };
+}
+
+async function submitEdit() {
+  if (!editingItem.value || !editForm.value.title.trim()) return;
+  const updated = await api.put<ScheduleItem>(`/schedule/${editingItem.value.id}`, {
+    date: editingItem.value.date,
+    time: editForm.value.time || undefined,
+    title: editForm.value.title.trim(),
+    note: editForm.value.note || undefined,
+    idea_id: editingItem.value.idea_id,
+  });
+  const idx = items.value.findIndex((i) => i.id === updated.id);
+  if (idx !== -1) items.value[idx] = updated;
+  editingItem.value = null;
+}
+
 function formatDay(date: string) {
   return new Date(date).toLocaleDateString('de-DE', {
     weekday: 'long',
@@ -210,7 +235,10 @@ function formatDay(date: string) {
             <span v-if="item.idea_id" class="idea-tag">💡 {{ ideaTitle(item.idea_id) }}</span>
             <p v-if="item.note" class="note">{{ item.note }}</p>
           </div>
-          <button class="secondary" @click="removeItem(item.id)">Löschen</button>
+          <div class="item-actions">
+            <EditButton small @click="startEdit(item)" />
+            <DeleteButton small @click="removeItem(item.id)" />
+          </div>
         </li>
         <li v-if="!dayItems.length" class="empty">Noch keine Termine an diesem Tag.</li>
       </ul>
@@ -222,6 +250,19 @@ function formatDay(date: string) {
         <button type="submit">Hinzufügen</button>
       </form>
     </div>
+
+    <Modal
+      :model-value="editingItem !== null"
+      title="Termin bearbeiten"
+      @update:model-value="(v) => !v && (editingItem = null)"
+    >
+      <form class="edit-form" @submit.prevent="submitEdit">
+        <input v-model="editForm.time" type="time" />
+        <input v-model="editForm.title" type="text" placeholder="Titel" required />
+        <input v-model="editForm.note" type="text" placeholder="Notiz (optional)" />
+        <button type="submit">Speichern</button>
+      </form>
+    </Modal>
   </div>
 </template>
 
@@ -331,6 +372,23 @@ function formatDay(date: string) {
 }
 
 .add-form input[type='text'] {
+  flex: 1;
+  min-width: 140px;
+}
+
+.item-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.edit-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.edit-form input[type='text'] {
   flex: 1;
   min-width: 140px;
 }

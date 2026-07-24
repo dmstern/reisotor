@@ -3,6 +3,9 @@ import { computed, onMounted, ref } from 'vue';
 import { api } from '../api/client';
 import type { DiaryComment, DiaryEntry, DiaryLike, User } from '../api/types';
 import { useAuthStore } from '../stores/auth';
+import Modal from '../components/Modal.vue';
+import EditButton from '../components/EditButton.vue';
+import DeleteButton from '../components/DeleteButton.vue';
 
 const auth = useAuthStore();
 const entries = ref<DiaryEntry[]>([]);
@@ -12,8 +15,11 @@ const users = ref<User[]>([]);
 const loading = ref(true);
 
 const showForm = ref(false);
-const editingId = ref<number | null>(null);
-const form = ref({ title: '', content: '', imagesText: '' });
+const emptyForm = () => ({ title: '', content: '', imagesText: '' });
+const form = ref(emptyForm());
+
+const editingEntry = ref<DiaryEntry | null>(null);
+const editForm = ref(emptyForm());
 
 const commentDrafts = ref<Record<number, string>>({});
 const openComments = ref<Set<number>>(new Set());
@@ -58,36 +64,42 @@ function commentsFor(entryId: number) {
     .sort((a, b) => a.created_at.localeCompare(b.created_at));
 }
 
-function resetForm() {
-  form.value = { title: '', content: '', imagesText: '' };
-  editingId.value = null;
-}
-
-function startEdit(entry: DiaryEntry) {
-  editingId.value = entry.id;
-  form.value = { title: entry.title ?? '', content: entry.content, imagesText: entry.images.join('\n') };
-  showForm.value = true;
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+function imagesFrom(text: string) {
+  return text
+    .split('\n')
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
 
 async function submitEntry() {
   if (!form.value.content.trim()) return;
-  const images = form.value.imagesText
-    .split('\n')
-    .map((s) => s.trim())
-    .filter(Boolean);
-  const body = { title: form.value.title || undefined, content: form.value.content.trim(), images };
-
-  if (editingId.value) {
-    const updated = await api.put<DiaryEntry>(`/diary/${editingId.value}`, body);
-    const idx = entries.value.findIndex((e) => e.id === updated.id);
-    if (idx !== -1) entries.value[idx] = updated;
-  } else {
-    const created = await api.post<DiaryEntry>('/diary', body);
-    entries.value.unshift(created);
-  }
-  resetForm();
+  const body = {
+    title: form.value.title || undefined,
+    content: form.value.content.trim(),
+    images: imagesFrom(form.value.imagesText),
+  };
+  const created = await api.post<DiaryEntry>('/diary', body);
+  entries.value.unshift(created);
+  form.value = emptyForm();
   showForm.value = false;
+}
+
+function startEdit(entry: DiaryEntry) {
+  editingEntry.value = entry;
+  editForm.value = { title: entry.title ?? '', content: entry.content, imagesText: entry.images.join('\n') };
+}
+
+async function submitEditEntry() {
+  if (!editingEntry.value || !editForm.value.content.trim()) return;
+  const body = {
+    title: editForm.value.title || undefined,
+    content: editForm.value.content.trim(),
+    images: imagesFrom(editForm.value.imagesText),
+  };
+  const updated = await api.put<DiaryEntry>(`/diary/${editingEntry.value.id}`, body);
+  const idx = entries.value.findIndex((e) => e.id === updated.id);
+  if (idx !== -1) entries.value[idx] = updated;
+  editingEntry.value = null;
 }
 
 async function removeEntry(id: number) {
@@ -130,7 +142,7 @@ async function removeComment(id: number) {
       <button
         @click="
           showForm = !showForm;
-          if (!showForm) resetForm();
+          if (!showForm) form = emptyForm();
         "
       >
         {{ showForm ? 'Abbrechen' : '+ Neuer Eintrag' }}
@@ -145,7 +157,7 @@ async function removeComment(id: number) {
         placeholder="Bild-URLs (optional, eine pro Zeile)"
         rows="2"
       ></textarea>
-      <button type="submit">{{ editingId ? 'Speichern' : 'Veröffentlichen' }}</button>
+      <button type="submit">Veröffentlichen</button>
     </form>
 
     <div class="entries">
@@ -157,8 +169,8 @@ async function removeComment(id: number) {
             <span class="date">{{ formatDate(entry.created_at) }}<span v-if="entry.updated_at"> (bearbeitet)</span></span>
           </div>
           <div v-if="entry.author_id === auth.user?.id" class="entry-actions">
-            <button class="secondary" @click="startEdit(entry)">✎</button>
-            <button class="secondary" @click="removeEntry(entry.id)">✕</button>
+            <EditButton small @click="startEdit(entry)" />
+            <DeleteButton small @click="removeEntry(entry.id)" />
           </div>
         </header>
 
@@ -187,7 +199,11 @@ async function removeComment(id: number) {
               <strong>{{ author(c.author_id)?.username ?? '?' }}</strong>
               <span>{{ c.content }}</span>
             </div>
-            <button v-if="c.author_id === auth.user?.id" class="secondary" @click="removeComment(c.id)">✕</button>
+            <DeleteButton
+              v-if="c.author_id === auth.user?.id"
+              small
+              @click="removeComment(c.id)"
+            />
           </div>
 
           <form class="comment-form" @submit.prevent="submitComment(entry.id)">
@@ -198,6 +214,19 @@ async function removeComment(id: number) {
       </article>
     </div>
     <p v-if="!entries.length" class="empty">Noch keine Tagebuch-Einträge.</p>
+
+    <Modal
+      :model-value="editingEntry !== null"
+      title="Eintrag bearbeiten"
+      @update:model-value="(v) => !v && (editingEntry = null)"
+    >
+      <form class="add-form" @submit.prevent="submitEditEntry">
+        <input v-model="editForm.title" type="text" placeholder="Titel (optional)" />
+        <textarea v-model="editForm.content" rows="5" required></textarea>
+        <textarea v-model="editForm.imagesText" placeholder="Bild-URLs (eine pro Zeile)" rows="2"></textarea>
+        <button type="submit">Speichern</button>
+      </form>
+    </Modal>
   </div>
 </template>
 
@@ -247,11 +276,6 @@ async function removeComment(id: number) {
 .entry-actions {
   display: flex;
   gap: 4px;
-}
-
-.entry-actions button {
-  padding: 4px 8px;
-  font-size: 0.8rem;
 }
 
 .entry h3 {
@@ -315,10 +339,6 @@ async function removeComment(id: number) {
   font-size: 0.88rem;
 }
 
-.comment button {
-  padding: 2px 6px;
-  font-size: 0.75rem;
-}
 
 .comment-form {
   display: flex;

@@ -95,6 +95,8 @@ Das Backend lauscht nur auf `localhost:3000`; nur Caddy ist öffentlich erreichb
 - **Notizen** sind frei von allen editierbar/löschbar (wie die Packliste) statt nur vom Ersteller, da hierfür keine Ownership-Einschränkung verlangt wurde.
 - **Tagebuch-Bilder:** Wie bei Ideen nur Bild-URLs (Textarea, eine URL pro Zeile), kein Datei-Upload – konsistent mit dem "kein Datei-Upload"-Grundsatz der Bauanleitung.
 - **Reise-Kosten ↔ Budget:** Ein Reise-Eintrag mit Betrag *und* Zahler:in legt automatisch eine verknüpfte Budget-Ausgabe an (Kategorie „Transport") und hält sie bei Änderungen synchron; wird der Betrag entfernt oder der Eintrag gelöscht, verschwindet die Ausgabe wieder automatisch aus der Budgetplanung. Ohne Zahler:in wird kein Budget-Eintrag erzeugt (die Saldo-Berechnung bräuchte sonst eine willkürliche Zuordnung).
+- **Unterkunft-Kosten ↔ Budget:** Gleiches Prinzip wie bei Reise-Kosten, nur mit Kategorie „Unterkunft" statt „Transport".
+- **Zentrale Icons/Edit-UX:** `components/DeleteButton.vue` und `EditButton.vue` sind die einzige Stelle, an der die Icons (🗑️/✎) definiert sind – überall sonst wird die Komponente eingebunden. „Bearbeiten" öffnet konsistent ein `Modal.vue`-Popup (eigener Formular-State, getrennt vom Hinzufügen-Formular); nur sehr leichte Inline-Edits (z. B. Käufer:in-Zuweisung per Dropdown, Kategorie-Zielbudget-Betrag) bleiben bewusst inline, da dafür ein Popup unverhältnismäßig wäre.
 - **Profil-Icon:** lebt jetzt im `AppHeader` oben rechts (statt in der Navigationsleiste), auf gleicher Höhe wie das Logo.
 
 ### Bugfix: kaputte Kartenmarker ("leeres Quadrat mit 'mark'")

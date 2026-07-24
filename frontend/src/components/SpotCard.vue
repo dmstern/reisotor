@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Spot } from '../api/types';
+import DeleteButton from './DeleteButton.vue';
 
 defineProps<{ spot: Spot }>();
 const emit = defineEmits<{ (e: 'remove', id: number): void }>();
@@ -14,7 +15,9 @@ const emit = defineEmits<{ (e: 'remove', id: number): void }>();
     <p v-if="spot.note">{{ spot.note }}</p>
     <a v-if="spot.link" :href="spot.link" target="_blank" rel="noopener">Auf Karte öffnen ↗</a>
     <p v-if="spot.lat && spot.lng" class="coords">{{ spot.lat.toFixed(5) }}, {{ spot.lng.toFixed(5) }}</p>
-    <button class="secondary" @click="emit('remove', spot.id)">Löschen</button>
+    <div class="delete-wrap">
+      <DeleteButton small @click="emit('remove', spot.id)" />
+    </div>
   </div>
 </template>
 
@@ -50,10 +53,8 @@ const emit = defineEmits<{ (e: 'remove', id: number): void }>();
   color: var(--color-text-muted);
 }
 
-button {
+.delete-wrap {
   align-self: flex-start;
-  font-size: 0.8rem;
-  padding: 6px 10px;
   margin-top: var(--space-1);
 }
 </style>
