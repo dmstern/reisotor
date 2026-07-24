@@ -11,6 +11,7 @@ const links = [
   { to: '/packing', label: 'Packliste', icon: '🧳' },
   { to: '/shopping', label: 'Einkauf', icon: '🛒' },
   { to: '/ideas', label: 'Ideen', icon: '💡' },
+  { to: '/travel', label: 'Reise', icon: '✈️' },
   { to: '/accommodation', label: 'Unterkunft', icon: '🛏️' },
   { to: '/budget', label: 'Budget', icon: '💶' },
   { to: '/map', label: 'Karte', icon: '🗺️' },
@@ -30,10 +31,6 @@ async function onLogout() {
       <router-link v-for="link in links" :key="link.to" :to="link.to" class="link">
         <span class="icon">{{ link.icon }}</span>
         <span class="label">{{ link.label }}</span>
-      </router-link>
-      <router-link to="/profile" class="link">
-        <span class="icon">{{ auth.user?.avatar || '👤' }}</span>
-        <span class="label">Profil</span>
       </router-link>
     </div>
     <button class="secondary logout" @click="onLogout">Abmelden</button>

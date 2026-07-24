@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { useAuthStore } from '../stores/auth';
+
+const auth = useAuthStore();
 </script>
 
 <template>
@@ -6,6 +9,9 @@
     <router-link to="/" class="brand">
       <img src="/reisotor_logo.svg" alt="Reisotor Logo" class="logo" />
       <span class="wordmark">Reisotor</span>
+    </router-link>
+    <router-link to="/profile" class="profile-link" title="Profil">
+      <span class="avatar">{{ auth.user?.avatar || '👤' }}</span>
     </router-link>
   </header>
 </template>
@@ -18,6 +24,7 @@
   height: 56px;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
   padding: 0 var(--space-4);
@@ -41,5 +48,28 @@
   font-weight: 700;
   color: var(--color-primary-dark);
   font-size: 1.1rem;
+}
+
+.profile-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #eaf3f1;
+  text-decoration: none;
+  flex-shrink: 0;
+  transition: background 0.15s ease;
+}
+
+.profile-link:hover,
+.profile-link.router-link-active {
+  background: var(--color-primary);
+}
+
+.avatar {
+  font-size: 1.2rem;
+  line-height: 1;
 }
 </style>

@@ -10,7 +10,13 @@ const filterBuyer = ref('all');
 
 const newLabel = ref('');
 const newBuyer = ref('');
+const newLink = ref('');
 const newNote = ref('');
+
+const editingId = ref<number | null>(null);
+const editLabel = ref('');
+const editLink = ref('');
+const editNote = ref('');
 
 onMounted(async () => {
   const [itemsRes, usersRes] = await Promise.all([
@@ -21,15 +27,6 @@ onMounted(async () => {
   users.value = usersRes;
   loading.value = false;
 });
-
-function buyerName(id: number | null) {
-  if (id == null) return 'Nicht zugewiesen';
-  return users.value.find((u) => u.id === id)?.username ?? '?';
-}
-function buyerAvatar(id: number | null) {
-  if (id == null) return '❔';
-  return users.value.find((u) => u.id === id)?.avatar ?? '❓';
-}
 
 const filteredItems = computed(() => {
   if (filterBuyer.value === 'all') return items.value;
@@ -48,6 +45,7 @@ async function toggle(item: ShoppingItem) {
     label: item.label,
     assigned_to_user_id: item.assigned_to_user_id,
     checked: !item.checked,
+    link: item.link ?? undefined,
     note: item.note ?? undefined,
   });
   const idx = items.value.findIndex((i) => i.id === item.id);
@@ -61,10 +59,36 @@ async function reassign(item: ShoppingItem, event: Event) {
     label: item.label,
     assigned_to_user_id,
     checked: !!item.checked,
+    link: item.link ?? undefined,
     note: item.note ?? undefined,
   });
   const idx = items.value.findIndex((i) => i.id === item.id);
   if (idx !== -1) items.value[idx] = updated;
+}
+
+function startEdit(item: ShoppingItem) {
+  editingId.value = item.id;
+  editLabel.value = item.label;
+  editLink.value = item.link ?? '';
+  editNote.value = item.note ?? '';
+}
+
+function cancelEdit() {
+  editingId.value = null;
+}
+
+async function saveEdit(item: ShoppingItem) {
+  if (!editLabel.value.trim()) return;
+  const updated = await api.put<ShoppingItem>(`/shopping/${item.id}`, {
+    label: editLabel.value.trim(),
+    assigned_to_user_id: item.assigned_to_user_id,
+    checked: !!item.checked,
+    link: editLink.value || undefined,
+    note: editNote.value || undefined,
+  });
+  const idx = items.value.findIndex((i) => i.id === item.id);
+  if (idx !== -1) items.value[idx] = updated;
+  editingId.value = null;
 }
 
 async function remove(id: number) {
@@ -77,10 +101,12 @@ async function addItem() {
   const created = await api.post<ShoppingItem>('/shopping', {
     label: newLabel.value.trim(),
     assigned_to_user_id: newBuyer.value ? Number(newBuyer.value) : undefined,
+    link: newLink.value || undefined,
     note: newNote.value || undefined,
   });
   items.value.push(created);
   newLabel.value = '';
+  newLink.value = '';
   newNote.value = '';
 }
 </script>
@@ -96,6 +122,7 @@ async function addItem() {
         <option value="">Kein:e Einkäufer:in</option>
         <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
       </select>
+      <input v-model="newLink" type="url" placeholder="Link (optional, z. B. Amazon)" />
       <input v-model="newNote" type="text" placeholder="Notiz (optional)" />
       <button type="submit">Hinzufügen</button>
     </form>
@@ -111,18 +138,29 @@ async function addItem() {
 
     <div class="card">
       <ul class="list">
-        <li v-for="item in filteredItems" :key="item.id" class="row">
-          <label class="check">
-            <input type="checkbox" :checked="!!item.checked" @change="toggle(item)" />
-            <span :class="{ done: item.checked }">{{ item.label }}</span>
-          </label>
-          <span v-if="item.note" class="note">{{ item.note }}</span>
-          <select class="buyer-select" :value="item.assigned_to_user_id ?? ''" @change="reassign(item, $event)">
-            <option value="">Nicht zugewiesen</option>
-            <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
-          </select>
-          <button class="secondary" @click="remove(item.id)">✕</button>
-        </li>
+        <template v-for="item in filteredItems" :key="item.id">
+          <li v-if="editingId !== item.id" class="row">
+            <label class="check">
+              <input type="checkbox" :checked="!!item.checked" @change="toggle(item)" />
+              <span :class="{ done: item.checked }">{{ item.label }}</span>
+            </label>
+            <a v-if="item.link" :href="item.link" target="_blank" rel="noopener" class="link">🔗 Link</a>
+            <span v-if="item.note" class="note">{{ item.note }}</span>
+            <select class="buyer-select" :value="item.assigned_to_user_id ?? ''" @change="reassign(item, $event)">
+              <option value="">Nicht zugewiesen</option>
+              <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
+            </select>
+            <button class="secondary" @click="startEdit(item)">✎</button>
+            <button class="secondary" @click="remove(item.id)">✕</button>
+          </li>
+          <li v-else class="row edit-row">
+            <input v-model="editLabel" type="text" class="edit-input" placeholder="Artikel" />
+            <input v-model="editLink" type="url" class="edit-input" placeholder="Link (optional)" />
+            <input v-model="editNote" type="text" class="edit-input" placeholder="Notiz (optional)" />
+            <button @click="saveEdit(item)">Speichern</button>
+            <button class="secondary" @click="cancelEdit">Abbrechen</button>
+          </li>
+        </template>
         <li v-if="!filteredItems.length" class="empty">Keine Einträge.</li>
       </ul>
     </div>
@@ -184,6 +222,10 @@ async function addItem() {
   color: var(--color-text-muted);
 }
 
+.link {
+  font-size: 0.82rem;
+}
+
 .note {
   font-size: 0.82rem;
   color: var(--color-text-muted);
@@ -192,6 +234,20 @@ async function addItem() {
 .buyer-select {
   font-size: 0.82rem;
   padding: 4px 6px;
+}
+
+.row > button {
+  padding: 4px 8px;
+  font-size: 0.8rem;
+}
+
+.edit-row {
+  gap: var(--space-2);
+}
+
+.edit-input {
+  flex: 1;
+  min-width: 120px;
 }
 
 .empty {

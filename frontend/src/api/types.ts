@@ -67,6 +67,24 @@ export interface Accommodation {
   lng: number | null;
 }
 
+export interface TravelItem {
+  id: number;
+  title: string;
+  type: string | null;
+  from_location: string | null;
+  to_location: string | null;
+  date: string | null;
+  departure_time: string | null;
+  checkin_info: string | null;
+  amount: number | null;
+  paid_by_user_id: number | null;
+  luggage: string | null;
+  seat: string | null;
+  link: string | null;
+  note: string | null;
+  budget_expense_id: number | null;
+}
+
 export interface BudgetExpense {
   id: number;
   title: string;
@@ -103,6 +121,7 @@ export interface ShoppingItem {
   label: string;
   assigned_to_user_id: number | null;
   checked: 0 | 1;
+  link: string | null;
   note: string | null;
 }
 

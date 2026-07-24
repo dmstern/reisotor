@@ -94,7 +94,17 @@ Das Backend lauscht nur auf `localhost:3000`; nur Caddy ist öffentlich erreichb
 - **Einkaufsliste** ist eine einzelne gemeinsame Liste (kein Pro-Nutzer-Split wie bei der Packliste) mit optionaler Käufer:in-Zuweisung – passt eher zum Charakter "was muss noch besorgt werden" als zu individuellen Listen.
 - **Notizen** sind frei von allen editierbar/löschbar (wie die Packliste) statt nur vom Ersteller, da hierfür keine Ownership-Einschränkung verlangt wurde.
 - **Tagebuch-Bilder:** Wie bei Ideen nur Bild-URLs (Textarea, eine URL pro Zeile), kein Datei-Upload – konsistent mit dem "kein Datei-Upload"-Grundsatz der Bauanleitung.
+- **Reise-Kosten ↔ Budget:** Ein Reise-Eintrag mit Betrag *und* Zahler:in legt automatisch eine verknüpfte Budget-Ausgabe an (Kategorie „Transport") und hält sie bei Änderungen synchron; wird der Betrag entfernt oder der Eintrag gelöscht, verschwindet die Ausgabe wieder automatisch aus der Budgetplanung. Ohne Zahler:in wird kein Budget-Eintrag erzeugt (die Saldo-Berechnung bräuchte sonst eine willkürliche Zuordnung).
+- **Profil-Icon:** lebt jetzt im `AppHeader` oben rechts (statt in der Navigationsleiste), auf gleicher Höhe wie das Logo.
 
 ### Bugfix: kaputte Kartenmarker ("leeres Quadrat mit 'mark'")
 
 Leaflets `Icon.Default._getIconUrl` versucht automatisch, den Bildpfad aus einer CSS-Regel (`.leaflet-default-icon-path`) zu erkennen und stellt diesen den eigentlichen Icon-URLs voran – auch wenn man über `mergeOptions` bereits vollständige, von Vite aufgelöste URLs gesetzt hat. Das Ergebnis war eine doppelt verschachtelte, 404-URL, wodurch der Browser nur das `alt`-Attribut ("marker icon", abgeschnitten zu "mark") anzeigte. Gelöst durch eigene Emoji-`divIcon`s statt der Standard-Icons (siehe oben).
+
+### Bugfix: Karte zeigte gar nichts mehr an
+
+Ursache war kein Code-Fehler, sondern ein verwaister, alter Vite-Dev-Server-Prozess aus einer früheren Sitzung, der still auf Port 5173 hängen geblieben war (während ein neuerer, im echten Terminal gestarteter Prozess mangels freiem Port gar nicht erst binden konnte) – vermutlich mit einem durch die vorherige Commit-Historie-Bereinigung (`git reset`/`cherry-pick`) verwirrten Modul-Cache. Behoben durch Beenden des alten Prozesses, Löschen von `frontend/node_modules/.vite` und sauberen Neustart.
+
+### Bugfix: `FOREIGN KEY constraint failed` beim Löschen von Reise-Kosten
+
+Die Budget-Sync-Logik hat beim Entfernen eines Betrags/beim Löschen eines Reise-Eintrags zuerst die verknüpfte `budget_items`-Zeile gelöscht, während `travel_items.budget_expense_id` noch darauf verwies – SQLite verweigert das per Foreign-Key-Constraint. Behoben durch Umkehren der Reihenfolge: erst die referenzierende `travel_items`-Zeile aktualisieren/löschen, danach erst die verwaiste `budget_items`-Zeile entfernen.

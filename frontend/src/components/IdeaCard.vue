@@ -5,6 +5,7 @@ defineProps<{ idea: Idea }>();
 const emit = defineEmits<{
   (e: 'toggle-status', idea: Idea): void;
   (e: 'remove', id: number): void;
+  (e: 'edit', idea: Idea): void;
 }>();
 </script>
 
@@ -12,6 +13,7 @@ const emit = defineEmits<{
   <div class="card idea-card">
     <div class="image" :style="idea.image_url ? { backgroundImage: `url(${idea.image_url})` } : {}">
       <span v-if="!idea.image_url" class="placeholder">🏞️</span>
+      <button class="edit-btn" title="Bearbeiten" @click="emit('edit', idea)">✎</button>
       <span class="status" :class="idea.status">{{ idea.status === 'planned' ? 'Geplant' : 'Idee' }}</span>
     </div>
     <div class="body">
@@ -69,6 +71,22 @@ const emit = defineEmits<{
 
 .status.planned {
   color: var(--color-success);
+}
+
+.edit-btn {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--color-text);
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .body {

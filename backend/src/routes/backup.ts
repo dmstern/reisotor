@@ -18,6 +18,7 @@ const TABLES = [
   'diary_entries',
   'diary_likes',
   'diary_comments',
+  'travel_items',
 ] as const;
 
 type TableName = (typeof TABLES)[number];

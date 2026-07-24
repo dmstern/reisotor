@@ -109,23 +109,27 @@ function formatDate(d: string) {
 
     <div class="grid cards">
       <router-link to="/schedule" class="card tile">
+        <span class="tile-icon">📅</span>
         <h3>Nächster Programmpunkt</h3>
         <p v-if="nextItem">{{ formatDate(nextItem.date) }}<span v-if="nextItem.time"> · {{ nextItem.time }}</span> — {{ nextItem.title }}</p>
         <p v-else>Noch nichts geplant</p>
       </router-link>
 
       <router-link to="/packing" class="card tile" v-for="list in packingLists" :key="list.key">
+        <span class="tile-icon">🧳</span>
         <h3>Packliste: {{ list.title }}</h3>
         <p>{{ list.checked }}/{{ list.total }} gepackt</p>
       </router-link>
 
       <router-link to="/budget" class="card tile">
+        <span class="tile-icon">💶</span>
         <h3>Budget</h3>
         <p>{{ budgetSummary.spent.toFixed(2) }} € ausgegeben von {{ budgetSummary.target.toFixed(2) }} €</p>
         <p>Rest: {{ budgetSummary.rest.toFixed(2) }} €</p>
       </router-link>
 
       <router-link to="/shopping" class="card tile">
+        <span class="tile-icon">🛒</span>
         <h3>Einkaufsliste</h3>
         <p>{{ shoppingProgress.checked }}/{{ shoppingProgress.total }} gekauft</p>
       </router-link>
@@ -150,9 +154,11 @@ function formatDate(d: string) {
 
 .cards {
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  padding-top: 22px;
 }
 
 .tile {
+  position: relative;
   text-decoration: none;
   color: inherit;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
@@ -163,8 +169,31 @@ function formatDate(d: string) {
   box-shadow: var(--shadow-md);
 }
 
+.tile-icon {
+  position: absolute;
+  top: -22px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+}
+
 .tile h3 {
   color: var(--color-primary-dark);
   font-size: 1rem;
+  margin-top: var(--space-2);
+  text-align: center;
+}
+
+.tile p {
+  text-align: center;
 }
 </style>

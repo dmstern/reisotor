@@ -143,6 +143,24 @@ CREATE TABLE IF NOT EXISTS diary_comments (
   content TEXT NOT NULL,
   created_at TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS travel_items (
+  id INTEGER PRIMARY KEY,
+  title TEXT NOT NULL,
+  type TEXT,
+  from_location TEXT,
+  to_location TEXT,
+  date TEXT,
+  departure_time TEXT,
+  checkin_info TEXT,
+  amount REAL,
+  paid_by_user_id INTEGER REFERENCES users(id),
+  luggage TEXT,
+  seat TEXT,
+  link TEXT,
+  note TEXT,
+  budget_expense_id INTEGER REFERENCES budget_items(id)
+);
 `);
 
 // Additive Migrationen (idempotent): erlaubt, das Schema weiterzuentwickeln,
@@ -175,6 +193,7 @@ ensureColumn('budget_items', 'date', 'TEXT');
 ensureColumn('budget_items', 'note', 'TEXT');
 dropColumnIfExists('budget_items', 'paid_by');
 dropColumnIfExists('budget_items', 'is_paid');
+ensureColumn('shopping_items', 'link', 'TEXT');
 
 const DEFAULT_BUDGET_CATEGORIES = [
   'Essen & Trinken',
