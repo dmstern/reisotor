@@ -14,6 +14,9 @@ import { accommodationRoutes } from './routes/accommodation.js';
 import { budgetRoutes } from './routes/budget.js';
 import { usersRoutes } from './routes/users.js';
 import { backupRoutes } from './routes/backup.js';
+import { shoppingRoutes } from './routes/shopping.js';
+import { notesRoutes } from './routes/notes.js';
+import { diaryRoutes } from './routes/diary.js';
 
 const isProd = process.env.NODE_ENV === 'production';
 const port = Number(process.env.PORT ?? 3000);
@@ -52,6 +55,9 @@ app.register(
       await protectedApi.register(budgetRoutes);
       await protectedApi.register(usersRoutes);
       await protectedApi.register(backupRoutes);
+      await protectedApi.register(shoppingRoutes);
+      await protectedApi.register(notesRoutes);
+      await protectedApi.register(diaryRoutes);
     });
   },
   { prefix: '/api' },

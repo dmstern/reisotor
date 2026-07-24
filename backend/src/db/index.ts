@@ -79,6 +79,70 @@ CREATE TABLE IF NOT EXISTS budget_items (
   paid_by TEXT,
   is_paid INTEGER DEFAULT 0
 );
+
+CREATE TABLE IF NOT EXISTS budget_targets (
+  id INTEGER PRIMARY KEY,
+  owner_id INTEGER REFERENCES users(id),
+  amount REAL NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS budget_category_targets (
+  id INTEGER PRIMARY KEY,
+  category TEXT UNIQUE NOT NULL,
+  amount REAL NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS budget_transfers (
+  id INTEGER PRIMARY KEY,
+  from_user_id INTEGER NOT NULL REFERENCES users(id),
+  to_user_id INTEGER NOT NULL REFERENCES users(id),
+  amount REAL NOT NULL,
+  date TEXT,
+  note TEXT
+);
+
+CREATE TABLE IF NOT EXISTS shopping_items (
+  id INTEGER PRIMARY KEY,
+  label TEXT NOT NULL,
+  assigned_to_user_id INTEGER REFERENCES users(id),
+  checked INTEGER DEFAULT 0,
+  note TEXT
+);
+
+CREATE TABLE IF NOT EXISTS notes (
+  id INTEGER PRIMARY KEY,
+  title TEXT,
+  content TEXT NOT NULL,
+  created_by INTEGER REFERENCES users(id),
+  created_at TEXT NOT NULL,
+  updated_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS diary_entries (
+  id INTEGER PRIMARY KEY,
+  author_id INTEGER NOT NULL REFERENCES users(id),
+  title TEXT,
+  content TEXT NOT NULL,
+  images TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS diary_likes (
+  id INTEGER PRIMARY KEY,
+  entry_id INTEGER NOT NULL REFERENCES diary_entries(id) ON DELETE CASCADE,
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  created_at TEXT NOT NULL,
+  UNIQUE(entry_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS diary_comments (
+  id INTEGER PRIMARY KEY,
+  entry_id INTEGER NOT NULL REFERENCES diary_entries(id) ON DELETE CASCADE,
+  author_id INTEGER NOT NULL REFERENCES users(id),
+  content TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
 `);
 
 // Additive Migrationen (idempotent): erlaubt, das Schema weiterzuentwickeln,
@@ -87,6 +151,13 @@ function ensureColumn(table: string, column: string, definition: string) {
   const existing = db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
   if (!existing.some((c) => c.name === column)) {
     db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+  }
+}
+
+function dropColumnIfExists(table: string, column: string) {
+  const existing = db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
+  if (existing.some((c) => c.name === column)) {
+    db.exec(`ALTER TABLE ${table} DROP COLUMN ${column}`);
   }
 }
 
@@ -99,3 +170,23 @@ ensureColumn('schedule_items', 'idea_id', 'INTEGER REFERENCES ideas(id)');
 ensureColumn('accommodation', 'start_date', 'TEXT');
 ensureColumn('accommodation', 'end_date', 'TEXT');
 ensureColumn('accommodation', 'maps_link', 'TEXT');
+ensureColumn('budget_items', 'paid_by_user_id', 'INTEGER REFERENCES users(id)');
+ensureColumn('budget_items', 'date', 'TEXT');
+ensureColumn('budget_items', 'note', 'TEXT');
+dropColumnIfExists('budget_items', 'paid_by');
+dropColumnIfExists('budget_items', 'is_paid');
+
+const DEFAULT_BUDGET_CATEGORIES = [
+  'Essen & Trinken',
+  'Unterkunft',
+  'Transport',
+  'Aktivitäten & Spaß',
+  'Souvenirs',
+  'Sonstiges',
+];
+const insertCategoryTarget = db.prepare(
+  'INSERT OR IGNORE INTO budget_category_targets (category, amount) VALUES (?, 0)',
+);
+for (const category of DEFAULT_BUDGET_CATEGORIES) {
+  insertCategoryTarget.run(category);
+}

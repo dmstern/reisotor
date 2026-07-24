@@ -67,11 +67,74 @@ export interface Accommodation {
   lng: number | null;
 }
 
-export interface BudgetItem {
+export interface BudgetExpense {
   id: number;
   title: string;
   category: string | null;
   amount: number;
-  paid_by: string | null;
-  is_paid: 0 | 1;
+  paid_by_user_id: number | null;
+  date: string | null;
+  note: string | null;
+}
+
+export interface BudgetTarget {
+  id: number;
+  owner_id: number | null;
+  amount: number;
+}
+
+export interface BudgetCategoryTarget {
+  id: number;
+  category: string;
+  amount: number;
+}
+
+export interface BudgetTransfer {
+  id: number;
+  from_user_id: number;
+  to_user_id: number;
+  amount: number;
+  date: string | null;
+  note: string | null;
+}
+
+export interface ShoppingItem {
+  id: number;
+  label: string;
+  assigned_to_user_id: number | null;
+  checked: 0 | 1;
+  note: string | null;
+}
+
+export interface Note {
+  id: number;
+  title: string | null;
+  content: string;
+  created_by: number | null;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface DiaryEntry {
+  id: number;
+  author_id: number;
+  title: string | null;
+  content: string;
+  images: string[];
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface DiaryLike {
+  id: number;
+  entry_id: number;
+  user_id: number;
+}
+
+export interface DiaryComment {
+  id: number;
+  entry_id: number;
+  author_id: number;
+  content: string;
+  created_at: string;
 }

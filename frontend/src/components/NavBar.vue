@@ -9,10 +9,13 @@ const links = [
   { to: '/', label: 'Übersicht', icon: '🏠' },
   { to: '/schedule', label: 'Ablauf', icon: '📅' },
   { to: '/packing', label: 'Packliste', icon: '🧳' },
+  { to: '/shopping', label: 'Einkauf', icon: '🛒' },
   { to: '/ideas', label: 'Ideen', icon: '💡' },
   { to: '/accommodation', label: 'Unterkunft', icon: '🛏️' },
   { to: '/budget', label: 'Budget', icon: '💶' },
   { to: '/map', label: 'Karte', icon: '🗺️' },
+  { to: '/diary', label: 'Tagebuch', icon: '📔' },
+  { to: '/notes', label: 'Notizen', icon: '📝' },
 ];
 
 async function onLogout() {

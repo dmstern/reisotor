@@ -1,29 +1,43 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { api } from '../api/client';
-import type { BudgetItem, PackingItem, ScheduleItem, Trip, User } from '../api/types';
+import type {
+  BudgetExpense,
+  BudgetTarget,
+  PackingItem,
+  ScheduleItem,
+  ShoppingItem,
+  Trip,
+  User,
+} from '../api/types';
 import { useAuthStore } from '../stores/auth';
 
 const auth = useAuthStore();
 const trip = ref<Trip | null>(null);
 const schedule = ref<ScheduleItem[]>([]);
 const packing = ref<PackingItem[]>([]);
-const budget = ref<BudgetItem[]>([]);
+const expenses = ref<BudgetExpense[]>([]);
+const targets = ref<BudgetTarget[]>([]);
+const shopping = ref<ShoppingItem[]>([]);
 const users = ref<User[]>([]);
 const loading = ref(true);
 
 onMounted(async () => {
-  const [tripRes, scheduleRes, packingRes, budgetRes, usersRes] = await Promise.all([
+  const [tripRes, scheduleRes, packingRes, expensesRes, targetsRes, shoppingRes, usersRes] = await Promise.all([
     api.get<Trip>('/trip'),
     api.get<ScheduleItem[]>('/schedule'),
     api.get<PackingItem[]>('/packing'),
-    api.get<BudgetItem[]>('/budget'),
+    api.get<BudgetExpense[]>('/budget'),
+    api.get<BudgetTarget[]>('/budget/targets'),
+    api.get<ShoppingItem[]>('/shopping'),
     api.get<User[]>('/users'),
   ]);
   trip.value = tripRes;
   schedule.value = scheduleRes;
   packing.value = packingRes;
-  budget.value = budgetRes;
+  expenses.value = expensesRes;
+  targets.value = targetsRes;
+  shopping.value = shoppingRes;
   users.value = usersRes;
   loading.value = false;
 });
@@ -65,9 +79,15 @@ const packingLists = computed(() => {
 });
 
 const budgetSummary = computed(() => {
-  const total = budget.value.reduce((sum, b) => sum + b.amount, 0);
-  const paid = budget.value.filter((b) => b.is_paid).reduce((sum, b) => sum + b.amount, 0);
-  return { total, paid, rest: total - paid };
+  const target = targets.value.find((t) => t.owner_id === null)?.amount ?? 0;
+  const spent = expenses.value.reduce((sum, e) => sum + e.amount, 0);
+  return { target, spent, rest: target - spent };
+});
+
+const shoppingProgress = computed(() => {
+  const total = shopping.value.length;
+  const checked = shopping.value.filter((s) => s.checked).length;
+  return { total, checked };
 });
 
 function formatDate(d: string) {
@@ -101,8 +121,13 @@ function formatDate(d: string) {
 
       <router-link to="/budget" class="card tile">
         <h3>Budget</h3>
-        <p>{{ budgetSummary.paid.toFixed(2) }} € bezahlt von {{ budgetSummary.total.toFixed(2) }} €</p>
+        <p>{{ budgetSummary.spent.toFixed(2) }} € ausgegeben von {{ budgetSummary.target.toFixed(2) }} €</p>
         <p>Rest: {{ budgetSummary.rest.toFixed(2) }} €</p>
+      </router-link>
+
+      <router-link to="/shopping" class="card tile">
+        <h3>Einkaufsliste</h3>
+        <p>{{ shoppingProgress.checked }}/{{ shoppingProgress.total }} gekauft</p>
       </router-link>
     </div>
   </div>

@@ -10,6 +10,14 @@ const TABLES = [
   'spots',
   'accommodation',
   'budget_items',
+  'budget_targets',
+  'budget_category_targets',
+  'budget_transfers',
+  'shopping_items',
+  'notes',
+  'diary_entries',
+  'diary_likes',
+  'diary_comments',
 ] as const;
 
 type TableName = (typeof TABLES)[number];
