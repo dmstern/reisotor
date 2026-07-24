@@ -1,0 +1,140 @@
+:root {
+  --color-bg: #faf8f5;
+  --color-surface: #ffffff;
+  --color-border: #e8e2d9;
+  --color-text: #2b2a28;
+  --color-text-muted: #726e66;
+  --color-primary: #2a7f74;
+  --color-primary-dark: #1f6059;
+  --color-accent: #e08e45;
+  --color-danger: #c1503f;
+  --color-success: #3f8f5c;
+
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 22px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 16px;
+  --space-4: 24px;
+  --space-5: 32px;
+  --space-6: 48px;
+
+  --shadow-sm: 0 1px 3px rgba(43, 42, 40, 0.08);
+  --shadow-md: 0 4px 16px rgba(43, 42, 40, 0.1);
+
+  --font-sans: 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--color-bg);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+#app {
+  min-height: 100vh;
+}
+
+h1,
+h2,
+h3 {
+  font-weight: 600;
+  line-height: 1.2;
+  margin: 0 0 var(--space-3);
+}
+
+p {
+  margin: 0 0 var(--space-3);
+  color: var(--color-text-muted);
+}
+
+a {
+  color: var(--color-primary);
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+  font-size: 1rem;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 10px 16px;
+  background: var(--color-primary);
+  color: white;
+  font-weight: 600;
+  transition: background 0.15s ease;
+}
+
+button:hover {
+  background: var(--color-primary-dark);
+}
+
+button.secondary {
+  background: transparent;
+  color: var(--color-primary);
+  border: 1px solid var(--color-border);
+}
+
+button.secondary:hover {
+  background: var(--color-surface);
+}
+
+button.danger {
+  background: var(--color-danger);
+}
+
+input,
+select,
+textarea {
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-4);
+}
+
+.page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: var(--space-4);
+  padding-bottom: 88px;
+}
+
+.grid {
+  display: grid;
+  gap: var(--space-3);
+}
