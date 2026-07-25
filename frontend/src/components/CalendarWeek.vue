@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from 'vue';
 import type { Accommodation, CalendarEntry } from '../api/types';
 import { SCHEDULE_CATEGORY_META } from '../utils/scheduleCategory';
 
@@ -28,7 +29,24 @@ function isToday(date: string) {
   return date === new Date().toISOString().slice(0, 10);
 }
 
+// Zähler statt Boolean pro Tag: dragenter/dragleave feuern beim Überqueren verschachtelter
+// Kind-Elemente (day-head, item-line, …) mehrfach, ein einfacher Boolean würde dabei flackern.
+const dragOverCounts = ref<Record<string, number>>({});
+
+function isDragOver(date: string) {
+  return (dragOverCounts.value[date] ?? 0) > 0;
+}
+
+function onDragEnter(date: string) {
+  dragOverCounts.value[date] = (dragOverCounts.value[date] ?? 0) + 1;
+}
+
+function onDragLeave(date: string) {
+  dragOverCounts.value[date] = Math.max(0, (dragOverCounts.value[date] ?? 0) - 1);
+}
+
 function onDrop(event: DragEvent, date: string) {
+  dragOverCounts.value[date] = 0;
   const raw = event.dataTransfer?.getData('text/excursion-id');
   if (!raw) return;
   emit('drop-excursion', date, Number(raw));
@@ -41,9 +59,11 @@ function onDrop(event: DragEvent, date: string) {
       v-for="day in days"
       :key="day.date"
       class="day"
-      :class="{ active: day.date === selectedDate, today: isToday(day.date) }"
+      :class="{ active: day.date === selectedDate, today: isToday(day.date), 'drag-over': isDragOver(day.date) }"
       @click="emit('select', day.date)"
       @dragover.prevent
+      @dragenter.prevent="onDragEnter(day.date)"
+      @dragleave="onDragLeave(day.date)"
       @drop.prevent="onDrop($event, day.date)"
     >
       <div class="day-head">
@@ -104,6 +124,12 @@ function onDrop(event: DragEvent, date: string) {
 .day.active {
   background: var(--color-primary-tint);
   border-color: var(--color-primary);
+}
+
+.day.drag-over {
+  background: var(--color-primary-tint);
+  outline: 2px dashed var(--color-primary);
+  outline-offset: -2px;
 }
 
 .day-head {

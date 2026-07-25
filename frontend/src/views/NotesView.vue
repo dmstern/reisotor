@@ -1,22 +1,27 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import { api, ApiError } from '../api/client';
-import type { Note, User } from '../api/types';
+import type { Note, NoteComment, NoteLike, User } from '../api/types';
 import { useAuthStore } from '../stores/auth';
 import { useTripStore } from '../stores/trip';
 import { renderRichText } from '../utils/richText';
 import Modal from '../components/Modal.vue';
 import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
+import LikeButton from '../components/LikeButton.vue';
+import Comments from '../components/Comments.vue';
 
 const auth = useAuthStore();
 const tripStore = useTripStore();
 const tripId = tripStore.currentTripId as number;
 const notes = ref<Note[]>([]);
 const users = ref<User[]>([]);
+const likes = ref<NoteLike[]>([]);
+const comments = ref<NoteComment[]>([]);
 const loading = ref(true);
 const showForm = ref(false);
 const error = ref('');
+const openComments = ref<Set<number>>(new Set());
 
 const emptyForm = () => ({ title: '', content: '' });
 const form = ref(emptyForm());
@@ -25,14 +30,64 @@ const editingNote = ref<Note | null>(null);
 const editForm = ref(emptyForm());
 
 onMounted(async () => {
-  const [notesRes, usersRes] = await Promise.all([
+  const [notesRes, usersRes, likesRes, commentsRes] = await Promise.all([
     api.get<Note[]>(`/notes?trip_id=${tripId}`),
     api.get<User[]>('/users'),
+    api.get<NoteLike[]>(`/notes/likes?trip_id=${tripId}`),
+    api.get<NoteComment[]>(`/notes/comments?trip_id=${tripId}`),
   ]);
   notes.value = notesRes;
   users.value = usersRes;
+  likes.value = likesRes;
+  comments.value = commentsRes;
   loading.value = false;
 });
+
+function author(id: number) {
+  return users.value.find((u) => u.id === id);
+}
+function likesFor(noteId: number) {
+  return likes.value.filter((l) => l.note_id === noteId);
+}
+function likedByMe(noteId: number) {
+  return likesFor(noteId).some((l) => l.user_id === auth.user?.id);
+}
+function commentsFor(noteId: number) {
+  return comments.value.filter((c) => c.note_id === noteId).sort((a, b) => a.created_at.localeCompare(b.created_at));
+}
+function commentItemsFor(noteId: number) {
+  return commentsFor(noteId).map((c) => ({
+    id: c.id,
+    avatar: author(c.author_id)?.avatar ?? '❓',
+    username: author(c.author_id)?.username ?? '?',
+    content: c.content,
+    canRemove: c.author_id === auth.user?.id,
+  }));
+}
+
+function toggleComments(noteId: number) {
+  if (openComments.value.has(noteId)) openComments.value.delete(noteId);
+  else openComments.value.add(noteId);
+}
+
+async function toggleLike(noteId: number) {
+  const result = await api.post<{ liked: boolean }>(`/notes/${noteId}/like`);
+  if (result.liked) {
+    likes.value.push({ id: Date.now(), note_id: noteId, user_id: auth.user!.id });
+  } else {
+    likes.value = likes.value.filter((l) => !(l.note_id === noteId && l.user_id === auth.user!.id));
+  }
+}
+
+async function submitComment(noteId: number, content: string) {
+  const created = await api.post<NoteComment>(`/notes/${noteId}/comments`, { content });
+  comments.value.push(created);
+}
+
+async function removeComment(id: number) {
+  await api.delete(`/notes/comments/${id}`);
+  comments.value = comments.value.filter((c) => c.id !== id);
+}
 
 function authorLabel(id: number | null) {
   if (id == null) return '';
@@ -54,6 +109,11 @@ async function submit() {
   notes.value.unshift(created);
   form.value = emptyForm();
   showForm.value = false;
+}
+
+function closeForm() {
+  showForm.value = false;
+  form.value = emptyForm();
 }
 
 function startEdit(note: Note) {
@@ -87,20 +147,13 @@ async function remove(id: number) {
   <div class="page" v-if="!loading">
     <div class="header">
       <h1>Notizen</h1>
-      <button
-        @click="
-          showForm = !showForm;
-          if (!showForm) form = emptyForm();
-        "
-      >
-        {{ showForm ? 'Abbrechen' : '+ Neue Notiz' }}
-      </button>
+      <button @click="showForm = true">+ Neue Notiz</button>
     </div>
 
     <p v-if="error" class="error">{{ error }}</p>
 
-    <Transition name="fade">
-    <form v-if="showForm" class="card add-form" @submit.prevent="submit">
+    <Modal :model-value="showForm" title="Neue Notiz" @update:model-value="(v) => !v && closeForm()">
+    <form class="add-form" @submit.prevent="submit">
       <input v-model="form.title" type="text" placeholder="Titel (optional)" />
       <textarea v-model="form.content" placeholder="Inhalt" rows="8" required></textarea>
       <p class="syntax-hint">
@@ -109,7 +162,7 @@ async function remove(id: number) {
       </p>
       <button type="submit">Hinzufügen</button>
     </form>
-    </Transition>
+    </Modal>
 
     <TransitionGroup tag="div" name="list" class="grid cards">
       <div class="card note-card" v-for="note in notes" :key="note.id">
@@ -122,6 +175,16 @@ async function remove(id: number) {
         </div>
         <div class="content" v-html="renderRichText(note.content)"></div>
         <p class="meta">{{ authorLabel(note.created_by) }} · {{ formatDate(note.updated_at ?? note.created_at) }}</p>
+        <div class="social-row">
+          <LikeButton :count="likesFor(note.id).length" :liked="likedByMe(note.id)" @toggle="toggleLike(note.id)" />
+          <button class="secondary" @click="toggleComments(note.id)">💬 {{ commentsFor(note.id).length || '' }}</button>
+        </div>
+        <Comments
+          v-if="openComments.has(note.id)"
+          :comments="commentItemsFor(note.id)"
+          @submit="(content) => submitComment(note.id, content)"
+          @remove="removeComment"
+        />
       </div>
     </TransitionGroup>
     <p v-if="!notes.length" class="empty">Noch keine Notizen.</p>
@@ -188,6 +251,11 @@ async function remove(id: number) {
   display: flex;
   gap: 4px;
   flex-shrink: 0;
+}
+
+.social-row {
+  display: flex;
+  gap: var(--space-2);
 }
 
 .error {

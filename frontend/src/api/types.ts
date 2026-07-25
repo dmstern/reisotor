@@ -16,7 +16,7 @@ export interface Trip {
   image_url: string | null;
 }
 
-export type ScheduleCategory = 'trip' | 'excursion' | 'todo' | 'other';
+export type ScheduleCategory = 'trip' | 'excursion' | 'todo' | 'travel' | 'other';
 
 /** Zeitraum, in dem ein Einkaufs-/ToDo-Eintrag erledigt werden soll: vor oder während des Urlaubs. */
 export type Period = 'before' | 'during';
@@ -43,9 +43,9 @@ export interface ScheduleItem {
 export interface CalendarEntry {
   key: string;
   /** Herkunft des Eintrags: 'schedule' ist ein echter, editierbarer Kalender-Termin;
-   *  'trip' und 'todo' sind synthetische, nicht editierbare Einträge aus anderen Sichten
+   *  'trip', 'todo' und 'travel' sind synthetische, nicht editierbare Einträge aus anderen Sichten
    *  (Architekturregel Batch 3: nur lesend/verknüpfend, mit Sprung-Button zur Ursprungssicht). */
-  kind: 'schedule' | 'trip' | 'todo';
+  kind: 'schedule' | 'trip' | 'todo' | 'travel';
   date: string;
   endDate: string;
   time: string | null;
@@ -55,6 +55,7 @@ export interface CalendarEntry {
   category: ScheduleCategory;
   ideaId: number | null;
   todoId: number | null;
+  travelId: number | null;
   scheduleItem: ScheduleItem | null;
 }
 
@@ -79,6 +80,20 @@ export interface Excursion {
   lat: number | null;
   lng: number | null;
   suggested_by_user_id: number | null;
+}
+
+export interface ExcursionLike {
+  id: number;
+  idea_id: number;
+  user_id: number;
+}
+
+export interface ExcursionComment {
+  id: number;
+  idea_id: number;
+  author_id: number;
+  content: string;
+  created_at: string;
 }
 
 export interface Accommodation {
@@ -193,6 +208,20 @@ export interface Note {
   created_by: number | null;
   created_at: string;
   updated_at: string | null;
+}
+
+export interface NoteLike {
+  id: number;
+  note_id: number;
+  user_id: number;
+}
+
+export interface NoteComment {
+  id: number;
+  note_id: number;
+  author_id: number;
+  content: string;
+  created_at: string;
 }
 
 export interface DiaryEntry {

@@ -95,7 +95,7 @@ const daysUntilStart = computed(() => {
 // Kalender-Widget: echte Termine + eingebettete synthetische Einträge (Urlaub-Start/-Ende, ToDo
 // mit Fälligkeitsdatum), sortiert, die nächsten drei statt nur den einen nächsten (Batch 12).
 const upcomingEntries = computed(() =>
-  buildAllEntries(schedule.value, trip.value, todos.value)
+  buildAllEntries(schedule.value, trip.value, todos.value, travelItems.value)
     .filter((e) => e.endDate >= todayStr())
     .sort((a, b) => (a.date + (a.time ?? '')).localeCompare(b.date + (b.time ?? '')))
     .slice(0, 3),

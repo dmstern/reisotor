@@ -109,6 +109,11 @@ async function addBudget() {
   showNewBudgetForm.value = false;
 }
 
+function closeNewBudgetForm() {
+  showNewBudgetForm.value = false;
+  newBudgetForm.value = { name: '', kind: 'shared', owner_id: '' };
+}
+
 async function removeBudget(id: number) {
   await api.delete(`/budget/budgets/${id}`);
   budgets.value = budgets.value.filter((b) => b.id !== id);
@@ -199,6 +204,11 @@ async function submitExpense() {
   showExpenseForm.value = false;
 }
 
+function closeExpenseForm() {
+  showExpenseForm.value = false;
+  expenseForm.value = emptyExpenseForm();
+}
+
 function startEditExpense(expense: BudgetExpense) {
   editingExpense.value = expense;
   editExpenseForm.value = {
@@ -248,6 +258,11 @@ async function submitTransfer() {
   showTransferForm.value = false;
 }
 
+function closeTransferForm() {
+  showTransferForm.value = false;
+  transferForm.value = { from_user_id: '', to_user_id: '', amount: '', date: today(), note: '' };
+}
+
 async function removeTransfer(id: number) {
   await api.delete(`/budget/transfers/${id}`);
   transfers.value = transfers.value.filter((t) => t.id !== id);
@@ -277,24 +292,12 @@ const twoPersonSummary = computed(() => {
   return { settled: false as const, debtor: debtor.user, creditor: creditor.user, amount: Math.abs(a.net) };
 });
 
-// --- Kategorien-Breakdown je Budget ---
-const budgetBreakdown = computed(() => {
+// --- Kategorienfarben (konsistent über alle Budgets hinweg) ---
+const categoryColors = computed(() => {
   const names = new Set<string>();
   allocations.value.forEach((a) => names.add(a.category));
   const sorted = [...names].sort((a, b) => a.localeCompare(b, 'de'));
-  const colors = assignCategoryColors(sorted);
-  return budgets.value.map((budget) => ({
-    budget,
-    categories: allocationsFor(budget.id)
-      .slice()
-      .sort((a, b) => a.category.localeCompare(b.category, 'de'))
-      .map((a) => ({
-        category: a.category,
-        spent: spentFor(budget, a.category),
-        target: a.amount,
-        color: colors.get(a.category) ?? '#8a8a86',
-      })),
-  }));
+  return assignCategoryColors(sorted);
 });
 </script>
 
@@ -348,29 +351,27 @@ const budgetBreakdown = computed(() => {
     <div class="card">
       <div class="header">
         <h2>Budgets</h2>
-        <button @click="showNewBudgetForm = !showNewBudgetForm">
-          {{ showNewBudgetForm ? 'Abbrechen' : '+ Budget anlegen' }}
-        </button>
+        <button @click="showNewBudgetForm = true">+ Budget anlegen</button>
       </div>
       <p class="hint">
         Legt persönliche oder geteilte Budgets an und teilt sie in Kategorien auf. Das Gesamtbudget oben
         ergibt sich automatisch aus der Summe aller Kategorien aller Budgets.
       </p>
 
-      <Transition name="fade">
-      <form v-if="showNewBudgetForm" class="new-budget-form" @submit.prevent="addBudget">
-        <input v-model="newBudgetForm.name" type="text" placeholder="Name (z. B. Souvenirs)" required />
-        <select v-model="newBudgetForm.kind">
-          <option value="shared">Geteilt</option>
-          <option value="personal">Persönlich</option>
-        </select>
-        <select v-if="newBudgetForm.kind === 'personal'" v-model="newBudgetForm.owner_id" required>
-          <option value="" disabled>Nutzer:in wählen…</option>
-          <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
-        </select>
-        <button type="submit">Anlegen</button>
-      </form>
-      </Transition>
+      <Modal :model-value="showNewBudgetForm" title="Budget anlegen" @update:model-value="(v) => !v && closeNewBudgetForm()">
+        <form class="new-budget-form" @submit.prevent="addBudget">
+          <input v-model="newBudgetForm.name" type="text" placeholder="Name (z. B. Souvenirs)" required />
+          <select v-model="newBudgetForm.kind">
+            <option value="shared">Geteilt</option>
+            <option value="personal">Persönlich</option>
+          </select>
+          <select v-if="newBudgetForm.kind === 'personal'" v-model="newBudgetForm.owner_id" required>
+            <option value="" disabled>Nutzer:in wählen…</option>
+            <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
+          </select>
+          <button type="submit">Anlegen</button>
+        </form>
+      </Modal>
 
       <TransitionGroup tag="div" name="list" class="budget-list">
         <div class="budget-block" v-for="budget in budgets" :key="budget.id">
@@ -382,15 +383,22 @@ const budgetBreakdown = computed(() => {
             </div>
           </div>
 
-          <div class="target-row" v-for="a in allocationsFor(budget.id)" :key="a.id">
-            <label>{{ a.category }}</label>
-            <input
-              type="number"
-              step="0.01"
-              :value="a.amount"
-              @change="saveAllocation(budget.id, a.category, ($event.target as HTMLInputElement).value)"
+          <div class="category-row" v-for="a in allocationsFor(budget.id)" :key="a.id">
+            <BudgetMeter
+              :label="a.category"
+              :spent="spentFor(budget, a.category)"
+              :target="a.amount"
+              :color="categoryColors.get(a.category) ?? '#8a8a86'"
             />
-            <DeleteButton small @click="removeAllocation(a.id)" />
+            <div class="category-edit">
+              <input
+                type="number"
+                step="0.01"
+                :value="a.amount"
+                @change="saveAllocation(budget.id, a.category, ($event.target as HTMLInputElement).value)"
+              />
+              <DeleteButton small @click="removeAllocation(a.id)" />
+            </div>
           </div>
           <form class="target-row" @submit.prevent="addAllocation(budget.id)">
             <input v-model="categoryForm(budget.id).category" type="text" placeholder="Neue Kategorie" />
@@ -402,54 +410,31 @@ const budgetBreakdown = computed(() => {
       </TransitionGroup>
     </div>
 
-    <!-- Kategorien je Budget -->
-    <div class="card" v-if="budgetBreakdown.some((b) => b.categories.length)">
-      <h2>Kategorien</h2>
-      <div v-for="entry in budgetBreakdown" :key="entry.budget.id">
-        <h3 v-if="entry.categories.length">{{ entry.budget.name }} · {{ budgetLabel(entry.budget) }}</h3>
-        <BudgetMeter
-          v-for="c in entry.categories"
-          :key="c.category"
-          :label="c.category"
-          :spent="c.spent"
-          :target="c.target"
-          :color="c.color"
-        />
-      </div>
-    </div>
-
     <!-- Bezahlungen -->
     <div class="card">
       <div class="header">
         <h2>Bezahlungen</h2>
-        <button
-          @click="
-            showExpenseForm = !showExpenseForm;
-            if (!showExpenseForm) expenseForm = emptyExpenseForm();
-          "
-        >
-          {{ showExpenseForm ? 'Abbrechen' : '+ Bezahlung eintragen' }}
-        </button>
+        <button @click="showExpenseForm = true">+ Bezahlung eintragen</button>
       </div>
 
-      <Transition name="fade">
-      <form v-if="showExpenseForm" class="add-form" @submit.prevent="submitExpense">
-        <input v-model="expenseForm.title" type="text" placeholder="Titel" required />
-        <Combobox v-model="expenseForm.category" :options="expenseCategories" placeholder="Kategorie" />
-        <input v-model="expenseForm.amount" type="number" step="0.01" placeholder="Betrag" required />
-        <select v-model="expenseForm.paid_by_user_id" required>
-          <option value="" disabled>Bezahlt von…</option>
-          <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
-        </select>
-        <select v-model="expenseForm.budget_id">
-          <option value="">Kein Budget</option>
-          <option v-for="b in budgets" :key="b.id" :value="String(b.id)">{{ b.name }} ({{ budgetLabel(b) }})</option>
-        </select>
-        <input v-model="expenseForm.date" type="date" />
-        <input v-model="expenseForm.note" type="text" placeholder="Notiz (optional)" />
-        <button type="submit">Hinzufügen</button>
-      </form>
-      </Transition>
+      <Modal :model-value="showExpenseForm" title="Bezahlung eintragen" @update:model-value="(v) => !v && closeExpenseForm()">
+        <form class="add-form" @submit.prevent="submitExpense">
+          <input v-model="expenseForm.title" type="text" placeholder="Titel" required />
+          <Combobox v-model="expenseForm.category" :options="expenseCategories" placeholder="Kategorie" />
+          <input v-model="expenseForm.amount" type="number" step="0.01" placeholder="Betrag" required />
+          <select v-model="expenseForm.paid_by_user_id" required>
+            <option value="" disabled>Bezahlt von…</option>
+            <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
+          </select>
+          <select v-model="expenseForm.budget_id">
+            <option value="">Kein Budget</option>
+            <option v-for="b in budgets" :key="b.id" :value="String(b.id)">{{ b.name }} ({{ budgetLabel(b) }})</option>
+          </select>
+          <input v-model="expenseForm.date" type="date" />
+          <input v-model="expenseForm.note" type="text" placeholder="Notiz (optional)" />
+          <button type="submit">Hinzufügen</button>
+        </form>
+      </Modal>
 
       <table class="data-table">
         <thead>
@@ -493,27 +478,25 @@ const budgetBreakdown = computed(() => {
     <div class="card">
       <div class="header">
         <h2>Überweisungen</h2>
-        <button @click="showTransferForm = !showTransferForm">
-          {{ showTransferForm ? 'Abbrechen' : '💸 Überweisung eintragen' }}
-        </button>
+        <button @click="showTransferForm = true">💸 Überweisung eintragen</button>
       </div>
 
-      <Transition name="fade">
-      <form v-if="showTransferForm" class="add-form" @submit.prevent="submitTransfer">
-        <select v-model="transferForm.from_user_id" required>
-          <option value="" disabled>Von…</option>
-          <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
-        </select>
-        <select v-model="transferForm.to_user_id" required>
-          <option value="" disabled>An…</option>
-          <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
-        </select>
-        <input v-model="transferForm.amount" type="number" step="0.01" placeholder="Betrag" required />
-        <input v-model="transferForm.date" type="date" />
-        <input v-model="transferForm.note" type="text" placeholder="Notiz (optional)" />
-        <button type="submit">Eintragen</button>
-      </form>
-      </Transition>
+      <Modal :model-value="showTransferForm" title="Überweisung eintragen" @update:model-value="(v) => !v && closeTransferForm()">
+        <form class="add-form" @submit.prevent="submitTransfer">
+          <select v-model="transferForm.from_user_id" required>
+            <option value="" disabled>Von…</option>
+            <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
+          </select>
+          <select v-model="transferForm.to_user_id" required>
+            <option value="" disabled>An…</option>
+            <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
+          </select>
+          <input v-model="transferForm.amount" type="number" step="0.01" placeholder="Betrag" required />
+          <input v-model="transferForm.date" type="date" />
+          <input v-model="transferForm.note" type="text" placeholder="Notiz (optional)" />
+          <button type="submit">Eintragen</button>
+        </form>
+      </Modal>
 
       <table class="data-table">
         <thead>
@@ -657,7 +640,6 @@ const budgetBreakdown = computed(() => {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
-  margin-bottom: var(--space-3);
 }
 
 .new-budget-form input,
@@ -712,14 +694,29 @@ const budgetBreakdown = computed(() => {
   margin-top: var(--space-2);
 }
 
-.target-row label {
-  flex: 1;
-  min-width: 100px;
-  font-size: 0.9rem;
-}
-
 .target-row input {
   width: 120px;
+}
+
+.category-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.category-row :deep(.meter-row) {
+  flex: 1;
+}
+
+.category-edit {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.category-edit input {
+  width: 100px;
 }
 
 .header {

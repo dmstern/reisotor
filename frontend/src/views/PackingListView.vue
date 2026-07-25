@@ -54,7 +54,7 @@ const lists = computed<ListGroup[]>(() => {
   };
   const perUser: ListGroup[] = users.value.map((u) => ({
     key: `user-${u.id}`,
-    title: u.id === auth.user?.id ? `Meine Packliste (${u.avatar})` : `Packliste von ${u.username} (${u.avatar})`,
+    title: u.id === auth.user?.id ? `${u.avatar} Meine Packliste` : `${u.avatar} Packliste von ${u.username}`,
     ownerId: u.id,
     items: items.value.filter((i) => i.owner_id === u.id),
   }));

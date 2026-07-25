@@ -6,5 +6,6 @@ export const SCHEDULE_CATEGORY_META: Record<ScheduleCategory, { icon: string; co
   trip: { icon: '🧳', color: '#2a78d6', label: 'Urlaub' },
   excursion: { icon: '🎒', color: '#eb6834', label: 'Ausflug' },
   todo: { icon: '☑️', color: '#4a3aa7', label: 'ToDo' },
+  travel: { icon: '✈️', color: '#1baf7a', label: 'Reise' },
   other: { icon: '📌', color: '#8a8a86', label: 'Termin' },
 };

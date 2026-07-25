@@ -1,4 +1,4 @@
-import type { CalendarEntry, ScheduleItem, TodoItem, Trip } from '../api/types';
+import type { CalendarEntry, ScheduleItem, TodoItem, TravelItem, Trip } from '../api/types';
 
 export function scheduleItemToEntry(item: ScheduleItem): CalendarEntry {
   return {
@@ -13,6 +13,7 @@ export function scheduleItemToEntry(item: ScheduleItem): CalendarEntry {
     category: item.category,
     ideaId: item.idea_id,
     todoId: null,
+    travelId: null,
     scheduleItem: item,
   };
 }
@@ -34,6 +35,7 @@ export function buildTripEntries(trip: Trip | null): CalendarEntry[] {
       category: 'trip',
       ideaId: null,
       todoId: null,
+      travelId: null,
       scheduleItem: null,
     },
   ];
@@ -50,6 +52,7 @@ export function buildTripEntries(trip: Trip | null): CalendarEntry[] {
       category: 'trip',
       ideaId: null,
       todoId: null,
+      travelId: null,
       scheduleItem: null,
     });
   }
@@ -72,10 +75,43 @@ export function buildTodoEntries(todos: TodoItem[]): CalendarEntry[] {
       category: 'todo' as const,
       ideaId: null,
       todoId: t.id,
+      travelId: null,
       scheduleItem: null,
     }));
 }
 
-export function buildAllEntries(items: ScheduleItem[], trip: Trip | null, todos: TodoItem[]): CalendarEntry[] {
-  return [...items.map(scheduleItemToEntry), ...buildTripEntries(trip), ...buildTodoEntries(todos)];
+// Reise-Einträge (Flug/Zug/Bus/…) mit Datum erscheinen automatisch (nicht editierbar) im Kalender,
+// analog zu Urlaub-Stammdaten und ToDos.
+export function buildTravelEntries(travelItems: TravelItem[]): CalendarEntry[] {
+  return travelItems
+    .filter((t): t is TravelItem & { date: string } => !!t.date)
+    .map((t) => ({
+      key: `travel-${t.id}`,
+      kind: 'travel' as const,
+      date: t.date,
+      endDate: t.date,
+      time: t.departure_time,
+      title: t.title,
+      note: t.note,
+      location: t.from_location && t.to_location ? `${t.from_location} → ${t.to_location}` : null,
+      category: 'travel' as const,
+      ideaId: null,
+      todoId: null,
+      travelId: t.id,
+      scheduleItem: null,
+    }));
+}
+
+export function buildAllEntries(
+  items: ScheduleItem[],
+  trip: Trip | null,
+  todos: TodoItem[],
+  travelItems: TravelItem[],
+): CalendarEntry[] {
+  return [
+    ...items.map(scheduleItemToEntry),
+    ...buildTripEntries(trip),
+    ...buildTodoEntries(todos),
+    ...buildTravelEntries(travelItems),
+  ];
 }

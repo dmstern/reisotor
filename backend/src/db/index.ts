@@ -161,6 +161,38 @@ CREATE TABLE IF NOT EXISTS diary_comments (
   created_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS idea_likes (
+  id INTEGER PRIMARY KEY,
+  idea_id INTEGER NOT NULL REFERENCES ideas(id) ON DELETE CASCADE,
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  created_at TEXT NOT NULL,
+  UNIQUE(idea_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS idea_comments (
+  id INTEGER PRIMARY KEY,
+  idea_id INTEGER NOT NULL REFERENCES ideas(id) ON DELETE CASCADE,
+  author_id INTEGER NOT NULL REFERENCES users(id),
+  content TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS note_likes (
+  id INTEGER PRIMARY KEY,
+  note_id INTEGER NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  created_at TEXT NOT NULL,
+  UNIQUE(note_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS note_comments (
+  id INTEGER PRIMARY KEY,
+  note_id INTEGER NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
+  author_id INTEGER NOT NULL REFERENCES users(id),
+  content TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS travel_items (
   id INTEGER PRIMARY KEY,
   title TEXT NOT NULL,

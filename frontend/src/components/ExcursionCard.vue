@@ -1,14 +1,28 @@
 <script setup lang="ts">
+import { ref } from 'vue';
 import type { Excursion } from '../api/types';
 import EditButton from './EditButton.vue';
 import DeleteButton from './DeleteButton.vue';
+import LikeButton from './LikeButton.vue';
+import Comments, { type CommentItem } from './Comments.vue';
 
-defineProps<{ excursion: Excursion; suggestedByLabel?: string | null }>();
+defineProps<{
+  excursion: Excursion;
+  suggestedByLabel?: string | null;
+  likeCount: number;
+  liked: boolean;
+  comments: CommentItem[];
+}>();
 const emit = defineEmits<{
   (e: 'set-status', excursion: Excursion, status: Excursion['status']): void;
   (e: 'remove', id: number): void;
   (e: 'edit', excursion: Excursion): void;
+  (e: 'toggle-like'): void;
+  (e: 'submit-comment', content: string): void;
+  (e: 'remove-comment', id: number): void;
 }>();
+
+const showComments = ref(false);
 
 const STATUS_LABELS: Record<Excursion['status'], string> = {
   idea: 'Idee',
@@ -29,7 +43,9 @@ const STATUS_LABELS: Record<Excursion['status'], string> = {
       <p v-if="suggestedByLabel" class="suggested-by">💡 Vorgeschlagen von {{ suggestedByLabel }}</p>
       <p v-if="excursion.note">{{ excursion.note }}</p>
       <a v-if="excursion.link" :href="excursion.link" target="_blank" rel="noopener">Link öffnen ↗</a>
-      <a v-if="excursion.maps_link" :href="excursion.maps_link" target="_blank" rel="noopener">📍 Extern öffnen ↗</a>
+      <a v-if="excursion.maps_link" :href="excursion.maps_link" target="_blank" rel="noopener" class="external-link-btn"
+        >📍 Extern öffnen ↗</a
+      >
       <router-link
         v-if="excursion.lat != null && excursion.lng != null"
         :to="{ path: '/map', query: { focus: `excursion-${excursion.id}` } }"
@@ -72,6 +88,16 @@ const STATUS_LABELS: Record<Excursion['status'], string> = {
         </div>
         <DeleteButton small @click="emit('remove', excursion.id)" />
       </div>
+      <div class="social-row">
+        <LikeButton :count="likeCount" :liked="liked" @toggle="emit('toggle-like')" />
+        <button class="secondary" @click="showComments = !showComments">💬 {{ comments.length || '' }}</button>
+      </div>
+      <Comments
+        v-if="showComments"
+        :comments="comments"
+        @submit="(content) => emit('submit-comment', content)"
+        @remove="(id) => emit('remove-comment', id)"
+      />
     </div>
   </div>
 </template>
@@ -161,9 +187,34 @@ const STATUS_LABELS: Record<Excursion['status'], string> = {
   background: var(--color-primary-tint);
 }
 
+.social-row {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
 .schedule-hint {
   font-size: 0.85rem;
   font-weight: 600;
   text-decoration: none;
+}
+
+.external-link-btn {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: rgba(42, 127, 116, 0.08);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--color-primary);
+}
+
+.external-link-btn:hover {
+  background: var(--color-primary-tint);
 }
 </style>

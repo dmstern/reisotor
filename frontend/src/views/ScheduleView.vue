@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { api } from '../api/client';
-import type { Accommodation, CalendarEntry, Excursion, ScheduleItem, TodoItem } from '../api/types';
+import type { Accommodation, CalendarEntry, Excursion, ScheduleItem, TodoItem, TravelItem } from '../api/types';
 import { useTripStore } from '../stores/trip';
 import CalendarWeek from '../components/CalendarWeek.vue';
 import Modal from '../components/Modal.vue';
@@ -18,6 +18,7 @@ const items = ref<ScheduleItem[]>([]);
 const excursions = ref<Excursion[]>([]);
 const accommodations = ref<Accommodation[]>([]);
 const todos = ref<TodoItem[]>([]);
+const travelItems = ref<TravelItem[]>([]);
 const selectedDate = ref<string | null>(null);
 const loading = ref(true);
 
@@ -35,16 +36,18 @@ const editingItem = ref<ScheduleItem | null>(null);
 const editForm = ref({ time: '', title: '', note: '', endDate: '', location: '', mapsLink: '' });
 
 onMounted(async () => {
-  const [scheduleRes, excursionsRes, accommodationRes, todosRes] = await Promise.all([
+  const [scheduleRes, excursionsRes, accommodationRes, todosRes, travelRes] = await Promise.all([
     api.get<ScheduleItem[]>(`/schedule?trip_id=${tripId}`),
     api.get<Excursion[]>(`/ideas?trip_id=${tripId}`),
     api.get<Accommodation[]>(`/accommodation?trip_id=${tripId}`),
     api.get<TodoItem[]>(`/todos?trip_id=${tripId}`),
+    api.get<TravelItem[]>(`/travel?trip_id=${tripId}`),
   ]);
   items.value = scheduleRes;
   excursions.value = excursionsRes;
   accommodations.value = accommodationRes;
   todos.value = todosRes;
+  travelItems.value = travelRes;
   selectedDate.value = new Date().toISOString().slice(0, 10);
   formDate.value = selectedDate.value;
   loading.value = false;
@@ -66,7 +69,7 @@ function accommodationsForDate(date: string) {
   );
 }
 
-const allEntries = computed(() => buildAllEntries(items.value, trip.value, todos.value));
+const allEntries = computed(() => buildAllEntries(items.value, trip.value, todos.value, travelItems.value));
 
 function entriesForDate(date: string) {
   return allEntries.value
@@ -74,10 +77,24 @@ function entriesForDate(date: string) {
     .sort((a, b) => (a.time ?? '').localeCompare(b.time ?? ''));
 }
 
+// Zeigt nicht nur den Urlaubszeitraum, sondern auch alle Tage, an denen Objekte im Kalender
+// hinterlegt sind (z. B. ToDos oder Reise-Einträge mit Fälligkeits-/Termin-Datum vor Urlaubsbeginn).
+const calendarRange = computed(() => {
+  if (!trip.value) return null;
+  const dates = [
+    new Date(trip.value.start_date),
+    new Date(trip.value.end_date),
+    ...allEntries.value.flatMap((e) => [new Date(e.date), new Date(e.endDate)]),
+  ];
+  return {
+    start: new Date(Math.min(...dates.map((d) => d.getTime()))),
+    end: new Date(Math.max(...dates.map((d) => d.getTime()))),
+  };
+});
+
 const weeks = computed(() => {
-  if (!trip.value) return [];
-  const start = new Date(trip.value.start_date);
-  const end = new Date(trip.value.end_date);
+  if (!calendarRange.value) return [];
+  const { start, end } = calendarRange.value;
 
   // Woche beginnt am Montag
   const firstMonday = new Date(start);
@@ -291,6 +308,9 @@ function formatDay(date: string) {
             </template>
             <template v-else-if="entry.kind === 'todo'">
               <router-link to="/todo" class="secondary jump-btn">Zum ToDo</router-link>
+            </template>
+            <template v-else-if="entry.kind === 'travel'">
+              <router-link to="/travel" class="secondary jump-btn">Zur Reise</router-link>
             </template>
             <template v-else-if="entry.ideaId">
               <router-link to="/excursions" class="secondary jump-btn">Zum Ausflug</router-link>

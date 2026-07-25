@@ -92,6 +92,12 @@ async function submit() {
   showForm.value = false;
 }
 
+function closeForm() {
+  showForm.value = false;
+  form.value = emptyForm();
+  mapsLinkResolved.value = null;
+}
+
 function startEdit(acc: Accommodation) {
   editingItem.value = acc;
   editForm.value = {
@@ -134,18 +140,11 @@ function formatDate(d: string | null) {
   <div class="page" v-if="!loading">
     <div class="header">
       <h1>Unterkunft</h1>
-      <button
-        @click="
-          showForm = !showForm;
-          if (!showForm) form = emptyForm();
-        "
-      >
-        {{ showForm ? 'Abbrechen' : '+ Neue Unterkunft' }}
-      </button>
+      <button @click="showForm = true">+ Neue Unterkunft</button>
     </div>
 
-    <Transition name="fade">
-    <form v-if="showForm" class="card form" @submit.prevent="submit">
+    <Modal :model-value="showForm" title="Neue Unterkunft" @update:model-value="(v) => !v && closeForm()">
+    <form class="form" @submit.prevent="submit">
       <label>
         Name
         <input v-model="form.name" type="text" required />
@@ -211,7 +210,7 @@ function formatDate(d: string | null) {
 
       <button type="submit">Hinzufügen</button>
     </form>
-    </Transition>
+    </Modal>
 
     <TransitionGroup tag="div" name="list" class="grid cards">
       <div class="card acc-card" v-for="acc in accommodations" :key="acc.id">

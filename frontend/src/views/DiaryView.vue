@@ -9,6 +9,8 @@ import { compressImage } from '../utils/imageCompression';
 import Modal from '../components/Modal.vue';
 import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
+import LikeButton from '../components/LikeButton.vue';
+import Comments from '../components/Comments.vue';
 
 const auth = useAuthStore();
 const tripStore = useTripStore();
@@ -30,7 +32,6 @@ const editForm = ref(emptyForm());
 const editUploading = ref(false);
 const editUploadError = ref('');
 
-const commentDrafts = ref<Record<number, string>>({});
 const openComments = ref<Set<number>>(new Set());
 
 onMounted(async () => {
@@ -71,6 +72,15 @@ function commentsFor(entryId: number) {
   return comments.value
     .filter((c) => c.entry_id === entryId)
     .sort((a, b) => a.created_at.localeCompare(b.created_at));
+}
+function commentItemsFor(entryId: number) {
+  return commentsFor(entryId).map((c) => ({
+    id: c.id,
+    avatar: author(c.author_id)?.avatar ?? '❓',
+    username: author(c.author_id)?.username ?? '?',
+    content: c.content,
+    canRemove: c.author_id === auth.user?.id,
+  }));
 }
 
 /** Komprimiert ausgewählte Bilder im Browser (Canvas-API) und lädt sie hoch – spart Traffic
@@ -123,6 +133,11 @@ async function submitEntry() {
   showForm.value = false;
 }
 
+function closeForm() {
+  showForm.value = false;
+  form.value = emptyForm();
+}
+
 function startEdit(entry: DiaryEntry) {
   editingEntry.value = entry;
   editForm.value = { title: entry.title ?? '', content: entry.content, images: [...entry.images] };
@@ -160,12 +175,9 @@ function toggleComments(entryId: number) {
   else openComments.value.add(entryId);
 }
 
-async function submitComment(entryId: number) {
-  const content = commentDrafts.value[entryId]?.trim();
-  if (!content) return;
+async function submitComment(entryId: number, content: string) {
   const created = await api.post<DiaryComment>(`/diary/${entryId}/comments`, { content });
   comments.value.push(created);
-  commentDrafts.value[entryId] = '';
 }
 
 async function removeComment(id: number) {
@@ -178,18 +190,11 @@ async function removeComment(id: number) {
   <div class="page" v-if="!loading">
     <div class="header">
       <h1>Tagebuch</h1>
-      <button
-        @click="
-          showForm = !showForm;
-          if (!showForm) form = emptyForm();
-        "
-      >
-        {{ showForm ? 'Abbrechen' : '+ Neuer Eintrag' }}
-      </button>
+      <button @click="showForm = true">+ Neuer Eintrag</button>
     </div>
 
-    <Transition name="fade">
-    <form v-if="showForm" class="card add-form" @submit.prevent="submitEntry">
+    <Modal :model-value="showForm" title="Neuer Tagebucheintrag" @update:model-value="(v) => !v && closeForm()">
+    <form class="add-form" @submit.prevent="submitEntry">
       <input v-model="form.title" type="text" placeholder="Titel (optional)" />
       <textarea v-model="form.content" placeholder="Was ist heute passiert?" rows="10" required></textarea>
       <p class="syntax-hint">
@@ -210,7 +215,7 @@ async function removeComment(id: number) {
       </div>
       <button type="submit">Veröffentlichen</button>
     </form>
-    </Transition>
+    </Modal>
 
     <TransitionGroup tag="div" name="list" class="entries">
       <article class="card entry" v-for="entry in entries" :key="entry.id">
@@ -236,33 +241,18 @@ async function removeComment(id: number) {
         </div>
 
         <div class="entry-footer">
-          <button class="secondary like-btn" :class="{ liked: likedByMe(entry.id) }" @click="toggleLike(entry.id)">
-            {{ likedByMe(entry.id) ? '❤️' : '🤍' }} {{ likesFor(entry.id).length || '' }}
-          </button>
+          <LikeButton :count="likesFor(entry.id).length" :liked="likedByMe(entry.id)" @toggle="toggleLike(entry.id)" />
           <button class="secondary" @click="toggleComments(entry.id)">
             💬 {{ commentsFor(entry.id).length || '' }}
           </button>
         </div>
 
-        <div class="comments" v-if="openComments.has(entry.id)">
-          <div class="comment" v-for="c in commentsFor(entry.id)" :key="c.id">
-            <span class="avatar-sm">{{ author(c.author_id)?.avatar ?? '❓' }}</span>
-            <div class="comment-body">
-              <strong>{{ author(c.author_id)?.username ?? '?' }}</strong>
-              <span>{{ c.content }}</span>
-            </div>
-            <DeleteButton
-              v-if="c.author_id === auth.user?.id"
-              small
-              @click="removeComment(c.id)"
-            />
-          </div>
-
-          <form class="comment-form" @submit.prevent="submitComment(entry.id)">
-            <input v-model="commentDrafts[entry.id]" type="text" placeholder="Kommentar schreiben…" />
-            <button type="submit">Senden</button>
-          </form>
-        </div>
+        <Comments
+          v-if="openComments.has(entry.id)"
+          :comments="commentItemsFor(entry.id)"
+          @submit="(content) => submitComment(entry.id, content)"
+          @remove="removeComment"
+        />
       </article>
     </TransitionGroup>
     <p v-if="!entries.length" class="empty">Noch keine Tagebuch-Einträge.</p>
@@ -458,46 +448,6 @@ async function removeComment(id: number) {
 .entry-footer {
   display: flex;
   gap: var(--space-2);
-}
-
-.like-btn.liked {
-  border-color: var(--color-danger);
-}
-
-.comments {
-  margin-top: var(--space-3);
-  padding-top: var(--space-3);
-  border-top: 1px solid var(--color-border);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.comment {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-2);
-}
-
-.avatar-sm {
-  font-size: 1.1rem;
-}
-
-.comment-body {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  font-size: 0.88rem;
-}
-
-
-.comment-form {
-  display: flex;
-  gap: var(--space-2);
-}
-
-.comment-form input {
-  flex: 1;
 }
 
 .empty {

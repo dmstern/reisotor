@@ -80,6 +80,11 @@ async function submit() {
   showForm.value = false;
 }
 
+function closeForm() {
+  showForm.value = false;
+  form.value = emptyForm();
+}
+
 function startEdit(item: TravelItem) {
   editingItem.value = item;
   editForm.value = {
@@ -126,18 +131,11 @@ function typeIcon(type: string | null) {
   <div class="page" v-if="!loading">
     <div class="header">
       <h1>Reise</h1>
-      <button
-        @click="
-          showForm = !showForm;
-          if (!showForm) form = emptyForm();
-        "
-      >
-        {{ showForm ? 'Abbrechen' : '+ Neuer Eintrag' }}
-      </button>
+      <button @click="showForm = true">+ Neuer Eintrag</button>
     </div>
 
-    <Transition name="fade">
-    <form v-if="showForm" class="card form" @submit.prevent="submit">
+    <Modal :model-value="showForm" title="Neuer Reise-Eintrag" @update:model-value="(v) => !v && closeForm()">
+    <form class="form" @submit.prevent="submit">
       <label>
         Titel
         <input v-model="form.title" type="text" placeholder="z. B. Hinflug nach Wien" required />
@@ -209,7 +207,7 @@ function typeIcon(type: string | null) {
 
       <button type="submit">Hinzufügen</button>
     </form>
-    </Transition>
+    </Modal>
 
     <TransitionGroup tag="div" name="list" class="grid cards">
       <div class="card travel-card" v-for="item in items" :key="item.id">

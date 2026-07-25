@@ -1,17 +1,21 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { api } from '../api/client';
-import type { Excursion, ScheduleItem, User } from '../api/types';
+import type { Excursion, ExcursionComment, ExcursionLike, ScheduleItem, User } from '../api/types';
+import { useAuthStore } from '../stores/auth';
 import { useTripStore } from '../stores/trip';
 import ExcursionCard from '../components/ExcursionCard.vue';
 import Modal from '../components/Modal.vue';
 import { parseLatLngFromMapsLink } from '../utils/googleMaps';
 
+const auth = useAuthStore();
 const tripStore = useTripStore();
 const tripId = tripStore.currentTripId as number;
 const excursions = ref<Excursion[]>([]);
 const users = ref<User[]>([]);
 const scheduleItems = ref<ScheduleItem[]>([]);
+const likes = ref<ExcursionLike[]>([]);
+const comments = ref<ExcursionComment[]>([]);
 const loading = ref(true);
 const showForm = ref(false);
 
@@ -23,16 +27,61 @@ const editForm = ref({ title: '', image_url: '', link: '', maps_link: '', note: 
 const editMapsLinkResolved = ref<boolean | null>(null);
 
 onMounted(async () => {
-  const [excursionsRes, usersRes, scheduleRes] = await Promise.all([
+  const [excursionsRes, usersRes, scheduleRes, likesRes, commentsRes] = await Promise.all([
     api.get<Excursion[]>(`/ideas?trip_id=${tripId}`),
     api.get<User[]>('/users'),
     api.get<ScheduleItem[]>(`/schedule?trip_id=${tripId}`),
+    api.get<ExcursionLike[]>(`/ideas/likes?trip_id=${tripId}`),
+    api.get<ExcursionComment[]>(`/ideas/comments?trip_id=${tripId}`),
   ]);
   excursions.value = excursionsRes;
   users.value = usersRes;
   scheduleItems.value = scheduleRes;
+  likes.value = likesRes;
+  comments.value = commentsRes;
   loading.value = false;
 });
+
+function author(id: number) {
+  return users.value.find((u) => u.id === id);
+}
+function likesFor(ideaId: number) {
+  return likes.value.filter((l) => l.idea_id === ideaId);
+}
+function likedByMe(ideaId: number) {
+  return likesFor(ideaId).some((l) => l.user_id === auth.user?.id);
+}
+function commentsFor(ideaId: number) {
+  return comments.value.filter((c) => c.idea_id === ideaId).sort((a, b) => a.created_at.localeCompare(b.created_at));
+}
+function commentItemsFor(ideaId: number) {
+  return commentsFor(ideaId).map((c) => ({
+    id: c.id,
+    avatar: author(c.author_id)?.avatar ?? '❓',
+    username: author(c.author_id)?.username ?? '?',
+    content: c.content,
+    canRemove: c.author_id === auth.user?.id,
+  }));
+}
+
+async function toggleLike(ideaId: number) {
+  const result = await api.post<{ liked: boolean }>(`/ideas/${ideaId}/like`);
+  if (result.liked) {
+    likes.value.push({ id: Date.now(), idea_id: ideaId, user_id: auth.user!.id });
+  } else {
+    likes.value = likes.value.filter((l) => !(l.idea_id === ideaId && l.user_id === auth.user!.id));
+  }
+}
+
+async function submitComment(ideaId: number, content: string) {
+  const created = await api.post<ExcursionComment>(`/ideas/${ideaId}/comments`, { content });
+  comments.value.push(created);
+}
+
+async function removeComment(id: number) {
+  await api.delete(`/ideas/comments/${id}`);
+  comments.value = comments.value.filter((c) => c.id !== id);
+}
 
 function checkMapsLink() {
   if (!form.value.maps_link) {
@@ -40,6 +89,11 @@ function checkMapsLink() {
     return;
   }
   mapsLinkResolved.value = parseLatLngFromMapsLink(form.value.maps_link) != null;
+}
+
+function resetForm() {
+  form.value = { title: '', image_url: '', link: '', maps_link: '', note: '', suggested_by_user_id: '' };
+  mapsLinkResolved.value = null;
 }
 
 async function addExcursion() {
@@ -57,8 +111,7 @@ async function addExcursion() {
     suggested_by_user_id: form.value.suggested_by_user_id ? Number(form.value.suggested_by_user_id) : undefined,
   });
   excursions.value.unshift(created);
-  form.value = { title: '', image_url: '', link: '', maps_link: '', note: '', suggested_by_user_id: '' };
-  mapsLinkResolved.value = null;
+  resetForm();
   showForm.value = false;
 }
 
@@ -164,11 +217,15 @@ function userLabel(id: number | null) {
   <div class="page" v-if="!loading">
     <div class="header">
       <h1>Ausflüge</h1>
-      <button @click="showForm = !showForm">{{ showForm ? 'Abbrechen' : '+ Neuer Ausflug' }}</button>
+      <button @click="showForm = true">+ Neuer Ausflug</button>
     </div>
 
-    <Transition name="fade">
-      <form v-if="showForm" class="card add-form" @submit.prevent="addExcursion">
+    <Modal
+      :model-value="showForm"
+      title="Neuer Ausflug"
+      @update:model-value="(v) => { showForm = v; if (!v) resetForm(); }"
+    >
+      <form class="edit-form" @submit.prevent="addExcursion">
         <input v-model="form.title" type="text" placeholder="Titel" required />
         <input v-model="form.image_url" type="url" placeholder="Bild-URL (optional)" />
         <input v-model="form.link" type="url" placeholder="Link (optional)" />
@@ -190,7 +247,7 @@ function userLabel(id: number | null) {
         <textarea v-model="form.note" placeholder="Notiz (optional)" rows="2"></textarea>
         <button type="submit">Speichern</button>
       </form>
-    </Transition>
+    </Modal>
 
     <section v-for="group in groupedExcursions" :key="group.status" class="status-group">
       <h2>{{ group.heading }}</h2>
@@ -200,9 +257,15 @@ function userLabel(id: number | null) {
           :key="excursion.id"
           :excursion="excursion"
           :suggested-by-label="userLabel(excursion.suggested_by_user_id)"
+          :like-count="likesFor(excursion.id).length"
+          :liked="likedByMe(excursion.id)"
+          :comments="commentItemsFor(excursion.id)"
           @set-status="setStatus"
           @remove="remove"
           @edit="startEdit"
+          @toggle-like="toggleLike(excursion.id)"
+          @submit-comment="(content) => submitComment(excursion.id, content)"
+          @remove-comment="removeComment"
         />
       </TransitionGroup>
     </section>
@@ -246,16 +309,10 @@ function userLabel(id: number | null) {
   margin-bottom: var(--space-3);
 }
 
-.add-form,
 .edit-form {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  margin-bottom: var(--space-4);
-}
-
-.edit-form {
-  margin-bottom: 0;
 }
 
 .hint {
