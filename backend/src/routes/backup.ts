@@ -7,7 +7,6 @@ const TABLES = [
   'schedule_items',
   'packing_items',
   'ideas',
-  'spots',
   'accommodation',
   'budget_items',
   'budget_targets',

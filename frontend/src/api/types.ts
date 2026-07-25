@@ -10,6 +10,9 @@ export interface Trip {
   destination: string | null;
   start_date: string;
   end_date: string;
+  maps_link: string | null;
+  lat: number | null;
+  lng: number | null;
 }
 
 export type ScheduleCategory = 'trip' | 'excursion' | 'other';
@@ -64,17 +67,6 @@ export interface Excursion {
   maps_link: string | null;
   note: string | null;
   status: 'idea' | 'planned' | 'discarded';
-  lat: number | null;
-  lng: number | null;
-}
-
-export interface Spot {
-  id: number;
-  trip_id: number;
-  name: string;
-  category: string | null;
-  link: string | null;
-  note: string | null;
   lat: number | null;
   lng: number | null;
 }

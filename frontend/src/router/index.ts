@@ -20,7 +20,6 @@ const router = createRouter({
     { path: '/notes', name: 'notes', component: () => import('../views/NotesView.vue') },
     { path: '/diary', name: 'diary', component: () => import('../views/DiaryView.vue') },
     { path: '/map', name: 'map', component: () => import('../views/MapView.vue') },
-    { path: '/spots', redirect: '/map' },
     { path: '/profile', name: 'profile', component: () => import('../views/ProfileView.vue') },
   ],
 });

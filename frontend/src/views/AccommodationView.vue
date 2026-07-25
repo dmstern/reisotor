@@ -235,7 +235,13 @@ function formatDate(d: string | null) {
         <p v-if="acc.note">{{ acc.note }}</p>
         <div class="links">
           <a v-if="acc.link" :href="acc.link" target="_blank" rel="noopener">Buchung ↗</a>
-          <a v-if="acc.maps_link" :href="acc.maps_link" target="_blank" rel="noopener">📍 Maps ↗</a>
+          <a v-if="acc.maps_link" :href="acc.maps_link" target="_blank" rel="noopener">📍 Extern öffnen ↗</a>
+          <router-link
+            v-if="acc.lat != null && acc.lng != null"
+            :to="{ path: '/map', query: { focus: `accommodation-${acc.id}` } }"
+          >
+            🗺️ Auf Karte anzeigen
+          </router-link>
         </div>
       </div>
     </div>

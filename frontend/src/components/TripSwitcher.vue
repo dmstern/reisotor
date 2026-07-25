@@ -64,7 +64,7 @@ async function onSubmit(data: TripFormData) {
 
 async function onDelete(trip: Trip) {
   const confirmed = window.confirm(
-    `Reise "${trip.name}" wirklich löschen? Alle zugehörigen Daten (Kalender, Packliste, Ausflüge, Spots, Unterkunft, Budget, ...) werden unwiderruflich gelöscht.`,
+    `Reise "${trip.name}" wirklich löschen? Alle zugehörigen Daten (Kalender, Packliste, Ausflüge, Unterkunft, Budget, ...) werden unwiderruflich gelöscht.`,
   );
   if (!confirmed) return;
   await tripStore.deleteTrip(trip.id);
@@ -111,6 +111,7 @@ async function onDelete(trip: Trip) {
                 destination: editingTrip.destination ?? '',
                 start_date: editingTrip.start_date,
                 end_date: editingTrip.end_date,
+                maps_link: editingTrip.maps_link ?? '',
               }
             : undefined
         "

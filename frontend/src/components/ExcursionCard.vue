@@ -28,9 +28,14 @@ const STATUS_LABELS: Record<Excursion['status'], string> = {
       <h3>{{ excursion.title }}</h3>
       <p v-if="excursion.note">{{ excursion.note }}</p>
       <a v-if="excursion.link" :href="excursion.link" target="_blank" rel="noopener">Link öffnen ↗</a>
-      <a v-if="excursion.maps_link" :href="excursion.maps_link" target="_blank" rel="noopener">
-        📍 {{ excursion.lat != null ? 'Auf Karte' : 'Maps öffnen' }} ↗
-      </a>
+      <a v-if="excursion.maps_link" :href="excursion.maps_link" target="_blank" rel="noopener">📍 Extern öffnen ↗</a>
+      <router-link
+        v-if="excursion.lat != null && excursion.lng != null"
+        :to="{ path: '/map', query: { focus: `excursion-${excursion.id}` } }"
+        class="schedule-hint"
+      >
+        🗺️ Auf Karte anzeigen
+      </router-link>
       <router-link v-if="excursion.status === 'planned'" to="/schedule" class="schedule-hint">
         📅 Im Kalender einplanen
       </router-link>

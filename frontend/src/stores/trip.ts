@@ -10,6 +10,9 @@ export interface TripFormData {
   destination?: string;
   start_date: string;
   end_date: string;
+  maps_link?: string;
+  lat?: number;
+  lng?: number;
 }
 
 export const useTripStore = defineStore('trip', () => {

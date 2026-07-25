@@ -58,16 +58,6 @@ CREATE TABLE IF NOT EXISTS ideas (
   status TEXT DEFAULT 'idea'
 );
 
-CREATE TABLE IF NOT EXISTS spots (
-  id INTEGER PRIMARY KEY,
-  name TEXT NOT NULL,
-  category TEXT,
-  link TEXT,
-  note TEXT,
-  lat REAL,
-  lng REAL
-);
-
 CREATE TABLE IF NOT EXISTS accommodation (
   id INTEGER PRIMARY KEY,
   name TEXT NOT NULL,
@@ -218,6 +208,13 @@ ensureColumn('schedule_items', 'maps_link', 'TEXT');
 ensureColumn('schedule_items', 'lat', 'REAL');
 ensureColumn('schedule_items', 'lng', 'REAL');
 ensureColumn('schedule_items', 'category', "TEXT DEFAULT 'other'");
+ensureColumn('trips', 'maps_link', 'TEXT');
+ensureColumn('trips', 'lat', 'REAL');
+ensureColumn('trips', 'lng', 'REAL');
+
+// Spots als eigenständiges Konzept wurden zugunsten einer reinen Kartenansicht (Batch 4)
+// wieder entfernt – Karte zeigt seitdem nur noch Reise/Ausflüge/Unterkunft mit Koordinaten.
+db.exec('DROP TABLE IF EXISTS spots');
 
 // budget_category_targets brauchte bisher ein globales UNIQUE(category) – mit mehreren
 // Reisen muss dieselbe Kategorie in jeder Reise separat existieren können. Da SQLite
@@ -244,7 +241,6 @@ const TRIP_SCOPED_TABLES = [
   'schedule_items',
   'packing_items',
   'ideas',
-  'spots',
   'accommodation',
   'travel_items',
   'budget_items',
