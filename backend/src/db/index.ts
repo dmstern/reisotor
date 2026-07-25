@@ -280,8 +280,8 @@ const DEFAULT_BUDGET_CATEGORIES = [
 ];
 
 /** Legt für einen Urlaub das Standard-"Gemeinsame Budget" mit den Standardkategorien an,
- *  sofern noch kein geteiltes Budget existiert. */
-export function ensureDefaultSharedBudget(tripId: number) {
+ *  sofern noch kein geteiltes Budget existiert, und gibt dessen id zurück. */
+export function ensureDefaultSharedBudget(tripId: number): number {
   const existing = db
     .prepare('SELECT id FROM budgets WHERE trip_id = ? AND owner_id IS NULL ORDER BY id LIMIT 1')
     .get(tripId) as { id: number } | undefined;
@@ -296,6 +296,7 @@ export function ensureDefaultSharedBudget(tripId: number) {
   for (const category of DEFAULT_BUDGET_CATEGORIES) {
     insertAllocation.run(budgetId, category);
   }
+  return budgetId;
 }
 
 // Einmalige Migration vom alten Modell (ein manuell eingetragenes Gesamtbudget, optionale
@@ -362,6 +363,20 @@ if (hasTable('budget_targets')) {
 // Für jeden Urlaub sicherstellen, dass ein geteiltes Budget mit den Standardkategorien existiert
 // (frisch angelegte Urlaube sowie ggf. eben migrierte Urlaube ohne geteiltes Ziel).
 const allTrips = db.prepare('SELECT id FROM trips').all() as { id: number }[];
+const sharedBudgetIdByTrip = new Map<number, number>();
 for (const trip of allTrips) {
-  ensureDefaultSharedBudget(trip.id);
+  sharedBudgetIdByTrip.set(trip.id, ensureDefaultSharedBudget(trip.id));
+}
+
+// Bugfix-Backfill (Batch 11): Vor diesem Fix wurden automatisch aus Unterkunft-/Reise-Einträgen
+// erzeugte Ausgaben ohne budget_id angelegt und nur über den zufällig gleichen Kategorienamen in
+// der Kategorien-Visualisierung "erraten" – das brach z. B. sobald ein zweites geteiltes Budget
+// existierte. Bereits bestehende Alt-Zeilen werden hier einmalig nachträglich verknüpft.
+const orphanedAutoExpenses = db
+  .prepare("SELECT id, trip_id FROM budget_items WHERE budget_id IS NULL AND note LIKE 'Automatisch%'")
+  .all() as { id: number; trip_id: number }[];
+const linkAutoExpense = db.prepare('UPDATE budget_items SET budget_id = ? WHERE id = ?');
+for (const row of orphanedAutoExpenses) {
+  const budgetId = sharedBudgetIdByTrip.get(row.trip_id);
+  if (budgetId) linkAutoExpense.run(budgetId, row.id);
 }

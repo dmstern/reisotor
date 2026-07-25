@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify';
-import { db } from '../db/index.js';
+import { db, ensureDefaultSharedBudget } from '../db/index.js';
 
 interface TravelBody {
   trip_id: number;
@@ -30,7 +30,12 @@ interface TravelRow {
 
 /** Bestimmt, wie die verknüpfte Budget-Ausgabe aussehen soll, ohne bereits zu löschen –
  *  eine ggf. verwaiste alte Ausgabe wird erst gelöscht, NACHDEM die travel_items-Zeile
- *  nicht mehr per Foreign Key darauf verweist (sonst SQLITE_CONSTRAINT_FOREIGNKEY). */
+ *  nicht mehr per Foreign Key darauf verweist (sonst SQLITE_CONSTRAINT_FOREIGNKEY).
+ *
+ *  Bugfix (Batch 11): Die Ausgabe wird jetzt fest mit `budget_id` an das geteilte Budget des
+ *  Urlaubs gebunden, statt (wie zuvor) ohne budget_id nur über den zufällig gleichen
+ *  Kategorienamen in der Kategorien-Visualisierung "erraten" zu werden – das brach z. B. sobald
+ *  ein zweites geteiltes Budget oder eine umbenannte Kategorie existierte. */
 function planBudgetExpense(tripId: number, existingBudgetExpenseId: number | null, body: TravelBody) {
   const hasAmount = body.amount != null && body.amount > 0 && body.paid_by_user_id != null;
 
@@ -38,19 +43,38 @@ function planBudgetExpense(tripId: number, existingBudgetExpenseId: number | nul
     return { budgetExpenseId: null as number | null, staleIdToDelete: existingBudgetExpenseId };
   }
 
+  const sharedBudgetId = ensureDefaultSharedBudget(tripId);
+
   if (existingBudgetExpenseId) {
     db.prepare(
-      'UPDATE budget_items SET title = ?, category = ?, amount = ?, paid_by_user_id = ?, date = ? WHERE id = ?',
-    ).run(body.title, 'Transport', body.amount, body.paid_by_user_id, body.date ?? null, existingBudgetExpenseId);
+      'UPDATE budget_items SET title = ?, category = ?, amount = ?, paid_by_user_id = ?, date = ?, budget_id = ? WHERE id = ?',
+    ).run(
+      body.title,
+      'Transport',
+      body.amount,
+      body.paid_by_user_id,
+      body.date ?? null,
+      sharedBudgetId,
+      existingBudgetExpenseId,
+    );
     return { budgetExpenseId: existingBudgetExpenseId, staleIdToDelete: null };
   }
 
   const result = db
     .prepare(
-      `INSERT INTO budget_items (trip_id, title, category, amount, paid_by_user_id, date, note)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO budget_items (trip_id, title, category, amount, paid_by_user_id, date, note, budget_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     )
-    .run(tripId, body.title, 'Transport', body.amount, body.paid_by_user_id, body.date ?? null, 'Automatisch aus Reise-Eintrag');
+    .run(
+      tripId,
+      body.title,
+      'Transport',
+      body.amount,
+      body.paid_by_user_id,
+      body.date ?? null,
+      'Automatisch aus Reise-Eintrag',
+      sharedBudgetId,
+    );
   return { budgetExpenseId: result.lastInsertRowid as number, staleIdToDelete: null };
 }
 

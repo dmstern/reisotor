@@ -6,6 +6,7 @@ import { useAuthStore } from '../stores/auth';
 import { useTripStore } from '../stores/trip';
 import PackingItemRow from '../components/PackingItem.vue';
 import Modal from '../components/Modal.vue';
+import Combobox from '../components/Combobox.vue';
 
 const auth = useAuthStore();
 const tripStore = useTripStore();
@@ -19,7 +20,7 @@ const newCategory = ref('');
 const newOwner = ref<string>('me');
 
 const editingItem = ref<PackingItem | null>(null);
-const editForm = ref({ label: '', category: '' });
+const editForm = ref({ label: '', category: '', ownerId: 'shared' });
 
 onMounted(async () => {
   const [itemsRes, usersRes] = await Promise.all([
@@ -92,16 +93,21 @@ async function toggle(item: PackingItem) {
 
 function startEdit(item: PackingItem) {
   editingItem.value = item;
-  editForm.value = { label: item.label, category: item.category ?? '' };
+  editForm.value = {
+    label: item.label,
+    category: item.category ?? '',
+    ownerId: item.owner_id == null ? 'shared' : String(item.owner_id),
+  };
 }
 
 async function submitEdit() {
   if (!editingItem.value || !editForm.value.label.trim()) return;
+  const owner_id = editForm.value.ownerId === 'shared' ? null : Number(editForm.value.ownerId);
   const updated = await api.put<PackingItem>(`/packing/${editingItem.value.id}`, {
     label: editForm.value.label.trim(),
     category: editForm.value.category.trim() || undefined,
     checked: !!editingItem.value.checked,
-    owner_id: editingItem.value.owner_id,
+    owner_id,
   });
   const idx = items.value.findIndex((i) => i.id === updated.id);
   if (idx !== -1) items.value[idx] = updated;
@@ -131,17 +137,13 @@ async function addItem() {
   <div class="page" v-if="!loading">
     <h1>Packliste</h1>
 
-    <datalist id="packing-categories">
-      <option v-for="c in categories" :key="c" :value="c" />
-    </datalist>
-
     <form class="add-form card" @submit.prevent="addItem">
       <input v-model="newLabel" type="text" placeholder="Neuer Gegenstand" required />
-      <input v-model="newCategory" type="text" list="packing-categories" placeholder="Kategorie (optional)" />
+      <Combobox v-model="newCategory" :options="categories" placeholder="Kategorie (optional)" />
       <select v-model="newOwner">
-        <option value="shared">Gemeinsam</option>
+        <option value="shared">🤝 Gemeinsam</option>
         <option v-for="u in users" :key="u.id" :value="String(u.id)">
-          {{ u.id === auth.user?.id ? 'Meine Liste' : u.username }}
+          {{ u.avatar }} {{ u.id === auth.user?.id ? 'Meine Liste' : u.username }}
         </option>
       </select>
       <button type="submit">Hinzufügen</button>
@@ -176,7 +178,13 @@ async function addItem() {
     >
       <form class="edit-form" @submit.prevent="submitEdit">
         <input v-model="editForm.label" type="text" placeholder="Gegenstand" required />
-        <input v-model="editForm.category" type="text" list="packing-categories" placeholder="Kategorie" />
+        <Combobox v-model="editForm.category" :options="categories" placeholder="Kategorie" />
+        <select v-model="editForm.ownerId">
+          <option value="shared">🤝 Gemeinsam</option>
+          <option v-for="u in users" :key="u.id" :value="String(u.id)">
+            {{ u.avatar }} {{ u.id === auth.user?.id ? 'Meine Liste' : u.username }}
+          </option>
+        </select>
         <button type="submit">Speichern</button>
       </form>
     </Modal>

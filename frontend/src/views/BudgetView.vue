@@ -16,6 +16,7 @@ import BudgetMeter from '../components/BudgetMeter.vue';
 import Modal from '../components/Modal.vue';
 import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
+import Combobox from '../components/Combobox.vue';
 
 const tripStore = useTripStore();
 const tripId = tripStore.currentTripId as number;
@@ -431,14 +432,10 @@ const budgetBreakdown = computed(() => {
         </button>
       </div>
 
-      <datalist id="budget-categories">
-        <option v-for="c in expenseCategories" :key="c" :value="c" />
-      </datalist>
-
       <Transition name="fade">
       <form v-if="showExpenseForm" class="add-form" @submit.prevent="submitExpense">
         <input v-model="expenseForm.title" type="text" placeholder="Titel" required />
-        <input v-model="expenseForm.category" type="text" list="budget-categories" placeholder="Kategorie" />
+        <Combobox v-model="expenseForm.category" :options="expenseCategories" placeholder="Kategorie" />
         <input v-model="expenseForm.amount" type="number" step="0.01" placeholder="Betrag" required />
         <select v-model="expenseForm.paid_by_user_id" required>
           <option value="" disabled>Bezahlt von…</option>
@@ -552,7 +549,7 @@ const budgetBreakdown = computed(() => {
     >
       <form class="add-form" @submit.prevent="submitEditExpense">
         <input v-model="editExpenseForm.title" type="text" placeholder="Titel" required />
-        <input v-model="editExpenseForm.category" type="text" list="budget-categories" placeholder="Kategorie" />
+        <Combobox v-model="editExpenseForm.category" :options="expenseCategories" placeholder="Kategorie" />
         <input v-model="editExpenseForm.amount" type="number" step="0.01" placeholder="Betrag" required />
         <select v-model="editExpenseForm.paid_by_user_id" required>
           <option value="" disabled>Bezahlt von…</option>
