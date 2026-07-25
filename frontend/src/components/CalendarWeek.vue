@@ -94,7 +94,7 @@ function onDrop(event: DragEvent, date: string) {
 }
 
 .day:hover {
-  background: #f4f1ec;
+  background: var(--color-hover);
 }
 
 .day.today .num {
@@ -102,7 +102,7 @@ function onDrop(event: DragEvent, date: string) {
 }
 
 .day.active {
-  background: #eaf3f1;
+  background: var(--color-primary-tint);
   border-color: var(--color-primary);
 }
 
@@ -125,8 +125,8 @@ function onDrop(event: DragEvent, date: string) {
 }
 
 .acc-bar {
-  background: #eef0fd;
-  color: #5b6ee1;
+  background: var(--color-accent-secondary-bg);
+  color: var(--color-accent-secondary);
   font-size: 0.55rem;
   border-radius: 4px;
   padding: 1px 3px;
@@ -143,7 +143,7 @@ function onDrop(event: DragEvent, date: string) {
 
 .item-line {
   font-size: 0.6rem;
-  background: #f4f1ec;
+  background: var(--color-hover);
   border-radius: 4px;
   border-left: 3px solid transparent;
   padding: 1px 3px;

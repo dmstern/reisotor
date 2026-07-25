@@ -400,8 +400,8 @@ function formatDay(date: string) {
 }
 
 .pool-item {
-  background: #fff4e8;
-  border: 1px solid #f0d3ac;
+  background: var(--color-highlight);
+  border: 1px solid var(--color-highlight-border);
   border-radius: var(--radius-sm);
   padding: 6px 12px;
   font-size: 0.85rem;
@@ -432,7 +432,7 @@ function formatDay(date: string) {
 }
 
 .acc-note {
-  color: #5b6ee1;
+  color: var(--color-accent-secondary);
   font-weight: 600;
   margin: 0 0 var(--space-2);
 }

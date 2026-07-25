@@ -85,7 +85,7 @@ const STATUS_LABELS: Record<Excursion['status'], string> = {
 
 .image {
   height: 160px;
-  background: #eaf3f1 center/cover no-repeat;
+  background: var(--color-primary-tint) center/cover no-repeat;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -152,7 +152,7 @@ const STATUS_LABELS: Record<Excursion['status'], string> = {
 .status-btn.active {
   opacity: 1;
   border-color: var(--color-primary);
-  background: #eaf3f1;
+  background: var(--color-primary-tint);
 }
 
 .schedule-hint {

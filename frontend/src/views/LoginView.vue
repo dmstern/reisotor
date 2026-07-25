@@ -2,10 +2,12 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
+import { useThemeStore } from '../stores/theme';
 import { ApiError } from '../api/client';
 
 const auth = useAuthStore();
 const router = useRouter();
+const theme = useThemeStore();
 
 const username = ref('');
 const password = ref('');
@@ -28,6 +30,15 @@ async function onSubmit() {
 
 <template>
   <div class="login-page">
+    <button
+      type="button"
+      class="secondary theme-toggle"
+      :title="theme.isDark ? 'Zum hellen Modus wechseln' : 'Zum dunklen Modus wechseln'"
+      :aria-label="theme.isDark ? 'Zum hellen Modus wechseln' : 'Zum dunklen Modus wechseln'"
+      @click="theme.toggle"
+    >
+      {{ theme.isDark ? '☀️' : '🌙' }}
+    </button>
     <form class="card login-card" @submit.prevent="onSubmit">
       <img src="/reisotor_logo.svg" alt="Reisotor Logo" class="logo" />
       <h1>Reisotor</h1>
@@ -52,12 +63,28 @@ async function onSubmit() {
 
 <style scoped>
 .login-page {
+  position: relative;
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: var(--space-4);
-  background: linear-gradient(160deg, #eaf3f1, var(--color-bg) 60%);
+  background: linear-gradient(160deg, var(--color-primary-tint), var(--color-bg) 60%);
+}
+
+.theme-toggle {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 1.1rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .login-card {

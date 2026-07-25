@@ -214,6 +214,19 @@ function jumpToTrip() {
   border: 1px solid var(--color-border);
 }
 
+/* Die OpenStreetMap-Kacheln selbst kennen keinen Dark Mode – ein Farb-Invert nur auf der
+   Kachel-Ebene (nicht auf Markern/Popups) sorgt für eine abgedunkelte Karte statt eines
+   grellen weißen Rechtecks im ansonsten dunklen UI. */
+:root[data-theme='dark'] .map :deep(.leaflet-tile-pane) {
+  filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.9);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .map :deep(.leaflet-tile-pane) {
+    filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.9);
+  }
+}
+
 .legend {
   display: flex;
   flex-wrap: wrap;

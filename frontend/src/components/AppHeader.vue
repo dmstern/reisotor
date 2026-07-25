@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { useAuthStore } from '../stores/auth';
+import { useThemeStore } from '../stores/theme';
 import TripSwitcher from './TripSwitcher.vue';
 
 const auth = useAuthStore();
+const theme = useThemeStore();
 </script>
 
 <template>
@@ -12,6 +14,15 @@ const auth = useAuthStore();
       <span class="wordmark">Reisotor</span>
     </router-link>
     <TripSwitcher class="switcher" />
+    <button
+      type="button"
+      class="secondary theme-toggle"
+      :title="theme.isDark ? 'Zum hellen Modus wechseln' : 'Zum dunklen Modus wechseln'"
+      :aria-label="theme.isDark ? 'Zum hellen Modus wechseln' : 'Zum dunklen Modus wechseln'"
+      @click="theme.toggle"
+    >
+      {{ theme.isDark ? '☀️' : '🌙' }}
+    </button>
     <router-link to="/profile" class="profile-link" title="Profil">
       <span class="avatar">{{ auth.user?.avatar || '👤' }}</span>
     </router-link>
@@ -61,6 +72,19 @@ const auth = useAuthStore();
   font-size: 1.1rem;
 }
 
+.theme-toggle {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 1.1rem;
+  line-height: 1;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .profile-link {
   display: flex;
   align-items: center;
@@ -68,7 +92,7 @@ const auth = useAuthStore();
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: #eaf3f1;
+  background: var(--color-primary-tint);
   text-decoration: none;
   flex-shrink: 0;
   transition: background 0.15s ease;

@@ -278,7 +278,7 @@ async function addItem() {
 .shop-tag {
   font-size: 0.78rem;
   color: var(--color-text-muted);
-  background: #f4f1ec;
+  background: var(--color-hover);
   border-radius: 999px;
   padding: 2px 8px;
 }

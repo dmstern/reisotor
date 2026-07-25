@@ -141,7 +141,7 @@ function formatDate(d: string) {
 <style scoped>
 .hero {
   margin-bottom: var(--space-4);
-  background: linear-gradient(135deg, #eaf3f1, var(--color-surface));
+  background: linear-gradient(135deg, var(--color-primary-tint), var(--color-surface));
 }
 
 .hero h1 {

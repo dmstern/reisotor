@@ -81,7 +81,7 @@ function onLinkClick(event: MouseEvent) {
 
 .link.router-link-active {
   color: var(--color-primary-dark);
-  background: #eaf3f1;
+  background: var(--color-primary-tint);
 }
 
 .icon {

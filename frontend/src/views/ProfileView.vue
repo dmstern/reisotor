@@ -407,7 +407,7 @@ async function onImportFileSelected(event: Event) {
 
 .emoji-btn.active {
   border-color: var(--color-primary);
-  background: #eaf3f1;
+  background: var(--color-primary-tint);
 }
 
 .form {

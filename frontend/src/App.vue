@@ -57,7 +57,7 @@ async function onCreateFirstTrip(data: TripFormData) {
   align-items: center;
   justify-content: center;
   padding: var(--space-4);
-  background: linear-gradient(160deg, #eaf3f1, var(--color-bg) 60%);
+  background: linear-gradient(160deg, var(--color-primary-tint), var(--color-bg) 60%);
 }
 
 .onboarding-card {

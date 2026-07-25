@@ -130,7 +130,7 @@ async function onDelete(trip: Trip) {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: #eaf3f1;
+  background: var(--color-primary-tint);
   border: none;
   border-radius: var(--radius-sm);
   padding: 6px 12px;
@@ -199,7 +199,7 @@ async function onDelete(trip: Trip) {
 }
 
 .trip-select:hover {
-  background: #f4f1ec;
+  background: var(--color-hover);
 }
 
 .row-actions {
@@ -227,6 +227,6 @@ async function onDelete(trip: Trip) {
 }
 
 .new-trip-btn:hover {
-  background: #eaf3f1;
+  background: var(--color-primary-tint);
 }
 </style>
