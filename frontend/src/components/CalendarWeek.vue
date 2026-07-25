@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import type { Accommodation, ScheduleItem } from '../api/types';
+import type { Accommodation, CalendarEntry } from '../api/types';
+import { SCHEDULE_CATEGORY_META } from '../utils/scheduleCategory';
 
 interface Day {
   date: string;
-  items: ScheduleItem[];
+  entries: CalendarEntry[];
   accommodations: Accommodation[];
 }
 
@@ -55,10 +56,17 @@ function onDrop(event: DragEvent, date: string) {
       </div>
 
       <div class="items">
-        <div class="item-line" v-for="item in day.items.slice(0, 3)" :key="item.id" :title="item.title">
-          <span v-if="item.time" class="time">{{ item.time }}</span>{{ item.title }}
+        <div
+          class="item-line"
+          v-for="entry in day.entries.slice(0, 3)"
+          :key="entry.key"
+          :title="entry.title"
+          :style="{ borderLeftColor: SCHEDULE_CATEGORY_META[entry.category].color }"
+        >
+          <span v-if="entry.time" class="time">{{ entry.time }}</span
+          >{{ SCHEDULE_CATEGORY_META[entry.category].icon }} {{ entry.title }}
         </div>
-        <div class="more" v-if="day.items.length > 3">+{{ day.items.length - 3 }} mehr</div>
+        <div class="more" v-if="day.entries.length > 3">+{{ day.entries.length - 3 }} mehr</div>
       </div>
     </div>
   </div>
@@ -137,6 +145,7 @@ function onDrop(event: DragEvent, date: string) {
   font-size: 0.6rem;
   background: #f4f1ec;
   border-radius: 4px;
+  border-left: 3px solid transparent;
   padding: 1px 3px;
   overflow: hidden;
   text-overflow: ellipsis;

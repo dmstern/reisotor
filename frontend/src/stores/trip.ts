@@ -16,6 +16,10 @@ export const useTripStore = defineStore('trip', () => {
   const trips = ref<Trip[]>([]);
   const currentTripId = ref<number | null>(null);
   const loaded = ref(false);
+  // Zählt hoch, wenn aus einer einbettenden Sicht (z. B. Kalender) zur Reise-Bearbeitung
+  // gesprungen werden soll. TripSwitcher beobachtet das und öffnet dafür sein Edit-Modal
+  // (Architekturregel Batch 3: Fremdobjekte springen zur Ursprungssicht statt inline editierbar zu sein).
+  const editTripRequestId = ref(0);
 
   const currentTrip = computed(() => trips.value.find((t) => t.id === currentTripId.value) ?? null);
 
@@ -48,6 +52,10 @@ export const useTripStore = defineStore('trip', () => {
     persist();
   }
 
+  function requestEditTrip() {
+    editTripRequestId.value++;
+  }
+
   async function createTrip(body: TripFormData) {
     const created = await api.post<Trip>('/trips', body);
     trips.value.push(created);
@@ -76,8 +84,10 @@ export const useTripStore = defineStore('trip', () => {
     currentTripId,
     currentTrip,
     loaded,
+    editTripRequestId,
     loadTrips,
     selectTrip,
+    requestEditTrip,
     createTrip,
     updateTrip,
     deleteTrip,

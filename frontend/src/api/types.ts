@@ -12,14 +12,38 @@ export interface Trip {
   end_date: string;
 }
 
+export type ScheduleCategory = 'trip' | 'excursion' | 'other';
+
 export interface ScheduleItem {
   id: number;
   trip_id: number;
   date: string;
+  end_date: string | null;
   time: string | null;
   title: string;
   note: string | null;
   idea_id: number | null;
+  location: string | null;
+  maps_link: string | null;
+  lat: number | null;
+  lng: number | null;
+  category: ScheduleCategory;
+}
+
+/** Vereinheitlichte Darstellung für die Kalenderansicht: entweder ein echter Kalender-Termin
+ *  (scheduleItem gesetzt) oder ein synthetischer, nicht editierbarer Eintrag wie Reise-Start/-Ende
+ *  (scheduleItem null), der nur zur Ursprungssicht springt statt inline editierbar zu sein. */
+export interface CalendarEntry {
+  key: string;
+  date: string;
+  endDate: string;
+  time: string | null;
+  title: string;
+  note: string | null;
+  location: string | null;
+  category: ScheduleCategory;
+  ideaId: number | null;
+  scheduleItem: ScheduleItem | null;
 }
 
 export interface PackingItem {

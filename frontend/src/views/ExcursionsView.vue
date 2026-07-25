@@ -52,10 +52,17 @@ async function addExcursion() {
   showForm.value = false;
 }
 
-const STATUS_ORDER: Record<Excursion['status'], number> = { idea: 0, planned: 1, discarded: 2 };
+const STATUS_GROUPS: { status: Excursion['status']; heading: string }[] = [
+  { status: 'idea', heading: '💡 Idee' },
+  { status: 'planned', heading: '✅ Geplant' },
+  { status: 'discarded', heading: '❌ Verworfen' },
+];
 
-const sortedExcursions = computed(() =>
-  [...excursions.value].sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]),
+const groupedExcursions = computed(() =>
+  STATUS_GROUPS.map((group) => ({
+    ...group,
+    excursions: excursions.value.filter((e) => e.status === group.status),
+  })).filter((group) => group.excursions.length > 0),
 );
 
 async function setStatus(excursion: Excursion, status: Excursion['status']) {
@@ -143,16 +150,19 @@ async function submitEdit() {
       <button type="submit">Speichern</button>
     </form>
 
-    <div class="grid cards">
-      <ExcursionCard
-        v-for="excursion in sortedExcursions"
-        :key="excursion.id"
-        :excursion="excursion"
-        @set-status="setStatus"
-        @remove="remove"
-        @edit="startEdit"
-      />
-    </div>
+    <section v-for="group in groupedExcursions" :key="group.status" class="status-group">
+      <h2>{{ group.heading }}</h2>
+      <div class="grid cards">
+        <ExcursionCard
+          v-for="excursion in group.excursions"
+          :key="excursion.id"
+          :excursion="excursion"
+          @set-status="setStatus"
+          @remove="remove"
+          @edit="startEdit"
+        />
+      </div>
+    </section>
     <p v-if="!excursions.length" class="empty">Noch keine Ausflüge gesammelt.</p>
 
     <Modal
@@ -207,6 +217,16 @@ async function submitEdit() {
 
 .hint.success {
   color: var(--color-success);
+}
+
+.status-group {
+  margin-bottom: var(--space-4);
+}
+
+.status-group h2 {
+  font-size: 1rem;
+  color: var(--color-primary-dark);
+  margin-bottom: var(--space-2);
 }
 
 .cards {

@@ -212,6 +212,12 @@ ensureColumn('shopping_items', 'link', 'TEXT');
 ensureColumn('accommodation', 'amount', 'REAL');
 ensureColumn('accommodation', 'paid_by_user_id', 'INTEGER REFERENCES users(id)');
 ensureColumn('accommodation', 'budget_expense_id', 'INTEGER REFERENCES budget_items(id)');
+ensureColumn('schedule_items', 'end_date', 'TEXT');
+ensureColumn('schedule_items', 'location', 'TEXT');
+ensureColumn('schedule_items', 'maps_link', 'TEXT');
+ensureColumn('schedule_items', 'lat', 'REAL');
+ensureColumn('schedule_items', 'lng', 'REAL');
+ensureColumn('schedule_items', 'category', "TEXT DEFAULT 'other'");
 
 // budget_category_targets brauchte bisher ein globales UNIQUE(category) – mit mehreren
 // Reisen muss dieselbe Kategorie in jeder Reise separat existieren können. Da SQLite

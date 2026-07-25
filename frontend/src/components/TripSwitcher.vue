@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { useTripStore, type TripFormData } from '../stores/trip';
 import type { Trip } from '../api/types';
 import Modal from './Modal.vue';
@@ -11,6 +11,17 @@ const tripStore = useTripStore();
 const open = ref(false);
 const showForm = ref(false);
 const editingTrip = ref<Trip | null>(null);
+
+// Sprungziel für Fremdobjekte (z. B. Reise-Einträge im Kalender): öffnet das Edit-Modal
+// der aktuellen Reise, ohne dass die einbettende Sicht selbst editieren muss.
+watch(
+  () => tripStore.editTripRequestId,
+  (id) => {
+    if (id > 0 && tripStore.currentTrip) {
+      openEdit(tripStore.currentTrip);
+    }
+  },
+);
 
 function toggle() {
   open.value = !open.value;
