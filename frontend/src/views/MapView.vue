@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { api } from '../api/client';
@@ -95,6 +95,10 @@ function renderMarkers() {
 onMounted(async () => {
   await loadAll();
   loading.value = false;
+  // Der Karten-Container steckt hinter v-if="!loading" und existiert im DOM
+  // erst, nachdem Vue den Zustandswechsel gerendert hat – ohne nextTick() ist
+  // mapEl.value hier immer noch null und die Karte wird nie initialisiert.
+  await nextTick();
 
   if (!mapEl.value) return;
   map = L.map(mapEl.value);
