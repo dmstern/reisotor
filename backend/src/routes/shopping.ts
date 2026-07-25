@@ -9,6 +9,7 @@ interface ShoppingBody {
   link?: string;
   note?: string;
   shop?: string;
+  period?: 'before' | 'during' | null;
 }
 
 export const shoppingRoutes: FastifyPluginAsync = async (app) => {
@@ -20,23 +21,41 @@ export const shoppingRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.post<{ Body: ShoppingBody }>('/shopping', async (req, reply) => {
-    const { trip_id, label, assigned_to_user_id, checked, link, note, shop } = req.body;
+    const { trip_id, label, assigned_to_user_id, checked, link, note, shop, period } = req.body;
     const result = db
       .prepare(
-        'INSERT INTO shopping_items (trip_id, label, assigned_to_user_id, checked, link, note, shop) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        'INSERT INTO shopping_items (trip_id, label, assigned_to_user_id, checked, link, note, shop, period) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
       )
-      .run(trip_id, label, assigned_to_user_id ?? null, checked ? 1 : 0, link ?? null, note ?? null, shop ?? null);
+      .run(
+        trip_id,
+        label,
+        assigned_to_user_id ?? null,
+        checked ? 1 : 0,
+        link ?? null,
+        note ?? null,
+        shop ?? null,
+        period ?? null,
+      );
     reply.code(201);
     return db.prepare('SELECT * FROM shopping_items WHERE id = ?').get(result.lastInsertRowid);
   });
 
   app.put<{ Params: { id: string }; Body: ShoppingBody }>('/shopping/:id', async (req, reply) => {
-    const { label, assigned_to_user_id, checked, link, note, shop } = req.body;
+    const { label, assigned_to_user_id, checked, link, note, shop, period } = req.body;
     const result = db
       .prepare(
-        'UPDATE shopping_items SET label = ?, assigned_to_user_id = ?, checked = ?, link = ?, note = ?, shop = ? WHERE id = ?',
+        'UPDATE shopping_items SET label = ?, assigned_to_user_id = ?, checked = ?, link = ?, note = ?, shop = ?, period = ? WHERE id = ?',
       )
-      .run(label, assigned_to_user_id ?? null, checked ? 1 : 0, link ?? null, note ?? null, shop ?? null, req.params.id);
+      .run(
+        label,
+        assigned_to_user_id ?? null,
+        checked ? 1 : 0,
+        link ?? null,
+        note ?? null,
+        shop ?? null,
+        period ?? null,
+        req.params.id,
+      );
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
     return db.prepare('SELECT * FROM shopping_items WHERE id = ?').get(req.params.id);
   });

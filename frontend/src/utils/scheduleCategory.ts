@@ -5,5 +5,6 @@ import type { ScheduleCategory } from '../api/types';
 export const SCHEDULE_CATEGORY_META: Record<ScheduleCategory, { icon: string; color: string; label: string }> = {
   trip: { icon: '🧳', color: '#2a78d6', label: 'Urlaub' },
   excursion: { icon: '🎒', color: '#eb6834', label: 'Ausflug' },
+  todo: { icon: '☑️', color: '#4a3aa7', label: 'ToDo' },
   other: { icon: '📌', color: '#8a8a86', label: 'Termin' },
 };

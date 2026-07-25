@@ -15,7 +15,10 @@ export interface Trip {
   lng: number | null;
 }
 
-export type ScheduleCategory = 'trip' | 'excursion' | 'other';
+export type ScheduleCategory = 'trip' | 'excursion' | 'todo' | 'other';
+
+/** Zeitraum, in dem ein Einkaufs-/ToDo-Eintrag erledigt werden soll: vor oder während des Urlaubs. */
+export type Period = 'before' | 'during';
 
 export interface ScheduleItem {
   id: number;
@@ -38,6 +41,10 @@ export interface ScheduleItem {
  *  (scheduleItem null), der nur zur Ursprungssicht springt statt inline editierbar zu sein. */
 export interface CalendarEntry {
   key: string;
+  /** Herkunft des Eintrags: 'schedule' ist ein echter, editierbarer Kalender-Termin;
+   *  'trip' und 'todo' sind synthetische, nicht editierbare Einträge aus anderen Sichten
+   *  (Architekturregel Batch 3: nur lesend/verknüpfend, mit Sprung-Button zur Ursprungssicht). */
+  kind: 'schedule' | 'trip' | 'todo';
   date: string;
   endDate: string;
   time: string | null;
@@ -46,6 +53,7 @@ export interface CalendarEntry {
   location: string | null;
   category: ScheduleCategory;
   ideaId: number | null;
+  todoId: number | null;
   scheduleItem: ScheduleItem | null;
 }
 
@@ -158,6 +166,7 @@ export interface ShoppingItem {
   link: string | null;
   note: string | null;
   shop: string | null;
+  period: Period | null;
 }
 
 export type TodoPriority = 'low' | 'medium' | 'high';
@@ -171,6 +180,7 @@ export interface TodoItem {
   priority: TodoPriority;
   note: string | null;
   done: 0 | 1;
+  period: Period | null;
 }
 
 export interface Note {

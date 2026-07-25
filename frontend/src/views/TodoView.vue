@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { api } from '../api/client';
-import type { TodoItem, TodoPriority, User } from '../api/types';
+import type { Period, TodoItem, TodoPriority, User } from '../api/types';
 import { useTripStore } from '../stores/trip';
+import { PERIOD_META } from '../utils/period';
 import Modal from '../components/Modal.vue';
 import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
@@ -12,7 +13,11 @@ const tripId = tripStore.currentTripId as number;
 const items = ref<TodoItem[]>([]);
 const users = ref<User[]>([]);
 const loading = ref(true);
-const filterAssignee = ref('all');
+
+type GroupBy = 'assignee' | 'period';
+type SortBy = 'due_date' | 'priority' | 'assignee';
+const groupBy = ref<GroupBy>('assignee');
+const sortBy = ref<SortBy>('priority');
 
 const PRIORITY_META: Record<TodoPriority, { label: string; icon: string }> = {
   low: { label: 'Niedrig', icon: '🟢' },
@@ -27,6 +32,7 @@ const emptyForm = () => ({
   due_date: '',
   priority: 'medium' as TodoPriority,
   note: '',
+  period: '' as Period | '',
 });
 const newForm = ref(emptyForm());
 
@@ -43,17 +49,53 @@ onMounted(async () => {
   loading.value = false;
 });
 
-const filteredItems = computed(() => {
-  const base =
-    filterAssignee.value === 'all'
-      ? items.value
-      : filterAssignee.value === 'unassigned'
-        ? items.value.filter((i) => i.assigned_to_user_id == null)
-        : items.value.filter((i) => i.assigned_to_user_id === Number(filterAssignee.value));
-  return [...base].sort((a, b) => {
+function userLabel(id: number | null) {
+  if (id == null) return null;
+  const u = users.value.find((u) => u.id === id);
+  return u ? `${u.avatar} ${u.username}` : null;
+}
+
+function sortItems(list: TodoItem[]) {
+  return [...list].sort((a, b) => {
     if (!!a.done !== !!b.done) return a.done ? 1 : -1;
+    if (sortBy.value === 'due_date') {
+      if (!a.due_date && !b.due_date) return 0;
+      if (!a.due_date) return 1;
+      if (!b.due_date) return -1;
+      return a.due_date.localeCompare(b.due_date);
+    }
+    if (sortBy.value === 'assignee') {
+      return (userLabel(a.assigned_to_user_id) ?? '').localeCompare(userLabel(b.assigned_to_user_id) ?? '', 'de');
+    }
     return PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
   });
+}
+
+interface Group {
+  key: string;
+  label: string;
+  items: TodoItem[];
+}
+
+const groupedItems = computed<Group[]>(() => {
+  if (groupBy.value === 'period') {
+    return [
+      { key: 'before', label: PERIOD_META.before, items: sortItems(items.value.filter((i) => i.period === 'before')) },
+      { key: 'during', label: PERIOD_META.during, items: sortItems(items.value.filter((i) => i.period === 'during')) },
+      { key: 'none', label: 'Ohne Zeitraum', items: sortItems(items.value.filter((i) => !i.period)) },
+    ];
+  }
+  const perUser: Group[] = users.value.map((u) => ({
+    key: `user-${u.id}`,
+    label: `${u.avatar} ${u.username}`,
+    items: sortItems(items.value.filter((i) => i.assigned_to_user_id === u.id)),
+  }));
+  const unassigned: Group = {
+    key: 'unassigned',
+    label: 'Nicht zugewiesen',
+    items: sortItems(items.value.filter((i) => i.assigned_to_user_id == null)),
+  };
+  return [...perUser, unassigned];
 });
 
 const progress = computed(() => {
@@ -70,6 +112,7 @@ function toBody(f: ReturnType<typeof emptyForm>) {
     due_date: f.due_date || undefined,
     priority: f.priority,
     note: f.note || undefined,
+    period: f.period || undefined,
   };
 }
 
@@ -89,6 +132,7 @@ async function toggleDone(item: TodoItem) {
     priority: item.priority,
     note: item.note ?? undefined,
     done: !item.done,
+    period: item.period ?? undefined,
   });
   const idx = items.value.findIndex((i) => i.id === item.id);
   if (idx !== -1) items.value[idx] = updated;
@@ -102,6 +146,7 @@ function startEdit(item: TodoItem) {
     due_date: item.due_date ?? '',
     priority: item.priority,
     note: item.note ?? '',
+    period: item.period ?? '',
   };
 }
 
@@ -119,12 +164,6 @@ async function submitEdit() {
 async function remove(id: number) {
   await api.delete(`/todos/${id}`);
   items.value = items.value.filter((i) => i.id !== id);
-}
-
-function userLabel(id: number | null) {
-  if (id == null) return null;
-  const u = users.value.find((u) => u.id === id);
-  return u ? `${u.avatar} ${u.username}` : null;
 }
 
 function formatDate(d: string | null) {
@@ -153,40 +192,60 @@ function isOverdue(item: TodoItem) {
       <select v-model="newForm.priority">
         <option v-for="(meta, key) in PRIORITY_META" :key="key" :value="key">{{ meta.icon }} {{ meta.label }}</option>
       </select>
+      <select v-model="newForm.period">
+        <option value="">Kein Zeitraum</option>
+        <option value="before">{{ PERIOD_META.before }}</option>
+        <option value="during">{{ PERIOD_META.during }}</option>
+      </select>
       <input v-model="newForm.note" type="text" placeholder="Notiz (optional)" />
       <button type="submit">Hinzufügen</button>
     </form>
 
     <div class="filter-row">
-      <label>Filtern nach Zuweisung:</label>
-      <select v-model="filterAssignee">
-        <option value="all">Alle</option>
-        <option value="unassigned">Nicht zugewiesen</option>
-        <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
-      </select>
+      <label>
+        Gruppieren:
+        <select v-model="groupBy">
+          <option value="assignee">nach Bearbeiter:in</option>
+          <option value="period">nach Zeitraum</option>
+        </select>
+      </label>
+      <label>
+        Sortieren:
+        <select v-model="sortBy">
+          <option value="due_date">nach Datum</option>
+          <option value="priority">nach Priorität</option>
+          <option value="assignee">nach Bearbeiter:in</option>
+        </select>
+      </label>
     </div>
 
-    <div class="card">
-      <TransitionGroup tag="ul" name="list" class="list">
-        <li v-for="item in filteredItems" :key="item.id" class="row" :class="{ done: item.done }">
-          <label class="check">
-            <input type="checkbox" :checked="!!item.done" @change="toggleDone(item)" />
-            <span class="title" :class="{ struck: item.done }">{{ item.title }}</span>
-          </label>
-          <span class="priority" :title="PRIORITY_META[item.priority].label">{{ PRIORITY_META[item.priority].icon }}</span>
-          <span v-if="item.due_date" class="due" :class="{ overdue: isOverdue(item) }">
-            📅 {{ formatDate(item.due_date) }}
-          </span>
-          <span v-if="userLabel(item.assigned_to_user_id)" class="assignee">{{ userLabel(item.assigned_to_user_id) }}</span>
-          <span v-if="item.note" class="note">{{ item.note }}</span>
-          <div class="row-actions">
-            <EditButton small @click="startEdit(item)" />
-            <DeleteButton small @click="remove(item.id)" />
-          </div>
-        </li>
-        <li v-if="!filteredItems.length" key="empty" class="empty">Keine Aufgaben.</li>
-      </TransitionGroup>
-    </div>
+    <section class="group-section" v-for="group in groupedItems" :key="group.key">
+      <h2>{{ group.label }}</h2>
+      <div class="card">
+        <TransitionGroup tag="ul" name="list" class="list">
+          <li v-for="item in group.items" :key="item.id" class="row" :class="{ done: item.done }">
+            <label class="check">
+              <input type="checkbox" :checked="!!item.done" @change="toggleDone(item)" />
+              <span class="title" :class="{ struck: item.done }">{{ item.title }}</span>
+            </label>
+            <span class="priority" :title="PRIORITY_META[item.priority].label">{{ PRIORITY_META[item.priority].icon }}</span>
+            <span v-if="item.due_date" class="due" :class="{ overdue: isOverdue(item) }">
+              📅 {{ formatDate(item.due_date) }}
+            </span>
+            <span v-if="groupBy !== 'assignee' && userLabel(item.assigned_to_user_id)" class="assignee">{{
+              userLabel(item.assigned_to_user_id)
+            }}</span>
+            <span v-if="groupBy !== 'period' && item.period" class="assignee">🗓️ {{ PERIOD_META[item.period] }}</span>
+            <span v-if="item.note" class="note">{{ item.note }}</span>
+            <div class="row-actions">
+              <EditButton small @click="startEdit(item)" />
+              <DeleteButton small @click="remove(item.id)" />
+            </div>
+          </li>
+          <li v-if="!group.items.length" :key="`${group.key}-empty`" class="empty">Keine Aufgaben.</li>
+        </TransitionGroup>
+      </div>
+    </section>
 
     <Modal
       :model-value="editingItem !== null"
@@ -202,6 +261,11 @@ function isOverdue(item: TodoItem) {
         <input v-model="editForm.due_date" type="date" />
         <select v-model="editForm.priority">
           <option v-for="(meta, key) in PRIORITY_META" :key="key" :value="key">{{ meta.icon }} {{ meta.label }}</option>
+        </select>
+        <select v-model="editForm.period">
+          <option value="">Kein Zeitraum</option>
+          <option value="before">{{ PERIOD_META.before }}</option>
+          <option value="during">{{ PERIOD_META.during }}</option>
         </select>
         <input v-model="editForm.note" type="text" placeholder="Notiz (optional)" />
         <button type="submit">Speichern</button>
@@ -227,9 +291,26 @@ function isOverdue(item: TodoItem) {
 .filter-row {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  flex-wrap: wrap;
+  gap: var(--space-4);
   margin-bottom: var(--space-3);
   font-size: 0.9rem;
+}
+
+.filter-row label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.group-section {
+  margin-bottom: var(--space-3);
+}
+
+.group-section h2 {
+  font-size: 0.95rem;
+  color: var(--color-primary-dark);
+  margin-bottom: var(--space-2);
 }
 
 .list {

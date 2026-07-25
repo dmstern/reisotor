@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { api } from '../api/client';
-import type { ShoppingItem, User } from '../api/types';
+import type { Period, ShoppingItem, User } from '../api/types';
 import { useTripStore } from '../stores/trip';
+import { PERIOD_META } from '../utils/period';
 import Modal from '../components/Modal.vue';
 import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
@@ -12,17 +13,19 @@ const tripId = tripStore.currentTripId as number;
 const items = ref<ShoppingItem[]>([]);
 const users = ref<User[]>([]);
 const loading = ref(true);
-const filterBuyer = ref('all');
-const groupByShop = ref(false);
+
+type GroupBy = 'buyer' | 'shop' | 'period';
+const groupBy = ref<GroupBy>('buyer');
 
 const newLabel = ref('');
 const newBuyer = ref('');
 const newLink = ref('');
 const newNote = ref('');
 const newShop = ref('');
+const newPeriod = ref<Period | ''>('');
 
 const editingItem = ref<ShoppingItem | null>(null);
-const editForm = ref({ label: '', link: '', note: '', shop: '' });
+const editForm = ref({ label: '', link: '', note: '', shop: '', period: '' as Period | '' });
 
 onMounted(async () => {
   const [itemsRes, usersRes] = await Promise.all([
@@ -34,24 +37,46 @@ onMounted(async () => {
   loading.value = false;
 });
 
-const filteredItems = computed(() => {
-  if (filterBuyer.value === 'all') return items.value;
-  if (filterBuyer.value === 'unassigned') return items.value.filter((i) => i.assigned_to_user_id == null);
-  return items.value.filter((i) => i.assigned_to_user_id === Number(filterBuyer.value));
-});
-
 const UNASSIGNED_SHOP = 'Ohne Shop';
 
-const groupedItems = computed(() => {
-  const groups = new Map<string, ShoppingItem[]>();
-  for (const item of filteredItems.value) {
-    const key = item.shop?.trim() || UNASSIGNED_SHOP;
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key)!.push(item);
+interface Group {
+  key: string;
+  label: string;
+  items: ShoppingItem[];
+}
+
+const groupedItems = computed<Group[]>(() => {
+  if (groupBy.value === 'shop') {
+    const groups = new Map<string, ShoppingItem[]>();
+    for (const item of items.value) {
+      const key = item.shop?.trim() || UNASSIGNED_SHOP;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(item);
+    }
+    return [...groups.entries()]
+      .sort(([a], [b]) => (a === UNASSIGNED_SHOP ? 1 : b === UNASSIGNED_SHOP ? -1 : a.localeCompare(b, 'de')))
+      .map(([shop, shopItems]) => ({ key: shop, label: `🏬 ${shop}`, items: shopItems }));
   }
-  return [...groups.entries()]
-    .sort(([a], [b]) => (a === UNASSIGNED_SHOP ? 1 : b === UNASSIGNED_SHOP ? -1 : a.localeCompare(b, 'de')))
-    .map(([shop, shopItems]) => ({ shop, items: shopItems }));
+  if (groupBy.value === 'period') {
+    const groups: Group[] = [
+      { key: 'before', label: PERIOD_META.before, items: items.value.filter((i) => i.period === 'before') },
+      { key: 'during', label: PERIOD_META.during, items: items.value.filter((i) => i.period === 'during') },
+      { key: 'none', label: 'Ohne Zeitraum', items: items.value.filter((i) => !i.period) },
+    ];
+    return groups;
+  }
+  // buyer
+  const perUser: Group[] = users.value.map((u) => ({
+    key: `user-${u.id}`,
+    label: `${u.avatar} ${u.username}`,
+    items: items.value.filter((i) => i.assigned_to_user_id === u.id),
+  }));
+  const unassigned: Group = {
+    key: 'unassigned',
+    label: 'Nicht zugewiesen',
+    items: items.value.filter((i) => i.assigned_to_user_id == null),
+  };
+  return [...perUser, unassigned];
 });
 
 const knownShops = computed(() => {
@@ -74,6 +99,7 @@ async function toggle(item: ShoppingItem) {
     link: item.link ?? undefined,
     note: item.note ?? undefined,
     shop: item.shop ?? undefined,
+    period: item.period ?? undefined,
   });
   const idx = items.value.findIndex((i) => i.id === item.id);
   if (idx !== -1) items.value[idx] = updated;
@@ -89,6 +115,7 @@ async function reassign(item: ShoppingItem, event: Event) {
     link: item.link ?? undefined,
     note: item.note ?? undefined,
     shop: item.shop ?? undefined,
+    period: item.period ?? undefined,
   });
   const idx = items.value.findIndex((i) => i.id === item.id);
   if (idx !== -1) items.value[idx] = updated;
@@ -96,7 +123,13 @@ async function reassign(item: ShoppingItem, event: Event) {
 
 function startEdit(item: ShoppingItem) {
   editingItem.value = item;
-  editForm.value = { label: item.label, link: item.link ?? '', note: item.note ?? '', shop: item.shop ?? '' };
+  editForm.value = {
+    label: item.label,
+    link: item.link ?? '',
+    note: item.note ?? '',
+    shop: item.shop ?? '',
+    period: item.period ?? '',
+  };
 }
 
 async function submitEdit() {
@@ -108,6 +141,7 @@ async function submitEdit() {
     link: editForm.value.link || undefined,
     note: editForm.value.note || undefined,
     shop: editForm.value.shop || undefined,
+    period: editForm.value.period || undefined,
   });
   const idx = items.value.findIndex((i) => i.id === updated.id);
   if (idx !== -1) items.value[idx] = updated;
@@ -128,12 +162,14 @@ async function addItem() {
     link: newLink.value || undefined,
     note: newNote.value || undefined,
     shop: newShop.value || undefined,
+    period: newPeriod.value || undefined,
   });
   items.value.push(created);
   newLabel.value = '';
   newLink.value = '';
   newNote.value = '';
   newShop.value = '';
+  newPeriod.value = '';
 }
 </script>
 
@@ -153,36 +189,46 @@ async function addItem() {
         <option value="">Kein:e Einkäufer:in</option>
         <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
       </select>
+      <select v-model="newPeriod">
+        <option value="">Kein Zeitraum</option>
+        <option value="before">{{ PERIOD_META.before }}</option>
+        <option value="during">{{ PERIOD_META.during }}</option>
+      </select>
       <input v-model="newLink" type="url" placeholder="Link (optional, z. B. Amazon)" />
       <input v-model="newNote" type="text" placeholder="Notiz (optional)" />
       <button type="submit">Hinzufügen</button>
     </form>
 
     <div class="filter-row">
-      <label>Filtern nach Einkäufer:in:</label>
-      <select v-model="filterBuyer">
-        <option value="all">Alle</option>
-        <option value="unassigned">Nicht zugewiesen</option>
-        <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
-      </select>
-      <label class="group-toggle">
-        <input type="checkbox" v-model="groupByShop" />
-        Nach Shop gruppieren
+      <label>
+        Gruppieren:
+        <select v-model="groupBy">
+          <option value="buyer">nach Einkäufer:in</option>
+          <option value="shop">nach Shop</option>
+          <option value="period">nach Zeitraum</option>
+        </select>
       </label>
     </div>
 
-    <template v-if="groupByShop">
-      <div class="card shop-group" v-for="group in groupedItems" :key="group.shop">
-        <h2>🏬 {{ group.shop }}</h2>
+    <section class="group-section" v-for="group in groupedItems" :key="group.key">
+      <h2>{{ group.label }}</h2>
+      <div class="card">
         <TransitionGroup tag="ul" name="list" class="list">
           <li v-for="item in group.items" :key="item.id" class="row">
             <label class="check">
               <input type="checkbox" :checked="!!item.checked" @change="toggle(item)" />
               <span :class="{ done: item.checked }">{{ item.label }}</span>
             </label>
+            <span v-if="groupBy !== 'shop' && item.shop" class="tag">🏬 {{ item.shop }}</span>
+            <span v-if="groupBy !== 'period' && item.period" class="tag">🗓️ {{ PERIOD_META[item.period] }}</span>
             <a v-if="item.link" :href="item.link" target="_blank" rel="noopener" class="link">🔗 Link</a>
             <span v-if="item.note" class="note">{{ item.note }}</span>
-            <select class="buyer-select" :value="item.assigned_to_user_id ?? ''" @change="reassign(item, $event)">
+            <select
+              v-if="groupBy !== 'buyer'"
+              class="buyer-select"
+              :value="item.assigned_to_user_id ?? ''"
+              @change="reassign(item, $event)"
+            >
               <option value="">Nicht zugewiesen</option>
               <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
             </select>
@@ -191,33 +237,10 @@ async function addItem() {
               <DeleteButton small @click="remove(item.id)" />
             </div>
           </li>
+          <li v-if="!group.items.length" :key="`${group.key}-empty`" class="empty">Keine Einträge.</li>
         </TransitionGroup>
       </div>
-      <p v-if="!groupedItems.length" class="empty">Keine Einträge.</p>
-    </template>
-
-    <div class="card" v-else>
-      <TransitionGroup tag="ul" name="list" class="list">
-        <li v-for="item in filteredItems" :key="item.id" class="row">
-          <label class="check">
-            <input type="checkbox" :checked="!!item.checked" @change="toggle(item)" />
-            <span :class="{ done: item.checked }">{{ item.label }}</span>
-          </label>
-          <span v-if="item.shop" class="shop-tag">🏬 {{ item.shop }}</span>
-          <a v-if="item.link" :href="item.link" target="_blank" rel="noopener" class="link">🔗 Link</a>
-          <span v-if="item.note" class="note">{{ item.note }}</span>
-          <select class="buyer-select" :value="item.assigned_to_user_id ?? ''" @change="reassign(item, $event)">
-            <option value="">Nicht zugewiesen</option>
-            <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
-          </select>
-          <div class="row-actions">
-            <EditButton small @click="startEdit(item)" />
-            <DeleteButton small @click="remove(item.id)" />
-          </div>
-        </li>
-        <li v-if="!filteredItems.length" key="empty" class="empty">Keine Einträge.</li>
-      </TransitionGroup>
-    </div>
+    </section>
 
     <Modal
       :model-value="editingItem !== null"
@@ -227,6 +250,11 @@ async function addItem() {
       <form class="edit-form" @submit.prevent="submitEdit">
         <input v-model="editForm.label" type="text" placeholder="Artikel" required />
         <input v-model="editForm.shop" type="text" list="shopping-shops" placeholder="Shop/Laden (optional)" />
+        <select v-model="editForm.period">
+          <option value="">Kein Zeitraum</option>
+          <option value="before">{{ PERIOD_META.before }}</option>
+          <option value="during">{{ PERIOD_META.during }}</option>
+        </select>
         <input v-model="editForm.link" type="url" placeholder="Link (optional)" />
         <input v-model="editForm.note" type="text" placeholder="Notiz (optional)" />
         <button type="submit">Speichern</button>
@@ -258,24 +286,23 @@ async function addItem() {
   font-size: 0.9rem;
 }
 
-.group-toggle {
+.filter-row label {
   display: flex;
   align-items: center;
-  gap: 4px;
-  margin-left: auto;
+  gap: var(--space-2);
 }
 
-.shop-group {
+.group-section {
   margin-bottom: var(--space-3);
 }
 
-.shop-group h2 {
+.group-section h2 {
   font-size: 0.95rem;
   color: var(--color-primary-dark);
   margin-bottom: var(--space-2);
 }
 
-.shop-tag {
+.tag {
   font-size: 0.78rem;
   color: var(--color-text-muted);
   background: var(--color-hover);

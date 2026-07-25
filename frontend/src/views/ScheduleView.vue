@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { api } from '../api/client';
-import type { Accommodation, CalendarEntry, Excursion, ScheduleItem } from '../api/types';
+import type { Accommodation, CalendarEntry, Excursion, ScheduleItem, TodoItem } from '../api/types';
 import { useTripStore } from '../stores/trip';
 import CalendarWeek from '../components/CalendarWeek.vue';
 import Modal from '../components/Modal.vue';
@@ -16,6 +16,7 @@ const trip = computed(() => tripStore.currentTrip);
 const items = ref<ScheduleItem[]>([]);
 const excursions = ref<Excursion[]>([]);
 const accommodations = ref<Accommodation[]>([]);
+const todos = ref<TodoItem[]>([]);
 const selectedDate = ref<string | null>(null);
 const loading = ref(true);
 
@@ -33,14 +34,16 @@ const editingItem = ref<ScheduleItem | null>(null);
 const editForm = ref({ time: '', title: '', note: '', endDate: '', location: '', mapsLink: '' });
 
 onMounted(async () => {
-  const [scheduleRes, excursionsRes, accommodationRes] = await Promise.all([
+  const [scheduleRes, excursionsRes, accommodationRes, todosRes] = await Promise.all([
     api.get<ScheduleItem[]>(`/schedule?trip_id=${tripId}`),
     api.get<Excursion[]>(`/ideas?trip_id=${tripId}`),
     api.get<Accommodation[]>(`/accommodation?trip_id=${tripId}`),
+    api.get<TodoItem[]>(`/todos?trip_id=${tripId}`),
   ]);
   items.value = scheduleRes;
   excursions.value = excursionsRes;
   accommodations.value = accommodationRes;
+  todos.value = todosRes;
   selectedDate.value = new Date().toISOString().slice(0, 10);
   formDate.value = selectedDate.value;
   loading.value = false;
@@ -65,6 +68,7 @@ function accommodationsForDate(date: string) {
 function itemToEntry(item: ScheduleItem): CalendarEntry {
   return {
     key: `s-${item.id}`,
+    kind: 'schedule',
     date: item.date,
     endDate: item.end_date ?? item.date,
     time: item.time,
@@ -73,6 +77,7 @@ function itemToEntry(item: ScheduleItem): CalendarEntry {
     location: item.location,
     category: item.category,
     ideaId: item.idea_id,
+    todoId: null,
     scheduleItem: item,
   };
 }
@@ -84,6 +89,7 @@ const tripEntries = computed<CalendarEntry[]>(() => {
   const entries: CalendarEntry[] = [
     {
       key: 'trip-start',
+      kind: 'trip',
       date: trip.value.start_date,
       endDate: trip.value.start_date,
       time: null,
@@ -92,12 +98,14 @@ const tripEntries = computed<CalendarEntry[]>(() => {
       location: null,
       category: 'trip',
       ideaId: null,
+      todoId: null,
       scheduleItem: null,
     },
   ];
   if (trip.value.end_date !== trip.value.start_date) {
     entries.push({
       key: 'trip-end',
+      kind: 'trip',
       date: trip.value.end_date,
       endDate: trip.value.end_date,
       time: null,
@@ -106,13 +114,35 @@ const tripEntries = computed<CalendarEntry[]>(() => {
       location: null,
       category: 'trip',
       ideaId: null,
+      todoId: null,
       scheduleItem: null,
     });
   }
   return entries;
 });
 
-const allEntries = computed(() => [...items.value.map(itemToEntry), ...tripEntries.value]);
+// Aufgaben mit Fälligkeitsdatum erscheinen automatisch (nicht editierbar) im Kalender – analog zu
+// den synthetischen Urlaub-Start/-Ende-Einträgen, mit Sprung-Button zur ToDo-Ansicht (Batch 9).
+const todoEntries = computed<CalendarEntry[]>(() =>
+  todos.value
+    .filter((t) => !!t.due_date)
+    .map((t) => ({
+      key: `todo-${t.id}`,
+      kind: 'todo' as const,
+      date: t.due_date as string,
+      endDate: t.due_date as string,
+      time: null,
+      title: `ToDo: ${t.title}`,
+      note: t.note,
+      location: null,
+      category: 'todo' as const,
+      ideaId: null,
+      todoId: t.id,
+      scheduleItem: null,
+    })),
+);
+
+const allEntries = computed(() => [...items.value.map(itemToEntry), ...tripEntries.value, ...todoEntries.value]);
 
 function entriesForDate(date: string) {
   return allEntries.value
@@ -330,10 +360,13 @@ function formatDay(date: string) {
             <p v-if="entry.note" class="note">{{ entry.note }}</p>
           </div>
           <div class="item-actions">
-            <!-- Architekturregel: Fremdobjekte (Urlaub-Stammdaten, verknüpfte Ausflüge) sind hier
-                 nur lesend/verknüpfend darstellbar – Bearbeitung passiert in der Ursprungssicht. -->
-            <template v-if="entry.scheduleItem === null">
+            <!-- Architekturregel: Fremdobjekte (Urlaub-Stammdaten, ToDos, verknüpfte Ausflüge) sind
+                 hier nur lesend/verknüpfend darstellbar – Bearbeitung passiert in der Ursprungssicht. -->
+            <template v-if="entry.kind === 'trip'">
               <button type="button" class="secondary jump-btn" @click="jumpToTrip">Zum Urlaub</button>
+            </template>
+            <template v-else-if="entry.kind === 'todo'">
+              <router-link to="/todo" class="secondary jump-btn">Zum ToDo</router-link>
             </template>
             <template v-else-if="entry.ideaId">
               <router-link to="/excursions" class="secondary jump-btn">Zum Ausflug</router-link>
