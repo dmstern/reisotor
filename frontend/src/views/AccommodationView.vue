@@ -144,6 +144,7 @@ function formatDate(d: string | null) {
       </button>
     </div>
 
+    <Transition name="fade">
     <form v-if="showForm" class="card form" @submit.prevent="submit">
       <label>
         Name
@@ -210,8 +211,9 @@ function formatDate(d: string | null) {
 
       <button type="submit">Hinzufügen</button>
     </form>
+    </Transition>
 
-    <div class="grid cards">
+    <TransitionGroup tag="div" name="list" class="grid cards">
       <div class="card acc-card" v-for="acc in accommodations" :key="acc.id">
         <div class="acc-head">
           <h3>{{ acc.name }}</h3>
@@ -244,7 +246,7 @@ function formatDate(d: string | null) {
           </router-link>
         </div>
       </div>
-    </div>
+    </TransitionGroup>
     <p v-if="!accommodations.length" class="empty">Noch keine Unterkunft eingetragen.</p>
 
     <Modal

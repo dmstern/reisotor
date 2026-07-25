@@ -356,6 +356,7 @@ const budgetBreakdown = computed(() => {
         ergibt sich automatisch aus der Summe aller Kategorien aller Budgets.
       </p>
 
+      <Transition name="fade">
       <form v-if="showNewBudgetForm" class="new-budget-form" @submit.prevent="addBudget">
         <input v-model="newBudgetForm.name" type="text" placeholder="Name (z. B. Souvenirs)" required />
         <select v-model="newBudgetForm.kind">
@@ -368,8 +369,9 @@ const budgetBreakdown = computed(() => {
         </select>
         <button type="submit">Anlegen</button>
       </form>
+      </Transition>
 
-      <div class="budget-list">
+      <TransitionGroup tag="div" name="list" class="budget-list">
         <div class="budget-block" v-for="budget in budgets" :key="budget.id">
           <div class="budget-head">
             <h3>{{ budget.name }} <span class="owner-tag">{{ budgetLabel(budget) }}</span></h3>
@@ -395,8 +397,8 @@ const budgetBreakdown = computed(() => {
             <button type="submit">+ Hinzufügen</button>
           </form>
         </div>
-        <p v-if="!budgets.length" class="empty">Noch keine Budgets angelegt.</p>
-      </div>
+        <p v-if="!budgets.length" key="empty" class="empty">Noch keine Budgets angelegt.</p>
+      </TransitionGroup>
     </div>
 
     <!-- Kategorien je Budget -->
@@ -433,6 +435,7 @@ const budgetBreakdown = computed(() => {
         <option v-for="c in expenseCategories" :key="c" :value="c" />
       </datalist>
 
+      <Transition name="fade">
       <form v-if="showExpenseForm" class="add-form" @submit.prevent="submitExpense">
         <input v-model="expenseForm.title" type="text" placeholder="Titel" required />
         <input v-model="expenseForm.category" type="text" list="budget-categories" placeholder="Kategorie" />
@@ -449,6 +452,7 @@ const budgetBreakdown = computed(() => {
         <input v-model="expenseForm.note" type="text" placeholder="Notiz (optional)" />
         <button type="submit">Hinzufügen</button>
       </form>
+      </Transition>
 
       <table class="data-table">
         <thead>
@@ -461,7 +465,7 @@ const budgetBreakdown = computed(() => {
             <th></th>
           </tr>
         </thead>
-        <tbody>
+        <TransitionGroup tag="tbody" name="list">
           <tr v-for="e in expenses" :key="e.id">
             <td>{{ e.date || '–' }}</td>
             <td>{{ e.title }}<span v-if="e.note" class="note"> · {{ e.note }}</span></td>
@@ -481,10 +485,10 @@ const budgetBreakdown = computed(() => {
               </template>
             </td>
           </tr>
-          <tr v-if="!expenses.length">
+          <tr v-if="!expenses.length" key="empty">
             <td colspan="6" class="empty">Noch keine Bezahlungen eingetragen.</td>
           </tr>
-        </tbody>
+        </TransitionGroup>
       </table>
     </div>
 
@@ -497,6 +501,7 @@ const budgetBreakdown = computed(() => {
         </button>
       </div>
 
+      <Transition name="fade">
       <form v-if="showTransferForm" class="add-form" @submit.prevent="submitTransfer">
         <select v-model="transferForm.from_user_id" required>
           <option value="" disabled>Von…</option>
@@ -511,6 +516,7 @@ const budgetBreakdown = computed(() => {
         <input v-model="transferForm.note" type="text" placeholder="Notiz (optional)" />
         <button type="submit">Eintragen</button>
       </form>
+      </Transition>
 
       <table class="data-table">
         <thead>
@@ -522,7 +528,7 @@ const budgetBreakdown = computed(() => {
             <th></th>
           </tr>
         </thead>
-        <tbody>
+        <TransitionGroup tag="tbody" name="list">
           <tr v-for="t in transfers" :key="t.id">
             <td>{{ t.date || '–' }}</td>
             <td>{{ userAvatar(t.from_user_id) }} {{ userName(t.from_user_id) }}</td>
@@ -532,10 +538,10 @@ const budgetBreakdown = computed(() => {
               <DeleteButton small @click="removeTransfer(t.id)" />
             </td>
           </tr>
-          <tr v-if="!transfers.length">
+          <tr v-if="!transfers.length" key="empty">
             <td colspan="5" class="empty">Noch keine Überweisungen eingetragen.</td>
           </tr>
-        </tbody>
+        </TransitionGroup>
       </table>
     </div>
 

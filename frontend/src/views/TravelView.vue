@@ -136,6 +136,7 @@ function typeIcon(type: string | null) {
       </button>
     </div>
 
+    <Transition name="fade">
     <form v-if="showForm" class="card form" @submit.prevent="submit">
       <label>
         Titel
@@ -208,8 +209,9 @@ function typeIcon(type: string | null) {
 
       <button type="submit">Hinzufügen</button>
     </form>
+    </Transition>
 
-    <div class="grid cards">
+    <TransitionGroup tag="div" name="list" class="grid cards">
       <div class="card travel-card" v-for="item in items" :key="item.id">
         <div class="travel-head">
           <h3>{{ typeIcon(item.type) }} {{ item.title }}</h3>
@@ -234,7 +236,7 @@ function typeIcon(type: string | null) {
         <p v-if="item.note">{{ item.note }}</p>
         <a v-if="item.link" :href="item.link" target="_blank" rel="noopener">Details/Check-in ↗</a>
       </div>
-    </div>
+    </TransitionGroup>
     <p v-if="!items.length" class="empty">Noch keine Reise-Infos eingetragen.</p>
 
     <Modal

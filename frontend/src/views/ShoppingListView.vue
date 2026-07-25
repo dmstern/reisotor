@@ -174,7 +174,7 @@ async function addItem() {
     <template v-if="groupByShop">
       <div class="card shop-group" v-for="group in groupedItems" :key="group.shop">
         <h2>🏬 {{ group.shop }}</h2>
-        <ul class="list">
+        <TransitionGroup tag="ul" name="list" class="list">
           <li v-for="item in group.items" :key="item.id" class="row">
             <label class="check">
               <input type="checkbox" :checked="!!item.checked" @change="toggle(item)" />
@@ -191,13 +191,13 @@ async function addItem() {
               <DeleteButton small @click="remove(item.id)" />
             </div>
           </li>
-        </ul>
+        </TransitionGroup>
       </div>
       <p v-if="!groupedItems.length" class="empty">Keine Einträge.</p>
     </template>
 
     <div class="card" v-else>
-      <ul class="list">
+      <TransitionGroup tag="ul" name="list" class="list">
         <li v-for="item in filteredItems" :key="item.id" class="row">
           <label class="check">
             <input type="checkbox" :checked="!!item.checked" @change="toggle(item)" />
@@ -215,8 +215,8 @@ async function addItem() {
             <DeleteButton small @click="remove(item.id)" />
           </div>
         </li>
-        <li v-if="!filteredItems.length" class="empty">Keine Einträge.</li>
-      </ul>
+        <li v-if="!filteredItems.length" key="empty" class="empty">Keine Einträge.</li>
+      </TransitionGroup>
     </div>
 
     <Modal

@@ -188,6 +188,7 @@ async function removeComment(id: number) {
       </button>
     </div>
 
+    <Transition name="fade">
     <form v-if="showForm" class="card add-form" @submit.prevent="submitEntry">
       <input v-model="form.title" type="text" placeholder="Titel (optional)" />
       <textarea v-model="form.content" placeholder="Was ist heute passiert?" rows="10" required></textarea>
@@ -209,8 +210,9 @@ async function removeComment(id: number) {
       </div>
       <button type="submit">Veröffentlichen</button>
     </form>
+    </Transition>
 
-    <div class="entries">
+    <TransitionGroup tag="div" name="list" class="entries">
       <article class="card entry" v-for="entry in entries" :key="entry.id">
         <header class="entry-head">
           <span class="avatar">{{ author(entry.author_id)?.avatar ?? '❓' }}</span>
@@ -262,7 +264,7 @@ async function removeComment(id: number) {
           </form>
         </div>
       </article>
-    </div>
+    </TransitionGroup>
     <p v-if="!entries.length" class="empty">Noch keine Tagebuch-Einträge.</p>
 
     <Modal

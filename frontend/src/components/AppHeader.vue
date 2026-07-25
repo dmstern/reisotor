@@ -29,6 +29,7 @@ const auth = useAuthStore();
   gap: var(--space-2);
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
   padding: 0 var(--space-4);
   box-sizing: border-box;
 }

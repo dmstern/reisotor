@@ -9,17 +9,19 @@ function close() {
 
 <template>
   <Teleport to="body">
-    <div v-if="modelValue" class="overlay" @click.self="close">
-      <div class="modal">
-        <div class="modal-head">
-          <h2 v-if="title">{{ title }}</h2>
-          <button class="secondary close-btn" @click="close">✕</button>
-        </div>
-        <div class="modal-body">
-          <slot />
+    <Transition name="modal-fade">
+      <div v-if="modelValue" class="overlay" @click.self="close">
+        <div class="modal">
+          <div class="modal-head">
+            <h2 v-if="title">{{ title }}</h2>
+            <button class="secondary close-btn" @click="close">✕</button>
+          </div>
+          <div class="modal-body">
+            <slot />
+          </div>
         </div>
       </div>
-    </div>
+    </Transition>
   </Teleport>
 </template>
 
@@ -33,6 +35,27 @@ function close() {
   justify-content: center;
   z-index: 100;
   padding: var(--space-4);
+}
+
+.modal-fade-enter-active,
+.modal-fade-leave-active {
+  transition: opacity 0.2s ease-in-out;
+}
+
+.modal-fade-enter-active .modal,
+.modal-fade-leave-active .modal {
+  transition: transform 0.2s ease-in-out, opacity 0.2s ease-in-out;
+}
+
+.modal-fade-enter-from,
+.modal-fade-leave-to {
+  opacity: 0;
+}
+
+.modal-fade-enter-from .modal,
+.modal-fade-leave-to .modal {
+  transform: scale(0.95) translateY(8px);
+  opacity: 0;
 }
 
 .modal {

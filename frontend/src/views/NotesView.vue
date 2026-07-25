@@ -99,6 +99,7 @@ async function remove(id: number) {
 
     <p v-if="error" class="error">{{ error }}</p>
 
+    <Transition name="fade">
     <form v-if="showForm" class="card add-form" @submit.prevent="submit">
       <input v-model="form.title" type="text" placeholder="Titel (optional)" />
       <textarea v-model="form.content" placeholder="Inhalt" rows="8" required></textarea>
@@ -108,8 +109,9 @@ async function remove(id: number) {
       </p>
       <button type="submit">Hinzufügen</button>
     </form>
+    </Transition>
 
-    <div class="grid cards">
+    <TransitionGroup tag="div" name="list" class="grid cards">
       <div class="card note-card" v-for="note in notes" :key="note.id">
         <div class="note-head">
           <h3 v-if="note.title">{{ note.title }}</h3>
@@ -121,7 +123,7 @@ async function remove(id: number) {
         <div class="content" v-html="renderRichText(note.content)"></div>
         <p class="meta">{{ authorLabel(note.created_by) }} · {{ formatDate(note.updated_at ?? note.created_at) }}</p>
       </div>
-    </div>
+    </TransitionGroup>
     <p v-if="!notes.length" class="empty">Noch keine Notizen.</p>
 
     <Modal

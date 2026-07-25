@@ -21,8 +21,8 @@
   --space-5: 32px;
   --space-6: 48px;
 
-  --shadow-sm: 0 1px 3px rgba(43, 42, 40, 0.08);
-  --shadow-md: 0 4px 16px rgba(43, 42, 40, 0.1);
+  --shadow-sm: 0 2px 6px rgba(43, 42, 40, 0.12);
+  --shadow-md: 0 8px 24px rgba(43, 42, 40, 0.16);
 
   --font-sans: 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
 }
@@ -141,4 +141,30 @@ textarea:focus {
 .grid {
   display: grid;
   gap: var(--space-3);
+}
+
+/* Wiederverwendbare Übergänge für CRUD-/Sortier-Interaktionen (Batch 7): Elemente per
+   <TransitionGroup name="list"> ein-/ausblenden und beim Umsortieren sanft an ihre neue
+   Position gleiten lassen; <Transition name="fade"> für einfaches Ein-/Ausblenden ohne Liste.
+   Global statt pro Komponente definiert, damit die Übergänge app-weit konsistent bleiben. */
+.list-move,
+.list-enter-active,
+.list-leave-active {
+  transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
+}
+
+.list-enter-from,
+.list-leave-to {
+  opacity: 0;
+  transform: translateY(-6px) scale(0.98);
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease-in-out;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }

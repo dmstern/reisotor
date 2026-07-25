@@ -131,28 +131,30 @@ async function submitEdit() {
       <button @click="showForm = !showForm">{{ showForm ? 'Abbrechen' : '+ Neuer Ausflug' }}</button>
     </div>
 
-    <form v-if="showForm" class="card add-form" @submit.prevent="addExcursion">
-      <input v-model="form.title" type="text" placeholder="Titel" required />
-      <input v-model="form.image_url" type="url" placeholder="Bild-URL (optional)" />
-      <input v-model="form.link" type="url" placeholder="Link (optional)" />
-      <input
-        v-model="form.maps_link"
-        type="url"
-        placeholder="Google-Maps-Link (optional)"
-        @blur="checkMapsLink"
-      />
-      <p v-if="mapsLinkResolved === true" class="hint success">📍 Standort erkannt – erscheint auf der Karte</p>
-      <p v-if="mapsLinkResolved === false" class="hint">
-        Standort konnte nicht automatisch erkannt werden (Kurzlinks werden nicht unterstützt). Der Link
-        bleibt trotzdem klickbar.
-      </p>
-      <textarea v-model="form.note" placeholder="Notiz (optional)" rows="2"></textarea>
-      <button type="submit">Speichern</button>
-    </form>
+    <Transition name="fade">
+      <form v-if="showForm" class="card add-form" @submit.prevent="addExcursion">
+        <input v-model="form.title" type="text" placeholder="Titel" required />
+        <input v-model="form.image_url" type="url" placeholder="Bild-URL (optional)" />
+        <input v-model="form.link" type="url" placeholder="Link (optional)" />
+        <input
+          v-model="form.maps_link"
+          type="url"
+          placeholder="Google-Maps-Link (optional)"
+          @blur="checkMapsLink"
+        />
+        <p v-if="mapsLinkResolved === true" class="hint success">📍 Standort erkannt – erscheint auf der Karte</p>
+        <p v-if="mapsLinkResolved === false" class="hint">
+          Standort konnte nicht automatisch erkannt werden (Kurzlinks werden nicht unterstützt). Der Link
+          bleibt trotzdem klickbar.
+        </p>
+        <textarea v-model="form.note" placeholder="Notiz (optional)" rows="2"></textarea>
+        <button type="submit">Speichern</button>
+      </form>
+    </Transition>
 
     <section v-for="group in groupedExcursions" :key="group.status" class="status-group">
       <h2>{{ group.heading }}</h2>
-      <div class="grid cards">
+      <TransitionGroup tag="div" name="list" class="grid cards">
         <ExcursionCard
           v-for="excursion in group.excursions"
           :key="excursion.id"
@@ -161,7 +163,7 @@ async function submitEdit() {
           @remove="remove"
           @edit="startEdit"
         />
-      </div>
+      </TransitionGroup>
     </section>
     <p v-if="!excursions.length" class="empty">Noch keine Ausflüge gesammelt.</p>
 

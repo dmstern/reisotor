@@ -274,7 +274,7 @@ function formatDay(date: string) {
         💡 Diese <strong>gelb hinterlegten Ausflüge</strong> kannst du direkt auf einen Tag im Kalender
         ziehen, um sie einzuplanen. Alternativ geht es auch über das Dropdown-Menü unten.
       </p>
-      <div class="pool-items">
+      <TransitionGroup tag="div" name="list" class="pool-items">
         <div
           v-for="excursion in unscheduledPlannedExcursions"
           :key="excursion.id"
@@ -284,7 +284,7 @@ function formatDay(date: string) {
         >
           🎒 {{ excursion.title }}
         </div>
-      </div>
+      </TransitionGroup>
       <form class="schedule-form" @submit.prevent="onScheduleFromForm">
         <select v-model="formExcursionId" required>
           <option value="" disabled>Ausflug wählen…</option>
@@ -313,7 +313,7 @@ function formatDay(date: string) {
 
       <p v-for="acc in dayAccommodations" :key="acc.id" class="acc-note">🛏️ Unterkunft: {{ acc.name }}</p>
 
-      <ul class="items">
+      <TransitionGroup tag="ul" name="list" class="items">
         <li
           v-for="entry in dayEntries"
           :key="entry.key"
@@ -345,8 +345,8 @@ function formatDay(date: string) {
             </template>
           </div>
         </li>
-        <li v-if="!dayEntries.length" class="empty">Noch keine Termine an diesem Tag.</li>
-      </ul>
+        <li v-if="!dayEntries.length" key="empty" class="empty">Noch keine Termine an diesem Tag.</li>
+      </TransitionGroup>
 
       <form class="add-form" @submit.prevent="addItem">
         <input v-model="newTime" type="time" />

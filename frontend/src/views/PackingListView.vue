@@ -155,7 +155,7 @@ async function addItem() {
 
       <div class="card group" v-for="[category, groupItems] in groupByCategory(list.items)" :key="category">
         <h3>{{ category }}</h3>
-        <ul class="list">
+        <TransitionGroup tag="ul" name="list" class="list">
           <PackingItemRow
             v-for="item in groupItems"
             :key="item.id"
@@ -164,7 +164,7 @@ async function addItem() {
             @remove="remove"
             @edit="startEdit"
           />
-        </ul>
+        </TransitionGroup>
       </div>
       <p v-if="!list.items.length" class="empty">Noch nichts auf dieser Liste.</p>
     </section>

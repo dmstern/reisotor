@@ -167,7 +167,7 @@ function isOverdue(item: TodoItem) {
     </div>
 
     <div class="card">
-      <ul class="list">
+      <TransitionGroup tag="ul" name="list" class="list">
         <li v-for="item in filteredItems" :key="item.id" class="row" :class="{ done: item.done }">
           <label class="check">
             <input type="checkbox" :checked="!!item.done" @change="toggleDone(item)" />
@@ -184,8 +184,8 @@ function isOverdue(item: TodoItem) {
             <DeleteButton small @click="remove(item.id)" />
           </div>
         </li>
-        <li v-if="!filteredItems.length" class="empty">Keine Aufgaben.</li>
-      </ul>
+        <li v-if="!filteredItems.length" key="empty" class="empty">Keine Aufgaben.</li>
+      </TransitionGroup>
     </div>
 
     <Modal
