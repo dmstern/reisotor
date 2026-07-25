@@ -9,6 +9,7 @@ interface TripBody {
   maps_link?: string;
   lat?: number;
   lng?: number;
+  image_url?: string;
 }
 
 export const tripsRoutes: FastifyPluginAsync = async (app) => {
@@ -23,12 +24,12 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.post<{ Body: TripBody }>('/trips', async (req, reply) => {
-    const { name, destination, start_date, end_date, maps_link, lat, lng } = req.body;
+    const { name, destination, start_date, end_date, maps_link, lat, lng, image_url } = req.body;
     const result = db
       .prepare(
-        'INSERT INTO trips (name, destination, start_date, end_date, maps_link, lat, lng) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        'INSERT INTO trips (name, destination, start_date, end_date, maps_link, lat, lng, image_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
       )
-      .run(name, destination ?? null, start_date, end_date, maps_link ?? null, lat ?? null, lng ?? null);
+      .run(name, destination ?? null, start_date, end_date, maps_link ?? null, lat ?? null, lng ?? null, image_url ?? null);
     const tripId = result.lastInsertRowid as number;
     ensureDefaultSharedBudget(tripId);
     reply.code(201);
@@ -36,12 +37,22 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.put<{ Params: { id: string }; Body: TripBody }>('/trips/:id', async (req, reply) => {
-    const { name, destination, start_date, end_date, maps_link, lat, lng } = req.body;
+    const { name, destination, start_date, end_date, maps_link, lat, lng, image_url } = req.body;
     const result = db
       .prepare(
-        'UPDATE trips SET name = ?, destination = ?, start_date = ?, end_date = ?, maps_link = ?, lat = ?, lng = ? WHERE id = ?',
+        'UPDATE trips SET name = ?, destination = ?, start_date = ?, end_date = ?, maps_link = ?, lat = ?, lng = ?, image_url = ? WHERE id = ?',
       )
-      .run(name, destination ?? null, start_date, end_date, maps_link ?? null, lat ?? null, lng ?? null, req.params.id);
+      .run(
+        name,
+        destination ?? null,
+        start_date,
+        end_date,
+        maps_link ?? null,
+        lat ?? null,
+        lng ?? null,
+        image_url ?? null,
+        req.params.id,
+      );
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
     return db.prepare('SELECT * FROM trips WHERE id = ?').get(req.params.id);
   });

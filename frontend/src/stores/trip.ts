@@ -13,6 +13,7 @@ export interface TripFormData {
   maps_link?: string;
   lat?: number;
   lng?: number;
+  image_url?: string;
 }
 
 export const useTripStore = defineStore('trip', () => {

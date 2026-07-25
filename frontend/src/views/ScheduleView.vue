@@ -9,6 +9,7 @@ import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
 import { SCHEDULE_CATEGORY_META } from '../utils/scheduleCategory';
 import { parseLatLngFromMapsLink } from '../utils/googleMaps';
+import { buildAllEntries } from '../utils/calendarEntries';
 
 const tripStore = useTripStore();
 const tripId = tripStore.currentTripId as number;
@@ -65,84 +66,7 @@ function accommodationsForDate(date: string) {
   );
 }
 
-function itemToEntry(item: ScheduleItem): CalendarEntry {
-  return {
-    key: `s-${item.id}`,
-    kind: 'schedule',
-    date: item.date,
-    endDate: item.end_date ?? item.date,
-    time: item.time,
-    title: item.title,
-    note: item.note,
-    location: item.location,
-    category: item.category,
-    ideaId: item.idea_id,
-    todoId: null,
-    scheduleItem: item,
-  };
-}
-
-// Urlaub-Stammdaten erscheinen automatisch als (nicht editierbare) Kalender-Items der Kategorie
-// "Urlaub" – synthetisch aus den Trip-Stammdaten erzeugt, nicht in schedule_items gespeichert.
-const tripEntries = computed<CalendarEntry[]>(() => {
-  if (!trip.value) return [];
-  const entries: CalendarEntry[] = [
-    {
-      key: 'trip-start',
-      kind: 'trip',
-      date: trip.value.start_date,
-      endDate: trip.value.start_date,
-      time: null,
-      title: `Urlaub-Start: ${trip.value.name}`,
-      note: null,
-      location: null,
-      category: 'trip',
-      ideaId: null,
-      todoId: null,
-      scheduleItem: null,
-    },
-  ];
-  if (trip.value.end_date !== trip.value.start_date) {
-    entries.push({
-      key: 'trip-end',
-      kind: 'trip',
-      date: trip.value.end_date,
-      endDate: trip.value.end_date,
-      time: null,
-      title: `Urlaub-Ende: ${trip.value.name}`,
-      note: null,
-      location: null,
-      category: 'trip',
-      ideaId: null,
-      todoId: null,
-      scheduleItem: null,
-    });
-  }
-  return entries;
-});
-
-// Aufgaben mit Fälligkeitsdatum erscheinen automatisch (nicht editierbar) im Kalender – analog zu
-// den synthetischen Urlaub-Start/-Ende-Einträgen, mit Sprung-Button zur ToDo-Ansicht (Batch 9).
-const todoEntries = computed<CalendarEntry[]>(() =>
-  todos.value
-    .filter((t) => !!t.due_date)
-    .map((t) => ({
-      key: `todo-${t.id}`,
-      kind: 'todo' as const,
-      date: t.due_date as string,
-      endDate: t.due_date as string,
-      time: null,
-      title: `ToDo: ${t.title}`,
-      note: t.note,
-      location: null,
-      category: 'todo' as const,
-      ideaId: null,
-      todoId: t.id,
-      scheduleItem: null,
-    })),
-);
-
-const allEntries = computed(() => [...items.value.map(itemToEntry), ...tripEntries.value, ...todoEntries.value]);
+const allEntries = computed(() => buildAllEntries(items.value, trip.value, todos.value));
 
 function entriesForDate(date: string) {
   return allEntries.value

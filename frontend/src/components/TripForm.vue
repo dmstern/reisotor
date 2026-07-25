@@ -7,7 +7,7 @@ const props = defineProps<{ initial?: TripFormData; submitLabel?: string }>();
 const emit = defineEmits<{ (e: 'submit', data: TripFormData): void }>();
 
 function blankForm(): TripFormData {
-  return { name: '', destination: '', start_date: '', end_date: '', maps_link: '' };
+  return { name: '', destination: '', start_date: '', end_date: '', maps_link: '', image_url: '' };
 }
 
 const form = ref<TripFormData>(props.initial ? { ...props.initial } : blankForm());
@@ -40,6 +40,7 @@ function onSubmit() {
     maps_link: form.value.maps_link || undefined,
     lat: parsed?.lat,
     lng: parsed?.lng,
+    image_url: form.value.image_url || undefined,
   });
 }
 </script>
@@ -70,6 +71,10 @@ function onSubmit() {
     </label>
     <p v-if="mapsLinkResolved === true" class="hint success">📍 Standort erkannt – erscheint auf der Karte</p>
     <p v-if="mapsLinkResolved === false" class="hint">Standort konnte nicht automatisch erkannt werden.</p>
+    <label>
+      Bild-URL für das Dashboard-Banner (optional)
+      <input v-model="form.image_url" type="url" placeholder="https://…" />
+    </label>
     <button type="submit">{{ submitLabel ?? 'Speichern' }}</button>
   </form>
 </template>

@@ -6,6 +6,8 @@ const props = defineProps<{
   spent: number;
   target: number;
   color: string;
+  /** 'currency' (Standard, mit €) oder 'count' für einfache Stückzahlen (z. B. Dashboard-Widgets). */
+  format?: 'currency' | 'count';
 }>();
 
 const hasTarget = computed(() => props.target > 0);
@@ -13,6 +15,10 @@ const ratio = computed(() => (hasTarget.value ? props.spent / props.target : 0))
 const fillPercent = computed(() => Math.min(100, ratio.value * 100));
 const isOver = computed(() => hasTarget.value && props.spent > props.target);
 const overBy = computed(() => props.spent - props.target);
+
+function fmt(n: number) {
+  return props.format === 'count' ? String(n) : `${n.toFixed(2)} €`;
+}
 </script>
 
 <template>
@@ -21,8 +27,8 @@ const overBy = computed(() => props.spent - props.target);
       <span class="dot" :style="{ background: color }"></span>
       <span class="label">{{ label }}</span>
       <span class="values">
-        <strong>{{ spent.toFixed(2) }} €</strong>
-        <span v-if="hasTarget" class="of"> / {{ target.toFixed(2) }} €</span>
+        <strong>{{ fmt(spent) }}</strong>
+        <span v-if="hasTarget" class="of"> / {{ fmt(target) }}</span>
         <span v-else class="of muted"> (kein Ziel gesetzt)</span>
       </span>
     </div>
@@ -32,7 +38,7 @@ const overBy = computed(() => props.spent - props.target);
         :style="{ width: hasTarget ? fillPercent + '%' : '100%', background: color }"
       ></div>
     </div>
-    <p v-if="isOver" class="over-badge">⚠️ {{ overBy.toFixed(2) }} € über Budget</p>
+    <p v-if="isOver" class="over-badge">⚠️ {{ fmt(overBy) }} über {{ format === 'count' ? 'Ziel' : 'Budget' }}</p>
   </div>
 </template>
 

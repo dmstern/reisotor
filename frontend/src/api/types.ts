@@ -13,6 +13,7 @@ export interface Trip {
   maps_link: string | null;
   lat: number | null;
   lng: number | null;
+  image_url: string | null;
 }
 
 export type ScheduleCategory = 'trip' | 'excursion' | 'todo' | 'other';
