@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { api } from '../api/client';
-import type { Accommodation, CalendarEntry, Excursion, ScheduleItem, TodoItem, TravelItem } from '../api/types';
+import type { Accommodation, CalendarEntry, ScheduleItem, TodoItem, TravelItem } from '../api/types';
 import { useTripStore } from '../stores/trip';
+import { useExcursionsStore } from '../stores/excursions';
 import CalendarWeek from '../components/CalendarWeek.vue';
 import Modal from '../components/Modal.vue';
 import EditButton from '../components/EditButton.vue';
@@ -12,10 +13,9 @@ import { parseLatLngFromMapsLink } from '../utils/googleMaps';
 import { buildAllEntries } from '../utils/calendarEntries';
 
 const tripStore = useTripStore();
-const tripId = tripStore.currentTripId as number;
 const trip = computed(() => tripStore.currentTrip);
+const excursionsStore = useExcursionsStore();
 const items = ref<ScheduleItem[]>([]);
-const excursions = ref<Excursion[]>([]);
 const accommodations = ref<Accommodation[]>([]);
 const todos = ref<TodoItem[]>([]);
 const travelItems = ref<TravelItem[]>([]);
@@ -29,39 +29,38 @@ const newEndDate = ref('');
 const newLocation = ref('');
 const newMapsLink = ref('');
 
-const formExcursionId = ref('');
-const formDate = ref('');
-
 const editingItem = ref<ScheduleItem | null>(null);
 const editForm = ref({ time: '', title: '', note: '', endDate: '', location: '', mapsLink: '' });
+const showAddForm = ref(false);
 
-onMounted(async () => {
-  const [scheduleRes, excursionsRes, accommodationRes, todosRes, travelRes] = await Promise.all([
+async function loadAll() {
+  const tripId = tripStore.currentTripId;
+  if (tripId == null) return;
+  const [scheduleRes, accommodationRes, todosRes, travelRes] = await Promise.all([
     api.get<ScheduleItem[]>(`/schedule?trip_id=${tripId}`),
-    api.get<Excursion[]>(`/ideas?trip_id=${tripId}`),
     api.get<Accommodation[]>(`/accommodation?trip_id=${tripId}`),
     api.get<TodoItem[]>(`/todos?trip_id=${tripId}`),
     api.get<TravelItem[]>(`/travel?trip_id=${tripId}`),
   ]);
   items.value = scheduleRes;
-  excursions.value = excursionsRes;
   accommodations.value = accommodationRes;
   todos.value = todosRes;
   travelItems.value = travelRes;
+}
+
+onMounted(async () => {
+  await loadAll();
   selectedDate.value = new Date().toISOString().slice(0, 10);
-  formDate.value = selectedDate.value;
   loading.value = false;
 });
+
+// ScheduleView ist nicht mehr Teil des per Urlaub-Id gekeyten <router-view> (jetzt global
+// gemountete Schublade), muss also selbst auf einen Urlaubswechsel reagieren.
+watch(() => tripStore.currentTripId, loadAll);
 
 function toIso(d: Date) {
   return d.toISOString().slice(0, 10);
 }
-
-const scheduledExcursionIds = computed(() => new Set(items.value.map((i) => i.idea_id).filter(Boolean)));
-
-const unscheduledPlannedExcursions = computed(() =>
-  excursions.value.filter((i) => i.status !== 'discarded' && !scheduledExcursionIds.value.has(i.id)),
-);
 
 function accommodationsForDate(date: string) {
   return accommodations.value.filter(
@@ -69,7 +68,9 @@ function accommodationsForDate(date: string) {
   );
 }
 
-const allEntries = computed(() => buildAllEntries(items.value, trip.value, todos.value, travelItems.value));
+const allEntries = computed(() =>
+  buildAllEntries(items.value, trip.value, todos.value, travelItems.value, excursionsStore.excursions),
+);
 
 function entriesForDate(date: string) {
   return allEntries.value
@@ -133,39 +134,33 @@ function selectDay(date: string) {
   selectedDate.value = date;
 }
 
-async function scheduleExcursion(excursionId: number, date: string) {
-  const excursion = excursions.value.find((i) => i.id === excursionId);
-  if (!excursion) return;
-  const created = await api.post<ScheduleItem>('/schedule', {
-    trip_id: tripId,
-    date,
-    title: excursion.title,
-    note: excursion.note ?? undefined,
-    idea_id: excursion.id,
-  });
-  items.value.push(created);
-}
-
+// Ausflüge werden direkt aus der Ausflüge-Sicht per Drag&Drop hierher gezogen (ExcursionCard.vue) –
+// das Datum wird am Ausflug selbst gesetzt, kein separater schedule_items-Eintrag mehr nötig.
 function onDropExcursion(date: string, excursionId: number) {
-  scheduleExcursion(excursionId, date);
+  excursionsStore.setDate(excursionId, date);
 }
 
-async function onScheduleFromForm() {
-  if (!formExcursionId.value || !formDate.value) return;
-  await scheduleExcursion(Number(formExcursionId.value), formDate.value);
-  formExcursionId.value = '';
+// "Aus dem Kalender nehmen": macht die Einplanung rückgängig, Ausflug gilt wieder als
+// "in Planung" – Alternative zum Zurückziehen per Drag&Drop in der Ausflüge-Sicht.
+function unplanExcursion(excursionId: number) {
+  excursionsStore.setDate(excursionId, null);
 }
 
-function onDragStart(event: DragEvent, excursionId: number) {
-  event.dataTransfer?.setData('text/excursion-id', String(excursionId));
-  event.dataTransfer!.effectAllowed = 'move';
+function closeAddForm() {
+  showAddForm.value = false;
+  newTime.value = '';
+  newTitle.value = '';
+  newNote.value = '';
+  newEndDate.value = '';
+  newLocation.value = '';
+  newMapsLink.value = '';
 }
 
 async function addItem() {
   if (!selectedDate.value || !newTitle.value.trim()) return;
   const parsed = parseLatLngFromMapsLink(newMapsLink.value);
   const created = await api.post<ScheduleItem>('/schedule', {
-    trip_id: tripId,
+    trip_id: tripStore.currentTripId,
     date: selectedDate.value,
     end_date: newEndDate.value || undefined,
     time: newTime.value || undefined,
@@ -177,12 +172,7 @@ async function addItem() {
     lng: parsed?.lng,
   });
   items.value.push(created);
-  newTime.value = '';
-  newTitle.value = '';
-  newNote.value = '';
-  newEndDate.value = '';
-  newLocation.value = '';
-  newMapsLink.value = '';
+  closeAddForm();
 }
 
 async function removeItem(id: number) {
@@ -211,7 +201,6 @@ async function submitEdit() {
     time: editForm.value.time || undefined,
     title: editForm.value.title.trim(),
     note: editForm.value.note || undefined,
-    idea_id: editingItem.value.idea_id,
     location: editForm.value.location || undefined,
     maps_link: editForm.value.mapsLink || undefined,
     lat: parsed?.lat ?? editingItem.value.lat ?? undefined,
@@ -236,37 +225,8 @@ function formatDay(date: string) {
 </script>
 
 <template>
-  <div class="page" v-if="!loading">
-    <h1>Kalender</h1>
-
-    <div class="card excursions-pool" v-if="unscheduledPlannedExcursions.length">
-      <h2>Ausflüge einplanen</h2>
-      <p class="hint">
-        💡 Diese <strong>gelb hinterlegten Ausflüge</strong> kannst du direkt auf einen Tag im Kalender
-        ziehen, um sie einzuplanen. Alternativ geht es auch über das Dropdown-Menü unten.
-      </p>
-      <TransitionGroup tag="div" name="list" class="pool-items">
-        <div
-          v-for="excursion in unscheduledPlannedExcursions"
-          :key="excursion.id"
-          class="pool-item"
-          draggable="true"
-          @dragstart="onDragStart($event, excursion.id)"
-        >
-          🎒 {{ excursion.title }}
-        </div>
-      </TransitionGroup>
-      <form class="schedule-form" @submit.prevent="onScheduleFromForm">
-        <select v-model="formExcursionId" required>
-          <option value="" disabled>Ausflug wählen…</option>
-          <option v-for="excursion in unscheduledPlannedExcursions" :key="excursion.id" :value="excursion.id">
-            {{ excursion.title }}
-          </option>
-        </select>
-        <input v-model="formDate" type="date" required />
-        <button type="submit">Einplanen</button>
-      </form>
-    </div>
+  <div class="calendar-drawer-content" v-if="!loading">
+    <h2>Kalender</h2>
 
     <div class="card weeks">
       <CalendarWeek
@@ -280,7 +240,10 @@ function formatDay(date: string) {
     </div>
 
     <div class="card day-detail" v-if="selectedDate">
-      <h2>{{ formatDay(selectedDate) }}</h2>
+      <div class="day-detail-head">
+        <h3>{{ formatDay(selectedDate) }}</h3>
+        <button type="button" class="secondary" @click="showAddForm = true">+ Neu</button>
+      </div>
 
       <p v-for="acc in dayAccommodations" :key="acc.id" class="acc-note">🛏️ Unterkunft: {{ acc.name }}</p>
 
@@ -301,8 +264,8 @@ function formatDay(date: string) {
             <p v-if="entry.note" class="note">{{ entry.note }}</p>
           </div>
           <div class="item-actions">
-            <!-- Architekturregel: Fremdobjekte (Urlaub-Stammdaten, ToDos, verknüpfte Ausflüge) sind
-                 hier nur lesend/verknüpfend darstellbar – Bearbeitung passiert in der Ursprungssicht. -->
+            <!-- Architekturregel: Fremdobjekte (Urlaub-Stammdaten, ToDos, Ausflüge, Reise-Einträge)
+                 sind hier nur lesend/verknüpfend darstellbar – Bearbeitung passiert in der Ursprungssicht. -->
             <template v-if="entry.kind === 'trip'">
               <button type="button" class="secondary jump-btn" @click="jumpToTrip">Zum Urlaub</button>
             </template>
@@ -312,9 +275,17 @@ function formatDay(date: string) {
             <template v-else-if="entry.kind === 'travel'">
               <router-link to="/travel" class="secondary jump-btn">Zur Reise</router-link>
             </template>
-            <template v-else-if="entry.ideaId">
+            <template v-else-if="entry.kind === 'excursion'">
               <router-link to="/excursions" class="secondary jump-btn">Zum Ausflug</router-link>
-              <DeleteButton small @click="removeItem(entry.scheduleItem!.id)" />
+              <button
+                type="button"
+                class="secondary unplan-btn"
+                title="Aus dem Kalender nehmen (zurück zu 'In Planung')"
+                aria-label="Aus dem Kalender nehmen"
+                @click="unplanExcursion(entry.ideaId!)"
+              >
+                ✕
+              </button>
             </template>
             <template v-else>
               <EditButton small @click="startEdit(entry.scheduleItem!)" />
@@ -324,17 +295,23 @@ function formatDay(date: string) {
         </li>
         <li v-if="!dayEntries.length" key="empty" class="empty">Noch keine Termine an diesem Tag.</li>
       </TransitionGroup>
+    </div>
 
-      <form class="add-form" @submit.prevent="addItem">
+    <Modal
+      :model-value="showAddForm"
+      title="Termin anlegen"
+      @update:model-value="(v) => !v && closeAddForm()"
+    >
+      <form class="edit-form" @submit.prevent="addItem">
         <input v-model="newTime" type="time" />
         <input v-model="newTitle" type="text" placeholder="Titel" required />
-        <input v-model="newEndDate" type="date" :min="selectedDate" placeholder="Enddatum (optional)" title="Enddatum (optional)" />
+        <input v-model="newEndDate" type="date" :min="selectedDate ?? undefined" placeholder="Enddatum (optional)" title="Enddatum (optional)" />
         <input v-model="newLocation" type="text" placeholder="Ort (optional)" />
-        <input v-model="newMapsLink" type="url" placeholder="Google-Maps-Link (optional)" />
+        <input v-model="newMapsLink" type="url" placeholder="Maps-Link (Google/Apple) (optional)" />
         <input v-model="newNote" type="text" placeholder="Notiz (optional)" />
         <button type="submit">Hinzufügen</button>
       </form>
-    </div>
+    </Modal>
 
     <Modal
       :model-value="editingItem !== null"
@@ -346,7 +323,7 @@ function formatDay(date: string) {
         <input v-model="editForm.title" type="text" placeholder="Titel" required />
         <input v-model="editForm.endDate" type="date" :min="editingItem?.date" placeholder="Enddatum (optional)" title="Enddatum (optional)" />
         <input v-model="editForm.location" type="text" placeholder="Ort (optional)" />
-        <input v-model="editForm.mapsLink" type="url" placeholder="Google-Maps-Link (optional)" />
+        <input v-model="editForm.mapsLink" type="url" placeholder="Maps-Link (Google/Apple) (optional)" />
         <input v-model="editForm.note" type="text" placeholder="Notiz (optional)" />
         <button type="submit">Speichern</button>
       </form>
@@ -355,57 +332,33 @@ function formatDay(date: string) {
 </template>
 
 <style scoped>
-.excursions-pool {
-  margin-bottom: var(--space-3);
+.calendar-drawer-content {
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
 }
 
-.excursions-pool h2 {
-  font-size: 1rem;
+.calendar-drawer-content h2 {
+  margin: 0;
+  font-size: 1.1rem;
   color: var(--color-primary-dark);
-}
-
-.hint {
-  font-size: 0.85rem;
-  margin-top: -6px;
-}
-
-.pool-items {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  margin-bottom: var(--space-3);
-}
-
-.pool-item {
-  background: var(--color-highlight);
-  border: 1px solid var(--color-highlight-border);
-  border-radius: var(--radius-sm);
-  padding: 6px 12px;
-  font-size: 0.85rem;
-  cursor: grab;
-}
-
-.pool-item:active {
-  cursor: grabbing;
-}
-
-.schedule-form {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-}
-
-.schedule-form select {
-  flex: 1;
-  min-width: 160px;
 }
 
 .weeks {
-  margin-bottom: var(--space-4);
+  padding: var(--space-2);
 }
 
-.day-detail h2 {
+.day-detail-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.day-detail h3 {
   color: var(--color-primary-dark);
+  margin-top: 0;
 }
 
 .acc-note {
@@ -481,6 +434,12 @@ function formatDay(date: string) {
   font-size: 0.8rem;
   white-space: nowrap;
   text-decoration: none;
+}
+
+.unplan-btn {
+  padding: 4px 8px;
+  font-size: 0.8rem;
+  line-height: 1;
 }
 
 .edit-form {

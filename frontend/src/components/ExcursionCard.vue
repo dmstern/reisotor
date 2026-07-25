@@ -1,20 +1,22 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import type { Excursion } from '../api/types';
+import type { Excursion, Spot } from '../api/types';
+import { renderRichText } from '../utils/richText';
+import { spotCategoryMeta } from '../utils/spotCategory';
 import EditButton from './EditButton.vue';
 import DeleteButton from './DeleteButton.vue';
 import LikeButton from './LikeButton.vue';
 import Comments, { type CommentItem } from './Comments.vue';
 
-defineProps<{
+const props = defineProps<{
   excursion: Excursion;
-  suggestedByLabel?: string | null;
+  creatorLabel: string | null;
   likeCount: number;
   liked: boolean;
   comments: CommentItem[];
+  stations: Spot[];
 }>();
 const emit = defineEmits<{
-  (e: 'set-status', excursion: Excursion, status: Excursion['status']): void;
   (e: 'remove', id: number): void;
   (e: 'edit', excursion: Excursion): void;
   (e: 'toggle-like'): void;
@@ -24,68 +26,38 @@ const emit = defineEmits<{
 
 const showComments = ref(false);
 
-const STATUS_LABELS: Record<Excursion['status'], string> = {
-  idea: 'Idee',
-  planned: 'Geplant',
-  discarded: 'Verworfen',
-};
+function formatDate(d: string) {
+  return new Date(d).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+}
+
+// Drag-Quelle fürs Einplanen: der Ausflug wird direkt aus dieser Karte in die Kalender-Schublade
+// gezogen (ersetzt den alten Pool auf der Kalender-Seite).
+function onDragStart(event: DragEvent) {
+  event.dataTransfer?.setData('text/excursion-id', String(props.excursion.id));
+  if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+}
 </script>
 
 <template>
-  <div class="card excursion-card">
+  <div class="card excursion-card" draggable="true" @dragstart="onDragStart">
     <div class="image" :style="excursion.image_url ? { backgroundImage: `url(${excursion.image_url})` } : {}">
-      <span v-if="!excursion.image_url" class="placeholder">🏞️</span>
+      <span v-if="!excursion.image_url" class="placeholder">🎒</span>
       <EditButton floating @click="emit('edit', excursion)" />
-      <span class="status" :class="excursion.status">{{ STATUS_LABELS[excursion.status] }}</span>
+      <span class="status" :class="{ planned: excursion.date }">
+        {{ excursion.date ? `📅 ${formatDate(excursion.date)}` : 'In Planung' }}
+      </span>
     </div>
     <div class="body">
       <h3>{{ excursion.title }}</h3>
-      <p v-if="suggestedByLabel" class="suggested-by">💡 Vorgeschlagen von {{ suggestedByLabel }}</p>
-      <p v-if="excursion.note">{{ excursion.note }}</p>
-      <a v-if="excursion.link" :href="excursion.link" target="_blank" rel="noopener">Link öffnen ↗</a>
-      <a v-if="excursion.maps_link" :href="excursion.maps_link" target="_blank" rel="noopener" class="external-link-btn"
-        >📍 Extern öffnen ↗</a
-      >
-      <router-link
-        v-if="excursion.lat != null && excursion.lng != null"
-        :to="{ path: '/map', query: { focus: `excursion-${excursion.id}` } }"
-        class="schedule-hint"
-      >
-        🗺️ Auf Karte anzeigen
-      </router-link>
-      <router-link v-if="excursion.status === 'planned'" to="/schedule" class="schedule-hint">
-        📅 Im Kalender einplanen
-      </router-link>
+      <p v-if="creatorLabel" class="creator">von {{ creatorLabel }}</p>
+      <div v-if="excursion.note" class="note" v-html="renderRichText(excursion.note)"></div>
+      <div class="stations" v-if="stations.length">
+        <span v-for="spot in stations" :key="spot.id" class="station-chip">
+          {{ spotCategoryMeta(spot.category).icon }} {{ spot.title }}
+        </span>
+      </div>
       <div class="actions">
-        <div class="status-buttons">
-          <button
-            type="button"
-            class="secondary status-btn"
-            :class="{ active: excursion.status === 'idea' }"
-            title="Als Idee markieren"
-            @click="emit('set-status', excursion, 'idea')"
-          >
-            💡
-          </button>
-          <button
-            type="button"
-            class="secondary status-btn"
-            :class="{ active: excursion.status === 'planned' }"
-            title="Als geplant markieren"
-            @click="emit('set-status', excursion, 'planned')"
-          >
-            ✅
-          </button>
-          <button
-            type="button"
-            class="secondary status-btn"
-            :class="{ active: excursion.status === 'discarded' }"
-            title="Als verworfen markieren"
-            @click="emit('set-status', excursion, 'discarded')"
-          >
-            ❌
-          </button>
-        </div>
+        <span class="drag-hint">↕ auf Kalender-Schublade ziehen zum Einplanen</span>
         <DeleteButton small @click="emit('remove', excursion.id)" />
       </div>
       <div class="social-row">
@@ -108,6 +80,11 @@ const STATUS_LABELS: Record<Excursion['status'], string> = {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  cursor: grab;
+}
+
+.excursion-card:active {
+  cursor: grabbing;
 }
 
 .image {
@@ -139,10 +116,6 @@ const STATUS_LABELS: Record<Excursion['status'], string> = {
   color: var(--color-success);
 }
 
-.status.discarded {
-  color: var(--color-danger);
-}
-
 .body {
   padding: var(--space-3);
   display: flex;
@@ -155,9 +128,18 @@ const STATUS_LABELS: Record<Excursion['status'], string> = {
   margin-bottom: 0;
 }
 
-.suggested-by {
+.creator {
   font-size: 0.82rem;
   color: var(--color-text-muted);
+  margin: 0;
+}
+
+.note {
+  overflow-wrap: anywhere;
+}
+
+.note :deep(a) {
+  color: var(--color-primary);
 }
 
 .actions {
@@ -169,22 +151,9 @@ const STATUS_LABELS: Record<Excursion['status'], string> = {
   flex-wrap: wrap;
 }
 
-.status-buttons {
-  display: flex;
-  gap: 4px;
-}
-
-.status-btn {
-  padding: 4px 8px;
-  font-size: 0.9rem;
-  line-height: 1;
-  opacity: 0.45;
-}
-
-.status-btn.active {
-  opacity: 1;
-  border-color: var(--color-primary);
-  background: var(--color-primary-tint);
+.drag-hint {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
 }
 
 .social-row {
@@ -193,28 +162,17 @@ const STATUS_LABELS: Record<Excursion['status'], string> = {
   margin-top: var(--space-2);
 }
 
-.schedule-hint {
-  font-size: 0.85rem;
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.external-link-btn {
-  align-self: flex-start;
-  display: inline-flex;
-  align-items: center;
+.stations {
+  display: flex;
+  flex-wrap: wrap;
   gap: 4px;
-  padding: 4px 10px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: rgba(42, 127, 116, 0.08);
-  font-size: 0.85rem;
-  font-weight: 600;
-  text-decoration: none;
-  color: var(--color-primary);
 }
 
-.external-link-btn:hover {
-  background: var(--color-primary-tint);
+.station-chip {
+  background: var(--color-hover);
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
 }
 </style>

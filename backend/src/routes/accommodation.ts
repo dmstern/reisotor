@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { db, ensureDefaultSharedBudget } from '../db/index.js';
+import { resolveLatLng } from '../utils/mapsLink.js';
 
 interface AccommodationBody {
   trip_id: number;
@@ -86,6 +87,11 @@ export const accommodationRoutes: FastifyPluginAsync = async (app) => {
   app.post<{ Body: AccommodationBody }>('/accommodation', async (req, reply) => {
     const body = req.body;
     const { budgetExpenseId } = planBudgetExpense(body.trip_id, null, body);
+    if ((body.lat == null || body.lng == null) && body.maps_link) {
+      const resolved = await resolveLatLng(body.maps_link);
+      body.lat = resolved?.lat;
+      body.lng = resolved?.lng;
+    }
 
     const result = db
       .prepare(
@@ -123,6 +129,11 @@ export const accommodationRoutes: FastifyPluginAsync = async (app) => {
     if (!existing) return reply.code(404).send({ error: 'Nicht gefunden' });
 
     const body = req.body;
+    if ((body.lat == null || body.lng == null) && body.maps_link) {
+      const resolved = await resolveLatLng(body.maps_link);
+      body.lat = resolved?.lat;
+      body.lng = resolved?.lng;
+    }
     const { budgetExpenseId, staleIdToDelete } = planBudgetExpense(existing.trip_id, existing.budget_expense_id, body);
 
     db.prepare(

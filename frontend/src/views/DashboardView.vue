@@ -16,13 +16,18 @@ import type {
 } from '../api/types';
 import { useAuthStore } from '../stores/auth';
 import { useTripStore } from '../stores/trip';
+import { useExcursionsStore } from '../stores/excursions';
+import { useDrawersStore } from '../stores/drawers';
 import { assignCategoryColors } from '../utils/categoryColors';
 import { buildAllEntries } from '../utils/calendarEntries';
 import { SCHEDULE_CATEGORY_META } from '../utils/scheduleCategory';
+import { SECTION_ICONS } from '../utils/sectionIcons';
 import BudgetMeter from '../components/BudgetMeter.vue';
 
 const auth = useAuthStore();
 const tripStore = useTripStore();
+const excursionsStore = useExcursionsStore();
+const drawers = useDrawersStore();
 const tripId = tripStore.currentTripId as number;
 const trip = computed(() => tripStore.currentTrip);
 const schedule = ref<ScheduleItem[]>([]);
@@ -95,14 +100,14 @@ const daysUntilStart = computed(() => {
 // Kalender-Widget: echte Termine + eingebettete synthetische Einträge (Urlaub-Start/-Ende, ToDo
 // mit Fälligkeitsdatum), sortiert, die nächsten drei statt nur den einen nächsten (Batch 12).
 const upcomingEntries = computed(() =>
-  buildAllEntries(schedule.value, trip.value, todos.value, travelItems.value)
+  buildAllEntries(schedule.value, trip.value, todos.value, travelItems.value, excursionsStore.excursions)
     .filter((e) => e.endDate >= todayStr())
     .sort((a, b) => (a.date + (a.time ?? '')).localeCompare(b.date + (b.time ?? '')))
     .slice(0, 3),
 );
 
 function formatDate(d: string) {
-  return new Date(d).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  return new Date(d).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
 }
 
 // Packliste: ein zusammengefasstes Widget (statt drei einzelner Tiles) mit Gesamtfortschritt
@@ -182,22 +187,29 @@ function jumpToTrip() {
     </header>
 
     <div class="grid cards">
-      <!-- Kalender -->
-      <router-link to="/schedule" class="card tile" :style="{ background: `${WIDGET_COLORS.get('schedule')}0d` }">
-        <span class="tile-icon" :style="{ background: `${WIDGET_COLORS.get('schedule')}26`, borderColor: WIDGET_COLORS.get('schedule') }">📅</span>
+      <!-- Kalender: keine eigene Route mehr (jetzt Kalender-Schublade), Kachel öffnet die Schublade -->
+      <button
+        type="button"
+        class="card tile tile-btn"
+        :style="{ background: `${WIDGET_COLORS.get('schedule')}0d` }"
+        @click="drawers.calendarOpen = true"
+      >
+        <span class="tile-icon" :style="{ background: `${WIDGET_COLORS.get('schedule')}26`, borderColor: WIDGET_COLORS.get('schedule') }">{{ SECTION_ICONS.calendar }}</span>
         <h3>Kalender</h3>
         <ul v-if="upcomingEntries.length" class="mini-list">
           <li v-for="entry in upcomingEntries" :key="entry.key">
             <span class="mini-dot" :style="{ background: SCHEDULE_CATEGORY_META[entry.category].color }"></span>
-            {{ formatDate(entry.date) }}<span v-if="entry.time"> · {{ entry.time }}</span> — {{ entry.title }}
+            <span class="entry-text"
+              >{{ formatDate(entry.date) }}<span v-if="entry.time"> · {{ entry.time }}</span> — {{ entry.title }}</span
+            >
           </li>
         </ul>
         <p v-else>Noch nichts geplant</p>
-      </router-link>
+      </button>
 
       <!-- Packliste (zusammengefasst) -->
       <router-link to="/packing" class="card tile" :style="{ background: `${WIDGET_COLORS.get('packing')}0d` }">
-        <span class="tile-icon" :style="{ background: `${WIDGET_COLORS.get('packing')}26`, borderColor: WIDGET_COLORS.get('packing') }">🧳</span>
+        <span class="tile-icon" :style="{ background: `${WIDGET_COLORS.get('packing')}26`, borderColor: WIDGET_COLORS.get('packing') }">{{ SECTION_ICONS.packing }}</span>
         <h3>Packliste</h3>
         <BudgetMeter
           label="Gepackt"
@@ -213,7 +225,7 @@ function jumpToTrip() {
 
       <!-- Budget -->
       <router-link to="/budget" class="card tile" :style="{ background: `${WIDGET_COLORS.get('budget')}0d` }">
-        <span class="tile-icon" :style="{ background: `${WIDGET_COLORS.get('budget')}26`, borderColor: WIDGET_COLORS.get('budget') }">💶</span>
+        <span class="tile-icon" :style="{ background: `${WIDGET_COLORS.get('budget')}26`, borderColor: WIDGET_COLORS.get('budget') }">{{ SECTION_ICONS.budget }}</span>
         <h3>Budget</h3>
         <BudgetMeter
           label="Ausgegeben"
@@ -225,7 +237,7 @@ function jumpToTrip() {
 
       <!-- Einkaufsliste -->
       <router-link to="/shopping" class="card tile" :style="{ background: `${WIDGET_COLORS.get('shopping')}0d` }">
-        <span class="tile-icon" :style="{ background: `${WIDGET_COLORS.get('shopping')}26`, borderColor: WIDGET_COLORS.get('shopping') }">🛒</span>
+        <span class="tile-icon" :style="{ background: `${WIDGET_COLORS.get('shopping')}26`, borderColor: WIDGET_COLORS.get('shopping') }">{{ SECTION_ICONS.shopping }}</span>
         <h3>Einkaufsliste</h3>
         <BudgetMeter
           label="Gekauft"
@@ -238,7 +250,7 @@ function jumpToTrip() {
 
       <!-- ToDo -->
       <router-link to="/todo" class="card tile" :style="{ background: `${WIDGET_COLORS.get('todo')}0d` }">
-        <span class="tile-icon" :style="{ background: `${WIDGET_COLORS.get('todo')}26`, borderColor: WIDGET_COLORS.get('todo') }">☑️</span>
+        <span class="tile-icon" :style="{ background: `${WIDGET_COLORS.get('todo')}26`, borderColor: WIDGET_COLORS.get('todo') }">{{ SECTION_ICONS.todo }}</span>
         <h3>ToDo</h3>
         <BudgetMeter
           label="Erledigt"
@@ -251,7 +263,7 @@ function jumpToTrip() {
 
       <!-- Reise (Fahrten/Flüge) -->
       <router-link to="/travel" class="card tile" :style="{ background: `${WIDGET_COLORS.get('travel')}0d` }">
-        <span class="tile-icon" :style="{ background: `${WIDGET_COLORS.get('travel')}26`, borderColor: WIDGET_COLORS.get('travel') }">✈️</span>
+        <span class="tile-icon" :style="{ background: `${WIDGET_COLORS.get('travel')}26`, borderColor: WIDGET_COLORS.get('travel') }">{{ SECTION_ICONS.travel }}</span>
         <h3>Reise</h3>
         <p v-if="nextTravelItem">{{ formatDate(nextTravelItem.date!) }} — {{ nextTravelItem.title }}</p>
         <p v-else-if="travelItems.length">{{ travelItems.length }} Einträge</p>
@@ -260,7 +272,7 @@ function jumpToTrip() {
 
       <!-- Unterkunft -->
       <router-link to="/accommodation" class="card tile" :style="{ background: `${WIDGET_COLORS.get('accommodation')}0d` }">
-        <span class="tile-icon" :style="{ background: `${WIDGET_COLORS.get('accommodation')}26`, borderColor: WIDGET_COLORS.get('accommodation') }">🛏️</span>
+        <span class="tile-icon" :style="{ background: `${WIDGET_COLORS.get('accommodation')}26`, borderColor: WIDGET_COLORS.get('accommodation') }">{{ SECTION_ICONS.accommodation }}</span>
         <h3>Unterkunft</h3>
         <p v-if="currentOrNextAccommodation">
           {{ currentOrNextAccommodation.name }}<span v-if="currentOrNextAccommodation.start_date">
@@ -272,7 +284,7 @@ function jumpToTrip() {
 
       <!-- Tagebuch -->
       <router-link to="/diary" class="card tile" :style="{ background: `${WIDGET_COLORS.get('diary')}0d` }">
-        <span class="tile-icon" :style="{ background: `${WIDGET_COLORS.get('diary')}26`, borderColor: WIDGET_COLORS.get('diary') }">📔</span>
+        <span class="tile-icon" :style="{ background: `${WIDGET_COLORS.get('diary')}26`, borderColor: WIDGET_COLORS.get('diary') }">{{ SECTION_ICONS.diary }}</span>
         <h3>Tagebuch</h3>
         <p v-if="diaryEntries.length">{{ diaryEntries.length }} {{ diaryEntries.length === 1 ? 'Eintrag' : 'Einträge' }}<span v-if="latestDiaryEntry"> · zuletzt {{ formatDate(latestDiaryEntry.created_at) }}</span></p>
         <p v-else>Noch nichts geschrieben</p>
@@ -280,7 +292,7 @@ function jumpToTrip() {
 
       <!-- Notizen -->
       <router-link to="/notes" class="card tile" :style="{ background: `${WIDGET_COLORS.get('notes')}0d` }">
-        <span class="tile-icon" :style="{ background: `${WIDGET_COLORS.get('notes')}26`, borderColor: WIDGET_COLORS.get('notes') }">🗒️</span>
+        <span class="tile-icon" :style="{ background: `${WIDGET_COLORS.get('notes')}26`, borderColor: WIDGET_COLORS.get('notes') }">{{ SECTION_ICONS.notes }}</span>
         <h3>Notizen</h3>
         <p v-if="notes.length">{{ notes.length }} {{ notes.length === 1 ? 'Notiz' : 'Notizen' }}</p>
         <p v-else>Noch nichts notiert</p>
@@ -344,6 +356,10 @@ function jumpToTrip() {
   box-shadow: var(--shadow-md);
 }
 
+.tile-btn {
+  width: 100%;
+}
+
 .tile-icon {
   position: absolute;
   top: -22px;
@@ -386,6 +402,14 @@ function jumpToTrip() {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.entry-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .mini-dot {

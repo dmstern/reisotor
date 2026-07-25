@@ -29,7 +29,6 @@ export interface ScheduleItem {
   time: string | null;
   title: string;
   note: string | null;
-  idea_id: number | null;
   location: string | null;
   maps_link: string | null;
   lat: number | null;
@@ -43,9 +42,10 @@ export interface ScheduleItem {
 export interface CalendarEntry {
   key: string;
   /** Herkunft des Eintrags: 'schedule' ist ein echter, editierbarer Kalender-Termin;
-   *  'trip', 'todo' und 'travel' sind synthetische, nicht editierbare Einträge aus anderen Sichten
-   *  (Architekturregel Batch 3: nur lesend/verknüpfend, mit Sprung-Button zur Ursprungssicht). */
-  kind: 'schedule' | 'trip' | 'todo' | 'travel';
+   *  'trip', 'todo', 'travel' und 'excursion' sind synthetische, nicht editierbare Einträge aus
+   *  anderen Sichten (Architekturregel Batch 3: nur lesend/verknüpfend, mit Sprung-Button zur
+   *  Ursprungssicht). */
+  kind: 'schedule' | 'trip' | 'todo' | 'travel' | 'excursion';
   date: string;
   endDate: string;
   time: string | null;
@@ -73,13 +73,12 @@ export interface Excursion {
   trip_id: number;
   title: string;
   image_url: string | null;
-  link: string | null;
-  maps_link: string | null;
   note: string | null;
-  status: 'idea' | 'planned' | 'discarded';
-  lat: number | null;
-  lng: number | null;
-  suggested_by_user_id: number | null;
+  /** Optionales Datum: gesetzt = "geplant" (im Kalender eingeplant), ungesetzt = "in Planung". */
+  date: string | null;
+  created_by: number | null;
+  /** IDs der Spots, die diesem Ausflug als Stationen zugeordnet sind. */
+  spot_ids: number[];
 }
 
 export interface ExcursionLike {
@@ -133,6 +132,27 @@ export interface TravelItem {
   link: string | null;
   note: string | null;
   budget_expense_id: number | null;
+  from_maps_link: string | null;
+  from_lat: number | null;
+  from_lng: number | null;
+  to_maps_link: string | null;
+  to_lat: number | null;
+  to_lng: number | null;
+}
+
+export interface Spot {
+  id: number;
+  trip_id: number;
+  title: string;
+  image_url: string | null;
+  /** Freitext-Kategorie (Combobox mit Vorschlägen, siehe utils/spotCategory.ts). */
+  category: string | null;
+  note: string | null;
+  maps_link: string | null;
+  lat: number | null;
+  lng: number | null;
+  created_by: number | null;
+  discarded: 0 | 1;
 }
 
 export interface BudgetExpense {

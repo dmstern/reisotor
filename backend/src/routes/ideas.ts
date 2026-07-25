@@ -5,69 +5,84 @@ interface IdeaBody {
   trip_id: number;
   title: string;
   image_url?: string;
-  link?: string;
-  maps_link?: string;
   note?: string;
-  status?: 'idea' | 'planned' | 'discarded';
-  lat?: number;
-  lng?: number;
-  suggested_by_user_id?: number | null;
+  date?: string;
+  spot_ids?: number[];
+}
+
+interface IdeaRow {
+  id: number;
+  [key: string]: unknown;
 }
 
 interface CommentBody {
   content: string;
 }
 
+// Stationen eines Ausflugs (Batch 13): welche Spots gehören dazu. Wird bei jedem Anlegen/
+// Bearbeiten komplett neu geschrieben (einfacher als Diffing) – kleine Anzahl Zeilen pro Ausflug.
+function syncExcursionSpots(ideaId: number, spotIds: number[]) {
+  db.prepare('DELETE FROM excursion_spots WHERE idea_id = ?').run(ideaId);
+  const insert = db.prepare('INSERT INTO excursion_spots (idea_id, spot_id) VALUES (?, ?)');
+  for (const spotId of spotIds) {
+    insert.run(ideaId, spotId);
+  }
+}
+
+function spotIdsFor(ideaIds: number[]): Map<number, number[]> {
+  const map = new Map<number, number[]>();
+  if (!ideaIds.length) return map;
+  const placeholders = ideaIds.map(() => '?').join(',');
+  const rows = db
+    .prepare(`SELECT idea_id, spot_id FROM excursion_spots WHERE idea_id IN (${placeholders})`)
+    .all(...ideaIds) as { idea_id: number; spot_id: number }[];
+  for (const row of rows) {
+    const list = map.get(row.idea_id) ?? [];
+    list.push(row.spot_id);
+    map.set(row.idea_id, list);
+  }
+  return map;
+}
+
+function serializeIdea(row: IdeaRow, spotIds: number[]) {
+  return { ...row, spot_ids: spotIds };
+}
+
 export const ideasRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: { trip_id?: string } }>('/ideas', async (req, reply) => {
     if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
-    return db.prepare('SELECT * FROM ideas WHERE trip_id = ? ORDER BY id DESC').all(req.query.trip_id);
+    const rows = db.prepare('SELECT * FROM ideas WHERE trip_id = ? ORDER BY id DESC').all(req.query.trip_id) as IdeaRow[];
+    const spotIds = spotIdsFor(rows.map((r) => r.id));
+    return rows.map((row) => serializeIdea(row, spotIds.get(row.id) ?? []));
   });
 
   app.post<{ Body: IdeaBody }>('/ideas', async (req, reply) => {
-    const { trip_id, title, image_url, link, maps_link, note, status, lat, lng, suggested_by_user_id } = req.body;
+    const { trip_id, title, image_url, note, date, spot_ids } = req.body;
     const result = db
       .prepare(
-        `INSERT INTO ideas (trip_id, title, image_url, link, maps_link, note, status, lat, lng, suggested_by_user_id)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO ideas (trip_id, title, image_url, note, date, created_by)
+         VALUES (?, ?, ?, ?, ?, ?)`,
       )
-      .run(
-        trip_id,
-        title,
-        image_url ?? null,
-        link ?? null,
-        maps_link ?? null,
-        note ?? null,
-        status ?? 'idea',
-        lat ?? null,
-        lng ?? null,
-        suggested_by_user_id ?? null,
-      );
+      .run(trip_id, title, image_url ?? null, note ?? null, date ?? null, req.session.userId);
+    const ideaId = result.lastInsertRowid as number;
+    syncExcursionSpots(ideaId, spot_ids ?? []);
     reply.code(201);
-    return db.prepare('SELECT * FROM ideas WHERE id = ?').get(result.lastInsertRowid);
+    const row = db.prepare('SELECT * FROM ideas WHERE id = ?').get(ideaId) as IdeaRow;
+    return serializeIdea(row, spot_ids ?? []);
   });
 
   app.put<{ Params: { id: string }; Body: IdeaBody }>('/ideas/:id', async (req, reply) => {
-    const { title, image_url, link, maps_link, note, status, lat, lng, suggested_by_user_id } = req.body;
+    const { title, image_url, note, date, spot_ids } = req.body;
     const result = db
       .prepare(
-        `UPDATE ideas SET title = ?, image_url = ?, link = ?, maps_link = ?, note = ?, status = ?, lat = ?, lng = ?, suggested_by_user_id = ?
+        `UPDATE ideas SET title = ?, image_url = ?, note = ?, date = ?
          WHERE id = ?`,
       )
-      .run(
-        title,
-        image_url ?? null,
-        link ?? null,
-        maps_link ?? null,
-        note ?? null,
-        status ?? 'idea',
-        lat ?? null,
-        lng ?? null,
-        suggested_by_user_id ?? null,
-        req.params.id,
-      );
+      .run(title, image_url ?? null, note ?? null, date ?? null, req.params.id);
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
-    return db.prepare('SELECT * FROM ideas WHERE id = ?').get(req.params.id);
+    syncExcursionSpots(Number(req.params.id), spot_ids ?? []);
+    const row = db.prepare('SELECT * FROM ideas WHERE id = ?').get(req.params.id) as IdeaRow;
+    return serializeIdea(row, spot_ids ?? []);
   });
 
   app.delete<{ Params: { id: string } }>('/ideas/:id', async (req, reply) => {

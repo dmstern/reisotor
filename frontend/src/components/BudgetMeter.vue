@@ -29,7 +29,6 @@ function fmt(n: number) {
       <span class="values">
         <strong>{{ fmt(spent) }}</strong>
         <span v-if="hasTarget" class="of"> / {{ fmt(target) }}</span>
-        <span v-else class="of muted"> (kein Ziel gesetzt)</span>
       </span>
     </div>
     <div class="track" :style="{ background: `${color}26` }">
@@ -38,6 +37,7 @@ function fmt(n: number) {
         :style="{ width: hasTarget ? fillPercent + '%' : '100%', background: color }"
       ></div>
     </div>
+    <p v-if="!hasTarget" class="no-target">Kein Ziel gesetzt</p>
     <p v-if="isOver" class="over-badge">⚠️ {{ fmt(overBy) }} über {{ format === 'count' ? 'Ziel' : 'Budget' }}</p>
   </div>
 </template>
@@ -67,20 +67,28 @@ function fmt(n: number) {
 .label {
   font-weight: 600;
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .values {
   color: var(--color-text);
   font-size: 0.85rem;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .of {
   color: var(--color-text-muted);
 }
 
-.of.muted {
+.no-target {
+  margin: 0;
+  font-size: 0.78rem;
   font-style: italic;
+  color: var(--color-text-muted);
 }
 
 .track {

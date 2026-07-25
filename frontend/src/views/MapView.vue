@@ -1,39 +1,39 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
-import { useRoute } from 'vue-router';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { api } from '../api/client';
-import type { Accommodation, Excursion } from '../api/types';
+import type { Accommodation, Spot, TravelItem } from '../api/types';
 import { useTripStore } from '../stores/trip';
+import { useDrawersStore } from '../stores/drawers';
+import { spotCategoryMeta } from '../utils/spotCategory';
 
-// Die Karte ist eine reine Anzeige (Batch 4): Sie zeigt nur Punkte, die in ihren
-// Ursprungssichten (Urlaub, Ausflüge, Unterkunft) mit Koordinaten hinterlegt wurden.
-// Anlegen/Bearbeiten gibt es hier nicht – ein Klick auf einen Punkt zeigt eine kurze
-// Info mit einem Sprung-Button zur jeweiligen Ursprungssicht (Architekturregel Batch 3).
-type MapKind = 'trip' | 'excursion' | 'accommodation';
+// Die Karte ist ein generischer, reiner Pin-Layer (kein Anlegen/Bearbeiten hier): sie zeigt
+// automatisch jedes Objekt des aktuellen Urlaubs mit hinterlegtem Standort – Unterkunft, Reise
+// (Abflug/Ankunft) und Spots. Ein Klick auf einen Punkt zeigt eine kurze Info mit einem
+// Sprung-Button zur jeweiligen Ursprungssicht (Architekturregel Batch 3).
+type MapOrigin = 'accommodation' | 'travel' | 'spot';
 
 interface MapPoint {
   key: string;
-  kind: MapKind;
-  id: number;
+  origin: MapOrigin;
   lat: number;
   lng: number;
   title: string;
+  icon: string;
+  color: string;
+  label: string;
 }
 
-const MAP_KIND_META: Record<MapKind, { icon: string; color: string; label: string }> = {
-  trip: { icon: '🧳', color: '#2a78d6', label: 'Urlaub' },
-  excursion: { icon: '🎒', color: '#eb6834', label: 'Ausflug' },
-  accommodation: { icon: '🛏️', color: '#1baf7a', label: 'Unterkunft' },
-};
-const MAP_KINDS: MapKind[] = ['trip', 'excursion', 'accommodation'];
+const ACCOMMODATION_META = { icon: '🛏️', color: '#1baf7a', label: 'Unterkunft' };
+const TRAVEL_FROM_META = { icon: '🛫', color: '#4a3aa7', label: 'Abflug/Abfahrt' };
+const TRAVEL_TO_META = { icon: '🛬', color: '#4a3aa7', label: 'Ankunft' };
 
-const route = useRoute();
 const tripStore = useTripStore();
-const tripId = tripStore.currentTripId as number;
-const excursions = ref<Excursion[]>([]);
+const drawers = useDrawersStore();
 const accommodations = ref<Accommodation[]>([]);
+const travelItems = ref<TravelItem[]>([]);
+const spots = ref<Spot[]>([]);
 const loading = ref(true);
 const selectedPoint = ref<MapPoint | null>(null);
 
@@ -54,49 +54,86 @@ function emojiPin(emoji: string, color: string) {
   });
 }
 
-const icons: Record<MapKind, L.DivIcon> = {
-  trip: emojiPin(MAP_KIND_META.trip.icon, MAP_KIND_META.trip.color),
-  excursion: emojiPin(MAP_KIND_META.excursion.icon, MAP_KIND_META.excursion.color),
-  accommodation: emojiPin(MAP_KIND_META.accommodation.icon, MAP_KIND_META.accommodation.color),
-};
+// Icons werden pro (Icon, Farbe)-Kombination einmal gebaut und wiederverwendet – bei den
+// dynamischen Spot-Kategorien wären sonst bei jedem renderMarkers()-Aufruf unnötig viele
+// L.divIcon-Instanzen fällig.
+const iconCache = new Map<string, L.DivIcon>();
+function iconFor(point: MapPoint) {
+  const key = `${point.icon}|${point.color}`;
+  let icon = iconCache.get(key);
+  if (!icon) {
+    icon = emojiPin(point.icon, point.color);
+    iconCache.set(key, icon);
+  }
+  return icon;
+}
 
 const points = computed<MapPoint[]>(() => {
   const result: MapPoint[] = [];
-  const trip = tripStore.currentTrip;
-  if (trip && trip.lat != null && trip.lng != null) {
-    result.push({ key: `trip-${trip.id}`, kind: 'trip', id: trip.id, lat: trip.lat, lng: trip.lng, title: trip.name });
-  }
-  for (const e of excursions.value) {
-    if (e.lat != null && e.lng != null) {
-      result.push({ key: `excursion-${e.id}`, kind: 'excursion', id: e.id, lat: e.lat, lng: e.lng, title: e.title });
-    }
-  }
   for (const a of accommodations.value) {
     if (a.lat != null && a.lng != null) {
+      result.push({ key: `accommodation-${a.id}`, origin: 'accommodation', lat: a.lat, lng: a.lng, title: a.name, ...ACCOMMODATION_META });
+    }
+  }
+  for (const t of travelItems.value) {
+    if (t.from_lat != null && t.from_lng != null) {
       result.push({
-        key: `accommodation-${a.id}`,
-        kind: 'accommodation',
-        id: a.id,
-        lat: a.lat,
-        lng: a.lng,
-        title: a.name,
+        key: `travel-from-${t.id}`,
+        origin: 'travel',
+        lat: t.from_lat,
+        lng: t.from_lng,
+        title: `${t.title} (Abflug/Abfahrt)`,
+        ...TRAVEL_FROM_META,
       });
+    }
+    if (t.to_lat != null && t.to_lng != null) {
+      result.push({
+        key: `travel-to-${t.id}`,
+        origin: 'travel',
+        lat: t.to_lat,
+        lng: t.to_lng,
+        title: `${t.title} (Ankunft)`,
+        ...TRAVEL_TO_META,
+      });
+    }
+  }
+  for (const s of spots.value) {
+    if (s.lat != null && s.lng != null) {
+      const meta = spotCategoryMeta(s.category);
+      result.push({ key: `spot-${s.id}`, origin: 'spot', lat: s.lat, lng: s.lng, title: s.title, icon: meta.icon, color: meta.color, label: s.category ?? 'Sonstiges' });
     }
   }
   return result;
 });
 
 async function loadAll() {
-  const [excursionsRes, accommodationRes] = await Promise.all([
-    api.get<Excursion[]>(`/ideas?trip_id=${tripId}`),
+  const tripId = tripStore.currentTripId;
+  if (tripId == null) return;
+  const [accommodationRes, travelRes, spotsRes] = await Promise.all([
     api.get<Accommodation[]>(`/accommodation?trip_id=${tripId}`),
+    api.get<TravelItem[]>(`/travel?trip_id=${tripId}`),
+    api.get<Spot[]>(`/spots?trip_id=${tripId}`),
   ]);
-  excursions.value = excursionsRes;
   accommodations.value = accommodationRes;
+  travelItems.value = travelRes;
+  spots.value = spotsRes;
 }
 
 function selectPoint(point: MapPoint) {
   selectedPoint.value = point;
+}
+
+// Zoomt/zentriert auf genau den Ausschnitt, der alle aktuell eingetragenen Orte zeigt – z. B.
+// nachdem man vorher auf einen einzelnen Punkt fokussiert hatte (openMapAt) oder sich verzoomt hat.
+function fitAll() {
+  if (!map) return;
+  const latLngs = points.value.map((p): L.LatLngExpression => [p.lat, p.lng]);
+  if (latLngs.length > 1) {
+    map.fitBounds(L.latLngBounds(latLngs), { padding: [32, 32] });
+  } else if (latLngs.length === 1) {
+    map.setView(latLngs[0], 13);
+  }
+  selectedPoint.value = null;
 }
 
 function renderMarkers() {
@@ -107,15 +144,14 @@ function renderMarkers() {
   for (const point of points.value) {
     const latlng: L.LatLngExpression = [point.lat, point.lng];
     latLngs.push(latlng);
-    L.marker(latlng, { icon: icons[point.kind] })
+    L.marker(latlng, { icon: iconFor(point) })
       .addTo(markersLayer)
       .on('click', () => selectPoint(point));
   }
 
-  // "Auf Karte anzeigen" aus Ausflüge/Unterkunft springt mit ?focus=<key> hierher
-  // und soll direkt auf den jeweiligen Punkt zentrieren.
-  const focusKey = typeof route.query.focus === 'string' ? route.query.focus : null;
-  const focusPoint = focusKey ? points.value.find((p) => p.key === focusKey) : null;
+  // "Auf Karte anzeigen" aus Unterkunft/Reise/Spots öffnet die Schublade und setzt
+  // drawers.mapFocusKey – hier zentrieren/hervorheben wir dann direkt auf den Punkt.
+  const focusPoint = drawers.mapFocusKey ? points.value.find((p) => p.key === drawers.mapFocusKey) : null;
 
   if (focusPoint) {
     map.setView([focusPoint.lat, focusPoint.lng], 15);
@@ -128,6 +164,8 @@ function renderMarkers() {
     map.setView([48.1351, 11.582], 5); // Fallback: Mitteleuropa
   }
 }
+
+let resizeObserver: ResizeObserver | null = null;
 
 onMounted(async () => {
   await loadAll();
@@ -145,51 +183,88 @@ onMounted(async () => {
   }).addTo(map);
   markersLayer = L.layerGroup().addTo(map);
   renderMarkers();
+
+  // Leaflet misst die Containergröße nur einmal beim Initialisieren und merkt sich das intern –
+  // ändert sich die Größe danach (Schublade öffnet/schließt, wird per Anfasser breiter/schmaler
+  // gezogen, Fenster wird verändert), rendert die Karte sonst nur den halben Ausschnitt statt
+  // sich neu zu berechnen. ResizeObserver deckt alle diese Fälle einheitlich ab.
+  resizeObserver = new ResizeObserver(() => map?.invalidateSize());
+  resizeObserver.observe(mapEl.value);
 });
 
 onUnmounted(() => {
+  resizeObserver?.disconnect();
+  resizeObserver = null;
   map?.remove();
   map = null;
 });
 
-function jumpToTrip() {
-  tripStore.requestEditTrip();
-}
+// MapView ist nicht mehr Teil des per Urlaub-Id gekeyten <router-view> (jetzt global gemountete
+// Schublade), muss also selbst auf einen Urlaubswechsel reagieren statt sich neu zu mounten.
+watch(
+  () => tripStore.currentTripId,
+  async () => {
+    await loadAll();
+    renderMarkers();
+  },
+);
+
+// Die Karte ist eine global gemountete Schublade (nicht mehr an eine Route gebunden) und bleibt
+// dauerhaft im Hintergrund geladen – beim Öffnen einmal neu laden, damit Änderungen aus der
+// Ausflüge-/Unterkunft-/Reise-Sicht (die diese Karte nicht direkt beobachten) sichtbar werden.
+watch(
+  () => drawers.mapOpen,
+  (open) => {
+    if (open) loadAll().then(renderMarkers);
+  },
+);
+
+// Fokus-Punkt kann sich ändern, während die Karte schon offen/gemountet ist (z. B. zweites
+// "Auf Karte anzeigen" direkt hintereinander).
+watch(
+  () => drawers.mapFocusKey,
+  () => renderMarkers(),
+);
 </script>
 
 <template>
   <div class="karte" v-if="!loading">
-    <h1 class="title">Karte</h1>
-    <div ref="mapEl" class="map"></div>
-
-    <div class="legend">
-      <span v-for="kind in MAP_KINDS" :key="kind">
-        <i class="dot" :style="{ background: MAP_KIND_META[kind].color }"></i>
-        {{ MAP_KIND_META[kind].icon }} {{ MAP_KIND_META[kind].label }}
-      </span>
+    <h2 class="title">Karte</h2>
+    <div class="map-wrap">
+      <div ref="mapEl" class="map"></div>
+      <button
+        type="button"
+        class="fit-btn"
+        title="Alle eingetragenen Orte anzeigen"
+        aria-label="Alle eingetragenen Orte anzeigen"
+        :disabled="!points.length"
+        @click="fitAll"
+      >
+        🔍
+      </button>
     </div>
 
     <div class="card info-panel" v-if="selectedPoint">
       <button type="button" class="close-btn" aria-label="Schließen" @click="selectedPoint = null">✕</button>
       <div class="info-head">
-        <span class="info-icon">{{ MAP_KIND_META[selectedPoint.kind].icon }}</span>
+        <span class="info-icon">{{ selectedPoint.icon }}</span>
         <div>
           <h3>{{ selectedPoint.title }}</h3>
-          <span class="info-category">{{ MAP_KIND_META[selectedPoint.kind].label }}</span>
+          <span class="info-category">{{ selectedPoint.label }}</span>
         </div>
       </div>
-      <button v-if="selectedPoint.kind === 'trip'" type="button" class="secondary jump-btn" @click="jumpToTrip">
-        Zum Urlaub
-      </button>
-      <router-link v-else-if="selectedPoint.kind === 'excursion'" to="/excursions" class="secondary jump-btn">
-        Zu den Ausflügen
+      <router-link v-if="selectedPoint.origin === 'accommodation'" to="/accommodation" class="secondary jump-btn">
+        Zur Unterkunft
       </router-link>
-      <router-link v-else to="/accommodation" class="secondary jump-btn"> Zur Unterkunft </router-link>
+      <router-link v-else-if="selectedPoint.origin === 'travel'" to="/travel" class="secondary jump-btn">
+        Zur Reise
+      </router-link>
+      <router-link v-else to="/excursions" class="secondary jump-btn"> Zu den Spots </router-link>
     </div>
 
     <p v-if="!points.length" class="empty">
-      Noch keine Orte mit Koordinaten hinterlegt. Füge bei Urlaub, Ausflügen oder Unterkunft einen
-      Google-Maps-Link hinzu, damit sie hier erscheinen.
+      Noch keine Orte mit Koordinaten hinterlegt. Füge bei Unterkunft, Reise-Einträgen oder Spots
+      einen Maps-Link (Google/Apple) hinzu, damit sie hier erscheinen.
     </p>
   </div>
 </template>
@@ -198,20 +273,48 @@ function jumpToTrip() {
 .karte {
   display: flex;
   flex-direction: column;
-  padding: var(--space-3) var(--space-4) var(--space-4);
+  padding: var(--space-3);
   gap: var(--space-3);
 }
 
 .title {
   margin: 0;
+  font-size: 1.1rem;
+  color: var(--color-primary-dark);
+}
+
+.map-wrap {
+  position: relative;
 }
 
 .map {
   height: 55vh;
-  min-height: 360px;
+  min-height: 320px;
   border-radius: var(--radius-md);
   overflow: hidden;
   border: 1px solid var(--color-border);
+}
+
+.fit-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1000;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  border: 2px solid rgba(0, 0, 0, 0.25);
+  color: var(--color-text);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.fit-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 /* Die OpenStreetMap-Kacheln selbst kennen keinen Dark Mode – ein Farb-Invert nur auf der
@@ -227,25 +330,8 @@ function jumpToTrip() {
   }
 }
 
-.legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-4);
-  font-size: 0.85rem;
-  color: var(--color-text-muted);
-}
-
-.dot {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  margin-right: 4px;
-}
-
 .info-panel {
   position: relative;
-  max-width: 420px;
   display: flex;
   flex-direction: column;
   gap: var(--space-2);

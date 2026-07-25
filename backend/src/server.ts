@@ -20,6 +20,7 @@ import { todosRoutes } from './routes/todos.js';
 import { notesRoutes } from './routes/notes.js';
 import { diaryRoutes } from './routes/diary.js';
 import { travelRoutes } from './routes/travel.js';
+import { spotsRoutes } from './routes/spots.js';
 
 const isProd = process.env.NODE_ENV === 'production';
 const port = Number(process.env.PORT ?? 3000);
@@ -73,6 +74,7 @@ app.register(
       await protectedApi.register(notesRoutes);
       await protectedApi.register(diaryRoutes);
       await protectedApi.register(travelRoutes);
+      await protectedApi.register(spotsRoutes);
     });
   },
   { prefix: '/api' },

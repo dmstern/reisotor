@@ -4,9 +4,11 @@ import { useRouter } from 'vue-router';
 import { api, ApiError } from '../api/client';
 import type { User } from '../api/types';
 import { useAuthStore } from '../stores/auth';
+import { useNavPositionStore } from '../stores/navPosition';
 
 const auth = useAuthStore();
 const router = useRouter();
+const navPosition = useNavPositionStore();
 const users = ref<User[]>([]);
 const loading = ref(true);
 
@@ -258,6 +260,27 @@ async function onImportFileSelected(event: Event) {
     </div>
 
     <div class="card">
+      <h2>Navigation</h2>
+      <p class="hint">Position der Navigationsleiste, getrennt für Desktop und mobile Bedienung.</p>
+      <div class="nav-position-row">
+        <label>
+          Desktop
+          <select v-model="navPosition.desktop">
+            <option value="top">Oben</option>
+            <option value="bottom">Unten</option>
+          </select>
+        </label>
+        <label>
+          Mobil
+          <select v-model="navPosition.mobile">
+            <option value="top">Oben</option>
+            <option value="bottom">Unten</option>
+          </select>
+        </label>
+      </div>
+    </div>
+
+    <div class="card">
       <h2>Passwort ändern</h2>
       <form class="form" @submit.prevent="changePassword">
         <label>
@@ -419,6 +442,20 @@ async function onImportFileSelected(event: Event) {
 
 .username-form {
   margin-bottom: var(--space-3);
+}
+
+.nav-position-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.nav-position-row label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-weight: 600;
+  font-size: 0.9rem;
 }
 
 label {

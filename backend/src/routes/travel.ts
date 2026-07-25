@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { db, ensureDefaultSharedBudget } from '../db/index.js';
+import { resolveLatLng } from '../utils/mapsLink.js';
 
 interface TravelBody {
   trip_id: number;
@@ -16,6 +17,12 @@ interface TravelBody {
   seat?: string;
   link?: string;
   note?: string;
+  from_maps_link?: string;
+  from_lat?: number;
+  from_lng?: number;
+  to_maps_link?: string;
+  to_lat?: number;
+  to_lng?: number;
 }
 
 interface TravelRow {
@@ -78,6 +85,19 @@ function planBudgetExpense(tripId: number, existingBudgetExpenseId: number | nul
   return { budgetExpenseId: result.lastInsertRowid as number, staleIdToDelete: null };
 }
 
+async function resolveFromToLatLng(body: TravelBody) {
+  if ((body.from_lat == null || body.from_lng == null) && body.from_maps_link) {
+    const resolved = await resolveLatLng(body.from_maps_link);
+    body.from_lat = resolved?.lat;
+    body.from_lng = resolved?.lng;
+  }
+  if ((body.to_lat == null || body.to_lng == null) && body.to_maps_link) {
+    const resolved = await resolveLatLng(body.to_maps_link);
+    body.to_lat = resolved?.lat;
+    body.to_lng = resolved?.lng;
+  }
+}
+
 export const travelRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: { trip_id?: string } }>('/travel', async (req, reply) => {
     if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
@@ -86,14 +106,16 @@ export const travelRoutes: FastifyPluginAsync = async (app) => {
 
   app.post<{ Body: TravelBody }>('/travel', async (req, reply) => {
     const body = req.body;
+    await resolveFromToLatLng(body);
     const { budgetExpenseId } = planBudgetExpense(body.trip_id, null, body);
 
     const result = db
       .prepare(
         `INSERT INTO travel_items
           (trip_id, title, type, from_location, to_location, date, departure_time, checkin_info, amount,
-           paid_by_user_id, luggage, seat, link, note, budget_expense_id)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+           paid_by_user_id, luggage, seat, link, note, budget_expense_id,
+           from_maps_link, from_lat, from_lng, to_maps_link, to_lat, to_lng)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         body.trip_id,
@@ -111,6 +133,12 @@ export const travelRoutes: FastifyPluginAsync = async (app) => {
         body.link ?? null,
         body.note ?? null,
         budgetExpenseId,
+        body.from_maps_link ?? null,
+        body.from_lat ?? null,
+        body.from_lng ?? null,
+        body.to_maps_link ?? null,
+        body.to_lat ?? null,
+        body.to_lng ?? null,
       );
     reply.code(201);
     return db.prepare('SELECT * FROM travel_items WHERE id = ?').get(result.lastInsertRowid);
@@ -123,12 +151,14 @@ export const travelRoutes: FastifyPluginAsync = async (app) => {
     if (!existing) return reply.code(404).send({ error: 'Nicht gefunden' });
 
     const body = req.body;
+    await resolveFromToLatLng(body);
     const { budgetExpenseId, staleIdToDelete } = planBudgetExpense(existing.trip_id, existing.budget_expense_id, body);
 
     db.prepare(
       `UPDATE travel_items SET title = ?, type = ?, from_location = ?, to_location = ?, date = ?,
          departure_time = ?, checkin_info = ?, amount = ?, paid_by_user_id = ?, luggage = ?, seat = ?,
-         link = ?, note = ?, budget_expense_id = ?
+         link = ?, note = ?, budget_expense_id = ?,
+         from_maps_link = ?, from_lat = ?, from_lng = ?, to_maps_link = ?, to_lat = ?, to_lng = ?
        WHERE id = ?`,
     ).run(
       body.title,
@@ -145,6 +175,12 @@ export const travelRoutes: FastifyPluginAsync = async (app) => {
       body.link ?? null,
       body.note ?? null,
       budgetExpenseId,
+      body.from_maps_link ?? null,
+      body.from_lat ?? null,
+      body.from_lng ?? null,
+      body.to_maps_link ?? null,
+      body.to_lat ?? null,
+      body.to_lng ?? null,
       req.params.id,
     );
 

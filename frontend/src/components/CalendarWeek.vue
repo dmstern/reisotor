@@ -95,7 +95,11 @@ function onDrop(event: DragEvent, date: string) {
 <style scoped>
 .week {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  /* minmax(0, 1fr) statt nur 1fr: ohne das explizite Minimum von 0 verhindert die intrinsische
+     Mindestbreite von unumbrochenem Text (z. B. langer Termin-Titel) das gleichmäßige
+     Zusammenschrumpfen der Spalten – einzelne Tage würden sonst aus dem Raster herausfallen,
+     besonders in der schmalen Kalender-Schublade. */
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: var(--space-1);
   margin-bottom: var(--space-1);
 }
@@ -111,6 +115,8 @@ function onDrop(event: DragEvent, date: string) {
   color: var(--color-text);
   cursor: pointer;
   min-height: 64px;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .day:hover {

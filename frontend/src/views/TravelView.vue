@@ -3,11 +3,14 @@ import { onMounted, ref } from 'vue';
 import { api } from '../api/client';
 import type { TravelItem, User } from '../api/types';
 import { useTripStore } from '../stores/trip';
+import { useDrawersStore } from '../stores/drawers';
+import { parseLatLngFromMapsLink } from '../utils/googleMaps';
 import Modal from '../components/Modal.vue';
 import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
 
 const tripStore = useTripStore();
+const drawers = useDrawersStore();
 const tripId = tripStore.currentTripId as number;
 const items = ref<TravelItem[]>([]);
 const users = ref<User[]>([]);
@@ -21,6 +24,8 @@ const emptyForm = () => ({
   type: 'Flug',
   from_location: '',
   to_location: '',
+  from_maps_link: '',
+  to_maps_link: '',
   date: '',
   departure_time: '',
   checkin_info: '',
@@ -33,9 +38,13 @@ const emptyForm = () => ({
 });
 
 const form = ref(emptyForm());
+const fromMapsLinkResolved = ref<boolean | null>(null);
+const toMapsLinkResolved = ref<boolean | null>(null);
 
 const editingItem = ref<TravelItem | null>(null);
 const editForm = ref(emptyForm());
+const editFromMapsLinkResolved = ref<boolean | null>(null);
+const editToMapsLinkResolved = ref<boolean | null>(null);
 
 onMounted(async () => {
   const [itemsRes, usersRes] = await Promise.all([
@@ -54,12 +63,20 @@ function userLabel(id: number | null) {
 }
 
 function toBody(f: ReturnType<typeof emptyForm>) {
+  const fromParsed = parseLatLngFromMapsLink(f.from_maps_link);
+  const toParsed = parseLatLngFromMapsLink(f.to_maps_link);
   return {
     trip_id: tripId,
     title: f.title.trim(),
     type: f.type || undefined,
     from_location: f.from_location || undefined,
     to_location: f.to_location || undefined,
+    from_maps_link: f.from_maps_link || undefined,
+    from_lat: fromParsed?.lat,
+    from_lng: fromParsed?.lng,
+    to_maps_link: f.to_maps_link || undefined,
+    to_lat: toParsed?.lat,
+    to_lng: toParsed?.lng,
     date: f.date || undefined,
     departure_time: f.departure_time || undefined,
     checkin_info: f.checkin_info || undefined,
@@ -72,17 +89,35 @@ function toBody(f: ReturnType<typeof emptyForm>) {
   };
 }
 
+function checkFromMapsLink() {
+  fromMapsLinkResolved.value = form.value.from_maps_link ? parseLatLngFromMapsLink(form.value.from_maps_link) != null : null;
+}
+function checkToMapsLink() {
+  toMapsLinkResolved.value = form.value.to_maps_link ? parseLatLngFromMapsLink(form.value.to_maps_link) != null : null;
+}
+function checkEditFromMapsLink() {
+  editFromMapsLinkResolved.value = editForm.value.from_maps_link
+    ? parseLatLngFromMapsLink(editForm.value.from_maps_link) != null
+    : null;
+}
+function checkEditToMapsLink() {
+  editToMapsLinkResolved.value = editForm.value.to_maps_link
+    ? parseLatLngFromMapsLink(editForm.value.to_maps_link) != null
+    : null;
+}
+
 async function submit() {
   if (!form.value.title.trim()) return;
   const created = await api.post<TravelItem>('/travel', toBody(form.value));
   items.value.push(created);
-  form.value = emptyForm();
-  showForm.value = false;
+  closeForm();
 }
 
 function closeForm() {
   showForm.value = false;
   form.value = emptyForm();
+  fromMapsLinkResolved.value = null;
+  toMapsLinkResolved.value = null;
 }
 
 function startEdit(item: TravelItem) {
@@ -92,6 +127,8 @@ function startEdit(item: TravelItem) {
     type: item.type ?? 'Flug',
     from_location: item.from_location ?? '',
     to_location: item.to_location ?? '',
+    from_maps_link: item.from_maps_link ?? '',
+    to_maps_link: item.to_maps_link ?? '',
     date: item.date ?? '',
     departure_time: item.departure_time ?? '',
     checkin_info: item.checkin_info ?? '',
@@ -102,6 +139,8 @@ function startEdit(item: TravelItem) {
     link: item.link ?? '',
     note: item.note ?? '',
   };
+  editFromMapsLinkResolved.value = null;
+  editToMapsLinkResolved.value = null;
 }
 
 async function submitEdit() {
@@ -156,6 +195,22 @@ function typeIcon(type: string | null) {
           <input v-model="form.to_location" type="text" />
         </label>
       </div>
+      <div class="row">
+        <label>
+          Standort Abflug/Abfahrt (Maps-Link (Google/Apple), optional)
+          <input v-model="form.from_maps_link" type="url" @blur="checkFromMapsLink" />
+        </label>
+        <label>
+          Standort Ankunft (Maps-Link (Google/Apple), optional)
+          <input v-model="form.to_maps_link" type="url" @blur="checkToMapsLink" />
+        </label>
+      </div>
+      <p v-if="fromMapsLinkResolved === true || toMapsLinkResolved === true" class="hint success">
+        📍 Standort erkannt – erscheint auf der Karte
+      </p>
+      <p v-if="fromMapsLinkResolved === false || toMapsLinkResolved === false" class="hint">
+        Ein Standort konnte nicht automatisch erkannt werden.
+      </p>
       <div class="row">
         <label>
           Datum
@@ -233,6 +288,22 @@ function typeIcon(type: string | null) {
         </p>
         <p v-if="item.note">{{ item.note }}</p>
         <a v-if="item.link" :href="item.link" target="_blank" rel="noopener">Details/Check-in ↗</a>
+        <button
+          v-if="item.from_lat != null && item.from_lng != null"
+          type="button"
+          class="secondary map-btn"
+          @click="drawers.openMapAt(`travel-from-${item.id}`)"
+        >
+          🗺️ Abflug auf Karte anzeigen
+        </button>
+        <button
+          v-if="item.to_lat != null && item.to_lng != null"
+          type="button"
+          class="secondary map-btn"
+          @click="drawers.openMapAt(`travel-to-${item.id}`)"
+        >
+          🗺️ Ankunft auf Karte anzeigen
+        </button>
       </div>
     </TransitionGroup>
     <p v-if="!items.length" class="empty">Noch keine Reise-Infos eingetragen.</p>
@@ -263,6 +334,22 @@ function typeIcon(type: string | null) {
             <input v-model="editForm.to_location" type="text" />
           </label>
         </div>
+        <div class="row">
+          <label>
+            Standort Abflug/Abfahrt (Maps-Link (Google/Apple), optional)
+            <input v-model="editForm.from_maps_link" type="url" @blur="checkEditFromMapsLink" />
+          </label>
+          <label>
+            Standort Ankunft (Maps-Link (Google/Apple), optional)
+            <input v-model="editForm.to_maps_link" type="url" @blur="checkEditToMapsLink" />
+          </label>
+        </div>
+        <p v-if="editFromMapsLinkResolved === true || editToMapsLinkResolved === true" class="hint success">
+          📍 Standort erkannt
+        </p>
+        <p v-if="editFromMapsLinkResolved === false || editToMapsLinkResolved === false" class="hint">
+          Ein Standort konnte nicht automatisch erkannt werden.
+        </p>
         <div class="row">
           <label>
             Datum
@@ -360,6 +447,10 @@ label {
   color: var(--color-text-muted);
 }
 
+.hint.success {
+  color: var(--color-success);
+}
+
 .cards {
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
 }
@@ -368,6 +459,12 @@ label {
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+
+.map-btn {
+  align-self: flex-start;
+  font-size: 0.85rem;
+  padding: 4px 10px;
 }
 
 .travel-head {

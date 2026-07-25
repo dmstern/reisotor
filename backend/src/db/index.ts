@@ -210,6 +210,28 @@ CREATE TABLE IF NOT EXISTS travel_items (
   note TEXT,
   budget_expense_id INTEGER REFERENCES budget_items(id)
 );
+
+CREATE TABLE IF NOT EXISTS spots (
+  id INTEGER PRIMARY KEY,
+  trip_id INTEGER NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  image_url TEXT,
+  category TEXT,
+  note TEXT,
+  maps_link TEXT,
+  lat REAL,
+  lng REAL,
+  created_by INTEGER REFERENCES users(id),
+  discarded INTEGER NOT NULL DEFAULT 0
+);
+
+-- Stationen eines Ausflugs: welche Spots gehören zu welchem Ausflug (Batch 13).
+CREATE TABLE IF NOT EXISTS excursion_spots (
+  id INTEGER PRIMARY KEY,
+  idea_id INTEGER NOT NULL REFERENCES ideas(id) ON DELETE CASCADE,
+  spot_id INTEGER NOT NULL REFERENCES spots(id) ON DELETE CASCADE,
+  UNIQUE(idea_id, spot_id)
+);
 `);
 
 // Additive Migrationen (idempotent): erlaubt, das Schema weiterzuentwickeln,
@@ -270,10 +292,39 @@ ensureColumn('shopping_items', 'period', 'TEXT');
 ensureColumn('todo_items', 'period', 'TEXT');
 ensureColumn('ideas', 'suggested_by_user_id', 'INTEGER REFERENCES users(id)');
 ensureColumn('trips', 'image_url', 'TEXT');
+// Standort Abflug-/Ankunftsort eines Reise-Eintrags (Batch 13) – analog zum maps_link/lat/lng-
+// Muster bei Ausflügen/Unterkunft, hier je einmal für "Von" und "Nach".
+ensureColumn('travel_items', 'from_maps_link', 'TEXT');
+ensureColumn('travel_items', 'from_lat', 'REAL');
+ensureColumn('travel_items', 'from_lng', 'REAL');
+ensureColumn('travel_items', 'to_maps_link', 'TEXT');
+ensureColumn('travel_items', 'to_lat', 'REAL');
+ensureColumn('travel_items', 'to_lng', 'REAL');
 
-// Spots als eigenständiges Konzept wurden zugunsten einer reinen Kartenansicht (Batch 4)
-// wieder entfernt – Karte zeigt seitdem nur noch Urlaub/Ausflüge/Unterkunft mit Koordinaten.
-db.exec('DROP TABLE IF EXISTS spots');
+// Ausflug wird zum reinen Container-Objekt (Titel/Bild/Notiz/Spots) mit optionalem eigenen
+// Datum für die Kalender-Einplanung – Standort/Link/Status wandern zu den zugeordneten Spots
+// bzw. entfallen (ersetzt durch das Datum-Feld selbst: kein Datum = "in Planung").
+ensureColumn('ideas', 'date', 'TEXT');
+ensureColumn('ideas', 'created_by', 'INTEGER REFERENCES users(id)');
+dropColumnIfExists('ideas', 'link');
+dropColumnIfExists('ideas', 'maps_link');
+dropColumnIfExists('ideas', 'lat');
+dropColumnIfExists('ideas', 'lng');
+dropColumnIfExists('ideas', 'status');
+dropColumnIfExists('ideas', 'suggested_by_user_id');
+
+// Spot übernimmt die bisherige Rolle des alten "Ausflugs" (Ziel/Ort): "name" -> "title",
+// zusätzlich Bild-URL, Ersteller und Verworfen-Status. Additiv statt im CREATE TABLE, falls die
+// Tabelle (z. B. in einer bereits laufenden Dev-Instanz) schon mit dem alten Schema angelegt wurde.
+ensureColumn('spots', 'title', 'TEXT');
+ensureColumn('spots', 'image_url', 'TEXT');
+ensureColumn('spots', 'created_by', 'INTEGER REFERENCES users(id)');
+ensureColumn('spots', 'discarded', 'INTEGER NOT NULL DEFAULT 0');
+if (hasColumn('spots', 'name')) {
+  db.exec("UPDATE spots SET title = name WHERE title IS NULL");
+  dropColumnIfExists('spots', 'name');
+}
+dropColumnIfExists('spots', 'link');
 
 // trip_id auf allen Inhalts-Tabellen: ordnet jede Zeile einem Urlaub zu. ON DELETE CASCADE
 // sorgt dafür, dass beim Löschen eines Urlaubs alle zugehörigen Daten mit verschwinden.

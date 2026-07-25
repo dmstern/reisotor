@@ -66,7 +66,7 @@ function onSubmit() {
       </label>
     </div>
     <label>
-      Google-Maps-Link (optional)
+      Maps-Link (Google/Apple) (optional)
       <input v-model="form.maps_link" type="url" @blur="checkMapsLink" />
     </label>
     <p v-if="mapsLinkResolved === true" class="hint success">📍 Standort erkannt – erscheint auf der Karte</p>

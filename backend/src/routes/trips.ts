@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { db, ensureDefaultSharedBudget } from '../db/index.js';
+import { resolveLatLng, tilePreviewUrl } from '../utils/mapsLink.js';
 
 interface TripBody {
   name: string;
@@ -24,7 +25,16 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.post<{ Body: TripBody }>('/trips', async (req, reply) => {
-    const { name, destination, start_date, end_date, maps_link, lat, lng, image_url } = req.body;
+    const { name, destination, start_date, end_date, maps_link } = req.body;
+    let { lat, lng, image_url } = req.body;
+    if ((lat == null || lng == null) && maps_link) {
+      const resolved = await resolveLatLng(maps_link);
+      lat = resolved?.lat;
+      lng = resolved?.lng;
+    }
+    if (!image_url && lat != null && lng != null) {
+      image_url = tilePreviewUrl(lat, lng);
+    }
     const result = db
       .prepare(
         'INSERT INTO trips (name, destination, start_date, end_date, maps_link, lat, lng, image_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
@@ -37,7 +47,16 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.put<{ Params: { id: string }; Body: TripBody }>('/trips/:id', async (req, reply) => {
-    const { name, destination, start_date, end_date, maps_link, lat, lng, image_url } = req.body;
+    const { name, destination, start_date, end_date, maps_link } = req.body;
+    let { lat, lng, image_url } = req.body;
+    if ((lat == null || lng == null) && maps_link) {
+      const resolved = await resolveLatLng(maps_link);
+      lat = resolved?.lat;
+      lng = resolved?.lng;
+    }
+    if (!image_url && lat != null && lng != null) {
+      image_url = tilePreviewUrl(lat, lng);
+    }
     const result = db
       .prepare(
         'UPDATE trips SET name = ?, destination = ?, start_date = ?, end_date = ?, maps_link = ?, lat = ?, lng = ?, image_url = ? WHERE id = ?',

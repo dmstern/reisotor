@@ -1,23 +1,24 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
+import { useNavPositionStore } from '../stores/navPosition';
+import { SECTION_ICONS } from '../utils/sectionIcons';
 
 const auth = useAuthStore();
 const router = useRouter();
+const navPosition = useNavPositionStore();
 
 const links = [
-  { to: '/', label: 'Übersicht', icon: '🏠' },
-  { to: '/schedule', label: 'Kalender', icon: '📅' },
-  { to: '/packing', label: 'Packliste', icon: '🧳' },
-  { to: '/shopping', label: 'Einkauf', icon: '🛒' },
-  { to: '/todo', label: 'ToDo', icon: '✅' },
-  { to: '/excursions', label: 'Ausflüge', icon: '🎒' },
-  { to: '/travel', label: 'Reise', icon: '✈️' },
-  { to: '/accommodation', label: 'Unterkunft', icon: '🛏️' },
-  { to: '/budget', label: 'Budget', icon: '💶' },
-  { to: '/map', label: 'Karte', icon: '🗺️' },
-  { to: '/diary', label: 'Tagebuch', icon: '📔' },
-  { to: '/notes', label: 'Notizen', icon: '📝' },
+  { to: '/', label: 'Übersicht', icon: SECTION_ICONS.dashboard },
+  { to: '/packing', label: 'Packliste', icon: SECTION_ICONS.packing },
+  { to: '/shopping', label: 'Einkauf', icon: SECTION_ICONS.shopping },
+  { to: '/todo', label: 'ToDo', icon: SECTION_ICONS.todo },
+  { to: '/excursions', label: 'Ausflüge', icon: SECTION_ICONS.excursions },
+  { to: '/travel', label: 'Reise', icon: SECTION_ICONS.travel },
+  { to: '/accommodation', label: 'Unterkunft', icon: SECTION_ICONS.accommodation },
+  { to: '/budget', label: 'Budget', icon: SECTION_ICONS.budget },
+  { to: '/diary', label: 'Tagebuch', icon: SECTION_ICONS.diary },
+  { to: '/notes', label: 'Notizen', icon: SECTION_ICONS.notes },
 ];
 
 async function onLogout() {
@@ -33,7 +34,7 @@ function onLinkClick(event: MouseEvent) {
 </script>
 
 <template>
-  <nav class="navbar">
+  <nav class="navbar" :class="[`mobile-${navPosition.mobile}`, `desktop-${navPosition.desktop}`]">
     <div class="links">
       <router-link v-for="link in links" :key="link.to" :to="link.to" class="link" @click="onLinkClick">
         <span class="icon">{{ link.icon }}</span>
@@ -47,17 +48,31 @@ function onLinkClick(event: MouseEvent) {
 <style scoped>
 .navbar {
   position: sticky;
-  bottom: 0;
+  top: 56px;
   left: 0;
   right: 0;
   display: flex;
   align-items: center;
   gap: var(--space-2);
   background: var(--color-surface);
-  border-top: 1px solid var(--color-border);
   padding: var(--space-2) var(--space-3);
   overflow-x: auto;
   z-index: 10;
+  border-top: none;
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* Position ist pro Gerätebreite konfigurierbar (Profil-Einstellungen) – Default für beide "oben".
+   "Oben" nutzt sticky (die NavBar steht dafür im Markup VOR dem Hauptinhalt, siehe App.vue – nur
+   an ihrer natürlichen Fluss-Position hält sticky sie beim Scrollen tatsächlich fest). "Unten"
+   braucht dagegen position:fixed, unabhängig von der DOM-Reihenfolge an den Viewport-Rand gepinnt;
+   .page hat dafür bereits durchgehend padding-bottom reserviert. */
+.navbar.mobile-bottom {
+  position: fixed;
+  top: auto;
+  bottom: 0;
+  border-top: 1px solid var(--color-border);
+  border-bottom: none;
 }
 
 .links {
@@ -93,12 +108,21 @@ function onLinkClick(event: MouseEvent) {
 }
 
 @media (min-width: 800px) {
-  .navbar {
+  .navbar.mobile-bottom {
+    /* Mobile Einstellung gilt hier nicht mehr – Desktop-Einstellung übernimmt. */
     position: sticky;
     top: 56px;
     bottom: auto;
     border-top: none;
     border-bottom: 1px solid var(--color-border);
+  }
+
+  .navbar.desktop-bottom {
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    border-top: 1px solid var(--color-border);
+    border-bottom: none;
   }
 
   .link {

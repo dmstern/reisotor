@@ -3,12 +3,14 @@ import { onMounted, ref } from 'vue';
 import { api } from '../api/client';
 import type { Accommodation, User } from '../api/types';
 import { useTripStore } from '../stores/trip';
+import { useDrawersStore } from '../stores/drawers';
 import { parseLatLngFromMapsLink } from '../utils/googleMaps';
 import Modal from '../components/Modal.vue';
 import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
 
 const tripStore = useTripStore();
+const drawers = useDrawersStore();
 const tripId = tripStore.currentTripId as number;
 const accommodations = ref<Accommodation[]>([]);
 const users = ref<User[]>([]);
@@ -178,7 +180,7 @@ function formatDate(d: string | null) {
         <input v-model="form.link" type="url" />
       </label>
       <label>
-        Google-Maps-Link
+        Maps-Link (Google/Apple)
         <input v-model="form.maps_link" type="url" @blur="checkMapsLink" />
       </label>
       <p v-if="mapsLinkResolved === true" class="hint success">📍 Standort erkannt – erscheint auf der Karte</p>
@@ -237,12 +239,14 @@ function formatDate(d: string | null) {
         <div class="links">
           <a v-if="acc.link" :href="acc.link" target="_blank" rel="noopener">Buchung ↗</a>
           <a v-if="acc.maps_link" :href="acc.maps_link" target="_blank" rel="noopener">📍 Extern öffnen ↗</a>
-          <router-link
+          <button
             v-if="acc.lat != null && acc.lng != null"
-            :to="{ path: '/map', query: { focus: `accommodation-${acc.id}` } }"
+            type="button"
+            class="secondary map-btn"
+            @click="drawers.openMapAt(`accommodation-${acc.id}`)"
           >
             🗺️ Auf Karte anzeigen
-          </router-link>
+          </button>
         </div>
       </div>
     </TransitionGroup>
@@ -287,7 +291,7 @@ function formatDate(d: string | null) {
           <input v-model="editForm.link" type="url" />
         </label>
         <label>
-          Google-Maps-Link
+          Maps-Link (Google/Apple)
           <input v-model="editForm.maps_link" type="url" @blur="checkEditMapsLink" />
         </label>
         <p v-if="editMapsLinkResolved === true" class="hint success">📍 Standort erkannt</p>
@@ -398,8 +402,15 @@ label {
 
 .links {
   display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: var(--space-3);
   margin-top: var(--space-2);
+}
+
+.map-btn {
+  font-size: 0.85rem;
+  padding: 4px 10px;
 }
 
 .empty {

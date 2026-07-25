@@ -1,4 +1,4 @@
-import type { CalendarEntry, ScheduleItem, TodoItem, TravelItem, Trip } from '../api/types';
+import type { CalendarEntry, Excursion, ScheduleItem, TodoItem, TravelItem, Trip } from '../api/types';
 
 export function scheduleItemToEntry(item: ScheduleItem): CalendarEntry {
   return {
@@ -11,7 +11,7 @@ export function scheduleItemToEntry(item: ScheduleItem): CalendarEntry {
     note: item.note,
     location: item.location,
     category: item.category,
-    ideaId: item.idea_id,
+    ideaId: null,
     todoId: null,
     travelId: null,
     scheduleItem: item,
@@ -69,7 +69,7 @@ export function buildTodoEntries(todos: TodoItem[]): CalendarEntry[] {
       date: t.due_date,
       endDate: t.due_date,
       time: null,
-      title: `ToDo: ${t.title}`,
+      title: t.title,
       note: t.note,
       location: null,
       category: 'todo' as const,
@@ -102,16 +102,41 @@ export function buildTravelEntries(travelItems: TravelItem[]): CalendarEntry[] {
     }));
 }
 
+// Ausflüge mit gesetztem Datum erscheinen automatisch (nicht editierbar) im Kalender – das Datum
+// selbst ist die einzige Kalender-Verknüpfung (kein separater schedule_items-Eintrag mehr nötig,
+// im Unterschied zum alten Drag&Drop-Einplanen-Mechanismus).
+export function buildExcursionEntries(excursions: Excursion[]): CalendarEntry[] {
+  return excursions
+    .filter((e): e is Excursion & { date: string } => !!e.date)
+    .map((e) => ({
+      key: `excursion-${e.id}`,
+      kind: 'excursion' as const,
+      date: e.date,
+      endDate: e.date,
+      time: null,
+      title: e.title,
+      note: e.note,
+      location: null,
+      category: 'excursion' as const,
+      ideaId: e.id,
+      todoId: null,
+      travelId: null,
+      scheduleItem: null,
+    }));
+}
+
 export function buildAllEntries(
   items: ScheduleItem[],
   trip: Trip | null,
   todos: TodoItem[],
   travelItems: TravelItem[],
+  excursions: Excursion[],
 ): CalendarEntry[] {
   return [
     ...items.map(scheduleItemToEntry),
     ...buildTripEntries(trip),
     ...buildTodoEntries(todos),
     ...buildTravelEntries(travelItems),
+    ...buildExcursionEntries(excursions),
   ];
 }
