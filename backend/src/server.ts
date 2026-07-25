@@ -23,7 +23,12 @@ const isProd = process.env.NODE_ENV === 'production';
 const port = Number(process.env.PORT ?? 3000);
 const sessionSecret = process.env.SESSION_SECRET ?? 'dev-secret-please-change-me-32chars';
 
-const app = Fastify({ logger: true, bodyLimit: 10 * 1024 * 1024 });
+// trustProxy: hinter Caddy (TLS-Terminierung) sieht Fastify sonst nur die interne
+// Klartext-Verbindung und hält request.protocol für 'http' – die Session-Cookie-Logik
+// von @fastify/session verweigert dann bei cookie.secure=true (Produktion) das Setzen
+// des Set-Cookie-Headers komplett (siehe isInsecureConnection-Check dort). Mit
+// trustProxy wertet Fastify den von Caddy gesetzten X-Forwarded-Proto-Header aus.
+const app = Fastify({ logger: true, bodyLimit: 10 * 1024 * 1024, trustProxy: true });
 
 await app.register(cors, {
   origin: isProd ? false : ['http://localhost:5173'],
@@ -66,7 +71,10 @@ app.register(
 );
 
 app
-  .listen({ port, host: '0.0.0.0' })
+  // Nur auf localhost lauschen: Caddy läuft auf demselben Host und proxied
+  // /api/* auf localhost:3000 – ein Binding auf 0.0.0.0 würde das Backend
+  // direkt aus dem Internet erreichbar machen und Caddys HTTPS umgehen.
+  .listen({ port, host: '127.0.0.1' })
   .then((addr) => app.log.info(`Reisotor backend läuft auf ${addr}`))
   .catch((err) => {
     app.log.error(err);
