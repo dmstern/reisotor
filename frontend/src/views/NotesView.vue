@@ -101,7 +101,7 @@ async function remove(id: number) {
 
     <form v-if="showForm" class="card add-form" @submit.prevent="submit">
       <input v-model="form.title" type="text" placeholder="Titel (optional)" />
-      <textarea v-model="form.content" placeholder="Inhalt" rows="4" required></textarea>
+      <textarea v-model="form.content" placeholder="Inhalt" rows="8" required></textarea>
       <p class="syntax-hint">
         <code>**fett**</code> · <code>_kursiv_</code> · <code>* Punkt</code> für Listen · Links werden
         automatisch erkannt
@@ -131,7 +131,7 @@ async function remove(id: number) {
     >
       <form class="add-form" @submit.prevent="submitEdit">
         <input v-model="editForm.title" type="text" placeholder="Titel (optional)" />
-        <textarea v-model="editForm.content" rows="4" required></textarea>
+        <textarea v-model="editForm.content" rows="8" required></textarea>
         <p class="syntax-hint">
           <code>**fett**</code> · <code>_kursiv_</code> · <code>* Punkt</code> für Listen · Links werden
           automatisch erkannt
@@ -145,8 +145,10 @@ async function remove(id: number) {
 <style scoped>
 .header {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
+  gap: var(--space-2);
   margin-bottom: var(--space-3);
 }
 

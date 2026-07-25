@@ -9,16 +9,17 @@ interface ExpenseBody {
   paid_by_user_id?: number | null;
   date?: string;
   note?: string;
+  budget_id?: number | null;
 }
 
-interface TargetBody {
+interface BudgetBody {
   trip_id: number;
+  name: string;
   owner_id?: number | null;
-  amount: number;
 }
 
-interface CategoryTargetBody {
-  trip_id: number;
+interface AllocationBody {
+  budget_id: number;
   category: string;
   amount: number;
 }
@@ -51,25 +52,25 @@ export const budgetRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.post<{ Body: ExpenseBody }>('/budget', async (req, reply) => {
-    const { trip_id, title, category, amount, paid_by_user_id, date, note } = req.body;
+    const { trip_id, title, category, amount, paid_by_user_id, date, note, budget_id } = req.body;
     const result = db
       .prepare(
-        `INSERT INTO budget_items (trip_id, title, category, amount, paid_by_user_id, date, note)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO budget_items (trip_id, title, category, amount, paid_by_user_id, date, note, budget_id)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       )
-      .run(trip_id, title, category ?? null, amount, paid_by_user_id ?? null, date ?? null, note ?? null);
+      .run(trip_id, title, category ?? null, amount, paid_by_user_id ?? null, date ?? null, note ?? null, budget_id ?? null);
     reply.code(201);
     return db.prepare('SELECT * FROM budget_items WHERE id = ?').get(result.lastInsertRowid);
   });
 
   app.put<{ Params: { id: string }; Body: ExpenseBody }>('/budget/:id', async (req, reply) => {
-    const { title, category, amount, paid_by_user_id, date, note } = req.body;
+    const { title, category, amount, paid_by_user_id, date, note, budget_id } = req.body;
     const result = db
       .prepare(
-        `UPDATE budget_items SET title = ?, category = ?, amount = ?, paid_by_user_id = ?, date = ?, note = ?
+        `UPDATE budget_items SET title = ?, category = ?, amount = ?, paid_by_user_id = ?, date = ?, note = ?, budget_id = ?
          WHERE id = ?`,
       )
-      .run(title, category ?? null, amount, paid_by_user_id ?? null, date ?? null, note ?? null, req.params.id);
+      .run(title, category ?? null, amount, paid_by_user_id ?? null, date ?? null, note ?? null, budget_id ?? null, req.params.id);
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
     return db.prepare('SELECT * FROM budget_items WHERE id = ?').get(req.params.id);
   });
@@ -80,56 +81,67 @@ export const budgetRoutes: FastifyPluginAsync = async (app) => {
     return reply.code(204).send();
   });
 
-  // --- Zielbudgets (gesamt + pro Nutzer) ---
+  // --- Budgets (persönlich oder geteilt) ---
 
-  app.get<{ Querystring: { trip_id?: string } }>('/budget/targets', async (req, reply) => {
+  app.get<{ Querystring: { trip_id?: string } }>('/budget/budgets', async (req, reply) => {
     if (!requireTripId(req.query, reply)) return;
-    return db.prepare('SELECT * FROM budget_targets WHERE trip_id = ?').all(req.query.trip_id);
+    return db.prepare('SELECT * FROM budgets WHERE trip_id = ? ORDER BY owner_id IS NOT NULL, id').all(req.query.trip_id);
   });
 
-  app.put<{ Body: TargetBody }>('/budget/targets', async (req, reply) => {
-    const { trip_id, owner_id, amount } = req.body;
-    const ownerId = owner_id ?? null;
-
-    const existing = ownerId === null
-      ? db.prepare('SELECT id FROM budget_targets WHERE trip_id = ? AND owner_id IS NULL').get(trip_id)
-      : db.prepare('SELECT id FROM budget_targets WHERE trip_id = ? AND owner_id = ?').get(trip_id, ownerId);
-
-    if (existing) {
-      db.prepare('UPDATE budget_targets SET amount = ? WHERE id = ?').run(amount, (existing as { id: number }).id);
-    } else {
-      db.prepare('INSERT INTO budget_targets (trip_id, owner_id, amount) VALUES (?, ?, ?)').run(trip_id, ownerId, amount);
-    }
-
-    const row = ownerId === null
-      ? db.prepare('SELECT * FROM budget_targets WHERE trip_id = ? AND owner_id IS NULL').get(trip_id)
-      : db.prepare('SELECT * FROM budget_targets WHERE trip_id = ? AND owner_id = ?').get(trip_id, ownerId);
-    reply.code(200);
-    return row;
+  app.post<{ Body: BudgetBody }>('/budget/budgets', async (req, reply) => {
+    const { trip_id, name, owner_id } = req.body;
+    if (!name?.trim()) return reply.code(400).send({ error: 'Name erforderlich' });
+    const result = db
+      .prepare('INSERT INTO budgets (trip_id, name, owner_id) VALUES (?, ?, ?)')
+      .run(trip_id, name.trim(), owner_id ?? null);
+    reply.code(201);
+    return db.prepare('SELECT * FROM budgets WHERE id = ?').get(result.lastInsertRowid);
   });
 
-  // --- Kategorien-Zielbudgets ---
+  app.put<{ Params: { id: string }; Body: BudgetBody }>('/budget/budgets/:id', async (req, reply) => {
+    const { name, owner_id } = req.body;
+    if (!name?.trim()) return reply.code(400).send({ error: 'Name erforderlich' });
+    const result = db
+      .prepare('UPDATE budgets SET name = ?, owner_id = ? WHERE id = ?')
+      .run(name.trim(), owner_id ?? null, req.params.id);
+    if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
+    return db.prepare('SELECT * FROM budgets WHERE id = ?').get(req.params.id);
+  });
 
-  app.get<{ Querystring: { trip_id?: string } }>('/budget/category-targets', async (req, reply) => {
+  app.delete<{ Params: { id: string } }>('/budget/budgets/:id', async (req, reply) => {
+    const result = db.prepare('DELETE FROM budgets WHERE id = ?').run(req.params.id);
+    if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
+    return reply.code(204).send();
+  });
+
+  // --- Kategorien-Aufteilung je Budget ---
+
+  app.get<{ Querystring: { trip_id?: string } }>('/budget/allocations', async (req, reply) => {
     if (!requireTripId(req.query, reply)) return;
     return db
-      .prepare('SELECT * FROM budget_category_targets WHERE trip_id = ? ORDER BY category')
+      .prepare(
+        `SELECT a.* FROM budget_allocations a
+         JOIN budgets b ON b.id = a.budget_id
+         WHERE b.trip_id = ?
+         ORDER BY a.category`,
+      )
       .all(req.query.trip_id);
   });
 
-  app.put<{ Body: CategoryTargetBody }>('/budget/category-targets', async (req) => {
-    const { trip_id, category, amount } = req.body;
+  app.put<{ Body: AllocationBody }>('/budget/allocations', async (req, reply) => {
+    const { budget_id, category, amount } = req.body;
+    if (!category?.trim()) return reply.code(400).send({ error: 'Kategorie erforderlich' });
     db.prepare(
-      `INSERT INTO budget_category_targets (trip_id, category, amount) VALUES (?, ?, ?)
-       ON CONFLICT(trip_id, category) DO UPDATE SET amount = excluded.amount`,
-    ).run(trip_id, category, amount);
+      `INSERT INTO budget_allocations (budget_id, category, amount) VALUES (?, ?, ?)
+       ON CONFLICT(budget_id, category) DO UPDATE SET amount = excluded.amount`,
+    ).run(budget_id, category.trim(), amount || 0);
     return db
-      .prepare('SELECT * FROM budget_category_targets WHERE trip_id = ? AND category = ?')
-      .get(trip_id, category);
+      .prepare('SELECT * FROM budget_allocations WHERE budget_id = ? AND category = ?')
+      .get(budget_id, category.trim());
   });
 
-  app.delete<{ Params: { id: string } }>('/budget/category-targets/:id', async (req, reply) => {
-    const result = db.prepare('DELETE FROM budget_category_targets WHERE id = ?').run(req.params.id);
+  app.delete<{ Params: { id: string } }>('/budget/allocations/:id', async (req, reply) => {
+    const result = db.prepare('DELETE FROM budget_allocations WHERE id = ?').run(req.params.id);
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
     return reply.code(204).send();
   });

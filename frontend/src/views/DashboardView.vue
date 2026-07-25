@@ -2,8 +2,8 @@
 import { computed, onMounted, ref } from 'vue';
 import { api } from '../api/client';
 import type {
+  BudgetAllocation,
   BudgetExpense,
-  BudgetTarget,
   PackingItem,
   ScheduleItem,
   ShoppingItem,
@@ -19,24 +19,24 @@ const trip = computed(() => tripStore.currentTrip);
 const schedule = ref<ScheduleItem[]>([]);
 const packing = ref<PackingItem[]>([]);
 const expenses = ref<BudgetExpense[]>([]);
-const targets = ref<BudgetTarget[]>([]);
+const allocations = ref<BudgetAllocation[]>([]);
 const shopping = ref<ShoppingItem[]>([]);
 const users = ref<User[]>([]);
 const loading = ref(true);
 
 onMounted(async () => {
-  const [scheduleRes, packingRes, expensesRes, targetsRes, shoppingRes, usersRes] = await Promise.all([
+  const [scheduleRes, packingRes, expensesRes, allocationsRes, shoppingRes, usersRes] = await Promise.all([
     api.get<ScheduleItem[]>(`/schedule?trip_id=${tripId}`),
     api.get<PackingItem[]>(`/packing?trip_id=${tripId}`),
     api.get<BudgetExpense[]>(`/budget?trip_id=${tripId}`),
-    api.get<BudgetTarget[]>(`/budget/targets?trip_id=${tripId}`),
+    api.get<BudgetAllocation[]>(`/budget/allocations?trip_id=${tripId}`),
     api.get<ShoppingItem[]>(`/shopping?trip_id=${tripId}`),
     api.get<User[]>('/users'),
   ]);
   schedule.value = scheduleRes;
   packing.value = packingRes;
   expenses.value = expensesRes;
-  targets.value = targetsRes;
+  allocations.value = allocationsRes;
   shopping.value = shoppingRes;
   users.value = usersRes;
   loading.value = false;
@@ -79,7 +79,8 @@ const packingLists = computed(() => {
 });
 
 const budgetSummary = computed(() => {
-  const target = targets.value.find((t) => t.owner_id === null)?.amount ?? 0;
+  // Kein manuelles Gesamtbudget mehr: die Summe ergibt sich automatisch aus allen Budgets.
+  const target = allocations.value.reduce((sum, a) => sum + a.amount, 0);
   const spent = expenses.value.reduce((sum, e) => sum + e.amount, 0);
   return { target, spent, rest: target - spent };
 });

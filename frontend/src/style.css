@@ -110,6 +110,10 @@ textarea {
   border-radius: var(--radius-sm);
   background: var(--color-surface);
   color: var(--color-text);
+  /* Ohne das schrumpfen Eingabefelder (v. a. type=date/number auf iOS Safari) in Flex-Reihen
+     nicht unter ihre intrinsische Breite und ragen auf schmalen Bildschirmen über den Rand. */
+  min-width: 0;
+  max-width: 100%;
 }
 
 input:focus,

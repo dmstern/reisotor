@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify';
-import { db, ensureDefaultBudgetCategories } from '../db/index.js';
+import { db, ensureDefaultSharedBudget } from '../db/index.js';
 
 interface TripBody {
   name: string;
@@ -30,7 +30,7 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
       )
       .run(name, destination ?? null, start_date, end_date, maps_link ?? null, lat ?? null, lng ?? null);
     const tripId = result.lastInsertRowid as number;
-    ensureDefaultBudgetCategories(tripId);
+    ensureDefaultSharedBudget(tripId);
     reply.code(201);
     return db.prepare('SELECT * FROM trips WHERE id = ?').get(tripId);
   });

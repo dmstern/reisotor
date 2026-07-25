@@ -13,14 +13,16 @@ const items = ref<ShoppingItem[]>([]);
 const users = ref<User[]>([]);
 const loading = ref(true);
 const filterBuyer = ref('all');
+const groupByShop = ref(false);
 
 const newLabel = ref('');
 const newBuyer = ref('');
 const newLink = ref('');
 const newNote = ref('');
+const newShop = ref('');
 
 const editingItem = ref<ShoppingItem | null>(null);
-const editForm = ref({ label: '', link: '', note: '' });
+const editForm = ref({ label: '', link: '', note: '', shop: '' });
 
 onMounted(async () => {
   const [itemsRes, usersRes] = await Promise.all([
@@ -38,6 +40,26 @@ const filteredItems = computed(() => {
   return items.value.filter((i) => i.assigned_to_user_id === Number(filterBuyer.value));
 });
 
+const UNASSIGNED_SHOP = 'Ohne Shop';
+
+const groupedItems = computed(() => {
+  const groups = new Map<string, ShoppingItem[]>();
+  for (const item of filteredItems.value) {
+    const key = item.shop?.trim() || UNASSIGNED_SHOP;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(item);
+  }
+  return [...groups.entries()]
+    .sort(([a], [b]) => (a === UNASSIGNED_SHOP ? 1 : b === UNASSIGNED_SHOP ? -1 : a.localeCompare(b, 'de')))
+    .map(([shop, shopItems]) => ({ shop, items: shopItems }));
+});
+
+const knownShops = computed(() => {
+  const set = new Set<string>();
+  items.value.forEach((i) => i.shop && set.add(i.shop));
+  return [...set].sort((a, b) => a.localeCompare(b, 'de'));
+});
+
 const progress = computed(() => {
   const total = items.value.length;
   const checked = items.value.filter((i) => i.checked).length;
@@ -51,6 +73,7 @@ async function toggle(item: ShoppingItem) {
     checked: !item.checked,
     link: item.link ?? undefined,
     note: item.note ?? undefined,
+    shop: item.shop ?? undefined,
   });
   const idx = items.value.findIndex((i) => i.id === item.id);
   if (idx !== -1) items.value[idx] = updated;
@@ -65,6 +88,7 @@ async function reassign(item: ShoppingItem, event: Event) {
     checked: !!item.checked,
     link: item.link ?? undefined,
     note: item.note ?? undefined,
+    shop: item.shop ?? undefined,
   });
   const idx = items.value.findIndex((i) => i.id === item.id);
   if (idx !== -1) items.value[idx] = updated;
@@ -72,7 +96,7 @@ async function reassign(item: ShoppingItem, event: Event) {
 
 function startEdit(item: ShoppingItem) {
   editingItem.value = item;
-  editForm.value = { label: item.label, link: item.link ?? '', note: item.note ?? '' };
+  editForm.value = { label: item.label, link: item.link ?? '', note: item.note ?? '', shop: item.shop ?? '' };
 }
 
 async function submitEdit() {
@@ -83,6 +107,7 @@ async function submitEdit() {
     checked: !!editingItem.value.checked,
     link: editForm.value.link || undefined,
     note: editForm.value.note || undefined,
+    shop: editForm.value.shop || undefined,
   });
   const idx = items.value.findIndex((i) => i.id === updated.id);
   if (idx !== -1) items.value[idx] = updated;
@@ -102,11 +127,13 @@ async function addItem() {
     assigned_to_user_id: newBuyer.value ? Number(newBuyer.value) : undefined,
     link: newLink.value || undefined,
     note: newNote.value || undefined,
+    shop: newShop.value || undefined,
   });
   items.value.push(created);
   newLabel.value = '';
   newLink.value = '';
   newNote.value = '';
+  newShop.value = '';
 }
 </script>
 
@@ -115,8 +142,13 @@ async function addItem() {
     <h1>Einkaufsliste</h1>
     <p>{{ progress.checked }}/{{ progress.total }} gekauft</p>
 
+    <datalist id="shopping-shops">
+      <option v-for="s in knownShops" :key="s" :value="s" />
+    </datalist>
+
     <form class="add-form card" @submit.prevent="addItem">
       <input v-model="newLabel" type="text" placeholder="Neuer Artikel" required />
+      <input v-model="newShop" type="text" list="shopping-shops" placeholder="Shop/Laden (optional)" />
       <select v-model="newBuyer">
         <option value="">Kein:e Einkäufer:in</option>
         <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
@@ -133,15 +165,45 @@ async function addItem() {
         <option value="unassigned">Nicht zugewiesen</option>
         <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
       </select>
+      <label class="group-toggle">
+        <input type="checkbox" v-model="groupByShop" />
+        Nach Shop gruppieren
+      </label>
     </div>
 
-    <div class="card">
+    <template v-if="groupByShop">
+      <div class="card shop-group" v-for="group in groupedItems" :key="group.shop">
+        <h2>🏬 {{ group.shop }}</h2>
+        <ul class="list">
+          <li v-for="item in group.items" :key="item.id" class="row">
+            <label class="check">
+              <input type="checkbox" :checked="!!item.checked" @change="toggle(item)" />
+              <span :class="{ done: item.checked }">{{ item.label }}</span>
+            </label>
+            <a v-if="item.link" :href="item.link" target="_blank" rel="noopener" class="link">🔗 Link</a>
+            <span v-if="item.note" class="note">{{ item.note }}</span>
+            <select class="buyer-select" :value="item.assigned_to_user_id ?? ''" @change="reassign(item, $event)">
+              <option value="">Nicht zugewiesen</option>
+              <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
+            </select>
+            <div class="row-actions">
+              <EditButton small @click="startEdit(item)" />
+              <DeleteButton small @click="remove(item.id)" />
+            </div>
+          </li>
+        </ul>
+      </div>
+      <p v-if="!groupedItems.length" class="empty">Keine Einträge.</p>
+    </template>
+
+    <div class="card" v-else>
       <ul class="list">
         <li v-for="item in filteredItems" :key="item.id" class="row">
           <label class="check">
             <input type="checkbox" :checked="!!item.checked" @change="toggle(item)" />
             <span :class="{ done: item.checked }">{{ item.label }}</span>
           </label>
+          <span v-if="item.shop" class="shop-tag">🏬 {{ item.shop }}</span>
           <a v-if="item.link" :href="item.link" target="_blank" rel="noopener" class="link">🔗 Link</a>
           <span v-if="item.note" class="note">{{ item.note }}</span>
           <select class="buyer-select" :value="item.assigned_to_user_id ?? ''" @change="reassign(item, $event)">
@@ -164,6 +226,7 @@ async function addItem() {
     >
       <form class="edit-form" @submit.prevent="submitEdit">
         <input v-model="editForm.label" type="text" placeholder="Artikel" required />
+        <input v-model="editForm.shop" type="text" list="shopping-shops" placeholder="Shop/Laden (optional)" />
         <input v-model="editForm.link" type="url" placeholder="Link (optional)" />
         <input v-model="editForm.note" type="text" placeholder="Notiz (optional)" />
         <button type="submit">Speichern</button>
@@ -189,9 +252,35 @@ async function addItem() {
 .filter-row {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: var(--space-2);
   margin-bottom: var(--space-3);
   font-size: 0.9rem;
+}
+
+.group-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.shop-group {
+  margin-bottom: var(--space-3);
+}
+
+.shop-group h2 {
+  font-size: 0.95rem;
+  color: var(--color-primary-dark);
+  margin-bottom: var(--space-2);
+}
+
+.shop-tag {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  background: #f4f1ec;
+  border-radius: 999px;
+  padding: 2px 8px;
 }
 
 .list {

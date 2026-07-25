@@ -1,21 +1,47 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import { api, ApiError } from '../api/client';
 import type { User } from '../api/types';
 import { useAuthStore } from '../stores/auth';
 
 const auth = useAuthStore();
+const router = useRouter();
 const users = ref<User[]>([]);
 const loading = ref(true);
 
-const EMOJI_OPTIONS = [
-  '🙂', '😎', '🥳', '🧑', '👩', '👨', '🧑‍🦱', '👩‍🦰', '🧑‍🦳', '🧔',
-  '🐨', '🦊', '🐢', '🦁', '🐸', '🐧', '🌞', '🌙', '⭐', '🌈',
-  '🏔️', '🏖️', '✈️', '🎒',
+const EMOJI_CATEGORIES: { label: string; emojis: string[] }[] = [
+  {
+    label: 'Menschen',
+    emojis: [
+      '🙂', '😎', '🥳', '😄', '🤓', '🥸', '🧑', '👩', '👨', '🧑‍🦱',
+      '👩‍🦰', '🧑‍🦳', '🧔', '👵', '👴', '🧑‍🚀', '🧑‍🎤', '🧑‍🍳', '🥷', '🧙',
+    ],
+  },
+  {
+    label: 'Tiere',
+    emojis: [
+      '🐨', '🦊', '🐢', '🦁', '🐸', '🐧', '🐶', '🐱', '🐼', '🐰',
+      '🦄', '🐙', '🦉', '🐝', '🦋', '🐳', '🐬', '🦖', '🐺', '🦔',
+      '🐷', '🐮', '🐵', '🦒', '🐘', '🦓', '🦩', '🐌', '🐊', '🦈',
+    ],
+  },
+  {
+    label: 'Natur & Sonstiges',
+    emojis: [
+      '🌞', '🌙', '⭐', '🌈', '🏔️', '🏖️', '✈️', '🎒', '🌊', '🔥',
+      '🍀', '🌵', '🌺', '🍉', '⚽', '🎸', '📷', '🎲',
+    ],
+  },
 ];
 
 const avatarSaving = ref(false);
 const avatarSaved = ref(false);
+
+const usernameForm = ref({ username: '' });
+const usernameError = ref('');
+const usernameSaved = ref(false);
+const usernameSaving = ref(false);
 
 const passwordForm = ref({ currentPassword: '', newPassword: '', confirmPassword: '' });
 const passwordError = ref('');
@@ -36,8 +62,32 @@ const importFileInput = ref<HTMLInputElement | null>(null);
 
 onMounted(async () => {
   users.value = await api.get<User[]>('/users');
+  usernameForm.value.username = auth.user?.username ?? '';
   loading.value = false;
 });
+
+async function changeUsername() {
+  usernameError.value = '';
+  usernameSaved.value = false;
+  if (!usernameForm.value.username.trim()) return;
+  usernameSaving.value = true;
+  try {
+    const updated = await api.put<User>('/users/me/username', { username: usernameForm.value.username.trim() });
+    if (auth.user) auth.user.username = updated.username;
+    const idx = users.value.findIndex((u) => u.id === updated.id);
+    if (idx !== -1) users.value[idx] = updated;
+    usernameSaved.value = true;
+  } catch (err) {
+    usernameError.value = err instanceof ApiError ? err.message : 'Benutzername konnte nicht geändert werden';
+  } finally {
+    usernameSaving.value = false;
+  }
+}
+
+async function logout() {
+  await auth.logout();
+  router.push('/login');
+}
 
 async function selectAvatar(avatar: string) {
   avatarSaving.value = true;
@@ -166,20 +216,41 @@ async function onImportFileSelected(event: Event) {
     <h1>Profil</h1>
 
     <div class="card">
-      <h2>{{ auth.user?.avatar }} {{ auth.user?.username }}</h2>
-      <p>Avatar wählen</p>
-      <div class="emoji-grid">
-        <button
-          v-for="emoji in EMOJI_OPTIONS"
-          :key="emoji"
-          type="button"
-          class="emoji-btn secondary"
-          :class="{ active: emoji === auth.user?.avatar }"
-          :disabled="avatarSaving"
-          @click="selectAvatar(emoji)"
-        >
-          {{ emoji }}
+      <div class="header">
+        <h2>{{ auth.user?.avatar }} {{ auth.user?.username }}</h2>
+        <button type="button" class="secondary" @click="logout">🚪 Abmelden</button>
+      </div>
+
+      <form class="form username-form" @submit.prevent="changeUsername">
+        <label>
+          Benutzername
+          <input v-model="usernameForm.username" type="text" required />
+        </label>
+        <p v-if="usernameError" class="hint error">{{ usernameError }}</p>
+        <p v-if="usernameSaved" class="hint success">Benutzername geändert ✓</p>
+        <button type="submit" :disabled="usernameSaving">
+          {{ usernameSaving ? 'Speichern…' : 'Benutzername speichern' }}
         </button>
+      </form>
+
+      <p>Avatar wählen</p>
+      <div class="emoji-scroll">
+        <div v-for="cat in EMOJI_CATEGORIES" :key="cat.label" class="emoji-category">
+          <p class="emoji-category-label">{{ cat.label }}</p>
+          <div class="emoji-grid">
+            <button
+              v-for="emoji in cat.emojis"
+              :key="emoji"
+              type="button"
+              class="emoji-btn secondary"
+              :class="{ active: emoji === auth.user?.avatar }"
+              :disabled="avatarSaving"
+              @click="selectAvatar(emoji)"
+            >
+              {{ emoji }}
+            </button>
+          </div>
+        </div>
       </div>
       <p v-if="avatarSaved" class="hint success">Gespeichert ✓</p>
     </div>
@@ -230,17 +301,22 @@ async function onImportFileSelected(event: Event) {
         </label>
         <div>
           <p class="avatar-label">Avatar</p>
-          <div class="emoji-grid">
-            <button
-              v-for="emoji in EMOJI_OPTIONS"
-              :key="emoji"
-              type="button"
-              class="emoji-btn secondary"
-              :class="{ active: emoji === newUserForm.avatar }"
-              @click="newUserForm.avatar = emoji"
-            >
-              {{ emoji }}
-            </button>
+          <div class="emoji-scroll">
+            <div v-for="cat in EMOJI_CATEGORIES" :key="cat.label" class="emoji-category">
+              <p class="emoji-category-label">{{ cat.label }}</p>
+              <div class="emoji-grid">
+                <button
+                  v-for="emoji in cat.emojis"
+                  :key="emoji"
+                  type="button"
+                  class="emoji-btn secondary"
+                  :class="{ active: emoji === newUserForm.avatar }"
+                  @click="newUserForm.avatar = emoji"
+                >
+                  {{ emoji }}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
         <p v-if="newUserError" class="hint error">{{ newUserError }}</p>
@@ -295,11 +371,30 @@ async function onImportFileSelected(event: Event) {
   color: var(--color-primary-dark);
 }
 
+.emoji-scroll {
+  max-height: 220px;
+  overflow-y: auto;
+  margin-top: var(--space-2);
+  padding-right: 4px;
+}
+
+.emoji-category + .emoji-category {
+  margin-top: var(--space-2);
+}
+
+.emoji-category-label {
+  margin: 0 0 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
 .emoji-grid {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-1);
-  margin-top: var(--space-2);
 }
 
 .emoji-btn {
@@ -318,6 +413,10 @@ async function onImportFileSelected(event: Event) {
   flex-direction: column;
   gap: var(--space-3);
   max-width: 360px;
+}
+
+.username-form {
+  margin-bottom: var(--space-3);
 }
 
 label {
@@ -358,8 +457,10 @@ label {
 
 .header {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
+  gap: var(--space-2);
 }
 
 .user-list {

@@ -1,5 +1,9 @@
 import type { FastifyPluginAsync } from 'fastify';
+import { randomUUID } from 'node:crypto';
+import { writeFile } from 'node:fs/promises';
+import path from 'node:path';
 import { db } from '../db/index.js';
+import { uploadsDir } from '../uploads.js';
 
 interface EntryRow {
   id: number;
@@ -23,6 +27,17 @@ interface CommentBody {
   content: string;
 }
 
+interface ImageUploadBody {
+  data: string;
+}
+
+const ALLOWED_IMAGE_TYPES: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+};
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+
 function serializeEntry(row: EntryRow) {
   return { ...row, images: row.images ? (JSON.parse(row.images) as string[]) : [] };
 }
@@ -42,6 +57,28 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
 
   app.get('/diary/comments', async () => {
     return db.prepare('SELECT * FROM diary_comments ORDER BY created_at ASC, id ASC').all();
+  });
+
+  // Nimmt ein bereits client-seitig (Canvas-API) verkleinertes/komprimiertes Bild als Data-URL
+  // entgegen und legt es als Datei ab – bewusst kein serverseitiges Resizing (z. B. via sharp),
+  // das ist auf dem ressourcenschwachen Raspberry Pi 2 zu teuer.
+  app.post<{ Body: ImageUploadBody }>('/diary/images', async (req, reply) => {
+    const match = /^data:(image\/[a-z]+);base64,(.+)$/.exec(req.body?.data ?? '');
+    if (!match) return reply.code(400).send({ error: 'Ungültiges Bildformat' });
+
+    const [, mimeType, base64] = match;
+    const extension = ALLOWED_IMAGE_TYPES[mimeType];
+    if (!extension) return reply.code(400).send({ error: 'Nicht unterstützter Bildtyp' });
+
+    const buffer = Buffer.from(base64, 'base64');
+    if (buffer.byteLength > MAX_IMAGE_BYTES) {
+      return reply.code(413).send({ error: 'Bild ist zu groß (max. 5 MB nach Komprimierung)' });
+    }
+
+    const filename = `${randomUUID()}.${extension}`;
+    await writeFile(path.join(uploadsDir, filename), buffer);
+    reply.code(201);
+    return { url: `/api/uploads/${filename}` };
   });
 
   app.post<{ Body: EntryBody }>('/diary', async (req, reply) => {

@@ -2,7 +2,9 @@ import Fastify from 'fastify';
 import cookie from '@fastify/cookie';
 import session from '@fastify/session';
 import cors from '@fastify/cors';
+import fastifyStatic from '@fastify/static';
 import './db/index.js';
+import { uploadsDir } from './uploads.js';
 import { authRoutes } from './routes/auth.js';
 import { requireAuth } from './auth.js';
 import { tripsRoutes } from './routes/trips.js';
@@ -14,6 +16,7 @@ import { budgetRoutes } from './routes/budget.js';
 import { usersRoutes } from './routes/users.js';
 import { backupRoutes } from './routes/backup.js';
 import { shoppingRoutes } from './routes/shopping.js';
+import { todosRoutes } from './routes/todos.js';
 import { notesRoutes } from './routes/notes.js';
 import { diaryRoutes } from './routes/diary.js';
 import { travelRoutes } from './routes/travel.js';
@@ -33,6 +36,12 @@ await app.register(cors, {
   origin: isProd ? false : ['http://localhost:5173'],
   credentials: true,
 });
+
+// Hochgeladene (bereits client-seitig komprimierte) Tagebuch-Bilder werden unter /api/uploads/
+// ausgeliefert, damit der bestehende Caddy-Proxy (nur /api/* -> Backend) ohne Anpassung reicht.
+// Bewusst ohne Auth-Check auf Auslieferung: nur Upload erfordert eine Session, das Betrachten
+// eines Bildlinks (wie bei jedem anderen <img src>) nicht.
+await app.register(fastifyStatic, { root: uploadsDir, prefix: '/api/uploads/' });
 
 await app.register(cookie);
 await app.register(session, {
@@ -60,6 +69,7 @@ app.register(
       await protectedApi.register(usersRoutes);
       await protectedApi.register(backupRoutes);
       await protectedApi.register(shoppingRoutes);
+      await protectedApi.register(todosRoutes);
       await protectedApi.register(notesRoutes);
       await protectedApi.register(diaryRoutes);
       await protectedApi.register(travelRoutes);

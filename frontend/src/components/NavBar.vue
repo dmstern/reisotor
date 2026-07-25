@@ -10,6 +10,7 @@ const links = [
   { to: '/schedule', label: 'Kalender', icon: '📅' },
   { to: '/packing', label: 'Packliste', icon: '🧳' },
   { to: '/shopping', label: 'Einkauf', icon: '🛒' },
+  { to: '/todo', label: 'ToDo', icon: '✅' },
   { to: '/excursions', label: 'Ausflüge', icon: '🎒' },
   { to: '/travel', label: 'Reise', icon: '✈️' },
   { to: '/accommodation', label: 'Unterkunft', icon: '🛏️' },
@@ -23,12 +24,18 @@ async function onLogout() {
   await auth.logout();
   router.push('/login');
 }
+
+// Scrollt ein angeklicktes Nav-Icon vollständig in den sichtbaren Bereich – wichtig auf
+// mobilen Geräten, wo die Leiste horizontal scrollt und rechte Icons teils abgeschnitten sind.
+function onLinkClick(event: MouseEvent) {
+  (event.currentTarget as HTMLElement).scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' });
+}
 </script>
 
 <template>
   <nav class="navbar">
     <div class="links">
-      <router-link v-for="link in links" :key="link.to" :to="link.to" class="link">
+      <router-link v-for="link in links" :key="link.to" :to="link.to" class="link" @click="onLinkClick">
         <span class="icon">{{ link.icon }}</span>
         <span class="label">{{ link.label }}</span>
       </router-link>

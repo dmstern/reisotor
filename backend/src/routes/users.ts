@@ -19,6 +19,10 @@ interface AvatarBody {
   avatar: string;
 }
 
+interface UsernameBody {
+  username: string;
+}
+
 interface PasswordBody {
   currentPassword: string;
   newPassword: string;
@@ -56,6 +60,19 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
     return db
       .prepare('SELECT id, username, avatar FROM users WHERE id = ?')
       .get(req.session.userId);
+  });
+
+  app.put<{ Body: UsernameBody }>('/users/me/username', async (req, reply) => {
+    const { username } = req.body ?? {};
+    if (!username?.trim()) return reply.code(400).send({ error: 'Benutzername erforderlich' });
+
+    const existing = db
+      .prepare('SELECT id FROM users WHERE username = ? AND id != ?')
+      .get(username.trim(), req.session.userId);
+    if (existing) return reply.code(409).send({ error: 'Benutzername bereits vergeben' });
+
+    db.prepare('UPDATE users SET username = ? WHERE id = ?').run(username.trim(), req.session.userId);
+    return db.prepare('SELECT id, username, avatar FROM users WHERE id = ?').get(req.session.userId);
   });
 
   app.put<{ Body: PasswordBody }>('/users/me/password', async (req, reply) => {

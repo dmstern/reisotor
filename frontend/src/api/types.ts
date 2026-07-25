@@ -119,18 +119,22 @@ export interface BudgetExpense {
   paid_by_user_id: number | null;
   date: string | null;
   note: string | null;
+  budget_id: number | null;
 }
 
-export interface BudgetTarget {
+/** Ein Budget ist entweder persönlich (owner_id gesetzt) oder geteilt (owner_id null). */
+export interface Budget {
   id: number;
   trip_id: number;
+  name: string;
   owner_id: number | null;
-  amount: number;
 }
 
-export interface BudgetCategoryTarget {
+/** Kategorien-Anteil innerhalb eines Budgets. Die Summe aller Allocations eines Budgets
+ *  ergibt dessen Ziel-Gesamtsumme; die Summe über alle Budgets ergibt das Gesamtbudget der Reise. */
+export interface BudgetAllocation {
   id: number;
-  trip_id: number;
+  budget_id: number;
   category: string;
   amount: number;
 }
@@ -153,6 +157,20 @@ export interface ShoppingItem {
   checked: 0 | 1;
   link: string | null;
   note: string | null;
+  shop: string | null;
+}
+
+export type TodoPriority = 'low' | 'medium' | 'high';
+
+export interface TodoItem {
+  id: number;
+  trip_id: number;
+  title: string;
+  assigned_to_user_id: number | null;
+  due_date: string | null;
+  priority: TodoPriority;
+  note: string | null;
+  done: 0 | 1;
 }
 
 export interface Note {

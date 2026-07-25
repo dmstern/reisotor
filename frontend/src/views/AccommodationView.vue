@@ -324,8 +324,10 @@ function formatDate(d: string | null) {
 <style scoped>
 .header {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
+  gap: var(--space-2);
   margin-bottom: var(--space-3);
 }
 
@@ -348,7 +350,12 @@ label {
 
 .row {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-3);
+}
+
+.row > label {
+  min-width: 140px;
 }
 
 .hint {

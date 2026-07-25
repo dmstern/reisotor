@@ -1,13 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { api } from '../api/client';
-import type {
-  BudgetCategoryTarget,
-  BudgetExpense,
-  BudgetTarget,
-  BudgetTransfer,
-  User,
-} from '../api/types';
+import type { Budget, BudgetAllocation, BudgetExpense, BudgetTransfer, User } from '../api/types';
 import { useTripStore } from '../stores/trip';
 import { assignCategoryColors } from '../utils/categoryColors';
 import BudgetMeter from '../components/BudgetMeter.vue';
@@ -19,39 +13,33 @@ const tripStore = useTripStore();
 const tripId = tripStore.currentTripId as number;
 const users = ref<User[]>([]);
 const expenses = ref<BudgetExpense[]>([]);
-const targets = ref<BudgetTarget[]>([]);
-const categoryTargets = ref<BudgetCategoryTarget[]>([]);
+const budgets = ref<Budget[]>([]);
+const allocations = ref<BudgetAllocation[]>([]);
 const transfers = ref<BudgetTransfer[]>([]);
 const loading = ref(true);
 
 const today = () => new Date().toISOString().slice(0, 10);
 
-async function refreshTargets() {
-  targets.value = await api.get<BudgetTarget[]>(`/budget/targets?trip_id=${tripId}`);
+async function refreshBudgets() {
+  budgets.value = await api.get<Budget[]>(`/budget/budgets?trip_id=${tripId}`);
 }
-async function refreshCategoryTargets() {
-  categoryTargets.value = await api.get<BudgetCategoryTarget[]>(`/budget/category-targets?trip_id=${tripId}`);
+async function refreshAllocations() {
+  allocations.value = await api.get<BudgetAllocation[]>(`/budget/allocations?trip_id=${tripId}`);
 }
 
 onMounted(async () => {
-  const [u, e, t, ct, tr] = await Promise.all([
+  const [u, e, b, a, tr] = await Promise.all([
     api.get<User[]>('/users'),
     api.get<BudgetExpense[]>(`/budget?trip_id=${tripId}`),
-    api.get<BudgetTarget[]>(`/budget/targets?trip_id=${tripId}`),
-    api.get<BudgetCategoryTarget[]>(`/budget/category-targets?trip_id=${tripId}`),
+    api.get<Budget[]>(`/budget/budgets?trip_id=${tripId}`),
+    api.get<BudgetAllocation[]>(`/budget/allocations?trip_id=${tripId}`),
     api.get<BudgetTransfer[]>(`/budget/transfers?trip_id=${tripId}`),
   ]);
   users.value = u;
   expenses.value = e;
-  targets.value = t;
-  categoryTargets.value = ct;
+  budgets.value = b;
+  allocations.value = a;
   transfers.value = tr;
-
-  totalTargetInput.value = String(totalTarget.value || '');
-  for (const user of u) {
-    userTargetInputs.value[user.id] = String(userTarget(user.id) || '');
-  }
-
   loading.value = false;
 });
 
@@ -63,63 +51,86 @@ function userAvatar(id: number | null) {
   if (id == null) return '🤝';
   return users.value.find((u) => u.id === id)?.avatar ?? '❓';
 }
-
-// --- Zielbudgets ---
-const totalTarget = computed(() => targets.value.find((t) => t.owner_id === null)?.amount ?? 0);
-function userTarget(userId: number) {
-  return targets.value.find((t) => t.owner_id === userId)?.amount ?? 0;
+function budgetLabel(budget: Budget) {
+  return budget.owner_id == null ? '🤝 Gemeinsam' : `${userAvatar(budget.owner_id)} ${userName(budget.owner_id)}`;
 }
 
-const totalTargetInput = ref('');
-const userTargetInputs = ref<Record<number, string>>({});
-const targetSaved = ref<string | null>(null);
-
-async function saveTotalTarget() {
-  await api.put('/budget/targets', { trip_id: tripId, owner_id: null, amount: Number(totalTargetInput.value) || 0 });
-  await refreshTargets();
-  targetSaved.value = 'total';
-  window.setTimeout(() => (targetSaved.value = null), 1500);
+// --- Budgets (persönlich oder geteilt) ---
+function allocationsFor(budgetId: number) {
+  return allocations.value.filter((a) => a.budget_id === budgetId);
 }
+function budgetTotal(budgetId: number) {
+  return allocationsFor(budgetId).reduce((s, a) => s + a.amount, 0);
+}
+// Kein manuelles Gesamtbudget mehr: die Summe ergibt sich automatisch aus allen Budgets.
+const grandTotal = computed(() => budgets.value.reduce((s, b) => s + budgetTotal(b.id), 0));
 
-async function saveUserTarget(userId: number) {
-  await api.put('/budget/targets', {
+const newBudgetForm = ref({ name: '', kind: 'shared' as 'shared' | 'personal', owner_id: '' });
+const showNewBudgetForm = ref(false);
+
+async function addBudget() {
+  if (!newBudgetForm.value.name.trim()) return;
+  if (newBudgetForm.value.kind === 'personal' && !newBudgetForm.value.owner_id) return;
+  const created = await api.post<Budget>('/budget/budgets', {
     trip_id: tripId,
-    owner_id: userId,
-    amount: Number(userTargetInputs.value[userId]) || 0,
+    name: newBudgetForm.value.name.trim(),
+    owner_id: newBudgetForm.value.kind === 'personal' ? Number(newBudgetForm.value.owner_id) : undefined,
   });
-  await refreshTargets();
-  targetSaved.value = `user-${userId}`;
-  window.setTimeout(() => (targetSaved.value = null), 1500);
+  budgets.value.push(created);
+  newBudgetForm.value = { name: '', kind: 'shared', owner_id: '' };
+  showNewBudgetForm.value = false;
 }
 
-// --- Kategorien-Zielbudgets ---
-const newCategoryForm = ref({ category: '', amount: '' });
-
-async function saveCategoryTarget(category: string, amount: string) {
-  await api.put('/budget/category-targets', { trip_id: tripId, category, amount: Number(amount) || 0 });
-  await refreshCategoryTargets();
+async function removeBudget(id: number) {
+  await api.delete(`/budget/budgets/${id}`);
+  budgets.value = budgets.value.filter((b) => b.id !== id);
+  allocations.value = allocations.value.filter((a) => a.budget_id !== id);
 }
 
-async function addCategoryTarget() {
-  if (!newCategoryForm.value.category.trim()) return;
-  await saveCategoryTarget(newCategoryForm.value.category.trim(), newCategoryForm.value.amount);
-  newCategoryForm.value = { category: '', amount: '' };
+const newCategoryForms = ref<Record<number, { category: string; amount: string }>>({});
+function categoryForm(budgetId: number) {
+  if (!newCategoryForms.value[budgetId]) {
+    newCategoryForms.value[budgetId] = { category: '', amount: '' };
+  }
+  return newCategoryForms.value[budgetId];
 }
 
-async function removeCategoryTarget(id: number) {
-  await api.delete(`/budget/category-targets/${id}`);
-  await refreshCategoryTargets();
+async function saveAllocation(budgetId: number, category: string, amount: string) {
+  await api.put('/budget/allocations', { budget_id: budgetId, category, amount: Number(amount) || 0 });
+  await refreshAllocations();
+}
+
+async function addAllocation(budgetId: number) {
+  const form = categoryForm(budgetId);
+  if (!form.category.trim()) return;
+  await saveAllocation(budgetId, form.category.trim(), form.amount);
+  newCategoryForms.value[budgetId] = { category: '', amount: '' };
+}
+
+async function removeAllocation(id: number) {
+  await api.delete(`/budget/allocations/${id}`);
+  allocations.value = allocations.value.filter((a) => a.id !== id);
 }
 
 // --- Ausgaben (Bezahlungen) ---
 const totalSpent = computed(() => expenses.value.reduce((s, e) => s + e.amount, 0));
-function spentByUser(userId: number) {
-  return expenses.value.filter((e) => e.paid_by_user_id === userId).reduce((s, e) => s + e.amount, 0);
+
+/** Ausgaben ohne budget_id (u. a. automatisch aus Unterkunft/Reise erzeugte) werden dem
+ *  geteilten Budget anhand des Kategorienamens zugeordnet, damit sie in der Aufschlüsselung
+ *  auftauchen, ohne dass jede Alt-Ausgabe nachträglich manuell zugewiesen werden muss. */
+function spentFor(budget: Budget, category: string) {
+  return expenses.value
+    .filter((e) => {
+      if (e.budget_id === budget.id) return true;
+      if (e.budget_id == null && budget.owner_id == null && (e.category ?? '') === category) return true;
+      return false;
+    })
+    .reduce((s, e) => s + e.amount, 0);
 }
 
 const expenseCategories = computed(() => {
   const set = new Set<string>();
-  categoryTargets.value.forEach((c) => set.add(c.category));
+  allocations.value.forEach((a) => set.add(a.category));
   expenses.value.forEach((e) => e.category && set.add(e.category));
   return [...set].sort((a, b) => a.localeCompare(b, 'de'));
 });
@@ -132,6 +143,7 @@ const emptyExpenseForm = () => ({
   paid_by_user_id: '',
   date: today(),
   note: '',
+  budget_id: '',
 });
 const expenseForm = ref(emptyExpenseForm());
 
@@ -147,6 +159,7 @@ function expenseToBody(f: ReturnType<typeof emptyExpenseForm>) {
     paid_by_user_id: f.paid_by_user_id ? Number(f.paid_by_user_id) : undefined,
     date: f.date || undefined,
     note: f.note || undefined,
+    budget_id: f.budget_id ? Number(f.budget_id) : undefined,
   };
 }
 
@@ -167,6 +180,7 @@ function startEditExpense(expense: BudgetExpense) {
     paid_by_user_id: expense.paid_by_user_id != null ? String(expense.paid_by_user_id) : '',
     date: expense.date ?? today(),
     note: expense.note ?? '',
+    budget_id: expense.budget_id != null ? String(expense.budget_id) : '',
   };
 }
 
@@ -217,7 +231,7 @@ const balances = computed(() => {
   if (n === 0) return [];
   const fairShare = totalSpent.value / n;
   return users.value.map((u) => {
-    const paid = spentByUser(u.id);
+    const paid = expenses.value.filter((e) => e.paid_by_user_id === u.id).reduce((s, e) => s + e.amount, 0);
     const received = transfers.value.filter((t) => t.to_user_id === u.id).reduce((s, t) => s + t.amount, 0);
     const sent = transfers.value.filter((t) => t.from_user_id === u.id).reduce((s, t) => s + t.amount, 0);
     // Eine Überweisung ist eine Schuldenrückzahlung: wer sendet, baut Schulden ab (net steigt);
@@ -235,20 +249,23 @@ const twoPersonSummary = computed(() => {
   return { settled: false as const, debtor: debtor.user, creditor: creditor.user, amount: Math.abs(a.net) };
 });
 
-// --- Kategorien-Breakdown ---
-const categoryBreakdown = computed(() => {
+// --- Kategorien-Breakdown je Budget ---
+const budgetBreakdown = computed(() => {
   const names = new Set<string>();
-  categoryTargets.value.forEach((c) => names.add(c.category));
-  expenses.value.forEach((e) => names.add(e.category?.trim() || 'Sonstiges'));
+  allocations.value.forEach((a) => names.add(a.category));
   const sorted = [...names].sort((a, b) => a.localeCompare(b, 'de'));
   const colors = assignCategoryColors(sorted);
-  return sorted.map((category) => ({
-    category,
-    spent: expenses.value
-      .filter((e) => (e.category?.trim() || 'Sonstiges') === category)
-      .reduce((s, e) => s + e.amount, 0),
-    target: categoryTargets.value.find((c) => c.category === category)?.amount ?? 0,
-    color: colors.get(category) ?? '#8a8a86',
+  return budgets.value.map((budget) => ({
+    budget,
+    categories: allocationsFor(budget.id)
+      .slice()
+      .sort((a, b) => a.category.localeCompare(b.category, 'de'))
+      .map((a) => ({
+        category: a.category,
+        spent: spentFor(budget, a.category),
+        target: a.amount,
+        color: colors.get(a.category) ?? '#8a8a86',
+      })),
   }));
 });
 </script>
@@ -260,7 +277,7 @@ const categoryBreakdown = computed(() => {
     <div class="grid kpis">
       <div class="card kpi">
         <span class="kpi-label">Gesamtbudget</span>
-        <strong class="kpi-value">{{ totalTarget.toFixed(2) }} €</strong>
+        <strong class="kpi-value">{{ grandTotal.toFixed(2) }} €</strong>
       </div>
       <div class="card kpi">
         <span class="kpi-label">Ausgegeben</span>
@@ -268,8 +285,8 @@ const categoryBreakdown = computed(() => {
       </div>
       <div class="card kpi">
         <span class="kpi-label">Rest</span>
-        <strong class="kpi-value" :class="{ negative: totalTarget - totalSpent < 0 }">
-          {{ (totalTarget - totalSpent).toFixed(2) }} €
+        <strong class="kpi-value" :class="{ negative: grandTotal - totalSpent < 0 }">
+          {{ (grandTotal - totalSpent).toFixed(2) }} €
         </strong>
       </div>
     </div>
@@ -299,51 +316,76 @@ const categoryBreakdown = computed(() => {
       </p>
     </div>
 
-    <!-- Kategorien -->
+    <!-- Budgets -->
     <div class="card">
-      <h2>Kategorien</h2>
-      <BudgetMeter
-        v-for="c in categoryBreakdown"
-        :key="c.category"
-        :label="c.category"
-        :spent="c.spent"
-        :target="c.target"
-        :color="c.color"
-      />
+      <div class="header">
+        <h2>Budgets</h2>
+        <button @click="showNewBudgetForm = !showNewBudgetForm">
+          {{ showNewBudgetForm ? 'Abbrechen' : '+ Budget anlegen' }}
+        </button>
+      </div>
+      <p class="hint">
+        Legt persönliche oder geteilte Budgets an und teilt sie in Kategorien auf. Das Gesamtbudget oben
+        ergibt sich automatisch aus der Summe aller Kategorien aller Budgets.
+      </p>
+
+      <form v-if="showNewBudgetForm" class="new-budget-form" @submit.prevent="addBudget">
+        <input v-model="newBudgetForm.name" type="text" placeholder="Name (z. B. Souvenirs)" required />
+        <select v-model="newBudgetForm.kind">
+          <option value="shared">Geteilt</option>
+          <option value="personal">Persönlich</option>
+        </select>
+        <select v-if="newBudgetForm.kind === 'personal'" v-model="newBudgetForm.owner_id" required>
+          <option value="" disabled>Nutzer:in wählen…</option>
+          <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
+        </select>
+        <button type="submit">Anlegen</button>
+      </form>
+
+      <div class="budget-list">
+        <div class="budget-block" v-for="budget in budgets" :key="budget.id">
+          <div class="budget-head">
+            <h3>{{ budget.name }} <span class="owner-tag">{{ budgetLabel(budget) }}</span></h3>
+            <div class="budget-head-actions">
+              <strong>{{ budgetTotal(budget.id).toFixed(2) }} €</strong>
+              <DeleteButton small @click="removeBudget(budget.id)" />
+            </div>
+          </div>
+
+          <div class="target-row" v-for="a in allocationsFor(budget.id)" :key="a.id">
+            <label>{{ a.category }}</label>
+            <input
+              type="number"
+              step="0.01"
+              :value="a.amount"
+              @change="saveAllocation(budget.id, a.category, ($event.target as HTMLInputElement).value)"
+            />
+            <DeleteButton small @click="removeAllocation(a.id)" />
+          </div>
+          <form class="target-row" @submit.prevent="addAllocation(budget.id)">
+            <input v-model="categoryForm(budget.id).category" type="text" placeholder="Neue Kategorie" />
+            <input v-model="categoryForm(budget.id).amount" type="number" step="0.01" placeholder="Ziel €" />
+            <button type="submit">+ Hinzufügen</button>
+          </form>
+        </div>
+        <p v-if="!budgets.length" class="empty">Noch keine Budgets angelegt.</p>
+      </div>
     </div>
 
-    <!-- Zielbudgets bearbeiten -->
-    <div class="card">
-      <h2>Zielbudgets bearbeiten</h2>
-      <div class="target-row">
-        <label>Gesamt</label>
-        <input v-model="totalTargetInput" type="number" step="0.01" />
-        <button class="secondary" @click="saveTotalTarget">Speichern</button>
-        <span v-if="targetSaved === 'total'" class="saved-hint">✓</span>
-      </div>
-      <div class="target-row" v-for="u in users" :key="u.id">
-        <label>{{ u.avatar }} {{ u.username }}</label>
-        <input v-model="userTargetInputs[u.id]" type="number" step="0.01" />
-        <button class="secondary" @click="saveUserTarget(u.id)">Speichern</button>
-        <span v-if="targetSaved === `user-${u.id}`" class="saved-hint">✓</span>
-      </div>
-
-      <h3>Kategorien-Budgets</h3>
-      <div class="target-row" v-for="c in categoryTargets" :key="c.id">
-        <label>{{ c.category }}</label>
-        <input
-          type="number"
-          step="0.01"
-          :value="c.amount"
-          @change="saveCategoryTarget(c.category, ($event.target as HTMLInputElement).value)"
+    <!-- Kategorien je Budget -->
+    <div class="card" v-if="budgetBreakdown.some((b) => b.categories.length)">
+      <h2>Kategorien</h2>
+      <div v-for="entry in budgetBreakdown" :key="entry.budget.id">
+        <h3 v-if="entry.categories.length">{{ entry.budget.name }} · {{ budgetLabel(entry.budget) }}</h3>
+        <BudgetMeter
+          v-for="c in entry.categories"
+          :key="c.category"
+          :label="c.category"
+          :spent="c.spent"
+          :target="c.target"
+          :color="c.color"
         />
-        <DeleteButton small @click="removeCategoryTarget(c.id)" />
       </div>
-      <form class="target-row" @submit.prevent="addCategoryTarget">
-        <input v-model="newCategoryForm.category" type="text" placeholder="Neue Kategorie" />
-        <input v-model="newCategoryForm.amount" type="number" step="0.01" placeholder="Ziel €" />
-        <button type="submit">+ Hinzufügen</button>
-      </form>
     </div>
 
     <!-- Bezahlungen -->
@@ -371,6 +413,10 @@ const categoryBreakdown = computed(() => {
         <select v-model="expenseForm.paid_by_user_id" required>
           <option value="" disabled>Bezahlt von…</option>
           <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
+        </select>
+        <select v-model="expenseForm.budget_id">
+          <option value="">Kein Budget</option>
+          <option v-for="b in budgets" :key="b.id" :value="String(b.id)">{{ b.name }} ({{ budgetLabel(b) }})</option>
         </select>
         <input v-model="expenseForm.date" type="date" />
         <input v-model="expenseForm.note" type="text" placeholder="Notiz (optional)" />
@@ -412,7 +458,7 @@ const categoryBreakdown = computed(() => {
       <div class="header">
         <h2>Überweisungen</h2>
         <button @click="showTransferForm = !showTransferForm">
-          {{ showTransferForm ? 'Abbrechen' : '+ Überweisung eintragen' }}
+          {{ showTransferForm ? 'Abbrechen' : '💸 Überweisung eintragen' }}
         </button>
       </div>
 
@@ -470,6 +516,10 @@ const categoryBreakdown = computed(() => {
         <select v-model="editExpenseForm.paid_by_user_id" required>
           <option value="" disabled>Bezahlt von…</option>
           <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
+        </select>
+        <select v-model="editExpenseForm.budget_id">
+          <option value="">Kein Budget</option>
+          <option v-for="b in budgets" :key="b.id" :value="String(b.id)">{{ b.name }} ({{ budgetLabel(b) }})</option>
         </select>
         <input v-model="editExpenseForm.date" type="date" />
         <input v-model="editExpenseForm.note" type="text" placeholder="Notiz (optional)" />
@@ -562,14 +612,66 @@ const categoryBreakdown = computed(() => {
 .hint {
   font-size: 0.8rem;
   color: var(--color-text-muted);
-  margin: var(--space-2) 0 0;
+  margin: var(--space-2) 0 var(--space-3);
+}
+
+.new-budget-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.new-budget-form input,
+.new-budget-form select {
+  flex: 1;
+  min-width: 140px;
+}
+
+.budget-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.budget-block {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+}
+
+.budget-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.budget-head h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--color-text);
+}
+
+.owner-tag {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+.budget-head-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
 }
 
 .target-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
-  margin-bottom: var(--space-2);
+  margin-top: var(--space-2);
 }
 
 .target-row label {
@@ -582,14 +684,12 @@ const categoryBreakdown = computed(() => {
   width: 120px;
 }
 
-.saved-hint {
-  color: var(--color-success);
-}
-
 .header {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
+  gap: var(--space-2);
   margin-bottom: var(--space-3);
 }
 

@@ -17,6 +17,7 @@ const router = createRouter({
     },
     { path: '/budget', name: 'budget', component: () => import('../views/BudgetView.vue') },
     { path: '/shopping', name: 'shopping', component: () => import('../views/ShoppingListView.vue') },
+    { path: '/todo', name: 'todo', component: () => import('../views/TodoView.vue') },
     { path: '/notes', name: 'notes', component: () => import('../views/NotesView.vue') },
     { path: '/diary', name: 'diary', component: () => import('../views/DiaryView.vue') },
     { path: '/map', name: 'map', component: () => import('../views/MapView.vue') },
