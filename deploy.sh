@@ -15,17 +15,23 @@ source "$ENV_FILE"
 set +a
 
 : "${SSH_USER:?SSH_USER fehlt in .env}"
-: "${LOCAL_HOST:?LOCAL_HOST fehlt in .env}"
 : "${PUBLIC_HOST:?PUBLIC_HOST fehlt in .env}"
 
-echo "Pruefe, ob der Pi im lokalen Netz erreichbar ist..."
-if ssh -o BatchMode=yes -o ConnectTimeout=3 -o StrictHostKeyChecking=accept-new \
-    "$SSH_USER@$LOCAL_HOST" true 2>/dev/null; then
-  HOST="$LOCAL_HOST"
-  echo "-> Im lokalen Netz, nutze $HOST"
+# LOCAL_HOST ist optional: nur relevant, falls PUBLIC_HOST vom selben Netz aus
+# (z. B. per NAT-Hairpin) nicht erreichbar ist und keine lokale Alternativroute
+# existiert (z. B. via /etc/hosts). Wenn nicht gesetzt, wird direkt PUBLIC_HOST genutzt.
+if [ -n "${LOCAL_HOST:-}" ]; then
+  echo "Pruefe, ob der Server ueber LOCAL_HOST erreichbar ist..."
+  if ssh -o BatchMode=yes -o ConnectTimeout=3 -o StrictHostKeyChecking=accept-new \
+      "$SSH_USER@$LOCAL_HOST" true 2>/dev/null; then
+    HOST="$LOCAL_HOST"
+    echo "-> Erreichbar, nutze $HOST"
+  else
+    HOST="$PUBLIC_HOST"
+    echo "-> LOCAL_HOST nicht erreichbar, nutze $HOST"
+  fi
 else
   HOST="$PUBLIC_HOST"
-  echo "-> Nicht im lokalen Netz erreichbar, nutze oeffentliche Adresse $HOST"
 fi
 
 echo "Baue Frontend..."

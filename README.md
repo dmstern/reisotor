@@ -125,14 +125,17 @@ Der Frontend-Build läuft **lokal**, nicht auf dem Zielserver – auf schwacher 
 
 ### Automatisiertes Deployment mit `deploy.sh`
 
-`deploy.sh` im Repo-Root automatisiert Build + Kopieren + Neustart. Persönliche Werte (SSH-Nutzer, lokaler Hostname, öffentliche Domain) kommen aus einer lokalen `.env`-Datei (siehe `.env.example`), damit das Skript selbst ohne Infrastruktur-Details versioniert werden kann:
+`deploy.sh` im Repo-Root automatisiert Build + Kopieren + Neustart. Persönliche Werte (SSH-Nutzer, öffentliche Domain, optional ein lokaler Hostname) kommen aus einer lokalen `.env`-Datei (siehe `.env.example`), damit das Skript selbst ohne Infrastruktur-Details versioniert werden kann:
 
 ```bash
 cp .env.example .env   # einmalig, dann eigene Werte eintragen
 ./deploy.sh
 ```
 
-Das Skript prüft zuerst, ob der Server über `LOCAL_HOST` erreichbar ist (praktisch, wenn Client und Server im selben lokalen Netz hinter demselben Router hängen – von dort ist die öffentliche Domain oft nicht erreichbar, klassisches NAT-Hairpin-Problem), und nutzt sonst `PUBLIC_HOST` als Fallback.
+Falls Client und Server im selben lokalen Netz hinter demselben Router hängen, ist die öffentliche Domain von dort aus oft nicht erreichbar (klassisches NAT-Hairpin-Problem). Dagegen helfen zwei Optionen:
+
+- **`LOCAL_HOST`** in der `.env` setzen (z. B. der lokale Hostname/die lokale IP des Servers) – das Skript probiert diesen zuerst und fällt sonst auf `PUBLIC_HOST` zurück.
+- Alternativ (z. B. per `/etc/hosts`) die öffentliche Domain lokal direkt auf die interne IP des Servers auflösen lassen – dann funktioniert auch der Browser-Zugriff auf die App selbst im Heimnetz ohne Umweg, und `LOCAL_HOST` kann in der `.env` weggelassen werden.
 
 ## Bekannte Stolpersteine
 
