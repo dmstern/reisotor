@@ -19,7 +19,7 @@ export const useTripStore = defineStore('trip', () => {
   const trips = ref<Trip[]>([]);
   const currentTripId = ref<number | null>(null);
   const loaded = ref(false);
-  // Zählt hoch, wenn aus einer einbettenden Sicht (z. B. Kalender) zur Reise-Bearbeitung
+  // Zählt hoch, wenn aus einer einbettenden Sicht (z. B. Kalender) zur Urlaub-Bearbeitung
   // gesprungen werden soll. TripSwitcher beobachtet das und öffnet dafür sein Edit-Modal
   // (Architekturregel Batch 3: Fremdobjekte springen zur Ursprungssicht statt inline editierbar zu sein).
   const editTripRequestId = ref(0);

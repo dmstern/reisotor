@@ -10,7 +10,7 @@ db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 
 // Migration von der alten Singleton-Tabelle "trip" (immer nur eine Zeile mit id=1)
-// zur neuen Liste "trips" (mehrere Reisen möglich) – per RENAME bleiben alle
+// zur neuen Liste "trips" (mehrere Urlaube möglich) – per RENAME bleiben alle
 // bestehenden Daten und die ursprüngliche id erhalten.
 const hasOldTripTable = db
   .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'trip'")
@@ -91,7 +91,7 @@ CREATE TABLE IF NOT EXISTS budget_transfers (
 
 -- Ein Budget ist entweder persönlich (owner_id gesetzt) oder geteilt (owner_id NULL).
 -- Es gibt kein manuelles Gesamtbudget mehr – die Gesamtsumme ergibt sich aus der Summe
--- aller budget_allocations über alle Budgets einer Reise.
+-- aller budget_allocations über alle Budgets eines Urlaubs.
 CREATE TABLE IF NOT EXISTS budgets (
   id INTEGER PRIMARY KEY,
   trip_id INTEGER NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
@@ -236,11 +236,11 @@ ensureColumn('trips', 'lng', 'REAL');
 ensureColumn('budget_items', 'budget_id', 'INTEGER REFERENCES budgets(id) ON DELETE SET NULL');
 
 // Spots als eigenständiges Konzept wurden zugunsten einer reinen Kartenansicht (Batch 4)
-// wieder entfernt – Karte zeigt seitdem nur noch Reise/Ausflüge/Unterkunft mit Koordinaten.
+// wieder entfernt – Karte zeigt seitdem nur noch Urlaub/Ausflüge/Unterkunft mit Koordinaten.
 db.exec('DROP TABLE IF EXISTS spots');
 
-// trip_id auf allen Inhalts-Tabellen: ordnet jede Zeile einer Reise zu. ON DELETE CASCADE
-// sorgt dafür, dass beim Löschen einer Reise alle zugehörigen Daten mit verschwinden.
+// trip_id auf allen Inhalts-Tabellen: ordnet jede Zeile einem Urlaub zu. ON DELETE CASCADE
+// sorgt dafür, dass beim Löschen eines Urlaubs alle zugehörigen Daten mit verschwinden.
 const TRIP_SCOPED_TABLES = [
   'schedule_items',
   'packing_items',
@@ -258,8 +258,8 @@ for (const table of TRIP_SCOPED_TABLES) {
   ensureColumn(table, 'trip_id', 'INTEGER REFERENCES trips(id) ON DELETE CASCADE');
 }
 
-// Backfill: bestehende Zeilen (aus der Zeit vor Multi-Reise-Unterstützung) der
-// jeweils ersten/ältesten Reise zuordnen, damit keine verwaisten Daten entstehen.
+// Backfill: bestehende Zeilen (aus der Zeit vor Multi-Urlaub-Unterstützung) dem
+// jeweils ersten/ältesten Urlaub zuordnen, damit keine verwaisten Daten entstehen.
 const firstTrip = db.prepare('SELECT id FROM trips ORDER BY id LIMIT 1').get() as { id: number } | undefined;
 if (firstTrip) {
   for (const table of TRIP_SCOPED_TABLES) {
@@ -276,7 +276,7 @@ const DEFAULT_BUDGET_CATEGORIES = [
   'Sonstiges',
 ];
 
-/** Legt für eine Reise das Standard-"Gemeinsame Budget" mit den Standardkategorien an,
+/** Legt für einen Urlaub das Standard-"Gemeinsame Budget" mit den Standardkategorien an,
  *  sofern noch kein geteiltes Budget existiert. */
 export function ensureDefaultSharedBudget(tripId: number) {
   const existing = db
@@ -356,8 +356,8 @@ if (hasTable('budget_targets')) {
   migrateBudgets();
 }
 
-// Für jede Reise sicherstellen, dass ein geteiltes Budget mit den Standardkategorien existiert
-// (frisch angelegte Reisen sowie ggf. eben migrierte Reisen ohne geteiltes Ziel).
+// Für jeden Urlaub sicherstellen, dass ein geteiltes Budget mit den Standardkategorien existiert
+// (frisch angelegte Urlaube sowie ggf. eben migrierte Urlaube ohne geteiltes Ziel).
 const allTrips = db.prepare('SELECT id FROM trips').all() as { id: number }[];
 for (const trip of allTrips) {
   ensureDefaultSharedBudget(trip.id);

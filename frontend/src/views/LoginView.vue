@@ -31,7 +31,7 @@ async function onSubmit() {
     <form class="card login-card" @submit.prevent="onSubmit">
       <img src="/reisotor_logo.svg" alt="Reisotor Logo" class="logo" />
       <h1>Reisotor</h1>
-      <p>Melde dich an, um eure Reise zu planen.</p>
+      <p>Melde dich an, um euren Urlaub zu planen.</p>
 
       <label>
         Benutzername

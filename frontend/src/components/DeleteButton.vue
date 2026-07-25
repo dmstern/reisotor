@@ -1,5 +1,5 @@
 <script setup lang="ts">
-defineProps<{ small?: boolean }>();
+defineProps<{ small?: boolean; disabled?: boolean }>();
 defineEmits<{ (e: 'click'): void }>();
 </script>
 
@@ -8,8 +8,9 @@ defineEmits<{ (e: 'click'): void }>();
     type="button"
     class="secondary delete-btn"
     :class="{ small }"
-    title="Löschen"
-    aria-label="Löschen"
+    :disabled="disabled"
+    :title="disabled ? 'Löschen hier nicht möglich – in der Ursprungssicht bearbeiten' : 'Löschen'"
+    :aria-label="disabled ? 'Löschen nicht möglich' : 'Löschen'"
     @click="$emit('click')"
   >
     🗑️
@@ -27,5 +28,10 @@ defineEmits<{ (e: 'click'): void }>();
 .delete-btn.small {
   padding: 4px 8px;
   font-size: 0.8rem;
+}
+
+.delete-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 </style>

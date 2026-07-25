@@ -38,8 +38,8 @@ async function onCreateFirstTrip(data: TripFormData) {
     <div class="onboarding">
       <div class="card onboarding-card">
         <h1>Willkommen bei Reisotor!</h1>
-        <p>Lege deine erste Reise an, um loszulegen.</p>
-        <TripForm submit-label="Reise anlegen" @submit="onCreateFirstTrip" />
+        <p>Lege deinen ersten Urlaub an, um loszulegen.</p>
+        <TripForm submit-label="Urlaub anlegen" @submit="onCreateFirstTrip" />
       </div>
     </div>
   </template>

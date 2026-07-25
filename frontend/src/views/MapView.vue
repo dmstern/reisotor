@@ -8,7 +8,7 @@ import type { Accommodation, Excursion } from '../api/types';
 import { useTripStore } from '../stores/trip';
 
 // Die Karte ist eine reine Anzeige (Batch 4): Sie zeigt nur Punkte, die in ihren
-// Ursprungssichten (Reise, Ausflüge, Unterkunft) mit Koordinaten hinterlegt wurden.
+// Ursprungssichten (Urlaub, Ausflüge, Unterkunft) mit Koordinaten hinterlegt wurden.
 // Anlegen/Bearbeiten gibt es hier nicht – ein Klick auf einen Punkt zeigt eine kurze
 // Info mit einem Sprung-Button zur jeweiligen Ursprungssicht (Architekturregel Batch 3).
 type MapKind = 'trip' | 'excursion' | 'accommodation';
@@ -23,7 +23,7 @@ interface MapPoint {
 }
 
 const MAP_KIND_META: Record<MapKind, { icon: string; color: string; label: string }> = {
-  trip: { icon: '🧳', color: '#2a78d6', label: 'Reise' },
+  trip: { icon: '🧳', color: '#2a78d6', label: 'Urlaub' },
   excursion: { icon: '🎒', color: '#eb6834', label: 'Ausflug' },
   accommodation: { icon: '🛏️', color: '#1baf7a', label: 'Unterkunft' },
 };
@@ -179,7 +179,7 @@ function jumpToTrip() {
         </div>
       </div>
       <button v-if="selectedPoint.kind === 'trip'" type="button" class="secondary jump-btn" @click="jumpToTrip">
-        Zur Reise
+        Zum Urlaub
       </button>
       <router-link v-else-if="selectedPoint.kind === 'excursion'" to="/excursions" class="secondary jump-btn">
         Zu den Ausflügen
@@ -188,7 +188,7 @@ function jumpToTrip() {
     </div>
 
     <p v-if="!points.length" class="empty">
-      Noch keine Orte mit Koordinaten hinterlegt. Füge bei Reise, Ausflügen oder Unterkunft einen
+      Noch keine Orte mit Koordinaten hinterlegt. Füge bei Urlaub, Ausflügen oder Unterkunft einen
       Google-Maps-Link hinzu, damit sie hier erscheinen.
     </p>
   </div>

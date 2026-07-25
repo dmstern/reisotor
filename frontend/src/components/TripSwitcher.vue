@@ -12,8 +12,8 @@ const open = ref(false);
 const showForm = ref(false);
 const editingTrip = ref<Trip | null>(null);
 
-// Sprungziel für Fremdobjekte (z. B. Reise-Einträge im Kalender): öffnet das Edit-Modal
-// der aktuellen Reise, ohne dass die einbettende Sicht selbst editieren muss.
+// Sprungziel für Fremdobjekte (z. B. Urlaub-Einträge im Kalender): öffnet das Edit-Modal
+// des aktuellen Urlaubs, ohne dass die einbettende Sicht selbst editieren muss.
 watch(
   () => tripStore.editTripRequestId,
   (id) => {
@@ -64,7 +64,7 @@ async function onSubmit(data: TripFormData) {
 
 async function onDelete(trip: Trip) {
   const confirmed = window.confirm(
-    `Reise "${trip.name}" wirklich löschen? Alle zugehörigen Daten (Kalender, Packliste, Ausflüge, Unterkunft, Budget, ...) werden unwiderruflich gelöscht.`,
+    `Urlaub "${trip.name}" wirklich löschen? Alle zugehörigen Daten (Kalender, Packliste, Ausflüge, Unterkunft, Budget, ...) werden unwiderruflich gelöscht.`,
   );
   if (!confirmed) return;
   await tripStore.deleteTrip(trip.id);
@@ -74,7 +74,7 @@ async function onDelete(trip: Trip) {
 <template>
   <div class="trip-switcher">
     <button type="button" class="switcher-btn" @click="toggle">
-      <span class="trip-name">{{ tripStore.currentTrip?.name ?? 'Reise wählen' }}</span>
+      <span class="trip-name">{{ tripStore.currentTrip?.name ?? 'Urlaub wählen' }}</span>
       <span class="caret">▾</span>
     </button>
 
@@ -93,14 +93,14 @@ async function onDelete(trip: Trip) {
             <DeleteButton small @click="onDelete(trip)" />
           </div>
         </div>
-        <p v-if="!tripStore.trips.length" class="empty">Noch keine Reisen.</p>
-        <button type="button" class="new-trip-btn" @click="openCreate">+ Neue Reise</button>
+        <p v-if="!tripStore.trips.length" class="empty">Noch keine Urlaube.</p>
+        <button type="button" class="new-trip-btn" @click="openCreate">+ Neuer Urlaub</button>
       </div>
     </template>
 
     <Modal
       :model-value="showForm"
-      :title="editingTrip ? 'Reise bearbeiten' : 'Neue Reise anlegen'"
+      :title="editingTrip ? 'Urlaub bearbeiten' : 'Neuen Urlaub anlegen'"
       @update:model-value="(v) => !v && closeForm()"
     >
       <TripForm

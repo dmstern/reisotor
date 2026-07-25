@@ -47,7 +47,7 @@ function onSubmit() {
 <template>
   <form class="trip-form" @submit.prevent="onSubmit">
     <label>
-      Name der Reise
+      Name des Urlaubs
       <input v-model="form.name" type="text" placeholder="z. B. Italien 2026" required />
     </label>
     <label>

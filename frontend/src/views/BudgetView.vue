@@ -1,7 +1,15 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { api } from '../api/client';
-import type { Budget, BudgetAllocation, BudgetExpense, BudgetTransfer, User } from '../api/types';
+import type {
+  Accommodation,
+  Budget,
+  BudgetAllocation,
+  BudgetExpense,
+  BudgetTransfer,
+  TravelItem,
+  User,
+} from '../api/types';
 import { useTripStore } from '../stores/trip';
 import { assignCategoryColors } from '../utils/categoryColors';
 import BudgetMeter from '../components/BudgetMeter.vue';
@@ -16,6 +24,8 @@ const expenses = ref<BudgetExpense[]>([]);
 const budgets = ref<Budget[]>([]);
 const allocations = ref<BudgetAllocation[]>([]);
 const transfers = ref<BudgetTransfer[]>([]);
+const accommodations = ref<Accommodation[]>([]);
+const travelItems = ref<TravelItem[]>([]);
 const loading = ref(true);
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -28,20 +38,37 @@ async function refreshAllocations() {
 }
 
 onMounted(async () => {
-  const [u, e, b, a, tr] = await Promise.all([
+  const [u, e, b, a, tr, acc, travel] = await Promise.all([
     api.get<User[]>('/users'),
     api.get<BudgetExpense[]>(`/budget?trip_id=${tripId}`),
     api.get<Budget[]>(`/budget/budgets?trip_id=${tripId}`),
     api.get<BudgetAllocation[]>(`/budget/allocations?trip_id=${tripId}`),
     api.get<BudgetTransfer[]>(`/budget/transfers?trip_id=${tripId}`),
+    api.get<Accommodation[]>(`/accommodation?trip_id=${tripId}`),
+    api.get<TravelItem[]>(`/travel?trip_id=${tripId}`),
   ]);
   users.value = u;
   expenses.value = e;
   budgets.value = b;
   allocations.value = a;
   transfers.value = tr;
+  accommodations.value = acc;
+  travelItems.value = travel;
   loading.value = false;
 });
+
+/** Bezahlungen, die automatisch aus einem Unterkunft- oder Reise-Eintrag erzeugt wurden
+ *  (siehe accommodation.ts/travel.ts `planBudgetExpense`), sind hier gemäß der Architekturregel
+ *  aus Batch 3 nicht direkt editier-/löschbar – stattdessen springt man zur Ursprungssicht. */
+function autoSourceFor(expenseId: number): { label: string; path: string } | null {
+  if (accommodations.value.some((a) => a.budget_expense_id === expenseId)) {
+    return { label: 'Zur Unterkunft', path: '/accommodation' };
+  }
+  if (travelItems.value.some((t) => t.budget_expense_id === expenseId)) {
+    return { label: 'Zur Reise', path: '/travel' };
+  }
+  return null;
+}
 
 function userName(id: number | null) {
   if (id == null) return 'Gemeinsam';
@@ -442,8 +469,16 @@ const budgetBreakdown = computed(() => {
             <td>{{ userAvatar(e.paid_by_user_id) }} {{ userName(e.paid_by_user_id) }}</td>
             <td>{{ e.amount.toFixed(2) }} €</td>
             <td class="actions">
-              <EditButton small @click="startEditExpense(e)" />
-              <DeleteButton small @click="removeExpense(e.id)" />
+              <template v-if="autoSourceFor(e.id)">
+                <router-link :to="autoSourceFor(e.id)!.path" class="secondary jump-btn-sm">
+                  {{ autoSourceFor(e.id)!.label }}
+                </router-link>
+                <DeleteButton small disabled />
+              </template>
+              <template v-else>
+                <EditButton small @click="startEditExpense(e)" />
+                <DeleteButton small @click="removeExpense(e.id)" />
+              </template>
             </td>
           </tr>
           <tr v-if="!expenses.length">
@@ -731,7 +766,15 @@ const budgetBreakdown = computed(() => {
 
 .actions {
   display: flex;
+  align-items: center;
   gap: 4px;
+  flex-wrap: wrap;
+}
+
+.jump-btn-sm {
+  font-size: 0.78rem;
+  white-space: nowrap;
+  text-decoration: none;
 }
 
 .empty {

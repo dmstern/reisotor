@@ -99,7 +99,7 @@ function formatDate(d: string) {
 <template>
   <div class="page" v-if="!loading">
     <header class="hero card">
-      <h1>{{ trip?.name || 'Eure Reise' }}</h1>
+      <h1>{{ trip?.name || 'Euer Urlaub' }}</h1>
       <p v-if="trip?.destination">📍 {{ trip.destination }}</p>
       <p v-if="trip">{{ formatDate(trip.start_date) }} – {{ formatDate(trip.end_date) }}</p>
       <p v-if="daysUntilStart !== null && daysUntilStart >= 0" class="countdown">

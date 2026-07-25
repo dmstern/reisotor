@@ -77,8 +77,8 @@ function itemToEntry(item: ScheduleItem): CalendarEntry {
   };
 }
 
-// Reise-Stammdaten erscheinen automatisch als (nicht editierbare) Kalender-Items der Kategorie
-// "Reise" – synthetisch aus den Trip-Stammdaten erzeugt, nicht in schedule_items gespeichert.
+// Urlaub-Stammdaten erscheinen automatisch als (nicht editierbare) Kalender-Items der Kategorie
+// "Urlaub" – synthetisch aus den Trip-Stammdaten erzeugt, nicht in schedule_items gespeichert.
 const tripEntries = computed<CalendarEntry[]>(() => {
   if (!trip.value) return [];
   const entries: CalendarEntry[] = [
@@ -87,7 +87,7 @@ const tripEntries = computed<CalendarEntry[]>(() => {
       date: trip.value.start_date,
       endDate: trip.value.start_date,
       time: null,
-      title: `Reise-Start: ${trip.value.name}`,
+      title: `Urlaub-Start: ${trip.value.name}`,
       note: null,
       location: null,
       category: 'trip',
@@ -101,7 +101,7 @@ const tripEntries = computed<CalendarEntry[]>(() => {
       date: trip.value.end_date,
       endDate: trip.value.end_date,
       time: null,
-      title: `Reise-Ende: ${trip.value.name}`,
+      title: `Urlaub-Ende: ${trip.value.name}`,
       note: null,
       location: null,
       category: 'trip',
@@ -330,10 +330,10 @@ function formatDay(date: string) {
             <p v-if="entry.note" class="note">{{ entry.note }}</p>
           </div>
           <div class="item-actions">
-            <!-- Architekturregel: Fremdobjekte (Reise-Stammdaten, verknüpfte Ausflüge) sind hier
+            <!-- Architekturregel: Fremdobjekte (Urlaub-Stammdaten, verknüpfte Ausflüge) sind hier
                  nur lesend/verknüpfend darstellbar – Bearbeitung passiert in der Ursprungssicht. -->
             <template v-if="entry.scheduleItem === null">
-              <button type="button" class="secondary jump-btn" @click="jumpToTrip">Zur Reise</button>
+              <button type="button" class="secondary jump-btn" @click="jumpToTrip">Zum Urlaub</button>
             </template>
             <template v-else-if="entry.ideaId">
               <router-link to="/excursions" class="secondary jump-btn">Zum Ausflug</router-link>

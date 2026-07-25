@@ -34,7 +34,7 @@ export interface ScheduleItem {
 }
 
 /** Vereinheitlichte Darstellung für die Kalenderansicht: entweder ein echter Kalender-Termin
- *  (scheduleItem gesetzt) oder ein synthetischer, nicht editierbarer Eintrag wie Reise-Start/-Ende
+ *  (scheduleItem gesetzt) oder ein synthetischer, nicht editierbarer Eintrag wie Urlaub-Start/-Ende
  *  (scheduleItem null), der nur zur Ursprungssicht springt statt inline editierbar zu sein. */
 export interface CalendarEntry {
   key: string;
@@ -131,7 +131,7 @@ export interface Budget {
 }
 
 /** Kategorien-Anteil innerhalb eines Budgets. Die Summe aller Allocations eines Budgets
- *  ergibt dessen Ziel-Gesamtsumme; die Summe über alle Budgets ergibt das Gesamtbudget der Reise. */
+ *  ergibt dessen Ziel-Gesamtsumme; die Summe über alle Budgets ergibt das Gesamtbudget des Urlaubs. */
 export interface BudgetAllocation {
   id: number;
   budget_id: number;
