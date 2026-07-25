@@ -14,6 +14,7 @@ export interface Trip {
 
 export interface ScheduleItem {
   id: number;
+  trip_id: number;
   date: string;
   time: string | null;
   title: string;
@@ -23,14 +24,16 @@ export interface ScheduleItem {
 
 export interface PackingItem {
   id: number;
+  trip_id: number;
   category: string | null;
   label: string;
   checked: 0 | 1;
   owner_id: number | null;
 }
 
-export interface Idea {
+export interface Excursion {
   id: number;
+  trip_id: number;
   title: string;
   image_url: string | null;
   link: string | null;
@@ -43,6 +46,7 @@ export interface Idea {
 
 export interface Spot {
   id: number;
+  trip_id: number;
   name: string;
   category: string | null;
   link: string | null;
@@ -53,6 +57,7 @@ export interface Spot {
 
 export interface Accommodation {
   id: number;
+  trip_id: number;
   name: string;
   address: string | null;
   link: string | null;
@@ -72,6 +77,7 @@ export interface Accommodation {
 
 export interface TravelItem {
   id: number;
+  trip_id: number;
   title: string;
   type: string | null;
   from_location: string | null;
@@ -90,6 +96,7 @@ export interface TravelItem {
 
 export interface BudgetExpense {
   id: number;
+  trip_id: number;
   title: string;
   category: string | null;
   amount: number;
@@ -100,18 +107,21 @@ export interface BudgetExpense {
 
 export interface BudgetTarget {
   id: number;
+  trip_id: number;
   owner_id: number | null;
   amount: number;
 }
 
 export interface BudgetCategoryTarget {
   id: number;
+  trip_id: number;
   category: string;
   amount: number;
 }
 
 export interface BudgetTransfer {
   id: number;
+  trip_id: number;
   from_user_id: number;
   to_user_id: number;
   amount: number;
@@ -121,6 +131,7 @@ export interface BudgetTransfer {
 
 export interface ShoppingItem {
   id: number;
+  trip_id: number;
   label: string;
   assigned_to_user_id: number | null;
   checked: 0 | 1;
@@ -130,6 +141,7 @@ export interface ShoppingItem {
 
 export interface Note {
   id: number;
+  trip_id: number;
   title: string | null;
   content: string;
   created_by: number | null;
@@ -139,6 +151,7 @@ export interface Note {
 
 export interface DiaryEntry {
   id: number;
+  trip_id: number;
   author_id: number;
   title: string | null;
   content: string;

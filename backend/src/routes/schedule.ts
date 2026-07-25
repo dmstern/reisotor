@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import { db } from '../db/index.js';
 
 interface ScheduleBody {
+  trip_id: number;
   date: string;
   time?: string;
   title: string;
@@ -10,15 +11,18 @@ interface ScheduleBody {
 }
 
 export const scheduleRoutes: FastifyPluginAsync = async (app) => {
-  app.get('/schedule', async () => {
-    return db.prepare('SELECT * FROM schedule_items ORDER BY date, time').all();
+  app.get<{ Querystring: { trip_id?: string } }>('/schedule', async (req, reply) => {
+    if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
+    return db
+      .prepare('SELECT * FROM schedule_items WHERE trip_id = ? ORDER BY date, time')
+      .all(req.query.trip_id);
   });
 
   app.post<{ Body: ScheduleBody }>('/schedule', async (req, reply) => {
-    const { date, time, title, note, idea_id } = req.body;
+    const { trip_id, date, time, title, note, idea_id } = req.body;
     const result = db
-      .prepare('INSERT INTO schedule_items (date, time, title, note, idea_id) VALUES (?, ?, ?, ?, ?)')
-      .run(date, time ?? null, title, note ?? null, idea_id ?? null);
+      .prepare('INSERT INTO schedule_items (trip_id, date, time, title, note, idea_id) VALUES (?, ?, ?, ?, ?, ?)')
+      .run(trip_id, date, time ?? null, title, note ?? null, idea_id ?? null);
     if (idea_id) {
       db.prepare("UPDATE ideas SET status = 'planned' WHERE id = ?").run(idea_id);
     }

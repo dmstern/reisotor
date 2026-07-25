@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import { db } from '../db/index.js';
 
 interface IdeaBody {
+  trip_id: number;
   title: string;
   image_url?: string;
   link?: string;
@@ -13,18 +14,20 @@ interface IdeaBody {
 }
 
 export const ideasRoutes: FastifyPluginAsync = async (app) => {
-  app.get('/ideas', async () => {
-    return db.prepare('SELECT * FROM ideas ORDER BY id DESC').all();
+  app.get<{ Querystring: { trip_id?: string } }>('/ideas', async (req, reply) => {
+    if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
+    return db.prepare('SELECT * FROM ideas WHERE trip_id = ? ORDER BY id DESC').all(req.query.trip_id);
   });
 
   app.post<{ Body: IdeaBody }>('/ideas', async (req, reply) => {
-    const { title, image_url, link, maps_link, note, status, lat, lng } = req.body;
+    const { trip_id, title, image_url, link, maps_link, note, status, lat, lng } = req.body;
     const result = db
       .prepare(
-        `INSERT INTO ideas (title, image_url, link, maps_link, note, status, lat, lng)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO ideas (trip_id, title, image_url, link, maps_link, note, status, lat, lng)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
+        trip_id,
         title,
         image_url ?? null,
         link ?? null,

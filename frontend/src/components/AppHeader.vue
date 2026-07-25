@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useAuthStore } from '../stores/auth';
+import TripSwitcher from './TripSwitcher.vue';
 
 const auth = useAuthStore();
 </script>
@@ -10,6 +11,7 @@ const auth = useAuthStore();
       <img src="/reisotor_logo.svg" alt="Reisotor Logo" class="logo" />
       <span class="wordmark">Reisotor</span>
     </router-link>
+    <TripSwitcher class="switcher" />
     <router-link to="/profile" class="profile-link" title="Profil">
       <span class="avatar">{{ auth.user?.avatar || '👤' }}</span>
     </router-link>
@@ -24,7 +26,7 @@ const auth = useAuthStore();
   height: 56px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: var(--space-2);
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
   padding: 0 var(--space-4);
@@ -37,6 +39,14 @@ const auth = useAuthStore();
   gap: var(--space-2);
   text-decoration: none;
   width: fit-content;
+  flex-shrink: 0;
+}
+
+.switcher {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  justify-content: center;
 }
 
 .logo {

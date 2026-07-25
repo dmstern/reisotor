@@ -1,15 +1,18 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { api } from '../api/client';
-import type { Accommodation, Idea, ScheduleItem, Trip } from '../api/types';
+import type { Accommodation, Excursion, ScheduleItem } from '../api/types';
+import { useTripStore } from '../stores/trip';
 import CalendarWeek from '../components/CalendarWeek.vue';
 import Modal from '../components/Modal.vue';
 import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
 
-const trip = ref<Trip | null>(null);
+const tripStore = useTripStore();
+const tripId = tripStore.currentTripId as number;
+const trip = computed(() => tripStore.currentTrip);
 const items = ref<ScheduleItem[]>([]);
-const ideas = ref<Idea[]>([]);
+const excursions = ref<Excursion[]>([]);
 const accommodations = ref<Accommodation[]>([]);
 const selectedDate = ref<string | null>(null);
 const loading = ref(true);
@@ -18,22 +21,20 @@ const newTime = ref('');
 const newTitle = ref('');
 const newNote = ref('');
 
-const formIdeaId = ref('');
+const formExcursionId = ref('');
 const formDate = ref('');
 
 const editingItem = ref<ScheduleItem | null>(null);
 const editForm = ref({ time: '', title: '', note: '' });
 
 onMounted(async () => {
-  const [tripRes, scheduleRes, ideasRes, accommodationRes] = await Promise.all([
-    api.get<Trip>('/trip'),
-    api.get<ScheduleItem[]>('/schedule'),
-    api.get<Idea[]>('/ideas'),
-    api.get<Accommodation[]>('/accommodation'),
+  const [scheduleRes, excursionsRes, accommodationRes] = await Promise.all([
+    api.get<ScheduleItem[]>(`/schedule?trip_id=${tripId}`),
+    api.get<Excursion[]>(`/ideas?trip_id=${tripId}`),
+    api.get<Accommodation[]>(`/accommodation?trip_id=${tripId}`),
   ]);
-  trip.value = tripRes;
   items.value = scheduleRes;
-  ideas.value = ideasRes;
+  excursions.value = excursionsRes;
   accommodations.value = accommodationRes;
   selectedDate.value = new Date().toISOString().slice(0, 10);
   formDate.value = selectedDate.value;
@@ -44,10 +45,10 @@ function toIso(d: Date) {
   return d.toISOString().slice(0, 10);
 }
 
-const scheduledIdeaIds = computed(() => new Set(items.value.map((i) => i.idea_id).filter(Boolean)));
+const scheduledExcursionIds = computed(() => new Set(items.value.map((i) => i.idea_id).filter(Boolean)));
 
-const unscheduledPlannedIdeas = computed(() =>
-  ideas.value.filter((i) => i.status !== 'discarded' && !scheduledIdeaIds.value.has(i.id)),
+const unscheduledPlannedExcursions = computed(() =>
+  excursions.value.filter((i) => i.status !== 'discarded' && !scheduledExcursionIds.value.has(i.id)),
 );
 
 function accommodationsForDate(date: string) {
@@ -98,45 +99,47 @@ const dayAccommodations = computed(() =>
   selectedDate.value ? accommodationsForDate(selectedDate.value) : [],
 );
 
-function ideaTitle(ideaId: number | null) {
-  if (!ideaId) return null;
-  return ideas.value.find((i) => i.id === ideaId)?.title ?? null;
+function excursionTitle(excursionId: number | null) {
+  if (!excursionId) return null;
+  return excursions.value.find((i) => i.id === excursionId)?.title ?? null;
 }
 
 function selectDay(date: string) {
   selectedDate.value = date;
 }
 
-async function scheduleIdea(ideaId: number, date: string) {
-  const idea = ideas.value.find((i) => i.id === ideaId);
-  if (!idea) return;
+async function scheduleExcursion(excursionId: number, date: string) {
+  const excursion = excursions.value.find((i) => i.id === excursionId);
+  if (!excursion) return;
   const created = await api.post<ScheduleItem>('/schedule', {
+    trip_id: tripId,
     date,
-    title: idea.title,
-    note: idea.note ?? undefined,
-    idea_id: idea.id,
+    title: excursion.title,
+    note: excursion.note ?? undefined,
+    idea_id: excursion.id,
   });
   items.value.push(created);
 }
 
-function onDropIdea(date: string, ideaId: number) {
-  scheduleIdea(ideaId, date);
+function onDropExcursion(date: string, excursionId: number) {
+  scheduleExcursion(excursionId, date);
 }
 
 async function onScheduleFromForm() {
-  if (!formIdeaId.value || !formDate.value) return;
-  await scheduleIdea(Number(formIdeaId.value), formDate.value);
-  formIdeaId.value = '';
+  if (!formExcursionId.value || !formDate.value) return;
+  await scheduleExcursion(Number(formExcursionId.value), formDate.value);
+  formExcursionId.value = '';
 }
 
-function onDragStart(event: DragEvent, ideaId: number) {
-  event.dataTransfer?.setData('text/idea-id', String(ideaId));
+function onDragStart(event: DragEvent, excursionId: number) {
+  event.dataTransfer?.setData('text/excursion-id', String(excursionId));
   event.dataTransfer!.effectAllowed = 'move';
 }
 
 async function addItem() {
   if (!selectedDate.value || !newTitle.value.trim()) return;
   const created = await api.post<ScheduleItem>('/schedule', {
+    trip_id: tripId,
     date: selectedDate.value,
     time: newTime.value || undefined,
     title: newTitle.value.trim(),
@@ -183,30 +186,30 @@ function formatDay(date: string) {
 
 <template>
   <div class="page" v-if="!loading">
-    <h1>Ablauf</h1>
+    <h1>Kalender</h1>
 
-    <div class="card ideas-pool" v-if="unscheduledPlannedIdeas.length">
-      <h2>Ideen einplanen</h2>
+    <div class="card excursions-pool" v-if="unscheduledPlannedExcursions.length">
+      <h2>Ausflüge einplanen</h2>
       <p class="hint">
-        💡 Diese <strong>gelb hinterlegten Ideen</strong> kannst du direkt auf einen Tag im Kalender
+        💡 Diese <strong>gelb hinterlegten Ausflüge</strong> kannst du direkt auf einen Tag im Kalender
         ziehen, um sie einzuplanen. Alternativ geht es auch über das Dropdown-Menü unten.
       </p>
       <div class="pool-items">
         <div
-          v-for="idea in unscheduledPlannedIdeas"
-          :key="idea.id"
+          v-for="excursion in unscheduledPlannedExcursions"
+          :key="excursion.id"
           class="pool-item"
           draggable="true"
-          @dragstart="onDragStart($event, idea.id)"
+          @dragstart="onDragStart($event, excursion.id)"
         >
-          💡 {{ idea.title }}
+          💡 {{ excursion.title }}
         </div>
       </div>
       <form class="schedule-form" @submit.prevent="onScheduleFromForm">
-        <select v-model="formIdeaId" required>
-          <option value="" disabled>Idee wählen…</option>
-          <option v-for="idea in unscheduledPlannedIdeas" :key="idea.id" :value="idea.id">
-            {{ idea.title }}
+        <select v-model="formExcursionId" required>
+          <option value="" disabled>Ausflug wählen…</option>
+          <option v-for="excursion in unscheduledPlannedExcursions" :key="excursion.id" :value="excursion.id">
+            {{ excursion.title }}
           </option>
         </select>
         <input v-model="formDate" type="date" required />
@@ -221,7 +224,7 @@ function formatDay(date: string) {
         :days="week"
         :selected-date="selectedDate"
         @select="selectDay"
-        @drop-idea="onDropIdea"
+        @drop-excursion="onDropExcursion"
       />
     </div>
 
@@ -235,7 +238,7 @@ function formatDay(date: string) {
           <div>
             <strong v-if="item.time">{{ item.time }}</strong>
             <span class="title">{{ item.title }}</span>
-            <span v-if="item.idea_id" class="idea-tag">💡 {{ ideaTitle(item.idea_id) }}</span>
+            <span v-if="item.idea_id" class="excursion-tag">💡 {{ excursionTitle(item.idea_id) }}</span>
             <p v-if="item.note" class="note">{{ item.note }}</p>
           </div>
           <div class="item-actions">
@@ -270,11 +273,11 @@ function formatDay(date: string) {
 </template>
 
 <style scoped>
-.ideas-pool {
+.excursions-pool {
   margin-bottom: var(--space-3);
 }
 
-.ideas-pool h2 {
+.excursions-pool h2 {
   font-size: 1rem;
   color: var(--color-primary-dark);
 }
@@ -352,7 +355,7 @@ function formatDay(date: string) {
   margin-left: var(--space-2);
 }
 
-.idea-tag {
+.excursion-tag {
   margin-left: var(--space-2);
   font-size: 0.75rem;
   color: var(--color-accent);

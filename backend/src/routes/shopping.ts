@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import { db } from '../db/index.js';
 
 interface ShoppingBody {
+  trip_id: number;
   label: string;
   assigned_to_user_id?: number | null;
   checked?: boolean;
@@ -10,17 +11,20 @@ interface ShoppingBody {
 }
 
 export const shoppingRoutes: FastifyPluginAsync = async (app) => {
-  app.get('/shopping', async () => {
-    return db.prepare('SELECT * FROM shopping_items ORDER BY checked, id DESC').all();
+  app.get<{ Querystring: { trip_id?: string } }>('/shopping', async (req, reply) => {
+    if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
+    return db
+      .prepare('SELECT * FROM shopping_items WHERE trip_id = ? ORDER BY checked, id DESC')
+      .all(req.query.trip_id);
   });
 
   app.post<{ Body: ShoppingBody }>('/shopping', async (req, reply) => {
-    const { label, assigned_to_user_id, checked, link, note } = req.body;
+    const { trip_id, label, assigned_to_user_id, checked, link, note } = req.body;
     const result = db
       .prepare(
-        'INSERT INTO shopping_items (label, assigned_to_user_id, checked, link, note) VALUES (?, ?, ?, ?, ?)',
+        'INSERT INTO shopping_items (trip_id, label, assigned_to_user_id, checked, link, note) VALUES (?, ?, ?, ?, ?, ?)',
       )
-      .run(label, assigned_to_user_id ?? null, checked ? 1 : 0, link ?? null, note ?? null);
+      .run(trip_id, label, assigned_to_user_id ?? null, checked ? 1 : 0, link ?? null, note ?? null);
     reply.code(201);
     return db.prepare('SELECT * FROM shopping_items WHERE id = ?').get(result.lastInsertRowid);
   });

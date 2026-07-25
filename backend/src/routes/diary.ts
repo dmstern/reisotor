@@ -3,6 +3,7 @@ import { db } from '../db/index.js';
 
 interface EntryRow {
   id: number;
+  trip_id: number;
   author_id: number;
   title: string | null;
   content: string;
@@ -12,6 +13,7 @@ interface EntryRow {
 }
 
 interface EntryBody {
+  trip_id: number;
   title?: string;
   content: string;
   images?: string[];
@@ -26,8 +28,11 @@ function serializeEntry(row: EntryRow) {
 }
 
 export const diaryRoutes: FastifyPluginAsync = async (app) => {
-  app.get('/diary', async () => {
-    const rows = db.prepare('SELECT * FROM diary_entries ORDER BY created_at DESC, id DESC').all() as EntryRow[];
+  app.get<{ Querystring: { trip_id?: string } }>('/diary', async (req, reply) => {
+    if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
+    const rows = db
+      .prepare('SELECT * FROM diary_entries WHERE trip_id = ? ORDER BY created_at DESC, id DESC')
+      .all(req.query.trip_id) as EntryRow[];
     return rows.map(serializeEntry);
   });
 
@@ -40,11 +45,13 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.post<{ Body: EntryBody }>('/diary', async (req, reply) => {
-    const { title, content, images } = req.body;
+    const { trip_id, title, content, images } = req.body;
     const now = new Date().toISOString();
     const result = db
-      .prepare('INSERT INTO diary_entries (author_id, title, content, images, created_at) VALUES (?, ?, ?, ?, ?)')
-      .run(req.session.userId, title ?? null, content, JSON.stringify(images ?? []), now);
+      .prepare(
+        'INSERT INTO diary_entries (trip_id, author_id, title, content, images, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+      )
+      .run(trip_id, req.session.userId, title ?? null, content, JSON.stringify(images ?? []), now);
     reply.code(201);
     const row = db.prepare('SELECT * FROM diary_entries WHERE id = ?').get(result.lastInsertRowid) as EntryRow;
     return serializeEntry(row);

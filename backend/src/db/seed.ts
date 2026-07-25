@@ -23,8 +23,4 @@ for (const u of users) {
   insertUser.run(u.username, hash, u.avatar);
 }
 
-db.prepare(
-  `INSERT OR IGNORE INTO trip (id, name, destination, start_date, end_date) VALUES (1, ?, ?, ?, ?)`,
-).run('Unsere Reise', '', new Date().toISOString().slice(0, 10), new Date().toISOString().slice(0, 10));
-
 console.log('Seed abgeschlossen. Nutzer:', users.map((u) => u.username).join(', '));

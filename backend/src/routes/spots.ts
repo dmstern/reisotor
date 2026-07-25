@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import { db } from '../db/index.js';
 
 interface SpotBody {
+  trip_id: number;
   name: string;
   category?: string;
   link?: string;
@@ -11,17 +12,18 @@ interface SpotBody {
 }
 
 export const spotsRoutes: FastifyPluginAsync = async (app) => {
-  app.get('/spots', async () => {
-    return db.prepare('SELECT * FROM spots ORDER BY id DESC').all();
+  app.get<{ Querystring: { trip_id?: string } }>('/spots', async (req, reply) => {
+    if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
+    return db.prepare('SELECT * FROM spots WHERE trip_id = ? ORDER BY id DESC').all(req.query.trip_id);
   });
 
   app.post<{ Body: SpotBody }>('/spots', async (req, reply) => {
-    const { name, category, link, note, lat, lng } = req.body;
+    const { trip_id, name, category, link, note, lat, lng } = req.body;
     const result = db
       .prepare(
-        'INSERT INTO spots (name, category, link, note, lat, lng) VALUES (?, ?, ?, ?, ?, ?)',
+        'INSERT INTO spots (trip_id, name, category, link, note, lat, lng) VALUES (?, ?, ?, ?, ?, ?, ?)',
       )
-      .run(name, category ?? null, link ?? null, note ?? null, lat ?? null, lng ?? null);
+      .run(trip_id, name, category ?? null, link ?? null, note ?? null, lat ?? null, lng ?? null);
     reply.code(201);
     return db.prepare('SELECT * FROM spots WHERE id = ?').get(result.lastInsertRowid);
   });

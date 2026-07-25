@@ -7,13 +7,15 @@ import type {
   PackingItem,
   ScheduleItem,
   ShoppingItem,
-  Trip,
   User,
 } from '../api/types';
 import { useAuthStore } from '../stores/auth';
+import { useTripStore } from '../stores/trip';
 
 const auth = useAuthStore();
-const trip = ref<Trip | null>(null);
+const tripStore = useTripStore();
+const tripId = tripStore.currentTripId as number;
+const trip = computed(() => tripStore.currentTrip);
 const schedule = ref<ScheduleItem[]>([]);
 const packing = ref<PackingItem[]>([]);
 const expenses = ref<BudgetExpense[]>([]);
@@ -23,16 +25,14 @@ const users = ref<User[]>([]);
 const loading = ref(true);
 
 onMounted(async () => {
-  const [tripRes, scheduleRes, packingRes, expensesRes, targetsRes, shoppingRes, usersRes] = await Promise.all([
-    api.get<Trip>('/trip'),
-    api.get<ScheduleItem[]>('/schedule'),
-    api.get<PackingItem[]>('/packing'),
-    api.get<BudgetExpense[]>('/budget'),
-    api.get<BudgetTarget[]>('/budget/targets'),
-    api.get<ShoppingItem[]>('/shopping'),
+  const [scheduleRes, packingRes, expensesRes, targetsRes, shoppingRes, usersRes] = await Promise.all([
+    api.get<ScheduleItem[]>(`/schedule?trip_id=${tripId}`),
+    api.get<PackingItem[]>(`/packing?trip_id=${tripId}`),
+    api.get<BudgetExpense[]>(`/budget?trip_id=${tripId}`),
+    api.get<BudgetTarget[]>(`/budget/targets?trip_id=${tripId}`),
+    api.get<ShoppingItem[]>(`/shopping?trip_id=${tripId}`),
     api.get<User[]>('/users'),
   ]);
-  trip.value = tripRes;
   schedule.value = scheduleRes;
   packing.value = packingRes;
   expenses.value = expensesRes;

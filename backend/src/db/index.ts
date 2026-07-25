@@ -9,6 +9,16 @@ export const db = new Database(dbPath);
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 
+// Migration von der alten Singleton-Tabelle "trip" (immer nur eine Zeile mit id=1)
+// zur neuen Liste "trips" (mehrere Reisen möglich) – per RENAME bleiben alle
+// bestehenden Daten und die ursprüngliche id erhalten.
+const hasOldTripTable = db
+  .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'trip'")
+  .get();
+if (hasOldTripTable) {
+  db.exec('ALTER TABLE trip RENAME TO trips');
+}
+
 db.exec(`
 CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY,
@@ -16,7 +26,7 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS trip (
+CREATE TABLE IF NOT EXISTS trips (
   id INTEGER PRIMARY KEY,
   name TEXT NOT NULL,
   destination TEXT,
@@ -179,6 +189,11 @@ function dropColumnIfExists(table: string, column: string) {
   }
 }
 
+function hasColumn(table: string, column: string) {
+  const existing = db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
+  return existing.some((c) => c.name === column);
+}
+
 ensureColumn('users', 'avatar', "TEXT DEFAULT '🙂'");
 ensureColumn('ideas', 'lat', 'REAL');
 ensureColumn('ideas', 'lng', 'REAL');
@@ -198,6 +213,56 @@ ensureColumn('accommodation', 'amount', 'REAL');
 ensureColumn('accommodation', 'paid_by_user_id', 'INTEGER REFERENCES users(id)');
 ensureColumn('accommodation', 'budget_expense_id', 'INTEGER REFERENCES budget_items(id)');
 
+// budget_category_targets brauchte bisher ein globales UNIQUE(category) – mit mehreren
+// Reisen muss dieselbe Kategorie in jeder Reise separat existieren können. Da SQLite
+// UNIQUE-Constraints nicht per ALTER TABLE ändern kann, wird die Tabelle neu aufgebaut.
+if (!hasColumn('budget_category_targets', 'trip_id')) {
+  db.exec(`
+    CREATE TABLE budget_category_targets_new (
+      id INTEGER PRIMARY KEY,
+      trip_id INTEGER REFERENCES trips(id) ON DELETE CASCADE,
+      category TEXT NOT NULL,
+      amount REAL NOT NULL DEFAULT 0,
+      UNIQUE(trip_id, category)
+    );
+    INSERT INTO budget_category_targets_new (id, category, amount)
+      SELECT id, category, amount FROM budget_category_targets;
+    DROP TABLE budget_category_targets;
+    ALTER TABLE budget_category_targets_new RENAME TO budget_category_targets;
+  `);
+}
+
+// trip_id auf allen Inhalts-Tabellen: ordnet jede Zeile einer Reise zu. ON DELETE CASCADE
+// sorgt dafür, dass beim Löschen einer Reise alle zugehörigen Daten mit verschwinden.
+const TRIP_SCOPED_TABLES = [
+  'schedule_items',
+  'packing_items',
+  'ideas',
+  'spots',
+  'accommodation',
+  'travel_items',
+  'budget_items',
+  'budget_targets',
+  'budget_category_targets',
+  'budget_transfers',
+  'shopping_items',
+  'notes',
+  'diary_entries',
+] as const;
+
+for (const table of TRIP_SCOPED_TABLES) {
+  ensureColumn(table, 'trip_id', 'INTEGER REFERENCES trips(id) ON DELETE CASCADE');
+}
+
+// Backfill: bestehende Zeilen (aus der Zeit vor Multi-Reise-Unterstützung) der
+// jeweils ersten/ältesten Reise zuordnen, damit keine verwaisten Daten entstehen.
+const firstTrip = db.prepare('SELECT id FROM trips ORDER BY id LIMIT 1').get() as { id: number } | undefined;
+if (firstTrip) {
+  for (const table of TRIP_SCOPED_TABLES) {
+    db.prepare(`UPDATE ${table} SET trip_id = ? WHERE trip_id IS NULL`).run(firstTrip.id);
+  }
+}
+
 const DEFAULT_BUDGET_CATEGORIES = [
   'Essen & Trinken',
   'Unterkunft',
@@ -206,9 +271,20 @@ const DEFAULT_BUDGET_CATEGORIES = [
   'Souvenirs',
   'Sonstiges',
 ];
-const insertCategoryTarget = db.prepare(
-  'INSERT OR IGNORE INTO budget_category_targets (category, amount) VALUES (?, 0)',
-);
-for (const category of DEFAULT_BUDGET_CATEGORIES) {
-  insertCategoryTarget.run(category);
+
+/** Legt die Standard-Budgetkategorien für eine (neue) Reise an, sofern nicht bereits vorhanden. */
+export function ensureDefaultBudgetCategories(tripId: number) {
+  const insertCategoryTarget = db.prepare(
+    'INSERT OR IGNORE INTO budget_category_targets (trip_id, category, amount) VALUES (?, ?, 0)',
+  );
+  for (const category of DEFAULT_BUDGET_CATEGORIES) {
+    insertCategoryTarget.run(tripId, category);
+  }
+}
+
+// Für bereits bestehende Reisen (z. B. nach der Migration von der alten Singleton-Tabelle)
+// sicherstellen, dass die Standardkategorien vorhanden sind.
+const allTrips = db.prepare('SELECT id FROM trips').all() as { id: number }[];
+for (const trip of allTrips) {
+  ensureDefaultBudgetCategories(trip.id);
 }

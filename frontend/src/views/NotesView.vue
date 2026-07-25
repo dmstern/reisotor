@@ -3,12 +3,15 @@ import { onMounted, ref } from 'vue';
 import { api, ApiError } from '../api/client';
 import type { Note, User } from '../api/types';
 import { useAuthStore } from '../stores/auth';
+import { useTripStore } from '../stores/trip';
 import { renderRichText } from '../utils/richText';
 import Modal from '../components/Modal.vue';
 import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
 
 const auth = useAuthStore();
+const tripStore = useTripStore();
+const tripId = tripStore.currentTripId as number;
 const notes = ref<Note[]>([]);
 const users = ref<User[]>([]);
 const loading = ref(true);
@@ -23,7 +26,7 @@ const editForm = ref(emptyForm());
 
 onMounted(async () => {
   const [notesRes, usersRes] = await Promise.all([
-    api.get<Note[]>('/notes'),
+    api.get<Note[]>(`/notes?trip_id=${tripId}`),
     api.get<User[]>('/users'),
   ]);
   notes.value = notesRes;
@@ -44,6 +47,7 @@ function formatDate(iso: string) {
 async function submit() {
   if (!form.value.content.trim()) return;
   const created = await api.post<Note>('/notes', {
+    trip_id: tripId,
     title: form.value.title || undefined,
     content: form.value.content.trim(),
   });

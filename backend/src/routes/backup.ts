@@ -3,7 +3,7 @@ import { db } from '../db/index.js';
 
 const TABLES = [
   'users',
-  'trip',
+  'trips',
   'schedule_items',
   'packing_items',
   'ideas',

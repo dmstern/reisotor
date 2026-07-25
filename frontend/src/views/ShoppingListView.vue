@@ -2,10 +2,13 @@
 import { computed, onMounted, ref } from 'vue';
 import { api } from '../api/client';
 import type { ShoppingItem, User } from '../api/types';
+import { useTripStore } from '../stores/trip';
 import Modal from '../components/Modal.vue';
 import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
 
+const tripStore = useTripStore();
+const tripId = tripStore.currentTripId as number;
 const items = ref<ShoppingItem[]>([]);
 const users = ref<User[]>([]);
 const loading = ref(true);
@@ -21,7 +24,7 @@ const editForm = ref({ label: '', link: '', note: '' });
 
 onMounted(async () => {
   const [itemsRes, usersRes] = await Promise.all([
-    api.get<ShoppingItem[]>('/shopping'),
+    api.get<ShoppingItem[]>(`/shopping?trip_id=${tripId}`),
     api.get<User[]>('/users'),
   ]);
   items.value = itemsRes;
@@ -94,6 +97,7 @@ async function remove(id: number) {
 async function addItem() {
   if (!newLabel.value.trim()) return;
   const created = await api.post<ShoppingItem>('/shopping', {
+    trip_id: tripId,
     label: newLabel.value.trim(),
     assigned_to_user_id: newBuyer.value ? Number(newBuyer.value) : undefined,
     link: newLink.value || undefined,

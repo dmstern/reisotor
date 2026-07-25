@@ -5,7 +5,7 @@ import cors from '@fastify/cors';
 import './db/index.js';
 import { authRoutes } from './routes/auth.js';
 import { requireAuth } from './auth.js';
-import { tripRoutes } from './routes/trip.js';
+import { tripsRoutes } from './routes/trips.js';
 import { scheduleRoutes } from './routes/schedule.js';
 import { packingRoutes } from './routes/packing.js';
 import { ideasRoutes } from './routes/ideas.js';
@@ -47,7 +47,7 @@ app.register(
 
     await api.register(async (protectedApi) => {
       protectedApi.addHook('preHandler', requireAuth);
-      await protectedApi.register(tripRoutes);
+      await protectedApi.register(tripsRoutes);
       await protectedApi.register(scheduleRoutes);
       await protectedApi.register(packingRoutes);
       await protectedApi.register(ideasRoutes);

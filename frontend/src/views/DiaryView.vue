@@ -3,11 +3,14 @@ import { computed, onMounted, ref } from 'vue';
 import { api } from '../api/client';
 import type { DiaryComment, DiaryEntry, DiaryLike, User } from '../api/types';
 import { useAuthStore } from '../stores/auth';
+import { useTripStore } from '../stores/trip';
 import Modal from '../components/Modal.vue';
 import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
 
 const auth = useAuthStore();
+const tripStore = useTripStore();
+const tripId = tripStore.currentTripId as number;
 const entries = ref<DiaryEntry[]>([]);
 const likes = ref<DiaryLike[]>([]);
 const comments = ref<DiaryComment[]>([]);
@@ -26,7 +29,7 @@ const openComments = ref<Set<number>>(new Set());
 
 onMounted(async () => {
   const [entriesRes, likesRes, commentsRes, usersRes] = await Promise.all([
-    api.get<DiaryEntry[]>('/diary'),
+    api.get<DiaryEntry[]>(`/diary?trip_id=${tripId}`),
     api.get<DiaryLike[]>('/diary/likes'),
     api.get<DiaryComment[]>('/diary/comments'),
     api.get<User[]>('/users'),
@@ -74,6 +77,7 @@ function imagesFrom(text: string) {
 async function submitEntry() {
   if (!form.value.content.trim()) return;
   const body = {
+    trip_id: tripId,
     title: form.value.title || undefined,
     content: form.value.content.trim(),
     images: imagesFrom(form.value.imagesText),

@@ -8,12 +8,15 @@ import type {
   BudgetTransfer,
   User,
 } from '../api/types';
+import { useTripStore } from '../stores/trip';
 import { assignCategoryColors } from '../utils/categoryColors';
 import BudgetMeter from '../components/BudgetMeter.vue';
 import Modal from '../components/Modal.vue';
 import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
 
+const tripStore = useTripStore();
+const tripId = tripStore.currentTripId as number;
 const users = ref<User[]>([]);
 const expenses = ref<BudgetExpense[]>([]);
 const targets = ref<BudgetTarget[]>([]);
@@ -24,19 +27,19 @@ const loading = ref(true);
 const today = () => new Date().toISOString().slice(0, 10);
 
 async function refreshTargets() {
-  targets.value = await api.get<BudgetTarget[]>('/budget/targets');
+  targets.value = await api.get<BudgetTarget[]>(`/budget/targets?trip_id=${tripId}`);
 }
 async function refreshCategoryTargets() {
-  categoryTargets.value = await api.get<BudgetCategoryTarget[]>('/budget/category-targets');
+  categoryTargets.value = await api.get<BudgetCategoryTarget[]>(`/budget/category-targets?trip_id=${tripId}`);
 }
 
 onMounted(async () => {
   const [u, e, t, ct, tr] = await Promise.all([
     api.get<User[]>('/users'),
-    api.get<BudgetExpense[]>('/budget'),
-    api.get<BudgetTarget[]>('/budget/targets'),
-    api.get<BudgetCategoryTarget[]>('/budget/category-targets'),
-    api.get<BudgetTransfer[]>('/budget/transfers'),
+    api.get<BudgetExpense[]>(`/budget?trip_id=${tripId}`),
+    api.get<BudgetTarget[]>(`/budget/targets?trip_id=${tripId}`),
+    api.get<BudgetCategoryTarget[]>(`/budget/category-targets?trip_id=${tripId}`),
+    api.get<BudgetTransfer[]>(`/budget/transfers?trip_id=${tripId}`),
   ]);
   users.value = u;
   expenses.value = e;
@@ -72,14 +75,18 @@ const userTargetInputs = ref<Record<number, string>>({});
 const targetSaved = ref<string | null>(null);
 
 async function saveTotalTarget() {
-  await api.put('/budget/targets', { owner_id: null, amount: Number(totalTargetInput.value) || 0 });
+  await api.put('/budget/targets', { trip_id: tripId, owner_id: null, amount: Number(totalTargetInput.value) || 0 });
   await refreshTargets();
   targetSaved.value = 'total';
   window.setTimeout(() => (targetSaved.value = null), 1500);
 }
 
 async function saveUserTarget(userId: number) {
-  await api.put('/budget/targets', { owner_id: userId, amount: Number(userTargetInputs.value[userId]) || 0 });
+  await api.put('/budget/targets', {
+    trip_id: tripId,
+    owner_id: userId,
+    amount: Number(userTargetInputs.value[userId]) || 0,
+  });
   await refreshTargets();
   targetSaved.value = `user-${userId}`;
   window.setTimeout(() => (targetSaved.value = null), 1500);
@@ -89,7 +96,7 @@ async function saveUserTarget(userId: number) {
 const newCategoryForm = ref({ category: '', amount: '' });
 
 async function saveCategoryTarget(category: string, amount: string) {
-  await api.put('/budget/category-targets', { category, amount: Number(amount) || 0 });
+  await api.put('/budget/category-targets', { trip_id: tripId, category, amount: Number(amount) || 0 });
   await refreshCategoryTargets();
 }
 
@@ -133,6 +140,7 @@ const editExpenseForm = ref(emptyExpenseForm());
 
 function expenseToBody(f: ReturnType<typeof emptyExpenseForm>) {
   return {
+    trip_id: tripId,
     title: f.title.trim(),
     category: f.category || undefined,
     amount: Number(f.amount),
@@ -186,6 +194,7 @@ async function submitTransfer() {
   if (!transferForm.value.from_user_id || !transferForm.value.to_user_id || !transferForm.value.amount) return;
   if (transferForm.value.from_user_id === transferForm.value.to_user_id) return;
   const created = await api.post<BudgetTransfer>('/budget/transfers', {
+    trip_id: tripId,
     from_user_id: Number(transferForm.value.from_user_id),
     to_user_id: Number(transferForm.value.to_user_id),
     amount: Number(transferForm.value.amount),

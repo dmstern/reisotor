@@ -10,7 +10,7 @@ interface Day {
 defineProps<{ days: Day[]; selectedDate: string | null }>();
 const emit = defineEmits<{
   (e: 'select', date: string): void;
-  (e: 'drop-idea', date: string, ideaId: number): void;
+  (e: 'drop-excursion', date: string, excursionId: number): void;
 }>();
 
 const weekdayFormatter = new Intl.DateTimeFormat('de-DE', { weekday: 'short' });
@@ -28,9 +28,9 @@ function isToday(date: string) {
 }
 
 function onDrop(event: DragEvent, date: string) {
-  const raw = event.dataTransfer?.getData('text/idea-id');
+  const raw = event.dataTransfer?.getData('text/excursion-id');
   if (!raw) return;
-  emit('drop-idea', date, Number(raw));
+  emit('drop-excursion', date, Number(raw));
 }
 </script>
 

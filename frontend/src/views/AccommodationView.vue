@@ -2,11 +2,14 @@
 import { onMounted, ref } from 'vue';
 import { api } from '../api/client';
 import type { Accommodation, User } from '../api/types';
+import { useTripStore } from '../stores/trip';
 import { parseLatLngFromMapsLink } from '../utils/googleMaps';
 import Modal from '../components/Modal.vue';
 import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
 
+const tripStore = useTripStore();
+const tripId = tripStore.currentTripId as number;
 const accommodations = ref<Accommodation[]>([]);
 const users = ref<User[]>([]);
 const loading = ref(true);
@@ -35,7 +38,7 @@ const editForm = ref(emptyForm());
 
 onMounted(async () => {
   const [accRes, usersRes] = await Promise.all([
-    api.get<Accommodation[]>('/accommodation'),
+    api.get<Accommodation[]>(`/accommodation?trip_id=${tripId}`),
     api.get<User[]>('/users'),
   ]);
   accommodations.value = accRes;
@@ -62,6 +65,7 @@ function checkEditMapsLink() {
 function toBody(f: ReturnType<typeof emptyForm>) {
   const parsed = parseLatLngFromMapsLink(f.maps_link);
   return {
+    trip_id: tripId,
     name: f.name.trim(),
     address: f.address || undefined,
     link: f.link || undefined,

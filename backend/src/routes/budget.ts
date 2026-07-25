@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import { db } from '../db/index.js';
 
 interface ExpenseBody {
+  trip_id: number;
   title: string;
   category?: string;
   amount: number;
@@ -11,16 +12,19 @@ interface ExpenseBody {
 }
 
 interface TargetBody {
+  trip_id: number;
   owner_id?: number | null;
   amount: number;
 }
 
 interface CategoryTargetBody {
+  trip_id: number;
   category: string;
   amount: number;
 }
 
 interface TransferBody {
+  trip_id: number;
   from_user_id: number;
   to_user_id: number;
   amount: number;
@@ -28,21 +32,32 @@ interface TransferBody {
   note?: string;
 }
 
+function requireTripId(query: { trip_id?: string }, reply: { code: (n: number) => { send: (b: unknown) => unknown } }) {
+  if (!query.trip_id) {
+    reply.code(400).send({ error: 'trip_id erforderlich' });
+    return false;
+  }
+  return true;
+}
+
 export const budgetRoutes: FastifyPluginAsync = async (app) => {
   // --- Ausgaben (Bezahlungen) ---
 
-  app.get('/budget', async () => {
-    return db.prepare('SELECT * FROM budget_items ORDER BY date DESC, id DESC').all();
+  app.get<{ Querystring: { trip_id?: string } }>('/budget', async (req, reply) => {
+    if (!requireTripId(req.query, reply)) return;
+    return db
+      .prepare('SELECT * FROM budget_items WHERE trip_id = ? ORDER BY date DESC, id DESC')
+      .all(req.query.trip_id);
   });
 
   app.post<{ Body: ExpenseBody }>('/budget', async (req, reply) => {
-    const { title, category, amount, paid_by_user_id, date, note } = req.body;
+    const { trip_id, title, category, amount, paid_by_user_id, date, note } = req.body;
     const result = db
       .prepare(
-        `INSERT INTO budget_items (title, category, amount, paid_by_user_id, date, note)
-         VALUES (?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO budget_items (trip_id, title, category, amount, paid_by_user_id, date, note)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
       )
-      .run(title, category ?? null, amount, paid_by_user_id ?? null, date ?? null, note ?? null);
+      .run(trip_id, title, category ?? null, amount, paid_by_user_id ?? null, date ?? null, note ?? null);
     reply.code(201);
     return db.prepare('SELECT * FROM budget_items WHERE id = ?').get(result.lastInsertRowid);
   });
@@ -67,44 +82,50 @@ export const budgetRoutes: FastifyPluginAsync = async (app) => {
 
   // --- Zielbudgets (gesamt + pro Nutzer) ---
 
-  app.get('/budget/targets', async () => {
-    return db.prepare('SELECT * FROM budget_targets').all();
+  app.get<{ Querystring: { trip_id?: string } }>('/budget/targets', async (req, reply) => {
+    if (!requireTripId(req.query, reply)) return;
+    return db.prepare('SELECT * FROM budget_targets WHERE trip_id = ?').all(req.query.trip_id);
   });
 
   app.put<{ Body: TargetBody }>('/budget/targets', async (req, reply) => {
-    const { owner_id, amount } = req.body;
+    const { trip_id, owner_id, amount } = req.body;
     const ownerId = owner_id ?? null;
 
     const existing = ownerId === null
-      ? db.prepare('SELECT id FROM budget_targets WHERE owner_id IS NULL').get()
-      : db.prepare('SELECT id FROM budget_targets WHERE owner_id = ?').get(ownerId);
+      ? db.prepare('SELECT id FROM budget_targets WHERE trip_id = ? AND owner_id IS NULL').get(trip_id)
+      : db.prepare('SELECT id FROM budget_targets WHERE trip_id = ? AND owner_id = ?').get(trip_id, ownerId);
 
     if (existing) {
       db.prepare('UPDATE budget_targets SET amount = ? WHERE id = ?').run(amount, (existing as { id: number }).id);
     } else {
-      db.prepare('INSERT INTO budget_targets (owner_id, amount) VALUES (?, ?)').run(ownerId, amount);
+      db.prepare('INSERT INTO budget_targets (trip_id, owner_id, amount) VALUES (?, ?, ?)').run(trip_id, ownerId, amount);
     }
 
     const row = ownerId === null
-      ? db.prepare('SELECT * FROM budget_targets WHERE owner_id IS NULL').get()
-      : db.prepare('SELECT * FROM budget_targets WHERE owner_id = ?').get(ownerId);
+      ? db.prepare('SELECT * FROM budget_targets WHERE trip_id = ? AND owner_id IS NULL').get(trip_id)
+      : db.prepare('SELECT * FROM budget_targets WHERE trip_id = ? AND owner_id = ?').get(trip_id, ownerId);
     reply.code(200);
     return row;
   });
 
   // --- Kategorien-Zielbudgets ---
 
-  app.get('/budget/category-targets', async () => {
-    return db.prepare('SELECT * FROM budget_category_targets ORDER BY category').all();
+  app.get<{ Querystring: { trip_id?: string } }>('/budget/category-targets', async (req, reply) => {
+    if (!requireTripId(req.query, reply)) return;
+    return db
+      .prepare('SELECT * FROM budget_category_targets WHERE trip_id = ? ORDER BY category')
+      .all(req.query.trip_id);
   });
 
   app.put<{ Body: CategoryTargetBody }>('/budget/category-targets', async (req) => {
-    const { category, amount } = req.body;
+    const { trip_id, category, amount } = req.body;
     db.prepare(
-      `INSERT INTO budget_category_targets (category, amount) VALUES (?, ?)
-       ON CONFLICT(category) DO UPDATE SET amount = excluded.amount`,
-    ).run(category, amount);
-    return db.prepare('SELECT * FROM budget_category_targets WHERE category = ?').get(category);
+      `INSERT INTO budget_category_targets (trip_id, category, amount) VALUES (?, ?, ?)
+       ON CONFLICT(trip_id, category) DO UPDATE SET amount = excluded.amount`,
+    ).run(trip_id, category, amount);
+    return db
+      .prepare('SELECT * FROM budget_category_targets WHERE trip_id = ? AND category = ?')
+      .get(trip_id, category);
   });
 
   app.delete<{ Params: { id: string } }>('/budget/category-targets/:id', async (req, reply) => {
@@ -115,17 +136,20 @@ export const budgetRoutes: FastifyPluginAsync = async (app) => {
 
   // --- Überweisungen (Schulden begleichen) ---
 
-  app.get('/budget/transfers', async () => {
-    return db.prepare('SELECT * FROM budget_transfers ORDER BY date DESC, id DESC').all();
+  app.get<{ Querystring: { trip_id?: string } }>('/budget/transfers', async (req, reply) => {
+    if (!requireTripId(req.query, reply)) return;
+    return db
+      .prepare('SELECT * FROM budget_transfers WHERE trip_id = ? ORDER BY date DESC, id DESC')
+      .all(req.query.trip_id);
   });
 
   app.post<{ Body: TransferBody }>('/budget/transfers', async (req, reply) => {
-    const { from_user_id, to_user_id, amount, date, note } = req.body;
+    const { trip_id, from_user_id, to_user_id, amount, date, note } = req.body;
     const result = db
       .prepare(
-        'INSERT INTO budget_transfers (from_user_id, to_user_id, amount, date, note) VALUES (?, ?, ?, ?, ?)',
+        'INSERT INTO budget_transfers (trip_id, from_user_id, to_user_id, amount, date, note) VALUES (?, ?, ?, ?, ?, ?)',
       )
-      .run(from_user_id, to_user_id, amount, date ?? null, note ?? null);
+      .run(trip_id, from_user_id, to_user_id, amount, date ?? null, note ?? null);
     reply.code(201);
     return db.prepare('SELECT * FROM budget_transfers WHERE id = ?').get(result.lastInsertRowid);
   });

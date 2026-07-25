@@ -3,12 +3,15 @@ import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { api } from '../api/client';
-import type { Accommodation, Idea, Spot } from '../api/types';
+import type { Accommodation, Excursion, Spot } from '../api/types';
+import { useTripStore } from '../stores/trip';
 import { parseLatLngFromMapsLink } from '../utils/googleMaps';
 import SpotCard from '../components/SpotCard.vue';
 
+const tripStore = useTripStore();
+const tripId = tripStore.currentTripId as number;
 const spots = ref<Spot[]>([]);
-const ideas = ref<Idea[]>([]);
+const excursions = ref<Excursion[]>([]);
 const accommodations = ref<Accommodation[]>([]);
 const loading = ref(true);
 const showForm = ref(false);
@@ -33,22 +36,22 @@ function emojiPin(emoji: string, color: string) {
 }
 
 const spotIcon = emojiPin('📍', '#2a7f74');
-const ideaIcon = emojiPin('💡', '#e08e45');
+const excursionIcon = emojiPin('💡', '#e08e45');
 const accommodationIcon = emojiPin('🛏️', '#5b6ee1');
 
-const ideasOnMap = computed(() => ideas.value.filter((i) => i.lat != null && i.lng != null));
+const excursionsOnMap = computed(() => excursions.value.filter((i) => i.lat != null && i.lng != null));
 const accommodationsOnMap = computed(() =>
   accommodations.value.filter((a) => a.lat != null && a.lng != null),
 );
 
 async function loadAll() {
-  const [spotsRes, ideasRes, accommodationRes] = await Promise.all([
-    api.get<Spot[]>('/spots'),
-    api.get<Idea[]>('/ideas'),
-    api.get<Accommodation[]>('/accommodation'),
+  const [spotsRes, excursionsRes, accommodationRes] = await Promise.all([
+    api.get<Spot[]>(`/spots?trip_id=${tripId}`),
+    api.get<Excursion[]>(`/ideas?trip_id=${tripId}`),
+    api.get<Accommodation[]>(`/accommodation?trip_id=${tripId}`),
   ]);
   spots.value = spotsRes;
-  ideas.value = ideasRes;
+  excursions.value = excursionsRes;
   accommodations.value = accommodationRes;
 }
 
@@ -67,12 +70,14 @@ function renderMarkers() {
       .bindPopup(`<strong>📍 ${spot.name}</strong>${spot.category ? `<br>${spot.category}` : ''}`);
   }
 
-  for (const idea of ideasOnMap.value) {
-    const point: L.LatLngExpression = [idea.lat as number, idea.lng as number];
+  for (const excursion of excursionsOnMap.value) {
+    const point: L.LatLngExpression = [excursion.lat as number, excursion.lng as number];
     points.push(point);
-    L.marker(point, { icon: ideaIcon })
+    L.marker(point, { icon: excursionIcon })
       .addTo(markersLayer)
-      .bindPopup(`<strong>💡 ${idea.title}</strong>${idea.status === 'planned' ? '<br>Geplant' : ''}`);
+      .bindPopup(
+        `<strong>💡 ${excursion.title}</strong>${excursion.status === 'planned' ? '<br>Geplant' : ''}`,
+      );
   }
 
   for (const acc of accommodationsOnMap.value) {
@@ -128,6 +133,7 @@ async function addSpot() {
   }
 
   const created = await api.post<Spot>('/spots', {
+    trip_id: tripId,
     name: form.value.name.trim(),
     category: form.value.category || undefined,
     link: form.value.link || undefined,
@@ -155,7 +161,7 @@ async function removeSpot(id: number) {
 
     <div class="legend">
       <span><i class="dot" style="background:#2a7f74"></i> Spots</span>
-      <span><i class="dot" style="background:#e08e45"></i> Ideen</span>
+      <span><i class="dot" style="background:#e08e45"></i> Ausflüge</span>
       <span><i class="dot" style="background:#5b6ee1"></i> Unterkunft</span>
     </div>
 

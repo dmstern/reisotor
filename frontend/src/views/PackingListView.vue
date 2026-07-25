@@ -3,10 +3,13 @@ import { computed, onMounted, ref } from 'vue';
 import { api } from '../api/client';
 import type { PackingItem, User } from '../api/types';
 import { useAuthStore } from '../stores/auth';
+import { useTripStore } from '../stores/trip';
 import PackingItemRow from '../components/PackingItem.vue';
 import Modal from '../components/Modal.vue';
 
 const auth = useAuthStore();
+const tripStore = useTripStore();
+const tripId = tripStore.currentTripId as number;
 const items = ref<PackingItem[]>([]);
 const users = ref<User[]>([]);
 const loading = ref(true);
@@ -20,7 +23,7 @@ const editForm = ref({ label: '', category: '' });
 
 onMounted(async () => {
   const [itemsRes, usersRes] = await Promise.all([
-    api.get<PackingItem[]>('/packing'),
+    api.get<PackingItem[]>(`/packing?trip_id=${tripId}`),
     api.get<User[]>('/users'),
   ]);
   items.value = itemsRes;
@@ -114,6 +117,7 @@ async function addItem() {
   if (!newLabel.value.trim()) return;
   const owner_id = newOwner.value === 'shared' ? null : Number(newOwner.value);
   const created = await api.post<PackingItem>('/packing', {
+    trip_id: tripId,
     label: newLabel.value.trim(),
     category: newCategory.value.trim() || undefined,
     owner_id,

@@ -7,10 +7,10 @@ const router = useRouter();
 
 const links = [
   { to: '/', label: 'Übersicht', icon: '🏠' },
-  { to: '/schedule', label: 'Ablauf', icon: '📅' },
+  { to: '/schedule', label: 'Kalender', icon: '📅' },
   { to: '/packing', label: 'Packliste', icon: '🧳' },
   { to: '/shopping', label: 'Einkauf', icon: '🛒' },
-  { to: '/ideas', label: 'Ideen', icon: '💡' },
+  { to: '/excursions', label: 'Ausflüge', icon: '💡' },
   { to: '/travel', label: 'Reise', icon: '✈️' },
   { to: '/accommodation', label: 'Unterkunft', icon: '🛏️' },
   { to: '/budget', label: 'Budget', icon: '💶' },

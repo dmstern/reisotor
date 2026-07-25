@@ -2,10 +2,13 @@
 import { onMounted, ref } from 'vue';
 import { api } from '../api/client';
 import type { TravelItem, User } from '../api/types';
+import { useTripStore } from '../stores/trip';
 import Modal from '../components/Modal.vue';
 import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
 
+const tripStore = useTripStore();
+const tripId = tripStore.currentTripId as number;
 const items = ref<TravelItem[]>([]);
 const users = ref<User[]>([]);
 const loading = ref(true);
@@ -36,7 +39,7 @@ const editForm = ref(emptyForm());
 
 onMounted(async () => {
   const [itemsRes, usersRes] = await Promise.all([
-    api.get<TravelItem[]>('/travel'),
+    api.get<TravelItem[]>(`/travel?trip_id=${tripId}`),
     api.get<User[]>('/users'),
   ]);
   items.value = itemsRes;
@@ -52,6 +55,7 @@ function userLabel(id: number | null) {
 
 function toBody(f: ReturnType<typeof emptyForm>) {
   return {
+    trip_id: tripId,
     title: f.title.trim(),
     type: f.type || undefined,
     from_location: f.from_location || undefined,

@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import type { Idea } from '../api/types';
+import type { Excursion } from '../api/types';
 import EditButton from './EditButton.vue';
 import DeleteButton from './DeleteButton.vue';
 
-defineProps<{ idea: Idea }>();
+defineProps<{ excursion: Excursion }>();
 const emit = defineEmits<{
-  (e: 'set-status', idea: Idea, status: Idea['status']): void;
+  (e: 'set-status', excursion: Excursion, status: Excursion['status']): void;
   (e: 'remove', id: number): void;
-  (e: 'edit', idea: Idea): void;
+  (e: 'edit', excursion: Excursion): void;
 }>();
 
-const STATUS_LABELS: Record<Idea['status'], string> = {
+const STATUS_LABELS: Record<Excursion['status'], string> = {
   idea: 'Idee',
   planned: 'Geplant',
   discarded: 'Verworfen',
@@ -18,20 +18,20 @@ const STATUS_LABELS: Record<Idea['status'], string> = {
 </script>
 
 <template>
-  <div class="card idea-card">
-    <div class="image" :style="idea.image_url ? { backgroundImage: `url(${idea.image_url})` } : {}">
-      <span v-if="!idea.image_url" class="placeholder">🏞️</span>
-      <EditButton floating @click="emit('edit', idea)" />
-      <span class="status" :class="idea.status">{{ STATUS_LABELS[idea.status] }}</span>
+  <div class="card excursion-card">
+    <div class="image" :style="excursion.image_url ? { backgroundImage: `url(${excursion.image_url})` } : {}">
+      <span v-if="!excursion.image_url" class="placeholder">🏞️</span>
+      <EditButton floating @click="emit('edit', excursion)" />
+      <span class="status" :class="excursion.status">{{ STATUS_LABELS[excursion.status] }}</span>
     </div>
     <div class="body">
-      <h3>{{ idea.title }}</h3>
-      <p v-if="idea.note">{{ idea.note }}</p>
-      <a v-if="idea.link" :href="idea.link" target="_blank" rel="noopener">Link öffnen ↗</a>
-      <a v-if="idea.maps_link" :href="idea.maps_link" target="_blank" rel="noopener">
-        📍 {{ idea.lat != null ? 'Auf Karte' : 'Maps öffnen' }} ↗
+      <h3>{{ excursion.title }}</h3>
+      <p v-if="excursion.note">{{ excursion.note }}</p>
+      <a v-if="excursion.link" :href="excursion.link" target="_blank" rel="noopener">Link öffnen ↗</a>
+      <a v-if="excursion.maps_link" :href="excursion.maps_link" target="_blank" rel="noopener">
+        📍 {{ excursion.lat != null ? 'Auf Karte' : 'Maps öffnen' }} ↗
       </a>
-      <router-link v-if="idea.status === 'planned'" to="/schedule" class="schedule-hint">
+      <router-link v-if="excursion.status === 'planned'" to="/schedule" class="schedule-hint">
         📅 Im Kalender einplanen
       </router-link>
       <div class="actions">
@@ -39,39 +39,39 @@ const STATUS_LABELS: Record<Idea['status'], string> = {
           <button
             type="button"
             class="secondary status-btn"
-            :class="{ active: idea.status === 'idea' }"
+            :class="{ active: excursion.status === 'idea' }"
             title="Als Idee markieren"
-            @click="emit('set-status', idea, 'idea')"
+            @click="emit('set-status', excursion, 'idea')"
           >
             💡
           </button>
           <button
             type="button"
             class="secondary status-btn"
-            :class="{ active: idea.status === 'planned' }"
+            :class="{ active: excursion.status === 'planned' }"
             title="Als geplant markieren"
-            @click="emit('set-status', idea, 'planned')"
+            @click="emit('set-status', excursion, 'planned')"
           >
             ✅
           </button>
           <button
             type="button"
             class="secondary status-btn"
-            :class="{ active: idea.status === 'discarded' }"
+            :class="{ active: excursion.status === 'discarded' }"
             title="Als verworfen markieren"
-            @click="emit('set-status', idea, 'discarded')"
+            @click="emit('set-status', excursion, 'discarded')"
           >
             ❌
           </button>
         </div>
-        <DeleteButton small @click="emit('remove', idea.id)" />
+        <DeleteButton small @click="emit('remove', excursion.id)" />
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.idea-card {
+.excursion-card {
   padding: 0;
   overflow: hidden;
   display: flex;

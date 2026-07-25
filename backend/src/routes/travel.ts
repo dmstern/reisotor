@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import { db } from '../db/index.js';
 
 interface TravelBody {
+  trip_id: number;
   title: string;
   type?: string;
   from_location?: string;
@@ -19,6 +20,7 @@ interface TravelBody {
 
 interface TravelRow {
   id: number;
+  trip_id: number;
   title: string;
   amount: number | null;
   paid_by_user_id: number | null;
@@ -29,7 +31,7 @@ interface TravelRow {
 /** Bestimmt, wie die verknüpfte Budget-Ausgabe aussehen soll, ohne bereits zu löschen –
  *  eine ggf. verwaiste alte Ausgabe wird erst gelöscht, NACHDEM die travel_items-Zeile
  *  nicht mehr per Foreign Key darauf verweist (sonst SQLITE_CONSTRAINT_FOREIGNKEY). */
-function planBudgetExpense(existingBudgetExpenseId: number | null, body: TravelBody) {
+function planBudgetExpense(tripId: number, existingBudgetExpenseId: number | null, body: TravelBody) {
   const hasAmount = body.amount != null && body.amount > 0 && body.paid_by_user_id != null;
 
   if (!hasAmount) {
@@ -45,30 +47,32 @@ function planBudgetExpense(existingBudgetExpenseId: number | null, body: TravelB
 
   const result = db
     .prepare(
-      `INSERT INTO budget_items (title, category, amount, paid_by_user_id, date, note)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO budget_items (trip_id, title, category, amount, paid_by_user_id, date, note)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
     )
-    .run(body.title, 'Transport', body.amount, body.paid_by_user_id, body.date ?? null, 'Automatisch aus Reise-Eintrag');
+    .run(tripId, body.title, 'Transport', body.amount, body.paid_by_user_id, body.date ?? null, 'Automatisch aus Reise-Eintrag');
   return { budgetExpenseId: result.lastInsertRowid as number, staleIdToDelete: null };
 }
 
 export const travelRoutes: FastifyPluginAsync = async (app) => {
-  app.get('/travel', async () => {
-    return db.prepare('SELECT * FROM travel_items ORDER BY date, id').all();
+  app.get<{ Querystring: { trip_id?: string } }>('/travel', async (req, reply) => {
+    if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
+    return db.prepare('SELECT * FROM travel_items WHERE trip_id = ? ORDER BY date, id').all(req.query.trip_id);
   });
 
   app.post<{ Body: TravelBody }>('/travel', async (req, reply) => {
     const body = req.body;
-    const { budgetExpenseId } = planBudgetExpense(null, body);
+    const { budgetExpenseId } = planBudgetExpense(body.trip_id, null, body);
 
     const result = db
       .prepare(
         `INSERT INTO travel_items
-          (title, type, from_location, to_location, date, departure_time, checkin_info, amount,
+          (trip_id, title, type, from_location, to_location, date, departure_time, checkin_info, amount,
            paid_by_user_id, luggage, seat, link, note, budget_expense_id)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
+        body.trip_id,
         body.title,
         body.type ?? null,
         body.from_location ?? null,
@@ -95,7 +99,7 @@ export const travelRoutes: FastifyPluginAsync = async (app) => {
     if (!existing) return reply.code(404).send({ error: 'Nicht gefunden' });
 
     const body = req.body;
-    const { budgetExpenseId, staleIdToDelete } = planBudgetExpense(existing.budget_expense_id, body);
+    const { budgetExpenseId, staleIdToDelete } = planBudgetExpense(existing.trip_id, existing.budget_expense_id, body);
 
     db.prepare(
       `UPDATE travel_items SET title = ?, type = ?, from_location = ?, to_location = ?, date = ?,
