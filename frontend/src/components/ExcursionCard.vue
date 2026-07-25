@@ -3,7 +3,7 @@ import type { Excursion } from '../api/types';
 import EditButton from './EditButton.vue';
 import DeleteButton from './DeleteButton.vue';
 
-defineProps<{ excursion: Excursion }>();
+defineProps<{ excursion: Excursion; suggestedByLabel?: string | null }>();
 const emit = defineEmits<{
   (e: 'set-status', excursion: Excursion, status: Excursion['status']): void;
   (e: 'remove', id: number): void;
@@ -26,6 +26,7 @@ const STATUS_LABELS: Record<Excursion['status'], string> = {
     </div>
     <div class="body">
       <h3>{{ excursion.title }}</h3>
+      <p v-if="suggestedByLabel" class="suggested-by">💡 Vorgeschlagen von {{ suggestedByLabel }}</p>
       <p v-if="excursion.note">{{ excursion.note }}</p>
       <a v-if="excursion.link" :href="excursion.link" target="_blank" rel="noopener">Link öffnen ↗</a>
       <a v-if="excursion.maps_link" :href="excursion.maps_link" target="_blank" rel="noopener">📍 Extern öffnen ↗</a>
@@ -126,6 +127,11 @@ const STATUS_LABELS: Record<Excursion['status'], string> = {
 .body h3 {
   font-size: 1rem;
   margin-bottom: 0;
+}
+
+.suggested-by {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
 }
 
 .actions {

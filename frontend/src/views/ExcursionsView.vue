@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { api } from '../api/client';
-import type { Excursion } from '../api/types';
+import type { Excursion, ScheduleItem, User } from '../api/types';
 import { useTripStore } from '../stores/trip';
 import ExcursionCard from '../components/ExcursionCard.vue';
 import Modal from '../components/Modal.vue';
@@ -10,18 +10,27 @@ import { parseLatLngFromMapsLink } from '../utils/googleMaps';
 const tripStore = useTripStore();
 const tripId = tripStore.currentTripId as number;
 const excursions = ref<Excursion[]>([]);
+const users = ref<User[]>([]);
+const scheduleItems = ref<ScheduleItem[]>([]);
 const loading = ref(true);
 const showForm = ref(false);
 
-const form = ref({ title: '', image_url: '', link: '', maps_link: '', note: '' });
+const form = ref({ title: '', image_url: '', link: '', maps_link: '', note: '', suggested_by_user_id: '' });
 const mapsLinkResolved = ref<boolean | null>(null);
 
 const editingExcursion = ref<Excursion | null>(null);
-const editForm = ref({ title: '', image_url: '', link: '', maps_link: '', note: '' });
+const editForm = ref({ title: '', image_url: '', link: '', maps_link: '', note: '', suggested_by_user_id: '' });
 const editMapsLinkResolved = ref<boolean | null>(null);
 
 onMounted(async () => {
-  excursions.value = await api.get<Excursion[]>(`/ideas?trip_id=${tripId}`);
+  const [excursionsRes, usersRes, scheduleRes] = await Promise.all([
+    api.get<Excursion[]>(`/ideas?trip_id=${tripId}`),
+    api.get<User[]>('/users'),
+    api.get<ScheduleItem[]>(`/schedule?trip_id=${tripId}`),
+  ]);
+  excursions.value = excursionsRes;
+  users.value = usersRes;
+  scheduleItems.value = scheduleRes;
   loading.value = false;
 });
 
@@ -45,9 +54,10 @@ async function addExcursion() {
     note: form.value.note || undefined,
     lat: parsed?.lat,
     lng: parsed?.lng,
+    suggested_by_user_id: form.value.suggested_by_user_id ? Number(form.value.suggested_by_user_id) : undefined,
   });
   excursions.value.unshift(created);
-  form.value = { title: '', image_url: '', link: '', maps_link: '', note: '' };
+  form.value = { title: '', image_url: '', link: '', maps_link: '', note: '', suggested_by_user_id: '' };
   mapsLinkResolved.value = null;
   showForm.value = false;
 }
@@ -65,7 +75,24 @@ const groupedExcursions = computed(() =>
   })).filter((group) => group.excursions.length > 0),
 );
 
+function linkedScheduleItems(excursionId: number) {
+  return scheduleItems.value.filter((s) => s.idea_id === excursionId);
+}
+
 async function setStatus(excursion: Excursion, status: Excursion['status']) {
+  // Ein bereits geplanter, mit dem Kalender verknüpfter Ausflug entfernt beim Statuswechsel weg von
+  // "geplant" auch den verknüpften Kalender-Termin – das ist nicht rückgängig zu machen, deshalb
+  // vorher bestätigen lassen (Batch 10). Ohne Bestätigung bleibt alles unverändert.
+  const linked = excursion.status === 'planned' && status !== 'planned' ? linkedScheduleItems(excursion.id) : [];
+  if (linked.length) {
+    const confirmed = window.confirm('Ausflug wirklich aus dem Kalender entfernen?');
+    if (!confirmed) return;
+    for (const item of linked) {
+      await api.delete(`/schedule/${item.id}`);
+    }
+    scheduleItems.value = scheduleItems.value.filter((s) => s.idea_id !== excursion.id);
+  }
+
   const updated = await api.put<Excursion>(`/ideas/${excursion.id}`, {
     title: excursion.title,
     image_url: excursion.image_url ?? undefined,
@@ -75,6 +102,7 @@ async function setStatus(excursion: Excursion, status: Excursion['status']) {
     status,
     lat: excursion.lat ?? undefined,
     lng: excursion.lng ?? undefined,
+    suggested_by_user_id: excursion.suggested_by_user_id ?? undefined,
   });
   const idx = excursions.value.findIndex((i) => i.id === excursion.id);
   if (idx !== -1) excursions.value[idx] = updated;
@@ -93,6 +121,7 @@ function startEdit(excursion: Excursion) {
     link: excursion.link ?? '',
     maps_link: excursion.maps_link ?? '',
     note: excursion.note ?? '',
+    suggested_by_user_id: excursion.suggested_by_user_id != null ? String(excursion.suggested_by_user_id) : '',
   };
   editMapsLinkResolved.value = null;
 }
@@ -117,10 +146,17 @@ async function submitEdit() {
     status: editingExcursion.value.status,
     lat: parsed?.lat ?? editingExcursion.value.lat ?? undefined,
     lng: parsed?.lng ?? editingExcursion.value.lng ?? undefined,
+    suggested_by_user_id: editForm.value.suggested_by_user_id ? Number(editForm.value.suggested_by_user_id) : undefined,
   });
   const idx = excursions.value.findIndex((i) => i.id === updated.id);
   if (idx !== -1) excursions.value[idx] = updated;
   editingExcursion.value = null;
+}
+
+function userLabel(id: number | null) {
+  if (id == null) return null;
+  const u = users.value.find((u) => u.id === id);
+  return u ? `${u.avatar} ${u.username}` : null;
 }
 </script>
 
@@ -147,6 +183,10 @@ async function submitEdit() {
           Standort konnte nicht automatisch erkannt werden (Kurzlinks werden nicht unterstützt). Der Link
           bleibt trotzdem klickbar.
         </p>
+        <select v-model="form.suggested_by_user_id">
+          <option value="">Vorschlagende Person (optional)</option>
+          <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
+        </select>
         <textarea v-model="form.note" placeholder="Notiz (optional)" rows="2"></textarea>
         <button type="submit">Speichern</button>
       </form>
@@ -159,6 +199,7 @@ async function submitEdit() {
           v-for="excursion in group.excursions"
           :key="excursion.id"
           :excursion="excursion"
+          :suggested-by-label="userLabel(excursion.suggested_by_user_id)"
           @set-status="setStatus"
           @remove="remove"
           @edit="startEdit"
@@ -184,6 +225,10 @@ async function submitEdit() {
         />
         <p v-if="editMapsLinkResolved === true" class="hint success">📍 Standort erkannt</p>
         <p v-if="editMapsLinkResolved === false" class="hint">Standort konnte nicht automatisch erkannt werden.</p>
+        <select v-model="editForm.suggested_by_user_id">
+          <option value="">Vorschlagende Person (optional)</option>
+          <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
+        </select>
         <textarea v-model="editForm.note" placeholder="Notiz (optional)" rows="3"></textarea>
         <button type="submit">Speichern</button>
       </form>
@@ -230,7 +275,7 @@ async function submitEdit() {
 .status-group h2 {
   font-size: 1rem;
   color: var(--color-primary-dark);
-  margin-bottom: var(--space-2);
+  margin-bottom: var(--space-4);
 }
 
 .cards {

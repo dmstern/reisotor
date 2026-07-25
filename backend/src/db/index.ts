@@ -236,6 +236,7 @@ ensureColumn('trips', 'lng', 'REAL');
 ensureColumn('budget_items', 'budget_id', 'INTEGER REFERENCES budgets(id) ON DELETE SET NULL');
 ensureColumn('shopping_items', 'period', 'TEXT');
 ensureColumn('todo_items', 'period', 'TEXT');
+ensureColumn('ideas', 'suggested_by_user_id', 'INTEGER REFERENCES users(id)');
 
 // Spots als eigenständiges Konzept wurden zugunsten einer reinen Kartenansicht (Batch 4)
 // wieder entfernt – Karte zeigt seitdem nur noch Urlaub/Ausflüge/Unterkunft mit Koordinaten.

@@ -11,6 +11,7 @@ interface IdeaBody {
   status?: 'idea' | 'planned' | 'discarded';
   lat?: number;
   lng?: number;
+  suggested_by_user_id?: number | null;
 }
 
 export const ideasRoutes: FastifyPluginAsync = async (app) => {
@@ -20,11 +21,11 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.post<{ Body: IdeaBody }>('/ideas', async (req, reply) => {
-    const { trip_id, title, image_url, link, maps_link, note, status, lat, lng } = req.body;
+    const { trip_id, title, image_url, link, maps_link, note, status, lat, lng, suggested_by_user_id } = req.body;
     const result = db
       .prepare(
-        `INSERT INTO ideas (trip_id, title, image_url, link, maps_link, note, status, lat, lng)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO ideas (trip_id, title, image_url, link, maps_link, note, status, lat, lng, suggested_by_user_id)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         trip_id,
@@ -36,16 +37,17 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
         status ?? 'idea',
         lat ?? null,
         lng ?? null,
+        suggested_by_user_id ?? null,
       );
     reply.code(201);
     return db.prepare('SELECT * FROM ideas WHERE id = ?').get(result.lastInsertRowid);
   });
 
   app.put<{ Params: { id: string }; Body: IdeaBody }>('/ideas/:id', async (req, reply) => {
-    const { title, image_url, link, maps_link, note, status, lat, lng } = req.body;
+    const { title, image_url, link, maps_link, note, status, lat, lng, suggested_by_user_id } = req.body;
     const result = db
       .prepare(
-        `UPDATE ideas SET title = ?, image_url = ?, link = ?, maps_link = ?, note = ?, status = ?, lat = ?, lng = ?
+        `UPDATE ideas SET title = ?, image_url = ?, link = ?, maps_link = ?, note = ?, status = ?, lat = ?, lng = ?, suggested_by_user_id = ?
          WHERE id = ?`,
       )
       .run(
@@ -57,6 +59,7 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
         status ?? 'idea',
         lat ?? null,
         lng ?? null,
+        suggested_by_user_id ?? null,
         req.params.id,
       );
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });

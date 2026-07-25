@@ -77,6 +77,7 @@ export interface Excursion {
   status: 'idea' | 'planned' | 'discarded';
   lat: number | null;
   lng: number | null;
+  suggested_by_user_id: number | null;
 }
 
 export interface Accommodation {
