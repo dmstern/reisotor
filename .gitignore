@@ -1,9 +1,5 @@
 .claude
 
-# Private Planungs-/Arbeitsdokumente – nicht fuers oeffentliche Repo bestimmt
-bauanleitung.md
-feature-reuqests.txt
-
 # Persoenliche Werte fuers Deploy-Skript (Domain, SSH-User, lokaler Hostname).
 # Vorlage: .env.example
 .env
