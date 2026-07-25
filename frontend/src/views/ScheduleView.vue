@@ -202,7 +202,7 @@ function formatDay(date: string) {
           draggable="true"
           @dragstart="onDragStart($event, excursion.id)"
         >
-          💡 {{ excursion.title }}
+          🎒 {{ excursion.title }}
         </div>
       </div>
       <form class="schedule-form" @submit.prevent="onScheduleFromForm">

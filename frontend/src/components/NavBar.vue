@@ -10,7 +10,7 @@ const links = [
   { to: '/schedule', label: 'Kalender', icon: '📅' },
   { to: '/packing', label: 'Packliste', icon: '🧳' },
   { to: '/shopping', label: 'Einkauf', icon: '🛒' },
-  { to: '/excursions', label: 'Ausflüge', icon: '💡' },
+  { to: '/excursions', label: 'Ausflüge', icon: '🎒' },
   { to: '/travel', label: 'Reise', icon: '✈️' },
   { to: '/accommodation', label: 'Unterkunft', icon: '🛏️' },
   { to: '/budget', label: 'Budget', icon: '💶' },

@@ -12,7 +12,7 @@ Web-App zur gemeinsamen Reiseplanung – ein zentraler Ort für alles rund um ei
 - 📅 **Ablauf/Kalender**: Wochenansicht über den ganzen Reisezeitraum, Termine mit Uhrzeit & Notiz, Drag & Drop von geplanten Ideen direkt auf einen Tag
 - 🧳 **Packliste**: eigene Liste pro Nutzer:in + eine gemeinsame Liste, Kategorien mit Autovervollständigung
 - 🛒 **Einkaufsliste**: gemeinsame Liste mit optionaler Käufer:in-Zuweisung, Filter danach, Produktlinks
-- 💡 **Ausflugsideen**: Status Idee/Geplant/Verworfen, optionaler Google-Maps-Link (erscheint dann automatisch auf der Karte)
+- 🎒 **Ausflugsideen**: Status Idee/Geplant/Verworfen, optionaler Google-Maps-Link (erscheint dann automatisch auf der Karte)
 - 🗺️ **Spots & Karte**: Restaurants, Sehenswürdigkeiten etc. mit Koordinaten, alles zusammen auf einer Leaflet/OpenStreetMap-Karte
 - 🛏️ **Unterkunft**: mehrere Einträge möglich, mit Zeitraum, Check-in/-out, Kosten
 - ✈️ **Reise/Transport**: Flug-/Zug-Infos (Zeiten, Gepäck, Sitzplatz), Kosten

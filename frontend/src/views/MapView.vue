@@ -36,7 +36,7 @@ function emojiPin(emoji: string, color: string) {
 }
 
 const spotIcon = emojiPin('📍', '#2a7f74');
-const excursionIcon = emojiPin('💡', '#e08e45');
+const excursionIcon = emojiPin('🎒', '#e08e45');
 const accommodationIcon = emojiPin('🛏️', '#5b6ee1');
 
 const excursionsOnMap = computed(() => excursions.value.filter((i) => i.lat != null && i.lng != null));
