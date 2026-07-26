@@ -306,23 +306,27 @@ function typeIcon(type: string | null) {
           <span v-if="item.paid_by_user_id"> · bezahlt von {{ userLabel(item.paid_by_user_id) }}</span>
         </p>
         <p v-if="item.note">{{ item.note }}</p>
-        <a v-if="item.link" :href="item.link" target="_blank" rel="noopener">Details/Check-in ↗</a>
-        <button
-          v-if="item.from_lat != null && item.from_lng != null"
-          type="button"
-          class="secondary map-btn"
-          @click="drawers.openMapAt(`travel-from-${item.id}`)"
-        >
-          🗺️ Abflug auf Karte anzeigen
-        </button>
-        <button
-          v-if="item.to_lat != null && item.to_lng != null"
-          type="button"
-          class="secondary map-btn"
-          @click="drawers.openMapAt(`travel-to-${item.id}`)"
-        >
-          🗺️ Ankunft auf Karte anzeigen
-        </button>
+        <div class="links">
+          <a v-if="item.link" :href="item.link" target="_blank" rel="noopener" class="card-action-btn"
+            >Details/Check-in ↗</a
+          >
+          <button
+            v-if="item.from_lat != null && item.from_lng != null"
+            type="button"
+            class="card-action-btn"
+            @click="drawers.openMapAt(`travel-from-${item.id}`)"
+          >
+            🗺️ Abflug auf Karte anzeigen
+          </button>
+          <button
+            v-if="item.to_lat != null && item.to_lng != null"
+            type="button"
+            class="card-action-btn"
+            @click="drawers.openMapAt(`travel-to-${item.id}`)"
+          >
+            🗺️ Ankunft auf Karte anzeigen
+          </button>
+        </div>
       </div>
     </TransitionGroup>
     <p v-if="!items.length" class="empty">Noch keine Reise-Infos eingetragen.</p>
@@ -489,10 +493,12 @@ label {
   gap: 4px;
 }
 
-.map-btn {
-  align-self: flex-start;
-  font-size: 0.85rem;
-  padding: 4px 10px;
+.links {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: 4px;
 }
 
 .role-badge {

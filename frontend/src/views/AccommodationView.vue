@@ -5,6 +5,7 @@ import type { Accommodation, User } from '../api/types';
 import { useTripStore } from '../stores/trip';
 import { useDrawersStore } from '../stores/drawers';
 import { parseLatLngFromMapsLink } from '../utils/googleMaps';
+import { renderRichText } from '../utils/richText';
 import Modal from '../components/Modal.vue';
 import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
@@ -212,6 +213,10 @@ function formatDate(d: string | null) {
         Notizen
         <textarea v-model="form.note" rows="3"></textarea>
       </label>
+      <p class="syntax-hint">
+        <code>**fett**</code> · <code>_kursiv_</code> · <code>* Punkt</code> für Listen · Links werden
+        automatisch erkannt
+      </p>
 
       <button type="submit">Hinzufügen</button>
     </form>
@@ -238,14 +243,16 @@ function formatDate(d: string | null) {
           💶 {{ acc.amount.toFixed(2) }} €
           <span v-if="acc.paid_by_user_id"> · bezahlt von {{ userLabel(acc.paid_by_user_id) }}</span>
         </p>
-        <p v-if="acc.note">{{ acc.note }}</p>
+        <div v-if="acc.note" class="note" v-html="renderRichText(acc.note)"></div>
         <div class="links">
-          <a v-if="acc.link" :href="acc.link" target="_blank" rel="noopener">Buchung ↗</a>
-          <a v-if="acc.maps_link" :href="acc.maps_link" target="_blank" rel="noopener">📍 Extern öffnen ↗</a>
+          <a v-if="acc.link" :href="acc.link" target="_blank" rel="noopener" class="card-action-btn">Buchung ↗</a>
+          <a v-if="acc.maps_link" :href="acc.maps_link" target="_blank" rel="noopener" class="card-action-btn"
+            >📍 Extern öffnen ↗</a
+          >
           <button
             v-if="acc.lat != null && acc.lng != null"
             type="button"
-            class="secondary map-btn"
+            class="card-action-btn"
             @click="drawers.openMapAt(`accommodation-${acc.id}`)"
           >
             🗺️ Auf Karte anzeigen
@@ -323,6 +330,10 @@ function formatDate(d: string | null) {
           Notizen
           <textarea v-model="editForm.note" rows="3"></textarea>
         </label>
+        <p class="syntax-hint">
+          <code>**fett**</code> · <code>_kursiv_</code> · <code>* Punkt</code> für Listen · Links werden
+          automatisch erkannt
+        </p>
         <button type="submit">Speichern</button>
       </form>
     </Modal>
@@ -376,8 +387,25 @@ label {
   color: var(--color-success);
 }
 
+.syntax-hint {
+  margin: -4px 0 0;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+
+.syntax-hint code {
+  background: var(--color-bg);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 0.78rem;
+}
+
 .cards {
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  /* Ohne das streckt CSS Grid (Default: stretch) jede Karte einer Reihe auf die Höhe der
+     vollsten Nachbar-Karte – bei sehr unterschiedlich befüllten Unterkünften (eine mit viel
+     Text, eine fast leer) sah die leere Karte dadurch unschön aufgebläht aus. */
+  align-items: start;
 }
 
 .acc-card {
@@ -397,6 +425,10 @@ label {
   font-size: 1rem;
 }
 
+.note {
+  overflow-wrap: anywhere;
+}
+
 .actions {
   display: flex;
   gap: 4px;
@@ -409,11 +441,6 @@ label {
   flex-wrap: wrap;
   gap: var(--space-3);
   margin-top: var(--space-2);
-}
-
-.map-btn {
-  font-size: 0.85rem;
-  padding: 4px 10px;
 }
 
 .empty {

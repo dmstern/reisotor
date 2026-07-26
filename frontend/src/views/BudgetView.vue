@@ -456,7 +456,7 @@ const categoryColors = computed(() => {
             <td>{{ e.amount.toFixed(2) }} €</td>
             <td class="actions">
               <template v-if="autoSourceFor(e.id)">
-                <router-link :to="autoSourceFor(e.id)!.path" class="secondary jump-btn-sm">
+                <router-link :to="autoSourceFor(e.id)!.path" class="card-action-btn">
                   {{ autoSourceFor(e.id)!.label }}
                 </router-link>
                 <DeleteButton small disabled />
@@ -769,12 +769,6 @@ const categoryColors = computed(() => {
   align-items: center;
   gap: 4px;
   flex-wrap: wrap;
-}
-
-.jump-btn-sm {
-  font-size: 0.78rem;
-  white-space: nowrap;
-  text-decoration: none;
 }
 
 .empty {

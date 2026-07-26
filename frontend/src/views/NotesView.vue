@@ -282,10 +282,6 @@ async function remove(id: number) {
   overflow-wrap: anywhere;
 }
 
-.content :deep(a) {
-  color: var(--color-primary);
-}
-
 .content :deep(ul) {
   margin: 4px 0;
   padding-left: 1.3em;
