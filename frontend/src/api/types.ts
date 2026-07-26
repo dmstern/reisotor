@@ -269,6 +269,8 @@ export interface DiaryEntry {
   images: string[];
   created_at: string;
   updated_at: string | null;
+  /** IDs der Ausflüge, die diesem Eintrag zugeordnet sind (z. B. an diesem Tag unternommen). */
+  excursion_ids: number[];
 }
 
 export interface DiaryLike {

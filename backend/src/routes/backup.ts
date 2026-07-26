@@ -19,6 +19,7 @@ const TABLES = [
   'diary_entries',
   'diary_likes',
   'diary_comments',
+  'diary_excursions',
   'travel_items',
   'spots',
   'excursion_spots',

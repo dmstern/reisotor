@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { api } from '../api/client';
-import type { DiaryComment, DiaryEntry, DiaryLike, User } from '../api/types';
+import type { DiaryComment, DiaryEntry, DiaryLike, Excursion, User } from '../api/types';
 import { useAuthStore } from '../stores/auth';
 import { useTripStore } from '../stores/trip';
+import { useExcursionsStore } from '../stores/excursions';
 import { renderRichText } from '../utils/richText';
 import { compressImage } from '../utils/imageCompression';
 import Modal from '../components/Modal.vue';
@@ -15,6 +16,7 @@ import Comments from '../components/Comments.vue';
 const auth = useAuthStore();
 const tripStore = useTripStore();
 const tripId = tripStore.currentTripId as number;
+const excursionsStore = useExcursionsStore();
 const entries = ref<DiaryEntry[]>([]);
 const likes = ref<DiaryLike[]>([]);
 const comments = ref<DiaryComment[]>([]);
@@ -22,7 +24,7 @@ const users = ref<User[]>([]);
 const loading = ref(true);
 
 const showForm = ref(false);
-const emptyForm = () => ({ title: '', content: '', images: [] as string[] });
+const emptyForm = () => ({ title: '', content: '', images: [] as string[], excursion_ids: [] as number[] });
 const form = ref(emptyForm());
 const uploading = ref(false);
 const uploadError = ref('');
@@ -34,12 +36,40 @@ const editUploadError = ref('');
 
 const openComments = ref<Set<number>>(new Set());
 
+// Lokales Datum (nicht toISOString, das ist UTC) im selben "YYYY-MM-DD"-Format wie
+// Excursion.date (aus <input type="date">), damit sich beide direkt vergleichen lassen.
+function localDateStr(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+function dateStrOf(iso: string) {
+  return localDateStr(new Date(iso));
+}
+
+const todayDateStr = computed(() => localDateStr(new Date()));
+const editEntryDateStr = computed(() => (editingEntry.value ? dateStrOf(editingEntry.value.created_at) : ''));
+
+// Ausflüge, die am angegebenen Tag geplant sind, zuerst (Vorschlag) – der Rest bleibt in
+// Store-Reihenfolge dahinter, damit man bei Bedarf auch einen Ausflug an einem anderen Tag
+// zuordnen kann (z. B. ein Rückblick, der erst am Folgetag geschrieben wird).
+function pickerExcursions(dateStr: string) {
+  const matching = excursionsStore.excursions.filter((e) => e.date === dateStr);
+  const rest = excursionsStore.excursions.filter((e) => e.date !== dateStr);
+  return [...matching, ...rest];
+}
+
+function excursionsForEntry(entry: DiaryEntry): Excursion[] {
+  return entry.excursion_ids
+    .map((id) => excursionsStore.excursions.find((e) => e.id === id))
+    .filter((e): e is Excursion => !!e);
+}
+
 onMounted(async () => {
   const [entriesRes, likesRes, commentsRes, usersRes] = await Promise.all([
     api.get<DiaryEntry[]>(`/diary?trip_id=${tripId}`),
     api.get<DiaryLike[]>('/diary/likes'),
     api.get<DiaryComment[]>('/diary/comments'),
     api.get<User[]>('/users'),
+    excursionsStore.load(),
   ]);
   entries.value = entriesRes;
   likes.value = likesRes;
@@ -119,6 +149,14 @@ function removeImage(target: { images: string[] }, index: number) {
   target.images.splice(index, 1);
 }
 
+function openNewForm() {
+  form.value = emptyForm();
+  // Vorschlag: an diesem Tag geplante Ausflüge direkt vorauswählen, statt sie nur anzuzeigen –
+  // meist wird ein Eintrag ja am selben Tag über genau diesen Ausflug geschrieben.
+  form.value.excursion_ids = excursionsStore.excursions.filter((e) => e.date === todayDateStr.value).map((e) => e.id);
+  showForm.value = true;
+}
+
 async function submitEntry() {
   if (!form.value.content.trim()) return;
   const body = {
@@ -126,6 +164,7 @@ async function submitEntry() {
     title: form.value.title || undefined,
     content: form.value.content.trim(),
     images: form.value.images,
+    excursion_ids: form.value.excursion_ids,
   };
   const created = await api.post<DiaryEntry>('/diary', body);
   entries.value.unshift(created);
@@ -140,7 +179,12 @@ function closeForm() {
 
 function startEdit(entry: DiaryEntry) {
   editingEntry.value = entry;
-  editForm.value = { title: entry.title ?? '', content: entry.content, images: [...entry.images] };
+  editForm.value = {
+    title: entry.title ?? '',
+    content: entry.content,
+    images: [...entry.images],
+    excursion_ids: [...entry.excursion_ids],
+  };
 }
 
 async function submitEditEntry() {
@@ -149,6 +193,7 @@ async function submitEditEntry() {
     title: editForm.value.title || undefined,
     content: editForm.value.content.trim(),
     images: editForm.value.images,
+    excursion_ids: editForm.value.excursion_ids,
   };
   const updated = await api.put<DiaryEntry>(`/diary/${editingEntry.value.id}`, body);
   const idx = entries.value.findIndex((e) => e.id === updated.id);
@@ -190,7 +235,7 @@ async function removeComment(id: number) {
   <div class="page" v-if="!loading">
     <div class="header">
       <h1>Tagebuch</h1>
-      <button @click="showForm = true">+ Neuer Eintrag</button>
+      <button @click="openNewForm">+ Neuer Eintrag</button>
     </div>
 
     <Modal :model-value="showForm" title="Neuer Tagebucheintrag" @update:model-value="(v) => !v && closeForm()">
@@ -213,6 +258,14 @@ async function removeComment(id: number) {
           <button type="button" class="remove-thumb" @click="removeImage(form, i)">✕</button>
         </div>
       </div>
+      <fieldset v-if="excursionsStore.excursions.length" class="excursion-picker">
+        <legend>🎒 Ausflüge zuordnen</legend>
+        <label v-for="ex in pickerExcursions(todayDateStr)" :key="ex.id" class="excursion-option">
+          <input type="checkbox" :value="ex.id" v-model="form.excursion_ids" />
+          <span class="excursion-option-title">{{ ex.title }}</span>
+          <span v-if="ex.date === todayDateStr" class="excursion-option-badge">📅 heute geplant</span>
+        </label>
+      </fieldset>
       <button type="submit">Veröffentlichen</button>
     </form>
     </Modal>
@@ -245,6 +298,23 @@ async function removeComment(id: number) {
           <button class="secondary" @click="toggleComments(entry.id)">
             💬 {{ commentsFor(entry.id).length || '' }}
           </button>
+        </div>
+
+        <div class="excursion-links" v-if="excursionsForEntry(entry).length">
+          <router-link
+            v-for="ex in excursionsForEntry(entry)"
+            :key="ex.id"
+            to="/excursions"
+            class="excursion-chip"
+          >
+            <span
+              class="excursion-chip-img"
+              :style="ex.image_url ? { backgroundImage: `url(${ex.image_url})` } : {}"
+            >
+              <span v-if="!ex.image_url">🎒</span>
+            </span>
+            <span class="excursion-chip-title">{{ ex.title }}</span>
+          </router-link>
         </div>
 
         <Comments
@@ -281,6 +351,14 @@ async function removeComment(id: number) {
             <button type="button" class="remove-thumb" @click="removeImage(editForm, i)">✕</button>
           </div>
         </div>
+        <fieldset v-if="excursionsStore.excursions.length" class="excursion-picker">
+          <legend>🎒 Ausflüge zuordnen</legend>
+          <label v-for="ex in pickerExcursions(editEntryDateStr)" :key="ex.id" class="excursion-option">
+            <input type="checkbox" :value="ex.id" v-model="editForm.excursion_ids" />
+            <span class="excursion-option-title">{{ ex.title }}</span>
+            <span v-if="ex.date === editEntryDateStr" class="excursion-option-badge">📅 an diesem Tag geplant</span>
+          </label>
+        </fieldset>
         <button type="submit">Speichern</button>
       </form>
     </Modal>
@@ -311,6 +389,80 @@ async function removeComment(id: number) {
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--color-text-muted);
+}
+
+.excursion-picker {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.excursion-picker legend {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  padding: 0 4px;
+}
+
+.excursion-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.9rem;
+  font-weight: 400;
+}
+
+.excursion-option-title {
+  flex: 1;
+}
+
+.excursion-option-badge {
+  font-size: 0.78rem;
+  color: var(--color-success);
+  white-space: nowrap;
+}
+
+/* Verknüpfte Ausflüge am unteren Rand der Kachel (nach dem Inhalt, vor den Kommentaren) – Bild +
+   Titel wie bei anderen "Sprung"-Links in der App (Architekturregel: nur Sprung-Button, kein
+   Inline-Entfernen hier). */
+.excursion-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-2) 0;
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-border);
+}
+
+.excursion-chip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--color-hover);
+  border-radius: 999px;
+  padding: 4px 12px 4px 4px;
+  font-size: 0.82rem;
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.excursion-chip:hover {
+  background: var(--color-primary-tint);
+}
+
+.excursion-chip-img {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--color-primary-tint) center/cover no-repeat;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  flex-shrink: 0;
 }
 
 .hint {

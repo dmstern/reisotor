@@ -160,6 +160,16 @@ CREATE TABLE IF NOT EXISTS diary_comments (
   created_at TEXT NOT NULL
 );
 
+-- Zuordnung Tagebucheintrag <-> Ausflug (m:n): ein Eintrag kann z. B. mehrere an diesem Tag
+-- unternommene Ausflüge referenzieren. idea_id, weil Ausflüge intern weiterhin in der
+-- "ideas"-Tabelle liegen (siehe excursion_spots).
+CREATE TABLE IF NOT EXISTS diary_excursions (
+  id INTEGER PRIMARY KEY,
+  entry_id INTEGER NOT NULL REFERENCES diary_entries(id) ON DELETE CASCADE,
+  idea_id INTEGER NOT NULL REFERENCES ideas(id) ON DELETE CASCADE,
+  UNIQUE(entry_id, idea_id)
+);
+
 CREATE TABLE IF NOT EXISTS idea_likes (
   id INTEGER PRIMARY KEY,
   idea_id INTEGER NOT NULL REFERENCES ideas(id) ON DELETE CASCADE,

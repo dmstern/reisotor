@@ -21,6 +21,32 @@ interface EntryBody {
   title?: string;
   content: string;
   images?: string[];
+  excursion_ids?: number[];
+}
+
+// Zuordnung Tagebucheintrag -> Ausflüge (m:n, analog syncExcursionSpots in ideas.ts): wird bei
+// jedem Anlegen/Bearbeiten komplett neu geschrieben statt gedifft – kleine Anzahl Zeilen pro Eintrag.
+function syncDiaryExcursions(entryId: number, excursionIds: number[]) {
+  db.prepare('DELETE FROM diary_excursions WHERE entry_id = ?').run(entryId);
+  const insert = db.prepare('INSERT INTO diary_excursions (entry_id, idea_id) VALUES (?, ?)');
+  for (const excursionId of excursionIds) {
+    insert.run(entryId, excursionId);
+  }
+}
+
+function excursionIdsFor(entryIds: number[]): Map<number, number[]> {
+  const map = new Map<number, number[]>();
+  if (!entryIds.length) return map;
+  const placeholders = entryIds.map(() => '?').join(',');
+  const rows = db
+    .prepare(`SELECT entry_id, idea_id FROM diary_excursions WHERE entry_id IN (${placeholders})`)
+    .all(...entryIds) as { entry_id: number; idea_id: number }[];
+  for (const row of rows) {
+    const list = map.get(row.entry_id) ?? [];
+    list.push(row.idea_id);
+    map.set(row.entry_id, list);
+  }
+  return map;
 }
 
 interface CommentBody {
@@ -38,8 +64,8 @@ const ALLOWED_IMAGE_TYPES: Record<string, string> = {
 };
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
-function serializeEntry(row: EntryRow) {
-  return { ...row, images: row.images ? (JSON.parse(row.images) as string[]) : [] };
+function serializeEntry(row: EntryRow, excursionIds: number[]) {
+  return { ...row, images: row.images ? (JSON.parse(row.images) as string[]) : [], excursion_ids: excursionIds };
 }
 
 export const diaryRoutes: FastifyPluginAsync = async (app) => {
@@ -48,7 +74,8 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
     const rows = db
       .prepare('SELECT * FROM diary_entries WHERE trip_id = ? ORDER BY created_at DESC, id DESC')
       .all(req.query.trip_id) as EntryRow[];
-    return rows.map(serializeEntry);
+    const excursionIds = excursionIdsFor(rows.map((r) => r.id));
+    return rows.map((row) => serializeEntry(row, excursionIds.get(row.id) ?? []));
   });
 
   app.get('/diary/likes', async () => {
@@ -82,16 +109,18 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.post<{ Body: EntryBody }>('/diary', async (req, reply) => {
-    const { trip_id, title, content, images } = req.body;
+    const { trip_id, title, content, images, excursion_ids } = req.body;
     const now = new Date().toISOString();
     const result = db
       .prepare(
         'INSERT INTO diary_entries (trip_id, author_id, title, content, images, created_at) VALUES (?, ?, ?, ?, ?, ?)',
       )
       .run(trip_id, req.session.userId, title ?? null, content, JSON.stringify(images ?? []), now);
+    const entryId = result.lastInsertRowid as number;
+    syncDiaryExcursions(entryId, excursion_ids ?? []);
     reply.code(201);
-    const row = db.prepare('SELECT * FROM diary_entries WHERE id = ?').get(result.lastInsertRowid) as EntryRow;
-    return serializeEntry(row);
+    const row = db.prepare('SELECT * FROM diary_entries WHERE id = ?').get(entryId) as EntryRow;
+    return serializeEntry(row, excursion_ids ?? []);
   });
 
   app.put<{ Params: { id: string }; Body: EntryBody }>('/diary/:id', async (req, reply) => {
@@ -103,7 +132,7 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(403).send({ error: 'Nur die Autorin/der Autor kann diesen Beitrag bearbeiten' });
     }
 
-    const { title, content, images } = req.body;
+    const { title, content, images, excursion_ids } = req.body;
     const now = new Date().toISOString();
     db.prepare('UPDATE diary_entries SET title = ?, content = ?, images = ?, updated_at = ? WHERE id = ?').run(
       title ?? null,
@@ -112,8 +141,9 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
       now,
       req.params.id,
     );
+    syncDiaryExcursions(Number(req.params.id), excursion_ids ?? []);
     const row = db.prepare('SELECT * FROM diary_entries WHERE id = ?').get(req.params.id) as EntryRow;
-    return serializeEntry(row);
+    return serializeEntry(row, excursion_ids ?? []);
   });
 
   app.delete<{ Params: { id: string } }>('/diary/:id', async (req, reply) => {
