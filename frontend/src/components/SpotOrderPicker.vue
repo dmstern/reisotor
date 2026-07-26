@@ -35,6 +35,11 @@ function removeSpot(id: number) {
 // dataTransfer-Format nötig, anders als beim Ziehen von SpotCard auf ExcursionCard). setData mit
 // leerem Wert ist trotzdem nötig, manche Browser starten sonst gar keinen Drag.
 const draggedIndex = ref<number | null>(null);
+// Index in plannedSpots, VOR dem die Drop-Line gerade eingezeichnet wird (index === Länge des
+// Arrays => Line nach dem letzten Eintrag) – wird bei jedem dragover anhand der Cursor-Position
+// relativ zur Mitte der jeweiligen Zeile neu bestimmt, damit man sichtbar zwischen zwei Zeilen
+// (statt nur "auf" einer Zeile) ablegen kann.
+const dropIndicatorIndex = ref<number | null>(null);
 
 function onDragStart(event: DragEvent, index: number) {
   draggedIndex.value = index;
@@ -42,17 +47,31 @@ function onDragStart(event: DragEvent, index: number) {
   if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
 }
 
-function onDrop(index: number) {
-  if (draggedIndex.value === null || draggedIndex.value === index) return;
-  const next = [...selected.value];
-  const [moved] = next.splice(draggedIndex.value, 1);
-  next.splice(index, 0, moved);
-  selected.value = next;
+function onRowDragOver(event: DragEvent, index: number) {
+  const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+  const before = event.clientY < rect.top + rect.height / 2;
+  dropIndicatorIndex.value = before ? index : index + 1;
+}
+
+function onDrop() {
+  if (draggedIndex.value === null || dropIndicatorIndex.value === null) return;
+  let targetIndex = dropIndicatorIndex.value;
+  // Ziel-Index bezieht sich auf das Array VOR dem Entfernen des gezogenen Eintrags – liegt die
+  // Zeile davor, verschiebt das Herausnehmen alle nachfolgenden Indizes um eins nach vorn.
+  if (draggedIndex.value < targetIndex) targetIndex--;
+  if (targetIndex !== draggedIndex.value) {
+    const next = [...selected.value];
+    const [moved] = next.splice(draggedIndex.value, 1);
+    next.splice(targetIndex, 0, moved);
+    selected.value = next;
+  }
   draggedIndex.value = null;
+  dropIndicatorIndex.value = null;
 }
 
 function onDragEnd() {
   draggedIndex.value = null;
+  dropIndicatorIndex.value = null;
 }
 </script>
 
@@ -64,24 +83,26 @@ function onDragEnd() {
         In dieser Reihenfolge werden die Spots während des Ausflugs abgeklappert (bestimmt auch die
         eingezeichnete Route auf der Karte) – zum Sortieren ziehen.
       </p>
-      <div
-        v-for="(spot, index) in plannedSpots"
-        :key="spot.id"
-        class="planned-row"
-        :class="{ dragging: draggedIndex === index }"
-        draggable="true"
-        @dragstart="onDragStart($event, index)"
-        @dragover.prevent
-        @drop.prevent="onDrop(index)"
-        @dragend="onDragEnd"
-      >
-        <span class="order-num">{{ index + 1 }}.</span>
-        <span class="drag-handle" aria-hidden="true">⠿</span>
-        <span class="spot-title">{{ spotCategoryMeta(spot.category).icon }} {{ spot.title }}</span>
-        <button type="button" class="remove-btn" @click="removeSpot(spot.id)" aria-label="Aus Ausflug entfernen">
-          ✕
-        </button>
-      </div>
+      <template v-for="(spot, index) in plannedSpots" :key="spot.id">
+        <div class="drop-line" v-if="draggedIndex !== null && dropIndicatorIndex === index"></div>
+        <div
+          class="planned-row"
+          :class="{ dragging: draggedIndex === index }"
+          draggable="true"
+          @dragstart="onDragStart($event, index)"
+          @dragover.prevent="onRowDragOver($event, index)"
+          @drop.prevent="onDrop"
+          @dragend="onDragEnd"
+        >
+          <span class="order-num">{{ index + 1 }}.</span>
+          <span class="drag-handle" aria-hidden="true">⠿</span>
+          <span class="spot-title">{{ spotCategoryMeta(spot.category).icon }} {{ spot.title }}</span>
+          <button type="button" class="remove-btn" @click="removeSpot(spot.id)" aria-label="Aus Ausflug entfernen">
+            ✕
+          </button>
+        </div>
+      </template>
+      <div class="drop-line" v-if="draggedIndex !== null && dropIndicatorIndex === plannedSpots.length"></div>
     </fieldset>
 
     <fieldset v-if="remainingSpots.length" class="spot-picker">
@@ -147,6 +168,13 @@ function onDragEnd() {
 
 .planned-row.dragging {
   opacity: 0.4;
+}
+
+.drop-line {
+  height: 2px;
+  border-radius: 1px;
+  background: var(--color-primary);
+  margin: 0 8px;
 }
 
 .order-num {
