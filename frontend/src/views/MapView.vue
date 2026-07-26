@@ -27,6 +27,9 @@ interface MapPoint {
   /** Zuhause-Seite eines Reise-Eintrags (Startpunkt der Anreise / Zielpunkt der Abreise) – wird
    *  vom Urlaubsfokus-Button ausgeblendet, siehe vacationPoints. */
   homeSide?: boolean;
+  /** Ursprünglicher Maps-Link (Google/Apple), falls hinterlegt – Fallback für "In Karten-App
+   *  öffnen" (openExternally) auf Plattformen ohne App-Auswahl-Dialog (siehe dort). */
+  mapsLink: string | null;
 }
 
 const ACCOMMODATION_META = { icon: '🛏️', color: '#1baf7a', label: 'Unterkunft' };
@@ -78,7 +81,15 @@ const points = computed<MapPoint[]>(() => {
   const result: MapPoint[] = [];
   for (const a of accommodations.value) {
     if (a.lat != null && a.lng != null) {
-      result.push({ key: `accommodation-${a.id}`, origin: 'accommodation', lat: a.lat, lng: a.lng, title: a.name, ...ACCOMMODATION_META });
+      result.push({
+        key: `accommodation-${a.id}`,
+        origin: 'accommodation',
+        lat: a.lat,
+        lng: a.lng,
+        title: a.name,
+        mapsLink: a.maps_link,
+        ...ACCOMMODATION_META,
+      });
     }
   }
   for (const t of travelItems.value) {
@@ -92,6 +103,7 @@ const points = computed<MapPoint[]>(() => {
         lng: t.from_lng,
         title: `${t.title} (Abflug/Abfahrt)`,
         homeSide: t.role === 'arrival',
+        mapsLink: t.from_maps_link,
         ...TRAVEL_FROM_META,
       });
     }
@@ -103,6 +115,7 @@ const points = computed<MapPoint[]>(() => {
         lng: t.to_lng,
         title: `${t.title} (Ankunft)`,
         homeSide: t.role === 'departure',
+        mapsLink: t.to_maps_link,
         ...TRAVEL_TO_META,
       });
     }
@@ -110,7 +123,17 @@ const points = computed<MapPoint[]>(() => {
   for (const s of spots.value) {
     if (s.lat != null && s.lng != null) {
       const meta = spotCategoryMeta(s.category);
-      result.push({ key: `spot-${s.id}`, origin: 'spot', lat: s.lat, lng: s.lng, title: s.title, icon: meta.icon, color: meta.color, label: s.category ?? 'Sonstiges' });
+      result.push({
+        key: `spot-${s.id}`,
+        origin: 'spot',
+        lat: s.lat,
+        lng: s.lng,
+        title: s.title,
+        icon: meta.icon,
+        color: meta.color,
+        label: s.category ?? 'Sonstiges',
+        mapsLink: s.maps_link,
+      });
     }
   }
   return result;
@@ -134,6 +157,27 @@ async function loadAll() {
 
 function selectPoint(point: MapPoint) {
   selectedPoint.value = point;
+}
+
+// "In Karten-App öffnen": statt zu raten, welche App installiert ist (dafür gibt es per Web-Link
+// plattformübergreifend keinen zuverlässigen Mechanismus), zeigt ein kleines Menü die gängigen
+// Apps zur Auswahl – jeweils als offizieller Universal-Link, der die App öffnet, falls installiert,
+// und sonst auf die Web-Vorschau ausweicht (funktioniert daher überall, ganz ohne
+// User-Agent-Sniffing).
+const mapsPickerOpen = ref(false);
+// Egal auf welchem Weg selectedPoint wechselt (neuer Punkt, Schließen-Button, fitAll/fitVacation,
+// Fokus-Sprung aus einer anderen Sicht) – ein noch offenes Auswahl-Menü vom vorherigen Punkt soll
+// dabei nie hängen bleiben.
+watch(selectedPoint, () => {
+  mapsPickerOpen.value = false;
+});
+
+function appleMapsHref(point: MapPoint) {
+  return `https://maps.apple.com/?ll=${point.lat},${point.lng}&q=${encodeURIComponent(point.title)}`;
+}
+
+function googleMapsHref(point: MapPoint) {
+  return `https://www.google.com/maps/search/?api=1&query=${point.lat},${point.lng}`;
 }
 
 // Zoomt/zentriert auf genau den Ausschnitt, der alle aktuell eingetragenen Orte zeigt – z. B.
@@ -191,6 +235,28 @@ function renderMarkers() {
   }
 }
 
+// Sample-Punkte für einen gestrichelten Bogen zwischen zwei Koordinaten (quadratische Bezier-
+// Kurve, Kontrollpunkt senkrecht zur Verbindungslinie versetzt) – rein optisch, wie man es von
+// schematischen Flugrouten-Darstellungen kennt, keine echte Streckenführung/Großkreisberechnung.
+function arcPoints(from: L.LatLngExpression, to: L.LatLngExpression, segments = 32): L.LatLngExpression[] {
+  const [lat1, lng1] = from as [number, number];
+  const [lat2, lng2] = to as [number, number];
+  const dLat = lat2 - lat1;
+  const dLng = lng2 - lng1;
+  // Versatz proportional zur Streckenlänge (dLat/dLng selbst) – kurze Routen bekommen dadurch
+  // automatisch einen dezenteren, lange einen deutlicheren Bogen. 0.15 ist ein reiner Optik-Faktor.
+  const controlLat = (lat1 + lat2) / 2 - dLng * 0.15;
+  const controlLng = (lng1 + lng2) / 2 + dLat * 0.15;
+  const points: L.LatLngExpression[] = [];
+  for (let i = 0; i <= segments; i++) {
+    const t = i / segments;
+    const lat = (1 - t) ** 2 * lat1 + 2 * (1 - t) * t * controlLat + t ** 2 * lat2;
+    const lng = (1 - t) ** 2 * lng1 + 2 * (1 - t) * t * controlLng + t ** 2 * lng2;
+    points.push([lat, lng]);
+  }
+  return points;
+}
+
 // Zeichnet Verbindungslinien: je Reise-Eintrag mit Start- UND Zielkoordinaten eine Strecke
 // (Flug/Bahn/Auto/…), je Ausflug mit ≥2 verorteten Spots eine Route entlang der Stationen
 // (in der Reihenfolge von spot_ids). Rein visuell, keine echte Routenführung entlang von Straßen.
@@ -200,13 +266,12 @@ function renderRoutes() {
 
   for (const t of travelItems.value) {
     if (t.from_lat != null && t.from_lng != null && t.to_lat != null && t.to_lng != null) {
-      L.polyline(
-        [
-          [t.from_lat, t.from_lng],
-          [t.to_lat, t.to_lng],
-        ],
-        { color: TRAVEL_FROM_META.color, weight: 3, opacity: 0.65, dashArray: '6 6' },
-      ).addTo(routesLayer);
+      L.polyline(arcPoints([t.from_lat, t.from_lng], [t.to_lat, t.to_lng]), {
+        color: TRAVEL_FROM_META.color,
+        weight: 3,
+        opacity: 0.65,
+        dashArray: '6 6',
+      }).addTo(routesLayer);
     }
   }
 
@@ -217,7 +282,14 @@ function renderRoutes() {
       if (spot?.lat != null && spot?.lng != null) coords.push([spot.lat, spot.lng]);
     }
     if (coords.length >= 2) {
-      L.polyline(coords, { color: '#e08e45', weight: 3, opacity: 0.65 }).addTo(routesLayer);
+      // Bogen je Teilstrecke zusammensetzen – Startpunkt jedes Folgesegments weglassen, sonst
+      // wäre er doppelt (identisch mit dem Endpunkt des vorigen Segments).
+      const arced: L.LatLngExpression[] = [];
+      for (let i = 0; i < coords.length - 1; i++) {
+        const segment = arcPoints(coords[i], coords[i + 1]);
+        arced.push(...(i === 0 ? segment : segment.slice(1)));
+      }
+      L.polyline(arced, { color: '#e08e45', weight: 3, opacity: 0.65, dashArray: '6 6' }).addTo(routesLayer);
     }
   }
 }
@@ -353,13 +425,50 @@ watch(
           <span class="info-category">{{ selectedPoint.label }}</span>
         </div>
       </div>
-      <router-link v-if="selectedPoint.origin === 'accommodation'" to="/accommodation" class="secondary jump-btn">
-        Zur Unterkunft
-      </router-link>
-      <router-link v-else-if="selectedPoint.origin === 'travel'" to="/travel" class="secondary jump-btn">
-        Zur Reise
-      </router-link>
-      <router-link v-else to="/excursions" class="secondary jump-btn"> Zu den Spots </router-link>
+      <div class="info-actions">
+        <div class="maps-picker">
+          <button type="button" class="card-action-btn" @click="mapsPickerOpen = !mapsPickerOpen">
+            🗺️ In Karten-App öffnen ↗
+          </button>
+          <template v-if="mapsPickerOpen">
+            <div class="picker-backdrop" @click="mapsPickerOpen = false"></div>
+            <div class="picker-menu">
+              <a
+                :href="appleMapsHref(selectedPoint)"
+                target="_blank"
+                rel="noopener"
+                @click="mapsPickerOpen = false"
+              >
+                🍎 Apple Maps
+              </a>
+              <a
+                :href="googleMapsHref(selectedPoint)"
+                target="_blank"
+                rel="noopener"
+                @click="mapsPickerOpen = false"
+              >
+                🗺️ Google Maps
+              </a>
+              <a
+                v-if="selectedPoint.mapsLink"
+                :href="selectedPoint.mapsLink"
+                target="_blank"
+                rel="noopener"
+                @click="mapsPickerOpen = false"
+              >
+                🔗 Ursprünglichen Link öffnen
+              </a>
+            </div>
+          </template>
+        </div>
+        <router-link v-if="selectedPoint.origin === 'accommodation'" to="/accommodation" class="card-action-btn">
+          Zur Unterkunft
+        </router-link>
+        <router-link v-else-if="selectedPoint.origin === 'travel'" to="/travel" class="card-action-btn">
+          Zur Reise
+        </router-link>
+        <router-link v-else to="/excursions" class="card-action-btn"> Zu den Spots </router-link>
+      </div>
     </div>
 
     <p v-if="!points.length" class="empty">
@@ -474,9 +583,49 @@ watch(
   color: var(--color-text-muted);
 }
 
-.jump-btn {
-  align-self: flex-start;
+.info-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.maps-picker {
+  position: relative;
+}
+
+.picker-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+}
+
+.picker-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 200px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-2);
+  z-index: 21;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.picker-menu a {
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
   text-decoration: none;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.picker-menu a:hover {
+  background: var(--color-hover);
 }
 
 .empty {
