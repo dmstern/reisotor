@@ -202,6 +202,20 @@ function onSpotDrop(event: DragEvent) {
   color: var(--color-success);
 }
 
+/* Der immer-helle Hintergrund (für Kontrast über beliebigen Vorschaubildern) kollidiert im Dark
+   Mode mit der hell eingefärbten --color-text-muted/--color-success-Schrift (für dunkle
+   Hintergründe gedacht) – zu wenig Kontrast. Gleiches Muster wie bei den schwebenden
+   Bearbeiten-/Löschen-Buttons: im Dark Mode ein dunkler halbtransparenter Chip statt fest hell. */
+:root[data-theme='dark'] .status {
+  background: rgba(35, 34, 32, 0.85);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .status {
+    background: rgba(35, 34, 32, 0.85);
+  }
+}
+
 .creator {
   font-size: 0.82rem;
   color: var(--color-text-muted);
