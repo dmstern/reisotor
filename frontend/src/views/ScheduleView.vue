@@ -131,14 +131,19 @@ const weeks = computed(() => {
 });
 
 // Bei langen Zeitspannen (z. B. ein ToDo mit Fälligkeitsdatum Monate vor dem Urlaub) würde die
-// Schublade sonst eine sehr lange Liste an Wochen rendern – stattdessen wird nur ein Fenster von
-// WEEKS_PER_PAGE Wochen angezeigt, durch das man blättern kann.
-const WEEKS_PER_PAGE = 6;
+// Schublade sonst eine sehr lange Liste an Wochen rendern – stattdessen wird nur ein Fenster
+// angezeigt, durch das man blättert. Die Fenster-/Schrittgröße ist wählbar: wochenweise,
+// zweiwochenweise oder "monatsweise" (gleitend – ein festes 4-Wochen-Fenster, nicht an
+// Kalendermonats-Grenzen ausgerichtet).
+type PageGranularity = 'week' | 'twoWeeks' | 'month';
+const WEEKS_PER_PAGE_BY_GRANULARITY: Record<PageGranularity, number> = { week: 1, twoWeeks: 2, month: 4 };
+const granularity = ref<PageGranularity>('month');
+const weeksPerPage = computed(() => WEEKS_PER_PAGE_BY_GRANULARITY[granularity.value]);
 const pageOffset = ref(0);
 
-const visibleWeeks = computed(() => weeks.value.slice(pageOffset.value, pageOffset.value + WEEKS_PER_PAGE));
+const visibleWeeks = computed(() => weeks.value.slice(pageOffset.value, pageOffset.value + weeksPerPage.value));
 const canGoPrev = computed(() => pageOffset.value > 0);
-const canGoNext = computed(() => pageOffset.value + WEEKS_PER_PAGE < weeks.value.length);
+const canGoNext = computed(() => pageOffset.value + weeksPerPage.value < weeks.value.length);
 
 const visibleRangeLabel = computed(() => {
   if (!visibleWeeks.value.length) return '';
@@ -151,15 +156,22 @@ const visibleRangeLabel = computed(() => {
 });
 
 function clampOffset(idx: number) {
-  return Math.min(Math.max(0, weeks.value.length - WEEKS_PER_PAGE), Math.max(0, idx));
+  return Math.min(Math.max(0, weeks.value.length - weeksPerPage.value), Math.max(0, idx));
 }
 
 function prevPage() {
-  pageOffset.value = clampOffset(pageOffset.value - WEEKS_PER_PAGE);
+  pageOffset.value = clampOffset(pageOffset.value - weeksPerPage.value);
 }
 function nextPage() {
-  pageOffset.value = clampOffset(pageOffset.value + WEEKS_PER_PAGE);
+  pageOffset.value = clampOffset(pageOffset.value + weeksPerPage.value);
 }
+
+// Beim Wechsel der Blätter-Granularität bleibt die erste sichtbare Woche als Anker erhalten,
+// nur die Fenstergröße ändert sich – muss aber ggf. neu geklemmt werden, falls das größere
+// Fenster sonst über das Ende des Kalenderbereichs hinausragen würde.
+watch(weeksPerPage, () => {
+  pageOffset.value = clampOffset(pageOffset.value);
+});
 
 // Springt so, dass die Woche mit dem übergebenen Datum als erste Woche der Seite sichtbar wird.
 // Gibt zurück, ob das Datum im aktuellen Kalenderbereich gefunden wurde.
@@ -283,6 +295,32 @@ function formatDay(date: string) {
     <h2>Kalender</h2>
 
     <div class="calendar-toolbar">
+      <div class="granularity-row">
+        <button
+          type="button"
+          class="secondary gran-btn"
+          :class="{ active: granularity === 'week' }"
+          @click="granularity = 'week'"
+        >
+          Woche
+        </button>
+        <button
+          type="button"
+          class="secondary gran-btn"
+          :class="{ active: granularity === 'twoWeeks' }"
+          @click="granularity = 'twoWeeks'"
+        >
+          2 Wochen
+        </button>
+        <button
+          type="button"
+          class="secondary gran-btn"
+          :class="{ active: granularity === 'month' }"
+          @click="granularity = 'month'"
+        >
+          Monat
+        </button>
+      </div>
       <div class="pager">
         <button type="button" class="secondary page-btn" :disabled="!canGoPrev" @click="prevPage" aria-label="Vorherige Wochen">
           ‹
@@ -423,6 +461,24 @@ function formatDay(date: string) {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+}
+
+.granularity-row {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.gran-btn {
+  padding: 4px 10px;
+  font-size: 0.78rem;
+}
+
+.gran-btn.active {
+  background: var(--color-primary-tint);
+  border-color: var(--color-primary);
+  color: var(--color-primary-dark);
 }
 
 .pager {
