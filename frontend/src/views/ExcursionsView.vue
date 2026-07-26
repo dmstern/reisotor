@@ -8,6 +8,7 @@ import { useExcursionsStore } from '../stores/excursions';
 import { useDrawersStore } from '../stores/drawers';
 import ExcursionCard from '../components/ExcursionCard.vue';
 import SpotCard from '../components/SpotCard.vue';
+import SpotOrderPicker from '../components/SpotOrderPicker.vue';
 import Modal from '../components/Modal.vue';
 import Combobox from '../components/Combobox.vue';
 import { parseLatLngFromMapsLink, tilePreviewUrl } from '../utils/googleMaps';
@@ -375,9 +376,6 @@ function byLikesThenTitle(a: Spot, b: Spot) {
 const sortSpotsByLikes = ref(false);
 const sortedSpots = computed(() => (sortSpotsByLikes.value ? [...spots.value].sort(byLikesThenTitle) : spots.value));
 
-// Im Ausflug-Dialog immer nach Likes sortiert, unabhängig vom Toggle oben.
-const spotsForPicker = computed(() => [...spots.value].sort(byLikesThenTitle));
-
 const spotCategoryOptions = computed(() => {
   const used = spots.value.map((s) => s.category).filter((c): c is string => !!c);
   return [...new Set([...SPOT_CATEGORY_SUGGESTIONS, ...used])];
@@ -472,14 +470,7 @@ function showSpotOnMap(spot: Spot) {
           Datum (optional – ansonsten "In Planung")
           <input v-model="excursionForm.date" type="date" />
         </label>
-        <fieldset v-if="spotsForPicker.length" class="spot-picker">
-          <legend>Stationen (Spots) – nach Likes sortiert</legend>
-          <label v-for="spot in spotsForPicker" :key="spot.id" class="spot-option">
-            <input type="checkbox" :value="spot.id" v-model="excursionForm.spot_ids" />
-            <span class="spot-option-title">{{ spotCategoryMeta(spot.category).icon }} {{ spot.title }}</span>
-            <span class="spot-option-likes">❤️ {{ spotLikeCount(spot.id) }}</span>
-          </label>
-        </fieldset>
+        <SpotOrderPicker v-if="spots.length" v-model="excursionForm.spot_ids" :spots="spots" :like-count="spotLikeCount" />
         <button type="submit">Speichern</button>
       </form>
     </Modal>
@@ -567,14 +558,7 @@ function showSpotOnMap(spot: Spot) {
           Datum (optional – ansonsten "In Planung")
           <input v-model="editExcursionForm.date" type="date" />
         </label>
-        <fieldset v-if="spotsForPicker.length" class="spot-picker">
-          <legend>Stationen (Spots) – nach Likes sortiert</legend>
-          <label v-for="spot in spotsForPicker" :key="spot.id" class="spot-option">
-            <input type="checkbox" :value="spot.id" v-model="editExcursionForm.spot_ids" />
-            <span class="spot-option-title">{{ spotCategoryMeta(spot.category).icon }} {{ spot.title }}</span>
-            <span class="spot-option-likes">❤️ {{ spotLikeCount(spot.id) }}</span>
-          </label>
-        </fieldset>
+        <SpotOrderPicker v-if="spots.length" v-model="editExcursionForm.spot_ids" :spots="spots" :like-count="spotLikeCount" />
         <button type="submit">Speichern</button>
       </form>
     </Modal>
@@ -769,40 +753,6 @@ function showSpotOnMap(spot: Spot) {
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--color-text-muted);
-}
-
-.spot-picker {
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  padding: var(--space-2) var(--space-3);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.spot-picker legend {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
-  padding: 0 4px;
-}
-
-.spot-option {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: 0.9rem;
-  font-weight: 400;
-}
-
-.spot-option-title {
-  flex: 1;
-}
-
-.spot-option-likes {
-  font-size: 0.8rem;
-  color: var(--color-text-muted);
-  white-space: nowrap;
 }
 
 .group {
