@@ -327,6 +327,21 @@ function jumpToTrip() {
   padding: 4px 10px;
 }
 
+/* .secondary ist transparent mit --color-primary-Schrift – über einem Foto (statt dem sonst
+   einfarbigen Verlaufs-Hintergrund) oft zu wenig Kontrast, je nach Bildmotiv. Bei hinterlegtem
+   Bild deshalb ein fester halbtransparenter dunkler Chip mit weißer Schrift, unabhängig vom
+   jeweiligen Bildmotiv immer gut lesbar (gleiches Muster wie die schwebenden Bearbeiten-/
+   Löschen-Buttons auf Karten-Vorschaubildern). */
+.hero.has-image .banner-edit-btn {
+  background: rgba(20, 20, 18, 0.55);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.hero.has-image .banner-edit-btn:hover {
+  background: rgba(20, 20, 18, 0.75);
+}
+
 .hero h1 {
   color: var(--color-primary-dark);
 }
