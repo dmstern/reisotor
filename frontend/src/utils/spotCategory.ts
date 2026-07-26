@@ -13,6 +13,12 @@ const KNOWN_CATEGORIES: { label: string; icon: string; color: string }[] = [
   { label: 'Shop', icon: '🛍️', color: '#e87ba4' },
   { label: 'Museum', icon: '🏛️', color: '#7a5c3e' },
   { label: 'Aktivität', icon: '🎉', color: '#0aa3a3' },
+  { label: 'Sehenswürdigkeit', icon: '🏰', color: '#a15be0' },
+  { label: 'Strand', icon: '🏖️', color: '#1ba8c4' },
+  { label: 'Natur', icon: '🌳', color: '#2f9e44' },
+  { label: 'Aussichtspunkt', icon: '🌄', color: '#e0763b' },
+  { label: 'Wanderweg', icon: '🥾', color: '#6b7a3a' },
+  { label: 'Nachtleben', icon: '🍸', color: '#7a3ea1' },
 ];
 
 const OTHER_META: CategoryMeta = { icon: '📍', color: '#8a8a86' };

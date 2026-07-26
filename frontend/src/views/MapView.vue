@@ -3,7 +3,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { api } from '../api/client';
-import type { Accommodation, Spot, TravelItem } from '../api/types';
+import type { Accommodation, Excursion, Spot, TravelItem } from '../api/types';
 import { useTripStore } from '../stores/trip';
 import { useDrawersStore } from '../stores/drawers';
 import { useExcursionsStore } from '../stores/excursions';
@@ -142,6 +142,20 @@ const points = computed<MapPoint[]>(() => {
 // Für den Urlaubsfokus-Button: alle Punkte außer den Zuhause-Seiten von Anreise/Abreise.
 const vacationPoints = computed(() => points.value.filter((p) => !p.homeSide));
 
+// "Auf Karte anzeigen" aus einer Ausflug-Karte (ExcursionCard.vue) fokussiert exklusiv auf dessen
+// Stationen – alle anderen Spots werden ausgeblendet, Unterkunft/Reise bleiben sichtbar (zur
+// Orientierung), siehe visiblePoints.
+const focusedExcursion = computed<Excursion | null>(() => {
+  if (drawers.mapFocusExcursionId == null) return null;
+  return excursionsStore.excursions.find((e) => e.id === drawers.mapFocusExcursionId) ?? null;
+});
+
+const visiblePoints = computed(() => {
+  const excursion = focusedExcursion.value;
+  if (!excursion) return points.value;
+  return points.value.filter((p) => p.origin !== 'spot' || excursion.spot_ids.includes(Number(p.key.slice('spot-'.length))));
+});
+
 async function loadAll() {
   const tripId = tripStore.currentTripId;
   if (tripId == null) return;
@@ -184,6 +198,7 @@ function googleMapsHref(point: MapPoint) {
 // nachdem man vorher auf einen einzelnen Punkt fokussiert hatte (openMapAt) oder sich verzoomt hat.
 function fitAll() {
   if (!map) return;
+  drawers.mapFocusExcursionId = null;
   const latLngs = points.value.map((p): L.LatLngExpression => [p.lat, p.lng]);
   if (latLngs.length > 1) {
     map.fitBounds(L.latLngBounds(latLngs), { padding: [32, 32] });
@@ -197,6 +212,7 @@ function fitAll() {
 // (vacationPoints), damit man im Urlaub direkt den näheren, relevanten Kartenausschnitt bekommt.
 function fitVacation() {
   if (!map) return;
+  drawers.mapFocusExcursionId = null;
   const latLngs = vacationPoints.value.map((p): L.LatLngExpression => [p.lat, p.lng]);
   if (latLngs.length > 1) {
     map.fitBounds(L.latLngBounds(latLngs), { padding: [32, 32] });
@@ -212,7 +228,30 @@ const accommodationPoints = computed(() => points.value.filter((p) => p.origin =
 // (z. B. Roadtrip), um schnell zwischen ihnen zu vergleichen statt Spots/Reise mit anzuzeigen.
 function fitAccommodations() {
   if (!map) return;
+  drawers.mapFocusExcursionId = null;
   const latLngs = accommodationPoints.value.map((p): L.LatLngExpression => [p.lat, p.lng]);
+  if (latLngs.length > 1) {
+    map.fitBounds(L.latLngBounds(latLngs), { padding: [32, 32] });
+  } else if (latLngs.length === 1) {
+    map.setView(latLngs[0], 13);
+  }
+  selectedPoint.value = null;
+}
+
+// Alle Spots, die (mindestens) einem Ausflug als Station zugeordnet sind – für den Ausflüge-Fokus-
+// Button unten. Anders als der einzelne Ausflug-Fokus (drawers.mapFocusExcursionId) bezieht sich
+// dieser Button auf ALLE Ausflüge gleichzeitig, blendet also nichts aus, sondern zoomt nur.
+const excursionSpotIds = computed(() => new Set(excursionsStore.excursions.flatMap((e) => e.spot_ids)));
+const excursionPoints = computed(() =>
+  points.value.filter((p) => p.origin === 'spot' && excursionSpotIds.value.has(Number(p.key.slice('spot-'.length)))),
+);
+
+// Zoomt/zentriert nur auf die Spots, die irgendeinem Ausflug zugeordnet sind – praktisch, um sich
+// schnell einen Überblick über alle geplanten Ausflugsziele zu verschaffen.
+function fitExcursions() {
+  if (!map) return;
+  drawers.mapFocusExcursionId = null;
+  const latLngs = excursionPoints.value.map((p): L.LatLngExpression => [p.lat, p.lng]);
   if (latLngs.length > 1) {
     map.fitBounds(L.latLngBounds(latLngs), { padding: [32, 32] });
   } else if (latLngs.length === 1) {
@@ -226,7 +265,7 @@ function renderMarkers() {
   markersLayer.clearLayers();
 
   const latLngs: L.LatLngExpression[] = [];
-  for (const point of points.value) {
+  for (const point of visiblePoints.value) {
     const latlng: L.LatLngExpression = [point.lat, point.lng];
     latLngs.push(latlng);
     L.marker(latlng, { icon: iconFor(point) })
@@ -234,11 +273,26 @@ function renderMarkers() {
       .on('click', () => selectPoint(point));
   }
 
+  // Ausflug-Fokus hat Vorrang vor mapFocusKey (schließen sich laut drawers-Store ohnehin
+  // gegenseitig aus) – zoomt gezielt auf die Stationen des Ausflugs statt auf alle sichtbaren
+  // Punkte (die z. B. auch Unterkunft/Reise zur Orientierung enthalten können).
+  const excursion = focusedExcursion.value;
+  const excursionLatLngs: L.LatLngExpression[] = excursion
+    ? visiblePoints.value.filter((p) => p.origin === 'spot').map((p): L.LatLngExpression => [p.lat, p.lng])
+    : [];
+
   // "Auf Karte anzeigen" aus Unterkunft/Reise/Spots öffnet die Schublade und setzt
   // drawers.mapFocusKey – hier zentrieren/hervorheben wir dann direkt auf den Punkt.
   const focusPoint = drawers.mapFocusKey ? points.value.find((p) => p.key === drawers.mapFocusKey) : null;
 
-  if (focusPoint) {
+  if (excursion) {
+    if (excursionLatLngs.length > 1) {
+      map.fitBounds(L.latLngBounds(excursionLatLngs), { padding: [32, 32] });
+    } else if (excursionLatLngs.length === 1) {
+      map.setView(excursionLatLngs[0], 14);
+    }
+    selectedPoint.value = null;
+  } else if (focusPoint) {
     map.setView([focusPoint.lat, focusPoint.lng], 15);
     selectPoint(focusPoint);
   } else if (latLngs.length > 1) {
@@ -290,7 +344,9 @@ function renderRoutes() {
     }
   }
 
-  for (const excursion of excursionsStore.excursions) {
+  // Im Ausflug-Fokus nur dessen eigene Route zeichnen, nicht die aller anderen Ausflüge.
+  const excursionsToDraw = focusedExcursion.value ? [focusedExcursion.value] : excursionsStore.excursions;
+  for (const excursion of excursionsToDraw) {
     const coords: L.LatLngExpression[] = [];
     for (const spotId of excursion.spot_ids) {
       const spot = spots.value.find((s) => s.id === spotId);
@@ -380,6 +436,17 @@ watch(
   () => renderMarkers(),
 );
 
+// Ausflug-Fokus (Button "Auf Karte anzeigen" in ExcursionCard.vue) blendet andere Spots aus und
+// zeichnet nur dessen eigene Route – beides betrifft Marker UND Routen, daher hier beide neu
+// rendern statt nur renderMarkers() wie beim einfachen Punkt-Fokus oben.
+watch(
+  () => drawers.mapFocusExcursionId,
+  () => {
+    renderMarkers();
+    renderRoutes();
+  },
+);
+
 // Ausflüge werden im excursions-Store gehalten (u. a. für Drag&Drop in die Kalender-Schublade) und
 // erst asynchron geladen – ändert sich die Liste (z. B. Spot-Zuordnung bearbeitet), müssen die
 // Ausflugs-Routen neu gezeichnet werden.
@@ -439,6 +506,22 @@ watch(
       >
         🛏️
       </button>
+      <button
+        type="button"
+        class="fit-btn excursions-btn"
+        title="Nur Ausflugsziele fokussieren"
+        aria-label="Nur Ausflugsziele fokussieren"
+        :disabled="!excursionPoints.length"
+        @click="fitExcursions"
+      >
+        🎒
+      </button>
+      <div class="focus-banner" v-if="focusedExcursion">
+        <span>🎒 {{ focusedExcursion.title }}</span>
+        <button type="button" class="card-action-btn" @click="drawers.mapFocusExcursionId = null">
+          ✕ Fokus verlassen
+        </button>
+      </div>
     </div>
 
     <div class="card info-panel" v-if="selectedPoint">
@@ -557,6 +640,34 @@ watch(
 
 .accommodation-btn {
   top: 90px;
+}
+
+.excursions-btn {
+  top: 130px;
+}
+
+.focus-banner {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--color-surface);
+  border: 2px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-primary-dark);
+  max-width: calc(100% - 60px);
+}
+
+.focus-banner span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Die OpenStreetMap-Kacheln selbst kennen keinen Dark Mode – ein Farb-Invert nur auf der

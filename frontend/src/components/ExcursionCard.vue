@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import type { Excursion, Spot } from '../api/types';
 import { renderRichText } from '../utils/richText';
 import { spotCategoryMeta } from '../utils/spotCategory';
@@ -27,7 +27,10 @@ const emit = defineEmits<{
     e: 'drop-derived-location',
     location: { key: string; title: string; icon: string; category: string; maps_link: string | null; lat: number; lng: number },
   ): void;
+  (e: 'show-on-map'): void;
 }>();
+
+const hasMappedStations = computed(() => props.stations.some((s) => s.lat != null && s.lng != null));
 
 const showComments = ref(false);
 
@@ -100,6 +103,9 @@ function onSpotDrop(event: DragEvent) {
         <span v-for="spot in stations" :key="spot.id" class="station-chip">
           {{ spotCategoryMeta(spot.category).icon }} {{ spot.title }}
         </span>
+      </div>
+      <div class="links" v-if="hasMappedStations">
+        <button type="button" class="card-action-btn" @click="emit('show-on-map')">🗺️ Auf Karte anzeigen</button>
       </div>
       <span class="drag-hint">↕ auf Kalender-Schublade ziehen zum Einplanen</span>
       <div class="social-row">
@@ -242,6 +248,13 @@ function onSpotDrop(event: DragEvent) {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: 4px;
 }
 
 .station-chip {

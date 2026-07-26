@@ -501,6 +501,7 @@ function showSpotOnMap(spot: Spot) {
           @remove-comment="removeComment"
           @drop-spot="(spotId) => addSpotToExcursion(excursion.id, spotId)"
           @drop-derived-location="(loc) => addDerivedLocationToExcursion(excursion.id, loc as DerivedLocation)"
+          @show-on-map="drawers.openMapForExcursion(excursion.id)"
         />
       </TransitionGroup>
       <p v-else class="empty dropzone-hint">
@@ -536,6 +537,7 @@ function showSpotOnMap(spot: Spot) {
           @remove-comment="removeComment"
           @drop-spot="(spotId) => addSpotToExcursion(excursion.id, spotId)"
           @drop-derived-location="(loc) => addDerivedLocationToExcursion(excursion.id, loc as DerivedLocation)"
+          @show-on-map="drawers.openMapForExcursion(excursion.id)"
         />
       </TransitionGroup>
     </section>

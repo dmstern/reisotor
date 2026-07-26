@@ -37,6 +37,10 @@ export const useDrawersStore = defineStore('drawers', () => {
   const calendarOpen = ref(loadOpen(CALENDAR_OPEN_KEY));
   const mapOpen = ref(loadOpen(MAP_OPEN_KEY));
   const mapFocusKey = ref<string | null>(null);
+  // Ausflug, dessen Stationen gerade isoliert auf der Karte gezeigt werden (alle anderen Spots
+  // ausgeblendet, siehe MapView.vue) – exklusiv zu mapFocusKey, daher setzt jede der beiden
+  // Focus-Arten die jeweils andere zurück.
+  const mapFocusExcursionId = ref<number | null>(null);
   const calendarWidth = ref(loadWidth(CALENDAR_WIDTH_KEY));
   const mapWidth = ref(loadWidth(MAP_WIDTH_KEY));
   // Welche Schublade (falls überhaupt) gerade als Vollbild-Overlay maximiert ist (Drawer.vue).
@@ -69,6 +73,13 @@ export const useDrawersStore = defineStore('drawers', () => {
 
   function openMapAt(key: string) {
     mapFocusKey.value = key;
+    mapFocusExcursionId.value = null;
+    mapOpen.value = true;
+  }
+
+  function openMapForExcursion(excursionId: number) {
+    mapFocusExcursionId.value = excursionId;
+    mapFocusKey.value = null;
     mapOpen.value = true;
   }
 
@@ -91,6 +102,7 @@ export const useDrawersStore = defineStore('drawers', () => {
     calendarOpen,
     mapOpen,
     mapFocusKey,
+    mapFocusExcursionId,
     calendarWidth,
     mapWidth,
     maximizedSide,
@@ -98,6 +110,7 @@ export const useDrawersStore = defineStore('drawers', () => {
     toggleCalendar,
     toggleMap,
     openMapAt,
+    openMapForExcursion,
     maximize,
     restoreMaximized,
     touchLocations,
