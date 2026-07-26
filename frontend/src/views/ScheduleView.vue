@@ -51,6 +51,12 @@ async function loadAll() {
 onMounted(async () => {
   await loadAll();
   selectedDate.value = new Date().toISOString().slice(0, 10);
+  // Beim ersten Laden direkt zur Woche mit dem heutigen Tag blättern statt bei der (ggf. Monate
+  // zurückliegenden) ersten Woche zu starten; liegt heute außerhalb des Kalenderbereichs (z. B.
+  // Urlaub komplett in der Vergangenheit/Zukunft ohne nahe ToDo-Fälligkeiten), zum Urlaubsstart.
+  if (!goToDate(new Date().toISOString().slice(0, 10)) && trip.value) {
+    goToDate(trip.value.start_date);
+  }
   loading.value = false;
 });
 
@@ -123,6 +129,54 @@ const weeks = computed(() => {
   }
   return result;
 });
+
+// Bei langen Zeitspannen (z. B. ein ToDo mit Fälligkeitsdatum Monate vor dem Urlaub) würde die
+// Schublade sonst eine sehr lange Liste an Wochen rendern – stattdessen wird nur ein Fenster von
+// WEEKS_PER_PAGE Wochen angezeigt, durch das man blättern kann.
+const WEEKS_PER_PAGE = 6;
+const pageOffset = ref(0);
+
+const visibleWeeks = computed(() => weeks.value.slice(pageOffset.value, pageOffset.value + WEEKS_PER_PAGE));
+const canGoPrev = computed(() => pageOffset.value > 0);
+const canGoNext = computed(() => pageOffset.value + WEEKS_PER_PAGE < weeks.value.length);
+
+const visibleRangeLabel = computed(() => {
+  if (!visibleWeeks.value.length) return '';
+  const first = visibleWeeks.value[0][0]?.date;
+  const lastWeek = visibleWeeks.value[visibleWeeks.value.length - 1];
+  const last = lastWeek[lastWeek.length - 1]?.date;
+  if (!first || !last) return '';
+  const fmt = (d: string) => new Date(d).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+  return `${fmt(first)} – ${fmt(last)}`;
+});
+
+function clampOffset(idx: number) {
+  return Math.min(Math.max(0, weeks.value.length - WEEKS_PER_PAGE), Math.max(0, idx));
+}
+
+function prevPage() {
+  pageOffset.value = clampOffset(pageOffset.value - WEEKS_PER_PAGE);
+}
+function nextPage() {
+  pageOffset.value = clampOffset(pageOffset.value + WEEKS_PER_PAGE);
+}
+
+// Springt so, dass die Woche mit dem übergebenen Datum als erste Woche der Seite sichtbar wird.
+// Gibt zurück, ob das Datum im aktuellen Kalenderbereich gefunden wurde.
+function goToDate(dateIso: string): boolean {
+  const idx = weeks.value.findIndex((week) => week.some((day) => day.date === dateIso));
+  if (idx === -1) return false;
+  pageOffset.value = clampOffset(idx);
+  return true;
+}
+
+function jumpToToday() {
+  goToDate(new Date().toISOString().slice(0, 10));
+}
+
+function goToTripDates() {
+  if (trip.value) goToDate(trip.value.start_date);
+}
 
 const dayEntries = computed(() => (selectedDate.value ? entriesForDate(selectedDate.value) : []));
 
@@ -228,10 +282,26 @@ function formatDay(date: string) {
   <div class="calendar-drawer-content" v-if="!loading">
     <h2>Kalender</h2>
 
+    <div class="calendar-toolbar">
+      <div class="pager">
+        <button type="button" class="secondary page-btn" :disabled="!canGoPrev" @click="prevPage" aria-label="Vorherige Wochen">
+          ‹
+        </button>
+        <span class="range-label">{{ visibleRangeLabel }}</span>
+        <button type="button" class="secondary page-btn" :disabled="!canGoNext" @click="nextPage" aria-label="Nächste Wochen">
+          ›
+        </button>
+      </div>
+      <div class="jump-row">
+        <button type="button" class="card-action-btn" @click="jumpToToday">📍 Heute</button>
+        <button type="button" class="card-action-btn" v-if="trip" @click="goToTripDates">🏖️ Urlaub</button>
+      </div>
+    </div>
+
     <div class="card weeks">
       <CalendarWeek
-        v-for="(week, idx) in weeks"
-        :key="idx"
+        v-for="week in visibleWeeks"
+        :key="week[0]?.date"
         :days="week"
         :selected-date="selectedDate"
         @select="selectDay"
@@ -242,7 +312,7 @@ function formatDay(date: string) {
     <div class="card day-detail" v-if="selectedDate">
       <div class="day-detail-head">
         <h3>{{ formatDay(selectedDate) }}</h3>
-        <button type="button" class="secondary" @click="showAddForm = true">+ Neu</button>
+        <button type="button" @click="showAddForm = true">+ Neu</button>
       </div>
 
       <p v-for="acc in dayAccommodations" :key="acc.id" class="acc-note">🛏️ Unterkunft: {{ acc.name }}</p>
@@ -267,16 +337,16 @@ function formatDay(date: string) {
             <!-- Architekturregel: Fremdobjekte (Urlaub-Stammdaten, ToDos, Ausflüge, Reise-Einträge)
                  sind hier nur lesend/verknüpfend darstellbar – Bearbeitung passiert in der Ursprungssicht. -->
             <template v-if="entry.kind === 'trip'">
-              <button type="button" class="secondary jump-btn" @click="jumpToTrip">Zum Urlaub</button>
+              <button type="button" class="card-action-btn" @click="jumpToTrip">Zum Urlaub</button>
             </template>
             <template v-else-if="entry.kind === 'todo'">
-              <router-link to="/todo" class="secondary jump-btn">Zum ToDo</router-link>
+              <router-link to="/todo" class="card-action-btn">Zum ToDo</router-link>
             </template>
             <template v-else-if="entry.kind === 'travel'">
-              <router-link to="/travel" class="secondary jump-btn">Zur Reise</router-link>
+              <router-link to="/travel" class="card-action-btn">Zur Reise</router-link>
             </template>
             <template v-else-if="entry.kind === 'excursion'">
-              <router-link to="/excursions" class="secondary jump-btn">Zum Ausflug</router-link>
+              <router-link to="/excursions" class="card-action-btn">Zum Ausflug</router-link>
               <button
                 type="button"
                 class="secondary unplan-btn"
@@ -349,11 +419,55 @@ function formatDay(date: string) {
   padding: var(--space-2);
 }
 
+.calendar-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+.page-btn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  font-size: 1.1rem;
+  line-height: 1;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.page-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.range-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  min-width: 100px;
+  text-align: center;
+}
+
+.jump-row {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
 .day-detail-head {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: var(--space-2);
+  margin-bottom: var(--space-3);
 }
 
 .day-detail h3 {
@@ -427,13 +541,6 @@ function formatDay(date: string) {
   gap: 4px;
   flex-shrink: 0;
   align-items: center;
-}
-
-.jump-btn {
-  padding: 4px 10px;
-  font-size: 0.8rem;
-  white-space: nowrap;
-  text-decoration: none;
 }
 
 .unplan-btn {
