@@ -23,6 +23,10 @@ const emit = defineEmits<{
   (e: 'submit-comment', content: string): void;
   (e: 'remove-comment', id: number): void;
   (e: 'drop-spot', spotId: number): void;
+  (
+    e: 'drop-derived-location',
+    location: { key: string; title: string; icon: string; category: string; maps_link: string | null; lat: number; lng: number },
+  ): void;
 }>();
 
 const showComments = ref(false);
@@ -38,29 +42,34 @@ function onDragStart(event: DragEvent) {
   if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
 }
 
-// Drop-Zone fürs Zuordnen: ein Spot kann direkt aus der Spots-Sicht auf diese Karte gezogen
-// werden, um ihn als Station hinzuzufügen (SpotCard.vue ist die Drag-Quelle). Zähler statt
-// Boolean, da dragenter/dragleave beim Überqueren von Kind-Elementen mehrfach feuern. Der
-// types-Check ist nötig, weil beim Ziehen eines ANDEREN Ausflugs (text/excursion-id) über diese
-// Karte hinweg sonst ebenfalls dragenter/dragleave feuern würde – Ausflüge sollen nur auf den
-// Status-Bereichen (In Planung/Geplant) landen, nicht auf einzelnen Ausflug-Karten.
+// Drop-Zone fürs Zuordnen: ein Spot ODER ein abgeleiteter Ort (Unterkunft/Reise-Start-/Zielort,
+// siehe ExcursionsView.vue) kann direkt auf diese Karte gezogen werden, um ihn als Station
+// hinzuzufügen. Zähler statt Boolean, da dragenter/dragleave beim Überqueren von Kind-Elementen
+// mehrfach feuern. Der types-Check ist nötig, weil beim Ziehen eines ANDEREN Ausflugs
+// (text/excursion-id) über diese Karte hinweg sonst ebenfalls dragenter/dragleave feuern würde –
+// Ausflüge sollen nur auf den Status-Bereichen (In Planung/Geplant) landen, nicht auf einzelnen
+// Ausflug-Karten.
 const spotDragOverCount = ref(0);
-function isSpotDrag(event: DragEvent) {
-  return !!event.dataTransfer?.types.includes('text/spot-id');
+function isStationDrag(event: DragEvent) {
+  return !!(event.dataTransfer?.types.includes('text/spot-id') || event.dataTransfer?.types.includes('text/derived-location'));
 }
 function onSpotDragEnter(event: DragEvent) {
-  if (!isSpotDrag(event)) return;
+  if (!isStationDrag(event)) return;
   spotDragOverCount.value++;
 }
 function onSpotDragLeave(event: DragEvent) {
-  if (!isSpotDrag(event)) return;
+  if (!isStationDrag(event)) return;
   spotDragOverCount.value = Math.max(0, spotDragOverCount.value - 1);
 }
 function onSpotDrop(event: DragEvent) {
   spotDragOverCount.value = 0;
-  const raw = event.dataTransfer?.getData('text/spot-id');
-  if (!raw) return;
-  emit('drop-spot', Number(raw));
+  const rawSpotId = event.dataTransfer?.getData('text/spot-id');
+  if (rawSpotId) {
+    emit('drop-spot', Number(rawSpotId));
+    return;
+  }
+  const rawLocation = event.dataTransfer?.getData('text/derived-location');
+  if (rawLocation) emit('drop-derived-location', JSON.parse(rawLocation));
 }
 </script>
 

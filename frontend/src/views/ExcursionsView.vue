@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { api } from '../api/client';
-import type { ExcursionComment, ExcursionLike, Spot, SpotComment, SpotLike, User } from '../api/types';
+import type { Accommodation, ExcursionComment, ExcursionLike, Spot, SpotComment, SpotLike, TravelItem, User } from '../api/types';
 import { useAuthStore } from '../stores/auth';
 import { useTripStore } from '../stores/trip';
 import { useExcursionsStore } from '../stores/excursions';
@@ -25,24 +25,31 @@ const comments = ref<ExcursionComment[]>([]);
 const spots = ref<Spot[]>([]);
 const spotLikes = ref<SpotLike[]>([]);
 const spotComments = ref<SpotComment[]>([]);
+const accommodations = ref<Accommodation[]>([]);
+const travelItems = ref<TravelItem[]>([]);
 const loading = ref(true);
 
 onMounted(async () => {
-  const [usersRes, likesRes, commentsRes, spotsRes, spotLikesRes, spotCommentsRes] = await Promise.all([
-    api.get<User[]>('/users'),
-    api.get<ExcursionLike[]>(`/ideas/likes?trip_id=${tripId}`),
-    api.get<ExcursionComment[]>(`/ideas/comments?trip_id=${tripId}`),
-    api.get<Spot[]>(`/spots?trip_id=${tripId}`),
-    api.get<SpotLike[]>(`/spots/likes?trip_id=${tripId}`),
-    api.get<SpotComment[]>(`/spots/comments?trip_id=${tripId}`),
-    excursionsStore.load(),
-  ]);
+  const [usersRes, likesRes, commentsRes, spotsRes, spotLikesRes, spotCommentsRes, accommodationRes, travelRes] =
+    await Promise.all([
+      api.get<User[]>('/users'),
+      api.get<ExcursionLike[]>(`/ideas/likes?trip_id=${tripId}`),
+      api.get<ExcursionComment[]>(`/ideas/comments?trip_id=${tripId}`),
+      api.get<Spot[]>(`/spots?trip_id=${tripId}`),
+      api.get<SpotLike[]>(`/spots/likes?trip_id=${tripId}`),
+      api.get<SpotComment[]>(`/spots/comments?trip_id=${tripId}`),
+      api.get<Accommodation[]>(`/accommodation?trip_id=${tripId}`),
+      api.get<TravelItem[]>(`/travel?trip_id=${tripId}`),
+      excursionsStore.load(),
+    ]);
   users.value = usersRes;
   likes.value = likesRes;
   comments.value = commentsRes;
   spots.value = spotsRes;
   spotLikes.value = spotLikesRes;
   spotComments.value = spotCommentsRes;
+  accommodations.value = accommodationRes;
+  travelItems.value = travelRes;
   loading.value = false;
 });
 
@@ -207,6 +214,81 @@ async function addSpotToExcursion(excursionId: number, spotId: number) {
     date: excursion.date ?? undefined,
     spot_ids: [...excursion.spot_ids, spotId],
   });
+}
+
+// --- Abgeleitete Orte (Unterkunft, Reise-Start-/Zielorte) ---
+// Ausklappbarer Bereich am oberen Rand der Spots-Sicht: zeigt automatisch alle Orte, die bereits
+// anderswo (Unterkunft, Reise) mit Koordinaten hinterlegt sind, damit man z. B. die Unterkunft
+// oder einen Reise-Zielort direkt per Drag&Drop einem Ausflug als Station hinzufügen kann, ohne
+// sie vorher manuell als Spot anzulegen.
+const showDerivedLocations = ref(false);
+
+interface DerivedLocation {
+  key: string;
+  title: string;
+  icon: string;
+  category: string;
+  maps_link: string | null;
+  lat: number;
+  lng: number;
+}
+
+const derivedLocations = computed<DerivedLocation[]>(() => {
+  const result: DerivedLocation[] = [];
+  for (const a of accommodations.value) {
+    if (a.lat != null && a.lng != null) {
+      result.push({ key: `accommodation-${a.id}`, title: a.name, icon: '🛏️', category: 'Unterkunft', maps_link: a.maps_link, lat: a.lat, lng: a.lng });
+    }
+  }
+  for (const t of travelItems.value) {
+    if (t.from_lat != null && t.from_lng != null) {
+      result.push({
+        key: `travel-from-${t.id}`,
+        title: `${t.title} (Abflug/Abfahrt)`,
+        icon: '🛫',
+        category: 'Reise',
+        maps_link: t.from_maps_link,
+        lat: t.from_lat,
+        lng: t.from_lng,
+      });
+    }
+    if (t.to_lat != null && t.to_lng != null) {
+      result.push({
+        key: `travel-to-${t.id}`,
+        title: `${t.title} (Ankunft)`,
+        icon: '🛬',
+        category: 'Reise',
+        maps_link: t.to_maps_link,
+        lat: t.to_lat,
+        lng: t.to_lng,
+      });
+    }
+  }
+  return result;
+});
+
+function onDerivedLocationDragStart(event: DragEvent, loc: DerivedLocation) {
+  event.dataTransfer?.setData('text/derived-location', JSON.stringify(loc));
+  if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+}
+
+// Beim Ablegen auf einer Ausflug-Karte: wiederverwenden, falls für diesen Ort (per Maps-Link)
+// schon einmal ein Spot angelegt wurde, sonst neu anlegen – so entstehen keine Duplikate, wenn
+// derselbe Ort in mehrere Ausflüge einsortiert wird.
+async function addDerivedLocationToExcursion(excursionId: number, loc: DerivedLocation) {
+  let spot = loc.maps_link ? spots.value.find((s) => s.maps_link === loc.maps_link) : undefined;
+  if (!spot) {
+    spot = await api.post<Spot>('/spots', {
+      trip_id: tripId,
+      title: loc.title,
+      category: loc.category,
+      maps_link: loc.maps_link || undefined,
+      lat: loc.lat,
+      lng: loc.lng,
+    });
+    spots.value.unshift(spot);
+  }
+  await addSpotToExcursion(excursionId, spot.id);
 }
 
 // Drop-Zone, um die Kalender-Einplanung rückgängig zu machen: ein geplanter Ausflug kann aus dem
@@ -427,6 +509,7 @@ function showSpotOnMap(spot: Spot) {
           @submit-comment="(content) => submitComment(excursion.id, content)"
           @remove-comment="removeComment"
           @drop-spot="(spotId) => addSpotToExcursion(excursion.id, spotId)"
+          @drop-derived-location="(loc) => addDerivedLocationToExcursion(excursion.id, loc as DerivedLocation)"
         />
       </TransitionGroup>
       <p v-else class="empty dropzone-hint">
@@ -461,6 +544,7 @@ function showSpotOnMap(spot: Spot) {
           @submit-comment="(content) => submitComment(excursion.id, content)"
           @remove-comment="removeComment"
           @drop-spot="(spotId) => addSpotToExcursion(excursion.id, spotId)"
+          @drop-derived-location="(loc) => addDerivedLocationToExcursion(excursion.id, loc as DerivedLocation)"
         />
       </TransitionGroup>
     </section>
@@ -496,6 +580,29 @@ function showSpotOnMap(spot: Spot) {
     </Modal>
 
     <hr class="divider" />
+
+    <div class="derived-locations" v-if="derivedLocations.length">
+      <button type="button" class="derived-toggle" @click="showDerivedLocations = !showDerivedLocations">
+        {{ showDerivedLocations ? '▾' : '▸' }} 🛏️🛫 Unterkunft &amp; Reise-Orte ({{ derivedLocations.length }})
+      </button>
+      <template v-if="showDerivedLocations">
+        <p class="hint">
+          Bereits bei Unterkunft/Reise hinterlegte Orte – ziehe einen davon auf einen Ausflug oben, um ihn dort
+          als Station hinzuzufügen.
+        </p>
+        <div class="derived-list">
+          <div
+            v-for="loc in derivedLocations"
+            :key="loc.key"
+            class="derived-chip"
+            draggable="true"
+            @dragstart="onDerivedLocationDragStart($event, loc)"
+          >
+            {{ loc.icon }} {{ loc.title }}
+          </div>
+        </div>
+      </template>
+    </div>
 
     <div class="header">
       <h2>Spots</h2>
@@ -738,6 +845,40 @@ function showSpotOnMap(spot: Spot) {
   border: none;
   border-top: 1px solid var(--color-border);
   margin: var(--space-4) 0;
+}
+
+.derived-locations {
+  margin-bottom: var(--space-3);
+}
+
+.derived-toggle {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--color-primary-dark);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.derived-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.derived-chip {
+  background: var(--color-hover);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 0.85rem;
+  cursor: grab;
+}
+
+.derived-chip:active {
+  cursor: grabbing;
 }
 
 .empty {

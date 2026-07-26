@@ -206,6 +206,21 @@ function fitVacation() {
   selectedPoint.value = null;
 }
 
+const accommodationPoints = computed(() => points.value.filter((p) => p.origin === 'accommodation'));
+
+// Zoomt/zentriert nur auf die Unterkünfte – praktisch bei mehreren Unterkünften im selben Urlaub
+// (z. B. Roadtrip), um schnell zwischen ihnen zu vergleichen statt Spots/Reise mit anzuzeigen.
+function fitAccommodations() {
+  if (!map) return;
+  const latLngs = accommodationPoints.value.map((p): L.LatLngExpression => [p.lat, p.lng]);
+  if (latLngs.length > 1) {
+    map.fitBounds(L.latLngBounds(latLngs), { padding: [32, 32] });
+  } else if (latLngs.length === 1) {
+    map.setView(latLngs[0], 13);
+  }
+  selectedPoint.value = null;
+}
+
 function renderMarkers() {
   if (!map || !markersLayer) return;
   markersLayer.clearLayers();
@@ -414,6 +429,16 @@ watch(
       >
         🏖️
       </button>
+      <button
+        type="button"
+        class="fit-btn accommodation-btn"
+        title="Nur Unterkünfte fokussieren"
+        aria-label="Nur Unterkünfte fokussieren"
+        :disabled="!accommodationPoints.length"
+        @click="fitAccommodations"
+      >
+        🛏️
+      </button>
     </div>
 
     <div class="card info-panel" v-if="selectedPoint">
@@ -528,6 +553,10 @@ watch(
 
 .vacation-btn {
   top: 50px;
+}
+
+.accommodation-btn {
+  top: 90px;
 }
 
 /* Die OpenStreetMap-Kacheln selbst kennen keinen Dark Mode – ein Farb-Invert nur auf der
