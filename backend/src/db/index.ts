@@ -221,8 +221,7 @@ CREATE TABLE IF NOT EXISTS spots (
   maps_link TEXT,
   lat REAL,
   lng REAL,
-  created_by INTEGER REFERENCES users(id),
-  discarded INTEGER NOT NULL DEFAULT 0
+  created_by INTEGER REFERENCES users(id)
 );
 
 -- Stationen eines Ausflugs: welche Spots gehören zu welchem Ausflug (Batch 13).
@@ -231,6 +230,33 @@ CREATE TABLE IF NOT EXISTS excursion_spots (
   idea_id INTEGER NOT NULL REFERENCES ideas(id) ON DELETE CASCADE,
   spot_id INTEGER NOT NULL REFERENCES spots(id) ON DELETE CASCADE,
   UNIQUE(idea_id, spot_id)
+);
+
+-- Likes/Kommentare für Spots (analog idea_likes/idea_comments): ersetzt den bisherigen
+-- Verworfen-Status – Spots werden per Like-Anzahl statt eines aktiv/verworfen-Flags sortiert.
+CREATE TABLE IF NOT EXISTS spot_likes (
+  id INTEGER PRIMARY KEY,
+  spot_id INTEGER NOT NULL REFERENCES spots(id) ON DELETE CASCADE,
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  created_at TEXT NOT NULL,
+  UNIQUE(spot_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS spot_comments (
+  id INTEGER PRIMARY KEY,
+  spot_id INTEGER NOT NULL REFERENCES spots(id) ON DELETE CASCADE,
+  author_id INTEGER NOT NULL REFERENCES users(id),
+  content TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+
+-- Persistenter Session-Store (sessionStore.ts) statt @fastify/session-Default (nur Arbeitsspeicher
+-- – laut dessen eigener Dokumentation "should not be used in a production environment"): sonst
+-- verliert jeder Nutzer seinen Login bei jedem Prozess-Neustart (Crash, Deploy, OOM auf dem Pi).
+CREATE TABLE IF NOT EXISTS sessions (
+  sid TEXT PRIMARY KEY,
+  sess TEXT NOT NULL,
+  expires INTEGER
 );
 `);
 
@@ -289,7 +315,10 @@ ensureColumn('trips', 'lat', 'REAL');
 ensureColumn('trips', 'lng', 'REAL');
 ensureColumn('budget_items', 'budget_id', 'INTEGER REFERENCES budgets(id) ON DELETE SET NULL');
 ensureColumn('shopping_items', 'period', 'TEXT');
-ensureColumn('todo_items', 'period', 'TEXT');
+// ToDo-Einträge haben (anders als Einkaufslisten-Einträge) ein Fälligkeitsdatum – der Zeitraum
+// (vor/während des Urlaubs) wird daraus + den Urlaubs-Eckdaten hergeleitet (utils/period.ts im
+// Frontend) statt manuell gepflegt zu werden, daher entfällt die Spalte hier wieder.
+dropColumnIfExists('todo_items', 'period');
 ensureColumn('ideas', 'suggested_by_user_id', 'INTEGER REFERENCES users(id)');
 ensureColumn('trips', 'image_url', 'TEXT');
 // Standort Abflug-/Ankunftsort eines Reise-Eintrags (Batch 13) – analog zum maps_link/lat/lng-
@@ -319,12 +348,14 @@ dropColumnIfExists('ideas', 'status');
 dropColumnIfExists('ideas', 'suggested_by_user_id');
 
 // Spot übernimmt die bisherige Rolle des alten "Ausflugs" (Ziel/Ort): "name" -> "title",
-// zusätzlich Bild-URL, Ersteller und Verworfen-Status. Additiv statt im CREATE TABLE, falls die
-// Tabelle (z. B. in einer bereits laufenden Dev-Instanz) schon mit dem alten Schema angelegt wurde.
+// zusätzlich Bild-URL und Ersteller. Additiv statt im CREATE TABLE, falls die Tabelle (z. B. in
+// einer bereits laufenden Dev-Instanz) schon mit dem alten Schema angelegt wurde.
 ensureColumn('spots', 'title', 'TEXT');
 ensureColumn('spots', 'image_url', 'TEXT');
 ensureColumn('spots', 'created_by', 'INTEGER REFERENCES users(id)');
-ensureColumn('spots', 'discarded', 'INTEGER NOT NULL DEFAULT 0');
+// Verworfen-Status entfällt: Spots bekommen stattdessen Likes/Kommentare (spot_likes/
+// spot_comments) und werden danach sortiert/gruppiert statt nach aktiv/verworfen.
+dropColumnIfExists('spots', 'discarded');
 if (hasColumn('spots', 'name')) {
   db.exec("UPDATE spots SET title = name WHERE title IS NULL");
   dropColumnIfExists('spots', 'name');
