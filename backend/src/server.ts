@@ -4,6 +4,7 @@ import session from '@fastify/session';
 import cors from '@fastify/cors';
 import fastifyStatic from '@fastify/static';
 import './db/index.js';
+import { SqliteSessionStore } from './sessionStore.js';
 import { uploadsDir } from './uploads.js';
 import { authRoutes } from './routes/auth.js';
 import { requireAuth } from './auth.js';
@@ -47,6 +48,12 @@ await app.register(fastifyStatic, { root: uploadsDir, prefix: '/api/uploads/' })
 await app.register(cookie);
 await app.register(session, {
   secret: sessionSecret,
+  // Ohne eigenen store hält @fastify/session Sessions nur im Arbeitsspeicher (laut eigener
+  // Dokumentation "should not be used in a production environment") – jeder Prozess-Neustart
+  // (Crash, Deploy, OOM auf dem Pi) würde sonst alle Logins killen, ohne dass das Frontend das
+  // bemerkt (siehe api/client.ts, das solche 401s jetzt abfängt und zur Login-Seite umleitet;
+  // der persistente Store hier verhindert das Problem aber schon an der Wurzel).
+  store: new SqliteSessionStore(),
   cookie: {
     secure: isProd,
     httpOnly: true,
