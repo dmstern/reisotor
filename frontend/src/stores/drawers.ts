@@ -39,6 +39,10 @@ export const useDrawersStore = defineStore('drawers', () => {
   const mapFocusKey = ref<string | null>(null);
   const calendarWidth = ref(loadWidth(CALENDAR_WIDTH_KEY));
   const mapWidth = ref(loadWidth(MAP_WIDTH_KEY));
+  // Welche Schublade (falls überhaupt) gerade als Vollbild-Overlay maximiert ist (Drawer.vue).
+  // Zentral statt lokal im Drawer, da eine maximierte Schublade die jeweils andere automatisch
+  // zuklappen muss – bewusst nicht in localStorage persistiert (flüchtiger UI-Zustand).
+  const maximizedSide = ref<'left' | 'right' | null>(null);
 
   watch(calendarOpen, (v) => localStorage.setItem(CALENDAR_OPEN_KEY, String(v)));
   watch(mapOpen, (v) => localStorage.setItem(MAP_OPEN_KEY, String(v)));
@@ -58,14 +62,32 @@ export const useDrawersStore = defineStore('drawers', () => {
     mapOpen.value = true;
   }
 
+  // Maximieren einer Schublade klappt die jeweils andere zu (nur eine Schublade kann gleichzeitig
+  // vollflächig sein) – die Kalender-Schublade liegt links, die Karten-Schublade rechts.
+  function maximize(side: 'left' | 'right') {
+    maximizedSide.value = side;
+    if (side === 'left') {
+      mapOpen.value = false;
+    } else {
+      calendarOpen.value = false;
+    }
+  }
+
+  function restoreMaximized() {
+    maximizedSide.value = null;
+  }
+
   return {
     calendarOpen,
     mapOpen,
     mapFocusKey,
     calendarWidth,
     mapWidth,
+    maximizedSide,
     toggleCalendar,
     toggleMap,
     openMapAt,
+    maximize,
+    restoreMaximized,
   };
 });

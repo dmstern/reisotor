@@ -1,28 +1,72 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-import { MAX_DRAWER_WIDTH, MIN_DRAWER_WIDTH } from '../stores/drawers';
+import { computed, nextTick, watch, ref } from 'vue';
+import { MAX_DRAWER_WIDTH, MIN_DRAWER_WIDTH, useDrawersStore } from '../stores/drawers';
 
 const props = defineProps<{ side: 'left' | 'right'; open: boolean; label: string; icon: string; width: number }>();
 const emit = defineEmits<{ (e: 'update:open', value: boolean): void; (e: 'update:width', value: number): void }>();
+
+const drawers = useDrawersStore();
+const panelEl = ref<HTMLDivElement | null>(null);
 
 function toggle() {
   emit('update:open', !props.open);
 }
 
-// Nur auf Desktop nutzbar (siehe .maximize-btn CSS) – Mobil verhält sich ohnehin bereits wie
-// "maximiert" (Panel als Vollbild-Overlay). Lokaler, nicht persistierter State: schließt sich beim
-// Zuklappen der Schublade selbst wieder, damit sie beim nächsten Öffnen nicht überraschend
-// vollflächig ist.
-const maximized = ref(false);
+// Maximieren nur auf Desktop nutzbar (siehe .maximize-btn CSS) – Mobil verhält sich ohnehin
+// bereits wie "maximiert" (Panel als Vollbild-Overlay). Zustand liegt zentral im Store statt lokal,
+// da eine maximierte Schublade die jeweils andere automatisch zuklappen und deren Lasche
+// deaktivieren muss (siehe drawers.maximize()).
+const maximized = computed(() => drawers.maximizedSide === props.side);
+const tabDisabled = computed(() => drawers.maximizedSide !== null && drawers.maximizedSide !== props.side);
 
-function toggleMaximize() {
-  maximized.value = !maximized.value;
+// Der Wechsel zwischen "normal" (sticky, Flex-Geschwister) und "maximiert" (fixed, Vollbild) lässt
+// sich nicht per reiner CSS-Transition animieren – der Sprung von sticky zu fixed ist nicht
+// interpolierbar. Stattdessen FLIP-Technik: alte Bildschirmposition/-größe vor der Änderung messen,
+// nach der Änderung erneut messen, die Differenz per (sehr wohl animierbarem) transform "rückgängig"
+// setzen und dann zur Zielgröße zurück-transitionieren – so sieht der Nutzer ein flüssiges
+// Auf-/Zuklappen statt eines harten Sprungs und versteht dadurch, was gerade passiert ist.
+async function toggleMaximize() {
+  const el = panelEl.value;
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const first = el && !reduceMotion ? el.getBoundingClientRect() : null;
+
+  if (maximized.value) {
+    drawers.restoreMaximized();
+  } else {
+    drawers.maximize(props.side);
+  }
+
+  if (!el || !first) return;
+  await nextTick();
+  const last = el.getBoundingClientRect();
+  const dx = first.left - last.left;
+  const dy = first.top - last.top;
+  const scaleX = last.width ? first.width / last.width : 1;
+  const scaleY = last.height ? first.height / last.height : 1;
+  if (!dx && !dy && scaleX === 1 && scaleY === 1) return;
+
+  el.style.transition = 'none';
+  el.style.transformOrigin = 'top left';
+  el.style.transform = `translate(${dx}px, ${dy}px) scale(${scaleX}, ${scaleY})`;
+  void el.offsetWidth; // Reflow erzwingen, damit die Startposition tatsächlich gerendert wird.
+  el.style.transition = 'transform 0.3s ease';
+  el.style.transform = 'none';
+
+  const cleanup = () => {
+    el.style.transition = '';
+    el.style.transform = '';
+    el.style.transformOrigin = '';
+    el.removeEventListener('transitionend', cleanup);
+  };
+  el.addEventListener('transitionend', cleanup);
 }
 
+// Schließt man die gerade maximierte Schublade über ihre eigene Lasche, soll sie nicht als
+// "maximiert" hängen bleiben (sonst zeigt der Store beim nächsten Öffnen wieder Vollbild an).
 watch(
   () => props.open,
   (open) => {
-    if (!open) maximized.value = false;
+    if (!open && maximized.value) drawers.restoreMaximized();
   },
 );
 
@@ -60,7 +104,7 @@ function onResizeEnd() {
 <template>
   <div class="drawer" :class="[side, { open, maximized }]" :style="{ '--drawer-width': `${width}px` }">
     <div class="drawer-backdrop" v-if="open" @click="emit('update:open', false)"></div>
-    <div class="drawer-panel">
+    <div ref="panelEl" class="drawer-panel">
       <div
         v-if="open"
         class="resize-handle"
@@ -87,6 +131,7 @@ function onResizeEnd() {
       class="drawer-tab"
       :aria-expanded="open"
       :aria-label="(open ? 'Schließen: ' : 'Öffnen: ') + label"
+      :disabled="tabDisabled"
       @click="toggle"
     >
       <span class="tab-icon">{{ icon }}</span>
@@ -124,6 +169,17 @@ function onResizeEnd() {
   width: 46px;
   min-height: 84px;
   color: var(--color-primary-dark);
+}
+
+.drawer-tab:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.drawer-tab:disabled:hover {
+  width: 32px;
+  min-height: 72px;
+  color: var(--color-text-muted);
 }
 
 .drawer.left .drawer-tab {
@@ -276,6 +332,10 @@ function onResizeEnd() {
     transform: scale(1.4);
   }
 
+  .drawer-tab:disabled:hover {
+    transform: none;
+  }
+
   .drawer.left .drawer-tab:hover {
     transform-origin: left center;
   }
@@ -331,6 +391,10 @@ function onResizeEnd() {
     display: flex;
     position: absolute;
     top: 8px;
+    /* Bei beiden Schubladen rechts im Panel: bei der linken ist das die vom Hauptbereich
+       abgewandte Seite (frei von Inhalt), bei der rechten vermeidet das eine Überlagerung der
+       (links beginnenden) Überschrift des Schubladen-Inhalts (z. B. "Karte"-Titel). */
+    right: 8px;
     z-index: 14;
     width: 28px;
     height: 28px;
@@ -351,18 +415,12 @@ function onResizeEnd() {
     color: var(--color-primary-dark);
   }
 
-  .drawer.left .maximize-btn {
-    right: 8px;
-  }
-
-  .drawer.right .maximize-btn {
-    left: 8px;
-  }
-
   /* Maximiert: Panel verlässt den Flex-Verbund und legt sich als Vollbild-Overlay über den
      Hauptbereich (ähnlich der mobilen Darstellung) – lässt aber oben/unten Platz für Header
      und NavBar frei (--navbar-offset/--navbar-bottom-offset, NavBar.vue), die auf Desktop im
-     Gegensatz zu Mobil stets sichtbar bleiben sollen. */
+     Gegensatz zu Mobil stets sichtbar bleiben sollen. Höherer z-index als Tabs (13) und Header/
+     NavBar (11/10), damit die (bereits automatisch zugeklappte, deaktivierte) andere Lasche nicht
+     mehr sichtbar durchscheint. */
   .drawer.maximized .drawer-panel {
     position: fixed;
     top: calc(56px + var(--navbar-offset, 0px));
@@ -373,6 +431,7 @@ function onResizeEnd() {
     max-height: none;
     transform: none;
     border-radius: 0;
+    z-index: 16;
   }
 
   .drawer.maximized .resize-handle {
