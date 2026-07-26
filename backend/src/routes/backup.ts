@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { db } from '../db/index.js';
+import { resolveLatLng, tilePreviewUrl } from '../utils/mapsLink.js';
 
 const TABLES = [
   'users',
@@ -44,6 +45,41 @@ function isValidPayload(body: unknown): body is BackupPayload {
   return TABLES.every((table) => Array.isArray((data as Record<string, unknown>)[table]));
 }
 
+/** Löst Google/Apple-Maps-Kurzlinks für importierte Zeilen auf, die zwar einen maps_link, aber
+ *  (noch) keine Koordinaten haben – z. B. ein Backup aus einer älteren App-Version, in der die
+ *  Auflösung noch nicht existierte, oder eines, das (wie beim regulären Anlegen über die API)
+ *  ohne bereits aufgelöste Koordinaten exportiert wurde. Läuft VOR der eigentlichen (synchronen)
+ *  Import-Transaktion, da resolveLatLng Netzwerkzugriffe macht. Zeilen ohne maps_link oder mit
+ *  bereits gesetzten Koordinaten bleiben unangetastet. */
+async function resolveMissingCoordinates(data: BackupPayload['data']) {
+  async function resolveRow(row: SqlRow, linkKey: string, latKey: string, lngKey: string) {
+    const link = row[linkKey];
+    if (typeof link !== 'string' || !link) return;
+    if (row[latKey] != null && row[lngKey] != null) return;
+    const resolved = await resolveLatLng(link);
+    row[latKey] = resolved?.lat ?? null;
+    row[lngKey] = resolved?.lng ?? null;
+  }
+
+  await Promise.all(data.spots.map((row) => resolveRow(row, 'maps_link', 'lat', 'lng')));
+  // Wie beim regulären Anlegen (routes/spots.ts): kein eigenes Bild, aber jetzt bekannter
+  // Standort -> automatisches Kartenausschnitt-Vorschaubild statt leerem Platzhalter.
+  for (const row of data.spots) {
+    if (!row.image_url && row.lat != null && row.lng != null) {
+      row.image_url = tilePreviewUrl(row.lat as number, row.lng as number);
+    }
+  }
+
+  await Promise.all(data.accommodation.map((row) => resolveRow(row, 'maps_link', 'lat', 'lng')));
+  await Promise.all(data.schedule_items.map((row) => resolveRow(row, 'maps_link', 'lat', 'lng')));
+  await Promise.all(
+    data.travel_items.map(async (row) => {
+      await resolveRow(row, 'from_maps_link', 'from_lat', 'from_lng');
+      await resolveRow(row, 'to_maps_link', 'to_lat', 'to_lng');
+    }),
+  );
+}
+
 export const backupRoutes: FastifyPluginAsync = async (app) => {
   app.get('/backup/export', async (_req, reply) => {
     const data = {} as BackupPayload['data'];
@@ -69,6 +105,7 @@ export const backupRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(400).send({ error: 'Ungültige oder unvollständige Backup-Datei' });
     }
     const payload = req.body;
+    await resolveMissingCoordinates(payload.data);
 
     const counts: Record<string, number> = {};
 

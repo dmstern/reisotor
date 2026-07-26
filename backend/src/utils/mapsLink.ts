@@ -7,8 +7,13 @@ export interface LatLng {
 // über ein Shared-Package geteilt, da Frontend/Backend hier getrennte Build-Pipelines haben.
 // Deckt sowohl Google-Maps- als auch Apple-Maps-Linkformate ab.
 const PATTERNS: RegExp[] = [
-  /@(-?\d+\.\d+),(-?\d+\.\d+)/,
+  // !3d/!4d zuerst: kodiert die exakte Position des Pins/Orts. Google-Maps-URLs (v. a. die nach
+  // Kurzlink-Redirect aufgelösten) enthalten oft ZUSÄTZLICH ein führendes "@lat,lng,zoom" – das ist
+  // aber nur der Kartenausschnitt der (oft weit herausgezoomten) Zwischenseite, nicht der Ort
+  // selbst. Bei falscher Reihenfolge landen dadurch viele unterschiedliche Orte fälschlich auf
+  // demselben groben Stadt-/Regionsmittelpunkt statt auf ihrer echten Position.
   /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/,
+  /@(-?\d+\.\d+),(-?\d+\.\d+)/,
   /coordinate=(-?\d+\.\d+),\s*(-?\d+\.\d+)/, // Apple Maps: ?coordinate=48.2082,16.3738
   /[?&]ll=(-?\d+\.\d+),(-?\d+\.\d+)/,
   /[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/,
