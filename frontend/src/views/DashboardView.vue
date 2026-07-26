@@ -315,7 +315,13 @@ function jumpToTrip() {
 }
 
 .hero.has-image h1,
+.hero.has-image p,
 .hero.has-image .countdown {
+  /* Die globale p { color: var(--color-text-muted) }-Regel (style.css) setzt die Farbe direkt auf
+     jedes <p> selbst – ein per Vererbung von .hero.has-image kommendes color:#fff greift dadurch
+     NICHT (eine eigene Deklaration am Element schlägt Vererbung immer, unabhängig von der
+     Spezifität des Vorfahren). Ort- und Datumszeile (reine <p> ohne eigene Klasse) waren deshalb
+     bei hinterlegtem Bild weiterhin kontrastarm grau statt weiß. */
   color: #fff;
 }
 
