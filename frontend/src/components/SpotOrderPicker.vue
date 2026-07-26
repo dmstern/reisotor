@@ -1,10 +1,24 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import type { Spot } from '../api/types';
+import type { DerivedLocation } from '../utils/derivedLocation';
 import { spotCategoryMeta } from '../utils/spotCategory';
 
-const props = defineProps<{ modelValue: number[]; spots: Spot[]; likeCount: (spotId: number) => number }>();
-const emit = defineEmits<{ (e: 'update:modelValue', value: number[]): void }>();
+const props = withDefaults(
+  defineProps<{
+    modelValue: number[];
+    spots: Spot[];
+    likeCount: (spotId: number) => number;
+    /** Unterkunft-/Reise-Orte, die noch kein eigener Spot sind (siehe ExcursionsView.vue) – wählbar
+     *  wie ein Spot, wird beim Anhaken erst zu einem echten Spot aufgelöst (pick-derived-location). */
+    derivedLocations?: DerivedLocation[];
+  }>(),
+  { derivedLocations: () => [] },
+);
+const emit = defineEmits<{
+  (e: 'update:modelValue', value: number[]): void;
+  (e: 'pick-derived-location', location: DerivedLocation): void;
+}>();
 
 // Schreibbarer Computed statt einzelner add/remove-Emits: die Checkboxen der "weitere Spots"-Liste
 // nutzen dadurch dasselbe v-model-Array-Muster wie vorher, ohne dass die Elternkomponente eigene
@@ -25,6 +39,13 @@ const remainingSpots = computed(() =>
   [...props.spots]
     .filter((s) => !props.modelValue.includes(s.id))
     .sort((a, b) => props.likeCount(b.id) - props.likeCount(a.id) || a.title.localeCompare(b.title)),
+);
+
+// Ein abgeleiteter Ort "verschwindet" aus dieser Liste, sobald der daraus erzeugte Spot bereits
+// eingeplant ist (dedupliziert über den Maps-Link) – sonst könnte man scheinbar denselben Ort ein
+// zweites Mal hinzufügen, obwohl er schon in der Ausflugsreihenfolge steht.
+const availableDerivedLocations = computed(() =>
+  props.derivedLocations.filter((loc) => !plannedSpots.value.some((s) => s.maps_link === loc.maps_link)),
 );
 
 function removeSpot(id: number) {
@@ -112,6 +133,20 @@ function onDragEnd() {
         <span class="spot-option-title">{{ spotCategoryMeta(spot.category).icon }} {{ spot.title }}</span>
         <span class="spot-option-likes">❤️ {{ likeCount(spot.id) }}</span>
       </label>
+    </fieldset>
+
+    <fieldset v-if="availableDerivedLocations.length" class="spot-picker">
+      <legend>🛏️🛫 Unterkunft &amp; Reise-Orte</legend>
+      <button
+        v-for="loc in availableDerivedLocations"
+        :key="loc.key"
+        type="button"
+        class="derived-option"
+        @click="emit('pick-derived-location', loc)"
+      >
+        <span class="spot-option-title">{{ loc.icon }} {{ loc.title }}</span>
+        <span class="derived-add" aria-hidden="true">+</span>
+      </button>
     </fieldset>
   </div>
 </template>
@@ -224,5 +259,29 @@ function onDragEnd() {
   font-size: 0.8rem;
   color: var(--color-text-muted);
   white-space: nowrap;
+}
+
+.derived-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.9rem;
+  background: none;
+  border: none;
+  padding: 4px 2px;
+  cursor: pointer;
+  color: var(--color-text);
+  width: 100%;
+  text-align: left;
+}
+
+.derived-option:hover {
+  color: var(--color-primary-dark);
+}
+
+.derived-add {
+  color: var(--color-primary);
+  font-weight: 700;
+  flex-shrink: 0;
 }
 </style>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import type { Excursion, Spot } from '../api/types';
+import type { DerivedLocation } from '../utils/derivedLocation';
 import { renderRichText } from '../utils/richText';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import EditButton from './EditButton.vue';
@@ -23,10 +24,7 @@ const emit = defineEmits<{
   (e: 'submit-comment', content: string): void;
   (e: 'remove-comment', id: number): void;
   (e: 'drop-spot', spotId: number): void;
-  (
-    e: 'drop-derived-location',
-    location: { key: string; title: string; icon: string; category: string; maps_link: string | null; lat: number; lng: number },
-  ): void;
+  (e: 'drop-derived-location', location: DerivedLocation): void;
   (e: 'show-on-map'): void;
 }>();
 

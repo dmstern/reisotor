@@ -13,6 +13,7 @@ import Modal from '../components/Modal.vue';
 import Combobox from '../components/Combobox.vue';
 import { parseLatLngFromMapsLink, tilePreviewUrl } from '../utils/googleMaps';
 import { spotCategoryMeta, SPOT_CATEGORY_SUGGESTIONS } from '../utils/spotCategory';
+import type { DerivedLocation } from '../utils/derivedLocation';
 
 const auth = useAuthStore();
 const tripStore = useTripStore();
@@ -224,16 +225,6 @@ async function addSpotToExcursion(excursionId: number, spotId: number) {
 // sie vorher manuell als Spot anzulegen.
 const showDerivedLocations = ref(false);
 
-interface DerivedLocation {
-  key: string;
-  title: string;
-  icon: string;
-  category: string;
-  maps_link: string | null;
-  lat: number;
-  lng: number;
-}
-
 const derivedLocations = computed<DerivedLocation[]>(() => {
   const result: DerivedLocation[] = [];
   for (const a of accommodations.value) {
@@ -273,10 +264,12 @@ function onDerivedLocationDragStart(event: DragEvent, loc: DerivedLocation) {
   if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
 }
 
-// Beim Ablegen auf einer Ausflug-Karte: wiederverwenden, falls für diesen Ort (per Maps-Link)
-// schon einmal ein Spot angelegt wurde, sonst neu anlegen – so entstehen keine Duplikate, wenn
-// derselbe Ort in mehrere Ausflüge einsortiert wird.
-async function addDerivedLocationToExcursion(excursionId: number, loc: DerivedLocation) {
+// Wiederverwenden, falls für diesen Ort (per Maps-Link) schon einmal ein Spot angelegt wurde,
+// sonst neu anlegen – so entstehen keine Duplikate, wenn derselbe Ort in mehrere Ausflüge
+// einsortiert wird. Von zwei Stellen genutzt: direktes Ablegen auf einer Ausflug-Karte
+// (addDerivedLocationToExcursion, sofort persistiert) UND Auswahl im Anlege-/Bearbeiten-Dialog
+// (pickDerivedLocationForForm, landet erstmal nur im lokalen Formular).
+async function resolveDerivedLocationSpot(loc: DerivedLocation): Promise<Spot> {
   let spot = loc.maps_link ? spots.value.find((s) => s.maps_link === loc.maps_link) : undefined;
   if (!spot) {
     spot = await api.post<Spot>('/spots', {
@@ -289,7 +282,28 @@ async function addDerivedLocationToExcursion(excursionId: number, loc: DerivedLo
     });
     spots.value.unshift(spot);
   }
+  return spot;
+}
+
+// Beim Ablegen auf einer Ausflug-Karte (Drag&Drop außerhalb des Dialogs): sofort speichern.
+async function addDerivedLocationToExcursion(excursionId: number, loc: DerivedLocation) {
+  const spot = await resolveDerivedLocationSpot(loc);
   await addSpotToExcursion(excursionId, spot.id);
+}
+
+// Auswahl im Anlege-/Bearbeiten-Dialog (SpotOrderPicker): der Spot wird zwar sofort angelegt/
+// wiederverwendet (dedupliziert über den Maps-Link), die Ausflug-Zuordnung selbst bleibt aber wie
+// bei jedem anderen Spot-Häkchen lokal im Formular, bis "Speichern" gedrückt wird. Zwei separate
+// Funktionen statt einer mit Ref-Parameter, da eine im Template übergebene Ref dort automatisch
+// entpackt wird (Vue unwrappt Top-Level-Refs in Template-Ausdrücken) und dann nicht mehr als Ref
+// beim Funktionsaufruf ankäme.
+async function pickDerivedLocationForNewForm(loc: DerivedLocation) {
+  const spot = await resolveDerivedLocationSpot(loc);
+  if (!excursionForm.value.spot_ids.includes(spot.id)) excursionForm.value.spot_ids.push(spot.id);
+}
+async function pickDerivedLocationForEditForm(loc: DerivedLocation) {
+  const spot = await resolveDerivedLocationSpot(loc);
+  if (!editExcursionForm.value.spot_ids.includes(spot.id)) editExcursionForm.value.spot_ids.push(spot.id);
 }
 
 // Drop-Zone, um die Kalender-Einplanung rückgängig zu machen: ein geplanter Ausflug kann aus dem
@@ -472,7 +486,14 @@ function showSpotOnMap(spot: Spot) {
           Datum (optional – ansonsten "In Planung")
           <input v-model="excursionForm.date" type="date" />
         </label>
-        <SpotOrderPicker v-if="spots.length" v-model="excursionForm.spot_ids" :spots="spots" :like-count="spotLikeCount" />
+        <SpotOrderPicker
+          v-if="spots.length || derivedLocations.length"
+          v-model="excursionForm.spot_ids"
+          :spots="spots"
+          :like-count="spotLikeCount"
+          :derived-locations="derivedLocations"
+          @pick-derived-location="pickDerivedLocationForNewForm"
+        />
         <button type="submit">Speichern</button>
       </form>
     </Modal>
@@ -562,7 +583,14 @@ function showSpotOnMap(spot: Spot) {
           Datum (optional – ansonsten "In Planung")
           <input v-model="editExcursionForm.date" type="date" />
         </label>
-        <SpotOrderPicker v-if="spots.length" v-model="editExcursionForm.spot_ids" :spots="spots" :like-count="spotLikeCount" />
+        <SpotOrderPicker
+          v-if="spots.length || derivedLocations.length"
+          v-model="editExcursionForm.spot_ids"
+          :spots="spots"
+          :like-count="spotLikeCount"
+          :derived-locations="derivedLocations"
+          @pick-derived-location="pickDerivedLocationForEditForm"
+        />
         <button type="submit">Speichern</button>
       </form>
     </Modal>
