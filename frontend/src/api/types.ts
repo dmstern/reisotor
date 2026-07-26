@@ -100,7 +100,6 @@ export interface Accommodation {
   trip_id: number;
   name: string;
   address: string | null;
-  link: string | null;
   maps_link: string | null;
   start_date: string | null;
   end_date: string | null;

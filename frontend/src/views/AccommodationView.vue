@@ -6,6 +6,7 @@ import { useTripStore } from '../stores/trip';
 import { useDrawersStore } from '../stores/drawers';
 import { parseLatLngFromMapsLink } from '../utils/googleMaps';
 import { renderRichText } from '../utils/richText';
+import { parseContact } from '../utils/contact';
 import Modal from '../components/Modal.vue';
 import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
@@ -23,7 +24,6 @@ const editMapsLinkResolved = ref<boolean | null>(null);
 const emptyForm = () => ({
   name: '',
   address: '',
-  link: '',
   maps_link: '',
   start_date: '',
   end_date: '',
@@ -71,7 +71,6 @@ function toBody(f: ReturnType<typeof emptyForm>) {
     trip_id: tripId,
     name: f.name.trim(),
     address: f.address || undefined,
-    link: f.link || undefined,
     maps_link: f.maps_link || undefined,
     start_date: f.start_date || undefined,
     end_date: f.end_date || undefined,
@@ -107,7 +106,6 @@ function startEdit(acc: Accommodation) {
   editForm.value = {
     name: acc.name,
     address: acc.address ?? '',
-    link: acc.link ?? '',
     maps_link: acc.maps_link ?? '',
     start_date: acc.start_date ?? '',
     end_date: acc.end_date ?? '',
@@ -180,10 +178,6 @@ function formatDate(d: string | null) {
         </label>
       </div>
       <label>
-        Link (Buchungsseite o. Ä.)
-        <input v-model="form.link" type="url" />
-      </label>
-      <label>
         Maps-Link (Google/Apple)
         <input v-model="form.maps_link" type="url" @blur="checkMapsLink" />
       </label>
@@ -191,7 +185,7 @@ function formatDate(d: string | null) {
       <p v-if="mapsLinkResolved === false" class="hint">Standort konnte nicht automatisch erkannt werden.</p>
       <label>
         Kontakt
-        <input v-model="form.contact" type="text" />
+        <input v-model="form.contact" type="text" placeholder="Telefon, E-Mail oder Text – wird automatisch erkannt" />
       </label>
       <div class="row">
         <label>
@@ -238,17 +232,21 @@ function formatDate(d: string | null) {
         <p v-if="acc.checkin || acc.checkout">
           Check-in {{ acc.checkin || '–' }} · Check-out {{ acc.checkout || '–' }}
         </p>
-        <p v-if="acc.contact">📞 {{ acc.contact }}</p>
+        <p v-if="acc.contact && parseContact(acc.contact).kind === 'phone'">
+          📞 <a :href="parseContact(acc.contact).href">{{ acc.contact }}</a>
+        </p>
+        <p v-else-if="acc.contact && parseContact(acc.contact).kind === 'email'">
+          📧 <a :href="parseContact(acc.contact).href">{{ acc.contact }}</a>
+        </p>
+        <p v-else-if="acc.contact">
+          👤 <span class="contact-text" v-html="renderRichText(acc.contact)"></span>
+        </p>
         <p v-if="acc.amount != null">
           💶 {{ acc.amount.toFixed(2) }} €
           <span v-if="acc.paid_by_user_id"> · bezahlt von {{ userLabel(acc.paid_by_user_id) }}</span>
         </p>
         <div v-if="acc.note" class="note" v-html="renderRichText(acc.note)"></div>
         <div class="links">
-          <a v-if="acc.link" :href="acc.link" target="_blank" rel="noopener" class="card-action-btn">Buchung ↗</a>
-          <a v-if="acc.maps_link" :href="acc.maps_link" target="_blank" rel="noopener" class="card-action-btn"
-            >📍 Extern öffnen ↗</a
-          >
           <button
             v-if="acc.lat != null && acc.lng != null"
             type="button"
@@ -297,10 +295,6 @@ function formatDate(d: string | null) {
           </label>
         </div>
         <label>
-          Link (Buchungsseite o. Ä.)
-          <input v-model="editForm.link" type="url" />
-        </label>
-        <label>
           Maps-Link (Google/Apple)
           <input v-model="editForm.maps_link" type="url" @blur="checkEditMapsLink" />
         </label>
@@ -308,7 +302,7 @@ function formatDate(d: string | null) {
         <p v-if="editMapsLinkResolved === false" class="hint">Standort konnte nicht automatisch erkannt werden.</p>
         <label>
           Kontakt
-          <input v-model="editForm.contact" type="text" />
+          <input v-model="editForm.contact" type="text" placeholder="Telefon, E-Mail oder Text – wird automatisch erkannt" />
         </label>
         <div class="row">
           <label>
@@ -427,6 +421,10 @@ label {
 
 .note {
   overflow-wrap: anywhere;
+}
+
+.contact-text :deep(br:last-child) {
+  display: none;
 }
 
 .actions {

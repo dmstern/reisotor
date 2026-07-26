@@ -5,6 +5,8 @@ import type { TravelItem, TravelRole, User } from '../api/types';
 import { useTripStore } from '../stores/trip';
 import { useDrawersStore } from '../stores/drawers';
 import { parseLatLngFromMapsLink } from '../utils/googleMaps';
+import { linkLabel } from '../utils/linkLabel';
+import { renderRichText } from '../utils/richText';
 import { TRAVEL_ROLE_META, TRAVEL_ROLE_OPTIONS } from '../utils/travelRole';
 import Modal from '../components/Modal.vue';
 import EditButton from '../components/EditButton.vue';
@@ -275,6 +277,10 @@ function typeIcon(type: string | null) {
         Weitere Infos
         <textarea v-model="form.note" rows="2"></textarea>
       </label>
+      <p class="syntax-hint">
+        <code>**fett**</code> · <code>_kursiv_</code> · <code>* Punkt</code> für Listen · Links/E-Mails/
+        Telefonnummern werden automatisch erkannt
+      </p>
 
       <button type="submit">Hinzufügen</button>
     </form>
@@ -305,10 +311,10 @@ function typeIcon(type: string | null) {
           💶 {{ item.amount.toFixed(2) }} €
           <span v-if="item.paid_by_user_id"> · bezahlt von {{ userLabel(item.paid_by_user_id) }}</span>
         </p>
-        <p v-if="item.note">{{ item.note }}</p>
+        <div v-if="item.note" class="note" v-html="renderRichText(item.note)"></div>
         <div class="links">
           <a v-if="item.link" :href="item.link" target="_blank" rel="noopener" class="card-action-btn"
-            >Details/Check-in ↗</a
+            >{{ linkLabel(item.link) }} ↗</a
           >
           <button
             v-if="item.from_lat != null && item.from_lng != null"
@@ -430,6 +436,10 @@ function typeIcon(type: string | null) {
           Weitere Infos
           <textarea v-model="editForm.note" rows="2"></textarea>
         </label>
+        <p class="syntax-hint">
+          <code>**fett**</code> · <code>_kursiv_</code> · <code>* Punkt</code> für Listen · Links/E-Mails/
+          Telefonnummern werden automatisch erkannt
+        </p>
         <button type="submit">Speichern</button>
       </form>
     </Modal>
@@ -485,12 +495,37 @@ label {
 
 .cards {
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  /* Ohne das streckt CSS Grid (Default: stretch) jede Karte einer Reihe auf die Höhe der
+     vollsten Nachbar-Karte – bei sehr unterschiedlich befüllten Reise-Einträgen (einer mit viel
+     Text, einer fast leer) sah die leere Karte dadurch unschön aufgebläht aus. */
+  align-items: start;
 }
 
 .travel-card {
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+
+.note {
+  overflow-wrap: anywhere;
+}
+
+.note :deep(br:last-child) {
+  display: none;
+}
+
+.syntax-hint {
+  margin: -4px 0 0;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+
+.syntax-hint code {
+  background: var(--color-bg);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 0.78rem;
 }
 
 .links {

@@ -62,7 +62,6 @@ CREATE TABLE IF NOT EXISTS accommodation (
   id INTEGER PRIMARY KEY,
   name TEXT NOT NULL,
   address TEXT,
-  link TEXT,
   checkin TEXT,
   checkout TEXT,
   contact TEXT,
@@ -304,6 +303,9 @@ ensureColumn('shopping_items', 'shop', 'TEXT');
 ensureColumn('accommodation', 'amount', 'REAL');
 ensureColumn('accommodation', 'paid_by_user_id', 'INTEGER REFERENCES users(id)');
 ensureColumn('accommodation', 'budget_expense_id', 'INTEGER REFERENCES budget_items(id)');
+// Buchungs-Link entfällt: Links gehören stattdessen ins Notizen-Feld (rendert sie automatisch,
+// siehe utils/richText.ts), statt ein eigenes, oft mit dem Maps-Link verwechseltes Feld zu sein.
+dropColumnIfExists('accommodation', 'link');
 ensureColumn('schedule_items', 'end_date', 'TEXT');
 ensureColumn('schedule_items', 'location', 'TEXT');
 ensureColumn('schedule_items', 'maps_link', 'TEXT');

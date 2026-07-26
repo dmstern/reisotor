@@ -6,7 +6,6 @@ interface AccommodationBody {
   trip_id: number;
   name: string;
   address?: string;
-  link?: string;
   maps_link?: string;
   start_date?: string;
   end_date?: string;
@@ -96,15 +95,14 @@ export const accommodationRoutes: FastifyPluginAsync = async (app) => {
     const result = db
       .prepare(
         `INSERT INTO accommodation
-          (trip_id, name, address, link, maps_link, start_date, end_date, checkin, checkout, contact, note, lat, lng,
+          (trip_id, name, address, maps_link, start_date, end_date, checkin, checkout, contact, note, lat, lng,
            amount, paid_by_user_id, budget_expense_id)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         body.trip_id,
         body.name,
         body.address ?? null,
-        body.link ?? null,
         body.maps_link ?? null,
         body.start_date ?? null,
         body.end_date ?? null,
@@ -137,14 +135,13 @@ export const accommodationRoutes: FastifyPluginAsync = async (app) => {
     const { budgetExpenseId, staleIdToDelete } = planBudgetExpense(existing.trip_id, existing.budget_expense_id, body);
 
     db.prepare(
-      `UPDATE accommodation SET name = ?, address = ?, link = ?, maps_link = ?, start_date = ?, end_date = ?,
+      `UPDATE accommodation SET name = ?, address = ?, maps_link = ?, start_date = ?, end_date = ?,
          checkin = ?, checkout = ?, contact = ?, note = ?, lat = ?, lng = ?, amount = ?, paid_by_user_id = ?,
          budget_expense_id = ?
        WHERE id = ?`,
     ).run(
       body.name,
       body.address ?? null,
-      body.link ?? null,
       body.maps_link ?? null,
       body.start_date ?? null,
       body.end_date ?? null,
