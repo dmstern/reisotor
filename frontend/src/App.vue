@@ -111,6 +111,11 @@ async function onCreateFirstTrip(data: TripFormData) {
 
 .app-main {
   min-width: 0;
+  /* container-type global hier statt in einzelnen Views: .app-main ist die einzige Stelle, an der
+     die WIRKLICH verfügbare Breite ankommt (Viewport minus offene Schubladen, siehe .app-shell
+     unten) – einzelne Seiten (z. B. ExcursionsView.vue) können sich per @container darauf
+     verlassen, ohne selbst noch einen eigenen Container aufspannen zu müssen. */
+  container-type: inline-size;
 }
 
 @media (min-width: 800px) {

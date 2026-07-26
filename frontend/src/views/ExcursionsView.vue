@@ -452,6 +452,8 @@ function showSpotOnMap(spot: Spot) {
 
 <template>
   <div class="page" v-if="!loading">
+    <div class="layout">
+    <div class="excursions-col">
     <div class="header">
       <h1>Ausflüge</h1>
       <button @click="showExcursionForm = true">+ Neuer Ausflug</button>
@@ -565,8 +567,9 @@ function showSpotOnMap(spot: Spot) {
       </form>
     </Modal>
 
-    <hr class="divider" />
+    </div>
 
+    <div class="spots-col">
     <div class="derived-locations" v-if="derivedLocations.length">
       <button type="button" class="derived-toggle" @click="showDerivedLocations = !showDerivedLocations">
         {{ showDerivedLocations ? '▾' : '▸' }} 🛏️🛫 Unterkunft &amp; Reise-Orte ({{ derivedLocations.length }})
@@ -680,6 +683,8 @@ function showSpotOnMap(spot: Spot) {
         <button type="submit">Speichern</button>
       </form>
     </Modal>
+    </div>
+    </div>
   </div>
 </template>
 
@@ -793,10 +798,39 @@ function showSpotOnMap(spot: Spot) {
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
 }
 
-.divider {
-  border: none;
+.spots-col {
   border-top: 1px solid var(--color-border);
-  margin: var(--space-4) 0;
+  padding-top: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+/* Nebeneinander statt untereinander, sobald genug Breite verfügbar ist (z. B. beide Schubladen
+   eingeklappt) – erleichtert das Drag&Drop von Spots auf Ausflüge, da beide Bereiche dann ohne
+   Scrollen gleichzeitig sichtbar sind. Container-Query statt @media, da sich die verfügbare
+   Breite durchs Auf-/Zuklappen der Schubladen ändert, ohne dass sich das Browserfenster ändert
+   (der Container ist .app-main in App.vue, nicht diese Seite selbst). Zusätzlich wird hier auch
+   .page breiter gemacht – dessen normaler max-width:960px-Deckel (style.css, für die einspaltige
+   Lesbarkeit auf allen anderen Seiten gedacht) würde die zwei Spalten sonst weiterhin auf denselben
+   schmalen Streifen zusammenquetschen, obwohl links/rechts noch reichlich Platz frei wäre. */
+@container (min-width: 900px) {
+  .page {
+    max-width: 1400px;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+    gap: 0 var(--space-5);
+  }
+
+  .spots-col {
+    border-top: none;
+    border-left: 1px solid var(--color-border);
+    padding-top: 0;
+    padding-left: var(--space-5);
+    margin-top: 0;
+  }
 }
 
 .derived-locations {
