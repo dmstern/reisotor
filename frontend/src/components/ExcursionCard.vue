@@ -32,6 +32,18 @@ const emit = defineEmits<{
 
 const hasMappedStations = computed(() => props.stations.some((s) => s.lat != null && s.lng != null));
 
+// Fallback-Bild, falls der Ausflug selbst kein Bild hat: das Bild des ersten zugeordneten Spots
+// (in der definierten Reihenfolge, spot_ids – nicht die Reihenfolge von props.stations, die vom
+// Spots-Store kommt und dadurch anders sortiert sein kann).
+const displayImage = computed(() => {
+  if (props.excursion.image_url) return props.excursion.image_url;
+  for (const spotId of props.excursion.spot_ids) {
+    const spot = props.stations.find((s) => s.id === spotId);
+    if (spot?.image_url) return spot.image_url;
+  }
+  return null;
+});
+
 const showComments = ref(false);
 
 function formatDate(d: string) {
@@ -88,8 +100,8 @@ function onSpotDrop(event: DragEvent) {
     @drop.prevent="onSpotDrop"
   >
     <DeleteButton floating class="card-delete" @click="emit('remove', excursion.id)" />
-    <div class="image" :style="excursion.image_url ? { backgroundImage: `url(${excursion.image_url})` } : {}">
-      <span v-if="!excursion.image_url" class="placeholder">🎒</span>
+    <div class="image" :style="displayImage ? { backgroundImage: `url(${displayImage})` } : {}">
+      <span v-if="!displayImage" class="placeholder">🎒</span>
       <EditButton floating @click="emit('edit', excursion)" />
       <span class="status" :class="{ planned: excursion.date }">
         {{ excursion.date ? `📅 ${formatDate(excursion.date)}` : 'In Planung' }}
