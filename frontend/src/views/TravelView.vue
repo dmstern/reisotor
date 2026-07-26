@@ -113,6 +113,7 @@ async function submit() {
   if (!form.value.title.trim()) return;
   const created = await api.post<TravelItem>('/travel', toBody(form.value));
   items.value.push(created);
+  drawers.touchLocations();
   closeForm();
 }
 
@@ -152,12 +153,14 @@ async function submitEdit() {
   const updated = await api.put<TravelItem>(`/travel/${editingItem.value.id}`, toBody(editForm.value));
   const idx = items.value.findIndex((i) => i.id === updated.id);
   if (idx !== -1) items.value[idx] = updated;
+  drawers.touchLocations();
   editingItem.value = null;
 }
 
 async function remove(id: number) {
   await api.delete(`/travel/${id}`);
   items.value = items.value.filter((i) => i.id !== id);
+  drawers.touchLocations();
 }
 
 function typeIcon(type: string | null) {

@@ -43,6 +43,16 @@ export const useDrawersStore = defineStore('drawers', () => {
   // Zentral statt lokal im Drawer, da eine maximierte Schublade die jeweils andere automatisch
   // zuklappen muss – bewusst nicht in localStorage persistiert (flüchtiger UI-Zustand).
   const maximizedSide = ref<'left' | 'right' | null>(null);
+  // Zähler statt Boolean: MapView.vue hält Unterkunft/Reise/Spots in eigenem lokalem State (keine
+  // gemeinsame Pinia-Quelle) und lädt deshalb nicht automatisch neu, wenn irgendwo sonst in der App
+  // ein Ort mit Maps-Link angelegt/bearbeitet wird. touchLocations() signalisiert genau das – ein
+  // Zähler statt Boolean, damit auch zwei schnell aufeinanderfolgende Änderungen zuverlässig je
+  // einen watch()-Trigger auslösen (bei einem Boolean könnte derselbe Wert zweimal gesetzt werden).
+  const locationsVersion = ref(0);
+
+  function touchLocations() {
+    locationsVersion.value++;
+  }
 
   watch(calendarOpen, (v) => localStorage.setItem(CALENDAR_OPEN_KEY, String(v)));
   watch(mapOpen, (v) => localStorage.setItem(MAP_OPEN_KEY, String(v)));
@@ -84,10 +94,12 @@ export const useDrawersStore = defineStore('drawers', () => {
     calendarWidth,
     mapWidth,
     maximizedSide,
+    locationsVersion,
     toggleCalendar,
     toggleMap,
     openMapAt,
     maximize,
     restoreMaximized,
+    touchLocations,
   };
 });

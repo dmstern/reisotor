@@ -223,6 +223,7 @@ async function addSpot() {
   if (!spotForm.value.title.trim()) return;
   const created = await api.post<Spot>('/spots', spotToBody(spotForm.value));
   spots.value.unshift(created);
+  drawers.touchLocations();
   closeSpotForm();
 }
 
@@ -243,12 +244,14 @@ async function submitEditSpot() {
   const updated = await api.put<Spot>(`/spots/${editingSpot.value.id}`, spotToBody(editSpotForm.value));
   const idx = spots.value.findIndex((s) => s.id === updated.id);
   if (idx !== -1) spots.value[idx] = updated;
+  drawers.touchLocations();
   editingSpot.value = null;
 }
 
 async function removeSpot(id: number) {
   await api.delete(`/spots/${id}`);
   spots.value = spots.value.filter((s) => s.id !== id);
+  drawers.touchLocations();
 }
 
 async function toggleDiscarded(spot: Spot) {

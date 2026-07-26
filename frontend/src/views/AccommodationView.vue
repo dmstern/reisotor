@@ -89,6 +89,7 @@ async function submit() {
   if (!form.value.name.trim()) return;
   const created = await api.post<Accommodation>('/accommodation', toBody(form.value));
   accommodations.value.push(created);
+  drawers.touchLocations();
   form.value = emptyForm();
   mapsLinkResolved.value = null;
   showForm.value = false;
@@ -124,12 +125,14 @@ async function submitEdit() {
   const updated = await api.put<Accommodation>(`/accommodation/${editingItem.value.id}`, toBody(editForm.value));
   const idx = accommodations.value.findIndex((a) => a.id === updated.id);
   if (idx !== -1) accommodations.value[idx] = updated;
+  drawers.touchLocations();
   editingItem.value = null;
 }
 
 async function remove(id: number) {
   await api.delete(`/accommodation/${id}`);
   accommodations.value = accommodations.value.filter((a) => a.id !== id);
+  drawers.touchLocations();
 }
 
 function formatDate(d: string | null) {

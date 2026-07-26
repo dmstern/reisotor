@@ -301,6 +301,20 @@ watch(
   () => renderRoutes(),
   { deep: true },
 );
+
+// Unterkunft/Reise/Spots liegen (anders als Ausflüge) nicht in einem gemeinsamen Store, sondern
+// als lokaler State in den jeweiligen Sichten – ohne dieses Signal würde ein frisch hinzugefügter
+// Maps-Link erst nach Schließen+Wiederöffnen der Karten-Schublade sichtbar (siehe watch auf
+// drawers.mapOpen oben). drawers.touchLocations() wird von Unterkunft-/Reise-/Ausflüge-Sicht nach
+// jedem erfolgreichen Anlegen/Bearbeiten eines Orts aufgerufen.
+watch(
+  () => drawers.locationsVersion,
+  async () => {
+    await loadAll();
+    renderMarkers();
+    renderRoutes();
+  },
+);
 </script>
 
 <template>
