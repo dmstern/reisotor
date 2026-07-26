@@ -11,6 +11,7 @@ import DeleteButton from '../components/DeleteButton.vue';
 import { SCHEDULE_CATEGORY_META } from '../utils/scheduleCategory';
 import { parseLatLngFromMapsLink } from '../utils/googleMaps';
 import { buildAllEntries } from '../utils/calendarEntries';
+import { calendarEventFromEntry, googleCalendarHref, outlookCalendarHref, triggerIcsDownload } from '../utils/calendarExport';
 
 const tripStore = useTripStore();
 const trip = computed(() => tripStore.currentTrip);
@@ -32,6 +33,17 @@ const newMapsLink = ref('');
 const editingItem = ref<ScheduleItem | null>(null);
 const editForm = ref({ time: '', title: '', note: '', endDate: '', location: '', mapsLink: '' });
 const showAddForm = ref(false);
+
+// "Zum eigenen Kalender hinzufügen"-Menü: welcher Eintrag (per key) hat sein Menü gerade offen –
+// gilt für ALLE Eintrags-Arten (echte wie automatisch erzeugte), nicht nur editierbare Termine.
+const calendarPickerKey = ref<string | null>(null);
+function toggleCalendarPicker(key: string) {
+  calendarPickerKey.value = calendarPickerKey.value === key ? null : key;
+}
+function downloadIcsForEntry(entry: CalendarEntry) {
+  triggerIcsDownload(calendarEventFromEntry(entry));
+  calendarPickerKey.value = null;
+}
 
 async function loadAll() {
   const tripId = tripStore.currentTripId;
@@ -372,6 +384,40 @@ function formatDay(date: string) {
             <p v-if="entry.note" class="note">{{ entry.note }}</p>
           </div>
           <div class="item-actions">
+            <div class="calendar-export">
+              <button
+                type="button"
+                class="secondary calendar-btn"
+                title="Zum eigenen Kalender hinzufügen"
+                aria-label="Zum eigenen Kalender hinzufügen"
+                @click="toggleCalendarPicker(entry.key)"
+              >
+                📅
+              </button>
+              <template v-if="calendarPickerKey === entry.key">
+                <div class="picker-backdrop" @click="calendarPickerKey = null"></div>
+                <div class="picker-menu">
+                  <button type="button" @click="downloadIcsForEntry(entry)">🍎 Apple/iPhone</button>
+                  <a
+                    :href="googleCalendarHref(calendarEventFromEntry(entry))"
+                    target="_blank"
+                    rel="noopener"
+                    @click="calendarPickerKey = null"
+                  >
+                    📆 Google Kalender
+                  </a>
+                  <a
+                    :href="outlookCalendarHref(calendarEventFromEntry(entry))"
+                    target="_blank"
+                    rel="noopener"
+                    @click="calendarPickerKey = null"
+                  >
+                    📧 Outlook
+                  </a>
+                  <button type="button" @click="downloadIcsForEntry(entry)">🤖 Android</button>
+                </div>
+              </template>
+            </div>
             <!-- Architekturregel: Fremdobjekte (Urlaub-Stammdaten, ToDos, Ausflüge, Reise-Einträge)
                  sind hier nur lesend/verknüpfend darstellbar – Bearbeitung passiert in der Ursprungssicht. -->
             <template v-if="entry.kind === 'trip'">
@@ -603,6 +649,58 @@ function formatDay(date: string) {
   padding: 4px 8px;
   font-size: 0.8rem;
   line-height: 1;
+}
+
+.calendar-export {
+  position: relative;
+}
+
+.calendar-btn {
+  padding: 4px 8px;
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+.picker-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+}
+
+.picker-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 180px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-2);
+  z-index: 21;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.picker-menu a,
+.picker-menu button {
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  text-decoration: none;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+}
+
+.picker-menu a:hover,
+.picker-menu button:hover {
+  background: var(--color-hover);
 }
 
 .edit-form {
