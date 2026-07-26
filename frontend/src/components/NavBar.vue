@@ -76,7 +76,6 @@ function onLinkClick(event: MouseEvent) {
         <span class="label">{{ link.label }}</span>
       </router-link>
     </div>
-    <button class="secondary logout" @click="onLogout">Abmelden</button>
   </nav>
 </template>
 
