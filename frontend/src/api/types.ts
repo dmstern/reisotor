@@ -235,7 +235,6 @@ export interface TodoItem {
   priority: TodoPriority;
   note: string | null;
   done: 0 | 1;
-  period: Period | null;
 }
 
 export interface Note {

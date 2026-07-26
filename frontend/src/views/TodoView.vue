@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { api } from '../api/client';
-import type { Period, TodoItem, TodoPriority, User } from '../api/types';
+import type { TodoItem, TodoPriority, User } from '../api/types';
 import { useTripStore } from '../stores/trip';
-import { PERIOD_META } from '../utils/period';
+import { PERIOD_META, computePeriod } from '../utils/period';
 import Modal from '../components/Modal.vue';
 import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
@@ -32,8 +32,14 @@ const emptyForm = () => ({
   due_date: '',
   priority: 'medium' as TodoPriority,
   note: '',
-  period: '' as Period | '',
 });
+
+// Zeitraum (vor/während des Urlaubs) wird aus dem Fälligkeitsdatum + den Urlaubs-Eckdaten
+// hergeleitet statt manuell abgefragt – ToDo-Einträge haben dafür (anders als die Einkaufsliste)
+// immer ein Datum.
+function periodFor(item: TodoItem) {
+  return computePeriod(item.due_date, tripStore.currentTrip);
+}
 const newForm = ref(emptyForm());
 
 const editingItem = ref<TodoItem | null>(null);
@@ -80,9 +86,9 @@ interface Group {
 const groupedItems = computed<Group[]>(() => {
   if (groupBy.value === 'period') {
     return [
-      { key: 'before', label: PERIOD_META.before, items: sortItems(items.value.filter((i) => i.period === 'before')) },
-      { key: 'during', label: PERIOD_META.during, items: sortItems(items.value.filter((i) => i.period === 'during')) },
-      { key: 'none', label: 'Ohne Zeitraum', items: sortItems(items.value.filter((i) => !i.period)) },
+      { key: 'before', label: PERIOD_META.before, items: sortItems(items.value.filter((i) => periodFor(i) === 'before')) },
+      { key: 'during', label: PERIOD_META.during, items: sortItems(items.value.filter((i) => periodFor(i) === 'during')) },
+      { key: 'none', label: 'Ohne Zeitraum', items: sortItems(items.value.filter((i) => !periodFor(i))) },
     ];
   }
   const perUser: Group[] = users.value.map((u) => ({
@@ -112,7 +118,6 @@ function toBody(f: ReturnType<typeof emptyForm>) {
     due_date: f.due_date || undefined,
     priority: f.priority,
     note: f.note || undefined,
-    period: f.period || undefined,
   };
 }
 
@@ -132,7 +137,6 @@ async function toggleDone(item: TodoItem) {
     priority: item.priority,
     note: item.note ?? undefined,
     done: !item.done,
-    period: item.period ?? undefined,
   });
   const idx = items.value.findIndex((i) => i.id === item.id);
   if (idx !== -1) items.value[idx] = updated;
@@ -146,7 +150,6 @@ function startEdit(item: TodoItem) {
     due_date: item.due_date ?? '',
     priority: item.priority,
     note: item.note ?? '',
-    period: item.period ?? '',
   };
 }
 
@@ -192,11 +195,6 @@ function isOverdue(item: TodoItem) {
       <select v-model="newForm.priority">
         <option v-for="(meta, key) in PRIORITY_META" :key="key" :value="key">{{ meta.icon }} {{ meta.label }}</option>
       </select>
-      <select v-model="newForm.period">
-        <option value="">Kein Zeitraum</option>
-        <option value="before">{{ PERIOD_META.before }}</option>
-        <option value="during">{{ PERIOD_META.during }}</option>
-      </select>
       <input v-model="newForm.note" type="text" placeholder="Notiz (optional)" />
       <button type="submit">Hinzufügen</button>
     </form>
@@ -235,7 +233,7 @@ function isOverdue(item: TodoItem) {
             <span v-if="groupBy !== 'assignee' && userLabel(item.assigned_to_user_id)" class="assignee">{{
               userLabel(item.assigned_to_user_id)
             }}</span>
-            <span v-if="groupBy !== 'period' && item.period" class="assignee">🗓️ {{ PERIOD_META[item.period] }}</span>
+            <span v-if="groupBy !== 'period' && periodFor(item)" class="assignee">🗓️ {{ PERIOD_META[periodFor(item)!] }}</span>
             <span v-if="item.note" class="note">{{ item.note }}</span>
             <div class="row-actions">
               <EditButton small @click="startEdit(item)" />
@@ -261,11 +259,6 @@ function isOverdue(item: TodoItem) {
         <input v-model="editForm.due_date" type="date" />
         <select v-model="editForm.priority">
           <option v-for="(meta, key) in PRIORITY_META" :key="key" :value="key">{{ meta.icon }} {{ meta.label }}</option>
-        </select>
-        <select v-model="editForm.period">
-          <option value="">Kein Zeitraum</option>
-          <option value="before">{{ PERIOD_META.before }}</option>
-          <option value="during">{{ PERIOD_META.during }}</option>
         </select>
         <input v-model="editForm.note" type="text" placeholder="Notiz (optional)" />
         <button type="submit">Speichern</button>

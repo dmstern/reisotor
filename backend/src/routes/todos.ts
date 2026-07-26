@@ -9,7 +9,6 @@ interface TodoBody {
   priority?: 'low' | 'medium' | 'high';
   note?: string;
   done?: boolean;
-  period?: 'before' | 'during' | null;
 }
 
 export const todosRoutes: FastifyPluginAsync = async (app) => {
@@ -21,11 +20,11 @@ export const todosRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.post<{ Body: TodoBody }>('/todos', async (req, reply) => {
-    const { trip_id, title, assigned_to_user_id, due_date, priority, note, done, period } = req.body;
+    const { trip_id, title, assigned_to_user_id, due_date, priority, note, done } = req.body;
     const result = db
       .prepare(
-        `INSERT INTO todo_items (trip_id, title, assigned_to_user_id, due_date, priority, note, done, period)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO todo_items (trip_id, title, assigned_to_user_id, due_date, priority, note, done)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         trip_id,
@@ -35,17 +34,16 @@ export const todosRoutes: FastifyPluginAsync = async (app) => {
         priority ?? 'medium',
         note ?? null,
         done ? 1 : 0,
-        period ?? null,
       );
     reply.code(201);
     return db.prepare('SELECT * FROM todo_items WHERE id = ?').get(result.lastInsertRowid);
   });
 
   app.put<{ Params: { id: string }; Body: TodoBody }>('/todos/:id', async (req, reply) => {
-    const { title, assigned_to_user_id, due_date, priority, note, done, period } = req.body;
+    const { title, assigned_to_user_id, due_date, priority, note, done } = req.body;
     const result = db
       .prepare(
-        `UPDATE todo_items SET title = ?, assigned_to_user_id = ?, due_date = ?, priority = ?, note = ?, done = ?, period = ?
+        `UPDATE todo_items SET title = ?, assigned_to_user_id = ?, due_date = ?, priority = ?, note = ?, done = ?
          WHERE id = ?`,
       )
       .run(
@@ -55,7 +53,6 @@ export const todosRoutes: FastifyPluginAsync = async (app) => {
         priority ?? 'medium',
         note ?? null,
         done ? 1 : 0,
-        period ?? null,
         req.params.id,
       );
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
