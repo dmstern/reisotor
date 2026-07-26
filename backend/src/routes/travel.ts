@@ -23,6 +23,7 @@ interface TravelBody {
   to_maps_link?: string;
   to_lat?: number;
   to_lng?: number;
+  role?: 'arrival' | 'departure' | 'onward';
 }
 
 interface TravelRow {
@@ -114,8 +115,8 @@ export const travelRoutes: FastifyPluginAsync = async (app) => {
         `INSERT INTO travel_items
           (trip_id, title, type, from_location, to_location, date, departure_time, checkin_info, amount,
            paid_by_user_id, luggage, seat, link, note, budget_expense_id,
-           from_maps_link, from_lat, from_lng, to_maps_link, to_lat, to_lng)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+           from_maps_link, from_lat, from_lng, to_maps_link, to_lat, to_lng, role)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         body.trip_id,
@@ -139,6 +140,7 @@ export const travelRoutes: FastifyPluginAsync = async (app) => {
         body.to_maps_link ?? null,
         body.to_lat ?? null,
         body.to_lng ?? null,
+        body.role ?? null,
       );
     reply.code(201);
     return db.prepare('SELECT * FROM travel_items WHERE id = ?').get(result.lastInsertRowid);
@@ -158,7 +160,7 @@ export const travelRoutes: FastifyPluginAsync = async (app) => {
       `UPDATE travel_items SET title = ?, type = ?, from_location = ?, to_location = ?, date = ?,
          departure_time = ?, checkin_info = ?, amount = ?, paid_by_user_id = ?, luggage = ?, seat = ?,
          link = ?, note = ?, budget_expense_id = ?,
-         from_maps_link = ?, from_lat = ?, from_lng = ?, to_maps_link = ?, to_lat = ?, to_lng = ?
+         from_maps_link = ?, from_lat = ?, from_lng = ?, to_maps_link = ?, to_lat = ?, to_lng = ?, role = ?
        WHERE id = ?`,
     ).run(
       body.title,
@@ -181,6 +183,7 @@ export const travelRoutes: FastifyPluginAsync = async (app) => {
       body.to_maps_link ?? null,
       body.to_lat ?? null,
       body.to_lng ?? null,
+      body.role ?? null,
       req.params.id,
     );
 

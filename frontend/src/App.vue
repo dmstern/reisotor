@@ -116,11 +116,13 @@ async function onCreateFirstTrip(data: TripFormData) {
 @media (min-width: 800px) {
   .app-shell {
     display: flex;
-    /* flex-start statt stretch: sonst wird .drawer (und darin der zentrierte Tab) über
-       align-items:stretch auf die volle Höhe des .app-main-Inhalts gezogen – bei langen Seiten
-       landet der Tab dann irgendwo weit unten statt im sichtbaren Bereich, und die Schublade
-       kann eine unten fixierte NavBar überlagern. */
-    align-items: flex-start;
+    /* stretch (nicht flex-start!): .drawer muss die volle Höhe von .app-main erreichen, sonst hat
+       das sticky .drawer-panel (Drawer.vue) bei langen Seiten nur ein kurzes "Trag"-Element zum
+       Dranhaften zur Verfügung und scrollt nach einem Viewport schon mit weg, statt stehen zu
+       bleiben. Das sichtbare/blickdichte Panel selbst bleibt trotzdem über sein eigenes
+       max-height (Drawer.vue) auf Viewport-Höhe gedeckelt – dadurch kann es weiterhin nie eine
+       unten fixierte NavBar überlagern, unabhängig davon, wie hoch .drawer insgesamt ist. */
+    align-items: stretch;
   }
 
   .app-main {

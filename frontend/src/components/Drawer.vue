@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { MAX_DRAWER_WIDTH, MIN_DRAWER_WIDTH } from '../stores/drawers';
 
 const props = defineProps<{ side: 'left' | 'right'; open: boolean; label: string; icon: string; width: number }>();
@@ -8,6 +8,23 @@ const emit = defineEmits<{ (e: 'update:open', value: boolean): void; (e: 'update
 function toggle() {
   emit('update:open', !props.open);
 }
+
+// Nur auf Desktop nutzbar (siehe .maximize-btn CSS) – Mobil verhält sich ohnehin bereits wie
+// "maximiert" (Panel als Vollbild-Overlay). Lokaler, nicht persistierter State: schließt sich beim
+// Zuklappen der Schublade selbst wieder, damit sie beim nächsten Öffnen nicht überraschend
+// vollflächig ist.
+const maximized = ref(false);
+
+function toggleMaximize() {
+  maximized.value = !maximized.value;
+}
+
+watch(
+  () => props.open,
+  (open) => {
+    if (!open) maximized.value = false;
+  },
+);
 
 // Anfasser zum Grösser-/Kleinerziehen der Schublade (Pointer Events statt separater Maus-/Touch-
 // Handler, damit derselbe Code auch auf Tablets funktioniert).
@@ -41,7 +58,7 @@ function onResizeEnd() {
 </script>
 
 <template>
-  <div class="drawer" :class="[side, { open }]" :style="{ '--drawer-width': `${width}px` }">
+  <div class="drawer" :class="[side, { open, maximized }]" :style="{ '--drawer-width': `${width}px` }">
     <div class="drawer-backdrop" v-if="open" @click="emit('update:open', false)"></div>
     <div class="drawer-panel">
       <div
@@ -52,6 +69,17 @@ function onResizeEnd() {
         :aria-label="`${label}-Schublade in der Breite anpassen`"
         @pointerdown="onResizeStart"
       ></div>
+      <button
+        v-if="open"
+        type="button"
+        class="maximize-btn"
+        :aria-pressed="maximized"
+        :aria-label="(maximized ? 'Verkleinern: ' : 'Maximieren: ') + label"
+        :title="maximized ? 'Verkleinern' : 'Maximieren'"
+        @click="toggleMaximize"
+      >
+        {{ maximized ? '🗗' : '⛶' }}
+      </button>
       <div class="drawer-content"><slot /></div>
     </div>
     <button
@@ -132,7 +160,7 @@ function onResizeEnd() {
 
 .drawer-backdrop {
   position: fixed;
-  top: 56px;
+  top: calc(56px + var(--navbar-offset, 0px));
   bottom: 60px;
   left: 0;
   right: 0;
@@ -142,7 +170,7 @@ function onResizeEnd() {
 
 .drawer-panel {
   position: fixed;
-  top: 56px;
+  top: calc(56px + var(--navbar-offset, 0px));
   bottom: 60px;
   width: min(85vw, var(--drawer-width));
   background: var(--color-surface);
@@ -211,6 +239,12 @@ function onResizeEnd() {
   left: -5px;
 }
 
+/* Maximieren gibt es nur auf Desktop (siehe @media unten) – mobil ist das Panel ohnehin bereits
+   ein Vollbild-Overlay, ein zusätzlicher Button wäre dort redundant. */
+.maximize-btn {
+  display: none;
+}
+
 /* Desktop: Panel wird echtes Flex-Geschwisterelement (schiebt den Arbeitsbereich zur Seite),
    kein Overlay/Backdrop mehr. App.vue setzt display:flex auf den umgebenden .app-shell-Container;
    die Reihenfolge der Flex-Kinder (Tab vs. Panel) steuert `order` statt DOM-Reihenfolge. */
@@ -262,11 +296,14 @@ function onResizeEnd() {
        align-items:stretch (.drawer/.app-shell) das Panel sonst auf die volle Höhe des
        Hauptinhalts – bei langen Seiten ragt das blickdichte Panel dann über den sichtbaren
        Bereich hinaus und überdeckt (höherer z-index) eine unten fixierte NavBar links/rechts.
-       sticky hält es zusätzlich beim Scrollen des Hauptinhalts im Blickfeld. */
+       sticky hält es zusätzlich beim Scrollen des Hauptinhalts im Blickfeld. top/max-height
+       beziehen zusätzlich --navbar-offset (NavBar.vue) ein: klebt die NavBar selbst "oben" fest,
+       hat sie denselben sticky-top wie das Panel – ohne den Offset würde das Panel (höherer
+       z-index) sie beim Scrollen überdecken statt sich darunter einzuordnen. */
     position: sticky;
-    top: 56px;
+    top: calc(56px + var(--navbar-offset, 0px));
     bottom: auto;
-    max-height: calc(100vh - 56px);
+    max-height: calc(100vh - 56px - var(--navbar-offset, 0px));
     transform: none;
     box-shadow: none;
     border-radius: 0;
@@ -288,6 +325,58 @@ function onResizeEnd() {
     overflow: hidden;
     pointer-events: none;
     border: none;
+  }
+
+  .maximize-btn {
+    display: flex;
+    position: absolute;
+    top: 8px;
+    z-index: 14;
+    width: 28px;
+    height: 28px;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-sm);
+    color: var(--color-text-muted);
+    cursor: pointer;
+    font-size: 0.95rem;
+    line-height: 1;
+  }
+
+  .maximize-btn:hover {
+    color: var(--color-primary-dark);
+  }
+
+  .drawer.left .maximize-btn {
+    right: 8px;
+  }
+
+  .drawer.right .maximize-btn {
+    left: 8px;
+  }
+
+  /* Maximiert: Panel verlässt den Flex-Verbund und legt sich als Vollbild-Overlay über den
+     Hauptbereich (ähnlich der mobilen Darstellung) – lässt aber oben/unten Platz für Header
+     und NavBar frei (--navbar-offset/--navbar-bottom-offset, NavBar.vue), die auf Desktop im
+     Gegensatz zu Mobil stets sichtbar bleiben sollen. */
+  .drawer.maximized .drawer-panel {
+    position: fixed;
+    top: calc(56px + var(--navbar-offset, 0px));
+    bottom: var(--navbar-bottom-offset, 0px);
+    left: 0;
+    right: 0;
+    width: auto;
+    max-height: none;
+    transform: none;
+    border-radius: 0;
+  }
+
+  .drawer.maximized .resize-handle {
+    display: none;
   }
 }
 </style>

@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import { api } from '../api/client';
-import type { TravelItem, User } from '../api/types';
+import type { TravelItem, TravelRole, User } from '../api/types';
 import { useTripStore } from '../stores/trip';
 import { useDrawersStore } from '../stores/drawers';
 import { parseLatLngFromMapsLink } from '../utils/googleMaps';
+import { TRAVEL_ROLE_META, TRAVEL_ROLE_OPTIONS } from '../utils/travelRole';
 import Modal from '../components/Modal.vue';
 import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
@@ -22,6 +23,7 @@ const TYPE_OPTIONS = ['Flug', 'Zug', 'Bus', 'Auto', 'Fähre', 'Sonstiges'];
 const emptyForm = () => ({
   title: '',
   type: 'Flug',
+  role: '' as TravelRole | '',
   from_location: '',
   to_location: '',
   from_maps_link: '',
@@ -69,6 +71,7 @@ function toBody(f: ReturnType<typeof emptyForm>) {
     trip_id: tripId,
     title: f.title.trim(),
     type: f.type || undefined,
+    role: f.role || undefined,
     from_location: f.from_location || undefined,
     to_location: f.to_location || undefined,
     from_maps_link: f.from_maps_link || undefined,
@@ -125,6 +128,7 @@ function startEdit(item: TravelItem) {
   editForm.value = {
     title: item.title,
     type: item.type ?? 'Flug',
+    role: item.role ?? '',
     from_location: item.from_location ?? '',
     to_location: item.to_location ?? '',
     from_maps_link: item.from_maps_link ?? '',
@@ -183,6 +187,15 @@ function typeIcon(type: string | null) {
         Art
         <select v-model="form.type">
           <option v-for="t in TYPE_OPTIONS" :key="t" :value="t">{{ typeIcon(t) }} {{ t }}</option>
+        </select>
+      </label>
+      <label>
+        Rolle (für Karten-Urlaubsfokus)
+        <select v-model="form.role">
+          <option value="">– nicht festgelegt –</option>
+          <option v-for="r in TRAVEL_ROLE_OPTIONS" :key="r" :value="r">
+            {{ TRAVEL_ROLE_META[r].icon }} {{ TRAVEL_ROLE_META[r].label }} ({{ TRAVEL_ROLE_META[r].hint }})
+          </option>
         </select>
       </label>
       <div class="row">
@@ -273,6 +286,9 @@ function typeIcon(type: string | null) {
             <DeleteButton small @click="remove(item.id)" />
           </div>
         </div>
+        <span v-if="item.role" class="role-badge">
+          {{ TRAVEL_ROLE_META[item.role].icon }} {{ TRAVEL_ROLE_META[item.role].label }}
+        </span>
         <p v-if="item.from_location || item.to_location">
           {{ item.from_location || '?' }} → {{ item.to_location || '?' }}
         </p>
@@ -322,6 +338,15 @@ function typeIcon(type: string | null) {
           Art
           <select v-model="editForm.type">
             <option v-for="t in TYPE_OPTIONS" :key="t" :value="t">{{ typeIcon(t) }} {{ t }}</option>
+          </select>
+        </label>
+        <label>
+          Rolle (für Karten-Urlaubsfokus)
+          <select v-model="editForm.role">
+            <option value="">– nicht festgelegt –</option>
+            <option v-for="r in TRAVEL_ROLE_OPTIONS" :key="r" :value="r">
+              {{ TRAVEL_ROLE_META[r].icon }} {{ TRAVEL_ROLE_META[r].label }} ({{ TRAVEL_ROLE_META[r].hint }})
+            </option>
           </select>
         </label>
         <div class="row">
@@ -465,6 +490,16 @@ label {
   align-self: flex-start;
   font-size: 0.85rem;
   padding: 4px 10px;
+}
+
+.role-badge {
+  align-self: flex-start;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-primary-dark);
+  background: var(--color-primary-tint);
+  border-radius: var(--radius-sm);
+  padding: 2px 8px;
 }
 
 .travel-head {

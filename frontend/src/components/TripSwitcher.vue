@@ -162,7 +162,11 @@ async function onDelete(trip: Trip) {
 .dropdown {
   position: absolute;
   top: calc(100% + 6px);
-  left: 0;
+  /* Der Switcher-Wrapper ist über die von AppHeader.vue übergebene .switcher-Klasse (flex:1)
+     deutlich breiter als der Button selbst und zentriert diesen nur per justify-content – ein
+     "left:0" würde das Dropdown daher am Wrapper-Rand statt unter dem Button positionieren. */
+  left: 50%;
+  transform: translateX(-50%);
   min-width: 240px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);

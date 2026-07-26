@@ -115,6 +115,10 @@ export interface Accommodation {
   budget_expense_id: number | null;
 }
 
+/** Rolle des Reise-Eintrags: für die Karten-Fokussierung auf den Urlaubsort ("Urlaubsfokus")
+ *  muss die App wissen, welche Seite (Von/Nach) zuhause ist und welche zum Urlaubsziel gehört. */
+export type TravelRole = 'arrival' | 'departure' | 'onward';
+
 export interface TravelItem {
   id: number;
   trip_id: number;
@@ -138,6 +142,7 @@ export interface TravelItem {
   to_maps_link: string | null;
   to_lat: number | null;
   to_lng: number | null;
+  role: TravelRole | null;
 }
 
 export interface Spot {

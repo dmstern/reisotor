@@ -1,5 +1,12 @@
 :root {
   color-scheme: light;
+  /* Von NavBar.vue live per ResizeObserver gepflegt: tatsächliche Höhe der NavBar, wenn sie
+     (je nach Breakpoint/Einstellung) oben klebt – 0px, wenn sie unten fixiert ist. Schubladen
+     (Drawer.vue) addieren das zur Header-Höhe, damit sie die NavBar nie überdecken. */
+  --navbar-offset: 0px;
+  /* Gegenstück für "unten": Höhe der NavBar, wenn sie unten fixiert ist, sonst 0px – damit eine
+     maximierte Schublade (Drawer.vue) auch dort Platz für die NavBar freihält. */
+  --navbar-bottom-offset: 0px;
   --color-bg: #faf8f5;
   --color-surface: #ffffff;
   --color-border: #e8e2d9;

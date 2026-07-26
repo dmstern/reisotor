@@ -6,6 +6,7 @@ import { api } from '../api/client';
 import type { Accommodation, Spot, TravelItem } from '../api/types';
 import { useTripStore } from '../stores/trip';
 import { useDrawersStore } from '../stores/drawers';
+import { useExcursionsStore } from '../stores/excursions';
 import { spotCategoryMeta } from '../utils/spotCategory';
 
 // Die Karte ist ein generischer, reiner Pin-Layer (kein Anlegen/Bearbeiten hier): sie zeigt
@@ -23,6 +24,9 @@ interface MapPoint {
   icon: string;
   color: string;
   label: string;
+  /** Zuhause-Seite eines Reise-Eintrags (Startpunkt der Anreise / Zielpunkt der Abreise) – wird
+   *  vom Urlaubsfokus-Button ausgeblendet, siehe vacationPoints. */
+  homeSide?: boolean;
 }
 
 const ACCOMMODATION_META = { icon: '🛏️', color: '#1baf7a', label: 'Unterkunft' };
@@ -31,6 +35,7 @@ const TRAVEL_TO_META = { icon: '🛬', color: '#4a3aa7', label: 'Ankunft' };
 
 const tripStore = useTripStore();
 const drawers = useDrawersStore();
+const excursionsStore = useExcursionsStore();
 const accommodations = ref<Accommodation[]>([]);
 const travelItems = ref<TravelItem[]>([]);
 const spots = ref<Spot[]>([]);
@@ -40,6 +45,7 @@ const selectedPoint = ref<MapPoint | null>(null);
 const mapEl = ref<HTMLDivElement | null>(null);
 let map: L.Map | null = null;
 let markersLayer: L.LayerGroup | null = null;
+let routesLayer: L.LayerGroup | null = null;
 
 function emojiPin(emoji: string, color: string) {
   return L.divIcon({
@@ -76,6 +82,8 @@ const points = computed<MapPoint[]>(() => {
     }
   }
   for (const t of travelItems.value) {
+    // homeSide: bei "Anreise" ist der Startpunkt (from) zuhause, bei "Abreise" der Zielpunkt (to).
+    // Bei "Weiterreise" oder ohne gesetzte Rolle zählen beide Seiten sicherheitshalber zum Urlaub.
     if (t.from_lat != null && t.from_lng != null) {
       result.push({
         key: `travel-from-${t.id}`,
@@ -83,6 +91,7 @@ const points = computed<MapPoint[]>(() => {
         lat: t.from_lat,
         lng: t.from_lng,
         title: `${t.title} (Abflug/Abfahrt)`,
+        homeSide: t.role === 'arrival',
         ...TRAVEL_FROM_META,
       });
     }
@@ -93,6 +102,7 @@ const points = computed<MapPoint[]>(() => {
         lat: t.to_lat,
         lng: t.to_lng,
         title: `${t.title} (Ankunft)`,
+        homeSide: t.role === 'departure',
         ...TRAVEL_TO_META,
       });
     }
@@ -105,6 +115,9 @@ const points = computed<MapPoint[]>(() => {
   }
   return result;
 });
+
+// Für den Urlaubsfokus-Button: alle Punkte außer den Zuhause-Seiten von Anreise/Abreise.
+const vacationPoints = computed(() => points.value.filter((p) => !p.homeSide));
 
 async function loadAll() {
   const tripId = tripStore.currentTripId;
@@ -128,6 +141,19 @@ function selectPoint(point: MapPoint) {
 function fitAll() {
   if (!map) return;
   const latLngs = points.value.map((p): L.LatLngExpression => [p.lat, p.lng]);
+  if (latLngs.length > 1) {
+    map.fitBounds(L.latLngBounds(latLngs), { padding: [32, 32] });
+  } else if (latLngs.length === 1) {
+    map.setView(latLngs[0], 13);
+  }
+  selectedPoint.value = null;
+}
+
+// Zoomt/zentriert nur auf die Punkte am Urlaubsort – ohne die Zuhause-Seite von Anreise/Abreise
+// (vacationPoints), damit man im Urlaub direkt den näheren, relevanten Kartenausschnitt bekommt.
+function fitVacation() {
+  if (!map) return;
+  const latLngs = vacationPoints.value.map((p): L.LatLngExpression => [p.lat, p.lng]);
   if (latLngs.length > 1) {
     map.fitBounds(L.latLngBounds(latLngs), { padding: [32, 32] });
   } else if (latLngs.length === 1) {
@@ -165,6 +191,37 @@ function renderMarkers() {
   }
 }
 
+// Zeichnet Verbindungslinien: je Reise-Eintrag mit Start- UND Zielkoordinaten eine Strecke
+// (Flug/Bahn/Auto/…), je Ausflug mit ≥2 verorteten Spots eine Route entlang der Stationen
+// (in der Reihenfolge von spot_ids). Rein visuell, keine echte Routenführung entlang von Straßen.
+function renderRoutes() {
+  if (!map || !routesLayer) return;
+  routesLayer.clearLayers();
+
+  for (const t of travelItems.value) {
+    if (t.from_lat != null && t.from_lng != null && t.to_lat != null && t.to_lng != null) {
+      L.polyline(
+        [
+          [t.from_lat, t.from_lng],
+          [t.to_lat, t.to_lng],
+        ],
+        { color: TRAVEL_FROM_META.color, weight: 3, opacity: 0.65, dashArray: '6 6' },
+      ).addTo(routesLayer);
+    }
+  }
+
+  for (const excursion of excursionsStore.excursions) {
+    const coords: L.LatLngExpression[] = [];
+    for (const spotId of excursion.spot_ids) {
+      const spot = spots.value.find((s) => s.id === spotId);
+      if (spot?.lat != null && spot?.lng != null) coords.push([spot.lat, spot.lng]);
+    }
+    if (coords.length >= 2) {
+      L.polyline(coords, { color: '#e08e45', weight: 3, opacity: 0.65 }).addTo(routesLayer);
+    }
+  }
+}
+
 let resizeObserver: ResizeObserver | null = null;
 
 onMounted(async () => {
@@ -181,8 +238,12 @@ onMounted(async () => {
     attribution: '&copy; OpenStreetMap-Mitwirkende',
     maxZoom: 19,
   }).addTo(map);
+  // routesLayer vor markersLayer hinzufügen, damit Routen-Linien unter den (klickbaren) Pins
+  // liegen statt sie zu verdecken.
+  routesLayer = L.layerGroup().addTo(map);
   markersLayer = L.layerGroup().addTo(map);
   renderMarkers();
+  renderRoutes();
 
   // Leaflet misst die Containergröße nur einmal beim Initialisieren und merkt sich das intern –
   // ändert sich die Größe danach (Schublade öffnet/schließt, wird per Anfasser breiter/schmaler
@@ -206,6 +267,7 @@ watch(
   async () => {
     await loadAll();
     renderMarkers();
+    renderRoutes();
   },
 );
 
@@ -215,7 +277,12 @@ watch(
 watch(
   () => drawers.mapOpen,
   (open) => {
-    if (open) loadAll().then(renderMarkers);
+    if (open) {
+      loadAll().then(() => {
+        renderMarkers();
+        renderRoutes();
+      });
+    }
   },
 );
 
@@ -224,6 +291,15 @@ watch(
 watch(
   () => drawers.mapFocusKey,
   () => renderMarkers(),
+);
+
+// Ausflüge werden im excursions-Store gehalten (u. a. für Drag&Drop in die Kalender-Schublade) und
+// erst asynchron geladen – ändert sich die Liste (z. B. Spot-Zuordnung bearbeitet), müssen die
+// Ausflugs-Routen neu gezeichnet werden.
+watch(
+  () => excursionsStore.excursions,
+  () => renderRoutes(),
+  { deep: true },
 );
 </script>
 
@@ -241,6 +317,16 @@ watch(
         @click="fitAll"
       >
         🔍
+      </button>
+      <button
+        type="button"
+        class="fit-btn vacation-btn"
+        title="Nur Urlaubsort fokussieren (ohne Start-/Zielpunkt zuhause)"
+        aria-label="Nur Urlaubsort fokussieren"
+        :disabled="!vacationPoints.length"
+        @click="fitVacation"
+      >
+        🏖️
       </button>
     </div>
 
@@ -315,6 +401,10 @@ watch(
 .fit-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+.vacation-btn {
+  top: 50px;
 }
 
 /* Die OpenStreetMap-Kacheln selbst kennen keinen Dark Mode – ein Farb-Invert nur auf der

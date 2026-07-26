@@ -300,6 +300,11 @@ ensureColumn('travel_items', 'from_lng', 'REAL');
 ensureColumn('travel_items', 'to_maps_link', 'TEXT');
 ensureColumn('travel_items', 'to_lat', 'REAL');
 ensureColumn('travel_items', 'to_lng', 'REAL');
+// Rolle des Reise-Eintrags: 'arrival' (Anreise, von zuhause zum Urlaubsziel), 'departure'
+// (Abreise, vom Urlaubsziel nach zuhause) oder 'onward' (Weiterreise zwischen zwei Orten
+// innerhalb des Urlaubs). Damit kann die Karte "Auf Urlaubsziel fokussieren" die Start-/
+// Zielpunkte zuhause zuverlässig von den eigentlichen Urlaubsorten unterscheiden.
+ensureColumn('travel_items', 'role', 'TEXT');
 
 // Ausflug wird zum reinen Container-Objekt (Titel/Bild/Notiz/Spots) mit optionalem eigenen
 // Datum für die Kalender-Einplanung – Standort/Link/Status wandern zu den zugeordneten Spots
