@@ -24,6 +24,8 @@ const TABLES = [
   'excursion_spots',
   'idea_likes',
   'idea_comments',
+  'spot_likes',
+  'spot_comments',
   'note_likes',
   'note_comments',
 ] as const;

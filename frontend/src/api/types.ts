@@ -157,7 +157,20 @@ export interface Spot {
   lat: number | null;
   lng: number | null;
   created_by: number | null;
-  discarded: 0 | 1;
+}
+
+export interface SpotLike {
+  id: number;
+  spot_id: number;
+  user_id: number;
+}
+
+export interface SpotComment {
+  id: number;
+  spot_id: number;
+  author_id: number;
+  content: string;
+  created_at: string;
 }
 
 export interface BudgetExpense {

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { api } from '../api/client';
-import type { ExcursionComment, ExcursionLike, Spot, User } from '../api/types';
+import type { ExcursionComment, ExcursionLike, Spot, SpotComment, SpotLike, User } from '../api/types';
 import { useAuthStore } from '../stores/auth';
 import { useTripStore } from '../stores/trip';
 import { useExcursionsStore } from '../stores/excursions';
@@ -10,7 +10,7 @@ import ExcursionCard from '../components/ExcursionCard.vue';
 import SpotCard from '../components/SpotCard.vue';
 import Modal from '../components/Modal.vue';
 import Combobox from '../components/Combobox.vue';
-import { parseLatLngFromMapsLink } from '../utils/googleMaps';
+import { parseLatLngFromMapsLink, tilePreviewUrl } from '../utils/googleMaps';
 import { spotCategoryMeta, SPOT_CATEGORY_SUGGESTIONS } from '../utils/spotCategory';
 
 const auth = useAuthStore();
@@ -23,20 +23,26 @@ const users = ref<User[]>([]);
 const likes = ref<ExcursionLike[]>([]);
 const comments = ref<ExcursionComment[]>([]);
 const spots = ref<Spot[]>([]);
+const spotLikes = ref<SpotLike[]>([]);
+const spotComments = ref<SpotComment[]>([]);
 const loading = ref(true);
 
 onMounted(async () => {
-  const [usersRes, likesRes, commentsRes, spotsRes] = await Promise.all([
+  const [usersRes, likesRes, commentsRes, spotsRes, spotLikesRes, spotCommentsRes] = await Promise.all([
     api.get<User[]>('/users'),
     api.get<ExcursionLike[]>(`/ideas/likes?trip_id=${tripId}`),
     api.get<ExcursionComment[]>(`/ideas/comments?trip_id=${tripId}`),
     api.get<Spot[]>(`/spots?trip_id=${tripId}`),
+    api.get<SpotLike[]>(`/spots/likes?trip_id=${tripId}`),
+    api.get<SpotComment[]>(`/spots/comments?trip_id=${tripId}`),
     excursionsStore.load(),
   ]);
   users.value = usersRes;
   likes.value = likesRes;
   comments.value = commentsRes;
   spots.value = spotsRes;
+  spotLikes.value = spotLikesRes;
+  spotComments.value = spotCommentsRes;
   loading.value = false;
 });
 
@@ -53,7 +59,7 @@ function stationsFor(spotIds: number[]) {
   return spots.value.filter((s) => spotIds.includes(s.id));
 }
 
-// --- Likes/Kommentare (unverändert, weiterhin an ideas/idea_likes/idea_comments gebunden) ---
+// --- Likes/Kommentare Ausflüge (weiterhin an ideas/idea_likes/idea_comments gebunden) ---
 function likesFor(ideaId: number) {
   return likes.value.filter((l) => l.idea_id === ideaId);
 }
@@ -87,6 +93,42 @@ async function submitComment(ideaId: number, content: string) {
 async function removeComment(id: number) {
   await api.delete(`/ideas/comments/${id}`);
   comments.value = comments.value.filter((c) => c.id !== id);
+}
+
+// --- Likes/Kommentare Spots (analog, an spots/spot_likes/spot_comments gebunden) ---
+function spotLikesFor(spotId: number) {
+  return spotLikes.value.filter((l) => l.spot_id === spotId);
+}
+function spotLikedByMe(spotId: number) {
+  return spotLikesFor(spotId).some((l) => l.user_id === auth.user?.id);
+}
+function spotCommentsFor(spotId: number) {
+  return spotComments.value.filter((c) => c.spot_id === spotId).sort((a, b) => a.created_at.localeCompare(b.created_at));
+}
+function spotCommentItemsFor(spotId: number) {
+  return spotCommentsFor(spotId).map((c) => ({
+    id: c.id,
+    avatar: author(c.author_id)?.avatar ?? '❓',
+    username: author(c.author_id)?.username ?? '?',
+    content: c.content,
+    canRemove: c.author_id === auth.user?.id,
+  }));
+}
+async function toggleSpotLike(spotId: number) {
+  const result = await api.post<{ liked: boolean }>(`/spots/${spotId}/like`);
+  if (result.liked) {
+    spotLikes.value.push({ id: Date.now(), spot_id: spotId, user_id: auth.user!.id });
+  } else {
+    spotLikes.value = spotLikes.value.filter((l) => !(l.spot_id === spotId && l.user_id === auth.user!.id));
+  }
+}
+async function submitSpotComment(spotId: number, content: string) {
+  const created = await api.post<SpotComment>(`/spots/${spotId}/comments`, { content });
+  spotComments.value.push(created);
+}
+async function removeSpotComment(id: number) {
+  await api.delete(`/spots/comments/${id}`);
+  spotComments.value = spotComments.value.filter((c) => c.id !== id);
 }
 
 // --- Ausflüge ---
@@ -153,16 +195,40 @@ async function removeExcursion(id: number) {
   await excursionsStore.remove(id);
 }
 
+// Spot per Drag&Drop aus der Spots-Sicht auf eine Ausflug-Karte fallen lassen: als Station
+// hinzufügen (ExcursionCard.vue ist die Drop-Zone, emittiert die abgelegte Spot-Id).
+async function addSpotToExcursion(excursionId: number, spotId: number) {
+  const excursion = excursionsStore.excursions.find((e) => e.id === excursionId);
+  if (!excursion || excursion.spot_ids.includes(spotId)) return;
+  await excursionsStore.update(excursionId, {
+    title: excursion.title,
+    image_url: excursion.image_url ?? undefined,
+    note: excursion.note ?? undefined,
+    date: excursion.date ?? undefined,
+    spot_ids: [...excursion.spot_ids, spotId],
+  });
+}
+
 // Drop-Zone, um die Kalender-Einplanung rückgängig zu machen: ein geplanter Ausflug kann aus dem
 // "Geplant"-Bereich (oder direkt aus der Kalender-Schublade) hierher zurückgezogen werden.
 // Zähler statt Boolean, da dragenter/dragleave beim Überqueren von Kind-Elementen mehrfach feuern.
 const unplannedDragOverCount = ref(0);
 const unplannedDragOver = computed(() => unplannedDragOverCount.value > 0);
 
-function onUnplannedDragEnter() {
+// dataTransfer.types ist (anders als getData) schon bei dragenter/dragleave verfügbar – damit
+// reagiert die Sektion nur auf Ausflug-Drags. Ohne diesen Check würde beim Ziehen eines Spots
+// über eine einzelne Ausflug-Karte hinweg (dropSpot-Feature) die ganze Sektion grün aufleuchten,
+// weil dragenter/dragleave von Kind-Elementen an den umschließenden Container durchbubbeln.
+function isExcursionDrag(event: DragEvent) {
+  return !!event.dataTransfer?.types.includes('text/excursion-id');
+}
+
+function onUnplannedDragEnter(event: DragEvent) {
+  if (!isExcursionDrag(event)) return;
   unplannedDragOverCount.value++;
 }
-function onUnplannedDragLeave() {
+function onUnplannedDragLeave(event: DragEvent) {
+  if (!isExcursionDrag(event)) return;
   unplannedDragOverCount.value = Math.max(0, unplannedDragOverCount.value - 1);
 }
 function onUnplannedDrop(event: DragEvent) {
@@ -170,6 +236,26 @@ function onUnplannedDrop(event: DragEvent) {
   const raw = event.dataTransfer?.getData('text/excursion-id');
   if (!raw) return;
   excursionsStore.setDate(Number(raw), null);
+}
+
+// "Geplant" bekommt dieselbe Dropzone-Optik wie "In Planung" – ein Ausflug wird beim Ziehen
+// weiterhin nur auf DIESE beiden Status-Bereiche fallen gelassen, nie auf einzelne Ausflug-Karten
+// (siehe isSpotDrag-Check in ExcursionCard.vue). Ein konkretes Datum lässt sich aus einem Drop
+// hier aber nicht herleiten (das passiert weiterhin per Drag in die Kalender-Schublade) – der
+// Drop selbst bleibt daher bewusst folgenlos, nur der Zähler wird zurückgesetzt.
+const plannedDragOverCount = ref(0);
+const plannedDragOver = computed(() => plannedDragOverCount.value > 0);
+
+function onPlannedDragEnter(event: DragEvent) {
+  if (!isExcursionDrag(event)) return;
+  plannedDragOverCount.value++;
+}
+function onPlannedDragLeave(event: DragEvent) {
+  if (!isExcursionDrag(event)) return;
+  plannedDragOverCount.value = Math.max(0, plannedDragOverCount.value - 1);
+}
+function onPlannedDrop() {
+  plannedDragOverCount.value = 0;
 }
 
 // --- Spots ---
@@ -182,8 +268,33 @@ const editingSpot = ref<Spot | null>(null);
 const editSpotForm = ref(emptySpotForm());
 const editSpotMapsLinkResolved = ref<boolean | null>(null);
 
-const activeSpots = computed(() => spots.value.filter((s) => !s.discarded));
-const discardedSpots = computed(() => spots.value.filter((s) => s.discarded));
+// Live-Vorschau im Anlege-/Bearbeiten-Dialog (Bild-Banner, wie bei der Card): eigenes Bild, sonst
+// Kachel-Vorschau der Koordinate, sofern der Maps-Link clientseitig parsbar ist (bei Kurzlinks
+// erst nach dem Speichern möglich, siehe resolveLatLng serverseitig).
+const spotPreviewImage = computed(() => {
+  if (spotForm.value.image_url) return spotForm.value.image_url;
+  const parsed = parseLatLngFromMapsLink(spotForm.value.maps_link);
+  return parsed ? tilePreviewUrl(parsed.lat, parsed.lng) : null;
+});
+const editSpotPreviewImage = computed(() => {
+  if (editSpotForm.value.image_url) return editSpotForm.value.image_url;
+  const parsed = parseLatLngFromMapsLink(editSpotForm.value.maps_link);
+  return parsed ? tilePreviewUrl(parsed.lat, parsed.lng) : null;
+});
+
+function spotLikeCount(spotId: number) {
+  return spotLikesFor(spotId).length;
+}
+function byLikesThenTitle(a: Spot, b: Spot) {
+  return spotLikeCount(b.id) - spotLikeCount(a.id) || a.title.localeCompare(b.title);
+}
+
+// Toggle in der Spots-Übersicht: nach Likes sortiert (meiste zuerst) statt alphabetisch.
+const sortSpotsByLikes = ref(false);
+const sortedSpots = computed(() => (sortSpotsByLikes.value ? [...spots.value].sort(byLikesThenTitle) : spots.value));
+
+// Im Ausflug-Dialog immer nach Likes sortiert, unabhängig vom Toggle oben.
+const spotsForPicker = computed(() => [...spots.value].sort(byLikesThenTitle));
 
 const spotCategoryOptions = computed(() => {
   const used = spots.value.map((s) => s.category).filter((c): c is string => !!c);
@@ -254,21 +365,6 @@ async function removeSpot(id: number) {
   drawers.touchLocations();
 }
 
-async function toggleDiscarded(spot: Spot) {
-  const updated = await api.put<Spot>(`/spots/${spot.id}`, {
-    title: spot.title,
-    image_url: spot.image_url ?? undefined,
-    category: spot.category ?? undefined,
-    note: spot.note ?? undefined,
-    maps_link: spot.maps_link ?? undefined,
-    lat: spot.lat ?? undefined,
-    lng: spot.lng ?? undefined,
-    discarded: !spot.discarded,
-  });
-  const idx = spots.value.findIndex((s) => s.id === spot.id);
-  if (idx !== -1) spots.value[idx] = updated;
-}
-
 function showSpotOnMap(spot: Spot) {
   drawers.openMapAt(`spot-${spot.id}`);
 }
@@ -294,11 +390,12 @@ function showSpotOnMap(spot: Spot) {
           Datum (optional – ansonsten "In Planung")
           <input v-model="excursionForm.date" type="date" />
         </label>
-        <fieldset v-if="spots.length" class="spot-picker">
-          <legend>Stationen (Spots)</legend>
-          <label v-for="spot in spots" :key="spot.id" class="spot-option">
+        <fieldset v-if="spotsForPicker.length" class="spot-picker">
+          <legend>Stationen (Spots) – nach Likes sortiert</legend>
+          <label v-for="spot in spotsForPicker" :key="spot.id" class="spot-option">
             <input type="checkbox" :value="spot.id" v-model="excursionForm.spot_ids" />
-            {{ spotCategoryMeta(spot.category).icon }} {{ spot.title }}
+            <span class="spot-option-title">{{ spotCategoryMeta(spot.category).icon }} {{ spot.title }}</span>
+            <span class="spot-option-likes">❤️ {{ spotLikeCount(spot.id) }}</span>
           </label>
         </fieldset>
         <button type="submit">Speichern</button>
@@ -313,8 +410,8 @@ function showSpotOnMap(spot: Spot) {
       @dragleave="onUnplannedDragLeave"
       @drop.prevent="onUnplannedDrop"
     >
-      <h2>In Planung</h2>
-      <TransitionGroup v-if="unplannedExcursions.length" tag="div" name="list" class="grid cards">
+      <h2>📝 In Planung</h2>
+      <TransitionGroup v-if="unplannedExcursions.length" tag="div" name="list" class="entries">
         <ExcursionCard
           v-for="excursion in unplannedExcursions"
           :key="excursion.id"
@@ -329,6 +426,7 @@ function showSpotOnMap(spot: Spot) {
           @toggle-like="toggleLike(excursion.id)"
           @submit-comment="(content) => submitComment(excursion.id, content)"
           @remove-comment="removeComment"
+          @drop-spot="(spotId) => addSpotToExcursion(excursion.id, spotId)"
         />
       </TransitionGroup>
       <p v-else class="empty dropzone-hint">
@@ -337,9 +435,17 @@ function showSpotOnMap(spot: Spot) {
       </p>
     </section>
 
-    <section class="group" v-if="plannedExcursions.length">
-      <h2>Geplant</h2>
-      <TransitionGroup tag="div" name="list" class="grid cards">
+    <section
+      class="group dropzone"
+      :class="{ 'drag-over': plannedDragOver }"
+      v-if="plannedExcursions.length"
+      @dragover.prevent
+      @dragenter.prevent="onPlannedDragEnter"
+      @dragleave="onPlannedDragLeave"
+      @drop.prevent="onPlannedDrop"
+    >
+      <h2>📅 Geplant</h2>
+      <TransitionGroup tag="div" name="list" class="entries">
         <ExcursionCard
           v-for="excursion in plannedExcursions"
           :key="excursion.id"
@@ -354,6 +460,7 @@ function showSpotOnMap(spot: Spot) {
           @toggle-like="toggleLike(excursion.id)"
           @submit-comment="(content) => submitComment(excursion.id, content)"
           @remove-comment="removeComment"
+          @drop-spot="(spotId) => addSpotToExcursion(excursion.id, spotId)"
         />
       </TransitionGroup>
     </section>
@@ -376,11 +483,12 @@ function showSpotOnMap(spot: Spot) {
           Datum (optional – ansonsten "In Planung")
           <input v-model="editExcursionForm.date" type="date" />
         </label>
-        <fieldset v-if="spots.length" class="spot-picker">
-          <legend>Stationen (Spots)</legend>
-          <label v-for="spot in spots" :key="spot.id" class="spot-option">
+        <fieldset v-if="spotsForPicker.length" class="spot-picker">
+          <legend>Stationen (Spots) – nach Likes sortiert</legend>
+          <label v-for="spot in spotsForPicker" :key="spot.id" class="spot-option">
             <input type="checkbox" :value="spot.id" v-model="editExcursionForm.spot_ids" />
-            {{ spotCategoryMeta(spot.category).icon }} {{ spot.title }}
+            <span class="spot-option-title">{{ spotCategoryMeta(spot.category).icon }} {{ spot.title }}</span>
+            <span class="spot-option-likes">❤️ {{ spotLikeCount(spot.id) }}</span>
           </label>
         </fieldset>
         <button type="submit">Speichern</button>
@@ -391,15 +499,29 @@ function showSpotOnMap(spot: Spot) {
 
     <div class="header">
       <h2>Spots</h2>
-      <button @click="showSpotForm = true">+ Neuer Spot</button>
+      <div class="header-actions">
+        <button
+          type="button"
+          class="secondary sort-toggle"
+          :class="{ active: sortSpotsByLikes }"
+          @click="sortSpotsByLikes = !sortSpotsByLikes"
+        >
+          {{ sortSpotsByLikes ? '❤️ Nach Likes sortiert' : '🔤 Alphabetisch sortiert' }}
+        </button>
+        <button @click="showSpotForm = true">+ Neuer Spot</button>
+      </div>
     </div>
     <p class="hint">
       Orte (Restaurant, Sehenswürdigkeit, Strand, …), die du als Stationen bei Ausflügen zuordnen kannst –
-      auch unabhängig von einem Ausflug.
+      auch unabhängig von einem Ausflug. Tipp: Ziehe eine Spot-Karte direkt auf einen Ausflug weiter oben,
+      um sie dort als Station hinzuzufügen.
     </p>
 
     <Modal :model-value="showSpotForm" title="Neuer Spot" @update:model-value="(v) => !v && closeSpotForm()">
       <form class="edit-form" @submit.prevent="addSpot">
+        <div class="form-image-banner" :style="spotPreviewImage ? { backgroundImage: `url(${spotPreviewImage})` } : {}">
+          <span v-if="!spotPreviewImage" class="placeholder">{{ spotCategoryMeta(spotForm.category).icon }}</span>
+        </div>
         <input v-model="spotForm.title" type="text" placeholder="Titel" required />
         <input v-model="spotForm.image_url" type="url" placeholder="Bild-URL (optional)" />
         <Combobox v-model="spotForm.category" :options="spotCategoryOptions" placeholder="Kategorie (optional)" />
@@ -418,37 +540,26 @@ function showSpotOnMap(spot: Spot) {
       </form>
     </Modal>
 
-    <section class="group" v-if="activeSpots.length">
+    <section class="group" v-if="sortedSpots.length">
       <TransitionGroup tag="div" name="list" class="grid cards">
         <SpotCard
-          v-for="spot in activeSpots"
+          v-for="spot in sortedSpots"
           :key="spot.id"
           :spot="spot"
           :creator-label="creatorLabel(spot.created_by)"
+          :like-count="spotLikeCount(spot.id)"
+          :liked="spotLikedByMe(spot.id)"
+          :comments="spotCommentItemsFor(spot.id)"
           @edit="startEditSpot"
           @remove="removeSpot"
-          @toggle-discarded="toggleDiscarded"
           @show-on-map="showSpotOnMap"
+          @toggle-like="toggleSpotLike(spot.id)"
+          @submit-comment="(content) => submitSpotComment(spot.id, content)"
+          @remove-comment="removeSpotComment"
         />
       </TransitionGroup>
     </section>
     <p v-if="!spots.length" class="empty">Noch keine Spots angelegt.</p>
-
-    <section class="group" v-if="discardedSpots.length">
-      <h3>Verworfen</h3>
-      <TransitionGroup tag="div" name="list" class="grid cards">
-        <SpotCard
-          v-for="spot in discardedSpots"
-          :key="spot.id"
-          :spot="spot"
-          :creator-label="creatorLabel(spot.created_by)"
-          @edit="startEditSpot"
-          @remove="removeSpot"
-          @toggle-discarded="toggleDiscarded"
-          @show-on-map="showSpotOnMap"
-        />
-      </TransitionGroup>
-    </section>
 
     <Modal
       :model-value="editingSpot !== null"
@@ -456,6 +567,9 @@ function showSpotOnMap(spot: Spot) {
       @update:model-value="(v) => !v && (editingSpot = null)"
     >
       <form class="edit-form" @submit.prevent="submitEditSpot">
+        <div class="form-image-banner" :style="editSpotPreviewImage ? { backgroundImage: `url(${editSpotPreviewImage})` } : {}">
+          <span v-if="!editSpotPreviewImage" class="placeholder">{{ spotCategoryMeta(editSpotForm.category).icon }}</span>
+        </div>
         <input v-model="editSpotForm.title" type="text" placeholder="Titel" required />
         <input v-model="editSpotForm.image_url" type="url" placeholder="Bild-URL (optional)" />
         <Combobox v-model="editSpotForm.category" :options="spotCategoryOptions" placeholder="Kategorie (optional)" />
@@ -486,6 +600,19 @@ function showSpotOnMap(spot: Spot) {
   margin-bottom: var(--space-2);
 }
 
+.header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.sort-toggle.active {
+  background: var(--color-primary-tint);
+  border-color: var(--color-primary);
+  color: var(--color-primary-dark);
+}
+
 .hint {
   margin: 0 0 var(--space-3);
   font-size: 0.85rem;
@@ -500,6 +627,19 @@ function showSpotOnMap(spot: Spot) {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+}
+
+.form-image-banner {
+  height: 140px;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary-tint) center/cover no-repeat;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.form-image-banner .placeholder {
+  font-size: 2.2rem;
 }
 
 .syntax-hint {
@@ -548,6 +688,16 @@ function showSpotOnMap(spot: Spot) {
   font-weight: 400;
 }
 
+.spot-option-title {
+  flex: 1;
+}
+
+.spot-option-likes {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
 .group {
   margin-bottom: var(--space-4);
 }
@@ -572,6 +722,12 @@ function showSpotOnMap(spot: Spot) {
   font-size: 1rem;
   color: var(--color-primary-dark);
   margin-bottom: var(--space-3);
+}
+
+.entries {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
 }
 
 .cards {

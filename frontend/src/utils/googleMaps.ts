@@ -41,3 +41,15 @@ export function parseLatLngFromMapsLink(url: string | null | undefined): LatLng 
   }
   return null;
 }
+
+/** Baut die URL einer einzelnen OpenStreetMap-Kachel rund um die Koordinate – dient als
+ *  Live-Vorschau im Anlege-/Bearbeiten-Formular (Bild-Banner), solange kein eigenes Bild
+ *  hinterlegt ist. Dieselbe Kachel, die auch backend/src/utils/mapsLink.ts als serverseitigen
+ *  Fallback berechnet (dort bewusst dupliziert, siehe Kommentar oben – getrennte Build-Pipelines). */
+export function tilePreviewUrl(lat: number, lng: number, zoom = 15): string {
+  const latRad = (lat * Math.PI) / 180;
+  const n = 2 ** zoom;
+  const x = Math.floor(((lng + 180) / 360) * n);
+  const y = Math.floor(((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * n);
+  return `https://tile.openstreetmap.org/${zoom}/${x}/${y}.png`;
+}

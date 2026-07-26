@@ -22,6 +22,7 @@ const emit = defineEmits<{
   (e: 'toggle-like'): void;
   (e: 'submit-comment', content: string): void;
   (e: 'remove-comment', id: number): void;
+  (e: 'drop-spot', spotId: number): void;
 }>();
 
 const showComments = ref(false);
@@ -36,10 +37,45 @@ function onDragStart(event: DragEvent) {
   event.dataTransfer?.setData('text/excursion-id', String(props.excursion.id));
   if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
 }
+
+// Drop-Zone fürs Zuordnen: ein Spot kann direkt aus der Spots-Sicht auf diese Karte gezogen
+// werden, um ihn als Station hinzuzufügen (SpotCard.vue ist die Drag-Quelle). Zähler statt
+// Boolean, da dragenter/dragleave beim Überqueren von Kind-Elementen mehrfach feuern. Der
+// types-Check ist nötig, weil beim Ziehen eines ANDEREN Ausflugs (text/excursion-id) über diese
+// Karte hinweg sonst ebenfalls dragenter/dragleave feuern würde – Ausflüge sollen nur auf den
+// Status-Bereichen (In Planung/Geplant) landen, nicht auf einzelnen Ausflug-Karten.
+const spotDragOverCount = ref(0);
+function isSpotDrag(event: DragEvent) {
+  return !!event.dataTransfer?.types.includes('text/spot-id');
+}
+function onSpotDragEnter(event: DragEvent) {
+  if (!isSpotDrag(event)) return;
+  spotDragOverCount.value++;
+}
+function onSpotDragLeave(event: DragEvent) {
+  if (!isSpotDrag(event)) return;
+  spotDragOverCount.value = Math.max(0, spotDragOverCount.value - 1);
+}
+function onSpotDrop(event: DragEvent) {
+  spotDragOverCount.value = 0;
+  const raw = event.dataTransfer?.getData('text/spot-id');
+  if (!raw) return;
+  emit('drop-spot', Number(raw));
+}
 </script>
 
 <template>
-  <div class="card excursion-card" draggable="true" @dragstart="onDragStart">
+  <div
+    class="card excursion-card"
+    :class="{ 'drop-target': spotDragOverCount > 0 }"
+    draggable="true"
+    @dragstart="onDragStart"
+    @dragover.prevent
+    @dragenter.prevent="onSpotDragEnter"
+    @dragleave="onSpotDragLeave"
+    @drop.prevent="onSpotDrop"
+  >
+    <DeleteButton floating class="card-delete" @click="emit('remove', excursion.id)" />
     <div class="image" :style="excursion.image_url ? { backgroundImage: `url(${excursion.image_url})` } : {}">
       <span v-if="!excursion.image_url" class="placeholder">🎒</span>
       <EditButton floating @click="emit('edit', excursion)" />
@@ -56,10 +92,7 @@ function onDragStart(event: DragEvent) {
           {{ spotCategoryMeta(spot.category).icon }} {{ spot.title }}
         </span>
       </div>
-      <div class="actions">
-        <span class="drag-hint">↕ auf Kalender-Schublade ziehen zum Einplanen</span>
-        <DeleteButton small @click="emit('remove', excursion.id)" />
-      </div>
+      <span class="drag-hint">↕ auf Kalender-Schublade ziehen zum Einplanen</span>
       <div class="social-row">
         <LikeButton :count="likeCount" :liked="liked" @toggle="emit('toggle-like')" />
         <button class="secondary" @click="showComments = !showComments">💬 {{ comments.length || '' }}</button>
@@ -75,20 +108,41 @@ function onDragStart(event: DragEvent) {
 </template>
 
 <style scoped>
+/* Volle Breite statt kleiner Grid-Card (wie Tagebucheinträge) – macht Ausflüge auf einen Blick von
+   den (weiterhin als Grid angezeigten) Spots unterscheidbar. Bild als schmale, feste Miniatur
+   links statt großem Banner oben, damit es bei voller Breite nicht unnötig gestreckt wirkt. */
 .excursion-card {
+  position: relative;
   padding: 0;
   overflow: hidden;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: stretch;
+  min-height: 120px;
   cursor: grab;
+  border: 2px dashed transparent;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+/* Löschen-Button schwebt in der oberen rechten Ecke der ganzen Card (nicht des Vorschaubilds) –
+   .excursion-card ist dafür position:relative. */
+.card-delete {
+  z-index: 1;
 }
 
 .excursion-card:active {
   cursor: grabbing;
 }
 
+/* Spot per Drag&Drop aus der Spots-Sicht darauf ablegen (SpotCard.vue ist die Drag-Quelle). */
+.excursion-card.drop-target {
+  border-color: var(--color-primary);
+  background: var(--color-primary-tint);
+}
+
 .image {
-  height: 160px;
+  width: 140px;
+  flex-shrink: 0;
   background: var(--color-primary-tint) center/cover no-repeat;
   display: flex;
   align-items: center;
@@ -96,8 +150,31 @@ function onDragStart(event: DragEvent) {
   position: relative;
 }
 
+@media (max-width: 480px) {
+  .excursion-card {
+    flex-direction: column;
+  }
+
+  .image {
+    width: auto;
+    height: 140px;
+  }
+}
+
 .placeholder {
   font-size: 2.5rem;
+}
+
+.body {
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.body h3 {
+  font-size: 1rem;
+  margin-bottom: 0;
 }
 
 .status {
@@ -116,18 +193,6 @@ function onDragStart(event: DragEvent) {
   color: var(--color-success);
 }
 
-.body {
-  padding: var(--space-3);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.body h3 {
-  font-size: 1rem;
-  margin-bottom: 0;
-}
-
 .creator {
   font-size: 0.82rem;
   color: var(--color-text-muted);
@@ -138,22 +203,10 @@ function onDragStart(event: DragEvent) {
   overflow-wrap: anywhere;
 }
 
-.note :deep(a) {
-  color: var(--color-primary);
-}
-
-.actions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--space-2);
-  margin-top: var(--space-2);
-  flex-wrap: wrap;
-}
-
 .drag-hint {
   font-size: 0.72rem;
   color: var(--color-text-muted);
+  margin-top: var(--space-1);
 }
 
 .social-row {

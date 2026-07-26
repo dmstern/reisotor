@@ -1,24 +1,45 @@
 <script setup lang="ts">
+import { ref } from 'vue';
 import type { Spot } from '../api/types';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { renderRichText } from '../utils/richText';
 import EditButton from './EditButton.vue';
 import DeleteButton from './DeleteButton.vue';
+import LikeButton from './LikeButton.vue';
+import Comments, { type CommentItem } from './Comments.vue';
 
-defineProps<{ spot: Spot; creatorLabel: string | null }>();
+const props = defineProps<{
+  spot: Spot;
+  creatorLabel: string | null;
+  likeCount: number;
+  liked: boolean;
+  comments: CommentItem[];
+}>();
 const emit = defineEmits<{
   (e: 'edit', spot: Spot): void;
   (e: 'remove', id: number): void;
-  (e: 'toggle-discarded', spot: Spot): void;
   (e: 'show-on-map', spot: Spot): void;
+  (e: 'toggle-like'): void;
+  (e: 'submit-comment', content: string): void;
+  (e: 'remove-comment', id: number): void;
 }>();
+
+const showComments = ref(false);
+
+// Drag-Quelle fürs Zuordnen zu einem Ausflug: der Spot wird direkt aus dieser Karte auf eine
+// Ausflug-Karte gezogen (ExcursionCard.vue ist die Drop-Zone).
+function onDragStart(event: DragEvent) {
+  event.dataTransfer?.setData('text/spot-id', String(props.spot.id));
+  if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+}
 </script>
 
 <template>
-  <div class="card spot-card" :class="{ discarded: spot.discarded }">
+  <div class="card spot-card" draggable="true" @dragstart="onDragStart">
     <div class="image" :style="spot.image_url ? { backgroundImage: `url(${spot.image_url})` } : {}">
       <span v-if="!spot.image_url" class="placeholder">{{ spotCategoryMeta(spot.category).icon }}</span>
       <EditButton floating @click="emit('edit', spot)" />
+      <DeleteButton floating @click="emit('remove', spot.id)" />
     </div>
     <div class="body">
       <div class="head">
@@ -30,19 +51,21 @@ const emit = defineEmits<{
       <p v-if="creatorLabel" class="creator">von {{ creatorLabel }}</p>
       <div v-if="spot.note" class="note" v-html="renderRichText(spot.note)"></div>
       <div class="links">
-        <a v-if="spot.maps_link" :href="spot.maps_link" target="_blank" rel="noopener" class="external-link-btn"
-          >📍 Extern öffnen ↗</a
-        >
-        <button v-if="spot.lat != null && spot.lng != null" type="button" class="secondary map-btn" @click="emit('show-on-map', spot)">
+        <button v-if="spot.lat != null && spot.lng != null" type="button" class="card-action-btn" @click="emit('show-on-map', spot)">
           🗺️ Auf Karte anzeigen
         </button>
       </div>
-      <div class="actions">
-        <button type="button" class="secondary discard-btn" @click="emit('toggle-discarded', spot)">
-          {{ spot.discarded ? '↩️ Wieder aktivieren' : '❌ Verwerfen' }}
-        </button>
-        <DeleteButton small @click="emit('remove', spot.id)" />
+      <span class="drag-hint">↕ auf einen Ausflug ziehen, um ihn dort als Station hinzuzufügen</span>
+      <div class="social-row">
+        <LikeButton :count="likeCount" :liked="liked" @toggle="emit('toggle-like')" />
+        <button class="secondary" @click="showComments = !showComments">💬 {{ comments.length || '' }}</button>
       </div>
+      <Comments
+        v-if="showComments"
+        :comments="comments"
+        @submit="(content) => emit('submit-comment', content)"
+        @remove="(id) => emit('remove-comment', id)"
+      />
     </div>
   </div>
 </template>
@@ -53,10 +76,11 @@ const emit = defineEmits<{
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  cursor: grab;
 }
 
-.spot-card.discarded {
-  opacity: 0.6;
+.spot-card:active {
+  cursor: grabbing;
 }
 
 .image {
@@ -110,10 +134,6 @@ const emit = defineEmits<{
   overflow-wrap: anywhere;
 }
 
-.note :deep(a) {
-  color: var(--color-primary);
-}
-
 .links {
   display: flex;
   flex-wrap: wrap;
@@ -121,40 +141,15 @@ const emit = defineEmits<{
   margin-top: var(--space-1);
 }
 
-.external-link-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: rgba(42, 127, 116, 0.08);
-  font-size: 0.85rem;
-  font-weight: 600;
-  text-decoration: none;
-  color: var(--color-primary);
+.drag-hint {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  margin-top: var(--space-1);
 }
 
-.external-link-btn:hover {
-  background: var(--color-primary-tint);
-}
-
-.map-btn {
-  font-size: 0.85rem;
-  padding: 4px 10px;
-}
-
-.actions {
+.social-row {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
   gap: var(--space-2);
   margin-top: var(--space-2);
-  flex-wrap: wrap;
-}
-
-.discard-btn {
-  font-size: 0.8rem;
-  padding: 4px 10px;
 }
 </style>
