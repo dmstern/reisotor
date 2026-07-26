@@ -265,7 +265,9 @@ function onResizeEnd() {
   position: absolute;
   top: 0;
   bottom: 0;
-  width: 10px;
+  /* Bewusst deutlich breiter als der sichtbare Griff-Strich selbst (::after) – reine
+     Klickfläche, damit man beim Greifen nicht pixelgenau den schmalen Rand treffen muss. */
+  width: 18px;
   z-index: 14;
   cursor: col-resize;
   touch-action: none;
@@ -276,10 +278,12 @@ function onResizeEnd() {
   position: absolute;
   top: 0;
   bottom: 0;
-  left: 4px;
-  width: 2px;
+  left: 7.5px;
+  width: 3px;
   border-radius: 2px;
-  background: transparent;
+  /* Dauerhaft schwach sichtbar statt erst bei Hover komplett unsichtbar – sonst findet man den
+     Griff nur durch Zufall. Auf color-border, damit es sich dezent ins UI einfügt. */
+  background: var(--color-border);
   transition: background 0.15s ease;
 }
 
@@ -288,11 +292,11 @@ function onResizeEnd() {
 }
 
 .drawer.left .resize-handle {
-  right: -5px;
+  right: -9px;
 }
 
 .drawer.right .resize-handle {
-  left: -5px;
+  left: -9px;
 }
 
 /* Maximieren gibt es nur auf Desktop (siehe @media unten) – mobil ist das Panel ohnehin bereits
@@ -314,26 +318,33 @@ function onResizeEnd() {
     display: none;
   }
 
+  /* position:sticky statt static: .drawer ist (wie .drawer-panel) auf die volle Höhe des
+     Hauptinhalts gestreckt (.app-shell/.drawer align-items:stretch) – mit align-self:center hängt
+     die vertikale Position des Tabs dadurch von der GESAMTEN Dokumenthöhe ab und "scrollt" bei
+     langen Seiten sichtbar mit, statt am Viewport zu kleben. Sticky + top:50% + translateY(-50%)
+     ist derselbe Trick wie beim Panel selbst (top: calc(...)), nur mit 50% als Schwelle: der Tab
+     rutscht dadurch beim Scrollen nie höher als vertikal mittig im sichtbaren Bereich. */
   .drawer-tab {
-    position: static;
-    top: auto;
-    transform: none;
+    position: sticky;
+    top: 50%;
+    transform: translateY(-50%);
     min-height: auto;
-    align-self: center;
+    align-self: flex-start;
   }
 
   /* Auf Desktop ist der Tab ein echtes Flex-Geschwisterelement neben dem Hauptinhalt – eine
      Breitenänderung bei Hover (wie mobil) würde den Arbeitsbereich seitlich verschieben. Der
-     Vergrößerungseffekt läuft hier stattdessen rein visuell über transform:scale(), das nimmt
-     keinen Platz im Flex-Layout ein und schiebt daher nichts. */
+     Vergrößerungseffekt läuft hier stattdessen rein visuell zusätzlich über scale() (kombiniert
+     mit dem translateY(-50%) von oben, sonst spränge der Tab beim Hover aus der Zentrierung), das
+     nimmt keinen Platz im Flex-Layout ein und schiebt daher nichts. */
   .drawer-tab:hover {
     width: 32px;
     min-height: auto;
-    transform: scale(1.4);
+    transform: translateY(-50%) scale(1.4);
   }
 
   .drawer-tab:disabled:hover {
-    transform: none;
+    transform: translateY(-50%);
   }
 
   .drawer.left .drawer-tab:hover {
@@ -344,11 +355,24 @@ function onResizeEnd() {
     transform-origin: right center;
   }
 
+  /* left/right (samt der .open-Variante unten) stammen aus der mobilen position:fixed-Darstellung
+     und wirkten bei position:static bisher folgenlos mit (statische Elemente ignorieren sie
+     komplett). Jetzt, wo der Tab auf Desktop position:sticky ist, würden sie sonst als (hier
+     ungewollte) horizontale Sticky-Schwellen aktiv – die horizontale Position kommt auf Desktop
+     ausschließlich aus dem Flex-`order`. */
   .drawer.left .drawer-tab {
     order: 2;
+    left: auto;
   }
   .drawer.right .drawer-tab {
     order: 1;
+    right: auto;
+  }
+
+  .drawer.left.open .drawer-tab,
+  .drawer.right.open .drawer-tab {
+    left: auto;
+    right: auto;
   }
 
   .drawer-panel {

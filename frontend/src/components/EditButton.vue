@@ -48,4 +48,19 @@ defineEmits<{ (e: 'click'): void }>();
   align-items: center;
   justify-content: center;
 }
+
+/* Ohne eigenes Vorschaubild (Platzhalter-Fläche in --color-primary-tint, dunkel im Dark Mode)
+   wirkt der immer-helle Kreis dort zu grell. Dunkler, halbtransparenter Kreis + heller Icon statt
+   fest hell+dunkel – bleibt trotzdem über echten Fotos in beiden Modi gut lesbar. */
+:root[data-theme='dark'] .edit-btn.floating {
+  background: rgba(35, 34, 32, 0.85);
+  color: #f2efe9;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .edit-btn.floating {
+    background: rgba(35, 34, 32, 0.85);
+    color: #f2efe9;
+  }
+}
 </style>
