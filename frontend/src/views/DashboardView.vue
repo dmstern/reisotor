@@ -396,6 +396,15 @@ function jumpToTrip() {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  /* Block als Ganzes bleibt mittig in der Kachel (wie h3/p daneben), schrumpft dabei aber auf
+     die tatsächlich benötigte Breite – sonst würde .entry-text (flex:1, s.u.) über die volle
+     Kachelbreite gestreckt und sein Text (per :left ausdrücklich statt vom <button>-Element der
+     Kalender-Kachel geerbtem text-align:center) inhaltsabhängig unterschiedlich weit eingerückt
+     wirken statt sauber untereinander auf einer Fluchtlinie zu stehen. */
+  align-self: center;
+  width: fit-content;
+  max-width: 100%;
+  text-align: left;
 }
 
 .mini-list li {
@@ -424,6 +433,11 @@ function jumpToTrip() {
   flex-wrap: wrap;
   flex-direction: row;
   gap: 4px 10px;
+  /* Diese Variante (Zeilen-Umbruch statt vertikaler Liste) soll weiterhin die volle Kachelbreite
+     nutzen können, nicht auf den engeren Fluchtlinien-Look der Kalender-Liste schrumpfen. */
+  align-self: stretch;
+  width: auto;
+  max-width: none;
 }
 
 .mini-list.breakdown li {

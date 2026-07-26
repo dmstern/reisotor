@@ -116,7 +116,11 @@ async function onCreateFirstTrip(data: TripFormData) {
 @media (min-width: 800px) {
   .app-shell {
     display: flex;
-    align-items: stretch;
+    /* flex-start statt stretch: sonst wird .drawer (und darin der zentrierte Tab) über
+       align-items:stretch auf die volle Höhe des .app-main-Inhalts gezogen – bei langen Seiten
+       landet der Tab dann irgendwo weit unten statt im sichtbaren Bereich, und die Schublade
+       kann eine unten fixierte NavBar überlagern. */
+    align-items: flex-start;
   }
 
   .app-main {

@@ -149,6 +149,11 @@ function onResizeEnd() {
   box-shadow: var(--shadow-md);
   z-index: 12;
   overflow-y: auto;
+  /* Der Anfasser ragt bewusst ein paar Pixel über den Panel-Rand hinaus (siehe .resize-handle,
+     right/left: -5px) – ohne explizites overflow-x:hidden zählt das als horizontal überlaufender
+     Inhalt, wodurch v. a. Firefox einen (kaum wahrnehmbaren, aber störenden) horizontalen
+     Scrollbalken einblendet. */
+  overflow-x: hidden;
   transition: transform 0.25s ease;
 }
 
@@ -253,9 +258,15 @@ function onResizeEnd() {
   }
 
   .drawer-panel {
-    position: relative;
-    top: auto;
+    /* sticky + max-height statt einfach relative: ohne eigene Höhenbegrenzung strecken
+       align-items:stretch (.drawer/.app-shell) das Panel sonst auf die volle Höhe des
+       Hauptinhalts – bei langen Seiten ragt das blickdichte Panel dann über den sichtbaren
+       Bereich hinaus und überdeckt (höherer z-index) eine unten fixierte NavBar links/rechts.
+       sticky hält es zusätzlich beim Scrollen des Hauptinhalts im Blickfeld. */
+    position: sticky;
+    top: 56px;
     bottom: auto;
+    max-height: calc(100vh - 56px);
     transform: none;
     box-shadow: none;
     border-radius: 0;
