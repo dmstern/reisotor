@@ -5,8 +5,10 @@ import type { DiaryComment, DiaryEntry, DiaryLike, Excursion, User } from '../ap
 import { useAuthStore } from '../stores/auth';
 import { useTripStore } from '../stores/trip';
 import { useExcursionsStore } from '../stores/excursions';
+import { useSpotsStore } from '../stores/spots';
 import { renderRichText } from '../utils/richText';
 import { compressImage } from '../utils/imageCompression';
+import { spotCategoryMeta } from '../utils/spotCategory';
 import Modal from '../components/Modal.vue';
 import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
@@ -17,6 +19,7 @@ const auth = useAuthStore();
 const tripStore = useTripStore();
 const tripId = tripStore.currentTripId as number;
 const excursionsStore = useExcursionsStore();
+const spotsStore = useSpotsStore();
 const entries = ref<DiaryEntry[]>([]);
 const likes = ref<DiaryLike[]>([]);
 const comments = ref<DiaryComment[]>([]);
@@ -33,6 +36,12 @@ const editingEntry = ref<DiaryEntry | null>(null);
 const editForm = ref(emptyForm());
 const editUploading = ref(false);
 const editUploadError = ref('');
+
+// Rein lokale, flüchtige Markierung "in dieser Formular-Sitzung bereits per Spot-Picker
+// hinzugefügt" (siehe pickSpot unten) – dient nur der visuellen Rückmeldung (Häkchen), kein
+// Zurück-Mapping von excursion_ids auf Spots nötig, da ein Spot immer nur einmal angeklickt wird.
+const pickedSpotIds = ref<Set<number>>(new Set());
+const editPickedSpotIds = ref<Set<number>>(new Set());
 
 const openComments = ref<Set<number>>(new Set());
 
@@ -63,6 +72,24 @@ function excursionsForEntry(entry: DiaryEntry): Excursion[] {
     .filter((e): e is Excursion => !!e);
 }
 
+// Ob ein Spot an diesem Tag bereits (über irgendeinen Ausflug) geplant ist – analog zum
+// bestehenden "📅 heute geplant"-Badge bei Ausflügen, hier direkt über station_keys geprüft
+// (kein voller Stations-Resolver nötig, ein einfacher String-Vergleich reicht).
+function spotAlreadyPlanned(spotId: number, dateStr: string) {
+  return excursionsStore.excursions.some((e) => e.date === dateStr && e.station_keys.includes(`spot-${spotId}`));
+}
+
+// Spot direkt zuordnen, ohne vorher einen Ausflug anzulegen: legt im Hintergrund einen
+// Ein-Spot-Ausflug für den Tag des Eintrags an (oder findet einen bereits bestehenden,
+// idempotent, siehe excursionsStore.planSpotOnDate) und fügt ihn wie einen normal
+// ausgewählten Ausflug zu excursion_ids hinzu – der bestehende diary_excursions-Mechanismus
+// bleibt dadurch unverändert.
+async function pickSpot(spotId: number, dateStr: string, target: { excursion_ids: number[] }, picked: Set<number>) {
+  const excursion = await excursionsStore.planSpotOnDate(spotId, dateStr);
+  if (!target.excursion_ids.includes(excursion.id)) target.excursion_ids.push(excursion.id);
+  picked.add(spotId);
+}
+
 onMounted(async () => {
   const [entriesRes, likesRes, commentsRes, usersRes] = await Promise.all([
     api.get<DiaryEntry[]>(`/diary?trip_id=${tripId}`),
@@ -70,6 +97,7 @@ onMounted(async () => {
     api.get<DiaryComment[]>('/diary/comments'),
     api.get<User[]>('/users'),
     excursionsStore.load(),
+    spotsStore.load(),
   ]);
   entries.value = entriesRes;
   likes.value = likesRes;
@@ -151,6 +179,7 @@ function removeImage(target: { images: string[] }, index: number) {
 
 function openNewForm() {
   form.value = emptyForm();
+  pickedSpotIds.value = new Set();
   // Vorschlag: an diesem Tag geplante Ausflüge direkt vorauswählen, statt sie nur anzuzeigen –
   // meist wird ein Eintrag ja am selben Tag über genau diesen Ausflug geschrieben.
   form.value.excursion_ids = excursionsStore.excursions.filter((e) => e.date === todayDateStr.value).map((e) => e.id);
@@ -185,6 +214,7 @@ function startEdit(entry: DiaryEntry) {
     images: [...entry.images],
     excursion_ids: [...entry.excursion_ids],
   };
+  editPickedSpotIds.value = new Set();
 }
 
 async function submitEditEntry() {
@@ -265,6 +295,20 @@ async function removeComment(id: number) {
           <span class="excursion-option-title">{{ ex.title }}</span>
           <span v-if="ex.date === todayDateStr" class="excursion-option-badge">📅 heute geplant</span>
         </label>
+      </fieldset>
+      <fieldset v-if="spotsStore.spots.length" class="excursion-picker">
+        <legend>📍 Spots zuordnen</legend>
+        <button
+          v-for="spot in spotsStore.spots"
+          :key="spot.id"
+          type="button"
+          class="excursion-option spot-option-btn"
+          @click="pickSpot(spot.id, todayDateStr, form, pickedSpotIds)"
+        >
+          <span class="excursion-option-title">{{ spotCategoryMeta(spot.category).icon }} {{ spot.title }}</span>
+          <span v-if="pickedSpotIds.has(spot.id)" class="excursion-option-badge">✓ hinzugefügt</span>
+          <span v-else-if="spotAlreadyPlanned(spot.id, todayDateStr)" class="excursion-option-badge">📅 heute geplant</span>
+        </button>
       </fieldset>
       <button type="submit">Veröffentlichen</button>
     </form>
@@ -359,6 +403,20 @@ async function removeComment(id: number) {
             <span v-if="ex.date === editEntryDateStr" class="excursion-option-badge">📅 an diesem Tag geplant</span>
           </label>
         </fieldset>
+        <fieldset v-if="spotsStore.spots.length" class="excursion-picker">
+          <legend>📍 Spots zuordnen</legend>
+          <button
+            v-for="spot in spotsStore.spots"
+            :key="spot.id"
+            type="button"
+            class="excursion-option spot-option-btn"
+            @click="pickSpot(spot.id, editEntryDateStr, editForm, editPickedSpotIds)"
+          >
+            <span class="excursion-option-title">{{ spotCategoryMeta(spot.category).icon }} {{ spot.title }}</span>
+            <span v-if="editPickedSpotIds.has(spot.id)" class="excursion-option-badge">✓ hinzugefügt</span>
+            <span v-else-if="spotAlreadyPlanned(spot.id, editEntryDateStr)" class="excursion-option-badge">📅 an diesem Tag geplant</span>
+          </button>
+        </fieldset>
         <button type="submit">Speichern</button>
       </form>
     </Modal>
@@ -417,6 +475,19 @@ async function removeComment(id: number) {
 
 .excursion-option-title {
   flex: 1;
+}
+
+/* Spot-Picker nutzt Buttons statt Checkbox-Labels (jeder Klick löst sofort das
+   Hintergrund-Einplanen aus, siehe pickSpot) – Button-Grundstil zurücksetzen, damit er optisch
+   zu den Checkbox-Zeilen der Ausflüge darüber passt. */
+.spot-option-btn {
+  background: none;
+  border: none;
+  padding: 2px 0;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  color: var(--color-text);
 }
 
 .excursion-option-badge {
