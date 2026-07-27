@@ -4,6 +4,9 @@ import type { Excursion, Spot } from '../api/types';
 import type { DerivedLocation } from '../utils/derivedLocation';
 import { renderRichText } from '../utils/richText';
 import { spotCategoryMeta } from '../utils/spotCategory';
+import { usePointerDrag } from '../composables/usePointerDrag';
+import { useExcursionsStore } from '../stores/excursions';
+import { useDrawersStore } from '../stores/drawers';
 import EditButton from './EditButton.vue';
 import DeleteButton from './DeleteButton.vue';
 import LikeButton from './LikeButton.vue';
@@ -48,12 +51,23 @@ function formatDate(d: string) {
   return new Date(d).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
 }
 
-// Drag-Quelle fürs Einplanen: der Ausflug wird direkt aus dieser Karte in die Kalender-Schublade
-// gezogen (ersetzt den alten Pool auf der Kalender-Seite).
-function onDragStart(event: DragEvent) {
-  event.dataTransfer?.setData('text/excursion-id', String(props.excursion.id));
-  if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
-}
+// Einplanen per Zeige-/Touch-Drag am eigenen Anfasser (📅 Einplanen) statt am gesamten Card-Root:
+// natives HTML5-draggable/dragstart wurde ersetzt, da es auf Touch-Geräten (v. a. Android Chrome)
+// nicht zuverlässig funktioniert. onStart öffnet die Kalender-Schublade automatisch, damit die
+// Tageszellen im DOM existieren; onDrop sucht per elementFromPoint die getroffene Tageszelle
+// (data-date, siehe CalendarWeek.vue) und plant den Ausflug direkt über den Store ein.
+const excursionsStore = useExcursionsStore();
+const drawers = useDrawersStore();
+const { dragging, ghostStyle, onPointerDown } = usePointerDrag({
+  onStart: () => {
+    drawers.calendarOpen = true;
+  },
+  onDrop: (targetEl) => {
+    const dayEl = targetEl?.closest<HTMLElement>('[data-date]');
+    if (!dayEl?.dataset.date) return;
+    excursionsStore.setDate(props.excursion.id, dayEl.dataset.date);
+  },
+});
 
 // Drop-Zone fürs Zuordnen: ein Spot ODER ein abgeleiteter Ort (Unterkunft/Reise-Start-/Zielort,
 // siehe ExcursionsView.vue) kann direkt auf diese Karte gezogen werden, um ihn als Station
@@ -90,8 +104,6 @@ function onSpotDrop(event: DragEvent) {
   <div
     class="card excursion-card"
     :class="{ 'drop-target': spotDragOverCount > 0 }"
-    draggable="true"
-    @dragstart="onDragStart"
     @dragover.prevent
     @dragenter.prevent="onSpotDragEnter"
     @dragleave="onSpotDragLeave"
@@ -117,7 +129,18 @@ function onSpotDrop(event: DragEvent) {
       <div class="links" v-if="hasMappedStations">
         <button type="button" class="card-action-btn" @click="emit('show-on-map')">🗺️ Auf Karte anzeigen</button>
       </div>
-      <span class="drag-hint">↕ auf Kalender-Schublade ziehen zum Einplanen</span>
+      <button
+        type="button"
+        class="calendar-drag-handle"
+        aria-label="Auf Kalender ziehen zum Einplanen"
+        title="Auf Kalender ziehen zum Einplanen"
+        @pointerdown="onPointerDown"
+      >
+        📅 Einplanen
+      </button>
+      <Teleport to="body">
+        <div v-if="dragging" class="drag-ghost" :style="ghostStyle ?? {}">📅 {{ excursion.title }}</div>
+      </Teleport>
       <div class="social-row">
         <LikeButton :count="likeCount" :liked="liked" @toggle="emit('toggle-like')" />
         <button class="secondary" @click="showComments = !showComments">💬 {{ comments.length || '' }}</button>
@@ -144,7 +167,6 @@ function onSpotDrop(event: DragEvent) {
   flex-direction: row;
   align-items: stretch;
   min-height: 120px;
-  cursor: grab;
   border: 2px dashed transparent;
   transition: border-color 0.15s ease, background 0.15s ease;
 }
@@ -153,10 +175,6 @@ function onSpotDrop(event: DragEvent) {
    .excursion-card ist dafür position:relative. */
 .card-delete {
   z-index: 1;
-}
-
-.excursion-card:active {
-  cursor: grabbing;
 }
 
 /* Spot per Drag&Drop aus der Spots-Sicht darauf ablegen (SpotCard.vue ist die Drag-Quelle). */
@@ -242,10 +260,46 @@ function onSpotDrop(event: DragEvent) {
   overflow-wrap: anywhere;
 }
 
-.drag-hint {
+/* Eigener Anfasser statt des gesamten Card-Roots als Drag-Quelle (siehe usePointerDrag-Wiring im
+   Script) – touch-action:none verhindert, dass der Browser das Ziehen als Seiten-Scroll
+   interpretiert. */
+.calendar-drag-handle {
+  align-self: flex-start;
+  background: var(--color-hover);
+  border: none;
+  border-radius: 999px;
+  padding: 3px 10px;
   font-size: 0.72rem;
   color: var(--color-text-muted);
   margin-top: var(--space-1);
+  cursor: grab;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.calendar-drag-handle:active {
+  cursor: grabbing;
+}
+
+/* Schwebt während des Drags am Zeiger, per Teleport außerhalb der Karte (sonst würde sie beim
+   Öffnen der Kalender-Schublade durch deren Backdrop/Panel überlagert). z-index 60: über dem
+   Drawer-Overlay (11/12), unter Modal.vue (100, wird während eines Drags nie gleichzeitig
+   gebraucht). Fester dunkler Chip statt Dark-Mode-Override, da sie über beliebigem Seiteninhalt
+   schwebt statt über einem Foto. */
+.drag-ghost {
+  position: fixed;
+  z-index: 60;
+  transform: translate(-50%, -130%);
+  pointer-events: none;
+  background: rgba(35, 34, 32, 0.92);
+  color: #f2efe9;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: var(--shadow-md);
 }
 
 .social-row {

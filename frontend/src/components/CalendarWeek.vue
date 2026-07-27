@@ -59,6 +59,7 @@ function onDrop(event: DragEvent, date: string) {
       v-for="day in days"
       :key="day.date"
       class="day"
+      :data-date="day.date"
       :class="{ active: day.date === selectedDate, today: isToday(day.date), 'drag-over': isDragOver(day.date) }"
       @click="emit('select', day.date)"
       @dragover.prevent
