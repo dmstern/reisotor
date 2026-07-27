@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, type ComponentPublicInstance } from 'vue';
 import { api } from '../api/client';
 import type { Accommodation, ExcursionComment, ExcursionLike, Spot, SpotComment, SpotLike, TravelItem, User } from '../api/types';
 import { useAuthStore } from '../stores/auth';
@@ -462,6 +462,19 @@ const spotGroups = computed(() => {
 
 const filterCategoryOptions = computed(() => sortedCategoryKeys(allSpotItems.value.map(itemCategory)));
 
+// Horizontale Kategorie-Navigation (Wolt-Stil): Map statt DOM-`id`, damit Leerzeichen/Umlaute in
+// Kategorienamen ("Aussichtspunkt", "Unterkunft") kein Escaping-Problem sind. scrollIntoView()
+// läuft die scrollenden Vorfahren selbst hoch – landet also automatisch in .spots-col, sobald die
+// Container-Query (≥900px) diese Spalte selbst scrollen lässt, sonst in der normalen Seite.
+const categoryRefs = new Map<string, HTMLElement>();
+function setCategoryRef(category: string, el: Element | ComponentPublicInstance | null) {
+  if (el instanceof HTMLElement) categoryRefs.set(category, el);
+  else categoryRefs.delete(category);
+}
+function scrollToCategory(category: string) {
+  categoryRefs.get(category)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
 function checkSpotMapsLink() {
   spotMapsLinkResolved.value = spotForm.value.maps_link ? parseLatLngFromMapsLink(spotForm.value.maps_link) != null : null;
 }
@@ -751,8 +764,21 @@ function showSpotOnMap(spot: Spot) {
       </form>
     </Modal>
 
+    <nav class="category-nav" v-if="spotGroups.length > 1" aria-label="Zu Kategorie springen">
+      <button
+        v-for="grp in spotGroups"
+        :key="grp.category"
+        type="button"
+        class="category-nav-item"
+        @click="scrollToCategory(grp.category)"
+      >
+        <span class="category-nav-icon">{{ grp.icon }}</span>
+        <span class="category-nav-label">{{ grp.category }}</span>
+      </button>
+    </nav>
+
     <section class="group category-group" v-for="grp in spotGroups" :key="grp.category">
-      <h3 class="category-heading">{{ grp.icon }} {{ grp.category }}</h3>
+      <h3 class="category-heading" :ref="(el) => setCategoryRef(grp.category, el)">{{ grp.icon }} {{ grp.category }}</h3>
       <TransitionGroup tag="div" name="list" class="grid cards">
         <template v-for="item in grp.items" :key="item.kind === 'spot' ? `spot-${item.spot.id}` : item.loc.key">
           <SpotCard
@@ -1078,6 +1104,46 @@ function showSpotOnMap(spot: Spot) {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+/* Horizontale Kategorie-Navigation (Wolt-Stil): Icon zentriert über dem Label, ganze Leiste
+   scrollt bei Bedarf horizontal statt umzubrechen (viele Kategorien nebeneinander). */
+.category-nav {
+  display: flex;
+  gap: var(--space-3);
+  overflow-x: auto;
+  padding: 4px 2px var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+.category-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  padding: 4px 2px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  min-width: 52px;
+}
+
+.category-nav-item:hover {
+  color: var(--color-primary-dark);
+}
+
+.category-nav-icon {
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+.category-nav-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .empty {
