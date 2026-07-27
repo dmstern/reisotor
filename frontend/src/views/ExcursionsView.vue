@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, type ComponentPublicInstance } from 'vue';
 import { api } from '../api/client';
-import type { Accommodation, ExcursionComment, ExcursionLike, Spot, SpotComment, SpotLike, TravelItem, User } from '../api/types';
+import type { Accommodation, ExcursionComment, ExcursionLike, Spot, TravelItem, User } from '../api/types';
 import { useAuthStore } from '../stores/auth';
 import { useTripStore } from '../stores/trip';
 import { useExcursionsStore } from '../stores/excursions';
+import { useSpotsStore } from '../stores/spots';
 import { useDrawersStore } from '../stores/drawers';
 import ExcursionCard from '../components/ExcursionCard.vue';
 import SpotCard from '../components/SpotCard.vue';
@@ -20,37 +21,29 @@ const auth = useAuthStore();
 const tripStore = useTripStore();
 const tripId = tripStore.currentTripId as number;
 const excursionsStore = useExcursionsStore();
+const spotsStore = useSpotsStore();
 const drawers = useDrawersStore();
 
 const users = ref<User[]>([]);
 const likes = ref<ExcursionLike[]>([]);
 const comments = ref<ExcursionComment[]>([]);
-const spots = ref<Spot[]>([]);
-const spotLikes = ref<SpotLike[]>([]);
-const spotComments = ref<SpotComment[]>([]);
 const accommodations = ref<Accommodation[]>([]);
 const travelItems = ref<TravelItem[]>([]);
 const loading = ref(true);
 
 onMounted(async () => {
-  const [usersRes, likesRes, commentsRes, spotsRes, spotLikesRes, spotCommentsRes, accommodationRes, travelRes] =
-    await Promise.all([
-      api.get<User[]>('/users'),
-      api.get<ExcursionLike[]>(`/ideas/likes?trip_id=${tripId}`),
-      api.get<ExcursionComment[]>(`/ideas/comments?trip_id=${tripId}`),
-      api.get<Spot[]>(`/spots?trip_id=${tripId}`),
-      api.get<SpotLike[]>(`/spots/likes?trip_id=${tripId}`),
-      api.get<SpotComment[]>(`/spots/comments?trip_id=${tripId}`),
-      api.get<Accommodation[]>(`/accommodation?trip_id=${tripId}`),
-      api.get<TravelItem[]>(`/travel?trip_id=${tripId}`),
-      excursionsStore.load(),
-    ]);
+  const [usersRes, likesRes, commentsRes, accommodationRes, travelRes] = await Promise.all([
+    api.get<User[]>('/users'),
+    api.get<ExcursionLike[]>(`/ideas/likes?trip_id=${tripId}`),
+    api.get<ExcursionComment[]>(`/ideas/comments?trip_id=${tripId}`),
+    api.get<Accommodation[]>(`/accommodation?trip_id=${tripId}`),
+    api.get<TravelItem[]>(`/travel?trip_id=${tripId}`),
+    excursionsStore.load(),
+    spotsStore.load(),
+  ]);
   users.value = usersRes;
   likes.value = likesRes;
   comments.value = commentsRes;
-  spots.value = spotsRes;
-  spotLikes.value = spotLikesRes;
-  spotComments.value = spotCommentsRes;
   accommodations.value = accommodationRes;
   travelItems.value = travelRes;
   loading.value = false;
@@ -66,7 +59,7 @@ function author(id: number) {
 }
 
 function stationsFor(spotIds: number[]) {
-  return spots.value.filter((s) => spotIds.includes(s.id));
+  return spotsStore.spots.filter((s) => spotIds.includes(s.id));
 }
 
 // --- Likes/Kommentare Ausflüge (weiterhin an ideas/idea_likes/idea_comments gebunden) ---
@@ -105,18 +98,10 @@ async function removeComment(id: number) {
   comments.value = comments.value.filter((c) => c.id !== id);
 }
 
-// --- Likes/Kommentare Spots (analog, an spots/spot_likes/spot_comments gebunden) ---
-function spotLikesFor(spotId: number) {
-  return spotLikes.value.filter((l) => l.spot_id === spotId);
-}
-function spotLikedByMe(spotId: number) {
-  return spotLikesFor(spotId).some((l) => l.user_id === auth.user?.id);
-}
-function spotCommentsFor(spotId: number) {
-  return spotComments.value.filter((c) => c.spot_id === spotId).sort((a, b) => a.created_at.localeCompare(b.created_at));
-}
+// --- Likes/Kommentare Spots (jetzt über stores/spots.ts, geteilt mit MapView.vue/
+// ExcursionDetailDialog.vue, die Spot-Detail-Dialoge außerhalb dieser View öffnen können) ---
 function spotCommentItemsFor(spotId: number) {
-  return spotCommentsFor(spotId).map((c) => ({
+  return spotsStore.commentsFor(spotId).map((c) => ({
     id: c.id,
     avatar: author(c.author_id)?.avatar ?? '❓',
     username: author(c.author_id)?.username ?? '?',
@@ -125,20 +110,13 @@ function spotCommentItemsFor(spotId: number) {
   }));
 }
 async function toggleSpotLike(spotId: number) {
-  const result = await api.post<{ liked: boolean }>(`/spots/${spotId}/like`);
-  if (result.liked) {
-    spotLikes.value.push({ id: Date.now(), spot_id: spotId, user_id: auth.user!.id });
-  } else {
-    spotLikes.value = spotLikes.value.filter((l) => !(l.spot_id === spotId && l.user_id === auth.user!.id));
-  }
+  await spotsStore.toggleLike(spotId, auth.user!.id);
 }
 async function submitSpotComment(spotId: number, content: string) {
-  const created = await api.post<SpotComment>(`/spots/${spotId}/comments`, { content });
-  spotComments.value.push(created);
+  await spotsStore.submitComment(spotId, content);
 }
 async function removeSpotComment(id: number) {
-  await api.delete(`/spots/comments/${id}`);
-  spotComments.value = spotComments.value.filter((c) => c.id !== id);
+  await spotsStore.removeComment(id);
 }
 
 // --- Ausflüge ---
@@ -264,19 +242,16 @@ const derivedLocations = computed<DerivedLocation[]>(() => {
 // (addDerivedLocationToExcursion, sofort persistiert) UND Auswahl im Anlege-/Bearbeiten-Dialog
 // (pickDerivedLocationForForm, landet erstmal nur im lokalen Formular).
 async function resolveDerivedLocationSpot(loc: DerivedLocation): Promise<Spot> {
-  let spot = loc.maps_link ? spots.value.find((s) => s.maps_link === loc.maps_link) : undefined;
-  if (!spot) {
-    spot = await api.post<Spot>('/spots', {
-      trip_id: tripId,
-      title: loc.title,
-      category: loc.category,
-      maps_link: loc.maps_link || undefined,
-      lat: loc.lat,
-      lng: loc.lng,
-    });
-    spots.value.unshift(spot);
-  }
-  return spot;
+  const existing = loc.maps_link ? spotsStore.spots.find((s) => s.maps_link === loc.maps_link) : undefined;
+  if (existing) return existing;
+  return spotsStore.create({
+    trip_id: tripId,
+    title: loc.title,
+    category: loc.category,
+    maps_link: loc.maps_link || undefined,
+    lat: loc.lat,
+    lng: loc.lng,
+  });
 }
 
 // Beim Ablegen auf einer Ausflug-Karte (Drag&Drop außerhalb des Dialogs): sofort speichern.
@@ -373,12 +348,8 @@ const editSpotPreviewImage = computed(() => {
   return parsed ? tilePreviewUrl(parsed.lat, parsed.lng) : null;
 });
 
-function spotLikeCount(spotId: number) {
-  return spotLikesFor(spotId).length;
-}
-
 const spotCategoryOptions = computed(() => {
-  const used = spots.value.map((s) => s.category).filter((c): c is string => !!c);
+  const used = spotsStore.spots.map((s) => s.category).filter((c): c is string => !!c);
   return [...new Set([...SPOT_CATEGORY_SUGGESTIONS, ...used])];
 });
 
@@ -394,7 +365,7 @@ function itemTitle(item: SpotsGroupItem): string {
   return item.kind === 'spot' ? item.spot.title : item.loc.title;
 }
 function itemLikeCount(item: SpotsGroupItem): number {
-  return item.kind === 'spot' ? spotLikeCount(item.spot.id) : 0;
+  return item.kind === 'spot' ? spotsStore.likeCountFor(item.spot.id) : 0;
 }
 // Unterkunft/Reise sind keine "echten" Spot-Kategorien (spotCategoryMeta kennt sie nicht) – eigenes
 // Icon je Sammel-Kategorie, sonst wie gewohnt über spotCategoryMeta (inkl. 📍-Fallback).
@@ -414,7 +385,7 @@ function removeCategoryFilter(cat: string) {
 }
 
 const allSpotItems = computed<SpotsGroupItem[]>(() => [
-  ...spots.value.map((spot): SpotsGroupItem => ({ kind: 'spot', spot })),
+  ...spotsStore.spots.map((spot): SpotsGroupItem => ({ kind: 'spot', spot })),
   ...derivedLocations.value.map((loc): SpotsGroupItem => ({ kind: 'derived', loc })),
 ]);
 
@@ -506,8 +477,7 @@ function closeSpotForm() {
 
 async function addSpot() {
   if (!spotForm.value.title.trim()) return;
-  const created = await api.post<Spot>('/spots', spotToBody(spotForm.value));
-  spots.value.unshift(created);
+  await spotsStore.create(spotToBody(spotForm.value));
   drawers.touchLocations();
   closeSpotForm();
 }
@@ -526,16 +496,13 @@ function startEditSpot(spot: Spot) {
 
 async function submitEditSpot() {
   if (!editingSpot.value || !editSpotForm.value.title.trim()) return;
-  const updated = await api.put<Spot>(`/spots/${editingSpot.value.id}`, spotToBody(editSpotForm.value));
-  const idx = spots.value.findIndex((s) => s.id === updated.id);
-  if (idx !== -1) spots.value[idx] = updated;
+  await spotsStore.update(editingSpot.value.id, spotToBody(editSpotForm.value));
   drawers.touchLocations();
   editingSpot.value = null;
 }
 
 async function removeSpot(id: number) {
-  await api.delete(`/spots/${id}`);
-  spots.value = spots.value.filter((s) => s.id !== id);
+  await spotsStore.remove(id);
   drawers.touchLocations();
 }
 
@@ -567,10 +534,10 @@ function showSpotOnMap(spot: Spot) {
           <input v-model="excursionForm.date" type="date" />
         </label>
         <SpotOrderPicker
-          v-if="spots.length || derivedLocations.length"
+          v-if="spotsStore.spots.length || derivedLocations.length"
           v-model="excursionForm.spot_ids"
-          :spots="spots"
-          :like-count="spotLikeCount"
+          :spots="spotsStore.spots"
+          :like-count="spotsStore.likeCountFor"
           :derived-locations="derivedLocations"
           @pick-derived-location="pickDerivedLocationForNewForm"
         />
@@ -605,6 +572,7 @@ function showSpotOnMap(spot: Spot) {
           @drop-spot="(spotId) => addSpotToExcursion(excursion.id, spotId)"
           @drop-derived-location="(loc) => addDerivedLocationToExcursion(excursion.id, loc as DerivedLocation)"
           @show-on-map="drawers.openMapForExcursion(excursion.id)"
+          @edit-station-spot="startEditSpot"
         />
       </TransitionGroup>
       <p v-else class="empty dropzone-hint">
@@ -641,6 +609,7 @@ function showSpotOnMap(spot: Spot) {
           @drop-spot="(spotId) => addSpotToExcursion(excursion.id, spotId)"
           @drop-derived-location="(loc) => addDerivedLocationToExcursion(excursion.id, loc as DerivedLocation)"
           @show-on-map="drawers.openMapForExcursion(excursion.id)"
+          @edit-station-spot="startEditSpot"
         />
       </TransitionGroup>
     </section>
@@ -664,10 +633,10 @@ function showSpotOnMap(spot: Spot) {
           <input v-model="editExcursionForm.date" type="date" />
         </label>
         <SpotOrderPicker
-          v-if="spots.length || derivedLocations.length"
+          v-if="spotsStore.spots.length || derivedLocations.length"
           v-model="editExcursionForm.spot_ids"
-          :spots="spots"
-          :like-count="spotLikeCount"
+          :spots="spotsStore.spots"
+          :like-count="spotsStore.likeCountFor"
           :derived-locations="derivedLocations"
           @pick-derived-location="pickDerivedLocationForEditForm"
         />
@@ -786,8 +755,8 @@ function showSpotOnMap(spot: Spot) {
             :key="`spot-${item.spot.id}`"
             :spot="item.spot"
             :creator-label="creatorLabel(item.spot.created_by)"
-            :like-count="spotLikeCount(item.spot.id)"
-            :liked="spotLikedByMe(item.spot.id)"
+            :like-count="spotsStore.likeCountFor(item.spot.id)"
+            :liked="spotsStore.likedByMe(item.spot.id, auth.user?.id)"
             :comments="spotCommentItemsFor(item.spot.id)"
             @edit="startEditSpot"
             @remove="removeSpot"
@@ -972,6 +941,9 @@ function showSpotOnMap(spot: Spot) {
     top: calc(56px + var(--navbar-offset, 0px));
     max-height: calc(100vh - 56px - var(--navbar-offset, 0px));
     overflow-y: auto;
+    /* Der native Scrollbalken sitzt sonst direkt auf dem Kartenrand – etwas Luft, damit er nicht
+       am Inhalt klebt. */
+    padding-right: var(--space-3);
   }
 
   .spots-col {
@@ -1104,6 +1076,10 @@ function showSpotOnMap(spot: Spot) {
   display: flex;
   align-items: center;
   gap: 6px;
+  /* scrollToCategory() landet sonst mit der Überschrift genau unter der fest/sticky positionierten
+     AppHeader (56px) + ggf. der oben positionierten NavBar (--navbar-offset) – dieselbe Formel wie
+     bei .excursions-col/.spots-col weiter unten und Drawer.vue. */
+  scroll-margin-top: calc(56px + var(--navbar-offset, 0px) + var(--space-2));
 }
 
 /* Horizontale Kategorie-Navigation (Wolt-Stil): Icon zentriert über dem Label, ganze Leiste
