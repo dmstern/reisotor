@@ -1,5 +1,9 @@
 <script setup lang="ts">
-defineProps<{ modelValue: boolean; title?: string }>();
+// hideHeader: für DetailModal.vue, dessen Bild-Banner randlos bis ganz oben reichen soll – die
+// normale .modal-head-Zeile (auch ohne title nur der Close-Button) würde dafür immer eine Lücke
+// über dem Banner offen lassen, egal wie stark man das Banner selbst nach oben zieht. In dem Fall
+// übernimmt der Aufrufer den Close-Button selbst (siehe DetailModal.vue).
+defineProps<{ modelValue: boolean; title?: string; hideHeader?: boolean }>();
 const emit = defineEmits<{ (e: 'update:modelValue', value: boolean): void }>();
 
 function close() {
@@ -12,12 +16,12 @@ function close() {
     <Transition name="modal-fade">
       <div v-if="modelValue" class="overlay" @click.self="close">
         <div class="modal">
-          <div class="modal-head">
+          <div class="modal-head" v-if="!hideHeader">
             <h2 v-if="title">{{ title }}</h2>
             <button class="secondary close-btn" @click="close">✕</button>
           </div>
           <div class="modal-body">
-            <slot />
+            <slot :close="close" />
           </div>
         </div>
       </div>

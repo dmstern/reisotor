@@ -258,6 +258,7 @@ function showDetailOnMap() {
       @update:model-value="(v) => !v && closeDetail()"
       :title="detailItem?.name ?? ''"
       placeholder-icon="🛏️"
+      @edit="editFromDetail"
     >
       <template v-if="detailItem">
         <p v-if="detailItem.start_date || detailItem.end_date" class="detail-row">
@@ -290,7 +291,6 @@ function showDetailOnMap() {
         </p>
         <div v-if="detailItem.note" class="detail-row note" v-html="renderRichText(detailItem.note)"></div>
         <div class="detail-actions">
-          <button type="button" class="card-action-btn" @click="editFromDetail">✎ Bearbeiten</button>
           <button v-if="detailItem.lat != null && detailItem.lng != null" type="button" class="card-action-btn" @click="showDetailOnMap">
             🗺️ Auf Karte anzeigen
           </button>

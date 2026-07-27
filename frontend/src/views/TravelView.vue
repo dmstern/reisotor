@@ -8,6 +8,7 @@ import { parseLatLngFromMapsLink } from '../utils/googleMaps';
 import { linkLabel } from '../utils/linkLabel';
 import { renderRichText } from '../utils/richText';
 import { TRAVEL_ROLE_META, TRAVEL_ROLE_OPTIONS } from '../utils/travelRole';
+import { formatTravelDuration, travelDurationMinutes } from '../utils/travelDuration';
 import Modal from '../components/Modal.vue';
 import DetailModal from '../components/DetailModal.vue';
 import EditButton from '../components/EditButton.vue';
@@ -33,6 +34,7 @@ const emptyForm = () => ({
   to_maps_link: '',
   date: '',
   departure_time: '',
+  arrival_time: '',
   checkin_info: '',
   amount: '',
   paid_by_user_id: '',
@@ -85,6 +87,7 @@ function toBody(f: ReturnType<typeof emptyForm>) {
     to_lng: toParsed?.lng,
     date: f.date || undefined,
     departure_time: f.departure_time || undefined,
+    arrival_time: f.arrival_time || undefined,
     checkin_info: f.checkin_info || undefined,
     amount: f.amount ? Number(f.amount) : undefined,
     paid_by_user_id: f.paid_by_user_id ? Number(f.paid_by_user_id) : undefined,
@@ -139,6 +142,7 @@ function startEdit(item: TravelItem) {
     to_maps_link: item.to_maps_link ?? '',
     date: item.date ?? '',
     departure_time: item.departure_time ?? '',
+    arrival_time: item.arrival_time ?? '',
     checkin_info: item.checkin_info ?? '',
     amount: item.amount != null ? String(item.amount) : '',
     paid_by_user_id: item.paid_by_user_id != null ? String(item.paid_by_user_id) : '',
@@ -173,6 +177,11 @@ function typeIcon(type: string | null) {
   if (type === 'Auto') return '🚗';
   if (type === 'Fähre') return '⛴️';
   return '🎫';
+}
+
+function travelDuration(item: TravelItem) {
+  const minutes = travelDurationMinutes(item.departure_time, item.arrival_time);
+  return minutes == null ? null : formatTravelDuration(minutes);
 }
 
 // Ein einziger Detail-Dialog außerhalb des v-for statt einer pro Karte (gleiches Muster wie der
@@ -255,14 +264,18 @@ function showDetailToOnMap() {
       <p v-if="fromMapsLinkResolved === false || toMapsLinkResolved === false" class="hint">
         Ein Standort konnte nicht automatisch erkannt werden.
       </p>
+      <label>
+        Datum
+        <input v-model="form.date" type="date" />
+      </label>
       <div class="row">
-        <label>
-          Datum
-          <input v-model="form.date" type="date" />
-        </label>
         <label>
           Abflug/Abfahrt
           <input v-model="form.departure_time" type="time" />
+        </label>
+        <label>
+          Ankunft
+          <input v-model="form.arrival_time" type="time" />
         </label>
       </div>
       <label>
@@ -325,7 +338,11 @@ function showDetailToOnMap() {
           {{ TRAVEL_ROLE_META[item.role].icon }} {{ TRAVEL_ROLE_META[item.role].label }}
         </span>
         <p v-if="item.date || item.departure_time">
-          🗓️ {{ item.date || '' }}<span v-if="item.departure_time"> · {{ item.departure_time }} Uhr</span>
+          🗓️ {{ item.date || '' }}
+          <span v-if="item.departure_time">
+            · {{ item.departure_time }}<span v-if="item.arrival_time">–{{ item.arrival_time }}</span> Uhr
+          </span>
+          <span v-if="travelDuration(item)" class="duration">({{ travelDuration(item) }})</span>
         </p>
       </div>
     </TransitionGroup>
@@ -336,6 +353,7 @@ function showDetailToOnMap() {
       @update:model-value="(v) => !v && closeDetail()"
       :title="detailItem?.title ?? ''"
       :placeholder-icon="detailItem ? typeIcon(detailItem.type) : undefined"
+      @edit="editFromDetail"
     >
       <template v-if="detailItem">
         <p v-if="detailItem.from_location || detailItem.to_location" class="detail-row">
@@ -354,7 +372,6 @@ function showDetailToOnMap() {
         </p>
         <div v-if="detailItem.note" class="detail-row note" v-html="renderRichText(detailItem.note)"></div>
         <div class="detail-actions">
-          <button type="button" class="card-action-btn" @click="editFromDetail">✎ Bearbeiten</button>
           <a v-if="detailItem.link" :href="detailItem.link" target="_blank" rel="noopener" class="card-action-btn" @click="closeDetail"
             >{{ linkLabel(detailItem.link) }} ↗</a
           >
@@ -429,14 +446,18 @@ function showDetailToOnMap() {
         <p v-if="editFromMapsLinkResolved === false || editToMapsLinkResolved === false" class="hint">
           Ein Standort konnte nicht automatisch erkannt werden.
         </p>
+        <label>
+          Datum
+          <input v-model="editForm.date" type="date" />
+        </label>
         <div class="row">
-          <label>
-            Datum
-            <input v-model="editForm.date" type="date" />
-          </label>
           <label>
             Abflug/Abfahrt
             <input v-model="editForm.departure_time" type="time" />
+          </label>
+          <label>
+            Ankunft
+            <input v-model="editForm.arrival_time" type="time" />
           </label>
         </div>
         <label>
@@ -578,6 +599,11 @@ label {
   background: var(--color-primary-tint);
   border-radius: var(--radius-sm);
   padding: 2px 8px;
+}
+
+.duration {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
 }
 
 .travel-head {
