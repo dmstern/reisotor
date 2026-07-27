@@ -8,6 +8,7 @@ import { parseLatLngFromMapsLink } from '../utils/googleMaps';
 import { renderRichText } from '../utils/richText';
 import { parseContact } from '../utils/contact';
 import Modal from '../components/Modal.vue';
+import DetailModal from '../components/DetailModal.vue';
 import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
 
@@ -138,6 +139,26 @@ function formatDate(d: string | null) {
   if (!d) return null;
   return new Date(d).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
+
+// Ein einziger Detail-Dialog außerhalb des v-for statt einer pro Karte (gleiches Muster wie der
+// bestehende Bearbeiten-Modal mit editingItem/editForm).
+const detailItem = ref<Accommodation | null>(null);
+function openDetail(acc: Accommodation) {
+  detailItem.value = acc;
+}
+function closeDetail() {
+  detailItem.value = null;
+}
+function editFromDetail() {
+  if (!detailItem.value) return;
+  startEdit(detailItem.value);
+  closeDetail();
+}
+function showDetailOnMap() {
+  if (!detailItem.value) return;
+  drawers.openMapAt(`accommodation-${detailItem.value.id}`);
+  closeDetail();
+}
 </script>
 
 <template>
@@ -217,7 +238,7 @@ function formatDate(d: string | null) {
     </Modal>
 
     <TransitionGroup tag="div" name="list" class="grid cards">
-      <div class="card acc-card" v-for="acc in accommodations" :key="acc.id">
+      <div class="card acc-card" v-for="acc in accommodations" :key="acc.id" @click="openDetail(acc)">
         <div class="acc-head">
           <h3>{{ acc.name }}</h3>
           <div class="actions">
@@ -228,37 +249,54 @@ function formatDate(d: string | null) {
         <p v-if="acc.start_date || acc.end_date">
           🗓️ {{ formatDate(acc.start_date) || '?' }} – {{ formatDate(acc.end_date) || '?' }}
         </p>
-        <p v-if="acc.address">{{ acc.address }}</p>
-        <p v-if="acc.checkin || acc.checkout">
-          Check-in {{ acc.checkin || '–' }} · Check-out {{ acc.checkout || '–' }}
-        </p>
-        <p v-if="acc.contact && parseContact(acc.contact).kind === 'phone'">
-          📞 <a :href="parseContact(acc.contact).href">{{ acc.contact }}</a>
-        </p>
-        <p v-else-if="acc.contact && parseContact(acc.contact).kind === 'email'">
-          📧 <a :href="parseContact(acc.contact).href">{{ acc.contact }}</a>
-        </p>
-        <p v-else-if="acc.contact">
-          👤 <span class="contact-text" v-html="renderRichText(acc.contact)"></span>
-        </p>
-        <p v-if="acc.amount != null">
-          💶 {{ acc.amount.toFixed(2) }} €
-          <span v-if="acc.paid_by_user_id"> · bezahlt von {{ userLabel(acc.paid_by_user_id) }}</span>
-        </p>
-        <div v-if="acc.note" class="note" v-html="renderRichText(acc.note)"></div>
-        <div class="links">
-          <button
-            v-if="acc.lat != null && acc.lng != null"
-            type="button"
-            class="card-action-btn"
-            @click="drawers.openMapAt(`accommodation-${acc.id}`)"
-          >
-            🗺️ Auf Karte anzeigen
-          </button>
-        </div>
       </div>
     </TransitionGroup>
     <p v-if="!accommodations.length" class="empty">Noch keine Unterkunft eingetragen.</p>
+
+    <DetailModal
+      :model-value="detailItem !== null"
+      @update:model-value="(v) => !v && closeDetail()"
+      :title="detailItem?.name ?? ''"
+      placeholder-icon="🛏️"
+    >
+      <template v-if="detailItem">
+        <p v-if="detailItem.start_date || detailItem.end_date" class="detail-row">
+          <span class="detail-label">Zeitraum</span>
+          🗓️ {{ formatDate(detailItem.start_date) || '?' }} – {{ formatDate(detailItem.end_date) || '?' }}
+        </p>
+        <p v-if="detailItem.address" class="detail-row">
+          <span class="detail-label">Adresse</span>{{ detailItem.address }}
+        </p>
+        <p v-if="detailItem.checkin || detailItem.checkout" class="detail-row">
+          <span class="detail-label">Check-in/-out</span>
+          {{ detailItem.checkin || '–' }} · {{ detailItem.checkout || '–' }}
+        </p>
+        <p v-if="detailItem.contact && parseContact(detailItem.contact).kind === 'phone'" class="detail-row">
+          <span class="detail-label">Kontakt</span>
+          📞 <a :href="parseContact(detailItem.contact).href">{{ detailItem.contact }}</a>
+        </p>
+        <p v-else-if="detailItem.contact && parseContact(detailItem.contact).kind === 'email'" class="detail-row">
+          <span class="detail-label">Kontakt</span>
+          📧 <a :href="parseContact(detailItem.contact).href">{{ detailItem.contact }}</a>
+        </p>
+        <p v-else-if="detailItem.contact" class="detail-row">
+          <span class="detail-label">Kontakt</span>
+          <span class="contact-text" v-html="renderRichText(detailItem.contact)"></span>
+        </p>
+        <p v-if="detailItem.amount != null" class="detail-row">
+          <span class="detail-label">Kosten</span>
+          💶 {{ detailItem.amount.toFixed(2) }} €
+          <span v-if="detailItem.paid_by_user_id"> · bezahlt von {{ userLabel(detailItem.paid_by_user_id) }}</span>
+        </p>
+        <div v-if="detailItem.note" class="detail-row note" v-html="renderRichText(detailItem.note)"></div>
+        <div class="detail-actions">
+          <button type="button" class="card-action-btn" @click="editFromDetail">✎ Bearbeiten</button>
+          <button v-if="detailItem.lat != null && detailItem.lng != null" type="button" class="card-action-btn" @click="showDetailOnMap">
+            🗺️ Auf Karte anzeigen
+          </button>
+        </div>
+      </template>
+    </DetailModal>
 
     <Modal
       :model-value="editingItem !== null"
@@ -406,6 +444,7 @@ label {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  cursor: pointer;
 }
 
 .acc-head {
@@ -431,14 +470,6 @@ label {
   display: flex;
   gap: 4px;
   flex-shrink: 0;
-}
-
-.links {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--space-3);
-  margin-top: var(--space-2);
 }
 
 .empty {
