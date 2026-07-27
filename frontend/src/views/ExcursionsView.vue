@@ -424,10 +424,12 @@ const filteredSpotItems = computed(() =>
     : allSpotItems.value.filter((item) => categoryFilter.value.includes(itemCategory(item))),
 );
 
-// Reihenfolge der Gruppen: bekannte Spot-Kategorien (spotCategory.ts-Reihenfolge) zuerst, dann
-// Unterkunft/Reise, dann eigene Freitext-Kategorien alphabetisch, "Sonstiges" (keine Kategorie)
-// zuletzt – bleibt unabhängig von der gewählten Sortierung innerhalb der Gruppen stabil.
-const CATEGORY_GROUP_ORDER = [...SPOT_CATEGORY_SUGGESTIONS, 'Unterkunft', 'Reise'];
+// Reihenfolge der Gruppen: die automatisch eingebetteten Unterkunft-/Reise-Orte zuerst (sind
+// bereits anderswo gepflegt, sollen als "kostenloser" Ausgangspunkt sofort ins Auge fallen), dann
+// bekannte Spot-Kategorien (spotCategory.ts-Reihenfolge), dann eigene Freitext-Kategorien
+// alphabetisch, "Sonstiges" (keine Kategorie) zuletzt – bleibt unabhängig von der gewählten
+// Sortierung innerhalb der Gruppen stabil.
+const CATEGORY_GROUP_ORDER = ['Unterkunft', 'Reise', ...SPOT_CATEGORY_SUGGESTIONS];
 
 function sortedCategoryKeys(categories: Iterable<string>): string[] {
   const set = new Set(categories);
