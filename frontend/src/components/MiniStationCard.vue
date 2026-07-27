@@ -1,0 +1,71 @@
+<script setup lang="ts">
+import type { ExcursionStation } from '../utils/excursionStations';
+
+// Ganz bewusst ohne Like/Kommentar/Edit/Löschen/Drag – dient in der Ausflug-Stationsliste
+// (ExcursionDetailDialog.vue, MapView.vue) nur der Übersicht "welche Stationen in welcher
+// Reihenfolge", nicht der Interaktion. Eine Station ist nicht zwingend ein echter Spot (kann auch
+// die Unterkunft oder ein Anreise-/Abreise-Ort sein, siehe utils/excursionStations.ts) – Icon/
+// Kategorie/Bild kommen deshalb bereits fertig aufgelöst vom ExcursionStation-Objekt statt hier
+// erneut per spotCategoryMeta() bestimmt zu werden.
+defineProps<{ station: ExcursionStation }>();
+</script>
+
+<template>
+  <div class="mini-station-card">
+    <div class="image" :style="station.imageUrl ? { backgroundImage: `url(${station.imageUrl})` } : {}">
+      <span v-if="!station.imageUrl" class="placeholder">{{ station.icon }}</span>
+    </div>
+    <div class="body">
+      <span class="title">{{ station.title }}</span>
+      <span class="category">{{ station.icon }} {{ station.category }}</span>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.mini-station-card {
+  width: 96px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.image {
+  height: 64px;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary-tint) center/cover no-repeat;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.placeholder {
+  font-size: 1.4rem;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.title {
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.category {
+  font-size: 0.68rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+</style>

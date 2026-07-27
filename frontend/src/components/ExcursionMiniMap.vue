@@ -2,15 +2,15 @@
 import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import type { Spot } from '../api/types';
-import { spotCategoryMeta } from '../utils/spotCategory';
+import type { ExcursionStation } from '../utils/excursionStations';
 import { arcRoute, cachedEmojiPin } from '../utils/mapRoute';
 
 // Kleine, eigenständige Leaflet-Instanz für den Ausflug-Detail-Dialog – bewusst lazy erzeugt (erst
 // beim Mounten des Dialogs) und beim Schließen wieder mit map.remove() abgebaut (Pi-2-Ressourcen-
 // Rücksicht), statt dauerhaft im Hintergrund zu laufen wie die große Karte (MapView.vue). Der
-// Aufrufer liefert bereits gefilterte (lat/lng gesetzt) und in Besuchsreihenfolge sortierte Spots.
-const props = defineProps<{ spots: Spot[]; routeColor?: string }>();
+// Aufrufer liefert bereits gefilterte (lat/lng gesetzt) und in Besuchsreihenfolge sortierte
+// Stationen (nicht zwingend echte Spots, siehe utils/excursionStations.ts).
+const props = defineProps<{ stations: ExcursionStation[]; routeColor?: string }>();
 
 const mapEl = ref<HTMLDivElement | null>(null);
 let map: L.Map | null = null;
@@ -24,12 +24,11 @@ function render() {
   routesLayer.clearLayers();
 
   const coords: L.LatLngExpression[] = [];
-  for (const spot of props.spots) {
-    if (spot.lat == null || spot.lng == null) continue;
-    const meta = spotCategoryMeta(spot.category);
-    const latlng: L.LatLngExpression = [spot.lat, spot.lng];
+  for (const station of props.stations) {
+    if (station.lat == null || station.lng == null) continue;
+    const latlng: L.LatLngExpression = [station.lat, station.lng];
     coords.push(latlng);
-    L.marker(latlng, { icon: cachedEmojiPin(meta.icon, meta.color) }).addTo(markersLayer);
+    L.marker(latlng, { icon: cachedEmojiPin(station.icon, station.color) }).addTo(markersLayer);
   }
 
   if (coords.length >= 2) {
@@ -68,7 +67,7 @@ onUnmounted(() => {
   map = null;
 });
 
-watch(() => props.spots, render, { deep: true });
+watch(() => props.stations, render, { deep: true });
 </script>
 
 <template>

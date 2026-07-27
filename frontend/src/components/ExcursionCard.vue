@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import type { Excursion, Spot } from '../api/types';
+import type { Accommodation, Excursion, Spot, TravelItem } from '../api/types';
 import type { DerivedLocation } from '../utils/derivedLocation';
-import { spotCategoryMeta } from '../utils/spotCategory';
+import type { ExcursionStation } from '../utils/excursionStations';
 import { usePointerDrag } from '../composables/usePointerDrag';
 import { useExcursionsStore } from '../stores/excursions';
 import { useDrawersStore } from '../stores/drawers';
@@ -19,7 +19,11 @@ const props = defineProps<{
   likeCount: number;
   liked: boolean;
   comments: CommentItem[];
-  stations: Spot[];
+  stations: ExcursionStation[];
+  // Reine Durchreichung an ExcursionDetailDialog.vue (siehe dort) – der Dialog braucht die rohen
+  // Listen für seinen eigenen Stations-Resolver-Aufruf, nicht nur die schon aufgelösten stations.
+  accommodations: Accommodation[];
+  travelItems: TravelItem[];
 }>();
 const emit = defineEmits<{
   (e: 'remove', id: number): void;
@@ -37,14 +41,15 @@ const detailOpen = ref(false);
 
 const hasMappedStations = computed(() => props.stations.some((s) => s.lat != null && s.lng != null));
 
-// Fallback-Bilder, falls der Ausflug selbst kein Bild hat: Bilder der zugeordneten Spots in der
-// definierten Reihenfolge (spot_ids – nicht die Reihenfolge von props.stations, die vom
-// Spots-Store kommt und dadurch anders sortiert sein kann). Bei ≥2 Bildern eine kleine Collage
-// (SpotImageCollage.vue) statt nur des ersten Spot-Bilds – macht auf einen Blick erkennbar, dass
+// Fallback-Bilder, falls der Ausflug selbst kein Bild hat: Bilder der zugeordneten Spot-Stationen
+// in der definierten Reihenfolge (station_keys – nicht die Reihenfolge von props.stations, die vom
+// Spots-Store kommt und dadurch anders sortiert sein kann). Unterkunft-/Reise-Stationen haben kein
+// eigenes Bild (imageUrl null) und fallen dadurch automatisch raus. Bei ≥2 Bildern eine kleine
+// Collage (SpotImageCollage.vue) statt nur des ersten Bilds – macht auf einen Blick erkennbar, dass
 // hier mehrere Orte drinstecken, statt wie ein einzelner Spot auszusehen.
 const fallbackImages = computed(() =>
-  props.excursion.spot_ids
-    .map((id) => props.stations.find((s) => s.id === id)?.image_url)
+  props.excursion.station_keys
+    .map((key) => props.stations.find((s) => s.key === key)?.imageUrl)
     .filter((url): url is string => !!url),
 );
 const showCollage = computed(() => !props.excursion.image_url && fallbackImages.value.length >= 2);
@@ -130,8 +135,8 @@ function onSpotDrop(event: DragEvent) {
     <div class="body">
       <h3>{{ excursion.title }}</h3>
       <div class="stations" v-if="stations.length">
-        <span v-for="spot in stations" :key="spot.id" class="station-chip">
-          {{ spotCategoryMeta(spot.category).icon }} {{ spot.title }}
+        <span v-for="station in stations" :key="station.key" class="station-chip">
+          {{ station.icon }} {{ station.title }}
         </span>
       </div>
       <div class="links" v-if="hasMappedStations">
@@ -171,6 +176,8 @@ function onSpotDrop(event: DragEvent) {
       :liked="liked"
       :comments="comments"
       :stations="stations"
+      :accommodations="accommodations"
+      :travel-items="travelItems"
       @edit="detailOpen = false; emit('edit', excursion)"
       @toggle-like="emit('toggle-like')"
       @submit-comment="(content) => emit('submit-comment', content)"
