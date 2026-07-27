@@ -77,8 +77,10 @@ export interface Excursion {
   /** Optionales Datum: gesetzt = "geplant" (im Kalender eingeplant), ungesetzt = "in Planung". */
   date: string | null;
   created_by: number | null;
-  /** IDs der Spots, die diesem Ausflug als Stationen zugeordnet sind. */
-  spot_ids: number[];
+  /** Stationen dieses Ausflugs, in Reihenfolge – generische Schlüssel wie MapPoint.key/
+   *  DerivedLocation.key ('spot-<id>', 'accommodation-<id>', 'travel-from-<id>', 'travel-to-<id>'),
+   *  nicht zwingend echte Spots (siehe utils/excursionStations.ts). */
+  station_keys: string[];
 }
 
 export interface ExcursionLike {

@@ -6,33 +6,47 @@ import { spotCategoryMeta } from '../utils/spotCategory';
 
 const props = withDefaults(
   defineProps<{
-    modelValue: number[];
+    /** Stationsreihenfolge als generische Schlüssel (siehe Excursion.station_keys/
+     *  utils/excursionStations.ts) – kann sowohl echte Spots als auch Unterkunft-/Reise-Orte
+     *  enthalten (loc.key ist bereits der fertige Schlüssel, wird nicht mehr zu einem Spot
+     *  aufgelöst). */
+    modelValue: string[];
     spots: Spot[];
     likeCount: (spotId: number) => number;
-    /** Unterkunft-/Reise-Orte, die noch kein eigener Spot sind (siehe ExcursionsView.vue) – wählbar
-     *  wie ein Spot, wird beim Anhaken erst zu einem echten Spot aufgelöst (pick-derived-location). */
+    /** Unterkunft-/Reise-Orte – wählbar wie ein Spot, ohne dafür einen anzulegen. */
     derivedLocations?: DerivedLocation[];
   }>(),
   { derivedLocations: () => [] },
 );
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: number[]): void;
+  (e: 'update:modelValue', value: string[]): void;
   (e: 'pick-derived-location', location: DerivedLocation): void;
 }>();
 
 // Schreibbarer Computed statt einzelner add/remove-Emits: die Checkboxen der "weitere Spots"-Liste
 // nutzen dadurch dasselbe v-model-Array-Muster wie vorher, ohne dass die Elternkomponente eigene
 // add/remove-Handler bräuchte.
-const selected = computed<number[]>({
+const selected = computed<string[]>({
   get: () => props.modelValue,
   set: (v) => emit('update:modelValue', v),
 });
 
-// Reihenfolge der geplanten Spots entspricht der Abklapper-Reihenfolge während des Ausflugs (und
-// bestimmt auch die auf der Karte gezeichnete Route, siehe MapView.vue) – deshalb hier nach
-// modelValue-Reihenfolge, NICHT nach Likes sortiert.
-const plannedSpots = computed(() =>
-  props.modelValue.map((id) => props.spots.find((s) => s.id === id)).filter((s): s is Spot => !!s),
+// Reihenfolge der geplanten Stationen entspricht der Abklapper-Reihenfolge während des Ausflugs
+// (und bestimmt auch die auf der Karte gezeichnete Route, siehe MapView.vue) – deshalb hier nach
+// modelValue-Reihenfolge, NICHT nach Likes sortiert. Löst jeden Key lokal auf: 'spot-*' gegen
+// props.spots, alles andere (Unterkunft/Reise) gegen props.derivedLocations – kein Bedarf an einem
+// vollen ExcursionStation-Resolver hier, beide Quellen bringen Titel/Icon schon fertig mit.
+const plannedStations = computed(() =>
+  props.modelValue
+    .map((key) => {
+      if (key.startsWith('spot-')) {
+        const spot = props.spots.find((s) => s.id === Number(key.slice('spot-'.length)));
+        return spot ? { key, title: spot.title, icon: spotCategoryMeta(spot.category).icon } : null;
+      }
+      const loc = props.derivedLocations.find((l) => l.key === key);
+      return loc ? { key, title: loc.title, icon: loc.icon } : null;
+    })
+    .filter((s): s is { key: string; title: string; icon: string } => !!s),
 );
 
 // Bewusst NICHT mehr gefiltert auf "noch nicht eingeplant" – für einen Rundgang muss derselbe Spot
@@ -44,7 +58,7 @@ const addableSpots = computed(() =>
 );
 
 function addSpot(id: number) {
-  selected.value = [...selected.value, id];
+  selected.value = [...selected.value, `spot-${id}`];
 }
 
 function removeSpotAt(index: number) {
@@ -99,13 +113,13 @@ function onDragEnd() {
 
 <template>
   <div class="spot-order-picker">
-    <fieldset v-if="plannedSpots.length" class="planned-box">
+    <fieldset v-if="plannedStations.length" class="planned-box">
       <legend>📋 Ausflugsreihenfolge</legend>
       <p class="order-hint">
-        In dieser Reihenfolge werden die Spots während des Ausflugs abgeklappert (bestimmt auch die
-        eingezeichnete Route auf der Karte) – zum Sortieren ziehen.
+        In dieser Reihenfolge werden die Stationen während des Ausflugs abgeklappert (bestimmt auch
+        die eingezeichnete Route auf der Karte) – zum Sortieren ziehen.
       </p>
-      <template v-for="(spot, index) in plannedSpots" :key="index">
+      <template v-for="(station, index) in plannedStations" :key="index">
         <div class="drop-line" v-if="draggedIndex !== null && dropIndicatorIndex === index"></div>
         <div
           class="planned-row"
@@ -118,13 +132,13 @@ function onDragEnd() {
         >
           <span class="order-num">{{ index + 1 }}.</span>
           <span class="drag-handle" aria-hidden="true">⠿</span>
-          <span class="spot-title">{{ spotCategoryMeta(spot.category).icon }} {{ spot.title }}</span>
+          <span class="spot-title">{{ station.icon }} {{ station.title }}</span>
           <button type="button" class="remove-btn" @click="removeSpotAt(index)" aria-label="Aus Ausflug entfernen">
             ✕
           </button>
         </div>
       </template>
-      <div class="drop-line" v-if="draggedIndex !== null && dropIndicatorIndex === plannedSpots.length"></div>
+      <div class="drop-line" v-if="draggedIndex !== null && dropIndicatorIndex === plannedStations.length"></div>
     </fieldset>
 
     <fieldset v-if="addableSpots.length" class="spot-picker">

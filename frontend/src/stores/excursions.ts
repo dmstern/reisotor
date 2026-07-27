@@ -9,7 +9,7 @@ export interface ExcursionFormData {
   image_url?: string;
   note?: string;
   date?: string;
-  spot_ids?: number[];
+  station_keys?: string[];
 }
 
 // Eigener Store statt lokalem State in ExcursionsView: Ausflüge werden per Drag&Drop aus der
@@ -61,7 +61,7 @@ export const useExcursionsStore = defineStore('excursions', () => {
       image_url: existing.image_url ?? undefined,
       note: existing.note ?? undefined,
       date: date ?? undefined,
-      spot_ids: existing.spot_ids,
+      station_keys: existing.station_keys,
     });
   }
 

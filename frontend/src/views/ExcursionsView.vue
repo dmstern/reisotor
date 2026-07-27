@@ -16,6 +16,7 @@ import Combobox from '../components/Combobox.vue';
 import { parseLatLngFromMapsLink, tilePreviewUrl } from '../utils/googleMaps';
 import { spotCategoryMeta, SPOT_CATEGORY_SUGGESTIONS } from '../utils/spotCategory';
 import type { DerivedLocation } from '../utils/derivedLocation';
+import { resolveStations } from '../utils/excursionStations';
 
 const auth = useAuthStore();
 const tripStore = useTripStore();
@@ -58,8 +59,8 @@ function author(id: number) {
   return users.value.find((u) => u.id === id);
 }
 
-function stationsFor(spotIds: number[]) {
-  return spotsStore.spots.filter((s) => spotIds.includes(s.id));
+function stationsForKeys(keys: string[]) {
+  return resolveStations(keys, spotsStore.spots, accommodations.value, travelItems.value);
 }
 
 // --- Likes/Kommentare Ausflüge (weiterhin an ideas/idea_likes/idea_comments gebunden) ---
@@ -121,7 +122,7 @@ async function removeSpotComment(id: number) {
 
 // --- Ausflüge ---
 const showExcursionForm = ref(false);
-const emptyExcursionForm = () => ({ title: '', image_url: '', note: '', date: '', spot_ids: [] as number[] });
+const emptyExcursionForm = () => ({ title: '', image_url: '', note: '', date: '', station_keys: [] as string[] });
 const excursionForm = ref(emptyExcursionForm());
 
 const editingExcursion = ref<number | null>(null);
@@ -144,19 +145,19 @@ async function addExcursion() {
     image_url: excursionForm.value.image_url || undefined,
     note: excursionForm.value.note || undefined,
     date: excursionForm.value.date || undefined,
-    spot_ids: excursionForm.value.spot_ids,
+    station_keys: excursionForm.value.station_keys,
   });
   closeExcursionForm();
 }
 
-function startEditExcursion(excursion: { id: number; title: string; image_url: string | null; note: string | null; date: string | null; spot_ids: number[] }) {
+function startEditExcursion(excursion: { id: number; title: string; image_url: string | null; note: string | null; date: string | null; station_keys: string[] }) {
   editingExcursion.value = excursion.id;
   editExcursionForm.value = {
     title: excursion.title,
     image_url: excursion.image_url ?? '',
     note: excursion.note ?? '',
     date: excursion.date ?? '',
-    spot_ids: [...excursion.spot_ids],
+    station_keys: [...excursion.station_keys],
   };
 }
 
@@ -167,7 +168,7 @@ async function submitEditExcursion() {
     image_url: editExcursionForm.value.image_url || undefined,
     note: editExcursionForm.value.note || undefined,
     date: editExcursionForm.value.date || undefined,
-    spot_ids: editExcursionForm.value.spot_ids,
+    station_keys: editExcursionForm.value.station_keys,
   });
   editingExcursion.value = null;
 }
@@ -187,13 +188,14 @@ async function removeExcursion(id: number) {
 // hinzufügen (ExcursionCard.vue ist die Drop-Zone, emittiert die abgelegte Spot-Id).
 async function addSpotToExcursion(excursionId: number, spotId: number) {
   const excursion = excursionsStore.excursions.find((e) => e.id === excursionId);
-  if (!excursion || excursion.spot_ids.includes(spotId)) return;
+  const key = `spot-${spotId}`;
+  if (!excursion || excursion.station_keys.includes(key)) return;
   await excursionsStore.update(excursionId, {
     title: excursion.title,
     image_url: excursion.image_url ?? undefined,
     note: excursion.note ?? undefined,
     date: excursion.date ?? undefined,
-    spot_ids: [...excursion.spot_ids, spotId],
+    station_keys: [...excursion.station_keys, key],
   });
 }
 
@@ -236,43 +238,32 @@ const derivedLocations = computed<DerivedLocation[]>(() => {
   return result;
 });
 
-// Wiederverwenden, falls für diesen Ort (per Maps-Link) schon einmal ein Spot angelegt wurde,
-// sonst neu anlegen – so entstehen keine Duplikate, wenn derselbe Ort in mehrere Ausflüge
-// einsortiert wird. Von zwei Stellen genutzt: direktes Ablegen auf einer Ausflug-Karte
-// (addDerivedLocationToExcursion, sofort persistiert) UND Auswahl im Anlege-/Bearbeiten-Dialog
-// (pickDerivedLocationForForm, landet erstmal nur im lokalen Formular).
-async function resolveDerivedLocationSpot(loc: DerivedLocation): Promise<Spot> {
-  const existing = loc.maps_link ? spotsStore.spots.find((s) => s.maps_link === loc.maps_link) : undefined;
-  if (existing) return existing;
-  return spotsStore.create({
-    trip_id: tripId,
-    title: loc.title,
-    category: loc.category,
-    maps_link: loc.maps_link || undefined,
-    lat: loc.lat,
-    lng: loc.lng,
+// loc.key ist bereits der fertige Stations-Schlüssel (gleiches Format wie Excursion.station_keys,
+// siehe utils/excursionStations.ts) – anders als früher muss dafür kein eigener Spot mehr angelegt
+// werden, die Unterkunft/der Reise-Ort bleibt als solcher erkennbar (kein Duplikat in der
+// Spots-Übersicht, Klick auf die Station öffnet den echten Unterkunft-/Reise-Dialog).
+
+// Beim Ablegen auf einer Ausflug-Karte (Drag&Drop außerhalb des Dialogs): sofort speichern, gleiches
+// Duplikat-Check-Muster wie addSpotToExcursion.
+async function addDerivedLocationToExcursion(excursionId: number, loc: DerivedLocation) {
+  const excursion = excursionsStore.excursions.find((e) => e.id === excursionId);
+  if (!excursion || excursion.station_keys.includes(loc.key)) return;
+  await excursionsStore.update(excursionId, {
+    title: excursion.title,
+    image_url: excursion.image_url ?? undefined,
+    note: excursion.note ?? undefined,
+    date: excursion.date ?? undefined,
+    station_keys: [...excursion.station_keys, loc.key],
   });
 }
 
-// Beim Ablegen auf einer Ausflug-Karte (Drag&Drop außerhalb des Dialogs): sofort speichern.
-async function addDerivedLocationToExcursion(excursionId: number, loc: DerivedLocation) {
-  const spot = await resolveDerivedLocationSpot(loc);
-  await addSpotToExcursion(excursionId, spot.id);
+// Auswahl im Anlege-/Bearbeiten-Dialog (SpotOrderPicker): landet erstmal nur lokal im Formular, bis
+// "Speichern" gedrückt wird.
+function pickDerivedLocationForNewForm(loc: DerivedLocation) {
+  excursionForm.value.station_keys.push(loc.key);
 }
-
-// Auswahl im Anlege-/Bearbeiten-Dialog (SpotOrderPicker): der Spot wird zwar sofort angelegt/
-// wiederverwendet (dedupliziert über den Maps-Link), die Ausflug-Zuordnung selbst bleibt aber wie
-// bei jedem anderen Spot-Häkchen lokal im Formular, bis "Speichern" gedrückt wird. Zwei separate
-// Funktionen statt einer mit Ref-Parameter, da eine im Template übergebene Ref dort automatisch
-// entpackt wird (Vue unwrappt Top-Level-Refs in Template-Ausdrücken) und dann nicht mehr als Ref
-// beim Funktionsaufruf ankäme.
-async function pickDerivedLocationForNewForm(loc: DerivedLocation) {
-  const spot = await resolveDerivedLocationSpot(loc);
-  if (!excursionForm.value.spot_ids.includes(spot.id)) excursionForm.value.spot_ids.push(spot.id);
-}
-async function pickDerivedLocationForEditForm(loc: DerivedLocation) {
-  const spot = await resolveDerivedLocationSpot(loc);
-  if (!editExcursionForm.value.spot_ids.includes(spot.id)) editExcursionForm.value.spot_ids.push(spot.id);
+function pickDerivedLocationForEditForm(loc: DerivedLocation) {
+  editExcursionForm.value.station_keys.push(loc.key);
 }
 
 // Drop-Zone, um die Kalender-Einplanung rückgängig zu machen: ein geplanter Ausflug kann aus dem
@@ -535,7 +526,7 @@ function showSpotOnMap(spot: Spot) {
         </label>
         <SpotOrderPicker
           v-if="spotsStore.spots.length || derivedLocations.length"
-          v-model="excursionForm.spot_ids"
+          v-model="excursionForm.station_keys"
           :spots="spotsStore.spots"
           :like-count="spotsStore.likeCountFor"
           :derived-locations="derivedLocations"
@@ -563,7 +554,7 @@ function showSpotOnMap(spot: Spot) {
           :like-count="likesFor(excursion.id).length"
           :liked="likedByMe(excursion.id)"
           :comments="commentItemsFor(excursion.id)"
-          :stations="stationsFor(excursion.spot_ids)"
+          :stations="stationsForKeys(excursion.station_keys)"
           @edit="startEditExcursion"
           @remove="removeExcursion"
           @toggle-like="toggleLike(excursion.id)"
@@ -600,7 +591,7 @@ function showSpotOnMap(spot: Spot) {
           :like-count="likesFor(excursion.id).length"
           :liked="likedByMe(excursion.id)"
           :comments="commentItemsFor(excursion.id)"
-          :stations="stationsFor(excursion.spot_ids)"
+          :stations="stationsForKeys(excursion.station_keys)"
           @edit="startEditExcursion"
           @remove="removeExcursion"
           @toggle-like="toggleLike(excursion.id)"
@@ -634,7 +625,7 @@ function showSpotOnMap(spot: Spot) {
         </label>
         <SpotOrderPicker
           v-if="spotsStore.spots.length || derivedLocations.length"
-          v-model="editExcursionForm.spot_ids"
+          v-model="editExcursionForm.station_keys"
           :spots="spotsStore.spots"
           :like-count="spotsStore.likeCountFor"
           :derived-locations="derivedLocations"
