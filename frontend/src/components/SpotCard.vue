@@ -3,7 +3,8 @@ import { ref } from 'vue';
 import type { Spot } from '../api/types';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { renderRichText } from '../utils/richText';
-import DetailModal from './DetailModal.vue';
+import CategoryChip from './CategoryChip.vue';
+import SpotDetailDialog from './SpotDetailDialog.vue';
 import EditButton from './EditButton.vue';
 import DeleteButton from './DeleteButton.vue';
 import LikeButton from './LikeButton.vue';
@@ -28,10 +29,10 @@ const emit = defineEmits<{
 const showComments = ref(false);
 const detailOpen = ref(false);
 
-// Natives Drag (Zuordnen zu einem Ausflug) und der neue Klick-zum-Öffnen-Handler vertragen sich
-// auf Desktop ohne Sonderbehandlung: der Browser unterdrückt den synthetischen Klick nach einem
-// echten Drag-Vorgang von selbst (anders als bei ExcursionCard.vue's neuem Touch-Anfasser, wo kein
-// natives DnD mehr im Spiel ist und deshalb explizit @click.stop nötig ist).
+// Natives Drag (Zuordnen zu einem Ausflug) und der Klick-zum-Öffnen-Handler vertragen sich auf
+// Desktop ohne Sonderbehandlung: der Browser unterdrückt den synthetischen Klick nach einem echten
+// Drag-Vorgang von selbst (anders als bei ExcursionCard.vue's Touch-Anfasser, wo kein natives DnD
+// mehr im Spiel ist und deshalb explizit @click.stop nötig ist).
 function onDragStart(event: DragEvent) {
   event.dataTransfer?.setData('text/spot-id', String(props.spot.id));
   if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
@@ -48,10 +49,9 @@ function onDragStart(event: DragEvent) {
     <div class="body">
       <div class="head">
         <h3>{{ spot.title }}</h3>
-        <span v-if="spot.category" class="category" :style="{ background: `${spotCategoryMeta(spot.category).color}26`, color: spotCategoryMeta(spot.category).color }">
-          {{ spotCategoryMeta(spot.category).icon }} {{ spot.category }}
-        </span>
+        <CategoryChip :category="spot.category" />
       </div>
+      <div v-if="spot.note" class="note" v-html="renderRichText(spot.note)"></div>
       <span class="drag-hint">↕ auf einen Ausflug ziehen, um ihn dort als Station hinzuzufügen</span>
       <div class="social-row">
         <LikeButton :count="likeCount" :liked="liked" @toggle="emit('toggle-like')" />
@@ -66,37 +66,19 @@ function onDragStart(event: DragEvent) {
       />
     </div>
 
-    <DetailModal
+    <SpotDetailDialog
       v-model="detailOpen"
-      :title="spot.title"
-      :image-url="spot.image_url"
-      :placeholder-icon="spotCategoryMeta(spot.category).icon"
-    >
-      <p v-if="creatorLabel" class="detail-row"><span class="detail-label">Von</span>{{ creatorLabel }}</p>
-      <p v-if="spot.category" class="detail-row">
-        <span class="detail-label">Kategorie</span>{{ spotCategoryMeta(spot.category).icon }} {{ spot.category }}
-      </p>
-      <div v-if="spot.note" class="detail-row note" v-html="renderRichText(spot.note)"></div>
-      <div class="social-row">
-        <LikeButton :count="likeCount" :liked="liked" @toggle="emit('toggle-like')" />
-      </div>
-      <Comments
-        :comments="comments"
-        @submit="(content) => emit('submit-comment', content)"
-        @remove="(id) => emit('remove-comment', id)"
-      />
-      <div class="detail-actions">
-        <button type="button" class="card-action-btn" @click="detailOpen = false; emit('edit', spot)">✎ Bearbeiten</button>
-        <button
-          v-if="spot.lat != null && spot.lng != null"
-          type="button"
-          class="card-action-btn"
-          @click="detailOpen = false; emit('show-on-map', spot)"
-        >
-          🗺️ Auf Karte anzeigen
-        </button>
-      </div>
-    </DetailModal>
+      :spot="spot"
+      :creator-label="creatorLabel"
+      :like-count="likeCount"
+      :liked="liked"
+      :comments="comments"
+      @edit="detailOpen = false; emit('edit', spot)"
+      @toggle-like="emit('toggle-like')"
+      @submit-comment="(content) => emit('submit-comment', content)"
+      @remove-comment="(id) => emit('remove-comment', id)"
+      @show-on-map="detailOpen = false; emit('show-on-map', spot)"
+    />
   </div>
 </template>
 
@@ -140,14 +122,6 @@ function onDragStart(event: DragEvent) {
 .head h3 {
   margin: 0;
   font-size: 1rem;
-}
-
-.category {
-  font-size: 0.72rem;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 999px;
-  white-space: nowrap;
 }
 
 .note {
