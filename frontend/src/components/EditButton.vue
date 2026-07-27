@@ -4,13 +4,18 @@ defineEmits<{ (e: 'click'): void }>();
 </script>
 
 <template>
+  <!-- .stop hier (statt an den Verwendungsstellen mit @click.stop="handler"): dort wäre der
+       emittierte Payload undefined (click hat keine Nutzlast), Vues .stop-Modifier ruft aber
+       stopPropagation() auf genau diesem Payload auf – würde also crashen. Hier ist $event der
+       echte native Klick, .stop ist deshalb sicher und schützt jede Karte, die diesen Button in
+       einen jetzt klickbaren Card-Root einbettet (z. B. ExcursionCard.vue). -->
   <button
     type="button"
     class="secondary edit-btn"
     :class="{ small, floating }"
     title="Bearbeiten"
     aria-label="Bearbeiten"
-    @click="$emit('click')"
+    @click.stop="$emit('click')"
   >
     ✎
   </button>

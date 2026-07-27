@@ -2,7 +2,6 @@
 import { computed, ref } from 'vue';
 import type { Excursion, Spot } from '../api/types';
 import type { DerivedLocation } from '../utils/derivedLocation';
-import { renderRichText } from '../utils/richText';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { usePointerDrag } from '../composables/usePointerDrag';
 import { useExcursionsStore } from '../stores/excursions';
@@ -11,6 +10,7 @@ import EditButton from './EditButton.vue';
 import DeleteButton from './DeleteButton.vue';
 import LikeButton from './LikeButton.vue';
 import Comments, { type CommentItem } from './Comments.vue';
+import ExcursionDetailDialog from './ExcursionDetailDialog.vue';
 
 const props = defineProps<{
   excursion: Excursion;
@@ -31,7 +31,7 @@ const emit = defineEmits<{
   (e: 'show-on-map'): void;
 }>();
 
-const hasMappedStations = computed(() => props.stations.some((s) => s.lat != null && s.lng != null));
+const detailOpen = ref(false);
 
 // Fallback-Bild, falls der Ausflug selbst kein Bild hat: das Bild des ersten zugeordneten Spots
 // (in der definierten Reihenfolge, spot_ids – nicht die Reihenfolge von props.stations, die vom
@@ -104,6 +104,7 @@ function onSpotDrop(event: DragEvent) {
   <div
     class="card excursion-card"
     :class="{ 'drop-target': spotDragOverCount > 0 }"
+    @click="detailOpen = true"
     @dragover.prevent
     @dragenter.prevent="onSpotDragEnter"
     @dragleave="onSpotDragLeave"
@@ -119,15 +120,10 @@ function onSpotDrop(event: DragEvent) {
     </div>
     <div class="body">
       <h3>{{ excursion.title }}</h3>
-      <p v-if="creatorLabel" class="creator">von {{ creatorLabel }}</p>
-      <div v-if="excursion.note" class="note" v-html="renderRichText(excursion.note)"></div>
       <div class="stations" v-if="stations.length">
         <span v-for="spot in stations" :key="spot.id" class="station-chip">
           {{ spotCategoryMeta(spot.category).icon }} {{ spot.title }}
         </span>
-      </div>
-      <div class="links" v-if="hasMappedStations">
-        <button type="button" class="card-action-btn" @click="emit('show-on-map')">🗺️ Auf Karte anzeigen</button>
       </div>
       <button
         type="button"
@@ -135,6 +131,7 @@ function onSpotDrop(event: DragEvent) {
         aria-label="Auf Kalender ziehen zum Einplanen"
         title="Auf Kalender ziehen zum Einplanen"
         @pointerdown="onPointerDown"
+        @click.stop
       >
         📅 Einplanen
       </button>
@@ -143,15 +140,31 @@ function onSpotDrop(event: DragEvent) {
       </Teleport>
       <div class="social-row">
         <LikeButton :count="likeCount" :liked="liked" @toggle="emit('toggle-like')" />
-        <button class="secondary" @click="showComments = !showComments">💬 {{ comments.length || '' }}</button>
+        <button class="secondary" @click.stop="showComments = !showComments">💬 {{ comments.length || '' }}</button>
       </div>
       <Comments
         v-if="showComments"
         :comments="comments"
+        @click.stop
         @submit="(content) => emit('submit-comment', content)"
         @remove="(id) => emit('remove-comment', id)"
       />
     </div>
+
+    <ExcursionDetailDialog
+      v-model="detailOpen"
+      :excursion="excursion"
+      :creator-label="creatorLabel"
+      :like-count="likeCount"
+      :liked="liked"
+      :comments="comments"
+      :stations="stations"
+      @edit="detailOpen = false; emit('edit', excursion)"
+      @toggle-like="emit('toggle-like')"
+      @submit-comment="(content) => emit('submit-comment', content)"
+      @remove-comment="(id) => emit('remove-comment', id)"
+      @show-on-map="emit('show-on-map')"
+    />
   </div>
 </template>
 
@@ -168,6 +181,7 @@ function onSpotDrop(event: DragEvent) {
   align-items: stretch;
   min-height: 120px;
   border: 2px dashed transparent;
+  cursor: pointer;
   transition: border-color 0.15s ease, background 0.15s ease;
 }
 
@@ -250,16 +264,6 @@ function onSpotDrop(event: DragEvent) {
   }
 }
 
-.creator {
-  font-size: 0.82rem;
-  color: var(--color-text-muted);
-  margin: 0;
-}
-
-.note {
-  overflow-wrap: anywhere;
-}
-
 /* Eigener Anfasser statt des gesamten Card-Roots als Drag-Quelle (siehe usePointerDrag-Wiring im
    Script) – touch-action:none verhindert, dass der Browser das Ziehen als Seiten-Scroll
    interpretiert. */
@@ -312,13 +316,6 @@ function onSpotDrop(event: DragEvent) {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
-}
-
-.links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  margin-top: 4px;
 }
 
 .station-chip {

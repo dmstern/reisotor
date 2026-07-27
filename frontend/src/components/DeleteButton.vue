@@ -4,6 +4,8 @@ defineEmits<{ (e: 'click'): void }>();
 </script>
 
 <template>
+  <!-- .stop hier statt an den Verwendungsstellen – siehe EditButton.vue für die Begründung
+       (dort wäre der emittierte Payload undefined, .stop dort würde crashen). -->
   <button
     type="button"
     class="secondary delete-btn"
@@ -11,7 +13,7 @@ defineEmits<{ (e: 'click'): void }>();
     :disabled="disabled"
     :title="disabled ? 'Löschen hier nicht möglich – in der Ursprungssicht bearbeiten' : 'Löschen'"
     :aria-label="disabled ? 'Löschen nicht möglich' : 'Löschen'"
-    @click="$emit('click')"
+    @click.stop="$emit('click')"
   >
     🗑️
   </button>
