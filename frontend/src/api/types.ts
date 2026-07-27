@@ -127,6 +127,7 @@ export interface TravelItem {
   to_location: string | null;
   date: string | null;
   departure_time: string | null;
+  arrival_time: string | null;
   checkin_info: string | null;
   amount: number | null;
   paid_by_user_id: number | null;

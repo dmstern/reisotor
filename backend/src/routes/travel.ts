@@ -10,6 +10,7 @@ interface TravelBody {
   to_location?: string;
   date?: string;
   departure_time?: string;
+  arrival_time?: string;
   checkin_info?: string;
   amount?: number;
   paid_by_user_id?: number | null;
@@ -113,10 +114,10 @@ export const travelRoutes: FastifyPluginAsync = async (app) => {
     const result = db
       .prepare(
         `INSERT INTO travel_items
-          (trip_id, title, type, from_location, to_location, date, departure_time, checkin_info, amount,
+          (trip_id, title, type, from_location, to_location, date, departure_time, arrival_time, checkin_info, amount,
            paid_by_user_id, luggage, seat, link, note, budget_expense_id,
            from_maps_link, from_lat, from_lng, to_maps_link, to_lat, to_lng, role)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         body.trip_id,
@@ -126,6 +127,7 @@ export const travelRoutes: FastifyPluginAsync = async (app) => {
         body.to_location ?? null,
         body.date ?? null,
         body.departure_time ?? null,
+        body.arrival_time ?? null,
         body.checkin_info ?? null,
         body.amount ?? null,
         body.paid_by_user_id ?? null,
@@ -158,7 +160,7 @@ export const travelRoutes: FastifyPluginAsync = async (app) => {
 
     db.prepare(
       `UPDATE travel_items SET title = ?, type = ?, from_location = ?, to_location = ?, date = ?,
-         departure_time = ?, checkin_info = ?, amount = ?, paid_by_user_id = ?, luggage = ?, seat = ?,
+         departure_time = ?, arrival_time = ?, checkin_info = ?, amount = ?, paid_by_user_id = ?, luggage = ?, seat = ?,
          link = ?, note = ?, budget_expense_id = ?,
          from_maps_link = ?, from_lat = ?, from_lng = ?, to_maps_link = ?, to_lat = ?, to_lng = ?, role = ?
        WHERE id = ?`,
@@ -169,6 +171,7 @@ export const travelRoutes: FastifyPluginAsync = async (app) => {
       body.to_location ?? null,
       body.date ?? null,
       body.departure_time ?? null,
+      body.arrival_time ?? null,
       body.checkin_info ?? null,
       body.amount ?? null,
       body.paid_by_user_id ?? null,
