@@ -937,6 +937,17 @@ function showSpotOnMap(spot: Spot) {
     gap: 0 var(--space-5);
   }
 
+  /* Beide Spalten scrollen ab hier unabhängig voneinander statt gemeinsam mit der Seite – dieselbe
+     Sticky-Offset-Formel wie Drawer.vue's Desktop-Panel (56px NavBar + evtl. zusätzlicher
+     --navbar-offset, falls die NavBar selbst "oben" positioniert ist). */
+  .excursions-col,
+  .spots-col {
+    position: sticky;
+    top: calc(56px + var(--navbar-offset, 0px));
+    max-height: calc(100vh - 56px - var(--navbar-offset, 0px));
+    overflow-y: auto;
+  }
+
   .spots-col {
     border-top: none;
     border-left: 1px solid var(--color-border);
