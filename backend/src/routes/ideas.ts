@@ -19,6 +19,12 @@ interface CommentBody {
   content: string;
 }
 
+interface PlanSpotBody {
+  trip_id: number;
+  spot_id: number;
+  date: string;
+}
+
 // Stationen eines Ausflugs (Batch 13, Reihenfolge/Mehrfachbesuche nachgerüstet; Batch 14:
 // generischer station_key statt spot_id): welche Orte gehören dazu, in welcher Reihenfolge. Eine
 // Station muss kein echter Spot sein – station_key trägt auch 'accommodation-<id>'/
@@ -97,6 +103,46 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
     const result = db.prepare('DELETE FROM ideas WHERE id = ?').run(req.params.id);
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
     return reply.code(204).send();
+  });
+
+  // Spontanes Einplanen eines einzelnen Spots (ohne dass die Nutzerin vorher einen Ausflug
+  // anlegen muss, siehe MapView.vue/SpotCard.vue Kalender-Anfasser und DiaryView.vue
+  // Spot-Picker): legt im Hintergrund einen "Ausflug" mit genau dieser einen Station an – für
+  // die Nutzerin unsichtbar, sie sieht nur "der Spot ist an diesem Tag geplant". Dedupe-Check
+  // (exakt EIN Stations-Eintrag mit demselben station_key an trip_id+date) verhindert
+  // Duplikate, wenn derselbe Spot mehrfach für denselben Tag ausgelöst wird (z. B. Kalender-Drop
+  // gefolgt von Tagebuch-Auswahl) – zwei VERSCHIEDENE Spots am selben Tag erzeugen dagegen
+  // bewusst je einen eigenen Ausflug (kein Zusammenlegen).
+  app.post<{ Body: PlanSpotBody }>('/ideas/plan-spot', async (req, reply) => {
+    const { trip_id, spot_id, date } = req.body;
+    const stationKey = `spot-${spot_id}`;
+
+    const existing = db
+      .prepare(
+        `SELECT ideas.id AS id FROM ideas
+         JOIN excursion_spots ON excursion_spots.idea_id = ideas.id
+         WHERE ideas.trip_id = ? AND ideas.date = ?
+         GROUP BY ideas.id
+         HAVING COUNT(*) = 1 AND MAX(excursion_spots.station_key) = ?`,
+      )
+      .get(trip_id, date, stationKey) as { id: number } | undefined;
+
+    if (existing) {
+      const row = db.prepare('SELECT * FROM ideas WHERE id = ?').get(existing.id) as IdeaRow;
+      return serializeIdea(row, [stationKey]);
+    }
+
+    const spot = db.prepare('SELECT title FROM spots WHERE id = ?').get(spot_id) as { title: string } | undefined;
+    if (!spot) return reply.code(404).send({ error: 'Spot nicht gefunden' });
+
+    const result = db
+      .prepare('INSERT INTO ideas (trip_id, title, date, created_by) VALUES (?, ?, ?, ?)')
+      .run(trip_id, spot.title, date, req.session.userId);
+    const ideaId = result.lastInsertRowid as number;
+    syncExcursionStations(ideaId, [stationKey]);
+    reply.code(201);
+    const row = db.prepare('SELECT * FROM ideas WHERE id = ?').get(ideaId) as IdeaRow;
+    return serializeIdea(row, [stationKey]);
   });
 
   app.get<{ Querystring: { trip_id?: string } }>('/ideas/likes', async (req, reply) => {
