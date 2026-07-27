@@ -1,4 +1,5 @@
-import type { CalendarEntry, Excursion, ScheduleItem, TodoItem, TravelItem, Trip } from '../api/types';
+import type { Accommodation, CalendarEntry, Excursion, ScheduleItem, Spot, TodoItem, TravelItem, Trip } from '../api/types';
+import { resolveStations } from './excursionStations';
 
 export function scheduleItemToEntry(item: ScheduleItem): CalendarEntry {
   return {
@@ -104,25 +105,36 @@ export function buildTravelEntries(travelItems: TravelItem[]): CalendarEntry[] {
 
 // Ausflüge mit gesetztem Datum erscheinen automatisch (nicht editierbar) im Kalender – das Datum
 // selbst ist die einzige Kalender-Verknüpfung (kein separater schedule_items-Eintrag mehr nötig,
-// im Unterschied zum alten Drag&Drop-Einplanen-Mechanismus).
-export function buildExcursionEntries(excursions: Excursion[]): CalendarEntry[] {
+// im Unterschied zum alten Drag&Drop-Einplanen-Mechanismus). Hat ein Ausflug genau eine Station,
+// zeigt sein Kalender-Eintrag deren Kategorie-Icon statt des generischen 🎒 (z. B. bei spontan
+// per Kalender-Anfasser/Tagebuch eingeplanten Einzel-Spots, siehe SpotCard.vue/DiaryView.vue).
+export function buildExcursionEntries(
+  excursions: Excursion[],
+  spots: Spot[],
+  accommodations: Accommodation[],
+  travelItems: TravelItem[],
+): CalendarEntry[] {
   return excursions
     .filter((e): e is Excursion & { date: string } => !!e.date)
-    .map((e) => ({
-      key: `excursion-${e.id}`,
-      kind: 'excursion' as const,
-      date: e.date,
-      endDate: e.date,
-      time: null,
-      title: e.title,
-      note: e.note,
-      location: null,
-      category: 'excursion' as const,
-      ideaId: e.id,
-      todoId: null,
-      travelId: null,
-      scheduleItem: null,
-    }));
+    .map((e) => {
+      const stations = resolveStations(e.station_keys, spots, accommodations, travelItems);
+      return {
+        key: `excursion-${e.id}`,
+        kind: 'excursion' as const,
+        date: e.date,
+        endDate: e.date,
+        time: null,
+        title: e.title,
+        note: e.note,
+        location: null,
+        category: 'excursion' as const,
+        icon: stations.length === 1 ? stations[0].icon : undefined,
+        ideaId: e.id,
+        todoId: null,
+        travelId: null,
+        scheduleItem: null,
+      };
+    });
 }
 
 export function buildAllEntries(
@@ -131,12 +143,14 @@ export function buildAllEntries(
   todos: TodoItem[],
   travelItems: TravelItem[],
   excursions: Excursion[],
+  spots: Spot[],
+  accommodations: Accommodation[],
 ): CalendarEntry[] {
   return [
     ...items.map(scheduleItemToEntry),
     ...buildTripEntries(trip),
     ...buildTodoEntries(todos),
     ...buildTravelEntries(travelItems),
-    ...buildExcursionEntries(excursions),
+    ...buildExcursionEntries(excursions, spots, accommodations, travelItems),
   ];
 }

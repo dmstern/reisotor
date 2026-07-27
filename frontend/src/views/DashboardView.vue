@@ -17,6 +17,7 @@ import type {
 import { useAuthStore } from '../stores/auth';
 import { useTripStore } from '../stores/trip';
 import { useExcursionsStore } from '../stores/excursions';
+import { useSpotsStore } from '../stores/spots';
 import { useDrawersStore } from '../stores/drawers';
 import { assignCategoryColors } from '../utils/categoryColors';
 import { buildAllEntries } from '../utils/calendarEntries';
@@ -27,6 +28,7 @@ import BudgetMeter from '../components/BudgetMeter.vue';
 const auth = useAuthStore();
 const tripStore = useTripStore();
 const excursionsStore = useExcursionsStore();
+const spotsStore = useSpotsStore();
 const drawers = useDrawersStore();
 const tripId = tripStore.currentTripId as number;
 const trip = computed(() => tripStore.currentTrip);
@@ -71,6 +73,7 @@ onMounted(async () => {
       api.get<DiaryEntry[]>(`/diary?trip_id=${tripId}`),
       api.get<Note[]>(`/notes?trip_id=${tripId}`),
       api.get<User[]>('/users'),
+      spotsStore.load(),
     ]);
   schedule.value = scheduleRes;
   todos.value = todosRes;
@@ -100,7 +103,15 @@ const daysUntilStart = computed(() => {
 // Kalender-Widget: echte Termine + eingebettete synthetische Einträge (Urlaub-Start/-Ende, ToDo
 // mit Fälligkeitsdatum), sortiert, die nächsten drei statt nur den einen nächsten (Batch 12).
 const upcomingEntries = computed(() =>
-  buildAllEntries(schedule.value, trip.value, todos.value, travelItems.value, excursionsStore.excursions)
+  buildAllEntries(
+    schedule.value,
+    trip.value,
+    todos.value,
+    travelItems.value,
+    excursionsStore.excursions,
+    spotsStore.spots,
+    accommodations.value,
+  )
     .filter((e) => e.endDate >= todayStr())
     .sort((a, b) => (a.date + (a.time ?? '')).localeCompare(b.date + (b.time ?? '')))
     .slice(0, 3),

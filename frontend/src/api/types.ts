@@ -53,6 +53,10 @@ export interface CalendarEntry {
   note: string | null;
   location: string | null;
   category: ScheduleCategory;
+  /** Icon-Override statt SCHEDULE_CATEGORY_META[category].icon – nur für Ausflüge mit genau
+   *  einer Spot-Station gesetzt (zeigt dann deren Kategorie-Emoji statt des generischen 🎒,
+   *  siehe buildExcursionEntries). Die Rahmenfarbe bleibt bewusst einheitlich Ausflug-orange. */
+  icon?: string;
   ideaId: number | null;
   todoId: number | null;
   travelId: number | null;

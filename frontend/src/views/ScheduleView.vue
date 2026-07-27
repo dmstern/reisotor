@@ -4,6 +4,7 @@ import { api } from '../api/client';
 import type { Accommodation, CalendarEntry, ScheduleItem, TodoItem, TravelItem } from '../api/types';
 import { useTripStore } from '../stores/trip';
 import { useExcursionsStore } from '../stores/excursions';
+import { useSpotsStore } from '../stores/spots';
 import CalendarWeek from '../components/CalendarWeek.vue';
 import Modal from '../components/Modal.vue';
 import EditButton from '../components/EditButton.vue';
@@ -16,6 +17,7 @@ import { calendarEventFromEntry, googleCalendarHref, outlookCalendarHref, trigge
 const tripStore = useTripStore();
 const trip = computed(() => tripStore.currentTrip);
 const excursionsStore = useExcursionsStore();
+const spotsStore = useSpotsStore();
 const items = ref<ScheduleItem[]>([]);
 const accommodations = ref<Accommodation[]>([]);
 const todos = ref<TodoItem[]>([]);
@@ -53,6 +55,7 @@ async function loadAll() {
     api.get<Accommodation[]>(`/accommodation?trip_id=${tripId}`),
     api.get<TodoItem[]>(`/todos?trip_id=${tripId}`),
     api.get<TravelItem[]>(`/travel?trip_id=${tripId}`),
+    spotsStore.load(),
   ]);
   items.value = scheduleRes;
   accommodations.value = accommodationRes;
@@ -87,7 +90,15 @@ function accommodationsForDate(date: string) {
 }
 
 const allEntries = computed(() =>
-  buildAllEntries(items.value, trip.value, todos.value, travelItems.value, excursionsStore.excursions),
+  buildAllEntries(
+    items.value,
+    trip.value,
+    todos.value,
+    travelItems.value,
+    excursionsStore.excursions,
+    spotsStore.spots,
+    accommodations.value,
+  ),
 );
 
 function entriesForDate(date: string) {
@@ -376,7 +387,7 @@ function formatDay(date: string) {
         >
           <div>
             <span class="category-icon" :title="SCHEDULE_CATEGORY_META[entry.category].label">{{
-              SCHEDULE_CATEGORY_META[entry.category].icon
+              entry.icon ?? SCHEDULE_CATEGORY_META[entry.category].icon
             }}</span>
             <strong v-if="entry.time">{{ entry.time }}</strong>
             <span class="title">{{ entry.title }}</span>

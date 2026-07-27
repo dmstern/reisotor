@@ -85,7 +85,7 @@ function onDrop(event: DragEvent, date: string) {
           :style="{ borderLeftColor: SCHEDULE_CATEGORY_META[entry.category].color }"
         >
           <span v-if="entry.time" class="time">{{ entry.time }}</span
-          >{{ SCHEDULE_CATEGORY_META[entry.category].icon }} {{ entry.title }}
+          >{{ entry.icon ?? SCHEDULE_CATEGORY_META[entry.category].icon }} {{ entry.title }}
         </div>
         <div class="more" v-if="day.entries.length > 3">+{{ day.entries.length - 3 }} mehr</div>
       </div>
