@@ -137,6 +137,16 @@ const visiblePoints = computed(() => {
   return points.value.filter((p) => p.origin !== 'spot' || excursion.spot_ids.includes(Number(p.key.slice('spot-'.length))));
 });
 
+// Stationsliste unter der Karte bei Ausflug-Fokus: in spot_ids-Reihenfolge (= Route/Abklapper-
+// Reihenfolge), damit man nicht jeden Pin einzeln anklicken muss, um zu sehen, welcher Spot
+// welcher ist.
+const focusedExcursionSpotPoints = computed<MapPoint[]>(() => {
+  const excursion = focusedExcursion.value;
+  if (!excursion) return [];
+  const byKey = new Map(points.value.map((p) => [p.key, p]));
+  return excursion.spot_ids.map((id) => byKey.get(`spot-${id}`)).filter((p): p is MapPoint => !!p);
+});
+
 async function loadAll() {
   const tripId = tripStore.currentTripId;
   if (tripId == null) return;
@@ -476,6 +486,20 @@ watch(
       </div>
     </div>
 
+    <div class="card focus-spot-list" v-if="focusedExcursion && focusedExcursionSpotPoints.length">
+      <h3 class="focus-spot-list-title">Stationen</h3>
+      <button
+        v-for="point in focusedExcursionSpotPoints"
+        :key="point.key"
+        type="button"
+        class="focus-spot-row"
+        @click="selectPoint(point)"
+      >
+        <span class="focus-spot-icon">{{ point.icon }}</span>
+        <span class="focus-spot-title">{{ point.title }}</span>
+      </button>
+    </div>
+
     <div class="card info-panel" v-if="selectedPoint">
       <button type="button" class="close-btn" aria-label="Schließen" @click="selectedPoint = null">✕</button>
       <div class="info-head">
@@ -633,6 +657,41 @@ watch(
   :root:not([data-theme='light']) .map :deep(.leaflet-tile-pane) {
     filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.9);
   }
+}
+
+.focus-spot-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.focus-spot-list-title {
+  margin: 0 0 4px;
+  font-size: 0.85rem;
+  color: var(--color-primary-dark);
+}
+
+.focus-spot-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: none;
+  border: none;
+  padding: 6px 4px;
+  border-radius: var(--radius-sm);
+  text-align: left;
+  cursor: pointer;
+  color: var(--color-text);
+  font-size: 0.9rem;
+}
+
+.focus-spot-row:hover {
+  background: var(--color-hover);
+}
+
+.focus-spot-icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
 }
 
 .info-panel {
