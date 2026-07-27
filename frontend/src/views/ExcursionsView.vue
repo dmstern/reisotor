@@ -8,6 +8,7 @@ import { useSpotsStore } from '../stores/spots';
 import { useDrawersStore } from '../stores/drawers';
 import SpotCard from '../components/SpotCard.vue';
 import DerivedLocationCard from '../components/DerivedLocationCard.vue';
+import TripMap from '../components/TripMap.vue';
 import Modal from '../components/Modal.vue';
 import Combobox from '../components/Combobox.vue';
 import { parseLatLngFromMapsLink, tilePreviewUrl } from '../utils/googleMaps';
@@ -299,9 +300,11 @@ function showSpotOnMap(spot: Spot) {
 
 <template>
   <div class="page" v-if="!loading">
+    <h1 class="page-title">🗺️ Karte</h1>
+    <div class="layout">
     <div class="spots-col">
       <div class="header">
-        <h1>Spots</h1>
+        <h2>Spots</h2>
         <div class="header-actions">
           <div class="dropdown">
             <button
@@ -451,10 +454,59 @@ function showSpotOnMap(spot: Spot) {
         </form>
       </Modal>
     </div>
+
+    <div class="map-col">
+      <TripMap @edit-spot="startEditSpot" />
+    </div>
+    </div>
   </div>
 </template>
 
 <style scoped>
+.page-title {
+  margin: 0 0 var(--space-3);
+  font-size: 1.3rem;
+  color: var(--color-primary-dark);
+}
+
+/* Nebeneinander statt untereinander, sobald genug Breite verfügbar ist – schmalere Spots-Liste
+   links, große Karte rechts (grob an Google Maps orientiert: Liste/Suche links, Karte füllt den
+   Rest). Container-Query statt @media, da sich die verfügbare Breite durchs Auf-/Zuklappen der
+   Schubladen ändert, ohne dass sich das Browserfenster ändert (der Container ist .app-main in
+   App.vue, nicht diese Seite selbst). Zusätzlich wird hier auch .page breiter gemacht – dessen
+   normaler max-width:960px-Deckel (style.css, für die einspaltige Lesbarkeit auf allen anderen
+   Seiten gedacht) würde die zwei Spalten sonst weiterhin auf denselben schmalen Streifen
+   zusammenquetschen, obwohl links/rechts noch reichlich Platz frei wäre. */
+@container (min-width: 900px) {
+  .page {
+    max-width: 1600px;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(320px, 420px) 1fr;
+    align-items: start;
+    gap: 0 var(--space-5);
+  }
+
+  /* Beide Spalten scrollen ab hier unabhängig voneinander statt gemeinsam mit der Seite – dieselbe
+     Sticky-Offset-Formel wie Drawer.vue's Desktop-Panel (56px NavBar + evtl. zusätzlicher
+     --navbar-offset, falls die NavBar selbst "oben" positioniert ist). */
+  .spots-col,
+  .map-col {
+    position: sticky;
+    top: calc(56px + var(--navbar-offset, 0px));
+    max-height: calc(100vh - 56px - var(--navbar-offset, 0px));
+    overflow-y: auto;
+  }
+
+  .spots-col {
+    /* Der native Scrollbalken sitzt sonst direkt auf dem Kartenrand – etwas Luft, damit er nicht
+       am Inhalt klebt. */
+    padding-right: var(--space-3);
+  }
+}
+
 .header {
   display: flex;
   flex-wrap: wrap;
@@ -650,7 +702,7 @@ function showSpotOnMap(spot: Spot) {
   gap: 6px;
   /* scrollToCategory() landet sonst mit der Überschrift genau unter der fest/sticky positionierten
      AppHeader (56px) + ggf. der oben positionierten NavBar (--navbar-offset) – dieselbe Formel wie
-     bei .spots-col weiter unten und Drawer.vue. */
+     bei .spots-col/.map-col weiter oben und Drawer.vue. */
   scroll-margin-top: calc(56px + var(--navbar-offset, 0px) + var(--space-2));
 }
 

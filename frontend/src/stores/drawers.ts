@@ -1,11 +1,10 @@
 import { defineStore } from 'pinia';
 import { ref, watch } from 'vue';
+import router from '../router';
 
 const CALENDAR_OPEN_KEY = 'reisotor-drawer-calendar-open';
-const MAP_OPEN_KEY = 'reisotor-drawer-map-open';
 const EXCURSIONS_OPEN_KEY = 'reisotor-drawer-excursions-open';
 const CALENDAR_WIDTH_KEY = 'reisotor-drawer-calendar-width';
-const MAP_WIDTH_KEY = 'reisotor-drawer-map-width';
 const EXCURSIONS_WIDTH_KEY = 'reisotor-drawer-excursions-width';
 
 export const DEFAULT_DRAWER_WIDTH = 360;
@@ -31,16 +30,18 @@ function loadWidth(key: string): number {
     : DEFAULT_DRAWER_WIDTH;
 }
 
-// Kalender und Karte sind keine Nav-Seiten mehr, sondern global gemountete, in der Breite
-// verstellbare Schubladen (App.vue). Auf-/Zu-Zustand und Breite werden hier zentral gehalten
+// Kalender und Ausflüge sind keine Nav-Seiten mehr, sondern global gemountete, in der Breite
+// verstellbare Schubladen (App.vue) – die Karte selbst ist dagegen fest in die Karte-Hauptsicht
+// (ExcursionsView.vue, Route /excursions) eingebettet, kein Schubladen-Toggle mehr nötig. Auf-/
+// Zu-Zustand und Breite der beiden verbleibenden Schubladen werden hier zentral gehalten
 // (persistiert in localStorage), damit z. B. das Dashboard oder "Auf Karte anzeigen"-Buttons aus
-// beliebigen Sichten die Schublade öffnen können, ohne eine Route zu wechseln.
+// beliebigen Sichten sie öffnen können, ohne die Route zu wechseln.
 export const useDrawersStore = defineStore('drawers', () => {
   const calendarOpen = ref(loadOpen(CALENDAR_OPEN_KEY));
-  const mapOpen = ref(loadOpen(MAP_OPEN_KEY));
+  const excursionsOpen = ref(loadOpen(EXCURSIONS_OPEN_KEY));
   const mapFocusKey = ref<string | null>(null);
   // Ausflug, dessen Stationen gerade isoliert auf der Karte gezeigt werden (alle anderen Spots
-  // ausgeblendet, siehe MapView.vue) – exklusiv zu mapFocusKey, daher setzt jede der beiden
+  // ausgeblendet, siehe TripMap.vue) – exklusiv zu mapFocusKey, daher setzt jede der beiden
   // Focus-Arten die jeweils andere zurück.
   const mapFocusExcursionId = ref<number | null>(null);
   // Kalendertag, dessen Ausflüge (auch mehrere, z. B. mehrere spontan eingeplante Einzel-Spots)
@@ -48,22 +49,16 @@ export const useDrawersStore = defineStore('drawers', () => {
   // anderen Fokus-Arten (siehe focusMapOnDate).
   const mapFocusDate = ref<string | null>(null);
   const calendarWidth = ref(loadWidth(CALENDAR_WIDTH_KEY));
-  const mapWidth = ref(loadWidth(MAP_WIDTH_KEY));
-  // Ausflüge-Schublade (übernimmt den rechten Schubladen-Platz, sobald die Karte in die
-  // Hauptsicht einzieht und die Karten-Schublade entfällt) – bewusst schon jetzt als eigener,
-  // unabhängiger Zustand angelegt statt mapOpen umzubenennen, da mapOpen bis zum endgültigen
-  // Zusammenbau noch die bestehende Karten-Schublade steuert.
-  const excursionsOpen = ref(loadOpen(EXCURSIONS_OPEN_KEY));
   const excursionsWidth = ref(loadWidth(EXCURSIONS_WIDTH_KEY));
   // Welche Schublade (falls überhaupt) gerade als Vollbild-Overlay maximiert ist (Drawer.vue).
   // Zentral statt lokal im Drawer, da eine maximierte Schublade die jeweils andere automatisch
   // zuklappen muss – bewusst nicht in localStorage persistiert (flüchtiger UI-Zustand).
   const maximizedSide = ref<'left' | 'right' | null>(null);
-  // Zähler statt Boolean: MapView.vue hält Unterkunft/Reise/Spots in eigenem lokalem State (keine
-  // gemeinsame Pinia-Quelle) und lädt deshalb nicht automatisch neu, wenn irgendwo sonst in der App
-  // ein Ort mit Maps-Link angelegt/bearbeitet wird. touchLocations() signalisiert genau das – ein
-  // Zähler statt Boolean, damit auch zwei schnell aufeinanderfolgende Änderungen zuverlässig je
-  // einen watch()-Trigger auslösen (bei einem Boolean könnte derselbe Wert zweimal gesetzt werden).
+  // Zähler statt Boolean: Unterkunft/Reise/Spots liegen nicht in einer gemeinsamen Pinia-Quelle
+  // und laden deshalb nicht automatisch neu, wenn irgendwo sonst in der App ein Ort mit Maps-Link
+  // angelegt/bearbeitet wird. touchLocations() signalisiert genau das – ein Zähler statt Boolean,
+  // damit auch zwei schnell aufeinanderfolgende Änderungen zuverlässig je einen watch()-Trigger
+  // auslösen (bei einem Boolean könnte derselbe Wert zweimal gesetzt werden).
   const locationsVersion = ref(0);
 
   function touchLocations() {
@@ -71,36 +66,37 @@ export const useDrawersStore = defineStore('drawers', () => {
   }
 
   watch(calendarOpen, (v) => localStorage.setItem(CALENDAR_OPEN_KEY, String(v)));
-  watch(mapOpen, (v) => localStorage.setItem(MAP_OPEN_KEY, String(v)));
   watch(excursionsOpen, (v) => localStorage.setItem(EXCURSIONS_OPEN_KEY, String(v)));
   watch(calendarWidth, (v) => localStorage.setItem(CALENDAR_WIDTH_KEY, String(v)));
-  watch(mapWidth, (v) => localStorage.setItem(MAP_WIDTH_KEY, String(v)));
   watch(excursionsWidth, (v) => localStorage.setItem(EXCURSIONS_WIDTH_KEY, String(v)));
 
   function toggleCalendar() {
     calendarOpen.value = !calendarOpen.value;
   }
 
-  function toggleMap() {
-    mapOpen.value = !mapOpen.value;
-  }
-
   function toggleExcursions() {
     excursionsOpen.value = !excursionsOpen.value;
+  }
+
+  // Springt zur Karte-Hauptsicht, falls man gerade woanders ist (z. B. "Auf Karte anzeigen" aus
+  // TravelView.vue/AccommodationView.vue) – ein Push auf die bereits aktive Route würde
+  // vue-router sonst unnötig (harmlos, aber unsauber) erneut auflösen lassen.
+  function ensureMapRoute() {
+    if (router.currentRoute.value.name !== 'excursions') router.push('/excursions');
   }
 
   function openMapAt(key: string) {
     mapFocusKey.value = key;
     mapFocusExcursionId.value = null;
     mapFocusDate.value = null;
-    mapOpen.value = true;
+    ensureMapRoute();
   }
 
   function openMapForExcursion(excursionId: number) {
     mapFocusExcursionId.value = excursionId;
     mapFocusKey.value = null;
     mapFocusDate.value = null;
-    mapOpen.value = true;
+    ensureMapRoute();
   }
 
   // Zeigt alle Ausflüge eines Tages zusammen auf der Karte (gestrichelte Route über alle
@@ -110,15 +106,15 @@ export const useDrawersStore = defineStore('drawers', () => {
     mapFocusDate.value = date;
     mapFocusKey.value = null;
     mapFocusExcursionId.value = null;
-    mapOpen.value = true;
+    ensureMapRoute();
   }
 
   // Maximieren einer Schublade klappt die jeweils andere zu (nur eine Schublade kann gleichzeitig
-  // vollflächig sein) – die Kalender-Schublade liegt links, die Karten-Schublade rechts.
+  // vollflächig sein) – die Kalender-Schublade liegt links, die Ausflüge-Schublade rechts.
   function maximize(side: 'left' | 'right') {
     maximizedSide.value = side;
     if (side === 'left') {
-      mapOpen.value = false;
+      excursionsOpen.value = false;
     } else {
       calendarOpen.value = false;
     }
@@ -130,18 +126,15 @@ export const useDrawersStore = defineStore('drawers', () => {
 
   return {
     calendarOpen,
-    mapOpen,
     excursionsOpen,
     mapFocusKey,
     mapFocusExcursionId,
     mapFocusDate,
     calendarWidth,
-    mapWidth,
     excursionsWidth,
     maximizedSide,
     locationsVersion,
     toggleCalendar,
-    toggleMap,
     toggleExcursions,
     openMapAt,
     openMapForExcursion,

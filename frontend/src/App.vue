@@ -10,7 +10,7 @@ import NavBar from './components/NavBar.vue';
 import TripForm from './components/TripForm.vue';
 import Drawer from './components/Drawer.vue';
 import ScheduleView from './views/ScheduleView.vue';
-import MapView from './views/MapView.vue';
+import ExcursionsDrawer from './views/ExcursionsDrawer.vue';
 
 const route = useRoute();
 const auth = useAuthStore();
@@ -72,14 +72,14 @@ async function onCreateFirstTrip(data: TripFormData) {
       </main>
       <Drawer
         side="right"
-        :open="drawers.mapOpen"
-        :width="drawers.mapWidth"
-        label="Karte"
-        :icon="SECTION_ICONS.map"
-        @update:open="(v) => (drawers.mapOpen = v)"
-        @update:width="(w) => (drawers.mapWidth = w)"
+        :open="drawers.excursionsOpen"
+        :width="drawers.excursionsWidth"
+        label="Ausflüge"
+        :icon="SECTION_ICONS.excursions"
+        @update:open="(v) => (drawers.excursionsOpen = v)"
+        @update:width="(w) => (drawers.excursionsWidth = w)"
       >
-        <MapView />
+        <ExcursionsDrawer />
       </Drawer>
     </div>
   </template>
