@@ -1,14 +1,20 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { api } from '../api/client';
-import type { Accommodation, Excursion, Spot, TravelItem } from '../api/types';
+import type { Accommodation, Excursion, ExcursionComment, ExcursionLike, Spot, TravelItem, User } from '../api/types';
 import { useTripStore } from '../stores/trip';
 import { useDrawersStore } from '../stores/drawers';
 import { useExcursionsStore } from '../stores/excursions';
+import { useSpotsStore } from '../stores/spots';
+import { useAuthStore } from '../stores/auth';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { arcRoute, cachedEmojiPin } from '../utils/mapRoute';
+import SpotDetailDialog from '../components/SpotDetailDialog.vue';
+import MiniSpotCard from '../components/MiniSpotCard.vue';
+import ExcursionDetailDialog from '../components/ExcursionDetailDialog.vue';
 
 // Die Karte ist ein generischer, reiner Pin-Layer (kein Anlegen/Bearbeiten hier): sie zeigt
 // automatisch jedes Objekt des aktuellen Urlaubs mit hinterlegtem Standort – Unterkunft, Reise
@@ -37,14 +43,29 @@ const ACCOMMODATION_META = { icon: '🛏️', color: '#1baf7a', label: 'Unterkun
 const TRAVEL_FROM_META = { icon: '🛫', color: '#4a3aa7', label: 'Abflug/Abfahrt' };
 const TRAVEL_TO_META = { icon: '🛬', color: '#4a3aa7', label: 'Ankunft' };
 
+const router = useRouter();
 const tripStore = useTripStore();
 const drawers = useDrawersStore();
 const excursionsStore = useExcursionsStore();
+const spotsStore = useSpotsStore();
+const auth = useAuthStore();
 const accommodations = ref<Accommodation[]>([]);
 const travelItems = ref<TravelItem[]>([]);
-const spots = ref<Spot[]>([]);
 const loading = ref(true);
 const selectedPoint = ref<MapPoint | null>(null);
+
+// Eigener kleiner users-Fetch: nur für die Autor-Anzeige im Spot-/Ausflug-Detail-Dialog gebraucht,
+// die sich aus der Stationsliste heraus öffnen lassen (siehe unten) – gleiches Vorgehen wie in
+// anderen Views, die /users unabhängig voneinander laden, statt einen weiteren globalen Store
+// dafür anzulegen.
+const users = ref<User[]>([]);
+
+// Likes/Kommentare von Ausflügen liegen (wie in ExcursionsView.vue) nicht im excursions-Store,
+// sondern weiterhin lokal an ideas/idea_likes/idea_comments gebunden – hier eigens geladen, damit
+// der Ausflug-Detail-Dialog (unten, Klick auf den Kartentitel unter der Karte) dieselben Daten
+// zeigen kann wie in der Ausflüge-Sicht.
+const ideaLikes = ref<ExcursionLike[]>([]);
+const ideaComments = ref<ExcursionComment[]>([]);
 
 const mapEl = ref<HTMLDivElement | null>(null);
 let map: L.Map | null = null;
@@ -56,6 +77,10 @@ let routesLayer: L.LayerGroup | null = null;
 // Wrapper.
 function iconFor(point: MapPoint) {
   return cachedEmojiPin(point.icon, point.color);
+}
+
+function formatDate(d: string) {
+  return new Date(d).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
 const points = computed<MapPoint[]>(() => {
@@ -101,7 +126,7 @@ const points = computed<MapPoint[]>(() => {
       });
     }
   }
-  for (const s of spots.value) {
+  for (const s of spotsStore.spots) {
     if (s.lat != null && s.lng != null) {
       const meta = spotCategoryMeta(s.category);
       result.push({
@@ -138,30 +163,129 @@ const visiblePoints = computed(() => {
 });
 
 // Stationsliste unter der Karte bei Ausflug-Fokus: in spot_ids-Reihenfolge (= Route/Abklapper-
-// Reihenfolge), damit man nicht jeden Pin einzeln anklicken muss, um zu sehen, welcher Spot
-// welcher ist.
-const focusedExcursionSpotPoints = computed<MapPoint[]>(() => {
+// Reihenfolge), als echte Spot-Objekte (statt MapPoint) für MiniSpotCard und damit derselbe Spot
+// mehrfach vorkommen kann (Rundgang, z. B. Start UND Ende an der Unterkunft) – ein MapPoint-Lookup
+// per Key wäre dafür ungeeignet, da mehrere Stationen dann denselben Key/dieselbe Referenz teilen.
+const focusedExcursionStations = computed<Spot[]>(() => {
   const excursion = focusedExcursion.value;
   if (!excursion) return [];
-  const byKey = new Map(points.value.map((p) => [p.key, p]));
-  return excursion.spot_ids.map((id) => byKey.get(`spot-${id}`)).filter((p): p is MapPoint => !!p);
+  return excursion.spot_ids.map((id) => spotsStore.spots.find((s) => s.id === id)).filter((s): s is Spot => !!s);
 });
 
 async function loadAll() {
   const tripId = tripStore.currentTripId;
   if (tripId == null) return;
-  const [accommodationRes, travelRes, spotsRes] = await Promise.all([
+  const [accommodationRes, travelRes, ideaLikesRes, ideaCommentsRes] = await Promise.all([
     api.get<Accommodation[]>(`/accommodation?trip_id=${tripId}`),
     api.get<TravelItem[]>(`/travel?trip_id=${tripId}`),
-    api.get<Spot[]>(`/spots?trip_id=${tripId}`),
+    api.get<ExcursionLike[]>(`/ideas/likes?trip_id=${tripId}`),
+    api.get<ExcursionComment[]>(`/ideas/comments?trip_id=${tripId}`),
   ]);
   accommodations.value = accommodationRes;
   travelItems.value = travelRes;
-  spots.value = spotsRes;
+  ideaLikes.value = ideaLikesRes;
+  ideaComments.value = ideaCommentsRes;
+  // Spots kommen jetzt aus dem geteilten spotsStore (reaktiv, wird u. a. von ExcursionsView.vue
+  // selbst aktuell gehalten) – kein eigener Fetch/Refresh-Trigger hier mehr nötig.
 }
 
 function selectPoint(point: MapPoint) {
   selectedPoint.value = point;
+}
+
+// Klick auf eine Zeile in der Stationsliste öffnet den vollständigen Spot-Detail-Dialog (statt nur
+// des kleinen Info-Panels wie bei einem Pin-Klick) – die Liste besteht ausschließlich aus Spots
+// (Stationen eines Ausflugs), daher hier kein origin-Check nötig. "welcher Spot" (openSpotId) und
+// "ist der Dialog offen" (spotDialogOpen) bewusst getrennt: SpotDetailDialog.vue braucht ein
+// echtes Spot-Objekt als Prop (nicht nullable), müsste beim Schließen also sonst komplett aus dem
+// DOM entfernt werden (v-if) statt nur unsichtbar zu werden – das würde Modal.vue's eigene
+// Fade-Out-Transition abschneiden, da sie nie zum Abspielen kommt.
+const openSpotId = ref<number | null>(null);
+const spotDialogOpen = ref(false);
+const openSpot = computed(() => spotsStore.spots.find((s) => s.id === openSpotId.value) ?? null);
+function openSpotDetail(spotId: number) {
+  openSpotId.value = spotId;
+  spotDialogOpen.value = true;
+}
+function spotCreatorLabel(userId: number | null) {
+  if (userId == null) return null;
+  const u = users.value.find((u) => u.id === userId);
+  return u ? `${u.avatar} ${u.username}` : null;
+}
+function spotCommentItemsFor(spotId: number) {
+  return spotsStore.commentsFor(spotId).map((c) => ({
+    id: c.id,
+    avatar: users.value.find((u) => u.id === c.author_id)?.avatar ?? '❓',
+    username: users.value.find((u) => u.id === c.author_id)?.username ?? '?',
+    content: c.content,
+    canRemove: c.author_id === auth.user?.id,
+  }));
+}
+// Bearbeiten braucht das echte Formular, das nur die Spots-Übersicht besitzt – anders als bei
+// ExcursionDetailDialog.vue (schon Teil dieser Sicht) ist die Karte eine eigenständige, global
+// gemountete Schublade, daher hier ein echter Sprung statt eines Emits nach oben
+// (Architekturregel: Fremdobjekte sind hier nur lesend/verknüpfend, Bearbeitung in der
+// Ursprungssicht).
+function editOpenSpot() {
+  spotDialogOpen.value = false;
+  router.push('/excursions');
+}
+
+// Klick auf den Ausflug-Titel unter der Karte öffnet dessen Detail-Dialog (dieselbe Komponente wie
+// in ExcursionsView.vue) – "welcher Ausflug" (openExcursionId) und "ist der Dialog offen"
+// (excursionDetailOpen) bewusst getrennt, gleicher Grund wie bei openSpotId/spotDialogOpen oben.
+const openExcursionId = ref<number | null>(null);
+const excursionDetailOpen = ref(false);
+const openExcursion = computed(() => excursionsStore.excursions.find((e) => e.id === openExcursionId.value) ?? null);
+function openExcursionDetail() {
+  if (!focusedExcursion.value) return;
+  openExcursionId.value = focusedExcursion.value.id;
+  excursionDetailOpen.value = true;
+}
+function ideaCreatorLabel(userId: number | null) {
+  if (userId == null) return null;
+  const u = users.value.find((u) => u.id === userId);
+  return u ? `${u.avatar} ${u.username}` : null;
+}
+function ideaLikeCount(ideaId: number) {
+  return ideaLikes.value.filter((l) => l.idea_id === ideaId).length;
+}
+function ideaLikedByMe(ideaId: number) {
+  return ideaLikes.value.some((l) => l.idea_id === ideaId && l.user_id === auth.user?.id);
+}
+function ideaCommentItemsFor(ideaId: number) {
+  return ideaComments.value
+    .filter((c) => c.idea_id === ideaId)
+    .sort((a, b) => a.created_at.localeCompare(b.created_at))
+    .map((c) => ({
+      id: c.id,
+      avatar: users.value.find((u) => u.id === c.author_id)?.avatar ?? '❓',
+      username: users.value.find((u) => u.id === c.author_id)?.username ?? '?',
+      content: c.content,
+      canRemove: c.author_id === auth.user?.id,
+    }));
+}
+async function toggleIdeaLike(ideaId: number) {
+  const result = await api.post<{ liked: boolean }>(`/ideas/${ideaId}/like`);
+  if (result.liked) {
+    ideaLikes.value.push({ id: Date.now(), idea_id: ideaId, user_id: auth.user!.id });
+  } else {
+    ideaLikes.value = ideaLikes.value.filter((l) => !(l.idea_id === ideaId && l.user_id === auth.user!.id));
+  }
+}
+async function submitIdeaComment(ideaId: number, content: string) {
+  const created = await api.post<ExcursionComment>(`/ideas/${ideaId}/comments`, { content });
+  ideaComments.value.push(created);
+}
+async function removeIdeaComment(id: number) {
+  await api.delete(`/ideas/comments/${id}`);
+  ideaComments.value = ideaComments.value.filter((c) => c.id !== id);
+}
+// Bearbeiten und Bearbeiten einer Station brauchen wie bei editOpenSpot() das echte Formular aus
+// der Ausflüge-Sicht – gleicher Sprung-statt-Emit-Grund (Architekturregel Batch 3).
+function editOpenExcursion() {
+  excursionDetailOpen.value = false;
+  router.push('/excursions');
 }
 
 // "In Karten-App öffnen": statt zu raten, welche App installiert ist (dafür gibt es per Web-Link
@@ -318,7 +442,7 @@ function renderRoutes() {
   for (const excursion of excursionsToDraw) {
     const coords: L.LatLngExpression[] = [];
     for (const spotId of excursion.spot_ids) {
-      const spot = spots.value.find((s) => s.id === spotId);
+      const spot = spotsStore.spots.find((s) => s.id === spotId);
       if (spot?.lat != null && spot?.lng != null) coords.push([spot.lat, spot.lng]);
     }
     if (coords.length >= 2) {
@@ -330,7 +454,8 @@ function renderRoutes() {
 let resizeObserver: ResizeObserver | null = null;
 
 onMounted(async () => {
-  await loadAll();
+  const [, , usersRes] = await Promise.all([loadAll(), spotsStore.load(), api.get<User[]>('/users')]);
+  users.value = usersRes;
   loading.value = false;
   // Der Karten-Container steckt hinter v-if="!loading" und existiert im DOM
   // erst, nachdem Vue den Zustandswechsel gerendert hat – ohne nextTick() ist
@@ -486,19 +611,56 @@ watch(
       </div>
     </div>
 
-    <div class="card focus-spot-list" v-if="focusedExcursion && focusedExcursionSpotPoints.length">
-      <h3 class="focus-spot-list-title">Stationen</h3>
-      <button
-        v-for="point in focusedExcursionSpotPoints"
-        :key="point.key"
-        type="button"
-        class="focus-spot-row"
-        @click="selectPoint(point)"
-      >
-        <span class="focus-spot-icon">{{ point.icon }}</span>
-        <span class="focus-spot-title">{{ point.title }}</span>
+    <div class="card focus-spot-list" v-if="focusedExcursion && focusedExcursionStations.length">
+      <button type="button" class="focus-spot-list-header" @click="openExcursionDetail">
+        <h3 class="focus-spot-list-title">🎒 {{ focusedExcursion.title }}</h3>
+        <span class="focus-spot-list-status" :class="{ planned: focusedExcursion.date }">
+          {{ focusedExcursion.date ? `📅 ${formatDate(focusedExcursion.date)}` : 'In Planung' }}
+        </span>
       </button>
+      <p class="focus-spot-list-subtitle">Stationen</p>
+      <div class="station-timeline">
+        <template v-for="(spot, index) in focusedExcursionStations" :key="index">
+          <button type="button" class="station-node" @click="openSpotDetail(spot.id)">
+            <span class="station-order">{{ index + 1 }}</span>
+            <MiniSpotCard :spot="spot" />
+          </button>
+          <div v-if="index < focusedExcursionStations.length - 1" class="station-connector" aria-hidden="true"></div>
+        </template>
+      </div>
     </div>
+
+    <SpotDetailDialog
+      v-if="openSpot"
+      v-model="spotDialogOpen"
+      :spot="openSpot"
+      :creator-label="spotCreatorLabel(openSpot.created_by)"
+      :like-count="spotsStore.likeCountFor(openSpot.id)"
+      :liked="spotsStore.likedByMe(openSpot.id, auth.user?.id)"
+      :comments="spotCommentItemsFor(openSpot.id)"
+      @edit="editOpenSpot"
+      @toggle-like="spotsStore.toggleLike(openSpot.id, auth.user!.id)"
+      @submit-comment="(content) => spotsStore.submitComment(openSpot!.id, content)"
+      @remove-comment="spotsStore.removeComment"
+      @show-on-map="spotDialogOpen = false"
+    />
+
+    <ExcursionDetailDialog
+      v-if="openExcursion"
+      v-model="excursionDetailOpen"
+      :excursion="openExcursion"
+      :creator-label="ideaCreatorLabel(openExcursion.created_by)"
+      :like-count="ideaLikeCount(openExcursion.id)"
+      :liked="ideaLikedByMe(openExcursion.id)"
+      :comments="ideaCommentItemsFor(openExcursion.id)"
+      :stations="spotsStore.spots"
+      @edit="editOpenExcursion"
+      @toggle-like="toggleIdeaLike(openExcursion.id)"
+      @submit-comment="(content) => submitIdeaComment(openExcursion!.id, content)"
+      @remove-comment="removeIdeaComment"
+      @show-on-map="excursionDetailOpen = false"
+      @edit-station-spot="editOpenExcursion"
+    />
 
     <div class="card info-panel" v-if="selectedPoint">
       <button type="button" class="close-btn" aria-label="Schließen" @click="selectedPoint = null">✕</button>
@@ -665,33 +827,97 @@ watch(
   gap: 2px;
 }
 
-.focus-spot-list-title {
-  margin: 0 0 4px;
-  font-size: 0.85rem;
-  color: var(--color-primary-dark);
-}
-
-.focus-spot-row {
+/* Klickbarer Titel-Bereich: öffnet den Ausflug-Detail-Dialog (ExcursionDetailDialog.vue) – dieselbe
+   Komponente wie in der Ausflüge-Sicht, hier per eigenem Likes-/Kommentar-Fetch gefüttert. */
+.focus-spot-list-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: var(--space-2);
   background: none;
   border: none;
-  padding: 6px 4px;
+  padding: 4px;
+  margin: -4px -4px 0;
   border-radius: var(--radius-sm);
-  text-align: left;
   cursor: pointer;
-  color: var(--color-text);
-  font-size: 0.9rem;
+  text-align: left;
+  width: 100%;
 }
 
-.focus-spot-row:hover {
+.focus-spot-list-header:hover {
   background: var(--color-hover);
 }
 
-.focus-spot-icon {
-  font-size: 1.1rem;
+.focus-spot-list-title {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--color-primary-dark);
+}
+
+.focus-spot-list-status {
   flex-shrink: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.focus-spot-list-status.planned {
+  color: var(--color-success);
+}
+
+.focus-spot-list-subtitle {
+  margin: 0 0 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+/* Timeline-Optik identisch zu ExcursionDetailDialog.vue's Stationsliste (Nummern-Badge +
+   Mini-Vorschaubild + gestrichelte Verbindung) – bewusst dieselben Klassen/Werte, damit dieselbe
+   Ausflug-Reihenfolge überall gleich aussieht. */
+.station-timeline {
+  display: flex;
+  align-items: center;
+  overflow-x: auto;
+  padding: 12px 10px 8px 14px;
+}
+
+.station-node {
+  position: relative;
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+}
+
+.station-order {
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  z-index: 1;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.station-connector {
+  flex: 0 0 24px;
+  height: 0;
+  border-top: 3px dashed var(--color-primary);
+  margin: 0 4px;
+  align-self: center;
 }
 
 .info-panel {
