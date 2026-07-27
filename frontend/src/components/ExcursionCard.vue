@@ -11,6 +11,7 @@ import DeleteButton from './DeleteButton.vue';
 import LikeButton from './LikeButton.vue';
 import Comments, { type CommentItem } from './Comments.vue';
 import ExcursionDetailDialog from './ExcursionDetailDialog.vue';
+import SpotImageCollage from './SpotImageCollage.vue';
 
 const props = defineProps<{
   excursion: Excursion;
@@ -29,20 +30,27 @@ const emit = defineEmits<{
   (e: 'drop-spot', spotId: number): void;
   (e: 'drop-derived-location', location: DerivedLocation): void;
   (e: 'show-on-map'): void;
+  (e: 'edit-station-spot', spot: Spot): void;
 }>();
 
 const detailOpen = ref(false);
 
-// Fallback-Bild, falls der Ausflug selbst kein Bild hat: das Bild des ersten zugeordneten Spots
-// (in der definierten Reihenfolge, spot_ids – nicht die Reihenfolge von props.stations, die vom
-// Spots-Store kommt und dadurch anders sortiert sein kann).
+const hasMappedStations = computed(() => props.stations.some((s) => s.lat != null && s.lng != null));
+
+// Fallback-Bilder, falls der Ausflug selbst kein Bild hat: Bilder der zugeordneten Spots in der
+// definierten Reihenfolge (spot_ids – nicht die Reihenfolge von props.stations, die vom
+// Spots-Store kommt und dadurch anders sortiert sein kann). Bei ≥2 Bildern eine kleine Collage
+// (SpotImageCollage.vue) statt nur des ersten Spot-Bilds – macht auf einen Blick erkennbar, dass
+// hier mehrere Orte drinstecken, statt wie ein einzelner Spot auszusehen.
+const fallbackImages = computed(() =>
+  props.excursion.spot_ids
+    .map((id) => props.stations.find((s) => s.id === id)?.image_url)
+    .filter((url): url is string => !!url),
+);
+const showCollage = computed(() => !props.excursion.image_url && fallbackImages.value.length >= 2);
 const displayImage = computed(() => {
   if (props.excursion.image_url) return props.excursion.image_url;
-  for (const spotId of props.excursion.spot_ids) {
-    const spot = props.stations.find((s) => s.id === spotId);
-    if (spot?.image_url) return spot.image_url;
-  }
-  return null;
+  return fallbackImages.value.length === 1 ? fallbackImages.value[0] : null;
 });
 
 const showComments = ref(false);
@@ -112,7 +120,8 @@ function onSpotDrop(event: DragEvent) {
   >
     <DeleteButton floating class="card-delete" @click="emit('remove', excursion.id)" />
     <div class="image" :style="displayImage ? { backgroundImage: `url(${displayImage})` } : {}">
-      <span v-if="!displayImage" class="placeholder">🎒</span>
+      <SpotImageCollage v-if="showCollage" :images="fallbackImages" />
+      <span v-else-if="!displayImage" class="placeholder">🎒</span>
       <EditButton floating @click="emit('edit', excursion)" />
       <span class="status" :class="{ planned: excursion.date }">
         {{ excursion.date ? `📅 ${formatDate(excursion.date)}` : 'In Planung' }}
@@ -124,6 +133,9 @@ function onSpotDrop(event: DragEvent) {
         <span v-for="spot in stations" :key="spot.id" class="station-chip">
           {{ spotCategoryMeta(spot.category).icon }} {{ spot.title }}
         </span>
+      </div>
+      <div class="links" v-if="hasMappedStations">
+        <button type="button" class="card-action-btn" @click.stop="emit('show-on-map')">🗺️ Auf Karte anzeigen</button>
       </div>
       <button
         type="button"
@@ -164,6 +176,7 @@ function onSpotDrop(event: DragEvent) {
       @submit-comment="(content) => emit('submit-comment', content)"
       @remove-comment="(id) => emit('remove-comment', id)"
       @show-on-map="emit('show-on-map')"
+      @edit-station-spot="(spot) => emit('edit-station-spot', spot)"
     />
   </div>
 </template>
@@ -316,6 +329,13 @@ function onSpotDrop(event: DragEvent) {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: 4px;
 }
 
 .station-chip {
