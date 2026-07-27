@@ -9,6 +9,7 @@ import { linkLabel } from '../utils/linkLabel';
 import { renderRichText } from '../utils/richText';
 import { TRAVEL_ROLE_META, TRAVEL_ROLE_OPTIONS } from '../utils/travelRole';
 import Modal from '../components/Modal.vue';
+import DetailModal from '../components/DetailModal.vue';
 import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
 
@@ -173,6 +174,31 @@ function typeIcon(type: string | null) {
   if (type === 'Fähre') return '⛴️';
   return '🎫';
 }
+
+// Ein einziger Detail-Dialog außerhalb des v-for statt einer pro Karte (gleiches Muster wie der
+// bestehende Bearbeiten-Modal mit editingItem/editForm).
+const detailItem = ref<TravelItem | null>(null);
+function openDetail(item: TravelItem) {
+  detailItem.value = item;
+}
+function closeDetail() {
+  detailItem.value = null;
+}
+function editFromDetail() {
+  if (!detailItem.value) return;
+  startEdit(detailItem.value);
+  closeDetail();
+}
+function showDetailFromOnMap() {
+  if (!detailItem.value) return;
+  drawers.openMapAt(`travel-from-${detailItem.value.id}`);
+  closeDetail();
+}
+function showDetailToOnMap() {
+  if (!detailItem.value) return;
+  drawers.openMapAt(`travel-to-${detailItem.value.id}`);
+  closeDetail();
+}
 </script>
 
 <template>
@@ -287,7 +313,7 @@ function typeIcon(type: string | null) {
     </Modal>
 
     <TransitionGroup tag="div" name="list" class="grid cards">
-      <div class="card travel-card" v-for="item in items" :key="item.id">
+      <div class="card travel-card" v-for="item in items" :key="item.id" @click="openDetail(item)">
         <div class="travel-head">
           <h3>{{ typeIcon(item.type) }} {{ item.title }}</h3>
           <div class="actions">
@@ -298,44 +324,59 @@ function typeIcon(type: string | null) {
         <span v-if="item.role" class="role-badge">
           {{ TRAVEL_ROLE_META[item.role].icon }} {{ TRAVEL_ROLE_META[item.role].label }}
         </span>
-        <p v-if="item.from_location || item.to_location">
-          {{ item.from_location || '?' }} → {{ item.to_location || '?' }}
-        </p>
         <p v-if="item.date || item.departure_time">
           🗓️ {{ item.date || '' }}<span v-if="item.departure_time"> · {{ item.departure_time }} Uhr</span>
         </p>
-        <p v-if="item.checkin_info">⏱️ {{ item.checkin_info }}</p>
-        <p v-if="item.luggage">🧳 {{ item.luggage }}</p>
-        <p v-if="item.seat">💺 {{ item.seat }}</p>
-        <p v-if="item.amount != null">
-          💶 {{ item.amount.toFixed(2) }} €
-          <span v-if="item.paid_by_user_id"> · bezahlt von {{ userLabel(item.paid_by_user_id) }}</span>
+      </div>
+    </TransitionGroup>
+    <p v-if="!items.length" class="empty">Noch keine Reise-Infos eingetragen.</p>
+
+    <DetailModal
+      :model-value="detailItem !== null"
+      @update:model-value="(v) => !v && closeDetail()"
+      :title="detailItem?.title ?? ''"
+      :placeholder-icon="detailItem ? typeIcon(detailItem.type) : undefined"
+    >
+      <template v-if="detailItem">
+        <p v-if="detailItem.from_location || detailItem.to_location" class="detail-row">
+          <span class="detail-label">Strecke</span>
+          {{ detailItem.from_location || '?' }} → {{ detailItem.to_location || '?' }}
         </p>
-        <div v-if="item.note" class="note" v-html="renderRichText(item.note)"></div>
-        <div class="links">
-          <a v-if="item.link" :href="item.link" target="_blank" rel="noopener" class="card-action-btn"
-            >{{ linkLabel(item.link) }} ↗</a
+        <p v-if="detailItem.checkin_info" class="detail-row">
+          <span class="detail-label">Vorher da sein</span>⏱️ {{ detailItem.checkin_info }}
+        </p>
+        <p v-if="detailItem.luggage" class="detail-row"><span class="detail-label">Gepäck</span>🧳 {{ detailItem.luggage }}</p>
+        <p v-if="detailItem.seat" class="detail-row"><span class="detail-label">Sitzplatz</span>💺 {{ detailItem.seat }}</p>
+        <p v-if="detailItem.amount != null" class="detail-row">
+          <span class="detail-label">Kosten</span>
+          💶 {{ detailItem.amount.toFixed(2) }} €
+          <span v-if="detailItem.paid_by_user_id"> · bezahlt von {{ userLabel(detailItem.paid_by_user_id) }}</span>
+        </p>
+        <div v-if="detailItem.note" class="detail-row note" v-html="renderRichText(detailItem.note)"></div>
+        <div class="detail-actions">
+          <button type="button" class="card-action-btn" @click="editFromDetail">✎ Bearbeiten</button>
+          <a v-if="detailItem.link" :href="detailItem.link" target="_blank" rel="noopener" class="card-action-btn" @click="closeDetail"
+            >{{ linkLabel(detailItem.link) }} ↗</a
           >
           <button
-            v-if="item.from_lat != null && item.from_lng != null"
+            v-if="detailItem.from_lat != null && detailItem.from_lng != null"
             type="button"
             class="card-action-btn"
-            @click="drawers.openMapAt(`travel-from-${item.id}`)"
+            @click="showDetailFromOnMap"
           >
             🗺️ Abflug auf Karte anzeigen
           </button>
           <button
-            v-if="item.to_lat != null && item.to_lng != null"
+            v-if="detailItem.to_lat != null && detailItem.to_lng != null"
             type="button"
             class="card-action-btn"
-            @click="drawers.openMapAt(`travel-to-${item.id}`)"
+            @click="showDetailToOnMap"
           >
             🗺️ Ankunft auf Karte anzeigen
           </button>
         </div>
-      </div>
-    </TransitionGroup>
-    <p v-if="!items.length" class="empty">Noch keine Reise-Infos eingetragen.</p>
+      </template>
+    </DetailModal>
 
     <Modal
       :model-value="editingItem !== null"
@@ -505,6 +546,7 @@ label {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  cursor: pointer;
 }
 
 .note {
@@ -526,14 +568,6 @@ label {
   border-radius: 4px;
   padding: 1px 5px;
   font-size: 0.78rem;
-}
-
-.links {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  margin-top: 4px;
 }
 
 .role-badge {
