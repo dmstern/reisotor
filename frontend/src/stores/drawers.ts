@@ -3,8 +3,10 @@ import { ref, watch } from 'vue';
 
 const CALENDAR_OPEN_KEY = 'reisotor-drawer-calendar-open';
 const MAP_OPEN_KEY = 'reisotor-drawer-map-open';
+const EXCURSIONS_OPEN_KEY = 'reisotor-drawer-excursions-open';
 const CALENDAR_WIDTH_KEY = 'reisotor-drawer-calendar-width';
 const MAP_WIDTH_KEY = 'reisotor-drawer-map-width';
+const EXCURSIONS_WIDTH_KEY = 'reisotor-drawer-excursions-width';
 
 export const DEFAULT_DRAWER_WIDTH = 360;
 export const MIN_DRAWER_WIDTH = 280;
@@ -47,6 +49,12 @@ export const useDrawersStore = defineStore('drawers', () => {
   const mapFocusDate = ref<string | null>(null);
   const calendarWidth = ref(loadWidth(CALENDAR_WIDTH_KEY));
   const mapWidth = ref(loadWidth(MAP_WIDTH_KEY));
+  // Ausflüge-Schublade (übernimmt den rechten Schubladen-Platz, sobald die Karte in die
+  // Hauptsicht einzieht und die Karten-Schublade entfällt) – bewusst schon jetzt als eigener,
+  // unabhängiger Zustand angelegt statt mapOpen umzubenennen, da mapOpen bis zum endgültigen
+  // Zusammenbau noch die bestehende Karten-Schublade steuert.
+  const excursionsOpen = ref(loadOpen(EXCURSIONS_OPEN_KEY));
+  const excursionsWidth = ref(loadWidth(EXCURSIONS_WIDTH_KEY));
   // Welche Schublade (falls überhaupt) gerade als Vollbild-Overlay maximiert ist (Drawer.vue).
   // Zentral statt lokal im Drawer, da eine maximierte Schublade die jeweils andere automatisch
   // zuklappen muss – bewusst nicht in localStorage persistiert (flüchtiger UI-Zustand).
@@ -64,8 +72,10 @@ export const useDrawersStore = defineStore('drawers', () => {
 
   watch(calendarOpen, (v) => localStorage.setItem(CALENDAR_OPEN_KEY, String(v)));
   watch(mapOpen, (v) => localStorage.setItem(MAP_OPEN_KEY, String(v)));
+  watch(excursionsOpen, (v) => localStorage.setItem(EXCURSIONS_OPEN_KEY, String(v)));
   watch(calendarWidth, (v) => localStorage.setItem(CALENDAR_WIDTH_KEY, String(v)));
   watch(mapWidth, (v) => localStorage.setItem(MAP_WIDTH_KEY, String(v)));
+  watch(excursionsWidth, (v) => localStorage.setItem(EXCURSIONS_WIDTH_KEY, String(v)));
 
   function toggleCalendar() {
     calendarOpen.value = !calendarOpen.value;
@@ -73,6 +83,10 @@ export const useDrawersStore = defineStore('drawers', () => {
 
   function toggleMap() {
     mapOpen.value = !mapOpen.value;
+  }
+
+  function toggleExcursions() {
+    excursionsOpen.value = !excursionsOpen.value;
   }
 
   function openMapAt(key: string) {
@@ -117,15 +131,18 @@ export const useDrawersStore = defineStore('drawers', () => {
   return {
     calendarOpen,
     mapOpen,
+    excursionsOpen,
     mapFocusKey,
     mapFocusExcursionId,
     mapFocusDate,
     calendarWidth,
     mapWidth,
+    excursionsWidth,
     maximizedSide,
     locationsVersion,
     toggleCalendar,
     toggleMap,
+    toggleExcursions,
     openMapAt,
     openMapForExcursion,
     focusMapOnDate,
