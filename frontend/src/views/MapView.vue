@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { api } from '../api/client';
-import type { Accommodation, Excursion, ExcursionComment, ExcursionLike, Spot, TravelItem, User } from '../api/types';
+import type { Accommodation, Excursion, ExcursionComment, ExcursionLike, TravelItem, User } from '../api/types';
 import { useTripStore } from '../stores/trip';
 import { useDrawersStore } from '../stores/drawers';
 import { useExcursionsStore } from '../stores/excursions';
@@ -12,9 +12,12 @@ import { useSpotsStore } from '../stores/spots';
 import { useAuthStore } from '../stores/auth';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { arcRoute, cachedEmojiPin } from '../utils/mapRoute';
+import { resolveStations, type ExcursionStation } from '../utils/excursionStations';
 import SpotDetailDialog from '../components/SpotDetailDialog.vue';
-import MiniSpotCard from '../components/MiniSpotCard.vue';
+import MiniStationCard from '../components/MiniStationCard.vue';
 import ExcursionDetailDialog from '../components/ExcursionDetailDialog.vue';
+import AccommodationDetailDialog from '../components/AccommodationDetailDialog.vue';
+import TravelDetailDialog from '../components/TravelDetailDialog.vue';
 
 // Die Karte ist ein generischer, reiner Pin-Layer (kein Anlegen/Bearbeiten hier): sie zeigt
 // automatisch jedes Objekt des aktuellen Urlaubs mit hinterlegtem Standort – Unterkunft, Reise
@@ -159,17 +162,19 @@ const focusedExcursion = computed<Excursion | null>(() => {
 const visiblePoints = computed(() => {
   const excursion = focusedExcursion.value;
   if (!excursion) return points.value;
-  return points.value.filter((p) => p.origin !== 'spot' || excursion.spot_ids.includes(Number(p.key.slice('spot-'.length))));
+  return points.value.filter((p) => p.origin !== 'spot' || excursion.station_keys.includes(p.key));
 });
 
-// Stationsliste unter der Karte bei Ausflug-Fokus: in spot_ids-Reihenfolge (= Route/Abklapper-
-// Reihenfolge), als echte Spot-Objekte (statt MapPoint) für MiniSpotCard und damit derselbe Spot
-// mehrfach vorkommen kann (Rundgang, z. B. Start UND Ende an der Unterkunft) – ein MapPoint-Lookup
-// per Key wäre dafür ungeeignet, da mehrere Stationen dann denselben Key/dieselbe Referenz teilen.
-const focusedExcursionStations = computed<Spot[]>(() => {
+// Stationsliste unter der Karte bei Ausflug-Fokus: in station_keys-Reihenfolge (= Route/Abklapper-
+// Reihenfolge), als aufgelöste ExcursionStation-Objekte (statt MapPoint) für MiniStationCard und
+// damit dieselbe Station mehrfach vorkommen kann (Rundgang, z. B. Start UND Ende an der
+// Unterkunft) – ein MapPoint-Lookup per Key wäre dafür ungeeignet, da mehrere Stationen dann
+// denselben Key/dieselbe Referenz teilen. Eine Station ist nicht zwingend ein echter Spot (siehe
+// utils/excursionStations.ts).
+const focusedExcursionStations = computed<ExcursionStation[]>(() => {
   const excursion = focusedExcursion.value;
   if (!excursion) return [];
-  return excursion.spot_ids.map((id) => spotsStore.spots.find((s) => s.id === id)).filter((s): s is Spot => !!s);
+  return resolveStations(excursion.station_keys, spotsStore.spots, accommodations.value, travelItems.value);
 });
 
 async function loadAll() {
@@ -288,6 +293,44 @@ function editOpenExcursion() {
   router.push('/excursions');
 }
 
+// Klick auf eine Unterkunft-/Reise-Station in der Stationsliste öffnet den echten Unterkunft-/
+// Reise-Dialog (nicht mehr einen Spot-Dialog für einen künstlich angelegten Spot, siehe Backend-
+// Umbau) – gleiches "welches Objekt"/"ist offen"-Trennungsmuster wie oben bei Spots/Ausflügen.
+const openAccommodationId = ref<number | null>(null);
+const accommodationDialogOpen = ref(false);
+const openAccommodation = computed(() => accommodations.value.find((a) => a.id === openAccommodationId.value) ?? null);
+
+const openTravelId = ref<number | null>(null);
+const travelDialogOpen = ref(false);
+const openTravel = computed(() => travelItems.value.find((t) => t.id === openTravelId.value) ?? null);
+
+function openStationDetail(station: ExcursionStation) {
+  if (station.kind === 'spot') {
+    openSpotDetail(station.id);
+  } else if (station.kind === 'accommodation') {
+    openAccommodationId.value = station.id;
+    accommodationDialogOpen.value = true;
+  } else {
+    openTravelId.value = station.id;
+    travelDialogOpen.value = true;
+  }
+}
+// Bearbeiten braucht wie bei editOpenSpot() das echte Formular aus der jeweiligen Sicht – die
+// Karte besitzt selbst keins (Architekturregel Batch 3).
+function editOpenAccommodation() {
+  accommodationDialogOpen.value = false;
+  router.push('/accommodation');
+}
+function editOpenTravel() {
+  travelDialogOpen.value = false;
+  router.push('/travel');
+}
+function payerLabelFor(userId: number | null) {
+  if (userId == null) return null;
+  const u = users.value.find((u) => u.id === userId);
+  return u ? `${u.avatar} ${u.username}` : null;
+}
+
 // "In Karten-App öffnen": statt zu raten, welche App installiert ist (dafür gibt es per Web-Link
 // plattformübergreifend keinen zuverlässigen Mechanismus), zeigt ein kleines Menü die gängigen
 // Apps zur Auswahl – jeweils als offizieller Universal-Link, der die App öffnet, falls installiert,
@@ -355,8 +398,17 @@ function fitAccommodations() {
 
 // Alle Spots, die (mindestens) einem Ausflug als Station zugeordnet sind – für den Ausflüge-Fokus-
 // Button unten. Anders als der einzelne Ausflug-Fokus (drawers.mapFocusExcursionId) bezieht sich
-// dieser Button auf ALLE Ausflüge gleichzeitig, blendet also nichts aus, sondern zoomt nur.
-const excursionSpotIds = computed(() => new Set(excursionsStore.excursions.flatMap((e) => e.spot_ids)));
+// dieser Button auf ALLE Ausflüge gleichzeitig, blendet also nichts aus, sondern zoomt nur. Bewusst
+// weiterhin nur auf echte Spot-Stationen beschränkt (Button-Icon 🎒 "Ausflugsziele"), nicht auf
+// Unterkunft/Reise-Stationen – die sind über die eigenen Fokus-Buttons bereits erreichbar.
+const excursionSpotIds = computed(
+  () =>
+    new Set(
+      excursionsStore.excursions.flatMap((e) =>
+        e.station_keys.filter((k) => k.startsWith('spot-')).map((k) => Number(k.slice('spot-'.length))),
+      ),
+    ),
+);
 const excursionPoints = computed(() =>
   points.value.filter((p) => p.origin === 'spot' && excursionSpotIds.value.has(Number(p.key.slice('spot-'.length)))),
 );
@@ -420,8 +472,9 @@ function renderMarkers() {
 }
 
 // Zeichnet Verbindungslinien: je Reise-Eintrag mit Start- UND Zielkoordinaten eine Strecke
-// (Flug/Bahn/Auto/…), je Ausflug mit ≥2 verorteten Spots eine Route entlang der Stationen
-// (in der Reihenfolge von spot_ids). Rein visuell, keine echte Routenführung entlang von Straßen.
+// (Flug/Bahn/Auto/…), je Ausflug mit ≥2 verorteten Stationen eine Route entlang der Stationen
+// (in der Reihenfolge von station_keys). Rein visuell, keine echte Routenführung entlang von
+// Straßen.
 function renderRoutes() {
   if (!map || !routesLayer) return;
   routesLayer.clearLayers();
@@ -440,11 +493,10 @@ function renderRoutes() {
   // Im Ausflug-Fokus nur dessen eigene Route zeichnen, nicht die aller anderen Ausflüge.
   const excursionsToDraw = focusedExcursion.value ? [focusedExcursion.value] : excursionsStore.excursions;
   for (const excursion of excursionsToDraw) {
-    const coords: L.LatLngExpression[] = [];
-    for (const spotId of excursion.spot_ids) {
-      const spot = spotsStore.spots.find((s) => s.id === spotId);
-      if (spot?.lat != null && spot?.lng != null) coords.push([spot.lat, spot.lng]);
-    }
+    const stations = resolveStations(excursion.station_keys, spotsStore.spots, accommodations.value, travelItems.value);
+    const coords: L.LatLngExpression[] = stations
+      .filter((s) => s.lat != null && s.lng != null)
+      .map((s) => [s.lat as number, s.lng as number]);
     if (coords.length >= 2) {
       L.polyline(arcRoute(coords), { color: '#e08e45', weight: 3, opacity: 0.65, dashArray: '6 6' }).addTo(routesLayer);
     }
@@ -620,10 +672,10 @@ watch(
       </button>
       <p class="focus-spot-list-subtitle">Stationen</p>
       <div class="station-timeline">
-        <template v-for="(spot, index) in focusedExcursionStations" :key="index">
-          <button type="button" class="station-node" @click="openSpotDetail(spot.id)">
+        <template v-for="(station, index) in focusedExcursionStations" :key="index">
+          <button type="button" class="station-node" @click="openStationDetail(station)">
             <span class="station-order">{{ index + 1 }}</span>
-            <MiniSpotCard :spot="spot" />
+            <MiniStationCard :station="station" />
           </button>
           <div v-if="index < focusedExcursionStations.length - 1" class="station-connector" aria-hidden="true"></div>
         </template>
@@ -654,12 +706,33 @@ watch(
       :liked="ideaLikedByMe(openExcursion.id)"
       :comments="ideaCommentItemsFor(openExcursion.id)"
       :stations="spotsStore.spots"
+      :accommodations="accommodations"
+      :travel-items="travelItems"
       @edit="editOpenExcursion"
       @toggle-like="toggleIdeaLike(openExcursion.id)"
       @submit-comment="(content) => submitIdeaComment(openExcursion!.id, content)"
       @remove-comment="removeIdeaComment"
       @show-on-map="excursionDetailOpen = false"
       @edit-station-spot="editOpenExcursion"
+    />
+
+    <AccommodationDetailDialog
+      v-if="openAccommodation"
+      v-model="accommodationDialogOpen"
+      :accommodation="openAccommodation"
+      :payer-label="payerLabelFor(openAccommodation.paid_by_user_id)"
+      @edit="editOpenAccommodation"
+      @show-on-map="accommodationDialogOpen = false"
+    />
+
+    <TravelDetailDialog
+      v-if="openTravel"
+      v-model="travelDialogOpen"
+      :item="openTravel"
+      :payer-label="payerLabelFor(openTravel.paid_by_user_id)"
+      @edit="editOpenTravel"
+      @show-on-map-from="travelDialogOpen = false"
+      @show-on-map-to="travelDialogOpen = false"
     />
 
     <div class="card info-panel" v-if="selectedPoint">
