@@ -65,5 +65,21 @@ export const useExcursionsStore = defineStore('excursions', () => {
     });
   }
 
-  return { excursions, loaded, load, create, update, remove, setDate };
+  /** Spontanes Einplanen eines einzelnen Spots (kein vorheriges Anlegen eines Ausflugs nötig,
+   *  siehe SpotCard.vue-Anfasser/DiaryView.vue-Spot-Picker) – das Backend legt dafür im
+   *  Hintergrund einen Ein-Spot-Ausflug an oder gibt einen bereits dafür bestehenden zurück
+   *  (dedupliziert über trip_id+date+Station, siehe POST /ideas/plan-spot). */
+  async function planSpotOnDate(spotId: number, date: string) {
+    const excursion = await api.post<Excursion>('/ideas/plan-spot', {
+      trip_id: tripStore.currentTripId,
+      spot_id: spotId,
+      date,
+    });
+    const idx = excursions.value.findIndex((e) => e.id === excursion.id);
+    if (idx !== -1) excursions.value[idx] = excursion;
+    else excursions.value.unshift(excursion);
+    return excursion;
+  }
+
+  return { excursions, loaded, load, create, update, remove, setDate, planSpotOnDate };
 });
