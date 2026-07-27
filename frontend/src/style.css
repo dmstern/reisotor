@@ -203,6 +203,51 @@ button.danger {
   border-color: var(--color-primary);
 }
 
+/* Gemeinsame Read-Only-Feld-Optik für die Detail-Dialoge (Ausflug/Spot/Unterkunft/Reise,
+   DetailModal.vue) – global statt scoped, da vier verschiedene Views dieselbe Optik brauchen.
+   Nutzt ausschließlich themefähige CSS-Variablen, daher kein eigener Dark-Mode-Override nötig
+   (anders als die schwebenden Buttons, die über beliebigen Fotos fest hell/dunkel bleiben müssen). */
+.detail-image-banner {
+  height: 180px;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary-tint) center/cover no-repeat;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--space-3);
+}
+
+.detail-image-banner .placeholder {
+  font-size: 2.5rem;
+}
+
+.detail-title {
+  margin: 0 0 var(--space-3);
+  font-size: 1.15rem;
+  color: var(--color-primary-dark);
+}
+
+.detail-row {
+  margin: 0 0 var(--space-2);
+  font-size: 0.92rem;
+}
+
+.detail-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  display: block;
+}
+
+.detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
 /* Auto-erkannte Links in gerenderten Markdown-Notizen/Tagebuch-/Ausflugs-/Spot-Texten (siehe
    utils/richText.ts) nutzen dieselbe Pill-Optik, stehen aber mitten im Fließtext statt in einer
    eigenen Aktions-Reihe – vertical-align sorgt dafür, dass sie sich sauber an der Textzeile statt

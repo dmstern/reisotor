@@ -8,6 +8,7 @@ import { useTripStore } from '../stores/trip';
 import { useDrawersStore } from '../stores/drawers';
 import { useExcursionsStore } from '../stores/excursions';
 import { spotCategoryMeta } from '../utils/spotCategory';
+import { arcRoute, cachedEmojiPin } from '../utils/mapRoute';
 
 // Die Karte ist ein generischer, reiner Pin-Layer (kein Anlegen/Bearbeiten hier): sie zeigt
 // automatisch jedes Objekt des aktuellen Urlaubs mit hinterlegtem Standort – Unterkunft, Reise
@@ -50,31 +51,11 @@ let map: L.Map | null = null;
 let markersLayer: L.LayerGroup | null = null;
 let routesLayer: L.LayerGroup | null = null;
 
-function emojiPin(emoji: string, color: string) {
-  return L.divIcon({
-    html: `<div style="width:32px;height:32px;border-radius:50% 50% 50% 0;background:${color};
-      transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;
-      box-shadow:0 2px 6px rgba(0,0,0,.35);border:2px solid white;">
-      <span style="transform:rotate(45deg);font-size:15px;line-height:1;">${emoji}</span></div>`,
-    className: '',
-    iconSize: [32, 32],
-    iconAnchor: [16, 32],
-    popupAnchor: [0, -30],
-  });
-}
-
-// Icons werden pro (Icon, Farbe)-Kombination einmal gebaut und wiederverwendet – bei den
-// dynamischen Spot-Kategorien wären sonst bei jedem renderMarkers()-Aufruf unnötig viele
-// L.divIcon-Instanzen fällig.
-const iconCache = new Map<string, L.DivIcon>();
+// Icons/Bogen-Routen sind in utils/mapRoute.ts ausgelagert (gemeinsamer Cache mit der neuen
+// Ausflug-Mini-Karte, ExcursionMiniMap.vue) – hier nur noch ein dünner MapPoint-spezifischer
+// Wrapper.
 function iconFor(point: MapPoint) {
-  const key = `${point.icon}|${point.color}`;
-  let icon = iconCache.get(key);
-  if (!icon) {
-    icon = emojiPin(point.icon, point.color);
-    iconCache.set(key, icon);
-  }
-  return icon;
+  return cachedEmojiPin(point.icon, point.color);
 }
 
 const points = computed<MapPoint[]>(() => {
@@ -304,28 +285,6 @@ function renderMarkers() {
   }
 }
 
-// Sample-Punkte für einen gestrichelten Bogen zwischen zwei Koordinaten (quadratische Bezier-
-// Kurve, Kontrollpunkt senkrecht zur Verbindungslinie versetzt) – rein optisch, wie man es von
-// schematischen Flugrouten-Darstellungen kennt, keine echte Streckenführung/Großkreisberechnung.
-function arcPoints(from: L.LatLngExpression, to: L.LatLngExpression, segments = 32): L.LatLngExpression[] {
-  const [lat1, lng1] = from as [number, number];
-  const [lat2, lng2] = to as [number, number];
-  const dLat = lat2 - lat1;
-  const dLng = lng2 - lng1;
-  // Versatz proportional zur Streckenlänge (dLat/dLng selbst) – kurze Routen bekommen dadurch
-  // automatisch einen dezenteren, lange einen deutlicheren Bogen. 0.15 ist ein reiner Optik-Faktor.
-  const controlLat = (lat1 + lat2) / 2 - dLng * 0.15;
-  const controlLng = (lng1 + lng2) / 2 + dLat * 0.15;
-  const points: L.LatLngExpression[] = [];
-  for (let i = 0; i <= segments; i++) {
-    const t = i / segments;
-    const lat = (1 - t) ** 2 * lat1 + 2 * (1 - t) * t * controlLat + t ** 2 * lat2;
-    const lng = (1 - t) ** 2 * lng1 + 2 * (1 - t) * t * controlLng + t ** 2 * lng2;
-    points.push([lat, lng]);
-  }
-  return points;
-}
-
 // Zeichnet Verbindungslinien: je Reise-Eintrag mit Start- UND Zielkoordinaten eine Strecke
 // (Flug/Bahn/Auto/…), je Ausflug mit ≥2 verorteten Spots eine Route entlang der Stationen
 // (in der Reihenfolge von spot_ids). Rein visuell, keine echte Routenführung entlang von Straßen.
@@ -335,7 +294,7 @@ function renderRoutes() {
 
   for (const t of travelItems.value) {
     if (t.from_lat != null && t.from_lng != null && t.to_lat != null && t.to_lng != null) {
-      L.polyline(arcPoints([t.from_lat, t.from_lng], [t.to_lat, t.to_lng]), {
+      L.polyline(arcRoute([[t.from_lat, t.from_lng], [t.to_lat, t.to_lng]]), {
         color: TRAVEL_FROM_META.color,
         weight: 3,
         opacity: 0.65,
@@ -353,14 +312,7 @@ function renderRoutes() {
       if (spot?.lat != null && spot?.lng != null) coords.push([spot.lat, spot.lng]);
     }
     if (coords.length >= 2) {
-      // Bogen je Teilstrecke zusammensetzen – Startpunkt jedes Folgesegments weglassen, sonst
-      // wäre er doppelt (identisch mit dem Endpunkt des vorigen Segments).
-      const arced: L.LatLngExpression[] = [];
-      for (let i = 0; i < coords.length - 1; i++) {
-        const segment = arcPoints(coords[i], coords[i + 1]);
-        arced.push(...(i === 0 ? segment : segment.slice(1)));
-      }
-      L.polyline(arced, { color: '#e08e45', weight: 3, opacity: 0.65, dashArray: '6 6' }).addTo(routesLayer);
+      L.polyline(arcRoute(coords), { color: '#e08e45', weight: 3, opacity: 0.65, dashArray: '6 6' }).addTo(routesLayer);
     }
   }
 }
