@@ -5,12 +5,10 @@ import type { TravelItem, TravelRole, User } from '../api/types';
 import { useTripStore } from '../stores/trip';
 import { useDrawersStore } from '../stores/drawers';
 import { parseLatLngFromMapsLink } from '../utils/googleMaps';
-import { linkLabel } from '../utils/linkLabel';
-import { renderRichText } from '../utils/richText';
 import { TRAVEL_ROLE_META, TRAVEL_ROLE_OPTIONS } from '../utils/travelRole';
 import { formatTravelDuration, travelDurationMinutes } from '../utils/travelDuration';
 import Modal from '../components/Modal.vue';
-import DetailModal from '../components/DetailModal.vue';
+import TravelDetailDialog from '../components/TravelDetailDialog.vue';
 import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
 
@@ -185,13 +183,19 @@ function travelDuration(item: TravelItem) {
 }
 
 // Ein einziger Detail-Dialog außerhalb des v-for statt einer pro Karte (gleiches Muster wie der
-// bestehende Bearbeiten-Modal mit editingItem/editForm).
+// bestehende Bearbeiten-Modal mit editingItem/editForm). "welcher Eintrag" (detailItem) und "ist
+// der Dialog offen" (detailDialogOpen) bewusst getrennt: TravelDetailDialog.vue braucht ein echtes
+// TravelItem-Objekt als Prop (nicht nullable), müsste beim Schließen also sonst komplett aus dem
+// DOM entfernt werden (v-if) statt nur unsichtbar zu werden – das würde Modal.vue's eigene
+// Fade-Out-Transition abschneiden.
 const detailItem = ref<TravelItem | null>(null);
+const detailDialogOpen = ref(false);
 function openDetail(item: TravelItem) {
   detailItem.value = item;
+  detailDialogOpen.value = true;
 }
 function closeDetail() {
-  detailItem.value = null;
+  detailDialogOpen.value = false;
 }
 function editFromDetail() {
   if (!detailItem.value) return;
@@ -348,52 +352,15 @@ function showDetailToOnMap() {
     </TransitionGroup>
     <p v-if="!items.length" class="empty">Noch keine Reise-Infos eingetragen.</p>
 
-    <DetailModal
-      :model-value="detailItem !== null"
-      @update:model-value="(v) => !v && closeDetail()"
-      :title="detailItem?.title ?? ''"
-      :placeholder-icon="detailItem ? typeIcon(detailItem.type) : undefined"
+    <TravelDetailDialog
+      v-if="detailItem"
+      v-model="detailDialogOpen"
+      :item="detailItem"
+      :payer-label="detailItem.paid_by_user_id != null ? userLabel(detailItem.paid_by_user_id) : null"
       @edit="editFromDetail"
-    >
-      <template v-if="detailItem">
-        <p v-if="detailItem.from_location || detailItem.to_location" class="detail-row">
-          <span class="detail-label">Strecke</span>
-          {{ detailItem.from_location || '?' }} → {{ detailItem.to_location || '?' }}
-        </p>
-        <p v-if="detailItem.checkin_info" class="detail-row">
-          <span class="detail-label">Vorher da sein</span>⏱️ {{ detailItem.checkin_info }}
-        </p>
-        <p v-if="detailItem.luggage" class="detail-row"><span class="detail-label">Gepäck</span>🧳 {{ detailItem.luggage }}</p>
-        <p v-if="detailItem.seat" class="detail-row"><span class="detail-label">Sitzplatz</span>💺 {{ detailItem.seat }}</p>
-        <p v-if="detailItem.amount != null" class="detail-row">
-          <span class="detail-label">Kosten</span>
-          💶 {{ detailItem.amount.toFixed(2) }} €
-          <span v-if="detailItem.paid_by_user_id"> · bezahlt von {{ userLabel(detailItem.paid_by_user_id) }}</span>
-        </p>
-        <div v-if="detailItem.note" class="detail-row note" v-html="renderRichText(detailItem.note)"></div>
-        <div class="detail-actions">
-          <a v-if="detailItem.link" :href="detailItem.link" target="_blank" rel="noopener" class="card-action-btn" @click="closeDetail"
-            >{{ linkLabel(detailItem.link) }} ↗</a
-          >
-          <button
-            v-if="detailItem.from_lat != null && detailItem.from_lng != null"
-            type="button"
-            class="card-action-btn"
-            @click="showDetailFromOnMap"
-          >
-            🗺️ Abflug auf Karte anzeigen
-          </button>
-          <button
-            v-if="detailItem.to_lat != null && detailItem.to_lng != null"
-            type="button"
-            class="card-action-btn"
-            @click="showDetailToOnMap"
-          >
-            🗺️ Ankunft auf Karte anzeigen
-          </button>
-        </div>
-      </template>
-    </DetailModal>
+      @show-on-map-from="showDetailFromOnMap"
+      @show-on-map-to="showDetailToOnMap"
+    />
 
     <Modal
       :model-value="editingItem !== null"

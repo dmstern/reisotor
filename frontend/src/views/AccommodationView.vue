@@ -5,10 +5,8 @@ import type { Accommodation, User } from '../api/types';
 import { useTripStore } from '../stores/trip';
 import { useDrawersStore } from '../stores/drawers';
 import { parseLatLngFromMapsLink } from '../utils/googleMaps';
-import { renderRichText } from '../utils/richText';
-import { parseContact } from '../utils/contact';
 import Modal from '../components/Modal.vue';
-import DetailModal from '../components/DetailModal.vue';
+import AccommodationDetailDialog from '../components/AccommodationDetailDialog.vue';
 import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
 
@@ -141,13 +139,19 @@ function formatDate(d: string | null) {
 }
 
 // Ein einziger Detail-Dialog außerhalb des v-for statt einer pro Karte (gleiches Muster wie der
-// bestehende Bearbeiten-Modal mit editingItem/editForm).
+// bestehende Bearbeiten-Modal mit editingItem/editForm). "welche Unterkunft" (detailItem) und "ist
+// der Dialog offen" (detailDialogOpen) bewusst getrennt: AccommodationDetailDialog.vue braucht ein
+// echtes Accommodation-Objekt als Prop (nicht nullable), müsste beim Schließen also sonst komplett
+// aus dem DOM entfernt werden (v-if) statt nur unsichtbar zu werden – das würde Modal.vue's eigene
+// Fade-Out-Transition abschneiden, da sie nie zum Abspielen kommt.
 const detailItem = ref<Accommodation | null>(null);
+const detailDialogOpen = ref(false);
 function openDetail(acc: Accommodation) {
   detailItem.value = acc;
+  detailDialogOpen.value = true;
 }
 function closeDetail() {
-  detailItem.value = null;
+  detailDialogOpen.value = false;
 }
 function editFromDetail() {
   if (!detailItem.value) return;
@@ -253,50 +257,14 @@ function showDetailOnMap() {
     </TransitionGroup>
     <p v-if="!accommodations.length" class="empty">Noch keine Unterkunft eingetragen.</p>
 
-    <DetailModal
-      :model-value="detailItem !== null"
-      @update:model-value="(v) => !v && closeDetail()"
-      :title="detailItem?.name ?? ''"
-      placeholder-icon="🛏️"
+    <AccommodationDetailDialog
+      v-if="detailItem"
+      v-model="detailDialogOpen"
+      :accommodation="detailItem"
+      :payer-label="detailItem.paid_by_user_id != null ? userLabel(detailItem.paid_by_user_id) : null"
       @edit="editFromDetail"
-    >
-      <template v-if="detailItem">
-        <p v-if="detailItem.start_date || detailItem.end_date" class="detail-row">
-          <span class="detail-label">Zeitraum</span>
-          🗓️ {{ formatDate(detailItem.start_date) || '?' }} – {{ formatDate(detailItem.end_date) || '?' }}
-        </p>
-        <p v-if="detailItem.address" class="detail-row">
-          <span class="detail-label">Adresse</span>{{ detailItem.address }}
-        </p>
-        <p v-if="detailItem.checkin || detailItem.checkout" class="detail-row">
-          <span class="detail-label">Check-in/-out</span>
-          {{ detailItem.checkin || '–' }} · {{ detailItem.checkout || '–' }}
-        </p>
-        <p v-if="detailItem.contact && parseContact(detailItem.contact).kind === 'phone'" class="detail-row">
-          <span class="detail-label">Kontakt</span>
-          📞 <a :href="parseContact(detailItem.contact).href">{{ detailItem.contact }}</a>
-        </p>
-        <p v-else-if="detailItem.contact && parseContact(detailItem.contact).kind === 'email'" class="detail-row">
-          <span class="detail-label">Kontakt</span>
-          📧 <a :href="parseContact(detailItem.contact).href">{{ detailItem.contact }}</a>
-        </p>
-        <p v-else-if="detailItem.contact" class="detail-row">
-          <span class="detail-label">Kontakt</span>
-          <span class="contact-text" v-html="renderRichText(detailItem.contact)"></span>
-        </p>
-        <p v-if="detailItem.amount != null" class="detail-row">
-          <span class="detail-label">Kosten</span>
-          💶 {{ detailItem.amount.toFixed(2) }} €
-          <span v-if="detailItem.paid_by_user_id"> · bezahlt von {{ userLabel(detailItem.paid_by_user_id) }}</span>
-        </p>
-        <div v-if="detailItem.note" class="detail-row note" v-html="renderRichText(detailItem.note)"></div>
-        <div class="detail-actions">
-          <button v-if="detailItem.lat != null && detailItem.lng != null" type="button" class="card-action-btn" @click="showDetailOnMap">
-            🗺️ Auf Karte anzeigen
-          </button>
-        </div>
-      </template>
-    </DetailModal>
+      @show-on-map="showDetailOnMap"
+    />
 
     <Modal
       :model-value="editingItem !== null"
