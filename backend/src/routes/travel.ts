@@ -208,6 +208,13 @@ export const travelRoutes: FastifyPluginAsync = async (app) => {
     if (existing.budget_expense_id) {
       db.prepare('DELETE FROM budget_items WHERE id = ?').run(existing.budget_expense_id);
     }
+    // Verwaiste Stationsreferenzen (Ausflüge, die den Abflug-/Ankunftsort dieses Eintrags als
+    // Station eingeplant hatten) mit entfernen – siehe gleiches Vorgehen in routes/spots.ts. Beide
+    // Seiten (from/to) gehören zum selben Eintrag, daher hier immer beide Keys entfernen.
+    db.prepare('DELETE FROM excursion_spots WHERE station_key IN (?, ?)').run(
+      `travel-from-${req.params.id}`,
+      `travel-to-${req.params.id}`,
+    );
     return reply.code(204).send();
   });
 };

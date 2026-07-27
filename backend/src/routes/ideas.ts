@@ -7,7 +7,7 @@ interface IdeaBody {
   image_url?: string;
   note?: string;
   date?: string;
-  spot_ids?: number[];
+  station_keys?: string[];
 }
 
 interface IdeaRow {
@@ -19,50 +19,53 @@ interface CommentBody {
   content: string;
 }
 
-// Stationen eines Ausflugs (Batch 13, Reihenfolge/Mehrfachbesuche nachgerüstet): welche Spots
-// gehören dazu, in welcher Reihenfolge. Wird bei jedem Anlegen/Bearbeiten komplett neu geschrieben
-// (einfacher als Diffing) – kleine Anzahl Zeilen pro Ausflug. `position` statt der Zeilen-Id
-// bestimmt die Reihenfolge, damit derselbe Spot mehrfach vorkommen darf (z. B. Start UND Ende an
-// der Unterkunft für einen Rundgang).
-function syncExcursionSpots(ideaId: number, spotIds: number[]) {
+// Stationen eines Ausflugs (Batch 13, Reihenfolge/Mehrfachbesuche nachgerüstet; Batch 14:
+// generischer station_key statt spot_id): welche Orte gehören dazu, in welcher Reihenfolge. Eine
+// Station muss kein echter Spot sein – station_key trägt auch 'accommodation-<id>'/
+// 'travel-from-<id>'/'travel-to-<id>' (siehe db/index.ts), damit Unterkunft/Anreise-/Abreise-Ort
+// eingeplant werden können, ohne dafür einen Spot anzulegen. Wird bei jedem Anlegen/Bearbeiten
+// komplett neu geschrieben (einfacher als Diffing) – kleine Anzahl Zeilen pro Ausflug. `position`
+// statt der Zeilen-Id bestimmt die Reihenfolge, damit derselbe Ort mehrfach vorkommen darf (z. B.
+// Start UND Ende an der Unterkunft für einen Rundgang).
+function syncExcursionStations(ideaId: number, stationKeys: string[]) {
   db.prepare('DELETE FROM excursion_spots WHERE idea_id = ?').run(ideaId);
-  const insert = db.prepare('INSERT INTO excursion_spots (idea_id, spot_id, position) VALUES (?, ?, ?)');
-  spotIds.forEach((spotId, index) => {
-    insert.run(ideaId, spotId, index);
+  const insert = db.prepare('INSERT INTO excursion_spots (idea_id, station_key, position) VALUES (?, ?, ?)');
+  stationKeys.forEach((key, index) => {
+    insert.run(ideaId, key, index);
   });
 }
 
-function spotIdsFor(ideaIds: number[]): Map<number, number[]> {
-  const map = new Map<number, number[]>();
+function stationKeysFor(ideaIds: number[]): Map<number, string[]> {
+  const map = new Map<number, string[]>();
   if (!ideaIds.length) return map;
   const placeholders = ideaIds.map(() => '?').join(',');
   const rows = db
     .prepare(
-      `SELECT idea_id, spot_id FROM excursion_spots WHERE idea_id IN (${placeholders}) ORDER BY idea_id, position`,
+      `SELECT idea_id, station_key FROM excursion_spots WHERE idea_id IN (${placeholders}) ORDER BY idea_id, position`,
     )
-    .all(...ideaIds) as { idea_id: number; spot_id: number }[];
+    .all(...ideaIds) as { idea_id: number; station_key: string }[];
   for (const row of rows) {
     const list = map.get(row.idea_id) ?? [];
-    list.push(row.spot_id);
+    list.push(row.station_key);
     map.set(row.idea_id, list);
   }
   return map;
 }
 
-function serializeIdea(row: IdeaRow, spotIds: number[]) {
-  return { ...row, spot_ids: spotIds };
+function serializeIdea(row: IdeaRow, stationKeys: string[]) {
+  return { ...row, station_keys: stationKeys };
 }
 
 export const ideasRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: { trip_id?: string } }>('/ideas', async (req, reply) => {
     if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
     const rows = db.prepare('SELECT * FROM ideas WHERE trip_id = ? ORDER BY id DESC').all(req.query.trip_id) as IdeaRow[];
-    const spotIds = spotIdsFor(rows.map((r) => r.id));
-    return rows.map((row) => serializeIdea(row, spotIds.get(row.id) ?? []));
+    const stationKeys = stationKeysFor(rows.map((r) => r.id));
+    return rows.map((row) => serializeIdea(row, stationKeys.get(row.id) ?? []));
   });
 
   app.post<{ Body: IdeaBody }>('/ideas', async (req, reply) => {
-    const { trip_id, title, image_url, note, date, spot_ids } = req.body;
+    const { trip_id, title, image_url, note, date, station_keys } = req.body;
     const result = db
       .prepare(
         `INSERT INTO ideas (trip_id, title, image_url, note, date, created_by)
@@ -70,14 +73,14 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
       )
       .run(trip_id, title, image_url ?? null, note ?? null, date ?? null, req.session.userId);
     const ideaId = result.lastInsertRowid as number;
-    syncExcursionSpots(ideaId, spot_ids ?? []);
+    syncExcursionStations(ideaId, station_keys ?? []);
     reply.code(201);
     const row = db.prepare('SELECT * FROM ideas WHERE id = ?').get(ideaId) as IdeaRow;
-    return serializeIdea(row, spot_ids ?? []);
+    return serializeIdea(row, station_keys ?? []);
   });
 
   app.put<{ Params: { id: string }; Body: IdeaBody }>('/ideas/:id', async (req, reply) => {
-    const { title, image_url, note, date, spot_ids } = req.body;
+    const { title, image_url, note, date, station_keys } = req.body;
     const result = db
       .prepare(
         `UPDATE ideas SET title = ?, image_url = ?, note = ?, date = ?
@@ -85,9 +88,9 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
       )
       .run(title, image_url ?? null, note ?? null, date ?? null, req.params.id);
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
-    syncExcursionSpots(Number(req.params.id), spot_ids ?? []);
+    syncExcursionStations(Number(req.params.id), station_keys ?? []);
     const row = db.prepare('SELECT * FROM ideas WHERE id = ?').get(req.params.id) as IdeaRow;
-    return serializeIdea(row, spot_ids ?? []);
+    return serializeIdea(row, station_keys ?? []);
   });
 
   app.delete<{ Params: { id: string } }>('/ideas/:id', async (req, reply) => {

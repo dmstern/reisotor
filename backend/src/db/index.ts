@@ -233,14 +233,19 @@ CREATE TABLE IF NOT EXISTS spots (
   created_by INTEGER REFERENCES users(id)
 );
 
--- Stationen eines Ausflugs: welche Spots gehören zu welchem Ausflug, in welcher Reihenfolge
--- (Batch 13, Reihenfolge/Mehrfachbesuche nachgerüstet). Bewusst KEIN UNIQUE(idea_id, spot_id) –
--- ein Rundgang darf denselben Spot mehrfach enthalten (z. B. Start UND Ende an der Unterkunft),
--- "position" ist deshalb die eigentliche Quelle der Abklapper-Reihenfolge, nicht die Zeilen-Id.
+-- Stationen eines Ausflugs: welche Orte gehören zu welchem Ausflug, in welcher Reihenfolge
+-- (Batch 13, Reihenfolge/Mehrfachbesuche nachgerüstet; Batch 14: generischer station_key statt
+-- spot_id). Eine Station ist NICHT mehr zwingend ein echter Spot – station_key trägt stattdessen
+-- einen generischen Schlüssel im selben Format wie MapPoint.key/DerivedLocation.key
+-- ('spot-<id>', 'accommodation-<id>', 'travel-from-<id>', 'travel-to-<id>'), damit Unterkunft/
+-- Anreise-/Abreise-Orte als Station eingeplant werden können, ohne dafür einen doppelten Spot
+-- anzulegen. Bewusst KEIN UNIQUE(idea_id, station_key) – ein Rundgang darf denselben Ort mehrfach
+-- enthalten (z. B. Start UND Ende an der Unterkunft), "position" ist deshalb die eigentliche
+-- Quelle der Abklapper-Reihenfolge, nicht die Zeilen-Id.
 CREATE TABLE IF NOT EXISTS excursion_spots (
   id INTEGER PRIMARY KEY,
   idea_id INTEGER NOT NULL REFERENCES ideas(id) ON DELETE CASCADE,
-  spot_id INTEGER NOT NULL REFERENCES spots(id) ON DELETE CASCADE,
+  station_key TEXT NOT NULL,
   position INTEGER NOT NULL DEFAULT 0
 );
 
@@ -297,30 +302,29 @@ function hasTable(name: string) {
   return !!db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?").get(name);
 }
 
-// excursion_spots hatte ursprünglich UNIQUE(idea_id, spot_id) – das verhindert genau das, was ein
-// Rundgang braucht (derselbe Spot mehrfach in einem Ausflug, z. B. Start UND Ende an der
-// Unterkunft). SQLite kann eine Tabellen-Constraint nicht per ALTER TABLE entfernen, bei
-// Altbeständen wird die Tabelle daher einmalig neu aufgebaut (bisherige Zeilen-Id als position
-// übernommen – das war ohnehin schon die implizit genutzte Einfüge-/Abfragereihenfolge).
-function migrateExcursionSpotsUnique() {
-  const row = db.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'excursion_spots'").get() as
-    | { sql: string }
-    | undefined;
-  if (!row || !row.sql.includes('UNIQUE')) return;
+// excursion_spots hatte ursprünglich UNIQUE(idea_id, spot_id) und eine feste spot_id-Spalte statt
+// des generischen station_key – beides verhindert(e), was ein Rundgang bzw. eine Unterkunft/Reise
+// als Station braucht (siehe Kommentar am CREATE TABLE oben). SQLite kann weder eine Tabellen-
+// Constraint noch eine Spalten-Bedeutung per ALTER TABLE ändern, bei Altbeständen wird die Tabelle
+// daher einmalig neu aufgebaut. Gate über das Fehlen der station_key-Spalte statt eines Text-Checks
+// auf UNIQUE, da mittlerweile zwei verschiedene Alt-Schemata (mit/ohne UNIQUE, aber beide noch mit
+// spot_id) auf diesen einen Rebuild treffen können.
+function migrateExcursionStations() {
+  if (!hasTable('excursion_spots') || hasColumn('excursion_spots', 'station_key')) return;
   db.exec(`
     ALTER TABLE excursion_spots RENAME TO excursion_spots_old;
     CREATE TABLE excursion_spots (
       id INTEGER PRIMARY KEY,
       idea_id INTEGER NOT NULL REFERENCES ideas(id) ON DELETE CASCADE,
-      spot_id INTEGER NOT NULL REFERENCES spots(id) ON DELETE CASCADE,
+      station_key TEXT NOT NULL,
       position INTEGER NOT NULL DEFAULT 0
     );
-    INSERT INTO excursion_spots (id, idea_id, spot_id, position)
-      SELECT id, idea_id, spot_id, id FROM excursion_spots_old;
+    INSERT INTO excursion_spots (id, idea_id, station_key, position)
+      SELECT id, idea_id, 'spot-' || spot_id, COALESCE(position, id) FROM excursion_spots_old;
     DROP TABLE excursion_spots_old;
   `);
 }
-migrateExcursionSpotsUnique();
+migrateExcursionStations();
 
 ensureColumn('users', 'avatar', "TEXT DEFAULT '🙂'");
 ensureColumn('ideas', 'lat', 'REAL');

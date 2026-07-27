@@ -89,6 +89,10 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
   app.delete<{ Params: { id: string } }>('/spots/:id', async (req, reply) => {
     const result = db.prepare('DELETE FROM spots WHERE id = ?').run(req.params.id);
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
+    // excursion_spots.station_key ist kein Fremdschlüssel mehr (generischer Text statt spot_id
+    // mit ON DELETE CASCADE) – verwaiste Stationsreferenzen auf den gelöschten Spot müssen daher
+    // manuell mit entfernt werden.
+    db.prepare('DELETE FROM excursion_spots WHERE station_key = ?').run(`spot-${req.params.id}`);
     return reply.code(204).send();
   });
 
