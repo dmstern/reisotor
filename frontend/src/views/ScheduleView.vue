@@ -5,6 +5,7 @@ import type { Accommodation, CalendarEntry, ScheduleItem, TodoItem, TravelItem }
 import { useTripStore } from '../stores/trip';
 import { useExcursionsStore } from '../stores/excursions';
 import { useSpotsStore } from '../stores/spots';
+import { useDrawersStore } from '../stores/drawers';
 import CalendarWeek from '../components/CalendarWeek.vue';
 import Modal from '../components/Modal.vue';
 import EditButton from '../components/EditButton.vue';
@@ -18,6 +19,7 @@ const tripStore = useTripStore();
 const trip = computed(() => tripStore.currentTrip);
 const excursionsStore = useExcursionsStore();
 const spotsStore = useSpotsStore();
+const drawers = useDrawersStore();
 const items = ref<ScheduleItem[]>([]);
 const accommodations = ref<Accommodation[]>([]);
 const todos = ref<TodoItem[]>([]);
@@ -215,6 +217,15 @@ function goToTripDates() {
 
 const dayEntries = computed(() => (selectedDate.value ? entriesForDate(selectedDate.value) : []));
 
+// "Tag auf Karte anzeigen" nur sinnvoll, wenn an diesem Tag mindestens ein Ausflug geplant ist
+// (sonst gäbe es nichts, das die Karte fokussieren könnte).
+const selectedDateHasExcursion = computed(
+  () => !!selectedDate.value && excursionsStore.excursions.some((e) => e.date === selectedDate.value),
+);
+function showDayOnMap() {
+  if (selectedDate.value) drawers.focusMapOnDate(selectedDate.value);
+}
+
 const dayAccommodations = computed(() =>
   selectedDate.value ? accommodationsForDate(selectedDate.value) : [],
 );
@@ -373,7 +384,12 @@ function formatDay(date: string) {
     <div class="card day-detail" v-if="selectedDate">
       <div class="day-detail-head">
         <h3>{{ formatDay(selectedDate) }}</h3>
-        <button type="button" @click="showAddForm = true">+ Neu</button>
+        <div class="day-detail-actions">
+          <button v-if="selectedDateHasExcursion" type="button" class="card-action-btn" @click="showDayOnMap">
+            🗺️ Tag auf Karte anzeigen
+          </button>
+          <button type="button" @click="showAddForm = true">+ Neu</button>
+        </div>
       </div>
 
       <p v-for="acc in dayAccommodations" :key="acc.id" class="acc-note">🛏️ Unterkunft: {{ acc.name }}</p>
@@ -581,6 +597,13 @@ function formatDay(date: string) {
   align-items: center;
   gap: var(--space-2);
   margin-bottom: var(--space-3);
+}
+
+.day-detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
 }
 
 .day-detail h3 {

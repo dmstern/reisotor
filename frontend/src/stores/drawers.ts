@@ -41,6 +41,10 @@ export const useDrawersStore = defineStore('drawers', () => {
   // ausgeblendet, siehe MapView.vue) – exklusiv zu mapFocusKey, daher setzt jede der beiden
   // Focus-Arten die jeweils andere zurück.
   const mapFocusExcursionId = ref<number | null>(null);
+  // Kalendertag, dessen Ausflüge (auch mehrere, z. B. mehrere spontan eingeplante Einzel-Spots)
+  // zusammen als eine Route auf der Karte gezeigt werden – ebenfalls exklusiv zu den beiden
+  // anderen Fokus-Arten (siehe focusMapOnDate).
+  const mapFocusDate = ref<string | null>(null);
   const calendarWidth = ref(loadWidth(CALENDAR_WIDTH_KEY));
   const mapWidth = ref(loadWidth(MAP_WIDTH_KEY));
   // Welche Schublade (falls überhaupt) gerade als Vollbild-Overlay maximiert ist (Drawer.vue).
@@ -74,12 +78,24 @@ export const useDrawersStore = defineStore('drawers', () => {
   function openMapAt(key: string) {
     mapFocusKey.value = key;
     mapFocusExcursionId.value = null;
+    mapFocusDate.value = null;
     mapOpen.value = true;
   }
 
   function openMapForExcursion(excursionId: number) {
     mapFocusExcursionId.value = excursionId;
     mapFocusKey.value = null;
+    mapFocusDate.value = null;
+    mapOpen.value = true;
+  }
+
+  // Zeigt alle Ausflüge eines Tages zusammen auf der Karte (gestrichelte Route über alle
+  // Stationen) – z. B. wenn an einem Tag mehrere Spots spontan eingeplant wurden, ohne dass sie
+  // zu einem gemeinsamen Ausflug zusammengefasst sind. Aufruf aus ScheduleView.vue.
+  function focusMapOnDate(date: string) {
+    mapFocusDate.value = date;
+    mapFocusKey.value = null;
+    mapFocusExcursionId.value = null;
     mapOpen.value = true;
   }
 
@@ -103,6 +119,7 @@ export const useDrawersStore = defineStore('drawers', () => {
     mapOpen,
     mapFocusKey,
     mapFocusExcursionId,
+    mapFocusDate,
     calendarWidth,
     mapWidth,
     maximizedSide,
@@ -111,6 +128,7 @@ export const useDrawersStore = defineStore('drawers', () => {
     toggleMap,
     openMapAt,
     openMapForExcursion,
+    focusMapOnDate,
     maximize,
     restoreMaximized,
     touchLocations,
