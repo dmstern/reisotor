@@ -8,6 +8,7 @@ import { useExcursionsStore } from '../stores/excursions';
 import { useDrawersStore } from '../stores/drawers';
 import ExcursionCard from '../components/ExcursionCard.vue';
 import SpotCard from '../components/SpotCard.vue';
+import DerivedLocationCard from '../components/DerivedLocationCard.vue';
 import SpotOrderPicker from '../components/SpotOrderPicker.vue';
 import Modal from '../components/Modal.vue';
 import Combobox from '../components/Combobox.vue';
@@ -219,12 +220,10 @@ async function addSpotToExcursion(excursionId: number, spotId: number) {
 }
 
 // --- Abgeleitete Orte (Unterkunft, Reise-Start-/Zielorte) ---
-// Ausklappbarer Bereich am oberen Rand der Spots-Sicht: zeigt automatisch alle Orte, die bereits
-// anderswo (Unterkunft, Reise) mit Koordinaten hinterlegt sind, damit man z. B. die Unterkunft
-// oder einen Reise-Zielort direkt per Drag&Drop einem Ausflug als Station hinzufügen kann, ohne
-// sie vorher manuell als Spot anzulegen.
-const showDerivedLocations = ref(false);
-
+// Automatisch als feste Karten in die Spots-Übersicht eingebettet (DerivedLocationCard.vue) –
+// zeigt Orte, die bereits anderswo (Unterkunft, Reise) mit Koordinaten hinterlegt sind, damit man
+// z. B. die Unterkunft oder einen Reise-Zielort direkt per Drag&Drop einem Ausflug als Station
+// hinzufügen kann, ohne sie vorher manuell als Spot anzulegen.
 const derivedLocations = computed<DerivedLocation[]>(() => {
   const result: DerivedLocation[] = [];
   for (const a of accommodations.value) {
@@ -258,11 +257,6 @@ const derivedLocations = computed<DerivedLocation[]>(() => {
   }
   return result;
 });
-
-function onDerivedLocationDragStart(event: DragEvent, loc: DerivedLocation) {
-  event.dataTransfer?.setData('text/derived-location', JSON.stringify(loc));
-  if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
-}
 
 // Wiederverwenden, falls für diesen Ort (per Maps-Link) schon einmal ein Spot angelegt wurde,
 // sonst neu anlegen – so entstehen keine Duplikate, wenn derselbe Ort in mehrere Ausflüge
@@ -382,18 +376,89 @@ const editSpotPreviewImage = computed(() => {
 function spotLikeCount(spotId: number) {
   return spotLikesFor(spotId).length;
 }
-function byLikesThenTitle(a: Spot, b: Spot) {
-  return spotLikeCount(b.id) - spotLikeCount(a.id) || a.title.localeCompare(b.title);
-}
-
-// Toggle in der Spots-Übersicht: nach Likes sortiert (meiste zuerst) statt alphabetisch.
-const sortSpotsByLikes = ref(false);
-const sortedSpots = computed(() => (sortSpotsByLikes.value ? [...spots.value].sort(byLikesThenTitle) : spots.value));
 
 const spotCategoryOptions = computed(() => {
   const used = spots.value.map((s) => s.category).filter((c): c is string => !!c);
   return [...new Set([...SPOT_CATEGORY_SUGGESTIONS, ...used])];
 });
+
+// --- Sortierung, Kategorie-Filter & -Gruppierung der Spots-Übersicht ---
+// Ein "Spots-Item" ist entweder ein echter Spot oder ein abgeleiteter Ort (Unterkunft/Reise) – beide
+// werden gemeinsam sortiert, gefiltert und nach Kategorie gruppiert dargestellt.
+type SpotsGroupItem = { kind: 'spot'; spot: Spot } | { kind: 'derived'; loc: DerivedLocation };
+
+function itemCategory(item: SpotsGroupItem): string {
+  return item.kind === 'spot' ? item.spot.category ?? 'Sonstiges' : item.loc.category;
+}
+function itemTitle(item: SpotsGroupItem): string {
+  return item.kind === 'spot' ? item.spot.title : item.loc.title;
+}
+function itemLikeCount(item: SpotsGroupItem): number {
+  return item.kind === 'spot' ? spotLikeCount(item.spot.id) : 0;
+}
+// Unterkunft/Reise sind keine "echten" Spot-Kategorien (spotCategoryMeta kennt sie nicht) – eigenes
+// Icon je Sammel-Kategorie, sonst wie gewohnt über spotCategoryMeta (inkl. 📍-Fallback).
+function groupIcon(category: string): string {
+  if (category === 'Unterkunft') return '🛏️';
+  if (category === 'Reise') return '🧳';
+  return spotCategoryMeta(category).icon;
+}
+
+const sortMenuOpen = ref(false);
+const sortMode = ref<'alpha' | 'likes'>('alpha');
+
+const categoryMenuOpen = ref(false);
+const categoryFilter = ref<string[]>([]);
+function removeCategoryFilter(cat: string) {
+  categoryFilter.value = categoryFilter.value.filter((c) => c !== cat);
+}
+
+const allSpotItems = computed<SpotsGroupItem[]>(() => [
+  ...spots.value.map((spot): SpotsGroupItem => ({ kind: 'spot', spot })),
+  ...derivedLocations.value.map((loc): SpotsGroupItem => ({ kind: 'derived', loc })),
+]);
+
+const filteredSpotItems = computed(() =>
+  categoryFilter.value.length === 0
+    ? allSpotItems.value
+    : allSpotItems.value.filter((item) => categoryFilter.value.includes(itemCategory(item))),
+);
+
+// Reihenfolge der Gruppen: bekannte Spot-Kategorien (spotCategory.ts-Reihenfolge) zuerst, dann
+// Unterkunft/Reise, dann eigene Freitext-Kategorien alphabetisch, "Sonstiges" (keine Kategorie)
+// zuletzt – bleibt unabhängig von der gewählten Sortierung innerhalb der Gruppen stabil.
+const CATEGORY_GROUP_ORDER = [...SPOT_CATEGORY_SUGGESTIONS, 'Unterkunft', 'Reise'];
+
+function sortedCategoryKeys(categories: Iterable<string>): string[] {
+  const set = new Set(categories);
+  const known = CATEGORY_GROUP_ORDER.filter((c) => set.has(c));
+  const custom = [...set].filter((c) => !CATEGORY_GROUP_ORDER.includes(c) && c !== 'Sonstiges').sort();
+  return [...known, ...custom, ...(set.has('Sonstiges') ? ['Sonstiges'] : [])];
+}
+
+const spotGroups = computed(() => {
+  const groups = new Map<string, SpotsGroupItem[]>();
+  for (const item of filteredSpotItems.value) {
+    const cat = itemCategory(item);
+    const list = groups.get(cat) ?? [];
+    list.push(item);
+    groups.set(cat, list);
+  }
+  for (const list of groups.values()) {
+    list.sort((a, b) =>
+      sortMode.value === 'likes'
+        ? itemLikeCount(b) - itemLikeCount(a) || itemTitle(a).localeCompare(itemTitle(b))
+        : itemTitle(a).localeCompare(itemTitle(b)),
+    );
+  }
+  return sortedCategoryKeys(groups.keys()).map((category) => ({
+    category,
+    icon: groupIcon(category),
+    items: groups.get(category)!,
+  }));
+});
+
+const filterCategoryOptions = computed(() => sortedCategoryKeys(allSpotItems.value.map(itemCategory)));
 
 function checkSpotMapsLink() {
   spotMapsLinkResolved.value = spotForm.value.maps_link ? parseLatLngFromMapsLink(spotForm.value.maps_link) != null : null;
@@ -598,40 +663,31 @@ function showSpotOnMap(spot: Spot) {
     </div>
 
     <div class="spots-col">
-    <div class="derived-locations" v-if="derivedLocations.length">
-      <button type="button" class="derived-toggle" @click="showDerivedLocations = !showDerivedLocations">
-        {{ showDerivedLocations ? '▾' : '▸' }} 🛏️🛫 Unterkunft &amp; Reise-Orte ({{ derivedLocations.length }})
-      </button>
-      <template v-if="showDerivedLocations">
-        <p class="hint">
-          Bereits bei Unterkunft/Reise hinterlegte Orte – ziehe einen davon auf einen Ausflug oben, um ihn dort
-          als Station hinzuzufügen.
-        </p>
-        <div class="derived-list">
-          <div
-            v-for="loc in derivedLocations"
-            :key="loc.key"
-            class="derived-chip"
-            draggable="true"
-            @dragstart="onDerivedLocationDragStart($event, loc)"
-          >
-            {{ loc.icon }} {{ loc.title }}
-          </div>
-        </div>
-      </template>
-    </div>
-
     <div class="header">
       <h2>Spots</h2>
       <div class="header-actions">
-        <button
-          type="button"
-          class="secondary sort-toggle"
-          :class="{ active: sortSpotsByLikes }"
-          @click="sortSpotsByLikes = !sortSpotsByLikes"
-        >
-          {{ sortSpotsByLikes ? '❤️ Nach Likes sortiert' : '🔤 Alphabetisch sortiert' }}
-        </button>
+        <div class="dropdown">
+          <button
+            type="button"
+            class="secondary sort-btn"
+            title="Sortierung ändern"
+            aria-label="Sortierung ändern"
+            @click="sortMenuOpen = !sortMenuOpen"
+          >
+            🔀 {{ sortMode === 'likes' ? 'Nach Likes' : 'Alphabetisch' }}
+          </button>
+          <template v-if="sortMenuOpen">
+            <div class="picker-backdrop" @click="sortMenuOpen = false"></div>
+            <div class="picker-menu">
+              <button type="button" :class="{ active: sortMode === 'alpha' }" @click="sortMode = 'alpha'; sortMenuOpen = false">
+                🔤 Alphabetisch
+              </button>
+              <button type="button" :class="{ active: sortMode === 'likes' }" @click="sortMode = 'likes'; sortMenuOpen = false">
+                ❤️ Nach Likes
+              </button>
+            </div>
+          </template>
+        </div>
         <button @click="showSpotForm = true">+ Neuer Spot</button>
       </div>
     </div>
@@ -640,6 +696,35 @@ function showSpotOnMap(spot: Spot) {
       auch unabhängig von einem Ausflug. Tipp: Ziehe eine Spot-Karte direkt auf einen Ausflug weiter oben,
       um sie dort als Station hinzuzufügen.
     </p>
+
+    <div class="filter-bar" v-if="filterCategoryOptions.length">
+      <div class="filter-chips">
+        <span v-for="cat in categoryFilter" :key="cat" class="filter-chip">
+          {{ groupIcon(cat) }} {{ cat }}
+          <button type="button" @click="removeCategoryFilter(cat)" aria-label="Filter entfernen">✕</button>
+        </span>
+      </div>
+      <div class="dropdown">
+        <button
+          type="button"
+          class="secondary category-btn"
+          title="Nach Kategorie filtern"
+          aria-label="Nach Kategorie filtern"
+          @click="categoryMenuOpen = !categoryMenuOpen"
+        >
+          🏷️ Kategorie
+        </button>
+        <template v-if="categoryMenuOpen">
+          <div class="picker-backdrop" @click="categoryMenuOpen = false"></div>
+          <div class="picker-menu category-menu">
+            <label v-for="cat in filterCategoryOptions" :key="cat" class="category-option">
+              <input type="checkbox" :value="cat" v-model="categoryFilter" />
+              {{ groupIcon(cat) }} {{ cat }}
+            </label>
+          </div>
+        </template>
+      </div>
+    </div>
 
     <Modal :model-value="showSpotForm" title="Neuer Spot" @update:model-value="(v) => !v && closeSpotForm()">
       <form class="edit-form" @submit.prevent="addSpot">
@@ -664,26 +749,30 @@ function showSpotOnMap(spot: Spot) {
       </form>
     </Modal>
 
-    <section class="group" v-if="sortedSpots.length">
+    <section class="group category-group" v-for="grp in spotGroups" :key="grp.category">
+      <h3 class="category-heading">{{ grp.icon }} {{ grp.category }}</h3>
       <TransitionGroup tag="div" name="list" class="grid cards">
-        <SpotCard
-          v-for="spot in sortedSpots"
-          :key="spot.id"
-          :spot="spot"
-          :creator-label="creatorLabel(spot.created_by)"
-          :like-count="spotLikeCount(spot.id)"
-          :liked="spotLikedByMe(spot.id)"
-          :comments="spotCommentItemsFor(spot.id)"
-          @edit="startEditSpot"
-          @remove="removeSpot"
-          @show-on-map="showSpotOnMap"
-          @toggle-like="toggleSpotLike(spot.id)"
-          @submit-comment="(content) => submitSpotComment(spot.id, content)"
-          @remove-comment="removeSpotComment"
-        />
+        <template v-for="item in grp.items" :key="item.kind === 'spot' ? `spot-${item.spot.id}` : item.loc.key">
+          <SpotCard
+            v-if="item.kind === 'spot'"
+            :key="`spot-${item.spot.id}`"
+            :spot="item.spot"
+            :creator-label="creatorLabel(item.spot.created_by)"
+            :like-count="spotLikeCount(item.spot.id)"
+            :liked="spotLikedByMe(item.spot.id)"
+            :comments="spotCommentItemsFor(item.spot.id)"
+            @edit="startEditSpot"
+            @remove="removeSpot"
+            @show-on-map="showSpotOnMap"
+            @toggle-like="toggleSpotLike(item.spot.id)"
+            @submit-comment="(content) => submitSpotComment(item.spot.id, content)"
+            @remove-comment="removeSpotComment"
+          />
+          <DerivedLocationCard v-else :key="item.loc.key" :location="item.loc" />
+        </template>
       </TransitionGroup>
     </section>
-    <p v-if="!spots.length" class="empty">Noch keine Spots angelegt.</p>
+    <p v-if="!spotGroups.length" class="empty">Noch keine Spots angelegt.</p>
 
     <Modal
       :model-value="editingSpot !== null"
@@ -731,12 +820,6 @@ function showSpotOnMap(spot: Spot) {
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
-}
-
-.sort-toggle.active {
-  background: var(--color-primary-tint);
-  border-color: var(--color-primary);
-  color: var(--color-primary-dark);
 }
 
 .hint {
@@ -861,38 +944,127 @@ function showSpotOnMap(spot: Spot) {
   }
 }
 
-.derived-locations {
-  margin-bottom: var(--space-3);
+.dropdown {
+  position: relative;
 }
 
-.derived-toggle {
+.sort-btn.active,
+.category-btn.active {
+  background: var(--color-primary-tint);
+  border-color: var(--color-primary);
+  color: var(--color-primary-dark);
+}
+
+.picker-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+}
+
+.picker-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 180px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-2);
+  z-index: 21;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.picker-menu button {
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  font-size: 0.85rem;
+  white-space: nowrap;
   background: none;
   border: none;
-  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+}
+
+.picker-menu button:hover {
+  background: var(--color-hover);
+}
+
+.picker-menu button.active {
   color: var(--color-primary-dark);
   font-weight: 600;
+}
+
+.category-menu {
+  min-width: 220px;
+}
+
+.category-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 6px 8px;
   font-size: 0.9rem;
+  font-weight: 400;
+  border-radius: var(--radius-sm);
   cursor: pointer;
 }
 
-.derived-list {
+.category-option:hover {
+  background: var(--color-hover);
+}
+
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-3);
+}
+
+.filter-chips {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
-  margin-top: var(--space-2);
+  flex: 1;
 }
 
-.derived-chip {
-  background: var(--color-hover);
-  border: 1px solid var(--color-border);
+.filter-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--color-primary-tint);
+  border: 1px solid var(--color-primary);
+  color: var(--color-primary-dark);
   border-radius: 999px;
-  padding: 4px 12px;
-  font-size: 0.85rem;
-  cursor: grab;
+  padding: 3px 6px 3px 12px;
+  font-size: 0.82rem;
+  font-weight: 600;
 }
 
-.derived-chip:active {
-  cursor: grabbing;
+.filter-chip button {
+  background: none;
+  border: none;
+  padding: 2px;
+  color: inherit;
+  cursor: pointer;
+  font-size: 0.75rem;
+  line-height: 1;
+  display: flex;
+}
+
+.category-btn {
+  font-size: 0.85rem;
+}
+
+.category-heading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .empty {
