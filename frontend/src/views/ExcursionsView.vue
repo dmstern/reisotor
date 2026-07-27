@@ -1,49 +1,43 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, type ComponentPublicInstance } from 'vue';
 import { api } from '../api/client';
-import type { Accommodation, ExcursionComment, ExcursionLike, Spot, TravelItem, User } from '../api/types';
+import type { Accommodation, Spot, TravelItem, User } from '../api/types';
 import { useAuthStore } from '../stores/auth';
 import { useTripStore } from '../stores/trip';
-import { useExcursionsStore } from '../stores/excursions';
 import { useSpotsStore } from '../stores/spots';
 import { useDrawersStore } from '../stores/drawers';
-import ExcursionCard from '../components/ExcursionCard.vue';
 import SpotCard from '../components/SpotCard.vue';
 import DerivedLocationCard from '../components/DerivedLocationCard.vue';
-import SpotOrderPicker from '../components/SpotOrderPicker.vue';
 import Modal from '../components/Modal.vue';
 import Combobox from '../components/Combobox.vue';
 import { parseLatLngFromMapsLink, tilePreviewUrl } from '../utils/googleMaps';
 import { spotCategoryMeta, SPOT_CATEGORY_SUGGESTIONS } from '../utils/spotCategory';
 import type { DerivedLocation } from '../utils/derivedLocation';
 
+// Ausflüge-Verwaltung (Anlegen/Bearbeiten/Einplanen) lebt jetzt in der eigenständigen
+// Ausflüge-Schublade (views/ExcursionsDrawer.vue, rechter Schubladen-Platz) statt hier – diese
+// Sicht zeigt nur noch Spots (inkl. der automatisch eingebetteten Unterkunft-/Reise-Orte). Lädt
+// deshalb eigene Unterkunft-/Reise-/Nutzer-Daten unabhängig von der Ausflüge-Schublade, analog zur
+// bereits bestehenden Duplikation zwischen der früheren MapView.vue und dieser View.
 const auth = useAuthStore();
 const tripStore = useTripStore();
 const tripId = tripStore.currentTripId as number;
-const excursionsStore = useExcursionsStore();
 const spotsStore = useSpotsStore();
 const drawers = useDrawersStore();
 
 const users = ref<User[]>([]);
-const likes = ref<ExcursionLike[]>([]);
-const comments = ref<ExcursionComment[]>([]);
 const accommodations = ref<Accommodation[]>([]);
 const travelItems = ref<TravelItem[]>([]);
 const loading = ref(true);
 
 onMounted(async () => {
-  const [usersRes, likesRes, commentsRes, accommodationRes, travelRes] = await Promise.all([
+  const [usersRes, accommodationRes, travelRes] = await Promise.all([
     api.get<User[]>('/users'),
-    api.get<ExcursionLike[]>(`/ideas/likes?trip_id=${tripId}`),
-    api.get<ExcursionComment[]>(`/ideas/comments?trip_id=${tripId}`),
     api.get<Accommodation[]>(`/accommodation?trip_id=${tripId}`),
     api.get<TravelItem[]>(`/travel?trip_id=${tripId}`),
-    excursionsStore.load(),
     spotsStore.load(),
   ]);
   users.value = usersRes;
-  likes.value = likesRes;
-  comments.value = commentsRes;
   accommodations.value = accommodationRes;
   travelItems.value = travelRes;
   loading.value = false;
@@ -58,44 +52,8 @@ function author(id: number) {
   return users.value.find((u) => u.id === id);
 }
 
-// --- Likes/Kommentare Ausflüge (weiterhin an ideas/idea_likes/idea_comments gebunden) ---
-function likesFor(ideaId: number) {
-  return likes.value.filter((l) => l.idea_id === ideaId);
-}
-function likedByMe(ideaId: number) {
-  return likesFor(ideaId).some((l) => l.user_id === auth.user?.id);
-}
-function commentsFor(ideaId: number) {
-  return comments.value.filter((c) => c.idea_id === ideaId).sort((a, b) => a.created_at.localeCompare(b.created_at));
-}
-function commentItemsFor(ideaId: number) {
-  return commentsFor(ideaId).map((c) => ({
-    id: c.id,
-    avatar: author(c.author_id)?.avatar ?? '❓',
-    username: author(c.author_id)?.username ?? '?',
-    content: c.content,
-    canRemove: c.author_id === auth.user?.id,
-  }));
-}
-async function toggleLike(ideaId: number) {
-  const result = await api.post<{ liked: boolean }>(`/ideas/${ideaId}/like`);
-  if (result.liked) {
-    likes.value.push({ id: Date.now(), idea_id: ideaId, user_id: auth.user!.id });
-  } else {
-    likes.value = likes.value.filter((l) => !(l.idea_id === ideaId && l.user_id === auth.user!.id));
-  }
-}
-async function submitComment(ideaId: number, content: string) {
-  const created = await api.post<ExcursionComment>(`/ideas/${ideaId}/comments`, { content });
-  comments.value.push(created);
-}
-async function removeComment(id: number) {
-  await api.delete(`/ideas/comments/${id}`);
-  comments.value = comments.value.filter((c) => c.id !== id);
-}
-
-// --- Likes/Kommentare Spots (jetzt über stores/spots.ts, geteilt mit MapView.vue/
-// ExcursionDetailDialog.vue, die Spot-Detail-Dialoge außerhalb dieser View öffnen können) ---
+// --- Likes/Kommentare Spots (über stores/spots.ts, geteilt mit TripMap.vue/
+// ExcursionDetailDialog.vue, die Spot-Detail-Dialoge außerhalb dieser Sicht öffnen können) ---
 function spotCommentItemsFor(spotId: number) {
   return spotsStore.commentsFor(spotId).map((c) => ({
     id: c.id,
@@ -115,90 +73,9 @@ async function removeSpotComment(id: number) {
   await spotsStore.removeComment(id);
 }
 
-// --- Ausflüge ---
-const showExcursionForm = ref(false);
-const emptyExcursionForm = () => ({ title: '', image_url: '', note: '', date: '', station_keys: [] as string[] });
-const excursionForm = ref(emptyExcursionForm());
-
-const editingExcursion = ref<number | null>(null);
-const editExcursionForm = ref(emptyExcursionForm());
-
-const unplannedExcursions = computed(() => excursionsStore.excursions.filter((e) => !e.date));
-const plannedExcursions = computed(() =>
-  [...excursionsStore.excursions].filter((e) => e.date).sort((a, b) => (a.date ?? '').localeCompare(b.date ?? '')),
-);
-
-function closeExcursionForm() {
-  showExcursionForm.value = false;
-  excursionForm.value = emptyExcursionForm();
-}
-
-async function addExcursion() {
-  if (!excursionForm.value.title.trim()) return;
-  await excursionsStore.create({
-    title: excursionForm.value.title.trim(),
-    image_url: excursionForm.value.image_url || undefined,
-    note: excursionForm.value.note || undefined,
-    date: excursionForm.value.date || undefined,
-    station_keys: excursionForm.value.station_keys,
-  });
-  closeExcursionForm();
-}
-
-function startEditExcursion(excursion: { id: number; title: string; image_url: string | null; note: string | null; date: string | null; station_keys: string[] }) {
-  editingExcursion.value = excursion.id;
-  editExcursionForm.value = {
-    title: excursion.title,
-    image_url: excursion.image_url ?? '',
-    note: excursion.note ?? '',
-    date: excursion.date ?? '',
-    station_keys: [...excursion.station_keys],
-  };
-}
-
-async function submitEditExcursion() {
-  if (editingExcursion.value == null || !editExcursionForm.value.title.trim()) return;
-  await excursionsStore.update(editingExcursion.value, {
-    title: editExcursionForm.value.title.trim(),
-    image_url: editExcursionForm.value.image_url || undefined,
-    note: editExcursionForm.value.note || undefined,
-    date: editExcursionForm.value.date || undefined,
-    station_keys: editExcursionForm.value.station_keys,
-  });
-  editingExcursion.value = null;
-}
-
-async function removeExcursion(id: number) {
-  const excursion = excursionsStore.excursions.find((e) => e.id === id);
-  if (excursion?.date) {
-    const confirmed = window.confirm(
-      'Dieser Ausflug ist bereits im Kalender eingeplant. Wirklich löschen? Die zugeordneten Spots bleiben erhalten und werden nicht mitgelöscht.',
-    );
-    if (!confirmed) return;
-  }
-  await excursionsStore.remove(id);
-}
-
-// Spot per Drag&Drop aus der Spots-Sicht auf eine Ausflug-Karte fallen lassen: als Station
-// hinzufügen (ExcursionCard.vue ist die Drop-Zone, emittiert die abgelegte Spot-Id).
-async function addSpotToExcursion(excursionId: number, spotId: number) {
-  const excursion = excursionsStore.excursions.find((e) => e.id === excursionId);
-  const key = `spot-${spotId}`;
-  if (!excursion || excursion.station_keys.includes(key)) return;
-  await excursionsStore.update(excursionId, {
-    title: excursion.title,
-    image_url: excursion.image_url ?? undefined,
-    note: excursion.note ?? undefined,
-    date: excursion.date ?? undefined,
-    station_keys: [...excursion.station_keys, key],
-  });
-}
-
 // --- Abgeleitete Orte (Unterkunft, Reise-Start-/Zielorte) ---
 // Automatisch als feste Karten in die Spots-Übersicht eingebettet (DerivedLocationCard.vue) –
-// zeigt Orte, die bereits anderswo (Unterkunft, Reise) mit Koordinaten hinterlegt sind, damit man
-// z. B. die Unterkunft oder einen Reise-Zielort direkt per Drag&Drop einem Ausflug als Station
-// hinzufügen kann, ohne sie vorher manuell als Spot anzulegen.
+// zeigt Orte, die bereits anderswo (Unterkunft, Reise) mit Koordinaten hinterlegt sind.
 const derivedLocations = computed<DerivedLocation[]>(() => {
   const result: DerivedLocation[] = [];
   for (const a of accommodations.value) {
@@ -232,83 +109,6 @@ const derivedLocations = computed<DerivedLocation[]>(() => {
   }
   return result;
 });
-
-// loc.key ist bereits der fertige Stations-Schlüssel (gleiches Format wie Excursion.station_keys,
-// siehe utils/excursionStations.ts) – anders als früher muss dafür kein eigener Spot mehr angelegt
-// werden, die Unterkunft/der Reise-Ort bleibt als solcher erkennbar (kein Duplikat in der
-// Spots-Übersicht, Klick auf die Station öffnet den echten Unterkunft-/Reise-Dialog).
-
-// Beim Ablegen auf einer Ausflug-Karte (Drag&Drop außerhalb des Dialogs): sofort speichern, gleiches
-// Duplikat-Check-Muster wie addSpotToExcursion.
-async function addDerivedLocationToExcursion(excursionId: number, loc: DerivedLocation) {
-  const excursion = excursionsStore.excursions.find((e) => e.id === excursionId);
-  if (!excursion || excursion.station_keys.includes(loc.key)) return;
-  await excursionsStore.update(excursionId, {
-    title: excursion.title,
-    image_url: excursion.image_url ?? undefined,
-    note: excursion.note ?? undefined,
-    date: excursion.date ?? undefined,
-    station_keys: [...excursion.station_keys, loc.key],
-  });
-}
-
-// Auswahl im Anlege-/Bearbeiten-Dialog (SpotOrderPicker): landet erstmal nur lokal im Formular, bis
-// "Speichern" gedrückt wird.
-function pickDerivedLocationForNewForm(loc: DerivedLocation) {
-  excursionForm.value.station_keys.push(loc.key);
-}
-function pickDerivedLocationForEditForm(loc: DerivedLocation) {
-  editExcursionForm.value.station_keys.push(loc.key);
-}
-
-// Drop-Zone, um die Kalender-Einplanung rückgängig zu machen: ein geplanter Ausflug kann aus dem
-// "Geplant"-Bereich (oder direkt aus der Kalender-Schublade) hierher zurückgezogen werden.
-// Zähler statt Boolean, da dragenter/dragleave beim Überqueren von Kind-Elementen mehrfach feuern.
-const unplannedDragOverCount = ref(0);
-const unplannedDragOver = computed(() => unplannedDragOverCount.value > 0);
-
-// dataTransfer.types ist (anders als getData) schon bei dragenter/dragleave verfügbar – damit
-// reagiert die Sektion nur auf Ausflug-Drags. Ohne diesen Check würde beim Ziehen eines Spots
-// über eine einzelne Ausflug-Karte hinweg (dropSpot-Feature) die ganze Sektion grün aufleuchten,
-// weil dragenter/dragleave von Kind-Elementen an den umschließenden Container durchbubbeln.
-function isExcursionDrag(event: DragEvent) {
-  return !!event.dataTransfer?.types.includes('text/excursion-id');
-}
-
-function onUnplannedDragEnter(event: DragEvent) {
-  if (!isExcursionDrag(event)) return;
-  unplannedDragOverCount.value++;
-}
-function onUnplannedDragLeave(event: DragEvent) {
-  if (!isExcursionDrag(event)) return;
-  unplannedDragOverCount.value = Math.max(0, unplannedDragOverCount.value - 1);
-}
-function onUnplannedDrop(event: DragEvent) {
-  unplannedDragOverCount.value = 0;
-  const raw = event.dataTransfer?.getData('text/excursion-id');
-  if (!raw) return;
-  excursionsStore.setDate(Number(raw), null);
-}
-
-// "Geplant" bekommt dieselbe Dropzone-Optik wie "In Planung" – ein Ausflug wird beim Ziehen
-// weiterhin nur auf DIESE beiden Status-Bereiche fallen gelassen, nie auf einzelne Ausflug-Karten
-// (siehe isSpotDrag-Check in ExcursionCard.vue). Ein konkretes Datum lässt sich aus einem Drop
-// hier aber nicht herleiten (das passiert weiterhin per Drag in die Kalender-Schublade) – der
-// Drop selbst bleibt daher bewusst folgenlos, nur der Zähler wird zurückgesetzt.
-const plannedDragOverCount = ref(0);
-const plannedDragOver = computed(() => plannedDragOverCount.value > 0);
-
-function onPlannedDragEnter(event: DragEvent) {
-  if (!isExcursionDrag(event)) return;
-  plannedDragOverCount.value++;
-}
-function onPlannedDragLeave(event: DragEvent) {
-  if (!isExcursionDrag(event)) return;
-  plannedDragOverCount.value = Math.max(0, plannedDragOverCount.value - 1);
-}
-function onPlannedDrop() {
-  plannedDragOverCount.value = 0;
-}
 
 // --- Spots ---
 const showSpotForm = ref(false);
@@ -499,295 +299,157 @@ function showSpotOnMap(spot: Spot) {
 
 <template>
   <div class="page" v-if="!loading">
-    <div class="layout">
-    <div class="excursions-col">
-    <div class="header">
-      <h1>Ausflüge</h1>
-      <button @click="showExcursionForm = true">+ Neuer Ausflug</button>
-    </div>
-
-    <Modal :model-value="showExcursionForm" title="Neuer Ausflug" @update:model-value="(v) => !v && closeExcursionForm()">
-      <form class="edit-form" @submit.prevent="addExcursion">
-        <input v-model="excursionForm.title" type="text" placeholder="Titel" required />
-        <input v-model="excursionForm.image_url" type="url" placeholder="Bild-URL (optional)" />
-        <textarea v-model="excursionForm.note" placeholder="Notiz (optional)" rows="4"></textarea>
-        <p class="syntax-hint">
-          <code>**fett**</code> · <code>_kursiv_</code> · <code>* Punkt</code> für Listen · Links werden
-          automatisch erkannt
-        </p>
-        <label class="date-label">
-          Datum (optional – ansonsten "In Planung")
-          <input v-model="excursionForm.date" type="date" />
-        </label>
-        <SpotOrderPicker
-          v-if="spotsStore.spots.length || derivedLocations.length"
-          v-model="excursionForm.station_keys"
-          :spots="spotsStore.spots"
-          :like-count="spotsStore.likeCountFor"
-          :derived-locations="derivedLocations"
-          @pick-derived-location="pickDerivedLocationForNewForm"
-        />
-        <button type="submit">Speichern</button>
-      </form>
-    </Modal>
-
-    <section
-      class="group dropzone"
-      :class="{ 'drag-over': unplannedDragOver }"
-      @dragover.prevent
-      @dragenter.prevent="onUnplannedDragEnter"
-      @dragleave="onUnplannedDragLeave"
-      @drop.prevent="onUnplannedDrop"
-    >
-      <h2>📝 In Planung</h2>
-      <TransitionGroup v-if="unplannedExcursions.length" tag="div" name="list" class="entries">
-        <ExcursionCard
-          v-for="excursion in unplannedExcursions"
-          :key="excursion.id"
-          :excursion="excursion"
-          :creator-label="creatorLabel(excursion.created_by)"
-          :like-count="likesFor(excursion.id).length"
-          :liked="likedByMe(excursion.id)"
-          :comments="commentItemsFor(excursion.id)"
-          :stations="spotsStore.spots"
-          :accommodations="accommodations"
-          :travel-items="travelItems"
-          @edit="startEditExcursion"
-          @remove="removeExcursion"
-          @toggle-like="toggleLike(excursion.id)"
-          @submit-comment="(content) => submitComment(excursion.id, content)"
-          @remove-comment="removeComment"
-          @drop-spot="(spotId) => addSpotToExcursion(excursion.id, spotId)"
-          @drop-derived-location="(loc) => addDerivedLocationToExcursion(excursion.id, loc as DerivedLocation)"
-          @show-on-map="drawers.openMapForExcursion(excursion.id)"
-          @edit-station-spot="startEditSpot"
-        />
-      </TransitionGroup>
-      <p v-else class="empty dropzone-hint">
-        Noch keine Ausflüge in Planung – geplante Ausflüge kannst du hierher ziehen, um die
-        Einplanung rückgängig zu machen.
-      </p>
-    </section>
-
-    <section
-      class="group dropzone"
-      :class="{ 'drag-over': plannedDragOver }"
-      v-if="plannedExcursions.length"
-      @dragover.prevent
-      @dragenter.prevent="onPlannedDragEnter"
-      @dragleave="onPlannedDragLeave"
-      @drop.prevent="onPlannedDrop"
-    >
-      <h2>📅 Geplant</h2>
-      <TransitionGroup tag="div" name="list" class="entries">
-        <ExcursionCard
-          v-for="excursion in plannedExcursions"
-          :key="excursion.id"
-          :excursion="excursion"
-          :creator-label="creatorLabel(excursion.created_by)"
-          :like-count="likesFor(excursion.id).length"
-          :liked="likedByMe(excursion.id)"
-          :comments="commentItemsFor(excursion.id)"
-          :stations="spotsStore.spots"
-          :accommodations="accommodations"
-          :travel-items="travelItems"
-          @edit="startEditExcursion"
-          @remove="removeExcursion"
-          @toggle-like="toggleLike(excursion.id)"
-          @submit-comment="(content) => submitComment(excursion.id, content)"
-          @remove-comment="removeComment"
-          @drop-spot="(spotId) => addSpotToExcursion(excursion.id, spotId)"
-          @drop-derived-location="(loc) => addDerivedLocationToExcursion(excursion.id, loc as DerivedLocation)"
-          @show-on-map="drawers.openMapForExcursion(excursion.id)"
-          @edit-station-spot="startEditSpot"
-        />
-      </TransitionGroup>
-    </section>
-    <p v-if="!excursionsStore.excursions.length" class="empty">Noch keine Ausflüge angelegt.</p>
-
-    <Modal
-      :model-value="editingExcursion !== null"
-      title="Ausflug bearbeiten"
-      @update:model-value="(v) => !v && (editingExcursion = null)"
-    >
-      <form class="edit-form" @submit.prevent="submitEditExcursion">
-        <input v-model="editExcursionForm.title" type="text" placeholder="Titel" required />
-        <input v-model="editExcursionForm.image_url" type="url" placeholder="Bild-URL (optional)" />
-        <textarea v-model="editExcursionForm.note" placeholder="Notiz (optional)" rows="4"></textarea>
-        <p class="syntax-hint">
-          <code>**fett**</code> · <code>_kursiv_</code> · <code>* Punkt</code> für Listen · Links werden
-          automatisch erkannt
-        </p>
-        <label class="date-label">
-          Datum (optional – ansonsten "In Planung")
-          <input v-model="editExcursionForm.date" type="date" />
-        </label>
-        <SpotOrderPicker
-          v-if="spotsStore.spots.length || derivedLocations.length"
-          v-model="editExcursionForm.station_keys"
-          :spots="spotsStore.spots"
-          :like-count="spotsStore.likeCountFor"
-          :derived-locations="derivedLocations"
-          @pick-derived-location="pickDerivedLocationForEditForm"
-        />
-        <button type="submit">Speichern</button>
-      </form>
-    </Modal>
-
-    </div>
-
     <div class="spots-col">
-    <div class="header">
-      <h2>Spots</h2>
-      <div class="header-actions">
+      <div class="header">
+        <h1>Spots</h1>
+        <div class="header-actions">
+          <div class="dropdown">
+            <button
+              type="button"
+              class="secondary sort-btn"
+              title="Sortierung ändern"
+              aria-label="Sortierung ändern"
+              @click="sortMenuOpen = !sortMenuOpen"
+            >
+              🔀 {{ sortMode === 'likes' ? 'Nach Likes' : 'Alphabetisch' }}
+            </button>
+            <template v-if="sortMenuOpen">
+              <div class="picker-backdrop" @click="sortMenuOpen = false"></div>
+              <div class="picker-menu">
+                <button type="button" :class="{ active: sortMode === 'alpha' }" @click="sortMode = 'alpha'; sortMenuOpen = false">
+                  🔤 Alphabetisch
+                </button>
+                <button type="button" :class="{ active: sortMode === 'likes' }" @click="sortMode = 'likes'; sortMenuOpen = false">
+                  ❤️ Nach Likes
+                </button>
+              </div>
+            </template>
+          </div>
+          <button @click="showSpotForm = true">+ Neuer Spot</button>
+        </div>
+      </div>
+      <p class="hint">
+        Orte (Restaurant, Sehenswürdigkeit, Strand, …), die du als Stationen bei Ausflügen zuordnen kannst –
+        auch unabhängig von einem Ausflug. Tipp: Ziehe eine Spot-Karte direkt auf einen Ausflug in der
+        Ausflüge-Schublade oder auf einen Kalendertag, um sie dort als Station bzw. spontan einzuplanen.
+      </p>
+
+      <div class="filter-bar" v-if="filterCategoryOptions.length">
+        <div class="filter-chips">
+          <span v-for="cat in categoryFilter" :key="cat" class="filter-chip">
+            {{ groupIcon(cat) }} {{ cat }}
+            <button type="button" @click="removeCategoryFilter(cat)" aria-label="Filter entfernen">✕</button>
+          </span>
+        </div>
         <div class="dropdown">
           <button
             type="button"
-            class="secondary sort-btn"
-            title="Sortierung ändern"
-            aria-label="Sortierung ändern"
-            @click="sortMenuOpen = !sortMenuOpen"
+            class="secondary category-btn"
+            title="Nach Kategorie filtern"
+            aria-label="Nach Kategorie filtern"
+            @click="categoryMenuOpen = !categoryMenuOpen"
           >
-            🔀 {{ sortMode === 'likes' ? 'Nach Likes' : 'Alphabetisch' }}
+            🏷️ Kategorie
           </button>
-          <template v-if="sortMenuOpen">
-            <div class="picker-backdrop" @click="sortMenuOpen = false"></div>
-            <div class="picker-menu">
-              <button type="button" :class="{ active: sortMode === 'alpha' }" @click="sortMode = 'alpha'; sortMenuOpen = false">
-                🔤 Alphabetisch
-              </button>
-              <button type="button" :class="{ active: sortMode === 'likes' }" @click="sortMode = 'likes'; sortMenuOpen = false">
-                ❤️ Nach Likes
-              </button>
+          <template v-if="categoryMenuOpen">
+            <div class="picker-backdrop" @click="categoryMenuOpen = false"></div>
+            <div class="picker-menu category-menu">
+              <label v-for="cat in filterCategoryOptions" :key="cat" class="category-option">
+                <input type="checkbox" :value="cat" v-model="categoryFilter" />
+                {{ groupIcon(cat) }} {{ cat }}
+              </label>
             </div>
           </template>
         </div>
-        <button @click="showSpotForm = true">+ Neuer Spot</button>
       </div>
-    </div>
-    <p class="hint">
-      Orte (Restaurant, Sehenswürdigkeit, Strand, …), die du als Stationen bei Ausflügen zuordnen kannst –
-      auch unabhängig von einem Ausflug. Tipp: Ziehe eine Spot-Karte direkt auf einen Ausflug weiter oben,
-      um sie dort als Station hinzuzufügen.
-    </p>
 
-    <div class="filter-bar" v-if="filterCategoryOptions.length">
-      <div class="filter-chips">
-        <span v-for="cat in categoryFilter" :key="cat" class="filter-chip">
-          {{ groupIcon(cat) }} {{ cat }}
-          <button type="button" @click="removeCategoryFilter(cat)" aria-label="Filter entfernen">✕</button>
-        </span>
-      </div>
-      <div class="dropdown">
-        <button
-          type="button"
-          class="secondary category-btn"
-          title="Nach Kategorie filtern"
-          aria-label="Nach Kategorie filtern"
-          @click="categoryMenuOpen = !categoryMenuOpen"
-        >
-          🏷️ Kategorie
-        </button>
-        <template v-if="categoryMenuOpen">
-          <div class="picker-backdrop" @click="categoryMenuOpen = false"></div>
-          <div class="picker-menu category-menu">
-            <label v-for="cat in filterCategoryOptions" :key="cat" class="category-option">
-              <input type="checkbox" :value="cat" v-model="categoryFilter" />
-              {{ groupIcon(cat) }} {{ cat }}
-            </label>
+      <Modal :model-value="showSpotForm" title="Neuer Spot" @update:model-value="(v) => !v && closeSpotForm()">
+        <form class="edit-form" @submit.prevent="addSpot">
+          <div class="form-image-banner" :style="spotPreviewImage ? { backgroundImage: `url(${spotPreviewImage})` } : {}">
+            <span v-if="!spotPreviewImage" class="placeholder">{{ spotCategoryMeta(spotForm.category).icon }}</span>
           </div>
-        </template>
-      </div>
-    </div>
-
-    <Modal :model-value="showSpotForm" title="Neuer Spot" @update:model-value="(v) => !v && closeSpotForm()">
-      <form class="edit-form" @submit.prevent="addSpot">
-        <div class="form-image-banner" :style="spotPreviewImage ? { backgroundImage: `url(${spotPreviewImage})` } : {}">
-          <span v-if="!spotPreviewImage" class="placeholder">{{ spotCategoryMeta(spotForm.category).icon }}</span>
-        </div>
-        <input v-model="spotForm.title" type="text" placeholder="Titel" required />
-        <input v-model="spotForm.image_url" type="url" placeholder="Bild-URL (optional)" />
-        <Combobox v-model="spotForm.category" :options="spotCategoryOptions" placeholder="Kategorie (optional)" />
-        <input
-          v-model="spotForm.maps_link"
-          type="url"
-          placeholder="Maps-Link (Google/Apple) (optional)"
-          @blur="checkSpotMapsLink"
-        />
-        <p v-if="spotMapsLinkResolved === true" class="hint success">📍 Standort erkannt – erscheint auf der Karte</p>
-        <p v-if="spotMapsLinkResolved === false" class="hint">
-          Standort wird beim Speichern serverseitig aufgelöst (auch Kurzlinks funktionieren).
-        </p>
-        <textarea v-model="spotForm.note" placeholder="Notiz (optional)" rows="3"></textarea>
-        <button type="submit">Speichern</button>
-      </form>
-    </Modal>
-
-    <nav class="category-nav" v-if="spotGroups.length > 1" aria-label="Zu Kategorie springen">
-      <button
-        v-for="grp in spotGroups"
-        :key="grp.category"
-        type="button"
-        class="category-nav-item"
-        @click="scrollToCategory(grp.category)"
-      >
-        <span class="category-nav-icon">{{ grp.icon }}</span>
-        <span class="category-nav-label">{{ grp.category }}</span>
-      </button>
-    </nav>
-
-    <section class="group category-group" v-for="grp in spotGroups" :key="grp.category">
-      <h3 class="category-heading" :ref="(el) => setCategoryRef(grp.category, el)">{{ grp.icon }} {{ grp.category }}</h3>
-      <TransitionGroup tag="div" name="list" class="grid cards">
-        <template v-for="item in grp.items" :key="item.kind === 'spot' ? `spot-${item.spot.id}` : item.loc.key">
-          <SpotCard
-            v-if="item.kind === 'spot'"
-            :key="`spot-${item.spot.id}`"
-            :spot="item.spot"
-            :creator-label="creatorLabel(item.spot.created_by)"
-            :like-count="spotsStore.likeCountFor(item.spot.id)"
-            :liked="spotsStore.likedByMe(item.spot.id, auth.user?.id)"
-            :comments="spotCommentItemsFor(item.spot.id)"
-            @edit="startEditSpot"
-            @remove="removeSpot"
-            @show-on-map="showSpotOnMap"
-            @toggle-like="toggleSpotLike(item.spot.id)"
-            @submit-comment="(content) => submitSpotComment(item.spot.id, content)"
-            @remove-comment="removeSpotComment"
+          <input v-model="spotForm.title" type="text" placeholder="Titel" required />
+          <input v-model="spotForm.image_url" type="url" placeholder="Bild-URL (optional)" />
+          <Combobox v-model="spotForm.category" :options="spotCategoryOptions" placeholder="Kategorie (optional)" />
+          <input
+            v-model="spotForm.maps_link"
+            type="url"
+            placeholder="Maps-Link (Google/Apple) (optional)"
+            @blur="checkSpotMapsLink"
           />
-          <DerivedLocationCard v-else :key="item.loc.key" :location="item.loc" />
-        </template>
-      </TransitionGroup>
-    </section>
-    <p v-if="!spotGroups.length" class="empty">Noch keine Spots angelegt.</p>
+          <p v-if="spotMapsLinkResolved === true" class="hint success">📍 Standort erkannt – erscheint auf der Karte</p>
+          <p v-if="spotMapsLinkResolved === false" class="hint">
+            Standort wird beim Speichern serverseitig aufgelöst (auch Kurzlinks funktionieren).
+          </p>
+          <textarea v-model="spotForm.note" placeholder="Notiz (optional)" rows="3"></textarea>
+          <button type="submit">Speichern</button>
+        </form>
+      </Modal>
 
-    <Modal
-      :model-value="editingSpot !== null"
-      title="Spot bearbeiten"
-      @update:model-value="(v) => !v && (editingSpot = null)"
-    >
-      <form class="edit-form" @submit.prevent="submitEditSpot">
-        <div class="form-image-banner" :style="editSpotPreviewImage ? { backgroundImage: `url(${editSpotPreviewImage})` } : {}">
-          <span v-if="!editSpotPreviewImage" class="placeholder">{{ spotCategoryMeta(editSpotForm.category).icon }}</span>
-        </div>
-        <input v-model="editSpotForm.title" type="text" placeholder="Titel" required />
-        <input v-model="editSpotForm.image_url" type="url" placeholder="Bild-URL (optional)" />
-        <Combobox v-model="editSpotForm.category" :options="spotCategoryOptions" placeholder="Kategorie (optional)" />
-        <input
-          v-model="editSpotForm.maps_link"
-          type="url"
-          placeholder="Maps-Link (Google/Apple) (optional)"
-          @blur="checkEditSpotMapsLink"
-        />
-        <p v-if="editSpotMapsLinkResolved === true" class="hint success">📍 Standort erkannt</p>
-        <p v-if="editSpotMapsLinkResolved === false" class="hint">
-          Standort wird beim Speichern serverseitig aufgelöst (auch Kurzlinks funktionieren).
-        </p>
-        <textarea v-model="editSpotForm.note" placeholder="Notiz (optional)" rows="3"></textarea>
-        <button type="submit">Speichern</button>
-      </form>
-    </Modal>
-    </div>
+      <nav class="category-nav" v-if="spotGroups.length > 1" aria-label="Zu Kategorie springen">
+        <button
+          v-for="grp in spotGroups"
+          :key="grp.category"
+          type="button"
+          class="category-nav-item"
+          @click="scrollToCategory(grp.category)"
+        >
+          <span class="category-nav-icon">{{ grp.icon }}</span>
+          <span class="category-nav-label">{{ grp.category }}</span>
+        </button>
+      </nav>
+
+      <section class="group category-group" v-for="grp in spotGroups" :key="grp.category">
+        <h3 class="category-heading" :ref="(el) => setCategoryRef(grp.category, el)">{{ grp.icon }} {{ grp.category }}</h3>
+        <TransitionGroup tag="div" name="list" class="grid cards">
+          <template v-for="item in grp.items" :key="item.kind === 'spot' ? `spot-${item.spot.id}` : item.loc.key">
+            <SpotCard
+              v-if="item.kind === 'spot'"
+              :key="`spot-${item.spot.id}`"
+              :spot="item.spot"
+              :creator-label="creatorLabel(item.spot.created_by)"
+              :like-count="spotsStore.likeCountFor(item.spot.id)"
+              :liked="spotsStore.likedByMe(item.spot.id, auth.user?.id)"
+              :comments="spotCommentItemsFor(item.spot.id)"
+              @edit="startEditSpot"
+              @remove="removeSpot"
+              @show-on-map="showSpotOnMap"
+              @toggle-like="toggleSpotLike(item.spot.id)"
+              @submit-comment="(content) => submitSpotComment(item.spot.id, content)"
+              @remove-comment="removeSpotComment"
+            />
+            <DerivedLocationCard v-else :key="item.loc.key" :location="item.loc" />
+          </template>
+        </TransitionGroup>
+      </section>
+      <p v-if="!spotGroups.length" class="empty">Noch keine Spots angelegt.</p>
+
+      <Modal
+        :model-value="editingSpot !== null"
+        title="Spot bearbeiten"
+        @update:model-value="(v) => !v && (editingSpot = null)"
+      >
+        <form class="edit-form" @submit.prevent="submitEditSpot">
+          <div class="form-image-banner" :style="editSpotPreviewImage ? { backgroundImage: `url(${editSpotPreviewImage})` } : {}">
+            <span v-if="!editSpotPreviewImage" class="placeholder">{{ spotCategoryMeta(editSpotForm.category).icon }}</span>
+          </div>
+          <input v-model="editSpotForm.title" type="text" placeholder="Titel" required />
+          <input v-model="editSpotForm.image_url" type="url" placeholder="Bild-URL (optional)" />
+          <Combobox v-model="editSpotForm.category" :options="spotCategoryOptions" placeholder="Kategorie (optional)" />
+          <input
+            v-model="editSpotForm.maps_link"
+            type="url"
+            placeholder="Maps-Link (Google/Apple) (optional)"
+            @blur="checkEditSpotMapsLink"
+          />
+          <p v-if="editSpotMapsLinkResolved === true" class="hint success">📍 Standort erkannt</p>
+          <p v-if="editSpotMapsLinkResolved === false" class="hint">
+            Standort wird beim Speichern serverseitig aufgelöst (auch Kurzlinks funktionieren).
+          </p>
+          <textarea v-model="editSpotForm.note" placeholder="Notiz (optional)" rows="3"></textarea>
+          <button type="submit">Speichern</button>
+        </form>
+      </Modal>
     </div>
   </div>
 </template>
@@ -851,98 +513,18 @@ function showSpotOnMap(spot: Spot) {
   font-size: 0.78rem;
 }
 
-.date-label {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
-}
-
 .group {
   margin-bottom: var(--space-4);
 }
 
-.dropzone {
-  border: 2px dashed transparent;
-  border-radius: var(--radius-md);
-  transition: border-color 0.15s ease, background 0.15s ease;
-}
-
-.dropzone.drag-over {
-  border-color: var(--color-primary);
-  background: var(--color-primary-tint);
-}
-
-.dropzone-hint {
-  font-size: 0.85rem;
-}
-
-.group h2,
 .group h3 {
   font-size: 1rem;
   color: var(--color-primary-dark);
   margin-bottom: var(--space-3);
 }
 
-.entries {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
 .cards {
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-}
-
-.spots-col {
-  border-top: 1px solid var(--color-border);
-  padding-top: var(--space-4);
-  margin-top: var(--space-4);
-}
-
-/* Nebeneinander statt untereinander, sobald genug Breite verfügbar ist (z. B. beide Schubladen
-   eingeklappt) – erleichtert das Drag&Drop von Spots auf Ausflüge, da beide Bereiche dann ohne
-   Scrollen gleichzeitig sichtbar sind. Container-Query statt @media, da sich die verfügbare
-   Breite durchs Auf-/Zuklappen der Schubladen ändert, ohne dass sich das Browserfenster ändert
-   (der Container ist .app-main in App.vue, nicht diese Seite selbst). Zusätzlich wird hier auch
-   .page breiter gemacht – dessen normaler max-width:960px-Deckel (style.css, für die einspaltige
-   Lesbarkeit auf allen anderen Seiten gedacht) würde die zwei Spalten sonst weiterhin auf denselben
-   schmalen Streifen zusammenquetschen, obwohl links/rechts noch reichlich Platz frei wäre. */
-@container (min-width: 900px) {
-  .page {
-    max-width: 1400px;
-  }
-
-  .layout {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    align-items: start;
-    gap: 0 var(--space-5);
-  }
-
-  /* Beide Spalten scrollen ab hier unabhängig voneinander statt gemeinsam mit der Seite – dieselbe
-     Sticky-Offset-Formel wie Drawer.vue's Desktop-Panel (56px NavBar + evtl. zusätzlicher
-     --navbar-offset, falls die NavBar selbst "oben" positioniert ist). */
-  .excursions-col,
-  .spots-col {
-    position: sticky;
-    top: calc(56px + var(--navbar-offset, 0px));
-    max-height: calc(100vh - 56px - var(--navbar-offset, 0px));
-    overflow-y: auto;
-    /* Der native Scrollbalken sitzt sonst direkt auf dem Kartenrand – etwas Luft, damit er nicht
-       am Inhalt klebt. */
-    padding-right: var(--space-3);
-  }
-
-  .spots-col {
-    border-top: none;
-    border-left: 1px solid var(--color-border);
-    padding-top: 0;
-    padding-left: var(--space-5);
-    margin-top: 0;
-  }
 }
 
 .dropdown {
@@ -1068,7 +650,7 @@ function showSpotOnMap(spot: Spot) {
   gap: 6px;
   /* scrollToCategory() landet sonst mit der Überschrift genau unter der fest/sticky positionierten
      AppHeader (56px) + ggf. der oben positionierten NavBar (--navbar-offset) – dieselbe Formel wie
-     bei .excursions-col/.spots-col weiter unten und Drawer.vue. */
+     bei .spots-col weiter unten und Drawer.vue. */
   scroll-margin-top: calc(56px + var(--navbar-offset, 0px) + var(--space-2));
 }
 
