@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue';
 import type { Accommodation, Excursion, Spot, TravelItem } from '../api/types';
 import type { DerivedLocation } from '../utils/derivedLocation';
-import type { ExcursionStation } from '../utils/excursionStations';
+import { resolveStations } from '../utils/excursionStations';
 import { usePointerDrag } from '../composables/usePointerDrag';
 import { useExcursionsStore } from '../stores/excursions';
 import { useDrawersStore } from '../stores/drawers';
@@ -19,9 +19,11 @@ const props = defineProps<{
   likeCount: number;
   liked: boolean;
   comments: CommentItem[];
-  stations: ExcursionStation[];
-  // Reine Durchreichung an ExcursionDetailDialog.vue (siehe dort) – der Dialog braucht die rohen
-  // Listen für seinen eigenen Stations-Resolver-Aufruf, nicht nur die schon aufgelösten stations.
+  // Roher Spot-Pool (nicht schon aufgelöst) – wird 1:1 an ExcursionDetailDialog.vue durchgereicht
+  // (siehe dort, braucht dieselben Listen für seinen eigenen Stations-Resolver-Aufruf), hier lokal
+  // per resolveStations() zu resolvedStations aufgelöst (Icon/Titel/Bild je nach Spot/Unterkunft/
+  // Reise-Station, siehe utils/excursionStations.ts).
+  stations: Spot[];
   accommodations: Accommodation[];
   travelItems: TravelItem[];
 }>();
@@ -39,18 +41,20 @@ const emit = defineEmits<{
 
 const detailOpen = ref(false);
 
-const hasMappedStations = computed(() => props.stations.some((s) => s.lat != null && s.lng != null));
+const resolvedStations = computed(() =>
+  resolveStations(props.excursion.station_keys, props.stations, props.accommodations, props.travelItems),
+);
+
+const hasMappedStations = computed(() => resolvedStations.value.some((s) => s.lat != null && s.lng != null));
 
 // Fallback-Bilder, falls der Ausflug selbst kein Bild hat: Bilder der zugeordneten Spot-Stationen
-// in der definierten Reihenfolge (station_keys – nicht die Reihenfolge von props.stations, die vom
-// Spots-Store kommt und dadurch anders sortiert sein kann). Unterkunft-/Reise-Stationen haben kein
-// eigenes Bild (imageUrl null) und fallen dadurch automatisch raus. Bei ≥2 Bildern eine kleine
-// Collage (SpotImageCollage.vue) statt nur des ersten Bilds – macht auf einen Blick erkennbar, dass
-// hier mehrere Orte drinstecken, statt wie ein einzelner Spot auszusehen.
+// in der definierten Reihenfolge (bereits die Reihenfolge von resolvedStations, siehe oben).
+// Unterkunft-/Reise-Stationen haben kein eigenes Bild (imageUrl null) und fallen dadurch
+// automatisch raus. Bei ≥2 Bildern eine kleine Collage (SpotImageCollage.vue) statt nur des ersten
+// Bilds – macht auf einen Blick erkennbar, dass hier mehrere Orte drinstecken, statt wie ein
+// einzelner Spot auszusehen.
 const fallbackImages = computed(() =>
-  props.excursion.station_keys
-    .map((key) => props.stations.find((s) => s.key === key)?.imageUrl)
-    .filter((url): url is string => !!url),
+  resolvedStations.value.map((s) => s.imageUrl).filter((url): url is string => !!url),
 );
 const showCollage = computed(() => !props.excursion.image_url && fallbackImages.value.length >= 2);
 const displayImage = computed(() => {
@@ -134,8 +138,8 @@ function onSpotDrop(event: DragEvent) {
     </div>
     <div class="body">
       <h3>{{ excursion.title }}</h3>
-      <div class="stations" v-if="stations.length">
-        <span v-for="station in stations" :key="station.key" class="station-chip">
+      <div class="stations" v-if="resolvedStations.length">
+        <span v-for="station in resolvedStations" :key="station.key" class="station-chip">
           {{ station.icon }} {{ station.title }}
         </span>
       </div>

@@ -1,17 +1,21 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import { api } from '../api/client';
-import type { Excursion, Spot, User } from '../api/types';
+import type { Accommodation, Excursion, Spot, TravelItem, User } from '../api/types';
 import { renderRichText } from '../utils/richText';
+import { resolveStations, type ExcursionStation } from '../utils/excursionStations';
 import { useAuthStore } from '../stores/auth';
 import { useSpotsStore } from '../stores/spots';
 import { useDrawersStore } from '../stores/drawers';
 import DetailModal from './DetailModal.vue';
 import LikeButton from './LikeButton.vue';
 import Comments, { type CommentItem } from './Comments.vue';
-import MiniSpotCard from './MiniSpotCard.vue';
+import MiniStationCard from './MiniStationCard.vue';
 import ExcursionMiniMap from './ExcursionMiniMap.vue';
 import SpotDetailDialog from './SpotDetailDialog.vue';
+import AccommodationDetailDialog from './AccommodationDetailDialog.vue';
+import TravelDetailDialog from './TravelDetailDialog.vue';
 
 const props = defineProps<{
   modelValue: boolean;
@@ -21,6 +25,8 @@ const props = defineProps<{
   liked: boolean;
   comments: CommentItem[];
   stations: Spot[];
+  accommodations: Accommodation[];
+  travelItems: TravelItem[];
 }>();
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void;
@@ -32,18 +38,21 @@ const emit = defineEmits<{
   // Bearbeiten einer Station (Spot) braucht das echte Anlege-/Bearbeiten-Formular, das nur
   // ExcursionsView.vue besitzt – anders als Like/Kommentar/"Auf Karte anzeigen" (siehe unten),
   // die direkt über die globalen Stores laufen, muss dieser eine Fall über ExcursionCard.vue
-  // nach oben durchgereicht werden.
+  // nach oben durchgereicht werden. Unterkunft/Reise-Stationen haben dagegen kein eigenes
+  // Formular in dieser Sicht (siehe editStationLocation unten) – dafür genügt ein echter Sprung.
   (e: 'edit-station-spot', spot: Spot): void;
 }>();
 
+const router = useRouter();
 const auth = useAuthStore();
 const spotsStore = useSpotsStore();
 const drawers = useDrawersStore();
 
 // Eigener kleiner users-Fetch statt Prop-Durchreichung durch ExcursionCard.vue: wird nur für die
-// Autor-Anzeige einer Station gebraucht, falls man ihren Detail-Dialog öffnet (siehe unten) – ein
-// zusätzlicher /users-Aufruf ist hier billiger als den gesamten Prop-Pfad umzubauen (gleiches
-// Vorgehen wie in vielen anderen Views dieser App, die /users unabhängig voneinander laden).
+// Autor-/Zahler-Anzeige einer Station gebraucht, falls man ihren Detail-Dialog öffnet (siehe
+// unten) – ein zusätzlicher /users-Aufruf ist hier billiger als den gesamten Prop-Pfad umzubauen
+// (gleiches Vorgehen wie in vielen anderen Views dieser App, die /users unabhängig voneinander
+// laden).
 const users = ref<User[]>([]);
 onMounted(async () => {
   users.value = await api.get<User[]>('/users');
@@ -63,38 +72,65 @@ function commentItemsFor(spotId: number) {
   }));
 }
 
-// Stationen in der definierten Ausflugsreihenfolge (spot_ids), nicht in der Reihenfolge von
+// Stationen in der definierten Ausflugsreihenfolge (station_keys), nicht in der Reihenfolge von
 // props.stations (kommt vom Spots-Store und kann anders sortiert sein) – bestimmt sowohl die
-// Timeline-/Mini-Karten-Reihenfolge als auch die auf der Mini-Karte gezeichnete Route.
+// Timeline-/Mini-Karten-Reihenfolge als auch die auf der Mini-Karte gezeichnete Route. Eine
+// Station ist nicht zwingend ein echter Spot (siehe utils/excursionStations.ts).
 const orderedStations = computed(() =>
-  props.excursion.spot_ids.map((id) => props.stations.find((s) => s.id === id)).filter((s): s is Spot => !!s),
+  resolveStations(props.excursion.station_keys, props.stations, props.accommodations, props.travelItems),
 );
 const mappedStations = computed(() => orderedStations.value.filter((s) => s.lat != null && s.lng != null));
 
 // Fallback-Bild fürs Banner, falls der Ausflug selbst kein Bild hat – dieselbe Collage-Logik wie
 // auf der Miniatur-Karte (ExcursionCard.vue), hier separat berechnet statt als Prop durchgereicht,
 // da beide Komponenten dieselben Ausgangsdaten (excursion + stations) bereits selbst bekommen.
+// Unterkunft-/Reise-Stationen liefern kein eigenes Bild (imageUrl null) und fallen automatisch raus.
 const fallbackImages = computed(() =>
-  orderedStations.value.map((s) => s.image_url).filter((url): url is string => !!url),
+  orderedStations.value.map((s) => s.imageUrl).filter((url): url is string => !!url),
 );
 
 function formatDate(d: string) {
   return new Date(d).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
-// Klick auf eine Stationen-Mini-Karte öffnet deren eigenen Spot-Detail-Dialog (verschachtelt über
-// der Ausflug-Detail-Ansicht) – Like/Kommentar/"Auf Karte anzeigen" laufen dort direkt über die
-// globalen Stores, nur Bearbeiten wird nach oben durchgereicht (siehe emit-Deklaration oben).
-// "welche Station" (openStationSpotId) und "ist der Dialog offen" (stationDialogOpen) bewusst
-// getrennt: SpotDetailDialog.vue braucht ein echtes Spot-Objekt als Prop (nicht nullable), müsste
-// beim Schließen also sonst komplett aus dem DOM entfernt werden (v-if) statt nur unsichtbar zu
-// werden – das würde Modal.vue's eigene Fade-Out-Transition abschneiden.
+// Klick auf eine Stationen-Mini-Karte öffnet je nach Art den passenden verschachtelten Detail-
+// Dialog (Spot/Unterkunft/Reise) – Like/Kommentar/"Auf Karte anzeigen" laufen dort direkt über die
+// globalen Stores bzw. drawers.openMapAt(), nur das Bearbeiten eines Spots wird nach oben
+// durchgereicht (ExcursionsView.vue besitzt das echte Formular). Für Unterkunft/Reise gibt es hier
+// kein Formular, daher bei "Bearbeiten" ein echter Sprung zur jeweiligen Sicht (Architekturregel:
+// fremde Objekte sind hier nur lesend/verknüpfend). "welche Station"/"ist der Dialog offen" jeweils
+// bewusst getrennt (openStation*Id nie zurückgesetzt) – sonst würde Modal.vue's Fade-Out-Transition
+// beim Schließen abgeschnitten, da das Objekt sonst per v-if sofort aus dem DOM verschwände.
 const openStationSpotId = ref<number | null>(null);
 const stationDialogOpen = ref(false);
-const openStationSpot = computed(() => orderedStations.value.find((s) => s.id === openStationSpotId.value) ?? null);
-function openStationSpotDetail(spotId: number) {
-  openStationSpotId.value = spotId;
-  stationDialogOpen.value = true;
+const openStationSpot = computed(() => props.stations.find((s) => s.id === openStationSpotId.value) ?? null);
+
+const openStationAccommodationId = ref<number | null>(null);
+const stationAccommodationDialogOpen = ref(false);
+const openStationAccommodation = computed(
+  () => props.accommodations.find((a) => a.id === openStationAccommodationId.value) ?? null,
+);
+
+const openStationTravelId = ref<number | null>(null);
+const stationTravelDialogOpen = ref(false);
+const openStationTravel = computed(() => props.travelItems.find((t) => t.id === openStationTravelId.value) ?? null);
+
+function openStationDetail(station: ExcursionStation) {
+  if (station.kind === 'spot') {
+    openStationSpotId.value = station.id;
+    stationDialogOpen.value = true;
+  } else if (station.kind === 'accommodation') {
+    openStationAccommodationId.value = station.id;
+    stationAccommodationDialogOpen.value = true;
+  } else {
+    openStationTravelId.value = station.id;
+    stationTravelDialogOpen.value = true;
+  }
+}
+function editStationLocation(target: 'accommodation' | 'travel') {
+  stationAccommodationDialogOpen.value = false;
+  stationTravelDialogOpen.value = false;
+  router.push(`/${target}`);
 }
 </script>
 
@@ -118,10 +154,10 @@ function openStationSpotDetail(spotId: number) {
     <template v-if="orderedStations.length">
       <span class="detail-label">Stationen</span>
       <div class="station-timeline">
-        <template v-for="(spot, index) in orderedStations" :key="index">
-          <button type="button" class="station-node" @click="openStationSpotDetail(spot.id)">
+        <template v-for="(station, index) in orderedStations" :key="index">
+          <button type="button" class="station-node" @click="openStationDetail(station)">
             <span class="station-order">{{ index + 1 }}</span>
-            <MiniSpotCard :spot="spot" />
+            <MiniStationCard :station="station" />
           </button>
           <div v-if="index < orderedStations.length - 1" class="station-connector" aria-hidden="true"></div>
         </template>
@@ -130,7 +166,7 @@ function openStationSpotDetail(spotId: number) {
 
     <template v-if="mappedStations.length">
       <span class="detail-label">Route</span>
-      <ExcursionMiniMap :spots="mappedStations" />
+      <ExcursionMiniMap :stations="mappedStations" />
       <div class="map-actions">
         <button type="button" class="card-action-btn" @click="emit('show-on-map')">🗺️ Auf Karte anzeigen</button>
       </div>
@@ -159,6 +195,25 @@ function openStationSpotDetail(spotId: number) {
       @submit-comment="(content) => spotsStore.submitComment(openStationSpot!.id, content)"
       @remove-comment="spotsStore.removeComment"
       @show-on-map="stationDialogOpen = false; drawers.openMapAt(`spot-${openStationSpot.id}`)"
+    />
+
+    <AccommodationDetailDialog
+      v-if="openStationAccommodation"
+      v-model="stationAccommodationDialogOpen"
+      :accommodation="openStationAccommodation"
+      :payer-label="creatorLabelFor(openStationAccommodation.paid_by_user_id)"
+      @edit="editStationLocation('accommodation')"
+      @show-on-map="stationAccommodationDialogOpen = false; drawers.openMapAt(`accommodation-${openStationAccommodation.id}`)"
+    />
+
+    <TravelDetailDialog
+      v-if="openStationTravel"
+      v-model="stationTravelDialogOpen"
+      :item="openStationTravel"
+      :payer-label="creatorLabelFor(openStationTravel.paid_by_user_id)"
+      @edit="editStationLocation('travel')"
+      @show-on-map-from="stationTravelDialogOpen = false; drawers.openMapAt(`travel-from-${openStationTravel.id}`)"
+      @show-on-map-to="stationTravelDialogOpen = false; drawers.openMapAt(`travel-to-${openStationTravel.id}`)"
     />
   </DetailModal>
 </template>

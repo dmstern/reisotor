@@ -16,7 +16,6 @@ import Combobox from '../components/Combobox.vue';
 import { parseLatLngFromMapsLink, tilePreviewUrl } from '../utils/googleMaps';
 import { spotCategoryMeta, SPOT_CATEGORY_SUGGESTIONS } from '../utils/spotCategory';
 import type { DerivedLocation } from '../utils/derivedLocation';
-import { resolveStations } from '../utils/excursionStations';
 
 const auth = useAuthStore();
 const tripStore = useTripStore();
@@ -57,10 +56,6 @@ function creatorLabel(userId: number | null) {
 }
 function author(id: number) {
   return users.value.find((u) => u.id === id);
-}
-
-function stationsForKeys(keys: string[]) {
-  return resolveStations(keys, spotsStore.spots, accommodations.value, travelItems.value);
 }
 
 // --- Likes/Kommentare Ausflüge (weiterhin an ideas/idea_likes/idea_comments gebunden) ---
@@ -554,7 +549,7 @@ function showSpotOnMap(spot: Spot) {
           :like-count="likesFor(excursion.id).length"
           :liked="likedByMe(excursion.id)"
           :comments="commentItemsFor(excursion.id)"
-          :stations="stationsForKeys(excursion.station_keys)"
+          :stations="spotsStore.spots"
           :accommodations="accommodations"
           :travel-items="travelItems"
           @edit="startEditExcursion"
@@ -593,7 +588,7 @@ function showSpotOnMap(spot: Spot) {
           :like-count="likesFor(excursion.id).length"
           :liked="likedByMe(excursion.id)"
           :comments="commentItemsFor(excursion.id)"
-          :stations="stationsForKeys(excursion.station_keys)"
+          :stations="spotsStore.spots"
           :accommodations="accommodations"
           :travel-items="travelItems"
           @edit="startEditExcursion"
