@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import type { Spot } from '../api/types';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { renderRichText } from '../utils/richText';
+import DetailModal from './DetailModal.vue';
 import EditButton from './EditButton.vue';
 import DeleteButton from './DeleteButton.vue';
 import LikeButton from './LikeButton.vue';
@@ -25,9 +26,12 @@ const emit = defineEmits<{
 }>();
 
 const showComments = ref(false);
+const detailOpen = ref(false);
 
-// Drag-Quelle fürs Zuordnen zu einem Ausflug: der Spot wird direkt aus dieser Karte auf eine
-// Ausflug-Karte gezogen (ExcursionCard.vue ist die Drop-Zone).
+// Natives Drag (Zuordnen zu einem Ausflug) und der neue Klick-zum-Öffnen-Handler vertragen sich
+// auf Desktop ohne Sonderbehandlung: der Browser unterdrückt den synthetischen Klick nach einem
+// echten Drag-Vorgang von selbst (anders als bei ExcursionCard.vue's neuem Touch-Anfasser, wo kein
+// natives DnD mehr im Spiel ist und deshalb explizit @click.stop nötig ist).
 function onDragStart(event: DragEvent) {
   event.dataTransfer?.setData('text/spot-id', String(props.spot.id));
   if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
@@ -35,7 +39,7 @@ function onDragStart(event: DragEvent) {
 </script>
 
 <template>
-  <div class="card spot-card" draggable="true" @dragstart="onDragStart">
+  <div class="card spot-card" draggable="true" @dragstart="onDragStart" @click="detailOpen = true">
     <div class="image" :style="spot.image_url ? { backgroundImage: `url(${spot.image_url})` } : {}">
       <span v-if="!spot.image_url" class="placeholder">{{ spotCategoryMeta(spot.category).icon }}</span>
       <EditButton floating @click="emit('edit', spot)" />
@@ -48,25 +52,51 @@ function onDragStart(event: DragEvent) {
           {{ spotCategoryMeta(spot.category).icon }} {{ spot.category }}
         </span>
       </div>
-      <p v-if="creatorLabel" class="creator">von {{ creatorLabel }}</p>
-      <div v-if="spot.note" class="note" v-html="renderRichText(spot.note)"></div>
-      <div class="links">
-        <button v-if="spot.lat != null && spot.lng != null" type="button" class="card-action-btn" @click="emit('show-on-map', spot)">
-          🗺️ Auf Karte anzeigen
-        </button>
-      </div>
       <span class="drag-hint">↕ auf einen Ausflug ziehen, um ihn dort als Station hinzuzufügen</span>
       <div class="social-row">
         <LikeButton :count="likeCount" :liked="liked" @toggle="emit('toggle-like')" />
-        <button class="secondary" @click="showComments = !showComments">💬 {{ comments.length || '' }}</button>
+        <button class="secondary" @click.stop="showComments = !showComments">💬 {{ comments.length || '' }}</button>
       </div>
       <Comments
         v-if="showComments"
         :comments="comments"
+        @click.stop
         @submit="(content) => emit('submit-comment', content)"
         @remove="(id) => emit('remove-comment', id)"
       />
     </div>
+
+    <DetailModal
+      v-model="detailOpen"
+      :title="spot.title"
+      :image-url="spot.image_url"
+      :placeholder-icon="spotCategoryMeta(spot.category).icon"
+    >
+      <p v-if="creatorLabel" class="detail-row"><span class="detail-label">Von</span>{{ creatorLabel }}</p>
+      <p v-if="spot.category" class="detail-row">
+        <span class="detail-label">Kategorie</span>{{ spotCategoryMeta(spot.category).icon }} {{ spot.category }}
+      </p>
+      <div v-if="spot.note" class="detail-row note" v-html="renderRichText(spot.note)"></div>
+      <div class="social-row">
+        <LikeButton :count="likeCount" :liked="liked" @toggle="emit('toggle-like')" />
+      </div>
+      <Comments
+        :comments="comments"
+        @submit="(content) => emit('submit-comment', content)"
+        @remove="(id) => emit('remove-comment', id)"
+      />
+      <div class="detail-actions">
+        <button type="button" class="card-action-btn" @click="detailOpen = false; emit('edit', spot)">✎ Bearbeiten</button>
+        <button
+          v-if="spot.lat != null && spot.lng != null"
+          type="button"
+          class="card-action-btn"
+          @click="detailOpen = false; emit('show-on-map', spot)"
+        >
+          🗺️ Auf Karte anzeigen
+        </button>
+      </div>
+    </DetailModal>
   </div>
 </template>
 
@@ -76,11 +106,7 @@ function onDragStart(event: DragEvent) {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  cursor: grab;
-}
-
-.spot-card:active {
-  cursor: grabbing;
+  cursor: pointer;
 }
 
 .image {
@@ -124,21 +150,8 @@ function onDragStart(event: DragEvent) {
   white-space: nowrap;
 }
 
-.creator {
-  font-size: 0.82rem;
-  color: var(--color-text-muted);
-  margin: 0;
-}
-
 .note {
   overflow-wrap: anywhere;
-}
-
-.links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  margin-top: var(--space-1);
 }
 
 .drag-hint {
