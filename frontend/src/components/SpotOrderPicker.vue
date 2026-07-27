@@ -35,21 +35,22 @@ const plannedSpots = computed(() =>
   props.modelValue.map((id) => props.spots.find((s) => s.id === id)).filter((s): s is Spot => !!s),
 );
 
-const remainingSpots = computed(() =>
-  [...props.spots]
-    .filter((s) => !props.modelValue.includes(s.id))
-    .sort((a, b) => props.likeCount(b.id) - props.likeCount(a.id) || a.title.localeCompare(b.title)),
+// Bewusst NICHT mehr gefiltert auf "noch nicht eingeplant" – für einen Rundgang muss derselbe Spot
+// mehrfach in der Reihenfolge stehen können (z. B. Start UND Ende an der Unterkunft), Klick fügt
+// deshalb immer eine weitere Station hinzu statt (wie ein Checkbox-Häkchen) nur ein einziges Mal
+// umschaltbar zu sein.
+const addableSpots = computed(() =>
+  [...props.spots].sort((a, b) => props.likeCount(b.id) - props.likeCount(a.id) || a.title.localeCompare(b.title)),
 );
 
-// Ein abgeleiteter Ort "verschwindet" aus dieser Liste, sobald der daraus erzeugte Spot bereits
-// eingeplant ist (dedupliziert über den Maps-Link) – sonst könnte man scheinbar denselben Ort ein
-// zweites Mal hinzufügen, obwohl er schon in der Ausflugsreihenfolge steht.
-const availableDerivedLocations = computed(() =>
-  props.derivedLocations.filter((loc) => !plannedSpots.value.some((s) => s.maps_link === loc.maps_link)),
-);
+function addSpot(id: number) {
+  selected.value = [...selected.value, id];
+}
 
-function removeSpot(id: number) {
-  selected.value = selected.value.filter((sid) => sid !== id);
+function removeSpotAt(index: number) {
+  const next = [...selected.value];
+  next.splice(index, 1);
+  selected.value = next;
 }
 
 // Drag&Drop-Umsortierung innerhalb der geplanten Liste – rein lokal (kein Component-übergreifendes
@@ -104,7 +105,7 @@ function onDragEnd() {
         In dieser Reihenfolge werden die Spots während des Ausflugs abgeklappert (bestimmt auch die
         eingezeichnete Route auf der Karte) – zum Sortieren ziehen.
       </p>
-      <template v-for="(spot, index) in plannedSpots" :key="spot.id">
+      <template v-for="(spot, index) in plannedSpots" :key="index">
         <div class="drop-line" v-if="draggedIndex !== null && dropIndicatorIndex === index"></div>
         <div
           class="planned-row"
@@ -118,7 +119,7 @@ function onDragEnd() {
           <span class="order-num">{{ index + 1 }}.</span>
           <span class="drag-handle" aria-hidden="true">⠿</span>
           <span class="spot-title">{{ spotCategoryMeta(spot.category).icon }} {{ spot.title }}</span>
-          <button type="button" class="remove-btn" @click="removeSpot(spot.id)" aria-label="Aus Ausflug entfernen">
+          <button type="button" class="remove-btn" @click="removeSpotAt(index)" aria-label="Aus Ausflug entfernen">
             ✕
           </button>
         </div>
@@ -126,19 +127,19 @@ function onDragEnd() {
       <div class="drop-line" v-if="draggedIndex !== null && dropIndicatorIndex === plannedSpots.length"></div>
     </fieldset>
 
-    <fieldset v-if="remainingSpots.length" class="spot-picker">
-      <legend>Weitere Spots hinzufügen – nach Likes sortiert</legend>
-      <label v-for="spot in remainingSpots" :key="spot.id" class="spot-option">
-        <input type="checkbox" :value="spot.id" v-model="selected" />
+    <fieldset v-if="addableSpots.length" class="spot-picker">
+      <legend>Spots hinzufügen – nach Likes sortiert (auch mehrfach möglich, z. B. Start &amp; Ende)</legend>
+      <button v-for="spot in addableSpots" :key="spot.id" type="button" class="derived-option" @click="addSpot(spot.id)">
         <span class="spot-option-title">{{ spotCategoryMeta(spot.category).icon }} {{ spot.title }}</span>
         <span class="spot-option-likes">❤️ {{ likeCount(spot.id) }}</span>
-      </label>
+        <span class="derived-add" aria-hidden="true">+</span>
+      </button>
     </fieldset>
 
-    <fieldset v-if="availableDerivedLocations.length" class="spot-picker">
-      <legend>🛏️🛫 Unterkunft &amp; Reise-Orte</legend>
+    <fieldset v-if="derivedLocations.length" class="spot-picker">
+      <legend>🛏️🛫 Unterkunft &amp; Reise-Orte (auch mehrfach möglich)</legend>
       <button
-        v-for="loc in availableDerivedLocations"
+        v-for="loc in derivedLocations"
         :key="loc.key"
         type="button"
         class="derived-option"
@@ -241,14 +242,6 @@ function onDragEnd() {
 
 .remove-btn:hover {
   color: var(--color-danger);
-}
-
-.spot-option {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: 0.9rem;
-  font-weight: 400;
 }
 
 .spot-option-title {

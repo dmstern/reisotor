@@ -19,14 +19,17 @@ interface CommentBody {
   content: string;
 }
 
-// Stationen eines Ausflugs (Batch 13): welche Spots gehören dazu. Wird bei jedem Anlegen/
-// Bearbeiten komplett neu geschrieben (einfacher als Diffing) – kleine Anzahl Zeilen pro Ausflug.
+// Stationen eines Ausflugs (Batch 13, Reihenfolge/Mehrfachbesuche nachgerüstet): welche Spots
+// gehören dazu, in welcher Reihenfolge. Wird bei jedem Anlegen/Bearbeiten komplett neu geschrieben
+// (einfacher als Diffing) – kleine Anzahl Zeilen pro Ausflug. `position` statt der Zeilen-Id
+// bestimmt die Reihenfolge, damit derselbe Spot mehrfach vorkommen darf (z. B. Start UND Ende an
+// der Unterkunft für einen Rundgang).
 function syncExcursionSpots(ideaId: number, spotIds: number[]) {
   db.prepare('DELETE FROM excursion_spots WHERE idea_id = ?').run(ideaId);
-  const insert = db.prepare('INSERT INTO excursion_spots (idea_id, spot_id) VALUES (?, ?)');
-  for (const spotId of spotIds) {
-    insert.run(ideaId, spotId);
-  }
+  const insert = db.prepare('INSERT INTO excursion_spots (idea_id, spot_id, position) VALUES (?, ?, ?)');
+  spotIds.forEach((spotId, index) => {
+    insert.run(ideaId, spotId, index);
+  });
 }
 
 function spotIdsFor(ideaIds: number[]): Map<number, number[]> {
@@ -34,7 +37,9 @@ function spotIdsFor(ideaIds: number[]): Map<number, number[]> {
   if (!ideaIds.length) return map;
   const placeholders = ideaIds.map(() => '?').join(',');
   const rows = db
-    .prepare(`SELECT idea_id, spot_id FROM excursion_spots WHERE idea_id IN (${placeholders})`)
+    .prepare(
+      `SELECT idea_id, spot_id FROM excursion_spots WHERE idea_id IN (${placeholders}) ORDER BY idea_id, position`,
+    )
     .all(...ideaIds) as { idea_id: number; spot_id: number }[];
   for (const row of rows) {
     const list = map.get(row.idea_id) ?? [];

@@ -233,12 +233,15 @@ CREATE TABLE IF NOT EXISTS spots (
   created_by INTEGER REFERENCES users(id)
 );
 
--- Stationen eines Ausflugs: welche Spots gehören zu welchem Ausflug (Batch 13).
+-- Stationen eines Ausflugs: welche Spots gehören zu welchem Ausflug, in welcher Reihenfolge
+-- (Batch 13, Reihenfolge/Mehrfachbesuche nachgerüstet). Bewusst KEIN UNIQUE(idea_id, spot_id) –
+-- ein Rundgang darf denselben Spot mehrfach enthalten (z. B. Start UND Ende an der Unterkunft),
+-- "position" ist deshalb die eigentliche Quelle der Abklapper-Reihenfolge, nicht die Zeilen-Id.
 CREATE TABLE IF NOT EXISTS excursion_spots (
   id INTEGER PRIMARY KEY,
   idea_id INTEGER NOT NULL REFERENCES ideas(id) ON DELETE CASCADE,
   spot_id INTEGER NOT NULL REFERENCES spots(id) ON DELETE CASCADE,
-  UNIQUE(idea_id, spot_id)
+  position INTEGER NOT NULL DEFAULT 0
 );
 
 -- Likes/Kommentare für Spots (analog idea_likes/idea_comments): ersetzt den bisherigen
@@ -294,6 +297,31 @@ function hasTable(name: string) {
   return !!db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?").get(name);
 }
 
+// excursion_spots hatte ursprünglich UNIQUE(idea_id, spot_id) – das verhindert genau das, was ein
+// Rundgang braucht (derselbe Spot mehrfach in einem Ausflug, z. B. Start UND Ende an der
+// Unterkunft). SQLite kann eine Tabellen-Constraint nicht per ALTER TABLE entfernen, bei
+// Altbeständen wird die Tabelle daher einmalig neu aufgebaut (bisherige Zeilen-Id als position
+// übernommen – das war ohnehin schon die implizit genutzte Einfüge-/Abfragereihenfolge).
+function migrateExcursionSpotsUnique() {
+  const row = db.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'excursion_spots'").get() as
+    | { sql: string }
+    | undefined;
+  if (!row || !row.sql.includes('UNIQUE')) return;
+  db.exec(`
+    ALTER TABLE excursion_spots RENAME TO excursion_spots_old;
+    CREATE TABLE excursion_spots (
+      id INTEGER PRIMARY KEY,
+      idea_id INTEGER NOT NULL REFERENCES ideas(id) ON DELETE CASCADE,
+      spot_id INTEGER NOT NULL REFERENCES spots(id) ON DELETE CASCADE,
+      position INTEGER NOT NULL DEFAULT 0
+    );
+    INSERT INTO excursion_spots (id, idea_id, spot_id, position)
+      SELECT id, idea_id, spot_id, id FROM excursion_spots_old;
+    DROP TABLE excursion_spots_old;
+  `);
+}
+migrateExcursionSpotsUnique();
+
 ensureColumn('users', 'avatar', "TEXT DEFAULT '🙂'");
 ensureColumn('ideas', 'lat', 'REAL');
 ensureColumn('ideas', 'lng', 'REAL');
@@ -346,6 +374,9 @@ ensureColumn('travel_items', 'to_lng', 'REAL');
 // innerhalb des Urlaubs). Damit kann die Karte "Auf Urlaubsziel fokussieren" die Start-/
 // Zielpunkte zuhause zuverlässig von den eigentlichen Urlaubsorten unterscheiden.
 ensureColumn('travel_items', 'role', 'TEXT');
+// Ankunftszeit zusätzlich zur Abflugzeit – erlaubt die automatische Reisedauer-Berechnung im
+// Frontend (utils/travelDuration.ts), ohne die Uhrzeit manuell ausrechnen zu müssen.
+ensureColumn('travel_items', 'arrival_time', 'TEXT');
 
 // Ausflug wird zum reinen Container-Objekt (Titel/Bild/Notiz/Spots) mit optionalem eigenen
 // Datum für die Kalender-Einplanung – Standort/Link/Status wandern zu den zugeordneten Spots
