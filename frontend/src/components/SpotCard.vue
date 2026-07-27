@@ -3,6 +3,9 @@ import { ref } from 'vue';
 import type { Spot } from '../api/types';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { renderRichText } from '../utils/richText';
+import { usePointerDrag } from '../composables/usePointerDrag';
+import { useExcursionsStore } from '../stores/excursions';
+import { useDrawersStore } from '../stores/drawers';
 import CategoryChip from './CategoryChip.vue';
 import SpotDetailDialog from './SpotDetailDialog.vue';
 import EditButton from './EditButton.vue';
@@ -37,6 +40,25 @@ function onDragStart(event: DragEvent) {
   event.dataTransfer?.setData('text/spot-id', String(props.spot.id));
   if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
 }
+
+// Spontanes Einplanen direkt auf einen Kalendertag, ohne vorher einen Ausflug anzulegen (das
+// Backend legt dafür im Hintergrund einen Ein-Spot-Ausflug an, siehe
+// excursionsStore.planSpotOnDate) – 1:1 nach dem Muster von ExcursionCard.vue's
+// 📅-Einplanen-Anfasser (eigener Pointer-Events-Drag statt nativem HTML5-DnD, da Letzteres auf
+// Touch-Geräten unzuverlässig ist). Eigenständig neben dem bestehenden nativen
+// draggable/dragstart oben (Zuordnen zu einem Ausflug) – kein Ersatz dafür.
+const excursionsStore = useExcursionsStore();
+const drawers = useDrawersStore();
+const { dragging, ghostStyle, onPointerDown } = usePointerDrag({
+  onStart: () => {
+    drawers.calendarOpen = true;
+  },
+  onDrop: (targetEl) => {
+    const dayEl = targetEl?.closest<HTMLElement>('[data-date]');
+    if (!dayEl?.dataset.date) return;
+    excursionsStore.planSpotOnDate(props.spot.id, dayEl.dataset.date);
+  },
+});
 </script>
 
 <template>
@@ -53,6 +75,19 @@ function onDragStart(event: DragEvent) {
       </div>
       <div v-if="spot.note" class="note" v-html="renderRichText(spot.note)"></div>
       <span class="drag-hint">↕ auf einen Ausflug ziehen, um ihn dort als Station hinzuzufügen</span>
+      <button
+        type="button"
+        class="calendar-drag-handle"
+        aria-label="Auf Kalender ziehen zum spontanen Einplanen"
+        title="Auf Kalender ziehen zum spontanen Einplanen"
+        @pointerdown="onPointerDown"
+        @click.stop
+      >
+        📅 Einplanen
+      </button>
+      <Teleport to="body">
+        <div v-if="dragging" class="drag-ghost" :style="ghostStyle ?? {}">📅 {{ spot.title }}</div>
+      </Teleport>
       <div class="social-row">
         <LikeButton :count="likeCount" :liked="liked" @toggle="emit('toggle-like')" />
         <button class="secondary" @click.stop="showComments = !showComments">💬 {{ comments.length || '' }}</button>
@@ -138,5 +173,47 @@ function onDragStart(event: DragEvent) {
   display: flex;
   gap: var(--space-2);
   margin-top: var(--space-2);
+}
+
+/* Eigener Anfasser statt des gesamten Card-Roots als Drag-Quelle (siehe usePointerDrag-Wiring im
+   Script) – touch-action:none verhindert, dass der Browser das Ziehen als Seiten-Scroll
+   interpretiert. */
+.calendar-drag-handle {
+  align-self: flex-start;
+  background: var(--color-hover);
+  border: none;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  margin-top: var(--space-1);
+  cursor: grab;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.calendar-drag-handle:active {
+  cursor: grabbing;
+}
+
+/* Schwebt während des Drags am Zeiger, per Teleport außerhalb der Karte (sonst würde sie beim
+   Öffnen der Kalender-Schublade durch deren Backdrop/Panel überlagert). z-index 60: über dem
+   Drawer-Overlay (11/12), unter Modal.vue (100, wird während eines Drags nie gleichzeitig
+   gebraucht). Fester dunkler Chip statt Dark-Mode-Override, da sie über beliebigem Seiteninhalt
+   schwebt statt über einem Foto. */
+.drag-ghost {
+  position: fixed;
+  z-index: 60;
+  transform: translate(-50%, -130%);
+  pointer-events: none;
+  background: rgba(35, 34, 32, 0.92);
+  color: #f2efe9;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: var(--shadow-md);
 }
 </style>
