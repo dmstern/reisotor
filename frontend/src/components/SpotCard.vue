@@ -316,5 +316,14 @@ function onCardClick() {
   .spot-card.expanded .image {
     height: 160px;
   }
+
+  /* .spot-card.expanded { grid-column: span 2; } (oben, für Desktops mehrspaltiges Raster gedacht)
+     erzeugt hier eine ungewollte zusätzliche implizite Spalte, da ExcursionsView.vue's .cards auf
+     schmalen Bildschirmen nur eine einzige Spalte definiert (grid-template-columns: 1fr) – dadurch
+     rutschten alle nachfolgenden Karten in diese neue, schmale Spalte und wirkten abgeschnitten.
+     Hier zurück auf eine einzelne Spalte. */
+  .spot-card.expanded {
+    grid-column: span 1;
+  }
 }
 </style>
