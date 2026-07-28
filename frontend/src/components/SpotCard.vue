@@ -32,10 +32,9 @@ const emit = defineEmits<{
 const showComments = ref(false);
 const detailOpen = ref(false);
 
-// Natives Drag (Zuordnen zu einem Ausflug) und der Klick-zum-Öffnen-Handler vertragen sich auf
-// Desktop ohne Sonderbehandlung: der Browser unterdrückt den synthetischen Klick nach einem echten
-// Drag-Vorgang von selbst (anders als bei ExcursionCard.vue's Touch-Anfasser, wo kein natives DnD
-// mehr im Spiel ist und deshalb explizit @click.stop nötig ist).
+// Natives Drag (Zuordnen zu einer Tour) startet über einen dedizierten Anfasser (.excursion-drag-
+// handle, siehe Template) statt über die ganze Karte – @click.stop dort verhindert, dass ein reiner
+// (Nicht-Drag-)Klick auf den Anfasser zusätzlich die Detail-Ansicht öffnet.
 function onDragStart(event: DragEvent) {
   event.dataTransfer?.setData('text/spot-id', String(props.spot.id));
   if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
@@ -86,7 +85,7 @@ function onShowOnMap() {
 </script>
 
 <template>
-  <div class="card spot-card" draggable="true" @dragstart="onDragStart" @click="openDetail">
+  <div class="card spot-card" @click="openDetail">
     <div class="image" :style="spot.image_url ? { backgroundImage: `url(${spot.image_url})` } : {}">
       <span v-if="!spot.image_url" class="placeholder">{{ spotCategoryMeta(spot.category).icon }}</span>
       <EditButton floating @click="emit('edit', spot)" />
@@ -101,7 +100,17 @@ function onShowOnMap() {
       <div class="links" v-if="spot.lat != null && spot.lng != null">
         <button type="button" class="card-action-btn" @click.stop="emit('show-on-map', spot)">🗺️ Auf Karte anzeigen</button>
       </div>
-      <span class="drag-hint">↕ auf einen Ausflug ziehen, um ihn dort als Station hinzuzufügen</span>
+      <button
+        type="button"
+        class="excursion-drag-handle"
+        draggable="true"
+        aria-label="Auf eine Tour ziehen, um sie dort als Station hinzuzufügen"
+        title="Auf eine Tour ziehen, um sie dort als Station hinzuzufügen"
+        @dragstart="onDragStart"
+        @click.stop
+      >
+        🎒 Auf Tour ziehen
+      </button>
       <button
         type="button"
         class="calendar-drag-handle"
@@ -191,12 +200,6 @@ function onShowOnMap() {
   overflow-wrap: anywhere;
 }
 
-.drag-hint {
-  font-size: 0.72rem;
-  color: var(--color-text-muted);
-  margin-top: var(--space-1);
-}
-
 .links {
   display: flex;
   flex-wrap: wrap;
@@ -209,25 +212,50 @@ function onShowOnMap() {
   margin-top: var(--space-2);
 }
 
-/* Eigener Anfasser statt des gesamten Card-Roots als Drag-Quelle (siehe usePointerDrag-Wiring im
-   Script) – touch-action:none verhindert, dass der Browser das Ziehen als Seiten-Scroll
-   interpretiert. */
-.calendar-drag-handle {
+/* Zwei Anfasser statt des gesamten Card-Roots als Drag-Quelle: .excursion-drag-handle (natives
+   HTML5-DnD, siehe onDragStart im Script) und .calendar-drag-handle (Pointer-Events, siehe
+   usePointerDrag-Wiring). touch-action:none beim Kalender-Anfasser verhindert, dass der Browser
+   das Ziehen als Seiten-Scroll interpretiert (beim nativen DnD-Anfasser übernimmt das der Browser
+   selbst). Das ::before-Punkte-Raster macht beide auf einen Blick als Zieh-Griff statt als
+   normalen Button erkennbar. */
+.calendar-drag-handle,
+.excursion-drag-handle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   align-self: flex-start;
   background: var(--color-hover);
   border: none;
   border-radius: 999px;
-  padding: 3px 10px;
+  padding: 3px 10px 3px 8px;
   font-size: 0.72rem;
   color: var(--color-text-muted);
   margin-top: var(--space-1);
   cursor: grab;
-  touch-action: none;
   -webkit-user-select: none;
   user-select: none;
 }
 
-.calendar-drag-handle:active {
+.calendar-drag-handle {
+  touch-action: none;
+}
+
+.calendar-drag-handle::before,
+.excursion-drag-handle::before {
+  content: '';
+  flex-shrink: 0;
+  width: 6px;
+  height: 12px;
+  background-image: radial-gradient(circle, currentColor 1px, transparent 1.3px),
+    radial-gradient(circle, currentColor 1px, transparent 1.3px);
+  background-size: 3px 4px, 3px 4px;
+  background-position: 0 0, 3px 0;
+  background-repeat: repeat-y, repeat-y;
+  opacity: 0.6;
+}
+
+.calendar-drag-handle:active,
+.excursion-drag-handle:active {
   cursor: grabbing;
 }
 

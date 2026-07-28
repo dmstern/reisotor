@@ -290,13 +290,17 @@ function onSpotDrop(event: DragEvent) {
 
 /* Eigener Anfasser statt des gesamten Card-Roots als Drag-Quelle (siehe usePointerDrag-Wiring im
    Script) – touch-action:none verhindert, dass der Browser das Ziehen als Seiten-Scroll
-   interpretiert. */
+   interpretiert. Das ::before-Punkte-Raster macht ihn auf einen Blick als Zieh-Griff statt als
+   normalen Button erkennbar (identisches Muster wie SpotCard.vue's Anfasser). */
 .calendar-drag-handle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   align-self: flex-start;
   background: var(--color-hover);
   border: none;
   border-radius: 999px;
-  padding: 3px 10px;
+  padding: 3px 10px 3px 8px;
   font-size: 0.72rem;
   color: var(--color-text-muted);
   margin-top: var(--space-1);
@@ -304,6 +308,19 @@ function onSpotDrop(event: DragEvent) {
   touch-action: none;
   -webkit-user-select: none;
   user-select: none;
+}
+
+.calendar-drag-handle::before {
+  content: '';
+  flex-shrink: 0;
+  width: 6px;
+  height: 12px;
+  background-image: radial-gradient(circle, currentColor 1px, transparent 1.3px),
+    radial-gradient(circle, currentColor 1px, transparent 1.3px);
+  background-size: 3px 4px, 3px 4px;
+  background-position: 0 0, 3px 0;
+  background-repeat: repeat-y, repeat-y;
+  opacity: 0.6;
 }
 
 .calendar-drag-handle:active {
