@@ -286,7 +286,7 @@ function onCardClick() {
    reagiert auf die tatsächliche Breite von .spots-col (container-type dort in ExcursionsView.vue),
    nicht auf die Fenster-/Viewport-Breite – greift dadurch auch, wenn man auf Desktop den Anfasser
    zwischen Spots-Liste und Karte weit zur Karte hin zieht, nicht nur auf echtem Mobil. */
-@container (max-width: 480px) {
+@container spots-col (max-width: 480px) {
   .spot-card:not(.expanded) {
     flex-direction: row;
     align-items: stretch;

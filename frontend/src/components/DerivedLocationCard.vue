@@ -123,7 +123,7 @@ function onDragStart(event: DragEvent) {
    SpotCard.vue (dort auch die Begründung für Container-Query statt @media und den Schwellenwert,
    muss mit dort übereinstimmen), hier einfacher da ohne Aufklapp-Zustand: der Anfasser (seltener
    gebraucht als der Sprung-Link) entfällt kompakt, Titel/Sprung-Link bleiben sichtbar. */
-@container (max-width: 480px) {
+@container spots-col (max-width: 480px) {
   .derived-card {
     flex-direction: row;
     align-items: stretch;

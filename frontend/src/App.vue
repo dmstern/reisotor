@@ -114,8 +114,12 @@ async function onCreateFirstTrip(data: TripFormData) {
   /* container-type global hier statt in einzelnen Views: .app-main ist die einzige Stelle, an der
      die WIRKLICH verfügbare Breite ankommt (Viewport minus offene Schubladen, siehe .app-shell
      unten) – einzelne Seiten (z. B. ExcursionsView.vue) können sich per @container darauf
-     verlassen, ohne selbst noch einen eigenen Container aufspannen zu müssen. */
-  container-type: inline-size;
+     verlassen, ohne selbst noch einen eigenen Container aufspannen zu müssen. Benannt (statt
+     anonym), da einzelne Seiten (ExcursionsView.vue) inzwischen selbst verschachtelte
+     Container aufspannen (z. B. .spots-col für Kompakt-Zeilen-Abfragen) – unbenannte
+     @container-Abfragen für Enkel-Elemente eines solchen inneren Containers würden sonst
+     versehentlich GEGEN DIESEN statt gegen .app-main ausgewertet. */
+  container: app-main / inline-size;
 }
 
 @media (min-width: 800px) {

@@ -665,8 +665,12 @@ function showSpotOnMap(spot: Spot) {
      DerivedLocationCard.vue/.cards weiter unten (@container-Abfragen dort) – reagiert dadurch auf
      die TATSÄCHLICHE Breite dieser Spalte (auch beim Verschieben des Anfassers auf Desktop),
      unabhängig von Viewport/anderer-Container-Breite. Gilt unverändert in beiden Modi (Mobil
-     fixed/Desktop sticky), da hier nicht zurückgesetzt. */
-  container-type: inline-size;
+     fixed/Desktop sticky), da hier nicht zurückgesetzt. Benannt (statt anonym) und die Kompakt-
+     Zeilen-Abfragen unten explizit "spots-col" statt unbenannt: sonst würden auch die unbenannten
+     @container(min-width:900px)-Abfragen für Nachfahren wie .sheet-handle/.spots-col-body
+     versehentlich gegen DIESEN (statt gegen .app-main, App.vue) ausgewertet – .spots-col ist selbst
+     nie ≥900px breit, das "Desktop"-Zurücksetzen von .sheet-handle etc. hätte dadurch nie gegriffen. */
+  container: spots-col / inline-size;
   /* Deckelt alle drei Höhen-Zustände (unten) auf den Platz UNTER Kopfzeile/NavBar (56px
      App-Header + --navbar-offset, dieselbe Formel wie .map-col's sticky top) – reine vh-Werte
      kennen die NavBar-Höhe nicht und wuchsen auf kürzeren Fenstern über sie hinaus (der obere Rand
@@ -750,7 +754,11 @@ function showSpotOnMap(spot: Spot) {
   display: none;
 }
 
-@container (min-width: 900px) {
+/* Explizit "app-main" statt unbenannt: dieser Block enthält auch Regeln für Nachfahren von
+   .spots-col (.sheet-handle, .spots-col-body), das selbst seit Kurzem ein eigener, benannter
+   Container ist (siehe dort) – unbenannt würde das sonst versehentlich gegen .spots-col statt
+   gegen .app-main (App.vue) ausgewertet. */
+@container app-main (min-width: 900px) {
   .page {
     max-width: 1600px;
   }
@@ -932,8 +940,9 @@ function showSpotOnMap(spot: Spot) {
    @media (siehe container-type auf .spots-col oben) – reagiert dadurch auf die tatsächliche
    Spalten-Breite, nicht auf die Fenster-/Viewport-Breite. Derselbe Schwellenwert wie in
    SpotCard.vue/DerivedLocationCard.vue (muss übereinstimmen, sonst driftet die Kompakt-Zeile dort
-   von der Ein-Spalten-Entscheidung hier auseinander). */
-@container (max-width: 480px) {
+   von der Ein-Spalten-Entscheidung hier auseinander). Explizit "spots-col" statt unbenannt, damit
+   eindeutig gegen diesen (statt versehentlich gegen .app-main) ausgewertet wird. */
+@container spots-col (max-width: 480px) {
   .cards {
     grid-template-columns: 1fr;
   }
