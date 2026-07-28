@@ -238,6 +238,28 @@ function scrollToCategory(category: string) {
   tripMapRef.value?.focusCategory(category);
 }
 
+// Welcher Spot ist gerade in der Liste aufgeklappt (SpotCard.vue, ersetzt den früheren Modal-
+// Dialog) – lebt hier statt lokal in SpotCard.vue, da ein Pin-Klick auf der Karte (TripMap.vue's
+// @focus-spot) dieselbe Karte von außen aufklappen können muss, exakt wie ein Kategorie-Klick
+// scrollToCategory() von außen auslöst (gleiches Ref-Map-Muster wie categoryRefs oben).
+const expandedSpotId = ref<number | null>(null);
+const spotRefs = new Map<number, HTMLElement>();
+function setSpotRef(id: number, el: Element | ComponentPublicInstance | null) {
+  const domEl = el && '$el' in el ? (el.$el as HTMLElement) : (el as HTMLElement | null);
+  if (domEl instanceof HTMLElement) spotRefs.set(id, domEl);
+  else spotRefs.delete(id);
+}
+function scrollToSpot(id: number) {
+  spotRefs.get(id)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+// Klick auf einen Spot-Pin auf der Karte (TripMap.vue) klappt die passende Karte hier auf und
+// scrollt sie in den Blick – die Pin-Vergrößerung selbst setzt TripMap.vue bereits eigenständig
+// (drawers.mapFocusKey), hier geht es nur um die Liste.
+function onFocusSpotFromMap(spotId: number) {
+  expandedSpotId.value = spotId;
+  scrollToSpot(spotId);
+}
+
 function checkSpotMapsLink() {
   spotMapsLinkResolved.value = spotForm.value.maps_link ? parseLatLngFromMapsLink(spotForm.value.maps_link) != null : null;
 }
@@ -414,7 +436,9 @@ function showSpotOnMap(spot: Spot) {
             <SpotCard
               v-if="item.kind === 'spot'"
               :key="`spot-${item.spot.id}`"
+              :ref="(el) => setSpotRef(item.spot.id, el)"
               :spot="item.spot"
+              :expanded="expandedSpotId === item.spot.id"
               :creator-label="creatorLabel(item.spot.created_by)"
               :like-count="spotsStore.likeCountFor(item.spot.id)"
               :liked="spotsStore.likedByMe(item.spot.id, auth.user?.id)"
@@ -425,6 +449,8 @@ function showSpotOnMap(spot: Spot) {
               @toggle-like="toggleSpotLike(item.spot.id)"
               @submit-comment="(content) => submitSpotComment(item.spot.id, content)"
               @remove-comment="removeSpotComment"
+              @open="(spot) => (expandedSpotId = spot.id)"
+              @close="expandedSpotId = null"
             />
             <DerivedLocationCard v-else :key="item.loc.key" :location="item.loc" />
           </template>
@@ -461,7 +487,12 @@ function showSpotOnMap(spot: Spot) {
     </div>
 
     <div class="map-col">
-      <TripMap ref="tripMapRef" :category-filter="categoryFilter" @edit-spot="startEditSpot" />
+      <TripMap
+        ref="tripMapRef"
+        :category-filter="categoryFilter"
+        @edit-spot="startEditSpot"
+        @focus-spot="onFocusSpotFromMap"
+      />
     </div>
     </div>
   </div>

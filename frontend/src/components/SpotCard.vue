@@ -7,7 +7,6 @@ import { usePointerDrag } from '../composables/usePointerDrag';
 import { useExcursionsStore } from '../stores/excursions';
 import { useDrawersStore } from '../stores/drawers';
 import CategoryChip from './CategoryChip.vue';
-import SpotDetailDialog from './SpotDetailDialog.vue';
 import EditButton from './EditButton.vue';
 import DeleteButton from './DeleteButton.vue';
 import LikeButton from './LikeButton.vue';
@@ -19,6 +18,11 @@ const props = defineProps<{
   likeCount: number;
   liked: boolean;
   comments: CommentItem[];
+  // Liegt beim Elternteil (ExcursionsView.vue), nicht lokal hier: dieselbe Information steuert dort
+  // gleichzeitig, welcher Pin auf der direkt danebenliegenden Karte vergrößert wird (siehe
+  // onCardClick unten) – ein Pin-Klick auf der Karte muss diese Karte hier aufklappen können, ohne
+  // dass TripMap.vue direkten Zugriff auf SpotCard-Instanzen bräuchte.
+  expanded: boolean;
 }>();
 const emit = defineEmits<{
   (e: 'edit', spot: Spot): void;
@@ -27,10 +31,11 @@ const emit = defineEmits<{
   (e: 'toggle-like'): void;
   (e: 'submit-comment', content: string): void;
   (e: 'remove-comment', id: number): void;
+  (e: 'open', spot: Spot): void;
+  (e: 'close'): void;
 }>();
 
 const showComments = ref(false);
-const detailOpen = ref(false);
 
 // Natives Drag (Zuordnen zu einer Tour) startet über einen dedizierten Anfasser (.excursion-drag-
 // handle, siehe Template) statt über die ganze Karte – @click.stop dort verhindert, dass ein reiner
@@ -59,33 +64,24 @@ const { dragging, ghostStyle, onPointerDown } = usePointerDrag({
   },
 });
 
-// Öffnen des Detail-Dialogs koppelt die (direkt danebenliegende) Karte: drawers.openMapAt zoomt/
-// zentriert auf diesen Spot und lässt TripMap.vue seinen Pin dezent vergrößert darstellen. Schließen
-// via Modal (✕/Backdrop/Escape) hebt die Hervorhebung wieder auf – bewusst nicht als pauschaler
-// watch(detailOpen)-Handler, da @show-on-map unten detailOpen ebenfalls auf false setzt, dort aber
-// der Fokus (auf denselben Punkt) bestehen bleiben soll (kein Wettlauf zwischen "schließen löscht
-// Fokus" und "Auf-Karte-anzeigen setzt ihn").
-function openDetail() {
-  detailOpen.value = true;
-  drawers.openMapAt(`spot-${props.spot.id}`);
-}
-function onDetailDialogUpdate(v: boolean) {
-  detailOpen.value = v;
-  if (!v && drawers.mapFocusKey === `spot-${props.spot.id}`) drawers.mapFocusKey = null;
-}
-function onEdit() {
-  detailOpen.value = false;
-  if (drawers.mapFocusKey === `spot-${props.spot.id}`) drawers.mapFocusKey = null;
-  emit('edit', props.spot);
-}
-function onShowOnMap() {
-  detailOpen.value = false;
-  emit('show-on-map', props.spot);
+// Klick auf die Karte klappt sie auf-/zu, statt (wie zuvor) einen Modal-Dialog zu öffnen – die
+// direkt danebenliegende Karte (TripMap.vue) bleibt dadurch immer interaktiv, auch während man
+// sich die Details eines Spots ansieht. Aufklappen zoomt/zentriert zusätzlich über
+// drawers.openMapAt auf diesen Spot und lässt TripMap.vue seinen Pin dezent vergrößert darstellen;
+// Zuklappen hebt die Hervorhebung wieder auf.
+function onCardClick() {
+  if (props.expanded) {
+    emit('close');
+    if (drawers.mapFocusKey === `spot-${props.spot.id}`) drawers.mapFocusKey = null;
+  } else {
+    emit('open', props.spot);
+    drawers.openMapAt(`spot-${props.spot.id}`);
+  }
 }
 </script>
 
 <template>
-  <div class="card spot-card" @click="openDetail">
+  <div class="card spot-card" :class="{ expanded }" @click="onCardClick">
     <div class="image" :style="spot.image_url ? { backgroundImage: `url(${spot.image_url})` } : {}">
       <span v-if="!spot.image_url" class="placeholder">{{ spotCategoryMeta(spot.category).icon }}</span>
       <EditButton floating @click="emit('edit', spot)" />
@@ -96,6 +92,7 @@ function onShowOnMap() {
         <h3>{{ spot.title }}</h3>
         <CategoryChip :category="spot.category" />
       </div>
+      <p v-if="expanded && creatorLabel" class="detail-row"><span class="detail-label">Von</span>{{ creatorLabel }}</p>
       <div v-if="spot.note" class="note" v-html="renderRichText(spot.note)"></div>
       <div class="links" v-if="spot.lat != null && spot.lng != null">
         <button type="button" class="card-action-btn" @click.stop="emit('show-on-map', spot)">🗺️ Auf Karte anzeigen</button>
@@ -136,21 +133,6 @@ function onShowOnMap() {
         @remove="(id) => emit('remove-comment', id)"
       />
     </div>
-
-    <SpotDetailDialog
-      :model-value="detailOpen"
-      @update:model-value="onDetailDialogUpdate"
-      :spot="spot"
-      :creator-label="creatorLabel"
-      :like-count="likeCount"
-      :liked="liked"
-      :comments="comments"
-      @edit="onEdit"
-      @toggle-like="emit('toggle-like')"
-      @submit-comment="(content) => emit('submit-comment', content)"
-      @remove-comment="(id) => emit('remove-comment', id)"
-      @show-on-map="onShowOnMap"
-    />
   </div>
 </template>
 
@@ -161,6 +143,23 @@ function onShowOnMap() {
   display: flex;
   flex-direction: column;
   cursor: pointer;
+  border: 2px solid transparent;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+/* Ersetzt den früheren Modal-Dialog: die aktive Karte klappt an Ort und Stelle auf (mehr Zeilen,
+   größeres Bild) statt einen Dialog über die Karte zu legen, die dadurch immer interaktiv bleibt
+   (siehe onCardClick im Script). grid-column: span 2 nutzt das umgebende
+   auto-fill-Raster (ExcursionsView.vue's .cards) für mehr Breite – reduziert sich bei nur einer
+   verfügbaren Spalte automatisch auf span 1. */
+.spot-card.expanded {
+  grid-column: span 2;
+  border-color: var(--color-primary);
+  background: var(--color-primary-tint);
+}
+
+.spot-card.expanded .image {
+  height: 200px;
 }
 
 .image {
@@ -170,6 +169,7 @@ function onShowOnMap() {
   align-items: center;
   justify-content: center;
   position: relative;
+  transition: height 0.15s ease;
 }
 
 .placeholder {

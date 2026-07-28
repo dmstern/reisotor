@@ -64,6 +64,10 @@ const emit = defineEmits<{
   // Ausflüge/Unterkunft/Reise) im selben Komponentenbaum wie die echte Spots-Bearbeiten-Form
   // (beide Teil der Karte-Hauptsicht) – kein Routen-Sprung nötig, nur ein Emit nach oben.
   (e: 'edit-spot', spot: Spot): void;
+  // Klick auf einen Spot-Pin (nicht Unterkunft/Reise, siehe handlePointClick): statt eines eigenen
+  // Modal-Dialogs (der die Karte dahinter blockieren würde) klappt die passende Spot-Karte in der
+  // Liste auf – die kennt TripMap.vue nicht direkt, daher Emit an die Karte-Hauptsicht.
+  (e: 'focus-spot', spotId: number): void;
 }>();
 
 const router = useRouter();
@@ -382,13 +386,17 @@ function openStationDetail(station: ExcursionStation) {
   }
 }
 
-// Klick auf einen Pin direkt auf der Karte (nicht in der Stationsliste): öffnet sofort den
-// vollständigen Detail-Dialog des jeweiligen Objekts in der Bildschirmmitte, statt nur ein kleines
-// Info-Panel zu zeigen – dieselbe Ziel-Ansicht wie bei einem Klick in der Stationsliste
-// (openStationDetail), hier aber anhand des MapPoint statt einer aufgelösten ExcursionStation.
+// Klick auf einen Pin direkt auf der Karte (nicht in der Stationsliste): bei Spots klappt (statt
+// eines eigenen Modal-Dialogs, der die Karte dahinter blockieren würde) die passende Karte in der
+// Spots-Liste auf (Emit an ExcursionsView.vue, siehe dort) – bei Unterkunft/Reise gibt es kein
+// Listen-Gegenstück, dort bleibt der bisherige Modal-Dialog (unproblematisch, da seltener genutzt
+// als die primäre Spot↔Karte-Kopplung). Die Pin-Vergrößerung (drawers.mapFocusKey) läuft in beiden
+// Fällen weiterhin gleich.
 function handlePointClick(point: MapPoint) {
   if (point.origin === 'spot') {
-    openSpotDetail(Number(point.key.slice('spot-'.length)));
+    const spotId = Number(point.key.slice('spot-'.length));
+    drawers.mapFocusKey = point.key;
+    emit('focus-spot', spotId);
   } else if (point.origin === 'accommodation') {
     openAccommodationId.value = Number(point.key.slice('accommodation-'.length));
     accommodationDialogOpen.value = true;
