@@ -198,7 +198,7 @@ async function onImportFileSelected(event: Event) {
   }
 
   const confirmed = window.confirm(
-    'Import überschreibt ALLE aktuellen Daten (Urlaub, Kalender, Packlisten, Ausflüge, Unterkünfte, Budget, Nutzer) unwiderruflich mit dem Inhalt der Datei. Fortfahren?',
+    'Import überschreibt ALLE aktuellen Daten (Urlaub, Kalender, Packlisten, Touren, Unterkünfte, Budget, Nutzer) unwiderruflich mit dem Inhalt der Datei. Fortfahren?',
   );
   if (!confirmed) return;
 
@@ -355,7 +355,7 @@ async function onImportFileSelected(event: Event) {
       <h2>Datensicherung</h2>
       <p>
         Vor einem Neu-Deployment mit neuen Features könnt ihr hier alle Daten (Urlaub, Kalender,
-        Packlisten, Ausflüge, Unterkünfte, Budget, Nutzer) als JSON-Datei sichern und später
+        Packlisten, Touren, Unterkünfte, Budget, Nutzer) als JSON-Datei sichern und später
         wiederherstellen.
       </p>
 

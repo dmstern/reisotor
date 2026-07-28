@@ -74,7 +74,7 @@ async function onCreateFirstTrip(data: TripFormData) {
         side="right"
         :open="drawers.excursionsOpen"
         :width="drawers.excursionsWidth"
-        label="Ausflüge"
+        label="Touren"
         :icon="SECTION_ICONS.excursions"
         @update:open="(v) => (drawers.excursionsOpen = v)"
         @update:width="(w) => (drawers.excursionsWidth = w)"

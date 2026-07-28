@@ -746,8 +746,8 @@ watch(
       <button
         type="button"
         class="fit-btn excursions-btn"
-        title="Nur Ausflugsziele fokussieren"
-        aria-label="Nur Ausflugsziele fokussieren"
+        title="Nur Tourziele fokussieren"
+        aria-label="Nur Tourziele fokussieren"
         :disabled="!excursionPoints.length"
         @click="fitExcursions"
       >

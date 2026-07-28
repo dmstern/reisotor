@@ -291,7 +291,7 @@ async function removeComment(id: number) {
         </div>
       </div>
       <fieldset v-if="excursionsStore.excursions.length" class="excursion-picker">
-        <legend>🎒 Ausflüge zuordnen</legend>
+        <legend>🎒 Touren zuordnen</legend>
         <label v-for="ex in pickerExcursions(todayDateStr)" :key="ex.id" class="excursion-option">
           <input type="checkbox" :value="ex.id" v-model="form.excursion_ids" />
           <span class="excursion-option-title">{{ ex.title }}</span>
@@ -399,7 +399,7 @@ async function removeComment(id: number) {
           </div>
         </div>
         <fieldset v-if="excursionsStore.excursions.length" class="excursion-picker">
-          <legend>🎒 Ausflüge zuordnen</legend>
+          <legend>🎒 Touren zuordnen</legend>
           <label v-for="ex in pickerExcursions(editEntryDateStr)" :key="ex.id" class="excursion-option">
             <input type="checkbox" :value="ex.id" v-model="editForm.excursion_ids" />
             <span class="excursion-option-title">{{ ex.title }}</span>

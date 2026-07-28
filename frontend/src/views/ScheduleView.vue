@@ -457,7 +457,7 @@ function formatDay(date: string) {
               <router-link to="/travel" class="card-action-btn">Zur Reise</router-link>
             </template>
             <template v-else-if="entry.kind === 'excursion'">
-              <button type="button" class="card-action-btn" @click="drawers.excursionsOpen = true">Zum Ausflug</button>
+              <button type="button" class="card-action-btn" @click="drawers.excursionsOpen = true">Zur Tour</button>
               <button
                 type="button"
                 class="secondary unplan-btn"

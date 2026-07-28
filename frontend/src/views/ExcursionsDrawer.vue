@@ -149,7 +149,7 @@ async function removeExcursion(id: number) {
   const excursion = excursionsStore.excursions.find((e) => e.id === id);
   if (excursion?.date) {
     const confirmed = window.confirm(
-      'Dieser Ausflug ist bereits im Kalender eingeplant. Wirklich löschen? Die zugeordneten Spots bleiben erhalten und werden nicht mitgelöscht.',
+      'Diese Tour ist bereits im Kalender eingeplant. Wirklich löschen? Die zugeordneten Spots bleiben erhalten und werden nicht mitgelöscht.',
     );
     if (!confirmed) return;
   }
@@ -282,11 +282,11 @@ function editStationSpot() {
 <template>
   <div class="excursions-drawer" v-if="!loading">
     <div class="header">
-      <h2>🎒 Ausflüge</h2>
-      <button @click="showExcursionForm = true">+ Neuer Ausflug</button>
+      <h2>🎒 Touren</h2>
+      <button @click="showExcursionForm = true">+ Neue Tour</button>
     </div>
 
-    <Modal :model-value="showExcursionForm" title="Neuer Ausflug" @update:model-value="(v) => !v && closeExcursionForm()">
+    <Modal :model-value="showExcursionForm" title="Neue Tour" @update:model-value="(v) => !v && closeExcursionForm()">
       <form class="edit-form" @submit.prevent="addExcursion">
         <input v-model="excursionForm.title" type="text" placeholder="Titel" required />
         <input v-model="excursionForm.image_url" type="url" placeholder="Bild-URL (optional)" />
@@ -344,7 +344,7 @@ function editStationSpot() {
         />
       </TransitionGroup>
       <p v-else class="empty dropzone-hint">
-        Noch keine Ausflüge in Planung – geplante Ausflüge kannst du hierher ziehen, um die
+        Noch keine Touren in Planung – geplante Touren kannst du hierher ziehen, um die
         Einplanung rückgängig zu machen.
       </p>
     </section>
@@ -383,11 +383,11 @@ function editStationSpot() {
         />
       </TransitionGroup>
     </section>
-    <p v-if="!excursionsStore.excursions.length" class="empty">Noch keine Ausflüge angelegt.</p>
+    <p v-if="!excursionsStore.excursions.length" class="empty">Noch keine Touren angelegt.</p>
 
     <Modal
       :model-value="editingExcursion !== null"
-      title="Ausflug bearbeiten"
+      title="Tour bearbeiten"
       @update:model-value="(v) => !v && (editingExcursion = null)"
     >
       <form class="edit-form" @submit.prevent="submitEditExcursion">

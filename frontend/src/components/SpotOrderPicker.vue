@@ -114,9 +114,9 @@ function onDragEnd() {
 <template>
   <div class="spot-order-picker">
     <fieldset v-if="plannedStations.length" class="planned-box">
-      <legend>📋 Ausflugsreihenfolge</legend>
+      <legend>📋 Tourreihenfolge</legend>
       <p class="order-hint">
-        In dieser Reihenfolge werden die Stationen während des Ausflugs abgeklappert (bestimmt auch
+        In dieser Reihenfolge werden die Stationen während der Tour abgeklappert (bestimmt auch
         die eingezeichnete Route auf der Karte) – zum Sortieren ziehen.
       </p>
       <template v-for="(station, index) in plannedStations" :key="index">
@@ -133,7 +133,7 @@ function onDragEnd() {
           <span class="order-num">{{ index + 1 }}.</span>
           <span class="drag-handle" aria-hidden="true">⠿</span>
           <span class="spot-title">{{ station.icon }} {{ station.title }}</span>
-          <button type="button" class="remove-btn" @click="removeSpotAt(index)" aria-label="Aus Ausflug entfernen">
+          <button type="button" class="remove-btn" @click="removeSpotAt(index)" aria-label="Aus Tour entfernen">
             ✕
           </button>
         </div>

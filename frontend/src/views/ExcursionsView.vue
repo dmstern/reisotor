@@ -337,9 +337,9 @@ function showSpotOnMap(spot: Spot) {
         </div>
       </div>
       <p class="hint">
-        Orte (Restaurant, Sehenswürdigkeit, Strand, …), die du als Stationen bei Ausflügen zuordnen kannst –
-        auch unabhängig von einem Ausflug. Tipp: Ziehe eine Spot-Karte direkt auf einen Ausflug in der
-        Ausflüge-Schublade oder auf einen Kalendertag, um sie dort als Station bzw. spontan einzuplanen.
+        Orte (Restaurant, Sehenswürdigkeit, Strand, …), die du als Stationen bei Touren zuordnen kannst –
+        auch unabhängig von einer Tour. Tipp: Ziehe eine Spot-Karte direkt auf eine Tour in der
+        Touren-Schublade oder auf einen Kalendertag, um sie dort als Station bzw. spontan einzuplanen.
       </p>
 
       <div class="filter-bar" v-if="filterCategoryOptions.length">
