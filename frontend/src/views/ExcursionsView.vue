@@ -44,7 +44,11 @@ function setPageTitleRef(el: Element | ComponentPublicInstance | null) {
   pageTitleObserver = null;
   if (el instanceof HTMLElement) {
     pageTitleObserver = new ResizeObserver(() => {
-      pageTitleHeight.value = el.getBoundingClientRect().height;
+      // getBoundingClientRect() liefert nur die Border-Box, nicht den eigenen margin-bottom des
+      // Titels (siehe .page-title-CSS) – der zählt aber genauso zum Platz, den .layout darunter
+      // frei lassen muss, sonst fehlte genau dieser Rest weiterhin in der max-height-Rechnung.
+      const marginBottom = parseFloat(getComputedStyle(el).marginBottom) || 0;
+      pageTitleHeight.value = el.getBoundingClientRect().height + marginBottom;
     });
     pageTitleObserver.observe(el);
   }
@@ -783,6 +787,13 @@ function showSpotOnMap(spot: Spot) {
 @container app-main (min-width: 900px) {
   .page {
     max-width: 1600px;
+    /* Die globale .page-Regel (style.css) bringt padding-bottom:88px für normal scrollende Seiten
+       mit (Platz z. B. für eine untere mobile Navigation) – hier unnötig und der Hauptgrund für den
+       sichtbaren leeren Weißraum am Seitenende, da .layout's Inhalt (sticky/fixed) sich schon
+       selbst begrenzt. padding-top wird stattdessen unten in der max-height-Rechnung berücksichtigt
+       (statt es hier auf 0 zu setzen), damit der Titel nicht direkt am Seitenrand klebt. */
+    padding-top: var(--space-3);
+    padding-bottom: 0;
   }
 
   /* Auf Desktop gibt es keine vollflächige Hintergrund-Karte (siehe .map-col weiter unten) – der
@@ -818,10 +829,10 @@ function showSpotOnMap(spot: Spot) {
     z-index: auto;
     top: calc(56px + var(--navbar-offset, 0px));
     /* Zieht zusätzlich die (live gemessene, siehe pageTitleHeight im Script) Höhe des Seitentitels
-       ab, der über .layout steht – ohne das war die Spalte beim ersten Rendern (bevor sie
-       tatsächlich einrastet) um genau diese Höhe zu groß, was eine überflüssige Seiten-Scrollbar
-       samt leerem Weißraum am Ende erzeugte. */
-    max-height: calc(100vh - 56px - var(--navbar-offset, 0px) - var(--page-title-height, 0px));
+       samt seines margin-bottom sowie .page's eigenes padding-top (var(--space-3), s. o.) ab – ohne
+       das war die Spalte beim ersten Rendern (bevor sie tatsächlich einrastet) zu groß, was eine
+       überflüssige Seiten-Scrollbar samt leerem Weißraum am Ende erzeugte. */
+    max-height: calc(100vh - 56px - var(--navbar-offset, 0px) - var(--page-title-height, 0px) - var(--space-3));
     overflow-y: auto;
   }
 
@@ -858,7 +869,7 @@ function showSpotOnMap(spot: Spot) {
     justify-content: center;
     position: sticky;
     top: calc(56px + var(--navbar-offset, 0px));
-    height: calc(100vh - 56px - var(--navbar-offset, 0px) - var(--page-title-height, 0px));
+    height: calc(100vh - 56px - var(--navbar-offset, 0px) - var(--page-title-height, 0px) - var(--space-3));
     cursor: col-resize;
     touch-action: none;
     border-radius: var(--radius-sm);
