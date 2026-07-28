@@ -203,6 +203,42 @@ button.danger {
   border-color: var(--color-primary);
 }
 
+/* Einheitliche Optik für alle fensterartigen Größen-Anfasser (Drawer.vue's Schubladen-Anfasser,
+   ExcursionsView.vue's Anfasser zwischen Spots-Liste und Karte, …) – zentral statt je Stelle mit
+   leicht abweichenden Werten dupliziert. Erwartet einen Flex-Container mit definierter Höhe/Breite
+   (Größe/Position bleibt bewusst Sache der jeweiligen Verwendungsstelle, z. B. position:sticky vs.
+   position:absolute); nur die Interaktions-/Hover-Optik selbst (Hover-Hintergrund über den ganzen
+   Anfasser statt nur eine dünne Linie, kurzer zentrierter Griff-Strich statt einer über die volle
+   Höhe laufenden Linie) lebt hier. */
+.resize-grip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: col-resize;
+  touch-action: none;
+  border-radius: var(--radius-sm);
+  transition: background 0.15s ease;
+}
+
+.resize-grip:hover,
+.resize-grip:active {
+  background: var(--color-hover);
+}
+
+.resize-grip::after {
+  content: '';
+  width: 4px;
+  height: 44px;
+  border-radius: 3px;
+  background: var(--color-border);
+  transition: background 0.15s ease;
+}
+
+.resize-grip:hover::after,
+.resize-grip:active::after {
+  background: var(--color-primary);
+}
+
 /* Gemeinsame Read-Only-Feld-Optik für die Detail-Dialoge (Ausflug/Spot/Unterkunft/Reise,
    DetailModal.vue) – global statt scoped, da vier verschiedene Views dieselbe Optik brauchen.
    Bild-Banner/Titel sitzen inzwischen direkt in DetailModal.vue selbst (scoped, als Hero-Overlay),

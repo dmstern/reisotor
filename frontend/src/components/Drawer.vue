@@ -127,7 +127,7 @@ function onResizeEnd() {
          zwischen Panel und Lasche (siehe --drawer-handle-gap unten), außerhalb jeder Clip-Box. -->
     <div
       v-if="open"
-      class="resize-handle"
+      class="resize-handle resize-grip"
       role="separator"
       aria-orientation="vertical"
       :aria-label="`${label}-Schublade in der Breite anpassen`"
@@ -275,6 +275,10 @@ function onResizeEnd() {
   min-height: 100%;
 }
 
+/* Nur Positionierung/Größe hier – die eigentliche Anfasser-Optik (Hover-Hintergrund, zentrierter
+   Griff-Strich) kommt aus der geteilten .resize-grip-Klasse (style.css), damit sie überall gleich
+   aussieht (z. B. ExcursionsView.vue's Anfasser zwischen Spots-Liste und Karte nutzt dieselbe
+   Klasse). */
 .resize-handle {
   /* fixed statt absolute (analog zu .drawer-panel): lebt jetzt als Geschwister außerhalb von
      .drawer-panel im Zwischenraum vor der Lasche (--drawer-handle-gap), viewport-verankert mit
@@ -284,26 +288,6 @@ function onResizeEnd() {
   bottom: 60px;
   width: var(--drawer-handle-gap);
   z-index: 14;
-  cursor: col-resize;
-  touch-action: none;
-}
-
-.resize-handle::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: calc(var(--drawer-handle-gap) / 2 - 1.5px);
-  width: 3px;
-  border-radius: 2px;
-  /* Dauerhaft schwach sichtbar statt erst bei Hover komplett unsichtbar – sonst findet man den
-     Griff nur durch Zufall. Auf color-border, damit es sich dezent ins UI einfügt. */
-  background: var(--color-border);
-  transition: background 0.15s ease;
-}
-
-.resize-handle:hover::after {
-  background: var(--color-primary);
 }
 
 /* Position exakt am äußeren Panel-Rand (Beginn des Zwischenraums zur Lasche hin) – dieselbe Formel

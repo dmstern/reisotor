@@ -639,7 +639,7 @@ function showSpotOnMap(spot: Spot) {
     </div>
 
     <div
-      class="col-resize-handle"
+      class="col-resize-handle resize-grip"
       role="separator"
       aria-orientation="vertical"
       aria-label="Aufteilung zwischen Spots-Liste und Karte anpassen"
@@ -887,39 +887,14 @@ function showSpotOnMap(spot: Spot) {
      nur `max-height`: .spots-col/.map-col bekommen ihre Höhe automatisch von ihrem (teils langen)
      Inhalt, ein leeres Element wie dieses hätte ohne erzwungene `height` sonst nur eine Höhe nahe 0
      (Grid-`align-items: start` auf .layout streckt Items nicht automatisch) – der Anfasser wäre
-     dadurch praktisch unsichtbar/nicht greifbar gewesen. */
+     dadurch praktisch unsichtbar/nicht greifbar gewesen. Nur Positionierung/Größe hier – die
+     eigentliche Anfasser-Optik (Hover-Hintergrund, Griff-Strich) kommt aus der geteilten
+     .resize-grip-Klasse (style.css), damit sie überall identisch aussieht (Drawer.vue's
+     Schubladen-Anfasser nutzt dieselbe Klasse). */
   .col-resize-handle {
-    display: flex;
-    align-items: center;
-    justify-content: center;
     position: sticky;
     top: calc(56px + var(--navbar-offset, 0px));
     height: calc(100vh - 56px - var(--navbar-offset, 0px) - var(--page-title-height, 0px) - var(--space-3));
-    cursor: col-resize;
-    touch-action: none;
-    border-radius: var(--radius-sm);
-    transition: background 0.15s ease;
-  }
-
-  .col-resize-handle:hover,
-  .col-resize-handle:active {
-    background: var(--color-hover);
-  }
-
-  /* Kurzer, zentrierter Griff-Strich statt eines über die volle Höhe laufenden dünnen Strichs –
-     deutlicher als "Ziehpunkt" erkennbar, ähnlich dem Anfasser einer Bottom-Sheet/Modal-Leiste. */
-  .col-resize-handle::after {
-    content: '';
-    width: 4px;
-    height: 44px;
-    border-radius: 3px;
-    background: var(--color-border);
-    transition: background 0.15s ease;
-  }
-
-  .col-resize-handle:hover::after,
-  .col-resize-handle:active::after {
-    background: var(--color-primary);
   }
 }
 
