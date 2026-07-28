@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch, type ComponentPublicInstance } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch, type ComponentPublicInstance } from 'vue';
 import { api } from '../api/client';
 import type { Accommodation, Spot, TravelItem, User } from '../api/types';
 import { useAuthStore } from '../stores/auth';
@@ -30,6 +30,28 @@ const users = ref<User[]>([]);
 const accommodations = ref<Accommodation[]>([]);
 const travelItems = ref<TravelItem[]>([]);
 const loading = ref(true);
+
+// Höhe des Seitentitels (nur auf Desktop sichtbar, siehe .page-title-CSS) live gemessen und als
+// CSS-Variable bereitgestellt (gleiches Vorgehen wie --navbar-offset in NavBar.vue) – ohne das
+// rechneten .spots-col/.map-col/.col-resize-handle's max-height/height-Formeln (weiter unten im
+// CSS) nur mit der NavBar-Höhe, nicht mit dem darüber liegenden Titel. Dadurch wurden die sticky
+// Spalten beim ersten Rendern (bevor sie tatsächlich "einrasten") um genau die Titel-Höhe zu hoch,
+// die Seite bekam eine überflüssige eigene Scrollbar mit leerem Weißraum am Ende.
+const pageTitleHeight = ref(0);
+let pageTitleObserver: ResizeObserver | null = null;
+function setPageTitleRef(el: Element | ComponentPublicInstance | null) {
+  pageTitleObserver?.disconnect();
+  pageTitleObserver = null;
+  if (el instanceof HTMLElement) {
+    pageTitleObserver = new ResizeObserver(() => {
+      pageTitleHeight.value = el.getBoundingClientRect().height;
+    });
+    pageTitleObserver.observe(el);
+  }
+}
+onUnmounted(() => {
+  pageTitleObserver?.disconnect();
+});
 
 onMounted(async () => {
   const [usersRes, accommodationRes, travelRes] = await Promise.all([
@@ -436,8 +458,8 @@ function showSpotOnMap(spot: Spot) {
 </script>
 
 <template>
-  <div class="page" v-if="!loading">
-    <h1 class="page-title">🗺️ Karte</h1>
+  <div class="page" v-if="!loading" :style="{ '--page-title-height': pageTitleHeight + 'px' }">
+    <h1 class="page-title" :ref="setPageTitleRef">🗺️ Karte</h1>
     <div class="layout" :style="{ '--spots-col-width': spotsColWidth + 'px' }">
     <div
       class="spots-col"
@@ -795,7 +817,11 @@ function showSpotOnMap(spot: Spot) {
     bottom: auto;
     z-index: auto;
     top: calc(56px + var(--navbar-offset, 0px));
-    max-height: calc(100vh - 56px - var(--navbar-offset, 0px));
+    /* Zieht zusätzlich die (live gemessene, siehe pageTitleHeight im Script) Höhe des Seitentitels
+       ab, der über .layout steht – ohne das war die Spalte beim ersten Rendern (bevor sie
+       tatsächlich einrastet) um genau diese Höhe zu groß, was eine überflüssige Seiten-Scrollbar
+       samt leerem Weißraum am Ende erzeugte. */
+    max-height: calc(100vh - 56px - var(--navbar-offset, 0px) - var(--page-title-height, 0px));
     overflow-y: auto;
   }
 
@@ -832,7 +858,7 @@ function showSpotOnMap(spot: Spot) {
     justify-content: center;
     position: sticky;
     top: calc(56px + var(--navbar-offset, 0px));
-    height: calc(100vh - 56px - var(--navbar-offset, 0px));
+    height: calc(100vh - 56px - var(--navbar-offset, 0px) - var(--page-title-height, 0px));
     cursor: col-resize;
     touch-action: none;
     border-radius: var(--radius-sm);
