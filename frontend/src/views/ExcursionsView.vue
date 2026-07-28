@@ -890,8 +890,16 @@ function showSpotOnMap(spot: Spot) {
      dadurch praktisch unsichtbar/nicht greifbar gewesen. Nur Positionierung/Größe hier – die
      eigentliche Anfasser-Optik (Hover-Hintergrund, Griff-Strich) kommt aus der geteilten
      .resize-grip-Klasse (style.css), damit sie überall identisch aussieht (Drawer.vue's
-     Schubladen-Anfasser nutzt dieselbe Klasse). */
+     Schubladen-Anfasser nutzt dieselbe Klasse). display:flex MUSS hier trotzdem explizit gesetzt
+     bleiben (nicht der globalen .resize-grip-Regel überlassen): der unconditional Mobil-Default
+     weiter oben (.col-resize-handle { display: none; }) hat dieselbe Spezifität wie .resize-grip's
+     eigenes display:flex, und scoped Component-Styles gewinnen bei einem Unentschieden gegen
+     globale Styles typischerweise unabhängig von der Lade-Reihenfolge – ohne dieses explizite
+     Zurücksetzen blieb der Anfasser dadurch auch auf Desktop display:none, wodurch er als
+     Grid-Element komplett wegfiel und .map-col in seine 20px-Spalte statt die eigentliche
+     1fr-Spalte rutschte (dadurch wirkte die Karte winzig). */
   .col-resize-handle {
+    display: flex;
     position: sticky;
     top: calc(56px + var(--navbar-offset, 0px));
     height: calc(100vh - 56px - var(--navbar-offset, 0px) - var(--page-title-height, 0px) - var(--space-3));
