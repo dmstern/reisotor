@@ -59,10 +59,34 @@ const { dragging, ghostStyle, onPointerDown } = usePointerDrag({
     excursionsStore.planSpotOnDate(props.spot.id, dayEl.dataset.date);
   },
 });
+
+// Öffnen des Detail-Dialogs koppelt die (direkt danebenliegende) Karte: drawers.openMapAt zoomt/
+// zentriert auf diesen Spot und lässt TripMap.vue seinen Pin dezent vergrößert darstellen. Schließen
+// via Modal (✕/Backdrop/Escape) hebt die Hervorhebung wieder auf – bewusst nicht als pauschaler
+// watch(detailOpen)-Handler, da @show-on-map unten detailOpen ebenfalls auf false setzt, dort aber
+// der Fokus (auf denselben Punkt) bestehen bleiben soll (kein Wettlauf zwischen "schließen löscht
+// Fokus" und "Auf-Karte-anzeigen setzt ihn").
+function openDetail() {
+  detailOpen.value = true;
+  drawers.openMapAt(`spot-${props.spot.id}`);
+}
+function onDetailDialogUpdate(v: boolean) {
+  detailOpen.value = v;
+  if (!v && drawers.mapFocusKey === `spot-${props.spot.id}`) drawers.mapFocusKey = null;
+}
+function onEdit() {
+  detailOpen.value = false;
+  if (drawers.mapFocusKey === `spot-${props.spot.id}`) drawers.mapFocusKey = null;
+  emit('edit', props.spot);
+}
+function onShowOnMap() {
+  detailOpen.value = false;
+  emit('show-on-map', props.spot);
+}
 </script>
 
 <template>
-  <div class="card spot-card" draggable="true" @dragstart="onDragStart" @click="detailOpen = true">
+  <div class="card spot-card" draggable="true" @dragstart="onDragStart" @click="openDetail">
     <div class="image" :style="spot.image_url ? { backgroundImage: `url(${spot.image_url})` } : {}">
       <span v-if="!spot.image_url" class="placeholder">{{ spotCategoryMeta(spot.category).icon }}</span>
       <EditButton floating @click="emit('edit', spot)" />
@@ -105,17 +129,18 @@ const { dragging, ghostStyle, onPointerDown } = usePointerDrag({
     </div>
 
     <SpotDetailDialog
-      v-model="detailOpen"
+      :model-value="detailOpen"
+      @update:model-value="onDetailDialogUpdate"
       :spot="spot"
       :creator-label="creatorLabel"
       :like-count="likeCount"
       :liked="liked"
       :comments="comments"
-      @edit="detailOpen = false; emit('edit', spot)"
+      @edit="onEdit"
       @toggle-like="emit('toggle-like')"
       @submit-comment="(content) => emit('submit-comment', content)"
       @remove-comment="(id) => emit('remove-comment', id)"
-      @show-on-map="detailOpen = false; emit('show-on-map', spot)"
+      @show-on-map="onShowOnMap"
     />
   </div>
 </template>
