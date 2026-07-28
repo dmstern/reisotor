@@ -438,6 +438,16 @@ function editStationSpot() {
   gap: var(--space-2);
 }
 
+/* Nur auf Desktop nötig: Drawer.vue schwebt dort den Maximieren-/Schließen-Button-Block
+   (28px hoch, ab top:8px, endet also bei 36px) über den Panel-Inhalt – ohne diesen Abstand
+   überlagerte er den rechts stehenden "+ Neue Tour"-Button in dieser Kopfzeile. Auf Mobil gibt es
+   diese schwebenden Buttons nicht (siehe Drawer.vue), daher hier keine zusätzliche Distanz nötig. */
+@media (min-width: 800px) {
+  .header {
+    margin-top: 32px;
+  }
+}
+
 .edit-form {
   display: flex;
   flex-direction: column;
