@@ -667,6 +667,14 @@ function showSpotOnMap(spot: Spot) {
      unabhängig von Viewport/anderer-Container-Breite. Gilt unverändert in beiden Modi (Mobil
      fixed/Desktop sticky), da hier nicht zurückgesetzt. */
   container-type: inline-size;
+  /* Deckelt alle drei Höhen-Zustände (unten) auf den Platz UNTER Kopfzeile/NavBar (56px
+     App-Header + --navbar-offset, dieselbe Formel wie .map-col's sticky top) – reine vh-Werte
+     kennen die NavBar-Höhe nicht und wuchsen auf kürzeren Fenstern über sie hinaus (der obere Rand
+     landete dann dahinter verdeckt). Als eigene Variable statt direkt in jedem height-Wert, damit
+     sie nur an einer Stelle gepflegt werden muss. Reine CSS-Rechnung (reagiert live auf
+     --navbar-offset), nicht die JS-Berechnung in sheetHeightPx() – die greift nur während eines
+     aktiven Ziehens/beim Einrasten, nicht für diesen ruhenden Grundzustand. */
+  --sheet-max-height: calc(100vh - 56px - var(--navbar-offset, 0px) - 8px);
   position: fixed;
   left: 0;
   right: 0;
@@ -677,17 +685,17 @@ function showSpotOnMap(spot: Spot) {
   background: var(--color-surface);
   border-radius: var(--radius-md) var(--radius-md) 0 0;
   box-shadow: var(--shadow-md);
-  height: 46vh;
+  height: min(46vh, var(--sheet-max-height));
   transition: height 0.25s ease;
   overflow: hidden;
 }
 
 .spots-col.collapsed {
-  height: 96px;
+  height: min(96px, var(--sheet-max-height));
 }
 
 .spots-col.full {
-  height: 88vh;
+  height: min(88vh, var(--sheet-max-height));
 }
 
 .spots-col.dragging {
