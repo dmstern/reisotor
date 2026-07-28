@@ -1,6 +1,6 @@
 import L from 'leaflet';
 
-// Aus MapView.vue extrahiert: Marker-Icon- und Bogen-Routen-Helfer, die jetzt sowohl von der
+// Aus TripMap.vue extrahiert: Marker-Icon- und Bogen-Routen-Helfer, die jetzt sowohl von der
 // großen Karte als auch von der kleinen Ausflug-Mini-Karte (ExcursionMiniMap.vue) gebraucht
 // werden – ein gemeinsamer Icon-Cache spart auf dem ressourcenschwachen Pi 2 unnötige
 // L.DivIcon-Instanzen, egal welche Karte gerade rendert.

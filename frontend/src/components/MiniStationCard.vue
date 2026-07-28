@@ -2,7 +2,7 @@
 import type { ExcursionStation } from '../utils/excursionStations';
 
 // Ganz bewusst ohne Like/Kommentar/Edit/Löschen/Drag – dient in der Ausflug-Stationsliste
-// (ExcursionDetailDialog.vue, MapView.vue) nur der Übersicht "welche Stationen in welcher
+// (ExcursionDetailDialog.vue, TripMap.vue) nur der Übersicht "welche Stationen in welcher
 // Reihenfolge", nicht der Interaktion. Eine Station ist nicht zwingend ein echter Spot (kann auch
 // die Unterkunft oder ein Anreise-/Abreise-Ort sein, siehe utils/excursionStations.ts) – Icon/
 // Kategorie/Bild kommen deshalb bereits fertig aufgelöst vom ExcursionStation-Objekt statt hier

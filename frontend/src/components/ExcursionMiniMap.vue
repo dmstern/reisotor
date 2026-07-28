@@ -7,7 +7,7 @@ import { arcRoute, cachedEmojiPin } from '../utils/mapRoute';
 
 // Kleine, eigenständige Leaflet-Instanz für den Ausflug-Detail-Dialog – bewusst lazy erzeugt (erst
 // beim Mounten des Dialogs) und beim Schließen wieder mit map.remove() abgebaut (Pi-2-Ressourcen-
-// Rücksicht), statt dauerhaft im Hintergrund zu laufen wie die große Karte (MapView.vue). Der
+// Rücksicht), statt dauerhaft im Hintergrund zu laufen wie die große Karte (TripMap.vue). Der
 // Aufrufer liefert bereits gefilterte (lat/lng gesetzt) und in Besuchsreihenfolge sortierte
 // Stationen (nicht zwingend echte Spots, siehe utils/excursionStations.ts).
 const props = defineProps<{ stations: ExcursionStation[]; routeColor?: string }>();

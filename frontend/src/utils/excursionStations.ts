@@ -4,7 +4,7 @@ import { spotCategoryMeta } from './spotCategory';
 // Löst die generischen station_keys eines Ausflugs (siehe api/types.ts, Excursion.station_keys) zu
 // einem einheitlichen Anzeige-Objekt auf – eine Station ist nicht zwingend ein echter Spot (kann
 // auch die Unterkunft oder ein Anreise-/Abreise-Ort sein, siehe Kommentar dort). Zentralisiert die
-// Metadaten, die MapView.vue und ExcursionsView.vue (derivedLocations) für dieselben drei
+// Metadaten, die TripMap.vue und ExcursionsView.vue (derivedLocations) für dieselben drei
 // Objekttypen ohnehin schon separat kennen (Icon/Farbe/Label).
 export type StationKind = 'spot' | 'accommodation' | 'travel-from' | 'travel-to';
 

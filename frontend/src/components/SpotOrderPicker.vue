@@ -32,7 +32,7 @@ const selected = computed<string[]>({
 });
 
 // Reihenfolge der geplanten Stationen entspricht der Abklapper-Reihenfolge während des Ausflugs
-// (und bestimmt auch die auf der Karte gezeichnete Route, siehe MapView.vue) – deshalb hier nach
+// (und bestimmt auch die auf der Karte gezeichnete Route, siehe TripMap.vue) – deshalb hier nach
 // modelValue-Reihenfolge, NICHT nach Likes sortiert. Löst jeden Key lokal auf: 'spot-*' gegen
 // props.spots, alles andere (Unterkunft/Reise) gegen props.derivedLocations – kein Bedarf an einem
 // vollen ExcursionStation-Resolver hier, beide Quellen bringen Titel/Icon schon fertig mit.

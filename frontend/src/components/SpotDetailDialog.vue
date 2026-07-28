@@ -8,7 +8,7 @@ import LikeButton from './LikeButton.vue';
 import Comments, { type CommentItem } from './Comments.vue';
 
 // Eigenständige Komponente statt inline in SpotCard.vue, da dieser Dialog auch von anderer Stelle
-// geöffnet werden muss (MapView.vue's Stationsliste, ExcursionDetailDialog.vue's Stationen) – nicht
+// geöffnet werden muss (TripMap.vue's Stationsliste, ExcursionDetailDialog.vue's Stationen) – nicht
 // nur aus der Spots-Übersicht heraus.
 defineProps<{
   modelValue: boolean;

@@ -5,7 +5,7 @@ import { parseContact } from '../utils/contact';
 import DetailModal from './DetailModal.vue';
 
 // Eigenständige Komponente statt inline in AccommodationView.vue, da dieser Dialog auch von anderer
-// Stelle geöffnet werden muss (MapView.vue's Stationsliste, ExcursionDetailDialog.vue's Stationen,
+// Stelle geöffnet werden muss (TripMap.vue's Stationsliste, ExcursionDetailDialog.vue's Stationen,
 // falls die Unterkunft dort als Ausflug-Station eingeplant ist) – gleiches Vorgehen wie
 // SpotDetailDialog.vue/ExcursionDetailDialog.vue.
 defineProps<{
