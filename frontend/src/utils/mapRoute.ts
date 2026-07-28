@@ -4,25 +4,30 @@ import L from 'leaflet';
 // großen Karte als auch von der kleinen Ausflug-Mini-Karte (ExcursionMiniMap.vue) gebraucht
 // werden – ein gemeinsamer Icon-Cache spart auf dem ressourcenschwachen Pi 2 unnötige
 // L.DivIcon-Instanzen, egal welche Karte gerade rendert.
-export function emojiPin(emoji: string, color: string) {
+// `large`: dezent vergrößerte Variante für den aktuell hervorgehobenen Punkt (siehe
+// TripMap.vue's drawers.mapFocusKey-Kopplung mit der Spots-/Detail-Ansicht) – eigener
+// Cache-Eintrag pro Größe, da L.DivIcon-Instanzen unveränderlich sind.
+export function emojiPin(emoji: string, color: string, large = false) {
+  const size = large ? 42 : 32;
+  const fontSize = large ? 19 : 15;
   return L.divIcon({
-    html: `<div style="width:32px;height:32px;border-radius:50% 50% 50% 0;background:${color};
+    html: `<div style="width:${size}px;height:${size}px;border-radius:50% 50% 50% 0;background:${color};
       transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;
       box-shadow:0 2px 6px rgba(0,0,0,.35);border:2px solid white;">
-      <span style="transform:rotate(45deg);font-size:15px;line-height:1;">${emoji}</span></div>`,
+      <span style="transform:rotate(45deg);font-size:${fontSize}px;line-height:1;">${emoji}</span></div>`,
     className: '',
-    iconSize: [32, 32],
-    iconAnchor: [16, 32],
-    popupAnchor: [0, -30],
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size],
+    popupAnchor: [0, -size + 2],
   });
 }
 
 const iconCache = new Map<string, L.DivIcon>();
-export function cachedEmojiPin(emoji: string, color: string) {
-  const key = `${emoji}|${color}`;
+export function cachedEmojiPin(emoji: string, color: string, large = false) {
+  const key = `${emoji}|${color}|${large}`;
   let icon = iconCache.get(key);
   if (!icon) {
-    icon = emojiPin(emoji, color);
+    icon = emojiPin(emoji, color, large);
     iconCache.set(key, icon);
   }
   return icon;

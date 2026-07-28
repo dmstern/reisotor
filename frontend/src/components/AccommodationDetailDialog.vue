@@ -3,6 +3,7 @@ import type { Accommodation } from '../api/types';
 import { renderRichText } from '../utils/richText';
 import { parseContact } from '../utils/contact';
 import DetailModal from './DetailModal.vue';
+import MapsAppPicker from './MapsAppPicker.vue';
 
 // Eigenständige Komponente statt inline in AccommodationView.vue, da dieser Dialog auch von anderer
 // Stelle geöffnet werden muss (TripMap.vue's Stationsliste, ExcursionDetailDialog.vue's Stationen,
@@ -71,6 +72,13 @@ function formatDate(d: string | null) {
       >
         🗺️ Auf Karte anzeigen
       </button>
+      <MapsAppPicker
+        v-if="accommodation.lat != null && accommodation.lng != null"
+        :lat="accommodation.lat"
+        :lng="accommodation.lng"
+        :title="accommodation.name"
+        :maps-link="accommodation.maps_link"
+      />
     </div>
   </DetailModal>
 </template>

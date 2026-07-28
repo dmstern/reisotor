@@ -38,18 +38,26 @@ interface MapPoint {
   title: string;
   icon: string;
   color: string;
-  label: string;
+  /** Für Kategorie-Filter/-Fokus-Kopplung mit der Spots-Sicht (ExcursionsView.vue): bei Spots die
+   *  echte Kategorie (bzw. "Sonstiges"), bei Unterkunft/Reise die dortige Sammel-Kategorie
+   *  ("Unterkunft"/"Reise") – identisch zu ExcursionsView.vue's itemCategory()/DerivedLocation.category,
+   *  damit derselbe Filter/dieselbe Kategorie-Navigation für Liste UND Karte gilt. */
+  category: string;
   /** Zuhause-Seite eines Reise-Eintrags (Startpunkt der Anreise / Zielpunkt der Abreise) – wird
    *  vom Urlaubsfokus-Button ausgeblendet, siehe vacationPoints. */
   homeSide?: boolean;
-  /** Ursprünglicher Maps-Link (Google/Apple), falls hinterlegt – Fallback für "In Karten-App
-   *  öffnen" (openExternally) auf Plattformen ohne App-Auswahl-Dialog (siehe dort). */
-  mapsLink: string | null;
 }
 
-const ACCOMMODATION_META = { icon: '🛏️', color: '#1baf7a', label: 'Unterkunft' };
-const TRAVEL_FROM_META = { icon: '🛫', color: '#4a3aa7', label: 'Abflug/Abfahrt' };
-const TRAVEL_TO_META = { icon: '🛬', color: '#4a3aa7', label: 'Ankunft' };
+const ACCOMMODATION_META = { icon: '🛏️', color: '#1baf7a' };
+const TRAVEL_FROM_META = { icon: '🛫', color: '#4a3aa7' };
+const TRAVEL_TO_META = { icon: '🛬', color: '#4a3aa7' };
+
+const props = defineProps<{
+  /** Von ExcursionsView.vue durchgereichter Kategorie-Filter der Spots-Liste (leer = alles
+   *  anzeigen) – koppelt den Karten-Inhalt 1:1 mit dem, was in der Liste sichtbar ist, statt einen
+   *  zweiten, unabhängigen Filter zu pflegen. */
+  categoryFilter?: string[];
+}>();
 
 const emit = defineEmits<{
   // Bearbeiten eines Spots: die Karte besitzt kein eigenes Formular, lebt aber (anders als
@@ -66,7 +74,6 @@ const spotsStore = useSpotsStore();
 const auth = useAuthStore();
 const accommodations = ref<Accommodation[]>([]);
 const travelItems = ref<TravelItem[]>([]);
-const selectedPoint = ref<MapPoint | null>(null);
 
 // Eigener kleiner users-Fetch: nur für die Autor-Anzeige im Spot-/Ausflug-Detail-Dialog gebraucht,
 // die sich aus der Stationsliste heraus öffnen lassen (siehe unten) – gleiches Vorgehen wie in
@@ -90,7 +97,7 @@ let routesLayer: L.LayerGroup | null = null;
 // Ausflug-Mini-Karte, ExcursionMiniMap.vue) – hier nur noch ein dünner MapPoint-spezifischer
 // Wrapper.
 function iconFor(point: MapPoint) {
-  return cachedEmojiPin(point.icon, point.color);
+  return cachedEmojiPin(point.icon, point.color, point.key === drawers.mapFocusKey);
 }
 
 function formatDate(d: string) {
@@ -107,8 +114,9 @@ const points = computed<MapPoint[]>(() => {
         lat: a.lat,
         lng: a.lng,
         title: a.name,
-        mapsLink: a.maps_link,
-        ...ACCOMMODATION_META,
+        category: 'Unterkunft',
+        icon: ACCOMMODATION_META.icon,
+        color: ACCOMMODATION_META.color,
       });
     }
   }
@@ -122,9 +130,10 @@ const points = computed<MapPoint[]>(() => {
         lat: t.from_lat,
         lng: t.from_lng,
         title: `${t.title} (Abflug/Abfahrt)`,
+        category: 'Reise',
         homeSide: t.role === 'arrival',
-        mapsLink: t.from_maps_link,
-        ...TRAVEL_FROM_META,
+        icon: TRAVEL_FROM_META.icon,
+        color: TRAVEL_FROM_META.color,
       });
     }
     if (t.to_lat != null && t.to_lng != null) {
@@ -134,9 +143,10 @@ const points = computed<MapPoint[]>(() => {
         lat: t.to_lat,
         lng: t.to_lng,
         title: `${t.title} (Ankunft)`,
+        category: 'Reise',
         homeSide: t.role === 'departure',
-        mapsLink: t.to_maps_link,
-        ...TRAVEL_TO_META,
+        icon: TRAVEL_TO_META.icon,
+        color: TRAVEL_TO_META.color,
       });
     }
   }
@@ -151,16 +161,24 @@ const points = computed<MapPoint[]>(() => {
         title: s.title,
         icon: meta.icon,
         color: meta.color,
-        label: s.category ?? 'Sonstiges',
-        mapsLink: s.maps_link,
+        category: s.category ?? 'Sonstiges',
       });
     }
   }
   return result;
 });
 
+// Kategorie-Filter aus der Spots-Liste (ExcursionsView.vue) – gilt einheitlich für Spots UND die
+// Unterkunft-/Reise-Sammelkategorien, da beide dieselben Kategorie-Strings verwenden (siehe
+// MapPoint.category). Leerer Filter = keine Einschränkung.
+const filteredPoints = computed(() => {
+  const filter = props.categoryFilter;
+  if (!filter || filter.length === 0) return points.value;
+  return points.value.filter((p) => filter.includes(p.category));
+});
+
 // Für den Urlaubsfokus-Button: alle Punkte außer den Zuhause-Seiten von Anreise/Abreise.
-const vacationPoints = computed(() => points.value.filter((p) => !p.homeSide));
+const vacationPoints = computed(() => filteredPoints.value.filter((p) => !p.homeSide));
 
 // "Auf Karte anzeigen" aus einer Ausflug-Karte (ExcursionCard.vue) fokussiert exklusiv auf dessen
 // Stationen – alle anderen Spots werden ausgeblendet, Unterkunft/Reise bleiben sichtbar (zur
@@ -187,13 +205,13 @@ const focusedDateStations = computed<ExcursionStation[]>(() =>
 const visiblePoints = computed(() => {
   const excursion = focusedExcursion.value;
   if (excursion) {
-    return points.value.filter((p) => p.origin !== 'spot' || excursion.station_keys.includes(p.key));
+    return filteredPoints.value.filter((p) => p.origin !== 'spot' || excursion.station_keys.includes(p.key));
   }
   if (drawers.mapFocusDate) {
     const keys = new Set(focusedDateStations.value.map((s) => s.key));
-    return points.value.filter((p) => p.origin !== 'spot' || keys.has(p.key));
+    return filteredPoints.value.filter((p) => p.origin !== 'spot' || keys.has(p.key));
   }
-  return points.value;
+  return filteredPoints.value;
 });
 
 // Stationsliste unter der Karte bei Ausflug-Fokus: in station_keys-Reihenfolge (= Route/Abklapper-
@@ -225,23 +243,30 @@ async function loadAll() {
   // selbst aktuell gehalten) – kein eigener Fetch/Refresh-Trigger hier mehr nötig.
 }
 
-function selectPoint(point: MapPoint) {
-  selectedPoint.value = point;
-}
-
-// Klick auf eine Zeile in der Stationsliste öffnet den vollständigen Spot-Detail-Dialog (statt nur
-// des kleinen Info-Panels wie bei einem Pin-Klick) – die Liste besteht ausschließlich aus Spots
-// (Stationen eines Ausflugs), daher hier kein origin-Check nötig. "welcher Spot" (openSpotId) und
-// "ist der Dialog offen" (spotDialogOpen) bewusst getrennt: SpotDetailDialog.vue braucht ein
-// echtes Spot-Objekt als Prop (nicht nullable), müsste beim Schließen also sonst komplett aus dem
-// DOM entfernt werden (v-if) statt nur unsichtbar zu werden – das würde Modal.vue's eigene
-// Fade-Out-Transition abschneiden, da sie nie zum Abspielen kommt.
+// Ein Klick auf einen Pin (egal ob direkt auf der Karte oder in der Stationsliste eines Fokus-
+// Ausflugs) öffnet den vollständigen Detail-Dialog des jeweiligen Objekts direkt in der Bildschirm-
+// mitte – ein separates kleines Info-Panel gibt es dafür nicht mehr (siehe handlePointClick unten).
+// "welcher Spot" (openSpotId) und "ist der Dialog offen" (spotDialogOpen) bewusst getrennt:
+// SpotDetailDialog.vue braucht ein echtes Spot-Objekt als Prop (nicht nullable), müsste beim
+// Schließen also sonst komplett aus dem DOM entfernt werden (v-if) statt nur unsichtbar zu werden –
+// das würde Modal.vue's eigene Fade-Out-Transition abschneiden, da sie nie zum Abspielen kommt.
 const openSpotId = ref<number | null>(null);
 const spotDialogOpen = ref(false);
 const openSpot = computed(() => spotsStore.spots.find((s) => s.id === openSpotId.value) ?? null);
+// Setzt gleichzeitig drawers.mapFocusKey: der Pin des geöffneten Spots wird dadurch (über iconFor())
+// dezent vergrößert dargestellt, egal ob der Dialog per Pin-Klick oder Stationsliste geöffnet wurde.
 function openSpotDetail(spotId: number) {
   openSpotId.value = spotId;
   spotDialogOpen.value = true;
+  drawers.mapFocusKey = `spot-${spotId}`;
+}
+// Schließen NUR über Modal.vue's eigene Wege (✕/Backdrop/Escape) hebt die Pin-Hervorhebung wieder
+// auf – bewusst nicht als pauschaler watch(spotDialogOpen)-Handler, da @show-on-map unten
+// spotDialogOpen ebenfalls auf false setzt, dort aber der Fokus (auf denselben Punkt) bestehen
+// bleiben soll (kein Wettlauf zwischen "schließen löscht Fokus" und "Auf-Karte-anzeigen setzt ihn").
+function onSpotDialogUpdate(v: boolean) {
+  spotDialogOpen.value = v;
+  if (!v) drawers.mapFocusKey = null;
 }
 function spotCreatorLabel(userId: number | null) {
   if (userId == null) return null;
@@ -330,10 +355,18 @@ function editOpenExcursion() {
 const openAccommodationId = ref<number | null>(null);
 const accommodationDialogOpen = ref(false);
 const openAccommodation = computed(() => accommodations.value.find((a) => a.id === openAccommodationId.value) ?? null);
+function onAccommodationDialogUpdate(v: boolean) {
+  accommodationDialogOpen.value = v;
+  if (!v) drawers.mapFocusKey = null;
+}
 
 const openTravelId = ref<number | null>(null);
 const travelDialogOpen = ref(false);
 const openTravel = computed(() => travelItems.value.find((t) => t.id === openTravelId.value) ?? null);
+function onTravelDialogUpdate(v: boolean) {
+  travelDialogOpen.value = v;
+  if (!v) drawers.mapFocusKey = null;
+}
 
 function openStationDetail(station: ExcursionStation) {
   if (station.kind === 'spot') {
@@ -341,9 +374,30 @@ function openStationDetail(station: ExcursionStation) {
   } else if (station.kind === 'accommodation') {
     openAccommodationId.value = station.id;
     accommodationDialogOpen.value = true;
+    drawers.mapFocusKey = station.key;
   } else {
     openTravelId.value = station.id;
     travelDialogOpen.value = true;
+    drawers.mapFocusKey = station.key;
+  }
+}
+
+// Klick auf einen Pin direkt auf der Karte (nicht in der Stationsliste): öffnet sofort den
+// vollständigen Detail-Dialog des jeweiligen Objekts in der Bildschirmmitte, statt nur ein kleines
+// Info-Panel zu zeigen – dieselbe Ziel-Ansicht wie bei einem Klick in der Stationsliste
+// (openStationDetail), hier aber anhand des MapPoint statt einer aufgelösten ExcursionStation.
+function handlePointClick(point: MapPoint) {
+  if (point.origin === 'spot') {
+    openSpotDetail(Number(point.key.slice('spot-'.length)));
+  } else if (point.origin === 'accommodation') {
+    openAccommodationId.value = Number(point.key.slice('accommodation-'.length));
+    accommodationDialogOpen.value = true;
+    drawers.mapFocusKey = point.key;
+  } else {
+    const isFrom = point.key.startsWith('travel-from-');
+    openTravelId.value = Number(point.key.slice((isFrom ? 'travel-from-' : 'travel-to-').length));
+    travelDialogOpen.value = true;
+    drawers.mapFocusKey = point.key;
   }
 }
 // Unterkunft/Reise bleiben eigene, echte Routen (anders als Ausflüge/Spots) – hier weiterhin ein
@@ -362,26 +416,24 @@ function payerLabelFor(userId: number | null) {
   return u ? `${u.avatar} ${u.username}` : null;
 }
 
-// "In Karten-App öffnen": statt zu raten, welche App installiert ist (dafür gibt es per Web-Link
-// plattformübergreifend keinen zuverlässigen Mechanismus), zeigt ein kleines Menü die gängigen
-// Apps zur Auswahl – jeweils als offizieller Universal-Link, der die App öffnet, falls installiert,
-// und sonst auf die Web-Vorschau ausweicht (funktioniert daher überall, ganz ohne
-// User-Agent-Sniffing).
-const mapsPickerOpen = ref(false);
-// Egal auf welchem Weg selectedPoint wechselt (neuer Punkt, Schließen-Button, fitAll/fitVacation,
-// Fokus-Sprung aus einer anderen Sicht) – ein noch offenes Auswahl-Menü vom vorherigen Punkt soll
-// dabei nie hängen bleiben.
-watch(selectedPoint, () => {
-  mapsPickerOpen.value = false;
-});
-
-function appleMapsHref(point: MapPoint) {
-  return `https://maps.apple.com/?ll=${point.lat},${point.lng}&q=${encodeURIComponent(point.title)}`;
+// Fokussiert alle Punkte einer Kategorie (Aufruf von ExcursionsView.vue's Kategorie-Navigation, per
+// Template-Ref/defineExpose statt eines weiteren drawers-Felds, da rein kamera-bewegend und ohne
+// Auswirkung auf andere Sichten) – zoomt/zentriert, ohne andere Punkte auszublenden (wie die
+// bestehenden Fit-Buttons unten).
+function focusCategory(category: string) {
+  if (!map) return;
+  drawers.mapFocusExcursionId = null;
+  drawers.mapFocusDate = null;
+  drawers.mapFocusKey = null;
+  const catPoints = filteredPoints.value.filter((p) => p.category === category);
+  const latLngs = catPoints.map((p): L.LatLngExpression => [p.lat, p.lng]);
+  if (latLngs.length > 1) {
+    map.fitBounds(L.latLngBounds(latLngs), { padding: [32, 32] });
+  } else if (latLngs.length === 1) {
+    map.setView(latLngs[0], 14);
+  }
 }
-
-function googleMapsHref(point: MapPoint) {
-  return `https://www.google.com/maps/search/?api=1&query=${point.lat},${point.lng}`;
-}
+defineExpose({ focusCategory });
 
 // Zoomt/zentriert auf genau den Ausschnitt, der alle aktuell eingetragenen Orte zeigt – z. B.
 // nachdem man vorher auf einen einzelnen Punkt fokussiert hatte (openMapAt) oder sich verzoomt hat.
@@ -389,13 +441,13 @@ function fitAll() {
   if (!map) return;
   drawers.mapFocusExcursionId = null;
   drawers.mapFocusDate = null;
-  const latLngs = points.value.map((p): L.LatLngExpression => [p.lat, p.lng]);
+  drawers.mapFocusKey = null;
+  const latLngs = filteredPoints.value.map((p): L.LatLngExpression => [p.lat, p.lng]);
   if (latLngs.length > 1) {
     map.fitBounds(L.latLngBounds(latLngs), { padding: [32, 32] });
   } else if (latLngs.length === 1) {
     map.setView(latLngs[0], 13);
   }
-  selectedPoint.value = null;
 }
 
 // Zoomt/zentriert nur auf die Punkte am Urlaubsort – ohne die Zuhause-Seite von Anreise/Abreise
@@ -404,16 +456,16 @@ function fitVacation() {
   if (!map) return;
   drawers.mapFocusExcursionId = null;
   drawers.mapFocusDate = null;
+  drawers.mapFocusKey = null;
   const latLngs = vacationPoints.value.map((p): L.LatLngExpression => [p.lat, p.lng]);
   if (latLngs.length > 1) {
     map.fitBounds(L.latLngBounds(latLngs), { padding: [32, 32] });
   } else if (latLngs.length === 1) {
     map.setView(latLngs[0], 13);
   }
-  selectedPoint.value = null;
 }
 
-const accommodationPoints = computed(() => points.value.filter((p) => p.origin === 'accommodation'));
+const accommodationPoints = computed(() => filteredPoints.value.filter((p) => p.origin === 'accommodation'));
 
 // Zoomt/zentriert nur auf die Unterkünfte – praktisch bei mehreren Unterkünften im selben Urlaub
 // (z. B. Roadtrip), um schnell zwischen ihnen zu vergleichen statt Spots/Reise mit anzuzeigen.
@@ -421,13 +473,13 @@ function fitAccommodations() {
   if (!map) return;
   drawers.mapFocusExcursionId = null;
   drawers.mapFocusDate = null;
+  drawers.mapFocusKey = null;
   const latLngs = accommodationPoints.value.map((p): L.LatLngExpression => [p.lat, p.lng]);
   if (latLngs.length > 1) {
     map.fitBounds(L.latLngBounds(latLngs), { padding: [32, 32] });
   } else if (latLngs.length === 1) {
     map.setView(latLngs[0], 13);
   }
-  selectedPoint.value = null;
 }
 
 // Alle Spots, die (mindestens) einem Ausflug als Station zugeordnet sind – für den Ausflüge-Fokus-
@@ -444,7 +496,7 @@ const excursionSpotIds = computed(
     ),
 );
 const excursionPoints = computed(() =>
-  points.value.filter((p) => p.origin === 'spot' && excursionSpotIds.value.has(Number(p.key.slice('spot-'.length)))),
+  filteredPoints.value.filter((p) => p.origin === 'spot' && excursionSpotIds.value.has(Number(p.key.slice('spot-'.length)))),
 );
 
 // Zoomt/zentriert nur auf die Spots, die irgendeinem Ausflug zugeordnet sind – praktisch, um sich
@@ -453,13 +505,13 @@ function fitExcursions() {
   if (!map) return;
   drawers.mapFocusExcursionId = null;
   drawers.mapFocusDate = null;
+  drawers.mapFocusKey = null;
   const latLngs = excursionPoints.value.map((p): L.LatLngExpression => [p.lat, p.lng]);
   if (latLngs.length > 1) {
     map.fitBounds(L.latLngBounds(latLngs), { padding: [32, 32] });
   } else if (latLngs.length === 1) {
     map.setView(latLngs[0], 13);
   }
-  selectedPoint.value = null;
 }
 
 function renderMarkers() {
@@ -472,7 +524,7 @@ function renderMarkers() {
     latLngs.push(latlng);
     L.marker(latlng, { icon: iconFor(point) })
       .addTo(markersLayer)
-      .on('click', () => selectPoint(point));
+      .on('click', () => handlePointClick(point));
   }
 
   // Ausflug-Fokus hat Vorrang vor mapFocusKey (schließen sich laut drawers-Store ohnehin
@@ -490,8 +542,8 @@ function renderMarkers() {
           .map((s): L.LatLngExpression => [s.lat as number, s.lng as number])
       : [];
 
-  // "Auf Karte anzeigen" aus Unterkunft/Reise/Spots öffnet die Schublade und setzt
-  // drawers.mapFocusKey – hier zentrieren/hervorheben wir dann direkt auf den Punkt.
+  // "Auf Karte anzeigen"/Pin-Klick setzt drawers.mapFocusKey – hier zentrieren wir dann direkt auf
+  // den Punkt (die dezente Pin-Vergrößerung selbst passiert unabhängig davon in iconFor()).
   const focusPoint = drawers.mapFocusKey ? points.value.find((p) => p.key === drawers.mapFocusKey) : null;
 
   if (excursion) {
@@ -500,17 +552,14 @@ function renderMarkers() {
     } else if (excursionLatLngs.length === 1) {
       map.setView(excursionLatLngs[0], 14);
     }
-    selectedPoint.value = null;
   } else if (drawers.mapFocusDate && dateLatLngs.length) {
     if (dateLatLngs.length > 1) {
       map.fitBounds(L.latLngBounds(dateLatLngs), { padding: [32, 32] });
     } else {
       map.setView(dateLatLngs[0], 14);
     }
-    selectedPoint.value = null;
   } else if (focusPoint) {
     map.setView([focusPoint.lat, focusPoint.lng], 15);
-    selectPoint(focusPoint);
   } else if (latLngs.length > 1) {
     map.fitBounds(L.latLngBounds(latLngs), { padding: [32, 32] });
   } else if (latLngs.length === 1) {
@@ -669,7 +718,7 @@ watch(
         class="fit-btn"
         title="Alle eingetragenen Orte anzeigen"
         aria-label="Alle eingetragenen Orte anzeigen"
-        :disabled="!points.length"
+        :disabled="!filteredPoints.length"
         @click="fitAll"
       >
         🔍
@@ -751,7 +800,8 @@ watch(
 
     <SpotDetailDialog
       v-if="openSpot"
-      v-model="spotDialogOpen"
+      :model-value="spotDialogOpen"
+      @update:model-value="onSpotDialogUpdate"
       :spot="openSpot"
       :creator-label="spotCreatorLabel(openSpot.created_by)"
       :like-count="spotsStore.likeCountFor(openSpot.id)"
@@ -785,7 +835,8 @@ watch(
 
     <AccommodationDetailDialog
       v-if="openAccommodation"
-      v-model="accommodationDialogOpen"
+      :model-value="accommodationDialogOpen"
+      @update:model-value="onAccommodationDialogUpdate"
       :accommodation="openAccommodation"
       :payer-label="payerLabelFor(openAccommodation.paid_by_user_id)"
       @edit="editOpenAccommodation"
@@ -794,67 +845,14 @@ watch(
 
     <TravelDetailDialog
       v-if="openTravel"
-      v-model="travelDialogOpen"
+      :model-value="travelDialogOpen"
+      @update:model-value="onTravelDialogUpdate"
       :item="openTravel"
       :payer-label="payerLabelFor(openTravel.paid_by_user_id)"
       @edit="editOpenTravel"
       @show-on-map-from="travelDialogOpen = false"
       @show-on-map-to="travelDialogOpen = false"
     />
-
-    <div class="card info-panel" v-if="selectedPoint">
-      <button type="button" class="close-btn" aria-label="Schließen" @click="selectedPoint = null">✕</button>
-      <div class="info-head">
-        <span class="info-icon">{{ selectedPoint.icon }}</span>
-        <div>
-          <h3>{{ selectedPoint.title }}</h3>
-          <span class="info-category">{{ selectedPoint.label }}</span>
-        </div>
-      </div>
-      <div class="info-actions">
-        <div class="maps-picker">
-          <button type="button" class="card-action-btn" @click="mapsPickerOpen = !mapsPickerOpen">
-            🗺️ In Karten-App öffnen ↗
-          </button>
-          <template v-if="mapsPickerOpen">
-            <div class="picker-backdrop" @click="mapsPickerOpen = false"></div>
-            <div class="picker-menu">
-              <a
-                :href="appleMapsHref(selectedPoint)"
-                target="_blank"
-                rel="noopener"
-                @click="mapsPickerOpen = false"
-              >
-                🍎 Apple Maps
-              </a>
-              <a
-                :href="googleMapsHref(selectedPoint)"
-                target="_blank"
-                rel="noopener"
-                @click="mapsPickerOpen = false"
-              >
-                🗺️ Google Maps
-              </a>
-              <a
-                v-if="selectedPoint.mapsLink"
-                :href="selectedPoint.mapsLink"
-                target="_blank"
-                rel="noopener"
-                @click="mapsPickerOpen = false"
-              >
-                🔗 Ursprünglichen Link öffnen
-              </a>
-            </div>
-          </template>
-        </div>
-        <router-link v-if="selectedPoint.origin === 'accommodation'" to="/accommodation" class="card-action-btn">
-          Zur Unterkunft
-        </router-link>
-        <router-link v-else-if="selectedPoint.origin === 'travel'" to="/travel" class="card-action-btn">
-          Zur Reise
-        </router-link>
-      </div>
-    </div>
 
     <p v-if="!points.length" class="empty">
       Noch keine Orte mit Koordinaten hinterlegt. Füge bei Unterkunft, Reise-Einträgen oder Spots
@@ -1050,91 +1048,6 @@ watch(
   border-top: 3px dashed var(--color-primary);
   margin: 0 4px;
   align-self: center;
-}
-
-.info-panel {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.close-btn {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 0.9rem;
-  color: var(--color-text-muted);
-  padding: 4px;
-  line-height: 1;
-}
-
-.info-head {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.info-icon {
-  font-size: 1.6rem;
-}
-
-.info-head h3 {
-  margin: 0;
-  font-size: 1rem;
-}
-
-.info-category {
-  font-size: 0.75rem;
-  color: var(--color-text-muted);
-}
-
-.info-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-}
-
-.maps-picker {
-  position: relative;
-}
-
-.picker-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 20;
-}
-
-.picker-menu {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  min-width: 200px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-md);
-  padding: var(--space-2);
-  z-index: 21;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.picker-menu a {
-  padding: 6px 8px;
-  border-radius: var(--radius-sm);
-  color: var(--color-text);
-  text-decoration: none;
-  font-size: 0.85rem;
-  white-space: nowrap;
-}
-
-.picker-menu a:hover {
-  background: var(--color-hover);
 }
 
 .empty {

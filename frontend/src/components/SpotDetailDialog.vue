@@ -4,6 +4,7 @@ import { spotCategoryMeta } from '../utils/spotCategory';
 import { renderRichText } from '../utils/richText';
 import DetailModal from './DetailModal.vue';
 import CategoryChip from './CategoryChip.vue';
+import MapsAppPicker from './MapsAppPicker.vue';
 import LikeButton from './LikeButton.vue';
 import Comments, { type CommentItem } from './Comments.vue';
 
@@ -57,6 +58,7 @@ const emit = defineEmits<{
       >
         🗺️ Auf Karte anzeigen
       </button>
+      <MapsAppPicker v-if="spot.lat != null && spot.lng != null" :lat="spot.lat" :lng="spot.lng" :title="spot.title" :maps-link="spot.maps_link" />
     </div>
   </DetailModal>
 </template>

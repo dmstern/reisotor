@@ -229,8 +229,13 @@ function setCategoryRef(category: string, el: Element | ComponentPublicInstance 
   if (el instanceof HTMLElement) categoryRefs.set(category, el);
   else categoryRefs.delete(category);
 }
+// Ref auf die eingebettete Karte (TripMap.vue): scrollToCategory() lässt bei Klick auf eine
+// Kategorie-Nav-Pille zusätzlich die Karte auf alle Punkte dieser Kategorie zoomen (siehe
+// TripMap.vue's defineExpose(focusCategory)) – dieselbe Kategorie-Kopplung wie beim Filter oben.
+const tripMapRef = ref<InstanceType<typeof TripMap> | null>(null);
 function scrollToCategory(category: string) {
   categoryRefs.get(category)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  tripMapRef.value?.focusCategory(category);
 }
 
 function checkSpotMapsLink() {
@@ -456,7 +461,7 @@ function showSpotOnMap(spot: Spot) {
     </div>
 
     <div class="map-col">
-      <TripMap @edit-spot="startEditSpot" />
+      <TripMap ref="tripMapRef" :category-filter="categoryFilter" @edit-spot="startEditSpot" />
     </div>
     </div>
   </div>

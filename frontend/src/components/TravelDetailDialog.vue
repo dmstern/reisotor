@@ -4,6 +4,7 @@ import { renderRichText } from '../utils/richText';
 import { linkLabel } from '../utils/linkLabel';
 import { formatTravelDuration, travelDurationMinutes } from '../utils/travelDuration';
 import DetailModal from './DetailModal.vue';
+import MapsAppPicker from './MapsAppPicker.vue';
 
 // Eigenständige Komponente statt inline in TravelView.vue, da dieser Dialog auch von anderer Stelle
 // geöffnet werden muss (TripMap.vue's Stationsliste, ExcursionDetailDialog.vue's Stationen, falls
@@ -78,6 +79,13 @@ function travelDuration(item: TravelItem) {
       >
         🗺️ Abflug auf Karte anzeigen
       </button>
+      <MapsAppPicker
+        v-if="item.from_lat != null && item.from_lng != null"
+        :lat="item.from_lat"
+        :lng="item.from_lng"
+        :title="`${item.title} (Abflug/Abfahrt)`"
+        :maps-link="item.from_maps_link"
+      />
       <button
         v-if="item.to_lat != null && item.to_lng != null"
         type="button"
@@ -86,6 +94,13 @@ function travelDuration(item: TravelItem) {
       >
         🗺️ Ankunft auf Karte anzeigen
       </button>
+      <MapsAppPicker
+        v-if="item.to_lat != null && item.to_lng != null"
+        :lat="item.to_lat"
+        :lng="item.to_lng"
+        :title="`${item.title} (Ankunft)`"
+        :maps-link="item.to_maps_link"
+      />
     </div>
   </DetailModal>
 </template>
