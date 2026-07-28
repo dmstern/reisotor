@@ -6,6 +6,7 @@ import { useAuthStore } from '../stores/auth';
 import { useTripStore } from '../stores/trip';
 import { useExcursionsStore } from '../stores/excursions';
 import { useSpotsStore } from '../stores/spots';
+import { useDrawersStore } from '../stores/drawers';
 import { renderRichText } from '../utils/richText';
 import { compressImage } from '../utils/imageCompression';
 import { spotCategoryMeta } from '../utils/spotCategory';
@@ -20,6 +21,7 @@ const tripStore = useTripStore();
 const tripId = tripStore.currentTripId as number;
 const excursionsStore = useExcursionsStore();
 const spotsStore = useSpotsStore();
+const drawers = useDrawersStore();
 const entries = ref<DiaryEntry[]>([]);
 const likes = ref<DiaryLike[]>([]);
 const comments = ref<DiaryComment[]>([]);
@@ -345,11 +347,12 @@ async function removeComment(id: number) {
         </div>
 
         <div class="excursion-links" v-if="excursionsForEntry(entry).length">
-          <router-link
+          <button
             v-for="ex in excursionsForEntry(entry)"
             :key="ex.id"
-            to="/excursions"
+            type="button"
             class="excursion-chip"
+            @click="drawers.excursionsOpen = true"
           >
             <span
               class="excursion-chip-img"
@@ -358,7 +361,7 @@ async function removeComment(id: number) {
               <span v-if="!ex.image_url">🎒</span>
             </span>
             <span class="excursion-chip-title">{{ ex.title }}</span>
-          </router-link>
+          </button>
         </div>
 
         <Comments
@@ -513,11 +516,14 @@ async function removeComment(id: number) {
   align-items: center;
   gap: var(--space-2);
   background: var(--color-hover);
+  border: none;
   border-radius: 999px;
   padding: 4px 12px 4px 4px;
   font-size: 0.82rem;
+  font-family: inherit;
   color: var(--color-text);
   text-decoration: none;
+  cursor: pointer;
 }
 
 .excursion-chip:hover {
