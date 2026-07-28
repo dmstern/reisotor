@@ -669,16 +669,24 @@ function showSpotOnMap(spot: Spot) {
   color: var(--color-primary-dark);
 }
 
-/* Mobil (Default): Karte füllt den Bildschirm unterhalb der NavBar vollflächig als fixer
-   Hintergrund (siehe TripMap.vue für die Karten-eigene Vollbild-Anpassung); die Spots-Liste
-   (.spots-col weiter unten) liegt als Bottom-Sheet darüber. Auf Desktop (@container weiter unten)
-   wieder die bisherige sticky Spalte. */
+/* Mobil (Default) UND Desktop mit stark eingeschränktem .app-main (z. B. beide Schubladen
+   gleichzeitig aufgeklappt, siehe @container weiter unten für die genaue Schwelle): .page bekommt
+   eine feste Höhe unterhalb von Kopfzeile/NavBar und wird zum Positionierungsrahmen für Karte +
+   Bottom-Sheet, die beide position:absolute (nicht mehr position:fixed) sind. Der Unterschied ist
+   entscheidend: fixed wäre viewport-weit verankert und würde damit auch über eventuell geöffnete
+   Schubladen (die .app-main als Flex-Geschwister lediglich schmaler machen, siehe Drawer.vue)
+   hinweg alles überlagern – absolute bleibt dagegen innerhalb von .page und damit innerhalb des
+   tatsächlich für die Karte verbleibenden Platzes. */
+.page {
+  position: relative;
+  height: calc(100vh - 56px - var(--navbar-offset, 0px));
+  overflow: hidden;
+  padding: 0;
+}
+
 .map-col {
-  position: fixed;
-  top: calc(56px + var(--navbar-offset, 0px));
-  left: 0;
-  right: 0;
-  bottom: 0;
+  position: absolute;
+  inset: 0;
   z-index: 1;
 }
 
@@ -697,15 +705,16 @@ function showSpotOnMap(spot: Spot) {
      versehentlich gegen DIESEN (statt gegen .app-main, App.vue) ausgewertet – .spots-col ist selbst
      nie ≥900px breit, das "Desktop"-Zurücksetzen von .sheet-handle etc. hätte dadurch nie gegriffen. */
   container: spots-col / inline-size;
-  /* Deckelt alle drei Höhen-Zustände (unten) auf den Platz UNTER Kopfzeile/NavBar (56px
-     App-Header + --navbar-offset, dieselbe Formel wie .map-col's sticky top) – reine vh-Werte
-     kennen die NavBar-Höhe nicht und wuchsen auf kürzeren Fenstern über sie hinaus (der obere Rand
-     landete dann dahinter verdeckt). Als eigene Variable statt direkt in jedem height-Wert, damit
-     sie nur an einer Stelle gepflegt werden muss. Reine CSS-Rechnung (reagiert live auf
-     --navbar-offset), nicht die JS-Berechnung in sheetHeightPx() – die greift nur während eines
-     aktiven Ziehens/beim Einrasten, nicht für diesen ruhenden Grundzustand. */
-  --sheet-max-height: calc(100vh - 56px - var(--navbar-offset, 0px) - 8px);
-  position: fixed;
+  /* Deckelt alle drei Höhen-Zustände (unten) auf .page's eigene Höhe (siehe .page weiter oben, die
+     rechnet Kopfzeile/NavBar bereits ein) – reine vh-Werte kennen weder NavBar- noch Titel-Höhe und
+     wuchsen sonst über den verfügbaren Platz hinaus. 100% statt einer eigenen vh-Rechnung, da
+     .spots-col jetzt position:absolute innerhalb des bereits korrekt bemessenen .page ist (dessen
+     Höhe ist die "Containing Block"-Höhe, gegen die % hier auflöst) – einfacher und automatisch
+     konsistent mit .page, statt dieselbe Formel ein zweites Mal zu duplizieren. Reine CSS-Rechnung,
+     nicht die JS-Berechnung in sheetHeightPx() – die greift nur während eines aktiven Ziehens/beim
+     Einrasten, nicht für diesen ruhenden Grundzustand. */
+  --sheet-max-height: calc(100% - 8px);
+  position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
@@ -780,26 +789,27 @@ function showSpotOnMap(spot: Spot) {
   display: none;
 }
 
-/* @media statt @container(app-main) – bewusst dieselbe Schwelle wie Drawer.vue's eigener
-   Mobil/Desktop-Split (@media (min-width:800px), dort steuert sie fixed-Overlay vs. sticky
-   Flex-Geschwister). Ein Container-Query auf .app-main's Breite wäre hier falsch: sind auf einem
-   breiten Desktop-Bildschirm BEIDE Schubladen aufgeklappt, kann .app-main allein dadurch unter
-   900px schrumpfen – die Karte-Sicht würde dann fälschlich in den mobilen Bottom-Sheet-/
-   Vollbild-Karte-Modus kippen (position:fixed, viewport-verankert statt an .app-main gebunden) und
-   von den Schubladen überdeckt werden, statt sich einfach nur schmaler ins verbleibende
-   .app-main zu quetschen. Die feinere "wie schmal darf .spots-col selbst werden"-Frage (Kompakt-
-   Zeile, Ein-Spalten-Raster) bleibt bewusst weiterhin ein @container(spots-col)-Query weiter unten
-   – das ist innerhalb des Desktop-Modus hier weiterhin sinnvoll container-relativ. */
-@media (min-width: 800px) {
+/* Zurück zu @container(app-main): jetzt, wo Karte+Sheet innerhalb von .page bleiben
+   (position:absolute statt fixed, siehe .page/.map-col/.spots-col weiter oben), ist ein knappes
+   .app-main (z. B. durch beide gleichzeitig geöffneten Schubladen) kein Problem mehr – die Karte
+   quetscht sich dann einfach mit in den (jetzt wieder passend bemessenen) mobilen Vollbild-Modus,
+   statt von den Schubladen überdeckt zu werden. Genau dieses Verhalten ist inzwischen auch
+   gewünscht: bei sehr wenig Platz (unabhängig davon, ob das an einem schmalen Gerät oder an
+   geöffneten Schubladen auf Desktop liegt) macht ein enges 2-Spalten-Grid weniger Sinn als eine
+   große Karte mit Sheet darüber. Die feinere "wie schmal darf .spots-col selbst werden"-Frage
+   (Kompakt-Zeile, Ein-Spalten-Raster) bleibt weiterhin ein separates @container(spots-col)-Query. */
+@container app-main (min-width: 900px) {
   .page {
+    position: static;
+    height: auto;
+    overflow: visible;
     max-width: 1600px;
     /* Die globale .page-Regel (style.css) bringt padding-bottom:88px für normal scrollende Seiten
        mit (Platz z. B. für eine untere mobile Navigation) – hier unnötig und der Hauptgrund für den
-       sichtbaren leeren Weißraum am Seitenende, da .layout's Inhalt (sticky/fixed) sich schon
-       selbst begrenzt. padding-top wird stattdessen unten in der max-height-Rechnung berücksichtigt
+       sichtbaren leeren Weißraum am Seitenende, da .layout's Inhalt (sticky) sich schon selbst
+       begrenzt. padding-top wird stattdessen unten in der max-height-Rechnung berücksichtigt
        (statt es hier auf 0 zu setzen), damit der Titel nicht direkt am Seitenrand klebt. */
-    padding-top: var(--space-3);
-    padding-bottom: 0;
+    padding: var(--space-3) var(--space-4) 0;
   }
 
   /* Auf Desktop gibt es keine vollflächige Hintergrund-Karte (siehe .map-col weiter unten) – der
@@ -852,6 +862,15 @@ function showSpotOnMap(spot: Spot) {
     border-radius: 0;
     box-shadow: none;
     transition: none;
+  }
+
+  /* .spots-col.collapsed/.full (höhere Spezifität als die einfache .spots-col-Regel oben, da zwei
+     statt einer Klasse) würden das dortige height:auto sonst weiterhin überschreiben, falls
+     sheetState beim Wechsel in den Desktop-Modus zufällig "collapsed"/"full" war (z. B. nach
+     Schließen einer Schublade, während die Karte vorher im mobilen Modus auf "voll" stand). */
+  .spots-col.collapsed,
+  .spots-col.full {
+    height: auto;
   }
 
   .sheet-handle {
