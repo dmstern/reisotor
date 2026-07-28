@@ -58,6 +58,10 @@ SEED_USER1=daniel SEED_PASS1=... SEED_USER2=partner SEED_PASS2=... npm run seed
 
 Das Skript ist idempotent (`INSERT OR IGNORE`) – bereits vorhandene Nutzer/Zeilen werden nicht überschrieben.
 
+### Demo-Daten für Sandbox/Testing
+
+`npm run seed:demo` im Backend legt zusätzlich zu den 2 Nutzern einen kompletten Beispiel-Urlaub mit Daten in allen Bereichen an (Unterkunft, Hin-/Rückflug, Kalendertermine, Pack- und Einkaufsliste, Ausflug mit Spots auf der Karte, Budget mit Ausgaben und Überweisung, Tagebucheintrag, Notiz) – praktisch, um Änderungen in einer frischen Sandbox zu sehen, ohne erst alles von Hand anzulegen. Bricht ab, falls schon ein Urlaub existiert (kein Duplizieren). Nicht für Produktionsdaten gedacht.
+
 ### Backend-Umgebungsvariablen
 
 | Variable | Zweck | Default |
@@ -127,9 +131,15 @@ Der Frontend-Build läuft **lokal**, nicht auf dem Zielserver – auf schwacher 
    ```
    Das Backend sollte dabei nur auf `localhost` lauschen, nicht öffentlich exponiert sein.
 
-### Automatisiertes Deployment mit `deploy.sh`
+### Automatisiertes Deployment über GitHub Actions + Pi-Cronjob
 
-`deploy.sh` im Repo-Root automatisiert Build + Kopieren + Neustart. Persönliche Werte (SSH-Nutzer, öffentliche Domain, optional ein lokaler Hostname) kommen aus einer lokalen `.env`-Datei (siehe `.env.example`), damit das Skript selbst ohne Infrastruktur-Details versioniert werden kann:
+Push auf `main` löst `.github/workflows/build-deploy.yml` aus: Frontend und Backend werden dort gebaut (inkl. Typecheck, der Build schlägt bei Fehlern fehl) und das Ergebnis als einzelner Commit auf den Branch `deploy` veröffentlicht. Der Server selbst pollt diesen Branch per Cronjob (`~/reisotor-deploy.sh`, alle 5 Minuten) und deployt automatisch, sobald ein neuer Build bereitsteht – kein Laptop/Client muss dafür online sein oder selbst Zugangsdaten zum Server halten. Das Skript ist auch manuell auf dem Server ausführbar, falls man nicht auf den nächsten Cron-Tick warten will.
+
+Voraussetzung auf dem Server: ein read-only Deploy Key fürs Repo (unter GitHub → Settings → Deploy keys hinterlegt) sowie ein separater flacher Checkout des `deploy`-Branches unter `~/reisotor-deploy-src`.
+
+### Manuelles Deployment mit `deploy.sh`
+
+Alternativ (z. B. wenn kein Internetzugang zu GitHub Actions gewünscht ist oder rein lokal getestet werden soll) automatisiert `deploy.sh` im Repo-Root Build + Kopieren + Neustart **vom eigenen Rechner aus**. Persönliche Werte (SSH-Nutzer, öffentliche Domain, optional ein lokaler Hostname) kommen aus einer lokalen `.env`-Datei (siehe `.env.example`), damit das Skript selbst ohne Infrastruktur-Details versioniert werden kann:
 
 ```bash
 cp .env.example .env   # einmalig, dann eigene Werte eintragen

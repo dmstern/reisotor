@@ -1,0 +1,62 @@
+name: Build & Deploy
+
+# Baut Frontend + Backend bei jedem Push auf main und veröffentlicht das Ergebnis als einzigen
+# Commit auf dem Branch "deploy". Der eigentliche Rollout auf den Ziel-Server (Raspberry Pi)
+# passiert NICHT hier, sondern per Cronjob auf dem Server selbst, der diesen Branch pollt (siehe
+# README.md, Abschnitt "Automatisiertes Deployment über GitHub Actions + Pi-Cronjob") – so ist der
+# Server nie darauf angewiesen, dass ein Client (Laptop/Handy) online ist oder Zugangsdaten hält.
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Install & build backend
+        working-directory: backend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Install & build frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Assemble release artifact
+        run: |
+          rm -rf release
+          mkdir -p release/frontend release/backend/dist
+          cp -r frontend/dist/. release/frontend/
+          cp -r backend/dist/. release/backend/dist/
+          cp backend/package.json backend/package-lock.json release/backend/
+          printf '%s %s\n' "${{ github.sha }}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > release/COMMIT
+
+      - name: Publish to deploy branch
+        working-directory: release
+        run: |
+          git init -q
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -q -b deploy
+          git add -A
+          git commit -q -m "Build ${{ github.sha }}"
+          git push --force "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" deploy:deploy
