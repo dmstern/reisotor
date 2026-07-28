@@ -579,9 +579,9 @@ function showSpotOnMap(spot: Spot) {
 
   .layout {
     display: grid;
-    grid-template-columns: var(--spots-col-width) 14px 1fr;
+    grid-template-columns: var(--spots-col-width) 20px 1fr;
     align-items: start;
-    gap: 0 var(--space-3);
+    gap: 0;
   }
 
   /* Beide Spalten scrollen ab hier unabhängig voneinander statt gemeinsam mit der Seite – dieselbe
@@ -601,28 +601,42 @@ function showSpotOnMap(spot: Spot) {
     padding-right: var(--space-3);
   }
 
-  /* Dieselbe Sticky-Formel wie die beiden Inhaltsspalten, damit der Anfasser über die volle
-     sichtbare Höhe reicht statt nur über die (ggf. kürzere) Inhaltshöhe einer Spalte. */
+  /* Dieselbe Sticky-Formel wie die beiden Inhaltsspalten – hier aber als explizite `height` statt
+     nur `max-height`: .spots-col/.map-col bekommen ihre Höhe automatisch von ihrem (teils langen)
+     Inhalt, ein leeres Element wie dieses hätte ohne erzwungene `height` sonst nur eine Höhe nahe 0
+     (Grid-`align-items: start` auf .layout streckt Items nicht automatisch) – der Anfasser wäre
+     dadurch praktisch unsichtbar/nicht greifbar gewesen. */
   .col-resize-handle {
     display: flex;
-    align-items: stretch;
+    align-items: center;
     justify-content: center;
     position: sticky;
     top: calc(56px + var(--navbar-offset, 0px));
-    max-height: calc(100vh - 56px - var(--navbar-offset, 0px));
+    height: calc(100vh - 56px - var(--navbar-offset, 0px));
     cursor: col-resize;
     touch-action: none;
+    border-radius: var(--radius-sm);
+    transition: background 0.15s ease;
   }
 
+  .col-resize-handle:hover,
+  .col-resize-handle:active {
+    background: var(--color-hover);
+  }
+
+  /* Kurzer, zentrierter Griff-Strich statt eines über die volle Höhe laufenden dünnen Strichs –
+     deutlicher als "Ziehpunkt" erkennbar, ähnlich dem Anfasser einer Bottom-Sheet/Modal-Leiste. */
   .col-resize-handle::after {
     content: '';
-    width: 3px;
-    border-radius: 2px;
+    width: 4px;
+    height: 44px;
+    border-radius: 3px;
     background: var(--color-border);
     transition: background 0.15s ease;
   }
 
-  .col-resize-handle:hover::after {
+  .col-resize-handle:hover::after,
+  .col-resize-handle:active::after {
     background: var(--color-primary);
   }
 }
