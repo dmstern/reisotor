@@ -116,6 +116,16 @@ function onResizeEnd() {
       >
         {{ maximized ? '🗗' : '⛶' }}
       </button>
+      <button
+        v-if="open"
+        type="button"
+        class="close-drawer-btn"
+        :aria-label="'Schließen: ' + label"
+        title="Schließen"
+        @click="emit('update:open', false)"
+      >
+        ✕
+      </button>
       <div class="drawer-content"><slot /></div>
     </div>
     <!-- Bewusst AUSSERHALB von .drawer-panel (statt wie früher darin verschachtelt): .drawer-panel
@@ -300,9 +310,12 @@ function onResizeEnd() {
   right: min(85vw, var(--drawer-width));
 }
 
-/* Maximieren gibt es nur auf Desktop (siehe @media unten) – mobil ist das Panel ohnehin bereits
-   ein Vollbild-Overlay, ein zusätzlicher Button wäre dort redundant. */
-.maximize-btn {
+/* Maximieren/Schließen gibt es nur auf Desktop (siehe @media unten) – mobil ist das Panel ohnehin
+   bereits ein Vollbild-Overlay mit eigenem Backdrop-Klick-zum-Schließen, ein zusätzlicher Button
+   wäre dort redundant (die Lasche selbst bleibt dort außerdem als Schließen-Weg sichtbar, siehe
+   unten). */
+.maximize-btn,
+.close-drawer-btn {
   display: none;
 }
 
@@ -356,26 +369,31 @@ function onResizeEnd() {
     transform-origin: right center;
   }
 
-  /* left/right (samt der .open-Variante unten) stammen aus der mobilen position:fixed-Darstellung
-     und wirkten bei position:static bisher folgenlos mit (statische Elemente ignorieren sie
-     komplett). Jetzt, wo der Tab auf Desktop position:sticky ist, würden sie sonst als (hier
-     ungewollte) horizontale Sticky-Schwellen aktiv – die horizontale Position kommt auf Desktop
-     ausschließlich aus dem Flex-`order`. */
+  /* left/right stammen aus der mobilen position:fixed-Darstellung und wirkten bei position:static
+     bisher folgenlos mit (statische Elemente ignorieren sie komplett). Jetzt, wo der Tab auf
+     Desktop position:sticky ist, würden sie sonst als (hier ungewollte) horizontale
+     Sticky-Schwellen aktiv – die horizontale Position kommt auf Desktop ausschließlich aus dem
+     Flex-`order`. Bewusst OHNE margin zum Panel hin (frühere Version hatte hier
+     margin-left/-right: var(--drawer-handle-gap) für Abstand im geöffneten Zustand) – die Lasche
+     ist jetzt bei geöffneter Schublade ohnehin komplett ausgeblendet (siehe .drawer.open
+     .drawer-tab weiter unten), ein Abstand zum (dann unsichtbaren) Panel wird nicht mehr gebraucht.
+     Ohne diesen Rest-Margin klebt die Lasche im geschlossenen Zustand jetzt korrekt direkt am
+     Bildschirmrand statt mit ungewolltem Abstand davor zu schweben. */
   .drawer.left .drawer-tab {
     order: 2;
     left: auto;
-    margin-left: var(--drawer-handle-gap);
   }
   .drawer.right .drawer-tab {
     order: 1;
     right: auto;
-    margin-right: var(--drawer-handle-gap);
   }
 
-  .drawer.left.open .drawer-tab,
-  .drawer.right.open .drawer-tab {
-    left: auto;
-    right: auto;
+  /* Bei geöffneter Schublade übernimmt der neue Schließen-Button (oben im Panel, neben dem
+     Maximieren-Button) die Schließen-Funktion – die Lasche selbst wäre dann redundant und würde
+     zudem (da sie ohne margin jetzt direkt am Panel-Rand läge) optisch mit dem Anfasser
+     kollidieren. */
+  .drawer.open .drawer-tab {
+    display: none;
   }
 
   /* Auf Desktop ist .drawer-panel nicht mehr auf 85vw gedeckelt (siehe .drawer-panel weiter unten,
@@ -429,14 +447,11 @@ function onResizeEnd() {
     border: none;
   }
 
-  .maximize-btn {
+  .maximize-btn,
+  .close-drawer-btn {
     display: flex;
     position: absolute;
     top: 8px;
-    /* Bei beiden Schubladen rechts im Panel: bei der linken ist das die vom Hauptbereich
-       abgewandte Seite (frei von Inhalt), bei der rechten vermeidet das eine Überlagerung der
-       (links beginnenden) Überschrift des Schubladen-Inhalts (z. B. "Karte"-Titel). */
-    right: 8px;
     z-index: 14;
     width: 28px;
     height: 28px;
@@ -453,7 +468,21 @@ function onResizeEnd() {
     line-height: 1;
   }
 
-  .maximize-btn:hover {
+  /* Bei beiden Schubladen rechts im Panel: bei der linken ist das die vom Hauptbereich abgewandte
+     Seite (frei von Inhalt), bei der rechten vermeidet das eine Überlagerung der (links
+     beginnenden) Überschrift des Schubladen-Inhalts (z. B. "Karte"-Titel). Schließen-Button
+     außen/rechts (die "endgültigere" Aktion in der äußersten Ecke), Maximieren-Button direkt
+     daneben. */
+  .maximize-btn {
+    right: 44px;
+  }
+
+  .close-drawer-btn {
+    right: 8px;
+  }
+
+  .maximize-btn:hover,
+  .close-drawer-btn:hover {
     color: var(--color-primary-dark);
   }
 
