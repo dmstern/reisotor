@@ -105,14 +105,6 @@ function onResizeEnd() {
   <div class="drawer" :class="[side, { open, maximized }]" :style="{ '--drawer-width': `${width}px` }">
     <div class="drawer-backdrop" v-if="open" @click="emit('update:open', false)"></div>
     <div ref="panelEl" class="drawer-panel">
-      <div
-        v-if="open"
-        class="resize-handle"
-        role="separator"
-        aria-orientation="vertical"
-        :aria-label="`${label}-Schublade in der Breite anpassen`"
-        @pointerdown="onResizeStart"
-      ></div>
       <button
         v-if="open"
         type="button"
@@ -126,6 +118,21 @@ function onResizeEnd() {
       </button>
       <div class="drawer-content"><slot /></div>
     </div>
+    <!-- Bewusst AUSSERHALB von .drawer-panel (statt wie früher darin verschachtelt): .drawer-panel
+         ist scrollbar (overflow-y:auto) und clippt (overflow-x:hidden) alles, was über seinen
+         eigenen Rand hinausragt – ein Anfasser, der teilweise außerhalb des Panels liegen soll (um
+         nicht mit dem nativen Scrollbalken um dieselben Pixel zu konkurrieren), würde dort
+         unsichtbar/nicht klickbar. Als Geschwister-Element mit eigener fixed-Positionierung (analog
+         zu .drawer-panel selbst) liegt er stattdessen im eigens dafür vorgesehenen Zwischenraum
+         zwischen Panel und Lasche (siehe --drawer-handle-gap unten), außerhalb jeder Clip-Box. -->
+    <div
+      v-if="open"
+      class="resize-handle"
+      role="separator"
+      aria-orientation="vertical"
+      :aria-label="`${label}-Schublade in der Breite anpassen`"
+      @pointerdown="onResizeStart"
+    ></div>
     <button
       type="button"
       class="drawer-tab"
@@ -141,6 +148,14 @@ function onResizeEnd() {
 </template>
 
 <style scoped>
+.drawer {
+  /* Fester Zwischenraum zwischen Schublade und Ausklapp-Lasche, in dem der Größen-Anfasser
+     (.resize-handle) exklusiv liegt – überlappt dadurch nie mit dem nativen Scrollbalken des
+     Panels (dessen Breite je nach Betriebssystem/Browser variiert), egal wie breit dieser
+     tatsächlich ist. */
+  --drawer-handle-gap: 12px;
+}
+
 /* Mobil (Default): Panel als fixed Overlay, Tab bleibt als touch-tauglicher Griff permanent am
    Bildschirmrand sichtbar. Wächst zusätzlich bei Hover (Desktop-Maus) für präziseres Klicken,
    ohne die Grundgröße dauerhaft so groß zu machen, dass sie Inhalte am Rand überlagert. */
@@ -195,11 +210,11 @@ function onResizeEnd() {
 }
 
 .drawer.left.open .drawer-tab {
-  left: min(85vw, var(--drawer-width));
+  left: calc(min(85vw, var(--drawer-width)) + var(--drawer-handle-gap));
 }
 
 .drawer.right.open .drawer-tab {
-  right: min(85vw, var(--drawer-width));
+  right: calc(min(85vw, var(--drawer-width)) + var(--drawer-handle-gap));
 }
 
 .tab-icon {
@@ -233,10 +248,9 @@ function onResizeEnd() {
   box-shadow: var(--shadow-md);
   z-index: 12;
   overflow-y: auto;
-  /* Der Anfasser ragt bewusst ein paar Pixel über den Panel-Rand hinaus (siehe .resize-handle,
-     right/left: -5px) – ohne explizites overflow-x:hidden zählt das als horizontal überlaufender
-     Inhalt, wodurch v. a. Firefox einen (kaum wahrnehmbaren, aber störenden) horizontalen
-     Scrollbalken einblendet. */
+  /* Rein defensiv (kein bekannter aktueller Grund für horizontalen Überlauf) – .resize-handle liegt
+     bewusst NICHT mehr innerhalb dieser Box (siehe dort), gerade damit overflow-x:hidden es nicht
+     mit clippen kann. */
   overflow-x: hidden;
   transition: transform 0.25s ease;
 }
@@ -262,12 +276,13 @@ function onResizeEnd() {
 }
 
 .resize-handle {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  /* Bewusst deutlich breiter als der sichtbare Griff-Strich selbst (::after) – reine
-     Klickfläche, damit man beim Greifen nicht pixelgenau den schmalen Rand treffen muss. */
-  width: 18px;
+  /* fixed statt absolute (analog zu .drawer-panel): lebt jetzt als Geschwister außerhalb von
+     .drawer-panel im Zwischenraum vor der Lasche (--drawer-handle-gap), viewport-verankert mit
+     denselben top/bottom-Werten wie das Panel selbst, damit beide exakt übereinstimmen. */
+  position: fixed;
+  top: calc(56px + var(--navbar-offset, 0px));
+  bottom: 60px;
+  width: var(--drawer-handle-gap);
   z-index: 14;
   cursor: col-resize;
   touch-action: none;
@@ -278,7 +293,7 @@ function onResizeEnd() {
   position: absolute;
   top: 0;
   bottom: 0;
-  left: 7.5px;
+  left: calc(var(--drawer-handle-gap) / 2 - 1.5px);
   width: 3px;
   border-radius: 2px;
   /* Dauerhaft schwach sichtbar statt erst bei Hover komplett unsichtbar – sonst findet man den
@@ -291,12 +306,14 @@ function onResizeEnd() {
   background: var(--color-primary);
 }
 
+/* Position exakt am äußeren Panel-Rand (Beginn des Zwischenraums zur Lasche hin) – dieselbe Formel
+   wie .drawer-panel's eigene width auf Mobil (min(85vw, var(--drawer-width))). */
 .drawer.left .resize-handle {
-  right: -9px;
+  left: min(85vw, var(--drawer-width));
 }
 
 .drawer.right .resize-handle {
-  left: -9px;
+  right: min(85vw, var(--drawer-width));
 }
 
 /* Maximieren gibt es nur auf Desktop (siehe @media unten) – mobil ist das Panel ohnehin bereits
@@ -363,16 +380,33 @@ function onResizeEnd() {
   .drawer.left .drawer-tab {
     order: 2;
     left: auto;
+    margin-left: var(--drawer-handle-gap);
   }
   .drawer.right .drawer-tab {
     order: 1;
     right: auto;
+    margin-right: var(--drawer-handle-gap);
   }
 
   .drawer.left.open .drawer-tab,
   .drawer.right.open .drawer-tab {
     left: auto;
     right: auto;
+  }
+
+  /* Auf Desktop ist .drawer-panel nicht mehr auf 85vw gedeckelt (siehe .drawer-panel weiter unten,
+     width: var(--drawer-width)) – der Anfasser muss der ungeklammerten Breite folgen, sonst
+     driftet er bei sehr breiten Schubladen vom tatsächlichen Panel-Rand weg. bottom:0 statt 60px,
+     da hier keine untere Navigationsleiste im Weg ist (siehe .drawer-panel's eigenes bottom:auto/
+     max-height weiter unten). */
+  .resize-handle {
+    bottom: 0;
+  }
+  .drawer.left .resize-handle {
+    left: var(--drawer-width);
+  }
+  .drawer.right .resize-handle {
+    right: var(--drawer-width);
   }
 
   .drawer-panel {
