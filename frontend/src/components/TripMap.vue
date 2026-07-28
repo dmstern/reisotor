@@ -1078,9 +1078,11 @@ watch(
 
 /* Desktop: zurück auf den bisherigen Stand (Karte als eigene, begrenzte Box statt vollflächigem
    Hintergrund – .map-col in ExcursionsView.vue ist hier eine normale sticky Spalte, kein
-   fixed-Vollbild-Container mehr, siehe dort). Derselbe Container (.app-main) und dieselbe Schwelle
-   wie ExcursionsView.vue's eigener Desktop/Mobil-Split. */
-@container (min-width: 900px) {
+   fixed-Vollbild-Container mehr, siehe dort). @media statt @container: dieselbe Schwelle wie
+   ExcursionsView.vue's eigener Desktop/Mobil-Split (siehe dort für die Begründung – ein
+   Container-Query auf .app-main's Breite würde bei beiden aufgeklappten Schubladen fälschlich in
+   den mobilen Modus kippen, obwohl der Viewport selbst weiterhin breit/Desktop ist). */
+@media (min-width: 800px) {
   .karte {
     display: flex;
     flex-direction: column;

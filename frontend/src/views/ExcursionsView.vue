@@ -780,11 +780,17 @@ function showSpotOnMap(spot: Spot) {
   display: none;
 }
 
-/* Explizit "app-main" statt unbenannt: dieser Block enthält auch Regeln für Nachfahren von
-   .spots-col (.sheet-handle, .spots-col-body), das selbst seit Kurzem ein eigener, benannter
-   Container ist (siehe dort) – unbenannt würde das sonst versehentlich gegen .spots-col statt
-   gegen .app-main (App.vue) ausgewertet. */
-@container app-main (min-width: 900px) {
+/* @media statt @container(app-main) – bewusst dieselbe Schwelle wie Drawer.vue's eigener
+   Mobil/Desktop-Split (@media (min-width:800px), dort steuert sie fixed-Overlay vs. sticky
+   Flex-Geschwister). Ein Container-Query auf .app-main's Breite wäre hier falsch: sind auf einem
+   breiten Desktop-Bildschirm BEIDE Schubladen aufgeklappt, kann .app-main allein dadurch unter
+   900px schrumpfen – die Karte-Sicht würde dann fälschlich in den mobilen Bottom-Sheet-/
+   Vollbild-Karte-Modus kippen (position:fixed, viewport-verankert statt an .app-main gebunden) und
+   von den Schubladen überdeckt werden, statt sich einfach nur schmaler ins verbleibende
+   .app-main zu quetschen. Die feinere "wie schmal darf .spots-col selbst werden"-Frage (Kompakt-
+   Zeile, Ein-Spalten-Raster) bleibt bewusst weiterhin ein @container(spots-col)-Query weiter unten
+   – das ist innerhalb des Desktop-Modus hier weiterhin sinnvoll container-relativ. */
+@media (min-width: 800px) {
   .page {
     max-width: 1600px;
     /* Die globale .page-Regel (style.css) bringt padding-bottom:88px für normal scrollende Seiten
