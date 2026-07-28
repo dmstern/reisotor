@@ -304,6 +304,66 @@ function onColResizeEnd() {
   window.removeEventListener('pointerup', onColResizeEnd);
 }
 
+// --- Mobil: Spots-Liste als Bottom-Sheet über der (jetzt vollflächigen, siehe TripMap.vue)
+// Karte, ähnlich Google Maps – drei Zustände statt eines stufenlosen Anfassers wie oben, da hier
+// ein fester "Ziel"-Zustand (eingeklappt/angeschnitten/voll) gewünscht ist statt einer frei
+// wählbaren Aufteilung. Nur auf dem Mobil-CSS-Zweig sichtbar (siehe @container weiter unten).
+type SheetState = 'collapsed' | 'partial' | 'full';
+const sheetState = ref<SheetState>('partial');
+const sheetDragging = ref(false);
+const sheetDragHeightPx = ref<number | null>(null);
+
+function sheetHeightPx(state: SheetState): number {
+  if (state === 'collapsed') return 96;
+  if (state === 'partial') return window.innerHeight * 0.46;
+  return window.innerHeight * 0.88;
+}
+
+let sheetStartY = 0;
+let sheetStartHeight = 0;
+function onSheetDragStart(event: PointerEvent) {
+  sheetDragging.value = true;
+  sheetStartY = event.clientY;
+  sheetStartHeight = sheetDragHeightPx.value ?? sheetHeightPx(sheetState.value);
+  window.addEventListener('pointermove', onSheetDragMove);
+  window.addEventListener('pointerup', onSheetDragEnd);
+  event.preventDefault();
+}
+function onSheetDragMove(event: PointerEvent) {
+  if (!sheetDragging.value) return;
+  // Nach oben ziehen (kleinerer clientY) vergrößert die Höhe.
+  const delta = sheetStartY - event.clientY;
+  const next = sheetStartHeight + delta;
+  sheetDragHeightPx.value = Math.min(sheetHeightPx('full'), Math.max(sheetHeightPx('collapsed'), next));
+}
+function onSheetDragEnd() {
+  sheetDragging.value = false;
+  window.removeEventListener('pointermove', onSheetDragMove);
+  window.removeEventListener('pointerup', onSheetDragEnd);
+  const current = sheetDragHeightPx.value;
+  sheetDragHeightPx.value = null;
+  if (current == null) return;
+  const movedFar = Math.abs(current - sheetStartHeight) > 8;
+  if (!movedFar) {
+    // Kaum Bewegung = Tippen statt Ziehen: einen Zustand weiterschalten statt "an derselben
+    // Stelle" wieder einzurasten (das wäre sonst ein wirkungsloser Tap gewesen).
+    const order: SheetState[] = ['collapsed', 'partial', 'full'];
+    sheetState.value = order[(order.indexOf(sheetState.value) + 1) % order.length];
+    return;
+  }
+  const states: SheetState[] = ['collapsed', 'partial', 'full'];
+  let closest: SheetState = 'partial';
+  let bestDist = Infinity;
+  for (const s of states) {
+    const dist = Math.abs(sheetHeightPx(s) - current);
+    if (dist < bestDist) {
+      bestDist = dist;
+      closest = s;
+    }
+  }
+  sheetState.value = closest;
+}
+
 function checkSpotMapsLink() {
   spotMapsLinkResolved.value = spotForm.value.maps_link ? parseLatLngFromMapsLink(spotForm.value.maps_link) != null : null;
 }
@@ -373,7 +433,22 @@ function showSpotOnMap(spot: Spot) {
   <div class="page" v-if="!loading">
     <h1 class="page-title">🗺️ Karte</h1>
     <div class="layout" :style="{ '--spots-col-width': spotsColWidth + 'px' }">
-    <div class="spots-col">
+    <div
+      class="spots-col"
+      :class="[sheetState, { dragging: sheetDragging }]"
+      :style="sheetDragHeightPx != null ? { height: sheetDragHeightPx + 'px' } : {}"
+    >
+      <div
+        class="sheet-handle"
+        role="separator"
+        aria-orientation="horizontal"
+        aria-label="Spots-Liste ein-/ausklappen"
+        @pointerdown="onSheetDragStart"
+      >
+        <span class="sheet-grip" aria-hidden="true"></span>
+        <span class="sheet-summary">📍 {{ filteredSpotItems.length }} {{ filteredSpotItems.length === 1 ? 'Ort' : 'Orte' }}</span>
+      </div>
+      <div class="spots-col-body">
       <div class="header">
         <h2>Spots</h2>
         <div class="header-actions">
@@ -528,6 +603,7 @@ function showSpotOnMap(spot: Spot) {
           <button type="submit">Speichern</button>
         </form>
       </Modal>
+      </div>
     </div>
 
     <div
@@ -551,10 +627,94 @@ function showSpotOnMap(spot: Spot) {
 </template>
 
 <style scoped>
+/* Mobil (Default): deckende Kopfleiste über der (jetzt dahinterliegenden, siehe .map-col weiter
+   unten) vollflächigen Karte – ohne Hintergrund wäre der Titel je nach Kartenausschnitt kaum
+   lesbar. Auf Desktop (@container weiter unten) wieder der bisherige schlichte Titel ohne eigene
+   Box. */
 .page-title {
-  margin: 0 0 var(--space-3);
+  position: relative;
+  z-index: 2;
+  background: var(--color-bg);
+  padding: var(--space-2) var(--space-3);
+  margin: 0;
+  border-bottom: 1px solid var(--color-border);
   font-size: 1.3rem;
   color: var(--color-primary-dark);
+}
+
+/* Mobil (Default): Karte füllt den Bildschirm unterhalb der NavBar vollflächig als fixer
+   Hintergrund (siehe TripMap.vue für die Karten-eigene Vollbild-Anpassung); die Spots-Liste
+   (.spots-col weiter unten) liegt als Bottom-Sheet darüber. Auf Desktop (@container weiter unten)
+   wieder die bisherige sticky Spalte. */
+.map-col {
+  position: fixed;
+  top: calc(56px + var(--navbar-offset, 0px));
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+}
+
+/* Bottom-Sheet mit drei Rasteinungen (siehe sheetState/onSheetDragStart im Script) – Höhe kommt
+   entweder aus der Zustands-Klasse (collapsed/full, Default = "partial" ohne eigene Klasse) oder,
+   während eines aktiven Ziehens, aus dem inline gesetzten :style (folgt direkt dem Finger).
+   .dragging schaltet die Transition ab, damit das Ziehen nicht hinterherhinkt. */
+.spots-col {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  box-shadow: var(--shadow-md);
+  height: 46vh;
+  transition: height 0.25s ease;
+  overflow: hidden;
+}
+
+.spots-col.collapsed {
+  height: 96px;
+}
+
+.spots-col.full {
+  height: 88vh;
+}
+
+.spots-col.dragging {
+  transition: none;
+}
+
+.sheet-handle {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 0 6px;
+  cursor: grab;
+  touch-action: none;
+}
+
+.sheet-grip {
+  width: 40px;
+  height: 4px;
+  border-radius: 3px;
+  background: var(--color-border);
+}
+
+.sheet-summary {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.spots-col-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 var(--space-3) var(--space-3);
 }
 
 /* Nebeneinander statt untereinander, sobald genug Breite verfügbar ist – schmalere Spots-Liste
@@ -580,6 +740,17 @@ function showSpotOnMap(spot: Spot) {
     max-width: 1600px;
   }
 
+  /* Zurück auf den bisherigen schlichten Titel ohne eigene Box – die deckende Kopfleiste (siehe
+     Default-Regel weiter oben) ist nur nötig, wenn dahinter die vollflächige mobile Karte liegt. */
+  .page-title {
+    position: static;
+    z-index: auto;
+    background: none;
+    padding: 0;
+    margin: 0 0 var(--space-3);
+    border-bottom: none;
+  }
+
   .layout {
     display: grid;
     /* min(..., 75cqw) statt einfach var(--spots-col-width): deckelt die Spots-Spalte zusätzlich
@@ -594,10 +765,16 @@ function showSpotOnMap(spot: Spot) {
 
   /* Beide Spalten scrollen ab hier unabhängig voneinander statt gemeinsam mit der Seite – dieselbe
      Sticky-Offset-Formel wie Drawer.vue's Desktop-Panel (56px NavBar + evtl. zusätzlicher
-     --navbar-offset, falls die NavBar selbst "oben" positioniert ist). */
+     --navbar-offset, falls die NavBar selbst "oben" positioniert ist). Auch der komplette Reset
+     der mobilen Bottom-Sheet-/Vollbild-Eigenschaften (fixed-Positionierung, Höhe, Hintergrund, …)
+     zurück auf den bisherigen Stand. */
   .spots-col,
   .map-col {
     position: sticky;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    z-index: auto;
     top: calc(56px + var(--navbar-offset, 0px));
     max-height: calc(100vh - 56px - var(--navbar-offset, 0px));
     overflow-y: auto;
@@ -607,6 +784,22 @@ function showSpotOnMap(spot: Spot) {
     /* Der native Scrollbalken sitzt sonst direkt auf dem Kartenrand – etwas Luft, damit er nicht
        am Inhalt klebt. */
     padding-right: var(--space-3);
+    display: block;
+    height: auto;
+    background: none;
+    border-radius: 0;
+    box-shadow: none;
+    transition: none;
+  }
+
+  .sheet-handle {
+    display: none;
+  }
+
+  .spots-col-body {
+    flex: none;
+    overflow-y: visible;
+    padding: 0;
   }
 
   /* Dieselbe Sticky-Formel wie die beiden Inhaltsspalten – hier aber als explizite `height` statt
