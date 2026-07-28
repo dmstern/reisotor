@@ -74,6 +74,9 @@ const { dragging, ghostStyle, onPointerDown } = usePointerDrag({
         <CategoryChip :category="spot.category" />
       </div>
       <div v-if="spot.note" class="note" v-html="renderRichText(spot.note)"></div>
+      <div class="links" v-if="spot.lat != null && spot.lng != null">
+        <button type="button" class="card-action-btn" @click.stop="emit('show-on-map', spot)">🗺️ Auf Karte anzeigen</button>
+      </div>
       <span class="drag-hint">↕ auf einen Ausflug ziehen, um ihn dort als Station hinzuzufügen</span>
       <button
         type="button"
@@ -167,6 +170,12 @@ const { dragging, ghostStyle, onPointerDown } = usePointerDrag({
   font-size: 0.72rem;
   color: var(--color-text-muted);
   margin-top: var(--space-1);
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
 }
 
 .social-row {
