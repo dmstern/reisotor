@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, type ComponentPublicInstance } from 'vue';
+import { computed, onMounted, ref, watch, type ComponentPublicInstance } from 'vue';
 import { api } from '../api/client';
 import type { Accommodation, Spot, TravelItem, User } from '../api/types';
 import { useAuthStore } from '../stores/auth';
@@ -260,6 +260,47 @@ function onFocusSpotFromMap(spotId: number) {
   scrollToSpot(spotId);
 }
 
+// --- Aufteilung Spots-Liste/Karte per Anfasser verschiebbar (nur Desktop-Grid, siehe @container-
+// Query im CSS) ---
+const SPOTS_COL_WIDTH_KEY = 'reisotor-spots-col-width';
+const MIN_SPOTS_COL_WIDTH = 280;
+const MAX_SPOTS_COL_WIDTH = 640;
+const DEFAULT_SPOTS_COL_WIDTH = 380;
+
+function loadSpotsColWidth(): number {
+  const stored = Number(localStorage.getItem(SPOTS_COL_WIDTH_KEY));
+  return Number.isFinite(stored) && stored >= MIN_SPOTS_COL_WIDTH && stored <= MAX_SPOTS_COL_WIDTH
+    ? stored
+    : DEFAULT_SPOTS_COL_WIDTH;
+}
+const spotsColWidth = ref(loadSpotsColWidth());
+watch(spotsColWidth, (v) => localStorage.setItem(SPOTS_COL_WIDTH_KEY, String(v)));
+
+// Anfasser zwischen Spots-Liste und Karte (Pointer Events statt separater Maus-/Touch-Handler,
+// analog zu Drawer.vue's Schubladen-Anfasser) – verschiebt das Grid-Spaltenverhältnis, indem er
+// die CSS-Variable --spots-col-width der ersten Spalte (siehe :style auf .layout) anpasst.
+const resizingCol = ref(false);
+let colStartX = 0;
+let colStartWidth = 0;
+function onColResizeStart(event: PointerEvent) {
+  resizingCol.value = true;
+  colStartX = event.clientX;
+  colStartWidth = spotsColWidth.value;
+  window.addEventListener('pointermove', onColResizeMove);
+  window.addEventListener('pointerup', onColResizeEnd);
+  event.preventDefault();
+}
+function onColResizeMove(event: PointerEvent) {
+  if (!resizingCol.value) return;
+  const delta = event.clientX - colStartX;
+  spotsColWidth.value = Math.min(MAX_SPOTS_COL_WIDTH, Math.max(MIN_SPOTS_COL_WIDTH, colStartWidth + delta));
+}
+function onColResizeEnd() {
+  resizingCol.value = false;
+  window.removeEventListener('pointermove', onColResizeMove);
+  window.removeEventListener('pointerup', onColResizeEnd);
+}
+
 function checkSpotMapsLink() {
   spotMapsLinkResolved.value = spotForm.value.maps_link ? parseLatLngFromMapsLink(spotForm.value.maps_link) != null : null;
 }
@@ -328,7 +369,7 @@ function showSpotOnMap(spot: Spot) {
 <template>
   <div class="page" v-if="!loading">
     <h1 class="page-title">🗺️ Karte</h1>
-    <div class="layout">
+    <div class="layout" :style="{ '--spots-col-width': spotsColWidth + 'px' }">
     <div class="spots-col">
       <div class="header">
         <h2>Spots</h2>
@@ -486,6 +527,14 @@ function showSpotOnMap(spot: Spot) {
       </Modal>
     </div>
 
+    <div
+      class="col-resize-handle"
+      role="separator"
+      aria-orientation="vertical"
+      aria-label="Aufteilung zwischen Spots-Liste und Karte anpassen"
+      @pointerdown="onColResizeStart"
+    ></div>
+
     <div class="map-col">
       <TripMap
         ref="tripMapRef"
@@ -513,6 +562,16 @@ function showSpotOnMap(spot: Spot) {
    normaler max-width:960px-Deckel (style.css, für die einspaltige Lesbarkeit auf allen anderen
    Seiten gedacht) würde die zwei Spalten sonst weiterhin auf denselben schmalen Streifen
    zusammenquetschen, obwohl links/rechts noch reichlich Platz frei wäre. */
+/* Anfasser zwischen Spots-Liste und Karte: nur auf dem Desktop-Grid sichtbar (mobil stapeln sich
+   die Spalten normal untereinander, ein horizontaler Anfasser ergäbe dort keinen Sinn). Eigene
+   Grid-Spalte statt eines absolut positionierten Elements im Gap (wie ursprünglich bei Drawer.vue's
+   Schubladen-Anfasser) – vermeidet dieselbe Falle wie dort: .spots-col/.map-col sind overflow-y:
+   auto, was overflow-x laut CSS-Spec implizit auf auto setzt und ein überlappendes Element clippen
+   würde. */
+.col-resize-handle {
+  display: none;
+}
+
 @container (min-width: 900px) {
   .page {
     max-width: 1600px;
@@ -520,9 +579,9 @@ function showSpotOnMap(spot: Spot) {
 
   .layout {
     display: grid;
-    grid-template-columns: minmax(320px, 420px) 1fr;
+    grid-template-columns: var(--spots-col-width) 14px 1fr;
     align-items: start;
-    gap: 0 var(--space-5);
+    gap: 0 var(--space-3);
   }
 
   /* Beide Spalten scrollen ab hier unabhängig voneinander statt gemeinsam mit der Seite – dieselbe
@@ -540,6 +599,31 @@ function showSpotOnMap(spot: Spot) {
     /* Der native Scrollbalken sitzt sonst direkt auf dem Kartenrand – etwas Luft, damit er nicht
        am Inhalt klebt. */
     padding-right: var(--space-3);
+  }
+
+  /* Dieselbe Sticky-Formel wie die beiden Inhaltsspalten, damit der Anfasser über die volle
+     sichtbare Höhe reicht statt nur über die (ggf. kürzere) Inhaltshöhe einer Spalte. */
+  .col-resize-handle {
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    position: sticky;
+    top: calc(56px + var(--navbar-offset, 0px));
+    max-height: calc(100vh - 56px - var(--navbar-offset, 0px));
+    cursor: col-resize;
+    touch-action: none;
+  }
+
+  .col-resize-handle::after {
+    content: '';
+    width: 3px;
+    border-radius: 2px;
+    background: var(--color-border);
+    transition: background 0.15s ease;
+  }
+
+  .col-resize-handle:hover::after {
+    background: var(--color-primary);
   }
 }
 
