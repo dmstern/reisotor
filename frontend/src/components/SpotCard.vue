@@ -278,4 +278,43 @@ function onCardClick() {
   white-space: nowrap;
   box-shadow: var(--shadow-md);
 }
+
+/* Kompakte Listen-Zeile statt Miniatur-Card auf schmalen Bildschirmen (Bottom-Sheet auf Mobil,
+   siehe ExcursionsView.vue) – zeigt nur die wichtigsten Infos (Bild, Titel, Kategorie), sekundäre
+   Aktionen (Notiz, Anfasser, Auf-Karte-Button) erst nach dem Aufklappen (:not(.expanded)). Grob
+   nach demselben Zeilen-Muster wie ExcursionCard.vue (festes Vorschaubild links, Rest daneben). */
+@media (max-width: 899px) {
+  .spot-card:not(.expanded) {
+    flex-direction: row;
+    align-items: stretch;
+  }
+
+  .spot-card:not(.expanded) .image {
+    width: 64px;
+    height: auto;
+    flex-shrink: 0;
+  }
+
+  .spot-card:not(.expanded) .body {
+    padding: var(--space-2);
+    gap: 2px;
+  }
+
+  .spot-card:not(.expanded) .note,
+  .spot-card:not(.expanded) .links,
+  .spot-card:not(.expanded) .excursion-drag-handle,
+  .spot-card:not(.expanded) .calendar-drag-handle {
+    display: none;
+  }
+
+  .spot-card:not(.expanded) .social-row {
+    margin-top: 0;
+  }
+
+  /* Etwas kleiner als der Desktop-Wert (200px) aus der Aufklapp-Ansicht, damit das Bild auf
+     schmalen Bildschirmen nicht zu dominant wirkt. */
+  .spot-card.expanded .image {
+    height: 160px;
+  }
+}
 </style>

@@ -118,4 +118,30 @@ function onDragStart(event: DragEvent) {
 .excursion-drag-handle:active {
   cursor: grabbing;
 }
+
+/* Kompakte Listen-Zeile statt Miniatur-Card auf schmalen Bildschirmen (Bottom-Sheet auf Mobil,
+   siehe ExcursionsView.vue) – gleiches Prinzip wie SpotCard.vue, hier einfacher da ohne
+   Aufklapp-Zustand: der Anfasser (seltener gebraucht als der Sprung-Link) entfällt kompakt,
+   Titel/Sprung-Link bleiben sichtbar. */
+@media (max-width: 899px) {
+  .derived-card {
+    flex-direction: row;
+    align-items: stretch;
+  }
+
+  .image {
+    width: 64px;
+    height: auto;
+    flex-shrink: 0;
+  }
+
+  .body {
+    padding: var(--space-2);
+    gap: 2px;
+  }
+
+  .excursion-drag-handle {
+    display: none;
+  }
+}
 </style>
