@@ -1,14 +1,23 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { DerivedLocation } from '../utils/derivedLocation';
+import { useDrawersStore } from '../stores/drawers';
 
 const props = defineProps<{ location: DerivedLocation }>();
+const drawers = useDrawersStore();
 
 // Kein eigener Edit-/Löschen-/Like-/Kommentar-Button: der Ort selbst gehört nicht dieser Sicht
 // (bearbeitet wird er in der Unterkunft-/Reise-Sicht), daher nur ein Sprung-Button dorthin.
 const jumpTarget = computed(() =>
   props.location.category === 'Unterkunft' ? { to: '/accommodation', label: 'Zur Unterkunft' } : { to: '/travel', label: 'Zur Reise' },
 );
+
+// Klick auf die Karte öffnet den Ort auf der Karte, genau wie bei einem "echten" Spot (SpotCard.vue)
+// – location.key ist bereits derselbe generische Schlüssel, den drawers.openMapAt/TripMap.vue für
+// Unterkunft-/Reise-Punkte erwarten (accommodation-<id>/travel-from-<id>/travel-to-<id>).
+function showOnMap() {
+  drawers.openMapAt(props.location.key);
+}
 
 // Weiterhin per Drag&Drop einer Tour als Station hinzufügbar (ExcursionCard.vue ist die
 // Drop-Zone) – dasselbe Format wie zuvor im ausgeklappten Panel. Startet über einen dedizierten
@@ -20,14 +29,14 @@ function onDragStart(event: DragEvent) {
 </script>
 
 <template>
-  <div class="card derived-card">
+  <div class="card derived-card" @click="showOnMap">
     <div class="image">
       <span class="placeholder">{{ location.icon }}</span>
     </div>
     <div class="body">
       <h3>{{ location.title }}</h3>
       <div class="links">
-        <router-link :to="jumpTarget.to" class="card-action-btn">{{ jumpTarget.label }}</router-link>
+        <router-link :to="jumpTarget.to" class="card-action-btn" @click.stop>{{ jumpTarget.label }}</router-link>
       </div>
       <button
         type="button"
@@ -36,6 +45,7 @@ function onDragStart(event: DragEvent) {
         aria-label="Auf eine Tour ziehen, um sie dort als Station hinzuzufügen"
         title="Auf eine Tour ziehen, um sie dort als Station hinzuzufügen"
         @dragstart="onDragStart"
+        @click.stop
       >
         🎒 Auf Tour ziehen
       </button>
@@ -49,6 +59,7 @@ function onDragStart(event: DragEvent) {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  cursor: pointer;
 }
 
 .image {
