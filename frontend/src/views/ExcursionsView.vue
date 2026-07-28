@@ -627,17 +627,12 @@ function showSpotOnMap(spot: Spot) {
 </template>
 
 <style scoped>
-/* Mobil (Default): deckende Kopfleiste über der (jetzt dahinterliegenden, siehe .map-col weiter
-   unten) vollflächigen Karte – ohne Hintergrund wäre der Titel je nach Kartenausschnitt kaum
-   lesbar. Auf Desktop (@container weiter unten) wieder der bisherige schlichte Titel ohne eigene
-   Box. */
+/* Mobil (Default): kein eigener Titel-Balken über der (jetzt dahinterliegenden, siehe .map-col
+   weiter unten) vollflächigen Karte – anders als bei Google Maps (Vorbild für die vollflächige
+   Karte) ist das hier kein Suchfeld, nur eine leere Kopfzeile ohne Funktion. Auf Desktop
+   (@container weiter unten) bleibt der bisherige schlichte Titel unverändert sichtbar. */
 .page-title {
-  position: relative;
-  z-index: 2;
-  background: var(--color-bg);
-  padding: var(--space-2) var(--space-3);
-  margin: 0;
-  border-bottom: 1px solid var(--color-border);
+  display: none;
   font-size: 1.3rem;
   color: var(--color-primary-dark);
 }
@@ -740,15 +735,11 @@ function showSpotOnMap(spot: Spot) {
     max-width: 1600px;
   }
 
-  /* Zurück auf den bisherigen schlichten Titel ohne eigene Box – die deckende Kopfleiste (siehe
-     Default-Regel weiter oben) ist nur nötig, wenn dahinter die vollflächige mobile Karte liegt. */
+  /* Auf Desktop gibt es keine vollflächige Hintergrund-Karte (siehe .map-col weiter unten) – der
+     Titel ist hier weiterhin sinnvoll und bleibt sichtbar. */
   .page-title {
-    position: static;
-    z-index: auto;
-    background: none;
-    padding: 0;
+    display: block;
     margin: 0 0 var(--space-3);
-    border-bottom: none;
   }
 
   .layout {
@@ -912,6 +903,16 @@ function showSpotOnMap(spot: Spot) {
 
 .cards {
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+
+/* Auf schmalen Bildschirmen (Bottom-Sheet, siehe .spots-col weiter oben) immer eine einzelne
+   Spalte statt auto-fill – bei knapper, aber nicht ganz ausreichender Breite für zwei 240px-Spalten
+   schnitt auto-fill die zweite Karte sonst am rechten Rand ab, statt sie in eine neue Zeile
+   umbrechen zu lassen. Passt außerdem besser zur listenartigen Kompakt-Zeile aus SpotCard.vue. */
+@media (max-width: 899px) {
+  .cards {
+    grid-template-columns: 1fr;
+  }
 }
 
 .dropdown {
