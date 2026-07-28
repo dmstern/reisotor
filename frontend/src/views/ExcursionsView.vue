@@ -655,6 +655,12 @@ function showSpotOnMap(spot: Spot) {
    während eines aktiven Ziehens, aus dem inline gesetzten :style (folgt direkt dem Finger).
    .dragging schaltet die Transition ab, damit das Ziehen nicht hinterherhinkt. */
 .spots-col {
+  /* Macht .spots-col selbst zum Container für die Kompakt-Zeile-Entscheidung in SpotCard.vue/
+     DerivedLocationCard.vue/.cards weiter unten (@container-Abfragen dort) – reagiert dadurch auf
+     die TATSÄCHLICHE Breite dieser Spalte (auch beim Verschieben des Anfassers auf Desktop),
+     unabhängig von Viewport/anderer-Container-Breite. Gilt unverändert in beiden Modi (Mobil
+     fixed/Desktop sticky), da hier nicht zurückgesetzt. */
+  container-type: inline-size;
   position: fixed;
   left: 0;
   right: 0;
@@ -905,11 +911,15 @@ function showSpotOnMap(spot: Spot) {
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
 }
 
-/* Auf schmalen Bildschirmen (Bottom-Sheet, siehe .spots-col weiter oben) immer eine einzelne
-   Spalte statt auto-fill – bei knapper, aber nicht ganz ausreichender Breite für zwei 240px-Spalten
-   schnitt auto-fill die zweite Karte sonst am rechten Rand ab, statt sie in eine neue Zeile
-   umbrechen zu lassen. Passt außerdem besser zur listenartigen Kompakt-Zeile aus SpotCard.vue. */
-@media (max-width: 899px) {
+/* Auf schmalen .spots-col-Breiten (Bottom-Sheet auf Mobil, ODER auf Desktop, wenn der Anfasser sehr
+   weit zur Karte hin gezogen wurde) immer eine einzelne Spalte statt auto-fill – bei knapper, aber
+   nicht ganz ausreichender Breite für zwei 240px-Spalten schnitt auto-fill die zweite Karte sonst
+   am rechten Rand ab, statt sie in eine neue Zeile umbrechen zu lassen. Container-Query statt
+   @media (siehe container-type auf .spots-col oben) – reagiert dadurch auf die tatsächliche
+   Spalten-Breite, nicht auf die Fenster-/Viewport-Breite. Derselbe Schwellenwert wie in
+   SpotCard.vue/DerivedLocationCard.vue (muss übereinstimmen, sonst driftet die Kompakt-Zeile dort
+   von der Ein-Spalten-Entscheidung hier auseinander). */
+@container (max-width: 480px) {
   .cards {
     grid-template-columns: 1fr;
   }

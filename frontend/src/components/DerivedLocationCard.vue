@@ -119,11 +119,11 @@ function onDragStart(event: DragEvent) {
   cursor: grabbing;
 }
 
-/* Kompakte Listen-Zeile statt Miniatur-Card auf schmalen Bildschirmen (Bottom-Sheet auf Mobil,
-   siehe ExcursionsView.vue) – gleiches Prinzip wie SpotCard.vue, hier einfacher da ohne
-   Aufklapp-Zustand: der Anfasser (seltener gebraucht als der Sprung-Link) entfällt kompakt,
-   Titel/Sprung-Link bleiben sichtbar. */
-@media (max-width: 899px) {
+/* Kompakte Listen-Zeile statt Miniatur-Card auf schmalen .spots-col-Breiten – gleiches Prinzip wie
+   SpotCard.vue (dort auch die Begründung für Container-Query statt @media und den Schwellenwert,
+   muss mit dort übereinstimmen), hier einfacher da ohne Aufklapp-Zustand: der Anfasser (seltener
+   gebraucht als der Sprung-Link) entfällt kompakt, Titel/Sprung-Link bleiben sichtbar. */
+@container (max-width: 480px) {
   .derived-card {
     flex-direction: row;
     align-items: stretch;
