@@ -313,10 +313,16 @@ const sheetState = ref<SheetState>('partial');
 const sheetDragging = ref(false);
 const sheetDragHeightPx = ref<number | null>(null);
 
+// Deckelt alle drei Zustände auf den Platz UNTER der Kopfzeile/NavBar (56px App-Header +
+// --navbar-offset, dieselbe Formel wie .map-col's sticky top weiter unten) – ohne diesen Deckel
+// wuchs der "voll"-Zustand (88vh der GESAMTEN Fensterhöhe) auf kurzen Fenstern über die Kopfzeile
+// hinaus, sein oberer Rand landete dann teilweise dahinter/darunter verdeckt.
 function sheetHeightPx(state: SheetState): number {
-  if (state === 'collapsed') return 96;
-  if (state === 'partial') return window.innerHeight * 0.46;
-  return window.innerHeight * 0.88;
+  const navbarOffset = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--navbar-offset')) || 0;
+  const maxAvailable = Math.max(160, window.innerHeight - 56 - navbarOffset - 8);
+  if (state === 'collapsed') return Math.min(96, maxAvailable);
+  if (state === 'partial') return Math.min(window.innerHeight * 0.46, maxAvailable);
+  return Math.min(window.innerHeight * 0.88, maxAvailable);
 }
 
 let sheetStartY = 0;
