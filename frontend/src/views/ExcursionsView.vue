@@ -264,7 +264,10 @@ function onFocusSpotFromMap(spotId: number) {
 // Query im CSS) ---
 const SPOTS_COL_WIDTH_KEY = 'reisotor-spots-col-width';
 const MIN_SPOTS_COL_WIDTH = 280;
-const MAX_SPOTS_COL_WIDTH = 640;
+// Großzügig bemessen (der tatsächliche visuelle Anschlag kommt aus dem CSS, siehe
+// grid-template-columns: min(var(--spots-col-width), 75cqw) ... – container-relativ, damit die
+// Karte auf schmaleren Containern nie komplett verdrängt wird, unabhängig von diesem px-Wert hier).
+const MAX_SPOTS_COL_WIDTH = 1400;
 const DEFAULT_SPOTS_COL_WIDTH = 380;
 
 function loadSpotsColWidth(): number {
@@ -579,7 +582,12 @@ function showSpotOnMap(spot: Spot) {
 
   .layout {
     display: grid;
-    grid-template-columns: var(--spots-col-width) 20px 1fr;
+    /* min(..., 75cqw) statt einfach var(--spots-col-width): deckelt die Spots-Spalte zusätzlich
+       relativ zur tatsächlichen Container-Breite (derselbe Container wie die @container-Query hier,
+       .app-main in App.vue) – ohne das könnte die Karte auf schmaleren Containern komplett verdrängt
+       werden, wenn spotsColWidth (JS, siehe MAX_SPOTS_COL_WIDTH) großzügiger als der verfügbare
+       Platz gewählt wurde. 75cqw erlaubt der Liste bis zu 3/4 des Platzes, wenn gewünscht. */
+    grid-template-columns: min(var(--spots-col-width), 75cqw) 20px 1fr;
     align-items: start;
     gap: 0;
   }
