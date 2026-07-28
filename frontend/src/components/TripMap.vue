@@ -870,22 +870,25 @@ watch(
 </template>
 
 <style scoped>
+/* Mobil (Default): die Karte füllt ihren Container (.map-col in ExcursionsView.vue, dort auf Mobil
+   position:fixed über den ganzen Bildschirm) randlos vollflächig aus, ähnlich Google Maps –
+   .karte selbst erzeugt dafür keine eigene Box mehr (display:contents), .map-wrap/.map übernehmen
+   direkt die volle Fläche ihres jetzt fixed-positionierten Großelternteils. Auf Desktop
+   (@container weiter unten) wird das komplett auf den bisherigen Stand zurückgesetzt. */
 .karte {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
+  display: contents;
 }
 
 .map-wrap {
-  position: relative;
+  position: absolute;
+  inset: 0;
 }
 
 .map {
-  height: 70vh;
-  min-height: 420px;
-  border-radius: var(--radius-md);
+  height: 100%;
+  border-radius: 0;
   overflow: hidden;
-  border: 1px solid var(--color-border);
+  border: none;
 }
 
 .fit-btn {
@@ -959,7 +962,18 @@ watch(
   }
 }
 
+/* Mobil (Default): schwebt als eigene Karte ÜBER der (jetzt vollflächigen) Karte, statt wie bisher
+   als normales Flow-Element darunter zu stehen – dafür ist auf dem mobilen Vollbild-Hintergrund
+   kein Platz mehr. Bewusst einfach oben verankert statt an die Bottom-Sheet-Höhe der Spots-Liste
+   gekoppelt (ExcursionsView.vue) – Ausflug-/Tag-Fokus ist der seltenere Pfad, eine dynamische
+   Kopplung wäre hier unverhältnismäßig viel zusätzliche Komplexität. Auf Desktop (@container
+   weiter unten) wieder normales Flow-Element wie bisher. */
 .focus-spot-list {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  z-index: 1000;
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -1060,5 +1074,33 @@ watch(
 
 .empty {
   color: var(--color-text-muted);
+}
+
+/* Desktop: zurück auf den bisherigen Stand (Karte als eigene, begrenzte Box statt vollflächigem
+   Hintergrund – .map-col in ExcursionsView.vue ist hier eine normale sticky Spalte, kein
+   fixed-Vollbild-Container mehr, siehe dort). Derselbe Container (.app-main) und dieselbe Schwelle
+   wie ExcursionsView.vue's eigener Desktop/Mobil-Split. */
+@container (min-width: 900px) {
+  .karte {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .map-wrap {
+    position: relative;
+    inset: auto;
+  }
+
+  .map {
+    height: 70vh;
+    min-height: 420px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
+  }
+
+  .focus-spot-list {
+    position: static;
+  }
 }
 </style>
