@@ -48,7 +48,7 @@ const links = [
   { to: '/packing', label: 'Packliste', icon: SECTION_ICONS.packing },
   { to: '/shopping', label: 'Einkauf', icon: SECTION_ICONS.shopping },
   { to: '/todo', label: 'ToDo', icon: SECTION_ICONS.todo },
-  { to: '/excursions', label: 'Ausflüge', icon: SECTION_ICONS.excursions },
+  { to: '/excursions', label: 'Karte', icon: SECTION_ICONS.map },
   { to: '/travel', label: 'Reise', icon: SECTION_ICONS.travel },
   { to: '/accommodation', label: 'Unterkunft', icon: SECTION_ICONS.accommodation },
   { to: '/budget', label: 'Budget', icon: SECTION_ICONS.budget },
