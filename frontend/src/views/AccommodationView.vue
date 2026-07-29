@@ -253,6 +253,9 @@ function showDetailOnMap() {
         <p v-if="acc.start_date || acc.end_date">
           🗓️ {{ formatDate(acc.start_date) || '?' }} – {{ formatDate(acc.end_date) || '?' }}
         </p>
+        <p v-if="acc.address" class="acc-meta">📍 {{ acc.address }}</p>
+        <p v-if="acc.checkin || acc.checkout" class="acc-meta">🕒 {{ acc.checkin || '–' }} · {{ acc.checkout || '–' }}</p>
+        <p v-if="acc.note" class="acc-note">{{ acc.note }}</p>
       </div>
     </TransitionGroup>
     <p v-if="!accommodations.length" class="empty">Noch keine Unterkunft eingetragen.</p>
@@ -424,6 +427,22 @@ label {
 .acc-head h3 {
   margin: 0;
   font-size: 1rem;
+}
+
+.acc-meta {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.acc-note {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
 .note {
