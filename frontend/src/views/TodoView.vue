@@ -26,9 +26,16 @@ const PRIORITY_META: Record<TodoPriority, { label: string; icon: string }> = {
 };
 const PRIORITY_ORDER: Record<TodoPriority, number> = { high: 0, medium: 1, low: 2 };
 
+// Merkt sich die zuletzt für ein neues ToDo gewählte Bearbeiter:in (z. B. wenn mehrere Aufgaben
+// hintereinander für dieselbe Person angelegt werden) und schlägt sie beim nächsten neuen Eintrag
+// direkt vor, statt jedes Mal wieder "Nicht zugewiesen" zu zeigen. Persistiert über localStorage,
+// damit die Vorauswahl auch nach einem Reload erhalten bleibt (gleiches Muster wie andere
+// UI-Präferenzen der App, z. B. SPOTS_COL_WIDTH_KEY).
+const LAST_ASSIGNEE_KEY = 'reisotor-todo-last-assignee';
+
 const emptyForm = () => ({
   title: '',
-  assigned_to_user_id: '',
+  assigned_to_user_id: localStorage.getItem(LAST_ASSIGNEE_KEY) ?? '',
   due_date: '',
   priority: 'medium' as TodoPriority,
   note: '',
@@ -125,6 +132,11 @@ async function addItem() {
   if (!newForm.value.title.trim()) return;
   const created = await api.post<TodoItem>('/todos', toBody(newForm.value));
   items.value.push(created);
+  if (newForm.value.assigned_to_user_id) {
+    localStorage.setItem(LAST_ASSIGNEE_KEY, newForm.value.assigned_to_user_id);
+  } else {
+    localStorage.removeItem(LAST_ASSIGNEE_KEY);
+  }
   newForm.value = emptyForm();
 }
 
