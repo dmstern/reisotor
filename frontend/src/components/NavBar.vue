@@ -94,6 +94,12 @@ function onLinkClick(event: MouseEvent) {
   z-index: 10;
   border-top: none;
   border-bottom: 1px solid var(--color-border);
+  /* Deutlich sichtbarer Schatten (statt des vorher fehlenden), damit sich der fixe Kopfbereich klar
+     vom scrollenden Inhalt darunter abhebt (AppHeader.vue verzichtet dafür jetzt bewusst auf einen
+     eigenen Schatten). Reines Schwarz mit fester Opacity statt der --shadow-sm/md-Tokens (die sind
+     für dezente Karten-Schatten kalibriert) – bleibt so in beiden Themes gleich gut sichtbar.
+     Richtung folgt der jeweiligen Kante: hier "oben" (Default), nach unten in den Inhalt hinein. */
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
 }
 
 /* Position ist pro Gerätebreite konfigurierbar (Profil-Einstellungen) – Default für beide "oben".
@@ -107,6 +113,9 @@ function onLinkClick(event: MouseEvent) {
   bottom: 0;
   border-top: 1px solid var(--color-border);
   border-bottom: none;
+  /* Unten-fixiert: Schatten nach oben in den Inhalt hinein statt nach unten (dort wäre er ohnehin
+     außerhalb des Viewports). */
+  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.18);
 }
 
 .links {
@@ -149,6 +158,7 @@ function onLinkClick(event: MouseEvent) {
     bottom: auto;
     border-top: none;
     border-bottom: 1px solid var(--color-border);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
   }
 
   .navbar.desktop-bottom {
@@ -157,6 +167,7 @@ function onLinkClick(event: MouseEvent) {
     bottom: 0;
     border-top: 1px solid var(--color-border);
     border-bottom: none;
+    box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.18);
   }
 
   .link {

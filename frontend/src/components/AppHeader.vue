@@ -40,7 +40,10 @@ const theme = useThemeStore();
   gap: var(--space-2);
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
-  box-shadow: var(--shadow-sm);
+  /* Bewusst kein Schlagschatten mehr: die NavBar direkt darunter bekommt jetzt den deutlich
+     sichtbaren Schatten, der den fixen Header-Bereich vom scrollenden Inhalt abhebt (siehe
+     NavBar.vue) – zwei Schatten kurz hintereinander wirkten redundant/unruhig. Die Trennlinie
+     (border-bottom) reicht hier weiterhin als dezente Abgrenzung. */
   padding: 0 var(--space-4);
   box-sizing: border-box;
 }
