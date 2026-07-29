@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { api } from '../api/client';
 import type {
   Accommodation,
@@ -64,6 +64,19 @@ async function loadWeather() {
     weatherLoading.value = false;
   }
 }
+
+// Lädt neu, sobald sich die Koordinaten des Urlaubs tatsächlich ändern (z. B. nach dem Bearbeiten
+// des Urlaubsorts) – vorher lief loadWeather() nur einmal beim Mounten, ein Wechsel der
+// Koordinaten dananch hätte sonst weiterhin die alten (oder gar keine) Wetterdaten gezeigt.
+// weatherDays vorher zurücksetzen, damit währenddessen nicht kurz die Vorhersage des alten Orts
+// aufblitzt.
+watch(
+  () => [trip.value?.lat, trip.value?.lng],
+  () => {
+    weatherDays.value = null;
+    loadWeather();
+  },
+);
 
 // Feste, deterministische Farbzuordnung je Widget (dataviz-Skill: kategoriale Identität, fixe
 // Reihenfolge statt gewürfelter Farben) – dieselbe validierte Palette wie überall sonst in der App.
@@ -208,6 +221,11 @@ const vacationForecastDays = computed(() => {
   return weatherDays.value.filter((d) => d.date >= trip.value!.start_date && d.date <= trip.value!.end_date);
 });
 
+// Zeigt zusätzlich zur (ggf. noch nicht verfügbaren) Urlaubs-Vorhersage immer auch das aktuelle
+// Wetter am Zielort – die Vorhersage deckt dank past_days:1 im Fetch (utils/weather.ts) ohnehin
+// bereits heute mit ab, unabhängig davon, ob der Urlaub selbst schon im 16-Tage-Fenster liegt.
+const todayWeather = computed(() => weatherDays.value?.find((d) => d.date === todayStr()) ?? null);
+
 const weekdayDateFormatter = new Intl.DateTimeFormat('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' });
 function formatWeekdayDate(d: string) {
   return weekdayDateFormatter.format(new Date(d));
@@ -232,23 +250,33 @@ function formatWeekdayDate(d: string) {
     </header>
 
     <section v-if="trip?.lat != null && trip?.lng != null" class="card weather-card">
-      <h3>🌤️ Wetter im Urlaub</h3>
+      <h3>🌤️ Wetter</h3>
       <p v-if="weatherLoading && !weatherDays" class="hint">Lädt …</p>
       <p v-else-if="weatherError" class="hint error">{{ weatherError }}</p>
-      <p v-else-if="!vacationForecastDays.length" class="hint">
-        Für die Urlaubstage liegt noch keine Vorhersage vor – Open-Meteo deckt nur die kommenden
-        ~16 Tage ab, schau kurz vorher nochmal vorbei.
-      </p>
-      <div v-else class="weather-days">
-        <div class="weather-day" v-for="day in vacationForecastDays" :key="day.date">
-          <span class="weather-date">{{ formatWeekdayDate(day.date) }}</span>
-          <span class="weather-icon" :title="weatherCodeMeta(day.weatherCode).label">{{
-            weatherCodeMeta(day.weatherCode).icon
+      <template v-else>
+        <div v-if="todayWeather" class="weather-today">
+          <span class="weather-today-label">Heute{{ trip?.destination ? ` in ${trip.destination}` : '' }}</span>
+          <span class="weather-icon" :title="weatherCodeMeta(todayWeather.weatherCode).label">{{
+            weatherCodeMeta(todayWeather.weatherCode).icon
           }}</span>
-          <span class="weather-temp">{{ Math.round(day.tempMax) }}° / {{ Math.round(day.tempMin) }}°</span>
-          <span v-if="day.precipitationProbability != null" class="weather-rain">💧{{ day.precipitationProbability }}%</span>
+          <span class="weather-temp">{{ Math.round(todayWeather.tempMax) }}° / {{ Math.round(todayWeather.tempMin) }}°</span>
+          <span v-if="todayWeather.precipitationProbability != null" class="weather-rain">💧{{ todayWeather.precipitationProbability }}%</span>
         </div>
-      </div>
+        <p v-if="!vacationForecastDays.length" class="hint">
+          Für die Urlaubstage liegt noch keine Vorhersage vor – Open-Meteo deckt nur die kommenden
+          ~16 Tage ab, schau kurz vorher nochmal vorbei.
+        </p>
+        <div v-else class="weather-days">
+          <div class="weather-day" v-for="day in vacationForecastDays" :key="day.date">
+            <span class="weather-date">{{ formatWeekdayDate(day.date) }}</span>
+            <span class="weather-icon" :title="weatherCodeMeta(day.weatherCode).label">{{
+              weatherCodeMeta(day.weatherCode).icon
+            }}</span>
+            <span class="weather-temp">{{ Math.round(day.tempMax) }}° / {{ Math.round(day.tempMin) }}°</span>
+            <span v-if="day.precipitationProbability != null" class="weather-rain">💧{{ day.precipitationProbability }}%</span>
+          </div>
+        </div>
+      </template>
     </section>
     <section v-else class="card weather-card">
       <h3>🌤️ Wetter im Urlaub</h3>
@@ -434,6 +462,24 @@ function formatWeekdayDate(d: string) {
   color: var(--color-primary-dark);
   font-size: 1rem;
   margin-bottom: var(--space-2);
+}
+
+.weather-today {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+  font-weight: 600;
+}
+
+.weather-today-label {
+  flex: 1;
+  min-width: 0;
+  color: var(--color-text-muted);
+  font-weight: 600;
+  font-size: 0.9rem;
 }
 
 .weather-card .hint {
