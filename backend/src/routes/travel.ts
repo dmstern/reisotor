@@ -25,6 +25,8 @@ interface TravelBody {
   to_lat?: number;
   to_lng?: number;
   role?: 'arrival' | 'departure' | 'onward';
+  from_place_id?: number | null;
+  to_place_id?: number | null;
 }
 
 interface TravelRow {
@@ -35,6 +37,24 @@ interface TravelRow {
   paid_by_user_id: number | null;
   date: string | null;
   budget_expense_id: number | null;
+}
+
+interface TravelPlaceBody {
+  trip_id: number;
+  name: string;
+  is_home?: boolean;
+  maps_link?: string;
+  lat?: number;
+  lng?: number;
+}
+
+interface TravelPlaceRow {
+  id: number;
+  name: string;
+  is_home: 0 | 1;
+  maps_link: string | null;
+  lat: number | null;
+  lng: number | null;
 }
 
 /** Bestimmt, wie die verknüpfte Budget-Ausgabe aussehen soll, ohne bereits zu löschen –
@@ -100,7 +120,92 @@ async function resolveFromToLatLng(body: TravelBody) {
   }
 }
 
+/** Übernimmt bei gesetztem from_place_id/to_place_id die Orts-Stammdaten in die schon bestehenden
+ *  "flachen" from_location/from_maps_link/... -Felder (bzw. die "to_"-Pendants), die alle
+ *  bestehenden Verbraucher (Karte, Kalender, Detail-Dialog) bereits kennen – der Ort ist damit nur
+ *  eine bequeme, wiederverwendbare Eingabequelle, kein neuer Datenpfad, den andere Stellen der App
+ *  zusätzlich verstehen müssten. Leitet außerdem, sofern keine Rolle explizit gesetzt wurde, aus
+ *  is_home beider Orte eine sinnvolle Standard-Rolle ab (Anreise/Abreise/Weiterreise) statt sie bei
+ *  jeder Etappe manuell abfragen zu müssen.
+ */
+function applyPlaces(body: TravelBody) {
+  const fromPlace = body.from_place_id
+    ? (db.prepare('SELECT * FROM travel_places WHERE id = ?').get(body.from_place_id) as TravelPlaceRow | undefined)
+    : undefined;
+  const toPlace = body.to_place_id
+    ? (db.prepare('SELECT * FROM travel_places WHERE id = ?').get(body.to_place_id) as TravelPlaceRow | undefined)
+    : undefined;
+
+  if (fromPlace) {
+    body.from_location = fromPlace.name;
+    body.from_maps_link = fromPlace.maps_link ?? undefined;
+    body.from_lat = fromPlace.lat ?? undefined;
+    body.from_lng = fromPlace.lng ?? undefined;
+  }
+  if (toPlace) {
+    body.to_location = toPlace.name;
+    body.to_maps_link = toPlace.maps_link ?? undefined;
+    body.to_lat = toPlace.lat ?? undefined;
+    body.to_lng = toPlace.lng ?? undefined;
+  }
+
+  if (!body.role && fromPlace && toPlace) {
+    if (fromPlace.is_home && !toPlace.is_home) body.role = 'arrival';
+    else if (!fromPlace.is_home && toPlace.is_home) body.role = 'departure';
+    else body.role = 'onward';
+  }
+}
+
 export const travelRoutes: FastifyPluginAsync = async (app) => {
+  // --- Orte (Batch: Reise/Flüge schlauer machen) ---
+
+  app.get<{ Querystring: { trip_id?: string } }>('/travel/places', async (req, reply) => {
+    if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
+    return db
+      .prepare('SELECT * FROM travel_places WHERE trip_id = ? ORDER BY is_home DESC, name COLLATE NOCASE')
+      .all(req.query.trip_id);
+  });
+
+  app.post<{ Body: TravelPlaceBody }>('/travel/places', async (req, reply) => {
+    const { trip_id, name, is_home } = req.body;
+    let { lat, lng } = req.body;
+    const { maps_link } = req.body;
+    if ((lat == null || lng == null) && maps_link) {
+      const resolved = await resolveLatLng(maps_link);
+      lat = resolved?.lat;
+      lng = resolved?.lng;
+    }
+    const result = db
+      .prepare('INSERT INTO travel_places (trip_id, name, is_home, maps_link, lat, lng) VALUES (?, ?, ?, ?, ?, ?)')
+      .run(trip_id, name, is_home ? 1 : 0, maps_link ?? null, lat ?? null, lng ?? null);
+    reply.code(201);
+    return db.prepare('SELECT * FROM travel_places WHERE id = ?').get(result.lastInsertRowid);
+  });
+
+  app.put<{ Params: { id: string }; Body: TravelPlaceBody }>('/travel/places/:id', async (req, reply) => {
+    const { name, is_home } = req.body;
+    let { lat, lng } = req.body;
+    const { maps_link } = req.body;
+    if ((lat == null || lng == null) && maps_link) {
+      const resolved = await resolveLatLng(maps_link);
+      lat = resolved?.lat;
+      lng = resolved?.lng;
+    }
+    const result = db
+      .prepare('UPDATE travel_places SET name = ?, is_home = ?, maps_link = ?, lat = ?, lng = ? WHERE id = ?')
+      .run(name, is_home ? 1 : 0, maps_link ?? null, lat ?? null, lng ?? null, req.params.id);
+    if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
+    return db.prepare('SELECT * FROM travel_places WHERE id = ?').get(req.params.id);
+  });
+
+  app.delete<{ Params: { id: string } }>('/travel/places/:id', async (req, reply) => {
+    const result = db.prepare('DELETE FROM travel_places WHERE id = ?').run(req.params.id);
+    if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
+    return reply.code(204).send();
+  });
+
+  // --- Etappen ---
+
   app.get<{ Querystring: { trip_id?: string } }>('/travel', async (req, reply) => {
     if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
     return db.prepare('SELECT * FROM travel_items WHERE trip_id = ? ORDER BY date, id').all(req.query.trip_id);
@@ -108,6 +213,7 @@ export const travelRoutes: FastifyPluginAsync = async (app) => {
 
   app.post<{ Body: TravelBody }>('/travel', async (req, reply) => {
     const body = req.body;
+    applyPlaces(body);
     await resolveFromToLatLng(body);
     const { budgetExpenseId } = planBudgetExpense(body.trip_id, null, body);
 
@@ -116,8 +222,8 @@ export const travelRoutes: FastifyPluginAsync = async (app) => {
         `INSERT INTO travel_items
           (trip_id, title, type, from_location, to_location, date, departure_time, arrival_time, checkin_info, amount,
            paid_by_user_id, luggage, seat, link, note, budget_expense_id,
-           from_maps_link, from_lat, from_lng, to_maps_link, to_lat, to_lng, role)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+           from_maps_link, from_lat, from_lng, to_maps_link, to_lat, to_lng, role, from_place_id, to_place_id)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         body.trip_id,
@@ -143,6 +249,8 @@ export const travelRoutes: FastifyPluginAsync = async (app) => {
         body.to_lat ?? null,
         body.to_lng ?? null,
         body.role ?? null,
+        body.from_place_id ?? null,
+        body.to_place_id ?? null,
       );
     reply.code(201);
     return db.prepare('SELECT * FROM travel_items WHERE id = ?').get(result.lastInsertRowid);
@@ -155,6 +263,7 @@ export const travelRoutes: FastifyPluginAsync = async (app) => {
     if (!existing) return reply.code(404).send({ error: 'Nicht gefunden' });
 
     const body = req.body;
+    applyPlaces(body);
     await resolveFromToLatLng(body);
     const { budgetExpenseId, staleIdToDelete } = planBudgetExpense(existing.trip_id, existing.budget_expense_id, body);
 
@@ -162,7 +271,8 @@ export const travelRoutes: FastifyPluginAsync = async (app) => {
       `UPDATE travel_items SET title = ?, type = ?, from_location = ?, to_location = ?, date = ?,
          departure_time = ?, arrival_time = ?, checkin_info = ?, amount = ?, paid_by_user_id = ?, luggage = ?, seat = ?,
          link = ?, note = ?, budget_expense_id = ?,
-         from_maps_link = ?, from_lat = ?, from_lng = ?, to_maps_link = ?, to_lat = ?, to_lng = ?, role = ?
+         from_maps_link = ?, from_lat = ?, from_lng = ?, to_maps_link = ?, to_lat = ?, to_lng = ?, role = ?,
+         from_place_id = ?, to_place_id = ?
        WHERE id = ?`,
     ).run(
       body.title,
@@ -187,6 +297,8 @@ export const travelRoutes: FastifyPluginAsync = async (app) => {
       body.to_lat ?? null,
       body.to_lng ?? null,
       body.role ?? null,
+      body.from_place_id ?? null,
+      body.to_place_id ?? null,
       req.params.id,
     );
 

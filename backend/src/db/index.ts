@@ -220,6 +220,21 @@ CREATE TABLE IF NOT EXISTS travel_items (
   budget_expense_id INTEGER REFERENCES budget_items(id)
 );
 
+-- Wiederverwendbare Orte für Reise-Etappen (Batch: Reise/Flüge schlauer machen) – statt bei jeder
+-- Etappe "Von"/"Nach" samt Maps-Link erneut einzutippen, werden Start/Ziel einmal als Ort angelegt
+-- und dann aus mehreren Etappen heraus referenziert (siehe travel_items.from_place_id/to_place_id
+-- weiter unten). is_home markiert "zuhause"-Orte, ersetzt für neu angelegte Etappen die bisher
+-- manuell zu setzende travel_items.role (die Rolle lässt sich daraus automatisch ableiten).
+CREATE TABLE IF NOT EXISTS travel_places (
+  id INTEGER PRIMARY KEY,
+  trip_id INTEGER NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  is_home INTEGER NOT NULL DEFAULT 0,
+  maps_link TEXT,
+  lat REAL,
+  lng REAL
+);
+
 CREATE TABLE IF NOT EXISTS spots (
   id INTEGER PRIMARY KEY,
   trip_id INTEGER NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
@@ -399,6 +414,14 @@ ensureColumn('travel_items', 'role', 'TEXT');
 // Ankunftszeit zusätzlich zur Abflugzeit – erlaubt die automatische Reisedauer-Berechnung im
 // Frontend (utils/travelDuration.ts), ohne die Uhrzeit manuell ausrechnen zu müssen.
 ensureColumn('travel_items', 'arrival_time', 'TEXT');
+// Referenz auf einen wiederverwendbaren Ort (travel_places, siehe CREATE TABLE oben) statt erneuter
+// Freitext-Eingabe je Etappe. Rein informativ/bequem: from_location/from_maps_link/from_lat/from_lng
+// (bzw. die "to"-Pendants) bleiben die tatsächliche Quelle für Karte/Kalender & Co. und werden beim
+// Anlegen/Bearbeiten einer Etappe aus dem gewählten Ort übernommen (siehe routes/travel.ts) – so
+// funktioniert jeder bestehende Verbraucher dieser Felder unverändert weiter, ohne sie kennen zu
+// müssen.
+ensureColumn('travel_items', 'from_place_id', 'INTEGER REFERENCES travel_places(id) ON DELETE SET NULL');
+ensureColumn('travel_items', 'to_place_id', 'INTEGER REFERENCES travel_places(id) ON DELETE SET NULL');
 
 // Ausflug wird zum reinen Container-Objekt (Titel/Bild/Notiz/Spots) mit optionalem eigenen
 // Datum für die Kalender-Einplanung – Standort/Link/Status wandern zu den zugeordneten Spots

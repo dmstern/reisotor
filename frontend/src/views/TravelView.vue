@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import { api } from '../api/client';
-import type { TravelItem, TravelRole, User } from '../api/types';
+import type { TravelItem, TravelPlace, TravelRole, User } from '../api/types';
 import { useTripStore } from '../stores/trip';
 import { useDrawersStore } from '../stores/drawers';
 import { parseLatLngFromMapsLink } from '../utils/googleMaps';
@@ -16,16 +16,22 @@ const tripStore = useTripStore();
 const drawers = useDrawersStore();
 const tripId = tripStore.currentTripId as number;
 const items = ref<TravelItem[]>([]);
+const places = ref<TravelPlace[]>([]);
 const users = ref<User[]>([]);
 const loading = ref(true);
 const showForm = ref(false);
 
 const TYPE_OPTIONS = ['Flug', 'Zug', 'Bus', 'Auto', 'Fähre', 'Sonstiges'];
+// Sentinel-Wert für "kein Ort ausgewählt, Freitext eingeben" – ein leerer String wäre auch möglich,
+// aber als eigene Konstante an einer Stelle klarer als verstreute '' -Vergleiche.
+const MANUAL = '';
 
 const emptyForm = () => ({
   title: '',
   type: 'Flug',
   role: '' as TravelRole | '',
+  from_place_id: MANUAL,
+  to_place_id: MANUAL,
   from_location: '',
   to_location: '',
   from_maps_link: '',
@@ -52,11 +58,13 @@ const editFromMapsLinkResolved = ref<boolean | null>(null);
 const editToMapsLinkResolved = ref<boolean | null>(null);
 
 onMounted(async () => {
-  const [itemsRes, usersRes] = await Promise.all([
+  const [itemsRes, placesRes, usersRes] = await Promise.all([
     api.get<TravelItem[]>(`/travel?trip_id=${tripId}`),
+    api.get<TravelPlace[]>(`/travel/places?trip_id=${tripId}`),
     api.get<User[]>('/users'),
   ]);
   items.value = itemsRes;
+  places.value = placesRes;
   users.value = usersRes;
   loading.value = false;
 });
@@ -67,6 +75,12 @@ function userLabel(id: number | null) {
   return u ? `${u.avatar} ${u.username}` : '';
 }
 
+function placeLabel(id: number | null) {
+  if (id == null) return null;
+  const p = places.value.find((p) => p.id === id);
+  return p ? `${p.is_home ? '🏠' : '📍'} ${p.name}` : null;
+}
+
 function toBody(f: ReturnType<typeof emptyForm>) {
   const fromParsed = parseLatLngFromMapsLink(f.from_maps_link);
   const toParsed = parseLatLngFromMapsLink(f.to_maps_link);
@@ -75,6 +89,8 @@ function toBody(f: ReturnType<typeof emptyForm>) {
     title: f.title.trim(),
     type: f.type || undefined,
     role: f.role || undefined,
+    from_place_id: f.from_place_id ? Number(f.from_place_id) : undefined,
+    to_place_id: f.to_place_id ? Number(f.to_place_id) : undefined,
     from_location: f.from_location || undefined,
     to_location: f.to_location || undefined,
     from_maps_link: f.from_maps_link || undefined,
@@ -134,6 +150,8 @@ function startEdit(item: TravelItem) {
     title: item.title,
     type: item.type ?? 'Flug',
     role: item.role ?? '',
+    from_place_id: item.from_place_id != null ? String(item.from_place_id) : MANUAL,
+    to_place_id: item.to_place_id != null ? String(item.to_place_id) : MANUAL,
     from_location: item.from_location ?? '',
     to_location: item.to_location ?? '',
     from_maps_link: item.from_maps_link ?? '',
@@ -182,6 +200,92 @@ function travelDuration(item: TravelItem) {
   return minutes == null ? null : formatTravelDuration(minutes);
 }
 
+// "🔄 Rückreise anlegen": statt Von/Nach (samt Orten) für den Rückweg erneut einzutippen, öffnet
+// das ohnehin vorhandene Anlegen-Formular vorausgefüllt mit vertauschten Orten – nur Datum/Zeiten
+// (und ggf. Kosten) sind für die Rückreise ja typischerweise ohnehin andere und bleiben leer.
+const ROLE_SWAP: Record<TravelRole, TravelRole> = { arrival: 'departure', departure: 'arrival', onward: 'onward' };
+
+function swapTitle(title: string): string {
+  if (/hin/i.test(title)) {
+    return title.replace(/hin/i, (m) => (m === m.toUpperCase() ? 'RÜCK' : m[0] === m[0].toUpperCase() ? 'Rück' : 'rück'));
+  }
+  return `Rückreise: ${title}`;
+}
+
+function createReturnLeg(item: TravelItem) {
+  form.value = {
+    ...emptyForm(),
+    title: swapTitle(item.title),
+    type: item.type ?? 'Flug',
+    role: item.role ? ROLE_SWAP[item.role] : '',
+    from_place_id: item.to_place_id != null ? String(item.to_place_id) : MANUAL,
+    to_place_id: item.from_place_id != null ? String(item.from_place_id) : MANUAL,
+    from_location: item.to_location ?? '',
+    to_location: item.from_location ?? '',
+    from_maps_link: item.to_maps_link ?? '',
+    to_maps_link: item.from_maps_link ?? '',
+    luggage: item.luggage ?? '',
+  };
+  fromMapsLinkResolved.value = null;
+  toMapsLinkResolved.value = null;
+  showForm.value = true;
+}
+
+// --- Orte (wiederverwendbare Start-/Zielpunkte für Etappen) ---
+const emptyPlaceForm = () => ({ name: '', is_home: false, maps_link: '' });
+const newPlaceForm = ref(emptyPlaceForm());
+const newPlaceMapsLinkResolved = ref<boolean | null>(null);
+const editingPlace = ref<TravelPlace | null>(null);
+const editPlaceForm = ref(emptyPlaceForm());
+
+function checkNewPlaceMapsLink() {
+  newPlaceMapsLinkResolved.value = newPlaceForm.value.maps_link
+    ? parseLatLngFromMapsLink(newPlaceForm.value.maps_link) != null
+    : null;
+}
+
+async function addPlace() {
+  if (!newPlaceForm.value.name.trim()) return;
+  const created = await api.post<TravelPlace>('/travel/places', {
+    trip_id: tripId,
+    name: newPlaceForm.value.name.trim(),
+    is_home: newPlaceForm.value.is_home,
+    maps_link: newPlaceForm.value.maps_link || undefined,
+  });
+  places.value.push(created);
+  drawers.touchLocations();
+  newPlaceForm.value = emptyPlaceForm();
+  newPlaceMapsLinkResolved.value = null;
+}
+
+function startEditPlace(place: TravelPlace) {
+  editingPlace.value = place;
+  editPlaceForm.value = { name: place.name, is_home: !!place.is_home, maps_link: place.maps_link ?? '' };
+}
+
+async function submitEditPlace() {
+  if (!editingPlace.value || !editPlaceForm.value.name.trim()) return;
+  const updated = await api.put<TravelPlace>(`/travel/places/${editingPlace.value.id}`, {
+    trip_id: tripId,
+    name: editPlaceForm.value.name.trim(),
+    is_home: editPlaceForm.value.is_home,
+    maps_link: editPlaceForm.value.maps_link || undefined,
+  });
+  const idx = places.value.findIndex((p) => p.id === updated.id);
+  if (idx !== -1) places.value[idx] = updated;
+  drawers.touchLocations();
+  editingPlace.value = null;
+}
+
+async function removePlace(id: number) {
+  await api.delete(`/travel/places/${id}`);
+  places.value = places.value.filter((p) => p.id !== id);
+  // Etappen, die diesen Ort referenzierten, verlieren serverseitig nur die Verknüpfung (ON DELETE
+  // SET NULL) – ihre zuletzt materialisierten Von/Nach-Angaben bleiben als Freitext erhalten, ein
+  // Reload hält from_place_id/to_place_id in der Liste damit konsistent zum Server.
+  items.value = await api.get<TravelItem[]>(`/travel?trip_id=${tripId}`);
+}
+
 // Ein einziger Detail-Dialog außerhalb des v-for statt einer pro Karte (gleiches Muster wie der
 // bestehende Bearbeiten-Modal mit editingItem/editForm). "welcher Eintrag" (detailItem) und "ist
 // der Dialog offen" (detailDialogOpen) bewusst getrennt: TravelDetailDialog.vue braucht ein echtes
@@ -221,6 +325,35 @@ function showDetailToOnMap() {
       <button @click="showForm = true">+ Neuer Eintrag</button>
     </div>
 
+    <section class="card places-card">
+      <h2>📍 Orte</h2>
+      <p class="hint">
+        Einmal angelegt, lassen sich Orte in Etappen als Von/Nach auswählen, statt sie erneut
+        eintippen zu müssen – z. B. "Zuhause" für Hin- und Rückreise.
+      </p>
+      <form class="place-form" @submit.prevent="addPlace">
+        <input v-model="newPlaceForm.name" type="text" placeholder="Name, z. B. Zuhause oder Hotel Meeresblick" required />
+        <label class="home-check">
+          <input v-model="newPlaceForm.is_home" type="checkbox" />
+          🏠 Zuhause
+        </label>
+        <input v-model="newPlaceForm.maps_link" type="url" placeholder="Maps-Link (optional)" @blur="checkNewPlaceMapsLink" />
+        <button type="submit">+ Ort</button>
+      </form>
+      <p v-if="newPlaceMapsLinkResolved === true" class="hint success">📍 Standort erkannt</p>
+      <p v-if="newPlaceMapsLinkResolved === false" class="hint">Standort konnte nicht automatisch erkannt werden.</p>
+      <ul class="places-list" v-if="places.length">
+        <li v-for="place in places" :key="place.id" class="place-row">
+          <span class="place-name">{{ place.is_home ? '🏠' : '📍' }} {{ place.name }}</span>
+          <div class="row-actions">
+            <EditButton small @click="startEditPlace(place)" />
+            <DeleteButton small @click="removePlace(place.id)" />
+          </div>
+        </li>
+      </ul>
+      <p v-else class="empty">Noch keine Orte angelegt.</p>
+    </section>
+
     <Modal :model-value="showForm" title="Neuer Reise-Eintrag" @update:model-value="(v) => !v && closeForm()">
     <form class="form" @submit.prevent="submit">
       <label>
@@ -236,7 +369,7 @@ function showDetailToOnMap() {
       <label>
         Rolle (für Karten-Urlaubsfokus)
         <select v-model="form.role">
-          <option value="">– nicht festgelegt –</option>
+          <option value="">– automatisch anhand der Orte / nicht festgelegt –</option>
           <option v-for="r in TRAVEL_ROLE_OPTIONS" :key="r" :value="r">
             {{ TRAVEL_ROLE_META[r].icon }} {{ TRAVEL_ROLE_META[r].label }} ({{ TRAVEL_ROLE_META[r].hint }})
           </option>
@@ -245,20 +378,36 @@ function showDetailToOnMap() {
       <div class="row">
         <label>
           Von
-          <input v-model="form.from_location" type="text" />
+          <select v-model="form.from_place_id">
+            <option :value="MANUAL">✏️ Manuell eingeben</option>
+            <option v-for="p in places" :key="p.id" :value="String(p.id)">{{ p.is_home ? '🏠' : '📍' }} {{ p.name }}</option>
+          </select>
         </label>
         <label>
           Nach
+          <select v-model="form.to_place_id">
+            <option :value="MANUAL">✏️ Manuell eingeben</option>
+            <option v-for="p in places" :key="p.id" :value="String(p.id)">{{ p.is_home ? '🏠' : '📍' }} {{ p.name }}</option>
+          </select>
+        </label>
+      </div>
+      <div class="row" v-if="!form.from_place_id || !form.to_place_id">
+        <label v-if="!form.from_place_id">
+          Von (Freitext)
+          <input v-model="form.from_location" type="text" />
+        </label>
+        <label v-if="!form.to_place_id">
+          Nach (Freitext)
           <input v-model="form.to_location" type="text" />
         </label>
       </div>
-      <div class="row">
-        <label>
-          Standort Abflug/Abfahrt (Maps-Link (Google/Apple), optional)
+      <div class="row" v-if="!form.from_place_id || !form.to_place_id">
+        <label v-if="!form.from_place_id">
+          Standort Abflug/Abfahrt (Maps-Link, optional)
           <input v-model="form.from_maps_link" type="url" @blur="checkFromMapsLink" />
         </label>
-        <label>
-          Standort Ankunft (Maps-Link (Google/Apple), optional)
+        <label v-if="!form.to_place_id">
+          Standort Ankunft (Maps-Link, optional)
           <input v-model="form.to_maps_link" type="url" @blur="checkToMapsLink" />
         </label>
       </div>
@@ -334,13 +483,16 @@ function showDetailToOnMap() {
         <div class="travel-head">
           <h3>{{ typeIcon(item.type) }} {{ item.title }}</h3>
           <div class="actions">
-            <EditButton small @click="startEdit(item)" />
-            <DeleteButton small @click="remove(item.id)" />
+            <EditButton small @click.stop="startEdit(item)" />
+            <DeleteButton small @click.stop="remove(item.id)" />
           </div>
         </div>
         <span v-if="item.role" class="role-badge">
           {{ TRAVEL_ROLE_META[item.role].icon }} {{ TRAVEL_ROLE_META[item.role].label }}
         </span>
+        <p v-if="item.from_location || item.to_location" class="route">
+          {{ placeLabel(item.from_place_id) ?? item.from_location ?? '?' }} → {{ placeLabel(item.to_place_id) ?? item.to_location ?? '?' }}
+        </p>
         <p v-if="item.date || item.departure_time">
           🗓️ {{ item.date || '' }}
           <span v-if="item.departure_time">
@@ -348,6 +500,9 @@ function showDetailToOnMap() {
           </span>
           <span v-if="travelDuration(item)" class="duration">({{ travelDuration(item) }})</span>
         </p>
+        <button type="button" class="card-action-btn return-btn" @click.stop="createReturnLeg(item)">
+          🔄 Rückreise anlegen
+        </button>
       </div>
     </TransitionGroup>
     <p v-if="!items.length" class="empty">Noch keine Reise-Infos eingetragen.</p>
@@ -381,7 +536,7 @@ function showDetailToOnMap() {
         <label>
           Rolle (für Karten-Urlaubsfokus)
           <select v-model="editForm.role">
-            <option value="">– nicht festgelegt –</option>
+            <option value="">– automatisch anhand der Orte / nicht festgelegt –</option>
             <option v-for="r in TRAVEL_ROLE_OPTIONS" :key="r" :value="r">
               {{ TRAVEL_ROLE_META[r].icon }} {{ TRAVEL_ROLE_META[r].label }} ({{ TRAVEL_ROLE_META[r].hint }})
             </option>
@@ -390,20 +545,36 @@ function showDetailToOnMap() {
         <div class="row">
           <label>
             Von
-            <input v-model="editForm.from_location" type="text" />
+            <select v-model="editForm.from_place_id">
+              <option :value="MANUAL">✏️ Manuell eingeben</option>
+              <option v-for="p in places" :key="p.id" :value="String(p.id)">{{ p.is_home ? '🏠' : '📍' }} {{ p.name }}</option>
+            </select>
           </label>
           <label>
             Nach
+            <select v-model="editForm.to_place_id">
+              <option :value="MANUAL">✏️ Manuell eingeben</option>
+              <option v-for="p in places" :key="p.id" :value="String(p.id)">{{ p.is_home ? '🏠' : '📍' }} {{ p.name }}</option>
+            </select>
+          </label>
+        </div>
+        <div class="row" v-if="!editForm.from_place_id || !editForm.to_place_id">
+          <label v-if="!editForm.from_place_id">
+            Von (Freitext)
+            <input v-model="editForm.from_location" type="text" />
+          </label>
+          <label v-if="!editForm.to_place_id">
+            Nach (Freitext)
             <input v-model="editForm.to_location" type="text" />
           </label>
         </div>
-        <div class="row">
-          <label>
-            Standort Abflug/Abfahrt (Maps-Link (Google/Apple), optional)
+        <div class="row" v-if="!editForm.from_place_id || !editForm.to_place_id">
+          <label v-if="!editForm.from_place_id">
+            Standort Abflug/Abfahrt (Maps-Link, optional)
             <input v-model="editForm.from_maps_link" type="url" @blur="checkEditFromMapsLink" />
           </label>
-          <label>
-            Standort Ankunft (Maps-Link (Google/Apple), optional)
+          <label v-if="!editForm.to_place_id">
+            Standort Ankunft (Maps-Link, optional)
             <input v-model="editForm.to_maps_link" type="url" @blur="checkEditToMapsLink" />
           </label>
         </div>
@@ -472,6 +643,22 @@ function showDetailToOnMap() {
         <button type="submit">Speichern</button>
       </form>
     </Modal>
+
+    <Modal
+      :model-value="editingPlace !== null"
+      title="Ort bearbeiten"
+      @update:model-value="(v) => !v && (editingPlace = null)"
+    >
+      <form class="edit-form" @submit.prevent="submitEditPlace">
+        <input v-model="editPlaceForm.name" type="text" placeholder="Name" required />
+        <label class="home-check">
+          <input v-model="editPlaceForm.is_home" type="checkbox" />
+          🏠 Zuhause
+        </label>
+        <input v-model="editPlaceForm.maps_link" type="url" placeholder="Maps-Link (optional)" />
+        <button type="submit">Speichern</button>
+      </form>
+    </Modal>
   </div>
 </template>
 
@@ -483,6 +670,70 @@ function showDetailToOnMap() {
   align-items: center;
   gap: var(--space-2);
   margin-bottom: var(--space-3);
+}
+
+.places-card {
+  margin-bottom: var(--space-4);
+}
+
+.places-card h2 {
+  font-size: 1rem;
+  color: var(--color-primary-dark);
+  margin-bottom: 4px;
+}
+
+.places-card .hint {
+  margin-bottom: var(--space-2);
+}
+
+.place-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.place-form input[type='text'] {
+  flex: 1;
+  min-width: 160px;
+}
+
+.place-form input[type='url'] {
+  flex: 1;
+  min-width: 160px;
+}
+
+.home-check {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.places-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.place-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: 6px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.place-row:last-child {
+  border-bottom: none;
+}
+
+.place-name {
+  font-size: 0.9rem;
 }
 
 .form {
@@ -537,6 +788,10 @@ label {
   cursor: pointer;
 }
 
+.route {
+  overflow-wrap: anywhere;
+}
+
 .note {
   overflow-wrap: anywhere;
 }
@@ -588,6 +843,11 @@ label {
   display: flex;
   gap: 4px;
   flex-shrink: 0;
+}
+
+.return-btn {
+  align-self: flex-start;
+  margin-top: 4px;
 }
 
 .empty {

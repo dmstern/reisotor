@@ -132,6 +132,20 @@ export interface Accommodation {
  *  muss die App wissen, welche Seite (Von/Nach) zuhause ist und welche zum Urlaubsziel gehört. */
 export type TravelRole = 'arrival' | 'departure' | 'onward';
 
+/** Wiederverwendbarer Ort für Reise-Etappen (z. B. "Zuhause" oder "Hotel Meeresblick") – einmal
+ *  angelegt, dann aus mehreren Etappen heraus als Von/Nach referenzierbar statt bei jeder Etappe
+ *  erneut Name/Maps-Link einzutippen. is_home markiert "zuhause"-Orte, daraus leitet das Backend
+ *  automatisch die passende TravelRole (Anreise/Abreise/Weiterreise) einer Etappe ab. */
+export interface TravelPlace {
+  id: number;
+  trip_id: number;
+  name: string;
+  is_home: 0 | 1;
+  maps_link: string | null;
+  lat: number | null;
+  lng: number | null;
+}
+
 export interface TravelItem {
   id: number;
   trip_id: number;
@@ -157,6 +171,8 @@ export interface TravelItem {
   to_lat: number | null;
   to_lng: number | null;
   role: TravelRole | null;
+  from_place_id: number | null;
+  to_place_id: number | null;
 }
 
 export interface Spot {
