@@ -219,12 +219,13 @@ function onResizeEnd() {
   border-radius: var(--radius-sm) 0 0 var(--radius-sm);
 }
 
-.drawer.left.open .drawer-tab {
-  left: calc(min(85vw, var(--drawer-width)) + var(--drawer-handle-gap));
-}
-
-.drawer.right.open .drawer-tab {
-  right: calc(min(85vw, var(--drawer-width)) + var(--drawer-handle-gap));
+/* Bei ausgeklappter Schublade übernimmt der Schließen-Button (oben im Panel) die Schließen-
+   Funktion – die Lasche selbst wäre dann redundant und (da sie mobil ohnehin am äußersten Rand
+   läge) auch optisch im Weg. Gilt jetzt für Mobil UND Desktop gleichermaßen (vorher nur Desktop,
+   siehe @media weiter unten), auf Mobil ersetzt seitdem ebenfalls der Schließen-Button die Lasche
+   statt sie nur an den (jetzt nicht mehr vorhandenen) Panel-Rand zu verschieben. */
+.drawer.open .drawer-tab {
+  display: none;
 }
 
 .tab-icon {
@@ -253,7 +254,10 @@ function onResizeEnd() {
   position: fixed;
   top: calc(56px + var(--navbar-offset, 0px));
   bottom: 60px;
-  width: min(85vw, var(--drawer-width));
+  /* Volle Breite auf Mobil (statt vorher min(85vw, var(--drawer-width))) – ausgeklappt ist eine
+     Schublade auf Mobil ohnehin bereits gleichbedeutend mit "maximiert" (kein eigener Maximieren-
+     Button dort, siehe .maximize-btn unten), soll den verfügbaren Platz dafür auch komplett nutzen. */
+  width: 100vw;
   background: var(--color-surface);
   box-shadow: var(--shadow-md);
   z-index: 12;
@@ -289,34 +293,44 @@ function onResizeEnd() {
    Griff-Strich) kommt aus der geteilten .resize-grip-Klasse (style.css), damit sie überall gleich
    aussieht (z. B. ExcursionsView.vue's Anfasser zwischen Spots-Liste und Karte nutzt dieselbe
    Klasse). */
+/* Auf Mobil kein Anfasser: das Panel ist dort immer 100vw breit (siehe .drawer-panel oben), eine
+   Größenänderung gibt es nicht. Erst auf Desktop wieder eingeblendet (siehe @media unten). */
 .resize-handle {
-  /* fixed statt absolute (analog zu .drawer-panel): lebt jetzt als Geschwister außerhalb von
-     .drawer-panel im Zwischenraum vor der Lasche (--drawer-handle-gap), viewport-verankert mit
-     denselben top/bottom-Werten wie das Panel selbst, damit beide exakt übereinstimmen. */
-  position: fixed;
-  top: calc(56px + var(--navbar-offset, 0px));
-  bottom: 60px;
-  width: var(--drawer-handle-gap);
-  z-index: 14;
-}
-
-/* Position exakt am äußeren Panel-Rand (Beginn des Zwischenraums zur Lasche hin) – dieselbe Formel
-   wie .drawer-panel's eigene width auf Mobil (min(85vw, var(--drawer-width))). */
-.drawer.left .resize-handle {
-  left: min(85vw, var(--drawer-width));
-}
-
-.drawer.right .resize-handle {
-  right: min(85vw, var(--drawer-width));
-}
-
-/* Maximieren/Schließen gibt es nur auf Desktop (siehe @media unten) – mobil ist das Panel ohnehin
-   bereits ein Vollbild-Overlay mit eigenem Backdrop-Klick-zum-Schließen, ein zusätzlicher Button
-   wäre dort redundant (die Lasche selbst bleibt dort außerdem als Schließen-Weg sichtbar, siehe
-   unten). */
-.maximize-btn,
-.close-drawer-btn {
   display: none;
+}
+
+/* Maximieren gibt es nur auf Desktop (siehe @media unten) – ausgeklappt ist eine Schublade auf
+   Mobil dank voller Breite (.drawer-panel oben) ohnehin bereits gleichbedeutend mit "maximiert",
+   ein zusätzlicher Button dafür wäre dort überflüssig. Schließen dagegen jetzt auch auf Mobil über
+   diesen Button statt (wie vorher) ausschließlich über die (bei offener Schublade jetzt immer
+   ausgeblendete, siehe .drawer.open .drawer-tab oben) Lasche oder den Backdrop-Klick. */
+.maximize-btn {
+  display: none;
+}
+
+.close-drawer-btn {
+  display: flex;
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 14;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.close-drawer-btn:hover {
+  color: var(--color-primary-dark);
 }
 
 /* Desktop: Panel wird echtes Flex-Geschwisterelement (schiebt den Arbeitsbereich zur Seite),
@@ -388,20 +402,14 @@ function onResizeEnd() {
     right: auto;
   }
 
-  /* Bei geöffneter Schublade übernimmt der neue Schließen-Button (oben im Panel, neben dem
-     Maximieren-Button) die Schließen-Funktion – die Lasche selbst wäre dann redundant und würde
-     zudem (da sie ohne margin jetzt direkt am Panel-Rand läge) optisch mit dem Anfasser
-     kollidieren. */
-  .drawer.open .drawer-tab {
-    display: none;
-  }
-
   /* Auf Desktop ist .drawer-panel nicht mehr auf 85vw gedeckelt (siehe .drawer-panel weiter unten,
      width: var(--drawer-width)) – der Anfasser muss der ungeklammerten Breite folgen, sonst
      driftet er bei sehr breiten Schubladen vom tatsächlichen Panel-Rand weg. bottom:0 statt 60px,
      da hier keine untere Navigationsleiste im Weg ist (siehe .drawer-panel's eigenes bottom:auto/
-     max-height weiter unten). */
+     max-height weiter unten). display:flex hebt das mobile display:none wieder auf – nur auf
+     Desktop gibt es (bei fester Panel-Breite statt 100vw) überhaupt etwas zum Anfassen. */
   .resize-handle {
+    display: flex;
     bottom: 0;
   }
   .drawer.left .resize-handle {
@@ -447,11 +455,14 @@ function onResizeEnd() {
     border: none;
   }
 
-  .maximize-btn,
-  .close-drawer-btn {
+  /* Nur auf Desktop überhaupt vorhanden (mobil bleibt .maximize-btn display:none, siehe oben) – der
+     Schließen-Button selbst ist bereits app-weit (auch mobil) fertig gestylt, hier kommt nur der
+     Maximieren-Button dazu und rückt dafür etwas nach links, damit beide nebeneinander Platz haben. */
+  .maximize-btn {
     display: flex;
     position: absolute;
     top: 8px;
+    right: 44px;
     z-index: 14;
     width: 28px;
     height: 28px;
@@ -468,21 +479,7 @@ function onResizeEnd() {
     line-height: 1;
   }
 
-  /* Bei beiden Schubladen rechts im Panel: bei der linken ist das die vom Hauptbereich abgewandte
-     Seite (frei von Inhalt), bei der rechten vermeidet das eine Überlagerung der (links
-     beginnenden) Überschrift des Schubladen-Inhalts (z. B. "Karte"-Titel). Schließen-Button
-     außen/rechts (die "endgültigere" Aktion in der äußersten Ecke), Maximieren-Button direkt
-     daneben. */
-  .maximize-btn {
-    right: 44px;
-  }
-
-  .close-drawer-btn {
-    right: 8px;
-  }
-
-  .maximize-btn:hover,
-  .close-drawer-btn:hover {
+  .maximize-btn:hover {
     color: var(--color-primary-dark);
   }
 
