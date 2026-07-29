@@ -15,6 +15,7 @@ import { SCHEDULE_CATEGORY_META } from '../utils/scheduleCategory';
 import { parseLatLngFromMapsLink } from '../utils/googleMaps';
 import { buildAllEntries } from '../utils/calendarEntries';
 import { calendarEventFromEntry, googleCalendarHref, outlookCalendarHref, triggerIcsDownload } from '../utils/calendarExport';
+import { fetchWeatherForecast, weatherCodeMeta, type DailyWeather } from '../utils/weather';
 
 const tripStore = useTripStore();
 const trip = computed(() => tripStore.currentTrip);
@@ -90,8 +91,23 @@ async function loadAll() {
   places.value = placesRes;
 }
 
+// Nutzt denselben modulweiten Cache wie DashboardView.vue (utils/weather.ts) – ein Besuch dort in
+// derselben Session erspart hier den erneuten Netzwerk-Request. Bewusst ohne eigenen Lade-/
+// Fehlerzustand: Wetter ist hier nur ein optionales Extra je Tag, bei Fehlschlag bleiben die
+// Wetter-Badges einfach weg statt den Kalender mit einer Fehlermeldung zu blockieren.
+const weatherDays = ref<DailyWeather[] | null>(null);
+async function loadWeather() {
+  if (trip.value?.lat == null || trip.value?.lng == null) return;
+  try {
+    weatherDays.value = await fetchWeatherForecast(trip.value.lat, trip.value.lng);
+  } catch {
+    weatherDays.value = null;
+  }
+}
+
 onMounted(async () => {
   await loadAll();
+  loadWeather();
   selectedDate.value = new Date().toISOString().slice(0, 10);
   // Beim ersten Laden direkt zur Woche mit dem heutigen Tag blättern statt bei der (ggf. Monate
   // zurückliegenden) ersten Woche zu starten; liegt heute außerhalb des Kalenderbereichs (z. B.
@@ -149,6 +165,10 @@ const calendarRange = computed(() => {
   };
 });
 
+function weatherForDate(date: string): DailyWeather | undefined {
+  return weatherDays.value?.find((d) => d.date === date);
+}
+
 const weeks = computed(() => {
   if (!calendarRange.value) return [];
   const { start, end } = calendarRange.value;
@@ -158,9 +178,9 @@ const weeks = computed(() => {
   const offset = (firstMonday.getDay() + 6) % 7;
   firstMonday.setDate(firstMonday.getDate() - offset);
 
-  const result: { date: string; entries: CalendarEntry[]; accommodations: Accommodation[] }[][] = [];
+  const result: { date: string; entries: CalendarEntry[]; accommodations: Accommodation[]; weather?: DailyWeather }[][] = [];
   let cursor = new Date(firstMonday);
-  let week: { date: string; entries: CalendarEntry[]; accommodations: Accommodation[] }[] = [];
+  let week: { date: string; entries: CalendarEntry[]; accommodations: Accommodation[]; weather?: DailyWeather }[] = [];
 
   while (cursor <= end || week.length % 7 !== 0) {
     const iso = toIso(cursor);
@@ -168,6 +188,7 @@ const weeks = computed(() => {
       date: iso,
       entries: entriesForDate(iso),
       accommodations: accommodationsForDate(iso),
+      weather: weatherForDate(iso),
     });
     if (week.length === 7) {
       result.push(week);
@@ -249,6 +270,8 @@ function showDayOnMap() {
 const dayAccommodations = computed(() =>
   selectedDate.value ? accommodationsForDate(selectedDate.value) : [],
 );
+
+const selectedDateWeather = computed(() => (selectedDate.value ? weatherForDate(selectedDate.value) : undefined));
 
 // Klick-Alternative zum Drag-Einplanen (ExcursionCard.vue/SpotCard.vue's 📅-Anfasser als Button):
 // wartet ein Einplanen-Vorhaben (drawers.pendingSchedule, per Klick auf den Anfasser gesetzt), löst
@@ -429,6 +452,12 @@ function formatDay(date: string) {
           <button type="button" @click="showAddForm = true">+ Neu</button>
         </div>
       </div>
+
+      <p v-if="selectedDateWeather" class="day-weather-note">
+        {{ weatherCodeMeta(selectedDateWeather.weatherCode).icon }}
+        {{ Math.round(selectedDateWeather.tempMax) }}° / {{ Math.round(selectedDateWeather.tempMin) }}°
+        <span v-if="selectedDateWeather.precipitationProbability != null"> · 💧{{ selectedDateWeather.precipitationProbability }}%</span>
+      </p>
 
       <p v-for="acc in dayAccommodations" :key="acc.id" class="acc-note">🛏️ Unterkunft: {{ acc.name }}</p>
 
@@ -672,6 +701,12 @@ function formatDay(date: string) {
 
 .acc-note {
   color: var(--color-accent-secondary);
+  font-weight: 600;
+  margin: 0 0 var(--space-2);
+}
+
+.day-weather-note {
+  color: var(--color-text-muted);
   font-weight: 600;
   margin: 0 0 var(--space-2);
 }

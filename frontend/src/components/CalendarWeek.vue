@@ -2,11 +2,13 @@
 import { ref } from 'vue';
 import type { Accommodation, CalendarEntry } from '../api/types';
 import { SCHEDULE_CATEGORY_META } from '../utils/scheduleCategory';
+import { weatherCodeMeta, type DailyWeather } from '../utils/weather';
 
 interface Day {
   date: string;
   entries: CalendarEntry[];
   accommodations: Accommodation[];
+  weather?: DailyWeather;
 }
 
 defineProps<{ days: Day[]; selectedDate: string | null }>();
@@ -69,7 +71,12 @@ function onDrop(event: DragEvent, date: string) {
     >
       <div class="day-head">
         <span class="weekday">{{ weekday(day.date) }}</span>
-        <span class="num">{{ dayNumber(day.date) }}</span>
+        <span class="num-row">
+          <span class="num">{{ dayNumber(day.date) }}</span>
+          <span v-if="day.weather" class="day-weather" :title="weatherCodeMeta(day.weather.weatherCode).label">
+            {{ weatherCodeMeta(day.weather.weatherCode).icon }} {{ Math.round(day.weather.tempMax) }}°
+          </span>
+        </span>
       </div>
 
       <div class="acc-bar" v-for="acc in day.accommodations" :key="acc.id" :title="acc.name">
@@ -152,9 +159,21 @@ function onDrop(event: DragEvent, date: string) {
   color: var(--color-text-muted);
 }
 
+.num-row {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+}
+
 .num {
   font-size: 0.95rem;
   font-weight: 600;
+}
+
+.day-weather {
+  font-size: 0.55rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
 }
 
 .acc-bar {
