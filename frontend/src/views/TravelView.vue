@@ -322,7 +322,7 @@ function showDetailToOnMap() {
   <div class="page" v-if="!loading">
     <div class="header">
       <h1>Reise</h1>
-      <button @click="showForm = true">+ Neuer Eintrag</button>
+      <button @click="showForm = true">+ Neue Fahrt/Flug</button>
     </div>
 
     <section class="card places-card">
@@ -686,22 +686,22 @@ function showDetailToOnMap() {
   margin-bottom: var(--space-2);
 }
 
+/* Grid statt flex-wrap: bei flex-wrap landete die Checkbox (.home-check) auf schmalen Mobile-
+   Breiten unvorhersehbar allein auf einer Zeile (isoliert zwischen den beiden min-width:160px-
+   Textfeldern), da keins der Felder eine eigene volle Zeile beanspruchte. Mobil (< 560px) bekommt
+   dadurch jetzt jedes Feld eine eigene Zeile, ab 560px wieder eine gemeinsame Reihe wie zuvor. */
 .place-form {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  display: grid;
+  grid-template-columns: 1fr;
   gap: var(--space-2);
   margin-bottom: var(--space-2);
 }
 
-.place-form input[type='text'] {
-  flex: 1;
-  min-width: 160px;
-}
-
-.place-form input[type='url'] {
-  flex: 1;
-  min-width: 160px;
+@media (min-width: 560px) {
+  .place-form {
+    grid-template-columns: 1fr auto 1fr auto;
+    align-items: center;
+  }
 }
 
 .home-check {
