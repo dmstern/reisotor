@@ -23,6 +23,7 @@ import { assignCategoryColors } from '../utils/categoryColors';
 import { buildAllEntries } from '../utils/calendarEntries';
 import { SCHEDULE_CATEGORY_META } from '../utils/scheduleCategory';
 import { SECTION_ICONS } from '../utils/sectionIcons';
+import { fetchWeatherForecast, weatherCodeMeta, type DailyWeather } from '../utils/weather';
 import BudgetMeter from '../components/BudgetMeter.vue';
 
 const auth = useAuthStore();
@@ -44,6 +45,25 @@ const diaryEntries = ref<DiaryEntry[]>([]);
 const notes = ref<Note[]>([]);
 const users = ref<User[]>([]);
 const loading = ref(true);
+
+const weatherDays = ref<DailyWeather[] | null>(null);
+const weatherError = ref<string | null>(null);
+const weatherLoading = ref(false);
+
+// Eigenständig geladen statt Teil des großen Promise.all unten: Open-Meteo ist ein externer Dienst,
+// ein Fehlschlag/eine Verzögerung dort soll das Laden des restlichen Dashboards nicht blockieren.
+async function loadWeather() {
+  if (trip.value?.lat == null || trip.value?.lng == null) return;
+  weatherLoading.value = true;
+  weatherError.value = null;
+  try {
+    weatherDays.value = await fetchWeatherForecast(trip.value.lat, trip.value.lng);
+  } catch {
+    weatherError.value = 'Wetterdaten konnten nicht geladen werden.';
+  } finally {
+    weatherLoading.value = false;
+  }
+}
 
 // Feste, deterministische Farbzuordnung je Widget (dataviz-Skill: kategoriale Identität, fixe
 // Reihenfolge statt gewürfelter Farben) – dieselbe validierte Palette wie überall sonst in der App.
@@ -87,6 +107,7 @@ onMounted(async () => {
   notes.value = notesRes;
   users.value = usersRes;
   loading.value = false;
+  loadWeather();
 });
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
@@ -178,6 +199,19 @@ const latestDiaryEntry = computed(() =>
 function jumpToTrip() {
   tripStore.requestEditTrip();
 }
+
+// Nur die Tage zeigen, die tatsächlich im Urlaubszeitraum liegen UND von Open-Meteo abgedeckt sind
+// (nur die kommenden ~16 Tage plus 1 Tag rückwirkend, siehe utils/weather.ts) – bei weiter
+// entfernten Urlauben bleibt die Liste vorerst leer statt falsche/fehlende Tage zu zeigen.
+const vacationForecastDays = computed(() => {
+  if (!weatherDays.value || !trip.value) return [];
+  return weatherDays.value.filter((d) => d.date >= trip.value!.start_date && d.date <= trip.value!.end_date);
+});
+
+const weekdayDateFormatter = new Intl.DateTimeFormat('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' });
+function formatWeekdayDate(d: string) {
+  return weekdayDateFormatter.format(new Date(d));
+}
 </script>
 
 <template>
@@ -196,6 +230,30 @@ function jumpToTrip() {
       </p>
       <p v-else-if="daysUntilStart !== null" class="countdown">Gute Reise! ✈️</p>
     </header>
+
+    <section v-if="trip?.lat != null && trip?.lng != null" class="card weather-card">
+      <h3>🌤️ Wetter im Urlaub</h3>
+      <p v-if="weatherLoading && !weatherDays" class="hint">Lädt …</p>
+      <p v-else-if="weatherError" class="hint error">{{ weatherError }}</p>
+      <p v-else-if="!vacationForecastDays.length" class="hint">
+        Für die Urlaubstage liegt noch keine Vorhersage vor – Open-Meteo deckt nur die kommenden
+        ~16 Tage ab, schau kurz vorher nochmal vorbei.
+      </p>
+      <div v-else class="weather-days">
+        <div class="weather-day" v-for="day in vacationForecastDays" :key="day.date">
+          <span class="weather-date">{{ formatWeekdayDate(day.date) }}</span>
+          <span class="weather-icon" :title="weatherCodeMeta(day.weatherCode).label">{{
+            weatherCodeMeta(day.weatherCode).icon
+          }}</span>
+          <span class="weather-temp">{{ Math.round(day.tempMax) }}° / {{ Math.round(day.tempMin) }}°</span>
+          <span v-if="day.precipitationProbability != null" class="weather-rain">💧{{ day.precipitationProbability }}%</span>
+        </div>
+      </div>
+    </section>
+    <section v-else class="card weather-card">
+      <h3>🌤️ Wetter im Urlaub</h3>
+      <p class="hint">Hinterlege beim Urlaub einen Maps-Link, um hier die Wettervorhersage für die Urlaubstage zu sehen.</p>
+    </section>
 
     <div class="grid cards">
       <!-- Kalender: keine eigene Route mehr (jetzt Kalender-Schublade), Kachel öffnet die Schublade -->
@@ -366,6 +424,67 @@ function jumpToTrip() {
 .countdown {
   color: var(--color-accent);
   font-weight: 600;
+}
+
+.weather-card {
+  margin-bottom: var(--space-4);
+}
+
+.weather-card h3 {
+  color: var(--color-primary-dark);
+  font-size: 1rem;
+  margin-bottom: var(--space-2);
+}
+
+.weather-card .hint {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.weather-card .hint.error {
+  color: var(--color-danger);
+}
+
+.weather-days {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.weather-day {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 68px;
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-hover);
+}
+
+.weather-date {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: capitalize;
+}
+
+.weather-icon {
+  font-size: 1.4rem;
+}
+
+.weather-temp {
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.weather-rain {
+  font-size: 0.72rem;
+  color: var(--color-accent-secondary);
 }
 
 .cards {
