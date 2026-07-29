@@ -37,6 +37,10 @@ interface TravelRow {
   paid_by_user_id: number | null;
   date: string | null;
   budget_expense_id: number | null;
+  from_lat: number | null;
+  from_lng: number | null;
+  to_lat: number | null;
+  to_lng: number | null;
 }
 
 interface TravelPlaceBody {
@@ -107,16 +111,33 @@ function planBudgetExpense(tripId: number, existingBudgetExpenseId: number | nul
   return { budgetExpenseId: result.lastInsertRowid as number, staleIdToDelete: null };
 }
 
-async function resolveFromToLatLng(body: TravelBody) {
+/** existing wird nur beim Bearbeiten übergeben (POST hat nichts zu bewahren) – schlägt die
+ *  (erneute) Auflösung fehl, obwohl weiterhin ein Maps-Link hinterlegt ist, bleiben die bisherigen
+ *  Koordinaten erhalten statt genullt zu werden (gleiches Muster wie in trips.ts/spots.ts/
+ *  accommodation.ts). Greift nicht, wenn from_place_id/to_place_id gesetzt sind – applyPlaces()
+ *  liefert dort bereits die Koordinaten des gewählten Orts (oder bewusst keine, falls der Ort
+ *  selbst keine hat). */
+async function resolveFromToLatLng(
+  body: TravelBody,
+  existing?: Pick<TravelRow, 'from_lat' | 'from_lng' | 'to_lat' | 'to_lng'>,
+) {
   if ((body.from_lat == null || body.from_lng == null) && body.from_maps_link) {
     const resolved = await resolveLatLng(body.from_maps_link);
     body.from_lat = resolved?.lat;
     body.from_lng = resolved?.lng;
   }
+  if ((body.from_lat == null || body.from_lng == null) && body.from_maps_link && existing && !body.from_place_id) {
+    body.from_lat = body.from_lat ?? existing.from_lat ?? undefined;
+    body.from_lng = body.from_lng ?? existing.from_lng ?? undefined;
+  }
   if ((body.to_lat == null || body.to_lng == null) && body.to_maps_link) {
     const resolved = await resolveLatLng(body.to_maps_link);
     body.to_lat = resolved?.lat;
     body.to_lng = resolved?.lng;
+  }
+  if ((body.to_lat == null || body.to_lng == null) && body.to_maps_link && existing && !body.to_place_id) {
+    body.to_lat = body.to_lat ?? existing.to_lat ?? undefined;
+    body.to_lng = body.to_lng ?? existing.to_lng ?? undefined;
   }
 }
 
@@ -264,7 +285,7 @@ export const travelRoutes: FastifyPluginAsync = async (app) => {
 
     const body = req.body;
     applyPlaces(body);
-    await resolveFromToLatLng(body);
+    await resolveFromToLatLng(body, existing);
     const { budgetExpenseId, staleIdToDelete } = planBudgetExpense(existing.trip_id, existing.budget_expense_id, body);
 
     db.prepare(

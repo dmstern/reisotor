@@ -23,6 +23,8 @@ interface AccommodationRow {
   id: number;
   trip_id: number;
   budget_expense_id: number | null;
+  lat: number | null;
+  lng: number | null;
 }
 
 /** Bestimmt, wie die verknüpfte Budget-Ausgabe aussehen soll, ohne bereits zu löschen –
@@ -131,6 +133,12 @@ export const accommodationRoutes: FastifyPluginAsync = async (app) => {
       const resolved = await resolveLatLng(body.maps_link);
       body.lat = resolved?.lat;
       body.lng = resolved?.lng;
+    }
+    // Schlägt die (erneute) Auflösung fehl, obwohl weiterhin ein Maps-Link hinterlegt ist,
+    // bisherige Koordinaten behalten statt sie zu löschen (siehe gleiches Muster in trips.ts).
+    if ((body.lat == null || body.lng == null) && body.maps_link) {
+      body.lat = body.lat ?? existing.lat ?? undefined;
+      body.lng = body.lng ?? existing.lng ?? undefined;
     }
     const { budgetExpenseId, staleIdToDelete } = planBudgetExpense(existing.trip_id, existing.budget_expense_id, body);
 

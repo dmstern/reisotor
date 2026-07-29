@@ -57,12 +57,23 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.put<{ Params: { id: string }; Body: SpotBody }>('/spots/:id', async (req, reply) => {
+    const existing = db.prepare('SELECT lat, lng FROM spots WHERE id = ?').get(req.params.id) as
+      | { lat: number | null; lng: number | null }
+      | undefined;
+    if (!existing) return reply.code(404).send({ error: 'Nicht gefunden' });
+
     const { title, category, note, maps_link } = req.body;
     let { lat, lng, image_url } = req.body;
     if ((lat == null || lng == null) && maps_link) {
       const resolved = await resolveLatLng(maps_link);
       lat = resolved?.lat;
       lng = resolved?.lng;
+    }
+    // Schlägt die (erneute) Auflösung fehl, obwohl weiterhin ein Maps-Link hinterlegt ist,
+    // bisherige Koordinaten behalten statt sie zu löschen (siehe gleiches Muster in trips.ts).
+    if ((lat == null || lng == null) && maps_link) {
+      lat = lat ?? existing.lat ?? undefined;
+      lng = lng ?? existing.lng ?? undefined;
     }
     if (!image_url && lat != null && lng != null) {
       image_url = tilePreviewUrl(lat, lng);

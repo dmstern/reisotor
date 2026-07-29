@@ -47,12 +47,25 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.put<{ Params: { id: string }; Body: TripBody }>('/trips/:id', async (req, reply) => {
+    const existing = db.prepare('SELECT lat, lng FROM trips WHERE id = ?').get(req.params.id) as
+      | { lat: number | null; lng: number | null }
+      | undefined;
+    if (!existing) return reply.code(404).send({ error: 'Nicht gefunden' });
+
     const { name, destination, start_date, end_date, maps_link } = req.body;
     let { lat, lng, image_url } = req.body;
     if ((lat == null || lng == null) && maps_link) {
       const resolved = await resolveLatLng(maps_link);
       lat = resolved?.lat;
       lng = resolved?.lng;
+    }
+    // Schlägt die (erneute) Auflösung fehl, obwohl weiterhin ein Maps-Link hinterlegt ist (z. B.
+    // transienter Netzwerkfehler beim Bearbeiten eines unabhängigen Felds), bisherige Koordinaten
+    // behalten statt sie zu löschen. Wird der Maps-Link dagegen bewusst geleert, bleibt lat/lng wie
+    // bisher null (Ort wurde absichtlich entfernt).
+    if ((lat == null || lng == null) && maps_link) {
+      lat = lat ?? existing.lat ?? undefined;
+      lng = lng ?? existing.lng ?? undefined;
     }
     if (!image_url && lat != null && lng != null) {
       image_url = tilePreviewUrl(lat, lng);
