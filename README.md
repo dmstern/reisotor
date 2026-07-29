@@ -133,9 +133,14 @@ Der Frontend-Build läuft **lokal**, nicht auf dem Zielserver – auf schwacher 
 
 ### Automatisiertes Deployment über GitHub Actions + Pi-Cronjob
 
-Push auf `main` löst `.github/workflows/build-deploy.yml` aus: Frontend und Backend werden dort gebaut (inkl. Typecheck, der Build schlägt bei Fehlern fehl) und das Ergebnis als einzelner Commit auf den Branch `deploy` veröffentlicht. Der Server selbst pollt diesen Branch per Cronjob (`~/reisotor-deploy.sh`, alle 5 Minuten) und deployt automatisch, sobald ein neuer Build bereitsteht – kein Laptop/Client muss dafür online sein oder selbst Zugangsdaten zum Server halten. Das Skript ist auch manuell auf dem Server ausführbar, falls man nicht auf den nächsten Cron-Tick warten will.
+Zweistufiger Ablauf, damit eine Änderung erst angeschaut werden kann, bevor sie auf der von Nutzer:innen tatsächlich verwendeten Produktion landet:
 
-Voraussetzung auf dem Server: ein read-only Deploy Key fürs Repo (unter GitHub → Settings → Deploy keys hinterlegt) sowie ein separater flacher Checkout des `deploy`-Branches unter `~/reisotor-deploy-src`.
+1. **Push auf `main`** löst `.github/workflows/build-deploy.yml` aus: Frontend und Backend werden gebaut (inkl. Typecheck, der Build schlägt bei Fehlern fehl) und das Ergebnis als einzelner Commit auf den Branch `deploy-staging` veröffentlicht. Der Server pollt diesen Branch per Cronjob (`~/reisotor-deploy-staging.sh`, alle 5 Minuten) und deployt automatisch auf `https://dev.reise.ruebenherz.de` (Basic-Auth-geschützt, eigene Datenbank mit `npm run seed:demo`-Demo-Daten – niemals echte Nutzerdaten).
+2. Sieht das Ergebnis auf Staging gut aus, wird `main` explizit auf den Branch `prod` gepusht (`git push origin main:prod`). Das löst denselben Workflow erneut aus, diesmal mit Ziel-Branch `deploy` – der Server pollt diesen separat (`~/reisotor-deploy.sh`) und deployt auf die echte Produktion `https://reise.ruebenherz.de`.
+
+Kein Laptop/Client muss für den Rollout selbst online sein oder Zugangsdaten zum Server halten – beide Skripte sind zusätzlich manuell auf dem Server ausführbar, falls man nicht auf den nächsten Cron-Tick warten will.
+
+Voraussetzung auf dem Server: ein read-only Deploy Key fürs Repo (unter GitHub → Settings → Deploy keys hinterlegt) sowie je ein separater flacher Checkout der beiden Branches (`~/reisotor-deploy-src` für `deploy`, `~/reisotor-deploy-src-staging` für `deploy-staging`).
 
 ### Manuelles Deployment mit `deploy.sh`
 

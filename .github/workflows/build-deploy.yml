@@ -1,14 +1,19 @@
 name: Build & Deploy
 
-# Baut Frontend + Backend bei jedem Push auf main und veröffentlicht das Ergebnis als einzigen
-# Commit auf dem Branch "deploy". Der eigentliche Rollout auf den Ziel-Server (Raspberry Pi)
-# passiert NICHT hier, sondern per Cronjob auf dem Server selbst, der diesen Branch pollt (siehe
-# README.md, Abschnitt "Automatisiertes Deployment über GitHub Actions + Pi-Cronjob") – so ist der
-# Server nie darauf angewiesen, dass ein Client (Laptop/Handy) online ist oder Zugangsdaten hält.
+# Baut Frontend + Backend bei Push auf main ODER prod und veröffentlicht das Ergebnis als
+# einzigen Commit auf einem Ziel-Branch. Push auf main -> "deploy-staging" (dev.reise.ruebenherz.de,
+# automatisches Gate zum Anschauen einer Änderung). Push auf prod -> "deploy" (reise.ruebenherz.de,
+# die von Nutzer:innen tatsächlich verwendete Produktion). main wird erst manuell auf prod gepusht
+# ("git push origin main:prod"), sobald das Staging-Ergebnis geprüft wurde.
+#
+# Der eigentliche Rollout auf den Ziel-Server (Raspberry Pi) passiert NICHT hier, sondern per
+# Cronjob auf dem Server selbst, der den jeweiligen Branch pollt (siehe README.md, Abschnitt
+# "Automatisiertes Deployment über GitHub Actions + Pi-Cronjob") – so ist der Server nie darauf
+# angewiesen, dass ein Client (Laptop/Handy) online ist oder Zugangsdaten hält.
 
 on:
   push:
-    branches: [main]
+    branches: [main, prod]
 
 permissions:
   contents: write
@@ -50,13 +55,23 @@ jobs:
           cp backend/package.json backend/package-lock.json release/backend/
           printf '%s %s\n' "${{ github.sha }}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > release/COMMIT
 
+      - name: Determine target branch
+        id: target
+        run: |
+          if [ "${{ github.ref_name }}" = "prod" ]; then
+            echo "branch=deploy" >> "$GITHUB_OUTPUT"
+          else
+            echo "branch=deploy-staging" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Publish to deploy branch
         working-directory: release
         run: |
+          TARGET="${{ steps.target.outputs.branch }}"
           git init -q
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout -q -b deploy
+          git checkout -q -b "$TARGET"
           git add -A
           git commit -q -m "Build ${{ github.sha }}"
-          git push --force "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" deploy:deploy
+          git push --force "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" "$TARGET:$TARGET"
