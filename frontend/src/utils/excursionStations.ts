@@ -6,7 +6,7 @@ import { spotCategoryMeta } from './spotCategory';
 // auch die Unterkunft oder ein Anreise-/Abreise-Ort sein, siehe Kommentar dort). Zentralisiert die
 // Metadaten, die TripMap.vue und ExcursionsView.vue (derivedLocations) für dieselben drei
 // Objekttypen ohnehin schon separat kennen (Icon/Farbe/Label).
-export type StationKind = 'spot' | 'accommodation' | 'travel-from' | 'travel-to';
+export type StationKind = 'spot' | 'accommodation' | 'travel-from' | 'travel-to' | 'schedule';
 
 export interface ExcursionStation {
   key: string;

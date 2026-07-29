@@ -4,7 +4,17 @@ import { useRouter } from 'vue-router';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { api } from '../api/client';
-import type { Accommodation, Excursion, ExcursionComment, ExcursionLike, Spot, TravelItem, User } from '../api/types';
+import type {
+  Accommodation,
+  Excursion,
+  ExcursionComment,
+  ExcursionLike,
+  ScheduleItem,
+  Spot,
+  TravelItem,
+  User,
+} from '../api/types';
+import { buildDayStations } from '../utils/dayStations';
 import { useTripStore } from '../stores/trip';
 import { useDrawersStore } from '../stores/drawers';
 import { useExcursionsStore } from '../stores/excursions';
@@ -78,6 +88,7 @@ const spotsStore = useSpotsStore();
 const auth = useAuthStore();
 const accommodations = ref<Accommodation[]>([]);
 const travelItems = ref<TravelItem[]>([]);
+const scheduleItems = ref<ScheduleItem[]>([]);
 
 // Eigener kleiner users-Fetch: nur für die Autor-Anzeige im Spot-/Ausflug-Detail-Dialog gebraucht,
 // die sich aus der Stationsliste heraus öffnen lassen (siehe unten) – gleiches Vorgehen wie in
@@ -192,19 +203,21 @@ const focusedExcursion = computed<Excursion | null>(() => {
   return excursionsStore.excursions.find((e) => e.id === drawers.mapFocusExcursionId) ?? null;
 });
 
-// Tages-Fokus (ScheduleView.vue's "🗺️ Tag auf Karte anzeigen"): alle an diesem Tag geplanten
-// Ausflüge zusammen (kann mehrere sein, z. B. mehrere spontan eingeplante Einzel-Spots ohne
-// gemeinsamen Ausflug) – exklusiv zum Ausflug-Fokus oben, daher nur ausgewertet, wenn keiner
-// aktiv ist.
-const focusedDateExcursions = computed<Excursion[]>(() => {
+// Tages-Fokus (ScheduleView.vue's "🗺️ Tag auf Karte anzeigen"): ALLE Orte dieses Tages – Termine,
+// Reise-Etappen, Unterkunft UND Ausflüge (nicht mehr nur Ausflug-Stationen wie zuvor), in derselben
+// Reihenfolge wie ScheduleView.vue's eigene Tagesliste (siehe buildDayStations) – exklusiv zum
+// Ausflug-Fokus oben, daher nur ausgewertet, wenn keiner aktiv ist.
+const focusedDateStations = computed<ExcursionStation[]>(() => {
   if (focusedExcursion.value || !drawers.mapFocusDate) return [];
-  return excursionsStore.excursions.filter((e) => e.date === drawers.mapFocusDate);
+  return buildDayStations(
+    drawers.mapFocusDate,
+    scheduleItems.value,
+    excursionsStore.excursions,
+    travelItems.value,
+    accommodations.value,
+    spotsStore.spots,
+  );
 });
-const focusedDateStations = computed<ExcursionStation[]>(() =>
-  focusedDateExcursions.value.flatMap((e) =>
-    resolveStations(e.station_keys, spotsStore.spots, accommodations.value, travelItems.value),
-  ),
-);
 
 // Tage-Leiste: visualisiert den gesamten Urlaubszeitraum als anklickbare Tages-Chips direkt auf
 // der Karte (statt den Tages-Fokus nur indirekt über die Kalender-Schublade erreichbar zu machen,
@@ -226,7 +239,10 @@ const vacationDays = computed<string[]>(() => {
 function dayHasContent(date: string): boolean {
   if (excursionsStore.excursions.some((e) => e.date === date)) return true;
   if (travelItems.value.some((t) => t.date === date)) return true;
-  return accommodations.value.some((a) => a.start_date && a.end_date && a.start_date <= date && date <= a.end_date);
+  if (accommodations.value.some((a) => a.start_date && a.end_date && a.start_date <= date && date <= a.end_date)) return true;
+  return scheduleItems.value.some(
+    (i) => i.lat != null && i.lng != null && i.date <= date && date <= (i.end_date ?? i.date),
+  );
 }
 
 const dayChipWeekdayFormatter = new Intl.DateTimeFormat('de-DE', { weekday: 'short' });
@@ -272,14 +288,16 @@ const focusedExcursionStations = computed<ExcursionStation[]>(() => {
 async function loadAll() {
   const tripId = tripStore.currentTripId;
   if (tripId == null) return;
-  const [accommodationRes, travelRes, ideaLikesRes, ideaCommentsRes] = await Promise.all([
+  const [accommodationRes, travelRes, scheduleRes, ideaLikesRes, ideaCommentsRes] = await Promise.all([
     api.get<Accommodation[]>(`/accommodation?trip_id=${tripId}`),
     api.get<TravelItem[]>(`/travel?trip_id=${tripId}`),
+    api.get<ScheduleItem[]>(`/schedule?trip_id=${tripId}`),
     api.get<ExcursionLike[]>(`/ideas/likes?trip_id=${tripId}`),
     api.get<ExcursionComment[]>(`/ideas/comments?trip_id=${tripId}`),
   ]);
   accommodations.value = accommodationRes;
   travelItems.value = travelRes;
+  scheduleItems.value = scheduleRes;
   ideaLikes.value = ideaLikesRes;
   ideaComments.value = ideaCommentsRes;
   // Spots kommen jetzt aus dem geteilten spotsStore (reaktiv, wird u. a. von ExcursionsView.vue
@@ -417,6 +435,11 @@ function openStationDetail(station: ExcursionStation) {
   } else if (station.kind === 'accommodation') {
     openAccommodationId.value = station.id;
     accommodationDialogOpen.value = true;
+    drawers.mapFocusKey = station.key;
+  } else if (station.kind === 'schedule') {
+    // Kein eigener Detail-Dialog für Termine vorhanden (Architekturregel: fremde Objekte springen
+    // zur Ursprungssicht statt inline editierbar zu sein) – öffnet stattdessen die Kalender-Schublade.
+    drawers.calendarOpen = true;
     drawers.mapFocusKey = station.key;
   } else {
     openTravelId.value = station.id;

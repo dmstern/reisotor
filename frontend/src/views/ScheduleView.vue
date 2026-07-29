@@ -217,11 +217,6 @@ function goToTripDates() {
 
 const dayEntries = computed(() => (selectedDate.value ? entriesForDate(selectedDate.value) : []));
 
-// "Tag auf Karte anzeigen" nur sinnvoll, wenn an diesem Tag mindestens ein Ausflug geplant ist
-// (sonst gäbe es nichts, das die Karte fokussieren könnte).
-const selectedDateHasExcursion = computed(
-  () => !!selectedDate.value && excursionsStore.excursions.some((e) => e.date === selectedDate.value),
-);
 function showDayOnMap() {
   if (selectedDate.value) drawers.focusMapOnDate(selectedDate.value);
 }
@@ -385,9 +380,7 @@ function formatDay(date: string) {
       <div class="day-detail-head">
         <h3>{{ formatDay(selectedDate) }}</h3>
         <div class="day-detail-actions">
-          <button v-if="selectedDateHasExcursion" type="button" class="card-action-btn" @click="showDayOnMap">
-            🗺️ Tag auf Karte anzeigen
-          </button>
+          <button type="button" class="card-action-btn" @click="showDayOnMap">🗺️ Tag auf Karte anzeigen</button>
           <button type="button" @click="showAddForm = true">+ Neu</button>
         </div>
       </div>
