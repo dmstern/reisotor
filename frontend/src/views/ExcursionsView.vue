@@ -551,7 +551,7 @@ function showSpotOnMap(spot: Spot) {
           </div>
           <input v-model="spotForm.title" type="text" placeholder="Titel" required />
           <input v-model="spotForm.image_url" type="url" placeholder="Bild-URL (optional)" />
-          <Combobox v-model="spotForm.category" :options="spotCategoryOptions" placeholder="Kategorie (optional)" />
+          <Combobox v-model="spotForm.category" :options="spotCategoryOptions" placeholder="Kategorie (optional, z. B. Restaurant – oder eigene erstellen)" />
           <input
             v-model="spotForm.maps_link"
             type="url"
@@ -620,7 +620,7 @@ function showSpotOnMap(spot: Spot) {
           </div>
           <input v-model="editSpotForm.title" type="text" placeholder="Titel" required />
           <input v-model="editSpotForm.image_url" type="url" placeholder="Bild-URL (optional)" />
-          <Combobox v-model="editSpotForm.category" :options="spotCategoryOptions" placeholder="Kategorie (optional)" />
+          <Combobox v-model="editSpotForm.category" :options="spotCategoryOptions" placeholder="Kategorie (optional, z. B. Restaurant – oder eigene erstellen)" />
           <input
             v-model="editSpotForm.maps_link"
             type="url"

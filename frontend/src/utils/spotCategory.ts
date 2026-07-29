@@ -28,7 +28,36 @@ export const SPOT_CATEGORY_SUGGESTIONS = KNOWN_CATEGORIES.map((c) => c.label);
 
 const LOOKUP = new Map(KNOWN_CATEGORIES.map((c) => [c.label.toLowerCase(), c]));
 
+// Eigene, frei getippte Kategorien (die Combobox erlaubt das schon immer – kein Enum) bekamen
+// bisher alle dieselbe neutralgraue "Sonstiges"-Optik und waren dadurch auf Karte/Liste visuell
+// nicht von "keine Kategorie" zu unterscheiden. Statt einer festen Zuordnungstabelle (die für
+// beliebigen Freitext nicht pflegbar wäre) bekommt jede unbekannte Kategorie hier deterministisch
+// eine Farbe aus derselben validierten Palette wie budget/dataviz zugewiesen (Hash statt Reihenfolge
+// – anders als assignCategoryColors() in categoryColors.ts, das die volle Kategorienliste kennen
+// muss, funktioniert das pro einzelnem Aufruf ohne Kontext über andere Spots).
+const CUSTOM_CATEGORY_PALETTE = [
+  '#2a78d6',
+  '#eb6834',
+  '#1baf7a',
+  '#eda100',
+  '#e87ba4',
+  '#008300',
+  '#4a3aa7',
+  '#e34948',
+];
+
+function hashCategoryColor(category: string): string {
+  let hash = 0;
+  for (let i = 0; i < category.length; i++) {
+    hash = (hash * 31 + category.charCodeAt(i)) | 0;
+  }
+  return CUSTOM_CATEGORY_PALETTE[Math.abs(hash) % CUSTOM_CATEGORY_PALETTE.length];
+}
+
 export function spotCategoryMeta(category: string | null | undefined): CategoryMeta {
   if (!category) return OTHER_META;
-  return LOOKUP.get(category.trim().toLowerCase()) ?? OTHER_META;
+  const trimmed = category.trim().toLowerCase();
+  const known = LOOKUP.get(trimmed);
+  if (known) return known;
+  return { icon: OTHER_META.icon, color: hashCategoryColor(trimmed) };
 }
