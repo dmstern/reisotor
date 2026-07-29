@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import router from '../router';
 
 const CALENDAR_OPEN_KEY = 'reisotor-drawer-calendar-open';
@@ -69,6 +69,19 @@ export const useDrawersStore = defineStore('drawers', () => {
   watch(excursionsOpen, (v) => localStorage.setItem(EXCURSIONS_OPEN_KEY, String(v)));
   watch(calendarWidth, (v) => localStorage.setItem(CALENDAR_WIDTH_KEY, String(v)));
   watch(excursionsWidth, (v) => localStorage.setItem(EXCURSIONS_WIDTH_KEY, String(v)));
+
+  // Mobil ist eine offene Schublade vollflächig und scrollt selbst (siehe Drawer.vue) – ohne diese
+  // Sperre könnte die dahinterliegende Seite gleichzeitig mitscrollen (zwei übereinanderliegende
+  // Scroll-Bereiche, verwirrend/ruckelig). Auf Desktop ist eine Schublade nur ein schmales
+  // Seitenpanel neben dem weiterhin normal nutzbaren Hauptinhalt, daher dort keine Sperre.
+  const anyOpen = computed(() => calendarOpen.value || excursionsOpen.value);
+  watch(
+    anyOpen,
+    (open) => {
+      if (!isDesktop()) document.body.style.overflow = open ? 'hidden' : '';
+    },
+    { immediate: true },
+  );
 
   function toggleCalendar() {
     calendarOpen.value = !calendarOpen.value;

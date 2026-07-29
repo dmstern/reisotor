@@ -19,6 +19,13 @@ function toggle() {
 const maximized = computed(() => drawers.maximizedSide === props.side);
 const tabDisabled = computed(() => drawers.maximizedSide !== null && drawers.maximizedSide !== props.side);
 
+// Mobil ist eine ausgeklappte Schublade vollflächig (siehe .drawer-panel unten) – die Lasche der
+// jeweils ANDEREN Schublade würde sonst weiterhin oben drüber schweben (Store ist global, jede
+// Drawer-Instanz kennt daher auch den Öffnungszustand der jeweils anderen Seite). Nur mobil
+// relevant (siehe .drawer.other-open CSS) – auf Desktop dürfen beide Schubladen gleichzeitig offen
+// sein.
+const otherOpen = computed(() => (props.side === 'left' ? drawers.excursionsOpen : drawers.calendarOpen));
+
 // Der Wechsel zwischen "normal" (sticky, Flex-Geschwister) und "maximiert" (fixed, Vollbild) lässt
 // sich nicht per reiner CSS-Transition animieren – der Sprung von sticky zu fixed ist nicht
 // interpolierbar. Stattdessen FLIP-Technik: alte Bildschirmposition/-größe vor der Änderung messen,
@@ -102,7 +109,7 @@ function onResizeEnd() {
 </script>
 
 <template>
-  <div class="drawer" :class="[side, { open, maximized }]" :style="{ '--drawer-width': `${width}px` }">
+  <div class="drawer" :class="[side, { open, maximized, 'other-open': otherOpen }]" :style="{ '--drawer-width': `${width}px` }">
     <div class="drawer-backdrop" v-if="open" @click="emit('update:open', false)"></div>
     <div ref="panelEl" class="drawer-panel">
       <button
@@ -228,6 +235,13 @@ function onResizeEnd() {
   display: none;
 }
 
+/* Ist mobil die jeweils ANDERE Schublade vollflächig ausgeklappt, würde die eigene Lasche sonst
+   weiterhin oben drüber schweben (siehe otherOpen-Computed) – nur mobil nötig, auf Desktop (siehe
+   @media unten) dürfen beide Schubladen gleichzeitig offen sein und ihre Laschen bleiben sichtbar. */
+.drawer.other-open .drawer-tab {
+  display: none;
+}
+
 .tab-icon {
   font-size: 1.1rem;
   line-height: 1;
@@ -240,10 +254,15 @@ function onResizeEnd() {
   white-space: nowrap;
 }
 
+/* top:56px/bottom:0 (statt vorher unter Einbeziehung von --navbar-offset/60px) lässt die Schublade
+   bewusst bis zum Viewport-Rand reichen und dabei die NavBar überdecken (egal ob sie gerade oben
+   oder unten positioniert ist, siehe stores/navPosition.ts) – nutzt den Platz voll aus UND
+   verhindert, dass ein Tippen auf die (sonst darunter noch sichtbare/klickbare) NavBar versehentlich
+   in einen anderen Tab navigiert, während man denkt, die Schublade sei noch im Weg. */
 .drawer-backdrop {
   position: fixed;
-  top: calc(56px + var(--navbar-offset, 0px));
-  bottom: 60px;
+  top: 56px;
+  bottom: 0;
   left: 0;
   right: 0;
   background: rgba(0, 0, 0, 0.35);
@@ -252,8 +271,8 @@ function onResizeEnd() {
 
 .drawer-panel {
   position: fixed;
-  top: calc(56px + var(--navbar-offset, 0px));
-  bottom: 60px;
+  top: 56px;
+  bottom: 0;
   /* Volle Breite auf Mobil (statt vorher min(85vw, var(--drawer-width))) – ausgeklappt ist eine
      Schublade auf Mobil ohnehin bereits gleichbedeutend mit "maximiert" (kein eigener Maximieren-
      Button dort, siehe .maximize-btn unten), soll den verfügbaren Platz dafür auch komplett nutzen. */
@@ -400,6 +419,15 @@ function onResizeEnd() {
   .drawer.right .drawer-tab {
     order: 1;
     right: auto;
+  }
+
+  /* Auf Desktop dürfen beide Schubladen gleichzeitig offen sein (Flex-Geschwister statt
+     Vollbild-Overlay) – die mobile "andere Lasche ausblenden"-Regel gilt daher hier NICHT.
+     :not(.open) schützt davor, dass diese Rücksetzung die eigene .drawer.open .drawer-tab-Regel
+     (Lasche der SELBST offenen Schublade bleibt immer ausgeblendet) versehentlich überstimmt, falls
+     ein Drawer zufällig gleichzeitig .open UND .other-open ist (beide Schubladen offen). */
+  .drawer.other-open:not(.open) .drawer-tab {
+    display: flex;
   }
 
   /* Auf Desktop ist .drawer-panel nicht mehr auf 85vw gedeckelt (siehe .drawer-panel weiter unten,
