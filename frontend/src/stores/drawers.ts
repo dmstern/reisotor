@@ -65,6 +65,21 @@ export const useDrawersStore = defineStore('drawers', () => {
     locationsVersion.value++;
   }
 
+  // Klick-Alternative zum Drag-Einplanen (ExcursionCard.vue/SpotCard.vue's 📅-Anfasser): statt den
+  // Ausflug/Spot auf einen Kalendertag zu ziehen, tippt man den Anfasser einmal an (öffnet die
+  // Kalender-Schublade + merkt sich, was eingeplant werden soll) und tippt danach einen Tag an
+  // (ScheduleView.vue's selectDay() löst das auf und ruft clearPendingSchedule() auf).
+  const pendingSchedule = ref<{ kind: 'excursion' | 'spot'; id: number } | null>(null);
+
+  function startPendingSchedule(kind: 'excursion' | 'spot', id: number) {
+    pendingSchedule.value = { kind, id };
+    calendarOpen.value = true;
+  }
+
+  function clearPendingSchedule() {
+    pendingSchedule.value = null;
+  }
+
   watch(calendarOpen, (v) => localStorage.setItem(CALENDAR_OPEN_KEY, String(v)));
   watch(excursionsOpen, (v) => localStorage.setItem(EXCURSIONS_OPEN_KEY, String(v)));
   watch(calendarWidth, (v) => localStorage.setItem(CALENDAR_WIDTH_KEY, String(v)));
@@ -147,6 +162,7 @@ export const useDrawersStore = defineStore('drawers', () => {
     excursionsWidth,
     maximizedSide,
     locationsVersion,
+    pendingSchedule,
     toggleCalendar,
     toggleExcursions,
     openMapAt,
@@ -155,5 +171,7 @@ export const useDrawersStore = defineStore('drawers', () => {
     maximize,
     restoreMaximized,
     touchLocations,
+    startPendingSchedule,
+    clearPendingSchedule,
   };
 });

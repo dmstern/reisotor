@@ -62,6 +62,12 @@ const { dragging, ghostStyle, onPointerDown } = usePointerDrag({
     if (!dayEl?.dataset.date) return;
     excursionsStore.planSpotOnDate(props.spot.id, dayEl.dataset.date);
   },
+  // Klick-Alternative zum Drag: öffnet die Kalender-Schublade und merkt sich den Spot, der beim
+  // nächsten Tages-Klick eingeplant werden soll (siehe drawers.startPendingSchedule/
+  // ScheduleView.vue's selectDay()).
+  onTap: () => {
+    drawers.startPendingSchedule('spot', props.spot.id);
+  },
 });
 
 // Klick auf die Karte klappt sie auf-/zu, statt (wie zuvor) einen Modal-Dialog zu öffnen – die

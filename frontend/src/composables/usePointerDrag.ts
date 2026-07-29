@@ -11,6 +11,9 @@ export interface PointerDragOptions {
   /** Wird beim Loslassen nach einem echten Drag aufgerufen – targetEl ist das Element unter dem
    *  Zeiger (per elementFromPoint), null falls außerhalb des Viewports losgelassen wurde. */
   onDrop: (targetEl: Element | null, event: PointerEvent) => void;
+  /** Wird beim Loslassen nach einem reinen Tap (Bewegung unter dem Schwellwert) statt onDrop
+   *  aufgerufen – ermöglicht Klick-Alternativen zum Drag am selben Anfasser. */
+  onTap?: (event: PointerEvent) => void;
   /** Bewegung in px, ab der ein pointerdown als Drag statt als bloßer Tap gilt. */
   threshold?: number;
 }
@@ -57,6 +60,8 @@ export function usePointerDrag(options: PointerDragOptions) {
     if (moved) {
       const target = document.elementFromPoint(event.clientX, event.clientY);
       options.onDrop(target, event);
+    } else {
+      options.onTap?.(event);
     }
     reset();
   }

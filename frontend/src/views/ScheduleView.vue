@@ -225,9 +225,24 @@ const dayAccommodations = computed(() =>
   selectedDate.value ? accommodationsForDate(selectedDate.value) : [],
 );
 
+// Klick-Alternative zum Drag-Einplanen (ExcursionCard.vue/SpotCard.vue's 📅-Anfasser als Button):
+// wartet ein Einplanen-Vorhaben (drawers.pendingSchedule, per Klick auf den Anfasser gesetzt), löst
+// der nächste Tages-Klick es auf, statt nur den Tag auszuwählen.
 function selectDay(date: string) {
   selectedDate.value = date;
+  const pending = drawers.pendingSchedule;
+  if (!pending) return;
+  if (pending.kind === 'excursion') excursionsStore.setDate(pending.id, date);
+  else excursionsStore.planSpotOnDate(pending.id, date);
+  drawers.clearPendingSchedule();
 }
+
+const pendingScheduleLabel = computed(() => {
+  const pending = drawers.pendingSchedule;
+  if (!pending) return null;
+  if (pending.kind === 'excursion') return excursionsStore.excursions.find((e) => e.id === pending.id)?.title ?? null;
+  return spotsStore.spots.find((s) => s.id === pending.id)?.title ?? null;
+});
 
 // Ausflüge werden direkt aus der Ausflüge-Sicht per Drag&Drop hierher gezogen (ExcursionCard.vue) –
 // das Datum wird am Ausflug selbst gesetzt, kein separater schedule_items-Eintrag mehr nötig.
@@ -322,6 +337,11 @@ function formatDay(date: string) {
 <template>
   <div class="calendar-drawer-content" v-if="!loading">
     <h2>Kalender</h2>
+
+    <div class="pending-schedule-banner" v-if="drawers.pendingSchedule">
+      <span>📅 Tippe einen Tag an, um „{{ pendingScheduleLabel }}“ einzuplanen</span>
+      <button type="button" class="secondary" @click="drawers.clearPendingSchedule()">Abbrechen</button>
+    </div>
 
     <div class="calendar-toolbar">
       <div class="granularity-row">
@@ -521,6 +541,27 @@ function formatDay(date: string) {
 
 .weeks {
   padding: var(--space-2);
+}
+
+.pending-schedule-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--color-highlight);
+  border: 1px solid var(--color-highlight-border);
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--color-primary-dark);
+}
+
+.pending-schedule-banner button {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  font-size: 0.82rem;
 }
 
 .calendar-toolbar {
