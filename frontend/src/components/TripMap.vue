@@ -206,6 +206,45 @@ const focusedDateStations = computed<ExcursionStation[]>(() =>
   ),
 );
 
+// Tage-Leiste: visualisiert den gesamten Urlaubszeitraum als anklickbare Tages-Chips direkt auf
+// der Karte (statt den Tages-Fokus nur indirekt über die Kalender-Schublade erreichbar zu machen,
+// siehe ScheduleView.vue's "🗺️ Tag auf Karte anzeigen") – nutzt denselben drawers.focusMapOnDate()-
+// Mechanismus wie dort, hier aber für JEDEN Urlaubstag statt nur für Tage mit geplantem Ausflug.
+const vacationDays = computed<string[]>(() => {
+  const trip = tripStore.currentTrip;
+  if (!trip) return [];
+  const days: string[] = [];
+  const cursor = new Date(trip.start_date);
+  const end = new Date(trip.end_date);
+  while (cursor <= end) {
+    days.push(cursor.toISOString().slice(0, 10));
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return days;
+});
+
+function dayHasContent(date: string): boolean {
+  if (excursionsStore.excursions.some((e) => e.date === date)) return true;
+  if (travelItems.value.some((t) => t.date === date)) return true;
+  return accommodations.value.some((a) => a.start_date && a.end_date && a.start_date <= date && date <= a.end_date);
+}
+
+const dayChipWeekdayFormatter = new Intl.DateTimeFormat('de-DE', { weekday: 'short' });
+function dayChipWeekday(date: string) {
+  return dayChipWeekdayFormatter.format(new Date(date));
+}
+function dayChipNum(date: string) {
+  return new Date(date).getDate();
+}
+
+function toggleDayFocus(date: string) {
+  if (drawers.mapFocusDate === date) {
+    drawers.mapFocusDate = null;
+  } else {
+    drawers.focusMapOnDate(date);
+  }
+}
+
 const visiblePoints = computed(() => {
   const excursion = focusedExcursion.value;
   if (excursion) {
@@ -771,6 +810,22 @@ watch(
         <span>🗓️ {{ formatDate(drawers.mapFocusDate) }}</span>
         <button type="button" class="card-action-btn" @click="drawers.mapFocusDate = null">✕ Fokus verlassen</button>
       </div>
+
+      <div class="day-strip" v-if="vacationDays.length">
+        <button
+          v-for="day in vacationDays"
+          :key="day"
+          type="button"
+          class="day-chip"
+          :class="{ active: drawers.mapFocusDate === day, 'has-content': dayHasContent(day) }"
+          :title="formatDate(day)"
+          @click="toggleDayFocus(day)"
+        >
+          <span class="day-chip-weekday">{{ dayChipWeekday(day) }}</span>
+          <span class="day-chip-num">{{ dayChipNum(day) }}</span>
+          <span v-if="dayHasContent(day)" class="day-chip-dot" aria-hidden="true"></span>
+        </button>
+      </div>
     </div>
 
     <div class="card focus-spot-list" v-if="focusedExcursion && focusedExcursionStations.length">
@@ -949,6 +1004,81 @@ watch(
   white-space: nowrap;
 }
 
+/* Mobil (Default): schwebt als horizontal scrollbare Leiste über dem unteren Kartenrand (analog zu
+   .focus-spot-list oben, nur unten statt oben verankert). Auf Desktop (@container weiter unten)
+   wieder normales Flow-Element unterhalb der Karte. */
+.day-strip {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  z-index: 1000;
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 6px;
+  background: var(--color-surface);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
+}
+
+.day-chip {
+  position: relative;
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  min-width: 38px;
+  padding: 4px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--color-hover);
+  color: var(--color-text);
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.day-chip-weekday {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.day-chip-num {
+  font-size: 0.9rem;
+}
+
+.day-chip.has-content .day-chip-num {
+  color: var(--color-accent);
+}
+
+.day-chip-dot {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--color-accent);
+}
+
+.day-chip.active {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.day-chip.active .day-chip-weekday {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.day-chip.active .day-chip-num {
+  color: #fff;
+}
+
+.day-chip.active .day-chip-dot {
+  background: #fff;
+}
+
 /* Die OpenStreetMap-Kacheln selbst kennen keinen Dark Mode – ein Farb-Invert nur auf der
    Kachel-Ebene (nicht auf Markern/Popups) sorgt für eine abgedunkelte Karte statt eines
    grellen weißen Rechtecks im ansonsten dunklen UI. */
@@ -1103,6 +1233,10 @@ watch(
   }
 
   .focus-spot-list {
+    position: static;
+  }
+
+  .day-strip {
     position: static;
   }
 }
