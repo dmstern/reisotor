@@ -727,6 +727,23 @@ function showSpotOnMap(spot: Spot) {
   height: min(46vh, var(--sheet-max-height));
   transition: height 0.25s ease;
   overflow: hidden;
+  /* Bekannter iOS-Safari-Bug: ein fixed/absolute positioniertes Element mit border-radius+box-shadow
+     malt seinen Hintergrund beim allerersten Paint mitunter nicht korrekt (bleibt transparent, bis
+     irgendeine Interaktion – z. B. das Ziehen am Griff – einen Repaint erzwingt). Der Fix (eigene
+     Compositing-Ebene erzwingen) sitzt bewusst auf einem ::before statt direkt auf .spots-col
+     selbst: ein echtes transform HIER würde .spots-col zum Containing Block für alle
+     fixed-positionierten Nachfahren machen (z. B. .picker-backdrop unten, das per position:fixed
+     bewusst den ganzen Viewport abdecken soll) und deren Positionierung auf die Sheet-Fläche
+     einschränken. */
+}
+
+.spots-col::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: inherit;
+  transform: translateZ(0);
 }
 
 .spots-col.collapsed {
