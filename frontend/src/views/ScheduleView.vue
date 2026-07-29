@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
 import { api } from '../api/client';
-import type { Accommodation, CalendarEntry, ScheduleItem, TodoItem, TravelItem } from '../api/types';
+import type { Accommodation, CalendarEntry, ScheduleItem, TodoItem, TravelItem, TravelPlace } from '../api/types';
 import { useTripStore } from '../stores/trip';
 import { useExcursionsStore } from '../stores/excursions';
 import { useSpotsStore } from '../stores/spots';
 import { useDrawersStore } from '../stores/drawers';
 import CalendarWeek from '../components/CalendarWeek.vue';
 import Modal from '../components/Modal.vue';
+import Combobox from '../components/Combobox.vue';
 import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
 import { SCHEDULE_CATEGORY_META } from '../utils/scheduleCategory';
@@ -24,8 +25,11 @@ const items = ref<ScheduleItem[]>([]);
 const accommodations = ref<Accommodation[]>([]);
 const todos = ref<TodoItem[]>([]);
 const travelItems = ref<TravelItem[]>([]);
+const places = ref<TravelPlace[]>([]);
 const selectedDate = ref<string | null>(null);
 const loading = ref(true);
+
+const placeNames = computed(() => places.value.map((p) => p.name));
 
 const newTime = ref('');
 const newTitle = ref('');
@@ -36,6 +40,25 @@ const newMapsLink = ref('');
 
 const editingItem = ref<ScheduleItem | null>(null);
 const editForm = ref({ time: '', title: '', note: '', endDate: '', location: '', mapsLink: '' });
+
+// Wählt man einen bekannten Ort aus der Vorschlagsliste (Combobox, exakter Namenstreffer), wird
+// automatisch dessen Maps-Link übernommen – die bestehende parseLatLngFromMapsLink()-Logik beim
+// Speichern (toBody/addItem/submitEdit weiter unten) ermittelt daraus dann wie gewohnt die
+// Koordinaten, ganz ohne eigene Zusatzlogik.
+function placeMapsLinkFor(name: string): string | null {
+  return places.value.find((p) => p.name === name)?.maps_link ?? null;
+}
+watch(newLocation, (name) => {
+  const mapsLink = placeMapsLinkFor(name);
+  if (mapsLink) newMapsLink.value = mapsLink;
+});
+watch(
+  () => editForm.value.location,
+  (name) => {
+    const mapsLink = placeMapsLinkFor(name);
+    if (mapsLink) editForm.value.mapsLink = mapsLink;
+  },
+);
 const showAddForm = ref(false);
 
 // "Zum eigenen Kalender hinzufügen"-Menü: welcher Eintrag (per key) hat sein Menü gerade offen –
@@ -52,17 +75,19 @@ function downloadIcsForEntry(entry: CalendarEntry) {
 async function loadAll() {
   const tripId = tripStore.currentTripId;
   if (tripId == null) return;
-  const [scheduleRes, accommodationRes, todosRes, travelRes] = await Promise.all([
+  const [scheduleRes, accommodationRes, todosRes, travelRes, placesRes] = await Promise.all([
     api.get<ScheduleItem[]>(`/schedule?trip_id=${tripId}`),
     api.get<Accommodation[]>(`/accommodation?trip_id=${tripId}`),
     api.get<TodoItem[]>(`/todos?trip_id=${tripId}`),
     api.get<TravelItem[]>(`/travel?trip_id=${tripId}`),
+    api.get<TravelPlace[]>(`/travel/places?trip_id=${tripId}`),
     spotsStore.load(),
   ]);
   items.value = scheduleRes;
   accommodations.value = accommodationRes;
   todos.value = todosRes;
   travelItems.value = travelRes;
+  places.value = placesRes;
 }
 
 onMounted(async () => {
@@ -500,7 +525,7 @@ function formatDay(date: string) {
         <input v-model="newTime" type="time" />
         <input v-model="newTitle" type="text" placeholder="Titel" required />
         <input v-model="newEndDate" type="date" :min="selectedDate ?? undefined" placeholder="Enddatum (optional)" title="Enddatum (optional)" />
-        <input v-model="newLocation" type="text" placeholder="Ort (optional)" />
+        <Combobox v-model="newLocation" :options="placeNames" placeholder="Ort (optional)" />
         <input v-model="newMapsLink" type="url" placeholder="Maps-Link (Google/Apple) (optional)" />
         <input v-model="newNote" type="text" placeholder="Notiz (optional)" />
         <button type="submit">Hinzufügen</button>
@@ -516,7 +541,7 @@ function formatDay(date: string) {
         <input v-model="editForm.time" type="time" />
         <input v-model="editForm.title" type="text" placeholder="Titel" required />
         <input v-model="editForm.endDate" type="date" :min="editingItem?.date" placeholder="Enddatum (optional)" title="Enddatum (optional)" />
-        <input v-model="editForm.location" type="text" placeholder="Ort (optional)" />
+        <Combobox v-model="editForm.location" :options="placeNames" placeholder="Ort (optional)" />
         <input v-model="editForm.mapsLink" type="url" placeholder="Maps-Link (Google/Apple) (optional)" />
         <input v-model="editForm.note" type="text" placeholder="Notiz (optional)" />
         <button type="submit">Speichern</button>
