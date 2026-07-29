@@ -67,8 +67,16 @@ export interface PackingItem {
   id: number;
   trip_id: number;
   category: string | null;
+  /** Unterkategorie innerhalb der Kategorie, z. B. "Outfit Tag 1" innerhalb "Kleidung". */
+  subcategory: string | null;
   label: string;
-  checked: 0 | 1;
+  /** Wie viele Exemplare insgesamt eingepackt werden sollen (Standard 1). */
+  quantity: number;
+  /** Wie viele der `quantity` Exemplare bereits rausgelegt sind – umfasst auch bereits eingepackte
+   *  Exemplare (laid_out_count >= packed_count), da etwas Eingepacktes vorher rausgelegt wurde. */
+  laid_out_count: number;
+  /** Wie viele der `quantity` Exemplare bereits eingepackt sind. */
+  packed_count: number;
   owner_id: number | null;
 }
 

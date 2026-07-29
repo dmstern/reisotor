@@ -15,12 +15,14 @@ const items = ref<PackingItem[]>([]);
 const users = ref<User[]>([]);
 const loading = ref(true);
 
-const newLabel = ref('');
-const newCategory = ref('');
-const newOwner = ref<string>('me');
+// Ein schlankes Hinzufügen-Feld direkt über jeder Liste (statt eines einzigen globalen Formulars
+// mit Listen-Auswahl) – welche Liste gemeint ist, ergibt sich schon aus der Position, ein
+// Auswahlfeld dafür entfällt. Kategorie/Unterkategorie/Anzahl lassen sich danach über "Bearbeiten"
+// ergänzen, das hält das schnelle Eintippen mehrerer Gegenstände hintereinander leichtgängig.
+const quickAddLabels = ref<Record<string, string>>({});
 
 const editingItem = ref<PackingItem | null>(null);
-const editForm = ref({ label: '', category: '', ownerId: 'shared' });
+const editForm = ref({ label: '', category: '', subcategory: '', quantity: 1, ownerId: 'shared' });
 
 onMounted(async () => {
   const [itemsRes, usersRes] = await Promise.all([
@@ -29,13 +31,17 @@ onMounted(async () => {
   ]);
   items.value = itemsRes;
   users.value = usersRes;
-  newOwner.value = auth.user ? String(auth.user.id) : 'me';
   loading.value = false;
 });
 
 const categories = computed(() => {
   const set = new Set(items.value.map((i) => i.category?.trim()).filter((c): c is string => !!c));
-  return [...set].sort();
+  return [...set].sort((a, b) => a.localeCompare(b, 'de'));
+});
+
+const subcategories = computed(() => {
+  const set = new Set(items.value.map((i) => i.subcategory?.trim()).filter((c): c is string => !!c));
+  return [...set].sort((a, b) => a.localeCompare(b, 'de'));
 });
 
 interface ListGroup {
@@ -64,27 +70,57 @@ const lists = computed<ListGroup[]>(() => {
   return [...mine, shared, ...others];
 });
 
-function groupByCategory(listItems: PackingItem[]) {
-  const map = new Map<string, PackingItem[]>();
+interface SubGroup {
+  subcategory: string | null;
+  items: PackingItem[];
+}
+interface CategoryGroup {
+  category: string;
+  subgroups: SubGroup[];
+}
+
+// Zweistufige Gruppierung: Kategorie (wie bisher) -> Unterkategorie (neu, z. B. "Outfit Tag 1"
+// innerhalb "Kleidung") – Gegenstände ohne Unterkategorie laufen ohne eigene Zwischenüberschrift
+// direkt unter der Kategorie mit (leerer subcategory-Schlüssel sortiert alphabetisch zuerst).
+function groupByCategory(listItems: PackingItem[]): CategoryGroup[] {
+  const catMap = new Map<string, PackingItem[]>();
   for (const item of listItems) {
     const key = item.category?.trim() || 'Sonstiges';
-    if (!map.has(key)) map.set(key, []);
-    map.get(key)!.push(item);
+    if (!catMap.has(key)) catMap.set(key, []);
+    catMap.get(key)!.push(item);
   }
-  return [...map.entries()].sort(([a], [b]) => a.localeCompare(b));
+  return [...catMap.entries()]
+    .sort(([a], [b]) => a.localeCompare(b, 'de'))
+    .map(([category, catItems]) => {
+      const subMap = new Map<string, PackingItem[]>();
+      for (const item of catItems) {
+        const subKey = item.subcategory?.trim() || '';
+        if (!subMap.has(subKey)) subMap.set(subKey, []);
+        subMap.get(subKey)!.push(item);
+      }
+      const subgroups = [...subMap.entries()]
+        .sort(([a], [b]) => a.localeCompare(b, 'de'))
+        .map(([subcategory, subItems]) => ({ subcategory: subcategory || null, items: subItems }));
+      return { category, subgroups };
+    });
 }
 
+// Fortschritt zählt jetzt Exemplare statt Zeilen (ein Gegenstand mit Anzahl 5 zählt für den
+// Fortschritt auch als 5, "3/5 eingepackt" statt nur "gepackt/ungepackt" pro Zeile).
 function progress(listItems: PackingItem[]) {
-  const total = listItems.length;
-  const checked = listItems.filter((i) => i.checked).length;
-  return { total, checked };
+  const total = listItems.reduce((sum, i) => sum + i.quantity, 0);
+  const packed = listItems.reduce((sum, i) => sum + Math.min(i.packed_count, i.quantity), 0);
+  return { total, packed };
 }
 
-async function toggle(item: PackingItem) {
+async function updateCounts(item: PackingItem, laidOutCount: number, packedCount: number) {
   const updated = await api.put<PackingItem>(`/packing/${item.id}`, {
-    category: item.category,
+    category: item.category ?? undefined,
+    subcategory: item.subcategory ?? undefined,
     label: item.label,
-    checked: !item.checked,
+    quantity: item.quantity,
+    laid_out_count: laidOutCount,
+    packed_count: packedCount,
     owner_id: item.owner_id,
   });
   const idx = items.value.findIndex((i) => i.id === item.id);
@@ -96,6 +132,8 @@ function startEdit(item: PackingItem) {
   editForm.value = {
     label: item.label,
     category: item.category ?? '',
+    subcategory: item.subcategory ?? '',
+    quantity: item.quantity,
     ownerId: item.owner_id == null ? 'shared' : String(item.owner_id),
   };
 }
@@ -106,7 +144,10 @@ async function submitEdit() {
   const updated = await api.put<PackingItem>(`/packing/${editingItem.value.id}`, {
     label: editForm.value.label.trim(),
     category: editForm.value.category.trim() || undefined,
-    checked: !!editingItem.value.checked,
+    subcategory: editForm.value.subcategory.trim() || undefined,
+    quantity: Math.max(1, Math.round(editForm.value.quantity) || 1),
+    laid_out_count: editingItem.value.laid_out_count,
+    packed_count: editingItem.value.packed_count,
     owner_id,
   });
   const idx = items.value.findIndex((i) => i.id === updated.id);
@@ -119,57 +160,59 @@ async function remove(id: number) {
   items.value = items.value.filter((i) => i.id !== id);
 }
 
-async function addItem() {
-  if (!newLabel.value.trim()) return;
-  const owner_id = newOwner.value === 'shared' ? null : Number(newOwner.value);
+async function quickAdd(list: ListGroup) {
+  const label = (quickAddLabels.value[list.key] ?? '').trim();
+  if (!label) return;
   const created = await api.post<PackingItem>('/packing', {
     trip_id: tripId,
-    label: newLabel.value.trim(),
-    category: newCategory.value.trim() || undefined,
-    owner_id,
+    label,
+    owner_id: list.ownerId,
   });
   items.value.push(created);
-  newLabel.value = '';
+  quickAddLabels.value[list.key] = '';
 }
 </script>
 
 <template>
-  <div class="page" v-if="!loading">
+  <div class="page packing-page" v-if="!loading">
     <h1>Packliste</h1>
 
-    <form class="add-form card" @submit.prevent="addItem">
-      <input v-model="newLabel" type="text" placeholder="Neuer Gegenstand" required />
-      <Combobox v-model="newCategory" :options="categories" placeholder="Kategorie (optional)" />
-      <select v-model="newOwner">
-        <option value="shared">🤝 Gemeinsam</option>
-        <option v-for="u in users" :key="u.id" :value="String(u.id)">
-          {{ u.avatar }} {{ u.id === auth.user?.id ? 'Meine Liste' : u.username }}
-        </option>
-      </select>
-      <button type="submit">Hinzufügen</button>
-    </form>
+    <div class="lists-grid">
+      <section class="list-section" v-for="list in lists" :key="list.key">
+        <div class="list-header">
+          <h2>{{ list.title }}</h2>
+          <span class="progress">{{ progress(list.items).packed }}/{{ progress(list.items).total }} gepackt</span>
+        </div>
 
-    <section class="list-section" v-for="list in lists" :key="list.key">
-      <div class="list-header">
-        <h2>{{ list.title }}</h2>
-        <span class="progress">{{ progress(list.items).checked }}/{{ progress(list.items).total }} gepackt</span>
-      </div>
-
-      <div class="card group" v-for="[category, groupItems] in groupByCategory(list.items)" :key="category">
-        <h3>{{ category }}</h3>
-        <TransitionGroup tag="ul" name="list" class="list">
-          <PackingItemRow
-            v-for="item in groupItems"
-            :key="item.id"
-            :item="item"
-            @toggle="toggle"
-            @remove="remove"
-            @edit="startEdit"
+        <form class="quick-add card" @submit.prevent="quickAdd(list)">
+          <input
+            v-model="quickAddLabels[list.key]"
+            type="text"
+            :placeholder="`Neuer Gegenstand für ${list.title}`"
+            :aria-label="`Neuer Gegenstand für ${list.title}`"
           />
-        </TransitionGroup>
-      </div>
-      <p v-if="!list.items.length" class="empty">Noch nichts auf dieser Liste.</p>
-    </section>
+          <button type="submit">+</button>
+        </form>
+
+        <div class="card group" v-for="catGroup in groupByCategory(list.items)" :key="catGroup.category">
+          <h3>{{ catGroup.category }}</h3>
+          <template v-for="sub in catGroup.subgroups" :key="sub.subcategory ?? '_'">
+            <h4 v-if="sub.subcategory" class="subcategory">{{ sub.subcategory }}</h4>
+            <TransitionGroup tag="ul" name="list" class="list">
+              <PackingItemRow
+                v-for="item in sub.items"
+                :key="item.id"
+                :item="item"
+                @update-counts="updateCounts"
+                @remove="remove"
+                @edit="startEdit"
+              />
+            </TransitionGroup>
+          </template>
+        </div>
+        <p v-if="!list.items.length" class="empty">Noch nichts auf dieser Liste.</p>
+      </section>
+    </div>
 
     <Modal
       :model-value="editingItem !== null"
@@ -179,6 +222,11 @@ async function addItem() {
       <form class="edit-form" @submit.prevent="submitEdit">
         <input v-model="editForm.label" type="text" placeholder="Gegenstand" required />
         <Combobox v-model="editForm.category" :options="categories" placeholder="Kategorie" />
+        <Combobox v-model="editForm.subcategory" :options="subcategories" placeholder="Unterkategorie (optional, z. B. Outfit Tag 1)" />
+        <label class="qty-field">
+          Anzahl
+          <input v-model.number="editForm.quantity" type="number" min="1" step="1" />
+        </label>
         <select v-model="editForm.ownerId">
           <option value="shared">🤝 Gemeinsam</option>
           <option v-for="u in users" :key="u.id" :value="String(u.id)">
@@ -192,16 +240,28 @@ async function addItem() {
 </template>
 
 <style scoped>
-.add-form {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  margin-bottom: var(--space-4);
+/* Mehr Breite als der globale .page-Rahmen (960px), damit die Listen auf Desktop tatsächlich
+   nebeneinander Platz haben (siehe .lists-grid unten) statt trotz Mehrspaltigkeit schmal
+   zusammengequetscht zu wirken. */
+.packing-page {
+  max-width: 1400px;
 }
 
-.add-form input[type='text'] {
+.quick-add {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+}
+
+.quick-add input {
   flex: 1;
-  min-width: 140px;
+  min-width: 0;
+}
+
+.quick-add button {
+  flex-shrink: 0;
+  padding: 8px 14px;
 }
 
 .edit-form {
@@ -210,8 +270,26 @@ async function addItem() {
   gap: var(--space-2);
 }
 
+.qty-field {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.qty-field input {
+  width: 80px;
+}
+
+.lists-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
 .list-section {
-  margin-bottom: var(--space-5);
+  min-width: 0;
 }
 
 .list-header {
@@ -243,6 +321,15 @@ async function addItem() {
   margin: 0 0 var(--space-2);
 }
 
+.subcategory {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  margin: var(--space-2) 0 4px;
+}
+
 .list {
   list-style: none;
   margin: 0;
@@ -252,5 +339,17 @@ async function addItem() {
 .empty {
   color: var(--color-text-muted);
   font-size: 0.9rem;
+}
+
+/* Desktop: Listen nebeneinander statt untereinander, um den vorhandenen Platz besser zu nutzen
+   (Batch-Anfrage) – auto-fit/minmax statt einer festen Spaltenzahl, damit sich die Spaltenzahl der
+   tatsächlichen Fensterbreite und Anzahl an Listen (gemeinsam + je Person) anpasst. */
+@media (min-width: 900px) {
+  .lists-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+    align-items: start;
+    gap: var(--space-4);
+  }
 }
 </style>

@@ -4,33 +4,55 @@ import { db } from '../db/index.js';
 interface PackingBody {
   trip_id: number;
   category?: string;
+  subcategory?: string;
   label: string;
-  checked?: boolean;
+  quantity?: number;
+  laid_out_count?: number;
+  packed_count?: number;
   owner_id?: number | null;
+}
+
+/** Klammert beide Zähler serverseitig auf [0, quantity] und stellt sicher, dass "eingepackt" nie
+ *  größer als "rausgelegt" ist (etwas Eingepacktes muss vorher rausgelegt worden sein) – schützt
+ *  vor inkonsistenten Werten unabhängig davon, was das Frontend schickt. */
+function clampCounts(quantityRaw: number | undefined, laidOutRaw: number | undefined, packedRaw: number | undefined) {
+  const quantity = Math.max(1, Math.round(quantityRaw ?? 1));
+  const packed = Math.min(quantity, Math.max(0, Math.round(packedRaw ?? 0)));
+  const laidOut = Math.min(quantity, Math.max(packed, Math.round(laidOutRaw ?? 0)));
+  return { quantity, laidOut, packed };
 }
 
 export const packingRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: { trip_id?: string } }>('/packing', async (req, reply) => {
     if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
     return db
-      .prepare('SELECT * FROM packing_items WHERE trip_id = ? ORDER BY category, label')
+      .prepare('SELECT * FROM packing_items WHERE trip_id = ? ORDER BY category, subcategory, label')
       .all(req.query.trip_id);
   });
 
   app.post<{ Body: PackingBody }>('/packing', async (req, reply) => {
-    const { trip_id, category, label, checked, owner_id } = req.body;
+    const { trip_id, category, subcategory, label, owner_id } = req.body;
+    const { quantity, laidOut, packed } = clampCounts(req.body.quantity, req.body.laid_out_count, req.body.packed_count);
     const result = db
-      .prepare('INSERT INTO packing_items (trip_id, category, label, checked, owner_id) VALUES (?, ?, ?, ?, ?)')
-      .run(trip_id, category ?? null, label, checked ? 1 : 0, owner_id ?? null);
+      .prepare(
+        `INSERT INTO packing_items (trip_id, category, subcategory, label, quantity, laid_out_count, packed_count, owner_id)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      )
+      .run(trip_id, category ?? null, subcategory ?? null, label, quantity, laidOut, packed, owner_id ?? null);
     reply.code(201);
     return db.prepare('SELECT * FROM packing_items WHERE id = ?').get(result.lastInsertRowid);
   });
 
   app.put<{ Params: { id: string }; Body: PackingBody }>('/packing/:id', async (req, reply) => {
-    const { category, label, checked, owner_id } = req.body;
+    const { category, subcategory, label, owner_id } = req.body;
+    const { quantity, laidOut, packed } = clampCounts(req.body.quantity, req.body.laid_out_count, req.body.packed_count);
     const result = db
-      .prepare('UPDATE packing_items SET category = ?, label = ?, checked = ?, owner_id = ? WHERE id = ?')
-      .run(category ?? null, label, checked ? 1 : 0, owner_id ?? null, req.params.id);
+      .prepare(
+        `UPDATE packing_items
+         SET category = ?, subcategory = ?, label = ?, quantity = ?, laid_out_count = ?, packed_count = ?, owner_id = ?
+         WHERE id = ?`,
+      )
+      .run(category ?? null, subcategory ?? null, label, quantity, laidOut, packed, owner_id ?? null, req.params.id);
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
     return db.prepare('SELECT * FROM packing_items WHERE id = ?').get(req.params.id);
   });

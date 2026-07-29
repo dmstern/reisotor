@@ -364,6 +364,24 @@ ensureColumn('shopping_items', 'period', 'TEXT');
 // Frontend) statt manuell gepflegt zu werden, daher entfällt die Spalte hier wieder.
 dropColumnIfExists('todo_items', 'period');
 ensureColumn('ideas', 'suggested_by_user_id', 'INTEGER REFERENCES users(id)');
+// Packliste: Unterkategorien (z. B. "Outfit Tag 1" innerhalb "Kleidung"), eine Anzahl pro Gegenstand
+// sowie zwei Packstufen (rausgelegt/eingepackt) statt eines einfachen Ja/Nein-Häkchens – beide Zähler
+// sind pro Einheit gedacht und dürfen laid_out_count >= packed_count sein (etwas Eingepacktes war
+// zwangsläufig vorher rausgelegt), siehe Klammerung in routes/packing.ts.
+ensureColumn('packing_items', 'subcategory', 'TEXT');
+ensureColumn('packing_items', 'quantity', 'INTEGER NOT NULL DEFAULT 1');
+ensureColumn('packing_items', 'laid_out_count', 'INTEGER NOT NULL DEFAULT 0');
+ensureColumn('packing_items', 'packed_count', 'INTEGER NOT NULL DEFAULT 0');
+// Backfill + Ablösung des alten einfachen checked-Flags: bereits abgehakte Gegenstände gelten ab
+// sofort als vollständig eingepackt (und damit auch rausgelegt), statt ihren Fortschritt beim
+// Umstieg auf das neue Modell zu verlieren.
+if (hasColumn('packing_items', 'checked')) {
+  db.exec(
+    `UPDATE packing_items SET packed_count = quantity, laid_out_count = quantity
+     WHERE checked = 1 AND packed_count = 0`,
+  );
+  dropColumnIfExists('packing_items', 'checked');
+}
 ensureColumn('trips', 'image_url', 'TEXT');
 // Standort Abflug-/Ankunftsort eines Reise-Eintrags (Batch 13) – analog zum maps_link/lat/lng-
 // Muster bei Ausflügen/Unterkunft, hier je einmal für "Von" und "Nach".

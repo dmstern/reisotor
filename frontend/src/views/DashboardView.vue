@@ -124,8 +124,8 @@ function formatDate(d: string) {
 // Packliste: ein zusammengefasstes Widget (statt drei einzelner Tiles) mit Gesamtfortschritt
 // plus kompakter Aufschlüsselung je Teilliste (Batch 12).
 function progressOf(listItems: PackingItem[]) {
-  const total = listItems.length;
-  const checked = listItems.filter((p) => p.checked).length;
+  const total = listItems.reduce((sum, p) => sum + p.quantity, 0);
+  const checked = listItems.reduce((sum, p) => sum + Math.min(p.packed_count, p.quantity), 0);
   return { total, checked };
 }
 const packingTotal = computed(() => progressOf(packing.value));
