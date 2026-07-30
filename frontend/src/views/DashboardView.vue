@@ -262,6 +262,7 @@ function formatWeekdayDate(d: string) {
           <span class="weather-temp">{{ Math.round(todayWeather.tempMax) }}° / {{ Math.round(todayWeather.tempMin) }}°</span>
           <span v-if="todayWeather.precipitationProbability != null" class="weather-rain">💧{{ todayWeather.precipitationProbability }}%</span>
         </div>
+        <p class="weather-section-label">🏖️ Wetter im Urlaub</p>
         <p v-if="!vacationForecastDays.length" class="hint">
           Für die Urlaubstage liegt noch keine Vorhersage vor – Open-Meteo deckt nur die kommenden
           ~16 Tage ab, schau kurz vorher nochmal vorbei.
@@ -480,6 +481,15 @@ function formatWeekdayDate(d: string) {
   color: var(--color-text-muted);
   font-weight: 600;
   font-size: 0.9rem;
+}
+
+.weather-section-label {
+  margin: 0 0 6px;
+  color: var(--color-text-muted);
+  font-weight: 600;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
 
 .weather-card .hint {
