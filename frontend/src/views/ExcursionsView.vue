@@ -396,6 +396,17 @@ function onSheetDragEnd() {
   sheetState.value = closest;
 }
 
+// Buttons als Alternative zum Ziehen am Anfasser (weniger präzise auf kleinen Touch-Zielen) –
+// schalten jeweils einen Rasterschritt weiter statt frei zu ziehen, genau wie ein Tap auf den
+// Anfasser selbst (siehe onSheetDragEnd oben).
+const SHEET_ORDER: SheetState[] = ['collapsed', 'partial', 'full'];
+function stepSheet(direction: 1 | -1) {
+  const next = SHEET_ORDER[SHEET_ORDER.indexOf(sheetState.value) + direction];
+  if (next) sheetState.value = next;
+}
+const canExpandSheet = computed(() => sheetState.value !== 'full');
+const canCollapseSheet = computed(() => sheetState.value !== 'collapsed');
+
 function checkSpotMapsLink() {
   spotMapsLinkResolved.value = spotForm.value.maps_link ? parseLatLngFromMapsLink(spotForm.value.maps_link) != null : null;
 }
@@ -470,15 +481,37 @@ function showSpotOnMap(spot: Spot) {
       :class="[sheetState, { dragging: sheetDragging }]"
       :style="sheetDragHeightPx != null ? { height: sheetDragHeightPx + 'px' } : {}"
     >
-      <div
-        class="sheet-handle"
-        role="separator"
-        aria-orientation="horizontal"
-        aria-label="Spots-Liste ein-/ausklappen"
-        @pointerdown="onSheetDragStart"
-      >
-        <span class="sheet-grip" aria-hidden="true"></span>
-        <span class="sheet-summary">📍 {{ filteredSpotItems.length }} {{ filteredSpotItems.length === 1 ? 'Ort' : 'Orte' }}</span>
+      <div class="sheet-handle-row">
+        <button
+          type="button"
+          class="sheet-step-btn"
+          :disabled="!canExpandSheet"
+          aria-label="Spots-Liste weiter hochschieben"
+          title="Hochschieben"
+          @click="stepSheet(1)"
+        >
+          ▲
+        </button>
+        <div
+          class="sheet-handle"
+          role="separator"
+          aria-orientation="horizontal"
+          aria-label="Spots-Liste ein-/ausklappen"
+          @pointerdown="onSheetDragStart"
+        >
+          <span class="sheet-grip" aria-hidden="true"></span>
+          <span class="sheet-summary">📍 {{ filteredSpotItems.length }} {{ filteredSpotItems.length === 1 ? 'Ort' : 'Orte' }}</span>
+        </div>
+        <button
+          type="button"
+          class="sheet-step-btn"
+          :disabled="!canCollapseSheet"
+          aria-label="Spots-Liste weiter runterschieben"
+          title="Runterschieben"
+          @click="stepSheet(-1)"
+        >
+          ▼
+        </button>
       </div>
       <div class="spots-col-body">
       <div class="header">
@@ -758,15 +791,53 @@ function showSpotOnMap(spot: Spot) {
   transition: none;
 }
 
-.sheet-handle {
+.sheet-handle-row {
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px 0;
+}
+
+.sheet-handle {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  padding: 8px 0 6px;
+  padding: 4px 0 6px;
   cursor: grab;
   touch-action: none;
+}
+
+/* Alternative zum Ziehen am Anfasser (weniger präzise auf kleinen Touch-Zielen): schaltet jeweils
+   einen Rasterschritt weiter, disabled am jeweiligen Ende (siehe canExpandSheet/canCollapseSheet
+   im Script). */
+.sheet-step-btn {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: 0.7rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.sheet-step-btn:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary-dark);
+}
+
+.sheet-step-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 
 .sheet-grip {
@@ -890,7 +961,7 @@ function showSpotOnMap(spot: Spot) {
     height: auto;
   }
 
-  .sheet-handle {
+  .sheet-handle-row {
     display: none;
   }
 
