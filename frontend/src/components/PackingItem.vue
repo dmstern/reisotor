@@ -13,6 +13,11 @@ const emit = defineEmits<{
 
 const isFullyPacked = computed(() => props.item.packed_count >= props.item.quantity);
 
+// Sind bei Anzahl > 1 bereits alle Exemplare rausgelegt (aber noch nicht eingepackt), zeigt der
+// Hochzähl-Button statt des Plus-Icons denselben Punkt wie bei Anzahl 1 kurz vor dem Einpacken –
+// signalisiert "nichts mehr zum Rauslegen übrig, nächster Klick packt ein" statt "weiter hochzählen".
+const allLaidOut = computed(() => !isFullyPacked.value && props.item.laid_out_count >= props.item.quantity);
+
 // Bei Anzahl 1 (die meisten Gegenstände) reicht ein einzelner Klick-Zyklus statt einer Strichliste:
 // ungepackt → rausgelegt → eingepackt → wieder ungepackt. Behält dieselbe Häkchen-Optik wie überall
 // sonst (style.css), zeigt den Zwischenzustand "rausgelegt" zusätzlich über eine eigene Klasse an,
@@ -88,7 +93,7 @@ const tallyGroups = computed<number[]>(() => {
         :title="singleState === 'none' ? 'Ungepackt – klicken für rausgelegt' : singleState === 'laidOut' ? 'Rausgelegt – klicken für eingepackt' : 'Eingepackt – klicken zum Zurücksetzen'"
         @click="cycleSingleState"
       >
-        <span v-if="singleState === 'laidOut'" class="laid-out-mark">•</span>
+        <span v-if="singleState === 'laidOut'" class="laid-out-mark"></span>
       </button>
       <span class="label" :class="{ done: isFullyPacked }">
         {{ item.label }}
@@ -116,7 +121,8 @@ const tallyGroups = computed<number[]>(() => {
             <span v-if="!tallyGroups.length" class="tally-empty">–</span>
           </span>
           <span class="tally-count">{{ item.laid_out_count }}/{{ item.quantity }}</span>
-          <span class="tally-plus" aria-hidden="true">+</span>
+          <span v-if="allLaidOut" class="laid-out-mark" aria-hidden="true"></span>
+          <span v-else class="tally-plus" aria-hidden="true">+</span>
         </template>
       </button>
       <button
@@ -200,6 +206,7 @@ const tallyGroups = computed<number[]>(() => {
 }
 
 .laid-out-mark {
+  flex-shrink: 0;
   width: 8px;
   height: 8px;
   border-radius: 50%;
