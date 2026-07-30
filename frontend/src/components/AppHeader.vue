@@ -33,7 +33,12 @@ const theme = useThemeStore();
 .app-header {
   position: sticky;
   top: 0;
-  z-index: 11;
+  /* Höher als alle Drawer-Ebenen (Drawer.vue: Backdrop/Panel/Lasche/Buttons 11-16), da der Header
+     selbst eine eigene Stacking-Context bildet – ein hoher z-index innerhalb (z. B. das
+     TripSwitcher-Dropdown, z-index:21) wird sonst nur INNERHALB dieser Context verglichen und
+     verliert gegen eine Schublade mit höherem Context-z-index, obwohl der Dropdown-Inhalt optisch
+     weit darüber liegen soll. Bleibt unterhalb von Modal.vue (z-index:100). */
+  z-index: 25;
   height: 56px;
   display: flex;
   align-items: center;
