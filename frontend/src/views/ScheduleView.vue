@@ -292,7 +292,12 @@ function goToTripDates() {
 const dayEntries = computed(() => (selectedDate.value ? entriesForDate(selectedDate.value) : []));
 
 function showDayOnMap() {
-  if (selectedDate.value) drawers.focusMapOnDate(selectedDate.value);
+  if (!selectedDate.value) return;
+  drawers.focusMapOnDate(selectedDate.value);
+  // Analog zur Touren-Schublade (drawers.openMapForExcursion): Schublade schließen, damit die
+  // gerade fokussierte Karte sofort sichtbar ist statt (v. a. mobil als Vollbild-Overlay) verdeckt
+  // zu bleiben.
+  drawers.calendarOpen = false;
 }
 
 const dayAccommodations = computed(() =>
