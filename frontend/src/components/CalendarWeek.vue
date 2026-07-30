@@ -2,13 +2,14 @@
 import { ref } from 'vue';
 import type { Accommodation, CalendarEntry } from '../api/types';
 import { SCHEDULE_CATEGORY_META } from '../utils/scheduleCategory';
-import { weatherCodeMeta, type DailyWeather } from '../utils/weather';
+import { weatherCodeMeta } from '../utils/weather';
+import type { DayWeatherEntry } from '../utils/dayWeather';
 
 interface Day {
   date: string;
   entries: CalendarEntry[];
   accommodations: Accommodation[];
-  weather?: DailyWeather;
+  weatherEntries: DayWeatherEntry[];
 }
 
 defineProps<{ days: Day[]; selectedDate: string | null }>();
@@ -71,12 +72,17 @@ function onDrop(event: DragEvent, date: string) {
     >
       <div class="day-head">
         <span class="weekday">{{ weekday(day.date) }}</span>
-        <span class="num-row">
-          <span class="num">{{ dayNumber(day.date) }}</span>
-          <span v-if="day.weather" class="day-weather" :title="weatherCodeMeta(day.weather.weatherCode).label">
-            {{ weatherCodeMeta(day.weather.weatherCode).icon }} {{ Math.round(day.weather.tempMax) }}°
+        <span class="num">{{ dayNumber(day.date) }}</span>
+        <div class="day-weather-row" v-if="day.weatherEntries.length">
+          <span
+            v-for="entry in day.weatherEntries"
+            :key="entry.key"
+            class="day-weather"
+            :title="`${entry.label}: ${weatherCodeMeta(entry.weather.weatherCode).label}`"
+          >
+            {{ entry.icon }} {{ Math.round(entry.weather.tempMax) }}°
           </span>
-        </span>
+        </div>
       </div>
 
       <div class="acc-bar" v-for="acc in day.accommodations" :key="acc.id" :title="acc.name">
@@ -159,19 +165,20 @@ function onDrop(event: DragEvent, date: string) {
   color: var(--color-text-muted);
 }
 
-.num-row {
-  display: flex;
-  align-items: baseline;
-  gap: 3px;
-}
-
 .num {
   font-size: 0.95rem;
   font-weight: 600;
 }
 
+.day-weather-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0 3px;
+}
+
 .day-weather {
-  font-size: 0.55rem;
+  font-size: 0.52rem;
   color: var(--color-text-muted);
   white-space: nowrap;
 }

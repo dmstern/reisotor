@@ -16,6 +16,7 @@ import { parseLatLngFromMapsLink } from '../utils/googleMaps';
 import { buildAllEntries } from '../utils/calendarEntries';
 import { calendarEventFromEntry, googleCalendarHref, outlookCalendarHref, triggerIcsDownload } from '../utils/calendarExport';
 import { fetchWeatherForecast, weatherCodeMeta, type DailyWeather } from '../utils/weather';
+import { collectWeatherLocations, dayWeatherEntries, type DayWeatherEntry } from '../utils/dayWeather';
 
 const tripStore = useTripStore();
 const trip = computed(() => tripStore.currentTrip);
@@ -91,18 +92,35 @@ async function loadAll() {
   places.value = placesRes;
 }
 
-// Nutzt denselben modulweiten Cache wie DashboardView.vue (utils/weather.ts) – ein Besuch dort in
-// derselben Session erspart hier den erneuten Netzwerk-Request. Bewusst ohne eigenen Lade-/
-// Fehlerzustand: Wetter ist hier nur ein optionales Extra je Tag, bei Fehlschlag bleiben die
-// Wetter-Badges einfach weg statt den Kalender mit einer Fehlermeldung zu blockieren.
-const weatherDays = ref<DailyWeather[] | null>(null);
+// Nicht ein einzelner globaler Wetterort mehr, sondern je nach Tag ein anderer: an Urlaubstagen der
+// Urlaubsort (möglichst die an dem Tag aktive Unterkunft), an Nicht-Urlaubstagen zusätzlich Zuhause
+// (falls unter Reise > Orte als "Zuhause" hinterlegt) – siehe utils/dayWeather.ts. Nutzt denselben
+// modulweiten Cache wie DashboardView.vue (utils/weather.ts) – ein Besuch dort in derselben Session
+// erspart hier den erneuten Netzwerk-Request pro Ort.
+const home = computed(() => {
+  const p = places.value.find((p) => p.is_home && p.lat != null && p.lng != null);
+  return p ? { lat: p.lat as number, lng: p.lng as number } : null;
+});
+
+const weatherByLocation = ref<Map<string, DailyWeather[]>>(new Map());
+
+// Bewusst ohne eigenen Lade-/Fehlerzustand: Wetter ist hier nur ein optionales Extra je Tag, bei
+// Fehlschlag eines einzelnen Ortes (Promise.allSettled) bleiben nur dessen Badges weg statt den
+// ganzen Kalender mit einer Fehlermeldung zu blockieren.
 async function loadWeather() {
-  if (trip.value?.lat == null || trip.value?.lng == null) return;
-  try {
-    weatherDays.value = await fetchWeatherForecast(trip.value.lat, trip.value.lng);
-  } catch {
-    weatherDays.value = null;
+  const locations = collectWeatherLocations(trip.value, home.value, accommodations.value);
+  const results = await Promise.allSettled(
+    locations.map(async (loc) => ({ key: loc.key, days: await fetchWeatherForecast(loc.lat, loc.lng) })),
+  );
+  const map = new Map<string, DailyWeather[]>();
+  for (const result of results) {
+    if (result.status === 'fulfilled') map.set(result.value.key, result.value.days);
   }
+  weatherByLocation.value = map;
+}
+
+function weatherEntriesFor(date: string): DayWeatherEntry[] {
+  return dayWeatherEntries(date, trip.value, accommodations.value, weatherByLocation.value);
 }
 
 onMounted(async () => {
@@ -165,10 +183,6 @@ const calendarRange = computed(() => {
   };
 });
 
-function weatherForDate(date: string): DailyWeather | undefined {
-  return weatherDays.value?.find((d) => d.date === date);
-}
-
 const weeks = computed(() => {
   if (!calendarRange.value) return [];
   const { start, end } = calendarRange.value;
@@ -178,9 +192,9 @@ const weeks = computed(() => {
   const offset = (firstMonday.getDay() + 6) % 7;
   firstMonday.setDate(firstMonday.getDate() - offset);
 
-  const result: { date: string; entries: CalendarEntry[]; accommodations: Accommodation[]; weather?: DailyWeather }[][] = [];
+  const result: { date: string; entries: CalendarEntry[]; accommodations: Accommodation[]; weatherEntries: DayWeatherEntry[] }[][] = [];
   let cursor = new Date(firstMonday);
-  let week: { date: string; entries: CalendarEntry[]; accommodations: Accommodation[]; weather?: DailyWeather }[] = [];
+  let week: { date: string; entries: CalendarEntry[]; accommodations: Accommodation[]; weatherEntries: DayWeatherEntry[] }[] = [];
 
   while (cursor <= end || week.length % 7 !== 0) {
     const iso = toIso(cursor);
@@ -188,7 +202,7 @@ const weeks = computed(() => {
       date: iso,
       entries: entriesForDate(iso),
       accommodations: accommodationsForDate(iso),
-      weather: weatherForDate(iso),
+      weatherEntries: weatherEntriesFor(iso),
     });
     if (week.length === 7) {
       result.push(week);
@@ -271,7 +285,7 @@ const dayAccommodations = computed(() =>
   selectedDate.value ? accommodationsForDate(selectedDate.value) : [],
 );
 
-const selectedDateWeather = computed(() => (selectedDate.value ? weatherForDate(selectedDate.value) : undefined));
+const selectedDateWeatherEntries = computed(() => (selectedDate.value ? weatherEntriesFor(selectedDate.value) : []));
 
 // Klick-Alternative zum Drag-Einplanen (ExcursionCard.vue/SpotCard.vue's 📅-Anfasser als Button):
 // wartet ein Einplanen-Vorhaben (drawers.pendingSchedule, per Klick auf den Anfasser gesetzt), löst
@@ -453,10 +467,10 @@ function formatDay(date: string) {
         </div>
       </div>
 
-      <p v-if="selectedDateWeather" class="day-weather-note">
-        {{ weatherCodeMeta(selectedDateWeather.weatherCode).icon }}
-        {{ Math.round(selectedDateWeather.tempMax) }}° / {{ Math.round(selectedDateWeather.tempMin) }}°
-        <span v-if="selectedDateWeather.precipitationProbability != null"> · 💧{{ selectedDateWeather.precipitationProbability }}%</span>
+      <p v-for="entry in selectedDateWeatherEntries" :key="entry.key" class="day-weather-note">
+        {{ entry.icon }} {{ entry.label }}: {{ weatherCodeMeta(entry.weather.weatherCode).icon }}
+        {{ Math.round(entry.weather.tempMax) }}° / {{ Math.round(entry.weather.tempMin) }}°
+        <span v-if="entry.weather.precipitationProbability != null"> · 💧{{ entry.weather.precipitationProbability }}%</span>
       </p>
 
       <p v-for="acc in dayAccommodations" :key="acc.id" class="acc-note">🛏️ Unterkunft: {{ acc.name }}</p>

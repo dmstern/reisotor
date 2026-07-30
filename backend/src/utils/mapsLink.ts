@@ -51,7 +51,18 @@ export async function resolveLatLng(url: string | null | undefined): Promise<Lat
   if (direct) return direct;
 
   try {
-    const res = await fetch(url, { redirect: 'follow', signal: AbortSignal.timeout(5000) });
+    // Ein realistischer Browser-User-Agent statt des Node-Standard-UAs, da manche Kurzlink-
+    // Redirect-Dienste (u. a. Google) Anfragen ohne einen solchen teils mit 403 statt der
+    // eigentlichen Weiterleitung beantworten.
+    const res = await fetch(url, {
+      redirect: 'follow',
+      signal: AbortSignal.timeout(5000),
+      headers: {
+        'User-Agent':
+          'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1',
+        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      },
+    });
     return parseLatLngFromText(res.url);
   } catch {
     return null;
