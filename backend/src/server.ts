@@ -34,8 +34,12 @@ const sessionSecret = process.env.SESSION_SECRET ?? 'dev-secret-please-change-me
 // trustProxy wertet Fastify den von Caddy gesetzten X-Forwarded-Proto-Header aus.
 const app = Fastify({ logger: true, bodyLimit: 10 * 1024 * 1024, trustProxy: true });
 
+// CORS_ORIGIN erlaubt der e2e-Testsuite (/e2e), Backend+Frontend auf eigenen Ports parallel zum
+// normalen lokalen Dev-Server laufen zu lassen, ohne dessen Origin (Default: Vite auf 5173) zu
+// verändern. Kommagetrennt für mehrere Origins.
+const devOrigins = process.env.CORS_ORIGIN?.split(',').map((o) => o.trim()) ?? ['http://localhost:5173'];
 await app.register(cors, {
-  origin: isProd ? false : ['http://localhost:5173'],
+  origin: isProd ? false : devOrigins,
   credentials: true,
 });
 

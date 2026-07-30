@@ -212,15 +212,17 @@ insertSchedule.run(tripId, fmt(addDays(startDate, 2)), null, '10:00', 'Torre de 
 insertSchedule.run(tripId, fmt(addDays(startDate, 5)), null, '09:00', 'Tagesausflug nach Sintra', 'Zug ab Rossio-Bahnhof', 'Sintra');
 
 // --- Packliste (pro Nutzer + gemeinsam) ---
+// packed_count/laid_out_count statt des alten booleschen "checked" (per Migration in db/index.ts
+// entfernt) - bei "gepackt" beide auf quantity (Default 1) setzen, sonst beide 0.
 const insertPacking = db.prepare(
-  'INSERT INTO packing_items (trip_id, category, label, checked, owner_id) VALUES (?, ?, ?, ?, ?)',
+  'INSERT INTO packing_items (trip_id, category, label, owner_id, packed_count, laid_out_count) VALUES (?, ?, ?, ?, ?, ?)',
 );
-insertPacking.run(tripId, 'Kleidung', 'Badehose', 0, user1.id);
-insertPacking.run(tripId, 'Kleidung', 'Sommerkleid', 0, user2.id);
-insertPacking.run(tripId, 'Elektronik', 'Reiseadapter', 1, null);
-insertPacking.run(tripId, 'Elektronik', 'Powerbank', 0, null);
-insertPacking.run(tripId, 'Dokumente', 'Reisepass', 0, user1.id);
-insertPacking.run(tripId, 'Dokumente', 'Reisepass', 0, user2.id);
+insertPacking.run(tripId, 'Kleidung', 'Badehose', user1.id, 0, 0);
+insertPacking.run(tripId, 'Kleidung', 'Sommerkleid', user2.id, 0, 0);
+insertPacking.run(tripId, 'Elektronik', 'Reiseadapter', null, 1, 1);
+insertPacking.run(tripId, 'Elektronik', 'Powerbank', null, 0, 0);
+insertPacking.run(tripId, 'Dokumente', 'Reisepass', user1.id, 0, 0);
+insertPacking.run(tripId, 'Dokumente', 'Reisepass', user2.id, 0, 0);
 
 // --- Einkaufsliste ---
 const insertShopping = db.prepare(
