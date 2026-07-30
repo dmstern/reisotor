@@ -13,10 +13,10 @@ const emit = defineEmits<{
 
 const isFullyPacked = computed(() => props.item.packed_count >= props.item.quantity);
 
-// Bei Anzahl 1 (die meisten Gegenstände) reicht ein einzelner Klick-Zyklus statt zweier
-// Zähler-Zeilen: ungepackt → rausgelegt → eingepackt → wieder ungepackt. Behält dieselbe
-// Häkchen-Optik wie überall sonst (style.css), zeigt den Zwischenzustand "rausgelegt" zusätzlich
-// über eine eigene Klasse an, da input[type=checkbox] selbst nur zwei Zustände kennt.
+// Bei Anzahl 1 (die meisten Gegenstände) reicht ein einzelner Klick-Zyklus statt einer Strichliste:
+// ungepackt → rausgelegt → eingepackt → wieder ungepackt. Behält dieselbe Häkchen-Optik wie überall
+// sonst (style.css), zeigt den Zwischenzustand "rausgelegt" zusätzlich über eine eigene Klasse an,
+// da input[type=checkbox] selbst nur zwei Zustände kennt.
 type SingleState = 'none' | 'laidOut' | 'packed';
 const singleState = computed<SingleState>(() => {
   if (props.item.packed_count >= 1) return 'packed';
@@ -34,16 +34,44 @@ function cycleSingleState() {
   emit('update-counts', props.item, laidOut, packed);
 }
 
-function adjustLaidOut(delta: number) {
-  const laidOut = Math.min(props.item.quantity, Math.max(props.item.packed_count, props.item.laid_out_count + delta));
-  emit('update-counts', props.item, laidOut, props.item.packed_count);
+// Bei Anzahl > 1: ein Klick zählt die rausgelegten Exemplare einzeln als Strichliste hoch (wie von
+// Hand auf einem Zettel abgehakt); sind alle Exemplare rausgelegt, packt der nächste Klick alle auf
+// einmal ein (das ganze Element gilt danach als erledigt, genau wie bei Anzahl 1) – kein separates
+// Hochzählen beim Einpacken selbst nötig, das entspricht eher dem tatsächlichen Vorgang (erst alles
+// zusammensuchen, dann in einem Rutsch in den Koffer). Nochmaliges Klicken danach setzt zurück.
+function incrementMulti() {
+  if (props.item.laid_out_count < props.item.quantity) {
+    emit('update-counts', props.item, props.item.laid_out_count + 1, props.item.packed_count);
+  } else if (props.item.packed_count < props.item.quantity) {
+    emit('update-counts', props.item, props.item.quantity, props.item.quantity);
+  } else {
+    emit('update-counts', props.item, 0, 0);
+  }
 }
 
-function adjustPacked(delta: number) {
-  const packed = Math.min(props.item.quantity, Math.max(0, props.item.packed_count + delta));
-  const laidOut = Math.max(props.item.laid_out_count, packed);
-  emit('update-counts', props.item, laidOut, packed);
+// Korrigiert einen Fehlklick einen Schritt zurück, ohne den ganzen Zyklus erneut durchlaufen zu
+// müssen: aus "eingepackt" wird wieder "alle rausgelegt, nicht eingepackt", danach ein rausgelegtes
+// Exemplar nach dem anderen zurück.
+function decrementMulti() {
+  if (props.item.packed_count > 0) {
+    emit('update-counts', props.item, props.item.laid_out_count, 0);
+  } else if (props.item.laid_out_count > 0) {
+    emit('update-counts', props.item, props.item.laid_out_count - 1, 0);
+  }
 }
+
+// Strichliste in 5er-Gruppen (4 Striche + ein diagonaler 5.), wie von Hand auf einem Zettel
+// abgehakt – zeigt den Rausgelegt-Fortschritt an, solange noch nicht alles eingepackt ist.
+const tallyGroups = computed<number[]>(() => {
+  const groups: number[] = [];
+  let remaining = props.item.laid_out_count;
+  while (remaining > 0) {
+    const size = Math.min(5, remaining);
+    groups.push(size);
+    remaining -= size;
+  }
+  return groups;
+});
 </script>
 
 <template>
@@ -68,19 +96,42 @@ function adjustPacked(delta: number) {
       </span>
     </div>
 
-    <div v-if="item.quantity > 1" class="trackers">
-      <div class="tracker" title="Rausgelegt">
-        <span class="tracker-icon">🧺</span>
-        <button type="button" class="stepper-btn" :disabled="item.laid_out_count <= item.packed_count" @click="adjustLaidOut(-1)">−</button>
-        <span class="tracker-count">{{ item.laid_out_count }}/{{ item.quantity }}</span>
-        <button type="button" class="stepper-btn" :disabled="item.laid_out_count >= item.quantity" @click="adjustLaidOut(1)">+</button>
-      </div>
-      <div class="tracker" title="Eingepackt">
-        <span class="tracker-icon">🧳</span>
-        <button type="button" class="stepper-btn" :disabled="item.packed_count <= 0" @click="adjustPacked(-1)">−</button>
-        <span class="tracker-count">{{ item.packed_count }}/{{ item.quantity }}</span>
-        <button type="button" class="stepper-btn" :disabled="item.packed_count >= item.quantity" @click="adjustPacked(1)">+</button>
-      </div>
+    <div v-if="item.quantity > 1" class="tally-control">
+      <button
+        v-if="!isFullyPacked"
+        type="button"
+        class="tally-click"
+        :aria-label="`${item.label}: ${item.laid_out_count}/${item.quantity} rausgelegt`"
+        :title="item.laid_out_count < item.quantity ? 'Nächstes Exemplar rausgelegt' : 'Alle rausgelegt – klicken zum Einpacken'"
+        @click="incrementMulti"
+      >
+        <span class="tally-marks">
+          <span class="tally-group" v-for="(size, i) in tallyGroups" :key="i">
+            <span class="tally-stroke" v-for="n in Math.min(size, 4)" :key="n"></span>
+            <span class="tally-stroke tally-diagonal" v-if="size === 5"></span>
+          </span>
+          <span v-if="!tallyGroups.length" class="tally-empty">–</span>
+        </span>
+        <span class="tally-count">{{ item.laid_out_count }}/{{ item.quantity }}</span>
+      </button>
+      <button
+        v-else
+        type="button"
+        class="state-toggle packed"
+        aria-label="Eingepackt – klicken zum Zurücksetzen"
+        title="Eingepackt – klicken zum Zurücksetzen"
+        @click="incrementMulti"
+      ></button>
+      <button
+        v-if="item.laid_out_count > 0 || item.packed_count > 0"
+        type="button"
+        class="tally-undo"
+        aria-label="Einen Schritt zurück"
+        title="Einen Schritt zurück"
+        @click="decrementMulti"
+      >
+        ↺
+      </button>
     </div>
 
     <div class="row-actions">
@@ -115,7 +166,8 @@ function adjustPacked(delta: number) {
 
 /* Gleiche Grundoptik wie die globale input[type=checkbox]-Häkchen-Regel (style.css), als eigener
    <button> statt echter Checkbox, da hier drei statt zwei Zustände dargestellt werden müssen
-   (ungepackt/rausgelegt/eingepackt). */
+   (ungepackt/rausgelegt/eingepackt). Wird bei Anzahl > 1 auch für den "eingepackt"-Endzustand
+   wiederverwendet (statt der Strichliste), damit "fertig" app-weit immer gleich aussieht. */
 .state-toggle {
   flex-shrink: 0;
   width: 20px;
@@ -183,45 +235,86 @@ function adjustPacked(delta: number) {
   color: var(--color-text-muted);
 }
 
-.trackers {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-}
-
-.tracker {
+.tally-control {
   display: flex;
   align-items: center;
   gap: 4px;
-  background: var(--color-hover);
-  border-radius: var(--radius-sm);
-  padding: 2px 4px;
 }
 
-.tracker-icon {
+.tally-click {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  cursor: pointer;
+}
+
+.tally-click:hover {
+  border-color: var(--color-primary);
+}
+
+.tally-click:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.tally-marks {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  min-height: 14px;
+}
+
+.tally-group {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.tally-stroke {
+  width: 2px;
+  height: 14px;
+  background: var(--color-text);
+  border-radius: 1px;
+}
+
+/* Der 5. Strich der Gruppe: diagonal über die vorherigen 4, exakt wie eine handgeschriebene
+   Strichliste ("IIII" mit einem Querstrich). */
+.tally-diagonal {
+  position: absolute;
+  left: -2px;
+  top: 5px;
+  width: 20px;
+  height: 2px;
+  background: var(--color-text);
+  transform: rotate(-32deg);
+  transform-origin: left center;
+}
+
+.tally-empty {
+  color: var(--color-text-muted);
   font-size: 0.85rem;
 }
 
-.tracker-count {
+.tally-count {
   font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
   font-variant-numeric: tabular-nums;
-  min-width: 34px;
-  text-align: center;
 }
 
-.stepper-btn {
-  width: 22px;
-  height: 22px;
+.tally-undo {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
   padding: 0;
   border-radius: var(--radius-sm);
   font-size: 0.9rem;
   line-height: 1;
-}
-
-.stepper-btn:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
-  background: var(--color-border);
 }
 
 .row-actions {
