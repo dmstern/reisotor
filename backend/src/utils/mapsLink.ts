@@ -50,11 +50,19 @@ export async function resolveLatLng(url: string | null | undefined): Promise<Lat
   const direct = parseLatLngFromText(url);
   if (direct) return direct;
 
+  // Best-effort, unbewiesene Theorie: "g_st=ic" markiert einen über das native Teilen-Menü ("in
+  // context") erzeugten Kurzlink – genau diese Variante wurde wiederholt mit einem echten 403 von
+  // Google blockiert (Bot-Erkennung), auch mit realistischem Browser-User-Agent (siehe unten). Den
+  // Parameter vor dem Redirect-Follow zu entfernen kostet nichts und könnte in manchen Fällen
+  // helfen, ist aber KEIN verlässlicher Fix – der eigentliche Fallback ist der manuelle
+  // Karten-Picker im Frontend (LocationPicker.vue).
+  const strippedUrl = url.replace(/([?&])g_st=[^&]*&?/, '$1').replace(/[?&]$/, '');
+
   try {
     // Ein realistischer Browser-User-Agent statt des Node-Standard-UAs, da manche Kurzlink-
     // Redirect-Dienste (u. a. Google) Anfragen ohne einen solchen teils mit 403 statt der
     // eigentlichen Weiterleitung beantworten.
-    const res = await fetch(url, {
+    const res = await fetch(strippedUrl, {
       redirect: 'follow',
       signal: AbortSignal.timeout(5000),
       headers: {
