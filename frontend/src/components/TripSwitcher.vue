@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { useTripStore, type TripFormData } from '../stores/trip';
+import { useDrawersStore } from '../stores/drawers';
 import type { Trip } from '../api/types';
 import Modal from './Modal.vue';
 import TripForm from './TripForm.vue';
@@ -8,6 +9,7 @@ import EditButton from './EditButton.vue';
 import DeleteButton from './DeleteButton.vue';
 
 const tripStore = useTripStore();
+const drawers = useDrawersStore();
 const open = ref(false);
 const showForm = ref(false);
 const editingTrip = ref<Trip | null>(null);
@@ -80,6 +82,9 @@ async function onSubmit(data: TripFormData) {
     tripFormLocationError.value = true;
     return;
   }
+  // Analog zu Unterkunft-/Reise-/Ausflüge-Sicht: signalisiert TripMap.vue (Marker-Refresh) und
+  // ScheduleView.vue (Kalender-Wetter-Refresh), dass sich ein Ort geändert haben könnte.
+  drawers.touchLocations();
   closeForm();
 }
 

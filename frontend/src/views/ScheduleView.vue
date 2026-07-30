@@ -140,6 +140,20 @@ onMounted(async () => {
 // gemountete Schublade), muss also selbst auf einen Urlaubswechsel reagieren.
 watch(() => tripStore.currentTripId, loadAll);
 
+// Die Kalender-Schublade wird einmalig gemountet und bleibt danach dauerhaft im DOM (siehe
+// App.vue/Drawer.vue) – ohne dieses Signal würde ein nachträglich gesetzter Standort (z. B. über
+// den manuellen Karten-Picker, TripForm.vue/AccommodationView.vue) nie erneut Wetter laden, da
+// onMounted (unten) nur einmal beim allerersten Mount läuft. drawers.touchLocations() wird von
+// Unterkunft-/Reise-/Ausflüge-/Urlaub-Sicht nach jedem erfolgreichen Anlegen/Bearbeiten eines Orts
+// aufgerufen (gleiches Muster wie TripMap.vue:772-778).
+watch(
+  () => drawers.locationsVersion,
+  async () => {
+    await loadAll();
+    loadWeather();
+  },
+);
+
 function toIso(d: Date) {
   return d.toISOString().slice(0, 10);
 }
