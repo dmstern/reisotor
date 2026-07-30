@@ -2,8 +2,12 @@
 import { ref, watch } from 'vue';
 import type { TripFormData } from '../stores/trip';
 import { parseLatLngFromMapsLink } from '../utils/googleMaps';
+import LocationPicker from './LocationPicker.vue';
 
-const props = defineProps<{ initial?: TripFormData; submitLabel?: string }>();
+// locationError: vom Aufrufer (TripSwitcher.vue) gesetzt, wenn nach dem Speichern auffällt, dass
+// auch die serverseitige Maps-Link-Auflösung fehlgeschlagen ist (z. B. Google-Bot-Blocking eines
+// Kurzlinks) – öffnet dann automatisch den manuellen Karten-Picker als Fallback.
+const props = defineProps<{ initial?: TripFormData; submitLabel?: string; locationError?: boolean }>();
 const emit = defineEmits<{ (e: 'submit', data: TripFormData): void }>();
 
 function blankForm(): TripFormData {
@@ -12,14 +16,30 @@ function blankForm(): TripFormData {
 
 const form = ref<TripFormData>(props.initial ? { ...props.initial } : blankForm());
 const mapsLinkResolved = ref<boolean | null>(null);
+const manualPin = ref<{ lat: number; lng: number } | null>(null);
+const pickerOpen = ref(false);
 
 watch(
   () => props.initial,
   (initial) => {
     form.value = initial ? { ...initial } : blankForm();
     mapsLinkResolved.value = null;
+    manualPin.value = null;
+    pickerOpen.value = false;
   },
 );
+
+// Öffnet den Picker automatisch, sobald der Aufrufer einen Fehlschlag meldet; ein danach gesetzter
+// Pin löst automatisch einen erneuten Speicherversuch aus (kein separater "Speichern"-Klick nötig).
+watch(
+  () => props.locationError,
+  (err) => {
+    if (err) pickerOpen.value = true;
+  },
+);
+watch(manualPin, (pin) => {
+  if (pin && props.locationError) onSubmit();
+});
 
 function checkMapsLink() {
   if (!form.value.maps_link) {
@@ -38,8 +58,8 @@ function onSubmit() {
     start_date: form.value.start_date,
     end_date: form.value.end_date,
     maps_link: form.value.maps_link || undefined,
-    lat: parsed?.lat,
-    lng: parsed?.lng,
+    lat: manualPin.value?.lat ?? parsed?.lat,
+    lng: manualPin.value?.lng ?? parsed?.lng,
     image_url: form.value.image_url || undefined,
   });
 }
@@ -71,6 +91,13 @@ function onSubmit() {
     </label>
     <p v-if="mapsLinkResolved === true" class="hint success">📍 Standort erkannt – erscheint auf der Karte</p>
     <p v-if="mapsLinkResolved === false" class="hint">Standort konnte nicht automatisch erkannt werden.</p>
+    <p v-if="locationError" class="hint error">
+      ⚠️ Der Standort konnte auch automatisch nicht ermittelt werden. Bitte tippe unten auf die Karte, um ihn manuell zu setzen.
+    </p>
+    <button type="button" class="secondary picker-toggle" @click="pickerOpen = !pickerOpen">
+      📍 Standort manuell setzen {{ pickerOpen ? '▲' : '▼' }}
+    </button>
+    <LocationPicker v-if="pickerOpen" v-model="manualPin" />
     <label>
       Bild-URL für das Dashboard-Banner (optional)
       <input v-model="form.image_url" type="url" placeholder="https://…" />
@@ -102,6 +129,16 @@ label {
 
 .hint.success {
   color: var(--color-success);
+}
+
+.hint.error {
+  color: var(--color-danger);
+}
+
+.picker-toggle {
+  align-self: flex-start;
+  padding: 6px 12px;
+  font-size: 0.85rem;
 }
 
 .dates-row {

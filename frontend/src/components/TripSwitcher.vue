@@ -11,6 +11,11 @@ const tripStore = useTripStore();
 const open = ref(false);
 const showForm = ref(false);
 const editingTrip = ref<Trip | null>(null);
+// Bleibt gesetzt, solange nach dem Anlegen eines neuen Urlaubs die Standort-Auflösung fehlschlägt
+// (siehe onSubmit) – ein erneuter Speicherversuch (z. B. mit manuell gesetztem Pin) muss dann den
+// bereits angelegten Urlaub AKTUALISIEREN statt einen zweiten anzulegen.
+const pendingFixTripId = ref<number | null>(null);
+const tripFormLocationError = ref(false);
 
 // Sprungziel für Fremdobjekte (z. B. Urlaub-Einträge im Kalender): öffnet das Edit-Modal
 // des aktuellen Urlaubs, ohne dass die einbettende Sicht selbst editieren muss.
@@ -38,12 +43,16 @@ function selectAndClose(id: number) {
 
 function openCreate() {
   editingTrip.value = null;
+  pendingFixTripId.value = null;
+  tripFormLocationError.value = false;
   showForm.value = true;
   close();
 }
 
 function openEdit(trip: Trip) {
   editingTrip.value = trip;
+  pendingFixTripId.value = null;
+  tripFormLocationError.value = false;
   showForm.value = true;
   close();
 }
@@ -51,13 +60,25 @@ function openEdit(trip: Trip) {
 function closeForm() {
   showForm.value = false;
   editingTrip.value = null;
+  pendingFixTripId.value = null;
+  tripFormLocationError.value = false;
 }
 
 async function onSubmit(data: TripFormData) {
-  if (editingTrip.value) {
-    await tripStore.updateTrip(editingTrip.value.id, data);
-  } else {
-    await tripStore.createTrip(data);
+  const result =
+    pendingFixTripId.value != null
+      ? await tripStore.updateTrip(pendingFixTripId.value, data)
+      : editingTrip.value
+        ? await tripStore.updateTrip(editingTrip.value.id, data)
+        : await tripStore.createTrip(data);
+
+  // Serverseitige Auflösung (backend/src/utils/mapsLink.ts) ebenfalls fehlgeschlagen, z. B. weil
+  // Google einen Maps-Kurzlink per Bot-Erkennung blockt – Dialog offen lassen, TripForm zeigt einen
+  // Fehler-Hinweis und öffnet automatisch den manuellen Karten-Picker (LocationPicker.vue).
+  if (data.maps_link && result.lat == null && data.lat == null) {
+    pendingFixTripId.value = result.id;
+    tripFormLocationError.value = true;
+    return;
   }
   closeForm();
 }
@@ -104,6 +125,7 @@ async function onDelete(trip: Trip) {
       @update:model-value="(v) => !v && closeForm()"
     >
       <TripForm
+        :location-error="tripFormLocationError"
         :initial="
           editingTrip
             ? {
