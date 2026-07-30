@@ -15,11 +15,16 @@ const items = ref<PackingItem[]>([]);
 const users = ref<User[]>([]);
 const loading = ref(true);
 
-// Ein schlankes Hinzufügen-Feld direkt über jeder Liste (statt eines einzigen globalen Formulars
-// mit Listen-Auswahl) – welche Liste gemeint ist, ergibt sich schon aus der Position, ein
-// Auswahlfeld dafür entfällt. Kategorie/Unterkategorie/Anzahl lassen sich danach über "Bearbeiten"
-// ergänzen, das hält das schnelle Eintippen mehrerer Gegenstände hintereinander leichtgängig.
+// Ein Hinzufügen-Formular direkt über jeder Liste (statt eines einzigen globalen Formulars mit
+// Listen-Auswahl) – welche Liste gemeint ist, ergibt sich schon aus der Position, ein Auswahlfeld
+// dafür entfällt. Kategorie/Unterkategorie/Anzahl sind gleich mit dabei statt erst nachträglich per
+// "Bearbeiten" ergänzbar zu sein. Vier parallele Records statt eines Objekts pro Liste: dasselbe
+// Muster wie quickAddLabels, funktioniert unverändert auch für Listen, die noch keinen eigenen
+// Eintrag haben (Vue legt den Schlüssel beim ersten Tippen reaktiv an).
 const quickAddLabels = ref<Record<string, string>>({});
+const quickAddCategories = ref<Record<string, string>>({});
+const quickAddSubcategories = ref<Record<string, string>>({});
+const quickAddQuantities = ref<Record<string, number>>({});
 
 const editingItem = ref<PackingItem | null>(null);
 const editForm = ref({ label: '', category: '', subcategory: '', quantity: 1, ownerId: 'shared' });
@@ -163,13 +168,22 @@ async function remove(id: number) {
 async function quickAdd(list: ListGroup) {
   const label = (quickAddLabels.value[list.key] ?? '').trim();
   if (!label) return;
+  const category = (quickAddCategories.value[list.key] ?? '').trim();
+  const subcategory = (quickAddSubcategories.value[list.key] ?? '').trim();
+  const quantity = Math.max(1, Math.round(quickAddQuantities.value[list.key] || 1));
   const created = await api.post<PackingItem>('/packing', {
     trip_id: tripId,
     label,
+    category: category || undefined,
+    subcategory: subcategory || undefined,
+    quantity,
     owner_id: list.ownerId,
   });
   items.value.push(created);
   quickAddLabels.value[list.key] = '';
+  quickAddQuantities.value[list.key] = 1;
+  // Kategorie/Unterkategorie bleiben bewusst stehen: praktisch, wenn mehrere Gegenstände derselben
+  // Kategorie hintereinander erfasst werden (z. B. mehrere "Kleidung"-Teile).
 }
 </script>
 
@@ -191,6 +205,12 @@ async function quickAdd(list: ListGroup) {
             :placeholder="`Neuer Gegenstand für ${list.title}`"
             :aria-label="`Neuer Gegenstand für ${list.title}`"
           />
+          <Combobox v-model="quickAddCategories[list.key]" :options="categories" placeholder="Kategorie" />
+          <Combobox v-model="quickAddSubcategories[list.key]" :options="subcategories" placeholder="Unterkategorie" />
+          <label class="qty-field quick-add-qty">
+            Anzahl
+            <input v-model.number="quickAddQuantities[list.key]" type="number" min="1" step="1" placeholder="1" />
+          </label>
           <button type="submit">+</button>
         </form>
 
@@ -249,17 +269,28 @@ async function quickAdd(list: ListGroup) {
 
 .quick-add {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: var(--space-2);
   margin-bottom: var(--space-3);
   padding: var(--space-2) var(--space-3);
 }
 
-.quick-add input {
-  flex: 1;
+.quick-add > input[type='text'] {
+  flex: 1 1 160px;
   min-width: 0;
 }
 
-.quick-add button {
+.quick-add-qty {
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+.quick-add-qty input {
+  width: 64px;
+}
+
+.quick-add button[type='submit'] {
   flex-shrink: 0;
   padding: 8px 14px;
 }
