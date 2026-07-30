@@ -205,13 +205,15 @@ async function quickAdd(list: ListGroup) {
             :placeholder="`Neuer Gegenstand für ${list.title}`"
             :aria-label="`Neuer Gegenstand für ${list.title}`"
           />
-          <Combobox v-model="quickAddCategories[list.key]" :options="categories" placeholder="Kategorie" />
-          <Combobox v-model="quickAddSubcategories[list.key]" :options="subcategories" placeholder="Unterkategorie" />
+          <Combobox v-model="quickAddCategories[list.key]" :options="categories" placeholder="Kategorie (optional)" />
+          <Combobox v-model="quickAddSubcategories[list.key]" :options="subcategories" placeholder="Unterkategorie (optional)" />
           <label class="qty-field quick-add-qty">
             Anzahl
             <input v-model.number="quickAddQuantities[list.key]" type="number" min="1" step="1" placeholder="1" />
           </label>
-          <button type="submit">+</button>
+          <button type="submit" class="send-btn" :disabled="!quickAddLabels[list.key]?.trim()" aria-label="Gegenstand hinzufügen" title="Gegenstand hinzufügen">
+            ➤
+          </button>
         </form>
 
         <div class="card group" v-for="catGroup in groupByCategory(list.items)" :key="catGroup.category">
@@ -290,9 +292,22 @@ async function quickAdd(list: ListGroup) {
   width: 64px;
 }
 
-.quick-add button[type='submit'] {
+.quick-add .send-btn {
   flex-shrink: 0;
-  padding: 8px 14px;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.quick-add .send-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .edit-form {

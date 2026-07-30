@@ -98,39 +98,36 @@ const tallyGroups = computed<number[]>(() => {
 
     <div v-if="item.quantity > 1" class="tally-control">
       <button
-        v-if="!isFullyPacked"
         type="button"
-        class="tally-click"
-        :aria-label="`${item.label}: ${item.laid_out_count}/${item.quantity} rausgelegt`"
-        :title="item.laid_out_count < item.quantity ? 'Nächstes Exemplar rausgelegt' : 'Alle rausgelegt – klicken zum Einpacken'"
+        class="tally-pill"
+        :class="{ laidOut: !isFullyPacked && item.laid_out_count > 0, packed: isFullyPacked }"
+        role="checkbox"
+        :aria-checked="isFullyPacked"
+        :aria-label="isFullyPacked ? `${item.label}: eingepackt – klicken zum Zurücksetzen` : `${item.label}: ${item.laid_out_count}/${item.quantity} rausgelegt`"
+        :title="isFullyPacked ? 'Eingepackt – klicken zum Zurücksetzen' : item.laid_out_count < item.quantity ? 'Nächstes Exemplar rausgelegt' : 'Alle rausgelegt – klicken zum Einpacken'"
         @click="incrementMulti"
       >
-        <span class="tally-marks">
-          <span class="tally-group" v-for="(size, i) in tallyGroups" :key="i">
-            <span class="tally-stroke" v-for="n in Math.min(size, 4)" :key="n"></span>
-            <span class="tally-stroke tally-diagonal" v-if="size === 5"></span>
+        <template v-if="!isFullyPacked">
+          <span class="tally-marks">
+            <span class="tally-group" v-for="(size, i) in tallyGroups" :key="i">
+              <span class="tally-stroke" v-for="n in Math.min(size, 4)" :key="n"></span>
+              <span class="tally-stroke tally-diagonal" v-if="size === 5"></span>
+            </span>
+            <span v-if="!tallyGroups.length" class="tally-empty">–</span>
           </span>
-          <span v-if="!tallyGroups.length" class="tally-empty">–</span>
-        </span>
-        <span class="tally-count">{{ item.laid_out_count }}/{{ item.quantity }}</span>
+          <span class="tally-count">{{ item.laid_out_count }}/{{ item.quantity }}</span>
+          <span class="tally-plus" aria-hidden="true">+</span>
+        </template>
       </button>
-      <button
-        v-else
-        type="button"
-        class="state-toggle packed"
-        aria-label="Eingepackt – klicken zum Zurücksetzen"
-        title="Eingepackt – klicken zum Zurücksetzen"
-        @click="incrementMulti"
-      ></button>
       <button
         v-if="item.laid_out_count > 0 || item.packed_count > 0"
         type="button"
-        class="tally-undo"
+        class="tally-minus"
         aria-label="Einen Schritt zurück"
         title="Einen Schritt zurück"
         @click="decrementMulti"
       >
-        ↺
+        −
       </button>
     </div>
 
@@ -167,28 +164,37 @@ const tallyGroups = computed<number[]>(() => {
 /* Gleiche Grundoptik wie die globale input[type=checkbox]-Häkchen-Regel (style.css), als eigener
    <button> statt echter Checkbox, da hier drei statt zwei Zustände dargestellt werden müssen
    (ungepackt/rausgelegt/eingepackt). Wird bei Anzahl > 1 auch für den "eingepackt"-Endzustand
-   wiederverwendet (statt der Strichliste), damit "fertig" app-weit immer gleich aussieht. */
-.state-toggle {
-  flex-shrink: 0;
-  width: 20px;
-  height: 20px;
-  padding: 0;
+   wiederverwendet (statt der Strichliste), damit "fertig" app-weit immer gleich aussieht.
+   .tally-pill teilt sich dieselben Zustandsfarben (Grundfarbe/orange "rausgelegt"/grün "eingepackt"),
+   damit Gegenstände mit Anzahl 1 und Anzahl > 1 optisch als derselbe Zustandsautomat erkennbar
+   bleiben statt wie zwei unabhängige UI-Muster zu wirken. */
+.state-toggle,
+.tally-pill {
   border: 2px solid var(--color-border);
   border-radius: 6px;
   background: var(--color-surface);
   cursor: pointer;
   position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   transition: background 0.15s ease, border-color 0.15s ease;
 }
 
-.state-toggle:hover {
+.state-toggle {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.state-toggle:hover,
+.tally-pill:hover {
   border-color: var(--color-primary);
 }
 
-.state-toggle.laidOut {
+.state-toggle.laidOut,
+.tally-pill.laidOut {
   border-color: var(--color-accent);
   background: var(--color-highlight);
 }
@@ -200,12 +206,14 @@ const tallyGroups = computed<number[]>(() => {
   background: var(--color-accent);
 }
 
-.state-toggle.packed {
+.state-toggle.packed,
+.tally-pill.packed {
   background: var(--color-primary);
   border-color: var(--color-primary);
 }
 
-.state-toggle.packed::after {
+.state-toggle.packed::after,
+.tally-pill.packed::after {
   content: '';
   width: 5px;
   height: 10px;
@@ -214,7 +222,16 @@ const tallyGroups = computed<number[]>(() => {
   transform: rotate(45deg) translate(-1px, -1px);
 }
 
-.state-toggle:focus-visible {
+.tally-pill.packed {
+  min-width: 20px;
+  min-height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.state-toggle:focus-visible,
+.tally-pill:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
@@ -241,29 +258,16 @@ const tallyGroups = computed<number[]>(() => {
   gap: 4px;
 }
 
-.tally-click {
+.tally-pill {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 4px 10px;
-  border: 2px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
-  cursor: pointer;
-}
-
-.tally-click:hover {
-  border-color: var(--color-primary);
-}
-
-.tally-click:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
 }
 
 .tally-marks {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   gap: 6px;
   min-height: 14px;
 }
@@ -271,28 +275,30 @@ const tallyGroups = computed<number[]>(() => {
 .tally-group {
   position: relative;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   gap: 2px;
 }
 
+/* Gedecktes Grau statt Volltonfarbe: die Striche sollen als Fortschrittsanzeige lesbar, aber nicht
+   kontrastreicher als der übrige Zeilentext wirken. */
 .tally-stroke {
   width: 2px;
   height: 14px;
-  background: var(--color-text);
+  background: var(--color-text-muted);
   border-radius: 1px;
 }
 
 /* Der 5. Strich der Gruppe: diagonal über die vorherigen 4, exakt wie eine handgeschriebene
-   Strichliste ("IIII" mit einem Querstrich). */
+   Strichliste ("IIII" mit einem Querstrich). Vertikal mittig zentriert (statt am oberen Rand
+   ansetzend) und mit flacherem Winkel, damit der Querstrich wirklich alle 4 Striche mittig kreuzt. */
 .tally-diagonal {
   position: absolute;
   left: -2px;
-  top: 5px;
+  top: 50%;
   width: 20px;
   height: 2px;
-  background: var(--color-text);
-  transform: rotate(-32deg);
-  transform-origin: left center;
+  background: var(--color-text-muted);
+  transform: translateY(-50%) rotate(-22deg);
 }
 
 .tally-empty {
@@ -307,14 +313,35 @@ const tallyGroups = computed<number[]>(() => {
   font-variant-numeric: tabular-nums;
 }
 
-.tally-undo {
+.tally-plus {
+  font-weight: 700;
+  color: var(--color-primary);
+  line-height: 1;
+}
+
+.tally-minus {
   flex-shrink: 0;
   width: 24px;
   height: 24px;
   padding: 0;
-  border-radius: var(--radius-sm);
-  font-size: 0.9rem;
+  border: 2px solid var(--color-border);
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-weight: 700;
+  font-size: 1rem;
   line-height: 1;
+  cursor: pointer;
+}
+
+.tally-minus:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.tally-minus:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .row-actions {
