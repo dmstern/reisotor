@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { api } from '../api/client';
 import type { TravelItem, TravelPlace, TravelRole, User } from '../api/types';
 import { useTripStore } from '../stores/trip';
@@ -9,6 +9,7 @@ import { TRAVEL_ROLE_META, TRAVEL_ROLE_OPTIONS } from '../utils/travelRole';
 import { formatTravelDuration, travelDurationMinutes } from '../utils/travelDuration';
 import Modal from '../components/Modal.vue';
 import TravelDetailDialog from '../components/TravelDetailDialog.vue';
+import LocationPicker from '../components/LocationPicker.vue';
 import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
 
@@ -51,11 +52,33 @@ const emptyForm = () => ({
 const form = ref(emptyForm());
 const fromMapsLinkResolved = ref<boolean | null>(null);
 const toMapsLinkResolved = ref<boolean | null>(null);
+const manualFromPin = ref<{ lat: number; lng: number } | null>(null);
+const manualToPin = ref<{ lat: number; lng: number } | null>(null);
+const fromPickerOpen = ref(false);
+const toPickerOpen = ref(false);
+const fromLocationError = ref(false);
+const toLocationError = ref(false);
+// Bleibt gesetzt, solange nach dem Anlegen mindestens ein Standort nicht auflösbar ist – ein
+// erneuter Speicherversuch (manuell gesetzter Pin) muss dann den bereits angelegten Eintrag
+// AKTUALISIEREN statt einen zweiten anzulegen (gleiches Muster wie TripSwitcher.vue's pendingFixTripId).
+const pendingFixId = ref<number | null>(null);
 
 const editingItem = ref<TravelItem | null>(null);
 const editForm = ref(emptyForm());
 const editFromMapsLinkResolved = ref<boolean | null>(null);
 const editToMapsLinkResolved = ref<boolean | null>(null);
+const manualFromPinEdit = ref<{ lat: number; lng: number } | null>(null);
+const manualToPinEdit = ref<{ lat: number; lng: number } | null>(null);
+const fromPickerOpenEdit = ref(false);
+const toPickerOpenEdit = ref(false);
+const fromLocationErrorEdit = ref(false);
+const toLocationErrorEdit = ref(false);
+
+// Öffnet die Karte des manuellen Pickers direkt im Urlaubsgebiet statt einer leeren Weltkarte.
+const pickerCenter = computed(() => {
+  const t = tripStore.currentTrip;
+  return t?.lat != null && t?.lng != null ? { lat: t.lat, lng: t.lng } : undefined;
+});
 
 onMounted(async () => {
   const [itemsRes, placesRes, usersRes] = await Promise.all([
@@ -81,7 +104,11 @@ function placeLabel(id: number | null) {
   return p ? `${p.is_home ? '🏠' : '📍'} ${p.name}` : null;
 }
 
-function toBody(f: ReturnType<typeof emptyForm>) {
+function toBody(
+  f: ReturnType<typeof emptyForm>,
+  manualFrom?: { lat: number; lng: number } | null,
+  manualTo?: { lat: number; lng: number } | null,
+) {
   const fromParsed = parseLatLngFromMapsLink(f.from_maps_link);
   const toParsed = parseLatLngFromMapsLink(f.to_maps_link);
   return {
@@ -94,11 +121,11 @@ function toBody(f: ReturnType<typeof emptyForm>) {
     from_location: f.from_location || undefined,
     to_location: f.to_location || undefined,
     from_maps_link: f.from_maps_link || undefined,
-    from_lat: fromParsed?.lat,
-    from_lng: fromParsed?.lng,
+    from_lat: manualFrom?.lat ?? fromParsed?.lat,
+    from_lng: manualFrom?.lng ?? fromParsed?.lng,
     to_maps_link: f.to_maps_link || undefined,
-    to_lat: toParsed?.lat,
-    to_lng: toParsed?.lng,
+    to_lat: manualTo?.lat ?? toParsed?.lat,
+    to_lng: manualTo?.lng ?? toParsed?.lng,
     date: f.date || undefined,
     departure_time: f.departure_time || undefined,
     arrival_time: f.arrival_time || undefined,
@@ -131,17 +158,51 @@ function checkEditToMapsLink() {
 
 async function submit() {
   if (!form.value.title.trim()) return;
-  const created = await api.post<TravelItem>('/travel', toBody(form.value));
-  items.value.push(created);
+  const body = toBody(form.value, manualFromPin.value, manualToPin.value);
+  const created =
+    pendingFixId.value != null
+      ? await api.put<TravelItem>(`/travel/${pendingFixId.value}`, body)
+      : await api.post<TravelItem>('/travel', body);
+  const idx = items.value.findIndex((i) => i.id === created.id);
+  if (idx !== -1) items.value[idx] = created;
+  else items.value.push(created);
   drawers.touchLocations();
+  // Serverseitige Auflösung (backend/src/utils/mapsLink.ts) ebenfalls fehlgeschlagen, z. B. weil
+  // Google einen Maps-Kurzlink per Bot-Erkennung blockt – Dialog offen lassen, den betroffenen
+  // manuellen Picker (Abflug/Abfahrt und/oder Ankunft) automatisch aufklappen. Nur relevant, wenn
+  // die jeweilige Etappe überhaupt per Freitext-Link läuft (nicht bei gewähltem gespeicherten Ort).
+  const fromFailed = !form.value.from_place_id && !!body.from_maps_link && created.from_lat == null && !manualFromPin.value;
+  const toFailed = !form.value.to_place_id && !!body.to_maps_link && created.to_lat == null && !manualToPin.value;
+  if (fromFailed || toFailed) {
+    pendingFixId.value = created.id;
+    fromLocationError.value = fromFailed;
+    toLocationError.value = toFailed;
+    if (fromFailed) fromPickerOpen.value = true;
+    if (toFailed) toPickerOpen.value = true;
+    return;
+  }
   closeForm();
 }
+
+watch(manualFromPin, (pin) => {
+  if (pin && fromLocationError.value) submit();
+});
+watch(manualToPin, (pin) => {
+  if (pin && toLocationError.value) submit();
+});
 
 function closeForm() {
   showForm.value = false;
   form.value = emptyForm();
   fromMapsLinkResolved.value = null;
   toMapsLinkResolved.value = null;
+  manualFromPin.value = null;
+  manualToPin.value = null;
+  fromPickerOpen.value = false;
+  toPickerOpen.value = false;
+  fromLocationError.value = false;
+  toLocationError.value = false;
+  pendingFixId.value = null;
 }
 
 function startEdit(item: TravelItem) {
@@ -169,16 +230,42 @@ function startEdit(item: TravelItem) {
   };
   editFromMapsLinkResolved.value = null;
   editToMapsLinkResolved.value = null;
+  manualFromPinEdit.value = null;
+  manualToPinEdit.value = null;
+  fromPickerOpenEdit.value = false;
+  toPickerOpenEdit.value = false;
+  fromLocationErrorEdit.value = false;
+  toLocationErrorEdit.value = false;
 }
 
 async function submitEdit() {
   if (!editingItem.value || !editForm.value.title.trim()) return;
-  const updated = await api.put<TravelItem>(`/travel/${editingItem.value.id}`, toBody(editForm.value));
+  const body = toBody(editForm.value, manualFromPinEdit.value, manualToPinEdit.value);
+  const updated = await api.put<TravelItem>(`/travel/${editingItem.value.id}`, body);
   const idx = items.value.findIndex((i) => i.id === updated.id);
   if (idx !== -1) items.value[idx] = updated;
   drawers.touchLocations();
+  const fromFailed =
+    !editForm.value.from_place_id && !!body.from_maps_link && updated.from_lat == null && !manualFromPinEdit.value;
+  const toFailed = !editForm.value.to_place_id && !!body.to_maps_link && updated.to_lat == null && !manualToPinEdit.value;
+  if (fromFailed || toFailed) {
+    fromLocationErrorEdit.value = fromFailed;
+    toLocationErrorEdit.value = toFailed;
+    if (fromFailed) fromPickerOpenEdit.value = true;
+    if (toFailed) toPickerOpenEdit.value = true;
+    return;
+  }
+  fromLocationErrorEdit.value = false;
+  toLocationErrorEdit.value = false;
   editingItem.value = null;
 }
+
+watch(manualFromPinEdit, (pin) => {
+  if (pin && fromLocationErrorEdit.value) submitEdit();
+});
+watch(manualToPinEdit, (pin) => {
+  if (pin && toLocationErrorEdit.value) submitEdit();
+});
 
 async function remove(id: number) {
   await api.delete(`/travel/${id}`);
@@ -228,6 +315,13 @@ function createReturnLeg(item: TravelItem) {
   };
   fromMapsLinkResolved.value = null;
   toMapsLinkResolved.value = null;
+  manualFromPin.value = null;
+  manualToPin.value = null;
+  fromPickerOpen.value = false;
+  toPickerOpen.value = false;
+  fromLocationError.value = false;
+  toLocationError.value = false;
+  pendingFixId.value = null;
   showForm.value = true;
 }
 
@@ -417,6 +511,24 @@ function showDetailToOnMap() {
       <p v-if="fromMapsLinkResolved === false || toMapsLinkResolved === false" class="hint">
         Ein Standort konnte nicht automatisch erkannt werden.
       </p>
+      <template v-if="!form.from_place_id">
+        <p v-if="fromLocationError" class="hint error">
+          ⚠️ Der Abflug/Abfahrt-Standort konnte auch automatisch nicht ermittelt werden. Bitte tippe unten auf die Karte, um ihn manuell zu setzen.
+        </p>
+        <button type="button" class="secondary picker-toggle" @click="fromPickerOpen = !fromPickerOpen">
+          📍 Abflug/Abfahrt manuell setzen {{ fromPickerOpen ? '▲' : '▼' }}
+        </button>
+        <LocationPicker v-if="fromPickerOpen" v-model="manualFromPin" :center="pickerCenter" />
+      </template>
+      <template v-if="!form.to_place_id">
+        <p v-if="toLocationError" class="hint error">
+          ⚠️ Der Ankunft-Standort konnte auch automatisch nicht ermittelt werden. Bitte tippe unten auf die Karte, um ihn manuell zu setzen.
+        </p>
+        <button type="button" class="secondary picker-toggle" @click="toPickerOpen = !toPickerOpen">
+          📍 Ankunft manuell setzen {{ toPickerOpen ? '▲' : '▼' }}
+        </button>
+        <LocationPicker v-if="toPickerOpen" v-model="manualToPin" :center="pickerCenter" />
+      </template>
       <label>
         Datum
         <input v-model="form.date" type="date" />
@@ -584,6 +696,24 @@ function showDetailToOnMap() {
         <p v-if="editFromMapsLinkResolved === false || editToMapsLinkResolved === false" class="hint">
           Ein Standort konnte nicht automatisch erkannt werden.
         </p>
+        <template v-if="!editForm.from_place_id">
+          <p v-if="fromLocationErrorEdit" class="hint error">
+            ⚠️ Der Abflug/Abfahrt-Standort konnte auch automatisch nicht ermittelt werden. Bitte tippe unten auf die Karte, um ihn manuell zu setzen.
+          </p>
+          <button type="button" class="secondary picker-toggle" @click="fromPickerOpenEdit = !fromPickerOpenEdit">
+            📍 Abflug/Abfahrt manuell setzen {{ fromPickerOpenEdit ? '▲' : '▼' }}
+          </button>
+          <LocationPicker v-if="fromPickerOpenEdit" v-model="manualFromPinEdit" :center="pickerCenter" />
+        </template>
+        <template v-if="!editForm.to_place_id">
+          <p v-if="toLocationErrorEdit" class="hint error">
+            ⚠️ Der Ankunft-Standort konnte auch automatisch nicht ermittelt werden. Bitte tippe unten auf die Karte, um ihn manuell zu setzen.
+          </p>
+          <button type="button" class="secondary picker-toggle" @click="toPickerOpenEdit = !toPickerOpenEdit">
+            📍 Ankunft manuell setzen {{ toPickerOpenEdit ? '▲' : '▼' }}
+          </button>
+          <LocationPicker v-if="toPickerOpenEdit" v-model="manualToPinEdit" :center="pickerCenter" />
+        </template>
         <label>
           Datum
           <input v-model="editForm.date" type="date" />
@@ -771,6 +901,16 @@ label {
 
 .hint.success {
   color: var(--color-success);
+}
+
+.hint.error {
+  color: var(--color-danger);
+}
+
+.picker-toggle {
+  align-self: flex-start;
+  padding: 6px 12px;
+  font-size: 0.85rem;
 }
 
 .cards {
