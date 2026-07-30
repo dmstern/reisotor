@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { api } from '../api/client';
 import type { Accommodation, User } from '../api/types';
 import { useTripStore } from '../stores/trip';
@@ -7,6 +7,7 @@ import { useDrawersStore } from '../stores/drawers';
 import { parseLatLngFromMapsLink } from '../utils/googleMaps';
 import Modal from '../components/Modal.vue';
 import AccommodationDetailDialog from '../components/AccommodationDetailDialog.vue';
+import LocationPicker from '../components/LocationPicker.vue';
 import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
 
@@ -19,6 +20,22 @@ const loading = ref(true);
 const showForm = ref(false);
 const mapsLinkResolved = ref<boolean | null>(null);
 const editMapsLinkResolved = ref<boolean | null>(null);
+const manualPin = ref<{ lat: number; lng: number } | null>(null);
+const pickerOpen = ref(false);
+const locationError = ref(false);
+// Bleibt gesetzt, solange nach dem Anlegen die Standort-Auflösung fehlschlägt – ein erneuter
+// Speicherversuch (manuell gesetzter Pin) muss dann die bereits angelegte Unterkunft AKTUALISIEREN
+// statt eine zweite anzulegen (gleiches Muster wie TripSwitcher.vue's pendingFixTripId).
+const pendingFixId = ref<number | null>(null);
+const manualPinEdit = ref<{ lat: number; lng: number } | null>(null);
+const pickerOpenEdit = ref(false);
+const locationErrorEdit = ref(false);
+
+// Öffnet die Karte des manuellen Pickers direkt im Urlaubsgebiet statt einer leeren Weltkarte.
+const pickerCenter = computed(() => {
+  const t = tripStore.currentTrip;
+  return t?.lat != null && t?.lng != null ? { lat: t.lat, lng: t.lng } : undefined;
+});
 
 const emptyForm = () => ({
   name: '',
@@ -64,7 +81,7 @@ function checkEditMapsLink() {
     : null;
 }
 
-function toBody(f: ReturnType<typeof emptyForm>) {
+function toBody(f: ReturnType<typeof emptyForm>, manual?: { lat: number; lng: number } | null) {
   const parsed = parseLatLngFromMapsLink(f.maps_link);
   return {
     trip_id: tripId,
@@ -77,8 +94,8 @@ function toBody(f: ReturnType<typeof emptyForm>) {
     checkout: f.checkout || undefined,
     contact: f.contact || undefined,
     note: f.note || undefined,
-    lat: parsed?.lat,
-    lng: parsed?.lng,
+    lat: manual?.lat ?? parsed?.lat,
+    lng: manual?.lng ?? parsed?.lng,
     amount: f.amount ? Number(f.amount) : undefined,
     paid_by_user_id: f.paid_by_user_id ? Number(f.paid_by_user_id) : undefined,
   };
@@ -86,18 +103,39 @@ function toBody(f: ReturnType<typeof emptyForm>) {
 
 async function submit() {
   if (!form.value.name.trim()) return;
-  const created = await api.post<Accommodation>('/accommodation', toBody(form.value));
-  accommodations.value.push(created);
+  const body = toBody(form.value, manualPin.value);
+  const created =
+    pendingFixId.value != null
+      ? await api.put<Accommodation>(`/accommodation/${pendingFixId.value}`, body)
+      : await api.post<Accommodation>('/accommodation', body);
+  const idx = accommodations.value.findIndex((a) => a.id === created.id);
+  if (idx !== -1) accommodations.value[idx] = created;
+  else accommodations.value.push(created);
   drawers.touchLocations();
-  form.value = emptyForm();
-  mapsLinkResolved.value = null;
-  showForm.value = false;
+  // Serverseitige Auflösung (backend/src/utils/mapsLink.ts) ebenfalls fehlgeschlagen, z. B. weil
+  // Google einen Maps-Kurzlink per Bot-Erkennung blockt – Dialog offen lassen, manuellen Picker
+  // automatisch aufklappen (LocationPicker.vue).
+  if (body.maps_link && created.lat == null && !manualPin.value) {
+    pendingFixId.value = created.id;
+    locationError.value = true;
+    pickerOpen.value = true;
+    return;
+  }
+  closeForm();
 }
+
+watch(manualPin, (pin) => {
+  if (pin && locationError.value) submit();
+});
 
 function closeForm() {
   showForm.value = false;
   form.value = emptyForm();
   mapsLinkResolved.value = null;
+  manualPin.value = null;
+  pickerOpen.value = false;
+  locationError.value = false;
+  pendingFixId.value = null;
 }
 
 function startEdit(acc: Accommodation) {
@@ -116,16 +154,30 @@ function startEdit(acc: Accommodation) {
     paid_by_user_id: acc.paid_by_user_id != null ? String(acc.paid_by_user_id) : '',
   };
   editMapsLinkResolved.value = null;
+  manualPinEdit.value = null;
+  pickerOpenEdit.value = false;
+  locationErrorEdit.value = false;
 }
 
 async function submitEdit() {
   if (!editingItem.value || !editForm.value.name.trim()) return;
-  const updated = await api.put<Accommodation>(`/accommodation/${editingItem.value.id}`, toBody(editForm.value));
+  const body = toBody(editForm.value, manualPinEdit.value);
+  const updated = await api.put<Accommodation>(`/accommodation/${editingItem.value.id}`, body);
   const idx = accommodations.value.findIndex((a) => a.id === updated.id);
   if (idx !== -1) accommodations.value[idx] = updated;
   drawers.touchLocations();
+  if (body.maps_link && updated.lat == null && !manualPinEdit.value) {
+    locationErrorEdit.value = true;
+    pickerOpenEdit.value = true;
+    return;
+  }
+  locationErrorEdit.value = false;
   editingItem.value = null;
 }
+
+watch(manualPinEdit, (pin) => {
+  if (pin && locationErrorEdit.value) submitEdit();
+});
 
 async function remove(id: number) {
   await api.delete(`/accommodation/${id}`);
@@ -208,6 +260,13 @@ function showDetailOnMap() {
       </label>
       <p v-if="mapsLinkResolved === true" class="hint success">📍 Standort erkannt – erscheint auf der Karte</p>
       <p v-if="mapsLinkResolved === false" class="hint">Standort konnte nicht automatisch erkannt werden.</p>
+      <p v-if="locationError" class="hint error">
+        ⚠️ Der Standort konnte auch automatisch nicht ermittelt werden. Bitte tippe unten auf die Karte, um ihn manuell zu setzen.
+      </p>
+      <button type="button" class="secondary picker-toggle" @click="pickerOpen = !pickerOpen">
+        📍 Standort manuell setzen {{ pickerOpen ? '▲' : '▼' }}
+      </button>
+      <LocationPicker v-if="pickerOpen" v-model="manualPin" :center="pickerCenter" />
       <label>
         Kontakt
         <input v-model="form.contact" type="text" placeholder="Telefon, E-Mail oder Text – wird automatisch erkannt" />
@@ -309,6 +368,13 @@ function showDetailOnMap() {
         </label>
         <p v-if="editMapsLinkResolved === true" class="hint success">📍 Standort erkannt</p>
         <p v-if="editMapsLinkResolved === false" class="hint">Standort konnte nicht automatisch erkannt werden.</p>
+        <p v-if="locationErrorEdit" class="hint error">
+          ⚠️ Der Standort konnte auch automatisch nicht ermittelt werden. Bitte tippe unten auf die Karte, um ihn manuell zu setzen.
+        </p>
+        <button type="button" class="secondary picker-toggle" @click="pickerOpenEdit = !pickerOpenEdit">
+          📍 Standort manuell setzen {{ pickerOpenEdit ? '▲' : '▼' }}
+        </button>
+        <LocationPicker v-if="pickerOpenEdit" v-model="manualPinEdit" :center="pickerCenter" />
         <label>
           Kontakt
           <input v-model="editForm.contact" type="text" placeholder="Telefon, E-Mail oder Text – wird automatisch erkannt" />
@@ -388,6 +454,16 @@ label {
 
 .hint.success {
   color: var(--color-success);
+}
+
+.hint.error {
+  color: var(--color-danger);
+}
+
+.picker-toggle {
+  align-self: flex-start;
+  padding: 6px 12px;
+  font-size: 0.85rem;
 }
 
 .syntax-hint {
