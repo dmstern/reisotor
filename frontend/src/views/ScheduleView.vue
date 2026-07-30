@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import { api } from '../api/client';
 import type { Accommodation, CalendarEntry, ScheduleItem, TodoItem, TravelItem, TravelPlace } from '../api/types';
 import { useTripStore } from '../stores/trip';
@@ -8,8 +9,9 @@ import { useSpotsStore } from '../stores/spots';
 import { useDrawersStore } from '../stores/drawers';
 import CalendarWeek from '../components/CalendarWeek.vue';
 import Modal from '../components/Modal.vue';
+import DetailModal from '../components/DetailModal.vue';
+import MapsAppPicker from '../components/MapsAppPicker.vue';
 import Combobox from '../components/Combobox.vue';
-import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
 import { SCHEDULE_CATEGORY_META } from '../utils/scheduleCategory';
 import { parseLatLngFromMapsLink } from '../utils/googleMaps';
@@ -18,6 +20,7 @@ import { calendarEventFromEntry, googleCalendarHref, outlookCalendarHref, trigge
 import { fetchWeatherForecast, weatherCodeMeta, type DailyWeather } from '../utils/weather';
 import { collectWeatherLocations, dayWeatherEntries, type DayWeatherEntry } from '../utils/dayWeather';
 
+const router = useRouter();
 const tripStore = useTripStore();
 const trip = computed(() => tripStore.currentTrip);
 const excursionsStore = useExcursionsStore();
@@ -41,6 +44,7 @@ const newLocation = ref('');
 const newMapsLink = ref('');
 
 const editingItem = ref<ScheduleItem | null>(null);
+const viewingItem = ref<ScheduleItem | null>(null);
 const editForm = ref({ time: '', title: '', note: '', endDate: '', location: '', mapsLink: '' });
 
 // Wählt man einen bekannten Ort aus der Vorschlagsliste (Combobox, exakter Namenstreffer), wird
@@ -406,12 +410,36 @@ function jumpToTrip() {
   tripStore.requestEditTrip();
 }
 
+function openEntry(entry: CalendarEntry) {
+  if (entry.kind === 'trip') jumpToTrip();
+  else if (entry.kind === 'todo') router.push('/todo');
+  else if (entry.kind === 'travel') router.push('/travel');
+  else if (entry.kind === 'excursion') drawers.excursionsOpen = true;
+  else if (entry.kind === 'schedule') viewingItem.value = entry.scheduleItem;
+}
+
+function editViewingItem() {
+  if (!viewingItem.value) return;
+  startEdit(viewingItem.value);
+  viewingItem.value = null;
+}
+
+async function deleteViewingItem() {
+  if (!viewingItem.value) return;
+  await removeItem(viewingItem.value.id);
+  viewingItem.value = null;
+}
+
 function formatDay(date: string) {
   return new Date(date).toLocaleDateString('de-DE', {
     weekday: 'long',
     day: '2-digit',
     month: 'long',
   });
+}
+
+function formatDate(date: string) {
+  return new Date(date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 </script>
 
@@ -498,8 +526,9 @@ function formatDay(date: string) {
         <li
           v-for="entry in dayEntries"
           :key="entry.key"
-          class="item"
+          class="item clickable"
           :style="{ borderLeftColor: SCHEDULE_CATEGORY_META[entry.category].color }"
+          @click="openEntry(entry)"
         >
           <div>
             <span class="category-icon" :title="SCHEDULE_CATEGORY_META[entry.category].label">{{
@@ -517,13 +546,13 @@ function formatDay(date: string) {
                 class="secondary calendar-btn"
                 title="Zum eigenen Kalender hinzufügen"
                 aria-label="Zum eigenen Kalender hinzufügen"
-                @click="toggleCalendarPicker(entry.key)"
+                @click.stop="toggleCalendarPicker(entry.key)"
               >
                 📅
               </button>
               <template v-if="calendarPickerKey === entry.key">
-                <div class="picker-backdrop" @click="calendarPickerKey = null"></div>
-                <div class="picker-menu">
+                <div class="picker-backdrop" @click.stop="calendarPickerKey = null"></div>
+                <div class="picker-menu" @click.stop>
                   <button type="button" @click="downloadIcsForEntry(entry)">🍎 Apple/iPhone</button>
                   <a
                     :href="googleCalendarHref(calendarEventFromEntry(entry))"
@@ -546,31 +575,18 @@ function formatDay(date: string) {
               </template>
             </div>
             <!-- Architekturregel: Fremdobjekte (Urlaub-Stammdaten, ToDos, Ausflüge, Reise-Einträge)
-                 sind hier nur lesend/verknüpfend darstellbar – Bearbeitung passiert in der Ursprungssicht. -->
-            <template v-if="entry.kind === 'trip'">
-              <button type="button" class="card-action-btn" @click="jumpToTrip">Zum Urlaub</button>
-            </template>
-            <template v-else-if="entry.kind === 'todo'">
-              <router-link to="/todo" class="card-action-btn">Zum ToDo</router-link>
-            </template>
-            <template v-else-if="entry.kind === 'travel'">
-              <router-link to="/travel" class="card-action-btn">Zur Reise</router-link>
-            </template>
-            <template v-else-if="entry.kind === 'excursion'">
-              <button type="button" class="card-action-btn" @click="drawers.excursionsOpen = true">Zur Tour</button>
+                 sind hier nur lesend/verknüpfend darstellbar – Bearbeitung passiert in der Ursprungssicht.
+                 Klick auf die Karte öffnet das jeweilige Element (siehe openEntry). -->
+            <template v-if="entry.kind === 'excursion'">
               <button
                 type="button"
                 class="secondary unplan-btn"
                 title="Aus dem Kalender nehmen (zurück zu 'In Planung')"
                 aria-label="Aus dem Kalender nehmen"
-                @click="unplanExcursion(entry.ideaId!)"
+                @click.stop="unplanExcursion(entry.ideaId!)"
               >
                 ✕
               </button>
-            </template>
-            <template v-else>
-              <EditButton small @click="startEdit(entry.scheduleItem!)" />
-              <DeleteButton small @click="removeItem(entry.scheduleItem!.id)" />
             </template>
           </div>
         </li>
@@ -609,6 +625,35 @@ function formatDay(date: string) {
         <button type="submit">Speichern</button>
       </form>
     </Modal>
+
+    <DetailModal
+      :model-value="viewingItem !== null"
+      @update:model-value="(v) => !v && (viewingItem = null)"
+      :title="viewingItem?.title ?? ''"
+      :placeholder-icon="viewingItem ? SCHEDULE_CATEGORY_META[viewingItem.category].icon : undefined"
+      @edit="editViewingItem"
+    >
+      <p v-if="viewingItem?.time" class="detail-row">
+        <span class="detail-label">Zeit</span>🕐 {{ viewingItem.time }}
+      </p>
+      <p v-if="viewingItem?.end_date && viewingItem.end_date !== viewingItem.date" class="detail-row">
+        <span class="detail-label">Zeitraum</span>🗓️ {{ formatDate(viewingItem.date) }} – {{ formatDate(viewingItem.end_date) }}
+      </p>
+      <p v-if="viewingItem?.location" class="detail-row">
+        <span class="detail-label">Ort</span>📍 {{ viewingItem.location }}
+      </p>
+      <div v-if="viewingItem?.note" class="detail-row note">{{ viewingItem.note }}</div>
+      <div class="detail-actions">
+        <MapsAppPicker
+          v-if="viewingItem?.lat != null && viewingItem?.lng != null"
+          :lat="viewingItem.lat"
+          :lng="viewingItem.lng"
+          :title="viewingItem.title"
+          :maps-link="viewingItem.maps_link"
+        />
+        <DeleteButton small @click="deleteViewingItem" />
+      </div>
+    </DetailModal>
   </div>
 </template>
 
@@ -762,6 +807,14 @@ function formatDay(date: string) {
   border: 1px solid var(--color-border);
   border-left: 3px solid transparent;
   border-radius: var(--radius-sm);
+}
+
+.item.clickable {
+  cursor: pointer;
+}
+
+.item.clickable:hover {
+  background: var(--color-hover);
 }
 
 .category-icon {
