@@ -852,12 +852,23 @@ watch(
     </div>
 
     <div class="card focus-spot-list" v-if="focusedExcursion && focusedExcursionStations.length">
-      <button type="button" class="focus-spot-list-header" @click="openExcursionDetail">
-        <h3 class="focus-spot-list-title">🎒 {{ focusedExcursion.title }}</h3>
-        <span class="focus-spot-list-status" :class="{ planned: focusedExcursion.date }">
-          {{ focusedExcursion.date ? `📅 ${formatDate(focusedExcursion.date)}` : 'In Planung' }}
-        </span>
-      </button>
+      <div class="focus-spot-list-header">
+        <button type="button" class="focus-spot-list-title-btn" @click="openExcursionDetail">
+          <h3 class="focus-spot-list-title">🎒 {{ focusedExcursion.title }}</h3>
+          <span class="focus-spot-list-status" :class="{ planned: focusedExcursion.date }">
+            {{ focusedExcursion.date ? `📅 ${formatDate(focusedExcursion.date)}` : 'In Planung' }}
+          </span>
+        </button>
+        <button
+          type="button"
+          class="focus-spot-list-close"
+          aria-label="Tour-Fokus schließen"
+          title="Tour-Fokus schließen"
+          @click="drawers.mapFocusExcursionId = null"
+        >
+          ✕
+        </button>
+      </div>
       <p class="focus-spot-list-subtitle">Stationen</p>
       <div class="station-timeline">
         <template v-for="(station, index) in focusedExcursionStations" :key="index">
@@ -871,7 +882,18 @@ watch(
     </div>
 
     <div class="card focus-spot-list" v-else-if="drawers.mapFocusDate && focusedDateStations.length">
-      <h3 class="focus-spot-list-title">🗓️ {{ formatDate(drawers.mapFocusDate) }}</h3>
+      <div class="focus-spot-list-header">
+        <h3 class="focus-spot-list-title">🗓️ {{ formatDate(drawers.mapFocusDate) }}</h3>
+        <button
+          type="button"
+          class="focus-spot-list-close"
+          aria-label="Tages-Fokus schließen"
+          title="Tages-Fokus schließen"
+          @click="drawers.mapFocusDate = null"
+        >
+          ✕
+        </button>
+      </div>
       <p class="focus-spot-list-subtitle">Stationen</p>
       <div class="station-timeline">
         <template v-for="(station, index) in focusedDateStations" :key="index">
@@ -1132,25 +1154,58 @@ watch(
   gap: 2px;
 }
 
-/* Klickbarer Titel-Bereich: öffnet den Ausflug-Detail-Dialog (ExcursionDetailDialog.vue) – dieselbe
-   Komponente wie in der Ausflüge-Schublade, hier per eigenem Likes-/Kommentar-Fetch gefüttert. */
+/* Kopfzeile: klickbarer Titel-Bereich links (öffnet bei einem Ausflug-Fokus den Detail-Dialog,
+   ExcursionDetailDialog.vue – dieselbe Komponente wie in der Ausflüge-Schublade, hier per eigenem
+   Likes-/Kommentar-Fetch gefüttert), Schließen-Button rechts. Vorher lag der Schließen-Button
+   (ursprünglich .focus-banner weiter oben) exakt an derselben Position wie diese ganze Karte
+   (beide position:absolute; top/left:10px) – die Karte deckte ihn dadurch komplett zu. Jetzt fest
+   in der Kopfzeile verankert, damit er nicht mehr verdeckt werden kann. */
 .focus-spot-list-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
+}
+
+.focus-spot-list-title-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  flex: 1;
   background: none;
   border: none;
   padding: 4px;
-  margin: -4px -4px 0;
+  margin: -4px 0 -4px -4px;
   border-radius: var(--radius-sm);
   cursor: pointer;
   text-align: left;
-  width: 100%;
 }
 
-.focus-spot-list-header:hover {
+.focus-spot-list-title-btn:hover {
   background: var(--color-hover);
+}
+
+.focus-spot-list-close {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.focus-spot-list-close:hover {
+  color: var(--color-primary-dark);
+  border-color: var(--color-primary);
 }
 
 .focus-spot-list-title {
