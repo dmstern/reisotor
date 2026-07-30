@@ -11,6 +11,7 @@ import DerivedLocationCard from '../components/DerivedLocationCard.vue';
 import TripMap from '../components/TripMap.vue';
 import Modal from '../components/Modal.vue';
 import Combobox from '../components/Combobox.vue';
+import LocationPicker from '../components/LocationPicker.vue';
 import { parseLatLngFromMapsLink, tilePreviewUrl } from '../utils/googleMaps';
 import { spotCategoryMeta, SPOT_CATEGORY_SUGGESTIONS } from '../utils/spotCategory';
 import type { DerivedLocation } from '../utils/derivedLocation';
@@ -142,10 +143,27 @@ const showSpotForm = ref(false);
 const emptySpotForm = () => ({ title: '', image_url: '', maps_link: '', note: '', category: '' });
 const spotForm = ref(emptySpotForm());
 const spotMapsLinkResolved = ref<boolean | null>(null);
+const spotManualPin = ref<{ lat: number; lng: number } | null>(null);
+const spotPickerOpen = ref(false);
+const spotLocationError = ref(false);
+// Bleibt gesetzt, solange nach dem Anlegen die Standort-Auflösung fehlschlägt – ein erneuter
+// Speicherversuch (manuell gesetzter Pin) muss dann den bereits angelegten Spot AKTUALISIEREN
+// statt einen zweiten anzulegen (gleiches Muster wie TripSwitcher.vue's pendingFixTripId).
+const spotPendingFixId = ref<number | null>(null);
 
 const editingSpot = ref<Spot | null>(null);
 const editSpotForm = ref(emptySpotForm());
 const editSpotMapsLinkResolved = ref<boolean | null>(null);
+const editSpotManualPin = ref<{ lat: number; lng: number } | null>(null);
+const editSpotPickerOpen = ref(false);
+const editSpotLocationError = ref(false);
+
+// Öffnet die Karte des manuellen Pickers direkt im Urlaubsgebiet statt einer leeren Weltkarte,
+// sobald die Trip-Koordinaten bekannt sind.
+const spotPickerCenter = computed(() => {
+  const t = tripStore.currentTrip;
+  return t?.lat != null && t?.lng != null ? { lat: t.lat, lng: t.lng } : undefined;
+});
 
 // Live-Vorschau im Anlege-/Bearbeiten-Dialog (Bild-Banner, wie bei der Card): eigenes Bild, sonst
 // Kachel-Vorschau der Koordinate, sofern der Maps-Link clientseitig parsbar ist (bei Kurzlinks
@@ -416,7 +434,7 @@ function checkEditSpotMapsLink() {
     : null;
 }
 
-function spotToBody(f: ReturnType<typeof emptySpotForm>) {
+function spotToBody(f: ReturnType<typeof emptySpotForm>, manual?: { lat: number; lng: number } | null) {
   const parsed = parseLatLngFromMapsLink(f.maps_link);
   return {
     trip_id: tripId,
@@ -425,8 +443,8 @@ function spotToBody(f: ReturnType<typeof emptySpotForm>) {
     category: f.category || undefined,
     note: f.note || undefined,
     maps_link: f.maps_link || undefined,
-    lat: parsed?.lat,
-    lng: parsed?.lng,
+    lat: manual?.lat ?? parsed?.lat,
+    lng: manual?.lng ?? parsed?.lng,
   };
 }
 
@@ -434,14 +452,35 @@ function closeSpotForm() {
   showSpotForm.value = false;
   spotForm.value = emptySpotForm();
   spotMapsLinkResolved.value = null;
+  spotManualPin.value = null;
+  spotPickerOpen.value = false;
+  spotLocationError.value = false;
+  spotPendingFixId.value = null;
 }
 
 async function addSpot() {
   if (!spotForm.value.title.trim()) return;
-  await spotsStore.create(spotToBody(spotForm.value));
+  const body = spotToBody(spotForm.value, spotManualPin.value);
+  const result =
+    spotPendingFixId.value != null
+      ? await spotsStore.update(spotPendingFixId.value, body)
+      : await spotsStore.create(body);
   drawers.touchLocations();
+  // Serverseitige Auflösung (backend/src/utils/mapsLink.ts) ebenfalls fehlgeschlagen, z. B. weil
+  // Google einen Maps-Kurzlink per Bot-Erkennung blockt – Dialog offen lassen, manuellen Picker
+  // automatisch aufklappen (LocationPicker.vue).
+  if (body.maps_link && result.lat == null && !spotManualPin.value) {
+    spotPendingFixId.value = result.id;
+    spotLocationError.value = true;
+    spotPickerOpen.value = true;
+    return;
+  }
   closeSpotForm();
 }
+
+watch(spotManualPin, (pin) => {
+  if (pin && spotLocationError.value) addSpot();
+});
 
 function startEditSpot(spot: Spot) {
   editingSpot.value = spot;
@@ -453,14 +492,28 @@ function startEditSpot(spot: Spot) {
     category: spot.category ?? '',
   };
   editSpotMapsLinkResolved.value = null;
+  editSpotManualPin.value = null;
+  editSpotPickerOpen.value = false;
+  editSpotLocationError.value = false;
 }
 
 async function submitEditSpot() {
   if (!editingSpot.value || !editSpotForm.value.title.trim()) return;
-  await spotsStore.update(editingSpot.value.id, spotToBody(editSpotForm.value));
+  const body = spotToBody(editSpotForm.value, editSpotManualPin.value);
+  const updated = await spotsStore.update(editingSpot.value.id, body);
   drawers.touchLocations();
+  if (body.maps_link && updated.lat == null && !editSpotManualPin.value) {
+    editSpotLocationError.value = true;
+    editSpotPickerOpen.value = true;
+    return;
+  }
+  editSpotLocationError.value = false;
   editingSpot.value = null;
 }
+
+watch(editSpotManualPin, (pin) => {
+  if (pin && editSpotLocationError.value) submitEditSpot();
+});
 
 async function removeSpot(id: number) {
   await spotsStore.remove(id);
@@ -595,6 +648,13 @@ function showSpotOnMap(spot: Spot) {
           <p v-if="spotMapsLinkResolved === false" class="hint">
             Standort wird beim Speichern serverseitig aufgelöst (auch Kurzlinks funktionieren).
           </p>
+          <p v-if="spotLocationError" class="hint error">
+            ⚠️ Der Standort konnte auch automatisch nicht ermittelt werden. Bitte tippe unten auf die Karte, um ihn manuell zu setzen.
+          </p>
+          <button type="button" class="secondary picker-toggle" @click="spotPickerOpen = !spotPickerOpen">
+            📍 Standort manuell setzen {{ spotPickerOpen ? '▲' : '▼' }}
+          </button>
+          <LocationPicker v-if="spotPickerOpen" v-model="spotManualPin" :center="spotPickerCenter" />
           <textarea v-model="spotForm.note" placeholder="Notiz (optional)" rows="3"></textarea>
           <button type="submit">Speichern</button>
         </form>
@@ -664,6 +724,13 @@ function showSpotOnMap(spot: Spot) {
           <p v-if="editSpotMapsLinkResolved === false" class="hint">
             Standort wird beim Speichern serverseitig aufgelöst (auch Kurzlinks funktionieren).
           </p>
+          <p v-if="editSpotLocationError" class="hint error">
+            ⚠️ Der Standort konnte auch automatisch nicht ermittelt werden. Bitte tippe unten auf die Karte, um ihn manuell zu setzen.
+          </p>
+          <button type="button" class="secondary picker-toggle" @click="editSpotPickerOpen = !editSpotPickerOpen">
+            📍 Standort manuell setzen {{ editSpotPickerOpen ? '▲' : '▼' }}
+          </button>
+          <LocationPicker v-if="editSpotPickerOpen" v-model="editSpotManualPin" :center="spotPickerCenter" />
           <textarea v-model="editSpotForm.note" placeholder="Notiz (optional)" rows="3"></textarea>
           <button type="submit">Speichern</button>
         </form>
@@ -1018,6 +1085,16 @@ function showSpotOnMap(spot: Spot) {
 
 .hint.success {
   color: var(--color-success);
+}
+
+.hint.error {
+  color: var(--color-danger);
+}
+
+.picker-toggle {
+  align-self: flex-start;
+  padding: 6px 12px;
+  font-size: 0.85rem;
 }
 
 .edit-form {
