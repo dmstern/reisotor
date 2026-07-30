@@ -124,6 +124,10 @@ export const useDrawersStore = defineStore('drawers', () => {
     mapFocusExcursionId.value = excursionId;
     mapFocusKey.value = null;
     mapFocusDate.value = null;
+    // "Auf Karte anzeigen" wird nur aus der Touren-Schublade selbst aufgerufen (ExcursionsDrawer.vue)
+    // – die Schublade danach offen zu lassen, würde die gerade fokussierte Karte (v. a. mobil, wo sie
+    // vollflächig deckt) sofort wieder verdecken.
+    excursionsOpen.value = false;
     ensureMapRoute();
   }
 
