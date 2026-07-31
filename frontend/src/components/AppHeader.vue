@@ -105,6 +105,15 @@ const isNonProd = window.location.hostname !== 'reise.ruebenherz.de';
   font-size: 1.1rem;
 }
 
+/* Unter 800px (derselbe Mobil/Desktop-Umbruch wie NavBar.vue/App.vue) reicht der Platz zwischen
+   Logo, TripSwitcher und den Buttons rechts nicht mehr für den Schriftzug – er würde sich mit dem
+   TripSwitcher überlagern. Logo (und ein evtl. DEV-Badge) bleiben als kompakte Marke stehen. */
+@media (max-width: 799px) {
+  .wordmark {
+    display: none;
+  }
+}
+
 .theme-toggle {
   width: 36px;
   height: 36px;
