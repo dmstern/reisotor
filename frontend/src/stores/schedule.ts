@@ -9,6 +9,7 @@ export interface ScheduleFormData {
   date: string;
   end_date?: string | null;
   time?: string;
+  end_time?: string;
   title: string;
   note?: string;
   location?: string;

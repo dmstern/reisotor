@@ -10,8 +10,12 @@ export interface CalendarEventInput {
   date: string;
   /** YYYY-MM-DD, inklusive (nur bei mehrtägigen/ganztägigen Terminen relevant); Default: date. */
   endDate?: string | null;
-  /** HH:MM – gesetzt: Termin mit Uhrzeit (Default-Dauer 1h), sonst ganztägig über date..endDate. */
+  /** HH:MM – gesetzt: Termin mit Uhrzeit (Default-Dauer 1h sofern kein endTime gesetzt ist), sonst
+   *  ganztägig über date..endDate. */
   time?: string | null;
+  /** HH:MM – optionales explizites Ende der Uhrzeit (statt der Default-Dauer), nur relevant falls
+   *  time gesetzt ist. */
+  endTime?: string | null;
 }
 
 export function calendarEventFromEntry(entry: CalendarEntry): CalendarEventInput {
@@ -22,6 +26,7 @@ export function calendarEventFromEntry(entry: CalendarEntry): CalendarEventInput
     date: entry.date,
     endDate: entry.endDate,
     time: entry.time,
+    endTime: entry.endTime,
   };
 }
 
@@ -49,8 +54,12 @@ function dateTimeStamp(dateIso: string, time: string): string {
   return `${dateStamp(dateIso)}T${h.padStart(2, '0')}${m.padStart(2, '0')}00`;
 }
 
-function endDateTime(date: string, time: string): Date {
+// Nutzt die explizit eingegebene Enduhrzeit, falls vorhanden, sonst die Default-Dauer nach dem
+// Start – analog zum ganztägigen Fall (date..endDate) gilt hier keine Unterstützung für ein Ende an
+// einem anderen Tag als dem Start.
+function endDateTime(date: string, time: string, endTime?: string | null): Date {
   const start = new Date(`${date}T${time}:00`);
+  if (endTime) return new Date(`${date}T${endTime}:00`);
   return new Date(start.getTime() + DEFAULT_DURATION_MINUTES * 60000);
 }
 
@@ -69,7 +78,7 @@ function icsContent(event: CalendarEventInput): string {
   let dtend: string;
   if (event.time) {
     dtstart = `DTSTART:${dateTimeStamp(event.date, event.time)}`;
-    const end = endDateTime(event.date, event.time);
+    const end = endDateTime(event.date, event.time, event.endTime);
     dtend = `DTEND:${end.getFullYear()}${pad(end.getMonth() + 1)}${pad(end.getDate())}T${pad(end.getHours())}${pad(
       end.getMinutes(),
     )}${pad(end.getSeconds())}`;
@@ -118,7 +127,7 @@ export function googleCalendarHref(event: CalendarEventInput): string {
   let dates: string;
   if (event.time) {
     const start = dateTimeStamp(event.date, event.time);
-    const end = endDateTime(event.date, event.time);
+    const end = endDateTime(event.date, event.time, event.endTime);
     const endStamp = `${end.getFullYear()}${pad(end.getMonth() + 1)}${pad(end.getDate())}T${pad(end.getHours())}${pad(
       end.getMinutes(),
     )}00`;
@@ -139,7 +148,7 @@ export function outlookCalendarHref(event: CalendarEventInput): string {
     subject: event.title,
   });
   if (event.time) {
-    const end = endDateTime(event.date, event.time);
+    const end = endDateTime(event.date, event.time, event.endTime);
     params.set('startdt', `${event.date}T${event.time}:00`);
     params.set(
       'enddt',

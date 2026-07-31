@@ -21,6 +21,7 @@ function makeScheduleItem(overrides: Partial<ScheduleItem> = {}): ScheduleItem {
     date: '2026-08-02',
     end_date: null,
     time: '10:00',
+    end_time: null,
     title: 'Museum',
     note: 'Tickets vorher kaufen',
     location: 'Museu Nacional',

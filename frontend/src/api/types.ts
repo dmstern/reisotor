@@ -27,6 +27,7 @@ export interface ScheduleItem {
   date: string;
   end_date: string | null;
   time: string | null;
+  end_time: string | null;
   title: string;
   note: string | null;
   location: string | null;
@@ -57,6 +58,7 @@ export interface CalendarEntry {
   date: string;
   endDate: string;
   time: string | null;
+  endTime: string | null;
   title: string;
   note: string | null;
   location: string | null;
