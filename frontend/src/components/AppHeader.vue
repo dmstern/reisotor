@@ -5,13 +5,20 @@ import TripSwitcher from './TripSwitcher.vue';
 
 const auth = useAuthStore();
 const theme = useThemeStore();
+
+// Frontend wird identisch für Staging (dev.reise.ruebenherz.de) und Produktion
+// (reise.ruebenherz.de) gebaut (siehe .github/workflows/build-deploy.yml) – der Unterschied lässt
+// sich also nur zur Laufzeit über den Hostnamen erkennen, nicht über einen Build-Flag/env-Wert.
+// Alles außer der echten Produktions-Domain (Staging, localhost, IPs) gilt als Nicht-Prod.
+const isNonProd = window.location.hostname !== 'reise.ruebenherz.de';
 </script>
 
 <template>
-  <header class="app-header">
+  <header class="app-header" :class="{ 'non-prod': isNonProd }">
     <router-link to="/" class="brand">
       <img src="/reisotor_logo.svg" alt="Reisotor Logo" class="logo" />
       <span class="wordmark">Reisotor</span>
+      <span v-if="isNonProd" class="env-badge" title="Dev-/Staging-Umgebung, nicht die echte Produktion">DEV</span>
     </router-link>
     <TripSwitcher class="switcher" />
     <button
@@ -53,6 +60,13 @@ const theme = useThemeStore();
   box-sizing: border-box;
 }
 
+/* Einziger optischer Marker für "nicht Produktion" (Staging/lokal) – dezent (nur die
+   Header-Trennlinie, kein flächiger Farbwechsel), damit die grundsätzliche UI nicht gestört wird,
+   aber auf einen Blick von der echten Produktion unterscheidbar bleibt. */
+.app-header.non-prod {
+  border-bottom: 2px solid var(--color-accent);
+}
+
 .brand {
   display: flex;
   align-items: center;
@@ -60,6 +74,17 @@ const theme = useThemeStore();
   text-decoration: none;
   width: fit-content;
   flex-shrink: 0;
+}
+
+.env-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #fff;
+  background: var(--color-accent);
+  padding: 2px 7px;
+  border-radius: 999px;
+  line-height: 1.4;
 }
 
 .switcher {
