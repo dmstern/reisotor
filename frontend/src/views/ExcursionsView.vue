@@ -570,28 +570,6 @@ function showSpotOnMap(spot: Spot) {
       <div class="header">
         <h2>Spots</h2>
         <div class="header-actions">
-          <div class="dropdown">
-            <button
-              type="button"
-              class="secondary sort-btn"
-              title="Sortierung ändern"
-              aria-label="Sortierung ändern"
-              @click="sortMenuOpen = !sortMenuOpen"
-            >
-              🔀 {{ sortMode === 'likes' ? 'Nach Likes' : 'Alphabetisch' }}
-            </button>
-            <template v-if="sortMenuOpen">
-              <div class="picker-backdrop" @click="sortMenuOpen = false"></div>
-              <div class="picker-menu">
-                <button type="button" :class="{ active: sortMode === 'alpha' }" @click="sortMode = 'alpha'; sortMenuOpen = false">
-                  🔤 Alphabetisch
-                </button>
-                <button type="button" :class="{ active: sortMode === 'likes' }" @click="sortMode = 'likes'; sortMenuOpen = false">
-                  ❤️ Nach Likes
-                </button>
-              </div>
-            </template>
-          </div>
           <button @click="showSpotForm = true">+ Neuer Spot</button>
         </div>
       </div>
@@ -601,12 +579,37 @@ function showSpotOnMap(spot: Spot) {
         Touren-Schublade oder auf einen Kalendertag, um sie dort als Station bzw. spontan einzuplanen.
       </p>
 
+      <!-- Filter und Sortierung bewusst direkt hier, unmittelbar über der Kategorie-Navi (statt
+           Sortierung z. B. oben im .header): beide wirken auf dieselbe Kategorie-gruppierte Liste,
+           sollen deshalb auch räumlich als zusammengehöriges Werkzeug-Trio wahrgenommen werden. -->
       <div class="filter-bar" v-if="filterCategoryOptions.length">
         <div class="filter-chips">
           <span v-for="cat in categoryFilter" :key="cat" class="filter-chip">
             {{ groupIcon(cat) }} {{ cat }}
             <button type="button" @click="removeCategoryFilter(cat)" aria-label="Filter entfernen">✕</button>
           </span>
+        </div>
+        <div class="dropdown">
+          <button
+            type="button"
+            class="secondary sort-btn"
+            title="Sortierung ändern"
+            aria-label="Sortierung ändern"
+            @click="sortMenuOpen = !sortMenuOpen"
+          >
+            🔀 {{ sortMode === 'likes' ? 'Nach Likes' : 'Alphabetisch' }}
+          </button>
+          <template v-if="sortMenuOpen">
+            <div class="picker-backdrop" @click="sortMenuOpen = false"></div>
+            <div class="picker-menu">
+              <button type="button" :class="{ active: sortMode === 'alpha' }" @click="sortMode = 'alpha'; sortMenuOpen = false">
+                🔤 Alphabetisch
+              </button>
+              <button type="button" :class="{ active: sortMode === 'likes' }" @click="sortMode = 'likes'; sortMenuOpen = false">
+                ❤️ Nach Likes
+              </button>
+            </div>
+          </template>
         </div>
         <div class="dropdown">
           <button

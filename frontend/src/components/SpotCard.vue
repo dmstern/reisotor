@@ -39,10 +39,22 @@ const showComments = ref(false);
 
 // Natives Drag (Zuordnen zu einer Tour) startet über einen dedizierten Anfasser (.excursion-drag-
 // handle, siehe Template) statt über die ganze Karte – @click.stop dort verhindert, dass ein reiner
-// (Nicht-Drag-)Klick auf den Anfasser zusätzlich die Detail-Ansicht öffnet.
+// (Nicht-Drag-)Klick auf den Anfasser zusätzlich die Detail-Ansicht öffnet. Öffnet nebenbei die
+// Touren-Schublade: die ist auf Mobil standardmäßig zu (drawers.ts loadOpen), ein Drop auf eine
+// ExcursionCard darin wäre sonst gar nicht erreichbar.
 function onDragStart(event: DragEvent) {
   event.dataTransfer?.setData('text/spot-id', String(props.spot.id));
   if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+  drawers.excursionsOpen = true;
+}
+
+// Klick-Alternative zum nativen Drag oben: natives HTML5-DnD ist auf Touch-Geräten unzuverlässig
+// (siehe usePointerDrag-Kommentar unten), ein reiner Tap auf den Anfasser öffnet deshalb ebenfalls
+// direkt die Touren-Schublade – exakt dasselbe Muster wie der 📅-Einplanen-Anfasser (dort via
+// usePointerDrag's onTap statt eines eigenen Klick-Handlers, weil er zusätzlich ein echtes
+// Pointer-Drag unterstützt).
+function onExcursionHandleClick() {
+  drawers.excursionsOpen = true;
 }
 
 // Spontanes Einplanen direkt auf einen Kalendertag, ohne vorher einen Ausflug anzulegen (das
@@ -110,7 +122,7 @@ function onCardClick() {
         aria-label="Auf eine Tour ziehen, um sie dort als Station hinzuzufügen"
         title="Auf eine Tour ziehen, um sie dort als Station hinzuzufügen"
         @dragstart="onDragStart"
-        @click.stop
+        @click.stop="onExcursionHandleClick"
       >
         🎒 Auf Tour ziehen
       </button>
