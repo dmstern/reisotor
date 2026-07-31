@@ -278,12 +278,20 @@ db.prepare('INSERT INTO spot_comments (spot_id, author_id, content, created_at) 
 );
 
 const ideaResult = db
-  .prepare('INSERT INTO ideas (trip_id, title, image_url, note, date, created_by) VALUES (?, ?, ?, ?, ?, ?)')
-  .run(tripId, 'Sightseeing-Tag Belém', null, 'Turm + danach im Market essen', fmt(addDays(startDate, 2)), user1.id);
+  .prepare('INSERT INTO ideas (trip_id, title, image_url, note, created_by) VALUES (?, ?, ?, ?, ?)')
+  .run(tripId, 'Sightseeing-Tag Belém', null, 'Turm + danach im Market essen', user1.id);
 const ideaId = ideaResult.lastInsertRowid as number;
 const insertStation = db.prepare('INSERT INTO excursion_spots (idea_id, station_key, position) VALUES (?, ?, ?)');
 insertStation.run(ideaId, `spot-${belemSpotId}`, 0);
 insertStation.run(ideaId, `spot-${marketSpotId}`, 1);
+// "Geplant" ergibt sich aus einem verknüpften Kalender-Termin statt einer eigenen Datums-Spalte
+// auf dem Ausflug (siehe Kommentar in db/index.ts/routes/ideas.ts).
+db.prepare('INSERT INTO schedule_items (trip_id, date, title, idea_id) VALUES (?, ?, ?, ?)').run(
+  tripId,
+  fmt(addDays(startDate, 2)),
+  'Sightseeing-Tag Belém',
+  ideaId,
+);
 
 db.prepare('INSERT INTO idea_likes (idea_id, user_id, created_at) VALUES (?, ?, ?)').run(
   ideaId,

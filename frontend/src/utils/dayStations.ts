@@ -19,6 +19,16 @@ export function buildDayStations(
 
   for (const item of scheduleItems) {
     if (item.date > date || date > (item.end_date ?? item.date)) continue;
+    // Mit einem Spot verknüpfte Termine zeigen dessen echtes Kategorie-Icon/-Farbe statt des
+    // generischen Termin-Pins (übernimmt außerdem automatisch dessen Koordinaten, unabhängig
+    // davon, ob der Termin selbst welche gespeichert hat).
+    if (item.spot_id != null) {
+      const station = resolveStation(`spot-${item.spot_id}`, spots, accommodations, travelItems);
+      if (station) {
+        timed.push({ time: item.time, station });
+        continue;
+      }
+    }
     if (item.lat == null || item.lng == null) continue;
     const meta = SCHEDULE_CATEGORY_META[item.category];
     timed.push({

@@ -12,6 +12,19 @@ interface ScheduleBody {
   maps_link?: string;
   lat?: number;
   lng?: number;
+  spot_id?: number | null;
+  idea_id?: number | null;
+}
+
+// Ist der Termin mit einem Spot verknüpft, kommen Standort-Koordinaten/Maps-Link vom Spot selbst
+// statt aus separat gepflegten Feldern – Auswahl eines Spots (siehe ScheduleView.vue's
+// Verknüpfungs-Auswahl) ersetzt damit die manuelle Standort-Eingabe, sie bleibt bei verknüpften
+// Terminen unbenutzt/ausgeblendet (kein zweites, potenziell abweichendes Standort-Feld).
+function locationFromSpot(spotId: number | null | undefined) {
+  if (!spotId) return null;
+  return db.prepare('SELECT maps_link, lat, lng FROM spots WHERE id = ?').get(spotId) as
+    | { maps_link: string | null; lat: number | null; lng: number | null }
+    | undefined;
 }
 
 export const scheduleRoutes: FastifyPluginAsync = async (app) => {
@@ -23,11 +36,13 @@ export const scheduleRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.post<{ Body: ScheduleBody }>('/schedule', async (req, reply) => {
-    const { trip_id, date, end_date, time, title, note, location, maps_link, lat, lng } = req.body;
+    const { trip_id, date, end_date, time, title, note, location, maps_link, lat, lng, spot_id, idea_id } = req.body;
+    const spot = locationFromSpot(spot_id);
     const result = db
       .prepare(
-        `INSERT INTO schedule_items (trip_id, date, end_date, time, title, note, location, maps_link, lat, lng)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO schedule_items
+          (trip_id, date, end_date, time, title, note, location, maps_link, lat, lng, spot_id, idea_id)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         trip_id,
@@ -37,20 +52,24 @@ export const scheduleRoutes: FastifyPluginAsync = async (app) => {
         title,
         note ?? null,
         location ?? null,
-        maps_link ?? null,
-        lat ?? null,
-        lng ?? null,
+        spot?.maps_link ?? maps_link ?? null,
+        spot?.lat ?? lat ?? null,
+        spot?.lng ?? lng ?? null,
+        spot_id ?? null,
+        idea_id ?? null,
       );
     reply.code(201);
     return db.prepare('SELECT * FROM schedule_items WHERE id = ?').get(result.lastInsertRowid);
   });
 
   app.put<{ Params: { id: string }; Body: ScheduleBody }>('/schedule/:id', async (req, reply) => {
-    const { date, end_date, time, title, note, location, maps_link, lat, lng } = req.body;
+    const { date, end_date, time, title, note, location, maps_link, lat, lng, spot_id, idea_id } = req.body;
+    const spot = locationFromSpot(spot_id);
     const result = db
       .prepare(
         `UPDATE schedule_items
-         SET date = ?, end_date = ?, time = ?, title = ?, note = ?, location = ?, maps_link = ?, lat = ?, lng = ?
+         SET date = ?, end_date = ?, time = ?, title = ?, note = ?, location = ?, maps_link = ?, lat = ?, lng = ?,
+             spot_id = ?, idea_id = ?
          WHERE id = ?`,
       )
       .run(
@@ -60,9 +79,11 @@ export const scheduleRoutes: FastifyPluginAsync = async (app) => {
         title,
         note ?? null,
         location ?? null,
-        maps_link ?? null,
-        lat ?? null,
-        lng ?? null,
+        spot?.maps_link ?? maps_link ?? null,
+        spot?.lat ?? lat ?? null,
+        spot?.lng ?? lng ?? null,
+        spot_id ?? null,
+        idea_id ?? null,
         req.params.id,
       );
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });

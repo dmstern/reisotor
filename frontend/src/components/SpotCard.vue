@@ -5,6 +5,8 @@ import { spotCategoryMeta } from '../utils/spotCategory';
 import { renderRichText } from '../utils/richText';
 import { usePointerDrag } from '../composables/usePointerDrag';
 import { useExcursionsStore } from '../stores/excursions';
+import { useScheduleStore } from '../stores/schedule';
+import { useTripStore } from '../stores/trip';
 import { useDrawersStore } from '../stores/drawers';
 import CategoryChip from './CategoryChip.vue';
 import EditButton from './EditButton.vue';
@@ -58,13 +60,15 @@ function onExcursionHandleClick() {
   drawers.openExcursions();
 }
 
-// Spontanes Einplanen direkt auf einen Kalendertag, ohne vorher einen Ausflug anzulegen (das
-// Backend legt dafür im Hintergrund einen Ein-Spot-Ausflug an, siehe
-// excursionsStore.planSpotOnDate) – 1:1 nach dem Muster von ExcursionCard.vue's
+// Spontanes Einplanen direkt auf einen Kalendertag, ohne vorher einen Ausflug anzulegen: legt
+// einen mit diesem Spot verknüpften Termin an (siehe stores/schedule.ts) statt (wie früher) im
+// Hintergrund einen unsichtbaren Ein-Spot-Ausflug – 1:1 nach dem Muster von ExcursionCard.vue's
 // 📅-Einplanen-Anfasser (eigener Pointer-Events-Drag statt nativem HTML5-DnD, da Letzteres auf
 // Touch-Geräten unzuverlässig ist). Eigenständig neben dem bestehenden nativen
 // draggable/dragstart oben (Zuordnen zu einem Ausflug) – kein Ersatz dafür.
 const excursionsStore = useExcursionsStore();
+const scheduleStore = useScheduleStore();
+const tripStore = useTripStore();
 const drawers = useDrawersStore();
 const { dragging, ghostStyle, onPointerDown } = usePointerDrag({
   onStart: () => {
@@ -72,8 +76,13 @@ const { dragging, ghostStyle, onPointerDown } = usePointerDrag({
   },
   onDrop: (targetEl) => {
     const dayEl = targetEl?.closest<HTMLElement>('[data-date]');
-    if (!dayEl?.dataset.date) return;
-    excursionsStore.planSpotOnDate(props.spot.id, dayEl.dataset.date);
+    if (!dayEl?.dataset.date || tripStore.currentTripId == null) return;
+    scheduleStore.create({
+      trip_id: tripStore.currentTripId,
+      date: dayEl.dataset.date,
+      title: props.spot.title,
+      spot_id: props.spot.id,
+    });
   },
   // Klick-Alternative zum Drag: öffnet die Kalender-Schublade und merkt sich den Spot, der beim
   // nächsten Tages-Klick eingeplant werden soll (siehe drawers.startPendingSchedule/

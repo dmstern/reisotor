@@ -1,12 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  buildAllEntries,
-  buildExcursionEntries,
-  buildTodoEntries,
-  buildTravelEntries,
-  buildTripEntries,
-  scheduleItemToEntry,
-} from './calendarEntries';
+import { buildAllEntries, buildTodoEntries, buildTravelEntries, buildTripEntries, scheduleItemToEntry } from './calendarEntries';
 import type { Accommodation, Excursion, ScheduleItem, Spot, TodoItem, TravelItem, Trip } from '../api/types';
 
 const trip: Trip = {
@@ -21,31 +14,89 @@ const trip: Trip = {
   image_url: null,
 };
 
+function makeScheduleItem(overrides: Partial<ScheduleItem> = {}): ScheduleItem {
+  return {
+    id: 5,
+    trip_id: 1,
+    date: '2026-08-02',
+    end_date: null,
+    time: '10:00',
+    title: 'Museum',
+    note: 'Tickets vorher kaufen',
+    location: 'Museu Nacional',
+    maps_link: null,
+    lat: null,
+    lng: null,
+    category: 'other',
+    spot_id: null,
+    idea_id: null,
+    ...overrides,
+  };
+}
+
 describe('scheduleItemToEntry', () => {
-  it('maps a ScheduleItem to the expected CalendarEntry fields', () => {
-    const item: ScheduleItem = {
-      id: 5,
-      trip_id: 1,
-      date: '2026-08-02',
-      end_date: null,
-      time: '10:00',
-      title: 'Museum',
-      note: 'Tickets vorher kaufen',
-      location: 'Museu Nacional',
-      maps_link: null,
-      lat: null,
-      lng: null,
-      category: 'other',
-    };
-    expect(scheduleItemToEntry(item)).toMatchObject({
+  it('maps a freeform (unverknüpften) ScheduleItem to the expected CalendarEntry fields', () => {
+    const item = makeScheduleItem();
+    expect(scheduleItemToEntry(item, [], [], [], [])).toMatchObject({
       key: 's-5',
       kind: 'schedule',
       date: '2026-08-02',
       title: 'Museum',
       location: 'Museu Nacional',
       category: 'other',
+      icon: undefined,
       scheduleItem: item,
     });
+  });
+
+  it('übernimmt bei einem mit einem Spot verknüpften Termin dessen Kategorie-Icon und die Ausflug-Farbe', () => {
+    const spot: Spot = {
+      id: 42,
+      trip_id: 1,
+      title: 'Torre de Belém',
+      image_url: null,
+      category: 'Sehenswürdigkeit',
+      note: null,
+      maps_link: null,
+      lat: null,
+      lng: null,
+      created_by: null,
+    };
+    const item = makeScheduleItem({ spot_id: 42 });
+    const entry = scheduleItemToEntry(item, [spot], [], [], []);
+    expect(entry.category).toBe('excursion');
+    expect(entry.icon).toBe('🏰');
+    expect(entry.spotId).toBe(42);
+  });
+
+  it('übernimmt bei einer verknüpften Tour mit genau einer Spot-Station deren Icon', () => {
+    const spot: Spot = {
+      id: 7,
+      trip_id: 1,
+      title: 'Time Out Market',
+      image_url: null,
+      category: 'Restaurant',
+      note: null,
+      maps_link: null,
+      lat: null,
+      lng: null,
+      created_by: null,
+    };
+    const excursion: Excursion = {
+      id: 3,
+      trip_id: 1,
+      title: 'Sightseeing',
+      image_url: null,
+      note: null,
+      date: '2026-08-02',
+      created_by: null,
+      station_keys: ['spot-7'],
+    };
+    const item = makeScheduleItem({ idea_id: 3, title: 'Sightseeing' });
+    const entry = scheduleItemToEntry(item, [spot], [excursion], [], []);
+    expect(entry.category).toBe('excursion');
+    expect(entry.icon).toBe('🍽️');
+    expect(entry.ideaId).toBe(3);
   });
 });
 
@@ -117,41 +168,10 @@ describe('buildTravelEntries', () => {
   });
 });
 
-describe('buildExcursionEntries', () => {
-  it('maps a dated excursion', () => {
-    const excursions: Excursion[] = [
-      { id: 3, trip_id: 1, title: 'Sightseeing', image_url: null, note: null, date: '2026-08-02', created_by: null, station_keys: [] },
-    ];
-    const entries = buildExcursionEntries(excursions, [] as Spot[], [] as Accommodation[], [] as TravelItem[]);
-    expect(entries).toHaveLength(1);
-    expect(entries[0]).toMatchObject({ kind: 'excursion', date: '2026-08-02', title: 'Sightseeing', ideaId: 3 });
-  });
-
-  it('excludes excursions without a date', () => {
-    const excursions: Excursion[] = [
-      { id: 4, trip_id: 1, title: 'In Planung', image_url: null, note: null, date: null, created_by: null, station_keys: [] },
-    ];
-    expect(buildExcursionEntries(excursions, [], [], [])).toEqual([]);
-  });
-});
-
 describe('buildAllEntries', () => {
-  it('combines schedule items, trip, todos, travel and excursions into one array', () => {
-    const scheduleItem: ScheduleItem = {
-      id: 1,
-      trip_id: 1,
-      date: '2026-08-01',
-      end_date: null,
-      time: null,
-      title: 'Termin',
-      note: null,
-      location: null,
-      maps_link: null,
-      lat: null,
-      lng: null,
-      category: 'other',
-    };
-    const entries = buildAllEntries([scheduleItem], trip, [], [], [], [], []);
+  it('combines schedule items, trip, todos and travel into one array', () => {
+    const scheduleItem = makeScheduleItem({ id: 1, date: '2026-08-01', time: null, title: 'Termin', note: null, location: null });
+    const entries = buildAllEntries([scheduleItem], trip, [], [], [], [] as Spot[], [] as Accommodation[]);
     // 1 schedule + 2 trip (Start/Ende) = 3
     expect(entries).toHaveLength(3);
     expect(entries.some((e) => e.kind === 'schedule')).toBe(true);

@@ -1,7 +1,41 @@
 import type { Accommodation, CalendarEntry, Excursion, ScheduleItem, Spot, TodoItem, TravelItem, Trip } from '../api/types';
 import { resolveStations } from './excursionStations';
+import { spotCategoryMeta } from './spotCategory';
 
-export function scheduleItemToEntry(item: ScheduleItem): CalendarEntry {
+// Icon-Override für einen mit Spot/Tour verknüpften Termin: bei einem verknüpften Spot dessen
+// eigenes Kategorie-Icon, bei einer verknüpften Tour mit genau einer Spot-Station deren Icon
+// (sonst das generische 🎒 aus SCHEDULE_CATEGORY_META). Eigene Funktion statt nur inline in
+// scheduleItemToEntry, da ScheduleView.vue denselben Icon-Override auch für den Anzeige-Dialog
+// braucht (dort existiert keine fertige CalendarEntry, nur das rohe ScheduleItem).
+export function resolveScheduleItemIcon(
+  item: ScheduleItem,
+  spots: Spot[],
+  excursions: Excursion[],
+  accommodations: Accommodation[],
+  travelItems: TravelItem[],
+): string | undefined {
+  if (item.spot_id != null) {
+    const spot = spots.find((s) => s.id === item.spot_id);
+    if (spot) return spotCategoryMeta(spot.category).icon;
+  }
+  if (item.idea_id != null) {
+    const excursion = excursions.find((e) => e.id === item.idea_id);
+    if (excursion) {
+      const stations = resolveStations(excursion.station_keys, spots, accommodations, travelItems);
+      return stations.length === 1 ? stations[0].icon : undefined;
+    }
+  }
+  return undefined;
+}
+
+export function scheduleItemToEntry(
+  item: ScheduleItem,
+  spots: Spot[],
+  excursions: Excursion[],
+  accommodations: Accommodation[],
+  travelItems: TravelItem[],
+): CalendarEntry {
+  const linked = item.spot_id != null || item.idea_id != null;
   return {
     key: `s-${item.id}`,
     kind: 'schedule',
@@ -11,8 +45,13 @@ export function scheduleItemToEntry(item: ScheduleItem): CalendarEntry {
     title: item.title,
     note: item.note,
     location: item.location,
-    category: item.category,
-    ideaId: null,
+    // Mit Spot/Tour verknüpfte Termine übernehmen bewusst die "Ausflug"-Kategorie (einheitliche
+    // orange Rahmenfarbe) statt einer eigenen – exakt dieselbe Optik, die verknüpfte Termine schon
+    // vor der Einführung dieser Verknüpfung hatten (damals als eigenständige "Ausflug"-Einträge).
+    category: linked ? 'excursion' : item.category,
+    icon: resolveScheduleItemIcon(item, spots, excursions, accommodations, travelItems),
+    ideaId: item.idea_id,
+    spotId: item.spot_id,
     todoId: null,
     travelId: null,
     scheduleItem: item,
@@ -35,6 +74,7 @@ export function buildTripEntries(trip: Trip | null): CalendarEntry[] {
       location: null,
       category: 'trip',
       ideaId: null,
+      spotId: null,
       todoId: null,
       travelId: null,
       scheduleItem: null,
@@ -52,6 +92,7 @@ export function buildTripEntries(trip: Trip | null): CalendarEntry[] {
       location: null,
       category: 'trip',
       ideaId: null,
+      spotId: null,
       todoId: null,
       travelId: null,
       scheduleItem: null,
@@ -75,6 +116,7 @@ export function buildTodoEntries(todos: TodoItem[]): CalendarEntry[] {
       location: null,
       category: 'todo' as const,
       ideaId: null,
+      spotId: null,
       todoId: t.id,
       travelId: null,
       scheduleItem: null,
@@ -97,44 +139,11 @@ export function buildTravelEntries(travelItems: TravelItem[]): CalendarEntry[] {
       location: t.from_location && t.to_location ? `${t.from_location} → ${t.to_location}` : null,
       category: 'travel' as const,
       ideaId: null,
+      spotId: null,
       todoId: null,
       travelId: t.id,
       scheduleItem: null,
     }));
-}
-
-// Ausflüge mit gesetztem Datum erscheinen automatisch (nicht editierbar) im Kalender – das Datum
-// selbst ist die einzige Kalender-Verknüpfung (kein separater schedule_items-Eintrag mehr nötig,
-// im Unterschied zum alten Drag&Drop-Einplanen-Mechanismus). Hat ein Ausflug genau eine Station,
-// zeigt sein Kalender-Eintrag deren Kategorie-Icon statt des generischen 🎒 (z. B. bei spontan
-// per Kalender-Anfasser/Tagebuch eingeplanten Einzel-Spots, siehe SpotCard.vue/DiaryView.vue).
-export function buildExcursionEntries(
-  excursions: Excursion[],
-  spots: Spot[],
-  accommodations: Accommodation[],
-  travelItems: TravelItem[],
-): CalendarEntry[] {
-  return excursions
-    .filter((e): e is Excursion & { date: string } => !!e.date)
-    .map((e) => {
-      const stations = resolveStations(e.station_keys, spots, accommodations, travelItems);
-      return {
-        key: `excursion-${e.id}`,
-        kind: 'excursion' as const,
-        date: e.date,
-        endDate: e.date,
-        time: null,
-        title: e.title,
-        note: e.note,
-        location: null,
-        category: 'excursion' as const,
-        icon: stations.length === 1 ? stations[0].icon : undefined,
-        ideaId: e.id,
-        todoId: null,
-        travelId: null,
-        scheduleItem: null,
-      };
-    });
 }
 
 export function buildAllEntries(
@@ -147,10 +156,9 @@ export function buildAllEntries(
   accommodations: Accommodation[],
 ): CalendarEntry[] {
   return [
-    ...items.map(scheduleItemToEntry),
+    ...items.map((item) => scheduleItemToEntry(item, spots, excursions, accommodations, travelItems)),
     ...buildTripEntries(trip),
     ...buildTodoEntries(todos),
     ...buildTravelEntries(travelItems),
-    ...buildExcursionEntries(excursions, spots, accommodations, travelItems),
   ];
 }

@@ -369,6 +369,11 @@ ensureColumn('schedule_items', 'maps_link', 'TEXT');
 ensureColumn('schedule_items', 'lat', 'REAL');
 ensureColumn('schedule_items', 'lng', 'REAL');
 ensureColumn('schedule_items', 'category', "TEXT DEFAULT 'other'");
+// Ein Termin kann statt (oder zusätzlich zu) einer Freitext-Adresse/Koordinate mit einem echten
+// Spot oder einer Tour (ideas) verknüpft sein – siehe routes/schedule.ts. ON DELETE SET NULL statt
+// CASCADE: der Termin bleibt als eigenständiges Kalender-Objekt bestehen, auch wenn der
+// verknüpfte Spot später gelöscht wird (er verliert nur die Verknüpfung, nicht sich selbst).
+ensureColumn('schedule_items', 'spot_id', 'INTEGER REFERENCES spots(id) ON DELETE SET NULL');
 ensureColumn('trips', 'maps_link', 'TEXT');
 ensureColumn('trips', 'lat', 'REAL');
 ensureColumn('trips', 'lng', 'REAL');
@@ -423,10 +428,14 @@ ensureColumn('travel_items', 'arrival_time', 'TEXT');
 ensureColumn('travel_items', 'from_place_id', 'INTEGER REFERENCES travel_places(id) ON DELETE SET NULL');
 ensureColumn('travel_items', 'to_place_id', 'INTEGER REFERENCES travel_places(id) ON DELETE SET NULL');
 
-// Ausflug wird zum reinen Container-Objekt (Titel/Bild/Notiz/Spots) mit optionalem eigenen
-// Datum für die Kalender-Einplanung – Standort/Link/Status wandern zu den zugeordneten Spots
-// bzw. entfallen (ersetzt durch das Datum-Feld selbst: kein Datum = "in Planung").
-ensureColumn('ideas', 'date', 'TEXT');
+// Ausflug ist ein reines Container-Objekt (Titel/Bild/Notiz/Spots) – "geplant"/"in Planung" ergibt
+// sich nicht mehr aus einer eigenen Datums-Spalte, sondern daraus, ob ein Kalender-Termin
+// (schedule_items) über idea_id auf diesen Ausflug verweist (routes/ideas.ts serialisiert das
+// Datum dieses Termins zurück als Excursion.date, damit alle bestehenden Verbraucher davon
+// unverändert weiterlaufen). Dasselbe gilt für einzelne Spots (schedule_items.spot_id) – beide
+// Fälle legen dafür jetzt einen echten Termin an statt (wie zuvor) einen unsichtbaren
+// Ein-Spot-Ausflug zu erzeugen.
+dropColumnIfExists('ideas', 'date');
 ensureColumn('ideas', 'created_by', 'INTEGER REFERENCES users(id)');
 dropColumnIfExists('ideas', 'link');
 dropColumnIfExists('ideas', 'maps_link');

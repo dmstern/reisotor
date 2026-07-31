@@ -34,18 +34,26 @@ export interface ScheduleItem {
   lat: number | null;
   lng: number | null;
   category: ScheduleCategory;
+  /** Verknüpfter Spot (aus der Spots-Übersicht) statt Freitext-Standort – schließt sich mit
+   *  idea_id gegenseitig aus (siehe ScheduleView.vue's Verknüpfungs-Auswahl). */
+  spot_id: number | null;
+  /** Verknüpfte Tour (Ausflug) – z. B. wenn die Tour auf einen Kalendertag gezogen wurde
+   *  (drawers/excursionsStore.setDate) statt manuell einen Termin anzulegen. */
+  idea_id: number | null;
 }
 
 /** Vereinheitlichte Darstellung für die Kalenderansicht: entweder ein echter Kalender-Termin
  *  (scheduleItem gesetzt) oder ein synthetischer, nicht editierbarer Eintrag wie Urlaub-Start/-Ende
- *  (scheduleItem null), der nur zur Ursprungssicht springt statt inline editierbar zu sein. */
+ *  (scheduleItem null), der nur zur Ursprungssicht springt statt inline editierbar zu sein. Ein mit
+ *  Spot/Tour verknüpfter Termin bleibt trotzdem 'schedule' (editierbar) – nur seine Optik (Icon,
+ *  Kategorie-Farbe) übernimmt die des verknüpften Objekts, siehe calendarEntries.ts. */
 export interface CalendarEntry {
   key: string;
-  /** Herkunft des Eintrags: 'schedule' ist ein echter, editierbarer Kalender-Termin;
-   *  'trip', 'todo', 'travel' und 'excursion' sind synthetische, nicht editierbare Einträge aus
-   *  anderen Sichten (Architekturregel Batch 3: nur lesend/verknüpfend, mit Sprung-Button zur
-   *  Ursprungssicht). */
-  kind: 'schedule' | 'trip' | 'todo' | 'travel' | 'excursion';
+  /** Herkunft des Eintrags: 'schedule' ist ein echter, editierbarer Kalender-Termin (auch wenn er
+   *  mit einem Spot/einer Tour verknüpft ist); 'trip', 'todo' und 'travel' sind synthetische, nicht
+   *  editierbare Einträge aus anderen Sichten (Architekturregel Batch 3: nur lesend/verknüpfend,
+   *  mit Sprung-Button zur Ursprungssicht). */
+  kind: 'schedule' | 'trip' | 'todo' | 'travel';
   date: string;
   endDate: string;
   time: string | null;
@@ -53,11 +61,15 @@ export interface CalendarEntry {
   note: string | null;
   location: string | null;
   category: ScheduleCategory;
-  /** Icon-Override statt SCHEDULE_CATEGORY_META[category].icon – nur für Ausflüge mit genau
-   *  einer Spot-Station gesetzt (zeigt dann deren Kategorie-Emoji statt des generischen 🎒,
-   *  siehe buildExcursionEntries). Die Rahmenfarbe bleibt bewusst einheitlich Ausflug-orange. */
+  /** Icon-Override statt SCHEDULE_CATEGORY_META[category].icon – für Termine, die mit einem Spot
+   *  (dessen Kategorie-Emoji) oder einer Tour mit genau einer Spot-Station (deren Emoji statt des
+   *  generischen 🎒) verknüpft sind, siehe scheduleItemToEntry. Die Rahmenfarbe bleibt bewusst
+   *  einheitlich Ausflug-orange (category bleibt 'excursion'). */
   icon?: string;
   ideaId: number | null;
+  /** Verknüpfter Spot, falls der Termin (siehe scheduleItem.spot_id) direkt mit einem Spot statt
+   *  einer Tour verknüpft ist. */
+  spotId: number | null;
   todoId: number | null;
   travelId: number | null;
   scheduleItem: ScheduleItem | null;

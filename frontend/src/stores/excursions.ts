@@ -65,10 +65,12 @@ export const useExcursionsStore = defineStore('excursions', () => {
     });
   }
 
-  /** Spontanes Einplanen eines einzelnen Spots (kein vorheriges Anlegen eines Ausflugs nötig,
-   *  siehe SpotCard.vue-Anfasser/DiaryView.vue-Spot-Picker) – das Backend legt dafür im
-   *  Hintergrund einen Ein-Spot-Ausflug an oder gibt einen bereits dafür bestehenden zurück
-   *  (dedupliziert über trip_id+date+Station, siehe POST /ideas/plan-spot). */
+  /** NICHT für das Einplanen eines Spots im Kalender (das legt einen direkt mit dem Spot
+   *  verknüpften Termin an, siehe stores/schedule.ts/SpotCard.vue) – nur noch für DiaryView.vue's
+   *  Spot-Picker, der einen Ausflug zum Verknüpfen braucht (diary_excursions referenziert
+   *  ausschließlich idea_id). Legt dafür im Hintergrund einen Ein-Spot-Ausflug an oder gibt einen
+   *  bereits dafür bestehenden zurück (dedupliziert über trip_id+Termin-Datum+Station, siehe
+   *  POST /ideas/plan-spot). */
   async function planSpotOnDate(spotId: number, date: string) {
     const excursion = await api.post<Excursion>('/ideas/plan-spot', {
       trip_id: tripStore.currentTripId,

@@ -45,12 +45,19 @@ test('clicking an own schedule entry opens the detail dialog instead of navigati
   await expect(page.locator('.day-detail .detail-row')).toHaveCount(0);
 });
 
-test('clicking an excursion entry opens the excursions drawer, not a nav route', async ({ page }) => {
+test('clicking a tour-linked calendar entry opens the detail dialog, not the excursions drawer', async ({ page }) => {
   await page.locator(`.day[data-date="${belemDay.date}"]`).click();
   await page.locator('.item', { hasText: excursion.title }).click();
 
+  // Ein mit einer Tour verknüpfter Termin ist ein ganz normaler, editierbarer Kalender-Termin
+  // (siehe ScheduleView.vue openEntry()) – Klick öffnet den Anzeige-Dialog statt zur
+  // Touren-Schublade zu springen, mit einer Zeile zur verknüpften Tour.
   await expect(page).toHaveURL(/\/$/);
-  await expect(page.getByRole('heading', { name: 'Touren' })).toBeVisible();
+  const modal = page.locator('.overlay .modal');
+  await expect(modal).toBeVisible();
+  await expect(modal.getByText('Verknüpft')).toBeVisible();
+  await expect(modal).toContainText(excursion.title);
+  await expect(modal.locator('button[aria-label="Bearbeiten"]')).toBeVisible();
 });
 
 test('MapsAppPicker dropdown is not clipped by the modal', async ({ page }) => {

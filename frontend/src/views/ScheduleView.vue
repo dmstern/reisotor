@@ -6,6 +6,7 @@ import type { Accommodation, CalendarEntry, ScheduleItem, TodoItem, TravelItem, 
 import { useTripStore } from '../stores/trip';
 import { useExcursionsStore } from '../stores/excursions';
 import { useSpotsStore } from '../stores/spots';
+import { useScheduleStore } from '../stores/schedule';
 import { useDrawersStore } from '../stores/drawers';
 import CalendarWeek from '../components/CalendarWeek.vue';
 import Modal from '../components/Modal.vue';
@@ -31,8 +32,8 @@ const tripStore = useTripStore();
 const trip = computed(() => tripStore.currentTrip);
 const excursionsStore = useExcursionsStore();
 const spotsStore = useSpotsStore();
+const scheduleStore = useScheduleStore();
 const drawers = useDrawersStore();
-const items = ref<ScheduleItem[]>([]);
 const accommodations = ref<Accommodation[]>([]);
 const todos = ref<TodoItem[]>([]);
 const travelItems = ref<TravelItem[]>([]);
@@ -48,10 +49,49 @@ const newNote = ref('');
 const newEndDate = ref('');
 const newLocation = ref('');
 const newMapsLink = ref('');
+// Verknüpfung mit einem Spot ('spot:<id>') oder einer Tour ('idea:<id>') statt Freitext-Standort –
+// leer = kein verknüpftes Objekt. Ein String-Key (statt zweier separater IDs) macht die Auswahl im
+// <select> unten trivial (ein einzelner v-model-Wert statt zweier sich gegenseitig ausschließender
+// Felder), siehe parseLinkKey/linkKeyFor.
+const newLinkKey = ref('');
 
 const editingItem = ref<ScheduleItem | null>(null);
 const viewingItem = ref<ScheduleItem | null>(null);
-const editForm = ref({ time: '', title: '', note: '', endDate: '', location: '', mapsLink: '' });
+const editForm = ref({ time: '', title: '', note: '', endDate: '', location: '', mapsLink: '', linkKey: '' });
+
+function parseLinkKey(key: string): { spot_id: number | null; idea_id: number | null } {
+  if (key.startsWith('spot:')) return { spot_id: Number(key.slice('spot:'.length)), idea_id: null };
+  if (key.startsWith('idea:')) return { spot_id: null, idea_id: Number(key.slice('idea:'.length)) };
+  return { spot_id: null, idea_id: null };
+}
+
+function linkKeyFor(item: Pick<ScheduleItem, 'spot_id' | 'idea_id'>): string {
+  if (item.spot_id != null) return `spot:${item.spot_id}`;
+  if (item.idea_id != null) return `idea:${item.idea_id}`;
+  return '';
+}
+
+function titleForLinkKey(key: string): string | null {
+  const { spot_id, idea_id } = parseLinkKey(key);
+  if (spot_id != null) return spotsStore.spots.find((s) => s.id === spot_id)?.title ?? null;
+  if (idea_id != null) return excursionsStore.excursions.find((e) => e.id === idea_id)?.title ?? null;
+  return null;
+}
+
+// Übernimmt den Titel des verknüpften Spots/der Tour als Vorschlag, sobald eine Verknüpfung
+// gewählt wird – nur falls noch kein eigener Titel eingetippt wurde, damit ein bereits getippter
+// Titel nicht überschrieben wird.
+watch(newLinkKey, (key) => {
+  const t = key && titleForLinkKey(key);
+  if (t && !newTitle.value.trim()) newTitle.value = t;
+});
+watch(
+  () => editForm.value.linkKey,
+  (key) => {
+    const t = key && titleForLinkKey(key);
+    if (t && !editForm.value.title.trim()) editForm.value.title = t;
+  },
+);
 
 // Wählt man einen bekannten Ort aus der Vorschlagsliste (Combobox, exakter Namenstreffer), wird
 // automatisch dessen Maps-Link übernommen – die bestehende parseLatLngFromMapsLink()-Logik beim
@@ -87,15 +127,14 @@ function downloadIcsForEntry(entry: CalendarEntry) {
 async function loadAll() {
   const tripId = tripStore.currentTripId;
   if (tripId == null) return;
-  const [scheduleRes, accommodationRes, todosRes, travelRes, placesRes] = await Promise.all([
-    api.get<ScheduleItem[]>(`/schedule?trip_id=${tripId}`),
+  const [accommodationRes, todosRes, travelRes, placesRes] = await Promise.all([
     api.get<Accommodation[]>(`/accommodation?trip_id=${tripId}`),
     api.get<TodoItem[]>(`/todos?trip_id=${tripId}`),
     api.get<TravelItem[]>(`/travel?trip_id=${tripId}`),
     api.get<TravelPlace[]>(`/travel/places?trip_id=${tripId}`),
     spotsStore.load(),
+    scheduleStore.load(),
   ]);
-  items.value = scheduleRes;
   accommodations.value = accommodationRes;
   todos.value = todosRes;
   travelItems.value = travelRes;
@@ -176,7 +215,7 @@ function accommodationsForDate(date: string) {
 
 const allEntries = computed(() =>
   buildAllEntries(
-    items.value,
+    scheduleStore.items,
     trip.value,
     todos.value,
     travelItems.value,
@@ -323,8 +362,16 @@ function selectDay(date: string) {
   selectedDate.value = date;
   const pending = drawers.pendingSchedule;
   if (!pending) return;
-  if (pending.kind === 'excursion') excursionsStore.setDate(pending.id, date);
-  else excursionsStore.planSpotOnDate(pending.id, date);
+  if (pending.kind === 'excursion') {
+    excursionsStore.setDate(pending.id, date);
+  } else {
+    // Spot direkt einplanen: legt einen mit dem Spot verknüpften Termin an (statt wie früher
+    // einen unsichtbaren Ein-Spot-Ausflug), siehe stores/schedule.ts.
+    const spot = spotsStore.spots.find((s) => s.id === pending.id);
+    if (spot && tripStore.currentTripId != null) {
+      scheduleStore.create({ trip_id: tripStore.currentTripId, date, title: spot.title, spot_id: spot.id });
+    }
+  }
   drawers.clearPendingSchedule();
 }
 
@@ -336,15 +383,10 @@ const pendingScheduleLabel = computed(() => {
 });
 
 // Ausflüge werden direkt aus der Ausflüge-Sicht per Drag&Drop hierher gezogen (ExcursionCard.vue) –
-// das Datum wird am Ausflug selbst gesetzt, kein separater schedule_items-Eintrag mehr nötig.
+// legt/aktualisiert im Hintergrund den mit der Tour verknüpften Termin (routes/ideas.ts), ohne
+// dass sich hier am Aufruf selbst etwas ändert.
 function onDropExcursion(date: string, excursionId: number) {
   excursionsStore.setDate(excursionId, date);
-}
-
-// "Aus dem Kalender nehmen": macht die Einplanung rückgängig, Ausflug gilt wieder als
-// "in Planung" – Alternative zum Zurückziehen per Drag&Drop in der Ausflüge-Sicht.
-function unplanExcursion(excursionId: number) {
-  excursionsStore.setDate(excursionId, null);
 }
 
 function closeAddForm() {
@@ -355,30 +397,41 @@ function closeAddForm() {
   newEndDate.value = '';
   newLocation.value = '';
   newMapsLink.value = '';
+  newLinkKey.value = '';
+}
+
+// Ein direkt über den Schedule-Store angelegter/geänderter/gelöschter, mit einer Tour verknüpfter
+// Termin verändert deren abgeleitetes Datum (schedule_items.idea_id, siehe routes/ideas.ts) –
+// excursionsStore hält davon aber eine eigene, unabhängig geladene Kopie (Excursion.date), die
+// sich ohne diesen Refresh nicht von selbst aktualisieren würde (im Unterschied zu
+// excursionsStore.setDate/PUT /ideas/:id, das die eigene Kopie direkt mitaktualisiert).
+async function syncExcursionsIfLinked(...ideaIds: (number | null | undefined)[]) {
+  if (ideaIds.some((id) => id != null)) await excursionsStore.load();
 }
 
 async function addItem() {
-  if (!selectedDate.value || !newTitle.value.trim()) return;
+  if (!selectedDate.value || !newTitle.value.trim() || tripStore.currentTripId == null) return;
   const parsed = parseLatLngFromMapsLink(newMapsLink.value);
-  const created = await api.post<ScheduleItem>('/schedule', {
+  const { spot_id, idea_id } = parseLinkKey(newLinkKey.value);
+  const linked = spot_id != null || idea_id != null;
+  await scheduleStore.create({
     trip_id: tripStore.currentTripId,
     date: selectedDate.value,
     end_date: newEndDate.value || undefined,
     time: newTime.value || undefined,
     title: newTitle.value.trim(),
     note: newNote.value || undefined,
-    location: newLocation.value || undefined,
-    maps_link: newMapsLink.value || undefined,
-    lat: parsed?.lat,
-    lng: parsed?.lng,
+    // Verknüpfter Spot/Tour liefert den Standort selbst (routes/schedule.ts) – Freitext-Felder
+    // bleiben dafür unbenutzt (siehe auch v-if in der Vorlage, die sie in dem Fall ausblendet).
+    location: linked ? undefined : newLocation.value || undefined,
+    maps_link: linked ? undefined : newMapsLink.value || undefined,
+    lat: linked ? undefined : parsed?.lat,
+    lng: linked ? undefined : parsed?.lng,
+    spot_id,
+    idea_id,
   });
-  items.value.push(created);
+  await syncExcursionsIfLinked(idea_id);
   closeAddForm();
-}
-
-async function removeItem(id: number) {
-  await api.delete(`/schedule/${id}`);
-  items.value = items.value.filter((i) => i.id !== id);
 }
 
 function startEdit(item: ScheduleItem) {
@@ -390,25 +443,33 @@ function startEdit(item: ScheduleItem) {
     endDate: item.end_date ?? '',
     location: item.location ?? '',
     mapsLink: item.maps_link ?? '',
+    linkKey: linkKeyFor(item),
   };
 }
 
 async function submitEdit() {
-  if (!editingItem.value || !editForm.value.title.trim()) return;
+  if (!editingItem.value || !editForm.value.title.trim() || tripStore.currentTripId == null) return;
   const parsed = parseLatLngFromMapsLink(editForm.value.mapsLink);
-  const updated = await api.put<ScheduleItem>(`/schedule/${editingItem.value.id}`, {
+  const { spot_id, idea_id } = parseLinkKey(editForm.value.linkKey);
+  const linked = spot_id != null || idea_id != null;
+  const previousIdeaId = editingItem.value.idea_id;
+  await scheduleStore.update(editingItem.value.id, {
+    trip_id: tripStore.currentTripId,
     date: editingItem.value.date,
     end_date: editForm.value.endDate || undefined,
     time: editForm.value.time || undefined,
     title: editForm.value.title.trim(),
     note: editForm.value.note || undefined,
-    location: editForm.value.location || undefined,
-    maps_link: editForm.value.mapsLink || undefined,
-    lat: parsed?.lat ?? editingItem.value.lat ?? undefined,
-    lng: parsed?.lng ?? editingItem.value.lng ?? undefined,
+    location: linked ? undefined : editForm.value.location || undefined,
+    maps_link: linked ? undefined : editForm.value.mapsLink || undefined,
+    lat: linked ? undefined : parsed?.lat ?? editingItem.value.lat ?? undefined,
+    lng: linked ? undefined : parsed?.lng ?? editingItem.value.lng ?? undefined,
+    spot_id,
+    idea_id,
   });
-  const idx = items.value.findIndex((i) => i.id === updated.id);
-  if (idx !== -1) items.value[idx] = updated;
+  // Beide IDs (alt UND neu): eine Tour-Verknüpfung kann sich ändern (andere Tour ausgewählt) oder
+  // ganz entfernt werden – in beiden Fällen muss die vorher verknüpfte Tour ihr Datum verlieren.
+  await syncExcursionsIfLinked(previousIdeaId, idea_id);
   editingItem.value = null;
 }
 
@@ -420,8 +481,21 @@ function openEntry(entry: CalendarEntry) {
   if (entry.kind === 'trip') jumpToTrip();
   else if (entry.kind === 'todo') router.push('/todo');
   else if (entry.kind === 'travel') router.push('/travel');
-  else if (entry.kind === 'excursion') drawers.openExcursions();
   else if (entry.kind === 'schedule') viewingItem.value = entry.scheduleItem;
+}
+
+// Der Anzeige-Dialog (DetailModal) braucht dieselbe Icon-/Kategorie-Auflösung wie die Kalender-
+// Kärtchen selbst (Spot-/Tour-Verknüpfung, siehe calendarEntries.ts) – statt sie ein zweites Mal
+// separat zu berechnen, wird einfach der schon fertig berechnete CalendarEntry wiederverwendet.
+const viewingEntry = computed(() =>
+  viewingItem.value ? allEntries.value.find((e) => e.scheduleItem?.id === viewingItem.value!.id) ?? null : null,
+);
+
+function linkedTitleFor(entry: CalendarEntry | null): string | null {
+  if (!entry) return null;
+  if (entry.spotId != null) return spotsStore.spots.find((s) => s.id === entry.spotId)?.title ?? null;
+  if (entry.ideaId != null) return excursionsStore.excursions.find((e) => e.id === entry.ideaId)?.title ?? null;
+  return null;
 }
 
 function editViewingItem() {
@@ -432,7 +506,9 @@ function editViewingItem() {
 
 async function deleteViewingItem() {
   if (!viewingItem.value) return;
-  await removeItem(viewingItem.value.id);
+  const ideaId = viewingItem.value.idea_id;
+  await scheduleStore.remove(viewingItem.value.id);
+  await syncExcursionsIfLinked(ideaId);
   viewingItem.value = null;
 }
 
@@ -580,20 +656,12 @@ function formatDate(date: string) {
                 </div>
               </template>
             </div>
-            <!-- Architekturregel: Fremdobjekte (Urlaub-Stammdaten, ToDos, Ausflüge, Reise-Einträge)
-                 sind hier nur lesend/verknüpfend darstellbar – Bearbeitung passiert in der Ursprungssicht.
-                 Klick auf die Karte öffnet das jeweilige Element (siehe openEntry). -->
-            <template v-if="entry.kind === 'excursion'">
-              <button
-                type="button"
-                class="secondary unplan-btn"
-                title="Aus dem Kalender nehmen (zurück zu 'In Planung')"
-                aria-label="Aus dem Kalender nehmen"
-                @click.stop="unplanExcursion(entry.ideaId!)"
-              >
-                ✕
-              </button>
-            </template>
+            <!-- Architekturregel: Fremdobjekte (Urlaub-Stammdaten, ToDos, Reise-Einträge) sind hier
+                 nur lesend/verknüpfend darstellbar – Bearbeitung passiert in der Ursprungssicht.
+                 Mit einem Spot/einer Tour verknüpfte Termine sind dagegen ganz normale, editierbare
+                 Termine (kind bleibt 'schedule') – Klick auf die Karte öffnet für sie wie für jeden
+                 anderen Termin den Anzeige-Dialog (inkl. Löschen-Button dort), kein eigener
+                 Schnell-Entfernen-Button hier nötig. -->
           </div>
         </li>
         <li v-if="!dayEntries.length" key="empty" class="empty">Noch keine Termine an diesem Tag.</li>
@@ -609,8 +677,19 @@ function formatDate(date: string) {
         <input v-model="newTime" type="time" />
         <input v-model="newTitle" type="text" placeholder="Titel" required />
         <input v-model="newEndDate" type="date" :min="selectedDate ?? undefined" placeholder="Enddatum (optional)" title="Enddatum (optional)" />
-        <Combobox v-model="newLocation" :options="placeNames" placeholder="Ort (optional)" />
-        <input v-model="newMapsLink" type="url" placeholder="Maps-Link (Google/Apple) (optional)" />
+        <select v-model="newLinkKey" class="link-select">
+          <option value="">🔗 Kein Spot/keine Tour verknüpft</option>
+          <optgroup label="Spots" v-if="spotsStore.spots.length">
+            <option v-for="s in spotsStore.spots" :key="`spot:${s.id}`" :value="`spot:${s.id}`">{{ s.title }}</option>
+          </optgroup>
+          <optgroup label="Touren" v-if="excursionsStore.excursions.length">
+            <option v-for="e in excursionsStore.excursions" :key="`idea:${e.id}`" :value="`idea:${e.id}`">{{ e.title }}</option>
+          </optgroup>
+        </select>
+        <template v-if="!newLinkKey">
+          <Combobox v-model="newLocation" :options="placeNames" placeholder="Ort (optional)" />
+          <input v-model="newMapsLink" type="url" placeholder="Maps-Link (Google/Apple) (optional)" />
+        </template>
         <input v-model="newNote" type="text" placeholder="Notiz (optional)" />
         <button type="submit">Hinzufügen</button>
       </form>
@@ -625,8 +704,19 @@ function formatDate(date: string) {
         <input v-model="editForm.time" type="time" />
         <input v-model="editForm.title" type="text" placeholder="Titel" required />
         <input v-model="editForm.endDate" type="date" :min="editingItem?.date" placeholder="Enddatum (optional)" title="Enddatum (optional)" />
-        <Combobox v-model="editForm.location" :options="placeNames" placeholder="Ort (optional)" />
-        <input v-model="editForm.mapsLink" type="url" placeholder="Maps-Link (Google/Apple) (optional)" />
+        <select v-model="editForm.linkKey" class="link-select">
+          <option value="">🔗 Kein Spot/keine Tour verknüpft</option>
+          <optgroup label="Spots" v-if="spotsStore.spots.length">
+            <option v-for="s in spotsStore.spots" :key="`spot:${s.id}`" :value="`spot:${s.id}`">{{ s.title }}</option>
+          </optgroup>
+          <optgroup label="Touren" v-if="excursionsStore.excursions.length">
+            <option v-for="e in excursionsStore.excursions" :key="`idea:${e.id}`" :value="`idea:${e.id}`">{{ e.title }}</option>
+          </optgroup>
+        </select>
+        <template v-if="!editForm.linkKey">
+          <Combobox v-model="editForm.location" :options="placeNames" placeholder="Ort (optional)" />
+          <input v-model="editForm.mapsLink" type="url" placeholder="Maps-Link (Google/Apple) (optional)" />
+        </template>
         <input v-model="editForm.note" type="text" placeholder="Notiz (optional)" />
         <button type="submit">Speichern</button>
       </form>
@@ -636,16 +726,19 @@ function formatDate(date: string) {
       :model-value="viewingItem !== null"
       @update:model-value="(v) => !v && (viewingItem = null)"
       :title="viewingItem?.title ?? ''"
-      :placeholder-icon="viewingItem ? SCHEDULE_CATEGORY_META[viewingItem.category].icon : undefined"
+      :placeholder-icon="viewingEntry ? (viewingEntry.icon ?? SCHEDULE_CATEGORY_META[viewingEntry.category].icon) : undefined"
       @edit="editViewingItem"
     >
+      <p v-if="linkedTitleFor(viewingEntry)" class="detail-row">
+        <span class="detail-label">Verknüpft</span>{{ viewingEntry?.icon ?? '🎒' }} {{ linkedTitleFor(viewingEntry) }}
+      </p>
       <p v-if="viewingItem?.time" class="detail-row">
         <span class="detail-label">Zeit</span>🕐 {{ viewingItem.time }}
       </p>
       <p v-if="viewingItem?.end_date && viewingItem.end_date !== viewingItem.date" class="detail-row">
         <span class="detail-label">Zeitraum</span>🗓️ {{ formatDate(viewingItem.date) }} – {{ formatDate(viewingItem.end_date) }}
       </p>
-      <p v-if="viewingItem?.location" class="detail-row">
+      <p v-if="!linkedTitleFor(viewingEntry) && viewingItem?.location" class="detail-row">
         <span class="detail-label">Ort</span>📍 {{ viewingItem.location }}
       </p>
       <div v-if="viewingItem?.note" class="detail-row note">{{ viewingItem.note }}</div>
@@ -872,12 +965,6 @@ function formatDate(date: string) {
   align-items: center;
 }
 
-.unplan-btn {
-  padding: 4px 8px;
-  font-size: 0.8rem;
-  line-height: 1;
-}
-
 .calendar-export {
   position: relative;
 }
@@ -939,5 +1026,10 @@ function formatDate(date: string) {
 .edit-form input[type='text'] {
   flex: 1;
   min-width: 140px;
+}
+
+.link-select {
+  flex: 1;
+  min-width: 160px;
 }
 </style>
