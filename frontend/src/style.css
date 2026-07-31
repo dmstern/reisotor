@@ -277,8 +277,17 @@ button.danger {
    aussehenden nativen Kästchens – appearance:none + eigener Rahmen/Haken statt dessen. Global statt
    pro Liste dupliziert, damit "abgehakt" app-weit immer gleich aussieht. Multi-Select-Filter-
    Checkboxen (z. B. Kategorie-Filter) bekommen dieselbe Optik mit, das ist hier gewollt: eine
-   einzige, konsistente Häkchen-Sprache statt zweier verschiedener. */
-input[type='checkbox'] {
+   einzige, konsistente Häkchen-Sprache statt zweier verschiedener.
+   .state-toggle (Packliste, Anzahl 1, components/PackingItem.vue) ist aus UI-Gründen ein eigenes
+   <button>-Element statt einer echten Checkbox (drei statt zwei Zustände: ungepackt/rausgelegt/
+   eingepackt), hat aber im Ruhezustand exakt dieselbe 20×20-Grundform und teilt sie sich deshalb
+   direkt mit statt sie lokal zu duplizieren. .tally-pill (Anzahl > 1) hat eine eigene, breitere
+   Pillenform und bleibt deshalb bei der Grundform lokal – nur ihr "eingepackt"-Endzustand
+   (Hintergrund/Rahmenfarbe + Häkchen-Form) teilt sich mit .state-toggle.packed denselben
+   Regelsatz. Die Häkchen-Positionierung selbst bleibt für beide Buttons lokal in PackingItem.vue
+   (dort per Flex-Zentrierung statt der absoluten Position, die echte Checkboxen nutzen). */
+input[type='checkbox'],
+.state-toggle {
   appearance: none;
   -webkit-appearance: none;
   flex-shrink: 0;
@@ -294,30 +303,52 @@ input[type='checkbox'] {
   transition: background 0.15s ease, border-color 0.15s ease;
 }
 
-input[type='checkbox']:hover {
+input[type='checkbox']:hover,
+.state-toggle:hover {
   border-color: var(--color-primary);
 }
 
-input[type='checkbox']:checked {
+input[type='checkbox']:checked,
+.state-toggle.packed,
+.tally-pill.packed {
   background: var(--color-primary);
   border-color: var(--color-primary);
 }
 
-input[type='checkbox']:checked::after {
+input[type='checkbox']:checked::after,
+.state-toggle.packed::after,
+.tally-pill.packed::after {
   content: '';
-  position: absolute;
-  left: 6px;
-  top: 2px;
   width: 5px;
   height: 10px;
   border: solid #fff;
   border-width: 0 2px 2px 0;
+}
+
+input[type='checkbox']:checked::after {
+  position: absolute;
+  left: 6px;
+  top: 2px;
   transform: rotate(45deg);
 }
 
-input[type='checkbox']:focus-visible {
+input[type='checkbox']:focus-visible,
+.state-toggle:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
+}
+
+/* Ausgegraute Zeile für abgehakte/erledigte/eingepackte Listen-Einträge (ToDo, Packliste, ...) –
+   ein Regelsatz statt pro Liste dupliziert. */
+.row-done {
+  opacity: 0.6;
+}
+
+/* Durchgestrichener, gedämpfter Text für abgehakte/erledigte Einträge (ToDo, Packliste,
+   Einkaufsliste, ...) – ein Regelsatz statt pro Liste dupliziert. */
+.text-done {
+  text-decoration: line-through;
+  color: var(--color-text-muted);
 }
 
 input,

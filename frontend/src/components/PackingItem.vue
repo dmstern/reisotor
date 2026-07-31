@@ -80,7 +80,7 @@ const tallyGroups = computed<number[]>(() => {
 </script>
 
 <template>
-  <li class="row">
+  <li class="row" :class="{ 'row-done': isFullyPacked }">
     <div class="main">
       <button
         v-if="item.quantity <= 1"
@@ -95,7 +95,7 @@ const tallyGroups = computed<number[]>(() => {
       >
         <span v-if="singleState === 'laidOut'" class="laid-out-mark"></span>
       </button>
-      <span class="label" :class="{ done: isFullyPacked }">
+      <span class="label" :class="{ 'text-done': isFullyPacked }">
         {{ item.label }}
         <span v-if="item.quantity > 1" class="qty">×{{ item.quantity }}</span>
       </span>
@@ -167,14 +167,20 @@ const tallyGroups = computed<number[]>(() => {
   min-width: 140px;
 }
 
-/* Gleiche Grundoptik wie die globale input[type=checkbox]-Häkchen-Regel (style.css), als eigener
-   <button> statt echter Checkbox, da hier drei statt zwei Zustände dargestellt werden müssen
-   (ungepackt/rausgelegt/eingepackt). Wird bei Anzahl > 1 auch für den "eingepackt"-Endzustand
-   wiederverwendet (statt der Strichliste), damit "fertig" app-weit immer gleich aussieht.
-   .tally-pill teilt sich dieselben Zustandsfarben (Grundfarbe/orange "rausgelegt"/grün "eingepackt"),
-   damit Gegenstände mit Anzahl 1 und Anzahl > 1 optisch als derselbe Zustandsautomat erkennbar
-   bleiben statt wie zwei unabhängige UI-Muster zu wirken. */
-.state-toggle,
+/* .state-toggle (Anzahl 1) teilt sich Grundform, Zustandsfarben und Häkchen-Optik jetzt mit der
+   globalen input[type=checkbox]-Regel (style.css) statt sie lokal zu duplizieren – hier bleibt nur
+   noch die Flex-Zentrierung für die Häkchen-Positionierung (echte Checkboxen positionieren ihr
+   Häkchen absolut, dieser Button zentriert es stattdessen über den Elterncontainer). .tally-pill
+   (Anzahl > 1) hat eine eigene, breitere Pillenform und bleibt deshalb im Ruhezustand lokal
+   definiert; nur ihr "eingepackt"-Endzustand (Farben + Häkchen-Form) teilt sich mit .state-toggle
+   denselben globalen Regelsatz, damit Gegenstände mit Anzahl 1 und Anzahl > 1 optisch als derselbe
+   Zustandsautomat erkennbar bleiben statt wie zwei unabhängige UI-Muster zu wirken. */
+.state-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .tally-pill {
   border: 2px solid var(--color-border);
   border-radius: 6px;
@@ -184,17 +190,6 @@ const tallyGroups = computed<number[]>(() => {
   transition: background 0.15s ease, border-color 0.15s ease;
 }
 
-.state-toggle {
-  flex-shrink: 0;
-  width: 20px;
-  height: 20px;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.state-toggle:hover,
 .tally-pill:hover {
   border-color: var(--color-primary);
 }
@@ -213,19 +208,10 @@ const tallyGroups = computed<number[]>(() => {
   background: var(--color-accent);
 }
 
-.state-toggle.packed,
-.tally-pill.packed {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
-}
-
+/* Häkchen-Farben/-Form global (style.css) – hier nur noch der Positionierungs-Feinschliff, den die
+   Flex-Zentrierung dieser Buttons braucht (echte Checkboxen positionieren stattdessen absolut). */
 .state-toggle.packed::after,
 .tally-pill.packed::after {
-  content: '';
-  width: 5px;
-  height: 10px;
-  border: solid #fff;
-  border-width: 0 2px 2px 0;
   transform: rotate(45deg) translate(-1px, -1px);
 }
 
@@ -237,7 +223,6 @@ const tallyGroups = computed<number[]>(() => {
   justify-content: center;
 }
 
-.state-toggle:focus-visible,
 .tally-pill:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
@@ -252,11 +237,6 @@ const tallyGroups = computed<number[]>(() => {
   color: var(--color-text-muted);
   font-size: 0.85rem;
   margin-left: 2px;
-}
-
-.done {
-  text-decoration: line-through;
-  color: var(--color-text-muted);
 }
 
 .tally-control {

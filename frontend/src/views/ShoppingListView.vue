@@ -217,7 +217,7 @@ async function addItem() {
           <li v-for="item in group.items" :key="item.id" class="row">
             <label class="check">
               <input type="checkbox" :checked="!!item.checked" @change="toggle(item)" />
-              <span :class="{ done: item.checked }">{{ item.label }}</span>
+              <span :class="{ 'text-done': item.checked }">{{ item.label }}</span>
             </label>
             <span v-if="groupBy !== 'shop' && item.shop" class="tag">🏬 {{ item.shop }}</span>
             <span v-if="groupBy !== 'period' && item.period" class="tag">🗓️ {{ PERIOD_META[item.period] }}</span>
@@ -336,11 +336,6 @@ async function addItem() {
   cursor: pointer;
   flex: 1;
   min-width: 120px;
-}
-
-.done {
-  text-decoration: line-through;
-  color: var(--color-text-muted);
 }
 
 .link {

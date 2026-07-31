@@ -233,10 +233,10 @@ function isOverdue(item: TodoItem) {
       <h2>{{ group.label }}</h2>
       <div class="card">
         <TransitionGroup tag="ul" name="list" class="list">
-          <li v-for="item in group.items" :key="item.id" class="row" :class="{ done: item.done }">
+          <li v-for="item in group.items" :key="item.id" class="row" :class="{ 'row-done': item.done }">
             <label class="check">
               <input type="checkbox" :checked="!!item.done" @change="toggleDone(item)" />
-              <span class="title" :class="{ struck: item.done }">{{ item.title }}</span>
+              <span class="title" :class="{ 'text-done': item.done }">{{ item.title }}</span>
             </label>
             <span class="priority" :title="PRIORITY_META[item.priority].label">{{ PRIORITY_META[item.priority].icon }}</span>
             <span v-if="item.due_date" class="due" :class="{ overdue: isOverdue(item) }">
@@ -337,10 +337,6 @@ function isOverdue(item: TodoItem) {
   border-bottom: none;
 }
 
-.row.done {
-  opacity: 0.6;
-}
-
 .check {
   display: flex;
   align-items: center;
@@ -348,11 +344,6 @@ function isOverdue(item: TodoItem) {
   cursor: pointer;
   flex: 1;
   min-width: 140px;
-}
-
-.struck {
-  text-decoration: line-through;
-  color: var(--color-text-muted);
 }
 
 .priority {
