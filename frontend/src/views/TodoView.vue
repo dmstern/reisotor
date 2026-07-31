@@ -193,7 +193,7 @@ function isOverdue(item: TodoItem) {
 </script>
 
 <template>
-  <div class="page" v-if="!loading">
+  <div class="page todo-page" v-if="!loading">
     <h1>ToDo</h1>
     <p>{{ progress.done }}/{{ progress.total }} erledigt</p>
 
@@ -229,33 +229,35 @@ function isOverdue(item: TodoItem) {
       </label>
     </div>
 
-    <section class="group-section" v-for="group in groupedItems" :key="group.key">
-      <h2>{{ group.label }}</h2>
-      <div class="card">
-        <TransitionGroup tag="ul" name="list" class="list">
-          <li v-for="item in group.items" :key="item.id" class="row" :class="{ 'row-done': item.done }">
-            <label class="check">
-              <input type="checkbox" :checked="!!item.done" @change="toggleDone(item)" />
-              <span class="title" :class="{ 'text-done': item.done }">{{ item.title }}</span>
-            </label>
-            <span class="priority" :title="PRIORITY_META[item.priority].label">{{ PRIORITY_META[item.priority].icon }}</span>
-            <span v-if="item.due_date" class="due" :class="{ overdue: isOverdue(item) }">
-              📅 {{ formatDate(item.due_date) }}
-            </span>
-            <span v-if="groupBy !== 'assignee' && userLabel(item.assigned_to_user_id)" class="assignee">{{
-              userLabel(item.assigned_to_user_id)
-            }}</span>
-            <span v-if="groupBy !== 'period' && periodFor(item)" class="assignee">🗓️ {{ PERIOD_META[periodFor(item)!] }}</span>
-            <span v-if="item.note" class="note">{{ item.note }}</span>
-            <div class="row-actions">
-              <EditButton small @click="startEdit(item)" />
-              <DeleteButton small @click="remove(item.id)" />
-            </div>
-          </li>
-          <li v-if="!group.items.length" :key="`${group.key}-empty`" class="empty">Keine Aufgaben.</li>
-        </TransitionGroup>
-      </div>
-    </section>
+    <div class="groups-grid">
+      <section class="group-section" v-for="group in groupedItems" :key="group.key">
+        <h2>{{ group.label }}</h2>
+        <div class="card">
+          <TransitionGroup tag="ul" name="list" class="list">
+            <li v-for="item in group.items" :key="item.id" class="row" :class="{ 'row-done': item.done }">
+              <label class="check">
+                <input type="checkbox" :checked="!!item.done" @change="toggleDone(item)" />
+                <span class="title" :class="{ 'text-done': item.done }">{{ item.title }}</span>
+              </label>
+              <span class="priority" :title="PRIORITY_META[item.priority].label">{{ PRIORITY_META[item.priority].icon }}</span>
+              <span v-if="item.due_date" class="due" :class="{ overdue: isOverdue(item) }">
+                📅 {{ formatDate(item.due_date) }}
+              </span>
+              <span v-if="groupBy !== 'assignee' && userLabel(item.assigned_to_user_id)" class="assignee">{{
+                userLabel(item.assigned_to_user_id)
+              }}</span>
+              <span v-if="groupBy !== 'period' && periodFor(item)" class="assignee">🗓️ {{ PERIOD_META[periodFor(item)!] }}</span>
+              <span v-if="item.note" class="note">{{ item.note }}</span>
+              <div class="row-actions">
+                <EditButton small @click="startEdit(item)" />
+                <DeleteButton small @click="remove(item.id)" />
+              </div>
+            </li>
+            <li v-if="!group.items.length" :key="`${group.key}-empty`" class="empty">Keine Aufgaben.</li>
+          </TransitionGroup>
+        </div>
+      </section>
+    </div>
 
     <Modal
       :model-value="editingItem !== null"
@@ -280,6 +282,13 @@ function isOverdue(item: TodoItem) {
 </template>
 
 <style scoped>
+/* Mehr Breite als der globale .page-Rahmen (960px), damit die Gruppen auf Desktop tatsächlich
+   nebeneinander Platz haben (siehe .groups-grid unten) – exakt dasselbe Muster wie
+   PackingListView.vue's .packing-page/.lists-grid. */
+.todo-page {
+  max-width: 1400px;
+}
+
 .add-form {
   display: flex;
   flex-wrap: wrap;
@@ -308,8 +317,14 @@ function isOverdue(item: TodoItem) {
   gap: var(--space-2);
 }
 
+.groups-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
 .group-section {
-  margin-bottom: var(--space-3);
+  min-width: 0;
 }
 
 .group-section h2 {
@@ -386,5 +401,17 @@ function isOverdue(item: TodoItem) {
 .empty {
   color: var(--color-text-muted);
   padding: var(--space-2) 0;
+}
+
+/* Desktop: Gruppen nebeneinander statt untereinander, um den vorhandenen Platz besser zu nutzen –
+   auto-fit/minmax statt einer festen Spaltenzahl, damit sich die Spaltenzahl der tatsächlichen
+   Fensterbreite und Anzahl an Gruppen anpasst. Exakt dasselbe Muster wie PackingListView.vue. */
+@media (min-width: 900px) {
+  .groups-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+    align-items: start;
+    gap: var(--space-4);
+  }
 }
 </style>

@@ -174,7 +174,7 @@ async function addItem() {
 </script>
 
 <template>
-  <div class="page" v-if="!loading">
+  <div class="page shopping-page" v-if="!loading">
     <h1>Einkaufsliste</h1>
     <p>{{ progress.checked }}/{{ progress.total }} gekauft</p>
 
@@ -210,37 +210,39 @@ async function addItem() {
       </label>
     </div>
 
-    <section class="group-section" v-for="group in groupedItems" :key="group.key">
-      <h2>{{ group.label }}</h2>
-      <div class="card">
-        <TransitionGroup tag="ul" name="list" class="list">
-          <li v-for="item in group.items" :key="item.id" class="row">
-            <label class="check">
-              <input type="checkbox" :checked="!!item.checked" @change="toggle(item)" />
-              <span :class="{ 'text-done': item.checked }">{{ item.label }}</span>
-            </label>
-            <span v-if="groupBy !== 'shop' && item.shop" class="tag">🏬 {{ item.shop }}</span>
-            <span v-if="groupBy !== 'period' && item.period" class="tag">🗓️ {{ PERIOD_META[item.period] }}</span>
-            <a v-if="item.link" :href="item.link" target="_blank" rel="noopener" class="link">🔗 Link</a>
-            <span v-if="item.note" class="note">{{ item.note }}</span>
-            <select
-              v-if="groupBy !== 'buyer'"
-              class="buyer-select"
-              :value="item.assigned_to_user_id ?? ''"
-              @change="reassign(item, $event)"
-            >
-              <option value="">Nicht zugewiesen</option>
-              <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
-            </select>
-            <div class="row-actions">
-              <EditButton small @click="startEdit(item)" />
-              <DeleteButton small @click="remove(item.id)" />
-            </div>
-          </li>
-          <li v-if="!group.items.length" :key="`${group.key}-empty`" class="empty">Keine Einträge.</li>
-        </TransitionGroup>
-      </div>
-    </section>
+    <div class="groups-grid">
+      <section class="group-section" v-for="group in groupedItems" :key="group.key">
+        <h2>{{ group.label }}</h2>
+        <div class="card">
+          <TransitionGroup tag="ul" name="list" class="list">
+            <li v-for="item in group.items" :key="item.id" class="row">
+              <label class="check">
+                <input type="checkbox" :checked="!!item.checked" @change="toggle(item)" />
+                <span :class="{ 'text-done': item.checked }">{{ item.label }}</span>
+              </label>
+              <span v-if="groupBy !== 'shop' && item.shop" class="tag">🏬 {{ item.shop }}</span>
+              <span v-if="groupBy !== 'period' && item.period" class="tag">🗓️ {{ PERIOD_META[item.period] }}</span>
+              <a v-if="item.link" :href="item.link" target="_blank" rel="noopener" class="link">🔗 Link</a>
+              <span v-if="item.note" class="note">{{ item.note }}</span>
+              <select
+                v-if="groupBy !== 'buyer'"
+                class="buyer-select"
+                :value="item.assigned_to_user_id ?? ''"
+                @change="reassign(item, $event)"
+              >
+                <option value="">Nicht zugewiesen</option>
+                <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
+              </select>
+              <div class="row-actions">
+                <EditButton small @click="startEdit(item)" />
+                <DeleteButton small @click="remove(item.id)" />
+              </div>
+            </li>
+            <li v-if="!group.items.length" :key="`${group.key}-empty`" class="empty">Keine Einträge.</li>
+          </TransitionGroup>
+        </div>
+      </section>
+    </div>
 
     <Modal
       :model-value="editingItem !== null"
@@ -264,6 +266,13 @@ async function addItem() {
 </template>
 
 <style scoped>
+/* Mehr Breite als der globale .page-Rahmen (960px), damit die Gruppen auf Desktop tatsächlich
+   nebeneinander Platz haben (siehe .groups-grid unten) – exakt dasselbe Muster wie
+   PackingListView.vue's .packing-page/.lists-grid. */
+.shopping-page {
+  max-width: 1400px;
+}
+
 .add-form {
   display: flex;
   flex-wrap: wrap;
@@ -292,8 +301,14 @@ async function addItem() {
   gap: var(--space-2);
 }
 
+.groups-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
 .group-section {
-  margin-bottom: var(--space-3);
+  min-width: 0;
 }
 
 .group-section h2 {
@@ -367,5 +382,17 @@ async function addItem() {
 .empty {
   color: var(--color-text-muted);
   padding: var(--space-2) 0;
+}
+
+/* Desktop: Gruppen nebeneinander statt untereinander, um den vorhandenen Platz besser zu nutzen –
+   auto-fit/minmax statt einer festen Spaltenzahl, damit sich die Spaltenzahl der tatsächlichen
+   Fensterbreite und Anzahl an Gruppen anpasst. Exakt dasselbe Muster wie PackingListView.vue. */
+@media (min-width: 900px) {
+  .groups-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+    align-items: start;
+    gap: var(--space-4);
+  }
 }
 </style>
