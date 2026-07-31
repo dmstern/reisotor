@@ -5,6 +5,7 @@ import type { Accommodation, Spot, TravelItem, User } from '../api/types';
 import { useAuthStore } from '../stores/auth';
 import { useTripStore } from '../stores/trip';
 import { useSpotsStore } from '../stores/spots';
+import { useScheduleStore } from '../stores/schedule';
 import { useDrawersStore } from '../stores/drawers';
 import SpotCard from '../components/SpotCard.vue';
 import DerivedLocationCard from '../components/DerivedLocationCard.vue';
@@ -25,6 +26,7 @@ const auth = useAuthStore();
 const tripStore = useTripStore();
 const tripId = tripStore.currentTripId as number;
 const spotsStore = useSpotsStore();
+const scheduleStore = useScheduleStore();
 const drawers = useDrawersStore();
 
 const users = ref<User[]>([]);
@@ -189,6 +191,28 @@ const spotCategoryOptions = computed(() => {
 // werden gemeinsam sortiert, gefiltert und nach Kategorie gruppiert dargestellt.
 type SpotsGroupItem = { kind: 'spot'; spot: Spot } | { kind: 'derived'; loc: DerivedLocation };
 
+// Ein Spot gilt als "geplant", wenn ein Kalender-Termin (schedule_items) über spot_id auf ihn
+// verweist (analog zu Excursion.date, siehe db/index.ts) – rein clientseitig aus dem bereits
+// reaktiv geladenen scheduleStore abgeleitet statt eines eigenen Backend-Felds, damit sowohl das
+// spontane Einplanen per Ziehen auf den Kalender (SpotCard.vue) als auch jede Änderung/Löschung in
+// ScheduleView.vue sofort hier ankommt, ohne die Spots extra neu zu laden. Mehrfache Termine für
+// denselben Spot sind möglich (kein UNIQUE-Constraint) – das früheste Datum gewinnt.
+const spotScheduledDates = computed(() => {
+  const map = new Map<number, string>();
+  for (const item of scheduleStore.items) {
+    if (item.spot_id == null) continue;
+    const existing = map.get(item.spot_id);
+    if (!existing || item.date < existing) map.set(item.spot_id, item.date);
+  }
+  return map;
+});
+// Unterkunft-/Reise-Orte (kind 'derived') haben kein Kalender-Geplant-Konzept – null statt eines
+// Status heißt "Filter nicht anwendbar", sie bleiben unabhängig vom Status-Filter sichtbar.
+function itemStatus(item: SpotsGroupItem): 'planned' | 'unplanned' | null {
+  if (item.kind !== 'spot') return null;
+  return spotScheduledDates.value.has(item.spot.id) ? 'planned' : 'unplanned';
+}
+
 function itemCategory(item: SpotsGroupItem): string {
   return item.kind === 'spot' ? item.spot.category ?? 'Sonstiges' : item.loc.category;
 }
@@ -215,15 +239,25 @@ function removeCategoryFilter(cat: string) {
   categoryFilter.value = categoryFilter.value.filter((c) => c !== cat);
 }
 
+const STATUS_FILTER_LABEL: Record<'planned' | 'unplanned', string> = { planned: '📅 Geplant', unplanned: '📝 Ungeplant' };
+const statusMenuOpen = ref(false);
+const statusFilter = ref<('planned' | 'unplanned')[]>([]);
+function removeStatusFilter(status: 'planned' | 'unplanned') {
+  statusFilter.value = statusFilter.value.filter((s) => s !== status);
+}
+
 const allSpotItems = computed<SpotsGroupItem[]>(() => [
   ...spotsStore.spots.map((spot): SpotsGroupItem => ({ kind: 'spot', spot })),
   ...derivedLocations.value.map((loc): SpotsGroupItem => ({ kind: 'derived', loc })),
 ]);
 
 const filteredSpotItems = computed(() =>
-  categoryFilter.value.length === 0
-    ? allSpotItems.value
-    : allSpotItems.value.filter((item) => categoryFilter.value.includes(itemCategory(item))),
+  allSpotItems.value.filter((item) => {
+    if (categoryFilter.value.length && !categoryFilter.value.includes(itemCategory(item))) return false;
+    const status = itemStatus(item);
+    if (statusFilter.value.length && status !== null && !statusFilter.value.includes(status)) return false;
+    return true;
+  }),
 );
 
 // Reihenfolge der Gruppen: die automatisch eingebetteten Unterkunft-/Reise-Orte zuerst (sind
@@ -588,6 +622,10 @@ function showSpotOnMap(spot: Spot) {
             {{ groupIcon(cat) }} {{ cat }}
             <button type="button" @click="removeCategoryFilter(cat)" aria-label="Filter entfernen">✕</button>
           </span>
+          <span v-for="status in statusFilter" :key="status" class="filter-chip">
+            {{ STATUS_FILTER_LABEL[status] }}
+            <button type="button" @click="removeStatusFilter(status)" aria-label="Filter entfernen">✕</button>
+          </span>
         </div>
         <div class="dropdown">
           <button
@@ -627,6 +665,30 @@ function showSpotOnMap(spot: Spot) {
               <label v-for="cat in filterCategoryOptions" :key="cat" class="category-option">
                 <input type="checkbox" :value="cat" v-model="categoryFilter" />
                 {{ groupIcon(cat) }} {{ cat }}
+              </label>
+            </div>
+          </template>
+        </div>
+        <div class="dropdown">
+          <button
+            type="button"
+            class="secondary category-btn"
+            title="Nach Status (geplant/ungeplant) filtern"
+            aria-label="Nach Status filtern"
+            @click="statusMenuOpen = !statusMenuOpen"
+          >
+            🗓️ Status
+          </button>
+          <template v-if="statusMenuOpen">
+            <div class="picker-backdrop" @click="statusMenuOpen = false"></div>
+            <div class="picker-menu category-menu">
+              <label class="category-option">
+                <input type="checkbox" value="planned" v-model="statusFilter" />
+                📅 Geplant
+              </label>
+              <label class="category-option">
+                <input type="checkbox" value="unplanned" v-model="statusFilter" />
+                📝 Ungeplant
               </label>
             </div>
           </template>
@@ -686,6 +748,7 @@ function showSpotOnMap(spot: Spot) {
               :ref="(el) => setSpotRef(item.spot.id, el)"
               :spot="item.spot"
               :expanded="expandedSpotId === item.spot.id"
+              :scheduled-date="spotScheduledDates.get(item.spot.id) ?? null"
               :creator-label="creatorLabel(item.spot.created_by)"
               :like-count="spotsStore.likeCountFor(item.spot.id)"
               :liked="spotsStore.likedByMe(item.spot.id, auth.user?.id)"
