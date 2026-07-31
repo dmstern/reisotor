@@ -155,11 +155,10 @@ function onCardClick() {
 
 /* Ersetzt den früheren Modal-Dialog: die aktive Karte klappt an Ort und Stelle auf (mehr Zeilen,
    größeres Bild) statt einen Dialog über die Karte zu legen, die dadurch immer interaktiv bleibt
-   (siehe onCardClick im Script). grid-column: span 2 nutzt das umgebende
-   auto-fill-Raster (ExcursionsView.vue's .cards) für mehr Breite – reduziert sich bei nur einer
-   verfügbaren Spalte automatisch auf span 1. */
+   (siehe onCardClick im Script). Bleibt bewusst in der bestehenden Grid-Spalte (kein grid-column:
+   span 2 mehr) – die Karte soll sich nur durch Rahmen/Hintergrund als fokussiert zeigen, nicht die
+   volle Breite einnehmen. */
 .spot-card.expanded {
-  grid-column: span 2;
   border-color: var(--color-primary);
   background: var(--color-primary-tint);
 }
@@ -324,15 +323,6 @@ function onCardClick() {
      schmalen Bildschirmen nicht zu dominant wirkt. */
   .spot-card.expanded .image {
     height: 160px;
-  }
-
-  /* .spot-card.expanded { grid-column: span 2; } (oben, für Desktops mehrspaltiges Raster gedacht)
-     erzeugt hier eine ungewollte zusätzliche implizite Spalte, da ExcursionsView.vue's .cards auf
-     schmalen Bildschirmen nur eine einzige Spalte definiert (grid-template-columns: 1fr) – dadurch
-     rutschten alle nachfolgenden Karten in diese neue, schmale Spalte und wirkten abgeschnitten.
-     Hier zurück auf eine einzelne Spalte. */
-  .spot-card.expanded {
-    grid-column: span 1;
   }
 }
 </style>
