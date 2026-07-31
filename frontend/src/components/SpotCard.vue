@@ -50,11 +50,12 @@ function onDragStart(event: DragEvent) {
 
 // Klick-Alternative zum nativen Drag oben: natives HTML5-DnD ist auf Touch-Geräten unzuverlässig
 // (siehe usePointerDrag-Kommentar unten), ein reiner Tap auf den Anfasser öffnet deshalb ebenfalls
-// direkt die Touren-Schublade – exakt dasselbe Muster wie der 📅-Einplanen-Anfasser (dort via
+// direkt die Touren-Schublade (Desktop) bzw. navigiert zur Touren-Seite (Mobil, siehe
+// drawers.openExcursions()) – exakt dasselbe Muster wie der 📅-Einplanen-Anfasser (dort via
 // usePointerDrag's onTap statt eines eigenen Klick-Handlers, weil er zusätzlich ein echtes
 // Pointer-Drag unterstützt).
 function onExcursionHandleClick() {
-  drawers.excursionsOpen = true;
+  drawers.openExcursions();
 }
 
 // Spontanes Einplanen direkt auf einen Kalendertag, ohne vorher einen Ausflug anzulegen (das

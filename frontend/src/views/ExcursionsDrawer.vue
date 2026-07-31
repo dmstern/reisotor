@@ -13,11 +13,16 @@ import SpotOrderPicker from '../components/SpotOrderPicker.vue';
 import Modal from '../components/Modal.vue';
 import type { DerivedLocation } from '../utils/derivedLocation';
 
-// Eigenständig gemountete Schublade (App.vue, rechter Platz) statt Teil der Karte-Hauptsicht –
-// dadurch lassen sich Kalender- und Ausflüge-Schublade unabhängig voneinander auf-/zuklappen,
-// während Spots/Karte immer sichtbar bleiben (siehe ExcursionsView.vue). Lädt deshalb ihre eigenen
-// Daten (Unterkunft/Reise/Nutzer/Ausflug-Likes+Kommentare) unabhängig von der Karte-Hauptsicht,
-// analog zur bereits bestehenden Duplikation zwischen der früheren MapView.vue und dieser View.
+// Auf Desktop weiterhin eigenständig gemountete Schublade (App.vue, rechter Platz) statt Teil der
+// Karte-Hauptsicht – dadurch lassen sich Kalender- und Ausflüge-Schublade unabhängig voneinander
+// auf-/zuklappen, während Spots/Karte immer sichtbar bleiben (siehe ExcursionsView.vue). Lädt
+// deshalb ihre eigenen Daten (Unterkunft/Reise/Nutzer/Ausflug-Likes+Kommentare) unabhängig von der
+// Karte-Hauptsicht, analog zur bereits bestehenden Duplikation zwischen der früheren MapView.vue
+// und dieser View. Auf Mobil dagegen dieselbe Komponente als eigenständige Seite (Route /tours,
+// siehe router/index.ts) statt in einer kaum bedienbaren Schublade – standalone (per Route-Prop
+// gesetzt) schaltet dafür den nur im Schubladen-Kontext nötigen Abstand zu den dort schwebenden
+// Maximieren-/Schließen-Buttons ab (siehe .header unten).
+defineProps<{ standalone?: boolean }>();
 const auth = useAuthStore();
 const router = useRouter();
 const tripStore = useTripStore();
@@ -280,7 +285,7 @@ function editStationSpot() {
 </script>
 
 <template>
-  <div class="excursions-drawer" v-if="!loading">
+  <div class="excursions-drawer" :class="{ standalone }" v-if="!loading">
     <div class="header">
       <h2>🎒 Touren</h2>
       <button @click="showExcursionForm = true">+ Neue Tour</button>
@@ -424,6 +429,13 @@ function editStationSpot() {
   gap: var(--space-3);
 }
 
+/* Als eigenständige Seite (Route /tours) reserviert kein schwebender Maximieren-/Schließen-Button-
+   Block mehr Platz oben (siehe .header unten) – dafür braucht es hier wie bei jeder anderen Seite
+   unten Platz für eine unten fixierte mobile NavBar (siehe .page-Pendant in style.css). */
+.excursions-drawer.standalone {
+  padding-bottom: 88px;
+}
+
 .excursions-drawer h2 {
   margin: 0;
   font-size: 1.1rem;
@@ -432,9 +444,8 @@ function editStationSpot() {
 
 /* Drawer.vue schwebt den Maximieren-/Schließen-Button-Block (28px hoch, ab top:8px, endet also bei
    36px) über den Panel-Inhalt – ohne diesen Abstand überlagerte er den rechts stehenden
-   "+ Neue Tour"-Button in dieser Kopfzeile. Der Schließen-Button ist mittlerweile auch auf Mobil
-   immer sichtbar (nicht mehr nur auf Desktop, siehe Drawer.vue), daher gilt der Abstand jetzt
-   unconditional statt nur ab einer Mindestbreite. */
+   "+ Neue Tour"-Button in dieser Kopfzeile. Gilt nur im Schubladen-Kontext (Desktop, App.vue) –
+   als eigenständige Seite (.standalone, Route /tours) gibt es diese schwebenden Buttons nicht. */
 .header {
   display: flex;
   flex-wrap: wrap;
@@ -442,6 +453,10 @@ function editStationSpot() {
   align-items: center;
   gap: var(--space-2);
   margin-top: 32px;
+}
+
+.excursions-drawer.standalone .header {
+  margin-top: 0;
 }
 
 .edit-form {

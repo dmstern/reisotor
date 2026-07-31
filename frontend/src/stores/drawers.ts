@@ -65,6 +65,22 @@ export const useDrawersStore = defineStore('drawers', () => {
     locationsVersion.value++;
   }
 
+  // Kalender/Touren sind auf Desktop globale Schubladen, auf Mobil dagegen eigenständige Seiten
+  // (/calendar, /tours – siehe router/index.ts, dieselben Komponenten wie in den Schubladen). Jede
+  // Stelle in der App, die "Kalender"/"Touren-Schublade öffnen" will (Dashboard-Kachel,
+  // ExcursionCard/SpotCard-Anfasser, TripMap-Detailsprünge, DiaryView-Ausflug-Chips, …), ruft
+  // deshalb diese beiden Funktionen statt direkt calendarOpen/excursionsOpen zu setzen – so bleibt
+  // die Desktop/Mobil-Weiche an einer einzigen Stelle statt an jedem einzelnen Aufrufort dupliziert.
+  function openCalendar() {
+    if (isDesktop()) calendarOpen.value = true;
+    else router.push('/calendar');
+  }
+
+  function openExcursions() {
+    if (isDesktop()) excursionsOpen.value = true;
+    else router.push('/tours');
+  }
+
   // Klick-Alternative zum Drag-Einplanen (ExcursionCard.vue/SpotCard.vue's 📅-Anfasser): statt den
   // Ausflug/Spot auf einen Kalendertag zu ziehen, tippt man den Anfasser einmal an (öffnet die
   // Kalender-Schublade + merkt sich, was eingeplant werden soll) und tippt danach einen Tag an
@@ -73,7 +89,7 @@ export const useDrawersStore = defineStore('drawers', () => {
 
   function startPendingSchedule(kind: 'excursion' | 'spot', id: number) {
     pendingSchedule.value = { kind, id };
-    calendarOpen.value = true;
+    openCalendar();
   }
 
   function clearPendingSchedule() {
@@ -97,14 +113,6 @@ export const useDrawersStore = defineStore('drawers', () => {
     },
     { immediate: true },
   );
-
-  function toggleCalendar() {
-    calendarOpen.value = !calendarOpen.value;
-  }
-
-  function toggleExcursions() {
-    excursionsOpen.value = !excursionsOpen.value;
-  }
 
   // Springt zur Karte-Hauptsicht, falls man gerade woanders ist (z. B. "Auf Karte anzeigen" aus
   // TravelView.vue/AccommodationView.vue) – ein Push auf die bereits aktive Route würde
@@ -167,8 +175,8 @@ export const useDrawersStore = defineStore('drawers', () => {
     maximizedSide,
     locationsVersion,
     pendingSchedule,
-    toggleCalendar,
-    toggleExcursions,
+    openCalendar,
+    openExcursions,
     openMapAt,
     openMapForExcursion,
     focusMapOnDate,

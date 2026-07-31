@@ -20,6 +20,12 @@ import { calendarEventFromEntry, googleCalendarHref, outlookCalendarHref, trigge
 import { fetchWeatherForecast, weatherCodeMeta, type DailyWeather } from '../utils/weather';
 import { collectWeatherLocations, dayWeatherEntries, type DayWeatherEntry } from '../utils/dayWeather';
 
+// Auf Desktop weiterhin eigenständig gemountete Schublade (App.vue, linker Platz). Auf Mobil
+// dagegen dieselbe Komponente als eigenständige Seite (Route /calendar, siehe router/index.ts)
+// statt in einer kaum bedienbaren Schublade – standalone (per Route-Prop gesetzt) reserviert dafür
+// wie jede andere Seite unten Platz für eine unten fixierte mobile NavBar (siehe .page-Pendant in
+// style.css; im Schubladen-Kontext übernimmt das stattdessen Drawer.vue's eigenes Scroll-Panel).
+defineProps<{ standalone?: boolean }>();
 const router = useRouter();
 const tripStore = useTripStore();
 const trip = computed(() => tripStore.currentTrip);
@@ -414,7 +420,7 @@ function openEntry(entry: CalendarEntry) {
   if (entry.kind === 'trip') jumpToTrip();
   else if (entry.kind === 'todo') router.push('/todo');
   else if (entry.kind === 'travel') router.push('/travel');
-  else if (entry.kind === 'excursion') drawers.excursionsOpen = true;
+  else if (entry.kind === 'excursion') drawers.openExcursions();
   else if (entry.kind === 'schedule') viewingItem.value = entry.scheduleItem;
 }
 
@@ -444,7 +450,7 @@ function formatDate(date: string) {
 </script>
 
 <template>
-  <div class="calendar-drawer-content" v-if="!loading">
+  <div class="calendar-drawer-content" :class="{ standalone }" v-if="!loading">
     <h2>Kalender</h2>
 
     <div class="pending-schedule-banner" v-if="drawers.pendingSchedule">
@@ -663,6 +669,13 @@ function formatDate(date: string) {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+}
+
+/* Als eigenständige Seite (Route /calendar) übernimmt kein Drawer-Panel mehr das Scrollen/die
+   Höhenbegrenzung – braucht deshalb wie jede andere Seite unten Platz für eine unten fixierte
+   mobile NavBar (siehe .page-Pendant in style.css). */
+.calendar-drawer-content.standalone {
+  padding-bottom: 88px;
 }
 
 .calendar-drawer-content h2 {

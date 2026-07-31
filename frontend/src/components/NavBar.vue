@@ -3,21 +3,19 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import { useNavPositionStore } from '../stores/navPosition';
-import { useDrawersStore } from '../stores/drawers';
+import { useIsDesktop } from '../composables/useIsDesktop';
 import { SECTION_ICONS } from '../utils/sectionIcons';
 
 const auth = useAuthStore();
 const router = useRouter();
 const navPosition = useNavPositionStore();
-const drawers = useDrawersStore();
+const isDesktop = useIsDesktop();
 
 // Schubladen (Drawer.vue) kleben ebenfalls "oben" fest und müssen wissen, wie viel Platz die
 // NavBar dort tatsächlich einnimmt, um sie nicht zu überdecken – siehe --navbar-offset in
-// style.css. Breite/Höhe der NavBar hängen vom Breakpoint (mobil/Desktop) und der jeweiligen
-// Positions-Einstellung ab, daher live per matchMedia + ResizeObserver statt fest verdrahtet.
+// style.css. Höhe hängt vom Breakpoint (mobil/Desktop) und der jeweiligen Positions-Einstellung
+// ab, daher live per ResizeObserver statt fest verdrahtet.
 const navEl = ref<HTMLElement | null>(null);
-const desktopQuery = window.matchMedia('(min-width: 800px)');
-const isDesktop = ref(desktopQuery.matches);
 const isTop = computed(() => (isDesktop.value ? navPosition.desktop === 'top' : navPosition.mobile === 'top'));
 let resizeObserver: ResizeObserver | null = null;
 
@@ -27,19 +25,13 @@ function updateOffset() {
   document.documentElement.style.setProperty('--navbar-bottom-offset', `${isTop.value ? 0 : height}px`);
 }
 
-function onDesktopQueryChange(event: MediaQueryListEvent) {
-  isDesktop.value = event.matches;
-}
-
 onMounted(() => {
-  desktopQuery.addEventListener('change', onDesktopQueryChange);
   resizeObserver = new ResizeObserver(updateOffset);
   if (navEl.value) resizeObserver.observe(navEl.value);
   updateOffset();
 });
 
 onUnmounted(() => {
-  desktopQuery.removeEventListener('change', onDesktopQueryChange);
   resizeObserver?.disconnect();
 });
 
@@ -73,43 +65,32 @@ function onLinkClick(event: MouseEvent) {
 <template>
   <nav ref="navEl" class="navbar" :class="[`mobile-${navPosition.mobile}`, `desktop-${navPosition.desktop}`]">
     <div class="links">
-      <!-- Kalender/Touren sind keine Routen, sondern globale Schubladen (App.vue) – auf Desktop
-           bleiben sie über die seitlich schwebende Lasche (Drawer.vue) erreichbar, die dort genug
-           Abstand zum Inhalt hat. Auf Mobil überlagerte dieselbe Lasche aber teils wichtige Buttons
-           (z. B. die Sheet-Auf/Ab-Pfeile in ExcursionsView.vue) – dort deshalb stattdessen als
-           normale NavBar-Buttons (siehe .drawer-nav-link, nur <800px sichtbar; Drawer.vue blendet
-           die Lasche im Gegenzug dort aus). Kalender bewusst ganz links (kein zugehöriger
-           Routen-Link, an den er sich "anlehnen" könnte), Touren direkt neben ihrem inhaltlichen
-           Pendant "Karte". router-link-active (statt einer eigenen Klasse) für identische Optik zum
-           aktiven Routen-Link nebenan. -->
-      <button
-        type="button"
-        class="link drawer-nav-link"
-        :class="{ 'router-link-active': drawers.calendarOpen }"
-        :aria-expanded="drawers.calendarOpen"
-        :aria-label="(drawers.calendarOpen ? 'Schließen: ' : 'Öffnen: ') + 'Kalender'"
-        @click="onLinkClick($event); drawers.toggleCalendar()"
-      >
+      <!-- Kalender/Touren sind auf Desktop weiterhin globale Schubladen (App.vue, über die seitlich
+           schwebende Lasche erreichbar). Dieselben ausklapp-Schubladen lassen sich auf Mobil aber
+           kaum sinnvoll bedienen (u. a. überlagerte die Lasche dort teils wichtige Inhalte/Buttons)
+           – dort deshalb stattdessen als ganz normale, fest verlinkte Nav-Punkte auf eigene Seiten
+           (/calendar, /tours – dieselben Komponenten wie in den Schubladen, siehe router/index.ts),
+           nur <800px sichtbar (.mobile-page-link; ab Desktop bleibt es bei den beiden bestehenden
+           Nav-Punkten hier, Kalender/Touren erreicht man dort weiterhin nur über die Lasche).
+           Kalender bewusst ganz links, Touren direkt neben ihrem inhaltlichen Pendant "Karte". -->
+      <router-link to="/calendar" class="link mobile-page-link" @click="onLinkClick">
         <span class="icon">{{ SECTION_ICONS.calendar }}</span>
         <span class="label">Kalender</span>
-      </button>
+      </router-link>
       <template v-for="link in links" :key="link.to">
         <router-link :to="link.to" class="link" @click="onLinkClick">
           <span class="icon">{{ link.icon }}</span>
           <span class="label">{{ link.label }}</span>
         </router-link>
-        <button
+        <router-link
           v-if="link.to === '/excursions'"
-          type="button"
-          class="link drawer-nav-link"
-          :class="{ 'router-link-active': drawers.excursionsOpen }"
-          :aria-expanded="drawers.excursionsOpen"
-          :aria-label="(drawers.excursionsOpen ? 'Schließen: ' : 'Öffnen: ') + 'Touren'"
-          @click="onLinkClick($event); drawers.toggleExcursions()"
+          to="/tours"
+          class="link mobile-page-link"
+          @click="onLinkClick"
         >
           <span class="icon">{{ SECTION_ICONS.excursions }}</span>
           <span class="label">Touren</span>
-        </button>
+        </router-link>
       </template>
     </div>
   </nav>
@@ -182,20 +163,14 @@ function onLinkClick(event: MouseEvent) {
   font-size: 1.2rem;
 }
 
-/* Button-Reset, damit er optisch nicht von den .link-<router-link>s daneben abweicht. Nur <800px
-   sichtbar (siehe @media unten) – ab Desktop übernimmt wieder die Drawer.vue-Lasche. */
-.drawer-nav-link {
-  border: none;
-  background: none;
-  font: inherit;
-}
-
 .logout {
   display: none;
 }
 
 @media (min-width: 800px) {
-  .drawer-nav-link {
+  /* Ab Desktop bleibt es bei den zwei ursprünglichen Nav-Punkten neben "Karte" – Kalender/Touren
+     erreicht man dort weiterhin ausschließlich über die seitliche Lasche (Drawer.vue). */
+  .mobile-page-link {
     display: none;
   }
 

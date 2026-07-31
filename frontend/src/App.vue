@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router';
 import { useAuthStore } from './stores/auth';
 import { useTripStore, type TripFormData } from './stores/trip';
 import { useDrawersStore } from './stores/drawers';
+import { useIsDesktop } from './composables/useIsDesktop';
 import { SECTION_ICONS } from './utils/sectionIcons';
 import AppHeader from './components/AppHeader.vue';
 import NavBar from './components/NavBar.vue';
@@ -16,6 +17,7 @@ const route = useRoute();
 const auth = useAuthStore();
 const tripStore = useTripStore();
 const drawers = useDrawersStore();
+const isDesktop = useIsDesktop();
 const showNav = computed(() => route.name !== 'login');
 
 watch(
@@ -56,7 +58,13 @@ async function onCreateFirstTrip(data: TripFormData) {
          Scrollen nicht von einer späteren DOM-Position aus nach oben. -->
     <NavBar />
     <div class="app-shell">
+      <!-- Kalender/Touren nur auf Desktop als Schublade gemountet – auf Mobil ersetzen dieselben
+           Komponenten stattdessen als eigenständige Seiten (/calendar, /tours, siehe router/index.ts)
+           den Hauptinhalt. v-if (nicht nur CSS) verhindert, dass ScheduleView/ExcursionsDrawer auf
+           Mobil zusätzlich zur Routen-Seite ein zweites Mal (unsichtbar) gemountet würde und dabei
+           unnötig ein zweites Mal seine Daten läuft. -->
       <Drawer
+        v-if="isDesktop"
         side="left"
         :open="drawers.calendarOpen"
         :width="drawers.calendarWidth"
@@ -71,6 +79,7 @@ async function onCreateFirstTrip(data: TripFormData) {
         <router-view :key="tripStore.currentTripId ?? undefined" />
       </main>
       <Drawer
+        v-if="isDesktop"
         side="right"
         :open="drawers.excursionsOpen"
         :width="drawers.excursionsWidth"

@@ -285,12 +285,13 @@ function formatWeekdayDate(d: string) {
     </section>
 
     <div class="grid cards">
-      <!-- Kalender: keine eigene Route mehr (jetzt Kalender-Schublade), Kachel öffnet die Schublade -->
+      <!-- Kalender: Desktop-Schublade bzw. Mobil-Seite /calendar (siehe drawers.openCalendar()),
+           kein eigener router-link nötig, da die Kachel je nach Breite unterschiedlich navigieren muss -->
       <button
         type="button"
         class="card tile tile-btn"
         :style="{ background: `${WIDGET_COLORS.get('schedule')}0d` }"
-        @click="drawers.calendarOpen = true"
+        @click="drawers.openCalendar()"
       >
         <span class="tile-icon" :style="{ background: `${WIDGET_COLORS.get('schedule')}26`, borderColor: WIDGET_COLORS.get('schedule') }">{{ SECTION_ICONS.calendar }}</span>
         <h3>Kalender</h3>

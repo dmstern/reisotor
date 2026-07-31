@@ -173,13 +173,14 @@ function onResizeEnd() {
   --drawer-handle-gap: 12px;
 }
 
-/* Mobil (Default): komplett ausgeblendet – überlagerte dort als seitlich schwebende Lasche
-   teilweise wichtige Inhalte/Buttons (z. B. die Sheet-Auf/Ab-Pfeile in ExcursionsView.vue).
-   Ersetzt durch echte NavBar-Buttons (siehe NavBar.vue's .drawer-nav-link), die dieselben
-   Schubladen öffnen/schließen. Erst ab Desktop (siehe @media unten) wieder als sticky Flex-
-   Geschwisterelement sichtbar, dort überlagert sie nichts (genug Abstand zum Inhalt). */
+/* Mobil (Default): Panel als fixed Overlay, Tab bleibt als touch-tauglicher Griff permanent am
+   Bildschirmrand sichtbar. Wächst zusätzlich bei Hover (Desktop-Maus) für präziseres Klicken,
+   ohne die Grundgröße dauerhaft so groß zu machen, dass sie Inhalte am Rand überlagert.
+   Kalender/Touren nutzen Drawer.vue inzwischen nur noch auf Desktop (App.vue rendert es dort
+   gar nicht mehr, siehe App.vue/router/index.ts – auf Mobil ersetzen eigene Seiten dieselben
+   Schubladen-Inhalte), diese mobile Darstellung bleibt hier trotzdem als generisches, für sich
+   responsives Verhalten der Komponente erhalten. */
 .drawer-tab {
-  display: none;
   position: fixed;
   top: 50%;
   transform: translateY(-50%);
@@ -190,6 +191,7 @@ function onResizeEnd() {
   border: 1px solid var(--color-border);
   background: var(--color-surface);
   box-shadow: var(--shadow-sm);
+  display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -374,7 +376,6 @@ function onResizeEnd() {
      ist derselbe Trick wie beim Panel selbst (top: calc(...)), nur mit 50% als Schwelle: der Tab
      rutscht dadurch beim Scrollen nie höher als vertikal mittig im sichtbaren Bereich. */
   .drawer-tab {
-    display: flex;
     position: sticky;
     top: 50%;
     transform: translateY(-50%);

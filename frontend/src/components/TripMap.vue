@@ -407,7 +407,7 @@ async function removeIdeaComment(id: number) {
 // den Ausflug dort selbst (Architekturregel: fremde Objekte nur lesend/verknüpfend).
 function editOpenExcursion() {
   excursionDetailOpen.value = false;
-  drawers.excursionsOpen = true;
+  drawers.openExcursions();
 }
 
 // Klick auf eine Unterkunft-/Reise-Station in der Stationsliste öffnet den echten Unterkunft-/
@@ -438,8 +438,9 @@ function openStationDetail(station: ExcursionStation) {
     drawers.mapFocusKey = station.key;
   } else if (station.kind === 'schedule') {
     // Kein eigener Detail-Dialog für Termine vorhanden (Architekturregel: fremde Objekte springen
-    // zur Ursprungssicht statt inline editierbar zu sein) – öffnet stattdessen die Kalender-Schublade.
-    drawers.calendarOpen = true;
+    // zur Ursprungssicht statt inline editierbar zu sein) – öffnet stattdessen die Kalender-Schublade
+    // (Desktop) bzw. navigiert zur Kalender-Seite (Mobil, siehe drawers.openCalendar()).
+    drawers.openCalendar();
     drawers.mapFocusKey = station.key;
   } else {
     openTravelId.value = station.id;
