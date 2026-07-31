@@ -19,7 +19,7 @@ const PATTERNS: RegExp[] = [
   /[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/,
 ];
 
-function parseLatLngFromText(url: string): LatLng | null {
+export function parseLatLngFromText(url: string): LatLng | null {
   // Manche Apple-Maps-Links kodieren das Komma im coordinate=/ll=-Parameter als %2C.
   let text = url;
   try {

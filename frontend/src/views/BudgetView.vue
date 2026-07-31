@@ -12,6 +12,7 @@ import type {
 } from '../api/types';
 import { useTripStore } from '../stores/trip';
 import { assignCategoryColors } from '../utils/categoryColors';
+import { computeBalances, computeTwoPersonSummary } from '../utils/budgetBalances';
 import BudgetMeter from '../components/BudgetMeter.vue';
 import Modal from '../components/Modal.vue';
 import EditButton from '../components/EditButton.vue';
@@ -269,28 +270,9 @@ async function removeTransfer(id: number) {
 }
 
 // --- Salden / Schulden ---
-const balances = computed(() => {
-  const n = users.value.length;
-  if (n === 0) return [];
-  const fairShare = totalSpent.value / n;
-  return users.value.map((u) => {
-    const paid = expenses.value.filter((e) => e.paid_by_user_id === u.id).reduce((s, e) => s + e.amount, 0);
-    const received = transfers.value.filter((t) => t.to_user_id === u.id).reduce((s, t) => s + t.amount, 0);
-    const sent = transfers.value.filter((t) => t.from_user_id === u.id).reduce((s, t) => s + t.amount, 0);
-    // Eine Überweisung ist eine Schuldenrückzahlung: wer sendet, baut Schulden ab (net steigt);
-    // wer empfängt, hat bereits Ausgleich bekommen (net sinkt).
-    const net = paid - fairShare + sent - received;
-    return { user: u, paid, fairShare, net };
-  });
-});
-
-const twoPersonSummary = computed(() => {
-  if (balances.value.length !== 2) return null;
-  const [a, b] = balances.value;
-  if (Math.abs(a.net) < 0.01) return { settled: true as const };
-  const [debtor, creditor] = a.net < 0 ? [a, b] : [b, a];
-  return { settled: false as const, debtor: debtor.user, creditor: creditor.user, amount: Math.abs(a.net) };
-});
+// Berechnung in utils/budgetBalances.ts (reine Funktionen, unit-testbar ohne Komponenten-Mounting).
+const balances = computed(() => computeBalances(users.value, expenses.value, transfers.value));
+const twoPersonSummary = computed(() => computeTwoPersonSummary(balances.value));
 
 // --- Kategorienfarben (konsistent über alle Budgets hinweg) ---
 const categoryColors = computed(() => {

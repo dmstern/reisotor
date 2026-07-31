@@ -12,9 +12,42 @@ Nach jeder Frontend-Änderung zuerst den günstigsten Check laufen lassen:
 cd frontend && npm run build   # führt vue-tsc --noEmit vor dem Vite-Build aus
 ```
 
+## Unit-Tests (`backend/test/`, `frontend/src/**/*.test.ts`)
+
+Vitest auf beiden Seiten, unabhängig konfiguriert (Backend: `backend/vitest.config.ts`; Frontend:
+`test`-Key in `frontend/vite.config.ts`). Laufen ohne Browser/Server, deterministisch und schnell —
+im Gegensatz zur E2E-Suite unten laufen sie deshalb automatisch in CI, direkt vor dem jeweiligen
+Build-Schritt in `.github/workflows/build-deploy.yml`. Ein fehlschlagender Unit-Test verhindert
+damit sowohl den `main`→Staging- als auch den `prod`→Produktions-Deploy.
+
+```bash
+cd backend && npm test    # bzw. npm run test:watch für Watch-Mode
+cd frontend && npm test
+```
+
+Backend-Tests laufen gegen eine isolierte `:memory:`-SQLite-Instanz pro Testdatei (siehe
+`backend/test/helpers/buildTestApp.ts`), nie gegen echte Nutzdaten oder `data.sqlite`. Isolation ist
+bewusst pro Testdatei, nicht pro einzelnem Test (`beforeAll` statt `beforeEach`) — Tests innerhalb
+einer Datei legen dafür jeweils eigene, eindeutig identifizierbare Ressourcen an, statt sich auf
+eine leere Tabelle zu verlassen. Bei wachsender Suite ließe sich das mit `vi.resetModules()` in
+`beforeEach` auf echte Pro-Test-Isolation umstellen.
+
+`backend/src/utils/mapsLink.ts`s `resolveLatLng()` hat einen echten `fetch()`-Fallback (Kurzlink-
+Redirect-Auflösung, 5s Timeout) — bleibt bewusst ungetestet (würde Netzwerk-Mocking brauchen, für
+einen Best-Effort-Fallback aktuell nicht des Aufwands wert). Der direkte Parse-Pfad davor
+(`parseLatLngFromText`) ist dagegen vollständig getestet.
+
+### Umfang: Regressionsnetz statt Vollabdeckung
+
+Dieselbe Philosophie wie bei der E2E-Suite unten ("Wann einen neuen/aktualisierten Test
+schreiben?"): Regressionsnetz für echte Logik (Berechnungen, Regex-Parsing, Auth-Gating), keine
+vollständige Abdeckung jeder Route/Funktion. Reine CRUD-Routen ohne Verzweigungslogik brauchen i. d.
+R. keinen eigenen Test.
+
 ## E2E-Tests (`/e2e`)
 
-Committete Playwright-Suite, die beide Dev-Server automatisch startet und gegen eine frisch
+Ergänzt die schnellen, browserlosen Unit-Tests oben um echte Klick-Interaktionen durch einen
+Browser. Committete Playwright-Suite, die beide Dev-Server automatisch startet und gegen eine frisch
 geseedete, isolierte Test-Datenbank läuft (nie gegen echte Nutzdaten). Funktioniert identisch
 lokal, in einer Cloud-Sandbox und wenn Claude Code direkt am GitHub-Repo arbeitet (z. B. über die
 Claude-Mobile-App) — die gesamte Infrastruktur (Server-Autostart, Seed-Daten, Login) ist committet,

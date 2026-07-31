@@ -16,4 +16,9 @@ export default defineConfig({
       },
     },
   },
+  test: {
+    // Alle aktuellen Testziele sind plain Functions auf plain Daten (utils/*.ts) - kein DOM nötig,
+    // daher kein jsdom/@vue/test-utils. Bei künftigen Komponenten-Tests hier auf 'jsdom' wechseln.
+    environment: 'node',
+  },
 });

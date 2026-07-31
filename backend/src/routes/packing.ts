@@ -15,7 +15,7 @@ interface PackingBody {
 /** Klammert beide Zähler serverseitig auf [0, quantity] und stellt sicher, dass "eingepackt" nie
  *  größer als "rausgelegt" ist (etwas Eingepacktes muss vorher rausgelegt worden sein) – schützt
  *  vor inkonsistenten Werten unabhängig davon, was das Frontend schickt. */
-function clampCounts(quantityRaw: number | undefined, laidOutRaw: number | undefined, packedRaw: number | undefined) {
+export function clampCounts(quantityRaw: number | undefined, laidOutRaw: number | undefined, packedRaw: number | undefined) {
   const quantity = Math.max(1, Math.round(quantityRaw ?? 1));
   const packed = Math.min(quantity, Math.max(0, Math.round(packedRaw ?? 0)));
   const laidOut = Math.min(quantity, Math.max(packed, Math.round(laidOutRaw ?? 0)));
