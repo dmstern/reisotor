@@ -3,11 +3,13 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import { useNavPositionStore } from '../stores/navPosition';
+import { useDrawersStore } from '../stores/drawers';
 import { SECTION_ICONS } from '../utils/sectionIcons';
 
 const auth = useAuthStore();
 const router = useRouter();
 const navPosition = useNavPositionStore();
+const drawers = useDrawersStore();
 
 // Schubladen (Drawer.vue) kleben ebenfalls "oben" fest und müssen wissen, wie viel Platz die
 // NavBar dort tatsächlich einnimmt, um sie nicht zu überdecken – siehe --navbar-offset in
@@ -71,10 +73,44 @@ function onLinkClick(event: MouseEvent) {
 <template>
   <nav ref="navEl" class="navbar" :class="[`mobile-${navPosition.mobile}`, `desktop-${navPosition.desktop}`]">
     <div class="links">
-      <router-link v-for="link in links" :key="link.to" :to="link.to" class="link" @click="onLinkClick">
-        <span class="icon">{{ link.icon }}</span>
-        <span class="label">{{ link.label }}</span>
-      </router-link>
+      <!-- Kalender/Touren sind keine Routen, sondern globale Schubladen (App.vue) – auf Desktop
+           bleiben sie über die seitlich schwebende Lasche (Drawer.vue) erreichbar, die dort genug
+           Abstand zum Inhalt hat. Auf Mobil überlagerte dieselbe Lasche aber teils wichtige Buttons
+           (z. B. die Sheet-Auf/Ab-Pfeile in ExcursionsView.vue) – dort deshalb stattdessen als
+           normale NavBar-Buttons (siehe .drawer-nav-link, nur <800px sichtbar; Drawer.vue blendet
+           die Lasche im Gegenzug dort aus). Kalender bewusst ganz links (kein zugehöriger
+           Routen-Link, an den er sich "anlehnen" könnte), Touren direkt neben ihrem inhaltlichen
+           Pendant "Karte". router-link-active (statt einer eigenen Klasse) für identische Optik zum
+           aktiven Routen-Link nebenan. -->
+      <button
+        type="button"
+        class="link drawer-nav-link"
+        :class="{ 'router-link-active': drawers.calendarOpen }"
+        :aria-expanded="drawers.calendarOpen"
+        :aria-label="(drawers.calendarOpen ? 'Schließen: ' : 'Öffnen: ') + 'Kalender'"
+        @click="onLinkClick($event); drawers.toggleCalendar()"
+      >
+        <span class="icon">{{ SECTION_ICONS.calendar }}</span>
+        <span class="label">Kalender</span>
+      </button>
+      <template v-for="link in links" :key="link.to">
+        <router-link :to="link.to" class="link" @click="onLinkClick">
+          <span class="icon">{{ link.icon }}</span>
+          <span class="label">{{ link.label }}</span>
+        </router-link>
+        <button
+          v-if="link.to === '/excursions'"
+          type="button"
+          class="link drawer-nav-link"
+          :class="{ 'router-link-active': drawers.excursionsOpen }"
+          :aria-expanded="drawers.excursionsOpen"
+          :aria-label="(drawers.excursionsOpen ? 'Schließen: ' : 'Öffnen: ') + 'Touren'"
+          @click="onLinkClick($event); drawers.toggleExcursions()"
+        >
+          <span class="icon">{{ SECTION_ICONS.excursions }}</span>
+          <span class="label">Touren</span>
+        </button>
+      </template>
     </div>
   </nav>
 </template>
@@ -146,11 +182,23 @@ function onLinkClick(event: MouseEvent) {
   font-size: 1.2rem;
 }
 
+/* Button-Reset, damit er optisch nicht von den .link-<router-link>s daneben abweicht. Nur <800px
+   sichtbar (siehe @media unten) – ab Desktop übernimmt wieder die Drawer.vue-Lasche. */
+.drawer-nav-link {
+  border: none;
+  background: none;
+  font: inherit;
+}
+
 .logout {
   display: none;
 }
 
 @media (min-width: 800px) {
+  .drawer-nav-link {
+    display: none;
+  }
+
   .navbar.mobile-bottom {
     /* Mobile Einstellung gilt hier nicht mehr – Desktop-Einstellung übernimmt. */
     position: sticky;
