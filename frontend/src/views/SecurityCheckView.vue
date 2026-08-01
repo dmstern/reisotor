@@ -166,11 +166,17 @@ function startCheck() {
 
           <!-- Arme: Rumpf-Rect ist x=89..201, Schulterhöhe knapp unter dem Kopf. Runde Linienenden
                (stroke-linecap) + Handkreis ergeben dieselbe weiche Formsprache wie der Rest des
-               Roboters, statt eckiger Gliedmaßen. -->
-          <line x1="93" y1="208" x2="55" y2="240" stroke="#4FB3A9" stroke-width="14" stroke-linecap="round" />
-          <circle cx="55" cy="240" r="12" fill="#FDF6EC" />
-          <line x1="197" y1="208" x2="235" y2="240" stroke="#4FB3A9" stroke-width="14" stroke-linecap="round" />
-          <circle cx="235" cy="240" r="12" fill="#FDF6EC" />
+               Roboters, statt eckiger Gliedmaßen. Jeweils in einer eigenen Gruppe mit
+               transform-origin am Schulterpunkt, damit sie während des Scans ums Schultergelenk
+               schwingen können statt sich um ihren Mittelpunkt zu drehen. -->
+          <g class="arm arm-left">
+            <line x1="93" y1="208" x2="55" y2="240" stroke="#4FB3A9" stroke-width="14" stroke-linecap="round" />
+            <circle cx="55" cy="240" r="12" fill="#FDF6EC" />
+          </g>
+          <g class="arm arm-right">
+            <line x1="197" y1="208" x2="235" y2="240" stroke="#4FB3A9" stroke-width="14" stroke-linecap="round" />
+            <circle cx="235" cy="240" r="12" fill="#FDF6EC" />
+          </g>
 
           <!-- Rumpf -->
           <rect x="89" y="194" width="112" height="80" rx="18" fill="#F4A261" />
@@ -290,22 +296,23 @@ function startCheck() {
   transform: scaleY(1.1);
 }
 
-/* Nachdenklich wirkendes Hin-und-Her der Pupillen (nicht der ganzen Augen), solange der Reisotor
-   noch auf eine Anweisung wartet – pausiert automatisch, sobald phase auf "scanning"/"done"
-   wechselt (kein .pupil-group-Animation-Selektor außerhalb von .robot.idle). */
+/* Pupillen (nicht die ganzen Augen) rollen in allen Zuständen immer mal wieder sanft hin und her –
+   ein durchgehender kleiner Lebendigkeits-Tick statt eines auf idle beschränkten "Nachdenken"-Looks.
+   Kombiniert konfliktfrei mit der Blinzel-Animation der Eltern-.eye (unterschiedliche Elemente)
+   bzw. mit deren scaleY-Fixierung während des Scans. */
 .pupil-group {
   transform-box: fill-box;
   transform-origin: center;
+  animation: look-roll 4.2s ease-in-out infinite;
 }
 
-.robot.idle .pupil-group {
-  animation: look-wiggle 3.6s ease-in-out infinite;
-}
-
-@keyframes look-wiggle {
-  0%, 100% { transform: translateX(0); }
-  20%, 40% { transform: translateX(-3px); }
-  60%, 80% { transform: translateX(3px); }
+@keyframes look-roll {
+  0%, 100% { transform: translate(0, 0); }
+  15% { transform: translate(-3px, -1px); }
+  30% { transform: translate(-3px, 1px); }
+  50% { transform: translate(0, 0); }
+  65% { transform: translate(3px, -1px); }
+  80% { transform: translate(3px, 1px); }
 }
 
 .mouth {
@@ -343,6 +350,35 @@ function startCheck() {
 @keyframes ping {
   0% { transform: scale(0.6); opacity: 0.7; }
   100% { transform: scale(2.2); opacity: 0; }
+}
+
+/* Arme schwingen nur während des Scans etwas – sieht aus, als würde der Reisotor dabei
+   "arbeiten". transform-box: view-box statt fill-box: der Drehpunkt soll der feste Schulterpunkt
+   im SVG-Koordinatensystem sein, nicht die (durch Linie+Handkreis unregelmäßige) eigene
+   Bounding-Box der Gruppe. Rechter Arm mit halber Periode versetzt, damit beide gegenläufig statt
+   synchron schwingen. */
+.arm-left {
+  transform-box: view-box;
+  transform-origin: 93px 208px;
+}
+
+.arm-right {
+  transform-box: view-box;
+  transform-origin: 197px 208px;
+}
+
+.robot.scanning .arm-left,
+.robot.scanning .arm-right {
+  animation: armswing 1s ease-in-out infinite;
+}
+
+.robot.scanning .arm-right {
+  animation-delay: 0.5s;
+}
+
+@keyframes armswing {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(10deg); }
 }
 
 .badge {
@@ -430,7 +466,12 @@ function startCheck() {
 .result-list li {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  /* flex-wrap zusammen mit dem festen flex-basis:100% am Verdict (siehe dort): das Verdict
+     bekommt IMMER eine eigene volle Zeile unter Icon+Label, statt sich (fragil, je nach
+     Textlänge/Breite unterschiedlich) eine Reihe mit dem Label zu teilen – das war der
+     eigentliche Grund für das Überlappen/Herausragen auf schmalen Mobile-Breiten. */
+  flex-wrap: wrap;
+  gap: 2px var(--space-2);
   padding: 6px var(--space-2);
   border-radius: var(--radius-sm);
   background: var(--color-primary-tint);
@@ -442,14 +483,21 @@ function startCheck() {
 
 .result-label {
   flex: 1;
+  /* min-width:0 statt des Flexbox-Defaults auto: sonst verhindert die intrinsische Textbreite das
+     Schrumpfen/Umbrechen und lange Kategorienamen ragen auf schmalen Breiten über die Box hinaus. */
+  min-width: 0;
   font-weight: 600;
   font-size: 0.88rem;
 }
 
 .result-verdict {
+  /* Erzwingt den Umbruch in eine eigene Zeile (siehe Kommentar an .result-list li) – flex-basis:100%
+     beansprucht die volle Zeilenbreite, wodurch für Icon+Label garantiert kein Platz mehr auf
+     derselben Zeile bleibt. */
+  flex-basis: 100%;
+  padding-left: calc(1.1rem + var(--space-2));
   font-size: 0.82rem;
   color: var(--color-success);
-  white-space: nowrap;
 }
 
 .quote {
