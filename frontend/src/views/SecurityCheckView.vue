@@ -42,7 +42,6 @@ const CATEGORIES = [
   { icon: '👽', label: 'Außerirdische Aktivität' },
   { icon: '☔', label: 'Wetterchaos' },
   { icon: '🧳', label: 'Gepäck-Verschwörungen' },
-  { icon: '🍽️', label: 'Restaurant-Bewertungen' },
   { icon: '🐍', label: 'Wildtier-Begegnungen' },
   { icon: '🛗', label: 'Hotel-Aufzüge' },
   { icon: '🧭', label: 'Verlaufens-Wahrscheinlichkeit' },
@@ -90,12 +89,15 @@ function startCheck() {
   results.value = [];
   quote.value = '';
 
+  // Deutlich langsamer als ein technischer Ladebalken: die "Behörden" im Hintergrund brauchen
+  // spürbar Zeit, jede Meldung soll in Ruhe lesbar sein, bevor die nächste erscheint.
+  const MESSAGE_INTERVAL_MS = 1500;
   const messages = pickRandom(SCAN_MESSAGES, 5);
   messages.forEach((msg, i) => {
     timers.push(
       window.setTimeout(() => {
         visibleMessages.value.push(msg);
-      }, 500 * i + 300),
+      }, MESSAGE_INTERVAL_MS * i + 400),
     );
   });
 
@@ -107,7 +109,7 @@ function startCheck() {
       }));
       quote.value = QUOTES[Math.floor(Math.random() * QUOTES.length)];
       phase.value = 'done';
-    }, 500 * messages.length + 900),
+    }, MESSAGE_INTERVAL_MS * messages.length + 1600),
   );
 }
 </script>
@@ -140,22 +142,35 @@ function startCheck() {
           <!-- Kopf -->
           <rect class="head" x="71" y="66" width="148" height="126" rx="32" fill="#4FB3A9" />
 
-          <!-- Augen -->
+          <!-- Augen: Pupille+Lichtreflex in eigener Gruppe, damit sie beim "Nachdenken" (idle)
+               unabhängig von der Augenweiß-Blinzel-Animation hin- und herwackeln können. -->
           <g class="eye eye-left">
             <circle cx="113" cy="122" r="20" fill="#FDF6EC" />
-            <circle cx="116" cy="127" r="8" fill="#1F3A3D" />
-            <circle cx="113" cy="120" r="4" fill="#FFFFFF" opacity="0.9" />
+            <g class="pupil-group">
+              <circle cx="116" cy="127" r="8" fill="#1F3A3D" />
+              <circle cx="113" cy="120" r="4" fill="#FFFFFF" opacity="0.9" />
+            </g>
           </g>
           <g class="eye eye-right">
             <circle cx="177" cy="122" r="20" fill="#FDF6EC" />
-            <circle cx="180" cy="127" r="8" fill="#1F3A3D" />
-            <circle cx="177" cy="120" r="4" fill="#FFFFFF" opacity="0.9" />
+            <g class="pupil-group">
+              <circle cx="180" cy="127" r="8" fill="#1F3A3D" />
+              <circle cx="177" cy="120" r="4" fill="#FFFFFF" opacity="0.9" />
+            </g>
           </g>
 
           <path class="mouth" :d="mouthPath" fill="none" stroke="#1F3A3D" stroke-width="4" stroke-linecap="round" />
 
           <circle cx="85" cy="110" r="7" fill="#F4A261" />
           <circle cx="205" cy="110" r="7" fill="#F4A261" />
+
+          <!-- Arme: Rumpf-Rect ist x=89..201, Schulterhöhe knapp unter dem Kopf. Runde Linienenden
+               (stroke-linecap) + Handkreis ergeben dieselbe weiche Formsprache wie der Rest des
+               Roboters, statt eckiger Gliedmaßen. -->
+          <line x1="93" y1="208" x2="55" y2="240" stroke="#4FB3A9" stroke-width="14" stroke-linecap="round" />
+          <circle cx="55" cy="240" r="12" fill="#FDF6EC" />
+          <line x1="197" y1="208" x2="235" y2="240" stroke="#4FB3A9" stroke-width="14" stroke-linecap="round" />
+          <circle cx="235" cy="240" r="12" fill="#FDF6EC" />
 
           <!-- Rumpf -->
           <rect x="89" y="194" width="112" height="80" rx="18" fill="#F4A261" />
@@ -273,6 +288,24 @@ function startCheck() {
 .robot.scanning .eye {
   animation: none;
   transform: scaleY(1.1);
+}
+
+/* Nachdenklich wirkendes Hin-und-Her der Pupillen (nicht der ganzen Augen), solange der Reisotor
+   noch auf eine Anweisung wartet – pausiert automatisch, sobald phase auf "scanning"/"done"
+   wechselt (kein .pupil-group-Animation-Selektor außerhalb von .robot.idle). */
+.pupil-group {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.robot.idle .pupil-group {
+  animation: look-wiggle 3.6s ease-in-out infinite;
+}
+
+@keyframes look-wiggle {
+  0%, 100% { transform: translateX(0); }
+  20%, 40% { transform: translateX(-3px); }
+  60%, 80% { transform: translateX(3px); }
 }
 
 .mouth {
