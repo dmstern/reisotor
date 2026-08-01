@@ -293,7 +293,15 @@ CREATE TABLE IF NOT EXISTS sessions (
 `);
 
 // Additive Migrationen (idempotent): erlaubt, das Schema weiterzuentwickeln,
-// ohne bestehende Daten in data.sqlite zu verlieren.
+// ohne bestehende Daten in data.sqlite zu verlieren. Läuft bei jedem Backend-Start automatisch
+// gegen die echte Prod-Datei (deploy.sh/Pi-Cronjob überschreiben *.sqlite* nie) - das IST der
+// Prod-Migrationsmechanismus, kein separater Schritt nötig.
+//
+// Vor jedem dropColumnIfExists/Rename einer Spalte, die schon vor dem letzten Prod-Deploy live war
+// (Check: git diff gegen den Merge-Base mit origin/prod): Backfill davor, falls die Spalte echte
+// Werte tragen könnte (siehe packing_items.checked bzw. ideas.date weiter unten als Vorlage) -
+// sonst gehen sie beim nächsten Deploy kommentarlos verloren. Siehe CLAUDE.md, Abschnitt
+// "Datenmodell-Änderungen (DB-Migrationen)", für den vollständigen Check.
 function ensureColumn(table: string, column: string, definition: string) {
   const existing = db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
   if (!existing.some((c) => c.name === column)) {
