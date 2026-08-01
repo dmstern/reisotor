@@ -1,7 +1,14 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 
-const props = defineProps<{ modelValue: string; options: string[]; placeholder?: string }>();
+// modelValue optional mit Default '': Aufrufer wie PackingListView.vue binden ein Record<string,
+// string>, dessen Schlüssel erst existiert, sobald einmal in das jeweilige Feld reingetippt wurde –
+// bis dahin liefert der Zugriff undefined. Als Pflicht-String deklariert warf .trim() darauf und riss
+// das Rendering der Komponente ab (sichtbar als spontan verschwindendes/springendes Formularfeld).
+const props = withDefaults(
+  defineProps<{ modelValue?: string; options: string[]; placeholder?: string }>(),
+  { modelValue: '' },
+);
 const emit = defineEmits<{ (e: 'update:modelValue', value: string): void }>();
 
 const open = ref(false);
