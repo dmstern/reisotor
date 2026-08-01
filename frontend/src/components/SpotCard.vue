@@ -25,6 +25,10 @@ const props = defineProps<{
   // onCardClick unten) – ein Pin-Klick auf der Karte muss diese Karte hier aufklappen können, ohne
   // dass TripMap.vue direkten Zugriff auf SpotCard-Instanzen bräuchte.
   expanded: boolean;
+  // Frühestes Datum, an dem dieser Spot über einen Kalender-Termin (schedule_items.spot_id)
+  // eingeplant ist, oder null falls (noch) nicht geplant – vom Elternteil aus dem scheduleStore
+  // abgeleitet (analog zu Excursion.date), da mehrere Karten sich denselben Stand teilen müssen.
+  scheduledDate: string | null;
 }>();
 const emit = defineEmits<{
   (e: 'edit', spot: Spot): void;
@@ -38,6 +42,10 @@ const emit = defineEmits<{
 }>();
 
 const showComments = ref(false);
+
+function formatDate(d: string) {
+  return new Date(d).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+}
 
 // Natives Drag (Zuordnen zu einer Tour) startet über einen dedizierten Anfasser (.excursion-drag-
 // handle, siehe Template) statt über die ganze Karte – @click.stop dort verhindert, dass ein reiner
@@ -114,6 +122,7 @@ function onCardClick() {
       <span v-if="!spot.image_url" class="placeholder">{{ spotCategoryMeta(spot.category).icon }}</span>
       <EditButton floating @click="emit('edit', spot)" />
       <DeleteButton floating @click="emit('remove', spot.id)" />
+      <span v-if="scheduledDate" class="status planned">📅 {{ formatDate(scheduledDate) }}</span>
     </div>
     <div class="body">
       <div class="head">
@@ -201,6 +210,40 @@ function onCardClick() {
 
 .placeholder {
   font-size: 2.2rem;
+}
+
+/* Status-Chip "geplant" (im Kalender eingeplant) mit Datum – dasselbe Muster wie
+   ExcursionCard.vue's .status/.status.planned (inkl. Dark-Mode-Override unten), damit beide
+   Karten-Typen optisch konsistent bleiben. Unten statt oben rechts positioniert: oben rechts
+   sitzt hier bereits der schwebende Löschen-Button (EditButton/DeleteButton floating landen beide
+   im selben .image-Container), anders als bei ExcursionCard.vue, wo der Löschen-Button außerhalb
+   von .image auf Höhe der ganzen (breiteren) Card schwebt. Nur im geplanten Fall sichtbar (siehe
+   v-if im Template) statt immer einen "Nicht geplant"-Chip zu zeigen – ein Spot muss (anders als
+   ein Ausflug) nicht zwangsläufig einmal eingeplant werden. */
+.status {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.status.planned {
+  color: var(--color-success);
+}
+
+:root[data-theme='dark'] .status {
+  background: rgba(35, 34, 32, 0.85);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .status {
+    background: rgba(35, 34, 32, 0.85);
+  }
 }
 
 .body {
