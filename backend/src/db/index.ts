@@ -437,8 +437,8 @@ ensureColumn('travel_items', 'to_place_id', 'INTEGER REFERENCES travel_places(id
 // Datum dieses Termins zurück als Excursion.date, damit alle bestehenden Verbraucher davon
 // unverändert weiterlaufen). Dasselbe gilt für einzelne Spots (schedule_items.spot_id) – beide
 // Fälle legen dafür jetzt einen echten Termin an statt (wie zuvor) einen unsichtbaren
-// Ein-Spot-Ausflug zu erzeugen.
-dropColumnIfExists('ideas', 'date');
+// Ein-Spot-Ausflug zu erzeugen. Backfill + Drop stehen weiter unten (nach dem trip_id-Block),
+// weil der Backfill schedule_items.trip_id braucht, das erst dort sicher existiert.
 ensureColumn('ideas', 'created_by', 'INTEGER REFERENCES users(id)');
 dropColumnIfExists('ideas', 'link');
 dropColumnIfExists('ideas', 'maps_link');
@@ -488,6 +488,20 @@ if (firstTrip) {
   for (const table of TRIP_SCOPED_TABLES) {
     db.prepare(`UPDATE ${table} SET trip_id = ? WHERE trip_id IS NULL`).run(firstTrip.id);
   }
+}
+
+// Backfill für den ideas.date-Drop weiter oben: Ausflüge, die noch ein Datum aus dem alten Modell
+// tragen, bekommen dafür einen echten Termin, statt ihr Datum stillschweigend zu verlieren.
+// Braucht ideas.trip_id/schedule_items.trip_id, deshalb erst hier (nach obigem Block) statt direkt
+// bei den anderen ideas-Migrationen weiter oben.
+if (hasColumn('ideas', 'date')) {
+  db.exec(`
+    INSERT INTO schedule_items (trip_id, date, title, idea_id)
+    SELECT trip_id, date, title, id FROM ideas
+    WHERE date IS NOT NULL AND date != ''
+      AND NOT EXISTS (SELECT 1 FROM schedule_items WHERE idea_id = ideas.id)
+  `);
+  dropColumnIfExists('ideas', 'date');
 }
 
 const DEFAULT_BUDGET_CATEGORIES = [
