@@ -615,83 +615,93 @@ function showSpotOnMap(spot: Spot) {
 
       <!-- Filter und Sortierung bewusst direkt hier, unmittelbar über der Kategorie-Navi (statt
            Sortierung z. B. oben im .header): beide wirken auf dieselbe Kategorie-gruppierte Liste,
-           sollen deshalb auch räumlich als zusammengehöriges Werkzeug-Trio wahrgenommen werden. -->
+           sollen deshalb auch räumlich als zusammengehöriges Werkzeug-Trio wahrgenommen werden.
+           Sortierung und Filter in getrennten Zeilen (statt einer gemeinsamen, umbrechenden Reihe):
+           beides sind konzeptionell unterschiedliche Werkzeuge (eine Reihenfolge vs. eine
+           Ein-/Ausblend-Auswahl), ein eigenes Label+Icon je Zeile macht das auf einen Blick klar. -->
       <div class="filter-bar" v-if="filterCategoryOptions.length">
-        <div class="filter-chips">
-          <span v-for="cat in categoryFilter" :key="cat" class="filter-chip">
-            {{ groupIcon(cat) }} {{ cat }}
-            <button type="button" @click="removeCategoryFilter(cat)" aria-label="Filter entfernen">✕</button>
-          </span>
-          <span v-for="status in statusFilter" :key="status" class="filter-chip">
-            {{ STATUS_FILTER_LABEL[status] }}
-            <button type="button" @click="removeStatusFilter(status)" aria-label="Filter entfernen">✕</button>
-          </span>
+        <div class="tool-row">
+          <span class="tool-label">🔀 Sortieren</span>
+          <div class="dropdown">
+            <button
+              type="button"
+              class="secondary sort-btn"
+              title="Sortierung ändern"
+              aria-label="Sortierung ändern"
+              @click="sortMenuOpen = !sortMenuOpen"
+            >
+              {{ sortMode === 'likes' ? '❤️ Nach Likes' : '🔤 Alphabetisch' }}
+            </button>
+            <template v-if="sortMenuOpen">
+              <div class="picker-backdrop" @click="sortMenuOpen = false"></div>
+              <div class="picker-menu">
+                <button type="button" :class="{ active: sortMode === 'alpha' }" @click="sortMode = 'alpha'; sortMenuOpen = false">
+                  🔤 Alphabetisch
+                </button>
+                <button type="button" :class="{ active: sortMode === 'likes' }" @click="sortMode = 'likes'; sortMenuOpen = false">
+                  ❤️ Nach Likes
+                </button>
+              </div>
+            </template>
+          </div>
         </div>
-        <div class="dropdown">
-          <button
-            type="button"
-            class="secondary sort-btn"
-            title="Sortierung ändern"
-            aria-label="Sortierung ändern"
-            @click="sortMenuOpen = !sortMenuOpen"
-          >
-            🔀 {{ sortMode === 'likes' ? 'Nach Likes' : 'Alphabetisch' }}
-          </button>
-          <template v-if="sortMenuOpen">
-            <div class="picker-backdrop" @click="sortMenuOpen = false"></div>
-            <div class="picker-menu">
-              <button type="button" :class="{ active: sortMode === 'alpha' }" @click="sortMode = 'alpha'; sortMenuOpen = false">
-                🔤 Alphabetisch
-              </button>
-              <button type="button" :class="{ active: sortMode === 'likes' }" @click="sortMode = 'likes'; sortMenuOpen = false">
-                ❤️ Nach Likes
-              </button>
-            </div>
-          </template>
-        </div>
-        <div class="dropdown">
-          <button
-            type="button"
-            class="secondary category-btn"
-            title="Nach Kategorie filtern"
-            aria-label="Nach Kategorie filtern"
-            @click="categoryMenuOpen = !categoryMenuOpen"
-          >
-            🏷️ Kategorie
-          </button>
-          <template v-if="categoryMenuOpen">
-            <div class="picker-backdrop" @click="categoryMenuOpen = false"></div>
-            <div class="picker-menu category-menu">
-              <label v-for="cat in filterCategoryOptions" :key="cat" class="category-option">
-                <input type="checkbox" :value="cat" v-model="categoryFilter" />
-                {{ groupIcon(cat) }} {{ cat }}
-              </label>
-            </div>
-          </template>
-        </div>
-        <div class="dropdown">
-          <button
-            type="button"
-            class="secondary category-btn"
-            title="Nach Status (geplant/ungeplant) filtern"
-            aria-label="Nach Status filtern"
-            @click="statusMenuOpen = !statusMenuOpen"
-          >
-            🗓️ Status
-          </button>
-          <template v-if="statusMenuOpen">
-            <div class="picker-backdrop" @click="statusMenuOpen = false"></div>
-            <div class="picker-menu category-menu">
-              <label class="category-option">
-                <input type="checkbox" value="planned" v-model="statusFilter" />
-                📅 Geplant
-              </label>
-              <label class="category-option">
-                <input type="checkbox" value="unplanned" v-model="statusFilter" />
-                📝 Ungeplant
-              </label>
-            </div>
-          </template>
+
+        <div class="tool-row">
+          <span class="tool-label">🔎 Filtern</span>
+          <div class="dropdown">
+            <button
+              type="button"
+              class="secondary category-btn"
+              title="Nach Kategorie filtern"
+              aria-label="Nach Kategorie filtern"
+              @click="categoryMenuOpen = !categoryMenuOpen"
+            >
+              🏷️ Kategorie
+            </button>
+            <template v-if="categoryMenuOpen">
+              <div class="picker-backdrop" @click="categoryMenuOpen = false"></div>
+              <div class="picker-menu category-menu">
+                <label v-for="cat in filterCategoryOptions" :key="cat" class="category-option">
+                  <input type="checkbox" :value="cat" v-model="categoryFilter" />
+                  {{ groupIcon(cat) }} {{ cat }}
+                </label>
+              </div>
+            </template>
+          </div>
+          <div class="dropdown">
+            <button
+              type="button"
+              class="secondary category-btn"
+              title="Nach Status (geplant/ungeplant) filtern"
+              aria-label="Nach Status filtern"
+              @click="statusMenuOpen = !statusMenuOpen"
+            >
+              🗓️ Status
+            </button>
+            <template v-if="statusMenuOpen">
+              <div class="picker-backdrop" @click="statusMenuOpen = false"></div>
+              <div class="picker-menu category-menu">
+                <label class="category-option">
+                  <input type="checkbox" value="planned" v-model="statusFilter" />
+                  📅 Geplant
+                </label>
+                <label class="category-option">
+                  <input type="checkbox" value="unplanned" v-model="statusFilter" />
+                  📝 Ungeplant
+                </label>
+              </div>
+            </template>
+          </div>
+          <div class="filter-chips">
+            <span v-for="cat in categoryFilter" :key="cat" class="filter-chip">
+              {{ groupIcon(cat) }} {{ cat }}
+              <button type="button" @click="removeCategoryFilter(cat)" aria-label="Filter entfernen">✕</button>
+            </span>
+            <span v-for="status in statusFilter" :key="status" class="filter-chip">
+              {{ STATUS_FILTER_LABEL[status] }}
+              <button type="button" @click="removeStatusFilter(status)" aria-label="Filter entfernen">✕</button>
+            </span>
+          </div>
         </div>
       </div>
 
@@ -1300,10 +1310,25 @@ function showSpotOnMap(spot: Spot) {
 
 .filter-bar {
   display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-3);
+}
+
+/* Je eine Zeile für Sortieren und Filtern, statt einer gemeinsamen umbrechenden Reihe – siehe
+   Kommentar am Template. */
+.tool-row {
+  display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
-  margin: 0 0 var(--space-3);
+}
+
+.tool-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
 }
 
 .filter-chips {
