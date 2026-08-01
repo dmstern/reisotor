@@ -15,6 +15,7 @@ const PATTERNS: RegExp[] = [
   /coordinate=(-?\d+\.\d+),\s*(-?\d+\.\d+)/, // Apple Maps: ?coordinate=48.2082,16.3738
   /[?&]ll=(-?\d+\.\d+),(-?\d+\.\d+)/, // Google/Apple Maps: ?ll=48.2082,16.3738
   /[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/, // Google/Apple Maps: ?q=48.2082,16.3738
+  /[?&]mlat=(-?\d+\.\d+)&mlon=(-?\d+\.\d+)/, // OpenStreetMap: ?mlat=48.2082&mlon=16.3738 (siehe buildOsmLink unten)
 ];
 
 /** Extrahiert Lat/Lng aus gängigen Google-Maps- und Apple-Maps-Link-Formaten. Kurzlinks
@@ -46,6 +47,15 @@ export function parseLatLngFromMapsLink(url: string | null | undefined): LatLng 
  *  Live-Vorschau im Anlege-/Bearbeiten-Formular (Bild-Banner), solange kein eigenes Bild
  *  hinterlegt ist. Dieselbe Kachel, die auch backend/src/utils/mapsLink.ts als serverseitigen
  *  Fallback berechnet (dort bewusst dupliziert, siehe Kommentar oben – getrennte Build-Pipelines). */
+/** Baut einen teilbaren OpenStreetMap-Link für eine Koordinate – gedacht für den manuellen
+ *  Karten-Picker (LocationPicker.vue): trägt man dort selbst einen Pin ein, füllt TripForm.vue
+ *  damit automatisch das Maps-Link-Feld, damit sich die tatsächlich für die Wetterabfrage genutzte
+ *  Koordinate nachträglich per Klick nachvollziehen/gegenchecken lässt (z. B. gegen eine
+ *  Google-Wettersuche für dieselbe Stelle). */
+export function buildOsmLink(lat: number, lng: number, zoom = 15): string {
+  return `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=${zoom}/${lat}/${lng}`;
+}
+
 export function tilePreviewUrl(lat: number, lng: number, zoom = 15): string {
   const latRad = (lat * Math.PI) / 180;
   const n = 2 ** zoom;

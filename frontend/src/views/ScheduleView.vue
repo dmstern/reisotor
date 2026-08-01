@@ -317,20 +317,83 @@ const weeks = computed(() => {
 
 // Bei langen Zeitspannen (z. B. ein ToDo mit Fälligkeitsdatum Monate vor dem Urlaub) würde die
 // Schublade sonst eine sehr lange Liste an Wochen rendern – stattdessen wird nur ein Fenster
-// angezeigt, durch das man blättert. Die Fenster-/Schrittgröße ist wählbar: wochenweise,
-// zweiwochenweise oder "monatsweise" (gleitend – ein festes 4-Wochen-Fenster, nicht an
-// Kalendermonats-Grenzen ausgerichtet).
+// angezeigt, durch das man blättert. Die Fenster-/Schrittgröße ist wählbar: wochenweise oder
+// zweiwochenweise (beides ein gleitendes Fenster über die oben berechneten Wochen), "monatsweise"
+// zeigt dagegen einen ECHTEN Kalendermonat (siehe monthWeeks weiter unten) – ein Kalendermonat lässt
+// sich nicht auf ein festes Wochen-Vielfaches abbilden (4–6 Wochen, je nach Wochentag des 1. und
+// Monatslänge), braucht deshalb eine eigene, von pageOffset/weeksPerPage unabhängige Berechnung.
 type PageGranularity = 'week' | 'twoWeeks' | 'month';
-const WEEKS_PER_PAGE_BY_GRANULARITY: Record<PageGranularity, number> = { week: 1, twoWeeks: 2, month: 4 };
+const WEEKS_PER_PAGE_BY_GRANULARITY: Record<'week' | 'twoWeeks', number> = { week: 1, twoWeeks: 2 };
 const granularity = ref<PageGranularity>('month');
-const weeksPerPage = computed(() => WEEKS_PER_PAGE_BY_GRANULARITY[granularity.value]);
+const weeksPerPage = computed(() => (granularity.value === 'month' ? 4 : WEEKS_PER_PAGE_BY_GRANULARITY[granularity.value]));
 const pageOffset = ref(0);
 
-const visibleWeeks = computed(() => weeks.value.slice(pageOffset.value, pageOffset.value + weeksPerPage.value));
-const canGoPrev = computed(() => pageOffset.value > 0);
-const canGoNext = computed(() => pageOffset.value + weeksPerPage.value < weeks.value.length);
+interface DayCell {
+  date: string;
+  entries: CalendarEntry[];
+  accommodations: Accommodation[];
+  weatherEntries: DayWeatherEntry[];
+  otherMonth?: boolean;
+}
+
+function startOfMonth(d: Date) {
+  return new Date(d.getFullYear(), d.getMonth(), 1);
+}
+
+// Anker für die Monatsansicht (1. Tag des gerade angezeigten Monats) – eigenständig vom
+// wochenbasierten pageOffset oben, da "ein Monat" kein festes Wochen-Vielfaches ist.
+const monthAnchor = ref(startOfMonth(new Date()));
+
+// Baut ein vollständiges Kalendermonat-Raster: Montag der Woche mit dem 1. bis Sonntag der Woche
+// mit dem letzten Tag des Monats (führende/nachfolgende Tage aus Nachbarmonaten füllen das Raster
+// auf volle Wochen auf, wie bei jedem üblichen Monatskalender – als otherMonth markiert, siehe
+// CalendarWeek.vue).
+const monthWeeks = computed<DayCell[][]>(() => {
+  const year = monthAnchor.value.getFullYear();
+  const month = monthAnchor.value.getMonth();
+  const firstOfMonth = new Date(year, month, 1);
+  const lastOfMonth = new Date(year, month + 1, 0);
+
+  const gridStart = new Date(firstOfMonth);
+  gridStart.setDate(gridStart.getDate() - ((firstOfMonth.getDay() + 6) % 7));
+  const gridEnd = new Date(lastOfMonth);
+  gridEnd.setDate(gridEnd.getDate() + (6 - ((lastOfMonth.getDay() + 6) % 7)));
+
+  const result: DayCell[][] = [];
+  let week: DayCell[] = [];
+  const cursor = new Date(gridStart);
+  while (cursor <= gridEnd) {
+    const iso = toIso(cursor);
+    week.push({
+      date: iso,
+      entries: entriesForDate(iso),
+      accommodations: accommodationsForDate(iso),
+      weatherEntries: weatherEntriesFor(iso),
+      otherMonth: cursor.getMonth() !== month,
+    });
+    if (week.length === 7) {
+      result.push(week);
+      week = [];
+    }
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return result;
+});
+
+const monthLabel = computed(() => monthAnchor.value.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' }));
+
+const visibleWeeks = computed<DayCell[][]>(() =>
+  granularity.value === 'month'
+    ? monthWeeks.value
+    : weeks.value.slice(pageOffset.value, pageOffset.value + weeksPerPage.value),
+);
+const canGoPrev = computed(() => granularity.value === 'month' || pageOffset.value > 0);
+const canGoNext = computed(
+  () => granularity.value === 'month' || pageOffset.value + weeksPerPage.value < weeks.value.length,
+);
 
 const visibleRangeLabel = computed(() => {
+  if (granularity.value === 'month') return monthLabel.value;
   if (!visibleWeeks.value.length) return '';
   const first = visibleWeeks.value[0][0]?.date;
   const lastWeek = visibleWeeks.value[visibleWeeks.value.length - 1];
@@ -344,23 +407,56 @@ function clampOffset(idx: number) {
   return Math.min(Math.max(0, weeks.value.length - weeksPerPage.value), Math.max(0, idx));
 }
 
+function prevMonth() {
+  monthAnchor.value = new Date(monthAnchor.value.getFullYear(), monthAnchor.value.getMonth() - 1, 1);
+}
+function nextMonth() {
+  monthAnchor.value = new Date(monthAnchor.value.getFullYear(), monthAnchor.value.getMonth() + 1, 1);
+}
+
 function prevPage() {
-  pageOffset.value = clampOffset(pageOffset.value - weeksPerPage.value);
+  if (granularity.value === 'month') prevMonth();
+  else pageOffset.value = clampOffset(pageOffset.value - weeksPerPage.value);
 }
 function nextPage() {
-  pageOffset.value = clampOffset(pageOffset.value + weeksPerPage.value);
+  if (granularity.value === 'month') nextMonth();
+  else pageOffset.value = clampOffset(pageOffset.value + weeksPerPage.value);
 }
 
 // Beim Wechsel der Blätter-Granularität bleibt die erste sichtbare Woche als Anker erhalten,
 // nur die Fenstergröße ändert sich – muss aber ggf. neu geklemmt werden, falls das größere
-// Fenster sonst über das Ende des Kalenderbereichs hinausragen würde.
+// Fenster sonst über das Ende des Kalenderbereichs hinausragen würde. Betrifft nur Woche/2 Wochen
+// (weeksPerPage ist für "Monat" konstant 4, siehe oben) – der eigentliche Granularitäts-Wechsel
+// von/zu "Monat" wird über den granularity-Watcher weiter unten synchronisiert.
 watch(weeksPerPage, () => {
   pageOffset.value = clampOffset(pageOffset.value);
 });
 
-// Springt so, dass die Woche mit dem übergebenen Datum als erste Woche der Seite sichtbar wird.
-// Gibt zurück, ob das Datum im aktuellen Kalenderbereich gefunden wurde.
+// Übernimmt beim Wechsel der Granularität den bisher sichtbaren Zeitraum als neuen Anker, statt
+// unvermittelt zu einem unabhängigen Datum zu springen: Monat->Woche/2 Wochen übernimmt den ersten
+// Tag des angezeigten Monats, Woche/2 Wochen->Monat den Monat der ersten sichtbaren Woche.
+watch(granularity, (next, prev) => {
+  if (next === 'month' && prev !== 'month') {
+    const anchorDate = selectedDate.value ?? weeks.value[pageOffset.value]?.[0]?.date;
+    if (anchorDate) monthAnchor.value = startOfMonth(new Date(anchorDate));
+  } else if (prev === 'month' && next !== 'month') {
+    // Gleicher Fallback wie beim allerersten Laden (onMounted unten): liegt der Anker außerhalb des
+    // aktuellen Wochen-Kalenderbereichs (z. B. "heute" vor Urlaubsbeginn), zum Urlaubsstart springen
+    // statt stillschweigend auf der vorherigen Woche-Position stehen zu bleiben.
+    const anchorDate = selectedDate.value ?? toIso(monthAnchor.value);
+    if (!goToDate(anchorDate) && trip.value) goToDate(trip.value.start_date);
+  }
+});
+
+// Springt so, dass die Woche mit dem übergebenen Datum als erste Woche der Seite sichtbar wird
+// (Woche/2 Wochen) bzw. der entsprechende Monat angezeigt wird (Monat). Gibt zurück, ob das Datum
+// im aktuellen Kalenderbereich gefunden wurde (die Monatsansicht ist unbeschränkt, "findet" also
+// immer).
 function goToDate(dateIso: string): boolean {
+  if (granularity.value === 'month') {
+    monthAnchor.value = startOfMonth(new Date(dateIso));
+    return true;
+  }
   const idx = weeks.value.findIndex((week) => week.some((day) => day.date === dateIso));
   if (idx === -1) return false;
   pageOffset.value = clampOffset(idx);

@@ -7,6 +7,7 @@ import { useTripStore } from '../stores/trip';
 import { useSpotsStore } from '../stores/spots';
 import { useScheduleStore } from '../stores/schedule';
 import { useDrawersStore } from '../stores/drawers';
+import { useIsDesktop } from '../composables/useIsDesktop';
 import SpotCard from '../components/SpotCard.vue';
 import DerivedLocationCard from '../components/DerivedLocationCard.vue';
 import TripMap from '../components/TripMap.vue';
@@ -28,6 +29,7 @@ const tripId = tripStore.currentTripId as number;
 const spotsStore = useSpotsStore();
 const scheduleStore = useScheduleStore();
 const drawers = useDrawersStore();
+const isDesktop = useIsDesktop();
 
 const users = ref<User[]>([]);
 const accommodations = ref<Accommodation[]>([]);
@@ -426,20 +428,26 @@ function onSheetDragEnd() {
   window.removeEventListener('pointerup', onSheetDragEnd);
   const current = sheetDragHeightPx.value;
   sheetDragHeightPx.value = null;
-  if (current == null) return;
-  const movedFar = Math.abs(current - sheetStartHeight) > 8;
+  // current bleibt null, wenn zwischen Down und Up kein einziges pointermove-Event feuerte – bei
+  // einem echten, sehr kurzen/bewegungslosen Antippen (v. a. auf Touch-Geräten üblich) kommt das
+  // durchaus vor. Wurde das bisher wie "keine Bewegung erfasst, also gar nichts tun" behandelt
+  // (früher Return), reagierte der Anfasser auf genau so einen Tap gar nicht – dabei ist "keine
+  // Bewegung" der eindeutigste Tap-Fall überhaupt, kein Sonderfall zum Ignorieren.
+  const movedFar = current != null && Math.abs(current - sheetStartHeight) > 8;
   if (!movedFar) {
-    // Kaum Bewegung = Tippen statt Ziehen: einen Zustand weiterschalten statt "an derselben
+    // Kaum/keine Bewegung = Tippen statt Ziehen: einen Zustand weiterschalten statt "an derselben
     // Stelle" wieder einzurasten (das wäre sonst ein wirkungsloser Tap gewesen).
     const order: SheetState[] = ['collapsed', 'partial', 'full'];
     sheetState.value = order[(order.indexOf(sheetState.value) + 1) % order.length];
     return;
   }
+  // Ab hier laut movedFar-Berechnung oben garantiert nicht null.
+  const resolvedCurrent = current as number;
   const states: SheetState[] = ['collapsed', 'partial', 'full'];
   let closest: SheetState = 'partial';
   let bestDist = Infinity;
   for (const s of states) {
-    const dist = Math.abs(sheetHeightPx(s) - current);
+    const dist = Math.abs(sheetHeightPx(s) - resolvedCurrent);
     if (dist < bestDist) {
       bestDist = dist;
       closest = s;
@@ -458,6 +466,24 @@ function stepSheet(direction: 1 | -1) {
 }
 const canExpandSheet = computed(() => sheetState.value !== 'full');
 const canCollapseSheet = computed(() => sheetState.value !== 'collapsed');
+
+// Aktuelle Sheet-Höhe in px (Grundlage für die Karten-Zentrierung unten): der Anfasser selbst
+// verdeckt keine Karte, aber .spots-col liegt auf mobile als Overlay ÜBER der Karte (siehe .spots-
+// col/.map-col CSS) – ein per Fokus zentrierter Punkt landete deshalb bislang teils unsichtbar
+// dahinter, weil map.setView() die Karten-MITTE nimmt, nicht die tatsächlich sichtbare Restfläche
+// oberhalb des Sheets. Nur auf mobile relevant (Desktop: eigene Spalte statt Overlay, siehe
+// @container weiter unten im CSS).
+const currentSheetHeightPx = computed(() => sheetDragHeightPx.value ?? sheetHeightPx(sheetState.value));
+const mapCoveredBottomPx = computed(() => (isDesktop.value ? 0 : currentSheetHeightPx.value));
+
+// Ein Klick auf eine Spot-Karte öffnet sie (siehe SpotCard.vue's onCardClick, das bereits
+// drawers.openMapAt() aufruft) – steht das Sheet dabei auf "voll", verdeckt es die Karte komplett;
+// ein Schritt zurück auf "angeschnitten" gibt genug sichtbare Kartenfläche frei, um den gerade
+// fokussierten Punkt auch tatsächlich zu sehen, ohne die Liste ganz zu verstecken.
+function onSpotCardOpen(spot: Spot) {
+  expandedSpotId.value = spot.id;
+  if (sheetState.value === 'full') sheetState.value = 'partial';
+}
 
 function checkSpotMapsLink() {
   spotMapsLinkResolved.value = spotForm.value.maps_link ? parseLatLngFromMapsLink(spotForm.value.maps_link) != null : null;
@@ -552,10 +578,6 @@ watch(editSpotManualPin, (pin) => {
 async function removeSpot(id: number) {
   await spotsStore.remove(id);
   drawers.touchLocations();
-}
-
-function showSpotOnMap(spot: Spot) {
-  drawers.openMapAt(`spot-${spot.id}`);
 }
 </script>
 
@@ -765,11 +787,10 @@ function showSpotOnMap(spot: Spot) {
               :comments="spotCommentItemsFor(item.spot.id)"
               @edit="startEditSpot"
               @remove="removeSpot"
-              @show-on-map="showSpotOnMap"
               @toggle-like="toggleSpotLike(item.spot.id)"
               @submit-comment="(content) => submitSpotComment(item.spot.id, content)"
               @remove-comment="removeSpotComment"
-              @open="(spot) => (expandedSpotId = spot.id)"
+              @open="onSpotCardOpen"
               @close="expandedSpotId = null"
             />
             <DerivedLocationCard v-else :key="item.loc.key" :location="item.loc" />
@@ -826,6 +847,8 @@ function showSpotOnMap(spot: Spot) {
       <TripMap
         ref="tripMapRef"
         :category-filter="categoryFilter"
+        :status-filter="statusFilter"
+        :covered-bottom-px="mapCoveredBottomPx"
         @edit-spot="startEditSpot"
         @focus-spot="onFocusSpotFromMap"
       />
@@ -940,6 +963,10 @@ function showSpotOnMap(spot: Spot) {
   align-items: center;
   gap: 4px;
   padding: 4px 8px 0;
+  /* Gilt für die ganze Zeile (nicht nur .sheet-handle): ein Zug, der knapp neben dem eigentlichen
+     Anfasser beginnt (z. B. noch über den Stufen-Buttons), soll trotzdem nicht als Seiten-Scroll/
+     Pull-to-Refresh interpretiert werden. */
+  touch-action: none;
 }
 
 .sheet-handle {
@@ -948,7 +975,10 @@ function showSpotOnMap(spot: Spot) {
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  padding: 4px 0 6px;
+  /* Größerer Anfassbereich für Touch (vorher 4px/6px): der eigentliche Treffer-Bereich reichte auf
+     mobile oft nicht, ein Runterziehen landete leicht knapp daneben. */
+  padding: 10px 0 14px;
+  margin: -6px 0 -8px;
   cursor: grab;
   touch-action: none;
 }

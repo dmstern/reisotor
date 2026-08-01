@@ -8,8 +8,8 @@ import L from 'leaflet';
 // TripMap.vue's drawers.mapFocusKey-Kopplung mit der Spots-/Detail-Ansicht) – eigener
 // Cache-Eintrag pro Größe, da L.DivIcon-Instanzen unveränderlich sind.
 export function emojiPin(emoji: string, color: string, large = false) {
-  const size = large ? 42 : 32;
-  const fontSize = large ? 19 : 15;
+  const size = large ? 54 : 32;
+  const fontSize = large ? 25 : 15;
   return L.divIcon({
     html: `<div style="width:${size}px;height:${size}px;border-radius:50% 50% 50% 0;background:${color};
       transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;

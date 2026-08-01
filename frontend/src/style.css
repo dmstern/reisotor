@@ -106,6 +106,10 @@ html,
 body {
   margin: 0;
   padding: 0;
+  /* Verhindert Chromes natives Pull-to-Refresh beim Runterziehen am oberen Bildschirmrand – ohne
+     das reißt ein Zug, der leicht außerhalb eines dedizierten Anfassers (z. B. ExcursionsView.vue's
+     Spots-Schublade) beginnt, einen Seiten-Reload statt der eigentlich gemeinten Geste los. */
+  overscroll-behavior-y: contain;
 }
 
 body {

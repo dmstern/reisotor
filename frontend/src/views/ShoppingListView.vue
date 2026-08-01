@@ -215,7 +215,7 @@ async function addItem() {
         <h2>{{ group.label }}</h2>
         <div class="card">
           <TransitionGroup tag="ul" name="list" class="list">
-            <li v-for="item in group.items" :key="item.id" class="row">
+            <li v-for="item in group.items" :key="item.id" class="row" :class="{ 'row-done': item.checked }">
               <label class="check">
                 <input type="checkbox" :checked="!!item.checked" @change="toggle(item)" />
                 <span :class="{ 'text-done': item.checked }">{{ item.label }}</span>

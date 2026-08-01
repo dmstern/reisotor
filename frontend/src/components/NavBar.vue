@@ -65,6 +65,13 @@ function onLinkClick(event: MouseEvent) {
 <template>
   <nav ref="navEl" class="navbar" :class="[`mobile-${navPosition.mobile}`, `desktop-${navPosition.desktop}`]">
     <div class="links">
+      <!-- Übersicht (Dashboard) ganz links, noch vor dem mobilen Kalender-Link: der zentrale
+           Einstiegspunkt der App soll auf mobile immer der allererste (am wenigsten wegscrollte)
+           Nav-Punkt sein. -->
+      <router-link :to="links[0].to" class="link" @click="onLinkClick">
+        <span class="icon">{{ links[0].icon }}</span>
+        <span class="label">{{ links[0].label }}</span>
+      </router-link>
       <!-- Kalender/Touren sind auf Desktop weiterhin globale Schubladen (App.vue, über die seitlich
            schwebende Lasche erreichbar). Dieselben ausklapp-Schubladen lassen sich auf Mobil aber
            kaum sinnvoll bedienen (u. a. überlagerte die Lasche dort teils wichtige Inhalte/Buttons)
@@ -72,12 +79,12 @@ function onLinkClick(event: MouseEvent) {
            (/calendar, /tours – dieselben Komponenten wie in den Schubladen, siehe router/index.ts),
            nur <800px sichtbar (.mobile-page-link; ab Desktop bleibt es bei den beiden bestehenden
            Nav-Punkten hier, Kalender/Touren erreicht man dort weiterhin nur über die Lasche).
-           Kalender bewusst ganz links, Touren direkt neben ihrem inhaltlichen Pendant "Karte". -->
+           Kalender direkt nach Übersicht, Touren direkt neben ihrem inhaltlichen Pendant "Karte". -->
       <router-link to="/calendar" class="link mobile-page-link" @click="onLinkClick">
         <span class="icon">{{ SECTION_ICONS.calendar }}</span>
         <span class="label">Kalender</span>
       </router-link>
-      <template v-for="link in links" :key="link.to">
+      <template v-for="link in links.slice(1)" :key="link.to">
         <router-link :to="link.to" class="link" @click="onLinkClick">
           <span class="icon">{{ link.icon }}</span>
           <span class="label">{{ link.label }}</span>

@@ -33,7 +33,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'edit', spot: Spot): void;
   (e: 'remove', id: number): void;
-  (e: 'show-on-map', spot: Spot): void;
   (e: 'toggle-like'): void;
   (e: 'submit-comment', content: string): void;
   (e: 'remove-comment', id: number): void;
@@ -131,9 +130,6 @@ function onCardClick() {
       </div>
       <p v-if="expanded && creatorLabel" class="detail-row"><span class="detail-label">Von</span>{{ creatorLabel }}</p>
       <div v-if="spot.note" class="note richtext" v-html="renderRichText(spot.note)"></div>
-      <div class="links" v-if="spot.lat != null && spot.lng != null">
-        <button type="button" class="card-action-btn" @click.stop="emit('show-on-map', spot)">🗺️ Auf Karte anzeigen</button>
-      </div>
       <button
         type="button"
         class="excursion-drag-handle"
@@ -268,12 +264,6 @@ function onCardClick() {
 
 .note {
   overflow-wrap: anywhere;
-}
-
-.links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
 }
 
 .social-row {

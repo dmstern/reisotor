@@ -67,6 +67,17 @@ const props = defineProps<{
    *  anzeigen) – koppelt den Karten-Inhalt 1:1 mit dem, was in der Liste sichtbar ist, statt einen
    *  zweiten, unabhängigen Filter zu pflegen. */
   categoryFilter?: string[];
+  /** Von ExcursionsView.vue durchgereichter Geplant/Ungeplant-Filter der Spots-Liste (leer = alles
+   *  anzeigen) – gilt nur für Spot-Punkte (Unterkunft/Reise kennen dieses Konzept nicht, siehe
+   *  ExcursionsView.vue's itemStatus()). Braucht keine eigenen scheduleItems von außen: diese
+   *  Komponente lädt ihre eigenen (scheduleItems.value, siehe loadAll()) ohnehin schon unabhängig
+   *  von ExcursionsView.vue (gleiches Muster wie die übrige, bewusst duplizierte Datenladung
+   *  zwischen beiden Sichten). */
+  statusFilter?: ('planned' | 'unplanned')[];
+  /** Höhe (px) des von der mobilen Spots-Schublade verdeckten unteren Kartenbereichs, von
+   *  ExcursionsView.vue durchgereicht (0/undefined auf Desktop, wo die Schublade eine eigene Spalte
+   *  statt eines Overlays ist) – siehe centerOnPoint() unten. */
+  coveredBottomPx?: number;
 }>();
 
 const emit = defineEmits<{
@@ -183,13 +194,38 @@ const points = computed<MapPoint[]>(() => {
   return result;
 });
 
-// Kategorie-Filter aus der Spots-Liste (ExcursionsView.vue) – gilt einheitlich für Spots UND die
-// Unterkunft-/Reise-Sammelkategorien, da beide dieselben Kategorie-Strings verwenden (siehe
-// MapPoint.category). Leerer Filter = keine Einschränkung.
+// Geplant/Ungeplant je Spot – dieselbe Herleitung wie ExcursionsView.vue's spotScheduledDates
+// (frühestes Datum eines verknüpften Kalender-Termins gewinnt), hier aber aus den eigenen
+// scheduleItems dieser Komponente statt eines geteilten Stores.
+const spotScheduledDates = computed(() => {
+  const map = new Map<number, string>();
+  for (const item of scheduleItems.value) {
+    if (item.spot_id == null) continue;
+    const existing = map.get(item.spot_id);
+    if (!existing || item.date < existing) map.set(item.spot_id, item.date);
+  }
+  return map;
+});
+
+// Kategorie-/Status-Filter aus der Spots-Liste (ExcursionsView.vue) – gilt einheitlich für Spots UND
+// (nur beim Kategorie-Filter) die Unterkunft-/Reise-Sammelkategorien, da beide dieselben
+// Kategorie-Strings verwenden (siehe MapPoint.category). Der Status-Filter gilt dagegen nur für
+// echte Spots (Unterkunft/Reise kennen kein Geplant/Ungeplant, bleiben davon unberührt sichtbar –
+// exakt wie ExcursionsView.vue's itemStatus(), das für 'derived' immer null liefert). Leere Filter =
+// keine Einschränkung.
 const filteredPoints = computed(() => {
-  const filter = props.categoryFilter;
-  if (!filter || filter.length === 0) return points.value;
-  return points.value.filter((p) => filter.includes(p.category));
+  const categoryFilterActive = props.categoryFilter && props.categoryFilter.length > 0;
+  const statusFilterActive = props.statusFilter && props.statusFilter.length > 0;
+  if (!categoryFilterActive && !statusFilterActive) return points.value;
+  return points.value.filter((p) => {
+    if (categoryFilterActive && !props.categoryFilter!.includes(p.category)) return false;
+    if (statusFilterActive && p.origin === 'spot') {
+      const spotId = Number(p.key.slice('spot-'.length));
+      const status = spotScheduledDates.value.has(spotId) ? 'planned' : 'unplanned';
+      if (!props.statusFilter!.includes(status)) return false;
+    }
+    return true;
+  });
 });
 
 // Für den Urlaubsfokus-Button: alle Punkte außer den Zuhause-Seiten von Anreise/Abreise.
@@ -585,6 +621,32 @@ function fitExcursions() {
   }
 }
 
+// Zentriert auf einen einzelnen Punkt UND schiebt den sichtbaren Ausschnitt danach so weit nach
+// oben, dass der Punkt in der Mitte der tatsächlich sichtbaren Fläche landet – nicht in der Mitte
+// des gesamten Karten-Containers, dessen unterer Teil auf mobile von der Spots-Schublade verdeckt
+// wird (siehe props.coveredBottomPx, von ExcursionsView.vue durchgereicht). Ohne diesen Ausgleich
+// landete ein fokussierter Punkt bei aufgeklappter Schublade optisch dahinter statt im sichtbaren
+// oberen Kartenbereich.
+function centerOnPoint(latlng: L.LatLngExpression, zoom: number) {
+  if (!map) return;
+  const coveredBottomPx = props.coveredBottomPx;
+  if (!coveredBottomPx) {
+    map.setView(latlng, zoom, { animate: false });
+    return;
+  }
+  // Direkte Projektions-Rechnung statt map.setView()+map.panBy(): der Zielpunkt soll nicht im
+  // Zentrum des gesamten Karten-Containers landen, sondern im Zentrum der tatsächlich sichtbaren
+  // Fläche (Container abzüglich der unten überlagernden Schublade) – dafür muss der neue
+  // Karten-MITTELPUNKT um die Hälfte des verdeckten Bereichs "unter" dem Zielpunkt liegen (project()/
+  // unproject() arbeiten in einem containerunabhängigen Weltpixel-Raum, in dem sich Y-Versätze 1:1
+  // wie Bildschirmpixel verhalten). map.panBy() wurde hier bewusst NICHT verwendet: bei größeren,
+  // nicht animierten Offsets nimmt es einen internen Kurzschluss-Pfad, dessen Pixel-Verhalten sich
+  // in Tests als nicht zuverlässig vorhersagbar erwiesen hat.
+  const targetPoint = map.project(latlng, zoom);
+  const shiftedCenter = map.unproject(targetPoint.add([0, coveredBottomPx / 2]), zoom);
+  map.setView(shiftedCenter, zoom, { animate: false });
+}
+
 function renderMarkers() {
   if (!map || !markersLayer) return;
   markersLayer.clearLayers();
@@ -621,16 +683,16 @@ function renderMarkers() {
     if (excursionLatLngs.length > 1) {
       map.fitBounds(L.latLngBounds(excursionLatLngs), { padding: [32, 32] });
     } else if (excursionLatLngs.length === 1) {
-      map.setView(excursionLatLngs[0], 14);
+      centerOnPoint(excursionLatLngs[0], 14);
     }
   } else if (drawers.mapFocusDate && dateLatLngs.length) {
     if (dateLatLngs.length > 1) {
       map.fitBounds(L.latLngBounds(dateLatLngs), { padding: [32, 32] });
     } else {
-      map.setView(dateLatLngs[0], 14);
+      centerOnPoint(dateLatLngs[0], 14);
     }
   } else if (focusPoint) {
-    map.setView([focusPoint.lat, focusPoint.lng], 15);
+    centerOnPoint([focusPoint.lat, focusPoint.lng], 15);
   } else if (latLngs.length > 1) {
     map.fitBounds(L.latLngBounds(latLngs), { padding: [32, 32] });
   } else if (latLngs.length === 1) {

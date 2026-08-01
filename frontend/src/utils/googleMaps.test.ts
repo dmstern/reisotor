@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseLatLngFromMapsLink, tilePreviewUrl } from './googleMaps';
+import { buildOsmLink, parseLatLngFromMapsLink, tilePreviewUrl } from './googleMaps';
 
 describe('parseLatLngFromMapsLink', () => {
   it('prefers !3d/!4d over a leading @lat,lng', () => {
@@ -35,6 +35,13 @@ describe('parseLatLngFromMapsLink', () => {
     expect(parseLatLngFromMapsLink('https://maps.example/?q=48.2082,16.3738%')).toEqual({ lat: 48.2082, lng: 16.3738 });
   });
 
+  it('parses an OpenStreetMap ?mlat=&mlon= link (as produced by buildOsmLink)', () => {
+    expect(parseLatLngFromMapsLink('https://www.openstreetmap.org/?mlat=48.2082&mlon=16.3738#map=15/48.2082/16.3738')).toEqual({
+      lat: 48.2082,
+      lng: 16.3738,
+    });
+  });
+
   it('returns null when no pattern matches', () => {
     expect(parseLatLngFromMapsLink('https://maps.app.goo.gl/abc123')).toBeNull();
   });
@@ -42,6 +49,13 @@ describe('parseLatLngFromMapsLink', () => {
   it('returns null for null/undefined input', () => {
     expect(parseLatLngFromMapsLink(null)).toBeNull();
     expect(parseLatLngFromMapsLink(undefined)).toBeNull();
+  });
+});
+
+describe('buildOsmLink', () => {
+  it('builds a link that parseLatLngFromMapsLink can round-trip', () => {
+    const link = buildOsmLink(48.2082, 16.3738);
+    expect(parseLatLngFromMapsLink(link)).toEqual({ lat: 48.2082, lng: 16.3738 });
   });
 });
 

@@ -115,7 +115,8 @@ function startCheck() {
   <div class="page security-page">
     <h1>🛡️ Sicherheits-Check</h1>
     <p class="subtitle">
-      Rein zur Belustigung, ohne echte Funktion – der Reisotor nimmt seinen Job trotzdem sehr ernst.
+      Der Reisotor nimmt diese Mission über alle Maßen ernst – inklusive eigens entwickelter
+      Sensorik, die kein Fachbuch kennt.
     </p>
 
     <div class="card robot-card">
@@ -152,8 +153,7 @@ function startCheck() {
     </div>
 
     <p class="disclaimer">
-      Kleiner Spaß zwischendurch, keine echte Risikoeinschätzung – für verlässliche Reisehinweise
-      empfiehlt sich das Auswärtige Amt. 😉
+      Für Sicherheitsfragen jenseits der Reisotor-Zertifizierung hilft auch das Auswärtige Amt weiter.
     </p>
   </div>
 </template>

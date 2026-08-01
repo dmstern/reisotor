@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import type { TripFormData } from '../stores/trip';
-import { parseLatLngFromMapsLink } from '../utils/googleMaps';
+import { buildOsmLink, parseLatLngFromMapsLink } from '../utils/googleMaps';
 import LocationPicker from './LocationPicker.vue';
 
 // locationError: vom Aufrufer (TripSwitcher.vue) gesetzt, wenn nach dem Speichern auffällt, dass
@@ -37,8 +37,15 @@ watch(
     if (err) pickerOpen.value = true;
   },
 );
+// Ein manuell gesetzter Pin übernimmt das Maps-Link-Feld als OpenStreetMap-Link derselben
+// Koordinate – zur besseren Nachvollziehbarkeit, welcher Standort tatsächlich für z. B. die
+// Wetterabfrage verwendet wird (der Nutzer kann den Link danach anklicken/gegenchecken), statt dass
+// das Feld leer bzw. auf dem alten (evtl. falsch aufgelösten) Link stehen bleibt.
 watch(manualPin, (pin) => {
-  if (pin && props.locationError) onSubmit();
+  if (!pin) return;
+  form.value.maps_link = buildOsmLink(pin.lat, pin.lng);
+  mapsLinkResolved.value = true;
+  if (props.locationError) onSubmit();
 });
 
 function checkMapsLink() {

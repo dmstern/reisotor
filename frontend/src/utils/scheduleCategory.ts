@@ -5,7 +5,9 @@ import type { ScheduleCategory } from '../api/types';
 export const SCHEDULE_CATEGORY_META: Record<ScheduleCategory, { icon: string; color: string; label: string }> = {
   trip: { icon: '🧳', color: '#2a78d6', label: 'Urlaub' },
   excursion: { icon: '🎒', color: '#eb6834', label: 'Ausflug' },
-  todo: { icon: '☑️', color: '#4a3aa7', label: 'ToDo' },
+  // 📋 statt eines Häkchen-Symbols: ☑️ sah in der Kalender-Liste wie ein bereits abgehakter statt
+  // eines offenen ToDo-Eintrags aus.
+  todo: { icon: '📋', color: '#4a3aa7', label: 'ToDo' },
   travel: { icon: '✈️', color: '#1baf7a', label: 'Reise' },
   other: { icon: '📌', color: '#8a8a86', label: 'Termin' },
 };

@@ -10,6 +10,10 @@ interface Day {
   entries: CalendarEntry[];
   accommodations: Accommodation[];
   weatherEntries: DayWeatherEntry[];
+  /** Nur in der echten Monatsansicht gesetzt (ScheduleView.vue's monthWeeks): führende/nachfolgende
+   *  Tage aus dem Vor-/Folgemonat, die das Wochen-Raster auffüllen – optisch gedämpft, damit auf
+   *  einen Blick klar ist, welche Tage zum aktuell angezeigten Monat gehören. */
+  otherMonth?: boolean;
 }
 
 defineProps<{ days: Day[]; selectedDate: string | null }>();
@@ -63,7 +67,12 @@ function onDrop(event: DragEvent, date: string) {
       :key="day.date"
       class="day"
       :data-date="day.date"
-      :class="{ active: day.date === selectedDate, today: isToday(day.date), 'drag-over': isDragOver(day.date) }"
+      :class="{
+        active: day.date === selectedDate,
+        today: isToday(day.date),
+        'drag-over': isDragOver(day.date),
+        'other-month': day.otherMonth,
+      }"
       @click="emit('select', day.date)"
       @dragover.prevent
       @dragenter.prevent="onDragEnter(day.date)"
@@ -150,6 +159,13 @@ function onDrop(event: DragEvent, date: string) {
   background: var(--color-primary-tint);
   outline: 2px dashed var(--color-primary);
   outline-offset: -2px;
+}
+
+/* Führende/nachfolgende Tage aus dem Vor-/Folgemonat in der echten Monatsansicht (siehe otherMonth
+   oben) – gedämpft statt ausgeblendet, damit z. B. ein Termin am Monatsübergang trotzdem sichtbar
+   und antippbar bleibt, nur eben erkennbar als "nicht der aktuell im Fokus stehende Monat". */
+.day.other-month {
+  opacity: 0.45;
 }
 
 .day-head {
