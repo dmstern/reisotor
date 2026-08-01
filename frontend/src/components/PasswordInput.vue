@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-
 defineOptions({ inheritAttrs: false });
 const model = defineModel<string>({ required: true });
-const visible = ref(false);
+// Optionales zweites v-model (v-model:visible) – z. B. für LoginView.vue, das den Reisotor die
+// Augen zuhalten lässt, solange das Passwort im Klartext angezeigt wird. Ungenutzt bleibt es ein
+// rein internes Detail wie zuvor (Default false, kein Verhaltensunterschied für bestehende
+// Verwendungsstellen ohne diese Bindung).
+const visible = defineModel<boolean>('visible', { default: false });
 </script>
 
 <template>

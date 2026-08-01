@@ -5,6 +5,7 @@ import { useAuthStore } from '../stores/auth';
 import { useThemeStore } from '../stores/theme';
 import { ApiError } from '../api/client';
 import PasswordInput from '../components/PasswordInput.vue';
+import ReisotorRobot from '../components/ReisotorRobot.vue';
 
 const auth = useAuthStore();
 const router = useRouter();
@@ -12,6 +13,7 @@ const theme = useThemeStore();
 
 const username = ref('');
 const password = ref('');
+const passwordVisible = ref(false);
 const error = ref('');
 const loading = ref(false);
 
@@ -41,7 +43,7 @@ async function onSubmit() {
       {{ theme.isDark ? '☀️' : '🌙' }}
     </button>
     <form class="card login-card" @submit.prevent="onSubmit">
-      <img src="/reisotor_logo.svg" alt="Reisotor Logo" class="logo" />
+      <ReisotorRobot :covering-eyes="passwordVisible" size="140px" class="logo" />
       <h1>Reisotor</h1>
       <p>Melde dich an, um euren Urlaub zu planen.</p>
 
@@ -52,7 +54,13 @@ async function onSubmit() {
 
       <div class="field">
         <label for="login-password">Passwort</label>
-        <PasswordInput id="login-password" v-model="password" autocomplete="current-password" required />
+        <PasswordInput
+          id="login-password"
+          v-model="password"
+          v-model:visible="passwordVisible"
+          autocomplete="current-password"
+          required
+        />
       </div>
 
       <p v-if="error" class="error">{{ error }}</p>
@@ -99,8 +107,6 @@ async function onSubmit() {
 }
 
 .logo {
-  width: 140px;
-  height: 140px;
   margin-bottom: var(--space-1);
 }
 
