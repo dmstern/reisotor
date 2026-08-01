@@ -189,6 +189,7 @@ function onResizeEnd() {
   width: 32px;
   padding: 8px 3px;
   border: 1px solid var(--color-border);
+  corner-shape: squircle;
   background: var(--color-surface);
   box-shadow: var(--shadow-sm);
   display: flex;
@@ -283,6 +284,7 @@ function onResizeEnd() {
   width: 100vw;
   background: var(--color-surface);
   box-shadow: var(--shadow-md);
+  corner-shape: squircle;
   z-index: 12;
   overflow-y: auto;
   /* Rein defensiv (kein bekannter aktueller Grund für horizontalen Überlauf) – .resize-handle liegt

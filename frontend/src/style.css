@@ -1,3 +1,44 @@
+/* Selbst gehostet (public/fonts, aus Google Fonts extrahierter Latin-Subset) statt eines
+   Google-Fonts-<link>: funktioniert dadurch auch offline/bei schlechter Verbindung unterwegs (die
+   App wird im Urlaub genutzt) und ohne den zusätzlichen Verbindungsaufbau zu fonts.gstatic.com beim
+   ersten Seitenaufruf. Nur der Latin-Subset (deckt inkl. äöüßÄÖÜ alles ab, was die App auf Deutsch
+   braucht) statt aller Google-Fonts-Unicode-Ranges, damit die Dateien klein bleiben. */
+@font-face {
+  font-family: 'Fira Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/fira-sans-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Fira Sans';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/fira-sans-400-italic.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Fira Sans';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/fira-sans-500.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Fira Sans';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/fira-sans-600.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Fira Sans';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/fira-sans-700.woff2') format('woff2');
+}
+
 :root {
   color-scheme: light;
   /* Von NavBar.vue live per ResizeObserver gepflegt: tatsächliche Höhe der NavBar, wenn sie
@@ -28,9 +69,14 @@
   --color-accent-secondary: #5b6ee1;
   --color-accent-secondary-bg: #eef0fd;
 
-  --radius-sm: 8px;
-  --radius-md: 14px;
-  --radius-lg: 22px;
+  /* Etwas großzügiger als vorher (8/14/22) und mit corner-shape: squircle kombiniert (siehe unten,
+     .card/button/input/Modal/Drawer) für eine "kontinuierlichere", Apple-artigere Rundung statt
+     rein kreisförmiger Ecken – corner-shape ist progressive enhancement (nicht unterstützende
+     Browser sehen einfach normal abgerundete Ecken, kein Funktionsverlust). */
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 26px;
+  --radius-xl: 32px;
 
   --space-1: 4px;
   --space-2: 8px;
@@ -42,7 +88,7 @@
   --shadow-sm: 0 2px 6px rgba(43, 42, 40, 0.12);
   --shadow-md: 0 8px 24px rgba(43, 42, 40, 0.16);
 
-  --font-sans: 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  --font-sans: 'Fira Sans', 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
 }
 
 /* Dark Mode: standardmäßig die Systemeinstellung (prefers-color-scheme), zusätzlich manuell
@@ -131,6 +177,13 @@ h3 {
   margin: 0 0 var(--space-3);
 }
 
+/* Etwas kräftiger und enger getrackt als h2/h3 – große, fette Überschriften mit leicht negativem
+   letter-spacing sind ein sehr prägendes Merkmal von Apples Typografie (SF Pro Display). */
+h1 {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
 p {
   margin: 0 0 var(--space-3);
   color: var(--color-text-muted);
@@ -151,16 +204,23 @@ textarea {
 button {
   cursor: pointer;
   border: none;
-  border-radius: var(--radius-sm);
-  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  corner-shape: squircle;
+  padding: 11px 18px;
   background: var(--color-primary);
   color: white;
   font-weight: 600;
-  transition: background 0.15s ease;
+  transition: background 0.15s ease, transform 0.1s ease;
 }
 
 button:hover {
   background: var(--color-primary-dark);
+}
+
+/* Kurzes, dezentes "Eindrücken" beim Antippen/Klicken – ein sehr Apple-typisches taktiles Detail,
+   das rein visuelles Feedback ohne Funktionsänderung gibt. */
+button:active {
+  transform: scale(0.97);
 }
 
 button.secondary {
@@ -190,6 +250,7 @@ button.danger {
   padding: 4px 10px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
+  corner-shape: squircle;
   background: var(--color-primary-tint);
   color: var(--color-primary-dark);
   font-size: 0.85rem;
@@ -439,9 +500,10 @@ input[type='checkbox']:focus-visible,
 input,
 select,
 textarea {
-  padding: 8px 10px;
+  padding: 9px 12px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
+  corner-shape: squircle;
   background: var(--color-surface);
   color: var(--color-text);
   /* Ohne das schrumpfen Eingabefelder (v. a. type=date/number auf iOS Safari) in Flex-Reihen
@@ -461,6 +523,7 @@ textarea:focus {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
+  corner-shape: squircle;
   box-shadow: var(--shadow-sm);
   padding: var(--space-4);
 }
