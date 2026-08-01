@@ -292,8 +292,9 @@ function showDetailOnMap() {
         <textarea v-model="form.note" rows="3"></textarea>
       </label>
       <p class="syntax-hint">
-        <code>**fett**</code> · <code>_kursiv_</code> · <code>* Punkt</code> für Listen · Links werden
-        automatisch erkannt
+        <code>**fett**</code> · <code>_kursiv_</code> · <code>~~durch~~</code> · <code># Titel</code> ·
+        <code>&gt; Zitat</code> · <code>* Punkt</code> / <code>1. Punkt</code> für Listen ·
+        <code>---</code> für Trennlinie · <code>`Code`</code> · Links werden automatisch erkannt
       </p>
 
       <button type="submit">Hinzufügen</button>
@@ -400,8 +401,9 @@ function showDetailOnMap() {
           <textarea v-model="editForm.note" rows="3"></textarea>
         </label>
         <p class="syntax-hint">
-          <code>**fett**</code> · <code>_kursiv_</code> · <code>* Punkt</code> für Listen · Links werden
-          automatisch erkannt
+          <code>**fett**</code> · <code>_kursiv_</code> · <code>~~durch~~</code> · <code># Titel</code> ·
+          <code>&gt; Zitat</code> · <code>* Punkt</code> / <code>1. Punkt</code> für Listen ·
+          <code>---</code> für Trennlinie · <code>`Code`</code> · Links werden automatisch erkannt
         </p>
         <button type="submit">Speichern</button>
       </form>

@@ -130,7 +130,7 @@ function onCardClick() {
         <CategoryChip :category="spot.category" />
       </div>
       <p v-if="expanded && creatorLabel" class="detail-row"><span class="detail-label">Von</span>{{ creatorLabel }}</p>
-      <div v-if="spot.note" class="note" v-html="renderRichText(spot.note)"></div>
+      <div v-if="spot.note" class="note richtext" v-html="renderRichText(spot.note)"></div>
       <div class="links" v-if="spot.lat != null && spot.lng != null">
         <button type="button" class="card-action-btn" @click.stop="emit('show-on-map', spot)">🗺️ Auf Karte anzeigen</button>
       </div>

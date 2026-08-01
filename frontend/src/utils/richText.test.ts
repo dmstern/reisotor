@@ -36,6 +36,54 @@ describe('renderRichText', () => {
     expect(html).toContain('<li>zwei</li>');
     expect(html).toContain('<li>drei</li>');
   });
+
+  it('groups consecutive numbered lines into a single <ol> with one <li> per line', () => {
+    const html = renderRichText('1. eins\n2. zwei\nkein listenpunkt\n1. drei');
+    expect(html.match(/<ol>/g)).toHaveLength(2);
+    expect(html).toContain('<li>eins</li>');
+    expect(html).toContain('<li>zwei</li>');
+    expect(html).toContain('<li>drei</li>');
+  });
+
+  it('renders # through ###### as headings, with inline formatting inside', () => {
+    expect(renderRichText('# Titel')).toBe('<h1>Titel</h1>');
+    expect(renderRichText('## Titel')).toBe('<h2>Titel</h2>');
+    expect(renderRichText('###### Titel')).toBe('<h6>Titel</h6>');
+    expect(renderRichText('# **fett**')).toBe('<h1><strong>fett</strong></h1>');
+  });
+
+  it('renders a single quote line as a <blockquote>', () => {
+    expect(renderRichText('> Zitat')).toBe('<blockquote>Zitat</blockquote>');
+  });
+
+  it('groups consecutive quote lines into one <blockquote> joined by <br>', () => {
+    const html = renderRichText('> eins\n> zwei');
+    expect(html.match(/<blockquote>/g)).toHaveLength(1);
+    expect(html).toBe('<blockquote>eins<br>zwei</blockquote>');
+  });
+
+  it('renders ---, *** and ___ as a horizontal rule', () => {
+    expect(renderRichText('---')).toBe('<hr>');
+    expect(renderRichText('***')).toBe('<hr>');
+    expect(renderRichText('___')).toBe('<hr>');
+  });
+
+  it('flushes an open list when a different block type follows', () => {
+    const html = renderRichText('* eins\n> Zitat');
+    expect(html).toBe('<ul><li>eins</li></ul><blockquote>Zitat</blockquote>');
+  });
+
+  it('renders `code` spans and leaves their content unformatted/un-autolinked', () => {
+    expect(renderRichText('nutz `code` hier')).toContain('<code>code</code>');
+    const html = renderRichText('`**nicht fett** https://example.com`');
+    expect(html).not.toContain('<strong>');
+    expect(html).not.toContain('<a ');
+    expect(html).toContain('<code>**nicht fett** https://example.com</code>');
+  });
+
+  it('renders ~~text~~ as <del>', () => {
+    expect(renderRichText('~~weg~~')).toContain('<del>weg</del>');
+  });
 });
 
 describe('formatInline', () => {

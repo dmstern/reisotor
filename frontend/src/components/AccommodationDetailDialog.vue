@@ -55,14 +55,14 @@ function formatDate(d: string | null) {
     </p>
     <p v-else-if="accommodation.contact" class="detail-row">
       <span class="detail-label">Kontakt</span>
-      <span class="contact-text" v-html="renderRichText(accommodation.contact)"></span>
+      <span class="contact-text richtext" v-html="renderRichText(accommodation.contact)"></span>
     </p>
     <p v-if="accommodation.amount != null" class="detail-row">
       <span class="detail-label">Kosten</span>
       💶 {{ accommodation.amount.toFixed(2) }} €
       <span v-if="accommodation.paid_by_user_id"> · bezahlt von {{ payerLabel }}</span>
     </p>
-    <div v-if="accommodation.note" class="detail-row note" v-html="renderRichText(accommodation.note)"></div>
+    <div v-if="accommodation.note" class="detail-row note richtext" v-html="renderRichText(accommodation.note)"></div>
     <div class="detail-actions">
       <button
         v-if="accommodation.lat != null && accommodation.lng != null"
@@ -86,9 +86,5 @@ function formatDate(d: string | null) {
 <style scoped>
 .note {
   overflow-wrap: anywhere;
-}
-
-.contact-text :deep(br:last-child) {
-  display: none;
 }
 </style>

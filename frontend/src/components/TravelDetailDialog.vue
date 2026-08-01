@@ -66,7 +66,7 @@ function travelDuration(item: TravelItem) {
       💶 {{ item.amount.toFixed(2) }} €
       <span v-if="item.paid_by_user_id"> · bezahlt von {{ payerLabel }}</span>
     </p>
-    <div v-if="item.note" class="detail-row note" v-html="renderRichText(item.note)"></div>
+    <div v-if="item.note" class="detail-row note richtext" v-html="renderRichText(item.note)"></div>
     <div class="detail-actions">
       <a v-if="item.link" :href="item.link" target="_blank" rel="noopener" class="card-action-btn">
         {{ linkLabel(item.link) }} ↗
@@ -108,9 +108,5 @@ function travelDuration(item: TravelItem) {
 <style scoped>
 .note {
   overflow-wrap: anywhere;
-}
-
-.note :deep(br:last-child) {
-  display: none;
 }
 </style>

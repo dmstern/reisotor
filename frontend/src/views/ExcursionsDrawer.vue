@@ -297,8 +297,9 @@ function editStationSpot() {
         <input v-model="excursionForm.image_url" type="url" placeholder="Bild-URL (optional)" />
         <textarea v-model="excursionForm.note" placeholder="Notiz (optional)" rows="4"></textarea>
         <p class="syntax-hint">
-          <code>**fett**</code> · <code>_kursiv_</code> · <code>* Punkt</code> für Listen · Links werden
-          automatisch erkannt
+          <code>**fett**</code> · <code>_kursiv_</code> · <code>~~durch~~</code> · <code># Titel</code> ·
+          <code>&gt; Zitat</code> · <code>* Punkt</code> / <code>1. Punkt</code> für Listen ·
+          <code>---</code> für Trennlinie · <code>`Code`</code> · Links werden automatisch erkannt
         </p>
         <label class="date-label">
           Datum (optional – ansonsten "In Planung")
@@ -400,8 +401,9 @@ function editStationSpot() {
         <input v-model="editExcursionForm.image_url" type="url" placeholder="Bild-URL (optional)" />
         <textarea v-model="editExcursionForm.note" placeholder="Notiz (optional)" rows="4"></textarea>
         <p class="syntax-hint">
-          <code>**fett**</code> · <code>_kursiv_</code> · <code>* Punkt</code> für Listen · Links werden
-          automatisch erkannt
+          <code>**fett**</code> · <code>_kursiv_</code> · <code>~~durch~~</code> · <code># Titel</code> ·
+          <code>&gt; Zitat</code> · <code>* Punkt</code> / <code>1. Punkt</code> für Listen ·
+          <code>---</code> für Trennlinie · <code>`Code`</code> · Links werden automatisch erkannt
         </p>
         <label class="date-label">
           Datum (optional – ansonsten "In Planung")

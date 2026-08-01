@@ -272,6 +272,87 @@ button.danger {
   vertical-align: middle;
 }
 
+/* Gemeinsame Optik für alle von renderRichText() (utils/richText.ts) erzeugten Markdown-Elemente.
+   Alle v-html-Container quer durch die App (Notizen, Tagebuch, Ausflugs-/Spot-/Unterkunfts-Notizen,
+   Kontaktfeld) bekommen zusätzlich zu ihrer lokalen Klasse (.content/.note/.contact-text) die
+   Klasse .richtext, damit Überschriften/Zitate/Trennlinien/Listen/Code überall gleich aussehen statt
+   in sieben Komponenten dupliziert zu werden. v-html-Inhalt bekommt beim Kompilieren keine
+   scoped-Style-Attribute, ein globales (nicht scoped) Regelwerk hier trifft es trotzdem direkt, ganz
+   ohne :deep(). .richtext h1/h2/h3 gewinnt gegen das globale h1,h2,h3-Rule oben per Selektor-
+   Spezifität, Seitentitel bleiben also unangetastet. */
+.richtext > :first-child {
+  margin-top: 0;
+}
+
+.richtext ul,
+.richtext ol {
+  margin: 4px 0;
+  padding-left: 1.3em;
+}
+
+.richtext h1,
+.richtext h2,
+.richtext h3,
+.richtext h4,
+.richtext h5,
+.richtext h6 {
+  margin: var(--space-2) 0 4px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--color-text);
+}
+
+.richtext h1 {
+  font-size: 1.3rem;
+}
+
+.richtext h2 {
+  font-size: 1.15rem;
+}
+
+.richtext h3 {
+  font-size: 1.05rem;
+}
+
+.richtext h4,
+.richtext h5,
+.richtext h6 {
+  font-size: 0.95rem;
+}
+
+.richtext blockquote {
+  margin: 4px 0;
+  padding: 2px 0 2px 10px;
+  border-left: 3px solid var(--color-border);
+  color: var(--color-text-muted);
+}
+
+.richtext hr {
+  margin: var(--space-2) 0;
+  border: none;
+  border-top: 1px solid var(--color-border);
+}
+
+.richtext code {
+  background: var(--color-bg);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 0.9em;
+}
+
+.richtext del {
+  color: var(--color-text-muted);
+}
+
+/* Nur der Direct-Child-Selektor (>) statt Nachfahren-Selektor: ein <br> INNERHALB eines
+   <blockquote> (Zeilentrenner zwischen mehreren Zitat-Zeilen, siehe renderRichText) ist für
+   :last-child unter Umständen ebenfalls "letztes Element-Kind" (Textknoten zählen für :last-child
+   nicht mit) und würde sonst fälschlich mitversteckt – hier geht es nur um den einen, wirklich
+   überzähligen <br> ganz am Ende des gerenderten Textes selbst. */
+.richtext > br:last-child {
+  display: none;
+}
+
 /* Einheitliche Häkchen-Optik für alle "abgehakt"-Checkboxen der App (ToDo, Packliste,
    Einkaufsliste, ...) statt des nicht gestalteten, je nach Betriebssystem/Browser unterschiedlich
    aussehenden nativen Kästchens – appearance:none + eigener Rahmen/Haken statt dessen. Global statt
