@@ -1,8 +1,116 @@
 # CLAUDE.md
 
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 Reisotor ist eine Vue 3 + Fastify-Web-App zur gemeinsamen Reiseplanung für zwei Personen (siehe
-`README.md` für Features, Struktur und lokale Setup-/Deploy-Schritte). Diese Datei hält
-Dev-Workflow-Konventionen für Claude Code fest, nicht das Setup selbst.
+`README.md` für Features, lokale Setup-/Deploy-Schritte und Umgebungsvariablen). Diese Datei hält
+Architektur-Überblick und Dev-Workflow-Konventionen für Claude Code fest.
+
+## Setup & Befehle
+
+```bash
+# Backend (Fastify + TypeScript + better-sqlite3, /backend)
+cd backend
+npm install
+npm run seed        # legt 2 Nutzer + leere Trip-/Unterkunftszeile an (idempotent)
+npm run seed:demo   # zusätzlich kompletter Beispiel-Urlaub mit Daten in allen Bereichen
+npm run dev         # tsx watch auf http://localhost:3000
+npm run build       # tsc -> backend/dist
+npm test            # vitest run; npm run test:watch für Watch-Mode
+
+# Frontend (Vite + Vue 3 + TypeScript, /frontend)
+cd frontend
+npm install
+npm run dev         # Vite auf http://localhost:5173, proxied /api ans Backend
+npm run build   # vue-tsc --noEmit + vite build -> frontend/dist
+npm test            # vitest run
+
+# E2E (Playwright, /e2e) — siehe eigener Abschnitt unten
+cd e2e && npm install && npx playwright install chromium && npm test
+```
+
+Einzelnen Test ausführen: `npx vitest run <pfad-zur-datei>` bzw. `npx vitest run -t "<name>"`
+(aus `backend/` oder `frontend/`); für E2E `npx playwright test <pfad-zur-spec>` aus `e2e/`.
+
+Node.js 20+ sowie `make`/`gcc`/`python3` nötig (native Module `better-sqlite3`, `bcrypt`). Volle
+Setup-/Deploy-/Env-Var-Details: `README.md`.
+
+## Architektur
+
+**Backend** (`backend/src/`): Fastify-App, `app.ts` exportiert `buildApp()` getrennt von
+`server.ts` (das nur `buildApp()` aufruft und `.listen()`), damit Tests eine fertig konfigurierte
+Instanz per `.inject()` ansprechen können, ohne einen Port zu binden. Plugin-Reihenfolge in
+`app.ts`: CORS → statische Uploads (`/api/uploads/`) → Cookie+Session (`@fastify/session` mit
+eigenem `SqliteSessionStore` aus `sessionStore.ts`, damit Sessions einen Prozess-Neustart
+überleben) → `/api`-Präfix mit offenen `/auth/*`-Routen und einer zweiten, per `requireAuth`
+(`auth.ts`) geschützten Gruppe für alle übrigen Routen. Jede fachliche Domäne hat eine eigene Datei
+unter `routes/` (trips, schedule, packing, ideas, accommodation, budget, users, backup, shopping,
+todos, notes, diary, travel, spots) plus `buildInfo` für den Git-Commit/Build-Zeitstempel; alle
+werden in `app.ts` registriert. Routen greifen direkt per `better-sqlite3` (synchron, kein
+ORM/Query-Builder) auf `db.prepare(...)` zu.
+
+**Datenbank** (`backend/src/db/index.ts`): eine SQLite-Datei (`data.sqlite`), Schema wird bei jedem
+Prozessstart synchron per `CREATE TABLE IF NOT EXISTS` + additiven Migrationen (`ensureColumn`,
+`dropColumnIfExists`) angewendet — siehe Abschnitt "Datenmodell-Änderungen" unten für die
+Konventionen dabei. Domänen umfassen u. a. `trips`, `schedule_items`, `packing_items`, `ideas`
+(Ausflugsideen), `accommodation`, `budget_items`/`budget_transfers`/`budgets`/
+`budget_allocations`, `shopping_items`, `todo_items`, `notes`, `diary_entries` sowie je eigene
+`*_likes`/`*_comments`-Tabellen für Ausflüge/Notizen/Tagebuch/Spots, `travel_items`/
+`travel_places` (Flug/Zug), `spots`/`excursion_spots` (Karte) und `sessions`. Bewusst quer
+liegender Zusammenhang: Unterkunfts-/Reisekosten hängen per `budget_expense_id`-FK an
+`budget_items` (Sync-Logik in `routes/accommodation.ts`/`routes/travel.ts`) — beim Löschen zuerst
+die referenzierende Zeile aktualisieren/entfernen, danach die `budget_items`-Zeile (siehe
+"Bekannte Stolpersteine" in `README.md` zum genauen FK-Constraint-Fehler bei falscher Reihenfolge).
+
+**Auth**: Session-Cookie-basiert (kein JWT), `requireAuth`-preHandler-Hook gated alle Routen außer
+`/auth/*`. Kein User-Rollensystem — die App ist für genau zwei feste Nutzer:innen pro Haushalt
+ausgelegt, weitere Nutzer:innen lassen sich aber über die Profil-Seite anlegen.
+
+**Frontend** (`frontend/src/`): Vue 3 (Composition API, `<script setup>`) + Pinia-Stores (je einer
+pro Domäne unter `stores/`: `trip`, `schedule`, `spots`, `excursions`, `drawers`, `navPosition`,
+`theme`, `auth`) + `vue-router`. `router/index.ts` hat einen globalen `beforeEach`-Guard, der
+`auth.checkSession()` erzwingt und unauthentifizierte Zugriffe auf `/login` umleitet. Responsive
+Besonderheit: Kalender (`ScheduleView`) und Touren (`ExcursionsDrawer`) sind auf Desktop globale,
+in `App.vue` fest gemountete Schubladen (seitliche Lasche), dieselben Komponenten dienen auf Mobil
+zusätzlich als eigenständige Routen (`/calendar`, `/tours`) — der Router blockt einen direkten
+Aufruf dieser Mobil-Routen auf Desktop-Breite, um doppeltes Mounten zu vermeiden. Wiederkehrende
+Architekturkonvention: Referenzen auf fremde Objekte (z. B. ein verknüpfter Trip von einer anderen
+View aus) springen zur Ursprungs-View statt dort inline editierbar zu sein (siehe
+`stores/trip.ts`, `editTripRequestId`).
+
+API-Zugriff läuft zentral über `api/client.ts` (`fetch`-Wrapper mit `credentials: 'include'`); ein
+`401` leitet dort hart auf `/login` um (außer auf den paar selbst-behandelten Auth-Pfaden wie
+`/auth/login`), da eine im Arbeitsspeicher gehaltene Session einen Backend-Neustart nicht übersteht.
+Karte (`components/TripMap.vue` u. a.) nutzt Leaflet/OpenStreetMap mit eigenen Emoji-`divIcon`s
+statt der Standard-Marker (siehe "Bekannte Stolpersteine" in `README.md`).
+
+**Deployment** (Details: `README.md`): Push auf `main` baut via `.github/workflows/build-deploy.yml`
+(Unit-Tests → Build → E2E-Tests, alles gated) und veröffentlicht auf Branch `deploy-staging`
+(Server pollt das, deployt auf `dev.reise.ruebenherz.de`); erst ein expliziter
+`git push origin main:prod` löst denselben Workflow für Branch `deploy` aus (echte Produktion,
+`reise.ruebenherz.de`). Die SQLite-Datei wird beim Deploy nie überschrieben (siehe
+"Datenmodell-Änderungen" unten).
+
+## Konsistenz-Check bei Änderungen
+
+Die App ist über viele Sessions gewachsen, und dasselbe Konzept (Icon, Bezeichnung, Layout-/
+Verhaltensmuster, Datenmodell-Feld) taucht oft an mehreren Stellen gleichzeitig auf, ohne dass das
+zentral dokumentiert ist — der Nutzer hat nicht mehr die ganze App im Kopf und merkt nicht jede
+Stelle, die mitgezogen werden sollte (Beispiel: Todo-Icon wurde im Kalender zu einem Clipboard
+geändert, dasselbe Icon in der NavBar aber vergessen; ein Flex-Wrap-Fix an einer Card-Komponente,
+der an strukturell ähnlichen Cards woanders genauso gilt). Bei jeder Änderung an UI-Bausteinen
+(Icons, wiederkehrende Bezeichnungen, Layout-/Interaktionsmuster wie Card-Wrap-Verhalten) oder am
+Datenmodell (`backend/src/db/index.ts`, `api/types.ts`) deshalb aktiv prüfen, ob dasselbe Muster
+noch anderswo in der App vorkommt (kurz grep auf das Icon/den Bezeichner/die Komponente, nicht nur
+an der ursprünglich angefragten Stelle schauen):
+
+- **Offensichtlich sinnvolle Folgeanpassung** (identisches Icon/Konzept an anderer Stelle, exakt
+  gleiches Bug-Muster): nicht vorher nachfragen, einfach mit umsetzen — genau wie bei Bugfixes, die
+  während der Umsetzung auffallen — und danach kurz erwähnen, was zusätzlich mit angepasst wurde.
+- **Unklar, ob gewollt** (könnte an der anderen Stelle bewusst abweichen, Kontext unterschiedlich,
+  größerer Umbau nötig): die Beobachtung nennen und nachfragen statt eigenmächtig mitzuändern.
+
+Für Datenmodell-Änderungen im Speziellen gilt zusätzlich der Migrations-Check im nächsten Abschnitt.
 
 ## Typecheck
 
