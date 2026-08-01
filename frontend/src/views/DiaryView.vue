@@ -275,8 +275,9 @@ async function removeComment(id: number) {
       <input v-model="form.title" type="text" placeholder="Titel (optional)" />
       <textarea v-model="form.content" placeholder="Was ist heute passiert?" rows="10" required></textarea>
       <p class="syntax-hint">
-        <code>**fett**</code> · <code>_kursiv_</code> · <code>* Punkt</code> für Listen · Links werden
-        automatisch erkannt
+        <code>**fett**</code> · <code>_kursiv_</code> · <code>~~durch~~</code> · <code># Titel</code> ·
+        <code>&gt; Zitat</code> · <code>* Punkt</code> / <code>1. Punkt</code> für Listen ·
+        <code>---</code> für Trennlinie · <code>`Code`</code> · Links werden automatisch erkannt
       </p>
       <label class="upload-label">
         📷 Bilder hinzufügen
@@ -331,7 +332,7 @@ async function removeComment(id: number) {
         </header>
 
         <h3 v-if="entry.title">{{ entry.title }}</h3>
-        <div class="content" v-html="renderRichText(entry.content)"></div>
+        <div class="content richtext" v-html="renderRichText(entry.content)"></div>
 
         <div class="gallery" v-if="entry.images.length">
           <a v-for="(img, i) in entry.images" :key="i" :href="img" target="_blank" rel="noopener">
@@ -383,8 +384,9 @@ async function removeComment(id: number) {
         <input v-model="editForm.title" type="text" placeholder="Titel (optional)" />
         <textarea v-model="editForm.content" rows="10" required></textarea>
         <p class="syntax-hint">
-          <code>**fett**</code> · <code>_kursiv_</code> · <code>* Punkt</code> für Listen · Links werden
-          automatisch erkannt
+          <code>**fett**</code> · <code>_kursiv_</code> · <code>~~durch~~</code> · <code># Titel</code> ·
+          <code>&gt; Zitat</code> · <code>* Punkt</code> / <code>1. Punkt</code> für Listen ·
+          <code>---</code> für Trennlinie · <code>`Code`</code> · Links werden automatisch erkannt
         </p>
         <label class="upload-label">
           📷 Bilder hinzufügen
@@ -631,15 +633,6 @@ async function removeComment(id: number) {
 .content {
   margin: 0 0 var(--space-2);
   overflow-wrap: anywhere;
-}
-
-.content :deep(ul) {
-  margin: 4px 0;
-  padding-left: 1.3em;
-}
-
-.content :deep(br:last-child) {
-  display: none;
 }
 
 .syntax-hint {

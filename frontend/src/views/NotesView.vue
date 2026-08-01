@@ -157,8 +157,9 @@ async function remove(id: number) {
       <input v-model="form.title" type="text" placeholder="Titel (optional)" />
       <textarea v-model="form.content" placeholder="Inhalt" rows="8" required></textarea>
       <p class="syntax-hint">
-        <code>**fett**</code> · <code>_kursiv_</code> · <code>* Punkt</code> für Listen · Links werden
-        automatisch erkannt
+        <code>**fett**</code> · <code>_kursiv_</code> · <code>~~durch~~</code> · <code># Titel</code> ·
+        <code>&gt; Zitat</code> · <code>* Punkt</code> / <code>1. Punkt</code> für Listen ·
+        <code>---</code> für Trennlinie · <code>`Code`</code> · Links werden automatisch erkannt
       </p>
       <button type="submit">Hinzufügen</button>
     </form>
@@ -173,7 +174,7 @@ async function remove(id: number) {
             <DeleteButton small @click="remove(note.id)" />
           </div>
         </div>
-        <div class="content" v-html="renderRichText(note.content)"></div>
+        <div class="content richtext" v-html="renderRichText(note.content)"></div>
         <p class="meta">{{ authorLabel(note.created_by) }} · {{ formatDate(note.updated_at ?? note.created_at) }}</p>
         <div class="social-row">
           <LikeButton :count="likesFor(note.id).length" :liked="likedByMe(note.id)" @toggle="toggleLike(note.id)" />
@@ -198,8 +199,9 @@ async function remove(id: number) {
         <input v-model="editForm.title" type="text" placeholder="Titel (optional)" />
         <textarea v-model="editForm.content" rows="8" required></textarea>
         <p class="syntax-hint">
-          <code>**fett**</code> · <code>_kursiv_</code> · <code>* Punkt</code> für Listen · Links werden
-          automatisch erkannt
+          <code>**fett**</code> · <code>_kursiv_</code> · <code>~~durch~~</code> · <code># Titel</code> ·
+          <code>&gt; Zitat</code> · <code>* Punkt</code> / <code>1. Punkt</code> für Listen ·
+          <code>---</code> für Trennlinie · <code>`Code`</code> · Links werden automatisch erkannt
         </p>
         <button type="submit">Speichern</button>
       </form>
@@ -280,15 +282,6 @@ async function remove(id: number) {
   margin: 0;
   color: var(--color-text);
   overflow-wrap: anywhere;
-}
-
-.content :deep(ul) {
-  margin: 4px 0;
-  padding-left: 1.3em;
-}
-
-.content :deep(br:last-child) {
-  display: none;
 }
 
 .meta {

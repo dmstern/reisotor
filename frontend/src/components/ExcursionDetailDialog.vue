@@ -149,7 +149,7 @@ function editStationLocation(target: 'accommodation' | 'travel') {
       <span>{{ excursion.date ? `📅 ${formatDate(excursion.date)}` : '📝 In Planung' }}</span>
     </template>
 
-    <div v-if="excursion.note" class="detail-row note" v-html="renderRichText(excursion.note)"></div>
+    <div v-if="excursion.note" class="detail-row note richtext" v-html="renderRichText(excursion.note)"></div>
 
     <template v-if="orderedStations.length">
       <span class="detail-label">Stationen</span>

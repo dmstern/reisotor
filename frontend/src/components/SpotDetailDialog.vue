@@ -40,7 +40,7 @@ const emit = defineEmits<{
   >
     <p v-if="creatorLabel" class="detail-row"><span class="detail-label">Von</span>{{ creatorLabel }}</p>
     <p v-if="spot.category" class="detail-row"><CategoryChip :category="spot.category" /></p>
-    <div v-if="spot.note" class="detail-row note" v-html="renderRichText(spot.note)"></div>
+    <div v-if="spot.note" class="detail-row note richtext" v-html="renderRichText(spot.note)"></div>
     <div class="social-row">
       <LikeButton :count="likeCount" :liked="liked" @toggle="emit('toggle-like')" />
     </div>
