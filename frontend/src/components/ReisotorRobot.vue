@@ -77,27 +77,37 @@ const mouthPath = computed(() =>
       <!-- Arme (Ruhepose): Rumpf-Rect ist x=89..201, Schulterhöhe knapp unter dem Kopf. Runde
            Linienenden (stroke-linecap) + Handkreis ergeben dieselbe weiche Formsprache wie der Rest
            des Roboters. Eigene Gruppe mit transform-origin am Schulterpunkt, damit sie während des
-           Scans ums Schultergelenk schwingen können statt sich um ihren Mittelpunkt zu drehen. -->
+           Scans ums Schultergelenk schwingen können statt sich um ihren Mittelpunkt zu drehen.
+           Dunkle Outline-Linie zuerst (breiter, gleiche Koordinaten) darunter, dann die eigentliche
+           Armfarbe darüber – sonst verschwimmt der Arm (ursprünglich dieselbe Kopf-Teal-Farbe) beim
+           Überlappen mit Kopf/Rumpf sichtbar mit deren Flächen. Eigene, dunklere Teal-Farbe
+           (#2F8F86, schon von der Antenne bekannt) statt der Kopf-Farbe #4FB3A9 sorgt zusätzlich für
+           Kontrast. Handkreis bekommt denselben dunklen Rand, damit die helle Hand auch vor dem
+           ebenfalls hellen Augenweiß erkennbar bleibt (siehe Augen-zuhalten-Pose unten). -->
       <g class="arm arm-left">
-        <line x1="93" y1="208" x2="55" y2="240" stroke="#4FB3A9" stroke-width="14" stroke-linecap="round" />
-        <circle cx="55" cy="240" r="12" fill="#FDF6EC" />
+        <line x1="93" y1="208" x2="55" y2="240" stroke="#1F3A3D" stroke-width="18" stroke-linecap="round" />
+        <line x1="93" y1="208" x2="55" y2="240" stroke="#2F8F86" stroke-width="14" stroke-linecap="round" />
+        <circle cx="55" cy="240" r="12" fill="#FDF6EC" stroke="#1F3A3D" stroke-width="2" />
       </g>
       <g class="arm arm-right">
-        <line x1="197" y1="208" x2="235" y2="240" stroke="#4FB3A9" stroke-width="14" stroke-linecap="round" />
-        <circle cx="235" cy="240" r="12" fill="#FDF6EC" />
+        <line x1="197" y1="208" x2="235" y2="240" stroke="#1F3A3D" stroke-width="18" stroke-linecap="round" />
+        <line x1="197" y1="208" x2="235" y2="240" stroke="#2F8F86" stroke-width="14" stroke-linecap="round" />
+        <circle cx="235" cy="240" r="12" fill="#FDF6EC" stroke="#1F3A3D" stroke-width="2" />
       </g>
 
       <!-- Arme (Augen-zuhalten-Pose): eigene gebogene Form statt einer Drehung der Ruhepose – der
            Abstand Schulter→Auge ist größer als die kurze Ruhe-Armlänge, eine reine Rotation könnte
-           die Hand also nie bis zum Auge bringen. Blendet per Opacity-Crossfade mit der Ruhepose
-           um (siehe .arm/.arm-cover unten). -->
+           die Hand also nie bis zum Auge bringen. Blendet per Opacity-Crossfade mit der Ruhepose um
+           (siehe .arm/.arm-cover unten). Dieselbe Outline-Technik wie oben, aus demselben Grund. -->
       <g class="arm-cover arm-cover-left">
-        <path d="M93,208 Q90,160 113,122" stroke="#4FB3A9" stroke-width="14" stroke-linecap="round" fill="none" />
-        <circle cx="113" cy="122" r="13" fill="#FDF6EC" />
+        <path d="M93,208 Q90,160 113,122" stroke="#1F3A3D" stroke-width="18" stroke-linecap="round" fill="none" />
+        <path d="M93,208 Q90,160 113,122" stroke="#2F8F86" stroke-width="14" stroke-linecap="round" fill="none" />
+        <circle cx="113" cy="122" r="13" fill="#FDF6EC" stroke="#1F3A3D" stroke-width="2" />
       </g>
       <g class="arm-cover arm-cover-right">
-        <path d="M197,208 Q200,160 177,122" stroke="#4FB3A9" stroke-width="14" stroke-linecap="round" fill="none" />
-        <circle cx="177" cy="122" r="13" fill="#FDF6EC" />
+        <path d="M197,208 Q200,160 177,122" stroke="#1F3A3D" stroke-width="18" stroke-linecap="round" fill="none" />
+        <path d="M197,208 Q200,160 177,122" stroke="#2F8F86" stroke-width="14" stroke-linecap="round" fill="none" />
+        <circle cx="177" cy="122" r="13" fill="#FDF6EC" stroke="#1F3A3D" stroke-width="2" />
       </g>
 
       <!-- Rumpf -->
