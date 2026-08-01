@@ -12,6 +12,23 @@ const navPosition = useNavPositionStore();
 const users = ref<User[]>([]);
 const loading = ref(true);
 
+interface BuildInfo {
+  version: string | null;
+  ref: string | null;
+  builtAt: string | null;
+}
+const backendBuildInfo = ref<BuildInfo | null>(null);
+const buildTimeFormatter = new Intl.DateTimeFormat('de-DE', { dateStyle: 'medium', timeStyle: 'short' });
+function formatBuildTime(iso: string | null) {
+  return iso ? buildTimeFormatter.format(new Date(iso)) : 'unbekannt';
+}
+// Lokale Bindings statt der globalen __APP_*__-Konstanten direkt im Template: vue-tsc's
+// Template-Typprüfung löst per `define` gebackene Ambient-Globals dort nicht auf (versucht sie
+// stattdessen als Property der Komponenteninstanz zu finden).
+const frontendVersion = __APP_VERSION__;
+const frontendCommit = __APP_COMMIT__;
+const frontendBuiltAt = __APP_BUILT_AT__;
+
 const EMOJI_CATEGORIES: { label: string; emojis: string[] }[] = [
   {
     label: 'Menschen',
@@ -68,6 +85,7 @@ onMounted(async () => {
   users.value = await api.get<User[]>('/users');
   usernameForm.value.username = auth.user?.username ?? '';
   loading.value = false;
+  backendBuildInfo.value = await api.get<BuildInfo>('/build-info');
 });
 
 async function changeUsername() {
@@ -383,6 +401,20 @@ async function onImportFileSelected(event: Event) {
       </p>
       <p class="hint warning">⚠️ Der Import überschreibt alle aktuellen Daten unwiderruflich.</p>
     </div>
+
+    <div class="card build-info-card">
+      <h2>Build-Info</h2>
+      <dl class="build-info-list">
+        <dt>Frontend</dt>
+        <dd>v{{ frontendVersion }} ({{ frontendCommit }}) · {{ formatBuildTime(frontendBuiltAt) }}</dd>
+        <dt>Backend</dt>
+        <dd v-if="backendBuildInfo">
+          v{{ backendBuildInfo.version }} ({{ backendBuildInfo.ref ?? 'unbekannt' }}) ·
+          {{ formatBuildTime(backendBuildInfo.builtAt) }}
+        </dd>
+        <dd v-else>Lädt…</dd>
+      </dl>
+    </div>
   </div>
 </template>
 
@@ -520,5 +552,21 @@ label {
 .new-user-form {
   margin-top: var(--space-3);
   max-width: 360px;
+}
+
+.build-info-list {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px var(--space-3);
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.build-info-list dt {
+  color: var(--color-text-muted);
+}
+
+.build-info-list dd {
+  margin: 0;
 }
 </style>

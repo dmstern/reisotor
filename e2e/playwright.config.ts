@@ -33,6 +33,12 @@ export default defineConfig({
     // CLAUDE.md).
     screenshot: 'only-on-failure',
     video: 'off',
+    // Opt-in für Sandboxes mit einer vorinstallierten, von diesem Playwright-Paket abweichenden
+    // Chromium-Revision (z. B. Claude-Code-Remote-Umgebungen ohne Internetzugriff für
+    // `playwright install`) — no-op, solange die Env-Var nicht gesetzt ist.
+    launchOptions: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH
+      ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH }
+      : {},
   },
 
   projects: [

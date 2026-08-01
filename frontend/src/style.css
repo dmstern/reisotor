@@ -384,7 +384,7 @@ textarea:focus {
   max-width: 960px;
   margin: 0 auto;
   padding: var(--space-4);
-  padding-bottom: 88px;
+  padding-bottom: var(--navbar-bottom-offset, 88px);
 }
 
 .grid {

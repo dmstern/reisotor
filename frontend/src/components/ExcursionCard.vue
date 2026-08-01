@@ -294,6 +294,18 @@ function onSpotDrop(event: DragEvent) {
   }
 }
 
+/* .image nimmt bei diesem Breakpoint die volle Kartenbreite ein (siehe @media weiter oben), wodurch
+   .status (oben rechts relativ zu .image) und .card-delete (oben rechts relativ zur ganzen Card)
+   sonst exakt dieselbe Ecke träfen. Chip rückt unter den 28px hohen Löschen-Button. Muss NACH der
+   obigen unbedingten .status-Regel im Stylesheet stehen: bei gleicher Selektor-Spezifität
+   entscheidet die Reihenfolge im Stylesheet, nicht ob eine Regel in einer @media-Bedingung steckt –
+   vor der unbedingten Regel platziert, würde diese die hier gesetzte top-Änderung sonst überschreiben. */
+@media (max-width: 480px) {
+  .status {
+    top: 44px;
+  }
+}
+
 /* Eigener Anfasser statt des gesamten Card-Roots als Drag-Quelle (siehe usePointerDrag-Wiring im
    Script) – touch-action:none verhindert, dass der Browser das Ziehen als Seiten-Scroll
    interpretiert. Das ::before-Punkte-Raster macht ihn auf einen Blick als Zieh-Griff statt als

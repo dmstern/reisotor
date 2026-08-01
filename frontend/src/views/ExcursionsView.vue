@@ -782,7 +782,7 @@ function showSpotOnMap(spot: Spot) {
    tatsächlich für die Karte verbleibenden Platzes. */
 .page {
   position: relative;
-  height: calc(100vh - 56px - var(--navbar-offset, 0px));
+  height: calc(100vh - 56px - var(--navbar-offset, 0px) - var(--navbar-bottom-offset, 0px));
   overflow: hidden;
   padding: 0;
 }
@@ -1006,7 +1006,7 @@ function showSpotOnMap(spot: Spot) {
        samt seines margin-bottom sowie .page's eigenes padding-top (var(--space-3), s. o.) ab – ohne
        das war die Spalte beim ersten Rendern (bevor sie tatsächlich einrastet) zu groß, was eine
        überflüssige Seiten-Scrollbar samt leerem Weißraum am Ende erzeugte. */
-    max-height: calc(100vh - 56px - var(--navbar-offset, 0px) - var(--page-title-height, 0px) - var(--space-3));
+    max-height: calc(100vh - 56px - var(--navbar-offset, 0px) - var(--navbar-bottom-offset, 0px) - var(--page-title-height, 0px) - var(--space-3));
     overflow-y: auto;
   }
 
@@ -1060,7 +1060,7 @@ function showSpotOnMap(spot: Spot) {
     display: flex;
     position: sticky;
     top: calc(56px + var(--navbar-offset, 0px));
-    height: calc(100vh - 56px - var(--navbar-offset, 0px) - var(--page-title-height, 0px) - var(--space-3));
+    height: calc(100vh - 56px - var(--navbar-offset, 0px) - var(--navbar-bottom-offset, 0px) - var(--page-title-height, 0px) - var(--space-3));
   }
 }
 

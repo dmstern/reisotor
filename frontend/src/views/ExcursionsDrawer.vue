@@ -433,7 +433,7 @@ function editStationSpot() {
    Block mehr Platz oben (siehe .header unten) – dafür braucht es hier wie bei jeder anderen Seite
    unten Platz für eine unten fixierte mobile NavBar (siehe .page-Pendant in style.css). */
 .excursions-drawer.standalone {
-  padding-bottom: 88px;
+  padding-bottom: var(--navbar-bottom-offset, 88px);
 }
 
 .excursions-drawer h2 {

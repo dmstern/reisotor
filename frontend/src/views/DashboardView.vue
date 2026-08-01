@@ -430,6 +430,14 @@ function formatWeekdayDate(d: string) {
   right: var(--space-3);
   font-size: 0.8rem;
   padding: 4px 10px;
+  /* Bei stark eingeschränktem .app-main (z. B. beide Schubladen gleichzeitig offen auf einem nur
+     mäßig breiten Desktop-Viewport, siehe narrowDesktop-Fall in layout-overlap.spec.ts) schrumpft
+     die Hero-Card teils auf eine Breite unter der intrinsischen Button-Breite – ohne max-width ragt
+     der (per position:absolute von der Kartenbreite unabhängige) Button dann links aus der Card. */
+  max-width: calc(100% - 2 * var(--space-3));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* .secondary ist transparent mit --color-primary-Schrift – über einem Foto (statt dem sonst

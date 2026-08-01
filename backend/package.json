@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/server.ts",
-    "build": "tsc",
+    "dev": "node scripts/generate-build-info.mjs && tsx watch src/server.ts",
+    "build": "tsc && node scripts/generate-build-info.mjs",
     "start": "node dist/server.js",
     "seed": "tsx src/db/seed.ts",
     "seed:demo": "tsx src/db/seedDemo.ts",
