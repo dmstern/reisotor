@@ -16,9 +16,10 @@ cd frontend && npm run build   # führt vue-tsc --noEmit vor dem Vite-Build aus
 
 Vitest auf beiden Seiten, unabhängig konfiguriert (Backend: `backend/vitest.config.ts`; Frontend:
 `test`-Key in `frontend/vite.config.ts`). Laufen ohne Browser/Server, deterministisch und schnell —
-im Gegensatz zur E2E-Suite unten laufen sie deshalb automatisch in CI, direkt vor dem jeweiligen
-Build-Schritt in `.github/workflows/build-deploy.yml`. Ein fehlschlagender Unit-Test verhindert
-damit sowohl den `main`→Staging- als auch den `prod`→Produktions-Deploy.
+laufen deshalb automatisch in CI, direkt vor dem jeweiligen Build-Schritt in
+`.github/workflows/build-deploy.yml`. Ein fehlschlagender Unit-Test verhindert damit sowohl den
+`main`→Staging- als auch den `prod`→Produktions-Deploy (die E2E-Suite unten läuft im selben
+Workflow ebenfalls automatisch und gated genauso, ist nur spürbar langsamer wegen Browser-Start).
 
 ```bash
 cd backend && npm test    # bzw. npm run test:watch für Watch-Mode
@@ -56,6 +57,10 @@ nicht an lokale Umgebungsdaten gebunden.
 Läuft auf eigenen Ports (Backend 3100, Frontend 5273, via `CORS_ORIGIN`-Env-Var in
 `backend/src/server.ts` konfigurierbar) — kollidiert nicht mit einem eventuell schon laufenden
 echten lokalen Dev-Server auf 3000/5173, der muss dafür nicht gestoppt werden.
+
+Läuft außerdem automatisch in CI (`.github/workflows/build-deploy.yml`, nach den Unit-Tests, vor dem
+Assemble-Schritt) — bei einem Fehlschlag wird als Artefakt der HTML-Report samt Screenshots
+hochgeladen (`playwright-report`/`test-results`), abrufbar über den jeweiligen Workflow-Run.
 
 ```bash
 cd e2e
