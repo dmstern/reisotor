@@ -374,6 +374,9 @@ ensureColumn('schedule_items', 'category', "TEXT DEFAULT 'other'");
 // CASCADE: der Termin bleibt als eigenständiges Kalender-Objekt bestehen, auch wenn der
 // verknüpfte Spot später gelöscht wird (er verliert nur die Verknüpfung, nicht sich selbst).
 ensureColumn('schedule_items', 'spot_id', 'INTEGER REFERENCES spots(id) ON DELETE SET NULL');
+// Enduhrzeit zusätzlich zur Startuhrzeit (analog zu travel_items.arrival_time) – ein Termin kann
+// damit einen echten Zeitraum statt nur eines Startpunkts abbilden.
+ensureColumn('schedule_items', 'end_time', 'TEXT');
 ensureColumn('trips', 'maps_link', 'TEXT');
 ensureColumn('trips', 'lat', 'REAL');
 ensureColumn('trips', 'lng', 'REAL');

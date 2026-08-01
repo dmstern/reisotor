@@ -43,7 +43,9 @@ const loading = ref(true);
 
 const placeNames = computed(() => places.value.map((p) => p.name));
 
+const newStartDate = ref('');
 const newTime = ref('');
+const newEndTime = ref('');
 const newTitle = ref('');
 const newNote = ref('');
 const newEndDate = ref('');
@@ -57,7 +59,16 @@ const newLinkKey = ref('');
 
 const editingItem = ref<ScheduleItem | null>(null);
 const viewingItem = ref<ScheduleItem | null>(null);
-const editForm = ref({ time: '', title: '', note: '', endDate: '', location: '', mapsLink: '', linkKey: '' });
+const editForm = ref({
+  time: '',
+  endTime: '',
+  title: '',
+  note: '',
+  endDate: '',
+  location: '',
+  mapsLink: '',
+  linkKey: '',
+});
 
 function parseLinkKey(key: string): { spot_id: number | null; idea_id: number | null } {
   if (key.startsWith('spot:')) return { spot_id: Number(key.slice('spot:'.length)), idea_id: null };
@@ -357,7 +368,9 @@ function goToDate(dateIso: string): boolean {
 }
 
 function jumpToToday() {
-  goToDate(new Date().toISOString().slice(0, 10));
+  const today = new Date().toISOString().slice(0, 10);
+  goToDate(today);
+  selectDay(today);
 }
 
 function goToTripDates() {
@@ -415,9 +428,19 @@ function onDropExcursion(date: string, excursionId: number) {
   excursionsStore.setDate(excursionId, date);
 }
 
+// Öffnet den "Termin anlegen"-Dialog (jetzt global im Kalender-Werkzeugleiste statt an den
+// ausgewählten Tag gebunden, siehe Vorlage) – ist ein Tag bereits ausgewählt, wird er als
+// Startdatum vorausgefüllt, sonst bleibt das Feld leer und muss manuell gesetzt werden.
+function openAddForm() {
+  newStartDate.value = selectedDate.value ?? '';
+  showAddForm.value = true;
+}
+
 function closeAddForm() {
   showAddForm.value = false;
+  newStartDate.value = '';
   newTime.value = '';
+  newEndTime.value = '';
   newTitle.value = '';
   newNote.value = '';
   newEndDate.value = '';
@@ -436,15 +459,16 @@ async function syncExcursionsIfLinked(...ideaIds: (number | null | undefined)[])
 }
 
 async function addItem() {
-  if (!selectedDate.value || !newTitle.value.trim() || tripStore.currentTripId == null) return;
+  if (!newStartDate.value || !newTitle.value.trim() || tripStore.currentTripId == null) return;
   const parsed = parseLatLngFromMapsLink(newMapsLink.value);
   const { spot_id, idea_id } = parseLinkKey(newLinkKey.value);
   const linked = spot_id != null || idea_id != null;
   await scheduleStore.create({
     trip_id: tripStore.currentTripId,
-    date: selectedDate.value,
+    date: newStartDate.value,
     end_date: newEndDate.value || undefined,
     time: newTime.value || undefined,
+    end_time: newEndTime.value || undefined,
     title: newTitle.value.trim(),
     note: newNote.value || undefined,
     // Verknüpfter Spot/Tour liefert den Standort selbst (routes/schedule.ts) – Freitext-Felder
@@ -464,6 +488,7 @@ function startEdit(item: ScheduleItem) {
   editingItem.value = item;
   editForm.value = {
     time: item.time ?? '',
+    endTime: item.end_time ?? '',
     title: item.title,
     note: item.note ?? '',
     endDate: item.end_date ?? '',
@@ -484,6 +509,7 @@ async function submitEdit() {
     date: editingItem.value.date,
     end_date: editForm.value.endDate || undefined,
     time: editForm.value.time || undefined,
+    end_time: editForm.value.endTime || undefined,
     title: editForm.value.title.trim(),
     note: editForm.value.note || undefined,
     location: linked ? undefined : editForm.value.location || undefined,
@@ -599,6 +625,7 @@ function formatDate(date: string) {
       <div class="jump-row">
         <button type="button" class="card-action-btn" @click="jumpToToday">📍 Heute</button>
         <button type="button" class="card-action-btn" v-if="trip" @click="goToTripDates">🏖️ Urlaub</button>
+        <button type="button" @click="openAddForm">+ Neu</button>
       </div>
     </div>
 
@@ -618,7 +645,6 @@ function formatDate(date: string) {
         <h3>{{ formatDay(selectedDate) }}</h3>
         <div class="day-detail-actions">
           <button type="button" class="card-action-btn" @click="showDayOnMap">🗺️ Tag auf Karte anzeigen</button>
-          <button type="button" @click="showAddForm = true">+ Neu</button>
         </div>
       </div>
 
@@ -702,9 +728,23 @@ function formatDate(date: string) {
       @update:model-value="(v) => !v && closeAddForm()"
     >
       <form class="edit-form" @submit.prevent="addItem">
-        <input v-model="newTime" type="time" />
         <input v-model="newTitle" type="text" placeholder="Titel" required />
-        <input v-model="newEndDate" type="date" :min="selectedDate ?? undefined" placeholder="Enddatum (optional)" title="Enddatum (optional)" />
+        <label class="field-label">
+          Startdatum
+          <input v-model="newStartDate" type="date" required />
+        </label>
+        <label class="field-label">
+          Enddatum (optional)
+          <input v-model="newEndDate" type="date" :min="newStartDate || undefined" />
+        </label>
+        <label class="field-label">
+          Startzeit (optional)
+          <input v-model="newTime" type="time" />
+        </label>
+        <label class="field-label">
+          Enduhrzeit (optional)
+          <input v-model="newEndTime" type="time" />
+        </label>
         <select v-model="newLinkKey" class="link-select">
           <option value="">🔗 Kein Spot/keine Tour verknüpft</option>
           <optgroup label="Spots" v-if="spotsStore.spots.length">
@@ -729,9 +769,19 @@ function formatDate(date: string) {
       @update:model-value="(v) => !v && (editingItem = null)"
     >
       <form class="edit-form" @submit.prevent="submitEdit">
-        <input v-model="editForm.time" type="time" />
         <input v-model="editForm.title" type="text" placeholder="Titel" required />
-        <input v-model="editForm.endDate" type="date" :min="editingItem?.date" placeholder="Enddatum (optional)" title="Enddatum (optional)" />
+        <label class="field-label">
+          Enddatum (optional)
+          <input v-model="editForm.endDate" type="date" :min="editingItem?.date" />
+        </label>
+        <label class="field-label">
+          Startzeit (optional)
+          <input v-model="editForm.time" type="time" />
+        </label>
+        <label class="field-label">
+          Enduhrzeit (optional)
+          <input v-model="editForm.endTime" type="time" />
+        </label>
         <select v-model="editForm.linkKey" class="link-select">
           <option value="">🔗 Kein Spot/keine Tour verknüpft</option>
           <optgroup label="Spots" v-if="spotsStore.spots.length">
@@ -761,7 +811,7 @@ function formatDate(date: string) {
         <span class="detail-label">Verknüpft</span>{{ viewingEntry?.icon ?? '🎒' }} {{ linkedTitleFor(viewingEntry) }}
       </p>
       <p v-if="viewingItem?.time" class="detail-row">
-        <span class="detail-label">Zeit</span>🕐 {{ viewingItem.time }}
+        <span class="detail-label">Zeit</span>🕐 {{ viewingItem.time }}<template v-if="viewingItem.end_time"> – {{ viewingItem.end_time }}</template>
       </p>
       <p v-if="viewingItem?.end_date && viewingItem.end_date !== viewingItem.date" class="detail-row">
         <span class="detail-label">Zeitraum</span>🗓️ {{ formatDate(viewingItem.date) }} – {{ formatDate(viewingItem.end_date) }}
@@ -1048,6 +1098,15 @@ function formatDate(date: string) {
 .edit-form input[type='text'] {
   flex: 1;
   min-width: 140px;
+}
+
+.field-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
 }
 
 .link-select {

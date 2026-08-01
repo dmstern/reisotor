@@ -6,6 +6,7 @@ interface ScheduleBody {
   date: string;
   end_date?: string | null;
   time?: string;
+  end_time?: string;
   title: string;
   note?: string;
   location?: string;
@@ -36,19 +37,20 @@ export const scheduleRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.post<{ Body: ScheduleBody }>('/schedule', async (req, reply) => {
-    const { trip_id, date, end_date, time, title, note, location, maps_link, lat, lng, spot_id, idea_id } = req.body;
+    const { trip_id, date, end_date, time, end_time, title, note, location, maps_link, lat, lng, spot_id, idea_id } = req.body;
     const spot = locationFromSpot(spot_id);
     const result = db
       .prepare(
         `INSERT INTO schedule_items
-          (trip_id, date, end_date, time, title, note, location, maps_link, lat, lng, spot_id, idea_id)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          (trip_id, date, end_date, time, end_time, title, note, location, maps_link, lat, lng, spot_id, idea_id)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         trip_id,
         date,
         end_date ?? null,
         time ?? null,
+        end_time ?? null,
         title,
         note ?? null,
         location ?? null,
@@ -63,12 +65,12 @@ export const scheduleRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.put<{ Params: { id: string }; Body: ScheduleBody }>('/schedule/:id', async (req, reply) => {
-    const { date, end_date, time, title, note, location, maps_link, lat, lng, spot_id, idea_id } = req.body;
+    const { date, end_date, time, end_time, title, note, location, maps_link, lat, lng, spot_id, idea_id } = req.body;
     const spot = locationFromSpot(spot_id);
     const result = db
       .prepare(
         `UPDATE schedule_items
-         SET date = ?, end_date = ?, time = ?, title = ?, note = ?, location = ?, maps_link = ?, lat = ?, lng = ?,
+         SET date = ?, end_date = ?, time = ?, end_time = ?, title = ?, note = ?, location = ?, maps_link = ?, lat = ?, lng = ?,
              spot_id = ?, idea_id = ?
          WHERE id = ?`,
       )
@@ -76,6 +78,7 @@ export const scheduleRoutes: FastifyPluginAsync = async (app) => {
         date,
         end_date ?? null,
         time ?? null,
+        end_time ?? null,
         title,
         note ?? null,
         location ?? null,
