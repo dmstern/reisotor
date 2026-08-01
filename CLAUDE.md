@@ -91,6 +91,27 @@ statt der Standard-Marker (siehe "Bekannte Stolpersteine" in `README.md`).
 `reise.ruebenherz.de`). Die SQLite-Datei wird beim Deploy nie überschrieben (siehe
 "Datenmodell-Änderungen" unten).
 
+## Konsistenz-Check bei Änderungen
+
+Die App ist über viele Sessions gewachsen, und dasselbe Konzept (Icon, Bezeichnung, Layout-/
+Verhaltensmuster, Datenmodell-Feld) taucht oft an mehreren Stellen gleichzeitig auf, ohne dass das
+zentral dokumentiert ist — der Nutzer hat nicht mehr die ganze App im Kopf und merkt nicht jede
+Stelle, die mitgezogen werden sollte (Beispiel: Todo-Icon wurde im Kalender zu einem Clipboard
+geändert, dasselbe Icon in der NavBar aber vergessen; ein Flex-Wrap-Fix an einer Card-Komponente,
+der an strukturell ähnlichen Cards woanders genauso gilt). Bei jeder Änderung an UI-Bausteinen
+(Icons, wiederkehrende Bezeichnungen, Layout-/Interaktionsmuster wie Card-Wrap-Verhalten) oder am
+Datenmodell (`backend/src/db/index.ts`, `api/types.ts`) deshalb aktiv prüfen, ob dasselbe Muster
+noch anderswo in der App vorkommt (kurz grep auf das Icon/den Bezeichner/die Komponente, nicht nur
+an der ursprünglich angefragten Stelle schauen):
+
+- **Offensichtlich sinnvolle Folgeanpassung** (identisches Icon/Konzept an anderer Stelle, exakt
+  gleiches Bug-Muster): nicht vorher nachfragen, einfach mit umsetzen — genau wie bei Bugfixes, die
+  während der Umsetzung auffallen — und danach kurz erwähnen, was zusätzlich mit angepasst wurde.
+- **Unklar, ob gewollt** (könnte an der anderen Stelle bewusst abweichen, Kontext unterschiedlich,
+  größerer Umbau nötig): die Beobachtung nennen und nachfragen statt eigenmächtig mitzuändern.
+
+Für Datenmodell-Änderungen im Speziellen gilt zusätzlich der Migrations-Check im nächsten Abschnitt.
+
 ## Typecheck
 
 Nach jeder Frontend-Änderung zuerst den günstigsten Check laufen lassen:

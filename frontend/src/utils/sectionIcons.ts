@@ -22,7 +22,9 @@ export const SECTION_ICONS: Record<SectionKey, string> = {
   map: '🗺️',
   packing: '🧳',
   shopping: '🛒',
-  todo: '✅',
+  // Gleiches Icon wie SCHEDULE_CATEGORY_META.todo in scheduleCategory.ts (Kalender-Ansicht) für
+  // Wiedererkennungswert app-weit.
+  todo: '📋',
   excursions: '🎒',
   travel: '✈️',
   accommodation: '🛏️',
