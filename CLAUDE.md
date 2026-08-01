@@ -12,6 +12,46 @@ Nach jeder Frontend-Änderung zuerst den günstigsten Check laufen lassen:
 cd frontend && npm run build   # führt vue-tsc --noEmit vor dem Vite-Build aus
 ```
 
+## Datenmodell-Änderungen (DB-Migrationen)
+
+Jede Änderung an `backend/src/db/index.ts` (neue/entfernte Spalte oder Tabelle, umgebautes
+Feld) braucht diesen Check, bevor sie als fertig gilt — nicht erst, wenn explizit danach gefragt
+wird:
+
+1. **Ist das schon in Prod live?** Prüfen, ob die betroffene Spalte/Tabelle bereits Teil des
+   letzten Prod-Deploys ist: `git merge-base origin/prod HEAD` (bzw. `origin/main`, falls der
+   Branch von dort abzweigt) gibt den letzten gemeinsamen Commit; ein `git diff <dieser-commit>
+   HEAD -- backend/src/db/index.ts` zeigt, was seitdem am Schema geändert wurde. Alles, was schon
+   vorher drin war, kann echte Nutzdaten auf der echten `data.sqlite` enthalten (die App wird
+   aktiv von zwei echten Nutzer:innen für echte Reiseplanung verwendet).
+2. **Rein additiv bleiben, wo möglich.** Neue Spalten/Tabellen nur über `ensureColumn` (nullable
+   oder mit `DEFAULT`) bzw. `CREATE TABLE IF NOT EXISTS` — nie eine bestehende Tabelle mit einer
+   `NOT NULL`-Spalte ohne Default versehen.
+3. **Vor jedem `dropColumnIfExists`/Rename einer schon live gewesenen Spalte: Backfill davor.**
+   Falls die Spalte echte Werte tragen könnte, deren fachliche Bedeutung im neuen Modell woanders
+   landet, muss ein Backfill (`INSERT`/`UPDATE`) diese Werte migrieren, bevor die Spalte fällt —
+   sonst gehen sie beim nächsten Deploy kommentarlos verloren. Muster: `if (hasColumn(table, col))
+   { db.exec('INSERT/UPDATE ...'); dropColumnIfExists(table, col); }` (siehe die
+   `packing_items.checked`- bzw. `ideas.date`-Migration in `backend/src/db/index.ts` als Vorlage).
+   Ein reiner No-Op-Drop (Spalte war nie live oder nie befüllt) braucht keinen Backfill.
+4. **Reihenfolge im Skript beachten.** Migrationen laufen beim Backend-Start synchron in
+   Datei-Reihenfolge gegen den *tatsächlichen* aktuellen DB-Zustand, nicht gegen den Skript-Text.
+   Ein Backfill, der eine Spalte braucht, die selbst erst weiter unten per `ensureColumn` ergänzt
+   wird, muss hinter diese Stelle gesetzt werden — sonst schlägt er auf einer frischen/Test-DB mit
+   `no such column` fehl (auf der echten Prod-DB fällt das nicht auf, weil die Spalte dort durch
+   frühere Deploys schon längst existiert).
+5. **Migrationstest ergänzen.** Für jeden Backfill einen Test analog zu
+   `backend/test/unit/dbMigration.test.ts` schreiben: alten Schema-Stand in einer temporären
+   SQLite-Datei nachbauen, `db/index.ts` importieren lassen und prüfen, dass die Daten im neuen
+   Modell wiederzufinden sind.
+
+Der eigentliche Rollout-Mechanismus dafür existiert schon und braucht keine separate
+Migrations-Pipeline: `deploy.sh` und die Pi-Cronjob-Skripte schließen `*.sqlite*` explizit von
+`rsync --delete` aus, die Datenbank wird also nie überschrieben. Der Backend-Prozess führt
+`db/index.ts` bei jedem Neustart erneut aus, wendet die additiven Migrationen (und ggf. Backfills)
+automatisch auf die bestehende Datei an. Schema-Änderungen im Code committen reicht also aus —
+kein manueller Migrationsschritt auf dem Server nötig.
+
 ## Unit-Tests (`backend/test/`, `frontend/src/**/*.test.ts`)
 
 Vitest auf beiden Seiten, unabhängig konfiguriert (Backend: `backend/vitest.config.ts`; Frontend:
