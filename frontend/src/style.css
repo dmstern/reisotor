@@ -477,6 +477,24 @@ textarea:focus {
   gap: var(--space-3);
 }
 
+/* Masonry-artiges Kachel-Layout für Karten unterschiedlicher Höhe (Notizen, Unterkünfte,
+   Reise-Einträge): ein normales Grid streckt jede Zeile auf die Höhe ihrer höchsten Karte (bzw.
+   lässt bei align-items:start hässlichen Leerraum darunter), sobald z. B. eine lange Notiz neben
+   zwei kurzen liegt. CSS Multi-Column packt dagegen jede Spalte unabhängig von den anderen von oben
+   nach unten durch – jede Karte bekommt exakt ihre benötigte Höhe, ohne Zeilen-Zwang. Die
+   Spaltenbreite (bisher grid-template-columns: repeat(auto-fill, minmax(...))) setzt weiterhin jede
+   Sicht lokal über ihre eigene .cards-Klasse (jetzt column-width statt grid-template-columns) –
+   die SpaltenANZAHL passt sich dadurch weiterhin responsiv an die verfügbare Breite an. Bewusst statt
+   .grid verwendet (nicht zusätzlich dazu): display:grid und columns schließen sich gegenseitig aus. */
+.masonry {
+  column-gap: var(--space-3);
+}
+
+.masonry > * {
+  break-inside: avoid;
+  margin-bottom: var(--space-3);
+}
+
 /* Wiederverwendbare Übergänge für CRUD-/Sortier-Interaktionen (Batch 7): Elemente per
    <TransitionGroup name="list"> ein-/ausblenden und beim Umsortieren sanft an ihre neue
    Position gleiten lassen; <Transition name="fade"> für einfaches Ein-/Ausblenden ohne Liste.

@@ -165,7 +165,7 @@ async function remove(id: number) {
     </form>
     </Modal>
 
-    <TransitionGroup tag="div" name="list" class="grid cards">
+    <TransitionGroup tag="div" name="list" class="masonry cards">
       <div class="card note-card" v-for="note in notes" :key="note.id">
         <div class="note-head">
           <h3 v-if="note.title">{{ note.title }}</h3>
@@ -227,7 +227,7 @@ async function remove(id: number) {
 }
 
 .cards {
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  column-width: 240px;
 }
 
 .note-card {

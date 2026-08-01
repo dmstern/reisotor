@@ -301,7 +301,7 @@ function showDetailOnMap() {
     </form>
     </Modal>
 
-    <TransitionGroup tag="div" name="list" class="grid cards">
+    <TransitionGroup tag="div" name="list" class="masonry cards">
       <div class="card acc-card" v-for="acc in accommodations" :key="acc.id" @click="openDetail(acc)">
         <div class="acc-head">
           <h3>{{ acc.name }}</h3>
@@ -482,11 +482,7 @@ label {
 }
 
 .cards {
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  /* Ohne das streckt CSS Grid (Default: stretch) jede Karte einer Reihe auf die Höhe der
-     vollsten Nachbar-Karte – bei sehr unterschiedlich befüllten Unterkünften (eine mit viel
-     Text, eine fast leer) sah die leere Karte dadurch unschön aufgebläht aus. */
-  align-items: start;
+  column-width: 240px;
 }
 
 .acc-card {
