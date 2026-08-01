@@ -34,6 +34,11 @@ const router = createRouter({
     { path: '/notes', name: 'notes', component: () => import('../views/NotesView.vue') },
     { path: '/diary', name: 'diary', component: () => import('../views/DiaryView.vue') },
     { path: '/profile', name: 'profile', component: () => import('../views/ProfileView.vue') },
+    {
+      path: '/security-check',
+      name: 'security-check',
+      component: () => import('../views/SecurityCheckView.vue'),
+    },
   ],
 });
 

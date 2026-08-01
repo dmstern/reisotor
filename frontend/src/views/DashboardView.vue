@@ -91,6 +91,11 @@ const WIDGET_COLORS = assignCategoryColors([
   'todo',
   'travel',
 ]);
+// Eigene feste Farbe statt Teil der WIDGET_COLORS-Zuweisung oben: der Sicherheits-Check ist ein
+// reines Spaß-Gimmick, kein echtes Inhalts-Widget – über die kategoriale Palette laufen zu lassen
+// würde bei jeder künftigen Erweiterung dieser Liste die Farben der ECHTEN Widgets mitverschieben
+// (assignCategoryColors sortiert alphabetisch neu). Teal passend zum Reisotor-Roboter-Logo.
+const SECURITY_TILE_COLOR = '#4FB3A9';
 
 onMounted(async () => {
   const [scheduleRes, todosRes, packingRes, expensesRes, allocationsRes, shoppingRes, travelRes, accRes, diaryRes, notesRes, usersRes] =
@@ -395,6 +400,13 @@ function formatWeekdayDate(d: string) {
         <h3>Notizen</h3>
         <p v-if="notes.length">{{ notes.length }} {{ notes.length === 1 ? 'Notiz' : 'Notizen' }}</p>
         <p v-else>Noch nichts notiert</p>
+      </router-link>
+
+      <!-- Sicherheits-Check: reines Spaß-Gimmick ohne echte Funktion, siehe SecurityCheckView.vue -->
+      <router-link to="/security-check" class="card tile" :style="{ background: `${SECURITY_TILE_COLOR}0d` }">
+        <span class="tile-icon" :style="{ background: `${SECURITY_TILE_COLOR}26`, borderColor: SECURITY_TILE_COLOR }">🛡️</span>
+        <h3>Sicherheits-Check</h3>
+        <p>Der Reisotor scannt eure Reiseregion 🤖🔍</p>
       </router-link>
     </div>
   </div>
