@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import { useThemeStore } from '../stores/theme';
 import { ApiError } from '../api/client';
+import PasswordInput from '../components/PasswordInput.vue';
 
 const auth = useAuthStore();
 const router = useRouter();
@@ -49,10 +50,10 @@ async function onSubmit() {
         <input v-model="username" type="text" autocomplete="username" required />
       </label>
 
-      <label>
-        Passwort
-        <input v-model="password" type="password" autocomplete="current-password" required />
-      </label>
+      <div class="field">
+        <label for="login-password">Passwort</label>
+        <PasswordInput id="login-password" v-model="password" autocomplete="current-password" required />
+      </div>
 
       <p v-if="error" class="error">{{ error }}</p>
 
@@ -112,7 +113,8 @@ async function onSubmit() {
   margin: 0;
 }
 
-.login-card label {
+.login-card label,
+.login-card .field {
   width: 100%;
   text-align: left;
 }
@@ -121,7 +123,8 @@ async function onSubmit() {
   width: 100%;
 }
 
-label {
+label,
+.field {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);

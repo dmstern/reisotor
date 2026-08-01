@@ -5,6 +5,7 @@ import { api, ApiError } from '../api/client';
 import type { User } from '../api/types';
 import { useAuthStore } from '../stores/auth';
 import { useNavPositionStore } from '../stores/navPosition';
+import PasswordInput from '../components/PasswordInput.vue';
 
 const auth = useAuthStore();
 const router = useRouter();
@@ -301,18 +302,35 @@ async function onImportFileSelected(event: Event) {
     <div class="card">
       <h2>Passwort ändern</h2>
       <form class="form" @submit.prevent="changePassword">
-        <label>
-          Aktuelles Passwort
-          <input v-model="passwordForm.currentPassword" type="password" required />
-        </label>
-        <label>
-          Neues Passwort
-          <input v-model="passwordForm.newPassword" type="password" minlength="6" required />
-        </label>
-        <label>
-          Neues Passwort bestätigen
-          <input v-model="passwordForm.confirmPassword" type="password" minlength="6" required />
-        </label>
+        <div class="field">
+          <label for="profile-current-password">Aktuelles Passwort</label>
+          <PasswordInput
+            id="profile-current-password"
+            v-model="passwordForm.currentPassword"
+            autocomplete="current-password"
+            required
+          />
+        </div>
+        <div class="field">
+          <label for="profile-new-password">Neues Passwort</label>
+          <PasswordInput
+            id="profile-new-password"
+            v-model="passwordForm.newPassword"
+            autocomplete="new-password"
+            minlength="6"
+            required
+          />
+        </div>
+        <div class="field">
+          <label for="profile-confirm-password">Neues Passwort bestätigen</label>
+          <PasswordInput
+            id="profile-confirm-password"
+            v-model="passwordForm.confirmPassword"
+            autocomplete="new-password"
+            minlength="6"
+            required
+          />
+        </div>
         <p v-if="passwordError" class="hint error">{{ passwordError }}</p>
         <p v-if="passwordSaved" class="hint success">Passwort geändert ✓</p>
         <button type="submit" :disabled="passwordSaving">
@@ -338,10 +356,16 @@ async function onImportFileSelected(event: Event) {
           Benutzername
           <input v-model="newUserForm.username" type="text" required />
         </label>
-        <label>
-          Passwort
-          <input v-model="newUserForm.password" type="password" minlength="6" required />
-        </label>
+        <div class="field">
+          <label for="new-user-password">Passwort</label>
+          <PasswordInput
+            id="new-user-password"
+            v-model="newUserForm.password"
+            autocomplete="new-password"
+            minlength="6"
+            required
+          />
+        </div>
         <div>
           <p class="avatar-label">Avatar</p>
           <div class="emoji-scroll">
@@ -490,7 +514,8 @@ async function onImportFileSelected(event: Event) {
   font-size: 0.9rem;
 }
 
-label {
+label,
+.field {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
