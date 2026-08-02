@@ -66,6 +66,48 @@ interface ActivityRow {
   created_at: string;
 }
 
+interface Position {
+  lat: number;
+  lng: number;
+  updatedAt: string;
+}
+
+// Live-Standort auf der Karte (TripMap.vue): rein speicherinterner, ephemerer Broadcast-Kanal,
+// bewusst GETRENNT von recordActivity()/trip_activity oben – ein GPS-Ping alle paar Sekunden soll
+// weder eine dauerhafte DB-Zeile noch eine Push-Benachrichtigung pro Update auslösen. Nutzt
+// dieselbe SSE-Verbindung (connectionsByTrip) wie die Aktivitäts-/Präsenz-Events, nur mit einem
+// eigenen Event-Typ ('position'/'positions').
+const lastPositionsByTrip = new Map<number, Map<number, Position>>();
+
+export function positionsFor(tripId: number): Record<number, Position> {
+  const map = lastPositionsByTrip.get(tripId);
+  if (!map) return {};
+  return Object.fromEntries(map);
+}
+
+export function updatePosition(tripId: number, userId: number, lat: number, lng: number) {
+  let map = lastPositionsByTrip.get(tripId);
+  if (!map) {
+    map = new Map();
+    lastPositionsByTrip.set(tripId, map);
+  }
+  const position: Position = { lat, lng, updatedAt: new Date().toISOString() };
+  map.set(userId, position);
+  broadcastPosition(tripId, userId, position);
+}
+
+export function clearPosition(tripId: number, userId: number) {
+  const map = lastPositionsByTrip.get(tripId);
+  if (!map?.delete(userId)) return;
+  broadcastPosition(tripId, userId, null);
+}
+
+function broadcastPosition(tripId: number, userId: number, position: Position | null) {
+  const set = connectionsByTrip.get(tripId);
+  if (!set) return;
+  for (const conn of set) writeEvent(conn.reply, 'position', { userId, position });
+}
+
 function broadcastActivity(tripId: number, row: ActivityRow) {
   const set = connectionsByTrip.get(tripId);
   if (!set) return;

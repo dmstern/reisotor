@@ -17,6 +17,7 @@ import MapsAppPicker from '../components/MapsAppPicker.vue';
 import Combobox from '../components/Combobox.vue';
 import DeleteButton from '../components/DeleteButton.vue';
 import UndoDeleteRow from '../components/UndoDeleteRow.vue';
+import FileAttachments from '../components/FileAttachments.vue';
 import { SCHEDULE_CATEGORY_META } from '../utils/scheduleCategory';
 import { parseLatLngFromMapsLink } from '../utils/googleMaps';
 import { buildAllEntries } from '../utils/calendarEntries';
@@ -949,6 +950,7 @@ function formatDate(date: string) {
         <span class="detail-label">Ort</span>📍 {{ viewingItem.location }}
       </p>
       <div v-if="viewingItem?.note" class="detail-row note">{{ viewingItem.note }}</div>
+      <FileAttachments v-if="viewingItem" domain="schedule" :entity-id="viewingItem.id" />
       <div class="detail-actions">
         <MapsAppPicker
           v-if="viewingItem?.lat != null && viewingItem?.lng != null"

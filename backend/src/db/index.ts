@@ -1,6 +1,8 @@
 import Database from 'better-sqlite3';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import fs from 'node:fs';
+import { uploadsDir } from '../uploads.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dbPath = process.env.DB_PATH ?? path.join(__dirname, '..', '..', 'data.sqlite');
@@ -666,6 +668,47 @@ for (const row of orphanedAutoExpenses) {
   if (budgetId) linkAutoExpense.run(budgetId, row.id);
 }
 
+// Datei-Anhänge (Tickets/Dokumente, siehe routes/attachments.ts): polymorphe Referenz analog zu
+// trip_activity weiter unten – entity_id hat bewusst KEINEN FK, da die Zieltabelle je nach domain
+// variiert (schedule_items/accommodation/notes/travel_items/budget_items), SQLite kennt keinen FK
+// auf eine von mehreren möglichen Tabellen. Muss VOR purgeOldTrash() unten existieren, da dessen
+// Aufräum-Logik bereits auf diese Tabelle zugreift (siehe purgeAttachmentsForEntities).
+db.exec(`
+  CREATE TABLE IF NOT EXISTS attachments (
+    id INTEGER PRIMARY KEY,
+    trip_id INTEGER NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
+    domain TEXT NOT NULL,
+    entity_id INTEGER NOT NULL,
+    filename TEXT NOT NULL,
+    original_name TEXT NOT NULL,
+    mime_type TEXT NOT NULL,
+    size_bytes INTEGER NOT NULL,
+    uploaded_by INTEGER NOT NULL REFERENCES users(id),
+    created_at TEXT NOT NULL
+  );
+`);
+db.exec('CREATE INDEX IF NOT EXISTS idx_attachments_domain_entity ON attachments (domain, entity_id)');
+
+/** Löscht Anhang-Zeilen + zugehörige Dateien auf der Platte für eine Menge von Objekt-ids einer
+ *  Attachment-Domäne (siehe routes/attachments.ts's DOMAIN_TABLE) – aufgerufen, bevor die
+ *  referenzierenden Zeilen selbst endgültig verschwinden (Papierkorb-Purge unten, Urlaub-Löschung
+ *  in routes/trips.ts), sonst blieben verwaiste Dateien dauerhaft auf der Platte liegen. */
+export function purgeAttachmentsForEntities(domain: string, entityIds: number[]) {
+  if (!entityIds.length) return;
+  const placeholders = entityIds.map(() => '?').join(',');
+  const rows = db
+    .prepare(`SELECT filename FROM attachments WHERE domain = ? AND entity_id IN (${placeholders})`)
+    .all(domain, ...entityIds) as { filename: string }[];
+  db.prepare(`DELETE FROM attachments WHERE domain = ? AND entity_id IN (${placeholders})`).run(domain, ...entityIds);
+  for (const row of rows) {
+    try {
+      fs.unlinkSync(path.join(uploadsDir, row.filename));
+    } catch {
+      // Datei schon weg (oder nie erfolgreich geschrieben) – kein Fehlerfall.
+    }
+  }
+}
+
 // Weicher Löschvorgang (Papierkorb, routes/trash.ts): Löschen setzt nur noch deleted_at statt die
 // Zeile per DELETE zu entfernen, damit sie sich wiederherstellen lässt. Gilt für alle Objekttypen,
 // die der Nutzer selbst aktiv anlegt/löscht (nicht für reine Zuordnungstabellen wie
@@ -689,13 +732,32 @@ for (const table of TRASH_TABLES) {
   ensureColumn(table, 'deleted_at', 'TEXT');
 }
 
+// Ordnet einer Trash-Tabelle (falls vorhanden) ihre Attachment-Domäne zu (siehe
+// routes/attachments.ts's DOMAIN_TABLE) – nur diese 5 Tabellen können Datei-Anhänge tragen.
+const ATTACHMENT_DOMAIN_BY_TABLE: Partial<Record<(typeof TRASH_TABLES)[number], string>> = {
+  schedule_items: 'schedule',
+  accommodation: 'accommodation',
+  notes: 'notes',
+  travel_items: 'travel',
+  budget_items: 'budget',
+};
+
 // Endgültiges Aufräumen (optional, siehe CLAUDE.md-Auftrag "kein Muss"): Objekte, die länger als
 // 30 Tage im Papierkorb liegen, werden beim Backend-Start hart gelöscht. budget_transfers hat kein
 // trip_id (siehe CREATE TABLE oben), braucht daher keinen Join/Backfill – deleted_at reicht für den
-// Alters-Check bei allen Tabellen gleichermaßen aus.
+// Alters-Check bei allen Tabellen gleichermaßen aus. Vor dem Hart-Löschen werden zugehörige
+// Datei-Anhänge (falls die Tabelle Anhänge tragen kann) mit aufgeräumt, sonst blieben deren Dateien
+// dauerhaft verwaist auf der Platte liegen.
 export function purgeOldTrash(maxAgeDays = 30) {
   const cutoff = new Date(Date.now() - maxAgeDays * 24 * 60 * 60 * 1000).toISOString();
   for (const table of TRASH_TABLES) {
+    const attachmentDomain = ATTACHMENT_DOMAIN_BY_TABLE[table];
+    if (attachmentDomain) {
+      const staleRows = db
+        .prepare(`SELECT id FROM ${table} WHERE deleted_at IS NOT NULL AND deleted_at < ?`)
+        .all(cutoff) as { id: number }[];
+      purgeAttachmentsForEntities(attachmentDomain, staleRows.map((r) => r.id));
+    }
     db.prepare(`DELETE FROM ${table} WHERE deleted_at IS NOT NULL AND deleted_at < ?`).run(cutoff);
   }
 }
@@ -739,3 +801,8 @@ db.exec(`
     created_at TEXT NOT NULL
   );
 `);
+
+// Reiseregion-Infos (Dashboard-Widget, siehe utils/regionInfo.ts): einmalig per Reverse-Geocoding
+// aus lat/lng ermittelt und dauerhaft gecacht, nur neu aufgelöst, wenn sich lat/lng ändern.
+ensureColumn('trips', 'country_code', 'TEXT');
+ensureColumn('trips', 'country_name', 'TEXT');

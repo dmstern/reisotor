@@ -26,6 +26,7 @@ import { buildInfoRoutes } from './routes/buildInfo.js';
 import { trashRoutes } from './routes/trash.js';
 import { realtimeRoutes } from './routes/realtime.js';
 import { pushRoutes } from './routes/push.js';
+import { attachmentsRoutes } from './routes/attachments.js';
 
 // Von server.ts getrennt (das nur noch buildApp() aufruft und .listen()), damit Tests eine fertig
 // konfigurierte App-Instanz per Fastify .inject() ansprechen können, ohne einen echten Port zu
@@ -40,7 +41,9 @@ export async function buildApp(opts: { logger?: boolean } = {}) {
   // des Set-Cookie-Headers komplett (siehe isInsecureConnection-Check dort). Mit
   // trustProxy wertet Fastify den von Caddy gesetzten X-Forwarded-Proto-Header aus.
   // logger per Options-Override abschaltbar (Tests) - Default bleibt true, wie bisher.
-  const app = Fastify({ logger: opts.logger ?? true, bodyLimit: 10 * 1024 * 1024, trustProxy: true });
+  // 20 MB statt 10 MB: Datei-Anhänge (routes/attachments.ts) erlauben bis zu 15 MB Rohdateigröße,
+  // Base64-Kodierung hat ~33% Overhead.
+  const app = Fastify({ logger: opts.logger ?? true, bodyLimit: 20 * 1024 * 1024, trustProxy: true });
 
   // CORS_ORIGIN erlaubt der e2e-Testsuite (/e2e), Backend+Frontend auf eigenen Ports parallel zum
   // normalen lokalen Dev-Server laufen zu lassen, ohne dessen Origin (Default: Vite auf 5173) zu
@@ -98,6 +101,7 @@ export async function buildApp(opts: { logger?: boolean } = {}) {
         await protectedApi.register(trashRoutes);
         await protectedApi.register(realtimeRoutes);
         await protectedApi.register(pushRoutes);
+        await protectedApi.register(attachmentsRoutes);
       });
     },
     { prefix: '/api' },

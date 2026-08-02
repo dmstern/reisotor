@@ -654,8 +654,8 @@ async function removeSpot(id: number) {
       </div>
       <p class="hint">
         Orte (Restaurant, Sehenswürdigkeit, Strand, …), die du als Stationen bei Touren zuordnen kannst –
-        auch unabhängig von einer Tour. Tipp: Ziehe eine Spot-Karte direkt auf eine Tour in der
-        Touren-Schublade oder auf einen Kalendertag, um sie dort als Station bzw. spontan einzuplanen.
+        auch unabhängig von einer Tour. Tipp: Ziehe eine Spot-Karte direkt auf eine Tour oder auf
+        einen Kalendertag, um sie dort als Station bzw. spontan einzuplanen.
       </p>
 
       <!-- Filter und Sortierung bewusst direkt hier, unmittelbar über der Kategorie-Navi (statt

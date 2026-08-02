@@ -12,6 +12,7 @@ import DeleteButton from '../components/DeleteButton.vue';
 import SocialRow from '../components/SocialRow.vue';
 import Comments from '../components/Comments.vue';
 import UndoDeleteRow from '../components/UndoDeleteRow.vue';
+import FileAttachments from '../components/FileAttachments.vue';
 import { useUndoableDelete } from '../composables/useUndoableDelete';
 
 const auth = useAuthStore();
@@ -200,6 +201,7 @@ async function restore(id: number) {
           </div>
           <div class="content richtext" v-html="renderRichText(note.content)"></div>
           <p class="meta">{{ authorLabel(note.created_by) }} · {{ formatDate(note.updated_at ?? note.created_at) }}</p>
+          <FileAttachments domain="notes" :entity-id="note.id" />
           <SocialRow
             :like-count="likesFor(note.id).length"
             :liked="likedByMe(note.id)"

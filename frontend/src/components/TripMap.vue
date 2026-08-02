@@ -20,8 +20,9 @@ import { useDrawersStore } from '../stores/drawers';
 import { useExcursionsStore } from '../stores/excursions';
 import { useSpotsStore } from '../stores/spots';
 import { useAuthStore } from '../stores/auth';
+import { useLiveSyncStore } from '../stores/liveSync';
 import { spotCategoryMeta } from '../utils/spotCategory';
-import { arcRoute, cachedEmojiPin } from '../utils/mapRoute';
+import { arcRoute, cachedEmojiPin, pulsingEmojiPin } from '../utils/mapRoute';
 import { resolveStations, type ExcursionStation } from '../utils/excursionStations';
 import { useIsDesktop } from '../composables/useIsDesktop';
 import SpotDetailDialog from './SpotDetailDialog.vue';
@@ -110,6 +111,7 @@ const drawers = useDrawersStore();
 const excursionsStore = useExcursionsStore();
 const spotsStore = useSpotsStore();
 const auth = useAuthStore();
+const liveSync = useLiveSyncStore();
 const accommodations = ref<Accommodation[]>([]);
 const travelItems = ref<TravelItem[]>([]);
 const scheduleItems = ref<ScheduleItem[]>([]);
@@ -131,6 +133,16 @@ const mapEl = ref<HTMLDivElement | null>(null);
 let map: L.Map | null = null;
 let markersLayer: L.LayerGroup | null = null;
 let routesLayer: L.LayerGroup | null = null;
+// Eigener Layer für Live-Standort-Marker (eigener + andere Mitglieder), getrennt von markersLayer:
+// renderMarkers() räumt bei jedem Aufruf ALLE seine Marker komplett ab und baut sie neu auf (siehe
+// dortiger Kommentar) – bei häufigen GPS-Updates würde das unnötig auch alle anderen, unveränderten
+// Punkte (Unterkunft/Reise/Spots) mit flackern lassen.
+let positionsLayer: L.LayerGroup | null = null;
+// Eigener Standort kommt direkt aus dem lokalen navigator.geolocation-Callback (aktuellster Stand,
+// keine Netzwerk-Latenz) statt aus liveSync.memberPositions – die Store-Seite filtert den eigenen
+// Nutzer dort bewusst heraus (gleiches Muster wie bei onlineUserIds/Präsenz).
+const ownPosition = ref<{ lat: number; lng: number } | null>(null);
+let geoWatchId: number | null = null;
 
 // Icons/Bogen-Routen sind in utils/mapRoute.ts ausgelagert (gemeinsamer Cache mit der neuen
 // Ausflug-Mini-Karte, ExcursionMiniMap.vue) – hier nur noch ein dünner MapPoint-spezifischer
@@ -759,6 +771,49 @@ function renderRoutes() {
   }
 }
 
+// Zeichnet den eigenen (pulsierenden) und die Standort-Marker der anderen gerade auf der Karte
+// aktiven Mitglieder (liveSync.memberPositions) – eigener Layer statt Teil von renderMarkers(),
+// siehe Kommentar bei positionsLayer oben.
+function renderPositions() {
+  if (!map || !positionsLayer) return;
+  positionsLayer.clearLayers();
+
+  // Eigene Pane (statt des Default-Marker-Panes): garantiert, dass Standort-Marker immer ÜBER den
+  // übrigen Pins liegen (Unterkunft/Reise/Spots teilen sich sonst dieselbe Stapelreihenfolge), und
+  // gibt e2e-Tests (live-location.spec.ts) einen eindeutigen Selektor, um Standort-Marker von den
+  // übrigen (identisch gebauten) Emoji-Pins zu unterscheiden.
+  if (!map.getPane('live-positions')) {
+    const pane = map.createPane('live-positions');
+    pane.style.zIndex = '650';
+  }
+
+  if (ownPosition.value && auth.user) {
+    L.marker([ownPosition.value.lat, ownPosition.value.lng], {
+      icon: pulsingEmojiPin(auth.user.avatar, '#2f6fed'),
+      zIndexOffset: 1000,
+      pane: 'live-positions',
+    }).addTo(positionsLayer);
+  }
+
+  for (const [userId, position] of Object.entries(liveSync.memberPositions)) {
+    const user = users.value.find((u) => u.id === Number(userId));
+    if (!user) continue;
+    L.marker([position.lat, position.lng], {
+      icon: cachedEmojiPin(user.avatar, '#2f6fed'),
+      pane: 'live-positions',
+    }).addTo(positionsLayer);
+  }
+}
+
+// "Zu meinem Standort springen"-Button: nur aktiv, sobald mindestens ein GPS-Fix vorliegt.
+function jumpToMyLocation() {
+  if (!map || !ownPosition.value) return;
+  drawers.mapFocusExcursionId = null;
+  drawers.mapFocusDate = null;
+  drawers.mapFocusKey = null;
+  centerOnPoint([ownPosition.value.lat, ownPosition.value.lng], 16);
+}
+
 let resizeObserver: ResizeObserver | null = null;
 
 onMounted(async () => {
@@ -775,8 +830,31 @@ onMounted(async () => {
   // liegen statt sie zu verdecken.
   routesLayer = L.layerGroup().addTo(map);
   markersLayer = L.layerGroup().addTo(map);
+  positionsLayer = L.layerGroup().addTo(map);
   renderMarkers();
   renderRoutes();
+  renderPositions();
+
+  // Live-Standort: startet, sobald die Kartenansicht mountet, endet beim Unmounten (siehe unten) –
+  // bewusst kein dauerhaftes Hintergrund-Tracking, Teilen ist an "Kartenansicht offen" gekoppelt.
+  // watchPosition() statt eines einmaligen getCurrentPosition(): Standort soll sich mit der
+  // Nutzerin mitbewegen, ohne die Karte neu laden zu müssen. Fehlt die Geolocation-API (z. B. kein
+  // HTTPS-Kontext) oder verweigert die Nutzerin den Zugriff, bleibt die Karte unverändert nutzbar –
+  // nur ohne eigenen Standort-Marker.
+  if (navigator.geolocation) {
+    geoWatchId = navigator.geolocation.watchPosition(
+      (position) => {
+        ownPosition.value = { lat: position.coords.latitude, lng: position.coords.longitude };
+        liveSync.sendPosition(position.coords.latitude, position.coords.longitude);
+        renderPositions();
+      },
+      () => {
+        // Zugriff verweigert/fehlgeschlagen – kein Fehlerzustand, die Karte funktioniert weiterhin
+        // ohne Live-Standort.
+      },
+      { enableHighAccuracy: true, maximumAge: 10_000 },
+    );
+  }
 
   // Leaflet misst die Containergröße nur einmal beim Initialisieren und merkt sich das intern –
   // ändert sich die Größe danach (Fenster wird verändert, Layout-Spalten ändern ihr Verhältnis),
@@ -789,6 +867,8 @@ onMounted(async () => {
 onUnmounted(() => {
   resizeObserver?.disconnect();
   resizeObserver = null;
+  if (geoWatchId != null) navigator.geolocation.clearWatch(geoWatchId);
+  liveSync.stopSharingPosition();
   map?.remove();
   map = null;
 });
@@ -853,6 +933,10 @@ watch(
     renderRoutes();
   },
 );
+
+// Standort-Updates anderer Mitglieder (liveSync.ts's position/positions-SSE-Events) – deep, da
+// memberPositions ein reaktives Objekt ist, das in-place mutiert wird (kein Array-Austausch).
+watch(() => liveSync.memberPositions, () => renderPositions(), { deep: true });
 </script>
 
 <template>
@@ -898,6 +982,16 @@ watch(
         @click="fitExcursions"
       >
         🎒
+      </button>
+      <button
+        type="button"
+        class="fit-btn my-location-btn"
+        title="Zu meinem Standort springen"
+        aria-label="Zu meinem Standort springen"
+        :disabled="!ownPosition"
+        @click="jumpToMyLocation"
+      >
+        📍
       </button>
       <div class="focus-banner" v-if="focusedExcursion">
         <span>🎒 {{ focusedExcursion.title }}</span>
@@ -1106,6 +1200,10 @@ watch(
 
 .excursions-btn {
   top: 130px;
+}
+
+.my-location-btn {
+  top: 170px;
 }
 
 .focus-banner {
@@ -1403,6 +1501,27 @@ watch(
 
   .day-strip {
     position: static;
+  }
+}
+</style>
+
+<!-- Bewusst NICHT scoped: pulsingEmojiPin() (utils/mapRoute.ts) fügt sein Markup per innerHTML in
+     einen von Leaflet verwalteten DOM-Knoten außerhalb von Vues Template-Kompilierung ein – ein
+     scoped Style-Block würde sein data-v-*-Attribut nie auf dieses Markup anwenden, die Regel griffe
+     dadurch nie. -->
+<style>
+.map-pulse-ring {
+  animation: map-pulse-ring 2s ease-out infinite;
+}
+
+@keyframes map-pulse-ring {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.55;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
   }
 }
 </style>

@@ -33,6 +33,28 @@ export function cachedEmojiPin(emoji: string, color: string, large = false) {
   return icon;
 }
 
+// Für den eigenen Standort auf der Karte (TripMap.vue, Live-Standort): derselbe Pin wie emojiPin(),
+// zusätzlich von einem pulsierenden Ring umgeben (CSS-Animation "map-pulse-ring", siehe TripMap.vue's
+// zweiter, bewusst NICHT scoped-er <style>-Block – Leaflets dynamisch per innerHTML eingefügtes
+// Markup bekommt keine Vue-Scoping-Attribute, ein @keyframes-Regelsatz muss daher global gelten).
+export function pulsingEmojiPin(emoji: string, color: string) {
+  const size = 32;
+  return L.divIcon({
+    html: `<div style="position:relative;width:${size}px;height:${size}px;">
+      <div class="map-pulse-ring" style="position:absolute;inset:-10px;border-radius:50%;background:${color};"></div>
+      <div style="position:relative;width:${size}px;height:${size}px;border-radius:50% 50% 50% 0;background:${color};
+        transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;
+        box-shadow:0 2px 6px rgba(0,0,0,.35);border:2px solid white;">
+        <span style="transform:rotate(45deg);font-size:15px;line-height:1;">${emoji}</span>
+      </div>
+    </div>`,
+    className: '',
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size],
+    popupAnchor: [0, -size + 2],
+  });
+}
+
 // Sample-Punkte für einen gestrichelten Bogen zwischen zwei Koordinaten (quadratische Bezier-
 // Kurve, Kontrollpunkt senkrecht zur Verbindungslinie versetzt) – rein optisch, wie man es von
 // schematischen Flugrouten-Darstellungen kennt, keine echte Streckenführung/Großkreisberechnung.

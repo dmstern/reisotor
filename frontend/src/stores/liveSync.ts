@@ -67,6 +67,11 @@ export const useLiveSyncStore = defineStore('liveSync', () => {
   );
   const unseenEntityIds = reactive<Record<LiveDomain, Set<number>>>(emptySets());
   const onlineUserIds = ref<number[]>([]);
+  // Live-Standort auf der Karte (TripMap.vue): rein ephemer, kein domainVersion/unseenEntityIds-
+  // Eintrag – keyed per userId statt eines Arrays, da jedes Mitglied höchstens einen aktuellen
+  // Standort hat (ein neuer Ping überschreibt den alten). Siehe backend/src/activity.ts's
+  // lastPositionsByTrip für die Serverseite desselben Konzepts.
+  const memberPositions = reactive<Record<number, { lat: number; lng: number; updatedAt: string }>>({});
   // Wird erst true, nachdem das Nachhol-Protokoll (backfill unten) für den aktuellen Urlaub
   // abgeschlossen ist – App.vue blockt das Mounten jeder Domänen-Ansicht so lange (siehe dortiger
   // Kommentar), sonst gäbe es ein Wettrennen: eine Ansicht könnte markSeen() aufrufen, BEVOR
@@ -80,6 +85,23 @@ export const useLiveSyncStore = defineStore('liveSync', () => {
     source?.close();
     source = null;
     onlineUserIds.value = [];
+    for (const key of Object.keys(memberPositions)) delete memberPositions[Number(key)];
+  }
+
+  /** Von TripMap.vue in onMounted/watchPosition aufgerufen, solange die Kartenansicht sichtbar ist –
+   *  kein dauerhaftes Hintergrund-Tracking (siehe Kommentar in activity.ts). */
+  function sendPosition(lat: number, lng: number) {
+    const tripId = tripStore.currentTripId;
+    if (tripId == null) return;
+    api.post('/realtime/position', { trip_id: tripId, lat, lng }).catch(() => {});
+  }
+
+  /** Von TripMap.vue in onUnmounted aufgerufen – beendet das Teilen des eigenen Standorts explizit,
+   *  statt nur auf die (hier absichtlich nicht getrennte) SSE-Verbindung zu warten. */
+  function stopSharingPosition() {
+    const tripId = tripStore.currentTripId;
+    if (tripId == null) return;
+    api.delete(`/realtime/position?trip_id=${tripId}`).catch(() => {});
   }
 
   function applyActivityRow(row: ActivityRow) {
@@ -132,6 +154,43 @@ export const useLiveSyncStore = defineStore('liveSync', () => {
         // ignore
       }
     });
+    // Initialer Snapshot beim Verbindungsaufbau (routes/realtime.ts's positionsFor()) – ersetzt den
+    // kompletten bisherigen Stand, da er bereits alle aktuell geteilten Standorte enthält. Eigener
+    // Standort wird herausgefiltert (gleiches Muster wie presence oben): TripMap.vue zeigt den
+    // eigenen Marker direkt aus dem lokalen navigator.geolocation-Callback, nicht über einen
+    // SSE-Rundlauf über den Server.
+    source.addEventListener('positions', (event) => {
+      try {
+        const data = JSON.parse((event as MessageEvent).data) as Record<
+          string,
+          { lat: number; lng: number; updatedAt: string }
+        >;
+        for (const key of Object.keys(memberPositions)) delete memberPositions[Number(key)];
+        for (const [userId, position] of Object.entries(data)) {
+          if (Number(userId) !== auth.user?.id) memberPositions[Number(userId)] = position;
+        }
+      } catch {
+        // ignore
+      }
+    });
+    // Einzelnes Update (activity.ts's updatePosition()/clearPosition()) – position ist null, wenn
+    // das Mitglied das Standort-Teilen beendet hat (Karte geschlossen/Verbindung getrennt).
+    source.addEventListener('position', (event) => {
+      try {
+        const data = JSON.parse((event as MessageEvent).data) as {
+          userId: number;
+          position: { lat: number; lng: number; updatedAt: string } | null;
+        };
+        if (data.userId === auth.user?.id) return;
+        if (data.position) {
+          memberPositions[data.userId] = data.position;
+        } else {
+          delete memberPositions[data.userId];
+        }
+      } catch {
+        // ignore
+      }
+    });
   }
 
   watch(
@@ -177,5 +236,15 @@ export const useLiveSyncStore = defineStore('liveSync', () => {
     return changedIds;
   }
 
-  return { domainVersion, onlineUserIds, ready, hasUnseen, markSeen, refreshAll };
+  return {
+    domainVersion,
+    onlineUserIds,
+    memberPositions,
+    ready,
+    hasUnseen,
+    markSeen,
+    refreshAll,
+    sendPosition,
+    stopSharingPosition,
+  };
 });

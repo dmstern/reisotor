@@ -5,6 +5,7 @@ import { linkLabel } from '../utils/linkLabel';
 import { formatTravelDuration, travelDurationMinutes } from '../utils/travelDuration';
 import DetailModal from './DetailModal.vue';
 import MapsAppPicker from './MapsAppPicker.vue';
+import FileAttachments from './FileAttachments.vue';
 
 // Eigenständige Komponente statt inline in TravelView.vue, da dieser Dialog auch von anderer Stelle
 // geöffnet werden muss (TripMap.vue's Stationsliste, ExcursionDetailDialog.vue's Stationen, falls
@@ -67,6 +68,7 @@ function travelDuration(item: TravelItem) {
       <span v-if="item.paid_by_user_id"> · bezahlt von {{ payerLabel }}</span>
     </p>
     <div v-if="item.note" class="detail-row note richtext" v-html="renderRichText(item.note)"></div>
+    <FileAttachments domain="travel" :entity-id="item.id" />
     <div class="detail-actions">
       <a v-if="item.link" :href="item.link" target="_blank" rel="noopener" class="card-action-btn">
         {{ linkLabel(item.link) }} ↗

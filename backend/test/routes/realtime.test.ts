@@ -101,4 +101,59 @@ describe('realtime routes (SSE stream + trip-activity backfill)', () => {
       expect.objectContaining({ domain: 'todos', entity_id: todoId, action: 'created', actor_user_id: owner.userId }),
     );
   });
+
+  // Live-Standort auf der Karte (activity.ts's positionsFor/updatePosition/clearPosition): rein
+  // ephemer, kein trip_activity-Eintrag – hier nur das Auth-Gating der beiden HTTP-Endpunkte
+  // testbar (der eigentliche SSE-Broadcast läuft über dieselbe offene Verbindung wie oben, siehe
+  // Kommentar zur nicht sinnvoll per app.inject() durchlaufbaren SSE-Route).
+  it('POST/DELETE /realtime/position require trip_id and membership', async () => {
+    const owner = await register('katja', 'katja@example.com');
+    const outsider = await register('linus', 'linus@example.com');
+
+    const tripRes = await app.inject({
+      method: 'POST',
+      url: '/api/trips',
+      headers: { cookie: owner.cookie },
+      payload: { name: 'Standort-Trip', start_date: '2026-06-01', end_date: '2026-06-05' },
+    });
+    const tripId = tripRes.json().id;
+
+    const forbiddenPost = await app.inject({
+      method: 'POST',
+      url: '/api/realtime/position',
+      headers: { cookie: outsider.cookie },
+      payload: { trip_id: tripId, lat: 48.2, lng: 16.3 },
+    });
+    expect(forbiddenPost.statusCode).toBe(403);
+
+    const missingLatLng = await app.inject({
+      method: 'POST',
+      url: '/api/realtime/position',
+      headers: { cookie: owner.cookie },
+      payload: { trip_id: tripId },
+    });
+    expect(missingLatLng.statusCode).toBe(400);
+
+    const okPost = await app.inject({
+      method: 'POST',
+      url: '/api/realtime/position',
+      headers: { cookie: owner.cookie },
+      payload: { trip_id: tripId, lat: 48.2, lng: 16.3 },
+    });
+    expect(okPost.statusCode).toBe(204);
+
+    const forbiddenDelete = await app.inject({
+      method: 'DELETE',
+      url: `/api/realtime/position?trip_id=${tripId}`,
+      headers: { cookie: outsider.cookie },
+    });
+    expect(forbiddenDelete.statusCode).toBe(403);
+
+    const okDelete = await app.inject({
+      method: 'DELETE',
+      url: `/api/realtime/position?trip_id=${tripId}`,
+      headers: { cookie: owner.cookie },
+    });
+    expect(okDelete.statusCode).toBe(204);
+  });
 });

@@ -6,6 +6,7 @@ import type { User } from '../api/types';
 import { useAuthStore } from '../stores/auth';
 import { useNavPositionStore } from '../stores/navPosition';
 import { useWeatherProviderStore, WEATHER_MODEL_OPTIONS } from '../stores/weatherProvider';
+import { useHomeCurrencyStore, HOME_CURRENCY_OPTIONS } from '../stores/homeCurrency';
 import { getExistingSubscription, isPushSupported, subscribeToPush, unsubscribeFromPush } from '../utils/push';
 import PasswordInput from '../components/PasswordInput.vue';
 
@@ -13,6 +14,7 @@ const auth = useAuthStore();
 const router = useRouter();
 const navPosition = useNavPositionStore();
 const weatherProvider = useWeatherProviderStore();
+const homeCurrency = useHomeCurrencyStore();
 const users = ref<User[]>([]);
 const loading = ref(true);
 
@@ -342,6 +344,23 @@ async function onImportFileSelected(event: Event) {
         Wettermodell
         <select v-model="weatherProvider.model">
           <option v-for="option in WEATHER_MODEL_OPTIONS" :key="option.value" :value="option.value">
+            {{ option.label }}
+          </option>
+        </select>
+      </label>
+    </div>
+
+    <!-- id als Sprungziel, analog zu #weather-provider-settings oben -->
+    <div id="home-currency-settings" class="card">
+      <h2>💱 Heimatwährung</h2>
+      <p class="hint">
+        Wird im Dashboard genutzt, um bei Urlauben mit abweichender Landeswährung den aktuellen
+        Wechselkurs anzuzeigen.
+      </p>
+      <label class="weather-provider-label">
+        Heimatwährung
+        <select v-model="homeCurrency.currency">
+          <option v-for="option in HOME_CURRENCY_OPTIONS" :key="option.value" :value="option.value">
             {{ option.label }}
           </option>
         </select>

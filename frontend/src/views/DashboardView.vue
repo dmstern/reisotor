@@ -20,11 +20,13 @@ import { useExcursionsStore } from '../stores/excursions';
 import { useSpotsStore } from '../stores/spots';
 import { useDrawersStore } from '../stores/drawers';
 import { useWeatherProviderStore, WEATHER_MODEL_OPTIONS } from '../stores/weatherProvider';
+import { useHomeCurrencyStore } from '../stores/homeCurrency';
 import { assignCategoryColors } from '../utils/categoryColors';
 import { buildAllEntries } from '../utils/calendarEntries';
 import { SCHEDULE_CATEGORY_META } from '../utils/scheduleCategory';
 import { SECTION_ICONS } from '../utils/sectionIcons';
 import { fetchWeatherForecast, weatherCodeMeta, type DailyWeather } from '../utils/weather';
+import { fetchRegionInfo, type RegionInfo } from '../utils/regionInfo';
 import BudgetMeter from '../components/BudgetMeter.vue';
 
 const auth = useAuthStore();
@@ -33,6 +35,7 @@ const excursionsStore = useExcursionsStore();
 const spotsStore = useSpotsStore();
 const drawers = useDrawersStore();
 const weatherProvider = useWeatherProviderStore();
+const homeCurrency = useHomeCurrencyStore();
 const tripId = tripStore.currentTripId as number;
 const trip = computed(() => tripStore.currentTrip);
 const schedule = ref<ScheduleItem[]>([]);
@@ -84,6 +87,34 @@ const weatherModelLabel = computed(
   () => WEATHER_MODEL_OPTIONS.find((o) => o.value === weatherProvider.model)?.label ?? weatherProvider.model,
 );
 
+const regionInfo = ref<RegionInfo | null>(null);
+const regionError = ref<string | null>(null);
+const regionLoading = ref(false);
+
+// Eigenständig geladen (analog zu loadWeather() oben): ein externer Dienst soll das Laden des
+// restlichen Dashboards nicht blockieren, ein Fehlschlag blendet nur diese Card aus.
+async function loadRegionInfo() {
+  if (!trip.value) return;
+  regionLoading.value = true;
+  regionError.value = null;
+  try {
+    regionInfo.value = await fetchRegionInfo(trip.value.id);
+  } catch {
+    regionError.value = 'Regionsinfos konnten nicht geladen werden.';
+  } finally {
+    regionLoading.value = false;
+  }
+}
+
+// Neu laden, wenn sich der Urlaub oder die Heimatwährung (Wechselkurs-Vergleich) ändert.
+watch(
+  () => [trip.value?.id, homeCurrency.currency],
+  () => {
+    regionInfo.value = null;
+    loadRegionInfo();
+  },
+);
+
 // Feste, deterministische Farbzuordnung je Widget (dataviz-Skill: kategoriale Identität, fixe
 // Reihenfolge statt gewürfelter Farben) – dieselbe validierte Palette wie überall sonst in der App.
 const WIDGET_COLORS = assignCategoryColors([
@@ -132,6 +163,7 @@ onMounted(async () => {
   users.value = usersRes;
   loading.value = false;
   loadWeather();
+  loadRegionInfo();
 });
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
@@ -301,6 +333,36 @@ function formatWeekdayDate(d: string) {
     <section v-else class="card weather-card">
       <h3>🌤️ Wetter im Urlaub</h3>
       <p class="hint">Hinterlege beim Urlaub einen Maps-Link, um hier die Wettervorhersage für die Urlaubstage zu sehen.</p>
+    </section>
+
+    <section v-if="regionLoading && !regionInfo" class="card region-card">
+      <h3>🌍 Reiseregion</h3>
+      <p class="hint">Lädt …</p>
+    </section>
+    <section v-else-if="regionError" class="card region-card">
+      <h3>🌍 Reiseregion</h3>
+      <p class="hint error">{{ regionError }}</p>
+    </section>
+    <section v-else-if="regionInfo?.countryName" class="card region-card">
+      <h3>🌍 {{ regionInfo.countryName }}</h3>
+      <p v-if="regionInfo.languages.length" class="detail-row">
+        <span class="detail-label">Sprache</span>{{ regionInfo.languages.join(', ') }}
+      </p>
+      <p v-if="regionInfo.currency" class="detail-row">
+        <span class="detail-label">Währung</span>💱 {{ regionInfo.currency.name }} ({{ regionInfo.currency.code }})
+        <span v-if="regionInfo.exchangeRate != null">
+          · 1 {{ regionInfo.currency.code }} ≈ {{ regionInfo.exchangeRate.toFixed(2) }} {{ homeCurrency.currency }}
+        </span>
+      </p>
+      <p v-if="regionInfo.advisory" class="detail-row">
+        <span class="detail-label">Sicherheit</span>⚠️ {{ regionInfo.advisory.message }}
+        <span class="region-advisory-score">({{ regionInfo.advisory.score.toFixed(1) }}/5)</span>
+      </p>
+      <!-- Analog zum "Quelle: Open-Meteo"-Hinweis beim Wetter-Widget: Sprung zur Heimatwährungs-
+           Auswahl, falls der Wechselkurs-Vergleich einmal nicht passt. -->
+      <router-link to="/profile#home-currency-settings" class="weather-source">
+        Quelle: REST Countries · open.er-api.com · travel-advisory.info
+      </router-link>
     </section>
 
     <div class="grid cards">
@@ -589,6 +651,31 @@ function formatWeekdayDate(d: string) {
 
 .weather-source:hover {
   color: var(--color-primary-dark);
+}
+
+.region-card {
+  margin-bottom: var(--space-4);
+}
+
+.region-card h3 {
+  color: var(--color-primary-dark);
+  font-size: 1rem;
+  margin-bottom: var(--space-2);
+}
+
+.region-card .hint {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.region-card .hint.error {
+  color: var(--color-danger);
+}
+
+.region-advisory-score {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
 }
 
 .cards {

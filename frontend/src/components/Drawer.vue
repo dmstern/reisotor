@@ -154,7 +154,7 @@ function onResizeEnd() {
       class="resize-handle resize-grip"
       role="separator"
       aria-orientation="vertical"
-      :aria-label="`${label}-Schublade in der Breite anpassen`"
+      :aria-label="`Breite von ${label} anpassen`"
       @pointerdown="onResizeStart"
     ></div>
     <button

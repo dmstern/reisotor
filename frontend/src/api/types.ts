@@ -331,3 +331,20 @@ export interface DiaryComment {
   content: string;
   created_at: string;
 }
+
+/** Domänen, die Datei-Anhänge (Tickets/Dokumente) tragen können – siehe FileAttachments.vue. */
+export type AttachmentDomain = 'travel' | 'accommodation' | 'notes' | 'schedule' | 'budget';
+
+export interface Attachment {
+  id: number;
+  trip_id: number;
+  domain: AttachmentDomain;
+  entity_id: number;
+  filename: string;
+  original_name: string;
+  mime_type: string;
+  size_bytes: number;
+  uploaded_by: number;
+  created_at: string;
+  url: string;
+}

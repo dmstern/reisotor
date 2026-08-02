@@ -123,4 +123,90 @@ describe('trips routes', () => {
     });
     expect(res.statusCode).toBe(403);
   });
+
+  // Reiseregion-Infos (utils/regionInfo.ts): Auth-Gating der neuen Route + Fallback-Antwort ohne
+  // Koordinaten (kein Reverse-Geocoding möglich, also auch kein Ländercode) + der eigentliche
+  // Reverse-Geocoding-/Region-Info-Pfad mit gemocktem fetch (kein echtes Netzwerk in Tests).
+  describe('GET /trips/:id/region-info', () => {
+    it('requires membership', async () => {
+      const created = await app.inject({
+        method: 'POST',
+        url: '/api/trips',
+        headers: { cookie },
+        payload: { name: 'Regions-Trip', start_date: '2026-02-01', end_date: '2026-02-05' },
+      });
+      const id = created.json().id;
+
+      const outsiderRes = await app.inject({
+        method: 'POST',
+        url: '/api/auth/register',
+        payload: { username: 'region-outsider', email: 'region-outsider@example.com', password: 'correct-horse' },
+      });
+      const outsiderCookie = Array.isArray(outsiderRes.headers['set-cookie'])
+        ? outsiderRes.headers['set-cookie'].join('; ')
+        : String(outsiderRes.headers['set-cookie']);
+
+      const forbidden = await app.inject({
+        method: 'GET',
+        url: `/api/trips/${id}/region-info`,
+        headers: { cookie: outsiderCookie },
+      });
+      expect(forbidden.statusCode).toBe(403);
+    });
+
+    it('returns an empty result when the trip has no coordinates (no country to resolve)', async () => {
+      const created = await app.inject({
+        method: 'POST',
+        url: '/api/trips',
+        headers: { cookie },
+        payload: { name: 'Ohne Koordinaten', start_date: '2026-02-01', end_date: '2026-02-05' },
+      });
+      const id = created.json().id;
+
+      const res = await app.inject({ method: 'GET', url: `/api/trips/${id}/region-info`, headers: { cookie } });
+      expect(res.statusCode).toBe(200);
+      expect(res.json()).toEqual({ countryName: null, languages: [], currency: null, exchangeRate: null, advisory: null });
+    });
+
+    it('resolves the country once from lat/lng and returns region info (mocked external APIs)', async () => {
+      const created = await app.inject({
+        method: 'POST',
+        url: '/api/trips',
+        headers: { cookie },
+        payload: { name: 'Lissabon-Region', start_date: '2026-02-01', end_date: '2026-02-05', lat: 38.7, lng: -9.1 },
+      });
+      const id = created.json().id;
+
+      vi.stubGlobal(
+        'fetch',
+        vi.fn((url: string) => {
+          if (url.includes('nominatim.openstreetmap.org')) {
+            return Promise.resolve({
+              ok: true,
+              json: () => Promise.resolve({ address: { country: 'Portugal', country_code: 'pt' } }),
+            });
+          }
+          if (url.includes('restcountries.com')) {
+            return Promise.resolve({
+              ok: true,
+              json: () => Promise.resolve([{ languages: { por: 'Portuguese' }, currencies: { EUR: { name: 'Euro' } } }]),
+            });
+          }
+          if (url.includes('travel-advisory.info')) {
+            return Promise.resolve({ ok: false, status: 503 });
+          }
+          return Promise.reject(new Error('unexpected URL in test: ' + url));
+        }),
+      );
+
+      const res = await app.inject({ method: 'GET', url: `/api/trips/${id}/region-info`, headers: { cookie } });
+      expect(res.statusCode).toBe(200);
+      expect(res.json()).toMatchObject({
+        countryName: 'Portugal',
+        languages: ['Portuguese'],
+        currency: { code: 'EUR', name: 'Euro' },
+        advisory: null,
+      });
+    });
+  });
 });

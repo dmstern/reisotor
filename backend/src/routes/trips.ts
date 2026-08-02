@@ -1,8 +1,12 @@
 import type { FastifyPluginAsync } from 'fastify';
+import { unlink } from 'node:fs/promises';
+import path from 'node:path';
 import { db, ensureDefaultSharedBudget } from '../db/index.js';
 import { resolveLatLng, tilePreviewUrl } from '../utils/mapsLink.js';
 import { requireTripMember } from '../tripAccess.js';
 import { recordActivity } from '../activity.js';
+import { uploadsDir } from '../uploads.js';
+import { resolveCountry, fetchRegionInfo } from '../utils/regionInfo.js';
 
 interface TripBody {
   name: string;
@@ -112,10 +116,56 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
 
   app.delete<{ Params: { id: string } }>('/trips/:id', async (req, reply) => {
     if (!requireTripMember(reply, req.params.id, req.session.userId)) return;
+    // Datei-Anhänge (attachments.trip_id) werden per ON DELETE CASCADE zwar automatisch als
+    // DB-Zeile mitgelöscht, die eigentlichen Dateien auf der Platte bleiben davon aber unberührt –
+    // hier vorab einsammeln und danach entfernen, sonst blieben sie dauerhaft verwaist liegen.
+    const attachmentFiles = db.prepare('SELECT filename FROM attachments WHERE trip_id = ?').all(req.params.id) as {
+      filename: string;
+    }[];
     const result = db.prepare('DELETE FROM trips WHERE id = ?').run(req.params.id);
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
+    for (const { filename } of attachmentFiles) {
+      await unlink(path.join(uploadsDir, filename)).catch(() => {});
+    }
     return reply.code(204).send();
   });
+
+  // Reiseregion-Infos fürs Dashboard (Sprache/Währung/Wechselkurs/Reisewarnung, siehe
+  // utils/regionInfo.ts). country_code/country_name werden einmalig per Reverse-Geocoding aus
+  // lat/lng ermittelt und dauerhaft in trips persistiert – nur neu aufgelöst, wenn diese noch
+  // fehlen (ändert sich der Urlaubsort später, wird PUT /trips/:id NICHT rückwirkend erneut
+  // auflösen; das wäre ein seltener Fall und der Nutzer kann den Urlaub bei Bedarf neu anlegen).
+  app.get<{ Params: { id: string }; Querystring: { home_currency?: string } }>(
+    '/trips/:id/region-info',
+    async (req, reply) => {
+      if (!requireTripMember(reply, req.params.id, req.session.userId)) return;
+      const trip = db.prepare('SELECT * FROM trips WHERE id = ?').get(req.params.id) as
+        | { lat: number | null; lng: number | null; country_code: string | null; country_name: string | null }
+        | undefined;
+      if (!trip) return reply.code(404).send({ error: 'Nicht gefunden' });
+
+      let countryCode = trip.country_code;
+      let countryName = trip.country_name;
+      if (!countryCode && trip.lat != null && trip.lng != null) {
+        const resolved = await resolveCountry(trip.lat, trip.lng);
+        if (resolved) {
+          countryCode = resolved.code;
+          countryName = resolved.name;
+          db.prepare('UPDATE trips SET country_code = ?, country_name = ? WHERE id = ?').run(
+            countryCode,
+            countryName,
+            req.params.id,
+          );
+        }
+      }
+      if (!countryCode) {
+        return { countryName: null, languages: [], currency: null, exchangeRate: null, advisory: null };
+      }
+
+      const info = await fetchRegionInfo(countryCode, req.query.home_currency ?? null);
+      return { countryName, ...info };
+    },
+  );
 
   // --- Mitgliedschaft/Einladung (Batch: Registrierung + Einladung) ---
 

@@ -4,6 +4,7 @@ import { renderRichText } from '../utils/richText';
 import { parseContact } from '../utils/contact';
 import DetailModal from './DetailModal.vue';
 import MapsAppPicker from './MapsAppPicker.vue';
+import FileAttachments from './FileAttachments.vue';
 
 // Eigenständige Komponente statt inline in AccommodationView.vue, da dieser Dialog auch von anderer
 // Stelle geöffnet werden muss (TripMap.vue's Stationsliste, ExcursionDetailDialog.vue's Stationen,
@@ -63,6 +64,7 @@ function formatDate(d: string | null) {
       <span v-if="accommodation.paid_by_user_id"> · bezahlt von {{ payerLabel }}</span>
     </p>
     <div v-if="accommodation.note" class="detail-row note richtext" v-html="renderRichText(accommodation.note)"></div>
+    <FileAttachments domain="accommodation" :entity-id="accommodation.id" />
     <div class="detail-actions">
       <button
         v-if="accommodation.lat != null && accommodation.lng != null"

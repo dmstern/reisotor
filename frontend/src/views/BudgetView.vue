@@ -20,6 +20,7 @@ import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
 import Combobox from '../components/Combobox.vue';
 import UndoDeleteRow from '../components/UndoDeleteRow.vue';
+import FileAttachments from '../components/FileAttachments.vue';
 import { useUndoableDelete } from '../composables/useUndoableDelete';
 
 const tripStore = useTripStore();
@@ -573,6 +574,7 @@ const categoryColors = computed(() => {
         <input v-model="editExpenseForm.note" type="text" placeholder="Notiz (optional)" />
         <button type="submit">Speichern</button>
       </form>
+      <FileAttachments v-if="editingExpense" domain="budget" :entity-id="editingExpense.id" />
     </Modal>
   </div>
 </template>

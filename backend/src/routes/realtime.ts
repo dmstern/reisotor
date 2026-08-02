@@ -1,7 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { db } from '../db/index.js';
 import { requireTripMember } from '../tripAccess.js';
-import { onlineUserIds, subscribe } from '../activity.js';
+import { onlineUserIds, subscribe, positionsFor, updatePosition, clearPosition } from '../activity.js';
 
 const HEARTBEAT_MS = 25_000;
 
@@ -26,6 +26,10 @@ export const realtimeRoutes: FastifyPluginAsync = async (app) => {
       'X-Accel-Buffering': 'no',
     });
     reply.raw.write(`event: presence\ndata: ${JSON.stringify({ online: onlineUserIds(tripId) })}\n\n`);
+    // Initialer Snapshot bereits geteilter Standorte (Live-Standort auf der Karte, TripMap.vue) –
+    // ein frisch verbindender Client bekommt so sofort die Positionen bereits aktiver Mitglieder,
+    // statt erst auf deren nächsten GPS-Ping warten zu müssen.
+    reply.raw.write(`event: positions\ndata: ${JSON.stringify(positionsFor(tripId))}\n\n`);
 
     const unsubscribe = subscribe(tripId, req.session.userId!, reply);
     // Ohne periodisches Schreiben schließen manche Proxies/Browser eine lang inaktive HTTP-Verbindung
@@ -37,7 +41,35 @@ export const realtimeRoutes: FastifyPluginAsync = async (app) => {
     req.raw.on('close', () => {
       clearInterval(heartbeat);
       unsubscribe();
+      // Sicherheitsnetz für den Fall, dass TripMap.vue keine Gelegenheit mehr hatte, aktiv
+      // DELETE /realtime/position zu senden (z. B. Tab hart geschlossen statt Route gewechselt) –
+      // sonst bliebe der Standort-Marker dieses Mitglieds dauerhaft "eingefroren" auf der Karte der
+      // anderen stehen.
+      clearPosition(tripId, req.session.userId!);
     });
+  });
+
+  // Live-Standort auf der Karte (TripMap.vue): rein ephemer (siehe activity.ts's
+  // lastPositionsByTrip), bewusst KEIN recordActivity()-Aufruf – ein GPS-Ping soll weder einen
+  // dauerhaften Aktivitäts-Log-Eintrag noch eine Push-Benachrichtigung auslösen. Startet, sobald
+  // die Kartenansicht mountet, endet beim Unmounten (DELETE) – kein dauerhaftes
+  // Hintergrund-Tracking.
+  app.post<{ Body: { trip_id?: number; lat?: number; lng?: number } }>('/realtime/position', async (req, reply) => {
+    const { trip_id, lat, lng } = req.body ?? {};
+    if (!requireTripMember(reply, trip_id, req.session.userId)) return;
+    if (typeof lat !== 'number' || typeof lng !== 'number') {
+      return reply.code(400).send({ error: 'lat und lng erforderlich' });
+    }
+    updatePosition(trip_id!, req.session.userId!, lat, lng);
+    return reply.code(204).send();
+  });
+
+  // Querystring statt Body: api/client.ts's api.delete() sendet grundsätzlich keinen Body mit.
+  app.delete<{ Querystring: { trip_id?: string } }>('/realtime/position', async (req, reply) => {
+    const tripId = req.query.trip_id;
+    if (!requireTripMember(reply, tripId, req.session.userId)) return;
+    clearPosition(Number(tripId), req.session.userId!);
+    return reply.code(204).send();
   });
 
   // Nachhol-Protokoll für Clients, die beim Ändern nicht (mehr) verbunden waren (frischer
