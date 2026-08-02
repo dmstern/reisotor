@@ -2,9 +2,13 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-Reisotor ist eine Vue 3 + Fastify-Web-App zur gemeinsamen Reiseplanung für zwei Personen (siehe
-`README.md` für Features, lokale Setup-/Deploy-Schritte und Umgebungsvariablen). Diese Datei hält
-Architektur-Überblick und Dev-Workflow-Konventionen für Claude Code fest.
+Reisotor ist eine Vue 3 + Fastify-Web-App zur gemeinsamen Reiseplanung, ursprünglich für zwei
+Personen pro Haushalt gebaut. Registrierung ist offen (E-Mail-Adresse, siehe `routes/auth.ts`),
+Zugriff auf einen Urlaub ist aber zusätzlich per Mitgliedschaft (`trip_members`) beschränkt — wer
+einen Urlaub anlegt, ist zunächst allein darauf, weitere Personen müssen erst per Autocomplete-Suche
+eingeladen werden (siehe Abschnitt "Auth" unten). Siehe `README.md` für Features, lokale
+Setup-/Deploy-Schritte und Umgebungsvariablen. Diese Datei hält Architektur-Überblick und
+Dev-Workflow-Konventionen für Claude Code fest.
 
 ## Setup & Befehle
 
@@ -47,12 +51,15 @@ eigenem `SqliteSessionStore` aus `sessionStore.ts`, damit Sessions einen Prozess
 unter `routes/` (trips, schedule, packing, ideas, accommodation, budget, users, backup, shopping,
 todos, notes, diary, travel, spots) plus `buildInfo` für den Git-Commit/Build-Zeitstempel; alle
 werden in `app.ts` registriert. Routen greifen direkt per `better-sqlite3` (synchron, kein
-ORM/Query-Builder) auf `db.prepare(...)` zu.
+ORM/Query-Builder) auf `db.prepare(...)` zu. `tripAccess.ts`s `requireTripMember()` ist der zentrale
+Gate für die Mitgliedschaftsprüfung (siehe "Auth" unten) und wird von jeder Urlaub-bezogenen Route
+als Erstes aufgerufen.
 
 **Datenbank** (`backend/src/db/index.ts`): eine SQLite-Datei (`data.sqlite`), Schema wird bei jedem
 Prozessstart synchron per `CREATE TABLE IF NOT EXISTS` + additiven Migrationen (`ensureColumn`,
 `dropColumnIfExists`) angewendet — siehe Abschnitt "Datenmodell-Änderungen" unten für die
-Konventionen dabei. Domänen umfassen u. a. `trips`, `schedule_items`, `packing_items`, `ideas`
+Konventionen dabei. Domänen umfassen u. a. `trips`, `trip_members` (Mitgliedschaft pro Urlaub,
+siehe "Auth" unten), `schedule_items`, `packing_items`, `ideas`
 (Ausflugsideen), `accommodation`, `budget_items`/`budget_transfers`/`budgets`/
 `budget_allocations`, `shopping_items`, `todo_items`, `notes`, `diary_entries` sowie je eigene
 `*_likes`/`*_comments`-Tabellen für Ausflüge/Notizen/Tagebuch/Spots, `travel_items`/
@@ -63,8 +70,29 @@ die referenzierende Zeile aktualisieren/entfernen, danach die `budget_items`-Zei
 "Bekannte Stolpersteine" in `README.md` zum genauen FK-Constraint-Fehler bei falscher Reihenfolge).
 
 **Auth**: Session-Cookie-basiert (kein JWT), `requireAuth`-preHandler-Hook gated alle Routen außer
-`/auth/*`. Kein User-Rollensystem — die App ist für genau zwei feste Nutzer:innen pro Haushalt
-ausgelegt, weitere Nutzer:innen lassen sich aber über die Profil-Seite anlegen.
+`/auth/*`. Registrierung ist offen (`POST /auth/register`, E-Mail + Benutzername + Passwort, loggt
+danach direkt ein wie `/auth/login`) — kein Einladungscode oder Admin-Freischaltung nötig, um
+überhaupt einen Account zu bekommen. Kein globales User-Rollensystem (keine Admin-/Owner-Rolle).
+
+Zugriff auf einen konkreten Urlaub ist stattdessen per Mitgliedschaft geregelt: `trip_members`
+(`trip_id`, `user_id`) legt fest, wer einen Urlaub überhaupt sehen/bearbeiten darf. Wer einen Urlaub
+anlegt (`POST /trips`), wird automatisch dessen einziges Mitglied; alle anderen Urlaub-bezogenen
+Routen (Kalender, Packliste, Budget, Notizen, Tagebuch, Spots, Ausflüge, Unterkunft, Reise, ToDos,
+Einkaufsliste, Papierkorb) prüfen als Erstes per `tripAccess.ts`s `requireTripMember()`, ob die
+aktuelle Session Mitglied des betroffenen `trip_id` ist (403, falls nicht — auch bei einer
+nicht-existenten `trip_id`, um deren Existenz nicht zu verraten). Weitere Nutzer:innen werden über
+eine Autocomplete-Suche nach Benutzername/E-Mail (`GET /users/search?q=&trip_id=`, nur bereits
+registrierte Accounts, die noch nicht Mitglied sind) gefunden und per `POST /trips/:id/members`
+eingeladen (Frontend: `TripMembersDialog.vue`, aufrufbar über den 👥-Button im `TripSwitcher.vue`).
+Es gibt keine Owner-/Admin-Unterscheidung innerhalb eines Urlaubs — jedes Mitglied kann weitere
+Mitglieder einladen oder entfernen (auch sich selbst), es gibt keinen Schutz davor, dass ein Urlaub
+am Ende null Mitglieder hat.
+
+Bereits vor Einführung dieses Konzepts angelegte Urlaube/Nutzer:innen wurden per einmaligem Backfill
+(`db/index.ts`, gated auf `!hasTable('trip_members')` vor dem Erstellen der Tabelle) so migriert,
+dass jede:r bestehende Nutzer:in weiterhin Mitglied jedes bestehenden Urlaubs ist — das greift
+bewusst nur einmalig beim allerersten Deploy dieser Änderung, nicht bei jedem Prozessstart, sonst
+würden sich künftig neu registrierte Accounts automatisch in alle bestehenden Urlaube einklinken.
 
 **Frontend** (`frontend/src/`): Vue 3 (Composition API, `<script setup>`) + Pinia-Stores (je einer
 pro Domäne unter `stores/`: `trip`, `schedule`, `spots`, `excursions`, `drawers`, `navPosition`,
@@ -130,8 +158,9 @@ wird:
    letzten Prod-Deploys ist: `git merge-base origin/prod HEAD` (bzw. `origin/main`, falls der
    Branch von dort abzweigt) gibt den letzten gemeinsamen Commit; ein `git diff <dieser-commit>
    HEAD -- backend/src/db/index.ts` zeigt, was seitdem am Schema geändert wurde. Alles, was schon
-   vorher drin war, kann echte Nutzdaten auf der echten `data.sqlite` enthalten (die App wird
-   aktiv von zwei echten Nutzer:innen für echte Reiseplanung verwendet).
+   vorher drin war, kann echte Nutzdaten auf der echten `data.sqlite` enthalten (die App wird aktiv
+   für echte Reiseplanung verwendet — ursprünglich von zwei festen Haushaltsmitgliedern, seit der
+   offenen Registrierung potenziell auch von weiteren, eingeladenen Nutzer:innen).
 2. **Rein additiv bleiben, wo möglich.** Neue Spalten/Tabellen nur über `ensureColumn` (nullable
    oder mit `DEFAULT`) bzw. `CREATE TABLE IF NOT EXISTS` — nie eine bestehende Tabelle mit einer
    `NOT NULL`-Spalte ohne Default versehen.
