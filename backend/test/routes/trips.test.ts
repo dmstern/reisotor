@@ -111,13 +111,16 @@ describe('trips routes', () => {
     expect(updated.json()).toMatchObject({ lat: null, lng: null });
   });
 
-  it('returns 404 when updating a non-existent trip', async () => {
+  // Mitgliedschaft (tripAccess.ts) wird vor dem Existenz-Check geprüft: eine Person ohne
+  // trip_members-Zeile für 999999 bekommt 403 statt 404, egal ob der Urlaub existiert oder nicht
+  // (verrät damit nicht, ob eine fremde id überhaupt existiert).
+  it('returns 403 when updating a non-existent (and therefore inaccessible) trip', async () => {
     const res = await app.inject({
       method: 'PUT',
       url: '/api/trips/999999',
       headers: { cookie },
       payload: { name: 'x', start_date: '2026-01-01', end_date: '2026-01-10' },
     });
-    expect(res.statusCode).toBe(404);
+    expect(res.statusCode).toBe(403);
   });
 });

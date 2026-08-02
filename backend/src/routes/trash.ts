@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { db } from '../db/index.js';
+import { requireTripMember } from '../tripAccess.js';
 
 // Konfiguration für den Papierkorb (weicher Löschvorgang, siehe db/index.ts's TRASH_TABLES):
 // je Objekttyp Tabelle, deutsches Label (für die Papierkorb-Ansicht) und optional eine
@@ -65,6 +66,7 @@ export const trashRoutes: FastifyPluginAsync = async (app) => {
   // (spotCategoryMeta, scheduleCategory, …) und formatiert damit selbst.
   app.get<{ Querystring: { trip_id?: string } }>('/trash', async (req, reply) => {
     if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
+    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
     const entries = TRASH_CONFIG.flatMap((config) => {
       const rows = db
         .prepare(`SELECT * FROM ${config.table} WHERE trip_id = ? AND deleted_at IS NOT NULL`)
@@ -84,6 +86,12 @@ export const trashRoutes: FastifyPluginAsync = async (app) => {
   app.post<{ Params: { type: string; id: string } }>('/trash/:type/:id/restore', async (req, reply) => {
     const config = TRASH_CONFIG.find((c) => c.type === req.params.type);
     if (!config) return reply.code(400).send({ error: 'Unbekannter Objekttyp' });
+
+    const existingRow = db.prepare(`SELECT trip_id FROM ${config.table} WHERE id = ?`).get(req.params.id) as
+      | { trip_id: number }
+      | undefined;
+    if (!existingRow) return reply.code(404).send({ error: 'Nicht gefunden oder nicht gelöscht' });
+    if (!requireTripMember(reply, existingRow.trip_id, req.session.userId)) return;
 
     const result = db
       .prepare(`UPDATE ${config.table} SET deleted_at = NULL WHERE id = ? AND deleted_at IS NOT NULL`)

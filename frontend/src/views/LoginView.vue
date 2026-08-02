@@ -11,20 +11,31 @@ const auth = useAuthStore();
 const router = useRouter();
 const theme = useThemeStore();
 
+const mode = ref<'login' | 'register'>('login');
 const username = ref('');
+const email = ref('');
 const password = ref('');
 const passwordVisible = ref(false);
 const error = ref('');
 const loading = ref(false);
 
+function toggleMode() {
+  mode.value = mode.value === 'login' ? 'register' : 'login';
+  error.value = '';
+}
+
 async function onSubmit() {
   error.value = '';
   loading.value = true;
   try {
-    await auth.login(username.value, password.value);
+    if (mode.value === 'register') {
+      await auth.register(username.value, email.value, password.value);
+    } else {
+      await auth.login(username.value, password.value);
+    }
     router.push('/');
   } catch (err) {
-    error.value = err instanceof ApiError ? err.message : 'Login fehlgeschlagen';
+    error.value = err instanceof ApiError ? err.message : mode.value === 'register' ? 'Registrierung fehlgeschlagen' : 'Login fehlgeschlagen';
   } finally {
     loading.value = false;
   }
@@ -45,11 +56,16 @@ async function onSubmit() {
     <form class="card login-card" @submit.prevent="onSubmit">
       <ReisotorRobot :covering-eyes="passwordVisible" size="140px" class="logo" />
       <h1>Reisotor</h1>
-      <p>Melde dich an, um euren Urlaub zu planen.</p>
+      <p>{{ mode === 'register' ? 'Erstelle ein Konto, um euren Urlaub zu planen.' : 'Melde dich an, um euren Urlaub zu planen.' }}</p>
 
       <label>
         Benutzername
         <input v-model="username" type="text" autocomplete="username" required />
+      </label>
+
+      <label v-if="mode === 'register'">
+        E-Mail-Adresse
+        <input v-model="email" type="email" autocomplete="email" required />
       </label>
 
       <div class="field">
@@ -58,14 +74,20 @@ async function onSubmit() {
           id="login-password"
           v-model="password"
           v-model:visible="passwordVisible"
-          autocomplete="current-password"
+          :autocomplete="mode === 'register' ? 'new-password' : 'current-password'"
           required
         />
       </div>
 
       <p v-if="error" class="error">{{ error }}</p>
 
-      <button type="submit" :disabled="loading">{{ loading ? 'Anmelden…' : 'Anmelden' }}</button>
+      <button type="submit" :disabled="loading">
+        {{ loading ? (mode === 'register' ? 'Registrieren…' : 'Anmelden…') : mode === 'register' ? 'Registrieren' : 'Anmelden' }}
+      </button>
+
+      <button type="button" class="secondary mode-toggle" @click="toggleMode">
+        {{ mode === 'register' ? 'Schon registriert? Anmelden' : 'Noch kein Konto? Registrieren' }}
+      </button>
     </form>
   </div>
 </template>
@@ -128,6 +150,11 @@ async function onSubmit() {
 
 .login-card button {
   width: 100%;
+}
+
+.mode-toggle {
+  font-size: 0.85rem;
+  font-weight: 400;
 }
 
 label,

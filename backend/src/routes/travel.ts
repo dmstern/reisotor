@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { db, ensureDefaultSharedBudget } from '../db/index.js';
 import { resolveLatLng } from '../utils/mapsLink.js';
+import { requireTripMember } from '../tripAccess.js';
 
 interface TravelBody {
   trip_id: number;
@@ -182,6 +183,7 @@ export const travelRoutes: FastifyPluginAsync = async (app) => {
 
   app.get<{ Querystring: { trip_id?: string } }>('/travel/places', async (req, reply) => {
     if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
+    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
     return db
       .prepare('SELECT * FROM travel_places WHERE trip_id = ? ORDER BY is_home DESC, name COLLATE NOCASE')
       .all(req.query.trip_id);
@@ -189,6 +191,7 @@ export const travelRoutes: FastifyPluginAsync = async (app) => {
 
   app.post<{ Body: TravelPlaceBody }>('/travel/places', async (req, reply) => {
     const { trip_id, name, is_home } = req.body;
+    if (!requireTripMember(reply, trip_id, req.session.userId)) return;
     let { lat, lng } = req.body;
     const { maps_link } = req.body;
     if ((lat == null || lng == null) && maps_link) {
@@ -204,6 +207,12 @@ export const travelRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.put<{ Params: { id: string }; Body: TravelPlaceBody }>('/travel/places/:id', async (req, reply) => {
+    const existingPlace = db.prepare('SELECT trip_id FROM travel_places WHERE id = ?').get(req.params.id) as
+      | { trip_id: number }
+      | undefined;
+    if (!existingPlace) return reply.code(404).send({ error: 'Nicht gefunden' });
+    if (!requireTripMember(reply, existingPlace.trip_id, req.session.userId)) return;
+
     const { name, is_home } = req.body;
     let { lat, lng } = req.body;
     const { maps_link } = req.body;
@@ -220,6 +229,12 @@ export const travelRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.delete<{ Params: { id: string } }>('/travel/places/:id', async (req, reply) => {
+    const existingPlace = db.prepare('SELECT trip_id FROM travel_places WHERE id = ?').get(req.params.id) as
+      | { trip_id: number }
+      | undefined;
+    if (!existingPlace) return reply.code(404).send({ error: 'Nicht gefunden' });
+    if (!requireTripMember(reply, existingPlace.trip_id, req.session.userId)) return;
+
     const result = db.prepare('DELETE FROM travel_places WHERE id = ?').run(req.params.id);
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
     return reply.code(204).send();
@@ -229,6 +244,7 @@ export const travelRoutes: FastifyPluginAsync = async (app) => {
 
   app.get<{ Querystring: { trip_id?: string } }>('/travel', async (req, reply) => {
     if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
+    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
     return db
       .prepare('SELECT * FROM travel_items WHERE trip_id = ? AND deleted_at IS NULL ORDER BY date, id')
       .all(req.query.trip_id);
@@ -236,6 +252,7 @@ export const travelRoutes: FastifyPluginAsync = async (app) => {
 
   app.post<{ Body: TravelBody }>('/travel', async (req, reply) => {
     const body = req.body;
+    if (!requireTripMember(reply, body.trip_id, req.session.userId)) return;
     applyPlaces(body);
     await resolveFromToLatLng(body);
     const { budgetExpenseId } = planBudgetExpense(body.trip_id, null, body);
@@ -284,6 +301,7 @@ export const travelRoutes: FastifyPluginAsync = async (app) => {
       | TravelRow
       | undefined;
     if (!existing) return reply.code(404).send({ error: 'Nicht gefunden' });
+    if (!requireTripMember(reply, existing.trip_id, req.session.userId)) return;
 
     const body = req.body;
     applyPlaces(body);
@@ -342,6 +360,7 @@ export const travelRoutes: FastifyPluginAsync = async (app) => {
       req.params.id,
     ) as TravelRow | undefined;
     if (!existing) return reply.code(404).send({ error: 'Nicht gefunden' });
+    if (!requireTripMember(reply, existing.trip_id, req.session.userId)) return;
 
     const now = new Date().toISOString();
     db.prepare('UPDATE travel_items SET deleted_at = ? WHERE id = ?').run(now, req.params.id);

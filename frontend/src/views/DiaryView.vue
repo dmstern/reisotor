@@ -98,8 +98,8 @@ async function pickSpot(spotId: number, dateStr: string, target: { excursion_ids
 onMounted(async () => {
   const [entriesRes, likesRes, commentsRes, usersRes] = await Promise.all([
     api.get<DiaryEntry[]>(`/diary?trip_id=${tripId}`),
-    api.get<DiaryLike[]>('/diary/likes'),
-    api.get<DiaryComment[]>('/diary/comments'),
+    api.get<DiaryLike[]>(`/diary/likes?trip_id=${tripId}`),
+    api.get<DiaryComment[]>(`/diary/comments?trip_id=${tripId}`),
     api.get<User[]>('/users'),
     excursionsStore.load(),
     spotsStore.load(),

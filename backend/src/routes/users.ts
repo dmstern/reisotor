@@ -33,6 +33,28 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
     return db.prepare('SELECT id, username, avatar FROM users ORDER BY id').all();
   });
 
+  // Autocomplete für die Einladen-Suche (TripSwitcher.vue/TripMembersDialog.vue) – durchsucht ALLE
+  // registrierten Nutzer:innen (nicht nur Mitglieder des aktuellen Urlaubs, sonst ließe sich
+  // niemand Neues finden/einladen) nach Benutzername oder E-Mail. `trip_id` blendet bereits
+  // eingeladene Mitglieder aus dem Ergebnis aus, damit man sie nicht versehentlich doppelt
+  // vorschlägt. Mindestens 2 Zeichen, um bei jedem Tastendruck nicht die gesamte Nutzerliste
+  // zurückzugeben.
+  app.get<{ Querystring: { q?: string; trip_id?: string } }>('/users/search', async (req) => {
+    const q = (req.query.q ?? '').trim();
+    if (q.length < 2) return [];
+    const like = `%${q}%`;
+    const excludeTripId = req.query.trip_id ? Number(req.query.trip_id) : null;
+    return db
+      .prepare(
+        `SELECT id, username, avatar FROM users
+         WHERE (username LIKE ? OR email LIKE ?)
+           AND (? IS NULL OR id NOT IN (SELECT user_id FROM trip_members WHERE trip_id = ?))
+         ORDER BY username COLLATE NOCASE
+         LIMIT 10`,
+      )
+      .all(like, like, excludeTripId, excludeTripId);
+  });
+
   app.post<{ Body: CreateUserBody }>('/users', async (req, reply) => {
     const { username, password, avatar } = req.body ?? {};
     if (!username?.trim() || !password) {

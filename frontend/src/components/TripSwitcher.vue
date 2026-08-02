@@ -7,12 +7,15 @@ import Modal from './Modal.vue';
 import TripForm from './TripForm.vue';
 import EditButton from './EditButton.vue';
 import DeleteButton from './DeleteButton.vue';
+import TripMembersDialog from './TripMembersDialog.vue';
 
 const tripStore = useTripStore();
 const drawers = useDrawersStore();
 const open = ref(false);
 const showForm = ref(false);
 const editingTrip = ref<Trip | null>(null);
+const showMembers = ref(false);
+const membersTrip = ref<Trip | null>(null);
 // Bleibt gesetzt, solange nach dem Anlegen eines neuen Urlaubs die Standort-Auflösung fehlschlägt
 // (siehe onSubmit) – ein erneuter Speicherversuch (z. B. mit manuell gesetztem Pin) muss dann den
 // bereits angelegten Urlaub AKTUALISIEREN statt einen zweiten anzulegen.
@@ -56,6 +59,12 @@ function openEdit(trip: Trip) {
   pendingFixTripId.value = null;
   tripFormLocationError.value = false;
   showForm.value = true;
+  close();
+}
+
+function openMembers(trip: Trip) {
+  membersTrip.value = trip;
+  showMembers.value = true;
   close();
 }
 
@@ -115,6 +124,15 @@ async function onDelete(trip: Trip) {
         >
           <button type="button" class="trip-select" @click="selectAndClose(trip.id)">{{ trip.name }}</button>
           <div class="row-actions">
+            <button
+              type="button"
+              class="secondary members-btn"
+              title="Mitglieder verwalten"
+              aria-label="Mitglieder verwalten"
+              @click="openMembers(trip)"
+            >
+              👥
+            </button>
             <EditButton small @click="openEdit(trip)" />
             <DeleteButton small @click="onDelete(trip)" />
           </div>
@@ -146,6 +164,8 @@ async function onDelete(trip: Trip) {
         @submit="onSubmit"
       />
     </Modal>
+
+    <TripMembersDialog v-model="showMembers" :trip="membersTrip" />
   </div>
 </template>
 
@@ -237,6 +257,13 @@ async function onDelete(trip: Trip) {
 .row-actions {
   display: flex;
   gap: 2px;
+  flex-shrink: 0;
+}
+
+.members-btn {
+  padding: 4px 8px;
+  font-size: 0.8rem;
+  line-height: 1;
   flex-shrink: 0;
 }
 

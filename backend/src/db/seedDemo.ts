@@ -68,6 +68,16 @@ const tripResult = db
   );
 const tripId = tripResult.lastInsertRowid as number;
 
+// Ohne diese Zeilen wäre der Demo-Urlaub für beide Seed-Nutzer:innen unsichtbar (siehe
+// trip_members-Mitgliedschaftskonzept in tripAccess.ts) – normalerweise legt die POST /trips-Route
+// das für den anlegenden Account automatisch an, dieses Skript umgeht die Route aber per Direkt-SQL.
+const insertMembership = db.prepare(
+  'INSERT OR IGNORE INTO trip_members (trip_id, user_id, created_at) VALUES (?, ?, ?)',
+);
+const membershipNow = new Date().toISOString();
+insertMembership.run(tripId, user1.id, membershipNow);
+insertMembership.run(tripId, user2.id, membershipNow);
+
 // --- Budget: Kategorien-Allokationen des automatisch angelegten "Gemeinsamen Budgets" befüllen ---
 const sharedBudgetId = ensureDefaultSharedBudget(tripId);
 const allocations: Record<string, number> = {

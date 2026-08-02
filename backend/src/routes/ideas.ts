@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { db } from '../db/index.js';
+import { requireTripMember } from '../tripAccess.js';
 
 interface IdeaBody {
   trip_id: number;
@@ -106,6 +107,7 @@ function serializeIdea(row: IdeaRow, stationKeys: string[], date: string | null)
 export const ideasRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: { trip_id?: string } }>('/ideas', async (req, reply) => {
     if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
+    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
     const rows = db
       .prepare('SELECT * FROM ideas WHERE trip_id = ? AND deleted_at IS NULL ORDER BY id DESC')
       .all(req.query.trip_id) as IdeaRow[];
@@ -116,6 +118,7 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
 
   app.post<{ Body: IdeaBody }>('/ideas', async (req, reply) => {
     const { trip_id, title, image_url, note, date, station_keys } = req.body;
+    if (!requireTripMember(reply, trip_id, req.session.userId)) return;
     const result = db
       .prepare(
         `INSERT INTO ideas (trip_id, title, image_url, note, created_by)
@@ -131,6 +134,12 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.put<{ Params: { id: string }; Body: IdeaBody }>('/ideas/:id', async (req, reply) => {
+    const existingIdea = db.prepare('SELECT trip_id FROM ideas WHERE id = ?').get(req.params.id) as
+      | { trip_id: number }
+      | undefined;
+    if (!existingIdea) return reply.code(404).send({ error: 'Nicht gefunden' });
+    if (!requireTripMember(reply, existingIdea.trip_id, req.session.userId)) return;
+
     const { title, image_url, note, date, station_keys } = req.body;
     const result = db
       .prepare(
@@ -152,6 +161,12 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
   // im Kalender sichtbar. routes/trash.ts's restore() macht diese Kopplung beim Wiederherstellen
   // wieder rückgängig (siehe dort).
   app.delete<{ Params: { id: string } }>('/ideas/:id', async (req, reply) => {
+    const existingIdea = db.prepare('SELECT trip_id FROM ideas WHERE id = ?').get(req.params.id) as
+      | { trip_id: number }
+      | undefined;
+    if (!existingIdea) return reply.code(404).send({ error: 'Nicht gefunden' });
+    if (!requireTripMember(reply, existingIdea.trip_id, req.session.userId)) return;
+
     const deleteWithSchedule = db.transaction((id: string) => {
       const now = new Date().toISOString();
       db.prepare('UPDATE schedule_items SET deleted_at = ? WHERE idea_id = ? AND deleted_at IS NULL').run(now, id);
@@ -174,6 +189,7 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
   // dagegen bewusst je einen eigenen Ausflug (kein Zusammenlegen).
   app.post<{ Body: PlanSpotBody }>('/ideas/plan-spot', async (req, reply) => {
     const { trip_id, spot_id, date } = req.body;
+    if (!requireTripMember(reply, trip_id, req.session.userId)) return;
     const stationKey = `spot-${spot_id}`;
 
     const candidates = db
@@ -221,6 +237,7 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
 
   app.get<{ Querystring: { trip_id?: string } }>('/ideas/likes', async (req, reply) => {
     if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
+    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
     return db
       .prepare(
         `SELECT idea_likes.* FROM idea_likes
@@ -232,6 +249,7 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
 
   app.get<{ Querystring: { trip_id?: string } }>('/ideas/comments', async (req, reply) => {
     if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
+    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
     return db
       .prepare(
         `SELECT idea_comments.* FROM idea_comments
@@ -243,8 +261,11 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.post<{ Params: { id: string } }>('/ideas/:id/like', async (req, reply) => {
-    const idea = db.prepare('SELECT id FROM ideas WHERE id = ?').get(req.params.id);
+    const idea = db.prepare('SELECT id, trip_id FROM ideas WHERE id = ?').get(req.params.id) as
+      | { id: number; trip_id: number }
+      | undefined;
     if (!idea) return reply.code(404).send({ error: 'Nicht gefunden' });
+    if (!requireTripMember(reply, idea.trip_id, req.session.userId)) return;
 
     const existing = db
       .prepare('SELECT id FROM idea_likes WHERE idea_id = ? AND user_id = ?')
@@ -264,8 +285,11 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.post<{ Params: { id: string }; Body: CommentBody }>('/ideas/:id/comments', async (req, reply) => {
-    const idea = db.prepare('SELECT id FROM ideas WHERE id = ?').get(req.params.id);
+    const idea = db.prepare('SELECT id, trip_id FROM ideas WHERE id = ?').get(req.params.id) as
+      | { id: number; trip_id: number }
+      | undefined;
     if (!idea) return reply.code(404).send({ error: 'Nicht gefunden' });
+    if (!requireTripMember(reply, idea.trip_id, req.session.userId)) return;
 
     const result = db
       .prepare('INSERT INTO idea_comments (idea_id, author_id, content, created_at) VALUES (?, ?, ?, ?)')
@@ -275,10 +299,15 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.delete<{ Params: { id: string } }>('/ideas/comments/:id', async (req, reply) => {
-    const comment = db.prepare('SELECT * FROM idea_comments WHERE id = ?').get(req.params.id) as
-      | { id: number; author_id: number }
-      | undefined;
+    const comment = db
+      .prepare(
+        `SELECT idea_comments.id, idea_comments.author_id, ideas.trip_id FROM idea_comments
+         JOIN ideas ON ideas.id = idea_comments.idea_id
+         WHERE idea_comments.id = ?`,
+      )
+      .get(req.params.id) as { id: number; author_id: number; trip_id: number } | undefined;
     if (!comment) return reply.code(404).send({ error: 'Nicht gefunden' });
+    if (!requireTripMember(reply, comment.trip_id, req.session.userId)) return;
     if (comment.author_id !== req.session.userId) {
       return reply.code(403).send({ error: 'Nur die Autorin/der Autor kann diesen Kommentar löschen' });
     }

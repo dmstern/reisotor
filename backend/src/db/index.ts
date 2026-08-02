@@ -349,6 +349,49 @@ function migrateExcursionStations() {
 }
 migrateExcursionStations();
 
+// Selbstregistrierung (Login-Seite) braucht eine E-Mail-Adresse zusätzlich zum Benutzernamen.
+// Nullable statt UNIQUE NOT NULL: bestehende Nutzer:innen (vor Einführung der Registrierung
+// angelegt) haben noch keine E-Mail; Eindeutigkeit wird wie beim bereits bestehenden `username`
+// applikationsseitig per SELECT-Check vor dem INSERT geprüft (siehe routes/auth.ts) statt per
+// SQL-Constraint, da SQLite eine UNIQUE-Spalte nicht nachträglich per ALTER TABLE ADD COLUMN
+// ergänzen kann.
+ensureColumn('users', 'email', 'TEXT');
+
+// Mitgliedschaftskonzept pro Urlaub (Registrierung + Einladung): ein Urlaub ist nur noch für seine
+// Mitglieder sichtbar/bearbeitbar (siehe tripAccess.ts, in praktisch jeder Urlaub-bezogenen Route
+// verwendet) statt wie bisher implizit für alle Nutzer:innen. Backfill direkt hier bei der
+// Einführung der Tabelle, nicht als dauerhafter Teil des Start-Skripts: alle zum
+// Migrationszeitpunkt bestehenden Nutzer:innen werden einmalig Mitglied aller zu diesem Zeitpunkt
+// bestehenden Urlaube, damit die schon aktiv nutzenden (echten) Nutzer:innen ihre bestehenden
+// Urlaube nicht verlieren. Neu angelegte Urlaube bekommen danach nur noch die anlegende Person als
+// Mitglied (routes/trips.ts), neu registrierte Nutzer:innen treten KEINEM bestehenden Urlaub
+// automatisch bei – der Backfill läuft deshalb bewusst nur einmalig (gated auf "Tabelle existierte
+// vorher noch nicht"), nicht bei jedem Backend-Start, sonst würde jede/r neu registrierte Person
+// bei jedem Neustart rückwirkend allen bestehenden Urlauben beitreten.
+const hadTripMembersTable = hasTable('trip_members');
+db.exec(`
+  CREATE TABLE IF NOT EXISTS trip_members (
+    id INTEGER PRIMARY KEY,
+    trip_id INTEGER NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TEXT NOT NULL,
+    UNIQUE(trip_id, user_id)
+  );
+`);
+if (!hadTripMembersTable) {
+  const allTripsForMembershipBackfill = db.prepare('SELECT id FROM trips').all() as { id: number }[];
+  const allUsersForMembershipBackfill = db.prepare('SELECT id FROM users').all() as { id: number }[];
+  const insertBackfillMembership = db.prepare(
+    'INSERT OR IGNORE INTO trip_members (trip_id, user_id, created_at) VALUES (?, ?, ?)',
+  );
+  const membershipBackfillNow = new Date().toISOString();
+  for (const trip of allTripsForMembershipBackfill) {
+    for (const user of allUsersForMembershipBackfill) {
+      insertBackfillMembership.run(trip.id, user.id, membershipBackfillNow);
+    }
+  }
+}
+
 ensureColumn('users', 'avatar', "TEXT DEFAULT '🙂'");
 ensureColumn('ideas', 'lat', 'REAL');
 ensureColumn('ideas', 'lng', 'REAL');

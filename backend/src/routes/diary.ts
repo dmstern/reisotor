@@ -4,6 +4,7 @@ import { writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { db } from '../db/index.js';
 import { uploadsDir } from '../uploads.js';
+import { requireTripMember } from '../tripAccess.js';
 
 interface EntryRow {
   id: number;
@@ -71,6 +72,7 @@ function serializeEntry(row: EntryRow, excursionIds: number[]) {
 export const diaryRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: { trip_id?: string } }>('/diary', async (req, reply) => {
     if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
+    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
     const rows = db
       .prepare(
         'SELECT * FROM diary_entries WHERE trip_id = ? AND deleted_at IS NULL ORDER BY created_at DESC, id DESC',
@@ -80,12 +82,32 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
     return rows.map((row) => serializeEntry(row, excursionIds.get(row.id) ?? []));
   });
 
-  app.get('/diary/likes', async () => {
-    return db.prepare('SELECT * FROM diary_likes').all();
+  // trip_id jetzt erforderlich (vorher lieferten beide Routen ungefiltert ALLE Likes/Kommentare
+  // aller Urlaube zurück – seit Einführung des Mitgliedschaftskonzepts wäre das ein Datenleck über
+  // Urlaubsgrenzen hinweg, siehe tripAccess.ts).
+  app.get<{ Querystring: { trip_id?: string } }>('/diary/likes', async (req, reply) => {
+    if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
+    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
+    return db
+      .prepare(
+        `SELECT diary_likes.* FROM diary_likes
+         JOIN diary_entries ON diary_entries.id = diary_likes.entry_id
+         WHERE diary_entries.trip_id = ?`,
+      )
+      .all(req.query.trip_id);
   });
 
-  app.get('/diary/comments', async () => {
-    return db.prepare('SELECT * FROM diary_comments ORDER BY created_at ASC, id ASC').all();
+  app.get<{ Querystring: { trip_id?: string } }>('/diary/comments', async (req, reply) => {
+    if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
+    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
+    return db
+      .prepare(
+        `SELECT diary_comments.* FROM diary_comments
+         JOIN diary_entries ON diary_entries.id = diary_comments.entry_id
+         WHERE diary_entries.trip_id = ?
+         ORDER BY diary_comments.created_at ASC, diary_comments.id ASC`,
+      )
+      .all(req.query.trip_id);
   });
 
   // Nimmt ein bereits client-seitig (Canvas-API) verkleinertes/komprimiertes Bild als Data-URL
@@ -112,6 +134,7 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
 
   app.post<{ Body: EntryBody }>('/diary', async (req, reply) => {
     const { trip_id, title, content, images, excursion_ids } = req.body;
+    if (!requireTripMember(reply, trip_id, req.session.userId)) return;
     const now = new Date().toISOString();
     const result = db
       .prepare(
@@ -130,6 +153,7 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
       | EntryRow
       | undefined;
     if (!entry) return reply.code(404).send({ error: 'Nicht gefunden' });
+    if (!requireTripMember(reply, entry.trip_id, req.session.userId)) return;
     if (entry.author_id !== req.session.userId) {
       return reply.code(403).send({ error: 'Nur die Autorin/der Autor kann diesen Beitrag bearbeiten' });
     }
@@ -153,6 +177,7 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
       | EntryRow
       | undefined;
     if (!entry) return reply.code(404).send({ error: 'Nicht gefunden' });
+    if (!requireTripMember(reply, entry.trip_id, req.session.userId)) return;
     if (entry.author_id !== req.session.userId) {
       return reply.code(403).send({ error: 'Nur die Autorin/der Autor kann diesen Beitrag löschen' });
     }
@@ -163,8 +188,11 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.post<{ Params: { id: string } }>('/diary/:id/like', async (req, reply) => {
-    const entry = db.prepare('SELECT id FROM diary_entries WHERE id = ?').get(req.params.id);
+    const entry = db.prepare('SELECT id, trip_id FROM diary_entries WHERE id = ?').get(req.params.id) as
+      | { id: number; trip_id: number }
+      | undefined;
     if (!entry) return reply.code(404).send({ error: 'Nicht gefunden' });
+    if (!requireTripMember(reply, entry.trip_id, req.session.userId)) return;
 
     const existing = db
       .prepare('SELECT id FROM diary_likes WHERE entry_id = ? AND user_id = ?')
@@ -184,8 +212,11 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.post<{ Params: { id: string }; Body: CommentBody }>('/diary/:id/comments', async (req, reply) => {
-    const entry = db.prepare('SELECT id FROM diary_entries WHERE id = ?').get(req.params.id);
+    const entry = db.prepare('SELECT id, trip_id FROM diary_entries WHERE id = ?').get(req.params.id) as
+      | { id: number; trip_id: number }
+      | undefined;
     if (!entry) return reply.code(404).send({ error: 'Nicht gefunden' });
+    if (!requireTripMember(reply, entry.trip_id, req.session.userId)) return;
 
     const result = db
       .prepare('INSERT INTO diary_comments (entry_id, author_id, content, created_at) VALUES (?, ?, ?, ?)')
@@ -195,10 +226,15 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.delete<{ Params: { id: string } }>('/diary/comments/:id', async (req, reply) => {
-    const comment = db.prepare('SELECT * FROM diary_comments WHERE id = ?').get(req.params.id) as
-      | { id: number; author_id: number }
-      | undefined;
+    const comment = db
+      .prepare(
+        `SELECT diary_comments.id, diary_comments.author_id, diary_entries.trip_id FROM diary_comments
+         JOIN diary_entries ON diary_entries.id = diary_comments.entry_id
+         WHERE diary_comments.id = ?`,
+      )
+      .get(req.params.id) as { id: number; author_id: number; trip_id: number } | undefined;
     if (!comment) return reply.code(404).send({ error: 'Nicht gefunden' });
+    if (!requireTripMember(reply, comment.trip_id, req.session.userId)) return;
     if (comment.author_id !== req.session.userId) {
       return reply.code(403).send({ error: 'Nur die Autorin/der Autor kann diesen Kommentar löschen' });
     }

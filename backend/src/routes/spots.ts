@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { db } from '../db/index.js';
 import { resolveLatLng, tilePreviewUrl } from '../utils/mapsLink.js';
+import { requireTripMember } from '../tripAccess.js';
 
 interface SpotBody {
   trip_id: number;
@@ -20,6 +21,7 @@ interface CommentBody {
 export const spotsRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: { trip_id?: string } }>('/spots', async (req, reply) => {
     if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
+    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
     return db
       .prepare('SELECT * FROM spots WHERE trip_id = ? AND deleted_at IS NULL ORDER BY title COLLATE NOCASE')
       .all(req.query.trip_id);
@@ -27,6 +29,7 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
 
   app.post<{ Body: SpotBody }>('/spots', async (req, reply) => {
     const { trip_id, title, category, note, maps_link } = req.body;
+    if (!requireTripMember(reply, trip_id, req.session.userId)) return;
     let { lat, lng, image_url } = req.body;
     if ((lat == null || lng == null) && maps_link) {
       const resolved = await resolveLatLng(maps_link);
@@ -59,10 +62,11 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.put<{ Params: { id: string }; Body: SpotBody }>('/spots/:id', async (req, reply) => {
-    const existing = db.prepare('SELECT lat, lng FROM spots WHERE id = ?').get(req.params.id) as
-      | { lat: number | null; lng: number | null }
+    const existing = db.prepare('SELECT trip_id, lat, lng FROM spots WHERE id = ?').get(req.params.id) as
+      | { trip_id: number; lat: number | null; lng: number | null }
       | undefined;
     if (!existing) return reply.code(404).send({ error: 'Nicht gefunden' });
+    if (!requireTripMember(reply, existing.trip_id, req.session.userId)) return;
 
     const { title, category, note, maps_link } = req.body;
     let { lat, lng, image_url } = req.body;
@@ -105,6 +109,12 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
   // gefundenen (weil ausgeblendeten) Spot ohnehin `null` und die Station verschwindet dadurch
   // automatisch aus jeder Stationsliste, taucht nach dem Wiederherstellen aber unverändert wieder auf.
   app.delete<{ Params: { id: string } }>('/spots/:id', async (req, reply) => {
+    const existing = db.prepare('SELECT trip_id FROM spots WHERE id = ?').get(req.params.id) as
+      | { trip_id: number }
+      | undefined;
+    if (!existing) return reply.code(404).send({ error: 'Nicht gefunden' });
+    if (!requireTripMember(reply, existing.trip_id, req.session.userId)) return;
+
     const result = db
       .prepare('UPDATE spots SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL')
       .run(new Date().toISOString(), req.params.id);
@@ -116,6 +126,7 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
 
   app.get<{ Querystring: { trip_id?: string } }>('/spots/likes', async (req, reply) => {
     if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
+    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
     return db
       .prepare(
         `SELECT spot_likes.* FROM spot_likes
@@ -127,6 +138,7 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
 
   app.get<{ Querystring: { trip_id?: string } }>('/spots/comments', async (req, reply) => {
     if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
+    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
     return db
       .prepare(
         `SELECT spot_comments.* FROM spot_comments
@@ -138,8 +150,11 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.post<{ Params: { id: string } }>('/spots/:id/like', async (req, reply) => {
-    const spot = db.prepare('SELECT id FROM spots WHERE id = ?').get(req.params.id);
+    const spot = db.prepare('SELECT id, trip_id FROM spots WHERE id = ?').get(req.params.id) as
+      | { id: number; trip_id: number }
+      | undefined;
     if (!spot) return reply.code(404).send({ error: 'Nicht gefunden' });
+    if (!requireTripMember(reply, spot.trip_id, req.session.userId)) return;
 
     const existing = db
       .prepare('SELECT id FROM spot_likes WHERE spot_id = ? AND user_id = ?')
@@ -159,8 +174,11 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.post<{ Params: { id: string }; Body: CommentBody }>('/spots/:id/comments', async (req, reply) => {
-    const spot = db.prepare('SELECT id FROM spots WHERE id = ?').get(req.params.id);
+    const spot = db.prepare('SELECT id, trip_id FROM spots WHERE id = ?').get(req.params.id) as
+      | { id: number; trip_id: number }
+      | undefined;
     if (!spot) return reply.code(404).send({ error: 'Nicht gefunden' });
+    if (!requireTripMember(reply, spot.trip_id, req.session.userId)) return;
 
     const result = db
       .prepare('INSERT INTO spot_comments (spot_id, author_id, content, created_at) VALUES (?, ?, ?, ?)')
@@ -170,10 +188,15 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.delete<{ Params: { id: string } }>('/spots/comments/:id', async (req, reply) => {
-    const comment = db.prepare('SELECT * FROM spot_comments WHERE id = ?').get(req.params.id) as
-      | { id: number; author_id: number }
-      | undefined;
+    const comment = db
+      .prepare(
+        `SELECT spot_comments.id, spot_comments.author_id, spots.trip_id FROM spot_comments
+         JOIN spots ON spots.id = spot_comments.spot_id
+         WHERE spot_comments.id = ?`,
+      )
+      .get(req.params.id) as { id: number; author_id: number; trip_id: number } | undefined;
     if (!comment) return reply.code(404).send({ error: 'Nicht gefunden' });
+    if (!requireTripMember(reply, comment.trip_id, req.session.userId)) return;
     if (comment.author_id !== req.session.userId) {
       return reply.code(403).send({ error: 'Nur die Autorin/der Autor kann diesen Kommentar löschen' });
     }

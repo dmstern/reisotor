@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { db, ensureDefaultSharedBudget } from '../db/index.js';
 import { resolveLatLng, tilePreviewUrl } from '../utils/mapsLink.js';
+import { requireTripMember } from '../tripAccess.js';
 
 interface TripBody {
   name: string;
@@ -14,11 +15,22 @@ interface TripBody {
 }
 
 export const tripsRoutes: FastifyPluginAsync = async (app) => {
-  app.get('/trips', async () => {
-    return db.prepare('SELECT * FROM trips ORDER BY id').all();
+  // Nur Urlaube zeigen, denen die eingeloggte Person als Mitglied angehört (trip_members, siehe
+  // tripAccess.ts) – vorher implizit für alle Nutzer:innen sichtbar (siehe CLAUDE.md-Kommentar in
+  // db/index.ts zum Backfill).
+  app.get('/trips', async (req) => {
+    return db
+      .prepare(
+        `SELECT trips.* FROM trips
+         JOIN trip_members ON trip_members.trip_id = trips.id
+         WHERE trip_members.user_id = ?
+         ORDER BY trips.id`,
+      )
+      .all(req.session.userId);
   });
 
   app.get<{ Params: { id: string } }>('/trips/:id', async (req, reply) => {
+    if (!requireTripMember(reply, req.params.id, req.session.userId)) return;
     const trip = db.prepare('SELECT * FROM trips WHERE id = ?').get(req.params.id);
     if (!trip) return reply.code(404).send({ error: 'Nicht gefunden' });
     return trip;
@@ -41,12 +53,20 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
       )
       .run(name, destination ?? null, start_date, end_date, maps_link ?? null, lat ?? null, lng ?? null, image_url ?? null);
     const tripId = result.lastInsertRowid as number;
+    // Neu angelegter Urlaub ist zunächst nur für die anlegende Person sichtbar – weitere
+    // Mitglieder kommen nur per Einladung dazu (routes/trips.ts's POST /trips/:id/members).
+    db.prepare('INSERT INTO trip_members (trip_id, user_id, created_at) VALUES (?, ?, ?)').run(
+      tripId,
+      req.session.userId,
+      new Date().toISOString(),
+    );
     ensureDefaultSharedBudget(tripId);
     reply.code(201);
     return db.prepare('SELECT * FROM trips WHERE id = ?').get(tripId);
   });
 
   app.put<{ Params: { id: string }; Body: TripBody }>('/trips/:id', async (req, reply) => {
+    if (!requireTripMember(reply, req.params.id, req.session.userId)) return;
     const existing = db.prepare('SELECT lat, lng FROM trips WHERE id = ?').get(req.params.id) as
       | { lat: number | null; lng: number | null }
       | undefined;
@@ -90,8 +110,54 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.delete<{ Params: { id: string } }>('/trips/:id', async (req, reply) => {
+    if (!requireTripMember(reply, req.params.id, req.session.userId)) return;
     const result = db.prepare('DELETE FROM trips WHERE id = ?').run(req.params.id);
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
+    return reply.code(204).send();
+  });
+
+  // --- Mitgliedschaft/Einladung (Batch: Registrierung + Einladung) ---
+
+  app.get<{ Params: { id: string } }>('/trips/:id/members', async (req, reply) => {
+    if (!requireTripMember(reply, req.params.id, req.session.userId)) return;
+    return db
+      .prepare(
+        `SELECT users.id, users.username, users.avatar FROM users
+         JOIN trip_members ON trip_members.user_id = users.id
+         WHERE trip_members.trip_id = ?
+         ORDER BY users.id`,
+      )
+      .all(req.params.id);
+  });
+
+  // Einladen kann nur, wer selbst schon Mitglied ist – die einzuladende Person wird per
+  // Autocomplete-Suche gefunden (GET /users/search, routes/users.ts), damit hier keine
+  // Rollenprüfung über die reine Mitgliedschaft hinaus nötig ist (kein Owner-/Admin-Konzept,
+  // jedes Mitglied kann weitere Mitglieder einladen).
+  app.post<{ Params: { id: string }; Body: { user_id: number } }>('/trips/:id/members', async (req, reply) => {
+    if (!requireTripMember(reply, req.params.id, req.session.userId)) return;
+    const { user_id } = req.body ?? {};
+    if (!user_id) return reply.code(400).send({ error: 'user_id erforderlich' });
+
+    const user = db.prepare('SELECT id, username, avatar FROM users WHERE id = ?').get(user_id);
+    if (!user) return reply.code(404).send({ error: 'Nutzer:in nicht gefunden' });
+
+    db.prepare('INSERT OR IGNORE INTO trip_members (trip_id, user_id, created_at) VALUES (?, ?, ?)').run(
+      req.params.id,
+      user_id,
+      new Date().toISOString(),
+    );
+    reply.code(201);
+    return user;
+  });
+
+  // Mitgliedschaft wieder entfernen – bewusst ohne Sonderregel für die letzte verbleibende Person
+  // oder die anlegende Person (kein Owner-Konzept, siehe oben): würde das den Urlaub komplett ohne
+  // Mitglieder zurücklassen, bleibt er weiterhin über die trip_id direkt erreichbar für niemanden
+  // mehr – ein bewusst einfaches Verhalten statt zusätzlicher Sonderfälle.
+  app.delete<{ Params: { id: string; userId: string } }>('/trips/:id/members/:userId', async (req, reply) => {
+    if (!requireTripMember(reply, req.params.id, req.session.userId)) return;
+    db.prepare('DELETE FROM trip_members WHERE trip_id = ? AND user_id = ?').run(req.params.id, req.params.userId);
     return reply.code(204).send();
   });
 };
