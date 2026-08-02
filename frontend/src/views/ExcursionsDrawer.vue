@@ -291,7 +291,7 @@ function editStationSpot() {
       <button @click="showExcursionForm = true">+ Neue Tour</button>
     </div>
 
-    <Modal :model-value="showExcursionForm" title="Neue Tour" @update:model-value="(v) => !v && closeExcursionForm()">
+    <Modal :model-value="showExcursionForm" title="Neue Tour" full-height @update:model-value="(v) => !v && closeExcursionForm()">
       <form class="edit-form" @submit.prevent="addExcursion">
         <input v-model="excursionForm.title" type="text" placeholder="Titel" required />
         <input v-model="excursionForm.image_url" type="url" placeholder="Bild-URL (optional)" />
@@ -394,6 +394,7 @@ function editStationSpot() {
     <Modal
       :model-value="editingExcursion !== null"
       title="Tour bearbeiten"
+      full-height
       @update:model-value="(v) => !v && (editingExcursion = null)"
     >
       <form class="edit-form" @submit.prevent="submitEditExcursion">

@@ -448,7 +448,7 @@ function showDetailToOnMap() {
       <p v-else class="empty">Noch keine Orte angelegt.</p>
     </section>
 
-    <Modal :model-value="showForm" title="Neuer Reise-Eintrag" @update:model-value="(v) => !v && closeForm()">
+    <Modal :model-value="showForm" title="Neuer Reise-Eintrag" full-height @update:model-value="(v) => !v && closeForm()">
     <form class="form" @submit.prevent="submit">
       <label>
         Titel
@@ -634,6 +634,7 @@ function showDetailToOnMap() {
     <Modal
       :model-value="editingItem !== null"
       title="Reise-Eintrag bearbeiten"
+      full-height
       @update:model-value="(v) => !v && (editingItem = null)"
     >
       <form class="form" @submit.prevent="submitEdit">

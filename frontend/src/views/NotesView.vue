@@ -152,7 +152,7 @@ async function remove(id: number) {
 
     <p v-if="error" class="error">{{ error }}</p>
 
-    <Modal :model-value="showForm" title="Neue Notiz" @update:model-value="(v) => !v && closeForm()">
+    <Modal :model-value="showForm" title="Neue Notiz" full-height @update:model-value="(v) => !v && closeForm()">
     <form class="add-form" @submit.prevent="submit">
       <input v-model="form.title" type="text" placeholder="Titel (optional)" />
       <textarea v-model="form.content" placeholder="Inhalt" rows="8" required></textarea>
@@ -196,6 +196,7 @@ async function remove(id: number) {
     <Modal
       :model-value="editingNote !== null"
       title="Notiz bearbeiten"
+      full-height
       @update:model-value="(v) => !v && (editingNote = null)"
     >
       <form class="add-form" @submit.prevent="submitEdit">

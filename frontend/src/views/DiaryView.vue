@@ -270,7 +270,7 @@ async function removeComment(id: number) {
       <button @click="openNewForm">+ Neuer Eintrag</button>
     </div>
 
-    <Modal :model-value="showForm" title="Neuer Tagebucheintrag" @update:model-value="(v) => !v && closeForm()">
+    <Modal :model-value="showForm" title="Neuer Tagebucheintrag" full-height @update:model-value="(v) => !v && closeForm()">
     <form class="add-form" @submit.prevent="submitEntry">
       <input v-model="form.title" type="text" placeholder="Titel (optional)" />
       <textarea v-model="form.content" placeholder="Was ist heute passiert?" rows="10" required></textarea>
@@ -379,6 +379,7 @@ async function removeComment(id: number) {
     <Modal
       :model-value="editingEntry !== null"
       title="Eintrag bearbeiten"
+      full-height
       @update:model-value="(v) => !v && (editingEntry = null)"
     >
       <form class="add-form" @submit.prevent="submitEditEntry">

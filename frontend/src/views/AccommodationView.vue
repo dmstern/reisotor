@@ -224,7 +224,7 @@ function showDetailOnMap() {
       <button @click="showForm = true">+ Neue Unterkunft</button>
     </div>
 
-    <Modal :model-value="showForm" title="Neue Unterkunft" @update:model-value="(v) => !v && closeForm()">
+    <Modal :model-value="showForm" title="Neue Unterkunft" full-height @update:model-value="(v) => !v && closeForm()">
     <form class="form" @submit.prevent="submit">
       <label>
         Name
@@ -332,6 +332,7 @@ function showDetailOnMap() {
     <Modal
       :model-value="editingItem !== null"
       title="Unterkunft bearbeiten"
+      full-height
       @update:model-value="(v) => !v && (editingItem = null)"
     >
       <form class="form" @submit.prevent="submitEdit">
