@@ -533,7 +533,4 @@ label {
   flex-shrink: 0;
 }
 
-.empty {
-  color: var(--color-text-muted);
-}
 </style>

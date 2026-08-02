@@ -212,7 +212,7 @@ async function quickAdd(list: ListGroup) {
             <input v-model.number="quickAddQuantities[list.key]" type="number" min="1" step="1" placeholder="1" />
           </label>
           <button type="submit" class="send-btn" :disabled="!quickAddLabels[list.key]?.trim()" aria-label="Gegenstand hinzufügen" title="Gegenstand hinzufügen">
-            ➤
+            +
           </button>
         </form>
 
@@ -232,7 +232,7 @@ async function quickAdd(list: ListGroup) {
             </TransitionGroup>
           </template>
         </div>
-        <p v-if="!list.items.length" class="empty">Noch nichts auf dieser Liste.</p>
+        <p v-if="!list.items.length" class="empty">Noch keine Gegenstände auf dieser Liste.</p>
       </section>
     </div>
 
@@ -384,7 +384,6 @@ async function quickAdd(list: ListGroup) {
 }
 
 .empty {
-  color: var(--color-text-muted);
   font-size: 0.9rem;
 }
 

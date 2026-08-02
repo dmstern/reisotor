@@ -414,7 +414,7 @@ const categoryColors = computed(() => {
           </select>
           <input v-model="expenseForm.date" type="date" />
           <input v-model="expenseForm.note" type="text" placeholder="Notiz (optional)" />
-          <button type="submit">Hinzufügen</button>
+          <button type="submit">Eintragen</button>
         </form>
       </Modal>
 
@@ -460,7 +460,7 @@ const categoryColors = computed(() => {
     <div class="card">
       <div class="header">
         <h2>Überweisungen</h2>
-        <button @click="showTransferForm = true">💸 Überweisung eintragen</button>
+        <button @click="showTransferForm = true">+ Überweisung eintragen</button>
       </div>
 
       <Modal :model-value="showTransferForm" title="Überweisung eintragen" @update:model-value="(v) => !v && closeTransferForm()">
@@ -754,7 +754,6 @@ const categoryColors = computed(() => {
 }
 
 .empty {
-  color: var(--color-text-muted);
   text-align: center;
 }
 </style>

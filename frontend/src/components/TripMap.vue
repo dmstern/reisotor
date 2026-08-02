@@ -1343,9 +1343,6 @@ watch(
   align-self: center;
 }
 
-.empty {
-  color: var(--color-text-muted);
-}
 
 /* Desktop: zurück auf den bisherigen Stand (Karte als eigene, begrenzte Box statt vollflächigem
    Hintergrund – .map-col in ExcursionsView.vue ist hier eine normale sticky Spalte, kein

@@ -355,6 +355,13 @@ button.danger {
   margin-top: var(--space-3);
 }
 
+/* Gemeinsame Leerzustands-Optik (".Noch keine X" o. Ä.) – war in ~13 Views/Components lokal
+   dupliziert, global statt pro Datei definiert. Views mit zusätzlichem lokalem Feintuning
+   (Padding, Font-Size, Text-Align) behalten dafür weiterhin eine eigene, kleinere .empty-Regel. */
+.empty {
+  color: var(--color-text-muted);
+}
+
 /* Auto-erkannte Links in gerenderten Markdown-Notizen/Tagebuch-/Ausflugs-/Spot-Texten (siehe
    utils/richText.ts) nutzen dieselbe Pill-Optik, stehen aber mitten im Fließtext statt in einer
    eigenen Aktions-Reihe – vertical-align sorgt dafür, dass sie sich sauber an der Textzeile statt
