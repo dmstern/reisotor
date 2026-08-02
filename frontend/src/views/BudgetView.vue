@@ -18,6 +18,8 @@ import Modal from '../components/Modal.vue';
 import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
 import Combobox from '../components/Combobox.vue';
+import UndoDeleteRow from '../components/UndoDeleteRow.vue';
+import { useUndoableDelete } from '../composables/useUndoableDelete';
 
 const tripStore = useTripStore();
 const tripId = tripStore.currentTripId as number;
@@ -234,9 +236,21 @@ async function submitEditExpense() {
   editingExpense.value = null;
 }
 
+// Weicher Löschvorgang serverseitig (siehe routes/budget.ts) + 60s Rückgängig-Fenster clientseitig
+// (useUndoableDelete.ts) – eigene Instanz für Ausgaben und Überweisungen (siehe unten), da beide
+// Listen unabhängig voneinander per Id nummeriert sind.
+const expenseUndo = useUndoableDelete();
+
 async function removeExpense(id: number) {
   await api.delete(`/budget/${id}`);
-  expenses.value = expenses.value.filter((e) => e.id !== id);
+  expenseUndo.markPendingDelete(id, () => {
+    expenses.value = expenses.value.filter((e) => e.id !== id);
+  });
+}
+
+async function restoreExpense(id: number) {
+  expenseUndo.clearPending(id);
+  await api.post(`/trash/budget_item/${id}/restore`);
 }
 
 // --- Überweisungen ---
@@ -264,9 +278,18 @@ function closeTransferForm() {
   transferForm.value = { from_user_id: '', to_user_id: '', amount: '', date: today(), note: '' };
 }
 
+const transferUndo = useUndoableDelete();
+
 async function removeTransfer(id: number) {
   await api.delete(`/budget/transfers/${id}`);
-  transfers.value = transfers.value.filter((t) => t.id !== id);
+  transferUndo.markPendingDelete(id, () => {
+    transfers.value = transfers.value.filter((t) => t.id !== id);
+  });
+}
+
+async function restoreTransfer(id: number) {
+  transferUndo.clearPending(id);
+  await api.post(`/trash/budget_transfer/${id}/restore`);
 }
 
 // --- Salden / Schulden ---
@@ -430,25 +453,30 @@ const categoryColors = computed(() => {
           </tr>
         </thead>
         <TransitionGroup tag="tbody" name="list">
-          <tr v-for="e in expenses" :key="e.id">
-            <td>{{ e.date || '–' }}</td>
-            <td>{{ e.title }}<span v-if="e.note" class="note"> · {{ e.note }}</span></td>
-            <td>{{ e.category || '–' }}</td>
-            <td>{{ userAvatar(e.paid_by_user_id) }} {{ userName(e.paid_by_user_id) }}</td>
-            <td>{{ e.amount.toFixed(2) }} €</td>
-            <td class="actions">
-              <template v-if="autoSourceFor(e.id)">
-                <router-link :to="autoSourceFor(e.id)!.path" class="card-action-btn">
-                  {{ autoSourceFor(e.id)!.label }}
-                </router-link>
-                <DeleteButton small disabled />
-              </template>
-              <template v-else>
-                <EditButton small @click="startEditExpense(e)" />
-                <DeleteButton small @click="removeExpense(e.id)" />
-              </template>
-            </td>
-          </tr>
+          <template v-for="e in expenses" :key="e.id">
+            <tr v-if="expenseUndo.isPending(e.id)">
+              <td colspan="6"><UndoDeleteRow :label="e.title" @undo="restoreExpense(e.id)" /></td>
+            </tr>
+            <tr v-else>
+              <td>{{ e.date || '–' }}</td>
+              <td>{{ e.title }}<span v-if="e.note" class="note"> · {{ e.note }}</span></td>
+              <td>{{ e.category || '–' }}</td>
+              <td>{{ userAvatar(e.paid_by_user_id) }} {{ userName(e.paid_by_user_id) }}</td>
+              <td>{{ e.amount.toFixed(2) }} €</td>
+              <td class="actions">
+                <template v-if="autoSourceFor(e.id)">
+                  <router-link :to="autoSourceFor(e.id)!.path" class="card-action-btn">
+                    {{ autoSourceFor(e.id)!.label }}
+                  </router-link>
+                  <DeleteButton small disabled />
+                </template>
+                <template v-else>
+                  <EditButton small @click="startEditExpense(e)" />
+                  <DeleteButton small @click="removeExpense(e.id)" />
+                </template>
+              </td>
+            </tr>
+          </template>
           <tr v-if="!expenses.length" key="empty">
             <td colspan="6" class="empty">Noch keine Bezahlungen eingetragen.</td>
           </tr>
@@ -491,15 +519,22 @@ const categoryColors = computed(() => {
           </tr>
         </thead>
         <TransitionGroup tag="tbody" name="list">
-          <tr v-for="t in transfers" :key="t.id">
-            <td>{{ t.date || '–' }}</td>
-            <td>{{ userAvatar(t.from_user_id) }} {{ userName(t.from_user_id) }}</td>
-            <td>{{ userAvatar(t.to_user_id) }} {{ userName(t.to_user_id) }}</td>
-            <td>{{ t.amount.toFixed(2) }} €</td>
-            <td class="actions">
-              <DeleteButton small @click="removeTransfer(t.id)" />
-            </td>
-          </tr>
+          <template v-for="t in transfers" :key="t.id">
+            <tr v-if="transferUndo.isPending(t.id)">
+              <td colspan="5">
+                <UndoDeleteRow :label="`${t.amount.toFixed(2)} €`" @undo="restoreTransfer(t.id)" />
+              </td>
+            </tr>
+            <tr v-else>
+              <td>{{ t.date || '–' }}</td>
+              <td>{{ userAvatar(t.from_user_id) }} {{ userName(t.from_user_id) }}</td>
+              <td>{{ userAvatar(t.to_user_id) }} {{ userName(t.to_user_id) }}</td>
+              <td>{{ t.amount.toFixed(2) }} €</td>
+              <td class="actions">
+                <DeleteButton small @click="removeTransfer(t.id)" />
+              </td>
+            </tr>
+          </template>
           <tr v-if="!transfers.length" key="empty">
             <td colspan="5" class="empty">Noch keine Überweisungen eingetragen.</td>
           </tr>

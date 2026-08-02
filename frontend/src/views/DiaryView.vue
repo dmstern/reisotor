@@ -15,6 +15,8 @@ import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
 import SocialRow from '../components/SocialRow.vue';
 import Comments from '../components/Comments.vue';
+import UndoDeleteRow from '../components/UndoDeleteRow.vue';
+import { useUndoableDelete } from '../composables/useUndoableDelete';
 
 const auth = useAuthStore();
 const tripStore = useTripStore();
@@ -23,6 +25,7 @@ const excursionsStore = useExcursionsStore();
 const spotsStore = useSpotsStore();
 const drawers = useDrawersStore();
 const entries = ref<DiaryEntry[]>([]);
+const { isPending, markPendingDelete, clearPending } = useUndoableDelete();
 const likes = ref<DiaryLike[]>([]);
 const comments = ref<DiaryComment[]>([]);
 const users = ref<User[]>([]);
@@ -233,9 +236,18 @@ async function submitEditEntry() {
   editingEntry.value = null;
 }
 
+// Weicher Löschvorgang serverseitig (siehe routes/diary.ts) + 60s Rückgängig-Fenster clientseitig
+// (useUndoableDelete.ts).
 async function removeEntry(id: number) {
   await api.delete(`/diary/${id}`);
-  entries.value = entries.value.filter((e) => e.id !== id);
+  markPendingDelete(id, () => {
+    entries.value = entries.value.filter((e) => e.id !== id);
+  });
+}
+
+async function restoreEntry(id: number) {
+  clearPending(id);
+  await api.post(`/trash/diary_entry/${id}/restore`);
 }
 
 async function toggleLike(entryId: number) {
@@ -318,61 +330,64 @@ async function removeComment(id: number) {
     </Modal>
 
     <TransitionGroup tag="div" name="list" class="entries">
-      <article class="card entry" v-for="entry in entries" :key="entry.id">
-        <header class="entry-head">
-          <span class="avatar">{{ author(entry.author_id)?.avatar ?? '❓' }}</span>
-          <div class="entry-meta">
-            <strong>{{ author(entry.author_id)?.username ?? '?' }}</strong>
-            <span class="date">{{ formatDate(entry.created_at) }}<span v-if="entry.updated_at"> (bearbeitet)</span></span>
+      <template v-for="entry in entries" :key="entry.id">
+        <UndoDeleteRow v-if="isPending(entry.id)" :label="entry.title ?? undefined" @undo="restoreEntry(entry.id)" />
+        <article v-else class="card entry">
+          <header class="entry-head">
+            <span class="avatar">{{ author(entry.author_id)?.avatar ?? '❓' }}</span>
+            <div class="entry-meta">
+              <strong>{{ author(entry.author_id)?.username ?? '?' }}</strong>
+              <span class="date">{{ formatDate(entry.created_at) }}<span v-if="entry.updated_at"> (bearbeitet)</span></span>
+            </div>
+            <div v-if="entry.author_id === auth.user?.id" class="entry-actions">
+              <EditButton small @click="startEdit(entry)" />
+              <DeleteButton small @click="removeEntry(entry.id)" />
+            </div>
+          </header>
+
+          <h3 v-if="entry.title">{{ entry.title }}</h3>
+          <div class="content richtext" v-html="renderRichText(entry.content)"></div>
+
+          <div class="gallery" v-if="entry.images.length">
+            <a v-for="(img, i) in entry.images" :key="i" :href="img" target="_blank" rel="noopener">
+              <img :src="img" :alt="`Bild ${i + 1}`" loading="lazy" />
+            </a>
           </div>
-          <div v-if="entry.author_id === auth.user?.id" class="entry-actions">
-            <EditButton small @click="startEdit(entry)" />
-            <DeleteButton small @click="removeEntry(entry.id)" />
-          </div>
-        </header>
 
-        <h3 v-if="entry.title">{{ entry.title }}</h3>
-        <div class="content richtext" v-html="renderRichText(entry.content)"></div>
+          <SocialRow
+            :like-count="likesFor(entry.id).length"
+            :liked="likedByMe(entry.id)"
+            :comment-count="commentsFor(entry.id).length"
+            @toggle-like="toggleLike(entry.id)"
+            @toggle-comments="toggleComments(entry.id)"
+          />
 
-        <div class="gallery" v-if="entry.images.length">
-          <a v-for="(img, i) in entry.images" :key="i" :href="img" target="_blank" rel="noopener">
-            <img :src="img" :alt="`Bild ${i + 1}`" loading="lazy" />
-          </a>
-        </div>
-
-        <SocialRow
-          :like-count="likesFor(entry.id).length"
-          :liked="likedByMe(entry.id)"
-          :comment-count="commentsFor(entry.id).length"
-          @toggle-like="toggleLike(entry.id)"
-          @toggle-comments="toggleComments(entry.id)"
-        />
-
-        <div class="excursion-links" v-if="excursionsForEntry(entry).length">
-          <button
-            v-for="ex in excursionsForEntry(entry)"
-            :key="ex.id"
-            type="button"
-            class="excursion-chip"
-            @click="drawers.openExcursions()"
-          >
-            <span
-              class="excursion-chip-img"
-              :style="ex.image_url ? { backgroundImage: `url(${ex.image_url})` } : {}"
+          <div class="excursion-links" v-if="excursionsForEntry(entry).length">
+            <button
+              v-for="ex in excursionsForEntry(entry)"
+              :key="ex.id"
+              type="button"
+              class="excursion-chip"
+              @click="drawers.openExcursions()"
             >
-              <span v-if="!ex.image_url">🎒</span>
-            </span>
-            <span class="excursion-chip-title">{{ ex.title }}</span>
-          </button>
-        </div>
+              <span
+                class="excursion-chip-img"
+                :style="ex.image_url ? { backgroundImage: `url(${ex.image_url})` } : {}"
+              >
+                <span v-if="!ex.image_url">🎒</span>
+              </span>
+              <span class="excursion-chip-title">{{ ex.title }}</span>
+            </button>
+          </div>
 
-        <Comments
-          v-if="openComments.has(entry.id)"
-          :comments="commentItemsFor(entry.id)"
-          @submit="(content) => submitComment(entry.id, content)"
-          @remove="removeComment"
-        />
-      </article>
+          <Comments
+            v-if="openComments.has(entry.id)"
+            :comments="commentItemsFor(entry.id)"
+            @submit="(content) => submitComment(entry.id, content)"
+            @remove="removeComment"
+          />
+        </article>
+      </template>
     </TransitionGroup>
     <p v-if="!entries.length" class="empty">Noch keine Tagebuch-Einträge.</p>
 

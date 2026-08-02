@@ -72,7 +72,9 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: { trip_id?: string } }>('/diary', async (req, reply) => {
     if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
     const rows = db
-      .prepare('SELECT * FROM diary_entries WHERE trip_id = ? ORDER BY created_at DESC, id DESC')
+      .prepare(
+        'SELECT * FROM diary_entries WHERE trip_id = ? AND deleted_at IS NULL ORDER BY created_at DESC, id DESC',
+      )
       .all(req.query.trip_id) as EntryRow[];
     const excursionIds = excursionIdsFor(rows.map((r) => r.id));
     return rows.map((row) => serializeEntry(row, excursionIds.get(row.id) ?? []));
@@ -154,7 +156,9 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
     if (entry.author_id !== req.session.userId) {
       return reply.code(403).send({ error: 'Nur die Autorin/der Autor kann diesen Beitrag löschen' });
     }
-    db.prepare('DELETE FROM diary_entries WHERE id = ?').run(req.params.id);
+    // Weicher Löschvorgang (Papierkorb, routes/trash.ts): setzt nur deleted_at statt die Zeile
+    // wirklich zu entfernen.
+    db.prepare('UPDATE diary_entries SET deleted_at = ? WHERE id = ?').run(new Date().toISOString(), req.params.id);
     return reply.code(204).send();
   });
 

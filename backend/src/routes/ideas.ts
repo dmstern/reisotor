@@ -66,7 +66,9 @@ function scheduleDatesForIdeas(ideaIds: number[]): Map<number, string> {
   if (!ideaIds.length) return map;
   const placeholders = ideaIds.map(() => '?').join(',');
   const rows = db
-    .prepare(`SELECT idea_id, date FROM schedule_items WHERE idea_id IN (${placeholders})`)
+    .prepare(
+      `SELECT idea_id, date FROM schedule_items WHERE idea_id IN (${placeholders}) AND deleted_at IS NULL`,
+    )
     .all(...ideaIds) as { idea_id: number; date: string }[];
   for (const row of rows) map.set(row.idea_id, row.date);
   return map;
@@ -78,9 +80,9 @@ function scheduleDatesForIdeas(ideaIds: number[]): Map<number, string> {
 // setDate) laufen über denselben PUT/POST /ideas-Endpunkt und landen daher hier – EIN Mechanismus
 // statt zweier, wie es vor der Einführung des separaten "Ein-Spot-Ausflug"-Hacks für Spots war.
 function setIdeaScheduleDate(ideaId: number, tripId: number, title: string, date: string | null | undefined) {
-  const existing = db.prepare('SELECT id FROM schedule_items WHERE idea_id = ?').get(ideaId) as
-    | { id: number }
-    | undefined;
+  const existing = db
+    .prepare('SELECT id FROM schedule_items WHERE idea_id = ? AND deleted_at IS NULL')
+    .get(ideaId) as { id: number } | undefined;
   if (date) {
     if (existing) {
       db.prepare('UPDATE schedule_items SET date = ? WHERE id = ?').run(date, existing.id);
@@ -104,7 +106,9 @@ function serializeIdea(row: IdeaRow, stationKeys: string[], date: string | null)
 export const ideasRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: { trip_id?: string } }>('/ideas', async (req, reply) => {
     if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
-    const rows = db.prepare('SELECT * FROM ideas WHERE trip_id = ? ORDER BY id DESC').all(req.query.trip_id) as IdeaRow[];
+    const rows = db
+      .prepare('SELECT * FROM ideas WHERE trip_id = ? AND deleted_at IS NULL ORDER BY id DESC')
+      .all(req.query.trip_id) as IdeaRow[];
     const stationKeys = stationKeysFor(rows.map((r) => r.id));
     const dates = scheduleDatesForIdeas(rows.map((r) => r.id));
     return rows.map((row) => serializeIdea(row, stationKeys.get(row.id) ?? [], dates.get(row.id) ?? null));
@@ -142,15 +146,16 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
     return serializeIdea(row, station_keys ?? [], date ?? null);
   });
 
+  // Weicher Löschvorgang (Papierkorb, routes/trash.ts): setzt nur deleted_at statt die Zeilen
+  // wirklich zu entfernen. Der verknüpfte Kalender-Termin (schedule_items.idea_id) wird dabei
+  // mit "weggelöscht" – sonst bliebe er als Karteileiche mit einem im Papierkorb liegenden Ausflug
+  // im Kalender sichtbar. routes/trash.ts's restore() macht diese Kopplung beim Wiederherstellen
+  // wieder rückgängig (siehe dort).
   app.delete<{ Params: { id: string } }>('/ideas/:id', async (req, reply) => {
-    // Kein ON DELETE CASCADE auf schedule_items.idea_id (Spalte existierte schon vor dieser
-    // Verknüpfung, SQLite kann eine FK-Aktion nicht nachträglich per ALTER TABLE ergänzen) – der
-    // verknüpfte Kalender-Termin wird deshalb hier explizit mitgelöscht, bevor der Ausflug selbst
-    // verschwindet (sonst würde die FK-Constraint mit aktivem `foreign_keys = ON` den Delete
-    // blockieren).
     const deleteWithSchedule = db.transaction((id: string) => {
-      db.prepare('DELETE FROM schedule_items WHERE idea_id = ?').run(id);
-      return db.prepare('DELETE FROM ideas WHERE id = ?').run(id);
+      const now = new Date().toISOString();
+      db.prepare('UPDATE schedule_items SET deleted_at = ? WHERE idea_id = ? AND deleted_at IS NULL').run(now, id);
+      return db.prepare('UPDATE ideas SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL').run(now, id);
     });
     const result = deleteWithSchedule(req.params.id);
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
@@ -175,7 +180,8 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
       .prepare(
         `SELECT ideas.id AS id FROM ideas
          JOIN schedule_items ON schedule_items.idea_id = ideas.id
-         WHERE ideas.trip_id = ? AND schedule_items.date = ?`,
+         WHERE ideas.trip_id = ? AND ideas.deleted_at IS NULL AND schedule_items.deleted_at IS NULL
+           AND schedule_items.date = ?`,
       )
       .all(trip_id, date) as { id: number }[];
 
@@ -197,7 +203,9 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
       return serializeIdea(row, [stationKey], date);
     }
 
-    const spot = db.prepare('SELECT title FROM spots WHERE id = ?').get(spot_id) as { title: string } | undefined;
+    const spot = db.prepare('SELECT title FROM spots WHERE id = ? AND deleted_at IS NULL').get(spot_id) as
+      | { title: string }
+      | undefined;
     if (!spot) return reply.code(404).send({ error: 'Spot nicht gefunden' });
 
     const result = db

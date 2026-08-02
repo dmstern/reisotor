@@ -12,11 +12,14 @@ import TravelDetailDialog from '../components/TravelDetailDialog.vue';
 import LocationPicker from '../components/LocationPicker.vue';
 import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
+import UndoDeleteRow from '../components/UndoDeleteRow.vue';
+import { useUndoableDelete } from '../composables/useUndoableDelete';
 
 const tripStore = useTripStore();
 const drawers = useDrawersStore();
 const tripId = tripStore.currentTripId as number;
 const items = ref<TravelItem[]>([]);
+const { isPending, markPendingDelete, clearPending } = useUndoableDelete();
 const places = ref<TravelPlace[]>([]);
 const users = ref<User[]>([]);
 const loading = ref(true);
@@ -267,9 +270,19 @@ watch(manualToPinEdit, (pin) => {
   if (pin && toLocationErrorEdit.value) submitEdit();
 });
 
+// Weicher Löschvorgang serverseitig (siehe routes/travel.ts) + 60s Rückgängig-Fenster clientseitig
+// (useUndoableDelete.ts) – siehe gleiches Muster in AccommodationView.vue.
 async function remove(id: number) {
   await api.delete(`/travel/${id}`);
-  items.value = items.value.filter((i) => i.id !== id);
+  markPendingDelete(id, () => {
+    items.value = items.value.filter((i) => i.id !== id);
+  });
+  drawers.touchLocations();
+}
+
+async function restore(id: number) {
+  clearPending(id);
+  await api.post(`/trash/travel_item/${id}/restore`);
   drawers.touchLocations();
 }
 
@@ -593,31 +606,34 @@ function showDetailToOnMap() {
     </Modal>
 
     <TransitionGroup tag="div" name="list" class="masonry cards">
-      <div class="card travel-card" v-for="item in items" :key="item.id" @click="openDetail(item)">
-        <div class="travel-head">
-          <h3>{{ typeIcon(item.type) }} {{ item.title }}</h3>
-          <div class="actions">
-            <EditButton small @click.stop="startEdit(item)" />
-            <DeleteButton small @click.stop="remove(item.id)" />
+      <template v-for="item in items" :key="item.id">
+        <UndoDeleteRow v-if="isPending(item.id)" :label="item.title" @undo="restore(item.id)" />
+        <div v-else class="card travel-card" @click="openDetail(item)">
+          <div class="travel-head">
+            <h3>{{ typeIcon(item.type) }} {{ item.title }}</h3>
+            <div class="actions">
+              <EditButton small @click.stop="startEdit(item)" />
+              <DeleteButton small @click.stop="remove(item.id)" />
+            </div>
           </div>
-        </div>
-        <span v-if="item.role" class="role-badge">
-          {{ TRAVEL_ROLE_META[item.role].icon }} {{ TRAVEL_ROLE_META[item.role].label }}
-        </span>
-        <p v-if="item.from_location || item.to_location" class="route">
-          {{ placeLabel(item.from_place_id) ?? item.from_location ?? '?' }} → {{ placeLabel(item.to_place_id) ?? item.to_location ?? '?' }}
-        </p>
-        <p v-if="item.date || item.departure_time">
-          🗓️ {{ item.date || '' }}
-          <span v-if="item.departure_time">
-            · {{ item.departure_time }}<span v-if="item.arrival_time">–{{ item.arrival_time }}</span> Uhr
+          <span v-if="item.role" class="role-badge">
+            {{ TRAVEL_ROLE_META[item.role].icon }} {{ TRAVEL_ROLE_META[item.role].label }}
           </span>
-          <span v-if="travelDuration(item)" class="duration">({{ travelDuration(item) }})</span>
-        </p>
-        <button type="button" class="card-action-btn return-btn" @click.stop="createReturnLeg(item)">
-          🔄 Rückreise anlegen
-        </button>
-      </div>
+          <p v-if="item.from_location || item.to_location" class="route">
+            {{ placeLabel(item.from_place_id) ?? item.from_location ?? '?' }} → {{ placeLabel(item.to_place_id) ?? item.to_location ?? '?' }}
+          </p>
+          <p v-if="item.date || item.departure_time">
+            🗓️ {{ item.date || '' }}
+            <span v-if="item.departure_time">
+              · {{ item.departure_time }}<span v-if="item.arrival_time">–{{ item.arrival_time }}</span> Uhr
+            </span>
+            <span v-if="travelDuration(item)" class="duration">({{ travelDuration(item) }})</span>
+          </p>
+          <button type="button" class="card-action-btn return-btn" @click.stop="createReturnLeg(item)">
+            🔄 Rückreise anlegen
+          </button>
+        </div>
+      </template>
     </TransitionGroup>
     <p v-if="!items.length" class="empty">Noch keine Reise-Infos eingetragen.</p>
 

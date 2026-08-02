@@ -7,11 +7,14 @@ import { useTripStore } from '../stores/trip';
 import PackingItemRow from '../components/PackingItem.vue';
 import Modal from '../components/Modal.vue';
 import Combobox from '../components/Combobox.vue';
+import UndoDeleteRow from '../components/UndoDeleteRow.vue';
+import { useUndoableDelete } from '../composables/useUndoableDelete';
 
 const auth = useAuthStore();
 const tripStore = useTripStore();
 const tripId = tripStore.currentTripId as number;
 const items = ref<PackingItem[]>([]);
+const { isPending, markPendingDelete, clearPending } = useUndoableDelete();
 const users = ref<User[]>([]);
 const loading = ref(true);
 
@@ -160,9 +163,18 @@ async function submitEdit() {
   editingItem.value = null;
 }
 
+// Weicher Löschvorgang serverseitig (siehe routes/packing.ts) + 60s Rückgängig-Fenster clientseitig
+// (useUndoableDelete.ts).
 async function remove(id: number) {
   await api.delete(`/packing/${id}`);
-  items.value = items.value.filter((i) => i.id !== id);
+  markPendingDelete(id, () => {
+    items.value = items.value.filter((i) => i.id !== id);
+  });
+}
+
+async function restore(id: number) {
+  clearPending(id);
+  await api.post(`/trash/packing_item/${id}/restore`);
 }
 
 async function quickAdd(list: ListGroup) {
@@ -221,14 +233,16 @@ async function quickAdd(list: ListGroup) {
           <template v-for="sub in catGroup.subgroups" :key="sub.subcategory ?? '_'">
             <h4 v-if="sub.subcategory" class="subcategory">{{ sub.subcategory }}</h4>
             <TransitionGroup tag="ul" name="list" class="list">
-              <PackingItemRow
-                v-for="item in sub.items"
-                :key="item.id"
-                :item="item"
-                @update-counts="updateCounts"
-                @remove="remove"
-                @edit="startEdit"
-              />
+              <template v-for="item in sub.items" :key="item.id">
+                <li v-if="isPending(item.id)"><UndoDeleteRow :label="item.label" @undo="restore(item.id)" /></li>
+                <PackingItemRow
+                  v-else
+                  :item="item"
+                  @update-counts="updateCounts"
+                  @remove="remove"
+                  @edit="startEdit"
+                />
+              </template>
             </TransitionGroup>
           </template>
         </div>

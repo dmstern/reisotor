@@ -81,7 +81,7 @@ export const accommodationRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: { trip_id?: string } }>('/accommodation', async (req, reply) => {
     if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
     return db
-      .prepare('SELECT * FROM accommodation WHERE trip_id = ? ORDER BY start_date, id')
+      .prepare('SELECT * FROM accommodation WHERE trip_id = ? AND deleted_at IS NULL ORDER BY start_date, id')
       .all(req.query.trip_id);
   });
 
@@ -173,19 +173,25 @@ export const accommodationRoutes: FastifyPluginAsync = async (app) => {
     return db.prepare('SELECT * FROM accommodation WHERE id = ?').get(req.params.id);
   });
 
+  // Weicher Löschvorgang (Papierkorb, routes/trash.ts): setzt nur deleted_at statt die Zeile
+  // wirklich zu entfernen. Die verknüpfte Budget-Ausgabe (budget_expense_id) wird dabei mit
+  // "weggelöscht" – sonst bliebe sie als Ausgabe ohne sichtbare Unterkunft im Budget stehen.
+  // routes/trash.ts's restore() macht das beim Wiederherstellen wieder rückgängig. Verwaiste
+  // excursion_spots-Stationsreferenzen bleiben bewusst bestehen (siehe routes/spots.ts).
   app.delete<{ Params: { id: string } }>('/accommodation/:id', async (req, reply) => {
-    const existing = db.prepare('SELECT * FROM accommodation WHERE id = ?').get(req.params.id) as
-      | AccommodationRow
-      | undefined;
+    const existing = db.prepare('SELECT * FROM accommodation WHERE id = ? AND deleted_at IS NULL').get(
+      req.params.id,
+    ) as AccommodationRow | undefined;
     if (!existing) return reply.code(404).send({ error: 'Nicht gefunden' });
 
-    db.prepare('DELETE FROM accommodation WHERE id = ?').run(req.params.id);
+    const now = new Date().toISOString();
+    db.prepare('UPDATE accommodation SET deleted_at = ? WHERE id = ?').run(now, req.params.id);
     if (existing.budget_expense_id) {
-      db.prepare('DELETE FROM budget_items WHERE id = ?').run(existing.budget_expense_id);
+      db.prepare('UPDATE budget_items SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL').run(
+        now,
+        existing.budget_expense_id,
+      );
     }
-    // Verwaiste Stationsreferenzen (Ausflüge, die diese Unterkunft als Station eingeplant hatten)
-    // mit entfernen – siehe gleiches Vorgehen in routes/spots.ts.
-    db.prepare('DELETE FROM excursion_spots WHERE station_key = ?').run(`accommodation-${req.params.id}`);
     return reply.code(204).send();
   });
 };

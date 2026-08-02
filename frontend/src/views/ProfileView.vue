@@ -320,6 +320,15 @@ async function onImportFileSelected(event: Event) {
     </div>
 
     <div class="card">
+      <h2>🗑️ Papierkorb</h2>
+      <p class="hint">
+        Gelöschte Termine, Ausflüge, Spots und mehr bleiben eine Weile hier erhalten und lassen sich
+        wiederherstellen.
+      </p>
+      <router-link to="/trash" class="card-action-btn">Papierkorb öffnen</router-link>
+    </div>
+
+    <div class="card">
       <h2>Passwort ändern</h2>
       <form class="form" @submit.prevent="changePassword">
         <div class="field">

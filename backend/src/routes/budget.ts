@@ -47,7 +47,7 @@ export const budgetRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: { trip_id?: string } }>('/budget', async (req, reply) => {
     if (!requireTripId(req.query, reply)) return;
     return db
-      .prepare('SELECT * FROM budget_items WHERE trip_id = ? ORDER BY date DESC, id DESC')
+      .prepare('SELECT * FROM budget_items WHERE trip_id = ? AND deleted_at IS NULL ORDER BY date DESC, id DESC')
       .all(req.query.trip_id);
   });
 
@@ -75,8 +75,12 @@ export const budgetRoutes: FastifyPluginAsync = async (app) => {
     return db.prepare('SELECT * FROM budget_items WHERE id = ?').get(req.params.id);
   });
 
+  // Weicher Löschvorgang (Papierkorb, routes/trash.ts): setzt nur deleted_at statt die Zeile
+  // wirklich zu entfernen.
   app.delete<{ Params: { id: string } }>('/budget/:id', async (req, reply) => {
-    const result = db.prepare('DELETE FROM budget_items WHERE id = ?').run(req.params.id);
+    const result = db
+      .prepare('UPDATE budget_items SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL')
+      .run(new Date().toISOString(), req.params.id);
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
     return reply.code(204).send();
   });
@@ -151,7 +155,7 @@ export const budgetRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: { trip_id?: string } }>('/budget/transfers', async (req, reply) => {
     if (!requireTripId(req.query, reply)) return;
     return db
-      .prepare('SELECT * FROM budget_transfers WHERE trip_id = ? ORDER BY date DESC, id DESC')
+      .prepare('SELECT * FROM budget_transfers WHERE trip_id = ? AND deleted_at IS NULL ORDER BY date DESC, id DESC')
       .all(req.query.trip_id);
   });
 
@@ -177,8 +181,12 @@ export const budgetRoutes: FastifyPluginAsync = async (app) => {
     return db.prepare('SELECT * FROM budget_transfers WHERE id = ?').get(req.params.id);
   });
 
+  // Weicher Löschvorgang (Papierkorb, routes/trash.ts): setzt nur deleted_at statt die Zeile
+  // wirklich zu entfernen.
   app.delete<{ Params: { id: string } }>('/budget/transfers/:id', async (req, reply) => {
-    const result = db.prepare('DELETE FROM budget_transfers WHERE id = ?').run(req.params.id);
+    const result = db
+      .prepare('UPDATE budget_transfers SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL')
+      .run(new Date().toISOString(), req.params.id);
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
     return reply.code(204).send();
   });

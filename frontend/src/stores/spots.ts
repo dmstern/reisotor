@@ -3,6 +3,7 @@ import { ref, watch } from 'vue';
 import { api } from '../api/client';
 import type { Spot, SpotComment, SpotLike } from '../api/types';
 import { useTripStore } from './trip';
+import { useUndoableDelete } from '../composables/useUndoableDelete';
 
 export interface SpotFormData {
   trip_id: number;
@@ -25,6 +26,7 @@ export const useSpotsStore = defineStore('spots', () => {
   const spotLikes = ref<SpotLike[]>([]);
   const spotComments = ref<SpotComment[]>([]);
   const loaded = ref(false);
+  const { isPending, markPendingDelete, clearPending } = useUndoableDelete();
 
   async function load() {
     const tripId = tripStore.currentTripId;
@@ -74,9 +76,18 @@ export const useSpotsStore = defineStore('spots', () => {
     return updated;
   }
 
+  // Weicher Löschvorgang serverseitig (siehe routes/spots.ts) + 60s Rückgängig-Fenster clientseitig
+  // (useUndoableDelete.ts) – siehe gleiches Muster in stores/schedule.ts.
   async function remove(id: number) {
     await api.delete(`/spots/${id}`);
-    spots.value = spots.value.filter((s) => s.id !== id);
+    markPendingDelete(id, () => {
+      spots.value = spots.value.filter((s) => s.id !== id);
+    });
+  }
+
+  async function restore(id: number) {
+    clearPending(id);
+    await api.post(`/trash/spot/${id}/restore`);
   }
 
   async function toggleLike(spotId: number, userId: number) {
@@ -112,6 +123,8 @@ export const useSpotsStore = defineStore('spots', () => {
     create,
     update,
     remove,
+    restore,
+    isPending,
     toggleLike,
     submitComment,
     removeComment,

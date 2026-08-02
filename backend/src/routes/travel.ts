@@ -229,7 +229,9 @@ export const travelRoutes: FastifyPluginAsync = async (app) => {
 
   app.get<{ Querystring: { trip_id?: string } }>('/travel', async (req, reply) => {
     if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
-    return db.prepare('SELECT * FROM travel_items WHERE trip_id = ? ORDER BY date, id').all(req.query.trip_id);
+    return db
+      .prepare('SELECT * FROM travel_items WHERE trip_id = ? AND deleted_at IS NULL ORDER BY date, id')
+      .all(req.query.trip_id);
   });
 
   app.post<{ Body: TravelBody }>('/travel', async (req, reply) => {
@@ -331,23 +333,24 @@ export const travelRoutes: FastifyPluginAsync = async (app) => {
     return db.prepare('SELECT * FROM travel_items WHERE id = ?').get(req.params.id);
   });
 
+  // Weicher Löschvorgang (Papierkorb, routes/trash.ts): setzt nur deleted_at statt die Zeile
+  // wirklich zu entfernen. Die verknüpfte Budget-Ausgabe (budget_expense_id) wird dabei mit
+  // "weggelöscht" (siehe gleiches Vorgehen in routes/accommodation.ts). Verwaiste
+  // excursion_spots-Stationsreferenzen bleiben bewusst bestehen (siehe routes/spots.ts).
   app.delete<{ Params: { id: string } }>('/travel/:id', async (req, reply) => {
-    const existing = db.prepare('SELECT * FROM travel_items WHERE id = ?').get(req.params.id) as
-      | TravelRow
-      | undefined;
+    const existing = db.prepare('SELECT * FROM travel_items WHERE id = ? AND deleted_at IS NULL').get(
+      req.params.id,
+    ) as TravelRow | undefined;
     if (!existing) return reply.code(404).send({ error: 'Nicht gefunden' });
 
-    db.prepare('DELETE FROM travel_items WHERE id = ?').run(req.params.id);
+    const now = new Date().toISOString();
+    db.prepare('UPDATE travel_items SET deleted_at = ? WHERE id = ?').run(now, req.params.id);
     if (existing.budget_expense_id) {
-      db.prepare('DELETE FROM budget_items WHERE id = ?').run(existing.budget_expense_id);
+      db.prepare('UPDATE budget_items SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL').run(
+        now,
+        existing.budget_expense_id,
+      );
     }
-    // Verwaiste Stationsreferenzen (Ausflüge, die den Abflug-/Ankunftsort dieses Eintrags als
-    // Station eingeplant hatten) mit entfernen – siehe gleiches Vorgehen in routes/spots.ts. Beide
-    // Seiten (from/to) gehören zum selben Eintrag, daher hier immer beide Keys entfernen.
-    db.prepare('DELETE FROM excursion_spots WHERE station_key IN (?, ?)').run(
-      `travel-from-${req.params.id}`,
-      `travel-to-${req.params.id}`,
-    );
     return reply.code(204).send();
   });
 };

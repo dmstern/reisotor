@@ -15,7 +15,7 @@ export const notesRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: { trip_id?: string } }>('/notes', async (req, reply) => {
     if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
     return db
-      .prepare('SELECT * FROM notes WHERE trip_id = ? ORDER BY created_at DESC, id DESC')
+      .prepare('SELECT * FROM notes WHERE trip_id = ? AND deleted_at IS NULL ORDER BY created_at DESC, id DESC')
       .all(req.query.trip_id);
   });
 
@@ -39,8 +39,12 @@ export const notesRoutes: FastifyPluginAsync = async (app) => {
     return db.prepare('SELECT * FROM notes WHERE id = ?').get(req.params.id);
   });
 
+  // Weicher Löschvorgang (Papierkorb, routes/trash.ts): setzt nur deleted_at statt die Zeile
+  // wirklich zu entfernen.
   app.delete<{ Params: { id: string } }>('/notes/:id', async (req, reply) => {
-    const result = db.prepare('DELETE FROM notes WHERE id = ?').run(req.params.id);
+    const result = db
+      .prepare('UPDATE notes SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL')
+      .run(new Date().toISOString(), req.params.id);
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
     return reply.code(204).send();
   });
@@ -51,7 +55,7 @@ export const notesRoutes: FastifyPluginAsync = async (app) => {
       .prepare(
         `SELECT note_likes.* FROM note_likes
          JOIN notes ON notes.id = note_likes.note_id
-         WHERE notes.trip_id = ?`,
+         WHERE notes.trip_id = ? AND notes.deleted_at IS NULL`,
       )
       .all(req.query.trip_id);
   });
@@ -62,7 +66,7 @@ export const notesRoutes: FastifyPluginAsync = async (app) => {
       .prepare(
         `SELECT note_comments.* FROM note_comments
          JOIN notes ON notes.id = note_comments.note_id
-         WHERE notes.trip_id = ?
+         WHERE notes.trip_id = ? AND notes.deleted_at IS NULL
          ORDER BY note_comments.created_at ASC, note_comments.id ASC`,
       )
       .all(req.query.trip_id);

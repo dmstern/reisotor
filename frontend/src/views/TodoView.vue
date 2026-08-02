@@ -7,10 +7,13 @@ import { PERIOD_META, computePeriod } from '../utils/period';
 import Modal from '../components/Modal.vue';
 import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
+import UndoDeleteRow from '../components/UndoDeleteRow.vue';
+import { useUndoableDelete } from '../composables/useUndoableDelete';
 
 const tripStore = useTripStore();
 const tripId = tripStore.currentTripId as number;
 const items = ref<TodoItem[]>([]);
+const { isPending, markPendingDelete, clearPending } = useUndoableDelete();
 const users = ref<User[]>([]);
 const loading = ref(true);
 
@@ -176,9 +179,18 @@ async function submitEdit() {
   editingItem.value = null;
 }
 
+// Weicher Löschvorgang serverseitig (siehe routes/todos.ts) + 60s Rückgängig-Fenster clientseitig
+// (useUndoableDelete.ts).
 async function remove(id: number) {
   await api.delete(`/todos/${id}`);
-  items.value = items.value.filter((i) => i.id !== id);
+  markPendingDelete(id, () => {
+    items.value = items.value.filter((i) => i.id !== id);
+  });
+}
+
+async function restore(id: number) {
+  clearPending(id);
+  await api.post(`/trash/todo/${id}/restore`);
 }
 
 function formatDate(d: string | null) {
@@ -234,25 +246,30 @@ function isOverdue(item: TodoItem) {
         <h2>{{ group.label }}</h2>
         <div class="card">
           <TransitionGroup tag="ul" name="list" class="list">
-            <li v-for="item in group.items" :key="item.id" class="row" :class="{ 'row-done': item.done }">
-              <label class="check">
-                <input type="checkbox" :checked="!!item.done" @change="toggleDone(item)" />
-                <span class="title" :class="{ 'text-done': item.done }">{{ item.title }}</span>
-              </label>
-              <span class="priority" :title="PRIORITY_META[item.priority].label">{{ PRIORITY_META[item.priority].icon }}</span>
-              <span v-if="item.due_date" class="due" :class="{ overdue: isOverdue(item) }">
-                📅 {{ formatDate(item.due_date) }}
-              </span>
-              <span v-if="groupBy !== 'assignee' && userLabel(item.assigned_to_user_id)" class="assignee">{{
-                userLabel(item.assigned_to_user_id)
-              }}</span>
-              <span v-if="groupBy !== 'period' && periodFor(item)" class="assignee">🗓️ {{ PERIOD_META[periodFor(item)!] }}</span>
-              <span v-if="item.note" class="note">{{ item.note }}</span>
-              <div class="row-actions">
-                <EditButton small @click="startEdit(item)" />
-                <DeleteButton small @click="remove(item.id)" />
-              </div>
-            </li>
+            <template v-for="item in group.items" :key="item.id">
+              <li v-if="isPending(item.id)" class="row">
+                <UndoDeleteRow :label="item.title" @undo="restore(item.id)" />
+              </li>
+              <li v-else class="row" :class="{ 'row-done': item.done }">
+                <label class="check">
+                  <input type="checkbox" :checked="!!item.done" @change="toggleDone(item)" />
+                  <span class="title" :class="{ 'text-done': item.done }">{{ item.title }}</span>
+                </label>
+                <span class="priority" :title="PRIORITY_META[item.priority].label">{{ PRIORITY_META[item.priority].icon }}</span>
+                <span v-if="item.due_date" class="due" :class="{ overdue: isOverdue(item) }">
+                  📅 {{ formatDate(item.due_date) }}
+                </span>
+                <span v-if="groupBy !== 'assignee' && userLabel(item.assigned_to_user_id)" class="assignee">{{
+                  userLabel(item.assigned_to_user_id)
+                }}</span>
+                <span v-if="groupBy !== 'period' && periodFor(item)" class="assignee">🗓️ {{ PERIOD_META[periodFor(item)!] }}</span>
+                <span v-if="item.note" class="note">{{ item.note }}</span>
+                <div class="row-actions">
+                  <EditButton small @click="startEdit(item)" />
+                  <DeleteButton small @click="remove(item.id)" />
+                </div>
+              </li>
+            </template>
             <li v-if="!group.items.length" :key="`${group.key}-empty`" class="empty">Noch keine Aufgaben.</li>
           </TransitionGroup>
         </div>

@@ -10,11 +10,14 @@ import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
 import SocialRow from '../components/SocialRow.vue';
 import Comments from '../components/Comments.vue';
+import UndoDeleteRow from '../components/UndoDeleteRow.vue';
+import { useUndoableDelete } from '../composables/useUndoableDelete';
 
 const auth = useAuthStore();
 const tripStore = useTripStore();
 const tripId = tripStore.currentTripId as number;
 const notes = ref<Note[]>([]);
+const { isPending, markPendingDelete, clearPending } = useUndoableDelete();
 const users = ref<User[]>([]);
 const likes = ref<NoteLike[]>([]);
 const comments = ref<NoteComment[]>([]);
@@ -132,14 +135,23 @@ async function submitEdit() {
   editingNote.value = null;
 }
 
+// Weicher Löschvorgang serverseitig (siehe routes/notes.ts) + 60s Rückgängig-Fenster clientseitig
+// (useUndoableDelete.ts).
 async function remove(id: number) {
   error.value = '';
   try {
     await api.delete(`/notes/${id}`);
-    notes.value = notes.value.filter((n) => n.id !== id);
+    markPendingDelete(id, () => {
+      notes.value = notes.value.filter((n) => n.id !== id);
+    });
   } catch (err) {
     error.value = err instanceof ApiError ? err.message : 'Notiz konnte nicht gelöscht werden.';
   }
+}
+
+async function restore(id: number) {
+  clearPending(id);
+  await api.post(`/trash/note/${id}/restore`);
 }
 </script>
 
@@ -166,30 +178,33 @@ async function remove(id: number) {
     </Modal>
 
     <TransitionGroup tag="div" name="list" class="masonry cards">
-      <div class="card note-card" v-for="note in notes" :key="note.id">
-        <div class="note-head">
-          <h3 v-if="note.title">{{ note.title }}</h3>
-          <div class="note-actions">
-            <EditButton small @click="startEdit(note)" />
-            <DeleteButton small @click="remove(note.id)" />
+      <template v-for="note in notes" :key="note.id">
+        <UndoDeleteRow v-if="isPending(note.id)" :label="note.title ?? undefined" @undo="restore(note.id)" />
+        <div v-else class="card note-card">
+          <div class="note-head">
+            <h3 v-if="note.title">{{ note.title }}</h3>
+            <div class="note-actions">
+              <EditButton small @click="startEdit(note)" />
+              <DeleteButton small @click="remove(note.id)" />
+            </div>
           </div>
+          <div class="content richtext" v-html="renderRichText(note.content)"></div>
+          <p class="meta">{{ authorLabel(note.created_by) }} · {{ formatDate(note.updated_at ?? note.created_at) }}</p>
+          <SocialRow
+            :like-count="likesFor(note.id).length"
+            :liked="likedByMe(note.id)"
+            :comment-count="commentsFor(note.id).length"
+            @toggle-like="toggleLike(note.id)"
+            @toggle-comments="toggleComments(note.id)"
+          />
+          <Comments
+            v-if="openComments.has(note.id)"
+            :comments="commentItemsFor(note.id)"
+            @submit="(content) => submitComment(note.id, content)"
+            @remove="removeComment"
+          />
         </div>
-        <div class="content richtext" v-html="renderRichText(note.content)"></div>
-        <p class="meta">{{ authorLabel(note.created_by) }} · {{ formatDate(note.updated_at ?? note.created_at) }}</p>
-        <SocialRow
-          :like-count="likesFor(note.id).length"
-          :liked="likedByMe(note.id)"
-          :comment-count="commentsFor(note.id).length"
-          @toggle-like="toggleLike(note.id)"
-          @toggle-comments="toggleComments(note.id)"
-        />
-        <Comments
-          v-if="openComments.has(note.id)"
-          :comments="commentItemsFor(note.id)"
-          @submit="(content) => submitComment(note.id, content)"
-          @remove="removeComment"
-        />
-      </div>
+      </template>
     </TransitionGroup>
     <p v-if="!notes.length" class="empty">Noch keine Notizen.</p>
 

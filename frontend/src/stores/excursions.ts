@@ -3,6 +3,7 @@ import { ref, watch } from 'vue';
 import { api } from '../api/client';
 import type { Excursion } from '../api/types';
 import { useTripStore } from './trip';
+import { useUndoableDelete } from '../composables/useUndoableDelete';
 
 export interface ExcursionFormData {
   title: string;
@@ -20,6 +21,7 @@ export const useExcursionsStore = defineStore('excursions', () => {
   const tripStore = useTripStore();
   const excursions = ref<Excursion[]>([]);
   const loaded = ref(false);
+  const { isPending, markPendingDelete, clearPending } = useUndoableDelete();
 
   async function load() {
     const tripId = tripStore.currentTripId;
@@ -47,9 +49,18 @@ export const useExcursionsStore = defineStore('excursions', () => {
     return updated;
   }
 
+  // Weicher Löschvorgang serverseitig (siehe routes/ideas.ts) + 60s Rückgängig-Fenster clientseitig
+  // (useUndoableDelete.ts) – siehe gleiches Muster in stores/schedule.ts.
   async function remove(id: number) {
     await api.delete(`/ideas/${id}`);
-    excursions.value = excursions.value.filter((e) => e.id !== id);
+    markPendingDelete(id, () => {
+      excursions.value = excursions.value.filter((e) => e.id !== id);
+    });
+  }
+
+  async function restore(id: number) {
+    clearPending(id);
+    await api.post(`/trash/excursion/${id}/restore`);
   }
 
   /** Setzt/ändert nur das Datum (Drag&Drop auf einen Kalendertag) – restliche Felder bleiben. */
@@ -83,5 +94,5 @@ export const useExcursionsStore = defineStore('excursions', () => {
     return excursion;
   }
 
-  return { excursions, loaded, load, create, update, remove, setDate, planSpotOnDate };
+  return { excursions, loaded, load, create, update, remove, restore, isPending, setDate, planSpotOnDate };
 });

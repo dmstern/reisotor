@@ -3,6 +3,7 @@ import { ref, watch } from 'vue';
 import { api } from '../api/client';
 import type { ScheduleItem } from '../api/types';
 import { useTripStore } from './trip';
+import { useUndoableDelete } from '../composables/useUndoableDelete';
 
 export interface ScheduleFormData {
   trip_id: number;
@@ -28,6 +29,7 @@ export const useScheduleStore = defineStore('schedule', () => {
   const tripStore = useTripStore();
   const items = ref<ScheduleItem[]>([]);
   const loaded = ref(false);
+  const { isPending, markPendingDelete, clearPending } = useUndoableDelete();
 
   async function load() {
     const tripId = tripStore.currentTripId;
@@ -55,10 +57,21 @@ export const useScheduleStore = defineStore('schedule', () => {
     return updated;
   }
 
+  // Weicher Löschvorgang serverseitig (siehe routes/schedule.ts) + 60s Rückgängig-Fenster
+  // clientseitig (useUndoableDelete.ts): das Objekt bleibt in `items` bestehen (ScheduleView.vue
+  // zeigt an seiner Stelle einen "Löschen rückgängig machen"-Platzhalter, siehe isPending), erst
+  // nach Ablauf des Fensters verschwindet es endgültig aus der lokalen Liste.
   async function remove(id: number) {
     await api.delete(`/schedule/${id}`);
-    items.value = items.value.filter((i) => i.id !== id);
+    markPendingDelete(id, () => {
+      items.value = items.value.filter((i) => i.id !== id);
+    });
   }
 
-  return { items, loaded, load, create, update, remove };
+  async function restore(id: number) {
+    clearPending(id);
+    await api.post(`/trash/schedule_item/${id}/restore`);
+  }
+
+  return { items, loaded, load, create, update, remove, restore, isPending };
 });

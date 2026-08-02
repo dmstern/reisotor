@@ -9,6 +9,7 @@ import { useExcursionsStore } from '../stores/excursions';
 import { useSpotsStore } from '../stores/spots';
 import { useDrawersStore } from '../stores/drawers';
 import ExcursionCard from '../components/ExcursionCard.vue';
+import UndoDeleteRow from '../components/UndoDeleteRow.vue';
 import SpotOrderPicker from '../components/SpotOrderPicker.vue';
 import Modal from '../components/Modal.vue';
 import type { DerivedLocation } from '../utils/derivedLocation';
@@ -327,27 +328,33 @@ function editStationSpot() {
     >
       <h3>📝 In Planung</h3>
       <TransitionGroup v-if="unplannedExcursions.length" tag="div" name="list" class="entries">
-        <ExcursionCard
-          v-for="excursion in unplannedExcursions"
-          :key="excursion.id"
-          :excursion="excursion"
-          :creator-label="creatorLabel(excursion.created_by)"
-          :like-count="likesFor(excursion.id).length"
-          :liked="likedByMe(excursion.id)"
-          :comments="commentItemsFor(excursion.id)"
-          :stations="spotsStore.spots"
-          :accommodations="accommodations"
-          :travel-items="travelItems"
-          @edit="startEditExcursion"
-          @remove="removeExcursion"
-          @toggle-like="toggleLike(excursion.id)"
-          @submit-comment="(content) => submitComment(excursion.id, content)"
-          @remove-comment="removeComment"
-          @drop-spot="(spotId) => addSpotToExcursion(excursion.id, spotId)"
-          @drop-derived-location="(loc) => addDerivedLocationToExcursion(excursion.id, loc as DerivedLocation)"
-          @show-on-map="drawers.openMapForExcursion(excursion.id)"
-          @edit-station-spot="editStationSpot"
-        />
+        <template v-for="excursion in unplannedExcursions" :key="excursion.id">
+          <UndoDeleteRow
+            v-if="excursionsStore.isPending(excursion.id)"
+            :label="excursion.title"
+            @undo="excursionsStore.restore(excursion.id)"
+          />
+          <ExcursionCard
+            v-else
+            :excursion="excursion"
+            :creator-label="creatorLabel(excursion.created_by)"
+            :like-count="likesFor(excursion.id).length"
+            :liked="likedByMe(excursion.id)"
+            :comments="commentItemsFor(excursion.id)"
+            :stations="spotsStore.spots"
+            :accommodations="accommodations"
+            :travel-items="travelItems"
+            @edit="startEditExcursion"
+            @remove="removeExcursion"
+            @toggle-like="toggleLike(excursion.id)"
+            @submit-comment="(content) => submitComment(excursion.id, content)"
+            @remove-comment="removeComment"
+            @drop-spot="(spotId) => addSpotToExcursion(excursion.id, spotId)"
+            @drop-derived-location="(loc) => addDerivedLocationToExcursion(excursion.id, loc as DerivedLocation)"
+            @show-on-map="drawers.openMapForExcursion(excursion.id)"
+            @edit-station-spot="editStationSpot"
+          />
+        </template>
       </TransitionGroup>
       <p v-else class="empty dropzone-hint">
         Noch keine Touren in Planung – geplante Touren kannst du hierher ziehen, um die
@@ -366,27 +373,33 @@ function editStationSpot() {
     >
       <h3>📅 Geplant</h3>
       <TransitionGroup tag="div" name="list" class="entries">
-        <ExcursionCard
-          v-for="excursion in plannedExcursions"
-          :key="excursion.id"
-          :excursion="excursion"
-          :creator-label="creatorLabel(excursion.created_by)"
-          :like-count="likesFor(excursion.id).length"
-          :liked="likedByMe(excursion.id)"
-          :comments="commentItemsFor(excursion.id)"
-          :stations="spotsStore.spots"
-          :accommodations="accommodations"
-          :travel-items="travelItems"
-          @edit="startEditExcursion"
-          @remove="removeExcursion"
-          @toggle-like="toggleLike(excursion.id)"
-          @submit-comment="(content) => submitComment(excursion.id, content)"
-          @remove-comment="removeComment"
-          @drop-spot="(spotId) => addSpotToExcursion(excursion.id, spotId)"
-          @drop-derived-location="(loc) => addDerivedLocationToExcursion(excursion.id, loc as DerivedLocation)"
-          @show-on-map="drawers.openMapForExcursion(excursion.id)"
-          @edit-station-spot="editStationSpot"
-        />
+        <template v-for="excursion in plannedExcursions" :key="excursion.id">
+          <UndoDeleteRow
+            v-if="excursionsStore.isPending(excursion.id)"
+            :label="excursion.title"
+            @undo="excursionsStore.restore(excursion.id)"
+          />
+          <ExcursionCard
+            v-else
+            :excursion="excursion"
+            :creator-label="creatorLabel(excursion.created_by)"
+            :like-count="likesFor(excursion.id).length"
+            :liked="likedByMe(excursion.id)"
+            :comments="commentItemsFor(excursion.id)"
+            :stations="spotsStore.spots"
+            :accommodations="accommodations"
+            :travel-items="travelItems"
+            @edit="startEditExcursion"
+            @remove="removeExcursion"
+            @toggle-like="toggleLike(excursion.id)"
+            @submit-comment="(content) => submitComment(excursion.id, content)"
+            @remove-comment="removeComment"
+            @drop-spot="(spotId) => addSpotToExcursion(excursion.id, spotId)"
+            @drop-derived-location="(loc) => addDerivedLocationToExcursion(excursion.id, loc as DerivedLocation)"
+            @show-on-map="drawers.openMapForExcursion(excursion.id)"
+            @edit-station-spot="editStationSpot"
+          />
+        </template>
       </TransitionGroup>
     </section>
     <p v-if="!excursionsStore.excursions.length" class="empty">Noch keine Touren angelegt.</p>

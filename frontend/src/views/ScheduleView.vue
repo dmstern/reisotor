@@ -15,6 +15,7 @@ import DetailModal from '../components/DetailModal.vue';
 import MapsAppPicker from '../components/MapsAppPicker.vue';
 import Combobox from '../components/Combobox.vue';
 import DeleteButton from '../components/DeleteButton.vue';
+import UndoDeleteRow from '../components/UndoDeleteRow.vue';
 import { SCHEDULE_CATEGORY_META } from '../utils/scheduleCategory';
 import { parseLatLngFromMapsLink } from '../utils/googleMaps';
 import { buildAllEntries } from '../utils/calendarEntries';
@@ -762,67 +763,77 @@ function formatDate(date: string) {
       <p v-for="acc in dayAccommodations" :key="acc.id" class="acc-note">🛏️ Unterkunft: {{ acc.name }}</p>
 
       <TransitionGroup tag="ul" name="list" class="items">
-        <li
-          v-for="entry in dayEntries"
-          :key="entry.key"
-          class="item clickable"
-          :style="{ borderLeftColor: SCHEDULE_CATEGORY_META[entry.category].color }"
-          @click="openEntry(entry)"
-        >
-          <div>
-            <span class="category-icon" :title="SCHEDULE_CATEGORY_META[entry.category].label">{{
-              entry.icon ?? SCHEDULE_CATEGORY_META[entry.category].icon
-            }}</span>
-            <strong v-if="entry.time">{{ entry.time }}</strong>
-            <span class="title">{{ entry.title }}</span>
-            <p v-if="entry.location" class="location">📍 {{ entry.location }}</p>
-            <p v-if="entry.note" class="note">{{ entry.note }}</p>
-          </div>
-          <div class="item-actions">
-            <div class="calendar-export">
-              <button
-                type="button"
-                class="secondary calendar-btn"
-                title="Zum eigenen Kalender hinzufügen"
-                aria-label="Zum eigenen Kalender hinzufügen"
-                @click.stop="toggleCalendarPicker(entry.key, $event)"
-              >
-                📅
-              </button>
-              <Teleport to="body">
-                <template v-if="calendarPickerKey === entry.key">
-                  <div class="picker-backdrop" @click.stop="calendarPickerKey = null"></div>
-                  <div class="picker-menu" :style="calendarPickerStyle" @click.stop>
-                    <button type="button" @click="downloadIcsForEntry(entry)">🍎 Apple/iPhone</button>
-                    <a
-                      :href="googleCalendarHref(calendarEventFromEntry(entry))"
-                      target="_blank"
-                      rel="noopener"
-                      @click="calendarPickerKey = null"
-                    >
-                      📆 Google Kalender
-                    </a>
-                    <a
-                      :href="outlookCalendarHref(calendarEventFromEntry(entry))"
-                      target="_blank"
-                      rel="noopener"
-                      @click="calendarPickerKey = null"
-                    >
-                      📧 Outlook
-                    </a>
-                    <button type="button" @click="downloadIcsForEntry(entry)">🤖 Android</button>
-                  </div>
-                </template>
-              </Teleport>
+        <template v-for="entry in dayEntries" :key="entry.key">
+          <!-- 60s-Rückgängig-Fenster (useUndoableDelete.ts über stores/schedule.ts): der gelöschte
+               Termin bleibt bis dahin an seiner Stelle in der Liste, zeigt aber nur noch diesen
+               Platzhalter statt der normalen Karte. -->
+          <li
+            v-if="entry.kind === 'schedule' && scheduleStore.isPending(entry.scheduleItem!.id)"
+            class="item"
+          >
+            <UndoDeleteRow :label="entry.title" @undo="scheduleStore.restore(entry.scheduleItem!.id)" />
+          </li>
+          <li
+            v-else
+            class="item clickable"
+            :style="{ borderLeftColor: SCHEDULE_CATEGORY_META[entry.category].color }"
+            @click="openEntry(entry)"
+          >
+            <div>
+              <span class="category-icon" :title="SCHEDULE_CATEGORY_META[entry.category].label">{{
+                entry.icon ?? SCHEDULE_CATEGORY_META[entry.category].icon
+              }}</span>
+              <strong v-if="entry.time">{{ entry.time }}</strong>
+              <span class="title">{{ entry.title }}</span>
+              <p v-if="entry.location" class="location">📍 {{ entry.location }}</p>
+              <p v-if="entry.note" class="note">{{ entry.note }}</p>
             </div>
-            <!-- Architekturregel: Fremdobjekte (Urlaub-Stammdaten, ToDos, Reise-Einträge) sind hier
-                 nur lesend/verknüpfend darstellbar – Bearbeitung passiert in der Ursprungssicht.
-                 Mit einem Spot/einer Tour verknüpfte Termine sind dagegen ganz normale, editierbare
-                 Termine (kind bleibt 'schedule') – Klick auf die Karte öffnet für sie wie für jeden
-                 anderen Termin den Anzeige-Dialog (inkl. Löschen-Button dort), kein eigener
-                 Schnell-Entfernen-Button hier nötig. -->
-          </div>
-        </li>
+            <div class="item-actions">
+              <div class="calendar-export">
+                <button
+                  type="button"
+                  class="secondary calendar-btn"
+                  title="Zum eigenen Kalender hinzufügen"
+                  aria-label="Zum eigenen Kalender hinzufügen"
+                  @click.stop="toggleCalendarPicker(entry.key, $event)"
+                >
+                  📅
+                </button>
+                <Teleport to="body">
+                  <template v-if="calendarPickerKey === entry.key">
+                    <div class="picker-backdrop" @click.stop="calendarPickerKey = null"></div>
+                    <div class="picker-menu" :style="calendarPickerStyle" @click.stop>
+                      <button type="button" @click="downloadIcsForEntry(entry)">🍎 Apple/iPhone</button>
+                      <a
+                        :href="googleCalendarHref(calendarEventFromEntry(entry))"
+                        target="_blank"
+                        rel="noopener"
+                        @click="calendarPickerKey = null"
+                      >
+                        📆 Google Kalender
+                      </a>
+                      <a
+                        :href="outlookCalendarHref(calendarEventFromEntry(entry))"
+                        target="_blank"
+                        rel="noopener"
+                        @click="calendarPickerKey = null"
+                      >
+                        📧 Outlook
+                      </a>
+                      <button type="button" @click="downloadIcsForEntry(entry)">🤖 Android</button>
+                    </div>
+                  </template>
+                </Teleport>
+              </div>
+              <!-- Architekturregel: Fremdobjekte (Urlaub-Stammdaten, ToDos, Reise-Einträge) sind hier
+                   nur lesend/verknüpfend darstellbar – Bearbeitung passiert in der Ursprungssicht.
+                   Mit einem Spot/einer Tour verknüpfte Termine sind dagegen ganz normale, editierbare
+                   Termine (kind bleibt 'schedule') – Klick auf die Karte öffnet für sie wie für jeden
+                   anderen Termin den Anzeige-Dialog (inkl. Löschen-Button dort), kein eigener
+                   Schnell-Entfernen-Button hier nötig. -->
+            </div>
+          </li>
+        </template>
         <li v-if="!dayEntries.length" key="empty" class="empty">Noch keine Termine an diesem Tag.</li>
       </TransitionGroup>
     </div>

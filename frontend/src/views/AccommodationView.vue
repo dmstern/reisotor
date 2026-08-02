@@ -10,11 +10,14 @@ import AccommodationDetailDialog from '../components/AccommodationDetailDialog.v
 import LocationPicker from '../components/LocationPicker.vue';
 import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
+import UndoDeleteRow from '../components/UndoDeleteRow.vue';
+import { useUndoableDelete } from '../composables/useUndoableDelete';
 
 const tripStore = useTripStore();
 const drawers = useDrawersStore();
 const tripId = tripStore.currentTripId as number;
 const accommodations = ref<Accommodation[]>([]);
+const { isPending, markPendingDelete, clearPending } = useUndoableDelete();
 const users = ref<User[]>([]);
 const loading = ref(true);
 const showForm = ref(false);
@@ -179,9 +182,21 @@ watch(manualPinEdit, (pin) => {
   if (pin && locationErrorEdit.value) submitEdit();
 });
 
+// Weicher Löschvorgang serverseitig (siehe routes/accommodation.ts) + 60s Rückgängig-Fenster
+// clientseitig (useUndoableDelete.ts): die Zeile bleibt in `accommodations` bestehen (Template
+// zeigt an ihrer Stelle einen "Löschen rückgängig machen"-Platzhalter, siehe isPending), erst nach
+// Ablauf des Fensters verschwindet sie endgültig aus der lokalen Liste.
 async function remove(id: number) {
   await api.delete(`/accommodation/${id}`);
-  accommodations.value = accommodations.value.filter((a) => a.id !== id);
+  markPendingDelete(id, () => {
+    accommodations.value = accommodations.value.filter((a) => a.id !== id);
+  });
+  drawers.touchLocations();
+}
+
+async function restore(id: number) {
+  clearPending(id);
+  await api.post(`/trash/accommodation/${id}/restore`);
   drawers.touchLocations();
 }
 
@@ -302,21 +317,24 @@ function showDetailOnMap() {
     </Modal>
 
     <TransitionGroup tag="div" name="list" class="masonry cards">
-      <div class="card acc-card" v-for="acc in accommodations" :key="acc.id" @click="openDetail(acc)">
-        <div class="acc-head">
-          <h3>{{ acc.name }}</h3>
-          <div class="actions">
-            <EditButton small @click="startEdit(acc)" />
-            <DeleteButton small @click="remove(acc.id)" />
+      <template v-for="acc in accommodations" :key="acc.id">
+        <UndoDeleteRow v-if="isPending(acc.id)" :label="acc.name" @undo="restore(acc.id)" />
+        <div v-else class="card acc-card" @click="openDetail(acc)">
+          <div class="acc-head">
+            <h3>{{ acc.name }}</h3>
+            <div class="actions">
+              <EditButton small @click="startEdit(acc)" />
+              <DeleteButton small @click="remove(acc.id)" />
+            </div>
           </div>
+          <p v-if="acc.start_date || acc.end_date">
+            🗓️ {{ formatDate(acc.start_date) || '?' }} – {{ formatDate(acc.end_date) || '?' }}
+          </p>
+          <p v-if="acc.address" class="acc-meta">📍 {{ acc.address }}</p>
+          <p v-if="acc.checkin || acc.checkout" class="acc-meta">🕒 {{ acc.checkin || '–' }} · {{ acc.checkout || '–' }}</p>
+          <p v-if="acc.note" class="acc-note">{{ acc.note }}</p>
         </div>
-        <p v-if="acc.start_date || acc.end_date">
-          🗓️ {{ formatDate(acc.start_date) || '?' }} – {{ formatDate(acc.end_date) || '?' }}
-        </p>
-        <p v-if="acc.address" class="acc-meta">📍 {{ acc.address }}</p>
-        <p v-if="acc.checkin || acc.checkout" class="acc-meta">🕒 {{ acc.checkin || '–' }} · {{ acc.checkout || '–' }}</p>
-        <p v-if="acc.note" class="acc-note">{{ acc.note }}</p>
-      </div>
+      </template>
     </TransitionGroup>
     <p v-if="!accommodations.length" class="empty">Noch keine Unterkunft eingetragen.</p>
 

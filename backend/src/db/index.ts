@@ -622,3 +622,38 @@ for (const row of orphanedAutoExpenses) {
   const budgetId = sharedBudgetIdByTrip.get(row.trip_id);
   if (budgetId) linkAutoExpense.run(budgetId, row.id);
 }
+
+// Weicher Löschvorgang (Papierkorb, routes/trash.ts): Löschen setzt nur noch deleted_at statt die
+// Zeile per DELETE zu entfernen, damit sie sich wiederherstellen lässt. Gilt für alle Objekttypen,
+// die der Nutzer selbst aktiv anlegt/löscht (nicht für reine Zuordnungstabellen wie
+// excursion_spots/likes/comments oder Referenzdaten wie travel_places/budgets).
+export const TRASH_TABLES = [
+  'schedule_items',
+  'ideas',
+  'spots',
+  'accommodation',
+  'travel_items',
+  'budget_items',
+  'budget_transfers',
+  'todo_items',
+  'packing_items',
+  'shopping_items',
+  'notes',
+  'diary_entries',
+] as const;
+
+for (const table of TRASH_TABLES) {
+  ensureColumn(table, 'deleted_at', 'TEXT');
+}
+
+// Endgültiges Aufräumen (optional, siehe CLAUDE.md-Auftrag "kein Muss"): Objekte, die länger als
+// 30 Tage im Papierkorb liegen, werden beim Backend-Start hart gelöscht. budget_transfers hat kein
+// trip_id (siehe CREATE TABLE oben), braucht daher keinen Join/Backfill – deleted_at reicht für den
+// Alters-Check bei allen Tabellen gleichermaßen aus.
+export function purgeOldTrash(maxAgeDays = 30) {
+  const cutoff = new Date(Date.now() - maxAgeDays * 24 * 60 * 60 * 1000).toISOString();
+  for (const table of TRASH_TABLES) {
+    db.prepare(`DELETE FROM ${table} WHERE deleted_at IS NOT NULL AND deleted_at < ?`).run(cutoff);
+  }
+}
+purgeOldTrash();

@@ -9,6 +9,7 @@ import { useScheduleStore } from '../stores/schedule';
 import { useDrawersStore } from '../stores/drawers';
 import { useIsDesktop } from '../composables/useIsDesktop';
 import SpotCard from '../components/SpotCard.vue';
+import UndoDeleteRow from '../components/UndoDeleteRow.vue';
 import DerivedLocationCard from '../components/DerivedLocationCard.vue';
 import TripMap from '../components/TripMap.vue';
 import Modal from '../components/Modal.vue';
@@ -792,8 +793,13 @@ async function removeSpot(id: number) {
         <h3 class="category-heading" :ref="(el) => setCategoryRef(grp.category, el)">{{ grp.icon }} {{ grp.category }}</h3>
         <TransitionGroup tag="div" name="list" class="grid cards">
           <template v-for="item in grp.items" :key="item.kind === 'spot' ? `spot-${item.spot.id}` : item.loc.key">
+            <UndoDeleteRow
+              v-if="item.kind === 'spot' && spotsStore.isPending(item.spot.id)"
+              :label="item.spot.title"
+              @undo="spotsStore.restore(item.spot.id)"
+            />
             <SpotCard
-              v-if="item.kind === 'spot'"
+              v-else-if="item.kind === 'spot'"
               :key="`spot-${item.spot.id}`"
               :ref="(el) => setSpotRef(item.spot.id, el)"
               :spot="item.spot"

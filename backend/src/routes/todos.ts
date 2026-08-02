@@ -15,7 +15,9 @@ export const todosRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: { trip_id?: string } }>('/todos', async (req, reply) => {
     if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
     return db
-      .prepare('SELECT * FROM todo_items WHERE trip_id = ? ORDER BY done, due_date IS NULL, due_date, id DESC')
+      .prepare(
+        'SELECT * FROM todo_items WHERE trip_id = ? AND deleted_at IS NULL ORDER BY done, due_date IS NULL, due_date, id DESC',
+      )
       .all(req.query.trip_id);
   });
 
@@ -59,8 +61,12 @@ export const todosRoutes: FastifyPluginAsync = async (app) => {
     return db.prepare('SELECT * FROM todo_items WHERE id = ?').get(req.params.id);
   });
 
+  // Weicher Löschvorgang (Papierkorb, routes/trash.ts): setzt nur deleted_at statt die Zeile
+  // wirklich zu entfernen.
   app.delete<{ Params: { id: string } }>('/todos/:id', async (req, reply) => {
-    const result = db.prepare('DELETE FROM todo_items WHERE id = ?').run(req.params.id);
+    const result = db
+      .prepare('UPDATE todo_items SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL')
+      .run(new Date().toISOString(), req.params.id);
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
     return reply.code(204).send();
   });

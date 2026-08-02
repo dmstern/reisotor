@@ -8,10 +8,13 @@ import Modal from '../components/Modal.vue';
 import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
 import Combobox from '../components/Combobox.vue';
+import UndoDeleteRow from '../components/UndoDeleteRow.vue';
+import { useUndoableDelete } from '../composables/useUndoableDelete';
 
 const tripStore = useTripStore();
 const tripId = tripStore.currentTripId as number;
 const items = ref<ShoppingItem[]>([]);
+const { isPending, markPendingDelete, clearPending } = useUndoableDelete();
 const users = ref<User[]>([]);
 const loading = ref(true);
 
@@ -149,9 +152,18 @@ async function submitEdit() {
   editingItem.value = null;
 }
 
+// Weicher Löschvorgang serverseitig (siehe routes/shopping.ts) + 60s Rückgängig-Fenster clientseitig
+// (useUndoableDelete.ts).
 async function remove(id: number) {
   await api.delete(`/shopping/${id}`);
-  items.value = items.value.filter((i) => i.id !== id);
+  markPendingDelete(id, () => {
+    items.value = items.value.filter((i) => i.id !== id);
+  });
+}
+
+async function restore(id: number) {
+  clearPending(id);
+  await api.post(`/trash/shopping_item/${id}/restore`);
 }
 
 async function addItem() {
@@ -212,29 +224,34 @@ async function addItem() {
         <h2>{{ group.label }}</h2>
         <div class="card">
           <TransitionGroup tag="ul" name="list" class="list">
-            <li v-for="item in group.items" :key="item.id" class="row" :class="{ 'row-done': item.checked }">
-              <label class="check">
-                <input type="checkbox" :checked="!!item.checked" @change="toggle(item)" />
-                <span :class="{ 'text-done': item.checked }">{{ item.label }}</span>
-              </label>
-              <span v-if="groupBy !== 'shop' && item.shop" class="tag">🏬 {{ item.shop }}</span>
-              <span v-if="groupBy !== 'period' && item.period" class="tag">🗓️ {{ PERIOD_META[item.period] }}</span>
-              <a v-if="item.link" :href="item.link" target="_blank" rel="noopener" class="link">🔗 Link</a>
-              <span v-if="item.note" class="note">{{ item.note }}</span>
-              <select
-                v-if="groupBy !== 'buyer'"
-                class="buyer-select"
-                :value="item.assigned_to_user_id ?? ''"
-                @change="reassign(item, $event)"
-              >
-                <option value="">Nicht zugewiesen</option>
-                <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
-              </select>
-              <div class="row-actions">
-                <EditButton small @click="startEdit(item)" />
-                <DeleteButton small @click="remove(item.id)" />
-              </div>
-            </li>
+            <template v-for="item in group.items" :key="item.id">
+              <li v-if="isPending(item.id)" class="row">
+                <UndoDeleteRow :label="item.label" @undo="restore(item.id)" />
+              </li>
+              <li v-else class="row" :class="{ 'row-done': item.checked }">
+                <label class="check">
+                  <input type="checkbox" :checked="!!item.checked" @change="toggle(item)" />
+                  <span :class="{ 'text-done': item.checked }">{{ item.label }}</span>
+                </label>
+                <span v-if="groupBy !== 'shop' && item.shop" class="tag">🏬 {{ item.shop }}</span>
+                <span v-if="groupBy !== 'period' && item.period" class="tag">🗓️ {{ PERIOD_META[item.period] }}</span>
+                <a v-if="item.link" :href="item.link" target="_blank" rel="noopener" class="link">🔗 Link</a>
+                <span v-if="item.note" class="note">{{ item.note }}</span>
+                <select
+                  v-if="groupBy !== 'buyer'"
+                  class="buyer-select"
+                  :value="item.assigned_to_user_id ?? ''"
+                  @change="reassign(item, $event)"
+                >
+                  <option value="">Nicht zugewiesen</option>
+                  <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
+                </select>
+                <div class="row-actions">
+                  <EditButton small @click="startEdit(item)" />
+                  <DeleteButton small @click="remove(item.id)" />
+                </div>
+              </li>
+            </template>
             <li v-if="!group.items.length" :key="`${group.key}-empty`" class="empty">Noch keine Einträge.</li>
           </TransitionGroup>
         </div>

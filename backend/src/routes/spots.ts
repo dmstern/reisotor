@@ -20,7 +20,9 @@ interface CommentBody {
 export const spotsRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: { trip_id?: string } }>('/spots', async (req, reply) => {
     if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
-    return db.prepare('SELECT * FROM spots WHERE trip_id = ? ORDER BY title COLLATE NOCASE').all(req.query.trip_id);
+    return db
+      .prepare('SELECT * FROM spots WHERE trip_id = ? AND deleted_at IS NULL ORDER BY title COLLATE NOCASE')
+      .all(req.query.trip_id);
   });
 
   app.post<{ Body: SpotBody }>('/spots', async (req, reply) => {
@@ -97,13 +99,16 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
     return db.prepare('SELECT * FROM spots WHERE id = ?').get(req.params.id);
   });
 
+  // Weicher Löschvorgang (Papierkorb, routes/trash.ts): setzt nur deleted_at statt die Zeile
+  // wirklich zu entfernen. excursion_spots-Stationsreferenzen auf den Spot bleiben dabei bewusst
+  // bestehen (kein Cleanup mehr nötig) – resolveStation() im Frontend liefert für einen nicht mehr
+  // gefundenen (weil ausgeblendeten) Spot ohnehin `null` und die Station verschwindet dadurch
+  // automatisch aus jeder Stationsliste, taucht nach dem Wiederherstellen aber unverändert wieder auf.
   app.delete<{ Params: { id: string } }>('/spots/:id', async (req, reply) => {
-    const result = db.prepare('DELETE FROM spots WHERE id = ?').run(req.params.id);
+    const result = db
+      .prepare('UPDATE spots SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL')
+      .run(new Date().toISOString(), req.params.id);
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
-    // excursion_spots.station_key ist kein Fremdschlüssel mehr (generischer Text statt spot_id
-    // mit ON DELETE CASCADE) – verwaiste Stationsreferenzen auf den gelöschten Spot müssen daher
-    // manuell mit entfernt werden.
-    db.prepare('DELETE FROM excursion_spots WHERE station_key = ?').run(`spot-${req.params.id}`);
     return reply.code(204).send();
   });
 
@@ -115,7 +120,7 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
       .prepare(
         `SELECT spot_likes.* FROM spot_likes
          JOIN spots ON spots.id = spot_likes.spot_id
-         WHERE spots.trip_id = ?`,
+         WHERE spots.trip_id = ? AND spots.deleted_at IS NULL`,
       )
       .all(req.query.trip_id);
   });
@@ -126,7 +131,7 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
       .prepare(
         `SELECT spot_comments.* FROM spot_comments
          JOIN spots ON spots.id = spot_comments.spot_id
-         WHERE spots.trip_id = ?
+         WHERE spots.trip_id = ? AND spots.deleted_at IS NULL
          ORDER BY spot_comments.created_at ASC, spot_comments.id ASC`,
       )
       .all(req.query.trip_id);
