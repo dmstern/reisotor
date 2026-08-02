@@ -8,6 +8,7 @@ import { useExcursionsStore } from '../stores/excursions';
 import { useSpotsStore } from '../stores/spots';
 import { useScheduleStore } from '../stores/schedule';
 import { useDrawersStore } from '../stores/drawers';
+import { useWeatherProviderStore } from '../stores/weatherProvider';
 import CalendarWeek from '../components/CalendarWeek.vue';
 import Modal from '../components/Modal.vue';
 import DetailModal from '../components/DetailModal.vue';
@@ -34,6 +35,7 @@ const excursionsStore = useExcursionsStore();
 const spotsStore = useSpotsStore();
 const scheduleStore = useScheduleStore();
 const drawers = useDrawersStore();
+const weatherProvider = useWeatherProviderStore();
 const accommodations = ref<Accommodation[]>([]);
 const todos = ref<TodoItem[]>([]);
 const travelItems = ref<TravelItem[]>([]);
@@ -196,7 +198,10 @@ const weatherByLocation = ref<Map<string, DailyWeather[]>>(new Map());
 async function loadWeather() {
   const locations = collectWeatherLocations(trip.value, home.value, accommodations.value);
   const results = await Promise.allSettled(
-    locations.map(async (loc) => ({ key: loc.key, days: await fetchWeatherForecast(loc.lat, loc.lng) })),
+    locations.map(async (loc) => ({
+      key: loc.key,
+      days: await fetchWeatherForecast(loc.lat, loc.lng, weatherProvider.model),
+    })),
   );
   const map = new Map<string, DailyWeather[]>();
   for (const result of results) {
@@ -239,6 +244,10 @@ watch(
     loadWeather();
   },
 );
+
+// Neu laden, sobald der Wetteranbieter in den Einstellungen gewechselt wird (siehe DashboardView.vue
+// für dieselbe Kopplung).
+watch(() => weatherProvider.model, loadWeather);
 
 function toIso(d: Date) {
   return d.toISOString().slice(0, 10);

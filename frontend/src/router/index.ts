@@ -7,8 +7,38 @@ import { useAuthStore } from '../stores/auth';
 import ScheduleView from '../views/ScheduleView.vue';
 import ExcursionsDrawer from '../views/ExcursionsDrawer.vue';
 
+// Viele Sichten (z. B. ProfileView.vue) rendern ihr Template erst hinter einem v-if="!loading" nach
+// einem asynchronen API-Aufruf – ein Sprungziel wie #weather-provider-settings existiert direkt nach
+// dem Routenwechsel deshalb oft noch gar nicht im DOM. Ein fester setTimeout wäre abhängig von der
+// (auf dem Pi ggf. langsameren) API-Antwortzeit unzuverlässig; stattdessen wird auf das Element
+// gewartet (Poll pro Frame), bis es erscheint oder ein Timeout greift.
+function waitForElement(selector: string, timeoutMs = 3000): Promise<boolean> {
+  return new Promise((resolve) => {
+    const start = performance.now();
+    function check() {
+      if (document.querySelector(selector)) {
+        resolve(true);
+      } else if (performance.now() - start > timeoutMs) {
+        resolve(false);
+      } else {
+        requestAnimationFrame(check);
+      }
+    }
+    check();
+  });
+}
+
 const router = createRouter({
   history: createWebHistory(),
+  // Nur für echte Hash-Sprünge (z. B. der "Anbieter wechseln"-Link im Wetter-Widget,
+  // DashboardView.vue -> /profile#weather-provider-settings) – kein genereller Scroll-Reset auf
+  // Position 0 bei jeder Navigation, um das bisherige Verhalten (Scroll-Position bleibt bei
+  // normaler Navigation unangetastet) nicht zu verändern.
+  async scrollBehavior(to) {
+    if (!to.hash) return;
+    const found = await waitForElement(to.hash);
+    if (found) return { el: to.hash, behavior: 'smooth' };
+  },
   routes: [
     { path: '/login', name: 'login', component: () => import('../views/LoginView.vue') },
     { path: '/', name: 'dashboard', component: () => import('../views/DashboardView.vue') },

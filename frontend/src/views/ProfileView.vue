@@ -5,11 +5,13 @@ import { api, ApiError } from '../api/client';
 import type { User } from '../api/types';
 import { useAuthStore } from '../stores/auth';
 import { useNavPositionStore } from '../stores/navPosition';
+import { useWeatherProviderStore, WEATHER_MODEL_OPTIONS } from '../stores/weatherProvider';
 import PasswordInput from '../components/PasswordInput.vue';
 
 const auth = useAuthStore();
 const router = useRouter();
 const navPosition = useNavPositionStore();
+const weatherProvider = useWeatherProviderStore();
 const users = ref<User[]>([]);
 const loading = ref(true);
 
@@ -299,6 +301,24 @@ async function onImportFileSelected(event: Event) {
       </div>
     </div>
 
+    <!-- id als Sprungziel für den "Anbieter wechseln"-Link im Wetter-Widget (DashboardView.vue) -->
+    <div id="weather-provider-settings" class="card">
+      <h2>🌤️ Wetter</h2>
+      <p class="hint">
+        Wettervorhersage über Open-Meteo, das mehrere echte Wetterdienste bündelt. Zeigt eine
+        Vorhersage abweichende Werte gegenüber anderen Wetter-Apps (z. B. Apple Weather), lässt sich
+        hier ein anderer Anbieter ausprobieren.
+      </p>
+      <label class="weather-provider-label">
+        Wettermodell
+        <select v-model="weatherProvider.model">
+          <option v-for="option in WEATHER_MODEL_OPTIONS" :key="option.value" :value="option.value">
+            {{ option.label }}
+          </option>
+        </select>
+      </label>
+    </div>
+
     <div class="card">
       <h2>Passwort ändern</h2>
       <form class="form" @submit.prevent="changePassword">
@@ -512,6 +532,10 @@ async function onImportFileSelected(event: Event) {
   gap: 4px;
   font-weight: 600;
   font-size: 0.9rem;
+}
+
+.weather-provider-label {
+  max-width: 320px;
 }
 
 label,

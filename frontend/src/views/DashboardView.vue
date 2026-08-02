@@ -19,6 +19,7 @@ import { useTripStore } from '../stores/trip';
 import { useExcursionsStore } from '../stores/excursions';
 import { useSpotsStore } from '../stores/spots';
 import { useDrawersStore } from '../stores/drawers';
+import { useWeatherProviderStore, WEATHER_MODEL_OPTIONS } from '../stores/weatherProvider';
 import { assignCategoryColors } from '../utils/categoryColors';
 import { buildAllEntries } from '../utils/calendarEntries';
 import { SCHEDULE_CATEGORY_META } from '../utils/scheduleCategory';
@@ -31,6 +32,7 @@ const tripStore = useTripStore();
 const excursionsStore = useExcursionsStore();
 const spotsStore = useSpotsStore();
 const drawers = useDrawersStore();
+const weatherProvider = useWeatherProviderStore();
 const tripId = tripStore.currentTripId as number;
 const trip = computed(() => tripStore.currentTrip);
 const schedule = ref<ScheduleItem[]>([]);
@@ -57,7 +59,7 @@ async function loadWeather() {
   weatherLoading.value = true;
   weatherError.value = null;
   try {
-    weatherDays.value = await fetchWeatherForecast(trip.value.lat, trip.value.lng);
+    weatherDays.value = await fetchWeatherForecast(trip.value.lat, trip.value.lng, weatherProvider.model);
   } catch {
     weatherError.value = 'Wetterdaten konnten nicht geladen werden.';
   } finally {
@@ -66,16 +68,20 @@ async function loadWeather() {
 }
 
 // Lädt neu, sobald sich die Koordinaten des Urlaubs tatsächlich ändern (z. B. nach dem Bearbeiten
-// des Urlaubsorts) – vorher lief loadWeather() nur einmal beim Mounten, ein Wechsel der
-// Koordinaten dananch hätte sonst weiterhin die alten (oder gar keine) Wetterdaten gezeigt.
-// weatherDays vorher zurücksetzen, damit währenddessen nicht kurz die Vorhersage des alten Orts
-// aufblitzt.
+// des Urlaubsorts) ODER der Wetteranbieter in den Einstellungen gewechselt wird – vorher lief
+// loadWeather() nur einmal beim Mounten, eine Änderung danach hätte sonst weiterhin die alten
+// (oder gar keine) Wetterdaten gezeigt. weatherDays vorher zurücksetzen, damit währenddessen nicht
+// kurz die Vorhersage des alten Orts/Modells aufblitzt.
 watch(
-  () => [trip.value?.lat, trip.value?.lng],
+  () => [trip.value?.lat, trip.value?.lng, weatherProvider.model],
   () => {
     weatherDays.value = null;
     loadWeather();
   },
+);
+
+const weatherModelLabel = computed(
+  () => WEATHER_MODEL_OPTIONS.find((o) => o.value === weatherProvider.model)?.label ?? weatherProvider.model,
 );
 
 // Feste, deterministische Farbzuordnung je Widget (dataviz-Skill: kategoriale Identität, fixe
@@ -285,8 +291,11 @@ function formatWeekdayDate(d: string) {
         <!-- Andere Wetter-Apps (Apple Weather/Google) können abweichende Werte zeigen, v. a. bei der
              Bewölkung – eigenes Modell/eigene Quelle statt eines Fehlers, deshalb hier explizit
              benannt (wie DuckDuckGo es bei seinem eigenen Wetter-Widget genauso mit "Quelle: Apple
-             Weather" macht). -->
-        <p class="weather-source">Quelle: Open-Meteo (ECMWF)</p>
+             Weather" macht). Klickbar statt reinem Text: springt direkt zur Wetter-Anbieter-Auswahl
+             in den Einstellungen, falls der Wert einmal nicht passt. -->
+        <router-link to="/profile#weather-provider-settings" class="weather-source">
+          Quelle: Open-Meteo ({{ weatherModelLabel }}) · Anbieter wechseln
+        </router-link>
       </template>
     </section>
     <section v-else class="card weather-card">
@@ -570,9 +579,16 @@ function formatWeekdayDate(d: string) {
 }
 
 .weather-source {
+  display: inline-block;
   margin: var(--space-2) 0 0;
   font-size: 0.72rem;
   color: var(--color-text-muted);
+  text-decoration: underline;
+  text-decoration-style: dotted;
+}
+
+.weather-source:hover {
+  color: var(--color-primary-dark);
 }
 
 .cards {

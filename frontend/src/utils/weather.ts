@@ -55,12 +55,17 @@ export function weatherCodeMeta(code: number): { icon: string; label: string } {
   return WEATHER_CODE_META[code] ?? { icon: '🌡️', label: 'Unbekannt' };
 }
 
-// Einfacher Modul-Cache statt Store: pro (gerundeter) Koordinate reicht ein Fetch pro Session, die
-// Vorhersage ändert sich nicht innerhalb eines Dashboard-Aufrufs.
+// Einfacher Modul-Cache statt Store: pro (gerundeter) Koordinate+Modell reicht ein Fetch pro
+// Session, die Vorhersage ändert sich nicht innerhalb eines Dashboard-Aufrufs.
 let cache: { key: string; promise: Promise<DailyWeather[]> } | null = null;
 
-export function fetchWeatherForecast(lat: number, lng: number): Promise<DailyWeather[]> {
-  const key = `${lat.toFixed(3)},${lng.toFixed(3)}`;
+// model: welches der von Open-Meteo gebündelten Wettermodelle (siehe stores/weatherProvider.ts)
+// abgefragt wird – ECMWF IFS als Default, da es sich in der Praxis am ehesten mit dem deckt, was
+// kommerzielle Wetter-Apps (Apple Weather/Google) zeigen (ein Nutzer hatte abweichende Werte/
+// Symbole gegenüber Apple Weather bemerkt, v. a. bei der Bewölkung, dem modellsensibelsten Wert
+// überhaupt). In den Einstellungen (ProfileView.vue) auf ein anderes Modell umstellbar.
+export function fetchWeatherForecast(lat: number, lng: number, model = 'ecmwf_ifs025'): Promise<DailyWeather[]> {
+  const key = `${lat.toFixed(3)},${lng.toFixed(3)},${model}`;
   if (cache?.key === key) return cache.promise;
 
   const params = new URLSearchParams({
@@ -70,12 +75,7 @@ export function fetchWeatherForecast(lat: number, lng: number): Promise<DailyWea
     timezone: 'auto',
     past_days: '1',
     forecast_days: '16',
-    // Explizit statt des Open-Meteo-Defaults "best_match" (der je nach Region zwischen Modellen
-    // wechselt, u. a. auch gröbere): ECMWF IFS liefert international die konsistenteste Vorhersage-
-    // qualität und deckt sich erfahrungsgemäß am ehesten mit dem, was kommerzielle Wetter-Apps
-    // (Apple Weather/Google) zeigen – ein Nutzer hatte sonst abweichende Werte/Symbole gegenüber
-    // Apple Weather bemerkt (v. a. bei der Bewölkung, dem modellsensibelsten Wert überhaupt).
-    models: 'ecmwf_ifs025',
+    models: model,
   });
   const promise = fetch(`https://api.open-meteo.com/v1/forecast?${params}`)
     .then((res) => {
