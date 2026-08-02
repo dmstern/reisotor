@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { db } from '../db/index.js';
 import { requireTripMember } from '../tripAccess.js';
+import { recordActivity } from '../activity.js';
 
 interface IdeaBody {
   trip_id: number;
@@ -128,6 +129,7 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
     const ideaId = result.lastInsertRowid as number;
     syncExcursionStations(ideaId, station_keys ?? []);
     setIdeaScheduleDate(ideaId, trip_id, title, date);
+    recordActivity(trip_id, 'ideas', ideaId, 'created', req.session.userId!);
     reply.code(201);
     const row = db.prepare('SELECT * FROM ideas WHERE id = ?').get(ideaId) as IdeaRow;
     return serializeIdea(row, station_keys ?? [], date ?? null);
@@ -152,6 +154,7 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
     syncExcursionStations(ideaId, station_keys ?? []);
     const row = db.prepare('SELECT * FROM ideas WHERE id = ?').get(ideaId) as IdeaRow;
     setIdeaScheduleDate(ideaId, row.trip_id as number, title, date);
+    recordActivity(existingIdea.trip_id, 'ideas', ideaId, 'updated', req.session.userId!);
     return serializeIdea(row, station_keys ?? [], date ?? null);
   });
 
@@ -174,6 +177,7 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
     });
     const result = deleteWithSchedule(req.params.id);
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
+    recordActivity(existingIdea.trip_id, 'ideas', Number(req.params.id), 'deleted', req.session.userId!);
     return reply.code(204).send();
   });
 
@@ -230,6 +234,7 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
     const ideaId = result.lastInsertRowid as number;
     syncExcursionStations(ideaId, [stationKey]);
     setIdeaScheduleDate(ideaId, trip_id, spot.title, date);
+    recordActivity(trip_id, 'ideas', ideaId, 'created', req.session.userId!);
     reply.code(201);
     const row = db.prepare('SELECT * FROM ideas WHERE id = ?').get(ideaId) as IdeaRow;
     return serializeIdea(row, [stationKey], date);

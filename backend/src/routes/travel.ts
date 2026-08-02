@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import { db, ensureDefaultSharedBudget } from '../db/index.js';
 import { resolveLatLng } from '../utils/mapsLink.js';
 import { requireTripMember } from '../tripAccess.js';
+import { recordActivity } from '../activity.js';
 
 interface TravelBody {
   trip_id: number;
@@ -202,6 +203,7 @@ export const travelRoutes: FastifyPluginAsync = async (app) => {
     const result = db
       .prepare('INSERT INTO travel_places (trip_id, name, is_home, maps_link, lat, lng) VALUES (?, ?, ?, ?, ?, ?)')
       .run(trip_id, name, is_home ? 1 : 0, maps_link ?? null, lat ?? null, lng ?? null);
+    recordActivity(trip_id, 'travel', result.lastInsertRowid as number, 'created', req.session.userId!);
     reply.code(201);
     return db.prepare('SELECT * FROM travel_places WHERE id = ?').get(result.lastInsertRowid);
   });
@@ -225,6 +227,7 @@ export const travelRoutes: FastifyPluginAsync = async (app) => {
       .prepare('UPDATE travel_places SET name = ?, is_home = ?, maps_link = ?, lat = ?, lng = ? WHERE id = ?')
       .run(name, is_home ? 1 : 0, maps_link ?? null, lat ?? null, lng ?? null, req.params.id);
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
+    recordActivity(existingPlace.trip_id, 'travel', Number(req.params.id), 'updated', req.session.userId!);
     return db.prepare('SELECT * FROM travel_places WHERE id = ?').get(req.params.id);
   });
 
@@ -237,6 +240,7 @@ export const travelRoutes: FastifyPluginAsync = async (app) => {
 
     const result = db.prepare('DELETE FROM travel_places WHERE id = ?').run(req.params.id);
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
+    recordActivity(existingPlace.trip_id, 'travel', Number(req.params.id), 'deleted', req.session.userId!);
     return reply.code(204).send();
   });
 
@@ -292,6 +296,7 @@ export const travelRoutes: FastifyPluginAsync = async (app) => {
         body.from_place_id ?? null,
         body.to_place_id ?? null,
       );
+    recordActivity(body.trip_id, 'travel', result.lastInsertRowid as number, 'created', req.session.userId!);
     reply.code(201);
     return db.prepare('SELECT * FROM travel_items WHERE id = ?').get(result.lastInsertRowid);
   });
@@ -348,6 +353,7 @@ export const travelRoutes: FastifyPluginAsync = async (app) => {
       db.prepare('DELETE FROM budget_items WHERE id = ?').run(staleIdToDelete);
     }
 
+    recordActivity(existing.trip_id, 'travel', Number(req.params.id), 'updated', req.session.userId!);
     return db.prepare('SELECT * FROM travel_items WHERE id = ?').get(req.params.id);
   });
 
@@ -370,6 +376,7 @@ export const travelRoutes: FastifyPluginAsync = async (app) => {
         existing.budget_expense_id,
       );
     }
+    recordActivity(existing.trip_id, 'travel', Number(req.params.id), 'deleted', req.session.userId!);
     return reply.code(204).send();
   });
 };

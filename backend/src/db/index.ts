@@ -700,3 +700,42 @@ export function purgeOldTrash(maxAgeDays = 30) {
   }
 }
 purgeOldTrash();
+
+// Append-only Aktivitäts-Log (Echtzeit-Sync/Nav-Badges/Push, siehe activity.ts): eine Zeile pro
+// Mutation (angelegt/geändert/gelöscht/wiederhergestellt/Mitglied hinzugefügt/entfernt). Bewusst
+// eine einzige generische Tabelle statt pro Domäne eigener Spalten – entity_id ist nullable für
+// domänenweite Ereignisse ohne einzelne Objekt-id (z. B. "Mitglied eingeladen"). Dient sowohl als
+// Quelle für den SSE-Broadcast im selben Moment als auch als Nachhol-Protokoll für Clients, die beim
+// Ändern nicht verbunden waren (GET /trip-activity?since=).
+db.exec(`
+  CREATE TABLE IF NOT EXISTS trip_activity (
+    id INTEGER PRIMARY KEY,
+    trip_id INTEGER NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
+    domain TEXT NOT NULL,
+    entity_id INTEGER,
+    action TEXT NOT NULL,
+    actor_user_id INTEGER NOT NULL REFERENCES users(id),
+    created_at TEXT NOT NULL
+  );
+`);
+db.exec('CREATE INDEX IF NOT EXISTS idx_trip_activity_trip_created ON trip_activity (trip_id, created_at)');
+
+export function purgeOldActivity(maxAgeDays = 30) {
+  const cutoff = new Date(Date.now() - maxAgeDays * 24 * 60 * 60 * 1000).toISOString();
+  db.prepare('DELETE FROM trip_activity WHERE created_at < ?').run(cutoff);
+}
+purgeOldActivity();
+
+// Web-Push-Abonnements (Push-Benachrichtigungen, siehe push.ts): ein Browser/Gerät je Zeile, per
+// endpoint eindeutig (derselbe Nutzer kann auf mehreren Geräten abonniert sein). p256dh/auth sind
+// die vom Browser gelieferten Verschlüsselungsschlüssel für die Push-Nachricht (PushSubscriptionJSON).
+db.exec(`
+  CREATE TABLE IF NOT EXISTS push_subscriptions (
+    id INTEGER PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    endpoint TEXT NOT NULL UNIQUE,
+    p256dh TEXT NOT NULL,
+    auth TEXT NOT NULL,
+    created_at TEXT NOT NULL
+  );
+`);

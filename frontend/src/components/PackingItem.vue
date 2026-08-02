@@ -4,7 +4,7 @@ import type { PackingItem } from '../api/types';
 import DeleteButton from './DeleteButton.vue';
 import EditButton from './EditButton.vue';
 
-const props = defineProps<{ item: PackingItem }>();
+const props = defineProps<{ item: PackingItem; highlighted?: boolean }>();
 const emit = defineEmits<{
   (e: 'update-counts', item: PackingItem, laidOutCount: number, packedCount: number): void;
   (e: 'remove', id: number): void;
@@ -80,7 +80,7 @@ const tallyGroups = computed<number[]>(() => {
 </script>
 
 <template>
-  <li class="row" :class="{ 'row-done': isFullyPacked }">
+  <li class="row" :class="{ 'row-done': isFullyPacked, 'new-highlight': highlighted }">
     <div class="main">
       <button
         v-if="item.quantity <= 1"

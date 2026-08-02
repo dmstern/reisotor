@@ -7,6 +7,7 @@ import { useTripStore } from '../stores/trip';
 import { useSpotsStore } from '../stores/spots';
 import { useScheduleStore } from '../stores/schedule';
 import { useDrawersStore } from '../stores/drawers';
+import { useLiveSyncStore } from '../stores/liveSync';
 import { useIsDesktop } from '../composables/useIsDesktop';
 import SpotCard from '../components/SpotCard.vue';
 import UndoDeleteRow from '../components/UndoDeleteRow.vue';
@@ -30,12 +31,14 @@ const tripId = tripStore.currentTripId as number;
 const spotsStore = useSpotsStore();
 const scheduleStore = useScheduleStore();
 const drawers = useDrawersStore();
+const liveSync = useLiveSyncStore();
 const isDesktop = useIsDesktop();
 
 const users = ref<User[]>([]);
 const accommodations = ref<Accommodation[]>([]);
 const travelItems = ref<TravelItem[]>([]);
 const loading = ref(true);
+const highlightedIds = ref<Set<number>>(new Set());
 
 // Höhe des Seitentitels (nur auf Desktop sichtbar, siehe .page-title-CSS) live gemessen und als
 // CSS-Variable bereitgestellt (gleiches Vorgehen wie --navbar-offset in NavBar.vue) – ohne das
@@ -64,6 +67,7 @@ onUnmounted(() => {
 });
 
 onMounted(async () => {
+  highlightedIds.value = liveSync.markSeen('spots');
   const [usersRes, accommodationRes, travelRes] = await Promise.all([
     api.get<User[]>('/users'),
     api.get<Accommodation[]>(`/accommodation?trip_id=${tripId}`),
@@ -803,6 +807,7 @@ async function removeSpot(id: number) {
               :key="`spot-${item.spot.id}`"
               :ref="(el) => setSpotRef(item.spot.id, el)"
               :spot="item.spot"
+              :highlighted="highlightedIds.has(item.spot.id)"
               :expanded="expandedSpotId === item.spot.id"
               :scheduled-date="spotScheduledDates.get(item.spot.id) ?? null"
               :creator-label="creatorLabel(item.spot.created_by)"

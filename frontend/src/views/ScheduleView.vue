@@ -8,6 +8,7 @@ import { useExcursionsStore } from '../stores/excursions';
 import { useSpotsStore } from '../stores/spots';
 import { useScheduleStore } from '../stores/schedule';
 import { useDrawersStore } from '../stores/drawers';
+import { useLiveSyncStore } from '../stores/liveSync';
 import { useWeatherProviderStore } from '../stores/weatherProvider';
 import CalendarWeek from '../components/CalendarWeek.vue';
 import Modal from '../components/Modal.vue';
@@ -36,6 +37,7 @@ const excursionsStore = useExcursionsStore();
 const spotsStore = useSpotsStore();
 const scheduleStore = useScheduleStore();
 const drawers = useDrawersStore();
+const liveSync = useLiveSyncStore();
 const weatherProvider = useWeatherProviderStore();
 const accommodations = ref<Accommodation[]>([]);
 const todos = ref<TodoItem[]>([]);
@@ -215,7 +217,18 @@ function weatherEntriesFor(date: string): DayWeatherEntry[] {
   return dayWeatherEntries(date, trip.value, accommodations.value, weatherByLocation.value);
 }
 
+// Markiert den Kalender als "gesehen" (Nav-Punkt verschwindet) – zusätzlich zum onMounted unten
+// auch bei jedem Öffnen der Desktop-Schublade nötig, da diese View (siehe Kommentar unten) nur
+// einmalig gemountet wird und onMounted daher beim bloßen Auf-/Zuklappen nicht erneut feuert.
+watch(
+  () => drawers.calendarOpen,
+  (open) => {
+    if (open) liveSync.markSeen('schedule');
+  },
+);
+
 onMounted(async () => {
+  liveSync.markSeen('schedule');
   await loadAll();
   loadWeather();
   selectedDate.value = new Date().toISOString().slice(0, 10);

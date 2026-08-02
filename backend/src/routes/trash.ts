@@ -1,6 +1,25 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { db } from '../db/index.js';
 import { requireTripMember } from '../tripAccess.js';
+import { recordActivity } from '../activity.js';
+
+// Zuordnung des Papierkorb-Typs (TRASH_CONFIG unten) zur Nav-Item-Domäne für Echtzeit-Sync/
+// Nav-Badges (stores/liveSync.ts im Frontend) – Wiederherstellen soll dieselbe Domäne "aufleuchten"
+// lassen, in der das Objekt ursprünglich lebt, nicht einen generischen "trash"-Punkt.
+const DOMAIN_BY_TYPE: Record<string, string> = {
+  schedule_item: 'schedule',
+  excursion: 'ideas',
+  spot: 'spots',
+  accommodation: 'accommodation',
+  travel_item: 'travel',
+  budget_item: 'budget',
+  budget_transfer: 'budget',
+  todo: 'todos',
+  packing_item: 'packing',
+  shopping_item: 'shopping',
+  note: 'notes',
+  diary_entry: 'diary',
+};
 
 // Konfiguration für den Papierkorb (weicher Löschvorgang, siehe db/index.ts's TRASH_TABLES):
 // je Objekttyp Tabelle, deutsches Label (für die Papierkorb-Ansicht) und optional eine
@@ -99,6 +118,13 @@ export const trashRoutes: FastifyPluginAsync = async (app) => {
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden oder nicht gelöscht' });
 
     config.onRestore?.(req.params.id);
+    recordActivity(
+      existingRow.trip_id,
+      DOMAIN_BY_TYPE[req.params.type] ?? req.params.type,
+      Number(req.params.id),
+      'restored',
+      req.session.userId!,
+    );
     return db.prepare(`SELECT * FROM ${config.table} WHERE id = ?`).get(req.params.id);
   });
 };

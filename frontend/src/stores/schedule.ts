@@ -3,6 +3,7 @@ import { ref, watch } from 'vue';
 import { api } from '../api/client';
 import type { ScheduleItem } from '../api/types';
 import { useTripStore } from './trip';
+import { useLiveSyncStore } from './liveSync';
 import { useUndoableDelete } from '../composables/useUndoableDelete';
 
 export interface ScheduleFormData {
@@ -27,6 +28,7 @@ export interface ScheduleFormData {
 // abgelegte Termin dort nicht sofort auf (analog zu stores/excursions.ts' Begründung).
 export const useScheduleStore = defineStore('schedule', () => {
   const tripStore = useTripStore();
+  const liveSync = useLiveSyncStore();
   const items = ref<ScheduleItem[]>([]);
   const loaded = ref(false);
   const { isPending, markPendingDelete, clearPending } = useUndoableDelete();
@@ -43,6 +45,10 @@ export const useScheduleStore = defineStore('schedule', () => {
   }
 
   watch(() => tripStore.currentTripId, load, { immediate: true });
+  // Lädt automatisch neu, wenn ein anderes Mitglied etwas am Kalender ändert (Echtzeit-Sync, siehe
+  // stores/liveSync.ts) – unabhängig davon, ob die Kalender-Schublade gerade offen ist oder nicht,
+  // da dieser Store (anders als eine einzelne View) permanent existiert.
+  watch(() => liveSync.domainVersion.schedule, load);
 
   async function create(body: ScheduleFormData) {
     const created = await api.post<ScheduleItem>('/schedule', body);

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { api } from '../api/client';
 import type { Accommodation, ExcursionComment, ExcursionLike, TravelItem, User } from '../api/types';
@@ -8,6 +8,7 @@ import { useTripStore } from '../stores/trip';
 import { useExcursionsStore } from '../stores/excursions';
 import { useSpotsStore } from '../stores/spots';
 import { useDrawersStore } from '../stores/drawers';
+import { useLiveSyncStore } from '../stores/liveSync';
 import ExcursionCard from '../components/ExcursionCard.vue';
 import UndoDeleteRow from '../components/UndoDeleteRow.vue';
 import SpotOrderPicker from '../components/SpotOrderPicker.vue';
@@ -31,6 +32,7 @@ const tripId = tripStore.currentTripId as number;
 const excursionsStore = useExcursionsStore();
 const spotsStore = useSpotsStore();
 const drawers = useDrawersStore();
+const liveSync = useLiveSyncStore();
 
 const users = ref<User[]>([]);
 const likes = ref<ExcursionLike[]>([]);
@@ -38,8 +40,10 @@ const comments = ref<ExcursionComment[]>([]);
 const accommodations = ref<Accommodation[]>([]);
 const travelItems = ref<TravelItem[]>([]);
 const loading = ref(true);
+const highlightedIds = ref<Set<number>>(new Set());
 
 onMounted(async () => {
+  highlightedIds.value = liveSync.markSeen('ideas');
   const [usersRes, likesRes, commentsRes, accommodationRes, travelRes] = await Promise.all([
     api.get<User[]>('/users'),
     api.get<ExcursionLike[]>(`/ideas/likes?trip_id=${tripId}`),
@@ -56,6 +60,16 @@ onMounted(async () => {
   travelItems.value = travelRes;
   loading.value = false;
 });
+
+// Wie ScheduleView.vue: diese Ansicht ist auf Desktop dauerhaft in der Schublade gemountet, daher
+// zusätzlich beim Öffnen erneut als "gesehen" markieren (frische Hervorhebung für inzwischen
+// hinzugekommene Touren).
+watch(
+  () => drawers.excursionsOpen,
+  (open) => {
+    if (open) highlightedIds.value = liveSync.markSeen('ideas');
+  },
+);
 
 function creatorLabel(userId: number | null) {
   if (userId == null) return null;
@@ -337,6 +351,7 @@ function editStationSpot() {
           <ExcursionCard
             v-else
             :excursion="excursion"
+            :highlighted="highlightedIds.has(excursion.id)"
             :creator-label="creatorLabel(excursion.created_by)"
             :like-count="likesFor(excursion.id).length"
             :liked="likedByMe(excursion.id)"
@@ -382,6 +397,7 @@ function editStationSpot() {
           <ExcursionCard
             v-else
             :excursion="excursion"
+            :highlighted="highlightedIds.has(excursion.id)"
             :creator-label="creatorLabel(excursion.created_by)"
             :like-count="likesFor(excursion.id).length"
             :liked="likedByMe(excursion.id)"

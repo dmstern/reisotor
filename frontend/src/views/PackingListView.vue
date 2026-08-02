@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { api } from '../api/client';
 import type { PackingItem, User } from '../api/types';
 import { useAuthStore } from '../stores/auth';
 import { useTripStore } from '../stores/trip';
+import { useLiveSyncStore } from '../stores/liveSync';
 import PackingItemRow from '../components/PackingItem.vue';
 import Modal from '../components/Modal.vue';
 import Combobox from '../components/Combobox.vue';
@@ -12,11 +13,13 @@ import { useUndoableDelete } from '../composables/useUndoableDelete';
 
 const auth = useAuthStore();
 const tripStore = useTripStore();
+const liveSync = useLiveSyncStore();
 const tripId = tripStore.currentTripId as number;
 const items = ref<PackingItem[]>([]);
 const { isPending, markPendingDelete, clearPending } = useUndoableDelete();
 const users = ref<User[]>([]);
 const loading = ref(true);
+const highlightedIds = ref<Set<number>>(new Set());
 
 // Ein Hinzufügen-Formular direkt über jeder Liste (statt eines einzigen globalen Formulars mit
 // Listen-Auswahl) – welche Liste gemeint ist, ergibt sich schon aus der Position, ein Auswahlfeld
@@ -32,7 +35,7 @@ const quickAddQuantities = ref<Record<string, number>>({});
 const editingItem = ref<PackingItem | null>(null);
 const editForm = ref({ label: '', category: '', subcategory: '', quantity: 1, ownerId: 'shared' });
 
-onMounted(async () => {
+async function load() {
   const [itemsRes, usersRes] = await Promise.all([
     api.get<PackingItem[]>(`/packing?trip_id=${tripId}`),
     api.get<User[]>('/users'),
@@ -40,7 +43,14 @@ onMounted(async () => {
   items.value = itemsRes;
   users.value = usersRes;
   loading.value = false;
+}
+
+onMounted(() => {
+  highlightedIds.value = liveSync.markSeen('packing');
+  load();
 });
+
+watch(() => liveSync.domainVersion.packing, load);
 
 const categories = computed(() => {
   const set = new Set(items.value.map((i) => i.category?.trim()).filter((c): c is string => !!c));
@@ -238,6 +248,7 @@ async function quickAdd(list: ListGroup) {
                 <PackingItemRow
                   v-else
                   :item="item"
+                  :highlighted="highlightedIds.has(item.id)"
                   @update-counts="updateCounts"
                   @remove="remove"
                   @edit="startEdit"

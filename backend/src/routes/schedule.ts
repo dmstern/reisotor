@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { db } from '../db/index.js';
 import { requireTripMember } from '../tripAccess.js';
+import { recordActivity } from '../activity.js';
 
 interface ScheduleBody {
   trip_id: number;
@@ -63,6 +64,7 @@ export const scheduleRoutes: FastifyPluginAsync = async (app) => {
         spot_id ?? null,
         idea_id ?? null,
       );
+    recordActivity(trip_id, 'schedule', result.lastInsertRowid as number, 'created', req.session.userId!);
     reply.code(201);
     return db.prepare('SELECT * FROM schedule_items WHERE id = ?').get(result.lastInsertRowid);
   });
@@ -99,6 +101,7 @@ export const scheduleRoutes: FastifyPluginAsync = async (app) => {
         req.params.id,
       );
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
+    recordActivity(existingItem.trip_id, 'schedule', Number(req.params.id), 'updated', req.session.userId!);
     return db.prepare('SELECT * FROM schedule_items WHERE id = ?').get(req.params.id);
   });
 
@@ -115,6 +118,7 @@ export const scheduleRoutes: FastifyPluginAsync = async (app) => {
       .prepare('UPDATE schedule_items SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL')
       .run(new Date().toISOString(), req.params.id);
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
+    recordActivity(existingItem.trip_id, 'schedule', Number(req.params.id), 'deleted', req.session.userId!);
     return reply.code(204).send();
   });
 };

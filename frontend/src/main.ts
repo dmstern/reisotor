@@ -15,6 +15,17 @@ app.use(pinia);
 app.use(router);
 app.mount('#app');
 
+// Registriert den Service Worker früh (unabhängig davon, ob die Person Push je aktiviert) – ein
+// aktiviertes Abonnement braucht bei jedem App-Start eine aktive Registration, sonst wäre
+// navigator.serviceWorker.ready nie erfüllt (siehe utils/push.ts). Rein additiv: ohne SW-Unterstützung
+// (z. B. sehr alter Browser) bleibt die App unverändert funktionsfähig.
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {
+    // Push-Benachrichtigungen sind ein optionales Extra – ein fehlgeschlagenes SW-Setup soll die
+    // restliche App nicht beeinträchtigen.
+  });
+}
+
 // Checkboxen/Toggle-Buttons (style.css: input[type=checkbox]:focus-visible, .state-toggle:
 // focus-visible) behalten nach einem Klick den DOM-Fokus – Chromium/Firefox behandeln das bei
 // Checkbox-artigen Controls bewusst als "focus-visible" (anders als bei <button>), der grüne

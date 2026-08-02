@@ -1,10 +1,16 @@
 <script setup lang="ts">
 import { useAuthStore } from '../stores/auth';
 import { useThemeStore } from '../stores/theme';
+import { useConnectivityStore } from '../stores/connectivity';
 import TripSwitcher from './TripSwitcher.vue';
+import PresenceAvatars from './PresenceAvatars.vue';
+import OfflineIndicator from './OfflineIndicator.vue';
 
 const auth = useAuthStore();
 const theme = useThemeStore();
+// Nur instanziieren, damit die Online/Offline-Listener + der periodische Health-Check (siehe dort)
+// unabhängig davon laufen, ob gerade eine bestimmte Unteransicht gemountet ist.
+useConnectivityStore();
 
 // Frontend wird identisch für Staging (dev.reise.ruebenherz.de) und Produktion
 // (reise.ruebenherz.de) gebaut (siehe .github/workflows/build-deploy.yml) – der Unterschied lässt
@@ -21,6 +27,8 @@ const isNonProd = window.location.hostname !== 'reise.ruebenherz.de';
       <span v-if="isNonProd" class="env-badge" title="Dev-/Staging-Umgebung, nicht die echte Produktion">DEV</span>
     </router-link>
     <TripSwitcher class="switcher" />
+    <OfflineIndicator />
+    <PresenceAvatars />
     <button
       type="button"
       class="secondary theme-toggle"

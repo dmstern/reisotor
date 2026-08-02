@@ -3,6 +3,7 @@ import { ref, watch } from 'vue';
 import { api } from '../api/client';
 import type { Excursion } from '../api/types';
 import { useTripStore } from './trip';
+import { useLiveSyncStore } from './liveSync';
 import { useUndoableDelete } from '../composables/useUndoableDelete';
 
 export interface ExcursionFormData {
@@ -19,6 +20,7 @@ export interface ExcursionFormData {
 // nach dem Drop weiterhin das alte (fehlende) Datum an.
 export const useExcursionsStore = defineStore('excursions', () => {
   const tripStore = useTripStore();
+  const liveSync = useLiveSyncStore();
   const excursions = ref<Excursion[]>([]);
   const loaded = ref(false);
   const { isPending, markPendingDelete, clearPending } = useUndoableDelete();
@@ -35,6 +37,9 @@ export const useExcursionsStore = defineStore('excursions', () => {
   }
 
   watch(() => tripStore.currentTripId, load, { immediate: true });
+  // Echtzeit-Sync (siehe stores/liveSync.ts): lädt neu, sobald ein anderes Mitglied etwas an den
+  // Touren/Ausflügen ändert.
+  watch(() => liveSync.domainVersion.ideas, load);
 
   async function create(body: ExcursionFormData) {
     const created = await api.post<Excursion>('/ideas', { trip_id: tripStore.currentTripId, ...body });

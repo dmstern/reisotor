@@ -4,6 +4,7 @@ import { api } from '../api/client';
 import type { Accommodation, User } from '../api/types';
 import { useTripStore } from '../stores/trip';
 import { useDrawersStore } from '../stores/drawers';
+import { useLiveSyncStore } from '../stores/liveSync';
 import { parseLatLngFromMapsLink } from '../utils/googleMaps';
 import Modal from '../components/Modal.vue';
 import AccommodationDetailDialog from '../components/AccommodationDetailDialog.vue';
@@ -15,11 +16,13 @@ import { useUndoableDelete } from '../composables/useUndoableDelete';
 
 const tripStore = useTripStore();
 const drawers = useDrawersStore();
+const liveSync = useLiveSyncStore();
 const tripId = tripStore.currentTripId as number;
 const accommodations = ref<Accommodation[]>([]);
 const { isPending, markPendingDelete, clearPending } = useUndoableDelete();
 const users = ref<User[]>([]);
 const loading = ref(true);
+const highlightedIds = ref<Set<number>>(new Set());
 const showForm = ref(false);
 const mapsLinkResolved = ref<boolean | null>(null);
 const editMapsLinkResolved = ref<boolean | null>(null);
@@ -58,7 +61,7 @@ const form = ref(emptyForm());
 const editingItem = ref<Accommodation | null>(null);
 const editForm = ref(emptyForm());
 
-onMounted(async () => {
+async function load() {
   const [accRes, usersRes] = await Promise.all([
     api.get<Accommodation[]>(`/accommodation?trip_id=${tripId}`),
     api.get<User[]>('/users'),
@@ -66,7 +69,14 @@ onMounted(async () => {
   accommodations.value = accRes;
   users.value = usersRes;
   loading.value = false;
+}
+
+onMounted(() => {
+  highlightedIds.value = liveSync.markSeen('accommodation');
+  load();
 });
+
+watch(() => liveSync.domainVersion.accommodation, load);
 
 function userLabel(id: number | null) {
   if (id == null) return '';
@@ -319,7 +329,7 @@ function showDetailOnMap() {
     <TransitionGroup tag="div" name="list" class="masonry cards">
       <template v-for="acc in accommodations" :key="acc.id">
         <UndoDeleteRow v-if="isPending(acc.id)" :label="acc.name" @undo="restore(acc.id)" />
-        <div v-else class="card acc-card" @click="openDetail(acc)">
+        <div v-else class="card acc-card" :class="{ 'new-highlight': highlightedIds.has(acc.id) }" @click="openDetail(acc)">
           <div class="acc-head">
             <h3>{{ acc.name }}</h3>
             <div class="actions">

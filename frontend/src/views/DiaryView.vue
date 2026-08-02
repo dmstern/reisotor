@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { api } from '../api/client';
 import type { DiaryComment, DiaryEntry, DiaryLike, Excursion, User } from '../api/types';
 import { useAuthStore } from '../stores/auth';
@@ -7,6 +7,7 @@ import { useTripStore } from '../stores/trip';
 import { useExcursionsStore } from '../stores/excursions';
 import { useSpotsStore } from '../stores/spots';
 import { useDrawersStore } from '../stores/drawers';
+import { useLiveSyncStore } from '../stores/liveSync';
 import { renderRichText } from '../utils/richText';
 import { compressImage } from '../utils/imageCompression';
 import { spotCategoryMeta } from '../utils/spotCategory';
@@ -24,12 +25,14 @@ const tripId = tripStore.currentTripId as number;
 const excursionsStore = useExcursionsStore();
 const spotsStore = useSpotsStore();
 const drawers = useDrawersStore();
+const liveSync = useLiveSyncStore();
 const entries = ref<DiaryEntry[]>([]);
 const { isPending, markPendingDelete, clearPending } = useUndoableDelete();
 const likes = ref<DiaryLike[]>([]);
 const comments = ref<DiaryComment[]>([]);
 const users = ref<User[]>([]);
 const loading = ref(true);
+const highlightedIds = ref<Set<number>>(new Set());
 
 const showForm = ref(false);
 const emptyForm = () => ({ title: '', content: '', images: [] as string[], excursion_ids: [] as number[] });
@@ -95,7 +98,7 @@ async function pickSpot(spotId: number, dateStr: string, target: { excursion_ids
   picked.add(spotId);
 }
 
-onMounted(async () => {
+async function load() {
   const [entriesRes, likesRes, commentsRes, usersRes] = await Promise.all([
     api.get<DiaryEntry[]>(`/diary?trip_id=${tripId}`),
     api.get<DiaryLike[]>(`/diary/likes?trip_id=${tripId}`),
@@ -109,6 +112,13 @@ onMounted(async () => {
   comments.value = commentsRes;
   users.value = usersRes;
   loading.value = false;
+}
+
+watch(() => liveSync.domainVersion.diary, load);
+
+onMounted(async () => {
+  highlightedIds.value = liveSync.markSeen('diary');
+  await load();
 });
 
 function author(id: number) {
@@ -332,7 +342,7 @@ async function removeComment(id: number) {
     <TransitionGroup tag="div" name="list" class="entries">
       <template v-for="entry in entries" :key="entry.id">
         <UndoDeleteRow v-if="isPending(entry.id)" :label="entry.title ?? undefined" @undo="restoreEntry(entry.id)" />
-        <article v-else class="card entry">
+        <article v-else class="card entry" :class="{ 'new-highlight': highlightedIds.has(entry.id) }">
           <header class="entry-head">
             <span class="avatar">{{ author(entry.author_id)?.avatar ?? '❓' }}</span>
             <div class="entry-meta">

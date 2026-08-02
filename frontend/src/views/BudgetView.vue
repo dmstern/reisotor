@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { api } from '../api/client';
 import type {
   Accommodation,
@@ -11,6 +11,7 @@ import type {
   User,
 } from '../api/types';
 import { useTripStore } from '../stores/trip';
+import { useLiveSyncStore } from '../stores/liveSync';
 import { assignCategoryColors } from '../utils/categoryColors';
 import { computeBalances, computeTwoPersonSummary } from '../utils/budgetBalances';
 import BudgetMeter from '../components/BudgetMeter.vue';
@@ -22,6 +23,7 @@ import UndoDeleteRow from '../components/UndoDeleteRow.vue';
 import { useUndoableDelete } from '../composables/useUndoableDelete';
 
 const tripStore = useTripStore();
+const liveSync = useLiveSyncStore();
 const tripId = tripStore.currentTripId as number;
 const users = ref<User[]>([]);
 const expenses = ref<BudgetExpense[]>([]);
@@ -31,6 +33,7 @@ const transfers = ref<BudgetTransfer[]>([]);
 const accommodations = ref<Accommodation[]>([]);
 const travelItems = ref<TravelItem[]>([]);
 const loading = ref(true);
+const highlightedIds = ref<Set<number>>(new Set());
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -41,7 +44,7 @@ async function refreshAllocations() {
   allocations.value = await api.get<BudgetAllocation[]>(`/budget/allocations?trip_id=${tripId}`);
 }
 
-onMounted(async () => {
+async function load() {
   const [u, e, b, a, tr, acc, travel] = await Promise.all([
     api.get<User[]>('/users'),
     api.get<BudgetExpense[]>(`/budget?trip_id=${tripId}`),
@@ -59,7 +62,14 @@ onMounted(async () => {
   accommodations.value = acc;
   travelItems.value = travel;
   loading.value = false;
+}
+
+onMounted(() => {
+  highlightedIds.value = liveSync.markSeen('budget');
+  load();
 });
+
+watch(() => liveSync.domainVersion.budget, load);
 
 /** Bezahlungen, die automatisch aus einem Unterkunft- oder Reise-Eintrag erzeugt wurden
  *  (siehe accommodation.ts/travel.ts `planBudgetExpense`), sind hier gemäß der Architekturregel
@@ -457,7 +467,7 @@ const categoryColors = computed(() => {
             <tr v-if="expenseUndo.isPending(e.id)">
               <td colspan="6"><UndoDeleteRow :label="e.title" @undo="restoreExpense(e.id)" /></td>
             </tr>
-            <tr v-else>
+            <tr v-else :class="{ 'new-highlight': highlightedIds.has(e.id) }">
               <td>{{ e.date || '–' }}</td>
               <td>{{ e.title }}<span v-if="e.note" class="note"> · {{ e.note }}</span></td>
               <td>{{ e.category || '–' }}</td>
@@ -525,7 +535,7 @@ const categoryColors = computed(() => {
                 <UndoDeleteRow :label="`${t.amount.toFixed(2)} €`" @undo="restoreTransfer(t.id)" />
               </td>
             </tr>
-            <tr v-else>
+            <tr v-else :class="{ 'new-highlight': highlightedIds.has(t.id) }">
               <td>{{ t.date || '–' }}</td>
               <td>{{ userAvatar(t.from_user_id) }} {{ userName(t.from_user_id) }}</td>
               <td>{{ userAvatar(t.to_user_id) }} {{ userName(t.to_user_id) }}</td>

@@ -561,6 +561,16 @@ textarea:focus {
   padding: var(--space-4);
 }
 
+/* Markiert Objekte, die seit dem letzten Besuch dieser Ansicht von einer anderen Person geändert
+   wurden (Echtzeit-Sync, siehe stores/liveSync.ts's markSeen()) – ein farbiger Rand statt eines
+   flächigen Hintergrunds, damit er über allen Karten-Varianten (Bild-Karten, reine Text-Karten)
+   gleich gut lesbar bleibt. Bewusst kein zusätzlicher Nav-artiger Punkt hier, der sitzt schon am
+   auslösenden Nav-Item selbst (NavBar.vue/Drawer.vue). */
+.new-highlight {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
 .page {
   max-width: 960px;
   margin: 0 auto;

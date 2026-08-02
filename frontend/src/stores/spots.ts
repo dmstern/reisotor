@@ -3,6 +3,7 @@ import { ref, watch } from 'vue';
 import { api } from '../api/client';
 import type { Spot, SpotComment, SpotLike } from '../api/types';
 import { useTripStore } from './trip';
+import { useLiveSyncStore } from './liveSync';
 import { useUndoableDelete } from '../composables/useUndoableDelete';
 
 export interface SpotFormData {
@@ -22,6 +23,7 @@ export interface SpotFormData {
 // sehen wie die Spots-Übersicht, ohne eigene Parallel-Fetches.
 export const useSpotsStore = defineStore('spots', () => {
   const tripStore = useTripStore();
+  const liveSync = useLiveSyncStore();
   const spots = ref<Spot[]>([]);
   const spotLikes = ref<SpotLike[]>([]);
   const spotComments = ref<SpotComment[]>([]);
@@ -49,6 +51,9 @@ export const useSpotsStore = defineStore('spots', () => {
   }
 
   watch(() => tripStore.currentTripId, load, { immediate: true });
+  // Echtzeit-Sync (siehe stores/liveSync.ts): lädt neu, sobald ein anderes Mitglied etwas an den
+  // Spots ändert.
+  watch(() => liveSync.domainVersion.spots, load);
 
   function likesFor(spotId: number) {
     return spotLikes.value.filter((l) => l.spot_id === spotId);

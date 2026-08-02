@@ -6,6 +6,7 @@ import type { User } from '../api/types';
 import { useAuthStore } from '../stores/auth';
 import { useNavPositionStore } from '../stores/navPosition';
 import { useWeatherProviderStore, WEATHER_MODEL_OPTIONS } from '../stores/weatherProvider';
+import { getExistingSubscription, isPushSupported, subscribeToPush, unsubscribeFromPush } from '../utils/push';
 import PasswordInput from '../components/PasswordInput.vue';
 
 const auth = useAuthStore();
@@ -77,6 +78,31 @@ const newUserError = ref('');
 const newUserSaving = ref(false);
 const showNewUserForm = ref(false);
 
+const pushSupported = isPushSupported();
+// null = wird noch geprüft, sonst tatsächlicher Abo-Status beim Browser (nicht nur ein lokaler
+// Toggle-Zustand, da das Abo z. B. auch über die Browser-Einstellungen widerrufen worden sein kann).
+const pushEnabled = ref<boolean | null>(null);
+const pushLoading = ref(false);
+const pushError = ref('');
+
+async function togglePush() {
+  pushError.value = '';
+  pushLoading.value = true;
+  try {
+    if (pushEnabled.value) {
+      await unsubscribeFromPush();
+      pushEnabled.value = false;
+    } else {
+      await subscribeToPush();
+      pushEnabled.value = true;
+    }
+  } catch (err) {
+    pushError.value = err instanceof Error ? err.message : 'Push-Benachrichtigungen konnten nicht geändert werden';
+  } finally {
+    pushLoading.value = false;
+  }
+}
+
 const exporting = ref(false);
 const exportError = ref('');
 const importing = ref(false);
@@ -89,6 +115,9 @@ onMounted(async () => {
   usernameForm.value.username = auth.user?.username ?? '';
   loading.value = false;
   backendBuildInfo.value = await api.get<BuildInfo>('/build-info');
+  if (pushSupported) {
+    pushEnabled.value = !!(await getExistingSubscription());
+  }
 });
 
 async function changeUsername() {
@@ -326,6 +355,23 @@ async function onImportFileSelected(event: Event) {
         wiederherstellen.
       </p>
       <router-link to="/trash" class="card-action-btn">Papierkorb öffnen</router-link>
+    </div>
+
+    <div class="card">
+      <h2>🔔 Push-Benachrichtigungen</h2>
+      <p class="hint" v-if="!pushSupported">
+        Push-Benachrichtigungen werden von diesem Browser nicht unterstützt.
+      </p>
+      <template v-else>
+        <p class="hint">
+          Benachrichtigt dich, wenn andere Mitglieder eines Urlaubs etwas ändern – auch wenn Reisotor
+          gerade nicht offen ist.
+        </p>
+        <button class="secondary" :disabled="pushLoading || pushEnabled === null" @click="togglePush">
+          {{ pushLoading ? 'Wird geändert…' : pushEnabled ? 'Deaktivieren' : 'Aktivieren' }}
+        </button>
+        <p v-if="pushError" class="hint error">{{ pushError }}</p>
+      </template>
     </div>
 
     <div class="card">

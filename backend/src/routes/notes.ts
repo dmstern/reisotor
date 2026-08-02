@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { db } from '../db/index.js';
 import { requireTripMember } from '../tripAccess.js';
+import { recordActivity } from '../activity.js';
 
 interface NoteBody {
   trip_id: number;
@@ -28,6 +29,7 @@ export const notesRoutes: FastifyPluginAsync = async (app) => {
     const result = db
       .prepare('INSERT INTO notes (trip_id, title, content, created_by, created_at) VALUES (?, ?, ?, ?, ?)')
       .run(trip_id, title ?? null, content, req.session.userId, now);
+    recordActivity(trip_id, 'notes', result.lastInsertRowid as number, 'created', req.session.userId!);
     reply.code(201);
     return db.prepare('SELECT * FROM notes WHERE id = ?').get(result.lastInsertRowid);
   });
@@ -45,6 +47,7 @@ export const notesRoutes: FastifyPluginAsync = async (app) => {
       .prepare('UPDATE notes SET title = ?, content = ?, updated_at = ? WHERE id = ?')
       .run(title ?? null, content, now, req.params.id);
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
+    recordActivity(existingNote.trip_id, 'notes', Number(req.params.id), 'updated', req.session.userId!);
     return db.prepare('SELECT * FROM notes WHERE id = ?').get(req.params.id);
   });
 
@@ -61,6 +64,7 @@ export const notesRoutes: FastifyPluginAsync = async (app) => {
       .prepare('UPDATE notes SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL')
       .run(new Date().toISOString(), req.params.id);
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
+    recordActivity(existingNote.trip_id, 'notes', Number(req.params.id), 'deleted', req.session.userId!);
     return reply.code(204).send();
   });
 

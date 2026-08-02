@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import { db, ensureDefaultSharedBudget } from '../db/index.js';
 import { resolveLatLng, tilePreviewUrl } from '../utils/mapsLink.js';
 import { requireTripMember } from '../tripAccess.js';
+import { recordActivity } from '../activity.js';
 
 interface TripBody {
   name: string;
@@ -147,6 +148,7 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
       user_id,
       new Date().toISOString(),
     );
+    recordActivity(Number(req.params.id), 'members', user_id, 'member_added', req.session.userId!);
     reply.code(201);
     return user;
   });
@@ -158,6 +160,7 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
   app.delete<{ Params: { id: string; userId: string } }>('/trips/:id/members/:userId', async (req, reply) => {
     if (!requireTripMember(reply, req.params.id, req.session.userId)) return;
     db.prepare('DELETE FROM trip_members WHERE trip_id = ? AND user_id = ?').run(req.params.id, req.params.userId);
+    recordActivity(Number(req.params.id), 'members', Number(req.params.userId), 'member_removed', req.session.userId!);
     return reply.code(204).send();
   });
 };

@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router';
 import { useAuthStore } from './stores/auth';
 import { useTripStore, type TripFormData } from './stores/trip';
 import { useDrawersStore } from './stores/drawers';
+import { useLiveSyncStore } from './stores/liveSync';
 import { useIsDesktop } from './composables/useIsDesktop';
 import { SECTION_ICONS } from './utils/sectionIcons';
 import AppHeader from './components/AppHeader.vue';
@@ -18,6 +19,11 @@ const auth = useAuthStore();
 const tripStore = useTripStore();
 const drawers = useDrawersStore();
 const isDesktop = useIsDesktop();
+// SSE-Verbindung + Präsenz sollen laufen, sobald ein Urlaub geladen ist, unabhängig davon, welche
+// Unteransicht gerade aktiv ist – Pinia-Stores werden erst beim ersten useXStore()-Aufruf erzeugt,
+// siehe liveSync.ts's watch(currentTripId, ..., { immediate: true }). Wird hier außerdem für die
+// Nav-Punkte der beiden Schubladen-Laschen (Kalender/Touren) unten gebraucht.
+const liveSync = useLiveSyncStore();
 const showNav = computed(() => route.name !== 'login');
 
 watch(
@@ -70,6 +76,7 @@ async function onCreateFirstTrip(data: TripFormData) {
         :width="drawers.calendarWidth"
         label="Kalender"
         :icon="SECTION_ICONS.calendar"
+        :has-unseen="liveSync.hasUnseen('schedule')"
         @update:open="(v) => (drawers.calendarOpen = v)"
         @update:width="(w) => (drawers.calendarWidth = w)"
       >
@@ -85,6 +92,7 @@ async function onCreateFirstTrip(data: TripFormData) {
         :width="drawers.excursionsWidth"
         label="Touren"
         :icon="SECTION_ICONS.excursions"
+        :has-unseen="liveSync.hasUnseen('ideas')"
         @update:open="(v) => (drawers.excursionsOpen = v)"
         @update:width="(w) => (drawers.excursionsWidth = w)"
       >

@@ -26,6 +26,7 @@ const props = defineProps<{
   stations: Spot[];
   accommodations: Accommodation[];
   travelItems: TravelItem[];
+  highlighted?: boolean;
 }>();
 const emit = defineEmits<{
   (e: 'remove', id: number): void;
@@ -126,7 +127,7 @@ function onSpotDrop(event: DragEvent) {
 <template>
   <div
     class="card excursion-card"
-    :class="{ 'drop-target': spotDragOverCount > 0 }"
+    :class="{ 'drop-target': spotDragOverCount > 0, 'new-highlight': highlighted }"
     @click="detailOpen = true"
     @dragover.prevent
     @dragenter.prevent="onSpotDragEnter"

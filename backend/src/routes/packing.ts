@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { db } from '../db/index.js';
 import { requireTripMember } from '../tripAccess.js';
+import { recordActivity } from '../activity.js';
 
 interface PackingBody {
   trip_id: number;
@@ -44,6 +45,7 @@ export const packingRoutes: FastifyPluginAsync = async (app) => {
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(trip_id, category ?? null, subcategory ?? null, label, quantity, laidOut, packed, owner_id ?? null);
+    recordActivity(trip_id, 'packing', result.lastInsertRowid as number, 'created', req.session.userId!);
     reply.code(201);
     return db.prepare('SELECT * FROM packing_items WHERE id = ?').get(result.lastInsertRowid);
   });
@@ -65,6 +67,7 @@ export const packingRoutes: FastifyPluginAsync = async (app) => {
       )
       .run(category ?? null, subcategory ?? null, label, quantity, laidOut, packed, owner_id ?? null, req.params.id);
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
+    recordActivity(existingItem.trip_id, 'packing', Number(req.params.id), 'updated', req.session.userId!);
     return db.prepare('SELECT * FROM packing_items WHERE id = ?').get(req.params.id);
   });
 
@@ -81,6 +84,7 @@ export const packingRoutes: FastifyPluginAsync = async (app) => {
       .prepare('UPDATE packing_items SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL')
       .run(new Date().toISOString(), req.params.id);
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
+    recordActivity(existingItem.trip_id, 'packing', Number(req.params.id), 'deleted', req.session.userId!);
     return reply.code(204).send();
   });
 };

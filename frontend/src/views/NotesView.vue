@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 import { api, ApiError } from '../api/client';
 import type { Note, NoteComment, NoteLike, User } from '../api/types';
 import { useAuthStore } from '../stores/auth';
 import { useTripStore } from '../stores/trip';
+import { useLiveSyncStore } from '../stores/liveSync';
 import { renderRichText } from '../utils/richText';
 import Modal from '../components/Modal.vue';
 import EditButton from '../components/EditButton.vue';
@@ -15,6 +16,7 @@ import { useUndoableDelete } from '../composables/useUndoableDelete';
 
 const auth = useAuthStore();
 const tripStore = useTripStore();
+const liveSync = useLiveSyncStore();
 const tripId = tripStore.currentTripId as number;
 const notes = ref<Note[]>([]);
 const { isPending, markPendingDelete, clearPending } = useUndoableDelete();
@@ -25,6 +27,7 @@ const loading = ref(true);
 const showForm = ref(false);
 const error = ref('');
 const openComments = ref<Set<number>>(new Set());
+const highlightedIds = ref<Set<number>>(new Set());
 
 const emptyForm = () => ({ title: '', content: '' });
 const form = ref(emptyForm());
@@ -32,7 +35,7 @@ const form = ref(emptyForm());
 const editingNote = ref<Note | null>(null);
 const editForm = ref(emptyForm());
 
-onMounted(async () => {
+async function load() {
   const [notesRes, usersRes, likesRes, commentsRes] = await Promise.all([
     api.get<Note[]>(`/notes?trip_id=${tripId}`),
     api.get<User[]>('/users'),
@@ -44,7 +47,14 @@ onMounted(async () => {
   likes.value = likesRes;
   comments.value = commentsRes;
   loading.value = false;
+}
+
+onMounted(() => {
+  highlightedIds.value = liveSync.markSeen('notes');
+  load();
 });
+
+watch(() => liveSync.domainVersion.notes, load);
 
 function author(id: number) {
   return users.value.find((u) => u.id === id);
@@ -180,7 +190,7 @@ async function restore(id: number) {
     <TransitionGroup tag="div" name="list" class="masonry cards">
       <template v-for="note in notes" :key="note.id">
         <UndoDeleteRow v-if="isPending(note.id)" :label="note.title ?? undefined" @undo="restore(note.id)" />
-        <div v-else class="card note-card">
+        <div v-else class="card note-card" :class="{ 'new-highlight': highlightedIds.has(note.id) }">
           <div class="note-head">
             <h3 v-if="note.title">{{ note.title }}</h3>
             <div class="note-actions">

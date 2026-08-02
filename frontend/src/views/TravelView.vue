@@ -4,6 +4,7 @@ import { api } from '../api/client';
 import type { TravelItem, TravelPlace, TravelRole, User } from '../api/types';
 import { useTripStore } from '../stores/trip';
 import { useDrawersStore } from '../stores/drawers';
+import { useLiveSyncStore } from '../stores/liveSync';
 import { parseLatLngFromMapsLink } from '../utils/googleMaps';
 import { TRAVEL_ROLE_META, TRAVEL_ROLE_OPTIONS } from '../utils/travelRole';
 import { formatTravelDuration, travelDurationMinutes } from '../utils/travelDuration';
@@ -17,6 +18,7 @@ import { useUndoableDelete } from '../composables/useUndoableDelete';
 
 const tripStore = useTripStore();
 const drawers = useDrawersStore();
+const liveSync = useLiveSyncStore();
 const tripId = tripStore.currentTripId as number;
 const items = ref<TravelItem[]>([]);
 const { isPending, markPendingDelete, clearPending } = useUndoableDelete();
@@ -24,6 +26,7 @@ const places = ref<TravelPlace[]>([]);
 const users = ref<User[]>([]);
 const loading = ref(true);
 const showForm = ref(false);
+const highlightedIds = ref<Set<number>>(new Set());
 
 const TYPE_OPTIONS = ['Flug', 'Zug', 'Bus', 'Auto', 'Fähre', 'Sonstiges'];
 // Sentinel-Wert für "kein Ort ausgewählt, Freitext eingeben" – ein leerer String wäre auch möglich,
@@ -83,7 +86,7 @@ const pickerCenter = computed(() => {
   return t?.lat != null && t?.lng != null ? { lat: t.lat, lng: t.lng } : undefined;
 });
 
-onMounted(async () => {
+async function load() {
   const [itemsRes, placesRes, usersRes] = await Promise.all([
     api.get<TravelItem[]>(`/travel?trip_id=${tripId}`),
     api.get<TravelPlace[]>(`/travel/places?trip_id=${tripId}`),
@@ -93,6 +96,13 @@ onMounted(async () => {
   places.value = placesRes;
   users.value = usersRes;
   loading.value = false;
+}
+
+watch(() => liveSync.domainVersion.travel, load);
+
+onMounted(async () => {
+  highlightedIds.value = liveSync.markSeen('travel');
+  await load();
 });
 
 function userLabel(id: number | null) {
@@ -608,7 +618,7 @@ function showDetailToOnMap() {
     <TransitionGroup tag="div" name="list" class="masonry cards">
       <template v-for="item in items" :key="item.id">
         <UndoDeleteRow v-if="isPending(item.id)" :label="item.title" @undo="restore(item.id)" />
-        <div v-else class="card travel-card" @click="openDetail(item)">
+        <div v-else class="card travel-card" :class="{ 'new-highlight': highlightedIds.has(item.id) }" @click="openDetail(item)">
           <div class="travel-head">
             <h3>{{ typeIcon(item.type) }} {{ item.title }}</h3>
             <div class="actions">

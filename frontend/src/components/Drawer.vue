@@ -2,7 +2,14 @@
 import { computed, nextTick, watch, ref } from 'vue';
 import { MAX_DRAWER_WIDTH, MIN_DRAWER_WIDTH, useDrawersStore } from '../stores/drawers';
 
-const props = defineProps<{ side: 'left' | 'right'; open: boolean; label: string; icon: string; width: number }>();
+const props = defineProps<{
+  side: 'left' | 'right';
+  open: boolean;
+  label: string;
+  icon: string;
+  width: number;
+  hasUnseen?: boolean;
+}>();
 const emit = defineEmits<{ (e: 'update:open', value: boolean): void; (e: 'update:width', value: number): void }>();
 
 const drawers = useDrawersStore();
@@ -158,7 +165,10 @@ function onResizeEnd() {
       :disabled="tabDisabled"
       @click="toggle"
     >
-      <span class="tab-icon">{{ icon }}</span>
+      <span class="tab-icon-wrap">
+        <span class="tab-icon">{{ icon }}</span>
+        <span v-if="hasUnseen" class="unseen-dot" aria-label="Neue Änderungen" />
+      </span>
       <span class="tab-label">{{ label }}</span>
     </button>
   </div>
@@ -247,9 +257,27 @@ function onResizeEnd() {
   display: none;
 }
 
+.tab-icon-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
 .tab-icon {
   font-size: 1.1rem;
   line-height: 1;
+}
+
+/* Gegenstück zu NavBar.vue's .unseen-dot – dieselbe Bedeutung (jemand hat seit dem letzten Besuch
+   etwas in dieser Schublade geändert), hier auf der seitlichen Lasche statt einem Nav-Item. */
+.unseen-dot {
+  position: absolute;
+  top: -2px;
+  right: -3px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-danger);
+  border: 1.5px solid var(--color-surface);
 }
 
 .tab-label {

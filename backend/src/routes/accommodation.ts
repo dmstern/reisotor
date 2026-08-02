@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import { db, ensureDefaultSharedBudget } from '../db/index.js';
 import { resolveLatLng } from '../utils/mapsLink.js';
 import { requireTripMember } from '../tripAccess.js';
+import { recordActivity } from '../activity.js';
 
 interface AccommodationBody {
   trip_id: number;
@@ -121,6 +122,7 @@ export const accommodationRoutes: FastifyPluginAsync = async (app) => {
         body.paid_by_user_id ?? null,
         budgetExpenseId,
       );
+    recordActivity(body.trip_id, 'accommodation', result.lastInsertRowid as number, 'created', req.session.userId!);
     reply.code(201);
     return db.prepare('SELECT * FROM accommodation WHERE id = ?').get(result.lastInsertRowid);
   });
@@ -174,6 +176,7 @@ export const accommodationRoutes: FastifyPluginAsync = async (app) => {
       db.prepare('DELETE FROM budget_items WHERE id = ?').run(staleIdToDelete);
     }
 
+    recordActivity(existing.trip_id, 'accommodation', Number(req.params.id), 'updated', req.session.userId!);
     return db.prepare('SELECT * FROM accommodation WHERE id = ?').get(req.params.id);
   });
 
@@ -197,6 +200,7 @@ export const accommodationRoutes: FastifyPluginAsync = async (app) => {
         existing.budget_expense_id,
       );
     }
+    recordActivity(existing.trip_id, 'accommodation', Number(req.params.id), 'deleted', req.session.userId!);
     return reply.code(204).send();
   });
 };

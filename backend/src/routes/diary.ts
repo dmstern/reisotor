@@ -5,6 +5,7 @@ import path from 'node:path';
 import { db } from '../db/index.js';
 import { uploadsDir } from '../uploads.js';
 import { requireTripMember } from '../tripAccess.js';
+import { recordActivity } from '../activity.js';
 
 interface EntryRow {
   id: number;
@@ -143,6 +144,7 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
       .run(trip_id, req.session.userId, title ?? null, content, JSON.stringify(images ?? []), now);
     const entryId = result.lastInsertRowid as number;
     syncDiaryExcursions(entryId, excursion_ids ?? []);
+    recordActivity(trip_id, 'diary', entryId, 'created', req.session.userId!);
     reply.code(201);
     const row = db.prepare('SELECT * FROM diary_entries WHERE id = ?').get(entryId) as EntryRow;
     return serializeEntry(row, excursion_ids ?? []);
@@ -168,6 +170,7 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
       req.params.id,
     );
     syncDiaryExcursions(Number(req.params.id), excursion_ids ?? []);
+    recordActivity(entry.trip_id, 'diary', Number(req.params.id), 'updated', req.session.userId!);
     const row = db.prepare('SELECT * FROM diary_entries WHERE id = ?').get(req.params.id) as EntryRow;
     return serializeEntry(row, excursion_ids ?? []);
   });
@@ -184,6 +187,7 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
     // Weicher Löschvorgang (Papierkorb, routes/trash.ts): setzt nur deleted_at statt die Zeile
     // wirklich zu entfernen.
     db.prepare('UPDATE diary_entries SET deleted_at = ? WHERE id = ?').run(new Date().toISOString(), req.params.id);
+    recordActivity(entry.trip_id, 'diary', Number(req.params.id), 'deleted', req.session.userId!);
     return reply.code(204).send();
   });
 

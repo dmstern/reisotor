@@ -19,12 +19,14 @@
     "@fastify/static": "^7.0.4",
     "bcrypt": "^5.1.1",
     "better-sqlite3": "^11.3.0",
-    "fastify": "^4.28.1"
+    "fastify": "^4.28.1",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
     "@types/better-sqlite3": "^7.6.11",
     "@types/node": "^22.7.5",
+    "@types/web-push": "^3.6.4",
     "tsx": "^4.19.1",
     "typescript": "^5.6.3",
     "vitest": "^4.1.10"

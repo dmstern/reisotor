@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { api } from '../api/client';
 import type { TodoItem, TodoPriority, User } from '../api/types';
 import { useTripStore } from '../stores/trip';
+import { useLiveSyncStore } from '../stores/liveSync';
 import { PERIOD_META, computePeriod } from '../utils/period';
 import Modal from '../components/Modal.vue';
 import EditButton from '../components/EditButton.vue';
@@ -11,11 +12,15 @@ import UndoDeleteRow from '../components/UndoDeleteRow.vue';
 import { useUndoableDelete } from '../composables/useUndoableDelete';
 
 const tripStore = useTripStore();
+const liveSync = useLiveSyncStore();
 const tripId = tripStore.currentTripId as number;
 const items = ref<TodoItem[]>([]);
 const { isPending, markPendingDelete, clearPending } = useUndoableDelete();
 const users = ref<User[]>([]);
 const loading = ref(true);
+// Von anderen Mitgliedern seit dem letzten Besuch geänderte ToDos (siehe stores/liveSync.ts) –
+// einmalig beim Mounten eingefroren, damit die Hervorhebung nicht sofort wieder verschwindet.
+const highlightedIds = ref<Set<number>>(new Set());
 
 type GroupBy = 'assignee' | 'period';
 type SortBy = 'due_date' | 'priority' | 'assignee';
@@ -55,7 +60,7 @@ const newForm = ref(emptyForm());
 const editingItem = ref<TodoItem | null>(null);
 const editForm = ref(emptyForm());
 
-onMounted(async () => {
+async function load() {
   const [itemsRes, usersRes] = await Promise.all([
     api.get<TodoItem[]>(`/todos?trip_id=${tripId}`),
     api.get<User[]>('/users'),
@@ -63,7 +68,16 @@ onMounted(async () => {
   items.value = itemsRes;
   users.value = usersRes;
   loading.value = false;
+}
+
+onMounted(() => {
+  highlightedIds.value = liveSync.markSeen('todos');
+  load();
 });
+
+// Aktualisiert die Liste automatisch, wenn ein anderes Mitglied etwas an den ToDos ändert (siehe
+// stores/liveSync.ts) – analog zum bestehenden drawers.locationsVersion-Muster in ScheduleView.vue.
+watch(() => liveSync.domainVersion.todos, load);
 
 function userLabel(id: number | null) {
   if (id == null) return null;
@@ -250,7 +264,7 @@ function isOverdue(item: TodoItem) {
               <li v-if="isPending(item.id)" class="row">
                 <UndoDeleteRow :label="item.title" @undo="restore(item.id)" />
               </li>
-              <li v-else class="row" :class="{ 'row-done': item.done }">
+              <li v-else class="row" :class="{ 'row-done': item.done, 'new-highlight': highlightedIds.has(item.id) }">
                 <label class="check">
                   <input type="checkbox" :checked="!!item.done" @change="toggleDone(item)" />
                   <span class="title" :class="{ 'text-done': item.done }">{{ item.title }}</span>

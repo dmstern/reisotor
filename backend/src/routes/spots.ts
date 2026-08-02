@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import { db } from '../db/index.js';
 import { resolveLatLng, tilePreviewUrl } from '../utils/mapsLink.js';
 import { requireTripMember } from '../tripAccess.js';
+import { recordActivity } from '../activity.js';
 
 interface SpotBody {
   trip_id: number;
@@ -57,6 +58,7 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
         lng ?? null,
         req.session.userId,
       );
+    recordActivity(trip_id, 'spots', result.lastInsertRowid as number, 'created', req.session.userId!);
     reply.code(201);
     return db.prepare('SELECT * FROM spots WHERE id = ?').get(result.lastInsertRowid);
   });
@@ -100,6 +102,7 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
         req.params.id,
       );
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
+    recordActivity(existing.trip_id, 'spots', Number(req.params.id), 'updated', req.session.userId!);
     return db.prepare('SELECT * FROM spots WHERE id = ?').get(req.params.id);
   });
 
@@ -119,6 +122,7 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
       .prepare('UPDATE spots SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL')
       .run(new Date().toISOString(), req.params.id);
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
+    recordActivity(existing.trip_id, 'spots', Number(req.params.id), 'deleted', req.session.userId!);
     return reply.code(204).send();
   });
 

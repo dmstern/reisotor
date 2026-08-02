@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { db } from '../db/index.js';
 import { requireTripMember } from '../tripAccess.js';
+import { recordActivity } from '../activity.js';
 
 interface ExpenseBody {
   trip_id: number;
@@ -62,6 +63,7 @@ export const budgetRoutes: FastifyPluginAsync = async (app) => {
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(trip_id, title, category ?? null, amount, paid_by_user_id ?? null, date ?? null, note ?? null, budget_id ?? null);
+    recordActivity(trip_id, 'budget', result.lastInsertRowid as number, 'created', req.session.userId!);
     reply.code(201);
     return db.prepare('SELECT * FROM budget_items WHERE id = ?').get(result.lastInsertRowid);
   });
@@ -81,6 +83,7 @@ export const budgetRoutes: FastifyPluginAsync = async (app) => {
       )
       .run(title, category ?? null, amount, paid_by_user_id ?? null, date ?? null, note ?? null, budget_id ?? null, req.params.id);
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
+    recordActivity(existingExpense.trip_id, 'budget', Number(req.params.id), 'updated', req.session.userId!);
     return db.prepare('SELECT * FROM budget_items WHERE id = ?').get(req.params.id);
   });
 
@@ -97,6 +100,7 @@ export const budgetRoutes: FastifyPluginAsync = async (app) => {
       .prepare('UPDATE budget_items SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL')
       .run(new Date().toISOString(), req.params.id);
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
+    recordActivity(existingExpense.trip_id, 'budget', Number(req.params.id), 'deleted', req.session.userId!);
     return reply.code(204).send();
   });
 
@@ -115,6 +119,7 @@ export const budgetRoutes: FastifyPluginAsync = async (app) => {
     const result = db
       .prepare('INSERT INTO budgets (trip_id, name, owner_id) VALUES (?, ?, ?)')
       .run(trip_id, name.trim(), owner_id ?? null);
+    recordActivity(trip_id, 'budget', result.lastInsertRowid as number, 'created', req.session.userId!);
     reply.code(201);
     return db.prepare('SELECT * FROM budgets WHERE id = ?').get(result.lastInsertRowid);
   });
@@ -132,6 +137,7 @@ export const budgetRoutes: FastifyPluginAsync = async (app) => {
       .prepare('UPDATE budgets SET name = ?, owner_id = ? WHERE id = ?')
       .run(name.trim(), owner_id ?? null, req.params.id);
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
+    recordActivity(existingBudget.trip_id, 'budget', Number(req.params.id), 'updated', req.session.userId!);
     return db.prepare('SELECT * FROM budgets WHERE id = ?').get(req.params.id);
   });
 
@@ -144,6 +150,7 @@ export const budgetRoutes: FastifyPluginAsync = async (app) => {
 
     const result = db.prepare('DELETE FROM budgets WHERE id = ?').run(req.params.id);
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
+    recordActivity(existingBudget.trip_id, 'budget', Number(req.params.id), 'deleted', req.session.userId!);
     return reply.code(204).send();
   });
 
@@ -213,6 +220,7 @@ export const budgetRoutes: FastifyPluginAsync = async (app) => {
         'INSERT INTO budget_transfers (trip_id, from_user_id, to_user_id, amount, date, note) VALUES (?, ?, ?, ?, ?, ?)',
       )
       .run(trip_id, from_user_id, to_user_id, amount, date ?? null, note ?? null);
+    recordActivity(trip_id, 'budget', result.lastInsertRowid as number, 'created', req.session.userId!);
     reply.code(201);
     return db.prepare('SELECT * FROM budget_transfers WHERE id = ?').get(result.lastInsertRowid);
   });
@@ -231,6 +239,7 @@ export const budgetRoutes: FastifyPluginAsync = async (app) => {
       )
       .run(from_user_id, to_user_id, amount, date ?? null, note ?? null, req.params.id);
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
+    recordActivity(existingTransfer.trip_id, 'budget', Number(req.params.id), 'updated', req.session.userId!);
     return db.prepare('SELECT * FROM budget_transfers WHERE id = ?').get(req.params.id);
   });
 
@@ -247,6 +256,7 @@ export const budgetRoutes: FastifyPluginAsync = async (app) => {
       .prepare('UPDATE budget_transfers SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL')
       .run(new Date().toISOString(), req.params.id);
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
+    recordActivity(existingTransfer.trip_id, 'budget', Number(req.params.id), 'deleted', req.session.userId!);
     return reply.code(204).send();
   });
 };

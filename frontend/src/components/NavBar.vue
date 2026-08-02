@@ -3,12 +3,14 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import { useNavPositionStore } from '../stores/navPosition';
+import { useLiveSyncStore, type LiveDomain } from '../stores/liveSync';
 import { useIsDesktop } from '../composables/useIsDesktop';
 import { SECTION_ICONS } from '../utils/sectionIcons';
 
 const auth = useAuthStore();
 const router = useRouter();
 const navPosition = useNavPositionStore();
+const liveSync = useLiveSyncStore();
 const isDesktop = useIsDesktop();
 
 // Schubladen (Drawer.vue) kleben ebenfalls "oben" fest und müssen wissen, wie viel Platz die
@@ -37,17 +39,17 @@ onUnmounted(() => {
 
 watch(isTop, updateOffset);
 
-const links = [
+const links: { to: string; label: string; icon: string; domain?: LiveDomain }[] = [
   { to: '/', label: 'Übersicht', icon: SECTION_ICONS.dashboard },
-  { to: '/packing', label: 'Packliste', icon: SECTION_ICONS.packing },
-  { to: '/shopping', label: 'Einkauf', icon: SECTION_ICONS.shopping },
-  { to: '/todo', label: 'ToDo', icon: SECTION_ICONS.todo },
-  { to: '/excursions', label: 'Karte', icon: SECTION_ICONS.map },
-  { to: '/travel', label: 'Reise', icon: SECTION_ICONS.travel },
-  { to: '/accommodation', label: 'Unterkunft', icon: SECTION_ICONS.accommodation },
-  { to: '/budget', label: 'Budget', icon: SECTION_ICONS.budget },
-  { to: '/diary', label: 'Tagebuch', icon: SECTION_ICONS.diary },
-  { to: '/notes', label: 'Notizen', icon: SECTION_ICONS.notes },
+  { to: '/packing', label: 'Packliste', icon: SECTION_ICONS.packing, domain: 'packing' },
+  { to: '/shopping', label: 'Einkauf', icon: SECTION_ICONS.shopping, domain: 'shopping' },
+  { to: '/todo', label: 'ToDo', icon: SECTION_ICONS.todo, domain: 'todos' },
+  { to: '/excursions', label: 'Karte', icon: SECTION_ICONS.map, domain: 'spots' },
+  { to: '/travel', label: 'Reise', icon: SECTION_ICONS.travel, domain: 'travel' },
+  { to: '/accommodation', label: 'Unterkunft', icon: SECTION_ICONS.accommodation, domain: 'accommodation' },
+  { to: '/budget', label: 'Budget', icon: SECTION_ICONS.budget, domain: 'budget' },
+  { to: '/diary', label: 'Tagebuch', icon: SECTION_ICONS.diary, domain: 'diary' },
+  { to: '/notes', label: 'Notizen', icon: SECTION_ICONS.notes, domain: 'notes' },
 ];
 
 async function onLogout() {
@@ -81,12 +83,18 @@ function onLinkClick(event: MouseEvent) {
            Nav-Punkten hier, Kalender/Touren erreicht man dort weiterhin nur über die Lasche).
            Kalender direkt nach Übersicht, Touren direkt neben ihrem inhaltlichen Pendant "Karte". -->
       <router-link to="/calendar" class="link mobile-page-link" @click="onLinkClick">
-        <span class="icon">{{ SECTION_ICONS.calendar }}</span>
+        <span class="icon-wrap">
+          <span class="icon">{{ SECTION_ICONS.calendar }}</span>
+          <span v-if="liveSync.hasUnseen('schedule')" class="unseen-dot" aria-label="Neue Änderungen" />
+        </span>
         <span class="label">Kalender</span>
       </router-link>
       <template v-for="link in links.slice(1)" :key="link.to">
         <router-link :to="link.to" class="link" @click="onLinkClick">
-          <span class="icon">{{ link.icon }}</span>
+          <span class="icon-wrap">
+            <span class="icon">{{ link.icon }}</span>
+            <span v-if="link.domain && liveSync.hasUnseen(link.domain)" class="unseen-dot" aria-label="Neue Änderungen" />
+          </span>
           <span class="label">{{ link.label }}</span>
         </router-link>
         <router-link
@@ -95,7 +103,10 @@ function onLinkClick(event: MouseEvent) {
           class="link mobile-page-link"
           @click="onLinkClick"
         >
-          <span class="icon">{{ SECTION_ICONS.excursions }}</span>
+          <span class="icon-wrap">
+            <span class="icon">{{ SECTION_ICONS.excursions }}</span>
+            <span v-if="liveSync.hasUnseen('ideas')" class="unseen-dot" aria-label="Neue Änderungen" />
+          </span>
           <span class="label">Touren</span>
         </router-link>
       </template>
@@ -166,8 +177,27 @@ function onLinkClick(event: MouseEvent) {
   background: var(--color-primary-tint);
 }
 
+.icon-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
 .icon {
   font-size: 1.2rem;
+}
+
+/* Roter Punkt: eine andere Person hat seit dem letzten Besuch dieses Bereichs etwas geändert
+   (Echtzeit-Sync, siehe stores/liveSync.ts). Verschwindet, sobald die Zielansicht gemountet wird
+   (markSeen() dort) – ein Klick auf dieses Nav-Item reicht also, um ihn wieder loszuwerden. */
+.unseen-dot {
+  position: absolute;
+  top: -2px;
+  right: -4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-danger);
+  border: 1.5px solid var(--color-surface);
 }
 
 .logout {

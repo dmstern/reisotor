@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { api } from '../api/client';
 import type { Period, ShoppingItem, User } from '../api/types';
 import { useTripStore } from '../stores/trip';
+import { useLiveSyncStore } from '../stores/liveSync';
 import { PERIOD_META } from '../utils/period';
 import Modal from '../components/Modal.vue';
 import EditButton from '../components/EditButton.vue';
@@ -12,11 +13,13 @@ import UndoDeleteRow from '../components/UndoDeleteRow.vue';
 import { useUndoableDelete } from '../composables/useUndoableDelete';
 
 const tripStore = useTripStore();
+const liveSync = useLiveSyncStore();
 const tripId = tripStore.currentTripId as number;
 const items = ref<ShoppingItem[]>([]);
 const { isPending, markPendingDelete, clearPending } = useUndoableDelete();
 const users = ref<User[]>([]);
 const loading = ref(true);
+const highlightedIds = ref<Set<number>>(new Set());
 
 type GroupBy = 'buyer' | 'shop' | 'period';
 const groupBy = ref<GroupBy>('buyer');
@@ -31,7 +34,7 @@ const newPeriod = ref<Period | ''>('');
 const editingItem = ref<ShoppingItem | null>(null);
 const editForm = ref({ label: '', link: '', note: '', shop: '', period: '' as Period | '' });
 
-onMounted(async () => {
+async function load() {
   const [itemsRes, usersRes] = await Promise.all([
     api.get<ShoppingItem[]>(`/shopping?trip_id=${tripId}`),
     api.get<User[]>('/users'),
@@ -39,7 +42,14 @@ onMounted(async () => {
   items.value = itemsRes;
   users.value = usersRes;
   loading.value = false;
+}
+
+onMounted(() => {
+  highlightedIds.value = liveSync.markSeen('shopping');
+  load();
 });
+
+watch(() => liveSync.domainVersion.shopping, load);
 
 const UNASSIGNED_SHOP = 'Ohne Shop';
 
@@ -228,7 +238,7 @@ async function addItem() {
               <li v-if="isPending(item.id)" class="row">
                 <UndoDeleteRow :label="item.label" @undo="restore(item.id)" />
               </li>
-              <li v-else class="row" :class="{ 'row-done': item.checked }">
+              <li v-else class="row" :class="{ 'row-done': item.checked, 'new-highlight': highlightedIds.has(item.id) }">
                 <label class="check">
                   <input type="checkbox" :checked="!!item.checked" @change="toggle(item)" />
                   <span :class="{ 'text-done': item.checked }">{{ item.label }}</span>

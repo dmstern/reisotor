@@ -29,6 +29,7 @@ const props = defineProps<{
   // eingeplant ist, oder null falls (noch) nicht geplant – vom Elternteil aus dem scheduleStore
   // abgeleitet (analog zu Excursion.date), da mehrere Karten sich denselben Stand teilen müssen.
   scheduledDate: string | null;
+  highlighted?: boolean;
 }>();
 const emit = defineEmits<{
   (e: 'edit', spot: Spot): void;
@@ -116,7 +117,7 @@ function onCardClick() {
 </script>
 
 <template>
-  <div class="card spot-card" :class="{ expanded }" @click="onCardClick">
+  <div class="card spot-card" :class="{ expanded, 'new-highlight': highlighted }" @click="onCardClick">
     <div class="image" :style="spot.image_url ? { backgroundImage: `url(${spot.image_url})` } : {}">
       <span v-if="!spot.image_url" class="placeholder">{{ spotCategoryMeta(spot.category).icon }}</span>
       <EditButton floating @click="emit('edit', spot)" />
