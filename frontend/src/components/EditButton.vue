@@ -47,6 +47,10 @@ defineEmits<{ (e: 'click'): void }>();
   height: 28px;
   padding: 0;
   border-radius: 50%;
+  /* Setzt das globale corner-shape:squircle (style.css, gilt für <button> generell) für diesen
+     echten Kreis-Button zurück – bei border-radius:50% verzerrt squircle einen Kreis sichtbar zu
+     einer "Blob"-Form statt eines sauberen Kreises. */
+  corner-shape: round;
   background: rgba(255, 255, 255, 0.9);
   color: #2b2a28;
   display: flex;

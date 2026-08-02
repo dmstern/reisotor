@@ -64,7 +64,7 @@ function close() {
 
 .modal {
   background: var(--color-surface);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-lg-squircle);
   corner-shape: squircle;
   padding: var(--space-4);
   max-width: 480px;

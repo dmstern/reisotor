@@ -69,14 +69,24 @@
   --color-accent-secondary: #5b6ee1;
   --color-accent-secondary-bg: #eef0fd;
 
-  /* Etwas großzügiger als vorher (8/14/22) und mit corner-shape: squircle kombiniert (siehe unten,
-     .card/button/input/Modal/Drawer) für eine "kontinuierlichere", Apple-artigere Rundung statt
-     rein kreisförmiger Ecken – corner-shape ist progressive enhancement (nicht unterstützende
-     Browser sehen einfach normal abgerundete Ecken, kein Funktionsverlust). */
+  /* Etwas großzügiger als vorher (8/14/22) – Basiswerte, gelten unverändert für alles, was normal
+     rund bleibt (Pillen, echte Kreise wie EditButton/DeleteButton mit border-radius:50%, kleine
+     Chips/Badges, …). */
   --radius-sm: 10px;
   --radius-md: 16px;
   --radius-lg: 26px;
   --radius-xl: 32px;
+
+  /* Eigene "squircle"-Variante je Radius-Stufe: Default = identisch zum normalen Radius (Fallback
+     für Browser ohne corner-shape-Unterstützung, sieht dort wie ein gewöhnlicher Kreisbogen aus).
+     Nur Cards/Buttons/Inputs/Modal/Schubladen setzen zusätzlich corner-shape:squircle UND binden
+     ihren border-radius an diese -squircle-Variablen statt der Basiswerte – Elemente, die bewusst
+     komplett rund bleiben sollen (Kreis-Buttons, Pillen), verwenden weiterhin die Basiswerte direkt
+     und bleiben dadurch unangetastet. */
+  --radius-sm-squircle: var(--radius-sm);
+  --radius-md-squircle: var(--radius-md);
+  --radius-lg-squircle: var(--radius-lg);
+  --radius-xl-squircle: var(--radius-xl);
 
   --space-1: 4px;
   --space-2: 8px;
@@ -89,6 +99,22 @@
   --shadow-md: 0 8px 24px rgba(43, 42, 40, 0.16);
 
   --font-sans: 'Fira Sans', 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* corner-shape:squircle rendert bei GLEICHEM border-radius-Wert sichtbar WENIGER rund als ein
+   normaler Kreisbogen – die Superellipse-Kurve konzentriert sich stärker auf den unmittelbaren
+   Eckpunkt statt gleichmäßig auszurunden, ein squircle mit Radius 16px sieht dadurch eher wie ein
+   Kreisbogen mit Radius ~9px aus. Per Pixel-Vergleich ermittelt: Faktor ~1.75 auf den ursprünglichen
+   Radius trifft den visuellen Rundungs-Fußabdruck eines normalen Kreisbogens am genauesten. Nur
+   innerhalb dieser Feature-Query, damit Browser ohne corner-shape-Unterstützung unverändert die
+   Basiswerte (normaler Kreisbogen) bekommen statt einer zu starken Rundung ohne squircle-Effekt. */
+@supports (corner-shape: squircle) {
+  :root {
+    --radius-sm-squircle: calc(var(--radius-sm) * 1.75);
+    --radius-md-squircle: calc(var(--radius-md) * 1.75);
+    --radius-lg-squircle: calc(var(--radius-lg) * 1.75);
+    --radius-xl-squircle: calc(var(--radius-xl) * 1.75);
+  }
 }
 
 /* Dark Mode: standardmäßig die Systemeinstellung (prefers-color-scheme), zusätzlich manuell
@@ -204,7 +230,7 @@ textarea {
 button {
   cursor: pointer;
   border: none;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   padding: 11px 18px;
   background: var(--color-primary);
@@ -249,7 +275,7 @@ button.danger {
   gap: 4px;
   padding: 4px 10px;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   background: var(--color-primary-tint);
   color: var(--color-primary-dark);
@@ -502,7 +528,7 @@ select,
 textarea {
   padding: 9px 12px;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   background: var(--color-surface);
   color: var(--color-text);
@@ -522,7 +548,7 @@ textarea:focus {
 .card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   box-shadow: var(--shadow-sm);
   padding: var(--space-4);

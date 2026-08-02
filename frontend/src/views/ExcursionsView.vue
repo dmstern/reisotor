@@ -921,7 +921,7 @@ async function removeSpot(id: number) {
   display: flex;
   flex-direction: column;
   background: var(--color-surface);
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  border-radius: var(--radius-lg-squircle) var(--radius-lg-squircle) 0 0;
   corner-shape: squircle;
   box-shadow: var(--shadow-md);
   height: min(46vh, var(--sheet-max-height));
@@ -994,6 +994,7 @@ async function removeSpot(id: number) {
   padding: 0;
   border: 1px solid var(--color-border);
   border-radius: 50%;
+  corner-shape: round;
   background: var(--color-surface);
   color: var(--color-text-muted);
   font-size: 0.7rem;

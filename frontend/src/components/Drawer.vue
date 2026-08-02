@@ -222,13 +222,13 @@ function onResizeEnd() {
 .drawer.left .drawer-tab {
   left: 0;
   border-left: none;
-  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  border-radius: 0 var(--radius-sm-squircle) var(--radius-sm-squircle) 0;
 }
 
 .drawer.right .drawer-tab {
   right: 0;
   border-right: none;
-  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+  border-radius: var(--radius-sm-squircle) 0 0 var(--radius-sm-squircle);
 }
 
 /* Bei ausgeklappter Schublade übernimmt der Schließen-Button (oben im Panel) die Schließen-
@@ -297,13 +297,13 @@ function onResizeEnd() {
 .drawer.left .drawer-panel {
   left: 0;
   transform: translateX(-100%);
-  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  border-radius: 0 var(--radius-md-squircle) var(--radius-md-squircle) 0;
 }
 
 .drawer.right .drawer-panel {
   right: 0;
   transform: translateX(100%);
-  border-radius: var(--radius-md) 0 0 var(--radius-md);
+  border-radius: var(--radius-md-squircle) 0 0 var(--radius-md-squircle);
 }
 
 .drawer.open .drawer-panel {
@@ -345,7 +345,7 @@ function onResizeEnd() {
   justify-content: center;
   padding: 0;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-sm-squircle);
   background: var(--color-surface);
   box-shadow: var(--shadow-sm);
   color: var(--color-text-muted);
@@ -504,7 +504,7 @@ function onResizeEnd() {
     justify-content: center;
     padding: 0;
     border: 1px solid var(--color-border);
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-sm-squircle);
     background: var(--color-surface);
     box-shadow: var(--shadow-sm);
     color: var(--color-text-muted);

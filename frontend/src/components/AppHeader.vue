@@ -119,6 +119,7 @@ const isNonProd = window.location.hostname !== 'reise.ruebenherz.de';
   height: 36px;
   padding: 0;
   border-radius: 50%;
+  corner-shape: round;
   font-size: 1.1rem;
   line-height: 1;
   flex-shrink: 0;

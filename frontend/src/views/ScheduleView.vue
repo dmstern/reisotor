@@ -1014,6 +1014,7 @@ function formatDate(date: string) {
   font-size: 1.1rem;
   line-height: 1;
   border-radius: 50%;
+  corner-shape: round;
   flex-shrink: 0;
 }
 

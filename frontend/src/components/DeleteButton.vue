@@ -47,6 +47,9 @@ defineEmits<{ (e: 'click'): void }>();
   height: 28px;
   padding: 0;
   border-radius: 50%;
+  /* Setzt das globale corner-shape:squircle (style.css) für diesen echten Kreis-Button zurück –
+     siehe EditButton.vue's identischer Kommentar. */
+  corner-shape: round;
   background: rgba(255, 255, 255, 0.9);
   color: #2b2a28;
   display: flex;

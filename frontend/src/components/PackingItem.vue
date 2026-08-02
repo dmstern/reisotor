@@ -313,6 +313,7 @@ const tallyGroups = computed<number[]>(() => {
   padding: 0;
   border: 2px solid var(--color-border);
   border-radius: 50%;
+  corner-shape: round;
   background: var(--color-surface);
   color: var(--color-text-muted);
   font-weight: 700;

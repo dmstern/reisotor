@@ -298,6 +298,7 @@ async function quickAdd(list: ListGroup) {
   height: 38px;
   padding: 0;
   border-radius: 50%;
+  corner-shape: round;
   display: flex;
   align-items: center;
   justify-content: center;

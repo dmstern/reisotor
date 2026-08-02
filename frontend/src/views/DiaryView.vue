@@ -520,6 +520,7 @@ async function removeComment(id: number) {
   background: var(--color-hover);
   border: none;
   border-radius: 999px;
+  corner-shape: round;
   padding: 4px 12px 4px 4px;
   font-size: 0.82rem;
   font-family: inherit;
@@ -580,6 +581,7 @@ async function removeComment(id: number) {
   width: 20px;
   height: 20px;
   border-radius: 50%;
+  corner-shape: round;
   border: none;
   background: var(--color-danger);
   color: white;

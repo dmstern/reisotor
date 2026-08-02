@@ -318,6 +318,7 @@ function onSpotDrop(event: DragEvent) {
   background: var(--color-hover);
   border: none;
   border-radius: 999px;
+  corner-shape: round;
   padding: 3px 10px 3px 8px;
   font-size: 0.72rem;
   color: var(--color-text-muted);

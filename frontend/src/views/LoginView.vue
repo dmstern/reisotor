@@ -89,6 +89,7 @@ async function onSubmit() {
   height: 40px;
   padding: 0;
   border-radius: 50%;
+  corner-shape: round;
   font-size: 1.1rem;
   line-height: 1;
   display: flex;

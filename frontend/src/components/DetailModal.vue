@@ -81,6 +81,7 @@ const emit = defineEmits<{ (e: 'update:modelValue', value: boolean): void; (e: '
   height: 32px;
   padding: 0;
   border-radius: 50%;
+  corner-shape: round;
   border: none;
   background: rgba(35, 34, 32, 0.75);
   color: #f2efe9;
