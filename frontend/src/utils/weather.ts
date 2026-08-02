@@ -70,6 +70,12 @@ export function fetchWeatherForecast(lat: number, lng: number): Promise<DailyWea
     timezone: 'auto',
     past_days: '1',
     forecast_days: '16',
+    // Explizit statt des Open-Meteo-Defaults "best_match" (der je nach Region zwischen Modellen
+    // wechselt, u. a. auch gröbere): ECMWF IFS liefert international die konsistenteste Vorhersage-
+    // qualität und deckt sich erfahrungsgemäß am ehesten mit dem, was kommerzielle Wetter-Apps
+    // (Apple Weather/Google) zeigen – ein Nutzer hatte sonst abweichende Werte/Symbole gegenüber
+    // Apple Weather bemerkt (v. a. bei der Bewölkung, dem modellsensibelsten Wert überhaupt).
+    models: 'ecmwf_ifs025',
   });
   const promise = fetch(`https://api.open-meteo.com/v1/forecast?${params}`)
     .then((res) => {

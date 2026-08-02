@@ -282,6 +282,11 @@ function formatWeekdayDate(d: string) {
             <span v-if="day.precipitationProbability != null" class="weather-rain">💧{{ day.precipitationProbability }}%</span>
           </div>
         </div>
+        <!-- Andere Wetter-Apps (Apple Weather/Google) können abweichende Werte zeigen, v. a. bei der
+             Bewölkung – eigenes Modell/eigene Quelle statt eines Fehlers, deshalb hier explizit
+             benannt (wie DuckDuckGo es bei seinem eigenen Wetter-Widget genauso mit "Quelle: Apple
+             Weather" macht). -->
+        <p class="weather-source">Quelle: Open-Meteo (ECMWF)</p>
       </template>
     </section>
     <section v-else class="card weather-card">
@@ -562,6 +567,12 @@ function formatWeekdayDate(d: string) {
 .weather-rain {
   font-size: 0.72rem;
   color: var(--color-accent-secondary);
+}
+
+.weather-source {
+  margin: var(--space-2) 0 0;
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
 }
 
 .cards {
