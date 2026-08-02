@@ -313,7 +313,7 @@ function editStationSpot() {
           :derived-locations="derivedLocations"
           @pick-derived-location="pickDerivedLocationForNewForm"
         />
-        <button type="submit">Speichern</button>
+        <button type="submit">Hinzufügen</button>
       </form>
     </Modal>
 
@@ -520,7 +520,4 @@ function editStationSpot() {
   gap: var(--space-3);
 }
 
-.empty {
-  color: var(--color-text-muted);
-}
 </style>

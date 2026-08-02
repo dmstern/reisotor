@@ -225,10 +225,11 @@ function itemLikeCount(item: SpotsGroupItem): number {
   return item.kind === 'spot' ? spotsStore.likeCountFor(item.spot.id) : 0;
 }
 // Unterkunft/Reise sind keine "echten" Spot-Kategorien (spotCategoryMeta kennt sie nicht) – eigenes
-// Icon je Sammel-Kategorie, sonst wie gewohnt über spotCategoryMeta (inkl. 📍-Fallback).
+// Icon je Sammel-Kategorie, sonst wie gewohnt über spotCategoryMeta (inkl. 📍-Fallback). Dieselben
+// Icons wie SECTION_ICONS.accommodation/travel (sectionIcons.ts) für App-weite Konsistenz.
 function groupIcon(category: string): string {
   if (category === 'Unterkunft') return '🛏️';
-  if (category === 'Reise') return '🧳';
+  if (category === 'Reise') return '✈️';
   return spotCategoryMeta(category).icon;
 }
 
@@ -753,7 +754,7 @@ async function removeSpot(id: number) {
           </button>
           <LocationPicker v-if="spotPickerOpen" v-model="spotManualPin" :center="spotPickerCenter" />
           <textarea v-model="spotForm.note" placeholder="Notiz (optional)" rows="3"></textarea>
-          <button type="submit">Speichern</button>
+          <button type="submit">Hinzufügen</button>
         </form>
       </Modal>
 
@@ -1448,7 +1449,4 @@ async function removeSpot(id: number) {
   white-space: nowrap;
 }
 
-.empty {
-  color: var(--color-text-muted);
-}
 </style>

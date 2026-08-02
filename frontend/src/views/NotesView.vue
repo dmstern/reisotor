@@ -8,7 +8,7 @@ import { renderRichText } from '../utils/richText';
 import Modal from '../components/Modal.vue';
 import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
-import LikeButton from '../components/LikeButton.vue';
+import SocialRow from '../components/SocialRow.vue';
 import Comments from '../components/Comments.vue';
 
 const auth = useAuthStore();
@@ -176,10 +176,13 @@ async function remove(id: number) {
         </div>
         <div class="content richtext" v-html="renderRichText(note.content)"></div>
         <p class="meta">{{ authorLabel(note.created_by) }} · {{ formatDate(note.updated_at ?? note.created_at) }}</p>
-        <div class="social-row">
-          <LikeButton :count="likesFor(note.id).length" :liked="likedByMe(note.id)" @toggle="toggleLike(note.id)" />
-          <button class="secondary" @click="toggleComments(note.id)">💬 {{ commentsFor(note.id).length || '' }}</button>
-        </div>
+        <SocialRow
+          :like-count="likesFor(note.id).length"
+          :liked="likedByMe(note.id)"
+          :comment-count="commentsFor(note.id).length"
+          @toggle-like="toggleLike(note.id)"
+          @toggle-comments="toggleComments(note.id)"
+        />
         <Comments
           v-if="openComments.has(note.id)"
           :comments="commentItemsFor(note.id)"
@@ -255,11 +258,6 @@ async function remove(id: number) {
   flex-shrink: 0;
 }
 
-.social-row {
-  display: flex;
-  gap: var(--space-2);
-}
-
 .error {
   color: var(--color-danger);
   margin: 0 0 var(--space-3);
@@ -290,7 +288,4 @@ async function remove(id: number) {
   color: var(--color-text-muted);
 }
 
-.empty {
-  color: var(--color-text-muted);
-}
 </style>

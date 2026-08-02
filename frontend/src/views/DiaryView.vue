@@ -13,7 +13,7 @@ import { spotCategoryMeta } from '../utils/spotCategory';
 import Modal from '../components/Modal.vue';
 import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
-import LikeButton from '../components/LikeButton.vue';
+import SocialRow from '../components/SocialRow.vue';
 import Comments from '../components/Comments.vue';
 
 const auth = useAuthStore();
@@ -313,7 +313,7 @@ async function removeComment(id: number) {
           <span v-else-if="spotAlreadyPlanned(spot.id, todayDateStr)" class="excursion-option-badge">📅 heute geplant</span>
         </button>
       </fieldset>
-      <button type="submit">Veröffentlichen</button>
+      <button type="submit">Eintragen</button>
     </form>
     </Modal>
 
@@ -340,12 +340,13 @@ async function removeComment(id: number) {
           </a>
         </div>
 
-        <div class="entry-footer">
-          <LikeButton :count="likesFor(entry.id).length" :liked="likedByMe(entry.id)" @toggle="toggleLike(entry.id)" />
-          <button class="secondary" @click="toggleComments(entry.id)">
-            💬 {{ commentsFor(entry.id).length || '' }}
-          </button>
-        </div>
+        <SocialRow
+          :like-count="likesFor(entry.id).length"
+          :liked="likedByMe(entry.id)"
+          :comment-count="commentsFor(entry.id).length"
+          @toggle-like="toggleLike(entry.id)"
+          @toggle-comments="toggleComments(entry.id)"
+        />
 
         <div class="excursion-links" v-if="excursionsForEntry(entry).length">
           <button
@@ -665,12 +666,4 @@ async function removeComment(id: number) {
   flex-shrink: 0;
 }
 
-.entry-footer {
-  display: flex;
-  gap: var(--space-2);
-}
-
-.empty {
-  color: var(--color-text-muted);
-}
 </style>

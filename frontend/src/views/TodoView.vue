@@ -253,7 +253,7 @@ function isOverdue(item: TodoItem) {
                 <DeleteButton small @click="remove(item.id)" />
               </div>
             </li>
-            <li v-if="!group.items.length" :key="`${group.key}-empty`" class="empty">Keine Aufgaben.</li>
+            <li v-if="!group.items.length" :key="`${group.key}-empty`" class="empty">Noch keine Aufgaben.</li>
           </TransitionGroup>
         </div>
       </section>
@@ -399,7 +399,6 @@ function isOverdue(item: TodoItem) {
 }
 
 .empty {
-  color: var(--color-text-muted);
   padding: var(--space-2) 0;
 }
 

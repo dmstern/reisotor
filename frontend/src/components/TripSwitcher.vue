@@ -241,7 +241,6 @@ async function onDelete(trip: Trip) {
 }
 
 .empty {
-  color: var(--color-text-muted);
   font-size: 0.85rem;
   padding: 6px 8px;
 }

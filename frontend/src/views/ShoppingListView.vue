@@ -7,6 +7,7 @@ import { PERIOD_META } from '../utils/period';
 import Modal from '../components/Modal.vue';
 import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
+import Combobox from '../components/Combobox.vue';
 
 const tripStore = useTripStore();
 const tripId = tripStore.currentTripId as number;
@@ -178,13 +179,9 @@ async function addItem() {
     <h1>Einkaufsliste</h1>
     <p>{{ progress.checked }}/{{ progress.total }} gekauft</p>
 
-    <datalist id="shopping-shops">
-      <option v-for="s in knownShops" :key="s" :value="s" />
-    </datalist>
-
     <form class="add-form card" @submit.prevent="addItem">
       <input v-model="newLabel" type="text" placeholder="Neuer Artikel" required />
-      <input v-model="newShop" type="text" list="shopping-shops" placeholder="Shop/Laden (optional)" />
+      <Combobox v-model="newShop" :options="knownShops" placeholder="Shop/Laden (optional)" />
       <select v-model="newBuyer">
         <option value="">Kein:e Einkäufer:in</option>
         <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
@@ -238,7 +235,7 @@ async function addItem() {
                 <DeleteButton small @click="remove(item.id)" />
               </div>
             </li>
-            <li v-if="!group.items.length" :key="`${group.key}-empty`" class="empty">Keine Einträge.</li>
+            <li v-if="!group.items.length" :key="`${group.key}-empty`" class="empty">Noch keine Einträge.</li>
           </TransitionGroup>
         </div>
       </section>
@@ -251,7 +248,7 @@ async function addItem() {
     >
       <form class="edit-form" @submit.prevent="submitEdit">
         <input v-model="editForm.label" type="text" placeholder="Artikel" required />
-        <input v-model="editForm.shop" type="text" list="shopping-shops" placeholder="Shop/Laden (optional)" />
+        <Combobox v-model="editForm.shop" :options="knownShops" placeholder="Shop/Laden (optional)" />
         <select v-model="editForm.period">
           <option value="">Kein Zeitraum</option>
           <option value="before">{{ PERIOD_META.before }}</option>
@@ -380,7 +377,6 @@ async function addItem() {
 }
 
 .empty {
-  color: var(--color-text-muted);
   padding: var(--space-2) 0;
 }
 

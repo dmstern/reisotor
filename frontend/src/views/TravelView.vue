@@ -432,7 +432,7 @@ function showDetailToOnMap() {
           🏠 Zuhause
         </label>
         <input v-model="newPlaceForm.maps_link" type="url" placeholder="Maps-Link (optional)" @blur="checkNewPlaceMapsLink" />
-        <button type="submit">+ Ort</button>
+        <button type="submit">Hinzufügen</button>
       </form>
       <p v-if="newPlaceMapsLinkResolved === true" class="hint success">📍 Standort erkannt</p>
       <p v-if="newPlaceMapsLinkResolved === false" class="hint">Standort konnte nicht automatisch erkannt werden.</p>
@@ -990,7 +990,4 @@ label {
   margin-top: 4px;
 }
 
-.empty {
-  color: var(--color-text-muted);
-}
 </style>
