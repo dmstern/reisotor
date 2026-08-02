@@ -1118,7 +1118,6 @@ function formatDate(date: string) {
 }
 
 .empty {
-  color: var(--color-text-muted);
   padding: var(--space-2);
 }
 

@@ -8,7 +8,7 @@ import { useExcursionsStore } from '../stores/excursions';
 import { useDrawersStore } from '../stores/drawers';
 import EditButton from './EditButton.vue';
 import DeleteButton from './DeleteButton.vue';
-import LikeButton from './LikeButton.vue';
+import SocialRow from './SocialRow.vue';
 import Comments, { type CommentItem } from './Comments.vue';
 import ExcursionDetailDialog from './ExcursionDetailDialog.vue';
 import SpotImageCollage from './SpotImageCollage.vue';
@@ -165,10 +165,14 @@ function onSpotDrop(event: DragEvent) {
       <Teleport to="body">
         <div v-if="dragging" class="drag-ghost" :style="ghostStyle ?? {}">📅 {{ excursion.title }}</div>
       </Teleport>
-      <div class="social-row">
-        <LikeButton :count="likeCount" :liked="liked" @toggle="emit('toggle-like')" />
-        <button class="secondary" @click.stop="showComments = !showComments">💬 {{ comments.length || '' }}</button>
-      </div>
+      <SocialRow
+        class="social-row"
+        :like-count="likeCount"
+        :liked="liked"
+        :comment-count="comments.length"
+        @toggle-like="emit('toggle-like')"
+        @toggle-comments="showComments = !showComments"
+      />
       <Comments
         v-if="showComments"
         :comments="comments"
@@ -367,8 +371,6 @@ function onSpotDrop(event: DragEvent) {
 }
 
 .social-row {
-  display: flex;
-  gap: var(--space-2);
   margin-top: var(--space-2);
 }
 
