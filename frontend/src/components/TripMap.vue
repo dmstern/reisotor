@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -23,6 +23,7 @@ import { useAuthStore } from '../stores/auth';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { arcRoute, cachedEmojiPin } from '../utils/mapRoute';
 import { resolveStations, type ExcursionStation } from '../utils/excursionStations';
+import { useIsDesktop } from '../composables/useIsDesktop';
 import SpotDetailDialog from './SpotDetailDialog.vue';
 import MiniStationCard from './MiniStationCard.vue';
 import ExcursionDetailDialog from './ExcursionDetailDialog.vue';
@@ -92,6 +93,18 @@ const emit = defineEmits<{
 }>();
 
 const router = useRouter();
+const isDesktop = useIsDesktop();
+// #map-focus-dock (ExcursionsView.vue) ist ein Geschwister-Element, das im selben Render-Takt wie
+// diese Komponente entsteht (beide hinter demselben v-if="!loading") – Teleport muss sein Ziel beim
+// eigenen Mount bereits im Dokument vorfinden, sonst bricht es dauerhaft ab (Vue-Warnung "Failed to
+// locate Teleport target"). Ein Tick Verzögerung reicht: dann ist das Geschwister-Element sicher
+// eingehängt.
+const teleportReady = ref(false);
+onMounted(() => {
+  nextTick(() => {
+    teleportReady.value = true;
+  });
+});
 const tripStore = useTripStore();
 const drawers = useDrawersStore();
 const excursionsStore = useExcursionsStore();
@@ -914,6 +927,12 @@ watch(
       </div>
     </div>
 
+    <!-- Mobil (Teleport aktiv, siehe isDesktop) landet diese Stationen-Liste in der Spots-Schublade
+         (ExcursionsView.vue's #map-focus-dock) statt als Overlay über der Karte zu schweben – sie
+         deckte dort sonst einen Teil des Kartenausschnitts (und mitunter die Zoom-Steuerung) ab.
+         Auf Desktop bleibt sie unverändert Teil dieser Karten-Spalte (Teleport disabled, siehe
+         @container-Regel für .focus-spot-list weiter unten). -->
+    <Teleport v-if="teleportReady" to="#map-focus-dock" :disabled="isDesktop">
     <div class="card focus-spot-list" v-if="focusedExcursion && focusedExcursionStations.length">
       <div class="focus-spot-list-header">
         <button type="button" class="focus-spot-list-title-btn" @click="openExcursionDetail">
@@ -968,6 +987,7 @@ watch(
         </template>
       </div>
     </div>
+    </Teleport>
 
     <SpotDetailDialog
       v-if="openSpot"
@@ -1215,6 +1235,13 @@ watch(
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+
+/* Mobil per Teleport in die Spots-Schublade verschoben (siehe Template oben, ExcursionsView.vue's
+   #map-focus-dock) – dort ist sie ein normales Flow-Element innerhalb der Schublade statt eines
+   Overlays über der Karte, braucht also die obige absolute Positionierung nicht. */
+#map-focus-dock .focus-spot-list {
+  position: static;
 }
 
 /* Kopfzeile: klickbarer Titel-Bereich links (öffnet bei einem Ausflug-Fokus den Detail-Dialog,

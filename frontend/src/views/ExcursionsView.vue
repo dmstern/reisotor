@@ -486,6 +486,18 @@ function onSpotCardOpen(spot: Spot) {
   if (sheetState.value === 'full') sheetState.value = 'partial';
 }
 
+// Ein Tag-/Ausflug-Fokus (ScheduleView.vue's "🗺️ Tag auf Karte anzeigen" bzw. ExcursionCard.vue's
+// "Auf Karte anzeigen") lässt TripMap.vue mobil die Stationen-Liste hierher in die Schublade
+// teleportieren (siehe #map-focus-dock unten) statt sie als Overlay über die Karte zu legen – bei
+// eingeklapptem Sheet wäre sie dann aber unsichtbar, deshalb hier automatisch mindestens
+// "angeschnitten" aufklappen.
+watch(
+  () => drawers.mapFocusDate ?? (drawers.mapFocusExcursionId != null ? `excursion-${drawers.mapFocusExcursionId}` : null),
+  (focus) => {
+    if (focus != null && sheetState.value === 'collapsed') sheetState.value = 'partial';
+  },
+);
+
 function checkSpotMapsLink() {
   spotMapsLinkResolved.value = spotForm.value.maps_link ? parseLatLngFromMapsLink(spotForm.value.maps_link) != null : null;
 }
@@ -624,6 +636,11 @@ async function removeSpot(id: number) {
         </button>
       </div>
       <div class="spots-col-body">
+      <!-- Sprungziel für TripMap.vue's Tag-/Ausflug-Stationen-Liste: mobil (siehe TripMap.vue's
+           Teleport) landet sie hier statt als Overlay über der Karte zu schweben (verdeckte dort
+           Kartenausschnitt und teils die Zoom-Steuerung). Auf Desktop bleibt sie unverändert Teil
+           der Karte-Spalte (Teleport dort deaktiviert), dieser Anker bleibt also leer. -->
+      <div id="map-focus-dock" class="map-focus-dock"></div>
       <div class="header">
         <h2>Spots</h2>
         <div class="header-actions">
@@ -728,7 +745,7 @@ async function removeSpot(id: number) {
         </div>
       </div>
 
-      <Modal :model-value="showSpotForm" title="Neuer Spot" @update:model-value="(v) => !v && closeSpotForm()">
+      <Modal :model-value="showSpotForm" title="Neuer Spot" full-height @update:model-value="(v) => !v && closeSpotForm()">
         <form class="edit-form" @submit.prevent="addSpot">
           <div class="form-image-banner" :style="spotPreviewImage ? { backgroundImage: `url(${spotPreviewImage})` } : {}">
             <span v-if="!spotPreviewImage" class="placeholder">{{ spotCategoryMeta(spotForm.category).icon }}</span>
@@ -803,6 +820,7 @@ async function removeSpot(id: number) {
       <Modal
         :model-value="editingSpot !== null"
         title="Spot bearbeiten"
+        full-height
         @update:model-value="(v) => !v && (editingSpot = null)"
       >
         <form class="edit-form" @submit.prevent="submitEditSpot">
@@ -1033,6 +1051,17 @@ async function removeSpot(id: number) {
   flex: 1;
   overflow-y: auto;
   padding: 0 var(--space-3) var(--space-3);
+}
+
+/* Leer (kein Fokus aktiv bzw. Desktop, siehe TripMap.vue), wenn nichts hineingeteleportet wurde –
+   dann soll der Anker keinen Platz beanspruchen. */
+.map-focus-dock:empty {
+  display: none;
+}
+
+.map-focus-dock:not(:empty) {
+  padding-top: var(--space-2);
+  margin-bottom: var(--space-3);
 }
 
 /* Nebeneinander statt untereinander, sobald genug Breite verfügbar ist – schmalere Spots-Liste
