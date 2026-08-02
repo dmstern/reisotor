@@ -67,6 +67,12 @@ export const useLiveSyncStore = defineStore('liveSync', () => {
   );
   const unseenEntityIds = reactive<Record<LiveDomain, Set<number>>>(emptySets());
   const onlineUserIds = ref<number[]>([]);
+  // Wird erst true, nachdem das Nachhol-Protokoll (backfill unten) für den aktuellen Urlaub
+  // abgeschlossen ist – App.vue blockt das Mounten jeder Domänen-Ansicht so lange (siehe dortiger
+  // Kommentar), sonst gäbe es ein Wettrennen: eine Ansicht könnte markSeen() aufrufen, BEVOR
+  // backfill() dessen unseenEntityIds überhaupt gefüllt hat (z. B. direkt nach einem Reload/
+  // Deep-Link), wodurch die "neu"-Hervorhebung verloren ginge.
+  const ready = ref(false);
 
   let source: EventSource | null = null;
 
@@ -130,14 +136,17 @@ export const useLiveSyncStore = defineStore('liveSync', () => {
 
   watch(
     () => tripStore.currentTripId,
-    (tripId) => {
+    async (tripId) => {
       for (const domain of LIVE_DOMAINS) unseenEntityIds[domain].clear();
       if (tripId == null) {
         closeStream();
+        ready.value = true;
         return;
       }
+      ready.value = false;
       openStream(tripId);
-      backfill(tripId);
+      await backfill(tripId);
+      ready.value = true;
     },
     { immediate: true },
   );
@@ -168,5 +177,5 @@ export const useLiveSyncStore = defineStore('liveSync', () => {
     return changedIds;
   }
 
-  return { domainVersion, onlineUserIds, hasUnseen, markSeen, refreshAll };
+  return { domainVersion, onlineUserIds, ready, hasUnseen, markSeen, refreshAll };
 });

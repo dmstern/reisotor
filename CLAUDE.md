@@ -251,11 +251,24 @@ npx playwright show-report        # HTML-Report des letzten Laufs (u. a. Screens
 
 ### Wann einen neuen/aktualisierten Test schreiben?
 
-Nicht nach jeder Anpassung. Die Suite ist ein Regressionsnetz für ein paar zentrale Abläufe
-(Login-Gate, Kalender-Feature), keine vollständige Abdeckung. Einen Test ergänzen/anpassen, wenn
-eine Änderung sichtbares Nutzerverhalten neu einführt oder grundlegend ändert und das wert ist,
-gegen stille Regression abzusichern (Navigations-Logik, Positionierungs-/Layout-Bugs, Auth-Gating,
-neue Kern-Abläufe). Triviale visuelle/Text-Anpassungen brauchen keinen neuen Test.
+Nicht nach jeder Anpassung. Die Suite ist ein Regressionsnetz für die zentralen Abläufe der App
+(Login-Gate, Kalender-Feature, Mitgliedschaft/Einladung, Echtzeit-Sync, …), keine vollständige
+Abdeckung. Einen Test ergänzen/anpassen, wenn eine Änderung sichtbares Nutzerverhalten neu einführt
+oder grundlegend ändert und das wert ist, gegen stille Regression abzusichern (Navigations-Logik,
+Positionierungs-/Layout-Bugs, Auth-Gating, neue Kern-Abläufe). Triviale visuelle/Text-Anpassungen
+brauchen keinen neuen Test.
+
+**Standardverhalten, nicht Ausnahme:** Fällt während der Umsetzung eines Features ein Use Case auf,
+bei dem sich ein persistenter e2e-Test lohnt (neuer Kern-Ablauf, ein gerade selbst gefundener/
+gefixter Bug mit echtem Regressionsrisiko, ein Zusammenspiel mehrerer Komponenten, das leicht wieder
+kaputtgehen kann), den Test direkt im selben Arbeitsschritt schreiben statt es zu erwähnen oder auf
+Rückfrage zu warten — genau wie bei Bugfixes, die während der Umsetzung auffallen (siehe
+"Konsistenz-Check bei Änderungen" oben). Das gilt ausdrücklich auch für das Aktualisieren/Anpassen/
+Erweitern bestehender Spezifikationen (nicht nur neue Dateien): eine bestehende Spec darf und soll
+nach eigenem Ermessen umgebaut werden, wenn sich dadurch tatsächliches Nutzerverhalten treffender
+oder robuster abbilden lässt (z. B. eine zu spezifische Assertion verallgemeinern, einen neu
+entdeckten Seiteneffekt mit abdecken). Kein Vorab-Okay nötig — die Suite soll mit der App mitwachsen,
+nicht nur auf expliziten Auftrag hin.
 
 **Keine Pixel-Diff-Screenshot-Tests** (`toHaveScreenshot()`) verwenden — diese Dev-/Sandbox-Umgebung
 ist von Playwright selbst als nicht offiziell unterstütztes OS markiert (Font-/Rendering-Drift

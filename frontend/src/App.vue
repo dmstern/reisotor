@@ -45,7 +45,10 @@ async function onCreateFirstTrip(data: TripFormData) {
   <template v-if="!showNav">
     <router-view />
   </template>
-  <template v-else-if="!tripStore.loaded">
+  <template v-else-if="!tripStore.loaded || !liveSync.ready">
+    <!-- liveSync.ready: verhindert, dass eine Domänen-Ansicht mountet und markSeen() aufruft, BEVOR
+         das Nachhol-Protokoll (backfill, siehe liveSync.ts) für den aktuellen Urlaub fertig ist –
+         sonst ein Wettlauf, der die "neu"-Hervorhebung nach einem Reload/Deep-Link verlieren kann. -->
     <div class="onboarding"></div>
   </template>
   <template v-else-if="tripStore.trips.length === 0">
