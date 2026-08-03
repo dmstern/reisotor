@@ -117,7 +117,11 @@ function onLinkClick(event: MouseEvent) {
 <style scoped>
 .navbar {
   position: sticky;
-  top: 56px;
+  /* AppHeader.vue setzt diese Variable per ResizeObserver auf seine tatsächliche, veränderliche
+     Höhe (56px + Statuszeile, falls ein Offline-/PWA-Update-Hinweis gerade angezeigt wird) – ein
+     fest verdrahtetes "56px" würde die NavBar sonst beim Scrollen unter dem dann höheren Header
+     verschwinden lassen. */
+  top: var(--app-header-height, 56px);
   left: 0;
   right: 0;
   display: flex;
@@ -214,7 +218,7 @@ function onLinkClick(event: MouseEvent) {
   .navbar.mobile-bottom {
     /* Mobile Einstellung gilt hier nicht mehr – Desktop-Einstellung übernimmt. */
     position: sticky;
-    top: 56px;
+    top: var(--app-header-height, 56px);
     bottom: auto;
     border-top: none;
     border-bottom: 1px solid var(--color-border);

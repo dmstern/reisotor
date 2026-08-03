@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { onMounted, onUnmounted, ref } from 'vue';
 import { useAuthStore } from '../stores/auth';
 import { useThemeStore } from '../stores/theme';
 import { useConnectivityStore } from '../stores/connectivity';
@@ -13,6 +14,28 @@ const theme = useThemeStore();
 // unabhängig davon laufen, ob gerade eine bestimmte Unteransicht gemountet ist.
 useConnectivityStore();
 
+// Der Header ist nur noch 56px hoch, solange die Statuszeile (Offline-/PWA-Update-Hinweis) leer
+// ist – NavBar.vue klebt direkt darunter per position:sticky mit einem fest verdrahteten "top"-Wert
+// und muss deshalb die tatsächliche, veränderliche Höhe kennen (analog zu NavBar.vue's eigenem
+// --navbar-offset-Muster), sonst würde sie beim Scrollen unter dem dann höheren Header verschwinden.
+const headerEl = ref<HTMLElement | null>(null);
+let resizeObserver: ResizeObserver | null = null;
+
+function updateHeaderHeight() {
+  const height = headerEl.value ? headerEl.value.getBoundingClientRect().height : 56;
+  document.documentElement.style.setProperty('--app-header-height', `${height}px`);
+}
+
+onMounted(() => {
+  resizeObserver = new ResizeObserver(updateHeaderHeight);
+  if (headerEl.value) resizeObserver.observe(headerEl.value);
+  updateHeaderHeight();
+});
+
+onUnmounted(() => {
+  resizeObserver?.disconnect();
+});
+
 // Frontend wird identisch für Staging (dev.reise.ruebenherz.de) und Produktion
 // (reise.ruebenherz.de) gebaut (siehe .github/workflows/build-deploy.yml) – der Unterschied lässt
 // sich also nur zur Laufzeit über den Hostnamen erkennen, nicht über einen Build-Flag/env-Wert.
@@ -21,28 +44,36 @@ const isNonProd = window.location.hostname !== 'reise.ruebenherz.de';
 </script>
 
 <template>
-  <header class="app-header" :class="{ 'non-prod': isNonProd }">
-    <router-link to="/" class="brand">
-      <img src="/reisotor_logo.svg" alt="Reisotor Logo" class="logo" />
-      <span class="wordmark">Reisotor</span>
-      <span v-if="isNonProd" class="env-badge" title="Dev-/Staging-Umgebung, nicht die echte Produktion">DEV</span>
-    </router-link>
-    <TripSwitcher class="switcher" />
-    <OfflineIndicator />
-    <PwaUpdatePrompt />
-    <PresenceAvatars />
-    <button
-      type="button"
-      class="secondary theme-toggle"
-      :title="theme.isDark ? 'Zum hellen Modus wechseln' : 'Zum dunklen Modus wechseln'"
-      :aria-label="theme.isDark ? 'Zum hellen Modus wechseln' : 'Zum dunklen Modus wechseln'"
-      @click="theme.toggle"
-    >
-      {{ theme.isDark ? '☀️' : '🌙' }}
-    </button>
-    <router-link to="/profile" class="profile-link" title="Profil">
-      <span class="avatar">{{ auth.user?.avatar || '👤' }}</span>
-    </router-link>
+  <header ref="headerEl" class="app-header" :class="{ 'non-prod': isNonProd }">
+    <!-- Eigene Zeile ÜBER der Icon-Zeile statt zwischen TripSwitcher und den Icons rechts
+         eingereiht: der TripSwitcher-Button wächst mit dem Urlaubsnamen und schrumpft nicht
+         zuverlässig (siehe .switcher-btn in TripSwitcher.vue), wodurch ein hier eingereihter Pill
+         auf schmalen Viewports vom TripSwitcher überlagert statt danebengestellt wurde. -->
+    <div class="status-row">
+      <OfflineIndicator />
+      <PwaUpdatePrompt />
+    </div>
+    <div class="header-row">
+      <router-link to="/" class="brand">
+        <img src="/reisotor_logo.svg" alt="Reisotor Logo" class="logo" />
+        <span class="wordmark">Reisotor</span>
+        <span v-if="isNonProd" class="env-badge" title="Dev-/Staging-Umgebung, nicht die echte Produktion">DEV</span>
+      </router-link>
+      <TripSwitcher class="switcher" />
+      <PresenceAvatars />
+      <button
+        type="button"
+        class="secondary theme-toggle"
+        :title="theme.isDark ? 'Zum hellen Modus wechseln' : 'Zum dunklen Modus wechseln'"
+        :aria-label="theme.isDark ? 'Zum hellen Modus wechseln' : 'Zum dunklen Modus wechseln'"
+        @click="theme.toggle"
+      >
+        {{ theme.isDark ? '☀️' : '🌙' }}
+      </button>
+      <router-link to="/profile" class="profile-link" title="Profil">
+        <span class="avatar">{{ auth.user?.avatar || '👤' }}</span>
+      </router-link>
+    </div>
   </header>
 </template>
 
@@ -56,16 +87,38 @@ const isNonProd = window.location.hostname !== 'reise.ruebenherz.de';
      verliert gegen eine Schublade mit höherem Context-z-index, obwohl der Dropdown-Inhalt optisch
      weit darüber liegen soll. Bleibt unterhalb von Modal.vue (z-index:100). */
   z-index: 25;
-  height: 56px;
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
   /* Bewusst kein Schlagschatten mehr: die NavBar direkt darunter bekommt jetzt den deutlich
      sichtbaren Schatten, der den fixen Header-Bereich vom scrollenden Inhalt abhebt (siehe
      NavBar.vue) – zwei Schatten kurz hintereinander wirkten redundant/unruhig. Die Trennlinie
      (border-bottom) reicht hier weiterhin als dezente Abgrenzung. */
+  box-sizing: border-box;
+}
+
+/* Statuszeile (Offline-/PWA-Update-Hinweis) bekommt eine eigene volle Zeile über der Icon-Zeile
+   statt zwischen TripSwitcher und den Icons rechts eingereiht zu werden – der TripSwitcher-Button
+   wächst mit dem Urlaubsnamen und schrumpft nicht zuverlässig (siehe .switcher-btn in
+   TripSwitcher.vue), ein hier eingereihter Pill wurde dadurch auf schmalen Viewports vom
+   TripSwitcher überlagert statt danebengestellt. :has() statt eines eigenen "zeig überhaupt
+   etwas?"-Flags: Offline-/PWA-Zustand kommt aus zwei unabhängigen Stores, die Zeile soll aber ohne
+   zusätzliche Kopplung einfach nur dann Platz beanspruchen, wenn eine der beiden Kind-Komponenten
+   tatsächlich einen Pill rendert. */
+.status-row {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+.status-row:has(.offline-pill, .pwa-pill) {
+  padding: 6px var(--space-4) 0;
+}
+
+.header-row {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   padding: 0 var(--space-4);
   box-sizing: border-box;
 }

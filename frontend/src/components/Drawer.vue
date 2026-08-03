@@ -294,7 +294,7 @@ function onResizeEnd() {
    in einen anderen Tab navigiert, während man denkt, die Schublade sei noch im Weg. */
 .drawer-backdrop {
   position: fixed;
-  top: 56px;
+  top: var(--app-header-height, 56px);
   bottom: 0;
   left: 0;
   right: 0;
@@ -304,7 +304,7 @@ function onResizeEnd() {
 
 .drawer-panel {
   position: fixed;
-  top: 56px;
+  top: var(--app-header-height, 56px);
   bottom: 0;
   /* Volle Breite auf Mobil (statt vorher min(85vw, var(--drawer-width))) – ausgeklappt ist eine
      Schublade auf Mobil ohnehin bereits gleichbedeutend mit "maximiert" (kein eigener Maximieren-
@@ -491,9 +491,9 @@ function onResizeEnd() {
        hat sie denselben sticky-top wie das Panel – ohne den Offset würde das Panel (höherer
        z-index) sie beim Scrollen überdecken statt sich darunter einzuordnen. */
     position: sticky;
-    top: calc(56px + var(--navbar-offset, 0px));
+    top: calc(var(--app-header-height, 56px) + var(--navbar-offset, 0px));
     bottom: auto;
-    max-height: calc(100vh - 56px - var(--navbar-offset, 0px));
+    max-height: calc(100vh - var(--app-header-height, 56px) - var(--navbar-offset, 0px));
     transform: none;
     box-shadow: none;
     border-radius: 0;
@@ -553,7 +553,7 @@ function onResizeEnd() {
      mehr sichtbar durchscheint. */
   .drawer.maximized .drawer-panel {
     position: fixed;
-    top: calc(56px + var(--navbar-offset, 0px));
+    top: calc(var(--app-header-height, 56px) + var(--navbar-offset, 0px));
     bottom: var(--navbar-bottom-offset, 0px);
     left: 0;
     right: 0;

@@ -908,7 +908,7 @@ async function removeSpot(id: number) {
    tatsächlich für die Karte verbleibenden Platzes. */
 .page {
   position: relative;
-  height: calc(100vh - 56px - var(--navbar-offset, 0px) - var(--navbar-bottom-offset, 0px));
+  height: calc(100vh - var(--app-header-height, 56px) - var(--navbar-offset, 0px) - var(--navbar-bottom-offset, 0px));
   overflow: hidden;
   padding: 0;
 }
@@ -1147,12 +1147,12 @@ async function removeSpot(id: number) {
     right: auto;
     bottom: auto;
     z-index: auto;
-    top: calc(56px + var(--navbar-offset, 0px));
+    top: calc(var(--app-header-height, 56px) + var(--navbar-offset, 0px));
     /* Zieht zusätzlich die (live gemessene, siehe pageTitleHeight im Script) Höhe des Seitentitels
        samt seines margin-bottom sowie .page's eigenes padding-top (var(--space-3), s. o.) ab – ohne
        das war die Spalte beim ersten Rendern (bevor sie tatsächlich einrastet) zu groß, was eine
        überflüssige Seiten-Scrollbar samt leerem Weißraum am Ende erzeugte. */
-    max-height: calc(100vh - 56px - var(--navbar-offset, 0px) - var(--navbar-bottom-offset, 0px) - var(--page-title-height, 0px) - var(--space-3));
+    max-height: calc(100vh - var(--app-header-height, 56px) - var(--navbar-offset, 0px) - var(--navbar-bottom-offset, 0px) - var(--page-title-height, 0px) - var(--space-3));
     overflow-y: auto;
   }
 
@@ -1205,8 +1205,8 @@ async function removeSpot(id: number) {
   .col-resize-handle {
     display: flex;
     position: sticky;
-    top: calc(56px + var(--navbar-offset, 0px));
-    height: calc(100vh - 56px - var(--navbar-offset, 0px) - var(--navbar-bottom-offset, 0px) - var(--page-title-height, 0px) - var(--space-3));
+    top: calc(var(--app-header-height, 56px) + var(--navbar-offset, 0px));
+    height: calc(100vh - var(--app-header-height, 56px) - var(--navbar-offset, 0px) - var(--navbar-bottom-offset, 0px) - var(--page-title-height, 0px) - var(--space-3));
   }
 }
 
@@ -1446,7 +1446,7 @@ async function removeSpot(id: number) {
   /* scrollToCategory() landet sonst mit der Überschrift genau unter der fest/sticky positionierten
      AppHeader (56px) + ggf. der oben positionierten NavBar (--navbar-offset) – dieselbe Formel wie
      bei .spots-col/.map-col weiter oben und Drawer.vue. */
-  scroll-margin-top: calc(56px + var(--navbar-offset, 0px) + var(--space-2));
+  scroll-margin-top: calc(var(--app-header-height, 56px) + var(--navbar-offset, 0px) + var(--space-2));
 }
 
 /* Horizontale Kategorie-Navigation (Wolt-Stil): Icon zentriert über dem Label, ganze Leiste

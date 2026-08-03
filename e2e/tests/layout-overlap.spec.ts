@@ -128,6 +128,46 @@ test.describe('Mobile: ExcursionCard-Löschen-Button überdeckt nicht den Status
   });
 });
 
+test.describe('Mobile: Header-Statuszeile (Offline-/PWA-Update-Hinweis) überlagert nicht den TripSwitcher', () => {
+  test.use({ viewport: VIEWPORTS.mobile });
+
+  test('Update-Pill bekommt eine eigene Zeile statt vom TripSwitcher überdeckt zu werden, NavBar bleibt beim Scrollen sichtbar', async ({ page }) => {
+    // Regressionstest für einen vom Nutzer gemeldeten Bug: PwaUpdatePrompt.vue saß zunächst als
+    // weiterer Icon in derselben Zeile wie der TripSwitcher — dessen Button wächst mit dem
+    // Urlaubsnamen und schrumpft nicht zuverlässig (.switcher-btn hat kein min-width:0 auf
+    // .trip-name), wodurch er auf schmalen Viewports über seine eigene Box hinaus den danebenliegen-
+    // den Pill überlagerte. Fix: eigene .status-row über der Icon-Zeile in AppHeader.vue. Simuliert
+    // needRefresh=true per DOM-Injektion statt eines echten Service-Worker-Update-Zyklus (in Dev
+    // sowieso deaktiviert, siehe devOptions.enabled in vite.config.ts) — reicht für den reinen
+    // Layout-Check.
+    await page.goto('/');
+    await page.waitForSelector('.trip-name');
+    await page.evaluate(() => {
+      const row = document.querySelector('.status-row');
+      if (!row) throw new Error('.status-row nicht gefunden');
+      const pill = document.createElement('span');
+      pill.className = 'pwa-pill update';
+      pill.textContent = '🔄 Update verfügbar';
+      row.appendChild(pill);
+    });
+
+    const pill = page.locator('.pwa-pill.update');
+    const switcher = page.locator('.switcher-btn');
+    await expect(pill).toBeVisible();
+    await expectNotCoveredBy(page, switcher, pill);
+    await expectNotCoveredBy(page, pill, switcher);
+
+    // Der jetzt höhere Header (56px Icon-Zeile + Statuszeile) darf die sticky positionierte NavBar
+    // beim Scrollen nicht verdecken — Regressionstest für den fest verdrahteten "top:56px" in
+    // NavBar.vue, der die neue, variable Header-Höhe zunächst nicht kannte (siehe --app-header-height
+    // in AppHeader.vue/NavBar.vue).
+    await page.evaluate(() => window.scrollTo(0, 300));
+    const navbar = page.locator('nav.navbar');
+    await expect(navbar).toBeVisible();
+    await expectNotCoveredBy(page, navbar, page.locator('.app-header'));
+  });
+});
+
 // Referenz: das Dropdown-vs-Modal-Overflow-Muster (MapsAppPicker im Termin-Detail-Dialog) ist
 // bereits in calendar.spec.ts abgedeckt ("MapsAppPicker dropdown is not clipped by the modal") —
 // hier bewusst nicht dupliziert.
