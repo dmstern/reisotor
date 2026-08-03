@@ -7,6 +7,7 @@ import { useDrawersStore } from './stores/drawers';
 import { useLiveSyncStore } from './stores/liveSync';
 import { useIsDesktop } from './composables/useIsDesktop';
 import { SECTION_ICONS } from './utils/sectionIcons';
+import { prefetchTripDataForOffline } from './utils/offlinePrefetch';
 import AppHeader from './components/AppHeader.vue';
 import NavBar from './components/NavBar.vue';
 import TripForm from './components/TripForm.vue';
@@ -32,6 +33,19 @@ watch(
     if (user && !tripStore.loaded) {
       tripStore.loadTrips();
     }
+  },
+  { immediate: true },
+);
+
+// Wärmt den Offline-Daten-Cache (api/offline.ts) für den aktuellen Urlaub im Hintergrund vor -
+// sonst bleiben Views, die DashboardView.vue selbst nicht lädt (Touren, Reise-Orte, Budget-
+// Kategorien/Überweisungen, Likes/Kommentare), erst nach einem einmaligen Online-Besuch offline
+// nutzbar, obwohl die "App ist jetzt offline verfügbar"-Meldung (PwaUpdatePrompt.vue) das
+// Gegenteil suggeriert. Läuft bei jedem Urlaubswechsel erneut (eigener Cache-Key pro trip_id).
+watch(
+  () => tripStore.currentTripId,
+  (tripId) => {
+    if (tripId && navigator.onLine) prefetchTripDataForOffline(tripId);
   },
   { immediate: true },
 );

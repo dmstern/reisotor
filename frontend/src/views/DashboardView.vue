@@ -116,6 +116,20 @@ watch(
   },
 );
 
+// Sprache/Währung/Sicherheitshinweis sind je nach Land oft nur teilweise oder gar nicht verfügbar
+// (z. B. keine Einträge bei travel-advisory.info, keine Wechselkurs-Notierung für die Währung) -
+// nur die Quellen nennen, die tatsächlich zu einer sichtbaren Zeile im Template beigetragen haben,
+// statt pauschal alle drei zu zitieren.
+const regionSourceParts = computed(() => {
+  if (!regionInfo.value) return [];
+  const parts: string[] = [];
+  if (regionInfo.value.languages.length || regionInfo.value.currency) parts.push('REST Countries');
+  if (regionInfo.value.currency && regionInfo.value.exchangeRate != null) parts.push('open.er-api.com');
+  if (regionInfo.value.advisory) parts.push('travel-advisory.info');
+  return parts;
+});
+const regionShowsExchange = computed(() => !!(regionInfo.value?.currency && regionInfo.value.exchangeRate != null));
+
 // Feste, deterministische Farbzuordnung je Widget (dataviz-Skill: kategoriale Identität, fixe
 // Reihenfolge statt gewürfelter Farben) – dieselbe validierte Palette wie überall sonst in der App.
 const WIDGET_COLORS = assignCategoryColors([
@@ -292,77 +306,83 @@ function formatWeekdayDate(d: string) {
       <p v-else-if="daysUntilStart !== null" class="countdown">Gute Reise! ✈️</p>
     </header>
 
-    <section v-if="trip?.lat != null && trip?.lng != null" class="card weather-card">
+    <!-- Wetter + Reiseregion in einer Card statt zweier separater: beide sind "Infos über das
+         Reiseziel" und passen inhaltlich zusammen; eine eigene, oft nur teilweise befüllte
+         Reiseregion-Card daneben wirkte redundant. Reiseregion-Teil ist rein additiv (eigener
+         v-if/v-else-if-Block unten) und bleibt komplett weg, wenn nichts davon tatsächlich Daten
+         hat - keine Überschrift/Quelle ohne Inhalt. -->
+    <section class="card weather-card">
       <h3>🌤️ Wetter</h3>
-      <p v-if="weatherLoading && !weatherDays" class="hint">Lädt …</p>
-      <p v-else-if="weatherError" class="hint error">{{ weatherError }}</p>
-      <template v-else>
-        <div v-if="todayWeather" class="weather-today">
-          <span class="weather-today-label">Heute{{ trip?.destination ? ` in ${trip.destination}` : '' }}</span>
-          <span class="weather-icon" :title="weatherCodeMeta(todayWeather.weatherCode).label">{{
-            weatherCodeMeta(todayWeather.weatherCode).icon
-          }}</span>
-          <span class="weather-temp">{{ Math.round(todayWeather.tempMax) }}° / {{ Math.round(todayWeather.tempMin) }}°</span>
-          <span v-if="todayWeather.precipitationProbability != null" class="weather-rain">💧{{ todayWeather.precipitationProbability }}%</span>
-        </div>
-        <p class="weather-section-label">🏖️ Wetter im Urlaub</p>
-        <p v-if="!vacationForecastDays.length" class="hint">
-          Für die Urlaubstage liegt noch keine Vorhersage vor – Open-Meteo deckt nur die kommenden
-          ~16 Tage ab, schau kurz vorher nochmal vorbei.
-        </p>
-        <div v-else class="weather-days">
-          <div class="weather-day" v-for="day in vacationForecastDays" :key="day.date">
-            <span class="weather-date">{{ formatWeekdayDate(day.date) }}</span>
-            <span class="weather-icon" :title="weatherCodeMeta(day.weatherCode).label">{{
-              weatherCodeMeta(day.weatherCode).icon
+      <template v-if="trip?.lat != null && trip?.lng != null">
+        <p v-if="weatherLoading && !weatherDays" class="hint">Lädt …</p>
+        <p v-else-if="weatherError" class="hint error">{{ weatherError }}</p>
+        <template v-else>
+          <div v-if="todayWeather" class="weather-today">
+            <span class="weather-today-label">Heute{{ trip?.destination ? ` in ${trip.destination}` : '' }}</span>
+            <span class="weather-icon" :title="weatherCodeMeta(todayWeather.weatherCode).label">{{
+              weatherCodeMeta(todayWeather.weatherCode).icon
             }}</span>
-            <span class="weather-temp">{{ Math.round(day.tempMax) }}° / {{ Math.round(day.tempMin) }}°</span>
-            <span v-if="day.precipitationProbability != null" class="weather-rain">💧{{ day.precipitationProbability }}%</span>
+            <span class="weather-temp">{{ Math.round(todayWeather.tempMax) }}° / {{ Math.round(todayWeather.tempMin) }}°</span>
+            <span v-if="todayWeather.precipitationProbability != null" class="weather-rain">💧{{ todayWeather.precipitationProbability }}%</span>
           </div>
-        </div>
-        <!-- Andere Wetter-Apps (Apple Weather/Google) können abweichende Werte zeigen, v. a. bei der
-             Bewölkung – eigenes Modell/eigene Quelle statt eines Fehlers, deshalb hier explizit
-             benannt (wie DuckDuckGo es bei seinem eigenen Wetter-Widget genauso mit "Quelle: Apple
-             Weather" macht). Klickbar statt reinem Text: springt direkt zur Wetter-Anbieter-Auswahl
-             in den Einstellungen, falls der Wert einmal nicht passt. -->
-        <router-link to="/profile#weather-provider-settings" class="weather-source">
-          Quelle: Open-Meteo ({{ weatherModelLabel }}) · Anbieter wechseln
-        </router-link>
+          <p class="weather-section-label">🏖️ Wetter im Urlaub</p>
+          <p v-if="!vacationForecastDays.length" class="hint">
+            Für die Urlaubstage liegt noch keine Vorhersage vor – Open-Meteo deckt nur die kommenden
+            ~16 Tage ab, schau kurz vorher nochmal vorbei.
+          </p>
+          <div v-else class="weather-days">
+            <div class="weather-day" v-for="day in vacationForecastDays" :key="day.date">
+              <span class="weather-date">{{ formatWeekdayDate(day.date) }}</span>
+              <span class="weather-icon" :title="weatherCodeMeta(day.weatherCode).label">{{
+                weatherCodeMeta(day.weatherCode).icon
+              }}</span>
+              <span class="weather-temp">{{ Math.round(day.tempMax) }}° / {{ Math.round(day.tempMin) }}°</span>
+              <span v-if="day.precipitationProbability != null" class="weather-rain">💧{{ day.precipitationProbability }}%</span>
+            </div>
+          </div>
+          <!-- Andere Wetter-Apps (Apple Weather/Google) können abweichende Werte zeigen, v. a. bei der
+               Bewölkung – eigenes Modell/eigene Quelle statt eines Fehlers, deshalb hier explizit
+               benannt (wie DuckDuckGo es bei seinem eigenen Wetter-Widget genauso mit "Quelle: Apple
+               Weather" macht). Klickbar statt reinem Text: springt direkt zur Wetter-Anbieter-Auswahl
+               in den Einstellungen, falls der Wert einmal nicht passt. -->
+          <router-link to="/profile#weather-provider-settings" class="weather-source">
+            Quelle: Open-Meteo ({{ weatherModelLabel }}) · Anbieter wechseln
+          </router-link>
+        </template>
       </template>
-    </section>
-    <section v-else class="card weather-card">
-      <h3>🌤️ Wetter im Urlaub</h3>
-      <p class="hint">Hinterlege beim Urlaub einen Maps-Link, um hier die Wettervorhersage für die Urlaubstage zu sehen.</p>
-    </section>
+      <p v-else class="hint">Hinterlege beim Urlaub einen Maps-Link, um hier die Wettervorhersage für die Urlaubstage zu sehen.</p>
 
-    <section v-if="regionLoading && !regionInfo" class="card region-card">
-      <h3>🌍 Reiseregion</h3>
-      <p class="hint">Lädt …</p>
-    </section>
-    <section v-else-if="regionError" class="card region-card">
-      <h3>🌍 Reiseregion</h3>
-      <p class="hint error">{{ regionError }}</p>
-    </section>
-    <section v-else-if="regionInfo?.countryName" class="card region-card">
-      <h3>🌍 {{ regionInfo.countryName }}</h3>
-      <p v-if="regionInfo.languages.length" class="detail-row">
-        <span class="detail-label">Sprache</span>{{ regionInfo.languages.join(', ') }}
-      </p>
-      <p v-if="regionInfo.currency" class="detail-row">
-        <span class="detail-label">Währung</span>💱 {{ regionInfo.currency.name }} ({{ regionInfo.currency.code }})
-        <span v-if="regionInfo.exchangeRate != null">
-          · 1 {{ regionInfo.currency.code }} ≈ {{ regionInfo.exchangeRate.toFixed(2) }} {{ homeCurrency.currency }}
-        </span>
-      </p>
-      <p v-if="regionInfo.advisory" class="detail-row">
-        <span class="detail-label">Sicherheit</span>⚠️ {{ regionInfo.advisory.message }}
-        <span class="region-advisory-score">({{ regionInfo.advisory.score.toFixed(1) }}/5)</span>
-      </p>
-      <!-- Analog zum "Quelle: Open-Meteo"-Hinweis beim Wetter-Widget: Sprung zur Heimatwährungs-
-           Auswahl, falls der Wechselkurs-Vergleich einmal nicht passt. -->
-      <router-link to="/profile#home-currency-settings" class="weather-source">
-        Quelle: REST Countries · open.er-api.com · travel-advisory.info
-      </router-link>
+      <template v-if="regionLoading && !regionInfo">
+        <p class="weather-section-label">🌍 Reiseregion</p>
+        <p class="hint">Lädt …</p>
+      </template>
+      <template v-else-if="regionError">
+        <p class="weather-section-label">🌍 Reiseregion</p>
+        <p class="hint error">{{ regionError }}</p>
+      </template>
+      <template v-else-if="regionInfo && (regionInfo.languages.length || regionInfo.currency || regionInfo.advisory)">
+        <p class="weather-section-label">🌍 Reiseregion</p>
+        <p v-if="regionInfo.languages.length" class="detail-row">
+          <span class="detail-label">Sprache</span>{{ regionInfo.languages.join(', ') }}
+        </p>
+        <p v-if="regionInfo.currency" class="detail-row">
+          <span class="detail-label">Währung</span>💱 {{ regionInfo.currency.name }} ({{ regionInfo.currency.code }})
+          <span v-if="regionInfo.exchangeRate != null">
+            · 1 {{ regionInfo.currency.code }} ≈ {{ regionInfo.exchangeRate.toFixed(2) }} {{ homeCurrency.currency }}
+          </span>
+        </p>
+        <p v-if="regionInfo.advisory" class="detail-row">
+          <span class="detail-label">Sicherheit</span>⚠️ {{ regionInfo.advisory.message }}
+          <span class="region-advisory-score">({{ regionInfo.advisory.score.toFixed(1) }}/5)</span>
+        </p>
+        <!-- Nennt nur Quellen, die tatsächlich zu einer der Zeilen oben beigetragen haben (siehe
+             regionSourceParts) - und verlinkt nur zur Heimatwährungs-Auswahl, wenn ein Wechselkurs
+             auch wirklich mit dabei ist (analog zum "Quelle: Open-Meteo"-Hinweis beim Wetter oben). -->
+        <router-link v-if="regionShowsExchange" to="/profile#home-currency-settings" class="weather-source">
+          Quelle: {{ regionSourceParts.join(' · ') }} · Anbieter wechseln
+        </router-link>
+        <p v-else class="weather-source static">Quelle: {{ regionSourceParts.join(' · ') }}</p>
+      </template>
     </section>
 
     <div class="grid cards">
@@ -653,24 +673,15 @@ function formatWeekdayDate(d: string) {
   color: var(--color-primary-dark);
 }
 
-.region-card {
-  margin-bottom: var(--space-4);
+/* Reine Text-Variante (kein <router-link>) für den Fall, dass keine der genannten Quellen zur
+   Heimatwährungs-Einstellung verlinkt werden soll (kein Wechselkurs unter den gezeigten Zeilen). */
+.weather-source.static {
+  text-decoration: none;
+  cursor: default;
 }
 
-.region-card h3 {
-  color: var(--color-primary-dark);
-  font-size: 1rem;
-  margin-bottom: var(--space-2);
-}
-
-.region-card .hint {
-  margin: 0;
+.weather-source.static:hover {
   color: var(--color-text-muted);
-  font-size: 0.9rem;
-}
-
-.region-card .hint.error {
-  color: var(--color-danger);
 }
 
 .region-advisory-score {
