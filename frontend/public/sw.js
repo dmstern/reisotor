@@ -13,6 +13,15 @@ precacheAndRoute(self.__WB_MANIFEST);
 // index.html aus, der Client-seitige Router (vue-router) übernimmt danach normal.
 registerRoute(new NavigationRoute(createHandlerBoundToURL('/index.html')));
 
+// PwaUpdatePrompt.vue's "Neu laden"-Button ruft vite-plugin-pwa's updateSW(true) auf, das genau
+// diese Nachricht an den WARTENDEN (neuen) Service Worker schickt, um ihn sofort zu aktivieren statt
+// auf das natürliche Ende aller offenen Tabs zu warten. Bei der generateSW-Strategie fügt
+// vite-plugin-pwa diesen Listener automatisch ein - bei injectManifest (dieser Datei, siehe
+// vite.config.ts) ist das unsere eigene Aufgabe. Ohne ihn tut der Button-Klick buchstäblich nichts.
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
+});
+
 self.addEventListener('push', (event) => {
   if (!event.data) return;
   let payload;

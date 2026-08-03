@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { onUnmounted, ref } from 'vue';
 import { registerSW } from 'virtual:pwa-register';
 
 // Volle PWA (siehe vite.config.ts's VitePWA-Konfiguration, injectManifest-Strategie): registriert
@@ -11,6 +11,25 @@ import { registerSW } from 'virtual:pwa-register';
 const needRefresh = ref(false);
 const offlineReady = ref(false);
 
+// Der Browser prüft von sich aus nur bei einer echten Navigation auf eine neue Service-Worker-
+// Version - bleibt eine (v. a. iOS-Safari-)PWA im Standalone-Modus einfach offen/im Hintergrund
+// (App-Switcher, kein echter Neustart), passiert das nie von selbst, der Hinweis erscheint erst
+// beim nächsten kompletten Neustart der App. registration.update() stößt denselben Check manuell
+// an: einmal alle 60s, plus sofort, sobald die Seite wieder sichtbar wird (schneller als aufs
+// nächste Intervall zu warten, z. B. beim Zurückholen aus dem App-Switcher).
+const UPDATE_CHECK_INTERVAL_MS = 60_000;
+let updateCheckInterval: ReturnType<typeof setInterval> | undefined;
+let onVisibilityChange: (() => void) | undefined;
+
+function startPeriodicUpdateCheck(registration: ServiceWorkerRegistration | undefined) {
+  if (!registration) return;
+  updateCheckInterval = setInterval(() => registration.update(), UPDATE_CHECK_INTERVAL_MS);
+  onVisibilityChange = () => {
+    if (document.visibilityState === 'visible') registration.update();
+  };
+  document.addEventListener('visibilitychange', onVisibilityChange);
+}
+
 const updateSW = registerSW({
   onNeedRefresh() {
     needRefresh.value = true;
@@ -18,6 +37,14 @@ const updateSW = registerSW({
   onOfflineReady() {
     offlineReady.value = true;
   },
+  onRegisteredSW(_swUrl, registration) {
+    startPeriodicUpdateCheck(registration);
+  },
+});
+
+onUnmounted(() => {
+  if (updateCheckInterval != null) clearInterval(updateCheckInterval);
+  if (onVisibilityChange) document.removeEventListener('visibilitychange', onVisibilityChange);
 });
 
 function reload() {

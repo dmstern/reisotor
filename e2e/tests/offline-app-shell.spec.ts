@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { execSync, spawn, type ChildProcess } from 'node:child_process';
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { E2E_BACKEND_PORT, E2E_PWA_PREVIEW_PORT } from '../constants.js';
@@ -86,5 +87,48 @@ test.describe.serial('Offline-App-Shell (Workbox-Precaching)', () => {
 
     await context.setOffline(false);
     await context.close();
+  });
+
+  test('"Neu laden"-Button aktiviert die neue Version tatsächlich statt nichts zu tun', async ({ browser }) => {
+    // Regressionstest für einen vom Nutzer gemeldeten Bug: der Button rief vite-plugin-pwa's
+    // updateSW(true) auf, das per workbox-window eine {type:'SKIP_WAITING'}-Nachricht an den
+    // wartenden Service Worker schickt - public/sw.js (injectManifest-Strategie, siehe
+    // vite.config.ts) hatte dafür aber KEINEN message-Listener (den fügt nur die generateSW-
+    // Strategie automatisch ein). self.skipWaiting() wurde nie aufgerufen, der neue Worker nie
+    // aktiv, kein automatischer Reload (workbox-window's "controlling"-Event) - der Klick tat
+    // buchstäblich nichts. Fix: eigener message-Listener in public/sw.js.
+    test.setTimeout(60_000);
+    const appVuePath = path.join(frontendDir, 'src', 'App.vue');
+    const originalAppVue = fs.readFileSync(appVuePath, 'utf-8');
+
+    const context = await browser.newContext({ storageState: authFile });
+    const page = await context.newPage();
+    try {
+      await page.goto(previewUrl + '/');
+      await page.waitForFunction(() => navigator.serviceWorker.ready.then(() => true));
+      await expect(page.locator('.trip-name')).toBeVisible();
+
+      // Simuliert ein neues Deployment: jede Quelländerung verschiebt mindestens einen Datei-Hash
+      // und damit den in sw.js selbst eingebetteten Precache-Manifest-Array - sw.js' eigene Bytes
+      // ändern sich dadurch garantiert, was der Browser bei der nächsten Navigation erkennt.
+      fs.writeFileSync(appVuePath, `${originalAppVue}\n<!-- e2e-update-test -->\n`);
+      execSync('npm run build', { cwd: frontendDir, stdio: 'pipe' });
+
+      // Normale Navigation (kein page.goto auf eine neue URL, echtes Reload) - der Browser prüft
+      // dabei von sich aus auf eine neue Service-Worker-Version, unabhängig von unserem eigenen
+      // Popping in PwaUpdatePrompt.vue.
+      await page.reload();
+      await expect(page.locator('.pwa-pill.update')).toBeVisible({ timeout: 15_000 });
+
+      // Der eigentliche Kern des Bugs: ohne den sw.js-Fix passiert nach diesem Klick nichts, das
+      // Warten auf ein 'load'-Event würde in einen Timeout laufen.
+      await Promise.all([page.waitForEvent('load', { timeout: 10_000 }), page.locator('.pwa-pill-btn').click()]);
+
+      await expect(page.locator('.trip-name')).toBeVisible();
+      await expect(page.locator('.pwa-pill.update')).toHaveCount(0);
+    } finally {
+      fs.writeFileSync(appVuePath, originalAppVue);
+      await context.close();
+    }
   });
 });
