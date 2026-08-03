@@ -1,13 +1,14 @@
-import type { Accommodation, Spot, TravelItem } from '../api/types';
+import type { Accommodation, Spot, TravelItem, TravelPlace } from '../api/types';
 import { spotCategoryMeta } from './spotCategory';
 import { travelTypeIcon } from './travelTypeIcon';
+import { travelPlaceTypeIcon } from './travelPlaceType';
 
 // Löst die generischen station_keys eines Ausflugs (siehe api/types.ts, Excursion.station_keys) zu
 // einem einheitlichen Anzeige-Objekt auf – eine Station ist nicht zwingend ein echter Spot (kann
-// auch die Unterkunft oder ein Anreise-/Abreise-Ort sein, siehe Kommentar dort). Zentralisiert die
-// Metadaten, die TripMap.vue und ExcursionsView.vue (derivedLocations) für dieselben drei
-// Objekttypen ohnehin schon separat kennen (Icon/Farbe/Label).
-export type StationKind = 'spot' | 'accommodation' | 'travel-from' | 'travel-to' | 'schedule';
+// auch die Unterkunft, ein angelegter Reise-Ort oder ein Etappen-Ende ohne verknüpften Ort sein,
+// siehe Kommentar dort). Zentralisiert die Metadaten, die TripMap.vue und ExcursionsView.vue
+// (derivedLocations) für dieselben Objekttypen ohnehin schon separat kennen (Icon/Farbe/Label).
+export type StationKind = 'spot' | 'accommodation' | 'travel-place' | 'travel-from' | 'travel-to' | 'schedule';
 
 export interface ExcursionStation {
   key: string;
@@ -32,6 +33,7 @@ export function resolveStation(
   spots: Spot[],
   accommodations: Accommodation[],
   travelItems: TravelItem[],
+  travelPlaces: TravelPlace[] = [],
 ): ExcursionStation | null {
   if (key.startsWith('spot-')) {
     const id = Number(key.slice('spot-'.length));
@@ -70,6 +72,24 @@ export function resolveStation(
       mapsLink: acc.maps_link,
     };
   }
+  if (key.startsWith('travel-place-')) {
+    const id = Number(key.slice('travel-place-'.length));
+    const place = travelPlaces.find((p) => p.id === id);
+    if (!place) return null;
+    return {
+      key,
+      kind: 'travel-place',
+      id,
+      title: place.name,
+      icon: travelPlaceTypeIcon(place.type),
+      color: TRAVEL_COLOR,
+      category: 'Reise',
+      imageUrl: null,
+      lat: place.lat,
+      lng: place.lng,
+      mapsLink: place.maps_link,
+    };
+  }
   if (key.startsWith('travel-from-') || key.startsWith('travel-to-')) {
     const isFrom = key.startsWith('travel-from-');
     const id = Number(key.slice((isFrom ? 'travel-from-' : 'travel-to-').length));
@@ -97,8 +117,9 @@ export function resolveStations(
   spots: Spot[],
   accommodations: Accommodation[],
   travelItems: TravelItem[],
+  travelPlaces: TravelPlace[] = [],
 ): ExcursionStation[] {
   return keys
-    .map((key) => resolveStation(key, spots, accommodations, travelItems))
+    .map((key) => resolveStation(key, spots, accommodations, travelItems, travelPlaces))
     .filter((s): s is ExcursionStation => !!s);
 }

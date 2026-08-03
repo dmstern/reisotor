@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch, type ComponentPublicInstance } from 'vue';
 import { api } from '../api/client';
-import type { Accommodation, Spot, TravelItem, User } from '../api/types';
+import type { Accommodation, Spot, TravelItem, TravelPlace, User } from '../api/types';
 import { useAuthStore } from '../stores/auth';
 import { useTripStore } from '../stores/trip';
 import { useSpotsStore } from '../stores/spots';
@@ -38,6 +38,7 @@ const isDesktop = useIsDesktop();
 const users = ref<User[]>([]);
 const accommodations = ref<Accommodation[]>([]);
 const travelItems = ref<TravelItem[]>([]);
+const travelPlaces = ref<TravelPlace[]>([]);
 const loading = ref(true);
 const highlightedIds = ref<Set<number>>(new Set());
 
@@ -69,15 +70,17 @@ onUnmounted(() => {
 
 onMounted(async () => {
   highlightedIds.value = liveSync.markSeen('spots');
-  const [usersRes, accommodationRes, travelRes] = await Promise.all([
+  const [usersRes, accommodationRes, travelRes, travelPlacesRes] = await Promise.all([
     api.get<User[]>('/users'),
     api.get<Accommodation[]>(`/accommodation?trip_id=${tripId}`),
     api.get<TravelItem[]>(`/travel?trip_id=${tripId}`),
+    api.get<TravelPlace[]>(`/travel/places?trip_id=${tripId}`),
     spotsStore.load(),
   ]);
   users.value = usersRes;
   accommodations.value = accommodationRes;
   travelItems.value = travelRes;
+  travelPlaces.value = travelPlacesRes;
   loading.value = false;
 });
 
@@ -124,7 +127,7 @@ const derivedLocations = computed<DerivedLocation[]>(() => {
   // buildTravelDerivedLocations() dedupliziert bereits über from_place_id/to_place_id (bzw.
   // gerundete lat/lng) – ohne das erschien z. B. der Zielflughafen von Hin- UND Rückflug zweimal
   // als eigene Karte in dieser Liste.
-  result.push(...buildTravelDerivedLocations(travelItems.value));
+  result.push(...buildTravelDerivedLocations(travelItems.value, travelPlaces.value));
   return result;
 });
 

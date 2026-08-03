@@ -9,11 +9,13 @@ import { useLiveSyncStore } from '../stores/liveSync';
 import { parseLatLngFromMapsLink } from '../utils/googleMaps';
 import { TRAVEL_ROLE_META, TRAVEL_ROLE_OPTIONS } from '../utils/travelRole';
 import { travelTypeIcon } from '../utils/travelTypeIcon';
+import { travelPlaceTypeIcon, isZuhauseType, TRAVEL_PLACE_TYPE_SUGGESTIONS } from '../utils/travelPlaceType';
 import { formatTravelDuration, travelDurationMinutes } from '../utils/travelDuration';
 import { hashHighlightId } from '../utils/hashHighlight';
 import Modal from '../components/Modal.vue';
 import TravelDetailDialog from '../components/TravelDetailDialog.vue';
 import LocationPicker from '../components/LocationPicker.vue';
+import Combobox from '../components/Combobox.vue';
 import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
 import UndoDeleteRow from '../components/UndoDeleteRow.vue';
@@ -122,7 +124,7 @@ function userLabel(id: number | null) {
 function placeLabel(id: number | null) {
   if (id == null) return null;
   const p = places.value.find((p) => p.id === id);
-  return p ? `${p.is_home ? '🏠' : '📍'} ${p.name}` : null;
+  return p ? `${travelPlaceTypeIcon(p.type)} ${p.name}` : null;
 }
 
 function toBody(
@@ -352,7 +354,7 @@ function createReturnLeg(item: TravelItem) {
 }
 
 // --- Orte (wiederverwendbare Start-/Zielpunkte für Etappen) ---
-const emptyPlaceForm = () => ({ name: '', is_home: false, maps_link: '' });
+const emptyPlaceForm = () => ({ name: '', type: '', is_home: false, maps_link: '' });
 const newPlaceForm = ref(emptyPlaceForm());
 const newPlaceMapsLinkResolved = ref<boolean | null>(null);
 const editingPlace = ref<TravelPlace | null>(null);
@@ -369,7 +371,8 @@ async function addPlace() {
   const created = await api.post<TravelPlace>('/travel/places', {
     trip_id: tripId,
     name: newPlaceForm.value.name.trim(),
-    is_home: newPlaceForm.value.is_home,
+    type: newPlaceForm.value.type || undefined,
+    is_home: isZuhauseType(newPlaceForm.value.type) || newPlaceForm.value.is_home,
     maps_link: newPlaceForm.value.maps_link || undefined,
   });
   places.value.push(created);
@@ -380,7 +383,12 @@ async function addPlace() {
 
 function startEditPlace(place: TravelPlace) {
   editingPlace.value = place;
-  editPlaceForm.value = { name: place.name, is_home: !!place.is_home, maps_link: place.maps_link ?? '' };
+  editPlaceForm.value = {
+    name: place.name,
+    type: place.type ?? '',
+    is_home: !!place.is_home,
+    maps_link: place.maps_link ?? '',
+  };
 }
 
 async function submitEditPlace() {
@@ -388,7 +396,8 @@ async function submitEditPlace() {
   const updated = await api.put<TravelPlace>(`/travel/places/${editingPlace.value.id}`, {
     trip_id: tripId,
     name: editPlaceForm.value.name.trim(),
-    is_home: editPlaceForm.value.is_home,
+    type: editPlaceForm.value.type || undefined,
+    is_home: isZuhauseType(editPlaceForm.value.type) || editPlaceForm.value.is_home,
     maps_link: editPlaceForm.value.maps_link || undefined,
   });
   const idx = places.value.findIndex((p) => p.id === updated.id);
@@ -453,9 +462,14 @@ function showDetailToOnMap() {
       </p>
       <form class="place-form" @submit.prevent="addPlace">
         <input v-model="newPlaceForm.name" type="text" placeholder="Name, z. B. Zuhause oder Hotel Meeresblick" required />
-        <label class="home-check">
+        <Combobox
+          v-model="newPlaceForm.type"
+          :options="TRAVEL_PLACE_TYPE_SUGGESTIONS"
+          placeholder="Art (optional, z. B. Flughafen – oder eigene erstellen)"
+        />
+        <label class="home-check" v-if="!isZuhauseType(newPlaceForm.type)">
           <input v-model="newPlaceForm.is_home" type="checkbox" />
-          🏠 Zuhause
+          🏠 Heimat-Seite (nicht Urlaubsregion)
         </label>
         <input v-model="newPlaceForm.maps_link" type="url" placeholder="Maps-Link (optional)" @blur="checkNewPlaceMapsLink" />
         <button type="submit">Hinzufügen</button>
@@ -464,7 +478,12 @@ function showDetailToOnMap() {
       <p v-if="newPlaceMapsLinkResolved === false" class="hint">Standort konnte nicht automatisch erkannt werden.</p>
       <ul class="places-list" v-if="places.length">
         <li v-for="place in places" :key="place.id" class="place-row">
-          <span class="place-name">{{ place.is_home ? '🏠' : '📍' }} {{ place.name }}</span>
+          <span class="place-name">
+            {{ travelPlaceTypeIcon(place.type) }} {{ place.name }}
+            <span v-if="place.is_home && !isZuhauseType(place.type)" class="home-badge" title="Gehört zur Heimat-Seite">
+              🏠
+            </span>
+          </span>
           <div class="row-actions">
             <EditButton small @click="startEditPlace(place)" />
             <DeleteButton small @click="removePlace(place.id)" />
@@ -500,14 +519,14 @@ function showDetailToOnMap() {
           Von
           <select v-model="form.from_place_id">
             <option :value="MANUAL">✏️ Manuell eingeben</option>
-            <option v-for="p in places" :key="p.id" :value="String(p.id)">{{ p.is_home ? '🏠' : '📍' }} {{ p.name }}</option>
+            <option v-for="p in places" :key="p.id" :value="String(p.id)">{{ travelPlaceTypeIcon(p.type) }} {{ p.name }}</option>
           </select>
         </label>
         <label>
           Nach
           <select v-model="form.to_place_id">
             <option :value="MANUAL">✏️ Manuell eingeben</option>
-            <option v-for="p in places" :key="p.id" :value="String(p.id)">{{ p.is_home ? '🏠' : '📍' }} {{ p.name }}</option>
+            <option v-for="p in places" :key="p.id" :value="String(p.id)">{{ travelPlaceTypeIcon(p.type) }} {{ p.name }}</option>
           </select>
         </label>
       </div>
@@ -697,14 +716,14 @@ function showDetailToOnMap() {
             Von
             <select v-model="editForm.from_place_id">
               <option :value="MANUAL">✏️ Manuell eingeben</option>
-              <option v-for="p in places" :key="p.id" :value="String(p.id)">{{ p.is_home ? '🏠' : '📍' }} {{ p.name }}</option>
+              <option v-for="p in places" :key="p.id" :value="String(p.id)">{{ travelPlaceTypeIcon(p.type) }} {{ p.name }}</option>
             </select>
           </label>
           <label>
             Nach
             <select v-model="editForm.to_place_id">
               <option :value="MANUAL">✏️ Manuell eingeben</option>
-              <option v-for="p in places" :key="p.id" :value="String(p.id)">{{ p.is_home ? '🏠' : '📍' }} {{ p.name }}</option>
+              <option v-for="p in places" :key="p.id" :value="String(p.id)">{{ travelPlaceTypeIcon(p.type) }} {{ p.name }}</option>
             </select>
           </label>
         </div>
@@ -821,9 +840,14 @@ function showDetailToOnMap() {
     >
       <form class="edit-form" @submit.prevent="submitEditPlace">
         <input v-model="editPlaceForm.name" type="text" placeholder="Name" required />
-        <label class="home-check">
+        <Combobox
+          v-model="editPlaceForm.type"
+          :options="TRAVEL_PLACE_TYPE_SUGGESTIONS"
+          placeholder="Art (optional, z. B. Flughafen – oder eigene erstellen)"
+        />
+        <label class="home-check" v-if="!isZuhauseType(editPlaceForm.type)">
           <input v-model="editPlaceForm.is_home" type="checkbox" />
-          🏠 Zuhause
+          🏠 Heimat-Seite (nicht Urlaubsregion)
         </label>
         <input v-model="editPlaceForm.maps_link" type="url" placeholder="Maps-Link (optional)" />
         <button type="submit">Speichern</button>
@@ -904,6 +928,11 @@ function showDetailToOnMap() {
 
 .place-name {
   font-size: 0.9rem;
+}
+
+.home-badge {
+  font-size: 0.8rem;
+  opacity: 0.8;
 }
 
 .form {

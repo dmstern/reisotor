@@ -1,4 +1,4 @@
-import type { Accommodation, Excursion, ScheduleItem, Spot, TravelItem } from '../api/types';
+import type { Accommodation, Excursion, ScheduleItem, Spot, TravelItem, TravelPlace } from '../api/types';
 import { SCHEDULE_CATEGORY_META } from './scheduleCategory';
 import { resolveStation, resolveStations, type ExcursionStation } from './excursionStations';
 
@@ -14,6 +14,7 @@ export function buildDayStations(
   travelItems: TravelItem[],
   accommodations: Accommodation[],
   spots: Spot[],
+  travelPlaces: TravelPlace[] = [],
 ): ExcursionStation[] {
   const timed: { time: string | null; station: ExcursionStation }[] = [];
 
@@ -62,7 +63,7 @@ export function buildDayStations(
   }
 
   for (const e of excursions.filter((e) => e.date === date)) {
-    for (const station of resolveStations(e.station_keys, spots, accommodations, travelItems)) {
+    for (const station of resolveStations(e.station_keys, spots, accommodations, travelItems, travelPlaces)) {
       timed.push({ time: null, station });
     }
   }

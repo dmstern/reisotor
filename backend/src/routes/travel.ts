@@ -49,6 +49,9 @@ interface TravelPlaceBody {
   trip_id: number;
   name: string;
   is_home?: boolean;
+  /** Art des Orts (Flughafen/Bahnhof/Busbahnhof/Hafen/Raststätte/Zuhause/Sonstiges) – rein fürs
+   *  Icon, unabhängig von is_home (siehe db/index.ts's Migrationskommentar). */
+  type?: string;
   maps_link?: string;
   lat?: number;
   lng?: number;
@@ -58,6 +61,7 @@ interface TravelPlaceRow {
   id: number;
   name: string;
   is_home: 0 | 1;
+  type: string | null;
   maps_link: string | null;
   lat: number | null;
   lng: number | null;
@@ -191,7 +195,7 @@ export const travelRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.post<{ Body: TravelPlaceBody }>('/travel/places', async (req, reply) => {
-    const { trip_id, name, is_home } = req.body;
+    const { trip_id, name, is_home, type } = req.body;
     if (!requireTripMember(reply, trip_id, req.session.userId)) return;
     let { lat, lng } = req.body;
     const { maps_link } = req.body;
@@ -201,8 +205,8 @@ export const travelRoutes: FastifyPluginAsync = async (app) => {
       lng = resolved?.lng;
     }
     const result = db
-      .prepare('INSERT INTO travel_places (trip_id, name, is_home, maps_link, lat, lng) VALUES (?, ?, ?, ?, ?, ?)')
-      .run(trip_id, name, is_home ? 1 : 0, maps_link ?? null, lat ?? null, lng ?? null);
+      .prepare('INSERT INTO travel_places (trip_id, name, is_home, type, maps_link, lat, lng) VALUES (?, ?, ?, ?, ?, ?, ?)')
+      .run(trip_id, name, is_home ? 1 : 0, type ?? null, maps_link ?? null, lat ?? null, lng ?? null);
     recordActivity(trip_id, 'travel', result.lastInsertRowid as number, 'created', req.session.userId!);
     reply.code(201);
     return db.prepare('SELECT * FROM travel_places WHERE id = ?').get(result.lastInsertRowid);
@@ -215,7 +219,7 @@ export const travelRoutes: FastifyPluginAsync = async (app) => {
     if (!existingPlace) return reply.code(404).send({ error: 'Nicht gefunden' });
     if (!requireTripMember(reply, existingPlace.trip_id, req.session.userId)) return;
 
-    const { name, is_home } = req.body;
+    const { name, is_home, type } = req.body;
     let { lat, lng } = req.body;
     const { maps_link } = req.body;
     if ((lat == null || lng == null) && maps_link) {
@@ -224,8 +228,8 @@ export const travelRoutes: FastifyPluginAsync = async (app) => {
       lng = resolved?.lng;
     }
     const result = db
-      .prepare('UPDATE travel_places SET name = ?, is_home = ?, maps_link = ?, lat = ?, lng = ? WHERE id = ?')
-      .run(name, is_home ? 1 : 0, maps_link ?? null, lat ?? null, lng ?? null, req.params.id);
+      .prepare('UPDATE travel_places SET name = ?, is_home = ?, type = ?, maps_link = ?, lat = ?, lng = ? WHERE id = ?')
+      .run(name, is_home ? 1 : 0, type ?? null, maps_link ?? null, lat ?? null, lng ?? null, req.params.id);
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
     recordActivity(existingPlace.trip_id, 'travel', Number(req.params.id), 'updated', req.session.userId!);
     return db.prepare('SELECT * FROM travel_places WHERE id = ?').get(req.params.id);

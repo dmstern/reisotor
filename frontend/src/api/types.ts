@@ -159,6 +159,9 @@ export interface TravelPlace {
   trip_id: number;
   name: string;
   is_home: 0 | 1;
+  /** Art des Orts (Flughafen/Bahnhof/Zuhause/…, siehe utils/travelPlaceType.ts) – rein fürs Icon,
+   *  unabhängig von is_home. */
+  type: string | null;
   maps_link: string | null;
   lat: number | null;
   lng: number | null;

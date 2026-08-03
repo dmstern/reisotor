@@ -483,6 +483,16 @@ ensureColumn('travel_items', 'arrival_time', 'TEXT');
 // müssen.
 ensureColumn('travel_items', 'from_place_id', 'INTEGER REFERENCES travel_places(id) ON DELETE SET NULL');
 ensureColumn('travel_items', 'to_place_id', 'INTEGER REFERENCES travel_places(id) ON DELETE SET NULL');
+// Ort-Art (Zuhause/Flughafen/Bahnhof/Busbahnhof/Hafen/Raststätte/Sonstiger Zwischenstopp) – rein
+// fürs passende Icon in der Reise-Sicht UND den davon abgeleiteten Karten-/Spots-Einträgen (siehe
+// utils/travelPlaceType.ts). Bewusst UNABHÄNGIG von is_home: is_home bleibt die alleinige Quelle
+// dafür, ob ein Ort zur Heimat-Seite oder zur Urlaubsregion zählt (Rollen-Herleitung in
+// applyPlaces() unten UND TripMap.vue's Urlaubsfokus/vacationPoints) – ein "Flughafen"-Ort kann
+// z. B. sowohl der heimische Abflughafen (is_home) als auch der Zielflughafen (nicht is_home) sein,
+// type allein könnte das nicht unterscheiden. Keine Migration/kein Backfill nötig, da neu und
+// unabhängig von bestehenden Spalten (NULL = noch keine Art gewählt, Frontend zeigt dann den
+// generischen Pin).
+ensureColumn('travel_places', 'type', 'TEXT');
 
 // Ausflug ist ein reines Container-Objekt (Titel/Bild/Notiz/Spots) – "geplant"/"in Planung" ergibt
 // sich nicht mehr aus einer eigenen Datums-Spalte, sondern daraus, ob ein Kalender-Termin
