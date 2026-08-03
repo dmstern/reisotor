@@ -1,5 +1,6 @@
 import type { Accommodation, Spot, TravelItem } from '../api/types';
 import { spotCategoryMeta } from './spotCategory';
+import { travelTypeIcon } from './travelTypeIcon';
 
 // Löst die generischen station_keys eines Ausflugs (siehe api/types.ts, Excursion.station_keys) zu
 // einem einheitlichen Anzeige-Objekt auf – eine Station ist nicht zwingend ein echter Spot (kann
@@ -24,8 +25,7 @@ export interface ExcursionStation {
 }
 
 const ACCOMMODATION_META = { icon: '🛏️', color: '#1baf7a' };
-const TRAVEL_FROM_META = { icon: '🛫', color: '#4a3aa7' };
-const TRAVEL_TO_META = { icon: '🛬', color: '#4a3aa7' };
+const TRAVEL_COLOR = '#4a3aa7';
 
 export function resolveStation(
   key: string,
@@ -75,14 +75,13 @@ export function resolveStation(
     const id = Number(key.slice((isFrom ? 'travel-from-' : 'travel-to-').length));
     const item = travelItems.find((t) => t.id === id);
     if (!item) return null;
-    const meta = isFrom ? TRAVEL_FROM_META : TRAVEL_TO_META;
     return {
       key,
       kind: isFrom ? 'travel-from' : 'travel-to',
       id,
       title: `${item.title} (${isFrom ? 'Abflug/Abfahrt' : 'Ankunft'})`,
-      icon: meta.icon,
-      color: meta.color,
+      icon: travelTypeIcon(item.type, '📍'),
+      color: TRAVEL_COLOR,
       category: 'Reise',
       imageUrl: null,
       lat: isFrom ? item.from_lat : item.to_lat,

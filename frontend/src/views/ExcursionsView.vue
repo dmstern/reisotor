@@ -19,6 +19,7 @@ import LocationPicker from '../components/LocationPicker.vue';
 import { parseLatLngFromMapsLink, tilePreviewUrl } from '../utils/googleMaps';
 import { spotCategoryMeta, SPOT_CATEGORY_SUGGESTIONS } from '../utils/spotCategory';
 import type { DerivedLocation } from '../utils/derivedLocation';
+import { buildTravelDerivedLocations } from '../utils/travelDerivedLocations';
 
 // Ausflüge-Verwaltung (Anlegen/Bearbeiten/Einplanen) lebt jetzt in der eigenständigen
 // Ausflüge-Schublade (views/ExcursionsDrawer.vue, rechter Schubladen-Platz) statt hier – diese
@@ -120,30 +121,10 @@ const derivedLocations = computed<DerivedLocation[]>(() => {
       result.push({ key: `accommodation-${a.id}`, title: a.name, icon: '🛏️', category: 'Unterkunft', maps_link: a.maps_link, lat: a.lat, lng: a.lng });
     }
   }
-  for (const t of travelItems.value) {
-    if (t.from_lat != null && t.from_lng != null) {
-      result.push({
-        key: `travel-from-${t.id}`,
-        title: `${t.title} (Abflug/Abfahrt)`,
-        icon: '🛫',
-        category: 'Reise',
-        maps_link: t.from_maps_link,
-        lat: t.from_lat,
-        lng: t.from_lng,
-      });
-    }
-    if (t.to_lat != null && t.to_lng != null) {
-      result.push({
-        key: `travel-to-${t.id}`,
-        title: `${t.title} (Ankunft)`,
-        icon: '🛬',
-        category: 'Reise',
-        maps_link: t.to_maps_link,
-        lat: t.to_lat,
-        lng: t.to_lng,
-      });
-    }
-  }
+  // buildTravelDerivedLocations() dedupliziert bereits über from_place_id/to_place_id (bzw.
+  // gerundete lat/lng) – ohne das erschien z. B. der Zielflughafen von Hin- UND Rückflug zweimal
+  // als eigene Karte in dieser Liste.
+  result.push(...buildTravelDerivedLocations(travelItems.value));
   return result;
 });
 

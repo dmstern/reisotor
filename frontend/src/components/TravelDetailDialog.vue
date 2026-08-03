@@ -3,6 +3,7 @@ import type { TravelItem } from '../api/types';
 import { renderRichText } from '../utils/richText';
 import { linkLabel } from '../utils/linkLabel';
 import { formatTravelDuration, travelDurationMinutes } from '../utils/travelDuration';
+import { travelTypeIcon } from '../utils/travelTypeIcon';
 import DetailModal from './DetailModal.vue';
 import MapsAppPicker from './MapsAppPicker.vue';
 import FileAttachments from './FileAttachments.vue';
@@ -25,12 +26,7 @@ const emit = defineEmits<{
 }>();
 
 function typeIcon(type: string | null) {
-  if (type === 'Flug') return '✈️';
-  if (type === 'Zug') return '🚆';
-  if (type === 'Bus') return '🚌';
-  if (type === 'Auto') return '🚗';
-  if (type === 'Fähre') return '⛴️';
-  return '🎫';
+  return travelTypeIcon(type);
 }
 
 function travelDuration(item: TravelItem) {

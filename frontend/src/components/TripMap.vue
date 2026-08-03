@@ -22,6 +22,7 @@ import { useSpotsStore } from '../stores/spots';
 import { useAuthStore } from '../stores/auth';
 import { useLiveSyncStore } from '../stores/liveSync';
 import { spotCategoryMeta } from '../utils/spotCategory';
+import { buildTravelDerivedLocations } from '../utils/travelDerivedLocations';
 import { arcRoute, cachedEmojiPin, pulsingEmojiPin } from '../utils/mapRoute';
 import { formatDate as formatDateShared } from '../utils/dateFormat';
 import { resolveStations, type ExcursionStation } from '../utils/excursionStations';
@@ -62,8 +63,7 @@ interface MapPoint {
 }
 
 const ACCOMMODATION_META = { icon: '🛏️', color: '#1baf7a' };
-const TRAVEL_FROM_META = { icon: '🛫', color: '#4a3aa7' };
-const TRAVEL_TO_META = { icon: '🛬', color: '#4a3aa7' };
+const TRAVEL_COLOR = '#4a3aa7';
 
 const props = defineProps<{
   /** Von ExcursionsView.vue durchgereichter Kategorie-Filter der Spots-Liste (leer = alles
@@ -172,35 +172,21 @@ const points = computed<MapPoint[]>(() => {
       });
     }
   }
-  for (const t of travelItems.value) {
-    // homeSide: bei "Anreise" ist der Startpunkt (from) zuhause, bei "Abreise" der Zielpunkt (to).
-    // Bei "Weiterreise" oder ohne gesetzte Rolle zählen beide Seiten sicherheitshalber zum Urlaub.
-    if (t.from_lat != null && t.from_lng != null) {
-      result.push({
-        key: `travel-from-${t.id}`,
-        origin: 'travel',
-        lat: t.from_lat,
-        lng: t.from_lng,
-        title: `${t.title} (Abflug/Abfahrt)`,
-        category: 'Reise',
-        homeSide: t.role === 'arrival',
-        icon: TRAVEL_FROM_META.icon,
-        color: TRAVEL_FROM_META.color,
-      });
-    }
-    if (t.to_lat != null && t.to_lng != null) {
-      result.push({
-        key: `travel-to-${t.id}`,
-        origin: 'travel',
-        lat: t.to_lat,
-        lng: t.to_lng,
-        title: `${t.title} (Ankunft)`,
-        category: 'Reise',
-        homeSide: t.role === 'departure',
-        icon: TRAVEL_TO_META.icon,
-        color: TRAVEL_TO_META.color,
-      });
-    }
+  // buildTravelDerivedLocations() dedupliziert bereits über from_place_id/to_place_id (bzw.
+  // gerundete lat/lng) – ohne das zeigte z. B. der Zielflughafen von Hin- UND Rückflug zwei
+  // übereinanderliegende Pins am selben Ort.
+  for (const loc of buildTravelDerivedLocations(travelItems.value)) {
+    result.push({
+      key: loc.key,
+      origin: 'travel',
+      lat: loc.lat,
+      lng: loc.lng,
+      title: loc.title,
+      category: loc.category,
+      homeSide: loc.homeSide,
+      icon: loc.icon,
+      color: TRAVEL_COLOR,
+    });
   }
   for (const s of spotsStore.spots) {
     if (s.lat != null && s.lng != null) {
@@ -746,7 +732,7 @@ function renderRoutes() {
   for (const t of travelItems.value) {
     if (t.from_lat != null && t.from_lng != null && t.to_lat != null && t.to_lng != null) {
       L.polyline(arcRoute([[t.from_lat, t.from_lng], [t.to_lat, t.to_lng]]), {
-        color: TRAVEL_FROM_META.color,
+        color: TRAVEL_COLOR,
         weight: 3,
         opacity: 0.65,
         dashArray: '6 6',

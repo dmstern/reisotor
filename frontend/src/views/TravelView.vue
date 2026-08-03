@@ -8,6 +8,7 @@ import { useDrawersStore } from '../stores/drawers';
 import { useLiveSyncStore } from '../stores/liveSync';
 import { parseLatLngFromMapsLink } from '../utils/googleMaps';
 import { TRAVEL_ROLE_META, TRAVEL_ROLE_OPTIONS } from '../utils/travelRole';
+import { travelTypeIcon } from '../utils/travelTypeIcon';
 import { formatTravelDuration, travelDurationMinutes } from '../utils/travelDuration';
 import { hashHighlightId } from '../utils/hashHighlight';
 import Modal from '../components/Modal.vue';
@@ -304,12 +305,7 @@ async function restore(id: number) {
 }
 
 function typeIcon(type: string | null) {
-  if (type === 'Flug') return '✈️';
-  if (type === 'Zug') return '🚆';
-  if (type === 'Bus') return '🚌';
-  if (type === 'Auto') return '🚗';
-  if (type === 'Fähre') return '⛴️';
-  return '🎫';
+  return travelTypeIcon(type);
 }
 
 function travelDuration(item: TravelItem) {
