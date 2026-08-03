@@ -19,7 +19,14 @@ Web-App zur gemeinsamen Reiseplanung – ein zentraler Ort für alles rund um ei
 - 💶 **Budget**: Ziel- und Kategorienbudgets, Ausgaben und Überweisungen, automatische Saldo-/Schulden-Berechnung (Splitwise-artig)
 - 📔 **Tagebuch**: Einträge mit Bildern, Likes und Kommentaren
 - 📝 **Notizen**: freier Bereich für alles Sonstige, mit einfachem Rich-Text (fett/kursiv/Listen/Auto-Links)
-- 👤 **Profil & Nutzerverwaltung**: Emoji-Avatar, Passwort ändern, weitere Nutzer:innen anlegen
+- 📎 **Anhänge**: Dateien/Bilder direkt an Reise-, Unterkunfts-, Notiz-, Kalender- und Budget-Einträge hängen
+- 🌍 **Reiseregion-Infos**: Sprache, Währung, aktueller Wechselkurs zur eigenen Heimatwährung und Reisehinweise direkt im Dashboard
+- 📍 **Live-Standort**: Mitglieder können ihren aktuellen Standort auf der Karte teilen
+- 🔔 **Echtzeit-Zusammenarbeit**: Änderungen anderer Mitglieder erscheinen live (ohne Neuladen), inkl. Anwesenheitsanzeige und optionalen Push-Benachrichtigungen
+- 📴 **Offline-fähig**: als App installierbar (Icon auf Startbildschirm bei iOS/Android/Desktop), lädt auch ohne Internetverbindung; zuletzt geladene Daten bleiben einsehbar, Änderungen werden bei Wiederverbindung automatisch nachgereicht
+- 🗑️ **Papierkorb**: gelöschte Einträge lassen sich rückgängig machen (60-Sekunden-Fenster direkt an Ort und Stelle) oder später im Papierkorb wiederherstellen
+- 👥 **Mitgliedschaft & Einladung**: offene Registrierung per E-Mail, Zugriff auf einen Urlaub aber nur für eingeladene Mitglieder (Autocomplete-Suche nach Benutzername/E-Mail)
+- 👤 **Profil**: Emoji-Avatar, Passwort ändern, Kalender-Einstellungen (Wochenanfang, Datumsformat)
 - 💾 **Backup**: vollständiger Datenexport/-import als JSON
 
 ## Struktur
@@ -50,7 +57,7 @@ Die App ist unter `http://localhost:5173` erreichbar.
 
 ### Nutzer anlegen
 
-`npm run seed` im Backend legt standardmäßig zwei Nutzer an (`user1`/`changeme1`, `user2`/`changeme2`) – das ist nur ein Startpunkt, weitere Nutzer:innen lassen sich danach jederzeit über die Profil-Seite in der App anlegen. Für echte Zugangsdaten beim Seed folgende Umgebungsvariablen setzen:
+`npm run seed` im Backend legt standardmäßig zwei Nutzer an (`user1`/`changeme1`, `user2`/`changeme2`) – das ist nur ein Startpunkt für die lokale Entwicklung. Registrierung ist in der App selbst offen (Login-Seite, E-Mail + Benutzername + Passwort) – jede:r kann sich einen eigenen Account anlegen. Zugriff auf einen konkreten Urlaub ist davon unabhängig: wer einen Urlaub anlegt, ist zunächst allein darauf, weitere Personen müssen erst per Autocomplete-Suche (Benutzername/E-Mail) eingeladen werden. Für echte Zugangsdaten beim Seed folgende Umgebungsvariablen setzen:
 
 ```bash
 SEED_USER1=daniel SEED_PASS1=... SEED_USER2=partner SEED_PASS2=... npm run seed

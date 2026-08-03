@@ -112,6 +112,58 @@ API-Zugriff läuft zentral über `api/client.ts` (`fetch`-Wrapper mit `credentia
 Karte (`components/TripMap.vue` u. a.) nutzt Leaflet/OpenStreetMap mit eigenen Emoji-`divIcon`s
 statt der Standard-Marker (siehe "Bekannte Stolpersteine" in `README.md`).
 
+**Echtzeit-Sync & Präsenz**: SSE-basiert, kein WebSocket. `GET /realtime/stream?trip_id=` (`routes/
+realtime.ts`) hält pro Client eine offene Verbindung; `activity.ts`s `recordActivity()` (in
+praktisch jeder mutierenden Route verdrahtet, schreibt in `trip_activity`) broadcastet das Event an
+alle offenen Streams desselben Urlaubs und pflegt eine In-Memory-Präsenz-Registry (wer ist gerade
+online, inkl. optionalem Live-Standort-Broadcast). Frontend: `stores/liveSync.ts` hält die
+SSE-Verbindung und refetcht automatisch die passenden Stores bei Fremdänderungen; neu
+hinzugekommene/geänderte Objekte landen zusätzlich in einer `highlightedIds`-Menge pro View
+(`markSeen()` leert sie beim Betreten der View), sichtbar als roter Punkt auf NavBar/Drawer-Icons
+und als Farb-Highlight auf dem Objekt selbst — dieselbe Menge/derselbe visuelle Mechanismus wird
+auch für den Klick-Sprung zu Querverweisen genutzt (siehe unten). `components/PresenceAvatars.vue`
+zeigt die gerade anwesenden Mitglieder im Header. Zusätzlich Web-Push (`push_subscriptions`-Tabelle,
+Opt-in in `ProfileView.vue`, `public/sw.js`s `push`/`notificationclick`-Handler) für
+Benachrichtigungen auch bei geschlossenem Tab/Browser.
+
+**Offline-Fähigkeit** — zwei bewusst getrennte, nicht überlappende Schichten:
+- *Daten-Ebene*: `api/client.ts`/`api/offline.ts` cachen GET-Antworten in `localStorage` und queuen
+  Mutationen in einer Outbox, die `stores/connectivity.ts` bei Wiedererkennen der Verbindung
+  abarbeitet; `components/OfflineIndicator.vue` zeigt den Zustand im Header.
+- *App-Shell-Ebene (volle PWA)*: `vite-plugin-pwa` (`injectManifest`-Strategie, `frontend/
+  vite.config.ts`) erweitert denselben `public/sw.js` (statt ihn zu ersetzen) um
+  Workbox-Precaching für das komplette Bundle, damit die App auch ohne jedes Netz überhaupt lädt.
+  Macht die App auf iOS/Android/Desktop als Icon installierbar (PNG-/Maskable-Icons unter
+  `public/icons/`, erzeugt von `scripts/generate-icons.mjs` aus `reisotor_logo.svg`). Bewusst **kein**
+  Runtime-Caching von `/api/*` in dieser Schicht — das bleibt exklusiv Aufgabe der Daten-Ebene oben,
+  um nicht zwei konkurrierende Caches für dieselben Daten zu haben. `devOptions.enabled` ist im
+  Dev-Server bewusst `false` (Precaching gegen den sich ständig ändernden Vite-Dev-Bundle wäre nur
+  Verwirrung) — echtes Testen dieser Schicht braucht einen Produktions-Build (siehe
+  `e2e/tests/offline-app-shell.spec.ts`). `components/PwaUpdatePrompt.vue` zeigt einen Hinweis, wenn
+  eine neue Version bereitsteht bzw. einmalig, dass die App jetzt offline nutzbar ist.
+
+**Anhänge**: `attachments`-Tabelle + `routes/attachments.ts` (Upload/Auslieferung unter
+`/api/uploads/`, siehe Plugin-Reihenfolge oben), genutzt von 5 Domänen (Reise, Unterkunft, Notizen,
+Kalender, Budget) über die gemeinsame Komponente `components/FileAttachments.vue`. Verwaiste Dateien
+(z. B. nach gelöschtem verknüpftem Objekt) werden per eigener Cleanup-Routine entfernt.
+
+**Papierkorb/Soft-Delete**: alle 11 Domänen-Tabellen haben eine `deleted_at`-Spalte statt echtem
+`DELETE` (siehe "Datenmodell-Änderungen" unten für additive Migrationen allgemein); Lese-Routen
+filtern `deleted_at IS NULL`. `routes/trash.ts` listet/restauriert/purged endgültig. Frontend zeigt
+beim Löschen zuerst ein 60-Sekunden-Rückgängig-Fenster direkt an der Listenstelle
+(`useUndoableDelete.ts`-Composable + `UndoDeleteRow.vue`-Platzhalter), danach ist der Eintrag nur
+noch über die eigene `TrashView.vue` (erreichbar über Profil/Avatar-Menü) wiederherstellbar.
+
+**Kalender-Einstellungen & Querverweis-Hervorhebung**: Wochenanfang (Standard Montag) und
+Datumsformat sind in `stores/calendarSettings.ts` (localStorage) konfigurierbar (Einstellung in
+`ProfileView.vue`), angewendet über die zentralen Formatierfunktionen in `utils/dateFormat.ts` (dort
+auch `startOfWeek()`/`endOfWeek()`) — nicht duplizieren, jede View mit Datumsanzeige nutzt diese
+statt eigener Formatierlogik. Klicks auf Kalendereinträge/andere Querverweise (siehe "Referenzen auf
+fremde Objekte…" oben) hängen zusätzlich einen `#<domain>-<id>`-Hash an die Ziel-URL;
+`utils/hashHighlight.ts`s `hashHighlightId()` merged die referenzierte Id in dieselbe
+`highlightedIds`-Menge, die schon für das Echtzeit-"neu"-Highlighting oben genutzt wird (ein
+gemeinsamer Hervorhebungs-Mechanismus statt zweier paralleler).
+
 **Deployment** (Details: `README.md`): Push auf `main` baut via `.github/workflows/build-deploy.yml`
 (Unit-Tests → Build → E2E-Tests, alles gated) und veröffentlicht auf Branch `deploy-staging`
 (Server pollt das, deployt auf `dev.reise.ruebenherz.de`); erst ein expliziter
