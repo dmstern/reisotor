@@ -34,7 +34,7 @@ function dismissOfflineReady() {
     🔄 Update verfügbar
     <button type="button" class="pwa-pill-btn" @click="reload">Neu laden</button>
   </span>
-  <span v-else-if="offlineReady" class="pwa-pill" title="Diese App lädt jetzt auch ohne Internetverbindung">
+  <span v-else-if="offlineReady" class="pwa-pill ready" title="Diese App lädt jetzt auch ohne Internetverbindung">
     ✅ App ist jetzt offline verfügbar
     <button type="button" class="pwa-pill-btn" aria-label="Hinweis schließen" @click="dismissOfflineReady">✕</button>
   </span>
@@ -48,16 +48,15 @@ function dismissOfflineReady() {
   font-size: 0.75rem;
   font-weight: 600;
   color: #fff;
-  background: var(--color-accent);
+  /* Beide Varianten (Update verfügbar/App ist offline verfügbar) sind "gute Nachrichten", keine
+     Warnungen — grün statt der bisherigen Primär-/Accent-Farbe, damit sie sich klar von
+     OfflineIndicator.vue's orangen "wartet noch"-Pill unterscheiden. */
+  background: var(--color-success);
   padding: 4px 6px 4px 10px;
   border-radius: 999px;
   line-height: 1.3;
   white-space: nowrap;
   flex-shrink: 0;
-}
-
-.pwa-pill.update {
-  background: var(--color-primary);
 }
 
 .pwa-pill-btn {

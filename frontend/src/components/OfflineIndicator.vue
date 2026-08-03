@@ -31,7 +31,10 @@ const connectivity = useConnectivityStore();
   font-size: 0.75rem;
   font-weight: 600;
   color: #fff;
-  background: var(--color-danger);
+  /* Orange statt Rot: "offline"/"wartet noch auf Sync" ist ein Hinweis, kein Fehler — die App
+     funktioniert in diesem Zustand bewusst weiter (siehe api/offline.ts). Rot bleibt echten
+     Fehlern vorbehalten. */
+  background: var(--color-accent);
   padding: 4px 10px;
   border-radius: 999px;
   line-height: 1.3;
@@ -39,7 +42,12 @@ const connectivity = useConnectivityStore();
   flex-shrink: 0;
 }
 
+/* Aktiv laufender Sync statt eines wartenden Zustands: eigene Farbe, damit "gerade am
+   Synchronisieren" optisch von "offline"/"wartet noch" unterscheidbar bleibt, obwohl beide
+   dieselbe .offline-pill-Basis nutzen. --color-primary statt --color-accent-secondary (dessen
+   heller Dark-Mode-Ton #8b98f0 mit weißer Schrift zu wenig Kontrast hätte) — dieselbe
+   Farbe/Kombination, die PwaUpdatePrompt.vue vorher schon für seine Pill genutzt hat. */
 .offline-pill.syncing {
-  background: var(--color-accent);
+  background: var(--color-primary);
 }
 </style>
