@@ -31,6 +31,14 @@ const DENSITY = 800;
 async function renderFullBleed(size, filename) {
   await sharp(svgBuffer, { density: DENSITY })
     .resize(size, size, { fit: 'contain', background: BACKGROUND })
+    // Der Kreis der SVG reicht nicht ganz bis in die Ecken ihres eigenen 300×304-viewBox - dort
+    // bleiben Pixel transparent, auch nach dem Resize (dessen "background"-Option nur den
+    // ZUSÄTZLICHEN Letterbox-Rand füllt, nicht bereits vorhandene Transparenz IM Bild). iOS/Android
+    // rendern übrig gebliebene transparente Pixel als Schwarz statt als "kein Icon" - sichtbar als
+    // dünner schwarzer Rand direkt an der Kante der vom Betriebssystem aufgelegten Squircle-Maske.
+    // flatten() komponiert den kompletten Alphakanal auf die Hintergrundfarbe, damit wirklich kein
+    // transparentes Pixel mehr übrig bleibt.
+    .flatten({ background: BACKGROUND })
     .png()
     .toFile(path.join(outDir, filename));
 }
