@@ -20,7 +20,11 @@ test.beforeEach(async ({ page }) => {
 
 test('day selection shows the seeded schedule entry for that day', async ({ page }) => {
   await page.locator(`.day[data-date="${dinner.date}"]`).click();
-  await expect(page.locator('.day-detail .items .item')).toContainText(dinner.title);
+  // Gezielt gefiltert statt eines pauschalen toContainText() auf die ganze Liste - andernfalls
+  // Strict-Mode-Kollision, sobald mehr als ein .item existiert (z. B. ein per Tag/Datum kollidierender
+  // Eintrag aus einem anderen Test, siehe calendar-todo-checkbox.spec.ts, oder ein noch nicht fertig
+  // aus der Liste transitionierendes .item aus dem zuvor gewählten Tag).
+  await expect(page.locator('.day-detail .items .item', { hasText: dinner.title })).toBeVisible();
 });
 
 test('clicking an own schedule entry opens the detail dialog instead of navigating', async ({ page }) => {

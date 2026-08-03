@@ -11,6 +11,7 @@ import { useLiveSyncStore } from '../stores/liveSync';
 import { renderRichText } from '../utils/richText';
 import { compressImage } from '../utils/imageCompression';
 import { spotCategoryMeta } from '../utils/spotCategory';
+import { formatDateTime } from '../utils/dateFormat';
 import Modal from '../components/Modal.vue';
 import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
@@ -126,13 +127,7 @@ function author(id: number) {
 }
 
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleString('de-DE', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return formatDateTime(iso);
 }
 
 function likesFor(entryId: number) {

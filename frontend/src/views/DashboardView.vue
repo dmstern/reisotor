@@ -27,6 +27,7 @@ import { SCHEDULE_CATEGORY_META } from '../utils/scheduleCategory';
 import { SECTION_ICONS } from '../utils/sectionIcons';
 import { fetchWeatherForecast, weatherCodeMeta, type DailyWeather } from '../utils/weather';
 import { fetchRegionInfo, type RegionInfo } from '../utils/regionInfo';
+import { formatDate as formatDateShared, formatWeekdayDate as formatWeekdayDateShared } from '../utils/dateFormat';
 import BudgetMeter from '../components/BudgetMeter.vue';
 
 const auth = useAuthStore();
@@ -195,7 +196,7 @@ const upcomingEntries = computed(() =>
 );
 
 function formatDate(d: string) {
-  return new Date(d).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+  return formatDateShared(d, { includeYear: false });
 }
 
 // Packliste: ein zusammengefasstes Widget (statt drei einzelner Tiles) mit Gesamtfortschritt
@@ -269,9 +270,8 @@ const vacationForecastDays = computed(() => {
 // bereits heute mit ab, unabhängig davon, ob der Urlaub selbst schon im 16-Tage-Fenster liegt.
 const todayWeather = computed(() => weatherDays.value?.find((d) => d.date === todayStr()) ?? null);
 
-const weekdayDateFormatter = new Intl.DateTimeFormat('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' });
 function formatWeekdayDate(d: string) {
-  return weekdayDateFormatter.format(new Date(d));
+  return formatWeekdayDateShared(d);
 }
 </script>
 

@@ -5,6 +5,7 @@ import { parseContact } from '../utils/contact';
 import DetailModal from './DetailModal.vue';
 import MapsAppPicker from './MapsAppPicker.vue';
 import FileAttachments from './FileAttachments.vue';
+import { formatDate as formatDateShared } from '../utils/dateFormat';
 
 // Eigenständige Komponente statt inline in AccommodationView.vue, da dieser Dialog auch von anderer
 // Stelle geöffnet werden muss (TripMap.vue's Stationsliste, ExcursionDetailDialog.vue's Stationen,
@@ -23,7 +24,7 @@ const emit = defineEmits<{
 
 function formatDate(d: string | null) {
   if (!d) return null;
-  return new Date(d).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  return formatDateShared(d);
 }
 </script>
 

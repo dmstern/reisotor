@@ -75,6 +75,10 @@ export interface CalendarEntry {
   todoId: number | null;
   travelId: number | null;
   scheduleItem: ScheduleItem | null;
+  /** Nur für kind 'todo' aussagekräftig (TodoItem.done) – speist die Checkbox in
+   *  CalendarWeek.vue's Kompaktzelle, die selbst keinen Zugriff auf die vollständige
+   *  Todo-Liste hat. Bei anderen kinds schlicht false/irrelevant. */
+  done: boolean;
 }
 
 export interface PackingItem {

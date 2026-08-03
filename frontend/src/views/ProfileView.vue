@@ -7,6 +7,7 @@ import { useAuthStore } from '../stores/auth';
 import { useNavPositionStore } from '../stores/navPosition';
 import { useWeatherProviderStore, WEATHER_MODEL_OPTIONS } from '../stores/weatherProvider';
 import { useHomeCurrencyStore, HOME_CURRENCY_OPTIONS } from '../stores/homeCurrency';
+import { useCalendarSettingsStore, WEEK_START_OPTIONS, DATE_FORMAT_OPTIONS } from '../stores/calendarSettings';
 import { getExistingSubscription, isPushSupported, subscribeToPush, unsubscribeFromPush } from '../utils/push';
 import PasswordInput from '../components/PasswordInput.vue';
 
@@ -15,6 +16,7 @@ const router = useRouter();
 const navPosition = useNavPositionStore();
 const weatherProvider = useWeatherProviderStore();
 const homeCurrency = useHomeCurrencyStore();
+const calendarSettings = useCalendarSettingsStore();
 const users = ref<User[]>([]);
 const loading = ref(true);
 
@@ -327,6 +329,29 @@ async function onImportFileSelected(event: Event) {
           <select v-model="navPosition.mobile">
             <option value="top">Oben</option>
             <option value="bottom">Unten</option>
+          </select>
+        </label>
+      </div>
+    </div>
+
+    <div id="calendar-settings" class="card">
+      <h2>📅 Kalender</h2>
+      <p class="hint">Wochenanfang und Zahlenformat für Datumsanzeigen in der ganzen App.</p>
+      <div class="nav-position-row">
+        <label>
+          Wochenanfang
+          <select v-model="calendarSettings.weekStart">
+            <option v-for="option in WEEK_START_OPTIONS" :key="option.value" :value="option.value">
+              {{ option.label }}
+            </option>
+          </select>
+        </label>
+        <label>
+          Datumsformat
+          <select v-model="calendarSettings.dateFormat">
+            <option v-for="option in DATE_FORMAT_OPTIONS" :key="option.value" :value="option.value">
+              {{ option.label }}
+            </option>
           </select>
         </label>
       </div>

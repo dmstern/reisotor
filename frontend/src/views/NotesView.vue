@@ -13,6 +13,7 @@ import SocialRow from '../components/SocialRow.vue';
 import Comments from '../components/Comments.vue';
 import UndoDeleteRow from '../components/UndoDeleteRow.vue';
 import FileAttachments from '../components/FileAttachments.vue';
+import { formatDateTime } from '../utils/dateFormat';
 import { useUndoableDelete } from '../composables/useUndoableDelete';
 
 const auth = useAuthStore();
@@ -110,7 +111,7 @@ function authorLabel(id: number | null) {
 }
 
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return formatDateTime(iso);
 }
 
 async function submit() {

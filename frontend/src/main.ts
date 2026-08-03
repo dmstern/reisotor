@@ -15,16 +15,10 @@ app.use(pinia);
 app.use(router);
 app.mount('#app');
 
-// Registriert den Service Worker früh (unabhängig davon, ob die Person Push je aktiviert) – ein
-// aktiviertes Abonnement braucht bei jedem App-Start eine aktive Registration, sonst wäre
-// navigator.serviceWorker.ready nie erfüllt (siehe utils/push.ts). Rein additiv: ohne SW-Unterstützung
-// (z. B. sehr alter Browser) bleibt die App unverändert funktionsfähig.
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').catch(() => {
-    // Push-Benachrichtigungen sind ein optionales Extra – ein fehlgeschlagenes SW-Setup soll die
-    // restliche App nicht beeinträchtigen.
-  });
-}
+// Service-Worker-Registrierung läuft jetzt über vite-plugin-pwa's virtual:pwa-register-Modul (siehe
+// components/PwaUpdatePrompt.vue, in App.vue gemountet) statt eines manuellen
+// navigator.serviceWorker.register() hier – registriert weiterhin denselben public/sw.js unter
+// demselben Scope, navigator.serviceWorker.ready (siehe utils/push.ts) bleibt unverändert erfüllt.
 
 // Checkboxen/Toggle-Buttons (style.css: input[type=checkbox]:focus-visible, .state-toggle:
 // focus-visible) behalten nach einem Klick den DOM-Fokus – Chromium/Firefox behandeln das bei

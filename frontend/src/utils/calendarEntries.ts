@@ -56,6 +56,7 @@ export function scheduleItemToEntry(
     todoId: null,
     travelId: null,
     scheduleItem: item,
+    done: false,
   };
 }
 
@@ -80,6 +81,7 @@ export function buildTripEntries(trip: Trip | null): CalendarEntry[] {
       todoId: null,
       travelId: null,
       scheduleItem: null,
+      done: false,
     },
   ];
   if (trip.end_date !== trip.start_date) {
@@ -99,6 +101,7 @@ export function buildTripEntries(trip: Trip | null): CalendarEntry[] {
       todoId: null,
       travelId: null,
       scheduleItem: null,
+      done: false,
     });
   }
   return entries;
@@ -124,6 +127,7 @@ export function buildTodoEntries(todos: TodoItem[]): CalendarEntry[] {
       todoId: t.id,
       travelId: null,
       scheduleItem: null,
+      done: !!t.done,
     }));
 }
 
@@ -148,6 +152,7 @@ export function buildTravelEntries(travelItems: TravelItem[]): CalendarEntry[] {
       todoId: null,
       travelId: t.id,
       scheduleItem: null,
+      done: false,
     }));
 }
 

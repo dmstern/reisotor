@@ -24,6 +24,7 @@ import { buildAllEntries } from '../utils/calendarEntries';
 import { calendarEventFromEntry, googleCalendarHref, outlookCalendarHref, triggerIcsDownload } from '../utils/calendarExport';
 import { fetchWeatherForecast, weatherCodeMeta, type DailyWeather } from '../utils/weather';
 import { collectWeatherLocations, dayWeatherEntries, type DayWeatherEntry } from '../utils/dayWeather';
+import { endOfWeek, startOfWeek, formatDate as formatDateShared } from '../utils/dateFormat';
 
 // Auf Desktop weiterhin eigenständig gemountete Schublade (App.vue, linker Platz). Auf Mobil
 // dagegen dieselbe Komponente als eigenständige Seite (Route /calendar, siehe router/index.ts)
@@ -311,13 +312,11 @@ const weeks = computed(() => {
   if (!calendarRange.value) return [];
   const { start, end } = calendarRange.value;
 
-  // Woche beginnt am Montag
-  const firstMonday = new Date(start);
-  const offset = (firstMonday.getDay() + 6) % 7;
-  firstMonday.setDate(firstMonday.getDate() - offset);
+  // Wochenanfang respektiert die Profil-Einstellung (Standard: Montag, siehe utils/dateFormat.ts).
+  const firstWeekStart = startOfWeek(start);
 
   const result: { date: string; entries: CalendarEntry[]; accommodations: Accommodation[]; weatherEntries: DayWeatherEntry[] }[][] = [];
-  let cursor = new Date(firstMonday);
+  let cursor = new Date(firstWeekStart);
   let week: { date: string; entries: CalendarEntry[]; accommodations: Accommodation[]; weatherEntries: DayWeatherEntry[] }[] = [];
 
   while (cursor <= end || week.length % 7 !== 0) {
@@ -368,20 +367,18 @@ function startOfMonth(d: Date) {
 // wochenbasierten pageOffset oben, da "ein Monat" kein festes Wochen-Vielfaches ist.
 const monthAnchor = ref(startOfMonth(new Date()));
 
-// Baut ein vollständiges Kalendermonat-Raster: Montag der Woche mit dem 1. bis Sonntag der Woche
-// mit dem letzten Tag des Monats (führende/nachfolgende Tage aus Nachbarmonaten füllen das Raster
-// auf volle Wochen auf, wie bei jedem üblichen Monatskalender – als otherMonth markiert, siehe
-// CalendarWeek.vue).
+// Baut ein vollständiges Kalendermonat-Raster: Wochenanfang der Woche mit dem 1. bis Wochenende der
+// Woche mit dem letzten Tag des Monats (führende/nachfolgende Tage aus Nachbarmonaten füllen das
+// Raster auf volle Wochen auf, wie bei jedem üblichen Monatskalender – als otherMonth markiert,
+// siehe CalendarWeek.vue). Wochenanfang respektiert die Profil-Einstellung (Standard: Montag).
 const monthWeeks = computed<DayCell[][]>(() => {
   const year = monthAnchor.value.getFullYear();
   const month = monthAnchor.value.getMonth();
   const firstOfMonth = new Date(year, month, 1);
   const lastOfMonth = new Date(year, month + 1, 0);
 
-  const gridStart = new Date(firstOfMonth);
-  gridStart.setDate(gridStart.getDate() - ((firstOfMonth.getDay() + 6) % 7));
-  const gridEnd = new Date(lastOfMonth);
-  gridEnd.setDate(gridEnd.getDate() + (6 - ((lastOfMonth.getDay() + 6) % 7)));
+  const gridStart = startOfWeek(firstOfMonth);
+  const gridEnd = endOfWeek(lastOfMonth);
 
   const result: DayCell[][] = [];
   let week: DayCell[] = [];
@@ -423,7 +420,7 @@ const visibleRangeLabel = computed(() => {
   const lastWeek = visibleWeeks.value[visibleWeeks.value.length - 1];
   const last = lastWeek[lastWeek.length - 1]?.date;
   if (!first || !last) return '';
-  const fmt = (d: string) => new Date(d).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+  const fmt = (d: string) => formatDateShared(d, { includeYear: false });
   return `${fmt(first)} – ${fmt(last)}`;
 });
 
@@ -651,9 +648,36 @@ function jumpToTrip() {
 
 function openEntry(entry: CalendarEntry) {
   if (entry.kind === 'trip') jumpToTrip();
-  else if (entry.kind === 'todo') router.push('/todo');
-  else if (entry.kind === 'travel') router.push('/travel');
+  // Hash-Sprung (#todo-<id>/#travel-<id>) statt bloß der Ziel-Route: TodoView.vue/TravelView.vue
+  // nehmen die id über hashHighlightId() zusätzlich in ihre bereits bestehende highlightedIds-Menge
+  // auf, der Router scrollt automatisch zum Element mit dieser id (siehe router/index.ts's
+  // scrollBehavior).
+  else if (entry.kind === 'todo') router.push(`/todo#todo-${entry.todoId}`);
+  else if (entry.kind === 'travel') router.push(`/travel#travel-${entry.travelId}`);
   else if (entry.kind === 'schedule') viewingItem.value = entry.scheduleItem;
+}
+
+/** Für die Todo-Checkbox im Kalender (Tages-Detailliste + CalendarWeek.vue's Kompaktzelle): der
+ *  aktuelle Erledigt-Status kommt aus der bereits geladenen todos-Referenz, nicht aus
+ *  CalendarEntry.done direkt (das speist nur die kompakte Zellen-Darstellung, siehe unten). */
+function entryDone(entry: CalendarEntry): boolean {
+  return !!todos.value.find((t) => t.id === entry.todoId)?.done;
+}
+
+async function toggleTodoDone(todoId: number) {
+  const todo = todos.value.find((t) => t.id === todoId);
+  if (!todo) return;
+  const updated = await api.put<TodoItem>(`/todos/${todoId}`, {
+    trip_id: tripStore.currentTripId,
+    title: todo.title,
+    assigned_to_user_id: todo.assigned_to_user_id,
+    due_date: todo.due_date ?? undefined,
+    priority: todo.priority,
+    note: todo.note ?? undefined,
+    done: !todo.done,
+  });
+  const idx = todos.value.findIndex((t) => t.id === todoId);
+  if (idx !== -1) todos.value[idx] = updated;
 }
 
 // Der Anzeige-Dialog (DetailModal) braucht dieselbe Icon-/Kategorie-Auflösung wie die Kalender-
@@ -693,7 +717,7 @@ function formatDay(date: string) {
 }
 
 function formatDate(date: string) {
-  return new Date(date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  return formatDateShared(date);
 }
 </script>
 
@@ -794,7 +818,16 @@ function formatDate(date: string) {
             @click="openEntry(entry)"
           >
             <div>
-              <span class="category-icon" :title="SCHEDULE_CATEGORY_META[entry.category].label">{{
+              <input
+                v-if="entry.kind === 'todo'"
+                type="checkbox"
+                class="category-icon"
+                title="Erledigt"
+                autocomplete="off"
+                :checked="entryDone(entry)"
+                @click.stop="toggleTodoDone(entry.todoId!)"
+              />
+              <span v-else class="category-icon" :title="SCHEDULE_CATEGORY_META[entry.category].label">{{
                 entry.icon ?? SCHEDULE_CATEGORY_META[entry.category].icon
               }}</span>
               <strong v-if="entry.time">{{ entry.time }}</strong>

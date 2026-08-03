@@ -106,8 +106,22 @@ function onDrop(event: DragEvent, date: string) {
           :title="entry.title"
           :style="{ borderLeftColor: SCHEDULE_CATEGORY_META[entry.category].color }"
         >
-          <span v-if="entry.time" class="time">{{ entry.time }}</span
-          >{{ entry.icon ?? SCHEDULE_CATEGORY_META[entry.category].icon }} {{ entry.title }}
+          <span v-if="entry.time" class="time">{{ entry.time }}</span>
+          <!-- Rein visuell (nicht klickbar, pointer-events:none): diese kompakte Zelle ist selbst
+               ein großer Klick-Ziel für "Tag auswählen" (@click auf .day oben) – eine hier
+               tatsächlich klickbare Checkbox würde bei ungünstiger Cursor-Position versehentlich
+               statt der Tagesauswahl das Todo abhaken (siehe day-detail-Liste unten für die echte,
+               anklickbare Checkbox mit ausreichend Abstand). -->
+          <input
+            v-if="entry.kind === 'todo'"
+            type="checkbox"
+            class="item-checkbox"
+            tabindex="-1"
+            aria-hidden="true"
+            :checked="entry.done"
+          />
+          <template v-else>{{ entry.icon ?? SCHEDULE_CATEGORY_META[entry.category].icon }}</template>
+          {{ entry.title }}
         </div>
         <div class="more" v-if="day.entries.length > 3">+{{ day.entries.length - 3 }} mehr</div>
       </div>
@@ -225,6 +239,15 @@ function onDrop(event: DragEvent, date: string) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.item-checkbox {
+  width: 9px;
+  height: 9px;
+  margin-right: 1px;
+  vertical-align: -1px;
+  /* Rein informativ, siehe Template-Kommentar oben – Klicks fallen durch zum Tages-@click. */
+  pointer-events: none;
 }
 
 .time {

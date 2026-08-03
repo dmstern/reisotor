@@ -12,6 +12,7 @@ import SocialRow from './SocialRow.vue';
 import Comments, { type CommentItem } from './Comments.vue';
 import ExcursionDetailDialog from './ExcursionDetailDialog.vue';
 import SpotImageCollage from './SpotImageCollage.vue';
+import { formatDate as formatDateShared } from '../utils/dateFormat';
 
 const props = defineProps<{
   excursion: Excursion;
@@ -66,7 +67,7 @@ const displayImage = computed(() => {
 const showComments = ref(false);
 
 function formatDate(d: string) {
-  return new Date(d).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+  return formatDateShared(d, { includeYear: false });
 }
 
 // Einplanen per Zeige-/Touch-Drag am eigenen Anfasser (📅 Einplanen) statt am gesamten Card-Root:

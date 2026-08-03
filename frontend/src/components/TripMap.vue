@@ -23,6 +23,7 @@ import { useAuthStore } from '../stores/auth';
 import { useLiveSyncStore } from '../stores/liveSync';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { arcRoute, cachedEmojiPin, pulsingEmojiPin } from '../utils/mapRoute';
+import { formatDate as formatDateShared } from '../utils/dateFormat';
 import { resolveStations, type ExcursionStation } from '../utils/excursionStations';
 import { useIsDesktop } from '../composables/useIsDesktop';
 import SpotDetailDialog from './SpotDetailDialog.vue';
@@ -152,7 +153,7 @@ function iconFor(point: MapPoint) {
 }
 
 function formatDate(d: string) {
-  return new Date(d).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  return formatDateShared(d);
 }
 
 const points = computed<MapPoint[]>(() => {
@@ -533,14 +534,19 @@ function handlePointClick(point: MapPoint) {
   }
 }
 // Unterkunft/Reise bleiben eigene, echte Routen (anders als Ausflüge/Spots) – hier weiterhin ein
-// echter Sprung.
+// echter Sprung. Hash-Sprung (#accommodation-<id>/#travel-<id>) statt bloß der Ziel-Route: die
+// Ziel-Ansicht nimmt die id über hashHighlightId() in ihre highlightedIds-Menge auf und der Router
+// scrollt automatisch zum Element mit dieser id (siehe router/index.ts's scrollBehavior). id vorher
+// sichern, da das Schließen des Dialogs die *Open-Flags zurücksetzt, nicht aber die id-Refs selbst.
 function editOpenAccommodation() {
+  const id = openAccommodationId.value;
   accommodationDialogOpen.value = false;
-  router.push('/accommodation');
+  router.push(`/accommodation#accommodation-${id}`);
 }
 function editOpenTravel() {
+  const id = openTravelId.value;
   travelDialogOpen.value = false;
-  router.push('/travel');
+  router.push(`/travel#travel-${id}`);
 }
 function payerLabelFor(userId: number | null) {
   if (userId == null) return null;

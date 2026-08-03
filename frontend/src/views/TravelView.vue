@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
+import { useRoute } from 'vue-router';
 import { api } from '../api/client';
 import type { TravelItem, TravelPlace, TravelRole, User } from '../api/types';
 import { useTripStore } from '../stores/trip';
@@ -8,6 +9,7 @@ import { useLiveSyncStore } from '../stores/liveSync';
 import { parseLatLngFromMapsLink } from '../utils/googleMaps';
 import { TRAVEL_ROLE_META, TRAVEL_ROLE_OPTIONS } from '../utils/travelRole';
 import { formatTravelDuration, travelDurationMinutes } from '../utils/travelDuration';
+import { hashHighlightId } from '../utils/hashHighlight';
 import Modal from '../components/Modal.vue';
 import TravelDetailDialog from '../components/TravelDetailDialog.vue';
 import LocationPicker from '../components/LocationPicker.vue';
@@ -19,6 +21,7 @@ import { useUndoableDelete } from '../composables/useUndoableDelete';
 const tripStore = useTripStore();
 const drawers = useDrawersStore();
 const liveSync = useLiveSyncStore();
+const route = useRoute();
 const tripId = tripStore.currentTripId as number;
 const items = ref<TravelItem[]>([]);
 const { isPending, markPendingDelete, clearPending } = useUndoableDelete();
@@ -102,6 +105,10 @@ watch(() => liveSync.domainVersion.travel, load);
 
 onMounted(async () => {
   highlightedIds.value = liveSync.markSeen('travel');
+  // Querverweis-Sprung (z. B. aus ScheduleView.vue/TripMap.vue/ExcursionDetailDialog.vue) –
+  // dieselbe highlightedIds-Menge wie oben, kein zweites Hervorhebungs-System (hashHighlight.ts).
+  const hashId = hashHighlightId(route.hash, 'travel');
+  if (hashId != null) highlightedIds.value.add(hashId);
   await load();
 });
 
@@ -618,7 +625,13 @@ function showDetailToOnMap() {
     <TransitionGroup tag="div" name="list" class="masonry cards">
       <template v-for="item in items" :key="item.id">
         <UndoDeleteRow v-if="isPending(item.id)" :label="item.title" @undo="restore(item.id)" />
-        <div v-else class="card travel-card" :class="{ 'new-highlight': highlightedIds.has(item.id) }" @click="openDetail(item)">
+        <div
+          v-else
+          :id="`travel-${item.id}`"
+          class="card travel-card"
+          :class="{ 'new-highlight': highlightedIds.has(item.id) }"
+          @click="openDetail(item)"
+        >
           <div class="travel-head">
             <h3>{{ typeIcon(item.type) }} {{ item.title }}</h3>
             <div class="actions">

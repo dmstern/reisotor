@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
+import { useRoute } from 'vue-router';
 import { api } from '../api/client';
 import type { TodoItem, TodoPriority, User } from '../api/types';
 import { useTripStore } from '../stores/trip';
 import { useLiveSyncStore } from '../stores/liveSync';
 import { PERIOD_META, computePeriod } from '../utils/period';
+import { formatDate as formatDateShared } from '../utils/dateFormat';
+import { hashHighlightId } from '../utils/hashHighlight';
 import Modal from '../components/Modal.vue';
 import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
@@ -13,6 +16,7 @@ import { useUndoableDelete } from '../composables/useUndoableDelete';
 
 const tripStore = useTripStore();
 const liveSync = useLiveSyncStore();
+const route = useRoute();
 const tripId = tripStore.currentTripId as number;
 const items = ref<TodoItem[]>([]);
 const { isPending, markPendingDelete, clearPending } = useUndoableDelete();
@@ -72,6 +76,10 @@ async function load() {
 
 onMounted(() => {
   highlightedIds.value = liveSync.markSeen('todos');
+  // Querverweis-Sprung (z. B. aus dem Kalender, siehe ScheduleView.vue's openEntry()) – dieselbe
+  // highlightedIds-Menge wie oben, kein zweites Hervorhebungs-System (siehe hashHighlight.ts).
+  const hashId = hashHighlightId(route.hash, 'todo');
+  if (hashId != null) highlightedIds.value.add(hashId);
   load();
 });
 
@@ -209,7 +217,7 @@ async function restore(id: number) {
 
 function formatDate(d: string | null) {
   if (!d) return null;
-  return new Date(d).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  return formatDateShared(d);
 }
 
 function isOverdue(item: TodoItem) {
@@ -264,7 +272,12 @@ function isOverdue(item: TodoItem) {
               <li v-if="isPending(item.id)" class="row">
                 <UndoDeleteRow :label="item.title" @undo="restore(item.id)" />
               </li>
-              <li v-else class="row" :class="{ 'row-done': item.done, 'new-highlight': highlightedIds.has(item.id) }">
+              <li
+                v-else
+                :id="`todo-${item.id}`"
+                class="row"
+                :class="{ 'row-done': item.done, 'new-highlight': highlightedIds.has(item.id) }"
+              >
                 <label class="check">
                   <input type="checkbox" :checked="!!item.done" @change="toggleDone(item)" />
                   <span class="title" :class="{ 'text-done': item.done }">{{ item.title }}</span>

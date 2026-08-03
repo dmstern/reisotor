@@ -14,3 +14,8 @@ export const E2E_SESSION_SECRET = 'e2e-fixed-secret-not-for-prod-32chars';
 // ohne den echten Dev-Server je stoppen zu müssen.
 export const E2E_BACKEND_PORT = 3100;
 export const E2E_FRONTEND_PORT = 5273;
+// Eigener Port für `vite preview` (Produktions-Build), genutzt von
+// tests/offline-app-shell.spec.ts — läuft neben dem regulären Dev-Server-Port oben, den dieser
+// eine Test bewusst NICHT verwendet (Workbox-Precaching braucht einen echten Build, siehe dortiger
+// Kommentar in vite.config.ts's devOptions).
+export const E2E_PWA_PREVIEW_PORT = 5274;

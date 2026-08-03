@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
+import { useRoute } from 'vue-router';
 import { api } from '../api/client';
 import type { Accommodation, User } from '../api/types';
 import { useTripStore } from '../stores/trip';
 import { useDrawersStore } from '../stores/drawers';
 import { useLiveSyncStore } from '../stores/liveSync';
 import { parseLatLngFromMapsLink } from '../utils/googleMaps';
+import { formatDate as formatDateShared } from '../utils/dateFormat';
+import { hashHighlightId } from '../utils/hashHighlight';
 import Modal from '../components/Modal.vue';
 import AccommodationDetailDialog from '../components/AccommodationDetailDialog.vue';
 import LocationPicker from '../components/LocationPicker.vue';
@@ -17,6 +20,7 @@ import { useUndoableDelete } from '../composables/useUndoableDelete';
 const tripStore = useTripStore();
 const drawers = useDrawersStore();
 const liveSync = useLiveSyncStore();
+const route = useRoute();
 const tripId = tripStore.currentTripId as number;
 const accommodations = ref<Accommodation[]>([]);
 const { isPending, markPendingDelete, clearPending } = useUndoableDelete();
@@ -73,6 +77,10 @@ async function load() {
 
 onMounted(() => {
   highlightedIds.value = liveSync.markSeen('accommodation');
+  // Querverweis-Sprung (z. B. aus TripMap.vue/ExcursionDetailDialog.vue) – dieselbe highlightedIds-
+  // Menge wie oben, kein zweites Hervorhebungs-System (siehe hashHighlight.ts).
+  const hashId = hashHighlightId(route.hash, 'accommodation');
+  if (hashId != null) highlightedIds.value.add(hashId);
   load();
 });
 
@@ -212,7 +220,7 @@ async function restore(id: number) {
 
 function formatDate(d: string | null) {
   if (!d) return null;
-  return new Date(d).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  return formatDateShared(d);
 }
 
 // Ein einziger Detail-Dialog außerhalb des v-for statt einer pro Karte (gleiches Muster wie der
@@ -329,7 +337,13 @@ function showDetailOnMap() {
     <TransitionGroup tag="div" name="list" class="masonry cards">
       <template v-for="acc in accommodations" :key="acc.id">
         <UndoDeleteRow v-if="isPending(acc.id)" :label="acc.name" @undo="restore(acc.id)" />
-        <div v-else class="card acc-card" :class="{ 'new-highlight': highlightedIds.has(acc.id) }" @click="openDetail(acc)">
+        <div
+          v-else
+          :id="`accommodation-${acc.id}`"
+          class="card acc-card"
+          :class="{ 'new-highlight': highlightedIds.has(acc.id) }"
+          @click="openDetail(acc)"
+        >
           <div class="acc-head">
             <h3>{{ acc.name }}</h3>
             <div class="actions">

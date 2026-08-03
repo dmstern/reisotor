@@ -5,6 +5,7 @@ import { api } from '../api/client';
 import type { Accommodation, Excursion, Spot, TravelItem, User } from '../api/types';
 import { renderRichText } from '../utils/richText';
 import { resolveStations, type ExcursionStation } from '../utils/excursionStations';
+import { formatDate as formatDateShared } from '../utils/dateFormat';
 import { useAuthStore } from '../stores/auth';
 import { useSpotsStore } from '../stores/spots';
 import { useDrawersStore } from '../stores/drawers';
@@ -90,7 +91,7 @@ const fallbackImages = computed(() =>
 );
 
 function formatDate(d: string) {
-  return new Date(d).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  return formatDateShared(d);
 }
 
 // Klick auf eine Stationen-Mini-Karte öffnet je nach Art den passenden verschachtelten Detail-
@@ -127,10 +128,14 @@ function openStationDetail(station: ExcursionStation) {
     stationTravelDialogOpen.value = true;
   }
 }
+// Hash-Sprung (#accommodation-<id>/#travel-<id>) statt bloß der Ziel-Route – gleicher Grund wie
+// TripMap.vue's editOpenAccommodation()/editOpenTravel(): die Ziel-Ansicht hebt das referenzierte
+// Element hervor und der Router scrollt automatisch dorthin (siehe hashHighlight.ts).
 function editStationLocation(target: 'accommodation' | 'travel') {
+  const id = target === 'accommodation' ? openStationAccommodationId.value : openStationTravelId.value;
   stationAccommodationDialogOpen.value = false;
   stationTravelDialogOpen.value = false;
-  router.push(`/${target}`);
+  router.push(`/${target}#${target}-${id}`);
 }
 </script>
 

@@ -5,6 +5,7 @@ import { useConnectivityStore } from '../stores/connectivity';
 import TripSwitcher from './TripSwitcher.vue';
 import PresenceAvatars from './PresenceAvatars.vue';
 import OfflineIndicator from './OfflineIndicator.vue';
+import PwaUpdatePrompt from './PwaUpdatePrompt.vue';
 
 const auth = useAuthStore();
 const theme = useThemeStore();
@@ -28,6 +29,7 @@ const isNonProd = window.location.hostname !== 'reise.ruebenherz.de';
     </router-link>
     <TripSwitcher class="switcher" />
     <OfflineIndicator />
+    <PwaUpdatePrompt />
     <PresenceAvatars />
     <button
       type="button"

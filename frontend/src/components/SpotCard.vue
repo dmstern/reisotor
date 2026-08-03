@@ -13,6 +13,7 @@ import EditButton from './EditButton.vue';
 import DeleteButton from './DeleteButton.vue';
 import SocialRow from './SocialRow.vue';
 import Comments, { type CommentItem } from './Comments.vue';
+import { formatDate as formatDateShared } from '../utils/dateFormat';
 
 const props = defineProps<{
   spot: Spot;
@@ -44,7 +45,7 @@ const emit = defineEmits<{
 const showComments = ref(false);
 
 function formatDate(d: string) {
-  return new Date(d).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+  return formatDateShared(d, { includeYear: false });
 }
 
 // Natives Drag (Zuordnen zu einer Tour) startet über einen dedizierten Anfasser (.excursion-drag-
