@@ -918,6 +918,19 @@ watch(
   },
 );
 
+// Kategorie-/Status-Filter (ExcursionsView.vue) ändern zwar sofort filteredPoints/visiblePoints
+// (beides computed), das bewirkt aber für sich allein KEIN erneutes Zeichnen der Leaflet-Marker –
+// renderMarkers() ist eine reine, imperative Funktion, kein reaktiver Template-Ausdruck, sie muss
+// explizit erneut aufgerufen werden. Ohne diesen Watcher blieb die Karte auf dem zuletzt
+// gezeichneten Stand hängen, bis irgendein ANDERER beobachteter Zustand (Fokus, Tripwechsel, …)
+// zufällig ebenfalls ein renderMarkers() auslöste – daher wirkte der Filter auf der Karte "nur
+// manchmal" statt zuverlässig angewendet.
+watch(
+  () => [props.categoryFilter, props.statusFilter],
+  () => renderMarkers(),
+  { deep: true },
+);
+
 // Ausflüge werden im excursions-Store gehalten (u. a. für Drag&Drop in die Kalender-Schublade) und
 // erst asynchron geladen – ändert sich die Liste (z. B. Spot-Zuordnung bearbeitet), müssen die
 // Ausflugs-Routen neu gezeichnet werden.
@@ -997,7 +1010,10 @@ watch(() => liveSync.memberPositions, () => renderPositions(), { deep: true });
         :disabled="!ownPosition"
         @click="jumpToMyLocation"
       >
-        📍
+        <!-- Eigenes Avatar-Emoji statt eines generischen Pin-/Fadenkreuz-Icons - eindeutiger
+             erkennbar als "das bin ich" und konsistent mit dem eigenen Marker auf der Karte selbst
+             (siehe ownMarker weiter unten), der ebenfalls dieses Avatar zeigt. -->
+        {{ auth.user?.avatar || '📍' }}
       </button>
       <div class="focus-banner" v-if="focusedExcursion">
         <span>🎒 {{ focusedExcursion.title }}</span>

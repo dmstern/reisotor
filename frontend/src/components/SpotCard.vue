@@ -13,6 +13,7 @@ import EditButton from './EditButton.vue';
 import DeleteButton from './DeleteButton.vue';
 import SocialRow from './SocialRow.vue';
 import Comments, { type CommentItem } from './Comments.vue';
+import MapsAppPicker from './MapsAppPicker.vue';
 import { formatDate as formatDateShared } from '../utils/dateFormat';
 
 const props = defineProps<{
@@ -153,6 +154,14 @@ function onCardClick() {
       >
         📅 Einplanen
       </button>
+      <MapsAppPicker
+        v-if="spot.lat != null && spot.lng != null"
+        :lat="spot.lat"
+        :lng="spot.lng"
+        :title="spot.title"
+        :maps-link="spot.maps_link"
+        @click.stop
+      />
       <Teleport to="body">
         <div v-if="dragging" class="drag-ghost" :style="ghostStyle ?? {}">📅 {{ spot.title }}</div>
       </Teleport>
@@ -371,7 +380,8 @@ function onCardClick() {
   .spot-card:not(.expanded) .note,
   .spot-card:not(.expanded) .links,
   .spot-card:not(.expanded) .excursion-drag-handle,
-  .spot-card:not(.expanded) .calendar-drag-handle {
+  .spot-card:not(.expanded) .calendar-drag-handle,
+  .spot-card:not(.expanded) .maps-picker {
     display: none;
   }
 
