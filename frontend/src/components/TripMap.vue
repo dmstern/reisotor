@@ -743,7 +743,11 @@ function renderRoutes() {
   if (!map || !routesLayer) return;
   routesLayer.clearLayers();
 
+  // Im Tages-Fokus nur die Reise-Etappen DIESES Tages zeichnen - sonst blieben irrelevante
+  // Hin-/Rückflug-Strecken anderer Tage als zusätzliche gestrichelte Linien sichtbar, obwohl der
+  // Fokus laut Marker-Filterung (visiblePoints) eigentlich nur die Orte dieses einen Tages zeigen soll.
   for (const t of travelItems.value) {
+    if (drawers.mapFocusDate && t.date !== drawers.mapFocusDate) continue;
     if (t.from_lat != null && t.from_lng != null && t.to_lat != null && t.to_lng != null) {
       L.polyline(arcRoute([[t.from_lat, t.from_lng], [t.to_lat, t.to_lng]]), {
         color: TRAVEL_COLOR,
@@ -1099,7 +1103,18 @@ watch(() => liveSync.memberPositions, () => renderPositions(), { deep: true });
             <span class="station-order">{{ index + 1 }}</span>
             <MiniStationCard :station="station" />
           </button>
-          <div v-if="index < focusedDateStations.length - 1" class="station-connector" aria-hidden="true"></div>
+          <!-- Verbindungslinie trägt (sofern gesetzt) den Namen der verbindenden Reise-Etappe -
+               ExcursionStation.connector ist auf der ZIEL-Station der Etappe gesetzt (siehe
+               dayStations.ts), beschriftet also die Linie DAVOR. -->
+          <div
+            v-if="index < focusedDateStations.length - 1"
+            class="station-connector"
+            :class="{ labeled: !!focusedDateStations[index + 1].connector }"
+          >
+            <span v-if="focusedDateStations[index + 1].connector" class="connector-label">
+              {{ focusedDateStations[index + 1].connector!.icon }} {{ focusedDateStations[index + 1].connector!.label }}
+            </span>
+          </div>
         </template>
       </div>
     </div>
@@ -1489,6 +1504,44 @@ watch(() => liveSync.memberPositions, () => renderPositions(), { deep: true });
   border-top: 3px dashed var(--color-primary);
   margin: 0 4px;
   align-self: center;
+}
+
+/* Beschriftete Verbindung (Tages-Fokus, Name der verbindenden Reise-Etappe): die gestrichelte Linie
+   wandert auf ein absolut positioniertes ::before (statt border-top direkt auf .station-connector),
+   damit das Label als kleine Pille MIT eigenem Hintergrund darüber sitzen kann, statt die Linie
+   einfach zu durchqueren. */
+.station-connector.labeled {
+  flex: 0 0 auto;
+  height: auto;
+  border-top: none;
+  min-width: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.station-connector.labeled::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  border-top: 3px dashed var(--color-primary);
+  z-index: 0;
+}
+
+.connector-label {
+  position: relative;
+  z-index: 1;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: 0.68rem;
+  font-weight: 600;
+  white-space: nowrap;
+  padding: 2px 6px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
 }
 
 

@@ -6,7 +6,15 @@ import { computed, ref } from 'vue';
 // bis dahin liefert der Zugriff undefined. Als Pflicht-String deklariert warf .trim() darauf und riss
 // das Rendering der Komponente ab (sichtbar als spontan verschwindendes/springendes Formularfeld).
 const props = withDefaults(
-  defineProps<{ modelValue?: string; options: string[]; placeholder?: string }>(),
+  defineProps<{
+    modelValue?: string;
+    options: string[];
+    placeholder?: string;
+    // Optionales Icon je Option (z. B. travelPlaceTypeIcon()) - rein für die Dropdown-Liste, der
+    // gespeicherte Wert selbst bleibt reiner Text (kein eingebettetes Emoji), damit z. B. der
+    // case-insensitive Lookup in travelPlaceType.ts weiterhin einfach greift.
+    iconFor?: (option: string) => string;
+  }>(),
   { modelValue: '' },
 );
 const emit = defineEmits<{ (e: 'update:modelValue', value: string): void }>();
@@ -47,6 +55,7 @@ function onBlur() {
     />
     <ul class="options" v-if="open && filteredOptions.length">
       <li v-for="option in filteredOptions" :key="option" @mousedown.prevent="selectOption(option)">
+        <span v-if="iconFor" class="option-icon">{{ iconFor(option) }}</span>
         {{ option }}
       </li>
     </ul>
@@ -85,6 +94,11 @@ function onBlur() {
   padding: 6px 10px;
   font-size: 0.9rem;
   cursor: pointer;
+}
+
+.option-icon {
+  display: inline-block;
+  width: 1.3em;
 }
 
 .options li:hover {

@@ -19,6 +19,10 @@ const KNOWN_CATEGORIES: { label: string; icon: string; color: string }[] = [
   { label: 'Aussichtspunkt', icon: '🌄', color: '#e0763b' },
   { label: 'Wanderweg', icon: '🥾', color: '#6b7a3a' },
   { label: 'Nachtleben', icon: '🍸', color: '#7a3ea1' },
+  { label: 'Supermarkt', icon: '🛒', color: '#2a78d6' },
+  { label: 'Bäckerei', icon: '🥐', color: '#c17817' },
+  { label: 'Apotheke', icon: '💊', color: '#dc3545' },
+  { label: 'Tankstelle', icon: '⛽', color: '#5a6b7a' },
 ];
 
 const OTHER_META: CategoryMeta = { icon: '📍', color: '#8a8a86' };

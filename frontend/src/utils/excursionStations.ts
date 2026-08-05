@@ -23,6 +23,22 @@ export interface ExcursionStation {
   lat: number | null;
   lng: number | null;
   mapsLink: string | null;
+  /** Beschriftet die Verbindungslinie ZWISCHEN dieser und der vorherigen Station in einer Kette
+   *  (z. B. Tages-Fokus, siehe dayStations.ts) mit dem Namen der verbindenden Reise-Etappe – nur
+   *  gesetzt, wenn diese Station das Ziel einer Etappe ist, deren Startort in derselben Kette
+   *  vorkommt (bzw. wo der Startort als aufeinanderfolgendes Duplikat unterdrückt wurde). Bei allen
+   *  anderen Stations-Quellen (Spot/Unterkunft/Ausflug-Stationsliste) unbenutzt/undefined. */
+  connector?: { icon: string; label: string } | null;
+}
+
+/** Welcher station_key das Von/Nach-Ende einer Etappe repräsentiert – bevorzugt den verknüpften Ort
+ *  (travel-place-<id>, zeigt dann dessen eigenen Namen/Icon), fällt ohne Verknüpfung auf das alte
+ *  Etappen-Ende-Format zurück (travel-from-/to-<id>, siehe resolveStation() unten). Exportiert, da
+ *  dayStations.ts denselben Key braucht, um aufeinanderfolgende Etappen über ihren tatsächlichen Ort
+ *  (statt die Etappe selbst) zu verketten. */
+export function travelEndpointKey(item: TravelItem, side: 'from' | 'to'): string {
+  const placeId = side === 'from' ? item.from_place_id : item.to_place_id;
+  return placeId != null ? `travel-place-${placeId}` : `travel-${side}-${item.id}`;
 }
 
 const ACCOMMODATION_META = { icon: '🛏️', color: '#1baf7a' };

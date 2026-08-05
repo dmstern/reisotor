@@ -465,6 +465,7 @@ function showDetailToOnMap() {
         <Combobox
           v-model="newPlaceForm.type"
           :options="TRAVEL_PLACE_TYPE_SUGGESTIONS"
+          :icon-for="travelPlaceTypeIcon"
           placeholder="Art (optional, z. B. Flughafen – oder eigene erstellen)"
         />
         <label class="home-check" v-if="!isZuhauseType(newPlaceForm.type)">
@@ -843,6 +844,7 @@ function showDetailToOnMap() {
         <Combobox
           v-model="editPlaceForm.type"
           :options="TRAVEL_PLACE_TYPE_SUGGESTIONS"
+          :icon-for="travelPlaceTypeIcon"
           placeholder="Art (optional, z. B. Flughafen – oder eigene erstellen)"
         />
         <label class="home-check" v-if="!isZuhauseType(editPlaceForm.type)">

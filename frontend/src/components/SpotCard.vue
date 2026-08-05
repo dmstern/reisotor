@@ -122,8 +122,13 @@ function onCardClick() {
   <div class="card spot-card" :class="{ expanded, 'new-highlight': highlighted }" @click="onCardClick">
     <div class="image" :style="spot.image_url ? { backgroundImage: `url(${spot.image_url})` } : {}">
       <span v-if="!spot.image_url" class="placeholder">{{ spotCategoryMeta(spot.category).icon }}</span>
-      <EditButton floating @click="emit('edit', spot)" />
-      <DeleteButton floating @click="emit('remove', spot.id)" />
+      <!-- Nur in der aufgeklappten Karte - in der kompakten Mini-Card (v. a. auf mobile knapper
+           Platz) reichen Bild/Titel/Kategorie zur Orientierung, Bearbeiten/Löschen sind erst nach
+           dem Aufklappen erreichbar. -->
+      <template v-if="expanded">
+        <EditButton floating @click="emit('edit', spot)" />
+        <DeleteButton floating @click="emit('remove', spot.id)" />
+      </template>
       <span v-if="scheduledDate" class="status planned">📅 {{ formatDate(scheduledDate) }}</span>
     </div>
     <div class="body">

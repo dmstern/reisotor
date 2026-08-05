@@ -40,11 +40,52 @@ export function parseLatLngFromText(url: string): LatLng | null {
   return null;
 }
 
+const MOBILE_UA =
+  'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1';
+const FETCH_HEADERS = {
+  'User-Agent': MOBILE_UA,
+  Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+};
+const MAX_REDIRECT_HOPS = 5;
+
+/** Folgt dem Redirect eines Kurzlinks manuell, Hop für Hop, und parst NUR den `Location`-Header
+ *  jeder Zwischenantwort – ohne die volle (JS-lastige) Zielseite selbst abzurufen. Google kodiert
+ *  die Zielkoordinate bereits in der Redirect-Ziel-URL selbst (z. B. .../@lat,lng,zoom oder
+ *  !3d.../!4d...), ein Follow bis zur fertig gerenderten Maps-Seite ist dafür gar nicht nötig – und
+ *  genau DIESER letzte vollständige Seitenabruf ist der Schritt, an dem Googles Bot-Erkennung bei
+ *  bestimmten Kurzlink-Varianten (siehe g_st=ic unten) ansetzt. redirect:'manual' liefert in Node
+ *  (anders als im Browser, wo CORS einen undurchsichtigen "opaqueredirect"-Response erzwingt) einen
+ *  normal lesbaren Response mit Location-Header, kein Sonderfall nötig. */
+async function resolveViaRedirectHeaders(url: string): Promise<LatLng | null> {
+  let current = url;
+  for (let hop = 0; hop < MAX_REDIRECT_HOPS; hop++) {
+    let res: Response;
+    try {
+      res = await fetch(current, {
+        redirect: 'manual',
+        signal: AbortSignal.timeout(5000),
+        headers: FETCH_HEADERS,
+      });
+    } catch {
+      return null;
+    }
+    const location = res.headers.get('location');
+    if (!location) return null;
+    const resolved = new URL(location, current).toString();
+    const direct = parseLatLngFromText(resolved);
+    if (direct) return direct;
+    current = resolved;
+  }
+  return null;
+}
+
 /** Löst einen Google-Maps-Link serverseitig zu Koordinaten auf. Volle Links werden direkt per
  *  Regex geparst; Kurzlinks (maps.app.goo.gl, goo.gl/maps) lassen sich clientseitig nicht auflösen
- *  (kein sichtbarer Redirect-Ziel-URL), deshalb folgt der Server dem Redirect und parst die finale
- *  URL. Netzwerkfehler/Timeout führen zu `null` statt einem Fehler – Speichern soll auch ohne
- *  Koordinaten funktionieren. */
+ *  (kein sichtbarer Redirect-Ziel-URL). Zwei serverseitige Strategien nacheinander: zuerst nur die
+ *  Redirect-Header Hop für Hop lesen (resolveViaRedirectHeaders, siehe dortiger Kommentar – ruft nie
+ *  die volle Zielseite ab), erst wenn das nichts liefert als Fallback die komplette Weiterleitung bis
+ *  zur Zielseite verfolgen und deren finale URL parsen. Netzwerkfehler/Timeout führen zu `null`
+ *  statt einem Fehler – Speichern soll auch ohne Koordinaten funktionieren. */
 export async function resolveLatLng(url: string | null | undefined): Promise<LatLng | null> {
   if (!url) return null;
   const direct = parseLatLngFromText(url);
@@ -52,28 +93,79 @@ export async function resolveLatLng(url: string | null | undefined): Promise<Lat
 
   // Best-effort, unbewiesene Theorie: "g_st=ic" markiert einen über das native Teilen-Menü ("in
   // context") erzeugten Kurzlink – genau diese Variante wurde wiederholt mit einem echten 403 von
-  // Google blockiert (Bot-Erkennung), auch mit realistischem Browser-User-Agent (siehe unten). Den
-  // Parameter vor dem Redirect-Follow zu entfernen kostet nichts und könnte in manchen Fällen
-  // helfen, ist aber KEIN verlässlicher Fix – der eigentliche Fallback ist der manuelle
-  // Karten-Picker im Frontend (LocationPicker.vue).
+  // Google blockiert (Bot-Erkennung), auch mit realistischem Browser-User-Agent. Den Parameter vor
+  // dem Redirect-Follow zu entfernen kostet nichts und könnte in manchen Fällen helfen, ist aber
+  // KEIN verlässlicher Fix – der eigentliche Fallback bleibt der manuelle Karten-Picker im Frontend
+  // (LocationPicker.vue).
   const strippedUrl = url.replace(/([?&])g_st=[^&]*&?/, '$1').replace(/[?&]$/, '');
 
+  const viaHeaders = await resolveViaRedirectHeaders(strippedUrl);
+  if (viaHeaders) return viaHeaders;
+
   try {
-    // Ein realistischer Browser-User-Agent statt des Node-Standard-UAs, da manche Kurzlink-
-    // Redirect-Dienste (u. a. Google) Anfragen ohne einen solchen teils mit 403 statt der
-    // eigentlichen Weiterleitung beantworten.
     const res = await fetch(strippedUrl, {
       redirect: 'follow',
       signal: AbortSignal.timeout(5000),
-      headers: {
-        'User-Agent':
-          'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1',
-        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-      },
+      headers: FETCH_HEADERS,
     });
     return parseLatLngFromText(res.url);
   } catch {
     return null;
+  }
+}
+
+export interface PlacePreview {
+  name: string | null;
+  imageUrl: string | null;
+}
+
+// Google kodiert den Ortsnamen bereits URL-kodiert im Pfad einer aufgelösten Maps-Link-Zielseite
+// (.../maps/place/Caf%C3%A9+Central/@...) - kein zusätzlicher Request nötig, sobald man ohnehin
+// schon die finale URL kennt.
+function extractPlaceNameFromUrl(url: string): string | null {
+  const match = /\/maps\/place\/([^/@]+)/.exec(url);
+  if (!match) return null;
+  let name = match[1];
+  try {
+    name = decodeURIComponent(name);
+  } catch {
+    // Ungültige Prozent-Kodierung - mit dem Rohwert weiterarbeiten.
+  }
+  name = name.replace(/\+/g, ' ').trim();
+  return name || null;
+}
+
+// Kein Places-API-Key vorhanden (kostenpflichtig) - das og:image-Meta-Tag der Zielseite ist der
+// einzige ohne Zusatzkosten erreichbare Weg an ein ECHTES Foto des Orts zu kommen (statt nur des
+// Kartenausschnitts aus tilePreviewUrl() oben). Reine Regex statt eines HTML-Parsers, analog zum
+// bestehenden Muster in diesem Modul (parseLatLngFromText) - für ein einzelnes Meta-Tag ausreichend.
+function extractOgImage(html: string): string | null {
+  const match =
+    /<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i.exec(html) ??
+    /<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i.exec(html);
+  return match ? match[1] : null;
+}
+
+/** Best-effort-Vorschau (Titel/Foto) einer Maps-Link-Zielseite für ExcursionsView.vue's
+ *  Spot-Anlegen-Formular - füllt Titel/Bild automatisch, sobald ein Maps-Link eingegeben wurde.
+ *  Braucht (anders als resolveLatLng oben) zwingend die vollständige Zielseite (für og:image), kann
+ *  also NICHT den bot-erkennungs-ärmeren Redirect-Header-Pfad nutzen - liefert bei einer
+ *  fehlgeschlagenen Auflösung einfach leere Felder statt eines Fehlers, das Formular bleibt ohne
+ *  Vorschau normal nutzbar. Keine Kategorie-Erkennung: dafür gibt es ohne kostenpflichtige
+ *  Places-API kein verlässliches Signal. */
+export async function fetchPlacePreview(url: string | null | undefined): Promise<PlacePreview> {
+  if (!url) return { name: null, imageUrl: null };
+  const strippedUrl = url.replace(/([?&])g_st=[^&]*&?/, '$1').replace(/[?&]$/, '');
+  try {
+    const res = await fetch(strippedUrl, {
+      redirect: 'follow',
+      signal: AbortSignal.timeout(5000),
+      headers: FETCH_HEADERS,
+    });
+    const html = await res.text();
+    return { name: extractPlaceNameFromUrl(res.url), imageUrl: extractOgImage(html) };
+  } catch {
+    return { name: null, imageUrl: null };
   }
 }
 

@@ -43,6 +43,14 @@ function formatDate(d: string | null) {
     <p v-if="accommodation.address" class="detail-row">
       <span class="detail-label">Adresse</span>{{ accommodation.address }}
     </p>
+    <!-- Direkt neben der Adresse statt (wie zuvor) ganz unten im Dialog: passt inhaltlich besser
+         hierhin und die Karten-App-Auswahl (MapsAppPicker, öffnet ein per position:fixed unterhalb
+         des Buttons platziertes Menü) blieb dort auf mobile teils unbedienbar, wenn der Button nahe
+         am unteren Bildschirmrand eines langen, gescrollten Dialogs saß. -->
+    <div v-if="accommodation.lat != null && accommodation.lng != null" class="detail-actions map-actions">
+      <button type="button" class="card-action-btn" @click="emit('show-on-map')">🗺️ Auf Karte anzeigen</button>
+      <MapsAppPicker :lat="accommodation.lat" :lng="accommodation.lng" :title="accommodation.name" :maps-link="accommodation.maps_link" />
+    </div>
     <p v-if="accommodation.checkin || accommodation.checkout" class="detail-row">
       <span class="detail-label">Check-in/-out</span>
       {{ accommodation.checkin || '–' }} · {{ accommodation.checkout || '–' }}
@@ -66,23 +74,6 @@ function formatDate(d: string | null) {
     </p>
     <div v-if="accommodation.note" class="detail-row note richtext" v-html="renderRichText(accommodation.note)"></div>
     <FileAttachments domain="accommodation" :entity-id="accommodation.id" />
-    <div class="detail-actions">
-      <button
-        v-if="accommodation.lat != null && accommodation.lng != null"
-        type="button"
-        class="card-action-btn"
-        @click="emit('show-on-map')"
-      >
-        🗺️ Auf Karte anzeigen
-      </button>
-      <MapsAppPicker
-        v-if="accommodation.lat != null && accommodation.lng != null"
-        :lat="accommodation.lat"
-        :lng="accommodation.lng"
-        :title="accommodation.name"
-        :maps-link="accommodation.maps_link"
-      />
-    </div>
   </DetailModal>
 </template>
 

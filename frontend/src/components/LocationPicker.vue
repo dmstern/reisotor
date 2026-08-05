@@ -2,7 +2,7 @@
 import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { cachedEmojiPin } from '../utils/mapRoute';
+import { cachedEmojiPin, pulsingEmojiPin } from '../utils/mapRoute';
 
 // Manueller Fallback, falls weder clientseitiges Parsen noch die serverseitige Kurzlink-Auflösung
 // (backend/src/utils/mapsLink.ts) Koordinaten liefern (z. B. wenn Google einen Maps-Kurzlink per
@@ -14,6 +14,11 @@ const props = defineProps<{
   modelValue: { lat: number; lng: number } | null;
   center?: { lat: number; lng: number };
   zoom?: number;
+  // Andere bereits gespeicherte Orte (z. B. Spots des aktuellen Urlaubs) rein zur Orientierung beim
+  // Antippen der Karte – nicht interaktiv, kein Klick-Handler, nur eine reine Anzeige-Hilfe. Generisch
+  // benannt (nicht "spots"), da dieselbe Komponente auch von Unterkunft-/Reise-/Trip-Formularen
+  // eingebunden wird, die keine Spot-Objekte kennen.
+  referencePoints?: { lat: number; lng: number; icon?: string }[];
 }>();
 const emit = defineEmits<{ (e: 'update:modelValue', value: { lat: number; lng: number } | null): void }>();
 
@@ -27,6 +32,12 @@ const mapEl = ref<HTMLDivElement | null>(null);
 let map: L.Map | null = null;
 let marker: L.Marker | null = null;
 let resizeObserver: ResizeObserver | null = null;
+// Eigene Layer für Referenzpunkte (props.referencePoints) und eigenen Standort statt Teil des
+// aktiv gesetzten Pins – beide sind rein zur Orientierung, nie interaktiv/klickbar, damit ein Tap
+// darauf weiterhin wie überall sonst auf der Karte den Standort dort setzt (kein toter Bereich).
+let referenceLayer: L.LayerGroup | null = null;
+let ownLocationMarker: L.Marker | null = null;
+let geoWatchId: number | null = null;
 
 function placeMarker(lat: number, lng: number) {
   if (!map) return;
@@ -35,6 +46,46 @@ function placeMarker(lat: number, lng: number) {
   } else {
     marker = L.marker([lat, lng], { icon: cachedEmojiPin('📍', '#e08e45') }).addTo(map);
   }
+}
+
+// Andere gespeicherte Orte (z. B. Spots des Urlaubs) gedimmt im Hintergrund – zur Orientierung,
+// welche Umgebung man gerade antippt, ohne mit dem eigentlich zu setzenden Pin zu konkurrieren.
+function renderReferencePoints() {
+  if (!map) return;
+  referenceLayer?.clearLayers();
+  if (!props.referencePoints?.length) return;
+  if (!referenceLayer) referenceLayer = L.layerGroup().addTo(map);
+  for (const point of props.referencePoints) {
+    L.marker([point.lat, point.lng], {
+      icon: cachedEmojiPin(point.icon ?? '📍', '#8a8a86'),
+      interactive: false,
+      opacity: 0.7,
+    }).addTo(referenceLayer);
+  }
+}
+
+// Eigener Standort als zusätzliche Orientierungshilfe (z. B. "wie weit ist der Punkt von mir
+// entfernt") – watchPosition statt eines einmaligen getCurrentPosition, da der Picker während des
+// Antippens offen bleiben kann und sich der eigene Standort dabei mitbewegen können soll (analog zu
+// TripMap.vue's Live-Standort). Fehlt die Geolocation-API oder verweigert die Nutzerin den Zugriff,
+// bleibt der Picker unverändert nutzbar – nur ohne eigenen Standort-Marker.
+function startOwnLocation() {
+  if (!navigator.geolocation) return;
+  geoWatchId = navigator.geolocation.watchPosition(
+    (position) => {
+      if (!map) return;
+      const latlng: L.LatLngExpression = [position.coords.latitude, position.coords.longitude];
+      if (ownLocationMarker) {
+        ownLocationMarker.setLatLng(latlng);
+      } else {
+        ownLocationMarker = L.marker(latlng, { icon: pulsingEmojiPin('🧭', '#2f6fed'), interactive: false }).addTo(map!);
+      }
+    },
+    () => {
+      // Zugriff verweigert/fehlgeschlagen - kein Fehlerzustand, der Picker bleibt normal nutzbar.
+    },
+    { enableHighAccuracy: true, maximumAge: 10_000 },
+  );
 }
 
 onMounted(async () => {
@@ -49,6 +100,8 @@ onMounted(async () => {
   }).addTo(map);
 
   if (props.modelValue) placeMarker(props.modelValue.lat, props.modelValue.lng);
+  renderReferencePoints();
+  startOwnLocation();
 
   map.on('click', (e: L.LeafletMouseEvent) => {
     placeMarker(e.latlng.lat, e.latlng.lng);
@@ -59,9 +112,12 @@ onMounted(async () => {
   resizeObserver.observe(mapEl.value);
 });
 
+watch(() => props.referencePoints, renderReferencePoints, { deep: true });
+
 onUnmounted(() => {
   resizeObserver?.disconnect();
   resizeObserver = null;
+  if (geoWatchId != null) navigator.geolocation.clearWatch(geoWatchId);
   map?.remove();
   map = null;
 });

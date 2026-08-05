@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch, type ComponentPublicInstance } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch, type ComponentPublicInstance, type Ref } from 'vue';
 import { api } from '../api/client';
 import type { Accommodation, Spot, TravelItem, TravelPlace, User } from '../api/types';
 import { useAuthStore } from '../stores/auth';
@@ -176,6 +176,21 @@ const spotCategoryOptions = computed(() => {
   const used = spotsStore.spots.map((s) => s.category).filter((c): c is string => !!c);
   return [...new Set([...SPOT_CATEGORY_SUGGESTIONS, ...used])];
 });
+
+// Andere bereits gespeicherte Spots als gedimmte Referenzpunkte im manuellen Karten-Picker (siehe
+// LocationPicker.vue) – rein zur Orientierung beim Antippen, welche Umgebung man dort gerade setzt.
+// Beim Bearbeiten wird der gerade bearbeitete Spot selbst ausgeschlossen (der zeigt sich ohnehin
+// schon als der aktiv gesetzte Pin, siehe editSpotManualPin).
+const spotReferencePoints = computed(() =>
+  spotsStore.spots
+    .filter((s) => s.lat != null && s.lng != null)
+    .map((s) => ({ lat: s.lat as number, lng: s.lng as number, icon: spotCategoryMeta(s.category).icon })),
+);
+const editSpotReferencePoints = computed(() =>
+  spotsStore.spots
+    .filter((s) => s.id !== editingSpot.value?.id && s.lat != null && s.lng != null)
+    .map((s) => ({ lat: s.lat as number, lng: s.lng as number, icon: spotCategoryMeta(s.category).icon })),
+);
 
 // --- Sortierung, Kategorie-Filter & -Gruppierung der Spots-Übersicht ---
 // Ein "Spots-Item" ist entweder ein echter Spot oder ein abgeleiteter Ort (Unterkunft/Reise) – beide
@@ -487,13 +502,32 @@ watch(
   },
 );
 
+// Live-Vorschau (Titel/echtes Foto statt nur des Kartenausschnitts, siehe backend/src/utils/
+// mapsLink.ts's fetchPlacePreview()) - Best-effort, überschreibt nie bereits eingetippte Werte
+// (z. B. wenn der Titel schon vor dem Maps-Link gesetzt wurde). Keine Kategorie-Erkennung: dafür
+// gibt es ohne kostenpflichtige Places-API kein verlässliches Signal.
+async function fetchSpotPreview(mapsLink: string, form: Ref<ReturnType<typeof emptySpotForm>>) {
+  if (!mapsLink) return;
+  try {
+    const preview = await api.get<{ name: string | null; imageUrl: string | null }>(
+      `/spots/preview?maps_link=${encodeURIComponent(mapsLink)}`,
+    );
+    if (preview.name && !form.value.title.trim()) form.value.title = preview.name;
+    if (preview.imageUrl && !form.value.image_url.trim()) form.value.image_url = preview.imageUrl;
+  } catch {
+    // Vorschau fehlgeschlagen - Formular bleibt normal (ohne Vorschau) nutzbar.
+  }
+}
+
 function checkSpotMapsLink() {
   spotMapsLinkResolved.value = spotForm.value.maps_link ? parseLatLngFromMapsLink(spotForm.value.maps_link) != null : null;
+  if (spotForm.value.maps_link) fetchSpotPreview(spotForm.value.maps_link, spotForm);
 }
 function checkEditSpotMapsLink() {
   editSpotMapsLinkResolved.value = editSpotForm.value.maps_link
     ? parseLatLngFromMapsLink(editSpotForm.value.maps_link) != null
     : null;
+  if (editSpotForm.value.maps_link) fetchSpotPreview(editSpotForm.value.maps_link, editSpotForm);
 }
 
 function spotToBody(f: ReturnType<typeof emptySpotForm>, manual?: { lat: number; lng: number } | null) {
@@ -758,7 +792,12 @@ async function removeSpot(id: number) {
           <button type="button" class="secondary picker-toggle" @click="spotPickerOpen = !spotPickerOpen">
             📍 Standort manuell setzen {{ spotPickerOpen ? '▲' : '▼' }}
           </button>
-          <LocationPicker v-if="spotPickerOpen" v-model="spotManualPin" :center="spotPickerCenter" />
+          <LocationPicker
+            v-if="spotPickerOpen"
+            v-model="spotManualPin"
+            :center="spotPickerCenter"
+            :reference-points="spotReferencePoints"
+          />
           <textarea v-model="spotForm.note" placeholder="Notiz (optional)" rows="3"></textarea>
           <button type="submit">Hinzufügen</button>
         </form>
@@ -841,7 +880,12 @@ async function removeSpot(id: number) {
           <button type="button" class="secondary picker-toggle" @click="editSpotPickerOpen = !editSpotPickerOpen">
             📍 Standort manuell setzen {{ editSpotPickerOpen ? '▲' : '▼' }}
           </button>
-          <LocationPicker v-if="editSpotPickerOpen" v-model="editSpotManualPin" :center="spotPickerCenter" />
+          <LocationPicker
+            v-if="editSpotPickerOpen"
+            v-model="editSpotManualPin"
+            :center="spotPickerCenter"
+            :reference-points="editSpotReferencePoints"
+          />
           <textarea v-model="editSpotForm.note" placeholder="Notiz (optional)" rows="3"></textarea>
           <button type="submit">Speichern</button>
         </form>
@@ -1434,13 +1478,23 @@ async function removeSpot(id: number) {
 }
 
 /* Horizontale Kategorie-Navigation (Wolt-Stil): Icon zentriert über dem Label, ganze Leiste
-   scrollt bei Bedarf horizontal statt umzubrechen (viele Kategorien nebeneinander). */
+   scrollt bei Bedarf horizontal statt umzubrechen (viele Kategorien nebeneinander). Vertikal sticky
+   innerhalb von .spots-col-body (dem tatsächlich scrollenden Vorfahren, siehe dortige overflow-y):
+   Seitentitel/Filter darüber scrollen weg, die Navigation selbst bleibt oben angeheftet, damit man
+   auch nach dem Herunterscrollen weiter direkt zwischen Kategorien springen kann. Eigener
+   Hintergrund (wie .spots-col selbst) nötig, sonst scheint darunter liegender Karteninhalt beim
+   Scrollen durch. */
 .category-nav {
   display: flex;
   gap: var(--space-3);
   overflow-x: auto;
+  overflow-y: hidden;
   padding: 4px 2px var(--space-3);
   margin-bottom: var(--space-2);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--color-surface);
 }
 
 .category-nav-item {

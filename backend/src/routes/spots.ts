@@ -1,6 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { db } from '../db/index.js';
-import { resolveLatLng, tilePreviewUrl } from '../utils/mapsLink.js';
+import { fetchPlacePreview, resolveLatLng, tilePreviewUrl } from '../utils/mapsLink.js';
 import { requireTripMember } from '../tripAccess.js';
 import { recordActivity } from '../activity.js';
 
@@ -26,6 +26,13 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
     return db
       .prepare('SELECT * FROM spots WHERE trip_id = ? AND deleted_at IS NULL ORDER BY title COLLATE NOCASE')
       .all(req.query.trip_id);
+  });
+
+  // Live-Vorschau (Titel/Foto) für ExcursionsView.vue's Spot-Anlegen-Formular, sobald ein Maps-Link
+  // eingetippt wurde - kein trip_id-Bezug nötig (liest keine Trip-Daten), daher genügt die globale
+  // requireAuth-preHandler-Gruppe (app.ts) ohne zusätzliche requireTripMember-Prüfung.
+  app.get<{ Querystring: { maps_link?: string } }>('/spots/preview', async (req) => {
+    return fetchPlacePreview(req.query.maps_link);
   });
 
   app.post<{ Body: SpotBody }>('/spots', async (req, reply) => {

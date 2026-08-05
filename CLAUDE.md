@@ -262,10 +262,14 @@ einer Datei legen dafür jeweils eigene, eindeutig identifizierbare Ressourcen a
 eine leere Tabelle zu verlassen. Bei wachsender Suite ließe sich das mit `vi.resetModules()` in
 `beforeEach` auf echte Pro-Test-Isolation umstellen.
 
-`backend/src/utils/mapsLink.ts`s `resolveLatLng()` hat einen echten `fetch()`-Fallback (Kurzlink-
-Redirect-Auflösung, 5s Timeout) — bleibt bewusst ungetestet (würde Netzwerk-Mocking brauchen, für
-einen Best-Effort-Fallback aktuell nicht des Aufwands wert). Der direkte Parse-Pfad davor
-(`parseLatLngFromText`) ist dagegen vollständig getestet.
+`backend/src/utils/mapsLink.ts`s `resolveLatLng()` löst Kurzlinks serverseitig zweistufig auf:
+zuerst `resolveViaRedirectHeaders()` (folgt nur den `Location`-Headern Hop für Hop, ruft nie die
+volle Zielseite ab — genau das umgeht Googles Bot-Erkennung bei bestimmten Kurzlink-Varianten wie
+`g_st=ic`), erst danach als Fallback ein vollständiger Redirect-Follow. Beide Pfade sind mit
+gemocktem `fetch()` getestet (`vi.stubGlobal`, gleiches Muster wie `regionInfo.test.ts`) — echtes
+Netzwerkverhalten (ob Google diesen speziellen Kurzlink-Typ tatsächlich noch blockt) lässt sich
+damit nicht verifizieren, nur die Hop-Verkettungs-/Timeout-/Fehlerlogik selbst. Der direkte
+Parse-Pfad davor (`parseLatLngFromText`) ist vollständig getestet.
 
 ### Umfang: Regressionsnetz statt Vollabdeckung
 
