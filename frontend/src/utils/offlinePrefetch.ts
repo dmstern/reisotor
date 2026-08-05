@@ -23,7 +23,6 @@ function tripDataPaths(tripId: number): string[] {
     `/budget/allocations?trip_id=${tripId}`,
     `/budget/transfers?trip_id=${tripId}`,
     `/travel?trip_id=${tripId}`,
-    `/accommodation?trip_id=${tripId}`,
     `/diary?trip_id=${tripId}`,
     `/diary/likes?trip_id=${tripId}`,
     `/diary/comments?trip_id=${tripId}`,

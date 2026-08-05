@@ -2,7 +2,6 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { api } from '../api/client';
 import type {
-  Accommodation,
   BudgetAllocation,
   BudgetExpense,
   DiaryEntry,
@@ -25,6 +24,7 @@ import { assignCategoryColors } from '../utils/categoryColors';
 import { buildAllEntries } from '../utils/calendarEntries';
 import { SCHEDULE_CATEGORY_META } from '../utils/scheduleCategory';
 import { SECTION_ICONS } from '../utils/sectionIcons';
+import { spotCategoryMeta } from '../utils/spotCategory';
 import { fetchWeatherForecast, weatherCodeMeta, type DailyWeather } from '../utils/weather';
 import { fetchRegionInfo, type RegionInfo } from '../utils/regionInfo';
 import { formatDate as formatDateShared, formatWeekdayDate as formatWeekdayDateShared } from '../utils/dateFormat';
@@ -46,7 +46,9 @@ const expenses = ref<BudgetExpense[]>([]);
 const allocations = ref<BudgetAllocation[]>([]);
 const shopping = ref<ShoppingItem[]>([]);
 const travelItems = ref<TravelItem[]>([]);
-const accommodations = ref<Accommodation[]>([]);
+// Unterkunft ist seit der Verschmelzung in Spots (siehe Migrationskommentar in db/index.ts) ganz
+// normal ein Spot der Kategorie "Unterkunft" - kein eigener Fetch mehr nötig.
+const accommodations = computed(() => spotsStore.spots.filter((s) => s.category === 'Unterkunft'));
 const diaryEntries = ref<DiaryEntry[]>([]);
 const notes = ref<Note[]>([]);
 const users = ref<User[]>([]);
@@ -150,7 +152,7 @@ const WIDGET_COLORS = assignCategoryColors([
 const SECURITY_TILE_COLOR = '#4FB3A9';
 
 onMounted(async () => {
-  const [scheduleRes, todosRes, packingRes, expensesRes, allocationsRes, shoppingRes, travelRes, accRes, diaryRes, notesRes, usersRes] =
+  const [scheduleRes, todosRes, packingRes, expensesRes, allocationsRes, shoppingRes, travelRes, diaryRes, notesRes, usersRes] =
     await Promise.all([
       api.get<ScheduleItem[]>(`/schedule?trip_id=${tripId}`),
       api.get<TodoItem[]>(`/todos?trip_id=${tripId}`),
@@ -159,7 +161,6 @@ onMounted(async () => {
       api.get<BudgetAllocation[]>(`/budget/allocations?trip_id=${tripId}`),
       api.get<ShoppingItem[]>(`/shopping?trip_id=${tripId}`),
       api.get<TravelItem[]>(`/travel?trip_id=${tripId}`),
-      api.get<Accommodation[]>(`/accommodation?trip_id=${tripId}`),
       api.get<DiaryEntry[]>(`/diary?trip_id=${tripId}`),
       api.get<Note[]>(`/notes?trip_id=${tripId}`),
       api.get<User[]>('/users'),
@@ -172,7 +173,6 @@ onMounted(async () => {
   allocations.value = allocationsRes;
   shopping.value = shoppingRes;
   travelItems.value = travelRes;
-  accommodations.value = accRes;
   diaryEntries.value = diaryRes;
   notes.value = notesRes;
   users.value = usersRes;
@@ -202,7 +202,6 @@ const upcomingEntries = computed(() =>
     travelItems.value,
     excursionsStore.excursions,
     spotsStore.spots,
-    accommodations.value,
   )
     .filter((e) => e.endDate >= todayStr())
     .sort((a, b) => (a.date + (a.time ?? '')).localeCompare(b.date + (b.time ?? '')))
@@ -470,12 +469,19 @@ function formatWeekdayDate(d: string) {
         <p v-else>Noch nichts eingetragen</p>
       </router-link>
 
-      <!-- Unterkunft -->
-      <router-link to="/accommodation" class="card tile" :style="{ background: `${WIDGET_COLORS.get('accommodation')}0d` }">
-        <span class="tile-icon" :style="{ background: `${WIDGET_COLORS.get('accommodation')}26`, borderColor: WIDGET_COLORS.get('accommodation') }">{{ SECTION_ICONS.accommodation }}</span>
+      <!-- Unterkunft: seit der Verschmelzung in Spots (siehe Migrationskommentar in db/index.ts)
+           kein eigener Bereich mehr - Sprung zur Spots-Sicht (/excursions), bei bekannter aktueller/
+           nächster Unterkunft direkt mit Hash-Hervorhebung des jeweiligen Spots (siehe
+           ExcursionsView.vue's hashHighlightId-Verdrahtung). -->
+      <router-link
+        :to="currentOrNextAccommodation ? `/excursions#spot-${currentOrNextAccommodation.id}` : '/excursions'"
+        class="card tile"
+        :style="{ background: `${WIDGET_COLORS.get('accommodation')}0d` }"
+      >
+        <span class="tile-icon" :style="{ background: `${WIDGET_COLORS.get('accommodation')}26`, borderColor: WIDGET_COLORS.get('accommodation') }">{{ spotCategoryMeta('Unterkunft').icon }}</span>
         <h3>Unterkunft</h3>
         <p v-if="currentOrNextAccommodation">
-          {{ currentOrNextAccommodation.name }}<span v-if="currentOrNextAccommodation.start_date">
+          {{ currentOrNextAccommodation.title }}<span v-if="currentOrNextAccommodation.start_date">
             · {{ formatDate(currentOrNextAccommodation.start_date) }}</span
           >
         </p>

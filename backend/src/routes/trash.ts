@@ -10,7 +10,6 @@ const DOMAIN_BY_TYPE: Record<string, string> = {
   schedule_item: 'schedule',
   excursion: 'ideas',
   spot: 'spots',
-  accommodation: 'accommodation',
   travel_item: 'travel',
   budget_item: 'budget',
   budget_transfer: 'budget',
@@ -24,7 +23,7 @@ const DOMAIN_BY_TYPE: Record<string, string> = {
 // Konfiguration für den Papierkorb (weicher Löschvorgang, siehe db/index.ts's TRASH_TABLES):
 // je Objekttyp Tabelle, deutsches Label (für die Papierkorb-Ansicht) und optional eine
 // Restore-Kopplung für Zeilen, die beim Löschen des Haupt-Objekts mit "weggelöscht" wurden
-// (siehe routes/ideas.ts/accommodation.ts/travel.ts) und beim Wiederherstellen ebenfalls
+// (siehe routes/ideas.ts/spots.ts/travel.ts) und beim Wiederherstellen ebenfalls
 // zurückgeholt werden müssen.
 interface TrashConfig {
   type: string;
@@ -45,12 +44,13 @@ const TRASH_CONFIG: TrashConfig[] = [
     onRestore: (id) =>
       db.prepare('UPDATE schedule_items SET deleted_at = NULL WHERE idea_id = ? AND deleted_at IS NOT NULL').run(id),
   },
-  { type: 'spot', table: 'spots', label: 'Spot' },
   {
-    type: 'accommodation',
-    table: 'accommodation',
-    label: 'Unterkunft',
-    onRestore: (id) => restoreLinkedBudgetExpense('accommodation', id),
+    type: 'spot',
+    table: 'spots',
+    label: 'Spot',
+    // Betrifft nur Spots der Kategorie "Unterkunft" (budget_expense_id gesetzt, siehe
+    // Migrationskommentar in db/index.ts) – bei gewöhnlichen Spots ist die Spalte leer, restoreLinkedBudgetExpense() ist dann ein No-Op.
+    onRestore: (id) => restoreLinkedBudgetExpense('spots', id),
   },
   {
     type: 'travel_item',

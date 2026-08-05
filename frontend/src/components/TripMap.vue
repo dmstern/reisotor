@@ -5,7 +5,6 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { api } from '../api/client';
 import type {
-  Accommodation,
   Excursion,
   ExcursionComment,
   ExcursionLike,
@@ -30,7 +29,6 @@ import { useIsDesktop } from '../composables/useIsDesktop';
 import SpotDetailDialog from './SpotDetailDialog.vue';
 import MiniStationCard from './MiniStationCard.vue';
 import ExcursionDetailDialog from './ExcursionDetailDialog.vue';
-import AccommodationDetailDialog from './AccommodationDetailDialog.vue';
 import TravelDetailDialog from './TravelDetailDialog.vue';
 
 // Die Karte ist ein generischer, reiner Pin-Layer (kein Anlegen/Bearbeiten hier): sie zeigt
@@ -42,7 +40,7 @@ import TravelDetailDialog from './TravelDetailDialog.vue';
 // der Karte-Hauptsicht (ExcursionsView.vue) statt lazy per Schublade ein-/ausgeblendet zu
 // werden – Laden/Neuladen läuft daher nur noch über Datenänderungen (Urlaubswechsel,
 // locationsVersion), nicht mehr über ein "beim Öffnen"-Signal.
-type MapOrigin = 'accommodation' | 'travel' | 'spot';
+type MapOrigin = 'travel' | 'spot';
 
 interface MapPoint {
   key: string;
@@ -53,16 +51,16 @@ interface MapPoint {
   icon: string;
   color: string;
   /** Für Kategorie-Filter/-Fokus-Kopplung mit der Spots-Sicht (ExcursionsView.vue): bei Spots die
-   *  echte Kategorie (bzw. "Sonstiges"), bei Unterkunft/Reise die dortige Sammel-Kategorie
-   *  ("Unterkunft"/"Reise") – identisch zu ExcursionsView.vue's itemCategory()/DerivedLocation.category,
-   *  damit derselbe Filter/dieselbe Kategorie-Navigation für Liste UND Karte gilt. */
+   *  echte Kategorie (bzw. "Sonstiges", inkl. "Unterkunft" seit deren Verschmelzung in Spots – siehe
+   *  Migrationskommentar in db/index.ts), bei Reise die dortige Sammel-Kategorie ("Reise") –
+   *  identisch zu ExcursionsView.vue's itemCategory()/DerivedLocation.category, damit derselbe
+   *  Filter/dieselbe Kategorie-Navigation für Liste UND Karte gilt. */
   category: string;
   /** Zuhause-Seite eines Reise-Eintrags (Startpunkt der Anreise / Zielpunkt der Abreise) – wird
    *  vom Urlaubsfokus-Button ausgeblendet, siehe vacationPoints. */
   homeSide?: boolean;
 }
 
-const ACCOMMODATION_META = { icon: '🛏️', color: '#1baf7a' };
 const TRAVEL_COLOR = '#4a3aa7';
 
 const props = defineProps<{
@@ -113,7 +111,6 @@ const excursionsStore = useExcursionsStore();
 const spotsStore = useSpotsStore();
 const auth = useAuthStore();
 const liveSync = useLiveSyncStore();
-const accommodations = ref<Accommodation[]>([]);
 const travelItems = ref<TravelItem[]>([]);
 const scheduleItems = ref<ScheduleItem[]>([]);
 
@@ -158,20 +155,6 @@ function formatDate(d: string) {
 
 const points = computed<MapPoint[]>(() => {
   const result: MapPoint[] = [];
-  for (const a of accommodations.value) {
-    if (a.lat != null && a.lng != null) {
-      result.push({
-        key: `accommodation-${a.id}`,
-        origin: 'accommodation',
-        lat: a.lat,
-        lng: a.lng,
-        title: a.name,
-        category: 'Unterkunft',
-        icon: ACCOMMODATION_META.icon,
-        color: ACCOMMODATION_META.color,
-      });
-    }
-  }
   // buildTravelDerivedLocations() deckt nur noch Etappen-Enden OHNE verknüpften Ort ab (Freitext-
   // Eingabe) – ein verknüpfter Ort (from_place_id/to_place_id) ist seit der Verschmelzung von
   // Reise-Orten in Spots (siehe Migrationskommentar in db/index.ts) bereits ein normaler Spot und
@@ -269,7 +252,6 @@ const focusedDateStations = computed<ExcursionStation[]>(() => {
     scheduleItems.value,
     excursionsStore.excursions,
     travelItems.value,
-    accommodations.value,
     spotsStore.spots,
   );
 });
@@ -294,7 +276,12 @@ const vacationDays = computed<string[]>(() => {
 function dayHasContent(date: string): boolean {
   if (excursionsStore.excursions.some((e) => e.date === date)) return true;
   if (travelItems.value.some((t) => t.date === date)) return true;
-  if (accommodations.value.some((a) => a.start_date && a.end_date && a.start_date <= date && date <= a.end_date)) return true;
+  if (
+    spotsStore.spots.some(
+      (s) => s.category === 'Unterkunft' && s.start_date && s.end_date && s.start_date <= date && date <= s.end_date,
+    )
+  )
+    return true;
   return scheduleItems.value.some(
     (i) => i.lat != null && i.lng != null && i.date <= date && date <= (i.end_date ?? i.date),
   );
@@ -337,20 +324,18 @@ const visiblePoints = computed(() => {
 const focusedExcursionStations = computed<ExcursionStation[]>(() => {
   const excursion = focusedExcursion.value;
   if (!excursion) return [];
-  return resolveStations(excursion.station_keys, spotsStore.spots, accommodations.value, travelItems.value);
+  return resolveStations(excursion.station_keys, spotsStore.spots, travelItems.value);
 });
 
 async function loadAll() {
   const tripId = tripStore.currentTripId;
   if (tripId == null) return;
-  const [accommodationRes, travelRes, scheduleRes, ideaLikesRes, ideaCommentsRes] = await Promise.all([
-    api.get<Accommodation[]>(`/accommodation?trip_id=${tripId}`),
+  const [travelRes, scheduleRes, ideaLikesRes, ideaCommentsRes] = await Promise.all([
     api.get<TravelItem[]>(`/travel?trip_id=${tripId}`),
     api.get<ScheduleItem[]>(`/schedule?trip_id=${tripId}`),
     api.get<ExcursionLike[]>(`/ideas/likes?trip_id=${tripId}`),
     api.get<ExcursionComment[]>(`/ideas/comments?trip_id=${tripId}`),
   ]);
-  accommodations.value = accommodationRes;
   travelItems.value = travelRes;
   scheduleItems.value = scheduleRes;
   ideaLikes.value = ideaLikesRes;
@@ -465,17 +450,6 @@ function editOpenExcursion() {
   drawers.openExcursions();
 }
 
-// Klick auf eine Unterkunft-/Reise-Station in der Stationsliste öffnet den echten Unterkunft-/
-// Reise-Dialog (nicht mehr einen Spot-Dialog für einen künstlich angelegten Spot, siehe Backend-
-// Umbau) – gleiches "welches Objekt"/"ist offen"-Trennungsmuster wie oben bei Spots/Ausflügen.
-const openAccommodationId = ref<number | null>(null);
-const accommodationDialogOpen = ref(false);
-const openAccommodation = computed(() => accommodations.value.find((a) => a.id === openAccommodationId.value) ?? null);
-function onAccommodationDialogUpdate(v: boolean) {
-  accommodationDialogOpen.value = v;
-  if (!v) drawers.mapFocusKey = null;
-}
-
 const openTravelId = ref<number | null>(null);
 const travelDialogOpen = ref(false);
 const openTravel = computed(() => travelItems.value.find((t) => t.id === openTravelId.value) ?? null);
@@ -487,10 +461,6 @@ function onTravelDialogUpdate(v: boolean) {
 function openStationDetail(station: ExcursionStation) {
   if (station.kind === 'spot') {
     openSpotDetail(station.id);
-  } else if (station.kind === 'accommodation') {
-    openAccommodationId.value = station.id;
-    accommodationDialogOpen.value = true;
-    drawers.mapFocusKey = station.key;
   } else if (station.kind === 'schedule') {
     // Kein eigener Detail-Dialog für Termine vorhanden (Architekturregel: fremde Objekte springen
     // zur Ursprungssicht statt inline editierbar zu sein) – öffnet stattdessen die Kalender-Schublade
@@ -504,21 +474,17 @@ function openStationDetail(station: ExcursionStation) {
   }
 }
 
-// Klick auf einen Pin direkt auf der Karte (nicht in der Stationsliste): bei Spots klappt (statt
-// eines eigenen Modal-Dialogs, der die Karte dahinter blockieren würde) die passende Karte in der
-// Spots-Liste auf (Emit an ExcursionsView.vue, siehe dort) – bei Unterkunft/Reise gibt es kein
-// Listen-Gegenstück, dort bleibt der bisherige Modal-Dialog (unproblematisch, da seltener genutzt
-// als die primäre Spot↔Karte-Kopplung). Die Pin-Vergrößerung (drawers.mapFocusKey) läuft in beiden
-// Fällen weiterhin gleich.
+// Klick auf einen Pin direkt auf der Karte (nicht in der Stationsliste): bei Spots (inkl. Kategorie
+// "Unterkunft", seit deren Verschmelzung in Spots ganz normale Spots) klappt statt eines eigenen
+// Modal-Dialogs, der die Karte dahinter blockieren würde, die passende Karte in der Spots-Liste auf
+// (Emit an ExcursionsView.vue, siehe dort) – bei Reise gibt es kein Listen-Gegenstück, dort bleibt
+// der bisherige Modal-Dialog (unproblematisch, da seltener genutzt als die primäre Spot↔Karte-
+// Kopplung). Die Pin-Vergrößerung (drawers.mapFocusKey) läuft in beiden Fällen weiterhin gleich.
 function handlePointClick(point: MapPoint) {
   if (point.origin === 'spot') {
     const spotId = Number(point.key.slice('spot-'.length));
     drawers.mapFocusKey = point.key;
     emit('focus-spot', spotId);
-  } else if (point.origin === 'accommodation') {
-    openAccommodationId.value = Number(point.key.slice('accommodation-'.length));
-    accommodationDialogOpen.value = true;
-    drawers.mapFocusKey = point.key;
   } else {
     const isFrom = point.key.startsWith('travel-from-');
     openTravelId.value = Number(point.key.slice((isFrom ? 'travel-from-' : 'travel-to-').length));
@@ -526,16 +492,11 @@ function handlePointClick(point: MapPoint) {
     drawers.mapFocusKey = point.key;
   }
 }
-// Unterkunft/Reise bleiben eigene, echte Routen (anders als Ausflüge/Spots) – hier weiterhin ein
-// echter Sprung. Hash-Sprung (#accommodation-<id>/#travel-<id>) statt bloß der Ziel-Route: die
-// Ziel-Ansicht nimmt die id über hashHighlightId() in ihre highlightedIds-Menge auf und der Router
-// scrollt automatisch zum Element mit dieser id (siehe router/index.ts's scrollBehavior). id vorher
-// sichern, da das Schließen des Dialogs die *Open-Flags zurücksetzt, nicht aber die id-Refs selbst.
-function editOpenAccommodation() {
-  const id = openAccommodationId.value;
-  accommodationDialogOpen.value = false;
-  router.push(`/accommodation#accommodation-${id}`);
-}
+// Reise bleibt eigene, echte Route (anders als Ausflüge/Spots) – hier weiterhin ein echter Sprung.
+// Hash-Sprung (#travel-<id>) statt bloß der Ziel-Route: die Ziel-Ansicht nimmt die id über
+// hashHighlightId() in ihre highlightedIds-Menge auf und der Router scrollt automatisch zum
+// Element mit dieser id (siehe router/index.ts's scrollBehavior). id vorher sichern, da das
+// Schließen des Dialogs die *Open-Flags zurücksetzt, nicht aber die id-Refs selbst.
 function editOpenTravel() {
   const id = openTravelId.value;
   travelDialogOpen.value = false;
@@ -596,7 +557,7 @@ function fitVacation() {
   }
 }
 
-const accommodationPoints = computed(() => filteredPoints.value.filter((p) => p.origin === 'accommodation'));
+const accommodationPoints = computed(() => filteredPoints.value.filter((p) => p.category === 'Unterkunft'));
 
 // Zoomt/zentriert nur auf die Unterkünfte – praktisch bei mehreren Unterkünften im selben Urlaub
 // (z. B. Roadtrip), um schnell zwischen ihnen zu vergleichen statt Spots/Reise mit anzuzeigen.
@@ -764,7 +725,7 @@ function renderRoutes() {
   // Im Ausflug-Fokus nur dessen eigene Route zeichnen, nicht die aller anderen Ausflüge.
   const excursionsToDraw = focusedExcursion.value ? [focusedExcursion.value] : excursionsStore.excursions;
   for (const excursion of excursionsToDraw) {
-    const stations = resolveStations(excursion.station_keys, spotsStore.spots, accommodations.value, travelItems.value);
+    const stations = resolveStations(excursion.station_keys, spotsStore.spots, travelItems.value);
     const coords: L.LatLngExpression[] = stations
       .filter((s) => s.lat != null && s.lng != null)
       .map((s) => [s.lat as number, s.lng as number]);
@@ -1119,6 +1080,7 @@ watch(() => liveSync.memberPositions, () => renderPositions(), { deep: true });
       @update:model-value="onSpotDialogUpdate"
       :spot="openSpot"
       :creator-label="spotCreatorLabel(openSpot.created_by)"
+      :payer-label="payerLabelFor(openSpot.paid_by_user_id)"
       :like-count="spotsStore.likeCountFor(openSpot.id)"
       :liked="spotsStore.likedByMe(openSpot.id, auth.user?.id)"
       :comments="spotCommentItemsFor(openSpot.id)"
@@ -1138,7 +1100,6 @@ watch(() => liveSync.memberPositions, () => renderPositions(), { deep: true });
       :liked="ideaLikedByMe(openExcursion.id)"
       :comments="ideaCommentItemsFor(openExcursion.id)"
       :stations="spotsStore.spots"
-      :accommodations="accommodations"
       :travel-items="travelItems"
       @edit="editOpenExcursion"
       @toggle-like="toggleIdeaLike(openExcursion.id)"
@@ -1146,16 +1107,6 @@ watch(() => liveSync.memberPositions, () => renderPositions(), { deep: true });
       @remove-comment="removeIdeaComment"
       @show-on-map="excursionDetailOpen = false"
       @edit-station-spot="editOpenExcursion"
-    />
-
-    <AccommodationDetailDialog
-      v-if="openAccommodation"
-      :model-value="accommodationDialogOpen"
-      @update:model-value="onAccommodationDialogUpdate"
-      :accommodation="openAccommodation"
-      :payer-label="payerLabelFor(openAccommodation.paid_by_user_id)"
-      @edit="editOpenAccommodation"
-      @show-on-map="accommodationDialogOpen = false"
     />
 
     <TravelDetailDialog

@@ -29,9 +29,9 @@ interface PlanSpotBody {
 
 // Stationen eines Ausflugs (Batch 13, Reihenfolge/Mehrfachbesuche nachgerüstet; Batch 14:
 // generischer station_key statt spot_id): welche Orte gehören dazu, in welcher Reihenfolge. Eine
-// Station muss kein echter Spot sein – station_key trägt auch 'accommodation-<id>'/
-// 'travel-from-<id>'/'travel-to-<id>' (siehe db/index.ts), damit Unterkunft/Anreise-/Abreise-Ort
-// eingeplant werden können, ohne dafür einen Spot anzulegen. Wird bei jedem Anlegen/Bearbeiten
+// Station ist meist ein echter Spot ('spot-<id>', seit der Verschmelzung von Reise-Orten/
+// Unterkunft in Spots deckt das auch diese ab, siehe db/index.ts) – 'travel-from-<id>'/
+// 'travel-to-<id>' bleiben als Fallback für Etappen-Enden ohne verknüpften Ort. Wird bei jedem Anlegen/Bearbeiten
 // komplett neu geschrieben (einfacher als Diffing) – kleine Anzahl Zeilen pro Ausflug. `position`
 // statt der Zeilen-Id bestimmt die Reihenfolge, damit derselbe Ort mehrfach vorkommen darf (z. B.
 // Start UND Ende an der Unterkunft für einen Rundgang).

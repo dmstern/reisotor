@@ -12,7 +12,6 @@ import { tripsRoutes } from './routes/trips.js';
 import { scheduleRoutes } from './routes/schedule.js';
 import { packingRoutes } from './routes/packing.js';
 import { ideasRoutes } from './routes/ideas.js';
-import { accommodationRoutes } from './routes/accommodation.js';
 import { budgetRoutes } from './routes/budget.js';
 import { usersRoutes } from './routes/users.js';
 import { backupRoutes } from './routes/backup.js';
@@ -87,7 +86,6 @@ export async function buildApp(opts: { logger?: boolean } = {}) {
         await protectedApi.register(scheduleRoutes);
         await protectedApi.register(packingRoutes);
         await protectedApi.register(ideasRoutes);
-        await protectedApi.register(accommodationRoutes);
         await protectedApi.register(budgetRoutes);
         await protectedApi.register(usersRoutes);
         await protectedApi.register(backupRoutes);

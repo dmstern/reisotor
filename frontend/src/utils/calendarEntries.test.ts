@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildAllEntries, buildTodoEntries, buildTravelEntries, buildTripEntries, scheduleItemToEntry } from './calendarEntries';
-import type { Accommodation, Excursion, ScheduleItem, Spot, TodoItem, TravelItem, Trip } from '../api/types';
+import type { Excursion, ScheduleItem, Spot, TodoItem, TravelItem, Trip } from '../api/types';
 
 const trip: Trip = {
   id: 1,
@@ -38,7 +38,7 @@ function makeScheduleItem(overrides: Partial<ScheduleItem> = {}): ScheduleItem {
 describe('scheduleItemToEntry', () => {
   it('maps a freeform (unverknüpften) ScheduleItem to the expected CalendarEntry fields', () => {
     const item = makeScheduleItem();
-    expect(scheduleItemToEntry(item, [], [], [], [])).toMatchObject({
+    expect(scheduleItemToEntry(item, [], [], [])).toMatchObject({
       key: 's-5',
       kind: 'schedule',
       date: '2026-08-02',
@@ -63,9 +63,18 @@ describe('scheduleItemToEntry', () => {
       lng: null,
       created_by: null,
       is_home: 0,
+      address: null,
+      start_date: null,
+      end_date: null,
+      checkin: null,
+      checkout: null,
+      contact: null,
+      amount: null,
+      paid_by_user_id: null,
+      budget_expense_id: null,
     };
     const item = makeScheduleItem({ spot_id: 42 });
-    const entry = scheduleItemToEntry(item, [spot], [], [], []);
+    const entry = scheduleItemToEntry(item, [spot], [], []);
     expect(entry.category).toBe('excursion');
     expect(entry.icon).toBe('🏰');
     expect(entry.spotId).toBe(42);
@@ -84,6 +93,15 @@ describe('scheduleItemToEntry', () => {
       lng: null,
       created_by: null,
       is_home: 0,
+      address: null,
+      start_date: null,
+      end_date: null,
+      checkin: null,
+      checkout: null,
+      contact: null,
+      amount: null,
+      paid_by_user_id: null,
+      budget_expense_id: null,
     };
     const excursion: Excursion = {
       id: 3,
@@ -96,7 +114,7 @@ describe('scheduleItemToEntry', () => {
       station_keys: ['spot-7'],
     };
     const item = makeScheduleItem({ idea_id: 3, title: 'Sightseeing' });
-    const entry = scheduleItemToEntry(item, [spot], [excursion], [], []);
+    const entry = scheduleItemToEntry(item, [spot], [excursion], []);
     expect(entry.category).toBe('excursion');
     expect(entry.icon).toBe('🍽️');
     expect(entry.ideaId).toBe(3);
@@ -174,7 +192,7 @@ describe('buildTravelEntries', () => {
 describe('buildAllEntries', () => {
   it('combines schedule items, trip, todos and travel into one array', () => {
     const scheduleItem = makeScheduleItem({ id: 1, date: '2026-08-01', time: null, title: 'Termin', note: null, location: null });
-    const entries = buildAllEntries([scheduleItem], trip, [], [], [], [] as Spot[], [] as Accommodation[]);
+    const entries = buildAllEntries([scheduleItem], trip, [], [], [], [] as Spot[]);
     // 1 schedule + 2 trip (Start/Ende) = 3
     expect(entries).toHaveLength(3);
     expect(entries.some((e) => e.kind === 'schedule')).toBe(true);

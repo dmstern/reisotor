@@ -18,6 +18,15 @@ export interface SpotFormData {
   /** Heimat-Seite (Flughafen/Bahnhof/Zuhause/…), unabhängig von der Kategorie – siehe Spot.is_home
    *  in api/types.ts. Nur für als Reise-Etappen-Ort verwendete Spots relevant. */
   is_home?: boolean;
+  // Zusatzfelder für Spots der Kategorie "Unterkunft" (siehe Spot.address/… in api/types.ts).
+  address?: string;
+  start_date?: string;
+  end_date?: string;
+  checkin?: string;
+  checkout?: string;
+  contact?: string;
+  amount?: number;
+  paid_by_user_id?: number | null;
 }
 
 // Eigener Store statt lokalem State in ExcursionsView (analog zu stores/excursions.ts): Spots

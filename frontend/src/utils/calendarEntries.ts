@@ -1,4 +1,4 @@
-import type { Accommodation, CalendarEntry, Excursion, ScheduleItem, Spot, TodoItem, TravelItem, Trip } from '../api/types';
+import type { CalendarEntry, Excursion, ScheduleItem, Spot, TodoItem, TravelItem, Trip } from '../api/types';
 import { resolveStations } from './excursionStations';
 import { spotCategoryMeta } from './spotCategory';
 
@@ -11,7 +11,6 @@ export function resolveScheduleItemIcon(
   item: ScheduleItem,
   spots: Spot[],
   excursions: Excursion[],
-  accommodations: Accommodation[],
   travelItems: TravelItem[],
 ): string | undefined {
   if (item.spot_id != null) {
@@ -21,7 +20,7 @@ export function resolveScheduleItemIcon(
   if (item.idea_id != null) {
     const excursion = excursions.find((e) => e.id === item.idea_id);
     if (excursion) {
-      const stations = resolveStations(excursion.station_keys, spots, accommodations, travelItems);
+      const stations = resolveStations(excursion.station_keys, spots, travelItems);
       return stations.length === 1 ? stations[0].icon : undefined;
     }
   }
@@ -32,7 +31,6 @@ export function scheduleItemToEntry(
   item: ScheduleItem,
   spots: Spot[],
   excursions: Excursion[],
-  accommodations: Accommodation[],
   travelItems: TravelItem[],
 ): CalendarEntry {
   const linked = item.spot_id != null || item.idea_id != null;
@@ -50,7 +48,7 @@ export function scheduleItemToEntry(
     // orange Rahmenfarbe) statt einer eigenen – exakt dieselbe Optik, die verknüpfte Termine schon
     // vor der Einführung dieser Verknüpfung hatten (damals als eigenständige "Ausflug"-Einträge).
     category: linked ? 'excursion' : item.category,
-    icon: resolveScheduleItemIcon(item, spots, excursions, accommodations, travelItems),
+    icon: resolveScheduleItemIcon(item, spots, excursions, travelItems),
     ideaId: item.idea_id,
     spotId: item.spot_id,
     todoId: null,
@@ -163,10 +161,9 @@ export function buildAllEntries(
   travelItems: TravelItem[],
   excursions: Excursion[],
   spots: Spot[],
-  accommodations: Accommodation[],
 ): CalendarEntry[] {
   return [
-    ...items.map((item) => scheduleItemToEntry(item, spots, excursions, accommodations, travelItems)),
+    ...items.map((item) => scheduleItemToEntry(item, spots, excursions, travelItems)),
     ...buildTripEntries(trip),
     ...buildTodoEntries(todos),
     ...buildTravelEntries(travelItems),

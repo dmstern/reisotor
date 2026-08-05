@@ -1,4 +1,4 @@
-import type { Accommodation, Trip } from '../api/types';
+import type { Spot, Trip } from '../api/types';
 import type { DailyWeather } from './weather';
 
 export interface WeatherLocation {
@@ -16,11 +16,12 @@ export interface DayWeatherEntry {
 
 /** Sammelt alle Orte, für die Wetterdaten geladen werden müssen: Zuhause (sofern als Ort mit
  *  is_home hinterlegt und mit Koordinaten), das allgemeine Reiseziel (Urlaub-Stammdaten) und jede
- *  Unterkunft mit eigenen Koordinaten (z. B. mehrere Unterkünfte bei einem Roadtrip). */
+ *  Unterkunft mit eigenen Koordinaten (z. B. mehrere Unterkünfte bei einem Roadtrip). `accommodations`
+ *  sind Spots der Kategorie "Unterkunft" (siehe Migrationskommentar in db/index.ts). */
 export function collectWeatherLocations(
   trip: Trip | null,
   home: { lat: number; lng: number } | null,
-  accommodations: Accommodation[],
+  accommodations: Spot[],
 ): WeatherLocation[] {
   const locations: WeatherLocation[] = [];
   if (home) locations.push({ key: 'home', lat: home.lat, lng: home.lng });
@@ -40,7 +41,7 @@ export function collectWeatherLocations(
 export function dayWeatherEntries(
   date: string,
   trip: Trip | null,
-  accommodations: Accommodation[],
+  accommodations: Spot[],
   weatherByLocation: Map<string, DailyWeather[]>,
 ): DayWeatherEntry[] {
   const lookup = (key: string) => weatherByLocation.get(key)?.find((d) => d.date === date);

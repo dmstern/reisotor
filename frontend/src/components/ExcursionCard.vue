@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import type { Accommodation, Excursion, Spot, TravelItem } from '../api/types';
+import type { Excursion, Spot, TravelItem } from '../api/types';
 import type { DerivedLocation } from '../utils/derivedLocation';
 import { resolveStations } from '../utils/excursionStations';
 import { usePointerDrag } from '../composables/usePointerDrag';
@@ -22,10 +22,9 @@ const props = defineProps<{
   comments: CommentItem[];
   // Roher Spot-Pool (nicht schon aufgelöst) – wird 1:1 an ExcursionDetailDialog.vue durchgereicht
   // (siehe dort, braucht dieselben Listen für seinen eigenen Stations-Resolver-Aufruf), hier lokal
-  // per resolveStations() zu resolvedStations aufgelöst (Icon/Titel/Bild je nach Spot/Unterkunft/
-  // Reise-Station, siehe utils/excursionStations.ts).
+  // per resolveStations() zu resolvedStations aufgelöst (Icon/Titel/Bild je nach Spot-Kategorie,
+  // siehe utils/excursionStations.ts).
   stations: Spot[];
-  accommodations: Accommodation[];
   travelItems: TravelItem[];
   highlighted?: boolean;
 }>();
@@ -44,7 +43,7 @@ const emit = defineEmits<{
 const detailOpen = ref(false);
 
 const resolvedStations = computed(() =>
-  resolveStations(props.excursion.station_keys, props.stations, props.accommodations, props.travelItems),
+  resolveStations(props.excursion.station_keys, props.stations, props.travelItems),
 );
 
 const hasMappedStations = computed(() => resolvedStations.value.some((s) => s.lat != null && s.lng != null));
@@ -192,7 +191,6 @@ function onSpotDrop(event: DragEvent) {
       :liked="liked"
       :comments="comments"
       :stations="stations"
-      :accommodations="accommodations"
       :travel-items="travelItems"
       @edit="detailOpen = false; emit('edit', excursion)"
       @toggle-like="emit('toggle-like')"

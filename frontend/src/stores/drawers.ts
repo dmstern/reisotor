@@ -115,7 +115,7 @@ export const useDrawersStore = defineStore('drawers', () => {
   );
 
   // Springt zur Karte-Hauptsicht, falls man gerade woanders ist (z. B. "Auf Karte anzeigen" aus
-  // TravelView.vue/AccommodationView.vue) – ein Push auf die bereits aktive Route würde
+  // TravelView.vue/ExcursionsView.vue) – ein Push auf die bereits aktive Route würde
   // vue-router sonst unnötig (harmlos, aber unsauber) erneut auflösen lassen.
   function ensureMapRoute() {
     if (router.currentRoute.value.name !== 'excursions') router.push('/excursions');

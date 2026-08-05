@@ -50,7 +50,6 @@ const DOMAIN_LABEL: Record<string, string> = {
   spots: 'Spots',
   ideas: 'Touren',
   travel: 'Reise',
-  accommodation: 'Unterkunft',
   budget: 'Budget',
   diary: 'Tagebuch',
   notes: 'Notizen',

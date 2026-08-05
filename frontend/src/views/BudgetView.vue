@@ -2,7 +2,6 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { api } from '../api/client';
 import type {
-  Accommodation,
   Budget,
   BudgetAllocation,
   BudgetExpense,
@@ -11,6 +10,7 @@ import type {
   User,
 } from '../api/types';
 import { useTripStore } from '../stores/trip';
+import { useSpotsStore } from '../stores/spots';
 import { useLiveSyncStore } from '../stores/liveSync';
 import { assignCategoryColors } from '../utils/categoryColors';
 import { computeBalances, computeTwoPersonSummary } from '../utils/budgetBalances';
@@ -24,6 +24,7 @@ import FileAttachments from '../components/FileAttachments.vue';
 import { useUndoableDelete } from '../composables/useUndoableDelete';
 
 const tripStore = useTripStore();
+const spotsStore = useSpotsStore();
 const liveSync = useLiveSyncStore();
 const tripId = tripStore.currentTripId as number;
 const users = ref<User[]>([]);
@@ -31,7 +32,9 @@ const expenses = ref<BudgetExpense[]>([]);
 const budgets = ref<Budget[]>([]);
 const allocations = ref<BudgetAllocation[]>([]);
 const transfers = ref<BudgetTransfer[]>([]);
-const accommodations = ref<Accommodation[]>([]);
+// Unterkunft ist seit der Verschmelzung in Spots (siehe Migrationskommentar in db/index.ts) ganz
+// normal ein Spot der Kategorie "Unterkunft" - kein eigener Fetch mehr nötig.
+const accommodations = computed(() => spotsStore.spots.filter((s) => s.category === 'Unterkunft'));
 const travelItems = ref<TravelItem[]>([]);
 const loading = ref(true);
 const highlightedIds = ref<Set<number>>(new Set());
@@ -46,13 +49,13 @@ async function refreshAllocations() {
 }
 
 async function load() {
-  const [u, e, b, a, tr, acc, travel] = await Promise.all([
+  const [u, e, b, a, tr, , travel] = await Promise.all([
     api.get<User[]>('/users'),
     api.get<BudgetExpense[]>(`/budget?trip_id=${tripId}`),
     api.get<Budget[]>(`/budget/budgets?trip_id=${tripId}`),
     api.get<BudgetAllocation[]>(`/budget/allocations?trip_id=${tripId}`),
     api.get<BudgetTransfer[]>(`/budget/transfers?trip_id=${tripId}`),
-    api.get<Accommodation[]>(`/accommodation?trip_id=${tripId}`),
+    spotsStore.load(),
     api.get<TravelItem[]>(`/travel?trip_id=${tripId}`),
   ]);
   users.value = u;
@@ -60,7 +63,6 @@ async function load() {
   budgets.value = b;
   allocations.value = a;
   transfers.value = tr;
-  accommodations.value = acc;
   travelItems.value = travel;
   loading.value = false;
 }
@@ -73,11 +75,15 @@ onMounted(() => {
 watch(() => liveSync.domainVersion.budget, load);
 
 /** Bezahlungen, die automatisch aus einem Unterkunft- oder Reise-Eintrag erzeugt wurden
- *  (siehe accommodation.ts/travel.ts `planBudgetExpense`), sind hier gemäß der Architekturregel
- *  aus Batch 3 nicht direkt editier-/löschbar – stattdessen springt man zur Ursprungssicht. */
+ *  (siehe spots.ts/travel.ts `planBudgetExpense`), sind hier gemäß der Architekturregel
+ *  aus Batch 3 nicht direkt editier-/löschbar – stattdessen springt man zur Ursprungssicht. Ein
+ *  Unterkunft-Spot lebt seit der Verschmelzung (siehe Migrationskommentar in db/index.ts) in der
+ *  normalen Spots-Sicht (/excursions) statt einer eigenen Seite, daher der Hash-Sprung dorthin
+ *  (gleiches Muster wie /travel#travel-<id>, siehe hashHighlight.ts). */
 function autoSourceFor(expenseId: number): { label: string; path: string } | null {
-  if (accommodations.value.some((a) => a.budget_expense_id === expenseId)) {
-    return { label: 'Zur Unterkunft', path: '/accommodation' };
+  const accommodation = accommodations.value.find((a) => a.budget_expense_id === expenseId);
+  if (accommodation) {
+    return { label: 'Zur Unterkunft', path: `/excursions#spot-${accommodation.id}` };
   }
   if (travelItems.value.some((t) => t.budget_expense_id === expenseId)) {
     return { label: 'Zur Reise', path: '/travel' };

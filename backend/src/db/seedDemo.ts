@@ -100,7 +100,9 @@ const insertExpense = db.prepare(
    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
 );
 
-// --- Unterkunft (inkl. automatisch verknüpfter Budget-Ausgabe, analog routes/accommodation.ts) ---
+// --- Unterkunft (inkl. automatisch verknüpfter Budget-Ausgabe, analog spots.ts's planBudgetExpense)
+// – seit der Verschmelzung von Unterkunft in Spots (siehe Migrationskommentar in db/index.ts) ein
+// ganz normaler Spot der Kategorie "Unterkunft" statt einer eigenen Tabelle. ---
 const accommodationAmount = 540;
 const accommodationExpenseId = insertExpense.run(
   tripId,
@@ -114,23 +116,23 @@ const accommodationExpenseId = insertExpense.run(
 ).lastInsertRowid as number;
 
 db.prepare(
-  `INSERT INTO accommodation
-    (trip_id, name, address, maps_link, start_date, end_date, checkin, checkout, contact, note, lat, lng,
-     amount, paid_by_user_id, budget_expense_id)
-   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  `INSERT INTO spots
+    (trip_id, title, category, note, maps_link, lat, lng, address, start_date, end_date,
+     checkin, checkout, contact, amount, paid_by_user_id, budget_expense_id)
+   VALUES (?, ?, 'Unterkunft', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 ).run(
   tripId,
   'Hotel Alfama',
-  'Rua de São Pedro 12, 1100-590 Lisboa',
+  'Zentrale Lage im Altstadtviertel Alfama, Klimaanlage vorhanden.',
   null,
+  LISBON.lat + 0.0015,
+  LISBON.lng + 0.001,
+  'Rua de São Pedro 12, 1100-590 Lisboa',
   fmt(startDate),
   fmt(endDate),
   '15:00',
   '11:00',
   'reservas@hotelalfama.example',
-  'Zentrale Lage im Altstadtviertel Alfama, Klimaanlage vorhanden.',
-  LISBON.lat + 0.0015,
-  LISBON.lng + 0.001,
   accommodationAmount,
   user1.id,
   accommodationExpenseId,

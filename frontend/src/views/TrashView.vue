@@ -29,7 +29,6 @@ const TYPE_ICON: Record<string, string> = {
   schedule_item: '📅',
   excursion: '🎒',
   spot: '📍',
-  accommodation: '🛏️',
   travel_item: '✈️',
   budget_item: '💶',
   budget_transfer: '💶',
@@ -60,8 +59,6 @@ function titleFor(entry: TrashEntry): string {
     case 'budget_item':
     case 'todo':
       return (d.title as string) || '(ohne Titel)';
-    case 'accommodation':
-      return (d.name as string) || '(ohne Titel)';
     case 'packing_item':
     case 'shopping_item':
       return (d.label as string) || '(ohne Titel)';

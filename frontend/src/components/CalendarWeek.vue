@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import type { Accommodation, CalendarEntry } from '../api/types';
+import type { CalendarEntry, Spot } from '../api/types';
 import { SCHEDULE_CATEGORY_META } from '../utils/scheduleCategory';
 import { weatherCodeMeta } from '../utils/weather';
 import type { DayWeatherEntry } from '../utils/dayWeather';
@@ -8,7 +8,9 @@ import type { DayWeatherEntry } from '../utils/dayWeather';
 interface Day {
   date: string;
   entries: CalendarEntry[];
-  accommodations: Accommodation[];
+  /** Unterkunft-Spots (Kategorie "Unterkunft"), die an diesem Tag aktiv sind – siehe
+   *  Migrationskommentar in db/index.ts. */
+  accommodations: Spot[];
   weatherEntries: DayWeatherEntry[];
   /** Nur in der echten Monatsansicht gesetzt (ScheduleView.vue's monthWeeks): führende/nachfolgende
    *  Tage aus dem Vor-/Folgemonat, die das Wochen-Raster auffüllen – optisch gedämpft, damit auf
@@ -94,8 +96,8 @@ function onDrop(event: DragEvent, date: string) {
         </div>
       </div>
 
-      <div class="acc-bar" v-for="acc in day.accommodations" :key="acc.id" :title="acc.name">
-        🛏️ {{ acc.name }}
+      <div class="acc-bar" v-for="acc in day.accommodations" :key="acc.id" :title="acc.title">
+        🛏️ {{ acc.title }}
       </div>
 
       <div class="items">

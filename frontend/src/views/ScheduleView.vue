@@ -2,7 +2,7 @@
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { api } from '../api/client';
-import type { Accommodation, CalendarEntry, ScheduleItem, TodoItem, TravelItem } from '../api/types';
+import type { CalendarEntry, ScheduleItem, Spot, TodoItem, TravelItem } from '../api/types';
 import { useTripStore } from '../stores/trip';
 import { useExcursionsStore } from '../stores/excursions';
 import { useSpotsStore } from '../stores/spots';
@@ -41,7 +41,10 @@ const scheduleStore = useScheduleStore();
 const drawers = useDrawersStore();
 const liveSync = useLiveSyncStore();
 const weatherProvider = useWeatherProviderStore();
-const accommodations = ref<Accommodation[]>([]);
+// Unterkunft ist seit der Verschmelzung in Spots (siehe Migrationskommentar in db/index.ts) ganz
+// normal ein Spot der Kategorie "Unterkunft" - kein eigener Fetch mehr nötig, spotsStore.load()
+// bringt sie bereits mit.
+const accommodations = computed(() => spotsStore.spots.filter((s) => s.category === 'Unterkunft'));
 const todos = ref<TodoItem[]>([]);
 const travelItems = ref<TravelItem[]>([]);
 const selectedDate = ref<string | null>(null);
@@ -173,14 +176,12 @@ function downloadIcsForEntry(entry: CalendarEntry) {
 async function loadAll() {
   const tripId = tripStore.currentTripId;
   if (tripId == null) return;
-  const [accommodationRes, todosRes, travelRes] = await Promise.all([
-    api.get<Accommodation[]>(`/accommodation?trip_id=${tripId}`),
+  const [todosRes, travelRes] = await Promise.all([
     api.get<TodoItem[]>(`/todos?trip_id=${tripId}`),
     api.get<TravelItem[]>(`/travel?trip_id=${tripId}`),
     spotsStore.load(),
     scheduleStore.load(),
   ]);
-  accommodations.value = accommodationRes;
   todos.value = todosRes;
   travelItems.value = travelRes;
 }
@@ -249,7 +250,7 @@ watch(() => tripStore.currentTripId, loadAll);
 
 // Die Kalender-Schublade wird einmalig gemountet und bleibt danach dauerhaft im DOM (siehe
 // App.vue/Drawer.vue) – ohne dieses Signal würde ein nachträglich gesetzter Standort (z. B. über
-// den manuellen Karten-Picker, TripForm.vue/AccommodationView.vue) nie erneut Wetter laden, da
+// den manuellen Karten-Picker, TripForm.vue/ExcursionsView.vue) nie erneut Wetter laden, da
 // onMounted (unten) nur einmal beim allerersten Mount läuft. drawers.touchLocations() wird von
 // Unterkunft-/Reise-/Ausflüge-/Urlaub-Sicht nach jedem erfolgreichen Anlegen/Bearbeiten eines Orts
 // aufgerufen (gleiches Muster wie TripMap.vue:772-778).
@@ -283,7 +284,6 @@ const allEntries = computed(() =>
     travelItems.value,
     excursionsStore.excursions,
     spotsStore.spots,
-    accommodations.value,
   ),
 );
 
@@ -315,9 +315,9 @@ const weeks = computed(() => {
   // Wochenanfang respektiert die Profil-Einstellung (Standard: Montag, siehe utils/dateFormat.ts).
   const firstWeekStart = startOfWeek(start);
 
-  const result: { date: string; entries: CalendarEntry[]; accommodations: Accommodation[]; weatherEntries: DayWeatherEntry[] }[][] = [];
+  const result: { date: string; entries: CalendarEntry[]; accommodations: Spot[]; weatherEntries: DayWeatherEntry[] }[][] = [];
   let cursor = new Date(firstWeekStart);
-  let week: { date: string; entries: CalendarEntry[]; accommodations: Accommodation[]; weatherEntries: DayWeatherEntry[] }[] = [];
+  let week: { date: string; entries: CalendarEntry[]; accommodations: Spot[]; weatherEntries: DayWeatherEntry[] }[] = [];
 
   while (cursor <= end || week.length % 7 !== 0) {
     const iso = toIso(cursor);
@@ -354,7 +354,7 @@ const pageOffset = ref(0);
 interface DayCell {
   date: string;
   entries: CalendarEntry[];
-  accommodations: Accommodation[];
+  accommodations: Spot[];
   weatherEntries: DayWeatherEntry[];
   otherMonth?: boolean;
 }
@@ -798,7 +798,7 @@ function formatDate(date: string) {
         <span v-if="entry.weather.precipitationProbability != null"> · 💧{{ entry.weather.precipitationProbability }}%</span>
       </p>
 
-      <p v-for="acc in dayAccommodations" :key="acc.id" class="acc-note">🛏️ Unterkunft: {{ acc.name }}</p>
+      <p v-for="acc in dayAccommodations" :key="acc.id" class="acc-note">🛏️ Unterkunft: {{ acc.title }}</p>
 
       <TransitionGroup tag="ul" name="list" class="items">
         <template v-for="entry in dayEntries" :key="entry.key">

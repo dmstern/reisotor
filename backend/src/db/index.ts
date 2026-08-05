@@ -521,6 +521,19 @@ ensureColumn('spots', 'created_by', 'INTEGER REFERENCES users(id)');
 // nach dem trip_id-/deleted_at-Block), sobald Reise-Orte in Spots aufgehen. Für gewöhnliche Spots
 // (Restaurant, Sehenswürdigkeit, …) bleibt es einfach 0, keine eigene UI-Bedeutung dort.
 ensureColumn('spots', 'is_home', 'INTEGER NOT NULL DEFAULT 0');
+// Unterkunft (accommodation) verschmilzt mit Spots (siehe Migration weiter unten, nach dem
+// trip_id-/deleted_at-Block): ein Spot der Kategorie "Unterkunft" trägt zusätzlich Adresse/
+// Zeitraum/Check-in-out/Kontakt/Kosten – bei gewöhnlichen Spots (Restaurant, Sehenswürdigkeit, …)
+// bleiben diese Felder einfach leer, keine eigene UI-Bedeutung dort.
+ensureColumn('spots', 'address', 'TEXT');
+ensureColumn('spots', 'start_date', 'TEXT');
+ensureColumn('spots', 'end_date', 'TEXT');
+ensureColumn('spots', 'checkin', 'TEXT');
+ensureColumn('spots', 'checkout', 'TEXT');
+ensureColumn('spots', 'contact', 'TEXT');
+ensureColumn('spots', 'amount', 'REAL');
+ensureColumn('spots', 'paid_by_user_id', 'INTEGER REFERENCES users(id)');
+ensureColumn('spots', 'budget_expense_id', 'INTEGER REFERENCES budget_items(id)');
 // Verworfen-Status entfällt: Spots bekommen stattdessen Likes/Kommentare (spot_likes/
 // spot_comments) und werden danach sortiert/gruppiert statt nach aktiv/verworfen.
 dropColumnIfExists('spots', 'discarded');
@@ -536,7 +549,6 @@ const TRIP_SCOPED_TABLES = [
   'schedule_items',
   'packing_items',
   'ideas',
-  'accommodation',
   'travel_items',
   'budget_items',
   'budget_transfers',
@@ -732,7 +744,6 @@ export const TRASH_TABLES = [
   'schedule_items',
   'ideas',
   'spots',
-  'accommodation',
   'travel_items',
   'budget_items',
   'budget_transfers',
@@ -879,11 +890,102 @@ if (hasTable('travel_places')) {
   db.exec('DROP TABLE travel_places');
 }
 
+// Unterkunft (accommodation) verschmilzt mit Spots: bisher eine eigene Mini-Tabelle für i. d. R.
+// genau einen Ort mit ein paar mehr Feldern (Adresse, Zeitraum, Check-in/-out, Kontakt, Kosten) –
+// jetzt einfach ein Spot der Kategorie "Unterkunft" mit denselben Zusatzfeldern (siehe
+// ensureColumn('spots', 'address', …) weiter oben). id bleibt NICHT erhalten (anders als bei der
+// travel_places-Migration oben) – nichts referenziert accommodation.id per SQL-FK, nur
+// excursion_spots' 'accommodation-<id>'-Stationsschlüssel und attachments' domain='accommodation'
+// (beide werden unten auf die neue Spot-Id umgeschrieben), daher genügt eine einfache Id-Um-Map
+// ohne Tabellen-Neubau.
+if (hasTable('accommodation')) {
+  interface LegacyAccommodationRow {
+    id: number;
+    trip_id: number;
+    name: string;
+    address: string | null;
+    maps_link: string | null;
+    start_date: string | null;
+    end_date: string | null;
+    checkin: string | null;
+    checkout: string | null;
+    contact: string | null;
+    note: string | null;
+    lat: number | null;
+    lng: number | null;
+    amount: number | null;
+    paid_by_user_id: number | null;
+    budget_expense_id: number | null;
+    deleted_at: string | null;
+  }
+  const accommodations = db.prepare('SELECT * FROM accommodation').all() as LegacyAccommodationRow[];
+  const accommodationToSpotId = new Map<number, number>();
+  // Statement nur vorbereiten, wenn tatsächlich Zeilen zu übernehmen sind – accommodation existiert
+  // dank CREATE TABLE IF NOT EXISTS oben auf JEDER (auch brandneuen/Test-)DB, meist aber leer; ein
+  // vorbereitetes INSERT würde sonst unnötig gegen alle Zielspalten (u. a. spots.note) validiert.
+  if (accommodations.length > 0) {
+    const insertAccommodationSpot = db.prepare(`
+      INSERT INTO spots (
+        trip_id, title, category, note, maps_link, lat, lng, address, start_date, end_date,
+        checkin, checkout, contact, amount, paid_by_user_id, budget_expense_id, deleted_at
+      ) VALUES (?, ?, 'Unterkunft', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    for (const a of accommodations) {
+      const result = insertAccommodationSpot.run(
+        a.trip_id,
+        a.name,
+        a.note,
+        a.maps_link,
+        a.lat,
+        a.lng,
+        a.address,
+        a.start_date,
+        a.end_date,
+        a.checkin,
+        a.checkout,
+        a.contact,
+        a.amount,
+        a.paid_by_user_id,
+        a.budget_expense_id,
+        a.deleted_at,
+      );
+      accommodationToSpotId.set(a.id, result.lastInsertRowid as number);
+    }
+  }
+
+  // station_keys, die bislang auf 'accommodation-<id>' zeigten, zeigen jetzt direkt auf den
+  // entsprechenden Spot ('spot-<neue id>') – derselbe Ort, kein eigener Stations-Typ mehr nötig
+  // (siehe utils/excursionStations.ts).
+  const legacyAccommodationStationRows = db
+    .prepare(`SELECT id, station_key FROM excursion_spots WHERE station_key LIKE 'accommodation-%'`)
+    .all() as { id: number; station_key: string }[];
+  const updateAccommodationStationKey = db.prepare('UPDATE excursion_spots SET station_key = ? WHERE id = ?');
+  for (const row of legacyAccommodationStationRows) {
+    const oldAccommodationId = Number(row.station_key.slice('accommodation-'.length));
+    const newSpotId = accommodationToSpotId.get(oldAccommodationId);
+    if (newSpotId != null) updateAccommodationStationKey.run(`spot-${newSpotId}`, row.id);
+  }
+
+  // Datei-Anhänge (routes/attachments.ts) hingen bisher an domain='accommodation' + der alten
+  // accommodation.id – zeigen jetzt auf domain='spots' + die neue Spot-Id, sonst verlöre man beim
+  // nächsten Öffnen kommentarlos den Zugriff auf bereits hochgeladene Tickets/Dokumente.
+  const legacyAccommodationAttachmentRows = db
+    .prepare(`SELECT id, entity_id FROM attachments WHERE domain = 'accommodation'`)
+    .all() as { id: number; entity_id: number }[];
+  const updateAttachmentDomain = db.prepare(`UPDATE attachments SET domain = 'spots', entity_id = ? WHERE id = ?`);
+  for (const row of legacyAccommodationAttachmentRows) {
+    const newSpotId = accommodationToSpotId.get(row.entity_id);
+    if (newSpotId != null) updateAttachmentDomain.run(newSpotId, row.id);
+  }
+
+  db.exec('DROP TABLE accommodation');
+}
+
 // Ordnet einer Trash-Tabelle (falls vorhanden) ihre Attachment-Domäne zu (siehe
 // routes/attachments.ts's DOMAIN_TABLE) – nur diese 5 Tabellen können Datei-Anhänge tragen.
 const ATTACHMENT_DOMAIN_BY_TABLE: Partial<Record<(typeof TRASH_TABLES)[number], string>> = {
   schedule_items: 'schedule',
-  accommodation: 'accommodation',
+  spots: 'spots',
   notes: 'notes',
   travel_items: 'travel',
   budget_items: 'budget',

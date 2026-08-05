@@ -127,25 +127,6 @@ export interface ExcursionComment {
   created_at: string;
 }
 
-export interface Accommodation {
-  id: number;
-  trip_id: number;
-  name: string;
-  address: string | null;
-  maps_link: string | null;
-  start_date: string | null;
-  end_date: string | null;
-  checkin: string | null;
-  checkout: string | null;
-  contact: string | null;
-  note: string | null;
-  lat: number | null;
-  lng: number | null;
-  amount: number | null;
-  paid_by_user_id: number | null;
-  budget_expense_id: number | null;
-}
-
 /** Rolle des Reise-Eintrags: für die Karten-Fokussierung auf den Urlaubsort ("Urlaubsfokus")
  *  muss die App wissen, welche Seite (Von/Nach) zuhause ist und welche zum Urlaubsziel gehört. */
 export type TravelRole = 'arrival' | 'departure' | 'onward';
@@ -197,6 +178,17 @@ export interface Spot {
    *  ungenutzt/0. Das Backend leitet daraus die passende TravelRole (Anreise/Abreise/Weiterreise)
    *  einer Etappe ab (routes/travel.ts's applyPlaces()). */
   is_home: 0 | 1;
+  // Zusatzfelder für Spots der Kategorie "Unterkunft" (ehemals eigene Accommodation-Tabelle, siehe
+  // Migrationskommentar in db/index.ts) – bei anderen Kategorien einfach null/ungenutzt.
+  address: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  checkin: string | null;
+  checkout: string | null;
+  contact: string | null;
+  amount: number | null;
+  paid_by_user_id: number | null;
+  budget_expense_id: number | null;
 }
 
 export interface SpotLike {
@@ -328,8 +320,10 @@ export interface DiaryComment {
   created_at: string;
 }
 
-/** Domänen, die Datei-Anhänge (Tickets/Dokumente) tragen können – siehe FileAttachments.vue. */
-export type AttachmentDomain = 'travel' | 'accommodation' | 'notes' | 'schedule' | 'budget';
+/** Domänen, die Datei-Anhänge (Tickets/Dokumente) tragen können – siehe FileAttachments.vue.
+ *  'spots' deckt seit der Verschmelzung von Unterkunft in Spots auch Unterkunft-Anhänge ab (siehe
+ *  Migrationskommentar in db/index.ts). */
+export type AttachmentDomain = 'travel' | 'spots' | 'notes' | 'schedule' | 'budget';
 
 export interface Attachment {
   id: number;

@@ -1,21 +1,21 @@
-import type { Accommodation, Spot, TravelItem } from '../api/types';
+import type { Spot, TravelItem } from '../api/types';
 import { spotCategoryMeta } from './spotCategory';
 import { travelTypeIcon } from './travelTypeIcon';
 
 // Löst die generischen station_keys eines Ausflugs (siehe api/types.ts, Excursion.station_keys) zu
 // einem einheitlichen Anzeige-Objekt auf – eine Station ist nicht zwingend ein echter Spot (kann
-// auch die Unterkunft oder ein Etappen-Ende ohne verknüpften Ort sein, siehe Kommentar dort).
-// Zentralisiert die Metadaten, die TripMap.vue und ExcursionsView.vue (derivedLocations) für
-// dieselben Objekttypen ohnehin schon separat kennen (Icon/Farbe/Label). Reise-Orte (Flughafen/
-// Bahnhof/Zuhause/…) sind seit der Verschmelzung in Spots (siehe Migrationskommentar in
-// db/index.ts) ganz normale Spots und laufen daher über den 'spot'-Zweig, kein eigener
-// 'travel-place'-Stationstyp mehr nötig.
-export type StationKind = 'spot' | 'accommodation' | 'travel-from' | 'travel-to' | 'schedule';
+// auch ein Etappen-Ende ohne verknüpften Ort sein, siehe Kommentar dort). Zentralisiert die
+// Metadaten, die TripMap.vue und ExcursionsView.vue (derivedLocations) für dieselben Objekttypen
+// ohnehin schon separat kennen (Icon/Farbe/Label). Reise-Orte (Flughafen/Bahnhof/Zuhause/…) und
+// Unterkunft sind seit ihrer Verschmelzung in Spots (siehe Migrationskommentar in db/index.ts) ganz
+// normale Spots und laufen daher über den 'spot'-Zweig, kein eigener 'travel-place'-/
+// 'accommodation'-Stationstyp mehr nötig.
+export type StationKind = 'spot' | 'travel-from' | 'travel-to' | 'schedule';
 
 export interface ExcursionStation {
   key: string;
   kind: StationKind;
-  /** Id des zugrunde liegenden Spots/der Unterkunft/des Reise-Eintrags (nicht des station_key-Strings). */
+  /** Id des zugrunde liegenden Spots/des Reise-Eintrags (nicht des station_key-Strings). */
   id: number;
   title: string;
   icon: string;
@@ -29,7 +29,7 @@ export interface ExcursionStation {
    *  (z. B. Tages-Fokus, siehe dayStations.ts) mit dem Namen der verbindenden Reise-Etappe – nur
    *  gesetzt, wenn diese Station das Ziel einer Etappe ist, deren Startort in derselben Kette
    *  vorkommt (bzw. wo der Startort als aufeinanderfolgendes Duplikat unterdrückt wurde). Bei allen
-   *  anderen Stations-Quellen (Spot/Unterkunft/Ausflug-Stationsliste) unbenutzt/undefined. */
+   *  anderen Stations-Quellen (Spot/Ausflug-Stationsliste) unbenutzt/undefined. */
   connector?: { icon: string; label: string } | null;
 }
 
@@ -43,15 +43,9 @@ export function travelEndpointKey(item: TravelItem, side: 'from' | 'to'): string
   return placeId != null ? `spot-${placeId}` : `travel-${side}-${item.id}`;
 }
 
-const ACCOMMODATION_META = { icon: '🛏️', color: '#1baf7a' };
 const TRAVEL_COLOR = '#4a3aa7';
 
-export function resolveStation(
-  key: string,
-  spots: Spot[],
-  accommodations: Accommodation[],
-  travelItems: TravelItem[],
-): ExcursionStation | null {
+export function resolveStation(key: string, spots: Spot[], travelItems: TravelItem[]): ExcursionStation | null {
   if (key.startsWith('spot-')) {
     const id = Number(key.slice('spot-'.length));
     const spot = spots.find((s) => s.id === id);
@@ -69,24 +63,6 @@ export function resolveStation(
       lat: spot.lat,
       lng: spot.lng,
       mapsLink: spot.maps_link,
-    };
-  }
-  if (key.startsWith('accommodation-')) {
-    const id = Number(key.slice('accommodation-'.length));
-    const acc = accommodations.find((a) => a.id === id);
-    if (!acc) return null;
-    return {
-      key,
-      kind: 'accommodation',
-      id,
-      title: acc.name,
-      icon: ACCOMMODATION_META.icon,
-      color: ACCOMMODATION_META.color,
-      category: 'Unterkunft',
-      imageUrl: null,
-      lat: acc.lat,
-      lng: acc.lng,
-      mapsLink: acc.maps_link,
     };
   }
   if (key.startsWith('travel-from-') || key.startsWith('travel-to-')) {
@@ -111,13 +87,6 @@ export function resolveStation(
   return null;
 }
 
-export function resolveStations(
-  keys: string[],
-  spots: Spot[],
-  accommodations: Accommodation[],
-  travelItems: TravelItem[],
-): ExcursionStation[] {
-  return keys
-    .map((key) => resolveStation(key, spots, accommodations, travelItems))
-    .filter((s): s is ExcursionStation => !!s);
+export function resolveStations(keys: string[], spots: Spot[], travelItems: TravelItem[]): ExcursionStation[] {
+  return keys.map((key) => resolveStation(key, spots, travelItems)).filter((s): s is ExcursionStation => !!s);
 }

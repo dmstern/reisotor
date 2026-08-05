@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import type { Spot } from '../api/types';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { renderRichText } from '../utils/richText';
+import { parseContact } from '../utils/contact';
 import { usePointerDrag } from '../composables/usePointerDrag';
 import { useExcursionsStore } from '../stores/excursions';
 import { useScheduleStore } from '../stores/schedule';
@@ -14,6 +15,7 @@ import DeleteButton from './DeleteButton.vue';
 import SocialRow from './SocialRow.vue';
 import Comments, { type CommentItem } from './Comments.vue';
 import MapsAppPicker from './MapsAppPicker.vue';
+import FileAttachments from './FileAttachments.vue';
 import { formatDate as formatDateShared } from '../utils/dateFormat';
 
 const props = defineProps<{
@@ -32,7 +34,17 @@ const props = defineProps<{
   // abgeleitet (analog zu Excursion.date), da mehrere Karten sich denselben Stand teilen müssen.
   scheduledDate: string | null;
   highlighted?: boolean;
+  /** Nur für Kategorie "Unterkunft" mit gesetztem paid_by_user_id relevant (siehe
+   *  Migrationskommentar in db/index.ts). */
+  payerLabel?: string | null;
 }>();
+
+const isAccommodation = computed(() => props.spot.category === 'Unterkunft');
+
+function formatAccommodationDate(d: string | null) {
+  if (!d) return null;
+  return formatDateShared(d);
+}
 const emit = defineEmits<{
   (e: 'edit', spot: Spot): void;
   (e: 'remove', id: number): void;
@@ -137,6 +149,34 @@ function onCardClick() {
         <CategoryChip :category="spot.category" />
       </div>
       <p v-if="expanded && creatorLabel" class="detail-row"><span class="detail-label">Von</span>{{ creatorLabel }}</p>
+      <template v-if="expanded && isAccommodation">
+        <p v-if="spot.start_date || spot.end_date" class="detail-row">
+          <span class="detail-label">Zeitraum</span>
+          🗓️ {{ formatAccommodationDate(spot.start_date) || '?' }} – {{ formatAccommodationDate(spot.end_date) || '?' }}
+        </p>
+        <p v-if="spot.address" class="detail-row"><span class="detail-label">Adresse</span>{{ spot.address }}</p>
+        <p v-if="spot.checkin || spot.checkout" class="detail-row">
+          <span class="detail-label">Check-in/-out</span>
+          {{ spot.checkin || '–' }} · {{ spot.checkout || '–' }}
+        </p>
+        <p v-if="spot.contact && parseContact(spot.contact).kind === 'phone'" class="detail-row">
+          <span class="detail-label">Kontakt</span>
+          📞 <a :href="parseContact(spot.contact).href" @click.stop>{{ spot.contact }}</a>
+        </p>
+        <p v-else-if="spot.contact && parseContact(spot.contact).kind === 'email'" class="detail-row">
+          <span class="detail-label">Kontakt</span>
+          📧 <a :href="parseContact(spot.contact).href" @click.stop>{{ spot.contact }}</a>
+        </p>
+        <p v-else-if="spot.contact" class="detail-row">
+          <span class="detail-label">Kontakt</span>
+          <span class="contact-text richtext" v-html="renderRichText(spot.contact)"></span>
+        </p>
+        <p v-if="spot.amount != null" class="detail-row">
+          <span class="detail-label">Kosten</span>
+          💶 {{ spot.amount.toFixed(2) }} €
+          <span v-if="spot.paid_by_user_id"> · bezahlt von {{ payerLabel }}</span>
+        </p>
+      </template>
       <div v-if="spot.note" class="note richtext" v-html="renderRichText(spot.note)"></div>
       <button
         type="button"
@@ -185,6 +225,9 @@ function onCardClick() {
         @submit="(content) => emit('submit-comment', content)"
         @remove="(id) => emit('remove-comment', id)"
       />
+      <div v-if="expanded" @click.stop>
+        <FileAttachments domain="spots" :entity-id="spot.id" />
+      </div>
     </div>
   </div>
 </template>
@@ -284,6 +327,10 @@ function onCardClick() {
 
 .note {
   overflow-wrap: anywhere;
+}
+
+.contact-text :deep(br:last-child) {
+  display: none;
 }
 
 .social-row {

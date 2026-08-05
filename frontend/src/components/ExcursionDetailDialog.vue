@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { api } from '../api/client';
-import type { Accommodation, Excursion, Spot, TravelItem, User } from '../api/types';
+import type { Excursion, Spot, TravelItem, User } from '../api/types';
 import { renderRichText } from '../utils/richText';
 import { resolveStations, type ExcursionStation } from '../utils/excursionStations';
 import { formatDate as formatDateShared } from '../utils/dateFormat';
@@ -15,7 +15,6 @@ import Comments, { type CommentItem } from './Comments.vue';
 import MiniStationCard from './MiniStationCard.vue';
 import ExcursionMiniMap from './ExcursionMiniMap.vue';
 import SpotDetailDialog from './SpotDetailDialog.vue';
-import AccommodationDetailDialog from './AccommodationDetailDialog.vue';
 import TravelDetailDialog from './TravelDetailDialog.vue';
 
 const props = defineProps<{
@@ -26,7 +25,6 @@ const props = defineProps<{
   liked: boolean;
   comments: CommentItem[];
   stations: Spot[];
-  accommodations: Accommodation[];
   travelItems: TravelItem[];
 }>();
 const emit = defineEmits<{
@@ -78,7 +76,7 @@ function commentItemsFor(spotId: number) {
 // Timeline-/Mini-Karten-Reihenfolge als auch die auf der Mini-Karte gezeichnete Route. Eine
 // Station ist nicht zwingend ein echter Spot (siehe utils/excursionStations.ts).
 const orderedStations = computed(() =>
-  resolveStations(props.excursion.station_keys, props.stations, props.accommodations, props.travelItems),
+  resolveStations(props.excursion.station_keys, props.stations, props.travelItems),
 );
 const mappedStations = computed(() => orderedStations.value.filter((s) => s.lat != null && s.lng != null));
 
@@ -106,12 +104,6 @@ const openStationSpotId = ref<number | null>(null);
 const stationDialogOpen = ref(false);
 const openStationSpot = computed(() => props.stations.find((s) => s.id === openStationSpotId.value) ?? null);
 
-const openStationAccommodationId = ref<number | null>(null);
-const stationAccommodationDialogOpen = ref(false);
-const openStationAccommodation = computed(
-  () => props.accommodations.find((a) => a.id === openStationAccommodationId.value) ?? null,
-);
-
 const openStationTravelId = ref<number | null>(null);
 const stationTravelDialogOpen = ref(false);
 const openStationTravel = computed(() => props.travelItems.find((t) => t.id === openStationTravelId.value) ?? null);
@@ -120,22 +112,18 @@ function openStationDetail(station: ExcursionStation) {
   if (station.kind === 'spot') {
     openStationSpotId.value = station.id;
     stationDialogOpen.value = true;
-  } else if (station.kind === 'accommodation') {
-    openStationAccommodationId.value = station.id;
-    stationAccommodationDialogOpen.value = true;
   } else {
     openStationTravelId.value = station.id;
     stationTravelDialogOpen.value = true;
   }
 }
-// Hash-Sprung (#accommodation-<id>/#travel-<id>) statt bloß der Ziel-Route – gleicher Grund wie
-// TripMap.vue's editOpenAccommodation()/editOpenTravel(): die Ziel-Ansicht hebt das referenzierte
-// Element hervor und der Router scrollt automatisch dorthin (siehe hashHighlight.ts).
-function editStationLocation(target: 'accommodation' | 'travel') {
-  const id = target === 'accommodation' ? openStationAccommodationId.value : openStationTravelId.value;
-  stationAccommodationDialogOpen.value = false;
+// Hash-Sprung (#travel-<id>) statt bloß der Ziel-Route – gleicher Grund wie TripMap.vue's
+// editOpenTravel(): die Ziel-Ansicht hebt das referenzierte Element hervor und der Router scrollt
+// automatisch dorthin (siehe hashHighlight.ts).
+function editStationTravel() {
+  const id = openStationTravelId.value;
   stationTravelDialogOpen.value = false;
-  router.push(`/${target}#${target}-${id}`);
+  router.push(`/travel#travel-${id}`);
 }
 </script>
 
@@ -192,6 +180,7 @@ function editStationLocation(target: 'accommodation' | 'travel') {
       v-model="stationDialogOpen"
       :spot="openStationSpot"
       :creator-label="creatorLabelFor(openStationSpot.created_by)"
+      :payer-label="creatorLabelFor(openStationSpot.paid_by_user_id)"
       :like-count="spotsStore.likeCountFor(openStationSpot.id)"
       :liked="spotsStore.likedByMe(openStationSpot.id, auth.user?.id)"
       :comments="commentItemsFor(openStationSpot.id)"
@@ -202,21 +191,12 @@ function editStationLocation(target: 'accommodation' | 'travel') {
       @show-on-map="stationDialogOpen = false; drawers.openMapAt(`spot-${openStationSpot.id}`)"
     />
 
-    <AccommodationDetailDialog
-      v-if="openStationAccommodation"
-      v-model="stationAccommodationDialogOpen"
-      :accommodation="openStationAccommodation"
-      :payer-label="creatorLabelFor(openStationAccommodation.paid_by_user_id)"
-      @edit="editStationLocation('accommodation')"
-      @show-on-map="stationAccommodationDialogOpen = false; drawers.openMapAt(`accommodation-${openStationAccommodation.id}`)"
-    />
-
     <TravelDetailDialog
       v-if="openStationTravel"
       v-model="stationTravelDialogOpen"
       :item="openStationTravel"
       :payer-label="creatorLabelFor(openStationTravel.paid_by_user_id)"
-      @edit="editStationLocation('travel')"
+      @edit="editStationTravel"
       @show-on-map-from="stationTravelDialogOpen = false; drawers.openMapAt(`travel-from-${openStationTravel.id}`)"
       @show-on-map-to="stationTravelDialogOpen = false; drawers.openMapAt(`travel-to-${openStationTravel.id}`)"
     />

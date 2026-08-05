@@ -46,7 +46,6 @@ const links: { to: string; label: string; icon: string; domain?: LiveDomain }[] 
   { to: '/todo', label: 'ToDo', icon: SECTION_ICONS.todo, domain: 'todos' },
   { to: '/excursions', label: 'Karte', icon: SECTION_ICONS.map, domain: 'spots' },
   { to: '/travel', label: 'Reise', icon: SECTION_ICONS.travel, domain: 'travel' },
-  { to: '/accommodation', label: 'Unterkunft', icon: SECTION_ICONS.accommodation, domain: 'accommodation' },
   { to: '/budget', label: 'Budget', icon: SECTION_ICONS.budget, domain: 'budget' },
   { to: '/diary', label: 'Tagebuch', icon: SECTION_ICONS.diary, domain: 'diary' },
   { to: '/notes', label: 'Notizen', icon: SECTION_ICONS.notes, domain: 'notes' },

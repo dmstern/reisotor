@@ -7,14 +7,14 @@ const props = defineProps<{ location: DerivedLocation }>();
 const drawers = useDrawersStore();
 
 // Kein eigener Edit-/Löschen-/Like-/Kommentar-Button: der Ort selbst gehört nicht dieser Sicht
-// (bearbeitet wird er in der Unterkunft-/Reise-Sicht), daher nur ein Sprung-Button dorthin.
-const jumpTarget = computed(() =>
-  props.location.category === 'Unterkunft' ? { to: '/accommodation', label: 'Zur Unterkunft' } : { to: '/travel', label: 'Zur Reise' },
-);
+// (bearbeitet wird er in der Reise-Sicht), daher nur ein Sprung-Button dorthin. Unterkunft ist seit
+// der Verschmelzung in Spots (siehe Migrationskommentar in db/index.ts) ein echter Spot statt eines
+// abgeleiteten Orts, daher erzeugt travelDerivedLocations.ts nur noch die Kategorie 'Reise'.
+const jumpTarget = computed(() => ({ to: '/travel', label: 'Zur Reise' }));
 
 // Klick auf die Karte öffnet den Ort auf der Karte, genau wie bei einem "echten" Spot (SpotCard.vue)
 // – location.key ist bereits derselbe generische Schlüssel, den drawers.openMapAt/TripMap.vue für
-// Unterkunft-/Reise-Punkte erwarten (accommodation-<id>/travel-from-<id>/travel-to-<id>).
+// Reise-Punkte erwarten (travel-from-<id>/travel-to-<id>).
 function showOnMap() {
   drawers.openMapAt(props.location.key);
 }

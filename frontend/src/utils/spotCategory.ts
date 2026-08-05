@@ -32,6 +32,9 @@ const KNOWN_CATEGORIES: { label: string; icon: string; color: string }[] = [
   { label: 'Hafen', icon: '⛴️', color: '#4a3aa7' },
   { label: 'Raststätte', icon: '🛣️', color: '#4a3aa7' },
   { label: 'Zuhause', icon: '🏠', color: '#4a3aa7' },
+  // Unterkunft (ehemals eigene accommodation-Tabelle, siehe Migrationskommentar in db/index.ts) –
+  // jetzt ebenfalls eine ganz normale Spot-Kategorie.
+  { label: 'Unterkunft', icon: '🛏️', color: '#1baf7a' },
 ];
 
 const OTHER_META: CategoryMeta = { icon: '📍', color: '#8a8a86' };

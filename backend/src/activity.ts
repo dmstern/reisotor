@@ -118,7 +118,7 @@ function broadcastActivity(tripId: number, row: ActivityRow) {
  *  schreibt einen trip_activity-Log-Eintrag, broadcastet ihn per SSE an alle gerade verbundenen
  *  Mitglieder desselben Urlaubs und stößt (best effort, blockiert die aufrufende Route nie) eine
  *  Push-Benachrichtigung an alle ANDEREN Mitglieder an. `domain` folgt den Nav-Item-Domänen
- *  (schedule/packing/shopping/todos/spots/ideas/travel/accommodation/budget/diary/notes/members),
+ *  (schedule/packing/shopping/todos/spots/ideas/travel/budget/diary/notes/members),
  *  siehe stores/liveSync.ts im Frontend für die Gegenseite. */
 export function recordActivity(
   tripId: number,

@@ -9,7 +9,6 @@ const TABLES = [
   'schedule_items',
   'packing_items',
   'ideas',
-  'accommodation',
   'budget_items',
   'budgets',
   'budget_allocations',
@@ -40,7 +39,6 @@ const DIRECT_TRIP_SCOPED_TABLES = new Set([
   'schedule_items',
   'packing_items',
   'ideas',
-  'accommodation',
   'budget_items',
   'budgets',
   'budget_transfers',
@@ -118,7 +116,6 @@ async function resolveMissingCoordinates(data: BackupPayload['data']) {
     }
   }
 
-  await Promise.all(data.accommodation.map((row) => resolveRow(row, 'maps_link', 'lat', 'lng')));
   await Promise.all(data.schedule_items.map((row) => resolveRow(row, 'maps_link', 'lat', 'lng')));
   await Promise.all(
     data.travel_items.map(async (row) => {

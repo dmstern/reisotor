@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch, type ComponentPublicInstance, type Ref } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch, type ComponentPublicInstance, type Ref } from 'vue';
+import { useRoute } from 'vue-router';
 import { api } from '../api/client';
-import type { Accommodation, Spot, TravelItem, User } from '../api/types';
+import type { Spot, TravelItem, User } from '../api/types';
 import { useAuthStore } from '../stores/auth';
 import { useTripStore } from '../stores/trip';
 import { useSpotsStore } from '../stores/spots';
@@ -9,6 +10,7 @@ import { useScheduleStore } from '../stores/schedule';
 import { useDrawersStore } from '../stores/drawers';
 import { useLiveSyncStore } from '../stores/liveSync';
 import { useIsDesktop } from '../composables/useIsDesktop';
+import { hashHighlightId } from '../utils/hashHighlight';
 import SpotCard from '../components/SpotCard.vue';
 import UndoDeleteRow from '../components/UndoDeleteRow.vue';
 import DerivedLocationCard from '../components/DerivedLocationCard.vue';
@@ -28,6 +30,7 @@ import { buildTravelDerivedLocations } from '../utils/travelDerivedLocations';
 // bereits bestehenden Duplikation zwischen der früheren MapView.vue und dieser View.
 const auth = useAuthStore();
 const tripStore = useTripStore();
+const route = useRoute();
 const tripId = tripStore.currentTripId as number;
 const spotsStore = useSpotsStore();
 const scheduleStore = useScheduleStore();
@@ -36,7 +39,6 @@ const liveSync = useLiveSyncStore();
 const isDesktop = useIsDesktop();
 
 const users = ref<User[]>([]);
-const accommodations = ref<Accommodation[]>([]);
 const travelItems = ref<TravelItem[]>([]);
 const loading = ref(true);
 const highlightedIds = ref<Set<number>>(new Set());
@@ -69,16 +71,23 @@ onUnmounted(() => {
 
 onMounted(async () => {
   highlightedIds.value = liveSync.markSeen('spots');
-  const [usersRes, accommodationRes, travelRes] = await Promise.all([
+  // Querverweis-Sprung (z. B. aus dem Budget bei einem automatisch aus einer Unterkunft erzeugten
+  // Ausgabe-Eintrag, siehe BudgetView.vue's autoSourceFor()) – dieselbe highlightedIds-Menge wie
+  // oben, kein zweites Hervorhebungs-System (siehe hashHighlight.ts).
+  const hashId = hashHighlightId(route.hash, 'spot');
+  if (hashId != null) highlightedIds.value.add(hashId);
+  const [usersRes, travelRes] = await Promise.all([
     api.get<User[]>('/users'),
-    api.get<Accommodation[]>(`/accommodation?trip_id=${tripId}`),
     api.get<TravelItem[]>(`/travel?trip_id=${tripId}`),
     spotsStore.load(),
   ]);
   users.value = usersRes;
-  accommodations.value = accommodationRes;
   travelItems.value = travelRes;
   loading.value = false;
+  if (hashId != null) {
+    await nextTick();
+    onFocusSpotFromMap(hashId);
+  }
 });
 
 function creatorLabel(userId: number | null) {
@@ -111,16 +120,13 @@ async function removeSpotComment(id: number) {
   await spotsStore.removeComment(id);
 }
 
-// --- Abgeleitete Orte (Unterkunft, Reise-Start-/Zielorte) ---
-// Automatisch als feste Karten in die Spots-Übersicht eingebettet (DerivedLocationCard.vue) –
-// zeigt Orte, die bereits anderswo (Unterkunft, Reise) mit Koordinaten hinterlegt sind.
+// --- Abgeleitete Orte (Reise-Etappen-Enden ohne verknüpften Ort) ---
+// Automatisch als feste Karten in die Spots-Übersicht eingebettet (DerivedLocationCard.vue) – seit
+// der Verschmelzung von Unterkunft/Reise-Orten in Spots (siehe Migrationskommentar in db/index.ts)
+// deckt das nur noch den verbleibenden Freitext-Fallback ab, echte Orte sind längst normale Spots
+// (siehe allSpotItems unten).
 const derivedLocations = computed<DerivedLocation[]>(() => {
   const result: DerivedLocation[] = [];
-  for (const a of accommodations.value) {
-    if (a.lat != null && a.lng != null) {
-      result.push({ key: `accommodation-${a.id}`, title: a.name, icon: '🛏️', category: 'Unterkunft', maps_link: a.maps_link, lat: a.lat, lng: a.lng });
-    }
-  }
   // buildTravelDerivedLocations() deckt nur noch Etappen-Enden OHNE verknüpften Ort ab (Freitext-
   // Eingabe) – ein verknüpfter Ort ist seit der Verschmelzung von Reise-Orten in Spots (siehe
   // Migrationskommentar in db/index.ts) bereits ein normaler Spot und erscheint über
@@ -133,7 +139,23 @@ const derivedLocations = computed<DerivedLocation[]>(() => {
 
 // --- Spots ---
 const showSpotForm = ref(false);
-const emptySpotForm = () => ({ title: '', image_url: '', maps_link: '', note: '', category: '', is_home: false });
+const emptySpotForm = () => ({
+  title: '',
+  image_url: '',
+  maps_link: '',
+  note: '',
+  category: '',
+  is_home: false,
+  // Zusatzfelder für Kategorie "Unterkunft" (siehe Migrationskommentar in db/index.ts).
+  address: '',
+  start_date: '',
+  end_date: '',
+  checkin: '',
+  checkout: '',
+  contact: '',
+  amount: '',
+  paid_by_user_id: '',
+});
 const spotForm = ref(emptySpotForm());
 const spotMapsLinkResolved = ref<boolean | null>(null);
 const spotManualPin = ref<{ lat: number; lng: number } | null>(null);
@@ -542,6 +564,14 @@ function spotToBody(f: ReturnType<typeof emptySpotForm>, manual?: { lat: number;
     lat: manual?.lat ?? parsed?.lat,
     lng: manual?.lng ?? parsed?.lng,
     is_home: f.is_home,
+    address: f.address || undefined,
+    start_date: f.start_date || undefined,
+    end_date: f.end_date || undefined,
+    checkin: f.checkin || undefined,
+    checkout: f.checkout || undefined,
+    contact: f.contact || undefined,
+    amount: f.amount ? Number(f.amount) : undefined,
+    paid_by_user_id: f.paid_by_user_id ? Number(f.paid_by_user_id) : undefined,
   };
 }
 
@@ -588,6 +618,14 @@ function startEditSpot(spot: Spot) {
     note: spot.note ?? '',
     category: spot.category ?? '',
     is_home: !!spot.is_home,
+    address: spot.address ?? '',
+    start_date: spot.start_date ?? '',
+    end_date: spot.end_date ?? '',
+    checkin: spot.checkin ?? '',
+    checkout: spot.checkout ?? '',
+    contact: spot.contact ?? '',
+    amount: spot.amount != null ? String(spot.amount) : '',
+    paid_by_user_id: spot.paid_by_user_id != null ? String(spot.paid_by_user_id) : '',
   };
   editSpotMapsLinkResolved.value = null;
   editSpotManualPin.value = null;
@@ -782,6 +820,25 @@ async function removeSpot(id: number) {
             <input type="checkbox" v-model="spotForm.is_home" />
             🏠 Heimat-Seite (z. B. der heimische Flughafen/Bahnhof/Zuhause für Reise-Etappen)
           </label>
+          <template v-if="spotForm.category === 'Unterkunft'">
+            <input v-model="spotForm.address" type="text" placeholder="Adresse (optional)" />
+            <div class="row">
+              <input v-model="spotForm.start_date" type="date" />
+              <input v-model="spotForm.end_date" type="date" />
+            </div>
+            <div class="row">
+              <input v-model="spotForm.checkin" type="text" placeholder="Check-in (z. B. 15:00)" />
+              <input v-model="spotForm.checkout" type="text" placeholder="Check-out (z. B. 11:00)" />
+            </div>
+            <input v-model="spotForm.contact" type="text" placeholder="Kontakt (Telefon/E-Mail/Text, optional)" />
+            <div class="row">
+              <input v-model="spotForm.amount" type="number" step="0.01" placeholder="Kosten (€, optional)" />
+              <select v-model="spotForm.paid_by_user_id">
+                <option value="">Bezahlt von –</option>
+                <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
+              </select>
+            </div>
+          </template>
           <input
             v-model="spotForm.maps_link"
             type="url"
@@ -840,6 +897,7 @@ async function removeSpot(id: number) {
               :expanded="expandedSpotId === item.spot.id"
               :scheduled-date="spotScheduledDates.get(item.spot.id) ?? null"
               :creator-label="creatorLabel(item.spot.created_by)"
+              :payer-label="creatorLabel(item.spot.paid_by_user_id)"
               :like-count="spotsStore.likeCountFor(item.spot.id)"
               :liked="spotsStore.likedByMe(item.spot.id, auth.user?.id)"
               :comments="spotCommentItemsFor(item.spot.id)"
@@ -874,6 +932,25 @@ async function removeSpot(id: number) {
             <input type="checkbox" v-model="editSpotForm.is_home" />
             🏠 Heimat-Seite (z. B. der heimische Flughafen/Bahnhof/Zuhause für Reise-Etappen)
           </label>
+          <template v-if="editSpotForm.category === 'Unterkunft'">
+            <input v-model="editSpotForm.address" type="text" placeholder="Adresse (optional)" />
+            <div class="row">
+              <input v-model="editSpotForm.start_date" type="date" />
+              <input v-model="editSpotForm.end_date" type="date" />
+            </div>
+            <div class="row">
+              <input v-model="editSpotForm.checkin" type="text" placeholder="Check-in (z. B. 15:00)" />
+              <input v-model="editSpotForm.checkout" type="text" placeholder="Check-out (z. B. 11:00)" />
+            </div>
+            <input v-model="editSpotForm.contact" type="text" placeholder="Kontakt (Telefon/E-Mail/Text, optional)" />
+            <div class="row">
+              <input v-model="editSpotForm.amount" type="number" step="0.01" placeholder="Kosten (€, optional)" />
+              <select v-model="editSpotForm.paid_by_user_id">
+                <option value="">Bezahlt von –</option>
+                <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
+              </select>
+            </div>
+          </template>
           <input
             v-model="editSpotForm.maps_link"
             type="url"
@@ -1288,6 +1365,17 @@ async function removeSpot(id: number) {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+}
+
+.edit-form .row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.edit-form .row > * {
+  flex: 1;
+  min-width: 140px;
 }
 
 .form-image-banner {

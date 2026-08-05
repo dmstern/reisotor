@@ -6,8 +6,8 @@ import { cachedEmojiPin, pulsingEmojiPin } from '../utils/mapRoute';
 
 // Manueller Fallback, falls weder clientseitiges Parsen noch die serverseitige Kurzlink-Auflösung
 // (backend/src/utils/mapsLink.ts) Koordinaten liefern (z. B. wenn Google einen Maps-Kurzlink per
-// Bot-Erkennung mit 403 blockt – siehe TripForm.vue/AccommodationView.vue/ExcursionsView.vue/
-// TravelView.vue, die diese Komponente einbinden). Struktur an ExcursionMiniMap.vue angelehnt
+// Bot-Erkennung mit 403 blockt – siehe TripForm.vue/ExcursionsView.vue/TravelView.vue, die diese
+// Komponente einbinden). Struktur an ExcursionMiniMap.vue angelehnt
 // (eigenständige, lazy erzeugte Leaflet-Instanz, beim Unmount wieder abgebaut), aber MIT normaler
 // Zoom-Kontrolle statt zoomControl:false, da hier tatsächlich zum präzisen Antippen gezoomt wird.
 const props = defineProps<{

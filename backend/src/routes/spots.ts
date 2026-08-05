@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify';
-import { db } from '../db/index.js';
+import { db, ensureDefaultSharedBudget } from '../db/index.js';
 import { fetchPlacePreview, resolveLatLng, tilePreviewUrl } from '../utils/mapsLink.js';
 import { requireTripMember } from '../tripAccess.js';
 import { recordActivity } from '../activity.js';
@@ -17,10 +17,77 @@ interface SpotBody {
    *  Flughafen kann sowohl der heimische Abflughafen als auch der Zielflughafen sein. Nur für
    *  Reise-Etappen relevant (routes/travel.ts's applyPlaces()), bei gewöhnlichen Spots ungenutzt. */
   is_home?: boolean;
+  // Zusatzfelder für Spots der Kategorie "Unterkunft" (siehe Migrationskommentar in db/index.ts,
+  // Verschmelzung von accommodation in spots) – bei anderen Kategorien ungenutzt.
+  address?: string;
+  start_date?: string;
+  end_date?: string;
+  checkin?: string;
+  checkout?: string;
+  contact?: string;
+  amount?: number;
+  paid_by_user_id?: number | null;
+}
+
+interface SpotRow {
+  id: number;
+  trip_id: number;
+  lat: number | null;
+  lng: number | null;
+  category: string | null;
+  budget_expense_id: number | null;
 }
 
 interface CommentBody {
   content: string;
+}
+
+/** Bestimmt, wie die verknüpfte Budget-Ausgabe aussehen soll, ohne bereits zu löschen – eine ggf.
+ *  verwaiste alte Ausgabe wird erst gelöscht, NACHDEM die spots-Zeile nicht mehr per Foreign Key
+ *  darauf verweist (sonst SQLITE_CONSTRAINT_FOREIGNKEY). Nur für Spots der Kategorie "Unterkunft"
+ *  relevant (ehemals routes/accommodation.ts's planBudgetExpense) – ändert sich die Kategorie weg
+ *  von "Unterkunft", greift hasAmount nicht mehr und eine zuvor verknüpfte Ausgabe wird abgeräumt. */
+function planBudgetExpense(tripId: number, existingBudgetExpenseId: number | null, body: SpotBody) {
+  const hasAmount =
+    body.category === 'Unterkunft' && body.amount != null && body.amount > 0 && body.paid_by_user_id != null;
+
+  if (!hasAmount) {
+    return { budgetExpenseId: null as number | null, staleIdToDelete: existingBudgetExpenseId };
+  }
+
+  const sharedBudgetId = ensureDefaultSharedBudget(tripId);
+
+  if (existingBudgetExpenseId) {
+    db.prepare(
+      'UPDATE budget_items SET title = ?, category = ?, amount = ?, paid_by_user_id = ?, date = ?, budget_id = ? WHERE id = ?',
+    ).run(
+      body.title,
+      'Unterkunft',
+      body.amount,
+      body.paid_by_user_id,
+      body.start_date ?? null,
+      sharedBudgetId,
+      existingBudgetExpenseId,
+    );
+    return { budgetExpenseId: existingBudgetExpenseId, staleIdToDelete: null };
+  }
+
+  const result = db
+    .prepare(
+      `INSERT INTO budget_items (trip_id, title, category, amount, paid_by_user_id, date, note, budget_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    )
+    .run(
+      tripId,
+      body.title,
+      'Unterkunft',
+      body.amount,
+      body.paid_by_user_id,
+      body.start_date ?? null,
+      'Automatisch aus Unterkunft-Eintrag',
+      sharedBudgetId,
+    );
+  return { budgetExpenseId: result.lastInsertRowid as number, staleIdToDelete: null };
 }
 
 export const spotsRoutes: FastifyPluginAsync = async (app) => {
@@ -40,9 +107,10 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.post<{ Body: SpotBody }>('/spots', async (req, reply) => {
-    const { trip_id, title, category, note, maps_link, is_home } = req.body;
+    const body = req.body;
+    const { trip_id, title, category, note, maps_link, is_home } = body;
     if (!requireTripMember(reply, trip_id, req.session.userId)) return;
-    let { lat, lng, image_url } = req.body;
+    let { lat, lng, image_url } = body;
     if ((lat == null || lng == null) && maps_link) {
       const resolved = await resolveLatLng(maps_link);
       lat = resolved?.lat;
@@ -53,10 +121,14 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
     if (!image_url && lat != null && lng != null) {
       image_url = tilePreviewUrl(lat, lng);
     }
+    const { budgetExpenseId } = planBudgetExpense(trip_id, null, body);
     const result = db
       .prepare(
-        `INSERT INTO spots (trip_id, title, image_url, category, note, maps_link, lat, lng, created_by, is_home)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO spots (
+           trip_id, title, image_url, category, note, maps_link, lat, lng, created_by, is_home,
+           address, start_date, end_date, checkin, checkout, contact, amount, paid_by_user_id, budget_expense_id
+         )
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         trip_id,
@@ -69,6 +141,15 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
         lng ?? null,
         req.session.userId,
         is_home ? 1 : 0,
+        body.address ?? null,
+        body.start_date ?? null,
+        body.end_date ?? null,
+        body.checkin ?? null,
+        body.checkout ?? null,
+        body.contact ?? null,
+        body.amount ?? null,
+        body.paid_by_user_id ?? null,
+        budgetExpenseId,
       );
     recordActivity(trip_id, 'spots', result.lastInsertRowid as number, 'created', req.session.userId!);
     reply.code(201);
@@ -76,14 +157,15 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.put<{ Params: { id: string }; Body: SpotBody }>('/spots/:id', async (req, reply) => {
-    const existing = db.prepare('SELECT trip_id, lat, lng FROM spots WHERE id = ?').get(req.params.id) as
-      | { trip_id: number; lat: number | null; lng: number | null }
-      | undefined;
+    const existing = db.prepare('SELECT id, trip_id, lat, lng, budget_expense_id FROM spots WHERE id = ?').get(
+      req.params.id,
+    ) as SpotRow | undefined;
     if (!existing) return reply.code(404).send({ error: 'Nicht gefunden' });
     if (!requireTripMember(reply, existing.trip_id, req.session.userId)) return;
 
-    const { title, category, note, maps_link, is_home } = req.body;
-    let { lat, lng, image_url } = req.body;
+    const body = req.body;
+    const { title, category, note, maps_link, is_home } = body;
+    let { lat, lng, image_url } = body;
     if ((lat == null || lng == null) && maps_link) {
       const resolved = await resolveLatLng(maps_link);
       lat = resolved?.lat;
@@ -98,23 +180,39 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
     if (!image_url && lat != null && lng != null) {
       image_url = tilePreviewUrl(lat, lng);
     }
-    const result = db
-      .prepare(
-        `UPDATE spots SET title = ?, image_url = ?, category = ?, note = ?, maps_link = ?, lat = ?, lng = ?, is_home = ?
-         WHERE id = ?`,
-      )
-      .run(
-        title,
-        image_url ?? null,
-        category ?? null,
-        note ?? null,
-        maps_link ?? null,
-        lat ?? null,
-        lng ?? null,
-        is_home ? 1 : 0,
-        req.params.id,
-      );
-    if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
+    const { budgetExpenseId, staleIdToDelete } = planBudgetExpense(existing.trip_id, existing.budget_expense_id, body);
+
+    db.prepare(
+      `UPDATE spots SET title = ?, image_url = ?, category = ?, note = ?, maps_link = ?, lat = ?, lng = ?, is_home = ?,
+         address = ?, start_date = ?, end_date = ?, checkin = ?, checkout = ?, contact = ?, amount = ?,
+         paid_by_user_id = ?, budget_expense_id = ?
+       WHERE id = ?`,
+    ).run(
+      title,
+      image_url ?? null,
+      category ?? null,
+      note ?? null,
+      maps_link ?? null,
+      lat ?? null,
+      lng ?? null,
+      is_home ? 1 : 0,
+      body.address ?? null,
+      body.start_date ?? null,
+      body.end_date ?? null,
+      body.checkin ?? null,
+      body.checkout ?? null,
+      body.contact ?? null,
+      body.amount ?? null,
+      body.paid_by_user_id ?? null,
+      budgetExpenseId,
+      req.params.id,
+    );
+
+    // Erst jetzt löschen: die spots-Zeile verweist nicht mehr auf die alte Ausgabe.
+    if (staleIdToDelete) {
+      db.prepare('DELETE FROM budget_items WHERE id = ?').run(staleIdToDelete);
+    }
+
     recordActivity(existing.trip_id, 'spots', Number(req.params.id), 'updated', req.session.userId!);
     return db.prepare('SELECT * FROM spots WHERE id = ?').get(req.params.id);
   });
@@ -124,17 +222,27 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
   // bestehen (kein Cleanup mehr nötig) – resolveStation() im Frontend liefert für einen nicht mehr
   // gefundenen (weil ausgeblendeten) Spot ohnehin `null` und die Station verschwindet dadurch
   // automatisch aus jeder Stationsliste, taucht nach dem Wiederherstellen aber unverändert wieder auf.
+  // Eine verknüpfte Budget-Ausgabe (nur bei Kategorie "Unterkunft" gesetzt, siehe planBudgetExpense
+  // oben) wird dabei mit "weggelöscht" (gleiches Muster wie ehemals routes/accommodation.ts) –
+  // routes/trash.ts's restore() macht das beim Wiederherstellen wieder rückgängig.
   app.delete<{ Params: { id: string } }>('/spots/:id', async (req, reply) => {
-    const existing = db.prepare('SELECT trip_id FROM spots WHERE id = ?').get(req.params.id) as
-      | { trip_id: number }
+    const existing = db.prepare('SELECT trip_id, budget_expense_id FROM spots WHERE id = ?').get(req.params.id) as
+      | { trip_id: number; budget_expense_id: number | null }
       | undefined;
     if (!existing) return reply.code(404).send({ error: 'Nicht gefunden' });
     if (!requireTripMember(reply, existing.trip_id, req.session.userId)) return;
 
+    const now = new Date().toISOString();
     const result = db
       .prepare('UPDATE spots SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL')
-      .run(new Date().toISOString(), req.params.id);
+      .run(now, req.params.id);
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
+    if (existing.budget_expense_id) {
+      db.prepare('UPDATE budget_items SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL').run(
+        now,
+        existing.budget_expense_id,
+      );
+    }
     recordActivity(existing.trip_id, 'spots', Number(req.params.id), 'deleted', req.session.userId!);
     return reply.code(204).send();
   });

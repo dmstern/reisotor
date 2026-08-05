@@ -11,7 +11,7 @@ import FileAttachments from './FileAttachments.vue';
 // Eigenständige Komponente statt inline in TravelView.vue, da dieser Dialog auch von anderer Stelle
 // geöffnet werden muss (TripMap.vue's Stationsliste, ExcursionDetailDialog.vue's Stationen, falls
 // der Abflug-/Ankunftsort dort als Ausflug-Station eingeplant ist) – gleiches Vorgehen wie
-// SpotDetailDialog.vue/AccommodationDetailDialog.vue. Beide Seiten (Abflug/Ankunft) zeigen denselben
+// SpotDetailDialog.vue. Beide Seiten (Abflug/Ankunft) zeigen denselben
 // vollständigen Eintrag, daher hier ein einziger Dialog statt zwei separater.
 defineProps<{
   modelValue: boolean;

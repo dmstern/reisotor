@@ -53,11 +53,6 @@ const router = createRouter({
     { path: '/calendar', name: 'calendar', component: ScheduleView, props: { standalone: true } },
     { path: '/tours', name: 'tours', component: ExcursionsDrawer, props: { standalone: true } },
     { path: '/travel', name: 'travel', component: () => import('../views/TravelView.vue') },
-    {
-      path: '/accommodation',
-      name: 'accommodation',
-      component: () => import('../views/AccommodationView.vue'),
-    },
     { path: '/budget', name: 'budget', component: () => import('../views/BudgetView.vue') },
     { path: '/shopping', name: 'shopping', component: () => import('../views/ShoppingListView.vue') },
     { path: '/todo', name: 'todo', component: () => import('../views/TodoView.vue') },

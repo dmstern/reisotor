@@ -2,7 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { api } from '../api/client';
-import type { Accommodation, ExcursionComment, ExcursionLike, TravelItem, User } from '../api/types';
+import type { ExcursionComment, ExcursionLike, TravelItem, User } from '../api/types';
 import { useAuthStore } from '../stores/auth';
 import { useTripStore } from '../stores/trip';
 import { useExcursionsStore } from '../stores/excursions';
@@ -38,18 +38,16 @@ const liveSync = useLiveSyncStore();
 const users = ref<User[]>([]);
 const likes = ref<ExcursionLike[]>([]);
 const comments = ref<ExcursionComment[]>([]);
-const accommodations = ref<Accommodation[]>([]);
 const travelItems = ref<TravelItem[]>([]);
 const loading = ref(true);
 const highlightedIds = ref<Set<number>>(new Set());
 
 onMounted(async () => {
   highlightedIds.value = liveSync.markSeen('ideas');
-  const [usersRes, likesRes, commentsRes, accommodationRes, travelRes] = await Promise.all([
+  const [usersRes, likesRes, commentsRes, travelRes] = await Promise.all([
     api.get<User[]>('/users'),
     api.get<ExcursionLike[]>(`/ideas/likes?trip_id=${tripId}`),
     api.get<ExcursionComment[]>(`/ideas/comments?trip_id=${tripId}`),
-    api.get<Accommodation[]>(`/accommodation?trip_id=${tripId}`),
     api.get<TravelItem[]>(`/travel?trip_id=${tripId}`),
     excursionsStore.load(),
     spotsStore.load(),
@@ -57,7 +55,6 @@ onMounted(async () => {
   users.value = usersRes;
   likes.value = likesRes;
   comments.value = commentsRes;
-  accommodations.value = accommodationRes;
   travelItems.value = travelRes;
   loading.value = false;
 });
@@ -192,16 +189,14 @@ async function addSpotToExcursion(excursionId: number, spotId: number) {
   });
 }
 
-// --- Abgeleitete Orte (Unterkunft, Reise-Start-/Zielorte) ---
+// --- Abgeleitete Orte (Reise-Etappen-Enden ohne verknüpften Ort) ---
 // Wählbar wie ein Spot im SpotOrderPicker, ohne dafür einen anzulegen (loc.key ist bereits der
-// fertige Stations-Schlüssel, siehe utils/excursionStations.ts).
+// fertige Stations-Schlüssel, siehe utils/excursionStations.ts). Seit der Verschmelzung von
+// Unterkunft/Reise-Orten in Spots (siehe Migrationskommentar in db/index.ts) deckt das nur noch den
+// verbleibenden Freitext-Fallback ab, echte Orte sind längst normale, per SpotOrderPicker direkt
+// wählbare Spots.
 const derivedLocations = computed<DerivedLocation[]>(() => {
   const result: DerivedLocation[] = [];
-  for (const a of accommodations.value) {
-    if (a.lat != null && a.lng != null) {
-      result.push({ key: `accommodation-${a.id}`, title: a.name, icon: '🛏️', category: 'Unterkunft', maps_link: a.maps_link, lat: a.lat, lng: a.lng });
-    }
-  }
   // buildTravelDerivedLocations() deckt nur noch Etappen-Enden OHNE verknüpften Ort ab (Freitext-
   // Eingabe) – ein verknüpfter Ort ist seit der Verschmelzung von Reise-Orten in Spots (siehe
   // Migrationskommentar in db/index.ts) bereits ein normaler, per SpotOrderPicker wählbarer Spot.
@@ -341,7 +336,6 @@ function editStationSpot() {
             :liked="likedByMe(excursion.id)"
             :comments="commentItemsFor(excursion.id)"
             :stations="spotsStore.spots"
-            :accommodations="accommodations"
             :travel-items="travelItems"
             @edit="startEditExcursion"
             @remove="removeExcursion"
@@ -387,7 +381,6 @@ function editStationSpot() {
             :liked="likedByMe(excursion.id)"
             :comments="commentItemsFor(excursion.id)"
             :stations="spotsStore.spots"
-            :accommodations="accommodations"
             :travel-items="travelItems"
             @edit="startEditExcursion"
             @remove="removeExcursion"

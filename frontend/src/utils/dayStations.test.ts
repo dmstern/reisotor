@@ -47,6 +47,15 @@ function spot(overrides: Partial<Spot>): Spot {
     lng: null,
     created_by: null,
     is_home: 0,
+    address: null,
+    start_date: null,
+    end_date: null,
+    checkin: null,
+    checkout: null,
+    contact: null,
+    amount: null,
+    paid_by_user_id: null,
+    budget_expense_id: null,
     ...overrides,
   };
 }
@@ -81,7 +90,7 @@ describe('buildDayStations - Reise-Etappen-Verkettung', () => {
       to_place_id: placeC.id,
     });
 
-    const stations = buildDayStations('2026-08-10', [], [], [legAB, legBC], [], [placeA, placeB, placeC]);
+    const stations = buildDayStations('2026-08-10', [], [], [legAB, legBC], [placeA, placeB, placeC]);
 
     expect(stations.map((s) => s.title)).toEqual(['Zuhause', 'Zwischenstopp', 'Zielort']);
   });
@@ -104,7 +113,7 @@ describe('buildDayStations - Reise-Etappen-Verkettung', () => {
       to_place_id: placeC.id,
     });
 
-    const stations = buildDayStations('2026-08-10', [], [], [legAB, legBC], [], [placeA, placeB, placeC]);
+    const stations = buildDayStations('2026-08-10', [], [], [legAB, legBC], [placeA, placeB, placeC]);
 
     expect(stations[0].connector).toBeFalsy();
     expect(stations[1].connector?.label).toBe('Hinflug');
@@ -131,7 +140,7 @@ describe('buildDayStations - Reise-Etappen-Verkettung', () => {
 
     // Rückreihenfolge im Eingabe-Array - ohne interne Sortierung nach Abflugzeit würde die
     // Duplikat-Erkennung hier fälschlich nicht greifen.
-    const stations = buildDayStations('2026-08-10', [], [], [legBC, legAB], [], [placeA, placeB, placeC]);
+    const stations = buildDayStations('2026-08-10', [], [], [legBC, legAB], [placeA, placeB, placeC]);
 
     expect(stations.map((s) => s.title)).toEqual(['Zuhause', 'Zwischenstopp', 'Zielort']);
   });
@@ -149,7 +158,7 @@ describe('buildDayStations - Reise-Etappen-Verkettung', () => {
       to_lng: 11.78,
     });
 
-    const stations = buildDayStations('2026-08-10', [], [], [leg], [], []);
+    const stations = buildDayStations('2026-08-10', [], [], [leg], []);
 
     expect(stations.map((s) => s.title)).toEqual([
       'Taxi zum Flughafen (Abflug/Abfahrt)',
@@ -167,7 +176,7 @@ describe('buildDayStations - Reise-Etappen-Verkettung', () => {
       to_place_id: placeB.id,
     });
 
-    const stations = buildDayStations('2026-08-10', [], [], [otherDay], [], [placeA, placeB]);
+    const stations = buildDayStations('2026-08-10', [], [], [otherDay], [placeA, placeB]);
 
     expect(stations).toHaveLength(0);
   });

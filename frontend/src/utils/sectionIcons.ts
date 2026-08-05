@@ -11,7 +11,6 @@ export type SectionKey =
   | 'todo'
   | 'excursions'
   | 'travel'
-  | 'accommodation'
   | 'budget'
   | 'diary'
   | 'notes';
@@ -27,7 +26,6 @@ export const SECTION_ICONS: Record<SectionKey, string> = {
   todo: '📋',
   excursions: '🎒',
   travel: '✈️',
-  accommodation: '🛏️',
   budget: '💶',
   diary: '📔',
   notes: '📝',

@@ -1,4 +1,4 @@
-import type { Accommodation, Excursion, ScheduleItem, Spot, TravelItem } from '../api/types';
+import type { Excursion, ScheduleItem, Spot, TravelItem } from '../api/types';
 import { SCHEDULE_CATEGORY_META } from './scheduleCategory';
 import { resolveStation, resolveStations, travelEndpointKey, type ExcursionStation } from './excursionStations';
 import { travelTypeIcon } from './travelTypeIcon';
@@ -13,7 +13,6 @@ export function buildDayStations(
   scheduleItems: ScheduleItem[],
   excursions: Excursion[],
   travelItems: TravelItem[],
-  accommodations: Accommodation[],
   spots: Spot[],
 ): ExcursionStation[] {
   const timed: { time: string | null; station: ExcursionStation }[] = [];
@@ -24,7 +23,7 @@ export function buildDayStations(
     // generischen Termin-Pins (übernimmt außerdem automatisch dessen Koordinaten, unabhängig
     // davon, ob der Termin selbst welche gespeichert hat).
     if (item.spot_id != null) {
-      const station = resolveStation(`spot-${item.spot_id}`, spots, accommodations, travelItems);
+      const station = resolveStation(`spot-${item.spot_id}`, spots, travelItems);
       if (station) {
         timed.push({ time: item.time, station });
         continue;
@@ -64,12 +63,12 @@ export function buildDayStations(
     .sort((a, b) => (a.departure_time ?? '').localeCompare(b.departure_time ?? ''));
   let previousTravelKey: string | null = null;
   for (const t of todaysTravel) {
-    const from = resolveStation(travelEndpointKey(t, 'from'), spots, accommodations, travelItems);
+    const from = resolveStation(travelEndpointKey(t, 'from'), spots, travelItems);
     if (from && from.key !== previousTravelKey) {
       timed.push({ time: t.departure_time, station: from });
       previousTravelKey = from.key;
     }
-    const to = resolveStation(travelEndpointKey(t, 'to'), spots, accommodations, travelItems);
+    const to = resolveStation(travelEndpointKey(t, 'to'), spots, travelItems);
     if (to) {
       timed.push({
         time: t.arrival_time ?? t.departure_time,
@@ -79,13 +78,18 @@ export function buildDayStations(
     }
   }
 
-  for (const a of accommodations.filter((a) => a.start_date && a.end_date && a.start_date <= date && date <= a.end_date)) {
-    const station = resolveStation(`accommodation-${a.id}`, spots, accommodations, travelItems);
+  // Unterkunft-Spots (Kategorie "Unterkunft", siehe Migrationskommentar in db/index.ts) sind an
+  // jedem Tag ihres Aufenthaltszeitraums (start_date..end_date) automatisch eine Station, ohne dass
+  // sie einem Ausflug zugeordnet sein müssen.
+  for (const s of spots.filter(
+    (s) => s.category === 'Unterkunft' && s.start_date && s.end_date && s.start_date <= date && date <= s.end_date,
+  )) {
+    const station = resolveStation(`spot-${s.id}`, spots, travelItems);
     if (station) timed.push({ time: null, station });
   }
 
   for (const e of excursions.filter((e) => e.date === date)) {
-    for (const station of resolveStations(e.station_keys, spots, accommodations, travelItems)) {
+    for (const station of resolveStations(e.station_keys, spots, travelItems)) {
       timed.push({ time: null, station });
     }
   }

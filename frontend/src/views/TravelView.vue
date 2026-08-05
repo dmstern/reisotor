@@ -290,7 +290,7 @@ watch(manualToPinEdit, (pin) => {
 });
 
 // Weicher Löschvorgang serverseitig (siehe routes/travel.ts) + 60s Rückgängig-Fenster clientseitig
-// (useUndoableDelete.ts) – siehe gleiches Muster in AccommodationView.vue.
+// (useUndoableDelete.ts) – siehe gleiches Muster in ExcursionsView.vue.
 async function remove(id: number) {
   await api.delete(`/travel/${id}`);
   markPendingDelete(id, () => {
