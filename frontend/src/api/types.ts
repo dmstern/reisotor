@@ -107,10 +107,12 @@ export interface Excursion {
   /** Optionales Datum: gesetzt = "geplant" (im Kalender eingeplant), ungesetzt = "in Planung". */
   date: string | null;
   created_by: number | null;
-  /** Stationen dieses Ausflugs, in Reihenfolge – generische Schlüssel wie MapPoint.key/
-   *  DerivedLocation.key ('spot-<id>', 'accommodation-<id>', 'travel-from-<id>', 'travel-to-<id>'),
-   *  nicht zwingend echte Spots (siehe utils/excursionStations.ts). */
-  station_keys: string[];
+  /** Spots dieser Tour, in Reihenfolge (Duplikate erlaubt, z. B. Start UND Ende am selben Ort bei
+   *  einem Rundgang) – seit Unterkunft/Reise-Orte längst normale Spots sind, ist eine Tour-Station
+   *  IMMER ein echter Spot (siehe Migrationskommentar in db/index.ts). Reihenfolge/Mehrfachbesuch
+   *  lassen sich nur über die "Erweiterte Touren-Bearbeitung" editieren (siehe
+   *  stores/tourSettings.ts/SpotOrderPicker.vue); der einfache Tagging-Modus hängt Spots nur an. */
+  spot_ids: number[];
 }
 
 export interface ExcursionLike {

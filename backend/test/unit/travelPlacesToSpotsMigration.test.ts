@@ -93,10 +93,11 @@ describe('travel_places -> spots Verschmelzungs-Migration', () => {
     expect(travelItem?.to_place_id).toBeNull();
 
     // Die Ausflug-Station zeigt jetzt direkt auf den Spot statt auf den verschwundenen
-    // travel-place-Schlüssel.
-    const station = db.prepare('SELECT station_key FROM excursion_spots WHERE idea_id = 20').get() as
-      | { station_key: string }
+    // travel-place-Schlüssel (excursion_spots ist inzwischen selbst zu einer einfachen
+    // idea_id<->spot_id-Verknüpfung migriert, siehe excursionSpotsMigration.test.ts).
+    const station = db.prepare('SELECT spot_id FROM excursion_spots WHERE idea_id = 20').get() as
+      | { spot_id: number }
       | undefined;
-    expect(station?.station_key).toBe(`spot-${spot!.id}`);
+    expect(station?.spot_id).toBe(spot!.id);
   });
 });

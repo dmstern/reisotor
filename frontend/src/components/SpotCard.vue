@@ -9,6 +9,7 @@ import { useExcursionsStore } from '../stores/excursions';
 import { useScheduleStore } from '../stores/schedule';
 import { useTripStore } from '../stores/trip';
 import { useDrawersStore } from '../stores/drawers';
+import { useTourSettingsStore } from '../stores/tourSettings';
 import CategoryChip from './CategoryChip.vue';
 import EditButton from './EditButton.vue';
 import DeleteButton from './DeleteButton.vue';
@@ -92,6 +93,7 @@ const excursionsStore = useExcursionsStore();
 const scheduleStore = useScheduleStore();
 const tripStore = useTripStore();
 const drawers = useDrawersStore();
+const tourSettings = useTourSettingsStore();
 const { dragging, ghostStyle, onPointerDown } = usePointerDrag({
   onStart: () => {
     drawers.calendarOpen = true;
@@ -179,6 +181,7 @@ function onCardClick() {
       </template>
       <div v-if="spot.note" class="note richtext" v-html="renderRichText(spot.note)"></div>
       <button
+        v-if="tourSettings.advancedEditing"
         type="button"
         class="excursion-drag-handle"
         draggable="true"

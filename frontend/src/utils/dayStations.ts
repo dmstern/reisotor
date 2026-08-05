@@ -1,6 +1,6 @@
 import type { Excursion, ScheduleItem, Spot, TravelItem } from '../api/types';
 import { SCHEDULE_CATEGORY_META } from './scheduleCategory';
-import { resolveStation, resolveStations, travelEndpointKey, type ExcursionStation } from './excursionStations';
+import { excursionStationKeys, resolveStation, resolveStations, travelEndpointKey, type ExcursionStation } from './excursionStations';
 import { travelTypeIcon } from './travelTypeIcon';
 
 /** Alle Orte eines Kalendertages – über alle Quellen hinweg (Termine, Reise-Etappen, Unterkunft,
@@ -89,7 +89,7 @@ export function buildDayStations(
   }
 
   for (const e of excursions.filter((e) => e.date === date)) {
-    for (const station of resolveStations(e.station_keys, spots, travelItems)) {
+    for (const station of resolveStations(excursionStationKeys(e.spot_ids), spots, travelItems)) {
       timed.push({ time: null, station });
     }
   }

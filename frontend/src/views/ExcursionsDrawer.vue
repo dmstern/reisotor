@@ -9,12 +9,12 @@ import { useExcursionsStore } from '../stores/excursions';
 import { useSpotsStore } from '../stores/spots';
 import { useDrawersStore } from '../stores/drawers';
 import { useLiveSyncStore } from '../stores/liveSync';
+import { useTourSettingsStore } from '../stores/tourSettings';
 import ExcursionCard from '../components/ExcursionCard.vue';
 import UndoDeleteRow from '../components/UndoDeleteRow.vue';
 import SpotOrderPicker from '../components/SpotOrderPicker.vue';
+import SpotTogglePicker from '../components/SpotTogglePicker.vue';
 import Modal from '../components/Modal.vue';
-import type { DerivedLocation } from '../utils/derivedLocation';
-import { buildTravelDerivedLocations } from '../utils/travelDerivedLocations';
 
 // Auf Desktop weiterhin eigenständig gemountete Schublade (App.vue, rechter Platz) statt Teil der
 // Karte-Hauptsicht – dadurch lassen sich Kalender- und Ausflüge-Schublade unabhängig voneinander
@@ -34,6 +34,7 @@ const excursionsStore = useExcursionsStore();
 const spotsStore = useSpotsStore();
 const drawers = useDrawersStore();
 const liveSync = useLiveSyncStore();
+const tourSettings = useTourSettingsStore();
 
 const users = ref<User[]>([]);
 const likes = ref<ExcursionLike[]>([]);
@@ -112,7 +113,7 @@ async function removeComment(id: number) {
 }
 
 const showExcursionForm = ref(false);
-const emptyExcursionForm = () => ({ title: '', image_url: '', note: '', date: '', station_keys: [] as string[] });
+const emptyExcursionForm = () => ({ title: '', image_url: '', note: '', date: '', spot_ids: [] as number[] });
 const excursionForm = ref(emptyExcursionForm());
 
 const editingExcursion = ref<number | null>(null);
@@ -135,19 +136,19 @@ async function addExcursion() {
     image_url: excursionForm.value.image_url || undefined,
     note: excursionForm.value.note || undefined,
     date: excursionForm.value.date || undefined,
-    station_keys: excursionForm.value.station_keys,
+    spot_ids: excursionForm.value.spot_ids,
   });
   closeExcursionForm();
 }
 
-function startEditExcursion(excursion: { id: number; title: string; image_url: string | null; note: string | null; date: string | null; station_keys: string[] }) {
+function startEditExcursion(excursion: { id: number; title: string; image_url: string | null; note: string | null; date: string | null; spot_ids: number[] }) {
   editingExcursion.value = excursion.id;
   editExcursionForm.value = {
     title: excursion.title,
     image_url: excursion.image_url ?? '',
     note: excursion.note ?? '',
     date: excursion.date ?? '',
-    station_keys: [...excursion.station_keys],
+    spot_ids: [...excursion.spot_ids],
   };
 }
 
@@ -158,7 +159,7 @@ async function submitEditExcursion() {
     image_url: editExcursionForm.value.image_url || undefined,
     note: editExcursionForm.value.note || undefined,
     date: editExcursionForm.value.date || undefined,
-    station_keys: editExcursionForm.value.station_keys,
+    spot_ids: editExcursionForm.value.spot_ids,
   });
   editingExcursion.value = null;
 }
@@ -174,60 +175,19 @@ async function removeExcursion(id: number) {
   await excursionsStore.remove(id);
 }
 
-// Spot per Drag&Drop aus der Spots-Sicht auf eine Ausflug-Karte fallen lassen: als Station
-// hinzufügen (ExcursionCard.vue ist die Drop-Zone, emittiert die abgelegte Spot-Id).
+// Spot per Drag&Drop aus der Spots-Sicht auf eine Ausflug-Karte fallen lassen (nur "Erweiterte
+// Touren-Bearbeitung", siehe stores/tourSettings.ts/ExcursionCard.vue): als Station hinzufügen
+// (ExcursionCard.vue ist die Drop-Zone, emittiert die abgelegte Spot-Id).
 async function addSpotToExcursion(excursionId: number, spotId: number) {
   const excursion = excursionsStore.excursions.find((e) => e.id === excursionId);
-  const key = `spot-${spotId}`;
-  if (!excursion || excursion.station_keys.includes(key)) return;
+  if (!excursion) return;
   await excursionsStore.update(excursionId, {
     title: excursion.title,
     image_url: excursion.image_url ?? undefined,
     note: excursion.note ?? undefined,
     date: excursion.date ?? undefined,
-    station_keys: [...excursion.station_keys, key],
+    spot_ids: [...excursion.spot_ids, spotId],
   });
-}
-
-// --- Abgeleitete Orte (Reise-Etappen-Enden ohne verknüpften Ort) ---
-// Wählbar wie ein Spot im SpotOrderPicker, ohne dafür einen anzulegen (loc.key ist bereits der
-// fertige Stations-Schlüssel, siehe utils/excursionStations.ts). Seit der Verschmelzung von
-// Unterkunft/Reise-Orten in Spots (siehe Migrationskommentar in db/index.ts) deckt das nur noch den
-// verbleibenden Freitext-Fallback ab, echte Orte sind längst normale, per SpotOrderPicker direkt
-// wählbare Spots.
-const derivedLocations = computed<DerivedLocation[]>(() => {
-  const result: DerivedLocation[] = [];
-  // buildTravelDerivedLocations() deckt nur noch Etappen-Enden OHNE verknüpften Ort ab (Freitext-
-  // Eingabe) – ein verknüpfter Ort ist seit der Verschmelzung von Reise-Orten in Spots (siehe
-  // Migrationskommentar in db/index.ts) bereits ein normaler, per SpotOrderPicker wählbarer Spot.
-  // Dedupliziert weiterhin über from_place_id/to_place_id (bzw. gerundete lat/lng bei Freitext) –
-  // ohne das ließ sich derselbe physische Ort (z. B. der Zielflughafen von Hin- UND Rückflug)
-  // zweimal als Station auswählen.
-  result.push(...buildTravelDerivedLocations(travelItems.value));
-  return result;
-});
-
-// Beim Ablegen auf einer Ausflug-Karte (Drag&Drop außerhalb des Dialogs): sofort speichern, gleiches
-// Duplikat-Check-Muster wie addSpotToExcursion.
-async function addDerivedLocationToExcursion(excursionId: number, loc: DerivedLocation) {
-  const excursion = excursionsStore.excursions.find((e) => e.id === excursionId);
-  if (!excursion || excursion.station_keys.includes(loc.key)) return;
-  await excursionsStore.update(excursionId, {
-    title: excursion.title,
-    image_url: excursion.image_url ?? undefined,
-    note: excursion.note ?? undefined,
-    date: excursion.date ?? undefined,
-    station_keys: [...excursion.station_keys, loc.key],
-  });
-}
-
-// Auswahl im Anlege-/Bearbeiten-Dialog (SpotOrderPicker): landet erstmal nur lokal im Formular, bis
-// "Speichern" gedrückt wird.
-function pickDerivedLocationForNewForm(loc: DerivedLocation) {
-  excursionForm.value.station_keys.push(loc.key);
-}
-function pickDerivedLocationForEditForm(loc: DerivedLocation) {
-  editExcursionForm.value.station_keys.push(loc.key);
 }
 
 // Drop-Zone, um die Kalender-Einplanung rückgängig zu machen: ein geplanter Ausflug kann aus dem
@@ -300,12 +260,16 @@ function editStationSpot() {
           <input v-model="excursionForm.date" type="date" />
         </label>
         <SpotOrderPicker
-          v-if="spotsStore.spots.length || derivedLocations.length"
-          v-model="excursionForm.station_keys"
+          v-if="tourSettings.advancedEditing && spotsStore.spots.length"
+          v-model="excursionForm.spot_ids"
           :spots="spotsStore.spots"
           :like-count="spotsStore.likeCountFor"
-          :derived-locations="derivedLocations"
-          @pick-derived-location="pickDerivedLocationForNewForm"
+        />
+        <SpotTogglePicker
+          v-else-if="spotsStore.spots.length"
+          v-model="excursionForm.spot_ids"
+          :spots="spotsStore.spots"
+          :like-count="spotsStore.likeCountFor"
         />
         <button type="submit">Hinzufügen</button>
       </form>
@@ -343,7 +307,6 @@ function editStationSpot() {
             @submit-comment="(content) => submitComment(excursion.id, content)"
             @remove-comment="removeComment"
             @drop-spot="(spotId) => addSpotToExcursion(excursion.id, spotId)"
-            @drop-derived-location="(loc) => addDerivedLocationToExcursion(excursion.id, loc as DerivedLocation)"
             @show-on-map="drawers.openMapForExcursion(excursion.id)"
             @edit-station-spot="editStationSpot"
           />
@@ -388,7 +351,6 @@ function editStationSpot() {
             @submit-comment="(content) => submitComment(excursion.id, content)"
             @remove-comment="removeComment"
             @drop-spot="(spotId) => addSpotToExcursion(excursion.id, spotId)"
-            @drop-derived-location="(loc) => addDerivedLocationToExcursion(excursion.id, loc as DerivedLocation)"
             @show-on-map="drawers.openMapForExcursion(excursion.id)"
             @edit-station-spot="editStationSpot"
           />
@@ -417,12 +379,16 @@ function editStationSpot() {
           <input v-model="editExcursionForm.date" type="date" />
         </label>
         <SpotOrderPicker
-          v-if="spotsStore.spots.length || derivedLocations.length"
-          v-model="editExcursionForm.station_keys"
+          v-if="tourSettings.advancedEditing && spotsStore.spots.length"
+          v-model="editExcursionForm.spot_ids"
           :spots="spotsStore.spots"
           :like-count="spotsStore.likeCountFor"
-          :derived-locations="derivedLocations"
-          @pick-derived-location="pickDerivedLocationForEditForm"
+        />
+        <SpotTogglePicker
+          v-else-if="spotsStore.spots.length"
+          v-model="editExcursionForm.spot_ids"
+          :spots="spotsStore.spots"
+          :like-count="spotsStore.likeCountFor"
         />
         <button type="submit">Speichern</button>
       </form>
