@@ -4,7 +4,7 @@ import { api } from '../api/client';
 // App-Shell (Workbox-Precaching, siehe vite.config.ts) - der Daten-Cache in api/offline.ts füllt
 // sich sonst rein opportunistisch, GET für GET, während man online durch die App klickt. Ohne
 // diese Liste blieben Views, die DashboardView.vue selbst nicht für seine eigenen Kacheln braucht
-// (z. B. /travel/places, /budget/budgets+/transfers, *_likes/*_comments, /ideas), erst nach einem
+// (z. B. /budget/budgets+/transfers, *_likes/*_comments, /ideas), erst nach einem
 // einmaligen Online-Besuch offline nutzbar - was die Nachricht im Header als leeres Versprechen
 // erscheinen lässt. Deshalb hier bewusst die VOLLSTÄNDIGE Liste aller trip-bezogenen GET-Endpunkte
 // über alle Views hinweg, nicht nur die von Dashboard tatsächlich benötigten.
@@ -23,7 +23,6 @@ function tripDataPaths(tripId: number): string[] {
     `/budget/allocations?trip_id=${tripId}`,
     `/budget/transfers?trip_id=${tripId}`,
     `/travel?trip_id=${tripId}`,
-    `/travel/places?trip_id=${tripId}`,
     `/accommodation?trip_id=${tripId}`,
     `/diary?trip_id=${tripId}`,
     `/diary/likes?trip_id=${tripId}`,

@@ -1,14 +1,16 @@
-import type { Accommodation, Spot, TravelItem, TravelPlace } from '../api/types';
+import type { Accommodation, Spot, TravelItem } from '../api/types';
 import { spotCategoryMeta } from './spotCategory';
 import { travelTypeIcon } from './travelTypeIcon';
-import { travelPlaceTypeIcon } from './travelPlaceType';
 
 // Löst die generischen station_keys eines Ausflugs (siehe api/types.ts, Excursion.station_keys) zu
 // einem einheitlichen Anzeige-Objekt auf – eine Station ist nicht zwingend ein echter Spot (kann
-// auch die Unterkunft, ein angelegter Reise-Ort oder ein Etappen-Ende ohne verknüpften Ort sein,
-// siehe Kommentar dort). Zentralisiert die Metadaten, die TripMap.vue und ExcursionsView.vue
-// (derivedLocations) für dieselben Objekttypen ohnehin schon separat kennen (Icon/Farbe/Label).
-export type StationKind = 'spot' | 'accommodation' | 'travel-place' | 'travel-from' | 'travel-to' | 'schedule';
+// auch die Unterkunft oder ein Etappen-Ende ohne verknüpften Ort sein, siehe Kommentar dort).
+// Zentralisiert die Metadaten, die TripMap.vue und ExcursionsView.vue (derivedLocations) für
+// dieselben Objekttypen ohnehin schon separat kennen (Icon/Farbe/Label). Reise-Orte (Flughafen/
+// Bahnhof/Zuhause/…) sind seit der Verschmelzung in Spots (siehe Migrationskommentar in
+// db/index.ts) ganz normale Spots und laufen daher über den 'spot'-Zweig, kein eigener
+// 'travel-place'-Stationstyp mehr nötig.
+export type StationKind = 'spot' | 'accommodation' | 'travel-from' | 'travel-to' | 'schedule';
 
 export interface ExcursionStation {
   key: string;
@@ -32,13 +34,13 @@ export interface ExcursionStation {
 }
 
 /** Welcher station_key das Von/Nach-Ende einer Etappe repräsentiert – bevorzugt den verknüpften Ort
- *  (travel-place-<id>, zeigt dann dessen eigenen Namen/Icon), fällt ohne Verknüpfung auf das alte
+ *  (spot-<id>, zeigt dann dessen eigenen Namen/Icon), fällt ohne Verknüpfung auf das alte
  *  Etappen-Ende-Format zurück (travel-from-/to-<id>, siehe resolveStation() unten). Exportiert, da
  *  dayStations.ts denselben Key braucht, um aufeinanderfolgende Etappen über ihren tatsächlichen Ort
  *  (statt die Etappe selbst) zu verketten. */
 export function travelEndpointKey(item: TravelItem, side: 'from' | 'to'): string {
   const placeId = side === 'from' ? item.from_place_id : item.to_place_id;
-  return placeId != null ? `travel-place-${placeId}` : `travel-${side}-${item.id}`;
+  return placeId != null ? `spot-${placeId}` : `travel-${side}-${item.id}`;
 }
 
 const ACCOMMODATION_META = { icon: '🛏️', color: '#1baf7a' };
@@ -49,7 +51,6 @@ export function resolveStation(
   spots: Spot[],
   accommodations: Accommodation[],
   travelItems: TravelItem[],
-  travelPlaces: TravelPlace[] = [],
 ): ExcursionStation | null {
   if (key.startsWith('spot-')) {
     const id = Number(key.slice('spot-'.length));
@@ -88,24 +89,6 @@ export function resolveStation(
       mapsLink: acc.maps_link,
     };
   }
-  if (key.startsWith('travel-place-')) {
-    const id = Number(key.slice('travel-place-'.length));
-    const place = travelPlaces.find((p) => p.id === id);
-    if (!place) return null;
-    return {
-      key,
-      kind: 'travel-place',
-      id,
-      title: place.name,
-      icon: travelPlaceTypeIcon(place.type),
-      color: TRAVEL_COLOR,
-      category: 'Reise',
-      imageUrl: null,
-      lat: place.lat,
-      lng: place.lng,
-      mapsLink: place.maps_link,
-    };
-  }
   if (key.startsWith('travel-from-') || key.startsWith('travel-to-')) {
     const isFrom = key.startsWith('travel-from-');
     const id = Number(key.slice((isFrom ? 'travel-from-' : 'travel-to-').length));
@@ -133,9 +116,8 @@ export function resolveStations(
   spots: Spot[],
   accommodations: Accommodation[],
   travelItems: TravelItem[],
-  travelPlaces: TravelPlace[] = [],
 ): ExcursionStation[] {
   return keys
-    .map((key) => resolveStation(key, spots, accommodations, travelItems, travelPlaces))
+    .map((key) => resolveStation(key, spots, accommodations, travelItems))
     .filter((s): s is ExcursionStation => !!s);
 }

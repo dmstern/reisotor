@@ -1,4 +1,4 @@
-import type { Accommodation, Excursion, ScheduleItem, Spot, TravelItem, TravelPlace } from '../api/types';
+import type { Accommodation, Excursion, ScheduleItem, Spot, TravelItem } from '../api/types';
 import { SCHEDULE_CATEGORY_META } from './scheduleCategory';
 import { resolveStation, resolveStations, travelEndpointKey, type ExcursionStation } from './excursionStations';
 import { travelTypeIcon } from './travelTypeIcon';
@@ -15,7 +15,6 @@ export function buildDayStations(
   travelItems: TravelItem[],
   accommodations: Accommodation[],
   spots: Spot[],
-  travelPlaces: TravelPlace[] = [],
 ): ExcursionStation[] {
   const timed: { time: string | null; station: ExcursionStation }[] = [];
 
@@ -65,12 +64,12 @@ export function buildDayStations(
     .sort((a, b) => (a.departure_time ?? '').localeCompare(b.departure_time ?? ''));
   let previousTravelKey: string | null = null;
   for (const t of todaysTravel) {
-    const from = resolveStation(travelEndpointKey(t, 'from'), spots, accommodations, travelItems, travelPlaces);
+    const from = resolveStation(travelEndpointKey(t, 'from'), spots, accommodations, travelItems);
     if (from && from.key !== previousTravelKey) {
       timed.push({ time: t.departure_time, station: from });
       previousTravelKey = from.key;
     }
-    const to = resolveStation(travelEndpointKey(t, 'to'), spots, accommodations, travelItems, travelPlaces);
+    const to = resolveStation(travelEndpointKey(t, 'to'), spots, accommodations, travelItems);
     if (to) {
       timed.push({
         time: t.arrival_time ?? t.departure_time,
@@ -86,7 +85,7 @@ export function buildDayStations(
   }
 
   for (const e of excursions.filter((e) => e.date === date)) {
-    for (const station of resolveStations(e.station_keys, spots, accommodations, travelItems, travelPlaces)) {
+    for (const station of resolveStations(e.station_keys, spots, accommodations, travelItems)) {
       timed.push({ time: null, station });
     }
   }

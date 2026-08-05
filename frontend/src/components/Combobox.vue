@@ -10,9 +10,9 @@ const props = withDefaults(
     modelValue?: string;
     options: string[];
     placeholder?: string;
-    // Optionales Icon je Option (z. B. travelPlaceTypeIcon()) - rein für die Dropdown-Liste, der
-    // gespeicherte Wert selbst bleibt reiner Text (kein eingebettetes Emoji), damit z. B. der
-    // case-insensitive Lookup in travelPlaceType.ts weiterhin einfach greift.
+    // Optionales Icon je Option (z. B. ein Kategorie-Icon aus spotCategory.ts) - rein für die
+    // Dropdown-Liste, der gespeicherte Wert selbst bleibt reiner Text (kein eingebettetes Emoji),
+    // damit ein case-insensitiver Lookup weiterhin einfach greift.
     iconFor?: (option: string) => string;
   }>(),
   { modelValue: '' },

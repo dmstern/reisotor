@@ -13,6 +13,10 @@ interface SpotBody {
   maps_link?: string;
   lat?: number;
   lng?: number;
+  /** Heimat-Seite eines Orts (Flughafen/Bahnhof/Zuhause/…), unabhängig von der Kategorie – ein
+   *  Flughafen kann sowohl der heimische Abflughafen als auch der Zielflughafen sein. Nur für
+   *  Reise-Etappen relevant (routes/travel.ts's applyPlaces()), bei gewöhnlichen Spots ungenutzt. */
+  is_home?: boolean;
 }
 
 interface CommentBody {
@@ -36,7 +40,7 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.post<{ Body: SpotBody }>('/spots', async (req, reply) => {
-    const { trip_id, title, category, note, maps_link } = req.body;
+    const { trip_id, title, category, note, maps_link, is_home } = req.body;
     if (!requireTripMember(reply, trip_id, req.session.userId)) return;
     let { lat, lng, image_url } = req.body;
     if ((lat == null || lng == null) && maps_link) {
@@ -51,8 +55,8 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
     }
     const result = db
       .prepare(
-        `INSERT INTO spots (trip_id, title, image_url, category, note, maps_link, lat, lng, created_by)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO spots (trip_id, title, image_url, category, note, maps_link, lat, lng, created_by, is_home)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         trip_id,
@@ -64,6 +68,7 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
         lat ?? null,
         lng ?? null,
         req.session.userId,
+        is_home ? 1 : 0,
       );
     recordActivity(trip_id, 'spots', result.lastInsertRowid as number, 'created', req.session.userId!);
     reply.code(201);
@@ -77,7 +82,7 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
     if (!existing) return reply.code(404).send({ error: 'Nicht gefunden' });
     if (!requireTripMember(reply, existing.trip_id, req.session.userId)) return;
 
-    const { title, category, note, maps_link } = req.body;
+    const { title, category, note, maps_link, is_home } = req.body;
     let { lat, lng, image_url } = req.body;
     if ((lat == null || lng == null) && maps_link) {
       const resolved = await resolveLatLng(maps_link);
@@ -95,7 +100,7 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
     }
     const result = db
       .prepare(
-        `UPDATE spots SET title = ?, image_url = ?, category = ?, note = ?, maps_link = ?, lat = ?, lng = ?
+        `UPDATE spots SET title = ?, image_url = ?, category = ?, note = ?, maps_link = ?, lat = ?, lng = ?, is_home = ?
          WHERE id = ?`,
       )
       .run(
@@ -106,6 +111,7 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
         maps_link ?? null,
         lat ?? null,
         lng ?? null,
+        is_home ? 1 : 0,
         req.params.id,
       );
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });

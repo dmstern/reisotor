@@ -12,7 +12,6 @@ import type {
   ScheduleItem,
   Spot,
   TravelItem,
-  TravelPlace,
   User,
 } from '../api/types';
 import { buildDayStations } from '../utils/dayStations';
@@ -116,7 +115,6 @@ const auth = useAuthStore();
 const liveSync = useLiveSyncStore();
 const accommodations = ref<Accommodation[]>([]);
 const travelItems = ref<TravelItem[]>([]);
-const travelPlaces = ref<TravelPlace[]>([]);
 const scheduleItems = ref<ScheduleItem[]>([]);
 
 // Eigener kleiner users-Fetch: nur für die Autor-Anzeige im Spot-/Ausflug-Detail-Dialog gebraucht,
@@ -174,10 +172,13 @@ const points = computed<MapPoint[]>(() => {
       });
     }
   }
-  // buildTravelDerivedLocations() dedupliziert bereits über from_place_id/to_place_id (bzw.
-  // gerundete lat/lng) – ohne das zeigte z. B. der Zielflughafen von Hin- UND Rückflug zwei
-  // übereinanderliegende Pins am selben Ort.
-  for (const loc of buildTravelDerivedLocations(travelItems.value, travelPlaces.value)) {
+  // buildTravelDerivedLocations() deckt nur noch Etappen-Enden OHNE verknüpften Ort ab (Freitext-
+  // Eingabe) – ein verknüpfter Ort (from_place_id/to_place_id) ist seit der Verschmelzung von
+  // Reise-Orten in Spots (siehe Migrationskommentar in db/index.ts) bereits ein normaler Spot und
+  // erscheint über die Spots-Schleife unten, dedupliziert über from_place_id/to_place_id (bzw.
+  // gerundete lat/lng bei Freitext) – ohne das zeigte z. B. der Zielflughafen von Hin- UND Rückflug
+  // zwei übereinanderliegende Pins am selben Ort.
+  for (const loc of buildTravelDerivedLocations(travelItems.value)) {
     result.push({
       key: loc.key,
       origin: 'travel',
@@ -202,6 +203,10 @@ const points = computed<MapPoint[]>(() => {
         icon: meta.icon,
         color: meta.color,
         category: s.category ?? 'Sonstiges',
+        // Ein zuhause-markierter Reise-Ort-Spot (Flughafen/Bahnhof/… mit is_home) wird vom
+        // Urlaubsfokus-Button ausgeblendet, genau wie vorher travel_places.is_home – bei
+        // gewöhnlichen Spots ist is_home immer 0.
+        homeSide: !!s.is_home,
       });
     }
   }
@@ -266,7 +271,6 @@ const focusedDateStations = computed<ExcursionStation[]>(() => {
     travelItems.value,
     accommodations.value,
     spotsStore.spots,
-    travelPlaces.value,
   );
 });
 
@@ -333,23 +337,21 @@ const visiblePoints = computed(() => {
 const focusedExcursionStations = computed<ExcursionStation[]>(() => {
   const excursion = focusedExcursion.value;
   if (!excursion) return [];
-  return resolveStations(excursion.station_keys, spotsStore.spots, accommodations.value, travelItems.value, travelPlaces.value);
+  return resolveStations(excursion.station_keys, spotsStore.spots, accommodations.value, travelItems.value);
 });
 
 async function loadAll() {
   const tripId = tripStore.currentTripId;
   if (tripId == null) return;
-  const [accommodationRes, travelRes, travelPlacesRes, scheduleRes, ideaLikesRes, ideaCommentsRes] = await Promise.all([
+  const [accommodationRes, travelRes, scheduleRes, ideaLikesRes, ideaCommentsRes] = await Promise.all([
     api.get<Accommodation[]>(`/accommodation?trip_id=${tripId}`),
     api.get<TravelItem[]>(`/travel?trip_id=${tripId}`),
-    api.get<TravelPlace[]>(`/travel/places?trip_id=${tripId}`),
     api.get<ScheduleItem[]>(`/schedule?trip_id=${tripId}`),
     api.get<ExcursionLike[]>(`/ideas/likes?trip_id=${tripId}`),
     api.get<ExcursionComment[]>(`/ideas/comments?trip_id=${tripId}`),
   ]);
   accommodations.value = accommodationRes;
   travelItems.value = travelRes;
-  travelPlaces.value = travelPlacesRes;
   scheduleItems.value = scheduleRes;
   ideaLikes.value = ideaLikesRes;
   ideaComments.value = ideaCommentsRes;
@@ -495,11 +497,6 @@ function openStationDetail(station: ExcursionStation) {
     // (Desktop) bzw. navigiert zur Kalender-Seite (Mobil, siehe drawers.openCalendar()).
     drawers.openCalendar();
     drawers.mapFocusKey = station.key;
-  } else if (station.kind === 'travel-place') {
-    // Kein eigener Detail-Dialog für angelegte Reise-Orte (nur für einzelne Etappen, siehe
-    // TravelDetailDialog.vue unten) – echter Sprung zur Reise-Sicht, gleicher Grund wie bei Terminen
-    // oben.
-    router.push('/travel');
   } else {
     openTravelId.value = station.id;
     travelDialogOpen.value = true;
@@ -522,10 +519,6 @@ function handlePointClick(point: MapPoint) {
     openAccommodationId.value = Number(point.key.slice('accommodation-'.length));
     accommodationDialogOpen.value = true;
     drawers.mapFocusKey = point.key;
-  } else if (point.key.startsWith('travel-place-')) {
-    // Kein eigener Detail-Dialog für angelegte Reise-Orte (nur für einzelne Etappen, siehe
-    // TravelDetailDialog.vue unten) – echter Sprung zur Reise-Sicht statt eines Dialogs.
-    router.push('/travel');
   } else {
     const isFrom = point.key.startsWith('travel-from-');
     openTravelId.value = Number(point.key.slice((isFrom ? 'travel-from-' : 'travel-to-').length));
@@ -771,7 +764,7 @@ function renderRoutes() {
   // Im Ausflug-Fokus nur dessen eigene Route zeichnen, nicht die aller anderen Ausflüge.
   const excursionsToDraw = focusedExcursion.value ? [focusedExcursion.value] : excursionsStore.excursions;
   for (const excursion of excursionsToDraw) {
-    const stations = resolveStations(excursion.station_keys, spotsStore.spots, accommodations.value, travelItems.value, travelPlaces.value);
+    const stations = resolveStations(excursion.station_keys, spotsStore.spots, accommodations.value, travelItems.value);
     const coords: L.LatLngExpression[] = stations
       .filter((s) => s.lat != null && s.lng != null)
       .map((s) => [s.lat as number, s.lng as number]);
@@ -1147,7 +1140,6 @@ watch(() => liveSync.memberPositions, () => renderPositions(), { deep: true });
       :stations="spotsStore.spots"
       :accommodations="accommodations"
       :travel-items="travelItems"
-      :travel-places="travelPlaces"
       @edit="editOpenExcursion"
       @toggle-like="toggleIdeaLike(openExcursion.id)"
       @submit-comment="(content) => submitIdeaComment(openExcursion!.id, content)"

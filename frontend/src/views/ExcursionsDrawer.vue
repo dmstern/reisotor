@@ -2,7 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { api } from '../api/client';
-import type { Accommodation, ExcursionComment, ExcursionLike, TravelItem, TravelPlace, User } from '../api/types';
+import type { Accommodation, ExcursionComment, ExcursionLike, TravelItem, User } from '../api/types';
 import { useAuthStore } from '../stores/auth';
 import { useTripStore } from '../stores/trip';
 import { useExcursionsStore } from '../stores/excursions';
@@ -40,19 +40,17 @@ const likes = ref<ExcursionLike[]>([]);
 const comments = ref<ExcursionComment[]>([]);
 const accommodations = ref<Accommodation[]>([]);
 const travelItems = ref<TravelItem[]>([]);
-const travelPlaces = ref<TravelPlace[]>([]);
 const loading = ref(true);
 const highlightedIds = ref<Set<number>>(new Set());
 
 onMounted(async () => {
   highlightedIds.value = liveSync.markSeen('ideas');
-  const [usersRes, likesRes, commentsRes, accommodationRes, travelRes, travelPlacesRes] = await Promise.all([
+  const [usersRes, likesRes, commentsRes, accommodationRes, travelRes] = await Promise.all([
     api.get<User[]>('/users'),
     api.get<ExcursionLike[]>(`/ideas/likes?trip_id=${tripId}`),
     api.get<ExcursionComment[]>(`/ideas/comments?trip_id=${tripId}`),
     api.get<Accommodation[]>(`/accommodation?trip_id=${tripId}`),
     api.get<TravelItem[]>(`/travel?trip_id=${tripId}`),
-    api.get<TravelPlace[]>(`/travel/places?trip_id=${tripId}`),
     excursionsStore.load(),
     spotsStore.load(),
   ]);
@@ -61,7 +59,6 @@ onMounted(async () => {
   comments.value = commentsRes;
   accommodations.value = accommodationRes;
   travelItems.value = travelRes;
-  travelPlaces.value = travelPlacesRes;
   loading.value = false;
 });
 
@@ -205,10 +202,13 @@ const derivedLocations = computed<DerivedLocation[]>(() => {
       result.push({ key: `accommodation-${a.id}`, title: a.name, icon: '🛏️', category: 'Unterkunft', maps_link: a.maps_link, lat: a.lat, lng: a.lng });
     }
   }
-  // buildTravelDerivedLocations() dedupliziert bereits über from_place_id/to_place_id (bzw.
-  // gerundete lat/lng) – ohne das ließ sich derselbe physische Ort (z. B. der Zielflughafen von
-  // Hin- UND Rückflug) zweimal als Station auswählen.
-  result.push(...buildTravelDerivedLocations(travelItems.value, travelPlaces.value));
+  // buildTravelDerivedLocations() deckt nur noch Etappen-Enden OHNE verknüpften Ort ab (Freitext-
+  // Eingabe) – ein verknüpfter Ort ist seit der Verschmelzung von Reise-Orten in Spots (siehe
+  // Migrationskommentar in db/index.ts) bereits ein normaler, per SpotOrderPicker wählbarer Spot.
+  // Dedupliziert weiterhin über from_place_id/to_place_id (bzw. gerundete lat/lng bei Freitext) –
+  // ohne das ließ sich derselbe physische Ort (z. B. der Zielflughafen von Hin- UND Rückflug)
+  // zweimal als Station auswählen.
+  result.push(...buildTravelDerivedLocations(travelItems.value));
   return result;
 });
 
@@ -343,7 +343,6 @@ function editStationSpot() {
             :stations="spotsStore.spots"
             :accommodations="accommodations"
             :travel-items="travelItems"
-            :travel-places="travelPlaces"
             @edit="startEditExcursion"
             @remove="removeExcursion"
             @toggle-like="toggleLike(excursion.id)"
@@ -390,7 +389,6 @@ function editStationSpot() {
             :stations="spotsStore.spots"
             :accommodations="accommodations"
             :travel-items="travelItems"
-            :travel-places="travelPlaces"
             @edit="startEditExcursion"
             @remove="removeExcursion"
             @toggle-like="toggleLike(excursion.id)"

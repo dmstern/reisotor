@@ -2,20 +2,20 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { api } from '../api/client';
-import type { TravelItem, TravelPlace, TravelRole, User } from '../api/types';
+import type { TravelItem, TravelRole, User } from '../api/types';
 import { useTripStore } from '../stores/trip';
 import { useDrawersStore } from '../stores/drawers';
 import { useLiveSyncStore } from '../stores/liveSync';
+import { useSpotsStore } from '../stores/spots';
 import { parseLatLngFromMapsLink } from '../utils/googleMaps';
 import { TRAVEL_ROLE_META, TRAVEL_ROLE_OPTIONS } from '../utils/travelRole';
 import { travelTypeIcon } from '../utils/travelTypeIcon';
-import { travelPlaceTypeIcon, isZuhauseType, TRAVEL_PLACE_TYPE_SUGGESTIONS } from '../utils/travelPlaceType';
+import { spotCategoryMeta } from '../utils/spotCategory';
 import { formatTravelDuration, travelDurationMinutes } from '../utils/travelDuration';
 import { hashHighlightId } from '../utils/hashHighlight';
 import Modal from '../components/Modal.vue';
 import TravelDetailDialog from '../components/TravelDetailDialog.vue';
 import LocationPicker from '../components/LocationPicker.vue';
-import Combobox from '../components/Combobox.vue';
 import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
 import UndoDeleteRow from '../components/UndoDeleteRow.vue';
@@ -24,11 +24,11 @@ import { useUndoableDelete } from '../composables/useUndoableDelete';
 const tripStore = useTripStore();
 const drawers = useDrawersStore();
 const liveSync = useLiveSyncStore();
+const spotsStore = useSpotsStore();
 const route = useRoute();
 const tripId = tripStore.currentTripId as number;
 const items = ref<TravelItem[]>([]);
 const { isPending, markPendingDelete, clearPending } = useUndoableDelete();
-const places = ref<TravelPlace[]>([]);
 const users = ref<User[]>([]);
 const loading = ref(true);
 const showForm = ref(false);
@@ -93,13 +93,12 @@ const pickerCenter = computed(() => {
 });
 
 async function load() {
-  const [itemsRes, placesRes, usersRes] = await Promise.all([
+  const [itemsRes, usersRes] = await Promise.all([
     api.get<TravelItem[]>(`/travel?trip_id=${tripId}`),
-    api.get<TravelPlace[]>(`/travel/places?trip_id=${tripId}`),
     api.get<User[]>('/users'),
+    spotsStore.load(),
   ]);
   items.value = itemsRes;
-  places.value = placesRes;
   users.value = usersRes;
   loading.value = false;
 }
@@ -123,8 +122,8 @@ function userLabel(id: number | null) {
 
 function placeLabel(id: number | null) {
   if (id == null) return null;
-  const p = places.value.find((p) => p.id === id);
-  return p ? `${travelPlaceTypeIcon(p.type)} ${p.name}` : null;
+  const p = spotsStore.spots.find((s) => s.id === id);
+  return p ? `${spotCategoryMeta(p.category).icon} ${p.title}` : null;
 }
 
 function toBody(
@@ -353,68 +352,6 @@ function createReturnLeg(item: TravelItem) {
   showForm.value = true;
 }
 
-// --- Orte (wiederverwendbare Start-/Zielpunkte für Etappen) ---
-const emptyPlaceForm = () => ({ name: '', type: '', is_home: false, maps_link: '' });
-const newPlaceForm = ref(emptyPlaceForm());
-const newPlaceMapsLinkResolved = ref<boolean | null>(null);
-const editingPlace = ref<TravelPlace | null>(null);
-const editPlaceForm = ref(emptyPlaceForm());
-
-function checkNewPlaceMapsLink() {
-  newPlaceMapsLinkResolved.value = newPlaceForm.value.maps_link
-    ? parseLatLngFromMapsLink(newPlaceForm.value.maps_link) != null
-    : null;
-}
-
-async function addPlace() {
-  if (!newPlaceForm.value.name.trim()) return;
-  const created = await api.post<TravelPlace>('/travel/places', {
-    trip_id: tripId,
-    name: newPlaceForm.value.name.trim(),
-    type: newPlaceForm.value.type || undefined,
-    is_home: isZuhauseType(newPlaceForm.value.type) || newPlaceForm.value.is_home,
-    maps_link: newPlaceForm.value.maps_link || undefined,
-  });
-  places.value.push(created);
-  drawers.touchLocations();
-  newPlaceForm.value = emptyPlaceForm();
-  newPlaceMapsLinkResolved.value = null;
-}
-
-function startEditPlace(place: TravelPlace) {
-  editingPlace.value = place;
-  editPlaceForm.value = {
-    name: place.name,
-    type: place.type ?? '',
-    is_home: !!place.is_home,
-    maps_link: place.maps_link ?? '',
-  };
-}
-
-async function submitEditPlace() {
-  if (!editingPlace.value || !editPlaceForm.value.name.trim()) return;
-  const updated = await api.put<TravelPlace>(`/travel/places/${editingPlace.value.id}`, {
-    trip_id: tripId,
-    name: editPlaceForm.value.name.trim(),
-    type: editPlaceForm.value.type || undefined,
-    is_home: isZuhauseType(editPlaceForm.value.type) || editPlaceForm.value.is_home,
-    maps_link: editPlaceForm.value.maps_link || undefined,
-  });
-  const idx = places.value.findIndex((p) => p.id === updated.id);
-  if (idx !== -1) places.value[idx] = updated;
-  drawers.touchLocations();
-  editingPlace.value = null;
-}
-
-async function removePlace(id: number) {
-  await api.delete(`/travel/places/${id}`);
-  places.value = places.value.filter((p) => p.id !== id);
-  // Etappen, die diesen Ort referenzierten, verlieren serverseitig nur die Verknüpfung (ON DELETE
-  // SET NULL) – ihre zuletzt materialisierten Von/Nach-Angaben bleiben als Freitext erhalten, ein
-  // Reload hält from_place_id/to_place_id in der Liste damit konsistent zum Server.
-  items.value = await api.get<TravelItem[]>(`/travel?trip_id=${tripId}`);
-}
-
 // Ein einziger Detail-Dialog außerhalb des v-for statt einer pro Karte (gleiches Muster wie der
 // bestehende Bearbeiten-Modal mit editingItem/editForm). "welcher Eintrag" (detailItem) und "ist
 // der Dialog offen" (detailDialogOpen) bewusst getrennt: TravelDetailDialog.vue braucht ein echtes
@@ -454,45 +391,11 @@ function showDetailToOnMap() {
       <button @click="showForm = true">+ Neue Fahrt/Flug</button>
     </div>
 
-    <section class="card places-card">
-      <h2>📍 Orte</h2>
-      <p class="hint">
-        Einmal angelegt, lassen sich Orte in Etappen als Von/Nach auswählen, statt sie erneut
-        eintippen zu müssen – z. B. "Zuhause" für Hin- und Rückreise.
-      </p>
-      <form class="place-form" @submit.prevent="addPlace">
-        <input v-model="newPlaceForm.name" type="text" placeholder="Name, z. B. Zuhause oder Hotel Meeresblick" required />
-        <Combobox
-          v-model="newPlaceForm.type"
-          :options="TRAVEL_PLACE_TYPE_SUGGESTIONS"
-          :icon-for="travelPlaceTypeIcon"
-          placeholder="Art (optional, z. B. Flughafen – oder eigene erstellen)"
-        />
-        <label class="home-check" v-if="!isZuhauseType(newPlaceForm.type)">
-          <input v-model="newPlaceForm.is_home" type="checkbox" />
-          🏠 Heimat-Seite (nicht Urlaubsregion)
-        </label>
-        <input v-model="newPlaceForm.maps_link" type="url" placeholder="Maps-Link (optional)" @blur="checkNewPlaceMapsLink" />
-        <button type="submit">Hinzufügen</button>
-      </form>
-      <p v-if="newPlaceMapsLinkResolved === true" class="hint success">📍 Standort erkannt</p>
-      <p v-if="newPlaceMapsLinkResolved === false" class="hint">Standort konnte nicht automatisch erkannt werden.</p>
-      <ul class="places-list" v-if="places.length">
-        <li v-for="place in places" :key="place.id" class="place-row">
-          <span class="place-name">
-            {{ travelPlaceTypeIcon(place.type) }} {{ place.name }}
-            <span v-if="place.is_home && !isZuhauseType(place.type)" class="home-badge" title="Gehört zur Heimat-Seite">
-              🏠
-            </span>
-          </span>
-          <div class="row-actions">
-            <EditButton small @click="startEditPlace(place)" />
-            <DeleteButton small @click="removePlace(place.id)" />
-          </div>
-        </li>
-      </ul>
-      <p v-else class="empty">Noch keine Orte angelegt.</p>
-    </section>
+    <p class="hint places-hint">
+      Für Von/Nach lässt sich unten direkt ein bestehender Spot auswählen – neue Orte (Flughafen,
+      Bahnhof, Zuhause, …) legst du dafür in der 🗺️ Karte-Sicht als Spot an (Kategorie z. B.
+      "Flughafen" oder "Zuhause").
+    </p>
 
     <Modal :model-value="showForm" title="Neuer Reise-Eintrag" full-height @update:model-value="(v) => !v && closeForm()">
     <form class="form" @submit.prevent="submit">
@@ -520,14 +423,14 @@ function showDetailToOnMap() {
           Von
           <select v-model="form.from_place_id">
             <option :value="MANUAL">✏️ Manuell eingeben</option>
-            <option v-for="p in places" :key="p.id" :value="String(p.id)">{{ travelPlaceTypeIcon(p.type) }} {{ p.name }}</option>
+            <option v-for="s in spotsStore.spots" :key="s.id" :value="String(s.id)">{{ spotCategoryMeta(s.category).icon }} {{ s.title }}</option>
           </select>
         </label>
         <label>
           Nach
           <select v-model="form.to_place_id">
             <option :value="MANUAL">✏️ Manuell eingeben</option>
-            <option v-for="p in places" :key="p.id" :value="String(p.id)">{{ travelPlaceTypeIcon(p.type) }} {{ p.name }}</option>
+            <option v-for="s in spotsStore.spots" :key="s.id" :value="String(s.id)">{{ spotCategoryMeta(s.category).icon }} {{ s.title }}</option>
           </select>
         </label>
       </div>
@@ -717,14 +620,14 @@ function showDetailToOnMap() {
             Von
             <select v-model="editForm.from_place_id">
               <option :value="MANUAL">✏️ Manuell eingeben</option>
-              <option v-for="p in places" :key="p.id" :value="String(p.id)">{{ travelPlaceTypeIcon(p.type) }} {{ p.name }}</option>
+              <option v-for="s in spotsStore.spots" :key="s.id" :value="String(s.id)">{{ spotCategoryMeta(s.category).icon }} {{ s.title }}</option>
             </select>
           </label>
           <label>
             Nach
             <select v-model="editForm.to_place_id">
               <option :value="MANUAL">✏️ Manuell eingeben</option>
-              <option v-for="p in places" :key="p.id" :value="String(p.id)">{{ travelPlaceTypeIcon(p.type) }} {{ p.name }}</option>
+              <option v-for="s in spotsStore.spots" :key="s.id" :value="String(s.id)">{{ spotCategoryMeta(s.category).icon }} {{ s.title }}</option>
             </select>
           </label>
         </div>
@@ -834,27 +737,6 @@ function showDetailToOnMap() {
       </form>
     </Modal>
 
-    <Modal
-      :model-value="editingPlace !== null"
-      title="Ort bearbeiten"
-      @update:model-value="(v) => !v && (editingPlace = null)"
-    >
-      <form class="edit-form" @submit.prevent="submitEditPlace">
-        <input v-model="editPlaceForm.name" type="text" placeholder="Name" required />
-        <Combobox
-          v-model="editPlaceForm.type"
-          :options="TRAVEL_PLACE_TYPE_SUGGESTIONS"
-          :icon-for="travelPlaceTypeIcon"
-          placeholder="Art (optional, z. B. Flughafen – oder eigene erstellen)"
-        />
-        <label class="home-check" v-if="!isZuhauseType(editPlaceForm.type)">
-          <input v-model="editPlaceForm.is_home" type="checkbox" />
-          🏠 Heimat-Seite (nicht Urlaubsregion)
-        </label>
-        <input v-model="editPlaceForm.maps_link" type="url" placeholder="Maps-Link (optional)" />
-        <button type="submit">Speichern</button>
-      </form>
-    </Modal>
   </div>
 </template>
 
@@ -868,73 +750,8 @@ function showDetailToOnMap() {
   margin-bottom: var(--space-3);
 }
 
-.places-card {
-  margin-bottom: var(--space-4);
-}
-
-.places-card h2 {
-  font-size: 1rem;
-  color: var(--color-primary-dark);
-  margin-bottom: 4px;
-}
-
-.places-card .hint {
-  margin-bottom: var(--space-2);
-}
-
-/* Grid statt flex-wrap: bei flex-wrap landete die Checkbox (.home-check) auf schmalen Mobile-
-   Breiten unvorhersehbar allein auf einer Zeile (isoliert zwischen den beiden min-width:160px-
-   Textfeldern), da keins der Felder eine eigene volle Zeile beanspruchte. Mobil (< 560px) bekommt
-   dadurch jetzt jedes Feld eine eigene Zeile, ab 560px wieder eine gemeinsame Reihe wie zuvor. */
-.place-form {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--space-2);
-  margin-bottom: var(--space-2);
-}
-
-@media (min-width: 560px) {
-  .place-form {
-    grid-template-columns: 1fr auto 1fr auto;
-    align-items: center;
-  }
-}
-
-.home-check {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.places-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.place-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-  padding: 6px 0;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.place-row:last-child {
-  border-bottom: none;
-}
-
-.place-name {
-  font-size: 0.9rem;
-}
-
-.home-badge {
-  font-size: 0.8rem;
-  opacity: 0.8;
+.places-hint {
+  margin-bottom: var(--space-3);
 }
 
 .form {

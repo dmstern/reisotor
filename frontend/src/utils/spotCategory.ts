@@ -23,6 +23,15 @@ const KNOWN_CATEGORIES: { label: string; icon: string; color: string }[] = [
   { label: 'Bäckerei', icon: '🥐', color: '#c17817' },
   { label: 'Apotheke', icon: '💊', color: '#dc3545' },
   { label: 'Tankstelle', icon: '⛽', color: '#5a6b7a' },
+  // Reise-Orte (ehemals travel_places, siehe Migrationskommentar in db/index.ts) – jetzt ganz
+  // normale Spot-Kategorien, damit Flughafen/Bahnhof/Zuhause/… direkt in der Spots-Sicht anlegbar
+  // sind statt in einer eigenen, parallelen Orte-Liste für Reisen.
+  { label: 'Flughafen', icon: '✈️', color: '#4a3aa7' },
+  { label: 'Bahnhof', icon: '🚆', color: '#4a3aa7' },
+  { label: 'Busbahnhof', icon: '🚌', color: '#4a3aa7' },
+  { label: 'Hafen', icon: '⛴️', color: '#4a3aa7' },
+  { label: 'Raststätte', icon: '🛣️', color: '#4a3aa7' },
+  { label: 'Zuhause', icon: '🏠', color: '#4a3aa7' },
 ];
 
 const OTHER_META: CategoryMeta = { icon: '📍', color: '#8a8a86' };

@@ -13,7 +13,7 @@ const seeded = JSON.parse(
 // Daten-Cache (api/offline.ts) füllte sich vorher aber rein opportunistisch, GET für GET, während
 // man online durch die App klickt. Views, die DashboardView.vue selbst nicht für seine eigenen
 // Kacheln lädt (u. a. Budget, das zusätzlich /budget/budgets und /budget/transfers braucht;
-// Reise, das zusätzlich /travel/places braucht; Tagebuch/Notizen/Touren, die zusätzlich ihre
+// Tagebuch/Notizen/Touren, die zusätzlich ihre
 // */likes und */comments brauchen), blieben dadurch erst nach einem einmaligen Online-Besuch
 // offline nutzbar. Fix: App.vue wärmt den Daten-Cache für den kompletten Urlaub im Hintergrund vor
 // (utils/offlinePrefetch.ts), sobald ein Urlaub geladen ist.
@@ -34,7 +34,6 @@ test('wärmt beim Laden des Urlaubs den Offline-Cache für alle Domänen vor, ni
   const uncoveredByDashboard = [
     `/budget/budgets?trip_id=${tripId}`,
     `/budget/transfers?trip_id=${tripId}`,
-    `/travel/places?trip_id=${tripId}`,
     `/diary/likes?trip_id=${tripId}`,
     `/diary/comments?trip_id=${tripId}`,
     `/notes/likes?trip_id=${tripId}`,

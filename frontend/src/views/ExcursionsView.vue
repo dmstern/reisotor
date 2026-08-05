@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch, type ComponentPublicInstance, type Ref } from 'vue';
 import { api } from '../api/client';
-import type { Accommodation, Spot, TravelItem, TravelPlace, User } from '../api/types';
+import type { Accommodation, Spot, TravelItem, User } from '../api/types';
 import { useAuthStore } from '../stores/auth';
 import { useTripStore } from '../stores/trip';
 import { useSpotsStore } from '../stores/spots';
@@ -38,7 +38,6 @@ const isDesktop = useIsDesktop();
 const users = ref<User[]>([]);
 const accommodations = ref<Accommodation[]>([]);
 const travelItems = ref<TravelItem[]>([]);
-const travelPlaces = ref<TravelPlace[]>([]);
 const loading = ref(true);
 const highlightedIds = ref<Set<number>>(new Set());
 
@@ -70,17 +69,15 @@ onUnmounted(() => {
 
 onMounted(async () => {
   highlightedIds.value = liveSync.markSeen('spots');
-  const [usersRes, accommodationRes, travelRes, travelPlacesRes] = await Promise.all([
+  const [usersRes, accommodationRes, travelRes] = await Promise.all([
     api.get<User[]>('/users'),
     api.get<Accommodation[]>(`/accommodation?trip_id=${tripId}`),
     api.get<TravelItem[]>(`/travel?trip_id=${tripId}`),
-    api.get<TravelPlace[]>(`/travel/places?trip_id=${tripId}`),
     spotsStore.load(),
   ]);
   users.value = usersRes;
   accommodations.value = accommodationRes;
   travelItems.value = travelRes;
-  travelPlaces.value = travelPlacesRes;
   loading.value = false;
 });
 
@@ -124,16 +121,19 @@ const derivedLocations = computed<DerivedLocation[]>(() => {
       result.push({ key: `accommodation-${a.id}`, title: a.name, icon: '🛏️', category: 'Unterkunft', maps_link: a.maps_link, lat: a.lat, lng: a.lng });
     }
   }
-  // buildTravelDerivedLocations() dedupliziert bereits über from_place_id/to_place_id (bzw.
-  // gerundete lat/lng) – ohne das erschien z. B. der Zielflughafen von Hin- UND Rückflug zweimal
-  // als eigene Karte in dieser Liste.
-  result.push(...buildTravelDerivedLocations(travelItems.value, travelPlaces.value));
+  // buildTravelDerivedLocations() deckt nur noch Etappen-Enden OHNE verknüpften Ort ab (Freitext-
+  // Eingabe) – ein verknüpfter Ort ist seit der Verschmelzung von Reise-Orten in Spots (siehe
+  // Migrationskommentar in db/index.ts) bereits ein normaler Spot und erscheint über
+  // spotsStore.spots (siehe allSpotItems unten), dedupliziert über from_place_id/to_place_id (bzw.
+  // gerundete lat/lng bei Freitext) – ohne das erschien z. B. der Zielflughafen von Hin- UND
+  // Rückflug zweimal als eigene Karte in dieser Liste.
+  result.push(...buildTravelDerivedLocations(travelItems.value));
   return result;
 });
 
 // --- Spots ---
 const showSpotForm = ref(false);
-const emptySpotForm = () => ({ title: '', image_url: '', maps_link: '', note: '', category: '' });
+const emptySpotForm = () => ({ title: '', image_url: '', maps_link: '', note: '', category: '', is_home: false });
 const spotForm = ref(emptySpotForm());
 const spotMapsLinkResolved = ref<boolean | null>(null);
 const spotManualPin = ref<{ lat: number; lng: number } | null>(null);
@@ -541,6 +541,7 @@ function spotToBody(f: ReturnType<typeof emptySpotForm>, manual?: { lat: number;
     maps_link: f.maps_link || undefined,
     lat: manual?.lat ?? parsed?.lat,
     lng: manual?.lng ?? parsed?.lng,
+    is_home: f.is_home,
   };
 }
 
@@ -586,6 +587,7 @@ function startEditSpot(spot: Spot) {
     maps_link: spot.maps_link ?? '',
     note: spot.note ?? '',
     category: spot.category ?? '',
+    is_home: !!spot.is_home,
   };
   editSpotMapsLinkResolved.value = null;
   editSpotManualPin.value = null;
@@ -776,6 +778,10 @@ async function removeSpot(id: number) {
           <input v-model="spotForm.title" type="text" placeholder="Titel" required />
           <input v-model="spotForm.image_url" type="url" placeholder="Bild-URL (optional)" />
           <Combobox v-model="spotForm.category" :options="spotCategoryOptions" placeholder="Kategorie (optional, z. B. Restaurant – oder eigene erstellen)" />
+          <label class="checkbox-option">
+            <input type="checkbox" v-model="spotForm.is_home" />
+            🏠 Heimat-Seite (z. B. der heimische Flughafen/Bahnhof/Zuhause für Reise-Etappen)
+          </label>
           <input
             v-model="spotForm.maps_link"
             type="url"
@@ -864,6 +870,10 @@ async function removeSpot(id: number) {
           <input v-model="editSpotForm.title" type="text" placeholder="Titel" required />
           <input v-model="editSpotForm.image_url" type="url" placeholder="Bild-URL (optional)" />
           <Combobox v-model="editSpotForm.category" :options="spotCategoryOptions" placeholder="Kategorie (optional, z. B. Restaurant – oder eigene erstellen)" />
+          <label class="checkbox-option">
+            <input type="checkbox" v-model="editSpotForm.is_home" />
+            🏠 Heimat-Seite (z. B. der heimische Flughafen/Bahnhof/Zuhause für Reise-Etappen)
+          </label>
           <input
             v-model="editSpotForm.maps_link"
             type="url"
@@ -1407,6 +1417,14 @@ async function removeSpot(id: number) {
 
 .category-option:hover {
   background: var(--color-hover);
+}
+
+.checkbox-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.85rem;
+  cursor: pointer;
 }
 
 .filter-bar {

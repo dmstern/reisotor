@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { TravelItem, TravelPlace } from '../api/types';
+import type { Spot, TravelItem } from '../api/types';
 import { buildDayStations } from './dayStations';
 
 function travelItem(overrides: Partial<TravelItem>): TravelItem {
@@ -34,16 +34,19 @@ function travelItem(overrides: Partial<TravelItem>): TravelItem {
   };
 }
 
-function travelPlace(overrides: Partial<TravelPlace>): TravelPlace {
+function spot(overrides: Partial<Spot>): Spot {
   return {
     id: 1,
     trip_id: 1,
-    name: 'Ort',
-    is_home: 0,
-    type: null,
+    title: 'Ort',
+    image_url: null,
+    category: null,
+    note: null,
     maps_link: null,
     lat: null,
     lng: null,
+    created_by: null,
+    is_home: 0,
     ...overrides,
   };
 }
@@ -51,11 +54,12 @@ function travelPlace(overrides: Partial<TravelPlace>): TravelPlace {
 // Regressionsnetz für den Tages-Fokus-Stationen-Bau (Tag auf Karte anzeigen): Reise-Etappen desselben
 // Tages werden über ihren tatsächlichen ORT verkettet statt über die Etappe selbst - bei "A -> B"
 // gefolgt von "B -> C" soll B nur EINMAL als Station auftauchen, die Verbindungslinie dazwischen
-// trägt stattdessen den Namen der jeweiligen Etappe (ExcursionStation.connector).
+// trägt stattdessen den Namen der jeweiligen Etappe (ExcursionStation.connector). Reise-Orte sind
+// seit der Verschmelzung in Spots (siehe Migrationskommentar in db/index.ts) ganz normale Spots.
 describe('buildDayStations - Reise-Etappen-Verkettung', () => {
-  const placeA = travelPlace({ id: 1, name: 'Zuhause', lat: 48.1, lng: 11.5 });
-  const placeB = travelPlace({ id: 2, name: 'Zwischenstopp', lat: 45.0, lng: 12.0 });
-  const placeC = travelPlace({ id: 3, name: 'Zielort', lat: 40.8, lng: 14.2 });
+  const placeA = spot({ id: 1, title: 'Zuhause', lat: 48.1, lng: 11.5 });
+  const placeB = spot({ id: 2, title: 'Zwischenstopp', lat: 45.0, lng: 12.0 });
+  const placeC = spot({ id: 3, title: 'Zielort', lat: 40.8, lng: 14.2 });
 
   it('zeigt den geteilten Zwischenort (B) nur einmal statt als zwei benachbarte, identische Stationen', () => {
     const legAB = travelItem({
@@ -77,7 +81,7 @@ describe('buildDayStations - Reise-Etappen-Verkettung', () => {
       to_place_id: placeC.id,
     });
 
-    const stations = buildDayStations('2026-08-10', [], [], [legAB, legBC], [], [], [placeA, placeB, placeC]);
+    const stations = buildDayStations('2026-08-10', [], [], [legAB, legBC], [], [placeA, placeB, placeC]);
 
     expect(stations.map((s) => s.title)).toEqual(['Zuhause', 'Zwischenstopp', 'Zielort']);
   });
@@ -100,7 +104,7 @@ describe('buildDayStations - Reise-Etappen-Verkettung', () => {
       to_place_id: placeC.id,
     });
 
-    const stations = buildDayStations('2026-08-10', [], [], [legAB, legBC], [], [], [placeA, placeB, placeC]);
+    const stations = buildDayStations('2026-08-10', [], [], [legAB, legBC], [], [placeA, placeB, placeC]);
 
     expect(stations[0].connector).toBeFalsy();
     expect(stations[1].connector?.label).toBe('Hinflug');
@@ -127,7 +131,7 @@ describe('buildDayStations - Reise-Etappen-Verkettung', () => {
 
     // Rückreihenfolge im Eingabe-Array - ohne interne Sortierung nach Abflugzeit würde die
     // Duplikat-Erkennung hier fälschlich nicht greifen.
-    const stations = buildDayStations('2026-08-10', [], [], [legBC, legAB], [], [], [placeA, placeB, placeC]);
+    const stations = buildDayStations('2026-08-10', [], [], [legBC, legAB], [], [placeA, placeB, placeC]);
 
     expect(stations.map((s) => s.title)).toEqual(['Zuhause', 'Zwischenstopp', 'Zielort']);
   });
@@ -145,7 +149,7 @@ describe('buildDayStations - Reise-Etappen-Verkettung', () => {
       to_lng: 11.78,
     });
 
-    const stations = buildDayStations('2026-08-10', [], [], [leg], [], [], []);
+    const stations = buildDayStations('2026-08-10', [], [], [leg], [], []);
 
     expect(stations.map((s) => s.title)).toEqual([
       'Taxi zum Flughafen (Abflug/Abfahrt)',
@@ -163,7 +167,7 @@ describe('buildDayStations - Reise-Etappen-Verkettung', () => {
       to_place_id: placeB.id,
     });
 
-    const stations = buildDayStations('2026-08-10', [], [], [otherDay], [], [], [placeA, placeB]);
+    const stations = buildDayStations('2026-08-10', [], [], [otherDay], [], [placeA, placeB]);
 
     expect(stations).toHaveLength(0);
   });

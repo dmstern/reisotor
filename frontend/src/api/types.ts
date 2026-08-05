@@ -150,23 +150,6 @@ export interface Accommodation {
  *  muss die App wissen, welche Seite (Von/Nach) zuhause ist und welche zum Urlaubsziel gehört. */
 export type TravelRole = 'arrival' | 'departure' | 'onward';
 
-/** Wiederverwendbarer Ort für Reise-Etappen (z. B. "Zuhause" oder "Hotel Meeresblick") – einmal
- *  angelegt, dann aus mehreren Etappen heraus als Von/Nach referenzierbar statt bei jeder Etappe
- *  erneut Name/Maps-Link einzutippen. is_home markiert "zuhause"-Orte, daraus leitet das Backend
- *  automatisch die passende TravelRole (Anreise/Abreise/Weiterreise) einer Etappe ab. */
-export interface TravelPlace {
-  id: number;
-  trip_id: number;
-  name: string;
-  is_home: 0 | 1;
-  /** Art des Orts (Flughafen/Bahnhof/Zuhause/…, siehe utils/travelPlaceType.ts) – rein fürs Icon,
-   *  unabhängig von is_home. */
-  type: string | null;
-  maps_link: string | null;
-  lat: number | null;
-  lng: number | null;
-}
-
 export interface TravelItem {
   id: number;
   trip_id: number;
@@ -208,6 +191,12 @@ export interface Spot {
   lat: number | null;
   lng: number | null;
   created_by: number | null;
+  /** Heimat-Seite eines Orts (Flughafen/Bahnhof/Zuhause/…), unabhängig von der Kategorie – ein
+   *  Flughafen kann sowohl der heimische Abflughafen als auch der Zielflughafen sein. Nur für als
+   *  Reise-Etappen-Ort verwendete Spots relevant (siehe TravelView.vue), bei gewöhnlichen Spots
+   *  ungenutzt/0. Das Backend leitet daraus die passende TravelRole (Anreise/Abreise/Weiterreise)
+   *  einer Etappe ab (routes/travel.ts's applyPlaces()). */
+  is_home: 0 | 1;
 }
 
 export interface SpotLike {

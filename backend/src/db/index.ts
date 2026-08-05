@@ -516,6 +516,11 @@ dropColumnIfExists('ideas', 'suggested_by_user_id');
 ensureColumn('spots', 'title', 'TEXT');
 ensureColumn('spots', 'image_url', 'TEXT');
 ensureColumn('spots', 'created_by', 'INTEGER REFERENCES users(id)');
+// Heimat-Seite (unabhängig von der Kategorie – ein Flughafen kann sowohl der heimische Abflughafen
+// als auch der Zielflughafen sein): übernimmt travel_places.is_home (siehe Migration weiter unten,
+// nach dem trip_id-/deleted_at-Block), sobald Reise-Orte in Spots aufgehen. Für gewöhnliche Spots
+// (Restaurant, Sehenswürdigkeit, …) bleibt es einfach 0, keine eigene UI-Bedeutung dort.
+ensureColumn('spots', 'is_home', 'INTEGER NOT NULL DEFAULT 0');
 // Verworfen-Status entfällt: Spots bekommen stattdessen Likes/Kommentare (spot_likes/
 // spot_comments) und werden danach sortiert/gruppiert statt nach aktiv/verworfen.
 dropColumnIfExists('spots', 'discarded');
@@ -740,6 +745,138 @@ export const TRASH_TABLES = [
 
 for (const table of TRASH_TABLES) {
   ensureColumn(table, 'deleted_at', 'TEXT');
+}
+
+// Reise-Orte (travel_places) verschmelzen mit Spots: statt einer eigenen, parallelen Orte-Liste nur
+// für Reise-Etappen ist ein "Ort" (Flughafen/Bahnhof/Zuhause/…) jetzt einfach ein ganz normaler Spot
+// mit passender Kategorie – er lässt sich direkt in der Spots-Sicht anlegen und erscheint dort auch
+// automatisch, sobald er als Von/Nach einer Etappe gewählt wird ("eingebettet", keine zweite
+// Darstellung mehr nötig). is_home (siehe ensureColumn('spots', 'is_home', …) oben) bleibt dabei
+// unabhängig von der Kategorie erhalten – ein Flughafen kann sowohl der heimische Abflughafen als
+// auch der Zielflughafen sein.
+//
+// Muss NACH den beiden Schleifen oben laufen: die travel_items-Tabelle wird komplett neu angelegt
+// (siehe unten) und muss dafür bereits ihre trip_id-/deleted_at-Spalten besitzen, die erst durch die
+// TRIP_SCOPED_TABLES-/TRASH_TABLES-Schleifen ergänzt werden – sonst schlägt der Neuaufbau auf einer
+// frischen/Test-DB mit "no such column" fehl (siehe CLAUDE.md, Migrations-Reihenfolge).
+if (hasTable('travel_places')) {
+  interface LegacyTravelPlaceRow {
+    id: number;
+    trip_id: number;
+    name: string;
+    is_home: number;
+    type: string | null;
+    maps_link: string | null;
+    lat: number | null;
+    lng: number | null;
+  }
+  const places = db.prepare('SELECT * FROM travel_places').all() as LegacyTravelPlaceRow[];
+  const placeToSpotId = new Map<number, number>();
+  const insertSpot = db.prepare(
+    `INSERT INTO spots (trip_id, title, category, maps_link, lat, lng, is_home) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+  );
+  for (const p of places) {
+    const result = insertSpot.run(p.trip_id, p.name, p.type, p.maps_link, p.lat, p.lng, p.is_home);
+    placeToSpotId.set(p.id, result.lastInsertRowid as number);
+  }
+
+  // travel_items.from_place_id/to_place_id verweisen per FK fest auf travel_places(id) (foreign_keys
+  // ist oben per PRAGMA aktiviert) – SQLite erlaubt kein nachträgliches Ändern des FK-Ziels einer
+  // bestehenden Spalte, daher das Standard-SQLite-Muster fürs Ändern einer Spalten-FK: Tabelle
+  // komplett neu anlegen (mit from_place_id/to_place_id REFERENCES spots(id)) und alle Zeilen mit
+  // umgeschriebenen Von/Nach-Ids (alte travel_places.id -> neue spots.id, siehe placeToSpotId oben)
+  // hinüberkopieren. id wird dabei explizit mit übernommen (nicht neu vergeben) – sonst bräche jede
+  // bestehende Referenz auf einen Reise-Eintrag (budget_expense_id-Rückverweis, Attachments,
+  // excursion_spots' 'travel-from-<id>'/'travel-to-<id>'-Stationsschlüssel, Kalender-Verknüpfungen).
+  db.exec('ALTER TABLE travel_items RENAME TO travel_items_migrating');
+  db.exec(`
+    CREATE TABLE travel_items (
+      id INTEGER PRIMARY KEY,
+      title TEXT NOT NULL,
+      type TEXT,
+      from_location TEXT,
+      to_location TEXT,
+      date TEXT,
+      departure_time TEXT,
+      checkin_info TEXT,
+      amount REAL,
+      paid_by_user_id INTEGER REFERENCES users(id),
+      luggage TEXT,
+      seat TEXT,
+      link TEXT,
+      note TEXT,
+      budget_expense_id INTEGER REFERENCES budget_items(id),
+      from_maps_link TEXT,
+      from_lat REAL,
+      from_lng REAL,
+      to_maps_link TEXT,
+      to_lat REAL,
+      to_lng REAL,
+      role TEXT,
+      arrival_time TEXT,
+      from_place_id INTEGER REFERENCES spots(id) ON DELETE SET NULL,
+      to_place_id INTEGER REFERENCES spots(id) ON DELETE SET NULL,
+      trip_id INTEGER REFERENCES trips(id) ON DELETE CASCADE,
+      deleted_at TEXT
+    )
+  `);
+  const oldItems = db.prepare('SELECT * FROM travel_items_migrating').all() as Record<string, unknown>[];
+  const insertItem = db.prepare(`
+    INSERT INTO travel_items (
+      id, title, type, from_location, to_location, date, departure_time, checkin_info, amount,
+      paid_by_user_id, luggage, seat, link, note, budget_expense_id, from_maps_link, from_lat, from_lng,
+      to_maps_link, to_lat, to_lng, role, arrival_time, from_place_id, to_place_id, trip_id, deleted_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  for (const row of oldItems) {
+    const fromPlaceId = row.from_place_id != null ? placeToSpotId.get(row.from_place_id as number) ?? null : null;
+    const toPlaceId = row.to_place_id != null ? placeToSpotId.get(row.to_place_id as number) ?? null : null;
+    insertItem.run(
+      row.id,
+      row.title,
+      row.type,
+      row.from_location,
+      row.to_location,
+      row.date,
+      row.departure_time,
+      row.checkin_info,
+      row.amount,
+      row.paid_by_user_id,
+      row.luggage,
+      row.seat,
+      row.link,
+      row.note,
+      row.budget_expense_id,
+      row.from_maps_link,
+      row.from_lat,
+      row.from_lng,
+      row.to_maps_link,
+      row.to_lat,
+      row.to_lng,
+      row.role,
+      row.arrival_time,
+      fromPlaceId,
+      toPlaceId,
+      row.trip_id,
+      row.deleted_at,
+    );
+  }
+  db.exec('DROP TABLE travel_items_migrating');
+
+  // station_keys, die bislang auf einen eigenen "travel-place-<id>"-Eintrag zeigten (vorheriger
+  // Batch, siehe utils/excursionStations.ts), zeigen jetzt direkt auf den entsprechenden Spot
+  // ('spot-<neue id>') – derselbe Ort, kein eigener Stations-Typ mehr nötig.
+  const legacyStationRows = db
+    .prepare(`SELECT id, station_key FROM excursion_spots WHERE station_key LIKE 'travel-place-%'`)
+    .all() as { id: number; station_key: string }[];
+  const updateStationKey = db.prepare('UPDATE excursion_spots SET station_key = ? WHERE id = ?');
+  for (const row of legacyStationRows) {
+    const oldPlaceId = Number(row.station_key.slice('travel-place-'.length));
+    const newSpotId = placeToSpotId.get(oldPlaceId);
+    if (newSpotId != null) updateStationKey.run(`spot-${newSpotId}`, row.id);
+  }
+
+  db.exec('DROP TABLE travel_places');
 }
 
 // Ordnet einer Trash-Tabelle (falls vorhanden) ihre Attachment-Domäne zu (siehe

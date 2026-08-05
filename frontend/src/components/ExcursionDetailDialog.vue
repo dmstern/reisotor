@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { api } from '../api/client';
-import type { Accommodation, Excursion, Spot, TravelItem, TravelPlace, User } from '../api/types';
+import type { Accommodation, Excursion, Spot, TravelItem, User } from '../api/types';
 import { renderRichText } from '../utils/richText';
 import { resolveStations, type ExcursionStation } from '../utils/excursionStations';
 import { formatDate as formatDateShared } from '../utils/dateFormat';
@@ -28,7 +28,6 @@ const props = defineProps<{
   stations: Spot[];
   accommodations: Accommodation[];
   travelItems: TravelItem[];
-  travelPlaces?: TravelPlace[];
 }>();
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void;
@@ -79,7 +78,7 @@ function commentItemsFor(spotId: number) {
 // Timeline-/Mini-Karten-Reihenfolge als auch die auf der Mini-Karte gezeichnete Route. Eine
 // Station ist nicht zwingend ein echter Spot (siehe utils/excursionStations.ts).
 const orderedStations = computed(() =>
-  resolveStations(props.excursion.station_keys, props.stations, props.accommodations, props.travelItems, props.travelPlaces ?? []),
+  resolveStations(props.excursion.station_keys, props.stations, props.accommodations, props.travelItems),
 );
 const mappedStations = computed(() => orderedStations.value.filter((s) => s.lat != null && s.lng != null));
 
@@ -124,12 +123,6 @@ function openStationDetail(station: ExcursionStation) {
   } else if (station.kind === 'accommodation') {
     openStationAccommodationId.value = station.id;
     stationAccommodationDialogOpen.value = true;
-  } else if (station.kind === 'travel-place') {
-    // Kein eigener Detail-Dialog für angelegte Reise-Orte (nur für einzelne Etappen, siehe
-    // TravelDetailDialog.vue) - echter Sprung zur Reise-Sicht statt eines Dialogs (Architekturregel:
-    // fremde Objekte ohne eigenes Formular hier nur lesend/verknüpfend).
-    emit('update:modelValue', false);
-    router.push('/travel');
   } else {
     openStationTravelId.value = station.id;
     stationTravelDialogOpen.value = true;

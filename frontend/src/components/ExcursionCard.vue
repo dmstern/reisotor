@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import type { Accommodation, Excursion, Spot, TravelItem, TravelPlace } from '../api/types';
+import type { Accommodation, Excursion, Spot, TravelItem } from '../api/types';
 import type { DerivedLocation } from '../utils/derivedLocation';
 import { resolveStations } from '../utils/excursionStations';
 import { usePointerDrag } from '../composables/usePointerDrag';
@@ -27,7 +27,6 @@ const props = defineProps<{
   stations: Spot[];
   accommodations: Accommodation[];
   travelItems: TravelItem[];
-  travelPlaces?: TravelPlace[];
   highlighted?: boolean;
 }>();
 const emit = defineEmits<{
@@ -45,7 +44,7 @@ const emit = defineEmits<{
 const detailOpen = ref(false);
 
 const resolvedStations = computed(() =>
-  resolveStations(props.excursion.station_keys, props.stations, props.accommodations, props.travelItems, props.travelPlaces ?? []),
+  resolveStations(props.excursion.station_keys, props.stations, props.accommodations, props.travelItems),
 );
 
 const hasMappedStations = computed(() => resolvedStations.value.some((s) => s.lat != null && s.lng != null));
@@ -195,7 +194,6 @@ function onSpotDrop(event: DragEvent) {
       :stations="stations"
       :accommodations="accommodations"
       :travel-items="travelItems"
-      :travel-places="travelPlaces"
       @edit="detailOpen = false; emit('edit', excursion)"
       @toggle-like="emit('toggle-like')"
       @submit-comment="(content) => emit('submit-comment', content)"

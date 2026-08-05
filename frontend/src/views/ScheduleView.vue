@@ -2,7 +2,7 @@
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { api } from '../api/client';
-import type { Accommodation, CalendarEntry, ScheduleItem, TodoItem, TravelItem, TravelPlace } from '../api/types';
+import type { Accommodation, CalendarEntry, ScheduleItem, TodoItem, TravelItem } from '../api/types';
 import { useTripStore } from '../stores/trip';
 import { useExcursionsStore } from '../stores/excursions';
 import { useSpotsStore } from '../stores/spots';
@@ -44,11 +44,13 @@ const weatherProvider = useWeatherProviderStore();
 const accommodations = ref<Accommodation[]>([]);
 const todos = ref<TodoItem[]>([]);
 const travelItems = ref<TravelItem[]>([]);
-const places = ref<TravelPlace[]>([]);
 const selectedDate = ref<string | null>(null);
 const loading = ref(true);
 
-const placeNames = computed(() => places.value.map((p) => p.name));
+// Reise-Orte (Flughafen/Bahnhof/Zuhause/…) sind seit der Verschmelzung in Spots (siehe
+// Migrationskommentar in db/index.ts) ganz normale Spots - der Standort-Vorschlag hier nutzt daher
+// den geteilten spotsStore statt eines eigenen /travel/places-Fetches.
+const placeNames = computed(() => spotsStore.spots.map((s) => s.title));
 
 const newStartDate = ref('');
 const newTime = ref('');
@@ -116,7 +118,7 @@ watch(
 // Speichern (toBody/addItem/submitEdit weiter unten) ermittelt daraus dann wie gewohnt die
 // Koordinaten, ganz ohne eigene Zusatzlogik.
 function placeMapsLinkFor(name: string): string | null {
-  return places.value.find((p) => p.name === name)?.maps_link ?? null;
+  return spotsStore.spots.find((s) => s.title === name)?.maps_link ?? null;
 }
 watch(newLocation, (name) => {
   const mapsLink = placeMapsLinkFor(name);
@@ -171,18 +173,16 @@ function downloadIcsForEntry(entry: CalendarEntry) {
 async function loadAll() {
   const tripId = tripStore.currentTripId;
   if (tripId == null) return;
-  const [accommodationRes, todosRes, travelRes, placesRes] = await Promise.all([
+  const [accommodationRes, todosRes, travelRes] = await Promise.all([
     api.get<Accommodation[]>(`/accommodation?trip_id=${tripId}`),
     api.get<TodoItem[]>(`/todos?trip_id=${tripId}`),
     api.get<TravelItem[]>(`/travel?trip_id=${tripId}`),
-    api.get<TravelPlace[]>(`/travel/places?trip_id=${tripId}`),
     spotsStore.load(),
     scheduleStore.load(),
   ]);
   accommodations.value = accommodationRes;
   todos.value = todosRes;
   travelItems.value = travelRes;
-  places.value = placesRes;
 }
 
 // Nicht ein einzelner globaler Wetterort mehr, sondern je nach Tag ein anderer: an Urlaubstagen der
@@ -191,7 +191,7 @@ async function loadAll() {
 // modulweiten Cache wie DashboardView.vue (utils/weather.ts) – ein Besuch dort in derselben Session
 // erspart hier den erneuten Netzwerk-Request pro Ort.
 const home = computed(() => {
-  const p = places.value.find((p) => p.is_home && p.lat != null && p.lng != null);
+  const p = spotsStore.spots.find((s) => s.is_home && s.lat != null && s.lng != null);
   return p ? { lat: p.lat as number, lng: p.lng as number } : null;
 });
 

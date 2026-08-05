@@ -62,6 +62,7 @@ describe('scheduleItemToEntry', () => {
       lat: null,
       lng: null,
       created_by: null,
+      is_home: 0,
     };
     const item = makeScheduleItem({ spot_id: 42 });
     const entry = scheduleItemToEntry(item, [spot], [], [], []);
@@ -82,6 +83,7 @@ describe('scheduleItemToEntry', () => {
       lat: null,
       lng: null,
       created_by: null,
+      is_home: 0,
     };
     const excursion: Excursion = {
       id: 3,

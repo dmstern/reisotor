@@ -45,23 +45,10 @@ interface TravelRow {
   to_lng: number | null;
 }
 
-interface TravelPlaceBody {
-  trip_id: number;
-  name: string;
-  is_home?: boolean;
-  /** Art des Orts (Flughafen/Bahnhof/Busbahnhof/Hafen/Raststätte/Zuhause/Sonstiges) – rein fürs
-   *  Icon, unabhängig von is_home (siehe db/index.ts's Migrationskommentar). */
-  type?: string;
-  maps_link?: string;
-  lat?: number;
-  lng?: number;
-}
-
-interface TravelPlaceRow {
+interface SpotPlaceRow {
   id: number;
-  name: string;
+  title: string;
   is_home: 0 | 1;
-  type: string | null;
   maps_link: string | null;
   lat: number | null;
   lng: number | null;
@@ -157,20 +144,24 @@ async function resolveFromToLatLng(
  */
 function applyPlaces(body: TravelBody) {
   const fromPlace = body.from_place_id
-    ? (db.prepare('SELECT * FROM travel_places WHERE id = ?').get(body.from_place_id) as TravelPlaceRow | undefined)
+    ? (db.prepare('SELECT id, title, is_home, maps_link, lat, lng FROM spots WHERE id = ?').get(body.from_place_id) as
+        | SpotPlaceRow
+        | undefined)
     : undefined;
   const toPlace = body.to_place_id
-    ? (db.prepare('SELECT * FROM travel_places WHERE id = ?').get(body.to_place_id) as TravelPlaceRow | undefined)
+    ? (db.prepare('SELECT id, title, is_home, maps_link, lat, lng FROM spots WHERE id = ?').get(body.to_place_id) as
+        | SpotPlaceRow
+        | undefined)
     : undefined;
 
   if (fromPlace) {
-    body.from_location = fromPlace.name;
+    body.from_location = fromPlace.title;
     body.from_maps_link = fromPlace.maps_link ?? undefined;
     body.from_lat = fromPlace.lat ?? undefined;
     body.from_lng = fromPlace.lng ?? undefined;
   }
   if (toPlace) {
-    body.to_location = toPlace.name;
+    body.to_location = toPlace.title;
     body.to_maps_link = toPlace.maps_link ?? undefined;
     body.to_lat = toPlace.lat ?? undefined;
     body.to_lng = toPlace.lng ?? undefined;
@@ -184,71 +175,10 @@ function applyPlaces(body: TravelBody) {
 }
 
 export const travelRoutes: FastifyPluginAsync = async (app) => {
-  // --- Orte (Batch: Reise/Flüge schlauer machen) ---
-
-  app.get<{ Querystring: { trip_id?: string } }>('/travel/places', async (req, reply) => {
-    if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
-    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
-    return db
-      .prepare('SELECT * FROM travel_places WHERE trip_id = ? ORDER BY is_home DESC, name COLLATE NOCASE')
-      .all(req.query.trip_id);
-  });
-
-  app.post<{ Body: TravelPlaceBody }>('/travel/places', async (req, reply) => {
-    const { trip_id, name, is_home, type } = req.body;
-    if (!requireTripMember(reply, trip_id, req.session.userId)) return;
-    let { lat, lng } = req.body;
-    const { maps_link } = req.body;
-    if ((lat == null || lng == null) && maps_link) {
-      const resolved = await resolveLatLng(maps_link);
-      lat = resolved?.lat;
-      lng = resolved?.lng;
-    }
-    const result = db
-      .prepare('INSERT INTO travel_places (trip_id, name, is_home, type, maps_link, lat, lng) VALUES (?, ?, ?, ?, ?, ?, ?)')
-      .run(trip_id, name, is_home ? 1 : 0, type ?? null, maps_link ?? null, lat ?? null, lng ?? null);
-    recordActivity(trip_id, 'travel', result.lastInsertRowid as number, 'created', req.session.userId!);
-    reply.code(201);
-    return db.prepare('SELECT * FROM travel_places WHERE id = ?').get(result.lastInsertRowid);
-  });
-
-  app.put<{ Params: { id: string }; Body: TravelPlaceBody }>('/travel/places/:id', async (req, reply) => {
-    const existingPlace = db.prepare('SELECT trip_id FROM travel_places WHERE id = ?').get(req.params.id) as
-      | { trip_id: number }
-      | undefined;
-    if (!existingPlace) return reply.code(404).send({ error: 'Nicht gefunden' });
-    if (!requireTripMember(reply, existingPlace.trip_id, req.session.userId)) return;
-
-    const { name, is_home, type } = req.body;
-    let { lat, lng } = req.body;
-    const { maps_link } = req.body;
-    if ((lat == null || lng == null) && maps_link) {
-      const resolved = await resolveLatLng(maps_link);
-      lat = resolved?.lat;
-      lng = resolved?.lng;
-    }
-    const result = db
-      .prepare('UPDATE travel_places SET name = ?, is_home = ?, type = ?, maps_link = ?, lat = ?, lng = ? WHERE id = ?')
-      .run(name, is_home ? 1 : 0, type ?? null, maps_link ?? null, lat ?? null, lng ?? null, req.params.id);
-    if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
-    recordActivity(existingPlace.trip_id, 'travel', Number(req.params.id), 'updated', req.session.userId!);
-    return db.prepare('SELECT * FROM travel_places WHERE id = ?').get(req.params.id);
-  });
-
-  app.delete<{ Params: { id: string } }>('/travel/places/:id', async (req, reply) => {
-    const existingPlace = db.prepare('SELECT trip_id FROM travel_places WHERE id = ?').get(req.params.id) as
-      | { trip_id: number }
-      | undefined;
-    if (!existingPlace) return reply.code(404).send({ error: 'Nicht gefunden' });
-    if (!requireTripMember(reply, existingPlace.trip_id, req.session.userId)) return;
-
-    const result = db.prepare('DELETE FROM travel_places WHERE id = ?').run(req.params.id);
-    if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
-    recordActivity(existingPlace.trip_id, 'travel', Number(req.params.id), 'deleted', req.session.userId!);
-    return reply.code(204).send();
-  });
-
   // --- Etappen ---
+  // Orte (Flughafen/Bahnhof/Zuhause/…) für Von/Nach werden nicht mehr hier verwaltet, sondern sind
+  // ganz normale Spots (routes/spots.ts) – siehe applyPlaces() oben, das die Stammdaten des
+  // gewählten Spots übernimmt.
 
   app.get<{ Querystring: { trip_id?: string } }>('/travel', async (req, reply) => {
     if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });

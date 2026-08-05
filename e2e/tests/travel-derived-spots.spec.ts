@@ -6,16 +6,16 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const seeded = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'fixtures', 'seeded-data.json'), 'utf-8'));
 
-// Regressionstest für einen vom Nutzer gemeldeten Bug: die Spots-Liste zeigte für jeden angelegten
-// Reise-Ort (TravelView.vue's "Orte"-Karte, travel_places) einen eigenen Eintrag PRO ETAPPEN-ENDE,
-// das ihn referenziert - Hin- und Rückflug teilen sich aber typischerweise denselben Ort ("Zuhause"
-// ist Startpunkt des Hinflugs UND Zielpunkt des Rückflugs), wodurch der Nutzer denselben Ort
-// zweimal in der Liste sah, betitelt mit "Hinflug (Abflug/Abfahrt)"/"Rückflug (Ankunft)" statt dem
-// von ihm selbst vergebenen Ortsnamen. Fix: utils/travelDerivedLocations.ts leitet Spots-Einträge
-// jetzt direkt aus travel_places ab (ein Eintrag PRO ORT, unabhängig davon, wie viele Etappen ihn
-// referenzieren), mit dem Ortsnamen als Titel und dem Icon der gewählten Ort-Art
-// (utils/travelPlaceType.ts) statt eines festen Flugzeug-Icons.
-test('Angelegte Reise-Orte erscheinen mit ihrem eigenen Namen/Icon in der Spots-Liste - nicht dupliziert pro Etappe', async ({
+// Regressionstest für einen vom Nutzer gemeldeten Bug (ursprünglich gegen das inzwischen entfernte
+// travel_places-Konzept getestet): ein Reise-Ort, der von mehreren Etappen referenziert wird (z. B.
+// "Zuhause" als Startpunkt des Hinflugs UND Zielpunkt des Rückflugs), darf trotzdem nur EINMAL in
+// der Spots-Liste erscheinen, nicht einmal pro referenzierender Etappe. Seit der Verschmelzung von
+// Reise-Orten in Spots (siehe Migrationskommentar in db/index.ts) ist ein solcher Ort ein ganz
+// normaler, in der Spots-Sicht anlegbarer/editierbarer Spot (Kategorie z. B. "Flughafen") statt
+// einer separaten, nur lesend abgeleiteten Karte - travel_items referenziert ihn per
+// from_place_id/to_place_id, die Spots-Liste selbst kennt nur die Spot-Tabelle und dedupliziert
+// dadurch bereits von Natur aus.
+test('Ein von mehreren Etappen referenzierter Reise-Ort-Spot erscheint nur einmal in der Spots-Liste', async ({
   page,
 }) => {
   const tripId = seeded.trip.id;
@@ -23,17 +23,17 @@ test('Angelegte Reise-Orte erscheinen mit ihrem eigenen Namen/Icon in der Spots-
   const homeName = `Zuhause ${marker}`;
   const destinationName = `Zielflughafen ${marker}`;
 
-  const homePlace = await page.request.post('/api/travel/places', {
-    data: { trip_id: tripId, name: homeName, is_home: true, type: 'Flughafen', lat: 52.52, lng: 13.405 },
+  const homeSpot = await page.request.post('/api/spots', {
+    data: { trip_id: tripId, title: homeName, category: 'Flughafen', is_home: true, lat: 52.52, lng: 13.405 },
   });
-  expect(homePlace.ok()).toBeTruthy();
-  const home = await homePlace.json();
+  expect(homeSpot.ok()).toBeTruthy();
+  const home = await homeSpot.json();
 
-  const destinationPlace = await page.request.post('/api/travel/places', {
-    data: { trip_id: tripId, name: destinationName, is_home: false, type: 'Flughafen', lat: 38.78, lng: -9.14 },
+  const destinationSpot = await page.request.post('/api/spots', {
+    data: { trip_id: tripId, title: destinationName, category: 'Flughafen', is_home: false, lat: 38.78, lng: -9.14 },
   });
-  expect(destinationPlace.ok()).toBeTruthy();
-  const destination = await destinationPlace.json();
+  expect(destinationSpot.ok()).toBeTruthy();
+  const destination = await destinationSpot.json();
 
   // Zwei Etappen (Hin- und Rückflug), die beide dieselben zwei Orte referenzieren - der Bug zeigte
   // sich erst dadurch, dass ein Ort von MEHREREN Etappen aus referenziert wird.
@@ -49,18 +49,20 @@ test('Angelegte Reise-Orte erscheinen mit ihrem eigenen Namen/Icon in der Spots-
 
   await page.goto('/excursions');
 
-  // Genau zwei Orte angelegt -> genau zwei Karten, unabhängig davon, dass vier Etappen-Enden
+  // Genau zwei Spots angelegt -> genau zwei Karten, unabhängig davon, dass vier Etappen-Enden
   // (Hinflug Von/Nach, Rückflug Von/Nach) auf sie verweisen.
-  const derivedCards = page.locator('.derived-card', { hasText: marker });
-  await expect(derivedCards).toHaveCount(2);
+  const spotCards = page.locator('.spot-card', { hasText: marker });
+  await expect(spotCards).toHaveCount(2);
 
   // Titel = der vom Nutzer vergebene Ortsname, NICHT "Hinflug (Abflug/Abfahrt)"/"Rückflug (Ankunft)".
-  await expect(page.locator('.derived-card', { hasText: homeName })).toHaveCount(1);
-  await expect(page.locator('.derived-card', { hasText: destinationName })).toHaveCount(1);
-  await expect(page.locator('.derived-card', { hasText: `Hinflug ${marker}` })).toHaveCount(0);
-  await expect(page.locator('.derived-card', { hasText: `Rückflug ${marker}` })).toHaveCount(0);
+  await expect(page.locator('.spot-card', { hasText: homeName })).toHaveCount(1);
+  await expect(page.locator('.spot-card', { hasText: destinationName })).toHaveCount(1);
+  await expect(page.locator('.spot-card', { hasText: `Hinflug ${marker}` })).toHaveCount(0);
+  await expect(page.locator('.spot-card', { hasText: `Rückflug ${marker}` })).toHaveCount(0);
 
-  // Icon der gewählten Ort-Art (✈️ für "Flughafen") statt eines festen Flugzeug-Icons pro Etappe.
-  await expect(derivedCards.first().locator('.placeholder')).toHaveText('✈️');
-  await expect(derivedCards.last().locator('.placeholder')).toHaveText('✈️');
+  // Icon/Kategorie-Chip der gewählten Kategorie (✈️ Flughafen) statt eines festen Flugzeug-Icons
+  // pro Etappe - die Karte zeigt hier ein automatisches Kartenausschnitt-Vorschaubild statt des
+  // Kategorie-Platzhalters, da beim Anlegen bereits lat/lng bekannt waren (siehe routes/spots.ts).
+  await expect(spotCards.first().locator('.category-chip')).toHaveText('✈️ Flughafen');
+  await expect(spotCards.last().locator('.category-chip')).toHaveText('✈️ Flughafen');
 });
