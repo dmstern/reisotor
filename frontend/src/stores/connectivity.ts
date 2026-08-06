@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { onMounted, onUnmounted, ref } from 'vue';
-import { rawRequest } from '../api/client';
+import { fetchWithTimeout, rawRequest } from '../api/client';
 import { flushOutbox, getOutboxLength } from '../api/offline';
 import { useLiveSyncStore } from './liveSync';
 
@@ -45,8 +45,11 @@ export const useConnectivityStore = defineStore('connectivity', () => {
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
     healthCheck = setInterval(() => {
-      if (isOnline.value && pendingCount.value === 0) return;
-      fetch('/api/auth/me', { credentials: 'include' })
+      // Bewusst OHNE "if (isOnline.value && pendingCount.value === 0) return"-Kurzschluss: genau
+      // der Fall "isOnline fälschlich true" (z. B. WLAN verbunden, aber kein echter Internetzugang
+      // mehr dahinter) ist der, den dieser Check laut Kommentar oben eigentlich auffangen soll - ein
+      // Guard, der ausgerechnet dann übersprang, hätte die eigene Existenzberechtigung untergraben.
+      fetchWithTimeout('/api/auth/me', { credentials: 'include' })
         .then(() => {
           if (!isOnline.value) isOnline.value = true;
           trySync();
