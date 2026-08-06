@@ -232,7 +232,13 @@ watch(
 
 onMounted(async () => {
   liveSync.markSeen('schedule');
-  await loadAll();
+  try {
+    await loadAll();
+  } catch {
+    // Offline und (noch) kein Cache-Eintrag für mindestens einen der Endpunkte - Kalender soll
+    // trotzdem rendern (ggf. mit leeren/vorherigen Daten) statt durch das v-if="!loading" unten für
+    // immer blank zu bleiben (siehe api/client.ts's Offline-Fallback-Konzept).
+  }
   loadWeather();
   selectedDate.value = new Date().toISOString().slice(0, 10);
   // Beim ersten Laden direkt zur Woche mit dem heutigen Tag blättern statt bei der (ggf. Monate

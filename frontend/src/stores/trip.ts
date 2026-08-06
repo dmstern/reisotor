@@ -18,7 +18,16 @@ export interface TripFormData {
 
 export const useTripStore = defineStore('trip', () => {
   const trips = ref<Trip[]>([]);
-  const currentTripId = ref<number | null>(null);
+  // Synchron aus localStorage vorbelegen statt erst auf loadTrips() zu warten: fast alle Views
+  // lesen currentTripId nicht reaktiv, sondern einmalig bei ihrem eigenen setup() (z. B.
+  // TodoView.vue's "const tripId = tripStore.currentTripId as number"). Bliebe der Wert bis zum
+  // Abschluss von loadTrips() (also bis der /trips-Request durchgelaufen ist - bei instabiler
+  // Verbindung jetzt bis zu REQUEST_TIMEOUT_MS, siehe api/client.ts) auf null, würden diese Views
+  // dauerhaft mit einer leeren/ungültigen trip_id anfragen und leer bleiben, selbst wenn ihr
+  // eigener Offline-Cache-Eintrag längst unter der richtigen trip_id vorläge. loadTrips() unten
+  // validiert/korrigiert den Wert ohnehin, sobald die echten Trips (aus Netz oder Cache) da sind.
+  const storedTripId = Number(localStorage.getItem(STORAGE_KEY));
+  const currentTripId = ref<number | null>(Number.isFinite(storedTripId) ? storedTripId : null);
   const loaded = ref(false);
   // Zählt hoch, wenn aus einer einbettenden Sicht (z. B. Kalender) zur Urlaub-Bearbeitung
   // gesprungen werden soll. TripSwitcher beobachtet das und öffnet dafür sein Edit-Modal

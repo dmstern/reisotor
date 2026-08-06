@@ -38,17 +38,24 @@ const editingNote = ref<Note | null>(null);
 const editForm = ref(emptyForm());
 
 async function load() {
-  const [notesRes, usersRes, likesRes, commentsRes] = await Promise.all([
-    api.get<Note[]>(`/notes?trip_id=${tripId}`),
-    api.get<User[]>('/users'),
-    api.get<NoteLike[]>(`/notes/likes?trip_id=${tripId}`),
-    api.get<NoteComment[]>(`/notes/comments?trip_id=${tripId}`),
-  ]);
-  notes.value = notesRes;
-  users.value = usersRes;
-  likes.value = likesRes;
-  comments.value = commentsRes;
-  loading.value = false;
+  try {
+    const [notesRes, usersRes, likesRes, commentsRes] = await Promise.all([
+      api.get<Note[]>(`/notes?trip_id=${tripId}`),
+      api.get<User[]>('/users'),
+      api.get<NoteLike[]>(`/notes/likes?trip_id=${tripId}`),
+      api.get<NoteComment[]>(`/notes/comments?trip_id=${tripId}`),
+    ]);
+    notes.value = notesRes;
+    users.value = usersRes;
+    likes.value = likesRes;
+    comments.value = commentsRes;
+  } catch {
+    // Offline und (noch) kein Cache-Eintrag für mindestens einen der Endpunkte - Seite soll trotzdem
+    // rendern (ggf. mit leeren/vorherigen Daten) statt durch das v-if="!loading" unten für immer
+    // blank zu bleiben (siehe api/client.ts's Offline-Fallback-Konzept).
+  } finally {
+    loading.value = false;
+  }
 }
 
 onMounted(() => {

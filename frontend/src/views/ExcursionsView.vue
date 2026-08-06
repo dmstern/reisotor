@@ -79,15 +79,22 @@ onMounted(async () => {
   // oben, kein zweites Hervorhebungs-System (siehe hashHighlight.ts).
   const hashId = hashHighlightId(route.hash, 'spot');
   if (hashId != null) highlightedIds.value.add(hashId);
-  const [usersRes, travelRes] = await Promise.all([
-    api.get<User[]>('/users'),
-    api.get<TravelItem[]>(`/travel?trip_id=${tripId}`),
-    spotsStore.load(),
-    excursionsStore.load(),
-  ]);
-  users.value = usersRes;
-  travelItems.value = travelRes;
-  loading.value = false;
+  try {
+    const [usersRes, travelRes] = await Promise.all([
+      api.get<User[]>('/users'),
+      api.get<TravelItem[]>(`/travel?trip_id=${tripId}`),
+      spotsStore.load(),
+      excursionsStore.load(),
+    ]);
+    users.value = usersRes;
+    travelItems.value = travelRes;
+  } catch {
+    // Offline und (noch) kein Cache-Eintrag für mindestens einen der Endpunkte - Seite soll trotzdem
+    // rendern (ggf. mit leeren/vorherigen Daten) statt durch das v-if="!loading" unten für immer
+    // blank zu bleiben (siehe api/client.ts's Offline-Fallback-Konzept).
+  } finally {
+    loading.value = false;
+  }
   if (hashId != null) {
     await nextTick();
     onFocusSpotFromMap(hashId);
