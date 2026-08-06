@@ -45,19 +45,26 @@ const highlightedIds = ref<Set<number>>(new Set());
 
 onMounted(async () => {
   highlightedIds.value = liveSync.markSeen('ideas');
-  const [usersRes, likesRes, commentsRes, travelRes] = await Promise.all([
-    api.get<User[]>('/users'),
-    api.get<ExcursionLike[]>(`/ideas/likes?trip_id=${tripId}`),
-    api.get<ExcursionComment[]>(`/ideas/comments?trip_id=${tripId}`),
-    api.get<TravelItem[]>(`/travel?trip_id=${tripId}`),
-    excursionsStore.load(),
-    spotsStore.load(),
-  ]);
-  users.value = usersRes;
-  likes.value = likesRes;
-  comments.value = commentsRes;
-  travelItems.value = travelRes;
-  loading.value = false;
+  try {
+    const [usersRes, likesRes, commentsRes, travelRes] = await Promise.all([
+      api.get<User[]>('/users'),
+      api.get<ExcursionLike[]>(`/ideas/likes?trip_id=${tripId}`),
+      api.get<ExcursionComment[]>(`/ideas/comments?trip_id=${tripId}`),
+      api.get<TravelItem[]>(`/travel?trip_id=${tripId}`),
+      excursionsStore.load(),
+      spotsStore.load(),
+    ]);
+    users.value = usersRes;
+    likes.value = likesRes;
+    comments.value = commentsRes;
+    travelItems.value = travelRes;
+  } catch {
+    // Offline und (noch) kein Cache-Eintrag für mindestens einen der Endpunkte - Seite soll trotzdem
+    // rendern (ggf. mit leeren/vorherigen Daten) statt durch das v-if="!loading" unten für immer
+    // blank zu bleiben (siehe api/client.ts's Offline-Fallback-Konzept).
+  } finally {
+    loading.value = false;
+  }
 });
 
 // Wie ScheduleView.vue: diese Ansicht ist auf Desktop dauerhaft in der Schublade gemountet, daher

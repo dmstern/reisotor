@@ -35,13 +35,20 @@ const editingItem = ref<ShoppingItem | null>(null);
 const editForm = ref({ label: '', link: '', note: '', shop: '', period: '' as Period | '' });
 
 async function load() {
-  const [itemsRes, usersRes] = await Promise.all([
-    api.get<ShoppingItem[]>(`/shopping?trip_id=${tripId}`),
-    api.get<User[]>('/users'),
-  ]);
-  items.value = itemsRes;
-  users.value = usersRes;
-  loading.value = false;
+  try {
+    const [itemsRes, usersRes] = await Promise.all([
+      api.get<ShoppingItem[]>(`/shopping?trip_id=${tripId}`),
+      api.get<User[]>('/users'),
+    ]);
+    items.value = itemsRes;
+    users.value = usersRes;
+  } catch {
+    // Offline und (noch) kein Cache-Eintrag für mindestens einen der Endpunkte - Seite soll trotzdem
+    // rendern (ggf. mit leeren/vorherigen Daten) statt durch das v-if="!loading" unten für immer
+    // blank zu bleiben (siehe api/client.ts's Offline-Fallback-Konzept).
+  } finally {
+    loading.value = false;
+  }
 }
 
 onMounted(() => {

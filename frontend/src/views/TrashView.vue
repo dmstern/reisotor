@@ -78,13 +78,20 @@ function formatDeletedAt(iso: string) {
 }
 
 async function load() {
-  const [entriesRes, usersRes] = await Promise.all([
-    api.get<TrashEntry[]>(`/trash?trip_id=${tripId}`),
-    api.get<User[]>('/users'),
-  ]);
-  entries.value = entriesRes;
-  users.value = usersRes;
-  loading.value = false;
+  try {
+    const [entriesRes, usersRes] = await Promise.all([
+      api.get<TrashEntry[]>(`/trash?trip_id=${tripId}`),
+      api.get<User[]>('/users'),
+    ]);
+    entries.value = entriesRes;
+    users.value = usersRes;
+  } catch {
+    // Offline und (noch) kein Cache-Eintrag für mindestens einen der Endpunkte - Seite soll trotzdem
+    // rendern (ggf. mit leeren/vorherigen Daten) statt durch das v-if="!loading" unten für immer
+    // blank zu bleiben (siehe api/client.ts's Offline-Fallback-Konzept).
+  } finally {
+    loading.value = false;
+  }
 }
 
 onMounted(load);

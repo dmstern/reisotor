@@ -49,22 +49,29 @@ async function refreshAllocations() {
 }
 
 async function load() {
-  const [u, e, b, a, tr, , travel] = await Promise.all([
-    api.get<User[]>('/users'),
-    api.get<BudgetExpense[]>(`/budget?trip_id=${tripId}`),
-    api.get<Budget[]>(`/budget/budgets?trip_id=${tripId}`),
-    api.get<BudgetAllocation[]>(`/budget/allocations?trip_id=${tripId}`),
-    api.get<BudgetTransfer[]>(`/budget/transfers?trip_id=${tripId}`),
-    spotsStore.load(),
-    api.get<TravelItem[]>(`/travel?trip_id=${tripId}`),
-  ]);
-  users.value = u;
-  expenses.value = e;
-  budgets.value = b;
-  allocations.value = a;
-  transfers.value = tr;
-  travelItems.value = travel;
-  loading.value = false;
+  try {
+    const [u, e, b, a, tr, , travel] = await Promise.all([
+      api.get<User[]>('/users'),
+      api.get<BudgetExpense[]>(`/budget?trip_id=${tripId}`),
+      api.get<Budget[]>(`/budget/budgets?trip_id=${tripId}`),
+      api.get<BudgetAllocation[]>(`/budget/allocations?trip_id=${tripId}`),
+      api.get<BudgetTransfer[]>(`/budget/transfers?trip_id=${tripId}`),
+      spotsStore.load(),
+      api.get<TravelItem[]>(`/travel?trip_id=${tripId}`),
+    ]);
+    users.value = u;
+    expenses.value = e;
+    budgets.value = b;
+    allocations.value = a;
+    transfers.value = tr;
+    travelItems.value = travel;
+  } catch {
+    // Offline und (noch) kein Cache-Eintrag für mindestens einen der Endpunkte - Seite soll trotzdem
+    // rendern (ggf. mit leeren/vorherigen Daten) statt durch das v-if="!loading" unten für immer
+    // blank zu bleiben (siehe api/client.ts's Offline-Fallback-Konzept).
+  } finally {
+    loading.value = false;
+  }
 }
 
 onMounted(() => {

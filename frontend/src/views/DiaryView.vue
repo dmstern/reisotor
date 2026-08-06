@@ -100,19 +100,26 @@ async function pickSpot(spotId: number, dateStr: string, target: { excursion_ids
 }
 
 async function load() {
-  const [entriesRes, likesRes, commentsRes, usersRes] = await Promise.all([
-    api.get<DiaryEntry[]>(`/diary?trip_id=${tripId}`),
-    api.get<DiaryLike[]>(`/diary/likes?trip_id=${tripId}`),
-    api.get<DiaryComment[]>(`/diary/comments?trip_id=${tripId}`),
-    api.get<User[]>('/users'),
-    excursionsStore.load(),
-    spotsStore.load(),
-  ]);
-  entries.value = entriesRes;
-  likes.value = likesRes;
-  comments.value = commentsRes;
-  users.value = usersRes;
-  loading.value = false;
+  try {
+    const [entriesRes, likesRes, commentsRes, usersRes] = await Promise.all([
+      api.get<DiaryEntry[]>(`/diary?trip_id=${tripId}`),
+      api.get<DiaryLike[]>(`/diary/likes?trip_id=${tripId}`),
+      api.get<DiaryComment[]>(`/diary/comments?trip_id=${tripId}`),
+      api.get<User[]>('/users'),
+      excursionsStore.load(),
+      spotsStore.load(),
+    ]);
+    entries.value = entriesRes;
+    likes.value = likesRes;
+    comments.value = commentsRes;
+    users.value = usersRes;
+  } catch {
+    // Offline und (noch) kein Cache-Eintrag für mindestens einen der Endpunkte - Seite soll trotzdem
+    // rendern (ggf. mit leeren/vorherigen Daten) statt durch das v-if="!loading" unten für immer
+    // blank zu bleiben (siehe api/client.ts's Offline-Fallback-Konzept).
+  } finally {
+    loading.value = false;
+  }
 }
 
 watch(() => liveSync.domainVersion.diary, load);

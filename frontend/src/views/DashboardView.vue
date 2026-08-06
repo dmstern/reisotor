@@ -152,31 +152,38 @@ const WIDGET_COLORS = assignCategoryColors([
 const SECURITY_TILE_COLOR = '#4FB3A9';
 
 onMounted(async () => {
-  const [scheduleRes, todosRes, packingRes, expensesRes, allocationsRes, shoppingRes, travelRes, diaryRes, notesRes, usersRes] =
-    await Promise.all([
-      api.get<ScheduleItem[]>(`/schedule?trip_id=${tripId}`),
-      api.get<TodoItem[]>(`/todos?trip_id=${tripId}`),
-      api.get<PackingItem[]>(`/packing?trip_id=${tripId}`),
-      api.get<BudgetExpense[]>(`/budget?trip_id=${tripId}`),
-      api.get<BudgetAllocation[]>(`/budget/allocations?trip_id=${tripId}`),
-      api.get<ShoppingItem[]>(`/shopping?trip_id=${tripId}`),
-      api.get<TravelItem[]>(`/travel?trip_id=${tripId}`),
-      api.get<DiaryEntry[]>(`/diary?trip_id=${tripId}`),
-      api.get<Note[]>(`/notes?trip_id=${tripId}`),
-      api.get<User[]>('/users'),
-      spotsStore.load(),
-    ]);
-  schedule.value = scheduleRes;
-  todos.value = todosRes;
-  packing.value = packingRes;
-  expenses.value = expensesRes;
-  allocations.value = allocationsRes;
-  shopping.value = shoppingRes;
-  travelItems.value = travelRes;
-  diaryEntries.value = diaryRes;
-  notes.value = notesRes;
-  users.value = usersRes;
-  loading.value = false;
+  try {
+    const [scheduleRes, todosRes, packingRes, expensesRes, allocationsRes, shoppingRes, travelRes, diaryRes, notesRes, usersRes] =
+      await Promise.all([
+        api.get<ScheduleItem[]>(`/schedule?trip_id=${tripId}`),
+        api.get<TodoItem[]>(`/todos?trip_id=${tripId}`),
+        api.get<PackingItem[]>(`/packing?trip_id=${tripId}`),
+        api.get<BudgetExpense[]>(`/budget?trip_id=${tripId}`),
+        api.get<BudgetAllocation[]>(`/budget/allocations?trip_id=${tripId}`),
+        api.get<ShoppingItem[]>(`/shopping?trip_id=${tripId}`),
+        api.get<TravelItem[]>(`/travel?trip_id=${tripId}`),
+        api.get<DiaryEntry[]>(`/diary?trip_id=${tripId}`),
+        api.get<Note[]>(`/notes?trip_id=${tripId}`),
+        api.get<User[]>('/users'),
+        spotsStore.load(),
+      ]);
+    schedule.value = scheduleRes;
+    todos.value = todosRes;
+    packing.value = packingRes;
+    expenses.value = expensesRes;
+    allocations.value = allocationsRes;
+    shopping.value = shoppingRes;
+    travelItems.value = travelRes;
+    diaryEntries.value = diaryRes;
+    notes.value = notesRes;
+    users.value = usersRes;
+  } catch {
+    // Offline und (noch) kein Cache-Eintrag für mindestens einen der Endpunkte - Seite soll trotzdem
+    // rendern (ggf. mit leeren/vorherigen Daten) statt durch das v-if="!loading" unten für immer
+    // blank zu bleiben (siehe api/client.ts's Offline-Fallback-Konzept).
+  } finally {
+    loading.value = false;
+  }
   loadWeather();
   loadRegionInfo();
 });
