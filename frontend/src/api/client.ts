@@ -13,6 +13,24 @@ export class ApiError extends Error {
 // z. B. die Fehlermeldung im Login-Formular durch den Reload sofort wieder verschwinden.
 const AUTH_SELF_HANDLED_PATHS = ['/auth/login', '/auth/me', '/auth/logout'];
 
+// Auf einem instabilen Netz (Verbindung steht, Server antwortet aber nie - z. B. ein NAT64-/CGNAT-
+// Pfad, der Pakete verschluckt, oder ein Mobilfunk-/Ferienwohnungs-WLAN mit hängenden Verbindungen)
+// wirft ein normaler fetch() ohne eigenes Timeout NIE den TypeError, auf den isNetworkFailure()
+// unten prüft - der Request hängt stattdessen unbegrenzt lange, und die aufrufende View bleibt bei
+// navigator.onLine === true für immer im Ladezustand hängen statt auf den Cache zurückzufallen.
+// Eigener Timeout per AbortController erzwingt stattdessen einen definierten Fehlschlag.
+const REQUEST_TIMEOUT_MS = 8_000;
+
+export async function fetchWithTimeout(input: string, init: RequestInit = {}): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 // Rohe Netzwerk-Anfrage ohne Offline-Fallback (Cache-Lesen/Outbox-Warteschlange, siehe unten) –
 // wird sowohl von den öffentlichen api.*-Funktionen als auch vom Outbox-Replay
 // (stores/connectivity.ts) verwendet. Ein erneuter Fehlschlag beim Nachsenden aus der Warteschlange
@@ -26,7 +44,7 @@ export async function rawRequest<T>(path: string, options: RequestInit = {}): Pr
     ...options.headers,
   };
 
-  const res = await fetch(`/api${path}`, {
+  const res = await fetchWithTimeout(`/api${path}`, {
     credentials: 'include',
     ...options,
     headers,
@@ -60,11 +78,13 @@ export async function rawRequest<T>(path: string, options: RequestInit = {}): Pr
 }
 
 // fetch() wirft einen TypeError, wenn die Anfrage den Server gar nicht erst erreicht (offline,
-// DNS-Fehler, …) – im Unterschied zu einer echten HTTP-Fehlerantwort (4xx/5xx), die ganz normal als
-// ApiError oben geworfen wird. Nur der erste Fall soll offline behandelt werden (Cache-Fallback bzw.
-// Outbox-Warteschlange); eine echte 403/404/500 soll weiterhin sofort als Fehler sichtbar werden.
+// DNS-Fehler, …); ein per fetchWithTimeout() oben abgebrochener, hängender Request wirft stattdessen
+// einen DOMException("AbortError") – im Unterschied zu einer echten HTTP-Fehlerantwort (4xx/5xx), die
+// ganz normal als ApiError oben geworfen wird. Nur die ersten beiden Fälle sollen offline behandelt
+// werden (Cache-Fallback bzw. Outbox-Warteschlange); eine echte 403/404/500 soll weiterhin sofort als
+// Fehler sichtbar werden.
 function isNetworkFailure(err: unknown): boolean {
-  return err instanceof TypeError;
+  return err instanceof TypeError || (err instanceof DOMException && err.name === 'AbortError');
 }
 
 async function get<T>(path: string): Promise<T> {

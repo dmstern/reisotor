@@ -7,11 +7,33 @@
 // CSS/Fonts/Icons) gecacht, kein zweiter, konkurrierender Cache-Layer für /api/*-Antworten.
 import { precacheAndRoute, createHandlerBoundToURL } from 'workbox-precaching';
 import { NavigationRoute, registerRoute } from 'workbox-routing';
+import { CacheFirst } from 'workbox-strategies';
+import { ExpirationPlugin } from 'workbox-expiration';
+import { CacheableResponsePlugin } from 'workbox-cacheable-response';
 
 precacheAndRoute(self.__WB_MANIFEST);
 // SPA-Fallback: jede Navigation (auch ein Deep-Link wie /todo ohne Netz) liefert die gecachte
 // index.html aus, der Client-seitige Router (vue-router) übernimmt danach normal.
 registerRoute(new NavigationRoute(createHandlerBoundToURL('/index.html')));
+
+// Kartenkacheln (TripMap.vue/ExcursionMiniMap.vue, Leaflet gegen den öffentlichen
+// OSM-Tile-Server) sind weder Teil des obigen App-Shell-Precache (nur JS/CSS/HTML/Icons/Fonts)
+// noch des localStorage-Datencaches (api/offline.ts, ungeeignet für Bilddaten) - ohne eigene
+// Route bleiben bereits angesehene Kartenausschnitte offline nicht erhalten. CacheFirst statt
+// StaleWhileRevalidate, weil sich einmal gerenderte Kacheln praktisch nie ändern; ExpirationPlugin
+// begrenzt das Wachstum, CacheableResponsePlugin lässt auch response type "opaque" (Cross-Origin
+// ohne CORS-Header) zu, ohne die (mit CORS-Headern versehene) Antwort des OSM-Tile-Servers
+// fälschlich als Fehler zu behandeln.
+registerRoute(
+  ({ url }) => url.hostname.endsWith('.tile.openstreetmap.org') && /\/\d+\/\d+\/\d+\.png$/.test(url.pathname),
+  new CacheFirst({
+    cacheName: 'osm-tiles',
+    plugins: [
+      new CacheableResponsePlugin({ statuses: [0, 200] }),
+      new ExpirationPlugin({ maxEntries: 500, maxAgeSeconds: 30 * 24 * 60 * 60 }),
+    ],
+  }),
+);
 
 // PwaUpdatePrompt.vue's "Neu laden"-Button ruft vite-plugin-pwa's updateSW(true) auf, das genau
 // diese Nachricht an den WARTENDEN (neuen) Service Worker schickt, um ihn sofort zu aktivieren statt
