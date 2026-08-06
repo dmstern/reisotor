@@ -8,6 +8,7 @@ import { useNavPositionStore } from '../stores/navPosition';
 import { useWeatherProviderStore, WEATHER_MODEL_OPTIONS } from '../stores/weatherProvider';
 import { useHomeCurrencyStore, HOME_CURRENCY_OPTIONS } from '../stores/homeCurrency';
 import { useCalendarSettingsStore, WEEK_START_OPTIONS, DATE_FORMAT_OPTIONS } from '../stores/calendarSettings';
+import { useTourSettingsStore } from '../stores/tourSettings';
 import { getExistingSubscription, isPushSupported, subscribeToPush, unsubscribeFromPush } from '../utils/push';
 import PasswordInput from '../components/PasswordInput.vue';
 
@@ -17,6 +18,7 @@ const navPosition = useNavPositionStore();
 const weatherProvider = useWeatherProviderStore();
 const homeCurrency = useHomeCurrencyStore();
 const calendarSettings = useCalendarSettingsStore();
+const tourSettings = useTourSettingsStore();
 const users = ref<User[]>([]);
 const loading = ref(true);
 
@@ -357,6 +359,21 @@ async function onImportFileSelected(event: Event) {
       </div>
     </div>
 
+    <div class="card">
+      <h2>🎒 Touren</h2>
+      <p class="hint">
+        Standardmäßig ordnest du Spots einer Tour direkt im Spot-Formular per "Tour zuordnen" zu –
+        ganz ohne Reihenfolge. Für einen sorgfältig geplanten Rundgang (feste Abklapper-Reihenfolge,
+        derselbe Ort mehrfach, z. B. Start UND Ende an der Unterkunft) aktiviert diese Einstellung
+        zusätzlich den Drag&amp;Drop-Reihenfolge-Editor im Touren-Formular und das direkte Ablegen
+        eines Spots auf einer Tour-Karte.
+      </p>
+      <label class="checkbox-option">
+        <input type="checkbox" v-model="tourSettings.advancedEditing" />
+        Erweiterte Touren-Bearbeitung
+      </label>
+    </div>
+
     <!-- id als Sprungziel für den "Anbieter wechseln"-Link im Wetter-Widget (DashboardView.vue) -->
     <div id="weather-provider-settings" class="card">
       <h2>🌤️ Wetter</h2>
@@ -564,6 +581,14 @@ async function onImportFileSelected(event: Event) {
 <style scoped>
 .page > .card {
   margin-bottom: var(--space-4);
+}
+
+.checkbox-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.9rem;
+  cursor: pointer;
 }
 
 .card h2 {

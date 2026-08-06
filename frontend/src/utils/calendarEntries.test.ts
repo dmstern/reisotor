@@ -111,7 +111,7 @@ describe('scheduleItemToEntry', () => {
       note: null,
       date: '2026-08-02',
       created_by: null,
-      station_keys: ['spot-7'],
+      spot_ids: [7],
     };
     const item = makeScheduleItem({ idea_id: 3, title: 'Sightseeing' });
     const entry = scheduleItemToEntry(item, [spot], [excursion], []);

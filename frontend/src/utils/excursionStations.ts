@@ -2,9 +2,10 @@ import type { Spot, TravelItem } from '../api/types';
 import { spotCategoryMeta } from './spotCategory';
 import { travelTypeIcon } from './travelTypeIcon';
 
-// Löst die generischen station_keys eines Ausflugs (siehe api/types.ts, Excursion.station_keys) zu
-// einem einheitlichen Anzeige-Objekt auf – eine Station ist nicht zwingend ein echter Spot (kann
-// auch ein Etappen-Ende ohne verknüpften Ort sein, siehe Kommentar dort). Zentralisiert die
+// Löst die generischen station_keys eines Ausflugs (aus Excursion.spot_ids via
+// excursionStationKeys() unten abgeleitet, siehe api/types.ts) zu einem einheitlichen
+// Anzeige-Objekt auf – eine Station ist nicht zwingend ein echter Spot (kann auch ein
+// Etappen-Ende ohne verknüpften Ort sein, siehe Kommentar dort). Zentralisiert die
 // Metadaten, die TripMap.vue und ExcursionsView.vue (derivedLocations) für dieselben Objekttypen
 // ohnehin schon separat kennen (Icon/Farbe/Label). Reise-Orte (Flughafen/Bahnhof/Zuhause/…) und
 // Unterkunft sind seit ihrer Verschmelzung in Spots (siehe Migrationskommentar in db/index.ts) ganz
@@ -89,4 +90,12 @@ export function resolveStation(key: string, spots: Spot[], travelItems: TravelIt
 
 export function resolveStations(keys: string[], spots: Spot[], travelItems: TravelItem[]): ExcursionStation[] {
   return keys.map((key) => resolveStation(key, spots, travelItems)).filter((s): s is ExcursionStation => !!s);
+}
+
+/** Baut aus einer Tour-Spot-Id-Liste (Excursion.spot_ids, siehe api/types.ts) die generischen
+ *  station_keys, die resolveStation()/resolveStations() erwarten – eine Tour-Station ist seit der
+ *  Verschmelzung von Unterkunft/Reise-Orten in Spots IMMER ein echter Spot, daher genügt ein
+ *  einfaches Präfigieren statt eines echten Resolvers. */
+export function excursionStationKeys(spotIds: number[]): string[] {
+  return spotIds.map((id) => `spot-${id}`);
 }

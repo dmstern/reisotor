@@ -24,7 +24,7 @@ import { spotCategoryMeta } from '../utils/spotCategory';
 import { buildTravelDerivedLocations } from '../utils/travelDerivedLocations';
 import { arcRoute, cachedEmojiPin, pulsingEmojiPin } from '../utils/mapRoute';
 import { formatDate as formatDateShared } from '../utils/dateFormat';
-import { resolveStations, type ExcursionStation } from '../utils/excursionStations';
+import { excursionStationKeys, resolveStations, type ExcursionStation } from '../utils/excursionStations';
 import { useIsDesktop } from '../composables/useIsDesktop';
 import SpotDetailDialog from './SpotDetailDialog.vue';
 import MiniStationCard from './MiniStationCard.vue';
@@ -306,7 +306,8 @@ function toggleDayFocus(date: string) {
 const visiblePoints = computed(() => {
   const excursion = focusedExcursion.value;
   if (excursion) {
-    return filteredPoints.value.filter((p) => p.origin !== 'spot' || excursion.station_keys.includes(p.key));
+    const excursionKeys = excursionStationKeys(excursion.spot_ids);
+    return filteredPoints.value.filter((p) => p.origin !== 'spot' || excursionKeys.includes(p.key));
   }
   if (drawers.mapFocusDate) {
     const keys = new Set(focusedDateStations.value.map((s) => s.key));
@@ -315,16 +316,15 @@ const visiblePoints = computed(() => {
   return filteredPoints.value;
 });
 
-// Stationsliste unter der Karte bei Ausflug-Fokus: in station_keys-Reihenfolge (= Route/Abklapper-
+// Stationsliste unter der Karte bei Ausflug-Fokus: in spot_ids-Reihenfolge (= Route/Abklapper-
 // Reihenfolge), als aufgelöste ExcursionStation-Objekte (statt MapPoint) für MiniStationCard und
-// damit dieselbe Station mehrfach vorkommen kann (Rundgang, z. B. Start UND Ende an der
-// Unterkunft) – ein MapPoint-Lookup per Key wäre dafür ungeeignet, da mehrere Stationen dann
-// denselben Key/dieselbe Referenz teilen. Eine Station ist nicht zwingend ein echter Spot (siehe
-// utils/excursionStations.ts).
+// damit derselbe Spot mehrfach vorkommen kann (Rundgang, z. B. Start UND Ende an der Unterkunft) –
+// ein MapPoint-Lookup per Key wäre dafür ungeeignet, da mehrere Stationen dann denselben Key/
+// dieselbe Referenz teilen.
 const focusedExcursionStations = computed<ExcursionStation[]>(() => {
   const excursion = focusedExcursion.value;
   if (!excursion) return [];
-  return resolveStations(excursion.station_keys, spotsStore.spots, travelItems.value);
+  return resolveStations(excursionStationKeys(excursion.spot_ids), spotsStore.spots, travelItems.value);
 });
 
 async function loadAll() {
@@ -579,14 +579,7 @@ function fitAccommodations() {
 // dieser Button auf ALLE Ausflüge gleichzeitig, blendet also nichts aus, sondern zoomt nur. Bewusst
 // weiterhin nur auf echte Spot-Stationen beschränkt (Button-Icon 🎒 "Ausflugsziele"), nicht auf
 // Unterkunft/Reise-Stationen – die sind über die eigenen Fokus-Buttons bereits erreichbar.
-const excursionSpotIds = computed(
-  () =>
-    new Set(
-      excursionsStore.excursions.flatMap((e) =>
-        e.station_keys.filter((k) => k.startsWith('spot-')).map((k) => Number(k.slice('spot-'.length))),
-      ),
-    ),
-);
+const excursionSpotIds = computed(() => new Set(excursionsStore.excursions.flatMap((e) => e.spot_ids)));
 const excursionPoints = computed(() =>
   filteredPoints.value.filter((p) => p.origin === 'spot' && excursionSpotIds.value.has(Number(p.key.slice('spot-'.length)))),
 );
@@ -689,7 +682,7 @@ function renderMarkers() {
 
 // Zeichnet Verbindungslinien: je Reise-Eintrag mit Start- UND Zielkoordinaten eine Strecke
 // (Flug/Bahn/Auto/…), je Ausflug mit ≥2 verorteten Stationen eine Route entlang der Stationen
-// (in der Reihenfolge von station_keys). Rein visuell, keine echte Routenführung entlang von
+// (in der Reihenfolge von spot_ids). Rein visuell, keine echte Routenführung entlang von
 // Straßen. Im Tages-Fokus wird stattdessen eine einzige, zusammenhängende Route über alle
 // Stationen ALLER Ausflüge dieses Tages gezeichnet (statt je Ausflug eine eigene) – analog zum
 // Ausflug-Fokus, der ebenfalls nur dessen eigene Route statt aller Ausflüge zeigt.
@@ -725,7 +718,7 @@ function renderRoutes() {
   // Im Ausflug-Fokus nur dessen eigene Route zeichnen, nicht die aller anderen Ausflüge.
   const excursionsToDraw = focusedExcursion.value ? [focusedExcursion.value] : excursionsStore.excursions;
   for (const excursion of excursionsToDraw) {
-    const stations = resolveStations(excursion.station_keys, spotsStore.spots, travelItems.value);
+    const stations = resolveStations(excursionStationKeys(excursion.spot_ids), spotsStore.spots, travelItems.value);
     const coords: L.LatLngExpression[] = stations
       .filter((s) => s.lat != null && s.lng != null)
       .map((s) => [s.lat as number, s.lng as number]);

@@ -1,5 +1,5 @@
 import type { CalendarEntry, Excursion, ScheduleItem, Spot, TodoItem, TravelItem, Trip } from '../api/types';
-import { resolveStations } from './excursionStations';
+import { excursionStationKeys, resolveStations } from './excursionStations';
 import { spotCategoryMeta } from './spotCategory';
 
 // Icon-Override für einen mit Spot/Tour verknüpften Termin: bei einem verknüpften Spot dessen
@@ -20,7 +20,7 @@ export function resolveScheduleItemIcon(
   if (item.idea_id != null) {
     const excursion = excursions.find((e) => e.id === item.idea_id);
     if (excursion) {
-      const stations = resolveStations(excursion.station_keys, spots, travelItems);
+      const stations = resolveStations(excursionStationKeys(excursion.spot_ids), spots, travelItems);
       return stations.length === 1 ? stations[0].icon : undefined;
     }
   }

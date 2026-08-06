@@ -9,7 +9,7 @@ interface IdeaBody {
   image_url?: string;
   note?: string;
   date?: string;
-  station_keys?: string[];
+  spot_ids?: number[];
 }
 
 interface IdeaRow {
@@ -27,34 +27,33 @@ interface PlanSpotBody {
   date: string;
 }
 
-// Stationen eines Ausflugs (Batch 13, Reihenfolge/Mehrfachbesuche nachgerüstet; Batch 14:
-// generischer station_key statt spot_id): welche Orte gehören dazu, in welcher Reihenfolge. Eine
-// Station ist meist ein echter Spot ('spot-<id>', seit der Verschmelzung von Reise-Orten/
-// Unterkunft in Spots deckt das auch diese ab, siehe db/index.ts) – 'travel-from-<id>'/
-// 'travel-to-<id>' bleiben als Fallback für Etappen-Enden ohne verknüpften Ort. Wird bei jedem Anlegen/Bearbeiten
-// komplett neu geschrieben (einfacher als Diffing) – kleine Anzahl Zeilen pro Ausflug. `position`
-// statt der Zeilen-Id bestimmt die Reihenfolge, damit derselbe Ort mehrfach vorkommen darf (z. B.
-// Start UND Ende an der Unterkunft für einen Rundgang).
-function syncExcursionStations(ideaId: number, stationKeys: string[]) {
+// Welche Spots zu welcher Tour gehören, in welcher Reihenfolge (Batch 13, Reihenfolge/Mehrfach-
+// besuche nachgerüstet; Batch 14: generischer station_key statt spot_id, für Unterkunft-/Reise-
+// Etappen-Enden ohne eigenen Spot). station_key wich zwischenzeitlich einer echten spot_id-Fremd-
+// schlüsselspalte (siehe Migrationskommentar in db/index.ts) – Reihenfolge (position) und
+// Mehrfachbesuch (derselbe Spot z. B. als Start UND Ende eines Rundgangs) bleiben aber bewusst
+// erhalten, da zwei UI-Modi (einfaches Tagging vs. "Erweiterte Touren-Bearbeitung", siehe
+// ProfileView.vue) sich dasselbe Datenmodell teilen. spot_ids ist daher weiterhin ein geordnetes
+// Array (Duplikate erlaubt), nicht nur eine Menge. Wird bei jedem Anlegen/Bearbeiten komplett neu
+// geschrieben (einfacher als Diffing) – kleine Anzahl Zeilen pro Tour.
+function syncExcursionSpots(ideaId: number, spotIds: number[]) {
   db.prepare('DELETE FROM excursion_spots WHERE idea_id = ?').run(ideaId);
-  const insert = db.prepare('INSERT INTO excursion_spots (idea_id, station_key, position) VALUES (?, ?, ?)');
-  stationKeys.forEach((key, index) => {
-    insert.run(ideaId, key, index);
-  });
+  const insert = db.prepare('INSERT INTO excursion_spots (idea_id, spot_id, position) VALUES (?, ?, ?)');
+  spotIds.forEach((spotId, index) => insert.run(ideaId, spotId, index));
 }
 
-function stationKeysFor(ideaIds: number[]): Map<number, string[]> {
-  const map = new Map<number, string[]>();
+function spotIdsFor(ideaIds: number[]): Map<number, number[]> {
+  const map = new Map<number, number[]>();
   if (!ideaIds.length) return map;
   const placeholders = ideaIds.map(() => '?').join(',');
   const rows = db
     .prepare(
-      `SELECT idea_id, station_key FROM excursion_spots WHERE idea_id IN (${placeholders}) ORDER BY idea_id, position`,
+      `SELECT idea_id, spot_id FROM excursion_spots WHERE idea_id IN (${placeholders}) ORDER BY idea_id, position`,
     )
-    .all(...ideaIds) as { idea_id: number; station_key: string }[];
+    .all(...ideaIds) as { idea_id: number; spot_id: number }[];
   for (const row of rows) {
     const list = map.get(row.idea_id) ?? [];
-    list.push(row.station_key);
+    list.push(row.spot_id);
     map.set(row.idea_id, list);
   }
   return map;
@@ -62,7 +61,7 @@ function stationKeysFor(ideaIds: number[]): Map<number, string[]> {
 
 // Ein Ausflug ist "geplant", wenn genau ein Kalender-Termin (schedule_items) über idea_id auf ihn
 // verweist – kein eigenes Datums-Feld mehr auf dem Ausflug selbst (siehe Kommentar in db/index.ts).
-// Bündelt dieselbe Batch-Abfrage-Optik wie stationKeysFor oben.
+// Bündelt dieselbe Batch-Abfrage-Optik wie spotIdsFor oben.
 function scheduleDatesForIdeas(ideaIds: number[]): Map<number, string> {
   const map = new Map<number, string>();
   if (!ideaIds.length) return map;
@@ -101,8 +100,8 @@ function setIdeaScheduleDate(ideaId: number, tripId: number, title: string, date
   }
 }
 
-function serializeIdea(row: IdeaRow, stationKeys: string[], date: string | null) {
-  return { ...row, station_keys: stationKeys, date };
+function serializeIdea(row: IdeaRow, spotIds: number[], date: string | null) {
+  return { ...row, spot_ids: spotIds, date };
 }
 
 export const ideasRoutes: FastifyPluginAsync = async (app) => {
@@ -112,13 +111,13 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
     const rows = db
       .prepare('SELECT * FROM ideas WHERE trip_id = ? AND deleted_at IS NULL ORDER BY id DESC')
       .all(req.query.trip_id) as IdeaRow[];
-    const stationKeys = stationKeysFor(rows.map((r) => r.id));
+    const spotIds = spotIdsFor(rows.map((r) => r.id));
     const dates = scheduleDatesForIdeas(rows.map((r) => r.id));
-    return rows.map((row) => serializeIdea(row, stationKeys.get(row.id) ?? [], dates.get(row.id) ?? null));
+    return rows.map((row) => serializeIdea(row, spotIds.get(row.id) ?? [], dates.get(row.id) ?? null));
   });
 
   app.post<{ Body: IdeaBody }>('/ideas', async (req, reply) => {
-    const { trip_id, title, image_url, note, date, station_keys } = req.body;
+    const { trip_id, title, image_url, note, date, spot_ids } = req.body;
     if (!requireTripMember(reply, trip_id, req.session.userId)) return;
     const result = db
       .prepare(
@@ -127,12 +126,12 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
       )
       .run(trip_id, title, image_url ?? null, note ?? null, req.session.userId);
     const ideaId = result.lastInsertRowid as number;
-    syncExcursionStations(ideaId, station_keys ?? []);
+    syncExcursionSpots(ideaId, spot_ids ?? []);
     setIdeaScheduleDate(ideaId, trip_id, title, date);
     recordActivity(trip_id, 'ideas', ideaId, 'created', req.session.userId!);
     reply.code(201);
     const row = db.prepare('SELECT * FROM ideas WHERE id = ?').get(ideaId) as IdeaRow;
-    return serializeIdea(row, station_keys ?? [], date ?? null);
+    return serializeIdea(row, spot_ids ?? [], date ?? null);
   });
 
   app.put<{ Params: { id: string }; Body: IdeaBody }>('/ideas/:id', async (req, reply) => {
@@ -142,7 +141,7 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
     if (!existingIdea) return reply.code(404).send({ error: 'Nicht gefunden' });
     if (!requireTripMember(reply, existingIdea.trip_id, req.session.userId)) return;
 
-    const { title, image_url, note, date, station_keys } = req.body;
+    const { title, image_url, note, date, spot_ids } = req.body;
     const result = db
       .prepare(
         `UPDATE ideas SET title = ?, image_url = ?, note = ?
@@ -151,11 +150,11 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
       .run(title, image_url ?? null, note ?? null, req.params.id);
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
     const ideaId = Number(req.params.id);
-    syncExcursionStations(ideaId, station_keys ?? []);
+    syncExcursionSpots(ideaId, spot_ids ?? []);
     const row = db.prepare('SELECT * FROM ideas WHERE id = ?').get(ideaId) as IdeaRow;
     setIdeaScheduleDate(ideaId, row.trip_id as number, title, date);
     recordActivity(existingIdea.trip_id, 'ideas', ideaId, 'updated', req.session.userId!);
-    return serializeIdea(row, station_keys ?? [], date ?? null);
+    return serializeIdea(row, spot_ids ?? [], date ?? null);
   });
 
   // Weicher Löschvorgang (Papierkorb, routes/trash.ts): setzt nur deleted_at statt die Zeilen
@@ -187,14 +186,13 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
   // diesem Tag geplant". NICHT mehr der Weg, auf dem ein Spot im KALENDER eingeplant wird (das
   // erzeugt jetzt einen direkt mit dem Spot verknüpften Termin, siehe routes/schedule.ts) – bleibt
   // nur für den Tagebuch-Anwendungsfall bestehen, der einen Ausflug zum Verknüpfen braucht
-  // (diary_excursions referenziert ausschließlich idea_id). Dedupe-Check (exakt EIN Stations-
-  // Eintrag mit demselben station_key an trip_id+Termin-Datum) verhindert Duplikate, wenn derselbe
-  // Spot mehrfach für denselben Tag ausgelöst wird – zwei VERSCHIEDENE Spots am selben Tag erzeugen
-  // dagegen bewusst je einen eigenen Ausflug (kein Zusammenlegen).
+  // (diary_excursions referenziert ausschließlich idea_id). Dedupe-Check (exakt EINE Station mit
+  // demselben Spot an trip_id+Termin-Datum) verhindert Duplikate, wenn derselbe Spot mehrfach für
+  // denselben Tag ausgelöst wird – zwei VERSCHIEDENE Spots am selben Tag erzeugen dagegen bewusst
+  // je einen eigenen Ausflug (kein Zusammenlegen).
   app.post<{ Body: PlanSpotBody }>('/ideas/plan-spot', async (req, reply) => {
     const { trip_id, spot_id, date } = req.body;
     if (!requireTripMember(reply, trip_id, req.session.userId)) return;
-    const stationKey = `spot-${spot_id}`;
 
     const candidates = db
       .prepare(
@@ -213,14 +211,14 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
           `SELECT idea_id AS id FROM excursion_spots
            WHERE idea_id IN (${placeholders})
            GROUP BY idea_id
-           HAVING COUNT(*) = 1 AND MAX(station_key) = ?`,
+           HAVING COUNT(*) = 1 AND MAX(spot_id) = ?`,
         )
-        .get(...candidates.map((c) => c.id), stationKey) as { id: number } | undefined;
+        .get(...candidates.map((c) => c.id), spot_id) as { id: number } | undefined;
     }
 
     if (existing) {
       const row = db.prepare('SELECT * FROM ideas WHERE id = ?').get(existing.id) as IdeaRow;
-      return serializeIdea(row, [stationKey], date);
+      return serializeIdea(row, [spot_id], date);
     }
 
     const spot = db.prepare('SELECT title FROM spots WHERE id = ? AND deleted_at IS NULL').get(spot_id) as
@@ -232,12 +230,12 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
       .prepare('INSERT INTO ideas (trip_id, title, created_by) VALUES (?, ?, ?)')
       .run(trip_id, spot.title, req.session.userId);
     const ideaId = result.lastInsertRowid as number;
-    syncExcursionStations(ideaId, [stationKey]);
+    syncExcursionSpots(ideaId, [spot_id]);
     setIdeaScheduleDate(ideaId, trip_id, spot.title, date);
     recordActivity(trip_id, 'ideas', ideaId, 'created', req.session.userId!);
     reply.code(201);
     const row = db.prepare('SELECT * FROM ideas WHERE id = ?').get(ideaId) as IdeaRow;
-    return serializeIdea(row, [stationKey], date);
+    return serializeIdea(row, [spot_id], date);
   });
 
   app.get<{ Querystring: { trip_id?: string } }>('/ideas/likes', async (req, reply) => {

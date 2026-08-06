@@ -82,10 +82,10 @@ function excursionsForEntry(entry: DiaryEntry): Excursion[] {
 }
 
 // Ob ein Spot an diesem Tag bereits (über irgendeinen Ausflug) geplant ist – analog zum
-// bestehenden "📅 heute geplant"-Badge bei Ausflügen, hier direkt über station_keys geprüft
-// (kein voller Stations-Resolver nötig, ein einfacher String-Vergleich reicht).
+// bestehenden "📅 heute geplant"-Badge bei Ausflügen, hier direkt über spot_ids geprüft (kein
+// voller Stations-Resolver nötig).
 function spotAlreadyPlanned(spotId: number, dateStr: string) {
-  return excursionsStore.excursions.some((e) => e.date === dateStr && e.station_keys.includes(`spot-${spotId}`));
+  return excursionsStore.excursions.some((e) => e.date === dateStr && e.spot_ids.includes(spotId));
 }
 
 // Spot direkt zuordnen, ohne vorher einen Ausflug anzulegen: legt im Hintergrund einen

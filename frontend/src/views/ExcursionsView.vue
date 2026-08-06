@@ -9,6 +9,7 @@ import { useSpotsStore } from '../stores/spots';
 import { useScheduleStore } from '../stores/schedule';
 import { useDrawersStore } from '../stores/drawers';
 import { useLiveSyncStore } from '../stores/liveSync';
+import { useExcursionsStore } from '../stores/excursions';
 import { useIsDesktop } from '../composables/useIsDesktop';
 import { hashHighlightId } from '../utils/hashHighlight';
 import SpotCard from '../components/SpotCard.vue';
@@ -17,6 +18,7 @@ import DerivedLocationCard from '../components/DerivedLocationCard.vue';
 import TripMap from '../components/TripMap.vue';
 import Modal from '../components/Modal.vue';
 import Combobox from '../components/Combobox.vue';
+import TourAssignPicker from '../components/TourAssignPicker.vue';
 import LocationPicker from '../components/LocationPicker.vue';
 import { parseLatLngFromMapsLink, tilePreviewUrl } from '../utils/googleMaps';
 import { spotCategoryMeta, SPOT_CATEGORY_SUGGESTIONS } from '../utils/spotCategory';
@@ -36,6 +38,7 @@ const spotsStore = useSpotsStore();
 const scheduleStore = useScheduleStore();
 const drawers = useDrawersStore();
 const liveSync = useLiveSyncStore();
+const excursionsStore = useExcursionsStore();
 const isDesktop = useIsDesktop();
 
 const users = ref<User[]>([]);
@@ -80,6 +83,7 @@ onMounted(async () => {
     api.get<User[]>('/users'),
     api.get<TravelItem[]>(`/travel?trip_id=${tripId}`),
     spotsStore.load(),
+    excursionsStore.load(),
   ]);
   users.value = usersRes;
   travelItems.value = travelRes;
@@ -155,6 +159,9 @@ const emptySpotForm = () => ({
   contact: '',
   amount: '',
   paid_by_user_id: '',
+  // Touren, denen dieser Spot zugeordnet ist – Titel statt Ids, siehe TourAssignPicker.vue/
+  // syncSpotTours() unten (creatable: ein neuer Titel legt beim Speichern eine neue Tour an).
+  tourTitles: [] as string[],
 });
 const spotForm = ref(emptySpotForm());
 const spotMapsLinkResolved = ref<boolean | null>(null);
@@ -262,6 +269,18 @@ function groupIcon(category: string): string {
 const sortMenuOpen = ref(false);
 const sortMode = ref<'alpha' | 'likes'>('alpha');
 
+// Umschalter Kategorie/Touren (siehe spotGroups unten): gruppiert die Spots-Übersicht wahlweise
+// nach Kategorie (Standard) oder nach Tour-Zugehörigkeit – letzteres zeigt einen Spot in JEDER Tour,
+// der er zugeordnet ist (mehrfach, da viele-zu-viele), untaggte Spots/abgeleitete Orte landen
+// gemeinsam in "Ohne Tour".
+const groupMode = ref<'category' | 'tours'>('category');
+const UNASSIGNED_TOUR_GROUP = 'Ohne Tour';
+
+function tourTitlesForItem(item: SpotsGroupItem): string[] {
+  if (item.kind !== 'spot') return [];
+  return excursionsStore.excursions.filter((e) => e.spot_ids.includes(item.spot.id)).map((e) => e.title);
+}
+
 const categoryMenuOpen = ref(false);
 const categoryFilter = ref<string[]>([]);
 function removeCategoryFilter(cat: string) {
@@ -305,11 +324,15 @@ function sortedCategoryKeys(categories: Iterable<string>): string[] {
 
 const spotGroups = computed(() => {
   const groups = new Map<string, SpotsGroupItem[]>();
+  const groupKeysFor = groupMode.value === 'tours' ? tourTitlesForItem : (item: SpotsGroupItem) => [itemCategory(item)];
   for (const item of filteredSpotItems.value) {
-    const cat = itemCategory(item);
-    const list = groups.get(cat) ?? [];
-    list.push(item);
-    groups.set(cat, list);
+    const keys = groupKeysFor(item);
+    const effectiveKeys = groupMode.value === 'tours' && keys.length === 0 ? [UNASSIGNED_TOUR_GROUP] : keys;
+    for (const key of effectiveKeys) {
+      const list = groups.get(key) ?? [];
+      list.push(item);
+      groups.set(key, list);
+    }
   }
   for (const list of groups.values()) {
     list.sort((a, b) =>
@@ -317,6 +340,17 @@ const spotGroups = computed(() => {
         ? itemLikeCount(b) - itemLikeCount(a) || itemTitle(a).localeCompare(itemTitle(b))
         : itemTitle(a).localeCompare(itemTitle(b)),
     );
+  }
+  if (groupMode.value === 'tours') {
+    // "Ohne Tour" bewusst zuletzt statt alphabetisch einsortiert – die eigentlichen Touren sind der
+    // interessante Teil dieser Gruppierung, die Sammelgruppe für untaggte Spots bildet den Abschluss.
+    const known = [...groups.keys()].filter((k) => k !== UNASSIGNED_TOUR_GROUP).sort();
+    const keys = groups.has(UNASSIGNED_TOUR_GROUP) ? [...known, UNASSIGNED_TOUR_GROUP] : known;
+    return keys.map((title) => ({
+      category: title,
+      icon: title === UNASSIGNED_TOUR_GROUP ? '📍' : '🎒',
+      items: groups.get(title)!,
+    }));
   }
   return sortedCategoryKeys(groups.keys()).map((category) => ({
     category,
@@ -585,6 +619,47 @@ function closeSpotForm() {
   spotPendingFixId.value = null;
 }
 
+// Alle Tour-Titel als Vorschläge für die "Tour zuordnen"-Combobox (TourAssignPicker.vue).
+const allTourTitles = computed(() => excursionsStore.excursions.map((e) => e.title));
+
+function tourTitlesFor(spotId: number): string[] {
+  return excursionsStore.excursions.filter((e) => e.spot_ids.includes(spotId)).map((e) => e.title);
+}
+
+// Gleicht die Tour-Zuordnung eines Spots mit den im Formular gewählten Titeln ab (TourAssignPicker.
+// vue) – läuft NACH dem eigentlichen Spot-Speichern, braucht dessen id. Ein Titel, der zu einer
+// bestehenden Tour passt (case-insensitiv), hängt den Spot dort an; ein neuer Titel legt beim
+// Speichern eine neue Tour mit genau diesem einen Spot an (creatable, analog zur Kategorie-
+// Combobox). Ein Titel, der entfernt wurde, löst nur die Zuordnung, nicht die Tour selbst.
+async function syncSpotTours(spotId: number, desiredTitles: string[]) {
+  const desiredLower = desiredTitles.map((t) => t.toLowerCase());
+  for (const tour of excursionsStore.excursions.filter((e) => e.spot_ids.includes(spotId))) {
+    if (!desiredLower.includes(tour.title.toLowerCase())) {
+      await excursionsStore.update(tour.id, {
+        title: tour.title,
+        image_url: tour.image_url ?? undefined,
+        note: tour.note ?? undefined,
+        date: tour.date ?? undefined,
+        spot_ids: tour.spot_ids.filter((id) => id !== spotId),
+      });
+    }
+  }
+  for (const title of desiredTitles) {
+    const existing = excursionsStore.excursions.find((e) => e.title.toLowerCase() === title.toLowerCase());
+    if (!existing) {
+      await excursionsStore.create({ title, spot_ids: [spotId] });
+    } else if (!existing.spot_ids.includes(spotId)) {
+      await excursionsStore.update(existing.id, {
+        title: existing.title,
+        image_url: existing.image_url ?? undefined,
+        note: existing.note ?? undefined,
+        date: existing.date ?? undefined,
+        spot_ids: [...existing.spot_ids, spotId],
+      });
+    }
+  }
+}
+
 async function addSpot() {
   if (!spotForm.value.title.trim()) return;
   const body = spotToBody(spotForm.value, spotManualPin.value);
@@ -602,6 +677,7 @@ async function addSpot() {
     spotPickerOpen.value = true;
     return;
   }
+  await syncSpotTours(result.id, spotForm.value.tourTitles);
   closeSpotForm();
 }
 
@@ -626,6 +702,7 @@ function startEditSpot(spot: Spot) {
     contact: spot.contact ?? '',
     amount: spot.amount != null ? String(spot.amount) : '',
     paid_by_user_id: spot.paid_by_user_id != null ? String(spot.paid_by_user_id) : '',
+    tourTitles: tourTitlesFor(spot.id),
   };
   editSpotMapsLinkResolved.value = null;
   editSpotManualPin.value = null;
@@ -643,6 +720,7 @@ async function submitEditSpot() {
     editSpotPickerOpen.value = true;
     return;
   }
+  await syncSpotTours(editingSpot.value.id, editSpotForm.value.tourTitles);
   editSpotLocationError.value = false;
   editingSpot.value = null;
 }
@@ -723,6 +801,26 @@ async function removeSpot(id: number) {
            beides sind konzeptionell unterschiedliche Werkzeuge (eine Reihenfolge vs. eine
            Ein-/Ausblend-Auswahl), ein eigenes Label+Icon je Zeile macht das auf einen Blick klar. -->
       <div class="filter-bar" v-if="filterCategoryOptions.length">
+        <div class="tool-row">
+          <span class="tool-label">🗂️ Gruppieren</span>
+          <button
+            type="button"
+            class="secondary gran-btn"
+            :class="{ active: groupMode === 'category' }"
+            @click="groupMode = 'category'"
+          >
+            🏷️ Kategorie
+          </button>
+          <button
+            type="button"
+            class="secondary gran-btn"
+            :class="{ active: groupMode === 'tours' }"
+            @click="groupMode = 'tours'"
+          >
+            🎒 Touren
+          </button>
+        </div>
+
         <div class="tool-row">
           <span class="tool-label">🔀 Sortieren</span>
           <div class="dropdown">
@@ -862,6 +960,7 @@ async function removeSpot(id: number) {
             :reference-points="spotReferencePoints"
           />
           <textarea v-model="spotForm.note" placeholder="Notiz (optional)" rows="3"></textarea>
+          <TourAssignPicker v-model="spotForm.tourTitles" :tour-options="allTourTitles" />
           <button type="submit">Hinzufügen</button>
         </form>
       </Modal>
@@ -974,6 +1073,7 @@ async function removeSpot(id: number) {
             :reference-points="editSpotReferencePoints"
           />
           <textarea v-model="editSpotForm.note" placeholder="Notiz (optional)" rows="3"></textarea>
+          <TourAssignPicker v-model="editSpotForm.tourTitles" :tour-options="allTourTitles" />
           <button type="submit">Speichern</button>
         </form>
       </Modal>
@@ -1438,10 +1538,16 @@ async function removeSpot(id: number) {
 }
 
 .sort-btn.active,
-.category-btn.active {
+.category-btn.active,
+.gran-btn.active {
   background: var(--color-primary-tint);
   border-color: var(--color-primary);
   color: var(--color-primary-dark);
+}
+
+.gran-btn {
+  padding: 4px 10px;
+  font-size: 0.85rem;
 }
 
 .picker-backdrop {

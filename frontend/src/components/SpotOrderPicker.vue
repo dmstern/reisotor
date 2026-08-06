@@ -1,52 +1,39 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import type { Spot } from '../api/types';
-import type { DerivedLocation } from '../utils/derivedLocation';
 import { spotCategoryMeta } from '../utils/spotCategory';
 
-const props = withDefaults(
-  defineProps<{
-    /** Stationsreihenfolge als generische Schlüssel (siehe Excursion.station_keys/
-     *  utils/excursionStations.ts) – kann sowohl echte Spots als auch Unterkunft-/Reise-Orte
-     *  enthalten (loc.key ist bereits der fertige Schlüssel, wird nicht mehr zu einem Spot
-     *  aufgelöst). */
-    modelValue: string[];
-    spots: Spot[];
-    likeCount: (spotId: number) => number;
-    /** Unterkunft-/Reise-Orte – wählbar wie ein Spot, ohne dafür einen anzulegen. */
-    derivedLocations?: DerivedLocation[];
-  }>(),
-  { derivedLocations: () => [] },
-);
+// Nur im "Erweiterte Touren-Bearbeitung"-Modus verwendet (siehe stores/tourSettings.ts) – der
+// einfache Tagging-Modus ordnet Spots stattdessen ohne Reihenfolge über "Tour zuordnen" im
+// Spot-Formular zu (ExcursionsView.vue). Eine Tour-Station ist seit der Verschmelzung von
+// Unterkunft/Reise-Orten in Spots (siehe Migrationskommentar in db/index.ts) immer ein echter Spot.
+const props = defineProps<{
+  modelValue: number[];
+  spots: Spot[];
+  likeCount: (spotId: number) => number;
+}>();
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: string[]): void;
-  (e: 'pick-derived-location', location: DerivedLocation): void;
+  (e: 'update:modelValue', value: number[]): void;
 }>();
 
 // Schreibbarer Computed statt einzelner add/remove-Emits: die Checkboxen der "weitere Spots"-Liste
 // nutzen dadurch dasselbe v-model-Array-Muster wie vorher, ohne dass die Elternkomponente eigene
 // add/remove-Handler bräuchte.
-const selected = computed<string[]>({
+const selected = computed<number[]>({
   get: () => props.modelValue,
   set: (v) => emit('update:modelValue', v),
 });
 
 // Reihenfolge der geplanten Stationen entspricht der Abklapper-Reihenfolge während des Ausflugs
 // (und bestimmt auch die auf der Karte gezeichnete Route, siehe TripMap.vue) – deshalb hier nach
-// modelValue-Reihenfolge, NICHT nach Likes sortiert. Löst jeden Key lokal auf: 'spot-*' gegen
-// props.spots, alles andere (Unterkunft/Reise) gegen props.derivedLocations – kein Bedarf an einem
-// vollen ExcursionStation-Resolver hier, beide Quellen bringen Titel/Icon schon fertig mit.
+// modelValue-Reihenfolge, NICHT nach Likes sortiert.
 const plannedStations = computed(() =>
   props.modelValue
-    .map((key) => {
-      if (key.startsWith('spot-')) {
-        const spot = props.spots.find((s) => s.id === Number(key.slice('spot-'.length)));
-        return spot ? { key, title: spot.title, icon: spotCategoryMeta(spot.category).icon } : null;
-      }
-      const loc = props.derivedLocations.find((l) => l.key === key);
-      return loc ? { key, title: loc.title, icon: loc.icon } : null;
+    .map((spotId) => {
+      const spot = props.spots.find((s) => s.id === spotId);
+      return spot ? { id: spotId, title: spot.title, icon: spotCategoryMeta(spot.category).icon } : null;
     })
-    .filter((s): s is { key: string; title: string; icon: string } => !!s),
+    .filter((s): s is { id: number; title: string; icon: string } => !!s),
 );
 
 // Bewusst NICHT mehr gefiltert auf "noch nicht eingeplant" – für einen Rundgang muss derselbe Spot
@@ -58,7 +45,7 @@ const addableSpots = computed(() =>
 );
 
 function addSpot(id: number) {
-  selected.value = [...selected.value, `spot-${id}`];
+  selected.value = [...selected.value, id];
 }
 
 function removeSpotAt(index: number) {
@@ -146,20 +133,6 @@ function onDragEnd() {
       <button v-for="spot in addableSpots" :key="spot.id" type="button" class="derived-option" @click="addSpot(spot.id)">
         <span class="spot-option-title">{{ spotCategoryMeta(spot.category).icon }} {{ spot.title }}</span>
         <span class="spot-option-likes">❤️ {{ likeCount(spot.id) }}</span>
-        <span class="derived-add" aria-hidden="true">+</span>
-      </button>
-    </fieldset>
-
-    <fieldset v-if="derivedLocations.length" class="spot-picker">
-      <legend>🛏️🛫 Unterkunft &amp; Reise-Orte (auch mehrfach möglich)</legend>
-      <button
-        v-for="loc in derivedLocations"
-        :key="loc.key"
-        type="button"
-        class="derived-option"
-        @click="emit('pick-derived-location', loc)"
-      >
-        <span class="spot-option-title">{{ loc.icon }} {{ loc.title }}</span>
         <span class="derived-add" aria-hidden="true">+</span>
       </button>
     </fieldset>

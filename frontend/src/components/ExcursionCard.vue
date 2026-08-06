@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import type { Excursion, Spot, TravelItem } from '../api/types';
-import type { DerivedLocation } from '../utils/derivedLocation';
-import { resolveStations } from '../utils/excursionStations';
+import { excursionStationKeys, resolveStations } from '../utils/excursionStations';
 import { usePointerDrag } from '../composables/usePointerDrag';
 import { useExcursionsStore } from '../stores/excursions';
 import { useDrawersStore } from '../stores/drawers';
+import { useTourSettingsStore } from '../stores/tourSettings';
 import EditButton from './EditButton.vue';
 import DeleteButton from './DeleteButton.vue';
 import SocialRow from './SocialRow.vue';
@@ -35,7 +35,6 @@ const emit = defineEmits<{
   (e: 'submit-comment', content: string): void;
   (e: 'remove-comment', id: number): void;
   (e: 'drop-spot', spotId: number): void;
-  (e: 'drop-derived-location', location: DerivedLocation): void;
   (e: 'show-on-map'): void;
   (e: 'edit-station-spot', spot: Spot): void;
 }>();
@@ -43,7 +42,7 @@ const emit = defineEmits<{
 const detailOpen = ref(false);
 
 const resolvedStations = computed(() =>
-  resolveStations(props.excursion.station_keys, props.stations, props.travelItems),
+  resolveStations(excursionStationKeys(props.excursion.spot_ids), props.stations, props.travelItems),
 );
 
 const hasMappedStations = computed(() => resolvedStations.value.some((s) => s.lat != null && s.lng != null));
@@ -93,16 +92,18 @@ const { dragging, ghostStyle, onPointerDown } = usePointerDrag({
   },
 });
 
-// Drop-Zone fürs Zuordnen: ein Spot ODER ein abgeleiteter Ort (Unterkunft/Reise-Start-/Zielort,
-// siehe ExcursionsView.vue) kann direkt auf diese Karte gezogen werden, um ihn als Station
-// hinzuzufügen. Zähler statt Boolean, da dragenter/dragleave beim Überqueren von Kind-Elementen
-// mehrfach feuern. Der types-Check ist nötig, weil beim Ziehen eines ANDEREN Ausflugs
-// (text/excursion-id) über diese Karte hinweg sonst ebenfalls dragenter/dragleave feuern würde –
-// Ausflüge sollen nur auf den Status-Bereichen (In Planung/Geplant) landen, nicht auf einzelnen
-// Ausflug-Karten.
+// Drop-Zone fürs Zuordnen: ein Spot kann direkt auf diese Karte gezogen werden, um ihn als Station
+// hinzuzufügen - nur in der "Erweiterten Touren-Bearbeitung" (siehe stores/tourSettings.ts), im
+// einfachen Tagging-Modus läuft die Zuordnung stattdessen über "Tour zuordnen" im Spot-Formular
+// (ExcursionsView.vue), das Ziehen-Anfasser bleibt dafür auf SpotCard.vue ebenfalls verborgen.
+// Zähler statt Boolean, da dragenter/dragleave beim Überqueren von Kind-Elementen mehrfach feuern.
+// Der types-Check ist nötig, weil beim Ziehen eines ANDEREN Ausflugs (text/excursion-id) über diese
+// Karte hinweg sonst ebenfalls dragenter/dragleave feuern würde – Ausflüge sollen nur auf den
+// Status-Bereichen (In Planung/Geplant) landen, nicht auf einzelnen Ausflug-Karten.
+const tourSettings = useTourSettingsStore();
 const spotDragOverCount = ref(0);
 function isStationDrag(event: DragEvent) {
-  return !!(event.dataTransfer?.types.includes('text/spot-id') || event.dataTransfer?.types.includes('text/derived-location'));
+  return tourSettings.advancedEditing && !!event.dataTransfer?.types.includes('text/spot-id');
 }
 function onSpotDragEnter(event: DragEvent) {
   if (!isStationDrag(event)) return;
@@ -114,13 +115,9 @@ function onSpotDragLeave(event: DragEvent) {
 }
 function onSpotDrop(event: DragEvent) {
   spotDragOverCount.value = 0;
+  if (!tourSettings.advancedEditing) return;
   const rawSpotId = event.dataTransfer?.getData('text/spot-id');
-  if (rawSpotId) {
-    emit('drop-spot', Number(rawSpotId));
-    return;
-  }
-  const rawLocation = event.dataTransfer?.getData('text/derived-location');
-  if (rawLocation) emit('drop-derived-location', JSON.parse(rawLocation));
+  if (rawSpotId) emit('drop-spot', Number(rawSpotId));
 }
 </script>
 

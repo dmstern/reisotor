@@ -250,19 +250,21 @@ CREATE TABLE IF NOT EXISTS spots (
   created_by INTEGER REFERENCES users(id)
 );
 
--- Stationen eines Ausflugs: welche Orte gehören zu welchem Ausflug, in welcher Reihenfolge
--- (Batch 13, Reihenfolge/Mehrfachbesuche nachgerüstet; Batch 14: generischer station_key statt
--- spot_id). Eine Station ist NICHT mehr zwingend ein echter Spot – station_key trägt stattdessen
--- einen generischen Schlüssel im selben Format wie MapPoint.key/DerivedLocation.key
--- ('spot-<id>', 'accommodation-<id>', 'travel-from-<id>', 'travel-to-<id>'), damit Unterkunft/
--- Anreise-/Abreise-Orte als Station eingeplant werden können, ohne dafür einen doppelten Spot
--- anzulegen. Bewusst KEIN UNIQUE(idea_id, station_key) – ein Rundgang darf denselben Ort mehrfach
--- enthalten (z. B. Start UND Ende an der Unterkunft), "position" ist deshalb die eigentliche
--- Quelle der Abklapper-Reihenfolge, nicht die Zeilen-Id.
+-- Verknüpfung Tour<->Spot: welche Spots gehören zu welcher Tour, in welcher Reihenfolge (Batch 13:
+-- Reihenfolge/Mehrfachbesuche nachgerüstet; Batch 14: generischer station_key statt spot_id, damit
+-- auch Unterkunft/Reise-Etappen-Enden ohne eigenen Spot als Station gehen). Seit Unterkunft/Reise-
+-- Orte längst normale Spots sind (siehe Migrationskommentare weiter unten), ist eine Tour-Station
+-- jetzt IMMER ein echter Spot – station_key wird daher wieder zur echten spot_id-Fremdschlüssel-
+-- spalte. Reihenfolge (position) und Mehrfachbesuch (kein UNIQUE, ein Rundgang darf denselben Ort
+-- z. B. als Start UND Ende enthalten) bleiben bewusst erhalten: zwei UI-Modi teilen sich dasselbe
+-- Datenmodell – ein einfacher Tagging-Modus ("Tour zuordnen" im Spot-Formular, ohne Reihenfolge-
+-- Pflege) und ein optionaler "Erweiterte Touren-Bearbeitung"-Modus (Einstellung in ProfileView.vue),
+-- der weiterhin Drag&Drop-Reihenfolge + Mehrfachbesuch im Touren-Formular (SpotOrderPicker.vue)
+-- anbietet. position bestimmt die Abklapper-Reihenfolge, nicht die Zeilen-Id.
 CREATE TABLE IF NOT EXISTS excursion_spots (
   id INTEGER PRIMARY KEY,
   idea_id INTEGER NOT NULL REFERENCES ideas(id) ON DELETE CASCADE,
-  station_key TEXT NOT NULL,
+  spot_id INTEGER NOT NULL REFERENCES spots(id) ON DELETE CASCADE,
   position INTEGER NOT NULL DEFAULT 0
 );
 
@@ -326,30 +328,6 @@ function hasColumn(table: string, column: string) {
 function hasTable(name: string) {
   return !!db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?").get(name);
 }
-
-// excursion_spots hatte ursprünglich UNIQUE(idea_id, spot_id) und eine feste spot_id-Spalte statt
-// des generischen station_key – beides verhindert(e), was ein Rundgang bzw. eine Unterkunft/Reise
-// als Station braucht (siehe Kommentar am CREATE TABLE oben). SQLite kann weder eine Tabellen-
-// Constraint noch eine Spalten-Bedeutung per ALTER TABLE ändern, bei Altbeständen wird die Tabelle
-// daher einmalig neu aufgebaut. Gate über das Fehlen der station_key-Spalte statt eines Text-Checks
-// auf UNIQUE, da mittlerweile zwei verschiedene Alt-Schemata (mit/ohne UNIQUE, aber beide noch mit
-// spot_id) auf diesen einen Rebuild treffen können.
-function migrateExcursionStations() {
-  if (!hasTable('excursion_spots') || hasColumn('excursion_spots', 'station_key')) return;
-  db.exec(`
-    ALTER TABLE excursion_spots RENAME TO excursion_spots_old;
-    CREATE TABLE excursion_spots (
-      id INTEGER PRIMARY KEY,
-      idea_id INTEGER NOT NULL REFERENCES ideas(id) ON DELETE CASCADE,
-      station_key TEXT NOT NULL,
-      position INTEGER NOT NULL DEFAULT 0
-    );
-    INSERT INTO excursion_spots (id, idea_id, station_key, position)
-      SELECT id, idea_id, 'spot-' || spot_id, COALESCE(position, id) FROM excursion_spots_old;
-    DROP TABLE excursion_spots_old;
-  `);
-}
-migrateExcursionStations();
 
 // Selbstregistrierung (Login-Seite) braucht eine E-Mail-Adresse zusätzlich zum Benutzernamen.
 // Nullable statt UNIQUE NOT NULL: bestehende Nutzer:innen (vor Einführung der Registrierung
@@ -876,15 +854,20 @@ if (hasTable('travel_places')) {
 
   // station_keys, die bislang auf einen eigenen "travel-place-<id>"-Eintrag zeigten (vorheriger
   // Batch, siehe utils/excursionStations.ts), zeigen jetzt direkt auf den entsprechenden Spot
-  // ('spot-<neue id>') – derselbe Ort, kein eigener Stations-Typ mehr nötig.
-  const legacyStationRows = db
-    .prepare(`SELECT id, station_key FROM excursion_spots WHERE station_key LIKE 'travel-place-%'`)
-    .all() as { id: number; station_key: string }[];
-  const updateStationKey = db.prepare('UPDATE excursion_spots SET station_key = ? WHERE id = ?');
-  for (const row of legacyStationRows) {
-    const oldPlaceId = Number(row.station_key.slice('travel-place-'.length));
-    const newSpotId = placeToSpotId.get(oldPlaceId);
-    if (newSpotId != null) updateStationKey.run(`spot-${newSpotId}`, row.id);
+  // ('spot-<neue id>') – derselbe Ort, kein eigener Stations-Typ mehr nötig. Nur relevant, solange
+  // excursion_spots noch die alte station_key-Spalte hat (siehe die spätere Tagging-Vereinfachungs-
+  // Migration unten) – auf einer brandneuen DB hat excursion_spots von Anfang an nur noch spot_id,
+  // ein unbedingtes SELECT auf station_key würde dort mit "no such column" fehlschlagen.
+  if (hasColumn('excursion_spots', 'station_key')) {
+    const legacyStationRows = db
+      .prepare(`SELECT id, station_key FROM excursion_spots WHERE station_key LIKE 'travel-place-%'`)
+      .all() as { id: number; station_key: string }[];
+    const updateStationKey = db.prepare('UPDATE excursion_spots SET station_key = ? WHERE id = ?');
+    for (const row of legacyStationRows) {
+      const oldPlaceId = Number(row.station_key.slice('travel-place-'.length));
+      const newSpotId = placeToSpotId.get(oldPlaceId);
+      if (newSpotId != null) updateStationKey.run(`spot-${newSpotId}`, row.id);
+    }
   }
 
   db.exec('DROP TABLE travel_places');
@@ -955,15 +938,20 @@ if (hasTable('accommodation')) {
 
   // station_keys, die bislang auf 'accommodation-<id>' zeigten, zeigen jetzt direkt auf den
   // entsprechenden Spot ('spot-<neue id>') – derselbe Ort, kein eigener Stations-Typ mehr nötig
-  // (siehe utils/excursionStations.ts).
-  const legacyAccommodationStationRows = db
-    .prepare(`SELECT id, station_key FROM excursion_spots WHERE station_key LIKE 'accommodation-%'`)
-    .all() as { id: number; station_key: string }[];
-  const updateAccommodationStationKey = db.prepare('UPDATE excursion_spots SET station_key = ? WHERE id = ?');
-  for (const row of legacyAccommodationStationRows) {
-    const oldAccommodationId = Number(row.station_key.slice('accommodation-'.length));
-    const newSpotId = accommodationToSpotId.get(oldAccommodationId);
-    if (newSpotId != null) updateAccommodationStationKey.run(`spot-${newSpotId}`, row.id);
+  // (siehe utils/excursionStations.ts). Nur relevant, solange excursion_spots noch die alte
+  // station_key-Spalte hat (siehe die spätere Tagging-Vereinfachungs-Migration unten) – auf einer
+  // brandneuen DB hat excursion_spots von Anfang an nur noch spot_id, ein unbedingtes SELECT auf
+  // station_key würde dort mit "no such column" fehlschlagen.
+  if (hasColumn('excursion_spots', 'station_key')) {
+    const legacyAccommodationStationRows = db
+      .prepare(`SELECT id, station_key FROM excursion_spots WHERE station_key LIKE 'accommodation-%'`)
+      .all() as { id: number; station_key: string }[];
+    const updateAccommodationStationKey = db.prepare('UPDATE excursion_spots SET station_key = ? WHERE id = ?');
+    for (const row of legacyAccommodationStationRows) {
+      const oldAccommodationId = Number(row.station_key.slice('accommodation-'.length));
+      const newSpotId = accommodationToSpotId.get(oldAccommodationId);
+      if (newSpotId != null) updateAccommodationStationKey.run(`spot-${newSpotId}`, row.id);
+    }
   }
 
   // Datei-Anhänge (routes/attachments.ts) hingen bisher an domain='accommodation' + der alten
@@ -979,6 +967,75 @@ if (hasTable('accommodation')) {
   }
 
   db.exec('DROP TABLE accommodation');
+}
+
+// Touren (Ausflüge) verlieren ihren generischen station_key zugunsten einer echten spot_id-Fremd-
+// schlüsselspalte (siehe CREATE TABLE excursion_spots oben) – Reihenfolge (position) und Mehrfach-
+// besuch (kein UNIQUE) bleiben erhalten, nur der Stationstyp ist jetzt IMMER ein echter Spot (siehe
+// dortiger Kommentar). Muss NACH den travel_places-/accommodation-Migrationsblöcken oben laufen:
+// die schreiben 'travel-place-<id>'/'accommodation-<id>'-Stationsschlüssel bereits auf 'spot-<id>'
+// um, und travel_items.from_place_id/to_place_id zeigen an dieser Stelle schon auf spots(id) statt
+// travel_places(id) (siehe dortiger Kommentar) – beides wird hier gebraucht, um alte Stations-
+// schlüssel auf eine Spot-Id aufzulösen. Gate über die alte station_key-Spalte statt hasTable():
+// excursion_spots existiert dank CREATE TABLE IF NOT EXISTS oben immer schon (auch auf einer
+// brandneuen DB, dort aber bereits im neuen Schema, siehe oben – hasColumn liefert dann false,
+// Migration bleibt ein No-Op).
+if (hasColumn('excursion_spots', 'station_key')) {
+  interface LegacyExcursionSpotRow {
+    id: number;
+    idea_id: number;
+    station_key: string;
+    position: number;
+  }
+  const legacyRows = db.prepare('SELECT * FROM excursion_spots').all() as LegacyExcursionSpotRow[];
+
+  // Löst einen alten station_key auf eine Spot-Id auf – 'travel-from-<id>'/'travel-to-<id>' nur,
+  // wenn die Etappe tatsächlich einen verknüpften Ort hat (from_place_id/to_place_id), sonst (reine
+  // Freitext-Etappe ohne eigenen Spot) gibt es dafür in der neuen, spot-only Tour-Welt keine
+  // Entsprechung mehr – diese Station fällt ersatzlos weg (der einzige echte Funktionsverlust
+  // dieser Migration, alles andere - Reihenfolge, Mehrfachbesuch - bleibt erhalten).
+  function resolveLegacySpotId(stationKey: string): number | null {
+    if (stationKey.startsWith('spot-')) {
+      return Number(stationKey.slice('spot-'.length));
+    }
+    const isFrom = stationKey.startsWith('travel-from-');
+    const isTo = stationKey.startsWith('travel-to-');
+    if (!isFrom && !isTo) return null;
+    const travelId = Number(stationKey.slice((isFrom ? 'travel-from-' : 'travel-to-').length));
+    const travelItem = db
+      .prepare(`SELECT from_place_id, to_place_id FROM travel_items WHERE id = ?`)
+      .get(travelId) as { from_place_id: number | null; to_place_id: number | null } | undefined;
+    if (!travelItem) return null;
+    return (isFrom ? travelItem.from_place_id : travelItem.to_place_id) ?? null;
+  }
+
+  db.exec('ALTER TABLE excursion_spots RENAME TO excursion_spots_migrating');
+  db.exec(`
+    CREATE TABLE excursion_spots (
+      id INTEGER PRIMARY KEY,
+      idea_id INTEGER NOT NULL REFERENCES ideas(id) ON DELETE CASCADE,
+      spot_id INTEGER NOT NULL REFERENCES spots(id) ON DELETE CASCADE,
+      position INTEGER NOT NULL DEFAULT 0
+    )
+  `);
+  if (legacyRows.length > 0) {
+    // Nur vorbereiten, wenn tatsächlich Altzeilen existieren (gleiches Muster wie die
+    // Unterkunft-Migration oben) – auf einer frischen DB ohne station_key-Spalte greift dieser
+    // Zweig ohnehin nie.
+    const insertSpotLink = db.prepare(
+      'INSERT INTO excursion_spots (idea_id, spot_id, position) VALUES (?, ?, ?)',
+    );
+    const spotExists = db.prepare('SELECT 1 FROM spots WHERE id = ?');
+    for (const row of legacyRows) {
+      const spotId = resolveLegacySpotId(row.station_key);
+      // Sowohl unauflösbare (s. o.) als auch auf mittlerweile gelöschte Spots zeigende Stationen
+      // (alte station_key-Strings hatten keinen SQL-FK, ein Spot-Löschen konnte sie daher als
+      // Karteileiche zurücklassen) werden übersprungen statt gegen den neuen FK zu verstoßen.
+      if (spotId == null || !spotExists.get(spotId)) continue;
+      insertSpotLink.run(row.idea_id, spotId, row.position);
+    }
+  }
+  db.exec('DROP TABLE excursion_spots_migrating');
 }
 
 // Ordnet einer Trash-Tabelle (falls vorhanden) ihre Attachment-Domäne zu (siehe
