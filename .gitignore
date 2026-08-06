@@ -13,3 +13,8 @@ e2e/test-results
 e2e/playwright-report
 e2e/fixtures/seeded-data.json
 e2e/tests/scratch/
+
+# Lokal zusammengestelltes Release-Artefakt (Nachbau des "Assemble release artifact"-Schritts aus
+# .github/workflows/build-deploy.yml fuer einen manuellen Deploy, z. B. bei einer GitHub-Actions-
+# Stoerung) - reiner Build-Output wie dist/, nie committen.
+/release
