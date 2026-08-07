@@ -1121,3 +1121,18 @@ db.exec(`
 // aus lat/lng ermittelt und dauerhaft gecacht, nur neu aufgelöst, wenn sich lat/lng ändern.
 ensureColumn('trips', 'country_code', 'TEXT');
 ensureColumn('trips', 'country_name', 'TEXT');
+
+// Merkt sich, welche "Bis zur Abreise"-Erinnerungs-Push (departureReminders.ts, Schwellwerte in
+// Tagen vor Abreise) für welchen Urlaub schon verschickt wurde - ohne das würde derselbe
+// Schwellwert bei jedem periodischen Check (bzw. nach jedem Server-Neustart) erneut ausgelöst.
+// Zusammengesetzter Primärschlüssel statt eigener id-Spalte, da (trip_id, threshold_days) bereits
+// eindeutig ist und die Abfrage "wurde dieser Schwellwert schon verschickt?" so ohne zusätzlichen
+// Index auskommt.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS trip_departure_reminders_sent (
+    trip_id INTEGER NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
+    threshold_days INTEGER NOT NULL,
+    sent_at TEXT NOT NULL,
+    PRIMARY KEY (trip_id, threshold_days)
+  );
+`);

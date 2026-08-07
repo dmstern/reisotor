@@ -72,29 +72,38 @@ interface ActivityPushInfo {
   actorUsername: string;
 }
 
-/** Best-effort – wird von activity.ts's recordActivity() nach jeder Mutation angestoßen, blockiert
- *  die auslösende Route nie (siehe dortiger .catch()). Tote Abonnements (Browser hat die Berechtigung
+/** Gemeinsamer Versand-Kern für alle Push-Auslöser dieser Datei (Aktivitäts-Benachrichtigungen
+ *  hier UND departureReminders.ts's Abreise-Erinnerungen): lädt die Abos aller Urlaub-Mitglieder
+ *  (optional abzüglich einer ausschließenden user_id, z. B. der auslösenden Aktivitäts-Akteurin) und
+ *  verschickt denselben JSON-Payload an jedes. Tote Abonnements (Browser hat die Berechtigung
  *  entzogen oder das Abo ist abgelaufen) räumt sich hier selbst auf, sonst würde jeder künftige Push
- *  an dasselbe tote Abo erneut fehlschlagen. */
-export async function notifyTripMembers(tripId: number, excludeUserId: number, info: ActivityPushInfo) {
+ *  an dasselbe tote Abo erneut fehlschlagen. Best-effort - wirft nie, ruft nie process.exit o. Ä. */
+export async function sendPushToTripMembers(tripId: number, payload: Record<string, unknown>, excludeUserId?: number) {
   if (!pushEnabled) return;
-  const subs = db
-    .prepare(
-      `SELECT push_subscriptions.* FROM push_subscriptions
-       JOIN trip_members ON trip_members.user_id = push_subscriptions.user_id
-       WHERE trip_members.trip_id = ? AND push_subscriptions.user_id != ?`,
-    )
-    .all(tripId, excludeUserId) as PushSubscriptionRow[];
+  const subs = (
+    excludeUserId != null
+      ? db
+          .prepare(
+            `SELECT push_subscriptions.* FROM push_subscriptions
+             JOIN trip_members ON trip_members.user_id = push_subscriptions.user_id
+             WHERE trip_members.trip_id = ? AND push_subscriptions.user_id != ?`,
+          )
+          .all(tripId, excludeUserId)
+      : db
+          .prepare(
+            `SELECT push_subscriptions.* FROM push_subscriptions
+             JOIN trip_members ON trip_members.user_id = push_subscriptions.user_id
+             WHERE trip_members.trip_id = ?`,
+          )
+          .all(tripId)
+  ) as PushSubscriptionRow[];
   if (!subs.length) return;
 
-  const title = `${DOMAIN_LABEL[info.domain] ?? info.domain} · ${info.tripName}`;
-  const body = `${info.actorUsername} hat ${ACTION_LABEL[info.action] ?? 'etwas geändert'}`;
-  const payload = JSON.stringify({ title, body, tripId });
-
+  const body = JSON.stringify(payload);
   await Promise.all(
     subs.map(async (sub) => {
       try {
-        await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, payload);
+        await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, body);
       } catch (err) {
         const statusCode = (err as { statusCode?: number }).statusCode;
         if (statusCode === 404 || statusCode === 410) {
@@ -103,4 +112,12 @@ export async function notifyTripMembers(tripId: number, excludeUserId: number, i
       }
     }),
   );
+}
+
+/** Best-effort – wird von activity.ts's recordActivity() nach jeder Mutation angestoßen, blockiert
+ *  die auslösende Route nie (siehe dortiger .catch()). */
+export async function notifyTripMembers(tripId: number, excludeUserId: number, info: ActivityPushInfo) {
+  const title = `${DOMAIN_LABEL[info.domain] ?? info.domain} · ${info.tripName}`;
+  const body = `${info.actorUsername} hat ${ACTION_LABEL[info.action] ?? 'etwas geändert'}`;
+  await sendPushToTripMembers(tripId, { title, body, tripId }, excludeUserId);
 }
