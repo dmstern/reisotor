@@ -19,7 +19,9 @@ import SocialRow from '../components/SocialRow.vue';
 import Comments from '../components/Comments.vue';
 import UndoDeleteRow from '../components/UndoDeleteRow.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
+import DraftStatusBar from '../components/DraftStatusBar.vue';
 import { useUndoableDelete } from '../composables/useUndoableDelete';
+import { useDraftAutosave } from '../composables/useDraftAutosave';
 
 const auth = useAuthStore();
 const tripStore = useTripStore();
@@ -46,6 +48,16 @@ const editingEntry = ref<DiaryEntry | null>(null);
 const editForm = ref(emptyForm());
 const editUploading = ref(false);
 const editUploadError = ref('');
+
+// Entwurfs-Zwischenspeicherung (siehe composables/useDraftAutosave.ts) - images/excursion_ids sind
+// bereits gespeicherte Bild-URLs bzw. ids, nicht der flüchtige Upload-Fortschritt (uploading/
+// uploadError/pickedSpotIds bleiben bewusst außen vor, kommen nicht in `form`/`editForm`).
+const newDraft = useDraftAutosave('diary:new', form, showForm);
+const editDraft = useDraftAutosave(
+  () => `diary:edit:${editingEntry.value?.id}`,
+  editForm,
+  computed(() => editingEntry.value !== null),
+);
 
 // Rein lokale, flüchtige Markierung "in dieser Formular-Sitzung bereits per Spot-Picker
 // hinzugefügt" (siehe pickSpot unten) – dient nur der visuellen Rückmeldung (Häkchen), kein
@@ -217,11 +229,13 @@ async function submitEntry() {
   entries.value.unshift(created);
   form.value = emptyForm();
   showForm.value = false;
+  newDraft.clear();
 }
 
 function closeForm() {
   showForm.value = false;
   form.value = emptyForm();
+  newDraft.clear();
 }
 
 function startEdit(entry: DiaryEntry) {
@@ -246,6 +260,12 @@ async function submitEditEntry() {
   const updated = await api.put<DiaryEntry>(`/diary/${editingEntry.value.id}`, body);
   const idx = entries.value.findIndex((e) => e.id === updated.id);
   if (idx !== -1) entries.value[idx] = updated;
+  editDraft.clear();
+  editingEntry.value = null;
+}
+
+function closeEditForm() {
+  editDraft.clear();
   editingEntry.value = null;
 }
 
@@ -338,6 +358,7 @@ async function removeComment(id: number) {
           <span v-else-if="spotAlreadyPlanned(spot.id, todayDateStr)" class="excursion-option-badge">📅 heute geplant</span>
         </button>
       </fieldset>
+      <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
       <button type="submit">Eintragen</button>
     </form>
     </Modal>
@@ -408,7 +429,7 @@ async function removeComment(id: number) {
       :model-value="editingEntry !== null"
       title="Eintrag bearbeiten"
       full-height
-      @update:model-value="(v) => !v && (editingEntry = null)"
+      @update:model-value="(v) => !v && closeEditForm()"
     >
       <form class="add-form" @submit.prevent="submitEditEntry">
         <input v-model="editForm.title" type="text" placeholder="Titel (optional)" />
@@ -452,6 +473,7 @@ async function removeComment(id: number) {
             <span v-else-if="spotAlreadyPlanned(spot.id, editEntryDateStr)" class="excursion-option-badge">📅 an diesem Tag geplant</span>
           </button>
         </fieldset>
+        <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />
         <button type="submit">Speichern</button>
       </form>
     </Modal>

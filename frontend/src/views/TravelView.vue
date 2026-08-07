@@ -21,7 +21,9 @@ import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
 import UndoDeleteRow from '../components/UndoDeleteRow.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
+import DraftStatusBar from '../components/DraftStatusBar.vue';
 import { useUndoableDelete } from '../composables/useUndoableDelete';
+import { useDraftAutosave } from '../composables/useDraftAutosave';
 
 const tripStore = useTripStore();
 const drawers = useDrawersStore();
@@ -79,6 +81,18 @@ const pendingFixId = ref<number | null>(null);
 
 const editingItem = ref<TravelItem | null>(null);
 const editForm = ref(emptyForm());
+
+// Entwurfs-Zwischenspeicherung (siehe composables/useDraftAutosave.ts). closeForm()/submitEdit()'s
+// "editingItem = null" sind bewusst die einzigen Clear()-Stellen: solange submit()/submitEdit() im
+// Zwischenzustand "Standort manuell fixen" hängen bleiben (pendingFixId gesetzt bzw. früher
+// return, siehe dort), ist der Vorgang noch nicht wirklich abgeschlossen - der Entwurf soll bis
+// dahin bestehen bleiben.
+const newDraft = useDraftAutosave('travel:new', form, showForm);
+const editDraft = useDraftAutosave(
+  () => `travel:edit:${editingItem.value?.id}`,
+  editForm,
+  computed(() => editingItem.value !== null),
+);
 const editFromMapsLinkResolved = ref<boolean | null>(null);
 const editToMapsLinkResolved = ref<boolean | null>(null);
 const manualFromPinEdit = ref<{ lat: number; lng: number } | null>(null);
@@ -234,6 +248,7 @@ function closeForm() {
   fromLocationError.value = false;
   toLocationError.value = false;
   pendingFixId.value = null;
+  newDraft.clear();
 }
 
 function startEdit(item: TravelItem) {
@@ -288,6 +303,12 @@ async function submitEdit() {
   }
   fromLocationErrorEdit.value = false;
   toLocationErrorEdit.value = false;
+  editDraft.clear();
+  editingItem.value = null;
+}
+
+function closeEditForm() {
+  editDraft.clear();
   editingItem.value = null;
 }
 
@@ -546,6 +567,7 @@ function showDetailToOnMap() {
         automatisch erkannt
       </p>
 
+      <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
       <button type="submit">Hinzufügen</button>
     </form>
     </Modal>
@@ -602,7 +624,7 @@ function showDetailToOnMap() {
       :model-value="editingItem !== null"
       title="Reise-Eintrag bearbeiten"
       full-height
-      @update:model-value="(v) => !v && (editingItem = null)"
+      @update:model-value="(v) => !v && closeEditForm()"
     >
       <form class="form" @submit.prevent="submitEdit">
         <label>
@@ -743,6 +765,7 @@ function showDetailToOnMap() {
           automatisch erkannt
         </p>
         <FileAttachments v-if="editingItem" domain="travel" :entity-id="editingItem.id" />
+        <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />
         <button type="submit">Speichern</button>
       </form>
     </Modal>

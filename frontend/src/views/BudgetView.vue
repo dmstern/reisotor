@@ -23,7 +23,9 @@ import Combobox from '../components/Combobox.vue';
 import UndoDeleteRow from '../components/UndoDeleteRow.vue';
 import FileAttachments from '../components/FileAttachments.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
+import DraftStatusBar from '../components/DraftStatusBar.vue';
 import { useUndoableDelete } from '../composables/useUndoableDelete';
+import { useDraftAutosave } from '../composables/useDraftAutosave';
 
 const tripStore = useTripStore();
 const spotsStore = useSpotsStore();
@@ -212,6 +214,16 @@ const expenseForm = ref(emptyExpenseForm());
 const editingExpense = ref<BudgetExpense | null>(null);
 const editExpenseForm = ref(emptyExpenseForm());
 
+// Entwurfs-Zwischenspeicherung (siehe composables/useDraftAutosave.ts) - nur für die Ausgaben-
+// Formulare (Titel/Notiz sind hier Freitext), nicht für Budget-Anlegen/Überweisung/Kategorie-
+// Zuteilung (kurze, einzelne Felder mit geringem Verlustrisiko).
+const newExpenseDraft = useDraftAutosave('budgetExpense:new', expenseForm, showExpenseForm);
+const editExpenseDraft = useDraftAutosave(
+  () => `budgetExpense:edit:${editingExpense.value?.id}`,
+  editExpenseForm,
+  computed(() => editingExpense.value !== null),
+);
+
 function expenseToBody(f: ReturnType<typeof emptyExpenseForm>) {
   return {
     trip_id: tripId,
@@ -231,11 +243,13 @@ async function submitExpense() {
   expenses.value.unshift(created);
   expenseForm.value = emptyExpenseForm();
   showExpenseForm.value = false;
+  newExpenseDraft.clear();
 }
 
 function closeExpenseForm() {
   showExpenseForm.value = false;
   expenseForm.value = emptyExpenseForm();
+  newExpenseDraft.clear();
 }
 
 function startEditExpense(expense: BudgetExpense) {
@@ -259,6 +273,12 @@ async function submitEditExpense() {
   );
   const idx = expenses.value.findIndex((e) => e.id === updated.id);
   if (idx !== -1) expenses.value[idx] = updated;
+  editExpenseDraft.clear();
+  editingExpense.value = null;
+}
+
+function closeEditExpenseForm() {
+  editExpenseDraft.clear();
   editingExpense.value = null;
 }
 
@@ -463,6 +483,7 @@ const categoryColors = computed(() => {
           </select>
           <input v-model="expenseForm.date" type="date" />
           <input v-model="expenseForm.note" type="text" placeholder="Notiz (optional)" />
+          <DraftStatusBar :status="newExpenseDraft.status.value" :restored="newExpenseDraft.restored.value" />
           <button type="submit">Eintragen</button>
         </form>
       </Modal>
@@ -571,7 +592,7 @@ const categoryColors = computed(() => {
     <Modal
       :model-value="editingExpense !== null"
       title="Bezahlung bearbeiten"
-      @update:model-value="(v) => !v && (editingExpense = null)"
+      @update:model-value="(v) => !v && closeEditExpenseForm()"
     >
       <form class="add-form" @submit.prevent="submitEditExpense">
         <input v-model="editExpenseForm.title" type="text" placeholder="Titel" required />
@@ -587,6 +608,7 @@ const categoryColors = computed(() => {
         </select>
         <input v-model="editExpenseForm.date" type="date" />
         <input v-model="editExpenseForm.note" type="text" placeholder="Notiz (optional)" />
+        <DraftStatusBar :status="editExpenseDraft.status.value" :restored="editExpenseDraft.restored.value" />
         <button type="submit">Speichern</button>
       </form>
       <FileAttachments v-if="editingExpense" domain="budget" :entity-id="editingExpense.id" />

@@ -16,6 +16,8 @@ import SpotOrderPicker from '../components/SpotOrderPicker.vue';
 import SpotTogglePicker from '../components/SpotTogglePicker.vue';
 import Modal from '../components/Modal.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
+import DraftStatusBar from '../components/DraftStatusBar.vue';
+import { useDraftAutosave } from '../composables/useDraftAutosave';
 
 // Auf Desktop weiterhin eigenständig gemountete Schublade (App.vue, rechter Platz) statt Teil der
 // Karte-Hauptsicht – dadurch lassen sich Kalender- und Ausflüge-Schublade unabhängig voneinander
@@ -127,6 +129,14 @@ const excursionForm = ref(emptyExcursionForm());
 const editingExcursion = ref<number | null>(null);
 const editExcursionForm = ref(emptyExcursionForm());
 
+// Entwurfs-Zwischenspeicherung (siehe composables/useDraftAutosave.ts).
+const newExcursionDraft = useDraftAutosave('excursions:new', excursionForm, showExcursionForm);
+const editExcursionDraft = useDraftAutosave(
+  () => `excursions:edit:${editingExcursion.value}`,
+  editExcursionForm,
+  computed(() => editingExcursion.value !== null),
+);
+
 const unplannedExcursions = computed(() => excursionsStore.excursions.filter((e) => !e.date));
 const plannedExcursions = computed(() =>
   [...excursionsStore.excursions].filter((e) => e.date).sort((a, b) => (a.date ?? '').localeCompare(b.date ?? '')),
@@ -135,6 +145,7 @@ const plannedExcursions = computed(() =>
 function closeExcursionForm() {
   showExcursionForm.value = false;
   excursionForm.value = emptyExcursionForm();
+  newExcursionDraft.clear();
 }
 
 async function addExcursion() {
@@ -169,6 +180,12 @@ async function submitEditExcursion() {
     date: editExcursionForm.value.date || undefined,
     spot_ids: editExcursionForm.value.spot_ids,
   });
+  editExcursionDraft.clear();
+  editingExcursion.value = null;
+}
+
+function closeEditExcursionForm() {
+  editExcursionDraft.clear();
   editingExcursion.value = null;
 }
 
@@ -279,6 +296,7 @@ function editStationSpot() {
           :spots="spotsStore.spots"
           :like-count="spotsStore.likeCountFor"
         />
+        <DraftStatusBar :status="newExcursionDraft.status.value" :restored="newExcursionDraft.restored.value" />
         <button type="submit">Hinzufügen</button>
       </form>
     </Modal>
@@ -371,7 +389,7 @@ function editStationSpot() {
       :model-value="editingExcursion !== null"
       title="Tour bearbeiten"
       full-height
-      @update:model-value="(v) => !v && (editingExcursion = null)"
+      @update:model-value="(v) => !v && closeEditExcursionForm()"
     >
       <form class="edit-form" @submit.prevent="submitEditExcursion">
         <input v-model="editExcursionForm.title" type="text" placeholder="Titel" required />
@@ -398,6 +416,7 @@ function editStationSpot() {
           :spots="spotsStore.spots"
           :like-count="spotsStore.likeCountFor"
         />
+        <DraftStatusBar :status="editExcursionDraft.status.value" :restored="editExcursionDraft.restored.value" />
         <button type="submit">Speichern</button>
       </form>
     </Modal>
