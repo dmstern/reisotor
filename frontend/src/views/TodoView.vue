@@ -15,8 +15,10 @@ import DeleteButton from '../components/DeleteButton.vue';
 import UndoDeleteRow from '../components/UndoDeleteRow.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import DraftStatusBar from '../components/DraftStatusBar.vue';
+import QuickAddRow from '../components/QuickAddRow.vue';
 import { useUndoableDelete } from '../composables/useUndoableDelete';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
+import { usePersistedRef } from '../composables/usePersistedRef';
 
 const tripStore = useTripStore();
 const liveSync = useLiveSyncStore();
@@ -32,8 +34,10 @@ const highlightedIds = ref<Set<number>>(new Set());
 
 type GroupBy = 'assignee' | 'period';
 type SortBy = 'due_date' | 'priority' | 'assignee';
-const groupBy = ref<GroupBy>('assignee');
-const sortBy = ref<SortBy>('priority');
+// Gruppierung/Sortierung bleiben über localStorage auch nach einem Reload/erneuten Besuch erhalten
+// (siehe usePersistedRef.ts).
+const groupBy = usePersistedRef<GroupBy>('reisotor-todo-group-by', 'assignee');
+const sortBy = usePersistedRef<SortBy>('reisotor-todo-sort-by', 'priority');
 
 const PRIORITY_META: Record<TodoPriority, { label: string; icon: string }> = {
   low: { label: 'Niedrig', icon: '🟢' },
@@ -44,14 +48,12 @@ const PRIORITY_ORDER: Record<TodoPriority, number> = { high: 0, medium: 1, low: 
 
 // Merkt sich die zuletzt für ein neues ToDo gewählte Bearbeiter:in (z. B. wenn mehrere Aufgaben
 // hintereinander für dieselbe Person angelegt werden) und schlägt sie beim nächsten neuen Eintrag
-// direkt vor, statt jedes Mal wieder "Nicht zugewiesen" zu zeigen. Persistiert über localStorage,
-// damit die Vorauswahl auch nach einem Reload erhalten bleibt (gleiches Muster wie andere
-// UI-Präferenzen der App, z. B. SPOTS_COL_WIDTH_KEY).
-const LAST_ASSIGNEE_KEY = 'reisotor-todo-last-assignee';
+// direkt vor, statt jedes Mal wieder "Nicht zugewiesen" zu zeigen.
+const lastAssignee = usePersistedRef('reisotor-todo-last-assignee', '');
 
 const emptyForm = () => ({
   title: '',
-  assigned_to_user_id: localStorage.getItem(LAST_ASSIGNEE_KEY) ?? '',
+  assigned_to_user_id: lastAssignee.value,
   due_date: '',
   priority: 'medium' as TodoPriority,
   note: '',
@@ -177,13 +179,28 @@ async function addItem() {
   if (!newForm.value.title.trim()) return;
   const created = await api.post<TodoItem>('/todos', toBody(newForm.value));
   items.value.push(created);
-  if (newForm.value.assigned_to_user_id) {
-    localStorage.setItem(LAST_ASSIGNEE_KEY, newForm.value.assigned_to_user_id);
-  } else {
-    localStorage.removeItem(LAST_ASSIGNEE_KEY);
-  }
+  lastAssignee.value = newForm.value.assigned_to_user_id;
   newForm.value = emptyForm();
   newDraft.clear();
+}
+
+// Inline-Quick-Add direkt in einer Gruppen-Kopfzeile (siehe QuickAddRow.vue) - die aktuell
+// gruppierte Dimension (Bearbeiter:in oder Zeitraum) ergibt sich aus der Gruppe selbst; Priorität
+// bleibt als kompaktes Zusatzfeld übrig (Fälligkeitsdatum ist bei Zeitraum-Gruppierung nicht sinnvoll
+// frei wählbar, da der Zeitraum selbst daraus abgeleitet wird - siehe periodFor() oben).
+const quickAddPriority = ref<TodoPriority>('medium');
+
+async function quickAddToGroup(group: Group, label: string) {
+  if (!label.trim()) return;
+  const assigned_to_user_id =
+    groupBy.value === 'assignee' ? (group.key.startsWith('user-') ? Number(group.key.slice(5)) : undefined) : lastAssignee.value ? Number(lastAssignee.value) : undefined;
+  const created = await api.post<TodoItem>('/todos', {
+    trip_id: tripId,
+    title: label.trim(),
+    assigned_to_user_id,
+    priority: quickAddPriority.value,
+  });
+  items.value.push(created);
 }
 
 async function toggleDone(item: TodoItem) {
@@ -294,6 +311,17 @@ function isOverdue(item: TodoItem) {
     <div class="groups-grid">
       <section class="group-section" v-for="group in groupedItems" :key="group.key">
         <h2>{{ group.label }}</h2>
+        <QuickAddRow class="card group-quick-add" placeholder="Aufgabe hinzufügen…" @submit="(label) => quickAddToGroup(group, label)">
+          <template #extra>
+            <select v-if="groupBy !== 'assignee'" v-model="lastAssignee">
+              <option value="">Nicht zugewiesen</option>
+              <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
+            </select>
+            <select v-model="quickAddPriority">
+              <option v-for="(meta, key) in PRIORITY_META" :key="key" :value="key">{{ meta.icon }} {{ meta.label }}</option>
+            </select>
+          </template>
+        </QuickAddRow>
         <div class="card">
           <TransitionGroup tag="ul" name="list" class="list">
             <template v-for="item in group.items" :key="item.id">
@@ -401,6 +429,15 @@ function isOverdue(item: TodoItem) {
   font-size: 0.95rem;
   color: var(--color-primary-dark);
   margin-bottom: var(--space-2);
+}
+
+.group-quick-add {
+  margin-bottom: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+}
+
+.group-quick-add :deep(select) {
+  width: auto;
 }
 
 .list {

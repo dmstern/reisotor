@@ -34,7 +34,7 @@ test.describe('Zentrale Lade-Animation', () => {
     });
 
     await page.locator('input[placeholder^="Neuer Gegenstand"]').first().fill('E2E-Testartikel');
-    await page.getByRole('button', { name: 'Gegenstand hinzufügen' }).first().click();
+    await page.getByRole('button', { name: 'Hinzufügen', exact: true }).first().click();
 
     await expect(page.locator('.toast-pill.create')).toBeVisible();
     await expect(page.locator('.toast-pill.create .label')).toHaveText('Legt an…');
@@ -52,7 +52,7 @@ test.describe('Zentrale Lade-Animation', () => {
       await route.continue();
     });
     await page.locator('input[placeholder^="Neuer Gegenstand"]').first().fill('E2E-Testartikel-2');
-    await page.getByRole('button', { name: 'Gegenstand hinzufügen' }).first().click();
+    await page.getByRole('button', { name: 'Hinzufügen', exact: true }).first().click();
     await page.waitForTimeout(600); // über SHOW_DELAY_MS (200ms) hinaus warten
 
     await expect(page.locator('.toast-pill')).toHaveCount(0);

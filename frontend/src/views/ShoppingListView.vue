@@ -12,9 +12,11 @@ import Combobox from '../components/Combobox.vue';
 import UndoDeleteRow from '../components/UndoDeleteRow.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import DraftStatusBar from '../components/DraftStatusBar.vue';
+import QuickAddRow from '../components/QuickAddRow.vue';
 import { useUndoableDelete } from '../composables/useUndoableDelete';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
 import { sortWithDoneLast } from '../composables/useCheckedSort';
+import { usePersistedRef } from '../composables/usePersistedRef';
 
 const tripStore = useTripStore();
 const liveSync = useLiveSyncStore();
@@ -26,14 +28,18 @@ const loading = ref(true);
 const highlightedIds = ref<Set<number>>(new Set());
 
 type GroupBy = 'buyer' | 'shop' | 'period';
-const groupBy = ref<GroupBy>('buyer');
+// Gruppierung sowie zuletzt gewählter Shop/Zeitraum bleiben über localStorage auch nach einem
+// Reload/erneuten Besuch erhalten (siehe usePersistedRef.ts) - bewusst NICHT nach jedem addItem()
+// zurückgesetzt (anders als Label/Link/Notiz, die je Gegenstand unterschiedlich sind), damit sie beim
+// nächsten Öffnen der Einkaufsliste direkt wieder vorausgewählt sind.
+const groupBy = usePersistedRef<GroupBy>('reisotor-shopping-group-by', 'buyer');
 
 const newLabel = ref('');
 const newBuyer = ref('');
 const newLink = ref('');
 const newNote = ref('');
-const newShop = ref('');
-const newPeriod = ref<Period | ''>('');
+const newShop = usePersistedRef('reisotor-shopping-last-shop', '');
+const newPeriod = usePersistedRef<Period | ''>('reisotor-shopping-last-period', '');
 
 const editingItem = ref<ShoppingItem | null>(null);
 const editForm = ref({ label: '', link: '', note: '', shop: '', period: '' as Period | '' });
@@ -241,9 +247,38 @@ async function addItem() {
   newLabel.value = '';
   newLink.value = '';
   newNote.value = '';
-  newShop.value = '';
-  newPeriod.value = '';
+  // Shop/Zeitraum bleiben bewusst stehen (siehe usePersistedRef oben) - praktisch, wenn mehrere
+  // Artikel für denselben Shop/Zeitraum hintereinander erfasst werden, und dient gleichzeitig als
+  // Vorbelegung fürs nächste Öffnen der Liste.
   newDraft.clear();
+}
+
+// Inline-Quick-Add direkt in einer Gruppen-Kopfzeile (siehe QuickAddRow.vue) - die aktuell
+// gruppierte Dimension ergibt sich aus der Gruppe selbst, die jeweils anderen beiden bleiben als
+// kompakte Zusatzfelder übrig (gebunden an dieselben newBuyer/newShop/newPeriod-Refs wie das große
+// Formular oben, damit es EINE "aktuelle Auswahl" gibt statt mehrerer unabhängiger Kopien).
+async function quickAddToGroup(group: Group, label: string) {
+  if (!label.trim()) return;
+  const assigned_to_user_id =
+    groupBy.value === 'buyer'
+      ? group.key.startsWith('user-')
+        ? Number(group.key.slice(5))
+        : undefined
+      : newBuyer.value
+        ? Number(newBuyer.value)
+        : undefined;
+  const shop = groupBy.value === 'shop' ? (group.key === UNASSIGNED_SHOP ? undefined : group.key) : newShop.value || undefined;
+  const period =
+    groupBy.value === 'period' ? (group.key === 'before' || group.key === 'during' ? group.key : undefined) : newPeriod.value || undefined;
+
+  const created = await api.post<ShoppingItem>('/shopping', {
+    trip_id: tripId,
+    label: label.trim(),
+    assigned_to_user_id,
+    shop,
+    period,
+  });
+  items.value.push(created);
 }
 </script>
 
@@ -284,6 +319,20 @@ async function addItem() {
     <div class="groups-grid">
       <section class="group-section" v-for="group in groupedItems" :key="group.key">
         <h2>{{ group.label }}</h2>
+        <QuickAddRow class="card group-quick-add" placeholder="Artikel hinzufügen…" @submit="(label) => quickAddToGroup(group, label)">
+          <template #extra>
+            <select v-if="groupBy !== 'buyer'" v-model="newBuyer">
+              <option value="">Nicht zugewiesen</option>
+              <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
+            </select>
+            <Combobox v-if="groupBy !== 'shop'" v-model="newShop" :options="knownShops" placeholder="Shop" />
+            <select v-if="groupBy !== 'period'" v-model="newPeriod">
+              <option value="">Zeitraum</option>
+              <option value="before">{{ PERIOD_META.before }}</option>
+              <option value="during">{{ PERIOD_META.during }}</option>
+            </select>
+          </template>
+        </QuickAddRow>
         <div class="card">
           <TransitionGroup tag="ul" name="list" class="list">
             <template v-for="item in group.items" :key="item.id">
@@ -393,6 +442,15 @@ async function addItem() {
   font-size: 0.95rem;
   color: var(--color-primary-dark);
   margin-bottom: var(--space-2);
+}
+
+.group-quick-add {
+  margin-bottom: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+}
+
+.group-quick-add :deep(select) {
+  width: auto;
 }
 
 .tag {
