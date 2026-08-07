@@ -5,6 +5,7 @@ import { useAuthStore } from '../stores/auth';
 import { useNavPositionStore } from '../stores/navPosition';
 import { useLiveSyncStore, type LiveDomain } from '../stores/liveSync';
 import { useIsDesktop } from '../composables/useIsDesktop';
+import { useTourSettingsStore } from '../stores/tourSettings';
 import { SECTION_ICONS } from '../utils/sectionIcons';
 
 const auth = useAuthStore();
@@ -12,6 +13,7 @@ const router = useRouter();
 const navPosition = useNavPositionStore();
 const liveSync = useLiveSyncStore();
 const isDesktop = useIsDesktop();
+const tourSettings = useTourSettingsStore();
 
 // Schubladen (Drawer.vue) kleben ebenfalls "oben" fest und müssen wissen, wie viel Platz die
 // NavBar dort tatsächlich einnimmt, um sie nicht zu überdecken – siehe --navbar-offset in
@@ -96,8 +98,14 @@ function onLinkClick(event: MouseEvent) {
           </span>
           <span class="label">{{ link.label }}</span>
         </router-link>
+        <!-- Im einfachen Touren-Modus (Standard) ausgeblendet: Touren anlegen/Spots zuordnen geht
+             dort bereits direkt in der Karte (TourAssignPicker.vue), ein zusätzlicher Nav-Punkt
+             daneben wäre nur redundante Navigation (siehe App.vue's Drawer hideTab-Kommentar für
+             das Desktop-Pendant). Die Route /tours selbst bleibt unverändert erreichbar - Bearbeiten-
+             und Querverweis-Aktionen (drawers.openExcursions()) navigieren dorthin weiterhin, auch im
+             einfachen Modus. -->
         <router-link
-          v-if="link.to === '/excursions'"
+          v-if="link.to === '/excursions' && tourSettings.advancedEditing"
           to="/tours"
           class="link mobile-page-link"
           @click="onLinkClick"

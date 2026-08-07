@@ -5,6 +5,7 @@ import { useAuthStore } from './stores/auth';
 import { useTripStore, type TripFormData } from './stores/trip';
 import { useDrawersStore } from './stores/drawers';
 import { useLiveSyncStore } from './stores/liveSync';
+import { useTourSettingsStore } from './stores/tourSettings';
 import { useIsDesktop } from './composables/useIsDesktop';
 import { SECTION_ICONS } from './utils/sectionIcons';
 import { prefetchTripDataForOffline } from './utils/offlinePrefetch';
@@ -25,6 +26,7 @@ const isDesktop = useIsDesktop();
 // siehe liveSync.ts's watch(currentTripId, ..., { immediate: true }). Wird hier außerdem für die
 // Nav-Punkte der beiden Schubladen-Laschen (Kalender/Touren) unten gebraucht.
 const liveSync = useLiveSyncStore();
+const tourSettings = useTourSettingsStore();
 const showNav = computed(() => route.name !== 'login');
 
 watch(
@@ -102,6 +104,13 @@ async function onCreateFirstTrip(data: TripFormData) {
       <main class="app-main">
         <router-view :key="tripStore.currentTripId ?? undefined" />
       </main>
+      <!-- Lasche im einfachen Touren-Modus (Standard) ausgeblendet: Touren anlegen/Spots zuordnen
+           geht dort bereits direkt in der Karte-Hauptsicht (TourAssignPicker.vue in
+           ExcursionsView.vue), eine zusätzliche, ständig sichtbare "Touren"-Lasche daneben wäre nur
+           redundante Navigation. Die Schublade selbst bleibt trotzdem gemountet/funktionsfähig
+           (siehe Drawer.vue's hideTab-Prop) - "Bearbeiten" eines Ausflugs (TripMap.vue's
+           editOpenExcursion()) und Querverweise (z. B. aus dem Tagebuch) öffnen sie weiterhin
+           programmatisch, auch im einfachen Modus. -->
       <Drawer
         v-if="isDesktop"
         side="right"
@@ -110,6 +119,7 @@ async function onCreateFirstTrip(data: TripFormData) {
         label="Touren"
         :icon="SECTION_ICONS.excursions"
         :has-unseen="liveSync.hasUnseen('ideas')"
+        :hide-tab="!tourSettings.advancedEditing"
         @update:open="(v) => (drawers.excursionsOpen = v)"
         @update:width="(w) => (drawers.excursionsWidth = w)"
       >
