@@ -1,4 +1,5 @@
-import { enqueue, nextTempId, readCache, writeCache } from './offline';
+import { enqueue, isConfirmedOffline, nextTempId, readCache, setConfirmedOffline, writeCache } from './offline';
+import { useRequestActivityStore } from '../stores/requestActivity';
 
 export class ApiError extends Error {
   status: number;
@@ -88,20 +89,32 @@ function isNetworkFailure(err: unknown): boolean {
 }
 
 async function get<T>(path: string): Promise<T> {
-  if (navigator.onLine) {
-    try {
-      const data = await rawRequest<T>(path, { method: 'GET' });
-      writeCache(path, data);
-      return data;
-    } catch (err) {
-      if (!isNetworkFailure(err)) throw err;
-      // Netzwerk nicht erreichbar, obwohl navigator.onLine true meldet (unzuverlässig) – auf den
-      // Cache zurückfallen statt den Fehler direkt hochzureichen.
+  const activity = useRequestActivityStore();
+  activity.start('read');
+  try {
+    // isConfirmedOffline(): erst NACH einem echten Fehlschlag gesetzt (siehe api/offline.ts) - beim
+    // allerersten Request eines Ladens gilt navigator.onLine also noch allein, damit der Normalfall
+    // (echtes Online) unverändert sofort einen Netzversuch macht.
+    if (navigator.onLine && !isConfirmedOffline()) {
+      try {
+        const data = await rawRequest<T>(path, { method: 'GET' });
+        writeCache(path, data);
+        return data;
+      } catch (err) {
+        if (!isNetworkFailure(err)) throw err;
+        // Netzwerk nicht erreichbar, obwohl navigator.onLine true meldet (unzuverlässig) – auf den
+        // Cache zurückfallen statt den Fehler direkt hochzureichen. Merken, damit nachfolgende
+        // Requests nicht jedes Mal erneut den vollen Timeout abwarten müssen (siehe
+        // stores/connectivity.ts, das dieses Flag per Health-Check wieder zurücksetzt).
+        setConfirmedOffline(true);
+      }
     }
+    const cached = readCache<T>(path);
+    if (cached !== undefined) return cached;
+    throw new ApiError(0, 'Offline und keine zwischengespeicherten Daten für diese Ansicht vorhanden');
+  } finally {
+    activity.finish('read');
   }
-  const cached = readCache<T>(path);
-  if (cached !== undefined) return cached;
-  throw new ApiError(0, 'Offline und keine zwischengespeicherten Daten für diese Ansicht vorhanden');
 }
 
 type MutateMethod = 'POST' | 'PUT' | 'DELETE';
@@ -128,16 +141,29 @@ function queueMutation<T>(method: MutateMethod, path: string, body: unknown): T 
   return { ...(body as object), id: idMatch ? Number(idMatch[1]) : undefined, _pending: true } as T;
 }
 
+const MUTATE_KIND: Record<MutateMethod, 'create' | 'update' | 'delete'> = {
+  POST: 'create',
+  PUT: 'update',
+  DELETE: 'delete',
+};
+
 async function mutate<T>(method: MutateMethod, path: string, body?: unknown): Promise<T> {
-  if (navigator.onLine) {
-    try {
-      return await rawRequest<T>(path, { method, body: body ? JSON.stringify(body) : undefined });
-    } catch (err) {
-      if (!isNetworkFailure(err)) throw err;
-      // durchfallen zur Offline-Warteschlange unten
+  const activity = useRequestActivityStore();
+  activity.start(MUTATE_KIND[method]);
+  try {
+    if (navigator.onLine && !isConfirmedOffline()) {
+      try {
+        return await rawRequest<T>(path, { method, body: body ? JSON.stringify(body) : undefined });
+      } catch (err) {
+        if (!isNetworkFailure(err)) throw err;
+        setConfirmedOffline(true);
+        // durchfallen zur Offline-Warteschlange unten
+      }
     }
+    return queueMutation<T>(method, path, body);
+  } finally {
+    activity.finish(MUTATE_KIND[method]);
   }
-  return queueMutation<T>(method, path, body);
 }
 
 export const api = {
