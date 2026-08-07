@@ -2,41 +2,56 @@
 import { computed, onMounted, ref } from 'vue';
 import { api } from '../api/client';
 import type { User } from '../api/types';
+import { useTripStore } from '../stores/trip';
+import { useAuthStore } from '../stores/auth';
 import { useLiveSyncStore } from '../stores/liveSync';
 
-// Zeigt (ähnlich Google Docs) die Avatare der anderen Mitglieder, die gerade in der App online sind
-// (siehe stores/liveSync.ts's onlineUserIds, aus den SSE-Präsenz-Events des aktuellen Urlaubs).
-// Eigener kleiner /users-Fetch statt eines geteilten Stores – dieselbe Liste wird bereits in fast
-// jeder View unabhängig geladen (kein zentraler Users-Store in dieser App), hier reicht das genauso.
+// Zeigt (ähnlich Google Docs) gestapelt überlappende Avatare ALLER Mitreisenden dieses Urlaubs
+// (nicht nur online) - ausgegraut bei offline, mit grünem Punkt bei online (siehe
+// stores/liveSync.ts's onlineUserIds, aus den SSE-Präsenz-Events des aktuellen Urlaubs, filtert
+// bereits die eigene Person heraus). Trip-Mitglieder statt der globalen /users-Liste (anders als
+// z. B. TodoView.vue's Bearbeiter:innen-Auswahl), da hier ausdrücklich nur Personen gezeigt werden
+// sollen, die tatsächlich Zugriff auf diesen Urlaub haben.
+const tripStore = useTripStore();
+const auth = useAuthStore();
 const liveSync = useLiveSyncStore();
-const users = ref<User[]>([]);
+const members = ref<User[]>([]);
 
 onMounted(async () => {
-  users.value = await api.get<User[]>('/users');
+  const tripId = tripStore.currentTripId;
+  if (tripId == null) return;
+  members.value = await api.get<User[]>(`/trips/${tripId}/members`);
 });
 
-const allOnlineUsers = computed(() =>
-  liveSync.onlineUserIds.map((id) => users.value.find((u) => u.id === id)).filter((u): u is User => !!u),
-);
+const otherMembers = computed(() => members.value.filter((u) => u.id !== auth.user?.id));
+
+function isOnline(user: User) {
+  return liveSync.onlineUserIds.includes(user.id);
+}
+
 // Auf schmalen Bildschirmen ist im Header wenig Platz (siehe .wordmark, die dort schon ausgeblendet
-// wird) – höchstens 3 Avatare direkt zeigen, der Rest kompakt als "+N"-Kreis statt den Header
-// beliebig in die Breite wachsen zu lassen.
-const MAX_VISIBLE = 3;
-const visibleUsers = computed(() => allOnlineUsers.value.slice(0, MAX_VISIBLE));
-const overflowCount = computed(() => Math.max(0, allOnlineUsers.value.length - MAX_VISIBLE));
+// wird) – höchstens 4 Avatare direkt zeigen, der Rest kompakt als "+N"-Kreis statt den Header
+// beliebig in die Breite wachsen zu lassen. Etwas großzügiger als die bisherigen 3, da jetzt auch
+// offline Mitglieder mitzählen und dauerhaft (nicht nur bei zufälliger Online-Anwesenheit) sichtbar
+// sein sollen.
+const MAX_VISIBLE = 4;
+const visibleMembers = computed(() => otherMembers.value.slice(0, MAX_VISIBLE));
+const overflowCount = computed(() => Math.max(0, otherMembers.value.length - MAX_VISIBLE));
 </script>
 
 <template>
-  <div v-if="allOnlineUsers.length" class="presence-avatars">
+  <div v-if="otherMembers.length" class="presence-avatars">
     <span
-      v-for="user in visibleUsers"
+      v-for="user in visibleMembers"
       :key="user.id"
       class="presence-avatar"
-      :title="`${user.username} ist gerade online`"
+      :class="{ offline: !isOnline(user) }"
+      :title="`${user.username} ist gerade ${isOnline(user) ? 'online' : 'offline'}`"
     >
       {{ user.avatar }}
+      <span v-if="isOnline(user)" class="online-dot" aria-hidden="true" />
     </span>
-    <span v-if="overflowCount > 0" class="presence-avatar overflow" :title="`${overflowCount} weitere online`">
+    <span v-if="overflowCount > 0" class="presence-avatar overflow" :title="`${overflowCount} weitere Mitreisende`">
       +{{ overflowCount }}
     </span>
   </div>
@@ -50,6 +65,7 @@ const overflowCount = computed(() => Math.max(0, allOnlineUsers.value.length - M
 }
 
 .presence-avatar {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -62,15 +78,32 @@ const overflowCount = computed(() => Math.max(0, allOnlineUsers.value.length - M
   border: 2px solid var(--color-surface);
   /* Leicht überlappend wie bei Google Docs, statt einzeln nebeneinander zu stehen. */
   margin-left: -10px;
+  transition: opacity 0.15s ease, filter 0.15s ease;
 }
 
 .presence-avatar:first-child {
   margin-left: 0;
 }
 
+.presence-avatar.offline {
+  filter: grayscale(1);
+  opacity: 0.5;
+}
+
 .presence-avatar.overflow {
   font-size: 0.75rem;
   font-weight: 700;
   color: var(--color-text-muted);
+}
+
+.online-dot {
+  position: absolute;
+  bottom: -1px;
+  right: -1px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--color-success);
+  border: 2px solid var(--color-surface);
 }
 </style>

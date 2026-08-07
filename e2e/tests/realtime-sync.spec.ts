@@ -62,3 +62,40 @@ test('another member creating a todo lights up the ToDo nav badge, which clears 
   await ctxA.close();
   await ctxB.close();
 });
+
+// Regressionsnetz für PresenceAvatars.vue's Umstellung von "nur online" auf "alle Mitreisenden,
+// online/offline unterschieden" (siehe dortiger Kommentar).
+test('presence avatars show an offline member grayed out and mark them online once they connect', async ({ browser }) => {
+  const ctxA = await browser.newContext({ storageState: { cookies: [], origins: [] } });
+  const ctxB = await browser.newContext({ storageState: { cookies: [], origins: [] } });
+  const pageA = await ctxA.newPage();
+  const pageB = await ctxB.newPage();
+
+  async function login(page: Page, username: string, password: string) {
+    await page.goto('/login');
+    await page.getByLabel('Benutzername').fill(username);
+    await page.getByLabel('Passwort').fill(password);
+    await page.getByRole('button', { name: 'Anmelden', exact: true }).click();
+    await expect(page.locator('.trip-name').first()).toBeVisible();
+  }
+
+  await login(pageA, E2E_USERNAME, E2E_PASSWORD);
+
+  // Zweites Mitglied ist noch nicht eingeloggt - sein Avatar muss trotzdem (ausgegraut) sichtbar
+  // sein, da PresenceAvatars.vue jetzt alle Trip-Mitglieder zeigt, nicht mehr nur online welche.
+  const memberAvatar = pageA.locator(`.presence-avatar[title*="${E2E_USERNAME_2}"]`);
+  await expect(memberAvatar).toBeVisible();
+  await expect(memberAvatar).toHaveClass(/offline/);
+  await expect(memberAvatar.locator('.online-dot')).toHaveCount(0);
+
+  await login(pageB, E2E_USERNAME_2, E2E_PASSWORD_2);
+
+  await expect(memberAvatar).not.toHaveClass(/offline/);
+  await expect(memberAvatar.locator('.online-dot')).toBeVisible();
+
+  await ctxB.close();
+
+  await expect(memberAvatar).toHaveClass(/offline/, { timeout: 15_000 });
+
+  await ctxA.close();
+});
