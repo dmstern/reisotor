@@ -1,13 +1,22 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useRequestActivityStore, type RequestKind } from '../stores/requestActivity';
+import { useUiSettingsStore } from '../stores/uiSettings';
 
 // Zentrale Lade-Anzeige für JEDEN Server-Request (View laden, Objekt speichern/anlegen/löschen) -
 // siehe stores/requestActivity.ts, das api/client.ts's get()/mutate() bei jedem tatsächlichen
 // Netzversuch hoch-/runterzählt. Vorher gab es dafür keine sichtbare Rückmeldung; bei einem
 // hängenden Request (z. B. Server unter instabilem Netz erreichbar, antwortet aber nie, siehe
 // REQUEST_TIMEOUT_MS in api/client.ts) wirkte die App bis zu 8s wie eingefroren.
+//
+// Bewusst ein eigener, freischwebender Toast (position:fixed, siehe .toast-pill) statt eines
+// Header-Pills wie bei OfflineIndicator.vue/PwaUpdatePrompt.vue: Letztere sind dauerhafte Zustände,
+// die als Teil der Statuszeile zum Layout gehören dürfen. Dieser Indikator blinkt dagegen bei JEDEM
+// noch so kurzen Request auf/ab - als Flex-Kind der Statuszeile ließ das den Header spürbar
+// "wackeln" (Zeilenhöhe sprang ständig). Ein fixed-positionierter Toast nimmt am Layout gar nicht
+// teil, kann also beliebig oft erscheinen/verschwinden, ohne irgendetwas zu verschieben.
 const activity = useRequestActivityStore();
+const uiSettings = useUiSettingsStore();
 
 const ICONS: Record<RequestKind, string> = { read: '🔄', create: '➕', update: '💾', delete: '🗑️' };
 const LABELS: Record<RequestKind, string> = {
@@ -18,7 +27,7 @@ const LABELS: Record<RequestKind, string> = {
 };
 
 // Absichtlich erst mit kurzer Verzögerung einblenden statt sofort bei jedem noch so kurzen Request
-// (die meisten lokalen/schnellen Requests dauern <100ms) - ein bei jedem Klick aufblitzender Pill
+// (die meisten lokalen/schnellen Requests dauern <100ms) - ein bei jedem Klick aufblitzender Toast
 // wäre unruhiger als hilfreich. Beim Verschwinden dagegen keine Verzögerung, ein fertiger Request
 // soll sofort als fertig erkennbar sein.
 const SHOW_DELAY_MS = 200;
@@ -49,18 +58,26 @@ const label = computed(() => (visibleKind.value ? LABELS[visibleKind.value] : ''
 </script>
 
 <template>
-  <span v-if="visibleKind" class="loading-pill" :class="visibleKind" :title="label">
-    <span class="spinner" />
-    <span class="icon">{{ icon }}</span>
-    <span class="label">{{ label }}</span>
-  </span>
+  <Transition name="toast">
+    <div v-if="visibleKind && uiSettings.showActivityToasts" class="toast-pill" :class="visibleKind" :title="label">
+      <span class="spinner" />
+      <span class="icon">{{ icon }}</span>
+      <span class="label">{{ label }}</span>
+    </div>
+  </Transition>
 </template>
 
 <style scoped>
-/* Bewusst dieselbe Pill-Optik wie OfflineIndicator.vue's .offline-pill (Größe, Radius, Abstände) -
-   beide teilen sich dieselbe Statuszeile im Header (AppHeader.vue) und sollen als zusammengehörige
-   Statusanzeigen wirken, nicht als zwei unterschiedliche UI-Sprachen. */
-.loading-pill {
+/* position:fixed statt Flex-Kind der Statuszeile - siehe Kommentar oben im Script, das ist der
+   eigentliche Grund für den Umbau. Am unteren statt oberen Rand verankert, damit sich der Toast
+   nicht mit Header/NavBar überlagern kann - --navbar-bottom-offset (von NavBar.vue live gepflegt)
+   berücksichtigt dabei sowohl eine evtl. unten positionierte mobile NavBar als auch deren Fehlen. */
+.toast-pill {
+  position: fixed;
+  bottom: calc(var(--navbar-bottom-offset, 0px) + 16px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -72,21 +89,36 @@ const label = computed(() => (visibleKind.value ? LABELS[visibleKind.value] : ''
   border-radius: 999px;
   line-height: 1.3;
   white-space: nowrap;
-  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
 }
 
 /* Eigene, gedämpftere Farbe für löschende Operationen - kein Rot (das bleibt echten Fehlern
    vorbehalten, siehe OfflineIndicator.vue), aber ein Hauch Warnfarbe, damit sich "hier wird gerade
    etwas entfernt" leicht von "hier wird gerade geladen/gespeichert" absetzt. */
-.loading-pill.delete {
+.toast-pill.delete {
   background: var(--color-accent-secondary, var(--color-primary));
+}
+
+.toast-enter-active,
+.toast-leave-active {
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+.toast-enter-from,
+.toast-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(8px);
 }
 
 /* Klassischer rotierender Ring statt eines rotierenden Emojis - Emoji-Glyphen werden je nach
    Schriftart/Plattform beim Rotieren leicht verzerrt dargestellt. Der Ring ist bewusst die einzige
    Stelle, die sich unabhängig von der CRUD-Art immer gleich verhält; icon/label unterscheiden die
    Operation (siehe Kommentar oben in LoadingIndicator.vue) - hier ließe sich später pro Art auch der
-   Ring durch eine kleine Roboter-Animation ersetzen (siehe ReisotorRobot.vue). */
+   Ring durch eine kleine Roboter-Animation ersetzen (siehe ReisotorRobot.vue).
+   NICHT scoped bewusst hier weglassen (Vue scoped style deckt trotz position:fixed weiterhin ganz
+   normal ab, da das Element im selben Template-Baum bleibt) - kein Sonderfall nötig. */
 .spinner {
   width: 10px;
   height: 10px;

@@ -51,10 +51,14 @@ const isNonProd = window.location.hostname !== 'reise.ruebenherz.de';
          zuverlässig (siehe .switcher-btn in TripSwitcher.vue), wodurch ein hier eingereihter Pill
          auf schmalen Viewports vom TripSwitcher überlagert statt danebengestellt wurde. -->
     <div class="status-row">
-      <LoadingIndicator />
       <OfflineIndicator />
       <PwaUpdatePrompt />
     </div>
+    <!-- Bewusst AUSSERHALB von .status-row: LoadingIndicator.vue rendert seit dem Wechsel auf einen
+         freischwebenden Toast (position:fixed, blitzt bei JEDEM Request kurz auf/ab) nicht mehr am
+         Layout beteiligt - eine Verschachtelung in der Statuszeile würde nur suggerieren, dass er
+         (wie Offline-/PWA-Update-Hinweis) Teil von deren dauerhaftem Layout wäre. -->
+    <LoadingIndicator />
     <div class="header-row">
       <router-link to="/" class="brand">
         <img src="/reisotor_logo.svg" alt="Reisotor Logo" class="logo" />
@@ -112,7 +116,7 @@ const isNonProd = window.location.hostname !== 'reise.ruebenherz.de';
   gap: var(--space-2);
 }
 
-.status-row:has(.offline-pill, .pwa-pill, .loading-pill) {
+.status-row:has(.offline-pill, .pwa-pill) {
   padding: 6px var(--space-4) 0;
 }
 
