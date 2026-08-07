@@ -3,6 +3,11 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+// Reiner Patch-Import (kein Named/Default-Export genutzt): erweitert L.Map/L.Marker/... zur
+// Laufzeit um Rotationsunterstützung (setBearing()/getBearing(), touchRotate-Geste) - siehe
+// leaflet-rotate.d.ts für die zugehörige Typ-Ergänzung. Muss vor der ersten L.map()-Instanziierung
+// geladen sein.
+import 'leaflet-rotate';
 import { api } from '../api/client';
 import type {
   Excursion,
@@ -20,6 +25,7 @@ import { useExcursionsStore } from '../stores/excursions';
 import { useSpotsStore } from '../stores/spots';
 import { useAuthStore } from '../stores/auth';
 import { useLiveSyncStore } from '../stores/liveSync';
+import { useMapOrientationStore } from '../stores/mapOrientation';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { buildTravelDerivedLocations } from '../utils/travelDerivedLocations';
 import { arcRoute, cachedEmojiPin, compassPin } from '../utils/mapRoute';
@@ -112,6 +118,7 @@ const excursionsStore = useExcursionsStore();
 const spotsStore = useSpotsStore();
 const auth = useAuthStore();
 const liveSync = useLiveSyncStore();
+const mapOrientation = useMapOrientationStore();
 const travelItems = ref<TravelItem[]>([]);
 const scheduleItems = ref<ScheduleItem[]>([]);
 
@@ -151,6 +158,13 @@ const ownHeading = ref<number | null>(null);
 let orientationHandler: ((event: DeviceOrientationEvent) => void) | null = null;
 let orientationEventName: 'deviceorientationabsolute' | 'deviceorientation' = 'deviceorientation';
 
+// Aktuelle Kartendrehung (leaflet-rotate's map.getBearing(), 0 = Norden oben) - eigene reaktive
+// Kopie statt jedes Mal map.getBearing() aufzurufen, u. a. weil renderPositions() sie synchron
+// braucht, bevor `map` in seltenen Fällen (Fehlerpfade) überhaupt gesetzt ist. Wird sowohl bei
+// automatischer Drehung (mapOrientation.mode==='heading', siehe handleOrientation() unten) als auch
+// bei einer manuellen Zwei-Finger-Drehgeste aktuell gehalten (map.on('rotate', ...) in onMounted).
+const currentBearing = ref(0);
+
 // iOS liefert die bereits Kompass-korrigierte Blickrichtung direkt über das nicht standardisierte
 // webkitCompassHeading (0-360, im Uhrzeigersinn) - das ist zuverlässiger als alpha (auf iOS relativ
 // zur Startausrichtung, nicht zu Norden). Andere Plattformen (Android/Chrome) liefern kein
@@ -167,7 +181,25 @@ function handleOrientation(event: DeviceOrientationEvent) {
   const heading = headingFromOrientationEvent(event);
   if (heading == null) return;
   ownHeading.value = heading;
+  // Im Fahrtrichtung-Modus dreht sich die Karte laufend mit dem Kompass mit ("oben" = Guckrichtung);
+  // im Nord-Modus bleibt die Kartendrehung unangetastet (bleibt bei 0° bzw. wo eine manuelle
+  // Zwei-Finger-Geste sie zuletzt hingedreht hat, siehe map.on('rotate', ...) in onMounted).
+  if (map && mapOrientation.mode === 'heading') map.setBearing(heading);
   renderPositions();
+}
+
+// Wechselt zwischen "Norden oben" (feste 0°-Ausrichtung) und "Fahrtrichtung oben" (Kartendrehung
+// folgt laufend dem Kompass-Heading). Die Zwei-Finger-Drehgeste (touchRotate, siehe map-Optionen in
+// onMounted) bleibt in BEIDEN Modi nutzbar - dieser Umschalter steuert nur, ob die Karte sich
+// zusätzlich automatisch mitdreht.
+function toggleMapOrientation() {
+  if (!map) return;
+  mapOrientation.toggle();
+  if (mapOrientation.mode === 'north') {
+    map.setBearing(0);
+  } else if (ownHeading.value != null) {
+    map.setBearing(ownHeading.value);
+  }
 }
 
 // Einmal gestartet, läuft der Kompass unabhängig von weiteren Klicks weiter (kein erneutes
@@ -805,8 +837,15 @@ function renderPositions() {
   }
 
   if (ownPosition.value && auth.user) {
+    // Der Richtungskegel wird als Teil des (nicht mitrotierenden, siehe leaflet-rotate's
+    // rotateWithView-Default) Marker-Icons in Bildschirm-Koordinaten gezeichnet - dreht sich die
+    // Karte selbst (currentBearing), muss die Kegel-Rotation um denselben Betrag ausgeglichen
+    // werden, sonst zeigt er nach einer Kartendrehung in die falsche Richtung. Im Fahrtrichtung-
+    // Modus (bearing wird laufend auf den Heading-Wert gesetzt, siehe handleOrientation()) kürzt
+    // sich das exakt heraus - der Kegel zeigt dann konstant nach oben.
+    const coneRotation = ownHeading.value == null ? null : (ownHeading.value - currentBearing.value + 360) % 360;
     L.marker([ownPosition.value.lat, ownPosition.value.lng], {
-      icon: compassPin('#2f6fed', ownHeading.value),
+      icon: compassPin(auth.user.avatar, '#2f6fed', coneRotation),
       zIndexOffset: 1000,
       pane: 'live-positions',
     }).addTo(positionsLayer);
@@ -885,7 +924,10 @@ onMounted(async () => {
   users.value = usersRes;
 
   if (!mapEl.value) return;
-  map = L.map(mapEl.value);
+  // rotate/touchRotate (leaflet-rotate, siehe Import oben): aktiviert die Zwei-Finger-Drehgeste.
+  // rotateControl:false, weil wir einen eigenen, zum übrigen Button-Stack passenden Umschalter
+  // bauen (siehe toggleMapOrientation()/.orientation-btn) statt des mitgelieferten Steuerelements.
+  map = L.map(mapEl.value, { rotate: true, rotateControl: false, touchRotate: true, bearing: 0 });
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap-Mitwirkende',
     maxZoom: 19,
@@ -898,6 +940,14 @@ onMounted(async () => {
   renderMarkers();
   renderRoutes();
   renderPositions();
+
+  // Hält currentBearing (für den Richtungskegel-Ausgleich in renderPositions()) unabhängig von der
+  // Drehquelle synchron - sowohl bei automatischer Drehung (handleOrientation()) als auch bei einer
+  // manuellen Zwei-Finger-Geste, die die Karte ohne unser Zutun dreht.
+  map.on('rotate', () => {
+    currentBearing.value = map!.getBearing();
+    renderPositions();
+  });
 
   // Live-Standort: startet, sobald die Kartenansicht mountet, endet beim Unmounten (siehe unten) –
   // bewusst kein dauerhaftes Hintergrund-Tracking, Teilen ist an "Kartenansicht offen" gekoppelt.
@@ -1061,7 +1111,12 @@ watch(() => liveSync.memberPositions, () => renderPositions(), { deep: true });
       >
         🛏️
       </button>
+      <!-- v-if statt nur :disabled: solange noch gar keine Tour existiert, ist ein "Tourziele
+           fokussieren"-Button reine Verwirrung (fokussiert nichts, ohne erklärenden Kontext) - erst
+           sobald mindestens eine Tour gespeichert wurde, ist der Button überhaupt sinnvoll (auch
+           wenn er bei einer gerade leeren Tour bis zur ersten Stations-Zuordnung disabled bleibt). -->
       <button
+        v-if="excursionsStore.excursions.length"
         type="button"
         class="fit-btn excursions-btn"
         title="Nur Tourziele fokussieren"
@@ -1080,11 +1135,29 @@ watch(() => liveSync.memberPositions, () => renderPositions(), { deep: true });
         @click="jumpToMyLocation"
       >
         <!-- Eigenes Avatar-Emoji statt eines generischen Pin-/Fadenkreuz-Icons - eindeutiger
-             erkennbar als "das bin ich" für DIESEN Button. Der Marker auf der Karte selbst
-             (compassPin(), renderPositions() oben) zeigt bewusst KEIN Avatar mehr, sondern einen
-             Kreis mit optionalem Richtungskegel (siehe dortiger Kommentar) - beides referenziert
-             denselben eigenen Standort, aber mit unterschiedlicher, jeweils passender Optik. -->
+             erkennbar als "das bin ich", konsistent mit dem eigenen Marker auf der Karte selbst
+             (compassPin(), renderPositions() oben), der dasselbe Avatar jetzt zentriert in seinem
+             Kreis zeigt. -->
         {{ auth.user?.avatar || '📍' }}
+      </button>
+      <!-- Zwei-Finger-Drehgeste (touchRotate, siehe map-Optionen in onMounted) bleibt unabhängig
+           von diesem Umschalter immer nutzbar - er steuert nur, ob die Karte sich zusätzlich
+           automatisch mit dem Kompass mitdreht. -->
+      <button
+        type="button"
+        class="fit-btn orientation-btn"
+        :class="{ active: mapOrientation.mode === 'heading' }"
+        :title="
+          mapOrientation.mode === 'north'
+            ? 'Karte nach Norden ausgerichtet – antippen für Fahrtrichtung oben'
+            : 'Karte nach Fahrtrichtung ausgerichtet – antippen für Norden oben'
+        "
+        :aria-label="
+          mapOrientation.mode === 'north' ? 'Auf Fahrtrichtung oben umschalten' : 'Auf Norden oben umschalten'
+        "
+        @click="toggleMapOrientation"
+      >
+        {{ mapOrientation.mode === 'north' ? '🧭' : '⬆️' }}
       </button>
       <button
         type="button"
@@ -1319,8 +1392,19 @@ watch(() => liveSync.memberPositions, () => renderPositions(), { deep: true });
   top: 170px;
 }
 
-.offline-download-btn {
+.orientation-btn {
   top: 210px;
+}
+
+/* Hebt hervor, dass die Karte sich gerade aktiv mit dem Kompass mitdreht (Modus "Fahrtrichtung") -
+   dieselbe Akzentfarbe wie z. B. TripSwitcher.vue's aktiver Zustand, statt einer neuen Farbsprache. */
+.orientation-btn.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.offline-download-btn {
+  top: 250px;
 }
 
 /* Eigene Zeile unterhalb der Fokus-Banner-Position (links, wie .focus-banner) statt direkt neben

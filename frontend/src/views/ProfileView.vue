@@ -9,6 +9,7 @@ import { useWeatherProviderStore, WEATHER_MODEL_OPTIONS } from '../stores/weathe
 import { useHomeCurrencyStore, HOME_CURRENCY_OPTIONS } from '../stores/homeCurrency';
 import { useCalendarSettingsStore, WEEK_START_OPTIONS, DATE_FORMAT_OPTIONS } from '../stores/calendarSettings';
 import { useTourSettingsStore } from '../stores/tourSettings';
+import { useUiSettingsStore } from '../stores/uiSettings';
 import { getExistingSubscription, isPushSupported, subscribeToPush, unsubscribeFromPush } from '../utils/push';
 import PasswordInput from '../components/PasswordInput.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
@@ -20,6 +21,7 @@ const weatherProvider = useWeatherProviderStore();
 const homeCurrency = useHomeCurrencyStore();
 const calendarSettings = useCalendarSettingsStore();
 const tourSettings = useTourSettingsStore();
+const uiSettings = useUiSettingsStore();
 const users = ref<User[]>([]);
 const loading = ref(true);
 
@@ -372,6 +374,20 @@ async function onImportFileSelected(event: Event) {
       <label class="checkbox-option">
         <input type="checkbox" v-model="tourSettings.advancedEditing" />
         Erweiterte Touren-Bearbeitung
+      </label>
+    </div>
+
+    <div class="card">
+      <h2>🔔 Meldungen</h2>
+      <p class="hint">
+        Kurze Meldungen, die bei jedem Laden/Speichern/Löschen kurz unten am Bildschirmrand
+        aufblitzen (z. B. "Speichert…"), damit klar wird, dass die App gerade tatsächlich mit dem
+        Server arbeitet statt hängengeblieben zu sein. Wer das zu hektisch findet, kann sie hier
+        ausschalten - der dauerhafte Offline-/Update-Hinweis oben im Header bleibt davon unberührt.
+      </p>
+      <label class="checkbox-option">
+        <input type="checkbox" v-model="uiSettings.showActivityToasts" />
+        Detaillierte Lade-/Speicher-Meldungen anzeigen
       </label>
     </div>
 

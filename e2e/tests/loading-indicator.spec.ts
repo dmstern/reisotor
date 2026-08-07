@@ -24,7 +24,7 @@ test.describe('Zentrale Lade-Animation', () => {
     await expect(page.locator('.view-loading')).toHaveCount(0);
   });
 
-  test('Header-Pille unterscheidet Lesen von Anlegen', async ({ page }) => {
+  test('Toast unterscheidet Lesen von Anlegen', async ({ page }) => {
     await page.goto('/packing');
     await expect(page.locator('.packing-page')).toBeVisible();
 
@@ -36,7 +36,25 @@ test.describe('Zentrale Lade-Animation', () => {
     await page.locator('input[placeholder^="Neuer Gegenstand"]').first().fill('E2E-Testartikel');
     await page.getByRole('button', { name: 'Gegenstand hinzufügen' }).first().click();
 
-    await expect(page.locator('.loading-pill.create')).toBeVisible();
-    await expect(page.locator('.loading-pill.create .label')).toHaveText('Legt an…');
+    await expect(page.locator('.toast-pill.create')).toBeVisible();
+    await expect(page.locator('.toast-pill.create .label')).toHaveText('Legt an…');
+  });
+
+  test('Toast lässt sich in den Profil-Einstellungen abschalten', async ({ page }) => {
+    await page.goto('/profile');
+    await page.getByLabel('Detaillierte Lade-/Speicher-Meldungen anzeigen').uncheck();
+
+    await page.goto('/packing');
+    await expect(page.locator('.packing-page')).toBeVisible();
+
+    await page.route('**/api/**', async (route) => {
+      await new Promise((r) => setTimeout(r, 1000));
+      await route.continue();
+    });
+    await page.locator('input[placeholder^="Neuer Gegenstand"]').first().fill('E2E-Testartikel-2');
+    await page.getByRole('button', { name: 'Gegenstand hinzufügen' }).first().click();
+    await page.waitForTimeout(600); // über SHOW_DELAY_MS (200ms) hinaus warten
+
+    await expect(page.locator('.toast-pill')).toHaveCount(0);
   });
 });
