@@ -188,5 +188,3 @@ async function onCreateFirstTrip(data: TripFormData) {
   }
 }
 </style>
-
-<!-- e2e-update-test -->
