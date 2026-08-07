@@ -101,7 +101,7 @@ function formatDate(d: string | null) {
       @submit="(content) => emit('submit-comment', content)"
       @remove="(id) => emit('remove-comment', id)"
     />
-    <FileAttachments domain="spots" :entity-id="spot.id" />
+    <FileAttachments domain="spots" :entity-id="spot.id" :editable="false" />
     <div v-if="!isAccommodation" class="detail-actions">
       <button
         v-if="spot.lat != null && spot.lng != null"

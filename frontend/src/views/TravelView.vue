@@ -16,6 +16,7 @@ import { hashHighlightId } from '../utils/hashHighlight';
 import Modal from '../components/Modal.vue';
 import TravelDetailDialog from '../components/TravelDetailDialog.vue';
 import LocationPicker from '../components/LocationPicker.vue';
+import FileAttachments from '../components/FileAttachments.vue';
 import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
 import UndoDeleteRow from '../components/UndoDeleteRow.vue';
@@ -741,6 +742,7 @@ function showDetailToOnMap() {
           <code>---</code> für Trennlinie · <code>`Code`</code> · Links/E-Mails/Telefonnummern werden
           automatisch erkannt
         </p>
+        <FileAttachments v-if="editingItem" domain="travel" :entity-id="editingItem.id" />
         <button type="submit">Speichern</button>
       </form>
     </Modal>

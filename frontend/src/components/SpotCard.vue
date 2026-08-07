@@ -229,7 +229,7 @@ function onCardClick() {
         @remove="(id) => emit('remove-comment', id)"
       />
       <div v-if="expanded" @click.stop>
-        <FileAttachments domain="spots" :entity-id="spot.id" />
+        <FileAttachments domain="spots" :entity-id="spot.id" :editable="false" />
       </div>
     </div>
   </div>

@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { VIEWPORTS, expectNotCoveredBy, expectWithinBox, expectWithinViewport } from './helpers/layout';
+import { VIEWPORTS, boxOf, expectNotCoveredBy, expectWithinBox, expectWithinViewport } from './helpers/layout';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const seeded = JSON.parse(
@@ -165,6 +165,38 @@ test.describe('Mobile: Header-Statuszeile (Offline-/PWA-Update-Hinweis) überlag
     const navbar = page.locator('nav.navbar');
     await expect(navbar).toBeVisible();
     await expectNotCoveredBy(page, navbar, page.locator('.app-header'));
+  });
+});
+
+test.describe('Mobile: unten positionierte NavBar schwebt mit Rand statt randlos an der Kante zu kleben', () => {
+  test.use({ viewport: VIEWPORTS.mobile });
+
+  test('NavBar hat auf allen Seiten Abstand zum Viewport-Rand, Seiteninhalt bleibt darüber sichtbar', async ({ page }) => {
+    // Regressionstest für einen vom Nutzer gemeldeten Bug: eine randlos an die Bildschirmkante
+    // geklebte NavBar war zu niedrig, wodurch horizontales Wischen über die Icon-Leiste leicht
+    // versehentlich die Zurück-/Vorwärts-Wischgeste des mobilen Browsers auslöste (die an der
+    // äußersten Kante abgefangen wird). Fix: schwebende Pille mit Rand-Abstand (NavBar.vue).
+    await page.addInitScript(() => localStorage.setItem('reisotor-nav-position-mobile', 'bottom'));
+    await page.goto('/todo');
+
+    const navbar = page.locator('nav.navbar.mobile-bottom');
+    await expect(navbar).toBeVisible();
+    const box = await boxOf(navbar);
+    const viewport = page.viewportSize();
+    expect(viewport).not.toBeNull();
+    if (!viewport) return;
+
+    // "Schwebend" heißt: spürbarer Abstand auf allen vier Seiten, nicht nur oben (das ergäbe sich
+    // schon allein aus der Positionierung am unteren Rand).
+    expect(box.left, 'NavBar klebt links an der Bildschirmkante').toBeGreaterThan(4);
+    expect(viewport.width - box.right, 'NavBar klebt rechts an der Bildschirmkante').toBeGreaterThan(4);
+    expect(viewport.height - box.bottom, 'NavBar klebt unten an der Bildschirmkante').toBeGreaterThan(4);
+
+    // Der reservierte Content-Abstand (--navbar-bottom-offset) muss die schwebende Pille komplett
+    // decken (Höhe + unterer Rand-Abstand), sonst könnte Seiteninhalt am Ende dahinter verschwinden.
+    const pageEl = page.locator('.page').first();
+    const pageBox = await boxOf(pageEl);
+    expect(pageBox.bottom, 'Seiteninhalt reicht nicht bis zur schwebenden NavBar hoch').toBeGreaterThanOrEqual(box.top - 1);
   });
 });
 

@@ -13,6 +13,7 @@ import { useTripStore } from '../stores/trip';
 import { useSpotsStore } from '../stores/spots';
 import { useLiveSyncStore } from '../stores/liveSync';
 import { assignCategoryColors } from '../utils/categoryColors';
+import { toLocalDateString } from '../utils/dateFormat';
 import { computeBalances, computeTwoPersonSummary } from '../utils/budgetBalances';
 import BudgetMeter from '../components/BudgetMeter.vue';
 import Modal from '../components/Modal.vue';
@@ -40,7 +41,7 @@ const travelItems = ref<TravelItem[]>([]);
 const loading = ref(true);
 const highlightedIds = ref<Set<number>>(new Set());
 
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => toLocalDateString(new Date());
 
 async function refreshBudgets() {
   budgets.value = await api.get<Budget[]>(`/budget/budgets?trip_id=${tripId}`);

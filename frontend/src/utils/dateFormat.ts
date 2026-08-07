@@ -4,6 +4,15 @@ function pad2(n: number): string {
   return String(n).padStart(2, '0');
 }
 
+/** Lokaler Kalendertag (am Gerät) als 'YYYY-MM-DD' - bewusst NICHT `date.toISOString().slice(0,
+ *  10)`: das rechnet zuerst auf UTC um, was den Kalendertag in jeder Zeitzone östlich von UTC
+ *  (z. B. Europa) einen Teil des Tages lang fälschlich auf den VORTAG verschiebt (z. B. 00:30 Uhr
+ *  MESZ/UTC+2 ist bereits 22:30 UTC des Vortags). Betraf u. a. den Wochenanfang im Kalender-
+ *  Monatsraster und den "Bis zur Abreise"-Countdown im Dashboard. */
+export function toLocalDateString(d: Date): string {
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+}
+
 /** Zentrale Zahlen-Datumsformatierung, ersetzt die zuvor über die App verstreuten, lokal je Datei
  *  duplizierten `toLocaleDateString('de-DE', ...)`-Aufrufe. Respektiert die in ProfileView.vue
  *  einstellbare `calendarSettings.dateFormat` (deutsch/ISO/US) statt fest `'de-DE'` zu verwenden. */

@@ -372,6 +372,15 @@ if (!hadTripMembersTable) {
   }
 }
 
+// Standort-Freigabe pro Mitgliedschaft: wählbare Dauer ("dauerhaft"/"1 Woche"/"1 Tag"), siehe
+// routes/realtime.ts's location-share-Endpunkte. NULL = keine Freigabe (Default, entspricht dem
+// bisherigen Verhalten: Broadcast nur solange TripMap.vue selbst gemountet ist). Ein Zeitstempel in
+// der Zukunft aktiviert app-weites Teilen (auch außerhalb der Kartenansicht) bis zu diesem
+// Zeitpunkt; "dauerhaft" wird als sehr weit in der Zukunft liegender Zeitstempel abgelegt statt
+// eines eigenen Sonderwerts, damit ein einzelner Ablauf-Check (`location_share_until > now`)
+// überall reicht.
+ensureColumn('trip_members', 'location_share_until', 'TEXT');
+
 ensureColumn('users', 'avatar', "TEXT DEFAULT '🙂'");
 ensureColumn('ideas', 'lat', 'REAL');
 ensureColumn('ideas', 'lng', 'REAL');
@@ -1112,3 +1121,18 @@ db.exec(`
 // aus lat/lng ermittelt und dauerhaft gecacht, nur neu aufgelöst, wenn sich lat/lng ändern.
 ensureColumn('trips', 'country_code', 'TEXT');
 ensureColumn('trips', 'country_name', 'TEXT');
+
+// Merkt sich, welche "Bis zur Abreise"-Erinnerungs-Push (departureReminders.ts, Schwellwerte in
+// Tagen vor Abreise) für welchen Urlaub schon verschickt wurde - ohne das würde derselbe
+// Schwellwert bei jedem periodischen Check (bzw. nach jedem Server-Neustart) erneut ausgelöst.
+// Zusammengesetzter Primärschlüssel statt eigener id-Spalte, da (trip_id, threshold_days) bereits
+// eindeutig ist und die Abfrage "wurde dieser Schwellwert schon verschickt?" so ohne zusätzlichen
+// Index auskommt.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS trip_departure_reminders_sent (
+    trip_id INTEGER NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
+    threshold_days INTEGER NOT NULL,
+    sent_at TEXT NOT NULL,
+    PRIMARY KEY (trip_id, threshold_days)
+  );
+`);

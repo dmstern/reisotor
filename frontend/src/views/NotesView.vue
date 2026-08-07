@@ -210,7 +210,7 @@ async function restore(id: number) {
           </div>
           <div class="content richtext" v-html="renderRichText(note.content)"></div>
           <p class="meta">{{ authorLabel(note.created_by) }} · {{ formatDate(note.updated_at ?? note.created_at) }}</p>
-          <FileAttachments domain="notes" :entity-id="note.id" />
+          <FileAttachments domain="notes" :entity-id="note.id" :editable="false" />
           <SocialRow
             :like-count="likesFor(note.id).length"
             :liked="likedByMe(note.id)"
@@ -243,6 +243,7 @@ async function restore(id: number) {
           <code>&gt; Zitat</code> · <code>* Punkt</code> / <code>1. Punkt</code> für Listen ·
           <code>---</code> für Trennlinie · <code>`Code`</code> · Links werden automatisch erkannt
         </p>
+        <FileAttachments v-if="editingNote" domain="notes" :entity-id="editingNote.id" />
         <button type="submit">Speichern</button>
       </form>
     </Modal>

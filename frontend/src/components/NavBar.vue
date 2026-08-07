@@ -25,8 +25,17 @@ let resizeObserver: ResizeObserver | null = null;
 
 function updateOffset() {
   const height = navEl.value ? navEl.value.getBoundingClientRect().height : 0;
+  // Die schwebende "Liquid Glass"-Pille (mobile-bottom, siehe CSS unten) hat zusätzlich zu ihrer
+  // eigenen Höhe noch einen Rand-Abstand zum Viewport-Rand (var(--space-3)) - der muss mit in den
+  // reservierten Content-Abstand einfließen, sonst würde scrollbarer Inhalt optisch bis unter die
+  // Pille statt sauber darüber enden. Nur für mobile-bottom relevant, nicht desktop-bottom (das
+  // bleibt randlos flach, siehe @media(min-width:800px) im Style-Block).
+  const floatingGap =
+    !isDesktop.value && navPosition.mobile === 'bottom'
+      ? parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--space-3')) || 0
+      : 0;
   document.documentElement.style.setProperty('--navbar-offset', `${isTop.value ? height : 0}px`);
-  document.documentElement.style.setProperty('--navbar-bottom-offset', `${isTop.value ? 0 : height}px`);
+  document.documentElement.style.setProperty('--navbar-bottom-offset', `${isTop.value ? 0 : height + floatingGap}px`);
 }
 
 onMounted(() => {
@@ -153,15 +162,32 @@ function onLinkClick(event: MouseEvent) {
    an ihrer natürlichen Fluss-Position hält sticky sie beim Scrollen tatsächlich fest). "Unten"
    braucht dagegen position:fixed, unabhängig von der DOM-Reihenfolge an den Viewport-Rand gepinnt;
    .page hat dafür bereits durchgehend padding-bottom reserviert. */
+/* Schwebende "Liquid Glass"-Pille statt randloser Vollbreite-Leiste (nur mobil, siehe
+   @media(min-width:800px) unten für den unveränderten Desktop-Reset): eine randlos an die
+   Bildschirmkante geklebte Leiste war dort zu niedrig/schmal, wodurch ein horizontales
+   Wisch-Scrollen der Icons leicht versehentlich stattdessen die Zurück-/Vorwärts-Navigations-
+   geste des mobilen Browsers auslöste (die an der äußersten Bildschirmkante abgefangen wird) -
+   Rand-Abstand auf allen Seiten nimmt der Geste dort die Angriffsfläche. .page reserviert dafür
+   zusätzlichen Randabstand (siehe style.css, --navbar-bottom-offset), sonst würde die schwebende
+   Pille am unteren Seitenende Inhalt überlagern. */
 .navbar.mobile-bottom {
   position: fixed;
   top: auto;
-  bottom: 0;
-  border-top: 1px solid var(--color-border);
-  border-bottom: none;
-  /* Unten-fixiert: Schatten nach oben in den Inhalt hinein statt nach unten (dort wäre er ohnehin
-     außerhalb des Viewports). */
-  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.18);
+  left: var(--space-3);
+  right: var(--space-3);
+  bottom: var(--space-3);
+  padding-top: 10px;
+  padding-bottom: 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  /* color-mix() statt einer zweiten, fest kodierten rgba()-Farbe: bleibt automatisch im jeweils
+     aktiven Theme (hell/dunkel) stimmig, da --color-surface selbst schon themeabhängig ist. */
+  background: color-mix(in srgb, var(--color-surface) 75%, transparent);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 .links {
@@ -223,12 +249,25 @@ function onLinkClick(event: MouseEvent) {
   }
 
   .navbar.mobile-bottom {
-    /* Mobile Einstellung gilt hier nicht mehr – Desktop-Einstellung übernimmt. */
+    /* Mobile Einstellung gilt hier nicht mehr – Desktop-Einstellung übernimmt. Setzt auch die
+       schwebende "Liquid Glass"-Optik von oben zurück (bewusst nur ein Mobil-Phänomen, siehe
+       dortiger Kommentar - auf Desktop gibt es weder die Wisch-Zurück-Geste noch den knappen
+       Platz, der dort das Problem war). */
     position: sticky;
     top: var(--app-header-height, 56px);
+    left: 0;
+    right: 0;
     bottom: auto;
+    padding-top: var(--space-2);
+    padding-bottom: var(--space-2);
     border-top: none;
     border-bottom: 1px solid var(--color-border);
+    border-left: none;
+    border-right: none;
+    border-radius: 0;
+    background: var(--color-surface);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
   }
 

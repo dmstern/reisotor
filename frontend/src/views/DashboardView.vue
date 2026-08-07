@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { api } from '../api/client';
 import type {
   BudgetAllocation,
@@ -27,7 +27,12 @@ import { SECTION_ICONS } from '../utils/sectionIcons';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { fetchWeatherForecast, weatherCodeMeta, type DailyWeather } from '../utils/weather';
 import { fetchRegionInfo, type RegionInfo } from '../utils/regionInfo';
-import { formatDate as formatDateShared, formatWeekdayDate as formatWeekdayDateShared } from '../utils/dateFormat';
+import {
+  formatDate as formatDateShared,
+  formatWeekdayDate as formatWeekdayDateShared,
+  toLocalDateString,
+} from '../utils/dateFormat';
+import { computeDepartureCountdown } from '../utils/departureCountdown';
 import BudgetMeter from '../components/BudgetMeter.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 
@@ -189,16 +194,22 @@ onMounted(async () => {
   loadRegionInfo();
 });
 
-const todayStr = () => new Date().toISOString().slice(0, 10);
+const todayStr = () => toLocalDateString(new Date());
 
-const daysUntilStart = computed(() => {
-  if (!trip.value?.start_date) return null;
-  const start = new Date(trip.value.start_date);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const diff = Math.ceil((start.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-  return diff;
+// Tickt einmal pro Minute, damit die Stunden-Anzeige unten (departureCountdown) während einer
+// offen gelassenen Seite nicht stehen bleibt, ohne bei jeder Sekunde unnötig neu zu rendern.
+const now = ref(new Date());
+let nowTimer: ReturnType<typeof setInterval> | null = null;
+onMounted(() => {
+  nowTimer = setInterval(() => {
+    now.value = new Date();
+  }, 60_000);
 });
+onUnmounted(() => {
+  if (nowTimer != null) clearInterval(nowTimer);
+});
+
+const departureCountdown = computed(() => (trip.value?.start_date ? computeDepartureCountdown(trip.value.start_date, now.value) : null));
 
 // Kalender-Widget: echte Termine + eingebettete synthetische Einträge (Urlaub-Start/-Ende, ToDo
 // mit Fälligkeitsdatum), sortiert, die nächsten drei statt nur den einen nächsten (Batch 12).
@@ -307,10 +318,13 @@ function formatWeekdayDate(d: string) {
       <h1>{{ trip?.name || 'Euer Urlaub' }}</h1>
       <p v-if="trip?.destination">📍 {{ trip.destination }}</p>
       <p v-if="trip">{{ formatDate(trip.start_date) }} – {{ formatDate(trip.end_date) }}</p>
-      <p v-if="daysUntilStart !== null && daysUntilStart >= 0" class="countdown">
-        Noch {{ daysUntilStart }} {{ daysUntilStart === 1 ? 'Tag' : 'Tage' }} bis zur Abreise 🎒
+      <p v-if="departureCountdown?.phase === 'days'" class="countdown">
+        Noch {{ departureCountdown.days }} {{ departureCountdown.days === 1 ? 'Tag' : 'Tage' }} bis zur Abreise 🎒
       </p>
-      <p v-else-if="daysUntilStart !== null" class="countdown">Gute Reise! ✈️</p>
+      <p v-else-if="departureCountdown?.phase === 'hours'" class="countdown">
+        Noch {{ departureCountdown.hours }} {{ departureCountdown.hours === 1 ? 'Stunde' : 'Stunden' }} bis zur Abreise 🎒
+      </p>
+      <p v-else-if="departureCountdown?.phase === 'departed'" class="countdown">Gute Reise! ✈️</p>
     </header>
 
     <!-- Wetter + Reiseregion in einer Card statt zweier separater: beide sind "Infos über das

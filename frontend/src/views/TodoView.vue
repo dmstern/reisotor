@@ -6,7 +6,7 @@ import type { TodoItem, TodoPriority, User } from '../api/types';
 import { useTripStore } from '../stores/trip';
 import { useLiveSyncStore } from '../stores/liveSync';
 import { PERIOD_META, computePeriod } from '../utils/period';
-import { formatDate as formatDateShared } from '../utils/dateFormat';
+import { formatDate as formatDateShared, toLocalDateString } from '../utils/dateFormat';
 import { hashHighlightId } from '../utils/hashHighlight';
 import Modal from '../components/Modal.vue';
 import EditButton from '../components/EditButton.vue';
@@ -230,7 +230,7 @@ function formatDate(d: string | null) {
 
 function isOverdue(item: TodoItem) {
   if (!item.due_date || item.done) return false;
-  return item.due_date < new Date().toISOString().slice(0, 10);
+  return item.due_date < toLocalDateString(new Date());
 }
 </script>
 

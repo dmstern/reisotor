@@ -4,6 +4,7 @@ import type { CalendarEntry, Spot } from '../api/types';
 import { SCHEDULE_CATEGORY_META } from '../utils/scheduleCategory';
 import { weatherCodeMeta } from '../utils/weather';
 import type { DayWeatherEntry } from '../utils/dayWeather';
+import { toLocalDateString } from '../utils/dateFormat';
 
 interface Day {
   date: string;
@@ -35,7 +36,7 @@ function weekday(date: string) {
 }
 
 function isToday(date: string) {
-  return date === new Date().toISOString().slice(0, 10);
+  return date === toLocalDateString(new Date());
 }
 
 // Zähler statt Boolean pro Tag: dragenter/dragleave feuern beim Überqueren verschachtelter

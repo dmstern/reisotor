@@ -1,4 +1,5 @@
 import { buildApp } from './app.js';
+import { startDepartureReminderScheduler } from './departureReminders.js';
 
 const port = Number(process.env.PORT ?? 3000);
 const app = await buildApp();
@@ -13,3 +14,8 @@ app
     app.log.error(err);
     process.exit(1);
   });
+
+// Bewusst hier statt in app.ts registriert: app.ts wird auch von den Unit-Tests importiert (siehe
+// test/helpers/buildTestApp.ts) - ein dort gestarteter setInterval würde in jedem Testlauf ohne
+// zugehörigen Trip-Kontext unnötig weiterlaufen und Vitest am sauberen Beenden hindern.
+startDepartureReminderScheduler();

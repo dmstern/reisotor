@@ -11,6 +11,7 @@ import { useCalendarSettingsStore, WEEK_START_OPTIONS, DATE_FORMAT_OPTIONS } fro
 import { useTourSettingsStore } from '../stores/tourSettings';
 import { useUiSettingsStore } from '../stores/uiSettings';
 import { getExistingSubscription, isPushSupported, subscribeToPush, unsubscribeFromPush } from '../utils/push';
+import { toLocalDateString } from '../utils/dateFormat';
 import PasswordInput from '../components/PasswordInput.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 
@@ -221,7 +222,7 @@ async function exportBackup() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `reisotor-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `reisotor-backup-${toLocalDateString(new Date())}.json`;
     document.body.appendChild(a);
     a.click();
     a.remove();
