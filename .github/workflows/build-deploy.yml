@@ -10,10 +10,17 @@ name: Build & Deploy
 # Cronjob auf dem Server selbst, der den jeweiligen Branch pollt (siehe README.md, Abschnitt
 # "Automatisiertes Deployment über GitHub Actions + Pi-Cronjob") – so ist der Server nie darauf
 # angewiesen, dass ein Client (Laptop/Handy) online ist oder Zugangsdaten hält.
+#
+# Zusätzlich auf pull_request gegen main: nur die schnellen Schritte (Backend-/Frontend-Unit-Tests +
+# Build, kein e2e, kein Publish) - Kompromiss, damit ein PR-Push nicht durch den langsamen
+# Playwright-Browser-Start (~7 Min) verzögert wird, aber genau die Fehlerklasse (z. B. ein kaputter
+# Unit-Test/Build durch eine neue Dependency) schon vor dem Merge auffällt statt erst danach.
 
 on:
   push:
     branches: [main, prod]
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: write
@@ -50,25 +57,29 @@ jobs:
           npm run build
 
       - name: Install e2e dependencies
+        if: github.event_name == 'push'
         working-directory: e2e
         run: npm ci
 
       - name: Cache Playwright browsers
+        if: github.event_name == 'push'
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('e2e/package-lock.json') }}
 
       - name: Install Playwright Chromium
+        if: github.event_name == 'push'
         working-directory: e2e
         run: npx playwright install --with-deps chromium
 
       - name: Run e2e tests
+        if: github.event_name == 'push'
         working-directory: e2e
         run: npm test
 
       - name: Upload e2e report on failure
-        if: failure()
+        if: failure() && github.event_name == 'push'
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
@@ -78,6 +89,7 @@ jobs:
           retention-days: 7
 
       - name: Assemble release artifact
+        if: github.event_name == 'push'
         run: |
           rm -rf release
           mkdir -p release/frontend release/backend/dist
@@ -87,6 +99,7 @@ jobs:
           printf '%s %s\n' "${{ github.sha }}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > release/COMMIT
 
       - name: Determine target branch
+        if: github.event_name == 'push'
         id: target
         run: |
           if [ "${{ github.ref_name }}" = "prod" ]; then
@@ -96,6 +109,7 @@ jobs:
           fi
 
       - name: Publish to deploy branch
+        if: github.event_name == 'push'
         working-directory: release
         run: |
           TARGET="${{ steps.target.outputs.branch }}"
