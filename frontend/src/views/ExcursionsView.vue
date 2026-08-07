@@ -21,6 +21,7 @@ import Combobox from '../components/Combobox.vue';
 import TourAssignPicker from '../components/TourAssignPicker.vue';
 import LocationPicker from '../components/LocationPicker.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
+import FileAttachments from '../components/FileAttachments.vue';
 import { parseLatLngFromMapsLink, tilePreviewUrl } from '../utils/googleMaps';
 import { spotCategoryMeta, SPOT_CATEGORY_SUGGESTIONS } from '../utils/spotCategory';
 import type { DerivedLocation } from '../utils/derivedLocation';
@@ -1082,6 +1083,7 @@ async function removeSpot(id: number) {
           />
           <textarea v-model="editSpotForm.note" placeholder="Notiz (optional)" rows="3"></textarea>
           <TourAssignPicker v-model="editSpotForm.tourTitles" :tour-options="allTourTitles" />
+          <FileAttachments v-if="editingSpot" domain="spots" :entity-id="editingSpot.id" />
           <button type="submit">Speichern</button>
         </form>
       </Modal>

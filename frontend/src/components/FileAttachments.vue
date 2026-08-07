@@ -10,7 +10,19 @@ import { readAsDataUrl, formatFileSize } from '../utils/fileUpload';
 // sie 1:1 per <FileAttachments domain="..." :entity-id="item.id" /> in mehrere Views eingebunden
 // werden kann, analog zum uploadFiles()-Muster in DiaryView.vue (dort images-Array statt eigener
 // Anhang-Tabelle, da Tagebuch-Bilder inline im Beitrag gerendert werden statt als Anhangsliste).
-const props = defineProps<{ domain: AttachmentDomain; entityId: number }>();
+const props = withDefaults(
+  defineProps<{
+    domain: AttachmentDomain;
+    entityId: number;
+    /** Steuert, ob Hinzufügen/Löschen von Anhängen möglich ist - Standard AN, damit bestehende
+     *  Einbindungen ohne diese Prop unverändert funktionieren. Detail-/Ansichts-Dialoge (kein
+     *  Bearbeiten-Kontext, z. B. SpotDetailDialog.vue/TravelDetailDialog.vue) setzen das explizit
+     *  aus: Anhänge bleiben dort weiterhin sichtbar/herunterladbar, nur eben nicht änderbar - der
+     *  Datei-Upload-Button gehört ins jeweilige Bearbeiten-Formular, nicht in die reine Ansicht. */
+    editable?: boolean;
+  }>(),
+  { editable: true },
+);
 
 const attachments = ref<Attachment[]>([]);
 const uploading = ref(false);
@@ -55,7 +67,9 @@ async function remove(attachment: Attachment) {
 </script>
 
 <template>
-  <div class="file-attachments">
+  <!-- Im reinen Ansichtsmodus (editable=false) ohne jeden Anhang komplett weglassen statt einer
+       leeren "Anhänge"-Überschrift ohne Inhalt und ohne Möglichkeit, etwas hinzuzufügen. -->
+  <div v-if="editable || attachments.length" class="file-attachments">
     <h4 class="heading">Anhänge</h4>
     <ul v-if="attachments.length" class="attachment-list">
       <li v-for="attachment in attachments" :key="attachment.id" class="attachment-row">
@@ -63,10 +77,10 @@ async function remove(attachment: Attachment) {
           📎 {{ attachment.original_name }}
         </a>
         <span class="size">{{ formatFileSize(attachment.size_bytes) }}</span>
-        <button type="button" class="remove-btn" title="Anhang löschen" @click="remove(attachment)">✕</button>
+        <button v-if="editable" type="button" class="remove-btn" title="Anhang löschen" @click="remove(attachment)">✕</button>
       </li>
     </ul>
-    <label class="upload-label">
+    <label v-if="editable" class="upload-label">
       <input type="file" accept="image/*,application/pdf" multiple :disabled="uploading" @change="onFilesSelected" />
       {{ uploading ? 'Lädt hoch …' : '+ Datei hinzufügen' }}
     </label>
