@@ -8,6 +8,7 @@ import { useLiveSyncStore } from '../stores/liveSync';
 import PackingItemRow from '../components/PackingItem.vue';
 import Modal from '../components/Modal.vue';
 import Combobox from '../components/Combobox.vue';
+import QuickAddRow from '../components/QuickAddRow.vue';
 import UndoDeleteRow from '../components/UndoDeleteRow.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import { useUndoableDelete } from '../composables/useUndoableDelete';
@@ -25,10 +26,10 @@ const highlightedIds = ref<Set<number>>(new Set());
 // Ein Hinzufügen-Formular direkt über jeder Liste (statt eines einzigen globalen Formulars mit
 // Listen-Auswahl) – welche Liste gemeint ist, ergibt sich schon aus der Position, ein Auswahlfeld
 // dafür entfällt. Kategorie/Unterkategorie/Anzahl sind gleich mit dabei statt erst nachträglich per
-// "Bearbeiten" ergänzbar zu sein. Vier parallele Records statt eines Objekts pro Liste: dasselbe
-// Muster wie quickAddLabels, funktioniert unverändert auch für Listen, die noch keinen eigenen
-// Eintrag haben (Vue legt den Schlüssel beim ersten Tippen reaktiv an).
-const quickAddLabels = ref<Record<string, string>>({});
+// "Bearbeiten" ergänzbar zu sein. Das Label selbst verwaltet die gemeinsame QuickAddRow-Komponente
+// intern; Kategorie/Unterkategorie/Anzahl bleiben hier als Records (ein Eintrag pro Liste, Vue legt
+// den Schlüssel beim ersten Tippen reaktiv an), damit sie über einen quickAdd()-Aufruf hinweg
+// bewusst stehen bleiben können (siehe Kommentar an quickAdd() unten).
 const quickAddCategories = ref<Record<string, string>>({});
 const quickAddSubcategories = ref<Record<string, string>>({});
 const quickAddQuantities = ref<Record<string, number>>({});
@@ -195,22 +196,20 @@ async function restore(id: number) {
   await api.post(`/trash/packing_item/${id}/restore`);
 }
 
-async function quickAdd(list: ListGroup) {
-  const label = (quickAddLabels.value[list.key] ?? '').trim();
-  if (!label) return;
+async function quickAdd(list: ListGroup, label: string) {
+  if (!label.trim()) return;
   const category = (quickAddCategories.value[list.key] ?? '').trim();
   const subcategory = (quickAddSubcategories.value[list.key] ?? '').trim();
   const quantity = Math.max(1, Math.round(quickAddQuantities.value[list.key] || 1));
   const created = await api.post<PackingItem>('/packing', {
     trip_id: tripId,
-    label,
+    label: label.trim(),
     category: category || undefined,
     subcategory: subcategory || undefined,
     quantity,
     owner_id: list.ownerId,
   });
   items.value.push(created);
-  quickAddLabels.value[list.key] = '';
   quickAddQuantities.value[list.key] = 1;
   // Kategorie/Unterkategorie bleiben bewusst stehen: praktisch, wenn mehrere Gegenstände derselben
   // Kategorie hintereinander erfasst werden (z. B. mehrere "Kleidung"-Teile).
@@ -228,23 +227,21 @@ async function quickAdd(list: ListGroup) {
           <span class="progress">{{ progress(list.items).packed }}/{{ progress(list.items).total }} gepackt</span>
         </div>
 
-        <form class="quick-add card" @submit.prevent="quickAdd(list)">
-          <input
-            v-model="quickAddLabels[list.key]"
-            type="text"
-            :placeholder="`Neuer Gegenstand für ${list.title}`"
-            :aria-label="`Neuer Gegenstand für ${list.title}`"
-          />
-          <Combobox v-model="quickAddCategories[list.key]" :options="categories" placeholder="Kategorie (optional)" />
-          <Combobox v-model="quickAddSubcategories[list.key]" :options="subcategories" placeholder="Unterkategorie (optional)" />
-          <label class="qty-field quick-add-qty">
-            Anzahl
-            <input v-model.number="quickAddQuantities[list.key]" type="number" min="1" step="1" placeholder="1" />
-          </label>
-          <button type="submit" class="send-btn" :disabled="!quickAddLabels[list.key]?.trim()" aria-label="Gegenstand hinzufügen" title="Gegenstand hinzufügen">
-            +
-          </button>
-        </form>
+        <QuickAddRow
+          class="card"
+          :placeholder="`Neuer Gegenstand für ${list.title}`"
+          @submit="(label) => quickAdd(list, label)"
+        >
+          <template #extra>
+            <div class="pack-quick-extra">
+              <Combobox v-model="quickAddCategories[list.key]" :options="categories" placeholder="Kategorie (optional)" />
+              <Combobox v-model="quickAddSubcategories[list.key]" :options="subcategories" placeholder="Unterkategorie (optional)" />
+              <label class="qty-field quick-add-qty">
+                <input v-model.number="quickAddQuantities[list.key]" type="number" min="1" step="1" placeholder="1" />
+              </label>
+            </div>
+          </template>
+        </QuickAddRow>
 
         <div class="card group" v-for="catGroup in groupByCategory(list.items)" :key="catGroup.category">
           <h3>{{ catGroup.category }}</h3>
@@ -303,18 +300,21 @@ async function quickAdd(list: ListGroup) {
   max-width: 1400px;
 }
 
-.quick-add {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
+:deep(.quick-add-row) {
   margin-bottom: var(--space-3);
   padding: var(--space-2) var(--space-3);
 }
 
-.quick-add > input[type='text'] {
-  flex: 1 1 160px;
-  min-width: 0;
+.pack-quick-extra {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.pack-quick-extra :deep(.combobox) {
+  flex: 0 1 110px;
+  min-width: 90px;
 }
 
 .quick-add-qty {
@@ -323,26 +323,7 @@ async function quickAdd(list: ListGroup) {
 }
 
 .quick-add-qty input {
-  width: 64px;
-}
-
-.quick-add .send-btn {
-  flex-shrink: 0;
-  width: 38px;
-  height: 38px;
-  padding: 0;
-  border-radius: 50%;
-  corner-shape: round;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.1rem;
-  line-height: 1;
-}
-
-.quick-add .send-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+  width: 56px;
 }
 
 .edit-form {

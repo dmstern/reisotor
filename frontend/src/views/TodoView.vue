@@ -8,6 +8,7 @@ import { useLiveSyncStore } from '../stores/liveSync';
 import { PERIOD_META, computePeriod } from '../utils/period';
 import { formatDate as formatDateShared, toLocalDateString } from '../utils/dateFormat';
 import { hashHighlightId } from '../utils/hashHighlight';
+import { sortWithDoneLast } from '../composables/useCheckedSort';
 import Modal from '../components/Modal.vue';
 import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
@@ -114,8 +115,7 @@ function userLabel(id: number | null) {
 }
 
 function sortItems(list: TodoItem[]) {
-  return [...list].sort((a, b) => {
-    if (!!a.done !== !!b.done) return a.done ? 1 : -1;
+  return sortWithDoneLast(list, (i) => !!i.done, (a, b) => {
     if (sortBy.value === 'due_date') {
       if (!a.due_date && !b.due_date) return 0;
       if (!a.due_date) return 1;
