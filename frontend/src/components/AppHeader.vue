@@ -7,6 +7,7 @@ import TripSwitcher from './TripSwitcher.vue';
 import PresenceAvatars from './PresenceAvatars.vue';
 import OfflineIndicator from './OfflineIndicator.vue';
 import PwaUpdatePrompt from './PwaUpdatePrompt.vue';
+import LoadingIndicator from './LoadingIndicator.vue';
 
 const auth = useAuthStore();
 const theme = useThemeStore();
@@ -50,6 +51,7 @@ const isNonProd = window.location.hostname !== 'reise.ruebenherz.de';
          zuverlässig (siehe .switcher-btn in TripSwitcher.vue), wodurch ein hier eingereihter Pill
          auf schmalen Viewports vom TripSwitcher überlagert statt danebengestellt wurde. -->
     <div class="status-row">
+      <LoadingIndicator />
       <OfflineIndicator />
       <PwaUpdatePrompt />
     </div>
@@ -110,7 +112,7 @@ const isNonProd = window.location.hostname !== 'reise.ruebenherz.de';
   gap: var(--space-2);
 }
 
-.status-row:has(.offline-pill, .pwa-pill) {
+.status-row:has(.offline-pill, .pwa-pill, .loading-pill) {
   padding: 6px var(--space-4) 0;
 }
 

@@ -8,9 +8,16 @@ const connectivity = useConnectivityStore();
 </script>
 
 <template>
-  <span v-if="!connectivity.isOnline" class="offline-pill" title="Änderungen werden nur lokal gespeichert">
-    📴 Offline
-  </span>
+  <button
+    v-if="!connectivity.isOnline"
+    type="button"
+    class="offline-pill offline-pill-btn"
+    :disabled="connectivity.checking"
+    title="Änderungen werden nur lokal gespeichert – antippen, um sofort erneut zu versuchen"
+    @click="connectivity.checkNow()"
+  >
+    {{ connectivity.checking ? '🔄 Prüfe…' : '📴 Offline' }}
+  </button>
   <span v-else-if="connectivity.syncing" class="offline-pill syncing" title="Änderungen werden synchronisiert">
     🔄 Synchronisiert…
   </span>
@@ -40,6 +47,20 @@ const connectivity = useConnectivityStore();
   line-height: 1.3;
   white-space: nowrap;
   flex-shrink: 0;
+}
+
+/* Die Offline-Pille ist die einzige der drei Varianten, die als <button> statt <span> gerendert wird
+   (siehe Template) - Browser-Standardstile fürs <button>-Element zurücksetzen, damit sie optisch
+   nicht von den beiden span-Varianten abweicht, aber trotzdem klickbar/fokussierbar bleibt. */
+.offline-pill-btn {
+  border: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.offline-pill-btn:disabled {
+  cursor: default;
+  opacity: 0.85;
 }
 
 /* Aktiv laufender Sync statt eines wartenden Zustands: eigene Farbe, damit "gerade am

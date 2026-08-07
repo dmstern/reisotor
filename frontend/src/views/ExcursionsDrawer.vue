@@ -15,6 +15,7 @@ import UndoDeleteRow from '../components/UndoDeleteRow.vue';
 import SpotOrderPicker from '../components/SpotOrderPicker.vue';
 import SpotTogglePicker from '../components/SpotTogglePicker.vue';
 import Modal from '../components/Modal.vue';
+import ViewLoadingState from '../components/ViewLoadingState.vue';
 
 // Auf Desktop weiterhin eigenständig gemountete Schublade (App.vue, rechter Platz) statt Teil der
 // Karte-Hauptsicht – dadurch lassen sich Kalender- und Ausflüge-Schublade unabhängig voneinander
@@ -401,6 +402,7 @@ function editStationSpot() {
       </form>
     </Modal>
   </div>
+  <ViewLoadingState v-else />
 </template>
 
 <style scoped>

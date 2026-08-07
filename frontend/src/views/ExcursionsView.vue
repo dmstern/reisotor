@@ -20,6 +20,7 @@ import Modal from '../components/Modal.vue';
 import Combobox from '../components/Combobox.vue';
 import TourAssignPicker from '../components/TourAssignPicker.vue';
 import LocationPicker from '../components/LocationPicker.vue';
+import ViewLoadingState from '../components/ViewLoadingState.vue';
 import { parseLatLngFromMapsLink, tilePreviewUrl } from '../utils/googleMaps';
 import { spotCategoryMeta, SPOT_CATEGORY_SUGGESTIONS } from '../utils/spotCategory';
 import type { DerivedLocation } from '../utils/derivedLocation';
@@ -1107,6 +1108,7 @@ async function removeSpot(id: number) {
     </div>
     </div>
   </div>
+  <ViewLoadingState v-else />
 </template>
 
 <style scoped>

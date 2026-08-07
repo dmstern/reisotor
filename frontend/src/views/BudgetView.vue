@@ -21,6 +21,7 @@ import DeleteButton from '../components/DeleteButton.vue';
 import Combobox from '../components/Combobox.vue';
 import UndoDeleteRow from '../components/UndoDeleteRow.vue';
 import FileAttachments from '../components/FileAttachments.vue';
+import ViewLoadingState from '../components/ViewLoadingState.vue';
 import { useUndoableDelete } from '../composables/useUndoableDelete';
 
 const tripStore = useTripStore();
@@ -590,6 +591,7 @@ const categoryColors = computed(() => {
       <FileAttachments v-if="editingExpense" domain="budget" :entity-id="editingExpense.id" />
     </Modal>
   </div>
+  <ViewLoadingState v-else />
 </template>
 
 <style scoped>

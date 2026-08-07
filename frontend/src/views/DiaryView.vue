@@ -18,6 +18,7 @@ import DeleteButton from '../components/DeleteButton.vue';
 import SocialRow from '../components/SocialRow.vue';
 import Comments from '../components/Comments.vue';
 import UndoDeleteRow from '../components/UndoDeleteRow.vue';
+import ViewLoadingState from '../components/ViewLoadingState.vue';
 import { useUndoableDelete } from '../composables/useUndoableDelete';
 
 const auth = useAuthStore();
@@ -455,6 +456,7 @@ async function removeComment(id: number) {
       </form>
     </Modal>
   </div>
+  <ViewLoadingState v-else />
 </template>
 
 <style scoped>

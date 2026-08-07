@@ -3,6 +3,7 @@ import { onMounted, ref } from 'vue';
 import { api } from '../api/client';
 import type { User } from '../api/types';
 import { useTripStore } from '../stores/trip';
+import ViewLoadingState from '../components/ViewLoadingState.vue';
 
 // Eintrag aus GET /trash (routes/trash.ts): `data` trägt die komplette, noch nicht formatierte
 // Zeile – jeder Objekttyp braucht eine eigene kleine Extraktionsregel (titleFor unten), da die
@@ -143,6 +144,7 @@ async function restore(entry: TrashEntry) {
     </TransitionGroup>
     <p v-if="!entries.length" class="empty">Der Papierkorb ist leer.</p>
   </div>
+  <ViewLoadingState v-else />
 </template>
 
 <style scoped>

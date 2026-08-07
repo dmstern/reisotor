@@ -10,6 +10,7 @@ import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
 import Combobox from '../components/Combobox.vue';
 import UndoDeleteRow from '../components/UndoDeleteRow.vue';
+import ViewLoadingState from '../components/ViewLoadingState.vue';
 import { useUndoableDelete } from '../composables/useUndoableDelete';
 
 const tripStore = useTripStore();
@@ -294,6 +295,7 @@ async function addItem() {
       </form>
     </Modal>
   </div>
+  <ViewLoadingState v-else />
 </template>
 
 <style scoped>

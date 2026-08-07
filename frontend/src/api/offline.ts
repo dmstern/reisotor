@@ -50,6 +50,23 @@ export function writeCache(path: string, data: unknown) {
   }
 }
 
+// Bewusst ein reines Modul-Flag statt eines Pinia-Stores hier: api/offline.ts bleibt framework-
+// unabhängig, der eigentliche Online-Status inkl. periodischem Health-Check lebt weiterhin in
+// stores/connectivity.ts. Dieses Flag ist nur die für api/client.ts sichtbare Kurzfassung "seit dem
+// letzten bestätigten Erfolg wurde schon mal ein echter Netzfehler festgestellt" - ohne das müsste
+// JEDER einzelne Request erneut den vollen REQUEST_TIMEOUT_MS abwarten, bevor er auf den Cache
+// zurückfällt, obwohl längst klar ist, dass der Server gerade nicht erreichbar ist (genau der vom
+// Nutzer gemeldete Fall: Internet da, aber Server-Antworten blockiert - jede View/jeder Klick hing
+// dadurch für Sekunden). stores/connectivity.ts setzt dieses Flag zurück, sobald ein periodischer
+// Health-Check (oder ein manueller Retry) wieder erfolgreich war.
+let confirmedOffline = false;
+export function isConfirmedOffline(): boolean {
+  return confirmedOffline;
+}
+export function setConfirmedOffline(value: boolean) {
+  confirmedOffline = value;
+}
+
 function readOutbox(): OutboxEntry[] {
   try {
     return JSON.parse(localStorage.getItem(OUTBOX_KEY) ?? '[]') as OutboxEntry[];
