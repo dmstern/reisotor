@@ -2,11 +2,13 @@ import type { FastifyPluginAsync } from 'fastify';
 import { db } from '../db/index.js';
 import { requireTripMember } from '../tripAccess.js';
 import { recordActivity } from '../activity.js';
+import { sanitizeHtml } from '../utils/sanitizeHtml.js';
 
 interface NoteBody {
   trip_id: number;
   title?: string;
   content: string;
+  content_format?: 'html' | 'legacy';
 }
 
 interface CommentBody {
@@ -25,10 +27,13 @@ export const notesRoutes: FastifyPluginAsync = async (app) => {
   app.post<{ Body: NoteBody }>('/notes', async (req, reply) => {
     const { trip_id, title, content } = req.body;
     if (!requireTripMember(reply, trip_id, req.session.userId)) return;
+    const isHtml = req.body.content_format === 'html';
     const now = new Date().toISOString();
     const result = db
-      .prepare('INSERT INTO notes (trip_id, title, content, created_by, created_at) VALUES (?, ?, ?, ?, ?)')
-      .run(trip_id, title ?? null, content, req.session.userId, now);
+      .prepare(
+        'INSERT INTO notes (trip_id, title, content, content_format, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+      )
+      .run(trip_id, title ?? null, isHtml ? sanitizeHtml(content) : content, isHtml ? 'html' : 'legacy', req.session.userId, now);
     recordActivity(trip_id, 'notes', result.lastInsertRowid as number, 'created', req.session.userId!);
     reply.code(201);
     return db.prepare('SELECT * FROM notes WHERE id = ?').get(result.lastInsertRowid);
@@ -42,10 +47,11 @@ export const notesRoutes: FastifyPluginAsync = async (app) => {
     if (!requireTripMember(reply, existingNote.trip_id, req.session.userId)) return;
 
     const { title, content } = req.body;
+    const isHtml = req.body.content_format === 'html';
     const now = new Date().toISOString();
     const result = db
-      .prepare('UPDATE notes SET title = ?, content = ?, updated_at = ? WHERE id = ?')
-      .run(title ?? null, content, now, req.params.id);
+      .prepare('UPDATE notes SET title = ?, content = ?, content_format = ?, updated_at = ? WHERE id = ?')
+      .run(title ?? null, isHtml ? sanitizeHtml(content) : content, isHtml ? 'html' : 'legacy', now, req.params.id);
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
     recordActivity(existingNote.trip_id, 'notes', Number(req.params.id), 'updated', req.session.userId!);
     return db.prepare('SELECT * FROM notes WHERE id = ?').get(req.params.id);

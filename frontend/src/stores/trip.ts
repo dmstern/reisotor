@@ -14,6 +14,7 @@ export interface TripFormData {
   lat?: number;
   lng?: number;
   image_url?: string;
+  packing_category_required?: boolean;
 }
 
 export const useTripStore = defineStore('trip', () => {

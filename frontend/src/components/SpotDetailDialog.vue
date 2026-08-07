@@ -11,6 +11,7 @@ import MapsAppPicker from './MapsAppPicker.vue';
 import LikeButton from './LikeButton.vue';
 import Comments, { type CommentItem } from './Comments.vue';
 import FileAttachments from './FileAttachments.vue';
+import RichTextDisplay from './RichTextDisplay.vue';
 
 // Eigenständige Komponente statt inline in SpotCard.vue, da dieser Dialog auch von anderer Stelle
 // geöffnet werden muss (TripMap.vue's Stationsliste, ExcursionDetailDialog.vue's Stationen) – nicht
@@ -92,7 +93,7 @@ function formatDate(d: string | null) {
       </p>
     </template>
 
-    <div v-if="spot.note" class="detail-row note richtext" v-html="renderRichText(spot.note)"></div>
+    <RichTextDisplay v-if="spot.note" class="detail-row note" :content="spot.note" :format="spot.note_format" />
     <div class="social-row">
       <LikeButton :count="likeCount" :liked="liked" @toggle="emit('toggle-like')" />
     </div>

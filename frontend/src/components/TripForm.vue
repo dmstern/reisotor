@@ -11,7 +11,15 @@ const props = defineProps<{ initial?: TripFormData; submitLabel?: string; locati
 const emit = defineEmits<{ (e: 'submit', data: TripFormData): void }>();
 
 function blankForm(): TripFormData {
-  return { name: '', destination: '', start_date: '', end_date: '', maps_link: '', image_url: '' };
+  return {
+    name: '',
+    destination: '',
+    start_date: '',
+    end_date: '',
+    maps_link: '',
+    image_url: '',
+    packing_category_required: true,
+  };
 }
 
 const form = ref<TripFormData>(props.initial ? { ...props.initial } : blankForm());
@@ -68,6 +76,7 @@ function onSubmit() {
     lat: manualPin.value?.lat ?? parsed?.lat,
     lng: manualPin.value?.lng ?? parsed?.lng,
     image_url: form.value.image_url || undefined,
+    packing_category_required: form.value.packing_category_required ?? true,
   });
 }
 </script>
@@ -108,6 +117,10 @@ function onSubmit() {
     <label>
       Bild-URL für das Dashboard-Banner (optional)
       <input v-model="form.image_url" type="url" placeholder="https://…" />
+    </label>
+    <label class="checkbox-label">
+      <input v-model="form.packing_category_required" type="checkbox" />
+      Kategorie in der Packliste ist Pflichtfeld
     </label>
     <button type="submit">{{ submitLabel ?? 'Speichern' }}</button>
   </form>
@@ -155,5 +168,13 @@ label {
 
 .dates-row label {
   flex: 1;
+}
+
+.checkbox-label {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.9rem;
+  color: var(--color-text);
 }
 </style>

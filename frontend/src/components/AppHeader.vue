@@ -197,6 +197,16 @@ const isNonProd = window.location.hostname !== 'reise.ruebenherz.de';
   justify-content: center;
 }
 
+/* Auf mobile zieht "alle Mitreisenden statt nur online" (PresenceAvatars.vue) potenziell mehr
+   Avatare in den Header als vorher - der Theme-Toggle wandert dafür in die Profil-Einstellungen
+   (ProfileView.vue), auf Desktop bleibt er exklusiv hier im Header (derselbe 800px-Umbruch wie
+   .wordmark oben/NavBar.vue). */
+@media (max-width: 799px) {
+  .theme-toggle {
+    display: none;
+  }
+}
+
 .profile-link {
   display: flex;
   align-items: center;

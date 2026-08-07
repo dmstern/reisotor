@@ -12,6 +12,7 @@ export interface SpotFormData {
   image_url?: string;
   category?: string;
   note?: string;
+  note_format?: 'html' | 'legacy';
   maps_link?: string;
   lat?: number;
   lng?: number;

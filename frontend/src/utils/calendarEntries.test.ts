@@ -12,6 +12,7 @@ const trip: Trip = {
   lat: null,
   lng: null,
   image_url: null,
+  packing_category_required: 1,
 };
 
 function makeScheduleItem(overrides: Partial<ScheduleItem> = {}): ScheduleItem {
@@ -58,6 +59,7 @@ describe('scheduleItemToEntry', () => {
       image_url: null,
       category: 'Sehenswürdigkeit',
       note: null,
+      note_format: 'legacy',
       maps_link: null,
       lat: null,
       lng: null,
@@ -88,6 +90,7 @@ describe('scheduleItemToEntry', () => {
       image_url: null,
       category: 'Restaurant',
       note: null,
+      note_format: 'legacy',
       maps_link: null,
       lat: null,
       lng: null,
@@ -109,6 +112,7 @@ describe('scheduleItemToEntry', () => {
       title: 'Sightseeing',
       image_url: null,
       note: null,
+      note_format: 'legacy',
       date: '2026-08-02',
       created_by: null,
       spot_ids: [7],

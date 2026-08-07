@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { PackingItem } from '../api/types';
+import { isFullyPacked as isFullyPackedItem } from '../utils/packing';
 import DeleteButton from './DeleteButton.vue';
 import EditButton from './EditButton.vue';
 
@@ -11,7 +12,7 @@ const emit = defineEmits<{
   (e: 'edit', item: PackingItem): void;
 }>();
 
-const isFullyPacked = computed(() => props.item.packed_count >= props.item.quantity);
+const isFullyPacked = computed(() => isFullyPackedItem(props.item));
 
 // Sind bei Anzahl > 1 bereits alle Exemplare rausgelegt (aber noch nicht eingepackt), zeigt der
 // Hochzähl-Button statt des Plus-Icons denselben Punkt wie bei Anzahl 1 kurz vor dem Einpacken –
@@ -37,6 +38,17 @@ function cycleSingleState() {
   };
   const [laidOut, packed] = next[singleState.value];
   emit('update-counts', props.item, laidOut, packed);
+}
+
+// Bei Anzahl > 1 zusätzlich zur Strichliste (unten) ein einzelnes Häkchen, das alle Exemplare in
+// einem Schritt (un-)packt, unabhängig vom bisherigen Zwischenstand - für optische Konsistenz mit
+// Gegenständen mit Anzahl 1 (dieselbe .state-toggle-Optik links vom Label).
+function toggleAllPacked() {
+  if (isFullyPacked.value) {
+    emit('update-counts', props.item, 0, 0);
+  } else {
+    emit('update-counts', props.item, props.item.quantity, props.item.quantity);
+  }
 }
 
 // Bei Anzahl > 1: ein Klick zählt die rausgelegten Exemplare einzeln als Strichliste hoch (wie von
@@ -95,6 +107,17 @@ const tallyGroups = computed<number[]>(() => {
       >
         <span v-if="singleState === 'laidOut'" class="laid-out-mark"></span>
       </button>
+      <button
+        v-else
+        type="button"
+        class="state-toggle"
+        :class="{ packed: isFullyPacked }"
+        role="checkbox"
+        :aria-checked="isFullyPacked"
+        :aria-label="`${item.label}: alle ${item.quantity} Exemplare ${isFullyPacked ? 'eingepackt – klicken zum Zurücksetzen' : 'auf einmal einpacken'}`"
+        :title="isFullyPacked ? 'Alle eingepackt – klicken zum Zurücksetzen' : 'Alle auf einmal einpacken'"
+        @click="toggleAllPacked"
+      ></button>
       <span class="label" :class="{ 'text-done': isFullyPacked }">
         {{ item.label }}
         <span v-if="item.quantity > 1" class="qty">×{{ item.quantity }}</span>

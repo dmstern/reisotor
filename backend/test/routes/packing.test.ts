@@ -37,7 +37,7 @@ describe('packing routes', () => {
       method: 'POST',
       url: '/api/packing',
       headers: { cookie },
-      payload: { trip_id: tripId, label: 'Zahnbürste', quantity: 2, packed_count: 5 },
+      payload: { trip_id: tripId, category: 'Hygiene', label: 'Zahnbürste', quantity: 2, packed_count: 5 },
     });
     expect(res.statusCode).toBe(201);
     const body = res.json();
@@ -50,7 +50,7 @@ describe('packing routes', () => {
       method: 'POST',
       url: '/api/packing',
       headers: { cookie },
-      payload: { trip_id: tripId, label: 'Handtuch', quantity: 3 },
+      payload: { trip_id: tripId, category: 'Sonstiges', label: 'Handtuch', quantity: 3 },
     });
     const id = created.json().id;
 
@@ -58,7 +58,7 @@ describe('packing routes', () => {
       method: 'PUT',
       url: `/api/packing/${id}`,
       headers: { cookie },
-      payload: { label: 'Handtuch', quantity: 3, packed_count: 2, laid_out_count: 0 },
+      payload: { category: 'Sonstiges', label: 'Handtuch', quantity: 3, packed_count: 2, laid_out_count: 0 },
     });
     expect(updated.statusCode).toBe(200);
     expect(updated.json().laid_out_count).toBe(2);

@@ -158,6 +158,7 @@ async function onDelete(trip: Trip) {
                 end_date: editingTrip.end_date,
                 maps_link: editingTrip.maps_link ?? '',
                 image_url: editingTrip.image_url ?? '',
+                packing_category_required: editingTrip.packing_category_required !== 0,
               }
             : undefined
         "

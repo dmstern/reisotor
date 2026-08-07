@@ -17,6 +17,7 @@ interface TripBody {
   lat?: number;
   lng?: number;
   image_url?: string;
+  packing_category_required?: boolean;
 }
 
 export const tripsRoutes: FastifyPluginAsync = async (app) => {
@@ -52,11 +53,22 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
     if (!image_url && lat != null && lng != null) {
       image_url = tilePreviewUrl(lat, lng);
     }
+    const packingCategoryRequired = req.body.packing_category_required !== false ? 1 : 0;
     const result = db
       .prepare(
-        'INSERT INTO trips (name, destination, start_date, end_date, maps_link, lat, lng, image_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        'INSERT INTO trips (name, destination, start_date, end_date, maps_link, lat, lng, image_url, packing_category_required) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
       )
-      .run(name, destination ?? null, start_date, end_date, maps_link ?? null, lat ?? null, lng ?? null, image_url ?? null);
+      .run(
+        name,
+        destination ?? null,
+        start_date,
+        end_date,
+        maps_link ?? null,
+        lat ?? null,
+        lng ?? null,
+        image_url ?? null,
+        packingCategoryRequired,
+      );
     const tripId = result.lastInsertRowid as number;
     // Neu angelegter Urlaub ist zunächst nur für die anlegende Person sichtbar – weitere
     // Mitglieder kommen nur per Einladung dazu (routes/trips.ts's POST /trips/:id/members).
@@ -95,9 +107,10 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
     if (!image_url && lat != null && lng != null) {
       image_url = tilePreviewUrl(lat, lng);
     }
+    const packingCategoryRequired = req.body.packing_category_required !== false ? 1 : 0;
     const result = db
       .prepare(
-        'UPDATE trips SET name = ?, destination = ?, start_date = ?, end_date = ?, maps_link = ?, lat = ?, lng = ?, image_url = ? WHERE id = ?',
+        'UPDATE trips SET name = ?, destination = ?, start_date = ?, end_date = ?, maps_link = ?, lat = ?, lng = ?, image_url = ?, packing_category_required = ? WHERE id = ?',
       )
       .run(
         name,
@@ -108,6 +121,7 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
         lat ?? null,
         lng ?? null,
         image_url ?? null,
+        packingCategoryRequired,
         req.params.id,
       );
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });

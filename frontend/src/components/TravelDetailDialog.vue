@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import type { TravelItem } from '../api/types';
-import { renderRichText } from '../utils/richText';
 import { linkLabel } from '../utils/linkLabel';
 import { formatTravelDuration, travelDurationMinutes } from '../utils/travelDuration';
 import { travelTypeIcon } from '../utils/travelTypeIcon';
 import DetailModal from './DetailModal.vue';
 import MapsAppPicker from './MapsAppPicker.vue';
 import FileAttachments from './FileAttachments.vue';
+import RichTextDisplay from './RichTextDisplay.vue';
 
 // Eigenständige Komponente statt inline in TravelView.vue, da dieser Dialog auch von anderer Stelle
 // geöffnet werden muss (TripMap.vue's Stationsliste, ExcursionDetailDialog.vue's Stationen, falls
@@ -63,7 +63,7 @@ function travelDuration(item: TravelItem) {
       💶 {{ item.amount.toFixed(2) }} €
       <span v-if="item.paid_by_user_id"> · bezahlt von {{ payerLabel }}</span>
     </p>
-    <div v-if="item.note" class="detail-row note richtext" v-html="renderRichText(item.note)"></div>
+    <RichTextDisplay v-if="item.note" class="detail-row note" :content="item.note" :format="item.note_format" />
     <FileAttachments domain="travel" :entity-id="item.id" :editable="false" />
     <div class="detail-actions">
       <a v-if="item.link" :href="item.link" target="_blank" rel="noopener" class="card-action-btn">

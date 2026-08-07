@@ -6,7 +6,7 @@ import { test, expect } from '@playwright/test';
 // was wie ein Einfrieren der App wirkte.
 test.describe('Zentrale Lade-Animation', () => {
   test('View-Wechsel zeigt einen Lade-Platzhalter statt einer leeren Seite', async ({ page }) => {
-    await page.goto('/todo');
+    await page.goto('/listen?tab=todo');
     await expect(page.locator('.todo-page')).toBeVisible();
 
     // Alle API-Antworten künstlich verzögern, um den Ladezustand sichtbar zu machen.
@@ -15,7 +15,10 @@ test.describe('Zentrale Lade-Animation', () => {
       await route.continue();
     });
 
-    await page.getByRole('link', { name: 'Packliste' }).click();
+    // Packliste/ToDo sind seit dem "Listen"-Merge Tabs derselben Route statt eigener Nav-Links
+    // (siehe ListenView.vue) - ein Tab-Klick mountet die Ziel-Komponente aber weiterhin frisch
+    // (v-if), triggert also denselben Ladezustand wie vorher ein echter Routenwechsel.
+    await page.getByRole('tab', { name: 'Packliste' }).click();
     await expect(page.locator('.view-loading')).toBeVisible();
     await expect(page.locator('.view-loading .text')).toHaveText('Lädt…');
 
@@ -34,7 +37,7 @@ test.describe('Zentrale Lade-Animation', () => {
     });
 
     await page.locator('input[placeholder^="Neuer Gegenstand"]').first().fill('E2E-Testartikel');
-    await page.getByRole('button', { name: 'Gegenstand hinzufügen' }).first().click();
+    await page.getByRole('button', { name: 'Hinzufügen', exact: true }).first().click();
 
     await expect(page.locator('.toast-pill.create')).toBeVisible();
     await expect(page.locator('.toast-pill.create .label')).toHaveText('Legt an…');
@@ -52,7 +55,7 @@ test.describe('Zentrale Lade-Animation', () => {
       await route.continue();
     });
     await page.locator('input[placeholder^="Neuer Gegenstand"]').first().fill('E2E-Testartikel-2');
-    await page.getByRole('button', { name: 'Gegenstand hinzufügen' }).first().click();
+    await page.getByRole('button', { name: 'Hinzufügen', exact: true }).first().click();
     await page.waitForTimeout(600); // über SHOW_DELAY_MS (200ms) hinaus warten
 
     await expect(page.locator('.toast-pill')).toHaveCount(0);

@@ -2,13 +2,13 @@
 import { computed, onMounted, ref } from 'vue';
 import { api } from '../api/client';
 import type { Excursion, Spot, TravelItem, User } from '../api/types';
-import { renderRichText } from '../utils/richText';
 import { excursionStationKeys, resolveStations, type ExcursionStation } from '../utils/excursionStations';
 import { formatDate as formatDateShared } from '../utils/dateFormat';
 import { useAuthStore } from '../stores/auth';
 import { useSpotsStore } from '../stores/spots';
 import { useDrawersStore } from '../stores/drawers';
 import DetailModal from './DetailModal.vue';
+import RichTextDisplay from './RichTextDisplay.vue';
 import LikeButton from './LikeButton.vue';
 import Comments, { type CommentItem } from './Comments.vue';
 import MiniStationCard from './MiniStationCard.vue';
@@ -118,7 +118,7 @@ function openStationDetail(station: ExcursionStation) {
       <span>{{ excursion.date ? `📅 ${formatDate(excursion.date)}` : '📝 In Planung' }}</span>
     </template>
 
-    <div v-if="excursion.note" class="detail-row note richtext" v-html="renderRichText(excursion.note)"></div>
+    <RichTextDisplay v-if="excursion.note" class="detail-row note" :content="excursion.note" :format="excursion.note_format" />
 
     <template v-if="orderedStations.length">
       <span class="detail-label">Stationen</span>

@@ -11,6 +11,7 @@ import { useDrawersStore } from '../stores/drawers';
 import { useLiveSyncStore } from '../stores/liveSync';
 import { useExcursionsStore } from '../stores/excursions';
 import { useIsDesktop } from '../composables/useIsDesktop';
+import { usePersistedRef } from '../composables/usePersistedRef';
 import { hashHighlightId } from '../utils/hashHighlight';
 import SpotCard from '../components/SpotCard.vue';
 import UndoDeleteRow from '../components/UndoDeleteRow.vue';
@@ -23,6 +24,8 @@ import LocationPicker from '../components/LocationPicker.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import FileAttachments from '../components/FileAttachments.vue';
 import DraftStatusBar from '../components/DraftStatusBar.vue';
+import RichTextEditor from '../components/RichTextEditor.vue';
+import { isEmptyRichText } from '../utils/richText';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
 import { parseLatLngFromMapsLink, tilePreviewUrl } from '../utils/googleMaps';
 import { spotCategoryMeta, SPOT_CATEGORY_SUGGESTIONS } from '../utils/spotCategory';
@@ -290,13 +293,16 @@ function groupIcon(category: string): string {
 }
 
 const sortMenuOpen = ref(false);
-const sortMode = ref<'alpha' | 'likes'>('alpha');
+// Sortierung/Gruppierung/Filter bleiben über localStorage auch nach einem Reload/erneuten Besuch
+// erhalten (siehe usePersistedRef.ts) - dieselbe "Orte"-Liste, die CLAUDE.md's Backlog meint (es
+// gibt keine eigene SpotsView, diese gruppierte/filterbare Liste hier ist die gemeinte Stelle).
+const sortMode = usePersistedRef<'alpha' | 'likes'>('reisotor-excursions-sort-mode', 'alpha');
 
 // Umschalter Kategorie/Touren (siehe spotGroups unten): gruppiert die Spots-Übersicht wahlweise
 // nach Kategorie (Standard) oder nach Tour-Zugehörigkeit – letzteres zeigt einen Spot in JEDER Tour,
 // der er zugeordnet ist (mehrfach, da viele-zu-viele), untaggte Spots/abgeleitete Orte landen
 // gemeinsam in "Ohne Tour".
-const groupMode = ref<'category' | 'tours'>('category');
+const groupMode = usePersistedRef<'category' | 'tours'>('reisotor-excursions-group-mode', 'category');
 const UNASSIGNED_TOUR_GROUP = 'Ohne Tour';
 
 function tourTitlesForItem(item: SpotsGroupItem): string[] {
@@ -305,14 +311,14 @@ function tourTitlesForItem(item: SpotsGroupItem): string[] {
 }
 
 const categoryMenuOpen = ref(false);
-const categoryFilter = ref<string[]>([]);
+const categoryFilter = usePersistedRef<string[]>('reisotor-excursions-category-filter', []);
 function removeCategoryFilter(cat: string) {
   categoryFilter.value = categoryFilter.value.filter((c) => c !== cat);
 }
 
 const STATUS_FILTER_LABEL: Record<'planned' | 'unplanned', string> = { planned: '📅 Geplant', unplanned: '📝 Ungeplant' };
 const statusMenuOpen = ref(false);
-const statusFilter = ref<('planned' | 'unplanned')[]>([]);
+const statusFilter = usePersistedRef<('planned' | 'unplanned')[]>('reisotor-excursions-status-filter', []);
 function removeStatusFilter(status: 'planned' | 'unplanned') {
   statusFilter.value = statusFilter.value.filter((s) => s !== status);
 }
@@ -616,7 +622,8 @@ function spotToBody(f: ReturnType<typeof emptySpotForm>, manual?: { lat: number;
     title: f.title.trim(),
     image_url: f.image_url || undefined,
     category: f.category || undefined,
-    note: f.note || undefined,
+    note: f.note && !isEmptyRichText(f.note) ? f.note : undefined,
+    note_format: 'html' as const,
     maps_link: f.maps_link || undefined,
     lat: manual?.lat ?? parsed?.lat,
     lng: manual?.lng ?? parsed?.lng,
@@ -989,7 +996,7 @@ async function removeSpot(id: number) {
             :center="spotPickerCenter"
             :reference-points="spotReferencePoints"
           />
-          <textarea v-model="spotForm.note" placeholder="Notiz (optional)" rows="3"></textarea>
+          <RichTextEditor v-model="spotForm.note" placeholder="Notiz (optional)" />
           <TourAssignPicker v-model="spotForm.tourTitles" :tour-options="allTourTitles" />
           <DraftStatusBar :status="newSpotDraft.status.value" :restored="newSpotDraft.restored.value" />
           <button type="submit">Hinzufügen</button>
@@ -1103,7 +1110,7 @@ async function removeSpot(id: number) {
             :center="spotPickerCenter"
             :reference-points="editSpotReferencePoints"
           />
-          <textarea v-model="editSpotForm.note" placeholder="Notiz (optional)" rows="3"></textarea>
+          <RichTextEditor v-model="editSpotForm.note" placeholder="Notiz (optional)" />
           <TourAssignPicker v-model="editSpotForm.tourTitles" :tour-options="allTourTitles" />
           <FileAttachments v-if="editingSpot" domain="spots" :entity-id="editingSpot.id" />
           <DraftStatusBar :status="editSpotDraft.status.value" :restored="editSpotDraft.restored.value" />

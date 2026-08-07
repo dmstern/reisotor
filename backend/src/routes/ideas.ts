@@ -2,12 +2,14 @@ import type { FastifyPluginAsync } from 'fastify';
 import { db } from '../db/index.js';
 import { requireTripMember } from '../tripAccess.js';
 import { recordActivity } from '../activity.js';
+import { sanitizeHtml } from '../utils/sanitizeHtml.js';
 
 interface IdeaBody {
   trip_id: number;
   title: string;
   image_url?: string;
   note?: string;
+  note_format?: 'html' | 'legacy';
   date?: string;
   spot_ids?: number[];
 }
@@ -119,12 +121,13 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
   app.post<{ Body: IdeaBody }>('/ideas', async (req, reply) => {
     const { trip_id, title, image_url, note, date, spot_ids } = req.body;
     if (!requireTripMember(reply, trip_id, req.session.userId)) return;
+    const isHtml = req.body.note_format === 'html';
     const result = db
       .prepare(
-        `INSERT INTO ideas (trip_id, title, image_url, note, created_by)
-         VALUES (?, ?, ?, ?, ?)`,
+        `INSERT INTO ideas (trip_id, title, image_url, note, note_format, created_by)
+         VALUES (?, ?, ?, ?, ?, ?)`,
       )
-      .run(trip_id, title, image_url ?? null, note ?? null, req.session.userId);
+      .run(trip_id, title, image_url ?? null, note ? (isHtml ? sanitizeHtml(note) : note) : null, isHtml ? 'html' : 'legacy', req.session.userId);
     const ideaId = result.lastInsertRowid as number;
     syncExcursionSpots(ideaId, spot_ids ?? []);
     setIdeaScheduleDate(ideaId, trip_id, title, date);
@@ -142,12 +145,13 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
     if (!requireTripMember(reply, existingIdea.trip_id, req.session.userId)) return;
 
     const { title, image_url, note, date, spot_ids } = req.body;
+    const isHtml = req.body.note_format === 'html';
     const result = db
       .prepare(
-        `UPDATE ideas SET title = ?, image_url = ?, note = ?
+        `UPDATE ideas SET title = ?, image_url = ?, note = ?, note_format = ?
          WHERE id = ?`,
       )
-      .run(title, image_url ?? null, note ?? null, req.params.id);
+      .run(title, image_url ?? null, note ? (isHtml ? sanitizeHtml(note) : note) : null, isHtml ? 'html' : 'legacy', req.params.id);
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
     const ideaId = Number(req.params.id);
     syncExcursionSpots(ideaId, spot_ids ?? []);

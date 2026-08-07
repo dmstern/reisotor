@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, defineAsyncComponent, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { api } from '../api/client';
 import type { ExcursionComment, ExcursionLike, TravelItem, User } from '../api/types';
@@ -17,7 +17,14 @@ import SpotTogglePicker from '../components/SpotTogglePicker.vue';
 import Modal from '../components/Modal.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import DraftStatusBar from '../components/DraftStatusBar.vue';
+import { isEmptyRichText } from '../utils/richText';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
+
+// ExcursionsDrawer.vue ist (wie ScheduleView.vue) statisch in App.vue eingebunden, läuft also im
+// Hauptbundle - RichTextEditor.vue zieht Tiptap nach sich (~400 kB), das soll nicht JEDEN Seitenaufruf
+// treffen, sondern nur das tatsächliche Öffnen des Ausflug-Formulars. Restliche Views (Notizen,
+// Tagebuch, Reise, ...) sind ohnehin schon per Route lazy geladen, dort reicht ein normaler Import.
+const RichTextEditor = defineAsyncComponent(() => import('../components/RichTextEditor.vue'));
 
 // Auf Desktop weiterhin eigenständig gemountete Schublade (App.vue, rechter Platz) statt Teil der
 // Karte-Hauptsicht – dadurch lassen sich Kalender- und Ausflüge-Schublade unabhängig voneinander
@@ -153,7 +160,8 @@ async function addExcursion() {
   await excursionsStore.create({
     title: excursionForm.value.title.trim(),
     image_url: excursionForm.value.image_url || undefined,
-    note: excursionForm.value.note || undefined,
+    note: excursionForm.value.note && !isEmptyRichText(excursionForm.value.note) ? excursionForm.value.note : undefined,
+    note_format: 'html',
     date: excursionForm.value.date || undefined,
     spot_ids: excursionForm.value.spot_ids,
   });
@@ -176,7 +184,9 @@ async function submitEditExcursion() {
   await excursionsStore.update(editingExcursion.value, {
     title: editExcursionForm.value.title.trim(),
     image_url: editExcursionForm.value.image_url || undefined,
-    note: editExcursionForm.value.note || undefined,
+    note:
+      editExcursionForm.value.note && !isEmptyRichText(editExcursionForm.value.note) ? editExcursionForm.value.note : undefined,
+    note_format: 'html',
     date: editExcursionForm.value.date || undefined,
     spot_ids: editExcursionForm.value.spot_ids,
   });
@@ -274,12 +284,7 @@ function editStationSpot() {
       <form class="edit-form" @submit.prevent="addExcursion">
         <input v-model="excursionForm.title" type="text" placeholder="Titel" required />
         <input v-model="excursionForm.image_url" type="url" placeholder="Bild-URL (optional)" />
-        <textarea v-model="excursionForm.note" placeholder="Notiz (optional)" rows="4"></textarea>
-        <p class="syntax-hint">
-          <code>**fett**</code> · <code>_kursiv_</code> · <code>~~durch~~</code> · <code># Titel</code> ·
-          <code>&gt; Zitat</code> · <code>* Punkt</code> / <code>1. Punkt</code> für Listen ·
-          <code>---</code> für Trennlinie · <code>`Code`</code> · Links werden automatisch erkannt
-        </p>
+        <RichTextEditor v-model="excursionForm.note" placeholder="Notiz (optional)" />
         <label class="date-label">
           Datum (optional – ansonsten "In Planung")
           <input v-model="excursionForm.date" type="date" />
@@ -394,12 +399,7 @@ function editStationSpot() {
       <form class="edit-form" @submit.prevent="submitEditExcursion">
         <input v-model="editExcursionForm.title" type="text" placeholder="Titel" required />
         <input v-model="editExcursionForm.image_url" type="url" placeholder="Bild-URL (optional)" />
-        <textarea v-model="editExcursionForm.note" placeholder="Notiz (optional)" rows="4"></textarea>
-        <p class="syntax-hint">
-          <code>**fett**</code> · <code>_kursiv_</code> · <code>~~durch~~</code> · <code># Titel</code> ·
-          <code>&gt; Zitat</code> · <code>* Punkt</code> / <code>1. Punkt</code> für Listen ·
-          <code>---</code> für Trennlinie · <code>`Code`</code> · Links werden automatisch erkannt
-        </p>
+        <RichTextEditor v-model="editExcursionForm.note" placeholder="Notiz (optional)" />
         <label class="date-label">
           Datum (optional – ansonsten "In Planung")
           <input v-model="editExcursionForm.date" type="date" />

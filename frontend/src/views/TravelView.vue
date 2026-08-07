@@ -13,7 +13,9 @@ import { travelTypeIcon } from '../utils/travelTypeIcon';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { formatTravelDuration, travelDurationMinutes } from '../utils/travelDuration';
 import { hashHighlightId } from '../utils/hashHighlight';
+import { isEmptyRichText } from '../utils/richText';
 import Modal from '../components/Modal.vue';
+import RichTextEditor from '../components/RichTextEditor.vue';
 import TravelDetailDialog from '../components/TravelDetailDialog.vue';
 import LocationPicker from '../components/LocationPicker.vue';
 import FileAttachments from '../components/FileAttachments.vue';
@@ -180,7 +182,8 @@ function toBody(
     luggage: f.luggage || undefined,
     seat: f.seat || undefined,
     link: f.link || undefined,
-    note: f.note || undefined,
+    note: f.note && !isEmptyRichText(f.note) ? f.note : undefined,
+    note_format: 'html' as const,
   };
 }
 
@@ -558,7 +561,7 @@ function showDetailToOnMap() {
       </label>
       <label>
         Weitere Infos
-        <textarea v-model="form.note" rows="2"></textarea>
+        <RichTextEditor v-model="form.note" />
       </label>
       <p class="syntax-hint">
         <code>**fett**</code> · <code>_kursiv_</code> · <code>~~durch~~</code> · <code># Titel</code> ·
@@ -756,7 +759,7 @@ function showDetailToOnMap() {
         </label>
         <label>
           Weitere Infos
-          <textarea v-model="editForm.note" rows="2"></textarea>
+          <RichTextEditor v-model="editForm.note" />
         </label>
         <p class="syntax-hint">
           <code>**fett**</code> · <code>_kursiv_</code> · <code>~~durch~~</code> · <code># Titel</code> ·

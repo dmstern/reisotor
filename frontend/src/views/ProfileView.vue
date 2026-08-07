@@ -5,6 +5,10 @@ import { api, ApiError } from '../api/client';
 import type { User } from '../api/types';
 import { useAuthStore } from '../stores/auth';
 import { useNavPositionStore } from '../stores/navPosition';
+import { useNavConfigStore } from '../stores/navConfig';
+import { NAV_LINKS } from '../utils/navLinks';
+import { useThemeStore } from '../stores/theme';
+import { useIsDesktop } from '../composables/useIsDesktop';
 import { useWeatherProviderStore, WEATHER_MODEL_OPTIONS } from '../stores/weatherProvider';
 import { useHomeCurrencyStore, HOME_CURRENCY_OPTIONS } from '../stores/homeCurrency';
 import { useCalendarSettingsStore, WEEK_START_OPTIONS, DATE_FORMAT_OPTIONS } from '../stores/calendarSettings';
@@ -18,6 +22,16 @@ import ViewLoadingState from '../components/ViewLoadingState.vue';
 const auth = useAuthStore();
 const router = useRouter();
 const navPosition = useNavPositionStore();
+const navConfig = useNavConfigStore();
+const theme = useThemeStore();
+const isDesktop = useIsDesktop();
+
+function navLinkLabel(key: string) {
+  return NAV_LINKS.find((l) => l.key === key)?.label ?? key;
+}
+function navLinkIcon(key: string) {
+  return NAV_LINKS.find((l) => l.key === key)?.icon ?? '';
+}
 const weatherProvider = useWeatherProviderStore();
 const homeCurrency = useHomeCurrencyStore();
 const calendarSettings = useCalendarSettingsStore();
@@ -319,6 +333,16 @@ async function onImportFileSelected(event: Event) {
       <p v-if="avatarSaved" class="hint success">Gespeichert ✓</p>
     </div>
 
+    <div class="card" v-if="!isDesktop">
+      <h2>Darstellung</h2>
+      <!-- Nur auf mobile: auf Desktop bleibt der Toggle exklusiv im Header (AppHeader.vue), auf
+           mobile ist dort seit "alle Mitreisenden statt nur online" (PresenceAvatars.vue) potenziell
+           weniger Platz. -->
+      <button type="button" class="secondary theme-toggle-btn" @click="theme.toggle">
+        {{ theme.isDark ? '☀️ Zum hellen Modus wechseln' : '🌙 Zum dunklen Modus wechseln' }}
+      </button>
+    </div>
+
     <div class="card">
       <h2>Navigation</h2>
       <p class="hint">Position der Navigationsleiste, getrennt für Desktop und mobile Bedienung.</p>
@@ -338,6 +362,46 @@ async function onImportFileSelected(event: Event) {
           </select>
         </label>
       </div>
+
+      <p class="hint nav-config-hint">
+        Reihenfolge und Sichtbarkeit der übrigen Einträge ("Übersicht" bleibt immer an erster Stelle).
+      </p>
+      <ul class="nav-config-list">
+        <li v-for="(entry, index) in navConfig.entries" :key="entry.key" class="nav-config-row">
+          <span class="nav-config-icon">{{ navLinkIcon(entry.key) }}</span>
+          <span class="nav-config-label" :class="{ hidden: !entry.visible }">{{ navLinkLabel(entry.key) }}</span>
+          <div class="nav-config-actions">
+            <button
+              type="button"
+              class="secondary small"
+              :disabled="index === 0"
+              aria-label="Nach oben verschieben"
+              title="Nach oben verschieben"
+              @click="navConfig.moveUp(entry.key)"
+            >
+              ▲
+            </button>
+            <button
+              type="button"
+              class="secondary small"
+              :disabled="index === navConfig.entries.length - 1"
+              aria-label="Nach unten verschieben"
+              title="Nach unten verschieben"
+              @click="navConfig.moveDown(entry.key)"
+            >
+              ▼
+            </button>
+            <label class="nav-config-visible">
+              <input
+                type="checkbox"
+                :checked="entry.visible"
+                :aria-label="`${navLinkLabel(entry.key)} in der Navigation anzeigen`"
+                @change="navConfig.setVisible(entry.key, ($event.target as HTMLInputElement).checked)"
+              />
+            </label>
+          </div>
+        </li>
+      </ul>
     </div>
 
     <div id="calendar-settings" class="card">
@@ -675,6 +739,67 @@ async function onImportFileSelected(event: Event) {
   gap: 4px;
   font-weight: 600;
   font-size: 0.9rem;
+}
+
+.theme-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nav-config-hint {
+  margin-top: var(--space-3);
+}
+
+.nav-config-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nav-config-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 6px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.nav-config-row:last-child {
+  border-bottom: none;
+}
+
+.nav-config-icon {
+  font-size: 1.1rem;
+}
+
+.nav-config-label {
+  flex: 1;
+}
+
+.nav-config-label.hidden {
+  color: var(--color-text-muted);
+  text-decoration: line-through;
+}
+
+.nav-config-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.nav-config-actions .small {
+  padding: 4px 8px;
+  font-size: 0.8rem;
+}
+
+.nav-config-visible {
+  display: flex;
+  align-items: center;
+  margin-left: var(--space-2);
 }
 
 .weather-provider-label {

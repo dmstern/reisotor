@@ -429,7 +429,7 @@ function formatWeekdayDate(d: string) {
       </button>
 
       <!-- Packliste (zusammengefasst) -->
-      <router-link to="/packing" class="card tile" :style="{ background: `${WIDGET_COLORS.get('packing')}0d` }">
+      <router-link to="/listen?tab=packing" class="card tile" :style="{ background: `${WIDGET_COLORS.get('packing')}0d` }">
         <span class="tile-icon" :style="{ background: `${WIDGET_COLORS.get('packing')}26`, borderColor: WIDGET_COLORS.get('packing') }">{{ SECTION_ICONS.packing }}</span>
         <h3>Packliste</h3>
         <BudgetMeter
@@ -457,7 +457,7 @@ function formatWeekdayDate(d: string) {
       </router-link>
 
       <!-- Einkaufsliste -->
-      <router-link to="/shopping" class="card tile" :style="{ background: `${WIDGET_COLORS.get('shopping')}0d` }">
+      <router-link to="/listen?tab=shopping" class="card tile" :style="{ background: `${WIDGET_COLORS.get('shopping')}0d` }">
         <span class="tile-icon" :style="{ background: `${WIDGET_COLORS.get('shopping')}26`, borderColor: WIDGET_COLORS.get('shopping') }">{{ SECTION_ICONS.shopping }}</span>
         <h3>Einkaufsliste</h3>
         <BudgetMeter
@@ -470,7 +470,7 @@ function formatWeekdayDate(d: string) {
       </router-link>
 
       <!-- ToDo -->
-      <router-link to="/todo" class="card tile" :style="{ background: `${WIDGET_COLORS.get('todo')}0d` }">
+      <router-link to="/listen?tab=todo" class="card tile" :style="{ background: `${WIDGET_COLORS.get('todo')}0d` }">
         <span class="tile-icon" :style="{ background: `${WIDGET_COLORS.get('todo')}26`, borderColor: WIDGET_COLORS.get('todo') }">{{ SECTION_ICONS.todo }}</span>
         <h3>ToDo</h3>
         <BudgetMeter

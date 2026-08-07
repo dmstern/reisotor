@@ -42,7 +42,13 @@ const router = createRouter({
   routes: [
     { path: '/login', name: 'login', component: () => import('../views/LoginView.vue') },
     { path: '/', name: 'dashboard', component: () => import('../views/DashboardView.vue') },
-    { path: '/packing', name: 'packing', component: () => import('../views/PackingListView.vue') },
+    // Packliste/Einkauf/ToDo sind zu einer Tab-Ansicht zusammengefasst (siehe ListenView.vue) - die
+    // alten Routen bleiben als Redirects erhalten, damit Lesezeichen/Push-Payloads/Querverweise auf
+    // sie nicht ins Leere laufen.
+    { path: '/listen', name: 'listen', component: () => import('../views/ListenView.vue') },
+    { path: '/packing', redirect: '/listen?tab=packing' },
+    { path: '/shopping', redirect: '/listen?tab=shopping' },
+    { path: '/todo', redirect: '/listen?tab=todo' },
     { path: '/excursions', name: 'excursions', component: () => import('../views/ExcursionsView.vue') },
     // Kalender/Touren sind auf Desktop weiterhin globale Schubladen (App.vue, über die seitliche
     // Lasche erreichbar) – dieselben Komponenten dienen hier zusätzlich als eigenständige Mobil-
@@ -54,8 +60,6 @@ const router = createRouter({
     { path: '/tours', name: 'tours', component: ExcursionsDrawer, props: { standalone: true } },
     { path: '/travel', name: 'travel', component: () => import('../views/TravelView.vue') },
     { path: '/budget', name: 'budget', component: () => import('../views/BudgetView.vue') },
-    { path: '/shopping', name: 'shopping', component: () => import('../views/ShoppingListView.vue') },
-    { path: '/todo', name: 'todo', component: () => import('../views/TodoView.vue') },
     { path: '/notes', name: 'notes', component: () => import('../views/NotesView.vue') },
     { path: '/diary', name: 'diary', component: () => import('../views/DiaryView.vue') },
     { path: '/profile', name: 'profile', component: () => import('../views/ProfileView.vue') },

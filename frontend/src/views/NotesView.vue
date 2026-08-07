@@ -5,7 +5,9 @@ import type { Note, NoteComment, NoteLike, User } from '../api/types';
 import { useAuthStore } from '../stores/auth';
 import { useTripStore } from '../stores/trip';
 import { useLiveSyncStore } from '../stores/liveSync';
-import { renderRichText } from '../utils/richText';
+import RichTextEditor from '../components/RichTextEditor.vue';
+import RichTextDisplay from '../components/RichTextDisplay.vue';
+import { isEmptyRichText } from '../utils/richText';
 import Modal from '../components/Modal.vue';
 import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
@@ -136,11 +138,12 @@ function formatDate(iso: string) {
 }
 
 async function submit() {
-  if (!form.value.content.trim()) return;
+  if (isEmptyRichText(form.value.content)) return;
   const created = await api.post<Note>('/notes', {
     trip_id: tripId,
     title: form.value.title || undefined,
-    content: form.value.content.trim(),
+    content: form.value.content,
+    content_format: 'html',
   });
   notes.value.unshift(created);
   form.value = emptyForm();
@@ -160,10 +163,11 @@ function startEdit(note: Note) {
 }
 
 async function submitEdit() {
-  if (!editingNote.value || !editForm.value.content.trim()) return;
+  if (!editingNote.value || isEmptyRichText(editForm.value.content)) return;
   const updated = await api.put<Note>(`/notes/${editingNote.value.id}`, {
     title: editForm.value.title || undefined,
-    content: editForm.value.content.trim(),
+    content: editForm.value.content,
+    content_format: 'html',
   });
   const idx = notes.value.findIndex((n) => n.id === updated.id);
   if (idx !== -1) notes.value[idx] = updated;
@@ -208,12 +212,7 @@ async function restore(id: number) {
     <Modal :model-value="showForm" title="Neue Notiz" full-height @update:model-value="(v) => !v && closeForm()">
     <form class="add-form" @submit.prevent="submit">
       <input v-model="form.title" type="text" placeholder="Titel (optional)" />
-      <textarea v-model="form.content" placeholder="Inhalt" rows="8" required></textarea>
-      <p class="syntax-hint">
-        <code>**fett**</code> · <code>_kursiv_</code> · <code>~~durch~~</code> · <code># Titel</code> ·
-        <code>&gt; Zitat</code> · <code>* Punkt</code> / <code>1. Punkt</code> für Listen ·
-        <code>---</code> für Trennlinie · <code>`Code`</code> · Links werden automatisch erkannt
-      </p>
+      <RichTextEditor v-model="form.content" placeholder="Inhalt" />
       <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
       <button type="submit">Hinzufügen</button>
     </form>
@@ -230,7 +229,7 @@ async function restore(id: number) {
               <DeleteButton small @click="remove(note.id)" />
             </div>
           </div>
-          <div class="content richtext" v-html="renderRichText(note.content)"></div>
+          <RichTextDisplay class="content" :content="note.content" :format="note.content_format" />
           <p class="meta">{{ authorLabel(note.created_by) }} · {{ formatDate(note.updated_at ?? note.created_at) }}</p>
           <FileAttachments domain="notes" :entity-id="note.id" :editable="false" />
           <SocialRow
@@ -259,12 +258,7 @@ async function restore(id: number) {
     >
       <form class="add-form" @submit.prevent="submitEdit">
         <input v-model="editForm.title" type="text" placeholder="Titel (optional)" />
-        <textarea v-model="editForm.content" rows="8" required></textarea>
-        <p class="syntax-hint">
-          <code>**fett**</code> · <code>_kursiv_</code> · <code>~~durch~~</code> · <code># Titel</code> ·
-          <code>&gt; Zitat</code> · <code>* Punkt</code> / <code>1. Punkt</code> für Listen ·
-          <code>---</code> für Trennlinie · <code>`Code`</code> · Links werden automatisch erkannt
-        </p>
+        <RichTextEditor v-model="editForm.content" />
         <FileAttachments v-if="editingNote" domain="notes" :entity-id="editingNote.id" />
         <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />
         <button type="submit">Speichern</button>
