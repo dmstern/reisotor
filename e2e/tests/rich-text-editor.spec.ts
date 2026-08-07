@@ -29,6 +29,11 @@ test('creating a note with the WYSIWYG editor renders formatting, and a pre-exis
   await page.getByRole('button', { name: 'Aufzählung' }).click();
   await editor.pressSequentially('Erster Listenpunkt');
   await editor.press('Enter');
+  // Explizit auf den zweiten <li> warten statt direkt weiterzutippen - Enter erzeugt den neuen
+  // Listeneintrag über ProseMirrors Transaktions-/DOM-Update, das nicht synchron zum Playwright
+  // press() zurückkommt; ohne diese Wartezeit landete "Zweiter Listenpunkt" gelegentlich noch im
+  // ersten <li> (beobachtete CI-Flakiness).
+  await expect(editor.locator('li')).toHaveCount(2);
   await editor.pressSequentially('Zweiter Listenpunkt');
 
   await page.getByRole('button', { name: 'Hinzufügen', exact: true }).click();
