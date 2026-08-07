@@ -25,7 +25,7 @@ import { buildAllEntries } from '../utils/calendarEntries';
 import { calendarEventFromEntry, googleCalendarHref, outlookCalendarHref, triggerIcsDownload } from '../utils/calendarExport';
 import { fetchWeatherForecast, weatherCodeMeta, type DailyWeather } from '../utils/weather';
 import { collectWeatherLocations, dayWeatherEntries, type DayWeatherEntry } from '../utils/dayWeather';
-import { endOfWeek, startOfWeek, formatDate as formatDateShared } from '../utils/dateFormat';
+import { endOfWeek, startOfWeek, toLocalDateString, formatDate as formatDateShared } from '../utils/dateFormat';
 
 // Auf Desktop weiterhin eigenständig gemountete Schublade (App.vue, linker Platz). Auf Mobil
 // dagegen dieselbe Komponente als eigenständige Seite (Route /calendar, siehe router/index.ts)
@@ -241,11 +241,11 @@ onMounted(async () => {
     // immer blank zu bleiben (siehe api/client.ts's Offline-Fallback-Konzept).
   }
   loadWeather();
-  selectedDate.value = new Date().toISOString().slice(0, 10);
+  selectedDate.value = toLocalDateString(new Date());
   // Beim ersten Laden direkt zur Woche mit dem heutigen Tag blättern statt bei der (ggf. Monate
   // zurückliegenden) ersten Woche zu starten; liegt heute außerhalb des Kalenderbereichs (z. B.
   // Urlaub komplett in der Vergangenheit/Zukunft ohne nahe ToDo-Fälligkeiten), zum Urlaubsstart.
-  if (!goToDate(new Date().toISOString().slice(0, 10)) && trip.value) {
+  if (!goToDate(toLocalDateString(new Date())) && trip.value) {
     goToDate(trip.value.start_date);
   }
   loading.value = false;
@@ -274,7 +274,7 @@ watch(
 watch(() => weatherProvider.model, loadWeather);
 
 function toIso(d: Date) {
-  return d.toISOString().slice(0, 10);
+  return toLocalDateString(d);
 }
 
 function accommodationsForDate(date: string) {
@@ -492,7 +492,7 @@ function goToDate(dateIso: string): boolean {
 }
 
 function jumpToToday() {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = toLocalDateString(new Date());
   goToDate(today);
   selectDay(today);
 }
@@ -966,6 +966,7 @@ function formatDate(date: string) {
           <input v-model="editForm.mapsLink" type="url" placeholder="Maps-Link (Google/Apple) (optional)" />
         </template>
         <input v-model="editForm.note" type="text" placeholder="Notiz (optional)" />
+        <FileAttachments v-if="editingItem" domain="schedule" :entity-id="editingItem.id" />
         <button type="submit">Speichern</button>
       </form>
     </Modal>
@@ -990,7 +991,7 @@ function formatDate(date: string) {
         <span class="detail-label">Ort</span>📍 {{ viewingItem.location }}
       </p>
       <div v-if="viewingItem?.note" class="detail-row note">{{ viewingItem.note }}</div>
-      <FileAttachments v-if="viewingItem" domain="schedule" :entity-id="viewingItem.id" />
+      <FileAttachments v-if="viewingItem" domain="schedule" :entity-id="viewingItem.id" :editable="false" />
       <div class="detail-actions">
         <MapsAppPicker
           v-if="viewingItem?.lat != null && viewingItem?.lng != null"
