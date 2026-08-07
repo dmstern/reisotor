@@ -1155,3 +1155,12 @@ db.exec(`
     UNIQUE(user_id, trip_id, draft_key)
   );
 `);
+
+// Ob die Packlisten-Kategorie beim Anlegen/Bearbeiten eines Gegenstands Pflichtfeld ist (Standard:
+// ja) - pro Urlaub statt global, da unterschiedliche Trips das unterschiedlich streng handhaben
+// wollen können. NOT NULL DEFAULT 1 statt nullable: additiv unbedenklich (kein Datenverlust, siehe
+// CLAUDE.md "Datenmodell-Änderungen"), und macht "noch nicht konfiguriert" unnötig - alle
+// bestehenden Trips bekommen automatisch die gewünschte neue Standardeinstellung "Pflicht". Gilt nur
+// für neue/bearbeitete Gegenstände, bereits vorhandene Einträge ohne Kategorie werden dadurch nicht
+// rückwirkend zurückgewiesen (siehe routes/packing.ts).
+ensureColumn('trips', 'packing_category_required', 'INTEGER NOT NULL DEFAULT 1');

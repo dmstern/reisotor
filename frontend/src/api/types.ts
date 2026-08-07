@@ -14,6 +14,7 @@ export interface Trip {
   lat: number | null;
   lng: number | null;
   image_url: string | null;
+  packing_category_required: number;
 }
 
 export type ScheduleCategory = 'trip' | 'excursion' | 'todo' | 'travel' | 'other';

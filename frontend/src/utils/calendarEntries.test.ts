@@ -12,6 +12,7 @@ const trip: Trip = {
   lat: null,
   lng: null,
   image_url: null,
+  packing_category_required: 1,
 };
 
 function makeScheduleItem(overrides: Partial<ScheduleItem> = {}): ScheduleItem {

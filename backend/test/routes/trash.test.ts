@@ -37,7 +37,7 @@ describe('trash (soft delete + restore)', () => {
       method: 'POST',
       url: '/api/packing',
       headers: { cookie },
-      payload: { trip_id: tripId, label: 'Regenjacke', quantity: 1 },
+      payload: { trip_id: tripId, category: 'Kleidung', label: 'Regenjacke', quantity: 1 },
     });
     const id = created.json().id;
 

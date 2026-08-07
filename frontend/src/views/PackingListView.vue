@@ -39,6 +39,13 @@ const quickAddQuantities = ref<Record<string, number>>({});
 const editingItem = ref<PackingItem | null>(null);
 const editForm = ref({ label: '', category: '', subcategory: '', quantity: 1, ownerId: 'shared' });
 
+// Pro-Trip-Einstellung (trips.packing_category_required, siehe TripForm.vue): standardmäßig Pflicht,
+// per Trip abschaltbar. Ist eine Kategorie Pflicht, wird "Sonstiges" vorbelegt statt das Feld leer zu
+// lassen - wer wirklich keine Kategorie will, muss das explizit auswählen/ändern, statt es aus
+// Versehen leer zu lassen (siehe CLAUDE.md-Wunsch dazu).
+const categoryRequired = computed(() => tripStore.currentTrip?.packing_category_required !== 0);
+const DEFAULT_CATEGORY = 'Sonstiges';
+
 async function load() {
   try {
     const [itemsRes, usersRes] = await Promise.all([
@@ -98,6 +105,22 @@ const lists = computed<ListGroup[]>(() => {
   const others = perUser.filter((l) => l.ownerId !== auth.user?.id);
   return [...mine, shared, ...others];
 });
+
+// Belegt das Kategorie-Quick-Add-Feld jeder (neu hinzugekommenen) Liste mit "Sonstiges" vor, sobald
+// eine Kategorie Pflicht ist - rein additiv (überschreibt nie einen bereits vom Nutzer getippten
+// Wert), läuft deshalb gefahrlos bei jeder Neuberechnung von `lists` mit.
+watch(
+  lists,
+  (ls) => {
+    if (!categoryRequired.value) return;
+    for (const list of ls) {
+      if (quickAddCategories.value[list.key] === undefined) {
+        quickAddCategories.value[list.key] = DEFAULT_CATEGORY;
+      }
+    }
+  },
+  { immediate: true },
+);
 
 interface SubGroup {
   subcategory: string | null;
@@ -163,7 +186,7 @@ function startEdit(item: PackingItem) {
   editingItem.value = item;
   editForm.value = {
     label: item.label,
-    category: item.category ?? '',
+    category: item.category ?? (categoryRequired.value ? DEFAULT_CATEGORY : ''),
     subcategory: item.subcategory ?? '',
     quantity: item.quantity,
     ownerId: item.owner_id == null ? 'shared' : String(item.owner_id),
@@ -172,6 +195,7 @@ function startEdit(item: PackingItem) {
 
 async function submitEdit() {
   if (!editingItem.value || !editForm.value.label.trim()) return;
+  if (categoryRequired.value && !editForm.value.category.trim()) return;
   const owner_id = editForm.value.ownerId === 'shared' ? null : Number(editForm.value.ownerId);
   const updated = await api.put<PackingItem>(`/packing/${editingItem.value.id}`, {
     label: editForm.value.label.trim(),
@@ -204,6 +228,7 @@ async function restore(id: number) {
 async function quickAdd(list: ListGroup, label: string) {
   if (!label.trim()) return;
   const category = (quickAddCategories.value[list.key] ?? '').trim();
+  if (categoryRequired.value && !category) return;
   const subcategory = (quickAddSubcategories.value[list.key] ?? '').trim();
   const quantity = Math.max(1, Math.round(quickAddQuantities.value[list.key] || 1));
   const created = await api.post<PackingItem>('/packing', {
@@ -239,7 +264,11 @@ async function quickAdd(list: ListGroup, label: string) {
         >
           <template #extra>
             <div class="pack-quick-extra">
-              <Combobox v-model="quickAddCategories[list.key]" :options="categories" placeholder="Kategorie (optional)" />
+              <Combobox
+                v-model="quickAddCategories[list.key]"
+                :options="categories"
+                :placeholder="categoryRequired ? 'Kategorie' : 'Kategorie (optional)'"
+              />
               <Combobox v-model="quickAddSubcategories[list.key]" :options="subcategories" placeholder="Unterkategorie (optional)" />
               <label class="qty-field quick-add-qty">
                 <input v-model.number="quickAddQuantities[list.key]" type="number" min="1" step="1" placeholder="1" />
