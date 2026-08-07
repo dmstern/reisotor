@@ -20,13 +20,14 @@
     "bcrypt": "^5.1.1",
     "better-sqlite3": "^11.3.0",
     "fastify": "^4.28.1",
-    "isomorphic-dompurify": "^3.22.0",
+    "sanitize-html": "^2.17.6",
     "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
     "@types/better-sqlite3": "^7.6.11",
     "@types/node": "^22.7.5",
+    "@types/sanitize-html": "^2.16.1",
     "@types/web-push": "^3.6.4",
     "tsx": "^4.19.1",
     "typescript": "^5.6.3",
