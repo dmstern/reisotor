@@ -3,14 +3,17 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import { useNavPositionStore } from '../stores/navPosition';
-import { useLiveSyncStore, type LiveDomain } from '../stores/liveSync';
+import { useNavConfigStore } from '../stores/navConfig';
+import { useLiveSyncStore } from '../stores/liveSync';
 import { useIsDesktop } from '../composables/useIsDesktop';
 import { useTourSettingsStore } from '../stores/tourSettings';
 import { SECTION_ICONS } from '../utils/sectionIcons';
+import { NAV_LINKS, type NavLinkDef } from '../utils/navLinks';
 
 const auth = useAuthStore();
 const router = useRouter();
 const navPosition = useNavPositionStore();
+const navConfig = useNavConfigStore();
 const liveSync = useLiveSyncStore();
 const isDesktop = useIsDesktop();
 const tourSettings = useTourSettingsStore();
@@ -50,21 +53,21 @@ onUnmounted(() => {
 
 watch(isTop, updateOffset);
 
-// Packliste/Einkauf/ToDo teilen sich seit dem "Listen"-Merge (ListenView.vue) einen einzigen
-// Nav-Eintrag statt dreier separater - domains (Mehrzahl) statt domain, damit der Ungelesen-Punkt
-// weiterhin aufleuchtet, sobald irgendeine der drei zusammengelegten Domänen ungesehene Aktivität
-// hat (siehe hasUnseenAny() unten), nicht nur eine einzelne.
-const links: { to: string; label: string; icon: string; domain?: LiveDomain; domains?: LiveDomain[] }[] = [
-  { to: '/', label: 'Übersicht', icon: SECTION_ICONS.dashboard },
-  { to: '/listen', label: 'Listen', icon: SECTION_ICONS.todo, domains: ['packing', 'shopping', 'todos'] },
-  { to: '/excursions', label: 'Karte', icon: SECTION_ICONS.map, domain: 'spots' },
-  { to: '/travel', label: 'Reise', icon: SECTION_ICONS.travel, domain: 'travel' },
-  { to: '/budget', label: 'Budget', icon: SECTION_ICONS.budget, domain: 'budget' },
-  { to: '/diary', label: 'Tagebuch', icon: SECTION_ICONS.diary, domain: 'diary' },
-  { to: '/notes', label: 'Notizen', icon: SECTION_ICONS.notes, domain: 'notes' },
-];
+// "Übersicht" (Dashboard) bleibt fix, nicht Teil der konfigurierbaren Liste (siehe navLinks.ts) -
+// zentraler Einstiegspunkt der App, soll nicht ausblendbar/verschiebbar sein.
+const DASHBOARD_LINK: NavLinkDef = { key: 'dashboard', to: '/', label: 'Übersicht', icon: SECTION_ICONS.dashboard };
 
-function hasUnseenAny(link: (typeof links)[number]): boolean {
+// Sichtbare Einträge in der vom Nutzer konfigurierten Reihenfolge (siehe stores/navConfig.ts,
+// ProfileView.vue) - ausgeblendete Einträge werden hier bereits rausgefiltert, nicht erst im
+// Template, damit z. B. der "Touren neben Karte"-Sondereinschub unten unverändert funktioniert.
+const visibleLinks = computed<NavLinkDef[]>(() =>
+  navConfig.entries
+    .filter((e) => e.visible)
+    .map((e) => NAV_LINKS.find((l) => l.key === e.key))
+    .filter((l): l is NavLinkDef => !!l),
+);
+
+function hasUnseenAny(link: NavLinkDef): boolean {
   if (link.domain) return liveSync.hasUnseen(link.domain);
   if (link.domains) return link.domains.some((d) => liveSync.hasUnseen(d));
   return false;
@@ -88,9 +91,9 @@ function onLinkClick(event: MouseEvent) {
       <!-- Übersicht (Dashboard) ganz links, noch vor dem mobilen Kalender-Link: der zentrale
            Einstiegspunkt der App soll auf mobile immer der allererste (am wenigsten wegscrollte)
            Nav-Punkt sein. -->
-      <router-link :to="links[0].to" class="link" @click="onLinkClick">
-        <span class="icon">{{ links[0].icon }}</span>
-        <span class="label">{{ links[0].label }}</span>
+      <router-link :to="DASHBOARD_LINK.to" class="link" @click="onLinkClick">
+        <span class="icon">{{ DASHBOARD_LINK.icon }}</span>
+        <span class="label">{{ DASHBOARD_LINK.label }}</span>
       </router-link>
       <!-- Kalender/Touren sind auf Desktop weiterhin globale Schubladen (App.vue, über die seitlich
            schwebende Lasche erreichbar). Dieselben ausklapp-Schubladen lassen sich auf Mobil aber
@@ -107,7 +110,7 @@ function onLinkClick(event: MouseEvent) {
         </span>
         <span class="label">Kalender</span>
       </router-link>
-      <template v-for="link in links.slice(1)" :key="link.to">
+      <template v-for="link in visibleLinks" :key="link.to">
         <router-link :to="link.to" class="link" @click="onLinkClick">
           <span class="icon-wrap">
             <span class="icon">{{ link.icon }}</span>
