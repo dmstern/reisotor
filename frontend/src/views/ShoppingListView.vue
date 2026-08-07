@@ -14,6 +14,7 @@ import ViewLoadingState from '../components/ViewLoadingState.vue';
 import DraftStatusBar from '../components/DraftStatusBar.vue';
 import { useUndoableDelete } from '../composables/useUndoableDelete';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
+import { sortWithDoneLast } from '../composables/useCheckedSort';
 
 const tripStore = useTripStore();
 const liveSync = useLiveSyncStore();
@@ -92,6 +93,10 @@ watch(() => liveSync.domainVersion.shopping, load);
 
 const UNASSIGNED_SHOP = 'Ohne Shop';
 
+function isChecked(item: ShoppingItem) {
+  return !!item.checked;
+}
+
 interface Group {
   key: string;
   label: string;
@@ -108,13 +113,13 @@ const groupedItems = computed<Group[]>(() => {
     }
     return [...groups.entries()]
       .sort(([a], [b]) => (a === UNASSIGNED_SHOP ? 1 : b === UNASSIGNED_SHOP ? -1 : a.localeCompare(b, 'de')))
-      .map(([shop, shopItems]) => ({ key: shop, label: `🏬 ${shop}`, items: shopItems }));
+      .map(([shop, shopItems]) => ({ key: shop, label: `🏬 ${shop}`, items: sortWithDoneLast(shopItems, isChecked) }));
   }
   if (groupBy.value === 'period') {
     const groups: Group[] = [
-      { key: 'before', label: PERIOD_META.before, items: items.value.filter((i) => i.period === 'before') },
-      { key: 'during', label: PERIOD_META.during, items: items.value.filter((i) => i.period === 'during') },
-      { key: 'none', label: 'Ohne Zeitraum', items: items.value.filter((i) => !i.period) },
+      { key: 'before', label: PERIOD_META.before, items: sortWithDoneLast(items.value.filter((i) => i.period === 'before'), isChecked) },
+      { key: 'during', label: PERIOD_META.during, items: sortWithDoneLast(items.value.filter((i) => i.period === 'during'), isChecked) },
+      { key: 'none', label: 'Ohne Zeitraum', items: sortWithDoneLast(items.value.filter((i) => !i.period), isChecked) },
     ];
     return groups;
   }
@@ -122,12 +127,12 @@ const groupedItems = computed<Group[]>(() => {
   const perUser: Group[] = users.value.map((u) => ({
     key: `user-${u.id}`,
     label: `${u.avatar} ${u.username}`,
-    items: items.value.filter((i) => i.assigned_to_user_id === u.id),
+    items: sortWithDoneLast(items.value.filter((i) => i.assigned_to_user_id === u.id), isChecked),
   }));
   const unassigned: Group = {
     key: 'unassigned',
     label: 'Nicht zugewiesen',
-    items: items.value.filter((i) => i.assigned_to_user_id == null),
+    items: sortWithDoneLast(items.value.filter((i) => i.assigned_to_user_id == null), isChecked),
   };
   return [...perUser, unassigned];
 });

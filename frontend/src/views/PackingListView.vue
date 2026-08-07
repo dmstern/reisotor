@@ -12,6 +12,8 @@ import QuickAddRow from '../components/QuickAddRow.vue';
 import UndoDeleteRow from '../components/UndoDeleteRow.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import { useUndoableDelete } from '../composables/useUndoableDelete';
+import { sortWithDoneLast } from '../composables/useCheckedSort';
+import { isFullyPacked } from '../utils/packing';
 
 const auth = useAuthStore();
 const tripStore = useTripStore();
@@ -127,7 +129,10 @@ function groupByCategory(listItems: PackingItem[]): CategoryGroup[] {
       }
       const subgroups = [...subMap.entries()]
         .sort(([a], [b]) => a.localeCompare(b, 'de'))
-        .map(([subcategory, subItems]) => ({ subcategory: subcategory || null, items: subItems }));
+        .map(([subcategory, subItems]) => ({
+          subcategory: subcategory || null,
+          items: sortWithDoneLast(subItems, isFullyPacked),
+        }));
       return { category, subgroups };
     });
 }

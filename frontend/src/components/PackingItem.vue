@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { PackingItem } from '../api/types';
+import { isFullyPacked as isFullyPackedItem } from '../utils/packing';
 import DeleteButton from './DeleteButton.vue';
 import EditButton from './EditButton.vue';
 
@@ -11,7 +12,7 @@ const emit = defineEmits<{
   (e: 'edit', item: PackingItem): void;
 }>();
 
-const isFullyPacked = computed(() => props.item.packed_count >= props.item.quantity);
+const isFullyPacked = computed(() => isFullyPackedItem(props.item));
 
 // Sind bei Anzahl > 1 bereits alle Exemplare rausgelegt (aber noch nicht eingepackt), zeigt der
 // Hochzähl-Button statt des Plus-Icons denselben Punkt wie bei Anzahl 1 kurz vor dem Einpacken –
