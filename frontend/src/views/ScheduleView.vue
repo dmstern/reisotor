@@ -703,7 +703,7 @@ function openEntry(entry: CalendarEntry) {
   // nehmen die id über hashHighlightId() zusätzlich in ihre bereits bestehende highlightedIds-Menge
   // auf, der Router scrollt automatisch zum Element mit dieser id (siehe router/index.ts's
   // scrollBehavior).
-  else if (entry.kind === 'todo') router.push(`/todo#todo-${entry.todoId}`);
+  else if (entry.kind === 'todo') router.push(`/listen?tab=todo#todo-${entry.todoId}`);
   else if (entry.kind === 'travel') router.push(`/travel#travel-${entry.travelId}`);
   else if (entry.kind === 'schedule') viewingItem.value = entry.scheduleItem;
 }

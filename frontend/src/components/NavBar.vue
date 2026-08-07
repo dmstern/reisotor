@@ -50,17 +50,25 @@ onUnmounted(() => {
 
 watch(isTop, updateOffset);
 
-const links: { to: string; label: string; icon: string; domain?: LiveDomain }[] = [
+// Packliste/Einkauf/ToDo teilen sich seit dem "Listen"-Merge (ListenView.vue) einen einzigen
+// Nav-Eintrag statt dreier separater - domains (Mehrzahl) statt domain, damit der Ungelesen-Punkt
+// weiterhin aufleuchtet, sobald irgendeine der drei zusammengelegten Domänen ungesehene Aktivität
+// hat (siehe hasUnseenAny() unten), nicht nur eine einzelne.
+const links: { to: string; label: string; icon: string; domain?: LiveDomain; domains?: LiveDomain[] }[] = [
   { to: '/', label: 'Übersicht', icon: SECTION_ICONS.dashboard },
-  { to: '/packing', label: 'Packliste', icon: SECTION_ICONS.packing, domain: 'packing' },
-  { to: '/shopping', label: 'Einkauf', icon: SECTION_ICONS.shopping, domain: 'shopping' },
-  { to: '/todo', label: 'ToDo', icon: SECTION_ICONS.todo, domain: 'todos' },
+  { to: '/listen', label: 'Listen', icon: SECTION_ICONS.todo, domains: ['packing', 'shopping', 'todos'] },
   { to: '/excursions', label: 'Karte', icon: SECTION_ICONS.map, domain: 'spots' },
   { to: '/travel', label: 'Reise', icon: SECTION_ICONS.travel, domain: 'travel' },
   { to: '/budget', label: 'Budget', icon: SECTION_ICONS.budget, domain: 'budget' },
   { to: '/diary', label: 'Tagebuch', icon: SECTION_ICONS.diary, domain: 'diary' },
   { to: '/notes', label: 'Notizen', icon: SECTION_ICONS.notes, domain: 'notes' },
 ];
+
+function hasUnseenAny(link: (typeof links)[number]): boolean {
+  if (link.domain) return liveSync.hasUnseen(link.domain);
+  if (link.domains) return link.domains.some((d) => liveSync.hasUnseen(d));
+  return false;
+}
 
 async function onLogout() {
   await auth.logout();
@@ -103,7 +111,7 @@ function onLinkClick(event: MouseEvent) {
         <router-link :to="link.to" class="link" @click="onLinkClick">
           <span class="icon-wrap">
             <span class="icon">{{ link.icon }}</span>
-            <span v-if="link.domain && liveSync.hasUnseen(link.domain)" class="unseen-dot" aria-label="Neue Änderungen" />
+            <span v-if="hasUnseenAny(link)" class="unseen-dot" aria-label="Neue Änderungen" />
           </span>
           <span class="label">{{ link.label }}</span>
         </router-link>

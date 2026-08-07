@@ -6,7 +6,7 @@ import { test, expect } from '@playwright/test';
 // was wie ein Einfrieren der App wirkte.
 test.describe('Zentrale Lade-Animation', () => {
   test('View-Wechsel zeigt einen Lade-Platzhalter statt einer leeren Seite', async ({ page }) => {
-    await page.goto('/todo');
+    await page.goto('/listen?tab=todo');
     await expect(page.locator('.todo-page')).toBeVisible();
 
     // Alle API-Antworten künstlich verzögern, um den Ladezustand sichtbar zu machen.
@@ -15,7 +15,10 @@ test.describe('Zentrale Lade-Animation', () => {
       await route.continue();
     });
 
-    await page.getByRole('link', { name: 'Packliste' }).click();
+    // Packliste/ToDo sind seit dem "Listen"-Merge Tabs derselben Route statt eigener Nav-Links
+    // (siehe ListenView.vue) - ein Tab-Klick mountet die Ziel-Komponente aber weiterhin frisch
+    // (v-if), triggert also denselben Ladezustand wie vorher ein echter Routenwechsel.
+    await page.getByRole('tab', { name: 'Packliste' }).click();
     await expect(page.locator('.view-loading')).toBeVisible();
     await expect(page.locator('.view-loading .text')).toHaveText('Lädt…');
 

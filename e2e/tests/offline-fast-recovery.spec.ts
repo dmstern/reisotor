@@ -10,31 +10,33 @@ test.describe('Offline-Erkennung merkt sich einen Fehlschlag statt jedes Mal neu
   test('zweite View lädt nach einem ersten Fehlschlag sofort aus dem Cache statt erneut den Timeout abzuwarten', async ({
     page,
   }) => {
-    await page.goto('/todo');
+    await page.goto('/listen?tab=todo');
     await expect(page.locator('.todo-page')).toBeVisible();
     // Zweite View schon einmal online besuchen, damit ihr Cache-Eintrag existiert - der eigentliche
     // Test soll nur die Geschwindigkeit des ZWEITEN (bereits als offline bekannten) Requests prüfen,
-    // nicht einen echten Cache-Miss. Per Nav-Klick statt page.goto(), siehe Kommentar unten.
-    await page.getByRole('link', { name: 'Packliste' }).click();
+    // nicht einen echten Cache-Miss. Per Tab-Klick statt page.goto(), siehe Kommentar unten.
+    await page.getByRole('tab', { name: 'Packliste' }).click();
     await expect(page.locator('.packing-page')).toBeVisible();
 
     // Alle API-Requests hängen ab jetzt für immer (nie fulfill/abort) - simuliert das gemeldete
     // Szenario "Netz da, Server antwortet aber nie" statt eines sauberen, sofortigen Fehlschlags.
     await page.route('**/api/**', () => {});
 
-    // WICHTIG: ab hier per Klick auf den Nav-Link statt page.goto() - Letzteres löst einen echten
+    // WICHTIG: ab hier per Klick auf den Tab statt page.goto() - Letzteres löst einen echten
     // Browser-Neuladevorgang aus (neuer JS-Kontext), was auch isConfirmedOffline() (api/offline.ts) -
     // ein bewusst simples, nicht in localStorage persistiertes Modul-Flag - auf seinen Ausgangswert
     // zurücksetzen würde. Im echten Nutzungsfall navigiert man innerhalb der SPA (vue-router,
     // clientseitig, kein Neuladen) - genau das bildet ein Klick hier ab, ein erneutes page.goto()
-    // würde ein Szenario testen, das so in der App gar nicht vorkommt.
-    await page.getByRole('link', { name: 'ToDo' }).click();
+    // würde ein Szenario testen, das so in der App gar nicht vorkommt. Packliste/ToDo sind seit dem
+    // "Listen"-Merge Tabs derselben Route statt eigener Nav-Links (siehe ListenView.vue), ein
+    // Tab-Klick ist ebenso rein clientseitig wie vorher der Nav-Link-Klick.
+    await page.getByRole('tab', { name: 'ToDo' }).click();
     const todoStart = Date.now();
     await expect(page.locator('.todo-page')).toBeVisible({ timeout: 12_000 });
     expect(Date.now() - todoStart).toBeGreaterThan(6_000); // erster Fehlschlag wartet noch den vollen Timeout ab
 
     const packingStart = Date.now();
-    await page.getByRole('link', { name: 'Packliste' }).click();
+    await page.getByRole('tab', { name: 'Packliste' }).click();
     await expect(page.locator('.packing-page')).toBeVisible({ timeout: 3_000 });
     // Der zweite Request (anderer Endpunkt, aber derselbe bereits als offline bekannte Zustand) darf
     // nicht erneut den Timeout abwarten müssen.

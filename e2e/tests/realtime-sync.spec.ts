@@ -29,8 +29,11 @@ test('another member creating a todo lights up the ToDo nav badge, which clears 
   await login(pageA, E2E_USERNAME, E2E_PASSWORD);
   await login(pageB, E2E_USERNAME_2, E2E_PASSWORD_2);
 
-  const todoNavLink = pageA.locator('a.link', { hasText: 'ToDo' });
-  await expect(todoNavLink.locator('.unseen-dot')).toHaveCount(0);
+  // ToDo hat seit dem "Listen"-Merge keinen eigenen Nav-Link mehr (siehe ListenView.vue/NavBar.vue)
+  // - der Ungelesen-Punkt lebt jetzt am gemeinsamen "Listen"-Eintrag, leuchtet aber weiterhin für
+  // ToDo-Aktivität (hasUnseenAny() prüft alle drei zusammengelegten Domains).
+  const listenNavLink = pageA.locator('a.link', { hasText: 'Listen' });
+  await expect(listenNavLink.locator('.unseen-dot')).toHaveCount(0);
 
   // pageA never visits /todo itself - it should still learn about the change via SSE.
   await pageB.goto('/todo');
@@ -38,14 +41,23 @@ test('another member creating a todo lights up the ToDo nav badge, which clears 
   await pageB.locator('.add-form button[type="submit"]').click();
   await expect(pageB.locator('li.row', { hasText: 'E2E Realtime-Sync-Test-Todo' })).toBeVisible();
 
-  await expect(todoNavLink.locator('.unseen-dot')).toBeVisible();
+  await expect(listenNavLink.locator('.unseen-dot')).toBeVisible();
 
-  // Visiting the ToDo view clears the badge and shows the new item highlighted as "neu".
-  await pageA.goto('/todo');
+  // Visiting the ToDo tab clears ITS unseen state and shows the new item highlighted as "neu" - but
+  // the merged "Listen" badge (packing+shopping+todos, siehe NavBar.vue's hasUnseenAny()) only fully
+  // clears once all three represented domains have been visited, so also visit the other two tabs
+  // (realistic flow: opening the Listen view and browsing its tabs).
+  await pageA.goto('/listen?tab=todo');
   const newRow = pageA.locator('li.row', { hasText: 'E2E Realtime-Sync-Test-Todo' });
   await expect(newRow).toBeVisible();
   await expect(newRow).toHaveClass(/new-highlight/);
-  await expect(todoNavLink.locator('.unseen-dot')).toHaveCount(0);
+
+  await pageA.getByRole('tab', { name: 'Packliste' }).click();
+  await expect(pageA.locator('.packing-page')).toBeVisible();
+  await pageA.getByRole('tab', { name: 'Einkauf' }).click();
+  await expect(pageA.locator('.shopping-page')).toBeVisible();
+
+  await expect(listenNavLink.locator('.unseen-dot')).toHaveCount(0);
 
   await ctxA.close();
   await ctxB.close();
