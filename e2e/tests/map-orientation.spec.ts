@@ -36,7 +36,7 @@ test.describe('Karten-Rotation (Norden/Fahrtrichtung-Umschalter)', () => {
     const idleTransform = await page.locator('.leaflet-rotate-pane').evaluate((el) => getComputedStyle(el).transform);
     expect(Math.abs(rotationAngleFromMatrix(idleTransform))).toBeLessThan(1);
 
-    // Umschalten auf "Fahrtrichtung" (⬆️) - ab jetzt dreht sich die Karte mit dem Heading mit.
+    // Umschalten auf "Fahrtrichtung" (🔭) - ab jetzt dreht sich die Karte mit dem Heading mit.
     await orientationBtn.click();
     await expect(orientationBtn).toHaveClass(/active/);
 

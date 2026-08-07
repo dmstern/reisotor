@@ -1194,7 +1194,7 @@ watch(() => liveSync.memberPositions, () => renderPositions(), { deep: true });
         "
         @click="toggleMapOrientation"
       >
-        {{ mapOrientation.mode === 'north' ? '🧭' : '⬆️' }}
+        {{ mapOrientation.mode === 'north' ? '🧭' : '🔭' }}
       </button>
       <button
         type="button"
