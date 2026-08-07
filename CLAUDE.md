@@ -192,6 +192,12 @@ an der ursprünglich angefragten Stelle schauen):
 
 Für Datenmodell-Änderungen im Speziellen gilt zusätzlich der Migrations-Check im nächsten Abschnitt.
 
+**Design-Prinzipien**: Bei neuen UI-Elementen oder sichtbaren UI-Anpassungen zusätzlich `DESIGN.md`
+(Projekt-Root) konsultieren — hält Farben/Abstände/Eckenrundung (Squircle-Prinzip)/Typografie/
+Breakpoints/Icon-Konventionen als wiederverwendbare Prinzipien fest, damit neue Elemente bestehende
+Tokens/Muster nutzen statt neue Werte ad hoc zu erfinden. Entsteht dabei ein neues, wiederverwendbares
+Prinzip, dort ergänzen statt es nur implizit im CSS/einer Komponente stehen zu lassen.
+
 ## Typecheck
 
 Nach jeder Frontend-Änderung zuerst den günstigsten Check laufen lassen:
