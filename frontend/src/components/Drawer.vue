@@ -9,6 +9,11 @@ const props = defineProps<{
   icon: string;
   width: number;
   hasUnseen?: boolean;
+  /** Blendet nur die Lasche aus (den Klick-Einstieg), NICHT die Schublade selbst - die bleibt
+   *  weiterhin über `open`/den Store programmatisch erreichbar (z. B. drawers.openExcursions() aus
+   *  einer Detail-Bearbeiten- oder Querverweis-Aktion heraus, siehe App.vue's Touren-Schublade im
+   *  einfachen Touren-Modus). Verhindert nur das beiläufige Entdecken/Öffnen über die Lasche selbst. */
+  hideTab?: boolean;
 }>();
 const emit = defineEmits<{ (e: 'update:open', value: boolean): void; (e: 'update:width', value: number): void }>();
 
@@ -158,6 +163,7 @@ function onResizeEnd() {
       @pointerdown="onResizeStart"
     ></div>
     <button
+      v-if="!hideTab"
       type="button"
       class="drawer-tab"
       :aria-expanded="open"
