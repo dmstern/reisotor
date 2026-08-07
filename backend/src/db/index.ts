@@ -372,6 +372,15 @@ if (!hadTripMembersTable) {
   }
 }
 
+// Standort-Freigabe pro Mitgliedschaft: wählbare Dauer ("dauerhaft"/"1 Woche"/"1 Tag"), siehe
+// routes/realtime.ts's location-share-Endpunkte. NULL = keine Freigabe (Default, entspricht dem
+// bisherigen Verhalten: Broadcast nur solange TripMap.vue selbst gemountet ist). Ein Zeitstempel in
+// der Zukunft aktiviert app-weites Teilen (auch außerhalb der Kartenansicht) bis zu diesem
+// Zeitpunkt; "dauerhaft" wird als sehr weit in der Zukunft liegender Zeitstempel abgelegt statt
+// eines eigenen Sonderwerts, damit ein einzelner Ablauf-Check (`location_share_until > now`)
+// überall reicht.
+ensureColumn('trip_members', 'location_share_until', 'TEXT');
+
 ensureColumn('users', 'avatar', "TEXT DEFAULT '🙂'");
 ensureColumn('ideas', 'lat', 'REAL');
 ensureColumn('ideas', 'lng', 'REAL');

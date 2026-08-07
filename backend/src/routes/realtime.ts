@@ -72,6 +72,46 @@ export const realtimeRoutes: FastifyPluginAsync = async (app) => {
     return reply.code(204).send();
   });
 
+  // Standort-Freigabe unabhängig von der Kartenansicht (Nutzer-Feedback: bisher sah man andere
+  // Mitglieder nur, solange diese selbst gerade die Karte offen hatten). "dauerhaft" wird als
+  // Ablaufzeitpunkt weit in der Zukunft abgelegt statt eines eigenen Sonderwerts (siehe
+  // db/index.ts's Kommentar zu location_share_until) - ein einzelner ">"-Vergleich reicht so
+  // überall, auch clientseitig. Echtes Hintergrund-Tracking bei vollständig geschlossener PWA ist
+  // mit Standard-Web-Technologie nicht erreichbar (kein Geolocation-Zugriff aus einem Service
+  // Worker/nach Schließen der App, insbesondere iOS Safari/PWA) - diese Freigabe sorgt stattdessen
+  // dafür, dass das Teilen unabhängig von der aktuell offenen Ansicht läuft und Neustarts der App
+  // übersteht, solange sie irgendwo geöffnet ist (siehe stores/locationSharing.ts).
+  const SHARE_DURATION_MS: Record<'day' | 'week' | 'forever', number> = {
+    day: 24 * 60 * 60 * 1000,
+    week: 7 * 24 * 60 * 60 * 1000,
+    forever: 50 * 365 * 24 * 60 * 60 * 1000,
+  };
+
+  app.put<{ Body: { trip_id?: number; duration?: string } }>('/realtime/location-share', async (req, reply) => {
+    const { trip_id, duration } = req.body ?? {};
+    if (!requireTripMember(reply, trip_id, req.session.userId)) return;
+    if (duration !== 'off' && !(duration! in SHARE_DURATION_MS)) {
+      return reply.code(400).send({ error: 'Ungültige duration' });
+    }
+    const shareUntil =
+      duration === 'off' ? null : new Date(Date.now() + SHARE_DURATION_MS[duration as 'day' | 'week' | 'forever']).toISOString();
+    db.prepare('UPDATE trip_members SET location_share_until = ? WHERE trip_id = ? AND user_id = ?').run(
+      shareUntil,
+      trip_id,
+      req.session.userId,
+    );
+    if (shareUntil == null) clearPosition(Number(trip_id), req.session.userId!);
+    return reply.send({ location_share_until: shareUntil });
+  });
+
+  app.get<{ Querystring: { trip_id?: string } }>('/realtime/location-share', async (req, reply) => {
+    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
+    const row = db
+      .prepare('SELECT location_share_until FROM trip_members WHERE trip_id = ? AND user_id = ?')
+      .get(req.query.trip_id, req.session.userId) as { location_share_until: string | null } | undefined;
+    return { location_share_until: row?.location_share_until ?? null };
+  });
+
   // Nachhol-Protokoll für Clients, die beim Ändern nicht (mehr) verbunden waren (frischer
   // Seitenaufruf, Tab war geschlossen, Verbindung kurz weg) – liefert alles seit `since` nach, damit
   // Nav-Badges/Highlights auch ohne durchgehende SSE-Verbindung korrekt sind.

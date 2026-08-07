@@ -5,6 +5,7 @@ import { useAuthStore } from './stores/auth';
 import { useTripStore, type TripFormData } from './stores/trip';
 import { useDrawersStore } from './stores/drawers';
 import { useLiveSyncStore } from './stores/liveSync';
+import { useLocationSharingStore } from './stores/locationSharing';
 import { useTourSettingsStore } from './stores/tourSettings';
 import { useIsDesktop } from './composables/useIsDesktop';
 import { SECTION_ICONS } from './utils/sectionIcons';
@@ -26,6 +27,10 @@ const isDesktop = useIsDesktop();
 // siehe liveSync.ts's watch(currentTripId, ..., { immediate: true }). Wird hier außerdem für die
 // Nav-Punkte der beiden Schubladen-Laschen (Kalender/Touren) unten gebraucht.
 const liveSync = useLiveSyncStore();
+// Standort-Freigabe soll unabhängig von der Kartenansicht laufen (siehe stores/locationSharing.ts)
+// - hier instanziiert, damit ihr watch(currentTripId) unabhängig davon greift, welche Unteransicht
+// gerade aktiv ist, exakt wie liveSync oben.
+useLocationSharingStore();
 const tourSettings = useTourSettingsStore();
 const showNav = computed(() => route.name !== 'login');
 
@@ -183,3 +188,5 @@ async function onCreateFirstTrip(data: TripFormData) {
   }
 }
 </style>
+
+<!-- e2e-update-test -->

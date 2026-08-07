@@ -26,11 +26,12 @@ import { useSpotsStore } from '../stores/spots';
 import { useAuthStore } from '../stores/auth';
 import { useLiveSyncStore } from '../stores/liveSync';
 import { useMapOrientationStore } from '../stores/mapOrientation';
+import { useLocationSharingStore, type ShareDuration } from '../stores/locationSharing';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { buildTravelDerivedLocations } from '../utils/travelDerivedLocations';
 import { arcRoute, cachedEmojiPin, compassPin } from '../utils/mapRoute';
 import { downloadTiles, estimateTileDownload, formatApproxSize } from '../utils/offlineMapTiles';
-import { formatDate as formatDateShared } from '../utils/dateFormat';
+import { formatDate as formatDateShared, toLocalDateString } from '../utils/dateFormat';
 import { excursionStationKeys, resolveStations, type ExcursionStation } from '../utils/excursionStations';
 import { useIsDesktop } from '../composables/useIsDesktop';
 import SpotDetailDialog from './SpotDetailDialog.vue';
@@ -119,6 +120,7 @@ const spotsStore = useSpotsStore();
 const auth = useAuthStore();
 const liveSync = useLiveSyncStore();
 const mapOrientation = useMapOrientationStore();
+const locationSharing = useLocationSharingStore();
 const travelItems = ref<TravelItem[]>([]);
 const scheduleItems = ref<ScheduleItem[]>([]);
 
@@ -200,6 +202,38 @@ function toggleMapOrientation() {
   } else if (ownHeading.value != null) {
     map.setBearing(ownHeading.value);
   }
+}
+
+// Standort-Freigabe (stores/locationSharing.ts): läuft app-weit, unabhängig davon, ob diese
+// Kartenansicht gerade gemountet ist - hier nur die Dauer-Auswahl-UI, gleiches Teleport-Menü-Muster
+// wie MapsAppPicker.vue.
+const shareMenuOpen = ref(false);
+const shareButtonRef = ref<HTMLButtonElement | null>(null);
+const shareMenuStyle = ref({ top: '0px', left: '0px' });
+
+const shareDurationLabel = computed(() => {
+  if (!locationSharing.shareUntil) return 'Standort teilen';
+  const until = new Date(locationSharing.shareUntil);
+  const daysLeft = (until.getTime() - Date.now()) / (24 * 60 * 60 * 1000);
+  if (daysLeft > 365) return 'Standort wird dauerhaft geteilt';
+  return `Standort geteilt bis ${until.toLocaleDateString('de-DE')}`;
+});
+
+async function toggleShareMenu() {
+  shareMenuOpen.value = !shareMenuOpen.value;
+  if (!shareMenuOpen.value) return;
+  await nextTick();
+  const rect = shareButtonRef.value?.getBoundingClientRect();
+  if (!rect) return;
+  shareMenuStyle.value = {
+    top: `${rect.bottom + 6}px`,
+    left: `${Math.max(8, Math.min(rect.left, window.innerWidth - 216))}px`,
+  };
+}
+
+async function chooseShareDuration(duration: ShareDuration) {
+  shareMenuOpen.value = false;
+  await locationSharing.setDuration(duration);
 }
 
 // Einmal gestartet, läuft der Kompass unabhängig von weiteren Klicks weiter (kein erneutes
@@ -342,7 +376,7 @@ const vacationDays = computed<string[]>(() => {
   const cursor = new Date(trip.start_date);
   const end = new Date(trip.end_date);
   while (cursor <= end) {
-    days.push(cursor.toISOString().slice(0, 10));
+    days.push(toLocalDateString(cursor));
     cursor.setDate(cursor.getDate() + 1);
   }
   return days;
@@ -993,7 +1027,10 @@ onUnmounted(() => {
   resizeObserver = null;
   if (geoWatchId != null) navigator.geolocation.clearWatch(geoWatchId);
   stopCompass();
-  liveSync.stopSharingPosition();
+  // Nicht abbrechen, falls eine app-weite Standort-Freigabe (stores/locationSharing.ts) aktiv ist -
+  // die läuft bewusst unabhängig von dieser Ansicht weiter (siehe dortiger Kommentar), ein Verlassen
+  // der Kartenansicht darf eine "dauerhaft"/"für eine Woche" gewählte Freigabe nicht beenden.
+  if (!locationSharing.shareUntil) liveSync.stopSharingPosition();
   map?.remove();
   map = null;
 });
@@ -1169,6 +1206,32 @@ watch(() => liveSync.memberPositions, () => renderPositions(), { deep: true });
       >
         ⬇️
       </button>
+      <!-- Standort-Freigabe (stores/locationSharing.ts): läuft unabhängig davon, ob diese
+           Kartenansicht offen ist - Klick öffnet nur die Dauer-Auswahl. -->
+      <button
+        ref="shareButtonRef"
+        type="button"
+        class="fit-btn share-location-btn"
+        :class="{ active: !!locationSharing.shareUntil }"
+        :title="shareDurationLabel"
+        :aria-label="shareDurationLabel"
+        @click="toggleShareMenu"
+      >
+        📡
+      </button>
+      <Teleport to="body">
+        <template v-if="shareMenuOpen">
+          <div class="picker-backdrop" @click="shareMenuOpen = false"></div>
+          <div class="picker-menu" :style="shareMenuStyle">
+            <button type="button" :class="{ active: !locationSharing.shareUntil }" @click="chooseShareDuration('off')">
+              🚫 Nicht teilen
+            </button>
+            <button type="button" @click="chooseShareDuration('day')">📅 Für einen Tag</button>
+            <button type="button" @click="chooseShareDuration('week')">🗓️ Für eine Woche</button>
+            <button type="button" @click="chooseShareDuration('forever')">♾️ Dauerhaft</button>
+          </div>
+        </template>
+      </Teleport>
       <div class="tile-download-pill" v-if="tileDownloadState === 'downloading'">
         🔄 Lädt Kartenkacheln… {{ tileDownloadProgress.done }}/{{ tileDownloadProgress.total }}
       </div>
@@ -1405,6 +1468,60 @@ watch(() => liveSync.memberPositions, () => renderPositions(), { deep: true });
 
 .offline-download-btn {
   top: 250px;
+}
+
+.share-location-btn {
+  top: 290px;
+}
+
+/* Gleiche Akzentfarbe wie .orientation-btn.active - solange die Freigabe läuft, egal für welche
+   Dauer. */
+.share-location-btn.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+/* Gleiches Dropdown-Muster wie MapsAppPicker.vue/ExcursionsView.vue's Sortier-/Filter-Menüs -
+   scoped styles werden nicht komponentenübergreifend geteilt, daher eigene Kopie hier. */
+.picker-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 110;
+}
+
+.picker-menu {
+  position: fixed;
+  min-width: 200px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-2);
+  z-index: 111;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.picker-menu button {
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: none;
+  color: var(--color-text);
+  text-align: left;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.picker-menu button:hover {
+  background: var(--color-hover);
+}
+
+.picker-menu button.active {
+  background: var(--color-primary);
+  color: white;
 }
 
 /* Eigene Zeile unterhalb der Fokus-Banner-Position (links, wie .focus-banner) statt direkt neben
