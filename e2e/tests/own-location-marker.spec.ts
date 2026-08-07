@@ -36,7 +36,8 @@ test.describe('Eigener Standort-Marker', () => {
     await expect(cone).toBeVisible();
     // alpha=0 -> Heading (360-0)%360 = 0 = Norden -> Kegel zeigt ohne Rotation nach oben (nur der
     // durch die Border-Box bedingte Verschiebungsanteil von translate(-50%,-100%) bleibt bei
-    // rotate(0deg) übrig, siehe compassPin()).
-    await expect(cone).toHaveCSS('transform', 'matrix(1, 0, 0, 1, -9, -22)');
+    // rotate(0deg) übrig, siehe compassPin()) - Border-Box 24x28px (12px Seitenborder, 28px
+    // Bottom-Border), also -12/-28.
+    await expect(cone).toHaveCSS('transform', 'matrix(1, 0, 0, 1, -12, -28)');
   });
 });

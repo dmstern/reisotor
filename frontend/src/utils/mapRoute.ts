@@ -58,15 +58,15 @@ export function pulsingEmojiPin(emoji: string, color: string) {
 // Eigener Standort auf der großen Karte (TripMap.vue, Live-Standort): bewusst ein Kreis statt des
 // Pin-Ballons (emojiPin/pulsingEmojiPin oben) - ein Pin zeigt "hier ist ein Ort", während die
 // eigene Position sich bewegt und (bei vorhandenem Kompass) eine Blickrichtung hat, wie man es von
-// Google/Apple Maps kennt. `headingDeg` (0 = Norden, im Uhrzeigersinn, siehe
-// TripMap.vue's headingFromOrientationEvent()) ist optional - ohne Kompasszugriff (kein Sensor,
-// Berechtigung verweigert, Desktop ohne Gerätesensor) bleibt der Kegel schlicht weg, nur der Punkt
-// bleibt sichtbar. Pulsierender Ring (.map-pulse-ring, siehe der globale <style>-Block in
-// TripMap.vue) bleibt wie zuvor bei pulsingEmojiPin() erhalten, jetzt nur um den kleineren Punkt
-// statt um den ganzen Ballon.
-export function compassPin(color: string, headingDeg: number | null) {
-  const size = 48;
-  const dotSize = 16;
+// Google/Apple Maps kennt. Zeigt trotzdem weiterhin das eigene Avatar-Emoji im Kreis (wie vorher der
+// Pin-Ballon) statt eines schlichten Punkts, damit "das bin ich" auf einen Blick erkennbar bleibt.
+// `headingDeg` (0 = Norden, im Uhrzeigersinn, siehe TripMap.vue's headingFromOrientationEvent()) ist
+// optional - ohne Kompasszugriff (kein Sensor, Berechtigung verweigert, Desktop ohne Gerätesensor)
+// bleibt der Kegel schlicht weg, nur der Kreis bleibt sichtbar. Pulsierender Ring (.map-pulse-ring,
+// siehe der globale <style>-Block in TripMap.vue) bleibt wie zuvor bei pulsingEmojiPin() erhalten.
+export function compassPin(emoji: string, color: string, headingDeg: number | null) {
+  const size = 64;
+  const dotSize = 34;
   const half = size / 2;
   // Klassischer CSS-Dreieck-Trick (0 Breite/Höhe, zwei transparente Seitenborder + eine gefüllte
   // Bottom-Border) ergibt ein nach oben zeigendes Dreieck - "oben" entspricht Norden, da Leaflet die
@@ -80,17 +80,18 @@ export function compassPin(color: string, headingDeg: number | null) {
     headingDeg == null
       ? ''
       : `<div class="own-location-cone" style="position:absolute;left:50%;top:50%;width:0;height:0;
-          border-left:9px solid transparent;border-right:9px solid transparent;
-          border-bottom:22px solid ${color};opacity:.6;
+          border-left:12px solid transparent;border-right:12px solid transparent;
+          border-bottom:28px solid ${color};opacity:.6;
           transform-origin:50% 100%;transform:translate(-50%,-100%) rotate(${headingDeg}deg);"></div>`;
   return L.divIcon({
     html: `<div class="own-location-marker" style="position:relative;width:${size}px;height:${size}px;">
-      <div class="map-pulse-ring" style="position:absolute;left:50%;top:50%;width:30px;height:30px;
-        margin:-15px 0 0 -15px;border-radius:50%;background:${color};"></div>
+      <div class="map-pulse-ring" style="position:absolute;left:50%;top:50%;width:${dotSize + 10}px;height:${dotSize + 10}px;
+        margin:${-(dotSize + 10) / 2}px 0 0 ${-(dotSize + 10) / 2}px;border-radius:50%;background:${color};"></div>
       ${cone}
       <div style="position:absolute;left:50%;top:50%;width:${dotSize}px;height:${dotSize}px;
         margin:${-dotSize / 2}px 0 0 ${-dotSize / 2}px;border-radius:50%;background:${color};
-        border:3px solid white;box-shadow:0 1px 5px rgba(0,0,0,.4);"></div>
+        border:3px solid white;box-shadow:0 1px 5px rgba(0,0,0,.4);
+        display:flex;align-items:center;justify-content:center;font-size:16px;line-height:1;">${emoji}</div>
     </div>`,
     className: '',
     iconSize: [size, size],
