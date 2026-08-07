@@ -18,6 +18,7 @@ import Combobox from '../components/Combobox.vue';
 import DeleteButton from '../components/DeleteButton.vue';
 import UndoDeleteRow from '../components/UndoDeleteRow.vue';
 import FileAttachments from '../components/FileAttachments.vue';
+import ViewLoadingState from '../components/ViewLoadingState.vue';
 import { SCHEDULE_CATEGORY_META } from '../utils/scheduleCategory';
 import { parseLatLngFromMapsLink } from '../utils/googleMaps';
 import { buildAllEntries } from '../utils/calendarEntries';
@@ -1002,6 +1003,7 @@ function formatDate(date: string) {
       </div>
     </DetailModal>
   </div>
+  <ViewLoadingState v-else />
 </template>
 
 <style scoped>

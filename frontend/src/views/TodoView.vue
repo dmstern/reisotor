@@ -12,6 +12,7 @@ import Modal from '../components/Modal.vue';
 import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
 import UndoDeleteRow from '../components/UndoDeleteRow.vue';
+import ViewLoadingState from '../components/ViewLoadingState.vue';
 import { useUndoableDelete } from '../composables/useUndoableDelete';
 
 const tripStore = useTripStore();
@@ -330,6 +331,7 @@ function isOverdue(item: TodoItem) {
       </form>
     </Modal>
   </div>
+  <ViewLoadingState v-else />
 </template>
 
 <style scoped>

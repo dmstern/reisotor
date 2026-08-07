@@ -9,6 +9,7 @@ import PackingItemRow from '../components/PackingItem.vue';
 import Modal from '../components/Modal.vue';
 import Combobox from '../components/Combobox.vue';
 import UndoDeleteRow from '../components/UndoDeleteRow.vue';
+import ViewLoadingState from '../components/ViewLoadingState.vue';
 import { useUndoableDelete } from '../composables/useUndoableDelete';
 
 const auth = useAuthStore();
@@ -291,6 +292,7 @@ async function quickAdd(list: ListGroup) {
       </form>
     </Modal>
   </div>
+  <ViewLoadingState v-else />
 </template>
 
 <style scoped>

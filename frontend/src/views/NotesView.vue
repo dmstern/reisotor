@@ -13,6 +13,7 @@ import SocialRow from '../components/SocialRow.vue';
 import Comments from '../components/Comments.vue';
 import UndoDeleteRow from '../components/UndoDeleteRow.vue';
 import FileAttachments from '../components/FileAttachments.vue';
+import ViewLoadingState from '../components/ViewLoadingState.vue';
 import { formatDateTime } from '../utils/dateFormat';
 import { useUndoableDelete } from '../composables/useUndoableDelete';
 
@@ -246,6 +247,7 @@ async function restore(id: number) {
       </form>
     </Modal>
   </div>
+  <ViewLoadingState v-else />
 </template>
 
 <style scoped>

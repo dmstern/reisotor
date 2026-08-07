@@ -29,6 +29,7 @@ import { fetchWeatherForecast, weatherCodeMeta, type DailyWeather } from '../uti
 import { fetchRegionInfo, type RegionInfo } from '../utils/regionInfo';
 import { formatDate as formatDateShared, formatWeekdayDate as formatWeekdayDateShared } from '../utils/dateFormat';
 import BudgetMeter from '../components/BudgetMeter.vue';
+import ViewLoadingState from '../components/ViewLoadingState.vue';
 
 const auth = useAuthStore();
 const tripStore = useTripStore();
@@ -519,6 +520,7 @@ function formatWeekdayDate(d: string) {
       </router-link>
     </div>
   </div>
+  <ViewLoadingState v-else />
 </template>
 
 <style scoped>

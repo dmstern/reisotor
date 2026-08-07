@@ -1,0 +1,42 @@
+import { test, expect } from '@playwright/test';
+
+// Regressionstest für die zentrale Lade-Animation (stores/requestActivity.ts,
+// components/LoadingIndicator.vue, components/ViewLoadingState.vue): vorher gab es bei langsamen
+// Requests keinerlei sichtbare Rückmeldung - eine View blieb bis zum ersten Response komplett leer,
+// was wie ein Einfrieren der App wirkte.
+test.describe('Zentrale Lade-Animation', () => {
+  test('View-Wechsel zeigt einen Lade-Platzhalter statt einer leeren Seite', async ({ page }) => {
+    await page.goto('/todo');
+    await expect(page.locator('.todo-page')).toBeVisible();
+
+    // Alle API-Antworten künstlich verzögern, um den Ladezustand sichtbar zu machen.
+    await page.route('**/api/**', async (route) => {
+      await new Promise((r) => setTimeout(r, 1000));
+      await route.continue();
+    });
+
+    await page.getByRole('link', { name: 'Packliste' }).click();
+    await expect(page.locator('.view-loading')).toBeVisible();
+    await expect(page.locator('.view-loading .text')).toHaveText('Lädt…');
+
+    await page.unroute('**/api/**');
+    await expect(page.locator('.packing-page')).toBeVisible();
+    await expect(page.locator('.view-loading')).toHaveCount(0);
+  });
+
+  test('Header-Pille unterscheidet Lesen von Anlegen', async ({ page }) => {
+    await page.goto('/packing');
+    await expect(page.locator('.packing-page')).toBeVisible();
+
+    await page.route('**/api/**', async (route) => {
+      await new Promise((r) => setTimeout(r, 1000));
+      await route.continue();
+    });
+
+    await page.locator('input[placeholder^="Neuer Gegenstand"]').first().fill('E2E-Testartikel');
+    await page.getByRole('button', { name: 'Gegenstand hinzufügen' }).first().click();
+
+    await expect(page.locator('.loading-pill.create')).toBeVisible();
+    await expect(page.locator('.loading-pill.create .label')).toHaveText('Legt an…');
+  });
+});

@@ -11,6 +11,7 @@ import { useCalendarSettingsStore, WEEK_START_OPTIONS, DATE_FORMAT_OPTIONS } fro
 import { useTourSettingsStore } from '../stores/tourSettings';
 import { getExistingSubscription, isPushSupported, subscribeToPush, unsubscribeFromPush } from '../utils/push';
 import PasswordInput from '../components/PasswordInput.vue';
+import ViewLoadingState from '../components/ViewLoadingState.vue';
 
 const auth = useAuthStore();
 const router = useRouter();
@@ -576,6 +577,7 @@ async function onImportFileSelected(event: Event) {
       </dl>
     </div>
   </div>
+  <ViewLoadingState v-else />
 </template>
 
 <style scoped>
