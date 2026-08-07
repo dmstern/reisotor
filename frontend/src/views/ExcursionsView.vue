@@ -24,6 +24,8 @@ import LocationPicker from '../components/LocationPicker.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import FileAttachments from '../components/FileAttachments.vue';
 import DraftStatusBar from '../components/DraftStatusBar.vue';
+import RichTextEditor from '../components/RichTextEditor.vue';
+import { isEmptyRichText } from '../utils/richText';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
 import { parseLatLngFromMapsLink, tilePreviewUrl } from '../utils/googleMaps';
 import { spotCategoryMeta, SPOT_CATEGORY_SUGGESTIONS } from '../utils/spotCategory';
@@ -620,7 +622,8 @@ function spotToBody(f: ReturnType<typeof emptySpotForm>, manual?: { lat: number;
     title: f.title.trim(),
     image_url: f.image_url || undefined,
     category: f.category || undefined,
-    note: f.note || undefined,
+    note: f.note && !isEmptyRichText(f.note) ? f.note : undefined,
+    note_format: 'html' as const,
     maps_link: f.maps_link || undefined,
     lat: manual?.lat ?? parsed?.lat,
     lng: manual?.lng ?? parsed?.lng,
@@ -993,7 +996,7 @@ async function removeSpot(id: number) {
             :center="spotPickerCenter"
             :reference-points="spotReferencePoints"
           />
-          <textarea v-model="spotForm.note" placeholder="Notiz (optional)" rows="3"></textarea>
+          <RichTextEditor v-model="spotForm.note" placeholder="Notiz (optional)" />
           <TourAssignPicker v-model="spotForm.tourTitles" :tour-options="allTourTitles" />
           <DraftStatusBar :status="newSpotDraft.status.value" :restored="newSpotDraft.restored.value" />
           <button type="submit">Hinzufügen</button>
@@ -1107,7 +1110,7 @@ async function removeSpot(id: number) {
             :center="spotPickerCenter"
             :reference-points="editSpotReferencePoints"
           />
-          <textarea v-model="editSpotForm.note" placeholder="Notiz (optional)" rows="3"></textarea>
+          <RichTextEditor v-model="editSpotForm.note" placeholder="Notiz (optional)" />
           <TourAssignPicker v-model="editSpotForm.tourTitles" :tour-options="allTourTitles" />
           <FileAttachments v-if="editingSpot" domain="spots" :entity-id="editingSpot.id" />
           <DraftStatusBar :status="editSpotDraft.status.value" :restored="editSpotDraft.restored.value" />

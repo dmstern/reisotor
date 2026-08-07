@@ -105,6 +105,7 @@ export interface Excursion {
   title: string;
   image_url: string | null;
   note: string | null;
+  note_format: string;
   /** Optionales Datum: gesetzt = "geplant" (im Kalender eingeplant), ungesetzt = "in Planung". */
   date: string | null;
   created_by: number | null;
@@ -151,6 +152,7 @@ export interface TravelItem {
   seat: string | null;
   link: string | null;
   note: string | null;
+  note_format: string;
   budget_expense_id: number | null;
   from_maps_link: string | null;
   from_lat: number | null;
@@ -171,6 +173,7 @@ export interface Spot {
   /** Freitext-Kategorie (Combobox mit Vorschlägen, siehe utils/spotCategory.ts). */
   category: string | null;
   note: string | null;
+  note_format: string;
   maps_link: string | null;
   lat: number | null;
   lng: number | null;
@@ -277,6 +280,7 @@ export interface Note {
   trip_id: number;
   title: string | null;
   content: string;
+  content_format: string;
   created_by: number | null;
   created_at: string;
   updated_at: string | null;
@@ -302,6 +306,7 @@ export interface DiaryEntry {
   author_id: number;
   title: string | null;
   content: string;
+  content_format: string;
   images: string[];
   created_at: string;
   updated_at: string | null;

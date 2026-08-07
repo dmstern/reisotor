@@ -6,6 +6,7 @@ import { db } from '../db/index.js';
 import { uploadsDir } from '../uploads.js';
 import { requireTripMember } from '../tripAccess.js';
 import { recordActivity } from '../activity.js';
+import { sanitizeHtml } from '../utils/sanitizeHtml.js';
 
 interface EntryRow {
   id: number;
@@ -22,6 +23,7 @@ interface EntryBody {
   trip_id: number;
   title?: string;
   content: string;
+  content_format?: 'html' | 'legacy';
   images?: string[];
   excursion_ids?: number[];
 }
@@ -136,12 +138,21 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
   app.post<{ Body: EntryBody }>('/diary', async (req, reply) => {
     const { trip_id, title, content, images, excursion_ids } = req.body;
     if (!requireTripMember(reply, trip_id, req.session.userId)) return;
+    const isHtml = req.body.content_format === 'html';
     const now = new Date().toISOString();
     const result = db
       .prepare(
-        'INSERT INTO diary_entries (trip_id, author_id, title, content, images, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+        'INSERT INTO diary_entries (trip_id, author_id, title, content, content_format, images, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
       )
-      .run(trip_id, req.session.userId, title ?? null, content, JSON.stringify(images ?? []), now);
+      .run(
+        trip_id,
+        req.session.userId,
+        title ?? null,
+        isHtml ? sanitizeHtml(content) : content,
+        isHtml ? 'html' : 'legacy',
+        JSON.stringify(images ?? []),
+        now,
+      );
     const entryId = result.lastInsertRowid as number;
     syncDiaryExcursions(entryId, excursion_ids ?? []);
     recordActivity(trip_id, 'diary', entryId, 'created', req.session.userId!);
@@ -161,10 +172,14 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
     }
 
     const { title, content, images, excursion_ids } = req.body;
+    const isHtml = req.body.content_format === 'html';
     const now = new Date().toISOString();
-    db.prepare('UPDATE diary_entries SET title = ?, content = ?, images = ?, updated_at = ? WHERE id = ?').run(
+    db.prepare(
+      'UPDATE diary_entries SET title = ?, content = ?, content_format = ?, images = ?, updated_at = ? WHERE id = ?',
+    ).run(
       title ?? null,
-      content,
+      isHtml ? sanitizeHtml(content) : content,
+      isHtml ? 'html' : 'legacy',
       JSON.stringify(images ?? []),
       now,
       req.params.id,

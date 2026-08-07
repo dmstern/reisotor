@@ -8,7 +8,9 @@ import { useExcursionsStore } from '../stores/excursions';
 import { useSpotsStore } from '../stores/spots';
 import { useDrawersStore } from '../stores/drawers';
 import { useLiveSyncStore } from '../stores/liveSync';
-import { renderRichText } from '../utils/richText';
+import { isEmptyRichText } from '../utils/richText';
+import RichTextEditor from '../components/RichTextEditor.vue';
+import RichTextDisplay from '../components/RichTextDisplay.vue';
 import { compressImage } from '../utils/imageCompression';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { formatDateTime } from '../utils/dateFormat';
@@ -217,11 +219,12 @@ function openNewForm() {
 }
 
 async function submitEntry() {
-  if (!form.value.content.trim()) return;
+  if (isEmptyRichText(form.value.content)) return;
   const body = {
     trip_id: tripId,
     title: form.value.title || undefined,
-    content: form.value.content.trim(),
+    content: form.value.content,
+    content_format: 'html',
     images: form.value.images,
     excursion_ids: form.value.excursion_ids,
   };
@@ -250,10 +253,11 @@ function startEdit(entry: DiaryEntry) {
 }
 
 async function submitEditEntry() {
-  if (!editingEntry.value || !editForm.value.content.trim()) return;
+  if (!editingEntry.value || isEmptyRichText(editForm.value.content)) return;
   const body = {
     title: editForm.value.title || undefined,
-    content: editForm.value.content.trim(),
+    content: editForm.value.content,
+    content_format: 'html',
     images: editForm.value.images,
     excursion_ids: editForm.value.excursion_ids,
   };
@@ -318,12 +322,7 @@ async function removeComment(id: number) {
     <Modal :model-value="showForm" title="Neuer Tagebucheintrag" full-height @update:model-value="(v) => !v && closeForm()">
     <form class="add-form" @submit.prevent="submitEntry">
       <input v-model="form.title" type="text" placeholder="Titel (optional)" />
-      <textarea v-model="form.content" placeholder="Was ist heute passiert?" rows="10" required></textarea>
-      <p class="syntax-hint">
-        <code>**fett**</code> · <code>_kursiv_</code> · <code>~~durch~~</code> · <code># Titel</code> ·
-        <code>&gt; Zitat</code> · <code>* Punkt</code> / <code>1. Punkt</code> für Listen ·
-        <code>---</code> für Trennlinie · <code>`Code`</code> · Links werden automatisch erkannt
-      </p>
+      <RichTextEditor v-model="form.content" placeholder="Was ist heute passiert?" />
       <label class="upload-label">
         📷 Bilder hinzufügen
         <input type="file" accept="image/*" multiple :disabled="uploading" @change="onNewFilesSelected" />
@@ -380,7 +379,7 @@ async function removeComment(id: number) {
           </header>
 
           <h3 v-if="entry.title">{{ entry.title }}</h3>
-          <div class="content richtext" v-html="renderRichText(entry.content)"></div>
+          <RichTextDisplay class="content" :content="entry.content" :format="entry.content_format" />
 
           <div class="gallery" v-if="entry.images.length">
             <a v-for="(img, i) in entry.images" :key="i" :href="img" target="_blank" rel="noopener">
@@ -433,12 +432,7 @@ async function removeComment(id: number) {
     >
       <form class="add-form" @submit.prevent="submitEditEntry">
         <input v-model="editForm.title" type="text" placeholder="Titel (optional)" />
-        <textarea v-model="editForm.content" rows="10" required></textarea>
-        <p class="syntax-hint">
-          <code>**fett**</code> · <code>_kursiv_</code> · <code>~~durch~~</code> · <code># Titel</code> ·
-          <code>&gt; Zitat</code> · <code>* Punkt</code> / <code>1. Punkt</code> für Listen ·
-          <code>---</code> für Trennlinie · <code>`Code`</code> · Links werden automatisch erkannt
-        </p>
+        <RichTextEditor v-model="editForm.content" />
         <label class="upload-label">
           📷 Bilder hinzufügen
           <input type="file" accept="image/*" multiple :disabled="editUploading" @change="onEditFilesSelected" />

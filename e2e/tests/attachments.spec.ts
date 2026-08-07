@@ -12,7 +12,9 @@ import { test, expect } from '@playwright/test';
 test('uploading and removing a file attachment on a note (via edit form)', async ({ page }) => {
   await page.goto('/notes');
   await page.getByRole('button', { name: '+ Neue Notiz' }).click();
-  await page.locator('textarea[placeholder="Inhalt"]').fill('E2E Anhang-Test-Notiz');
+  const editor = page.locator('.modal .richtext-content[contenteditable="true"]');
+  await editor.click();
+  await editor.pressSequentially('E2E Anhang-Test-Notiz');
   await page.locator('.add-form button[type="submit"]').click();
 
   const card = page.locator('.note-card', { hasText: 'E2E Anhang-Test-Notiz' });

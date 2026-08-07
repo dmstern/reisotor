@@ -1164,3 +1164,16 @@ db.exec(`
 // für neue/bearbeitete Gegenstände, bereits vorhandene Einträge ohne Kategorie werden dadurch nicht
 // rückwirkend zurückgewiesen (siehe routes/packing.ts).
 ensureColumn('trips', 'packing_category_required', 'INTEGER NOT NULL DEFAULT 1');
+
+// Format der Freitext-/Notizfelder, die früher als reiner Markdown-ähnlicher Text galten und über
+// utils/richText.ts gerendert wurden - der neue WYSIWYG-Editor (RichTextEditor.vue) schreibt
+// stattdessen sanitiztes HTML. 'legacy' (Default) markiert bereits vorhandene Zeilen: sie werden
+// weiterhin über renderRichText() angezeigt (siehe RichTextDisplay.vue), 'html' markiert neu über
+// den Editor gespeicherte Inhalte. Bewusst ein Format-Flag statt einer Content-Sniffing-Heuristik -
+// eindeutig statt zu raten, ob ein gespeicherter String Markdown-Text oder schon HTML ist. Kein
+// Backfill nötig (reiner Default, keine Bedeutungsverschiebung bestehender Werte).
+ensureColumn('notes', 'content_format', "TEXT NOT NULL DEFAULT 'legacy'");
+ensureColumn('diary_entries', 'content_format', "TEXT NOT NULL DEFAULT 'legacy'");
+ensureColumn('travel_items', 'note_format', "TEXT NOT NULL DEFAULT 'legacy'");
+ensureColumn('ideas', 'note_format', "TEXT NOT NULL DEFAULT 'legacy'");
+ensureColumn('spots', 'note_format', "TEXT NOT NULL DEFAULT 'legacy'");

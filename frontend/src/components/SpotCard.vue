@@ -13,6 +13,7 @@ import { useTourSettingsStore } from '../stores/tourSettings';
 import CategoryChip from './CategoryChip.vue';
 import EditButton from './EditButton.vue';
 import DeleteButton from './DeleteButton.vue';
+import RichTextDisplay from './RichTextDisplay.vue';
 import SocialRow from './SocialRow.vue';
 import Comments, { type CommentItem } from './Comments.vue';
 import MapsAppPicker from './MapsAppPicker.vue';
@@ -179,7 +180,7 @@ function onCardClick() {
           <span v-if="spot.paid_by_user_id"> · bezahlt von {{ payerLabel }}</span>
         </p>
       </template>
-      <div v-if="spot.note" class="note richtext" v-html="renderRichText(spot.note)"></div>
+      <RichTextDisplay v-if="spot.note" class="note" :content="spot.note" :format="spot.note_format" />
       <button
         v-if="tourSettings.advancedEditing"
         type="button"

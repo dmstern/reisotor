@@ -3,6 +3,7 @@ import { db, ensureDefaultSharedBudget } from '../db/index.js';
 import { resolveLatLng } from '../utils/mapsLink.js';
 import { requireTripMember } from '../tripAccess.js';
 import { recordActivity } from '../activity.js';
+import { sanitizeHtml } from '../utils/sanitizeHtml.js';
 
 interface TravelBody {
   trip_id: number;
@@ -20,6 +21,7 @@ interface TravelBody {
   seat?: string;
   link?: string;
   note?: string;
+  note_format?: 'html' | 'legacy';
   from_maps_link?: string;
   from_lat?: number;
   from_lng?: number;
@@ -194,14 +196,15 @@ export const travelRoutes: FastifyPluginAsync = async (app) => {
     applyPlaces(body);
     await resolveFromToLatLng(body);
     const { budgetExpenseId } = planBudgetExpense(body.trip_id, null, body);
+    const isHtml = body.note_format === 'html';
 
     const result = db
       .prepare(
         `INSERT INTO travel_items
           (trip_id, title, type, from_location, to_location, date, departure_time, arrival_time, checkin_info, amount,
-           paid_by_user_id, luggage, seat, link, note, budget_expense_id,
+           paid_by_user_id, luggage, seat, link, note, note_format, budget_expense_id,
            from_maps_link, from_lat, from_lng, to_maps_link, to_lat, to_lng, role, from_place_id, to_place_id)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         body.trip_id,
@@ -218,7 +221,8 @@ export const travelRoutes: FastifyPluginAsync = async (app) => {
         body.luggage ?? null,
         body.seat ?? null,
         body.link ?? null,
-        body.note ?? null,
+        body.note ? (isHtml ? sanitizeHtml(body.note) : body.note) : null,
+        isHtml ? 'html' : 'legacy',
         budgetExpenseId,
         body.from_maps_link ?? null,
         body.from_lat ?? null,
@@ -246,11 +250,12 @@ export const travelRoutes: FastifyPluginAsync = async (app) => {
     applyPlaces(body);
     await resolveFromToLatLng(body, existing);
     const { budgetExpenseId, staleIdToDelete } = planBudgetExpense(existing.trip_id, existing.budget_expense_id, body);
+    const isHtml = body.note_format === 'html';
 
     db.prepare(
       `UPDATE travel_items SET title = ?, type = ?, from_location = ?, to_location = ?, date = ?,
          departure_time = ?, arrival_time = ?, checkin_info = ?, amount = ?, paid_by_user_id = ?, luggage = ?, seat = ?,
-         link = ?, note = ?, budget_expense_id = ?,
+         link = ?, note = ?, note_format = ?, budget_expense_id = ?,
          from_maps_link = ?, from_lat = ?, from_lng = ?, to_maps_link = ?, to_lat = ?, to_lng = ?, role = ?,
          from_place_id = ?, to_place_id = ?
        WHERE id = ?`,
@@ -268,7 +273,8 @@ export const travelRoutes: FastifyPluginAsync = async (app) => {
       body.luggage ?? null,
       body.seat ?? null,
       body.link ?? null,
-      body.note ?? null,
+      body.note ? (isHtml ? sanitizeHtml(body.note) : body.note) : null,
+      isHtml ? 'html' : 'legacy',
       budgetExpenseId,
       body.from_maps_link ?? null,
       body.from_lat ?? null,

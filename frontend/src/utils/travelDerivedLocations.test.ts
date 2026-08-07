@@ -20,6 +20,7 @@ function travelItem(overrides: Partial<TravelItem>): TravelItem {
     seat: null,
     link: null,
     note: null,
+    note_format: 'legacy',
     budget_expense_id: null,
     from_maps_link: null,
     from_lat: null,

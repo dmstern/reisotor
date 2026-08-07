@@ -1,5 +1,23 @@
 import { describe, expect, it } from 'vitest';
-import { formatInline, renderRichText } from './richText';
+import { formatInline, isEmptyRichText, renderRichText } from './richText';
+
+describe('isEmptyRichText', () => {
+  it('treats an empty Tiptap paragraph as empty', () => {
+    expect(isEmptyRichText('<p></p>')).toBe(true);
+  });
+
+  it('treats whitespace-only paragraphs as empty', () => {
+    expect(isEmptyRichText('<p>   </p>')).toBe(true);
+  });
+
+  it('treats an empty string as empty', () => {
+    expect(isEmptyRichText('')).toBe(true);
+  });
+
+  it('treats real text content as non-empty', () => {
+    expect(isEmptyRichText('<p>Hallo</p>')).toBe(false);
+  });
+});
 
 describe('renderRichText', () => {
   it('escapes HTML special characters before any markdown processing', () => {

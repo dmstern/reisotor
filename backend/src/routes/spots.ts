@@ -3,6 +3,7 @@ import { db, ensureDefaultSharedBudget } from '../db/index.js';
 import { fetchPlacePreview, resolveLatLng, tilePreviewUrl } from '../utils/mapsLink.js';
 import { requireTripMember } from '../tripAccess.js';
 import { recordActivity } from '../activity.js';
+import { sanitizeHtml } from '../utils/sanitizeHtml.js';
 
 interface SpotBody {
   trip_id: number;
@@ -10,6 +11,7 @@ interface SpotBody {
   image_url?: string;
   category?: string;
   note?: string;
+  note_format?: 'html' | 'legacy';
   maps_link?: string;
   lat?: number;
   lng?: number;
@@ -122,20 +124,22 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
       image_url = tilePreviewUrl(lat, lng);
     }
     const { budgetExpenseId } = planBudgetExpense(trip_id, null, body);
+    const isHtml = body.note_format === 'html';
     const result = db
       .prepare(
         `INSERT INTO spots (
-           trip_id, title, image_url, category, note, maps_link, lat, lng, created_by, is_home,
+           trip_id, title, image_url, category, note, note_format, maps_link, lat, lng, created_by, is_home,
            address, start_date, end_date, checkin, checkout, contact, amount, paid_by_user_id, budget_expense_id
          )
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         trip_id,
         title,
         image_url ?? null,
         category ?? null,
-        note ?? null,
+        note ? (isHtml ? sanitizeHtml(note) : note) : null,
+        isHtml ? 'html' : 'legacy',
         maps_link ?? null,
         lat ?? null,
         lng ?? null,
@@ -181,9 +185,10 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
       image_url = tilePreviewUrl(lat, lng);
     }
     const { budgetExpenseId, staleIdToDelete } = planBudgetExpense(existing.trip_id, existing.budget_expense_id, body);
+    const isHtml = body.note_format === 'html';
 
     db.prepare(
-      `UPDATE spots SET title = ?, image_url = ?, category = ?, note = ?, maps_link = ?, lat = ?, lng = ?, is_home = ?,
+      `UPDATE spots SET title = ?, image_url = ?, category = ?, note = ?, note_format = ?, maps_link = ?, lat = ?, lng = ?, is_home = ?,
          address = ?, start_date = ?, end_date = ?, checkin = ?, checkout = ?, contact = ?, amount = ?,
          paid_by_user_id = ?, budget_expense_id = ?
        WHERE id = ?`,
@@ -191,7 +196,8 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
       title,
       image_url ?? null,
       category ?? null,
-      note ?? null,
+      note ? (isHtml ? sanitizeHtml(note) : note) : null,
+      isHtml ? 'html' : 'legacy',
       maps_link ?? null,
       lat ?? null,
       lng ?? null,

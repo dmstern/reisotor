@@ -10,6 +10,7 @@ export interface ExcursionFormData {
   title: string;
   image_url?: string;
   note?: string;
+  note_format?: 'html' | 'legacy';
   date?: string;
   spot_ids?: number[];
 }
