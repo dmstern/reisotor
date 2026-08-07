@@ -63,3 +63,34 @@ test('marking a packing item as packed sinks it to the bottom of its category gr
     return texts.findIndex((t) => t.includes('E2E Pack A')) > texts.findIndex((t) => t.includes('E2E Pack B'));
   }).toBe(true);
 });
+
+// Regressionsnetz für den neuen "alles auf einmal einpacken"-Toggle bei Anzahl > 1 (siehe
+// PackingItem.vue's toggleAllPacked()) - vorher gab es dafür nur die Strichliste, kein einzelnes
+// Häkchen wie bei Anzahl 1.
+test('a quantity>1 packing item can be marked fully packed with a single toggle click', async ({ page }) => {
+  await page.goto('/packing');
+
+  const sharedList = page.locator('.list-section', { hasText: 'Gemeinsame Packliste' });
+  const quickAddLabel = sharedList.getByPlaceholder('Neuer Gegenstand für Gemeinsame Packliste');
+  // Die Zusatzfelder (Kategorie/Unterkategorie/Anzahl) rendern erst, sobald die Quick-Add-Zeile
+  // fokussiert/expandiert ist (siehe QuickAddRow.vue).
+  await quickAddLabel.click();
+  await sharedList.locator('.quick-add-qty input').fill('3');
+  await quickAddLabel.fill('E2E Pack Qty');
+  await quickAddLabel.press('Enter');
+
+  const row = sharedList.locator('.row', { hasText: 'E2E Pack Qty' });
+  await expect(row).toBeVisible();
+  await expect(row.locator('.tally-control')).toBeVisible();
+
+  const packAllToggle = row.locator('.state-toggle');
+  await expect(packAllToggle).toBeVisible();
+  await packAllToggle.click();
+
+  await expect(row).toHaveClass(/row-done/);
+  await expect(row.locator('span.text-done', { hasText: 'E2E Pack Qty' })).toBeVisible();
+  await expect(row.locator('.tally-pill')).toHaveClass(/packed/);
+
+  await packAllToggle.click();
+  await expect(row).not.toHaveClass(/row-done/);
+});

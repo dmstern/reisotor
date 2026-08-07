@@ -40,6 +40,17 @@ function cycleSingleState() {
   emit('update-counts', props.item, laidOut, packed);
 }
 
+// Bei Anzahl > 1 zusätzlich zur Strichliste (unten) ein einzelnes Häkchen, das alle Exemplare in
+// einem Schritt (un-)packt, unabhängig vom bisherigen Zwischenstand - für optische Konsistenz mit
+// Gegenständen mit Anzahl 1 (dieselbe .state-toggle-Optik links vom Label).
+function toggleAllPacked() {
+  if (isFullyPacked.value) {
+    emit('update-counts', props.item, 0, 0);
+  } else {
+    emit('update-counts', props.item, props.item.quantity, props.item.quantity);
+  }
+}
+
 // Bei Anzahl > 1: ein Klick zählt die rausgelegten Exemplare einzeln als Strichliste hoch (wie von
 // Hand auf einem Zettel abgehakt); sind alle Exemplare rausgelegt, packt der nächste Klick alle auf
 // einmal ein (das ganze Element gilt danach als erledigt, genau wie bei Anzahl 1) – kein separates
@@ -96,6 +107,17 @@ const tallyGroups = computed<number[]>(() => {
       >
         <span v-if="singleState === 'laidOut'" class="laid-out-mark"></span>
       </button>
+      <button
+        v-else
+        type="button"
+        class="state-toggle"
+        :class="{ packed: isFullyPacked }"
+        role="checkbox"
+        :aria-checked="isFullyPacked"
+        :aria-label="`${item.label}: alle ${item.quantity} Exemplare ${isFullyPacked ? 'eingepackt – klicken zum Zurücksetzen' : 'auf einmal einpacken'}`"
+        :title="isFullyPacked ? 'Alle eingepackt – klicken zum Zurücksetzen' : 'Alle auf einmal einpacken'"
+        @click="toggleAllPacked"
+      ></button>
       <span class="label" :class="{ 'text-done': isFullyPacked }">
         {{ item.label }}
         <span v-if="item.quantity > 1" class="qty">×{{ item.quantity }}</span>
