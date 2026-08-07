@@ -23,6 +23,7 @@ import { useLiveSyncStore } from '../stores/liveSync';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { buildTravelDerivedLocations } from '../utils/travelDerivedLocations';
 import { arcRoute, cachedEmojiPin, compassPin } from '../utils/mapRoute';
+import { downloadTiles, estimateTileDownload, formatApproxSize } from '../utils/offlineMapTiles';
 import { formatDate as formatDateShared } from '../utils/dateFormat';
 import { excursionStationKeys, resolveStations, type ExcursionStation } from '../utils/excursionStations';
 import { useIsDesktop } from '../composables/useIsDesktop';
@@ -845,6 +846,38 @@ async function jumpToMyLocation() {
   centerOnPoint([ownPosition.value.lat, ownPosition.value.lng], 16);
 }
 
+// Vorab-Herunterladen des sichtbaren Kartenausschnitts für den "totalen" Offline-Fall (siehe
+// utils/offlineMapTiles.ts) - bewusst der GERADE sichtbare Ausschnitt (map.getBounds()) statt einer
+// automatisch ermittelten "Urlaubsregion": die Nutzerin steuert Ausschnitt/Detailgrad selbst durch
+// Pan/Zoom, bevor sie den Button drückt - dasselbe Prinzip wie bei "Diesen Bereich herunterladen" in
+// gängigen Karten-Apps.
+type TileDownloadState = 'idle' | 'downloading' | 'done';
+const tileDownloadState = ref<TileDownloadState>('idle');
+const tileDownloadProgress = ref({ done: 0, total: 0 });
+const tileDownloadResult = ref<{ downloaded: number; failed: number } | null>(null);
+
+async function downloadOfflineMap() {
+  if (!map || tileDownloadState.value === 'downloading') return;
+  const bounds = map.getBounds();
+  const estimate = estimateTileDownload(bounds);
+  const confirmed = window.confirm(
+    `Aktuellen Kartenausschnitt für die Offline-Nutzung herunterladen?\n\n${estimate.count} Kacheln, ca. ${formatApproxSize(estimate.approxBytes)}.`,
+  );
+  if (!confirmed) return;
+
+  tileDownloadState.value = 'downloading';
+  tileDownloadProgress.value = { done: 0, total: estimate.count };
+  tileDownloadResult.value = await downloadTiles(bounds, (done, total) => {
+    tileDownloadProgress.value = { done, total };
+  });
+  tileDownloadState.value = 'done';
+}
+
+function dismissTileDownloadResult() {
+  tileDownloadState.value = 'idle';
+  tileDownloadResult.value = null;
+}
+
 let resizeObserver: ResizeObserver | null = null;
 
 onMounted(async () => {
@@ -1053,6 +1086,25 @@ watch(() => liveSync.memberPositions, () => renderPositions(), { deep: true });
              denselben eigenen Standort, aber mit unterschiedlicher, jeweils passender Optik. -->
         {{ auth.user?.avatar || '📍' }}
       </button>
+      <button
+        type="button"
+        class="fit-btn offline-download-btn"
+        title="Sichtbaren Kartenausschnitt für die Offline-Nutzung herunterladen"
+        aria-label="Sichtbaren Kartenausschnitt für die Offline-Nutzung herunterladen"
+        :disabled="tileDownloadState === 'downloading'"
+        @click="downloadOfflineMap"
+      >
+        ⬇️
+      </button>
+      <div class="tile-download-pill" v-if="tileDownloadState === 'downloading'">
+        🔄 Lädt Kartenkacheln… {{ tileDownloadProgress.done }}/{{ tileDownloadProgress.total }}
+      </div>
+      <div class="tile-download-pill" v-else-if="tileDownloadState === 'done' && tileDownloadResult">
+        ✅ {{ tileDownloadResult.downloaded }} Kacheln offline gespeichert{{
+          tileDownloadResult.failed ? `, ${tileDownloadResult.failed} fehlgeschlagen` : ''
+        }}
+        <button type="button" class="card-action-btn" @click="dismissTileDownloadResult">✕</button>
+      </div>
       <div class="focus-banner" v-if="focusedExcursion">
         <span>🎒 {{ focusedExcursion.title }}</span>
         <button type="button" class="card-action-btn" @click="drawers.mapFocusExcursionId = null">
@@ -1265,6 +1317,31 @@ watch(() => liveSync.memberPositions, () => renderPositions(), { deep: true });
 
 .my-location-btn {
   top: 170px;
+}
+
+.offline-download-btn {
+  top: 210px;
+}
+
+/* Eigene Zeile unterhalb der Fokus-Banner-Position (links, wie .focus-banner) statt direkt neben
+   dem auslösenden Button rechts - eine mehrzeilige Fortschritts-/Ergebnismeldung neben einer engen
+   Button-Spalte hätte dort keinen Platz. */
+.tile-download-pill {
+  position: absolute;
+  top: 50px;
+  left: 10px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--color-surface);
+  border: 2px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-primary-dark);
+  max-width: calc(100% - 60px);
 }
 
 .focus-banner {
