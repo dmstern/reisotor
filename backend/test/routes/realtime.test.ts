@@ -80,7 +80,11 @@ describe('realtime routes (SSE stream + trip-activity backfill)', () => {
     });
     expect(forbidden.statusCode).toBe(403);
 
-    const beforeCreate = new Date().toISOString();
+    // -1ms statt des exakten "jetzt": created_at (activity.ts's recordActivity()) hat nur
+    // Millisekunden-Auflösung - auf einem schnellen CI-Runner kann die gleich danach ausgelöste
+    // Mutation denselben Millisekunden-Zeitstempel bekommen wie dieses `since`, wodurch der
+    // strikte "created_at > since"-Filter (routes/realtime.ts) die Zeile fälschlich ausschließt.
+    const beforeCreate = new Date(Date.now() - 1).toISOString();
 
     const todoRes = await app.inject({
       method: 'POST',
