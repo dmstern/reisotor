@@ -19,6 +19,8 @@ import DeleteButton from '../components/DeleteButton.vue';
 import UndoDeleteRow from '../components/UndoDeleteRow.vue';
 import FileAttachments from '../components/FileAttachments.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
+import DraftStatusBar from '../components/DraftStatusBar.vue';
+import { useDraftAutosave } from '../composables/useDraftAutosave';
 import { SCHEDULE_CATEGORY_META } from '../utils/scheduleCategory';
 import { parseLatLngFromMapsLink } from '../utils/googleMaps';
 import { buildAllEntries } from '../utils/calendarEntries';
@@ -69,6 +71,37 @@ const newMapsLink = ref('');
 // <select> unten trivial (ein einzelner v-model-Wert statt zweier sich gegenseitig ausschließender
 // Felder), siehe parseLinkKey/linkKeyFor.
 const newLinkKey = ref('');
+const showAddForm = ref(false);
+
+// Entwurfs-Zwischenspeicherung (siehe composables/useDraftAutosave.ts): das Create-Formular besteht
+// (anders als in den meisten anderen Domänen) aus lauter einzelnen Refs statt eines Objekt-Refs -
+// ein schreibbarer computed() bündelt sie zu einem einzigen Ref-kompatiblen Objekt, das die
+// composable direkt lesen/überschreiben kann.
+const newFormBundle = computed<Record<string, unknown>>({
+  get: () => ({
+    newStartDate: newStartDate.value,
+    newTime: newTime.value,
+    newEndTime: newEndTime.value,
+    newTitle: newTitle.value,
+    newNote: newNote.value,
+    newEndDate: newEndDate.value,
+    newLocation: newLocation.value,
+    newMapsLink: newMapsLink.value,
+    newLinkKey: newLinkKey.value,
+  }),
+  set: (v) => {
+    newStartDate.value = (v.newStartDate as string) ?? '';
+    newTime.value = (v.newTime as string) ?? '';
+    newEndTime.value = (v.newEndTime as string) ?? '';
+    newTitle.value = (v.newTitle as string) ?? '';
+    newNote.value = (v.newNote as string) ?? '';
+    newEndDate.value = (v.newEndDate as string) ?? '';
+    newLocation.value = (v.newLocation as string) ?? '';
+    newMapsLink.value = (v.newMapsLink as string) ?? '';
+    newLinkKey.value = (v.newLinkKey as string) ?? '';
+  },
+});
+const newDraft = useDraftAutosave('schedule:new', newFormBundle, showAddForm);
 
 const editingItem = ref<ScheduleItem | null>(null);
 const viewingItem = ref<ScheduleItem | null>(null);
@@ -82,6 +115,11 @@ const editForm = ref({
   mapsLink: '',
   linkKey: '',
 });
+const editDraft = useDraftAutosave(
+  () => `schedule:edit:${editingItem.value?.id}`,
+  editForm,
+  computed(() => editingItem.value !== null),
+);
 
 function parseLinkKey(key: string): { spot_id: number | null; idea_id: number | null } {
   if (key.startsWith('spot:')) return { spot_id: Number(key.slice('spot:'.length)), idea_id: null };
@@ -135,7 +173,6 @@ watch(
     if (mapsLink) editForm.value.mapsLink = mapsLink;
   },
 );
-const showAddForm = ref(false);
 
 // "Zum eigenen Kalender hinzufügen"-Menü: welcher Eintrag (per key) hat sein Menü gerade offen –
 // gilt für ALLE Eintrags-Arten (echte wie automatisch erzeugte), nicht nur editierbare Termine.
@@ -571,6 +608,7 @@ function closeAddForm() {
   newLocation.value = '';
   newMapsLink.value = '';
   newLinkKey.value = '';
+  newDraft.clear();
 }
 
 // Ein direkt über den Schedule-Store angelegter/geänderter/gelöschter, mit einer Tour verknüpfter
@@ -646,6 +684,12 @@ async function submitEdit() {
   // Beide IDs (alt UND neu): eine Tour-Verknüpfung kann sich ändern (andere Tour ausgewählt) oder
   // ganz entfernt werden – in beiden Fällen muss die vorher verknüpfte Tour ihr Datum verlieren.
   await syncExcursionsIfLinked(previousIdeaId, idea_id);
+  editDraft.clear();
+  editingItem.value = null;
+}
+
+function closeEditForm() {
+  editDraft.clear();
   editingItem.value = null;
 }
 
@@ -929,6 +973,7 @@ function formatDate(date: string) {
           <input v-model="newMapsLink" type="url" placeholder="Maps-Link (Google/Apple) (optional)" />
         </template>
         <input v-model="newNote" type="text" placeholder="Notiz (optional)" />
+        <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
         <button type="submit">Hinzufügen</button>
       </form>
     </Modal>
@@ -936,7 +981,7 @@ function formatDate(date: string) {
     <Modal
       :model-value="editingItem !== null"
       title="Termin bearbeiten"
-      @update:model-value="(v) => !v && (editingItem = null)"
+      @update:model-value="(v) => !v && closeEditForm()"
     >
       <form class="edit-form" @submit.prevent="submitEdit">
         <input v-model="editForm.title" type="text" placeholder="Titel" required />
@@ -967,6 +1012,7 @@ function formatDate(date: string) {
         </template>
         <input v-model="editForm.note" type="text" placeholder="Notiz (optional)" />
         <FileAttachments v-if="editingItem" domain="schedule" :entity-id="editingItem.id" />
+        <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />
         <button type="submit">Speichern</button>
       </form>
     </Modal>

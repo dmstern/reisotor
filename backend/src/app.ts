@@ -26,6 +26,7 @@ import { trashRoutes } from './routes/trash.js';
 import { realtimeRoutes } from './routes/realtime.js';
 import { pushRoutes } from './routes/push.js';
 import { attachmentsRoutes } from './routes/attachments.js';
+import { draftsRoutes } from './routes/drafts.js';
 
 // Von server.ts getrennt (das nur noch buildApp() aufruft und .listen()), damit Tests eine fertig
 // konfigurierte App-Instanz per Fastify .inject() ansprechen können, ohne einen echten Port zu
@@ -100,6 +101,7 @@ export async function buildApp(opts: { logger?: boolean } = {}) {
         await protectedApi.register(realtimeRoutes);
         await protectedApi.register(pushRoutes);
         await protectedApi.register(attachmentsRoutes);
+        await protectedApi.register(draftsRoutes);
       });
     },
     { prefix: '/api' },

@@ -1136,3 +1136,22 @@ db.exec(`
     PRIMARY KEY (trip_id, threshold_days)
   );
 `);
+
+// Zwischenspeicher für noch nicht abgeschickte Create-/Edit-Formulare (Nutzer-Feedback: Eingaben
+// sollen bei einem App-Absturz nicht verloren gehen) - siehe routes/drafts.ts und
+// frontend/src/composables/useDraftAutosave.ts. Rein persönlich (pro user_id), nicht über
+// trip_members/Echtzeit-Sync geteilt - ein Entwurf ist kein fertiges Domänen-Objekt, das andere
+// Mitglieder sehen sollen. Kein deleted_at/Papierkorb-Eintrag wie bei den 11 echten Domänen-
+// Tabellen (siehe CLAUDE.md) - ein Entwurf ist Ablage-Infrastruktur wie sessions/
+// push_subscriptions, kein wiederherstellbares Nutzerobjekt.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS drafts (
+    id INTEGER PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    trip_id INTEGER NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
+    draft_key TEXT NOT NULL,
+    data TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    UNIQUE(user_id, trip_id, draft_key)
+  );
+`);

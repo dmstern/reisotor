@@ -22,6 +22,8 @@ import TourAssignPicker from '../components/TourAssignPicker.vue';
 import LocationPicker from '../components/LocationPicker.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import FileAttachments from '../components/FileAttachments.vue';
+import DraftStatusBar from '../components/DraftStatusBar.vue';
+import { useDraftAutosave } from '../composables/useDraftAutosave';
 import { parseLatLngFromMapsLink, tilePreviewUrl } from '../utils/googleMaps';
 import { spotCategoryMeta, SPOT_CATEGORY_SUGGESTIONS } from '../utils/spotCategory';
 import type { DerivedLocation } from '../utils/derivedLocation';
@@ -184,6 +186,18 @@ const spotPendingFixId = ref<number | null>(null);
 
 const editingSpot = ref<Spot | null>(null);
 const editSpotForm = ref(emptySpotForm());
+
+// Entwurfs-Zwischenspeicherung (siehe composables/useDraftAutosave.ts). closeSpotForm()/
+// submitEditSpot()'s "editingSpot = null" sind bewusst die einzigen Clear()-Stellen: solange
+// addSpot()/submitEditSpot() im Zwischenzustand "Standort manuell fixen" hängen (spotPendingFixId
+// gesetzt bzw. früher return, siehe dort), ist der Vorgang noch nicht abgeschlossen - der Entwurf
+// soll bis dahin bestehen bleiben.
+const newSpotDraft = useDraftAutosave('spots:new', spotForm, showSpotForm);
+const editSpotDraft = useDraftAutosave(
+  () => `spots:edit:${editingSpot.value?.id}`,
+  editSpotForm,
+  computed(() => editingSpot.value !== null),
+);
 const editSpotMapsLinkResolved = ref<boolean | null>(null);
 const editSpotManualPin = ref<{ lat: number; lng: number } | null>(null);
 const editSpotPickerOpen = ref(false);
@@ -626,6 +640,7 @@ function closeSpotForm() {
   spotPickerOpen.value = false;
   spotLocationError.value = false;
   spotPendingFixId.value = null;
+  newSpotDraft.clear();
 }
 
 // Alle Tour-Titel als Vorschläge für die "Tour zuordnen"-Combobox (TourAssignPicker.vue).
@@ -731,6 +746,12 @@ async function submitEditSpot() {
   }
   await syncSpotTours(editingSpot.value.id, editSpotForm.value.tourTitles);
   editSpotLocationError.value = false;
+  editSpotDraft.clear();
+  editingSpot.value = null;
+}
+
+function closeEditSpotForm() {
+  editSpotDraft.clear();
   editingSpot.value = null;
 }
 
@@ -970,6 +991,7 @@ async function removeSpot(id: number) {
           />
           <textarea v-model="spotForm.note" placeholder="Notiz (optional)" rows="3"></textarea>
           <TourAssignPicker v-model="spotForm.tourTitles" :tour-options="allTourTitles" />
+          <DraftStatusBar :status="newSpotDraft.status.value" :restored="newSpotDraft.restored.value" />
           <button type="submit">Hinzufügen</button>
         </form>
       </Modal>
@@ -1027,7 +1049,7 @@ async function removeSpot(id: number) {
         :model-value="editingSpot !== null"
         title="Spot bearbeiten"
         full-height
-        @update:model-value="(v) => !v && (editingSpot = null)"
+        @update:model-value="(v) => !v && closeEditSpotForm()"
       >
         <form class="edit-form" @submit.prevent="submitEditSpot">
           <div class="form-image-banner" :style="editSpotPreviewImage ? { backgroundImage: `url(${editSpotPreviewImage})` } : {}">
@@ -1084,6 +1106,7 @@ async function removeSpot(id: number) {
           <textarea v-model="editSpotForm.note" placeholder="Notiz (optional)" rows="3"></textarea>
           <TourAssignPicker v-model="editSpotForm.tourTitles" :tour-options="allTourTitles" />
           <FileAttachments v-if="editingSpot" domain="spots" :entity-id="editingSpot.id" />
+          <DraftStatusBar :status="editSpotDraft.status.value" :restored="editSpotDraft.restored.value" />
           <button type="submit">Speichern</button>
         </form>
       </Modal>

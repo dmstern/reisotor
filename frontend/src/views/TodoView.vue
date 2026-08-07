@@ -13,7 +13,9 @@ import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
 import UndoDeleteRow from '../components/UndoDeleteRow.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
+import DraftStatusBar from '../components/DraftStatusBar.vue';
 import { useUndoableDelete } from '../composables/useUndoableDelete';
+import { useDraftAutosave } from '../composables/useDraftAutosave';
 
 const tripStore = useTripStore();
 const liveSync = useLiveSyncStore();
@@ -64,6 +66,16 @@ const newForm = ref(emptyForm());
 
 const editingItem = ref<TodoItem | null>(null);
 const editForm = ref(emptyForm());
+
+// Entwurfs-Zwischenspeicherung (siehe composables/useDraftAutosave.ts) - das Create-Formular ist
+// hier (anders als bei den meisten anderen Domänen) immer sichtbar statt in einem Modal, daher
+// `active` konstant true: die Wiederherstellung läuft einmalig beim Mounten der View.
+const newDraft = useDraftAutosave('todos:new', newForm, ref(true));
+const editDraft = useDraftAutosave(
+  () => `todos:edit:${editingItem.value?.id}`,
+  editForm,
+  computed(() => editingItem.value !== null),
+);
 
 async function load() {
   try {
@@ -171,6 +183,7 @@ async function addItem() {
     localStorage.removeItem(LAST_ASSIGNEE_KEY);
   }
   newForm.value = emptyForm();
+  newDraft.clear();
 }
 
 async function toggleDone(item: TodoItem) {
@@ -206,6 +219,12 @@ async function submitEdit() {
   });
   const idx = items.value.findIndex((i) => i.id === updated.id);
   if (idx !== -1) items.value[idx] = updated;
+  editDraft.clear();
+  editingItem.value = null;
+}
+
+function closeEditForm() {
+  editDraft.clear();
   editingItem.value = null;
 }
 
@@ -251,6 +270,7 @@ function isOverdue(item: TodoItem) {
       </select>
       <input v-model="newForm.note" type="text" placeholder="Notiz (optional)" />
       <button type="submit">Hinzufügen</button>
+      <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
     </form>
 
     <div class="filter-row">
@@ -311,11 +331,7 @@ function isOverdue(item: TodoItem) {
       </section>
     </div>
 
-    <Modal
-      :model-value="editingItem !== null"
-      title="Aufgabe bearbeiten"
-      @update:model-value="(v) => !v && (editingItem = null)"
-    >
+    <Modal :model-value="editingItem !== null" title="Aufgabe bearbeiten" @update:model-value="(v) => !v && closeEditForm()">
       <form class="edit-form" @submit.prevent="submitEdit">
         <input v-model="editForm.title" type="text" placeholder="Titel" required />
         <select v-model="editForm.assigned_to_user_id">
@@ -327,6 +343,7 @@ function isOverdue(item: TodoItem) {
           <option v-for="(meta, key) in PRIORITY_META" :key="key" :value="key">{{ meta.icon }} {{ meta.label }}</option>
         </select>
         <input v-model="editForm.note" type="text" placeholder="Notiz (optional)" />
+        <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />
         <button type="submit">Speichern</button>
       </form>
     </Modal>

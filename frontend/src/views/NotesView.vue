@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { api, ApiError } from '../api/client';
 import type { Note, NoteComment, NoteLike, User } from '../api/types';
 import { useAuthStore } from '../stores/auth';
@@ -14,8 +14,10 @@ import Comments from '../components/Comments.vue';
 import UndoDeleteRow from '../components/UndoDeleteRow.vue';
 import FileAttachments from '../components/FileAttachments.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
+import DraftStatusBar from '../components/DraftStatusBar.vue';
 import { formatDateTime } from '../utils/dateFormat';
 import { useUndoableDelete } from '../composables/useUndoableDelete';
+import { useDraftAutosave } from '../composables/useDraftAutosave';
 
 const auth = useAuthStore();
 const tripStore = useTripStore();
@@ -37,6 +39,17 @@ const form = ref(emptyForm());
 
 const editingNote = ref<Note | null>(null);
 const editForm = ref(emptyForm());
+
+// Entwurfs-Zwischenspeicherung (Nutzer-Feedback: Eingaben sollen bei einem App-Absturz nicht
+// verloren gehen) - siehe composables/useDraftAutosave.ts. draftKey der Edit-Instanz wird erst beim
+// Öffnen ausgewertet (editingNote ist zu dem Zeitpunkt bereits gesetzt), daher als Getter statt
+// eines statischen Strings.
+const newDraft = useDraftAutosave('notes:new', form, showForm);
+const editDraft = useDraftAutosave(
+  () => `notes:edit:${editingNote.value?.id}`,
+  editForm,
+  computed(() => editingNote.value !== null),
+);
 
 async function load() {
   try {
@@ -132,11 +145,13 @@ async function submit() {
   notes.value.unshift(created);
   form.value = emptyForm();
   showForm.value = false;
+  newDraft.clear();
 }
 
 function closeForm() {
   showForm.value = false;
   form.value = emptyForm();
+  newDraft.clear();
 }
 
 function startEdit(note: Note) {
@@ -152,6 +167,12 @@ async function submitEdit() {
   });
   const idx = notes.value.findIndex((n) => n.id === updated.id);
   if (idx !== -1) notes.value[idx] = updated;
+  editDraft.clear();
+  editingNote.value = null;
+}
+
+function closeEditForm() {
+  editDraft.clear();
   editingNote.value = null;
 }
 
@@ -193,6 +214,7 @@ async function restore(id: number) {
         <code>&gt; Zitat</code> · <code>* Punkt</code> / <code>1. Punkt</code> für Listen ·
         <code>---</code> für Trennlinie · <code>`Code`</code> · Links werden automatisch erkannt
       </p>
+      <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
       <button type="submit">Hinzufügen</button>
     </form>
     </Modal>
@@ -233,7 +255,7 @@ async function restore(id: number) {
       :model-value="editingNote !== null"
       title="Notiz bearbeiten"
       full-height
-      @update:model-value="(v) => !v && (editingNote = null)"
+      @update:model-value="(v) => !v && closeEditForm()"
     >
       <form class="add-form" @submit.prevent="submitEdit">
         <input v-model="editForm.title" type="text" placeholder="Titel (optional)" />
@@ -244,6 +266,7 @@ async function restore(id: number) {
           <code>---</code> für Trennlinie · <code>`Code`</code> · Links werden automatisch erkannt
         </p>
         <FileAttachments v-if="editingNote" domain="notes" :entity-id="editingNote.id" />
+        <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />
         <button type="submit">Speichern</button>
       </form>
     </Modal>

@@ -11,7 +11,9 @@ import DeleteButton from '../components/DeleteButton.vue';
 import Combobox from '../components/Combobox.vue';
 import UndoDeleteRow from '../components/UndoDeleteRow.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
+import DraftStatusBar from '../components/DraftStatusBar.vue';
 import { useUndoableDelete } from '../composables/useUndoableDelete';
+import { useDraftAutosave } from '../composables/useDraftAutosave';
 
 const tripStore = useTripStore();
 const liveSync = useLiveSyncStore();
@@ -34,6 +36,35 @@ const newPeriod = ref<Period | ''>('');
 
 const editingItem = ref<ShoppingItem | null>(null);
 const editForm = ref({ label: '', link: '', note: '', shop: '', period: '' as Period | '' });
+
+// Entwurfs-Zwischenspeicherung (siehe composables/useDraftAutosave.ts): Create-Formular besteht aus
+// lauter einzelnen Refs statt eines Objekt-Refs, ein schreibbarer computed() bündelt sie (gleiches
+// Muster wie ScheduleView.vue). Immer sichtbares Inline-Formular statt Modal, daher `active`
+// konstant true.
+const newFormBundle = computed<Record<string, unknown>>({
+  get: () => ({
+    newLabel: newLabel.value,
+    newBuyer: newBuyer.value,
+    newLink: newLink.value,
+    newNote: newNote.value,
+    newShop: newShop.value,
+    newPeriod: newPeriod.value,
+  }),
+  set: (v) => {
+    newLabel.value = (v.newLabel as string) ?? '';
+    newBuyer.value = (v.newBuyer as string) ?? '';
+    newLink.value = (v.newLink as string) ?? '';
+    newNote.value = (v.newNote as string) ?? '';
+    newShop.value = (v.newShop as string) ?? '';
+    newPeriod.value = (v.newPeriod as Period | '') ?? '';
+  },
+});
+const newDraft = useDraftAutosave('shopping:new', newFormBundle, ref(true));
+const editDraft = useDraftAutosave(
+  () => `shopping:edit:${editingItem.value?.id}`,
+  editForm,
+  computed(() => editingItem.value !== null),
+);
 
 async function load() {
   try {
@@ -167,6 +198,12 @@ async function submitEdit() {
   });
   const idx = items.value.findIndex((i) => i.id === updated.id);
   if (idx !== -1) items.value[idx] = updated;
+  editDraft.clear();
+  editingItem.value = null;
+}
+
+function closeEditForm() {
+  editDraft.clear();
   editingItem.value = null;
 }
 
@@ -201,6 +238,7 @@ async function addItem() {
   newNote.value = '';
   newShop.value = '';
   newPeriod.value = '';
+  newDraft.clear();
 }
 </script>
 
@@ -224,6 +262,7 @@ async function addItem() {
       <input v-model="newLink" type="url" placeholder="Link (optional, z. B. Amazon)" />
       <input v-model="newNote" type="text" placeholder="Notiz (optional)" />
       <button type="submit">Hinzufügen</button>
+      <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
     </form>
 
     <div class="filter-row">
@@ -279,7 +318,7 @@ async function addItem() {
     <Modal
       :model-value="editingItem !== null"
       title="Artikel bearbeiten"
-      @update:model-value="(v) => !v && (editingItem = null)"
+      @update:model-value="(v) => !v && closeEditForm()"
     >
       <form class="edit-form" @submit.prevent="submitEdit">
         <input v-model="editForm.label" type="text" placeholder="Artikel" required />
@@ -291,6 +330,7 @@ async function addItem() {
         </select>
         <input v-model="editForm.link" type="url" placeholder="Link (optional)" />
         <input v-model="editForm.note" type="text" placeholder="Notiz (optional)" />
+        <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />
         <button type="submit">Speichern</button>
       </form>
     </Modal>
