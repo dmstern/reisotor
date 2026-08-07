@@ -22,7 +22,7 @@ import { useAuthStore } from '../stores/auth';
 import { useLiveSyncStore } from '../stores/liveSync';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { buildTravelDerivedLocations } from '../utils/travelDerivedLocations';
-import { arcRoute, cachedEmojiPin, pulsingEmojiPin } from '../utils/mapRoute';
+import { arcRoute, cachedEmojiPin, compassPin } from '../utils/mapRoute';
 import { formatDate as formatDateShared } from '../utils/dateFormat';
 import { excursionStationKeys, resolveStations, type ExcursionStation } from '../utils/excursionStations';
 import { useIsDesktop } from '../composables/useIsDesktop';
@@ -141,6 +141,48 @@ let positionsLayer: L.LayerGroup | null = null;
 // Nutzer dort bewusst heraus (gleiches Muster wie bei onlineUserIds/Präsenz).
 const ownPosition = ref<{ lat: number; lng: number } | null>(null);
 let geoWatchId: number | null = null;
+
+// Blickrichtung des eigenen Kompass-Markers (compassPin(), utils/mapRoute.ts) - 0 = Norden, im
+// Uhrzeigersinn, wie webkitCompassHeading es liefert. null solange kein Sensor-Wert vorliegt (kein
+// Magnetometer, Berechtigung verweigert/noch nicht erteilt, Desktop) - der Marker zeigt dann nur den
+// Punkt ohne Richtungskegel.
+const ownHeading = ref<number | null>(null);
+let orientationHandler: ((event: DeviceOrientationEvent) => void) | null = null;
+let orientationEventName: 'deviceorientationabsolute' | 'deviceorientation' = 'deviceorientation';
+
+// iOS liefert die bereits Kompass-korrigierte Blickrichtung direkt über das nicht standardisierte
+// webkitCompassHeading (0-360, im Uhrzeigersinn) - das ist zuverlässiger als alpha (auf iOS relativ
+// zur Startausrichtung, nicht zu Norden). Andere Plattformen (Android/Chrome) liefern kein
+// webkitCompassHeading, dafür alpha bereits Nord-referenziert über das 'deviceorientationabsolute'-
+// Event; alpha zählt dort gegen den Uhrzeigersinn, daher (360 - alpha) zur Umrechnung.
+function headingFromOrientationEvent(event: DeviceOrientationEvent): number | null {
+  const webkitHeading = (event as DeviceOrientationEvent & { webkitCompassHeading?: number }).webkitCompassHeading;
+  if (typeof webkitHeading === 'number') return webkitHeading;
+  if (event.alpha == null) return null;
+  return (360 - event.alpha) % 360;
+}
+
+function handleOrientation(event: DeviceOrientationEvent) {
+  const heading = headingFromOrientationEvent(event);
+  if (heading == null) return;
+  ownHeading.value = heading;
+  renderPositions();
+}
+
+// Einmal gestartet, läuft der Kompass unabhängig von weiteren Klicks weiter (kein erneutes
+// addEventListener nötig) - orientationHandler dient hier nur als "läuft schon?"-Wächter.
+function startCompass() {
+  if (orientationHandler) return;
+  orientationEventName = 'ondeviceorientationabsolute' in window ? 'deviceorientationabsolute' : 'deviceorientation';
+  orientationHandler = handleOrientation;
+  window.addEventListener(orientationEventName, orientationHandler as EventListener);
+}
+
+function stopCompass() {
+  if (!orientationHandler) return;
+  window.removeEventListener(orientationEventName, orientationHandler as EventListener);
+  orientationHandler = null;
+}
 
 // Icons/Bogen-Routen sind in utils/mapRoute.ts ausgelagert (gemeinsamer Cache mit der neuen
 // Ausflug-Mini-Karte, ExcursionMiniMap.vue) – hier nur noch ein dünner MapPoint-spezifischer
@@ -520,9 +562,9 @@ function focusCategory(category: string) {
   const catPoints = filteredPoints.value.filter((p) => p.category === category);
   const latLngs = catPoints.map((p): L.LatLngExpression => [p.lat, p.lng]);
   if (latLngs.length > 1) {
-    map.fitBounds(L.latLngBounds(latLngs), { padding: [32, 32] });
+    fitBoundsWithCoveredBottom(L.latLngBounds(latLngs));
   } else if (latLngs.length === 1) {
-    map.setView(latLngs[0], 14);
+    centerOnPoint(latLngs[0], 14);
   }
 }
 defineExpose({ focusCategory });
@@ -536,9 +578,9 @@ function fitAll() {
   drawers.mapFocusKey = null;
   const latLngs = filteredPoints.value.map((p): L.LatLngExpression => [p.lat, p.lng]);
   if (latLngs.length > 1) {
-    map.fitBounds(L.latLngBounds(latLngs), { padding: [32, 32] });
+    fitBoundsWithCoveredBottom(L.latLngBounds(latLngs));
   } else if (latLngs.length === 1) {
-    map.setView(latLngs[0], 13);
+    centerOnPoint(latLngs[0], 13);
   }
 }
 
@@ -551,9 +593,9 @@ function fitVacation() {
   drawers.mapFocusKey = null;
   const latLngs = vacationPoints.value.map((p): L.LatLngExpression => [p.lat, p.lng]);
   if (latLngs.length > 1) {
-    map.fitBounds(L.latLngBounds(latLngs), { padding: [32, 32] });
+    fitBoundsWithCoveredBottom(L.latLngBounds(latLngs));
   } else if (latLngs.length === 1) {
-    map.setView(latLngs[0], 13);
+    centerOnPoint(latLngs[0], 13);
   }
 }
 
@@ -568,9 +610,9 @@ function fitAccommodations() {
   drawers.mapFocusKey = null;
   const latLngs = accommodationPoints.value.map((p): L.LatLngExpression => [p.lat, p.lng]);
   if (latLngs.length > 1) {
-    map.fitBounds(L.latLngBounds(latLngs), { padding: [32, 32] });
+    fitBoundsWithCoveredBottom(L.latLngBounds(latLngs));
   } else if (latLngs.length === 1) {
-    map.setView(latLngs[0], 13);
+    centerOnPoint(latLngs[0], 13);
   }
 }
 
@@ -593,9 +635,9 @@ function fitExcursions() {
   drawers.mapFocusKey = null;
   const latLngs = excursionPoints.value.map((p): L.LatLngExpression => [p.lat, p.lng]);
   if (latLngs.length > 1) {
-    map.fitBounds(L.latLngBounds(latLngs), { padding: [32, 32] });
+    fitBoundsWithCoveredBottom(L.latLngBounds(latLngs));
   } else if (latLngs.length === 1) {
-    map.setView(latLngs[0], 13);
+    centerOnPoint(latLngs[0], 13);
   }
 }
 
@@ -623,6 +665,23 @@ function centerOnPoint(latlng: L.LatLngExpression, zoom: number) {
   const targetPoint = map.project(latlng, zoom);
   const shiftedCenter = map.unproject(targetPoint.add([0, coveredBottomPx / 2]), zoom);
   map.setView(shiftedCenter, zoom, { animate: false });
+}
+
+// Wie centerOnPoint() oben, aber für einen ganzen Ausschnitt (mehrere Punkte): Leaflets eigene
+// fitBounds()-padding-Option wirkt standardmäßig symmetrisch auf alle vier Seiten - Leaflet
+// unterstützt für genau diesen ungleichen Fall aber bereits eingebautes asymmetrisches Padding über
+// paddingTopLeft/paddingBottomRight, das reicht hier vollständig aus, ohne die project()/unproject()-
+// Rechnung von centerOnPoint() zu duplizieren. Vorher nutzten ALLE fitBounds()-Aufrufe (Ausflug-/Tages-
+// Fokus mit ≥2 Stationen, "Alle anzeigen", Kategorie-/Unterkunfts-/Ausflugsziele-Fokus) einheitlich
+// symmetrisches padding:[32,32] - der untere Rand des Ausschnitts landete bei aufgeklappter
+// Spots-Schublade dadurch trotzdem dahinter verdeckt, genau wie ursprünglich bei centerOnPoint().
+function fitBoundsWithCoveredBottom(bounds: L.LatLngBoundsExpression) {
+  if (!map) return;
+  const coveredBottomPx = props.coveredBottomPx ?? 0;
+  map.fitBounds(bounds, {
+    paddingTopLeft: [32, 32],
+    paddingBottomRight: [32, 32 + coveredBottomPx],
+  });
 }
 
 function renderMarkers() {
@@ -659,22 +718,22 @@ function renderMarkers() {
 
   if (excursion) {
     if (excursionLatLngs.length > 1) {
-      map.fitBounds(L.latLngBounds(excursionLatLngs), { padding: [32, 32] });
+      fitBoundsWithCoveredBottom(L.latLngBounds(excursionLatLngs));
     } else if (excursionLatLngs.length === 1) {
       centerOnPoint(excursionLatLngs[0], 14);
     }
   } else if (drawers.mapFocusDate && dateLatLngs.length) {
     if (dateLatLngs.length > 1) {
-      map.fitBounds(L.latLngBounds(dateLatLngs), { padding: [32, 32] });
+      fitBoundsWithCoveredBottom(L.latLngBounds(dateLatLngs));
     } else {
       centerOnPoint(dateLatLngs[0], 14);
     }
   } else if (focusPoint) {
     centerOnPoint([focusPoint.lat, focusPoint.lng], 15);
   } else if (latLngs.length > 1) {
-    map.fitBounds(L.latLngBounds(latLngs), { padding: [32, 32] });
+    fitBoundsWithCoveredBottom(L.latLngBounds(latLngs));
   } else if (latLngs.length === 1) {
-    map.setView(latLngs[0], 13);
+    centerOnPoint(latLngs[0], 13);
   } else {
     map.setView([48.1351, 11.582], 5); // Fallback: Mitteleuropa
   }
@@ -746,7 +805,7 @@ function renderPositions() {
 
   if (ownPosition.value && auth.user) {
     L.marker([ownPosition.value.lat, ownPosition.value.lng], {
-      icon: pulsingEmojiPin(auth.user.avatar, '#2f6fed'),
+      icon: compassPin('#2f6fed', ownHeading.value),
       zIndexOffset: 1000,
       pane: 'live-positions',
     }).addTo(positionsLayer);
@@ -762,9 +821,24 @@ function renderPositions() {
   }
 }
 
-// "Zu meinem Standort springen"-Button: nur aktiv, sobald mindestens ein GPS-Fix vorliegt.
-function jumpToMyLocation() {
+// "Zu meinem Standort springen"-Button: nur aktiv, sobald mindestens ein GPS-Fix vorliegt. Dient
+// zusätzlich als Auslöser für die Kompass-Berechtigung auf iOS 13+ (siehe requestCompassPermission
+// oben an startCompass()) - DeviceOrientationEvent.requestPermission() liefert dort NUR innerhalb
+// eines echten Klick-Handlers einen Berechtigungsdialog statt lautlos fehlzuschlagen, ein Aufruf
+// direkt in onMounted() würde also nie einen Dialog zeigen. Dieser Button ist der einzige gezielte
+// Nutzer-Klick im Kartenkontext, der sich dafür eignet.
+async function jumpToMyLocation() {
   if (!map || !ownPosition.value) return;
+  const OrientationEventCtor = (window as unknown as { DeviceOrientationEvent?: { requestPermission?: () => Promise<string> } })
+    .DeviceOrientationEvent;
+  if (OrientationEventCtor?.requestPermission && !orientationHandler) {
+    try {
+      const state = await OrientationEventCtor.requestPermission();
+      if (state === 'granted') startCompass();
+    } catch {
+      // Berechtigung abgelehnt/fehlgeschlagen - Marker bleibt einfach ohne Richtungskegel.
+    }
+  }
   drawers.mapFocusExcursionId = null;
   drawers.mapFocusDate = null;
   drawers.mapFocusKey = null;
@@ -813,6 +887,16 @@ onMounted(async () => {
     );
   }
 
+  // Kompass-Blickrichtung: auf den meisten Plattformen (Android/Chrome, Desktop) ohne gesonderte
+  // Berechtigung nutzbar, deshalb hier direkt starten. iOS 13+ ist die Ausnahme (siehe
+  // jumpToMyLocation() oben) - dort bleibt DeviceOrientationEvent.requestPermission ungenutzt, bis
+  // die Nutzerin dort klickt, ein automatischer Aufruf hier würde ohnehin lautlos verpuffen.
+  const OrientationEventCtor = (window as unknown as { DeviceOrientationEvent?: { requestPermission?: () => Promise<string> } })
+    .DeviceOrientationEvent;
+  if (OrientationEventCtor && !OrientationEventCtor.requestPermission) {
+    startCompass();
+  }
+
   // Leaflet misst die Containergröße nur einmal beim Initialisieren und merkt sich das intern –
   // ändert sich die Größe danach (Fenster wird verändert, Layout-Spalten ändern ihr Verhältnis),
   // rendert die Karte sonst nur den halben Ausschnitt statt sich neu zu berechnen. ResizeObserver
@@ -825,6 +909,7 @@ onUnmounted(() => {
   resizeObserver?.disconnect();
   resizeObserver = null;
   if (geoWatchId != null) navigator.geolocation.clearWatch(geoWatchId);
+  stopCompass();
   liveSync.stopSharingPosition();
   map?.remove();
   map = null;
@@ -962,8 +1047,10 @@ watch(() => liveSync.memberPositions, () => renderPositions(), { deep: true });
         @click="jumpToMyLocation"
       >
         <!-- Eigenes Avatar-Emoji statt eines generischen Pin-/Fadenkreuz-Icons - eindeutiger
-             erkennbar als "das bin ich" und konsistent mit dem eigenen Marker auf der Karte selbst
-             (siehe ownMarker weiter unten), der ebenfalls dieses Avatar zeigt. -->
+             erkennbar als "das bin ich" für DIESEN Button. Der Marker auf der Karte selbst
+             (compassPin(), renderPositions() oben) zeigt bewusst KEIN Avatar mehr, sondern einen
+             Kreis mit optionalem Richtungskegel (siehe dortiger Kommentar) - beides referenziert
+             denselben eigenen Standort, aber mit unterschiedlicher, jeweils passender Optik. -->
         {{ auth.user?.avatar || '📍' }}
       </button>
       <div class="focus-banner" v-if="focusedExcursion">
