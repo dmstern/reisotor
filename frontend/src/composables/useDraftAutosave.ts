@@ -58,6 +58,34 @@ export function useDraftAutosave<T extends Record<string, unknown>>(
     return useTripStore().currentTripId;
   }
 
+  // Wartet (statt eines einmaligen synchronen Checks) auf eine gültige trip_id, bevor ein Entwurf
+  // wiederhergestellt wird - reproduzierter Bug: nach einem Reload kann das Formular (dessen
+  // "active" z. B. per Button-Klick sofort danach true wird) schneller sichtbar/klickbar sein als
+  // tripStore.currentTripId per asynchronem Trips-Fetch gesetzt ist. Ein einmaliger Check zum
+  // Aktivierungszeitpunkt hätte dann null gesehen und NIE wiederhergestellt, obwohl der Entwurf
+  // längst da war - kein zweiter Versuch, da der active-Watcher nur bei einer echten
+  // false->true-Transition feuert. Gibt nach 5s ohne gültige trip_id auf (z. B. nicht eingeloggt).
+  function waitForTripId(): Promise<number | null> {
+    const tripStore = useTripStore();
+    if (tripStore.currentTripId != null) return Promise.resolve(tripStore.currentTripId);
+    return new Promise((resolve) => {
+      const timeout = setTimeout(() => {
+        stop();
+        resolve(tripStore.currentTripId);
+      }, 5000);
+      const stop = watch(
+        () => tripStore.currentTripId,
+        (id) => {
+          if (id != null) {
+            clearTimeout(timeout);
+            stop();
+            resolve(id);
+          }
+        },
+      );
+    });
+  }
+
   async function restoreIfPresent(tripId: number, key: string) {
     let best = readLocal<T>(storageKey(tripId, key));
     try {
@@ -114,7 +142,11 @@ export function useDraftAutosave<T extends Record<string, unknown>>(
       restored.value = false;
       baseline = JSON.stringify(formRef.value);
 
-      const tripId = currentTripId();
+      const tripId = await waitForTripId();
+      // Formular kann inzwischen wieder geschlossen worden sein, während auf die trip_id gewartet
+      // wurde - nicht mehr wiederherstellen/beobachten, sonst überschreibt restoreIfPresent() ein
+      // längst wieder leeres/anders belegtes Formular.
+      if (!toValue(active)) return;
       if (tripId != null && currentKey) {
         await restoreIfPresent(tripId, currentKey);
       }
