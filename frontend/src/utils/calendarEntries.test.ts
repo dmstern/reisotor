@@ -74,6 +74,7 @@ describe('scheduleItemToEntry', () => {
       amount: null,
       paid_by_user_id: null,
       budget_expense_id: null,
+      done: 0,
     };
     const item = makeScheduleItem({ spot_id: 42 });
     const entry = scheduleItemToEntry(item, [spot], [], []);
@@ -105,6 +106,7 @@ describe('scheduleItemToEntry', () => {
       amount: null,
       paid_by_user_id: null,
       budget_expense_id: null,
+      done: 0,
     };
     const excursion: Excursion = {
       id: 3,
@@ -116,6 +118,7 @@ describe('scheduleItemToEntry', () => {
       date: '2026-08-02',
       created_by: null,
       spot_ids: [7],
+      done: 0,
     };
     const item = makeScheduleItem({ idea_id: 3, title: 'Sightseeing' });
     const entry = scheduleItemToEntry(item, [spot], [excursion], []);

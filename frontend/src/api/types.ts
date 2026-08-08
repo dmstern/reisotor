@@ -115,6 +115,9 @@ export interface Excursion {
    *  lassen sich nur über die "Erweiterte Touren-Bearbeitung" editieren (siehe
    *  stores/tourSettings.ts/SpotOrderPicker.vue); der einfache Tagging-Modus hängt Spots nur an. */
   spot_ids: number[];
+  /** Unabhängig von `date`/geplant: explizit als tatsächlich unternommen markiert, auch für
+   *  spontane, nie geplante Touren nutzbar (siehe stores/excursions.ts's setDone()). */
+  done: 0 | 1;
 }
 
 export interface ExcursionLike {
@@ -195,6 +198,10 @@ export interface Spot {
   amount: number | null;
   paid_by_user_id: number | null;
   budget_expense_id: number | null;
+  /** Unabhängig von der aus schedule_items abgeleiteten geplant/ungeplant-Anzeige: explizit als
+   *  tatsächlich besucht markiert, auch für spontane, nie geplante Besuche nutzbar (siehe
+   *  stores/spots.ts's setDone()). */
+  done: 0 | 1;
 }
 
 export interface SpotLike {

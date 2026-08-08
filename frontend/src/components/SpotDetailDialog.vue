@@ -5,6 +5,7 @@ import { spotCategoryMeta } from '../utils/spotCategory';
 import { renderRichText } from '../utils/richText';
 import { parseContact } from '../utils/contact';
 import { formatDate as formatDateShared } from '../utils/dateFormat';
+import { useSpotsStore } from '../stores/spots';
 import DetailModal from './DetailModal.vue';
 import CategoryChip from './CategoryChip.vue';
 import MapsAppPicker from './MapsAppPicker.vue';
@@ -38,6 +39,7 @@ const emit = defineEmits<{
   (e: 'show-on-map'): void;
 }>();
 
+const spotsStore = useSpotsStore();
 const isAccommodation = computed(() => props.spot.category === 'Unterkunft');
 
 function formatDate(d: string | null) {
@@ -57,6 +59,16 @@ function formatDate(d: string | null) {
   >
     <p v-if="creatorLabel" class="detail-row"><span class="detail-label">Von</span>{{ creatorLabel }}</p>
     <p v-if="spot.category" class="detail-row"><CategoryChip :category="spot.category" /></p>
+
+    <button
+      type="button"
+      class="done-toggle"
+      :class="{ active: !!spot.done }"
+      :aria-pressed="!!spot.done"
+      @click="spotsStore.setDone(spot.id, !spot.done)"
+    >
+      {{ spot.done ? '✅ Gemacht' : '⬜️ Als gemacht markieren' }}
+    </button>
 
     <template v-if="isAccommodation">
       <p v-if="spot.start_date || spot.end_date" class="detail-row">
@@ -128,5 +140,27 @@ function formatDate(d: string | null) {
 
 .contact-text :deep(br:last-child) {
   display: none;
+}
+
+/* Gleicher Chip-Grundstil wie ExcursionDetailDialog.vue's .done-toggle für optische Konsistenz
+   zwischen Miniatur-Karte und Detail-Ansicht. */
+.done-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--color-hover);
+  border: none;
+  border-radius: 999px;
+  corner-shape: round;
+  padding: 4px 12px;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  margin-bottom: var(--space-2);
+}
+
+.done-toggle.active {
+  color: var(--color-success);
+  font-weight: 600;
 }
 </style>

@@ -7,6 +7,7 @@ import { parseContact } from '../utils/contact';
 import { usePointerDrag } from '../composables/usePointerDrag';
 import { useExcursionsStore } from '../stores/excursions';
 import { useScheduleStore } from '../stores/schedule';
+import { useSpotsStore } from '../stores/spots';
 import { useTripStore } from '../stores/trip';
 import { useDrawersStore } from '../stores/drawers';
 import { useTourSettingsStore } from '../stores/tourSettings';
@@ -92,6 +93,7 @@ function onExcursionHandleClick() {
 // draggable/dragstart oben (Zuordnen zu einem Ausflug) – kein Ersatz dafür.
 const excursionsStore = useExcursionsStore();
 const scheduleStore = useScheduleStore();
+const spotsStore = useSpotsStore();
 const tripStore = useTripStore();
 const drawers = useDrawersStore();
 const tourSettings = useTourSettingsStore();
@@ -145,6 +147,7 @@ function onCardClick() {
         <DeleteButton floating @click="emit('remove', spot.id)" />
       </template>
       <span v-if="scheduledDate" class="status planned">📅 {{ formatDate(scheduledDate) }}</span>
+      <span v-if="spot.done" class="status status-done">✅ Gemacht</span>
     </div>
     <div class="body">
       <div class="head">
@@ -181,28 +184,39 @@ function onCardClick() {
         </p>
       </template>
       <RichTextDisplay v-if="spot.note" class="note" :content="spot.note" :format="spot.note_format" />
-      <button
-        v-if="tourSettings.advancedEditing"
-        type="button"
-        class="excursion-drag-handle"
-        draggable="true"
-        aria-label="Auf eine Tour ziehen, um sie dort als Station hinzuzufügen"
-        title="Auf eine Tour ziehen, um sie dort als Station hinzuzufügen"
-        @dragstart="onDragStart"
-        @click.stop="onExcursionHandleClick"
-      >
-        🎒 Auf Tour ziehen
-      </button>
-      <button
-        type="button"
-        class="calendar-drag-handle"
-        aria-label="Auf Kalender ziehen zum spontanen Einplanen"
-        title="Auf Kalender ziehen zum spontanen Einplanen"
-        @pointerdown="onPointerDown"
-        @click.stop
-      >
-        📅 Einplanen
-      </button>
+      <div class="card-actions">
+        <button
+          v-if="tourSettings.advancedEditing"
+          type="button"
+          class="excursion-drag-handle"
+          draggable="true"
+          aria-label="Auf eine Tour ziehen, um sie dort als Station hinzuzufügen"
+          title="Auf eine Tour ziehen, um sie dort als Station hinzuzufügen"
+          @dragstart="onDragStart"
+          @click.stop="onExcursionHandleClick"
+        >
+          🎒 Auf Tour ziehen
+        </button>
+        <button
+          type="button"
+          class="calendar-drag-handle"
+          aria-label="Auf Kalender ziehen zum spontanen Einplanen"
+          title="Auf Kalender ziehen zum spontanen Einplanen"
+          @pointerdown="onPointerDown"
+          @click.stop
+        >
+          📅 Einplanen
+        </button>
+        <button
+          type="button"
+          class="done-toggle"
+          :class="{ active: !!spot.done }"
+          :aria-pressed="!!spot.done"
+          @click.stop="spotsStore.setDone(spot.id, !spot.done)"
+        >
+          {{ spot.done ? '✅ Gemacht' : '⬜️ Als gemacht markieren' }}
+        </button>
+      </div>
       <MapsAppPicker
         v-if="spot.lat != null && spot.lng != null"
         :lat="spot.lat"
@@ -299,6 +313,15 @@ function onCardClick() {
   color: var(--color-success);
 }
 
+/* Zweiter Status-Chip für "gemacht", unabhängig vom Planungs-Status oben - links statt rechts
+   positioniert (dieselbe Ecke wie .status.planned wäre bei gleichzeitig gesetztem Datum belegt),
+   damit beide Chips gleichzeitig sichtbar bleiben können. */
+.status.status-done {
+  right: auto;
+  left: 8px;
+  color: var(--color-success);
+}
+
 :root[data-theme='dark'] .status {
   background: rgba(35, 34, 32, 0.85);
 }
@@ -341,6 +364,14 @@ function onCardClick() {
   margin-top: var(--space-2);
 }
 
+.card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+
 /* Zwei Anfasser statt des gesamten Card-Roots als Drag-Quelle: .excursion-drag-handle (natives
    HTML5-DnD, siehe onDragStart im Script) und .calendar-drag-handle (Pointer-Events, siehe
    usePointerDrag-Wiring). touch-action:none beim Kalender-Anfasser verhindert, dass der Browser
@@ -352,7 +383,6 @@ function onCardClick() {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  align-self: flex-start;
   background: var(--color-hover);
   border: none;
   border-radius: 999px;
@@ -360,10 +390,31 @@ function onCardClick() {
   padding: 3px 10px 3px 8px;
   font-size: 0.72rem;
   color: var(--color-text-muted);
-  margin-top: var(--space-1);
   cursor: grab;
   -webkit-user-select: none;
   user-select: none;
+}
+
+/* Toggle statt Anfasser (kein Drag, nur Klick) - gleicher Chip-Grundstil wie die Anfasser oben für
+   optische Konsistenz, .active hebt den bereits gesetzten Status hervor (dieselbe Erfolgs-Farbe wie
+   .status.planned). */
+.done-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--color-hover);
+  border: none;
+  border-radius: 999px;
+  corner-shape: round;
+  padding: 3px 10px;
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.done-toggle.active {
+  color: var(--color-success);
+  font-weight: 600;
 }
 
 .calendar-drag-handle {
@@ -435,8 +486,7 @@ function onCardClick() {
 
   .spot-card:not(.expanded) .note,
   .spot-card:not(.expanded) .links,
-  .spot-card:not(.expanded) .excursion-drag-handle,
-  .spot-card:not(.expanded) .calendar-drag-handle,
+  .spot-card:not(.expanded) .card-actions,
   .spot-card:not(.expanded) .maps-picker {
     display: none;
   }

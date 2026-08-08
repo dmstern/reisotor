@@ -223,6 +223,23 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
     return db.prepare('SELECT * FROM spots WHERE id = ?').get(req.params.id);
   });
 
+  // "Gemacht"-Status: unabhängiges Flag neben geplant/ungeplant (das weiterhin rein aus verknüpften
+  // schedule_items abgeleitet wird) - auch spontane, nie geplante Besuche sollen markierbar sein.
+  // Eigener Endpunkt statt Teil von PUT /spots/:id, damit ein Toggle nicht das gesamte Formular
+  // (inkl. aller anderen Felder) erneut mitschicken muss - analog zum bestehenden /like-Toggle.
+  app.post<{ Params: { id: string }; Body: { done: boolean } }>('/spots/:id/done', async (req, reply) => {
+    const spot = db.prepare('SELECT id, trip_id FROM spots WHERE id = ?').get(req.params.id) as
+      | { id: number; trip_id: number }
+      | undefined;
+    if (!spot) return reply.code(404).send({ error: 'Nicht gefunden' });
+    if (!requireTripMember(reply, spot.trip_id, req.session.userId)) return;
+
+    const done = req.body.done ? 1 : 0;
+    db.prepare('UPDATE spots SET done = ? WHERE id = ?').run(done, req.params.id);
+    recordActivity(spot.trip_id, 'spots', spot.id, 'updated', req.session.userId!);
+    return { done: done === 1 };
+  });
+
   // Weicher Löschvorgang (Papierkorb, routes/trash.ts): setzt nur deleted_at statt die Zeile
   // wirklich zu entfernen. excursion_spots-Stationsreferenzen auf den Spot bleiben dabei bewusst
   // bestehen (kein Cleanup mehr nötig) – resolveStation() im Frontend liefert für einen nicht mehr

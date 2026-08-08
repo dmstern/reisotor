@@ -184,6 +184,24 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
     return reply.code(204).send();
   });
 
+  // "Gemacht"-Status: unabhängiges Flag neben geplant/ungeplant (das weiterhin rein aus einem
+  // verknüpften schedule_items-Termin abgeleitet wird, siehe scheduleDatesForIdeas oben) - auch
+  // spontane, nie geplante Touren sollen markierbar sein. Eigener Endpunkt statt Teil von
+  // PUT /ideas/:id, damit ein Toggle nicht das gesamte Formular erneut mitschicken muss - analog
+  // zum bestehenden /like-Toggle.
+  app.post<{ Params: { id: string }; Body: { done: boolean } }>('/ideas/:id/done', async (req, reply) => {
+    const idea = db.prepare('SELECT id, trip_id FROM ideas WHERE id = ?').get(req.params.id) as
+      | { id: number; trip_id: number }
+      | undefined;
+    if (!idea) return reply.code(404).send({ error: 'Nicht gefunden' });
+    if (!requireTripMember(reply, idea.trip_id, req.session.userId)) return;
+
+    const done = req.body.done ? 1 : 0;
+    db.prepare('UPDATE ideas SET done = ? WHERE id = ?').run(done, req.params.id);
+    recordActivity(idea.trip_id, 'ideas', idea.id, 'updated', req.session.userId!);
+    return { done: done === 1 };
+  });
+
   // Spontanes Einplanen eines einzelnen Spots im Tagebuch (siehe DiaryView.vue's Spot-Picker), OHNE
   // dass die Nutzerin vorher einen Ausflug anlegen muss: legt im Hintergrund einen "Ausflug" mit
   // genau dieser einen Station an – für die Nutzerin unsichtbar, sie sieht nur "der Spot ist an
