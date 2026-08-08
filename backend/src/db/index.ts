@@ -1177,3 +1177,11 @@ ensureColumn('diary_entries', 'content_format', "TEXT NOT NULL DEFAULT 'legacy'"
 ensureColumn('travel_items', 'note_format', "TEXT NOT NULL DEFAULT 'legacy'");
 ensureColumn('ideas', 'note_format', "TEXT NOT NULL DEFAULT 'legacy'");
 ensureColumn('spots', 'note_format', "TEXT NOT NULL DEFAULT 'legacy'");
+
+// Frei änderbares "Datum des Eintrags" (z. B. rückblickend am Folgetag über den Vortag geschrieben) -
+// bisher gab es dafür nur das unveränderliche created_at (Zeitpunkt des Speicherns). Nullable statt
+// NOT NULL DEFAULT: bestehende Zeilen brauchen einen echten Backfill (das Datum von created_at
+// übernehmen), nicht nur einen pauschalen Default-Wert, sonst würden alte Einträge alle denselben
+// falschen Tag zeigen. Neue Einträge setzen das Feld immer explizit (siehe routes/diary.ts).
+ensureColumn('diary_entries', 'date', 'TEXT');
+db.exec("UPDATE diary_entries SET date = substr(created_at, 1, 10) WHERE date IS NULL");

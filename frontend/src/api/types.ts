@@ -308,6 +308,8 @@ export interface DiaryEntry {
   content: string;
   content_format: string;
   images: string[];
+  /** Frei änderbares Datum des Eintrags (YYYY-MM-DD) - unabhängig von created_at, siehe DiaryView.vue. */
+  date: string;
   created_at: string;
   updated_at: string | null;
   /** IDs der Ausflüge, die diesem Eintrag zugeordnet sind (z. B. an diesem Tag unternommen). */
