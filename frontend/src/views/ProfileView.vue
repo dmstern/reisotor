@@ -7,7 +7,6 @@ import { useAuthStore } from '../stores/auth';
 import { useNavPositionStore } from '../stores/navPosition';
 import { useNavConfigStore } from '../stores/navConfig';
 import { NAV_LINKS } from '../utils/navLinks';
-import { useThemeStore } from '../stores/theme';
 import { useIsDesktop } from '../composables/useIsDesktop';
 import { useWeatherProviderStore, WEATHER_MODEL_OPTIONS } from '../stores/weatherProvider';
 import { useHomeCurrencyStore, HOME_CURRENCY_OPTIONS } from '../stores/homeCurrency';
@@ -18,12 +17,12 @@ import { getExistingSubscription, isPushSupported, subscribeToPush, unsubscribeF
 import { toLocalDateString } from '../utils/dateFormat';
 import PasswordInput from '../components/PasswordInput.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
+import ThemeModeSelect from '../components/ThemeModeSelect.vue';
 
 const auth = useAuthStore();
 const router = useRouter();
 const navPosition = useNavPositionStore();
 const navConfig = useNavConfigStore();
-const theme = useThemeStore();
 const isDesktop = useIsDesktop();
 
 function navLinkLabel(key: string) {
@@ -338,9 +337,7 @@ async function onImportFileSelected(event: Event) {
       <!-- Nur auf mobile: auf Desktop bleibt der Toggle exklusiv im Header (AppHeader.vue), auf
            mobile ist dort seit "alle Mitreisenden statt nur online" (PresenceAvatars.vue) potenziell
            weniger Platz. -->
-      <button type="button" class="secondary theme-toggle-btn" @click="theme.toggle">
-        {{ theme.isDark ? '☀️ Zum hellen Modus wechseln' : '🌙 Zum dunklen Modus wechseln' }}
-      </button>
+      <ThemeModeSelect variant="block" />
     </div>
 
     <div class="card">
@@ -739,12 +736,6 @@ async function onImportFileSelected(event: Event) {
   gap: 4px;
   font-weight: 600;
   font-size: 0.9rem;
-}
-
-.theme-toggle-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
 }
 
 .nav-config-hint {

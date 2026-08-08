@@ -1,14 +1,26 @@
 import { defineStore } from 'pinia';
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 
-type ThemeMode = 'light' | 'dark';
+// 'system' übernimmt die Geräteeinstellung (@media(prefers-color-scheme) in style.css) statt eines
+// fest gesetzten data-theme-Attributs - siehe apply() unten. Default, solange keine explizite
+// Präferenz gespeichert ist.
+export const THEME_MODE_OPTIONS = [
+  { value: 'light', icon: '☀️', label: 'Hell' },
+  { value: 'dark', icon: '🌙', label: 'Dunkel' },
+  { value: 'system', icon: '🖥️', label: 'Systemeinstellung' },
+] as const;
+export type ThemeMode = (typeof THEME_MODE_OPTIONS)[number]['value'];
 
 const STORAGE_KEY = 'reisotor-theme';
+const DEFAULT_MODE: ThemeMode = 'system';
+
+function loadMode(): ThemeMode {
+  const stored = localStorage.getItem(STORAGE_KEY);
+  return THEME_MODE_OPTIONS.some((o) => o.value === stored) ? (stored as ThemeMode) : DEFAULT_MODE;
+}
 
 export const useThemeStore = defineStore('theme', () => {
-  // null = keine explizite Nutzer-Präferenz gespeichert -> die Systemeinstellung greift
-  // automatisch über die @media(prefers-color-scheme)-Regel in style.css.
-  const explicitMode = ref<ThemeMode | null>(null);
+  const mode = ref<ThemeMode>(loadMode());
   const isDark = ref(false);
 
   function systemPrefersDark() {
@@ -16,33 +28,29 @@ export const useThemeStore = defineStore('theme', () => {
   }
 
   function apply() {
-    if (explicitMode.value) {
-      document.documentElement.setAttribute('data-theme', explicitMode.value);
-      isDark.value = explicitMode.value === 'dark';
-    } else {
+    if (mode.value === 'system') {
       document.documentElement.removeAttribute('data-theme');
       isDark.value = systemPrefersDark();
+    } else {
+      document.documentElement.setAttribute('data-theme', mode.value);
+      isDark.value = mode.value === 'dark';
     }
   }
 
   function init() {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    explicitMode.value = stored === 'light' || stored === 'dark' ? stored : null;
     apply();
+    watch(mode, (m) => {
+      localStorage.setItem(STORAGE_KEY, m);
+      apply();
+    });
 
-    // Solange keine explizite Präferenz gesetzt ist, das Icon bei Systemwechsel (z. B. Gerät
-    // wechselt abends automatisch in den Dark Mode) synchron halten. Die Farben selbst
-    // übernimmt bereits die @media-Regel in style.css unabhängig davon.
+    // Solange "Systemeinstellung" aktiv ist, isDark (und damit z. B. das Icon im ThemeModeSelect)
+    // bei Systemwechsel (z. B. Gerät wechselt abends automatisch in den Dark Mode) synchron halten.
+    // Die Farben selbst übernimmt bereits die @media-Regel in style.css unabhängig davon.
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-      if (!explicitMode.value) apply();
+      if (mode.value === 'system') apply();
     });
   }
 
-  function toggle() {
-    explicitMode.value = isDark.value ? 'light' : 'dark';
-    localStorage.setItem(STORAGE_KEY, explicitMode.value);
-    apply();
-  }
-
-  return { isDark, init, toggle };
+  return { mode, isDark, init };
 });

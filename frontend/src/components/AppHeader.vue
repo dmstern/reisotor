@@ -1,16 +1,15 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue';
 import { useAuthStore } from '../stores/auth';
-import { useThemeStore } from '../stores/theme';
 import { useConnectivityStore } from '../stores/connectivity';
 import TripSwitcher from './TripSwitcher.vue';
 import PresenceAvatars from './PresenceAvatars.vue';
 import OfflineIndicator from './OfflineIndicator.vue';
 import PwaUpdatePrompt from './PwaUpdatePrompt.vue';
 import LoadingIndicator from './LoadingIndicator.vue';
+import ThemeModeSelect from './ThemeModeSelect.vue';
 
 const auth = useAuthStore();
-const theme = useThemeStore();
 // Nur instanziieren, damit die Online/Offline-Listener + der periodische Health-Check (siehe dort)
 // unabhängig davon laufen, ob gerade eine bestimmte Unteransicht gemountet ist.
 useConnectivityStore();
@@ -67,15 +66,7 @@ const isNonProd = window.location.hostname !== 'reise.ruebenherz.de';
       </router-link>
       <TripSwitcher class="switcher" />
       <PresenceAvatars />
-      <button
-        type="button"
-        class="secondary theme-toggle"
-        :title="theme.isDark ? 'Zum hellen Modus wechseln' : 'Zum dunklen Modus wechseln'"
-        :aria-label="theme.isDark ? 'Zum hellen Modus wechseln' : 'Zum dunklen Modus wechseln'"
-        @click="theme.toggle"
-      >
-        {{ theme.isDark ? '☀️' : '🌙' }}
-      </button>
+      <ThemeModeSelect variant="icon" class="theme-toggle" />
       <router-link to="/profile" class="profile-link" title="Profil">
         <span class="avatar">{{ auth.user?.avatar || '👤' }}</span>
       </router-link>
@@ -181,20 +172,6 @@ const isNonProd = window.location.hostname !== 'reise.ruebenherz.de';
   .wordmark {
     display: none;
   }
-}
-
-.theme-toggle {
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  border-radius: 50%;
-  corner-shape: round;
-  font-size: 1.1rem;
-  line-height: 1;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 /* Auf mobile zieht "alle Mitreisenden statt nur online" (PresenceAvatars.vue) potenziell mehr
