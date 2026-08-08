@@ -232,7 +232,8 @@ function startCheck() {
   flex-wrap: wrap;
   gap: 2px var(--space-2);
   padding: 6px var(--space-2);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
   background: var(--color-primary-tint);
 }
 

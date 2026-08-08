@@ -1521,7 +1521,8 @@ async function removeSpot(id: number) {
 
 .form-image-banner {
   height: 140px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
   background: var(--color-primary-tint) center/cover no-repeat;
   display: flex;
   align-items: center;
@@ -1604,7 +1605,8 @@ async function removeSpot(id: number) {
   min-width: 180px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-md-squircle);
+  corner-shape: squircle;
   box-shadow: var(--shadow-md);
   padding: var(--space-2);
   z-index: 21;
@@ -1615,7 +1617,7 @@ async function removeSpot(id: number) {
 
 .picker-menu button {
   padding: 6px 8px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-sm-squircle);
   color: var(--color-text);
   font-size: 0.85rem;
   white-space: nowrap;
@@ -1646,7 +1648,8 @@ async function removeSpot(id: number) {
   padding: 6px 8px;
   font-size: 0.9rem;
   font-weight: 400;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
   cursor: pointer;
 }
 

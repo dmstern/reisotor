@@ -109,7 +109,8 @@ function onBlur() {
 .quick-add-row.expanded .label-input {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
   padding: 6px 8px;
 }
 

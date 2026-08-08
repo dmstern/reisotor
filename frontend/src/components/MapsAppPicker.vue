@@ -73,7 +73,8 @@ async function toggle() {
   min-width: 200px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-md-squircle);
+  corner-shape: squircle;
   box-shadow: var(--shadow-md);
   padding: var(--space-2);
   z-index: 111;
@@ -84,7 +85,8 @@ async function toggle() {
 
 .picker-menu a {
   padding: 6px 8px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
   color: var(--color-text);
   text-decoration: none;
   font-size: 0.85rem;

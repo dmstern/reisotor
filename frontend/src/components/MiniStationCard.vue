@@ -33,7 +33,8 @@ defineProps<{ station: ExcursionStation }>();
 
 .image {
   height: 64px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
   background: var(--color-primary-tint) center/cover no-repeat;
   display: flex;
   align-items: center;

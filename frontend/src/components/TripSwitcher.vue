@@ -181,7 +181,7 @@ async function onDelete(trip: Trip) {
   gap: 6px;
   background: var(--color-primary-tint);
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-sm-squircle);
   padding: 6px 12px;
   font-size: 0.85rem;
   font-weight: 600;
@@ -218,7 +218,8 @@ async function onDelete(trip: Trip) {
   min-width: 240px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-md-squircle);
+  corner-shape: squircle;
   box-shadow: var(--shadow-md);
   padding: var(--space-2);
   z-index: 21;
@@ -231,7 +232,8 @@ async function onDelete(trip: Trip) {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
 }
 
 .trip-row.active .trip-select {
@@ -248,7 +250,7 @@ async function onDelete(trip: Trip) {
   font-size: 0.9rem;
   color: var(--color-text);
   cursor: pointer;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-sm-squircle);
 }
 
 .trip-select:hover {
@@ -278,7 +280,7 @@ async function onDelete(trip: Trip) {
   text-align: left;
   background: none;
   border: 1px dashed var(--color-border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-sm-squircle);
   padding: 6px 8px;
   font-size: 0.85rem;
   color: var(--color-primary-dark);

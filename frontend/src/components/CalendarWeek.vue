@@ -147,7 +147,8 @@ function onDrop(event: DragEvent, date: string) {
 .day {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
   padding: 6px 4px;
   display: flex;
   flex-direction: column;
