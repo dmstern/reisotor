@@ -11,10 +11,13 @@ name: Build & Deploy
 # "Automatisiertes Deployment über GitHub Actions + Pi-Cronjob") – so ist der Server nie darauf
 # angewiesen, dass ein Client (Laptop/Handy) online ist oder Zugangsdaten hält.
 #
-# Zusätzlich auf pull_request gegen main: nur die schnellen Schritte (Backend-/Frontend-Unit-Tests +
-# Build, kein e2e, kein Publish) - Kompromiss, damit ein PR-Push nicht durch den langsamen
-# Playwright-Browser-Start (~7 Min) verzögert wird, aber genau die Fehlerklasse (z. B. ein kaputter
-# Unit-Test/Build durch eine neue Dependency) schon vor dem Merge auffällt statt erst danach.
+# Zusätzlich auf pull_request gegen main: derselbe komplette Test-Umfang wie bei einem Push
+# (Backend-/Frontend-Unit-Tests + Build UND die volle e2e-Suite) - nur der eigentliche
+# Publish-Schritt (Deploy-Branch) bleibt push-only, ein noch ungemergter Branch darf nie
+# veröffentlicht werden. Ursprünglich gab es hier einen Kompromiss ohne e2e auf PRs (schnellere
+# PR-Checks), der sich aber als falsche Abwägung erwiesen hat: e2e ist das eigentliche
+# Regressionsnetz fürs UI-Verhalten, ohne sie fielen mehrere echte Fehlschläge erst NACH dem
+# Merge auf main auf statt schon vorher auf dem PR.
 
 on:
   push:
@@ -57,29 +60,25 @@ jobs:
           npm run build
 
       - name: Install e2e dependencies
-        if: github.event_name == 'push'
         working-directory: e2e
         run: npm ci
 
       - name: Cache Playwright browsers
-        if: github.event_name == 'push'
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('e2e/package-lock.json') }}
 
       - name: Install Playwright Chromium
-        if: github.event_name == 'push'
         working-directory: e2e
         run: npx playwright install --with-deps chromium
 
       - name: Run e2e tests
-        if: github.event_name == 'push'
         working-directory: e2e
         run: npm test
 
       - name: Upload e2e report on failure
-        if: failure() && github.event_name == 'push'
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
