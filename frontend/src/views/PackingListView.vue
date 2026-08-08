@@ -90,7 +90,10 @@ interface ListGroup {
 const lists = computed<ListGroup[]>(() => {
   const shared: ListGroup = {
     key: 'shared',
-    title: 'Gemeinsame Packliste',
+    // 👥 statt gestapelter Einzel-Avatare: passt zur bestehenden Bedeutung des Icons anderswo in der
+    // App (Mitglieder-Button in TripSwitcher.vue) und bleibt bei vielen Mitreisenden trotzdem
+    // kompakt lesbar, statt mit wachsender Personenzahl immer breiter zu werden.
+    title: '👥 Gemeinsame Packliste',
     ownerId: null,
     items: items.value.filter((i) => i.owner_id == null),
   };

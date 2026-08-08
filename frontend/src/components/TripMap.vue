@@ -961,7 +961,15 @@ onMounted(async () => {
   // rotate/touchRotate (leaflet-rotate, siehe Import oben): aktiviert die Zwei-Finger-Drehgeste.
   // rotateControl:false, weil wir einen eigenen, zum übrigen Button-Stack passenden Umschalter
   // bauen (siehe toggleMapOrientation()/.orientation-btn) statt des mitgelieferten Steuerelements.
-  map = L.map(mapEl.value, { rotate: true, rotateControl: false, touchRotate: true, bearing: 0 });
+  map = L.map(mapEl.value, {
+    rotate: true,
+    rotateControl: false,
+    touchRotate: true,
+    bearing: 0,
+    // Explizit statt nur Leaflets Default (der ohnehin schon true ist) - macht die Absicht klar und
+    // schützt gegen versehentliches Abschalten bei künftigen Leaflet-Versionen/Default-Änderungen.
+    doubleClickZoom: true,
+  });
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap-Mitwirkende',
     maxZoom: 19,

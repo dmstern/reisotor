@@ -43,7 +43,7 @@ test('marking a packing item as packed sinks it to the bottom of its category gr
   await page.goto('/packing');
 
   const sharedList = page.locator('.list-section', { hasText: 'Gemeinsame Packliste' });
-  const quickAddLabel = sharedList.getByPlaceholder('Neuer Gegenstand für Gemeinsame Packliste');
+  const quickAddLabel = sharedList.getByPlaceholder('Neuer Gegenstand für 👥 Gemeinsame Packliste');
 
   const group = sharedList.locator('.group', { hasText: 'Sonstiges' });
   const rowA = group.locator('.row', { hasText: 'E2E Pack A' });
@@ -76,7 +76,7 @@ test('a quantity>1 packing item can be marked fully packed with a single toggle 
   await page.goto('/packing');
 
   const sharedList = page.locator('.list-section', { hasText: 'Gemeinsame Packliste' });
-  const quickAddLabel = sharedList.getByPlaceholder('Neuer Gegenstand für Gemeinsame Packliste');
+  const quickAddLabel = sharedList.getByPlaceholder('Neuer Gegenstand für 👥 Gemeinsame Packliste');
   // Die Zusatzfelder (Kategorie/Unterkategorie/Anzahl) rendern erst, sobald die Quick-Add-Zeile
   // fokussiert/expandiert ist (siehe QuickAddRow.vue).
   await quickAddLabel.click();

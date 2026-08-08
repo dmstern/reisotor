@@ -512,6 +512,23 @@ function onSheetDragMove(event: PointerEvent) {
   const next = sheetStartHeight + delta;
   sheetDragHeightPx.value = Math.min(sheetHeightPx('full'), Math.max(sheetHeightPx('collapsed'), next));
 }
+// Rundet eine frei gezogene Höhe auf den nächstgelegenen der drei festen Zustände - von
+// onSheetDragEnd() (Anfasser) UND onSheetBodyPointerUp() (Ziehen auf der Liste selbst, siehe dort)
+// genutzt, damit beide exakt gleich einrasten.
+function closestSheetState(heightPx: number): SheetState {
+  const states: SheetState[] = ['collapsed', 'partial', 'full'];
+  let closest: SheetState = 'partial';
+  let bestDist = Infinity;
+  for (const s of states) {
+    const dist = Math.abs(sheetHeightPx(s) - heightPx);
+    if (dist < bestDist) {
+      bestDist = dist;
+      closest = s;
+    }
+  }
+  return closest;
+}
+
 function onSheetDragEnd() {
   sheetDragging.value = false;
   window.removeEventListener('pointermove', onSheetDragMove);
@@ -532,18 +549,58 @@ function onSheetDragEnd() {
     return;
   }
   // Ab hier laut movedFar-Berechnung oben garantiert nicht null.
-  const resolvedCurrent = current as number;
-  const states: SheetState[] = ['collapsed', 'partial', 'full'];
-  let closest: SheetState = 'partial';
-  let bestDist = Infinity;
-  for (const s of states) {
-    const dist = Math.abs(sheetHeightPx(s) - resolvedCurrent);
-    if (dist < bestDist) {
-      bestDist = dist;
-      closest = s;
-    }
+  sheetState.value = closestSheetState(current as number);
+}
+
+// Wie Apple Maps: solange die Schublade nicht ganz oben ("voll") steht, ist die Liste selbst NICHT
+// scrollbar (siehe .spots-col-body's overflow im CSS) - ein Zug irgendwo auf der Liste verschiebt
+// stattdessen die ganze Schublade, genau wie ein Zug auf den dedizierten .sheet-handle-Anfasser
+// oben. Ein reiner Tap (z. B. auf eine Spot-Karte) muss aber weiterhin normal durchklicken können -
+// anders als beim Anfasser (der bei "kaum Bewegung" einen Zustand weiterschaltet) macht ein Tap
+// hier deshalb bewusst NICHTS mit dem Sheet-Zustand, bevor sich per Bewegungs-Schwelle
+// (SHEET_BODY_DRAG_THRESHOLD) überhaupt herausgestellt hat, dass es ein Zug statt eines Taps ist.
+const SHEET_BODY_DRAG_THRESHOLD = 8;
+let sheetBodyDragging = false;
+let sheetBodyStartY = 0;
+let sheetBodyStartHeight = 0;
+
+function onSheetBodyPointerDown(event: PointerEvent) {
+  if (sheetState.value === 'full') return; // voll ausgeklappt: Liste scrollt ganz normal.
+  // Eigene Zug-Ziele innerhalb der Liste (Kalender-/Touren-Anfasser einer Spot-Karte, siehe
+  // SpotCard.vue's usePointerDrag-Wiring) haben ihre eigene Pointer-Drag-Logik - ohne diesen Ausstieg
+  // würden beide gleichzeitig auf dieselbe Zugbewegung reagieren (Karte auf einen Kalendertag ziehen
+  // UND gleichzeitig die Schublade verschieben).
+  if ((event.target as HTMLElement).closest('button, a, input, textarea, select, [draggable="true"]')) return;
+  sheetBodyDragging = false;
+  sheetBodyStartY = event.clientY;
+  sheetBodyStartHeight = sheetDragHeightPx.value ?? sheetHeightPx(sheetState.value);
+  window.addEventListener('pointermove', onSheetBodyPointerMove);
+  window.addEventListener('pointerup', onSheetBodyPointerUp);
+}
+
+function onSheetBodyPointerMove(event: PointerEvent) {
+  const delta = sheetBodyStartY - event.clientY;
+  if (!sheetBodyDragging) {
+    // Erst ab der Schwelle als Zug werten - ein Tap zittert leicht, ohne echte Zugabsicht zu sein.
+    if (Math.abs(delta) < SHEET_BODY_DRAG_THRESHOLD) return;
+    sheetBodyDragging = true;
+    sheetDragging.value = true;
   }
-  sheetState.value = closest;
+  const next = sheetBodyStartHeight + delta;
+  sheetDragHeightPx.value = Math.min(sheetHeightPx('full'), Math.max(sheetHeightPx('collapsed'), next));
+  event.preventDefault();
+}
+
+function onSheetBodyPointerUp() {
+  window.removeEventListener('pointermove', onSheetBodyPointerMove);
+  window.removeEventListener('pointerup', onSheetBodyPointerUp);
+  if (!sheetBodyDragging) return; // reiner Tap - der Klick auf die Spot-Karte/den Inhalt lief bereits normal durch.
+  sheetBodyDragging = false;
+  sheetDragging.value = false;
+  const current = sheetDragHeightPx.value;
+  sheetDragHeightPx.value = null;
+  if (current == null) return;
+  sheetState.value = closestSheetState(current);
 }
 
 // Buttons als Alternative zum Ziehen am Anfasser (weniger präzise auf kleinen Touch-Zielen) –
@@ -813,7 +870,7 @@ async function removeSpot(id: number) {
           ▼
         </button>
       </div>
-      <div class="spots-col-body">
+      <div class="spots-col-body" @pointerdown="onSheetBodyPointerDown">
       <!-- Sprungziel für TripMap.vue's Tag-/Ausflug-Stationen-Liste: mobil (siehe TripMap.vue's
            Teleport) landet sie hier statt als Overlay über der Karte zu schweben (verdeckte dort
            Kartenausschnitt und teils die Zoom-Steuerung). Auf Desktop bleibt sie unverändert Teil
@@ -846,7 +903,7 @@ async function removeSpot(id: number) {
             :class="{ active: groupMode === 'category' }"
             @click="groupMode = 'category'"
           >
-            🏷️ Kategorie
+            🏷️ Spots
           </button>
           <button
             type="button"
@@ -1320,6 +1377,17 @@ async function removeSpot(id: number) {
   padding: 0 var(--space-3) var(--space-3);
 }
 
+/* Wie bei Apple Maps: nur im "voll"-Zustand ist die Liste selbst scrollbar. In "angeschnitten"/
+   eingeklappt übernimmt stattdessen ein Zug irgendwo auf der Liste das Verschieben der ganzen
+   Schublade (siehe onSheetBodyPointerDown() im Script) statt sie zu scrollen. touch-action:none
+   verhindert, dass der Browser hier von sich aus zu scrollen anfängt, bevor unser eigener
+   Pointer-Handler die Zugbewegung übernehmen kann. */
+.spots-col.collapsed .spots-col-body,
+.spots-col.partial .spots-col-body {
+  overflow-y: hidden;
+  touch-action: none;
+}
+
 /* Leer (kein Fokus aktiv bzw. Desktop, siehe TripMap.vue), wenn nichts hineingeteleportet wurde –
    dann soll der Anker keinen Platz beanspruchen. */
 .map-focus-dock:empty {
@@ -1441,6 +1509,16 @@ async function removeSpot(id: number) {
     flex: none;
     overflow-y: visible;
     padding: 0;
+  }
+
+  /* Reset des mobilen "nur im voll-Zustand scrollbar"-Verhaltens (siehe dortiger Kommentar) - auf
+     Desktop gibt es keinen Sheet-Zustand, die Liste soll unabhängig davon immer normal scrollen/
+     Zeigereignisse normal durchlassen. Gleiche Selektor-Spezifität + späterer Quellort wie die
+     mobile Regel, damit dieser Reset zuverlässig gewinnt statt an Spezifität zu scheitern. */
+  .spots-col.collapsed .spots-col-body,
+  .spots-col.partial .spots-col-body {
+    overflow-y: visible;
+    touch-action: auto;
   }
 
   /* Dieselbe Sticky-Formel wie die beiden Inhaltsspalten – hier aber als explizite `height` statt
@@ -1737,20 +1815,28 @@ async function removeSpot(id: number) {
    scrollt bei Bedarf horizontal statt umzubrechen (viele Kategorien nebeneinander). Vertikal sticky
    innerhalb von .spots-col-body (dem tatsächlich scrollenden Vorfahren, siehe dortige overflow-y):
    Seitentitel/Filter darüber scrollen weg, die Navigation selbst bleibt oben angeheftet, damit man
-   auch nach dem Herunterscrollen weiter direkt zwischen Kategorien springen kann. Eigener
-   Hintergrund (wie .spots-col selbst) nötig, sonst scheint darunter liegender Karteninhalt beim
-   Scrollen durch. */
+   auch nach dem Herunterscrollen weiter direkt zwischen Kategorien springen kann. Als schwebende
+   "Liquid Glass"-Pille statt einer randlosen, blickdichten Leiste - exakt dieselben Werte wie
+   NavBar.vue's .navbar.mobile-bottom (dort erklärt: color-mix() statt fest kodierter Farbe bleibt
+   themeabhängig stimmig, backdrop-filter blurrt statt verdeckt darunter durchscrollenden Inhalt). */
 .category-nav {
   display: flex;
   gap: var(--space-3);
   overflow-x: auto;
   overflow-y: hidden;
-  padding: 4px 2px var(--space-3);
-  margin-bottom: var(--space-2);
+  padding: 10px var(--space-3);
+  margin: var(--space-2) 0 var(--space-3);
   position: sticky;
-  top: 0;
+  top: var(--space-2);
   z-index: 2;
-  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-surface) 75%, transparent);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 .category-nav-item {
