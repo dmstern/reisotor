@@ -77,7 +77,31 @@ function setPageTitleRef(el: Element | ComponentPublicInstance | null) {
 }
 onUnmounted(() => {
   pageTitleObserver?.disconnect();
+  categoryNavObserver?.disconnect();
 });
+
+// .category-nav ist nur dann eine Liquid-Glass-Pill (siehe CSS unten), wenn sie tatsächlich im
+// position:sticky-"stuck"-Zustand ist - bei ausgefahrener Schublade/oben in der Liste soll sie wie
+// bisher eingebettet aussehen. Ein CSS-`:stuck`-Pseudoselektor ist noch nicht unterstützt, daher ein
+// unsichtbares Sentinel-Element direkt davor + IntersectionObserver: sobald das Sentinel den
+// sichtbaren Bereich verlässt, "klebt" die Nav. root=.spots-col reicht für Mobil- UND
+// Desktop-Layout, da IntersectionObserver automatisch alle overflow-clippenden Vorfahren zwischen
+// root und target berücksichtigt (egal ob .spots-col selbst oder .spots-col-body scrollt).
+const isCategoryNavStuck = ref(false);
+let categoryNavObserver: IntersectionObserver | null = null;
+function setCategoryNavSentinelRef(el: Element | ComponentPublicInstance | null) {
+  categoryNavObserver?.disconnect();
+  categoryNavObserver = null;
+  if (el instanceof HTMLElement) {
+    categoryNavObserver = new IntersectionObserver(
+      ([entry]) => {
+        isCategoryNavStuck.value = !entry.isIntersecting;
+      },
+      { root: el.closest('.spots-col'), threshold: 0 },
+    );
+    categoryNavObserver.observe(el);
+  }
+}
 
 onMounted(async () => {
   highlightedIds.value = liveSync.markSeen('spots');
@@ -1060,7 +1084,13 @@ async function removeSpot(id: number) {
         </form>
       </Modal>
 
-      <nav class="category-nav" v-if="spotGroups.length > 1" aria-label="Zu Kategorie springen">
+      <div v-if="spotGroups.length > 1" class="category-nav-sentinel" :ref="setCategoryNavSentinelRef"></div>
+      <nav
+        class="category-nav"
+        :class="{ 'is-stuck': isCategoryNavStuck }"
+        v-if="spotGroups.length > 1"
+        aria-label="Zu Kategorie springen"
+      >
         <button
           v-for="grp in spotGroups"
           :key="grp.category"
@@ -1811,25 +1841,55 @@ async function removeSpot(id: number) {
   scroll-margin-top: calc(var(--app-header-height, 56px) + var(--navbar-offset, 0px) + var(--space-2));
 }
 
+/* Zero-height Sentinel direkt vor .category-nav, per IntersectionObserver beobachtet (siehe
+   setCategoryNavSentinelRef im Script) - sobald es aus dem sichtbaren Bereich scrollt, "klebt" die
+   Nav gerade wirklich (position:sticky "stuck"), und .is-stuck unten greift. */
+.category-nav-sentinel {
+  height: 0;
+}
+
 /* Horizontale Kategorie-Navigation (Wolt-Stil): Icon zentriert über dem Label, ganze Leiste
    scrollt bei Bedarf horizontal statt umzubrechen (viele Kategorien nebeneinander). Vertikal sticky
    innerhalb von .spots-col-body (dem tatsächlich scrollenden Vorfahren, siehe dortige overflow-y):
    Seitentitel/Filter darüber scrollen weg, die Navigation selbst bleibt oben angeheftet, damit man
-   auch nach dem Herunterscrollen weiter direkt zwischen Kategorien springen kann. Als schwebende
-   "Liquid Glass"-Pille statt einer randlosen, blickdichten Leiste - exakt dieselben Werte wie
-   NavBar.vue's .navbar.mobile-bottom (dort erklärt: color-mix() statt fest kodierter Farbe bleibt
-   themeabhängig stimmig, backdrop-filter blurrt statt verdeckt darunter durchscrollenden Inhalt). */
+   auch nach dem Herunterscrollen weiter direkt zwischen Kategorien springen kann. Solange sie noch
+   eingebettet ist (nicht "stuck", also z. B. bei ausgefahrener Schublade oben in der Liste), sieht
+   sie aus wie ein normaler Abschnitt; erst im .is-stuck-Zustand wird sie zu einer schwebenden
+   "Liquid Glass"-Pille wie NavBar.vue's .navbar.mobile-bottom (dort erklärt: color-mix() statt fest
+   kodierter Farbe bleibt themeabhängig stimmig, backdrop-filter blurrt statt verdeckt darunter
+   durchscrollenden Inhalt) - der Wechsel zwischen beiden ist per CSS transition animiert.
+   */
 .category-nav {
   display: flex;
   gap: var(--space-3);
   overflow-x: auto;
   overflow-y: hidden;
-  padding: 10px var(--space-3);
-  margin: var(--space-2) 0 var(--space-3);
+  padding: 4px 2px var(--space-3);
+  margin-bottom: var(--space-2);
   position: sticky;
   top: var(--space-2);
   z-index: 2;
-  border: 1px solid var(--color-border);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md-squircle);
+  corner-shape: squircle;
+  background: var(--color-surface);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+  transition:
+    padding 0.25s ease,
+    margin 0.25s ease,
+    border-radius 0.25s ease,
+    border-color 0.25s ease,
+    background-color 0.25s ease,
+    backdrop-filter 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.category-nav.is-stuck {
+  padding: 10px var(--space-3);
+  margin: var(--space-2) 0 var(--space-3);
+  border-color: var(--color-border);
   border-radius: 999px;
   background: color-mix(in srgb, var(--color-surface) 75%, transparent);
   backdrop-filter: blur(20px) saturate(180%);
