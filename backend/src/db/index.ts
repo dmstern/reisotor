@@ -1185,3 +1185,13 @@ ensureColumn('spots', 'note_format', "TEXT NOT NULL DEFAULT 'legacy'");
 // falschen Tag zeigen. Neue Einträge setzen das Feld immer explizit (siehe routes/diary.ts).
 ensureColumn('diary_entries', 'date', 'TEXT');
 db.exec("UPDATE diary_entries SET date = substr(created_at, 1, 10) WHERE date IS NULL");
+
+// "Gemacht"-Status: unabhängiges Flag neben geplant/ungeplant (das weiterhin rein aus verknüpften
+// schedule_items abgeleitet wird, siehe Kommentar bei den ideas-Migrationen oben) - auch spontane,
+// nie geplante Besuche sollen als erledigt markierbar sein, ohne dass das ursprüngliche
+// Datum/geplant-Feld dafür ersetzt oder angetastet wird. Eigenes Feld auf beiden Tabellen (nicht nur
+// auf ideas), weil ein einzelner Spot auch unabhängig von jeder Tour als gemacht markierbar sein
+// muss. NOT NULL DEFAULT 0 statt nullable: additiv unbedenklich, kein Backfill nötig (neue Spalte,
+// alle bestehenden Zeilen sind naturgemäß "noch nicht gemacht").
+ensureColumn('spots', 'done', 'INTEGER NOT NULL DEFAULT 0');
+ensureColumn('ideas', 'done', 'INTEGER NOT NULL DEFAULT 0');

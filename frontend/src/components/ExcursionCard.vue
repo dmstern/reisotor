@@ -139,6 +139,7 @@ function onSpotDrop(event: DragEvent) {
       <span class="status" :class="{ planned: excursion.date }">
         {{ excursion.date ? `📅 ${formatDate(excursion.date)}` : 'In Planung' }}
       </span>
+      <span v-if="excursion.done" class="status status-done">✅ Gemacht</span>
     </div>
     <div class="body">
       <h3>{{ excursion.title }}</h3>
@@ -150,16 +151,27 @@ function onSpotDrop(event: DragEvent) {
       <div class="links" v-if="hasMappedStations">
         <button type="button" class="card-action-btn" @click.stop="emit('show-on-map')">🗺️ Auf Karte anzeigen</button>
       </div>
-      <button
-        type="button"
-        class="calendar-drag-handle"
-        aria-label="Auf Kalender ziehen zum Einplanen"
-        title="Auf Kalender ziehen zum Einplanen"
-        @pointerdown="onPointerDown"
-        @click.stop
-      >
-        📅 Einplanen
-      </button>
+      <div class="card-actions">
+        <button
+          type="button"
+          class="calendar-drag-handle"
+          aria-label="Auf Kalender ziehen zum Einplanen"
+          title="Auf Kalender ziehen zum Einplanen"
+          @pointerdown="onPointerDown"
+          @click.stop
+        >
+          📅 Einplanen
+        </button>
+        <button
+          type="button"
+          class="done-toggle"
+          :class="{ active: !!excursion.done }"
+          :aria-pressed="!!excursion.done"
+          @click.stop="excursionsStore.setDone(excursion.id, !excursion.done)"
+        >
+          {{ excursion.done ? '✅ Gemacht' : '⬜️ Als gemacht markieren' }}
+        </button>
+      </div>
       <Teleport to="body">
         <div v-if="dragging" class="drag-ghost" :style="ghostStyle ?? {}">📅 {{ excursion.title }}</div>
       </Teleport>
@@ -281,6 +293,15 @@ function onSpotDrop(event: DragEvent) {
   color: var(--color-success);
 }
 
+/* Zweiter Status-Chip für "gemacht", unabhängig vom Planungs-Status oben - unten statt oben
+   positioniert (dieselbe Idee wie SpotCard.vue's .status, nur dort aus Platzgründen fürs
+   Planungs-Badge selbst gebraucht), damit beide Chips gleichzeitig sichtbar bleiben können. */
+.status.status-done {
+  top: auto;
+  bottom: 8px;
+  color: var(--color-success);
+}
+
 /* Der immer-helle Hintergrund (für Kontrast über beliebigen Vorschaubildern) kollidiert im Dark
    Mode mit der hell eingefärbten --color-text-muted/--color-success-Schrift (für dunkle
    Hintergründe gedacht) – zu wenig Kontrast. Gleiches Muster wie bei den schwebenden
@@ -307,6 +328,14 @@ function onSpotDrop(event: DragEvent) {
   }
 }
 
+.card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+
 /* Eigener Anfasser statt des gesamten Card-Roots als Drag-Quelle (siehe usePointerDrag-Wiring im
    Script) – touch-action:none verhindert, dass der Browser das Ziehen als Seiten-Scroll
    interpretiert. Das ::before-Punkte-Raster macht ihn auf einen Blick als Zieh-Griff statt als
@@ -315,7 +344,6 @@ function onSpotDrop(event: DragEvent) {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  align-self: flex-start;
   background: var(--color-hover);
   border: none;
   border-radius: 999px;
@@ -323,11 +351,32 @@ function onSpotDrop(event: DragEvent) {
   padding: 3px 10px 3px 8px;
   font-size: 0.72rem;
   color: var(--color-text-muted);
-  margin-top: var(--space-1);
   cursor: grab;
   touch-action: none;
   -webkit-user-select: none;
   user-select: none;
+}
+
+/* Toggle statt Anfasser (kein Drag, nur Klick) - gleicher Chip-Grundstil wie
+   .calendar-drag-handle für optische Konsistenz, .active hebt den bereits gesetzten Status hervor
+   (dieselbe Erfolgs-Farbe wie .status.planned). */
+.done-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--color-hover);
+  border: none;
+  border-radius: 999px;
+  corner-shape: round;
+  padding: 3px 10px;
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.done-toggle.active {
+  color: var(--color-success);
+  font-weight: 600;
 }
 
 .calendar-drag-handle::before {

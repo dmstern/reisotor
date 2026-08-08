@@ -6,6 +6,7 @@ import { excursionStationKeys, resolveStations, type ExcursionStation } from '..
 import { formatDate as formatDateShared } from '../utils/dateFormat';
 import { useAuthStore } from '../stores/auth';
 import { useSpotsStore } from '../stores/spots';
+import { useExcursionsStore } from '../stores/excursions';
 import { useDrawersStore } from '../stores/drawers';
 import DetailModal from './DetailModal.vue';
 import RichTextDisplay from './RichTextDisplay.vue';
@@ -42,6 +43,7 @@ const emit = defineEmits<{
 
 const auth = useAuthStore();
 const spotsStore = useSpotsStore();
+const excursionsStore = useExcursionsStore();
 const drawers = useDrawersStore();
 
 // Eigener kleiner users-Fetch statt Prop-Durchreichung durch ExcursionCard.vue: wird nur für die
@@ -116,7 +118,18 @@ function openStationDetail(station: ExcursionStation) {
     <template #meta>
       <span v-if="creatorLabel">{{ creatorLabel }}</span>
       <span>{{ excursion.date ? `📅 ${formatDate(excursion.date)}` : '📝 In Planung' }}</span>
+      <span v-if="excursion.done" class="done-meta">✅ Gemacht</span>
     </template>
+
+    <button
+      type="button"
+      class="done-toggle"
+      :class="{ active: !!excursion.done }"
+      :aria-pressed="!!excursion.done"
+      @click="excursionsStore.setDone(excursion.id, !excursion.done)"
+    >
+      {{ excursion.done ? '✅ Gemacht' : '⬜️ Als gemacht markieren' }}
+    </button>
 
     <RichTextDisplay v-if="excursion.note" class="detail-row note" :content="excursion.note" :format="excursion.note_format" />
 
@@ -172,6 +185,33 @@ function openStationDetail(station: ExcursionStation) {
 <style scoped>
 .note {
   overflow-wrap: anywhere;
+}
+
+.done-meta {
+  color: var(--color-success);
+  font-weight: 600;
+}
+
+/* Gleicher Chip-Grundstil wie ExcursionCard.vue's .done-toggle für optische Konsistenz zwischen
+   Miniatur-Karte und Detail-Ansicht. */
+.done-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--color-hover);
+  border: none;
+  border-radius: 999px;
+  corner-shape: round;
+  padding: 4px 12px;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  margin-bottom: var(--space-2);
+}
+
+.done-toggle.active {
+  color: var(--color-success);
+  font-weight: 600;
 }
 
 .station-timeline {

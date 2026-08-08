@@ -76,6 +76,13 @@ const editDraft = useDraftAutosave(
 const pickedSpotIds = ref<Set<number>>(new Set());
 const editPickedSpotIds = ref<Set<number>>(new Set());
 
+// IDs der (meist unsichtbaren) Ein-Spot-Ausflüge, die pickSpot() im Hintergrund erzeugt/wieder-
+// verwendet hat (siehe dort) – getrennt von den "echten", über die Touren-Checkboxen ausgewählten
+// excursion_ids gehalten, damit submitEntry/submitEditEntry beim automatischen "gemacht"-Setzen
+// (siehe dort) den richtigen Spot statt des dahinterliegenden technischen Ausflugs markiert.
+const pickedSpotExcursionIds = ref<Set<number>>(new Set());
+const editPickedSpotExcursionIds = ref<Set<number>>(new Set());
+
 const openComments = ref<Set<number>>(new Set());
 
 // Lokales Datum (nicht toISOString, das ist UTC) im selben "YYYY-MM-DD"-Format wie
@@ -94,12 +101,20 @@ function sortEntries() {
   );
 }
 
-// Ausflüge, die am angegebenen Tag geplant sind, zuerst (Vorschlag) – der Rest bleibt in
-// Store-Reihenfolge dahinter, damit man bei Bedarf auch einen Ausflug an einem anderen Tag
-// zuordnen kann (z. B. ein Rückblick, der erst am Folgetag geschrieben wird).
+// Ausflüge, die am angegebenen Tag geplant sind, zuerst (Vorschlag, "⭐ Empfohlen" im Template) –
+// der Rest bleibt in Store-Reihenfolge dahinter, damit man bei Bedarf auch einen Ausflug an einem
+// anderen Tag zuordnen kann (z. B. ein Rückblick, der erst am Folgetag geschrieben wird).
 function pickerExcursions(dateStr: string) {
   const matching = excursionsStore.excursions.filter((e) => e.date === dateStr);
   const rest = excursionsStore.excursions.filter((e) => e.date !== dateStr);
+  return [...matching, ...rest];
+}
+
+// Analog zu pickerExcursions oben: an diesem Tag bereits geplante Spots (siehe spotAlreadyPlanned
+// unten) zuerst, damit die "⭐ Empfohlen"-Markierung nicht in der übrigen Liste untergeht.
+function pickerSpots(dateStr: string) {
+  const matching = spotsStore.spots.filter((s) => spotAlreadyPlanned(s.id, dateStr));
+  const rest = spotsStore.spots.filter((s) => !spotAlreadyPlanned(s.id, dateStr));
   return [...matching, ...rest];
 }
 
@@ -120,11 +135,40 @@ function spotAlreadyPlanned(spotId: number, dateStr: string) {
 // Ein-Spot-Ausflug für den Tag des Eintrags an (oder findet einen bereits bestehenden,
 // idempotent, siehe excursionsStore.planSpotOnDate) und fügt ihn wie einen normal
 // ausgewählten Ausflug zu excursion_ids hinzu – der bestehende diary_excursions-Mechanismus
-// bleibt dadurch unverändert.
-async function pickSpot(spotId: number, dateStr: string, target: { excursion_ids: number[] }, picked: Set<number>) {
+// bleibt dadurch unverändert. pickedExcursionIds merkt sich den dafür verwendeten (meist
+// unsichtbaren) Ausflug, damit submitEntry/submitEditEntry ihn beim automatischen "gemacht"-Setzen
+// von den echten Touren-Checkboxen unterscheiden kann (siehe dort).
+async function pickSpot(
+  spotId: number,
+  dateStr: string,
+  target: { excursion_ids: number[] },
+  picked: Set<number>,
+  pickedExcursionIds: Set<number>,
+) {
   const excursion = await excursionsStore.planSpotOnDate(spotId, dateStr);
   if (!target.excursion_ids.includes(excursion.id)) target.excursion_ids.push(excursion.id);
   picked.add(spotId);
+  pickedExcursionIds.add(excursion.id);
+}
+
+// Setzt automatisch gemacht=true auf jede Tour/jeden Spot, die/der beim Speichern dieses Eintrags
+// per Checkbox/Spot-Picker verknüpft wurde (Nutzer-Entscheidung: explizites Anhaken soll
+// zusätzlich zur Verknüpfung auch den "gemacht"-Status setzen) – ein Tagebucheintrag dokumentiert
+// per Definition etwas tatsächlich Erlebtes. pickedSpotExcursionIds wird dabei aus den echten
+// Touren-IDs herausgefiltert: der dahinterliegende technische Ein-Spot-Ausflug selbst soll nicht
+// als "gemachte Tour" markiert werden, sondern der Spot direkt (siehe pickSpot oben). Bewusst
+// best-effort/nicht blockierend für den Save-Erfolg – ein einzelner fehlgeschlagener Toggle soll
+// den bereits gespeicherten Tagebucheintrag nicht als fehlgeschlagen erscheinen lassen.
+async function markLinkedAsDone(excursionIds: number[], pickedSpotIds: Set<number>, pickedSpotExcursionIds: Set<number>) {
+  const tourIds = excursionIds.filter((id) => !pickedSpotExcursionIds.has(id));
+  try {
+    await Promise.all([
+      ...tourIds.map((id) => excursionsStore.setDone(id, true)),
+      ...[...pickedSpotIds].map((id) => spotsStore.setDone(id, true)),
+    ]);
+  } catch {
+    // Best effort - der Tagebucheintrag selbst ist bereits gespeichert, siehe Kommentar oben.
+  }
 }
 
 async function load() {
@@ -221,6 +265,7 @@ function removeImage(target: { images: string[] }, index: number) {
 function openNewForm() {
   form.value = emptyForm();
   pickedSpotIds.value = new Set();
+  pickedSpotExcursionIds.value = new Set();
   // Vorschlag: an diesem Tag geplante Ausflüge direkt vorauswählen, statt sie nur anzuzeigen –
   // meist wird ein Eintrag ja am selben Tag über genau diesen Ausflug geschrieben.
   form.value.excursion_ids = excursionsStore.excursions.filter((e) => e.date === form.value.date).map((e) => e.id);
@@ -241,6 +286,7 @@ async function submitEntry() {
   const created = await api.post<DiaryEntry>('/diary', body);
   entries.value.unshift(created);
   sortEntries();
+  markLinkedAsDone(form.value.excursion_ids, pickedSpotIds.value, pickedSpotExcursionIds.value);
   form.value = emptyForm();
   showForm.value = false;
   newDraft.clear();
@@ -262,6 +308,7 @@ function startEdit(entry: DiaryEntry) {
     date: entry.date,
   };
   editPickedSpotIds.value = new Set();
+  editPickedSpotExcursionIds.value = new Set();
 }
 
 async function submitEditEntry() {
@@ -278,6 +325,7 @@ async function submitEditEntry() {
   const idx = entries.value.findIndex((e) => e.id === updated.id);
   if (idx !== -1) entries.value[idx] = updated;
   sortEntries();
+  markLinkedAsDone(editForm.value.excursion_ids, editPickedSpotIds.value, editPickedSpotExcursionIds.value);
   editDraft.clear();
   editingEntry.value = null;
 }
@@ -358,21 +406,21 @@ async function removeComment(id: number) {
         <label v-for="ex in pickerExcursions(form.date)" :key="ex.id" class="excursion-option">
           <input type="checkbox" :value="ex.id" v-model="form.excursion_ids" />
           <span class="excursion-option-title">{{ ex.title }}</span>
-          <span v-if="ex.date === form.date" class="excursion-option-badge">📅 an diesem Tag geplant</span>
+          <span v-if="ex.date === form.date" class="excursion-option-badge recommended">⭐ Empfohlen – an diesem Tag geplant</span>
         </label>
       </fieldset>
       <fieldset v-if="spotsStore.spots.length" class="excursion-picker">
         <legend>📍 Spots zuordnen</legend>
         <button
-          v-for="spot in spotsStore.spots"
+          v-for="spot in pickerSpots(form.date)"
           :key="spot.id"
           type="button"
           class="excursion-option spot-option-btn"
-          @click="pickSpot(spot.id, form.date, form, pickedSpotIds)"
+          @click="pickSpot(spot.id, form.date, form, pickedSpotIds, pickedSpotExcursionIds)"
         >
           <span class="excursion-option-title">{{ spotCategoryMeta(spot.category).icon }} {{ spot.title }}</span>
           <span v-if="pickedSpotIds.has(spot.id)" class="excursion-option-badge">✓ hinzugefügt</span>
-          <span v-else-if="spotAlreadyPlanned(spot.id, form.date)" class="excursion-option-badge">📅 an diesem Tag geplant</span>
+          <span v-else-if="spotAlreadyPlanned(spot.id, form.date)" class="excursion-option-badge recommended">⭐ Empfohlen – an diesem Tag geplant</span>
         </button>
       </fieldset>
       <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
@@ -472,21 +520,21 @@ async function removeComment(id: number) {
           <label v-for="ex in pickerExcursions(editForm.date)" :key="ex.id" class="excursion-option">
             <input type="checkbox" :value="ex.id" v-model="editForm.excursion_ids" />
             <span class="excursion-option-title">{{ ex.title }}</span>
-            <span v-if="ex.date === editForm.date" class="excursion-option-badge">📅 an diesem Tag geplant</span>
+            <span v-if="ex.date === editForm.date" class="excursion-option-badge recommended">⭐ Empfohlen – an diesem Tag geplant</span>
           </label>
         </fieldset>
         <fieldset v-if="spotsStore.spots.length" class="excursion-picker">
           <legend>📍 Spots zuordnen</legend>
           <button
-            v-for="spot in spotsStore.spots"
+            v-for="spot in pickerSpots(editForm.date)"
             :key="spot.id"
             type="button"
             class="excursion-option spot-option-btn"
-            @click="pickSpot(spot.id, editForm.date, editForm, editPickedSpotIds)"
+            @click="pickSpot(spot.id, editForm.date, editForm, editPickedSpotIds, editPickedSpotExcursionIds)"
           >
             <span class="excursion-option-title">{{ spotCategoryMeta(spot.category).icon }} {{ spot.title }}</span>
             <span v-if="editPickedSpotIds.has(spot.id)" class="excursion-option-badge">✓ hinzugefügt</span>
-            <span v-else-if="spotAlreadyPlanned(spot.id, editForm.date)" class="excursion-option-badge">📅 an diesem Tag geplant</span>
+            <span v-else-if="spotAlreadyPlanned(spot.id, editForm.date)" class="excursion-option-badge recommended">⭐ Empfohlen – an diesem Tag geplant</span>
           </button>
         </fieldset>
         <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />
@@ -570,6 +618,18 @@ async function removeComment(id: number) {
   font-size: 0.78rem;
   color: var(--color-success);
   white-space: nowrap;
+}
+
+/* Hebt die für den Tag des Eintrags tatsächlich geplanten Vorschläge zusätzlich optisch hervor
+   (eigener Hintergrund-Chip statt nur eingefärbtem Text wie beim generischen Badge oben) - unter
+   ggf. weiteren wählbaren Einträgen sollen sie sofort als die wahrscheinlich gemeinten erkennbar
+   sein (siehe auch pickerExcursions/pickerSpots, die sie zusätzlich an den Listenanfang sortieren). */
+.excursion-option-badge.recommended {
+  background: var(--color-primary-tint);
+  padding: 2px 8px;
+  border-radius: 999px;
+  corner-shape: round;
+  font-weight: 600;
 }
 
 /* Verknüpfte Ausflüge am unteren Rand der Kachel (nach dem Inhalt, vor den Kommentaren) – Bild +

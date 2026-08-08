@@ -58,6 +58,7 @@ function spot(overrides: Partial<Spot>): Spot {
     amount: null,
     paid_by_user_id: null,
     budget_expense_id: null,
+    done: 0,
     ...overrides,
   };
 }

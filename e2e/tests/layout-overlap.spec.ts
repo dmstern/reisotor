@@ -120,6 +120,11 @@ test.describe('Mobile: ExcursionCard-Löschen-Button überdeckt nicht den Status
     await page.goto('/tours');
     const card = page.locator('.excursion-card', { hasText: excursion.title });
     await expect(card).toBeVisible();
+    // Scrollt die Karte in den sichtbaren Bereich, statt sich auf ihre initiale Position im
+    // Seitenfluss zu verlassen: elementFromPoint() (siehe expectNotCoveredBy) trifft für Punkte
+    // außerhalb des aktuellen Viewports sonst grundsätzlich "null", unabhängig vom eigentlich zu
+    // testenden Überdeckungs-Verhalten.
+    await card.scrollIntoViewIfNeeded();
     const statusChip = card.locator('.status');
     const deleteBtn = card.locator('.card-delete');
     await expect(statusChip).toBeVisible();

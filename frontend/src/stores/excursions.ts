@@ -100,5 +100,14 @@ export const useExcursionsStore = defineStore('excursions', () => {
     return excursion;
   }
 
-  return { excursions, loaded, load, create, update, remove, restore, isPending, setDate, planSpotOnDate };
+  /** Setzt/entfernt den "gemacht"-Status, unabhängig von geplant/ungeplant (siehe date oben) -
+   *  eigener Endpunkt statt eines vollen update(), damit ein Toggle nicht alle anderen Felder
+   *  (Titel/Notiz/Spots/Datum) erneut mitschicken muss. */
+  async function setDone(id: number, done: boolean) {
+    const result = await api.post<{ done: boolean }>(`/ideas/${id}/done`, { done });
+    const existing = excursions.value.find((e) => e.id === id);
+    if (existing) existing.done = result.done ? 1 : 0;
+  }
+
+  return { excursions, loaded, load, create, update, remove, restore, isPending, setDate, planSpotOnDate, setDone };
 });
