@@ -91,7 +91,9 @@ function onBlur() {
   border: none;
   background: transparent;
   padding: 4px 2px;
-  font-size: 0.9rem;
+  /* Mindestens 16px (1rem, siehe style.css's globale input-Regel) - iOS Safari zoomt beim
+     Fokussieren eines Eingabefelds automatisch rein, sobald dessen font-size darunter liegt. */
+  font-size: 1rem;
   border-bottom: 1px solid var(--color-border);
   border-radius: 0;
 }
@@ -121,9 +123,19 @@ function onBlur() {
   flex-wrap: wrap;
 }
 
-.extra-fields :deep(select),
-.extra-fields :deep(input) {
+.extra-fields :deep(select) {
   font-size: 0.78rem;
+  padding: 3px 6px;
+  min-width: 0;
+  width: auto;
+}
+
+/* Getrennt von select oben: ein <select> öffnet auf iOS ein natives Auswahlrad statt der
+   Tastatur (kein Zoom-Risiko), ein <input> würde bei derselben kleinen font-size wie oben aber
+   denselben Auto-Zoom-Bug wie .label-input auslösen (siehe dort) - deshalb hier mindestens 16px,
+   auch wenn aktuell keine Verwendungsstelle einen Text-Input in diesen Slot steckt. */
+.extra-fields :deep(input) {
+  font-size: 1rem;
   padding: 3px 6px;
   min-width: 0;
   width: auto;
