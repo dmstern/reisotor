@@ -149,7 +149,8 @@ function onDragEnd() {
 .planned-box,
 .spot-picker {
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
   padding: var(--space-2) var(--space-3);
   display: flex;
   flex-direction: column;
@@ -181,7 +182,8 @@ function onDragEnd() {
   gap: var(--space-2);
   padding: 6px 8px;
   background: var(--color-surface);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
   cursor: grab;
 }
 

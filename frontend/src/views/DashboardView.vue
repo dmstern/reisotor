@@ -663,7 +663,8 @@ function formatWeekdayDate(d: string) {
   gap: 2px;
   min-width: 68px;
   padding: var(--space-2);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
   background: var(--color-hover);
 }
 

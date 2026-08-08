@@ -51,7 +51,8 @@ const emit = defineEmits<{ (e: 'update:modelValue', value: boolean): void; (e: '
   margin: calc(-1 * var(--space-4)) calc(-1 * var(--space-4)) var(--space-3);
   height: 200px;
   background: var(--color-primary-tint) center/cover no-repeat;
-  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  border-radius: var(--radius-md-squircle) var(--radius-md-squircle) 0 0;
+  corner-shape: squircle;
   display: flex;
   align-items: center;
   justify-content: center;

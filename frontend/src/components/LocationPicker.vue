@@ -178,7 +178,8 @@ function clear() {
 
 .location-picker-map {
   height: 220px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
   overflow: hidden;
   border: 1px solid var(--color-border);
 }

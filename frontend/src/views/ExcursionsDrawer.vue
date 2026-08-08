@@ -502,7 +502,8 @@ function editStationSpot() {
 
 .dropzone {
   border: 2px dashed transparent;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-md-squircle);
+  corner-shape: squircle;
   transition: border-color 0.15s ease, background 0.15s ease;
 }
 

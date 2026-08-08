@@ -1085,7 +1085,8 @@ function formatDate(date: string) {
   justify-content: space-between;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
   background: var(--color-highlight);
   border: 1px solid var(--color-highlight-border);
   font-size: 0.88rem;
@@ -1210,7 +1211,8 @@ function formatDate(date: string) {
   padding: var(--space-2);
   border: 1px solid var(--color-border);
   border-left: 3px solid transparent;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
 }
 
 .item.clickable {
@@ -1279,7 +1281,8 @@ function formatDate(date: string) {
   min-width: 180px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-md-squircle);
+  corner-shape: squircle;
   box-shadow: var(--shadow-md);
   padding: var(--space-2);
   z-index: 21;
@@ -1291,7 +1294,8 @@ function formatDate(date: string) {
 .picker-menu a,
 .picker-menu button {
   padding: 6px 8px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
   color: var(--color-text);
   text-decoration: none;
   font-size: 0.85rem;

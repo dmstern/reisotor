@@ -86,7 +86,8 @@ function onBlur() {
   overflow-y: auto;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
   box-shadow: var(--shadow-md);
 }
 

@@ -139,7 +139,8 @@ function isActive(name: string, attrs?: Record<string, unknown>) {
 .richtext-editor {
   position: relative;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
   background: var(--color-surface);
   overflow: hidden;
 }

@@ -503,7 +503,8 @@ async function removeComment(id: number) {
 
 .excursion-picker {
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
   padding: var(--space-2) var(--space-3);
   display: flex;
   flex-direction: column;

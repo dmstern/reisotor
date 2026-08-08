@@ -131,7 +131,8 @@ function close() {
   justify-content: space-between;
   gap: var(--space-2);
   padding: 6px 8px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
   background: var(--color-primary-tint);
 }
 

@@ -213,7 +213,8 @@ function onLinkClick(event: MouseEvent) {
   align-items: center;
   gap: 2px;
   padding: 6px 10px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
   color: var(--color-text-muted);
   text-decoration: none;
   font-size: 0.7rem;
