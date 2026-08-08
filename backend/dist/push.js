@@ -1,0 +1,86 @@
+import webpush from 'web-push';
+import { db } from './db/index.js';
+const vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
+const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
+const vapidSubject = process.env.VAPID_SUBJECT ?? 'mailto:admin@example.com';
+// Push ist optional: ohne gesetzte VAPID_*-Env-Vars (siehe scripts/generate-vapid-keys.mjs)
+// bleibt die App voll funktionsfähig, nur ohne Push-Benachrichtigungen (kein harter Fehler beim
+// Start, z. B. für lokale Entwicklung ohne konfiguriertes Push).
+const pushEnabled = !!(vapidPublicKey && vapidPrivateKey);
+if (pushEnabled) {
+    webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
+}
+export function getVapidPublicKey() {
+    return vapidPublicKey ?? null;
+}
+export function saveSubscription(userId, sub) {
+    db.prepare(`INSERT INTO push_subscriptions (user_id, endpoint, p256dh, auth, created_at)
+     VALUES (?, ?, ?, ?, ?)
+     ON CONFLICT(endpoint) DO UPDATE SET user_id = excluded.user_id, p256dh = excluded.p256dh, auth = excluded.auth`).run(userId, sub.endpoint, sub.keys.p256dh, sub.keys.auth, new Date().toISOString());
+}
+export function removeSubscription(endpoint, userId) {
+    db.prepare('DELETE FROM push_subscriptions WHERE endpoint = ? AND user_id = ?').run(endpoint, userId);
+}
+const DOMAIN_LABEL = {
+    schedule: 'Kalender',
+    packing: 'Packliste',
+    shopping: 'Einkaufsliste',
+    todos: 'ToDos',
+    spots: 'Spots',
+    ideas: 'Touren',
+    travel: 'Reise',
+    budget: 'Budget',
+    diary: 'Tagebuch',
+    notes: 'Notizen',
+    members: 'Mitglieder',
+};
+const ACTION_LABEL = {
+    created: 'etwas hinzugefügt',
+    updated: 'etwas geändert',
+    deleted: 'etwas gelöscht',
+    restored: 'etwas wiederhergestellt',
+    member_added: 'jemanden eingeladen',
+    member_removed: 'jemanden entfernt',
+};
+/** Gemeinsamer Versand-Kern für alle Push-Auslöser dieser Datei (Aktivitäts-Benachrichtigungen
+ *  hier UND departureReminders.ts's Abreise-Erinnerungen): lädt die Abos aller Urlaub-Mitglieder
+ *  (optional abzüglich einer ausschließenden user_id, z. B. der auslösenden Aktivitäts-Akteurin) und
+ *  verschickt denselben JSON-Payload an jedes. Tote Abonnements (Browser hat die Berechtigung
+ *  entzogen oder das Abo ist abgelaufen) räumt sich hier selbst auf, sonst würde jeder künftige Push
+ *  an dasselbe tote Abo erneut fehlschlagen. Best-effort - wirft nie, ruft nie process.exit o. Ä. */
+export async function sendPushToTripMembers(tripId, payload, excludeUserId) {
+    if (!pushEnabled)
+        return;
+    const subs = (excludeUserId != null
+        ? db
+            .prepare(`SELECT push_subscriptions.* FROM push_subscriptions
+             JOIN trip_members ON trip_members.user_id = push_subscriptions.user_id
+             WHERE trip_members.trip_id = ? AND push_subscriptions.user_id != ?`)
+            .all(tripId, excludeUserId)
+        : db
+            .prepare(`SELECT push_subscriptions.* FROM push_subscriptions
+             JOIN trip_members ON trip_members.user_id = push_subscriptions.user_id
+             WHERE trip_members.trip_id = ?`)
+            .all(tripId));
+    if (!subs.length)
+        return;
+    const body = JSON.stringify(payload);
+    await Promise.all(subs.map(async (sub) => {
+        try {
+            await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, body);
+        }
+        catch (err) {
+            const statusCode = err.statusCode;
+            if (statusCode === 404 || statusCode === 410) {
+                db.prepare('DELETE FROM push_subscriptions WHERE endpoint = ?').run(sub.endpoint);
+            }
+        }
+    }));
+}
+/** Best-effort – wird von activity.ts's recordActivity() nach jeder Mutation angestoßen, blockiert
+ *  die auslösende Route nie (siehe dortiger .catch()). */
+export async function notifyTripMembers(tripId, excludeUserId, info) {
+    const title = `${DOMAIN_LABEL[info.domain] ?? info.domain} · ${info.tripName}`;
+    const body = `${info.actorUsername} hat ${ACTION_LABEL[info.action] ?? 'etwas geändert'}`;
+    await sendPushToTripMembers(tripId, { title, body, tripId }, excludeUserId);
+}

@@ -1,0 +1,102 @@
+import { db } from '../db/index.js';
+import { requireTripMember } from '../tripAccess.js';
+import { recordActivity } from '../activity.js';
+// Zuordnung des Papierkorb-Typs (TRASH_CONFIG unten) zur Nav-Item-Domäne für Echtzeit-Sync/
+// Nav-Badges (stores/liveSync.ts im Frontend) – Wiederherstellen soll dieselbe Domäne "aufleuchten"
+// lassen, in der das Objekt ursprünglich lebt, nicht einen generischen "trash"-Punkt.
+const DOMAIN_BY_TYPE = {
+    schedule_item: 'schedule',
+    excursion: 'ideas',
+    spot: 'spots',
+    travel_item: 'travel',
+    budget_item: 'budget',
+    budget_transfer: 'budget',
+    todo: 'todos',
+    packing_item: 'packing',
+    shopping_item: 'shopping',
+    note: 'notes',
+    diary_entry: 'diary',
+};
+const TRASH_CONFIG = [
+    { type: 'schedule_item', table: 'schedule_items', label: 'Kalender-Termin' },
+    {
+        type: 'excursion',
+        table: 'ideas',
+        label: 'Ausflug',
+        // Der Kalender-Termin, der den Ausflug als "geplant" markiert, wurde beim Löschen mit
+        // weggelöscht (routes/ideas.ts) – ohne diese Kopplung bliebe er dauerhaft im Papierkorb,
+        // obwohl der Ausflug selbst schon wiederhergestellt ist.
+        onRestore: (id) => db.prepare('UPDATE schedule_items SET deleted_at = NULL WHERE idea_id = ? AND deleted_at IS NOT NULL').run(id),
+    },
+    {
+        type: 'spot',
+        table: 'spots',
+        label: 'Spot',
+        // Betrifft nur Spots der Kategorie "Unterkunft" (budget_expense_id gesetzt, siehe
+        // Migrationskommentar in db/index.ts) – bei gewöhnlichen Spots ist die Spalte leer, restoreLinkedBudgetExpense() ist dann ein No-Op.
+        onRestore: (id) => restoreLinkedBudgetExpense('spots', id),
+    },
+    {
+        type: 'travel_item',
+        table: 'travel_items',
+        label: 'Reise-Eintrag',
+        onRestore: (id) => restoreLinkedBudgetExpense('travel_items', id),
+    },
+    { type: 'budget_item', table: 'budget_items', label: 'Bezahlung' },
+    { type: 'budget_transfer', table: 'budget_transfers', label: 'Überweisung' },
+    { type: 'todo', table: 'todo_items', label: 'ToDo' },
+    { type: 'packing_item', table: 'packing_items', label: 'Packlisten-Eintrag' },
+    { type: 'shopping_item', table: 'shopping_items', label: 'Einkaufslisten-Eintrag' },
+    { type: 'note', table: 'notes', label: 'Notiz' },
+    { type: 'diary_entry', table: 'diary_entries', label: 'Tagebuch-Eintrag' },
+];
+function restoreLinkedBudgetExpense(table, id) {
+    const row = db.prepare(`SELECT budget_expense_id FROM ${table} WHERE id = ?`).get(id);
+    if (row?.budget_expense_id) {
+        db.prepare('UPDATE budget_items SET deleted_at = NULL WHERE id = ? AND deleted_at IS NOT NULL').run(row.budget_expense_id);
+    }
+}
+export const trashRoutes = async (app) => {
+    // Listet alle weich gelöschten Objekte eines Urlaubs über alle Objekttypen hinweg, neueste
+    // Löschung zuerst. `data` trägt die komplette Zeile (statt eines vorformatierten Titels) – die
+    // Papierkorb-Ansicht im Frontend kennt pro Typ bereits die passenden Icons/Formatierungen
+    // (spotCategoryMeta, scheduleCategory, …) und formatiert damit selbst.
+    app.get('/trash', async (req, reply) => {
+        if (!req.query.trip_id)
+            return reply.code(400).send({ error: 'trip_id erforderlich' });
+        if (!requireTripMember(reply, req.query.trip_id, req.session.userId))
+            return;
+        const entries = TRASH_CONFIG.flatMap((config) => {
+            const rows = db
+                .prepare(`SELECT * FROM ${config.table} WHERE trip_id = ? AND deleted_at IS NOT NULL`)
+                .all(req.query.trip_id);
+            return rows.map((row) => ({
+                type: config.type,
+                id: row.id,
+                label: config.label,
+                deletedAt: row.deleted_at,
+                data: row,
+            }));
+        });
+        entries.sort((a, b) => b.deletedAt.localeCompare(a.deletedAt));
+        return entries;
+    });
+    app.post('/trash/:type/:id/restore', async (req, reply) => {
+        const config = TRASH_CONFIG.find((c) => c.type === req.params.type);
+        if (!config)
+            return reply.code(400).send({ error: 'Unbekannter Objekttyp' });
+        const existingRow = db.prepare(`SELECT trip_id FROM ${config.table} WHERE id = ?`).get(req.params.id);
+        if (!existingRow)
+            return reply.code(404).send({ error: 'Nicht gefunden oder nicht gelöscht' });
+        if (!requireTripMember(reply, existingRow.trip_id, req.session.userId))
+            return;
+        const result = db
+            .prepare(`UPDATE ${config.table} SET deleted_at = NULL WHERE id = ? AND deleted_at IS NOT NULL`)
+            .run(req.params.id);
+        if (result.changes === 0)
+            return reply.code(404).send({ error: 'Nicht gefunden oder nicht gelöscht' });
+        config.onRestore?.(req.params.id);
+        recordActivity(existingRow.trip_id, DOMAIN_BY_TYPE[req.params.type] ?? req.params.type, Number(req.params.id), 'restored', req.session.userId);
+        return db.prepare(`SELECT * FROM ${config.table} WHERE id = ?`).get(req.params.id);
+    });
+};

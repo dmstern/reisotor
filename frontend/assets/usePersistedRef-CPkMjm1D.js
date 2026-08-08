@@ -1,0 +1,1 @@
+import{r as n,s as o}from"./index-DSbcdL4V.js";function i(r,e){const t=n(a(r,e));return o(t,s=>{localStorage.setItem(r,JSON.stringify(s))},{flush:"sync"}),t}function a(r,e){const t=localStorage.getItem(r);if(t==null)return e;try{return JSON.parse(t)}catch{return e}}export{i as u};
