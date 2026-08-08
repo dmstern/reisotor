@@ -23,17 +23,26 @@ test('creating a note with the WYSIWYG editor renders formatting, and a pre-exis
   // selektieren) - deterministischer als eine Selektion, die je nach Editor-/Browser-Timing
   // unterschiedlich greifen kann.
   await page.getByRole('button', { name: 'Fett', exact: true }).click();
+  // Der Toolbar-Klick ruft intern editor.chain().focus()...run() auf (RichTextEditor.vue) - das
+  // Fokussieren läuft nicht synchron zum Klick-Event zurück zu Playwright, direktes Weitertippen
+  // konnte deshalb gelegentlich ins Leere gehen bzw. vor dem tatsächlichen Fokus-Wechsel landen
+  // (beobachtete CI-Flakiness: <li> existierte, aber mit leerem Text). Explizit auf den Fokus warten
+  // statt direkt weiterzutippen.
+  await expect(editor).toBeFocused();
   await editor.pressSequentially('Wichtiger Punkt');
   await page.getByRole('button', { name: 'Fett', exact: true }).click();
   await editor.press('Enter');
   await page.getByRole('button', { name: 'Aufzählung' }).click();
-  await editor.pressSequentially('Erster Listenpunkt');
   // Bewusst nur EIN Listeneintrag statt eines zweiten per Enter-Fortsetzung: Enter-getriebenes
   // Aufsplitten eines <li> in ein zweites hing in CI (anderer Chromium-Build als lokal) fest bei
   // "1 <li>" - reproduzierbar über mehrere Runs, kein reiner Timing-Flake, siehe Diskussion bei der
   // ursprünglichen Einführung dieses Tests. Ein einzelner Listeneintrag deckt den eigentlich
   // relevanten Regressionsfall (Aufzählung wird als <ul><li> gerendert) weiterhin vollständig ab.
+  // Auf das tatsächliche Erscheinen des <li> warten, bevor hineingetippt wird - sonst dieselbe
+  // Fokus-Race wie oben, nur diesmal mit einem neu erzeugten Knoten statt nur einem Fokus-Wechsel.
   await expect(editor.locator('li')).toHaveCount(1);
+  await expect(editor).toBeFocused();
+  await editor.pressSequentially('Erster Listenpunkt');
 
   await page.getByRole('button', { name: 'Hinzufügen', exact: true }).click();
 
