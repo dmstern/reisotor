@@ -6,15 +6,19 @@ import { test, expect } from '@playwright/test';
 test('checking an item in the shopping list sinks it to the bottom of its group and grays it out', async ({ page }) => {
   await page.goto('/shopping');
 
-  await page.getByPlaceholder('Neuer Artikel').fill('E2E Sort A');
-  await page.getByRole('button', { name: 'Hinzufügen', exact: true }).click();
-  await page.getByPlaceholder('Neuer Artikel').fill('E2E Sort B');
-  await page.getByRole('button', { name: 'Hinzufügen', exact: true }).click();
-
   const group = page.locator('.group-section', { hasText: 'Nicht zugewiesen' });
   const rowA = group.locator('.row', { hasText: 'E2E Sort A' });
   const rowB = group.locator('.row', { hasText: 'E2E Sort B' });
+
+  await page.getByPlaceholder('Neuer Artikel').fill('E2E Sort A');
+  await page.getByRole('button', { name: 'Hinzufügen', exact: true }).click();
+  // Erst auf das Eintreffen von A warten, bevor B hinzugefügt wird - sonst können sich der noch
+  // laufende Request/State-Reset des ersten Hinzufügens und das Ausfüllen des zweiten Artikels
+  // überschneiden (beobachtete CI-Flakiness, wo B nie auftauchte).
   await expect(rowA).toBeVisible();
+
+  await page.getByPlaceholder('Neuer Artikel').fill('E2E Sort B');
+  await page.getByRole('button', { name: 'Hinzufügen', exact: true }).click();
   await expect(rowB).toBeVisible();
 
   // A wurde zuerst angelegt, steht also zunächst vor B.
@@ -41,15 +45,16 @@ test('marking a packing item as packed sinks it to the bottom of its category gr
   const sharedList = page.locator('.list-section', { hasText: 'Gemeinsame Packliste' });
   const quickAddLabel = sharedList.getByPlaceholder('Neuer Gegenstand für Gemeinsame Packliste');
 
-  await quickAddLabel.fill('E2E Pack A');
-  await quickAddLabel.press('Enter');
-  await quickAddLabel.fill('E2E Pack B');
-  await quickAddLabel.press('Enter');
-
   const group = sharedList.locator('.group', { hasText: 'Sonstiges' });
   const rowA = group.locator('.row', { hasText: 'E2E Pack A' });
   const rowB = group.locator('.row', { hasText: 'E2E Pack B' });
+
+  await quickAddLabel.fill('E2E Pack A');
+  await quickAddLabel.press('Enter');
   await expect(rowA).toBeVisible();
+
+  await quickAddLabel.fill('E2E Pack B');
+  await quickAddLabel.press('Enter');
   await expect(rowB).toBeVisible();
 
   await rowA.locator('.state-toggle').click(); // ungepackt -> rausgelegt
