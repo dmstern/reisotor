@@ -49,7 +49,7 @@ test.describe('Tour-Zuordnung: einfacher Tagging-Modus + Kategorie/Touren-Gruppi
     await expect(tourGroupHeading).toBeVisible();
     await expect(spotCard).toBeVisible();
 
-    await page.getByRole('button', { name: '🏷️ Kategorie' }).click();
+    await page.getByRole('button', { name: '🏷️ Spots' }).click();
   });
 });
 
