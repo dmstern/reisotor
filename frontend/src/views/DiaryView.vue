@@ -13,7 +13,7 @@ import RichTextEditor from '../components/RichTextEditor.vue';
 import RichTextDisplay from '../components/RichTextDisplay.vue';
 import { compressImage } from '../utils/imageCompression';
 import { spotCategoryMeta } from '../utils/spotCategory';
-import { formatDateTime } from '../utils/dateFormat';
+import { formatDate } from '../utils/dateFormat';
 import Modal from '../components/Modal.vue';
 import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
@@ -41,7 +41,16 @@ const loading = ref(true);
 const highlightedIds = ref<Set<number>>(new Set());
 
 const showForm = ref(false);
-const emptyForm = () => ({ title: '', content: '', images: [] as string[], excursion_ids: [] as number[] });
+// date: vorausgewählt mit dem heutigen Tag (siehe localDateStr() weiter unten - als Funktions-
+// deklaration bereits hier aufrufbar, auch wenn sie textuell später im Modul steht), aber frei
+// änderbar - z. B. für einen rückblickend erst am Folgetag geschriebenen Eintrag über den Vortag.
+const emptyForm = () => ({
+  title: '',
+  content: '',
+  images: [] as string[],
+  excursion_ids: [] as number[],
+  date: localDateStr(new Date()),
+});
 const form = ref(emptyForm());
 const uploading = ref(false);
 const uploadError = ref('');
@@ -74,12 +83,16 @@ const openComments = ref<Set<number>>(new Set());
 function localDateStr(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
-function dateStrOf(iso: string) {
-  return localDateStr(new Date(iso));
-}
 
-const todayDateStr = computed(() => localDateStr(new Date()));
-const editEntryDateStr = computed(() => (editingEntry.value ? dateStrOf(editingEntry.value.created_at) : ''));
+// Sortiert nach dem (frei änderbaren) Eintrags-Datum statt nur nach created_at - ein rückblickend
+// nachgetragener oder auf einen anderen Tag verschobener Eintrag muss auch optisch an seine neue
+// chronologische Stelle wandern statt an der Position seines tatsächlichen Speicherzeitpunkts
+// hängen zu bleiben. created_at/id bleiben als Tiebreaker für mehrere Einträge am selben Tag.
+function sortEntries() {
+  entries.value.sort(
+    (a, b) => b.date.localeCompare(a.date) || b.created_at.localeCompare(a.created_at) || b.id - a.id,
+  );
+}
 
 // Ausflüge, die am angegebenen Tag geplant sind, zuerst (Vorschlag) – der Rest bleibt in
 // Store-Reihenfolge dahinter, damit man bei Bedarf auch einen Ausflug an einem anderen Tag
@@ -148,10 +161,6 @@ function author(id: number) {
   return users.value.find((u) => u.id === id);
 }
 
-function formatDate(iso: string) {
-  return formatDateTime(iso);
-}
-
 function likesFor(entryId: number) {
   return likes.value.filter((l) => l.entry_id === entryId);
 }
@@ -214,7 +223,7 @@ function openNewForm() {
   pickedSpotIds.value = new Set();
   // Vorschlag: an diesem Tag geplante Ausflüge direkt vorauswählen, statt sie nur anzuzeigen –
   // meist wird ein Eintrag ja am selben Tag über genau diesen Ausflug geschrieben.
-  form.value.excursion_ids = excursionsStore.excursions.filter((e) => e.date === todayDateStr.value).map((e) => e.id);
+  form.value.excursion_ids = excursionsStore.excursions.filter((e) => e.date === form.value.date).map((e) => e.id);
   showForm.value = true;
 }
 
@@ -227,9 +236,11 @@ async function submitEntry() {
     content_format: 'html',
     images: form.value.images,
     excursion_ids: form.value.excursion_ids,
+    date: form.value.date,
   };
   const created = await api.post<DiaryEntry>('/diary', body);
   entries.value.unshift(created);
+  sortEntries();
   form.value = emptyForm();
   showForm.value = false;
   newDraft.clear();
@@ -248,6 +259,7 @@ function startEdit(entry: DiaryEntry) {
     content: entry.content,
     images: [...entry.images],
     excursion_ids: [...entry.excursion_ids],
+    date: entry.date,
   };
   editPickedSpotIds.value = new Set();
 }
@@ -260,10 +272,12 @@ async function submitEditEntry() {
     content_format: 'html',
     images: editForm.value.images,
     excursion_ids: editForm.value.excursion_ids,
+    date: editForm.value.date,
   };
   const updated = await api.put<DiaryEntry>(`/diary/${editingEntry.value.id}`, body);
   const idx = entries.value.findIndex((e) => e.id === updated.id);
   if (idx !== -1) entries.value[idx] = updated;
+  sortEntries();
   editDraft.clear();
   editingEntry.value = null;
 }
@@ -321,6 +335,10 @@ async function removeComment(id: number) {
 
     <Modal :model-value="showForm" title="Neuer Tagebucheintrag" full-height @update:model-value="(v) => !v && closeForm()">
     <form class="add-form" @submit.prevent="submitEntry">
+      <label class="date-label">
+        📅 Datum
+        <input v-model="form.date" type="date" required />
+      </label>
       <input v-model="form.title" type="text" placeholder="Titel (optional)" />
       <RichTextEditor v-model="form.content" placeholder="Was ist heute passiert?" />
       <label class="upload-label">
@@ -337,10 +355,10 @@ async function removeComment(id: number) {
       </div>
       <fieldset v-if="excursionsStore.excursions.length" class="excursion-picker">
         <legend>🎒 Touren zuordnen</legend>
-        <label v-for="ex in pickerExcursions(todayDateStr)" :key="ex.id" class="excursion-option">
+        <label v-for="ex in pickerExcursions(form.date)" :key="ex.id" class="excursion-option">
           <input type="checkbox" :value="ex.id" v-model="form.excursion_ids" />
           <span class="excursion-option-title">{{ ex.title }}</span>
-          <span v-if="ex.date === todayDateStr" class="excursion-option-badge">📅 heute geplant</span>
+          <span v-if="ex.date === form.date" class="excursion-option-badge">📅 an diesem Tag geplant</span>
         </label>
       </fieldset>
       <fieldset v-if="spotsStore.spots.length" class="excursion-picker">
@@ -350,11 +368,11 @@ async function removeComment(id: number) {
           :key="spot.id"
           type="button"
           class="excursion-option spot-option-btn"
-          @click="pickSpot(spot.id, todayDateStr, form, pickedSpotIds)"
+          @click="pickSpot(spot.id, form.date, form, pickedSpotIds)"
         >
           <span class="excursion-option-title">{{ spotCategoryMeta(spot.category).icon }} {{ spot.title }}</span>
           <span v-if="pickedSpotIds.has(spot.id)" class="excursion-option-badge">✓ hinzugefügt</span>
-          <span v-else-if="spotAlreadyPlanned(spot.id, todayDateStr)" class="excursion-option-badge">📅 heute geplant</span>
+          <span v-else-if="spotAlreadyPlanned(spot.id, form.date)" class="excursion-option-badge">📅 an diesem Tag geplant</span>
         </button>
       </fieldset>
       <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
@@ -370,7 +388,7 @@ async function removeComment(id: number) {
             <span class="avatar">{{ author(entry.author_id)?.avatar ?? '❓' }}</span>
             <div class="entry-meta">
               <strong>{{ author(entry.author_id)?.username ?? '?' }}</strong>
-              <span class="date">{{ formatDate(entry.created_at) }}<span v-if="entry.updated_at"> (bearbeitet)</span></span>
+              <span class="date">{{ formatDate(entry.date) }}<span v-if="entry.updated_at"> (bearbeitet)</span></span>
             </div>
             <div v-if="entry.author_id === auth.user?.id" class="entry-actions">
               <EditButton small @click="startEdit(entry)" />
@@ -431,6 +449,10 @@ async function removeComment(id: number) {
       @update:model-value="(v) => !v && closeEditForm()"
     >
       <form class="add-form" @submit.prevent="submitEditEntry">
+        <label class="date-label">
+          📅 Datum
+          <input v-model="editForm.date" type="date" required />
+        </label>
         <input v-model="editForm.title" type="text" placeholder="Titel (optional)" />
         <RichTextEditor v-model="editForm.content" />
         <label class="upload-label">
@@ -447,10 +469,10 @@ async function removeComment(id: number) {
         </div>
         <fieldset v-if="excursionsStore.excursions.length" class="excursion-picker">
           <legend>🎒 Touren zuordnen</legend>
-          <label v-for="ex in pickerExcursions(editEntryDateStr)" :key="ex.id" class="excursion-option">
+          <label v-for="ex in pickerExcursions(editForm.date)" :key="ex.id" class="excursion-option">
             <input type="checkbox" :value="ex.id" v-model="editForm.excursion_ids" />
             <span class="excursion-option-title">{{ ex.title }}</span>
-            <span v-if="ex.date === editEntryDateStr" class="excursion-option-badge">📅 an diesem Tag geplant</span>
+            <span v-if="ex.date === editForm.date" class="excursion-option-badge">📅 an diesem Tag geplant</span>
           </label>
         </fieldset>
         <fieldset v-if="spotsStore.spots.length" class="excursion-picker">
@@ -460,11 +482,11 @@ async function removeComment(id: number) {
             :key="spot.id"
             type="button"
             class="excursion-option spot-option-btn"
-            @click="pickSpot(spot.id, editEntryDateStr, editForm, editPickedSpotIds)"
+            @click="pickSpot(spot.id, editForm.date, editForm, editPickedSpotIds)"
           >
             <span class="excursion-option-title">{{ spotCategoryMeta(spot.category).icon }} {{ spot.title }}</span>
             <span v-if="editPickedSpotIds.has(spot.id)" class="excursion-option-badge">✓ hinzugefügt</span>
-            <span v-else-if="spotAlreadyPlanned(spot.id, editEntryDateStr)" class="excursion-option-badge">📅 an diesem Tag geplant</span>
+            <span v-else-if="spotAlreadyPlanned(spot.id, editForm.date)" class="excursion-option-badge">📅 an diesem Tag geplant</span>
           </button>
         </fieldset>
         <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />
@@ -492,7 +514,8 @@ async function removeComment(id: number) {
   margin-bottom: var(--space-4);
 }
 
-.upload-label {
+.upload-label,
+.date-label {
   display: flex;
   flex-direction: column;
   gap: 4px;

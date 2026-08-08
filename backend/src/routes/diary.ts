@@ -15,6 +15,7 @@ interface EntryRow {
   title: string | null;
   content: string;
   images: string | null;
+  date: string;
   created_at: string;
   updated_at: string | null;
 }
@@ -26,6 +27,7 @@ interface EntryBody {
   content_format?: 'html' | 'legacy';
   images?: string[];
   excursion_ids?: number[];
+  date?: string;
 }
 
 // Zuordnung Tagebucheintrag -> Ausflüge (m:n, analog syncExcursionSpots in ideas.ts): wird bei
@@ -78,7 +80,7 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
     if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
     const rows = db
       .prepare(
-        'SELECT * FROM diary_entries WHERE trip_id = ? AND deleted_at IS NULL ORDER BY created_at DESC, id DESC',
+        'SELECT * FROM diary_entries WHERE trip_id = ? AND deleted_at IS NULL ORDER BY date DESC, created_at DESC, id DESC',
       )
       .all(req.query.trip_id) as EntryRow[];
     const excursionIds = excursionIdsFor(rows.map((r) => r.id));
@@ -136,13 +138,13 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.post<{ Body: EntryBody }>('/diary', async (req, reply) => {
-    const { trip_id, title, content, images, excursion_ids } = req.body;
+    const { trip_id, title, content, images, excursion_ids, date } = req.body;
     if (!requireTripMember(reply, trip_id, req.session.userId)) return;
     const isHtml = req.body.content_format === 'html';
     const now = new Date().toISOString();
     const result = db
       .prepare(
-        'INSERT INTO diary_entries (trip_id, author_id, title, content, content_format, images, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        'INSERT INTO diary_entries (trip_id, author_id, title, content, content_format, images, date, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
       )
       .run(
         trip_id,
@@ -151,6 +153,9 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
         isHtml ? sanitizeHtml(content) : content,
         isHtml ? 'html' : 'legacy',
         JSON.stringify(images ?? []),
+        // Client schickt immer ein vorausgewähltes Datum (Default: heute, siehe DiaryView.vue) -
+        // der Fallback hier greift nur defensiv, falls ein Client das Feld doch mal wegließe.
+        date || now.slice(0, 10),
         now,
       );
     const entryId = result.lastInsertRowid as number;
@@ -171,16 +176,17 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(403).send({ error: 'Nur die Autorin/der Autor kann diesen Beitrag bearbeiten' });
     }
 
-    const { title, content, images, excursion_ids } = req.body;
+    const { title, content, images, excursion_ids, date } = req.body;
     const isHtml = req.body.content_format === 'html';
     const now = new Date().toISOString();
     db.prepare(
-      'UPDATE diary_entries SET title = ?, content = ?, content_format = ?, images = ?, updated_at = ? WHERE id = ?',
+      'UPDATE diary_entries SET title = ?, content = ?, content_format = ?, images = ?, date = ?, updated_at = ? WHERE id = ?',
     ).run(
       title ?? null,
       isHtml ? sanitizeHtml(content) : content,
       isHtml ? 'html' : 'legacy',
       JSON.stringify(images ?? []),
+      date || entry.date,
       now,
       req.params.id,
     );

@@ -281,8 +281,14 @@ const currentOrNextAccommodation = computed(() => {
     .sort((a, b) => (a.start_date ?? '').localeCompare(b.start_date ?? ''))[0];
 });
 
+// Sortierung nach dem (frei änderbaren) Eintrags-Datum statt nur created_at - muss mit der
+// Reihenfolge in DiaryView.vue übereinstimmen, sonst zeigt die Kachel hier einen anderen Eintrag
+// als "zuletzt" als den, der dort tatsächlich ganz oben steht (z. B. nach einem rückblickend
+// nachgetragenen Eintrag mit einem älteren Datum).
 const latestDiaryEntry = computed(() =>
-  [...diaryEntries.value].sort((a, b) => b.created_at.localeCompare(a.created_at))[0],
+  [...diaryEntries.value].sort(
+    (a, b) => b.date.localeCompare(a.date) || b.created_at.localeCompare(a.created_at),
+  )[0],
 );
 
 function jumpToTrip() {
@@ -514,7 +520,7 @@ function formatWeekdayDate(d: string) {
       <router-link to="/diary" class="card tile" :style="{ background: `${WIDGET_COLORS.get('diary')}0d` }">
         <span class="tile-icon" :style="{ background: `${WIDGET_COLORS.get('diary')}26`, borderColor: WIDGET_COLORS.get('diary') }">{{ SECTION_ICONS.diary }}</span>
         <h3>Tagebuch</h3>
-        <p v-if="diaryEntries.length">{{ diaryEntries.length }} {{ diaryEntries.length === 1 ? 'Eintrag' : 'Einträge' }}<span v-if="latestDiaryEntry"> · zuletzt {{ formatDate(latestDiaryEntry.created_at) }}</span></p>
+        <p v-if="diaryEntries.length">{{ diaryEntries.length }} {{ diaryEntries.length === 1 ? 'Eintrag' : 'Einträge' }}<span v-if="latestDiaryEntry"> · zuletzt {{ formatDate(latestDiaryEntry.date) }}</span></p>
         <p v-else>Noch nichts geschrieben</p>
       </router-link>
 
