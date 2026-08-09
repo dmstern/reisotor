@@ -38,6 +38,8 @@ let resizeObserver: ResizeObserver | null = null;
 let referenceLayer: L.LayerGroup | null = null;
 let ownLocationMarker: L.Marker | null = null;
 let geoWatchId: number | null = null;
+const locatingSelf = ref(false);
+const locateError = ref(false);
 
 function placeMarker(lat: number, lng: number) {
   if (!map) return;
@@ -93,7 +95,12 @@ onMounted(async () => {
   if (!mapEl.value) return;
   const initial = props.modelValue ?? props.center ?? FALLBACK_CENTER;
   const initialZoom = props.modelValue ? 15 : props.zoom ?? FALLBACK_ZOOM;
-  map = L.map(mapEl.value).setView([initial.lat, initial.lng], initialZoom);
+  // Leere Optionen zwingend nötig: leaflet-rotate (siehe TripMap.vue) patcht L.Map.initialize
+  // global und liest darin unbedingt `options.rotate` – ohne (auch leeres) Options-Objekt crasht
+  // das mit "Cannot read properties of undefined (reading 'rotate')", sobald TripMap.vue (und
+  // damit der 'leaflet-rotate'-Side-Effect-Import) schon im selben View gemountet ist, was die
+  // Karte hier komplett leer lässt.
+  map = L.map(mapEl.value, {}).setView([initial.lat, initial.lng], initialZoom);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap-Mitwirkende',
     maxZoom: 19,
@@ -138,11 +145,38 @@ function clear() {
   marker = null;
   emit('update:modelValue', null);
 }
+
+// Einmaliger getCurrentPosition-Aufruf statt des laufenden watchPosition oben (startOwnLocation) -
+// hier soll der aktuelle Standort explizit als Pin übernommen werden, nicht nur zur Orientierung
+// mitlaufen.
+function useOwnLocation() {
+  if (!navigator.geolocation) return;
+  locatingSelf.value = true;
+  locateError.value = false;
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      locatingSelf.value = false;
+      const { latitude, longitude } = position.coords;
+      placeMarker(latitude, longitude);
+      map?.setView([latitude, longitude], 16);
+      emit('update:modelValue', { lat: latitude, lng: longitude });
+    },
+    () => {
+      locatingSelf.value = false;
+      locateError.value = true;
+    },
+    { enableHighAccuracy: true, maximumAge: 10_000 },
+  );
+}
 </script>
 
 <template>
   <div class="location-picker">
     <p class="hint">🗺️ Tippe auf die Karte, um den Standort zu setzen.</p>
+    <button type="button" class="secondary own-location-btn" :disabled="locatingSelf" @click="useOwnLocation">
+      🧭 {{ locatingSelf ? 'Standort wird ermittelt…' : 'Meinen aktuellen Standort verwenden' }}
+    </button>
+    <p v-if="locateError" class="hint error">⚠️ Standort konnte nicht ermittelt werden.</p>
     <div ref="mapEl" class="location-picker-map"></div>
     <p v-if="modelValue" class="hint success">
       📍 Standort gesetzt: {{ modelValue.lat.toFixed(5) }}, {{ modelValue.lng.toFixed(5) }}
@@ -171,9 +205,18 @@ function clear() {
   color: var(--color-primary-dark);
 }
 
+.hint.error {
+  color: var(--color-danger);
+}
+
 .clear-btn {
   padding: 2px 8px;
   font-size: 0.78rem;
+}
+
+.own-location-btn {
+  align-self: flex-start;
+  font-size: 0.85rem;
 }
 
 .location-picker-map {
