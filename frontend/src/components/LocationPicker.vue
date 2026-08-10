@@ -174,11 +174,21 @@ function useOwnLocation() {
 <template>
   <div class="location-picker">
     <p class="hint">🗺️ Tippe auf die Karte, um den Standort zu setzen.</p>
-    <button type="button" class="secondary own-location-btn" :disabled="locatingSelf" @click="useOwnLocation">
-      🧭 {{ locatingSelf ? 'Standort wird ermittelt…' : 'Meinen aktuellen Standort verwenden' }}
-    </button>
     <p v-if="locateError" class="hint error">⚠️ Standort konnte nicht ermittelt werden.</p>
-    <div ref="mapEl" class="location-picker-map"></div>
+    <div class="map-wrap">
+      <div ref="mapEl" class="location-picker-map"></div>
+      <button
+        type="button"
+        class="locate-btn"
+        :class="{ locating: locatingSelf }"
+        :disabled="locatingSelf"
+        title="Meinen aktuellen Standort verwenden"
+        aria-label="Meinen aktuellen Standort verwenden"
+        @click="useOwnLocation"
+      >
+        🧭
+      </button>
+    </div>
     <p v-if="modelValue" class="hint success">
       📍 Standort gesetzt: {{ modelValue.lat.toFixed(5) }}, {{ modelValue.lng.toFixed(5) }}
       <button type="button" class="secondary clear-btn" @click="clear">Entfernen</button>
@@ -215,9 +225,8 @@ function useOwnLocation() {
   font-size: 0.78rem;
 }
 
-.own-location-btn {
-  align-self: flex-start;
-  font-size: 0.85rem;
+.map-wrap {
+  position: relative;
 }
 
 .location-picker-map {
@@ -226,6 +235,48 @@ function useOwnLocation() {
   corner-shape: squircle;
   overflow: hidden;
   border: 1px solid var(--color-border);
+}
+
+/* Floating Icon-Only-Button direkt auf der Karte statt eines vollbreiten Text-Buttons darüber -
+   gleiches Muster/gleiche Maße wie TripMap.vue's .fit-btn-Stack (dort mehrere gestapelte
+   Kartensteuerelemente), hier reicht ein einzelner Button. */
+.locate-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1000;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  background: var(--color-surface);
+  border: 2px solid rgba(0, 0, 0, 0.25);
+  color: var(--color-text);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.locate-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Dezenter Puls statt Text ("Standort wird ermittelt…") - der Button hat als Icon-Only-Button
+   keinen Platz mehr für eine Textänderung während des Ermittelns. */
+.locate-btn.locating {
+  animation: locate-pulse 1s ease-in-out infinite;
+}
+
+@keyframes locate-pulse {
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 :root[data-theme='dark'] .location-picker-map :deep(.leaflet-tile-pane) {
