@@ -540,12 +540,30 @@ const spotGroups = computed(() => {
       if (!groups.has(ex.title)) groups.set(ex.title, []);
     }
   }
-  for (const list of groups.values()) {
-    list.sort((a, b) =>
-      sortMode.value === 'likes'
-        ? itemLikeCount(b) - itemLikeCount(a) || itemTitle(a).localeCompare(itemTitle(b))
-        : itemTitle(a).localeCompare(itemTitle(b)),
-    );
+  for (const [key, list] of groups) {
+    // Echte Tour-Gruppen (nicht "Ohne Tour") in der tatsächlichen Stationen-Reihenfolge der Tour
+    // (spot_ids, siehe SpotOrderPicker.vue) statt alphabetisch/nach Likes sortieren - macht die
+    // Reihenfolge/den Rundgang direkt in der Liste sichtbar (siehe verbindende gestrichelte Linie
+    // im Template unten). Erster Vorkommen-Index gewinnt bei Mehrfachbesuch (derselbe Spot bekommt
+    // hier ohnehin nur eine Karte, keine zweite für den Wiederbesuch).
+    const excursion = groupMode.value === 'tours' && key !== UNASSIGNED_TOUR_GROUP ? excursionForGroupTitle(key) : null;
+    if (excursion) {
+      const order = new Map<number, number>();
+      excursion.spot_ids.forEach((id, idx) => {
+        if (!order.has(id)) order.set(id, idx);
+      });
+      list.sort((a, b) => {
+        const ai = a.kind === 'spot' ? order.get(a.spot.id) ?? Infinity : Infinity;
+        const bi = b.kind === 'spot' ? order.get(b.spot.id) ?? Infinity : Infinity;
+        return ai - bi;
+      });
+    } else {
+      list.sort((a, b) =>
+        sortMode.value === 'likes'
+          ? itemLikeCount(b) - itemLikeCount(a) || itemTitle(a).localeCompare(itemTitle(b))
+          : itemTitle(a).localeCompare(itemTitle(b)),
+      );
+    }
   }
   if (groupMode.value === 'tours') {
     // "Ohne Tour" bewusst zuletzt statt alphabetisch einsortiert – die eigentlichen Touren sind der
@@ -1357,7 +1375,12 @@ async function removeSpot(id: number) {
           @edit-station-spot="startEditSpot"
         />
         <h3 v-else class="category-heading" :ref="(el) => setCategoryRef(grp.category, el)">{{ grp.icon }} {{ grp.category }}</h3>
-        <TransitionGroup tag="div" name="list" class="grid cards">
+        <!-- Tour-Gruppe: eingerückte, per gestrichelter Linie verbundene vertikale Liste statt des
+             normalen Karten-Grids (siehe .tour-station-list unten) - die Reihenfolge entspricht
+             spotGroups' Sortierung nach der echten Tour-Reihenfolge (spot_ids), macht den Rundgang
+             direkt sichtbar. Ersetzt die früheren Mini-Stations-Chips auf der ExcursionCard selbst
+             (redundant, sobald die echten Spot-Karten direkt darunter erscheinen). -->
+        <TransitionGroup tag="div" name="list" :class="grp.excursion ? 'tour-station-list' : 'grid cards'">
           <template v-for="item in grp.items" :key="item.kind === 'spot' ? `spot-${item.spot.id}` : item.loc.key">
             <UndoDeleteRow
               v-if="item.kind === 'spot' && spotsStore.isPending(item.spot.id)"
@@ -1940,6 +1963,20 @@ async function removeSpot(id: number) {
 
 .cards {
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+
+/* Stationen einer Tour: eingerückte, vertikale Liste statt des normalen Karten-Grids (siehe
+   Template), eine durchgehende gestrichelte Linie am linken Rand verbindet die Karten sichtbar in
+   der Reihenfolge der Tour (spotGroups sortiert sie entsprechend). Gleiche Akzentfarbe/Dashing wie
+   die Tour-Route auf der Karte (TripMap.vue's renderRoutes()) und wie ExcursionDetailDialog.vue's
+   .station-connector, nur vertikal statt horizontal. */
+.tour-station-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-left: 18px;
+  padding-left: var(--space-3);
+  border-left: 3px dashed var(--color-primary);
 }
 
 /* Auf schmalen .spots-col-Breiten (Bottom-Sheet auf Mobil, ODER auf Desktop, wenn der Anfasser sehr

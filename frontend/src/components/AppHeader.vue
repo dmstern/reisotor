@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useAuthStore } from '../stores/auth';
 import { useConnectivityStore } from '../stores/connectivity';
+import { useNavPositionStore } from '../stores/navPosition';
+import { useIsDesktop } from '../composables/useIsDesktop';
 import TripSwitcher from './TripSwitcher.vue';
 import PresenceAvatars from './PresenceAvatars.vue';
 import OfflineIndicator from './OfflineIndicator.vue';
@@ -13,6 +15,15 @@ const auth = useAuthStore();
 // Nur instanziieren, damit die Online/Offline-Listener + der periodische Health-Check (siehe dort)
 // unabhängig davon laufen, ob gerade eine bestimmte Unteransicht gemountet ist.
 useConnectivityStore();
+
+// Steht die NavBar (per Profil-Einstellung, siehe stores/navPosition.ts) gerade NICHT direkt unter
+// dem Header (sondern unten am Viewport-Rand), fehlt der Header sonst komplett ohne den kräftigeren
+// Schatten, der ihn vom scrollenden Inhalt abhebt (siehe .app-header-Kommentar unten) – die NavBar
+// selbst bekommt in dem Fall ja ihren eigenen, nach oben gerichteten Schatten. Gleiche
+// Desktop/Mobil-Weiche wie NavBar.vue's isTop.
+const navPosition = useNavPositionStore();
+const isDesktop = useIsDesktop();
+const navBarIsBottom = computed(() => (isDesktop.value ? navPosition.desktop === 'bottom' : navPosition.mobile === 'bottom'));
 
 // Der Header ist nur noch 56px hoch, solange die Statuszeile (Offline-/PWA-Update-Hinweis) leer
 // ist – NavBar.vue klebt direkt darunter per position:sticky mit einem fest verdrahteten "top"-Wert
@@ -44,7 +55,7 @@ const isNonProd = window.location.hostname !== 'reise.ruebenherz.de';
 </script>
 
 <template>
-  <header ref="headerEl" class="app-header" :class="{ 'non-prod': isNonProd }">
+  <header ref="headerEl" class="app-header" :class="{ 'non-prod': isNonProd, 'nav-bottom': navBarIsBottom }">
     <!-- Eigene Zeile ÜBER der Icon-Zeile statt zwischen TripSwitcher und den Icons rechts
          eingereiht: der TripSwitcher-Button wächst mit dem Urlaubsnamen und schrumpft nicht
          zuverlässig (siehe .switcher-btn in TripSwitcher.vue), wodurch ein hier eingereihter Pill
@@ -86,11 +97,19 @@ const isNonProd = window.location.hostname !== 'reise.ruebenherz.de';
   z-index: 25;
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
-  /* Bewusst kein Schlagschatten mehr: die NavBar direkt darunter bekommt jetzt den deutlich
-     sichtbaren Schatten, der den fixen Header-Bereich vom scrollenden Inhalt abhebt (siehe
+  /* Bewusst kein eigener Schlagschatten, solange die NavBar direkt darunter klebt: die bekommt dann
+     den deutlich sichtbaren Schatten, der den fixen Kopfbereich vom scrollenden Inhalt abhebt (siehe
      NavBar.vue) – zwei Schatten kurz hintereinander wirkten redundant/unruhig. Die Trennlinie
-     (border-bottom) reicht hier weiterhin als dezente Abgrenzung. */
+     (border-bottom) reicht hier weiterhin als dezente Abgrenzung. Steht die NavBar per
+     Profil-Einstellung dagegen unten (.nav-bottom unten), übernimmt der Header selbst genau
+     denselben Schatten – sonst fehlt er komplett, weil dann nichts mehr direkt darunter klebt. */
   box-sizing: border-box;
+}
+
+/* Gleicher Schattenwert wie NavBar.vue's Default-.navbar-Schatten (reines Schwarz mit fester
+   Opacity statt --shadow-sm/md-Tokens, bleibt so in beiden Themes gleich gut sichtbar). */
+.app-header.nav-bottom {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
 }
 
 /* Statuszeile (Offline-/PWA-Update-Hinweis) bekommt eine eigene volle Zeile über der Icon-Zeile
