@@ -11,7 +11,6 @@ import { useIsDesktop } from '../composables/useIsDesktop';
 import { useWeatherProviderStore, WEATHER_MODEL_OPTIONS } from '../stores/weatherProvider';
 import { useHomeCurrencyStore, HOME_CURRENCY_OPTIONS } from '../stores/homeCurrency';
 import { useCalendarSettingsStore, WEEK_START_OPTIONS, DATE_FORMAT_OPTIONS } from '../stores/calendarSettings';
-import { useTourSettingsStore } from '../stores/tourSettings';
 import { useUiSettingsStore } from '../stores/uiSettings';
 import { getExistingSubscription, isPushSupported, subscribeToPush, unsubscribeFromPush } from '../utils/push';
 import { toLocalDateString } from '../utils/dateFormat';
@@ -34,7 +33,6 @@ function navLinkIcon(key: string) {
 const weatherProvider = useWeatherProviderStore();
 const homeCurrency = useHomeCurrencyStore();
 const calendarSettings = useCalendarSettingsStore();
-const tourSettings = useTourSettingsStore();
 const uiSettings = useUiSettingsStore();
 const users = ref<User[]>([]);
 const loading = ref(true);
@@ -422,21 +420,6 @@ async function onImportFileSelected(event: Event) {
           </select>
         </label>
       </div>
-    </div>
-
-    <div class="card">
-      <h2>🎒 Touren</h2>
-      <p class="hint">
-        Standardmäßig ordnest du Spots einer Tour direkt im Spot-Formular per "Tour zuordnen" zu –
-        ganz ohne Reihenfolge. Für einen sorgfältig geplanten Rundgang (feste Abklapper-Reihenfolge,
-        derselbe Ort mehrfach, z. B. Start UND Ende an der Unterkunft) aktiviert diese Einstellung
-        zusätzlich den Drag&amp;Drop-Reihenfolge-Editor im Touren-Formular und das direkte Ablegen
-        eines Spots auf einer Tour-Karte.
-      </p>
-      <label class="checkbox-option">
-        <input type="checkbox" v-model="tourSettings.advancedEditing" />
-        Erweiterte Touren-Bearbeitung
-      </label>
     </div>
 
     <div class="card">

@@ -3,10 +3,10 @@ import { computed, ref } from 'vue';
 import type { Spot } from '../api/types';
 import { spotCategoryMeta } from '../utils/spotCategory';
 
-// Nur im "Erweiterte Touren-Bearbeitung"-Modus verwendet (siehe stores/tourSettings.ts) – der
-// einfache Tagging-Modus ordnet Spots stattdessen ohne Reihenfolge über "Tour zuordnen" im
-// Spot-Formular zu (ExcursionsView.vue). Eine Tour-Station ist seit der Verschmelzung von
-// Unterkunft/Reise-Orten in Spots (siehe Migrationskommentar in db/index.ts) immer ein echter Spot.
+// Drag&Drop-Reihenfolge-Editor fürs Touren-Formular (ExcursionsView.vue) – TourAssignPicker.vue
+// bietet daneben im Spot-Formular einen schnelleren Weg, einen Spot ohne Reihenfolge einer Tour
+// zuzuordnen. Eine Tour-Station ist seit der Verschmelzung von Unterkunft/Reise-Orten in Spots
+// (siehe Migrationskommentar in db/index.ts) immer ein echter Spot.
 const props = defineProps<{
   modelValue: number[];
   spots: Spot[];

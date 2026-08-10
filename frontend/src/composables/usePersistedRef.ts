@@ -1,7 +1,7 @@
 import { type Ref, ref, watch } from 'vue';
 
 // Verallgemeinert das bisher an mehreren Stellen einzeln nachgebaute Muster (z. B.
-// stores/navPosition.ts, stores/tourSettings.ts, TodoView.vues LAST_ASSIGNEE_KEY): ein Ref, das
+// stores/navPosition.ts, TodoView.vues LAST_ASSIGNEE_KEY): ein Ref, das
 // seinen Startwert aus localStorage lädt und bei jeder Änderung dorthin zurückschreibt. Gedacht für
 // Geräte-/Browser-UI-Präferenzen (zuletzt gewählter Formularwert, Sortierung/Gruppierung/Filter
 // einer Liste) statt Account-Daten - bewusst nur lokal, kein Sync über Geräte hinweg.

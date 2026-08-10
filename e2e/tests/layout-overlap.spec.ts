@@ -116,17 +116,31 @@ test.describe('Mobile: ExcursionCard-Löschen-Button überdeckt nicht den Status
     // Regressionstest für einen vom Nutzer gemeldeten Bug: im mobilen Spaltenlayout
     // (@media max-width:480px) landeten .card-delete (oben rechts relativ zur ganzen Card) und
     // .status (oben rechts relativ zu .image, das dort die volle Kartenbreite einnimmt) in
-    // derselben Ecke. Siehe Fix in ExcursionCard.vue.
-    await page.goto('/tours');
+    // derselben Ecke. Siehe Fix in ExcursionCard.vue. Touren-Karten leben seit der Verschmelzung
+    // des früheren "erweiterten Touren-Modus" in der Spots-Sicht (/excursions, Touren-Gruppierung)
+    // statt in einer eigenständigen Touren-Route.
+    await page.goto('/excursions');
+    // Spots-Sheet ganz aufziehen ("▲" bis deaktiviert, max. 2 Schritte von jedem Ausgangszustand
+    // aus): maximiert den für die Liste verfügbaren sichtbaren Bereich, bevor gescrollt wird -
+    // andere Tests können im geteilten Seed-Trip im Lauf der gesamten Suite weitere Spots/Stationen
+    // zu "Sightseeing-Tag Belém" hinzufügen, wodurch die Karte höher wird als bei einem isolierten
+    // Lauf dieser einen Spec.
+    const expandBtn = page.getByRole('button', { name: 'Spots-Liste weiter hochschieben' });
+    for (let i = 0; i < 2 && (await expandBtn.isEnabled()); i++) await expandBtn.click();
+    await page.getByRole('button', { name: '🎒 Touren' }).click();
     const card = page.locator('.excursion-card', { hasText: excursion.title });
     await expect(card).toBeVisible();
-    // Scrollt die Karte in den sichtbaren Bereich, statt sich auf ihre initiale Position im
-    // Seitenfluss zu verlassen: elementFromPoint() (siehe expectNotCoveredBy) trifft für Punkte
-    // außerhalb des aktuellen Viewports sonst grundsätzlich "null", unabhängig vom eigentlich zu
-    // testenden Überdeckungs-Verhalten.
-    await card.scrollIntoViewIfNeeded();
     const statusChip = card.locator('.status');
     const deleteBtn = card.locator('.card-delete');
+    // Scrollt gezielt die beiden zu prüfenden Elemente (nicht nur die - ggf. höher als der
+    // Viewport hohe - Karte als Ganzes) in den sichtbaren Bereich: elementFromPoint() (siehe
+    // expectNotCoveredBy) trifft für Punkte außerhalb des aktuellen Viewports sonst grundsätzlich
+    // "null", unabhängig vom eigentlich zu testenden Überdeckungs-Verhalten - reines
+    // card.scrollIntoViewIfNeeded() garantiert das für Kind-Elemente in der oberen Ecke einer hohen
+    // Karte nicht zuverlässig genug (leicht abweichende Schrift-/Layout-Maße je nach Umgebung
+    // können die Ecke knapp über oder unter den sichtbaren Bereich schieben).
+    await statusChip.scrollIntoViewIfNeeded();
+    await deleteBtn.scrollIntoViewIfNeeded();
     await expect(statusChip).toBeVisible();
     await expect(deleteBtn).toBeVisible();
     await expectNotCoveredBy(page, statusChip, deleteBtn);

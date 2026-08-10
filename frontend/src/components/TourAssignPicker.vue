@@ -2,9 +2,9 @@
 import { ref } from 'vue';
 import Combobox from './Combobox.vue';
 
-// Einfacher Tagging-Modus, um einen Spot einer oder mehreren Touren zuzuordnen, direkt im
-// Spot-Formular (ExcursionsView.vue) statt im Touren-Formular – Gegenstück zu SpotOrderPicker.vue/
-// SpotTogglePicker.vue (die ordnen umgekehrt Spots einer Tour zu). Arbeitet mit Tour-TITELN statt
+// Schneller Weg, um einen Spot einer oder mehreren Touren zuzuordnen, direkt im Spot-Formular
+// (ExcursionsView.vue) statt im Touren-Formular – Gegenstück zu SpotOrderPicker.vue (das ordnet
+// umgekehrt Spots einer Tour zu, inkl. Reihenfolge). Arbeitet mit Tour-TITELN statt
 // -Ids: passt ein getippter Titel zu keiner bestehenden Tour, entsteht beim Speichern eine neue
 // (siehe ExcursionsView.vue's syncSpotTours()) – "creatable" wie die Kategorie-Combobox.
 const props = defineProps<{

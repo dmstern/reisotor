@@ -15,11 +15,11 @@ test.use({
   viewport: VIEWPORTS.desktop,
 });
 
-// Kalender-/Touren-Schublade können aus einem vorherigen Test heraus offen bleiben (Zustand landet
-// via localStorage im gemeinsamen storageState, gleiches bekanntes Muster wie in
-// calendar-week-start.spec.ts) - bei beiden offen wird die Karte so schmal/niedrig, dass der unten
-// in der Button-Spalte sitzende Freigabe-Button vom Spots-Bottom-Sheet überdeckt wird. Explizit
-// schließen statt sich auf einen zufällig "sauberen" Ausgangszustand zu verlassen.
+// Die Kalender-Schublade kann aus einem vorherigen Test heraus offen bleiben (Zustand landet via
+// localStorage im gemeinsamen storageState, gleiches bekanntes Muster wie in
+// calendar-week-start.spec.ts) - offen wird die Karte so schmal/niedrig, dass der unten in der
+// Button-Spalte sitzende Freigabe-Button vom Spots-Bottom-Sheet überdeckt wird. Explizit schließen
+// statt sich auf einen zufällig "sauberen" Ausgangszustand zu verlassen.
 async function closeDrawerIfOpen(page: Page, label: string) {
   const closeBtn = page.locator(`.close-drawer-btn[aria-label="Schließen: ${label}"]`);
   if ((await closeBtn.count()) > 0 && (await closeBtn.isVisible())) {
@@ -31,7 +31,6 @@ test.describe('Standort-Freigabe-Dauer auf der Karte', () => {
   test('Auswahl "Für einen Tag" markiert den Button als aktiv und übersteht einen Reload', async ({ page }) => {
     await page.goto('/excursions');
     await closeDrawerIfOpen(page, 'Kalender');
-    await closeDrawerIfOpen(page, 'Touren');
     const shareBtn = page.locator('.share-location-btn');
     await expect(shareBtn).toBeVisible({ timeout: 10_000 });
     await expect(shareBtn).not.toHaveClass(/active/);
@@ -53,7 +52,6 @@ test.describe('Standort-Freigabe-Dauer auf der Karte', () => {
   test('Auswahl "Nicht teilen" deaktiviert die Freigabe wieder', async ({ page }) => {
     await page.goto('/excursions');
     await closeDrawerIfOpen(page, 'Kalender');
-    await closeDrawerIfOpen(page, 'Touren');
     const shareBtn = page.locator('.share-location-btn');
     await expect(shareBtn).toBeVisible({ timeout: 10_000 });
 

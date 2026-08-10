@@ -3,9 +3,7 @@ import { computed, ref, watch } from 'vue';
 import router from '../router';
 
 const CALENDAR_OPEN_KEY = 'reisotor-drawer-calendar-open';
-const EXCURSIONS_OPEN_KEY = 'reisotor-drawer-excursions-open';
 const CALENDAR_WIDTH_KEY = 'reisotor-drawer-calendar-width';
-const EXCURSIONS_WIDTH_KEY = 'reisotor-drawer-excursions-width';
 
 export const DEFAULT_DRAWER_WIDTH = 360;
 export const MIN_DRAWER_WIDTH = 280;
@@ -30,15 +28,14 @@ function loadWidth(key: string): number {
     : DEFAULT_DRAWER_WIDTH;
 }
 
-// Kalender und Ausflüge sind keine Nav-Seiten mehr, sondern global gemountete, in der Breite
-// verstellbare Schubladen (App.vue) – die Karte selbst ist dagegen fest in die Karte-Hauptsicht
-// (ExcursionsView.vue, Route /excursions) eingebettet, kein Schubladen-Toggle mehr nötig. Auf-/
-// Zu-Zustand und Breite der beiden verbleibenden Schubladen werden hier zentral gehalten
-// (persistiert in localStorage), damit z. B. das Dashboard oder "Auf Karte anzeigen"-Buttons aus
-// beliebigen Sichten sie öffnen können, ohne die Route zu wechseln.
+// Kalender ist keine Nav-Seite mehr, sondern eine global gemountete, in der Breite verstellbare
+// Schublade (App.vue) – die Karte (inkl. Touren, seit deren Verschmelzung in die Spots-Sicht) ist
+// dagegen fest in die Karte-Hauptsicht (ExcursionsView.vue, Route /excursions) eingebettet, kein
+// Schubladen-Toggle mehr nötig. Auf-/Zu-Zustand und Breite der Kalender-Schublade werden hier
+// zentral gehalten (persistiert in localStorage), damit z. B. das Dashboard oder
+// "Auf Karte anzeigen"-Buttons aus beliebigen Sichten sie öffnen können, ohne die Route zu wechseln.
 export const useDrawersStore = defineStore('drawers', () => {
   const calendarOpen = ref(loadOpen(CALENDAR_OPEN_KEY));
-  const excursionsOpen = ref(loadOpen(EXCURSIONS_OPEN_KEY));
   const mapFocusKey = ref<string | null>(null);
   // Ausflug, dessen Stationen gerade isoliert auf der Karte gezeigt werden (alle anderen Spots
   // ausgeblendet, siehe TripMap.vue) – exklusiv zu mapFocusKey, daher setzt jede der beiden
@@ -49,10 +46,11 @@ export const useDrawersStore = defineStore('drawers', () => {
   // anderen Fokus-Arten (siehe focusMapOnDate).
   const mapFocusDate = ref<string | null>(null);
   const calendarWidth = ref(loadWidth(CALENDAR_WIDTH_KEY));
-  const excursionsWidth = ref(loadWidth(EXCURSIONS_WIDTH_KEY));
-  // Welche Schublade (falls überhaupt) gerade als Vollbild-Overlay maximiert ist (Drawer.vue).
-  // Zentral statt lokal im Drawer, da eine maximierte Schublade die jeweils andere automatisch
-  // zuklappen muss – bewusst nicht in localStorage persistiert (flüchtiger UI-Zustand).
+  // Ob die Kalender-Schublade gerade als Vollbild-Overlay maximiert ist (Drawer.vue). Zentral statt
+  // lokal im Drawer gehalten (bewusst nicht in localStorage persistiert, flüchtiger UI-Zustand) –
+  // seit der Verschmelzung der Touren-Schublade in die Spots-Sicht gibt es nur noch diese eine
+  // Schublade, 'right' bleibt als Wert dadurch ungenutzt, der Typ blieb aber generisch (Drawer.vue
+  // ist weiterhin eine für beide Seiten wiederverwendbare Komponente).
   const maximizedSide = ref<'left' | 'right' | null>(null);
   // Zähler statt Boolean: Unterkunft/Reise/Spots liegen nicht in einer gemeinsamen Pinia-Quelle
   // und laden deshalb nicht automatisch neu, wenn irgendwo sonst in der App ein Ort mit Maps-Link
@@ -65,20 +63,15 @@ export const useDrawersStore = defineStore('drawers', () => {
     locationsVersion.value++;
   }
 
-  // Kalender/Touren sind auf Desktop globale Schubladen, auf Mobil dagegen eigenständige Seiten
-  // (/calendar, /tours – siehe router/index.ts, dieselben Komponenten wie in den Schubladen). Jede
-  // Stelle in der App, die "Kalender"/"Touren-Schublade öffnen" will (Dashboard-Kachel,
-  // ExcursionCard/SpotCard-Anfasser, TripMap-Detailsprünge, DiaryView-Ausflug-Chips, …), ruft
-  // deshalb diese beiden Funktionen statt direkt calendarOpen/excursionsOpen zu setzen – so bleibt
-  // die Desktop/Mobil-Weiche an einer einzigen Stelle statt an jedem einzelnen Aufrufort dupliziert.
+  // Kalender ist auf Desktop eine globale Schublade, auf Mobil dagegen eine eigenständige Seite
+  // (/calendar – siehe router/index.ts, dieselbe Komponente wie in der Schublade). Jede Stelle in
+  // der App, die die "Kalender-Schublade öffnen" will (Dashboard-Kachel, ExcursionCard/SpotCard-
+  // Anfasser, TripMap-Detailsprünge, …), ruft deshalb diese Funktion statt direkt calendarOpen zu
+  // setzen – so bleibt die Desktop/Mobil-Weiche an einer einzigen Stelle statt an jedem einzelnen
+  // Aufrufort dupliziert.
   function openCalendar() {
     if (isDesktop()) calendarOpen.value = true;
     else router.push('/calendar');
-  }
-
-  function openExcursions() {
-    if (isDesktop()) excursionsOpen.value = true;
-    else router.push('/tours');
   }
 
   // Klick-Alternative zum Drag-Einplanen (ExcursionCard.vue/SpotCard.vue's 📅-Anfasser): statt den
@@ -97,15 +90,13 @@ export const useDrawersStore = defineStore('drawers', () => {
   }
 
   watch(calendarOpen, (v) => localStorage.setItem(CALENDAR_OPEN_KEY, String(v)));
-  watch(excursionsOpen, (v) => localStorage.setItem(EXCURSIONS_OPEN_KEY, String(v)));
   watch(calendarWidth, (v) => localStorage.setItem(CALENDAR_WIDTH_KEY, String(v)));
-  watch(excursionsWidth, (v) => localStorage.setItem(EXCURSIONS_WIDTH_KEY, String(v)));
 
   // Mobil ist eine offene Schublade vollflächig und scrollt selbst (siehe Drawer.vue) – ohne diese
   // Sperre könnte die dahinterliegende Seite gleichzeitig mitscrollen (zwei übereinanderliegende
   // Scroll-Bereiche, verwirrend/ruckelig). Auf Desktop ist eine Schublade nur ein schmales
   // Seitenpanel neben dem weiterhin normal nutzbaren Hauptinhalt, daher dort keine Sperre.
-  const anyOpen = computed(() => calendarOpen.value || excursionsOpen.value);
+  const anyOpen = computed(() => calendarOpen.value);
   watch(
     anyOpen,
     (open) => {
@@ -132,10 +123,6 @@ export const useDrawersStore = defineStore('drawers', () => {
     mapFocusExcursionId.value = excursionId;
     mapFocusKey.value = null;
     mapFocusDate.value = null;
-    // "Auf Karte anzeigen" wird nur aus der Touren-Schublade selbst aufgerufen (ExcursionsDrawer.vue)
-    // – die Schublade danach offen zu lassen, würde die gerade fokussierte Karte (v. a. mobil, wo sie
-    // vollflächig deckt) sofort wieder verdecken.
-    excursionsOpen.value = false;
     ensureMapRoute();
   }
 
@@ -149,15 +136,12 @@ export const useDrawersStore = defineStore('drawers', () => {
     ensureMapRoute();
   }
 
-  // Maximieren einer Schublade klappt die jeweils andere zu (nur eine Schublade kann gleichzeitig
-  // vollflächig sein) – die Kalender-Schublade liegt links, die Ausflüge-Schublade rechts.
+  // Seit der Verschmelzung der Touren-Schublade in die Spots-Sicht gibt es nur noch die
+  // Kalender-Schublade – "die jeweils andere zuklappen" gibt es dadurch nicht mehr zu tun, die
+  // Funktion bleibt aber (samt generischem side-Parameter) bestehen, da Drawer.vue weiterhin eine
+  // für beide Seiten wiederverwendbare Komponente ist.
   function maximize(side: 'left' | 'right') {
     maximizedSide.value = side;
-    if (side === 'left') {
-      excursionsOpen.value = false;
-    } else {
-      calendarOpen.value = false;
-    }
   }
 
   function restoreMaximized() {
@@ -166,17 +150,14 @@ export const useDrawersStore = defineStore('drawers', () => {
 
   return {
     calendarOpen,
-    excursionsOpen,
     mapFocusKey,
     mapFocusExcursionId,
     mapFocusDate,
     calendarWidth,
-    excursionsWidth,
     maximizedSide,
     locationsVersion,
     pendingSchedule,
     openCalendar,
-    openExcursions,
     openMapAt,
     openMapForExcursion,
     focusMapOnDate,

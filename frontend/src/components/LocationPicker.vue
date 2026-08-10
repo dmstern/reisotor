@@ -2,7 +2,7 @@
 import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { cachedEmojiPin, pulsingEmojiPin } from '../utils/mapRoute';
+import { cachedEmojiPin, LEAFLET_ATTRIBUTION_PREFIX, pulsingEmojiPin } from '../utils/mapRoute';
 
 // Manueller Fallback, falls weder clientseitiges Parsen noch die serverseitige Kurzlink-Auflösung
 // (backend/src/utils/mapsLink.ts) Koordinaten liefern (z. B. wenn Google einen Maps-Kurzlink per
@@ -101,6 +101,7 @@ onMounted(async () => {
   // damit der 'leaflet-rotate'-Side-Effect-Import) schon im selben View gemountet ist, was die
   // Karte hier komplett leer lässt.
   map = L.map(mapEl.value, {}).setView([initial.lat, initial.lng], initialZoom);
+  map.attributionControl.setPrefix(LEAFLET_ATTRIBUTION_PREFIX);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap-Mitwirkende',
     maxZoom: 19,

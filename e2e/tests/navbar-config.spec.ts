@@ -29,8 +29,8 @@ test('reordering nav entries in ProfileView changes their order in the NavBar', 
   expect(newFirstLabel).not.toBe(initialFirstLabel);
 
   await page.goto('/');
-  // :visible schließt Kalender/Touren aus (.mobile-page-link, per CSS nur <800px sichtbar, Playwright
-  // läuft hier auf einem breiteren Default-Viewport, sie bleiben aber im DOM vorhanden). Erst auf das
+  // :visible schließt den Kalender-Link aus (.mobile-page-link, per CSS nur <800px sichtbar,
+  // Playwright läuft hier auf einem breiteren Default-Viewport, er bleibt aber im DOM vorhanden). Erst auf das
   // erste sichtbare Nav-Icon warten, damit allTextContents() nicht auf einer noch leeren/im Aufbau
   // befindlichen NavBar landet (allTextContents() selbst wartet nicht wie expect() automatisch).
   const navLinks = page.locator('nav.navbar .links .link:visible');

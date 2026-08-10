@@ -6,7 +6,6 @@ import { useNavPositionStore } from '../stores/navPosition';
 import { useNavConfigStore } from '../stores/navConfig';
 import { useLiveSyncStore } from '../stores/liveSync';
 import { useIsDesktop } from '../composables/useIsDesktop';
-import { useTourSettingsStore } from '../stores/tourSettings';
 import { SECTION_ICONS } from '../utils/sectionIcons';
 import { NAV_LINKS, type NavLinkDef } from '../utils/navLinks';
 
@@ -16,7 +15,6 @@ const navPosition = useNavPositionStore();
 const navConfig = useNavConfigStore();
 const liveSync = useLiveSyncStore();
 const isDesktop = useIsDesktop();
-const tourSettings = useTourSettingsStore();
 
 // Schubladen (Drawer.vue) kleben ebenfalls "oben" fest und müssen wissen, wie viel Platz die
 // NavBar dort tatsächlich einnimmt, um sie nicht zu überdecken – siehe --navbar-offset in
@@ -95,14 +93,15 @@ function onLinkClick(event: MouseEvent) {
         <span class="icon">{{ DASHBOARD_LINK.icon }}</span>
         <span class="label">{{ DASHBOARD_LINK.label }}</span>
       </router-link>
-      <!-- Kalender/Touren sind auf Desktop weiterhin globale Schubladen (App.vue, über die seitlich
-           schwebende Lasche erreichbar). Dieselben ausklapp-Schubladen lassen sich auf Mobil aber
-           kaum sinnvoll bedienen (u. a. überlagerte die Lasche dort teils wichtige Inhalte/Buttons)
-           – dort deshalb stattdessen als ganz normale, fest verlinkte Nav-Punkte auf eigene Seiten
-           (/calendar, /tours – dieselben Komponenten wie in den Schubladen, siehe router/index.ts),
-           nur <800px sichtbar (.mobile-page-link; ab Desktop bleibt es bei den beiden bestehenden
-           Nav-Punkten hier, Kalender/Touren erreicht man dort weiterhin nur über die Lasche).
-           Kalender direkt nach Übersicht, Touren direkt neben ihrem inhaltlichen Pendant "Karte". -->
+      <!-- Kalender ist auf Desktop weiterhin eine globale Schublade (App.vue, über die seitlich
+           schwebende Lasche erreichbar). Dieselbe ausklapp-Schublade lässt sich auf Mobil aber kaum
+           sinnvoll bedienen (u. a. überlagerte die Lasche dort teils wichtige Inhalte/Buttons) –
+           dort deshalb stattdessen als ganz normaler, fest verlinkter Nav-Punkt auf eine eigene
+           Seite (/calendar – dieselbe Komponente wie in der Schublade, siehe router/index.ts), nur
+           <800px sichtbar (.mobile-page-link; ab Desktop bleibt es beim bestehenden Nav-Punkt hier,
+           Kalender erreicht man dort weiterhin nur über die Lasche). Direkt nach Übersicht. Touren
+           haben seit ihrer Verschmelzung in die Spots-Sicht ("Karte", /excursions) keinen eigenen
+           Nav-Punkt mehr - Touren anlegen/Spots zuordnen geht bereits direkt dort. -->
       <router-link to="/calendar" class="link mobile-page-link" @click="onLinkClick">
         <span class="icon-wrap">
           <span class="icon">{{ SECTION_ICONS.calendar }}</span>
@@ -110,33 +109,13 @@ function onLinkClick(event: MouseEvent) {
         </span>
         <span class="label">Kalender</span>
       </router-link>
-      <template v-for="link in visibleLinks" :key="link.to">
-        <router-link :to="link.to" class="link" @click="onLinkClick">
-          <span class="icon-wrap">
-            <span class="icon">{{ link.icon }}</span>
-            <span v-if="hasUnseenAny(link)" class="unseen-dot" aria-label="Neue Änderungen" />
-          </span>
-          <span class="label">{{ link.label }}</span>
-        </router-link>
-        <!-- Im einfachen Touren-Modus (Standard) ausgeblendet: Touren anlegen/Spots zuordnen geht
-             dort bereits direkt in der Karte (TourAssignPicker.vue), ein zusätzlicher Nav-Punkt
-             daneben wäre nur redundante Navigation (siehe App.vue's Drawer hideTab-Kommentar für
-             das Desktop-Pendant). Die Route /tours selbst bleibt unverändert erreichbar - Bearbeiten-
-             und Querverweis-Aktionen (drawers.openExcursions()) navigieren dorthin weiterhin, auch im
-             einfachen Modus. -->
-        <router-link
-          v-if="link.to === '/excursions' && tourSettings.advancedEditing"
-          to="/tours"
-          class="link mobile-page-link"
-          @click="onLinkClick"
-        >
-          <span class="icon-wrap">
-            <span class="icon">{{ SECTION_ICONS.excursions }}</span>
-            <span v-if="liveSync.hasUnseen('ideas')" class="unseen-dot" aria-label="Neue Änderungen" />
-          </span>
-          <span class="label">Touren</span>
-        </router-link>
-      </template>
+      <router-link v-for="link in visibleLinks" :key="link.to" :to="link.to" class="link" @click="onLinkClick">
+        <span class="icon-wrap">
+          <span class="icon">{{ link.icon }}</span>
+          <span v-if="hasUnseenAny(link)" class="unseen-dot" aria-label="Neue Änderungen" />
+        </span>
+        <span class="label">{{ link.label }}</span>
+      </router-link>
     </div>
   </nav>
 </template>

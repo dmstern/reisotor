@@ -1,11 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
-// Statisch (nicht dynamisch wie die übrigen Routen) importiert: App.vue bindet dieselben zwei
-// Komponenten bereits statisch für die Desktop-Schubladen ein – ein zusätzlicher dynamischer Import
+// Statisch (nicht dynamisch wie die übrigen Routen) importiert: App.vue bindet dieselbe Komponente
+// bereits statisch für die Desktop-Kalender-Schublade ein – ein zusätzlicher dynamischer Import
 // hier würde sie nur unnötig erneut anfordern (Vite kann sie ohnehin nicht in einen separaten Chunk
-// auslagern, da sie schon Teil des Hauptbundles sind).
+// auslagern, da sie schon Teil des Hauptbundles ist).
 import ScheduleView from '../views/ScheduleView.vue';
-import ExcursionsDrawer from '../views/ExcursionsDrawer.vue';
 
 // Viele Sichten (z. B. ProfileView.vue) rendern ihr Template erst hinter einem v-if="!loading" nach
 // einem asynchronen API-Aufruf – ein Sprungziel wie #weather-provider-settings existiert direkt nach
@@ -50,14 +49,14 @@ const router = createRouter({
     { path: '/shopping', redirect: '/listen?tab=shopping' },
     { path: '/todo', redirect: '/listen?tab=todo' },
     { path: '/excursions', name: 'excursions', component: () => import('../views/ExcursionsView.vue') },
-    // Kalender/Touren sind auf Desktop weiterhin globale Schubladen (App.vue, über die seitliche
-    // Lasche erreichbar) – dieselben Komponenten dienen hier zusätzlich als eigenständige Mobil-
-    // Seiten (NavBar.vue verlinkt nur dorthin, auf Desktop bleiben diese beiden Nav-Punkte
-    // ausgeblendet). Kein separates Wrapper-/Duplikat-Component nötig: ScheduleView.vue/
-    // ExcursionsDrawer.vue sind bereits eigenständige, in sich responsive (Container-Queries)
-    // Komponenten ohne Abhängigkeit von der umgebenden Drawer-Chrome.
+    // Kalender ist auf Desktop weiterhin eine globale Schublade (App.vue, über die seitliche Lasche
+    // erreichbar) – dieselbe Komponente dient hier zusätzlich als eigenständige Mobil-Seite
+    // (NavBar.vue verlinkt nur dorthin, auf Desktop bleibt dieser Nav-Punkt ausgeblendet). Kein
+    // separates Wrapper-/Duplikat-Component nötig: ScheduleView.vue ist bereits eine eigenständige,
+    // in sich responsive (Container-Queries) Komponente ohne Abhängigkeit von der umgebenden
+    // Drawer-Chrome. Touren haben seit ihrer Verschmelzung in die Spots-Sicht (/excursions) keine
+    // eigene Route mehr.
     { path: '/calendar', name: 'calendar', component: ScheduleView, props: { standalone: true } },
-    { path: '/tours', name: 'tours', component: ExcursionsDrawer, props: { standalone: true } },
     { path: '/travel', name: 'travel', component: () => import('../views/TravelView.vue') },
     { path: '/budget', name: 'budget', component: () => import('../views/BudgetView.vue') },
     { path: '/notes', name: 'notes', component: () => import('../views/NotesView.vue') },
@@ -87,11 +86,11 @@ router.beforeEach(async (to) => {
     return { name: 'dashboard' };
   }
 
-  // Auf Desktop sind Kalender/Touren bereits als globale Schublade gemountet (App.vue) – ein
-  // direkter Aufruf dieser Mobil-Seiten-Routen (z. B. per eingetippter URL, kein Nav-Link dorthin
-  // auf Desktop) würde dieselbe Komponente sonst ein zweites Mal unabhängig mounten (doppelte
+  // Auf Desktop ist der Kalender bereits als globale Schublade gemountet (App.vue) – ein direkter
+  // Aufruf dieser Mobil-Seiten-Route (z. B. per eingetippter URL, kein Nav-Link dorthin auf
+  // Desktop) würde dieselbe Komponente sonst ein zweites Mal unabhängig mounten (doppelte
   // API-Aufrufe, zwei auseinanderlaufende lokale Zustände).
-  if ((to.name === 'calendar' || to.name === 'tours') && window.matchMedia('(min-width: 800px)').matches) {
+  if (to.name === 'calendar' && window.matchMedia('(min-width: 800px)').matches) {
     return { name: 'dashboard' };
   }
 

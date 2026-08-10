@@ -6,13 +6,14 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const seeded = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'fixtures', 'seeded-data.json'), 'utf-8'));
 
-// Regressionsnetz für den zentralen Kern-Ablauf von Phase 3 des Spots/Touren-Redesigns (siehe
-// CLAUDE.md, "Standardverhalten, nicht Ausnahme"): standardmäßig ordnet man einen Spot per "Tour
-// zuordnen"-Combobox (TourAssignPicker.vue) direkt im Spot-Formular einer Tour zu, ganz ohne
-// Reihenfolge - erst die "Erweiterte Touren-Bearbeitung"-Einstellung (stores/tourSettings.ts)
-// schaltet den Drag&Drop-Reihenfolge-Editor (SpotOrderPicker.vue, inkl. Mehrfachbesuch derselben
-// Station) im Touren-Formular frei. Beide Modi teilen sich exakt dasselbe Datenmodell
-// (Excursion.spot_ids) - das ist der eigentliche Punkt dieses Tests, kein UI-Detail.
+// Regressionsnetz für den zentralen Kern-Ablauf des Spots/Touren-Redesigns (siehe CLAUDE.md,
+// "Standardverhalten, nicht Ausnahme"): man kann einen Spot entweder per "Tour zuordnen"-Combobox
+// (TourAssignPicker.vue) direkt im Spot-Formular ohne Reihenfolge einer Tour zuordnen, oder über
+// den Drag&Drop-Reihenfolge-Editor (SpotOrderPicker.vue, inkl. Mehrfachbesuch derselben Station) im
+// Touren-Formular - beide Wege schreiben in dasselbe Excursion.spot_ids-Feld, das ist der
+// eigentliche Punkt dieses Tests, kein UI-Detail. Seit dem Zurückbau des früheren "erweiterten
+// Touren-Modus" ist der Reihenfolge-Editor immer verfügbar, direkt in der Karte-Hauptsicht
+// (ExcursionsView.vue) statt in einer eigenständigen Touren-Schublade/-Route.
 const tripId = seeded.trip.id;
 
 test.describe('Tour-Zuordnung: einfacher Tagging-Modus + Kategorie/Touren-Gruppierung', () => {
@@ -43,18 +44,20 @@ test.describe('Tour-Zuordnung: einfacher Tagging-Modus + Kategorie/Touren-Gruppi
     await expect(spotCard).toBeVisible();
 
     // Umschalten auf Touren-Gruppierung: der neu erstellte Spot muss unter der neu erstellten Tour
-    // auftauchen, statt (wie im Kategorie-Modus) unter seiner Kategorie.
+    // auftauchen, statt (wie im Kategorie-Modus) unter seiner Kategorie. Die Gruppen-Überschrift ist
+    // dabei eine anklickbare ExcursionCard (.excursion-card) statt einer reinen Text-Überschrift
+    // (die bleibt nur der Sammelgruppe "Ohne Tour" vorbehalten, siehe ExcursionsView.vue).
     await page.getByRole('button', { name: '🎒 Touren' }).click();
-    const tourGroupHeading = page.locator('.category-heading', { hasText: tourTitle });
-    await expect(tourGroupHeading).toBeVisible();
+    const tourGroupCard = page.locator('.excursion-card', { hasText: tourTitle });
+    await expect(tourGroupCard).toBeVisible();
     await expect(spotCard).toBeVisible();
 
     await page.getByRole('button', { name: '🏷️ Spots' }).click();
   });
 });
 
-test.describe('Erweiterte Touren-Bearbeitung: geteiltes Datenmodell zwischen einfachem und Power-User-Modus', () => {
-  test('Reihenfolge + Mehrfachbesuch bleiben erhalten, wenn zwischen den beiden Bearbeitungsmodi gewechselt wird', async ({
+test.describe('Touren-Reihenfolge-Editor: Reihenfolge + Mehrfachbesuch direkt in der Karte-Hauptsicht', () => {
+  test('Reihenfolge + Mehrfachbesuch bleiben nach Speichern+Neuladen erhalten, Tour-Karte visualisiert die Tour auf der Karte', async ({
     page,
   }) => {
     const marker = `E2E-Tour-Order-${Date.now()}`;
@@ -62,30 +65,25 @@ test.describe('Erweiterte Touren-Bearbeitung: geteiltes Datenmodell zwischen ein
     const spotBTitle = `Aussichtspunkt ${marker}`;
     const tourTitle = `Rundgang ${marker}`;
 
+    // Mit Koordinaten angelegt (nicht nur Titel/Kategorie): ExcursionCard.vue zeigt den
+    // "🗺️ Auf Karte anzeigen"-Button nur, wenn mindestens eine Station einen Standort hat.
     const spotA = await page.request.post('/api/spots', {
-      data: { trip_id: tripId, title: spotATitle, category: 'Sehenswürdigkeit' },
+      data: { trip_id: tripId, title: spotATitle, category: 'Sehenswürdigkeit', lat: 38.7223, lng: -9.1393 },
     });
     expect(spotA.ok()).toBeTruthy();
     const spotB = await page.request.post('/api/spots', {
-      data: { trip_id: tripId, title: spotBTitle, category: 'Sehenswürdigkeit' },
+      data: { trip_id: tripId, title: spotBTitle, category: 'Sehenswürdigkeit', lat: 38.7169, lng: -9.1399 },
     });
     expect(spotB.ok()).toBeTruthy();
 
-    // Power-User-Einstellung aktivieren.
-    await page.goto('/profile');
-    const advancedCheckbox = page.locator('label', { hasText: 'Erweiterte Touren-Bearbeitung' }).locator('input');
-    await advancedCheckbox.check();
-    await expect(advancedCheckbox).toBeChecked();
-
-    await page.goto('/tours');
+    await page.goto('/excursions');
     await page.getByRole('button', { name: '+ Neue Tour' }).click();
     const newTourModal = page.locator('.modal', { hasText: 'Neue Tour' });
     await newTourModal.locator('input[placeholder="Titel"]').fill(tourTitle);
 
-    // Der Reihenfolge-Editor (statt des einfachen Umschalt-Pickers) ist jetzt sichtbar - Start UND
-    // Ende an derselben Station (Spot A), dazwischen Spot B: Klick fügt IMMER eine weitere Station
-    // hinzu (kein Checkbox-Verhalten), genau das ist der Kern des Power-User-Modus.
-    await expect(newTourModal.locator('.spot-toggle-picker')).toHaveCount(0);
+    // Start UND Ende an derselben Station (Spot A), dazwischen Spot B: Klick fügt IMMER eine
+    // weitere Station hinzu (kein Checkbox-Verhalten) - der Reihenfolge-Editor ist seit dem
+    // Zurückbau des früheren "erweiterten Touren-Modus" immer verfügbar, kein Umschalten mehr nötig.
     const addableRow = (title: string) => newTourModal.locator('.spot-picker .derived-option', { hasText: title });
     await addableRow(spotATitle).click();
     await addableRow(spotBTitle).click();
@@ -101,10 +99,21 @@ test.describe('Erweiterte Touren-Bearbeitung: geteiltes Datenmodell zwischen ein
     await newTourModal.locator('form.edit-form button[type="submit"]').click();
     await expect(newTourModal).toBeHidden();
 
+    // Nach Kategorien gruppiert (Standard) taucht die neue Tour noch nicht als eigene Karte auf -
+    // erst die Touren-Gruppierung zeigt sie als anklickbare ExcursionCard.
+    await page.getByRole('button', { name: '🎒 Touren' }).click();
+
     // Neu laden + erneut bearbeiten: Reihenfolge und Mehrfachbesuch müssen einen vollen
     // Save+Reload-Zyklus überstehen (nicht nur clientseitig im Formular-State vorhanden sein).
     await page.reload();
+    await page.getByRole('button', { name: '🎒 Touren' }).click();
     const tourCard = page.locator('.excursion-card', { hasText: tourTitle });
+    await expect(tourCard).toBeVisible();
+
+    // Klick auf die Tour-Karte visualisiert die Tour auf der Karte (kein extra Touren-View nötig).
+    await tourCard.locator('.card-action-btn', { hasText: 'Auf Karte anzeigen' }).click();
+    await expect(page.locator('.focus-banner', { hasText: tourTitle })).toBeVisible();
+
     await tourCard.getByRole('button', { name: 'Bearbeiten' }).click();
     const editModal = page.locator('.modal', { hasText: 'Tour bearbeiten' });
     await expect(editModal.locator('.planned-row .spot-title')).toHaveText([
@@ -112,21 +121,5 @@ test.describe('Erweiterte Touren-Bearbeitung: geteiltes Datenmodell zwischen ein
       new RegExp(spotBTitle),
       new RegExp(spotATitle),
     ]);
-    await editModal.locator('.close-btn').click();
-
-    // Power-User-Einstellung wieder deaktivieren: dieselbe Tour muss im einfachen Modus weiterhin
-    // öffnen (keine Datenverlust/Absturz), auch wenn Reihenfolge/Mehrfachbesuch dort nicht mehr
-    // separat dargestellt werden - beide Modi teilen sich exakt dasselbe spot_ids-Feld.
-    await page.goto('/profile');
-    await advancedCheckbox.uncheck();
-    await expect(advancedCheckbox).not.toBeChecked();
-
-    await page.goto('/tours');
-    const tourCardAgain = page.locator('.excursion-card', { hasText: tourTitle });
-    await tourCardAgain.getByRole('button', { name: 'Bearbeiten' }).click();
-    const simpleEditModal = page.locator('.modal', { hasText: 'Tour bearbeiten' });
-    await expect(simpleEditModal.locator('.spot-toggle-picker')).toBeVisible();
-    await expect(simpleEditModal.locator('.spot-toggle-row', { hasText: spotATitle }).locator('input')).toBeChecked();
-    await expect(simpleEditModal.locator('.spot-toggle-row', { hasText: spotBTitle }).locator('input')).toBeChecked();
   });
 });

@@ -1,5 +1,14 @@
 import L from 'leaflet';
 
+// Leaflets Default-Attribution-Prefix stellt der "Leaflet"-Verlinkung eine kleine
+// Ukraine-Flaggen-SVG voran (Control.Attribution.js, seit 2022 aus Solidarität fest einprogrammiert,
+// nicht konfigurierbar außer durch komplettes Überschreiben des prefix). Gleicher Link-Text/-Ziel,
+// nur ohne die Flagge – an alle Karten mit sichtbarer Attribution-Control übergeben (siehe
+// TripMap.vue/LocationPicker.vue; ExcursionMiniMap.vue braucht das nicht, da dort
+// attributionControl:false).
+export const LEAFLET_ATTRIBUTION_PREFIX =
+  '<a href="https://leafletjs.com" title="A JavaScript library for interactive maps">Leaflet</a>';
+
 // Aus TripMap.vue extrahiert: Marker-Icon- und Bogen-Routen-Helfer, die jetzt sowohl von der
 // großen Karte als auch von der kleinen Ausflug-Mini-Karte (ExcursionMiniMap.vue) gebraucht
 // werden – ein gemeinsamer Icon-Cache spart auf dem ressourcenschwachen Pi 2 unnötige
