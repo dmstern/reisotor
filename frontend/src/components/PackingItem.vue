@@ -4,6 +4,7 @@ import type { PackingItem } from '../api/types';
 import { isFullyPacked as isFullyPackedItem } from '../utils/packing';
 import DeleteButton from './DeleteButton.vue';
 import EditButton from './EditButton.vue';
+import PendingSyncBadge from './PendingSyncBadge.vue';
 
 const props = defineProps<{ item: PackingItem; highlighted?: boolean }>();
 const emit = defineEmits<{
@@ -122,6 +123,7 @@ const tallyGroups = computed<number[]>(() => {
         {{ item.label }}
         <span v-if="item.quantity > 1" class="qty">×{{ item.quantity }}</span>
       </span>
+      <PendingSyncBadge v-if="item._pending" />
     </div>
 
     <div v-if="item.quantity > 1" class="tally-control">

@@ -75,6 +75,74 @@ function readOutbox(): OutboxEntry[] {
   }
 }
 
+/** Collection-Pfad vor einem eventuellen '?id'-Suffix bzw. Query-String, z. B. '/diary' sowohl für
+ *  GET '/diary?trip_id=5' als auch für POST '/diary'/PUT '/diary/123' – gemeinsamer Schlüssel, über
+ *  den mergePendingIntoList() und findCachedItemInCollection() unten Outbox-Einträge derselben
+ *  fachlichen Sammlung zuordnen, unabhängig vom jeweiligen HTTP-Pfad-Suffix. */
+export function collectionOf(path: string): string {
+  return path.split('?')[0].replace(/\/-?\d+$/, '');
+}
+
+interface Pendable {
+  id: number;
+}
+
+/** Ergänzt eine vom Server oder aus dem Cache gelesene Liste um noch nicht synchronisierte
+ *  Outbox-Einträge derselben Sammlung (siehe collectionOf) – ohne das würde ein offline neu
+ *  angelegtes/bearbeitetes/gelöschtes Objekt nach einem Seiten-Reload (bevor die Outbox wieder
+ *  gesendet werden konnte) einfach aus der Liste verschwinden, obwohl es sicher in der Outbox auf
+ *  den nächsten Sync-Versuch wartet. Reine Lese-Sicht – verändert weder Outbox noch Cache. Von
+ *  api/client.ts's get() für jede Array-Antwort aufgerufen. */
+export function mergePendingIntoList<T extends Pendable>(path: string, list: T[]): T[] {
+  const collection = collectionOf(path);
+  let result = list;
+  for (const entry of readOutbox()) {
+    const entryCollection = collectionOf(entry.path);
+    if (entryCollection !== collection) continue;
+    if (entry.method === 'POST' && entry.tempId != null) {
+      result = [...result, { ...(entry.body as object), id: entry.tempId, _pending: true } as unknown as T];
+      continue;
+    }
+    const idMatch = /\/(-?\d+)$/.exec(entry.path.split('?')[0]);
+    if (!idMatch) continue;
+    const id = Number(idMatch[1]);
+    if (entry.method === 'PUT') {
+      result = result.map((item) => (item.id === id ? ({ ...item, ...(entry.body as object), _pending: true } as unknown as T) : item));
+    } else if (entry.method === 'DELETE') {
+      result = result.filter((item) => item.id !== id);
+    }
+  }
+  return result;
+}
+
+/** Sucht ein Objekt mit passender id in irgendeinem gecachten GET-Ergebnis derselben Sammlung
+ *  (siehe collectionOf) – der genaue Query-String (z. B. '?trip_id=5') ist an dieser Stelle nicht
+ *  bekannt (queueMutation() unten kennt nur den PUT-Pfad '/diary/123', nicht den GET-Listenpfad),
+ *  daher ein Scan über alle Cache-Keys mit passendem Sammlungs-Präfix statt eines direkten Lookups.
+ *  Liefert das VOLLSTÄNDIGE zuletzt bekannte Objekt, damit ein offline abgeschickter PUT (dessen
+ *  Body typischerweise nur die im Formular editierbaren Felder enthält, siehe z. B. DiaryView.vue's
+ *  submitEditEntry) beim optimistischen Zurückschreiben keine server-verwalteten Felder wie
+ *  created_by/trip_id verliert (siehe queueMutation()). */
+export function findCachedItemInCollection(collection: string, id: number): Record<string, unknown> | undefined {
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (!key || !key.startsWith(CACHE_PREFIX)) continue;
+    const path = key.slice(CACHE_PREFIX.length);
+    if (path !== collection && !path.startsWith(`${collection}?`)) continue;
+    const raw = localStorage.getItem(key);
+    if (!raw) continue;
+    try {
+      const list = JSON.parse(raw);
+      if (!Array.isArray(list)) continue;
+      const found = (list as Array<Record<string, unknown>>).find((item) => item && item.id === id);
+      if (found) return found;
+    } catch {
+      // korrupter Cache-Eintrag - einfach überspringen, andere Cache-Keys können noch passen.
+    }
+  }
+  return undefined;
+}
+
 function writeOutboxList(list: OutboxEntry[]) {
   localStorage.setItem(OUTBOX_KEY, JSON.stringify(list));
 }

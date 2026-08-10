@@ -11,6 +11,7 @@ import SocialRow from './SocialRow.vue';
 import Comments, { type CommentItem } from './Comments.vue';
 import ExcursionDetailDialog from './ExcursionDetailDialog.vue';
 import SpotImageCollage from './SpotImageCollage.vue';
+import PendingSyncBadge from './PendingSyncBadge.vue';
 import { formatDate as formatDateShared } from '../utils/dateFormat';
 
 const props = defineProps<{
@@ -138,7 +139,10 @@ function onSpotDrop(event: DragEvent) {
       <span v-if="excursion.done" class="status status-done">✅ Gemacht</span>
     </div>
     <div class="body">
-      <h3>{{ excursion.title }}</h3>
+      <div class="title-row">
+        <h3>{{ excursion.title }}</h3>
+        <PendingSyncBadge v-if="excursion._pending" />
+      </div>
       <div class="links" v-if="hasMappedStations">
         <button type="button" class="card-action-btn" @click.stop="emit('show-on-map')">🗺️ Auf Karte anzeigen</button>
       </div>
@@ -266,6 +270,13 @@ function onSpotDrop(event: DragEvent) {
 .body h3 {
   font-size: 1rem;
   margin-bottom: 0;
+}
+
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
 }
 
 .status {

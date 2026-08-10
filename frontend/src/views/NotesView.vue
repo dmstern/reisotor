@@ -17,6 +17,7 @@ import UndoDeleteRow from '../components/UndoDeleteRow.vue';
 import FileAttachments from '../components/FileAttachments.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import DraftStatusBar from '../components/DraftStatusBar.vue';
+import PendingSyncBadge from '../components/PendingSyncBadge.vue';
 import { formatDateTime } from '../utils/dateFormat';
 import { useUndoableDelete } from '../composables/useUndoableDelete';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
@@ -224,6 +225,7 @@ async function restore(id: number) {
         <div v-else class="card note-card" :class="{ 'new-highlight': highlightedIds.has(note.id) }">
           <div class="note-head">
             <h3 v-if="note.title">{{ note.title }}</h3>
+            <PendingSyncBadge v-if="note._pending" />
             <div class="note-actions">
               <EditButton small @click="startEdit(note)" />
               <DeleteButton small @click="remove(note.id)" />

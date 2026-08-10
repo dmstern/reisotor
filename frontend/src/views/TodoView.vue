@@ -16,6 +16,7 @@ import UndoDeleteRow from '../components/UndoDeleteRow.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import DraftStatusBar from '../components/DraftStatusBar.vue';
 import QuickAddRow from '../components/QuickAddRow.vue';
+import PendingSyncBadge from '../components/PendingSyncBadge.vue';
 import { useUndoableDelete } from '../composables/useUndoableDelete';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
 import { usePersistedRef } from '../composables/usePersistedRef';
@@ -338,6 +339,7 @@ function isOverdue(item: TodoItem) {
                   <input type="checkbox" :checked="!!item.done" @change="toggleDone(item)" />
                   <span class="title" :class="{ 'text-done': item.done }">{{ item.title }}</span>
                 </label>
+                <PendingSyncBadge v-if="item._pending" />
                 <span class="priority" :title="PRIORITY_META[item.priority].label">{{ PRIORITY_META[item.priority].icon }}</span>
                 <span v-if="item.due_date" class="due" :class="{ overdue: isOverdue(item) }">
                   📅 {{ formatDate(item.due_date) }}

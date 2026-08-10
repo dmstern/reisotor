@@ -13,6 +13,7 @@ import UndoDeleteRow from '../components/UndoDeleteRow.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import DraftStatusBar from '../components/DraftStatusBar.vue';
 import QuickAddRow from '../components/QuickAddRow.vue';
+import PendingSyncBadge from '../components/PendingSyncBadge.vue';
 import { useUndoableDelete } from '../composables/useUndoableDelete';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
 import { sortWithDoneLast } from '../composables/useCheckedSort';
@@ -344,6 +345,7 @@ async function quickAddToGroup(group: Group, label: string) {
                   <input type="checkbox" :checked="!!item.checked" @change="toggle(item)" />
                   <span :class="{ 'text-done': item.checked }">{{ item.label }}</span>
                 </label>
+                <PendingSyncBadge v-if="item._pending" />
                 <span v-if="groupBy !== 'shop' && item.shop" class="tag">🏬 {{ item.shop }}</span>
                 <span v-if="groupBy !== 'period' && item.period" class="tag">🗓️ {{ PERIOD_META[item.period] }}</span>
                 <a v-if="item.link" :href="item.link" target="_blank" rel="noopener" class="link">🔗 Link</a>

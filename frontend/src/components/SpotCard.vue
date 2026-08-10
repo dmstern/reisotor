@@ -18,6 +18,7 @@ import SocialRow from './SocialRow.vue';
 import Comments, { type CommentItem } from './Comments.vue';
 import MapsAppPicker from './MapsAppPicker.vue';
 import FileAttachments from './FileAttachments.vue';
+import PendingSyncBadge from './PendingSyncBadge.vue';
 import { formatDate as formatDateShared } from '../utils/dateFormat';
 
 const props = defineProps<{
@@ -155,6 +156,7 @@ function onCardClick() {
       <div class="head">
         <h3>{{ spot.title }}</h3>
         <CategoryChip :category="spot.category" />
+        <PendingSyncBadge v-if="spot._pending" />
       </div>
       <p v-if="expanded && creatorLabel" class="detail-row"><span class="detail-label">Von</span>{{ creatorLabel }}</p>
       <template v-if="expanded && isAccommodation">

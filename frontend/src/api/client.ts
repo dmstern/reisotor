@@ -1,4 +1,14 @@
-import { enqueue, isConfirmedOffline, nextTempId, readCache, setConfirmedOffline, writeCache } from './offline';
+import {
+  collectionOf,
+  enqueue,
+  findCachedItemInCollection,
+  isConfirmedOffline,
+  mergePendingIntoList,
+  nextTempId,
+  readCache,
+  setConfirmedOffline,
+  writeCache,
+} from './offline';
 import { useRequestActivityStore } from '../stores/requestActivity';
 
 export class ApiError extends Error {
@@ -88,6 +98,16 @@ function isNetworkFailure(err: unknown): boolean {
   return err instanceof TypeError || (err instanceof DOMException && err.name === 'AbortError');
 }
 
+// Ergänzt eine Array-Antwort um noch nicht synchronisierte Outbox-Einträge derselben Sammlung
+// (siehe api/offline.ts's mergePendingIntoList) – sonst würde ein offline neu angelegtes/
+// bearbeitetes/gelöschtes Objekt nach einem Seiten-Reload (bevor die Outbox wieder gesendet werden
+// konnte) aus der Liste verschwinden, obwohl es sicher auf den nächsten Sync-Versuch wartet.
+// Nicht-Array-Antworten (Einzelobjekte, /users, …) bleiben unverändert.
+function withPending<T>(path: string, data: T): T {
+  if (!Array.isArray(data)) return data;
+  return mergePendingIntoList(path, data as Array<{ id: number }>) as unknown as T;
+}
+
 async function get<T>(path: string): Promise<T> {
   const activity = useRequestActivityStore();
   activity.start('read');
@@ -99,7 +119,7 @@ async function get<T>(path: string): Promise<T> {
       try {
         const data = await rawRequest<T>(path, { method: 'GET' });
         writeCache(path, data);
-        return data;
+        return withPending(path, data);
       } catch (err) {
         if (!isNetworkFailure(err)) throw err;
         // Netzwerk nicht erreichbar, obwohl navigator.onLine true meldet (unzuverlässig) – auf den
@@ -110,7 +130,7 @@ async function get<T>(path: string): Promise<T> {
       }
     }
     const cached = readCache<T>(path);
-    if (cached !== undefined) return cached;
+    if (cached !== undefined) return withPending(path, cached);
     throw new ApiError(0, 'Offline und keine zwischengespeicherten Daten für diese Ansicht vorhanden');
   } finally {
     activity.finish('read');
@@ -138,7 +158,13 @@ function queueMutation<T>(method: MutateMethod, path: string, body: unknown): T 
   // Zeile existiert (aus Sicht des Clients) bereits.
   const idMatch = /(\d+)(?:\?.*)?$/.exec(path);
   enqueue('PUT', path, body);
-  return { ...(body as object), id: idMatch ? Number(idMatch[1]) : undefined, _pending: true } as T;
+  const id = idMatch ? Number(idMatch[1]) : undefined;
+  // body enthält meist nur die im Formular editierbaren Felder (siehe z. B. DiaryView.vue's
+  // submitEditEntry), nicht server-verwaltete Felder wie created_by/trip_id/done - ohne diesen
+  // Merge über das zuletzt gecachte Vollobjekt würde die optimistische Antwort (bis zum nächsten
+  // echten GET) mit fehlenden Feldern in die View geschrieben (siehe findCachedItemInCollection).
+  const cachedBase = id != null ? findCachedItemInCollection(collectionOf(path), id) : undefined;
+  return { ...cachedBase, ...(body as object), id, _pending: true } as T;
 }
 
 const MUTATE_KIND: Record<MutateMethod, 'create' | 'update' | 'delete'> = {
