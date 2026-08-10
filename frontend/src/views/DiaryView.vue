@@ -22,6 +22,7 @@ import Comments from '../components/Comments.vue';
 import UndoDeleteRow from '../components/UndoDeleteRow.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import DraftStatusBar from '../components/DraftStatusBar.vue';
+import PendingSyncBadge from '../components/PendingSyncBadge.vue';
 import { useUndoableDelete } from '../composables/useUndoableDelete';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
 
@@ -438,6 +439,7 @@ async function removeComment(id: number) {
               <strong>{{ author(entry.author_id)?.username ?? '?' }}</strong>
               <span class="date">{{ formatDate(entry.date) }}<span v-if="entry.updated_at"> (bearbeitet)</span></span>
             </div>
+            <PendingSyncBadge v-if="entry._pending" />
             <div v-if="entry.author_id === auth.user?.id" class="entry-actions">
               <EditButton small @click="startEdit(entry)" />
               <DeleteButton small @click="removeEntry(entry.id)" />

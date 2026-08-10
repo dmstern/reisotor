@@ -97,6 +97,11 @@ export interface PackingItem {
   /** Wie viele der `quantity` Exemplare bereits eingepackt sind. */
   packed_count: number;
   owner_id: number | null;
+  /** Nur clientseitig gesetzt (api/client.ts's optimistische Antwort auf ein offline gequeutes
+   *  POST/PUT, siehe api/offline.ts) - dieses Objekt wurde offline angelegt/bearbeitet und wartet
+   *  noch auf den nächsten erfolgreichen Sync-Versuch (stores/connectivity.ts). Nie vom Backend
+   *  gesetzt. */
+  _pending?: boolean;
 }
 
 export interface Excursion {
@@ -119,6 +124,8 @@ export interface Excursion {
   /** Unabhängig von `date`/geplant: explizit als tatsächlich unternommen markiert, auch für
    *  spontane, nie geplante Touren nutzbar (siehe stores/excursions.ts's setDone()). */
   done: 0 | 1;
+  /** Nur clientseitig gesetzt, siehe PackingItem._pending oben. */
+  _pending?: boolean;
 }
 
 export interface ExcursionLike {
@@ -203,6 +210,8 @@ export interface Spot {
    *  tatsächlich besucht markiert, auch für spontane, nie geplante Besuche nutzbar (siehe
    *  stores/spots.ts's setDone()). */
   done: 0 | 1;
+  /** Nur clientseitig gesetzt, siehe PackingItem._pending oben. */
+  _pending?: boolean;
 }
 
 export interface SpotLike {
@@ -268,6 +277,8 @@ export interface ShoppingItem {
   note: string | null;
   shop: string | null;
   period: Period | null;
+  /** Nur clientseitig gesetzt, siehe PackingItem._pending oben. */
+  _pending?: boolean;
 }
 
 export type TodoPriority = 'low' | 'medium' | 'high';
@@ -281,6 +292,8 @@ export interface TodoItem {
   priority: TodoPriority;
   note: string | null;
   done: 0 | 1;
+  /** Nur clientseitig gesetzt, siehe PackingItem._pending oben. */
+  _pending?: boolean;
 }
 
 export interface Note {
@@ -292,6 +305,8 @@ export interface Note {
   created_by: number | null;
   created_at: string;
   updated_at: string | null;
+  /** Nur clientseitig gesetzt, siehe PackingItem._pending oben. */
+  _pending?: boolean;
 }
 
 export interface NoteLike {
@@ -322,6 +337,8 @@ export interface DiaryEntry {
   updated_at: string | null;
   /** IDs der Ausflüge, die diesem Eintrag zugeordnet sind (z. B. an diesem Tag unternommen). */
   excursion_ids: number[];
+  /** Nur clientseitig gesetzt, siehe PackingItem._pending oben. */
+  _pending?: boolean;
 }
 
 export interface DiaryLike {
