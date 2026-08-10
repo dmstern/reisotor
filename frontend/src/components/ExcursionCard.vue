@@ -139,11 +139,6 @@ function onSpotDrop(event: DragEvent) {
     </div>
     <div class="body">
       <h3>{{ excursion.title }}</h3>
-      <div class="stations" v-if="resolvedStations.length">
-        <span v-for="station in resolvedStations" :key="station.key" class="station-chip">
-          {{ station.icon }} {{ station.title }}
-        </span>
-      </div>
       <div class="links" v-if="hasMappedStations">
         <button type="button" class="card-action-btn" @click.stop="emit('show-on-map')">🗺️ Auf Karte anzeigen</button>
       </div>
@@ -416,24 +411,10 @@ function onSpotDrop(event: DragEvent) {
   margin-top: var(--space-2);
 }
 
-.stations {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
 .links {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
   margin-top: 4px;
-}
-
-.station-chip {
-  background: var(--color-hover);
-  border-radius: 999px;
-  padding: 2px 10px;
-  font-size: 0.78rem;
-  color: var(--color-text-muted);
 }
 </style>
