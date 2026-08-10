@@ -1412,7 +1412,17 @@ async function removeSpot(id: number) {
             <DerivedLocationCard v-else :key="item.loc.key" :location="item.loc" />
           </template>
         </TransitionGroup>
-        <p v-if="grp.excursion && !grp.items.length" class="empty">
+        <!-- Zwei unterschiedliche Gründe für eine leere Gruppe: entweder ist der Tour wirklich noch
+             kein Spot zugeordnet (grp.excursion.spot_ids selbst leer, unabhängig von Kategorie-/
+             Status-Filter), oder es sind welche zugeordnet, aber der aktive Filter blendet sie
+             gerade alle aus (grp.items kommt aus filteredSpotItems, spot_ids aus der Excursion
+             selbst bleibt dabei unangetastet) - ohne diese Unterscheidung wirkte eine reine
+             Filter-Situation fälschlich wie eine leere Tour. -->
+        <p v-if="grp.excursion && !grp.items.length && grp.excursion.spot_ids.length && (categoryFilter.length || statusFilter.length)" class="empty">
+          Die zugeordneten Spots sind gerade durch den Kategorie-/Status-Filter ausgeblendet – Filter
+          zurücksetzen, um sie wieder zu sehen.
+        </p>
+        <p v-else-if="grp.excursion && !grp.items.length" class="empty">
           Noch keine Spots zugeordnet – ziehe eine Spot-Karte hierher oder wähle diese Tour beim
           Bearbeiten eines Spots über "Tour zuordnen".
         </p>

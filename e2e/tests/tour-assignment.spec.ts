@@ -54,6 +54,49 @@ test.describe('Tour-Zuordnung: einfacher Tagging-Modus + Kategorie/Touren-Gruppi
 
     await page.getByRole('button', { name: '🏷️ Spots' }).click();
   });
+
+  test('Durch den Kategorie-Filter ausgeblendete Tour-Spots zeigen einen eigenen Hinweis statt "keine Spots zugeordnet"', async ({
+    page,
+  }) => {
+    const marker = `E2E-Tour-Filter-${Date.now()}`;
+    const spotTitle = `Aussichtspunkt ${marker}`;
+    const tourTitle = `Stadtrundgang ${marker}`;
+
+    const spotRes = await page.request.post('/api/spots', {
+      data: { trip_id: tripId, title: spotTitle, category: 'Sehenswürdigkeit' },
+    });
+    expect(spotRes.ok()).toBeTruthy();
+    const spot = await spotRes.json();
+    const tourRes = await page.request.post('/api/ideas', {
+      data: { trip_id: tripId, title: tourTitle, spot_ids: [spot.id] },
+    });
+    expect(tourRes.ok()).toBeTruthy();
+
+    await page.goto('/excursions');
+    await page.getByRole('button', { name: '🎒 Touren' }).click();
+    const group = page.locator('.category-group', { hasText: tourTitle });
+    await expect(group.locator('.spot-card', { hasText: spotTitle })).toBeVisible();
+    await expect(group.locator('.empty')).toHaveCount(0);
+
+    // Kategorie-Filter setzen, der den zugeordneten Spot (Sehenswürdigkeit) ausschließt - die Tour
+    // hat weiterhin einen zugeordneten Spot, er ist nur gerade nicht sichtbar.
+    await page.getByRole('button', { name: 'Nach Kategorie filtern' }).click();
+    await page.getByRole('checkbox', { name: '🍽️ Restaurant' }).first().check();
+    await page.locator('.picker-backdrop').click();
+
+    await expect(group.locator('.spot-card', { hasText: spotTitle })).toHaveCount(0);
+    await expect(group.locator('.empty')).toContainText('durch den Kategorie-/Status-Filter ausgeblendet');
+    await expect(group.locator('.empty')).not.toContainText('Noch keine Spots zugeordnet');
+
+    // Filter zurücksetzen: der Hinweis verschwindet wieder, der Spot ist erneut sichtbar.
+    await page.getByRole('button', { name: 'Nach Kategorie filtern' }).click();
+    await page.getByRole('checkbox', { name: '🍽️ Restaurant' }).first().uncheck();
+    await page.locator('.picker-backdrop').click();
+    await expect(group.locator('.spot-card', { hasText: spotTitle })).toBeVisible();
+    await expect(group.locator('.empty')).toHaveCount(0);
+
+    await page.getByRole('button', { name: '🏷️ Spots' }).click();
+  });
 });
 
 test.describe('Touren-Reihenfolge-Editor: Reihenfolge + Mehrfachbesuch direkt in der Karte-Hauptsicht', () => {
