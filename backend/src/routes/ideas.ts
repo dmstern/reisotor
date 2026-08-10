@@ -79,7 +79,7 @@ function scheduleDatesForIdeas(ideaIds: number[]): Map<number, string> {
 
 // Legt den Kalender-Termin an/aktualisiert/löscht ihn, der einen Ausflug im Kalender repräsentiert
 // – ersetzt die frühere eigene Datums-Spalte auf "ideas". Sowohl das Datum-Feld im Ausflug-
-// Formular (ExcursionsDrawer.vue) als auch das Ziehen auf einen Kalendertag (excursionsStore.
+// Formular (ExcursionsView.vue) als auch das Ziehen auf einen Kalendertag (excursionsStore.
 // setDate) laufen über denselben PUT/POST /ideas-Endpunkt und landen daher hier – EIN Mechanismus
 // statt zweier, wie es vor der Einführung des separaten "Ein-Spot-Ausflug"-Hacks für Spots war.
 function setIdeaScheduleDate(ideaId: number, tripId: number, title: string, date: string | null | undefined) {

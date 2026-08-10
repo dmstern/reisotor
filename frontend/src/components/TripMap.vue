@@ -29,7 +29,7 @@ import { useMapOrientationStore } from '../stores/mapOrientation';
 import { useLocationSharingStore, type ShareDuration } from '../stores/locationSharing';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { buildTravelDerivedLocations } from '../utils/travelDerivedLocations';
-import { arcRoute, cachedEmojiPin, compassPin } from '../utils/mapRoute';
+import { arcRoute, cachedEmojiPin, compassPin, LEAFLET_ATTRIBUTION_PREFIX } from '../utils/mapRoute';
 import { downloadTiles, estimateTileDownload, formatApproxSize } from '../utils/offlineMapTiles';
 import { formatDate as formatDateShared, toLocalDateString } from '../utils/dateFormat';
 import { excursionStationKeys, resolveStations, type ExcursionStation } from '../utils/excursionStations';
@@ -98,6 +98,10 @@ const emit = defineEmits<{
   // Modal-Dialogs (der die Karte dahinter blockieren würde) klappt die passende Spot-Karte in der
   // Liste auf – die kennt TripMap.vue nicht direkt, daher Emit an die Karte-Hauptsicht.
   (e: 'focus-spot', spotId: number): void;
+  // Bearbeiten eines Ausflugs: die Karte besitzt kein eigenes Touren-Formular, lebt aber (wie beim
+  // Spot-Formular oben) im selben Komponentenbaum wie die echte Touren-Bearbeiten-Form
+  // (ExcursionsView.vue) – kein Routen-/Schubladen-Sprung nötig, nur ein Emit nach oben.
+  (e: 'edit-excursion', excursion: Excursion): void;
 }>();
 
 const router = useRouter();
@@ -550,13 +554,19 @@ async function removeIdeaComment(id: number) {
   await api.delete(`/ideas/comments/${id}`);
   ideaComments.value = ideaComments.value.filter((c) => c.id !== id);
 }
-// Bearbeiten eines Ausflugs (oder einer seiner Stationen) braucht das echte Formular, das nur die
-// Ausflüge-Schublade besitzt (eigenständig gemountet, kein gemeinsamer Eltern-Scope mit der
-// Karte-Hauptsicht) – daher hier nur die Schublade öffnen statt eines Emits, die Nutzerin findet
-// den Ausflug dort selbst (Architekturregel: fremde Objekte nur lesend/verknüpfend).
-function editOpenExcursion() {
+// Bearbeiten öffnet die echte Touren-Bearbeiten-Form der Karte-Hauptsicht (beide Teil desselben
+// Komponentenbaums, siehe emit-Deklaration oben) – kein Schubladen-Sprung mehr nötig.
+function editExcursionDetail() {
+  if (!openExcursion.value) return;
   excursionDetailOpen.value = false;
-  drawers.openExcursions();
+  emit('edit-excursion', openExcursion.value);
+}
+
+// Bearbeiten einer Tour-Station (Spot) nutzt denselben edit-spot-Emit wie ein direkter Pin-Klick
+// (editOpenSpot oben) – ExcursionDetailDialog.vue liefert dafür bereits den fertigen Spot mit.
+function editStationSpot(spot: Spot) {
+  excursionDetailOpen.value = false;
+  emit('edit-spot', spot);
 }
 
 const openTravelId = ref<number | null>(null);
@@ -970,6 +980,7 @@ onMounted(async () => {
     // schützt gegen versehentliches Abschalten bei künftigen Leaflet-Versionen/Default-Änderungen.
     doubleClickZoom: true,
   });
+  map.attributionControl.setPrefix(LEAFLET_ATTRIBUTION_PREFIX);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap-Mitwirkende',
     maxZoom: 19,
@@ -1377,12 +1388,12 @@ watch(() => liveSync.memberPositions, () => renderPositions(), { deep: true });
       :comments="ideaCommentItemsFor(openExcursion.id)"
       :stations="spotsStore.spots"
       :travel-items="travelItems"
-      @edit="editOpenExcursion"
+      @edit="editExcursionDetail"
       @toggle-like="toggleIdeaLike(openExcursion.id)"
       @submit-comment="(content) => submitIdeaComment(openExcursion!.id, content)"
       @remove-comment="removeIdeaComment"
       @show-on-map="excursionDetailOpen = false"
-      @edit-station-spot="editOpenExcursion"
+      @edit-station-spot="editStationSpot"
     />
 
     <TravelDetailDialog

@@ -98,13 +98,25 @@ würden sich künftig neu registrierte Accounts automatisch in alle bestehenden 
 pro Domäne unter `stores/`: `trip`, `schedule`, `spots`, `excursions`, `drawers`, `navPosition`,
 `theme`, `auth`) + `vue-router`. `router/index.ts` hat einen globalen `beforeEach`-Guard, der
 `auth.checkSession()` erzwingt und unauthentifizierte Zugriffe auf `/login` umleitet. Responsive
-Besonderheit: Kalender (`ScheduleView`) und Touren (`ExcursionsDrawer`) sind auf Desktop globale,
-in `App.vue` fest gemountete Schubladen (seitliche Lasche), dieselben Komponenten dienen auf Mobil
-zusätzlich als eigenständige Routen (`/calendar`, `/tours`) — der Router blockt einen direkten
-Aufruf dieser Mobil-Routen auf Desktop-Breite, um doppeltes Mounten zu vermeiden. Wiederkehrende
-Architekturkonvention: Referenzen auf fremde Objekte (z. B. ein verknüpfter Trip von einer anderen
-View aus) springen zur Ursprungs-View statt dort inline editierbar zu sein (siehe
-`stores/trip.ts`, `editTripRequestId`).
+Besonderheit: Kalender (`ScheduleView`) ist auf Desktop eine globale, in `App.vue` fest gemountete
+Schublade (seitliche Lasche), dieselbe Komponente dient auf Mobil zusätzlich als eigenständige Route
+(`/calendar`) — der Router blockt einen direkten Aufruf dieser Mobil-Route auf Desktop-Breite, um
+doppeltes Mounten zu vermeiden. Wiederkehrende Architekturkonvention: Referenzen auf fremde Objekte
+(z. B. ein verknüpfter Trip von einer anderen View aus) springen zur Ursprungs-View statt dort
+inline editierbar zu sein (siehe `stores/trip.ts`, `editTripRequestId`).
+
+Touren (Ausflüge) haben seit dem Zurückbau eines früher parallel existierenden "erweiterten
+Touren-Modus" (separate Ausflüge-Schublade + Reihenfolge-Editor nur hinter einer Einstellung)
+**keine eigene Schublade/Route mehr** — Touren-Verwaltung (Anlegen/Bearbeiten/Löschen, Reihenfolge
+der Stationen per Drag&Drop) lebt vollständig in `ExcursionsView.vue` (Route `/excursions`,
+"🗺️ Karte"), zusammen mit der Spots-Liste und der eingebetteten `TripMap.vue`. Beim Gruppieren
+dieser Liste nach Touren (statt nach Kategorie, Umschalter im Filter-Bereich) rendert die
+Gruppen-Überschrift für jede echte Tour eine anklickbare `ExcursionCard.vue` statt einer reinen
+Text-Überschrift — ein Klick darauf visualisiert die Tour-Route direkt in der danebenliegenden
+Karte (`drawers.openMapForExcursion()`), kein Sichtwechsel nötig. Reihenfolge/Mehrfachbesuch einer
+Tour lassen sich im Anlege-/Bearbeiten-Formular immer per `SpotOrderPicker.vue` (Drag&Drop) pflegen;
+`TourAssignPicker.vue` bietet daneben im Spot-Formular einen schnelleren Weg, einen Spot ohne
+Reihenfolge einer (ggf. neuen) Tour zuzuordnen — beide schreiben in dasselbe `Excursion.spot_ids`.
 
 API-Zugriff läuft zentral über `api/client.ts` (`fetch`-Wrapper mit `credentials: 'include'`); ein
 `401` leitet dort hart auf `/login` um (außer auf den paar selbst-behandelten Auth-Pfaden wie

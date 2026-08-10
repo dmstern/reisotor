@@ -10,7 +10,7 @@ function loadShowActivityToasts(): boolean {
   return stored === null ? true : stored === 'true';
 }
 
-// Geräte-/Browser-UI-Einstellung (wie stores/tourSettings.ts) statt Account-Daten: bewusst nur
+// Geräte-/Browser-UI-Einstellung (wie stores/mapOrientation.ts) statt Account-Daten: bewusst nur
 // lokal in localStorage gehalten. Schaltet components/LoadingIndicator.vue's kurzlebige
 // "Lädt…/Speichert…"-Toast-Meldungen an/aus - für alle, denen die häufigen kurzen Meldungen zu
 // hektisch/zu viel Info sind, ohne die dauerhaften Header-Hinweise (Offline/PWA-Update) zu berühren.

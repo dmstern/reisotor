@@ -10,9 +10,9 @@ const props = defineProps<{
   width: number;
   hasUnseen?: boolean;
   /** Blendet nur die Lasche aus (den Klick-Einstieg), NICHT die Schublade selbst - die bleibt
-   *  weiterhin über `open`/den Store programmatisch erreichbar (z. B. drawers.openExcursions() aus
-   *  einer Detail-Bearbeiten- oder Querverweis-Aktion heraus, siehe App.vue's Touren-Schublade im
-   *  einfachen Touren-Modus). Verhindert nur das beiläufige Entdecken/Öffnen über die Lasche selbst. */
+   *  weiterhin über `open`/den Store programmatisch erreichbar. Aktuell ungenutzt (nur die
+   *  Kalender-Schublade bleibt seit der Verschmelzung der Touren-Schublade in die Spots-Sicht
+   *  übrig), die Drawer-Komponente unterstützt es aber weiterhin generisch. */
   hideTab?: boolean;
 }>();
 const emit = defineEmits<{ (e: 'update:open', value: boolean): void; (e: 'update:width', value: number): void }>();
@@ -30,13 +30,6 @@ function toggle() {
 // deaktivieren muss (siehe drawers.maximize()).
 const maximized = computed(() => drawers.maximizedSide === props.side);
 const tabDisabled = computed(() => drawers.maximizedSide !== null && drawers.maximizedSide !== props.side);
-
-// Mobil ist eine ausgeklappte Schublade vollflächig (siehe .drawer-panel unten) – die Lasche der
-// jeweils ANDEREN Schublade würde sonst weiterhin oben drüber schweben (Store ist global, jede
-// Drawer-Instanz kennt daher auch den Öffnungszustand der jeweils anderen Seite). Nur mobil
-// relevant (siehe .drawer.other-open CSS) – auf Desktop dürfen beide Schubladen gleichzeitig offen
-// sein.
-const otherOpen = computed(() => (props.side === 'left' ? drawers.excursionsOpen : drawers.calendarOpen));
 
 // Der Wechsel zwischen "normal" (sticky, Flex-Geschwister) und "maximiert" (fixed, Vollbild) lässt
 // sich nicht per reiner CSS-Transition animieren – der Sprung von sticky zu fixed ist nicht
@@ -121,7 +114,7 @@ function onResizeEnd() {
 </script>
 
 <template>
-  <div class="drawer" :class="[side, { open, maximized, 'other-open': otherOpen }]" :style="{ '--drawer-width': `${width}px` }">
+  <div class="drawer" :class="[side, { open, maximized }]" :style="{ '--drawer-width': `${width}px` }">
     <div class="drawer-backdrop" v-if="open" @click="emit('update:open', false)"></div>
     <div ref="panelEl" class="drawer-panel">
       <button
@@ -253,13 +246,6 @@ function onResizeEnd() {
    siehe @media weiter unten), auf Mobil ersetzt seitdem ebenfalls der Schließen-Button die Lasche
    statt sie nur an den (jetzt nicht mehr vorhandenen) Panel-Rand zu verschieben. */
 .drawer.open .drawer-tab {
-  display: none;
-}
-
-/* Ist mobil die jeweils ANDERE Schublade vollflächig ausgeklappt, würde die eigene Lasche sonst
-   weiterhin oben drüber schweben (siehe otherOpen-Computed) – nur mobil nötig, auf Desktop (siehe
-   @media unten) dürfen beide Schubladen gleichzeitig offen sein und ihre Laschen bleiben sichtbar. */
-.drawer.other-open .drawer-tab {
   display: none;
 }
 
@@ -459,15 +445,6 @@ function onResizeEnd() {
   .drawer.right .drawer-tab {
     order: 1;
     right: auto;
-  }
-
-  /* Auf Desktop dürfen beide Schubladen gleichzeitig offen sein (Flex-Geschwister statt
-     Vollbild-Overlay) – die mobile "andere Lasche ausblenden"-Regel gilt daher hier NICHT.
-     :not(.open) schützt davor, dass diese Rücksetzung die eigene .drawer.open .drawer-tab-Regel
-     (Lasche der SELBST offenen Schublade bleibt immer ausgeblendet) versehentlich überstimmt, falls
-     ein Drawer zufällig gleichzeitig .open UND .other-open ist (beide Schubladen offen). */
-  .drawer.other-open:not(.open) .drawer-tab {
-    display: flex;
   }
 
   /* Auf Desktop ist .drawer-panel nicht mehr auf 85vw gedeckelt (siehe .drawer-panel weiter unten,

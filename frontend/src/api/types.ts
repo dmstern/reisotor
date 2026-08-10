@@ -112,8 +112,9 @@ export interface Excursion {
   /** Spots dieser Tour, in Reihenfolge (Duplikate erlaubt, z. B. Start UND Ende am selben Ort bei
    *  einem Rundgang) – seit Unterkunft/Reise-Orte längst normale Spots sind, ist eine Tour-Station
    *  IMMER ein echter Spot (siehe Migrationskommentar in db/index.ts). Reihenfolge/Mehrfachbesuch
-   *  lassen sich nur über die "Erweiterte Touren-Bearbeitung" editieren (siehe
-   *  stores/tourSettings.ts/SpotOrderPicker.vue); der einfache Tagging-Modus hängt Spots nur an. */
+   *  lassen sich per Drag&Drop im Touren-Formular editieren (SpotOrderPicker.vue,
+   *  ExcursionsView.vue); TourAssignPicker.vue bietet daneben einen schnelleren Weg, einen Spot
+   *  ohne Reihenfolge einer Tour zuzuordnen. */
   spot_ids: number[];
   /** Unabhängig von `date`/geplant: explizit als tatsächlich unternommen markiert, auch für
    *  spontane, nie geplante Touren nutzbar (siehe stores/excursions.ts's setDone()). */

@@ -5,7 +5,6 @@ import { excursionStationKeys, resolveStations } from '../utils/excursionStation
 import { usePointerDrag } from '../composables/usePointerDrag';
 import { useExcursionsStore } from '../stores/excursions';
 import { useDrawersStore } from '../stores/drawers';
-import { useTourSettingsStore } from '../stores/tourSettings';
 import EditButton from './EditButton.vue';
 import DeleteButton from './DeleteButton.vue';
 import SocialRow from './SocialRow.vue';
@@ -92,18 +91,16 @@ const { dragging, ghostStyle, onPointerDown } = usePointerDrag({
   },
 });
 
-// Drop-Zone fürs Zuordnen: ein Spot kann direkt auf diese Karte gezogen werden, um ihn als Station
-// hinzuzufügen - nur in der "Erweiterten Touren-Bearbeitung" (siehe stores/tourSettings.ts), im
-// einfachen Tagging-Modus läuft die Zuordnung stattdessen über "Tour zuordnen" im Spot-Formular
-// (ExcursionsView.vue), das Ziehen-Anfasser bleibt dafür auf SpotCard.vue ebenfalls verborgen.
-// Zähler statt Boolean, da dragenter/dragleave beim Überqueren von Kind-Elementen mehrfach feuern.
-// Der types-Check ist nötig, weil beim Ziehen eines ANDEREN Ausflugs (text/excursion-id) über diese
-// Karte hinweg sonst ebenfalls dragenter/dragleave feuern würde – Ausflüge sollen nur auf den
-// Status-Bereichen (In Planung/Geplant) landen, nicht auf einzelnen Ausflug-Karten.
-const tourSettings = useTourSettingsStore();
+// Drop-Zone fürs Zuordnen: ein Spot kann direkt auf diese Karte gezogen werden (SpotCard.vue's
+// "🎒 Auf Tour ziehen"-Anfasser), um ihn als Station hinzuzufügen – "Tour zuordnen" im Spot-Formular
+// (TourAssignPicker.vue, ExcursionsView.vue) bleibt daneben als schnellerer Weg ohne Reihenfolge
+// bestehen, beide Wege schreiben in dasselbe spot_ids-Feld. Zähler statt Boolean, da dragenter/
+// dragleave beim Überqueren von Kind-Elementen mehrfach feuern. Der types-Check filtert gezielt auf
+// den von SpotCard.vue gesetzten MIME-Typ, damit andere Drags (z. B. SpotOrderPicker.vue's interne
+// Umsortierung) hier keine ungewollte drop-target-Hervorhebung auslösen.
 const spotDragOverCount = ref(0);
 function isStationDrag(event: DragEvent) {
-  return tourSettings.advancedEditing && !!event.dataTransfer?.types.includes('text/spot-id');
+  return !!event.dataTransfer?.types.includes('text/spot-id');
 }
 function onSpotDragEnter(event: DragEvent) {
   if (!isStationDrag(event)) return;
@@ -115,7 +112,6 @@ function onSpotDragLeave(event: DragEvent) {
 }
 function onSpotDrop(event: DragEvent) {
   spotDragOverCount.value = 0;
-  if (!tourSettings.advancedEditing) return;
   const rawSpotId = event.dataTransfer?.getData('text/spot-id');
   if (rawSpotId) emit('drop-spot', Number(rawSpotId));
 }

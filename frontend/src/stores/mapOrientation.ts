@@ -9,7 +9,7 @@ function loadMode(): MapOrientationMode {
   return localStorage.getItem(MAP_ORIENTATION_KEY) === 'heading' ? 'heading' : 'north';
 }
 
-// Geräte-/Browser-UI-Einstellung (wie stores/tourSettings.ts) statt Account-Daten: bewusst nur
+// Geräte-/Browser-UI-Einstellung (wie stores/uiSettings.ts) statt Account-Daten: bewusst nur
 // lokal in localStorage gehalten. Steuert TripMap.vue's Kartenausrichtung (siehe dortiger
 // toggleMapOrientation()) - "north": die Karte bleibt nordorientiert (0° Rotation), unabhängig vom
 // Kompass; "heading": die Karte dreht sich laufend mit der Blickrichtung (Kompass-Heading) mit,

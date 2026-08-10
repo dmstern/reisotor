@@ -467,7 +467,7 @@ async function removeComment(id: number) {
               :key="ex.id"
               type="button"
               class="excursion-chip"
-              @click="drawers.openExcursions()"
+              @click="drawers.openMapForExcursion(ex.id)"
             >
               <span
                 class="excursion-chip-img"

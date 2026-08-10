@@ -92,8 +92,11 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
     await modal.locator('button[type="submit"]').click();
     await expect(modal).toBeHidden();
 
-    // Beide verknüpften Objekte müssen jetzt automatisch als "gemacht" markiert sein.
-    await page.goto('/tours');
+    // Beide verknüpften Objekte müssen jetzt automatisch als "gemacht" markiert sein. Touren-Karten
+    // leben seit der Verschmelzung des früheren "erweiterten Touren-Modus" in der Spots-Sicht
+    // (/excursions, Touren-Gruppierung) statt in einer eigenständigen Touren-Route.
+    await page.goto('/excursions');
+    await page.getByRole('button', { name: '🎒 Touren' }).click();
     const tourCard = page.locator('.excursion-card', { hasText: tourTitle });
     await expect(tourCard.locator('.status.status-done')).toBeVisible();
 

@@ -221,8 +221,8 @@ export const useLiveSyncStore = defineStore('liveSync', () => {
     for (const domain of LIVE_DOMAINS) domainVersion[domain]++;
   }
 
-  /** Von jeder Domänen-Ansicht beim Mounten (bzw. beim Öffnen der Kalender-/Touren-Schublade auf
-   *  Desktop, siehe ScheduleView.vue/ExcursionsDrawer.vue) aufzurufen: liefert die seit dem letzten
+  /** Von jeder Domänen-Ansicht beim Mounten (bzw. beim Öffnen der Kalender-Schublade auf Desktop,
+   *  siehe ScheduleView.vue) aufzurufen: liefert die seit dem letzten
    *  Besuch von ANDEREN geänderten ids (für eine "neu"-Hervorhebung) und markiert die Domäne für
    *  diesen Urlaub als jetzt gesehen (Nav-Punkt verschwindet, Zeitstempel wird persistiert). */
   function markSeen(domain: LiveDomain): Set<number> {

@@ -10,7 +10,6 @@ import { useScheduleStore } from '../stores/schedule';
 import { useSpotsStore } from '../stores/spots';
 import { useTripStore } from '../stores/trip';
 import { useDrawersStore } from '../stores/drawers';
-import { useTourSettingsStore } from '../stores/tourSettings';
 import CategoryChip from './CategoryChip.vue';
 import EditButton from './EditButton.vue';
 import DeleteButton from './DeleteButton.vue';
@@ -56,6 +55,10 @@ const emit = defineEmits<{
   (e: 'remove-comment', id: number): void;
   (e: 'open', spot: Spot): void;
   (e: 'close'): void;
+  // Tap-Alternative zum nativen Drag auf eine Tour-Karte (siehe onExcursionHandleClick unten) –
+  // die Elternkomponente (ExcursionsView.vue) besitzt die Gruppierungs-Einstellung (groupMode) und
+  // schaltet auf "nach Touren gruppieren" um, damit die Tour-Karten als Drop-Ziele sichtbar werden.
+  (e: 'assign-to-tour'): void;
 }>();
 
 const showComments = ref(false);
@@ -66,23 +69,23 @@ function formatDate(d: string) {
 
 // Natives Drag (Zuordnen zu einer Tour) startet über einen dedizierten Anfasser (.excursion-drag-
 // handle, siehe Template) statt über die ganze Karte – @click.stop dort verhindert, dass ein reiner
-// (Nicht-Drag-)Klick auf den Anfasser zusätzlich die Detail-Ansicht öffnet. Öffnet nebenbei die
-// Touren-Schublade: die ist auf Mobil standardmäßig zu (drawers.ts loadOpen), ein Drop auf eine
-// ExcursionCard darin wäre sonst gar nicht erreichbar.
+// (Nicht-Drag-)Klick auf den Anfasser zusätzlich die Detail-Ansicht öffnet. Tour-Karten sind seit
+// der Verschmelzung von Touren/Spots-Sicht direkt in derselben Liste sichtbar (siehe
+// ExcursionsView.vue's groupMode==='tours'), kein Schubladen-Sprung mehr nötig, um ein Ablage-Ziel
+// erreichbar zu machen.
 function onDragStart(event: DragEvent) {
   event.dataTransfer?.setData('text/spot-id', String(props.spot.id));
   if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
-  drawers.excursionsOpen = true;
 }
 
 // Klick-Alternative zum nativen Drag oben: natives HTML5-DnD ist auf Touch-Geräten unzuverlässig
-// (siehe usePointerDrag-Kommentar unten), ein reiner Tap auf den Anfasser öffnet deshalb ebenfalls
-// direkt die Touren-Schublade (Desktop) bzw. navigiert zur Touren-Seite (Mobil, siehe
-// drawers.openExcursions()) – exakt dasselbe Muster wie der 📅-Einplanen-Anfasser (dort via
+// (siehe usePointerDrag-Kommentar unten), ein reiner Tap auf den Anfasser schaltet deshalb direkt
+// auf die Touren-Gruppierung um (siehe assign-to-tour-Emit oben), damit die Tour-Karten als
+// Ablage-Ziele sichtbar werden – exakt dasselbe Muster wie der 📅-Einplanen-Anfasser (dort via
 // usePointerDrag's onTap statt eines eigenen Klick-Handlers, weil er zusätzlich ein echtes
 // Pointer-Drag unterstützt).
 function onExcursionHandleClick() {
-  drawers.openExcursions();
+  emit('assign-to-tour');
 }
 
 // Spontanes Einplanen direkt auf einen Kalendertag, ohne vorher einen Ausflug anzulegen: legt
@@ -96,7 +99,6 @@ const scheduleStore = useScheduleStore();
 const spotsStore = useSpotsStore();
 const tripStore = useTripStore();
 const drawers = useDrawersStore();
-const tourSettings = useTourSettingsStore();
 const { dragging, ghostStyle, onPointerDown } = usePointerDrag({
   onStart: () => {
     drawers.calendarOpen = true;
@@ -186,7 +188,6 @@ function onCardClick() {
       <RichTextDisplay v-if="spot.note" class="note" :content="spot.note" :format="spot.note_format" />
       <div class="card-actions">
         <button
-          v-if="tourSettings.advancedEditing"
           type="button"
           class="excursion-drag-handle"
           draggable="true"

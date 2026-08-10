@@ -3,6 +3,7 @@ import { ref, watch } from 'vue';
 import type { TripFormData } from '../stores/trip';
 import { buildOsmLink, parseLatLngFromMapsLink } from '../utils/googleMaps';
 import LocationPicker from './LocationPicker.vue';
+import ImageUrlInput from './ImageUrlInput.vue';
 
 // locationError: vom Aufrufer (TripSwitcher.vue) gesetzt, wenn nach dem Speichern auffällt, dass
 // auch die serverseitige Maps-Link-Auflösung fehlgeschlagen ist (z. B. Google-Bot-Blocking eines
@@ -114,10 +115,10 @@ function onSubmit() {
       📍 Standort manuell setzen {{ pickerOpen ? '▲' : '▼' }}
     </button>
     <LocationPicker v-if="pickerOpen" v-model="manualPin" />
-    <label>
-      Bild-URL für das Dashboard-Banner (optional)
-      <input v-model="form.image_url" type="url" placeholder="https://…" />
-    </label>
+    <div class="field-group">
+      <span class="field-label">Bild für das Dashboard-Banner (optional)</span>
+      <ImageUrlInput v-model="form.image_url" placeholder="https://…" />
+    </div>
     <label class="checkbox-label">
       <input v-model="form.packing_category_required" type="checkbox" />
       Kategorie in der Packliste ist Pflichtfeld
@@ -133,7 +134,8 @@ function onSubmit() {
   gap: var(--space-2);
 }
 
-label {
+label,
+.field-group {
   display: flex;
   flex-direction: column;
   gap: 4px;
