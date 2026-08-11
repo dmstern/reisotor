@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { computeDepartureCountdown } from './departureCountdown';
+import { computeDepartureCountdown, computeVacationPhase } from './departureCountdown';
 
 // Regressionstest für einen gemeldeten Bug: die vorherige Implementierung nutzte
 // `new Date(startDateStr)` (UTC-Mitternacht) gemischt mit lokaler "heute Mitternacht"-Zeit und
@@ -39,5 +39,43 @@ describe('computeDepartureCountdown', () => {
     const result = computeDepartureCountdown('2026-08-14', now);
     expect(result.phase).toBe('hours');
     if (result.phase === 'hours') expect(result.hours).toBeGreaterThanOrEqual(1);
+  });
+});
+
+// Regressionsnetz für den Dashboard-Hinweis nach dem Abreisetag (siehe DashboardView.vue): der
+// vorherige, dauerhafte "Gute Reise!"-Text blieb bis lange nach Urlaubsende stehen. Diese Phasen
+// lösen ihn ab, sobald computeDepartureCountdown() 'departed' liefert.
+describe('computeVacationPhase', () => {
+  const trip = { start_date: '2026-08-14', end_date: '2026-08-18' };
+
+  it('liefert null, solange der Abreisetag selbst noch läuft', () => {
+    expect(computeVacationPhase(trip, new Date(2026, 7, 14, 23, 59, 0))).toBeNull();
+  });
+
+  it('liefert null vor dem Abreisetag', () => {
+    expect(computeVacationPhase(trip, new Date(2026, 7, 10, 12, 0, 0))).toBeNull();
+  });
+
+  it('zeigt "arrived" am ersten vollen Urlaubstag (Tag nach der Abreise)', () => {
+    expect(computeVacationPhase(trip, new Date(2026, 7, 15, 9, 0, 0))).toEqual({ phase: 'arrived' });
+  });
+
+  it('zeigt "ongoing" mit den korrekten Resttagen an einem mittleren Urlaubstag', () => {
+    // 2026-08-16, Urlaubsende 2026-08-18 -> noch 2 Kalendertage bis (und mit) dem letzten Tag.
+    expect(computeVacationPhase(trip, new Date(2026, 7, 16, 15, 0, 0))).toEqual({ phase: 'ongoing', daysLeft: 2 });
+  });
+
+  it('zeigt "lastDay" am end_date', () => {
+    expect(computeVacationPhase(trip, new Date(2026, 7, 18, 8, 0, 0))).toEqual({ phase: 'lastDay' });
+  });
+
+  it('zeigt "over" ab dem Tag nach end_date', () => {
+    expect(computeVacationPhase(trip, new Date(2026, 7, 19, 0, 0, 1))).toEqual({ phase: 'over' });
+    expect(computeVacationPhase(trip, new Date(2026, 9, 1, 12, 0, 0))).toEqual({ phase: 'over' });
+  });
+
+  it('bevorzugt "lastDay" vor "arrived" bei sehr kurzen Reisen (Tag nach Abreise == letzter Tag)', () => {
+    const shortTrip = { start_date: '2026-08-14', end_date: '2026-08-15' };
+    expect(computeVacationPhase(shortTrip, new Date(2026, 7, 15, 9, 0, 0))).toEqual({ phase: 'lastDay' });
   });
 });

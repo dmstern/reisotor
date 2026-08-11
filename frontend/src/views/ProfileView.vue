@@ -423,6 +423,19 @@ async function onImportFileSelected(event: Event) {
     </div>
 
     <div class="card">
+      <h2>🏖️ Urlaubs-Hinweis</h2>
+      <p class="hint">
+        Der Hinweis im Dashboard-Header während des laufenden Urlaubs zeigt standardmäßig immer
+        denselben Text - kann hier stattdessen auf einen Countdown der verbleibenden Urlaubstage
+        umgeschaltet werden.
+      </p>
+      <label class="checkbox-option">
+        <input type="checkbox" v-model="uiSettings.showVacationCountdown" />
+        Verbleibende Urlaubstage anzeigen statt festem Hinweis
+      </label>
+    </div>
+
+    <div class="card">
       <h2>🔔 Meldungen</h2>
       <p class="hint">
         Kurze Meldungen, die bei jedem Laden/Speichern/Löschen kurz unten am Bildschirmrand

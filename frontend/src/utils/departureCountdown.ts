@@ -35,3 +35,36 @@ export function computeDepartureCountdown(startDateStr: string, now: Date): Depa
   }
   return { phase: 'days', days: daysBetweenLocalDates(now, startOfDeparture) };
 }
+
+export type VacationPhase =
+  | { phase: 'arrived' }
+  | { phase: 'ongoing'; daysLeft: number }
+  | { phase: 'lastDay' }
+  | { phase: 'over' };
+
+/** Lebenszyklus-Phase des Urlaubs NACH dem Abreisetag - für DashboardView.vue's Hero-Card, sobald
+ *  computeDepartureCountdown() 'departed' liefert (dessen Stunden-/Tage-Countdown deckt den
+ *  Abreisetag selbst bereits sinnvoll ab, bleibt dafür weiterhin exklusiv zuständig). Eigene
+ *  Funktion statt eines gemeinsamen Fünf-Phasen-Enums, da beide unterschiedliche Granularität
+ *  brauchen (Stunden vs. Kalendertage) und unabhängig voneinander testbar bleiben sollen.
+ *  Datumsvergleich auf Kalendertag-Ebene wie daysBetweenLocalDates() oben, damit dieselbe
+ *  DST-/Zeitzonen-Sicherheit gilt. Gibt null zurück, solange `now` noch am/vor dem Abreisetag liegt
+ *  (dafür bleibt computeDepartureCountdown zuständig) - so bleibt die Funktion auch isoliert
+ *  testbar, ohne sich auf die Aufrufreihenfolge in DashboardView.vue verlassen zu müssen. */
+export function computeVacationPhase(trip: { start_date: string; end_date: string }, now: Date): VacationPhase | null {
+  const [sy, sm, sd] = trip.start_date.split('-').map(Number);
+  const [ey, em, ed] = trip.end_date.split('-').map(Number);
+  const dayAfterDeparture = new Date(sy, sm - 1, sd + 1);
+  const endOfTrip = new Date(ey, em - 1, ed);
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  if (today < dayAfterDeparture) return null;
+
+  const daysUntilEnd = daysBetweenLocalDates(today, endOfTrip);
+  if (daysUntilEnd < 0) return { phase: 'over' };
+  // Prüfung VOR 'arrived': bei sehr kurzen Reisen (z. B. 2 Tage) ist der Tag nach der Abreise
+  // gleichzeitig der letzte Urlaubstag - die "Ende"-Einordnung ist dann die nützlichere Information.
+  if (daysUntilEnd === 0) return { phase: 'lastDay' };
+  if (daysBetweenLocalDates(today, dayAfterDeparture) === 0) return { phase: 'arrived' };
+  return { phase: 'ongoing', daysLeft: daysUntilEnd };
+}

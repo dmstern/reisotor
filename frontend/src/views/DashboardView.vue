@@ -20,6 +20,7 @@ import { useSpotsStore } from '../stores/spots';
 import { useDrawersStore } from '../stores/drawers';
 import { useWeatherProviderStore, WEATHER_MODEL_OPTIONS } from '../stores/weatherProvider';
 import { useHomeCurrencyStore } from '../stores/homeCurrency';
+import { useUiSettingsStore } from '../stores/uiSettings';
 import { assignCategoryColors } from '../utils/categoryColors';
 import { buildAllEntries } from '../utils/calendarEntries';
 import { SCHEDULE_CATEGORY_META } from '../utils/scheduleCategory';
@@ -32,7 +33,7 @@ import {
   formatWeekdayDate as formatWeekdayDateShared,
   toLocalDateString,
 } from '../utils/dateFormat';
-import { computeDepartureCountdown } from '../utils/departureCountdown';
+import { computeDepartureCountdown, computeVacationPhase } from '../utils/departureCountdown';
 import BudgetMeter from '../components/BudgetMeter.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 
@@ -43,6 +44,7 @@ const spotsStore = useSpotsStore();
 const drawers = useDrawersStore();
 const weatherProvider = useWeatherProviderStore();
 const homeCurrency = useHomeCurrencyStore();
+const uiSettings = useUiSettingsStore();
 const tripId = tripStore.currentTripId as number;
 const trip = computed(() => tripStore.currentTrip);
 const schedule = ref<ScheduleItem[]>([]);
@@ -211,6 +213,11 @@ onUnmounted(() => {
 
 const departureCountdown = computed(() => (trip.value?.start_date ? computeDepartureCountdown(trip.value.start_date, now.value) : null));
 
+// Löst departureCountdown's frühere 'departed'-Phase ab, die dauerhaft "Gute Reise!" zeigte - auch
+// noch mitten im Urlaub oder lange nach dessen Ende. computeVacationPhase() liefert stattdessen
+// eigene Phasen für Ankunft/laufenden Urlaub/letzten Tag/vorbei (siehe dortiger Kommentar).
+const vacationPhase = computed(() => (trip.value ? computeVacationPhase(trip.value, now.value) : null));
+
 // Kalender-Widget: echte Termine + eingebettete synthetische Einträge (Urlaub-Start/-Ende, ToDo
 // mit Fälligkeitsdatum), sortiert, die nächsten drei statt nur den einen nächsten (Batch 12).
 const upcomingEntries = computed(() =>
@@ -330,7 +337,12 @@ function formatWeekdayDate(d: string) {
       <p v-else-if="departureCountdown?.phase === 'hours'" class="countdown">
         Noch {{ departureCountdown.hours }} {{ departureCountdown.hours === 1 ? 'Stunde' : 'Stunden' }} bis zur Abreise 🎒
       </p>
-      <p v-else-if="departureCountdown?.phase === 'departed'" class="countdown">Gute Reise! ✈️</p>
+      <p v-else-if="vacationPhase?.phase === 'arrived'" class="countdown">Der Urlaub hat begonnen! 🌴</p>
+      <p v-else-if="vacationPhase?.phase === 'ongoing' && uiSettings.showVacationCountdown" class="countdown">
+        Noch {{ vacationPhase.daysLeft }} {{ vacationPhase.daysLeft === 1 ? 'Tag' : 'Tage' }} Urlaub 🏖️
+      </p>
+      <p v-else-if="vacationPhase?.phase === 'ongoing'" class="countdown">Genießt euren Urlaub! 🏖️</p>
+      <p v-else-if="vacationPhase?.phase === 'lastDay'" class="countdown">Letzter Urlaubstag 🌅</p>
     </header>
 
     <!-- Wetter + Reiseregion in einer Card statt zweier separater: beide sind "Infos über das
