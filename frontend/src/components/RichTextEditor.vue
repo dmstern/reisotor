@@ -48,14 +48,22 @@ function isActive(name: string, attrs?: Record<string, unknown>) {
 
 <template>
   <div class="richtext-editor">
-    <div class="toolbar" v-if="editor">
+    <!-- Bewusst immer gerendert (kein v-if="editor") statt erst nach der asynchronen
+         Editor-Initialisierung zu erscheinen - sonst poppt die Toolbar kurz nach dem ersten Render
+         rein und verschiebt den Editor-Inhalt (und alles darunter, z. B. ein Datei-Upload-Feld) nach
+         unten. Führte zu einem echten Layout-Shift beim Öffnen (Fehlklicks bei zu schnellem
+         Interagieren) und genau daraus resultierender E2E-Flakiness (Klicks auf den Editor trafen
+         stattdessen kurzzeitig ein darunterliegendes Element). Buttons bis dahin deaktiviert statt
+         funktionslos anklickbar. -->
+    <div class="toolbar">
       <button
         type="button"
         class="toolbar-btn"
         :class="{ active: isActive('bold') }"
         title="Fett"
         aria-label="Fett"
-        @click="editor.chain().focus().toggleBold().run()"
+        :disabled="!editor"
+        @click="editor?.chain().focus().toggleBold().run()"
       >
         <strong>F</strong>
       </button>
@@ -65,7 +73,8 @@ function isActive(name: string, attrs?: Record<string, unknown>) {
         :class="{ active: isActive('italic') }"
         title="Kursiv"
         aria-label="Kursiv"
-        @click="editor.chain().focus().toggleItalic().run()"
+        :disabled="!editor"
+        @click="editor?.chain().focus().toggleItalic().run()"
       >
         <em>K</em>
       </button>
@@ -75,7 +84,8 @@ function isActive(name: string, attrs?: Record<string, unknown>) {
         :class="{ active: isActive('strike') }"
         title="Durchgestrichen"
         aria-label="Durchgestrichen"
-        @click="editor.chain().focus().toggleStrike().run()"
+        :disabled="!editor"
+        @click="editor?.chain().focus().toggleStrike().run()"
       >
         <s>D</s>
       </button>
@@ -85,7 +95,8 @@ function isActive(name: string, attrs?: Record<string, unknown>) {
         :class="{ active: isActive('heading', { level: 2 }) }"
         title="Überschrift"
         aria-label="Überschrift"
-        @click="editor.chain().focus().toggleHeading({ level: 2 }).run()"
+        :disabled="!editor"
+        @click="editor?.chain().focus().toggleHeading({ level: 2 }).run()"
       >
         H
       </button>
@@ -95,7 +106,8 @@ function isActive(name: string, attrs?: Record<string, unknown>) {
         :class="{ active: isActive('bulletList') }"
         title="Aufzählung"
         aria-label="Aufzählung"
-        @click="editor.chain().focus().toggleBulletList().run()"
+        :disabled="!editor"
+        @click="editor?.chain().focus().toggleBulletList().run()"
       >
         •
       </button>
@@ -105,7 +117,8 @@ function isActive(name: string, attrs?: Record<string, unknown>) {
         :class="{ active: isActive('orderedList') }"
         title="Nummerierte Liste"
         aria-label="Nummerierte Liste"
-        @click="editor.chain().focus().toggleOrderedList().run()"
+        :disabled="!editor"
+        @click="editor?.chain().focus().toggleOrderedList().run()"
       >
         1.
       </button>
@@ -115,7 +128,8 @@ function isActive(name: string, attrs?: Record<string, unknown>) {
         :class="{ active: isActive('blockquote') }"
         title="Zitat"
         aria-label="Zitat"
-        @click="editor.chain().focus().toggleBlockquote().run()"
+        :disabled="!editor"
+        @click="editor?.chain().focus().toggleBlockquote().run()"
       >
         "
       </button>
@@ -125,7 +139,8 @@ function isActive(name: string, attrs?: Record<string, unknown>) {
         :class="{ active: isActive('code') }"
         title="Code"
         aria-label="Code"
-        @click="editor.chain().focus().toggleCode().run()"
+        :disabled="!editor"
+        @click="editor?.chain().focus().toggleCode().run()"
       >
         ⌨︎
       </button>
@@ -174,6 +189,11 @@ function isActive(name: string, attrs?: Record<string, unknown>) {
 .toolbar-btn.active {
   background: var(--color-primary);
   color: #fff;
+}
+
+.toolbar-btn:disabled {
+  cursor: default;
+  opacity: 0.5;
 }
 
 .editor-placeholder {
