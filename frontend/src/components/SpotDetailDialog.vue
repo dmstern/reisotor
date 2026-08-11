@@ -61,6 +61,7 @@ function formatDate(d: string | null) {
     <p v-if="spot.category" class="detail-row"><CategoryChip :category="spot.category" /></p>
 
     <button
+      v-if="!isAccommodation"
       type="button"
       class="done-toggle"
       :class="{ active: !!spot.done }"
