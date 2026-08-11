@@ -79,7 +79,14 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
     await expect(tourOption.locator('input[type="checkbox"]')).toBeChecked();
     await expect(tourOption.locator('.excursion-option-badge.recommended')).toHaveText(/Empfohlen/);
 
+    // Wartet, bis alle beim Öffnen ausgelösten Requests (Touren-/Spot-Picker-Listen etc.) fertig
+    // sind, bevor der Editor angeklickt wird - auf langsameren Runnern (CI) konnte ein noch
+    // nachladendes/nachrenderndes Formularfeld oberhalb des Editors sonst dessen Position kurzzeitig
+    // verschieben und den Klick auf ein anderes Element umlenken ("intercepts pointer events").
+    await page.waitForLoadState('networkidle');
+
     const editor = modal.locator('.richtext-content[contenteditable="true"]');
+    await editor.scrollIntoViewIfNeeded();
     await editor.click();
     await editor.pressSequentially('Wir haben die Altstadt erkundet und sind spontan im Café eingekehrt.');
 
