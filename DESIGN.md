@@ -12,6 +12,37 @@ Für architektonische/UX-Ablauf-Muster (Querverweise springen zur Ursprungs-View
 Echtzeit-Highlight, …) siehe stattdessen den Abschnitt "Konsistenz-Check bei Änderungen" in
 `CLAUDE.md` – hier geht es nur um die visuelle Ebene.
 
+## Konsistenz (wichtigstes Prinzip)
+
+Dieselbe Art UI-Element muss überall in der App gleich aussehen und sich gleich verhalten –
+unabhängig davon, mit welcher technischen Lösung sie an der jeweiligen Stelle gerade umgesetzt
+wurde. Der Nutzer sieht keinen Unterschied zwischen "das ist ein natives `<select>`" und "das ist
+eine custom Combobox.vue" – beide sind für ihn einfach "ein Dropdown" und müssen deshalb exakt
+gleich hoch sein und gleich aussehen. Konkrete, in der Vergangenheit tatsächlich aufgetretene
+Stolpersteine:
+
+- **Dropdowns**: natives `<select>` und `components/Combobox.vue` müssen dieselbe Höhe/denselben
+  Rahmen/dieselbe Rundung haben. Ein `<select>` ohne eigenes `FormField`-Label neben einem
+  gelabelten Geschwisterfeld in derselben Flex-Zeile wird vom Flex-Default `align-items: stretch`
+  künstlich in die Höhe gezogen (siehe `FormField`-Regel im Abschnitt "Formularfelder" unten) – das
+  ist der häufigste Grund für sichtbar unterschiedlich hohe Dropdowns.
+- **Feld-Labels**: ein einziges Muster app-weit (`components/FormField.vue`), nicht mehrere
+  parallele mit leicht abweichender Schriftgröße/leicht abweichendem Abstand (historisch gewachsene
+  Beispiele, die deshalb entfernt wurden: `.date-label`, `.field-label`).
+- **Filtern/Gruppieren/Sortieren**: kommt in mehreren Views vor (Ausflüge/Spots, Einkauf, ToDo, …) –
+  dasselbe Konzept braucht dieselbe Präsentation überall (z. B. durchgehend Icon + Dropdown, oder
+  durchgehend Icon + Toggle-Buttons – nicht in einer View das eine, in der nächsten das andere, mal
+  mit Icon, mal ohne).
+
+**Praktische Konsequenz beim Bauen/Ändern von UI:** vor jedem neuen UI-Baustein oder jeder
+sichtbaren Design-Anpassung aktiv im Rest der App nachschauen, ob es dafür schon ein Muster/eine
+Komponente gibt (grep auf ähnliche Bezeichner/Klassen, nicht nur an der gerade bearbeiteten Stelle
+schauen) – wiederverwenden statt eine zweite, leicht abweichende Variante daneben zu bauen. Wird
+dabei eine neue Design-Anforderung erkennbar, die auch an anderen, gerade nicht angefragten Stellen
+mit demselben Muster gelten würde: siehe CLAUDE.md, Abschnitt "Konsistenz-Check bei Änderungen" für
+das Vorgehen dabei (dort jetzt: aktiv nachfragen statt eigenmächtig zu entscheiden, ob mitgezogen
+wird oder nicht).
+
 ## Farben
 
 Alle Farben laufen über CSS-Variablen (`--color-*` im `:root`-Block), nie als Hex-Wert direkt in

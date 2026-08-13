@@ -303,21 +303,21 @@ function isOverdue(item: TodoItem) {
     </form>
 
     <div class="filter-row">
-      <label>
-        Gruppieren:
+      <div class="tool-row">
+        <span class="tool-label">🗂️ Gruppieren</span>
         <select v-model="groupBy">
           <option value="assignee">nach Bearbeiter:in</option>
           <option value="period">nach Zeitraum</option>
         </select>
-      </label>
-      <label>
-        Sortieren:
+      </div>
+      <div class="tool-row">
+        <span class="tool-label">🔀 Sortieren</span>
         <select v-model="sortBy">
           <option value="due_date">nach Datum</option>
           <option value="priority">nach Priorität</option>
           <option value="assignee">nach Bearbeiter:in</option>
         </select>
-      </label>
+      </div>
     </div>
 
     <div class="groups-grid">
@@ -431,10 +431,20 @@ function isOverdue(item: TodoItem) {
   font-size: 0.9rem;
 }
 
-.filter-row label {
+/* Gleiches Muster wie ExcursionsView.vue's Gruppieren/Sortieren/Filtern-Zeile (dort .tool-row/
+   .tool-label) - für Konsistenz app-weit hier 1:1 übernommen statt einer eigenen Variante. */
+.tool-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
+}
+
+.tool-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
 }
 
 .groups-grid {
