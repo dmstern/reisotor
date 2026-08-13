@@ -80,18 +80,20 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
     await expect(tourOption.locator('.excursion-option-badge.recommended')).toHaveText(/Empfohlen/);
 
     // Wartet, bis alle beim Öffnen ausgelösten Requests (Touren-/Spot-Picker-Listen etc.) fertig
-    // sind, bevor der Editor angeklickt wird - auf langsameren Runnern (CI) konnte ein noch
-    // nachladendes/nachrenderndes Formularfeld oberhalb des Editors sonst dessen Position kurzzeitig
-    // verschieben und den Klick auf ein anderes Element umlenken ("intercepts pointer events").
+    // sind, bevor mit dem Editor interagiert wird.
     await page.waitForLoadState('networkidle');
-    // Zusätzlich auf den selbst gehosteten Font warten (style.css) - ein Swap von der
-    // Fallback-Schrift auf Fira Sans NACH dem ersten Render kann wegen abweichender
-    // Zeichen-/Zeilenmetriken denselben Effekt haben (siehe font-display-Kommentar dort).
     await page.evaluate(() => document.fonts.ready);
 
     const editor = modal.locator('.richtext-content[contenteditable="true"]');
     await editor.scrollIntoViewIfNeeded();
-    await editor.click();
+    // .focus() statt .click(): auf dem CI-Runner (nie lokal reproduzierbar, auch nach mehreren
+    // App-seitigen Layout-Shift-Fixes nicht) meldete ein echter Maus-Klick hier wiederholt
+    // "intercepts pointer events" durch benachbarte Formularfelder (Titel-Input, Bild-Upload) -
+    // Playwrights Hit-Test an der Klickposition traf dort offenbar zuverlässig daneben, obwohl das
+    // Zielelement selbst laut Playwright bereits "visible, enabled and stable" war. Für diesen Test
+    // kommt es nur darauf an, Text in den Editor zu bekommen, nicht das Klick-Verhalten selbst zu
+    // prüfen - .focus() setzt den Fokus direkt, ganz ohne Hit-Test an einer Bildschirmposition.
+    await editor.focus();
     await editor.pressSequentially('Wir haben die Altstadt erkundet und sind spontan im Café eingekehrt.');
 
     // Spot manuell per Picker-Button hinzufügen (nicht vorab geplant, daher kein Empfohlen-Badge).
