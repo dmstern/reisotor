@@ -84,6 +84,10 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
     // nachladendes/nachrenderndes Formularfeld oberhalb des Editors sonst dessen Position kurzzeitig
     // verschieben und den Klick auf ein anderes Element umlenken ("intercepts pointer events").
     await page.waitForLoadState('networkidle');
+    // Zusätzlich auf den selbst gehosteten Font warten (style.css) - ein Swap von der
+    // Fallback-Schrift auf Fira Sans NACH dem ersten Render kann wegen abweichender
+    // Zeichen-/Zeilenmetriken denselben Effekt haben (siehe font-display-Kommentar dort).
+    await page.evaluate(() => document.fonts.ready);
 
     const editor = modal.locator('.richtext-content[contenteditable="true"]');
     await editor.scrollIntoViewIfNeeded();

@@ -7,35 +7,42 @@
   font-family: 'Fira Sans';
   font-style: normal;
   font-weight: 400;
-  font-display: swap;
+  /* 'optional' statt 'swap': der Font wird selbst gehostet und ist meist längst im Cache, aber
+     falls nicht (langsame erste Verbindung unterwegs), bleibt der Browser für DIESEN Seitenaufruf
+     bei der Fallback-Schrift statt später (nach Download-Abschluss) auf Fira Sans umzuschalten -
+     ein solcher Swap kann wegen leicht abweichender Zeichen-/Zeilenmetriken einen echten
+     Layout-Shift auslösen (reproduzierter Bug: ein kurz nach dem Öffnen eines Formulars gesetzter
+     Klick traf durch den Swap-Reflow ein benachbartes Element statt das Zielfeld). Fira Sans lädt
+     im Hintergrund trotzdem weiter und steht ab dem nächsten Seitenaufruf normal zur Verfügung. */
+  font-display: optional;
   src: url('/fonts/fira-sans-400.woff2') format('woff2');
 }
 @font-face {
   font-family: 'Fira Sans';
   font-style: italic;
   font-weight: 400;
-  font-display: swap;
+  font-display: optional;
   src: url('/fonts/fira-sans-400-italic.woff2') format('woff2');
 }
 @font-face {
   font-family: 'Fira Sans';
   font-style: normal;
   font-weight: 500;
-  font-display: swap;
+  font-display: optional;
   src: url('/fonts/fira-sans-500.woff2') format('woff2');
 }
 @font-face {
   font-family: 'Fira Sans';
   font-style: normal;
   font-weight: 600;
-  font-display: swap;
+  font-display: optional;
   src: url('/fonts/fira-sans-600.woff2') format('woff2');
 }
 @font-face {
   font-family: 'Fira Sans';
   font-style: normal;
   font-weight: 700;
-  font-display: swap;
+  font-display: optional;
   src: url('/fonts/fira-sans-700.woff2') format('woff2');
 }
 
