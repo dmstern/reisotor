@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import type { Excursion, Spot, TravelItem } from '../api/types';
 import { excursionStationKeys, resolveStations } from '../utils/excursionStations';
+import { fetchWeatherForecast, weatherCodeMeta, type DailyWeather } from '../utils/weather';
 import { usePointerDrag } from '../composables/usePointerDrag';
 import { useExcursionsStore } from '../stores/excursions';
 import { useDrawersStore } from '../stores/drawers';
+import { useWeatherProviderStore } from '../stores/weatherProvider';
 import EditButton from './EditButton.vue';
 import DeleteButton from './DeleteButton.vue';
 import SocialRow from './SocialRow.vue';
@@ -67,6 +69,34 @@ const showComments = ref(false);
 function formatDate(d: string) {
   return formatDateShared(d, { includeYear: false });
 }
+
+// Wetter für den geplanten Tag am Ort der ersten kartierten Station, direkt am Status-Chip (siehe
+// Template) - gleiches Muster wie SpotCard.vue: eigener Fetch statt Prop von der Elternview, da
+// utils/weather.ts's fetchWeatherForecast() modulweit pro Koordinate+Modell cached.
+const weatherProvider = useWeatherProviderStore();
+const weatherStation = computed(() => resolvedStations.value.find((s) => s.lat != null && s.lng != null));
+const dayWeather = ref<DailyWeather | null>(null);
+watch(
+  () => [props.excursion.date, weatherStation.value?.lat, weatherStation.value?.lng, weatherProvider.model] as const,
+  async ([date, lat, lng, model]) => {
+    dayWeather.value = null;
+    if (!date || lat == null || lng == null) return;
+    try {
+      const days = await fetchWeatherForecast(lat, lng, model);
+      dayWeather.value = days.find((d) => d.date === date) ?? null;
+    } catch {
+      // best effort, siehe Kommentar oben
+    }
+  },
+  { immediate: true },
+);
+
+const statusLabel = computed(() => {
+  if (!props.excursion.date) return 'In Planung';
+  const dateLabel = `📅 ${formatDate(props.excursion.date)}`;
+  if (!dayWeather.value) return dateLabel;
+  return `${dateLabel} · ${weatherCodeMeta(dayWeather.value.weatherCode).icon} ${Math.round(dayWeather.value.tempMax)}°`;
+});
 
 // Einplanen per Zeige-/Touch-Drag am eigenen Anfasser (📅 Einplanen) statt am gesamten Card-Root:
 // natives HTML5-draggable/dragstart wurde ersetzt, da es auf Touch-Geräten (v. a. Android Chrome)
@@ -133,9 +163,7 @@ function onSpotDrop(event: DragEvent) {
       <SpotImageCollage v-if="showCollage" :images="fallbackImages" />
       <span v-else-if="!displayImage" class="placeholder">🎒</span>
       <EditButton floating @click="emit('edit', excursion)" />
-      <span class="status" :class="{ planned: excursion.date }">
-        {{ excursion.date ? `📅 ${formatDate(excursion.date)}` : 'In Planung' }}
-      </span>
+      <span class="status" :class="{ planned: excursion.date }">{{ statusLabel }}</span>
       <span v-if="excursion.done" class="status status-done">✅ Gemacht</span>
     </div>
     <div class="body">

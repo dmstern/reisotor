@@ -77,6 +77,15 @@ const editDraft = useDraftAutosave(
 const pickedSpotIds = ref<Set<number>>(new Set());
 const editPickedSpotIds = ref<Set<number>>(new Set());
 
+// Standardmäßig eingeklappt (siehe Konsistenz-Check-Anlass: die Auswahllisten nahmen auf mobile so
+// viel Platz weg, dass das RichTextEditor-Haupttextfeld nicht mehr sichtbar war) - Zurücksetzen in
+// openNewForm()/startEdit() unten, damit ein neuer Formular-Aufruf nicht die zuletzt aufgeklappte
+// Liste des vorherigen Eintrags übernimmt.
+const showExcursionPicker = ref(false);
+const showSpotPicker = ref(false);
+const editShowExcursionPicker = ref(false);
+const editShowSpotPicker = ref(false);
+
 // IDs der (meist unsichtbaren) Ein-Spot-Ausflüge, die pickSpot() im Hintergrund erzeugt/wieder-
 // verwendet hat (siehe dort) – getrennt von den "echten", über die Touren-Checkboxen ausgewählten
 // excursion_ids gehalten, damit submitEntry/submitEditEntry beim automatischen "gemacht"-Setzen
@@ -267,6 +276,8 @@ function openNewForm() {
   form.value = emptyForm();
   pickedSpotIds.value = new Set();
   pickedSpotExcursionIds.value = new Set();
+  showExcursionPicker.value = false;
+  showSpotPicker.value = false;
   // Vorschlag: an diesem Tag geplante Ausflüge direkt vorauswählen, statt sie nur anzuzeigen –
   // meist wird ein Eintrag ja am selben Tag über genau diesen Ausflug geschrieben.
   form.value.excursion_ids = excursionsStore.excursions.filter((e) => e.date === form.value.date).map((e) => e.id);
@@ -310,6 +321,8 @@ function startEdit(entry: DiaryEntry) {
   };
   editPickedSpotIds.value = new Set();
   editPickedSpotExcursionIds.value = new Set();
+  editShowExcursionPicker.value = false;
+  editShowSpotPicker.value = false;
 }
 
 async function submitEditEntry() {
@@ -403,26 +416,40 @@ async function removeComment(id: number) {
         </div>
       </div>
       <fieldset v-if="excursionsStore.excursions.length" class="excursion-picker">
-        <legend>🎒 Touren zuordnen</legend>
-        <label v-for="ex in pickerExcursions(form.date)" :key="ex.id" class="excursion-option">
-          <input type="checkbox" :value="ex.id" v-model="form.excursion_ids" />
-          <span class="excursion-option-title">{{ ex.title }}</span>
-          <span v-if="ex.date === form.date" class="excursion-option-badge recommended">⭐ Empfohlen – an diesem Tag geplant</span>
-        </label>
+        <legend>
+          <button type="button" class="picker-toggle" :aria-expanded="showExcursionPicker" @click="showExcursionPicker = !showExcursionPicker">
+            <span>🎒 Touren zuordnen<span v-if="form.excursion_ids.length" class="picker-count"> ({{ form.excursion_ids.length }} ausgewählt)</span></span>
+            <span class="caret">{{ showExcursionPicker ? '▾' : '▸' }}</span>
+          </button>
+        </legend>
+        <template v-if="showExcursionPicker">
+          <label v-for="ex in pickerExcursions(form.date)" :key="ex.id" class="excursion-option">
+            <input type="checkbox" :value="ex.id" v-model="form.excursion_ids" />
+            <span class="excursion-option-title">{{ ex.title }}</span>
+            <span v-if="ex.date === form.date" class="excursion-option-badge recommended">⭐ Empfohlen – an diesem Tag geplant</span>
+          </label>
+        </template>
       </fieldset>
       <fieldset v-if="spotsStore.spots.length" class="excursion-picker">
-        <legend>📍 Spots zuordnen</legend>
-        <button
-          v-for="spot in pickerSpots(form.date)"
-          :key="spot.id"
-          type="button"
-          class="excursion-option spot-option-btn"
-          @click="pickSpot(spot.id, form.date, form, pickedSpotIds, pickedSpotExcursionIds)"
-        >
-          <span class="excursion-option-title">{{ spotCategoryMeta(spot.category).icon }} {{ spot.title }}</span>
-          <span v-if="pickedSpotIds.has(spot.id)" class="excursion-option-badge">✓ hinzugefügt</span>
-          <span v-else-if="spotAlreadyPlanned(spot.id, form.date)" class="excursion-option-badge recommended">⭐ Empfohlen – an diesem Tag geplant</span>
-        </button>
+        <legend>
+          <button type="button" class="picker-toggle" :aria-expanded="showSpotPicker" @click="showSpotPicker = !showSpotPicker">
+            <span>📍 Spots zuordnen<span v-if="pickedSpotIds.size" class="picker-count"> ({{ pickedSpotIds.size }} ausgewählt)</span></span>
+            <span class="caret">{{ showSpotPicker ? '▾' : '▸' }}</span>
+          </button>
+        </legend>
+        <template v-if="showSpotPicker">
+          <button
+            v-for="spot in pickerSpots(form.date)"
+            :key="spot.id"
+            type="button"
+            class="excursion-option spot-option-btn"
+            @click="pickSpot(spot.id, form.date, form, pickedSpotIds, pickedSpotExcursionIds)"
+          >
+            <span class="excursion-option-title">{{ spotCategoryMeta(spot.category).icon }} {{ spot.title }}</span>
+            <span v-if="pickedSpotIds.has(spot.id)" class="excursion-option-badge">✓ hinzugefügt</span>
+            <span v-else-if="spotAlreadyPlanned(spot.id, form.date)" class="excursion-option-badge recommended">⭐ Empfohlen – an diesem Tag geplant</span>
+          </button>
+        </template>
       </fieldset>
       <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
       <button type="submit">Eintragen</button>
@@ -518,26 +545,40 @@ async function removeComment(id: number) {
           </div>
         </div>
         <fieldset v-if="excursionsStore.excursions.length" class="excursion-picker">
-          <legend>🎒 Touren zuordnen</legend>
-          <label v-for="ex in pickerExcursions(editForm.date)" :key="ex.id" class="excursion-option">
-            <input type="checkbox" :value="ex.id" v-model="editForm.excursion_ids" />
-            <span class="excursion-option-title">{{ ex.title }}</span>
-            <span v-if="ex.date === editForm.date" class="excursion-option-badge recommended">⭐ Empfohlen – an diesem Tag geplant</span>
-          </label>
+          <legend>
+            <button type="button" class="picker-toggle" :aria-expanded="editShowExcursionPicker" @click="editShowExcursionPicker = !editShowExcursionPicker">
+              <span>🎒 Touren zuordnen<span v-if="editForm.excursion_ids.length" class="picker-count"> ({{ editForm.excursion_ids.length }} ausgewählt)</span></span>
+              <span class="caret">{{ editShowExcursionPicker ? '▾' : '▸' }}</span>
+            </button>
+          </legend>
+          <template v-if="editShowExcursionPicker">
+            <label v-for="ex in pickerExcursions(editForm.date)" :key="ex.id" class="excursion-option">
+              <input type="checkbox" :value="ex.id" v-model="editForm.excursion_ids" />
+              <span class="excursion-option-title">{{ ex.title }}</span>
+              <span v-if="ex.date === editForm.date" class="excursion-option-badge recommended">⭐ Empfohlen – an diesem Tag geplant</span>
+            </label>
+          </template>
         </fieldset>
         <fieldset v-if="spotsStore.spots.length" class="excursion-picker">
-          <legend>📍 Spots zuordnen</legend>
-          <button
-            v-for="spot in pickerSpots(editForm.date)"
-            :key="spot.id"
-            type="button"
-            class="excursion-option spot-option-btn"
-            @click="pickSpot(spot.id, editForm.date, editForm, editPickedSpotIds, editPickedSpotExcursionIds)"
-          >
-            <span class="excursion-option-title">{{ spotCategoryMeta(spot.category).icon }} {{ spot.title }}</span>
-            <span v-if="editPickedSpotIds.has(spot.id)" class="excursion-option-badge">✓ hinzugefügt</span>
-            <span v-else-if="spotAlreadyPlanned(spot.id, editForm.date)" class="excursion-option-badge recommended">⭐ Empfohlen – an diesem Tag geplant</span>
-          </button>
+          <legend>
+            <button type="button" class="picker-toggle" :aria-expanded="editShowSpotPicker" @click="editShowSpotPicker = !editShowSpotPicker">
+              <span>📍 Spots zuordnen<span v-if="editPickedSpotIds.size" class="picker-count"> ({{ editPickedSpotIds.size }} ausgewählt)</span></span>
+              <span class="caret">{{ editShowSpotPicker ? '▾' : '▸' }}</span>
+            </button>
+          </legend>
+          <template v-if="editShowSpotPicker">
+            <button
+              v-for="spot in pickerSpots(editForm.date)"
+              :key="spot.id"
+              type="button"
+              class="excursion-option spot-option-btn"
+              @click="pickSpot(spot.id, editForm.date, editForm, editPickedSpotIds, editPickedSpotExcursionIds)"
+            >
+              <span class="excursion-option-title">{{ spotCategoryMeta(spot.category).icon }} {{ spot.title }}</span>
+              <span v-if="editPickedSpotIds.has(spot.id)" class="excursion-option-badge">✓ hinzugefügt</span>
+              <span v-else-if="spotAlreadyPlanned(spot.id, editForm.date)" class="excursion-option-badge recommended">⭐ Empfohlen – an diesem Tag geplant</span>
+            </button>
+          </template>
         </fieldset>
         <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />
         <button type="submit">Speichern</button>
@@ -585,10 +626,40 @@ async function removeComment(id: number) {
 }
 
 .excursion-picker legend {
+  width: 100%;
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--color-text-muted);
-  padding: 0 4px;
+  padding: 0;
+}
+
+/* Klickbarer Legend-Ersatz statt reinem Text (siehe showExcursionPicker/showSpotPicker im Script) -
+   Standard-Button-Look zurückgesetzt, damit er wie eine Legend statt wie ein Button wirkt, volle
+   Breite als Klick-/Tap-Fläche. */
+.picker-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 4px;
+  margin: 0;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  text-align: left;
+}
+
+.picker-count {
+  font-weight: 400;
+}
+
+.caret {
+  flex-shrink: 0;
 }
 
 .excursion-option {

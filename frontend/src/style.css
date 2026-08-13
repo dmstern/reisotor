@@ -569,6 +569,14 @@ textarea:focus {
 .new-highlight {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
+  /* Standard für Karten (SpotCard/ExcursionCard/.card allgemein) - deren border-radius kommt
+     zwar meist schon von .card selbst, aber moderne Browser lassen outline diesem ohnehin folgen;
+     dieser Wert stellt sicher, dass es auch dort funktioniert, wo new-highlight allein steht.
+     Elemente ohne eigenen Radius (Tabellenzeilen, Listen-Zeilen) überschreiben das gezielt lokal
+     mit einem kleineren Wert (siehe z. B. BudgetView.vue/ShoppingListView.vue/TodoView.vue/
+     PackingItem.vue) statt hier einen für alle passenden Wert zu erzwingen. */
+  border-radius: var(--radius-md-squircle);
+  corner-shape: squircle;
 }
 
 .page {

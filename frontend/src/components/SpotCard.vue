@@ -1,15 +1,17 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import type { Spot } from '../api/types';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { renderRichText } from '../utils/richText';
 import { parseContact } from '../utils/contact';
+import { fetchWeatherForecast, weatherCodeMeta, type DailyWeather } from '../utils/weather';
 import { usePointerDrag } from '../composables/usePointerDrag';
 import { useExcursionsStore } from '../stores/excursions';
 import { useScheduleStore } from '../stores/schedule';
 import { useSpotsStore } from '../stores/spots';
 import { useTripStore } from '../stores/trip';
 import { useDrawersStore } from '../stores/drawers';
+import { useWeatherProviderStore } from '../stores/weatherProvider';
 import CategoryChip from './CategoryChip.vue';
 import EditButton from './EditButton.vue';
 import DeleteButton from './DeleteButton.vue';
@@ -67,6 +69,35 @@ const showComments = ref(false);
 function formatDate(d: string) {
   return formatDateShared(d, { includeYear: false });
 }
+
+// Wetter für den geplanten Tag direkt am Chip mit dem Datum (siehe Template) - eigener Fetch statt
+// Prop von der Elternview, da utils/weather.ts's fetchWeatherForecast() modulweit pro Koordinate+
+// Modell cached; mehrere Karten mit demselben Ort verursachen dadurch ohnehin nur einen echten
+// Request. Best effort wie überall sonst bei Wetter (siehe DashboardView.vue) - ein Fehlschlag
+// blendet nur das Wetter-Suffix aus, nicht die ganze Karte.
+const weatherProvider = useWeatherProviderStore();
+const dayWeather = ref<DailyWeather | null>(null);
+watch(
+  () => [props.scheduledDate, props.spot.lat, props.spot.lng, weatherProvider.model] as const,
+  async ([date, lat, lng, model]) => {
+    dayWeather.value = null;
+    if (!date || lat == null || lng == null) return;
+    try {
+      const days = await fetchWeatherForecast(lat, lng, model);
+      dayWeather.value = days.find((d) => d.date === date) ?? null;
+    } catch {
+      // best effort, siehe Kommentar oben
+    }
+  },
+  { immediate: true },
+);
+
+const plannedLabel = computed(() => {
+  if (!props.scheduledDate) return '';
+  const dateLabel = `📅 ${formatDate(props.scheduledDate)}`;
+  if (!dayWeather.value) return dateLabel;
+  return `${dateLabel} · ${weatherCodeMeta(dayWeather.value.weatherCode).icon} ${Math.round(dayWeather.value.tempMax)}°`;
+});
 
 // Natives Drag (Zuordnen zu einer Tour) startet über einen dedizierten Anfasser (.excursion-drag-
 // handle, siehe Template) statt über die ganze Karte – @click.stop dort verhindert, dass ein reiner
@@ -149,7 +180,7 @@ function onCardClick() {
         <EditButton floating @click="emit('edit', spot)" />
         <DeleteButton floating @click="emit('remove', spot.id)" />
       </template>
-      <span v-if="scheduledDate" class="status planned">📅 {{ formatDate(scheduledDate) }}</span>
+      <span v-if="scheduledDate" class="status planned">{{ plannedLabel }}</span>
       <span v-if="spot.done" class="status status-done">✅ Gemacht</span>
     </div>
     <div class="body">

@@ -81,16 +81,44 @@ async function loadWeather() {
   }
 }
 
-// Lädt neu, sobald sich die Koordinaten des Urlaubs tatsächlich ändern (z. B. nach dem Bearbeiten
-// des Urlaubsorts) ODER der Wetteranbieter in den Einstellungen gewechselt wird – vorher lief
-// loadWeather() nur einmal beim Mounten, eine Änderung danach hätte sonst weiterhin die alten
-// (oder gar keine) Wetterdaten gezeigt. weatherDays vorher zurücksetzen, damit währenddessen nicht
-// kurz die Vorhersage des alten Orts/Modells aufblitzt.
+// "Zuhause" ist (wie im Kalender, siehe ScheduleView.vue) ein Spot mit is_home-Kennzeichnung statt
+// eines eigenen Account-/Trip-Felds - kein Schema-Änderung nötig, dieselbe Quelle wie dort.
+const home = computed(() => {
+  const p = spotsStore.spots.find((s) => s.is_home && s.lat != null && s.lng != null);
+  return p ? { lat: p.lat as number, lng: p.lng as number } : null;
+});
+
+const homeWeatherDays = ref<DailyWeather[] | null>(null);
+const homeWeatherError = ref<string | null>(null);
+const homeWeatherLoading = ref(false);
+
+// Eigenständig geladen, analog zu loadWeather() oben - unabhängiger Fehlschlag (z. B. Zuhause noch
+// nicht markiert) soll weder das restliche Dashboard noch das Reiseziel-Wetter blockieren.
+async function loadHomeWeather() {
+  if (!home.value) return;
+  homeWeatherLoading.value = true;
+  homeWeatherError.value = null;
+  try {
+    homeWeatherDays.value = await fetchWeatherForecast(home.value.lat, home.value.lng, weatherProvider.model);
+  } catch {
+    homeWeatherError.value = 'Wetterdaten konnten nicht geladen werden.';
+  } finally {
+    homeWeatherLoading.value = false;
+  }
+}
+
+// Lädt neu, sobald sich die Koordinaten des Urlaubs oder des Zuhause-Spots tatsächlich ändern (z. B.
+// nach dem Bearbeiten des Urlaubsorts) ODER der Wetteranbieter in den Einstellungen gewechselt wird –
+// vorher lief loadWeather() nur einmal beim Mounten, eine Änderung danach hätte sonst weiterhin die
+// alten (oder gar keine) Wetterdaten gezeigt. weatherDays vorher zurücksetzen, damit währenddessen
+// nicht kurz die Vorhersage des alten Orts/Modells aufblitzt.
 watch(
-  () => [trip.value?.lat, trip.value?.lng, weatherProvider.model],
+  () => [trip.value?.lat, trip.value?.lng, home.value?.lat, home.value?.lng, weatherProvider.model],
   () => {
     weatherDays.value = null;
+    homeWeatherDays.value = null;
     loadWeather();
+    loadHomeWeather();
   },
 );
 
@@ -310,6 +338,24 @@ const vacationForecastDays = computed(() => {
   return weatherDays.value.filter((d) => d.date >= trip.value!.start_date && d.date <= trip.value!.end_date);
 });
 
+function addDaysToDateStr(dateStr: string, days: number): string {
+  const d = new Date(`${dateStr}T00:00:00`);
+  d.setDate(d.getDate() + days);
+  return toLocalDateString(d);
+}
+
+// Standardmäßig nur die letzten paar Urlaubstage (Packen/Heimreise im Blick), wahlweise über
+// uiSettings.showHomeWeatherFullTrip (ProfileView.vue) für den kompletten Urlaubszeitraum wie beim
+// Reiseziel-Wetter oben.
+const HOME_WEATHER_TAIL_DAYS = 3;
+const homeForecastDays = computed(() => {
+  if (!homeWeatherDays.value || !trip.value) return [];
+  const rangeStart = uiSettings.showHomeWeatherFullTrip
+    ? trip.value.start_date
+    : addDaysToDateStr(trip.value.end_date, -(HOME_WEATHER_TAIL_DAYS - 1));
+  return homeWeatherDays.value.filter((d) => d.date >= rangeStart && d.date <= trip.value!.end_date);
+});
+
 // Zeigt zusätzlich zur (ggf. noch nicht verfügbaren) Urlaubs-Vorhersage immer auch das aktuelle
 // Wetter am Zielort – die Vorhersage deckt dank past_days:1 im Fetch (utils/weather.ts) ohnehin
 // bereits heute mit ab, unabhängig davon, ob der Urlaub selbst schon im 16-Tage-Fenster liegt.
@@ -390,6 +436,34 @@ function formatWeekdayDate(d: string) {
         </template>
       </template>
       <p v-else class="hint">Hinterlege beim Urlaub einen Maps-Link, um hier die Wettervorhersage für die Urlaubstage zu sehen.</p>
+
+      <!-- Unabhängig vom Trip-Maps-Link oben (kein v-if="trip?.lat...", das bezieht sich nur auf
+           das Reiseziel) - Zuhause kommt aus einem eigenen, in Reise > Orte per is_home markierten
+           Spot (siehe home-Computed, dasselbe Muster wie ScheduleView.vue's Kalender-Wetter). -->
+      <template v-if="home">
+        <p class="weather-section-label">🏠 Wetter zuhause</p>
+        <p v-if="homeWeatherLoading && !homeWeatherDays" class="hint">Lädt …</p>
+        <p v-else-if="homeWeatherError" class="hint error">{{ homeWeatherError }}</p>
+        <p v-else-if="!homeForecastDays.length" class="hint">
+          Für {{ uiSettings.showHomeWeatherFullTrip ? 'den Urlaubszeitraum' : 'die letzten Urlaubstage' }}
+          liegt noch keine Vorhersage vor – Open-Meteo deckt nur die kommenden ~16 Tage ab, schau kurz
+          vorher nochmal vorbei.
+        </p>
+        <div v-else class="weather-days">
+          <div class="weather-day" v-for="day in homeForecastDays" :key="day.date">
+            <span class="weather-date">{{ formatWeekdayDate(day.date) }}</span>
+            <span class="weather-icon" :title="weatherCodeMeta(day.weatherCode).label">{{
+              weatherCodeMeta(day.weatherCode).icon
+            }}</span>
+            <span class="weather-temp">{{ Math.round(day.tempMax) }}° / {{ Math.round(day.tempMin) }}°</span>
+            <span v-if="day.precipitationProbability != null" class="weather-rain">💧{{ day.precipitationProbability }}%</span>
+          </div>
+        </div>
+      </template>
+      <p v-else class="hint">
+        Markiere in Reise &gt; Orte einen Ort mit 🏠 „Zuhause“, um hier zusätzlich das Wetter zuhause
+        gegen Ende des Urlaubs zu sehen.
+      </p>
 
       <template v-if="regionLoading && !regionInfo">
         <p class="weather-section-label">🌍 Reiseregion</p>
