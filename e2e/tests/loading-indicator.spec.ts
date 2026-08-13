@@ -44,7 +44,7 @@ test.describe('Zentrale Lade-Animation', () => {
   });
 
   test('Toast lässt sich in den Profil-Einstellungen abschalten', async ({ page }) => {
-    await page.goto('/profile');
+    await page.goto('/profile?tab=notifications');
     await page.getByLabel('Detaillierte Lade-/Speicher-Meldungen anzeigen').uncheck();
 
     await page.goto('/packing');

@@ -41,9 +41,11 @@ test('the trash view (reachable via profile/avatar) lists a deleted item and res
   await page.waitForTimeout(300); // Transition-Group-Übergang abwarten (0.2s, siehe style.css)
   await expect(page.locator('.check', { hasText: 'E2E Papierkorb-Test-Aufgabe' })).toHaveCount(0);
 
-  // Erreichbarkeit über das Einstellungsmenü (Klick auf den Avatar -> Profil -> Papierkorb-Karte).
+  // Erreichbarkeit über das Einstellungsmenü (Klick auf den Avatar -> Profil -> "Daten"-Tab ->
+  // Papierkorb-Karte).
   await page.locator('.profile-link').click();
   await expect(page).toHaveURL(/\/profile$/);
+  await page.getByRole('tab', { name: 'Daten' }).click();
   await page.getByRole('link', { name: 'Papierkorb öffnen' }).click();
   await expect(page).toHaveURL(/\/trash$/);
 

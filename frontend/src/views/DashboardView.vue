@@ -428,7 +428,7 @@ function formatWeekdayDate(d: string) {
                benannt (wie DuckDuckGo es bei seinem eigenen Wetter-Widget genauso mit "Quelle: Apple
                Weather" macht). Klickbar statt reinem Text: springt direkt zur Wetter-Anbieter-Auswahl
                in den Einstellungen, falls der Wert einmal nicht passt. -->
-          <router-link to="/profile#weather-provider-settings" class="weather-source">
+          <router-link to="/profile?tab=trip#weather-provider-settings" class="weather-source">
             Quelle: Open-Meteo ({{ weatherModelLabel }}) · Anbieter wechseln
           </router-link>
         </template>
@@ -489,7 +489,7 @@ function formatWeekdayDate(d: string) {
         <!-- Nennt nur Quellen, die tatsächlich zu einer der Zeilen oben beigetragen haben (siehe
              regionSourceParts) - und verlinkt nur zur Heimatwährungs-Auswahl, wenn ein Wechselkurs
              auch wirklich mit dabei ist (analog zum "Quelle: Open-Meteo"-Hinweis beim Wetter oben). -->
-        <router-link v-if="regionShowsExchange" to="/profile#home-currency-settings" class="weather-source">
+        <router-link v-if="regionShowsExchange" to="/profile?tab=trip#home-currency-settings" class="weather-source">
           Quelle: {{ regionSourceParts.join(' · ') }} · Anbieter wechseln
         </router-link>
         <p v-else class="weather-source static">Quelle: {{ regionSourceParts.join(' · ') }}</p>
