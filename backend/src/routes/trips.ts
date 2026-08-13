@@ -181,6 +181,20 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
     },
   );
 
+  // Dauerhaft gespeicherte Wetter-Ist-Werte vergangener Urlaubstage (weatherSnapshots.ts, siehe
+  // db/index.ts's trip_weather_snapshots) - ergänzt im Frontend die live von Open-Meteo geholte
+  // Vorhersage (die selbst nur ~16 Tage im Voraus/1 Tag rückwirkend abdeckt) um beliebig weit
+  // zurückliegende Tage, damit das Wetter eines Urlaubs auch lange nach dessen Ende noch anzeigbar
+  // bleibt (Dashboard-Rückblick, Tagebuch).
+  app.get<{ Params: { id: string } }>('/trips/:id/weather-history', async (req, reply) => {
+    if (!requireTripMember(reply, req.params.id, req.session.userId)) return;
+    return db
+      .prepare(
+        'SELECT date, weathercode, temp_max, temp_min, precipitation_probability FROM trip_weather_snapshots WHERE trip_id = ? ORDER BY date',
+      )
+      .all(req.params.id);
+  });
+
   // --- Mitgliedschaft/Einladung (Batch: Registrierung + Einladung) ---
 
   app.get<{ Params: { id: string } }>('/trips/:id/members', async (req, reply) => {

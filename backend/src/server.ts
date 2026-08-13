@@ -1,5 +1,6 @@
 import { buildApp } from './app.js';
 import { startDepartureReminderScheduler } from './departureReminders.js';
+import { startWeatherSnapshotScheduler } from './weatherSnapshots.js';
 
 const port = Number(process.env.PORT ?? 3000);
 const app = await buildApp();
@@ -19,3 +20,4 @@ app
 // test/helpers/buildTestApp.ts) - ein dort gestarteter setInterval würde in jedem Testlauf ohne
 // zugehörigen Trip-Kontext unnötig weiterlaufen und Vitest am sauberen Beenden hindern.
 startDepartureReminderScheduler();
+startWeatherSnapshotScheduler();

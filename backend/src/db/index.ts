@@ -1137,6 +1137,27 @@ db.exec(`
   );
 `);
 
+// Tägliche Wetter-Ist-Werte für die Urlaubsregion (weatherSnapshots.ts, periodischer Scheduler wie
+// departureReminders.ts oben) - Open-Meteo selbst liefert live nur ~16 Tage Vorhersage plus 1 Tag
+// rückwirkend (siehe frontend/src/utils/weather.ts), ohne diese Tabelle wäre das Wetter eines
+// Urlaubs nach Ablauf dieses Fensters unwiederbringlich weg. Nur strikt vergangene, abgeschlossene
+// Tage werden hier gespeichert (siehe weatherSnapshots.ts) - der laufende Tag bleibt bewusst live
+// abgefragt, sein Wert ist bei Open-Meteo noch nicht final. Feldnamen bewusst nah an
+// utils/weather.ts's DailyWeather, damit GET /trips/:id/weather-history ohne Übersetzung
+// konsumierbar ist.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS trip_weather_snapshots (
+    id INTEGER PRIMARY KEY,
+    trip_id INTEGER NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
+    date TEXT NOT NULL,
+    weathercode INTEGER NOT NULL,
+    temp_max REAL NOT NULL,
+    temp_min REAL NOT NULL,
+    precipitation_probability REAL,
+    UNIQUE(trip_id, date)
+  );
+`);
+
 // Zwischenspeicher für noch nicht abgeschickte Create-/Edit-Formulare (Nutzer-Feedback: Eingaben
 // sollen bei einem App-Absturz nicht verloren gehen) - siehe routes/drafts.ts und
 // frontend/src/composables/useDraftAutosave.ts. Rein persönlich (pro user_id), nicht über

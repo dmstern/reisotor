@@ -10,7 +10,6 @@ import { useScheduleStore } from '../stores/schedule';
 import { useDrawersStore } from '../stores/drawers';
 import { useLiveSyncStore } from '../stores/liveSync';
 import { useExcursionsStore } from '../stores/excursions';
-import { useIsDesktop } from '../composables/useIsDesktop';
 import { usePersistedRef } from '../composables/usePersistedRef';
 import { hashHighlightId } from '../utils/hashHighlight';
 import SpotCard from '../components/SpotCard.vue';
@@ -50,7 +49,6 @@ const scheduleStore = useScheduleStore();
 const drawers = useDrawersStore();
 const liveSync = useLiveSyncStore();
 const excursionsStore = useExcursionsStore();
-const isDesktop = useIsDesktop();
 
 const users = ref<User[]>([]);
 const travelItems = ref<TravelItem[]>([]);
@@ -833,7 +831,34 @@ const canCollapseSheet = computed(() => sheetState.value !== 'collapsed');
 // oberhalb des Sheets. Nur auf mobile relevant (Desktop: eigene Spalte statt Overlay, siehe
 // @container weiter unten im CSS).
 const currentSheetHeightPx = computed(() => sheetDragHeightPx.value ?? sheetHeightPx(sheetState.value));
-const mapCoveredBottomPx = computed(() => (isDesktop.value ? 0 : currentSheetHeightPx.value));
+
+// isDesktop (window.matchMedia, siehe useIsDesktop.ts) reicht hier NICHT: ob .spots-col als Sheet-
+// Overlay über der Karte liegt oder als eigene Spalte daneben, entscheidet weiter unten im CSS ein
+// @container app-main (min-width: 900px)-Query gegen die tatsächlich gerenderte Breite von
+// .app-main - die kann schmaler als das Fenster sein (z. B. bei geöffneter Kalender-Schublade), auch
+// bei Fensterbreiten oberhalb der isDesktop-Schwelle von 800px. Ohne dieses eigene Signal wurde
+// mapCoveredBottomPx in genau dieser Konstellation fälschlich auf 0 gezwungen, obwohl das Sheet
+// weiterhin als Overlay rendert - fokussierte Punkte/Routen landeten dann zu weit unten, teils
+// hinter der Sheet-Kante.
+const appMainWidth = ref<number | null>(null);
+let appMainResizeObserver: ResizeObserver | null = null;
+onMounted(() => {
+  const appMainEl = document.querySelector('.app-main');
+  if (appMainEl) {
+    appMainResizeObserver = new ResizeObserver((entries) => {
+      appMainWidth.value = entries[0]?.contentRect.width ?? null;
+    });
+    appMainResizeObserver.observe(appMainEl);
+  }
+});
+onUnmounted(() => appMainResizeObserver?.disconnect());
+
+// Spiegelt exakt die 900px-Schwelle des @container app-main-Queries weiter unten im <style> - beide
+// Signale müssen übereinstimmen, sonst rechnet TripMap.vue mit einem falschen coveredBottomPx (siehe
+// centerOnPoint()/fitBoundsWithCoveredBottom() dort). window.innerWidth dient nur als Fallback, bis
+// der ResizeObserver beim Mounten seinen ersten Wert liefert.
+const isSheetOverlayMode = computed(() => (appMainWidth.value ?? window.innerWidth) < 900);
+const mapCoveredBottomPx = computed(() => (isSheetOverlayMode.value ? currentSheetHeightPx.value : 0));
 
 // Ein Klick auf eine Spot-Karte öffnet sie (siehe SpotCard.vue's onCardClick, das bereits
 // drawers.openMapAt() aufruft) – steht das Sheet dabei auf "voll", verdeckt es die Karte komplett;
@@ -1512,6 +1537,7 @@ async function removeSpot(id: number) {
         :category-filter="categoryFilter"
         :status-filter="statusFilter"
         :covered-bottom-px="mapCoveredBottomPx"
+        :sheet-overlay-mode="isSheetOverlayMode"
         @edit-spot="startEditSpot"
         @focus-spot="onFocusSpotFromMap"
         @edit-excursion="startEditExcursion"
