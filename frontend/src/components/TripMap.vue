@@ -27,6 +27,7 @@ import { useAuthStore } from '../stores/auth';
 import { useLiveSyncStore } from '../stores/liveSync';
 import { useMapOrientationStore } from '../stores/mapOrientation';
 import { useLocationSharingStore, type ShareDuration } from '../stores/locationSharing';
+import { useWeatherProviderStore } from '../stores/weatherProvider';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { buildTravelDerivedLocations } from '../utils/travelDerivedLocations';
 import { arcRoute, cachedEmojiPin, compassPin, LEAFLET_ATTRIBUTION_PREFIX } from '../utils/mapRoute';
@@ -38,6 +39,7 @@ import SpotDetailDialog from './SpotDetailDialog.vue';
 import MiniStationCard from './MiniStationCard.vue';
 import ExcursionDetailDialog from './ExcursionDetailDialog.vue';
 import TravelDetailDialog from './TravelDetailDialog.vue';
+import CurrentWeatherBadge from './CurrentWeatherBadge.vue';
 
 // Die Karte ist ein generischer, reiner Pin-Layer (kein Anlegen/Bearbeiten hier): sie zeigt
 // automatisch jedes Objekt des aktuellen Urlaubs mit hinterlegtem Standort – Unterkunft, Reise
@@ -87,6 +89,16 @@ const props = defineProps<{
    *  ExcursionsView.vue durchgereicht (0/undefined auf Desktop, wo die Schublade eine eigene Spalte
    *  statt eines Overlays ist) – siehe centerOnPoint() unten. */
   coveredBottomPx?: number;
+  /** Von ExcursionsView.vue durchgereicht: rendert .spots-col gerade als mobiles Overlay-Sheet statt
+   *  als eigene Desktop-Spalte (misst .app-main's tatsächliche Breite gegen dieselbe 900px-Schwelle
+   *  wie der @container-Query unten, siehe dortiger Kommentar zu isSheetOverlayMode). Steuert den
+   *  Teleport der Stationen-Liste (#map-focus-dock) weiter unten – reines window.matchMedia
+   *  (isDesktop) reichte hier nicht: bei mittleren Fensterbreiten (>800px, aber .app-main <900px,
+   *  z. B. geöffnete Kalender-Schublade) blieb die Liste bislang fälschlich als Overlay AUF der
+   *  Karte stehen (Teleport deaktiviert), obwohl ihre eigene CSS zu diesem Zeitpunkt schon den
+   *  mobilen Overlay-Stil nutzt – deckte dabei teils fokussierte Marker ab. Fällt ohne übergebenen
+   *  Wert auf das alte, reine isDesktop-Verhalten zurück. */
+  sheetOverlayMode?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -106,6 +118,11 @@ const emit = defineEmits<{
 
 const router = useRouter();
 const isDesktop = useIsDesktop();
+// Steuert den Teleport der Stationen-Liste unten (siehe sheetOverlayMode-Prop-Dokumentation oben) -
+// mit props.sheetOverlayMode statt des rohen isDesktop, sobald ExcursionsView.vue diesen Wert
+// mitgibt (immer der Fall, da TripMap.vue aktuell nur von dort aus verwendet wird); Fallback auf das
+// alte isDesktop-Verhalten nur zur Absicherung, falls die Komponente je ohne diesen Prop genutzt wird.
+const isNarrowLayout = computed(() => props.sheetOverlayMode ?? !isDesktop.value);
 // #map-focus-dock (ExcursionsView.vue) ist ein Geschwister-Element, das im selben Render-Takt wie
 // diese Komponente entsteht (beide hinter demselben v-if="!loading") – Teleport muss sein Ziel beim
 // eigenen Mount bereits im Dokument vorfinden, sonst bricht es dauerhaft ab (Vue-Warnung "Failed to
@@ -125,6 +142,7 @@ const auth = useAuthStore();
 const liveSync = useLiveSyncStore();
 const mapOrientation = useMapOrientationStore();
 const locationSharing = useLocationSharingStore();
+const weatherProvider = useWeatherProviderStore();
 const travelItems = ref<TravelItem[]>([]);
 const scheduleItems = ref<ScheduleItem[]>([]);
 
@@ -1238,6 +1256,14 @@ watch(() => liveSync.memberPositions, () => renderPositions(), { deep: true });
       >
         📡
       </button>
+      <!-- Auf Desktop steht dasselbe Wetter bereits ausführlicher in der Kalender-Schublade (siehe
+           CalendarWeek.vue) - die ist dort permanent neben der Karte gemountet. Auf Mobil ist der
+           Kalender stattdessen eine eigene Route (nie gleichzeitig mit der Karte sichtbar), ohne
+           dieses Pill wäre das Wetter-Feature auf Mobil komplett unsichtbar. Bewusst nur der
+           aktuelle Tag statt des ganzen Zeitraums, um die kleine Fläche nicht zu überfrachten. -->
+      <div v-if="!isDesktop" class="current-weather-slot">
+        <CurrentWeatherBadge :lat="tripStore.currentTrip?.lat ?? null" :lng="tripStore.currentTrip?.lng ?? null" :model="weatherProvider.model" />
+      </div>
       <Teleport to="body">
         <template v-if="shareMenuOpen">
           <div class="picker-backdrop" @click="shareMenuOpen = false"></div>
@@ -1288,12 +1314,13 @@ watch(() => liveSync.memberPositions, () => renderPositions(), { deep: true });
       </div>
     </div>
 
-    <!-- Mobil (Teleport aktiv, siehe isDesktop) landet diese Stationen-Liste in der Spots-Schublade
-         (ExcursionsView.vue's #map-focus-dock) statt als Overlay über der Karte zu schweben – sie
-         deckte dort sonst einen Teil des Kartenausschnitts (und mitunter die Zoom-Steuerung) ab.
-         Auf Desktop bleibt sie unverändert Teil dieser Karten-Spalte (Teleport disabled, siehe
-         @container-Regel für .focus-spot-list weiter unten). -->
-    <Teleport v-if="teleportReady" to="#map-focus-dock" :disabled="isDesktop">
+    <!-- Mobil/schmales Layout (Teleport aktiv, siehe isNarrowLayout) landet diese Stationen-Liste in
+         der Spots-Schublade (ExcursionsView.vue's #map-focus-dock) statt als Overlay über der Karte
+         zu schweben – sie deckte dort sonst einen Teil des Kartenausschnitts (und mitunter Marker/
+         die Zoom-Steuerung) ab. Auf echtem Desktop bleibt sie unverändert Teil dieser Karten-Spalte
+         (Teleport disabled, siehe @container-Regel für .focus-spot-list weiter unten - dieselbe
+         900px-Schwelle wie isNarrowLayout). -->
+    <Teleport v-if="teleportReady" to="#map-focus-dock" :disabled="!isNarrowLayout">
     <div class="card focus-spot-list" v-if="focusedExcursion && focusedExcursionStations.length">
       <div class="focus-spot-list-header">
         <button type="button" class="focus-spot-list-title-btn" @click="openExcursionDetail">
@@ -1491,6 +1518,16 @@ watch(() => liveSync.memberPositions, () => renderPositions(), { deep: true });
 
 .share-location-btn {
   top: 290px;
+}
+
+/* Direkt unterhalb des letzten .fit-btn (.share-location-btn, top:290px + 34px Höhe) - der einzige
+   auf Mobil noch freie Bereich: oben links ist bereits durch .focus-banner/.tile-download-pill/
+   .focus-spot-list belegt (bedingt sichtbar), .day-strip unten durch den Tage-Streifen. */
+.current-weather-slot {
+  position: absolute;
+  top: 330px;
+  right: 10px;
+  z-index: 1000;
 }
 
 /* Gleiche Akzentfarbe wie .orientation-btn.active - solange die Freigabe läuft, egal für welche

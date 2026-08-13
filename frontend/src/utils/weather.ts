@@ -1,3 +1,6 @@
+import { api } from '../api/client';
+import { toLocalDateString } from './dateFormat';
+
 // Wettervorhersage über Open-Meteo (kostenlos, kein API-Key nötig, CORS-freundlich für direkte
 // Browser-Aufrufe) – deckt nur die kommenden ~16 Tage plus wenige Tage rückwirkend ab, für weiter
 // entfernte Urlaube liefert die Abfrage entsprechend keine (oder nur teilweise) Tage im
@@ -98,4 +101,41 @@ export function fetchWeatherForecast(lat: number, lng: number, model = 'ecmwf_if
     if (cache?.key === key) cache = null;
   });
   return promise;
+}
+
+interface WeatherHistoryRow {
+  date: string;
+  weathercode: number;
+  temp_max: number;
+  temp_min: number;
+  precipitation_probability: number | null;
+}
+
+// Ergänzt die live von Open-Meteo geholte Vorhersage (deckt nur ~16 Tage im Voraus + 1 Tag
+// rückwirkend ab) um dauerhaft gespeicherte Ist-Werte vergangener Tage (backend/src/
+// weatherSnapshots.ts, GET /trips/:id/weather-history) – dadurch bleibt das Wetter eines Urlaubs
+// auch lange nach dessen Ende noch anzeigbar. Für "heute"/Zukunft bleibt weiterhin die Live-Vorhersage
+// maßgeblich (die gespeicherten Snapshots decken ohnehin nur strikt vergangene, abgeschlossene Tage
+// ab, siehe dortiger Kommentar). Ein Fehlschlag der History-Abfrage darf die Live-Vorhersage nicht
+// verhindern – deshalb kein Promise.all, sondern beide unabhängig behandelt.
+export async function fetchMergedWeather(tripId: number, lat: number, lng: number, model?: string): Promise<DailyWeather[]> {
+  const [live, history] = await Promise.all([
+    fetchWeatherForecast(lat, lng, model),
+    api.get<WeatherHistoryRow[]>(`/trips/${tripId}/weather-history`).catch(() => [] as WeatherHistoryRow[]),
+  ]);
+
+  const today = toLocalDateString(new Date());
+  const byDate = new Map<string, DailyWeather>();
+  for (const day of live) byDate.set(day.date, day);
+  for (const row of history) {
+    if (row.date >= today) continue; // Live-Vorhersage bleibt für heute/Zukunft maßgeblich
+    byDate.set(row.date, {
+      date: row.date,
+      weatherCode: row.weathercode,
+      tempMax: row.temp_max,
+      tempMin: row.temp_min,
+      precipitationProbability: row.precipitation_probability,
+    });
+  }
+  return [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
 }

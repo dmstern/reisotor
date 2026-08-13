@@ -8,7 +8,9 @@ import { useExcursionsStore } from '../stores/excursions';
 import { useSpotsStore } from '../stores/spots';
 import { useDrawersStore } from '../stores/drawers';
 import { useLiveSyncStore } from '../stores/liveSync';
+import { useWeatherProviderStore } from '../stores/weatherProvider';
 import { isEmptyRichText } from '../utils/richText';
+import { fetchMergedWeather, weatherCodeMeta, type DailyWeather } from '../utils/weather';
 import RichTextEditor from '../components/RichTextEditor.vue';
 import RichTextDisplay from '../components/RichTextDisplay.vue';
 import { compressImage } from '../utils/imageCompression';
@@ -33,6 +35,8 @@ const excursionsStore = useExcursionsStore();
 const spotsStore = useSpotsStore();
 const drawers = useDrawersStore();
 const liveSync = useLiveSyncStore();
+const weatherProvider = useWeatherProviderStore();
+const trip = computed(() => tripStore.currentTrip);
 const entries = ref<DiaryEntry[]>([]);
 const { isPending, markPendingDelete, clearPending } = useUndoableDelete();
 const likes = ref<DiaryLike[]>([]);
@@ -134,6 +138,23 @@ function excursionsForEntry(entry: DiaryEntry): Excursion[] {
     .filter((e): e is Excursion => !!e);
 }
 
+// Wetter am jeweiligen Eintrags-Tag in der Urlaubsregion - eigenständig geladen (wie das Dashboard-
+// Wetter-Widget), ein Fehlschlag soll das restliche Tagebuch nicht blockieren. Nutzt dieselbe
+// gemergte Quelle (Live-Vorhersage + dauerhaft gespeicherte Ist-Werte, siehe utils/weather.ts) wie
+// DashboardView.vue - funktioniert dadurch auch für Einträge aus lange vergangenen Urlauben.
+const weatherDays = ref<DailyWeather[] | null>(null);
+async function loadDiaryWeather() {
+  if (trip.value?.lat == null || trip.value?.lng == null) return;
+  try {
+    weatherDays.value = await fetchMergedWeather(tripId, trip.value.lat, trip.value.lng, weatherProvider.model);
+  } catch {
+    weatherDays.value = null;
+  }
+}
+function weatherForEntry(entry: DiaryEntry): DailyWeather | null {
+  return weatherDays.value?.find((d) => d.date === entry.date) ?? null;
+}
+
 // Ob ein Spot an diesem Tag bereits (über irgendeinen Ausflug) geplant ist – analog zum
 // bestehenden "📅 heute geplant"-Badge bei Ausflügen, hier direkt über spot_ids geprüft (kein
 // voller Stations-Resolver nötig).
@@ -209,6 +230,7 @@ watch(() => liveSync.domainVersion.diary, load);
 onMounted(async () => {
   highlightedIds.value = liveSync.markSeen('diary');
   await load();
+  loadDiaryWeather();
 });
 
 function author(id: number) {
@@ -492,7 +514,11 @@ async function removeComment(id: number) {
             @toggle-comments="toggleComments(entry.id)"
           />
 
-          <div class="excursion-links" v-if="excursionsForEntry(entry).length">
+          <div class="excursion-links" v-if="excursionsForEntry(entry).length || weatherForEntry(entry)">
+            <div v-if="weatherForEntry(entry)" class="diary-weather" :title="weatherCodeMeta(weatherForEntry(entry)!.weatherCode).label">
+              <span class="weather-icon">{{ weatherCodeMeta(weatherForEntry(entry)!.weatherCode).icon }}</span>
+              <span class="weather-temp">{{ Math.round(weatherForEntry(entry)!.tempMax) }}° / {{ Math.round(weatherForEntry(entry)!.tempMin) }}°</span>
+            </div>
             <button
               v-for="ex in excursionsForEntry(entry)"
               :key="ex.id"
@@ -749,6 +775,24 @@ async function removeComment(id: number) {
   justify-content: center;
   font-size: 0.9rem;
   flex-shrink: 0;
+}
+
+/* Gleiche Pillen-Dichte wie .excursion-chip daneben, aber kompakter (nur Icon + Temp, ohne
+   Regenwahrscheinlichkeit) - reine Zusatzinfo, kein anklickbares Element. */
+.diary-weather {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--color-hover);
+  border-radius: 999px;
+  corner-shape: round;
+  padding: 4px 12px;
+  font-size: 0.82rem;
+  color: var(--color-text);
+}
+
+.diary-weather .weather-icon {
+  font-size: 1rem;
 }
 
 .hint {

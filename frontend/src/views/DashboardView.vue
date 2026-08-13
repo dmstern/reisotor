@@ -26,7 +26,7 @@ import { buildAllEntries } from '../utils/calendarEntries';
 import { SCHEDULE_CATEGORY_META } from '../utils/scheduleCategory';
 import { SECTION_ICONS } from '../utils/sectionIcons';
 import { spotCategoryMeta } from '../utils/spotCategory';
-import { fetchWeatherForecast, weatherCodeMeta, type DailyWeather } from '../utils/weather';
+import { fetchMergedWeather, fetchWeatherForecast, weatherCodeMeta, type DailyWeather } from '../utils/weather';
 import { fetchRegionInfo, type RegionInfo } from '../utils/regionInfo';
 import {
   formatDate as formatDateShared,
@@ -73,7 +73,7 @@ async function loadWeather() {
   weatherLoading.value = true;
   weatherError.value = null;
   try {
-    weatherDays.value = await fetchWeatherForecast(trip.value.lat, trip.value.lng, weatherProvider.model);
+    weatherDays.value = await fetchMergedWeather(tripId, trip.value.lat, trip.value.lng, weatherProvider.model);
   } catch {
     weatherError.value = 'Wetterdaten konnten nicht geladen werden.';
   } finally {
@@ -389,6 +389,7 @@ function formatWeekdayDate(d: string) {
       </p>
       <p v-else-if="vacationPhase?.phase === 'ongoing'" class="countdown">Genießt euren Urlaub! 🏖️</p>
       <p v-else-if="vacationPhase?.phase === 'lastDay'" class="countdown">Letzter Urlaubstag 🌅</p>
+      <p v-else-if="vacationPhase?.phase === 'over'" class="countdown">Der Urlaub ist vorbei 👋</p>
     </header>
 
     <!-- Wetter + Reiseregion in einer Card statt zweier separater: beide sind "Infos über das
@@ -410,13 +411,18 @@ function formatWeekdayDate(d: string) {
             <span class="weather-temp">{{ Math.round(todayWeather.tempMax) }}° / {{ Math.round(todayWeather.tempMin) }}°</span>
             <span v-if="todayWeather.precipitationProbability != null" class="weather-rain">💧{{ todayWeather.precipitationProbability }}%</span>
           </div>
-          <p class="weather-section-label">🏖️ Wetter im Urlaub</p>
-          <p v-if="!vacationForecastDays.length" class="hint">
+          <p class="weather-section-label">
+            {{ vacationPhase?.phase === 'over' ? '☀️ Rückblick: Wetter im Urlaub' : '🏖️ Wetter im Urlaub' }}
+          </p>
+          <p v-if="!vacationForecastDays.length && vacationPhase?.phase !== 'over'" class="hint">
             Für die Urlaubstage liegt noch keine Vorhersage vor – Open-Meteo deckt nur die kommenden
             ~16 Tage ab, schau kurz vorher nochmal vorbei.
           </p>
+          <p v-else-if="!vacationForecastDays.length" class="hint">
+            Für diesen Zeitraum sind keine Wetterdaten gespeichert.
+          </p>
           <div v-else class="weather-days">
-            <div class="weather-day" v-for="day in vacationForecastDays" :key="day.date">
+            <div class="weather-day" :class="{ past: day.date < todayStr() }" v-for="day in vacationForecastDays" :key="day.date">
               <span class="weather-date">{{ formatWeekdayDate(day.date) }}</span>
               <span class="weather-icon" :title="weatherCodeMeta(day.weatherCode).label">{{
                 weatherCodeMeta(day.weatherCode).icon
@@ -759,6 +765,13 @@ function formatWeekdayDate(d: string) {
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   background: var(--color-hover);
+}
+
+/* Bereits vergangene Urlaubstage (Rückblick-Modus, siehe vacationPhase 'over') optisch abgesetzt -
+   gleiches Muster wie .hint (gedämpfte Textfarbe) statt eines neuen Farb-Tokens. */
+.weather-day.past {
+  color: var(--color-text-muted);
+  opacity: 0.75;
 }
 
 .weather-date {

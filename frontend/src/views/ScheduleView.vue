@@ -1063,9 +1063,10 @@ function formatDate(date: string) {
 
 /* Als eigenständige Seite (Route /calendar) übernimmt kein Drawer-Panel mehr das Scrollen/die
    Höhenbegrenzung – braucht deshalb wie jede andere Seite unten Platz für eine unten fixierte
-   mobile NavBar (siehe .page-Pendant in style.css). */
+   mobile NavBar (siehe .page-Pendant in style.css, inkl. des zusätzlichen --space-4 dort für einen
+   sichtbaren Mindestabstand, den --navbar-bottom-offset allein nicht liefert). */
 .calendar-drawer-content.standalone {
-  padding-bottom: var(--navbar-bottom-offset, 88px);
+  padding-bottom: calc(var(--navbar-bottom-offset, 88px) + var(--space-4));
 }
 
 .calendar-drawer-content h2 {
