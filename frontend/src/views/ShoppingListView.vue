@@ -9,6 +9,7 @@ import Modal from '../components/Modal.vue';
 import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
 import Combobox from '../components/Combobox.vue';
+import FormField from '../components/FormField.vue';
 import UndoDeleteRow from '../components/UndoDeleteRow.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import DraftStatusBar from '../components/DraftStatusBar.vue';
@@ -289,8 +290,12 @@ async function quickAddToGroup(group: Group, label: string) {
     <p>{{ progress.checked }}/{{ progress.total }} gekauft</p>
 
     <form class="add-form card" @submit.prevent="addItem">
-      <input v-model="newLabel" type="text" placeholder="Neuer Artikel" required />
-      <Combobox v-model="newShop" :options="knownShops" placeholder="Shop/Laden (optional)" />
+      <FormField icon="✏️" label="Artikel">
+        <input v-model="newLabel" type="text" placeholder="Neuer Artikel" required />
+      </FormField>
+      <FormField icon="🏬" label="Shop">
+        <Combobox v-model="newShop" :options="knownShops" placeholder="Shop/Laden (optional)" />
+      </FormField>
       <select v-model="newBuyer">
         <option value="">Kein:e Einkäufer:in</option>
         <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
@@ -300,8 +305,12 @@ async function quickAddToGroup(group: Group, label: string) {
         <option value="before">{{ PERIOD_META.before }}</option>
         <option value="during">{{ PERIOD_META.during }}</option>
       </select>
-      <input v-model="newLink" type="url" placeholder="Link (optional, z. B. Amazon)" />
-      <input v-model="newNote" type="text" placeholder="Notiz (optional)" />
+      <FormField icon="🔗" label="Link">
+        <input v-model="newLink" type="url" placeholder="Link (optional, z. B. Amazon)" />
+      </FormField>
+      <FormField icon="📝" label="Notiz">
+        <input v-model="newNote" type="text" placeholder="Notiz (optional)" />
+      </FormField>
       <button type="submit">Hinzufügen</button>
       <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
     </form>
@@ -377,15 +386,23 @@ async function quickAddToGroup(group: Group, label: string) {
       @update:model-value="(v) => !v && closeEditForm()"
     >
       <form class="edit-form" @submit.prevent="submitEdit">
-        <input v-model="editForm.label" type="text" placeholder="Artikel" required />
-        <Combobox v-model="editForm.shop" :options="knownShops" placeholder="Shop/Laden (optional)" />
+        <FormField icon="✏️" label="Artikel">
+          <input v-model="editForm.label" type="text" placeholder="Artikel" required />
+        </FormField>
+        <FormField icon="🏬" label="Shop">
+          <Combobox v-model="editForm.shop" :options="knownShops" placeholder="Shop/Laden (optional)" />
+        </FormField>
         <select v-model="editForm.period">
           <option value="">Kein Zeitraum</option>
           <option value="before">{{ PERIOD_META.before }}</option>
           <option value="during">{{ PERIOD_META.during }}</option>
         </select>
-        <input v-model="editForm.link" type="url" placeholder="Link (optional)" />
-        <input v-model="editForm.note" type="text" placeholder="Notiz (optional)" />
+        <FormField icon="🔗" label="Link">
+          <input v-model="editForm.link" type="url" placeholder="Link (optional)" />
+        </FormField>
+        <FormField icon="📝" label="Notiz">
+          <input v-model="editForm.note" type="text" placeholder="Notiz (optional)" />
+        </FormField>
         <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />
         <button type="submit">Speichern</button>
       </form>
@@ -409,7 +426,7 @@ async function quickAddToGroup(group: Group, label: string) {
   margin-bottom: var(--space-3);
 }
 
-.add-form input,
+.add-form .form-field,
 .add-form select {
   flex: 1;
   min-width: 140px;

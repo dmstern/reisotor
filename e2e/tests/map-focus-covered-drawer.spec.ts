@@ -83,6 +83,11 @@ for (const [viewportName, viewport] of Object.entries({ mobile: VIEWPORTS.mobile
       const sheet = page.locator('.spots-col');
       await expect(sheet).toBeVisible();
 
+      // Gruppieren/Sortieren/Filtern stecken auf echten mobilen Breiten standardmäßig hinter "⚙️
+      // Anzeige & Filter" (siehe ExcursionsView.vue) - bei narrowDesktop bleibt der Umschalter per
+      // @media (nicht @container) unsichtbar, dort ist die Zeile schon offen.
+      const filterToggle = page.locator('.filter-toggle-row');
+      if (await filterToggle.isVisible()) await filterToggle.click();
       await page.getByRole('button', { name: '🎒 Touren' }).click();
       const card = page.locator('.excursion-card', { hasText: excursion.title });
       await expect(card).toBeVisible();

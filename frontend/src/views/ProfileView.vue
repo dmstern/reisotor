@@ -7,6 +7,8 @@ import { useAuthStore } from '../stores/auth';
 import { useNavPositionStore } from '../stores/navPosition';
 import { useNavConfigStore } from '../stores/navConfig';
 import { NAV_LINKS } from '../utils/navLinks';
+import { useDashboardConfigStore } from '../stores/dashboardConfig';
+import { DASHBOARD_TILES } from '../utils/dashboardTiles';
 import { useIsDesktop } from '../composables/useIsDesktop';
 import { useWeatherProviderStore, WEATHER_MODEL_OPTIONS } from '../stores/weatherProvider';
 import { useHomeCurrencyStore, HOME_CURRENCY_OPTIONS } from '../stores/homeCurrency';
@@ -23,12 +25,19 @@ const router = useRouter();
 const navPosition = useNavPositionStore();
 const navConfig = useNavConfigStore();
 const isDesktop = useIsDesktop();
+const dashboardConfig = useDashboardConfigStore();
 
 function navLinkLabel(key: string) {
   return NAV_LINKS.find((l) => l.key === key)?.label ?? key;
 }
 function navLinkIcon(key: string) {
   return NAV_LINKS.find((l) => l.key === key)?.icon ?? '';
+}
+function dashboardTileLabel(key: string) {
+  return DASHBOARD_TILES.find((t) => t.key === key)?.label ?? key;
+}
+function dashboardTileIcon(key: string) {
+  return DASHBOARD_TILES.find((t) => t.key === key)?.icon ?? '';
 }
 const weatherProvider = useWeatherProviderStore();
 const homeCurrency = useHomeCurrencyStore();
@@ -399,6 +408,53 @@ async function onImportFileSelected(event: Event) {
       </ul>
     </div>
 
+    <div class="card">
+      <h2>🧩 Dashboard-Kacheln</h2>
+      <p class="hint nav-config-hint">Reihenfolge und Sichtbarkeit der Dashboard-Kacheln.</p>
+      <!-- Eigene dashboard-config-list/-row-Klassen statt der optisch identischen nav-config-list/
+           -row oben (gleiche CSS-Regeln per Komma-Selektor, siehe dort) - sonst würden e2e-
+           Selektoren wie .nav-config-row[hasText] auf beide Listen zugleich treffen, sobald ein
+           Eintrag denselben Namen trägt (z. B. "Notizen" existiert sowohl als Nav-Eintrag als auch
+           als Kachel). Die inneren Icon-/Label-/Actions-Klassen bleiben geteilt - dort scopen beide
+           Tests immer erst über die jeweilige äußere Zeilen-Klasse, keine Kollisionsgefahr. -->
+      <ul class="dashboard-config-list">
+        <li v-for="(entry, index) in dashboardConfig.entries" :key="entry.key" class="dashboard-config-row">
+          <span class="nav-config-icon">{{ dashboardTileIcon(entry.key) }}</span>
+          <span class="nav-config-label" :class="{ hidden: !entry.visible }">{{ dashboardTileLabel(entry.key) }}</span>
+          <div class="nav-config-actions">
+            <button
+              type="button"
+              class="secondary small"
+              :disabled="index === 0"
+              aria-label="Nach oben verschieben"
+              title="Nach oben verschieben"
+              @click="dashboardConfig.moveUp(entry.key)"
+            >
+              ▲
+            </button>
+            <button
+              type="button"
+              class="secondary small"
+              :disabled="index === dashboardConfig.entries.length - 1"
+              aria-label="Nach unten verschieben"
+              title="Nach unten verschieben"
+              @click="dashboardConfig.moveDown(entry.key)"
+            >
+              ▼
+            </button>
+            <label class="nav-config-visible">
+              <input
+                type="checkbox"
+                :checked="entry.visible"
+                :aria-label="`${dashboardTileLabel(entry.key)} auf dem Dashboard anzeigen`"
+                @change="dashboardConfig.setVisible(entry.key, ($event.target as HTMLInputElement).checked)"
+              />
+            </label>
+          </div>
+        </li>
+      </ul>
+    </div>
+
     <div id="calendar-settings" class="card">
       <h2>📅 Kalender</h2>
       <p class="hint">Wochenanfang und Zahlenformat für Datumsanzeigen in der ganzen App.</p>
@@ -742,7 +798,8 @@ async function onImportFileSelected(event: Event) {
   margin-top: var(--space-3);
 }
 
-.nav-config-list {
+.nav-config-list,
+.dashboard-config-list {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -751,7 +808,8 @@ async function onImportFileSelected(event: Event) {
   gap: 4px;
 }
 
-.nav-config-row {
+.nav-config-row,
+.dashboard-config-row {
   display: flex;
   align-items: center;
   gap: var(--space-2);
@@ -759,7 +817,8 @@ async function onImportFileSelected(event: Event) {
   border-bottom: 1px solid var(--color-border);
 }
 
-.nav-config-row:last-child {
+.nav-config-row:last-child,
+.dashboard-config-row:last-child {
   border-bottom: none;
 }
 

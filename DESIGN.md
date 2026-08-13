@@ -103,6 +103,34 @@ Standard-Marker-Pins – auch dort aus den bestehenden Registries beziehen, nich
   drittes System, sondern ein einfaches, wiederverwendbares Paar – bei jedem neuen "privat vs.
   geteilt"-Konzept dieselben zwei Emoji verwenden statt neue zu erfinden.
 
+## Formularfelder in Anlege-/Bearbeiten-Dialogen
+
+Reine Beschriftung eines Textfelds per HTML-`placeholder` verschwindet, sobald das Feld einen Wert
+trägt – wer einen bereits ausgefüllten Dialog erneut öffnet (Bearbeiten) sieht dann nicht mehr, wofür
+das Feld war. Für Text-/URL-/Nummer-/Zahl-Eingabefelder deshalb `components/FormField.vue` als
+Wrapper verwenden statt das Eingabefeld nackt ins Formular zu setzen:
+
+```html
+<FormField icon="✏️" label="Titel">
+  <input v-model="form.title" type="text" placeholder="Titel" required />
+</FormField>
+```
+
+Icon + kleines Label bleiben dauerhaft über dem Feld sichtbar, der `placeholder` bleibt zusätzlich als
+Beispiel-/Formatierungshinweis erhalten. `<select>`-Felder brauchen das i. d. R. nicht (die gewählte
+Option bleibt immer sichtbar, anders als ein `placeholder`) – ebenso Felder mit einem bereits
+bestehenden eigenen Label-Wrapper (`.date-label`, `.field-label`, `TripForm.vue`s
+`<label>Text<input/></label>`-Muster). Icon-Wahl folgt den anderswo in der App etablierten Emoji
+(z. B. 📅 Datum, 📍 Ort/Adresse, 🗺️ Maps-Link, 📞 Kontakt, 💶 Betrag, 📝 Notiz, 🏷️ Kategorie) – kein
+neues Icon erfinden, wenn ein bestehendes Konzept schon eins hat.
+
+Achtung bei bereits vorhandenem Flex-Row-Layout eines Formulars (z. B. `.add-form input, .add-form
+select { flex: 1; min-width: …px; }`): diese Selektoren zielten bisher direkt auf das `<input>`, das
+jetzt eine Ebene tiefer in `.form-field` sitzt. Selektor auf `.form-field` statt `input` ummünzen
+(`.add-form .form-field, .add-form select { flex: 1; … }`), sonst greift `flex`/`min-width` ins Leere
+(nur echte Flex-Items eines Flex-Containers reagieren darauf) und das Feld schrumpft auf seine
+Inhaltsbreite zusammen.
+
 ## Bei neuen Elementen
 
 1. Existiert schon eine passende Farbe/ein passender Radius-Wert/Breakpoint/Icon? → verwenden, nicht

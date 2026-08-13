@@ -1,4 +1,52 @@
 import { test, expect } from '@playwright/test';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const seeded = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'fixtures', 'seeded-data.json'), 'utf-8'));
+const tripId = seeded.trip.id;
+
+// Regressionstest für den neuen "✅ Gemacht"-Status-Filter (ExcursionsView.vue's statusFilter/
+// itemDone()) - unabhängig von planned/unplanned per ODER kombinierbar (ein Spot kann gleichzeitig
+// geplant UND gemacht sein), deshalb eigener Test statt nur einer Erweiterung des bestehenden
+// Kategorie-Filter-Tests oben.
+test.describe('Spots-Liste: "Gemacht"-Status-Filter', () => {
+  test('Filtern nach "✅ Gemacht" zeigt nur als gemacht markierte Spots', async ({ page }) => {
+    const marker = `E2E-GemachtFilter-${Date.now()}`;
+    const doneTitle = `Erledigt ${marker}`;
+    const openTitle = `Noch offen ${marker}`;
+
+    const doneRes = await page.request.post('/api/spots', {
+      data: { trip_id: tripId, title: doneTitle, category: 'Sonstiges' },
+    });
+    expect(doneRes.ok()).toBeTruthy();
+    const doneSpot = await doneRes.json();
+    const toggleRes = await page.request.post(`/api/spots/${doneSpot.id}/done`, { data: { done: true } });
+    expect(toggleRes.ok()).toBeTruthy();
+
+    const openRes = await page.request.post('/api/spots', {
+      data: { trip_id: tripId, title: openTitle, category: 'Sonstiges' },
+    });
+    expect(openRes.ok()).toBeTruthy();
+
+    await page.goto('/excursions');
+    await expect(page.locator('.spot-card', { hasText: doneTitle })).toBeVisible();
+    await expect(page.locator('.spot-card', { hasText: openTitle })).toBeVisible();
+
+    await page.getByRole('button', { name: 'Nach Status filtern' }).click();
+    await page.getByRole('checkbox', { name: '✅ Gemacht' }).check();
+    await page.locator('.picker-backdrop').click();
+
+    await expect(page.locator('.spot-card', { hasText: doneTitle })).toBeVisible();
+    await expect(page.locator('.spot-card', { hasText: openTitle })).toHaveCount(0);
+
+    // Aufräumen: Filter zurücksetzen, damit er nicht in andere Tests dieser Suite durchsickert.
+    await page.getByRole('button', { name: 'Nach Status filtern' }).click();
+    await page.getByRole('checkbox', { name: '✅ Gemacht' }).uncheck();
+    await page.locator('.picker-backdrop').click();
+  });
+});
 
 test.describe('Spots-Karte: Kategorie-Filter wird zuverlässig auf die Marker angewendet', () => {
   // Regressionstest für einen vom Nutzer gemeldeten Bug: der Kategorie-/Status-Filter aus der

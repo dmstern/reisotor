@@ -4,6 +4,7 @@ import type { Budget } from '../api/types';
 import { useBudgetStore } from '../stores/budget';
 import BudgetMeter from './BudgetMeter.vue';
 import DeleteButton from './DeleteButton.vue';
+import FormField from './FormField.vue';
 
 const props = defineProps<{
   budget: Budget;
@@ -97,8 +98,12 @@ function updateAllocationAmount(category: string, value: string) {
     <details class="add-category">
       <summary>+ Kategorie hinzufügen (optional)</summary>
       <form class="add-category-form" @submit.prevent="addCategory">
-        <input v-model="newCategory" type="text" placeholder="Neue Kategorie" />
-        <input v-model="newCategoryAmount" type="number" step="0.01" placeholder="Ziel €" />
+        <FormField icon="🏷️" label="Neue Kategorie">
+          <input v-model="newCategory" type="text" placeholder="Neue Kategorie" />
+        </FormField>
+        <FormField icon="💶" label="Ziel">
+          <input v-model="newCategoryAmount" type="number" step="0.01" placeholder="Ziel €" />
+        </FormField>
         <button type="submit">+ Hinzufügen</button>
       </form>
     </details>
@@ -203,7 +208,7 @@ function updateAllocationAmount(category: string, value: string) {
   margin-top: var(--space-2);
 }
 
-.add-category-form input {
+.add-category-form .form-field {
   flex: 1;
   min-width: 110px;
 }

@@ -20,6 +20,7 @@ import { useDrawersStore } from '../stores/drawers';
 import { useWeatherProviderStore, WEATHER_MODEL_OPTIONS } from '../stores/weatherProvider';
 import { useHomeCurrencyStore } from '../stores/homeCurrency';
 import { useUiSettingsStore } from '../stores/uiSettings';
+import { useDashboardConfigStore } from '../stores/dashboardConfig';
 import { assignCategoryColors } from '../utils/categoryColors';
 import { buildAllEntries } from '../utils/calendarEntries';
 import { SCHEDULE_CATEGORY_META } from '../utils/scheduleCategory';
@@ -45,6 +46,8 @@ const drawers = useDrawersStore();
 const weatherProvider = useWeatherProviderStore();
 const homeCurrency = useHomeCurrencyStore();
 const uiSettings = useUiSettingsStore();
+const dashboardConfig = useDashboardConfigStore();
+const visibleTileKeys = computed(() => dashboardConfig.entries.filter((e) => e.visible).map((e) => e.key));
 const tripId = tripStore.currentTripId as number;
 const trip = computed(() => tripStore.currentTrip);
 const schedule = ref<ScheduleItem[]>([]);
@@ -493,133 +496,156 @@ function formatWeekdayDate(d: string) {
       </template>
     </section>
 
+    <!-- Sichtbarkeit + Reihenfolge der Kacheln kommen aus dashboardConfig.ts (ProfileView.vue's
+         "🧩 Dashboard-Kacheln"-Einstellung, 1:1 nach dem Muster der NavBar-Konfiguration/
+         navConfig.ts) - jede Kachel behält ihre bisherige, unveränderte Markup/Logik, nur die
+         Reihenfolge/Sichtbarkeit ist jetzt datengetrieben statt fest im Template verdrahtet. */-->
     <div class="grid cards">
-      <!-- Kalender: Desktop-Schublade bzw. Mobil-Seite /calendar (siehe drawers.openCalendar()),
-           kein eigener router-link nötig, da die Kachel je nach Breite unterschiedlich navigieren muss -->
-      <button
-        type="button"
-        class="card tile tile-btn"
-        :style="{ background: `${WIDGET_COLORS.get('schedule')}0d` }"
-        @click="drawers.openCalendar()"
-      >
-        <span class="tile-icon" :style="{ background: `${WIDGET_COLORS.get('schedule')}26`, borderColor: WIDGET_COLORS.get('schedule') }">{{ SECTION_ICONS.calendar }}</span>
-        <h3>Kalender</h3>
-        <ul v-if="upcomingEntries.length" class="mini-list">
-          <li v-for="entry in upcomingEntries" :key="entry.key">
-            <span class="mini-dot" :style="{ background: SCHEDULE_CATEGORY_META[entry.category].color }"></span>
-            <span class="entry-text"
-              >{{ formatDate(entry.date) }}<span v-if="entry.time"> · {{ entry.time }}</span> — {{ entry.title }}</span
+      <template v-for="key in visibleTileKeys" :key="key">
+        <!-- Kalender: Desktop-Schublade bzw. Mobil-Seite /calendar (siehe drawers.openCalendar()),
+             kein eigener router-link nötig, da die Kachel je nach Breite unterschiedlich navigieren muss -->
+        <button
+          v-if="key === 'calendar'"
+          type="button"
+          class="card tile tile-btn"
+          :style="{ background: `${WIDGET_COLORS.get('schedule')}0d` }"
+          @click="drawers.openCalendar()"
+        >
+          <span class="tile-icon" :style="{ background: `${WIDGET_COLORS.get('schedule')}26`, borderColor: WIDGET_COLORS.get('schedule') }">{{ SECTION_ICONS.calendar }}</span>
+          <h3>Kalender</h3>
+          <ul v-if="upcomingEntries.length" class="mini-list">
+            <li v-for="entry in upcomingEntries" :key="entry.key">
+              <span class="mini-dot" :style="{ background: SCHEDULE_CATEGORY_META[entry.category].color }"></span>
+              <span class="entry-text"
+                >{{ formatDate(entry.date) }}<span v-if="entry.time"> · {{ entry.time }}</span> — {{ entry.title }}</span
+              >
+            </li>
+          </ul>
+          <p v-else>Noch nichts geplant</p>
+        </button>
+
+        <!-- Packliste (zusammengefasst) -->
+        <router-link
+          v-else-if="key === 'packing'"
+          to="/listen?tab=packing"
+          class="card tile"
+          :style="{ background: `${WIDGET_COLORS.get('packing')}0d` }"
+        >
+          <span class="tile-icon" :style="{ background: `${WIDGET_COLORS.get('packing')}26`, borderColor: WIDGET_COLORS.get('packing') }">{{ SECTION_ICONS.packing }}</span>
+          <h3>Packliste</h3>
+          <BudgetMeter
+            label="Gepackt"
+            format="count"
+            :spent="packingTotal.checked"
+            :target="packingTotal.total"
+            :color="WIDGET_COLORS.get('packing')!"
+          />
+          <ul class="mini-list breakdown">
+            <li v-for="list in packingLists" :key="list.key">{{ list.avatar }} {{ list.title }}: {{ list.checked }}/{{ list.total }}</li>
+          </ul>
+        </router-link>
+
+        <!-- Budget -->
+        <router-link v-else-if="key === 'budget'" to="/budget" class="card tile" :style="{ background: `${WIDGET_COLORS.get('budget')}0d` }">
+          <span class="tile-icon" :style="{ background: `${WIDGET_COLORS.get('budget')}26`, borderColor: WIDGET_COLORS.get('budget') }">{{ SECTION_ICONS.budget }}</span>
+          <h3>Budget</h3>
+          <BudgetMeter
+            label="Ausgegeben"
+            :spent="budgetStore.totalSpent"
+            :target="budgetStore.grandTotal"
+            :color="WIDGET_COLORS.get('budget')!"
+          />
+        </router-link>
+
+        <!-- Einkaufsliste -->
+        <router-link
+          v-else-if="key === 'shopping'"
+          to="/listen?tab=shopping"
+          class="card tile"
+          :style="{ background: `${WIDGET_COLORS.get('shopping')}0d` }"
+        >
+          <span class="tile-icon" :style="{ background: `${WIDGET_COLORS.get('shopping')}26`, borderColor: WIDGET_COLORS.get('shopping') }">{{ SECTION_ICONS.shopping }}</span>
+          <h3>Einkaufsliste</h3>
+          <BudgetMeter
+            label="Gekauft"
+            format="count"
+            :spent="shoppingProgress.checked"
+            :target="shoppingProgress.total"
+            :color="WIDGET_COLORS.get('shopping')!"
+          />
+        </router-link>
+
+        <!-- ToDo -->
+        <router-link v-else-if="key === 'todo'" to="/listen?tab=todo" class="card tile" :style="{ background: `${WIDGET_COLORS.get('todo')}0d` }">
+          <span class="tile-icon" :style="{ background: `${WIDGET_COLORS.get('todo')}26`, borderColor: WIDGET_COLORS.get('todo') }">{{ SECTION_ICONS.todo }}</span>
+          <h3>ToDo</h3>
+          <BudgetMeter
+            label="Erledigt"
+            format="count"
+            :spent="todoProgress.done"
+            :target="todoProgress.total"
+            :color="WIDGET_COLORS.get('todo')!"
+          />
+        </router-link>
+
+        <!-- Reise (Fahrten/Flüge) -->
+        <router-link v-else-if="key === 'travel'" to="/travel" class="card tile" :style="{ background: `${WIDGET_COLORS.get('travel')}0d` }">
+          <span class="tile-icon" :style="{ background: `${WIDGET_COLORS.get('travel')}26`, borderColor: WIDGET_COLORS.get('travel') }">{{ SECTION_ICONS.travel }}</span>
+          <h3>Reise</h3>
+          <p v-if="nextTravelItem">{{ formatDate(nextTravelItem.date!) }} — {{ nextTravelItem.title }}</p>
+          <p v-else-if="travelItems.length">{{ travelItems.length }} Einträge</p>
+          <p v-else>Noch nichts eingetragen</p>
+        </router-link>
+
+        <!-- Unterkunft: seit der Verschmelzung in Spots (siehe Migrationskommentar in db/index.ts)
+             kein eigener Bereich mehr - Sprung zur Spots-Sicht (/excursions), bei bekannter aktueller/
+             nächster Unterkunft direkt mit Hash-Hervorhebung des jeweiligen Spots (siehe
+             ExcursionsView.vue's hashHighlightId-Verdrahtung). -->
+        <router-link
+          v-else-if="key === 'accommodation'"
+          :to="currentOrNextAccommodation ? `/excursions#spot-${currentOrNextAccommodation.id}` : '/excursions'"
+          class="card tile"
+          :style="{ background: `${WIDGET_COLORS.get('accommodation')}0d` }"
+        >
+          <span class="tile-icon" :style="{ background: `${WIDGET_COLORS.get('accommodation')}26`, borderColor: WIDGET_COLORS.get('accommodation') }">{{ spotCategoryMeta('Unterkunft').icon }}</span>
+          <h3>Unterkunft</h3>
+          <p v-if="currentOrNextAccommodation">
+            {{ currentOrNextAccommodation.title }}<span v-if="currentOrNextAccommodation.start_date">
+              · {{ formatDate(currentOrNextAccommodation.start_date) }}</span
             >
-          </li>
-        </ul>
-        <p v-else>Noch nichts geplant</p>
-      </button>
+          </p>
+          <p v-else-if="accommodations.length">{{ accommodations.length }} Einträge</p>
+          <p v-else>Noch nichts eingetragen</p>
+        </router-link>
 
-      <!-- Packliste (zusammengefasst) -->
-      <router-link to="/listen?tab=packing" class="card tile" :style="{ background: `${WIDGET_COLORS.get('packing')}0d` }">
-        <span class="tile-icon" :style="{ background: `${WIDGET_COLORS.get('packing')}26`, borderColor: WIDGET_COLORS.get('packing') }">{{ SECTION_ICONS.packing }}</span>
-        <h3>Packliste</h3>
-        <BudgetMeter
-          label="Gepackt"
-          format="count"
-          :spent="packingTotal.checked"
-          :target="packingTotal.total"
-          :color="WIDGET_COLORS.get('packing')!"
-        />
-        <ul class="mini-list breakdown">
-          <li v-for="list in packingLists" :key="list.key">{{ list.avatar }} {{ list.title }}: {{ list.checked }}/{{ list.total }}</li>
-        </ul>
-      </router-link>
+        <!-- Tagebuch -->
+        <router-link v-else-if="key === 'diary'" to="/diary" class="card tile" :style="{ background: `${WIDGET_COLORS.get('diary')}0d` }">
+          <span class="tile-icon" :style="{ background: `${WIDGET_COLORS.get('diary')}26`, borderColor: WIDGET_COLORS.get('diary') }">{{ SECTION_ICONS.diary }}</span>
+          <h3>Tagebuch</h3>
+          <p v-if="diaryEntries.length">{{ diaryEntries.length }} {{ diaryEntries.length === 1 ? 'Eintrag' : 'Einträge' }}<span v-if="latestDiaryEntry"> · zuletzt {{ formatDate(latestDiaryEntry.date) }}</span></p>
+          <p v-else>Noch nichts geschrieben</p>
+        </router-link>
 
-      <!-- Budget -->
-      <router-link to="/budget" class="card tile" :style="{ background: `${WIDGET_COLORS.get('budget')}0d` }">
-        <span class="tile-icon" :style="{ background: `${WIDGET_COLORS.get('budget')}26`, borderColor: WIDGET_COLORS.get('budget') }">{{ SECTION_ICONS.budget }}</span>
-        <h3>Budget</h3>
-        <BudgetMeter
-          label="Ausgegeben"
-          :spent="budgetStore.totalSpent"
-          :target="budgetStore.grandTotal"
-          :color="WIDGET_COLORS.get('budget')!"
-        />
-      </router-link>
+        <!-- Notizen -->
+        <router-link v-else-if="key === 'notes'" to="/notes" class="card tile" :style="{ background: `${WIDGET_COLORS.get('notes')}0d` }">
+          <span class="tile-icon" :style="{ background: `${WIDGET_COLORS.get('notes')}26`, borderColor: WIDGET_COLORS.get('notes') }">{{ SECTION_ICONS.notes }}</span>
+          <h3>Notizen</h3>
+          <p v-if="notes.length">{{ notes.length }} {{ notes.length === 1 ? 'Notiz' : 'Notizen' }}</p>
+          <p v-else>Noch nichts notiert</p>
+        </router-link>
 
-      <!-- Einkaufsliste -->
-      <router-link to="/listen?tab=shopping" class="card tile" :style="{ background: `${WIDGET_COLORS.get('shopping')}0d` }">
-        <span class="tile-icon" :style="{ background: `${WIDGET_COLORS.get('shopping')}26`, borderColor: WIDGET_COLORS.get('shopping') }">{{ SECTION_ICONS.shopping }}</span>
-        <h3>Einkaufsliste</h3>
-        <BudgetMeter
-          label="Gekauft"
-          format="count"
-          :spent="shoppingProgress.checked"
-          :target="shoppingProgress.total"
-          :color="WIDGET_COLORS.get('shopping')!"
-        />
-      </router-link>
-
-      <!-- ToDo -->
-      <router-link to="/listen?tab=todo" class="card tile" :style="{ background: `${WIDGET_COLORS.get('todo')}0d` }">
-        <span class="tile-icon" :style="{ background: `${WIDGET_COLORS.get('todo')}26`, borderColor: WIDGET_COLORS.get('todo') }">{{ SECTION_ICONS.todo }}</span>
-        <h3>ToDo</h3>
-        <BudgetMeter
-          label="Erledigt"
-          format="count"
-          :spent="todoProgress.done"
-          :target="todoProgress.total"
-          :color="WIDGET_COLORS.get('todo')!"
-        />
-      </router-link>
-
-      <!-- Reise (Fahrten/Flüge) -->
-      <router-link to="/travel" class="card tile" :style="{ background: `${WIDGET_COLORS.get('travel')}0d` }">
-        <span class="tile-icon" :style="{ background: `${WIDGET_COLORS.get('travel')}26`, borderColor: WIDGET_COLORS.get('travel') }">{{ SECTION_ICONS.travel }}</span>
-        <h3>Reise</h3>
-        <p v-if="nextTravelItem">{{ formatDate(nextTravelItem.date!) }} — {{ nextTravelItem.title }}</p>
-        <p v-else-if="travelItems.length">{{ travelItems.length }} Einträge</p>
-        <p v-else>Noch nichts eingetragen</p>
-      </router-link>
-
-      <!-- Unterkunft: seit der Verschmelzung in Spots (siehe Migrationskommentar in db/index.ts)
-           kein eigener Bereich mehr - Sprung zur Spots-Sicht (/excursions), bei bekannter aktueller/
-           nächster Unterkunft direkt mit Hash-Hervorhebung des jeweiligen Spots (siehe
-           ExcursionsView.vue's hashHighlightId-Verdrahtung). -->
-      <router-link
-        :to="currentOrNextAccommodation ? `/excursions#spot-${currentOrNextAccommodation.id}` : '/excursions'"
-        class="card tile"
-        :style="{ background: `${WIDGET_COLORS.get('accommodation')}0d` }"
-      >
-        <span class="tile-icon" :style="{ background: `${WIDGET_COLORS.get('accommodation')}26`, borderColor: WIDGET_COLORS.get('accommodation') }">{{ spotCategoryMeta('Unterkunft').icon }}</span>
-        <h3>Unterkunft</h3>
-        <p v-if="currentOrNextAccommodation">
-          {{ currentOrNextAccommodation.title }}<span v-if="currentOrNextAccommodation.start_date">
-            · {{ formatDate(currentOrNextAccommodation.start_date) }}</span
-          >
-        </p>
-        <p v-else-if="accommodations.length">{{ accommodations.length }} Einträge</p>
-        <p v-else>Noch nichts eingetragen</p>
-      </router-link>
-
-      <!-- Tagebuch -->
-      <router-link to="/diary" class="card tile" :style="{ background: `${WIDGET_COLORS.get('diary')}0d` }">
-        <span class="tile-icon" :style="{ background: `${WIDGET_COLORS.get('diary')}26`, borderColor: WIDGET_COLORS.get('diary') }">{{ SECTION_ICONS.diary }}</span>
-        <h3>Tagebuch</h3>
-        <p v-if="diaryEntries.length">{{ diaryEntries.length }} {{ diaryEntries.length === 1 ? 'Eintrag' : 'Einträge' }}<span v-if="latestDiaryEntry"> · zuletzt {{ formatDate(latestDiaryEntry.date) }}</span></p>
-        <p v-else>Noch nichts geschrieben</p>
-      </router-link>
-
-      <!-- Notizen -->
-      <router-link to="/notes" class="card tile" :style="{ background: `${WIDGET_COLORS.get('notes')}0d` }">
-        <span class="tile-icon" :style="{ background: `${WIDGET_COLORS.get('notes')}26`, borderColor: WIDGET_COLORS.get('notes') }">{{ SECTION_ICONS.notes }}</span>
-        <h3>Notizen</h3>
-        <p v-if="notes.length">{{ notes.length }} {{ notes.length === 1 ? 'Notiz' : 'Notizen' }}</p>
-        <p v-else>Noch nichts notiert</p>
-      </router-link>
-
-      <!-- Sicherheits-Check: reines Spaß-Gimmick ohne echte Funktion, siehe SecurityCheckView.vue -->
-      <router-link to="/security-check" class="card tile" :style="{ background: `${SECURITY_TILE_COLOR}0d` }">
-        <span class="tile-icon" :style="{ background: `${SECURITY_TILE_COLOR}26`, borderColor: SECURITY_TILE_COLOR }">🛡️</span>
-        <h3>Sicherheits-Check</h3>
-        <p>Der Reisotor scannt eure Reiseregion 🤖🔍</p>
-      </router-link>
+        <!-- Sicherheits-Check: reines Spaß-Gimmick ohne echte Funktion, siehe SecurityCheckView.vue -->
+        <router-link
+          v-else-if="key === 'securityCheck'"
+          to="/security-check"
+          class="card tile"
+          :style="{ background: `${SECURITY_TILE_COLOR}0d` }"
+        >
+          <span class="tile-icon" :style="{ background: `${SECURITY_TILE_COLOR}26`, borderColor: SECURITY_TILE_COLOR }">🛡️</span>
+          <h3>Sicherheits-Check</h3>
+          <p>Der Reisotor scannt eure Reiseregion 🤖🔍</p>
+        </router-link>
+      </template>
     </div>
   </div>
   <ViewLoadingState v-else />

@@ -69,6 +69,9 @@ interface MapPoint {
   /** Zuhause-Seite eines Reise-Eintrags (Startpunkt der Anreise / Zielpunkt der Abreise) – wird
    *  vom Urlaubsfokus-Button ausgeblendet, siehe vacationPoints. */
   homeSide?: boolean;
+  /** Nur bei origin 'spot' gesetzt (Spot.done) - für den 'done'-Wert im Status-Filter, siehe
+   *  filteredPoints unten. Unterkunft-/Reise-Punkte kennen kein "gemacht"-Konzept. */
+  done?: boolean;
 }
 
 const TRAVEL_COLOR = '#4a3aa7';
@@ -78,13 +81,13 @@ const props = defineProps<{
    *  anzeigen) – koppelt den Karten-Inhalt 1:1 mit dem, was in der Liste sichtbar ist, statt einen
    *  zweiten, unabhängigen Filter zu pflegen. */
   categoryFilter?: string[];
-  /** Von ExcursionsView.vue durchgereichter Geplant/Ungeplant-Filter der Spots-Liste (leer = alles
-   *  anzeigen) – gilt nur für Spot-Punkte (Unterkunft/Reise kennen dieses Konzept nicht, siehe
+  /** Von ExcursionsView.vue durchgereichter Geplant/Ungeplant/Gemacht-Filter der Spots-Liste (leer =
+   *  alles anzeigen) – gilt nur für Spot-Punkte (Unterkunft/Reise kennen dieses Konzept nicht, siehe
    *  ExcursionsView.vue's itemStatus()). Braucht keine eigenen scheduleItems von außen: diese
    *  Komponente lädt ihre eigenen (scheduleItems.value, siehe loadAll()) ohnehin schon unabhängig
    *  von ExcursionsView.vue (gleiches Muster wie die übrige, bewusst duplizierte Datenladung
    *  zwischen beiden Sichten). */
-  statusFilter?: ('planned' | 'unplanned')[];
+  statusFilter?: ('planned' | 'unplanned' | 'done')[];
   /** Höhe (px) des von der mobilen Spots-Schublade verdeckten unteren Kartenbereichs, von
    *  ExcursionsView.vue durchgereicht (0/undefined auf Desktop, wo die Schublade eine eigene Spalte
    *  statt eines Overlays ist) – siehe centerOnPoint() unten. */
@@ -321,6 +324,7 @@ const points = computed<MapPoint[]>(() => {
         // Urlaubsfokus-Button ausgeblendet, genau wie vorher travel_places.is_home – bei
         // gewöhnlichen Spots ist is_home immer 0.
         homeSide: !!s.is_home,
+        done: !!s.done,
       });
     }
   }
@@ -355,7 +359,11 @@ const filteredPoints = computed(() => {
     if (statusFilterActive && p.origin === 'spot') {
       const spotId = Number(p.key.slice('spot-'.length));
       const status = spotScheduledDates.value.has(spotId) ? 'planned' : 'unplanned';
-      if (!props.statusFilter!.includes(status)) return false;
+      // 'done' ist unabhängig von planned/unplanned, per ODER kombiniert - identische Logik wie
+      // ExcursionsView.vue's filteredSpotItems (beide Filter müssen im Gleichschritt bleiben).
+      const matchesStatus = props.statusFilter!.includes(status);
+      const matchesDone = props.statusFilter!.includes('done') && !!p.done;
+      if (!matchesStatus && !matchesDone) return false;
     }
     return true;
   });

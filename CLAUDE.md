@@ -189,6 +189,11 @@ und auf manuelles Review warten. Der Nutzer testet Änderungen bewusst erst nach
 automatischen Deploy auf `dev.reise.ruebenherz.de`, nicht vorher am PR-Diff. Gilt nicht, wenn der
 Nutzer für eine bestimmte Änderung ausdrücklich um Review vor dem Merge bittet.
 
+Diese PRs deshalb direkt **nicht als Draft** (`draft: false`) erstellen statt sie später erst auf
+"ready for review" umzustellen – ein Draft-PR löst je nach GitHub-Konfiguration nicht zuverlässig
+denselben Auto-Merge-Trigger aus, das Umstellen war in der Praxis ein leicht vergessener manueller
+Zwischenschritt.
+
 ## Konsistenz-Check bei Änderungen
 
 Die App ist über viele Sessions gewachsen, und dasselbe Konzept (Icon, Bezeichnung, Layout-/

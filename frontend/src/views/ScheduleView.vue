@@ -15,6 +15,7 @@ import Modal from '../components/Modal.vue';
 import DetailModal from '../components/DetailModal.vue';
 import MapsAppPicker from '../components/MapsAppPicker.vue';
 import Combobox from '../components/Combobox.vue';
+import FormField from '../components/FormField.vue';
 import DeleteButton from '../components/DeleteButton.vue';
 import UndoDeleteRow from '../components/UndoDeleteRow.vue';
 import FileAttachments from '../components/FileAttachments.vue';
@@ -942,7 +943,9 @@ function formatDate(date: string) {
       @update:model-value="(v) => !v && closeAddForm()"
     >
       <form class="edit-form" @submit.prevent="addItem">
-        <input v-model="newTitle" type="text" placeholder="Titel" required />
+        <FormField icon="✏️" label="Titel">
+          <input v-model="newTitle" type="text" placeholder="Titel" required />
+        </FormField>
         <label class="field-label">
           Startdatum
           <input v-model="newStartDate" type="date" required />
@@ -969,10 +972,16 @@ function formatDate(date: string) {
           </optgroup>
         </select>
         <template v-if="!newLinkKey">
-          <Combobox v-model="newLocation" :options="placeNames" placeholder="Ort (optional)" />
-          <input v-model="newMapsLink" type="url" placeholder="Maps-Link (Google/Apple) (optional)" />
+          <FormField icon="📍" label="Ort">
+            <Combobox v-model="newLocation" :options="placeNames" placeholder="Ort (optional)" />
+          </FormField>
+          <FormField icon="🗺️" label="Maps-Link">
+            <input v-model="newMapsLink" type="url" placeholder="Maps-Link (Google/Apple) (optional)" />
+          </FormField>
         </template>
-        <input v-model="newNote" type="text" placeholder="Notiz (optional)" />
+        <FormField icon="📝" label="Notiz">
+          <input v-model="newNote" type="text" placeholder="Notiz (optional)" />
+        </FormField>
         <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
         <button type="submit">Hinzufügen</button>
       </form>
@@ -984,7 +993,9 @@ function formatDate(date: string) {
       @update:model-value="(v) => !v && closeEditForm()"
     >
       <form class="edit-form" @submit.prevent="submitEdit">
-        <input v-model="editForm.title" type="text" placeholder="Titel" required />
+        <FormField icon="✏️" label="Titel">
+          <input v-model="editForm.title" type="text" placeholder="Titel" required />
+        </FormField>
         <label class="field-label">
           Enddatum (optional)
           <input v-model="editForm.endDate" type="date" :min="editingItem?.date" />
@@ -1007,10 +1018,16 @@ function formatDate(date: string) {
           </optgroup>
         </select>
         <template v-if="!editForm.linkKey">
-          <Combobox v-model="editForm.location" :options="placeNames" placeholder="Ort (optional)" />
-          <input v-model="editForm.mapsLink" type="url" placeholder="Maps-Link (Google/Apple) (optional)" />
+          <FormField icon="📍" label="Ort">
+            <Combobox v-model="editForm.location" :options="placeNames" placeholder="Ort (optional)" />
+          </FormField>
+          <FormField icon="🗺️" label="Maps-Link">
+            <input v-model="editForm.mapsLink" type="url" placeholder="Maps-Link (Google/Apple) (optional)" />
+          </FormField>
         </template>
-        <input v-model="editForm.note" type="text" placeholder="Notiz (optional)" />
+        <FormField icon="📝" label="Notiz">
+          <input v-model="editForm.note" type="text" placeholder="Notiz (optional)" />
+        </FormField>
         <FileAttachments v-if="editingItem" domain="schedule" :entity-id="editingItem.id" />
         <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />
         <button type="submit">Speichern</button>
@@ -1319,7 +1336,8 @@ function formatDate(date: string) {
   gap: var(--space-2);
 }
 
-.edit-form input[type='text'] {
+.edit-form input[type='text'],
+.edit-form .form-field {
   flex: 1;
   min-width: 140px;
 }
