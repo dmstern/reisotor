@@ -201,6 +201,7 @@ function onCardClick() {
           🎒 Auf Tour ziehen
         </button>
         <button
+          v-if="!isAccommodation"
           type="button"
           class="calendar-drag-handle"
           aria-label="Auf Kalender ziehen zum spontanen Einplanen"
@@ -211,6 +212,7 @@ function onCardClick() {
           📅 Einplanen
         </button>
         <button
+          v-if="!isAccommodation"
           type="button"
           class="done-toggle"
           :class="{ active: !!spot.done }"

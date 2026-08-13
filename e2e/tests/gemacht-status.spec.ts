@@ -79,8 +79,21 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
     await expect(tourOption.locator('input[type="checkbox"]')).toBeChecked();
     await expect(tourOption.locator('.excursion-option-badge.recommended')).toHaveText(/Empfohlen/);
 
+    // Wartet, bis alle beim Öffnen ausgelösten Requests (Touren-/Spot-Picker-Listen etc.) fertig
+    // sind, bevor mit dem Editor interagiert wird.
+    await page.waitForLoadState('networkidle');
+    await page.evaluate(() => document.fonts.ready);
+
     const editor = modal.locator('.richtext-content[contenteditable="true"]');
-    await editor.click();
+    await editor.scrollIntoViewIfNeeded();
+    // .focus() statt .click(): auf dem CI-Runner (nie lokal reproduzierbar, auch nach mehreren
+    // App-seitigen Layout-Shift-Fixes nicht) meldete ein echter Maus-Klick hier wiederholt
+    // "intercepts pointer events" durch benachbarte Formularfelder (Titel-Input, Bild-Upload) -
+    // Playwrights Hit-Test an der Klickposition traf dort offenbar zuverlässig daneben, obwohl das
+    // Zielelement selbst laut Playwright bereits "visible, enabled and stable" war. Für diesen Test
+    // kommt es nur darauf an, Text in den Editor zu bekommen, nicht das Klick-Verhalten selbst zu
+    // prüfen - .focus() setzt den Fokus direkt, ganz ohne Hit-Test an einer Bildschirmposition.
+    await editor.focus();
     await editor.pressSequentially('Wir haben die Altstadt erkundet und sind spontan im Café eingekehrt.');
 
     // Spot manuell per Picker-Button hinzufügen (nicht vorab geplant, daher kein Empfohlen-Badge).

@@ -525,6 +525,7 @@ function formatWeekdayDate(d: string) {
             · {{ formatDate(currentOrNextAccommodation.start_date) }}</span
           >
         </p>
+        <p v-else-if="accommodations.length">{{ accommodations.length }} Einträge</p>
         <p v-else>Noch nichts eingetragen</p>
       </router-link>
 
