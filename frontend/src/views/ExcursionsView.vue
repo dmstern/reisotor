@@ -20,6 +20,7 @@ import DerivedLocationCard from '../components/DerivedLocationCard.vue';
 import TripMap from '../components/TripMap.vue';
 import Modal from '../components/Modal.vue';
 import Combobox from '../components/Combobox.vue';
+import FormField from '../components/FormField.vue';
 import TourAssignPicker from '../components/TourAssignPicker.vue';
 import LocationPicker from '../components/LocationPicker.vue';
 import ImageUrlInput from '../components/ImageUrlInput.vue';
@@ -1134,9 +1135,15 @@ async function removeSpot(id: number) {
 
       <Modal :model-value="showExcursionForm" title="Neue Tour" full-height @update:model-value="(v) => !v && closeExcursionForm()">
         <form class="edit-form" @submit.prevent="addExcursion">
-          <input v-model="excursionForm.title" type="text" placeholder="Titel" required />
-          <ImageUrlInput v-model="excursionForm.image_url" />
-          <RichTextEditor v-model="excursionForm.note" placeholder="Notiz (optional)" />
+          <FormField icon="✏️" label="Titel">
+            <input v-model="excursionForm.title" type="text" placeholder="Titel" required />
+          </FormField>
+          <FormField icon="🖼️" label="Bild">
+            <ImageUrlInput v-model="excursionForm.image_url" />
+          </FormField>
+          <FormField icon="📝" label="Notiz">
+            <RichTextEditor v-model="excursionForm.note" placeholder="Notiz (optional)" />
+          </FormField>
           <label class="date-label">
             Datum (optional – ansonsten "In Planung")
             <input v-model="excursionForm.date" type="date" />
@@ -1159,9 +1166,15 @@ async function removeSpot(id: number) {
         @update:model-value="(v) => !v && closeEditExcursionForm()"
       >
         <form class="edit-form" @submit.prevent="submitEditExcursion">
-          <input v-model="editExcursionForm.title" type="text" placeholder="Titel" required />
-          <ImageUrlInput v-model="editExcursionForm.image_url" />
-          <RichTextEditor v-model="editExcursionForm.note" placeholder="Notiz (optional)" />
+          <FormField icon="✏️" label="Titel">
+            <input v-model="editExcursionForm.title" type="text" placeholder="Titel" required />
+          </FormField>
+          <FormField icon="🖼️" label="Bild">
+            <ImageUrlInput v-model="editExcursionForm.image_url" />
+          </FormField>
+          <FormField icon="📝" label="Notiz">
+            <RichTextEditor v-model="editExcursionForm.note" placeholder="Notiz (optional)" />
+          </FormField>
           <label class="date-label">
             Datum (optional – ansonsten "In Planung")
             <input v-model="editExcursionForm.date" type="date" />
@@ -1294,38 +1307,62 @@ async function removeSpot(id: number) {
           <div class="form-image-banner" :style="spotPreviewImage ? { backgroundImage: `url(${spotPreviewImage})` } : {}">
             <span v-if="!spotPreviewImage" class="placeholder">{{ spotCategoryMeta(spotForm.category).icon }}</span>
           </div>
-          <input v-model="spotForm.title" type="text" placeholder="Titel" required />
-          <ImageUrlInput v-model="spotForm.image_url" />
-          <Combobox v-model="spotForm.category" :options="spotCategoryOptions" placeholder="Kategorie (optional, z. B. Restaurant – oder eigene erstellen)" />
+          <FormField icon="✏️" label="Titel">
+            <input v-model="spotForm.title" type="text" placeholder="Titel" required />
+          </FormField>
+          <FormField icon="🖼️" label="Bild">
+            <ImageUrlInput v-model="spotForm.image_url" />
+          </FormField>
+          <FormField icon="🏷️" label="Kategorie">
+            <Combobox v-model="spotForm.category" :options="spotCategoryOptions" placeholder="Kategorie (optional, z. B. Restaurant – oder eigene erstellen)" />
+          </FormField>
           <label class="checkbox-option">
             <input type="checkbox" v-model="spotForm.is_home" />
             🏠 Heimat-Seite (z. B. der heimische Flughafen/Bahnhof/Zuhause für Reise-Etappen)
           </label>
           <template v-if="spotForm.category === 'Unterkunft'">
-            <input v-model="spotForm.address" type="text" placeholder="Adresse (optional)" />
+            <FormField icon="📍" label="Adresse">
+              <input v-model="spotForm.address" type="text" placeholder="Adresse (optional)" />
+            </FormField>
             <div class="row">
-              <input v-model="spotForm.start_date" type="date" />
-              <input v-model="spotForm.end_date" type="date" />
+              <FormField icon="📅" label="Check-in-Datum">
+                <input v-model="spotForm.start_date" type="date" />
+              </FormField>
+              <FormField icon="📅" label="Check-out-Datum">
+                <input v-model="spotForm.end_date" type="date" />
+              </FormField>
             </div>
             <div class="row">
-              <input v-model="spotForm.checkin" type="text" placeholder="Check-in (z. B. 15:00)" />
-              <input v-model="spotForm.checkout" type="text" placeholder="Check-out (z. B. 11:00)" />
+              <FormField icon="🕒" label="Check-in-Zeit">
+                <input v-model="spotForm.checkin" type="text" placeholder="Check-in (z. B. 15:00)" />
+              </FormField>
+              <FormField icon="🕒" label="Check-out-Zeit">
+                <input v-model="spotForm.checkout" type="text" placeholder="Check-out (z. B. 11:00)" />
+              </FormField>
             </div>
-            <input v-model="spotForm.contact" type="text" placeholder="Kontakt (Telefon/E-Mail/Text, optional)" />
+            <FormField icon="📞" label="Kontakt">
+              <input v-model="spotForm.contact" type="text" placeholder="Kontakt (Telefon/E-Mail/Text, optional)" />
+            </FormField>
             <div class="row">
-              <input v-model="spotForm.amount" type="number" step="0.01" placeholder="Kosten (€, optional)" />
-              <select v-model="spotForm.paid_by_user_id">
-                <option value="">Bezahlt von –</option>
-                <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
-              </select>
+              <FormField icon="💶" label="Kosten">
+                <input v-model="spotForm.amount" type="number" step="0.01" placeholder="Kosten (€, optional)" />
+              </FormField>
+              <FormField icon="🤝" label="Bezahlt von">
+                <select v-model="spotForm.paid_by_user_id">
+                  <option value="">Bezahlt von –</option>
+                  <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
+                </select>
+              </FormField>
             </div>
           </template>
-          <input
-            v-model="spotForm.maps_link"
-            type="url"
-            placeholder="Maps-Link (Google/Apple) (optional)"
-            @blur="checkSpotMapsLink"
-          />
+          <FormField icon="🗺️" label="Maps-Link">
+            <input
+              v-model="spotForm.maps_link"
+              type="url"
+              placeholder="Maps-Link (Google/Apple) (optional)"
+              @blur="checkSpotMapsLink"
+            />
+          </FormField>
           <p v-if="spotMapsLinkResolved === true" class="hint success">📍 Standort erkannt – erscheint auf der Karte</p>
           <p v-if="spotMapsLinkResolved === false" class="hint">
             Standort wird beim Speichern serverseitig aufgelöst (auch Kurzlinks funktionieren).
@@ -1342,8 +1379,12 @@ async function removeSpot(id: number) {
             :center="spotPickerCenter"
             :reference-points="spotReferencePoints"
           />
-          <RichTextEditor v-model="spotForm.note" placeholder="Notiz (optional)" />
-          <TourAssignPicker v-model="spotForm.tourTitles" :tour-options="allTourTitles" />
+          <FormField icon="📝" label="Notiz">
+            <RichTextEditor v-model="spotForm.note" placeholder="Notiz (optional)" />
+          </FormField>
+          <FormField icon="🧭" label="Tour zuordnen">
+            <TourAssignPicker v-model="spotForm.tourTitles" :tour-options="allTourTitles" />
+          </FormField>
           <DraftStatusBar :status="newSpotDraft.status.value" :restored="newSpotDraft.restored.value" />
           <button type="submit">Hinzufügen</button>
         </form>
@@ -1465,38 +1506,62 @@ async function removeSpot(id: number) {
           <div class="form-image-banner" :style="editSpotPreviewImage ? { backgroundImage: `url(${editSpotPreviewImage})` } : {}">
             <span v-if="!editSpotPreviewImage" class="placeholder">{{ spotCategoryMeta(editSpotForm.category).icon }}</span>
           </div>
-          <input v-model="editSpotForm.title" type="text" placeholder="Titel" required />
-          <ImageUrlInput v-model="editSpotForm.image_url" />
-          <Combobox v-model="editSpotForm.category" :options="spotCategoryOptions" placeholder="Kategorie (optional, z. B. Restaurant – oder eigene erstellen)" />
+          <FormField icon="✏️" label="Titel">
+            <input v-model="editSpotForm.title" type="text" placeholder="Titel" required />
+          </FormField>
+          <FormField icon="🖼️" label="Bild">
+            <ImageUrlInput v-model="editSpotForm.image_url" />
+          </FormField>
+          <FormField icon="🏷️" label="Kategorie">
+            <Combobox v-model="editSpotForm.category" :options="spotCategoryOptions" placeholder="Kategorie (optional, z. B. Restaurant – oder eigene erstellen)" />
+          </FormField>
           <label class="checkbox-option">
             <input type="checkbox" v-model="editSpotForm.is_home" />
             🏠 Heimat-Seite (z. B. der heimische Flughafen/Bahnhof/Zuhause für Reise-Etappen)
           </label>
           <template v-if="editSpotForm.category === 'Unterkunft'">
-            <input v-model="editSpotForm.address" type="text" placeholder="Adresse (optional)" />
+            <FormField icon="📍" label="Adresse">
+              <input v-model="editSpotForm.address" type="text" placeholder="Adresse (optional)" />
+            </FormField>
             <div class="row">
-              <input v-model="editSpotForm.start_date" type="date" />
-              <input v-model="editSpotForm.end_date" type="date" />
+              <FormField icon="📅" label="Check-in-Datum">
+                <input v-model="editSpotForm.start_date" type="date" />
+              </FormField>
+              <FormField icon="📅" label="Check-out-Datum">
+                <input v-model="editSpotForm.end_date" type="date" />
+              </FormField>
             </div>
             <div class="row">
-              <input v-model="editSpotForm.checkin" type="text" placeholder="Check-in (z. B. 15:00)" />
-              <input v-model="editSpotForm.checkout" type="text" placeholder="Check-out (z. B. 11:00)" />
+              <FormField icon="🕒" label="Check-in-Zeit">
+                <input v-model="editSpotForm.checkin" type="text" placeholder="Check-in (z. B. 15:00)" />
+              </FormField>
+              <FormField icon="🕒" label="Check-out-Zeit">
+                <input v-model="editSpotForm.checkout" type="text" placeholder="Check-out (z. B. 11:00)" />
+              </FormField>
             </div>
-            <input v-model="editSpotForm.contact" type="text" placeholder="Kontakt (Telefon/E-Mail/Text, optional)" />
+            <FormField icon="📞" label="Kontakt">
+              <input v-model="editSpotForm.contact" type="text" placeholder="Kontakt (Telefon/E-Mail/Text, optional)" />
+            </FormField>
             <div class="row">
-              <input v-model="editSpotForm.amount" type="number" step="0.01" placeholder="Kosten (€, optional)" />
-              <select v-model="editSpotForm.paid_by_user_id">
-                <option value="">Bezahlt von –</option>
-                <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
-              </select>
+              <FormField icon="💶" label="Kosten">
+                <input v-model="editSpotForm.amount" type="number" step="0.01" placeholder="Kosten (€, optional)" />
+              </FormField>
+              <FormField icon="🤝" label="Bezahlt von">
+                <select v-model="editSpotForm.paid_by_user_id">
+                  <option value="">Bezahlt von –</option>
+                  <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
+                </select>
+              </FormField>
             </div>
           </template>
-          <input
-            v-model="editSpotForm.maps_link"
-            type="url"
-            placeholder="Maps-Link (Google/Apple) (optional)"
-            @blur="checkEditSpotMapsLink"
-          />
+          <FormField icon="🗺️" label="Maps-Link">
+            <input
+              v-model="editSpotForm.maps_link"
+              type="url"
+              placeholder="Maps-Link (Google/Apple) (optional)"
+              @blur="checkEditSpotMapsLink"
+            />
+          </FormField>
           <p v-if="editSpotMapsLinkResolved === true" class="hint success">📍 Standort erkannt</p>
           <p v-if="editSpotMapsLinkResolved === false" class="hint">
             Standort wird beim Speichern serverseitig aufgelöst (auch Kurzlinks funktionieren).
@@ -1513,8 +1578,12 @@ async function removeSpot(id: number) {
             :center="spotPickerCenter"
             :reference-points="editSpotReferencePoints"
           />
-          <RichTextEditor v-model="editSpotForm.note" placeholder="Notiz (optional)" />
-          <TourAssignPicker v-model="editSpotForm.tourTitles" :tour-options="allTourTitles" />
+          <FormField icon="📝" label="Notiz">
+            <RichTextEditor v-model="editSpotForm.note" placeholder="Notiz (optional)" />
+          </FormField>
+          <FormField icon="🧭" label="Tour zuordnen">
+            <TourAssignPicker v-model="editSpotForm.tourTitles" :tour-options="allTourTitles" />
+          </FormField>
           <FileAttachments v-if="editingSpot" domain="spots" :entity-id="editingSpot.id" />
           <DraftStatusBar :status="editSpotDraft.status.value" :restored="editSpotDraft.restored.value" />
           <button type="submit">Speichern</button>

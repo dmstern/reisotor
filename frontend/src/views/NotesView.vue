@@ -6,6 +6,7 @@ import { useAuthStore } from '../stores/auth';
 import { useTripStore } from '../stores/trip';
 import { useLiveSyncStore } from '../stores/liveSync';
 import RichTextEditor from '../components/RichTextEditor.vue';
+import FormField from '../components/FormField.vue';
 import RichTextDisplay from '../components/RichTextDisplay.vue';
 import { isEmptyRichText } from '../utils/richText';
 import Modal from '../components/Modal.vue';
@@ -212,7 +213,9 @@ async function restore(id: number) {
 
     <Modal :model-value="showForm" title="Neue Notiz" full-height @update:model-value="(v) => !v && closeForm()">
     <form class="add-form" @submit.prevent="submit">
-      <input v-model="form.title" type="text" placeholder="Titel (optional)" />
+      <FormField icon="✏️" label="Titel">
+        <input v-model="form.title" type="text" placeholder="Titel (optional)" />
+      </FormField>
       <RichTextEditor v-model="form.content" placeholder="Inhalt" />
       <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
       <button type="submit">Hinzufügen</button>
@@ -259,7 +262,9 @@ async function restore(id: number) {
       @update:model-value="(v) => !v && closeEditForm()"
     >
       <form class="add-form" @submit.prevent="submitEdit">
-        <input v-model="editForm.title" type="text" placeholder="Titel (optional)" />
+        <FormField icon="✏️" label="Titel">
+          <input v-model="editForm.title" type="text" placeholder="Titel (optional)" />
+        </FormField>
         <RichTextEditor v-model="editForm.content" />
         <FileAttachments v-if="editingNote" domain="notes" :entity-id="editingNote.id" />
         <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />

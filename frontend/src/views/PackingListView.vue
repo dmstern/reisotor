@@ -9,6 +9,7 @@ import PackingItemRow from '../components/PackingItem.vue';
 import Modal from '../components/Modal.vue';
 import Combobox from '../components/Combobox.vue';
 import QuickAddRow from '../components/QuickAddRow.vue';
+import FormField from '../components/FormField.vue';
 import UndoDeleteRow from '../components/UndoDeleteRow.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import { useUndoableDelete } from '../composables/useUndoableDelete';
@@ -309,9 +310,15 @@ async function quickAdd(list: ListGroup, label: string) {
       @update:model-value="(v) => !v && (editingItem = null)"
     >
       <form class="edit-form" @submit.prevent="submitEdit">
-        <input v-model="editForm.label" type="text" placeholder="Gegenstand" required />
-        <Combobox v-model="editForm.category" :options="categories" placeholder="Kategorie" />
-        <Combobox v-model="editForm.subcategory" :options="subcategories" placeholder="Unterkategorie (optional, z. B. Outfit Tag 1)" />
+        <FormField icon="✏️" label="Gegenstand">
+          <input v-model="editForm.label" type="text" placeholder="Gegenstand" required />
+        </FormField>
+        <FormField icon="🏷️" label="Kategorie">
+          <Combobox v-model="editForm.category" :options="categories" placeholder="Kategorie" />
+        </FormField>
+        <FormField icon="🏷️" label="Unterkategorie">
+          <Combobox v-model="editForm.subcategory" :options="subcategories" placeholder="Unterkategorie (optional, z. B. Outfit Tag 1)" />
+        </FormField>
         <label class="qty-field">
           Anzahl
           <input v-model.number="editForm.quantity" type="number" min="1" step="1" />
@@ -346,11 +353,15 @@ async function quickAdd(list: ListGroup, label: string) {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: var(--space-2);
+  /* Volle Breite statt nur der eigenen Inhaltsbreite - sonst bricht das umschließende
+     .extra-fields (QuickAddRow.vue) diesen einzelnen Kind-Container gar nicht erst um, bevor er
+     intern zu wrappen beginnt, was die Felder unnötig eng zusammenquetscht. */
+  width: 100%;
 }
 
 .pack-quick-extra :deep(.combobox) {
-  flex: 0 1 110px;
+  flex: 1 1 110px;
   min-width: 90px;
 }
 

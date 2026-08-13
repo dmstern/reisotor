@@ -12,6 +12,7 @@ import { useWeatherProviderStore } from '../stores/weatherProvider';
 import { isEmptyRichText } from '../utils/richText';
 import { fetchMergedWeather, weatherCodeMeta, type DailyWeather } from '../utils/weather';
 import RichTextEditor from '../components/RichTextEditor.vue';
+import FormField from '../components/FormField.vue';
 import RichTextDisplay from '../components/RichTextDisplay.vue';
 import { compressImage } from '../utils/imageCompression';
 import { spotCategoryMeta } from '../utils/spotCategory';
@@ -425,7 +426,9 @@ async function removeComment(id: number) {
         📅 Datum
         <input v-model="form.date" type="date" required />
       </label>
-      <input v-model="form.title" type="text" placeholder="Titel (optional)" />
+      <FormField icon="✏️" label="Titel">
+        <input v-model="form.title" type="text" placeholder="Titel (optional)" />
+      </FormField>
       <RichTextEditor v-model="form.content" placeholder="Was ist heute passiert?" />
       <label class="upload-label">
         📷 Bilder hinzufügen
@@ -558,7 +561,9 @@ async function removeComment(id: number) {
           📅 Datum
           <input v-model="editForm.date" type="date" required />
         </label>
-        <input v-model="editForm.title" type="text" placeholder="Titel (optional)" />
+        <FormField icon="✏️" label="Titel">
+          <input v-model="editForm.title" type="text" placeholder="Titel (optional)" />
+        </FormField>
         <RichTextEditor v-model="editForm.content" />
         <label class="upload-label">
           📷 Bilder hinzufügen

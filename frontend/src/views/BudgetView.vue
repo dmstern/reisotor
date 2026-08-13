@@ -20,6 +20,7 @@ import Modal from '../components/Modal.vue';
 import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
 import Combobox from '../components/Combobox.vue';
+import FormField from '../components/FormField.vue';
 import UndoDeleteRow from '../components/UndoDeleteRow.vue';
 import FileAttachments from '../components/FileAttachments.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
@@ -411,7 +412,9 @@ const categoryColors = computed(() => {
 
       <Modal :model-value="showNewBudgetForm" title="Budget anlegen" @update:model-value="(v) => !v && closeNewBudgetForm()">
         <form class="new-budget-form" @submit.prevent="addBudget">
-          <input v-model="newBudgetForm.name" type="text" placeholder="Name (z. B. Souvenirs)" required />
+          <FormField icon="✏️" label="Name">
+            <input v-model="newBudgetForm.name" type="text" placeholder="Name (z. B. Souvenirs)" required />
+          </FormField>
           <select v-model="newBudgetForm.kind">
             <option value="shared">Geteilt</option>
             <option value="personal">Persönlich</option>
@@ -470,9 +473,15 @@ const categoryColors = computed(() => {
 
       <Modal :model-value="showExpenseForm" title="Bezahlung eintragen" @update:model-value="(v) => !v && closeExpenseForm()">
         <form class="add-form" @submit.prevent="submitExpense">
-          <input v-model="expenseForm.title" type="text" placeholder="Titel" required />
-          <Combobox v-model="expenseForm.category" :options="expenseCategories" placeholder="Kategorie" />
-          <input v-model="expenseForm.amount" type="number" step="0.01" placeholder="Betrag" required />
+          <FormField icon="✏️" label="Titel">
+            <input v-model="expenseForm.title" type="text" placeholder="Titel" required />
+          </FormField>
+          <FormField icon="🏷️" label="Kategorie">
+            <Combobox v-model="expenseForm.category" :options="expenseCategories" placeholder="Kategorie" />
+          </FormField>
+          <FormField icon="💶" label="Betrag">
+            <input v-model="expenseForm.amount" type="number" step="0.01" placeholder="Betrag" required />
+          </FormField>
           <select v-model="expenseForm.paid_by_user_id" required>
             <option value="" disabled>Bezahlt von…</option>
             <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
@@ -481,8 +490,12 @@ const categoryColors = computed(() => {
             <option value="">Kein Budget</option>
             <option v-for="b in budgets" :key="b.id" :value="String(b.id)">{{ b.name }} ({{ budgetLabel(b) }})</option>
           </select>
-          <input v-model="expenseForm.date" type="date" />
-          <input v-model="expenseForm.note" type="text" placeholder="Notiz (optional)" />
+          <FormField icon="📅" label="Datum">
+            <input v-model="expenseForm.date" type="date" />
+          </FormField>
+          <FormField icon="📝" label="Notiz">
+            <input v-model="expenseForm.note" type="text" placeholder="Notiz (optional)" />
+          </FormField>
           <DraftStatusBar :status="newExpenseDraft.status.value" :restored="newExpenseDraft.restored.value" />
           <button type="submit">Eintragen</button>
         </form>
@@ -548,9 +561,15 @@ const categoryColors = computed(() => {
             <option value="" disabled>An…</option>
             <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
           </select>
-          <input v-model="transferForm.amount" type="number" step="0.01" placeholder="Betrag" required />
-          <input v-model="transferForm.date" type="date" />
-          <input v-model="transferForm.note" type="text" placeholder="Notiz (optional)" />
+          <FormField icon="💶" label="Betrag">
+            <input v-model="transferForm.amount" type="number" step="0.01" placeholder="Betrag" required />
+          </FormField>
+          <FormField icon="📅" label="Datum">
+            <input v-model="transferForm.date" type="date" />
+          </FormField>
+          <FormField icon="📝" label="Notiz">
+            <input v-model="transferForm.note" type="text" placeholder="Notiz (optional)" />
+          </FormField>
           <button type="submit">Eintragen</button>
         </form>
       </Modal>
@@ -595,9 +614,15 @@ const categoryColors = computed(() => {
       @update:model-value="(v) => !v && closeEditExpenseForm()"
     >
       <form class="add-form" @submit.prevent="submitEditExpense">
-        <input v-model="editExpenseForm.title" type="text" placeholder="Titel" required />
-        <Combobox v-model="editExpenseForm.category" :options="expenseCategories" placeholder="Kategorie" />
-        <input v-model="editExpenseForm.amount" type="number" step="0.01" placeholder="Betrag" required />
+        <FormField icon="✏️" label="Titel">
+          <input v-model="editExpenseForm.title" type="text" placeholder="Titel" required />
+        </FormField>
+        <FormField icon="🏷️" label="Kategorie">
+          <Combobox v-model="editExpenseForm.category" :options="expenseCategories" placeholder="Kategorie" />
+        </FormField>
+        <FormField icon="💶" label="Betrag">
+          <input v-model="editExpenseForm.amount" type="number" step="0.01" placeholder="Betrag" required />
+        </FormField>
         <select v-model="editExpenseForm.paid_by_user_id" required>
           <option value="" disabled>Bezahlt von…</option>
           <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
@@ -606,8 +631,12 @@ const categoryColors = computed(() => {
           <option value="">Kein Budget</option>
           <option v-for="b in budgets" :key="b.id" :value="String(b.id)">{{ b.name }} ({{ budgetLabel(b) }})</option>
         </select>
-        <input v-model="editExpenseForm.date" type="date" />
-        <input v-model="editExpenseForm.note" type="text" placeholder="Notiz (optional)" />
+        <FormField icon="📅" label="Datum">
+          <input v-model="editExpenseForm.date" type="date" />
+        </FormField>
+        <FormField icon="📝" label="Notiz">
+          <input v-model="editExpenseForm.note" type="text" placeholder="Notiz (optional)" />
+        </FormField>
         <DraftStatusBar :status="editExpenseDraft.status.value" :restored="editExpenseDraft.restored.value" />
         <button type="submit">Speichern</button>
       </form>
@@ -709,7 +738,7 @@ const categoryColors = computed(() => {
   gap: var(--space-2);
 }
 
-.new-budget-form input,
+.new-budget-form .form-field,
 .new-budget-form select {
   flex: 1;
   min-width: 140px;
@@ -803,7 +832,7 @@ const categoryColors = computed(() => {
   margin-bottom: var(--space-4);
 }
 
-.add-form input,
+.add-form .form-field,
 .add-form select {
   flex: 1;
   min-width: 130px;

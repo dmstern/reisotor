@@ -39,39 +39,51 @@ function onBlur() {
 
 <template>
   <form class="quick-add-row" :class="{ expanded }" @submit.prevent="submit">
-    <span class="plus" aria-hidden="true">+</span>
-    <input
-      ref="inputRef"
-      v-model="label"
-      type="text"
-      class="label-input"
-      :placeholder="props.placeholder"
-      :disabled="props.disabled"
-      @focus="focused = true"
-      @blur="onBlur"
-    />
+    <div class="main-row">
+      <span class="plus" aria-hidden="true">+</span>
+      <input
+        ref="inputRef"
+        v-model="label"
+        type="text"
+        class="label-input"
+        :placeholder="props.placeholder"
+        :disabled="props.disabled"
+        @focus="focused = true"
+        @blur="onBlur"
+      />
+      <button
+        v-if="expanded"
+        type="submit"
+        class="submit-btn"
+        :disabled="!label.trim()"
+        aria-label="Hinzufügen"
+        title="Hinzufügen"
+      >
+        +
+      </button>
+    </div>
+    <!-- Eigene, volle Zeile statt Teil von .main-row: die Zusatzfelder (Kategorie/Shop/Zeitraum/…)
+         sollen bei wenig Platz (Mobil, offene Tastatur) sauber untereinander umbrechen statt sich
+         mit Eingabefeld/Absenden-Button eine einzige Flex-Zeile zu teilen und dabei unvorhersehbar
+         mittendrin umzubrechen. -->
     <div class="extra-fields" v-if="expanded">
       <slot name="extra" />
     </div>
-    <button
-      v-if="expanded"
-      type="submit"
-      class="submit-btn"
-      :disabled="!label.trim()"
-      aria-label="Hinzufügen"
-      title="Hinzufügen"
-    >
-      +
-    </button>
   </form>
 </template>
 
 <style scoped>
 .quick-add-row {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: var(--space-2);
   padding: 4px 2px;
+}
+
+.main-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
 }
 
 .plus {
@@ -119,8 +131,12 @@ function onBlur() {
 .extra-fields {
   display: flex;
   align-items: center;
-  gap: 4px;
+  column-gap: var(--space-2);
+  row-gap: 6px;
   flex-wrap: wrap;
+  /* Leichter Einzug statt bündig mit dem Rand, damit die Zusatzfelder optisch weiter unter dem
+     Eingabefeld (statt unter dem "+"-Icon davor) beginnen. */
+  margin-left: 22px;
 }
 
 .extra-fields :deep(select) {
