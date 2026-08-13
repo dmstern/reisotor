@@ -127,6 +127,9 @@ test.describe('Mobile: ExcursionCard-Löschen-Button überdeckt nicht den Status
     // Lauf dieser einen Spec.
     const expandBtn = page.getByRole('button', { name: 'Spots-Liste weiter hochschieben' });
     for (let i = 0; i < 2 && (await expandBtn.isEnabled()); i++) await expandBtn.click();
+    // Gruppieren/Sortieren/Filtern stecken auf Mobil standardmäßig hinter "⚙️ Anzeige & Filter"
+    // (siehe ExcursionsView.vue) - erst aufklappen, um "🎒 Touren" überhaupt zu erreichen.
+    await page.locator('.filter-toggle-row').click();
     await page.getByRole('button', { name: '🎒 Touren' }).click();
     const card = page.locator('.excursion-card', { hasText: excursion.title });
     await expect(card).toBeVisible();
@@ -216,6 +219,47 @@ test.describe('Mobile: unten positionierte NavBar schwebt mit Rand statt randlos
     const pageEl = page.locator('.page').first();
     const pageBox = await boxOf(pageEl);
     expect(pageBox.bottom, 'Seiteninhalt reicht nicht bis zur schwebenden NavBar hoch').toBeGreaterThanOrEqual(box.top - 1);
+  });
+});
+
+test.describe('Mobile: Gruppieren/Sortieren/Filtern auf der Spots-Karte sind standardmäßig eingeklappt', () => {
+  test.use({ viewport: VIEWPORTS.mobile });
+
+  // Regressionsnetz für die neue Einklapp-Funktion (Nutzer-Feedback: das Werkzeug-Trio verbrauchte
+  // auf Mobil spürbar Platz) - ExcursionsView.vue's filterBarExpanded/.filter-toggle-row. Bewusst
+  // ein @media(max-width:799px)-Schwellenwert (nicht der schmalere @container spots-col
+  // max-width:480px, der auch für das Karten-Grid gilt) - sonst würde dieselbe Einklapp-Logik
+  // fälschlich auch auf Desktop greifen, sobald .spots-col dort schmal gezogen wird (echte
+  // Bildschirmhöhe ist dort trotzdem meist reichlich vorhanden, das eigentliche Platzproblem
+  // besteht nur auf kleinen Geräten).
+  test('Werkzeug-Trio ist eingeklappt, lässt sich aufklappen und zeigt dabei den animierten Segmented-Toggle', async ({ page }) => {
+    await page.goto('/excursions');
+    const toggle = page.locator('.filter-toggle-row');
+    await expect(toggle).toBeVisible();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    await expect(page.getByRole('button', { name: '🎒 Touren' })).toBeHidden();
+
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    const groupToggle = page.getByRole('button', { name: '🎒 Touren' });
+    await expect(groupToggle).toBeVisible();
+    await expect(groupToggle).toHaveAttribute('aria-pressed', 'false');
+    await groupToggle.click();
+    await expect(groupToggle).toHaveAttribute('aria-pressed', 'true');
+
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    await expect(groupToggle).toBeHidden();
+  });
+});
+
+test.describe('Desktop: Gruppieren/Sortieren/Filtern bleiben immer offen, kein Einklapp-Umschalter sichtbar', () => {
+  test.use({ viewport: VIEWPORTS.desktop });
+
+  test('kein "⚙️ Anzeige & Filter"-Umschalter, Werkzeug-Trio direkt sichtbar', async ({ page }) => {
+    await page.goto('/excursions');
+    await expect(page.locator('.filter-toggle-row')).toBeHidden();
+    await expect(page.getByRole('button', { name: '🎒 Touren' })).toBeVisible();
   });
 });
 

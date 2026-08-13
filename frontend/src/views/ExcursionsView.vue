@@ -14,6 +14,7 @@ import { usePersistedRef } from '../composables/usePersistedRef';
 import { hashHighlightId } from '../utils/hashHighlight';
 import SpotCard from '../components/SpotCard.vue';
 import ExcursionCard from '../components/ExcursionCard.vue';
+import SegmentedToggle from '../components/SegmentedToggle.vue';
 import SpotOrderPicker from '../components/SpotOrderPicker.vue';
 import UndoDeleteRow from '../components/UndoDeleteRow.vue';
 import DerivedLocationCard from '../components/DerivedLocationCard.vue';
@@ -459,7 +460,6 @@ function groupIcon(category: string): string {
   return spotCategoryMeta(category).icon;
 }
 
-const sortMenuOpen = ref(false);
 // Sortierung/Gruppierung/Filter bleiben über localStorage auch nach einem Reload/erneuten Besuch
 // erhalten (siehe usePersistedRef.ts) - dieselbe "Orte"-Liste, die CLAUDE.md's Backlog meint (es
 // gibt keine eigene SpotsView, diese gruppierte/filterbare Liste hier ist die gemeinte Stelle).
@@ -477,18 +477,36 @@ function tourTitlesForItem(item: SpotsGroupItem): string[] {
   return excursionsStore.excursions.filter((e) => e.spot_ids.includes(item.spot.id)).map((e) => e.title);
 }
 
+const descriptionOpen = ref(false);
 const categoryMenuOpen = ref(false);
 const categoryFilter = usePersistedRef<string[]>('reisotor-excursions-category-filter', []);
 function removeCategoryFilter(cat: string) {
   categoryFilter.value = categoryFilter.value.filter((c) => c !== cat);
 }
 
-const STATUS_FILTER_LABEL: Record<'planned' | 'unplanned', string> = { planned: '📅 Geplant', unplanned: '📝 Ungeplant' };
+// 'done' ist unabhängig von 'planned'/'unplanned' (ein Spot kann beides gleichzeitig sein, siehe
+// SpotCard.vue's zwei getrennte Status-Badges) - deshalb eine eigene, per ODER kombinierbare
+// Prüfung in filteredSpotItems unten statt eines dritten Werts derselben Status-Dimension.
+const STATUS_FILTER_LABEL: Record<'planned' | 'unplanned' | 'done', string> = {
+  planned: '📅 Geplant',
+  unplanned: '📝 Ungeplant',
+  done: '✅ Gemacht',
+};
 const statusMenuOpen = ref(false);
-const statusFilter = usePersistedRef<('planned' | 'unplanned')[]>('reisotor-excursions-status-filter', []);
-function removeStatusFilter(status: 'planned' | 'unplanned') {
+const statusFilter = usePersistedRef<('planned' | 'unplanned' | 'done')[]>('reisotor-excursions-status-filter', []);
+function removeStatusFilter(status: 'planned' | 'unplanned' | 'done') {
   statusFilter.value = statusFilter.value.filter((s) => s !== status);
 }
+function itemDone(item: SpotsGroupItem): boolean {
+  return item.kind === 'spot' && !!item.spot.done;
+}
+
+// Nicht persistiert (anders als sortMode/groupMode/*Filter oben) - ein bewusst flüchtiger UI-
+// Zustand wie DiaryView.vue's showSpotPicker/showExcursionPicker, kein dauerhaftes Nutzer-
+// Vorhaben. Auf breiteren Layouts per CSS ohnehin immer sichtbar (siehe .filter-toggle-row/
+// .filter-bar-rows unten) - der Wert wirkt sich dort erst gar nicht aus.
+const filterBarExpanded = ref(false);
+const activeFilterCount = computed(() => categoryFilter.value.length + statusFilter.value.length);
 
 const allSpotItems = computed<SpotsGroupItem[]>(() => [
   ...spotsStore.spots.map((spot): SpotsGroupItem => ({ kind: 'spot', spot })),
@@ -499,7 +517,15 @@ const filteredSpotItems = computed(() =>
   allSpotItems.value.filter((item) => {
     if (categoryFilter.value.length && !categoryFilter.value.includes(itemCategory(item))) return false;
     const status = itemStatus(item);
-    if (statusFilter.value.length && status !== null && !statusFilter.value.includes(status)) return false;
+    // status === null (Unterkunft-/Reise-Orte, kein Kalender-Geplant-Konzept) bleibt unverändert
+    // vom Status-Filter unberührt - nur echte Spots werden gegen die gewählten Filter geprüft.
+    // Mehrere gewählte Filter werden per ODER kombiniert (planned/unplanned/done können alle
+    // gleichzeitig zutreffen), damit z. B. "Geplant" + "Gemacht" beide Teilmengen gleichzeitig zeigt.
+    if (statusFilter.value.length && status !== null) {
+      const matchesStatus = statusFilter.value.includes(status);
+      const matchesDone = statusFilter.value.includes('done') && itemDone(item);
+      if (!matchesStatus && !matchesDone) return false;
+    }
     return true;
   }),
 );
@@ -1119,19 +1145,42 @@ async function removeSpot(id: number) {
            der Karte-Spalte (Teleport dort deaktiviert), dieser Anker bleibt also leer. -->
       <div id="map-focus-dock" class="map-focus-dock"></div>
       <div class="header">
-        <h2>Spots</h2>
+        <h2>
+          Spots
+          <!-- Der frühere, immer sichtbare Erklärtext nahm spürbar Platz weg, v. a. auf mobile
+               (Nutzer-Feedback) - jetzt hinter einem Info-Button versteckt, gleiches
+               Popover-Muster (Backdrop + .picker-menu) wie die Kategorie-/Status-Filter unten statt
+               eines neuen Tooltip-Mechanismus. -->
+          <span class="dropdown info-dropdown">
+            <button
+              type="button"
+              class="info-btn"
+              title="Was sind Spots?"
+              aria-label="Was sind Spots?"
+              @click="descriptionOpen = !descriptionOpen"
+            >
+              ℹ️
+            </button>
+            <template v-if="descriptionOpen">
+              <div class="picker-backdrop" @click="descriptionOpen = false"></div>
+              <div class="picker-menu description-popover">
+                <p>
+                  Orte (Restaurant, Sehenswürdigkeit, Strand, …), die du als Stationen bei Touren zuordnen
+                  kannst – auch unabhängig von einer Tour. Eignet sich auch einfach als Ideensammlung –
+                  nicht jeder Spot muss geplant oder besucht werden. Tipp: Ziehe eine Spot-Karte direkt auf
+                  eine Tour oder auf einen Kalendertag, um sie dort als Station bzw. spontan einzuplanen.
+                  Bei Gruppierung nach "🎒 Touren" unten zeigt ein Klick auf die Tour-Karte deren Route auf
+                  der Karte.
+                </p>
+              </div>
+            </template>
+          </span>
+        </h2>
         <div class="header-actions">
           <button @click="showSpotForm = true">+ Neuer Spot</button>
           <button class="secondary" @click="showExcursionForm = true">+ Neue Tour</button>
         </div>
       </div>
-      <p class="hint">
-        Orte (Restaurant, Sehenswürdigkeit, Strand, …), die du als Stationen bei Touren zuordnen kannst –
-        auch unabhängig von einer Tour. Eignet sich auch einfach als Ideensammlung – nicht jeder Spot
-        muss geplant oder besucht werden. Tipp: Ziehe eine Spot-Karte direkt auf eine Tour oder auf
-        einen Kalendertag, um sie dort als Station bzw. spontan einzuplanen. Bei Gruppierung nach
-        "🎒 Touren" unten zeigt ein Klick auf die Tour-Karte deren Route auf der Karte.
-      </p>
 
       <Modal :model-value="showExcursionForm" title="Neue Tour" full-height @update:model-value="(v) => !v && closeExcursionForm()">
         <form class="edit-form" @submit.prevent="addExcursion">
@@ -1195,110 +1244,108 @@ async function removeSpot(id: number) {
            sollen deshalb auch räumlich als zusammengehöriges Werkzeug-Trio wahrgenommen werden.
            Sortierung und Filter in getrennten Zeilen (statt einer gemeinsamen, umbrechenden Reihe):
            beides sind konzeptionell unterschiedliche Werkzeuge (eine Reihenfolge vs. eine
-           Ein-/Ausblend-Auswahl), ein eigenes Label+Icon je Zeile macht das auf einen Blick klar. -->
+           Ein-/Ausblend-Auswahl), ein eigenes Label+Icon je Zeile macht das auf einen Blick klar.
+           Auf schmalen Breiten (@container spots-col unten) kostet dieses Werkzeug-Trio spürbar
+           Platz (Nutzer-Feedback) - dort steckt es hinter .filter-toggle-row (nur dort per CSS
+           sichtbar), auf breiteren Layouts bleibt es wie bisher immer offen. Aktive Filter-Chips
+           bleiben bewusst außerhalb des einklappbaren Bereichs, bleiben also auch eingeklappt
+           sichtbar/entfernbar. -->
       <div class="filter-bar" v-if="filterCategoryOptions.length">
-        <div class="tool-row">
-          <span class="tool-label">🗂️ Gruppieren</span>
-          <button
-            type="button"
-            class="secondary gran-btn"
-            :class="{ active: groupMode === 'category' }"
-            @click="groupMode = 'category'"
-          >
-            🏷️ Spots
-          </button>
-          <button
-            type="button"
-            class="secondary gran-btn"
-            :class="{ active: groupMode === 'tours' }"
-            @click="groupMode = 'tours'"
-          >
-            🎒 Touren
-          </button>
+        <button
+          type="button"
+          class="filter-toggle-row"
+          :aria-expanded="filterBarExpanded"
+          @click="filterBarExpanded = !filterBarExpanded"
+        >
+          <span>⚙️ Anzeige &amp; Filter<span v-if="activeFilterCount" class="picker-count"> ({{ activeFilterCount }} aktiv)</span></span>
+          <span class="caret">{{ filterBarExpanded ? '▾' : '▸' }}</span>
+        </button>
+
+        <div class="filter-bar-rows" :class="{ expanded: filterBarExpanded }">
+          <div class="tool-row">
+            <span class="tool-label">🗂️ Gruppieren</span>
+            <SegmentedToggle
+              v-model="groupMode"
+              :options="[
+                { value: 'category', label: '🏷️ Spots' },
+                { value: 'tours', label: '🎒 Touren' },
+              ]"
+            />
+          </div>
+
+          <div class="tool-row">
+            <span class="tool-label">🔀 Sortieren</span>
+            <SegmentedToggle
+              v-model="sortMode"
+              :options="[
+                { value: 'alpha', label: '🔤 Alphabetisch' },
+                { value: 'likes', label: '❤️ Nach Likes' },
+              ]"
+            />
+          </div>
+
+          <div class="tool-row">
+            <span class="tool-label">🔎 Filtern</span>
+            <div class="dropdown">
+              <button
+                type="button"
+                class="secondary category-btn"
+                title="Nach Kategorie filtern"
+                aria-label="Nach Kategorie filtern"
+                @click="categoryMenuOpen = !categoryMenuOpen"
+              >
+                🏷️ Kategorie
+              </button>
+              <template v-if="categoryMenuOpen">
+                <div class="picker-backdrop" @click="categoryMenuOpen = false"></div>
+                <div class="picker-menu category-menu">
+                  <label v-for="cat in filterCategoryOptions" :key="cat" class="category-option">
+                    <input type="checkbox" :value="cat" v-model="categoryFilter" />
+                    {{ groupIcon(cat) }} {{ cat }}
+                  </label>
+                </div>
+              </template>
+            </div>
+            <div class="dropdown">
+              <button
+                type="button"
+                class="secondary category-btn"
+                title="Nach Status (geplant/ungeplant/gemacht) filtern"
+                aria-label="Nach Status filtern"
+                @click="statusMenuOpen = !statusMenuOpen"
+              >
+                🗓️ Status
+              </button>
+              <template v-if="statusMenuOpen">
+                <div class="picker-backdrop" @click="statusMenuOpen = false"></div>
+                <div class="picker-menu category-menu">
+                  <label class="category-option">
+                    <input type="checkbox" value="planned" v-model="statusFilter" />
+                    📅 Geplant
+                  </label>
+                  <label class="category-option">
+                    <input type="checkbox" value="unplanned" v-model="statusFilter" />
+                    📝 Ungeplant
+                  </label>
+                  <label class="category-option">
+                    <input type="checkbox" value="done" v-model="statusFilter" />
+                    ✅ Gemacht
+                  </label>
+                </div>
+              </template>
+            </div>
+          </div>
         </div>
 
-        <div class="tool-row">
-          <span class="tool-label">🔀 Sortieren</span>
-          <div class="dropdown">
-            <button
-              type="button"
-              class="secondary sort-btn"
-              title="Sortierung ändern"
-              aria-label="Sortierung ändern"
-              @click="sortMenuOpen = !sortMenuOpen"
-            >
-              {{ sortMode === 'likes' ? '❤️ Nach Likes' : '🔤 Alphabetisch' }}
-            </button>
-            <template v-if="sortMenuOpen">
-              <div class="picker-backdrop" @click="sortMenuOpen = false"></div>
-              <div class="picker-menu">
-                <button type="button" :class="{ active: sortMode === 'alpha' }" @click="sortMode = 'alpha'; sortMenuOpen = false">
-                  🔤 Alphabetisch
-                </button>
-                <button type="button" :class="{ active: sortMode === 'likes' }" @click="sortMode = 'likes'; sortMenuOpen = false">
-                  ❤️ Nach Likes
-                </button>
-              </div>
-            </template>
-          </div>
-        </div>
-
-        <div class="tool-row">
-          <span class="tool-label">🔎 Filtern</span>
-          <div class="dropdown">
-            <button
-              type="button"
-              class="secondary category-btn"
-              title="Nach Kategorie filtern"
-              aria-label="Nach Kategorie filtern"
-              @click="categoryMenuOpen = !categoryMenuOpen"
-            >
-              🏷️ Kategorie
-            </button>
-            <template v-if="categoryMenuOpen">
-              <div class="picker-backdrop" @click="categoryMenuOpen = false"></div>
-              <div class="picker-menu category-menu">
-                <label v-for="cat in filterCategoryOptions" :key="cat" class="category-option">
-                  <input type="checkbox" :value="cat" v-model="categoryFilter" />
-                  {{ groupIcon(cat) }} {{ cat }}
-                </label>
-              </div>
-            </template>
-          </div>
-          <div class="dropdown">
-            <button
-              type="button"
-              class="secondary category-btn"
-              title="Nach Status (geplant/ungeplant) filtern"
-              aria-label="Nach Status filtern"
-              @click="statusMenuOpen = !statusMenuOpen"
-            >
-              🗓️ Status
-            </button>
-            <template v-if="statusMenuOpen">
-              <div class="picker-backdrop" @click="statusMenuOpen = false"></div>
-              <div class="picker-menu category-menu">
-                <label class="category-option">
-                  <input type="checkbox" value="planned" v-model="statusFilter" />
-                  📅 Geplant
-                </label>
-                <label class="category-option">
-                  <input type="checkbox" value="unplanned" v-model="statusFilter" />
-                  📝 Ungeplant
-                </label>
-              </div>
-            </template>
-          </div>
-          <div class="filter-chips">
-            <span v-for="cat in categoryFilter" :key="cat" class="filter-chip">
-              {{ groupIcon(cat) }} {{ cat }}
-              <button type="button" @click="removeCategoryFilter(cat)" aria-label="Filter entfernen">✕</button>
-            </span>
-            <span v-for="status in statusFilter" :key="status" class="filter-chip">
-              {{ STATUS_FILTER_LABEL[status] }}
-              <button type="button" @click="removeStatusFilter(status)" aria-label="Filter entfernen">✕</button>
-            </span>
-          </div>
+        <div class="filter-chips" v-if="categoryFilter.length || statusFilter.length">
+          <span v-for="cat in categoryFilter" :key="cat" class="filter-chip">
+            {{ groupIcon(cat) }} {{ cat }}
+            <button type="button" @click="removeCategoryFilter(cat)" aria-label="Filter entfernen">✕</button>
+          </span>
+          <span v-for="status in statusFilter" :key="status" class="filter-chip">
+            {{ STATUS_FILTER_LABEL[status] }}
+            <button type="button" @click="removeStatusFilter(status)" aria-label="Filter entfernen">✕</button>
+          </span>
         </div>
       </div>
 
@@ -1977,6 +2024,47 @@ async function removeSpot(id: number) {
   margin-bottom: var(--space-2);
 }
 
+.header h2 {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+}
+
+/* Ersetzt den früheren, immer sichtbaren Erklärtext (siehe .description-popover unten) - reines
+   Info-Icon statt eines vollen Buttons, damit es sich der Überschrift unterordnet statt mit ihr zu
+   konkurrieren. */
+.info-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 0.95rem;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.info-btn:hover {
+  opacity: 1;
+}
+
+.description-popover {
+  min-width: 260px;
+  max-width: min(340px, 80vw);
+}
+
+.description-popover p {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: var(--color-text-muted);
+}
+
 .header-actions {
   display: flex;
   flex-wrap: wrap;
@@ -2071,6 +2159,43 @@ async function removeSpot(id: number) {
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
 }
 
+/* Basis-Regeln VOR dem @container-Query weiter unten definiert (nicht danach) - eine Regel gleicher
+   Spezifität, die textuell SPÄTER im Stylesheet steht, gewinnt bei einem CSS-Tie unabhängig davon,
+   ob sie in einem @container-Block steckt oder nicht. Stünde diese Basis-Regel (unconditional)
+   NACH dem @container-Override, würde sie ihn immer überschreiben, auch wenn die Query zutrifft -
+   exakt das Muster, dem auch .cards oben folgt. */
+.filter-toggle-row {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 4px;
+  margin: 0;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  text-align: left;
+}
+
+.picker-count {
+  font-weight: 400;
+}
+
+.caret {
+  flex-shrink: 0;
+}
+
+.filter-bar-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
 /* Stationen einer Tour: eingerückte, vertikale Liste statt des normalen Karten-Grids (siehe
    Template), eine durchgehende gestrichelte Linie am linken Rand verbindet die Karten sichtbar in
    der Reihenfolge der Tour (spotGroups sortiert sie entsprechend). Gleiche Akzentfarbe/Dashing wie
@@ -2100,21 +2225,37 @@ async function removeSpot(id: number) {
   }
 }
 
+/* Bewusst @media statt @container spots-col hier (anders als beim .cards-Raster oben): Gruppieren/
+   Sortieren/Filtern sollen nur auf echten schmalen GERÄTEN einklappbar sein (Nutzer-Feedback: "auf
+   mobile"), nicht schon, wenn jemand auf Desktop die .spots-col-Spalte per Anfasser schmal zieht -
+   dort ist trotz schmaler Spalte meist reichlich Bildschirmhöhe vorhanden, das eigentliche Problem
+   (wenig vertikaler Platz) tritt nur auf kleinen Geräten auf. Gleicher 800px-Schwellenwert wie
+   useIsDesktop()/NavBar.vue, damit "mobil" hier dasselbe bedeutet wie überall sonst in der App. */
+@media (max-width: 799px) {
+  /* Gruppieren/Sortieren/Filtern kosten auf schmalen Breiten spürbar Platz (Nutzer-Feedback) -
+     dort per Klick ein-/ausklappbar (Standard: eingeklappt), auf breiteren Layouts (Default-CSS
+     oben, hier nicht überschrieben) bleibt es wie bisher immer offen, kein Toggle sichtbar. */
+  .filter-toggle-row {
+    display: flex;
+  }
+
+  .filter-bar-rows {
+    display: none;
+  }
+
+  .filter-bar-rows.expanded {
+    display: flex;
+  }
+}
+
 .dropdown {
   position: relative;
 }
 
-.sort-btn.active,
-.category-btn.active,
-.gran-btn.active {
+.category-btn.active {
   background: var(--color-primary-tint);
   border-color: var(--color-primary);
   color: var(--color-primary-dark);
-}
-
-.gran-btn {
-  padding: 4px 10px;
-  font-size: 0.85rem;
 }
 
 .picker-backdrop {
@@ -2190,11 +2331,19 @@ async function removeSpot(id: number) {
   cursor: pointer;
 }
 
+/* Eigene, dezente "Werkzeugleisten"-Box (heller/kleinerer Radius als .card, damit sie sich klar den
+   eigentlichen Inhalts-Cards darunter unterordnet) statt frei im Seitenfluss stehender Buttons -
+   fasst Gruppieren/Sortieren/Filtern als ein zusammengehöriges, klar abgegrenztes Werkzeug
+   optisch zusammen (Nutzer-Feedback: wirkte vorher "gebastelt"). */
 .filter-bar {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
   margin: 0 0 var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-hover);
+  border-radius: var(--radius-md-squircle);
+  corner-shape: squircle;
 }
 
 /* Je eine Zeile für Sortieren und Filtern, statt einer gemeinsamen umbrechenden Reihe – siehe
