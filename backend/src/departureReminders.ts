@@ -42,11 +42,15 @@ export async function checkDepartureReminders() {
     if (alreadySent) continue;
 
     const label = days === 1 ? '1 Tag' : `${days} Tage`;
-    await sendPushToTripMembers(trip.id, {
-      title: `✈️ ${trip.name}`,
-      body: `Nur noch ${label} bis zur Abreise!`,
-      tripId: trip.id,
-    });
+    await sendPushToTripMembers(
+      trip.id,
+      {
+        title: `✈️ ${trip.name}`,
+        body: `Nur noch ${label} bis zur Abreise!`,
+        tripId: trip.id,
+      },
+      'departure',
+    );
 
     db.prepare('INSERT INTO trip_departure_reminders_sent (trip_id, threshold_days, sent_at) VALUES (?, ?, ?)').run(
       trip.id,

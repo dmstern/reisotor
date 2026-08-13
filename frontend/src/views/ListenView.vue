@@ -5,6 +5,7 @@ import PackingListView from './PackingListView.vue';
 import ShoppingListView from './ShoppingListView.vue';
 import TodoView from './TodoView.vue';
 import { SECTION_ICONS } from '../utils/sectionIcons';
+import { useLiveSyncStore, type LiveDomain } from '../stores/liveSync';
 
 // Zusammengeführte Ansicht für Packliste/Einkauf/ToDo (bisher drei eigene NavBar-Einträge/Routen) -
 // spart NavBar-Platz, ohne die drei Views selbst anzufassen: sie werden unverändert je nach aktivem
@@ -13,11 +14,15 @@ import { SECTION_ICONS } from '../utils/sectionIcons';
 // statt im Pfad (router.replace statt push, damit Tab-Klicks nicht einzeln in die Browser-History
 // wandern) - /packing, /shopping, /todo redirecten hierher (siehe router/index.ts).
 type Tab = 'packing' | 'shopping' | 'todo';
-const TABS: { key: Tab; label: string; icon: string }[] = [
-  { key: 'packing', label: 'Packliste', icon: SECTION_ICONS.packing },
-  { key: 'shopping', label: 'Einkauf', icon: SECTION_ICONS.shopping },
-  { key: 'todo', label: 'ToDo', icon: SECTION_ICONS.todo },
+// domain: LiveDomain-Key des Tabs - 'todo' (Tab) vs. 'todos' (Domäne) heißen bewusst
+// unterschiedlich, siehe stores/liveSync.ts's LIVE_DOMAINS.
+const TABS: { key: Tab; label: string; icon: string; domain: LiveDomain }[] = [
+  { key: 'packing', label: 'Packliste', icon: SECTION_ICONS.packing, domain: 'packing' },
+  { key: 'shopping', label: 'Einkauf', icon: SECTION_ICONS.shopping, domain: 'shopping' },
+  { key: 'todo', label: 'ToDo', icon: SECTION_ICONS.todo, domain: 'todos' },
 ];
+
+const liveSync = useLiveSyncStore();
 
 const route = useRoute();
 const router = useRouter();
@@ -45,7 +50,10 @@ function selectTab(tab: Tab) {
         :aria-selected="activeTab === tab.key"
         @click="selectTab(tab.key)"
       >
-        <span class="icon">{{ tab.icon }}</span>
+        <span class="icon-wrap">
+          <span class="icon">{{ tab.icon }}</span>
+          <span v-if="liveSync.hasUnseen(tab.domain)" class="unseen-dot" aria-label="Neue Änderungen" />
+        </span>
         {{ tab.label }}
       </button>
     </div>
@@ -88,5 +96,23 @@ function selectTab(tab: Tab) {
 
 .tab .icon {
   font-size: 1.1rem;
+}
+
+.icon-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+/* Gleiches Aussehen wie NavBar.vue's .unseen-dot (eigener scoped Style, da Vue-Styles nicht
+   komponentenübergreifend gelten). */
+.unseen-dot {
+  position: absolute;
+  top: -2px;
+  right: -4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-danger);
+  border: 1.5px solid var(--color-surface);
 }
 </style>

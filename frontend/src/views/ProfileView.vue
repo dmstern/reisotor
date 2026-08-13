@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { api, ApiError } from '../api/client';
 import type { User } from '../api/types';
@@ -15,10 +15,18 @@ import { useHomeCurrencyStore, HOME_CURRENCY_OPTIONS } from '../stores/homeCurre
 import { useCalendarSettingsStore, WEEK_START_OPTIONS, DATE_FORMAT_OPTIONS } from '../stores/calendarSettings';
 import { useUiSettingsStore } from '../stores/uiSettings';
 import { getExistingSubscription, isPushSupported, subscribeToPush, unsubscribeFromPush } from '../utils/push';
+import { useNotificationPreferencesStore } from '../stores/notificationPreferences';
+import {
+  NOTIFICATION_DOMAIN_META,
+  NOTIFICATION_DOMAINS,
+  NOTIFICATION_LEVEL_OPTIONS,
+  type NotificationLevel,
+} from '../utils/notificationPreferences';
 import { toLocalDateString } from '../utils/dateFormat';
 import PasswordInput from '../components/PasswordInput.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import ThemeModeSelect from '../components/ThemeModeSelect.vue';
+import SegmentedToggle from '../components/SegmentedToggle.vue';
 
 const auth = useAuthStore();
 const router = useRouter();
@@ -114,23 +122,41 @@ const pushSupported = isPushSupported();
 const pushEnabled = ref<boolean | null>(null);
 const pushLoading = ref(false);
 const pushError = ref('');
+const showPushDetails = ref(false);
+const notificationPrefs = useNotificationPreferencesStore();
 
-async function togglePush() {
+// Segmented-Control-Wert: 'off' bei fehlendem Abo, sonst die Stufe, die exakt zu den aktuellen
+// Einzel-Präferenzen passt - passt keine der drei Presets (individuell angepasst), matched nichts
+// in PUSH_LEVEL_TOGGLE_OPTIONS und die Toggle zeigt bewusst keinen aktiven Zustand.
+const pushLevelValue = computed(() => (pushEnabled.value ? (notificationPrefs.currentLevel ?? 'custom') : 'off'));
+const PUSH_LEVEL_TOGGLE_OPTIONS = [{ value: 'off', label: 'Aus' }, ...NOTIFICATION_LEVEL_OPTIONS];
+
+/** Bei "Aus" wird komplett abbestellt; bei jeder anderen Stufe wird (falls noch nicht geschehen)
+ *  zuerst abonniert und danach die zugehörige Preset-Kombination aus Einzel-Präferenzen gesetzt -
+ *  ein frisches Abo landet so direkt bei "Ausgewogen" statt ungefiltert bei "Alles". */
+async function selectPushLevel(level: string) {
   pushError.value = '';
   pushLoading.value = true;
   try {
-    if (pushEnabled.value) {
+    if (level === 'off') {
       await unsubscribeFromPush();
       pushEnabled.value = false;
     } else {
-      await subscribeToPush();
-      pushEnabled.value = true;
+      if (!pushEnabled.value) {
+        await subscribeToPush();
+        pushEnabled.value = true;
+      }
+      await notificationPrefs.applyLevel(level as NotificationLevel);
     }
   } catch (err) {
     pushError.value = err instanceof Error ? err.message : 'Push-Benachrichtigungen konnten nicht geändert werden';
   } finally {
     pushLoading.value = false;
   }
+}
+
+async function setDomainPreference(domain: (typeof NOTIFICATION_DOMAINS)[number], enabled: boolean) {
+  await notificationPrefs.update({ [domain]: enabled });
 }
 
 const exporting = ref(false);
@@ -147,6 +173,7 @@ onMounted(async () => {
   backendBuildInfo.value = await api.get<BuildInfo>('/build-info');
   if (pushSupported) {
     pushEnabled.value = !!(await getExistingSubscription());
+    if (pushEnabled.value) await notificationPrefs.load();
   }
 });
 
@@ -561,12 +588,48 @@ async function onImportFileSelected(event: Event) {
       <template v-else>
         <p class="hint">
           Benachrichtigt dich, wenn andere Mitglieder eines Urlaubs etwas ändern – auch wenn Reisotor
-          gerade nicht offen ist.
+          gerade nicht offen ist. Über die Stufe lässt sich einstellen, wie viel davon ankommt.
         </p>
-        <button class="secondary" :disabled="pushLoading || pushEnabled === null" @click="togglePush">
-          {{ pushLoading ? 'Wird geändert…' : pushEnabled ? 'Deaktivieren' : 'Aktivieren' }}
+        <button
+          v-if="pushEnabled === null"
+          class="secondary"
+          disabled
+        >
+          Wird geprüft…
         </button>
-        <p v-if="pushError" class="hint error">{{ pushError }}</p>
+        <button
+          v-else-if="!pushEnabled"
+          class="secondary"
+          :disabled="pushLoading"
+          @click="selectPushLevel('balanced')"
+        >
+          {{ pushLoading ? 'Wird aktiviert…' : 'Aktivieren' }}
+        </button>
+        <template v-else>
+          <SegmentedToggle
+            :model-value="pushLevelValue"
+            :options="PUSH_LEVEL_TOGGLE_OPTIONS"
+            @update:model-value="selectPushLevel"
+          />
+          <button type="button" class="secondary small push-details-toggle" @click="showPushDetails = !showPushDetails">
+            {{ showPushDetails ? 'Einzeln anpassen ▴' : 'Einzeln anpassen ▾' }}
+          </button>
+          <ul v-if="showPushDetails" class="nav-config-list push-domain-list">
+            <li v-for="domain in NOTIFICATION_DOMAINS" :key="domain" class="nav-config-row push-domain-row">
+              <span class="nav-config-icon">{{ NOTIFICATION_DOMAIN_META[domain].icon }}</span>
+              <span class="nav-config-label">{{ NOTIFICATION_DOMAIN_META[domain].label }}</span>
+              <label class="nav-config-visible">
+                <input
+                  type="checkbox"
+                  :checked="notificationPrefs.preferences?.[domain] ?? true"
+                  :aria-label="`${NOTIFICATION_DOMAIN_META[domain].label}-Push aktiv`"
+                  @change="setDomainPreference(domain, ($event.target as HTMLInputElement).checked)"
+                />
+              </label>
+            </li>
+          </ul>
+        </template>
+        <p v-if="pushError || notificationPrefs.error" class="hint error">{{ pushError || notificationPrefs.error }}</p>
       </template>
     </div>
 
@@ -799,7 +862,8 @@ async function onImportFileSelected(event: Event) {
 }
 
 .nav-config-list,
-.dashboard-config-list {
+.dashboard-config-list,
+.push-domain-list {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -809,7 +873,8 @@ async function onImportFileSelected(event: Event) {
 }
 
 .nav-config-row,
-.dashboard-config-row {
+.dashboard-config-row,
+.push-domain-row {
   display: flex;
   align-items: center;
   gap: var(--space-2);
@@ -818,8 +883,17 @@ async function onImportFileSelected(event: Event) {
 }
 
 .nav-config-row:last-child,
-.dashboard-config-row:last-child {
+.dashboard-config-row:last-child,
+.push-domain-row:last-child {
   border-bottom: none;
+}
+
+.push-details-toggle {
+  margin-top: var(--space-2);
+}
+
+.push-domain-list {
+  margin-top: var(--space-2);
 }
 
 .nav-config-icon {

@@ -42,6 +42,54 @@ export function removeSubscription(endpoint: string, userId: number) {
   db.prepare('DELETE FROM push_subscriptions WHERE endpoint = ? AND user_id = ?').run(endpoint, userId);
 }
 
+// Alle Domänen, für die Push-Präferenzen einstellbar sind: die 11 recordActivity()-Domänen plus
+// die Abreise-Erinnerung (departureReminders.ts, kein recordActivity-Event, aber dieselbe
+// Filterlogik über push_preferences).
+export const PUSH_PREFERENCE_DOMAINS = [
+  'schedule',
+  'packing',
+  'shopping',
+  'todos',
+  'spots',
+  'ideas',
+  'travel',
+  'budget',
+  'diary',
+  'notes',
+  'members',
+  'departure',
+] as const;
+export type PushPreferenceDomain = (typeof PUSH_PREFERENCE_DOMAINS)[number];
+
+interface PushPreferenceRow {
+  domain: string;
+  enabled: number;
+}
+
+/** Liefert die vollständige Präferenz-Map für alle bekannten Domänen - fehlende Zeilen (Domäne nie
+ *  angefasst) werden als `true` aufgefüllt (siehe Kommentar an der Tabellendefinition in
+ *  db/index.ts). */
+export function getPushPreferences(userId: number): Record<PushPreferenceDomain, boolean> {
+  const rows = db.prepare('SELECT domain, enabled FROM push_preferences WHERE user_id = ?').all(userId) as PushPreferenceRow[];
+  const byDomain = new Map(rows.map((r) => [r.domain, !!r.enabled]));
+  return Object.fromEntries(PUSH_PREFERENCE_DOMAINS.map((d) => [d, byDomain.get(d) ?? true])) as Record<
+    PushPreferenceDomain,
+    boolean
+  >;
+}
+
+/** Upsert je übergebenem Domain-Key (Teil- oder Vollmenge von PUSH_PREFERENCE_DOMAINS). */
+export function setPushPreferences(userId: number, prefs: Partial<Record<PushPreferenceDomain, boolean>>) {
+  const stmt = db.prepare(
+    `INSERT INTO push_preferences (user_id, domain, enabled) VALUES (?, ?, ?)
+     ON CONFLICT(user_id, domain) DO UPDATE SET enabled = excluded.enabled`,
+  );
+  for (const [domain, enabled] of Object.entries(prefs)) {
+    if (enabled === undefined) continue;
+    stmt.run(userId, domain, enabled ? 1 : 0);
+  }
+}
+
 const DOMAIN_LABEL: Record<string, string> = {
   schedule: 'Kalender',
   packing: 'Packliste',
@@ -74,11 +122,18 @@ interface ActivityPushInfo {
 
 /** Gemeinsamer Versand-Kern für alle Push-Auslöser dieser Datei (Aktivitäts-Benachrichtigungen
  *  hier UND departureReminders.ts's Abreise-Erinnerungen): lädt die Abos aller Urlaub-Mitglieder
- *  (optional abzüglich einer ausschließenden user_id, z. B. der auslösenden Aktivitäts-Akteurin) und
- *  verschickt denselben JSON-Payload an jedes. Tote Abonnements (Browser hat die Berechtigung
- *  entzogen oder das Abo ist abgelaufen) räumt sich hier selbst auf, sonst würde jeder künftige Push
- *  an dasselbe tote Abo erneut fehlschlagen. Best-effort - wirft nie, ruft nie process.exit o. Ä. */
-export async function sendPushToTripMembers(tripId: number, payload: Record<string, unknown>, excludeUserId?: number) {
+ *  (optional abzüglich einer ausschließenden user_id, z. B. der auslösenden Aktivitäts-Akteurin),
+ *  gefiltert per LEFT JOIN auf push_preferences nach der jeweiligen Empfänger:in-Präferenz für
+ *  `domain` (fehlende Zeile = aktiviert, siehe getPushPreferences()), und verschickt denselben
+ *  JSON-Payload an jedes verbleibende Abo. Tote Abonnements (Browser hat die Berechtigung entzogen
+ *  oder das Abo ist abgelaufen) räumt sich hier selbst auf, sonst würde jeder künftige Push an
+ *  dasselbe tote Abo erneut fehlschlagen. Best-effort - wirft nie, ruft nie process.exit o. Ä. */
+export async function sendPushToTripMembers(
+  tripId: number,
+  payload: Record<string, unknown>,
+  domain: PushPreferenceDomain,
+  excludeUserId?: number,
+) {
   if (!pushEnabled) return;
   const subs = (
     excludeUserId != null
@@ -86,16 +141,22 @@ export async function sendPushToTripMembers(tripId: number, payload: Record<stri
           .prepare(
             `SELECT push_subscriptions.* FROM push_subscriptions
              JOIN trip_members ON trip_members.user_id = push_subscriptions.user_id
-             WHERE trip_members.trip_id = ? AND push_subscriptions.user_id != ?`,
+             LEFT JOIN push_preferences ON push_preferences.user_id = push_subscriptions.user_id
+               AND push_preferences.domain = ?
+             WHERE trip_members.trip_id = ? AND push_subscriptions.user_id != ?
+               AND (push_preferences.enabled IS NULL OR push_preferences.enabled = 1)`,
           )
-          .all(tripId, excludeUserId)
+          .all(domain, tripId, excludeUserId)
       : db
           .prepare(
             `SELECT push_subscriptions.* FROM push_subscriptions
              JOIN trip_members ON trip_members.user_id = push_subscriptions.user_id
-             WHERE trip_members.trip_id = ?`,
+             LEFT JOIN push_preferences ON push_preferences.user_id = push_subscriptions.user_id
+               AND push_preferences.domain = ?
+             WHERE trip_members.trip_id = ?
+               AND (push_preferences.enabled IS NULL OR push_preferences.enabled = 1)`,
           )
-          .all(tripId)
+          .all(domain, tripId)
   ) as PushSubscriptionRow[];
   if (!subs.length) return;
 
@@ -119,5 +180,5 @@ export async function sendPushToTripMembers(tripId: number, payload: Record<stri
 export async function notifyTripMembers(tripId: number, excludeUserId: number, info: ActivityPushInfo) {
   const title = `${DOMAIN_LABEL[info.domain] ?? info.domain} · ${info.tripName}`;
   const body = `${info.actorUsername} hat ${ACTION_LABEL[info.action] ?? 'etwas geändert'}`;
-  await sendPushToTripMembers(tripId, { title, body, tripId }, excludeUserId);
+  await sendPushToTripMembers(tripId, { title, body, tripId }, info.domain as PushPreferenceDomain, excludeUserId);
 }

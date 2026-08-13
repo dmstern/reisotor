@@ -17,7 +17,10 @@ export interface NavLinkDef {
 // hinzukommende Einträge - die tatsächliche Anzeige-Reihenfolge kommt aus navConfig.ts.
 export const NAV_LINKS: NavLinkDef[] = [
   { key: 'listen', to: '/listen', label: 'Listen', icon: SECTION_ICONS.todo, domains: ['packing', 'shopping', 'todos'] },
-  { key: 'excursions', to: '/excursions', label: 'Karte', icon: SECTION_ICONS.map, domain: 'spots' },
+  // domains statt domain: ExcursionsView.vue bündelt Spots UND Touren (ideas), beide Domänen
+  // müssen den Nav-Punkt auslösen können - vorher fehlte 'ideas' hier, wodurch neue Touren nie
+  // einen Punkt zeigten (siehe auch ExcursionsView.vue's markSeen()-Aufrufe).
+  { key: 'excursions', to: '/excursions', label: 'Karte', icon: SECTION_ICONS.map, domains: ['spots', 'ideas'] },
   { key: 'travel', to: '/travel', label: 'Reise', icon: SECTION_ICONS.travel, domain: 'travel' },
   { key: 'budget', to: '/budget', label: 'Budget', icon: SECTION_ICONS.budget, domain: 'budget' },
   { key: 'diary', to: '/diary', label: 'Tagebuch', icon: SECTION_ICONS.diary, domain: 'diary' },
