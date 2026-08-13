@@ -2,8 +2,6 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { api } from '../api/client';
 import type {
-  BudgetAllocation,
-  BudgetExpense,
   DiaryEntry,
   Note,
   PackingItem,
@@ -17,6 +15,7 @@ import { useAuthStore } from '../stores/auth';
 import { useTripStore } from '../stores/trip';
 import { useExcursionsStore } from '../stores/excursions';
 import { useSpotsStore } from '../stores/spots';
+import { useBudgetStore } from '../stores/budget';
 import { useDrawersStore } from '../stores/drawers';
 import { useWeatherProviderStore, WEATHER_MODEL_OPTIONS } from '../stores/weatherProvider';
 import { useHomeCurrencyStore } from '../stores/homeCurrency';
@@ -42,6 +41,7 @@ const auth = useAuthStore();
 const tripStore = useTripStore();
 const excursionsStore = useExcursionsStore();
 const spotsStore = useSpotsStore();
+const budgetStore = useBudgetStore();
 const drawers = useDrawersStore();
 const weatherProvider = useWeatherProviderStore();
 const homeCurrency = useHomeCurrencyStore();
@@ -53,8 +53,6 @@ const trip = computed(() => tripStore.currentTrip);
 const schedule = ref<ScheduleItem[]>([]);
 const todos = ref<TodoItem[]>([]);
 const packing = ref<PackingItem[]>([]);
-const expenses = ref<BudgetExpense[]>([]);
-const allocations = ref<BudgetAllocation[]>([]);
 const shopping = ref<ShoppingItem[]>([]);
 const travelItems = ref<TravelItem[]>([]);
 // Unterkunft ist seit der Verschmelzung in Spots (siehe Migrationskommentar in db/index.ts) ganz
@@ -192,25 +190,22 @@ const SECURITY_TILE_COLOR = '#4FB3A9';
 
 onMounted(async () => {
   try {
-    const [scheduleRes, todosRes, packingRes, expensesRes, allocationsRes, shoppingRes, travelRes, diaryRes, notesRes, usersRes] =
+    const [scheduleRes, todosRes, packingRes, shoppingRes, travelRes, diaryRes, notesRes, usersRes] =
       await Promise.all([
         api.get<ScheduleItem[]>(`/schedule?trip_id=${tripId}`),
         api.get<TodoItem[]>(`/todos?trip_id=${tripId}`),
         api.get<PackingItem[]>(`/packing?trip_id=${tripId}`),
-        api.get<BudgetExpense[]>(`/budget?trip_id=${tripId}`),
-        api.get<BudgetAllocation[]>(`/budget/allocations?trip_id=${tripId}`),
         api.get<ShoppingItem[]>(`/shopping?trip_id=${tripId}`),
         api.get<TravelItem[]>(`/travel?trip_id=${tripId}`),
         api.get<DiaryEntry[]>(`/diary?trip_id=${tripId}`),
         api.get<Note[]>(`/notes?trip_id=${tripId}`),
         api.get<User[]>('/users'),
         spotsStore.load(),
+        budgetStore.load(tripId),
       ]);
     schedule.value = scheduleRes;
     todos.value = todosRes;
     packing.value = packingRes;
-    expenses.value = expensesRes;
-    allocations.value = allocationsRes;
     shopping.value = shoppingRes;
     travelItems.value = travelRes;
     diaryEntries.value = diaryRes;
@@ -286,12 +281,6 @@ const packingLists = computed(() => {
     ...progressOf(packing.value.filter((p) => p.owner_id === u.id)),
   }));
   return [...perUser, shared];
-});
-
-const budgetSummary = computed(() => {
-  const target = allocations.value.reduce((sum, a) => sum + a.amount, 0);
-  const spent = expenses.value.reduce((sum, e) => sum + e.amount, 0);
-  return { target, spent };
 });
 
 const shoppingProgress = computed(() => {
@@ -562,8 +551,8 @@ function formatWeekdayDate(d: string) {
           <h3>Budget</h3>
           <BudgetMeter
             label="Ausgegeben"
-            :spent="budgetSummary.spent"
-            :target="budgetSummary.target"
+            :spent="budgetStore.totalSpent"
+            :target="budgetStore.grandTotal"
             :color="WIDGET_COLORS.get('budget')!"
           />
         </router-link>

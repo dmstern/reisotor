@@ -30,6 +30,24 @@ interface TrashConfig {
   table: string;
   label: string;
   onRestore?: (id: string) => void;
+  // Überschreibt die generische "SELECT * FROM table"-Listen-Query, falls ein Typ mehr als reine
+  // Trip-Mitgliedschaft prüfen muss (siehe budget_item unten: private Budget-Töpfe dürfen nicht über
+  // den Papierkorb an andere Mitglieder durchsickern).
+  listQuery?: (tripId: string, userId: number | undefined) => Record<string, unknown>[];
+  // Zusätzlicher Sichtbarkeits-Check vor dem Wiederherstellen (analog zu listQuery).
+  checkVisible?: (id: string, userId: number | undefined) => boolean;
+}
+
+function isBudgetItemVisible(id: string, userId: number | undefined): boolean {
+  const row = db
+    .prepare(
+      `SELECT bi.budget_id, b.owner_id FROM budget_items bi
+       LEFT JOIN budgets b ON b.id = bi.budget_id
+       WHERE bi.id = ?`,
+    )
+    .get(id) as { budget_id: number | null; owner_id: number | null } | undefined;
+  if (!row) return true; // nicht gefunden - lässt den 404-Pfad des Aufrufers greifen
+  return row.budget_id == null || row.owner_id == null || row.owner_id === userId;
 }
 
 const TRASH_CONFIG: TrashConfig[] = [
@@ -58,7 +76,23 @@ const TRASH_CONFIG: TrashConfig[] = [
     label: 'Reise-Eintrag',
     onRestore: (id) => restoreLinkedBudgetExpense('travel_items', id),
   },
-  { type: 'budget_item', table: 'budget_items', label: 'Bezahlung' },
+  {
+    type: 'budget_item',
+    table: 'budget_items',
+    label: 'Bezahlung',
+    // Ausgaben aus einem fremden privaten Budget-Topf dürfen auch gelöscht nicht über den
+    // Papierkorb an andere Mitglieder durchsickern (gleiche Regel wie bei GET /budget).
+    listQuery: (tripId, userId) =>
+      db
+        .prepare(
+          `SELECT bi.* FROM budget_items bi
+           LEFT JOIN budgets b ON b.id = bi.budget_id
+           WHERE bi.trip_id = ? AND bi.deleted_at IS NOT NULL
+             AND (bi.budget_id IS NULL OR b.owner_id IS NULL OR b.owner_id = ?)`,
+        )
+        .all(tripId, userId ?? null) as Record<string, unknown>[],
+    checkVisible: isBudgetItemVisible,
+  },
   { type: 'budget_transfer', table: 'budget_transfers', label: 'Überweisung' },
   { type: 'todo', table: 'todo_items', label: 'ToDo' },
   { type: 'packing_item', table: 'packing_items', label: 'Packlisten-Eintrag' },
@@ -87,9 +121,11 @@ export const trashRoutes: FastifyPluginAsync = async (app) => {
     if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
     if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
     const entries = TRASH_CONFIG.flatMap((config) => {
-      const rows = db
-        .prepare(`SELECT * FROM ${config.table} WHERE trip_id = ? AND deleted_at IS NOT NULL`)
-        .all(req.query.trip_id) as Record<string, unknown>[];
+      const rows = config.listQuery
+        ? config.listQuery(req.query.trip_id as string, req.session.userId)
+        : (db
+            .prepare(`SELECT * FROM ${config.table} WHERE trip_id = ? AND deleted_at IS NOT NULL`)
+            .all(req.query.trip_id) as Record<string, unknown>[]);
       return rows.map((row) => ({
         type: config.type,
         id: row.id as number,
@@ -111,6 +147,9 @@ export const trashRoutes: FastifyPluginAsync = async (app) => {
       | undefined;
     if (!existingRow) return reply.code(404).send({ error: 'Nicht gefunden oder nicht gelöscht' });
     if (!requireTripMember(reply, existingRow.trip_id, req.session.userId)) return;
+    if (config.checkVisible && !config.checkVisible(req.params.id, req.session.userId)) {
+      return reply.code(403).send({ error: 'Kein Zugriff auf dieses Objekt' });
+    }
 
     const result = db
       .prepare(`UPDATE ${config.table} SET deleted_at = NULL WHERE id = ? AND deleted_at IS NOT NULL`)

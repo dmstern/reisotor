@@ -53,6 +53,8 @@ function fmt(n: number) {
 .meter-head {
   display: flex;
   align-items: baseline;
+  flex-wrap: wrap;
+  row-gap: 2px;
   gap: var(--space-2);
   font-size: 0.9rem;
 }
@@ -67,7 +69,11 @@ function fmt(n: number) {
 .label {
   font-weight: 600;
   flex: 1;
-  min-width: 0;
+  /* Erst ab deutlich weniger als diesem Wert wird der Name selbst abgeschnitten - reicht der Platz
+     für Label UND Werte nicht (z. B. schmale Karte + lange Zahl), rutschen die Werte per
+     flex-wrap (siehe .meter-head) stattdessen in eine eigene Zeile, statt den Namen unleserlich
+     kurz zu quetschen. */
+  min-width: 70px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -78,6 +84,7 @@ function fmt(n: number) {
   font-size: 0.85rem;
   white-space: nowrap;
   flex-shrink: 0;
+  margin-left: auto;
 }
 
 .of {

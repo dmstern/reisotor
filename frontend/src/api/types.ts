@@ -240,16 +240,20 @@ export interface BudgetExpense {
   budget_id: number | null;
 }
 
-/** Ein Budget ist entweder persönlich (owner_id gesetzt) oder geteilt (owner_id null). */
+/** Ein Budget ist entweder persönlich (owner_id gesetzt) oder geteilt (owner_id null). Effektives
+ *  Ziel: target_amount gewinnt, falls gesetzt (einfacher Modus); sonst die Summe seiner
+ *  Kategorie-Allokationen (detaillierter Modus) - siehe utils/budgetTargets.ts. */
 export interface Budget {
   id: number;
   trip_id: number;
   name: string;
   owner_id: number | null;
+  target_amount: number | null;
 }
 
-/** Kategorien-Anteil innerhalb eines Budgets. Die Summe aller Allocations eines Budgets
- *  ergibt dessen Ziel-Gesamtsumme; die Summe über alle Budgets ergibt das Gesamtbudget des Urlaubs. */
+/** Kategorien-Anteil innerhalb eines Budgets, nur relevant im detaillierten Modus (kein
+ *  target_amount gesetzt). Die Summe aller Allocations eines Budgets ergibt dessen
+ *  Ziel-Gesamtsumme in diesem Fall; die Summe über alle Budgets ergibt das Gesamtbudget des Urlaubs. */
 export interface BudgetAllocation {
   id: number;
   budget_id: number;

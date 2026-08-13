@@ -90,9 +90,11 @@ CREATE TABLE IF NOT EXISTS budget_transfers (
   note TEXT
 );
 
--- Ein Budget ist entweder persönlich (owner_id gesetzt) oder geteilt (owner_id NULL).
--- Es gibt kein manuelles Gesamtbudget mehr – die Gesamtsumme ergibt sich aus der Summe
--- aller budget_allocations über alle Budgets eines Urlaubs.
+-- Ein Budget ist entweder persönlich (owner_id gesetzt) oder geteilt (owner_id NULL). Es hat zwei
+-- Modi: "einfach" über die weiter unten per ensureColumn ergänzte target_amount-Spalte (eine
+-- direkte Gesamtsumme, keine Unterkategorien nötig) oder "detailliert" über budget_allocations
+-- (Summe der Kategorie-Ziele ergibt die Gesamtsumme). Ist target_amount gesetzt, gewinnt es
+-- gegenüber der Allokations-Summe (siehe frontend/src/utils/budgetTargets.ts).
 CREATE TABLE IF NOT EXISTS budgets (
   id INTEGER PRIMARY KEY,
   trip_id INTEGER NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
@@ -421,6 +423,13 @@ ensureColumn('trips', 'maps_link', 'TEXT');
 ensureColumn('trips', 'lat', 'REAL');
 ensureColumn('trips', 'lng', 'REAL');
 ensureColumn('budget_items', 'budget_id', 'INTEGER REFERENCES budgets(id) ON DELETE SET NULL');
+// Einfacher Budget-Modus: ein Budget kann statt/zusätzlich zu Kategorie-Allokationen
+// (budget_allocations) direkt ein Gesamtziel tragen, ganz ohne Unterkategorien anzulegen. Rein
+// additiv, nullable, keine Vorbedeutung zu migrieren (budgets-Tabelle war zwar schon vor diesem
+// Commit live, aber ohne dieses Feld). Effektives Ziel eines Budgets, falls beides gesetzt ist:
+// target_amount gewinnt (siehe frontend/src/utils/budgetTargets.ts für die Regel, konsistent für
+// Gesamtbudget-KPI und Budget-Meter verwendet).
+ensureColumn('budgets', 'target_amount', 'REAL');
 ensureColumn('shopping_items', 'period', 'TEXT');
 // ToDo-Einträge haben (anders als Einkaufslisten-Einträge) ein Fälligkeitsdatum – der Zeitraum
 // (vor/während des Urlaubs) wird daraus + den Urlaubs-Eckdaten hergeleitet (utils/period.ts im
