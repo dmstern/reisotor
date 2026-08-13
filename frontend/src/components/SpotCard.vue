@@ -92,9 +92,12 @@ watch(
   { immediate: true },
 );
 
+// Ohne führendes Icon - das kommt separat aus .status-icon im Template (siehe dort), damit die
+// Kompakt-Ansicht (@container spots-col (max-width: 480px)) nur das Icon zeigen und den Text-Teil
+// ausblenden kann, statt eines einzigen, nicht auftrennbaren Strings.
 const plannedLabel = computed(() => {
   if (!props.scheduledDate) return '';
-  const dateLabel = `📅 ${formatDate(props.scheduledDate)}`;
+  const dateLabel = formatDate(props.scheduledDate);
   if (!dayWeather.value) return dateLabel;
   return `${dateLabel} · ${weatherCodeMeta(dayWeather.value.weatherCode).icon} ${Math.round(dayWeather.value.tempMax)}°`;
 });
@@ -180,8 +183,12 @@ function onCardClick() {
         <EditButton floating @click="emit('edit', spot)" />
         <DeleteButton floating @click="emit('remove', spot.id)" />
       </template>
-      <span v-if="scheduledDate" class="status planned">{{ plannedLabel }}</span>
-      <span v-if="spot.done" class="status status-done">✅ Gemacht</span>
+      <span v-if="scheduledDate" class="status planned">
+        <span class="status-icon">📅</span><span class="status-text">{{ plannedLabel }}</span>
+      </span>
+      <span v-if="spot.done" class="status status-done">
+        <span class="status-icon">✅</span><span class="status-text">Gemacht</span>
+      </span>
     </div>
     <div class="body">
       <div class="head">
@@ -337,6 +344,9 @@ function onCardClick() {
   position: absolute;
   bottom: 8px;
   right: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   background: rgba(255, 255, 255, 0.9);
   padding: 2px 10px;
   border-radius: 999px;
@@ -529,6 +539,24 @@ function onCardClick() {
 
   .spot-card:not(.expanded) .social-row {
     margin-top: 0;
+  }
+
+  /* Ohne diesen Fix ragten die Status-Pillen (Text+Icon, ~90-110px breit) über das auf 64px
+     geschrumpfte Vorschaubild hinaus in den Titel/Kategorie-Bereich daneben - hier stattdessen zu
+     reinen Icon-Kreisen (ohne Text/Datum/Wetter-Detail) verkleinert, die garantiert innerhalb der
+     64px passen. Das Detail bleibt beim Aufklappen der Karte sichtbar (.spot-card.expanded nutzt
+     weiterhin die volle Pillen-Darstellung von .status oben), analog zum bereits bestehenden Muster,
+     dass .note/.links/.card-actions/.maps-picker im Kompakt-Modus ausgeblendet werden. */
+  .spot-card:not(.expanded) .status {
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 50%;
+  }
+
+  .spot-card:not(.expanded) .status-text {
+    display: none;
   }
 
   /* Etwas kleiner als der Desktop-Wert (200px) aus der Aufklapp-Ansicht, damit das Bild auf
