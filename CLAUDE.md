@@ -208,10 +208,26 @@ noch anderswo in der App vorkommt (kurz grep auf das Icon/den Bezeichner/die Kom
 an der ursprünglich angefragten Stelle schauen):
 
 - **Offensichtlich sinnvolle Folgeanpassung** (identisches Icon/Konzept an anderer Stelle, exakt
-  gleiches Bug-Muster): nicht vorher nachfragen, einfach mit umsetzen — genau wie bei Bugfixes, die
-  während der Umsetzung auffallen — und danach kurz erwähnen, was zusätzlich mit angepasst wurde.
+  gleiches Bug-Muster, klar auf dieselbe, gerade bearbeitete Baustelle begrenzt): nicht vorher
+  nachfragen, einfach mit umsetzen — genau wie bei Bugfixes, die während der Umsetzung auffallen —
+  und danach kurz erwähnen, was zusätzlich mit angepasst wurde.
 - **Unklar, ob gewollt** (könnte an der anderen Stelle bewusst abweichen, Kontext unterschiedlich,
   größerer Umbau nötig): die Beobachtung nennen und nachfragen statt eigenmächtig mitzuändern.
+
+**Neue UI-Bausteine/Design-Anforderungen speziell (nicht nur reines Bugfix-Nachziehen):** bevor eine
+neue Komponente gebaut oder ein neues visuelles Muster eingeführt wird (z. B. ein neuer
+Formularfeld-Label-Stil, ein neues Dropdown-/Filter-/Sortier-Muster), aktiv im Rest der App
+nachschauen, was es dafür schon gibt (grep auf ähnliche Komponenten/Klassen/Konzepte), statt eine
+zweite, leicht abweichende Variante danebenzubauen — siehe DESIGN.md, Abschnitt "Konsistenz", für
+konkret schon aufgetretene Fälle (native `<select>` vs. custom `Combobox.vue` mit unterschiedlicher
+Höhe, mehrere parallele Label-Stile, uneinheitliche Filter-/Gruppieren-/Sortieren-Präsentation je
+View). Fällt dabei zusätzliches Konsistenz-Optimierungspotenzial an einer *nicht* angefragten Stelle
+auf, das über eine 1:1-Wiederholung hinausgeht (z. B. eine App-weite Vereinheitlichung mehrerer
+Views mit bisher unterschiedlichem Muster, oder eine Design-Entscheidung zwischen mehreren
+gleichwertigen Optionen) — das zählt ab jetzt immer als "Unklar, ob gewollt" oben, auch wenn die
+Verbesserung an sich naheliegend wirkt: die Beobachtung nennen und (z. B. per `AskUserQuestion`)
+nachfragen, ob das gleich mitgemacht werden soll, statt eigenmächtig entweder den ganzen Scope
+auszuweiten oder die Beobachtung nur zu erwähnen und liegen zu lassen.
 
 Für Datenmodell-Änderungen im Speziellen gilt zusätzlich der Migrations-Check im nächsten Abschnitt.
 

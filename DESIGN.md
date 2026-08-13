@@ -1,16 +1,58 @@
 # DESIGN.md
 
-Design-Prinzipien für Reisotor: was neue UI-Elemente über Farben, Abstände, Eckenrundung, Icons
-und Breakpoints hinweg konsistent halten soll. `frontend/src/style.css` ist die Quelle der Wahrheit
-für die tatsächlichen Werte (CSS-Variablen im `:root`-Block) – diese Datei hält die *Prinzipien*
-und *Faustregeln* dahinter fest, damit sie nicht nur implizit im CSS stehen. Bei jedem neuen
-UI-Baustein oder jeder sichtbaren UI-Änderung hier kurz nachschauen, ob ein bestehendes Muster
-zutrifft, statt ad hoc neue Werte zu erfinden – und diese Datei ergänzen, wenn dabei ein neues,
-wiederverwendbares Prinzip entsteht.
+Design-Prinzipien für Reisotor: was neue UI-Elemente über Farben, Abstände, Eckenrundung, Schatten,
+Animationen, Typografie, Icons und Breakpoints hinweg konsistent halten soll. `frontend/src/style.css`
+ist die Quelle der Wahrheit für die tatsächlichen Werte (CSS-Variablen im `:root`-Block) – diese
+Datei hält die *Prinzipien* und *Faustregeln* dahinter fest, damit sie nicht nur implizit im CSS
+stehen. Bei jedem neuen UI-Baustein oder jeder sichtbaren UI-Änderung hier kurz nachschauen, ob ein
+bestehendes Muster zutrifft, statt ad hoc neue Werte zu erfinden – und diese Datei ergänzen, wenn
+dabei ein neues, wiederverwendbares Prinzip entsteht.
 
 Für architektonische/UX-Ablauf-Muster (Querverweise springen zur Ursprungs-View, Undo-Delete,
 Echtzeit-Highlight, …) siehe stattdessen den Abschnitt "Konsistenz-Check bei Änderungen" in
 `CLAUDE.md` – hier geht es nur um die visuelle Ebene.
+
+## Konsistenz (wichtigstes Prinzip)
+
+Dieselbe Art UI-Element muss überall in der App gleich aussehen und sich gleich verhalten –
+unabhängig davon, mit welcher technischen Lösung sie an der jeweiligen Stelle gerade umgesetzt
+wurde. Der Nutzer sieht keinen Unterschied zwischen "das ist ein natives `<select>`" und "das ist
+eine custom Combobox.vue" – beide sind für ihn einfach "ein Dropdown" und müssen deshalb exakt
+gleich hoch sein und gleich aussehen. Das gilt für jede der unten dokumentierten Kategorien:
+
+- **Farben**: nur `--color-*`-Variablen, nie ein neuer Hex-Wert lokal (Abschnitt "Farben").
+- **Abstände**: nur `--space-*`-Stufen, kein freier px-Wert (Abschnitt "Abstände").
+- **Formen/Eckenrundung**: Kreisbogen vs. Squircle konsequent nach Elementtyp, nie gemischt
+  innerhalb desselben Elementtyps (Abschnitt "Eckenrundung: Squircle-Prinzip").
+- **Schatten**: nur `--shadow-sm`/`--shadow-md`, kein eigener `box-shadow` (Abschnitt "Schatten").
+- **Animationen**: Timing/Easing nach Bewegungsgröße gestuft (0.15s Mikro-Interaktion / 0.2s Ein-
+  Ausblenden & Listen / 0.25–0.3s große Bewegung), immer `ease`/`ease-in-out`, globale
+  `list`/`fade`-Transition-Klassen statt lokaler Neuerfindung (Abschnitt "Animationen").
+- **Typografie**: eine Schriftfamilie, Größen/Gewichte an bestehenden Textrollen orientieren
+  (Abschnitt "Typografie").
+- **Icons**: Emoji aus den bestehenden Registries (`sectionIcons.ts`, `spotCategory.ts`,
+  `scheduleCategory.ts`), kein neues Icon für ein bereits vorhandenes Konzept (Abschnitt "Icons").
+- **Formularfelder/Labels**: ein einziges Label-Muster app-weit (`components/FormField.vue`), auch
+  für `<select>`, sobald es neben einem gelabelten Geschwisterfeld in derselben Flex-Zeile steht –
+  ohne eigenes Label wird es vom Flex-Default `align-items: stretch` künstlich in die Höhe gezogen,
+  der häufigste Grund für sichtbar unterschiedlich hohe Dropdowns (Abschnitt "Formularfelder").
+- **Wiederkehrende Interaktionsmuster** (z. B. Filtern/Gruppieren/Sortieren, aktuell in
+  Ausflüge/Spots, Einkauf, ToDo): dasselbe Konzept braucht dieselbe Präsentation überall (durchgehend
+  Icon + Label, dieselbe Steuerelement-Art) – nicht in einer View Toggle-Buttons mit Icon, in der
+  nächsten ein reiner Text-Label vor einem `<select>`.
+- **Alles andere, was diese Liste (noch) nicht nennt**: Button-/Card-Stile, Empty-/Error-/
+  Ladezustände, Hover-/Focus-Zustände, Copy-Ton – dasselbe Prinzip gilt sinngemäß, auch wenn es noch
+  keinen eigenen Abschnitt dafür gibt. Beim Bauen aktiv mitdenken statt nur die oben gelisteten
+  Kategorien als abschließend zu behandeln.
+
+**Praktische Konsequenz beim Bauen/Ändern von UI:** vor jedem neuen UI-Baustein oder jeder
+sichtbaren Design-Anpassung aktiv im Rest der App nachschauen, ob es dafür schon ein Muster/eine
+Komponente/einen Token gibt (grep auf ähnliche Bezeichner/Klassen/Werte, nicht nur an der gerade
+bearbeiteten Stelle schauen) – wiederverwenden statt eine zweite, leicht abweichende Variante
+daneben zu bauen. Wird dabei eine neue Design-Anforderung erkennbar, die auch an anderen, gerade
+nicht angefragten Stellen mit demselben Muster gelten würde: siehe CLAUDE.md, Abschnitt
+"Konsistenz-Check bei Änderungen" für das Vorgehen dabei (dort jetzt: aktiv nachfragen statt
+eigenmächtig zu entscheiden, ob mitgezogen wird oder nicht).
 
 ## Farben
 
@@ -65,6 +107,27 @@ Rundung wirkt inkonsistent zu den übrigen Elementen. Bei einer PR-Selbstprüfun
 `--shadow-sm`/`--shadow-md`, ebenfalls mit eigenen (dunkleren, undurchsichtigeren) Werten im Dark
 Mode. Für neue schwebende Elemente (Dropdowns, Tooltips, Cards mit Hebung) eine der beiden Stufen
 verwenden statt eines eigenen `box-shadow`-Werts.
+
+## Animationen
+
+Kein zentrales `--transition-*`-Token bisher, aber ein klarer de-facto Standard über drei
+Größenordnungen hinweg – neue Übergänge an einer dieser drei orientieren, nicht frei erfinden:
+
+- **Mikro-Interaktionen** (Hover/Focus/Press an Buttons, Links, Chips): `0.15s ease`, meist auf
+  `background`/`color`/`border-color`/`transform` (siehe `style.css`s `button`-Grundregel).
+- **Ein-/Ausblenden & Listen-Umsortieren**: `0.2s ease-in-out`, zentral als wiederverwendbare
+  Vue-Transition-Klassen in `style.css` definiert – `<TransitionGroup name="list">` für
+  CRUD-/Sortier-Interaktionen in Listen (Ein-/Ausblenden + sanftes Gleiten an die neue Position,
+  inkl. `translateY(-6px) scale(0.98)` beim Ein-/Ausblenden) und `<Transition name="fade">` für
+  einfaches Ein-/Ausblenden ohne Liste. `Modal.vue`s `modal-fade` folgt demselben `0.2s
+  ease-in-out`, ergänzt um ein leichtes Scale/Translate am `.modal` selbst. Diese globalen Klassen
+  verwenden statt einer lokalen, komponenteneigenen Transition – neue Listen/Modals/Ein-Ausblend-
+  Stellen binden sich an `name="list"`/`name="fade"` an, statt eigene Timings zu erfinden.
+- **Größere Bewegungen** (Drawer/Schublade rein-/rausfahren): `0.25s`–`0.3s ease` – etwas länger als
+  die anderen beiden Stufen, weil die zurückgelegte Strecke selbst größer ist.
+
+Durchgehend `ease`/`ease-in-out`, nie eine "bouncy"/Spring-artige Easing-Funktion – passt zum
+insgesamt eher zurückhaltenden, nativen App-Gefühl statt auffälliger Spielereien.
 
 ## Typografie
 
@@ -146,8 +209,8 @@ zusammen.
 
 ## Bei neuen Elementen
 
-1. Existiert schon eine passende Farbe/ein passender Radius-Wert/Breakpoint/Icon? → verwenden, nicht
-   neu erfinden.
+1. Existiert schon eine passende Farbe/ein passender Radius-/Schatten-/Abstands-Wert/Breakpoint/
+   Icon/Animations-Timing? → verwenden, nicht neu erfinden.
 2. Handelt es sich um eine Card/Button/Input/Modal/Drawer? → Squircle-Paar setzen (siehe oben).
 3. Neues wiederkehrendes Muster nötig? → hier dokumentieren, damit es beim nächsten Mal gefunden
    statt neu erfunden wird (siehe auch `CLAUDE.md`, Abschnitt "Konsistenz-Check bei Änderungen").
