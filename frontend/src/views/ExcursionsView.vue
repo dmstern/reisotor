@@ -113,7 +113,7 @@ function setCategoryNavSentinelRef(el: Element | ComponentPublicInstance | null)
 }
 
 onMounted(async () => {
-  highlightedIds.value = liveSync.markSeen('spots');
+  markSeenForGroupMode(groupMode.value);
   // Querverweis-Sprung (z. B. aus dem Budget bei einem automatisch aus einer Unterkunft erzeugten
   // Ausgabe-Eintrag, siehe BudgetView.vue's autoSourceFor()) – dieselbe highlightedIds-Menge wie
   // oben, kein zweites Hervorhebungs-System (siehe hashHighlight.ts).
@@ -471,6 +471,19 @@ const sortMode = usePersistedRef<'alpha' | 'likes'>('reisotor-excursions-sort-mo
 // gemeinsam in "Ohne Tour".
 const groupMode = usePersistedRef<'category' | 'tours'>('reisotor-excursions-group-mode', 'category');
 const UNASSIGNED_TOUR_GROUP = 'Ohne Tour';
+
+// Spots UND Touren (ideas) teilen sich diese eine Sicht, tracken in liveSync aber als zwei
+// getrennte Domänen. Nur die gerade aktive Gruppierung wird als gesehen markiert (initial in
+// onMounted unten, danach bei jedem Wechsel hier) - die jeweils andere behält ihren "neu"-Punkt
+// (siehe Gruppieren-Toggle weiter unten im Template), bis tatsächlich dorthin umgeschaltet wird;
+// sonst würde ein Wechsel auf "Touren" nie einen Punkt zeigen, weil 'ideas' schon beim bloßen
+// Öffnen der Seite unbesehen als gesehen gegolten hätte.
+function markSeenForGroupMode(mode: 'category' | 'tours') {
+  const domain = mode === 'tours' ? 'ideas' : 'spots';
+  for (const id of liveSync.markSeen(domain)) highlightedIds.value.add(id);
+}
+
+watch(groupMode, (mode) => markSeenForGroupMode(mode));
 
 function tourTitlesForItem(item: SpotsGroupItem): string[] {
   if (item.kind !== 'spot') return [];
@@ -1267,8 +1280,8 @@ async function removeSpot(id: number) {
             <SegmentedToggle
               v-model="groupMode"
               :options="[
-                { value: 'category', label: '🏷️ Spots' },
-                { value: 'tours', label: '🎒 Touren' },
+                { value: 'category', label: '🏷️ Spots', dot: liveSync.hasUnseen('spots') },
+                { value: 'tours', label: '🎒 Touren', dot: liveSync.hasUnseen('ideas') },
               ]"
             />
           </div>

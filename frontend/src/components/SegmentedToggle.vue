@@ -9,16 +9,22 @@ import { computed } from 'vue';
 // zwei genutzt.
 const props = defineProps<{
   modelValue: string;
-  options: { value: string; label: string }[];
+  // dot: optionaler roter "neu"-Punkt je Option (z. B. Spots/Touren-Umschalter in
+  // ExcursionsView.vue), gleiches Aussehen wie NavBar.vue's .unseen-dot. Optional, bestehende
+  // Verwendungsstellen ohne dot bleiben unverändert.
+  options: { value: string; label: string; dot?: boolean }[];
 }>();
 const emit = defineEmits<{ (e: 'update:modelValue', value: string): void }>();
 
-const activeIndex = computed(() => Math.max(0, props.options.findIndex((o) => o.value === props.modelValue)));
+// -1 (kein Match) statt auf 0 zu klammern, wenn modelValue keiner der options entspricht (z. B.
+// "individuell angepasst" bei den Push-Leveln in ProfileView.vue) - die Pille wird dann komplett
+// ausgeblendet statt fälschlich unter der ersten Option zu kleben.
+const activeIndex = computed(() => props.options.findIndex((o) => o.value === props.modelValue));
 </script>
 
 <template>
-  <div class="segmented-toggle" :style="{ '--count': options.length, '--active-index': activeIndex }">
-    <span class="segmented-thumb" aria-hidden="true"></span>
+  <div class="segmented-toggle" :style="{ '--count': options.length, '--active-index': Math.max(0, activeIndex) }">
+    <span v-if="activeIndex !== -1" class="segmented-thumb" aria-hidden="true"></span>
     <button
       v-for="option in options"
       :key="option.value"
@@ -29,6 +35,7 @@ const activeIndex = computed(() => Math.max(0, props.options.findIndex((o) => o.
       @click="emit('update:modelValue', option.value)"
     >
       {{ option.label }}
+      <span v-if="option.dot" class="segmented-dot" aria-label="Neue Änderungen" />
     </button>
   </div>
 </template>
@@ -77,5 +84,16 @@ const activeIndex = computed(() => Math.max(0, props.options.findIndex((o) => o.
 
 .segmented-option.active {
   color: var(--color-primary-dark);
+}
+
+.segmented-dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-danger);
+  border: 1.5px solid var(--color-surface);
 }
 </style>

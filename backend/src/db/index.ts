@@ -1126,6 +1126,21 @@ db.exec(`
   );
 `);
 
+// Push-Benachrichtigungs-Präferenzen pro Nutzer:in und Domäne (differenzierte Stufen statt eines
+// globalen An/Aus, siehe ProfileView.vue). Key-Value statt einer Spalte pro Domäne (analog
+// stores/navConfig.ts): fehlende Zeile für (user_id, domain) bedeutet "aktiviert" (Default true) -
+// das erhält für alle, die Push schon vor diesem Feature aktiviert hatten, unverändert das
+// bisherige "Alles"-Verhalten, ohne dass eine künftig neu hinzukommende Domäne eine Migration
+// bräuchte.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS push_preferences (
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    domain TEXT NOT NULL,
+    enabled INTEGER NOT NULL,
+    PRIMARY KEY (user_id, domain)
+  );
+`);
+
 // Reiseregion-Infos (Dashboard-Widget, siehe utils/regionInfo.ts): einmalig per Reverse-Geocoding
 // aus lat/lng ermittelt und dauerhaft gecacht, nur neu aufgelöst, wenn sich lat/lng ändern.
 ensureColumn('trips', 'country_code', 'TEXT');
