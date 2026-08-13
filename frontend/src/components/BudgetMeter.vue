@@ -5,6 +5,10 @@ const props = defineProps<{
   label: string;
   spent: number;
   target: number;
+  // Akzeptiert sowohl Hex-Strings (z. B. Kategoriefarben aus categoryColors.ts) als auch
+  // CSS-Variablen-Referenzen (z. B. "var(--color-primary-dark)") - die Track-Farbe unten nutzt
+  // deshalb color-mix() statt eines Hex-Alpha-Suffix (`${color}26`), das bei einer var()-Referenz
+  // nur ein ungültiges "var(...)26" ergäbe und stillschweigend keinen sichtbaren Track zeichnet.
   color: string;
   /** 'currency' (Standard, mit €) oder 'count' für einfache Stückzahlen (z. B. Dashboard-Widgets). */
   format?: 'currency' | 'count';
@@ -31,7 +35,7 @@ function fmt(n: number) {
         <span v-if="hasTarget" class="of"> / {{ fmt(target) }}</span>
       </span>
     </div>
-    <div class="track" :style="{ background: `${color}26` }">
+    <div class="track" :style="{ background: `color-mix(in srgb, ${color} 15%, transparent)` }">
       <div
         class="fill"
         :style="{ width: hasTarget ? fillPercent + '%' : '100%', background: color }"
