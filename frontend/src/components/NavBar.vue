@@ -200,9 +200,13 @@ function onLinkClick(event: MouseEvent) {
   white-space: nowrap;
 }
 
+/* Volle Pille statt der geerbten Squircle-Ecken von .link - näher an Apples Tab-Bar-Sprache (z. B.
+   Apple Podcasts), gleiche "Pille"-Konvention wie .navbar.mobile-bottom/.category-nav (siehe
+   DESIGN.md: vollständig runde Elemente nutzen border-radius:999px statt eines Squircle-Tokens). */
 .link.router-link-active {
   color: var(--color-primary-dark);
   background: var(--color-primary-tint);
+  border-radius: 999px;
 }
 
 .icon-wrap {
