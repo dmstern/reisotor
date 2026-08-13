@@ -98,6 +98,11 @@ Font-Ladevorgang, funktioniert offline). Zwei getrennte, in sich konsistente Ico
 Kartenmarker (`TripMap.vue` u. a.) nutzen dieselben Emoji als Leaflet `divIcon`s statt der
 Standard-Marker-Pins – auch dort aus den bestehenden Registries beziehen, nicht neu definieren.
 
+- **Sichtbarkeits-Kennzeichnung (privat vs. geteilt)**: 🔒 für "nur für eine Person sichtbar", 🤝
+  für "für alle Mitreisenden sichtbar" (z. B. Budget-Töpfe, `BudgetPotCard.vue`). Kein eigenes
+  drittes System, sondern ein einfaches, wiederverwendbares Paar – bei jedem neuen "privat vs.
+  geteilt"-Konzept dieselben zwei Emoji verwenden statt neue zu erfinden.
+
 ## Bei neuen Elementen
 
 1. Existiert schon eine passende Farbe/ein passender Radius-Wert/Breakpoint/Icon? → verwenden, nicht
