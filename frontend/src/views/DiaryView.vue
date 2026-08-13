@@ -422,10 +422,9 @@ async function removeComment(id: number) {
 
     <Modal :model-value="showForm" title="Neuer Tagebucheintrag" full-height @update:model-value="(v) => !v && closeForm()">
     <form class="add-form" @submit.prevent="submitEntry">
-      <label class="date-label">
-        📅 Datum
+      <FormField icon="📅" label="Datum">
         <input v-model="form.date" type="date" required />
-      </label>
+      </FormField>
       <FormField icon="✏️" label="Titel">
         <input v-model="form.title" type="text" placeholder="Titel (optional)" />
       </FormField>
@@ -557,10 +556,9 @@ async function removeComment(id: number) {
       @update:model-value="(v) => !v && closeEditForm()"
     >
       <form class="add-form" @submit.prevent="submitEditEntry">
-        <label class="date-label">
-          📅 Datum
+        <FormField icon="📅" label="Datum">
           <input v-model="editForm.date" type="date" required />
-        </label>
+        </FormField>
         <FormField icon="✏️" label="Titel">
           <input v-model="editForm.title" type="text" placeholder="Titel (optional)" />
         </FormField>
@@ -638,8 +636,7 @@ async function removeComment(id: number) {
   margin-bottom: var(--space-4);
 }
 
-.upload-label,
-.date-label {
+.upload-label {
   display: flex;
   flex-direction: column;
   gap: 4px;

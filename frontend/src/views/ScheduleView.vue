@@ -946,31 +946,29 @@ function formatDate(date: string) {
         <FormField icon="✏️" label="Titel">
           <input v-model="newTitle" type="text" placeholder="Titel" required />
         </FormField>
-        <label class="field-label">
-          Startdatum
+        <FormField icon="📅" label="Startdatum">
           <input v-model="newStartDate" type="date" required />
-        </label>
-        <label class="field-label">
-          Enddatum (optional)
+        </FormField>
+        <FormField icon="📅" label="Enddatum">
           <input v-model="newEndDate" type="date" :min="newStartDate || undefined" />
-        </label>
-        <label class="field-label">
-          Startzeit (optional)
+        </FormField>
+        <FormField icon="🕒" label="Startzeit">
           <input v-model="newTime" type="time" />
-        </label>
-        <label class="field-label">
-          Enduhrzeit (optional)
+        </FormField>
+        <FormField icon="🕒" label="Enduhrzeit">
           <input v-model="newEndTime" type="time" />
-        </label>
-        <select v-model="newLinkKey" class="link-select">
-          <option value="">🔗 Kein Spot/keine Tour verknüpft</option>
-          <optgroup label="Spots" v-if="spotsStore.spots.length">
-            <option v-for="s in spotsStore.spots" :key="`spot:${s.id}`" :value="`spot:${s.id}`">{{ s.title }}</option>
-          </optgroup>
-          <optgroup label="Touren" v-if="excursionsStore.excursions.length">
-            <option v-for="e in excursionsStore.excursions" :key="`idea:${e.id}`" :value="`idea:${e.id}`">{{ e.title }}</option>
-          </optgroup>
-        </select>
+        </FormField>
+        <FormField icon="🔗" label="Verknüpft">
+          <select v-model="newLinkKey">
+            <option value="">🔗 Kein Spot/keine Tour verknüpft</option>
+            <optgroup label="Spots" v-if="spotsStore.spots.length">
+              <option v-for="s in spotsStore.spots" :key="`spot:${s.id}`" :value="`spot:${s.id}`">{{ s.title }}</option>
+            </optgroup>
+            <optgroup label="Touren" v-if="excursionsStore.excursions.length">
+              <option v-for="e in excursionsStore.excursions" :key="`idea:${e.id}`" :value="`idea:${e.id}`">{{ e.title }}</option>
+            </optgroup>
+          </select>
+        </FormField>
         <template v-if="!newLinkKey">
           <FormField icon="📍" label="Ort">
             <Combobox v-model="newLocation" :options="placeNames" placeholder="Ort (optional)" />
@@ -996,27 +994,26 @@ function formatDate(date: string) {
         <FormField icon="✏️" label="Titel">
           <input v-model="editForm.title" type="text" placeholder="Titel" required />
         </FormField>
-        <label class="field-label">
-          Enddatum (optional)
+        <FormField icon="📅" label="Enddatum">
           <input v-model="editForm.endDate" type="date" :min="editingItem?.date" />
-        </label>
-        <label class="field-label">
-          Startzeit (optional)
+        </FormField>
+        <FormField icon="🕒" label="Startzeit">
           <input v-model="editForm.time" type="time" />
-        </label>
-        <label class="field-label">
-          Enduhrzeit (optional)
+        </FormField>
+        <FormField icon="🕒" label="Enduhrzeit">
           <input v-model="editForm.endTime" type="time" />
-        </label>
-        <select v-model="editForm.linkKey" class="link-select">
-          <option value="">🔗 Kein Spot/keine Tour verknüpft</option>
-          <optgroup label="Spots" v-if="spotsStore.spots.length">
-            <option v-for="s in spotsStore.spots" :key="`spot:${s.id}`" :value="`spot:${s.id}`">{{ s.title }}</option>
-          </optgroup>
-          <optgroup label="Touren" v-if="excursionsStore.excursions.length">
-            <option v-for="e in excursionsStore.excursions" :key="`idea:${e.id}`" :value="`idea:${e.id}`">{{ e.title }}</option>
-          </optgroup>
-        </select>
+        </FormField>
+        <FormField icon="🔗" label="Verknüpft">
+          <select v-model="editForm.linkKey">
+            <option value="">🔗 Kein Spot/keine Tour verknüpft</option>
+            <optgroup label="Spots" v-if="spotsStore.spots.length">
+              <option v-for="s in spotsStore.spots" :key="`spot:${s.id}`" :value="`spot:${s.id}`">{{ s.title }}</option>
+            </optgroup>
+            <optgroup label="Touren" v-if="excursionsStore.excursions.length">
+              <option v-for="e in excursionsStore.excursions" :key="`idea:${e.id}`" :value="`idea:${e.id}`">{{ e.title }}</option>
+            </optgroup>
+          </select>
+        </FormField>
         <template v-if="!editForm.linkKey">
           <FormField icon="📍" label="Ort">
             <Combobox v-model="editForm.location" :options="placeNames" placeholder="Ort (optional)" />
@@ -1342,17 +1339,4 @@ function formatDate(date: string) {
   min-width: 140px;
 }
 
-.field-label {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
-}
-
-.link-select {
-  flex: 1;
-  min-width: 160px;
-}
 </style>

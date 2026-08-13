@@ -281,16 +281,20 @@ function isOverdue(item: TodoItem) {
       <FormField icon="✏️" label="Aufgabe">
         <input v-model="newForm.title" type="text" placeholder="Neue Aufgabe" required />
       </FormField>
-      <select v-model="newForm.assigned_to_user_id">
-        <option value="">Nicht zugewiesen</option>
-        <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
-      </select>
+      <FormField icon="🧑" label="Bearbeiter:in">
+        <select v-model="newForm.assigned_to_user_id">
+          <option value="">Nicht zugewiesen</option>
+          <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
+        </select>
+      </FormField>
       <FormField icon="📅" label="Fällig">
         <input v-model="newForm.due_date" type="date" />
       </FormField>
-      <select v-model="newForm.priority">
-        <option v-for="(meta, key) in PRIORITY_META" :key="key" :value="key">{{ meta.icon }} {{ meta.label }}</option>
-      </select>
+      <FormField icon="🚦" label="Priorität">
+        <select v-model="newForm.priority">
+          <option v-for="(meta, key) in PRIORITY_META" :key="key" :value="key">{{ meta.icon }} {{ meta.label }}</option>
+        </select>
+      </FormField>
       <FormField icon="📝" label="Notiz">
         <input v-model="newForm.note" type="text" placeholder="Notiz (optional)" />
       </FormField>
@@ -373,16 +377,20 @@ function isOverdue(item: TodoItem) {
         <FormField icon="✏️" label="Titel">
           <input v-model="editForm.title" type="text" placeholder="Titel" required />
         </FormField>
-        <select v-model="editForm.assigned_to_user_id">
-          <option value="">Nicht zugewiesen</option>
-          <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
-        </select>
+        <FormField icon="🧑" label="Bearbeiter:in">
+          <select v-model="editForm.assigned_to_user_id">
+            <option value="">Nicht zugewiesen</option>
+            <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
+          </select>
+        </FormField>
         <FormField icon="📅" label="Fällig">
           <input v-model="editForm.due_date" type="date" />
         </FormField>
-        <select v-model="editForm.priority">
-          <option v-for="(meta, key) in PRIORITY_META" :key="key" :value="key">{{ meta.icon }} {{ meta.label }}</option>
-        </select>
+        <FormField icon="🚦" label="Priorität">
+          <select v-model="editForm.priority">
+            <option v-for="(meta, key) in PRIORITY_META" :key="key" :value="key">{{ meta.icon }} {{ meta.label }}</option>
+          </select>
+        </FormField>
         <FormField icon="📝" label="Notiz">
           <input v-model="editForm.note" type="text" placeholder="Notiz (optional)" />
         </FormField>
@@ -409,8 +417,7 @@ function isOverdue(item: TodoItem) {
   margin-bottom: var(--space-3);
 }
 
-.add-form .form-field,
-.add-form select {
+.add-form .form-field {
   flex: 1;
   min-width: 140px;
 }

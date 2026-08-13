@@ -1206,10 +1206,9 @@ async function removeSpot(id: number) {
           <FormField icon="📝" label="Notiz">
             <RichTextEditor v-model="excursionForm.note" placeholder="Notiz (optional)" />
           </FormField>
-          <label class="date-label">
-            Datum (optional – ansonsten "In Planung")
+          <FormField icon="📅" label="Datum (optional – sonst „In Planung“)">
             <input v-model="excursionForm.date" type="date" />
-          </label>
+          </FormField>
           <SpotOrderPicker
             v-if="spotsStore.spots.length"
             v-model="excursionForm.spot_ids"
@@ -1237,10 +1236,9 @@ async function removeSpot(id: number) {
           <FormField icon="📝" label="Notiz">
             <RichTextEditor v-model="editExcursionForm.note" placeholder="Notiz (optional)" />
           </FormField>
-          <label class="date-label">
-            Datum (optional – ansonsten "In Planung")
+          <FormField icon="📅" label="Datum (optional – sonst „In Planung“)">
             <input v-model="editExcursionForm.date" type="date" />
-          </label>
+          </FormField>
           <SpotOrderPicker
             v-if="spotsStore.spots.length"
             v-model="editExcursionForm.spot_ids"
@@ -2120,15 +2118,6 @@ async function removeSpot(id: number) {
 .edit-form .row > * {
   flex: 1;
   min-width: 140px;
-}
-
-.date-label {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
 }
 
 .form-image-banner {

@@ -117,19 +117,32 @@ Wrapper verwenden statt das Eingabefeld nackt ins Formular zu setzen:
 ```
 
 Icon + kleines Label bleiben dauerhaft über dem Feld sichtbar, der `placeholder` bleibt zusätzlich als
-Beispiel-/Formatierungshinweis erhalten. `<select>`-Felder brauchen das i. d. R. nicht (die gewählte
-Option bleibt immer sichtbar, anders als ein `placeholder`) – ebenso Felder mit einem bereits
-bestehenden eigenen Label-Wrapper (`.date-label`, `.field-label`, `TripForm.vue`s
-`<label>Text<input/></label>`-Muster). Icon-Wahl folgt den anderswo in der App etablierten Emoji
-(z. B. 📅 Datum, 📍 Ort/Adresse, 🗺️ Maps-Link, 📞 Kontakt, 💶 Betrag, 📝 Notiz, 🏷️ Kategorie) – kein
-neues Icon erfinden, wenn ein bestehendes Konzept schon eins hat.
+Beispiel-/Formatierungshinweis erhalten. **Auch `<select>`-Felder in FormField wrappen**, sobald sie
+in derselben Flex-Row wie mindestens ein FormField-umwickeltes Geschwisterfeld stehen (z. B.
+gemeinsam in einem `.add-form`/`.edit-form` mit `flex-wrap: wrap`) – ohne eigenes Label ist ein
+`<select>` niedriger als ein FormField (Label-Zeile + Feld), und das Default-`align-items: stretch`
+des Flex-Containers zieht das unbeschriftete `<select>` dann auf die Höhe des Nachbarfelds in die
+Länge. Ergebnis: ungleich hohe, "verrutscht" wirkende Felder in derselben Zeile – genau das Muster,
+das zu vermeiden ist. Ein einzelnes `<select>` ganz allein auf eigener Zeile (kein FormField-Nachbar
+in derselben Flex-Row) darf ohne Wrapper bleiben.
+
+Kein zweites, abweichendes Label-Muster parallel zu FormField einführen (z. B. ein eigenes
+`.date-label`/`.field-label` mit eigener Schriftgröße) – selbst wenn optisch ähnlich, ergibt das exakt
+dieselbe Höhen-Inkonsistenz wie beim `<select>` oben, sobald beide Muster in derselben Zeile landen.
+`TripForm.vue`/`TravelView.vue` sind die eine bewusste Ausnahme: dort trägt *jedes* Feld durchgehend
+deren eigenes `<label>Text<input/></label>`-Muster (kein Mix mit FormField in derselben Datei), daher
+dort keine Migration nötig.
+
+Icon-Wahl folgt den anderswo in der App etablierten Emoji (z. B. 📅 Datum, 🕒 Uhrzeit, 📍 Ort/Adresse,
+🗺️ Maps-Link, 📞 Kontakt, 💶 Betrag, 📝 Notiz, 🏷️ Kategorie, 🧑 Person/Bearbeiter:in, 🤝 Bezahlt
+von/geteilt) – kein neues Icon erfinden, wenn ein bestehendes Konzept schon eins hat.
 
 Achtung bei bereits vorhandenem Flex-Row-Layout eines Formulars (z. B. `.add-form input, .add-form
-select { flex: 1; min-width: …px; }`): diese Selektoren zielten bisher direkt auf das `<input>`, das
-jetzt eine Ebene tiefer in `.form-field` sitzt. Selektor auf `.form-field` statt `input` ummünzen
-(`.add-form .form-field, .add-form select { flex: 1; … }`), sonst greift `flex`/`min-width` ins Leere
-(nur echte Flex-Items eines Flex-Containers reagieren darauf) und das Feld schrumpft auf seine
-Inhaltsbreite zusammen.
+select { flex: 1; min-width: …px; }`): diese Selektoren zielten bisher direkt auf `<input>`/`<select>`,
+die jetzt eine Ebene tiefer in `.form-field` sitzen. Selektor auf `.form-field` ummünzen
+(`.add-form .form-field { flex: 1; … }`), sonst greift `flex`/`min-width` ins Leere (nur echte
+Flex-Items eines Flex-Containers reagieren darauf) und das Feld schrumpft auf seine Inhaltsbreite
+zusammen.
 
 ## Bei neuen Elementen
 

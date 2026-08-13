@@ -323,12 +323,14 @@ async function quickAdd(list: ListGroup, label: string) {
           Anzahl
           <input v-model.number="editForm.quantity" type="number" min="1" step="1" />
         </label>
-        <select v-model="editForm.ownerId">
-          <option value="shared">🤝 Gemeinsam</option>
-          <option v-for="u in users" :key="u.id" :value="String(u.id)">
-            {{ u.avatar }} {{ u.id === auth.user?.id ? 'Meine Liste' : u.username }}
-          </option>
-        </select>
+        <FormField icon="🧑" label="Liste">
+          <select v-model="editForm.ownerId">
+            <option value="shared">🤝 Gemeinsam</option>
+            <option v-for="u in users" :key="u.id" :value="String(u.id)">
+              {{ u.avatar }} {{ u.id === auth.user?.id ? 'Meine Liste' : u.username }}
+            </option>
+          </select>
+        </FormField>
         <button type="submit">Speichern</button>
       </form>
     </Modal>
