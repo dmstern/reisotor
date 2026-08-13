@@ -21,9 +21,13 @@ async function selectOptionByText(select: Locator, text: string) {
   await select.selectOption(value!);
 }
 
-async function kpiValue(page: Page, label: string): Promise<number> {
-  const text = await page.locator('.kpi', { hasText: label }).locator('.kpi-value').innerText();
-  return parseFloat(text.replace(/[^0-9.,-]/g, '').replace(',', '.'));
+// Die Gesamtübersicht ist ein einzelner BudgetMeter (Ausgegeben/Gesamtbudget als Balken statt
+// dreier KPI-Boxen) - ".values" trägt "spent €" bzw. bei gesetztem Ziel "spent € / target €".
+async function overviewValues(page: Page): Promise<{ spent: number; target: number }> {
+  const text = await page.locator('.overview-card .values').innerText();
+  const [spentPart, targetPart] = text.split('/');
+  const parse = (s: string) => parseFloat(s.replace(/[^0-9.,-]/g, '').replace(',', '.'));
+  return { spent: parse(spentPart), target: targetPart != null ? parse(targetPart) : 0 };
 }
 
 async function netFor(page: Page, username: string): Promise<number> {
@@ -37,8 +41,7 @@ test('creates a shared budget pot with categories and the KPIs reflect the new e
   await page.goto('/budget');
   await expect(page.locator('.budget-page')).toBeVisible();
 
-  const grandTotalBefore = await kpiValue(page, 'Gesamtbudget');
-  const spentBefore = await kpiValue(page, 'Ausgegeben');
+  const { spent: spentBefore, target: grandTotalBefore } = await overviewValues(page);
 
   const potName = `E2E Geteilter Topf ${Date.now()}`;
   await page.getByRole('button', { name: '+ Budget anlegen' }).click();
@@ -56,7 +59,7 @@ test('creates a shared budget pot with categories and the KPIs reflect the new e
   await expect(potCard.locator('.category-row')).toHaveCount(1);
 
   await expect(async () => {
-    expect(await kpiValue(page, 'Gesamtbudget')).toBeCloseTo(grandTotalBefore + 100, 1);
+    expect((await overviewValues(page)).target).toBeCloseTo(grandTotalBefore + 100, 1);
   }).toPass();
 
   // Ausgabe von 40 € gegen diese Kategorie und diesen Topf eintragen.
@@ -69,7 +72,7 @@ test('creates a shared budget pot with categories and the KPIs reflect the new e
   await page.locator('.modal:visible').getByRole('button', { name: 'Eintragen' }).click();
 
   await expect(async () => {
-    expect(await kpiValue(page, 'Ausgegeben')).toBeCloseTo(spentBefore + 40, 1);
+    expect((await overviewValues(page)).spent).toBeCloseTo(spentBefore + 40, 1);
   }).toPass();
 
   const categoryMeter = potCard.locator('.category-row', { hasText: 'E2E Testkategorie' });
@@ -80,7 +83,7 @@ test('creates a shared budget pot with categories and the KPIs reflect the new e
 test('a budget pot with only a target_amount (simple mode) shows a single meter without categories', async ({ page }) => {
   await page.goto('/budget');
   await expect(page.locator('.budget-page')).toBeVisible();
-  const grandTotalBefore = await kpiValue(page, 'Gesamtbudget');
+  const { target: grandTotalBefore } = await overviewValues(page);
 
   const potName = `E2E Einfacher Topf ${Date.now()}`;
   await page.getByRole('button', { name: '+ Budget anlegen' }).click();
@@ -95,7 +98,7 @@ test('a budget pot with only a target_amount (simple mode) shows a single meter 
   await expect(potCard).toContainText('250.00');
 
   await expect(async () => {
-    expect(await kpiValue(page, 'Gesamtbudget')).toBeCloseTo(grandTotalBefore + 250, 1);
+    expect((await overviewValues(page)).target).toBeCloseTo(grandTotalBefore + 250, 1);
   }).toPass();
 });
 
@@ -225,7 +228,7 @@ test('nothing overflows the mobile viewport on the budget view', async ({ page }
     expect(box.x + box.width, 'Element ragt rechts aus dem Viewport').toBeLessThanOrEqual(viewport.width + 0.5);
   }
 
-  await checkNoOverflow(page.locator('.kpis'));
+  await checkNoOverflow(page.locator('.overview-card'));
 
   // Pot-Karten können je nach Datenmenge (Seed-Daten haben z. B. 6 Standardkategorien) höher als
   // der Viewport sein - wie bei den Listen-Karten unten zählt hier nur die horizontale Breite.

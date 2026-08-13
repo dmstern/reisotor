@@ -10,6 +10,7 @@ import { useLiveSyncStore } from '../stores/liveSync';
 import { assignCategoryColors } from '../utils/categoryColors';
 import { toLocalDateString } from '../utils/dateFormat';
 import type { SettlementSuggestion } from '../utils/budgetBalances';
+import BudgetMeter from '../components/BudgetMeter.vue';
 import BudgetPotCard from '../components/BudgetPotCard.vue';
 import BudgetSettlementCard from '../components/BudgetSettlementCard.vue';
 import BudgetExpenseList from '../components/BudgetExpenseList.vue';
@@ -234,21 +235,19 @@ const categoryColors = computed(() => {
   <div class="page budget-page" v-if="!loading">
     <h1>Budget</h1>
 
-    <div class="grid kpis">
-      <div class="card kpi">
-        <span class="kpi-label">Gesamtbudget</span>
-        <strong class="kpi-value">{{ budgetStore.grandTotal.toFixed(2) }} €</strong>
-      </div>
-      <div class="card kpi">
-        <span class="kpi-label">Ausgegeben</span>
-        <strong class="kpi-value">{{ budgetStore.totalSpent.toFixed(2) }} €</strong>
-      </div>
-      <div class="card kpi">
-        <span class="kpi-label">Rest</span>
-        <strong class="kpi-value" :class="{ negative: budgetStore.remaining < 0 }">
-          {{ budgetStore.remaining.toFixed(2) }} €
-        </strong>
-      </div>
+    <div class="card overview-card">
+      <BudgetMeter
+        label="Budget"
+        :spent="budgetStore.totalSpent"
+        :target="budgetStore.grandTotal"
+        color="var(--color-primary-dark)"
+      />
+      <!-- BudgetMeter zeigt den Überzug-Fall (⚠️ X € über Budget) schon selbst an - hier nur den
+           positiven Rest-Fall ergänzen, den BudgetMeter (auch anderswo für Packliste/Einkaufsliste/
+           ToDo genutzt, siehe DashboardView.vue) bewusst nicht kennt. -->
+      <p v-if="budgetStore.grandTotal > 0 && budgetStore.remaining >= 0" class="remaining-line">
+        Noch übrig: <strong>{{ budgetStore.remaining.toFixed(2) }} €</strong>
+      </p>
     </div>
 
     <BudgetSettlementCard @use-suggestion="useSettlementSuggestion" />
@@ -387,31 +386,22 @@ const categoryColors = computed(() => {
   max-width: 1400px;
 }
 
-.kpis {
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+.overview-card {
   margin-bottom: var(--space-4);
 }
 
-.kpi {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
+.overview-card :deep(.meter-head) {
+  font-size: 1.05rem;
 }
 
-.kpi-label {
-  font-size: 0.8rem;
-  color: var(--color-text-muted);
+.overview-card :deep(.track) {
+  height: 14px;
 }
 
-.kpi-value {
-  font-size: 1.4rem;
-  color: var(--color-primary-dark);
-  overflow-wrap: anywhere;
-}
-
-.kpi-value.negative {
-  color: var(--color-danger);
+.remaining-line {
+  margin: var(--space-1) 0 0;
+  font-size: 0.9rem;
+  color: var(--color-success);
 }
 
 .budget-page > .card {
