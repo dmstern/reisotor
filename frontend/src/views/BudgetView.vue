@@ -822,6 +822,15 @@ const categoryColors = computed(() => {
   font-size: 0.88rem;
 }
 
+/* Tabellenzeilen haben (anders als .card) keinen eigenen border-radius - die globale
+   .new-highlight-Regel (style.css) würde hier sonst mit ihrem für Karten gedachten Radius
+   overrulen bzw. eckig wirken. Best effort: border-radius/outline-Rendering auf <tr> ist nicht in
+   jedem Browser 100%ig konsistent, schadet aber nirgends und rundet, wo es greift. */
+.data-table tr.new-highlight {
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+}
+
 .data-table th {
   color: var(--color-text-muted);
   font-weight: 600;

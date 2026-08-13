@@ -180,6 +180,14 @@ const tallyGroups = computed<number[]>(() => {
   border-bottom: 1px solid var(--color-border);
 }
 
+/* .row selbst hat (anders als .card) keinen border-radius - die globale .new-highlight-Regel
+   (style.css) würde hier sonst mit ihrem für Karten gedachten Radius overrulen bzw. eckig
+   wirken. Kleinerer, zur schmalen Listen-Zeile passender Wert. */
+.row.new-highlight {
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+}
+
 .row:last-child {
   border-bottom: none;
 }

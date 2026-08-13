@@ -465,6 +465,10 @@ async function onImportFileSelected(event: Event) {
           </option>
         </select>
       </label>
+      <label class="checkbox-option">
+        <input type="checkbox" v-model="uiSettings.showHomeWeatherFullTrip" />
+        Wetter zuhause für den ganzen Urlaub zeigen (statt nur gegen Ende)
+      </label>
     </div>
 
     <!-- id als Sprungziel, analog zu #weather-provider-settings oben -->

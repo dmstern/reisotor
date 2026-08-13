@@ -16,6 +16,13 @@ const props = withDefaults(defineProps<{ modelValue: string; placeholder?: strin
 });
 const emit = defineEmits<{ (e: 'update:modelValue', value: string): void }>();
 
+// Gesetzt während des eigenen onUpdate-Emits, siehe Watcher unten - verhindert, dass das direkt
+// danach vom Formular zurückgespiegelte v-model (identischer Inhalt, ggf. nur durch DOMPurify leicht
+// normalisiert) den Editor per setContent() erneut komplett neu aufbaut. So ein Reentrant-Aufbau
+// mitten im Tippen kappt auf iOS Safari u. a. die native "zweimal Leertaste -> Punkt"-Ersetzung, die
+// an einer ununterbrochenen nativen Eingabe-Session auf dem contenteditable-Element hängt.
+let syncingFromEditor = false;
+
 const editor = useEditor({
   content: props.modelValue,
   extensions: [
@@ -26,16 +33,22 @@ const editor = useEditor({
     attributes: { class: 'richtext-content richtext' },
   },
   onUpdate: ({ editor }) => {
+    syncingFromEditor = true;
     emit('update:modelValue', DOMPurify.sanitize(editor.getHTML()));
   },
 });
 
 // Externe Änderungen am v-model (z. B. Entwurfs-Wiederherstellung durch useDraftAutosave, oder ein
-// Formular-Reset nach dem Absenden) müssen den Editor-Inhalt nachziehen - ohne den Vergleich würde
-// jede Nutzereingabe den Cursor zurücksetzen, da setContent() sonst bei jedem Tastendruck erneut liefe.
+// Formular-Reset nach dem Absenden) müssen den Editor-Inhalt nachziehen - der syncingFromEditor-Guard
+// oben sorgt dafür, dass das nur bei echten externen Änderungen passiert, nicht als Echo der eigenen
+// Eingabe (siehe Kommentar dort).
 watch(
   () => props.modelValue,
   (value) => {
+    if (syncingFromEditor) {
+      syncingFromEditor = false;
+      return;
+    }
     if (!editor.value || editor.value.getHTML() === value) return;
     editor.value.commands.setContent(value, { emitUpdate: false });
   },
@@ -145,14 +158,26 @@ function isActive(name: string, attrs?: Record<string, unknown>) {
         ⌨︎
       </button>
     </div>
-    <editor-content :editor="editor" />
+    <editor-content :editor="editor" class="content-scroll" />
     <p v-if="placeholder && editor?.isEmpty" class="editor-placeholder" aria-hidden="true">{{ placeholder }}</p>
   </div>
 </template>
 
 <style scoped>
+/* display:flex + flex-shrink:0 + max-height (statt einfach nur overflow:hidden ohne Höhenangabe):
+   innerhalb eines full-height-Modal-Formulars (Modal.vue, :slotted(form) { flex:1; overflow-y:auto })
+   ist dieser Editor sonst selbst ein schrumpfbares Flex-Item - durch overflow:hidden bekommt es lt.
+   Flexbox-Spec eine automatische Mindestgröße von 0 und kann bei Platzmangel (z. B. eine lange
+   Touren-/Spot-Auswahlliste darunter) bis auf wenige Pixel zusammengedrückt werden, wobei die Toolbar
+   (erstes Kind) mit-geclippt wird. flex-shrink:0 verhindert das Zusammendrücken, max-height deckelt
+   stattdessen die Gesamthöhe - der eigentliche Scrollbereich für lange Texte ist .content-scroll
+   unten, nicht dieser äußere Rahmen. */
 .richtext-editor {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  max-height: min(55vh, 480px);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
@@ -165,6 +190,9 @@ function isActive(name: string, attrs?: Record<string, unknown>) {
   flex-wrap: wrap;
   gap: 2px;
   padding: 4px;
+  /* Fixer Flex-Sibling außerhalb von .content-scroll (siehe unten) statt Teil des scrollenden
+     Bereichs - bleibt dadurch beim Scrollen langer Texte immer sichtbar, ganz ohne position:sticky. */
+  flex-shrink: 0;
   border-bottom: 1px solid var(--color-border);
   background: var(--color-hover);
 }
@@ -205,6 +233,18 @@ function isActive(name: string, attrs?: Record<string, unknown>) {
   color: var(--color-text-muted);
   pointer-events: none;
   font-size: 0.95rem;
+}
+
+/* <editor-content> rendert einen eigenen, ungestylten Wrapper-Div um den tatsächlichen
+   contenteditable-Div (.richtext-content, siehe editorProps.attributes oben) - flex/overflow müssen
+   deshalb hier auf dem Wrapper sitzen, nicht auf .richtext-content selbst (das wäre kein direktes
+   Flex-Kind von .richtext-editor und flex:1 hätte dort keine Wirkung). min-height:0 erlaubt dem
+   Wrapper trotz max-height am Editor selbst kleiner als der Inhalt zu werden, statt ihn zu sprengen -
+   genau das macht .content-scroll zum eigentlichen, unabhängig scrollbaren Bereich für lange Texte. */
+.content-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .richtext-editor :deep(.richtext-content) {

@@ -8,12 +8,37 @@
 // bekämen – oft zu wenig Platz zum Tippen, v. a. mobil mit eingeblendeter Tastatur. Streckt den
 // Dialog stattdessen auf die verfügbare Höhe; das Formular (und darin per :slotted() jedes
 // textarea, siehe unten) wächst mit, alle anderen Felder behalten ihre natürliche Höhe.
-defineProps<{ modelValue: boolean; title?: string; hideHeader?: boolean; fullHeight?: boolean }>();
+import { onUnmounted, watch } from 'vue';
+
+const props = defineProps<{ modelValue: boolean; title?: string; hideHeader?: boolean; fullHeight?: boolean }>();
 const emit = defineEmits<{ (e: 'update:modelValue', value: boolean): void }>();
 
 function close() {
   emit('update:modelValue', false);
 }
+
+// Sperrt den Scroll der Hauptseite im Hintergrund, solange mindestens ein Modal offen ist - Zähler
+// statt Boolean, da mehrere Modals gleichzeitig gemountet sein können (z. B. DetailModal.vue
+// innerhalb einer Ansicht, die selbst schon einen Formular-Dialog offen hat); nur beim Wechsel von 0
+// auf 1 (bzw. zurück auf 0) tatsächlich sperren/entsperren, damit ein zweites offenes Modal die
+// Sperre des ersten nicht vorzeitig aufhebt. Modulweiter Zustand statt Pinia-Store, da Modal.vue
+// ohnehin nur einmal pro App-Instanz geladen wird - anders als stores/drawers.ts' ähnliches Muster
+// bewusst nicht auf Desktop/Mobile beschränkt, ein zentrierter Overlay soll auf jeder Breite jedes
+// Durchscrollen des Hintergrunds verhindern.
+let openModalCount = 0;
+function lockBodyScroll() {
+  openModalCount++;
+  if (openModalCount === 1) document.body.style.overflow = 'hidden';
+}
+function unlockBodyScroll() {
+  openModalCount = Math.max(0, openModalCount - 1);
+  if (openModalCount === 0) document.body.style.overflow = '';
+}
+
+watch(() => props.modelValue, (open) => (open ? lockBodyScroll() : unlockBodyScroll()), { immediate: true });
+onUnmounted(() => {
+  if (props.modelValue) unlockBodyScroll();
+});
 </script>
 
 <template>
