@@ -183,6 +183,12 @@ gemeinsamer Hervorhebungs-Mechanismus statt zweier paralleler).
 `reise.ruebenherz.de`). Die SQLite-Datei wird beim Deploy nie überschrieben (siehe
 "Datenmodell-Änderungen" unten).
 
+**PR-Merge-Regel für Claude Code**: von Claude Code erstellte PRs gegen `main` sollen automatisch
+gemergt werden, sobald die CI (Unit-Tests + Build, s. o.) grün ist – nicht als Draft liegen bleiben
+und auf manuelles Review warten. Der Nutzer testet Änderungen bewusst erst nach dem darauf folgenden
+automatischen Deploy auf `dev.reise.ruebenherz.de`, nicht vorher am PR-Diff. Gilt nicht, wenn der
+Nutzer für eine bestimmte Änderung ausdrücklich um Review vor dem Merge bittet.
+
 ## Konsistenz-Check bei Änderungen
 
 Die App ist über viele Sessions gewachsen, und dasselbe Konzept (Icon, Bezeichnung, Layout-/
