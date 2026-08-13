@@ -296,15 +296,19 @@ async function quickAddToGroup(group: Group, label: string) {
       <FormField icon="🏬" label="Shop">
         <Combobox v-model="newShop" :options="knownShops" placeholder="Shop/Laden (optional)" />
       </FormField>
-      <select v-model="newBuyer">
-        <option value="">Kein:e Einkäufer:in</option>
-        <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
-      </select>
-      <select v-model="newPeriod">
-        <option value="">Kein Zeitraum</option>
-        <option value="before">{{ PERIOD_META.before }}</option>
-        <option value="during">{{ PERIOD_META.during }}</option>
-      </select>
+      <FormField icon="🧑" label="Einkäufer:in">
+        <select v-model="newBuyer">
+          <option value="">Kein:e Einkäufer:in</option>
+          <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
+        </select>
+      </FormField>
+      <FormField icon="🗓️" label="Zeitraum">
+        <select v-model="newPeriod">
+          <option value="">Kein Zeitraum</option>
+          <option value="before">{{ PERIOD_META.before }}</option>
+          <option value="during">{{ PERIOD_META.during }}</option>
+        </select>
+      </FormField>
       <FormField icon="🔗" label="Link">
         <input v-model="newLink" type="url" placeholder="Link (optional, z. B. Amazon)" />
       </FormField>
@@ -392,11 +396,13 @@ async function quickAddToGroup(group: Group, label: string) {
         <FormField icon="🏬" label="Shop">
           <Combobox v-model="editForm.shop" :options="knownShops" placeholder="Shop/Laden (optional)" />
         </FormField>
-        <select v-model="editForm.period">
-          <option value="">Kein Zeitraum</option>
-          <option value="before">{{ PERIOD_META.before }}</option>
-          <option value="during">{{ PERIOD_META.during }}</option>
-        </select>
+        <FormField icon="🗓️" label="Zeitraum">
+          <select v-model="editForm.period">
+            <option value="">Kein Zeitraum</option>
+            <option value="before">{{ PERIOD_META.before }}</option>
+            <option value="during">{{ PERIOD_META.during }}</option>
+          </select>
+        </FormField>
         <FormField icon="🔗" label="Link">
           <input v-model="editForm.link" type="url" placeholder="Link (optional)" />
         </FormField>
@@ -426,8 +432,7 @@ async function quickAddToGroup(group: Group, label: string) {
   margin-bottom: var(--space-3);
 }
 
-.add-form .form-field,
-.add-form select {
+.add-form .form-field {
   flex: 1;
   min-width: 140px;
 }
