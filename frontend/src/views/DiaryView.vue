@@ -276,11 +276,13 @@ function openNewForm() {
   form.value = emptyForm();
   pickedSpotIds.value = new Set();
   pickedSpotExcursionIds.value = new Set();
-  showExcursionPicker.value = false;
   showSpotPicker.value = false;
   // Vorschlag: an diesem Tag geplante Ausflüge direkt vorauswählen, statt sie nur anzuzeigen –
   // meist wird ein Eintrag ja am selben Tag über genau diesen Ausflug geschrieben.
   form.value.excursion_ids = excursionsStore.excursions.filter((e) => e.date === form.value.date).map((e) => e.id);
+  // Picker bei einer Vorauswahl direkt aufklappen, damit die "Empfohlen"-Markierung sichtbar ist
+  // (Standard sonst eingeklappt, siehe showExcursionPicker oben).
+  showExcursionPicker.value = form.value.excursion_ids.length > 0;
   showForm.value = true;
 }
 
@@ -321,7 +323,7 @@ function startEdit(entry: DiaryEntry) {
   };
   editPickedSpotIds.value = new Set();
   editPickedSpotExcursionIds.value = new Set();
-  editShowExcursionPicker.value = false;
+  editShowExcursionPicker.value = editForm.value.excursion_ids.length > 0;
   editShowSpotPicker.value = false;
 }
 

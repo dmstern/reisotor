@@ -83,6 +83,10 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
     await editor.click();
     await editor.pressSequentially('Wir haben die Altstadt erkundet und sind spontan im Café eingekehrt.');
 
+    // Spot-Picker ist standardmäßig eingeklappt (spart Platz, siehe DiaryView.vue), muss also erst
+    // aufgeklappt werden, bevor der Picker-Button für den manuellen Spot erreichbar ist.
+    await modal.getByRole('button', { name: '📍 Spots zuordnen' }).click();
+
     // Spot manuell per Picker-Button hinzufügen (nicht vorab geplant, daher kein Empfohlen-Badge).
     const spotButton = modal.locator('.spot-option-btn', { hasText: spotTitle });
     await expect(spotButton.locator('.excursion-option-badge.recommended')).toHaveCount(0);
