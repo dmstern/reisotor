@@ -1806,8 +1806,11 @@ async function removeSpot(id: number) {
   /* Seitliches/oberes Polster deutlich großzügiger als die alten 8px/4px - bei der jetzt sichtbar
      gerundeten Sheet-Ecke (--radius-lg-squircle, siehe .spots-col oben) saßen die Stufen-Buttons
      sonst fast in der Rundung selbst statt sichtbar davor (genau der von Apples "X"-Button
-     abweichende Effekt aus dem PR-Review-Screenshot). */
-  padding: var(--space-3) var(--space-4) 0;
+     abweichende Effekt aus dem PR-Review-Screenshot). Oben/seitlich identisch (var(--space-3)
+     statt oben --space-3 und seitlich --space-4) - selbes Card-Innenabstand-Maß wie SpotCard.vue/
+     ExcursionCard.vue/DerivedLocationCard.vue u. a. (siehe DESIGN.md, Abschnitt "Abstände") statt
+     eines eigens erfundenen asymmetrischen Werts. */
+  padding: var(--space-3) var(--space-3) 0;
   /* Gilt für die ganze Zeile (nicht nur .sheet-handle): ein Zug, der knapp neben dem eigentlichen
      Anfasser beginnt (z. B. noch über den Stufen-Buttons), soll trotzdem nicht als Seiten-Scroll/
      Pull-to-Refresh interpretiert werden. */
