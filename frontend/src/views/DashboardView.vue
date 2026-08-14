@@ -843,6 +843,13 @@ function formatWeekdayDate(d: string) {
 .cards {
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   padding-top: 22px;
+  /* Zeilenabstand größer als der globale .grid-Standard (--space-3, 16px): .tile-icon (unten) ragt
+     22px über den oberen Rand seiner eigenen Kachel hinaus (abgerundetes "Badge"-Icon, halb auf/
+     halb über der Kachel) - bei nur 16px Zeilenabstand überdeckt es damit die Kachel der Zeile
+     darüber. --space-4 (24px) lässt 2px Luft; Spaltenabstand bleibt beim schmaleren Standardwert,
+     da dort kein Icon hineinragt. */
+  row-gap: var(--space-4);
+  column-gap: var(--space-3);
 }
 
 .tile {
