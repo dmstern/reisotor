@@ -41,27 +41,35 @@ const activeIndex = computed(() => props.options.findIndex((o) => o.value === pr
 </template>
 
 <style scoped>
+/* Voll rund (border-radius:999px) statt Squircle - ein Segmented-Control ist konzeptionell näher an
+   den anderen "vollständig runden" Pillen/Chips (siehe DESIGN.md, Abschnitt "Eckenrundung") als an
+   einer Card/einem Button. --shadow-inset + --texture-grain (siehe DESIGN.md, Abschnitt "Weiches
+   Material") lassen den Track wie eine leicht eingelassene Rinne wirken, in der die Pille unten
+   sichtbar "liegt", statt nur eine flache zweite Fläche zu sein. */
 .segmented-toggle {
   position: relative;
   display: grid;
   grid-template-columns: repeat(var(--count), 1fr);
-  background: var(--color-hover);
-  border-radius: var(--radius-md-squircle);
-  corner-shape: squircle;
-  padding: 3px;
+  background-color: var(--color-hover);
+  background-image: var(--texture-grain);
+  background-blend-mode: overlay;
+  border-radius: 999px;
+  padding: 4px;
   gap: 2px;
+  box-shadow: var(--shadow-inset);
 }
 
 /* Gleitet per transform statt left/width-Änderungen - eine Eigenschaft zu animieren reicht,
-   läuft dadurch auf dem Compositor statt bei jedem Frame Layout neu zu berechnen. */
+   läuft dadurch auf dem Compositor statt bei jedem Frame Layout neu zu berechnen.
+   --shadow-pill-raised (Glanzrand oben, Gewichts-Schatten unten, sanfte Abhebung vom Track) gibt der
+   Pille ein weiches, aufgepolstertes/gummi-haftiges statt rein flaches Erscheinungsbild. */
 .segmented-thumb {
   position: absolute;
-  inset: 3px;
-  width: calc((100% - 6px) / var(--count));
+  inset: 4px;
+  width: calc((100% - 8px) / var(--count));
   background: var(--color-surface);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  box-shadow: var(--shadow-sm);
+  border-radius: 999px;
+  box-shadow: var(--shadow-pill-raised);
   transform: translateX(calc(var(--active-index) * 100%));
   transition: transform 0.2s ease;
 }
@@ -72,8 +80,7 @@ const activeIndex = computed(() => props.options.findIndex((o) => o.value === pr
   padding: 5px 10px;
   border: none;
   background: none;
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
+  border-radius: 999px;
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--color-text-muted);

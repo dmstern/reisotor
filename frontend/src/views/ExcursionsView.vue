@@ -2445,10 +2445,20 @@ async function removeSpot(id: number) {
    */
 .category-nav {
   display: flex;
+  /* "safe center" statt schlicht "center": zentriert die Icons, solange sie in die Breite passen
+     (der Normalfall bei wenigen Touren/Kategorien, siehe gemeldeter Bug - vorher klebte die Reihe
+     durch das knappe padding unten sichtbar links/oben in ihrer Karte), fällt aber automatisch auf
+     Start-Ausrichtung zurück, sobald mehr Einträge nicht mehr reinpassen und die Leiste horizontal
+     scrollen muss (reines "center" würde dort das erste Element sonst nur durch Scrollen nach LINKS
+     erreichbar machen statt normal von links zu beginnen - unsafe/klassisches Verhalten). Kein
+     Fallback-Wert nötig: in Browsern ohne safe/unsafe-Unterstützung bleibt die gesamte Deklaration
+     ungültig und damit bei der Standard-Ausrichtung (flex-start) - kein Bruch, nur kein Centering. */
+  justify-content: safe center;
+  align-items: center;
   gap: var(--space-3);
   overflow-x: auto;
   overflow-y: hidden;
-  padding: 4px 2px var(--space-3);
+  padding: var(--space-2) var(--space-3);
   margin-bottom: var(--space-2);
   position: sticky;
   top: var(--space-2);
