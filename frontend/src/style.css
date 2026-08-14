@@ -537,7 +537,7 @@ input[type='checkbox']:focus-visible,
   color: var(--color-text-muted);
 }
 
-input,
+input:not([type='checkbox']):not([type='file']),
 select,
 textarea {
   padding: 9px 12px;
@@ -550,6 +550,12 @@ textarea {
      nicht unter ihre intrinsische Breite und ragen auf schmalen Bildschirmen über den Rand. */
   min-width: 0;
   max-width: 100%;
+  /* Native Eingabetypen (v. a. type=date/time, aber auch <select> je nach Plattform) bauen sich
+     intern mit eigenem Chrome (Kalender-/Uhr-Icon, Wertebereich) und werden dadurch trotz
+     identischer padding-Werte oft höher als ein normales Text-Eingabefeld gerendert - sichtbar als
+     "verrutschte" Zeile, sobald beide nebeneinanderstehen (Konsistenz-Prinzip, siehe DESIGN.md).
+     Eine gemeinsame Mindesthöhe erzwingt für alle Feldtypen dasselbe Ergebnis. */
+  min-height: 44px;
 }
 
 input:focus,

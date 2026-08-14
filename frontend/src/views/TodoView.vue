@@ -422,6 +422,14 @@ function isOverdue(item: TodoItem) {
   min-width: 140px;
 }
 
+/* Ohne eigenes FormField-Label würde der Absenden-Button, sobald er in derselben umgebrochenen
+   Flex-Zeile wie ein FormField landet, vom Flex-Default align-items:stretch auf dessen (größere)
+   Höhe gezogen (Konsistenz-Prinzip, siehe DESIGN.md). flex-basis:100% erzwingt stattdessen immer
+   eine eigene, volle Zeile - Absenden-Button bekommt so app-weit dieselbe, natürliche Höhe. */
+.add-form button[type='submit'] {
+  flex: 1 1 100%;
+}
+
 .filter-row {
   display: flex;
   align-items: center;

@@ -57,6 +57,10 @@ const currentOption = computed(() => THEME_MODE_OPTIONS.find((o) => o.value === 
   inset: 0;
   width: 100%;
   height: 100%;
+  /* Überschreibt style.css's globale min-height (44px, für normale Formularfelder gedacht) -
+     dieses <select> ist nur eine unsichtbare Klickfläche über dem 36px-Icon-Button, kein
+     eigenständiges Formularfeld. */
+  min-height: 0;
   opacity: 0;
   border: none;
   padding: 0;

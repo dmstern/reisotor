@@ -22,5 +22,10 @@ defineProps<{ status: DraftStatus; restored?: boolean }>();
   padding: 4px 0 0;
   font-size: 0.8rem;
   color: var(--color-text-muted);
+  /* In Flex-Row-Formularen (z. B. ShoppingListView.vue's .add-form) soll dieser Text nie eine
+     Formularfeld-Zeile mitteilen bzw. von deren Höhe gestreckt werden - erzwingt stattdessen immer
+     eine eigene volle Zeile. In Flex-Column-Formularen ist das ein No-op (dort schon von Natur aus
+     zeilenfüllend). */
+  flex-basis: 100%;
 }
 </style>
