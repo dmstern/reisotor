@@ -128,6 +128,10 @@ Rundung wirkt inkonsistent zu den übrigen Elementen. Bei einer PR-Selbstprüfun
 Mode. Für neue schwebende Elemente (Dropdowns, Tooltips, Cards mit Hebung) eine der beiden Stufen
 verwenden statt eines eigenen `box-shadow`-Werts.
 
+Für taktile Pillen-Elemente (aktuell: `SegmentedToggle.vue`) gibt es zusätzlich ein zweites,
+"weicheres" Paar – siehe Abschnitt "Weiches Material" weiter unten, nicht mit `--shadow-sm`/`-md`
+mischen.
+
 ## Animationen
 
 Kein zentrales `--transition-*`-Token bisher, aber ein klarer de-facto Standard über drei
@@ -149,10 +153,53 @@ Größenordnungen hinweg – neue Übergänge an einer dieser drei orientieren, 
 Durchgehend `ease`/`ease-in-out`, nie eine "bouncy"/Spring-artige Easing-Funktion – passt zum
 insgesamt eher zurückhaltenden, nativen App-Gefühl statt auffälliger Spielereien.
 
+## Weiches Material (taktile Pillen)
+
+Für Segmented-Controls (`SegmentedToggle.vue`) und ähnliche Umschalter, die wie ein greifbares,
+leicht gepolstertes physisches Objekt wirken sollen, gibt es zusätzlich zu `--shadow-sm`/`-md` ein
+eigenes Token-Paar:
+
+- `--shadow-inset`: eine leicht eingelassene Rinne für die Track-Fläche (der Bereich, in dem der
+  Thumb gleitet) – simuliert per `inset`-Schatten, dass die Fläche selbst zurückversetzt statt nur
+  eine zweite flache Ebene ist.
+- `--shadow-pill-raised`: ein sanft aufgepolstertes Kissen-Gefühl für den gleitenden Thumb selbst –
+  ein dezenter Glanzrand oben (`inset 0 1px 0 rgba(255,255,255,…)`), ein dezenter Gewichts-Schatten
+  unten sowie ein normaler (nicht-inset) Drop-Shadow für die sichtbare Abhebung vom Track.
+
+Beide wie `--shadow-sm`/`-md` je einmal hell (`:root`) und einmal dunkel (beide Dark-Mode-Blöcke)
+definiert – nie eine eigene `rgba()`/`box-shadow`-Kombination lokal in einer Komponente bauen.
+Zusätzlich sorgt `--texture-grain` (ein per SVG-`feTurbulence` erzeugtes, extrem dezentes
+Rausch-Muster als `background-image` mit `background-blend-mode: overlay`) für einen angenehm
+griffigen statt komplett flachen/plastikigen Flächen-Eindruck auf dem Track – theme-unabhängig
+(keine eigene Dark-Mode-Variante nötig, der Blend-Mode passt sich automatisch an).
+
+Diese Pillen sind bewusst immer **voll rund** (`border-radius: 999px`, kein Squircle) statt der
+normalen Card/Button-Squircle-Regel – ein Segmented-Control ist konzeptionell näher an den anderen
+"vollständig runden" Elementen (Pillen/Chips, siehe Abschnitt "Eckenrundung") als an einer
+Card/einem Button.
+
+Aktuell nur auf `SegmentedToggle.vue` angewendet. Eine App-weite Ausweitung dieses weicheren
+Materials auf normale Buttons/Cards wäre eine größere Design-Entscheidung (siehe `CLAUDE.md`,
+Abschnitt "Konsistenz-Check bei Änderungen") und sollte erst nach Rücksprache erfolgen, nicht
+automatisch bei der nächsten Gelegenheit an einem Button/einer Card mitgezogen werden.
+
 ## Typografie
 
 `--font-sans` (Fira Sans, selbst gehostet als Latin-Subset-WOFF2 – siehe Kommentar in `style.css`
 oben, funktioniert offline). Keine weiteren Schriftfamilien einführen.
+
+**Alle tatsächlich genutzten (Fettung × Schnitt)-Kombinationen brauchen einen echten `@font-face` -
+nicht nur alle genutzten `font-weight`-Stufen (aktuell 400/500/600/700) normal, sondern dieselben
+Stufen auch **kursiv**, sobald irgendwo `<em>`/`font-style: italic` mit diesem Gewicht zusammentrifft
+(z. B. `RichTextEditor.vue`s Kursiv-Knopf `<em>K</em>` innerhalb eines `font-weight:600`-Buttons,
+oder von Nutzer:innen im Editor kombiniertes Fett+Kursiv). Fehlt der passende Schnitt, rendert der
+Browser einen "faux"/synthetischen Schnitt (schräg gestelltes Kursiv bzw. künstlich verdicktes Fett)
+statt eines tatsächlich dafür gezeichneten Buchstabens – sieht in Fira Sans (mit klar unterschiedlich
+gestalteten dezidierten Schnitten) sichtbar unrunder/inkonsistenter aus als der Rest der Schrift. Bei
+einer neuen Stelle, die eine bisher ungenutzte Kombination einführt (neue `font-weight`-Stufe, neues
+`italic`-Vorkommen an einer bereits genutzten Stufe): grep auf `font-weight:`/`italic` in
+`frontend/src` gegen die in `style.css` vorhandenen `@font-face`-Blöcke prüfen, fehlenden Schnitt
+nachziehen statt den Browser synthetisieren zu lassen.
 
 ## Breakpoints
 

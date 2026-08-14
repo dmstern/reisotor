@@ -45,6 +45,34 @@
   font-display: optional;
   src: url('/fonts/fira-sans-700.woff2') format('woff2');
 }
+/* Kursiv-Schnitte für 500/600/700 (analog zu den drei normalen Schnitten oben) - fehlten bisher,
+   wodurch der Browser für jede Kombination aus Kursiv + einem dieser Fettungsgrade (z. B. der
+   "Kursiv"-Knopf im RichTextEditor.vue-Toolbar, dessen <em> in einem font-weight:600-Button sitzt,
+   oder von Nutzer:innen im Editor kombiniertes Fett+Kursiv) den echten 400er-Kursiv-Schnitt künstlich
+   schräg gestellt/verzerrt hat ("faux italic") statt einen tatsächlich für diesen Schnitt gezeichneten
+   Buchstaben zu zeigen - sichtbar als leicht unrunder/inkonsistenter Schrift-Eindruck genau an diesen
+   Stellen. */
+@font-face {
+  font-family: 'Fira Sans';
+  font-style: italic;
+  font-weight: 500;
+  font-display: optional;
+  src: url('/fonts/fira-sans-500-italic.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Fira Sans';
+  font-style: italic;
+  font-weight: 600;
+  font-display: optional;
+  src: url('/fonts/fira-sans-600-italic.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Fira Sans';
+  font-style: italic;
+  font-weight: 700;
+  font-display: optional;
+  src: url('/fonts/fira-sans-700-italic.woff2') format('woff2');
+}
 
 :root {
   color-scheme: light;
@@ -105,6 +133,25 @@
   --shadow-sm: 0 2px 6px rgba(43, 42, 40, 0.12);
   --shadow-md: 0 8px 24px rgba(43, 42, 40, 0.16);
 
+  /* Zweites, "weicheres" Schatten-Paar für taktile Pillen-Elemente (aktuell: SegmentedToggle.vue,
+     siehe DESIGN.md Abschnitt "Weiches Material") - getrennt von --shadow-sm/md (die sind für
+     normale schwebende Karten/Dropdowns kalibriert). --shadow-inset simuliert eine leicht
+     eingelassene Rinne für die Track-Fläche, --shadow-pill-raised ein sanft aufgepolstertes Kissen
+     für den darin liegenden Thumb (Glanzrand oben, Gewichts-Schatten unten, plus Abhebung vom
+     Track). Beide zusätzlich unten in beiden Dark-Mode-Blöcken überschrieben. */
+  --shadow-inset: inset 0 1px 3px rgba(43, 42, 40, 0.15), inset 0 -1px 0 rgba(255, 255, 255, 0.5);
+  --shadow-pill-raised:
+    0 1px 2px rgba(43, 42, 40, 0.15),
+    0 3px 8px rgba(43, 42, 40, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    inset 0 -2px 3px rgba(43, 42, 40, 0.06);
+
+  /* Extrem dezentes Rausch-Muster (SVG feTurbulence als Daten-URI) für einen angenehm griffigen statt
+     komplett flachen/plastikigen Flächen-Eindruck auf denselben taktilen Pillen-Elementen -
+     background-blend-mode:overlay statt eigener Deckkraft, damit es sich automatisch in beide Themes
+     einfügt statt in Dark Mode zu hell/grau zu wirken (keine separate Dark-Mode-Variante nötig). */
+  --texture-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.35'/%3E%3C/svg%3E");
+
   --font-sans: 'Fira Sans', 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
 }
 
@@ -149,6 +196,12 @@
 
     --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.35);
     --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
+    --shadow-inset: inset 0 1px 3px rgba(0, 0, 0, 0.5), inset 0 -1px 0 rgba(255, 255, 255, 0.04);
+    --shadow-pill-raised:
+      0 1px 2px rgba(0, 0, 0, 0.4),
+      0 3px 10px rgba(0, 0, 0, 0.35),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      inset 0 -2px 3px rgba(0, 0, 0, 0.25);
     color-scheme: dark;
   }
 }
@@ -174,6 +227,12 @@
 
   --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.35);
   --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --shadow-inset: inset 0 1px 3px rgba(0, 0, 0, 0.5), inset 0 -1px 0 rgba(255, 255, 255, 0.04);
+  --shadow-pill-raised:
+    0 1px 2px rgba(0, 0, 0, 0.4),
+    0 3px 10px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.25);
   color-scheme: dark;
 }
 
