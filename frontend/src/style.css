@@ -103,6 +103,14 @@
   --color-highlight-border: #f0d3ac;
   --color-accent-secondary: #5b6ee1;
   --color-accent-secondary-bg: #eef0fd;
+  /* Eigener Ton für "an diesem Tag ist etwas geplant" (TripMap.vue's Tage-Streifen) - bewusst NICHT
+     --color-accent, das app-weit bereits fest für "Echtzeit-Update von jemand anderem"/"wartet auf
+     Sync"/Sonstiges-Aufmerksamkeit steht (.new-highlight in diesem File, PendingSyncBadge.vue,
+     OfflineIndicator.vue, …). Beide als dieselbe Farbe zu zeigen macht an einer Stelle, an der beide
+     gleichzeitig auftreten können (Tage-Streifen + Live-Sync), nicht mehr unterscheidbar, welche der
+     beiden Bedeutungen gerade gemeint ist. Sattes/"saftiges" Hellblau statt eines weiteren
+     Rot-/Orange-Tons, um maximal von --color-accent/--color-danger abzuheben. */
+  --color-scheduled: #1e96d1;
 
   /* Etwas großzügiger als vorher (8/14/22) – Basiswerte, gelten unverändert für alles, was normal
      rund bleibt (Pillen, echte Kreise wie EditButton/DeleteButton mit border-radius:50%, kleine
@@ -136,15 +144,13 @@
   /* Zweites, "weicheres" Schatten-Paar für taktile Pillen-Elemente (aktuell: SegmentedToggle.vue,
      siehe DESIGN.md Abschnitt "Weiches Material") - getrennt von --shadow-sm/md (die sind für
      normale schwebende Karten/Dropdowns kalibriert). --shadow-inset simuliert eine leicht
-     eingelassene Rinne für die Track-Fläche, --shadow-pill-raised ein sanft aufgepolstertes Kissen
-     für den darin liegenden Thumb (Glanzrand oben, Gewichts-Schatten unten, plus Abhebung vom
-     Track). Beide zusätzlich unten in beiden Dark-Mode-Blöcken überschrieben. */
-  --shadow-inset: inset 0 1px 3px rgba(43, 42, 40, 0.15), inset 0 -1px 0 rgba(255, 255, 255, 0.5);
-  --shadow-pill-raised:
-    0 1px 2px rgba(43, 42, 40, 0.15),
-    0 3px 8px rgba(43, 42, 40, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.8),
-    inset 0 -2px 3px rgba(43, 42, 40, 0.06);
+     eingelassene Rinne für die Track-Fläche, --shadow-pill-raised eine sanfte Abhebung für den darin
+     liegenden Thumb. Bewusst NUR ein weicher, diffuser Schlagschatten je Ebene - kein heller
+     Glanzrand/Highlight-Inset (frühere Version hatte das, wirkte dadurch eher wie ein glänzender
+     2000er-Web-Button/Neumorphismus als modern/dezent). Beide zusätzlich unten in beiden
+     Dark-Mode-Blöcken überschrieben. */
+  --shadow-inset: inset 0 1px 2px rgba(43, 42, 40, 0.1);
+  --shadow-pill-raised: 0 1px 2px rgba(43, 42, 40, 0.08), 0 2px 6px rgba(43, 42, 40, 0.08);
 
   /* Extrem dezentes Rausch-Muster (SVG feTurbulence als Daten-URI) für einen angenehm griffigen statt
      komplett flachen/plastikigen Flächen-Eindruck auf denselben taktilen Pillen-Elementen -
@@ -193,15 +199,12 @@
     --color-highlight-border: #5c4a2c;
     --color-accent-secondary: #8b98f0;
     --color-accent-secondary-bg: #23253d;
+    --color-scheduled: #52b8ea;
 
     --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.35);
     --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
-    --shadow-inset: inset 0 1px 3px rgba(0, 0, 0, 0.5), inset 0 -1px 0 rgba(255, 255, 255, 0.04);
-    --shadow-pill-raised:
-      0 1px 2px rgba(0, 0, 0, 0.4),
-      0 3px 10px rgba(0, 0, 0, 0.35),
-      inset 0 1px 0 rgba(255, 255, 255, 0.08),
-      inset 0 -2px 3px rgba(0, 0, 0, 0.25);
+    --shadow-inset: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-pill-raised: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 6px rgba(0, 0, 0, 0.25);
     color-scheme: dark;
   }
 }
@@ -224,15 +227,12 @@
   --color-highlight-border: #5c4a2c;
   --color-accent-secondary: #8b98f0;
   --color-accent-secondary-bg: #23253d;
+  --color-scheduled: #52b8ea;
 
   --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.35);
   --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
-  --shadow-inset: inset 0 1px 3px rgba(0, 0, 0, 0.5), inset 0 -1px 0 rgba(255, 255, 255, 0.04);
-  --shadow-pill-raised:
-    0 1px 2px rgba(0, 0, 0, 0.4),
-    0 3px 10px rgba(0, 0, 0, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    inset 0 -2px 3px rgba(0, 0, 0, 0.25);
+  --shadow-inset: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-pill-raised: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 6px rgba(0, 0, 0, 0.25);
   color-scheme: dark;
 }
 

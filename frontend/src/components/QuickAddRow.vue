@@ -124,12 +124,14 @@ function onBlur() {
   border-bottom-color: var(--color-primary);
 }
 
+/* Bewusst KEIN eigener Rahmen/Hintergrund/Radius mehr im expandierten Zustand (frühere Version
+   "boxte" das Feld hier komplett ein) - diese Zeile lebt praktisch immer innerhalb einer bereits
+   umrahmten Gruppen-/Listen-Karte, ein zusätzlicher Kasten darin sah wie "Kasten im Kasten" aus statt
+   elegant. Die dünne Linie bleibt durchgehend das einzige Stil-Element, nur ihre Farbe zeigt "aktiv/
+   hat Inhalt" an (bleibt auch nach einem nativen blur mit noch ungespeichertem Text bestehen, siehe
+   :focus unten, das dasselbe nur bei echtem Fokus liefert). */
 .quick-add-row.expanded .label-input {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  padding: 6px 8px;
+  border-bottom-color: var(--color-primary);
 }
 
 .extra-fields {

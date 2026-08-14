@@ -639,7 +639,7 @@ function excursionForGroupTitle(title: string): Excursion | null {
 // Horizontale Kategorie-Navigation (Wolt-Stil): Map statt DOM-`id`, damit Leerzeichen/Umlaute in
 // Kategorienamen ("Aussichtspunkt", "Unterkunft") kein Escaping-Problem sind. scrollIntoView()
 // läuft die scrollenden Vorfahren selbst hoch – landet also automatisch in .spots-col, sobald die
-// Container-Query (≥900px) diese Spalte selbst scrollen lässt, sonst in der normalen Seite.
+// Container-Query (≥720px) diese Spalte selbst scrollen lässt, sonst in der normalen Seite.
 // Ziel kann sowohl eine reine Überschrift (Kategorie-Gruppierung) als auch eine ExcursionCard
 // (Touren-Gruppierung, siehe excursionForGroupTitle oben) sein - el.$el löst dafür wie bei
 // setSpotRef unten auf das tatsächliche DOM-Element der Komponente auf.
@@ -874,7 +874,7 @@ const currentSheetHeightPx = computed(() => sheetDragHeightPx.value ?? sheetHeig
 
 // isDesktop (window.matchMedia, siehe useIsDesktop.ts) reicht hier NICHT: ob .spots-col als Sheet-
 // Overlay über der Karte liegt oder als eigene Spalte daneben, entscheidet weiter unten im CSS ein
-// @container app-main (min-width: 900px)-Query gegen die tatsächlich gerenderte Breite von
+// @container app-main (min-width: 720px)-Query gegen die tatsächlich gerenderte Breite von
 // .app-main - die kann schmaler als das Fenster sein (z. B. bei geöffneter Kalender-Schublade), auch
 // bei Fensterbreiten oberhalb der isDesktop-Schwelle von 800px. Ohne dieses eigene Signal wurde
 // mapCoveredBottomPx in genau dieser Konstellation fälschlich auf 0 gezwungen, obwohl das Sheet
@@ -893,11 +893,15 @@ onMounted(() => {
 });
 onUnmounted(() => appMainResizeObserver?.disconnect());
 
-// Spiegelt exakt die 900px-Schwelle des @container app-main-Queries weiter unten im <style> - beide
+// Spiegelt exakt die 720px-Schwelle des @container app-main-Queries weiter unten im <style> - beide
 // Signale müssen übereinstimmen, sonst rechnet TripMap.vue mit einem falschen coveredBottomPx (siehe
 // centerOnPoint()/fitBoundsWithCoveredBottom() dort). window.innerWidth dient nur als Fallback, bis
-// der ResizeObserver beim Mounten seinen ersten Wert liefert.
-const isSheetOverlayMode = computed(() => (appMainWidth.value ?? window.innerWidth) < 900);
+// der ResizeObserver beim Mounten seinen ersten Wert liefert. Absichtlich niedriger als die
+// ursprünglichen 900px: bei geöffneter Kalender-Schublade (Standardbreite 360px, siehe
+// stores/drawers.ts) reichte .app-main auf gängigen Laptop-/Desktop-Breiten sonst oft nicht für die
+// Desktop-Spalten-Ansicht, obwohl rechnerisch noch genug Platz für eine schmalere, aber weiterhin
+// benutzbare Spots-Liste + Karte übrig war (siehe MIN_SPOTS_COL_WIDTH).
+const isSheetOverlayMode = computed(() => (appMainWidth.value ?? window.innerWidth) < 720);
 const mapCoveredBottomPx = computed(() => (isSheetOverlayMode.value ? currentSheetHeightPx.value : 0));
 
 // Ein Klick auf eine Spot-Karte öffnet sie (siehe SpotCard.vue's onCardClick, das bereits
@@ -1718,9 +1722,9 @@ async function removeSpot(id: number) {
      unabhängig von Viewport/anderer-Container-Breite. Gilt unverändert in beiden Modi (Mobil
      fixed/Desktop sticky), da hier nicht zurückgesetzt. Benannt (statt anonym) und die Kompakt-
      Zeilen-Abfragen unten explizit "spots-col" statt unbenannt: sonst würden auch die unbenannten
-     @container(min-width:900px)-Abfragen für Nachfahren wie .sheet-handle/.spots-col-body
+     @container(min-width:720px)-Abfragen für Nachfahren wie .sheet-handle/.spots-col-body
      versehentlich gegen DIESEN (statt gegen .app-main, App.vue) ausgewertet – .spots-col ist selbst
-     nie ≥900px breit, das "Desktop"-Zurücksetzen von .sheet-handle etc. hätte dadurch nie gegriffen. */
+     nie ≥720px breit, das "Desktop"-Zurücksetzen von .sheet-handle etc. hätte dadurch nie gegriffen. */
   container: spots-col / inline-size;
   /* Deckelt alle drei Höhen-Zustände (unten) auf .page's eigene Höhe (siehe .page weiter oben, die
      rechnet Kopfzeile/NavBar bereits ein) – reine vh-Werte kennen weder NavBar- noch Titel-Höhe und
@@ -1908,7 +1912,12 @@ async function removeSpot(id: number) {
    geöffneten Schubladen auf Desktop liegt) macht ein enges 2-Spalten-Grid weniger Sinn als eine
    große Karte mit Sheet darüber. Die feinere "wie schmal darf .spots-col selbst werden"-Frage
    (Kompakt-Zeile, Ein-Spalten-Raster) bleibt weiterhin ein separates @container(spots-col)-Query. */
-@container app-main (min-width: 900px) {
+/* 720px statt der ursprünglichen 900px (siehe isSheetOverlayMode im Script-Block für die exakt
+   gespiegelte JS-Seite dieser Schwelle): bei geöffneter Kalender-Schublade (Standard 360px) blieb
+   .app-main auf gängigen Desktop-/Laptop-Breiten sonst oft unter 900px und die Ansicht fiel auf den
+   mobilen Sheet-Modus zurück, obwohl noch genug Platz für eine (wenn auch schmalere) Spots-Liste +
+   Karte nebeneinander da war. */
+@container app-main (min-width: 720px) {
   .page {
     position: static;
     height: auto;

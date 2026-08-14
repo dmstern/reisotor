@@ -1304,7 +1304,20 @@ watch(() => liveSync.memberPositions, () => renderPositions(), { deep: true });
         <span>🗓️ {{ formatDate(drawers.mapFocusDate) }}</span>
         <button type="button" class="card-action-btn" @click="drawers.mapFocusDate = null">✕ Fokus verlassen</button>
       </div>
+    </div>
 
+    <!-- Mobil/schmales Layout (Teleport aktiv, siehe isNarrowLayout) landet diese Stationen-Liste UND
+         (weiter unten) den Tage-Streifen in der Spots-Schublade (ExcursionsView.vue's
+         #map-focus-dock) statt als Overlay über der Karte zu schweben. Für die Stationen-Liste war
+         das schon immer so (deckte sonst einen Teil des Kartenausschnitts/der Zoom-Steuerung ab); der
+         Tage-Streifen kam erst nachträglich dazu, nachdem er als schwebendes Overlay am unteren
+         Kartenrand auf Mobil praktisch permanent von der (dort ebenfalls unten verankerten, meist
+         mindestens "partial" hohen) Spots-Schublade verdeckt und damit faktisch unbedienbar war -
+         genau dieselbe Falle wie bei der Stationen-Liste vorher, jetzt mit demselben Muster gelöst.
+         Auf echtem Desktop bleibt beides unverändert Teil dieser Karten-Spalte (Teleport disabled,
+         siehe @container-Regel für .focus-spot-list/.day-strip weiter unten - dieselbe 720px-
+         Schwelle wie isNarrowLayout). -->
+    <Teleport v-if="teleportReady" to="#map-focus-dock" :disabled="!isNarrowLayout">
       <div class="day-strip" v-if="vacationDays.length">
         <button
           v-for="day in vacationDays"
@@ -1320,15 +1333,6 @@ watch(() => liveSync.memberPositions, () => renderPositions(), { deep: true });
           <span v-if="dayHasContent(day)" class="day-chip-dot" aria-hidden="true"></span>
         </button>
       </div>
-    </div>
-
-    <!-- Mobil/schmales Layout (Teleport aktiv, siehe isNarrowLayout) landet diese Stationen-Liste in
-         der Spots-Schublade (ExcursionsView.vue's #map-focus-dock) statt als Overlay über der Karte
-         zu schweben – sie deckte dort sonst einen Teil des Kartenausschnitts (und mitunter Marker/
-         die Zoom-Steuerung) ab. Auf echtem Desktop bleibt sie unverändert Teil dieser Karten-Spalte
-         (Teleport disabled, siehe @container-Regel für .focus-spot-list weiter unten - dieselbe
-         900px-Schwelle wie isNarrowLayout). -->
-    <Teleport v-if="teleportReady" to="#map-focus-dock" :disabled="!isNarrowLayout">
     <div class="card focus-spot-list" v-if="focusedExcursion && focusedExcursionStations.length">
       <div class="focus-spot-list-header">
         <button type="button" class="focus-spot-list-title-btn" @click="openExcursionDetail">
@@ -1655,6 +1659,19 @@ watch(() => liveSync.memberPositions, () => renderPositions(), { deep: true });
   box-shadow: var(--shadow-md);
 }
 
+/* Innerhalb der teleportierten Spots-Schublade (siehe Teleport-Kommentar oben) ist der Streifen
+   normales Fließ-Element am Anfang der Liste statt eines schwebenden Overlays - ID-Selektor statt nur
+   .day-strip, damit diese Regel unabhängig von Deklarationsreihenfolge/@container zuverlässig
+   gewinnt (gleiches Prinzip wie DESIGN.md, Abschnitt "Abstände"). */
+#map-focus-dock .day-strip {
+  position: static;
+  left: auto;
+  right: auto;
+  bottom: auto;
+  z-index: auto;
+  margin-bottom: var(--space-2);
+}
+
 .day-chip {
   position: relative;
   flex: 0 0 auto;
@@ -1681,8 +1698,11 @@ watch(() => liveSync.memberPositions, () => renderPositions(), { deep: true });
   font-size: 0.9rem;
 }
 
+/* --color-scheduled statt --color-accent: eigener Ton für "an diesem Tag ist etwas geplant", getrennt
+   von --color-accent (app-weit die Farbe für "Echtzeit-Update von jemand anderem", siehe
+   .new-highlight in style.css) - siehe DESIGN.md, Abschnitt "Farben" für die Begründung. */
 .day-chip.has-content .day-chip-num {
-  color: var(--color-accent);
+  color: var(--color-scheduled);
 }
 
 .day-chip-dot {
@@ -1692,7 +1712,7 @@ watch(() => liveSync.memberPositions, () => renderPositions(), { deep: true });
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: var(--color-accent);
+  background: var(--color-scheduled);
 }
 
 .day-chip.active {
@@ -1920,8 +1940,11 @@ watch(() => liveSync.memberPositions, () => renderPositions(), { deep: true });
    .map-col in ExcursionsView.vue position:absolute (statt fixed) innerhalb von .page bleibt, ist
    ein knappes .app-main (z. B. beide Schubladen offen) kein Problem mehr – die Karte quetscht sich
    dann einfach mit in den mobilen Vollbild-Modus, statt überdeckt zu werden (siehe dort für die
-   ausführliche Begründung). */
-@container (min-width: 900px) {
+   ausführliche Begründung). 720px statt 900px - muss exakt der @container app-main-Schwelle in
+   ExcursionsView.vue (dort samt Begründung) UND deren isSheetOverlayMode-JS-Spiegelung entsprechen,
+   sonst schaltet dieser Bereich hier (Karte/Tage-Streifen) bei einer anderen Breite auf Desktop-Optik
+   um als der umgebende Spalten-Grid, was zu einer inkonsistenten Zwischenbreite führen würde. */
+@container (min-width: 720px) {
   .karte {
     display: flex;
     flex-direction: column;

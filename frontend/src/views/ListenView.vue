@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import PackingListView from './PackingListView.vue';
 import ShoppingListView from './ShoppingListView.vue';
@@ -35,11 +35,37 @@ const activeTab = computed<Tab>(() => {
 function selectTab(tab: Tab) {
   router.replace({ query: { ...route.query, tab } });
 }
+
+// Gleitende Unterstreichung statt hart umschaltender border-bottom-Farbe - gleiches Grundprinzip wie
+// NavBar.vue's Anzeige-Pille (dortiger Kommentar für die ausführliche Begründung): Tabs haben hier
+// unterschiedliche Breiten (Label-Länge), daher per JS gemessene offsetLeft/offsetWidth des aktiven
+// .tab statt eines starren CSS-Grids mit gleich breiten Spalten wie bei SegmentedToggle.vue.
+const tabBarEl = ref<HTMLElement | null>(null);
+const underlineLeft = ref(0);
+const underlineWidth = ref(0);
+let tabBarResizeObserver: ResizeObserver | null = null;
+
+function updateUnderline() {
+  const activeEl = tabBarEl.value?.querySelector<HTMLElement>('.tab.active');
+  if (!activeEl) return;
+  underlineLeft.value = activeEl.offsetLeft;
+  underlineWidth.value = activeEl.offsetWidth;
+}
+
+onMounted(() => {
+  nextTick(updateUnderline);
+  tabBarResizeObserver = new ResizeObserver(updateUnderline);
+  if (tabBarEl.value) tabBarResizeObserver.observe(tabBarEl.value);
+});
+
+onUnmounted(() => tabBarResizeObserver?.disconnect());
+
+watch(activeTab, () => nextTick(updateUnderline));
 </script>
 
 <template>
   <div class="listen-view">
-    <div class="tab-bar" role="tablist">
+    <div class="tab-bar" role="tablist" ref="tabBarEl">
       <button
         v-for="tab in TABS"
         :key="tab.key"
@@ -56,6 +82,11 @@ function selectTab(tab: Tab) {
         </span>
         {{ tab.label }}
       </button>
+      <span
+        class="tab-underline"
+        :style="{ transform: `translateX(${underlineLeft}px)`, width: `${underlineWidth}px` }"
+        aria-hidden="true"
+      ></span>
     </div>
 
     <PackingListView v-if="activeTab === 'packing'" />
@@ -66,6 +97,7 @@ function selectTab(tab: Tab) {
 
 <style scoped>
 .tab-bar {
+  position: relative;
   display: flex;
   gap: var(--space-2);
   max-width: 1400px;
@@ -80,6 +112,8 @@ function selectTab(tab: Tab) {
   gap: 6px;
   padding: var(--space-2) var(--space-3);
   border: none;
+  /* Bleibt als reiner Platzhalter (Farbe kommt jetzt von .tab-underline) - ohne das würde der Tab
+     beim Wechsel 2px in der Höhe springen. */
   border-bottom: 2px solid transparent;
   border-radius: 0;
   background: none;
@@ -90,8 +124,21 @@ function selectTab(tab: Tab) {
 
 .tab.active {
   color: var(--color-primary-dark);
-  border-bottom-color: var(--color-primary);
   font-weight: 600;
+}
+
+/* Gleitet per transform/width zum jeweils aktiven Tab statt die Farbe hart umzuschalten - gleiches
+   Prinzip wie NavBar.vue's .nav-highlight (dortiger Kommentar für die Begründung, warum JS-gemessene
+   Positionen statt eines starren CSS-Grids nötig sind: unterschiedlich breite Tab-Label). */
+.tab-underline {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: var(--color-primary);
+  border-radius: 2px 2px 0 0;
+  transition: transform 0.2s ease, width 0.2s ease;
+  pointer-events: none;
 }
 
 .tab .icon {

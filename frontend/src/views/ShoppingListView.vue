@@ -440,9 +440,24 @@ async function quickAddToGroup(group: Group, label: string) {
 /* Ohne eigenes FormField-Label würde der Absenden-Button, sobald er in derselben umgebrochenen
    Flex-Zeile wie ein FormField landet, vom Flex-Default align-items:stretch auf dessen (größere)
    Höhe gezogen (Konsistenz-Prinzip, siehe DESIGN.md). flex-basis:100% erzwingt stattdessen immer
-   eine eigene, volle Zeile - Absenden-Button bekommt so app-weit dieselbe, natürliche Höhe. */
+   eine eigene, volle Zeile - Absenden-Button bekommt so app-weit dieselbe, natürliche Höhe. Auf Mobil
+   ist eine volle Zeile für den primären Absenden-Button zudem ohnehin der übliche, gut antippbare
+   Standard (großer Touch-Target). */
 .add-form button[type='submit'] {
   flex: 1 1 100%;
+}
+
+/* Auf Desktop wirkte derselbe volle-Breite-Button auf der (bis zu 1400px breiten, siehe .shopping-
+   page oben) Karte überdimensioniert - hier stattdessen normal breit wie jeder andere Button, am
+   Ende der letzten Feld-Zeile ausgerichtet statt in voller Kartenbreite gestreckt. align-self:flex-
+   end statt des geerbten align-items:stretch übernimmt dieselbe Höhen-Absicherung wie oben (Button
+   bleibt bei seiner natürlichen Höhe, nicht auf FormField-Höhe gezogen), nur diesmal ohne die eigene
+   volle Zeile zu erzwingen. */
+@media (min-width: 800px) {
+  .add-form button[type='submit'] {
+    flex: 0 0 auto;
+    align-self: flex-end;
+  }
 }
 
 .filter-row {

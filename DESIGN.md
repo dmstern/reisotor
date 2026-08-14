@@ -54,6 +54,48 @@ nicht angefragten Stellen mit demselben Muster gelten würde: siehe CLAUDE.md, A
 "Konsistenz-Check bei Änderungen" für das Vorgehen dabei (dort jetzt: aktiv nachfragen statt
 eigenmächtig zu entscheiden, ob mitgezogen wird oder nicht).
 
+## Desktop UND Mobile – nie nur eines im Kopf
+
+Reisotor wird an beiden Enden intensiv genutzt, zu unterschiedlichen Zeitpunkten der Reise: Desktop
+vor allem VOR dem Urlaub (Planung – Reise/Unterkunft/Budget anlegen, Kalender befüllen, in Ruhe am
+großen Bildschirm), Mobile (Handy vor allem, Tablet auch) vor allem WÄHREND des Urlaubs (unterwegs
+nachschlagen, schnell einen Punkt abhaken, spontan etwas eintragen). Beide Enden sind damit nicht
+"Haupt- und Nebenfall", sondern zwei gleichwertige Haupt-Nutzungssituationen zu unterschiedlichen
+Zeiten – ein neues Feature, das nur für eines von beiden gut funktioniert, lässt die App in genau der
+Phase im Stich, in der sie gerade gebraucht wird.
+
+Bei jedem neuen UI-Baustein oder jeder sichtbaren Änderung deshalb aktiv beide Enden durchdenken/
+-testen, nicht nur die Breite, an der man gerade selbst entwickelt/screenshotet:
+
+- **Größenabhängige Layout-Entscheidungen** (Grid- vs. Bottom-Sheet-Modus, Spalten- vs. Stapel-
+  Anordnung, Schubladen vs. eigene Route, …) müssen bei *allen* Kombinationen aus Fenster-/
+  Gerätebreite UND gleichzeitig geöffneten Schubladen/Overlays plausibel aussehen – nicht nur beim
+  Standard-Fall (Schublade zu, Fenster maximiert). Konkret aufgetretener Fall: `ExcursionsView.vue`s
+  Umschalt-Schwelle für die Desktop-Spalten-Ansicht war so hoch angesetzt, dass sie bei geöffneter
+  Kalender-Schublade auf gängigen Laptop-Breiten nie griff, obwohl rechnerisch noch genug Platz für
+  eine (schmalere, aber weiterhin brauchbare) Spalten-Ansicht da gewesen wäre – die Ansicht fiel
+  dadurch unnötig auf den beengteren mobilen Sheet-Modus zurück.
+- **Ein Feature, das auf einer Bildschirmgröße lebt, muss auf der anderen einen (ggf. anderen, aber
+  gleichwertigen) Zugang haben** – nicht einfach fehlen. Ein schwebendes Overlay, das auf Mobile von
+  einem anderen, dort permanenten UI-Element (z. B. einem Bottom-Sheet) verdeckt wird, zählt als
+  fehlend, auch wenn der Code es technisch rendert. Bei Platzmangel lieber in ein bestehendes,
+  bereits sichtbares Element integrieren (z. B. denselben Teleport-Dock-Mechanismus wie ein
+  verwandtes Feature) statt ein zusätzliches, permanent sichtbares Bedienelement obendrauf zu setzen
+  ("schlau eingebaut, ohne die Oberfläche zu überfrachten").
+- **Elemente, die sich an der Breite des umgebenden Containers orientieren** (z. B. `flex-basis:
+  100%` für einen Absenden-Button, damit er auf Mobil die volle, gut antippbare Breite bekommt),
+  auf einer breiten Desktop-Karte gegenprüfen – derselbe Wert, der auf Mobil genau richtig wirkt,
+  kann auf einer 1400px-Karte überdimensioniert aussehen. Meist reicht ein einzelner
+  `@media (min-width: 800px)`-Gegenwert, siehe `ShoppingListView.vue`/`TodoView.vue`.
+- **Bedienbarkeit an sich**: Touch-Targets auf Mobil groß genug (siehe globale `min-height:44px`-
+  Formularfeld-Regel), Anfasser/Drag-Interaktionen auf Desktop mit Maus testen (nicht nur mit
+  Touch-Emulation), Hover-abhängige Zustände (z. B. ein nur bei `:hover` sichtbarer Anfasser) auf
+  Touch-Geräten nicht als einzigen Zugang zu einer Funktion verwenden.
+
+Nicht bei jeder trivialen Änderung ein vollständiges Cross-Device-Testprotokoll nötig – aber bei
+jedem neuen Layout-Umbruch/jeder neuen Interaktion aktiv kurz "wie sieht das am jeweils anderen Ende
+aus" durchdenken, statt es erst bei Nutzer:innen-Feedback zu bemerken.
+
 ## Farben
 
 Alle Farben laufen über CSS-Variablen (`--color-*` im `:root`-Block), nie als Hex-Wert direkt in
@@ -65,6 +107,18 @@ anlegen, nicht als lokaler Wert in der Komponente.
 
 Semantische statt beschreibende Namen (`--color-danger`, nicht `--color-red`) – Töne können sich
 ändern, die Bedeutung bleibt.
+
+**Eine Bedeutung pro Farbe, nicht umgekehrt**: `--color-accent` ist app-weit fest für "Echtzeit-Update
+von jemand anderem / wartet auf etwas / allgemeine Aufmerksamkeit" reserviert (`.new-highlight`,
+`PendingSyncBadge.vue`, `OfflineIndicator.vue`, …) – ein zweites, fachlich unabhängiges Konzept nie
+einfach denselben Ton mitbenutzen lassen, nur weil er ähnlich "passt". Konkret aufgetretener Fall:
+`TripMap.vue`s Tage-Streifen zeigte anfangs ebenfalls `--color-accent` für "an diesem Tag ist etwas
+geplant" – identisch zur Update-Farbe, an der Karte (wo beide Bedeutungen gleichzeitig auftreten
+können: ein Tag kann sowohl geplante Einträge haben als auch gerade frisch synchronisiert worden sein)
+nicht mehr unterscheidbar. Dafür gibt es jetzt `--color-scheduled` (sattes Hellblau) als eigenständigen
+Ton. Bei einer neuen Farb-Kodierung deshalb immer zuerst prüfen, ob die gewünschte Bedeutung nicht
+zufällig schon eine der bestehenden `--color-*`-Variablen besetzt, und im Zweifel lieber eine neue,
+klar benannte Variable anlegen statt eine bestehende zweitzuverwenden.
 
 ## Abstände
 
@@ -162,16 +216,27 @@ eigenes Token-Paar:
 - `--shadow-inset`: eine leicht eingelassene Rinne für die Track-Fläche (der Bereich, in dem der
   Thumb gleitet) – simuliert per `inset`-Schatten, dass die Fläche selbst zurückversetzt statt nur
   eine zweite flache Ebene ist.
-- `--shadow-pill-raised`: ein sanft aufgepolstertes Kissen-Gefühl für den gleitenden Thumb selbst –
-  ein dezenter Glanzrand oben (`inset 0 1px 0 rgba(255,255,255,…)`), ein dezenter Gewichts-Schatten
-  unten sowie ein normaler (nicht-inset) Drop-Shadow für die sichtbare Abhebung vom Track.
+- `--shadow-pill-raised`: eine sanfte Abhebung für den gleitenden Thumb selbst – ein weicher, diffuser
+  (zweistufiger) Drop-Shadow, sonst nichts.
+
+**Bewusst KEIN Glanzrand/Highlight-Inset** (z. B. `inset 0 1px 0 rgba(255,255,255,…)`) und **kein**
+zusätzlicher Gewichts-Schatten obendrauf – eine frühere Version hatte beides kombiniert und wirkte
+dadurch eher wie ein glänzender 2000er-Web-Button bzw. Neumorphismus als modern/dezent. Die Faustregel
+für "weich, aber aktuell" statt "retro": **ein** ruhiger, mehrstufiger Drop-Shadow pro Ebene (Träger
++ mehr Blur/weniger Deckkraft in der zweiten Stufe für einen weichen statt harten Rand) plus reichlich
+Rundung (siehe unten) – keine Lichtkanten, keine gestapelten Inset-Schatten, kein
+Hell/Dunkel-Kontrast, der wie eine physische Fase/Kante aussehen soll. Bei jeder künftigen Anpassung
+dieser Tokens diese Faustregel zuerst gegenprüfen, bevor eine weitere Schatten-Ebene ergänzt wird.
 
 Beide wie `--shadow-sm`/`-md` je einmal hell (`:root`) und einmal dunkel (beide Dark-Mode-Blöcke)
-definiert – nie eine eigene `rgba()`/`box-shadow`-Kombination lokal in einer Komponente bauen.
+definiert – nie eine eigene `rgba()`/`box-shadow`-Kombination lokal in einer Komponente bauen, und nie
+mehr als diese eine zentrale Stelle pro Token anfassen müssen, um den Look global zu verändern.
 Zusätzlich sorgt `--texture-grain` (ein per SVG-`feTurbulence` erzeugtes, extrem dezentes
 Rausch-Muster als `background-image` mit `background-blend-mode: overlay`) für einen angenehm
 griffigen statt komplett flachen/plastikigen Flächen-Eindruck auf dem Track – theme-unabhängig
-(keine eigene Dark-Mode-Variante nötig, der Blend-Mode passt sich automatisch an).
+(keine eigene Dark-Mode-Variante nötig, der Blend-Mode passt sich automatisch an). Dieses
+Rausch-Muster ist der einzige bewusst "physische" Rest des Materials und bleibt unverändert, auch wenn
+die Schatten-Tiefe wie oben reduziert wird.
 
 Diese Pillen sind bewusst immer **voll rund** (`border-radius: 999px`, kein Squircle) statt der
 normalen Card/Button-Squircle-Regel – ein Segmented-Control ist konzeptionell näher an den anderen
