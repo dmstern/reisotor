@@ -1753,6 +1753,10 @@ async function removeSpot(id: number) {
   background: var(--color-surface);
   border-radius: var(--radius-lg-squircle);
   corner-shape: squircle;
+  /* Feiner Rand wie bei Apples schwebendem Sheet (siehe PR-Referenzscreenshot) - ohne ihn verlor
+     sich die Kante der Karte gegen eine bunte Karte im Hintergrund, der box-shadow allein reicht
+     dafür nicht. Gleiches --color-border-Muster wie z. B. Drawer.vue's/.picker-menu's Buttons. */
+  border: 1px solid var(--color-border);
   box-shadow: var(--shadow-md);
   height: min(46vh, var(--sheet-max-height));
   transition: height 0.25s ease, left 0.25s ease, right 0.25s ease, border-radius 0.25s ease;
@@ -1996,6 +2000,7 @@ async function removeSpot(id: number) {
     display: block;
     height: auto;
     background: none;
+    border: none;
     border-radius: 0;
     box-shadow: none;
     transition: none;
