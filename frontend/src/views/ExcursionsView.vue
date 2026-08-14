@@ -729,9 +729,14 @@ function onColResizeEnd() {
 // ein fester "Ziel"-Zustand (eingeklappt/angeschnitten/voll) gewünscht ist statt einer frei
 // wählbaren Aufteilung. Nur auf dem Mobil-CSS-Zweig sichtbar (siehe @container weiter unten).
 type SheetState = 'collapsed' | 'partial' | 'full';
+const SHEET_ORDER: SheetState[] = ['collapsed', 'partial', 'full'];
 const sheetState = ref<SheetState>('partial');
 const sheetDragging = ref(false);
 const sheetDragHeightPx = ref<number | null>(null);
+// Element-Ref auf .spots-col (Template unten) – der Drag selbst schreibt seine Höhe direkt hierauf
+// statt über eine reaktive :style-Bindung (siehe applySheetHeight() unten), um während des Ziehens
+// keinen Vue-Render-Tick pro pointermove abzuwarten.
+const sheetEl = ref<HTMLElement | null>(null);
 
 // Deckelt alle drei Zustände auf den Platz UNTER der Kopfzeile/NavBar (56px App-Header +
 // --navbar-offset, dieselbe Formel wie .map-col's sticky top weiter unten) – ohne diesen Deckel
@@ -745,12 +750,51 @@ function sheetHeightPx(state: SheetState): number {
   return Math.min(window.innerHeight * 0.88, maxAvailable);
 }
 
+// Schreibt die Sheet-Höhe während des Ziehens direkt aufs Element (statt über eine reaktive
+// :style-Bindung) - spart pro pointermove einen Vue-Render-Tick, damit das Ziehen dem Finger ohne
+// spürbare Verzögerung folgt.
+function applySheetHeight(heightPx: number) {
+  if (sheetEl.value) sheetEl.value.style.height = `${heightPx}px`;
+}
+function clearSheetHeightOverride() {
+  // Entfernt die inline Höhe wieder, sodass die CSS-Klassen-Regel (sheetState) inkl. ihrer eigenen
+  // Transition die Einrast-Animation übernimmt.
+  if (sheetEl.value) sheetEl.value.style.height = '';
+}
+
+// Schwung-/Flick-Erkennung fürs Loslassen (wie bei Google Maps): ein kurzer, schneller Wisch soll
+// unabhängig von der zurückgelegten Distanz einen Zustand weiterschalten, statt (wie zuvor
+// ausschließlich) nur nach der End-Position zu entscheiden - sonst "poppt" ein knackiger, aber kurzer
+// Wisch beim Loslassen zurück auf den Ausgangszustand. Von beiden Zug-Pfaden (Anfasser
+// onSheetDragEnd() UND Listen-Zug onSheetBodyPointerUp()) über resolveSheetTargetState() genutzt.
+const FLICK_SAMPLE_WINDOW_MS = 80;
+const FLICK_VELOCITY_PX_MS = 0.35;
+let dragSamples: { y: number; t: number }[] = [];
+function resetDragSamples() {
+  dragSamples = [];
+}
+function recordDragSample(y: number) {
+  const t = performance.now();
+  dragSamples.push({ y, t });
+  while (dragSamples.length > 1 && t - dragSamples[0].t > FLICK_SAMPLE_WINDOW_MS) dragSamples.shift();
+}
+// px/ms bezogen auf clientY, negativ = Finger bewegt sich nach oben (vergrößert die Sheet-Höhe).
+function dragFlickVelocity(): number {
+  if (dragSamples.length < 2) return 0;
+  const first = dragSamples[0];
+  const last = dragSamples[dragSamples.length - 1];
+  const dt = last.t - first.t;
+  return dt > 0 ? (last.y - first.y) / dt : 0;
+}
+
 let sheetStartY = 0;
 let sheetStartHeight = 0;
 function onSheetDragStart(event: PointerEvent) {
   sheetDragging.value = true;
   sheetStartY = event.clientY;
   sheetStartHeight = sheetDragHeightPx.value ?? sheetHeightPx(sheetState.value);
+  resetDragSamples();
+  recordDragSample(event.clientY);
   window.addEventListener('pointermove', onSheetDragMove);
   window.addEventListener('pointerup', onSheetDragEnd);
   event.preventDefault();
@@ -760,16 +804,17 @@ function onSheetDragMove(event: PointerEvent) {
   // Nach oben ziehen (kleinerer clientY) vergrößert die Höhe.
   const delta = sheetStartY - event.clientY;
   const next = sheetStartHeight + delta;
-  sheetDragHeightPx.value = Math.min(sheetHeightPx('full'), Math.max(sheetHeightPx('collapsed'), next));
+  const clamped = Math.min(sheetHeightPx('full'), Math.max(sheetHeightPx('collapsed'), next));
+  sheetDragHeightPx.value = clamped;
+  applySheetHeight(clamped);
+  recordDragSample(event.clientY);
 }
-// Rundet eine frei gezogene Höhe auf den nächstgelegenen der drei festen Zustände - von
-// onSheetDragEnd() (Anfasser) UND onSheetBodyPointerUp() (Ziehen auf der Liste selbst, siehe dort)
-// genutzt, damit beide exakt gleich einrasten.
+// Rundet eine frei gezogene Höhe auf den nächstgelegenen der drei festen Zustände - reiner
+// Distanz-Fallback für resolveSheetTargetState() unten, wenn kein knackiger Flick vorlag.
 function closestSheetState(heightPx: number): SheetState {
-  const states: SheetState[] = ['collapsed', 'partial', 'full'];
   let closest: SheetState = 'partial';
   let bestDist = Infinity;
-  for (const s of states) {
+  for (const s of SHEET_ORDER) {
     const dist = Math.abs(sheetHeightPx(s) - heightPx);
     if (dist < bestDist) {
       bestDist = dist;
@@ -778,6 +823,19 @@ function closestSheetState(heightPx: number): SheetState {
   }
   return closest;
 }
+// Entscheidet den Ziel-Zustand beim Loslassen - von onSheetDragEnd() (Anfasser) UND
+// onSheetBodyPointerUp() (Ziehen auf der Liste selbst, siehe dort) genutzt, damit beide exakt gleich
+// einrasten. Bei einem knackigen Flick (siehe dragFlickVelocity()) zählt die Wisch-Richtung, sonst
+// die reine End-Position (closestSheetState()).
+function resolveSheetTargetState(startState: SheetState, heightPx: number): SheetState {
+  const velocity = dragFlickVelocity();
+  if (Math.abs(velocity) > FLICK_VELOCITY_PX_MS) {
+    const direction = velocity < 0 ? 1 : -1; // Finger nach oben (kleineres clientY) -> Zustand aufwärts.
+    const next = SHEET_ORDER[SHEET_ORDER.indexOf(startState) + direction];
+    if (next) return next;
+  }
+  return closestSheetState(heightPx);
+}
 
 function onSheetDragEnd() {
   sheetDragging.value = false;
@@ -785,6 +843,7 @@ function onSheetDragEnd() {
   window.removeEventListener('pointerup', onSheetDragEnd);
   const current = sheetDragHeightPx.value;
   sheetDragHeightPx.value = null;
+  clearSheetHeightOverride();
   // current bleibt null, wenn zwischen Down und Up kein einziges pointermove-Event feuerte – bei
   // einem echten, sehr kurzen/bewegungslosen Antippen (v. a. auf Touch-Geräten üblich) kommt das
   // durchaus vor. Wurde das bisher wie "keine Bewegung erfasst, also gar nichts tun" behandelt
@@ -794,12 +853,11 @@ function onSheetDragEnd() {
   if (!movedFar) {
     // Kaum/keine Bewegung = Tippen statt Ziehen: einen Zustand weiterschalten statt "an derselben
     // Stelle" wieder einzurasten (das wäre sonst ein wirkungsloser Tap gewesen).
-    const order: SheetState[] = ['collapsed', 'partial', 'full'];
-    sheetState.value = order[(order.indexOf(sheetState.value) + 1) % order.length];
+    sheetState.value = SHEET_ORDER[(SHEET_ORDER.indexOf(sheetState.value) + 1) % SHEET_ORDER.length];
     return;
   }
   // Ab hier laut movedFar-Berechnung oben garantiert nicht null.
-  sheetState.value = closestSheetState(current as number);
+  sheetState.value = resolveSheetTargetState(sheetState.value, current as number);
 }
 
 // Wie Apple Maps: solange die Schublade nicht ganz oben ("voll") steht, ist die Liste selbst NICHT
@@ -824,6 +882,8 @@ function onSheetBodyPointerDown(event: PointerEvent) {
   sheetBodyDragging = false;
   sheetBodyStartY = event.clientY;
   sheetBodyStartHeight = sheetDragHeightPx.value ?? sheetHeightPx(sheetState.value);
+  resetDragSamples();
+  recordDragSample(event.clientY);
   window.addEventListener('pointermove', onSheetBodyPointerMove);
   window.addEventListener('pointerup', onSheetBodyPointerUp);
 }
@@ -837,7 +897,10 @@ function onSheetBodyPointerMove(event: PointerEvent) {
     sheetDragging.value = true;
   }
   const next = sheetBodyStartHeight + delta;
-  sheetDragHeightPx.value = Math.min(sheetHeightPx('full'), Math.max(sheetHeightPx('collapsed'), next));
+  const clamped = Math.min(sheetHeightPx('full'), Math.max(sheetHeightPx('collapsed'), next));
+  sheetDragHeightPx.value = clamped;
+  applySheetHeight(clamped);
+  recordDragSample(event.clientY);
   event.preventDefault();
 }
 
@@ -849,14 +912,14 @@ function onSheetBodyPointerUp() {
   sheetDragging.value = false;
   const current = sheetDragHeightPx.value;
   sheetDragHeightPx.value = null;
+  clearSheetHeightOverride();
   if (current == null) return;
-  sheetState.value = closestSheetState(current);
+  sheetState.value = resolveSheetTargetState(sheetState.value, current);
 }
 
 // Buttons als Alternative zum Ziehen am Anfasser (weniger präzise auf kleinen Touch-Zielen) –
 // schalten jeweils einen Rasterschritt weiter statt frei zu ziehen, genau wie ein Tap auf den
-// Anfasser selbst (siehe onSheetDragEnd oben).
-const SHEET_ORDER: SheetState[] = ['collapsed', 'partial', 'full'];
+// Anfasser selbst (siehe onSheetDragEnd oben). SHEET_ORDER ist weiter oben (bei sheetState) deklariert.
 function stepSheet(direction: 1 | -1) {
   const next = SHEET_ORDER[SHEET_ORDER.indexOf(sheetState.value) + direction];
   if (next) sheetState.value = next;
@@ -1115,9 +1178,9 @@ async function removeSpot(id: number) {
     <h1 class="page-title" :ref="setPageTitleRef">🗺️ Karte</h1>
     <div class="layout" :style="{ '--spots-col-width': spotsColWidth + 'px' }">
     <div
+      ref="sheetEl"
       class="spots-col"
       :class="[sheetState, { dragging: sheetDragging }]"
-      :style="sheetDragHeightPx != null ? { height: sheetDragHeightPx + 'px' } : {}"
     >
       <div class="sheet-handle-row">
         <button
@@ -1715,8 +1778,16 @@ async function removeSpot(id: number) {
 
 /* Bottom-Sheet mit drei Rasteinungen (siehe sheetState/onSheetDragStart im Script) – Höhe kommt
    entweder aus der Zustands-Klasse (collapsed/full, Default = "partial" ohne eigene Klasse) oder,
-   während eines aktiven Ziehens, aus dem inline gesetzten :style (folgt direkt dem Finger).
-   .dragging schaltet die Transition ab, damit das Ziehen nicht hinterherhinkt. */
+   während eines aktiven Ziehens, wird sie vom Script direkt aufs Element geschrieben (siehe
+   applySheetHeight() im Script) statt über eine reaktive :style-Bindung, um jeden Vue-Render-Tick
+   zu sparen. .dragging schaltet die Transition ab, damit das Ziehen nicht hinterherhinkt.
+   BEWUSST height statt transform: translateY() (naheliegender für GPU-beschleunigtes Compositing,
+   ohne Reflow/Repaint bei jedem Frame) – ein eigener Versuch damit zeigte ein nicht sauber
+   eingrenzbares Race mit TripMap.vue's ResizeObserver/invalidateSize() (siehe dortiger Kommentar):
+   ein transform auf .spots-col ließ die Karte (.map-col, Geschwisterelement) nach einem
+   Fokus-Klick auf einen Spot in ca. 4 von 5 Läufen an eine falsche Position springen (per E2E
+   reproduziert, Ursache trotz Analyse nicht abschließend gefunden). Nicht erneut versuchen, ohne
+   dieses Race zuerst zuverlässig zu verstehen/zu beheben. */
 .spots-col {
   /* Macht .spots-col selbst zum Container für die Kompakt-Zeile-Entscheidung in SpotCard.vue/
      DerivedLocationCard.vue/.cards weiter unten (@container-Abfragen dort) – reagiert dadurch auf
@@ -1749,7 +1820,7 @@ async function removeSpot(id: number) {
   corner-shape: squircle;
   box-shadow: var(--shadow-md);
   height: min(46vh, var(--sheet-max-height));
-  transition: height 0.25s ease;
+  transition: height 0.3s cubic-bezier(0.32, 0.72, 0, 1);
   overflow: hidden;
   /* Bekannter iOS-Safari-Bug: ein fixed/absolute positioniertes Element mit border-radius+box-shadow
      malt seinen Hintergrund beim allerersten Paint mitunter nicht korrekt (bleibt transparent, bis
