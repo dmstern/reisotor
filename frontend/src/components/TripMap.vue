@@ -1464,6 +1464,26 @@ watch(() => liveSync.memberPositions, () => renderPositions(), { deep: true });
 }
 
 .map-wrap {
+  /* Von .fit-btn UND .current-weather-slot genutzt (siehe dort) - hier statt direkt auf .fit-btn
+     gesetzt, da .current-weather-slot ein Geschwisterelement ist: Custom Properties vererben sich
+     nur von Vorfahren zu Nachfahren, nicht zwischen Geschwistern.
+
+     Eckenabstand/Lücke über --space-3/--space-2 (statt der alten 10px/6px), auf Mobil wie auf
+     Desktop einheitlich - nur der Durchmesser selbst bleibt auf Mobil kleiner (@container weiter
+     unten hebt ihn auf Desktop auf Apples 44px an, siehe dort). Senkrechter Platz vor dem
+     darunterliegenden Bottom-Sheet ist auf Mobil knapp: von den 8 Buttons + Wetter-Badge im Stapel
+     bleiben bei Standard-Sheet-Höhe (46vh) nur die ersten 7 sicher oberhalb des Sheets, der letzte
+     Button (.share-location-btn, 📡) + das Wetter-Badge rutschen mit den großzügigeren Werten
+     ebenso wie schon VOR dieser Änderung teilweise dahinter (z-index wirkt dort nicht: .map-col
+     und .spots-col bilden eigene Stacking-Contexts, .spots-col gewinnt dort unabhängig vom
+     z-index der Buttons selbst) - bewusst in Kauf genommen, damit der auf den ersten Blick
+     sichtbare Haupt-Stapel (genau der, den Nutzer:innen als "zu eng" empfunden haben) den
+     großzügigeren Apple-Abstand bekommt, statt für den ohnehin knappen letzten Slot komplett auf
+     der alten, engen Optik zu bleiben. */
+  --fit-btn-size: 34px;
+  --fit-btn-gap: var(--space-2);
+  --fit-btn-inset: var(--space-3);
+  --fit-btn-step: calc(var(--fit-btn-size) + var(--fit-btn-gap));
   position: absolute;
   inset: 0;
 }
@@ -1475,15 +1495,21 @@ watch(() => liveSync.memberPositions, () => renderPositions(), { deep: true });
   border: none;
 }
 
+/* Echter Kreisbogen (50% + corner-shape:round) statt der Squircle-Variable, die hier vorher ohne
+   passendes corner-shape blieb - siehe DESIGN.md, Abschnitt "Eckenrundung", runde Icon-Buttons
+   bekommen Kreisbogen, keinen Squircle. Größe/Abstand kommen aus den --fit-btn-*-Variablen
+   (.map-wrap oben) statt fester px-Werte direkt hier, damit Mobil/Desktop (@container weiter
+   unten) nur noch die Variablen überschreiben müssen statt jede top-Regel einzeln. */
 .fit-btn {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: var(--fit-btn-inset);
+  right: var(--fit-btn-inset);
   z-index: 1000;
-  width: 34px;
-  height: 34px;
+  width: var(--fit-btn-size);
+  height: var(--fit-btn-size);
   padding: 0;
-  border-radius: var(--radius-sm-squircle);
+  border-radius: 50%;
+  corner-shape: round;
   background: var(--color-surface);
   border: 2px solid rgba(0, 0, 0, 0.25);
   color: var(--color-text);
@@ -1498,23 +1524,23 @@ watch(() => liveSync.memberPositions, () => renderPositions(), { deep: true });
 }
 
 .vacation-btn {
-  top: 50px;
+  top: calc(var(--fit-btn-inset) + var(--fit-btn-step));
 }
 
 .accommodation-btn {
-  top: 90px;
+  top: calc(var(--fit-btn-inset) + 2 * var(--fit-btn-step));
 }
 
 .excursions-btn {
-  top: 130px;
+  top: calc(var(--fit-btn-inset) + 3 * var(--fit-btn-step));
 }
 
 .my-location-btn {
-  top: 170px;
+  top: calc(var(--fit-btn-inset) + 4 * var(--fit-btn-step));
 }
 
 .orientation-btn {
-  top: 210px;
+  top: calc(var(--fit-btn-inset) + 5 * var(--fit-btn-step));
 }
 
 /* Hebt hervor, dass die Karte sich gerade aktiv mit dem Kompass mitdreht (Modus "Fahrtrichtung") -
@@ -1525,20 +1551,20 @@ watch(() => liveSync.memberPositions, () => renderPositions(), { deep: true });
 }
 
 .offline-download-btn {
-  top: 250px;
+  top: calc(var(--fit-btn-inset) + 6 * var(--fit-btn-step));
 }
 
 .share-location-btn {
-  top: 290px;
+  top: calc(var(--fit-btn-inset) + 7 * var(--fit-btn-step));
 }
 
-/* Direkt unterhalb des letzten .fit-btn (.share-location-btn, top:290px + 34px Höhe) - der einzige
-   auf Mobil noch freie Bereich: oben links ist bereits durch .focus-banner/.tile-download-pill/
-   .focus-spot-list belegt (bedingt sichtbar), .day-strip unten durch den Tage-Streifen. */
+/* Direkt unterhalb des letzten .fit-btn (.share-location-btn) - der einzige auf Mobil noch freie
+   Bereich: oben links ist bereits durch .focus-banner/.tile-download-pill/.focus-spot-list belegt
+   (bedingt sichtbar), .day-strip unten durch den Tage-Streifen. */
 .current-weather-slot {
   position: absolute;
-  top: 330px;
-  right: 10px;
+  top: calc(var(--fit-btn-inset) + 8 * var(--fit-btn-step));
+  right: var(--fit-btn-inset);
   z-index: 1000;
 }
 
@@ -1598,8 +1624,8 @@ watch(() => liveSync.memberPositions, () => renderPositions(), { deep: true });
    Button-Spalte hätte dort keinen Platz. */
 .tile-download-pill {
   position: absolute;
-  top: 50px;
-  left: 10px;
+  top: 56px;
+  left: var(--space-3);
   z-index: 1000;
   display: flex;
   align-items: center;
@@ -1617,8 +1643,8 @@ watch(() => liveSync.memberPositions, () => renderPositions(), { deep: true });
 
 .focus-banner {
   position: absolute;
-  top: 10px;
-  left: 10px;
+  top: var(--space-3);
+  left: var(--space-3);
   z-index: 1000;
   display: flex;
   align-items: center;
@@ -1954,6 +1980,18 @@ watch(() => liveSync.memberPositions, () => renderPositions(), { deep: true });
   .map-wrap {
     position: relative;
     inset: auto;
+    /* Auf Desktop ist die Karte eine eigene Karte mit sichtbar gerundeter Ecke (s. u.) statt
+       randlos wie auf Mobil, UND es gibt deutlich mehr Höhe (min. 420px statt der schmalen
+       Mobil-Kartenfläche vor dem Bottom-Sheet, das es hier ohnehin nicht gibt - .spots-col ist auf
+       dieser Breite eine normale Spalte statt eines Overlays, siehe ExcursionsView.vue). Eckenabstand/
+       Lücke sind schon auf Mobil (.map-wrap oben) auf Apples Maß, hier reicht der Platz zusätzlich
+       für den größeren Durchmesser: 44px (dasselbe "großer runder Icon-Button"-Maß wie
+       DashboardView.vue's .tile-icon) statt der auf Mobil aus Platznot nötigen 34px. */
+    --fit-btn-size: 44px;
+  }
+
+  .fit-btn {
+    font-size: 1.2rem;
   }
 
   .map {

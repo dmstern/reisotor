@@ -1809,18 +1809,35 @@ async function removeSpot(id: number) {
      Einrasten, nicht für diesen ruhenden Grundzustand. */
   --sheet-max-height: calc(100% - 8px);
   position: absolute;
-  left: 0;
-  right: 0;
+  /* Wie bei Apple Maps' Suchleisten-Schublade: solange nicht ganz hochgezogen (collapsed/partial,
+     .full überschreibt beide Werte unten auf 0/nur obere Ecken), schwebt das Sheet als eigene Karte
+     mit sichtbarem Rand zum Bildschirmrand UND rundum gerundeten Ecken statt nur oben - randlos/nur
+     oben gerundet wirkte im Vergleich zu eng an den Bildschirmrand gequetscht. Eigene
+     left/right/border-radius-Transitions (zusätzlich zu height) sorgen dafür, dass der Wechsel auf
+     volle Breite beim Hochziehen bis "voll" weich einrastet statt hart umzuspringen. */
+  left: var(--space-2);
+  right: var(--space-2);
   bottom: 0;
   z-index: 5;
   display: flex;
   flex-direction: column;
   background: var(--color-surface);
-  border-radius: var(--radius-lg-squircle) var(--radius-lg-squircle) 0 0;
+  border-radius: var(--radius-lg-squircle);
   corner-shape: squircle;
+  /* Feiner Rand wie bei Apples schwebendem Sheet (siehe PR-Referenzscreenshot) - ohne ihn verlor
+     sich die Kante der Karte gegen eine bunte Karte im Hintergrund, der box-shadow allein reicht
+     dafür nicht. Gleiches --color-border-Muster wie z. B. Drawer.vue's/.picker-menu's Buttons. */
+  border: 1px solid var(--color-border);
   box-shadow: var(--shadow-md);
   height: min(46vh, var(--sheet-max-height));
-  transition: height 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  /* Alle vier Eigenschaften mit derselben weicheren Einrast-Kurve (siehe DESIGN.md, "Zieh-
+     Interaktionen") statt nur height - left/right/border-radius wechseln beim Hoch-/Runterziehen
+     gemeinsam mit der Höhe, sollen deshalb auch gleich smooth ankommen statt einzeln rauszustechen. */
+  transition:
+    height 0.3s cubic-bezier(0.32, 0.72, 0, 1),
+    left 0.3s cubic-bezier(0.32, 0.72, 0, 1),
+    right 0.3s cubic-bezier(0.32, 0.72, 0, 1),
+    border-radius 0.3s cubic-bezier(0.32, 0.72, 0, 1);
   overflow: hidden;
   /* Bekannter iOS-Safari-Bug: ein fixed/absolute positioniertes Element mit border-radius+box-shadow
      malt seinen Hintergrund beim allerersten Paint mitunter nicht korrekt (bleibt transparent, bis
@@ -1845,7 +1862,13 @@ async function removeSpot(id: number) {
   height: min(96px, var(--sheet-max-height));
 }
 
+/* Ganz hochgezogen: wie bei Apple erst jetzt randlos volle Breite, nur noch oben gerundete Ecken
+   (statt der rundum gerundeten "schwebenden Karte" oben) - Übergang läuft über dieselben
+   left/right/border-radius-Transitions wie an .spots-col selbst. */
 .spots-col.full {
+  left: 0;
+  right: 0;
+  border-radius: var(--radius-lg-squircle) var(--radius-lg-squircle) 0 0;
   height: min(88vh, var(--sheet-max-height));
 }
 
@@ -1858,7 +1881,14 @@ async function removeSpot(id: number) {
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 8px 0;
+  /* Seitliches/oberes Polster deutlich großzügiger als die alten 8px/4px - bei der jetzt sichtbar
+     gerundeten Sheet-Ecke (--radius-lg-squircle, siehe .spots-col oben) saßen die Stufen-Buttons
+     sonst fast in der Rundung selbst statt sichtbar davor (genau der von Apples "X"-Button
+     abweichende Effekt aus dem PR-Review-Screenshot). Oben/seitlich identisch (var(--space-3)
+     statt oben --space-3 und seitlich --space-4) - selbes Card-Innenabstand-Maß wie SpotCard.vue/
+     ExcursionCard.vue/DerivedLocationCard.vue u. a. (siehe DESIGN.md, Abschnitt "Abstände") statt
+     eines eigens erfundenen asymmetrischen Werts. */
+  padding: var(--space-3) var(--space-3) 0;
   /* Gilt für die ganze Zeile (nicht nur .sheet-handle): ein Zug, der knapp neben dem eigentlichen
      Anfasser beginnt (z. B. noch über den Stufen-Buttons), soll trotzdem nicht als Seiten-Scroll/
      Pull-to-Refresh interpretiert werden. */
@@ -2051,6 +2081,7 @@ async function removeSpot(id: number) {
     display: block;
     height: auto;
     background: none;
+    border: none;
     border-radius: 0;
     box-shadow: none;
     transition: none;
