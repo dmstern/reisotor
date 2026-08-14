@@ -11,6 +11,7 @@ import { useDrawersStore } from '../stores/drawers';
 import { useLiveSyncStore } from '../stores/liveSync';
 import { useWeatherProviderStore } from '../stores/weatherProvider';
 import CalendarWeek from '../components/CalendarWeek.vue';
+import SegmentedToggle from '../components/SegmentedToggle.vue';
 import Modal from '../components/Modal.vue';
 import DetailModal from '../components/DetailModal.vue';
 import MapsAppPicker from '../components/MapsAppPicker.vue';
@@ -784,30 +785,14 @@ function formatDate(date: string) {
 
     <div class="calendar-toolbar">
       <div class="granularity-row">
-        <button
-          type="button"
-          class="secondary gran-btn"
-          :class="{ active: granularity === 'week' }"
-          @click="granularity = 'week'"
-        >
-          Woche
-        </button>
-        <button
-          type="button"
-          class="secondary gran-btn"
-          :class="{ active: granularity === 'twoWeeks' }"
-          @click="granularity = 'twoWeeks'"
-        >
-          2 Wochen
-        </button>
-        <button
-          type="button"
-          class="secondary gran-btn"
-          :class="{ active: granularity === 'month' }"
-          @click="granularity = 'month'"
-        >
-          Monat
-        </button>
+        <SegmentedToggle
+          v-model="granularity"
+          :options="[
+            { value: 'week', label: 'Woche' },
+            { value: 'twoWeeks', label: '2 Wochen' },
+            { value: 'month', label: 'Monat' },
+          ]"
+        />
       </div>
       <div class="pager">
         <button type="button" class="secondary page-btn" :disabled="!canGoPrev" @click="prevPage" aria-label="Vorherige Wochen">
@@ -1124,19 +1109,6 @@ function formatDate(date: string) {
 .granularity-row {
   display: flex;
   justify-content: center;
-  gap: 4px;
-  flex-wrap: wrap;
-}
-
-.gran-btn {
-  padding: 4px 10px;
-  font-size: 0.78rem;
-}
-
-.gran-btn.active {
-  background: var(--color-primary-tint);
-  border-color: var(--color-primary);
-  color: var(--color-primary-dark);
 }
 
 .pager {
