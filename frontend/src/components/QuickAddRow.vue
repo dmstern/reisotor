@@ -108,6 +108,10 @@ function onBlur() {
   font-size: 1rem;
   border-bottom: 1px solid var(--color-border);
   border-radius: 0;
+  /* Überschreibt style.css's globale min-height (44px, für normale Formularfelder gedacht) -
+     diese Zeile bleibt bewusst kompakt/papierlisten-artig statt jedes Feld auf Touch-Target-Höhe
+     aufzublasen (siehe Kommentar oben zum Interaktionsmuster). */
+  min-height: 0;
 }
 
 .label-input::placeholder {
@@ -144,6 +148,7 @@ function onBlur() {
   padding: 3px 6px;
   min-width: 0;
   width: auto;
+  min-height: 0;
 }
 
 /* Getrennt von select oben: ein <select> öffnet auf iOS ein natives Auswahlrad statt der
@@ -155,6 +160,7 @@ function onBlur() {
   padding: 3px 6px;
   min-width: 0;
   width: auto;
+  min-height: 0;
 }
 
 .submit-btn {
