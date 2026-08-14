@@ -486,10 +486,17 @@ function onResizeEnd() {
     bottom: auto;
     max-height: calc(100vh - var(--app-header-height, 56px) - var(--navbar-offset, 0px));
     transform: none;
-    box-shadow: none;
+    /* --shadow-md statt none: das Panel legt sich beim Ausklappen über den Hauptinhalt (der
+       schiebt zwar zur Seite, bekommt aber keinen eigenen Rand) - ein sichtbar "über dem
+       Hintergrund liegendes" Element braucht einen Schatten, sonst wirkt der Bereichswechsel wie
+       zwei gleichrangige Spalten statt einer bewusst geöffneten Schublade (siehe DESIGN.md,
+       Abschnitt "Schatten": Elemente, die über anderen liegen, bekommen einen Schatten). In der
+       Transition unten mit, damit er beim Auf-/Zuklappen sanft ein-/ausblendet statt hart zu
+       springen. */
+    box-shadow: var(--shadow-md);
     border-radius: 0;
     width: var(--drawer-width);
-    transition: width 0.25s ease, opacity 0.2s ease;
+    transition: width 0.25s ease, opacity 0.2s ease, box-shadow 0.25s ease;
   }
   .drawer.left .drawer-panel {
     order: 1;

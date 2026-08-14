@@ -120,6 +120,15 @@ Ton. Bei einer neuen Farb-Kodierung deshalb immer zuerst prüfen, ob die gewüns
 zufällig schon eine der bestehenden `--color-*`-Variablen besetzt, und im Zweifel lieber eine neue,
 klar benannte Variable anlegen statt eine bestehende zweitzuverwenden.
 
+**Steuerungselement vs. Dateninhalt**: Flächen, die ein Werkzeug/eine Steuerung sind (Gruppieren-/
+Sortieren-/Filtern-Leiste, Kategorie-/Touren-Navigationsleiste – der Nutzer interagiert mit der
+Fläche selbst, sie zeigt keinen eigenen Inhalt) bekommen `--color-primary-tint` (das leichte
+Markengrün) als Hintergrund statt des neutralen `--color-hover`/`--color-surface` – macht sie auf
+einen Blick als "das ist Bedienung" erkennbar. Flächen, die Dateninhalt zeigen (Spot-/Ausflugs-Cards,
+Listenzeilen – der Inhalt selbst ist relevant, nicht die Fläche als Werkzeug) bleiben bei
+`--color-surface` (weiß/hell in Light Mode). Beispiele: `ExcursionsView.vue`s `.filter-bar` und
+`.category-nav` (Steuerung, grün) vs. `SpotCard.vue`/`ExcursionCard.vue` (Dateninhalt, weiß).
+
 ## Abstände
 
 `--space-1` (4px) bis `--space-6` (48px), verdoppelnd/gestuft. Für Innenabstände/Gaps immer diese
@@ -186,6 +195,15 @@ Für taktile Pillen-Elemente (aktuell: `SegmentedToggle.vue`) gibt es zusätzlic
 "weicheres" Paar – siehe Abschnitt "Weiches Material" weiter unten, nicht mit `--shadow-sm`/`-md`
 mischen.
 
+**Über anderen Elementen liegen = Schatten haben.** Jedes Element, das sich sichtbar über den
+Hintergrund/andere Inhalte legt (aufgeklapptes Panel, Schublade im geöffneten Zustand, Dropdown,
+Modal, Popover), braucht einen Schatten (`--shadow-sm`/`-md`) – ohne ihn wirkt es wie ein
+gleichrangiges Layout-Element statt einer bewusst "erhobenen" Fläche, die Nutzer:innen gerade selbst
+geöffnet haben. Konkret aufgetretener Fall: `Drawer.vue`s Desktop-Panel hatte `box-shadow: none`
+(Rest eines älteren Layouts, in dem das Panel randlos in eine feste Spalte floss) – wirkte dadurch
+trotz sichtbarem Öffnen/Schließen-Zustand wie eine flache Nachbarspalte statt einer darüber liegenden
+Schublade. Gilt für jeden neuen "erhobenen" Zustand, nicht nur offensichtliche Overlays.
+
 ## Animationen
 
 Kein zentrales `--transition-*`-Token bisher, aber ein klarer de-facto Standard über drei
@@ -206,6 +224,17 @@ Größenordnungen hinweg – neue Übergänge an einer dieser drei orientieren, 
 
 Durchgehend `ease`/`ease-in-out`, nie eine "bouncy"/Spring-artige Easing-Funktion – passt zum
 insgesamt eher zurückhaltenden, nativen App-Gefühl statt auffälliger Spielereien.
+
+**Landet ein Element durch eine Interaktion woanders als vorher, muss die Bewegung selbst animiert
+sein** – nicht nur der Endzustand hübsch gestylt. Das schließt scheinbar "nur strukturelle" Wechsel
+ein: eine aktive Hervorhebung, die zu einem anderen Tab/Nav-Item springt (siehe `NavBar.vue`s
+`.nav-highlight`, `SegmentedToggle.vue`s `.segmented-thumb`, `ListenView.vue`s `.tab-underline` –
+alle drei gleiten per `transform`/`width`, keins schaltet hart um), ein Panel, das sich öffnet und
+dabei Inhalt zur Seite schiebt (`width`/`transform` in der oben genannten "größere Bewegungen"-Stufe),
+oder ein neu einsortiertes Listen-Element (`<TransitionGroup name="list">`, siehe oben). Bei jedem
+neuen UI-Zustand, der eine Position/Größe/Sichtbarkeit ändert: prüfen, ob der Wechsel gerade hart
+umschaltet, und wenn ja, eine der drei Bewegungsgrößen-Stufen oben dafür verwenden statt es beim
+ungeprüften Sprung zu belassen.
 
 ## Weiches Material (taktile Pillen)
 

@@ -1310,6 +1310,7 @@ async function removeSpot(id: number) {
                 @click="categoryMenuOpen = !categoryMenuOpen"
               >
                 🏷️ Kategorie
+                <span class="caret dropdown-caret">{{ categoryMenuOpen ? '▴' : '▾' }}</span>
               </button>
               <template v-if="categoryMenuOpen">
                 <div class="picker-backdrop" @click="categoryMenuOpen = false"></div>
@@ -1330,6 +1331,7 @@ async function removeSpot(id: number) {
                 @click="statusMenuOpen = !statusMenuOpen"
               >
                 🗓️ Status
+                <span class="caret dropdown-caret">{{ statusMenuOpen ? '▴' : '▾' }}</span>
               </button>
               <template v-if="statusMenuOpen">
                 <div class="picker-backdrop" @click="statusMenuOpen = false"></div>
@@ -2346,13 +2348,17 @@ async function removeSpot(id: number) {
    eigentlichen Inhalts-Cards darunter unterordnet) statt frei im Seitenfluss stehender Buttons -
    fasst Gruppieren/Sortieren/Filtern als ein zusammengehöriges, klar abgegrenztes Werkzeug
    optisch zusammen (Nutzer-Feedback: wirkte vorher "gebastelt"). */
+/* --color-primary-tint (leichtes Markengrün) statt des neutralen --color-hover: dieser Bereich ist
+   ein Steuerungs-/Werkzeug-Element (Gruppieren/Sortieren/Filtern), keine Dateninhalt-Fläche - siehe
+   DESIGN.md, Abschnitt "Farben" für die Unterscheidung Steuerungselement (leicht eingefärbt) vs.
+   Karte mit Dateninhalt (weiß/--color-surface, z. B. SpotCard.vue). */
 .filter-bar {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
   margin: 0 0 var(--space-3);
   padding: var(--space-2) var(--space-3);
-  background: var(--color-hover);
+  background: var(--color-primary-tint);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
 }
@@ -2406,6 +2412,16 @@ async function removeSpot(id: number) {
 
 .category-btn {
   font-size: 0.85rem;
+}
+
+/* Kleiner Auf-/Zu-Pfeil rechts neben dem Label, macht auf einen Blick klarer, dass ein Klick ein
+   Dropdown-Menü öffnet/schließt statt z. B. direkt eine Aktion auszulösen (Nutzer:innen-Feedback) -
+   dasselbe Auf/Zu-Symbolpaar wie ProfileView.vue's "Einzeln anpassen ▴/▾". Kein flex nötig: .caret
+   (der .filter-toggle-row-Basisstil) reicht hier als reines Inline-Element direkt nach dem Label. */
+.dropdown-caret {
+  margin-left: 4px;
+  font-size: 0.7rem;
+  opacity: 0.6;
 }
 
 .category-heading {
@@ -2475,7 +2491,11 @@ async function removeSpot(id: number) {
   border: 1px solid transparent;
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
-  background: var(--color-surface);
+  /* --color-primary-tint statt --color-surface: dieselbe "Steuerungselement statt Dateninhalt"-
+     Unterscheidung wie .filter-bar oben (siehe DESIGN.md, Abschnitt "Farben") - diese Navi ist ein
+     Werkzeug zum Springen zwischen Kategorien/Touren, kein Dateninhalt wie die weißen Spot-Cards
+     darunter. */
+  background: var(--color-primary-tint);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   box-shadow: none;
@@ -2494,7 +2514,7 @@ async function removeSpot(id: number) {
   margin: var(--space-2) 0 var(--space-3);
   border-color: var(--color-border);
   border-radius: 999px;
-  background: color-mix(in srgb, var(--color-surface) 75%, transparent);
+  background: color-mix(in srgb, var(--color-primary-tint) 75%, transparent);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   box-shadow:
