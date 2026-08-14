@@ -183,16 +183,32 @@ gemeinsamer Hervorhebungs-Mechanismus statt zweier paralleler).
 `reise.ruebenherz.de`). Die SQLite-Datei wird beim Deploy nie überschrieben (siehe
 "Datenmodell-Änderungen" unten).
 
-**PR-Merge-Regel für Claude Code**: von Claude Code erstellte PRs gegen `main` sollen automatisch
-gemergt werden, sobald die CI (Unit-Tests + Build, s. o.) grün ist – nicht als Draft liegen bleiben
-und auf manuelles Review warten. Der Nutzer testet Änderungen bewusst erst nach dem darauf folgenden
-automatischen Deploy auf `dev.reise.ruebenherz.de`, nicht vorher am PR-Diff. Gilt nicht, wenn der
-Nutzer für eine bestimmte Änderung ausdrücklich um Review vor dem Merge bittet.
+**PR-Merge-Regel für Claude Code (Stand: seit Screenshots im PR, siehe unten)**: von Claude Code
+erstellte PRs gegen `main` NICHT mehr automatisch mergen, sobald CI grün ist – stattdessen offen
+lassen und auf das Review des Nutzers warten (er checkt jetzt bewusst zuerst visuell anhand der im
+PR angehängten Screenshots, siehe unten, statt wie zuvor direkt auf `dev.reise.ruebenherz.de` zu
+testen). Frühere Version dieser Regel (automatischer Merge bei grüner CI) war ausdrücklich dafür
+gedacht, sofort auf dev testen zu können – mit den Screenshots direkt im PR ist das nicht mehr nötig,
+ein visuelles Review vorab ist dem Nutzer lieber. Explizit auf einen Merge-Wunsch/eine Freigabe des
+Nutzers warten, nicht eigenmächtig mergen, auch wenn CI längst grün ist. Weiterhin **nicht als
+Draft** (`draft: false`) erstellen – rein informativ für ein sauberes PR-Listing, nicht mehr für
+einen Auto-Merge-Trigger nötig.
 
-Diese PRs deshalb direkt **nicht als Draft** (`draft: false`) erstellen statt sie später erst auf
-"ready for review" umzustellen – ein Draft-PR löst je nach GitHub-Konfiguration nicht zuverlässig
-denselben Auto-Merge-Trigger aus, das Umstellen war in der Praxis ein leicht vergessener manueller
-Zwischenschritt.
+**Screenshots im PR selbst, für das visuelle Review ohne Deploy-Wartezeit**: jeder PR, der eine
+sichtbare UI-Änderung/einen sichtbaren Bugfix enthält, bekommt Screenshots des betroffenen Bereichs
+direkt im PR (Body oder Kommentar) angehängt – in den relevanten Viewports (mind. mobil ~390px UND
+Desktop ~1280px breit, bei einer reinen Desktop- oder reinen Mobil-Änderung reicht der jeweils
+betroffene Viewport). Zweck: der Nutzer soll das Ergebnis direkt auf GitHub sehen und reviewen
+können, bevor überhaupt gemergt/deployt wird (siehe PR-Merge-Regel oben) – nicht nur als Beleg nach
+dem Merge.
+
+Technisch: Screenshots per Playwright erzeugen (siehe Abschnitt "Ad-hoc-Checks" unten für den
+Wegwerf-Spec-Kniff), dann NICHT im gitignoreten `e2e/tests/scratch/` belassen, sondern gezielt in
+den PR einbetten. Da die GitHub-Tools dieser Umgebung keinen direkten Bild-Upload-Endpunkt für
+Kommentare bieten, dafür die Bilder committen (z. B. unter `docs/pr-screenshots/<kurzer-slug>/` auf
+demselben Feature-Branch) und im PR-Body/-Kommentar per Markdown-Bild-Syntax auf die
+`raw.githubusercontent.com`- bzw. Blob-URL dieses Branches verlinken – GitHub rendert das inline.
+Reine Text-/Backend-only-Änderungen ohne sichtbare Oberfläche brauchen keine Screenshots.
 
 ## Konsistenz-Check bei Änderungen
 
