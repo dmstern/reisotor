@@ -241,7 +241,6 @@ function onSpotDrop(event: DragEvent) {
 .excursion-card {
   position: relative;
   padding: 0;
-  overflow: hidden;
   display: flex;
   flex-direction: row;
   align-items: stretch;
@@ -263,6 +262,12 @@ function onSpotDrop(event: DragEvent) {
   background: var(--color-primary-tint);
 }
 
+/* Eigene Rundung statt overflow:hidden auf .excursion-card: eine eckige .image würde sonst nicht zu
+   den abgerundeten Kartenecken passen - overflow:hidden auf der Card selbst würde das zwar auch
+   lösen, aber gleichzeitig die .new-highlight-Outline-Markierung (style.css) abschneiden, die auf
+   demselben Element sitzt (Outline liegt außerhalb der Border-Box und wird vom eigenen
+   overflow:hidden mitgeclippt). Linke Ecken gerundet, da .image hier links sitzt (Zeilen-Layout);
+   die @media-Umschaltung unten auf Spalten-Layout rundet stattdessen die oberen Ecken. */
 .image {
   width: 140px;
   flex-shrink: 0;
@@ -271,6 +276,8 @@ function onSpotDrop(event: DragEvent) {
   align-items: center;
   justify-content: center;
   position: relative;
+  border-radius: var(--radius-md-squircle) 0 0 var(--radius-md-squircle);
+  corner-shape: squircle;
 }
 
 @media (max-width: 480px) {
@@ -281,6 +288,7 @@ function onSpotDrop(event: DragEvent) {
   .image {
     width: auto;
     height: 140px;
+    border-radius: var(--radius-md-squircle) var(--radius-md-squircle) 0 0;
   }
 }
 

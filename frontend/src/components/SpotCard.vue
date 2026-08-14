@@ -296,7 +296,6 @@ function onCardClick() {
 <style scoped>
 .spot-card {
   padding: 0;
-  overflow: hidden;
   display: flex;
   flex-direction: column;
   cursor: pointer;
@@ -318,6 +317,12 @@ function onCardClick() {
   height: 200px;
 }
 
+/* Eigene Rundung statt overflow:hidden auf .spot-card: eine eckige .image würde sonst nicht zu den
+   abgerundeten Kartenecken passen - overflow:hidden auf der Card selbst würde das zwar auch lösen,
+   aber gleichzeitig die .new-highlight-Outline-Markierung (style.css) abschneiden, die auf demselben
+   Element sitzt (Outline liegt außerhalb der Border-Box und wird vom eigenen overflow:hidden
+   mitgeclippt). Nur die oberen Ecken gerundet, da .image hier standardmäßig oben sitzt (Spalten-
+   Layout); die Kompakt-Zeilenansicht unten rundet stattdessen die linken Ecken. */
 .image {
   height: 120px;
   background: var(--color-primary-tint) center/cover no-repeat;
@@ -326,6 +331,8 @@ function onCardClick() {
   justify-content: center;
   position: relative;
   transition: height 0.15s ease;
+  border-radius: var(--radius-md-squircle) var(--radius-md-squircle) 0 0;
+  corner-shape: squircle;
 }
 
 .placeholder {
@@ -523,6 +530,9 @@ function onCardClick() {
     width: 64px;
     height: auto;
     flex-shrink: 0;
+    /* Bild sitzt hier links statt oben (Zeilen- statt Spalten-Layout) - deshalb linke statt obere
+       Ecken gerundet (siehe .image oben). */
+    border-radius: var(--radius-md-squircle) 0 0 var(--radius-md-squircle);
   }
 
   .spot-card:not(.expanded) .body {
