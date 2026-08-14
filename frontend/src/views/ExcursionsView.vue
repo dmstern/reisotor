@@ -2410,17 +2410,23 @@ async function removeSpot(id: number) {
   display: flex;
 }
 
+/* inline-flex statt des geerbten inline-block: der kleinere .dropdown-caret (0.7rem) sitzt als reines
+   Inline-Element auf der Baseline der umgebenden 0.85rem-Beschriftung - das lässt ihn spürbar tiefer
+   als die visuelle Mitte des Labels erscheinen statt vertikal zentriert (Nutzer:innen-Feedback).
+   align-items:center zentriert Emoji/Label/Caret stattdessen alle gemeinsam auf einer Flex-Achse. */
 .category-btn {
+  display: inline-flex;
+  align-items: center;
   font-size: 0.85rem;
 }
 
 /* Kleiner Auf-/Zu-Pfeil rechts neben dem Label, macht auf einen Blick klarer, dass ein Klick ein
    Dropdown-Menü öffnet/schließt statt z. B. direkt eine Aktion auszulösen (Nutzer:innen-Feedback) -
-   dasselbe Auf/Zu-Symbolpaar wie ProfileView.vue's "Einzeln anpassen ▴/▾". Kein flex nötig: .caret
-   (der .filter-toggle-row-Basisstil) reicht hier als reines Inline-Element direkt nach dem Label. */
+   dasselbe Auf/Zu-Symbolpaar wie ProfileView.vue's "Einzeln anpassen ▴/▾". */
 .dropdown-caret {
   margin-left: 4px;
   font-size: 0.7rem;
+  line-height: 1;
   opacity: 0.6;
 }
 
