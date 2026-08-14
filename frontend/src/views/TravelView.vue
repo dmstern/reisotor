@@ -787,8 +787,12 @@ function showDetailToOnMap() {
   margin-bottom: var(--space-3);
 }
 
-.places-hint {
-  margin-bottom: var(--space-3);
+/* Compound-Selektor (statt nur .places-hint) nötig, damit dieses margin-bottom zuverlässig das
+   .hint-Basis-margin:0 weiter unten überschreibt - bei gleicher Spezifität (je eine Klasse) würde
+   sonst die Deklarationsreihenfolge im Stylesheet entscheiden, nicht die inhaltliche Absicht (siehe
+   DESIGN.md, Abschnitt "Abstände" für das generelle Prinzip). */
+.hint.places-hint {
+  margin-bottom: var(--space-4);
 }
 
 .form {

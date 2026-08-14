@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
-import { useRouter } from 'vue-router';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import { useNavPositionStore } from '../stores/navPosition';
 import { useNavConfigStore } from '../stores/navConfig';
@@ -11,6 +11,7 @@ import { NAV_LINKS, type NavLinkDef } from '../utils/navLinks';
 
 const auth = useAuthStore();
 const router = useRouter();
+const route = useRoute();
 const navPosition = useNavPositionStore();
 const navConfig = useNavConfigStore();
 const liveSync = useLiveSyncStore();
@@ -39,10 +40,36 @@ function updateOffset() {
   document.documentElement.style.setProperty('--navbar-bottom-offset', `${isTop.value ? 0 : height + floatingGap}px`);
 }
 
+// Aktive Hervorhebung gleitet per JS-gemessener transform/width-Animation zwischen den Nav-Punkten
+// statt hart umzuschalten (gleiches Grundprinzip wie SegmentedToggle.vue's Pille) - anders als dort
+// haben Nav-Links aber unterschiedliche Breiten und eine dynamische, nutzerkonfigurierbare Anzahl
+// (navConfig.ts), ein reines CSS-Grid mit gleich breiten Spalten funktioniert hier also nicht. Statt
+// dessen wird die tatsächliche Position/Breite des aktiven `.link`-Elements per offsetLeft/
+// offsetWidth ausgelesen und einem absolut positionierten Geschwister-Element zugewiesen.
+const linksEl = ref<HTMLElement | null>(null);
+const highlightLeft = ref(0);
+const highlightWidth = ref(0);
+const highlightVisible = ref(false);
+
+function updateHighlight() {
+  const activeEl = linksEl.value?.querySelector<HTMLElement>('.link.router-link-active');
+  if (!activeEl) {
+    highlightVisible.value = false;
+    return;
+  }
+  highlightLeft.value = activeEl.offsetLeft;
+  highlightWidth.value = activeEl.offsetWidth;
+  highlightVisible.value = true;
+}
+
 onMounted(() => {
-  resizeObserver = new ResizeObserver(updateOffset);
+  resizeObserver = new ResizeObserver(() => {
+    updateOffset();
+    updateHighlight();
+  });
   if (navEl.value) resizeObserver.observe(navEl.value);
   updateOffset();
+  nextTick(updateHighlight);
 });
 
 onUnmounted(() => {
@@ -65,6 +92,13 @@ const visibleLinks = computed<NavLinkDef[]>(() =>
     .filter((l): l is NavLinkDef => !!l),
 );
 
+// route.fullPath (nicht nur .path) reicht auch für den seltenen Fall, dass sich nur Query/Hash
+// ändern und `router-link-active` dadurch nicht neu berechnet wird - dann bleibt updateHighlight()
+// einfach ein No-Op, da sich die aktive Klasse nicht verschiebt. visibleLinks zusätzlich beobachten,
+// da sich Breite/Position aller Links ändert, sobald Einträge in ProfileView.vue aus-/eingeblendet
+// werden.
+watch([() => route.fullPath, visibleLinks], () => nextTick(updateHighlight));
+
 function hasUnseenAny(link: NavLinkDef): boolean {
   if (link.domain) return liveSync.hasUnseen(link.domain);
   if (link.domains) return link.domains.some((d) => liveSync.hasUnseen(d));
@@ -85,7 +119,16 @@ function onLinkClick(event: MouseEvent) {
 
 <template>
   <nav ref="navEl" class="navbar" :class="[`mobile-${navPosition.mobile}`, `desktop-${navPosition.desktop}`]">
-    <div class="links">
+    <div class="links" ref="linksEl">
+      <!-- Gleitende Hervorhebung hinter den Links (siehe updateHighlight() oben) - ein einzelnes
+           Element statt einer Hintergrundfarbe je aktivem .link, damit sich beim Wechseln eine
+           durchgehende Bewegung statt eines harten Umschaltens ergibt. -->
+      <span
+        class="nav-highlight"
+        :class="{ visible: highlightVisible }"
+        :style="{ transform: `translateX(${highlightLeft}px)`, width: `${highlightWidth}px` }"
+        aria-hidden="true"
+      ></span>
       <!-- Übersicht (Dashboard) ganz links, noch vor dem mobilen Kalender-Link: der zentrale
            Einstiegspunkt der App soll auf mobile immer der allererste (am wenigsten wegscrollte)
            Nav-Punkt sein. -->
@@ -181,12 +224,39 @@ function onLinkClick(event: MouseEvent) {
 }
 
 .links {
+  position: relative;
   display: flex;
   gap: var(--space-1);
   flex: 1;
 }
 
+/* Gleitende Hervorhebungs-Pille hinter den Links (siehe updateHighlight() im Script-Block) - ersetzt
+   die vorher pro Link hart umgeschaltete Hintergrundfarbe durch ein einzelnes, per transform/width
+   animiertes Element, das zwischen den Nav-Punkten hinüberrutscht (gleiches Grundprinzip wie
+   SegmentedToggle.vue's .segmented-thumb). Volle Pille (border-radius:999px) statt Squircle - näher
+   an Apples Tab-Bar-Sprache (z. B. Apple Podcasts), gleiche Konvention wie .navbar.mobile-bottom/
+   .category-nav (siehe DESIGN.md). "Größere Bewegung" laut DESIGN.md's Animations-Abschnitt (0.25s
+   ease) statt der 0.15s-Mikro-Interaktions-Stufe, da die Pille teils über mehrere Nav-Punkte hinweg
+   wandert statt nur an Ort und Stelle zu reagieren. */
+.nav-highlight {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  background: var(--color-primary-tint);
+  border-radius: 999px;
+  opacity: 0;
+  transition: transform 0.25s ease, width 0.25s ease, opacity 0.15s ease;
+  pointer-events: none;
+}
+
+.nav-highlight.visible {
+  opacity: 1;
+}
+
 .link {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -200,13 +270,8 @@ function onLinkClick(event: MouseEvent) {
   white-space: nowrap;
 }
 
-/* Volle Pille statt der geerbten Squircle-Ecken von .link - näher an Apples Tab-Bar-Sprache (z. B.
-   Apple Podcasts), gleiche "Pille"-Konvention wie .navbar.mobile-bottom/.category-nav (siehe
-   DESIGN.md: vollständig runde Elemente nutzen border-radius:999px statt eines Squircle-Tokens). */
 .link.router-link-active {
   color: var(--color-primary-dark);
-  background: var(--color-primary-tint);
-  border-radius: 999px;
 }
 
 .icon-wrap {

@@ -72,6 +72,26 @@ Semantische statt beschreibende Namen (`--color-danger`, nicht `--color-red`) �
 Stufen verwenden statt beliebiger px-Werte – macht Layouts über Views hinweg optisch konsistent und
 Design-Anpassungen global statt Datei für Datei nötig.
 
+**Beschreibungstext vor einer Karte/Liste/einem Grid**: eine erklärende `<p>`-Zeile direkt unter
+einer Überschrift, gefolgt von der eigentlichen Karten-/Listen-Sektion, braucht sichtbar mehr Luft
+nach unten als reine Fließtext-Abstände – mindestens `--space-3` (16px), bei einer Karten-lastigen
+Sektion eher `--space-4` (24px), damit Text und Karte klar als zwei getrennte Blöcke wirken statt
+aneinanderzukleben. Der globale `p`-Grundstil in `style.css` liefert bereits `margin: 0 0
+var(--space-3)` – reicht meist von allein, sobald keine lokale Regel das wieder auf `margin: 0`
+zurücksetzt.
+
+Genau das ist der häufigste Stolperstein: Views nutzen dieselbe generische `.hint`-Klasse sowohl für
+knapp unter einem Eingabefeld sitzende Mini-Hinweise (dort bewusst `margin: 0`, siehe z. B.
+`TravelView.vue`) als auch für eine Seiten-Einleitung direkt vor der Kartenliste. Bei zwei
+Klassen mit gleicher Spezifität (`.hint` und z. B. `.places-hint`) entscheidet dann die
+Deklarations-Reihenfolge im Stylesheet, nicht die inhaltliche Absicht – eine spätere `.hint`-Regel
+kann so ein vorher gesetztes `margin-bottom` stillschweigend wieder auf 0 kappen. Für einen
+Seiten-Einleitungstext deshalb entweder eine eigene, von `.hint` unabhängige Klasse verwenden, oder
+per Compound-Selektor (`.hint.places-hint { margin-bottom: var(--space-4); }`) höhere Spezifität
+erzwingen, statt sich auf die Regel-Reihenfolge zu verlassen. Bei jeder neuen Einleitungszeile vor
+einer Karten-/Listen-Sektion aktiv im gerenderten Ergebnis nachschauen, ob der Abstand tatsächlich
+ankommt, statt sich auf eine bestehende `margin-bottom`-Deklaration allein zu verlassen.
+
 ## Eckenrundung: Squircle-Prinzip
 
 Basiswerte `--radius-sm` (10px) bis `--radius-xl` (32px) gelten für alles, was ein **normaler
