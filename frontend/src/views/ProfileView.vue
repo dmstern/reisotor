@@ -58,8 +58,15 @@ const activeTab = computed<Tab>(() => {
   return (TAB_KEYS as string[]).includes(tab as string) ? (tab as Tab) : 'account';
 });
 
-function selectTab(tab: Tab) {
+function selectTab(tab: Tab, event?: MouseEvent) {
   router.replace({ query: { ...route.query, tab } });
+  // Scrollt einen angeklickten, teils außerhalb des sichtbaren Bereichs liegenden Tab vollständig
+  // in Sicht - gleiches Muster wie NavBar.vue's onLinkClick() für deren horizontal scrollende Leiste.
+  (event?.currentTarget as HTMLElement | undefined)?.scrollIntoView({
+    behavior: 'smooth',
+    inline: 'nearest',
+    block: 'nearest',
+  });
 }
 
 function navLinkLabel(key: string) {
@@ -328,7 +335,7 @@ async function onImportFileSelected(event: Event) {
         role="tab"
         :class="{ active: activeTab === tab.key }"
         :aria-selected="activeTab === tab.key"
-        @click="selectTab(tab.key)"
+        @click="selectTab(tab.key, $event)"
       >
         <span class="icon">{{ tab.icon }}</span>
         {{ tab.label }}
@@ -749,21 +756,23 @@ async function onImportFileSelected(event: Event) {
 
 /* Tab-Leiste analog zu ListenView.vue's .tab-bar/.tab (eigener, lokal duplizierter Style-Block,
    Vue-Styles gelten nicht komponentenübergreifend) - hier ohne deren max-width/padding, da .page
-   (style.css) bereits Breite/Innenabstand der ganzen Seite vorgibt. flex-wrap: wrap zusätzlich zum
-   Original nötig, da hier 6 statt Listens 3 Tabs auf schmalen Breiten sonst quetschen/überlaufen
-   würden. */
+   (style.css) bereits Breite/Innenabstand der ganzen Seite vorgibt. Bei 6 statt Listens 3 Tabs
+   horizontal scrollbar statt umbrechend (overflow-x: auto + white-space: nowrap/flex-shrink: 0 je
+   Tab) - gleiches Muster wie NavBar.vue's mobile Scroll-Leiste, statt die Tabs auf mehrere Zeilen
+   umbrechen zu lassen. */
 .tab-bar {
   display: flex;
-  flex-wrap: wrap;
   gap: var(--space-2);
   padding-bottom: var(--space-2);
   margin-bottom: var(--space-4);
   border-bottom: 1px solid var(--color-border);
+  overflow-x: auto;
 }
 
 .tab {
   display: flex;
   align-items: center;
+  flex-shrink: 0;
   gap: 6px;
   padding: var(--space-2) var(--space-3);
   border: none;
@@ -772,6 +781,7 @@ async function onImportFileSelected(event: Event) {
   background: none;
   color: var(--color-text-muted);
   font-size: 0.9rem;
+  white-space: nowrap;
   cursor: pointer;
 }
 
