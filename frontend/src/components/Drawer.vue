@@ -452,10 +452,18 @@ function onResizeEnd() {
      driftet er bei sehr breiten Schubladen vom tatsächlichen Panel-Rand weg. bottom:0 statt 60px,
      da hier keine untere Navigationsleiste im Weg ist (siehe .drawer-panel's eigenes bottom:auto/
      max-height weiter unten). display:flex hebt das mobile display:none wieder auf – nur auf
-     Desktop gibt es (bei fester Panel-Breite statt 100vw) überhaupt etwas zum Anfassen. */
+     Desktop gibt es (bei fester Panel-Breite statt 100vw) überhaupt etwas zum Anfassen.
+     position:fixed fehlte hier bisher komplett – ohne das ignoriert der Browser left/right/top/
+     bottom (Grundregel für alles außer position:static), das Element blieb also position:static und
+     landete dadurch als normales, winziges Flex-Geschwisterelement ganz am linken Rand von .drawer
+     (vor .drawer-panel im Quellcode, unbeeinflusst von left/bottom) statt sichtbar an der
+     Panel-Kante zu liegen – der Anfasser war dadurch faktisch unauffindbar/nicht bedienbar. */
   .resize-handle {
     display: flex;
+    position: fixed;
+    top: calc(var(--app-header-height, 56px) + var(--navbar-offset, 0px));
     bottom: 0;
+    width: var(--drawer-handle-gap);
   }
   .drawer.left .resize-handle {
     left: var(--drawer-width);
@@ -478,10 +486,17 @@ function onResizeEnd() {
     bottom: auto;
     max-height: calc(100vh - var(--app-header-height, 56px) - var(--navbar-offset, 0px));
     transform: none;
-    box-shadow: none;
+    /* --shadow-md statt none: das Panel legt sich beim Ausklappen über den Hauptinhalt (der
+       schiebt zwar zur Seite, bekommt aber keinen eigenen Rand) - ein sichtbar "über dem
+       Hintergrund liegendes" Element braucht einen Schatten, sonst wirkt der Bereichswechsel wie
+       zwei gleichrangige Spalten statt einer bewusst geöffneten Schublade (siehe DESIGN.md,
+       Abschnitt "Schatten": Elemente, die über anderen liegen, bekommen einen Schatten). In der
+       Transition unten mit, damit er beim Auf-/Zuklappen sanft ein-/ausblendet statt hart zu
+       springen. */
+    box-shadow: var(--shadow-md);
     border-radius: 0;
     width: var(--drawer-width);
-    transition: width 0.25s ease, opacity 0.2s ease;
+    transition: width 0.25s ease, opacity 0.2s ease, box-shadow 0.25s ease;
   }
   .drawer.left .drawer-panel {
     order: 1;
