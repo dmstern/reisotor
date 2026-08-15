@@ -159,6 +159,20 @@ ankommt, statt sich auf eine bestehende `margin-bottom`-Deklaration allein zu ve
 
 ## Eckenrundung: Squircle-Prinzip
 
+**Grundsatz: nirgends ganz eckige (90°-)Ecken.** Jede eigenständig abgegrenzte Fläche – Card,
+Button, Input, Modal, Drawer, aber auch eine flache Werkzeug-/Navigationsleiste wie
+`ExcursionsView.vue`s `.category-nav` – bekommt eine der beiden Rundungsarten unten (Kreisbogen oder
+Squircle, je nach Elementtyp), nie `border-radius: 0`. Das gilt besonders für Flächen, die beim
+Scrollen über anderem Inhalt schweben (`position: sticky`/`fixed`): ein scharfkantiges Rechteck fällt
+dort noch stärker auf als im ruhenden Layout, speziell wenn die Fläche (wie `.category-nav` im
+"stuck"-Zustand) über einem andersfarbigen Hintergrund liegt – konkret aufgetretener Fall: ein
+eckiger, weißer Balken direkt über dem beigen Seitenhintergrund (Desktop, wo die umschließende
+Sheet-Karte anders als mobil komplett transparent wird) wirkte dadurch wie ein Rendering-Fehler statt
+einer bewussten Fläche. Bei jedem neuen "schwebenden"/sticky positionierten Element deshalb aktiv
+sowohl Rundung als auch Hintergrundfarbe (siehe Abschnitt "Farben" oben – Steuerungselemente bekommen
+`--color-primary-tint`, nicht `--color-surface`) gegen den jeweils dahinterliegenden Hintergrund
+prüfen, nicht nur im eingebetteten Grundzustand.
+
 Basiswerte `--radius-sm` (10px) bis `--radius-xl` (32px) gelten für alles, was ein **normaler
 Kreisbogen** bleiben soll: komplett runde Elemente (`border-radius: 50%`, z. B. `EditButton.vue`/
 `DeleteButton.vue`, meist zusätzlich mit `corner-shape: round;` explizit gemacht), Pillen sowie

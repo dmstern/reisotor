@@ -2996,18 +2996,25 @@ async function removeSpot(id: number) {
   height: 0;
 }
 
-/* Horizontale Kategorie-Navigation, Wolt-Stil: eine flache Tab-Leiste (Trennlinie + gleitende
-   Unterstreichung, gleiches Grundprinzip wie ListenView.vue's .tab-bar) statt einer schwebenden
-   "Liquid Glass"-Pille wie in einer früheren Version dieser Nav (siehe Git-Historie) – dadurch
-   unterscheidet sie sich klarer von der App-weiten NavBar (die IST eine schwebende Pille) und bleibt
-   optisch eine sekundäre, dem Inhalt untergeordnete Werkzeugleiste. Icon links neben statt über dem
-   Label (Wolt-Vorbild), ganze Leiste scrollt bei Bedarf horizontal statt umzubrechen (viele
-   Kategorien nebeneinander) und hält die aktive Kategorie dabei per JS automatisch im sichtbaren
-   Bereich (siehe watch(activeCategory) im Script). Vertikal sticky innerhalb von .spots-col-body
-   (dem tatsächlich scrollenden Vorfahren, siehe dortige overflow-y) mit top:0, sitzt also im
+/* Horizontale Kategorie-Navigation, Wolt-Stil: eine flache Tab-Leiste (gleitende Unterstreichung,
+   gleiches Grundprinzip wie ListenView.vue's .tab-bar) statt einer schwebenden "Liquid Glass"-Pille
+   wie in einer früheren Version dieser Nav (siehe Git-Historie) – dadurch unterscheidet sie sich
+   klarer von der App-weiten NavBar (die IST eine schwebende Pille) und bleibt optisch eine
+   sekundäre, dem Inhalt untergeordnete Werkzeugleiste. Icon links neben statt über dem Label
+   (Wolt-Vorbild), ganze Leiste scrollt bei Bedarf horizontal statt umzubrechen (viele Kategorien
+   nebeneinander) und hält die aktive Kategorie dabei per JS automatisch im sichtbaren Bereich
+   (siehe watch(activeCategory) im Script). Vertikal sticky innerhalb von .spots-col-body (dem
+   tatsächlich scrollenden Vorfahren, siehe dortige overflow-y) mit top:0, sitzt also im
    "stuck"-Zustand direkt an der Oberkante der Liste – anders als die frühere Pille bleibt die Höhe
    dabei konstant (kein Zustand mit größerem Padding mehr), daher ist keine zusätzliche
-   Abstands-Kompensation für die erste sichtbare Gruppe mehr nötig. */
+   Abstands-Kompensation für die erste sichtbare Gruppe mehr nötig.
+   --color-primary-tint statt --color-surface + Squircle-Rundung statt eckiger Ecken: dieselbe
+   "Steuerungselement statt Dateninhalt"-Behandlung wie .filter-bar oben (siehe DESIGN.md, Abschnitt
+   "Farben") – diese Navi ist ein Werkzeug zum Springen zwischen Kategorien, kein Dateninhalt. Ein
+   weißer, eckiger Balken sah hier speziell im "stuck"-Zustand sichtbar falsch aus: auf Desktop wird
+   .spots-col dort komplett transparent (siehe dortiges background:none), ein weißes Rechteck mit
+   90°-Ecken hätte scharf gegen den beigen Seitenhintergrund abgesetzt gewirkt – siehe DESIGN.md,
+   Abschnitt "Eckenrundung", "nie ganz eckige Ecken"-Grundsatz. */
 .category-nav {
   position: sticky;
   top: 0;
@@ -3017,8 +3024,9 @@ async function removeSpot(id: number) {
   overflow-x: auto;
   overflow-y: hidden;
   margin-bottom: var(--space-3);
-  background: var(--color-surface);
-  border-bottom: 1px solid var(--color-border);
+  background: var(--color-primary-tint);
+  border-radius: var(--radius-md-squircle);
+  corner-shape: squircle;
   transition: box-shadow 0.2s ease;
 }
 
