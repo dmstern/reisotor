@@ -1240,3 +1240,35 @@ db.exec("UPDATE diary_entries SET date = substr(created_at, 1, 10) WHERE date IS
 // alle bestehenden Zeilen sind naturgemäß "noch nicht gemacht").
 ensureColumn('spots', 'done', 'INTEGER NOT NULL DEFAULT 0');
 ensureColumn('ideas', 'done', 'INTEGER NOT NULL DEFAULT 0');
+
+// Standort-Aufzeichnung ("wo war ich wirklich?", im Gegensatz zum rein ephemeren Live-Standort in
+// activity.ts's lastPositionsByTrip): eine Aufzeichnungs-Sitzung (location_tracks) plus die dabei
+// gesammelten GPS-Punkte (location_track_points). Komplett neue Tabellen, kein Backfill nötig.
+// visibility folgt demselben 🔒/🤝-Konzept wie private/geteilte Budget-Töpfe (siehe DESIGN.md):
+// 'private' (Standard) ist nur für die aufzeichnende Person sichtbar, 'shared' für alle
+// Trip-Mitglieder. excursion_id ist optional (ON DELETE SET NULL statt CASCADE, analog zu
+// schedule_items.spot_id) - eine Aufzeichnung bleibt als eigenständiges Objekt bestehen, auch wenn
+// die verknüpfte Tour später gelöscht wird.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS location_tracks (
+    id INTEGER PRIMARY KEY,
+    trip_id INTEGER NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    excursion_id INTEGER REFERENCES ideas(id) ON DELETE SET NULL,
+    title TEXT,
+    visibility TEXT NOT NULL DEFAULT 'private',
+    started_at TEXT NOT NULL,
+    ended_at TEXT,
+    deleted_at TEXT
+  );
+
+  CREATE TABLE IF NOT EXISTS location_track_points (
+    id INTEGER PRIMARY KEY,
+    track_id INTEGER NOT NULL REFERENCES location_tracks(id) ON DELETE CASCADE,
+    lat REAL NOT NULL,
+    lng REAL NOT NULL,
+    recorded_at TEXT NOT NULL,
+    accuracy REAL
+  );
+`);
+db.exec('CREATE INDEX IF NOT EXISTS idx_track_points_track_recorded ON location_track_points (track_id, recorded_at)');

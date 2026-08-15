@@ -18,6 +18,7 @@ const DOMAIN_BY_TYPE: Record<string, string> = {
   shopping_item: 'shopping',
   note: 'notes',
   diary_entry: 'diary',
+  location_track: 'ideas',
 };
 
 // Konfiguration für den Papierkorb (weicher Löschvorgang, siehe db/index.ts's TRASH_TABLES):
@@ -36,6 +37,17 @@ interface TrashConfig {
   listQuery?: (tripId: string, userId: number | undefined) => Record<string, unknown>[];
   // Zusätzlicher Sichtbarkeits-Check vor dem Wiederherstellen (analog zu listQuery).
   checkVisible?: (id: string, userId: number | undefined) => boolean;
+}
+
+// Private Standort-Aufzeichnungen (visibility='private', Standard beim Start, siehe routes/tracks.ts)
+// dürfen auch gelöscht nicht über den Papierkorb an andere Mitglieder durchsickern - gleiches
+// Prinzip wie private Budget-Töpfe unten.
+function isTrackVisible(id: string, userId: number | undefined): boolean {
+  const row = db.prepare('SELECT user_id, visibility FROM location_tracks WHERE id = ?').get(id) as
+    | { user_id: number; visibility: string }
+    | undefined;
+  if (!row) return true; // nicht gefunden - lässt den 404-Pfad des Aufrufers greifen
+  return row.user_id === userId || row.visibility === 'shared';
 }
 
 function isBudgetItemVisible(id: string, userId: number | undefined): boolean {
@@ -99,6 +111,21 @@ const TRASH_CONFIG: TrashConfig[] = [
   { type: 'shopping_item', table: 'shopping_items', label: 'Einkaufslisten-Eintrag' },
   { type: 'note', table: 'notes', label: 'Notiz' },
   { type: 'diary_entry', table: 'diary_entries', label: 'Tagebuch-Eintrag' },
+  {
+    type: 'location_track',
+    table: 'location_tracks',
+    label: 'Standort-Aufzeichnung',
+    // Private Aufzeichnungen anderer Mitglieder dürfen weder gelistet noch wiederhergestellt
+    // sichtbar sein (gleiches Muster wie bei budget_item oben).
+    listQuery: (tripId, userId) =>
+      db
+        .prepare(
+          `SELECT * FROM location_tracks
+           WHERE trip_id = ? AND deleted_at IS NOT NULL AND (user_id = ? OR visibility = 'shared')`,
+        )
+        .all(tripId, userId ?? null) as Record<string, unknown>[],
+    checkVisible: isTrackVisible,
+  },
 ];
 
 function restoreLinkedBudgetExpense(table: string, id: string) {

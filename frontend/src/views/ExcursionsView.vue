@@ -2,7 +2,7 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch, type ComponentPublicInstance, type Ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { api } from '../api/client';
-import type { Excursion, ExcursionComment, ExcursionLike, Spot, TravelItem, User } from '../api/types';
+import type { Excursion, ExcursionComment, ExcursionLike, LocationTrack, Spot, TravelItem, User } from '../api/types';
 import { useAuthStore } from '../stores/auth';
 import { useTripStore } from '../stores/trip';
 import { useSpotsStore } from '../stores/spots';
@@ -10,6 +10,10 @@ import { useScheduleStore } from '../stores/schedule';
 import { useDrawersStore } from '../stores/drawers';
 import { useLiveSyncStore } from '../stores/liveSync';
 import { useExcursionsStore } from '../stores/excursions';
+import { useTracksStore } from '../stores/tracks';
+import { useTrackRecordingStore } from '../stores/trackRecording';
+import { formatDateTime } from '../utils/dateFormat';
+import { formatDurationShort } from '../utils/trackGeometry';
 import { usePersistedRef } from '../composables/usePersistedRef';
 import { hashHighlightId } from '../utils/hashHighlight';
 import SpotCard from '../components/SpotCard.vue';
@@ -51,6 +55,29 @@ const scheduleStore = useScheduleStore();
 const drawers = useDrawersStore();
 const liveSync = useLiveSyncStore();
 const excursionsStore = useExcursionsStore();
+const tracksStore = useTracksStore();
+const trackRecording = useTrackRecordingStore();
+
+const tracksSectionOpen = ref(false);
+
+function trackTitle(track: LocationTrack): string {
+  return track.title || `Aufzeichnung vom ${formatDateTime(track.started_at)}`;
+}
+
+function trackDurationLabel(track: LocationTrack): string {
+  if (!track.ended_at) return '';
+  const ms = new Date(track.ended_at).getTime() - new Date(track.started_at).getTime();
+  return formatDurationShort(ms);
+}
+
+async function toggleTrackVisibility(track: LocationTrack) {
+  await tracksStore.update(track.id, { visibility: track.visibility === 'shared' ? 'private' : 'shared' });
+}
+
+async function removeTrack(id: number) {
+  if (drawers.mapFocusTrackId === id) drawers.mapFocusTrackId = null;
+  await tracksStore.remove(id);
+}
 
 const users = ref<User[]>([]);
 const travelItems = ref<TravelItem[]>([]);
@@ -1259,7 +1286,80 @@ async function removeSpot(id: number) {
         <div class="header-actions">
           <button @click="showSpotForm = true">+ Neuer Spot</button>
           <button class="secondary" @click="showExcursionForm = true">+ Neue Tour</button>
+          <!-- Zweiter Einstiegspunkt zum ⏺️/⏹️-Button auf TripMap.vue (Start dort mit Sichtbarkeits-
+               Auswahl/Tour-Kopplung): der Karten-Button steckt in einer bereits vollen
+               Button-Spalte, die auf Mobil beim Standard-Sheet-Zustand teils vom Bottom-Sheet
+               verdeckt wird (siehe dortiger CSS-Kommentar zu .share-location-btn) - "Standort
+               aufzeichnen" ist aber gerade das unterwegs/mobil wichtigste neue Kern-Feature, braucht
+               daher einen immer erreichbaren zweiten Zugang (siehe DESIGN.md, Abschnitt "Desktop UND
+               Mobile"). Startet direkt privat/ungekoppelt statt eines eigenen Menüs - Teilen/Tour-
+               Kopplung bleiben über den Karten-Button bzw. den Sichtbarkeits-Umschalter in der
+               Aufzeichnungen-Liste erreichbar. -->
+          <button
+            type="button"
+            class="secondary"
+            :class="{ recording: trackRecording.recording }"
+            @click="trackRecording.recording ? trackRecording.stop() : trackRecording.start({ visibility: 'private' })"
+          >
+            {{ trackRecording.recording ? '⏹️ Aufzeichnung beenden' : '⏺️ Aufzeichnen' }}
+          </button>
         </div>
+      </div>
+
+      <!-- Standort-Aufzeichnungen (stores/tracks.ts): eigene, geteilte und mit anderen geteilte
+           Tracks - Start/Stop selbst passiert auf der Karte (TripMap.vue's ⏺️-Button), hier nur die
+           Übersicht + nachträgliches Teilen/Löschen. Eingeklappt per Default, damit die für die
+           meiste Zeit relevantere Spots-Liste nicht verdrängt wird - genau wie .filter-bar oben. -->
+      <div class="tracks-section" v-if="tracksStore.tracks.length">
+        <button
+          type="button"
+          class="tracks-toggle"
+          :aria-expanded="tracksSectionOpen"
+          @click="tracksSectionOpen = !tracksSectionOpen"
+        >
+          <span>🧭 Aufzeichnungen ({{ tracksStore.tracks.length }})</span>
+          <span class="caret">{{ tracksSectionOpen ? '▾' : '▸' }}</span>
+        </button>
+        <ul v-if="tracksSectionOpen" class="tracks-list">
+          <li
+            v-for="track in tracksStore.tracks"
+            :key="track.id"
+            class="track-row"
+            :class="{ active: drawers.mapFocusTrackId === track.id }"
+          >
+            <button type="button" class="track-row-main" @click="drawers.openMapForTrack(track.id)">
+              <span class="track-row-title">{{ trackTitle(track) }}</span>
+              <span class="track-row-meta">
+                <span v-if="!track.ended_at">🔴 läuft</span>
+                <span v-else-if="trackDurationLabel(track)">⏱️ {{ trackDurationLabel(track) }}</span>
+              </span>
+            </button>
+            <template v-if="track.user_id === auth.user?.id">
+              <button
+                type="button"
+                class="track-icon-btn"
+                :title="
+                  track.visibility === 'shared'
+                    ? 'Für alle Mitreisenden sichtbar – antippen, um wieder privat zu machen'
+                    : 'Nur für dich sichtbar – antippen, um mit allen zu teilen'
+                "
+                :aria-label="track.visibility === 'shared' ? 'Teilen zurücknehmen' : 'Mit allen teilen'"
+                @click="toggleTrackVisibility(track)"
+              >
+                {{ track.visibility === 'shared' ? '🤝' : '🔒' }}
+              </button>
+              <button
+                type="button"
+                class="track-icon-btn"
+                title="Aufzeichnung löschen"
+                aria-label="Aufzeichnung löschen"
+                @click="removeTrack(track.id)"
+              >
+                🗑️
+              </button>
+            </template>
+          </li>
+        </ul>
       </div>
 
       <Modal :model-value="showExcursionForm" title="Neue Tour" full-height @update:model-value="(v) => !v && closeExcursionForm()">
@@ -2196,6 +2296,14 @@ async function removeSpot(id: number) {
   gap: var(--space-2);
 }
 
+/* Gleicher Rec-Ton wie TrackRecordingIndicator.vue's .recording-pill, damit "läuft gerade" app-weit
+   dieselbe Farbe trägt. */
+.header-actions button.recording {
+  background: var(--color-danger);
+  border-color: var(--color-danger);
+  color: #fff;
+}
+
 .hint {
   margin: 0 0 var(--space-3);
   font-size: 0.85rem;
@@ -2463,6 +2571,105 @@ async function removeSpot(id: number) {
   background: var(--color-primary-tint);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
+}
+
+/* Steuerung (Ein-/Ausklappen), daher --color-primary-tint statt --color-surface - gleiches Prinzip
+   wie .filter-bar oben (siehe DESIGN.md, Abschnitt "Steuerungselement vs. Dateninhalt"). */
+.tracks-section {
+  margin: 0 0 var(--space-3);
+  border-radius: var(--radius-md-squircle);
+  corner-shape: squircle;
+  background: var(--color-primary-tint);
+  overflow: hidden;
+}
+
+.tracks-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  width: 100%;
+  background: none;
+  border: none;
+  padding: var(--space-2) var(--space-3);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-primary-dark);
+  cursor: pointer;
+  text-align: left;
+}
+
+/* Dateninhalt (je eine echte Aufzeichnung), daher --color-surface statt der Steuerungsfarbe der
+   umgebenden .tracks-section - gleiches Prinzip wie SpotCard.vue/ExcursionCard.vue. */
+.tracks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0 var(--space-2) var(--space-2);
+  list-style: none;
+}
+
+.track-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  background: var(--color-surface);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+}
+
+.track-row.active {
+  outline: 2px solid var(--color-primary);
+}
+
+.track-row-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: none;
+  border: none;
+  padding: var(--space-1) var(--space-2);
+  text-align: left;
+  cursor: pointer;
+}
+
+.track-row-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.track-row-meta {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.track-icon-btn {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  margin-right: var(--space-1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.track-icon-btn:hover {
+  background: var(--color-hover);
 }
 
 /* Je eine Zeile für Sortieren und Filtern, statt einer gemeinsamen umbrechenden Reihe – siehe
