@@ -11,6 +11,7 @@ import { useDrawersStore } from '../stores/drawers';
 import { useLiveSyncStore } from '../stores/liveSync';
 import { useExcursionsStore } from '../stores/excursions';
 import { useTracksStore } from '../stores/tracks';
+import { useTrackRecordingStore } from '../stores/trackRecording';
 import { formatDateTime } from '../utils/dateFormat';
 import { formatDurationShort } from '../utils/trackGeometry';
 import { usePersistedRef } from '../composables/usePersistedRef';
@@ -55,6 +56,7 @@ const drawers = useDrawersStore();
 const liveSync = useLiveSyncStore();
 const excursionsStore = useExcursionsStore();
 const tracksStore = useTracksStore();
+const trackRecording = useTrackRecordingStore();
 
 const tracksSectionOpen = ref(false);
 
@@ -1221,6 +1223,23 @@ async function removeSpot(id: number) {
         <div class="header-actions">
           <button @click="showSpotForm = true">+ Neuer Spot</button>
           <button class="secondary" @click="showExcursionForm = true">+ Neue Tour</button>
+          <!-- Zweiter Einstiegspunkt zum ⏺️/⏹️-Button auf TripMap.vue (Start dort mit Sichtbarkeits-
+               Auswahl/Tour-Kopplung): der Karten-Button steckt in einer bereits vollen
+               Button-Spalte, die auf Mobil beim Standard-Sheet-Zustand teils vom Bottom-Sheet
+               verdeckt wird (siehe dortiger CSS-Kommentar zu .share-location-btn) - "Standort
+               aufzeichnen" ist aber gerade das unterwegs/mobil wichtigste neue Kern-Feature, braucht
+               daher einen immer erreichbaren zweiten Zugang (siehe DESIGN.md, Abschnitt "Desktop UND
+               Mobile"). Startet direkt privat/ungekoppelt statt eines eigenen Menüs - Teilen/Tour-
+               Kopplung bleiben über den Karten-Button bzw. den Sichtbarkeits-Umschalter in der
+               Aufzeichnungen-Liste erreichbar. -->
+          <button
+            type="button"
+            class="secondary"
+            :class="{ recording: trackRecording.recording }"
+            @click="trackRecording.recording ? trackRecording.stop() : trackRecording.start({ visibility: 'private' })"
+          >
+            {{ trackRecording.recording ? '⏹️ Aufzeichnung beenden' : '⏺️ Aufzeichnen' }}
+          </button>
         </div>
       </div>
 
@@ -2197,6 +2216,14 @@ async function removeSpot(id: number) {
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
+}
+
+/* Gleicher Rec-Ton wie TrackRecordingIndicator.vue's .recording-pill, damit "läuft gerade" app-weit
+   dieselbe Farbe trägt. */
+.header-actions button.recording {
+  background: var(--color-danger);
+  border-color: var(--color-danger);
+  color: #fff;
 }
 
 .hint {

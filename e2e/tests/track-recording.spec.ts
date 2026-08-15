@@ -52,10 +52,13 @@ test.describe('Standort-Aufzeichnung', () => {
     await expect(recordBtn).not.toHaveClass(/active/, { timeout: 10_000 });
     await expect(recordingPill).not.toBeVisible();
 
-    // Aufzeichnungen-Liste in ExcursionsView.vue.
+    // Aufzeichnungen-Liste in ExcursionsView.vue - keine feste Gesamtanzahl erwarten (die e2e-Suite
+    // teilt sich eine DB über alle Spec-Dateien hinweg, siehe playwright.config.ts), stattdessen die
+    // gerade erstellte Zeile über ihre Sortierung finden: GET /tracks liefert neueste zuerst
+    // (routes/tracks.ts), die eigene Aufzeichnung ist also immer die erste.
     const tracksToggle = page.locator('.tracks-toggle');
     await expect(tracksToggle).toBeVisible({ timeout: 10_000 });
-    await expect(tracksToggle).toContainText('(1)');
+    await expect(tracksToggle).toContainText(/Aufzeichnungen \(\d+\)/);
     await tracksToggle.click();
 
     const trackRow = page.locator('.track-row').first();
