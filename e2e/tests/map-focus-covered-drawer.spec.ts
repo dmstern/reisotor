@@ -22,7 +22,9 @@ async function focusDayViaCalendar(page: Page, viewportName: string) {
   }
   // "🏖️ Urlaub" springt zum Start des Urlaubszeitraums - stellt sicher, dass excursion.date (irgendwo
   // im Urlaubszeitraum) in der sichtbaren Wochenauswahl liegt, unabhängig vom heutigen Datum.
-  await page.getByRole('button', { name: 'Urlaub' }).click();
+  // exact: true - sonst matcht das nicht-exakte Substring-Matching auch AppHeader.vue's
+  // TripSwitcher-Knopf (Trip-Name "Sommerurlaub Lissabon" enthält "Urlaub" als Substring).
+  await page.getByRole('button', { name: 'Urlaub', exact: true }).click();
   await page.locator(`.day[data-date="${excursion.date}"]`).click();
   await page.getByRole('button', { name: 'Tag auf Karte anzeigen' }).click();
   await page.waitForURL('**/excursions');

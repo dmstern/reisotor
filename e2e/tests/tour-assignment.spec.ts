@@ -52,7 +52,7 @@ test.describe('Tour-Zuordnung: einfacher Tagging-Modus + Kategorie/Touren-Gruppi
     await expect(tourGroupCard).toBeVisible();
     await expect(spotCard).toBeVisible();
 
-    await page.getByRole('button', { name: 'Spots' }).click();
+    await page.getByRole('button', { name: 'Spots', exact: true }).click();
   });
 
   test('Durch den Kategorie-Filter ausgeblendete Tour-Spots zeigen einen eigenen Hinweis statt "keine Spots zugeordnet"', async ({
@@ -95,7 +95,7 @@ test.describe('Tour-Zuordnung: einfacher Tagging-Modus + Kategorie/Touren-Gruppi
     await expect(group.locator('.spot-card', { hasText: spotTitle })).toBeVisible();
     await expect(group.locator('.empty')).toHaveCount(0);
 
-    await page.getByRole('button', { name: 'Spots' }).click();
+    await page.getByRole('button', { name: 'Spots', exact: true }).click();
   });
 });
 
