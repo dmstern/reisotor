@@ -159,6 +159,20 @@ ankommt, statt sich auf eine bestehende `margin-bottom`-Deklaration allein zu ve
 
 ## Eckenrundung: Squircle-Prinzip
 
+**Grundsatz: nirgends ganz eckige (90°-)Ecken.** Jede eigenständig abgegrenzte Fläche – Card,
+Button, Input, Modal, Drawer, aber auch eine flache Werkzeug-/Navigationsleiste wie
+`ExcursionsView.vue`s `.category-nav` – bekommt eine der beiden Rundungsarten unten (Kreisbogen oder
+Squircle, je nach Elementtyp), nie `border-radius: 0`. Das gilt besonders für Flächen, die beim
+Scrollen über anderem Inhalt schweben (`position: sticky`/`fixed`): ein scharfkantiges Rechteck fällt
+dort noch stärker auf als im ruhenden Layout, speziell wenn die Fläche (wie `.category-nav` im
+"stuck"-Zustand) über einem andersfarbigen Hintergrund liegt – konkret aufgetretener Fall: ein
+eckiger, weißer Balken direkt über dem beigen Seitenhintergrund (Desktop, wo die umschließende
+Sheet-Karte anders als mobil komplett transparent wird) wirkte dadurch wie ein Rendering-Fehler statt
+einer bewussten Fläche. Bei jedem neuen "schwebenden"/sticky positionierten Element deshalb aktiv
+sowohl Rundung als auch Hintergrundfarbe (siehe Abschnitt "Farben" oben – Steuerungselemente bekommen
+`--color-primary-tint`, nicht `--color-surface`) gegen den jeweils dahinterliegenden Hintergrund
+prüfen, nicht nur im eingebetteten Grundzustand.
+
 Basiswerte `--radius-sm` (10px) bis `--radius-xl` (32px) gelten für alles, was ein **normaler
 Kreisbogen** bleiben soll: komplett runde Elemente (`border-radius: 50%`, z. B. `EditButton.vue`/
 `DeleteButton.vue`, meist zusätzlich mit `corner-shape: round;` explizit gemacht), Pillen sowie
@@ -419,6 +433,26 @@ gewähltes, gespeichertes Identitätsdatum ohne sinnvolles festes Tabler-Äquiva
   für "für alle Mitreisenden sichtbar" (z. B. Budget-Töpfe, `BudgetPotCard.vue`). Kein eigenes
   drittes System, sondern ein einfaches, wiederverwendbares Paar – bei jedem neuen "privat vs.
   geteilt"-Konzept dieselben zwei Emoji verwenden statt neue zu erfinden.
+
+**Jedes neue Icon braucht ein `IconDef`, nie einen rohen Emoji-String direkt im Template.** Auch für
+Icons ohne passende der obigen Registries (z. B. Werkzeug-/Aktions-Icons wie `TripMap.vue`s
+Kartensteuerung, siehe `utils/mapToolIcons.ts`) gilt dasselbe Muster wie bei
+`formFieldIcons.ts`/den Kategorie-Registries: `{ id, emoji, outline, filled? }` statt `{{ '🔍' }}` im
+Template, gerendert über `<AppIcon :icon="…" />`. Zwei Gründe, beide nicht verhandelbar:
+
+1. Nur so greift die Emoji/Symbole-Einstellung (`stores/iconStyle.ts`) überhaupt – ein hartkodiertes
+   Emoji-Zeichen bleibt für Nutzer:innen mit aktivierten Tabler-Symbolen stur Emoji, ein sichtbarer
+   Stilbruch mitten im sonst umgeschalteten Rest der App.
+2. Ein separates, aktuell in einer anderen Session laufendes Feature (Icon-Gruppen-Konfiguration –
+   welche Icon-Kategorien/-Gruppen wo konfigurierbar sind) baut auf genau dieser Struktur auf: ein
+   Icon, das nur als roher Emoji-String existiert, kann von dieser Konfiguration nicht erfasst
+   werden. Jedes neue Icon muss deshalb zusätzlich einer sinnvollen Gruppe zugeordnet sein – entweder
+   einer bestehenden Registry (passendes Konzept, siehe oben) oder einer neuen, thematisch klar
+   benannten Registry-Datei nach demselben Muster (nicht lose Einzel-`IconDef`s verstreut in
+   Komponenten). `outline` ist Pflicht, `filled` optional (nicht jedes Tabler-Icon hat ein Filled-
+   Pendant) – `resolveIconComponent()`/`AppIcon.vue` fallen dann automatisch auf `outline` zurück.
+   Einzige Ausnahme weiterhin das Nutzer-Avatar (siehe "Kartenmarker" oben): ein frei gewähltes
+   Emoji ohne festes Tabler-Äquivalent bleibt bewusst immer Emoji, roh, ohne `IconDef`.
 
 ## Formularfelder in Anlege-/Bearbeiten-Dialogen
 

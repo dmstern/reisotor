@@ -548,6 +548,15 @@ function onCardClick() {
   .spot-card:not(.expanded) .body {
     padding: var(--space-2);
     gap: 2px;
+    /* Ohne das bleibt .body (jetzt ein Flex-Item in der Zeile statt in der Spalte, siehe
+       .spot-card:not(.expanded) oben) auf seiner automatischen Mindestbreite stehen - die entspricht
+       ohne explizites min-width:0 dem eigenen min-content (rekursiv über .head bis zum Titel
+       berechnet), bei einem langen, per white-space:nowrap absichtlich nicht umbrechenden Titel also
+       dessen volle Textbreite. .head h3 kürzt zwar selbst schon per Ellipsis (siehe dortiges CSS),
+       das greift aber erst, wenn .body überhaupt auf die verfügbare Breite schrumpfen darf - sonst
+       ragte die ganze Karte (und mit ihr die komplette Spots-Liste) auf schmalen Mobilbreiten seitlich
+       über den Bildschirmrand hinaus (horizontale Scrollleiste statt gekürztem Titel). */
+    min-width: 0;
   }
 
   .spot-card:not(.expanded) .note,

@@ -43,11 +43,15 @@ test.describe('Kalender-Drawer: Kalender-Export-Dropdown wird nicht vom Drawer-P
 test.describe('Mobile: Kollabiertes Bottom-Sheet verdeckt keine Karten-Steuerelemente', () => {
   test.use({ viewport: VIEWPORTS.mobile });
 
-  test('Karten-Button "Alle eingetragenen Orte anzeigen" bleibt über dem kollabierten Sheet sichtbar', async ({ page }) => {
+  test('Karten-Button "Kartenausschnitt fokussieren" bleibt über dem kollabierten Sheet sichtbar', async ({ page }) => {
     await page.goto('/excursions');
     await page.getByRole('button', { name: 'Spots-Liste weiter runterschieben' }).click();
 
-    const fitBtn = page.getByRole('button', { name: 'Alle eingetragenen Orte anzeigen' });
+    // Oberster, immer sichtbarer Button des Kartenwerkzeug-Stapels (fasst seit der Popover-
+    // Zusammenfassung "Alle anzeigen"/"Nur Urlaubsort"/"Nur Unterkünfte"/"Nur Tourziele" zusammen,
+    // siehe TripMap.vue's .focus-btn) - derselbe Regressionsfall wie zuvor: der oberste Button darf
+    // nicht hinter dem kollabierten Sheet verschwinden.
+    const fitBtn = page.getByRole('button', { name: 'Kartenausschnitt fokussieren' });
     const sheet = page.locator('.spots-col');
     await expect(sheet).toHaveClass(/collapsed/);
     await expectNotCoveredBy(page, fitBtn, sheet);

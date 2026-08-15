@@ -18,13 +18,17 @@ function rotationAngleFromMatrix(matrix: string): number {
 test.describe('Karten-Rotation (Norden/Fahrtrichtung-Umschalter)', () => {
   test('Fahrtrichtung-Modus dreht die Karte auf den Kompass-Heading, Norden-Modus nicht', async ({ page }) => {
     await page.goto('/excursions');
-    const orientationBtn = page.locator('.orientation-btn');
-    await expect(orientationBtn).toBeVisible({ timeout: 10_000 });
+    // Norden/Fahrtrichtung-Umschalter lebt hinter dem "Standort & Ausrichtung"-Popover (siehe
+    // TripMap.vue's .location-btn/locationMenuOpen) statt eines eigenen, immer sichtbaren Buttons.
+    const locationBtn = page.locator('.location-btn');
+    await expect(locationBtn).toBeVisible({ timeout: 10_000 });
 
     // Standardmäßig "Norden" (🧭) - Kompass-Events verändern die Kartendrehung NICHT. Die
     // Rotations-Pane (leaflet-rotate) existiert unabhängig vom Modus immer, bleibt hier aber bei
     // 0° (Identitäts-Transform).
-    await expect(orientationBtn).not.toHaveClass(/active/);
+    await locationBtn.click();
+    await expect(page.getByRole('button', { name: 'Norden oben' })).toHaveClass(/active/);
+    await page.locator('.picker-backdrop').click();
     await page.evaluate(() => {
       const eventName = 'ondeviceorientationabsolute' in window ? 'deviceorientationabsolute' : 'deviceorientation';
       const event = new Event(eventName) as DeviceOrientationEvent & { alpha: number; absolute: boolean };
@@ -37,8 +41,11 @@ test.describe('Karten-Rotation (Norden/Fahrtrichtung-Umschalter)', () => {
     expect(Math.abs(rotationAngleFromMatrix(idleTransform))).toBeLessThan(1);
 
     // Umschalten auf "Fahrtrichtung" (🔭) - ab jetzt dreht sich die Karte mit dem Heading mit.
-    await orientationBtn.click();
-    await expect(orientationBtn).toHaveClass(/active/);
+    await locationBtn.click();
+    await page.getByRole('button', { name: 'Fahrtrichtung oben' }).click();
+    await locationBtn.click();
+    await expect(page.getByRole('button', { name: 'Fahrtrichtung oben' })).toHaveClass(/active/);
+    await page.locator('.picker-backdrop').click();
 
     await page.evaluate(() => {
       const eventName = 'ondeviceorientationabsolute' in window ? 'deviceorientationabsolute' : 'deviceorientation';
