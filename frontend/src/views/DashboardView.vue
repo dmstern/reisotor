@@ -963,6 +963,7 @@ function formatWeekdayDate(d: string) {
   align-items: center;
   justify-content: center;
   font-size: 1.4rem;
+  padding: .5rem;
 }
 
 .tile h3 {
