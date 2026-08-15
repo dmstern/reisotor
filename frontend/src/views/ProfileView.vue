@@ -29,6 +29,7 @@ import ThemeModeSelect from '../components/ThemeModeSelect.vue';
 import SegmentedToggle from '../components/SegmentedToggle.vue';
 import AppIcon from '../components/AppIcon.vue';
 import IconStyleSettings from '../components/IconStyleSettings.vue';
+import FeedbackDialog from '../components/FeedbackDialog.vue';
 
 const auth = useAuthStore();
 const router = useRouter();
@@ -88,6 +89,7 @@ const homeCurrency = useHomeCurrencyStore();
 const calendarSettings = useCalendarSettingsStore();
 const uiSettings = useUiSettingsStore();
 const loading = ref(true);
+const showFeedbackDialog = ref(false);
 
 interface BuildInfo {
   version: string | null;
@@ -736,21 +738,34 @@ async function onImportFileSelected(event: Event) {
       </div>
     </template>
 
-    <div class="card build-info-card" v-if="activeTab === 'about'">
-      <h2>Build-Info</h2>
-      <dl class="build-info-list">
-        <dt>Frontend</dt>
-        <dd>v{{ frontendVersion }} ({{ frontendCommit }}) · {{ formatBuildTime(frontendBuiltAt) }}</dd>
-        <dt>Backend</dt>
-        <dd v-if="backendBuildInfo">
-          v{{ backendBuildInfo.version }} ({{ backendBuildInfo.ref ?? 'unbekannt' }}) ·
-          {{ formatBuildTime(backendBuildInfo.builtAt) }}
-        </dd>
-        <dd v-else>Lädt…</dd>
-      </dl>
-    </div>
+    <template v-if="activeTab === 'about'">
+      <div class="card">
+        <h2>🐛 Feedback</h2>
+        <p class="hint">
+          Bug gefunden oder eine Idee für eine neue Funktion? Landet direkt als Issue im
+          Reisotor-Repository.
+        </p>
+        <button type="button" class="secondary" @click="showFeedbackDialog = true">Feedback geben</button>
+      </div>
+
+      <div class="card build-info-card">
+        <h2>Build-Info</h2>
+        <dl class="build-info-list">
+          <dt>Frontend</dt>
+          <dd>v{{ frontendVersion }} ({{ frontendCommit }}) · {{ formatBuildTime(frontendBuiltAt) }}</dd>
+          <dt>Backend</dt>
+          <dd v-if="backendBuildInfo">
+            v{{ backendBuildInfo.version }} ({{ backendBuildInfo.ref ?? 'unbekannt' }}) ·
+            {{ formatBuildTime(backendBuildInfo.builtAt) }}
+          </dd>
+          <dd v-else>Lädt…</dd>
+        </dl>
+      </div>
+    </template>
   </div>
   <ViewLoadingState v-else />
+
+  <FeedbackDialog v-model="showFeedbackDialog" />
 </template>
 
 <style scoped>

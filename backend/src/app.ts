@@ -14,6 +14,7 @@ import { packingRoutes } from './routes/packing.js';
 import { ideasRoutes } from './routes/ideas.js';
 import { budgetRoutes } from './routes/budget.js';
 import { usersRoutes } from './routes/users.js';
+import { feedbackRoutes } from './routes/feedback.js';
 import { backupRoutes } from './routes/backup.js';
 import { shoppingRoutes } from './routes/shopping.js';
 import { todosRoutes } from './routes/todos.js';
@@ -91,6 +92,7 @@ export async function buildApp(opts: { logger?: boolean } = {}) {
         await protectedApi.register(ideasRoutes);
         await protectedApi.register(budgetRoutes);
         await protectedApi.register(usersRoutes);
+        await protectedApi.register(feedbackRoutes);
         await protectedApi.register(backupRoutes);
         await protectedApi.register(shoppingRoutes);
         await protectedApi.register(todosRoutes);

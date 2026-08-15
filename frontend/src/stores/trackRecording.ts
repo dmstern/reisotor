@@ -40,6 +40,11 @@ interface ActiveState {
   trackId: number;
   tripId: number;
   startedAt: string;
+  // Pausiert (z. B. Stromsparen, während man länger an einem Ort bleibt): GPS-Watch und Flush-Loop
+  // stehen still, der Track selbst bleibt aber offen (ended_at weiterhin NULL) - Fortsetzen hängt
+  // sich einfach wieder an dieselbe Aufzeichnung. Teil des persistierten Zustands, damit eine Pause
+  // auch einen Reload übersteht (wie der Rest der laufenden Sitzung, siehe restoreOnLoad() unten).
+  paused: boolean;
 }
 
 function loadActiveState(): ActiveState | null {
@@ -75,6 +80,7 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
 
   const track = ref<LocationTrack | null>(null);
   const recording = ref(false);
+  const paused = ref(false);
   const startError = ref<string | null>(null);
 
   let watchId: number | null = null;
@@ -163,8 +169,9 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
       }
       track.value = created;
       recording.value = true;
+      paused.value = false;
       pendingBuffer = [];
-      saveActiveState({ trackId: created.id, tripId, startedAt: created.started_at });
+      saveActiveState({ trackId: created.id, tripId, startedAt: created.started_at, paused: false });
       startWatch();
       startFlushLoop();
       // stores/tracks.ts bekäme die neue Aufzeichnung sonst erst beim nächsten Trip-Wechsel/Reload
@@ -194,15 +201,41 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
     saveActiveState(null);
     track.value = null;
     recording.value = false;
+    paused.value = false;
     pendingBuffer = [];
     // Aktualisiert u. a. den "🔴 läuft"-Status auf "⏱️ <Dauer>" in ExcursionsView.vue's
     // Aufzeichnungen-Liste (siehe Kommentar in start() oben).
     tracksStore.load().catch(() => {});
   }
 
-  /** Stellt eine beim letzten Beenden der App noch laufende Aufzeichnung wieder her (Reload/App neu
-   *  geöffnet, während eine Sitzung aktiv war) - inklusive noch nicht gesendeter Punkte. */
+  /** Pausiert eine laufende Aufzeichnung, ohne sie zu beenden (z. B. Stromsparen, während man länger
+   *  an einem Ort bleibt) - GPS-Watch und Flush-Loop stehen still, der Track bleibt offen (kein
+   *  POST .../stop). resume() hängt sich später wieder an dieselbe Aufzeichnung. Flusht vor dem
+   *  Anhalten noch ausstehende Punkte, damit während einer ggf. langen Pause nichts unnötig lang nur
+   *  lokal gepuffert bleibt. */
+  async function pause() {
+    if (!recording.value || paused.value || !track.value) return;
+    stopWatch();
+    await flushBuffer();
+    stopFlushLoop();
+    paused.value = true;
+    saveActiveState({ trackId: track.value.id, tripId: track.value.trip_id, startedAt: track.value.started_at, paused: true });
+  }
+
+  /** Setzt eine pausierte Aufzeichnung fort - hängt weitere Punkte an dieselbe, weiterhin offene
+   *  Aufzeichnung an (kein neuer Track). */
   function resume() {
+    if (!recording.value || !paused.value || !track.value) return;
+    paused.value = false;
+    startWatch();
+    startFlushLoop();
+    saveActiveState({ trackId: track.value.id, tripId: track.value.trip_id, startedAt: track.value.started_at, paused: false });
+  }
+
+  /** Stellt eine beim letzten Beenden der App noch laufende (ggf. auch pausierte) Aufzeichnung wieder
+   *  her (Reload/App neu geöffnet, während eine Sitzung aktiv war) - inklusive noch nicht gesendeter
+   *  Punkte. */
+  function restoreOnLoad() {
     const state = loadActiveState();
     if (!state || state.tripId !== tripStore.currentTripId) return;
     pendingBuffer = readBuffer(state.trackId);
@@ -217,8 +250,12 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
       ended_at: null,
     };
     recording.value = true;
-    startWatch();
-    startFlushLoop();
+    // ?? false: localStorage kann noch einen Zustand von vor Einführung des paused-Felds enthalten.
+    paused.value = state.paused ?? false;
+    if (!paused.value) {
+      startWatch();
+      startFlushLoop();
+    }
     // Echte Track-Metadaten (visibility/excursion_id/user_id) nachladen, damit UI-Zustände (z. B.
     // ein Sichtbarkeits-Badge) nach einem Reload korrekt sind, statt der obigen Platzhalterzeile.
     api
@@ -234,12 +271,12 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
     () => tripStore.currentTripId,
     (tripId, previousTripId) => {
       // Ein Urlaubswechsel während einer laufenden Aufzeichnung beendet sie NICHT automatisch (der
-      // Track bleibt dem Urlaub zugeordnet, in dem er gestartet wurde) - resume() greift nur beim
-      // initialen Laden (previousTripId noch undefined), nicht bei jedem Wechsel.
-      if (previousTripId === undefined && tripId != null) resume();
+      // Track bleibt dem Urlaub zugeordnet, in dem er gestartet wurde) - restoreOnLoad() greift nur
+      // beim initialen Laden (previousTripId noch undefined), nicht bei jedem Wechsel.
+      if (previousTripId === undefined && tripId != null) restoreOnLoad();
     },
     { immediate: true },
   );
 
-  return { track, recording, startError, start, stop };
+  return { track, recording, paused, startError, start, stop, pause, resume };
 });
