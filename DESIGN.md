@@ -277,14 +277,38 @@ für diesen Abschnitt (Nutzer-Vergleichsvideo gegen Google Maps' Bottom-Sheet).
    Ein-/Ausblenden, weil die Nutzer:in unmittelbar zuvor selbst mit dem Element interagiert hat.
 
 **Stolperfalle, die es wert ist, dokumentiert zu bleiben**: `transform: translateY()` statt `height`
-für die gezogene Positionierung wäre die naheliegende zusätzliche Optimierung (GPU-Compositing statt
-Reflow/Repaint bei jedem Frame) – bei einem Element, das eine Leaflet-Karte überlagert oder ihr
-benachbart ist (aktuell nur `.spots-col`), zeigte ein Versuch damit aber ein nicht sauber
-eingrenzbares Race mit `TripMap.vue`s `ResizeObserver`/`invalidateSize()`: die Karte sprang nach
-einem Fokus-Klick auf einen Spot in ca. 4 von 5 E2E-Läufen an eine falsche Position. Ursache trotz
-Analyse nicht abschließend gefunden – `height` bleibt deshalb dort bewusst die sicherere Wahl. Bei
-Zieh-Interaktionen **ohne** Karten-Nachbarschaft steht `transform` weiterhin offen, wurde nur noch
-nicht gebraucht.
+für die gezogene Positionierung (Höhen-Zustand collapsed/partial/full) wäre die naheliegende
+zusätzliche Optimierung (GPU-Compositing statt Reflow/Repaint bei jedem Frame) – bei einem Element,
+das eine Leaflet-Karte überlagert oder ihr benachbart ist (aktuell nur `.spots-col`), zeigte ein
+Versuch damit aber ein nicht sauber eingrenzbares Race mit `TripMap.vue`s
+`ResizeObserver`/`invalidateSize()`: die Karte sprang nach einem Fokus-Klick auf einen Spot in ca. 4
+von 5 E2E-Läufen an eine falsche Position. Ursache trotz Analyse nicht abschließend gefunden –
+`height` bleibt deshalb **für diese Höhen-Animation** bewusst die sicherere Wahl. Das betrifft
+ausdrücklich nur `translateY()` für die Höhe, nicht `transform` generell an `.spots-col`: für den
+Zusammen-/Ausklapp-Skalierungseffekt (Breite, `scaleX()`) läuft an genau diesem Element inzwischen
+sehr wohl ein `transform` produktiv, ohne dass das Leaflet-Race dabei auftrat (vermutlich weil dabei
+nur die Breite, nicht wie bei `translateY()` fortlaufend während eines aktiven Ziehens die Höhe
+animiert wird – ungesichert, nur eine Beobachtung, kein bewiesener Kausalzusammenhang). Ein erneuter
+`translateY()`-Versuch für die Höhe bleibt trotzdem offen, aber mit Vorsicht anzugehen.
+
+**Zweiter, diesmal deterministischer Grund, der gegen `transform` auf `.spots-col` selbst sprach**
+(egal ob für Höhe oder Breite/Skalierung): jedes `transform` außer `none` macht das Element zum
+Containing Block für alle `position: fixed`-Nachfahren (CSS-Spezifikation, kein Bug/Browser-
+Eigenheit) – `.spots-col` enthielt aber `.picker-backdrop` (Kategorie-/Status-/Info-Dropdowns,
+`ExcursionsView.vue`), das bewusst `position: fixed; inset: 0;` nutzt, um den GESAMTEN Viewport
+(inkl. der Karte darüber) statt nur die Sheet-Fläche abzudunkeln/für Außerhalb-Klicks zu schließen.
+Ein `transform` direkt auf `.spots-col` hätte dieses Backdrop auf die (ggf. gerade verkleinerte)
+Sheet-Fläche eingeschränkt. Betraf **jeden** `transform`-Versuch an diesem Element, nicht nur
+`translateY()` für die Höhe, sondern auch `scaleX()` für die Breite (der Anlass, der diesen Absatz
+ursprünglich ergänzt hat) – **inzwischen gelöst**: die drei Picker-Backdrop/-Menu-Paare sind per
+`<Teleport to="body">` aus `.spots-col` herausgelöst, ihre Position wird beim Öffnen einmalig per
+`getBoundingClientRect()` auf den auslösenden Button berechnet und als `position: fixed`
+(`computeMenuStyle()` in `ExcursionsView.vue`) gesetzt statt sich auf `position: absolute` relativ
+zum Button zu verlassen – identisches Muster wie `MapsAppPicker.vue`s Menü, das genau aus demselben
+Grund (dort: `Modal.vue`s `overflow-y: auto` statt eines `transform`) bereits so gebaut war. `.spots-
+col` selbst trägt seitdem `transform: scaleX()` für den Zusammen-/Ausklapp-Skalierungseffekt (siehe
+dortiger Kommentar). Bei künftigen `transform`-Vorhaben an einem Element mit `position: fixed`-
+Nachfahren: dasselbe Teleport-Muster ist der Standardweg, nicht erst neu erfinden.
 
 ## Weiches Material (taktile Pillen)
 

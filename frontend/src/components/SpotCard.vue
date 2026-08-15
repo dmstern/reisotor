@@ -397,12 +397,22 @@ function onCardClick() {
   justify-content: space-between;
   align-items: baseline;
   gap: var(--space-2);
-  flex-wrap: wrap;
 }
 
+/* min-width:0 + Kürzung statt Umbruch: ohne das wechselte ein langer Titel zwischen ein-/
+   zweizeilig abhängig von der paar Pixel schmaleren/breiteren .spots-col-Breite (Bottom-Sheet
+   eingeklappt/ausgefahren, siehe ExcursionsView.vue) - wirkte beim Hoch-/Runterziehen wie ein
+   hässlicher Layout-Sprung, obwohl sich der eigentlich verfügbare Platz kaum geändert hatte. Titel
+   schrumpft jetzt statt umzubrechen, CategoryChip/PendingSyncBadge daneben behalten ihre feste
+   Breite (Default flex-shrink:1 auf so kleinen Chips macht dort praktisch keinen Unterschied). */
 .head h3 {
   margin: 0;
   font-size: 1rem;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .note {

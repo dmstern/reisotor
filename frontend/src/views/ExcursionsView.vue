@@ -517,8 +517,43 @@ function tourTitlesForItem(item: SpotsGroupItem): string[] {
   return excursionsStore.excursions.filter((e) => e.spot_ids.includes(item.spot.id)).map((e) => e.title);
 }
 
+// Popover-Menüs der drei Dropdowns unten (Info-Popover, Kategorie-/Status-Filter) werden per
+// Teleport nach <body> gerendert statt lokal per position:absolute zu hängen (gleiches Muster wie
+// MapsAppPicker.vue) - .picker-backdrop braucht dafür position:fixed übers ganze Sichtfeld, das
+// ginge sonst nicht mehr zuverlässig: sobald .spots-col (das Bottom-Sheet, weiter unten im
+// Template) ein transform bekommt (z. B. für den Zusammen-/Ausklapp-Skalierungseffekt), wird es
+// laut CSS-Spezifikation zum Containing Block für alle position:fixed-Nachfahren - das Backdrop
+// würde sich sonst auf die Sheet-Fläche statt den ganzen Bildschirm beschränken (siehe DESIGN.md,
+// Abschnitt "Zieh-Interaktionen").
+function computeMenuStyle(btnEl: HTMLElement | null, minWidth = 200): { top: string; left: string } {
+  const rect = btnEl?.getBoundingClientRect();
+  if (!rect) return { top: '0px', left: '0px' };
+  return {
+    top: `${rect.bottom + 6}px`,
+    left: `${Math.max(8, Math.min(rect.left, window.innerWidth - minWidth - 8))}px`,
+  };
+}
+
 const descriptionOpen = ref(false);
+const descriptionBtnRef = ref<HTMLButtonElement | null>(null);
+const descriptionMenuStyle = ref({ top: '0px', left: '0px' });
+async function toggleDescription() {
+  descriptionOpen.value = !descriptionOpen.value;
+  if (!descriptionOpen.value) return;
+  await nextTick();
+  descriptionMenuStyle.value = computeMenuStyle(descriptionBtnRef.value, 260);
+}
+
 const categoryMenuOpen = ref(false);
+const categoryBtnRef = ref<HTMLButtonElement | null>(null);
+const categoryMenuStyle = ref({ top: '0px', left: '0px' });
+async function toggleCategoryMenu() {
+  categoryMenuOpen.value = !categoryMenuOpen.value;
+  if (!categoryMenuOpen.value) return;
+  await nextTick();
+  categoryMenuStyle.value = computeMenuStyle(categoryBtnRef.value, 220);
+}
+
 const categoryFilter = usePersistedRef<string[]>('reisotor-excursions-category-filter', []);
 function removeCategoryFilter(cat: string) {
   categoryFilter.value = categoryFilter.value.filter((c) => c !== cat);
@@ -533,6 +568,15 @@ const STATUS_FILTER_LABEL: Record<'planned' | 'unplanned' | 'done', string> = {
   done: '✅ Gemacht',
 };
 const statusMenuOpen = ref(false);
+const statusBtnRef = ref<HTMLButtonElement | null>(null);
+const statusMenuStyle = ref({ top: '0px', left: '0px' });
+async function toggleStatusMenu() {
+  statusMenuOpen.value = !statusMenuOpen.value;
+  if (!statusMenuOpen.value) return;
+  await nextTick();
+  statusMenuStyle.value = computeMenuStyle(statusBtnRef.value, 220);
+}
+
 const statusFilter = usePersistedRef<('planned' | 'unplanned' | 'done')[]>('reisotor-excursions-status-filter', []);
 function removeStatusFilter(status: 'planned' | 'unplanned' | 'done') {
   statusFilter.value = statusFilter.value.filter((s) => s !== status);
@@ -772,7 +816,9 @@ const sheetEl = ref<HTMLElement | null>(null);
 function sheetHeightPx(state: SheetState): number {
   const navbarOffset = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--navbar-offset')) || 0;
   const maxAvailable = Math.max(160, window.innerHeight - 56 - navbarOffset - 8);
-  if (state === 'collapsed') return Math.min(96, maxAvailable);
+  // 64px statt der früheren 96px: die Pille zeigt jetzt nur noch die Anfasser-Zeile (siehe
+  // .spots-col.collapsed CSS), kein Rest von .spots-col-body ragt mehr hinein.
+  if (state === 'collapsed') return Math.min(64, maxAvailable);
   if (state === 'partial') return Math.min(window.innerHeight * 0.46, maxAvailable);
   return Math.min(window.innerHeight * 0.88, maxAvailable);
 }
@@ -1260,27 +1306,30 @@ async function removeSpot(id: number) {
                eines neuen Tooltip-Mechanismus. -->
           <span class="dropdown info-dropdown">
             <button
+              ref="descriptionBtnRef"
               type="button"
               class="info-btn"
               title="Was sind Spots?"
               aria-label="Was sind Spots?"
-              @click="descriptionOpen = !descriptionOpen"
+              @click="toggleDescription"
             >
               ℹ️
             </button>
-            <template v-if="descriptionOpen">
-              <div class="picker-backdrop" @click="descriptionOpen = false"></div>
-              <div class="picker-menu description-popover">
-                <p>
-                  Orte (Restaurant, Sehenswürdigkeit, Strand, …), die du als Stationen bei Touren zuordnen
-                  kannst – auch unabhängig von einer Tour. Eignet sich auch einfach als Ideensammlung –
-                  nicht jeder Spot muss geplant oder besucht werden. Tipp: Ziehe eine Spot-Karte direkt auf
-                  eine Tour oder auf einen Kalendertag, um sie dort als Station bzw. spontan einzuplanen.
-                  Bei Gruppierung nach "🎒 Touren" unten zeigt ein Klick auf die Tour-Karte deren Route auf
-                  der Karte.
-                </p>
-              </div>
-            </template>
+            <Teleport to="body">
+              <template v-if="descriptionOpen">
+                <div class="picker-backdrop" @click="descriptionOpen = false"></div>
+                <div class="picker-menu description-popover" :style="descriptionMenuStyle">
+                  <p>
+                    Orte (Restaurant, Sehenswürdigkeit, Strand, …), die du als Stationen bei Touren zuordnen
+                    kannst – auch unabhängig von einer Tour. Eignet sich auch einfach als Ideensammlung –
+                    nicht jeder Spot muss geplant oder besucht werden. Tipp: Ziehe eine Spot-Karte direkt auf
+                    eine Tour oder auf einen Kalendertag, um sie dort als Station bzw. spontan einzuplanen.
+                    Bei Gruppierung nach "🎒 Touren" unten zeigt ein Klick auf die Tour-Karte deren Route auf
+                    der Karte.
+                  </p>
+                </div>
+              </template>
+            </Teleport>
           </span>
         </h2>
         <div class="header-actions">
@@ -1466,53 +1515,59 @@ async function removeSpot(id: number) {
             <span class="tool-label">🔎 Filtern</span>
             <div class="dropdown">
               <button
+                ref="categoryBtnRef"
                 type="button"
                 class="secondary category-btn"
                 title="Nach Kategorie filtern"
                 aria-label="Nach Kategorie filtern"
-                @click="categoryMenuOpen = !categoryMenuOpen"
+                @click="toggleCategoryMenu"
               >
                 🏷️ Kategorie
                 <span class="caret dropdown-caret">{{ categoryMenuOpen ? '▴' : '▾' }}</span>
               </button>
-              <template v-if="categoryMenuOpen">
-                <div class="picker-backdrop" @click="categoryMenuOpen = false"></div>
-                <div class="picker-menu category-menu">
-                  <label v-for="cat in filterCategoryOptions" :key="cat" class="category-option">
-                    <input type="checkbox" :value="cat" v-model="categoryFilter" />
-                    {{ groupIcon(cat) }} {{ cat }}
-                  </label>
-                </div>
-              </template>
+              <Teleport to="body">
+                <template v-if="categoryMenuOpen">
+                  <div class="picker-backdrop" @click="categoryMenuOpen = false"></div>
+                  <div class="picker-menu category-menu" :style="categoryMenuStyle">
+                    <label v-for="cat in filterCategoryOptions" :key="cat" class="category-option">
+                      <input type="checkbox" :value="cat" v-model="categoryFilter" />
+                      {{ groupIcon(cat) }} {{ cat }}
+                    </label>
+                  </div>
+                </template>
+              </Teleport>
             </div>
             <div class="dropdown">
               <button
+                ref="statusBtnRef"
                 type="button"
                 class="secondary category-btn"
                 title="Nach Status (geplant/ungeplant/gemacht) filtern"
                 aria-label="Nach Status filtern"
-                @click="statusMenuOpen = !statusMenuOpen"
+                @click="toggleStatusMenu"
               >
                 🗓️ Status
                 <span class="caret dropdown-caret">{{ statusMenuOpen ? '▴' : '▾' }}</span>
               </button>
-              <template v-if="statusMenuOpen">
-                <div class="picker-backdrop" @click="statusMenuOpen = false"></div>
-                <div class="picker-menu category-menu">
-                  <label class="category-option">
-                    <input type="checkbox" value="planned" v-model="statusFilter" />
-                    📅 Geplant
-                  </label>
-                  <label class="category-option">
-                    <input type="checkbox" value="unplanned" v-model="statusFilter" />
-                    📝 Ungeplant
-                  </label>
-                  <label class="category-option">
-                    <input type="checkbox" value="done" v-model="statusFilter" />
-                    ✅ Gemacht
-                  </label>
-                </div>
-              </template>
+              <Teleport to="body">
+                <template v-if="statusMenuOpen">
+                  <div class="picker-backdrop" @click="statusMenuOpen = false"></div>
+                  <div class="picker-menu category-menu" :style="statusMenuStyle">
+                    <label class="category-option">
+                      <input type="checkbox" value="planned" v-model="statusFilter" />
+                      📅 Geplant
+                    </label>
+                    <label class="category-option">
+                      <input type="checkbox" value="unplanned" v-model="statusFilter" />
+                      📝 Ungeplant
+                    </label>
+                    <label class="category-option">
+                      <input type="checkbox" value="done" v-model="statusFilter" />
+                      ✅ Gemacht
+                    </label>
+                  </div>
+                </template>
+              </Teleport>
             </div>
           </div>
         </div>
@@ -1908,16 +1963,23 @@ async function removeSpot(id: number) {
      nicht die JS-Berechnung in sheetHeightPx() – die greift nur während eines aktiven Ziehens/beim
      Einrasten, nicht für diesen ruhenden Grundzustand. */
   --sheet-max-height: calc(100% - 8px);
+  /* Feste Randbreite als Skalierungsfaktor statt echter Breitenänderung (left/right/width) - ein
+     schwankender Layout-Breite hatte SpotCard.vue/ExcursionCard.vue's Titelzeile (~16px zwischen
+     eingeklappt/ausgefahren) knapp an ihrer Umbruch-Schwelle vorbei-/dagegenlaufen lassen, je
+     nachdem in welchem Sheet-Zustand man gerade war - wirkte beim Ziehen wie ein hässlicher
+     Layout-Sprung (Nutzer-Feedback), obwohl der tatsächlich verfügbare Platz sich kaum geändert
+     hatte. 0.96 statt eines exakt aus --space-2 berechneten Faktors (der bräuchte die tatsächliche
+     Elementbreite, die in reinem CSS ohne Container-Query-Units auf sich selbst nicht verfügbar
+     ist) - 4% Schrumpfung liegt für die üblichen Mobil-Breiten (360-430px) nah genug an den
+     früheren 8px/Seite dran, ohne sich auf einen bestimmten Gerätewert zu verlassen. */
+  --sheet-collapsed-scale: 0.96;
   position: absolute;
-  /* Wie bei Apple Maps' Suchleisten-Schublade: solange nicht ganz hochgezogen (collapsed/partial,
-     .full überschreibt beide Werte unten auf 0/nur obere Ecken), schwebt das Sheet als eigene Karte
-     mit sichtbarem Rand zum Bildschirmrand UND rundum gerundeten Ecken statt nur oben - randlos/nur
-     oben gerundet wirkte im Vergleich zu eng an den Bildschirmrand gequetscht. Eigene
-     left/right/border-radius-Transitions (zusätzlich zu height) sorgen dafür, dass der Wechsel auf
-     volle Breite beim Hochziehen bis "voll" weich einrastet statt hart umzuspringen. */
-  left: var(--space-2);
-  right: var(--space-2);
-  bottom: 0;
+  left: 0;
+  right: 0;
+  /* Wie bei Apple: solange nicht ganz hochgezogen (collapsed/partial, .full überschreibt unten auf
+     0) schwebt das Sheet mit demselben Abstand nach unten wie zu den Seiten (--space-2, siehe
+     transform:scaleX() weiter unten) statt am unteren Bildschirmrand zu kleben. */
+  bottom: var(--space-2);
   z-index: 5;
   display: flex;
   flex-direction: column;
@@ -1930,23 +1992,36 @@ async function removeSpot(id: number) {
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-md);
   height: min(46vh, var(--sheet-max-height));
-  /* Alle vier Eigenschaften mit derselben weicheren Einrast-Kurve (siehe DESIGN.md, "Zieh-
-     Interaktionen") statt nur height - left/right/border-radius wechseln beim Hoch-/Runterziehen
+  /* Wie bei Apple Maps' Suchleisten-Schublade: solange nicht ganz hochgezogen (collapsed/partial,
+     .full überschreibt beide Werte unten auf scaleX(1)/nur obere Ecken), schwebt das Sheet als
+     eigene, rundum gerundete Karte mit sichtbarem Rand zum Bildschirmrand statt randlos - wirkte
+     vorher im Vergleich zu eng an den Bildschirmrand gequetscht. transform:scaleX() (statt left/
+     right, siehe --sheet-collapsed-scale oben) hält die tatsächliche Layout-Breite dabei konstant
+     (transform wirkt nur beim Zeichnen/Compositing, nicht beim Layout) - genau das verhindert den
+     Umbruch-Sprung oben. transform-origin bleibt beim Default (50% 50%): schrumpft dadurch
+     symmetrisch von beiden Seiten, wie es die vorherigen gleich großen left/right-Werte auch taten.
+     WICHTIG: .picker-backdrop/.picker-menu (Kategorie-/Status-/Info-Dropdowns, Template weiter
+     unten) sind deshalb per <Teleport to="body"> aus diesem Element herausgelöst - jedes transform
+     außer none macht ein Element sonst zum Containing Block für seine position:fixed-Nachfahren
+     (CSS-Spezifikation), das hätte deren viewport-weites Backdrop auf die Sheet-Fläche eingeschränkt
+     (siehe DESIGN.md, Abschnitt "Zieh-Interaktionen", für die ausführliche Begründung). */
+  transform: scaleX(var(--sheet-collapsed-scale));
+  /* Alle drei Eigenschaften mit derselben weicheren Einrast-Kurve (siehe DESIGN.md, "Zieh-
+     Interaktionen") statt nur height - transform/border-radius wechseln beim Hoch-/Runterziehen
      gemeinsam mit der Höhe, sollen deshalb auch gleich smooth ankommen statt einzeln rauszustechen. */
   transition:
     height 0.3s cubic-bezier(0.32, 0.72, 0, 1),
-    left 0.3s cubic-bezier(0.32, 0.72, 0, 1),
-    right 0.3s cubic-bezier(0.32, 0.72, 0, 1),
+    bottom 0.3s cubic-bezier(0.32, 0.72, 0, 1),
+    transform 0.3s cubic-bezier(0.32, 0.72, 0, 1),
     border-radius 0.3s cubic-bezier(0.32, 0.72, 0, 1);
   overflow: hidden;
   /* Bekannter iOS-Safari-Bug: ein fixed/absolute positioniertes Element mit border-radius+box-shadow
      malt seinen Hintergrund beim allerersten Paint mitunter nicht korrekt (bleibt transparent, bis
      irgendeine Interaktion – z. B. das Ziehen am Griff – einen Repaint erzwingt). Der Fix (eigene
-     Compositing-Ebene erzwingen) sitzt bewusst auf einem ::before statt direkt auf .spots-col
-     selbst: ein echtes transform HIER würde .spots-col zum Containing Block für alle
-     fixed-positionierten Nachfahren machen (z. B. .picker-backdrop unten, das per position:fixed
-     bewusst den ganzen Viewport abdecken soll) und deren Positionierung auf die Sheet-Fläche
-     einschränken. */
+     Compositing-Ebene erzwingen) sitzt trotzdem weiterhin auf einem eigenen ::before statt direkt
+     auf .spots-col, obwohl .spots-col jetzt selbst ein transform trägt - .spots-col::before hält so
+     unabhängig von .spots-col selbst seine eigene Compositing-Ebene, ohne dass diese beiden
+     transform-Werte sich gegenseitig überschreiben könnten. */
 }
 
 .spots-col::before {
@@ -1958,16 +2033,28 @@ async function removeSpot(id: number) {
   transform: translateZ(0);
 }
 
+/* Wie bei Apples eingeklapptem Suchleisten-Zustand: eine reine Pille (nur die Anfasser-Zeile ist
+   groß genug, um sichtbar zu bleiben) statt einer 96px hohen Karte, in die vorher noch eine Zeile
+   Inhalt hineinragte. .spots-col-body braucht dafür kein eigenes display:none - flex:1 auf einem
+   Elternelement, dessen Höhe exakt auf die Anfasser-Zeile passt, lässt ihm ohnehin keinen Platz
+   mehr; schrumpft dadurch während der height-Transition weich zusammen statt beim Klassenwechsel
+   hart zu verschwinden. 999px + corner-shape:round (nicht squircle wie die Basis-Karte) - Pillen
+   bekommen laut DESIGN.md, Abschnitt "Eckenrundung", immer einen echten Kreisbogen. 64px ergibt
+   sich aus der Anfasser-Zeile selbst (~33px Inhalt + 16px Polster oben + 16px unten, siehe
+   .sheet-handle-row unten) - kein willkürlicher Wert. */
 .spots-col.collapsed {
-  height: min(96px, var(--sheet-max-height));
+  height: min(64px, var(--sheet-max-height));
+  border-radius: 999px;
+  corner-shape: round;
 }
 
-/* Ganz hochgezogen: wie bei Apple erst jetzt randlos volle Breite, nur noch oben gerundete Ecken
-   (statt der rundum gerundeten "schwebenden Karte" oben) - Übergang läuft über dieselben
-   left/right/border-radius-Transitions wie an .spots-col selbst. */
+/* Ganz hochgezogen: wie bei Apple erst jetzt randlos volle Breite UND -höhe (kein Abstand mehr nach
+   unten, sonst wie collapsed/partial), nur noch oben gerundete Ecken (statt der rundum gerundeten
+   "schwebenden Karte" oben) - Übergang läuft über dieselben bottom/transform/border-radius-
+   Transitions wie an .spots-col selbst. */
 .spots-col.full {
-  left: 0;
-  right: 0;
+  bottom: 0;
+  transform: scaleX(1);
   border-radius: var(--radius-lg-squircle) var(--radius-lg-squircle) 0 0;
   height: min(88vh, var(--sheet-max-height));
 }
@@ -1993,6 +2080,13 @@ async function removeSpot(id: number) {
      Anfasser beginnt (z. B. noch über den Stufen-Buttons), soll trotzdem nicht als Seiten-Scroll/
      Pull-to-Refresh interpretiert werden. */
   touch-action: none;
+}
+
+/* Im collapsed-Zustand ist die Anfasser-Zeile der komplette sichtbare Inhalt der Pille (siehe
+   .spots-col.collapsed oben) - bekommt deshalb symmetrisches Polster (auch unten) statt der
+   normalen 0, die davon ausgeht, dass darunter noch .spots-col-body folgt. */
+.spots-col.collapsed .sheet-handle-row {
+  padding-bottom: var(--space-3);
 }
 
 .sheet-handle {
@@ -2184,16 +2278,21 @@ async function removeSpot(id: number) {
     border: none;
     border-radius: 0;
     box-shadow: none;
+    transform: none;
     transition: none;
   }
 
   /* .spots-col.collapsed/.full (höhere Spezifität als die einfache .spots-col-Regel oben, da zwei
      statt einer Klasse) würden das dortige height:auto sonst weiterhin überschreiben, falls
      sheetState beim Wechsel in den Desktop-Modus zufällig "collapsed"/"full" war (z. B. nach
-     Schließen einer Schublade, während die Karte vorher im mobilen Modus auf "voll" stand). */
+     Schließen einer Schublade, während die Karte vorher im mobilen Modus auf "voll" stand). Aus
+     demselben Grund jetzt auch bottom: .spots-col.full setzt mobil bottom:0 (siehe dort) - würde
+     ohne dieses Reset hier das .spots-col-weite bottom:auto (oben) aus genau demselben
+     Spezifitäts-Grund überschreiben und die sticky Spalte auf Desktop verschieben. */
   .spots-col.collapsed,
   .spots-col.full {
     height: auto;
+    bottom: auto;
   }
 
   .sheet-handle-row {
@@ -2481,16 +2580,20 @@ async function removeSpot(id: number) {
   color: var(--color-primary-dark);
 }
 
+/* Per Teleport nach <body> gerendert (siehe computeMenuStyle()/toggle*()-Funktionen im Script) -
+   position:fixed übers ganze Sichtfeld statt wie zuvor relativ zu .spots-col positioniert, das wäre
+   sobald .spots-col selbst ein transform bekommt nicht mehr zuverlässig (siehe Kommentar dort).
+   z-index deutlich höher als die bisherigen 20/21: als Teleport-Kind von <body> konkurriert das
+   jetzt mit AppHeader.vue (25) statt nur innerhalb von .spots-col (dort z-index:5) - gleiches Maß
+   wie MapsAppPicker.vue's Teleport-Menü (110/111, bewusst über Modal.vue's 100). */
 .picker-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 20;
+  z-index: 110;
 }
 
 .picker-menu {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
+  position: fixed;
   min-width: 180px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -2498,7 +2601,7 @@ async function removeSpot(id: number) {
   corner-shape: squircle;
   box-shadow: var(--shadow-md);
   padding: var(--space-2);
-  z-index: 21;
+  z-index: 111;
   display: flex;
   flex-direction: column;
   gap: 2px;
