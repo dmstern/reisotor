@@ -79,6 +79,7 @@ Das Skript ist idempotent (`INSERT OR IGNORE`) – bereits vorhandene Nutzer/Zei
 | `DB_PATH` | Pfad zur SQLite-Datei | `backend/data.sqlite` |
 | `GITHUB_TOKEN` | Fine-grained GitHub Personal Access Token für das In-App-Feedback-Formular (Bug/Feature-Meldungen landen darüber als echtes Issue im Repo). **Nur mit „Issues: Read and write"-Recht auf genau diesem Repo anlegen, sonst nichts** – selbst bei Kompromittierung bleibt der Schaden dann auf Issues beschränkt. Ohne gesetzten Token bleibt die App voll funktionsfähig, nur das Feedback-Formular meldet einen Fehler. | – (Feature deaktiviert) |
 | `GITHUB_REPO` | `owner/repo`, in dem das Feedback-Formular Issues anlegt | `dmstern/reisotor` |
+| `TRUSTED_FEEDBACK_REPORTERS` | Kommagetrennte Reisotor-Benutzernamen, deren eigene Feedback-Meldungen automatisch das `agent-ok`-Label bekommen (Freigabe für die tägliche Issue-Fix-Routine, siehe unten) – spart bei vertrauenswürdigen Melder:innen das manuelle Nachlabeln im GitHub-UI. Bewusst nur per Server-Env-Var pflegbar, nicht über eine App-Route: Registrierung ist offen, ein Self-Service-Toggle würde jeder registrierten Person erlauben, sich selbst freizuschalten. | – (niemand vorausgewählt) |
 
 ## Deployment
 

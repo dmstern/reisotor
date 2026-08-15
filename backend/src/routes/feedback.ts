@@ -27,6 +27,19 @@ const ALLOWED_SCREENSHOT_TYPES: Record<string, string> = {
 };
 const MAX_SCREENSHOT_BYTES = 8 * 1024 * 1024;
 
+// Reisotor-Benutzernamen, deren eigene Meldungen das "agent-ok"-Label (Freigabe für die tägliche
+// Issue-Fix-Routine) automatisch mitbekommen, statt es manuell im GitHub-UI nachzutragen. Bewusst
+// NUR per Server-Env-Var pflegbar, nicht über irgendeine App-Route/UI: Registrierung ist offen
+// (siehe CLAUDE.md), ein Self-Service-Toggle würde jeder/jedem registrierten Person erlauben, sich
+// selbst für die Automatisierung freizuschalten - genau die Umgehung, die das Label-Gate verhindern
+// soll. Nur wer Zugriff auf den Server-Prozess hat, kann diese Liste ändern.
+const TRUSTED_FEEDBACK_REPORTERS = new Set(
+  (process.env.TRUSTED_FEEDBACK_REPORTERS ?? '')
+    .split(',')
+    .map((name) => name.trim())
+    .filter(Boolean),
+);
+
 export const feedbackRoutes: FastifyPluginAsync = async (app) => {
   app.post<{ Body: FeedbackBody }>('/feedback', async (req, reply) => {
     const { type, title, description, screenshot } = req.body ?? {};
@@ -72,10 +85,15 @@ export const feedbackRoutes: FastifyPluginAsync = async (app) => {
       `Gemeldet von **${reporter?.username ?? 'unbekannt'}**${reporter?.email ? ` (${reporter.email})` : ''} über das In-App-Feedback-Formular.`,
     ];
 
+    const labels = [type === 'bug' ? 'bug' : 'enhancement', 'from-app'];
+    if (reporter && TRUSTED_FEEDBACK_REPORTERS.has(reporter.username)) {
+      labels.push('agent-ok');
+    }
+
     const result = await createGithubIssue({
       title: title.trim(),
       body: bodyParts.filter(Boolean).join('\n'),
-      labels: [type === 'bug' ? 'bug' : 'enhancement', 'from-app'],
+      labels,
     });
 
     if (!result.ok) {
