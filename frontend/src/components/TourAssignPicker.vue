@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import Combobox from './Combobox.vue';
+import AppIcon from './AppIcon.vue';
+import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
+import { ACTION_ICONS } from '../utils/actionIcons';
 
 // Schneller Weg, um einen Spot einer oder mehreren Touren zuzuordnen, direkt im Spot-Formular
 // (ExcursionsView.vue) statt im Touren-Formular – Gegenstück zu SpotOrderPicker.vue (das ordnet
@@ -35,8 +38,10 @@ function removeTour(title: string) {
   <div class="tour-assign-picker">
     <div class="tour-chips" v-if="modelValue.length">
       <span v-for="title in modelValue" :key="title" class="tour-chip">
-        🎒 {{ title }}
-        <button type="button" class="remove-btn" @click="removeTour(title)" aria-label="Von Tour entfernen">✕</button>
+        <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="13" group="navigation" /> {{ title }}
+        <button type="button" class="remove-btn" @click="removeTour(title)" aria-label="Von Tour entfernen">
+          <AppIcon :icon="ACTION_ICONS.close" :size="13" group="actions" />
+        </button>
       </span>
     </div>
     <div class="tour-add-row">

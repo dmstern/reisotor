@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import LikeButton from './LikeButton.vue';
+import AppIcon from './AppIcon.vue';
+import { ACTION_ICONS } from '../utils/actionIcons';
 
 // Teilt sich die Like+Kommentar-Zeile, die zuvor identisch in DiaryView/NotesView/ExcursionCard/
 // SpotCard dupliziert war. Der offen/geschlossen-Zustand fürs Kommentar-Panel selbst bleibt bewusst
@@ -16,7 +18,7 @@ const emit = defineEmits<{ (e: 'toggle-like'): void; (e: 'toggle-comments'): voi
          umschließenden Karten-Klick-Handler (Detailansicht öffnen) durchgereicht wird. Bei
          Diary/Notes, wo es keinen solchen Handler gibt, ist .stop wirkungslos, aber unschädlich. -->
     <button type="button" class="secondary" @click.stop="emit('toggle-comments')">
-      💬 {{ commentCount || '' }}
+      <AppIcon :icon="ACTION_ICONS.comment" :size="15" group="actions" /> {{ commentCount || '' }}
     </button>
   </div>
 </template>

@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { useConnectivityStore } from '../stores/connectivity';
+import AppIcon from './AppIcon.vue';
+import { ACTION_ICONS } from '../utils/actionIcons';
 
 // Zeigt an, dass die App gerade offline arbeitet (Änderungen werden nur lokal in der Outbox
 // gesammelt, siehe api/offline.ts) bzw. gerade dabei ist, diese nach einer Wiederverbindung
@@ -16,17 +18,18 @@ const connectivity = useConnectivityStore();
     title="Änderungen werden nur lokal gespeichert – antippen, um sofort erneut zu versuchen"
     @click="connectivity.checkNow()"
   >
-    {{ connectivity.checking ? '🔄 Prüfe…' : '📴 Offline' }}
+    <AppIcon :icon="connectivity.checking ? ACTION_ICONS.refresh : ACTION_ICONS.offline" :size="14" group="actions" />
+    {{ connectivity.checking ? 'Prüfe…' : 'Offline' }}
   </button>
   <span v-else-if="connectivity.syncing" class="offline-pill syncing" title="Änderungen werden synchronisiert">
-    🔄 Synchronisiert…
+    <AppIcon :icon="ACTION_ICONS.refresh" :size="14" group="actions" /> Synchronisiert…
   </span>
   <span
     v-else-if="connectivity.pendingCount > 0"
     class="offline-pill"
     :title="`${connectivity.pendingCount} Änderung(en) warten auf Synchronisierung`"
   >
-    ⏳ {{ connectivity.pendingCount }}
+    <AppIcon :icon="ACTION_ICONS.pending" :size="14" group="actions" /> {{ connectivity.pendingCount }}
   </span>
 </template>
 

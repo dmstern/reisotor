@@ -134,7 +134,7 @@ test.describe('Mobile: ExcursionCard-Löschen-Button überdeckt nicht den Status
     // Gruppieren/Sortieren/Filtern stecken auf Mobil standardmäßig hinter "⚙️ Anzeige & Filter"
     // (siehe ExcursionsView.vue) - erst aufklappen, um "🎒 Touren" überhaupt zu erreichen.
     await page.locator('.filter-toggle-row').click();
-    await page.getByRole('button', { name: '🎒 Touren' }).click();
+    await page.getByRole('button', { name: 'Touren' }).click();
     const card = page.locator('.excursion-card', { hasText: excursion.title });
     await expect(card).toBeVisible();
     const statusChip = card.locator('.status');
@@ -241,11 +241,11 @@ test.describe('Mobile: Gruppieren/Sortieren/Filtern auf der Spots-Karte sind sta
     const toggle = page.locator('.filter-toggle-row');
     await expect(toggle).toBeVisible();
     await expect(toggle).toHaveAttribute('aria-expanded', 'false');
-    await expect(page.getByRole('button', { name: '🎒 Touren' })).toBeHidden();
+    await expect(page.getByRole('button', { name: 'Touren' })).toBeHidden();
 
     await toggle.click();
     await expect(toggle).toHaveAttribute('aria-expanded', 'true');
-    const groupToggle = page.getByRole('button', { name: '🎒 Touren' });
+    const groupToggle = page.getByRole('button', { name: 'Touren' });
     await expect(groupToggle).toBeVisible();
     await expect(groupToggle).toHaveAttribute('aria-pressed', 'false');
     await groupToggle.click();
@@ -263,7 +263,7 @@ test.describe('Desktop: Gruppieren/Sortieren/Filtern bleiben immer offen, kein E
   test('kein "⚙️ Anzeige & Filter"-Umschalter, Werkzeug-Trio direkt sichtbar', async ({ page }) => {
     await page.goto('/excursions');
     await expect(page.locator('.filter-toggle-row')).toBeHidden();
-    await expect(page.getByRole('button', { name: '🎒 Touren' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Touren' })).toBeVisible();
   });
 });
 

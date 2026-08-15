@@ -8,6 +8,8 @@ import { useLiveSyncStore } from '../stores/liveSync';
 import { useIsDesktop } from '../composables/useIsDesktop';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { NAV_LINKS, type NavLinkDef } from '../utils/navLinks';
+import { NAV_LINK_COLORS } from '../utils/widgetColors';
+import { useIconStyleStore } from '../stores/iconStyle';
 import AppIcon from './AppIcon.vue';
 
 const auth = useAuthStore();
@@ -17,6 +19,7 @@ const navPosition = useNavPositionStore();
 const navConfig = useNavConfigStore();
 const liveSync = useLiveSyncStore();
 const isDesktop = useIsDesktop();
+const iconStyle = useIconStyleStore();
 
 // Schubladen (Drawer.vue) kleben ebenfalls "oben" fest und müssen wissen, wie viel Platz die
 // NavBar dort tatsächlich einnimmt, um sie nicht zu überdecken – siehe --navbar-offset in
@@ -134,7 +137,12 @@ function onLinkClick(event: MouseEvent) {
            Einstiegspunkt der App soll auf mobile immer der allererste (am wenigsten wegscrollte)
            Nav-Punkt sein. -->
       <router-link :to="DASHBOARD_LINK.to" class="link" @click="onLinkClick">
-        <AppIcon class="icon" :icon="DASHBOARD_LINK.icon" />
+        <AppIcon
+          class="icon"
+          :icon="DASHBOARD_LINK.icon"
+          group="navigation"
+          :color="iconStyle.navColored ? NAV_LINK_COLORS.get('dashboard') : undefined"
+        />
         <span class="label">{{ DASHBOARD_LINK.label }}</span>
       </router-link>
       <!-- Kalender ist auf Desktop weiterhin eine globale Schublade (App.vue, über die seitlich
@@ -148,14 +156,24 @@ function onLinkClick(event: MouseEvent) {
            Nav-Punkt mehr - Touren anlegen/Spots zuordnen geht bereits direkt dort. -->
       <router-link to="/calendar" class="link mobile-page-link" @click="onLinkClick">
         <span class="icon-wrap">
-          <AppIcon class="icon" :icon="SECTION_ICON_DEFS.calendar" />
+          <AppIcon
+            class="icon"
+            :icon="SECTION_ICON_DEFS.calendar"
+            group="navigation"
+            :color="iconStyle.navColored ? NAV_LINK_COLORS.get('calendar') : undefined"
+          />
           <span v-if="liveSync.hasUnseen('schedule')" class="unseen-dot" aria-label="Neue Änderungen" />
         </span>
         <span class="label">Kalender</span>
       </router-link>
       <router-link v-for="link in visibleLinks" :key="link.to" :to="link.to" class="link" @click="onLinkClick">
         <span class="icon-wrap">
-          <AppIcon class="icon" :icon="link.icon" />
+          <AppIcon
+            class="icon"
+            :icon="link.icon"
+            group="navigation"
+            :color="iconStyle.navColored ? NAV_LINK_COLORS.get(link.key) : undefined"
+          />
           <span v-if="hasUnseenAny(link)" class="unseen-dot" aria-label="Neue Änderungen" />
         </span>
         <span class="label">{{ link.label }}</span>

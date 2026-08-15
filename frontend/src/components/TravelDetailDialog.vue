@@ -2,11 +2,14 @@
 import type { TravelItem } from '../api/types';
 import { linkLabel } from '../utils/linkLabel';
 import { formatTravelDuration, travelDurationMinutes } from '../utils/travelDuration';
-import { travelTypeIcon } from '../utils/travelTypeIcon';
+import { travelTypeIconDef } from '../utils/travelTypeIcon';
+import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
+import { ACTION_ICONS } from '../utils/actionIcons';
 import DetailModal from './DetailModal.vue';
 import MapsAppPicker from './MapsAppPicker.vue';
 import FileAttachments from './FileAttachments.vue';
 import RichTextDisplay from './RichTextDisplay.vue';
+import AppIcon from './AppIcon.vue';
 
 // Eigenständige Komponente statt inline in TravelView.vue, da dieser Dialog auch von anderer Stelle
 // geöffnet werden muss (TripMap.vue's Stationsliste, ExcursionDetailDialog.vue's Stationen, falls
@@ -25,10 +28,6 @@ const emit = defineEmits<{
   (e: 'show-on-map-to'): void;
 }>();
 
-function typeIcon(type: string | null) {
-  return travelTypeIcon(type);
-}
-
 function travelDuration(item: TravelItem) {
   const minutes = travelDurationMinutes(item.departure_time, item.arrival_time);
   return minutes == null ? null : formatTravelDuration(minutes);
@@ -40,7 +39,7 @@ function travelDuration(item: TravelItem) {
     :model-value="modelValue"
     @update:model-value="(v) => emit('update:modelValue', v)"
     :title="item.title"
-    :placeholder-icon="typeIcon(item.type)"
+    :placeholder-icon="travelTypeIconDef(item.type)"
     @edit="emit('edit')"
   >
     <p v-if="item.from_location || item.to_location" class="detail-row">
@@ -49,18 +48,27 @@ function travelDuration(item: TravelItem) {
     </p>
     <p v-if="item.date || item.departure_time" class="detail-row">
       <span class="detail-label">Zeit</span>
-      🗓️ {{ item.date || '' }}
+      <AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" /> {{ item.date || '' }}
       <span v-if="item.departure_time">
         · {{ item.departure_time }}<span v-if="item.arrival_time">–{{ item.arrival_time }}</span> Uhr
       </span>
       <span v-if="travelDuration(item)"> ({{ travelDuration(item) }})</span>
     </p>
-    <p v-if="item.checkin_info" class="detail-row"><span class="detail-label">Vorher da sein</span>⏱️ {{ item.checkin_info }}</p>
-    <p v-if="item.luggage" class="detail-row"><span class="detail-label">Gepäck</span>🧳 {{ item.luggage }}</p>
-    <p v-if="item.seat" class="detail-row"><span class="detail-label">Sitzplatz</span>💺 {{ item.seat }}</p>
+    <p v-if="item.checkin_info" class="detail-row">
+      <span class="detail-label">Vorher da sein</span>
+      <AppIcon :icon="ACTION_ICONS.duration" :size="14" group="actions" /> {{ item.checkin_info }}
+    </p>
+    <p v-if="item.luggage" class="detail-row">
+      <span class="detail-label">Gepäck</span>
+      <AppIcon :icon="ACTION_ICONS.luggage" :size="14" group="actions" /> {{ item.luggage }}
+    </p>
+    <p v-if="item.seat" class="detail-row">
+      <span class="detail-label">Sitzplatz</span>
+      <AppIcon :icon="ACTION_ICONS.seat" :size="14" group="actions" /> {{ item.seat }}
+    </p>
     <p v-if="item.amount != null" class="detail-row">
       <span class="detail-label">Kosten</span>
-      💶 {{ item.amount.toFixed(2) }} €
+      <AppIcon :icon="FORM_FIELD_ICONS.amount" :size="14" group="formFields" /> {{ item.amount.toFixed(2) }} €
       <span v-if="item.paid_by_user_id"> · bezahlt von {{ payerLabel }}</span>
     </p>
     <RichTextDisplay v-if="item.note" class="detail-row note" :content="item.note" :format="item.note_format" />
@@ -75,7 +83,7 @@ function travelDuration(item: TravelItem) {
         class="card-action-btn"
         @click="emit('show-on-map-from')"
       >
-        🗺️ Abflug auf Karte anzeigen
+        <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" /> Abflug auf Karte anzeigen
       </button>
       <MapsAppPicker
         v-if="item.from_lat != null && item.from_lng != null"
@@ -90,7 +98,7 @@ function travelDuration(item: TravelItem) {
         class="card-action-btn"
         @click="emit('show-on-map-to')"
       >
-        🗺️ Ankunft auf Karte anzeigen
+        <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" /> Ankunft auf Karte anzeigen
       </button>
       <MapsAppPicker
         v-if="item.to_lat != null && item.to_lng != null"

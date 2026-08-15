@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useTrackRecordingStore } from '../stores/trackRecording';
+import AppIcon from './AppIcon.vue';
+import { ACTION_ICONS } from '../utils/actionIcons';
 
 // Läuft eine Standort-Aufzeichnung (stores/trackRecording.ts), soll das app-weit sichtbar sein –
 // nicht nur, solange TripMap.vue gerade gemountet ist (dort startet/stoppt man die Aufzeichnung,
@@ -63,9 +65,16 @@ const elapsedLabel = computed(() => {
       :aria-label="trackRecording.paused ? 'Aufzeichnung fortsetzen' : 'Aufzeichnung pausieren'"
       @click="trackRecording.paused ? trackRecording.resume() : trackRecording.pause()"
     >
-      {{ trackRecording.paused ? '▶️' : '⏸️' }}
+      <AppIcon :icon="trackRecording.paused ? ACTION_ICONS.play : ACTION_ICONS.pause" :size="13" group="actions" />
     </button>
-    <span class="recording-pill-label">{{ trackRecording.paused ? '⏸️ Pausiert' : `⏺️ ${elapsedLabel}` }}</span>
+    <span class="recording-pill-label">
+      <template v-if="trackRecording.paused">
+        <AppIcon :icon="ACTION_ICONS.pause" :size="13" group="actions" /> Pausiert
+      </template>
+      <template v-else>
+        <AppIcon :icon="ACTION_ICONS.recordStart" :size="13" group="actions" /> {{ elapsedLabel }}
+      </template>
+    </span>
     <button
       type="button"
       class="recording-pill-btn"
@@ -73,7 +82,7 @@ const elapsedLabel = computed(() => {
       aria-label="Aufzeichnung beenden"
       @click="trackRecording.stop()"
     >
-      ⏹️
+      <AppIcon :icon="ACTION_ICONS.recordStop" :size="13" group="actions" />
     </button>
   </div>
 </template>

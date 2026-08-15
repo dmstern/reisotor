@@ -47,12 +47,12 @@ test.describe('Tour-Zuordnung: einfacher Tagging-Modus + Kategorie/Touren-Gruppi
     // auftauchen, statt (wie im Kategorie-Modus) unter seiner Kategorie. Die Gruppen-Überschrift ist
     // dabei eine anklickbare ExcursionCard (.excursion-card) statt einer reinen Text-Überschrift
     // (die bleibt nur der Sammelgruppe "Ohne Tour" vorbehalten, siehe ExcursionsView.vue).
-    await page.getByRole('button', { name: '🎒 Touren' }).click();
+    await page.getByRole('button', { name: 'Touren' }).click();
     const tourGroupCard = page.locator('.excursion-card', { hasText: tourTitle });
     await expect(tourGroupCard).toBeVisible();
     await expect(spotCard).toBeVisible();
 
-    await page.getByRole('button', { name: '🏷️ Spots' }).click();
+    await page.getByRole('button', { name: 'Spots', exact: true }).click();
   });
 
   test('Durch den Kategorie-Filter ausgeblendete Tour-Spots zeigen einen eigenen Hinweis statt "keine Spots zugeordnet"', async ({
@@ -73,7 +73,7 @@ test.describe('Tour-Zuordnung: einfacher Tagging-Modus + Kategorie/Touren-Gruppi
     expect(tourRes.ok()).toBeTruthy();
 
     await page.goto('/excursions');
-    await page.getByRole('button', { name: '🎒 Touren' }).click();
+    await page.getByRole('button', { name: 'Touren' }).click();
     const group = page.locator('.category-group', { hasText: tourTitle });
     await expect(group.locator('.spot-card', { hasText: spotTitle })).toBeVisible();
     await expect(group.locator('.empty')).toHaveCount(0);
@@ -81,7 +81,7 @@ test.describe('Tour-Zuordnung: einfacher Tagging-Modus + Kategorie/Touren-Gruppi
     // Kategorie-Filter setzen, der den zugeordneten Spot (Sehenswürdigkeit) ausschließt - die Tour
     // hat weiterhin einen zugeordneten Spot, er ist nur gerade nicht sichtbar.
     await page.getByRole('button', { name: 'Nach Kategorie filtern' }).click();
-    await page.getByRole('checkbox', { name: '🍽️ Restaurant' }).first().check();
+    await page.getByRole('checkbox', { name: 'Restaurant' }).first().check();
     await page.locator('.picker-backdrop').click();
 
     await expect(group.locator('.spot-card', { hasText: spotTitle })).toHaveCount(0);
@@ -90,12 +90,12 @@ test.describe('Tour-Zuordnung: einfacher Tagging-Modus + Kategorie/Touren-Gruppi
 
     // Filter zurücksetzen: der Hinweis verschwindet wieder, der Spot ist erneut sichtbar.
     await page.getByRole('button', { name: 'Nach Kategorie filtern' }).click();
-    await page.getByRole('checkbox', { name: '🍽️ Restaurant' }).first().uncheck();
+    await page.getByRole('checkbox', { name: 'Restaurant' }).first().uncheck();
     await page.locator('.picker-backdrop').click();
     await expect(group.locator('.spot-card', { hasText: spotTitle })).toBeVisible();
     await expect(group.locator('.empty')).toHaveCount(0);
 
-    await page.getByRole('button', { name: '🏷️ Spots' }).click();
+    await page.getByRole('button', { name: 'Spots', exact: true }).click();
   });
 });
 
@@ -144,12 +144,12 @@ test.describe('Touren-Reihenfolge-Editor: Reihenfolge + Mehrfachbesuch direkt in
 
     // Nach Kategorien gruppiert (Standard) taucht die neue Tour noch nicht als eigene Karte auf -
     // erst die Touren-Gruppierung zeigt sie als anklickbare ExcursionCard.
-    await page.getByRole('button', { name: '🎒 Touren' }).click();
+    await page.getByRole('button', { name: 'Touren' }).click();
 
     // Neu laden + erneut bearbeiten: Reihenfolge und Mehrfachbesuch müssen einen vollen
     // Save+Reload-Zyklus überstehen (nicht nur clientseitig im Formular-State vorhanden sein).
     await page.reload();
-    await page.getByRole('button', { name: '🎒 Touren' }).click();
+    await page.getByRole('button', { name: 'Touren' }).click();
     const tourCard = page.locator('.excursion-card', { hasText: tourTitle });
     await expect(tourCard).toBeVisible();
 

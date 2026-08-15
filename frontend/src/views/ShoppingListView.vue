@@ -19,6 +19,10 @@ import { useUndoableDelete } from '../composables/useUndoableDelete';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
 import { sortWithDoneLast } from '../composables/useCheckedSort';
 import { usePersistedRef } from '../composables/usePersistedRef';
+import AppIcon from '../components/AppIcon.vue';
+import { ACTION_ICONS } from '../utils/actionIcons';
+import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
+import type { IconDef } from '../utils/icon';
 
 const tripStore = useTripStore();
 const liveSync = useLiveSyncStore();
@@ -108,6 +112,7 @@ function isChecked(item: ShoppingItem) {
 interface Group {
   key: string;
   label: string;
+  iconDef?: IconDef;
   items: ShoppingItem[];
 }
 
@@ -121,7 +126,12 @@ const groupedItems = computed<Group[]>(() => {
     }
     return [...groups.entries()]
       .sort(([a], [b]) => (a === UNASSIGNED_SHOP ? 1 : b === UNASSIGNED_SHOP ? -1 : a.localeCompare(b, 'de')))
-      .map(([shop, shopItems]) => ({ key: shop, label: `🏬 ${shop}`, items: sortWithDoneLast(shopItems, isChecked) }));
+      .map(([shop, shopItems]) => ({
+        key: shop,
+        label: shop,
+        iconDef: FORM_FIELD_ICONS.shop,
+        items: sortWithDoneLast(shopItems, isChecked),
+      }));
   }
   if (groupBy.value === 'period') {
     const groups: Group[] = [
@@ -321,7 +331,7 @@ async function quickAddToGroup(group: Group, label: string) {
 
     <div class="filter-row">
       <div class="tool-row">
-        <span class="tool-label">🗂️ Gruppieren</span>
+        <span class="tool-label"><AppIcon :icon="ACTION_ICONS.group" :size="14" group="actions" /> Gruppieren</span>
         <select v-model="groupBy">
           <option value="buyer">nach Einkäufer:in</option>
           <option value="shop">nach Shop</option>
@@ -332,7 +342,9 @@ async function quickAddToGroup(group: Group, label: string) {
 
     <div class="groups-grid">
       <section class="group-section" v-for="group in groupedItems" :key="group.key">
-        <h2>{{ group.label }}</h2>
+        <h2>
+          <AppIcon v-if="group.iconDef" :icon="group.iconDef" :size="18" group="categories" /> {{ group.label }}
+        </h2>
         <QuickAddRow class="card group-quick-add" placeholder="Artikel hinzufügen…" @submit="(label) => quickAddToGroup(group, label)">
           <template #extra>
             <select v-if="groupBy !== 'buyer'" v-model="newBuyer">
@@ -359,9 +371,15 @@ async function quickAddToGroup(group: Group, label: string) {
                   <span :class="{ 'text-done': item.checked }">{{ item.label }}</span>
                 </label>
                 <PendingSyncBadge v-if="item._pending" />
-                <span v-if="groupBy !== 'shop' && item.shop" class="tag">🏬 {{ item.shop }}</span>
-                <span v-if="groupBy !== 'period' && item.period" class="tag">🗓️ {{ PERIOD_META[item.period] }}</span>
-                <a v-if="item.link" :href="item.link" target="_blank" rel="noopener" class="link">🔗 Link</a>
+                <span v-if="groupBy !== 'shop' && item.shop" class="tag">
+                  <AppIcon :icon="FORM_FIELD_ICONS.shop" :size="13" group="formFields" /> {{ item.shop }}
+                </span>
+                <span v-if="groupBy !== 'period' && item.period" class="tag">
+                  <AppIcon :icon="FORM_FIELD_ICONS.period" :size="13" group="formFields" /> {{ PERIOD_META[item.period] }}
+                </span>
+                <a v-if="item.link" :href="item.link" target="_blank" rel="noopener" class="link">
+                  <AppIcon :icon="FORM_FIELD_ICONS.link" :size="13" group="formFields" /> Link
+                </a>
                 <span v-if="item.note" class="note">{{ item.note }}</span>
                 <select
                   v-if="groupBy !== 'buyer'"

@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import AppIcon from './AppIcon.vue';
+import { ACTION_ICONS } from '../utils/actionIcons';
 
 const props = defineProps<{
   label: string;
@@ -42,7 +44,9 @@ function fmt(n: number) {
       ></div>
     </div>
     <p v-if="!hasTarget" class="no-target">Kein Ziel gesetzt</p>
-    <p v-if="isOver" class="over-badge">⚠️ {{ fmt(overBy) }} über {{ format === 'count' ? 'Ziel' : 'Budget' }}</p>
+    <p v-if="isOver" class="over-badge">
+      <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> {{ fmt(overBy) }} über {{ format === 'count' ? 'Ziel' : 'Budget' }}
+    </p>
   </div>
 </template>
 

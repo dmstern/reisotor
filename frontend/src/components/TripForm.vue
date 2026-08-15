@@ -4,6 +4,8 @@ import type { TripFormData } from '../stores/trip';
 import { buildOsmLink, parseLatLngFromMapsLink } from '../utils/googleMaps';
 import LocationPicker from './LocationPicker.vue';
 import ImageUrlInput from './ImageUrlInput.vue';
+import AppIcon from './AppIcon.vue';
+import { ACTION_ICONS } from '../utils/actionIcons';
 
 // locationError: vom Aufrufer (TripSwitcher.vue) gesetzt, wenn nach dem Speichern auffällt, dass
 // auch die serverseitige Maps-Link-Auflösung fehlgeschlagen ist (z. B. Google-Bot-Blocking eines
@@ -106,13 +108,15 @@ function onSubmit() {
       Maps-Link (Google/Apple) (optional)
       <input v-model="form.maps_link" type="url" @blur="checkMapsLink" />
     </label>
-    <p v-if="mapsLinkResolved === true" class="hint success">📍 Standort erkannt – erscheint auf der Karte</p>
+    <p v-if="mapsLinkResolved === true" class="hint success">
+      <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort erkannt – erscheint auf der Karte
+    </p>
     <p v-if="mapsLinkResolved === false" class="hint">Standort konnte nicht automatisch erkannt werden.</p>
     <p v-if="locationError" class="hint error">
-      ⚠️ Der Standort konnte auch automatisch nicht ermittelt werden. Bitte tippe unten auf die Karte, um ihn manuell zu setzen.
+      <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Der Standort konnte auch automatisch nicht ermittelt werden. Bitte tippe unten auf die Karte, um ihn manuell zu setzen.
     </p>
     <button type="button" class="secondary picker-toggle" @click="pickerOpen = !pickerOpen">
-      📍 Standort manuell setzen {{ pickerOpen ? '▲' : '▼' }}
+      <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort manuell setzen {{ pickerOpen ? '▲' : '▼' }}
     </button>
     <LocationPicker v-if="pickerOpen" v-model="manualPin" />
     <div class="field-group">

@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import Modal from './Modal.vue';
 import SpotImageCollage from './SpotImageCollage.vue';
+import AppIcon from './AppIcon.vue';
+import { ACTION_ICONS } from '../utils/actionIcons';
+import type { IconDef } from '../utils/icon';
 
 // Dünner Wrapper um Modal.vue für Read-Only-Detail-Ansichten (Ausflug/Spot/Unterkunft/Reise):
 // Bild als echtes Vollbild-Banner (Bleed über Modal.vue's eigenes Padding hinaus), Titel + optionale
@@ -16,7 +19,7 @@ defineProps<{
    *  den Bildern zugeordneter Spots (SpotImageCollage.vue) statt nur des Platzhalter-Icons – nur
    *  relevant, wenn imageUrl fehlt. */
   collageImages?: string[];
-  placeholderIcon?: string;
+  placeholderIcon?: IconDef;
 }>();
 const emit = defineEmits<{ (e: 'update:modelValue', value: boolean): void; (e: 'edit'): void }>();
 </script>
@@ -26,10 +29,12 @@ const emit = defineEmits<{ (e: 'update:modelValue', value: boolean): void; (e: '
     <template #default="{ close }">
       <div class="detail-hero" :style="imageUrl ? { backgroundImage: `url(${imageUrl})` } : {}">
         <SpotImageCollage v-if="!imageUrl && collageImages && collageImages.length > 0" :images="collageImages" />
-        <span v-else-if="!imageUrl" class="placeholder">{{ placeholderIcon }}</span>
-        <button type="button" class="detail-close-btn" title="Schließen" aria-label="Schließen" @click="close">✕</button>
+        <AppIcon v-else-if="!imageUrl && placeholderIcon" class="placeholder" :size="45" :icon="placeholderIcon" group="categories" />
+        <button type="button" class="detail-close-btn" title="Schließen" aria-label="Schließen" @click="close">
+          <AppIcon :icon="ACTION_ICONS.close" :size="15" group="actions" />
+        </button>
         <button type="button" class="detail-edit-btn" title="Bearbeiten" aria-label="Bearbeiten" @click="emit('edit')">
-          ✎
+          <AppIcon :icon="ACTION_ICONS.edit" :size="15" group="actions" />
         </button>
         <div class="detail-hero-overlay">
           <h2 class="detail-title">{{ title }}</h2>

@@ -9,11 +9,15 @@ import { useLiveSyncStore } from '../stores/liveSync';
 import { useSpotsStore } from '../stores/spots';
 import { parseLatLngFromMapsLink } from '../utils/googleMaps';
 import { TRAVEL_ROLE_META, TRAVEL_ROLE_OPTIONS } from '../utils/travelRole';
-import { travelTypeIcon } from '../utils/travelTypeIcon';
+import { travelTypeIcon, travelTypeIconDef } from '../utils/travelTypeIcon';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { formatTravelDuration, travelDurationMinutes } from '../utils/travelDuration';
 import { hashHighlightId } from '../utils/hashHighlight';
 import { isEmptyRichText } from '../utils/richText';
+import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
+import { ACTION_ICONS } from '../utils/actionIcons';
+import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
+import AppIcon from '../components/AppIcon.vue';
 import Modal from '../components/Modal.vue';
 import RichTextEditor from '../components/RichTextEditor.vue';
 import TravelDetailDialog from '../components/TravelDetailDialog.vue';
@@ -426,8 +430,8 @@ function showDetailToOnMap() {
 
     <p class="hint places-hint">
       Für Von/Nach lässt sich unten direkt ein bestehender Spot auswählen – neue Orte (Flughafen,
-      Bahnhof, Zuhause, …) legst du dafür in der 🗺️ Karte-Sicht als Spot an (Kategorie z. B.
-      "Flughafen" oder "Zuhause").
+      Bahnhof, Zuhause, …) legst du dafür in der <AppIcon :icon="SECTION_ICON_DEFS.map" :size="14" group="navigation" /> Karte-Sicht
+      als Spot an (Kategorie z. B. "Flughafen" oder "Zuhause").
     </p>
 
     <Modal :model-value="showForm" title="Neuer Reise-Eintrag" full-height @update:model-value="(v) => !v && closeForm()">
@@ -488,26 +492,26 @@ function showDetailToOnMap() {
         </label>
       </div>
       <p v-if="fromMapsLinkResolved === true || toMapsLinkResolved === true" class="hint success">
-        📍 Standort erkannt – erscheint auf der Karte
+        <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort erkannt – erscheint auf der Karte
       </p>
       <p v-if="fromMapsLinkResolved === false || toMapsLinkResolved === false" class="hint">
         Ein Standort konnte nicht automatisch erkannt werden.
       </p>
       <template v-if="!form.from_place_id">
         <p v-if="fromLocationError" class="hint error">
-          ⚠️ Der Abflug/Abfahrt-Standort konnte auch automatisch nicht ermittelt werden. Bitte tippe unten auf die Karte, um ihn manuell zu setzen.
+          <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Der Abflug/Abfahrt-Standort konnte auch automatisch nicht ermittelt werden. Bitte tippe unten auf die Karte, um ihn manuell zu setzen.
         </p>
         <button type="button" class="secondary picker-toggle" @click="fromPickerOpen = !fromPickerOpen">
-          📍 Abflug/Abfahrt manuell setzen {{ fromPickerOpen ? '▲' : '▼' }}
+          <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Abflug/Abfahrt manuell setzen {{ fromPickerOpen ? '▲' : '▼' }}
         </button>
         <LocationPicker v-if="fromPickerOpen" v-model="manualFromPin" :center="pickerCenter" />
       </template>
       <template v-if="!form.to_place_id">
         <p v-if="toLocationError" class="hint error">
-          ⚠️ Der Ankunft-Standort konnte auch automatisch nicht ermittelt werden. Bitte tippe unten auf die Karte, um ihn manuell zu setzen.
+          <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Der Ankunft-Standort konnte auch automatisch nicht ermittelt werden. Bitte tippe unten auf die Karte, um ihn manuell zu setzen.
         </p>
         <button type="button" class="secondary picker-toggle" @click="toPickerOpen = !toPickerOpen">
-          📍 Ankunft manuell setzen {{ toPickerOpen ? '▲' : '▼' }}
+          <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Ankunft manuell setzen {{ toPickerOpen ? '▲' : '▼' }}
         </button>
         <LocationPicker v-if="toPickerOpen" v-model="manualToPin" :center="pickerCenter" />
       </template>
@@ -586,27 +590,27 @@ function showDetailToOnMap() {
           @click="openDetail(item)"
         >
           <div class="travel-head">
-            <h3>{{ typeIcon(item.type) }} {{ item.title }}</h3>
+            <h3><AppIcon :icon="travelTypeIconDef(item.type)" :size="18" group="categories" /> {{ item.title }}</h3>
             <div class="actions">
               <EditButton small @click.stop="startEdit(item)" />
               <DeleteButton small @click.stop="remove(item.id)" />
             </div>
           </div>
           <span v-if="item.role" class="role-badge">
-            {{ TRAVEL_ROLE_META[item.role].icon }} {{ TRAVEL_ROLE_META[item.role].label }}
+            <AppIcon :icon="TRAVEL_ROLE_META[item.role].tabler" :size="14" group="categories" /> {{ TRAVEL_ROLE_META[item.role].label }}
           </span>
           <p v-if="item.from_location || item.to_location" class="route">
             {{ placeLabel(item.from_place_id) ?? item.from_location ?? '?' }} → {{ placeLabel(item.to_place_id) ?? item.to_location ?? '?' }}
           </p>
           <p v-if="item.date || item.departure_time">
-            🗓️ {{ item.date || '' }}
+            <AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" /> {{ item.date || '' }}
             <span v-if="item.departure_time">
               · {{ item.departure_time }}<span v-if="item.arrival_time">–{{ item.arrival_time }}</span> Uhr
             </span>
             <span v-if="travelDuration(item)" class="duration">({{ travelDuration(item) }})</span>
           </p>
           <button type="button" class="card-action-btn return-btn" @click.stop="createReturnLeg(item)">
-            🔄 Rückreise anlegen
+            <AppIcon :icon="ACTION_ICONS.refresh" :size="14" group="actions" /> Rückreise anlegen
           </button>
         </div>
       </template>
@@ -686,26 +690,26 @@ function showDetailToOnMap() {
           </label>
         </div>
         <p v-if="editFromMapsLinkResolved === true || editToMapsLinkResolved === true" class="hint success">
-          📍 Standort erkannt
+          <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort erkannt
         </p>
         <p v-if="editFromMapsLinkResolved === false || editToMapsLinkResolved === false" class="hint">
           Ein Standort konnte nicht automatisch erkannt werden.
         </p>
         <template v-if="!editForm.from_place_id">
           <p v-if="fromLocationErrorEdit" class="hint error">
-            ⚠️ Der Abflug/Abfahrt-Standort konnte auch automatisch nicht ermittelt werden. Bitte tippe unten auf die Karte, um ihn manuell zu setzen.
+            <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Der Abflug/Abfahrt-Standort konnte auch automatisch nicht ermittelt werden. Bitte tippe unten auf die Karte, um ihn manuell zu setzen.
           </p>
           <button type="button" class="secondary picker-toggle" @click="fromPickerOpenEdit = !fromPickerOpenEdit">
-            📍 Abflug/Abfahrt manuell setzen {{ fromPickerOpenEdit ? '▲' : '▼' }}
+            <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Abflug/Abfahrt manuell setzen {{ fromPickerOpenEdit ? '▲' : '▼' }}
           </button>
           <LocationPicker v-if="fromPickerOpenEdit" v-model="manualFromPinEdit" :center="pickerCenter" />
         </template>
         <template v-if="!editForm.to_place_id">
           <p v-if="toLocationErrorEdit" class="hint error">
-            ⚠️ Der Ankunft-Standort konnte auch automatisch nicht ermittelt werden. Bitte tippe unten auf die Karte, um ihn manuell zu setzen.
+            <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Der Ankunft-Standort konnte auch automatisch nicht ermittelt werden. Bitte tippe unten auf die Karte, um ihn manuell zu setzen.
           </p>
           <button type="button" class="secondary picker-toggle" @click="toPickerOpenEdit = !toPickerOpenEdit">
-            📍 Ankunft manuell setzen {{ toPickerOpenEdit ? '▲' : '▼' }}
+            <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Ankunft manuell setzen {{ toPickerOpenEdit ? '▲' : '▼' }}
           </button>
           <LocationPicker v-if="toPickerOpenEdit" v-model="manualToPinEdit" :center="pickerCenter" />
         </template>

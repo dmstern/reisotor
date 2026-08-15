@@ -2,6 +2,9 @@
 import { computed, ref } from 'vue';
 import type { Spot } from '../api/types';
 import { spotCategoryMeta } from '../utils/spotCategory';
+import { ACTION_ICONS } from '../utils/actionIcons';
+import type { IconDef } from '../utils/icon';
+import AppIcon from './AppIcon.vue';
 
 // Drag&Drop-Reihenfolge-Editor fürs Touren-Formular (ExcursionsView.vue) – TourAssignPicker.vue
 // bietet daneben im Spot-Formular einen schnelleren Weg, einen Spot ohne Reihenfolge einer Tour
@@ -31,9 +34,9 @@ const plannedStations = computed(() =>
   props.modelValue
     .map((spotId) => {
       const spot = props.spots.find((s) => s.id === spotId);
-      return spot ? { id: spotId, title: spot.title, icon: spotCategoryMeta(spot.category).icon } : null;
+      return spot ? { id: spotId, title: spot.title, icon: spotCategoryMeta(spot.category).icon, tabler: spotCategoryMeta(spot.category).tabler } : null;
     })
-    .filter((s): s is { id: number; title: string; icon: string } => !!s),
+    .filter((s): s is { id: number; title: string; icon: string; tabler: IconDef } => !!s),
 );
 
 // Bewusst NICHT mehr gefiltert auf "noch nicht eingeplant" – für einen Rundgang muss derselbe Spot
@@ -101,7 +104,7 @@ function onDragEnd() {
 <template>
   <div class="spot-order-picker">
     <fieldset v-if="plannedStations.length" class="planned-box">
-      <legend>📋 Tourreihenfolge</legend>
+      <legend><AppIcon :icon="ACTION_ICONS.order" :size="14" group="actions" /> Tourreihenfolge</legend>
       <p class="order-hint">
         In dieser Reihenfolge werden die Stationen während der Tour abgeklappert (bestimmt auch
         die eingezeichnete Route auf der Karte) – zum Sortieren ziehen.
@@ -119,9 +122,9 @@ function onDragEnd() {
         >
           <span class="order-num">{{ index + 1 }}.</span>
           <span class="drag-handle" aria-hidden="true">⠿</span>
-          <span class="spot-title">{{ station.icon }} {{ station.title }}</span>
+          <span class="spot-title"><AppIcon :icon="station.tabler" :size="14" group="categories" /> {{ station.title }}</span>
           <button type="button" class="remove-btn" @click="removeSpotAt(index)" aria-label="Aus Tour entfernen">
-            ✕
+            <AppIcon :icon="ACTION_ICONS.close" :size="14" group="actions" />
           </button>
         </div>
       </template>
@@ -131,8 +134,12 @@ function onDragEnd() {
     <fieldset v-if="addableSpots.length" class="spot-picker">
       <legend>Spots hinzufügen – nach Likes sortiert (auch mehrfach möglich, z. B. Start &amp; Ende)</legend>
       <button v-for="spot in addableSpots" :key="spot.id" type="button" class="derived-option" @click="addSpot(spot.id)">
-        <span class="spot-option-title">{{ spotCategoryMeta(spot.category).icon }} {{ spot.title }}</span>
-        <span class="spot-option-likes">❤️ {{ likeCount(spot.id) }}</span>
+        <span class="spot-option-title">
+          <AppIcon :icon="spotCategoryMeta(spot.category).tabler" :size="14" group="categories" /> {{ spot.title }}
+        </span>
+        <span class="spot-option-likes">
+          <AppIcon :icon="ACTION_ICONS.sortLikes" :size="13" group="actions" /> {{ likeCount(spot.id) }}
+        </span>
         <span class="derived-add" aria-hidden="true">+</span>
       </button>
     </fieldset>

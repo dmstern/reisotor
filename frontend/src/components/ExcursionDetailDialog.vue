@@ -8,6 +8,10 @@ import { useAuthStore } from '../stores/auth';
 import { useSpotsStore } from '../stores/spots';
 import { useExcursionsStore } from '../stores/excursions';
 import { useDrawersStore } from '../stores/drawers';
+import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
+import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
+import { ACTION_ICONS } from '../utils/actionIcons';
+import AppIcon from './AppIcon.vue';
 import DetailModal from './DetailModal.vue';
 import RichTextDisplay from './RichTextDisplay.vue';
 import LikeButton from './LikeButton.vue';
@@ -112,13 +116,22 @@ function openStationDetail(station: ExcursionStation) {
     :title="excursion.title"
     :image-url="excursion.image_url"
     :collage-images="fallbackImages"
-    placeholder-icon="🎒"
+    :placeholder-icon="SECTION_ICON_DEFS.excursions"
     @edit="emit('edit')"
   >
     <template #meta>
       <span v-if="creatorLabel">{{ creatorLabel }}</span>
-      <span>{{ excursion.date ? `📅 ${formatDate(excursion.date)}` : '📝 In Planung' }}</span>
-      <span v-if="excursion.done" class="done-meta">✅ Gemacht</span>
+      <span>
+        <template v-if="excursion.date">
+          <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" /> {{ formatDate(excursion.date) }}
+        </template>
+        <template v-else>
+          <AppIcon :icon="FORM_FIELD_ICONS.note" :size="14" group="formFields" /> In Planung
+        </template>
+      </span>
+      <span v-if="excursion.done" class="done-meta">
+        <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" /> Gemacht
+      </span>
     </template>
 
     <button
@@ -128,7 +141,12 @@ function openStationDetail(station: ExcursionStation) {
       :aria-pressed="!!excursion.done"
       @click="excursionsStore.setDone(excursion.id, !excursion.done)"
     >
-      {{ excursion.done ? '✅ Gemacht' : '⬜️ Als gemacht markieren' }}
+      <template v-if="excursion.done">
+        <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" /> Gemacht
+      </template>
+      <template v-else>
+        <AppIcon :icon="ACTION_ICONS.notDone" :size="14" group="actions" /> Als gemacht markieren
+      </template>
     </button>
 
     <RichTextDisplay v-if="excursion.note" class="detail-row note" :content="excursion.note" :format="excursion.note_format" />
@@ -150,7 +168,9 @@ function openStationDetail(station: ExcursionStation) {
       <span class="detail-label">Route</span>
       <ExcursionMiniMap :stations="mappedStations" />
       <div class="map-actions">
-        <button type="button" class="card-action-btn" @click="emit('show-on-map')">🗺️ Auf Karte anzeigen</button>
+        <button type="button" class="card-action-btn" @click="emit('show-on-map')">
+          <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" /> Auf Karte anzeigen
+        </button>
       </div>
     </template>
     <p v-else class="hint">Noch keine Station mit Standort hinterlegt.</p>

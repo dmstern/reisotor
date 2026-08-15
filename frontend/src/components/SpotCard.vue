@@ -21,6 +21,10 @@ import Comments, { type CommentItem } from './Comments.vue';
 import MapsAppPicker from './MapsAppPicker.vue';
 import FileAttachments from './FileAttachments.vue';
 import PendingSyncBadge from './PendingSyncBadge.vue';
+import AppIcon from './AppIcon.vue';
+import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
+import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
+import { ACTION_ICONS } from '../utils/actionIcons';
 import { formatDate as formatDateShared } from '../utils/dateFormat';
 
 const props = defineProps<{
@@ -92,15 +96,10 @@ watch(
   { immediate: true },
 );
 
-// Ohne führendes Icon - das kommt separat aus .status-icon im Template (siehe dort), damit die
-// Kompakt-Ansicht (@container spots-col (max-width: 480px)) nur das Icon zeigen und den Text-Teil
-// ausblenden kann, statt eines einzigen, nicht auftrennbaren Strings.
-const plannedLabel = computed(() => {
-  if (!props.scheduledDate) return '';
-  const dateLabel = formatDate(props.scheduledDate);
-  if (!dayWeather.value) return dateLabel;
-  return `${dateLabel} · ${weatherCodeMeta(dayWeather.value.weatherCode).icon} ${Math.round(dayWeather.value.tempMax)}°`;
-});
+// Nur noch das Datum als String - das Wetter (falls vorhanden) rendert das Template direkt über ein
+// eigenes AppIcon + Temperatur, statt es wie zuvor in einen einzigen, nicht auftrennbaren String
+// einzubacken (der hätte sich nicht zwischen Emoji/Tabler-Icon umschalten lassen).
+const plannedDateLabel = computed(() => (props.scheduledDate ? formatDate(props.scheduledDate) : ''));
 
 // Natives Drag (Zuordnen zu einer Tour) startet über einen dedizierten Anfasser (.excursion-drag-
 // handle, siehe Template) statt über die ganze Karte – @click.stop dort verhindert, dass ein reiner
@@ -175,7 +174,7 @@ function onCardClick() {
 <template>
   <div class="card spot-card" :class="{ expanded, 'new-highlight': highlighted }" @click="onCardClick">
     <div class="image" :style="spot.image_url ? { backgroundImage: `url(${spot.image_url})` } : {}">
-      <span v-if="!spot.image_url" class="placeholder">{{ spotCategoryMeta(spot.category).icon }}</span>
+      <AppIcon v-if="!spot.image_url" class="placeholder" :size="35" :icon="spotCategoryMeta(spot.category).tabler" group="categories" />
       <!-- Nur in der aufgeklappten Karte - in der kompakten Mini-Card (v. a. auf mobile knapper
            Platz) reichen Bild/Titel/Kategorie zur Orientierung, Bearbeiten/Löschen sind erst nach
            dem Aufklappen erreichbar. -->
@@ -184,10 +183,15 @@ function onCardClick() {
         <DeleteButton floating @click="emit('remove', spot.id)" />
       </template>
       <span v-if="scheduledDate" class="status planned">
-        <span class="status-icon">📅</span><span class="status-text">{{ plannedLabel }}</span>
+        <AppIcon class="status-icon" :size="14" :icon="FORM_FIELD_ICONS.date" group="actions" />
+        <span class="status-text"
+          >{{ plannedDateLabel }}<template v-if="dayWeather"
+            > · <AppIcon :icon="weatherCodeMeta(dayWeather.weatherCode).tabler" :size="14" group="categories" /> {{ Math.round(dayWeather.tempMax) }}°</template
+          ></span
+        >
       </span>
       <span v-if="spot.done" class="status status-done">
-        <span class="status-icon">✅</span><span class="status-text">Gemacht</span>
+        <AppIcon class="status-icon" :size="14" :icon="ACTION_ICONS.done" group="actions" /><span class="status-text">Gemacht</span>
       </span>
     </div>
     <div class="body">
@@ -200,7 +204,8 @@ function onCardClick() {
       <template v-if="expanded && isAccommodation">
         <p v-if="spot.start_date || spot.end_date" class="detail-row">
           <span class="detail-label">Zeitraum</span>
-          🗓️ {{ formatAccommodationDate(spot.start_date) || '?' }} – {{ formatAccommodationDate(spot.end_date) || '?' }}
+          <AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" />
+          {{ formatAccommodationDate(spot.start_date) || '?' }} – {{ formatAccommodationDate(spot.end_date) || '?' }}
         </p>
         <p v-if="spot.address" class="detail-row"><span class="detail-label">Adresse</span>{{ spot.address }}</p>
         <p v-if="spot.checkin || spot.checkout" class="detail-row">
@@ -209,11 +214,13 @@ function onCardClick() {
         </p>
         <p v-if="spot.contact && parseContact(spot.contact).kind === 'phone'" class="detail-row">
           <span class="detail-label">Kontakt</span>
-          📞 <a :href="parseContact(spot.contact).href" @click.stop>{{ spot.contact }}</a>
+          <AppIcon :icon="FORM_FIELD_ICONS.contact" :size="14" group="formFields" />
+          <a :href="parseContact(spot.contact).href" @click.stop>{{ spot.contact }}</a>
         </p>
         <p v-else-if="spot.contact && parseContact(spot.contact).kind === 'email'" class="detail-row">
           <span class="detail-label">Kontakt</span>
-          📧 <a :href="parseContact(spot.contact).href" @click.stop>{{ spot.contact }}</a>
+          <AppIcon :icon="FORM_FIELD_ICONS.email" :size="14" group="formFields" />
+          <a :href="parseContact(spot.contact).href" @click.stop>{{ spot.contact }}</a>
         </p>
         <p v-else-if="spot.contact" class="detail-row">
           <span class="detail-label">Kontakt</span>
@@ -221,7 +228,7 @@ function onCardClick() {
         </p>
         <p v-if="spot.amount != null" class="detail-row">
           <span class="detail-label">Kosten</span>
-          💶 {{ spot.amount.toFixed(2) }} €
+          <AppIcon :icon="FORM_FIELD_ICONS.amount" :size="14" group="formFields" /> {{ spot.amount.toFixed(2) }} €
           <span v-if="spot.paid_by_user_id"> · bezahlt von {{ payerLabel }}</span>
         </p>
       </template>
@@ -236,7 +243,7 @@ function onCardClick() {
           @dragstart="onDragStart"
           @click.stop="onExcursionHandleClick"
         >
-          🎒 Auf Tour ziehen
+          <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="14" group="navigation" /> Auf Tour ziehen
         </button>
         <button
           v-if="!isAccommodation"
@@ -247,7 +254,7 @@ function onCardClick() {
           @pointerdown="onPointerDown"
           @click.stop
         >
-          📅 Einplanen
+          <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" /> Einplanen
         </button>
         <button
           v-if="!isAccommodation"
@@ -257,7 +264,12 @@ function onCardClick() {
           :aria-pressed="!!spot.done"
           @click.stop="spotsStore.setDone(spot.id, !spot.done)"
         >
-          {{ spot.done ? '✅ Gemacht' : '⬜️ Als gemacht markieren' }}
+          <template v-if="spot.done">
+            <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" /> Gemacht
+          </template>
+          <template v-else>
+            <AppIcon :icon="ACTION_ICONS.notDone" :size="14" group="actions" /> Als gemacht markieren
+          </template>
         </button>
       </div>
       <MapsAppPicker
@@ -269,7 +281,9 @@ function onCardClick() {
         @click.stop
       />
       <Teleport to="body">
-        <div v-if="dragging" class="drag-ghost" :style="ghostStyle ?? {}">📅 {{ spot.title }}</div>
+        <div v-if="dragging" class="drag-ghost" :style="ghostStyle ?? {}">
+          <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" /> {{ spot.title }}
+        </div>
       </Teleport>
       <SocialRow
         class="social-row"

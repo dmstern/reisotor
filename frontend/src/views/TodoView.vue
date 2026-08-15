@@ -21,6 +21,9 @@ import PendingSyncBadge from '../components/PendingSyncBadge.vue';
 import { useUndoableDelete } from '../composables/useUndoableDelete';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
 import { usePersistedRef } from '../composables/usePersistedRef';
+import AppIcon from '../components/AppIcon.vue';
+import { ACTION_ICONS } from '../utils/actionIcons';
+import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 
 const tripStore = useTripStore();
 const liveSync = useLiveSyncStore();
@@ -41,10 +44,10 @@ type SortBy = 'due_date' | 'priority' | 'assignee';
 const groupBy = usePersistedRef<GroupBy>('reisotor-todo-group-by', 'assignee');
 const sortBy = usePersistedRef<SortBy>('reisotor-todo-sort-by', 'priority');
 
-const PRIORITY_META: Record<TodoPriority, { label: string; icon: string }> = {
-  low: { label: 'Niedrig', icon: '🟢' },
-  medium: { label: 'Mittel', icon: '🟡' },
-  high: { label: 'Hoch', icon: '🔴' },
+const PRIORITY_META: Record<TodoPriority, { label: string; icon: string; color: string }> = {
+  low: { label: 'Niedrig', icon: '🟢', color: '#2f9e44' },
+  medium: { label: 'Mittel', icon: '🟡', color: '#e8a30c' },
+  high: { label: 'Hoch', icon: '🔴', color: '#d6336c' },
 };
 const PRIORITY_ORDER: Record<TodoPriority, number> = { high: 0, medium: 1, low: 2 };
 
@@ -304,14 +307,14 @@ function isOverdue(item: TodoItem) {
 
     <div class="filter-row">
       <div class="tool-row">
-        <span class="tool-label">🗂️ Gruppieren</span>
+        <span class="tool-label"><AppIcon :icon="ACTION_ICONS.group" :size="14" group="actions" /> Gruppieren</span>
         <select v-model="groupBy">
           <option value="assignee">nach Bearbeiter:in</option>
           <option value="period">nach Zeitraum</option>
         </select>
       </div>
       <div class="tool-row">
-        <span class="tool-label">🔀 Sortieren</span>
+        <span class="tool-label"><AppIcon :icon="ACTION_ICONS.sort" :size="14" group="actions" /> Sortieren</span>
         <select v-model="sortBy">
           <option value="due_date">nach Datum</option>
           <option value="priority">nach Priorität</option>
@@ -351,14 +354,18 @@ function isOverdue(item: TodoItem) {
                   <span class="title" :class="{ 'text-done': item.done }">{{ item.title }}</span>
                 </label>
                 <PendingSyncBadge v-if="item._pending" />
-                <span class="priority" :title="PRIORITY_META[item.priority].label">{{ PRIORITY_META[item.priority].icon }}</span>
+                <span class="priority" :title="PRIORITY_META[item.priority].label">
+                  <AppIcon :icon="ACTION_ICONS.priorityDot" :size="10" :color="PRIORITY_META[item.priority].color" group="actions" />
+                </span>
                 <span v-if="item.due_date" class="due" :class="{ overdue: isOverdue(item) }">
-                  📅 {{ formatDate(item.due_date) }}
+                  <AppIcon :icon="FORM_FIELD_ICONS.date" :size="13" group="formFields" /> {{ formatDate(item.due_date) }}
                 </span>
                 <span v-if="groupBy !== 'assignee' && userLabel(item.assigned_to_user_id)" class="assignee">{{
                   userLabel(item.assigned_to_user_id)
                 }}</span>
-                <span v-if="groupBy !== 'period' && periodFor(item)" class="assignee">🗓️ {{ PERIOD_META[periodFor(item)!] }}</span>
+                <span v-if="groupBy !== 'period' && periodFor(item)" class="assignee">
+                  <AppIcon :icon="FORM_FIELD_ICONS.period" :size="13" group="formFields" /> {{ PERIOD_META[periodFor(item)!] }}
+                </span>
                 <span v-if="item.note" class="note">{{ item.note }}</span>
                 <div class="row-actions">
                   <EditButton small @click="startEdit(item)" />

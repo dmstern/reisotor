@@ -39,6 +39,11 @@ import { parseLatLngFromMapsLink, tilePreviewUrl } from '../utils/googleMaps';
 import { spotCategoryMeta, SPOT_CATEGORY_SUGGESTIONS } from '../utils/spotCategory';
 import type { DerivedLocation } from '../utils/derivedLocation';
 import { buildTravelDerivedLocations } from '../utils/travelDerivedLocations';
+import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
+import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
+import { ACTION_ICONS } from '../utils/actionIcons';
+import type { IconDef } from '../utils/icon';
+import AppIcon from '../components/AppIcon.vue';
 
 // Touren-Verwaltung (Anlegen/Bearbeiten/Einplanen) ist seit dem Zurückbau des früheren "erweiterten
 // Touren-Modus" (vormals eine eigenständige Ausflüge-Schublade, views/ExcursionsDrawer.vue) Teil
@@ -479,12 +484,12 @@ function itemLikeCount(item: SpotsGroupItem): number {
   return item.kind === 'spot' ? spotsStore.likeCountFor(item.spot.id) : 0;
 }
 // Unterkunft/Reise sind keine "echten" Spot-Kategorien (spotCategoryMeta kennt sie nicht) – eigenes
-// Icon je Sammel-Kategorie, sonst wie gewohnt über spotCategoryMeta (inkl. 📍-Fallback). Dieselben
-// Icons wie SECTION_ICONS.accommodation/travel (sectionIcons.ts) für App-weite Konsistenz.
-function groupIcon(category: string): string {
-  if (category === 'Unterkunft') return '🛏️';
-  if (category === 'Reise') return '✈️';
-  return spotCategoryMeta(category).icon;
+// Icon je Sammel-Kategorie, sonst wie gewohnt über spotCategoryMeta. Dieselben Icons wie
+// SECTION_ICONS.accommodation/travel (sectionIcons.ts) für App-weite Konsistenz.
+function groupIconDef(category: string): IconDef {
+  if (category === 'Unterkunft') return spotCategoryMeta('Unterkunft').tabler;
+  if (category === 'Reise') return SECTION_ICON_DEFS.travel;
+  return spotCategoryMeta(category).tabler;
 }
 
 // Sortierung/Gruppierung/Filter bleiben über localStorage auch nach einem Reload/erneuten Besuch
@@ -563,9 +568,14 @@ function removeCategoryFilter(cat: string) {
 // SpotCard.vue's zwei getrennte Status-Badges) - deshalb eine eigene, per ODER kombinierbare
 // Prüfung in filteredSpotItems unten statt eines dritten Werts derselben Status-Dimension.
 const STATUS_FILTER_LABEL: Record<'planned' | 'unplanned' | 'done', string> = {
-  planned: '📅 Geplant',
-  unplanned: '📝 Ungeplant',
-  done: '✅ Gemacht',
+  planned: 'Geplant',
+  unplanned: 'Ungeplant',
+  done: 'Gemacht',
+};
+const STATUS_FILTER_ICON: Record<'planned' | 'unplanned' | 'done', IconDef> = {
+  planned: FORM_FIELD_ICONS.date,
+  unplanned: FORM_FIELD_ICONS.note,
+  done: ACTION_ICONS.done,
 };
 const statusMenuOpen = ref(false);
 const statusBtnRef = ref<HTMLButtonElement | null>(null);
@@ -685,7 +695,7 @@ const spotGroups = computed(() => {
     const keys = groups.has(UNASSIGNED_TOUR_GROUP) ? [...known, UNASSIGNED_TOUR_GROUP] : known;
     return keys.map((title) => ({
       category: title,
-      icon: title === UNASSIGNED_TOUR_GROUP ? '📍' : '🎒',
+      iconDef: title === UNASSIGNED_TOUR_GROUP ? FORM_FIELD_ICONS.location : SECTION_ICON_DEFS.excursions,
       items: groups.get(title)!,
       // Echte Excursion hinter dem Gruppen-Titel (nur bei Touren-Gruppierung, "Ohne Tour" bleibt
       // null) – die Gruppen-Überschrift rendert damit statt reinem Text eine anklickbare
@@ -695,7 +705,7 @@ const spotGroups = computed(() => {
   }
   return sortedCategoryKeys(groups.keys()).map((category) => ({
     category,
-    icon: groupIcon(category),
+    iconDef: groupIconDef(category),
     items: groups.get(category)!,
     excursion: null as Excursion | null,
   }));
@@ -1353,7 +1363,9 @@ async function removeSpot(id: number) {
 
 <template>
   <div class="page" v-if="!loading" :style="{ '--page-title-height': pageTitleHeight + 'px' }">
-    <h1 class="page-title" :ref="setPageTitleRef">🗺️ Karte</h1>
+    <h1 class="page-title" :ref="setPageTitleRef">
+      <AppIcon :icon="SECTION_ICON_DEFS.map" :size="22" group="navigation" /> Karte
+    </h1>
     <div class="layout" :style="{ '--spots-col-width': spotsColWidth + 'px' }">
     <div
       ref="sheetEl"
@@ -1379,7 +1391,10 @@ async function removeSpot(id: number) {
           @pointerdown="onSheetDragStart"
         >
           <span class="sheet-grip" aria-hidden="true"></span>
-          <span class="sheet-summary">📍 {{ filteredSpotItems.length }} {{ filteredSpotItems.length === 1 ? 'Ort' : 'Orte' }}</span>
+          <span class="sheet-summary">
+            <AppIcon :icon="FORM_FIELD_ICONS.location" :size="13" group="formFields" />
+            {{ filteredSpotItems.length }} {{ filteredSpotItems.length === 1 ? 'Ort' : 'Orte' }}
+          </span>
         </div>
         <button
           type="button"
@@ -1454,7 +1469,8 @@ async function removeSpot(id: number) {
             :class="{ recording: trackRecording.recording }"
             @click="trackRecording.recording ? trackRecording.stop() : trackRecording.start({ visibility: 'private' })"
           >
-            {{ trackRecording.recording ? '⏹️ Aufzeichnung beenden' : '⏺️ Aufzeichnen' }}
+            <AppIcon :icon="trackRecording.recording ? ACTION_ICONS.recordStop : ACTION_ICONS.recordStart" :size="15" group="actions" />
+            {{ trackRecording.recording ? 'Aufzeichnung beenden' : 'Aufzeichnen' }}
           </button>
         </div>
       </div>
@@ -1470,7 +1486,7 @@ async function removeSpot(id: number) {
           :aria-expanded="tracksSectionOpen"
           @click="tracksSectionOpen = !tracksSectionOpen"
         >
-          <span>🧭 Aufzeichnungen ({{ tracksStore.tracks.length }})</span>
+          <span><AppIcon :icon="ACTION_ICONS.history" :size="15" group="actions" /> Aufzeichnungen ({{ tracksStore.tracks.length }})</span>
           <span class="caret">{{ tracksSectionOpen ? '▾' : '▸' }}</span>
         </button>
         <ul v-if="tracksSectionOpen" class="tracks-list">
@@ -1483,8 +1499,10 @@ async function removeSpot(id: number) {
             <button type="button" class="track-row-main" @click="drawers.openMapForTrack(track.id)">
               <span class="track-row-title">{{ trackTitle(track) }}</span>
               <span class="track-row-meta">
-                <span v-if="!track.ended_at">🔴 läuft</span>
-                <span v-else-if="trackDurationLabel(track)">⏱️ {{ trackDurationLabel(track) }}</span>
+                <span v-if="!track.ended_at"><AppIcon :icon="ACTION_ICONS.recordStart" :size="12" group="actions" /> läuft</span>
+                <span v-else-if="trackDurationLabel(track)">
+                  <AppIcon :icon="ACTION_ICONS.duration" :size="12" group="actions" /> {{ trackDurationLabel(track) }}
+                </span>
               </span>
             </button>
             <template v-if="track.user_id === auth.user?.id">
@@ -1499,7 +1517,7 @@ async function removeSpot(id: number) {
                 :aria-label="track.visibility === 'shared' ? 'Teilen zurücknehmen' : 'Mit allen teilen'"
                 @click="toggleTrackVisibility(track)"
               >
-                {{ track.visibility === 'shared' ? '🤝' : '🔒' }}
+                <AppIcon :icon="track.visibility === 'shared' ? ACTION_ICONS.shared : ACTION_ICONS.private" :size="15" group="actions" />
               </button>
               <button
                 type="button"
@@ -1508,7 +1526,7 @@ async function removeSpot(id: number) {
                 aria-label="Aufzeichnung löschen"
                 @click="removeTrack(track.id)"
               >
-                🗑️
+                <AppIcon :icon="ACTION_ICONS.delete" :size="15" group="actions" />
               </button>
             </template>
           </li>
@@ -1588,35 +1606,42 @@ async function removeSpot(id: number) {
           :aria-expanded="filterBarExpanded"
           @click="filterBarExpanded = !filterBarExpanded"
         >
-          <span>⚙️ Anzeige &amp; Filter<span v-if="activeFilterCount" class="picker-count"> ({{ activeFilterCount }} aktiv)</span></span>
+          <span
+            ><AppIcon :icon="ACTION_ICONS.filterSettings" :size="15" group="actions" /> Anzeige &amp; Filter<span
+              v-if="activeFilterCount"
+              class="picker-count"
+            >
+              ({{ activeFilterCount }} aktiv)</span
+            ></span
+          >
           <span class="caret">{{ filterBarExpanded ? '▾' : '▸' }}</span>
         </button>
 
         <div class="filter-bar-rows" :class="{ expanded: filterBarExpanded }">
           <div class="tool-row">
-            <span class="tool-label">🗂️ Gruppieren</span>
+            <span class="tool-label"><AppIcon :icon="ACTION_ICONS.group" :size="14" group="actions" /> Gruppieren</span>
             <SegmentedToggle
               v-model="groupMode"
               :options="[
-                { value: 'category', label: '🏷️ Spots', dot: liveSync.hasUnseen('spots') },
-                { value: 'tours', label: '🎒 Touren', dot: liveSync.hasUnseen('ideas') },
+                { value: 'category', label: 'Spots', icon: FORM_FIELD_ICONS.category, iconGroup: 'formFields', dot: liveSync.hasUnseen('spots') },
+                { value: 'tours', label: 'Touren', icon: SECTION_ICON_DEFS.excursions, iconGroup: 'navigation', dot: liveSync.hasUnseen('ideas') },
               ]"
             />
           </div>
 
           <div class="tool-row">
-            <span class="tool-label">🔀 Sortieren</span>
+            <span class="tool-label"><AppIcon :icon="ACTION_ICONS.sort" :size="14" group="actions" /> Sortieren</span>
             <SegmentedToggle
               v-model="sortMode"
               :options="[
-                { value: 'alpha', label: '🔤 Alphabetisch' },
-                { value: 'likes', label: '❤️ Nach Likes' },
+                { value: 'alpha', label: 'Alphabetisch', icon: ACTION_ICONS.sortAlpha },
+                { value: 'likes', label: 'Nach Likes', icon: ACTION_ICONS.sortLikes },
               ]"
             />
           </div>
 
           <div class="tool-row">
-            <span class="tool-label">🔎 Filtern</span>
+            <span class="tool-label"><AppIcon :icon="ACTION_ICONS.filter" :size="14" group="actions" /> Filtern</span>
             <div class="dropdown">
               <button
                 ref="categoryBtnRef"
@@ -1626,7 +1651,7 @@ async function removeSpot(id: number) {
                 aria-label="Nach Kategorie filtern"
                 @click="toggleCategoryMenu"
               >
-                🏷️ Kategorie
+                <AppIcon :icon="FORM_FIELD_ICONS.category" :size="14" group="formFields" /> Kategorie
                 <span class="caret dropdown-caret">{{ categoryMenuOpen ? '▴' : '▾' }}</span>
               </button>
               <Teleport to="body">
@@ -1635,7 +1660,7 @@ async function removeSpot(id: number) {
                   <div class="picker-menu category-menu" :style="categoryMenuStyle">
                     <label v-for="cat in filterCategoryOptions" :key="cat" class="category-option">
                       <input type="checkbox" :value="cat" v-model="categoryFilter" />
-                      {{ groupIcon(cat) }} {{ cat }}
+                      <AppIcon :icon="groupIconDef(cat)" :size="14" group="categories" /> {{ cat }}
                     </label>
                   </div>
                 </template>
@@ -1650,7 +1675,7 @@ async function removeSpot(id: number) {
                 aria-label="Nach Status filtern"
                 @click="toggleStatusMenu"
               >
-                🗓️ Status
+                <AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" /> Status
                 <span class="caret dropdown-caret">{{ statusMenuOpen ? '▴' : '▾' }}</span>
               </button>
               <Teleport to="body">
@@ -1659,15 +1684,15 @@ async function removeSpot(id: number) {
                   <div class="picker-menu category-menu" :style="statusMenuStyle">
                     <label class="category-option">
                       <input type="checkbox" value="planned" v-model="statusFilter" />
-                      📅 Geplant
+                      <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" /> Geplant
                     </label>
                     <label class="category-option">
                       <input type="checkbox" value="unplanned" v-model="statusFilter" />
-                      📝 Ungeplant
+                      <AppIcon :icon="FORM_FIELD_ICONS.note" :size="14" group="formFields" /> Ungeplant
                     </label>
                     <label class="category-option">
                       <input type="checkbox" value="done" v-model="statusFilter" />
-                      ✅ Gemacht
+                      <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" /> Gemacht
                     </label>
                   </div>
                 </template>
@@ -1678,12 +1703,16 @@ async function removeSpot(id: number) {
 
         <div class="filter-chips" v-if="categoryFilter.length || statusFilter.length">
           <span v-for="cat in categoryFilter" :key="cat" class="filter-chip">
-            {{ groupIcon(cat) }} {{ cat }}
-            <button type="button" @click="removeCategoryFilter(cat)" aria-label="Filter entfernen">✕</button>
+            <AppIcon :icon="groupIconDef(cat)" :size="13" group="categories" /> {{ cat }}
+            <button type="button" @click="removeCategoryFilter(cat)" aria-label="Filter entfernen">
+              <AppIcon :icon="ACTION_ICONS.close" :size="12" group="actions" />
+            </button>
           </span>
           <span v-for="status in statusFilter" :key="status" class="filter-chip">
-            {{ STATUS_FILTER_LABEL[status] }}
-            <button type="button" @click="removeStatusFilter(status)" aria-label="Filter entfernen">✕</button>
+            <AppIcon :icon="STATUS_FILTER_ICON[status]" :size="13" group="actions" /> {{ STATUS_FILTER_LABEL[status] }}
+            <button type="button" @click="removeStatusFilter(status)" aria-label="Filter entfernen">
+              <AppIcon :icon="ACTION_ICONS.close" :size="12" group="actions" />
+            </button>
           </span>
         </div>
       </div>
@@ -1691,7 +1720,7 @@ async function removeSpot(id: number) {
       <Modal :model-value="showSpotForm" title="Neuer Spot" full-height @update:model-value="(v) => !v && closeSpotForm()">
         <form class="edit-form" @submit.prevent="addSpot">
           <div class="form-image-banner" :style="spotPreviewImage ? { backgroundImage: `url(${spotPreviewImage})` } : {}">
-            <span v-if="!spotPreviewImage" class="placeholder">{{ spotCategoryMeta(spotForm.category).icon }}</span>
+            <AppIcon v-if="!spotPreviewImage" class="placeholder" :size="35" :icon="spotCategoryMeta(spotForm.category).tabler" group="categories" />
           </div>
           <FormField icon="title" label="Titel">
             <input v-model="spotForm.title" type="text" placeholder="Titel" required />
@@ -1704,7 +1733,7 @@ async function removeSpot(id: number) {
           </FormField>
           <label class="checkbox-option">
             <input type="checkbox" v-model="spotForm.is_home" />
-            🏠 Heimat-Seite (z. B. der heimische Flughafen/Bahnhof/Zuhause für Reise-Etappen)
+            <AppIcon :icon="ACTION_ICONS.home" :size="14" group="actions" /> Heimat-Seite (z. B. der heimische Flughafen/Bahnhof/Zuhause für Reise-Etappen)
           </label>
           <template v-if="spotForm.category === 'Unterkunft'">
             <FormField icon="location" label="Adresse">
@@ -1749,15 +1778,17 @@ async function removeSpot(id: number) {
               @blur="checkSpotMapsLink"
             />
           </FormField>
-          <p v-if="spotMapsLinkResolved === true" class="hint success">📍 Standort erkannt – erscheint auf der Karte</p>
+          <p v-if="spotMapsLinkResolved === true" class="hint success">
+            <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort erkannt – erscheint auf der Karte
+          </p>
           <p v-if="spotMapsLinkResolved === false" class="hint">
             Standort wird beim Speichern serverseitig aufgelöst (auch Kurzlinks funktionieren).
           </p>
           <p v-if="spotLocationError" class="hint error">
-            ⚠️ Der Standort konnte auch automatisch nicht ermittelt werden. Bitte tippe unten auf die Karte, um ihn manuell zu setzen.
+            <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Der Standort konnte auch automatisch nicht ermittelt werden. Bitte tippe unten auf die Karte, um ihn manuell zu setzen.
           </p>
           <button type="button" class="secondary picker-toggle" @click="spotPickerOpen = !spotPickerOpen">
-            📍 Standort manuell setzen {{ spotPickerOpen ? '▲' : '▼' }}
+            <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort manuell setzen {{ spotPickerOpen ? '▲' : '▼' }}
           </button>
           <LocationPicker
             v-if="spotPickerOpen"
@@ -1794,7 +1825,7 @@ async function removeSpot(id: number) {
           :ref="(el) => setNavItemRef(grp.category, el)"
           @click="scrollToCategory(grp.category)"
         >
-          <span class="category-nav-icon">{{ grp.icon }}</span>
+          <AppIcon class="category-nav-icon" :icon="grp.iconDef" group="categories" />
           <span class="category-nav-label">{{ grp.category }}</span>
         </button>
         <span
@@ -1836,7 +1867,9 @@ async function removeSpot(id: number) {
           @show-on-map="drawers.openMapForExcursion(grp.excursion.id)"
           @edit-station-spot="startEditSpot"
         />
-        <h3 v-else class="category-heading" :ref="(el) => setCategoryRef(grp.category, el)">{{ grp.icon }} {{ grp.category }}</h3>
+        <h3 v-else class="category-heading" :ref="(el) => setCategoryRef(grp.category, el)">
+          <AppIcon :icon="grp.iconDef" group="categories" /> {{ grp.category }}
+        </h3>
         <!-- Tour-Gruppe: eingerückte, per gestrichelter Linie verbundene vertikale Liste statt des
              normalen Karten-Grids (siehe .tour-station-list unten) - die Reihenfolge entspricht
              spotGroups' Sortierung nach der echten Tour-Reihenfolge (spot_ids), macht den Rundgang
@@ -1899,7 +1932,7 @@ async function removeSpot(id: number) {
       >
         <form class="edit-form" @submit.prevent="submitEditSpot">
           <div class="form-image-banner" :style="editSpotPreviewImage ? { backgroundImage: `url(${editSpotPreviewImage})` } : {}">
-            <span v-if="!editSpotPreviewImage" class="placeholder">{{ spotCategoryMeta(editSpotForm.category).icon }}</span>
+            <AppIcon v-if="!editSpotPreviewImage" class="placeholder" :size="35" :icon="spotCategoryMeta(editSpotForm.category).tabler" group="categories" />
           </div>
           <FormField icon="title" label="Titel">
             <input v-model="editSpotForm.title" type="text" placeholder="Titel" required />
@@ -1912,7 +1945,7 @@ async function removeSpot(id: number) {
           </FormField>
           <label class="checkbox-option">
             <input type="checkbox" v-model="editSpotForm.is_home" />
-            🏠 Heimat-Seite (z. B. der heimische Flughafen/Bahnhof/Zuhause für Reise-Etappen)
+            <AppIcon :icon="ACTION_ICONS.home" :size="14" group="actions" /> Heimat-Seite (z. B. der heimische Flughafen/Bahnhof/Zuhause für Reise-Etappen)
           </label>
           <template v-if="editSpotForm.category === 'Unterkunft'">
             <FormField icon="location" label="Adresse">
@@ -1957,15 +1990,17 @@ async function removeSpot(id: number) {
               @blur="checkEditSpotMapsLink"
             />
           </FormField>
-          <p v-if="editSpotMapsLinkResolved === true" class="hint success">📍 Standort erkannt</p>
+          <p v-if="editSpotMapsLinkResolved === true" class="hint success">
+            <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort erkannt
+          </p>
           <p v-if="editSpotMapsLinkResolved === false" class="hint">
             Standort wird beim Speichern serverseitig aufgelöst (auch Kurzlinks funktionieren).
           </p>
           <p v-if="editSpotLocationError" class="hint error">
-            ⚠️ Der Standort konnte auch automatisch nicht ermittelt werden. Bitte tippe unten auf die Karte, um ihn manuell zu setzen.
+            <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Der Standort konnte auch automatisch nicht ermittelt werden. Bitte tippe unten auf die Karte, um ihn manuell zu setzen.
           </p>
           <button type="button" class="secondary picker-toggle" @click="editSpotPickerOpen = !editSpotPickerOpen">
-            📍 Standort manuell setzen {{ editSpotPickerOpen ? '▲' : '▼' }}
+            <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort manuell setzen {{ editSpotPickerOpen ? '▲' : '▼' }}
           </button>
           <LocationPicker
             v-if="editSpotPickerOpen"

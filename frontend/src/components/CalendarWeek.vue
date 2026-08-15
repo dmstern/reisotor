@@ -5,6 +5,8 @@ import { SCHEDULE_CATEGORY_META } from '../utils/scheduleCategory';
 import { weatherCodeMeta } from '../utils/weather';
 import type { DayWeatherEntry } from '../utils/dayWeather';
 import { toLocalDateString } from '../utils/dateFormat';
+import { ACCOMMODATION_ICON } from '../utils/dashboardTiles';
+import AppIcon from './AppIcon.vue';
 
 interface Day {
   date: string;
@@ -92,13 +94,13 @@ function onDrop(event: DragEvent, date: string) {
             class="day-weather"
             :title="`${entry.label}: ${weatherCodeMeta(entry.weather.weatherCode).label}`"
           >
-            {{ entry.icon }} {{ Math.round(entry.weather.tempMax) }}°
+            <AppIcon :icon="entry.tabler" :size="10" group="categories" /> {{ Math.round(entry.weather.tempMax) }}°
           </span>
         </div>
       </div>
 
       <div class="acc-bar" v-for="acc in day.accommodations" :key="acc.id" :title="acc.title">
-        🛏️ {{ acc.title }}
+        <AppIcon :icon="ACCOMMODATION_ICON" :size="10" group="categories" /> {{ acc.title }}
       </div>
 
       <div class="items">
@@ -123,7 +125,12 @@ function onDrop(event: DragEvent, date: string) {
             aria-hidden="true"
             :checked="entry.done"
           />
-          <template v-else>{{ entry.icon ?? SCHEDULE_CATEGORY_META[entry.category].icon }}</template>
+          <AppIcon
+            v-else
+            :icon="entry.iconDef ?? SCHEDULE_CATEGORY_META[entry.category].tabler"
+            :size="10"
+            group="categories"
+          />
           {{ entry.title }}
         </div>
         <div class="more" v-if="day.entries.length > 3">+{{ day.entries.length - 3 }} mehr</div>

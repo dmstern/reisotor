@@ -1,5 +1,7 @@
+import { IconBeach, IconHome, IconHomeFilled } from '@tabler/icons-vue';
 import type { Spot, Trip } from '../api/types';
 import type { DailyWeather } from './weather';
+import type { IconDef } from './icon';
 
 export interface WeatherLocation {
   key: string;
@@ -11,8 +13,12 @@ export interface DayWeatherEntry {
   key: string;
   label: string;
   icon: string;
+  tabler: IconDef;
   weather: DailyWeather;
 }
+
+const VACATION_PLACE_ICON: IconDef = { id: 'beach', emoji: '🏖️', outline: IconBeach };
+const HOME_ICON: IconDef = { id: 'home', emoji: '🏠', outline: IconHome, filled: IconHomeFilled };
 
 /** Sammelt alle Orte, für die Wetterdaten geladen werden müssen: Zuhause (sofern als Ort mit
  *  is_home hinterlegt und mit Koordinaten), das allgemeine Reiseziel (Urlaub-Stammdaten) und jede
@@ -54,16 +60,16 @@ export function dayWeatherEntries(
   if (accommodation || isVacationRange) {
     if (accommodation) {
       const weather = lookup(`accommodation-${accommodation.id}`);
-      return weather ? [{ key: `accommodation-${accommodation.id}`, label: 'Urlaubsort', icon: '🏖️', weather }] : [];
+      return weather ? [{ key: `accommodation-${accommodation.id}`, label: 'Urlaubsort', icon: '🏖️', tabler: VACATION_PLACE_ICON, weather }] : [];
     }
     const weather = trip ? lookup('destination') : undefined;
-    return weather ? [{ key: 'destination', label: 'Urlaubsort', icon: '🏖️', weather }] : [];
+    return weather ? [{ key: 'destination', label: 'Urlaubsort', icon: '🏖️', tabler: VACATION_PLACE_ICON, weather }] : [];
   }
 
   const entries: DayWeatherEntry[] = [];
   const home = lookup('home');
-  if (home) entries.push({ key: 'home', label: 'Zuhause', icon: '🏠', weather: home });
+  if (home) entries.push({ key: 'home', label: 'Zuhause', icon: '🏠', tabler: HOME_ICON, weather: home });
   const destination = lookup('destination');
-  if (destination) entries.push({ key: 'destination', label: 'Urlaubsort', icon: '🏖️', weather: destination });
+  if (destination) entries.push({ key: 'destination', label: 'Urlaubsort', icon: '🏖️', tabler: VACATION_PLACE_ICON, weather: destination });
   return entries;
 }

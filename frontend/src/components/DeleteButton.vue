@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import AppIcon from './AppIcon.vue';
+import { ACTION_ICONS } from '../utils/actionIcons';
+
 defineProps<{ small?: boolean; disabled?: boolean; floating?: boolean }>();
 defineEmits<{ (e: 'click'): void }>();
 </script>
@@ -15,7 +18,7 @@ defineEmits<{ (e: 'click'): void }>();
     :aria-label="disabled ? 'Löschen nicht möglich' : 'Löschen'"
     @click.stop="$emit('click')"
   >
-    🗑️
+    <AppIcon :icon="ACTION_ICONS.delete" :size="small ? 13 : 15" group="actions" />
   </button>
 </template>
 
