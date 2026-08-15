@@ -301,6 +301,11 @@ function onSpotDrop(event: DragEvent) {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
+  /* Ohne das bleibt .body (Flex-Item in der Zeile neben dem fest breiten .image, siehe
+     .excursion-card oben) auf seiner automatischen, vom Titel bestimmten Mindestbreite stehen - die
+     h3-Ellipsis unten greift erst, wenn .body überhaupt auf die verfügbare Breite schrumpfen darf
+     (gleicher Fix wie SpotCard.vue/DerivedLocationCard.vue's identisches .body). */
+  min-width: 0;
 }
 
 /* min-width:0 + Kürzung statt Umbruch, gleiches Muster wie SpotCard.vue's .head h3 (siehe dortiger

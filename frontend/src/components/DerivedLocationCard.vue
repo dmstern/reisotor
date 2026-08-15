@@ -150,6 +150,11 @@ function onDragStart(event: DragEvent) {
   .body {
     padding: var(--space-2);
     gap: 2px;
+    /* Gleicher Fix wie SpotCard.vue's identisches .body in derselben Kompakt-Zeile: ohne
+       min-width:0 bleibt .body (jetzt Flex-Item in der Zeile statt in der Spalte) auf seiner
+       automatischen, vom langen Titel bestimmten Mindestbreite stehen und ragt seitlich über den
+       Bildschirmrand hinaus, statt der h3-Ellipsis das Kürzen zu erlauben. */
+    min-width: 0;
   }
 
   .excursion-drag-handle {
