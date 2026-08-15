@@ -13,8 +13,11 @@ import type {
   Excursion,
   ExcursionComment,
   ExcursionLike,
+  LocationTrack,
   ScheduleItem,
   Spot,
+  TrackPoint,
+  TrackVisibility,
   TravelItem,
   User,
 } from '../api/types';
@@ -23,6 +26,8 @@ import { useTripStore } from '../stores/trip';
 import { useDrawersStore } from '../stores/drawers';
 import { useExcursionsStore } from '../stores/excursions';
 import { useSpotsStore } from '../stores/spots';
+import { useTracksStore } from '../stores/tracks';
+import { useTrackRecordingStore } from '../stores/trackRecording';
 import { useAuthStore } from '../stores/auth';
 import { useLiveSyncStore } from '../stores/liveSync';
 import { useMapOrientationStore } from '../stores/mapOrientation';
@@ -34,12 +39,14 @@ import { arcRoute, cachedEmojiPin, compassPin, LEAFLET_ATTRIBUTION_PREFIX } from
 import { downloadTiles, estimateTileDownload, formatApproxSize } from '../utils/offlineMapTiles';
 import { formatDate as formatDateShared, toLocalDateString } from '../utils/dateFormat';
 import { excursionStationKeys, resolveStations, type ExcursionStation } from '../utils/excursionStations';
+import { interpolateTrackPosition } from '../utils/trackGeometry';
 import { useIsDesktop } from '../composables/useIsDesktop';
 import SpotDetailDialog from './SpotDetailDialog.vue';
 import MiniStationCard from './MiniStationCard.vue';
 import ExcursionDetailDialog from './ExcursionDetailDialog.vue';
 import TravelDetailDialog from './TravelDetailDialog.vue';
 import CurrentWeatherBadge from './CurrentWeatherBadge.vue';
+import TrackPlayback from './TrackPlayback.vue';
 
 // Die Karte ist ein generischer, reiner Pin-Layer (kein Anlegen/Bearbeiten hier): sie zeigt
 // automatisch jedes Objekt des aktuellen Urlaubs mit hinterlegtem Standort – Unterkunft, Reise
@@ -141,6 +148,8 @@ const tripStore = useTripStore();
 const drawers = useDrawersStore();
 const excursionsStore = useExcursionsStore();
 const spotsStore = useSpotsStore();
+const tracksStore = useTracksStore();
+const trackRecording = useTrackRecordingStore();
 const auth = useAuthStore();
 const liveSync = useLiveSyncStore();
 const mapOrientation = useMapOrientationStore();
@@ -171,6 +180,14 @@ let routesLayer: L.LayerGroup | null = null;
 // dortiger Kommentar) – bei häufigen GPS-Updates würde das unnötig auch alle anderen, unveränderten
 // Punkte (Unterkunft/Reise/Spots) mit flackern lassen.
 let positionsLayer: L.LayerGroup | null = null;
+// Aufgezeichnete Route (Standort-Aufzeichnung, stores/tracks.ts) – eigener Layer statt Teil von
+// routesLayer, da eine echte GPS-Aufzeichnung (durchgezogene Linie) optisch klar von den
+// schematischen, gestrichelten Touren-Bögen (renderRoutes()) unterschieden werden soll. Zusätzlicher
+// eigener Layer nur für den Zeit-Slider-Marker (trackPlaybackLayer): dessen Position ändert sich bei
+// jedem Slider-Tick, ein gemeinsamer Layer mit der Route würde dafür unnötig die ganze Polyline neu
+// zeichnen (gleicher Grund wie bei positionsLayer/markersLayer oben).
+let tracksLayer: L.LayerGroup | null = null;
+let trackPlaybackLayer: L.LayerGroup | null = null;
 // Eigener Standort kommt direkt aus dem lokalen navigator.geolocation-Callback (aktuellster Stand,
 // keine Netzwerk-Latenz) statt aus liveSync.memberPositions – die Store-Seite filtert den eigenen
 // Nutzer dort bewusst heraus (gleiches Muster wie bei onlineUserIds/Präsenz).
@@ -259,6 +276,38 @@ async function toggleShareMenu() {
 async function chooseShareDuration(duration: ShareDuration) {
   shareMenuOpen.value = false;
   await locationSharing.setDuration(duration);
+}
+
+// Standort-Aufzeichnung (stores/trackRecording.ts): läuft (wie die Standort-Freigabe oben) app-weit
+// unabhängig von dieser Kartenansicht – Klick öffnet nur die Start-Auswahl bzw. beendet direkt eine
+// bereits laufende Aufzeichnung, gleiches Teleport-Menü-Muster wie beim Share-Button.
+const recordMenuOpen = ref(false);
+const recordButtonRef = ref<HTMLButtonElement | null>(null);
+const recordMenuStyle = ref({ top: '0px', left: '0px' });
+
+async function toggleRecordMenu() {
+  if (trackRecording.recording) {
+    await trackRecording.stop();
+    return;
+  }
+  recordMenuOpen.value = !recordMenuOpen.value;
+  if (!recordMenuOpen.value) return;
+  await nextTick();
+  const rect = recordButtonRef.value?.getBoundingClientRect();
+  if (!rect) return;
+  recordMenuStyle.value = {
+    top: `${rect.bottom + 6}px`,
+    left: `${Math.max(8, Math.min(rect.left, window.innerWidth - 216))}px`,
+  };
+}
+
+// Ist gerade eine Tour auf der Karte fokussiert (drawers.mapFocusExcursionId, siehe
+// focusedExcursion unten), wird eine neu gestartete Aufzeichnung automatisch mit ihr verknüpft –
+// diskreter, kontextabhängiger Weg für die "optional an eine Tour koppeln"-Anforderung, ohne ein
+// zusätzliches Auswahl-Steuerelement im ohnehin schon kleinen Menü zu brauchen.
+async function chooseRecordVisibility(visibility: TrackVisibility) {
+  recordMenuOpen.value = false;
+  await trackRecording.start({ visibility, excursionId: drawers.mapFocusExcursionId });
 }
 
 // Einmal gestartet, läuft der Kompass unabhängig von weiteren Klicks weiter (kein erneutes
@@ -379,6 +428,21 @@ const focusedExcursion = computed<Excursion | null>(() => {
   if (drawers.mapFocusExcursionId == null) return null;
   return excursionsStore.excursions.find((e) => e.id === drawers.mapFocusExcursionId) ?? null;
 });
+
+// Standort-Aufzeichnung, die gerade auf der Karte gezeigt wird (ExcursionsView.vue's
+// Aufzeichnungen-Liste, drawers.openMapForTrack()) – exklusiv zu den drei Fokus-Arten oben (siehe
+// drawers.ts), gleiches Muster wie focusedExcursion.
+const focusedTrack = computed<LocationTrack | null>(() => {
+  if (drawers.mapFocusTrackId == null) return null;
+  return tracksStore.tracks.find((t) => t.id === drawers.mapFocusTrackId) ?? null;
+});
+const focusedTrackPoints = computed<TrackPoint[]>(() => {
+  if (!focusedTrack.value) return [];
+  return tracksStore.pointsByTrack[focusedTrack.value.id] ?? [];
+});
+// Fortschritt des Zeit-Sliders (TrackPlayback.vue) – lebt hier statt in der Kind-Komponente, damit
+// der Playback-Marker unten (updateTrackPlaybackMarker()) direkt auf denselben Wert reagieren kann.
+const trackPlaybackProgress = ref(0);
 
 // Tages-Fokus (ScheduleView.vue's "🗺️ Tag auf Karte anzeigen"): ALLE Orte dieses Tages – Termine,
 // Reise-Etappen, Unterkunft UND Ausflüge (nicht mehr nur Ausflug-Stationen wie zuvor), in derselben
@@ -662,6 +726,7 @@ function focusCategory(category: string) {
   drawers.mapFocusExcursionId = null;
   drawers.mapFocusDate = null;
   drawers.mapFocusKey = null;
+  drawers.mapFocusTrackId = null;
   const catPoints = filteredPoints.value.filter((p) => p.category === category);
   const latLngs = catPoints.map((p): L.LatLngExpression => [p.lat, p.lng]);
   if (latLngs.length > 1) {
@@ -679,6 +744,7 @@ function fitAll() {
   drawers.mapFocusExcursionId = null;
   drawers.mapFocusDate = null;
   drawers.mapFocusKey = null;
+  drawers.mapFocusTrackId = null;
   const latLngs = filteredPoints.value.map((p): L.LatLngExpression => [p.lat, p.lng]);
   if (latLngs.length > 1) {
     fitBoundsWithCoveredBottom(L.latLngBounds(latLngs));
@@ -694,6 +760,7 @@ function fitVacation() {
   drawers.mapFocusExcursionId = null;
   drawers.mapFocusDate = null;
   drawers.mapFocusKey = null;
+  drawers.mapFocusTrackId = null;
   const latLngs = vacationPoints.value.map((p): L.LatLngExpression => [p.lat, p.lng]);
   if (latLngs.length > 1) {
     fitBoundsWithCoveredBottom(L.latLngBounds(latLngs));
@@ -711,6 +778,7 @@ function fitAccommodations() {
   drawers.mapFocusExcursionId = null;
   drawers.mapFocusDate = null;
   drawers.mapFocusKey = null;
+  drawers.mapFocusTrackId = null;
   const latLngs = accommodationPoints.value.map((p): L.LatLngExpression => [p.lat, p.lng]);
   if (latLngs.length > 1) {
     fitBoundsWithCoveredBottom(L.latLngBounds(latLngs));
@@ -736,6 +804,7 @@ function fitExcursions() {
   drawers.mapFocusExcursionId = null;
   drawers.mapFocusDate = null;
   drawers.mapFocusKey = null;
+  drawers.mapFocusTrackId = null;
   const latLngs = excursionPoints.value.map((p): L.LatLngExpression => [p.lat, p.lng]);
   if (latLngs.length > 1) {
     fitBoundsWithCoveredBottom(L.latLngBounds(latLngs));
@@ -890,6 +959,33 @@ function renderRoutes() {
   }
 }
 
+// Zeichnet die aktuell fokussierte Standort-Aufzeichnung als durchgezogene Linie (echte GPS-Punkte,
+// kein arcRoute()-Bogen wie bei den schematischen Touren-Routen in renderRoutes()) – wird nur bei
+// einem Track-Wechsel/frisch geladenen Punkten neu aufgerufen, nicht bei jedem Zeit-Slider-Tick
+// (dafür updateTrackPlaybackMarker() unten).
+function renderTracks() {
+  if (!map || !tracksLayer) return;
+  tracksLayer.clearLayers();
+  const trackPts = focusedTrackPoints.value;
+  if (trackPts.length < 2) return;
+  const coords: L.LatLngExpression[] = trackPts.map((p) => [p.lat, p.lng]);
+  L.polyline(coords, { color: '#2f6fed', weight: 4, opacity: 0.85 }).addTo(tracksLayer);
+  fitBoundsWithCoveredBottom(L.latLngBounds(coords));
+  updateTrackPlaybackMarker();
+}
+
+// Bewegt den Zeit-Slider-Marker (TrackPlayback.vue's v-model:progress) entlang der aufgezeichneten
+// Route – eigener, leichtgewichtiger Layer statt Teil von tracksLayer, da sich der Fortschritt bei
+// laufender Wiedergabe mehrfach pro Sekunde ändert und dafür nicht jedes Mal die ganze Polyline neu
+// gezeichnet werden soll (gleicher Grund wie bei positionsLayer/markersLayer oben).
+function updateTrackPlaybackMarker() {
+  if (!map || !trackPlaybackLayer) return;
+  trackPlaybackLayer.clearLayers();
+  const pos = interpolateTrackPosition(focusedTrackPoints.value, trackPlaybackProgress.value);
+  if (!pos) return;
+  L.marker([pos.lat, pos.lng], { icon: cachedEmojiPin('📍', '#2f6fed'), zIndexOffset: 900 }).addTo(trackPlaybackLayer);
+}
+
 // Zeichnet den eigenen (pulsierenden) und die Standort-Marker der anderen gerade auf der Karte
 // aktiven Mitglieder (liveSync.memberPositions) – eigener Layer statt Teil von renderMarkers(),
 // siehe Kommentar bei positionsLayer oben.
@@ -952,6 +1048,7 @@ async function jumpToMyLocation() {
   drawers.mapFocusExcursionId = null;
   drawers.mapFocusDate = null;
   drawers.mapFocusKey = null;
+  drawers.mapFocusTrackId = null;
   centerOnPoint([ownPosition.value.lat, ownPosition.value.lng], 16);
 }
 
@@ -1016,9 +1113,12 @@ onMounted(async () => {
   routesLayer = L.layerGroup().addTo(map);
   markersLayer = L.layerGroup().addTo(map);
   positionsLayer = L.layerGroup().addTo(map);
+  tracksLayer = L.layerGroup().addTo(map);
+  trackPlaybackLayer = L.layerGroup().addTo(map);
   renderMarkers();
   renderRoutes();
   renderPositions();
+  renderTracks();
 
   // Hält currentBearing (für den Richtungskegel-Ausgleich in renderPositions()) unabhängig von der
   // Drehquelle synchron - sowohl bei automatischer Drehung (handleOrientation()) als auch bei einer
@@ -1157,6 +1257,28 @@ watch(
 // Standort-Updates anderer Mitglieder (liveSync.ts's position/positions-SSE-Events) – deep, da
 // memberPositions ein reaktives Objekt ist, das in-place mutiert wird (kein Array-Austausch).
 watch(() => liveSync.memberPositions, () => renderPositions(), { deep: true });
+
+// Fokussierte Aufzeichnung wechselt (Klick in ExcursionsView.vue's Aufzeichnungen-Liste, siehe
+// drawers.openMapForTrack()) – Punkte werden erst on-demand geladen (tracksStore.pointsByTrack ist
+// zunächst leer für einen frisch fokussierten Track), Slider startet jeweils von vorn.
+watch(
+  () => drawers.mapFocusTrackId,
+  async (trackId) => {
+    trackPlaybackProgress.value = 0;
+    renderTracks();
+    if (trackId != null && !tracksStore.pointsByTrack[trackId]) {
+      await tracksStore.loadPoints(trackId);
+      renderTracks();
+    }
+  },
+);
+// Punkte können auch eintreffen, ohne dass sich mapFocusTrackId selbst ändert (z. B. erneuter
+// Fokus auf einen zuvor schon einmal geladenen, dann aber aktualisierten Track) – reagiert auf die
+// tatsächliche Punkte-Anzahl statt nur auf die Track-id.
+watch(() => focusedTrackPoints.value.length, () => renderTracks());
+// Zeit-Slider (TrackPlayback.vue) – nur der leichtgewichtige Marker wird bewegt, nicht die ganze
+// Route neu gezeichnet (siehe updateTrackPlaybackMarker()-Kommentar).
+watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
 </script>
 
 <template>
@@ -1264,6 +1386,20 @@ watch(() => liveSync.memberPositions, () => renderPositions(), { deep: true });
       >
         📡
       </button>
+      <!-- Standort-Aufzeichnung (stores/trackRecording.ts): läuft ebenfalls unabhängig von dieser
+           Kartenansicht weiter - Klick öffnet bei Nicht-Aufzeichnung nur die Start-Auswahl, beendet
+           bei laufender Aufzeichnung direkt (kein Menü nötig). -->
+      <button
+        ref="recordButtonRef"
+        type="button"
+        class="fit-btn record-btn"
+        :class="{ active: trackRecording.recording }"
+        :title="trackRecording.recording ? 'Aufzeichnung beenden' : 'Standort aufzeichnen'"
+        :aria-label="trackRecording.recording ? 'Aufzeichnung beenden' : 'Standort aufzeichnen'"
+        @click="toggleRecordMenu"
+      >
+        {{ trackRecording.recording ? '⏹️' : '⏺️' }}
+      </button>
       <!-- Auf Desktop steht dasselbe Wetter bereits ausführlicher in der Kalender-Schublade (siehe
            CalendarWeek.vue) - die ist dort permanent neben der Karte gemountet. Auf Mobil ist der
            Kalender stattdessen eine eigene Route (nie gleichzeitig mit der Karte sichtbar), ohne
@@ -1284,7 +1420,21 @@ watch(() => liveSync.memberPositions, () => renderPositions(), { deep: true });
             <button type="button" @click="chooseShareDuration('forever')">♾️ Dauerhaft</button>
           </div>
         </template>
+        <template v-if="recordMenuOpen">
+          <div class="picker-backdrop" @click="recordMenuOpen = false"></div>
+          <div class="picker-menu" :style="recordMenuStyle">
+            <p v-if="focusedExcursion" class="picker-menu-hint">
+              🔗 wird an „{{ focusedExcursion.title }}" gekoppelt
+            </p>
+            <button type="button" @click="chooseRecordVisibility('private')">🔒 Privat aufzeichnen</button>
+            <button type="button" @click="chooseRecordVisibility('shared')">🤝 Geteilt aufzeichnen</button>
+          </div>
+        </template>
       </Teleport>
+      <div class="tile-download-pill" v-if="trackRecording.startError">
+        ⚠️ {{ trackRecording.startError }}
+        <button type="button" class="card-action-btn" @click="trackRecording.startError = null">✕</button>
+      </div>
       <div class="tile-download-pill" v-if="tileDownloadState === 'downloading'">
         🔄 Lädt Kartenkacheln… {{ tileDownloadProgress.done }}/{{ tileDownloadProgress.total }}
       </div>
@@ -1397,6 +1547,25 @@ watch(() => liveSync.memberPositions, () => renderPositions(), { deep: true });
           </div>
         </template>
       </div>
+    </div>
+
+    <div class="card focus-spot-list" v-else-if="focusedTrack">
+      <div class="focus-spot-list-header">
+        <h3 class="focus-spot-list-title">
+          🧭 {{ focusedTrack.title || `Aufzeichnung vom ${formatDate(focusedTrack.started_at.slice(0, 10))}` }}
+        </h3>
+        <button
+          type="button"
+          class="focus-spot-list-close"
+          aria-label="Aufzeichnung-Fokus schließen"
+          title="Aufzeichnung-Fokus schließen"
+          @click="drawers.mapFocusTrackId = null"
+        >
+          ✕
+        </button>
+      </div>
+      <p v-if="focusedTrackPoints.length < 2" class="focus-spot-list-subtitle">Lädt Route…</p>
+      <TrackPlayback v-else :points="focusedTrackPoints" v-model:progress="trackPlaybackProgress" />
     </div>
     </Teleport>
 
@@ -1558,19 +1727,23 @@ watch(() => liveSync.memberPositions, () => renderPositions(), { deep: true });
   top: calc(var(--fit-btn-inset) + 7 * var(--fit-btn-step));
 }
 
-/* Direkt unterhalb des letzten .fit-btn (.share-location-btn) - der einzige auf Mobil noch freie
-   Bereich: oben links ist bereits durch .focus-banner/.tile-download-pill/.focus-spot-list belegt
-   (bedingt sichtbar), .day-strip unten durch den Tage-Streifen. */
+.record-btn {
+  top: calc(var(--fit-btn-inset) + 8 * var(--fit-btn-step));
+}
+
+/* Direkt unterhalb des letzten .fit-btn (.record-btn) - der einzige auf Mobil noch freie Bereich:
+   oben links ist bereits durch .focus-banner/.tile-download-pill/.focus-spot-list belegt (bedingt
+   sichtbar), .day-strip unten durch den Tage-Streifen. */
 .current-weather-slot {
   position: absolute;
-  top: calc(var(--fit-btn-inset) + 8 * var(--fit-btn-step));
+  top: calc(var(--fit-btn-inset) + 9 * var(--fit-btn-step));
   right: var(--fit-btn-inset);
   z-index: 1000;
 }
 
-/* Gleiche Akzentfarbe wie .orientation-btn.active - solange die Freigabe läuft, egal für welche
-   Dauer. */
-.share-location-btn.active {
+/* Gleiche Akzentfarbe wie .orientation-btn.active - solange die Freigabe/Aufzeichnung läuft. */
+.share-location-btn.active,
+.record-btn.active {
   background: var(--color-primary);
   border-color: var(--color-primary);
 }
@@ -1617,6 +1790,14 @@ watch(() => liveSync.memberPositions, () => renderPositions(), { deep: true });
 .picker-menu button.active {
   background: var(--color-primary);
   color: white;
+}
+
+.picker-menu-hint {
+  margin: 0 0 2px;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  white-space: normal;
 }
 
 /* Eigene Zeile unterhalb der Fokus-Banner-Position (links, wie .focus-banner) statt direkt neben

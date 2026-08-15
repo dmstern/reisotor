@@ -45,6 +45,10 @@ export const useDrawersStore = defineStore('drawers', () => {
   // zusammen als eine Route auf der Karte gezeigt werden – ebenfalls exklusiv zu den beiden
   // anderen Fokus-Arten (siehe focusMapOnDate).
   const mapFocusDate = ref<string | null>(null);
+  // Standort-Aufzeichnung, deren aufgezeichnete Route + Zeit-Slider gerade auf der Karte gezeigt
+  // wird (ExcursionsView.vue's Aufzeichnungen-Liste) – exklusiv zu den drei Fokus-Arten oben,
+  // gleiches Muster wie mapFocusExcursionId.
+  const mapFocusTrackId = ref<number | null>(null);
   const calendarWidth = ref(loadWidth(CALENDAR_WIDTH_KEY));
   // Ob die Kalender-Schublade gerade als Vollbild-Overlay maximiert ist (Drawer.vue). Zentral statt
   // lokal im Drawer gehalten (bewusst nicht in localStorage persistiert, flüchtiger UI-Zustand) –
@@ -116,6 +120,7 @@ export const useDrawersStore = defineStore('drawers', () => {
     mapFocusKey.value = key;
     mapFocusExcursionId.value = null;
     mapFocusDate.value = null;
+    mapFocusTrackId.value = null;
     ensureMapRoute();
   }
 
@@ -123,6 +128,7 @@ export const useDrawersStore = defineStore('drawers', () => {
     mapFocusExcursionId.value = excursionId;
     mapFocusKey.value = null;
     mapFocusDate.value = null;
+    mapFocusTrackId.value = null;
     ensureMapRoute();
   }
 
@@ -133,6 +139,17 @@ export const useDrawersStore = defineStore('drawers', () => {
     mapFocusDate.value = date;
     mapFocusKey.value = null;
     mapFocusExcursionId.value = null;
+    mapFocusTrackId.value = null;
+    ensureMapRoute();
+  }
+
+  // Zeigt eine aufgezeichnete Route (ExcursionsView.vue's Aufzeichnungen-Liste) auf der Karte,
+  // inkl. Zeit-Slider/Playback (TripMap.vue) – gleiches Muster wie openMapForExcursion.
+  function openMapForTrack(trackId: number) {
+    mapFocusTrackId.value = trackId;
+    mapFocusKey.value = null;
+    mapFocusExcursionId.value = null;
+    mapFocusDate.value = null;
     ensureMapRoute();
   }
 
@@ -153,6 +170,7 @@ export const useDrawersStore = defineStore('drawers', () => {
     mapFocusKey,
     mapFocusExcursionId,
     mapFocusDate,
+    mapFocusTrackId,
     calendarWidth,
     maximizedSide,
     locationsVersion,
@@ -160,6 +178,7 @@ export const useDrawersStore = defineStore('drawers', () => {
     openCalendar,
     openMapAt,
     openMapForExcursion,
+    openMapForTrack,
     focusMapOnDate,
     maximize,
     restoreMaximized,

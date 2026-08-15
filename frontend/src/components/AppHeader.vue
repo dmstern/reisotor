@@ -7,6 +7,7 @@ import { useIsDesktop } from '../composables/useIsDesktop';
 import TripSwitcher from './TripSwitcher.vue';
 import PresenceAvatars from './PresenceAvatars.vue';
 import OfflineIndicator from './OfflineIndicator.vue';
+import TrackRecordingIndicator from './TrackRecordingIndicator.vue';
 import PwaUpdatePrompt from './PwaUpdatePrompt.vue';
 import LoadingIndicator from './LoadingIndicator.vue';
 import ThemeModeSelect from './ThemeModeSelect.vue';
@@ -62,6 +63,7 @@ const isNonProd = window.location.hostname !== 'reise.ruebenherz.de';
          auf schmalen Viewports vom TripSwitcher überlagert statt danebengestellt wurde. -->
     <div class="status-row">
       <OfflineIndicator />
+      <TrackRecordingIndicator />
       <PwaUpdatePrompt />
     </div>
     <!-- Bewusst AUSSERHALB von .status-row: LoadingIndicator.vue rendert seit dem Wechsel auf einen

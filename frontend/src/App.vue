@@ -6,6 +6,7 @@ import { useTripStore, type TripFormData } from './stores/trip';
 import { useDrawersStore } from './stores/drawers';
 import { useLiveSyncStore } from './stores/liveSync';
 import { useLocationSharingStore } from './stores/locationSharing';
+import { useTrackRecordingStore } from './stores/trackRecording';
 import { useIsDesktop } from './composables/useIsDesktop';
 import { SECTION_ICONS } from './utils/sectionIcons';
 import { prefetchTripDataForOffline } from './utils/offlinePrefetch';
@@ -29,6 +30,10 @@ const liveSync = useLiveSyncStore();
 // - hier instanziiert, damit ihr watch(currentTripId) unabhängig davon greift, welche Unteransicht
 // gerade aktiv ist, exakt wie liveSync oben.
 useLocationSharingStore();
+// Standort-Aufzeichnung (stores/trackRecording.ts) läuft ebenso app-weit unabhängig von der
+// aktuellen View - hier instanziiert, damit resume() nach einem Reload/App-Neustart mit noch
+// laufender Aufzeichnung greift, exakt wie locationSharing oben.
+useTrackRecordingStore();
 const showNav = computed(() => route.name !== 'login');
 
 watch(

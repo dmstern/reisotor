@@ -1,0 +1,78 @@
+import { test, expect, type Page } from '@playwright/test';
+import { VIEWPORTS } from './helpers/layout.js';
+
+// Regressionsnetz für die Standort-Aufzeichnung (backend/src/routes/tracks.ts,
+// stores/trackRecording.ts/stores/tracks.ts, TripMap.vue/TrackPlayback.vue): Start über den
+// Karten-Button, laufender Header-Indikator, Stop, Erscheinen in ExcursionsView.vue's
+// Aufzeichnungen-Liste und Playback-Steuerung beim Fokussieren auf der Karte. Gleiches Muster wie
+// location-sharing.spec.ts (Picker-Menü) und live-location.spec.ts (Geolocation-Mock/desktop
+// Viewport wegen des unteren Spots-Bottom-Sheets, das sonst die Button-Spalte verdeckt).
+test.use({
+  geolocation: { latitude: 48.2, longitude: 16.37 },
+  permissions: ['geolocation'],
+  viewport: VIEWPORTS.desktop,
+});
+
+async function closeDrawerIfOpen(page: Page, label: string) {
+  const closeBtn = page.locator(`.close-drawer-btn[aria-label="Schließen: ${label}"]`);
+  if ((await closeBtn.count()) > 0 && (await closeBtn.isVisible())) {
+    await closeBtn.click();
+  }
+}
+
+test.describe('Standort-Aufzeichnung', () => {
+  test('Start auf der Karte, laufender Header-Indikator, Stop, Liste + Playback', async ({ page, context }) => {
+    await page.goto('/excursions');
+    await closeDrawerIfOpen(page, 'Kalender');
+
+    const recordBtn = page.locator('.record-btn');
+    await expect(recordBtn).toBeVisible({ timeout: 10_000 });
+    await expect(recordBtn).not.toHaveClass(/active/);
+
+    await recordBtn.click();
+    const menu = page.locator('.picker-menu', { hasText: 'Privat aufzeichnen' });
+    await expect(menu).toBeVisible();
+    await menu.getByRole('button', { name: '🔒 Privat aufzeichnen' }).click();
+
+    // Läuft: Button + app-weiter Header-Indikator zeigen den aktiven Zustand.
+    await expect(recordBtn).toHaveClass(/active/);
+    const recordingPill = page.locator('.recording-pill');
+    await expect(recordingPill).toBeVisible();
+
+    // Ein zweiter GPS-Fix an einer anderen Position, damit die Aufzeichnung mindestens zwei
+    // unterscheidbare Punkte hat (Playback/TrackPlayback.vue braucht >= 2 Punkte, siehe dortiges
+    // v-if) - ein einzelner, statischer Mock-Standort würde watchPosition sonst nur einmal auslösen.
+    await page.waitForTimeout(500);
+    await context.setGeolocation({ latitude: 48.21, longitude: 16.38 });
+    await page.waitForTimeout(500);
+
+    // Stop flusht den Punkte-Puffer sofort (kein Warten auf den periodischen 15s-Flush nötig, siehe
+    // stores/trackRecording.ts's stop()).
+    await recordBtn.click();
+    await expect(recordBtn).not.toHaveClass(/active/, { timeout: 10_000 });
+    await expect(recordingPill).not.toBeVisible();
+
+    // Aufzeichnungen-Liste in ExcursionsView.vue.
+    const tracksToggle = page.locator('.tracks-toggle');
+    await expect(tracksToggle).toBeVisible({ timeout: 10_000 });
+    await expect(tracksToggle).toContainText('(1)');
+    await tracksToggle.click();
+
+    const trackRow = page.locator('.track-row').first();
+    await expect(trackRow).toBeVisible();
+    await expect(trackRow.locator('.track-row-meta')).toContainText('⏱️');
+
+    // Klick zeigt die Route + den Zeit-Slider auf der Karte (analog zum Tour-Fokus).
+    await trackRow.locator('.track-row-main').click();
+    const focusCard = page.locator('.focus-spot-list', { hasText: 'Aufzeichnung' });
+    await expect(focusCard).toBeVisible();
+    await expect(focusCard.locator('.track-playback')).toBeVisible({ timeout: 10_000 });
+    await expect(focusCard.locator('.playback-slider')).toBeVisible();
+
+    // Sichtbarkeits-Umschalter: von privat (Standard) auf geteilt.
+    const visibilityBtn = trackRow.locator('.track-icon-btn').first();
+    await expect(visibilityBtn).toHaveText('🔒');
+    await visibilityBtn.click();
+    await expect(visibilityBtn).toHaveText('🤝');
+  });
+});

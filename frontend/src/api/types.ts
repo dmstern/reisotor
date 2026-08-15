@@ -142,6 +142,36 @@ export interface ExcursionComment {
   created_at: string;
 }
 
+/** 'private' (Standard beim Start) ist nur für die aufzeichnende Person sichtbar, 'shared' für alle
+ *  Trip-Mitglieder (gleiches 🔒/🤝-Konzept wie private/geteilte Budget-Töpfe, siehe DESIGN.md). */
+export type TrackVisibility = 'private' | 'shared';
+
+/** Eine Standort-Aufzeichnungs-Sitzung ("wo war ich wirklich?", stores/trackRecording.ts) – im
+ *  Gegensatz zum rein ephemeren Live-Standort (stores/liveSync.ts's memberPositions) tatsächlich
+ *  persistiert, siehe backend/src/routes/tracks.ts. */
+export interface LocationTrack {
+  id: number;
+  trip_id: number;
+  user_id: number;
+  excursion_id: number | null;
+  title: string | null;
+  visibility: TrackVisibility;
+  started_at: string;
+  /** null = Aufzeichnung läuft noch. */
+  ended_at: string | null;
+  /** Nur clientseitig gesetzt, siehe PackingItem._pending oben. */
+  _pending?: boolean;
+}
+
+export interface TrackPoint {
+  id: number;
+  track_id: number;
+  lat: number;
+  lng: number;
+  recorded_at: string;
+  accuracy: number | null;
+}
+
 /** Rolle des Reise-Eintrags: für die Karten-Fokussierung auf den Urlaubsort ("Urlaubsfokus")
  *  muss die App wissen, welche Seite (Von/Nach) zuhause ist und welche zum Urlaubsziel gehört. */
 export type TravelRole = 'arrival' | 'departure' | 'onward';
