@@ -39,6 +39,7 @@ export function buildDayStations(
         id: item.id,
         title: item.title,
         icon: meta.icon,
+        tabler: meta.tabler,
         color: meta.color,
         category: meta.label,
         imageUrl: null,

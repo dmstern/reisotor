@@ -1,9 +1,21 @@
 <script setup lang="ts">
+import { computed } from 'vue';
+import { FORM_FIELD_ICONS, type FormFieldIconKey } from '../utils/formFieldIcons';
+import type { IconDef } from '../utils/icon';
+import AppIcon from './AppIcon.vue';
+
 // Einheitlicher Feld-Wrapper für Anlege-/Bearbeiten-Formulare: Icon + kleines Label bleiben auch
 // dann sichtbar, wenn das Feld schon einen Wert trägt (reine Beschriftung per placeholder
 // verschwindet dann, siehe CLAUDE.md-Feedback dazu) – Icon/Label sind rein zusätzlich, das
 // Eingabefeld selbst behält wie bisher sein placeholder als Beispiel-/Hinweistext.
-defineProps<{ icon?: string; label: string }>();
+// icon: entweder ein Konzept-Key aus FORM_FIELD_ICONS (Normalfall) oder ein fertiges IconDef für
+// Einzelfälle ohne geteiltes Konzept - bewusst kein roher Emoji-String mehr (siehe DESIGN.md
+// "Formularfelder"), damit jede Aufrufstelle zwischen Emoji/Tabler-Icons umschaltbar bleibt.
+const props = defineProps<{ icon?: FormFieldIconKey | IconDef; label: string }>();
+const resolvedIcon = computed<IconDef | undefined>(() => {
+  if (!props.icon) return undefined;
+  return typeof props.icon === 'string' ? FORM_FIELD_ICONS[props.icon] : props.icon;
+});
 </script>
 
 <template>
@@ -14,7 +26,7 @@ defineProps<{ icon?: string; label: string }>();
        Labeltexts. -->
   <div class="form-field">
     <span class="form-field-label">
-      <span v-if="icon" class="form-field-icon" aria-hidden="true">{{ icon }}</span>
+      <AppIcon v-if="resolvedIcon" class="form-field-icon" :size="15" :icon="resolvedIcon" />
       {{ label }}
     </span>
     <slot />

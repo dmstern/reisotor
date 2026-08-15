@@ -1,4 +1,7 @@
 import L from 'leaflet';
+import { useIconStyleStore } from '../stores/iconStyle';
+import { tablerMarkerSvg } from './tablerMarkerSvg';
+import type { IconDef } from './icon';
 
 // Leaflets Default-Attribution-Prefix stellt der "Leaflet"-Verlinkung eine kleine
 // Ukraine-Flaggen-SVG voran (Control.Attribution.js, seit 2022 aus Solidarität fest einprogrammiert,
@@ -9,6 +12,28 @@ import L from 'leaflet';
 export const LEAFLET_ATTRIBUTION_PREFIX =
   '<a href="https://leafletjs.com" title="A JavaScript library for interactive maps">Leaflet</a>';
 
+// Ein Marker-Glyph ist entweder ein reines Emoji (String - z. B. das frei gewählte Nutzer-Avatar,
+// siehe TripMap.vue's compassPin(auth.user.avatar, ...)/cachedEmojiPin(user.avatar, ...) - bleibt
+// IMMER Emoji, unabhängig von der iconStyle-Einstellung, da es Identitätsdaten sind, kein festes
+// Konzept mit Tabler-Äquivalent) oder ein IconDef (Kategorie-/Ortsmarker aus den Registries, siehe
+// utils/icon.ts) - dann style-abhängig entweder Emoji oder eine rohe Tabler-SVG (tablerMarkerSvg.ts,
+// kein Fallback-Icon kuratiert -> bleibt ebenfalls Emoji).
+export type MarkerGlyph = IconDef | string;
+
+function markerGlyphHtml(icon: MarkerGlyph, sizePx: number): string {
+  if (typeof icon === 'string') {
+    return `<span style="font-size:${sizePx}px;line-height:1;">${icon}</span>`;
+  }
+  const iconStyle = useIconStyleStore();
+  if (iconStyle.style === 'emoji') {
+    return `<span style="font-size:${sizePx}px;line-height:1;">${icon.emoji}</span>`;
+  }
+  const svg = tablerMarkerSvg(icon.id, iconStyle.variant, sizePx);
+  return svg
+    ? `<span style="color:#fff;display:inline-flex;width:${sizePx}px;height:${sizePx}px;">${svg}</span>`
+    : `<span style="font-size:${sizePx}px;line-height:1;">${icon.emoji}</span>`;
+}
+
 // Aus TripMap.vue extrahiert: Marker-Icon- und Bogen-Routen-Helfer, die jetzt sowohl von der
 // großen Karte als auch von der kleinen Ausflug-Mini-Karte (ExcursionMiniMap.vue) gebraucht
 // werden – ein gemeinsamer Icon-Cache spart auf dem ressourcenschwachen Pi 2 unnötige
@@ -16,14 +41,14 @@ export const LEAFLET_ATTRIBUTION_PREFIX =
 // `large`: dezent vergrößerte Variante für den aktuell hervorgehobenen Punkt (siehe
 // TripMap.vue's drawers.mapFocusKey-Kopplung mit der Spots-/Detail-Ansicht) – eigener
 // Cache-Eintrag pro Größe, da L.DivIcon-Instanzen unveränderlich sind.
-export function emojiPin(emoji: string, color: string, large = false) {
+export function emojiPin(icon: MarkerGlyph, color: string, large = false) {
   const size = large ? 54 : 32;
   const fontSize = large ? 25 : 15;
   return L.divIcon({
     html: `<div style="width:${size}px;height:${size}px;border-radius:50% 50% 50% 0;background:${color};
       transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;
       box-shadow:0 2px 6px rgba(0,0,0,.35);border:2px solid white;">
-      <span style="transform:rotate(45deg);font-size:${fontSize}px;line-height:1;">${emoji}</span></div>`,
+      <span style="transform:rotate(45deg);">${markerGlyphHtml(icon, fontSize)}</span></div>`,
     className: '',
     iconSize: [size, size],
     iconAnchor: [size / 2, size],
@@ -32,21 +57,23 @@ export function emojiPin(emoji: string, color: string, large = false) {
 }
 
 const iconCache = new Map<string, L.DivIcon>();
-export function cachedEmojiPin(emoji: string, color: string, large = false) {
-  const key = `${emoji}|${color}|${large}`;
-  let icon = iconCache.get(key);
-  if (!icon) {
-    icon = emojiPin(emoji, color, large);
-    iconCache.set(key, icon);
+export function cachedEmojiPin(icon: MarkerGlyph, color: string, large = false) {
+  const iconStyle = useIconStyleStore();
+  const identity = typeof icon === 'string' ? `emoji:${icon}` : `def:${icon.id}`;
+  const key = `${identity}|${iconStyle.style}|${iconStyle.variant}|${color}|${large}`;
+  let cached = iconCache.get(key);
+  if (!cached) {
+    cached = emojiPin(icon, color, large);
+    iconCache.set(key, cached);
   }
-  return icon;
+  return cached;
 }
 
 // Für den eigenen Standort auf der Karte (TripMap.vue, Live-Standort): derselbe Pin wie emojiPin(),
 // zusätzlich von einem pulsierenden Ring umgeben (CSS-Animation "map-pulse-ring", siehe TripMap.vue's
 // zweiter, bewusst NICHT scoped-er <style>-Block – Leaflets dynamisch per innerHTML eingefügtes
 // Markup bekommt keine Vue-Scoping-Attribute, ein @keyframes-Regelsatz muss daher global gelten).
-export function pulsingEmojiPin(emoji: string, color: string) {
+export function pulsingEmojiPin(icon: MarkerGlyph, color: string) {
   const size = 32;
   return L.divIcon({
     html: `<div style="position:relative;width:${size}px;height:${size}px;">
@@ -54,7 +81,7 @@ export function pulsingEmojiPin(emoji: string, color: string) {
       <div style="position:relative;width:${size}px;height:${size}px;border-radius:50% 50% 50% 0;background:${color};
         transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;
         box-shadow:0 2px 6px rgba(0,0,0,.35);border:2px solid white;">
-        <span style="transform:rotate(45deg);font-size:15px;line-height:1;">${emoji}</span>
+        <span style="transform:rotate(45deg);">${markerGlyphHtml(icon, 15)}</span>
       </div>
     </div>`,
     className: '',
@@ -73,7 +100,7 @@ export function pulsingEmojiPin(emoji: string, color: string) {
 // optional - ohne Kompasszugriff (kein Sensor, Berechtigung verweigert, Desktop ohne Gerätesensor)
 // bleibt der Kegel schlicht weg, nur der Kreis bleibt sichtbar. Pulsierender Ring (.map-pulse-ring,
 // siehe der globale <style>-Block in TripMap.vue) bleibt wie zuvor bei pulsingEmojiPin() erhalten.
-export function compassPin(emoji: string, color: string, headingDeg: number | null) {
+export function compassPin(icon: MarkerGlyph, color: string, headingDeg: number | null) {
   const size = 64;
   const dotSize = 34;
   const half = size / 2;
@@ -100,7 +127,7 @@ export function compassPin(emoji: string, color: string, headingDeg: number | nu
       <div style="position:absolute;left:50%;top:50%;width:${dotSize}px;height:${dotSize}px;
         margin:${-dotSize / 2}px 0 0 ${-dotSize / 2}px;border-radius:50%;background:${color};
         border:3px solid white;box-shadow:0 1px 5px rgba(0,0,0,.4);
-        display:flex;align-items:center;justify-content:center;font-size:16px;line-height:1;">${emoji}</div>
+        display:flex;align-items:center;justify-content:center;">${markerGlyphHtml(icon, 16)}</div>
     </div>`,
     className: '',
     iconSize: [size, size],

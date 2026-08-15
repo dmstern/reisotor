@@ -28,7 +28,7 @@ function render() {
     if (station.lat == null || station.lng == null) continue;
     const latlng: L.LatLngExpression = [station.lat, station.lng];
     coords.push(latlng);
-    L.marker(latlng, { icon: cachedEmojiPin(station.icon, station.color) }).addTo(markersLayer);
+    L.marker(latlng, { icon: cachedEmojiPin(station.tabler, station.color) }).addTo(markersLayer);
   }
 
   if (coords.length >= 2) {

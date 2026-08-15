@@ -27,6 +27,8 @@ import PasswordInput from '../components/PasswordInput.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import ThemeModeSelect from '../components/ThemeModeSelect.vue';
 import SegmentedToggle from '../components/SegmentedToggle.vue';
+import AppIcon from '../components/AppIcon.vue';
+import IconStyleSettings from '../components/IconStyleSettings.vue';
 import FeedbackDialog from '../components/FeedbackDialog.vue';
 
 const auth = useAuthStore();
@@ -74,13 +76,13 @@ function navLinkLabel(key: string) {
   return NAV_LINKS.find((l) => l.key === key)?.label ?? key;
 }
 function navLinkIcon(key: string) {
-  return NAV_LINKS.find((l) => l.key === key)?.icon ?? '';
+  return NAV_LINKS.find((l) => l.key === key)?.icon ?? null;
 }
 function dashboardTileLabel(key: string) {
   return DASHBOARD_TILES.find((t) => t.key === key)?.label ?? key;
 }
 function dashboardTileIcon(key: string) {
-  return DASHBOARD_TILES.find((t) => t.key === key)?.icon ?? '';
+  return DASHBOARD_TILES.find((t) => t.key === key)?.icon ?? null;
 }
 const weatherProvider = useWeatherProviderStore();
 const homeCurrency = useHomeCurrencyStore();
@@ -435,6 +437,8 @@ async function onImportFileSelected(event: Event) {
         <ThemeModeSelect variant="block" />
       </div>
 
+      <IconStyleSettings />
+
       <div class="card">
         <h2>Navigation</h2>
         <p class="hint">Position der Navigationsleiste, getrennt für Desktop und mobile Bedienung.</p>
@@ -460,7 +464,7 @@ async function onImportFileSelected(event: Event) {
         </p>
         <ul class="nav-config-list">
           <li v-for="(entry, index) in navConfig.entries" :key="entry.key" class="nav-config-row">
-            <span class="nav-config-icon">{{ navLinkIcon(entry.key) }}</span>
+            <AppIcon v-if="navLinkIcon(entry.key)" class="nav-config-icon" :icon="navLinkIcon(entry.key)!" />
             <span class="nav-config-label" :class="{ hidden: !entry.visible }">{{ navLinkLabel(entry.key) }}</span>
             <div class="nav-config-actions">
               <button
@@ -507,7 +511,7 @@ async function onImportFileSelected(event: Event) {
              Tests immer erst über die jeweilige äußere Zeilen-Klasse, keine Kollisionsgefahr. -->
         <ul class="dashboard-config-list">
           <li v-for="(entry, index) in dashboardConfig.entries" :key="entry.key" class="dashboard-config-row">
-            <span class="nav-config-icon">{{ dashboardTileIcon(entry.key) }}</span>
+            <AppIcon v-if="dashboardTileIcon(entry.key)" class="nav-config-icon" :icon="dashboardTileIcon(entry.key)!" />
             <span class="nav-config-label" :class="{ hidden: !entry.visible }">{{ dashboardTileLabel(entry.key) }}</span>
             <div class="nav-config-actions">
               <button

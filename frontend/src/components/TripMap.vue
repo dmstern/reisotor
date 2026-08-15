@@ -36,6 +36,8 @@ import { useWeatherProviderStore } from '../stores/weatherProvider';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { buildTravelDerivedLocations } from '../utils/travelDerivedLocations';
 import { arcRoute, cachedEmojiPin, compassPin, LEAFLET_ATTRIBUTION_PREFIX } from '../utils/mapRoute';
+import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
+import type { IconDef } from '../utils/icon';
 import { downloadTiles, estimateTileDownload, formatApproxSize } from '../utils/offlineMapTiles';
 import { formatDate as formatDateShared, toLocalDateString } from '../utils/dateFormat';
 import { excursionStationKeys, resolveStations, type ExcursionStation } from '../utils/excursionStations';
@@ -65,7 +67,7 @@ interface MapPoint {
   lat: number;
   lng: number;
   title: string;
-  icon: string;
+  icon: IconDef;
   color: string;
   /** Für Kategorie-Filter/-Fokus-Kopplung mit der Spots-Sicht (ExcursionsView.vue): bei Spots die
    *  echte Kategorie (bzw. "Sonstiges", inkl. "Unterkunft" seit deren Verschmelzung in Spots – siehe
@@ -353,7 +355,7 @@ const points = computed<MapPoint[]>(() => {
       title: loc.title,
       category: loc.category,
       homeSide: loc.homeSide,
-      icon: loc.icon,
+      icon: loc.tabler,
       color: TRAVEL_COLOR,
     });
   }
@@ -366,7 +368,7 @@ const points = computed<MapPoint[]>(() => {
         lat: s.lat,
         lng: s.lng,
         title: s.title,
-        icon: meta.icon,
+        icon: meta.tabler,
         color: meta.color,
         category: s.category ?? 'Sonstiges',
         // Ein zuhause-markierter Reise-Ort-Spot (Flughafen/Bahnhof/… mit is_home) wird vom
@@ -983,7 +985,7 @@ function updateTrackPlaybackMarker() {
   trackPlaybackLayer.clearLayers();
   const pos = interpolateTrackPosition(focusedTrackPoints.value, trackPlaybackProgress.value);
   if (!pos) return;
-  L.marker([pos.lat, pos.lng], { icon: cachedEmojiPin('📍', '#2f6fed'), zIndexOffset: 900 }).addTo(trackPlaybackLayer);
+  L.marker([pos.lat, pos.lng], { icon: cachedEmojiPin(FORM_FIELD_ICONS.location, '#2f6fed'), zIndexOffset: 900 }).addTo(trackPlaybackLayer);
 }
 
 // Zeichnet den eigenen (pulsierenden) und die Standort-Marker der anderen gerade auf der Karte

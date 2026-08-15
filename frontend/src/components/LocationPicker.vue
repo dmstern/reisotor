@@ -2,7 +2,14 @@
 import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { IconCompass, IconCompassFilled } from '@tabler/icons-vue';
 import { cachedEmojiPin, LEAFLET_ATTRIBUTION_PREFIX, pulsingEmojiPin } from '../utils/mapRoute';
+import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
+import type { IconDef } from '../utils/icon';
+
+// Eigener Standort während des Antippens (startOwnLocation() unten) - eigenes IconDef statt
+// FORM_FIELD_ICONS.tour (dasselbe Tabler-Icon, aber ein anderes Konzept: dort "Tour zuordnen").
+const OWN_LOCATION_ICON: IconDef = { id: 'compass', emoji: '🧭', outline: IconCompass, filled: IconCompassFilled };
 
 // Manueller Fallback, falls weder clientseitiges Parsen noch die serverseitige Kurzlink-Auflösung
 // (backend/src/utils/mapsLink.ts) Koordinaten liefern (z. B. wenn Google einen Maps-Kurzlink per
@@ -18,7 +25,7 @@ const props = defineProps<{
   // Antippen der Karte – nicht interaktiv, kein Klick-Handler, nur eine reine Anzeige-Hilfe. Generisch
   // benannt (nicht "spots"), da dieselbe Komponente auch von Unterkunft-/Reise-/Trip-Formularen
   // eingebunden wird, die keine Spot-Objekte kennen.
-  referencePoints?: { lat: number; lng: number; icon?: string }[];
+  referencePoints?: { lat: number; lng: number; icon?: IconDef }[];
 }>();
 const emit = defineEmits<{ (e: 'update:modelValue', value: { lat: number; lng: number } | null): void }>();
 
@@ -46,7 +53,7 @@ function placeMarker(lat: number, lng: number) {
   if (marker) {
     marker.setLatLng([lat, lng]);
   } else {
-    marker = L.marker([lat, lng], { icon: cachedEmojiPin('📍', '#e08e45') }).addTo(map);
+    marker = L.marker([lat, lng], { icon: cachedEmojiPin(FORM_FIELD_ICONS.location, '#e08e45') }).addTo(map);
   }
 }
 
@@ -59,7 +66,7 @@ function renderReferencePoints() {
   if (!referenceLayer) referenceLayer = L.layerGroup().addTo(map);
   for (const point of props.referencePoints) {
     L.marker([point.lat, point.lng], {
-      icon: cachedEmojiPin(point.icon ?? '📍', '#8a8a86'),
+      icon: cachedEmojiPin(point.icon ?? FORM_FIELD_ICONS.location, '#8a8a86'),
       interactive: false,
       opacity: 0.7,
     }).addTo(referenceLayer);
@@ -80,7 +87,7 @@ function startOwnLocation() {
       if (ownLocationMarker) {
         ownLocationMarker.setLatLng(latlng);
       } else {
-        ownLocationMarker = L.marker(latlng, { icon: pulsingEmojiPin('🧭', '#2f6fed'), interactive: false }).addTo(map!);
+        ownLocationMarker = L.marker(latlng, { icon: pulsingEmojiPin(OWN_LOCATION_ICON, '#2f6fed'), interactive: false }).addTo(map!);
       }
     },
     () => {
