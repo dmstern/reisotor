@@ -1,5 +1,18 @@
+import {
+  IconSun,
+  IconSunFilled,
+  IconCloud,
+  IconCloudFilled,
+  IconCloudRain,
+  IconCloudSnow,
+  IconCloudFog,
+  IconCloudStorm,
+  IconSnowflake,
+  IconTemperature,
+} from '@tabler/icons-vue';
 import { api } from '../api/client';
 import { toLocalDateString } from './dateFormat';
+import type { IconDef } from './icon';
 
 // Wettervorhersage über Open-Meteo (kostenlos, kein API-Key nötig, CORS-freundlich für direkte
 // Browser-Aufrufe) – deckt nur die kommenden ~16 Tage plus wenige Tage rückwirkend ab, für weiter
@@ -23,39 +36,50 @@ interface OpenMeteoResponse {
   };
 }
 
-const WEATHER_CODE_META: Record<number, { icon: string; label: string }> = {
-  0: { icon: '☀️', label: 'Klar' },
-  1: { icon: '🌤️', label: 'Überwiegend klar' },
-  2: { icon: '⛅', label: 'Teilweise bewölkt' },
-  3: { icon: '☁️', label: 'Bedeckt' },
-  45: { icon: '🌫️', label: 'Nebel' },
-  48: { icon: '🌫️', label: 'Reifnebel' },
-  51: { icon: '🌦️', label: 'Leichter Nieselregen' },
-  53: { icon: '🌦️', label: 'Nieselregen' },
-  55: { icon: '🌧️', label: 'Starker Nieselregen' },
-  56: { icon: '🌧️', label: 'Gefrierender Nieselregen' },
-  57: { icon: '🌧️', label: 'Starker gefrierender Nieselregen' },
-  61: { icon: '🌦️', label: 'Leichter Regen' },
-  63: { icon: '🌧️', label: 'Regen' },
-  65: { icon: '🌧️', label: 'Starker Regen' },
-  66: { icon: '🌧️', label: 'Gefrierender Regen' },
-  67: { icon: '🌧️', label: 'Starker gefrierender Regen' },
-  71: { icon: '🌨️', label: 'Leichter Schneefall' },
-  73: { icon: '🌨️', label: 'Schneefall' },
-  75: { icon: '❄️', label: 'Starker Schneefall' },
-  77: { icon: '❄️', label: 'Schneegriesel' },
-  80: { icon: '🌦️', label: 'Leichte Regenschauer' },
-  81: { icon: '🌧️', label: 'Regenschauer' },
-  82: { icon: '⛈️', label: 'Heftige Regenschauer' },
-  85: { icon: '🌨️', label: 'Leichte Schneeschauer' },
-  86: { icon: '❄️', label: 'Starke Schneeschauer' },
-  95: { icon: '⛈️', label: 'Gewitter' },
-  96: { icon: '⛈️', label: 'Gewitter mit Hagel' },
-  99: { icon: '⛈️', label: 'Starkes Gewitter mit Hagel' },
+// Tabler deckt Wetter-Nuancen (z. B. gefrierend vs. normal) nicht 1:1 ab - mehrere Codes teilen sich
+// deshalb bewusst dasselbe IconDef, das Emoji bleibt weiterhin pro Code eindeutig.
+const ICON_SUN: IconDef = { id: 'sun', emoji: '☀️', outline: IconSun, filled: IconSunFilled };
+const ICON_CLOUD: IconDef = { id: 'cloud', emoji: '⛅', outline: IconCloud, filled: IconCloudFilled };
+const ICON_RAIN: IconDef = { id: 'cloud-rain', emoji: '🌧️', outline: IconCloudRain };
+const ICON_SNOW: IconDef = { id: 'cloud-snow', emoji: '🌨️', outline: IconCloudSnow };
+const ICON_SNOWFLAKE: IconDef = { id: 'snowflake', emoji: '❄️', outline: IconSnowflake };
+const ICON_FOG: IconDef = { id: 'cloud-fog', emoji: '🌫️', outline: IconCloudFog };
+const ICON_STORM: IconDef = { id: 'cloud-storm', emoji: '⛈️', outline: IconCloudStorm };
+const ICON_UNKNOWN: IconDef = { id: 'temperature', emoji: '🌡️', outline: IconTemperature };
+
+const WEATHER_CODE_META: Record<number, { icon: string; label: string; tabler: IconDef }> = {
+  0: { icon: '☀️', label: 'Klar', tabler: ICON_SUN },
+  1: { icon: '🌤️', label: 'Überwiegend klar', tabler: ICON_SUN },
+  2: { icon: '⛅', label: 'Teilweise bewölkt', tabler: ICON_CLOUD },
+  3: { icon: '☁️', label: 'Bedeckt', tabler: ICON_CLOUD },
+  45: { icon: '🌫️', label: 'Nebel', tabler: ICON_FOG },
+  48: { icon: '🌫️', label: 'Reifnebel', tabler: ICON_FOG },
+  51: { icon: '🌦️', label: 'Leichter Nieselregen', tabler: ICON_RAIN },
+  53: { icon: '🌦️', label: 'Nieselregen', tabler: ICON_RAIN },
+  55: { icon: '🌧️', label: 'Starker Nieselregen', tabler: ICON_RAIN },
+  56: { icon: '🌧️', label: 'Gefrierender Nieselregen', tabler: ICON_RAIN },
+  57: { icon: '🌧️', label: 'Starker gefrierender Nieselregen', tabler: ICON_RAIN },
+  61: { icon: '🌦️', label: 'Leichter Regen', tabler: ICON_RAIN },
+  63: { icon: '🌧️', label: 'Regen', tabler: ICON_RAIN },
+  65: { icon: '🌧️', label: 'Starker Regen', tabler: ICON_RAIN },
+  66: { icon: '🌧️', label: 'Gefrierender Regen', tabler: ICON_RAIN },
+  67: { icon: '🌧️', label: 'Starker gefrierender Regen', tabler: ICON_RAIN },
+  71: { icon: '🌨️', label: 'Leichter Schneefall', tabler: ICON_SNOW },
+  73: { icon: '🌨️', label: 'Schneefall', tabler: ICON_SNOW },
+  75: { icon: '❄️', label: 'Starker Schneefall', tabler: ICON_SNOWFLAKE },
+  77: { icon: '❄️', label: 'Schneegriesel', tabler: ICON_SNOWFLAKE },
+  80: { icon: '🌦️', label: 'Leichte Regenschauer', tabler: ICON_RAIN },
+  81: { icon: '🌧️', label: 'Regenschauer', tabler: ICON_RAIN },
+  82: { icon: '⛈️', label: 'Heftige Regenschauer', tabler: ICON_STORM },
+  85: { icon: '🌨️', label: 'Leichte Schneeschauer', tabler: ICON_SNOW },
+  86: { icon: '❄️', label: 'Starke Schneeschauer', tabler: ICON_SNOWFLAKE },
+  95: { icon: '⛈️', label: 'Gewitter', tabler: ICON_STORM },
+  96: { icon: '⛈️', label: 'Gewitter mit Hagel', tabler: ICON_STORM },
+  99: { icon: '⛈️', label: 'Starkes Gewitter mit Hagel', tabler: ICON_STORM },
 };
 
-export function weatherCodeMeta(code: number): { icon: string; label: string } {
-  return WEATHER_CODE_META[code] ?? { icon: '🌡️', label: 'Unbekannt' };
+export function weatherCodeMeta(code: number): { icon: string; label: string; tabler: IconDef } {
+  return WEATHER_CODE_META[code] ?? { icon: '🌡️', label: 'Unbekannt', tabler: ICON_UNKNOWN };
 }
 
 // Einfacher Modul-Cache statt Store: pro (gerundeter) Koordinate+Modell reicht ein Fetch pro

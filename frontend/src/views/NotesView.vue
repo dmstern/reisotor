@@ -213,7 +213,7 @@ async function restore(id: number) {
 
     <Modal :model-value="showForm" title="Neue Notiz" full-height @update:model-value="(v) => !v && closeForm()">
     <form class="add-form" @submit.prevent="submit">
-      <FormField icon="✏️" label="Titel">
+      <FormField icon="title" label="Titel">
         <input v-model="form.title" type="text" placeholder="Titel (optional)" />
       </FormField>
       <RichTextEditor v-model="form.content" placeholder="Inhalt" />
@@ -262,7 +262,7 @@ async function restore(id: number) {
       @update:model-value="(v) => !v && closeEditForm()"
     >
       <form class="add-form" @submit.prevent="submitEdit">
-        <FormField icon="✏️" label="Titel">
+        <FormField icon="title" label="Titel">
           <input v-model="editForm.title" type="text" placeholder="Titel (optional)" />
         </FormField>
         <RichTextEditor v-model="editForm.content" />

@@ -278,24 +278,24 @@ function isOverdue(item: TodoItem) {
     <p>{{ progress.done }}/{{ progress.total }} erledigt</p>
 
     <form class="add-form card" @submit.prevent="addItem">
-      <FormField icon="✏️" label="Aufgabe">
+      <FormField icon="title" label="Aufgabe">
         <input v-model="newForm.title" type="text" placeholder="Neue Aufgabe" required />
       </FormField>
-      <FormField icon="🧑" label="Bearbeiter:in">
+      <FormField icon="person" label="Bearbeiter:in">
         <select v-model="newForm.assigned_to_user_id">
           <option value="">Nicht zugewiesen</option>
           <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
         </select>
       </FormField>
-      <FormField icon="📅" label="Fällig">
+      <FormField icon="date" label="Fällig">
         <input v-model="newForm.due_date" type="date" />
       </FormField>
-      <FormField icon="🚦" label="Priorität">
+      <FormField icon="priority" label="Priorität">
         <select v-model="newForm.priority">
           <option v-for="(meta, key) in PRIORITY_META" :key="key" :value="key">{{ meta.icon }} {{ meta.label }}</option>
         </select>
       </FormField>
-      <FormField icon="📝" label="Notiz">
+      <FormField icon="note" label="Notiz">
         <input v-model="newForm.note" type="text" placeholder="Notiz (optional)" />
       </FormField>
       <button type="submit">Hinzufügen</button>
@@ -374,24 +374,24 @@ function isOverdue(item: TodoItem) {
 
     <Modal :model-value="editingItem !== null" title="Aufgabe bearbeiten" @update:model-value="(v) => !v && closeEditForm()">
       <form class="edit-form" @submit.prevent="submitEdit">
-        <FormField icon="✏️" label="Titel">
+        <FormField icon="title" label="Titel">
           <input v-model="editForm.title" type="text" placeholder="Titel" required />
         </FormField>
-        <FormField icon="🧑" label="Bearbeiter:in">
+        <FormField icon="person" label="Bearbeiter:in">
           <select v-model="editForm.assigned_to_user_id">
             <option value="">Nicht zugewiesen</option>
             <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
           </select>
         </FormField>
-        <FormField icon="📅" label="Fällig">
+        <FormField icon="date" label="Fällig">
           <input v-model="editForm.due_date" type="date" />
         </FormField>
-        <FormField icon="🚦" label="Priorität">
+        <FormField icon="priority" label="Priorität">
           <select v-model="editForm.priority">
             <option v-for="(meta, key) in PRIORITY_META" :key="key" :value="key">{{ meta.icon }} {{ meta.label }}</option>
           </select>
         </FormField>
-        <FormField icon="📝" label="Notiz">
+        <FormField icon="note" label="Notiz">
           <input v-model="editForm.note" type="text" placeholder="Notiz (optional)" />
         </FormField>
         <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />

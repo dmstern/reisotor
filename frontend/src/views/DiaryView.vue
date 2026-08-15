@@ -422,10 +422,10 @@ async function removeComment(id: number) {
 
     <Modal :model-value="showForm" title="Neuer Tagebucheintrag" full-height @update:model-value="(v) => !v && closeForm()">
     <form class="add-form" @submit.prevent="submitEntry">
-      <FormField icon="📅" label="Datum">
+      <FormField icon="date" label="Datum">
         <input v-model="form.date" type="date" required />
       </FormField>
-      <FormField icon="✏️" label="Titel">
+      <FormField icon="title" label="Titel">
         <input v-model="form.title" type="text" placeholder="Titel (optional)" />
       </FormField>
       <RichTextEditor v-model="form.content" placeholder="Was ist heute passiert?" />
@@ -556,10 +556,10 @@ async function removeComment(id: number) {
       @update:model-value="(v) => !v && closeEditForm()"
     >
       <form class="add-form" @submit.prevent="submitEditEntry">
-        <FormField icon="📅" label="Datum">
+        <FormField icon="date" label="Datum">
           <input v-model="editForm.date" type="date" required />
         </FormField>
-        <FormField icon="✏️" label="Titel">
+        <FormField icon="title" label="Titel">
           <input v-model="editForm.title" type="text" placeholder="Titel (optional)" />
         </FormField>
         <RichTextEditor v-model="editForm.content" />

@@ -6,8 +6,9 @@ import { useNavPositionStore } from '../stores/navPosition';
 import { useNavConfigStore } from '../stores/navConfig';
 import { useLiveSyncStore } from '../stores/liveSync';
 import { useIsDesktop } from '../composables/useIsDesktop';
-import { SECTION_ICONS } from '../utils/sectionIcons';
+import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { NAV_LINKS, type NavLinkDef } from '../utils/navLinks';
+import AppIcon from './AppIcon.vue';
 
 const auth = useAuthStore();
 const router = useRouter();
@@ -80,7 +81,7 @@ watch(isTop, updateOffset);
 
 // "Übersicht" (Dashboard) bleibt fix, nicht Teil der konfigurierbaren Liste (siehe navLinks.ts) -
 // zentraler Einstiegspunkt der App, soll nicht ausblendbar/verschiebbar sein.
-const DASHBOARD_LINK: NavLinkDef = { key: 'dashboard', to: '/', label: 'Übersicht', icon: SECTION_ICONS.dashboard };
+const DASHBOARD_LINK: NavLinkDef = { key: 'dashboard', to: '/', label: 'Übersicht', icon: SECTION_ICON_DEFS.dashboard };
 
 // Sichtbare Einträge in der vom Nutzer konfigurierten Reihenfolge (siehe stores/navConfig.ts,
 // ProfileView.vue) - ausgeblendete Einträge werden hier bereits rausgefiltert, nicht erst im
@@ -133,7 +134,7 @@ function onLinkClick(event: MouseEvent) {
            Einstiegspunkt der App soll auf mobile immer der allererste (am wenigsten wegscrollte)
            Nav-Punkt sein. -->
       <router-link :to="DASHBOARD_LINK.to" class="link" @click="onLinkClick">
-        <span class="icon">{{ DASHBOARD_LINK.icon }}</span>
+        <AppIcon class="icon" :icon="DASHBOARD_LINK.icon" />
         <span class="label">{{ DASHBOARD_LINK.label }}</span>
       </router-link>
       <!-- Kalender ist auf Desktop weiterhin eine globale Schublade (App.vue, über die seitlich
@@ -147,14 +148,14 @@ function onLinkClick(event: MouseEvent) {
            Nav-Punkt mehr - Touren anlegen/Spots zuordnen geht bereits direkt dort. -->
       <router-link to="/calendar" class="link mobile-page-link" @click="onLinkClick">
         <span class="icon-wrap">
-          <span class="icon">{{ SECTION_ICONS.calendar }}</span>
+          <AppIcon class="icon" :icon="SECTION_ICON_DEFS.calendar" />
           <span v-if="liveSync.hasUnseen('schedule')" class="unseen-dot" aria-label="Neue Änderungen" />
         </span>
         <span class="label">Kalender</span>
       </router-link>
       <router-link v-for="link in visibleLinks" :key="link.to" :to="link.to" class="link" @click="onLinkClick">
         <span class="icon-wrap">
-          <span class="icon">{{ link.icon }}</span>
+          <AppIcon class="icon" :icon="link.icon" />
           <span v-if="hasUnseenAny(link)" class="unseen-dot" aria-label="Neue Änderungen" />
         </span>
         <span class="label">{{ link.label }}</span>

@@ -928,22 +928,22 @@ function formatDate(date: string) {
       @update:model-value="(v) => !v && closeAddForm()"
     >
       <form class="edit-form" @submit.prevent="addItem">
-        <FormField icon="✏️" label="Titel">
+        <FormField icon="title" label="Titel">
           <input v-model="newTitle" type="text" placeholder="Titel" required />
         </FormField>
-        <FormField icon="📅" label="Startdatum">
+        <FormField icon="date" label="Startdatum">
           <input v-model="newStartDate" type="date" required />
         </FormField>
-        <FormField icon="📅" label="Enddatum">
+        <FormField icon="date" label="Enddatum">
           <input v-model="newEndDate" type="date" :min="newStartDate || undefined" />
         </FormField>
-        <FormField icon="🕒" label="Startzeit">
+        <FormField icon="time" label="Startzeit">
           <input v-model="newTime" type="time" />
         </FormField>
-        <FormField icon="🕒" label="Enduhrzeit">
+        <FormField icon="time" label="Enduhrzeit">
           <input v-model="newEndTime" type="time" />
         </FormField>
-        <FormField icon="🔗" label="Verknüpft">
+        <FormField icon="link" label="Verknüpft">
           <select v-model="newLinkKey">
             <option value="">🔗 Kein Spot/keine Tour verknüpft</option>
             <optgroup label="Spots" v-if="spotsStore.spots.length">
@@ -955,14 +955,14 @@ function formatDate(date: string) {
           </select>
         </FormField>
         <template v-if="!newLinkKey">
-          <FormField icon="📍" label="Ort">
+          <FormField icon="location" label="Ort">
             <Combobox v-model="newLocation" :options="placeNames" placeholder="Ort (optional)" />
           </FormField>
-          <FormField icon="🗺️" label="Maps-Link">
+          <FormField icon="maps" label="Maps-Link">
             <input v-model="newMapsLink" type="url" placeholder="Maps-Link (Google/Apple) (optional)" />
           </FormField>
         </template>
-        <FormField icon="📝" label="Notiz">
+        <FormField icon="note" label="Notiz">
           <input v-model="newNote" type="text" placeholder="Notiz (optional)" />
         </FormField>
         <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
@@ -976,19 +976,19 @@ function formatDate(date: string) {
       @update:model-value="(v) => !v && closeEditForm()"
     >
       <form class="edit-form" @submit.prevent="submitEdit">
-        <FormField icon="✏️" label="Titel">
+        <FormField icon="title" label="Titel">
           <input v-model="editForm.title" type="text" placeholder="Titel" required />
         </FormField>
-        <FormField icon="📅" label="Enddatum">
+        <FormField icon="date" label="Enddatum">
           <input v-model="editForm.endDate" type="date" :min="editingItem?.date" />
         </FormField>
-        <FormField icon="🕒" label="Startzeit">
+        <FormField icon="time" label="Startzeit">
           <input v-model="editForm.time" type="time" />
         </FormField>
-        <FormField icon="🕒" label="Enduhrzeit">
+        <FormField icon="time" label="Enduhrzeit">
           <input v-model="editForm.endTime" type="time" />
         </FormField>
-        <FormField icon="🔗" label="Verknüpft">
+        <FormField icon="link" label="Verknüpft">
           <select v-model="editForm.linkKey">
             <option value="">🔗 Kein Spot/keine Tour verknüpft</option>
             <optgroup label="Spots" v-if="spotsStore.spots.length">
@@ -1000,14 +1000,14 @@ function formatDate(date: string) {
           </select>
         </FormField>
         <template v-if="!editForm.linkKey">
-          <FormField icon="📍" label="Ort">
+          <FormField icon="location" label="Ort">
             <Combobox v-model="editForm.location" :options="placeNames" placeholder="Ort (optional)" />
           </FormField>
-          <FormField icon="🗺️" label="Maps-Link">
+          <FormField icon="maps" label="Maps-Link">
             <input v-model="editForm.mapsLink" type="url" placeholder="Maps-Link (Google/Apple) (optional)" />
           </FormField>
         </template>
-        <FormField icon="📝" label="Notiz">
+        <FormField icon="note" label="Notiz">
           <input v-model="editForm.note" type="text" placeholder="Notiz (optional)" />
         </FormField>
         <FileAttachments v-if="editingItem" domain="schedule" :entity-id="editingItem.id" />

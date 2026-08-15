@@ -310,20 +310,20 @@ async function quickAdd(list: ListGroup, label: string) {
       @update:model-value="(v) => !v && (editingItem = null)"
     >
       <form class="edit-form" @submit.prevent="submitEdit">
-        <FormField icon="✏️" label="Gegenstand">
+        <FormField icon="title" label="Gegenstand">
           <input v-model="editForm.label" type="text" placeholder="Gegenstand" required />
         </FormField>
-        <FormField icon="🏷️" label="Kategorie">
+        <FormField icon="category" label="Kategorie">
           <Combobox v-model="editForm.category" :options="categories" placeholder="Kategorie" />
         </FormField>
-        <FormField icon="🏷️" label="Unterkategorie">
+        <FormField icon="category" label="Unterkategorie">
           <Combobox v-model="editForm.subcategory" :options="subcategories" placeholder="Unterkategorie (optional, z. B. Outfit Tag 1)" />
         </FormField>
         <label class="qty-field">
           Anzahl
           <input v-model.number="editForm.quantity" type="number" min="1" step="1" />
         </label>
-        <FormField icon="🧑" label="Liste">
+        <FormField icon="person" label="Liste">
           <select v-model="editForm.ownerId">
             <option value="shared">🤝 Gemeinsam</option>
             <option v-for="u in users" :key="u.id" :value="String(u.id)">

@@ -1,6 +1,11 @@
+import { IconMapPin, IconMapPinFilled } from '@tabler/icons-vue';
 import type { TravelItem } from '../api/types';
 import type { DerivedLocation } from './derivedLocation';
-import { travelTypeIcon } from './travelTypeIcon';
+import { travelTypeIcon, travelTypeIconDef } from './travelTypeIcon';
+import type { IconDef } from './icon';
+
+// Gleicher Fallback wie travelTypeIcon()s '📍' oben - kein eigener Transportmittel-Typ bekannt.
+const LOCATION_FALLBACK_ICON: IconDef = { id: 'map-pin', emoji: '📍', outline: IconMapPin, filled: IconMapPinFilled };
 
 export interface TravelDerivedLocation extends DerivedLocation {
   /** Zuhause-/Heimat-Seite (siehe TravelItem.role) – siehe TripMap.vue's MapPoint.homeSide, hier
@@ -36,6 +41,7 @@ export function buildTravelDerivedLocations(travelItems: TravelItem[]): TravelDe
       key: `travel-${side}-${t.id}`,
       title: `${t.title} (${side === 'from' ? 'Abflug/Abfahrt' : 'Ankunft'})`,
       icon: travelTypeIcon(t.type, '📍'),
+      tabler: travelTypeIconDef(t.type, LOCATION_FALLBACK_ICON),
       category: 'Reise',
       maps_link: side === 'from' ? t.from_maps_link : t.to_maps_link,
       lat,

@@ -290,29 +290,29 @@ async function quickAddToGroup(group: Group, label: string) {
     <p>{{ progress.checked }}/{{ progress.total }} gekauft</p>
 
     <form class="add-form card" @submit.prevent="addItem">
-      <FormField icon="✏️" label="Artikel">
+      <FormField icon="title" label="Artikel">
         <input v-model="newLabel" type="text" placeholder="Neuer Artikel" required />
       </FormField>
-      <FormField icon="🏬" label="Shop">
+      <FormField icon="shop" label="Shop">
         <Combobox v-model="newShop" :options="knownShops" placeholder="Shop/Laden (optional)" />
       </FormField>
-      <FormField icon="🧑" label="Einkäufer:in">
+      <FormField icon="person" label="Einkäufer:in">
         <select v-model="newBuyer">
           <option value="">Kein:e Einkäufer:in</option>
           <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
         </select>
       </FormField>
-      <FormField icon="🗓️" label="Zeitraum">
+      <FormField icon="period" label="Zeitraum">
         <select v-model="newPeriod">
           <option value="">Kein Zeitraum</option>
           <option value="before">{{ PERIOD_META.before }}</option>
           <option value="during">{{ PERIOD_META.during }}</option>
         </select>
       </FormField>
-      <FormField icon="🔗" label="Link">
+      <FormField icon="link" label="Link">
         <input v-model="newLink" type="url" placeholder="Link (optional, z. B. Amazon)" />
       </FormField>
-      <FormField icon="📝" label="Notiz">
+      <FormField icon="note" label="Notiz">
         <input v-model="newNote" type="text" placeholder="Notiz (optional)" />
       </FormField>
       <button type="submit">Hinzufügen</button>
@@ -390,23 +390,23 @@ async function quickAddToGroup(group: Group, label: string) {
       @update:model-value="(v) => !v && closeEditForm()"
     >
       <form class="edit-form" @submit.prevent="submitEdit">
-        <FormField icon="✏️" label="Artikel">
+        <FormField icon="title" label="Artikel">
           <input v-model="editForm.label" type="text" placeholder="Artikel" required />
         </FormField>
-        <FormField icon="🏬" label="Shop">
+        <FormField icon="shop" label="Shop">
           <Combobox v-model="editForm.shop" :options="knownShops" placeholder="Shop/Laden (optional)" />
         </FormField>
-        <FormField icon="🗓️" label="Zeitraum">
+        <FormField icon="period" label="Zeitraum">
           <select v-model="editForm.period">
             <option value="">Kein Zeitraum</option>
             <option value="before">{{ PERIOD_META.before }}</option>
             <option value="during">{{ PERIOD_META.during }}</option>
           </select>
         </FormField>
-        <FormField icon="🔗" label="Link">
+        <FormField icon="link" label="Link">
           <input v-model="editForm.link" type="url" placeholder="Link (optional)" />
         </FormField>
-        <FormField icon="📝" label="Notiz">
+        <FormField icon="note" label="Notiz">
           <input v-model="editForm.note" type="text" placeholder="Notiz (optional)" />
         </FormField>
         <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />

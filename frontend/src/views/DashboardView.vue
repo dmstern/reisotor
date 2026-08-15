@@ -24,7 +24,8 @@ import { useDashboardConfigStore } from '../stores/dashboardConfig';
 import { assignCategoryColors } from '../utils/categoryColors';
 import { buildAllEntries } from '../utils/calendarEntries';
 import { SCHEDULE_CATEGORY_META } from '../utils/scheduleCategory';
-import { SECTION_ICONS } from '../utils/sectionIcons';
+import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
+import { ACCOMMODATION_ICON, SECURITY_CHECK_ICON } from '../utils/dashboardTiles';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { fetchMergedWeather, fetchWeatherForecast, weatherCodeMeta, type DailyWeather } from '../utils/weather';
 import { fetchRegionInfo, type RegionInfo } from '../utils/regionInfo';
@@ -36,6 +37,7 @@ import {
 import { computeDepartureCountdown, computeVacationPhase } from '../utils/departureCountdown';
 import BudgetMeter from '../components/BudgetMeter.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
+import AppIcon from '../components/AppIcon.vue';
 
 const auth = useAuthStore();
 const tripStore = useTripStore();
@@ -511,7 +513,7 @@ function formatWeekdayDate(d: string) {
           :style="{ background: `${WIDGET_COLORS.get('schedule')}0d` }"
           @click="drawers.openCalendar()"
         >
-          <span class="tile-icon" :style="{ background: `${WIDGET_COLORS.get('schedule')}26`, borderColor: WIDGET_COLORS.get('schedule') }">{{ SECTION_ICONS.calendar }}</span>
+          <AppIcon class="tile-icon" :size="22" :style="{ background: `${WIDGET_COLORS.get('schedule')}26`, borderColor: WIDGET_COLORS.get('schedule') }" :icon="SECTION_ICON_DEFS.calendar" />
           <h3>Kalender</h3>
           <ul v-if="upcomingEntries.length" class="mini-list">
             <li v-for="entry in upcomingEntries" :key="entry.key">
@@ -531,7 +533,7 @@ function formatWeekdayDate(d: string) {
           class="card tile"
           :style="{ background: `${WIDGET_COLORS.get('packing')}0d` }"
         >
-          <span class="tile-icon" :style="{ background: `${WIDGET_COLORS.get('packing')}26`, borderColor: WIDGET_COLORS.get('packing') }">{{ SECTION_ICONS.packing }}</span>
+          <AppIcon class="tile-icon" :size="22" :style="{ background: `${WIDGET_COLORS.get('packing')}26`, borderColor: WIDGET_COLORS.get('packing') }" :icon="SECTION_ICON_DEFS.packing" />
           <h3>Packliste</h3>
           <BudgetMeter
             label="Gepackt"
@@ -547,7 +549,7 @@ function formatWeekdayDate(d: string) {
 
         <!-- Budget -->
         <router-link v-else-if="key === 'budget'" to="/budget" class="card tile" :style="{ background: `${WIDGET_COLORS.get('budget')}0d` }">
-          <span class="tile-icon" :style="{ background: `${WIDGET_COLORS.get('budget')}26`, borderColor: WIDGET_COLORS.get('budget') }">{{ SECTION_ICONS.budget }}</span>
+          <AppIcon class="tile-icon" :size="22" :style="{ background: `${WIDGET_COLORS.get('budget')}26`, borderColor: WIDGET_COLORS.get('budget') }" :icon="SECTION_ICON_DEFS.budget" />
           <h3>Budget</h3>
           <BudgetMeter
             label="Ausgegeben"
@@ -564,7 +566,7 @@ function formatWeekdayDate(d: string) {
           class="card tile"
           :style="{ background: `${WIDGET_COLORS.get('shopping')}0d` }"
         >
-          <span class="tile-icon" :style="{ background: `${WIDGET_COLORS.get('shopping')}26`, borderColor: WIDGET_COLORS.get('shopping') }">{{ SECTION_ICONS.shopping }}</span>
+          <AppIcon class="tile-icon" :size="22" :style="{ background: `${WIDGET_COLORS.get('shopping')}26`, borderColor: WIDGET_COLORS.get('shopping') }" :icon="SECTION_ICON_DEFS.shopping" />
           <h3>Einkaufsliste</h3>
           <BudgetMeter
             label="Gekauft"
@@ -577,7 +579,7 @@ function formatWeekdayDate(d: string) {
 
         <!-- ToDo -->
         <router-link v-else-if="key === 'todo'" to="/listen?tab=todo" class="card tile" :style="{ background: `${WIDGET_COLORS.get('todo')}0d` }">
-          <span class="tile-icon" :style="{ background: `${WIDGET_COLORS.get('todo')}26`, borderColor: WIDGET_COLORS.get('todo') }">{{ SECTION_ICONS.todo }}</span>
+          <AppIcon class="tile-icon" :size="22" :style="{ background: `${WIDGET_COLORS.get('todo')}26`, borderColor: WIDGET_COLORS.get('todo') }" :icon="SECTION_ICON_DEFS.todo" />
           <h3>ToDo</h3>
           <BudgetMeter
             label="Erledigt"
@@ -590,7 +592,7 @@ function formatWeekdayDate(d: string) {
 
         <!-- Reise (Fahrten/Flüge) -->
         <router-link v-else-if="key === 'travel'" to="/travel" class="card tile" :style="{ background: `${WIDGET_COLORS.get('travel')}0d` }">
-          <span class="tile-icon" :style="{ background: `${WIDGET_COLORS.get('travel')}26`, borderColor: WIDGET_COLORS.get('travel') }">{{ SECTION_ICONS.travel }}</span>
+          <AppIcon class="tile-icon" :size="22" :style="{ background: `${WIDGET_COLORS.get('travel')}26`, borderColor: WIDGET_COLORS.get('travel') }" :icon="SECTION_ICON_DEFS.travel" />
           <h3>Reise</h3>
           <p v-if="nextTravelItem">{{ formatDate(nextTravelItem.date!) }} — {{ nextTravelItem.title }}</p>
           <p v-else-if="travelItems.length">{{ travelItems.length }} Einträge</p>
@@ -607,7 +609,12 @@ function formatWeekdayDate(d: string) {
           class="card tile"
           :style="{ background: `${WIDGET_COLORS.get('accommodation')}0d` }"
         >
-          <span class="tile-icon" :style="{ background: `${WIDGET_COLORS.get('accommodation')}26`, borderColor: WIDGET_COLORS.get('accommodation') }">{{ spotCategoryMeta('Unterkunft').icon }}</span>
+          <AppIcon
+            class="tile-icon"
+            :size="22"
+            :style="{ background: `${WIDGET_COLORS.get('accommodation')}26`, borderColor: WIDGET_COLORS.get('accommodation') }"
+            :icon="ACCOMMODATION_ICON"
+          />
           <h3>Unterkunft</h3>
           <p v-if="currentOrNextAccommodation">
             {{ currentOrNextAccommodation.title }}<span v-if="currentOrNextAccommodation.start_date">
@@ -620,7 +627,7 @@ function formatWeekdayDate(d: string) {
 
         <!-- Tagebuch -->
         <router-link v-else-if="key === 'diary'" to="/diary" class="card tile" :style="{ background: `${WIDGET_COLORS.get('diary')}0d` }">
-          <span class="tile-icon" :style="{ background: `${WIDGET_COLORS.get('diary')}26`, borderColor: WIDGET_COLORS.get('diary') }">{{ SECTION_ICONS.diary }}</span>
+          <AppIcon class="tile-icon" :size="22" :style="{ background: `${WIDGET_COLORS.get('diary')}26`, borderColor: WIDGET_COLORS.get('diary') }" :icon="SECTION_ICON_DEFS.diary" />
           <h3>Tagebuch</h3>
           <p v-if="diaryEntries.length">{{ diaryEntries.length }} {{ diaryEntries.length === 1 ? 'Eintrag' : 'Einträge' }}<span v-if="latestDiaryEntry"> · zuletzt {{ formatDate(latestDiaryEntry.date) }}</span></p>
           <p v-else>Noch nichts geschrieben</p>
@@ -628,7 +635,7 @@ function formatWeekdayDate(d: string) {
 
         <!-- Notizen -->
         <router-link v-else-if="key === 'notes'" to="/notes" class="card tile" :style="{ background: `${WIDGET_COLORS.get('notes')}0d` }">
-          <span class="tile-icon" :style="{ background: `${WIDGET_COLORS.get('notes')}26`, borderColor: WIDGET_COLORS.get('notes') }">{{ SECTION_ICONS.notes }}</span>
+          <AppIcon class="tile-icon" :size="22" :style="{ background: `${WIDGET_COLORS.get('notes')}26`, borderColor: WIDGET_COLORS.get('notes') }" :icon="SECTION_ICON_DEFS.notes" />
           <h3>Notizen</h3>
           <p v-if="notes.length">{{ notes.length }} {{ notes.length === 1 ? 'Notiz' : 'Notizen' }}</p>
           <p v-else>Noch nichts notiert</p>
@@ -641,7 +648,12 @@ function formatWeekdayDate(d: string) {
           class="card tile"
           :style="{ background: `${SECURITY_TILE_COLOR}0d` }"
         >
-          <span class="tile-icon" :style="{ background: `${SECURITY_TILE_COLOR}26`, borderColor: SECURITY_TILE_COLOR }">🛡️</span>
+          <AppIcon
+            class="tile-icon"
+            :size="22"
+            :style="{ background: `${SECURITY_TILE_COLOR}26`, borderColor: SECURITY_TILE_COLOR }"
+            :icon="SECURITY_CHECK_ICON"
+          />
           <h3>Sicherheits-Check</h3>
           <p>Der Reisotor scannt eure Reiseregion 🤖🔍</p>
         </router-link>

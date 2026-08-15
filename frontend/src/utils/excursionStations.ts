@@ -1,6 +1,10 @@
+import { IconMapPin, IconMapPinFilled } from '@tabler/icons-vue';
 import type { Spot, TravelItem } from '../api/types';
 import { spotCategoryMeta } from './spotCategory';
-import { travelTypeIcon } from './travelTypeIcon';
+import { travelTypeIcon, travelTypeIconDef } from './travelTypeIcon';
+import type { IconDef } from './icon';
+
+const LOCATION_FALLBACK_ICON: IconDef = { id: 'map-pin', emoji: '📍', outline: IconMapPin, filled: IconMapPinFilled };
 
 // Löst die generischen station_keys eines Ausflugs (aus Excursion.spot_ids via
 // excursionStationKeys() unten abgeleitet, siehe api/types.ts) zu einem einheitlichen
@@ -20,6 +24,10 @@ export interface ExcursionStation {
   id: number;
   title: string;
   icon: string;
+  /** Tabler-Pendant zu icon, für ExcursionMiniMap.vue's Kartenmarker (siehe utils/icon.ts) - additiv,
+   *  damit Aufrufstellen, die nur icon lesen (z. B. MiniStationCard.vue/ExcursionCard.vue), unverändert
+   *  funktionieren. */
+  tabler: IconDef;
   color: string;
   category: string;
   imageUrl: string | null;
@@ -58,6 +66,7 @@ export function resolveStation(key: string, spots: Spot[], travelItems: TravelIt
       id,
       title: spot.title,
       icon: meta.icon,
+      tabler: meta.tabler,
       color: meta.color,
       category: spot.category ?? 'Sonstiges',
       imageUrl: spot.image_url,
@@ -77,6 +86,7 @@ export function resolveStation(key: string, spots: Spot[], travelItems: TravelIt
       id,
       title: `${item.title} (${isFrom ? 'Abflug/Abfahrt' : 'Ankunft'})`,
       icon: travelTypeIcon(item.type, '📍'),
+      tabler: travelTypeIconDef(item.type, LOCATION_FALLBACK_ICON),
       color: TRAVEL_COLOR,
       category: 'Reise',
       imageUrl: null,

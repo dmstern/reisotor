@@ -382,19 +382,38 @@ Rest der App.
 
 ## Icons
 
-Ausschließlich Emoji statt einer Icon-Font/SVG-Icon-Bibliothek (leichtgewichtig, kein zusätzlicher
-Font-Ladevorgang, funktioniert offline). Zwei getrennte, in sich konsistente Icon-Systeme:
+Zwei umschaltbare Icon-Darstellungen statt ausschließlich Emoji: **Emoji** (Default, wie ursprünglich)
+oder **Symbole** (`@tabler/icons-vue`, MIT-Lizenz, Outline- oder gefüllte Variante) – einstellbar in
+den Profil-Einstellungen (`components/IconStyleSettings.vue`, gespeichert per
+`frontend/src/stores/iconStyle.ts`, localStorage-Keys `reisotor-icon-style`/`reisotor-icon-variant`,
+Geräte-lokal wie `calendarSettings.ts`/`weatherProvider.ts`). Beide Bibliotheken werden zur Build-Zeit
+ins Bundle kompiliert (keine Icon-Font, kein CDN-Laden zur Laufzeit) und vom bestehenden
+PWA-Service-Worker wie jeder andere App-Code precached – die ursprüngliche Offline-Begründung
+("leichtgewichtig, kein zusätzlicher Font-Ladevorgang, funktioniert offline") bleibt für beide
+Darstellungen gültig. Rendering läuft zentral über `components/AppIcon.vue` (nimmt ein `IconDef` aus
+`utils/icon.ts`, löst je nach Einstellung zu Emoji-Text oder Tabler-Komponente auf; fehlt für ein Icon
+die Tabler-Filled-Variante – nicht jedes Outline-Icon hat eine –, fällt automatisch auf Outline
+zurück). Zwei getrennte, in sich konsistente Icon-Systeme:
 
 - **App-Bereiche** (Navigation, Dashboard-Kacheln, Schubladen-Tabs): zentrale Registry in
-  `frontend/src/utils/sectionIcons.ts` (`SECTION_ICONS`). Ein Bereich hat *ein* Icon, das überall
-  identisch verwendet wird – nie ein Icon lokal in einer Komponente neu hartkodieren, sondern aus
-  dieser Registry importieren. Neuer App-Bereich → hier ergänzen, nicht ad hoc irgendwo inline.
-- **Kategorien innerhalb eines Bereichs** (Kalender-Kategorien, Spot-Kategorien): eigene, getrennte
-  Registries (`scheduleCategory.ts`, `spotCategory.ts`) – bewusst kein gemeinsames System mit
-  `sectionIcons.ts`, da Kategorien pro Bereich unterschiedliche Bedeutung haben.
+  `frontend/src/utils/sectionIcons.ts` (`SECTION_ICONS` fürs Emoji, `SECTION_ICON_DEFS` fürs
+  `IconDef`-Pendant). Ein Bereich hat *ein* Icon, das überall identisch verwendet wird – nie ein Icon
+  lokal in einer Komponente neu hartkodieren, sondern aus dieser Registry importieren. Neuer
+  App-Bereich → hier (beide Maps) ergänzen, nicht ad hoc irgendwo inline.
+- **Kategorien innerhalb eines Bereichs** (Kalender-Kategorien, Spot-Kategorien, Transportmittel,
+  Wetter): eigene, getrennte Registries (`scheduleCategory.ts`, `spotCategory.ts`,
+  `travelTypeIcon.ts`, `weather.ts`) – bewusst kein gemeinsames System mit `sectionIcons.ts`, da
+  Kategorien pro Bereich unterschiedliche Bedeutung haben. Jede trägt neben dem Emoji-String
+  zusätzlich ein `tabler: IconDef`-Feld – neues Konzept in einer dieser Registries → immer beide
+  Felder ergänzen, nicht nur das Emoji.
 
-Kartenmarker (`TripMap.vue` u. a.) nutzen dieselben Emoji als Leaflet `divIcon`s statt der
-Standard-Marker-Pins – auch dort aus den bestehenden Registries beziehen, nicht neu definieren.
+Kartenmarker (`utils/mapRoute.ts`, genutzt von `TripMap.vue`/`LocationPicker.vue`/
+`ExcursionMiniMap.vue`) akzeptieren sowohl ein `IconDef` (Kategorie-/Ortsmarker, respektieren die
+Einstellung – rohe Tabler-SVGs dafür kuratiert in `utils/tablerMarkerSvg.ts`, `?raw`-Importe aus dem
+vanilla `@tabler/icons`-Paket) als auch einen rohen Emoji-String – Letzteres bewusst nur für das
+Nutzer-Avatar (`auth.user.avatar`, `users.avatar`-Spalte): frei aus einem ~180-Emoji-Picker
+gewähltes, gespeichertes Identitätsdatum ohne sinnvolles festes Tabler-Äquivalent, bleibt daher
+**immer** Emoji, unabhängig von der Einstellung.
 
 - **Sichtbarkeits-Kennzeichnung (privat vs. geteilt)**: 🔒 für "nur für eine Person sichtbar", 🤝
   für "für alle Mitreisenden sichtbar" (z. B. Budget-Töpfe, `BudgetPotCard.vue`). Kein eigenes
@@ -409,7 +428,7 @@ das Feld war. Für Text-/URL-/Nummer-/Zahl-Eingabefelder deshalb `components/For
 Wrapper verwenden statt das Eingabefeld nackt ins Formular zu setzen:
 
 ```html
-<FormField icon="✏️" label="Titel">
+<FormField icon="title" label="Titel">
   <input v-model="form.title" type="text" placeholder="Titel" required />
 </FormField>
 ```
@@ -431,9 +450,12 @@ dieselbe Höhen-Inkonsistenz wie beim `<select>` oben, sobald beide Muster in de
 deren eigenes `<label>Text<input/></label>`-Muster (kein Mix mit FormField in derselben Datei), daher
 dort keine Migration nötig.
 
-Icon-Wahl folgt den anderswo in der App etablierten Emoji (z. B. 📅 Datum, 🕒 Uhrzeit, 📍 Ort/Adresse,
-🗺️ Maps-Link, 📞 Kontakt, 💶 Betrag, 📝 Notiz, 🏷️ Kategorie, 🧑 Person/Bearbeiter:in, 🤝 Bezahlt
-von/geteilt) – kein neues Icon erfinden, wenn ein bestehendes Konzept schon eins hat.
+`icon` ist kein roher Emoji-String mehr, sondern ein `FormFieldIconKey` aus
+`frontend/src/utils/formFieldIcons.ts`s `FORM_FIELD_ICONS` (z. B. `date` 📅, `time` 🕒, `location`
+📍, `maps` 🗺️, `contact` 📞, `amount` 💶, `note` 📝, `category` 🏷️, `person` 🧑, `shared` 🤝, `title`
+✏️, …) – kein neues Icon erfinden, wenn ein bestehendes Konzept schon eins hat, sondern dort
+ergänzen. Ein fertiges `IconDef` (z. B. aus einer der Kategorie-Registries) ist ebenfalls erlaubt, für
+Einzelfälle ohne geteiltes Konzept.
 
 Achtung bei bereits vorhandenem Flex-Row-Layout eines Formulars (z. B. `.add-form input, .add-form
 select { flex: 1; min-width: …px; }`): diese Selektoren zielten bisher direkt auf `<input>`/`<select>`,
