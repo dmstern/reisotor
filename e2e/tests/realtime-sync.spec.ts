@@ -121,15 +121,15 @@ test('another member creating a tour lights up the Karte nav badge and the Toure
   // Desktop-Breite dieses Test-Projekts liegt .filter-bar-rows bereits offen, kein Ausklappen nötig.
   const groupToggle = pageA.locator('.tool-row', { hasText: 'Gruppieren' });
   await expect(groupToggle).toBeVisible();
-  await expect(groupToggle.getByRole('button', { name: '🏷️ Spots' }).locator('.segmented-dot')).toHaveCount(0);
-  await expect(groupToggle.getByRole('button', { name: '🎒 Touren' }).locator('.segmented-dot')).toBeVisible();
+  await expect(groupToggle.getByRole('button', { name: 'Spots' }).locator('.segmented-dot')).toHaveCount(0);
+  await expect(groupToggle.getByRole('button', { name: 'Touren' }).locator('.segmented-dot')).toBeVisible();
   await expect(excursionsNavLink.locator('.unseen-dot')).toBeVisible();
 
   // Erst der tatsächliche Wechsel auf die Touren-Gruppierung löscht deren Punkt UND (da 'spots' es
   // bereits war) damit auch den äußeren Karte-Punkt vollständig.
-  await groupToggle.getByRole('button', { name: '🎒 Touren' }).click();
+  await groupToggle.getByRole('button', { name: 'Touren' }).click();
   await expect(pageA.locator('.excursion-card', { hasText: tourTitle })).toBeVisible();
-  await expect(groupToggle.getByRole('button', { name: '🎒 Touren' }).locator('.segmented-dot')).toHaveCount(0);
+  await expect(groupToggle.getByRole('button', { name: 'Touren' }).locator('.segmented-dot')).toHaveCount(0);
   await expect(excursionsNavLink.locator('.unseen-dot')).toHaveCount(0);
 
   await ctxA.close();
