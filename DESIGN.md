@@ -420,6 +420,26 @@ gewähltes, gespeichertes Identitätsdatum ohne sinnvolles festes Tabler-Äquiva
   drittes System, sondern ein einfaches, wiederverwendbares Paar – bei jedem neuen "privat vs.
   geteilt"-Konzept dieselben zwei Emoji verwenden statt neue zu erfinden.
 
+**Jedes neue Icon braucht ein `IconDef`, nie einen rohen Emoji-String direkt im Template.** Auch für
+Icons ohne passende der obigen Registries (z. B. Werkzeug-/Aktions-Icons wie `TripMap.vue`s
+Kartensteuerung, siehe `utils/mapToolIcons.ts`) gilt dasselbe Muster wie bei
+`formFieldIcons.ts`/den Kategorie-Registries: `{ id, emoji, outline, filled? }` statt `{{ '🔍' }}` im
+Template, gerendert über `<AppIcon :icon="…" />`. Zwei Gründe, beide nicht verhandelbar:
+
+1. Nur so greift die Emoji/Symbole-Einstellung (`stores/iconStyle.ts`) überhaupt – ein hartkodiertes
+   Emoji-Zeichen bleibt für Nutzer:innen mit aktivierten Tabler-Symbolen stur Emoji, ein sichtbarer
+   Stilbruch mitten im sonst umgeschalteten Rest der App.
+2. Ein separates, aktuell in einer anderen Session laufendes Feature (Icon-Gruppen-Konfiguration –
+   welche Icon-Kategorien/-Gruppen wo konfigurierbar sind) baut auf genau dieser Struktur auf: ein
+   Icon, das nur als roher Emoji-String existiert, kann von dieser Konfiguration nicht erfasst
+   werden. Jedes neue Icon muss deshalb zusätzlich einer sinnvollen Gruppe zugeordnet sein – entweder
+   einer bestehenden Registry (passendes Konzept, siehe oben) oder einer neuen, thematisch klar
+   benannten Registry-Datei nach demselben Muster (nicht lose Einzel-`IconDef`s verstreut in
+   Komponenten). `outline` ist Pflicht, `filled` optional (nicht jedes Tabler-Icon hat ein Filled-
+   Pendant) – `resolveIconComponent()`/`AppIcon.vue` fallen dann automatisch auf `outline` zurück.
+   Einzige Ausnahme weiterhin das Nutzer-Avatar (siehe "Kartenmarker" oben): ein frei gewähltes
+   Emoji ohne festes Tabler-Äquivalent bleibt bewusst immer Emoji, roh, ohne `IconDef`.
+
 ## Formularfelder in Anlege-/Bearbeiten-Dialogen
 
 Reine Beschriftung eines Textfelds per HTML-`placeholder` verschwindet, sobald das Feld einen Wert
