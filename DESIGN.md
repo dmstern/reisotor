@@ -27,7 +27,9 @@ gleich hoch sein und gleich aussehen. Das gilt für jede der unten dokumentierte
 - **Schatten**: nur `--shadow-sm`/`--shadow-md`, kein eigener `box-shadow` (Abschnitt "Schatten").
 - **Animationen**: Timing/Easing nach Bewegungsgröße gestuft (0.15s Mikro-Interaktion / 0.2s Ein-
   Ausblenden & Listen / 0.25–0.3s große Bewegung), immer `ease`/`ease-in-out`, globale
-  `list`/`fade`-Transition-Klassen statt lokaler Neuerfindung (Abschnitt "Animationen").
+  `list`/`fade`-Transition-Klassen statt lokaler Neuerfindung (Abschnitt "Animationen"). Für
+  Zieh-Interaktionen (Anfasser/Sheets) zusätzlich die eigene Faustregel im Unterabschnitt
+  "Zieh-Interaktionen" beachten – dort *bewusst* eine eigene, weichere Einrast-Kurve statt `ease`.
 - **Typografie**: eine Schriftfamilie, Größen/Gewichte an bestehenden Textrollen orientieren
   (Abschnitt "Typografie").
 - **Icons**: Emoji aus den bestehenden Registries (`sectionIcons.ts`, `spotCategory.ts`,
@@ -235,6 +237,54 @@ oder ein neu einsortiertes Listen-Element (`<TransitionGroup name="list">`, sieh
 neuen UI-Zustand, der eine Position/Größe/Sichtbarkeit ändert: prüfen, ob der Wechsel gerade hart
 umschaltet, und wenn ja, eine der drei Bewegungsgrößen-Stufen oben dafür verwenden statt es beim
 ungeprüften Sprung zu belassen.
+
+### Zieh-Interaktionen (Drag-to-Position): butterweich statt hakelig
+
+Gilt für jeden per Maus/Touch frei ziehbaren Anfasser mit anschließendem Einrasten (Bottom-Sheet-
+Griffe, Breiten-/Größen-Anfasser, künftige Slider mit festen Stufen) – nicht nur für die aktuell zwei
+Umsetzungen (`ExcursionsView.vue`s Spots-Sheet-Anfasser `.sheet-handle`, `Drawer.vue`s
+Breiten-Anfasser `.resize-handle`). Ohne die drei Punkte unten fühlt sich eine Zieh-Interaktion
+selbst mit korrekter Logik "hakelig"/"störrisch" statt nativ-smooth an – das war konkret der Auslöser
+für diesen Abschnitt (Nutzer-Vergleichsvideo gegen Google Maps' Bottom-Sheet).
+
+1. **Während des aktiven Ziehens keine CSS-Transition auf der gezogenen Eigenschaft.** Eine an sich
+   sinnvolle Einrast-Transition (siehe Punkt 3) darf nicht auch während des Ziehens selbst aktiv
+   sein, sonst hinkt das Element dem Zeiger mit der vollen Transition-Dauer hinterher, statt 1:1 zu
+   folgen. Dafür während des Drags eine eigene Zustands-Klasse setzen, die die Transition abschaltet
+   (`.spots-col.dragging { transition: none; }` bzw. `.drawer.resizing .drawer-panel { transition:
+   none; }`) – **und diese Klasse tatsächlich ans Root-/animierte Element binden**; ein reiner
+   `resizing`/`dragging`-Ref im Script ohne `:class`-Bindung wirkt nicht (genau dieser Lapsus war der
+   kollaterale Bug in `Drawer.vue`, den dieser Abschnitt jetzt festhält).
+2. **Pro Zeigerbewegung direkt aufs DOM-Element schreiben statt über eine reaktive `:style`-Bindung.**
+   Ein `ref<HTMLElement>` + `el.style.<prop> = …` im `pointermove`-Handler spart einen kompletten
+   Vue-Render-Tick pro Event – bei hochfrequenten Events (Touch kann deutlich mehr als 60 Events/s
+   liefern) macht das den Unterschied zwischen "folgt spürbar verzögert" und "folgt exakt". Siehe
+   `applySheetHeight()`/`clearSheetHeightOverride()` in `ExcursionsView.vue` als Vorlage: der Ref hält
+   während des Ziehens die Werte selbst, erst beim Loslassen übernimmt wieder die normale
+   Klassen-/State-getriebene Bindung (inkl. der jetzt wieder aktiven Transition aus Punkt 3).
+3. **Beim Loslassen bei mehreren festen Zielzuständen (nicht bei einem stufenlosen Anfasser wie
+   `Drawer.vue`s Breite) nicht nur nach der End-Position entscheiden, sondern auch nach der
+   Zieh-Geschwindigkeit ("Flick").** Ein kurzer, schneller Wisch legt kaum Distanz zurück und landet
+   bei reiner Positions-Logik fast immer wieder beim Ausgangszustand ("poppt zurück") – bei einem
+   knackigen Flick soll stattdessen trotzdem ein Zustand weitergeschaltet werden, unabhängig von der
+   Distanz (wie bei Google Maps). Referenz-Implementierung: `dragFlickVelocity()` +
+   `resolveSheetTargetState()` in `ExcursionsView.vue` (rollierendes Zeitfenster der letzten
+   Zieh-Positionen, Geschwindigkeits-Schwellwert vor Distanz-Fallback).
+4. **Eine eigene, weichere Kurve für die Einrast-Transition selbst**: `cubic-bezier(0.32, 0.72, 0, 1)`
+   (iOS-artige Sheet-Kurve) statt des app-weiten `ease`/`ease-in-out` aus dem Abschnitt "Animationen"
+   oben – bewusste Ausnahme, nur für das Einrasten nach einem Zieh-Loslassen, nicht für die drei dort
+   beschriebenen Standard-Stufen. `ease` wirkt hier spürbar mechanischer als bei einem einfachen
+   Ein-/Ausblenden, weil die Nutzer:in unmittelbar zuvor selbst mit dem Element interagiert hat.
+
+**Stolperfalle, die es wert ist, dokumentiert zu bleiben**: `transform: translateY()` statt `height`
+für die gezogene Positionierung wäre die naheliegende zusätzliche Optimierung (GPU-Compositing statt
+Reflow/Repaint bei jedem Frame) – bei einem Element, das eine Leaflet-Karte überlagert oder ihr
+benachbart ist (aktuell nur `.spots-col`), zeigte ein Versuch damit aber ein nicht sauber
+eingrenzbares Race mit `TripMap.vue`s `ResizeObserver`/`invalidateSize()`: die Karte sprang nach
+einem Fokus-Klick auf einen Spot in ca. 4 von 5 E2E-Läufen an eine falsche Position. Ursache trotz
+Analyse nicht abschließend gefunden – `height` bleibt deshalb dort bewusst die sicherere Wahl. Bei
+Zieh-Interaktionen **ohne** Karten-Nachbarschaft steht `transform` weiterhin offen, wurde nur noch
+nicht gebraucht.
 
 ## Weiches Material (taktile Pillen)
 

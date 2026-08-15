@@ -114,7 +114,7 @@ function onResizeEnd() {
 </script>
 
 <template>
-  <div class="drawer" :class="[side, { open, maximized }]" :style="{ '--drawer-width': `${width}px` }">
+  <div class="drawer" :class="[side, { open, maximized, resizing }]" :style="{ '--drawer-width': `${width}px` }">
     <div class="drawer-backdrop" v-if="open" @click="emit('update:open', false)"></div>
     <div ref="panelEl" class="drawer-panel">
       <button
@@ -497,6 +497,12 @@ function onResizeEnd() {
     border-radius: 0;
     width: var(--drawer-width);
     transition: width 0.25s ease, opacity 0.2s ease, box-shadow 0.25s ease;
+  }
+  /* Während des Ziehens am Breiten-Anfasser (onResizeMove) darf width nicht animiert sein, sonst
+     hinkt das Panel dem Mauszeiger mit 0.25s Verzögerung hinterher statt 1:1 zu folgen - gleiches
+     Muster wie .spots-col.dragging in ExcursionsView.vue's Bottom-Sheet. */
+  .drawer.resizing .drawer-panel {
+    transition: none;
   }
   .drawer.left .drawer-panel {
     order: 1;
