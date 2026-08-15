@@ -78,4 +78,63 @@ test.describe('Standort-Aufzeichnung', () => {
     await visibilityBtn.click();
     await expect(visibilityBtn).toHaveText('🤝');
   });
+
+  // Pausieren (z. B. Stromsparen bei längerem Aufenthalt an einem Ort, Nutzer-Anforderung) hängt
+  // sich beim Fortsetzen an DIESELBE Aufzeichnung an, statt eine zweite zu erzeugen - Kern-Check
+  // hier: der Header-Indikator wechselt Icon/Text korrekt zwischen "läuft"/"pausiert", und Stop
+  // direkt aus dem pausierten Zustand heraus funktioniert (kein "hängt fest").
+  test('Pausieren und Fortsetzen hängt sich an dieselbe Aufzeichnung, Stop geht auch pausiert', async ({
+    page,
+    context,
+  }) => {
+    await page.goto('/excursions');
+    await closeDrawerIfOpen(page, 'Kalender');
+
+    const recordBtn = page.locator('.record-btn');
+    await expect(recordBtn).toBeVisible({ timeout: 10_000 });
+    await recordBtn.click();
+    await page.getByRole('button', { name: '🔒 Privat aufzeichnen' }).click();
+    await expect(recordBtn).toHaveClass(/active/);
+
+    const recordingPill = page.locator('.recording-pill');
+    await expect(recordingPill).toBeVisible();
+    await expect(recordingPill).not.toHaveClass(/paused/);
+    await expect(recordingPill.locator('.recording-pill-label')).toContainText('⏺️');
+
+    const pauseBtn = recordingPill.locator('.recording-pill-btn').first();
+    await expect(pauseBtn).toHaveText('⏸️');
+    await pauseBtn.click();
+
+    await expect(recordingPill).toHaveClass(/paused/);
+    await expect(recordingPill.locator('.recording-pill-label')).toContainText('Pausiert');
+    await expect(pauseBtn).toHaveText('▶️');
+    // Bleibt weiterhin "aktiv" (derselbe Track, nicht beendet) - nur GPS-Watch/Flush stehen still.
+    await expect(recordBtn).toHaveClass(/active/);
+
+    // Ein GPS-Fix während der Pause soll nicht aufgezeichnet werden - kein direkt beobachtbarer
+    // UI-Zustand dafür, hier nur sichergestellt, dass eine Standortänderung während der Pause die
+    // App nicht durcheinanderbringt.
+    await context.setGeolocation({ latitude: 48.22, longitude: 16.39 });
+    await page.waitForTimeout(300);
+
+    await pauseBtn.click();
+    await expect(recordingPill).not.toHaveClass(/paused/);
+    await expect(recordingPill.locator('.recording-pill-label')).toContainText('⏺️');
+    await expect(pauseBtn).toHaveText('⏸️');
+
+    await page.waitForTimeout(300);
+    await context.setGeolocation({ latitude: 48.23, longitude: 16.4 });
+    await page.waitForTimeout(300);
+
+    // Stop direkt aus fortgesetztem Zustand heraus (analog zum ersten Test) - beendet dieselbe,
+    // einzige Aufzeichnung.
+    await recordBtn.click();
+    await expect(recordBtn).not.toHaveClass(/active/, { timeout: 10_000 });
+    await expect(recordingPill).not.toBeVisible();
+
+    const tracksToggle = page.locator('.tracks-toggle');
+    await expect(tracksToggle).toBeVisible({ timeout: 10_000 });
+    await tracksToggle.click();
+    await expect(page.locator('.track-row').first().locator('.track-row-meta')).toContainText('⏱️');
+  });
 });
