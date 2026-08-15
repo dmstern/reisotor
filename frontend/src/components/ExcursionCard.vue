@@ -14,6 +14,10 @@ import Comments, { type CommentItem } from './Comments.vue';
 import ExcursionDetailDialog from './ExcursionDetailDialog.vue';
 import SpotImageCollage from './SpotImageCollage.vue';
 import PendingSyncBadge from './PendingSyncBadge.vue';
+import AppIcon from './AppIcon.vue';
+import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
+import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
+import { ACTION_ICONS } from '../utils/actionIcons';
 import { formatDate as formatDateShared } from '../utils/dateFormat';
 
 const props = defineProps<{
@@ -91,12 +95,9 @@ watch(
   { immediate: true },
 );
 
-const statusLabel = computed(() => {
-  if (!props.excursion.date) return 'In Planung';
-  const dateLabel = `📅 ${formatDate(props.excursion.date)}`;
-  if (!dayWeather.value) return dateLabel;
-  return `${dateLabel} · ${weatherCodeMeta(dayWeather.value.weatherCode).icon} ${Math.round(dayWeather.value.tempMax)}°`;
-});
+// Nur noch das Datum als String - Icon/Wetter rendert das Template direkt (siehe dort), statt es
+// wie zuvor in einen einzigen, nicht auftrennbaren String einzubacken.
+const statusDateLabel = computed(() => (props.excursion.date ? formatDate(props.excursion.date) : ''));
 
 // Einplanen per Zeige-/Touch-Drag am eigenen Anfasser (📅 Einplanen) statt am gesamten Card-Root:
 // natives HTML5-draggable/dragstart wurde ersetzt, da es auf Touch-Geräten (v. a. Android Chrome)
@@ -161,10 +162,20 @@ function onSpotDrop(event: DragEvent) {
     <DeleteButton floating class="card-delete" @click="emit('remove', excursion.id)" />
     <div class="image" :style="displayImage ? { backgroundImage: `url(${displayImage})` } : {}">
       <SpotImageCollage v-if="showCollage" :images="fallbackImages" />
-      <span v-else-if="!displayImage" class="placeholder">🎒</span>
+      <AppIcon v-else-if="!displayImage" class="placeholder" :size="35" :icon="SECTION_ICON_DEFS.excursions" group="categories" />
       <EditButton floating @click="emit('edit', excursion)" />
-      <span class="status" :class="{ planned: excursion.date }">{{ statusLabel }}</span>
-      <span v-if="excursion.done" class="status status-done">✅ Gemacht</span>
+      <span class="status" :class="{ planned: excursion.date }">
+        <template v-if="!excursion.date">In Planung</template>
+        <template v-else>
+          <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="actions" /> {{ statusDateLabel
+          }}<template v-if="dayWeather">
+            · <AppIcon :icon="weatherCodeMeta(dayWeather.weatherCode).tabler" :size="14" group="categories" /> {{ Math.round(dayWeather.tempMax) }}°</template
+          >
+        </template>
+      </span>
+      <span v-if="excursion.done" class="status status-done">
+        <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" /> Gemacht
+      </span>
     </div>
     <div class="body">
       <div class="title-row">
@@ -172,7 +183,9 @@ function onSpotDrop(event: DragEvent) {
         <PendingSyncBadge v-if="excursion._pending" />
       </div>
       <div class="links" v-if="hasMappedStations">
-        <button type="button" class="card-action-btn" @click.stop="emit('show-on-map')">🗺️ Auf Karte anzeigen</button>
+        <button type="button" class="card-action-btn" @click.stop="emit('show-on-map')">
+          <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" /> Auf Karte anzeigen
+        </button>
       </div>
       <div class="card-actions">
         <button
@@ -183,7 +196,7 @@ function onSpotDrop(event: DragEvent) {
           @pointerdown="onPointerDown"
           @click.stop
         >
-          📅 Einplanen
+          <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" /> Einplanen
         </button>
         <button
           type="button"
@@ -192,11 +205,18 @@ function onSpotDrop(event: DragEvent) {
           :aria-pressed="!!excursion.done"
           @click.stop="excursionsStore.setDone(excursion.id, !excursion.done)"
         >
-          {{ excursion.done ? '✅ Gemacht' : '⬜️ Als gemacht markieren' }}
+          <template v-if="excursion.done">
+            <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" /> Gemacht
+          </template>
+          <template v-else>
+            <AppIcon :icon="ACTION_ICONS.notDone" :size="14" group="actions" /> Als gemacht markieren
+          </template>
         </button>
       </div>
       <Teleport to="body">
-        <div v-if="dragging" class="drag-ghost" :style="ghostStyle ?? {}">📅 {{ excursion.title }}</div>
+        <div v-if="dragging" class="drag-ghost" :style="ghostStyle ?? {}">
+          <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" /> {{ excursion.title }}
+        </div>
       </Teleport>
       <SocialRow
         class="social-row"

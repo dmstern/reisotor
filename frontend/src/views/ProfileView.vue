@@ -29,7 +29,11 @@ import ThemeModeSelect from '../components/ThemeModeSelect.vue';
 import SegmentedToggle from '../components/SegmentedToggle.vue';
 import AppIcon from '../components/AppIcon.vue';
 import IconStyleSettings from '../components/IconStyleSettings.vue';
+import { ACTION_ICONS } from '../utils/actionIcons';
+import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import FeedbackDialog from '../components/FeedbackDialog.vue';
+import { IconUser, IconUserFilled, IconDeviceDesktop, IconBell, IconBellFilled, IconDatabase, IconInfoCircle, IconInfoCircleFilled } from '@tabler/icons-vue';
+import type { IconDef } from '../utils/icon';
 
 const auth = useAuthStore();
 const router = useRouter();
@@ -46,13 +50,13 @@ const dashboardConfig = useDashboardConfigStore();
 // Komponente statt eigener Kind-Komponenten - das bestehende einzelne onMounted() unten lädt
 // weiterhin alles unabhängig vom aktiven Tab, die v-ifs zeigen nur, was davon gerade sichtbar ist.
 type Tab = 'account' | 'app' | 'trip' | 'notifications' | 'data' | 'about';
-const TABS: { key: Tab; label: string; icon: string }[] = [
-  { key: 'account', label: 'Account', icon: '👤' },
-  { key: 'app', label: 'App-Einstellungen', icon: '🖥️' },
-  { key: 'trip', label: 'Reise-Anzeige', icon: '📅' },
-  { key: 'notifications', label: 'Benachrichtigungen', icon: '🔔' },
-  { key: 'data', label: 'Daten', icon: '🗄️' },
-  { key: 'about', label: 'Über', icon: 'ℹ️' },
+const TABS: { key: Tab; label: string; icon: IconDef }[] = [
+  { key: 'account', label: 'Account', icon: { id: 'user', emoji: '👤', outline: IconUser, filled: IconUserFilled } },
+  { key: 'app', label: 'App-Einstellungen', icon: { id: 'device-desktop', emoji: '🖥️', outline: IconDeviceDesktop } },
+  { key: 'trip', label: 'Reise-Anzeige', icon: FORM_FIELD_ICONS.date },
+  { key: 'notifications', label: 'Benachrichtigungen', icon: { id: 'bell', emoji: '🔔', outline: IconBell, filled: IconBellFilled } },
+  { key: 'data', label: 'Daten', icon: { id: 'database', emoji: '🗄️', outline: IconDatabase } },
+  { key: 'about', label: 'Über', icon: { id: 'info-circle', emoji: 'ℹ️', outline: IconInfoCircle, filled: IconInfoCircleFilled } },
 ];
 const TAB_KEYS = TABS.map((t) => t.key);
 
@@ -341,7 +345,7 @@ async function onImportFileSelected(event: Event) {
         :aria-selected="activeTab === tab.key"
         @click="selectTab(tab.key, $event)"
       >
-        <span class="icon">{{ tab.icon }}</span>
+        <AppIcon class="icon" :icon="tab.icon" :size="16" group="navigation" />
         {{ tab.label }}
       </button>
     </div>
@@ -350,7 +354,9 @@ async function onImportFileSelected(event: Event) {
       <div class="card">
         <div class="header">
           <h2>{{ auth.user?.avatar }} {{ auth.user?.username }}</h2>
-          <button type="button" class="secondary" @click="logout">🚪 Abmelden</button>
+          <button type="button" class="secondary" @click="logout">
+            <AppIcon :icon="ACTION_ICONS.logout" :size="14" group="actions" /> Abmelden
+          </button>
         </div>
 
         <form class="form username-form" @submit.prevent="changeUsername">
@@ -359,7 +365,9 @@ async function onImportFileSelected(event: Event) {
             <input v-model="usernameForm.username" type="text" required />
           </label>
           <p v-if="usernameError" class="hint error">{{ usernameError }}</p>
-          <p v-if="usernameSaved" class="hint success">Benutzername geändert ✓</p>
+          <p v-if="usernameSaved" class="hint success">
+            Benutzername geändert <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
+          </p>
           <button type="submit" :disabled="usernameSaving">
             {{ usernameSaving ? 'Speichern…' : 'Benutzername speichern' }}
           </button>
@@ -384,7 +392,9 @@ async function onImportFileSelected(event: Event) {
             </div>
           </div>
         </div>
-        <p v-if="avatarSaved" class="hint success">Gespeichert ✓</p>
+        <p v-if="avatarSaved" class="hint success">
+          Gespeichert <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
+        </p>
       </div>
 
       <div class="card">
@@ -420,7 +430,9 @@ async function onImportFileSelected(event: Event) {
             />
           </div>
           <p v-if="passwordError" class="hint error">{{ passwordError }}</p>
-          <p v-if="passwordSaved" class="hint success">Passwort geändert ✓</p>
+          <p v-if="passwordSaved" class="hint success">
+            Passwort geändert <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
+          </p>
           <button type="submit" :disabled="passwordSaving">
             {{ passwordSaving ? 'Speichern…' : 'Passwort speichern' }}
           </button>
@@ -464,7 +476,7 @@ async function onImportFileSelected(event: Event) {
         </p>
         <ul class="nav-config-list">
           <li v-for="(entry, index) in navConfig.entries" :key="entry.key" class="nav-config-row">
-            <AppIcon v-if="navLinkIcon(entry.key)" class="nav-config-icon" :icon="navLinkIcon(entry.key)!" />
+            <AppIcon v-if="navLinkIcon(entry.key)" class="nav-config-icon" :icon="navLinkIcon(entry.key)!" group="navigation" />
             <span class="nav-config-label" :class="{ hidden: !entry.visible }">{{ navLinkLabel(entry.key) }}</span>
             <div class="nav-config-actions">
               <button
@@ -511,7 +523,7 @@ async function onImportFileSelected(event: Event) {
              Tests immer erst über die jeweilige äußere Zeilen-Klasse, keine Kollisionsgefahr. -->
         <ul class="dashboard-config-list">
           <li v-for="(entry, index) in dashboardConfig.entries" :key="entry.key" class="dashboard-config-row">
-            <AppIcon v-if="dashboardTileIcon(entry.key)" class="nav-config-icon" :icon="dashboardTileIcon(entry.key)!" />
+            <AppIcon v-if="dashboardTileIcon(entry.key)" class="nav-config-icon" :icon="dashboardTileIcon(entry.key)!" group="navigation" />
             <span class="nav-config-label" :class="{ hidden: !entry.visible }">{{ dashboardTileLabel(entry.key) }}</span>
             <div class="nav-config-actions">
               <button
@@ -714,10 +726,12 @@ async function onImportFileSelected(event: Event) {
 
         <div class="backup-actions">
           <button class="secondary" :disabled="exporting" @click="exportBackup">
-            {{ exporting ? 'Exportiere…' : '⬇️ Backup exportieren' }}
+            <template v-if="exporting">Exportiere…</template>
+            <template v-else><AppIcon :icon="ACTION_ICONS.download" :size="14" group="actions" /> Backup exportieren</template>
           </button>
           <button class="secondary" :disabled="importing" @click="triggerImportPicker">
-            {{ importing ? 'Importiere…' : '⬆️ Backup importieren' }}
+            <template v-if="importing">Importiere…</template>
+            <template v-else><AppIcon :icon="ACTION_ICONS.upload" :size="14" group="actions" /> Backup importieren</template>
           </button>
           <input
             ref="importFileInput"
@@ -734,7 +748,9 @@ async function onImportFileSelected(event: Event) {
           Import erfolgreich ({{ Object.values(importResult).reduce((a, b) => a + b, 0) }} Einträge). Seite
           wird neu geladen…
         </p>
-        <p class="hint warning">⚠️ Der Import überschreibt alle aktuellen Daten unwiderruflich.</p>
+        <p class="hint warning">
+          <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Der Import überschreibt alle aktuellen Daten unwiderruflich.
+        </p>
       </div>
     </template>
 

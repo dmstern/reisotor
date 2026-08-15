@@ -5,6 +5,8 @@ import { useBudgetStore } from '../stores/budget';
 import BudgetMeter from './BudgetMeter.vue';
 import DeleteButton from './DeleteButton.vue';
 import FormField from './FormField.vue';
+import AppIcon from './AppIcon.vue';
+import { ACTION_ICONS } from '../utils/actionIcons';
 
 const props = defineProps<{
   budget: Budget;
@@ -59,7 +61,11 @@ function updateAllocationAmount(category: string, value: string) {
       <div class="pot-title">
         <h3>{{ budget.name }}</h3>
         <span class="kind-badge">
-          {{ budget.owner_id == null ? '🤝 Geteilt' : `🔒 ${store.userAvatar(budget.owner_id)} ${store.userName(budget.owner_id)}` }}
+          <template v-if="budget.owner_id == null"><AppIcon :icon="ACTION_ICONS.shared" :size="14" group="actions" /> Geteilt</template>
+          <template v-else
+            ><AppIcon :icon="ACTION_ICONS.private" :size="14" group="actions" /> {{ store.userAvatar(budget.owner_id) }}
+            {{ store.userName(budget.owner_id) }}</template
+          >
         </span>
       </div>
       <DeleteButton small @click="store.removeBudget(budget.id)" />

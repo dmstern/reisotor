@@ -34,9 +34,12 @@ import { useMapOrientationStore } from '../stores/mapOrientation';
 import { useLocationSharingStore, type ShareDuration } from '../stores/locationSharing';
 import { useWeatherProviderStore } from '../stores/weatherProvider';
 import { spotCategoryMeta } from '../utils/spotCategory';
+import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { buildTravelDerivedLocations } from '../utils/travelDerivedLocations';
 import { arcRoute, cachedEmojiPin, compassPin, LEAFLET_ATTRIBUTION_PREFIX } from '../utils/mapRoute';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
+import { ACTION_ICONS } from '../utils/actionIcons';
+import AppIcon from './AppIcon.vue';
 import type { IconDef } from '../utils/icon';
 import { downloadTiles, estimateTileDownload, formatApproxSize } from '../utils/offlineMapTiles';
 import { formatDate as formatDateShared, toLocalDateString } from '../utils/dateFormat';
@@ -1295,7 +1298,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
         :disabled="!filteredPoints.length"
         @click="fitAll"
       >
-        🔍
+        <AppIcon :icon="ACTION_ICONS.fitAll" :size="18" group="actions" />
       </button>
       <button
         type="button"
@@ -1305,7 +1308,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
         :disabled="!vacationPoints.length"
         @click="fitVacation"
       >
-        🏖️
+        <AppIcon :icon="ACTION_ICONS.vacation" :size="18" group="actions" />
       </button>
       <button
         type="button"
@@ -1315,7 +1318,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
         :disabled="!accommodationPoints.length"
         @click="fitAccommodations"
       >
-        🛏️
+        <AppIcon :icon="spotCategoryMeta('Unterkunft').tabler" :size="18" group="categories" />
       </button>
       <!-- v-if statt nur :disabled: solange noch gar keine Tour existiert, ist ein "Tourziele
            fokussieren"-Button reine Verwirrung (fokussiert nichts, ohne erklärenden Kontext) - erst
@@ -1330,7 +1333,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
         :disabled="!excursionPoints.length"
         @click="fitExcursions"
       >
-        🎒
+        <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="18" group="navigation" />
       </button>
       <button
         type="button"
@@ -1363,7 +1366,11 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
         "
         @click="toggleMapOrientation"
       >
-        {{ mapOrientation.mode === 'north' ? '🧭' : '🔭' }}
+        <AppIcon
+          :icon="mapOrientation.mode === 'north' ? ACTION_ICONS.orientationNorth : ACTION_ICONS.orientationHeading"
+          :size="18"
+          group="actions"
+        />
       </button>
       <button
         type="button"
@@ -1373,7 +1380,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
         :disabled="tileDownloadState === 'downloading'"
         @click="downloadOfflineMap"
       >
-        ⬇️
+        <AppIcon :icon="ACTION_ICONS.download" :size="18" group="actions" />
       </button>
       <!-- Standort-Freigabe (stores/locationSharing.ts): läuft unabhängig davon, ob diese
            Kartenansicht offen ist - Klick öffnet nur die Dauer-Auswahl. -->
@@ -1386,7 +1393,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
         :aria-label="shareDurationLabel"
         @click="toggleShareMenu"
       >
-        📡
+        <AppIcon :icon="ACTION_ICONS.shareLocation" :size="18" group="actions" />
       </button>
       <!-- Standort-Aufzeichnung (stores/trackRecording.ts): läuft ebenfalls unabhängig von dieser
            Kartenansicht weiter - Klick öffnet bei Nicht-Aufzeichnung nur die Start-Auswahl, beendet
@@ -1400,7 +1407,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
         :aria-label="trackRecording.recording ? 'Aufzeichnung beenden' : 'Standort aufzeichnen'"
         @click="toggleRecordMenu"
       >
-        {{ trackRecording.recording ? '⏹️' : '⏺️' }}
+        <AppIcon :icon="trackRecording.recording ? ACTION_ICONS.recordStop : ACTION_ICONS.recordStart" :size="18" group="actions" />
       </button>
       <!-- Auf Desktop steht dasselbe Wetter bereits ausführlicher in der Kalender-Schublade (siehe
            CalendarWeek.vue) - die ist dort permanent neben der Karte gemountet. Auf Mobil ist der
@@ -1415,46 +1422,62 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
           <div class="picker-backdrop" @click="shareMenuOpen = false"></div>
           <div class="picker-menu" :style="shareMenuStyle">
             <button type="button" :class="{ active: !locationSharing.shareUntil }" @click="chooseShareDuration('off')">
-              🚫 Nicht teilen
+              <AppIcon :icon="ACTION_ICONS.off" :size="14" group="actions" /> Nicht teilen
             </button>
-            <button type="button" @click="chooseShareDuration('day')">📅 Für einen Tag</button>
-            <button type="button" @click="chooseShareDuration('week')">🗓️ Für eine Woche</button>
-            <button type="button" @click="chooseShareDuration('forever')">♾️ Dauerhaft</button>
+            <button type="button" @click="chooseShareDuration('day')">
+              <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" /> Für einen Tag
+            </button>
+            <button type="button" @click="chooseShareDuration('week')">
+              <AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" /> Für eine Woche
+            </button>
+            <button type="button" @click="chooseShareDuration('forever')">
+              <AppIcon :icon="ACTION_ICONS.forever" :size="14" group="actions" /> Dauerhaft
+            </button>
           </div>
         </template>
         <template v-if="recordMenuOpen">
           <div class="picker-backdrop" @click="recordMenuOpen = false"></div>
           <div class="picker-menu" :style="recordMenuStyle">
             <p v-if="focusedExcursion" class="picker-menu-hint">
-              🔗 wird an „{{ focusedExcursion.title }}" gekoppelt
+              <AppIcon :icon="FORM_FIELD_ICONS.link" :size="14" group="formFields" /> wird an „{{ focusedExcursion.title }}" gekoppelt
             </p>
-            <button type="button" @click="chooseRecordVisibility('private')">🔒 Privat aufzeichnen</button>
-            <button type="button" @click="chooseRecordVisibility('shared')">🤝 Geteilt aufzeichnen</button>
+            <button type="button" @click="chooseRecordVisibility('private')">
+              <AppIcon :icon="ACTION_ICONS.private" :size="14" group="actions" /> Privat aufzeichnen
+            </button>
+            <button type="button" @click="chooseRecordVisibility('shared')">
+              <AppIcon :icon="ACTION_ICONS.shared" :size="14" group="actions" /> Geteilt aufzeichnen
+            </button>
           </div>
         </template>
       </Teleport>
       <div class="tile-download-pill" v-if="trackRecording.startError">
-        ⚠️ {{ trackRecording.startError }}
-        <button type="button" class="card-action-btn" @click="trackRecording.startError = null">✕</button>
+        <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> {{ trackRecording.startError }}
+        <button type="button" class="card-action-btn" @click="trackRecording.startError = null">
+          <AppIcon :icon="ACTION_ICONS.close" :size="14" group="actions" />
+        </button>
       </div>
       <div class="tile-download-pill" v-if="tileDownloadState === 'downloading'">
-        🔄 Lädt Kartenkacheln… {{ tileDownloadProgress.done }}/{{ tileDownloadProgress.total }}
+        <AppIcon :icon="ACTION_ICONS.refresh" :size="14" group="actions" /> Lädt Kartenkacheln… {{ tileDownloadProgress.done }}/{{ tileDownloadProgress.total }}
       </div>
       <div class="tile-download-pill" v-else-if="tileDownloadState === 'done' && tileDownloadResult">
-        ✅ {{ tileDownloadResult.downloaded }} Kacheln offline gespeichert{{
+        <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" /> {{ tileDownloadResult.downloaded }} Kacheln offline gespeichert{{
           tileDownloadResult.failed ? `, ${tileDownloadResult.failed} fehlgeschlagen` : ''
         }}
-        <button type="button" class="card-action-btn" @click="dismissTileDownloadResult">✕</button>
+        <button type="button" class="card-action-btn" @click="dismissTileDownloadResult">
+          <AppIcon :icon="ACTION_ICONS.close" :size="14" group="actions" />
+        </button>
       </div>
       <div class="focus-banner" v-if="focusedExcursion">
-        <span>🎒 {{ focusedExcursion.title }}</span>
+        <span><AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="14" group="navigation" /> {{ focusedExcursion.title }}</span>
         <button type="button" class="card-action-btn" @click="drawers.mapFocusExcursionId = null">
-          ✕ Fokus verlassen
+          <AppIcon :icon="ACTION_ICONS.close" :size="14" group="actions" /> Fokus verlassen
         </button>
       </div>
       <div class="focus-banner" v-else-if="drawers.mapFocusDate">
-        <span>🗓️ {{ formatDate(drawers.mapFocusDate) }}</span>
-        <button type="button" class="card-action-btn" @click="drawers.mapFocusDate = null">✕ Fokus verlassen</button>
+        <span><AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" /> {{ formatDate(drawers.mapFocusDate) }}</span>
+        <button type="button" class="card-action-btn" @click="drawers.mapFocusDate = null">
+          <AppIcon :icon="ACTION_ICONS.close" :size="14" group="actions" /> Fokus verlassen
+        </button>
       </div>
     </div>
 
@@ -1488,9 +1511,14 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
     <div class="card focus-spot-list" v-if="focusedExcursion && focusedExcursionStations.length">
       <div class="focus-spot-list-header">
         <button type="button" class="focus-spot-list-title-btn" @click="openExcursionDetail">
-          <h3 class="focus-spot-list-title">🎒 {{ focusedExcursion.title }}</h3>
+          <h3 class="focus-spot-list-title">
+            <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="16" group="navigation" /> {{ focusedExcursion.title }}
+          </h3>
           <span class="focus-spot-list-status" :class="{ planned: focusedExcursion.date }">
-            {{ focusedExcursion.date ? `📅 ${formatDate(focusedExcursion.date)}` : 'In Planung' }}
+            <template v-if="focusedExcursion.date">
+              <AppIcon :icon="FORM_FIELD_ICONS.date" :size="13" group="formFields" /> {{ formatDate(focusedExcursion.date) }}
+            </template>
+            <template v-else>In Planung</template>
           </span>
         </button>
         <button
@@ -1500,7 +1528,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
           title="Tour-Fokus schließen"
           @click="drawers.mapFocusExcursionId = null"
         >
-          ✕
+          <AppIcon :icon="ACTION_ICONS.close" :size="14" group="actions" />
         </button>
       </div>
       <p class="focus-spot-list-subtitle">Stationen</p>
@@ -1517,7 +1545,9 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
 
     <div class="card focus-spot-list" v-else-if="drawers.mapFocusDate && focusedDateStations.length">
       <div class="focus-spot-list-header">
-        <h3 class="focus-spot-list-title">🗓️ {{ formatDate(drawers.mapFocusDate) }}</h3>
+        <h3 class="focus-spot-list-title">
+          <AppIcon :icon="FORM_FIELD_ICONS.period" :size="16" group="formFields" /> {{ formatDate(drawers.mapFocusDate) }}
+        </h3>
         <button
           type="button"
           class="focus-spot-list-close"
@@ -1525,7 +1555,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
           title="Tages-Fokus schließen"
           @click="drawers.mapFocusDate = null"
         >
-          ✕
+          <AppIcon :icon="ACTION_ICONS.close" :size="14" group="actions" />
         </button>
       </div>
       <p class="focus-spot-list-subtitle">Stationen</p>
@@ -1544,7 +1574,8 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
             :class="{ labeled: !!focusedDateStations[index + 1].connector }"
           >
             <span v-if="focusedDateStations[index + 1].connector" class="connector-label">
-              {{ focusedDateStations[index + 1].connector!.icon }} {{ focusedDateStations[index + 1].connector!.label }}
+              <AppIcon :icon="focusedDateStations[index + 1].connector!.tabler" :size="13" group="categories" />
+              {{ focusedDateStations[index + 1].connector!.label }}
             </span>
           </div>
         </template>
@@ -1554,7 +1585,8 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
     <div class="card focus-spot-list" v-else-if="focusedTrack">
       <div class="focus-spot-list-header">
         <h3 class="focus-spot-list-title">
-          🧭 {{ focusedTrack.title || `Aufzeichnung vom ${formatDate(focusedTrack.started_at.slice(0, 10))}` }}
+          <AppIcon :icon="ACTION_ICONS.orientationNorth" :size="16" group="actions" />
+          {{ focusedTrack.title || `Aufzeichnung vom ${formatDate(focusedTrack.started_at.slice(0, 10))}` }}
         </h3>
         <button
           type="button"
@@ -1563,7 +1595,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
           title="Aufzeichnung-Fokus schließen"
           @click="drawers.mapFocusTrackId = null"
         >
-          ✕
+          <AppIcon :icon="ACTION_ICONS.close" :size="14" group="actions" />
         </button>
       </div>
       <p v-if="focusedTrackPoints.length < 2" class="focus-spot-list-subtitle">Lädt Route…</p>

@@ -31,6 +31,8 @@ import {
   IconPigMoney,
   IconBuildingStore,
   IconUsers,
+  IconMail,
+  IconMailFilled,
 } from '@tabler/icons-vue';
 import type { IconDef } from './icon';
 
@@ -57,6 +59,7 @@ export type FormFieldIconKey =
   | 'tour'
   | 'priority'
   | 'contact'
+  | 'email'
   | 'pot'
   | 'shop'
   | 'visibility';
@@ -78,6 +81,7 @@ export const FORM_FIELD_ICONS: Record<FormFieldIconKey, IconDef> = {
   tour: { id: 'compass', emoji: '🧭', outline: IconCompass, filled: IconCompassFilled },
   priority: { id: 'alert-triangle', emoji: '🚦', outline: IconAlertTriangle, filled: IconAlertTriangleFilled },
   contact: { id: 'phone', emoji: '📞', outline: IconPhone, filled: IconPhoneFilled },
+  email: { id: 'mail', emoji: '📧', outline: IconMail, filled: IconMailFilled },
   pot: { id: 'pig-money', emoji: '🏺', outline: IconPigMoney },
   shop: { id: 'building-store', emoji: '🏬', outline: IconBuildingStore },
   visibility: { id: 'users', emoji: '👥', outline: IconUsers },

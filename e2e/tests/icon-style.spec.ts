@@ -91,4 +91,45 @@ test.describe('Icon-Stil: Emoji/Symbole', () => {
     await expect(page.locator('.app-header .avatar')).toHaveText(avatarText ?? '');
     expect(await page.locator('.app-header .avatar').locator('svg').count()).toBe(0);
   });
+
+  test('Bereichs-Override lässt die Navigation bei Emoji, während der globale Stil auf Symbole steht', async ({ page }) => {
+    await page.goto('/');
+    await page.evaluate(() => localStorage.setItem('reisotor-icon-style', 'icons'));
+    await page.goto('/profile?tab=app');
+    const iconsCard = page.locator('.card', { hasText: 'Icons' });
+    await expect(iconsCard).toBeVisible();
+
+    await iconsCard.locator('summary', { hasText: 'Für einzelne Bereiche anpassen' }).click();
+    const navRow = iconsCard.locator('.group-override-row', { hasText: 'Navigation & Dashboard' });
+    await navRow.locator('.segmented-option', { hasText: 'Emoji' }).click();
+    expect(await page.evaluate(() => localStorage.getItem('reisotor-icon-style-group-overrides'))).toContain('"navigation":"emoji"');
+
+    await page.goto('/');
+    const dashboardLink = page.locator('.navbar .link').first();
+    await expect(dashboardLink.locator('span.icon')).toHaveText('🏠');
+    expect(await dashboardLink.locator('svg.icon').count()).toBe(0);
+
+    // Ein anderer Bereich (Kategorien, z. B. Wetter-Icon auf dem Dashboard) bleibt unverändert bei
+    // Symbole - der Override gilt gezielt nur für die Navigation-Gruppe.
+    await page.goto('/dashboard');
+  });
+
+  test('"Icons in der Navigation einfärben" setzt eine Akzentfarbe auf das NavBar-Icon', async ({ page }) => {
+    await page.goto('/');
+    await page.evaluate(() => localStorage.setItem('reisotor-icon-style', 'icons'));
+    await page.goto('/profile?tab=app');
+    const iconsCard = page.locator('.card', { hasText: 'Icons' });
+    await expect(iconsCard).toBeVisible();
+
+    const dashboardIcon = () => page.locator('.navbar .link').first().locator('svg.icon');
+    await page.goto('/');
+    await expect(dashboardIcon()).toHaveAttribute('stroke', 'currentColor');
+
+    await page.goto('/profile?tab=app');
+    await iconsCard.locator('.nav-colored-row input[type="checkbox"]').check();
+    expect(await page.evaluate(() => localStorage.getItem('reisotor-icon-nav-colored'))).toBe('true');
+
+    await page.goto('/');
+    await expect(dashboardIcon()).not.toHaveAttribute('stroke', 'currentColor');
+  });
 });

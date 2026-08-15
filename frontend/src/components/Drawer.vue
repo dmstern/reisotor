@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { computed, nextTick, watch, ref } from 'vue';
 import { MAX_DRAWER_WIDTH, MIN_DRAWER_WIDTH, useDrawersStore } from '../stores/drawers';
+import AppIcon from './AppIcon.vue';
+import { ACTION_ICONS } from '../utils/actionIcons';
+import type { IconDef } from '../utils/icon';
 
 const props = defineProps<{
   side: 'left' | 'right';
   open: boolean;
   label: string;
-  icon: string;
+  icon: IconDef;
   width: number;
   hasUnseen?: boolean;
   /** Blendet nur die Lasche aus (den Klick-Einstieg), NICHT die Schublade selbst - die bleibt
@@ -126,7 +129,7 @@ function onResizeEnd() {
         :title="maximized ? 'Verkleinern' : 'Maximieren'"
         @click="toggleMaximize"
       >
-        {{ maximized ? '🗗' : '⛶' }}
+        <AppIcon :icon="maximized ? ACTION_ICONS.minimize : ACTION_ICONS.maximize" :size="16" group="actions" />
       </button>
       <button
         v-if="open"
@@ -136,7 +139,7 @@ function onResizeEnd() {
         title="Schließen"
         @click="emit('update:open', false)"
       >
-        ✕
+        <AppIcon :icon="ACTION_ICONS.close" :size="16" group="actions" />
       </button>
       <div class="drawer-content"><slot /></div>
     </div>
@@ -165,7 +168,7 @@ function onResizeEnd() {
       @click="toggle"
     >
       <span class="tab-icon-wrap">
-        <span class="tab-icon">{{ icon }}</span>
+        <AppIcon class="tab-icon" :size="18" :icon="icon" group="navigation" />
         <span v-if="hasUnseen" class="unseen-dot" aria-label="Neue Änderungen" />
       </span>
       <span class="tab-label">{{ label }}</span>

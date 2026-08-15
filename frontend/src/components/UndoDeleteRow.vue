@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import AppIcon from './AppIcon.vue';
+import { ACTION_ICONS } from '../utils/actionIcons';
+
 // Platzhalter, der für das 60s-Rückgängig-Fenster (useUndoableDelete.ts) genau an der Stelle steht,
 // an der die gelöschte Karte/Zeile vorher war – für den Fall, dass jemand aus Versehen gelöscht hat.
 defineProps<{ label?: string }>();
@@ -7,7 +10,11 @@ defineEmits<{ (e: 'undo'): void }>();
 
 <template>
   <div class="undo-delete-row">
-    <span class="undo-delete-text">🗑️ Gelöscht<template v-if="label"> · {{ label }}</template></span>
+    <span class="undo-delete-text"
+      ><AppIcon :icon="ACTION_ICONS.delete" :size="14" group="actions" /> Gelöscht<template v-if="label">
+        · {{ label }}</template
+      ></span
+    >
     <button type="button" class="card-action-btn" @click="$emit('undo')">Löschen rückgängig machen</button>
   </div>
 </template>

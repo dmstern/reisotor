@@ -2,8 +2,10 @@
 // Markiert ein einzelnes Objekt (nicht die ganze App wie OfflineIndicator.vue) als offline angelegt/
 // bearbeitet und noch nicht mit dem Server synchronisiert - siehe api/offline.ts's Outbox +
 // api/client.ts's queueMutation(), die genau dafür ein `_pending`-Flag auf die optimistische Antwort
-// setzen. Gleiches 📴-Icon wie OfflineIndicator.vue's Offline-Pille, damit beide Anzeigen als
+// setzen. Gleiches Icon wie OfflineIndicator.vue's Offline-Pille, damit beide Anzeigen als
 // dasselbe Konzept erkennbar bleiben.
+import AppIcon from './AppIcon.vue';
+import { ACTION_ICONS } from '../utils/actionIcons';
 </script>
 
 <template>
@@ -11,7 +13,7 @@
     class="pending-sync-badge"
     title="Offline gespeichert – wird automatisch synchronisiert, sobald wieder eine Verbindung besteht"
   >
-    📴 nur lokal gespeichert
+    <AppIcon :icon="ACTION_ICONS.offline" :size="12" group="actions" /> nur lokal gespeichert
   </span>
 </template>
 

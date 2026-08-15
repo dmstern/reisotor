@@ -393,7 +393,7 @@ PWA-Service-Worker wie jeder andere App-Code precached – die ursprüngliche Of
 Darstellungen gültig. Rendering läuft zentral über `components/AppIcon.vue` (nimmt ein `IconDef` aus
 `utils/icon.ts`, löst je nach Einstellung zu Emoji-Text oder Tabler-Komponente auf; fehlt für ein Icon
 die Tabler-Filled-Variante – nicht jedes Outline-Icon hat eine –, fällt automatisch auf Outline
-zurück). Zwei getrennte, in sich konsistente Icon-Systeme:
+zurück). Drei getrennte, in sich konsistente Icon-Systeme:
 
 - **App-Bereiche** (Navigation, Dashboard-Kacheln, Schubladen-Tabs): zentrale Registry in
   `frontend/src/utils/sectionIcons.ts` (`SECTION_ICONS` fürs Emoji, `SECTION_ICON_DEFS` fürs
@@ -406,6 +406,40 @@ zurück). Zwei getrennte, in sich konsistente Icon-Systeme:
   Kategorien pro Bereich unterschiedliche Bedeutung haben. Jede trägt neben dem Emoji-String
   zusätzlich ein `tabler: IconDef`-Feld – neues Konzept in einer dieser Registries → immer beide
   Felder ergänzen, nicht nur das Emoji.
+- **Aktionen/Status** (Buttons, Toggle-Beschriftungen, Status-Badges – z. B. Bearbeiten/Löschen/
+  Schließen, Privat/Geteilt, Erledigt/Nicht erledigt): `frontend/src/utils/actionIcons.ts`s
+  `ACTION_ICONS` (analog zu `FORM_FIELD_ICONS` für Formularfeld-Label, siehe eigener Abschnitt unten).
+  Ein Konzept-Icon pro Aktion, auch wenn mehrere App-Bereiche zufällig dieselbe Tabler-Komponente
+  nutzen (z. B. `vacation` hier und `spotCategory.ts`s "Strand" – bewusst getrennt gehalten, ein
+  Button-Aktion-Konzept und eine Spot-Kategorie sind unterschiedliche Dinge). Neues wiederkehrendes
+  Aktions-/Status-Icon → hier ergänzen statt lokal in der Komponente ein eigenes `IconDef` zu bauen
+  (Einzelfälle ohne Wiederverwendungspotenzial dürfen weiterhin lokal bleiben, siehe
+  `LocationPicker.vue`s `OWN_LOCATION_ICON`).
+
+**Icon-Stil pro Bereich einzeln einstellbar**: `AppIcon.vue`s Pflicht-Prop `group` (`IconGroup` aus
+`stores/iconStyle.ts`s `ICON_GROUP_OPTIONS`: `navigation`, `categories`, `formFields`, `actions`)
+ordnet jede Aufrufstelle einem groben Bereich zu. `groupOverrides` (`Partial<Record<IconGroup,
+IconStyle>>`, `usePersistedRef`, localStorage `reisotor-icon-style-group-overrides`) erlaubt einen vom
+globalen `style` abweichenden Stil je Bereich (z. B. Kategorien auf Symbole, Navigation weiter Emoji);
+`iconStyle.styleForGroup(group)` löst das auf (Override falls gesetzt, sonst der globale Default) und
+ist die Stelle, die `AppIcon.vue` intern aufruft – nie direkt `iconStyle.style` in einer Komponente
+lesen, wenn ein `AppIcon` gerendert wird, sonst umgeht das den Override. UI dafür lebt eingeklappt
+("Für einzelne Bereiche anpassen") in `IconStyleSettings.vue`, ein `SegmentedToggle.vue` (Standard/
+Emoji/Symbole) pro Eintrag aus `ICON_GROUP_OPTIONS`.
+
+**Farbcodierung wiederverwendet, nicht neu erfunden**: `AppIcon.vue`s optionale `color`-Prop
+(Default `currentColor`) überschreibt die Icon-Farbe gezielt an einer Aufrufstelle. Für Symbol-Icons
+im Dashboard-Widget-Kontext wird dafür **immer** dieselbe Akzentfarbe genutzt, die die Dashboard-
+Kachel selbst schon für dieses Widget hat (`frontend/src/utils/widgetColors.ts`s `WIDGET_COLORS`,
+ursprünglich aus `DashboardView.vue` extrahiert) – kein zweites, eigenes Farbschema fürs Icon
+daneben. `NAV_LINK_COLORS` in derselben Datei überträgt dieselbe Farbzuordnung 1:1 auf die
+NavBar-Icons, aktiv per `iconStyle.navColored` (`usePersistedRef`, localStorage
+`reisotor-icon-nav-colored`, **Default `false`**, da die Navigation bisher immer einfarbig war – ein
+bewussterer Stilbruch als bei den ohnehin schon farbig hinterlegten Dashboard-Kacheln, deshalb
+Opt-in statt automatisch aktiv wie beim Dashboard). Checkbox dafür in `IconStyleSettings.vue`
+("Icons in der Navigation einfärben"). Ein neues Widget/ein neuer Nav-Punkt mit eigenem Farbakzent →
+in `WIDGET_COLORS` (und ggf. `NAV_LINK_COLORS`) ergänzen, nicht lokal eine Hex-Farbe in der
+Komponente hartkodieren.
 
 Kartenmarker (`utils/mapRoute.ts`, genutzt von `TripMap.vue`/`LocationPicker.vue`/
 `ExcursionMiniMap.vue`) akzeptieren sowohl ein `IconDef` (Kategorie-/Ortsmarker, respektieren die
@@ -413,12 +447,18 @@ Einstellung – rohe Tabler-SVGs dafür kuratiert in `utils/tablerMarkerSvg.ts`,
 vanilla `@tabler/icons`-Paket) als auch einen rohen Emoji-String – Letzteres bewusst nur für das
 Nutzer-Avatar (`auth.user.avatar`, `users.avatar`-Spalte): frei aus einem ~180-Emoji-Picker
 gewähltes, gespeichertes Identitätsdatum ohne sinnvolles festes Tabler-Äquivalent, bleibt daher
-**immer** Emoji, unabhängig von der Einstellung.
+**immer** Emoji, unabhängig von der Einstellung. Dieselbe Ausnahme gilt für jeden Avatar-Fallback
+(z. B. `❓` für unbekannte Autor:innen, `🤝` als Platzhalter-"Avatar" für gemeinsame Budget-Töpfe/
+Packlisten-Abschnitte ohne festen Besitzer) sowie für native `<select><option>`-Inhalte (können keine
+Vue-Komponente rendern, brauchen also weiterhin einen rohen Emoji-String) und für rein dekorative,
+einmalige Fließtext-Ausschmückung ohne wiederverwendetes Konzept (z. B. `SecurityCheckView.vue`s
+Easter-Egg-Ladehinweise, `DashboardView.vue`s Abreise-Countdown-Sätze).
 
 - **Sichtbarkeits-Kennzeichnung (privat vs. geteilt)**: 🔒 für "nur für eine Person sichtbar", 🤝
   für "für alle Mitreisenden sichtbar" (z. B. Budget-Töpfe, `BudgetPotCard.vue`). Kein eigenes
   drittes System, sondern ein einfaches, wiederverwendbares Paar – bei jedem neuen "privat vs.
-  geteilt"-Konzept dieselben zwei Emoji verwenden statt neue zu erfinden.
+  geteilt"-Konzept dieselben zwei Emoji verwenden statt neue zu erfinden. Als `IconDef`-Pendant
+  `ACTION_ICONS.private`/`ACTION_ICONS.shared`.
 
 ## Formularfelder in Anlege-/Bearbeiten-Dialogen
 

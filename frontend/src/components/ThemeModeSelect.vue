@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useThemeStore, THEME_MODE_OPTIONS } from '../stores/theme';
+import AppIcon from './AppIcon.vue';
 
 // icon: kompakter runder Button wie der bisherige Toggle (AppHeader.vue, LoginView.vue) - das
 // eigentliche <select> liegt unsichtbar über dem Icon und fängt den Klick ab, damit sich der
@@ -19,7 +20,7 @@ const currentOption = computed(() => THEME_MODE_OPTIONS.find((o) => o.value === 
     :class="variant"
     title="Erscheinungsbild"
   >
-    <span v-if="variant === 'icon'" class="icon-face" aria-hidden="true">{{ currentOption.icon }}</span>
+    <AppIcon v-if="variant === 'icon'" class="icon-face" :size="18" :icon="currentOption.tabler" group="navigation" aria-hidden="true" />
     <span v-else class="block-label">Erscheinungsbild</span>
     <select v-model="theme.mode" aria-label="Erscheinungsbild">
       <option v-for="option in THEME_MODE_OPTIONS" :key="option.value" :value="option.value">

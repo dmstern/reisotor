@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import AppIcon from './AppIcon.vue';
+import { ACTION_ICONS } from '../utils/actionIcons';
+
 defineProps<{ small?: boolean; floating?: boolean }>();
 defineEmits<{ (e: 'click'): void }>();
 </script>
@@ -17,7 +20,7 @@ defineEmits<{ (e: 'click'): void }>();
     aria-label="Bearbeiten"
     @click.stop="$emit('click')"
   >
-    ✎
+    <AppIcon :icon="ACTION_ICONS.edit" :size="small ? 13 : 15" group="actions" />
   </button>
 </template>
 

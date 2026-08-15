@@ -25,7 +25,7 @@ function markerGlyphHtml(icon: MarkerGlyph, sizePx: number): string {
     return `<span style="font-size:${sizePx}px;line-height:1;">${icon}</span>`;
   }
   const iconStyle = useIconStyleStore();
-  if (iconStyle.style === 'emoji') {
+  if (iconStyle.styleForGroup('categories') === 'emoji') {
     return `<span style="font-size:${sizePx}px;line-height:1;">${icon.emoji}</span>`;
   }
   const svg = tablerMarkerSvg(icon.id, iconStyle.variant, sizePx);
@@ -60,7 +60,7 @@ const iconCache = new Map<string, L.DivIcon>();
 export function cachedEmojiPin(icon: MarkerGlyph, color: string, large = false) {
   const iconStyle = useIconStyleStore();
   const identity = typeof icon === 'string' ? `emoji:${icon}` : `def:${icon.id}`;
-  const key = `${identity}|${iconStyle.style}|${iconStyle.variant}|${color}|${large}`;
+  const key = `${identity}|${iconStyle.styleForGroup('categories')}|${iconStyle.variant}|${color}|${large}`;
   let cached = iconCache.get(key);
   if (!cached) {
     cached = emojiPin(icon, color, large);

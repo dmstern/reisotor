@@ -4,6 +4,10 @@ import { api } from '../api/client';
 import type { User } from '../api/types';
 import { useTripStore } from '../stores/trip';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
+import AppIcon from '../components/AppIcon.vue';
+import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
+import { ACTION_ICONS } from '../utils/actionIcons';
+import type { IconDef } from '../utils/icon';
 
 // Eintrag aus GET /trash (routes/trash.ts): `data` trägt die komplette, noch nicht formatierte
 // Zeile – jeder Objekttyp braucht eine eigene kleine Extraktionsregel (titleFor unten), da die
@@ -26,18 +30,18 @@ const error = ref('');
 
 // Dieselben Icons wie in der NavBar/den jeweiligen Fachsichten (siehe App.vue/NavBar.vue), damit
 // ein Objekttyp im Papierkorb auf den ersten Blick genauso aussieht wie überall sonst in der App.
-const TYPE_ICON: Record<string, string> = {
-  schedule_item: '📅',
-  excursion: '🎒',
-  spot: '📍',
-  travel_item: '✈️',
-  budget_item: '💶',
-  budget_transfer: '💶',
-  todo: '📋',
-  packing_item: '🧳',
-  shopping_item: '🛒',
-  note: '📝',
-  diary_entry: '📔',
+const TYPE_ICON: Record<string, IconDef> = {
+  schedule_item: SECTION_ICON_DEFS.calendar,
+  excursion: SECTION_ICON_DEFS.excursions,
+  spot: SECTION_ICON_DEFS.map,
+  travel_item: SECTION_ICON_DEFS.travel,
+  budget_item: SECTION_ICON_DEFS.budget,
+  budget_transfer: SECTION_ICON_DEFS.budget,
+  todo: SECTION_ICON_DEFS.todo,
+  packing_item: SECTION_ICON_DEFS.packing,
+  shopping_item: SECTION_ICON_DEFS.shopping,
+  note: SECTION_ICON_DEFS.notes,
+  diary_entry: SECTION_ICON_DEFS.diary,
 };
 
 function userLabel(id: unknown) {
@@ -118,7 +122,7 @@ async function restore(entry: TrashEntry) {
 
 <template>
   <div class="page" v-if="!loading">
-    <h1>🗑️ Papierkorb</h1>
+    <h1><AppIcon :icon="ACTION_ICONS.delete" :size="24" group="navigation" /> Papierkorb</h1>
     <p class="hint">
       Gelöschte Termine, Ausflüge, Spots und mehr bleiben hier eine Weile erhalten, bevor sie
       endgültig entfernt werden – hier lassen sie sich jederzeit wiederherstellen.
@@ -127,7 +131,7 @@ async function restore(entry: TrashEntry) {
 
     <TransitionGroup tag="ul" name="list" class="trash-list">
       <li class="card trash-row" v-for="entry in entries" :key="keyOf(entry)">
-        <span class="trash-icon">{{ TYPE_ICON[entry.type] ?? '🗑️' }}</span>
+        <span class="trash-icon"><AppIcon :icon="TYPE_ICON[entry.type] ?? ACTION_ICONS.delete" :size="18" group="categories" /></span>
         <div class="trash-info">
           <span class="trash-title">{{ titleFor(entry) }}</span>
           <span class="trash-meta">{{ entry.label }} · Gelöscht am {{ formatDeletedAt(entry.deletedAt) }}</span>
@@ -138,7 +142,7 @@ async function restore(entry: TrashEntry) {
           :disabled="restoringKey === keyOf(entry)"
           @click="restore(entry)"
         >
-          ↩️ Wiederherstellen
+          <AppIcon :icon="ACTION_ICONS.restore" :size="14" group="actions" /> Wiederherstellen
         </button>
       </li>
     </TransitionGroup>

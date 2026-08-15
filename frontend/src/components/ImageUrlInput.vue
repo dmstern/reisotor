@@ -2,6 +2,8 @@
 import { computed, ref } from 'vue';
 import { api } from '../api/client';
 import { compressImage } from '../utils/imageCompression';
+import AppIcon from './AppIcon.vue';
+import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 
 // Ergänzt das reine Bild-URL-Textfeld (extern gehostetes Bild) um einen direkten Datei-Upload -
 // beide schreiben am Ende in dasselbe image_url-Feld (Trip-/Spot-/Tour-Titelbild), es gibt keinen
@@ -50,7 +52,8 @@ async function onFileSelected(event: Event) {
     <input v-model="urlValue" type="text" :placeholder="placeholder ?? 'Bild-URL (optional)'" />
     <label class="upload-label">
       <input type="file" accept="image/*" :disabled="uploading" @change="onFileSelected" />
-      {{ uploading ? 'Lädt hoch …' : '📷 Oder Bild hochladen' }}
+      <template v-if="uploading">Lädt hoch …</template>
+      <template v-else><AppIcon :icon="FORM_FIELD_ICONS.image" :size="14" group="formFields" /> Oder Bild hochladen</template>
     </label>
     <p v-if="uploadError" class="hint error">{{ uploadError }}</p>
   </div>

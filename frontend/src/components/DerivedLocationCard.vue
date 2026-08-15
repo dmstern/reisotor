@@ -2,6 +2,8 @@
 import { computed } from 'vue';
 import type { DerivedLocation } from '../utils/derivedLocation';
 import { useDrawersStore } from '../stores/drawers';
+import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
+import AppIcon from './AppIcon.vue';
 
 const props = defineProps<{ location: DerivedLocation }>();
 const drawers = useDrawersStore();
@@ -31,7 +33,7 @@ function onDragStart(event: DragEvent) {
 <template>
   <div class="card derived-card" @click="showOnMap">
     <div class="image">
-      <span class="placeholder">{{ location.icon }}</span>
+      <AppIcon class="placeholder" :size="35" :icon="location.tabler" group="categories" />
     </div>
     <div class="body">
       <h3>{{ location.title }}</h3>
@@ -47,7 +49,7 @@ function onDragStart(event: DragEvent) {
         @dragstart="onDragStart"
         @click.stop
       >
-        🎒 Auf Tour ziehen
+        <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="14" group="navigation" /> Auf Tour ziehen
       </button>
     </div>
   </div>

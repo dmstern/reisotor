@@ -3,6 +3,8 @@ import { ref, watch } from 'vue';
 import { api } from '../api/client';
 import type { Trip, User } from '../api/types';
 import Modal from './Modal.vue';
+import AppIcon from './AppIcon.vue';
+import { ACTION_ICONS } from '../utils/actionIcons';
 
 const props = defineProps<{ modelValue: boolean; trip: Trip | null }>();
 const emit = defineEmits<{ (e: 'update:modelValue', value: boolean): void }>();
@@ -84,7 +86,7 @@ function close() {
         <li v-for="u in members" :key="u.id">
           <span>{{ u.avatar }} {{ u.username }}</span>
           <button type="button" class="secondary remove-btn" title="Entfernen" aria-label="Entfernen" @click="removeMember(u)">
-            ✕
+            <AppIcon :icon="ACTION_ICONS.close" :size="14" group="actions" />
           </button>
         </li>
         <li v-if="!members.length" class="empty">Noch keine Mitglieder.</li>

@@ -8,6 +8,8 @@ import TripForm from './TripForm.vue';
 import EditButton from './EditButton.vue';
 import DeleteButton from './DeleteButton.vue';
 import TripMembersDialog from './TripMembersDialog.vue';
+import AppIcon from './AppIcon.vue';
+import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 
 const tripStore = useTripStore();
 const drawers = useDrawersStore();
@@ -131,7 +133,7 @@ async function onDelete(trip: Trip) {
               aria-label="Mitglieder verwalten"
               @click="openMembers(trip)"
             >
-              👥
+              <AppIcon :icon="FORM_FIELD_ICONS.visibility" :size="15" group="formFields" />
             </button>
             <EditButton small @click="openEdit(trip)" />
             <DeleteButton small @click="onDelete(trip)" />

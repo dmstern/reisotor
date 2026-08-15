@@ -39,7 +39,7 @@ export interface ExcursionStation {
    *  gesetzt, wenn diese Station das Ziel einer Etappe ist, deren Startort in derselben Kette
    *  vorkommt (bzw. wo der Startort als aufeinanderfolgendes Duplikat unterdrückt wurde). Bei allen
    *  anderen Stations-Quellen (Spot/Ausflug-Stationsliste) unbenutzt/undefined. */
-  connector?: { icon: string; label: string } | null;
+  connector?: { icon: string; tabler: IconDef; label: string } | null;
 }
 
 /** Welcher station_key das Von/Nach-Ende einer Etappe repräsentiert – bevorzugt den verknüpften Ort
