@@ -77,6 +77,8 @@ Das Skript ist idempotent (`INSERT OR IGNORE`) – bereits vorhandene Nutzer/Zei
 | `SESSION_SECRET` | Secret zum Signieren der Session-Cookies | unsicherer Dev-Default – **in Produktion zwingend setzen** |
 | `NODE_ENV` | `production` aktiviert `secure`-Cookies und schärfere CORS-Regel | – |
 | `DB_PATH` | Pfad zur SQLite-Datei | `backend/data.sqlite` |
+| `GITHUB_TOKEN` | Fine-grained GitHub Personal Access Token für das In-App-Feedback-Formular (Bug/Feature-Meldungen landen darüber als echtes Issue im Repo). **Nur mit „Issues: Read and write"-Recht auf genau diesem Repo anlegen, sonst nichts** – selbst bei Kompromittierung bleibt der Schaden dann auf Issues beschränkt. Ohne gesetzten Token bleibt die App voll funktionsfähig, nur das Feedback-Formular meldet einen Fehler. | – (Feature deaktiviert) |
+| `GITHUB_REPO` | `owner/repo`, in dem das Feedback-Formular Issues anlegt | `dmstern/reisotor` |
 
 ## Deployment
 
