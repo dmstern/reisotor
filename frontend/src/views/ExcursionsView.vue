@@ -121,13 +121,13 @@ onUnmounted(() => {
   categoryNavObserver?.disconnect();
 });
 
-// .category-nav ist nur dann eine Liquid-Glass-Pill (siehe CSS unten), wenn sie tatsächlich im
-// position:sticky-"stuck"-Zustand ist - bei ausgefahrener Schublade/oben in der Liste soll sie wie
-// bisher eingebettet aussehen. Ein CSS-`:stuck`-Pseudoselektor ist noch nicht unterstützt, daher ein
-// unsichtbares Sentinel-Element direkt davor + IntersectionObserver: sobald das Sentinel den
-// sichtbaren Bereich verlässt, "klebt" die Nav. root=.spots-col reicht für Mobil- UND
-// Desktop-Layout, da IntersectionObserver automatisch alle overflow-clippenden Vorfahren zwischen
-// root und target berücksichtigt (egal ob .spots-col selbst oder .spots-col-body scrollt).
+// .category-nav bekommt nur dann ihren dezenten "schwebt gerade über Inhalt"-Schatten (siehe CSS
+// unten), wenn sie tatsächlich im position:sticky-"stuck"-Zustand ist. Ein CSS-`:stuck`-
+// Pseudoselektor ist noch nicht unterstützt, daher ein unsichtbares Sentinel-Element direkt davor +
+// IntersectionObserver: sobald das Sentinel den sichtbaren Bereich verlässt, "klebt" die Nav.
+// root=.spots-col reicht für Mobil- UND Desktop-Layout, da IntersectionObserver automatisch alle
+// overflow-clippenden Vorfahren zwischen root und target berücksichtigt (egal ob .spots-col selbst
+// oder .spots-col-body scrollt).
 const isCategoryNavStuck = ref(false);
 let categoryNavObserver: IntersectionObserver | null = null;
 function setCategoryNavSentinelRef(el: Element | ComponentPublicInstance | null) {
@@ -628,8 +628,12 @@ const filteredSpotItems = computed(() =>
 // bereits anderswo gepflegt, sollen als "kostenloser" Ausgangspunkt sofort ins Auge fallen), dann
 // bekannte Spot-Kategorien (spotCategory.ts-Reihenfolge), dann eigene Freitext-Kategorien
 // alphabetisch, "Sonstiges" (keine Kategorie) zuletzt – bleibt unabhängig von der gewählten
-// Sortierung innerhalb der Gruppen stabil.
-const CATEGORY_GROUP_ORDER = ['Unterkunft', 'Reise', ...SPOT_CATEGORY_SUGGESTIONS];
+// Sortierung innerhalb der Gruppen stabil. new Set(...) statt eines rohen Arrays: "Unterkunft" ist
+// selbst auch schon eine bekannte Spot-Kategorie (SPOT_CATEGORY_SUGGESTIONS, spotCategory.ts) - ohne
+// die Deduplizierung tauchte "Unterkunft" zweimal in dieser Liste auf, wodurch sortedCategoryKeys()
+// unten (filter() dedupliziert seine Quelle nicht) dieselbe Gruppe samt Karten zweimal rendert (u. a.
+// als doppelte Kategorie-Nav-Pille sichtbar geworden).
+const CATEGORY_GROUP_ORDER = [...new Set(['Unterkunft', 'Reise', ...SPOT_CATEGORY_SUGGESTIONS])];
 
 function sortedCategoryKeys(categories: Iterable<string>): string[] {
   const set = new Set(categories);
@@ -738,6 +742,107 @@ function scrollToCategory(category: string) {
   categoryRefs.get(category)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   tripMapRef.value?.focusCategory(category);
 }
+
+// Scrollspy (Wolt-Stil, "in beide Richtungen"): welche Gruppe gilt gerade als aktiv, abgeleitet aus
+// der tatsächlichen Scrollposition statt nur aus einem Klick - klicken bleibt weiterhin möglich
+// (scrollToCategory oben), landet aber am Ziel einfach in derselben, per Scrollposition erkannten
+// Auswahl. Default: die erste Gruppe, bevor überhaupt gescrollt/ein Callback gefeuert wurde bzw.
+// falls die zuvor aktive Kategorie durch einen Filter-/Gruppierungswechsel weggefallen ist.
+const activeCategory = ref<string | null>(null);
+watch(
+  spotGroups,
+  (groups) => {
+    if (!groups.some((g) => g.category === activeCategory.value)) {
+      activeCategory.value = groups[0]?.category ?? null;
+    }
+  },
+  { immediate: true },
+);
+
+// Umgekehrte Zuordnung DOM-Element -> Kategorie für den IntersectionObserver-Callback unten
+// (categoryRefs oben bildet stattdessen Kategorie -> Element ab, gebraucht für scrollToCategory).
+const categoryByEl = new Map<HTMLElement, string>();
+// Alle Gruppen, deren Überschrift/ExcursionCard gerade die Erkennungslinie unten berührt - bei
+// mehreren gleichzeitig (nur bei sehr kurzen, dicht aufeinanderfolgenden Gruppen möglich) gewinnt
+// die laut spotGroups-Reihenfolge oberste (siehe Observer-Callback unten).
+const intersectingCategories = new Set<string>();
+let categorySectionObserver: IntersectionObserver | null = null;
+
+// Baut den Observer bei jeder Änderung der Gruppen (Filter/Gruppierung/neue Spots) komplett neu auf
+// statt einzelne Targets nachzuziehen - günstig genug (nur bei Gruppenänderung, nicht pro Scroll)
+// und vermeidet, mit veralteten categoryRefs-Einträgen zu beobachten.
+function rebuildCategorySectionObserver() {
+  categorySectionObserver?.disconnect();
+  categorySectionObserver = null;
+  intersectingCategories.clear();
+  categoryByEl.clear();
+  const firstEl = categoryRefs.values().next().value as HTMLElement | undefined;
+  const root = firstEl?.closest('.spots-col-body') ?? null;
+  if (!root) return;
+  categorySectionObserver = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        const category = categoryByEl.get(entry.target as HTMLElement);
+        if (!category) continue;
+        if (entry.isIntersecting) intersectingCategories.add(category);
+        else intersectingCategories.delete(category);
+      }
+      const active = spotGroups.value.find((g) => intersectingCategories.has(g.category));
+      if (active) activeCategory.value = active.category;
+    },
+    // Erkennungslinie knapp unterhalb der sticky Kategorie-Nav (siehe --category-nav-clearance im
+    // CSS unten, derselbe Wert wie beim scroll-margin-top der Gruppen - "aktiv" und "per Klick
+    // angesprungen" greifen dadurch konsistent an derselben Stelle). -65% unten begrenzt die
+    // Erkennungszone auf einen schmalen Streifen statt der kompletten sichtbaren Liste.
+    { root, rootMargin: '-44px 0px -65% 0px', threshold: 0 },
+  );
+  for (const [category, el] of categoryRefs) {
+    categoryByEl.set(el, category);
+    categorySectionObserver.observe(el);
+  }
+}
+watch(spotGroups, () => nextTick(rebuildCategorySectionObserver));
+
+// Gleitende Unterstreichung + horizontales Nachscrollen der Nav-Leiste selbst, damit die aktive
+// Kategorie (egal ob per Klick oder per Scrollspy oben gesetzt) immer sichtbar bleibt - gleiches
+// Grundprinzip wie ListenView.vue's .tab-underline (dortiger Kommentar für die Begründung, warum
+// JS-gemessene offsetLeft/offsetWidth statt eines starren CSS-Grids nötig sind).
+const navItemRefs = new Map<string, HTMLElement>();
+function setNavItemRef(category: string, el: Element | ComponentPublicInstance | null) {
+  if (el instanceof HTMLElement) navItemRefs.set(category, el);
+  else navItemRefs.delete(category);
+}
+const underlineLeft = ref(0);
+const underlineWidth = ref(0);
+function updateCategoryNavUnderline() {
+  const activeEl = activeCategory.value ? navItemRefs.get(activeCategory.value) : null;
+  if (!activeEl) return;
+  underlineLeft.value = activeEl.offsetLeft;
+  underlineWidth.value = activeEl.offsetWidth;
+}
+let categoryNavResizeObserver: ResizeObserver | null = null;
+function setCategoryNavRef(el: Element | ComponentPublicInstance | null) {
+  categoryNavResizeObserver?.disconnect();
+  categoryNavResizeObserver = null;
+  if (el instanceof HTMLElement) {
+    categoryNavResizeObserver = new ResizeObserver(updateCategoryNavUnderline);
+    categoryNavResizeObserver.observe(el);
+  }
+}
+watch(activeCategory, () => {
+  nextTick(() => {
+    updateCategoryNavUnderline();
+    const activeEl = activeCategory.value ? navItemRefs.get(activeCategory.value) : null;
+    // 'nearest' statt 'center': scrollt nur, wenn die aktive Pille tatsächlich (teilweise) außerhalb
+    // der sichtbaren Nav-Leiste liegt, und dabei nur innerhalb der Leiste selbst (ihr nächster
+    // scrollender Vorfahre) statt zusätzlich die Spots-Liste dahinter zu verschieben.
+    activeEl?.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' });
+  });
+});
+onUnmounted(() => {
+  categorySectionObserver?.disconnect();
+  categoryNavResizeObserver?.disconnect();
+});
 
 // Welcher Spot ist gerade in der Liste aufgeklappt (SpotCard.vue, ersetzt den früheren Modal-
 // Dialog) – lebt hier statt lokal in SpotCard.vue, da ein Pin-Klick auf der Karte (TripMap.vue's
@@ -1304,7 +1409,6 @@ async function removeSpot(id: number) {
       </div>
       <div
         class="spots-col-body"
-        :class="{ 'nav-stuck': isCategoryNavStuck }"
         @pointerdown="onSheetBodyPointerDown"
       >
       <!-- Sprungziel für TripMap.vue's Tag-/Ausflug-Stationen-Liste: mobil (siehe TripMap.vue's
@@ -1709,17 +1813,26 @@ async function removeSpot(id: number) {
         :class="{ 'is-stuck': isCategoryNavStuck }"
         v-if="spotGroups.length > 1"
         aria-label="Zu Kategorie springen"
+        :ref="setCategoryNavRef"
       >
         <button
           v-for="grp in spotGroups"
           :key="grp.category"
           type="button"
           class="category-nav-item"
+          :class="{ active: activeCategory === grp.category }"
+          :aria-current="activeCategory === grp.category ? 'true' : undefined"
+          :ref="(el) => setNavItemRef(grp.category, el)"
           @click="scrollToCategory(grp.category)"
         >
           <AppIcon class="category-nav-icon" :icon="grp.iconDef" group="categories" />
           <span class="category-nav-label">{{ grp.category }}</span>
         </button>
+        <span
+          class="category-nav-underline"
+          :style="{ transform: `translateX(${underlineLeft}px)`, width: `${underlineWidth}px` }"
+          aria-hidden="true"
+        ></span>
       </nav>
 
       <section class="group category-group" v-for="grp in spotGroups" :key="grp.category">
@@ -2186,13 +2299,16 @@ async function removeSpot(id: number) {
   flex: 1;
   overflow-y: auto;
   padding: 0 var(--space-3) var(--space-3);
-  /* Statische, großzügig bemessene Schätzung der gerenderten Höhe der "stuck" .category-nav-Pille
-     (gemessen ca. 68px: Icon+Label-Zeile plus deren größeres Padding im .is-stuck-Zustand) statt
-     einer live gemessenen Höhe (z. B. per ResizeObserver) – eine solche wäre im Moment des
-     allerersten Sprungs/Scrolls nach dem Mounten noch nicht verfügbar (0px). Verwendet von
-     .category-heading/.tour-group-card (scroll-margin-top) sowie .nav-stuck .category-group
-     (margin-top) weiter unten. */
-  --category-nav-clearance: 76px;
+  /* Statische, großzügig bemessene Schätzung der gerenderten Höhe der sticky .category-nav-Leiste
+     (Icon+Label-Zeile plus Padding/Trennlinie, siehe dortiges CSS) statt einer live gemessenen Höhe
+     (z. B. per ResizeObserver) – eine solche wäre im Moment des allerersten Sprungs/Scrolls nach dem
+     Mounten noch nicht verfügbar (0px). Anders als die frühere "Liquid Glass"-Pille (siehe Git-
+     Historie) ändert die Leiste ihre Höhe nicht mehr zwischen eingebettetem und "stuck"-Zustand,
+     daher genügt hier ein einziger, unveränderlicher Wert. Verwendet von .category-heading/
+     .tour-group-card (scroll-margin-top) unten sowie identisch im Script (rebuildCategorySectionObserver()s
+     rootMargin – muss mit diesem Wert übereinstimmen, damit "aktiv" und "per Klick angesprungen"
+     an derselben Stelle greifen). */
+  --category-nav-clearance: 44px;
 }
 
 /* Wie bei Apple Maps: nur im "voll"-Zustand ist die Liste selbst scrollbar. In "angeschnitten"/
@@ -2578,7 +2694,13 @@ async function removeSpot(id: number) {
    eindeutig gegen diesen (statt versehentlich gegen .app-main) ausgewertet wird. */
 @container spots-col (max-width: 480px) {
   .cards {
-    grid-template-columns: 1fr;
+    /* minmax(0, 1fr) statt nacktem 1fr (= minmax(auto, 1fr)): eine bloße 1fr-Spalte bleibt trotz
+       Ein-Spalten-Rasters implizit mindestens so breit wie ihr Inhalt (z. B. ein langer, per
+       white-space:nowrap+ellipsis eigentlich kürzbarer Spot-Titel in SpotCard.vue), was auf schmalen
+       Mobilbreiten eine horizontale Scrollleiste der ganzen Liste erzeugte statt den Titel zu
+       kürzen. Die explizite 0-Untergrenze erlaubt der Spalte, echt auf die verfügbare Breite zu
+       schrumpfen. */
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -2884,9 +3006,8 @@ async function removeSpot(id: number) {
   /* scrollToCategory() landet sonst mit der Überschrift genau unter der fest/sticky positionierten
      AppHeader (56px) + ggf. der oben positionierten NavBar (--navbar-offset) – dieselbe Formel wie
      bei .spots-col/.map-col weiter oben und Drawer.vue. --category-nav-clearance (siehe
-     .spots-col-body unten) reserviert zusätzlich Platz für die schwebende Kategorie-/Touren-Nav-
-     Pille selbst, sobald sie "stuck" ist (siehe .category-nav.is-stuck) – ohne das würde ein Sprung
-     sie sonst teilweise unter der Pille landen lassen. */
+     .spots-col-body oben) reserviert zusätzlich Platz für die sticky Kategorie-/Touren-Nav-Leiste
+     selbst – ohne das würde ein Sprung sie sonst teilweise darunter landen lassen. */
   scroll-margin-top: calc(
     var(--app-header-height, 56px) + var(--navbar-offset, 0px) + var(--space-2) + var(--category-nav-clearance)
   );
@@ -2910,115 +3031,94 @@ async function removeSpot(id: number) {
   height: 0;
 }
 
-/* Horizontale Kategorie-Navigation (Wolt-Stil): Icon zentriert über dem Label, ganze Leiste
-   scrollt bei Bedarf horizontal statt umzubrechen (viele Kategorien nebeneinander). Vertikal sticky
-   innerhalb von .spots-col-body (dem tatsächlich scrollenden Vorfahren, siehe dortige overflow-y):
-   Seitentitel/Filter darüber scrollen weg, die Navigation selbst bleibt oben angeheftet, damit man
-   auch nach dem Herunterscrollen weiter direkt zwischen Kategorien springen kann. Solange sie noch
-   eingebettet ist (nicht "stuck", also z. B. bei ausgefahrener Schublade oben in der Liste), sieht
-   sie aus wie ein normaler Abschnitt; erst im .is-stuck-Zustand wird sie zu einer schwebenden
-   "Liquid Glass"-Pille wie NavBar.vue's .navbar.mobile-bottom (dort erklärt: color-mix() statt fest
-   kodierter Farbe bleibt themeabhängig stimmig, backdrop-filter blurrt statt verdeckt darunter
-   durchscrollenden Inhalt) - der Wechsel zwischen beiden ist per CSS transition animiert.
-   */
+/* Horizontale Kategorie-Navigation, Wolt-Stil: eine flache Tab-Leiste (gleitende Unterstreichung,
+   gleiches Grundprinzip wie ListenView.vue's .tab-bar) statt einer schwebenden "Liquid Glass"-Pille
+   wie in einer früheren Version dieser Nav (siehe Git-Historie) – dadurch unterscheidet sie sich
+   klarer von der App-weiten NavBar (die IST eine schwebende Pille) und bleibt optisch eine
+   sekundäre, dem Inhalt untergeordnete Werkzeugleiste. Icon links neben statt über dem Label
+   (Wolt-Vorbild), ganze Leiste scrollt bei Bedarf horizontal statt umzubrechen (viele Kategorien
+   nebeneinander) und hält die aktive Kategorie dabei per JS automatisch im sichtbaren Bereich
+   (siehe watch(activeCategory) im Script). Vertikal sticky innerhalb von .spots-col-body (dem
+   tatsächlich scrollenden Vorfahren, siehe dortige overflow-y) mit top:0, sitzt also im
+   "stuck"-Zustand direkt an der Oberkante der Liste – anders als die frühere Pille bleibt die Höhe
+   dabei konstant (kein Zustand mit größerem Padding mehr), daher ist keine zusätzliche
+   Abstands-Kompensation für die erste sichtbare Gruppe mehr nötig.
+   --color-primary-tint statt --color-surface + Squircle-Rundung statt eckiger Ecken: dieselbe
+   "Steuerungselement statt Dateninhalt"-Behandlung wie .filter-bar oben (siehe DESIGN.md, Abschnitt
+   "Farben") – diese Navi ist ein Werkzeug zum Springen zwischen Kategorien, kein Dateninhalt. Ein
+   weißer, eckiger Balken sah hier speziell im "stuck"-Zustand sichtbar falsch aus: auf Desktop wird
+   .spots-col dort komplett transparent (siehe dortiges background:none), ein weißes Rechteck mit
+   90°-Ecken hätte scharf gegen den beigen Seitenhintergrund abgesetzt gewirkt – siehe DESIGN.md,
+   Abschnitt "Eckenrundung", "nie ganz eckige Ecken"-Grundsatz. */
 .category-nav {
+  position: sticky;
+  top: 0;
+  z-index: 2;
   display: flex;
-  /* "safe center" statt schlicht "center": zentriert die Icons, solange sie in die Breite passen
-     (der Normalfall bei wenigen Touren/Kategorien, siehe gemeldeter Bug - vorher klebte die Reihe
-     durch das knappe padding unten sichtbar links/oben in ihrer Karte), fällt aber automatisch auf
-     Start-Ausrichtung zurück, sobald mehr Einträge nicht mehr reinpassen und die Leiste horizontal
-     scrollen muss (reines "center" würde dort das erste Element sonst nur durch Scrollen nach LINKS
-     erreichbar machen statt normal von links zu beginnen - unsafe/klassisches Verhalten). Kein
-     Fallback-Wert nötig: in Browsern ohne safe/unsafe-Unterstützung bleibt die gesamte Deklaration
-     ungültig und damit bei der Standard-Ausrichtung (flex-start) - kein Bruch, nur kein Centering. */
-  justify-content: safe center;
   align-items: center;
-  gap: var(--space-3);
   overflow-x: auto;
   overflow-y: hidden;
-  padding: var(--space-2) var(--space-3);
-  margin-bottom: var(--space-2);
-  position: sticky;
-  top: var(--space-2);
-  z-index: 2;
-  border: 1px solid transparent;
+  margin-bottom: var(--space-3);
+  background: var(--color-primary-tint);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
-  /* --color-primary-tint statt --color-surface: dieselbe "Steuerungselement statt Dateninhalt"-
-     Unterscheidung wie .filter-bar oben (siehe DESIGN.md, Abschnitt "Farben") - diese Navi ist ein
-     Werkzeug zum Springen zwischen Kategorien/Touren, kein Dateninhalt wie die weißen Spot-Cards
-     darunter. */
-  background: var(--color-primary-tint);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  box-shadow: none;
-  transition:
-    padding 0.25s ease,
-    margin 0.25s ease,
-    border-radius 0.25s ease,
-    border-color 0.25s ease,
-    background-color 0.25s ease,
-    backdrop-filter 0.25s ease,
-    box-shadow 0.25s ease;
+  transition: box-shadow 0.2s ease;
 }
 
+/* Sobald tatsächlich "stuck" (siehe Sentinel/IntersectionObserver oben): ein dezenter Schatten
+   zeigt an, dass die Leiste jetzt über scrollendem Inhalt schwebt, statt (wie die frühere Pille) die
+   Form komplett zu wechseln. */
 .category-nav.is-stuck {
-  padding: 10px var(--space-3);
-  margin: var(--space-2) 0 var(--space-3);
-  border-color: var(--color-border);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--color-primary-tint) 75%, transparent);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  box-shadow:
-    0 8px 24px rgba(0, 0, 0, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15);
-}
-
-/* position:sticky reserviert im Dokumentenfluss nur die natürliche (nicht "stuck") Höhe der Nav an
-   ihrer ursprünglichen Stelle – sobald man gerade so weit über das Sentinel hinausscrollt, dass sie
-   "stuck" wird (schwebende, dabei größere Liquid-Glass-Pille, siehe .is-stuck oben), kann JEDE
-   Gruppe, die dabei gerade zufällig ganz oben im sichtbaren Bereich landet (nicht nur die erste –
-   ein gezielter Sprung/Scroll etwa per scrollToCategory() kann jede beliebige Gruppe dorthin
-   bringen), dadurch an derselben Stelle wie die schwebende Pille landen (beobachtet z. B. bei einer
-   ExcursionCard als Tour-Gruppen-Überschrift, deren Status-Chip/Löschen-Button dann kurzzeitig
-   unter der Pille sitzt). --category-nav-clearance (siehe .spots-col-body oben) schiebt deshalb JEDE
-   Gruppe zusätzlich herunter, nur solange die Nav tatsächlich "stuck" ist – bei eingebetteter Nav
-   bleibt der normale, engere Abstand erhalten. Bewusst pro Gruppe statt nur für die erste: kostet
-   im "stuck"-Zustand etwas mehr Abstand zwischen den Gruppen, ist aber unabhängig von Datenreihen-
-   folge/Sortierung immer korrekt. */
-.spots-col-body.nav-stuck .category-group {
-  margin-top: calc(var(--category-nav-clearance) + var(--space-2));
+  box-shadow: var(--shadow-sm);
 }
 
 .category-nav-item {
+  position: relative;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   background: none;
   border: none;
-  padding: 4px 2px;
+  padding: var(--space-2) var(--space-3);
   color: var(--color-text-muted);
+  font-size: 0.85rem;
   cursor: pointer;
   flex-shrink: 0;
-  min-width: 52px;
+  white-space: nowrap;
 }
 
 .category-nav-item:hover {
   color: var(--color-primary-dark);
 }
 
+.category-nav-item.active {
+  color: var(--color-primary-dark);
+  font-weight: 600;
+}
+
 .category-nav-icon {
-  font-size: 1.3rem;
+  font-size: 1.05rem;
   line-height: 1;
 }
 
 .category-nav-label {
-  font-size: 0.68rem;
-  font-weight: 600;
-  text-align: center;
-  white-space: nowrap;
+  font-size: 0.85rem;
+}
+
+/* Gleitet per transform/width zur jeweils aktiven Kategorie statt die Farbe hart umzuschalten -
+   identisches Prinzip wie ListenView.vue's .tab-underline (dortiger Kommentar für die Begründung,
+   warum JS-gemessene Positionen statt eines starren CSS-Grids nötig sind: unterschiedlich breite
+   Kategorie-Labels). Aktualisiert sowohl bei Klick als auch beim Scrollspy-getriebenen Wechsel der
+   aktiven Kategorie (siehe activeCategory im Script) - funktioniert dadurch "in beide Richtungen". */
+.category-nav-underline {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: var(--color-primary);
+  border-radius: 2px 2px 0 0;
+  transition: transform 0.2s ease, width 0.2s ease;
+  pointer-events: none;
 }
 
 </style>
