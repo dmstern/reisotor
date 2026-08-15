@@ -80,9 +80,15 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
     await expect(tourOption.locator('input[type="checkbox"]')).toBeChecked();
     await expect(tourOption.locator('.excursion-option-badge.recommended')).toHaveText(/Empfohlen/);
 
-    // Wartet, bis alle beim Öffnen ausgelösten Requests (Touren-/Spot-Picker-Listen etc.) fertig
-    // sind, bevor mit dem Editor interagiert wird.
-    await page.waitForLoadState('networkidle');
+    // Kurzes Settle vor der Editor-Interaktion, statt page.waitForLoadState('networkidle') (frühere
+    // Version): die App hält für Echtzeit-Sync dauerhaft eine offene SSE-Verbindung
+    // (/realtime/stream, siehe CLAUDE.md "Echtzeit-Sync") - "networkidle" wartet auf keine aktiven
+    // Netzwerkverbindungen und wurde dadurch nie zuverlässig erreicht, lief im schlimmsten Fall bis
+    // zum vollen Test-Timeout (beobachtete CI-Flakiness). Die Touren-/Spot-Picker-Listen sind an
+    // dieser Stelle ohnehin schon geladen (die tourOption-Assertions oben warten bereits implizit
+    // darauf) - ein fester kurzer Wait reicht als reines Layout-/Font-Settle, analog zum
+    // bestehenden Muster in anderen Specs (z. B. map-focus-covered-drawer.spec.ts).
+    await page.waitForTimeout(300);
     await page.evaluate(() => document.fonts.ready);
 
     const editor = modal.locator('.richtext-content[contenteditable="true"]');
