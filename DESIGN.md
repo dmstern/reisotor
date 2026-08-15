@@ -286,6 +286,22 @@ Analyse nicht abschließend gefunden – `height` bleibt deshalb dort bewusst di
 Zieh-Interaktionen **ohne** Karten-Nachbarschaft steht `transform` weiterhin offen, wurde nur noch
 nicht gebraucht.
 
+**Zweiter, diesmal deterministischer Grund gegen `transform` auf `.spots-col` selbst** (egal ob für
+Höhe oder Breite/Skalierung): jedes `transform` außer `none` macht das Element zum Containing Block
+für alle `position: fixed`-Nachfahren (CSS-Spezifikation, kein Bug/Browser-Eigenheit) – `.spots-col`
+enthält aber `.picker-backdrop` (Kategorie-/Status-Filter-Dropdowns, `ExcursionsView.vue`), das
+bewusst `position: fixed; inset: 0;` nutzt, um den GESAMTEN Viewport (inkl. der Karte darüber) statt
+nur die Sheet-Fläche abzudunkeln/für Außerhalb-Klicks zu schließen. Ein `transform` direkt auf
+`.spots-col` würde dieses Backdrop auf die (ggf. gerade verkleinerte) Sheet-Fläche einschränken.
+Betrifft **jeden** `transform`-Versuch an diesem Element, nicht nur `translateY()` für die Höhe –
+z. B. auch `scale()` für einen Apple-artigen "schwebende Karte etwas kleiner, ausgeklappt 100%"-Effekt
+(genau der Anlass, der diesen Absatz ergänzt hat: dieselbe Idee wie oben, nur für die Breite/den
+Rand statt die Höhe). Ein `transform`-Versuch an `.spots-col` bräuchte deshalb zusätzlich, die
+Picker-Backdrop/-Menu-Paare per `<Teleport to="body">` aus dem transformierten Teilbaum
+herauszulösen (inkl. neu berechneter Positionierung relativ zum auslösenden Button statt der
+bisherigen `position: absolute`-Verankerung) – ein eigener, spürbarer Umbau, nicht nebenbei
+erledigt.
+
 ## Weiches Material (taktile Pillen)
 
 Für Segmented-Controls (`SegmentedToggle.vue`) und ähnliche Umschalter, die wie ein greifbares,

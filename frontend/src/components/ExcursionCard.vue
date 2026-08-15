@@ -303,16 +303,23 @@ function onSpotDrop(event: DragEvent) {
   gap: var(--space-1);
 }
 
+/* min-width:0 + Kürzung statt Umbruch, gleiches Muster wie SpotCard.vue's .head h3 (siehe dortiger
+   Kommentar) - langer Titel wechselte sonst zwischen ein-/zweizeilig je nach eingeklappter/
+   ausgefahrener Bottom-Sheet-Breite. */
 .body h3 {
   font-size: 1rem;
   margin-bottom: 0;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .title-row {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  flex-wrap: wrap;
 }
 
 .status {
