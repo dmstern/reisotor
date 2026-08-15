@@ -16,6 +16,7 @@ import { hashHighlightId } from '../utils/hashHighlight';
 import { isEmptyRichText } from '../utils/richText';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
+import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import AppIcon from '../components/AppIcon.vue';
 import Modal from '../components/Modal.vue';
 import RichTextEditor from '../components/RichTextEditor.vue';
@@ -429,8 +430,8 @@ function showDetailToOnMap() {
 
     <p class="hint places-hint">
       Für Von/Nach lässt sich unten direkt ein bestehender Spot auswählen – neue Orte (Flughafen,
-      Bahnhof, Zuhause, …) legst du dafür in der 🗺️ Karte-Sicht als Spot an (Kategorie z. B.
-      "Flughafen" oder "Zuhause").
+      Bahnhof, Zuhause, …) legst du dafür in der <AppIcon :icon="SECTION_ICON_DEFS.map" :size="14" group="navigation" /> Karte-Sicht
+      als Spot an (Kategorie z. B. "Flughafen" oder "Zuhause").
     </p>
 
     <Modal :model-value="showForm" title="Neuer Reise-Eintrag" full-height @update:model-value="(v) => !v && closeForm()">
