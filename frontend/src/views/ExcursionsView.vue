@@ -816,7 +816,9 @@ const sheetEl = ref<HTMLElement | null>(null);
 function sheetHeightPx(state: SheetState): number {
   const navbarOffset = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--navbar-offset')) || 0;
   const maxAvailable = Math.max(160, window.innerHeight - 56 - navbarOffset - 8);
-  if (state === 'collapsed') return Math.min(96, maxAvailable);
+  // 64px statt der früheren 96px: die Pille zeigt jetzt nur noch die Anfasser-Zeile (siehe
+  // .spots-col.collapsed CSS), kein Rest von .spots-col-body ragt mehr hinein.
+  if (state === 'collapsed') return Math.min(64, maxAvailable);
   if (state === 'partial') return Math.min(window.innerHeight * 0.46, maxAvailable);
   return Math.min(window.innerHeight * 0.88, maxAvailable);
 }
@@ -1974,7 +1976,10 @@ async function removeSpot(id: number) {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 0;
+  /* Wie bei Apple: solange nicht ganz hochgezogen (collapsed/partial, .full überschreibt unten auf
+     0) schwebt das Sheet mit demselben Abstand nach unten wie zu den Seiten (--space-2, siehe
+     transform:scaleX() weiter unten) statt am unteren Bildschirmrand zu kleben. */
+  bottom: var(--space-2);
   z-index: 5;
   display: flex;
   flex-direction: column;
@@ -2006,6 +2011,7 @@ async function removeSpot(id: number) {
      gemeinsam mit der Höhe, sollen deshalb auch gleich smooth ankommen statt einzeln rauszustechen. */
   transition:
     height 0.3s cubic-bezier(0.32, 0.72, 0, 1),
+    bottom 0.3s cubic-bezier(0.32, 0.72, 0, 1),
     transform 0.3s cubic-bezier(0.32, 0.72, 0, 1),
     border-radius 0.3s cubic-bezier(0.32, 0.72, 0, 1);
   overflow: hidden;
@@ -2027,14 +2033,27 @@ async function removeSpot(id: number) {
   transform: translateZ(0);
 }
 
+/* Wie bei Apples eingeklapptem Suchleisten-Zustand: eine reine Pille (nur die Anfasser-Zeile ist
+   groß genug, um sichtbar zu bleiben) statt einer 96px hohen Karte, in die vorher noch eine Zeile
+   Inhalt hineinragte. .spots-col-body braucht dafür kein eigenes display:none - flex:1 auf einem
+   Elternelement, dessen Höhe exakt auf die Anfasser-Zeile passt, lässt ihm ohnehin keinen Platz
+   mehr; schrumpft dadurch während der height-Transition weich zusammen statt beim Klassenwechsel
+   hart zu verschwinden. 999px + corner-shape:round (nicht squircle wie die Basis-Karte) - Pillen
+   bekommen laut DESIGN.md, Abschnitt "Eckenrundung", immer einen echten Kreisbogen. 64px ergibt
+   sich aus der Anfasser-Zeile selbst (~33px Inhalt + 16px Polster oben + 16px unten, siehe
+   .sheet-handle-row unten) - kein willkürlicher Wert. */
 .spots-col.collapsed {
-  height: min(96px, var(--sheet-max-height));
+  height: min(64px, var(--sheet-max-height));
+  border-radius: 999px;
+  corner-shape: round;
 }
 
-/* Ganz hochgezogen: wie bei Apple erst jetzt randlos volle Breite, nur noch oben gerundete Ecken
-   (statt der rundum gerundeten "schwebenden Karte" oben) - Übergang läuft über dieselben
-   transform/border-radius-Transitions wie an .spots-col selbst. */
+/* Ganz hochgezogen: wie bei Apple erst jetzt randlos volle Breite UND -höhe (kein Abstand mehr nach
+   unten, sonst wie collapsed/partial), nur noch oben gerundete Ecken (statt der rundum gerundeten
+   "schwebenden Karte" oben) - Übergang läuft über dieselben bottom/transform/border-radius-
+   Transitions wie an .spots-col selbst. */
 .spots-col.full {
+  bottom: 0;
   transform: scaleX(1);
   border-radius: var(--radius-lg-squircle) var(--radius-lg-squircle) 0 0;
   height: min(88vh, var(--sheet-max-height));
@@ -2061,6 +2080,13 @@ async function removeSpot(id: number) {
      Anfasser beginnt (z. B. noch über den Stufen-Buttons), soll trotzdem nicht als Seiten-Scroll/
      Pull-to-Refresh interpretiert werden. */
   touch-action: none;
+}
+
+/* Im collapsed-Zustand ist die Anfasser-Zeile der komplette sichtbare Inhalt der Pille (siehe
+   .spots-col.collapsed oben) - bekommt deshalb symmetrisches Polster (auch unten) statt der
+   normalen 0, die davon ausgeht, dass darunter noch .spots-col-body folgt. */
+.spots-col.collapsed .sheet-handle-row {
+  padding-bottom: var(--space-3);
 }
 
 .sheet-handle {
@@ -2259,10 +2285,14 @@ async function removeSpot(id: number) {
   /* .spots-col.collapsed/.full (höhere Spezifität als die einfache .spots-col-Regel oben, da zwei
      statt einer Klasse) würden das dortige height:auto sonst weiterhin überschreiben, falls
      sheetState beim Wechsel in den Desktop-Modus zufällig "collapsed"/"full" war (z. B. nach
-     Schließen einer Schublade, während die Karte vorher im mobilen Modus auf "voll" stand). */
+     Schließen einer Schublade, während die Karte vorher im mobilen Modus auf "voll" stand). Aus
+     demselben Grund jetzt auch bottom: .spots-col.full setzt mobil bottom:0 (siehe dort) - würde
+     ohne dieses Reset hier das .spots-col-weite bottom:auto (oben) aus genau demselben
+     Spezifitäts-Grund überschreiben und die sticky Spalte auf Desktop verschieben. */
   .spots-col.collapsed,
   .spots-col.full {
     height: auto;
+    bottom: auto;
   }
 
   .sheet-handle-row {
