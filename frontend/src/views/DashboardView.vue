@@ -521,7 +521,7 @@ function formatWeekdayDate(d: string) {
         >
           <AppIcon
             class="tile-icon"
-            :size="22"
+            :size="18"
             :style="{ background: `${WIDGET_COLORS.get('schedule')}26`, borderColor: WIDGET_COLORS.get('schedule') }"
             :icon="SECTION_ICON_DEFS.calendar"
             group="navigation"
@@ -548,7 +548,7 @@ function formatWeekdayDate(d: string) {
         >
           <AppIcon
             class="tile-icon"
-            :size="22"
+            :size="18"
             :style="{ background: `${WIDGET_COLORS.get('packing')}26`, borderColor: WIDGET_COLORS.get('packing') }"
             :icon="SECTION_ICON_DEFS.packing"
             group="navigation"
@@ -571,7 +571,7 @@ function formatWeekdayDate(d: string) {
         <router-link v-else-if="key === 'budget'" to="/budget" class="card tile" :style="{ background: `${WIDGET_COLORS.get('budget')}0d` }">
           <AppIcon
             class="tile-icon"
-            :size="22"
+            :size="18"
             :style="{ background: `${WIDGET_COLORS.get('budget')}26`, borderColor: WIDGET_COLORS.get('budget') }"
             :icon="SECTION_ICON_DEFS.budget"
             group="navigation"
@@ -595,7 +595,7 @@ function formatWeekdayDate(d: string) {
         >
           <AppIcon
             class="tile-icon"
-            :size="22"
+            :size="18"
             :style="{ background: `${WIDGET_COLORS.get('shopping')}26`, borderColor: WIDGET_COLORS.get('shopping') }"
             :icon="SECTION_ICON_DEFS.shopping"
             group="navigation"
@@ -615,7 +615,7 @@ function formatWeekdayDate(d: string) {
         <router-link v-else-if="key === 'todo'" to="/listen?tab=todo" class="card tile" :style="{ background: `${WIDGET_COLORS.get('todo')}0d` }">
           <AppIcon
             class="tile-icon"
-            :size="22"
+            :size="18"
             :style="{ background: `${WIDGET_COLORS.get('todo')}26`, borderColor: WIDGET_COLORS.get('todo') }"
             :icon="SECTION_ICON_DEFS.todo"
             group="navigation"
@@ -635,7 +635,7 @@ function formatWeekdayDate(d: string) {
         <router-link v-else-if="key === 'travel'" to="/travel" class="card tile" :style="{ background: `${WIDGET_COLORS.get('travel')}0d` }">
           <AppIcon
             class="tile-icon"
-            :size="22"
+            :size="18"
             :style="{ background: `${WIDGET_COLORS.get('travel')}26`, borderColor: WIDGET_COLORS.get('travel') }"
             :icon="SECTION_ICON_DEFS.travel"
             group="navigation"
@@ -659,7 +659,7 @@ function formatWeekdayDate(d: string) {
         >
           <AppIcon
             class="tile-icon"
-            :size="22"
+            :size="18"
             :style="{ background: `${WIDGET_COLORS.get('accommodation')}26`, borderColor: WIDGET_COLORS.get('accommodation') }"
             :icon="ACCOMMODATION_ICON"
             group="navigation"
@@ -679,7 +679,7 @@ function formatWeekdayDate(d: string) {
         <router-link v-else-if="key === 'diary'" to="/diary" class="card tile" :style="{ background: `${WIDGET_COLORS.get('diary')}0d` }">
           <AppIcon
             class="tile-icon"
-            :size="22"
+            :size="18"
             :style="{ background: `${WIDGET_COLORS.get('diary')}26`, borderColor: WIDGET_COLORS.get('diary') }"
             :icon="SECTION_ICON_DEFS.diary"
             group="navigation"
@@ -694,7 +694,7 @@ function formatWeekdayDate(d: string) {
         <router-link v-else-if="key === 'notes'" to="/notes" class="card tile" :style="{ background: `${WIDGET_COLORS.get('notes')}0d` }">
           <AppIcon
             class="tile-icon"
-            :size="22"
+            :size="18"
             :style="{ background: `${WIDGET_COLORS.get('notes')}26`, borderColor: WIDGET_COLORS.get('notes') }"
             :icon="SECTION_ICON_DEFS.notes"
             group="navigation"
@@ -714,7 +714,7 @@ function formatWeekdayDate(d: string) {
         >
           <AppIcon
             class="tile-icon"
-            :size="22"
+            :size="18"
             :style="{ background: `${SECURITY_TILE_COLOR}26`, borderColor: SECURITY_TILE_COLOR }"
             :icon="SECURITY_CHECK_ICON"
             group="navigation"
