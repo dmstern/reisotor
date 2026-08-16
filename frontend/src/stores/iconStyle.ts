@@ -1,12 +1,10 @@
 import { defineStore } from 'pinia';
-import { ref, watch, computed } from 'vue';
+import { ref, watch } from 'vue';
 import { usePersistedRef } from '../composables/usePersistedRef';
 
 // Geräte-/Browser-UI-Einstellung (wie stores/calendarSettings.ts/weatherProvider.ts) statt
-// Account-Daten: bewusst nur lokal in localStorage gehalten. Default ('emoji'/'outline') entspricht
-// dem bisherigen, hart codierten Verhalten der App - Bestandsnutzer:innen sehen ohne aktives
-// Opt-in keine Änderung (siehe utils/icon.ts für die Auflösungslogik, components/AppIcon.vue für
-// die Render-Stelle).
+// Account-Daten: bewusst nur lokal in localStorage gehalten (siehe utils/icon.ts für die
+// Auflösungslogik, components/AppIcon.vue für die Render-Stelle).
 export const ICON_STYLE_OPTIONS = [
   { value: 'emoji', label: 'Emoji' },
   { value: 'icons', label: 'Symbole (Tabler)' },
@@ -19,63 +17,115 @@ export const ICON_VARIANT_OPTIONS = [
 ] as const;
 export type IconVariant = (typeof ICON_VARIANT_OPTIONS)[number]['value'];
 
-// Grobe Bereiche, für die sich der Icon-Stil einzeln vom globalen Default abweichend einstellen
-// lässt (Nutzer-Feedback: "Kategorie-Icons per Tabler, Navigation weiter Emoji" o. ä. soll möglich
-// sein) - jede AppIcon.vue-Aufrufstelle ordnet sich über ihren `group`-Prop genau einer davon zu.
+// Grobe Bereiche, für die sich der Icon-Stil einzeln einstellen lässt (Nutzer-Feedback:
+// "Kategorie-Icons per Emoji, Navigation per Tabler" o. ä. soll möglich sein) - jede
+// AppIcon.vue-Aufrufstelle ordnet sich über ihren `group`-Prop genau einer davon zu. Es gibt
+// bewusst KEINEN globalen Fallback-Wert mehr, jeder Bereich hat immer einen konkreten Wert (siehe
+// DEFAULT_GROUPS/groups unten) - ein "für alle Bereiche umstellen"-Aufruf (setAllGroups) ist nur
+// ein Bulk-Setter, kein eigener persistenter Zustand.
 export const ICON_GROUP_OPTIONS = [
   { value: 'navigation', label: 'Navigation & Dashboard' },
-  { value: 'categories', label: 'Kategorien (Kalender, Spots, Wetter, Reise, Kartenmarker)' },
+  { value: 'categories', label: 'Kategorien (Kalender, Spots, Reise, Kartenmarker)' },
+  { value: 'weather', label: 'Wetter' },
   { value: 'formFields', label: 'Formularfelder' },
   { value: 'actions', label: 'Aktionen & Buttons' },
 ] as const;
 export type IconGroup = (typeof ICON_GROUP_OPTIONS)[number]['value'];
 
-const STYLE_KEY = 'reisotor-icon-style';
-const VARIANT_KEY = 'reisotor-icon-variant';
-const GROUP_OVERRIDES_KEY = 'reisotor-icon-style-group-overrides';
+const GROUPS_KEY = 'reisotor-icon-style-groups';
+const VARIANTS_KEY = 'reisotor-icon-style-variants';
 const NAV_COLORED_KEY = 'reisotor-icon-nav-colored';
-const DEFAULT_STYLE: IconStyle = 'emoji';
+const COLORIZE_WEATHER_KEY = 'reisotor-icon-colorize-weather';
 const DEFAULT_VARIANT: IconVariant = 'outline';
+// Neue Standard-Einstellungen (Issue #74): überall Symbole außer bei Kategorien, die per Default
+// bei Emoji bleiben.
+const DEFAULT_GROUPS: Record<IconGroup, IconStyle> = {
+  navigation: 'icons',
+  categories: 'emoji',
+  weather: 'icons',
+  formFields: 'icons',
+  actions: 'icons',
+};
+const DEFAULT_VARIANTS: Record<IconGroup, IconVariant> = {
+  navigation: DEFAULT_VARIANT,
+  categories: DEFAULT_VARIANT,
+  weather: DEFAULT_VARIANT,
+  formFields: DEFAULT_VARIANT,
+  actions: DEFAULT_VARIANT,
+};
 
-function loadStyle(): IconStyle {
-  const stored = localStorage.getItem(STYLE_KEY);
-  return ICON_STYLE_OPTIONS.some((o) => o.value === stored) ? (stored as IconStyle) : DEFAULT_STYLE;
-}
-
-function loadVariant(): IconVariant {
-  const stored = localStorage.getItem(VARIANT_KEY);
-  return ICON_VARIANT_OPTIONS.some((o) => o.value === stored) ? (stored as IconVariant) : DEFAULT_VARIANT;
+// Validiert jeden Bereich einzeln statt das ganze gespeicherte Objekt zu verwerfen - deckt sowohl
+// ganz neue Nutzer:innen (kein Eintrag) als auch Reste in einem älteren/kaputten Format robust ab.
+function loadPerGroup<T extends string>(key: string, validOptions: readonly { value: T }[], defaults: Record<IconGroup, T>): Record<IconGroup, T> {
+  const stored = localStorage.getItem(key);
+  let parsed: Partial<Record<IconGroup, unknown>> = {};
+  if (stored != null) {
+    try {
+      parsed = JSON.parse(stored);
+    } catch {
+      parsed = {};
+    }
+  }
+  const result = {} as Record<IconGroup, T>;
+  for (const { value: group } of ICON_GROUP_OPTIONS) {
+    const candidate = parsed[group];
+    result[group] = validOptions.some((o) => o.value === candidate) ? (candidate as T) : defaults[group];
+  }
+  return result;
 }
 
 export const useIconStyleStore = defineStore('iconStyle', () => {
-  const style = ref<IconStyle>(loadStyle());
-  const variant = ref<IconVariant>(loadVariant());
-  // undefined/fehlender Eintrag = "folgt der globalen style-Einstellung oben" - siehe styleForGroup().
-  const groupOverrides = usePersistedRef<Partial<Record<IconGroup, IconStyle>>>(GROUP_OVERRIDES_KEY, {});
+  const groups = ref<Record<IconGroup, IconStyle>>(loadPerGroup(GROUPS_KEY, ICON_STYLE_OPTIONS, DEFAULT_GROUPS));
+  const variants = ref<Record<IconGroup, IconVariant>>(loadPerGroup(VARIANTS_KEY, ICON_VARIANT_OPTIONS, DEFAULT_VARIANTS));
   // Nur für die Navigation (NavBar/Dashboard-Konfig-Liste) relevant, siehe utils/widgetColors.ts's
-  // NAV_LINK_COLORS - bewusst per Default AUS (anders als die Dashboard-Kacheln, die immer eingefärbt
-  // sind), da die NavBar bisher immer einfarbig war und das ein bewussterer Stilbruch ist als bei den
-  // ohnehin schon farbig hinterlegten Dashboard-Kacheln.
-  const navColored = usePersistedRef<boolean>(NAV_COLORED_KEY, false);
+  // NAV_LINK_COLORS.
+  const navColored = usePersistedRef<boolean>(NAV_COLORED_KEY, true);
+  // Einfärbung passend zur jeweiligen Wetter-Bedingung (Sonne gelb, Regen blau, …), siehe
+  // utils/weather.ts/components/WeatherIcon.vue.
+  const colorizeWeather = usePersistedRef<boolean>(COLORIZE_WEATHER_KEY, true);
 
-  watch(style, (v) => localStorage.setItem(STYLE_KEY, v));
-  watch(variant, (v) => localStorage.setItem(VARIANT_KEY, v));
+  watch(groups, (v) => localStorage.setItem(GROUPS_KEY, JSON.stringify(v)), { deep: true });
+  watch(variants, (v) => localStorage.setItem(VARIANTS_KEY, JSON.stringify(v)), { deep: true });
 
   function styleForGroup(group: IconGroup): IconStyle {
-    return groupOverrides.value[group] ?? style.value;
+    return groups.value[group];
   }
 
-  function setGroupOverride(group: IconGroup, value: IconStyle | null) {
-    const next = { ...groupOverrides.value };
-    if (value == null) delete next[group];
-    else next[group] = value;
-    groupOverrides.value = next;
+  function setGroupOverride(group: IconGroup, value: IconStyle) {
+    groups.value = { ...groups.value, [group]: value };
   }
 
-  // Für die Vorschau in IconStyleSettings.vue: zeigt, ob irgendein Bereich vom globalen Default
-  // abweicht, damit die "Für einzelne Bereiche anpassen"-Sektion erkennbar bleibt, auch wenn sie
-  // eingeklappt ist.
-  const hasGroupOverrides = computed(() => Object.keys(groupOverrides.value).length > 0);
+  function setAllGroups(value: IconStyle) {
+    const next = {} as Record<IconGroup, IconStyle>;
+    for (const { value: group } of ICON_GROUP_OPTIONS) next[group] = value;
+    groups.value = next;
+  }
 
-  return { style, variant, groupOverrides, navColored, styleForGroup, setGroupOverride, hasGroupOverrides };
+  function styleVariantForGroup(group: IconGroup): IconVariant {
+    return variants.value[group];
+  }
+
+  function setGroupVariant(group: IconGroup, value: IconVariant) {
+    variants.value = { ...variants.value, [group]: value };
+  }
+
+  function resetToDefaults() {
+    groups.value = { ...DEFAULT_GROUPS };
+    variants.value = { ...DEFAULT_VARIANTS };
+    navColored.value = true;
+    colorizeWeather.value = true;
+  }
+
+  return {
+    groups,
+    variants,
+    navColored,
+    colorizeWeather,
+    styleForGroup,
+    setGroupOverride,
+    setAllGroups,
+    styleVariantForGroup,
+    setGroupVariant,
+    resetToDefaults,
+  };
 });

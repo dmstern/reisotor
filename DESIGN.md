@@ -396,11 +396,14 @@ Rest der App.
 
 ## Icons
 
-Zwei umschaltbare Icon-Darstellungen statt ausschließlich Emoji: **Emoji** (Default, wie ursprünglich)
-oder **Symbole** (`@tabler/icons-vue`, MIT-Lizenz, Outline- oder gefüllte Variante) – einstellbar in
-den Profil-Einstellungen (`components/IconStyleSettings.vue`, gespeichert per
-`frontend/src/stores/iconStyle.ts`, localStorage-Keys `reisotor-icon-style`/`reisotor-icon-variant`,
-Geräte-lokal wie `calendarSettings.ts`/`weatherProvider.ts`). Beide Bibliotheken werden zur Build-Zeit
+Zwei umschaltbare Icon-Darstellungen statt ausschließlich Emoji: **Emoji** oder **Symbole**
+(`@tabler/icons-vue`, MIT-Lizenz, Outline- oder gefüllte Variante) – einstellbar in den
+Profil-Einstellungen (`components/IconStyleSettings.vue`, gespeichert per
+`frontend/src/stores/iconStyle.ts`, Geräte-lokal wie `calendarSettings.ts`/`weatherProvider.ts`).
+Seit Issue #74 gibt es **keinen globalen Fallback-Wert** mehr – jeder Bereich (`groups`/`variants`,
+beide `Record<IconGroup, ...>`, localStorage `reisotor-icon-style-groups`/
+`reisotor-icon-style-variants`) trägt immer einen konkreten Wert. Standard: überall Symbole/Outline,
+außer bei Kategorien (Emoji). Beide Bibliotheken werden zur Build-Zeit
 ins Bundle kompiliert (keine Icon-Font, kein CDN-Laden zur Laufzeit) und vom bestehenden
 PWA-Service-Worker wie jeder andere App-Code precached – die ursprüngliche Offline-Begründung
 ("leichtgewichtig, kein zusätzlicher Font-Ladevorgang, funktioniert offline") bleibt für beide
@@ -430,16 +433,20 @@ zurück). Drei getrennte, in sich konsistente Icon-Systeme:
   (Einzelfälle ohne Wiederverwendungspotenzial dürfen weiterhin lokal bleiben, siehe
   `LocationPicker.vue`s `OWN_LOCATION_ICON`).
 
-**Icon-Stil pro Bereich einzeln einstellbar**: `AppIcon.vue`s Pflicht-Prop `group` (`IconGroup` aus
-`stores/iconStyle.ts`s `ICON_GROUP_OPTIONS`: `navigation`, `categories`, `formFields`, `actions`)
-ordnet jede Aufrufstelle einem groben Bereich zu. `groupOverrides` (`Partial<Record<IconGroup,
-IconStyle>>`, `usePersistedRef`, localStorage `reisotor-icon-style-group-overrides`) erlaubt einen vom
-globalen `style` abweichenden Stil je Bereich (z. B. Kategorien auf Symbole, Navigation weiter Emoji);
-`iconStyle.styleForGroup(group)` löst das auf (Override falls gesetzt, sonst der globale Default) und
-ist die Stelle, die `AppIcon.vue` intern aufruft – nie direkt `iconStyle.style` in einer Komponente
-lesen, wenn ein `AppIcon` gerendert wird, sonst umgeht das den Override. UI dafür lebt eingeklappt
-("Für einzelne Bereiche anpassen") in `IconStyleSettings.vue`, ein `SegmentedToggle.vue` (Standard/
-Emoji/Symbole) pro Eintrag aus `ICON_GROUP_OPTIONS`.
+**Icon-Stil UND -Variante pro Bereich einzeln einstellbar**: `AppIcon.vue`s Pflicht-Prop `group`
+(`IconGroup` aus `stores/iconStyle.ts`s `ICON_GROUP_OPTIONS`: `navigation`, `categories`, `weather`,
+`formFields`, `actions`) ordnet jede Aufrufstelle einem groben Bereich zu. `iconStyle.styleForGroup(group)`/
+`styleVariantForGroup(group)` lesen den jeweils konkreten Wert aus `groups`/`variants` – nie direkt
+den rohen State in einer Komponente lesen, wenn ein `AppIcon` gerendert wird, sonst umgeht das die
+Bereichs-Einstellung. Die Bereichstabelle in `IconStyleSettings.vue` ist der zentrale, immer
+sichtbare Teil der Karte (kein Einklappen mehr) – oben ein "Für alle Bereiche umstellen"-Bulk-Toggle
+(reiner Setter, kein eigener Zustand), darunter je `ICON_GROUP_OPTIONS`-Eintrag eine Emoji/Symbole-
+`SegmentedToggle.vue`-Zeile und (nur wenn der Bereich auf Symbole steht) eine zweite, kleinere
+Outline/Gefüllt-Zeile darunter. Beide Toggle-Arten zeigen ein Beispiel-Icon je Option
+(`SegmentedToggle.vue`s optionale `icon`/`iconGroup`/`forceStyle`/`forceVariant`-Felder je Option –
+`forceStyle`/`forceVariant` sorgen dafür, dass eine Option IMMER ihre eigene Darstellung zeigt,
+unabhängig vom aktuell aktiven Wert), auf schmalen Karten (`@container`, analog `SpotCard.vue`s
+`@container spots-col`) bleibt nur noch das Icon, das Wort-Label wird ausgeblendet.
 
 **Farbcodierung wiederverwendet, nicht neu erfunden**: `AppIcon.vue`s optionale `color`-Prop
 (Default `currentColor`) überschreibt die Icon-Farbe gezielt an einer Aufrufstelle. Für Symbol-Icons
@@ -448,12 +455,19 @@ Kachel selbst schon für dieses Widget hat (`frontend/src/utils/widgetColors.ts`
 ursprünglich aus `DashboardView.vue` extrahiert) – kein zweites, eigenes Farbschema fürs Icon
 daneben. `NAV_LINK_COLORS` in derselben Datei überträgt dieselbe Farbzuordnung 1:1 auf die
 NavBar-Icons, aktiv per `iconStyle.navColored` (`usePersistedRef`, localStorage
-`reisotor-icon-nav-colored`, **Default `false`**, da die Navigation bisher immer einfarbig war – ein
-bewussterer Stilbruch als bei den ohnehin schon farbig hinterlegten Dashboard-Kacheln, deshalb
-Opt-in statt automatisch aktiv wie beim Dashboard). Checkbox dafür in `IconStyleSettings.vue`
-("Icons in der Navigation einfärben"). Ein neues Widget/ein neuer Nav-Punkt mit eigenem Farbakzent →
-in `WIDGET_COLORS` (und ggf. `NAV_LINK_COLORS`) ergänzen, nicht lokal eine Hex-Farbe in der
-Komponente hartkodieren.
+`reisotor-icon-nav-colored`, **Default `true`** seit Issue #74). Checkbox dafür in
+`IconStyleSettings.vue` ("Icons in der Navigation einfärben"). Ein neues Widget/ein neuer Nav-Punkt
+mit eigenem Farbakzent → in `WIDGET_COLORS` (und ggf. `NAV_LINK_COLORS`) ergänzen, nicht lokal eine
+Hex-Farbe in der Komponente hartkodieren.
+
+**Wetter als eigener, farbcodierter Icon-Bereich**: `utils/weather.ts`s `WEATHER_CODE_META` trägt
+neben `tabler` zusätzlich `color` (einteilige Codes wie Sonne/Wolke) bzw. `parts` (zweiteilige Codes
+wie Regen/Schneefall/Gewitter: Basis-Icon Wolke + Akzent-Icon Tropfen/Flocke/Blitz, je mit eigener
+Farbe). `components/WeatherIcon.vue` ist die zentrale Render-Stelle (ersetzt direkte
+`weatherCodeMeta().tabler`-Aufrufe), stapelt bei aktivierter Einfärbung (`iconStyle.colorizeWeather`,
+Default an) die zwei Teil-Icons statt das kombinierte Tabler-Icon pauschal einzufärben – Regentropfen/
+Blitz-Akzente sind dabei zusätzlich `forceFilled` (immer gefüllt statt Outline, sonst überlagern sich
+zwei Outline-Umrisse unschön).
 
 Kartenmarker (`utils/mapRoute.ts`, genutzt von `TripMap.vue`/`LocationPicker.vue`/
 `ExcursionMiniMap.vue`) akzeptieren sowohl ein `IconDef` (Kategorie-/Ortsmarker, respektieren die

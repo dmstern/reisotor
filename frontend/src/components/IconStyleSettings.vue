@@ -1,45 +1,59 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import {
-  useIconStyleStore,
-  ICON_VARIANT_OPTIONS,
-  ICON_GROUP_OPTIONS,
-  type IconVariant,
-  type IconStyle,
-  type IconGroup,
-} from '../stores/iconStyle';
+import { useIconStyleStore, ICON_GROUP_OPTIONS, type IconStyle, type IconVariant, type IconGroup } from '../stores/iconStyle';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
+import { ACTION_ICONS } from '../utils/actionIcons';
 import AppIcon from './AppIcon.vue';
 import SegmentedToggle from './SegmentedToggle.vue';
 
-// Eigene Vorschau-Karten statt eines reinen <select> (anders als z. B. WEEK_START_OPTIONS/
-// DATE_FORMAT_OPTIONS in ProfileView.vue) - der Witz dieser Einstellung ist, den Unterschied
-// tatsächlich zu SEHEN, nicht nur eine Text-Beschriftung zu lesen. forceStyle auf AppIcon.vue
-// zeigt beide Optionen nebeneinander, unabhängig vom gerade aktiven Store-Wert.
+// Issue #74: die Bereichseinstellungen sind der zentrale, immer sichtbare Teil dieser Karte
+// geworden (kein <details> mehr) - der "für alle Bereiche umstellen"-Umschalter oben in der
+// Tabelle ist bewusst KEIN eigener persistenter Zustand, sondern nur ein Bulk-Setter
+// (iconStyle.setAllGroups) auf die einzelnen Bereichs-Werte darunter.
 const iconStyle = useIconStyleStore();
 
 const PREVIEW_ICONS = [SECTION_ICON_DEFS.calendar, SECTION_ICON_DEFS.budget, FORM_FIELD_ICONS.location];
+// Ein einzelnes, immer gleiches Beispiel-Icon für die Emoji/Symbole- bzw. Outline/Gefüllt-Toggles
+// je Bereich (statt eines bereichs-spezifischen Icons) - der Bereich ist schon per Zeilen-Label
+// benannt, das Beispiel-Icon soll nur zeigen, WIE die jeweilige Option aussieht.
+const DEMO_ICON = SECTION_ICON_DEFS.calendar;
 
-// 'default' statt null/undefined als dritter SegmentedToggle-Wert, da dessen modelValue ein
-// einfacher String sein muss (siehe SegmentedToggle.vue) - eigener Getter/Setter pro Bereich
-// übersetzt das auf stores/iconStyle.ts's setGroupOverride()/styleForGroup().
-const GROUP_OVERRIDE_OPTIONS = [
-  { value: 'default', label: 'Standard' },
-  { value: 'emoji', label: 'Emoji' },
-  { value: 'icons', label: 'Symbole' },
+// forceStyle/forceVariant sorgen dafür, dass jede Option IMMER ihre eigene Darstellung zeigt
+// (unabhängig vom aktuell aktiven Wert) - gleiches Prinzip wie die große Vorschau oben.
+const STYLE_OPTIONS = [
+  { value: 'emoji', label: 'Emoji', icon: DEMO_ICON, iconGroup: 'navigation' as IconGroup, forceStyle: 'emoji' as IconStyle },
+  { value: 'icons', label: 'Symbole', icon: DEMO_ICON, iconGroup: 'navigation' as IconGroup, forceStyle: 'icons' as IconStyle },
+];
+const VARIANT_OPTIONS = [
+  {
+    value: 'outline',
+    label: 'Outline',
+    icon: DEMO_ICON,
+    iconGroup: 'navigation' as IconGroup,
+    forceStyle: 'icons' as IconStyle,
+    forceVariant: 'outline' as IconVariant,
+  },
+  {
+    value: 'filled',
+    label: 'Gefüllt',
+    icon: DEMO_ICON,
+    iconGroup: 'navigation' as IconGroup,
+    forceStyle: 'icons' as IconStyle,
+    forceVariant: 'filled' as IconVariant,
+  },
 ];
 
-function groupOverrideValue(group: IconGroup): string {
-  return iconStyle.groupOverrides[group] ?? 'default';
-}
-function setGroupOverrideValue(group: IconGroup, value: string) {
-  iconStyle.setGroupOverride(group, value === 'default' ? null : (value as IconStyle));
-}
+// '' statt eines der beiden Werte, wenn die Bereiche aktuell unterschiedlich eingestellt sind -
+// SegmentedToggle blendet die Pille dann komplett aus (siehe dortiger activeIndex-Kommentar),
+// statt fälschlich eine der beiden Optionen als "aktiv" zu zeigen.
+const allGroupsValue = computed(() => {
+  const values = ICON_GROUP_OPTIONS.map((g) => iconStyle.groups[g.value]);
+  return values.every((v) => v === values[0]) ? values[0] : '';
+});
 
-const navColorRelevant = computed(
-  () => iconStyle.styleForGroup('navigation') === 'icons',
-);
+const navColorRelevant = computed(() => iconStyle.groups.navigation === 'icons');
+const weatherColorRelevant = computed(() => iconStyle.groups.weather === 'icons');
 </script>
 
 <template>
@@ -48,75 +62,76 @@ const navColorRelevant = computed(
     <p class="hint">
       Emoji oder Symbole für Navigation, Kategorien und Formulare – dein Profilbild bleibt davon unberührt.
     </p>
+
     <div class="icon-style-preview-row">
-      <button
-        type="button"
-        class="icon-style-preview"
-        :class="{ active: iconStyle.style === 'emoji' }"
-        :aria-pressed="iconStyle.style === 'emoji'"
-        @click="iconStyle.style = 'emoji'"
-      >
+      <div class="icon-style-preview">
         <span class="icon-style-preview-icons">
           <AppIcon v-for="icon in PREVIEW_ICONS" :key="icon.id" :icon="icon" group="navigation" force-style="emoji" :size="22" />
         </span>
         <span class="icon-style-preview-label">Emoji</span>
-      </button>
-      <button
-        type="button"
-        class="icon-style-preview"
-        :class="{ active: iconStyle.style === 'icons' }"
-        :aria-pressed="iconStyle.style === 'icons'"
-        @click="iconStyle.style = 'icons'"
-      >
+      </div>
+      <div class="icon-style-preview">
         <span class="icon-style-preview-icons">
-          <AppIcon
-            v-for="icon in PREVIEW_ICONS"
-            :key="icon.id"
-            :icon="icon"
-            group="navigation"
-            force-style="icons"
-            :force-variant="iconStyle.variant"
-            :size="22"
-          />
+          <AppIcon v-for="icon in PREVIEW_ICONS" :key="icon.id" :icon="icon" group="navigation" force-style="icons" :size="22" />
         </span>
         <span class="icon-style-preview-label">Symbole (Tabler)</span>
-      </button>
+      </div>
     </div>
 
-    <div v-if="iconStyle.style === 'icons'" class="icon-variant-row">
-      <span class="icon-variant-label">Stil</span>
-      <SegmentedToggle
-        :model-value="iconStyle.variant"
-        :options="[...ICON_VARIANT_OPTIONS]"
-        @update:model-value="(v) => (iconStyle.variant = v as IconVariant)"
-      />
-    </div>
-
-    <label class="nav-colored-row" :class="{ dimmed: !navColorRelevant }">
-      <input type="checkbox" v-model="iconStyle.navColored" />
-      <span>
-        Icons in der Navigation einfärben
-        <span class="hint">
-          Nutzt dieselben Akzentfarben wie die Dashboard-Kacheln – wirkt sich nur aus, wenn die
-          Navigation auf Symbole steht (aktuell{{ navColorRelevant ? '' : ' nicht' }} der Fall).
-        </span>
-      </span>
-    </label>
-
-    <details class="group-overrides">
-      <summary>
-        Für einzelne Bereiche anpassen
-        <span v-if="iconStyle.hasGroupOverrides" class="override-badge">aktiv</span>
-      </summary>
-      <div class="group-override-row" v-for="group in ICON_GROUP_OPTIONS" :key="group.value">
-        <span class="group-override-label">{{ group.label }}</span>
+    <div class="group-overrides">
+      <div class="group-override-row all-groups-row">
+        <span class="group-override-label">Für alle Bereiche umstellen</span>
         <SegmentedToggle
-          :model-value="groupOverrideValue(group.value)"
-          :options="GROUP_OVERRIDE_OPTIONS"
-          @update:model-value="(v) => setGroupOverrideValue(group.value, v)"
+          :model-value="allGroupsValue"
+          :options="STYLE_OPTIONS"
+          @update:model-value="(v) => iconStyle.setAllGroups(v as IconStyle)"
         />
       </div>
-    </details>
+
+      <template v-for="group in ICON_GROUP_OPTIONS" :key="group.value">
+        <div class="group-override-row">
+          <span class="group-override-label">{{ group.label }}</span>
+          <SegmentedToggle
+            :model-value="iconStyle.groups[group.value]"
+            :options="STYLE_OPTIONS"
+            @update:model-value="(v) => iconStyle.setGroupOverride(group.value as IconGroup, v as IconStyle)"
+          />
+        </div>
+        <div v-if="iconStyle.groups[group.value] === 'icons'" class="group-override-row variant-row">
+          <span class="group-override-label">Stil</span>
+          <SegmentedToggle
+            :model-value="iconStyle.variants[group.value]"
+            :options="VARIANT_OPTIONS"
+            @update:model-value="(v) => iconStyle.setGroupVariant(group.value as IconGroup, v as IconVariant)"
+          />
+        </div>
+        <label v-if="group.value === 'navigation'" class="colorize-row" :class="{ dimmed: !navColorRelevant }">
+          <input type="checkbox" v-model="iconStyle.navColored" />
+          <span>
+            Icons in der Navigation einfärben
+            <span class="hint">
+              Nutzt dieselben Akzentfarben wie die Dashboard-Kacheln – wirkt sich nur aus, wenn die
+              Navigation auf Symbole steht (aktuell{{ navColorRelevant ? '' : ' nicht' }} der Fall).
+            </span>
+          </span>
+        </label>
+        <label v-if="group.value === 'weather'" class="colorize-row" :class="{ dimmed: !weatherColorRelevant }">
+          <input type="checkbox" v-model="iconStyle.colorizeWeather" />
+          <span>
+            Wetter-Icons passend einfärben
+            <span class="hint">
+              Sonne gelb, Wolken grau, Regen blau, Blitze gelb, … – wirkt sich nur aus, wenn Wetter
+              auf Symbole steht (aktuell{{ weatherColorRelevant ? '' : ' nicht' }} der Fall).
+            </span>
+          </span>
+        </label>
+      </template>
+    </div>
+
+    <button type="button" class="secondary reset-button" @click="iconStyle.resetToDefaults()">
+      <AppIcon :icon="ACTION_ICONS.refresh" :size="16" group="actions" />
+      Auf Standard-Einstellungen zurücksetzen
+    </button>
   </div>
 </template>
 
@@ -137,15 +152,6 @@ const navColorRelevant = computed(
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   background: var(--color-surface);
-  cursor: pointer;
-  transition:
-    border-color 0.15s ease,
-    background 0.15s ease;
-}
-
-.icon-style-preview.active {
-  border-color: var(--color-primary);
-  background: var(--color-primary-tint);
 }
 
 .icon-style-preview-icons {
@@ -161,80 +167,87 @@ const navColorRelevant = computed(
   color: var(--color-text-muted);
 }
 
-.icon-style-preview.active .icon-style-preview-label {
-  color: var(--color-primary-dark);
-}
-
-.icon-variant-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  margin-top: var(--space-3);
-}
-
-.icon-variant-label {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
-}
-
-.nav-colored-row {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-2);
-  margin-top: var(--space-3);
-  cursor: pointer;
-}
-
-.nav-colored-row input {
-  margin-top: 3px;
-  flex-shrink: 0;
-}
-
-.nav-colored-row .hint {
-  display: block;
-  margin-top: 2px;
-}
-
-.nav-colored-row.dimmed {
-  opacity: 0.7;
-}
-
+/* container statt globalem @media: betrifft nur die Toggles dieser Karte, nicht die vielen
+   anderen SegmentedToggle-Stellen in der App (gleiches Prinzip wie SpotCard.vue's
+   @container spots-col). */
 .group-overrides {
-  margin-top: var(--space-3);
+  margin-top: var(--space-4);
+  container-type: inline-size;
 }
 
-.group-overrides summary {
-  cursor: pointer;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.override-badge {
-  font-size: 0.7rem;
-  font-weight: 700;
-  color: #fff;
-  background: var(--color-primary);
-  padding: 1px 8px;
-  border-radius: 999px;
-}
-
+/* grid statt flex+space-between: der Toggle bleibt IMMER in der rechten Spalte fixiert, auch wenn
+   das Label lang ist und in eine zweite Zeile umbricht - vorher landete der Toggle je nach Umbruch
+   mal rechts, mal links (space-between mit nur einem Element auf der zweiten Zeile). */
 .group-override-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
   gap: var(--space-3);
   margin-top: var(--space-2);
-  flex-wrap: wrap;
+}
+
+.all-groups-row {
+  padding-bottom: var(--space-2);
+  margin-bottom: var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.all-groups-row .group-override-label {
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.variant-row {
+  margin-top: var(--space-1);
+  opacity: 0.85;
+}
+
+.variant-row .group-override-label {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
 }
 
 .group-override-label {
   font-size: 0.85rem;
   color: var(--color-text);
+}
+
+/* Auf schmalen Karten (Mobil) das Wort-Label der Toggle-Optionen ausblenden, nur das Beispiel-Icon
+   bleibt - spart die Breite, die sonst zum Umbruch/Missalignment der Zeile geführt hat. */
+@container (max-width: 380px) {
+  .group-override-row :deep(.segmented-option-label) {
+    display: none;
+  }
+}
+
+.colorize-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: var(--space-1) 0 var(--space-2) 0;
+  cursor: pointer;
+}
+
+.colorize-row input {
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+
+.colorize-row .hint {
+  display: block;
+  margin-top: 2px;
+}
+
+.colorize-row.dimmed {
+  opacity: 0.7;
+}
+
+.reset-button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+  padding: var(--space-2) var(--space-3);
+  font-size: 0.85rem;
 }
 </style>

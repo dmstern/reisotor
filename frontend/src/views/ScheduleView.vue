@@ -23,6 +23,7 @@ import FileAttachments from '../components/FileAttachments.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import DraftStatusBar from '../components/DraftStatusBar.vue';
 import AppIcon from '../components/AppIcon.vue';
+import WeatherIcon from '../components/WeatherIcon.vue';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
 import { SCHEDULE_CATEGORY_META } from '../utils/scheduleCategory';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
@@ -842,7 +843,7 @@ function formatDate(date: string) {
 
       <p v-for="entry in selectedDateWeatherEntries" :key="entry.key" class="day-weather-note">
         <AppIcon :icon="entry.tabler" :size="15" group="categories" /> {{ entry.label }}:
-        <AppIcon :icon="weatherCodeMeta(entry.weather.weatherCode).tabler" :size="15" group="categories" />
+        <WeatherIcon :code="entry.weather.weatherCode" :size="15" />
         {{ Math.round(entry.weather.tempMax) }}° / {{ Math.round(entry.weather.tempMin) }}°
         <span v-if="entry.weather.precipitationProbability != null">
           · <AppIcon :icon="ACTION_ICONS.rain" :size="13" group="actions" />{{ entry.weather.precipitationProbability }}%

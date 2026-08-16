@@ -27,6 +27,7 @@ import ViewLoadingState from '../components/ViewLoadingState.vue';
 import DraftStatusBar from '../components/DraftStatusBar.vue';
 import PendingSyncBadge from '../components/PendingSyncBadge.vue';
 import AppIcon from '../components/AppIcon.vue';
+import WeatherIcon from '../components/WeatherIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
@@ -524,7 +525,7 @@ async function removeComment(id: number) {
 
           <div class="excursion-links" v-if="excursionsForEntry(entry).length || weatherForEntry(entry)">
             <div v-if="weatherForEntry(entry)" class="diary-weather" :title="weatherCodeMeta(weatherForEntry(entry)!.weatherCode).label">
-              <AppIcon class="weather-icon" :size="16" :icon="weatherCodeMeta(weatherForEntry(entry)!.weatherCode).tabler" group="categories" />
+              <WeatherIcon class="weather-icon" :size="16" :code="weatherForEntry(entry)!.weatherCode" />
               <span class="weather-temp">{{ Math.round(weatherForEntry(entry)!.tempMax) }}° / {{ Math.round(weatherForEntry(entry)!.tempMin) }}°</span>
             </div>
             <button

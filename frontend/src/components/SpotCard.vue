@@ -22,6 +22,7 @@ import MapsAppPicker from './MapsAppPicker.vue';
 import FileAttachments from './FileAttachments.vue';
 import PendingSyncBadge from './PendingSyncBadge.vue';
 import AppIcon from './AppIcon.vue';
+import WeatherIcon from './WeatherIcon.vue';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
@@ -186,7 +187,7 @@ function onCardClick() {
         <AppIcon class="status-icon" :size="14" :icon="FORM_FIELD_ICONS.date" group="actions" />
         <span class="status-text"
           >{{ plannedDateLabel }}<template v-if="dayWeather"
-            > · <AppIcon :icon="weatherCodeMeta(dayWeather.weatherCode).tabler" :size="14" group="categories" /> {{ Math.round(dayWeather.tempMax) }}°</template
+            > · <WeatherIcon :code="dayWeather.weatherCode" :size="14" /> {{ Math.round(dayWeather.tempMax) }}°</template
           ></span
         >
       </span>

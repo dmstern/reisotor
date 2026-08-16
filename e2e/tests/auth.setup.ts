@@ -22,5 +22,18 @@ setup('authenticate', async ({ page }) => {
   // Kalender-Schublade als synthetischer "Urlaub-Start/-Ende"-Eintrag auftauchen (strict mode).
   await expect(page.locator('.trip-name', { hasText: seeded.trip.name })).toBeVisible();
 
+  // Fixiert Emoji als Icon-Darstellung für die gesamte Suite (geteiltes storageState, siehe
+  // playwright.config.ts) - viele bestehende Tests identifizieren ein Icon beiläufig per festem
+  // Emoji-Zeichen (z. B. '📋', '⏱️'), ohne dass es dabei eigentlich um die Icon-Stil-Einstellung
+  // selbst geht. stores/iconStyle.ts's Default ist seit Issue #74 überall Symbole außer Kategorien -
+  // ohne diesen Fixpunkt würden diese Assertions bei jeder künftigen Default-Änderung erneut
+  // brechen. Nur tests/icon-style.spec.ts (testet die Einstellung selbst) überschreibt das gezielt.
+  await page.evaluate(() => {
+    localStorage.setItem(
+      'reisotor-icon-style-groups',
+      JSON.stringify({ navigation: 'emoji', categories: 'emoji', weather: 'emoji', formFields: 'emoji', actions: 'emoji' }),
+    );
+  });
+
   await page.context().storageState({ path: authFile });
 });
