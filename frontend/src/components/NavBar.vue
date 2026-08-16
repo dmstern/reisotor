@@ -266,9 +266,10 @@ function onLinkClick(event: MouseEvent) {
   /* --color-primary-tint ist auf --color-surface (Navbar-Hintergrund) fast kontrastfrei (beides
      nahezu weiß in Light Mode, nahezu identisch dunkel in Dark Mode) - die Pille war dadurch fast
      unsichtbar, wodurch das eigentlich vorhandene Gleiten unbemerkt blieb (Issue #71: "Animation
-     nicht erkennbar auf Desktop"). Eine feste Border in der aktiven Textfarbe zeichnet die Pille
-     unabhängig vom Füllfarben-Kontrast klar nach. */
-  border: 1.5px solid var(--color-primary-dark);
+     nicht erkennbar auf Desktop"). Eine dezente, halbtransparente Border zeichnet die Pille
+     unabhängig vom Füllfarben-Kontrast nach, ohne selbst zum dominanten Element zu werden - das
+     aktive Icon (siehe .link.router-link-active .icon unten) trägt den Hauptteil der Hervorhebung. */
+  border: 1px solid color-mix(in srgb, var(--color-primary) 45%, transparent);
   border-radius: 999px;
   opacity: 0;
   transition: transform 0.25s ease, width 0.25s ease, opacity 0.15s ease;
@@ -297,6 +298,15 @@ function onLinkClick(event: MouseEvent) {
 
 .link.router-link-active {
   color: var(--color-primary-dark);
+}
+
+/* Aktives Icon etwas leuchtender als die (dunklere) Textfarbe daneben - .icon bekommt AppIcon.vue's
+   Default-color-Prop 'currentColor' (siehe dort), übernimmt diese Regel hier also automatisch für
+   die Tabler-Variante. Wirkt bewusst NICHT bei aktivierter navColored-Einstellung (dort setzt
+   AppIcon einen expliziten Farb-Prop pro Bereich, der als Inline-Style immer gewinnt) und auch
+   nicht für die Emoji-Variante (Emoji ignorieren CSS color ohnehin). */
+.link.router-link-active .icon {
+  color: var(--color-primary);
 }
 
 .icon-wrap {

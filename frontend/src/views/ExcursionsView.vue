@@ -739,6 +739,13 @@ function setCategoryRef(category: string, el: Element | ComponentPublicInstance 
 // TripMap.vue's defineExpose(focusCategory)) – dieselbe Kategorie-Kopplung wie beim Filter oben.
 const tripMapRef = ref<InstanceType<typeof TripMap> | null>(null);
 function scrollToCategory(category: string) {
+  // Sofort setzen statt nur auf den IntersectionObserver (Scrollspy weiter unten) zu warten: bei
+  // kurzen Gruppen, die schon vor dem Scrollen alle gleichzeitig im Beobachtungsfenster liegen,
+  // ändert sich die Schnittmenge durchs Scrollen u. U. gar nicht - die Unterstreichung sprang dann
+  // beim Klick nie zur angeklickten Kategorie (nur die zuerst in spotGroups gelistete blieb aktiv).
+  // Der Observer-Callback unten überschreibt diesen Wert ohnehin wieder, sobald sich die Scrollposition
+  // tatsächlich ändert - "in beide Richtungen" bleibt dadurch erhalten.
+  activeCategory.value = category;
   categoryRefs.get(category)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   tripMapRef.value?.focusCategory(category);
 }
@@ -3059,9 +3066,12 @@ async function removeSpot(id: number) {
   overflow-x: auto;
   overflow-y: hidden;
   margin-bottom: var(--space-3);
-  background: var(--color-primary-tint);
-  border-radius: var(--radius-md-squircle);
-  corner-shape: squircle;
+  /* Gleiche Farbe wie der dahinterliegende Seitenhintergrund statt eines eigenen Tons (vorher
+     --color-primary-tint mit eigener Rundung) - sieht dadurch "transparent" aus wie die anderen
+     Tab-/Nav-Leisten der App (NavBar.vue, TabBar.vue), muss aber wegen position:sticky tatsächlich
+     blickdicht bleiben, sonst schiene der darunter wegscrollende Inhalt durch. */
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
   transition: box-shadow 0.2s ease;
 }
 

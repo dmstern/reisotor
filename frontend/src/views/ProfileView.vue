@@ -435,7 +435,7 @@ async function onImportFileSelected(event: Event) {
 
       <div class="card">
         <h2>Navigation</h2>
-        <p class="hint">Position der Navigationsleiste, getrennt für Desktop und mobile Bedienung.</p>
+        <p class="hint intro-hint">Position der Navigationsleiste, getrennt für Desktop und mobile Bedienung.</p>
         <div class="nav-position-row">
           <label>
             Desktop
@@ -543,7 +543,7 @@ async function onImportFileSelected(event: Event) {
 
       <div class="card">
         <h2>🏖️ Urlaubs-Hinweis</h2>
-        <p class="hint">
+        <p class="hint intro-hint">
           Der Hinweis im Dashboard-Header während des laufenden Urlaubs zeigt standardmäßig immer
           denselben Text - kann hier stattdessen auf einen Countdown der verbleibenden Urlaubstage
           umgeschaltet werden.
@@ -558,7 +558,7 @@ async function onImportFileSelected(event: Event) {
     <div v-if="activeTab === 'trip'" class="grid settings-grid">
       <div id="calendar-settings" class="card">
         <h2>📅 Kalender</h2>
-        <p class="hint">Wochenanfang und Zahlenformat für Datumsanzeigen in der ganzen App.</p>
+        <p class="hint intro-hint">Wochenanfang und Zahlenformat für Datumsanzeigen in der ganzen App.</p>
         <div class="nav-position-row">
           <label>
             Wochenanfang
@@ -582,7 +582,7 @@ async function onImportFileSelected(event: Event) {
       <!-- id als Sprungziel für den "Anbieter wechseln"-Link im Wetter-Widget (DashboardView.vue) -->
       <div id="weather-provider-settings" class="card">
         <h2>🌤️ Wetter</h2>
-        <p class="hint">
+        <p class="hint intro-hint">
           Wettervorhersage über Open-Meteo, das mehrere echte Wetterdienste bündelt. Zeigt eine
           Vorhersage abweichende Werte gegenüber anderen Wetter-Apps (z. B. Apple Weather), lässt sich
           hier ein anderer Anbieter ausprobieren.
@@ -604,7 +604,7 @@ async function onImportFileSelected(event: Event) {
       <!-- id als Sprungziel, analog zu #weather-provider-settings oben -->
       <div id="home-currency-settings" class="card">
         <h2>💱 Heimatwährung</h2>
-        <p class="hint">
+        <p class="hint intro-hint">
           Wird im Dashboard genutzt, um bei Urlauben mit abweichender Landeswährung den aktuellen
           Wechselkurs anzuzeigen.
         </p>
@@ -622,7 +622,7 @@ async function onImportFileSelected(event: Event) {
     <template v-if="activeTab === 'notifications'">
       <div class="card">
         <h2>🔔 Meldungen</h2>
-        <p class="hint">
+        <p class="hint intro-hint">
           Kurze Meldungen, die bei jedem Laden/Speichern/Löschen kurz unten am Bildschirmrand
           aufblitzen (z. B. "Speichert…"), damit klar wird, dass die App gerade tatsächlich mit dem
           Server arbeitet statt hängengeblieben zu sein. Wer das zu hektisch findet, kann sie hier
@@ -640,7 +640,7 @@ async function onImportFileSelected(event: Event) {
           Push-Benachrichtigungen werden von diesem Browser nicht unterstützt.
         </p>
         <template v-else>
-          <p class="hint">
+          <p class="hint intro-hint">
             Benachrichtigt dich, wenn andere Mitglieder eines Urlaubs etwas ändern – auch wenn Reisotor
             gerade nicht offen ist. Über die Stufe lässt sich einstellen, wie viel davon ankommt.
           </p>
@@ -691,7 +691,7 @@ async function onImportFileSelected(event: Event) {
     <template v-if="activeTab === 'data'">
       <div class="card">
         <h2>🗑️ Papierkorb</h2>
-        <p class="hint">
+        <p class="hint intro-hint">
           Gelöschte Termine, Ausflüge, Spots und mehr bleiben eine Weile hier erhalten und lassen sich
           wiederherstellen.
         </p>
@@ -739,7 +739,7 @@ async function onImportFileSelected(event: Event) {
     <template v-if="activeTab === 'about'">
       <div class="card">
         <h2>🐛 Feedback</h2>
-        <p class="hint">
+        <p class="hint intro-hint">
           Bug gefunden oder eine Idee für eine neue Funktion? Landet direkt als Issue im
           Reisotor-Repository.
         </p>
@@ -870,6 +870,10 @@ async function onImportFileSelected(event: Event) {
 
 .nav-config-hint {
   margin-top: var(--space-3);
+  /* Ohne das klebte die Liste direkt darunter (▲▼✓-Zeilen) an der letzten Textzeile - derselbe
+     .hint-Stolperstein wie .intro-hint oben, hier separat gehalten, weil nav-config-hint zusätzlich
+     den margin-top von der Zeile darüber braucht. */
+  margin-bottom: var(--space-3);
 }
 
 .nav-config-list,
@@ -965,6 +969,17 @@ label,
 
 .hint.warning {
   color: var(--color-accent);
+}
+
+/* .hint's margin:0 ist bewusst für knapp unter einem Eingabefeld sitzende Validierungs-/
+   Erfolgsmeldungen gedacht (siehe DESIGN.md "Beschreibungstext vor einer Karte/Liste/einem Grid" -
+   derselbe .hint-Klassen-Stolperstein wie dort, nur diesmal vor einem Steuerelement statt vor einer
+   Karte/Liste). Ein erklärender Absatz direkt VOR einem Button/Dropdown/Toggle braucht dagegen
+   sichtbar Luft - ohne diese Klasse klebte der Absatz sonst direkt am folgenden Steuerelement (Issue
+   #69: "Feedback geben"-Button, "Papierkorb öffnen"-Button, Push-"Aktivieren"-Button sowie mehrere
+   Dropdown-/Listen-Gruppen in dieser View betroffen). */
+.hint.intro-hint {
+  margin-bottom: var(--space-3);
 }
 
 .backup-actions {
