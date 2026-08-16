@@ -28,7 +28,7 @@ const component = computed(() =>
   resolveIconComponent(
     props.icon,
     props.forceStyle ?? iconStyle.styleForGroup(props.group),
-    props.forceVariant ?? iconStyle.variant,
+    props.forceVariant ?? iconStyle.styleVariantForGroup(props.group),
   ),
 );
 </script>

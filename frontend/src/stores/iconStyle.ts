@@ -32,8 +32,8 @@ export const ICON_GROUP_OPTIONS = [
 ] as const;
 export type IconGroup = (typeof ICON_GROUP_OPTIONS)[number]['value'];
 
-const VARIANT_KEY = 'reisotor-icon-variant';
 const GROUPS_KEY = 'reisotor-icon-style-groups';
+const VARIANTS_KEY = 'reisotor-icon-style-variants';
 const NAV_COLORED_KEY = 'reisotor-icon-nav-colored';
 const COLORIZE_WEATHER_KEY = 'reisotor-icon-colorize-weather';
 const DEFAULT_VARIANT: IconVariant = 'outline';
@@ -46,17 +46,18 @@ const DEFAULT_GROUPS: Record<IconGroup, IconStyle> = {
   formFields: 'icons',
   actions: 'icons',
 };
-
-function loadVariant(): IconVariant {
-  const stored = localStorage.getItem(VARIANT_KEY);
-  return ICON_VARIANT_OPTIONS.some((o) => o.value === stored) ? (stored as IconVariant) : DEFAULT_VARIANT;
-}
+const DEFAULT_VARIANTS: Record<IconGroup, IconVariant> = {
+  navigation: DEFAULT_VARIANT,
+  categories: DEFAULT_VARIANT,
+  weather: DEFAULT_VARIANT,
+  formFields: DEFAULT_VARIANT,
+  actions: DEFAULT_VARIANT,
+};
 
 // Validiert jeden Bereich einzeln statt das ganze gespeicherte Objekt zu verwerfen - deckt sowohl
-// ganz neue Nutzer:innen (kein Eintrag) als auch Reste im alten, partiellen Format
-// (reisotor-icon-style-group-overrides) oder einzelne kaputte Werte robust ab.
-function loadGroups(): Record<IconGroup, IconStyle> {
-  const stored = localStorage.getItem(GROUPS_KEY);
+// ganz neue Nutzer:innen (kein Eintrag) als auch Reste in einem älteren/kaputten Format robust ab.
+function loadPerGroup<T extends string>(key: string, validOptions: readonly { value: T }[], defaults: Record<IconGroup, T>): Record<IconGroup, T> {
+  const stored = localStorage.getItem(key);
   let parsed: Partial<Record<IconGroup, unknown>> = {};
   if (stored != null) {
     try {
@@ -65,17 +66,17 @@ function loadGroups(): Record<IconGroup, IconStyle> {
       parsed = {};
     }
   }
-  const result = {} as Record<IconGroup, IconStyle>;
+  const result = {} as Record<IconGroup, T>;
   for (const { value: group } of ICON_GROUP_OPTIONS) {
     const candidate = parsed[group];
-    result[group] = ICON_STYLE_OPTIONS.some((o) => o.value === candidate) ? (candidate as IconStyle) : DEFAULT_GROUPS[group];
+    result[group] = validOptions.some((o) => o.value === candidate) ? (candidate as T) : defaults[group];
   }
   return result;
 }
 
 export const useIconStyleStore = defineStore('iconStyle', () => {
-  const variant = ref<IconVariant>(loadVariant());
-  const groups = ref<Record<IconGroup, IconStyle>>(loadGroups());
+  const groups = ref<Record<IconGroup, IconStyle>>(loadPerGroup(GROUPS_KEY, ICON_STYLE_OPTIONS, DEFAULT_GROUPS));
+  const variants = ref<Record<IconGroup, IconVariant>>(loadPerGroup(VARIANTS_KEY, ICON_VARIANT_OPTIONS, DEFAULT_VARIANTS));
   // Nur für die Navigation (NavBar/Dashboard-Konfig-Liste) relevant, siehe utils/widgetColors.ts's
   // NAV_LINK_COLORS.
   const navColored = usePersistedRef<boolean>(NAV_COLORED_KEY, true);
@@ -83,8 +84,8 @@ export const useIconStyleStore = defineStore('iconStyle', () => {
   // utils/weather.ts/components/WeatherIcon.vue.
   const colorizeWeather = usePersistedRef<boolean>(COLORIZE_WEATHER_KEY, true);
 
-  watch(variant, (v) => localStorage.setItem(VARIANT_KEY, v));
   watch(groups, (v) => localStorage.setItem(GROUPS_KEY, JSON.stringify(v)), { deep: true });
+  watch(variants, (v) => localStorage.setItem(VARIANTS_KEY, JSON.stringify(v)), { deep: true });
 
   function styleForGroup(group: IconGroup): IconStyle {
     return groups.value[group];
@@ -100,21 +101,31 @@ export const useIconStyleStore = defineStore('iconStyle', () => {
     groups.value = next;
   }
 
+  function styleVariantForGroup(group: IconGroup): IconVariant {
+    return variants.value[group];
+  }
+
+  function setGroupVariant(group: IconGroup, value: IconVariant) {
+    variants.value = { ...variants.value, [group]: value };
+  }
+
   function resetToDefaults() {
-    variant.value = DEFAULT_VARIANT;
     groups.value = { ...DEFAULT_GROUPS };
+    variants.value = { ...DEFAULT_VARIANTS };
     navColored.value = true;
     colorizeWeather.value = true;
   }
 
   return {
-    variant,
     groups,
+    variants,
     navColored,
     colorizeWeather,
     styleForGroup,
     setGroupOverride,
     setAllGroups,
+    styleVariantForGroup,
+    setGroupVariant,
     resetToDefaults,
   };
 });

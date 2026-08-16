@@ -23,7 +23,14 @@ const accentSize = computed(() => Math.round(props.size * 0.62));
 <template>
   <span v-if="showParts" class="weather-icon-parts" :style="{ width: size + 'px', height: size + 'px' }" :title="title">
     <AppIcon class="weather-icon-base" :icon="meta.parts![0].icon" group="weather" :color="meta.parts![0].color" :size="size" />
-    <AppIcon class="weather-icon-accent" :icon="meta.parts![1].icon" group="weather" :color="meta.parts![1].color" :size="accentSize" />
+    <AppIcon
+      class="weather-icon-accent"
+      :icon="meta.parts![1].icon"
+      group="weather"
+      :color="meta.parts![1].color"
+      :force-variant="meta.parts![1].forceFilled ? 'filled' : undefined"
+      :size="accentSize"
+    />
   </span>
   <AppIcon
     v-else
