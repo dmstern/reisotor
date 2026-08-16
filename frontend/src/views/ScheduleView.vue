@@ -1184,7 +1184,13 @@ function formatDate(date: string) {
 .day-detail-head {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  /* flex-start statt center: der Tagesname kann in der (ggf. schmal gezogenen) Kalender-Schublade
+     auf mehrere Zeilen umbrechen ("Sonntag, 16. August") - bei center-Ausrichtung rückte der Button
+     dadurch optisch bis auf wenige Pixel an die letzte umgebrochene Zeile heran, obwohl der
+     horizontale gap eigentlich stimmt (Issue #69: "zu wenig Abstand zwischen Button und Text").
+     flex-start hält den Button auf Höhe der ersten Zeile, mit klarem Abstand zu allen Zeilen
+     darunter. */
+  align-items: flex-start;
   gap: var(--space-2);
   margin-bottom: var(--space-3);
 }

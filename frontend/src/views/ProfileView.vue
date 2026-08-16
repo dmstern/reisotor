@@ -32,6 +32,7 @@ import IconStyleSettings from '../components/IconStyleSettings.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import FeedbackDialog from '../components/FeedbackDialog.vue';
+import TabBar from '../components/TabBar.vue';
 import { IconUser, IconUserFilled, IconDeviceDesktop, IconBell, IconBellFilled, IconDatabase, IconInfoCircle, IconInfoCircleFilled } from '@tabler/icons-vue';
 import type { IconDef } from '../utils/icon';
 
@@ -65,15 +66,8 @@ const activeTab = computed<Tab>(() => {
   return (TAB_KEYS as string[]).includes(tab as string) ? (tab as Tab) : 'account';
 });
 
-function selectTab(tab: Tab, event?: MouseEvent) {
-  router.replace({ query: { ...route.query, tab } });
-  // Scrollt einen angeklickten, teils außerhalb des sichtbaren Bereichs liegenden Tab vollständig
-  // in Sicht - gleiches Muster wie NavBar.vue's onLinkClick() für deren horizontal scrollende Leiste.
-  (event?.currentTarget as HTMLElement | undefined)?.scrollIntoView({
-    behavior: 'smooth',
-    inline: 'nearest',
-    block: 'nearest',
-  });
+function selectTab(tab: string) {
+  router.replace({ query: { ...route.query, tab: tab as Tab } });
 }
 
 function navLinkLabel(key: string) {
@@ -334,20 +328,8 @@ async function onImportFileSelected(event: Event) {
   <div class="page" v-if="!loading">
     <h1>Profil</h1>
 
-    <div class="tab-bar" role="tablist">
-      <button
-        v-for="tab in TABS"
-        :key="tab.key"
-        type="button"
-        class="tab"
-        role="tab"
-        :class="{ active: activeTab === tab.key }"
-        :aria-selected="activeTab === tab.key"
-        @click="selectTab(tab.key, $event)"
-      >
-        <AppIcon class="icon" :icon="tab.icon" :size="16" group="navigation" />
-        {{ tab.label }}
-      </button>
+    <div class="tab-bar-wrap">
+      <TabBar :tabs="TABS" :active-key="activeTab" @select="selectTab" />
     </div>
 
     <template v-if="activeTab === 'account'">
@@ -789,45 +771,13 @@ async function onImportFileSelected(event: Event) {
   margin-bottom: var(--space-4);
 }
 
-/* Tab-Leiste analog zu ListenView.vue's .tab-bar/.tab (eigener, lokal duplizierter Style-Block,
-   Vue-Styles gelten nicht komponentenübergreifend) - hier ohne deren max-width/padding, da .page
-   (style.css) bereits Breite/Innenabstand der ganzen Seite vorgibt. Bei 6 statt Listens 3 Tabs
-   horizontal scrollbar statt umbrechend (overflow-x: auto + white-space: nowrap/flex-shrink: 0 je
-   Tab) - gleiches Muster wie NavBar.vue's mobile Scroll-Leiste, statt die Tabs auf mehrere Zeilen
-   umbrechen zu lassen. */
-.tab-bar {
-  display: flex;
-  gap: var(--space-2);
-  padding-bottom: var(--space-2);
+/* Tab-Leiste jetzt die gemeinsame TabBar-Komponente (components/TabBar.vue) statt eines eigenen,
+   lokal duplizierten Style-Blocks - siehe dortiger Kommentar zur Redundanz, die Issue #71 (Gleit-
+   Animation fehlte hier, obwohl ListenView.vue's identisches Muster sie hatte) erst ermöglichte.
+   Nur noch der Seiten-spezifische Abstand bleibt hier lokal (.page trägt bereits Breite/
+   Innenabstand der ganzen Seite, TabBar selbst kennt keine Umgebungs-Margins). */
+.tab-bar-wrap {
   margin-bottom: var(--space-4);
-  border-bottom: 1px solid var(--color-border);
-  overflow-x: auto;
-}
-
-.tab {
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-  gap: 6px;
-  padding: var(--space-2) var(--space-3);
-  border: none;
-  border-bottom: 2px solid transparent;
-  border-radius: 0;
-  background: none;
-  color: var(--color-text-muted);
-  font-size: 0.9rem;
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.tab.active {
-  color: var(--color-primary-dark);
-  border-bottom-color: var(--color-primary);
-  font-weight: 600;
-}
-
-.tab .icon {
-  font-size: 1.1rem;
 }
 
 /* Kleine Karten (nur 1-2 einfache Formfelder: Kalender/Wetter/Heimatwährung) nebeneinander statt

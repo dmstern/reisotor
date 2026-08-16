@@ -263,6 +263,12 @@ function onLinkClick(event: MouseEvent) {
   bottom: 0;
   left: 0;
   background: var(--color-primary-tint);
+  /* --color-primary-tint ist auf --color-surface (Navbar-Hintergrund) fast kontrastfrei (beides
+     nahezu weiß in Light Mode, nahezu identisch dunkel in Dark Mode) - die Pille war dadurch fast
+     unsichtbar, wodurch das eigentlich vorhandene Gleiten unbemerkt blieb (Issue #71: "Animation
+     nicht erkennbar auf Desktop"). Eine feste Border in der aktiven Textfarbe zeichnet die Pille
+     unabhängig vom Füllfarben-Kontrast klar nach. */
+  border: 1.5px solid var(--color-primary-dark);
   border-radius: 999px;
   opacity: 0;
   transition: transform 0.25s ease, width 0.25s ease, opacity 0.15s ease;
