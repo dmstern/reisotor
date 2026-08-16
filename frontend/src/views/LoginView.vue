@@ -76,7 +76,8 @@ async function onSubmit() {
         {{ loading ? (mode === 'register' ? 'Registrieren…' : 'Anmelden…') : mode === 'register' ? 'Registrieren' : 'Anmelden' }}
       </button>
 
-      <button type="button" class="secondary mode-toggle" @click="toggleMode">
+      <button v-if="false" type="button" class="secondary mode-toggle" @click="toggleMode">
+        {{ /* Hide register button for now **/ `&nbsp;` }}
         {{ mode === 'register' ? 'Schon registriert? Anmelden' : 'Noch kein Konto? Registrieren' }}
       </button>
     </form>
