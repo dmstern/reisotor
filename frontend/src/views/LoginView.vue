@@ -88,16 +88,12 @@ async function onSubmit() {
   position: relative;
   min-height: 100vh;
   display: flex;
+  gap: 1rem;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: var(--space-4);
   background: linear-gradient(160deg, var(--color-primary-tint), var(--color-bg) 60%);
-}
-
-.theme-toggle {
-  position: absolute;
-  top: var(--space-4);
-  right: var(--space-4);
 }
 
 .login-card {
