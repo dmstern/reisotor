@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { SettlementSuggestion } from '../utils/budgetBalances';
 import { useBudgetStore } from '../stores/budget';
+import AppIcon from './AppIcon.vue';
+import { ACTION_ICONS } from '../utils/actionIcons';
 
 defineEmits<{ (e: 'use-suggestion', suggestion: SettlementSuggestion): void }>();
 
@@ -12,7 +14,7 @@ const store = useBudgetStore();
     <h2>Wer schuldet wem?</h2>
 
     <p v-if="!store.settlementSuggestions.length" class="settled">
-      ✅ Ausgeglichen – niemand schuldet aktuell etwas.
+      <AppIcon :icon="ACTION_ICONS.done" :size="15" group="actions" /> Ausgeglichen – niemand schuldet aktuell etwas.
     </p>
 
     <ul v-else class="suggestion-list">

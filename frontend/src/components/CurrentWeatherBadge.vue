@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { fetchWeatherForecast, weatherCodeMeta, type DailyWeather } from '../utils/weather';
 import { toLocalDateString } from '../utils/dateFormat';
+import WeatherIcon from './WeatherIcon.vue';
 
 // Kompaktes Wetter-Pill für die mobile Kartenansicht (TripMap.vue) - zeigt bewusst NUR den
 // aktuellen Tag statt des ganzen Urlaubszeitraums wie im Dashboard/der Kalender-Schublade, um die
@@ -34,7 +35,7 @@ const meta = computed(() => (today.value ? weatherCodeMeta(today.value.weatherCo
 
 <template>
   <div v-if="today && meta" class="current-weather-badge" :title="`Heute: ${meta.label}`">
-    <span class="icon">{{ meta.icon }}</span>
+    <WeatherIcon class="icon" :size="18" :code="today.weatherCode" />
     <span class="temp">{{ Math.round(today.tempMax) }}° / {{ Math.round(today.tempMin) }}°</span>
   </div>
 </template>

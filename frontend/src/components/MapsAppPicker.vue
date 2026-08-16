@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { nextTick, ref } from 'vue';
+import AppIcon from './AppIcon.vue';
+import { ACTION_ICONS } from '../utils/actionIcons';
+import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 
 // Eigenständige Komponente statt Duplikat in jedem Detail-Dialog (Spot/Unterkunft/Reise): zeigt
 // ein kleines Auswahlmenü der gängigen Karten-Apps als offizielle Universal-Links (öffnet die App,
@@ -29,7 +32,9 @@ async function toggle() {
 
 <template>
   <div class="maps-picker">
-    <button ref="buttonRef" type="button" class="card-action-btn" @click="toggle">🗺️ In Karten-App öffnen ↗</button>
+    <button ref="buttonRef" type="button" class="card-action-btn" @click="toggle">
+      <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" /> In Karten-App öffnen ↗
+    </button>
     <Teleport to="body">
       <template v-if="open">
         <div class="picker-backdrop" @click="open = false"></div>
@@ -40,7 +45,7 @@ async function toggle() {
             rel="noopener"
             @click="open = false"
           >
-            🍎 Apple Maps
+            <AppIcon :icon="ACTION_ICONS.apple" :size="14" group="actions" /> Apple Maps
           </a>
           <a
             :href="`https://www.google.com/maps/search/?api=1&query=${props.lat},${props.lng}`"
@@ -48,10 +53,10 @@ async function toggle() {
             rel="noopener"
             @click="open = false"
           >
-            🗺️ Google Maps
+            <AppIcon :icon="ACTION_ICONS.googleMaps" :size="14" group="actions" /> Google Maps
           </a>
           <a v-if="props.mapsLink" :href="props.mapsLink" target="_blank" rel="noopener" @click="open = false">
-            🔗 Ursprünglichen Link öffnen
+            <AppIcon :icon="FORM_FIELD_ICONS.link" :size="14" group="formFields" /> Ursprünglichen Link öffnen
           </a>
         </div>
       </template>

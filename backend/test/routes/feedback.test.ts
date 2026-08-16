@@ -3,17 +3,19 @@ import type { FastifyInstance } from 'fastify';
 import { buildTestApp } from '../helpers/buildTestApp.js';
 
 // Regressionsnetz für POST /feedback (routes/feedback.ts): Validierung, dass ein Screenshot als
-// Bild-Link in den Issue-Body eingebettet wird, und dass das Label-Set je nach Meldungstyp stimmt
-// - bewusst OHNE Trip-Kontext (anders als attachments.test.ts), da Feedback absichtlich nicht
-// trip-gebunden ist (siehe requireAuth statt requireTripMember in feedback.ts). fetch ist gemockt
-// (gleiches Muster wie githubIssue.test.ts), GITHUB_TOKEN muss VOR buildTestApp() gesetzt sein, da
-// utils/githubIssue.ts ihn beim Modul-Import einmalig liest.
+// Bild-Link in den Issue-Body eingebettet wird, und dass das Label-Set je nach Meldungstyp (und je
+// nach TRUSTED_FEEDBACK_REPORTERS-Zugehörigkeit der meldenden Person) stimmt - bewusst OHNE
+// Trip-Kontext (anders als attachments.test.ts), da Feedback absichtlich nicht trip-gebunden ist
+// (siehe requireAuth statt requireTripMember in feedback.ts). fetch ist gemockt (gleiches Muster wie
+// githubIssue.test.ts), GITHUB_TOKEN/TRUSTED_FEEDBACK_REPORTERS müssen VOR buildTestApp() gesetzt
+// sein, da routes/feedback.ts sie beim Modul-Import einmalig liest.
 describe('feedback routes', () => {
   let app: FastifyInstance;
 
   beforeAll(async () => {
     process.env.GITHUB_TOKEN = 'test-token';
     process.env.GITHUB_REPO = 'someone/somerepo';
+    process.env.TRUSTED_FEEDBACK_REPORTERS = 'trusted-reporter, another-trusted-one';
     const built = await buildTestApp();
     app = built.app;
   });
@@ -132,6 +134,56 @@ describe('feedback routes', () => {
 
     expect(res.statusCode).toBe(201);
     expect(sentBody?.body).toMatch(/!\[Screenshot\]\(https?:\/\/.+\/api\/uploads\/.+\.png\)/);
+  });
+
+  it('auto-approves issues from a trusted reporter with the agent-ok label', async () => {
+    const cookie = await register('trusted-reporter', 'trusted@example.com');
+    let sentBody: { labels: string[] } | undefined;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((_url: string, init: RequestInit) => {
+        sentBody = JSON.parse(init.body as string);
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ number: 9, html_url: 'https://github.com/someone/somerepo/issues/9' }),
+        });
+      }),
+    );
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/feedback',
+      headers: { cookie },
+      payload: { type: 'bug', title: 'Vertraute Meldung', description: 'Sollte gleich freigegeben sein.' },
+    });
+
+    expect(res.statusCode).toBe(201);
+    expect(sentBody?.labels).toEqual(['bug', 'from-app', 'agent-ok']);
+  });
+
+  it('does not add agent-ok for a reporter not on the trusted list', async () => {
+    const cookie = await register('untrusted-reporter', 'untrusted@example.com');
+    let sentBody: { labels: string[] } | undefined;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((_url: string, init: RequestInit) => {
+        sentBody = JSON.parse(init.body as string);
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ number: 10, html_url: 'https://github.com/someone/somerepo/issues/10' }),
+        });
+      }),
+    );
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/feedback',
+      headers: { cookie },
+      payload: { type: 'bug', title: 'Unbekannte Meldung', description: 'Sollte manuell freigegeben werden.' },
+    });
+
+    expect(res.statusCode).toBe(201);
+    expect(sentBody?.labels).toEqual(['bug', 'from-app']);
   });
 
   it('surfaces a 502 when the GitHub API rejects the request', async () => {

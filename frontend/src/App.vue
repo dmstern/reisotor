@@ -8,7 +8,7 @@ import { useLiveSyncStore } from './stores/liveSync';
 import { useLocationSharingStore } from './stores/locationSharing';
 import { useTrackRecordingStore } from './stores/trackRecording';
 import { useIsDesktop } from './composables/useIsDesktop';
-import { SECTION_ICONS } from './utils/sectionIcons';
+import { SECTION_ICON_DEFS } from './utils/sectionIcons';
 import { prefetchTripDataForOffline } from './utils/offlinePrefetch';
 import AppHeader from './components/AppHeader.vue';
 import NavBar from './components/NavBar.vue';
@@ -102,7 +102,7 @@ async function onCreateFirstTrip(data: TripFormData) {
         :open="drawers.calendarOpen"
         :width="drawers.calendarWidth"
         label="Kalender"
-        :icon="SECTION_ICONS.calendar"
+        :icon="SECTION_ICON_DEFS.calendar"
         :has-unseen="liveSync.hasUnseen('schedule')"
         @update:open="(v) => (drawers.calendarOpen = v)"
         @update:width="(w) => (drawers.calendarWidth = w)"

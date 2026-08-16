@@ -34,9 +34,12 @@ import { useMapOrientationStore } from '../stores/mapOrientation';
 import { useLocationSharingStore, type ShareDuration } from '../stores/locationSharing';
 import { useWeatherProviderStore } from '../stores/weatherProvider';
 import { spotCategoryMeta } from '../utils/spotCategory';
+import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { buildTravelDerivedLocations } from '../utils/travelDerivedLocations';
 import { arcRoute, cachedEmojiPin, compassPin, LEAFLET_ATTRIBUTION_PREFIX } from '../utils/mapRoute';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
+import { ACTION_ICONS } from '../utils/actionIcons';
+import { MAP_TOOL_ICONS } from '../utils/mapToolIcons';
 import type { IconDef } from '../utils/icon';
 import { downloadTiles, estimateTileDownload, formatApproxSize } from '../utils/offlineMapTiles';
 import { formatDate as formatDateShared, toLocalDateString } from '../utils/dateFormat';
@@ -49,6 +52,7 @@ import ExcursionDetailDialog from './ExcursionDetailDialog.vue';
 import TravelDetailDialog from './TravelDetailDialog.vue';
 import CurrentWeatherBadge from './CurrentWeatherBadge.vue';
 import TrackPlayback from './TrackPlayback.vue';
+import AppIcon from './AppIcon.vue';
 
 // Die Karte ist ein generischer, reiner Pin-Layer (kein Anlegen/Bearbeiten hier): sie zeigt
 // automatisch jedes Objekt des aktuellen Urlaubs mit hinterlegtem Standort – Unterkunft, Reise
@@ -246,6 +250,69 @@ function toggleMapOrientation() {
   } else if (ownHeading.value != null) {
     map.setBearing(ownHeading.value);
   }
+}
+
+// Fasst die vier vorher einzeln gestapelten "Kartenausschnitt fokussieren"-Buttons (Alle/Urlaubsort/
+// Unterkünfte/Tourziele) hinter einem einzigen Popover-Trigger zusammen (Nutzer-Feedback: die lange
+// Button-Spalte auf der Karte war unübersichtlich geworden, einzelne Buttons wurden vom Bottom-Sheet
+// verdeckt). Gleiches Teleport-Popover-Muster wie shareMenuOpen/recordMenuOpen unten (eigene Kopie
+// statt geteilter Komponente, da scoped styles nicht komponentenübergreifend gelten).
+const focusMenuOpen = ref(false);
+const focusButtonRef = ref<HTMLButtonElement | null>(null);
+const focusMenuStyle = ref({ top: '0px', left: '0px' });
+
+// 252 statt der 216 der übrigen (kürzeren) Popover-Menüs unten: die Menüpunkte hier ("Alle
+// eingetragenen Orte anzeigen", "Zu meinem Standort springen", …) sind spürbar länger als
+// "🚫 Nicht teilen" & Co. - siehe .picker-menu-wide im CSS (feste Breite + Zeilenumbruch statt
+// des sonst üblichen white-space:nowrap, das die Menübreite an den längsten Eintrag anpassen würde).
+const WIDE_PICKER_MENU_WIDTH = 252;
+
+async function toggleFocusMenu() {
+  focusMenuOpen.value = !focusMenuOpen.value;
+  if (!focusMenuOpen.value) return;
+  await nextTick();
+  const rect = focusButtonRef.value?.getBoundingClientRect();
+  if (!rect) return;
+  focusMenuStyle.value = {
+    top: `${rect.bottom + 6}px`,
+    left: `${Math.max(8, Math.min(rect.left, window.innerWidth - WIDE_PICKER_MENU_WIDTH))}px`,
+  };
+}
+
+function selectFocus(action: () => void) {
+  focusMenuOpen.value = false;
+  action();
+}
+
+// Fasst "Zu meinem Standort springen" und den Ausrichtungs-Umschalter (Norden/Fahrtrichtung oben)
+// hinter einem zweiten Popover zusammen - beide drehen sich um "wo bin ich / wohin schaue ich auf
+// der Karte", anders als die reine Datenfokus-Gruppe oben. Der Ausrichtungs-Umschalter wird hier als
+// echte Zwei-Optionen-Auswahl statt als reiner Toggle dargestellt (klarer als ein Icon, das je nach
+// aktuellem Zustand wechselt), toggleMapOrientation() bleibt darunter unverändert der eigentliche
+// Umschalt-Mechanismus.
+const locationMenuOpen = ref(false);
+const locationButtonRef = ref<HTMLButtonElement | null>(null);
+const locationMenuStyle = ref({ top: '0px', left: '0px' });
+
+async function toggleLocationMenu() {
+  locationMenuOpen.value = !locationMenuOpen.value;
+  if (!locationMenuOpen.value) return;
+  await nextTick();
+  const rect = locationButtonRef.value?.getBoundingClientRect();
+  if (!rect) return;
+  locationMenuStyle.value = {
+    top: `${rect.bottom + 6}px`,
+    left: `${Math.max(8, Math.min(rect.left, window.innerWidth - WIDE_PICKER_MENU_WIDTH))}px`,
+  };
+}
+
+function selectLocation(action: () => void) {
+  locationMenuOpen.value = false;
+  action();
+}
+
+function setMapOrientationMode(mode: 'north' | 'heading') {
+  if (mapOrientation.mode !== mode) toggleMapOrientation();
 }
 
 // Standort-Freigabe (stores/locationSharing.ts): läuft app-weit, unabhängig davon, ob diese
@@ -1095,7 +1162,8 @@ onMounted(async () => {
   if (!mapEl.value) return;
   // rotate/touchRotate (leaflet-rotate, siehe Import oben): aktiviert die Zwei-Finger-Drehgeste.
   // rotateControl:false, weil wir einen eigenen, zum übrigen Button-Stack passenden Umschalter
-  // bauen (siehe toggleMapOrientation()/.orientation-btn) statt des mitgelieferten Steuerelements.
+  // bauen (siehe toggleMapOrientation(), erreichbar über das Standort-&-Ausrichtung-Popover
+  // .location-btn) statt des mitgelieferten Steuerelements.
   map = L.map(mapEl.value, {
     rotate: true,
     rotateControl: false,
@@ -1287,83 +1355,32 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
   <div class="karte">
     <div class="map-wrap">
       <div ref="mapEl" class="map"></div>
+      <!-- Fasst "Alle anzeigen"/"Nur Urlaubsort"/"Nur Unterkünfte"/"Nur Tourziele" hinter einem
+           Popover zusammen statt vier eigenen Buttons (Nutzer-Feedback: die Button-Spalte war zu
+           lang/unübersichtlich geworden, einzelne Buttons rutschten hinter das Bottom-Sheet). -->
       <button
+        ref="focusButtonRef"
         type="button"
-        class="fit-btn"
-        title="Alle eingetragenen Orte anzeigen"
-        aria-label="Alle eingetragenen Orte anzeigen"
+        class="fit-btn focus-btn"
+        title="Kartenausschnitt fokussieren"
+        aria-label="Kartenausschnitt fokussieren"
         :disabled="!filteredPoints.length"
-        @click="fitAll"
+        @click="toggleFocusMenu"
       >
-        🔍
+        <AppIcon :icon="MAP_TOOL_ICONS.focusGroup" :size="18" group="actions" />
       </button>
+      <!-- Fasst "Zu meinem Standort springen" und den Ausrichtungs-Umschalter (Norden/Fahrtrichtung
+           oben) hinter einem zweiten Popover zusammen - beide drehen sich um "wo bin ich/wohin
+           schaue ich", anders als die reine Datenfokus-Gruppe oben. -->
       <button
+        ref="locationButtonRef"
         type="button"
-        class="fit-btn vacation-btn"
-        title="Nur Urlaubsort fokussieren (ohne Start-/Zielpunkt zuhause)"
-        aria-label="Nur Urlaubsort fokussieren"
-        :disabled="!vacationPoints.length"
-        @click="fitVacation"
+        class="fit-btn location-btn"
+        title="Standort & Ausrichtung"
+        aria-label="Standort & Ausrichtung"
+        @click="toggleLocationMenu"
       >
-        🏖️
-      </button>
-      <button
-        type="button"
-        class="fit-btn accommodation-btn"
-        title="Nur Unterkünfte fokussieren"
-        aria-label="Nur Unterkünfte fokussieren"
-        :disabled="!accommodationPoints.length"
-        @click="fitAccommodations"
-      >
-        🛏️
-      </button>
-      <!-- v-if statt nur :disabled: solange noch gar keine Tour existiert, ist ein "Tourziele
-           fokussieren"-Button reine Verwirrung (fokussiert nichts, ohne erklärenden Kontext) - erst
-           sobald mindestens eine Tour gespeichert wurde, ist der Button überhaupt sinnvoll (auch
-           wenn er bei einer gerade leeren Tour bis zur ersten Stations-Zuordnung disabled bleibt). -->
-      <button
-        v-if="excursionsStore.excursions.length"
-        type="button"
-        class="fit-btn excursions-btn"
-        title="Nur Tourziele fokussieren"
-        aria-label="Nur Tourziele fokussieren"
-        :disabled="!excursionPoints.length"
-        @click="fitExcursions"
-      >
-        🎒
-      </button>
-      <button
-        type="button"
-        class="fit-btn my-location-btn"
-        title="Zu meinem Standort springen"
-        aria-label="Zu meinem Standort springen"
-        :disabled="!ownPosition"
-        @click="jumpToMyLocation"
-      >
-        <!-- Eigenes Avatar-Emoji statt eines generischen Pin-/Fadenkreuz-Icons - eindeutiger
-             erkennbar als "das bin ich", konsistent mit dem eigenen Marker auf der Karte selbst
-             (compassPin(), renderPositions() oben), der dasselbe Avatar jetzt zentriert in seinem
-             Kreis zeigt. -->
-        {{ auth.user?.avatar || '📍' }}
-      </button>
-      <!-- Zwei-Finger-Drehgeste (touchRotate, siehe map-Optionen in onMounted) bleibt unabhängig
-           von diesem Umschalter immer nutzbar - er steuert nur, ob die Karte sich zusätzlich
-           automatisch mit dem Kompass mitdreht. -->
-      <button
-        type="button"
-        class="fit-btn orientation-btn"
-        :class="{ active: mapOrientation.mode === 'heading' }"
-        :title="
-          mapOrientation.mode === 'north'
-            ? 'Karte nach Norden ausgerichtet – antippen für Fahrtrichtung oben'
-            : 'Karte nach Fahrtrichtung ausgerichtet – antippen für Norden oben'
-        "
-        :aria-label="
-          mapOrientation.mode === 'north' ? 'Auf Fahrtrichtung oben umschalten' : 'Auf Norden oben umschalten'
-        "
-        @click="toggleMapOrientation"
-      >
-        {{ mapOrientation.mode === 'north' ? '🧭' : '🔭' }}
+        <AppIcon :icon="MAP_TOOL_ICONS.locationGroup" :size="18" group="actions" />
       </button>
       <button
         type="button"
@@ -1373,7 +1390,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
         :disabled="tileDownloadState === 'downloading'"
         @click="downloadOfflineMap"
       >
-        ⬇️
+        <AppIcon :icon="ACTION_ICONS.download" :size="18" group="actions" />
       </button>
       <!-- Standort-Freigabe (stores/locationSharing.ts): läuft unabhängig davon, ob diese
            Kartenansicht offen ist - Klick öffnet nur die Dauer-Auswahl. -->
@@ -1386,7 +1403,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
         :aria-label="shareDurationLabel"
         @click="toggleShareMenu"
       >
-        📡
+        <AppIcon :icon="ACTION_ICONS.shareLocation" :size="18" group="actions" />
       </button>
       <!-- Standort-Aufzeichnung (stores/trackRecording.ts): läuft ebenfalls unabhängig von dieser
            Kartenansicht weiter - Klick öffnet bei Nicht-Aufzeichnung nur die Start-Auswahl, beendet
@@ -1400,7 +1417,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
         :aria-label="trackRecording.recording ? 'Aufzeichnung beenden' : 'Standort aufzeichnen'"
         @click="toggleRecordMenu"
       >
-        {{ trackRecording.recording ? '⏹️' : '⏺️' }}
+        <AppIcon :icon="trackRecording.recording ? ACTION_ICONS.recordStop : ACTION_ICONS.recordStart" :size="18" group="actions" />
       </button>
       <!-- Auf Desktop steht dasselbe Wetter bereits ausführlicher in der Kalender-Schublade (siehe
            CalendarWeek.vue) - die ist dort permanent neben der Karte gemountet. Auf Mobil ist der
@@ -1411,50 +1428,111 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
         <CurrentWeatherBadge :lat="tripStore.currentTrip?.lat ?? null" :lng="tripStore.currentTrip?.lng ?? null" :model="weatherProvider.model" />
       </div>
       <Teleport to="body">
+        <template v-if="focusMenuOpen">
+          <div class="picker-backdrop" @click="focusMenuOpen = false"></div>
+          <div class="picker-menu picker-menu-wide" :style="focusMenuStyle">
+            <button type="button" :disabled="!filteredPoints.length" @click="selectFocus(fitAll)">
+              <AppIcon :icon="MAP_TOOL_ICONS.fitAll" :size="14" group="actions" /> Alle eingetragenen Orte anzeigen
+            </button>
+            <button type="button" :disabled="!vacationPoints.length" @click="selectFocus(fitVacation)">
+              <AppIcon :icon="MAP_TOOL_ICONS.vacation" :size="14" group="actions" /> Nur Urlaubsort
+            </button>
+            <button type="button" :disabled="!accommodationPoints.length" @click="selectFocus(fitAccommodations)">
+              <AppIcon :icon="MAP_TOOL_ICONS.accommodation" :size="14" group="actions" /> Nur Unterkünfte
+            </button>
+            <button
+              v-if="excursionsStore.excursions.length"
+              type="button"
+              :disabled="!excursionPoints.length"
+              @click="selectFocus(fitExcursions)"
+            >
+              <AppIcon :icon="MAP_TOOL_ICONS.excursions" :size="14" group="actions" /> Nur Tourziele
+            </button>
+          </div>
+        </template>
+        <template v-if="locationMenuOpen">
+          <div class="picker-backdrop" @click="locationMenuOpen = false"></div>
+          <div class="picker-menu picker-menu-wide" :style="locationMenuStyle">
+            <button type="button" :disabled="!ownPosition" @click="selectLocation(jumpToMyLocation)">
+              <!-- Eigenes Avatar-Emoji statt eines generischen Pin-/Fadenkreuz-Icons - eindeutiger
+                   erkennbar als "das bin ich", konsistent mit dem eigenen Marker auf der Karte selbst
+                   (compassPin(), renderPositions() oben). Bewusst immer Emoji, unabhängig von der
+                   Icon-Stil-Einstellung (siehe DESIGN.md "Icons") - ein frei gewähltes Avatar hat kein
+                   sinnvolles festes Tabler-Äquivalent. -->
+              <span class="picker-item-emoji" aria-hidden="true">{{ auth.user?.avatar || '📍' }}</span> Zu meinem Standort springen
+            </button>
+            <button type="button" :class="{ active: mapOrientation.mode === 'north' }" @click="selectLocation(() => setMapOrientationMode('north'))">
+              <AppIcon :icon="MAP_TOOL_ICONS.orientationNorth" :size="14" group="actions" /> Norden oben
+            </button>
+            <button
+              type="button"
+              :class="{ active: mapOrientation.mode === 'heading' }"
+              @click="selectLocation(() => setMapOrientationMode('heading'))"
+            >
+              <AppIcon :icon="MAP_TOOL_ICONS.orientationHeading" :size="14" group="actions" /> Fahrtrichtung oben
+            </button>
+          </div>
+        </template>
         <template v-if="shareMenuOpen">
           <div class="picker-backdrop" @click="shareMenuOpen = false"></div>
           <div class="picker-menu" :style="shareMenuStyle">
             <button type="button" :class="{ active: !locationSharing.shareUntil }" @click="chooseShareDuration('off')">
-              🚫 Nicht teilen
+              <AppIcon :icon="ACTION_ICONS.off" :size="14" group="actions" /> Nicht teilen
             </button>
-            <button type="button" @click="chooseShareDuration('day')">📅 Für einen Tag</button>
-            <button type="button" @click="chooseShareDuration('week')">🗓️ Für eine Woche</button>
-            <button type="button" @click="chooseShareDuration('forever')">♾️ Dauerhaft</button>
+            <button type="button" @click="chooseShareDuration('day')">
+              <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" /> Für einen Tag
+            </button>
+            <button type="button" @click="chooseShareDuration('week')">
+              <AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" /> Für eine Woche
+            </button>
+            <button type="button" @click="chooseShareDuration('forever')">
+              <AppIcon :icon="ACTION_ICONS.forever" :size="14" group="actions" /> Dauerhaft
+            </button>
           </div>
         </template>
         <template v-if="recordMenuOpen">
           <div class="picker-backdrop" @click="recordMenuOpen = false"></div>
           <div class="picker-menu" :style="recordMenuStyle">
             <p v-if="focusedExcursion" class="picker-menu-hint">
-              🔗 wird an „{{ focusedExcursion.title }}" gekoppelt
+              <AppIcon :icon="FORM_FIELD_ICONS.link" :size="14" group="formFields" /> wird an „{{ focusedExcursion.title }}" gekoppelt
             </p>
-            <button type="button" @click="chooseRecordVisibility('private')">🔒 Privat aufzeichnen</button>
-            <button type="button" @click="chooseRecordVisibility('shared')">🤝 Geteilt aufzeichnen</button>
+            <button type="button" @click="chooseRecordVisibility('private')">
+              <AppIcon :icon="ACTION_ICONS.private" :size="14" group="actions" /> Privat aufzeichnen
+            </button>
+            <button type="button" @click="chooseRecordVisibility('shared')">
+              <AppIcon :icon="ACTION_ICONS.shared" :size="14" group="actions" /> Geteilt aufzeichnen
+            </button>
           </div>
         </template>
       </Teleport>
       <div class="tile-download-pill" v-if="trackRecording.startError">
-        ⚠️ {{ trackRecording.startError }}
-        <button type="button" class="card-action-btn" @click="trackRecording.startError = null">✕</button>
+        <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> {{ trackRecording.startError }}
+        <button type="button" class="card-action-btn" @click="trackRecording.startError = null">
+          <AppIcon :icon="ACTION_ICONS.close" :size="14" group="actions" />
+        </button>
       </div>
       <div class="tile-download-pill" v-if="tileDownloadState === 'downloading'">
-        🔄 Lädt Kartenkacheln… {{ tileDownloadProgress.done }}/{{ tileDownloadProgress.total }}
+        <AppIcon :icon="ACTION_ICONS.refresh" :size="14" group="actions" /> Lädt Kartenkacheln… {{ tileDownloadProgress.done }}/{{ tileDownloadProgress.total }}
       </div>
       <div class="tile-download-pill" v-else-if="tileDownloadState === 'done' && tileDownloadResult">
-        ✅ {{ tileDownloadResult.downloaded }} Kacheln offline gespeichert{{
+        <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" /> {{ tileDownloadResult.downloaded }} Kacheln offline gespeichert{{
           tileDownloadResult.failed ? `, ${tileDownloadResult.failed} fehlgeschlagen` : ''
         }}
-        <button type="button" class="card-action-btn" @click="dismissTileDownloadResult">✕</button>
+        <button type="button" class="card-action-btn" @click="dismissTileDownloadResult">
+          <AppIcon :icon="ACTION_ICONS.close" :size="14" group="actions" />
+        </button>
       </div>
       <div class="focus-banner" v-if="focusedExcursion">
-        <span>🎒 {{ focusedExcursion.title }}</span>
+        <span><AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="14" group="navigation" /> {{ focusedExcursion.title }}</span>
         <button type="button" class="card-action-btn" @click="drawers.mapFocusExcursionId = null">
-          ✕ Fokus verlassen
+          <AppIcon :icon="ACTION_ICONS.close" :size="14" group="actions" /> Fokus verlassen
         </button>
       </div>
       <div class="focus-banner" v-else-if="drawers.mapFocusDate">
-        <span>🗓️ {{ formatDate(drawers.mapFocusDate) }}</span>
-        <button type="button" class="card-action-btn" @click="drawers.mapFocusDate = null">✕ Fokus verlassen</button>
+        <span><AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" /> {{ formatDate(drawers.mapFocusDate) }}</span>
+        <button type="button" class="card-action-btn" @click="drawers.mapFocusDate = null">
+          <AppIcon :icon="ACTION_ICONS.close" :size="14" group="actions" /> Fokus verlassen
+        </button>
       </div>
     </div>
 
@@ -1488,9 +1566,14 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
     <div class="card focus-spot-list" v-if="focusedExcursion && focusedExcursionStations.length">
       <div class="focus-spot-list-header">
         <button type="button" class="focus-spot-list-title-btn" @click="openExcursionDetail">
-          <h3 class="focus-spot-list-title">🎒 {{ focusedExcursion.title }}</h3>
+          <h3 class="focus-spot-list-title">
+            <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="16" group="navigation" /> {{ focusedExcursion.title }}
+          </h3>
           <span class="focus-spot-list-status" :class="{ planned: focusedExcursion.date }">
-            {{ focusedExcursion.date ? `📅 ${formatDate(focusedExcursion.date)}` : 'In Planung' }}
+            <template v-if="focusedExcursion.date">
+              <AppIcon :icon="FORM_FIELD_ICONS.date" :size="13" group="formFields" /> {{ formatDate(focusedExcursion.date) }}
+            </template>
+            <template v-else>In Planung</template>
           </span>
         </button>
         <button
@@ -1500,7 +1583,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
           title="Tour-Fokus schließen"
           @click="drawers.mapFocusExcursionId = null"
         >
-          ✕
+          <AppIcon :icon="ACTION_ICONS.close" :size="14" group="actions" />
         </button>
       </div>
       <p class="focus-spot-list-subtitle">Stationen</p>
@@ -1517,7 +1600,9 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
 
     <div class="card focus-spot-list" v-else-if="drawers.mapFocusDate && focusedDateStations.length">
       <div class="focus-spot-list-header">
-        <h3 class="focus-spot-list-title">🗓️ {{ formatDate(drawers.mapFocusDate) }}</h3>
+        <h3 class="focus-spot-list-title">
+          <AppIcon :icon="FORM_FIELD_ICONS.period" :size="16" group="formFields" /> {{ formatDate(drawers.mapFocusDate) }}
+        </h3>
         <button
           type="button"
           class="focus-spot-list-close"
@@ -1525,7 +1610,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
           title="Tages-Fokus schließen"
           @click="drawers.mapFocusDate = null"
         >
-          ✕
+          <AppIcon :icon="ACTION_ICONS.close" :size="14" group="actions" />
         </button>
       </div>
       <p class="focus-spot-list-subtitle">Stationen</p>
@@ -1544,7 +1629,8 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
             :class="{ labeled: !!focusedDateStations[index + 1].connector }"
           >
             <span v-if="focusedDateStations[index + 1].connector" class="connector-label">
-              {{ focusedDateStations[index + 1].connector!.icon }} {{ focusedDateStations[index + 1].connector!.label }}
+              <AppIcon :icon="focusedDateStations[index + 1].connector!.tabler" :size="13" group="categories" />
+              {{ focusedDateStations[index + 1].connector!.label }}
             </span>
           </div>
         </template>
@@ -1554,7 +1640,8 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
     <div class="card focus-spot-list" v-else-if="focusedTrack">
       <div class="focus-spot-list-header">
         <h3 class="focus-spot-list-title">
-          🧭 {{ focusedTrack.title || `Aufzeichnung vom ${formatDate(focusedTrack.started_at.slice(0, 10))}` }}
+          <AppIcon :icon="ACTION_ICONS.orientationNorth" :size="16" group="actions" />
+          {{ focusedTrack.title || `Aufzeichnung vom ${formatDate(focusedTrack.started_at.slice(0, 10))}` }}
         </h3>
         <button
           type="button"
@@ -1563,7 +1650,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
           title="Aufzeichnung-Fokus schließen"
           @click="drawers.mapFocusTrackId = null"
         >
-          ✕
+          <AppIcon :icon="ACTION_ICONS.close" :size="14" group="actions" />
         </button>
       </div>
       <p v-if="focusedTrackPoints.length < 2" class="focus-spot-list-subtitle">Lädt Route…</p>
@@ -1641,16 +1728,11 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
 
      Eckenabstand/Lücke über --space-3/--space-2 (statt der alten 10px/6px), auf Mobil wie auf
      Desktop einheitlich - nur der Durchmesser selbst bleibt auf Mobil kleiner (@container weiter
-     unten hebt ihn auf Desktop auf Apples 44px an, siehe dort). Senkrechter Platz vor dem
-     darunterliegenden Bottom-Sheet ist auf Mobil knapp: von den 8 Buttons + Wetter-Badge im Stapel
-     bleiben bei Standard-Sheet-Höhe (46vh) nur die ersten 7 sicher oberhalb des Sheets, der letzte
-     Button (.share-location-btn, 📡) + das Wetter-Badge rutschen mit den großzügigeren Werten
-     ebenso wie schon VOR dieser Änderung teilweise dahinter (z-index wirkt dort nicht: .map-col
-     und .spots-col bilden eigene Stacking-Contexts, .spots-col gewinnt dort unabhängig vom
-     z-index der Buttons selbst) - bewusst in Kauf genommen, damit der auf den ersten Blick
-     sichtbare Haupt-Stapel (genau der, den Nutzer:innen als "zu eng" empfunden haben) den
-     großzügigeren Apple-Abstand bekommt, statt für den ohnehin knappen letzten Slot komplett auf
-     der alten, engen Optik zu bleiben. */
+     unten hebt ihn auf Desktop auf Apples 44px an, siehe dort). Der Stapel selbst wurde von
+     vormals 9 Einzel-Buttons auf 5 verkürzt (Nutzer-Feedback: zu lang/unübersichtlich, einzelne
+     Buttons rutschten hinter das Bottom-Sheet) - die vier Fokus-Buttons (Alle/Urlaubsort/
+     Unterkünfte/Tourziele) sowie Standort-Sprung + Ausrichtungs-Umschalter leben jetzt hinter je
+     einem Popover-Trigger (.focus-btn/.location-btn), siehe deren Klick-Handler im Script. */
   --fit-btn-size: 34px;
   --fit-btn-gap: var(--space-2);
   --fit-btn-inset: var(--space-3);
@@ -1694,43 +1776,20 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
   cursor: not-allowed;
 }
 
-.vacation-btn {
+.location-btn {
   top: calc(var(--fit-btn-inset) + var(--fit-btn-step));
 }
 
-.accommodation-btn {
+.offline-download-btn {
   top: calc(var(--fit-btn-inset) + 2 * var(--fit-btn-step));
 }
 
-.excursions-btn {
+.share-location-btn {
   top: calc(var(--fit-btn-inset) + 3 * var(--fit-btn-step));
 }
 
-.my-location-btn {
-  top: calc(var(--fit-btn-inset) + 4 * var(--fit-btn-step));
-}
-
-.orientation-btn {
-  top: calc(var(--fit-btn-inset) + 5 * var(--fit-btn-step));
-}
-
-/* Hebt hervor, dass die Karte sich gerade aktiv mit dem Kompass mitdreht (Modus "Fahrtrichtung") -
-   dieselbe Akzentfarbe wie z. B. TripSwitcher.vue's aktiver Zustand, statt einer neuen Farbsprache. */
-.orientation-btn.active {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
-}
-
-.offline-download-btn {
-  top: calc(var(--fit-btn-inset) + 6 * var(--fit-btn-step));
-}
-
-.share-location-btn {
-  top: calc(var(--fit-btn-inset) + 7 * var(--fit-btn-step));
-}
-
 .record-btn {
-  top: calc(var(--fit-btn-inset) + 8 * var(--fit-btn-step));
+  top: calc(var(--fit-btn-inset) + 4 * var(--fit-btn-step));
 }
 
 /* Direkt unterhalb des letzten .fit-btn (.record-btn) - der einzige auf Mobil noch freie Bereich:
@@ -1738,12 +1797,13 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
    sichtbar), .day-strip unten durch den Tage-Streifen. */
 .current-weather-slot {
   position: absolute;
-  top: calc(var(--fit-btn-inset) + 9 * var(--fit-btn-step));
+  top: calc(var(--fit-btn-inset) + 5 * var(--fit-btn-step));
   right: var(--fit-btn-inset);
   z-index: 1000;
 }
 
-/* Gleiche Akzentfarbe wie .orientation-btn.active - solange die Freigabe/Aufzeichnung läuft. */
+/* Gleiche Akzentfarbe, solange die jeweilige Funktion aktiv ist/läuft - dieselbe wie z. B.
+   TripSwitcher.vue's aktiver Zustand, statt einer neuen Farbsprache. */
 .share-location-btn.active,
 .record-btn.active {
   background: var(--color-primary);
@@ -1773,7 +1833,29 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
   gap: 2px;
 }
 
+/* Fokus-/Standort-Popover (siehe WIDE_PICKER_MENU_WIDTH im Script, muss mit der Breite hier
+   übereinstimmen): eine feste statt einer sich am Inhalt orientierenden Breite, weil die
+   Menüpunkte hier ("Alle eingetragenen Orte anzeigen", "Zu meinem Standort springen", …) spürbar
+   länger sind als bei den übrigen (schmaleren) Popover-Menüs unten - ohne festes width + erlaubten
+   Zeilenumbruch würde die Menübreite sich am längsten Eintrag ausrichten und auf schmalen
+   Mobilbreiten seitlich über den Bildschirmrand hinausragen. */
+.picker-menu-wide {
+  width: 236px;
+}
+
+/* Compound-Selektor (zwei Klassen statt einer) statt .picker-menu-wide button allein: braucht
+   höhere Spezifität als .picker-menu button (white-space:nowrap, weiter unten deklariert) - bei
+   gleicher Spezifität hätte sonst allein die spätere Reihenfolge im Stylesheet gewonnen, nicht die
+   inhaltliche Absicht (derselbe Stolperstein wie DESIGN.md, Abschnitt "Abstände" ihn für .hint
+   dokumentiert). */
+.picker-menu.picker-menu-wide button {
+  white-space: normal;
+}
+
 .picker-menu button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   padding: 6px 8px;
   border-radius: var(--radius-sm-squircle);
   border: none;
@@ -1785,6 +1867,11 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
   cursor: pointer;
 }
 
+.picker-menu button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .picker-menu button:hover {
   background: var(--color-hover);
 }
@@ -1792,6 +1879,19 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
 .picker-menu button.active {
   background: var(--color-primary);
   color: white;
+}
+
+/* Größe an AppIcon.vue's Default (20px) angeglichen, damit das Avatar-Emoji im Standort-Menü
+   (bewusst kein AppIcon, siehe dortiger Template-Kommentar) genauso mit dem Folgetext fluchtet wie
+   die AppIcon-Icons in den übrigen Menüpunkten. */
+.picker-item-emoji {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  font-size: 1.1rem;
+  line-height: 1;
+  flex-shrink: 0;
 }
 
 .picker-menu-hint {

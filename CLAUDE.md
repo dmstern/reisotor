@@ -210,6 +210,18 @@ demselben Feature-Branch) und im PR-Body/-Kommentar per Markdown-Bild-Syntax auf
 `raw.githubusercontent.com`- bzw. Blob-URL dieses Branches verlinken – GitHub rendert das inline.
 Reine Text-/Backend-only-Änderungen ohne sichtbare Oberfläche brauchen keine Screenshots.
 
+Token-sparend bleiben dabei bewusst lokal (Wegwerf-Spec), nicht nach CI verlagern: die Wegwerf-Spec
+soll nur die tatsächlich geänderte(n) View(s)/Komponente(n) ansteuern, ohne unnötige Zwischenschritte
+über das für den Screenshot Nötige hinaus – der erzeugte Playwright-Report/Reporter-Output selbst
+muss dafür nicht gelesen werden, es zählen nur die erzeugten PNG-Dateien (kurz per Read-Tool
+sichtprüfen, dann direkt committen). Eine Verlagerung nach CI (Job erzeugt Screenshots und committet
+sie zurück auf den PR-Branch) spart zwar lokale Tokens, würde aber Push-Rechte aus dem
+CI-Workflow zurück auf den eigenen PR-Branch brauchen (Trigger-Loop-Gefahr, mehr Angriffsfläche) –
+für einen Schritt, der lokal ohnehin schon günstig ist (einzelne gezielte Spec statt Suite, kein
+Output-Auswerten nötig). Genauso bewusst keine persistenten Specs dafür verwenden: Regressionstests
+unter `e2e/tests/` sollen bei einer verletzten Erwartung rot werden, nicht nebenbei Bilder für ein
+manuelles Review erzeugen – das vermischt zwei verschiedene Zwecke in einer Datei.
+
 ## Konsistenz-Check bei Änderungen
 
 Die App ist über viele Sessions gewachsen, und dasselbe Konzept (Icon, Bezeichnung, Layout-/
@@ -355,6 +367,18 @@ echten lokalen Dev-Server auf 3000/5173, der muss dafür nicht gestoppt werden.
 Läuft außerdem automatisch in CI (`.github/workflows/build-deploy.yml`, nach den Unit-Tests, vor dem
 Assemble-Schritt) — bei einem Fehlschlag wird als Artefakt der HTML-Report samt Screenshots
 hochgeladen (`playwright-report`/`test-results`), abrufbar über den jeweiligen Workflow-Run.
+
+**Token-sparend: die volle Suite (`npm test`) nicht routinemäßig lokal laufen lassen.** Da CI sie
+bei jedem Push ohnehin gated ausführt, kostet ein lokaler Vollauf für Claude Code nur unnötig
+Tokens — nicht wegen der Playwright-Laufzeit selbst, sondern weil die komplette Testausgabe
+(Namen, Traces, Report) ins Kontextfenster zurückgelesen wird. Lokal stattdessen gezielt einsetzen:
+- `npx playwright test <pfad-zur-spec>` für eine einzelne, gerade geschriebene/geänderte Spec
+  direkt nach dem Schreiben verifizieren.
+- Einen CI-E2E-Fehlschlag lokal reproduzieren/debuggen.
+- Eine Wegwerf-Spec unter `e2e/tests/scratch/` für Ad-hoc-Checks/PR-Screenshots (siehe unten bzw.
+  Abschnitt "Screenshots im PR selbst" oben).
+
+Auf einen vollen lokalen `npm test`-Lauf "zur Sicherheit" vor jedem Push verzichten — dafür ist CI da.
 
 ```bash
 cd e2e

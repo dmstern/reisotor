@@ -5,6 +5,8 @@ import 'leaflet/dist/leaflet.css';
 import { IconCompass, IconCompassFilled } from '@tabler/icons-vue';
 import { cachedEmojiPin, LEAFLET_ATTRIBUTION_PREFIX, pulsingEmojiPin } from '../utils/mapRoute';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
+import { ACTION_ICONS } from '../utils/actionIcons';
+import AppIcon from './AppIcon.vue';
 import type { IconDef } from '../utils/icon';
 
 // Eigener Standort während des Antippens (startOwnLocation() unten) - eigenes IconDef statt
@@ -180,8 +182,10 @@ function useOwnLocation() {
 
 <template>
   <div class="location-picker">
-    <p class="hint">🗺️ Tippe auf die Karte, um den Standort zu setzen.</p>
-    <p v-if="locateError" class="hint error">⚠️ Standort konnte nicht ermittelt werden.</p>
+    <p class="hint"><AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" /> Tippe auf die Karte, um den Standort zu setzen.</p>
+    <p v-if="locateError" class="hint error">
+      <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Standort konnte nicht ermittelt werden.
+    </p>
     <div class="map-wrap">
       <div ref="mapEl" class="location-picker-map"></div>
       <button
@@ -193,11 +197,12 @@ function useOwnLocation() {
         aria-label="Meinen aktuellen Standort verwenden"
         @click="useOwnLocation"
       >
-        🧭
+        <AppIcon :icon="OWN_LOCATION_ICON" :size="16" group="actions" />
       </button>
     </div>
     <p v-if="modelValue" class="hint success">
-      📍 Standort gesetzt: {{ modelValue.lat.toFixed(5) }}, {{ modelValue.lng.toFixed(5) }}
+      <AppIcon :icon="FORM_FIELD_ICONS.location" :size="14" group="formFields" />
+      Standort gesetzt: {{ modelValue.lat.toFixed(5) }}, {{ modelValue.lng.toFixed(5) }}
       <button type="button" class="secondary clear-btn" @click="clear">Entfernen</button>
     </p>
   </div>

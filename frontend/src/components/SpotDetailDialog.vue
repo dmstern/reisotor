@@ -13,6 +13,9 @@ import LikeButton from './LikeButton.vue';
 import Comments, { type CommentItem } from './Comments.vue';
 import FileAttachments from './FileAttachments.vue';
 import RichTextDisplay from './RichTextDisplay.vue';
+import AppIcon from './AppIcon.vue';
+import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
+import { ACTION_ICONS } from '../utils/actionIcons';
 
 // Eigenständige Komponente statt inline in SpotCard.vue, da dieser Dialog auch von anderer Stelle
 // geöffnet werden muss (TripMap.vue's Stationsliste, ExcursionDetailDialog.vue's Stationen) – nicht
@@ -54,7 +57,7 @@ function formatDate(d: string | null) {
     @update:model-value="(v) => emit('update:modelValue', v)"
     :title="spot.title"
     :image-url="spot.image_url"
-    :placeholder-icon="spotCategoryMeta(spot.category).icon"
+    :placeholder-icon="spotCategoryMeta(spot.category).tabler"
     @edit="emit('edit')"
   >
     <p v-if="creatorLabel" class="detail-row"><span class="detail-label">Von</span>{{ creatorLabel }}</p>
@@ -68,19 +71,27 @@ function formatDate(d: string | null) {
       :aria-pressed="!!spot.done"
       @click="spotsStore.setDone(spot.id, !spot.done)"
     >
-      {{ spot.done ? '✅ Gemacht' : '⬜️ Als gemacht markieren' }}
+      <template v-if="spot.done">
+        <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" /> Gemacht
+      </template>
+      <template v-else>
+        <AppIcon :icon="ACTION_ICONS.notDone" :size="14" group="actions" /> Als gemacht markieren
+      </template>
     </button>
 
     <template v-if="isAccommodation">
       <p v-if="spot.start_date || spot.end_date" class="detail-row">
         <span class="detail-label">Zeitraum</span>
-        🗓️ {{ formatDate(spot.start_date) || '?' }} – {{ formatDate(spot.end_date) || '?' }}
+        <AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" />
+        {{ formatDate(spot.start_date) || '?' }} – {{ formatDate(spot.end_date) || '?' }}
       </p>
       <p v-if="spot.address" class="detail-row">
         <span class="detail-label">Adresse</span>{{ spot.address }}
       </p>
       <div v-if="spot.lat != null && spot.lng != null" class="detail-actions map-actions">
-        <button type="button" class="card-action-btn" @click="emit('show-on-map')">🗺️ Auf Karte anzeigen</button>
+        <button type="button" class="card-action-btn" @click="emit('show-on-map')">
+          <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" /> Auf Karte anzeigen
+        </button>
         <MapsAppPicker :lat="spot.lat" :lng="spot.lng" :title="spot.title" :maps-link="spot.maps_link" />
       </div>
       <p v-if="spot.checkin || spot.checkout" class="detail-row">
@@ -89,11 +100,13 @@ function formatDate(d: string | null) {
       </p>
       <p v-if="spot.contact && parseContact(spot.contact).kind === 'phone'" class="detail-row">
         <span class="detail-label">Kontakt</span>
-        📞 <a :href="parseContact(spot.contact).href">{{ spot.contact }}</a>
+        <AppIcon :icon="FORM_FIELD_ICONS.contact" :size="14" group="formFields" />
+        <a :href="parseContact(spot.contact).href">{{ spot.contact }}</a>
       </p>
       <p v-else-if="spot.contact && parseContact(spot.contact).kind === 'email'" class="detail-row">
         <span class="detail-label">Kontakt</span>
-        📧 <a :href="parseContact(spot.contact).href">{{ spot.contact }}</a>
+        <AppIcon :icon="FORM_FIELD_ICONS.email" :size="14" group="formFields" />
+        <a :href="parseContact(spot.contact).href">{{ spot.contact }}</a>
       </p>
       <p v-else-if="spot.contact" class="detail-row">
         <span class="detail-label">Kontakt</span>
@@ -101,7 +114,7 @@ function formatDate(d: string | null) {
       </p>
       <p v-if="spot.amount != null" class="detail-row">
         <span class="detail-label">Kosten</span>
-        💶 {{ spot.amount.toFixed(2) }} €
+        <AppIcon :icon="FORM_FIELD_ICONS.amount" :size="14" group="formFields" /> {{ spot.amount.toFixed(2) }} €
         <span v-if="spot.paid_by_user_id"> · bezahlt von {{ payerLabel }}</span>
       </p>
     </template>
@@ -123,7 +136,7 @@ function formatDate(d: string | null) {
         class="card-action-btn"
         @click="emit('show-on-map')"
       >
-        🗺️ Auf Karte anzeigen
+        <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" /> Auf Karte anzeigen
       </button>
       <MapsAppPicker v-if="spot.lat != null && spot.lng != null" :lat="spot.lat" :lng="spot.lng" :title="spot.title" :maps-link="spot.maps_link" />
     </div>

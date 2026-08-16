@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import AppIcon from './AppIcon.vue';
+import { ACTION_ICONS } from '../utils/actionIcons';
+
 defineOptions({ inheritAttrs: false });
 const model = defineModel<string>({ required: true });
 // Optionales zweites v-model (v-model:visible) – z. B. für LoginView.vue, das den Reisotor die
@@ -18,7 +21,7 @@ const visible = defineModel<boolean>('visible', { default: false });
       :title="visible ? 'Eingabe verbergen' : 'Eingabe anzeigen'"
       @click="visible = !visible"
     >
-      {{ visible ? '🙈' : '👁️' }}
+      <AppIcon :icon="visible ? ACTION_ICONS.hidePassword : ACTION_ICONS.showPassword" :size="16" group="actions" />
     </button>
   </div>
 </template>

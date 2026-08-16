@@ -28,8 +28,13 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
     await page.goto('/excursions');
     const spotCard = page.locator('.spot-card', { hasText: spotTitle });
     await expect(spotCard).toBeVisible();
-    // Karte aufklappen, damit der Umschalt-Button (nur im aufgeklappten Zustand sichtbar) erreichbar ist.
-    await spotCard.click();
+    // Karte aufklappen, damit der Umschalt-Button (nur im aufgeklappten Zustand sichtbar) erreichbar
+    // ist. Gezielt auf den Titel statt auf die ganze Karte klicken (gleiches Muster wie
+    // map-focus-covered-drawer.spec.ts): ein Klick auf .spot-card selbst landet bei Playwright am
+    // geometrischen Mittelpunkt der Karte - der kann in der kompakten Zeilen-Ansicht (schmale
+    // .spots-col, z. B. bei geöffneter Kalender-Schublade auf Desktop) zufällig genau auf einem der
+    // SocialRow-Buttons (🤍/💬) liegen, die selbst @click.stop setzen und das Aufklappen verhindern.
+    await spotCard.locator('h3').click();
 
     const toggle = spotCard.locator('.done-toggle');
     await expect(toggle).toHaveText('⬜️ Als gemacht markieren');
@@ -40,7 +45,7 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
 
     await page.reload();
     const spotCardAfterReload = page.locator('.spot-card', { hasText: spotTitle });
-    await spotCardAfterReload.click();
+    await spotCardAfterReload.locator('h3').click();
     await expect(spotCardAfterReload.locator('.done-toggle')).toHaveText('✅ Gemacht');
   });
 
@@ -105,7 +110,7 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
 
     // Spot-Picker ist standardmäßig eingeklappt (spart Platz, siehe DiaryView.vue), muss also erst
     // aufgeklappt werden, bevor der Picker-Button für den manuellen Spot erreichbar ist.
-    await modal.getByRole('button', { name: '📍 Spots zuordnen' }).click();
+    await modal.getByRole('button', { name: 'Spots zuordnen' }).click();
 
     // Spot manuell per Picker-Button hinzufügen (nicht vorab geplant, daher kein Empfohlen-Badge).
     const spotButton = modal.locator('.spot-option-btn', { hasText: spotTitle });
@@ -120,13 +125,14 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
     // leben seit der Verschmelzung des früheren "erweiterten Touren-Modus" in der Spots-Sicht
     // (/excursions, Touren-Gruppierung) statt in einer eigenständigen Touren-Route.
     await page.goto('/excursions');
-    await page.getByRole('button', { name: '🎒 Touren' }).click();
+    await page.getByRole('button', { name: 'Touren' }).click();
     const tourCard = page.locator('.excursion-card', { hasText: tourTitle });
     await expect(tourCard.locator('.status.status-done')).toBeVisible();
 
     await page.goto('/excursions');
     const spotCard = page.locator('.spot-card', { hasText: spotTitle });
-    await spotCard.click();
+    // Titel statt ganzer Karte anklicken - siehe Kommentar im ersten Test dieser Datei.
+    await spotCard.locator('h3').click();
     await expect(spotCard.locator('.done-toggle')).toHaveText('✅ Gemacht');
   });
 

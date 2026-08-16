@@ -21,6 +21,8 @@ import FormField from '../components/FormField.vue';
 import FileAttachments from '../components/FileAttachments.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import DraftStatusBar from '../components/DraftStatusBar.vue';
+import AppIcon from '../components/AppIcon.vue';
+import { ACTION_ICONS } from '../utils/actionIcons';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
 
 const tripStore = useTripStore();
@@ -286,7 +288,7 @@ const categoryColors = computed(() => {
             <input v-model="newBudgetForm.target_amount" type="number" step="0.01" placeholder="Gesamtziel € (optional)" />
           </FormField>
           <p v-if="showsPrivacyHint" class="privacy-hint">
-            🔒 Nur {{ budgetStore.userName(Number(newBudgetForm.owner_id)) }} sieht diesen Topf danach.
+            <AppIcon :icon="ACTION_ICONS.private" :size="14" group="actions" /> Nur {{ budgetStore.userName(Number(newBudgetForm.owner_id)) }} sieht diesen Topf danach.
           </p>
           <button type="submit">Anlegen</button>
         </form>

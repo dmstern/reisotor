@@ -26,6 +26,11 @@ import UndoDeleteRow from '../components/UndoDeleteRow.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import DraftStatusBar from '../components/DraftStatusBar.vue';
 import PendingSyncBadge from '../components/PendingSyncBadge.vue';
+import AppIcon from '../components/AppIcon.vue';
+import WeatherIcon from '../components/WeatherIcon.vue';
+import { ACTION_ICONS } from '../utils/actionIcons';
+import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
+import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { useUndoableDelete } from '../composables/useUndoableDelete';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
 
@@ -430,7 +435,7 @@ async function removeComment(id: number) {
       </FormField>
       <RichTextEditor v-model="form.content" placeholder="Was ist heute passiert?" />
       <label class="upload-label">
-        📷 Bilder hinzufügen
+        <AppIcon :icon="FORM_FIELD_ICONS.image" :size="14" group="formFields" /> Bilder hinzufügen
         <input type="file" accept="image/*" multiple :disabled="uploading" @change="onNewFilesSelected" />
       </label>
       <p v-if="uploading" class="hint">Bilder werden komprimiert & hochgeladen…</p>
@@ -438,13 +443,13 @@ async function removeComment(id: number) {
       <div class="image-preview" v-if="form.images.length">
         <div class="preview-thumb" v-for="(img, i) in form.images" :key="img">
           <img :src="img" :alt="`Bild ${i + 1}`" />
-          <button type="button" class="remove-thumb" @click="removeImage(form, i)">✕</button>
+          <button type="button" class="remove-thumb" @click="removeImage(form, i)"><AppIcon :icon="ACTION_ICONS.close" :size="13" group="actions" /></button>
         </div>
       </div>
       <fieldset v-if="excursionsStore.excursions.length" class="excursion-picker">
         <legend>
           <button type="button" class="picker-toggle" :aria-expanded="showExcursionPicker" @click="showExcursionPicker = !showExcursionPicker">
-            <span>🎒 Touren zuordnen<span v-if="form.excursion_ids.length" class="picker-count"> ({{ form.excursion_ids.length }} ausgewählt)</span></span>
+            <span><AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="14" group="navigation" /> Touren zuordnen<span v-if="form.excursion_ids.length" class="picker-count"> ({{ form.excursion_ids.length }} ausgewählt)</span></span>
             <span class="caret">{{ showExcursionPicker ? '▾' : '▸' }}</span>
           </button>
         </legend>
@@ -452,14 +457,14 @@ async function removeComment(id: number) {
           <label v-for="ex in pickerExcursions(form.date)" :key="ex.id" class="excursion-option">
             <input type="checkbox" :value="ex.id" v-model="form.excursion_ids" />
             <span class="excursion-option-title">{{ ex.title }}</span>
-            <span v-if="ex.date === form.date" class="excursion-option-badge recommended">⭐ Empfohlen – an diesem Tag geplant</span>
+            <span v-if="ex.date === form.date" class="excursion-option-badge recommended"><AppIcon :icon="ACTION_ICONS.recommended" :size="13" group="actions" /> Empfohlen – an diesem Tag geplant</span>
           </label>
         </template>
       </fieldset>
       <fieldset v-if="spotsStore.spots.length" class="excursion-picker">
         <legend>
           <button type="button" class="picker-toggle" :aria-expanded="showSpotPicker" @click="showSpotPicker = !showSpotPicker">
-            <span>📍 Spots zuordnen<span v-if="pickedSpotIds.size" class="picker-count"> ({{ pickedSpotIds.size }} ausgewählt)</span></span>
+            <span><AppIcon :icon="FORM_FIELD_ICONS.location" :size="14" group="formFields" /> Spots zuordnen<span v-if="pickedSpotIds.size" class="picker-count"> ({{ pickedSpotIds.size }} ausgewählt)</span></span>
             <span class="caret">{{ showSpotPicker ? '▾' : '▸' }}</span>
           </button>
         </legend>
@@ -471,9 +476,11 @@ async function removeComment(id: number) {
             class="excursion-option spot-option-btn"
             @click="pickSpot(spot.id, form.date, form, pickedSpotIds, pickedSpotExcursionIds)"
           >
-            <span class="excursion-option-title">{{ spotCategoryMeta(spot.category).icon }} {{ spot.title }}</span>
-            <span v-if="pickedSpotIds.has(spot.id)" class="excursion-option-badge">✓ hinzugefügt</span>
-            <span v-else-if="spotAlreadyPlanned(spot.id, form.date)" class="excursion-option-badge recommended">⭐ Empfohlen – an diesem Tag geplant</span>
+            <span class="excursion-option-title">
+                <AppIcon :icon="spotCategoryMeta(spot.category).tabler" :size="14" group="categories" /> {{ spot.title }}
+              </span>
+            <span v-if="pickedSpotIds.has(spot.id)" class="excursion-option-badge"><AppIcon :icon="ACTION_ICONS.done" :size="13" group="actions" /> hinzugefügt</span>
+            <span v-else-if="spotAlreadyPlanned(spot.id, form.date)" class="excursion-option-badge recommended"><AppIcon :icon="ACTION_ICONS.recommended" :size="13" group="actions" /> Empfohlen – an diesem Tag geplant</span>
           </button>
         </template>
       </fieldset>
@@ -518,7 +525,7 @@ async function removeComment(id: number) {
 
           <div class="excursion-links" v-if="excursionsForEntry(entry).length || weatherForEntry(entry)">
             <div v-if="weatherForEntry(entry)" class="diary-weather" :title="weatherCodeMeta(weatherForEntry(entry)!.weatherCode).label">
-              <span class="weather-icon">{{ weatherCodeMeta(weatherForEntry(entry)!.weatherCode).icon }}</span>
+              <WeatherIcon class="weather-icon" :size="16" :code="weatherForEntry(entry)!.weatherCode" />
               <span class="weather-temp">{{ Math.round(weatherForEntry(entry)!.tempMax) }}° / {{ Math.round(weatherForEntry(entry)!.tempMin) }}°</span>
             </div>
             <button
@@ -532,7 +539,7 @@ async function removeComment(id: number) {
                 class="excursion-chip-img"
                 :style="ex.image_url ? { backgroundImage: `url(${ex.image_url})` } : {}"
               >
-                <span v-if="!ex.image_url">🎒</span>
+                <AppIcon v-if="!ex.image_url" :icon="SECTION_ICON_DEFS.excursions" :size="16" group="navigation" />
               </span>
               <span class="excursion-chip-title">{{ ex.title }}</span>
             </button>
@@ -564,7 +571,7 @@ async function removeComment(id: number) {
         </FormField>
         <RichTextEditor v-model="editForm.content" />
         <label class="upload-label">
-          📷 Bilder hinzufügen
+          <AppIcon :icon="FORM_FIELD_ICONS.image" :size="14" group="formFields" /> Bilder hinzufügen
           <input type="file" accept="image/*" multiple :disabled="editUploading" @change="onEditFilesSelected" />
         </label>
         <p v-if="editUploading" class="hint">Bilder werden komprimiert & hochgeladen…</p>
@@ -572,13 +579,13 @@ async function removeComment(id: number) {
         <div class="image-preview" v-if="editForm.images.length">
           <div class="preview-thumb" v-for="(img, i) in editForm.images" :key="img">
             <img :src="img" :alt="`Bild ${i + 1}`" />
-            <button type="button" class="remove-thumb" @click="removeImage(editForm, i)">✕</button>
+            <button type="button" class="remove-thumb" @click="removeImage(editForm, i)"><AppIcon :icon="ACTION_ICONS.close" :size="13" group="actions" /></button>
           </div>
         </div>
         <fieldset v-if="excursionsStore.excursions.length" class="excursion-picker">
           <legend>
             <button type="button" class="picker-toggle" :aria-expanded="editShowExcursionPicker" @click="editShowExcursionPicker = !editShowExcursionPicker">
-              <span>🎒 Touren zuordnen<span v-if="editForm.excursion_ids.length" class="picker-count"> ({{ editForm.excursion_ids.length }} ausgewählt)</span></span>
+              <span><AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="14" group="navigation" /> Touren zuordnen<span v-if="editForm.excursion_ids.length" class="picker-count"> ({{ editForm.excursion_ids.length }} ausgewählt)</span></span>
               <span class="caret">{{ editShowExcursionPicker ? '▾' : '▸' }}</span>
             </button>
           </legend>
@@ -586,14 +593,14 @@ async function removeComment(id: number) {
             <label v-for="ex in pickerExcursions(editForm.date)" :key="ex.id" class="excursion-option">
               <input type="checkbox" :value="ex.id" v-model="editForm.excursion_ids" />
               <span class="excursion-option-title">{{ ex.title }}</span>
-              <span v-if="ex.date === editForm.date" class="excursion-option-badge recommended">⭐ Empfohlen – an diesem Tag geplant</span>
+              <span v-if="ex.date === editForm.date" class="excursion-option-badge recommended"><AppIcon :icon="ACTION_ICONS.recommended" :size="13" group="actions" /> Empfohlen – an diesem Tag geplant</span>
             </label>
           </template>
         </fieldset>
         <fieldset v-if="spotsStore.spots.length" class="excursion-picker">
           <legend>
             <button type="button" class="picker-toggle" :aria-expanded="editShowSpotPicker" @click="editShowSpotPicker = !editShowSpotPicker">
-              <span>📍 Spots zuordnen<span v-if="editPickedSpotIds.size" class="picker-count"> ({{ editPickedSpotIds.size }} ausgewählt)</span></span>
+              <span><AppIcon :icon="FORM_FIELD_ICONS.location" :size="14" group="formFields" /> Spots zuordnen<span v-if="editPickedSpotIds.size" class="picker-count"> ({{ editPickedSpotIds.size }} ausgewählt)</span></span>
               <span class="caret">{{ editShowSpotPicker ? '▾' : '▸' }}</span>
             </button>
           </legend>
@@ -605,9 +612,11 @@ async function removeComment(id: number) {
               class="excursion-option spot-option-btn"
               @click="pickSpot(spot.id, editForm.date, editForm, editPickedSpotIds, editPickedSpotExcursionIds)"
             >
-              <span class="excursion-option-title">{{ spotCategoryMeta(spot.category).icon }} {{ spot.title }}</span>
-              <span v-if="editPickedSpotIds.has(spot.id)" class="excursion-option-badge">✓ hinzugefügt</span>
-              <span v-else-if="spotAlreadyPlanned(spot.id, editForm.date)" class="excursion-option-badge recommended">⭐ Empfohlen – an diesem Tag geplant</span>
+              <span class="excursion-option-title">
+                <AppIcon :icon="spotCategoryMeta(spot.category).tabler" :size="14" group="categories" /> {{ spot.title }}
+              </span>
+              <span v-if="editPickedSpotIds.has(spot.id)" class="excursion-option-badge"><AppIcon :icon="ACTION_ICONS.done" :size="13" group="actions" /> hinzugefügt</span>
+              <span v-else-if="spotAlreadyPlanned(spot.id, editForm.date)" class="excursion-option-badge recommended"><AppIcon :icon="ACTION_ICONS.recommended" :size="13" group="actions" /> Empfohlen – an diesem Tag geplant</span>
             </button>
           </template>
         </fieldset>

@@ -1,6 +1,7 @@
 import type { CalendarEntry, Excursion, ScheduleItem, Spot, TodoItem, TravelItem, Trip } from '../api/types';
 import { excursionStationKeys, resolveStations } from './excursionStations';
 import { spotCategoryMeta } from './spotCategory';
+import type { IconDef } from './icon';
 
 // Icon-Override für einen mit Spot/Tour verknüpften Termin: bei einem verknüpften Spot dessen
 // eigenes Kategorie-Icon, bei einer verknüpften Tour mit genau einer Spot-Station deren Icon
@@ -22,6 +23,29 @@ export function resolveScheduleItemIcon(
     if (excursion) {
       const stations = resolveStations(excursionStationKeys(excursion.spot_ids), spots, travelItems);
       return stations.length === 1 ? stations[0].icon : undefined;
+    }
+  }
+  return undefined;
+}
+
+// Tabler-Pendant zu resolveScheduleItemIcon() oben (siehe CalendarEntry.iconDef, api/types.ts) -
+// dieselbe Verknüpfungs-Logik, nur .tabler statt .icon von spotCategoryMeta()/den
+// ExcursionStation-Objekten gelesen.
+export function resolveScheduleItemIconDef(
+  item: ScheduleItem,
+  spots: Spot[],
+  excursions: Excursion[],
+  travelItems: TravelItem[],
+): IconDef | undefined {
+  if (item.spot_id != null) {
+    const spot = spots.find((s) => s.id === item.spot_id);
+    if (spot) return spotCategoryMeta(spot.category).tabler;
+  }
+  if (item.idea_id != null) {
+    const excursion = excursions.find((e) => e.id === item.idea_id);
+    if (excursion) {
+      const stations = resolveStations(excursionStationKeys(excursion.spot_ids), spots, travelItems);
+      return stations.length === 1 ? stations[0].tabler : undefined;
     }
   }
   return undefined;
@@ -49,6 +73,7 @@ export function scheduleItemToEntry(
     // vor der Einführung dieser Verknüpfung hatten (damals als eigenständige "Ausflug"-Einträge).
     category: linked ? 'excursion' : item.category,
     icon: resolveScheduleItemIcon(item, spots, excursions, travelItems),
+    iconDef: resolveScheduleItemIconDef(item, spots, excursions, travelItems),
     ideaId: item.idea_id,
     spotId: item.spot_id,
     todoId: null,

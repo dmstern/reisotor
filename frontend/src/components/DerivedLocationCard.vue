@@ -2,6 +2,8 @@
 import { computed } from 'vue';
 import type { DerivedLocation } from '../utils/derivedLocation';
 import { useDrawersStore } from '../stores/drawers';
+import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
+import AppIcon from './AppIcon.vue';
 
 const props = defineProps<{ location: DerivedLocation }>();
 const drawers = useDrawersStore();
@@ -31,7 +33,7 @@ function onDragStart(event: DragEvent) {
 <template>
   <div class="card derived-card" @click="showOnMap">
     <div class="image">
-      <span class="placeholder">{{ location.icon }}</span>
+      <AppIcon class="placeholder" :size="35" :icon="location.tabler" group="categories" />
     </div>
     <div class="body">
       <h3>{{ location.title }}</h3>
@@ -47,7 +49,7 @@ function onDragStart(event: DragEvent) {
         @dragstart="onDragStart"
         @click.stop
       >
-        🎒 Auf Tour ziehen
+        <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="14" group="navigation" /> Auf Tour ziehen
       </button>
     </div>
   </div>
@@ -150,6 +152,11 @@ function onDragStart(event: DragEvent) {
   .body {
     padding: var(--space-2);
     gap: 2px;
+    /* Gleicher Fix wie SpotCard.vue's identisches .body in derselben Kompakt-Zeile: ohne
+       min-width:0 bleibt .body (jetzt Flex-Item in der Zeile statt in der Spalte) auf seiner
+       automatischen, vom langen Titel bestimmten Mindestbreite stehen und ragt seitlich über den
+       Bildschirmrand hinaus, statt der h3-Ellipsis das Kürzen zu erlauben. */
+    min-width: 0;
   }
 
   .excursion-drag-handle {

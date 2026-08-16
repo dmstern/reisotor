@@ -1,3 +1,5 @@
+import type { IconDef } from '../utils/icon';
+
 export interface User {
   id: number;
   username: string;
@@ -69,6 +71,11 @@ export interface CalendarEntry {
    *  generischen 🎒) verknüpft sind, siehe scheduleItemToEntry. Die Rahmenfarbe bleibt bewusst
    *  einheitlich Ausflug-orange (category bleibt 'excursion'). */
   icon?: string;
+  /** Tabler-Pendant zu icon, für AppIcon.vue (siehe utils/icon.ts) - additiv wie bei den übrigen
+   *  Registries, gesetzt in utils/calendarEntries.ts's resolveScheduleItemIconDef(). Fehlt icon
+   *  (kein Override), bleibt auch iconDef unbesetzt - der Aufrufer fällt dann auf
+   *  SCHEDULE_CATEGORY_META[category].tabler zurück, genau wie icon auf .icon zurückfällt. */
+  iconDef?: IconDef;
   ideaId: number | null;
   /** Verknüpfter Spot, falls der Termin (siehe scheduleItem.spot_id) direkt mit einem Spot statt
    *  einer Tour verknüpft ist. */

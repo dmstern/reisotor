@@ -22,8 +22,14 @@ import UndoDeleteRow from '../components/UndoDeleteRow.vue';
 import FileAttachments from '../components/FileAttachments.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import DraftStatusBar from '../components/DraftStatusBar.vue';
+import AppIcon from '../components/AppIcon.vue';
+import WeatherIcon from '../components/WeatherIcon.vue';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
 import { SCHEDULE_CATEGORY_META } from '../utils/scheduleCategory';
+import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
+import { ACTION_ICONS } from '../utils/actionIcons';
+import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
+import { spotCategoryMeta } from '../utils/spotCategory';
 import { parseLatLngFromMapsLink } from '../utils/googleMaps';
 import { buildAllEntries } from '../utils/calendarEntries';
 import { calendarEventFromEntry, googleCalendarHref, outlookCalendarHref, triggerIcsDownload } from '../utils/calendarExport';
@@ -779,7 +785,7 @@ function formatDate(date: string) {
     <h2>Kalender</h2>
 
     <div class="pending-schedule-banner" v-if="drawers.pendingSchedule">
-      <span>📅 Tippe einen Tag an, um „{{ pendingScheduleLabel }}“ einzuplanen</span>
+      <span><AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" /> Tippe einen Tag an, um „{{ pendingScheduleLabel }}“ einzuplanen</span>
       <button type="button" class="secondary" @click="drawers.clearPendingSchedule()">Abbrechen</button>
     </div>
 
@@ -804,8 +810,12 @@ function formatDate(date: string) {
         </button>
       </div>
       <div class="jump-row">
-        <button type="button" class="card-action-btn" @click="jumpToToday">📍 Heute</button>
-        <button type="button" class="card-action-btn" v-if="trip" @click="goToTripDates">🏖️ Urlaub</button>
+        <button type="button" class="card-action-btn" @click="jumpToToday">
+          <AppIcon :icon="ACTION_ICONS.today" :size="14" group="actions" /> Heute
+        </button>
+        <button type="button" class="card-action-btn" v-if="trip" @click="goToTripDates">
+          <AppIcon :icon="ACTION_ICONS.vacation" :size="14" group="actions" /> Urlaub
+        </button>
         <button type="button" @click="openAddForm">+ Neu</button>
       </div>
     </div>
@@ -825,17 +835,24 @@ function formatDate(date: string) {
       <div class="day-detail-head">
         <h3>{{ formatDay(selectedDate) }}</h3>
         <div class="day-detail-actions">
-          <button type="button" class="card-action-btn" @click="showDayOnMap">🗺️ Tag auf Karte anzeigen</button>
+          <button type="button" class="card-action-btn" @click="showDayOnMap">
+            <AppIcon :icon="SECTION_ICON_DEFS.map" :size="14" group="navigation" /> Tag auf Karte anzeigen
+          </button>
         </div>
       </div>
 
       <p v-for="entry in selectedDateWeatherEntries" :key="entry.key" class="day-weather-note">
-        {{ entry.icon }} {{ entry.label }}: {{ weatherCodeMeta(entry.weather.weatherCode).icon }}
+        <AppIcon :icon="entry.tabler" :size="15" group="categories" /> {{ entry.label }}:
+        <WeatherIcon :code="entry.weather.weatherCode" :size="15" />
         {{ Math.round(entry.weather.tempMax) }}° / {{ Math.round(entry.weather.tempMin) }}°
-        <span v-if="entry.weather.precipitationProbability != null"> · 💧{{ entry.weather.precipitationProbability }}%</span>
+        <span v-if="entry.weather.precipitationProbability != null">
+          · <AppIcon :icon="ACTION_ICONS.rain" :size="13" group="actions" />{{ entry.weather.precipitationProbability }}%
+        </span>
       </p>
 
-      <p v-for="acc in dayAccommodations" :key="acc.id" class="acc-note">🛏️ Unterkunft: {{ acc.title }}</p>
+      <p v-for="acc in dayAccommodations" :key="acc.id" class="acc-note">
+        <AppIcon :icon="spotCategoryMeta('Unterkunft').tabler" :size="14" group="categories" /> Unterkunft: {{ acc.title }}
+      </p>
 
       <TransitionGroup tag="ul" name="list" class="items">
         <template v-for="entry in dayEntries" :key="entry.key">
@@ -864,12 +881,19 @@ function formatDate(date: string) {
                 :checked="entryDone(entry)"
                 @click.stop="toggleTodoDone(entry.todoId!)"
               />
-              <span v-else class="category-icon" :title="SCHEDULE_CATEGORY_META[entry.category].label">{{
-                entry.icon ?? SCHEDULE_CATEGORY_META[entry.category].icon
-              }}</span>
+              <AppIcon
+                v-else
+                class="category-icon"
+                :size="16"
+                :icon="entry.iconDef ?? SCHEDULE_CATEGORY_META[entry.category].tabler"
+                group="categories"
+                :title="SCHEDULE_CATEGORY_META[entry.category].label"
+              />
               <strong v-if="entry.time">{{ entry.time }}</strong>
               <span class="title">{{ entry.title }}</span>
-              <p v-if="entry.location" class="location">📍 {{ entry.location }}</p>
+              <p v-if="entry.location" class="location">
+                <AppIcon :icon="FORM_FIELD_ICONS.location" :size="13" group="formFields" /> {{ entry.location }}
+              </p>
               <p v-if="entry.note" class="note">{{ entry.note }}</p>
             </div>
             <div class="item-actions">
@@ -881,20 +905,22 @@ function formatDate(date: string) {
                   aria-label="Zum eigenen Kalender hinzufügen"
                   @click.stop="toggleCalendarPicker(entry.key, $event)"
                 >
-                  📅
+                  <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" />
                 </button>
                 <Teleport to="body">
                   <template v-if="calendarPickerKey === entry.key">
                     <div class="picker-backdrop" @click.stop="calendarPickerKey = null"></div>
                     <div class="picker-menu" :style="calendarPickerStyle" @click.stop>
-                      <button type="button" @click="downloadIcsForEntry(entry)">🍎 Apple/iPhone</button>
+                      <button type="button" @click="downloadIcsForEntry(entry)">
+                        <AppIcon :icon="ACTION_ICONS.apple" :size="14" group="actions" /> Apple/iPhone
+                      </button>
                       <a
                         :href="googleCalendarHref(calendarEventFromEntry(entry))"
                         target="_blank"
                         rel="noopener"
                         @click="calendarPickerKey = null"
                       >
-                        📆 Google Kalender
+                        <AppIcon :icon="ACTION_ICONS.googleCalendar" :size="14" group="actions" /> Google Kalender
                       </a>
                       <a
                         :href="outlookCalendarHref(calendarEventFromEntry(entry))"
@@ -902,9 +928,11 @@ function formatDate(date: string) {
                         rel="noopener"
                         @click="calendarPickerKey = null"
                       >
-                        📧 Outlook
+                        <AppIcon :icon="FORM_FIELD_ICONS.email" :size="14" group="formFields" /> Outlook
                       </a>
-                      <button type="button" @click="downloadIcsForEntry(entry)">🤖 Android</button>
+                      <button type="button" @click="downloadIcsForEntry(entry)">
+                        <AppIcon :icon="ACTION_ICONS.android" :size="14" group="actions" /> Android
+                      </button>
                     </div>
                   </template>
                 </Teleport>
@@ -1020,20 +1048,25 @@ function formatDate(date: string) {
       :model-value="viewingItem !== null"
       @update:model-value="(v) => !v && (viewingItem = null)"
       :title="viewingItem?.title ?? ''"
-      :placeholder-icon="viewingEntry ? (viewingEntry.icon ?? SCHEDULE_CATEGORY_META[viewingEntry.category].icon) : undefined"
+      :placeholder-icon="viewingEntry ? (viewingEntry.iconDef ?? SCHEDULE_CATEGORY_META[viewingEntry.category].tabler) : undefined"
       @edit="editViewingItem"
     >
       <p v-if="linkedTitleFor(viewingEntry)" class="detail-row">
-        <span class="detail-label">Verknüpft</span>{{ viewingEntry?.icon ?? '🎒' }} {{ linkedTitleFor(viewingEntry) }}
+        <span class="detail-label">Verknüpft</span>
+        <AppIcon :icon="viewingEntry?.iconDef ?? SECTION_ICON_DEFS.excursions" :size="15" group="categories" />
+        {{ linkedTitleFor(viewingEntry) }}
       </p>
       <p v-if="viewingItem?.time" class="detail-row">
-        <span class="detail-label">Zeit</span>🕐 {{ viewingItem.time }}<template v-if="viewingItem.end_time"> – {{ viewingItem.end_time }}</template>
+        <span class="detail-label">Zeit</span>
+        <AppIcon :icon="FORM_FIELD_ICONS.time" :size="14" group="formFields" /> {{ viewingItem.time }}<template v-if="viewingItem.end_time"> – {{ viewingItem.end_time }}</template>
       </p>
       <p v-if="viewingItem?.end_date && viewingItem.end_date !== viewingItem.date" class="detail-row">
-        <span class="detail-label">Zeitraum</span>🗓️ {{ formatDate(viewingItem.date) }} – {{ formatDate(viewingItem.end_date) }}
+        <span class="detail-label">Zeitraum</span>
+        <AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" /> {{ formatDate(viewingItem.date) }} – {{ formatDate(viewingItem.end_date) }}
       </p>
       <p v-if="!linkedTitleFor(viewingEntry) && viewingItem?.location" class="detail-row">
-        <span class="detail-label">Ort</span>📍 {{ viewingItem.location }}
+        <span class="detail-label">Ort</span>
+        <AppIcon :icon="FORM_FIELD_ICONS.location" :size="14" group="formFields" /> {{ viewingItem.location }}
       </p>
       <div v-if="viewingItem?.note" class="detail-row note">{{ viewingItem.note }}</div>
       <FileAttachments v-if="viewingItem" domain="schedule" :entity-id="viewingItem.id" :editable="false" />
@@ -1152,7 +1185,13 @@ function formatDate(date: string) {
 .day-detail-head {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  /* flex-start statt center: der Tagesname kann in der (ggf. schmal gezogenen) Kalender-Schublade
+     auf mehrere Zeilen umbrechen ("Sonntag, 16. August") - bei center-Ausrichtung rückte der Button
+     dadurch optisch bis auf wenige Pixel an die letzte umgebrochene Zeile heran, obwohl der
+     horizontale gap eigentlich stimmt (Issue #69: "zu wenig Abstand zwischen Button und Text").
+     flex-start hält den Button auf Höhe der ersten Zeile, mit klarem Abstand zu allen Zeilen
+     darunter. */
+  align-items: flex-start;
   gap: var(--space-2);
   margin-bottom: var(--space-3);
 }

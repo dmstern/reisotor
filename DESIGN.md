@@ -159,6 +159,20 @@ ankommt, statt sich auf eine bestehende `margin-bottom`-Deklaration allein zu ve
 
 ## Eckenrundung: Squircle-Prinzip
 
+**Grundsatz: nirgends ganz eckige (90°-)Ecken.** Jede eigenständig abgegrenzte Fläche – Card,
+Button, Input, Modal, Drawer, aber auch eine flache Werkzeug-/Navigationsleiste wie
+`ExcursionsView.vue`s `.category-nav` – bekommt eine der beiden Rundungsarten unten (Kreisbogen oder
+Squircle, je nach Elementtyp), nie `border-radius: 0`. Das gilt besonders für Flächen, die beim
+Scrollen über anderem Inhalt schweben (`position: sticky`/`fixed`): ein scharfkantiges Rechteck fällt
+dort noch stärker auf als im ruhenden Layout, speziell wenn die Fläche (wie `.category-nav` im
+"stuck"-Zustand) über einem andersfarbigen Hintergrund liegt – konkret aufgetretener Fall: ein
+eckiger, weißer Balken direkt über dem beigen Seitenhintergrund (Desktop, wo die umschließende
+Sheet-Karte anders als mobil komplett transparent wird) wirkte dadurch wie ein Rendering-Fehler statt
+einer bewussten Fläche. Bei jedem neuen "schwebenden"/sticky positionierten Element deshalb aktiv
+sowohl Rundung als auch Hintergrundfarbe (siehe Abschnitt "Farben" oben – Steuerungselemente bekommen
+`--color-primary-tint`, nicht `--color-surface`) gegen den jeweils dahinterliegenden Hintergrund
+prüfen, nicht nur im eingebetteten Grundzustand.
+
 Basiswerte `--radius-sm` (10px) bis `--radius-xl` (32px) gelten für alles, was ein **normaler
 Kreisbogen** bleiben soll: komplett runde Elemente (`border-radius: 50%`, z. B. `EditButton.vue`/
 `DeleteButton.vue`, meist zusätzlich mit `corner-shape: round;` explizit gemacht), Pillen sowie
@@ -382,18 +396,21 @@ Rest der App.
 
 ## Icons
 
-Zwei umschaltbare Icon-Darstellungen statt ausschließlich Emoji: **Emoji** (Default, wie ursprünglich)
-oder **Symbole** (`@tabler/icons-vue`, MIT-Lizenz, Outline- oder gefüllte Variante) – einstellbar in
-den Profil-Einstellungen (`components/IconStyleSettings.vue`, gespeichert per
-`frontend/src/stores/iconStyle.ts`, localStorage-Keys `reisotor-icon-style`/`reisotor-icon-variant`,
-Geräte-lokal wie `calendarSettings.ts`/`weatherProvider.ts`). Beide Bibliotheken werden zur Build-Zeit
+Zwei umschaltbare Icon-Darstellungen statt ausschließlich Emoji: **Emoji** oder **Symbole**
+(`@tabler/icons-vue`, MIT-Lizenz, Outline- oder gefüllte Variante) – einstellbar in den
+Profil-Einstellungen (`components/IconStyleSettings.vue`, gespeichert per
+`frontend/src/stores/iconStyle.ts`, Geräte-lokal wie `calendarSettings.ts`/`weatherProvider.ts`).
+Seit Issue #74 gibt es **keinen globalen Fallback-Wert** mehr – jeder Bereich (`groups`/`variants`,
+beide `Record<IconGroup, ...>`, localStorage `reisotor-icon-style-groups`/
+`reisotor-icon-style-variants`) trägt immer einen konkreten Wert. Standard: überall Symbole/Outline,
+außer bei Kategorien (Emoji). Beide Bibliotheken werden zur Build-Zeit
 ins Bundle kompiliert (keine Icon-Font, kein CDN-Laden zur Laufzeit) und vom bestehenden
 PWA-Service-Worker wie jeder andere App-Code precached – die ursprüngliche Offline-Begründung
 ("leichtgewichtig, kein zusätzlicher Font-Ladevorgang, funktioniert offline") bleibt für beide
 Darstellungen gültig. Rendering läuft zentral über `components/AppIcon.vue` (nimmt ein `IconDef` aus
 `utils/icon.ts`, löst je nach Einstellung zu Emoji-Text oder Tabler-Komponente auf; fehlt für ein Icon
 die Tabler-Filled-Variante – nicht jedes Outline-Icon hat eine –, fällt automatisch auf Outline
-zurück). Zwei getrennte, in sich konsistente Icon-Systeme:
+zurück). Drei getrennte, in sich konsistente Icon-Systeme:
 
 - **App-Bereiche** (Navigation, Dashboard-Kacheln, Schubladen-Tabs): zentrale Registry in
   `frontend/src/utils/sectionIcons.ts` (`SECTION_ICONS` fürs Emoji, `SECTION_ICON_DEFS` fürs
@@ -406,6 +423,51 @@ zurück). Zwei getrennte, in sich konsistente Icon-Systeme:
   Kategorien pro Bereich unterschiedliche Bedeutung haben. Jede trägt neben dem Emoji-String
   zusätzlich ein `tabler: IconDef`-Feld – neues Konzept in einer dieser Registries → immer beide
   Felder ergänzen, nicht nur das Emoji.
+- **Aktionen/Status** (Buttons, Toggle-Beschriftungen, Status-Badges – z. B. Bearbeiten/Löschen/
+  Schließen, Privat/Geteilt, Erledigt/Nicht erledigt): `frontend/src/utils/actionIcons.ts`s
+  `ACTION_ICONS` (analog zu `FORM_FIELD_ICONS` für Formularfeld-Label, siehe eigener Abschnitt unten).
+  Ein Konzept-Icon pro Aktion, auch wenn mehrere App-Bereiche zufällig dieselbe Tabler-Komponente
+  nutzen (z. B. `vacation` hier und `spotCategory.ts`s "Strand" – bewusst getrennt gehalten, ein
+  Button-Aktion-Konzept und eine Spot-Kategorie sind unterschiedliche Dinge). Neues wiederkehrendes
+  Aktions-/Status-Icon → hier ergänzen statt lokal in der Komponente ein eigenes `IconDef` zu bauen
+  (Einzelfälle ohne Wiederverwendungspotenzial dürfen weiterhin lokal bleiben, siehe
+  `LocationPicker.vue`s `OWN_LOCATION_ICON`).
+
+**Icon-Stil UND -Variante pro Bereich einzeln einstellbar**: `AppIcon.vue`s Pflicht-Prop `group`
+(`IconGroup` aus `stores/iconStyle.ts`s `ICON_GROUP_OPTIONS`: `navigation`, `categories`, `weather`,
+`formFields`, `actions`) ordnet jede Aufrufstelle einem groben Bereich zu. `iconStyle.styleForGroup(group)`/
+`styleVariantForGroup(group)` lesen den jeweils konkreten Wert aus `groups`/`variants` – nie direkt
+den rohen State in einer Komponente lesen, wenn ein `AppIcon` gerendert wird, sonst umgeht das die
+Bereichs-Einstellung. Die Bereichstabelle in `IconStyleSettings.vue` ist der zentrale, immer
+sichtbare Teil der Karte (kein Einklappen mehr) – oben ein "Für alle Bereiche umstellen"-Bulk-Toggle
+(reiner Setter, kein eigener Zustand), darunter je `ICON_GROUP_OPTIONS`-Eintrag eine Emoji/Symbole-
+`SegmentedToggle.vue`-Zeile und (nur wenn der Bereich auf Symbole steht) eine zweite, kleinere
+Outline/Gefüllt-Zeile darunter. Beide Toggle-Arten zeigen ein Beispiel-Icon je Option
+(`SegmentedToggle.vue`s optionale `icon`/`iconGroup`/`forceStyle`/`forceVariant`-Felder je Option –
+`forceStyle`/`forceVariant` sorgen dafür, dass eine Option IMMER ihre eigene Darstellung zeigt,
+unabhängig vom aktuell aktiven Wert), auf schmalen Karten (`@container`, analog `SpotCard.vue`s
+`@container spots-col`) bleibt nur noch das Icon, das Wort-Label wird ausgeblendet.
+
+**Farbcodierung wiederverwendet, nicht neu erfunden**: `AppIcon.vue`s optionale `color`-Prop
+(Default `currentColor`) überschreibt die Icon-Farbe gezielt an einer Aufrufstelle. Für Symbol-Icons
+im Dashboard-Widget-Kontext wird dafür **immer** dieselbe Akzentfarbe genutzt, die die Dashboard-
+Kachel selbst schon für dieses Widget hat (`frontend/src/utils/widgetColors.ts`s `WIDGET_COLORS`,
+ursprünglich aus `DashboardView.vue` extrahiert) – kein zweites, eigenes Farbschema fürs Icon
+daneben. `NAV_LINK_COLORS` in derselben Datei überträgt dieselbe Farbzuordnung 1:1 auf die
+NavBar-Icons, aktiv per `iconStyle.navColored` (`usePersistedRef`, localStorage
+`reisotor-icon-nav-colored`, **Default `true`** seit Issue #74). Checkbox dafür in
+`IconStyleSettings.vue` ("Icons in der Navigation einfärben"). Ein neues Widget/ein neuer Nav-Punkt
+mit eigenem Farbakzent → in `WIDGET_COLORS` (und ggf. `NAV_LINK_COLORS`) ergänzen, nicht lokal eine
+Hex-Farbe in der Komponente hartkodieren.
+
+**Wetter als eigener, farbcodierter Icon-Bereich**: `utils/weather.ts`s `WEATHER_CODE_META` trägt
+neben `tabler` zusätzlich `color` (einteilige Codes wie Sonne/Wolke) bzw. `parts` (zweiteilige Codes
+wie Regen/Schneefall/Gewitter: Basis-Icon Wolke + Akzent-Icon Tropfen/Flocke/Blitz, je mit eigener
+Farbe). `components/WeatherIcon.vue` ist die zentrale Render-Stelle (ersetzt direkte
+`weatherCodeMeta().tabler`-Aufrufe), stapelt bei aktivierter Einfärbung (`iconStyle.colorizeWeather`,
+Default an) die zwei Teil-Icons statt das kombinierte Tabler-Icon pauschal einzufärben – Regentropfen/
+Blitz-Akzente sind dabei zusätzlich `forceFilled` (immer gefüllt statt Outline, sonst überlagern sich
+zwei Outline-Umrisse unschön).
 
 Kartenmarker (`utils/mapRoute.ts`, genutzt von `TripMap.vue`/`LocationPicker.vue`/
 `ExcursionMiniMap.vue`) akzeptieren sowohl ein `IconDef` (Kategorie-/Ortsmarker, respektieren die
@@ -413,12 +475,38 @@ Einstellung – rohe Tabler-SVGs dafür kuratiert in `utils/tablerMarkerSvg.ts`,
 vanilla `@tabler/icons`-Paket) als auch einen rohen Emoji-String – Letzteres bewusst nur für das
 Nutzer-Avatar (`auth.user.avatar`, `users.avatar`-Spalte): frei aus einem ~180-Emoji-Picker
 gewähltes, gespeichertes Identitätsdatum ohne sinnvolles festes Tabler-Äquivalent, bleibt daher
-**immer** Emoji, unabhängig von der Einstellung.
+**immer** Emoji, unabhängig von der Einstellung. Dieselbe Ausnahme gilt für jeden Avatar-Fallback
+(z. B. `❓` für unbekannte Autor:innen, `🤝` als Platzhalter-"Avatar" für gemeinsame Budget-Töpfe/
+Packlisten-Abschnitte ohne festen Besitzer) sowie für native `<select><option>`-Inhalte (können keine
+Vue-Komponente rendern, brauchen also weiterhin einen rohen Emoji-String) und für rein dekorative,
+einmalige Fließtext-Ausschmückung ohne wiederverwendetes Konzept (z. B. `SecurityCheckView.vue`s
+Easter-Egg-Ladehinweise, `DashboardView.vue`s Abreise-Countdown-Sätze).
 
 - **Sichtbarkeits-Kennzeichnung (privat vs. geteilt)**: 🔒 für "nur für eine Person sichtbar", 🤝
   für "für alle Mitreisenden sichtbar" (z. B. Budget-Töpfe, `BudgetPotCard.vue`). Kein eigenes
   drittes System, sondern ein einfaches, wiederverwendbares Paar – bei jedem neuen "privat vs.
-  geteilt"-Konzept dieselben zwei Emoji verwenden statt neue zu erfinden.
+  geteilt"-Konzept dieselben zwei Emoji verwenden statt neue zu erfinden. Als `IconDef`-Pendant
+  `ACTION_ICONS.private`/`ACTION_ICONS.shared`.
+
+**Jedes neue Icon braucht ein `IconDef`, nie einen rohen Emoji-String direkt im Template.** Auch für
+Icons ohne passende der obigen Registries (z. B. Werkzeug-/Aktions-Icons wie `TripMap.vue`s
+Kartensteuerung, siehe `utils/mapToolIcons.ts`) gilt dasselbe Muster wie bei
+`formFieldIcons.ts`/den Kategorie-Registries: `{ id, emoji, outline, filled? }` statt `{{ '🔍' }}` im
+Template, gerendert über `<AppIcon :icon="…" />`. Zwei Gründe, beide nicht verhandelbar:
+
+1. Nur so greift die Emoji/Symbole-Einstellung (`stores/iconStyle.ts`) überhaupt – ein hartkodiertes
+   Emoji-Zeichen bleibt für Nutzer:innen mit aktivierten Tabler-Symbolen stur Emoji, ein sichtbarer
+   Stilbruch mitten im sonst umgeschalteten Rest der App.
+2. Ein separates, aktuell in einer anderen Session laufendes Feature (Icon-Gruppen-Konfiguration –
+   welche Icon-Kategorien/-Gruppen wo konfigurierbar sind) baut auf genau dieser Struktur auf: ein
+   Icon, das nur als roher Emoji-String existiert, kann von dieser Konfiguration nicht erfasst
+   werden. Jedes neue Icon muss deshalb zusätzlich einer sinnvollen Gruppe zugeordnet sein – entweder
+   einer bestehenden Registry (passendes Konzept, siehe oben) oder einer neuen, thematisch klar
+   benannten Registry-Datei nach demselben Muster (nicht lose Einzel-`IconDef`s verstreut in
+   Komponenten). `outline` ist Pflicht, `filled` optional (nicht jedes Tabler-Icon hat ein Filled-
+   Pendant) – `resolveIconComponent()`/`AppIcon.vue` fallen dann automatisch auf `outline` zurück.
+   Einzige Ausnahme weiterhin das Nutzer-Avatar (siehe "Kartenmarker" oben): ein frei gewähltes
+   Emoji ohne festes Tabler-Äquivalent bleibt bewusst immer Emoji, roh, ohne `IconDef`.
 
 ## Formularfelder in Anlege-/Bearbeiten-Dialogen
 

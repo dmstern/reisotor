@@ -8,6 +8,8 @@ import { useLiveSyncStore } from '../stores/liveSync';
 import { useIsDesktop } from '../composables/useIsDesktop';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { NAV_LINKS, type NavLinkDef } from '../utils/navLinks';
+import { NAV_LINK_COLORS } from '../utils/widgetColors';
+import { useIconStyleStore } from '../stores/iconStyle';
 import AppIcon from './AppIcon.vue';
 
 const auth = useAuthStore();
@@ -17,6 +19,7 @@ const navPosition = useNavPositionStore();
 const navConfig = useNavConfigStore();
 const liveSync = useLiveSyncStore();
 const isDesktop = useIsDesktop();
+const iconStyle = useIconStyleStore();
 
 // Schubladen (Drawer.vue) kleben ebenfalls "oben" fest und müssen wissen, wie viel Platz die
 // NavBar dort tatsächlich einnimmt, um sie nicht zu überdecken – siehe --navbar-offset in
@@ -134,7 +137,12 @@ function onLinkClick(event: MouseEvent) {
            Einstiegspunkt der App soll auf mobile immer der allererste (am wenigsten wegscrollte)
            Nav-Punkt sein. -->
       <router-link :to="DASHBOARD_LINK.to" class="link" @click="onLinkClick">
-        <AppIcon class="icon" :icon="DASHBOARD_LINK.icon" />
+        <AppIcon
+          class="icon"
+          :icon="DASHBOARD_LINK.icon"
+          group="navigation"
+          :color="iconStyle.navColored ? NAV_LINK_COLORS.get('dashboard') : undefined"
+        />
         <span class="label">{{ DASHBOARD_LINK.label }}</span>
       </router-link>
       <!-- Kalender ist auf Desktop weiterhin eine globale Schublade (App.vue, über die seitlich
@@ -148,14 +156,24 @@ function onLinkClick(event: MouseEvent) {
            Nav-Punkt mehr - Touren anlegen/Spots zuordnen geht bereits direkt dort. -->
       <router-link to="/calendar" class="link mobile-page-link" @click="onLinkClick">
         <span class="icon-wrap">
-          <AppIcon class="icon" :icon="SECTION_ICON_DEFS.calendar" />
+          <AppIcon
+            class="icon"
+            :icon="SECTION_ICON_DEFS.calendar"
+            group="navigation"
+            :color="iconStyle.navColored ? NAV_LINK_COLORS.get('calendar') : undefined"
+          />
           <span v-if="liveSync.hasUnseen('schedule')" class="unseen-dot" aria-label="Neue Änderungen" />
         </span>
         <span class="label">Kalender</span>
       </router-link>
       <router-link v-for="link in visibleLinks" :key="link.to" :to="link.to" class="link" @click="onLinkClick">
         <span class="icon-wrap">
-          <AppIcon class="icon" :icon="link.icon" />
+          <AppIcon
+            class="icon"
+            :icon="link.icon"
+            group="navigation"
+            :color="iconStyle.navColored ? NAV_LINK_COLORS.get(link.key) : undefined"
+          />
           <span v-if="hasUnseenAny(link)" class="unseen-dot" aria-label="Neue Änderungen" />
         </span>
         <span class="label">{{ link.label }}</span>
@@ -245,6 +263,13 @@ function onLinkClick(event: MouseEvent) {
   bottom: 0;
   left: 0;
   background: var(--color-primary-tint);
+  /* --color-primary-tint ist auf --color-surface (Navbar-Hintergrund) fast kontrastfrei (beides
+     nahezu weiß in Light Mode, nahezu identisch dunkel in Dark Mode) - die Pille war dadurch fast
+     unsichtbar, wodurch das eigentlich vorhandene Gleiten unbemerkt blieb (Issue #71: "Animation
+     nicht erkennbar auf Desktop"). Eine dezente, halbtransparente Border zeichnet die Pille
+     unabhängig vom Füllfarben-Kontrast nach, ohne selbst zum dominanten Element zu werden - das
+     aktive Icon (siehe .link.router-link-active .icon unten) trägt den Hauptteil der Hervorhebung. */
+  border: 1px solid color-mix(in srgb, var(--color-primary) 45%, transparent);
   border-radius: 999px;
   opacity: 0;
   transition: transform 0.25s ease, width 0.25s ease, opacity 0.15s ease;
@@ -273,6 +298,15 @@ function onLinkClick(event: MouseEvent) {
 
 .link.router-link-active {
   color: var(--color-primary-dark);
+}
+
+/* Aktives Icon etwas leuchtender als die (dunklere) Textfarbe daneben - .icon bekommt AppIcon.vue's
+   Default-color-Prop 'currentColor' (siehe dort), übernimmt diese Regel hier also automatisch für
+   die Tabler-Variante. Wirkt bewusst NICHT bei aktivierter navColored-Einstellung (dort setzt
+   AppIcon einen expliziten Farb-Prop pro Bereich, der als Inline-Style immer gewinnt) und auch
+   nicht für die Emoji-Variante (Emoji ignorieren CSS color ohnehin). */
+.link.router-link-active .icon {
+  color: var(--color-primary);
 }
 
 .icon-wrap {

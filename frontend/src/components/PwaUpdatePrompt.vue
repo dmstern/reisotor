@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { onUnmounted, ref } from 'vue';
 import { registerSW } from 'virtual:pwa-register';
+import AppIcon from './AppIcon.vue';
+import { ACTION_ICONS } from '../utils/actionIcons';
 
 // Volle PWA (siehe vite.config.ts's VitePWA-Konfiguration, injectManifest-Strategie): registriert
 // denselben public/sw.js wie zuvor (nur jetzt über das von vite-plugin-pwa generierte Modul statt
@@ -58,12 +60,14 @@ function dismissOfflineReady() {
 
 <template>
   <span v-if="needRefresh" class="pwa-pill update">
-    🔄 Update verfügbar
+    <AppIcon :icon="ACTION_ICONS.refresh" :size="14" group="actions" /> Update verfügbar
     <button type="button" class="pwa-pill-btn" @click="reload">Neu laden</button>
   </span>
   <span v-else-if="offlineReady" class="pwa-pill ready" title="Diese App lädt jetzt auch ohne Internetverbindung">
-    ✅ App ist jetzt offline verfügbar
-    <button type="button" class="pwa-pill-btn" aria-label="Hinweis schließen" @click="dismissOfflineReady">✕</button>
+    <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" /> App ist jetzt offline verfügbar
+    <button type="button" class="pwa-pill-btn" aria-label="Hinweis schließen" @click="dismissOfflineReady">
+      <AppIcon :icon="ACTION_ICONS.close" :size="14" group="actions" />
+    </button>
   </span>
 </template>
 

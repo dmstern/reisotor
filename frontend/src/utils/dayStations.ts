@@ -1,7 +1,7 @@
 import type { Excursion, ScheduleItem, Spot, TravelItem } from '../api/types';
 import { SCHEDULE_CATEGORY_META } from './scheduleCategory';
 import { excursionStationKeys, resolveStation, resolveStations, travelEndpointKey, type ExcursionStation } from './excursionStations';
-import { travelTypeIcon } from './travelTypeIcon';
+import { travelTypeIcon, travelTypeIconDef } from './travelTypeIcon';
 
 /** Alle Orte eines Kalendertages – über alle Quellen hinweg (Termine, Reise-Etappen, Unterkunft,
  *  Ausflüge), nicht nur Ausflug-Stationen wie bisher (siehe TripMap.vue's frühere
@@ -73,7 +73,7 @@ export function buildDayStations(
     if (to) {
       timed.push({
         time: t.arrival_time ?? t.departure_time,
-        station: { ...to, connector: { icon: travelTypeIcon(t.type, '📍'), label: t.title } },
+        station: { ...to, connector: { icon: travelTypeIcon(t.type, '📍'), tabler: travelTypeIconDef(t.type), label: t.title } },
       });
       previousTravelKey = to.key;
     }

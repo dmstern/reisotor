@@ -4,6 +4,8 @@ import { api } from '../api/client';
 import type { Attachment, AttachmentDomain } from '../api/types';
 import { compressImage } from '../utils/imageCompression';
 import { readAsDataUrl, formatFileSize } from '../utils/fileUpload';
+import AppIcon from './AppIcon.vue';
+import { ACTION_ICONS } from '../utils/actionIcons';
 
 // Wiederverwendbare Datei-Anhänge (Tickets/Dokumente) für Reise/Unterkunft/Notizen/Termine/Budget
 // (siehe backend/src/routes/attachments.ts) – kapselt GET/POST/DELETE /attachments komplett, damit
@@ -74,10 +76,12 @@ async function remove(attachment: Attachment) {
     <ul v-if="attachments.length" class="attachment-list">
       <li v-for="attachment in attachments" :key="attachment.id" class="attachment-row">
         <a :href="attachment.url" target="_blank" rel="noopener" class="attachment-link">
-          📎 {{ attachment.original_name }}
+          <AppIcon :icon="ACTION_ICONS.attachment" :size="14" group="actions" /> {{ attachment.original_name }}
         </a>
         <span class="size">{{ formatFileSize(attachment.size_bytes) }}</span>
-        <button v-if="editable" type="button" class="remove-btn" title="Anhang löschen" @click="remove(attachment)">✕</button>
+        <button v-if="editable" type="button" class="remove-btn" title="Anhang löschen" @click="remove(attachment)">
+          <AppIcon :icon="ACTION_ICONS.close" :size="14" group="actions" />
+        </button>
       </li>
     </ul>
     <label v-if="editable" class="upload-label">

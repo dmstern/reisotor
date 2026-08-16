@@ -2,6 +2,9 @@
 import { computed, ref, watch } from 'vue';
 import { useRequestActivityStore, type RequestKind } from '../stores/requestActivity';
 import { useUiSettingsStore } from '../stores/uiSettings';
+import AppIcon from './AppIcon.vue';
+import { ACTION_ICONS } from '../utils/actionIcons';
+import type { IconDef } from '../utils/icon';
 
 // Zentrale Lade-Anzeige für JEDEN Server-Request (View laden, Objekt speichern/anlegen/löschen) -
 // siehe stores/requestActivity.ts, das api/client.ts's get()/mutate() bei jedem tatsächlichen
@@ -18,7 +21,12 @@ import { useUiSettingsStore } from '../stores/uiSettings';
 const activity = useRequestActivityStore();
 const uiSettings = useUiSettingsStore();
 
-const ICONS: Record<RequestKind, string> = { read: '🔄', create: '➕', update: '💾', delete: '🗑️' };
+const ICONS: Record<RequestKind, IconDef> = {
+  read: ACTION_ICONS.refresh,
+  create: ACTION_ICONS.add,
+  update: ACTION_ICONS.save,
+  delete: ACTION_ICONS.delete,
+};
 const LABELS: Record<RequestKind, string> = {
   read: 'Lädt…',
   create: 'Legt an…',
@@ -53,7 +61,7 @@ watch(
   },
 );
 
-const icon = computed(() => (visibleKind.value ? ICONS[visibleKind.value] : ''));
+const icon = computed(() => (visibleKind.value ? ICONS[visibleKind.value] : null));
 const label = computed(() => (visibleKind.value ? LABELS[visibleKind.value] : ''));
 </script>
 
@@ -61,7 +69,7 @@ const label = computed(() => (visibleKind.value ? LABELS[visibleKind.value] : ''
   <Transition name="toast">
     <div v-if="visibleKind && uiSettings.showActivityToasts" class="toast-pill" :class="visibleKind" :title="label">
       <span class="spinner" />
-      <span class="icon">{{ icon }}</span>
+      <AppIcon v-if="icon" class="icon" :size="13" :icon="icon" group="actions" />
       <span class="label">{{ label }}</span>
     </div>
   </Transition>

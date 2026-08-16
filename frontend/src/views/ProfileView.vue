@@ -29,7 +29,12 @@ import ThemeModeSelect from '../components/ThemeModeSelect.vue';
 import SegmentedToggle from '../components/SegmentedToggle.vue';
 import AppIcon from '../components/AppIcon.vue';
 import IconStyleSettings from '../components/IconStyleSettings.vue';
+import { ACTION_ICONS } from '../utils/actionIcons';
+import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import FeedbackDialog from '../components/FeedbackDialog.vue';
+import TabBar from '../components/TabBar.vue';
+import { IconUser, IconUserFilled, IconDeviceDesktop, IconBell, IconBellFilled, IconDatabase, IconInfoCircle, IconInfoCircleFilled } from '@tabler/icons-vue';
+import type { IconDef } from '../utils/icon';
 
 const auth = useAuthStore();
 const router = useRouter();
@@ -46,13 +51,13 @@ const dashboardConfig = useDashboardConfigStore();
 // Komponente statt eigener Kind-Komponenten - das bestehende einzelne onMounted() unten lädt
 // weiterhin alles unabhängig vom aktiven Tab, die v-ifs zeigen nur, was davon gerade sichtbar ist.
 type Tab = 'account' | 'app' | 'trip' | 'notifications' | 'data' | 'about';
-const TABS: { key: Tab; label: string; icon: string }[] = [
-  { key: 'account', label: 'Account', icon: '👤' },
-  { key: 'app', label: 'App-Einstellungen', icon: '🖥️' },
-  { key: 'trip', label: 'Reise-Anzeige', icon: '📅' },
-  { key: 'notifications', label: 'Benachrichtigungen', icon: '🔔' },
-  { key: 'data', label: 'Daten', icon: '🗄️' },
-  { key: 'about', label: 'Über', icon: 'ℹ️' },
+const TABS: { key: Tab; label: string; icon: IconDef }[] = [
+  { key: 'account', label: 'Account', icon: { id: 'user', emoji: '👤', outline: IconUser, filled: IconUserFilled } },
+  { key: 'app', label: 'App-Einstellungen', icon: { id: 'device-desktop', emoji: '🖥️', outline: IconDeviceDesktop } },
+  { key: 'trip', label: 'Reise-Anzeige', icon: FORM_FIELD_ICONS.date },
+  { key: 'notifications', label: 'Benachrichtigungen', icon: { id: 'bell', emoji: '🔔', outline: IconBell, filled: IconBellFilled } },
+  { key: 'data', label: 'Daten', icon: { id: 'database', emoji: '🗄️', outline: IconDatabase } },
+  { key: 'about', label: 'Über', icon: { id: 'info-circle', emoji: 'ℹ️', outline: IconInfoCircle, filled: IconInfoCircleFilled } },
 ];
 const TAB_KEYS = TABS.map((t) => t.key);
 
@@ -61,15 +66,8 @@ const activeTab = computed<Tab>(() => {
   return (TAB_KEYS as string[]).includes(tab as string) ? (tab as Tab) : 'account';
 });
 
-function selectTab(tab: Tab, event?: MouseEvent) {
-  router.replace({ query: { ...route.query, tab } });
-  // Scrollt einen angeklickten, teils außerhalb des sichtbaren Bereichs liegenden Tab vollständig
-  // in Sicht - gleiches Muster wie NavBar.vue's onLinkClick() für deren horizontal scrollende Leiste.
-  (event?.currentTarget as HTMLElement | undefined)?.scrollIntoView({
-    behavior: 'smooth',
-    inline: 'nearest',
-    block: 'nearest',
-  });
+function selectTab(tab: string) {
+  router.replace({ query: { ...route.query, tab: tab as Tab } });
 }
 
 function navLinkLabel(key: string) {
@@ -330,27 +328,17 @@ async function onImportFileSelected(event: Event) {
   <div class="page" v-if="!loading">
     <h1>Profil</h1>
 
-    <div class="tab-bar" role="tablist">
-      <button
-        v-for="tab in TABS"
-        :key="tab.key"
-        type="button"
-        class="tab"
-        role="tab"
-        :class="{ active: activeTab === tab.key }"
-        :aria-selected="activeTab === tab.key"
-        @click="selectTab(tab.key, $event)"
-      >
-        <span class="icon">{{ tab.icon }}</span>
-        {{ tab.label }}
-      </button>
+    <div class="tab-bar-wrap">
+      <TabBar :tabs="TABS" :active-key="activeTab" @select="selectTab" />
     </div>
 
     <template v-if="activeTab === 'account'">
       <div class="card">
         <div class="header">
           <h2>{{ auth.user?.avatar }} {{ auth.user?.username }}</h2>
-          <button type="button" class="secondary" @click="logout">🚪 Abmelden</button>
+          <button type="button" class="secondary" @click="logout">
+            <AppIcon :icon="ACTION_ICONS.logout" :size="14" group="actions" /> Abmelden
+          </button>
         </div>
 
         <form class="form username-form" @submit.prevent="changeUsername">
@@ -359,7 +347,9 @@ async function onImportFileSelected(event: Event) {
             <input v-model="usernameForm.username" type="text" required />
           </label>
           <p v-if="usernameError" class="hint error">{{ usernameError }}</p>
-          <p v-if="usernameSaved" class="hint success">Benutzername geändert ✓</p>
+          <p v-if="usernameSaved" class="hint success">
+            Benutzername geändert <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
+          </p>
           <button type="submit" :disabled="usernameSaving">
             {{ usernameSaving ? 'Speichern…' : 'Benutzername speichern' }}
           </button>
@@ -384,7 +374,9 @@ async function onImportFileSelected(event: Event) {
             </div>
           </div>
         </div>
-        <p v-if="avatarSaved" class="hint success">Gespeichert ✓</p>
+        <p v-if="avatarSaved" class="hint success">
+          Gespeichert <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
+        </p>
       </div>
 
       <div class="card">
@@ -420,7 +412,9 @@ async function onImportFileSelected(event: Event) {
             />
           </div>
           <p v-if="passwordError" class="hint error">{{ passwordError }}</p>
-          <p v-if="passwordSaved" class="hint success">Passwort geändert ✓</p>
+          <p v-if="passwordSaved" class="hint success">
+            Passwort geändert <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
+          </p>
           <button type="submit" :disabled="passwordSaving">
             {{ passwordSaving ? 'Speichern…' : 'Passwort speichern' }}
           </button>
@@ -441,7 +435,7 @@ async function onImportFileSelected(event: Event) {
 
       <div class="card">
         <h2>Navigation</h2>
-        <p class="hint">Position der Navigationsleiste, getrennt für Desktop und mobile Bedienung.</p>
+        <p class="hint intro-hint">Position der Navigationsleiste, getrennt für Desktop und mobile Bedienung.</p>
         <div class="nav-position-row">
           <label>
             Desktop
@@ -464,7 +458,7 @@ async function onImportFileSelected(event: Event) {
         </p>
         <ul class="nav-config-list">
           <li v-for="(entry, index) in navConfig.entries" :key="entry.key" class="nav-config-row">
-            <AppIcon v-if="navLinkIcon(entry.key)" class="nav-config-icon" :icon="navLinkIcon(entry.key)!" />
+            <AppIcon v-if="navLinkIcon(entry.key)" class="nav-config-icon" :icon="navLinkIcon(entry.key)!" group="navigation" />
             <span class="nav-config-label" :class="{ hidden: !entry.visible }">{{ navLinkLabel(entry.key) }}</span>
             <div class="nav-config-actions">
               <button
@@ -511,7 +505,7 @@ async function onImportFileSelected(event: Event) {
              Tests immer erst über die jeweilige äußere Zeilen-Klasse, keine Kollisionsgefahr. -->
         <ul class="dashboard-config-list">
           <li v-for="(entry, index) in dashboardConfig.entries" :key="entry.key" class="dashboard-config-row">
-            <AppIcon v-if="dashboardTileIcon(entry.key)" class="nav-config-icon" :icon="dashboardTileIcon(entry.key)!" />
+            <AppIcon v-if="dashboardTileIcon(entry.key)" class="nav-config-icon" :icon="dashboardTileIcon(entry.key)!" group="navigation" />
             <span class="nav-config-label" :class="{ hidden: !entry.visible }">{{ dashboardTileLabel(entry.key) }}</span>
             <div class="nav-config-actions">
               <button
@@ -549,7 +543,7 @@ async function onImportFileSelected(event: Event) {
 
       <div class="card">
         <h2>🏖️ Urlaubs-Hinweis</h2>
-        <p class="hint">
+        <p class="hint intro-hint">
           Der Hinweis im Dashboard-Header während des laufenden Urlaubs zeigt standardmäßig immer
           denselben Text - kann hier stattdessen auf einen Countdown der verbleibenden Urlaubstage
           umgeschaltet werden.
@@ -564,7 +558,7 @@ async function onImportFileSelected(event: Event) {
     <div v-if="activeTab === 'trip'" class="grid settings-grid">
       <div id="calendar-settings" class="card">
         <h2>📅 Kalender</h2>
-        <p class="hint">Wochenanfang und Zahlenformat für Datumsanzeigen in der ganzen App.</p>
+        <p class="hint intro-hint">Wochenanfang und Zahlenformat für Datumsanzeigen in der ganzen App.</p>
         <div class="nav-position-row">
           <label>
             Wochenanfang
@@ -588,7 +582,7 @@ async function onImportFileSelected(event: Event) {
       <!-- id als Sprungziel für den "Anbieter wechseln"-Link im Wetter-Widget (DashboardView.vue) -->
       <div id="weather-provider-settings" class="card">
         <h2>🌤️ Wetter</h2>
-        <p class="hint">
+        <p class="hint intro-hint">
           Wettervorhersage über Open-Meteo, das mehrere echte Wetterdienste bündelt. Zeigt eine
           Vorhersage abweichende Werte gegenüber anderen Wetter-Apps (z. B. Apple Weather), lässt sich
           hier ein anderer Anbieter ausprobieren.
@@ -610,7 +604,7 @@ async function onImportFileSelected(event: Event) {
       <!-- id als Sprungziel, analog zu #weather-provider-settings oben -->
       <div id="home-currency-settings" class="card">
         <h2>💱 Heimatwährung</h2>
-        <p class="hint">
+        <p class="hint intro-hint">
           Wird im Dashboard genutzt, um bei Urlauben mit abweichender Landeswährung den aktuellen
           Wechselkurs anzuzeigen.
         </p>
@@ -628,7 +622,7 @@ async function onImportFileSelected(event: Event) {
     <template v-if="activeTab === 'notifications'">
       <div class="card">
         <h2>🔔 Meldungen</h2>
-        <p class="hint">
+        <p class="hint intro-hint">
           Kurze Meldungen, die bei jedem Laden/Speichern/Löschen kurz unten am Bildschirmrand
           aufblitzen (z. B. "Speichert…"), damit klar wird, dass die App gerade tatsächlich mit dem
           Server arbeitet statt hängengeblieben zu sein. Wer das zu hektisch findet, kann sie hier
@@ -646,7 +640,7 @@ async function onImportFileSelected(event: Event) {
           Push-Benachrichtigungen werden von diesem Browser nicht unterstützt.
         </p>
         <template v-else>
-          <p class="hint">
+          <p class="hint intro-hint">
             Benachrichtigt dich, wenn andere Mitglieder eines Urlaubs etwas ändern – auch wenn Reisotor
             gerade nicht offen ist. Über die Stufe lässt sich einstellen, wie viel davon ankommt.
           </p>
@@ -697,7 +691,7 @@ async function onImportFileSelected(event: Event) {
     <template v-if="activeTab === 'data'">
       <div class="card">
         <h2>🗑️ Papierkorb</h2>
-        <p class="hint">
+        <p class="hint intro-hint">
           Gelöschte Termine, Ausflüge, Spots und mehr bleiben eine Weile hier erhalten und lassen sich
           wiederherstellen.
         </p>
@@ -714,10 +708,12 @@ async function onImportFileSelected(event: Event) {
 
         <div class="backup-actions">
           <button class="secondary" :disabled="exporting" @click="exportBackup">
-            {{ exporting ? 'Exportiere…' : '⬇️ Backup exportieren' }}
+            <template v-if="exporting">Exportiere…</template>
+            <template v-else><AppIcon :icon="ACTION_ICONS.download" :size="14" group="actions" /> Backup exportieren</template>
           </button>
           <button class="secondary" :disabled="importing" @click="triggerImportPicker">
-            {{ importing ? 'Importiere…' : '⬆️ Backup importieren' }}
+            <template v-if="importing">Importiere…</template>
+            <template v-else><AppIcon :icon="ACTION_ICONS.upload" :size="14" group="actions" /> Backup importieren</template>
           </button>
           <input
             ref="importFileInput"
@@ -734,14 +730,16 @@ async function onImportFileSelected(event: Event) {
           Import erfolgreich ({{ Object.values(importResult).reduce((a, b) => a + b, 0) }} Einträge). Seite
           wird neu geladen…
         </p>
-        <p class="hint warning">⚠️ Der Import überschreibt alle aktuellen Daten unwiderruflich.</p>
+        <p class="hint warning">
+          <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Der Import überschreibt alle aktuellen Daten unwiderruflich.
+        </p>
       </div>
     </template>
 
     <template v-if="activeTab === 'about'">
       <div class="card">
         <h2>🐛 Feedback</h2>
-        <p class="hint">
+        <p class="hint intro-hint">
           Bug gefunden oder eine Idee für eine neue Funktion? Landet direkt als Issue im
           Reisotor-Repository.
         </p>
@@ -773,45 +771,13 @@ async function onImportFileSelected(event: Event) {
   margin-bottom: var(--space-4);
 }
 
-/* Tab-Leiste analog zu ListenView.vue's .tab-bar/.tab (eigener, lokal duplizierter Style-Block,
-   Vue-Styles gelten nicht komponentenübergreifend) - hier ohne deren max-width/padding, da .page
-   (style.css) bereits Breite/Innenabstand der ganzen Seite vorgibt. Bei 6 statt Listens 3 Tabs
-   horizontal scrollbar statt umbrechend (overflow-x: auto + white-space: nowrap/flex-shrink: 0 je
-   Tab) - gleiches Muster wie NavBar.vue's mobile Scroll-Leiste, statt die Tabs auf mehrere Zeilen
-   umbrechen zu lassen. */
-.tab-bar {
-  display: flex;
-  gap: var(--space-2);
-  padding-bottom: var(--space-2);
+/* Tab-Leiste jetzt die gemeinsame TabBar-Komponente (components/TabBar.vue) statt eines eigenen,
+   lokal duplizierten Style-Blocks - siehe dortiger Kommentar zur Redundanz, die Issue #71 (Gleit-
+   Animation fehlte hier, obwohl ListenView.vue's identisches Muster sie hatte) erst ermöglichte.
+   Nur noch der Seiten-spezifische Abstand bleibt hier lokal (.page trägt bereits Breite/
+   Innenabstand der ganzen Seite, TabBar selbst kennt keine Umgebungs-Margins). */
+.tab-bar-wrap {
   margin-bottom: var(--space-4);
-  border-bottom: 1px solid var(--color-border);
-  overflow-x: auto;
-}
-
-.tab {
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-  gap: 6px;
-  padding: var(--space-2) var(--space-3);
-  border: none;
-  border-bottom: 2px solid transparent;
-  border-radius: 0;
-  background: none;
-  color: var(--color-text-muted);
-  font-size: 0.9rem;
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.tab.active {
-  color: var(--color-primary-dark);
-  border-bottom-color: var(--color-primary);
-  font-weight: 600;
-}
-
-.tab .icon {
-  font-size: 1.1rem;
 }
 
 /* Kleine Karten (nur 1-2 einfache Formfelder: Kalender/Wetter/Heimatwährung) nebeneinander statt
@@ -902,8 +868,18 @@ async function onImportFileSelected(event: Event) {
   font-size: 0.9rem;
 }
 
-.nav-config-hint {
+/* Compound-Selektor (.hint.nav-config-hint) statt nur .nav-config-hint: beide Klassen haben
+   dieselbe Spezifität, und diese Regel steht im Stylesheet VOR der späteren .hint{margin:0}-Regel
+   unten - ohne den Compound-Selektor hätte die spätere Regel bei gleicher Spezifität gewonnen und
+   margin-top/-bottom hier wieder auf 0 zurückgesetzt (genau der in DESIGN.md dokumentierte
+   Deklarations-Reihenfolge-Stolperstein, der bei diesem Fix zunächst selbst reingefallen ist - der
+   Abstand zwischen den Oben-/Unten-Dropdowns und diesem Hinweistext blieb dadurch bei 0). */
+.hint.nav-config-hint {
   margin-top: var(--space-3);
+  /* Ohne das klebte die Liste direkt darunter (▲▼✓-Zeilen) an der letzten Textzeile - derselbe
+     .hint-Stolperstein wie .intro-hint unten, hier separat gehalten, weil nav-config-hint zusätzlich
+     den margin-top von der Zeile darüber braucht. */
+  margin-bottom: var(--space-3);
 }
 
 .nav-config-list,
@@ -999,6 +975,17 @@ label,
 
 .hint.warning {
   color: var(--color-accent);
+}
+
+/* .hint's margin:0 ist bewusst für knapp unter einem Eingabefeld sitzende Validierungs-/
+   Erfolgsmeldungen gedacht (siehe DESIGN.md "Beschreibungstext vor einer Karte/Liste/einem Grid" -
+   derselbe .hint-Klassen-Stolperstein wie dort, nur diesmal vor einem Steuerelement statt vor einer
+   Karte/Liste). Ein erklärender Absatz direkt VOR einem Button/Dropdown/Toggle braucht dagegen
+   sichtbar Luft - ohne diese Klasse klebte der Absatz sonst direkt am folgenden Steuerelement (Issue
+   #69: "Feedback geben"-Button, "Papierkorb öffnen"-Button, Push-"Aktivieren"-Button sowie mehrere
+   Dropdown-/Listen-Gruppen in dieser View betroffen). */
+.hint.intro-hint {
+  margin-bottom: var(--space-3);
 }
 
 .backup-actions {

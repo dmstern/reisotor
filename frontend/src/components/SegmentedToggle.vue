@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import AppIcon from './AppIcon.vue';
+import type { IconGroup, IconStyle, IconVariant } from '../stores/iconStyle';
+import type { IconDef } from '../utils/icon';
 
 // Echter schiebender Segmented-Control (statt zweier unabhängig hervorgehobener Buttons wie
 // bisher, siehe ExcursionsView.vue's Gruppieren/Sortieren-Umschalter): eine per CSS transform
@@ -12,7 +15,21 @@ const props = defineProps<{
   // dot: optionaler roter "neu"-Punkt je Option (z. B. Spots/Touren-Umschalter in
   // ExcursionsView.vue), gleiches Aussehen wie NavBar.vue's .unseen-dot. Optional, bestehende
   // Verwendungsstellen ohne dot bleiben unverändert.
-  options: { value: string; label: string; dot?: boolean }[];
+  // icon/iconGroup: optionales Icon vor dem Label (siehe utils/icon.ts) statt eines ins Label
+  // eingebackenen Emoji-Zeichens - iconGroup default 'actions', da die meisten Verwendungsstellen
+  // Toggle-/Filter-Buttons sind (siehe stores/iconStyle.ts's ICON_GROUP_OPTIONS).
+  // forceStyle/forceVariant: optional, an das AppIcon durchgereicht (siehe dortige Props) - nötig
+  // für Optionen, die IMMER eine bestimmte Darstellung zeigen sollen (z. B. IconStyleSettings.vue's
+  // Emoji/Symbole- bzw. Outline/Gefüllt-Beispiel-Icons), unabhängig vom aktuell aktiven Store-Wert.
+  options: {
+    value: string;
+    label: string;
+    dot?: boolean;
+    icon?: IconDef;
+    iconGroup?: IconGroup;
+    forceStyle?: IconStyle;
+    forceVariant?: IconVariant;
+  }[];
 }>();
 const emit = defineEmits<{ (e: 'update:modelValue', value: string): void }>();
 
@@ -34,7 +51,15 @@ const activeIndex = computed(() => props.options.findIndex((o) => o.value === pr
       :aria-pressed="option.value === modelValue"
       @click="emit('update:modelValue', option.value)"
     >
-      {{ option.label }}
+      <AppIcon
+        v-if="option.icon"
+        :icon="option.icon"
+        :group="option.iconGroup ?? 'actions'"
+        :force-style="option.forceStyle"
+        :force-variant="option.forceVariant"
+        :size="14"
+      />
+      <span class="segmented-option-label">{{ option.label }}</span>
       <span v-if="option.dot" class="segmented-dot" aria-label="Neue Änderungen" />
     </button>
   </div>

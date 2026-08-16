@@ -32,7 +32,7 @@ test.describe('Standort-Aufzeichnung', () => {
     await recordBtn.click();
     const menu = page.locator('.picker-menu', { hasText: 'Privat aufzeichnen' });
     await expect(menu).toBeVisible();
-    await menu.getByRole('button', { name: '🔒 Privat aufzeichnen' }).click();
+    await menu.getByRole('button', { name: 'Privat aufzeichnen' }).click();
 
     // Läuft: Button + app-weiter Header-Indikator zeigen den aktiven Zustand.
     await expect(recordBtn).toHaveClass(/active/);
@@ -93,7 +93,7 @@ test.describe('Standort-Aufzeichnung', () => {
     const recordBtn = page.locator('.record-btn');
     await expect(recordBtn).toBeVisible({ timeout: 10_000 });
     await recordBtn.click();
-    await page.getByRole('button', { name: '🔒 Privat aufzeichnen' }).click();
+    await page.getByRole('button', { name: 'Privat aufzeichnen' }).click();
     await expect(recordBtn).toHaveClass(/active/);
 
     const recordingPill = page.locator('.recording-pill');

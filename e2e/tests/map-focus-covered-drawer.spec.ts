@@ -22,9 +22,11 @@ async function focusDayViaCalendar(page: Page, viewportName: string) {
   }
   // "🏖️ Urlaub" springt zum Start des Urlaubszeitraums - stellt sicher, dass excursion.date (irgendwo
   // im Urlaubszeitraum) in der sichtbaren Wochenauswahl liegt, unabhängig vom heutigen Datum.
-  await page.getByRole('button', { name: '🏖️ Urlaub' }).click();
+  // exact: true - sonst matcht das nicht-exakte Substring-Matching auch AppHeader.vue's
+  // TripSwitcher-Knopf (Trip-Name "Sommerurlaub Lissabon" enthält "Urlaub" als Substring).
+  await page.getByRole('button', { name: 'Urlaub', exact: true }).click();
   await page.locator(`.day[data-date="${excursion.date}"]`).click();
-  await page.getByRole('button', { name: '🗺️ Tag auf Karte anzeigen' }).click();
+  await page.getByRole('button', { name: 'Tag auf Karte anzeigen' }).click();
   await page.waitForURL('**/excursions');
 }
 
@@ -88,10 +90,10 @@ for (const [viewportName, viewport] of Object.entries({ mobile: VIEWPORTS.mobile
       // @media (nicht @container) unsichtbar, dort ist die Zeile schon offen.
       const filterToggle = page.locator('.filter-toggle-row');
       if (await filterToggle.isVisible()) await filterToggle.click();
-      await page.getByRole('button', { name: '🎒 Touren' }).click();
+      await page.getByRole('button', { name: 'Touren' }).click();
       const card = page.locator('.excursion-card', { hasText: excursion.title });
       await expect(card).toBeVisible();
-      await card.getByRole('button', { name: '🗺️ Auf Karte anzeigen' }).click();
+      await card.getByRole('button', { name: 'Auf Karte anzeigen' }).click();
       await page.waitForTimeout(400);
 
       // Nur geometrischer Überlapp mit der Schublade (nicht expectNotCoveredBy) - die immer

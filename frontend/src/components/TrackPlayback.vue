@@ -2,6 +2,8 @@
 import { computed, onUnmounted, ref, watch } from 'vue';
 import type { TrackPoint } from '../api/types';
 import { formatDistanceShort, formatDurationShort, trackDistanceMeters, trackDurationMs } from '../utils/trackGeometry';
+import AppIcon from './AppIcon.vue';
+import { ACTION_ICONS } from '../utils/actionIcons';
 
 // Zeit-Slider für eine aufgezeichnete Route (TripMap.vue zeigt die Route selbst + einen Marker, der
 // hier per v-model:progress gesteuert wird - reine Anzeigekomponente ohne eigenen Store, analog zu
@@ -78,12 +80,12 @@ const currentTimeLabel = computed(() => {
 <template>
   <div v-if="points.length > 1" class="track-playback">
     <div class="track-playback-stats">
-      <span>📏 {{ formatDistanceShort(distance) }}</span>
-      <span>⏱️ {{ formatDurationShort(duration) }}</span>
+      <span><AppIcon :icon="ACTION_ICONS.distance" :size="14" group="actions" /> {{ formatDistanceShort(distance) }}</span>
+      <span><AppIcon :icon="ACTION_ICONS.duration" :size="14" group="actions" /> {{ formatDurationShort(duration) }}</span>
     </div>
     <div class="track-playback-controls">
       <button type="button" class="playback-btn" :aria-label="playing ? 'Pause' : 'Abspielen'" @click="togglePlay">
-        {{ playing ? '⏸️' : '▶️' }}
+        <AppIcon :icon="playing ? ACTION_ICONS.pause : ACTION_ICONS.play" :size="16" group="actions" />
       </button>
       <input
         type="range"
