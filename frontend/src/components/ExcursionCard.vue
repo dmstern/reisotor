@@ -15,6 +15,7 @@ import ExcursionDetailDialog from './ExcursionDetailDialog.vue';
 import SpotImageCollage from './SpotImageCollage.vue';
 import PendingSyncBadge from './PendingSyncBadge.vue';
 import AppIcon from './AppIcon.vue';
+import WeatherIcon from './WeatherIcon.vue';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
@@ -169,7 +170,7 @@ function onSpotDrop(event: DragEvent) {
         <template v-else>
           <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="actions" /> {{ statusDateLabel
           }}<template v-if="dayWeather">
-            · <AppIcon :icon="weatherCodeMeta(dayWeather.weatherCode).tabler" :size="14" group="categories" /> {{ Math.round(dayWeather.tempMax) }}°</template
+            · <WeatherIcon :code="dayWeather.weatherCode" :size="14" /> {{ Math.round(dayWeather.tempMax) }}°</template
           >
         </template>
       </span>

@@ -38,6 +38,7 @@ import { computeDepartureCountdown, computeVacationPhase } from '../utils/depart
 import BudgetMeter from '../components/BudgetMeter.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import AppIcon from '../components/AppIcon.vue';
+import WeatherIcon from '../components/WeatherIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
 const auth = useAuthStore();
@@ -386,11 +387,10 @@ function formatWeekdayDate(d: string) {
         <template v-else>
           <div v-if="todayWeather" class="weather-today">
             <span class="weather-today-label">Heute{{ trip?.destination ? ` in ${trip.destination}` : '' }}</span>
-            <AppIcon
+            <WeatherIcon
               class="weather-icon"
               :size="22"
-              :icon="weatherCodeMeta(todayWeather.weatherCode).tabler"
-              group="categories"
+              :code="todayWeather.weatherCode"
               :title="weatherCodeMeta(todayWeather.weatherCode).label"
             />
             <span class="weather-temp">{{ Math.round(todayWeather.tempMax) }}° / {{ Math.round(todayWeather.tempMin) }}°</span>
@@ -412,11 +412,10 @@ function formatWeekdayDate(d: string) {
           <div v-else class="weather-days">
             <div class="weather-day" :class="{ past: day.date < todayStr() }" v-for="day in vacationForecastDays" :key="day.date">
               <span class="weather-date">{{ formatWeekdayDate(day.date) }}</span>
-              <AppIcon
+              <WeatherIcon
                 class="weather-icon"
                 :size="22"
-                :icon="weatherCodeMeta(day.weatherCode).tabler"
-                group="categories"
+                :code="day.weatherCode"
                 :title="weatherCodeMeta(day.weatherCode).label"
               />
               <span class="weather-temp">{{ Math.round(day.tempMax) }}° / {{ Math.round(day.tempMin) }}°</span>
@@ -452,11 +451,10 @@ function formatWeekdayDate(d: string) {
         <div v-else class="weather-days">
           <div class="weather-day" v-for="day in homeForecastDays" :key="day.date">
             <span class="weather-date">{{ formatWeekdayDate(day.date) }}</span>
-            <AppIcon
+            <WeatherIcon
               class="weather-icon"
               :size="22"
-              :icon="weatherCodeMeta(day.weatherCode).tabler"
-              group="categories"
+              :code="day.weatherCode"
               :title="weatherCodeMeta(day.weatherCode).label"
             />
             <span class="weather-temp">{{ Math.round(day.tempMax) }}° / {{ Math.round(day.tempMin) }}°</span>
