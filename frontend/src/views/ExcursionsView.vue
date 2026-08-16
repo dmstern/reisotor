@@ -2440,6 +2440,13 @@ async function removeSpot(id: number) {
     transition: none;
   }
 
+  /* .spots-col ist ab hier transparent (s. o.) - die sticky .category-nav liegt hier also direkt auf
+     dem Seitenhintergrund statt dem mobilen Bottom-Sheet, braucht deshalb --color-bg statt der
+     --color-surface-Vorgabe oben. */
+  .category-nav {
+    background: var(--color-bg);
+  }
+
   /* .spots-col.collapsed/.full (höhere Spezifität als die einfache .spots-col-Regel oben, da zwei
      statt einer Klasse) würden das dortige height:auto sonst weiterhin überschreiben, falls
      sheetState beim Wechsel in den Desktop-Modus zufällig "collapsed"/"full" war (z. B. nach
@@ -3066,11 +3073,13 @@ async function removeSpot(id: number) {
   overflow-x: auto;
   overflow-y: hidden;
   margin-bottom: var(--space-3);
-  /* Gleiche Farbe wie der dahinterliegende Seitenhintergrund statt eines eigenen Tons (vorher
+  /* Gleiche Farbe wie der dahinterliegende Untergrund statt eines eigenen Tons (vorher
      --color-primary-tint mit eigener Rundung) - sieht dadurch "transparent" aus wie die anderen
      Tab-/Nav-Leisten der App (NavBar.vue, TabBar.vue), muss aber wegen position:sticky tatsächlich
-     blickdicht bleiben, sonst schiene der darunter wegscrollende Inhalt durch. */
-  background: var(--color-bg);
+     blickdicht bleiben, sonst schiene der darunter wegscrollende Inhalt durch. Mobil liegt dahinter
+     das Bottom-Sheet (.spots-col mit --color-surface, s. u.), nicht der Seitenhintergrund - erst ab
+     der Desktop-Breakpoint-Regel unten (.spots-col wird dort background:none) passt --color-bg. */
+  background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
   transition: box-shadow 0.2s ease;
 }
