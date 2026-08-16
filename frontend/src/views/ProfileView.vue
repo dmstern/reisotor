@@ -868,10 +868,16 @@ async function onImportFileSelected(event: Event) {
   font-size: 0.9rem;
 }
 
-.nav-config-hint {
+/* Compound-Selektor (.hint.nav-config-hint) statt nur .nav-config-hint: beide Klassen haben
+   dieselbe Spezifität, und diese Regel steht im Stylesheet VOR der späteren .hint{margin:0}-Regel
+   unten - ohne den Compound-Selektor hätte die spätere Regel bei gleicher Spezifität gewonnen und
+   margin-top/-bottom hier wieder auf 0 zurückgesetzt (genau der in DESIGN.md dokumentierte
+   Deklarations-Reihenfolge-Stolperstein, der bei diesem Fix zunächst selbst reingefallen ist - der
+   Abstand zwischen den Oben-/Unten-Dropdowns und diesem Hinweistext blieb dadurch bei 0). */
+.hint.nav-config-hint {
   margin-top: var(--space-3);
   /* Ohne das klebte die Liste direkt darunter (▲▼✓-Zeilen) an der letzten Textzeile - derselbe
-     .hint-Stolperstein wie .intro-hint oben, hier separat gehalten, weil nav-config-hint zusätzlich
+     .hint-Stolperstein wie .intro-hint unten, hier separat gehalten, weil nav-config-hint zusätzlich
      den margin-top von der Zeile darüber braucht. */
   margin-bottom: var(--space-3);
 }
