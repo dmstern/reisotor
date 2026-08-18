@@ -51,47 +51,44 @@ Nach jeder Frontend-Änderung zuerst den günstigsten Check laufen lassen:
 cd frontend && npm run build   # führt vue-tsc --noEmit vor dem Vite-Build aus
 ```
 
+## Sparsam mit Subagenten
+
+Bei klar umrissenen Änderungen in diesem Repo (bekannte Datei(en)/Fehlermeldung, überschaubarer
+Scope) direkt grep/Read/Edit verwenden statt einen Explore-/Plan-Subagenten zu spawnen — jeder
+Spawn re-derived den kompletten Kontext neu und kostet dadurch oft mehr Tokens als die direkte
+Suche selbst. Subagenten bleiben sinnvoll, wenn der Scope tatsächlich unklar/groß ist oder mehrere
+unabhängige Bereiche parallel durchsucht werden müssen — dort leidet sonst die Trefferquote.
+
 ## Konsistenz-Check bei Änderungen
 
-Die App ist über viele Sessions gewachsen, und dasselbe Konzept (Icon, Bezeichnung, Layout-/
-Verhaltensmuster, Datenmodell-Feld) taucht oft an mehreren Stellen gleichzeitig auf, ohne dass das
-zentral dokumentiert ist — der Nutzer hat nicht mehr die ganze App im Kopf und merkt nicht jede
-Stelle, die mitgezogen werden sollte (Beispiel: Todo-Icon wurde im Kalender zu einem Clipboard
-geändert, dasselbe Icon in der NavBar aber vergessen; ein Flex-Wrap-Fix an einer Card-Komponente,
-der an strukturell ähnlichen Cards woanders genauso gilt). Bei jeder Änderung an UI-Bausteinen
-(Icons, wiederkehrende Bezeichnungen, Layout-/Interaktionsmuster wie Card-Wrap-Verhalten) oder am
-Datenmodell (`backend/src/db/index.ts`, `api/types.ts`) deshalb aktiv prüfen, ob dasselbe Muster
-noch anderswo in der App vorkommt (kurz grep auf das Icon/den Bezeichner/die Komponente, nicht nur
-an der ursprünglich angefragten Stelle schauen):
+Die App ist über viele Sessions gewachsen; dasselbe Konzept (Icon, Bezeichnung, Layout-/
+Verhaltensmuster, Datenmodell-Feld) taucht oft an mehreren Stellen zugleich auf, ohne dass das
+zentral dokumentiert ist. Bei jeder Änderung an UI-Bausteinen oder am Datenmodell
+(`backend/src/db/index.ts`, `api/types.ts`) deshalb aktiv prüfen, ob dasselbe Muster noch anderswo
+vorkommt (kurz grep auf Icon/Bezeichner/Komponente, nicht nur an der ursprünglich angefragten
+Stelle):
 
 - **Offensichtlich sinnvolle Folgeanpassung** (identisches Icon/Konzept an anderer Stelle, exakt
-  gleiches Bug-Muster, klar auf dieselbe, gerade bearbeitete Baustelle begrenzt): nicht vorher
-  nachfragen, einfach mit umsetzen — genau wie bei Bugfixes, die während der Umsetzung auffallen —
-  und danach kurz erwähnen, was zusätzlich mit angepasst wurde.
-- **Unklar, ob gewollt** (könnte an der anderen Stelle bewusst abweichen, Kontext unterschiedlich,
-  größerer Umbau nötig): die Beobachtung nennen und nachfragen statt eigenmächtig mitzuändern.
+  gleiches Bug-Muster, klar auf dieselbe Baustelle begrenzt): direkt mit umsetzen, danach kurz
+  erwähnen, was zusätzlich angepasst wurde — nicht vorher nachfragen.
+- **Unklar, ob gewollt** (könnte an der anderen Stelle bewusst abweichen, größerer Umbau nötig,
+  oder Konsistenz-Potenzial über eine 1:1-Wiederholung hinaus wie eine App-weite Vereinheitlichung
+  mehrerer Views mit bisher unterschiedlichem Muster): die Beobachtung nennen und (z. B. per
+  `AskUserQuestion`) nachfragen statt eigenmächtig zu entscheiden oder mitzuändern.
 
-**Neue UI-Bausteine/Design-Anforderungen speziell (nicht nur reines Bugfix-Nachziehen):** bevor eine
-neue Komponente gebaut oder ein neues visuelles Muster eingeführt wird, aktiv im Rest der App
-nachschauen, was es dafür schon gibt (grep auf ähnliche Komponenten/Klassen/Konzepte), statt eine
-zweite, leicht abweichende Variante danebenzubauen — siehe `DESIGN.md`, Abschnitt "Konsistenz", für
-konkret schon aufgetretene Fälle (native `<select>` vs. custom `Combobox.vue`, mehrere parallele
-Label-Stile, uneinheitliche Filter-/Gruppieren-/Sortieren-Präsentation je View). Fällt dabei
-zusätzliches Konsistenz-Optimierungspotenzial an einer *nicht* angefragten Stelle auf, das über eine
-1:1-Wiederholung hinausgeht (z. B. eine App-weite Vereinheitlichung mehrerer Views mit bisher
-unterschiedlichem Muster, oder eine Design-Entscheidung zwischen mehreren gleichwertigen Optionen) —
-das zählt immer als "Unklar, ob gewollt" oben, auch wenn die Verbesserung an sich naheliegend wirkt:
-die Beobachtung nennen und (z. B. per `AskUserQuestion`) nachfragen, ob das gleich mitgemacht werden
-soll, statt eigenmächtig entweder den ganzen Scope auszuweiten oder die Beobachtung nur zu erwähnen
-und liegen zu lassen.
+**Neue UI-Bausteine/Design-Anforderungen** (nicht nur reines Bugfix-Nachziehen): vor dem Bauen aktiv
+im Rest der App nachschauen, was es dafür schon gibt (grep auf ähnliche Komponenten/Klassen/
+Konzepte), statt eine zweite, leicht abweichende Variante danebenzubauen — siehe `DESIGN.md`,
+Abschnitt "Konsistenz", für konkret schon aufgetretene Fälle (native `<select>` vs. custom
+`Combobox.vue`, mehrere parallele Label-Stile, uneinheitliche Filter-/Gruppieren-/Sortieren-
+Präsentation je View).
 
-Für Datenmodell-Änderungen gilt zusätzlich der Migrations-Check im nächsten Abschnitt.
-
-**Design-Prinzipien**: Bei neuen UI-Elementen oder sichtbaren UI-Anpassungen zusätzlich `DESIGN.md`
-(Projekt-Root) konsultieren — hält Farben/Abstände/Eckenrundung (Squircle-Prinzip)/Typografie/
-Breakpoints/Icon-Konventionen als wiederverwendbare Prinzipien fest, damit neue Elemente bestehende
-Tokens/Muster nutzen statt neue Werte ad hoc zu erfinden. Entsteht dabei ein neues, wiederverwendbares
-Prinzip, dort ergänzen statt es nur implizit im CSS/einer Komponente stehen zu lassen.
+Für Datenmodell-Änderungen gilt zusätzlich der Migrations-Check im nächsten Abschnitt. Bei neuen
+UI-Elementen oder sichtbaren UI-Anpassungen zusätzlich `DESIGN.md` (Projekt-Root) konsultieren —
+hält Farben/Abstände/Eckenrundung (Squircle-Prinzip)/Typografie/Breakpoints/Icon-Konventionen als
+wiederverwendbare Prinzipien fest, damit neue Elemente bestehende Tokens/Muster nutzen statt neue
+Werte ad hoc zu erfinden. Entsteht dabei ein neues, wiederverwendbares Prinzip, dort ergänzen statt
+es nur implizit im CSS/einer Komponente stehen zu lassen.
 
 ## Datenmodell-Änderungen (DB-Migrationen)
 
@@ -192,12 +189,13 @@ Abdeckung. Einen Test ergänzen/anpassen, wenn eine Änderung sichtbares Nutzerv
 oder grundlegend ändert und das wert ist, gegen stille Regression abzusichern. Triviale visuelle/
 Text-Anpassungen brauchen keinen neuen Test.
 
-**Standardverhalten, nicht Ausnahme:** Fällt während der Umsetzung eines Features ein Use Case auf,
-bei dem sich ein persistenter e2e-Test lohnt (neuer Kern-Ablauf, ein gerade selbst gefundener/
-gefixter Bug mit echtem Regressionsrisiko, ein Zusammenspiel mehrerer Komponenten, das leicht wieder
-kaputtgehen kann), den Test direkt im selben Arbeitsschritt schreiben statt es zu erwähnen oder auf
-Rückfrage zu warten (genau wie bei Bugfixes, siehe "Konsistenz-Check bei Änderungen" oben). Gilt
-ausdrücklich auch fürs Umbauen/Erweitern bestehender Specs, nach eigenem Ermessen, ohne Vorab-Okay.
+**Vorschlagen statt automatisch schreiben:** Fällt während der Umsetzung eines Features ein Use
+Case auf, bei dem sich ein persistenter e2e-Test lohnen würde (neuer Kern-Ablauf, ein gerade selbst
+gefundener/gefixter Bug mit echtem Regressionsrisiko, ein Zusammenspiel mehrerer Komponenten, das
+leicht wieder kaputtgehen kann), das am Ende kurz erwähnen und fragen, ob der Test ergänzt werden
+soll — nicht mehr automatisch mitschreiben, um bei kleineren/experimentellen Änderungen keine
+unaufgeforderte Testarbeit (und Tokens) zu erzeugen. Gilt auch fürs Umbauen/Erweitern bestehender
+Specs.
 
 **Keine Pixel-Diff-Screenshot-Tests** (`toHaveScreenshot()`) — diese Umgebung ist von Playwright
 nicht offiziell unterstützt (Font-/Rendering-Drift macht Snapshot-Baselines unzuverlässig).
