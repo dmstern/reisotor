@@ -128,8 +128,14 @@ Fläche selbst, sie zeigt keinen eigenen Inhalt) bekommen `--color-primary-tint`
 Markengrün) als Hintergrund statt des neutralen `--color-hover`/`--color-surface` – macht sie auf
 einen Blick als "das ist Bedienung" erkennbar. Flächen, die Dateninhalt zeigen (Spot-/Ausflugs-Cards,
 Listenzeilen – der Inhalt selbst ist relevant, nicht die Fläche als Werkzeug) bleiben bei
-`--color-surface` (weiß/hell in Light Mode). Beispiele: `ExcursionsView.vue`s `.filter-bar` und
-`.category-nav` (Steuerung, grün) vs. `SpotCard.vue`/`ExcursionCard.vue` (Dateninhalt, weiß).
+`--color-surface` (weiß/hell in Light Mode). Beispiel: `ExcursionsView.vue`s `.filter-bar`
+(Steuerung, grün) vs. `SpotCard.vue`/`ExcursionCard.vue` (Dateninhalt, weiß).
+
+Bewusste Ausnahme: `ExcursionsView.vue`s `.category-nav` nutzt trotz Steuerungselement-Charakter
+keinen eigenständigen Grünton, sondern passt sich transparent an den jeweils dahinterliegenden
+Untergrund an (`--color-surface` mobil im Bottom-Sheet, `--color-bg` auf Desktop) – wie
+`NavBar.vue`/`TabBar.vue`. Grund: als sticky-Leiste soll sie sich beim Über-Inhalt-Schweben optisch
+dem jeweiligen Kontext unterordnen statt sich als eigene, andersfarbige Fläche davon abzusetzen.
 
 ## Abstände
 
