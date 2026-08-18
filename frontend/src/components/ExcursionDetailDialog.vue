@@ -5,6 +5,7 @@ import type { Excursion, Spot, TravelItem, User } from '../api/types';
 import { excursionStationKeys, resolveStations, type ExcursionStation } from '../utils/excursionStations';
 import { formatDate as formatDateShared } from '../utils/dateFormat';
 import { useAuthStore } from '../stores/auth';
+import { useTripStore } from '../stores/trip';
 import { useSpotsStore } from '../stores/spots';
 import { useExcursionsStore } from '../stores/excursions';
 import { useDrawersStore } from '../stores/drawers';
@@ -46,18 +47,21 @@ const emit = defineEmits<{
 }>();
 
 const auth = useAuthStore();
+const tripStore = useTripStore();
 const spotsStore = useSpotsStore();
 const excursionsStore = useExcursionsStore();
 const drawers = useDrawersStore();
 
-// Eigener kleiner users-Fetch statt Prop-Durchreichung durch ExcursionCard.vue: wird nur für die
-// Autor-/Zahler-Anzeige einer Station gebraucht, falls man ihren Detail-Dialog öffnet (siehe
-// unten) – ein zusätzlicher /users-Aufruf ist hier billiger als den gesamten Prop-Pfad umzubauen
-// (gleiches Vorgehen wie in vielen anderen Views dieser App, die /users unabhängig voneinander
-// laden).
+// Eigener kleiner Mitglieder-Fetch statt Prop-Durchreichung durch ExcursionCard.vue: wird nur für
+// die Autor-/Zahler-Anzeige einer Station gebraucht, falls man ihren Detail-Dialog öffnet (siehe
+// unten) – ein zusätzlicher Aufruf ist hier billiger als den gesamten Prop-Pfad umzubauen (gleiches
+// Vorgehen wie in vielen anderen Views dieser App). Trip-scoped (/trips/:id/members) statt der
+// globalen /users-Route, sonst würden hier fremde Nutzer:innen angezeigt, die gar nicht Mitglied
+// dieses Urlaubs sind (Datenschutzproblem, siehe Issue #75).
 const users = ref<User[]>([]);
 onMounted(async () => {
-  users.value = await api.get<User[]>('/users');
+  if (tripStore.currentTripId == null) return;
+  users.value = await api.get<User[]>(`/trips/${tripStore.currentTripId}/members`);
 });
 function creatorLabelFor(userId: number | null) {
   if (userId == null) return null;

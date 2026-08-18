@@ -1,10 +1,11 @@
 import { defineStore } from 'pinia';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { api } from '../api/client';
 import type { Budget, BudgetAllocation, BudgetExpense, BudgetTransfer, User } from '../api/types';
 import { computeBalances, computeSettlementSuggestions, isSharedExpense } from '../utils/budgetBalances';
 import { effectiveBudgetTarget, grandTotalTarget } from '../utils/budgetTargets';
 import { useUndoableDelete } from '../composables/useUndoableDelete';
+import { useTripStore } from './trip';
 
 export interface BudgetFormInput {
   name: string;
@@ -37,6 +38,7 @@ export interface TransferInput {
  *  eigene Rechenlogik (die bleibt in utils/budgetBalances.ts + utils/budgetTargets.ts, damit sie
  *  unabhängig von einer Pinia-Instanz testbar bleibt). */
 export const useBudgetStore = defineStore('budget', () => {
+  const tripStore = useTripStore();
   const users = ref<User[]>([]);
   const expenses = ref<BudgetExpense[]>([]);
   const budgets = ref<Budget[]>([]);
@@ -50,10 +52,25 @@ export const useBudgetStore = defineStore('budget', () => {
   const expenseUndo = useUndoableDelete();
   const transferUndo = useUndoableDelete();
 
-  async function load(tripId: number) {
+  // Liest currentTripId selbst (statt eine tripId per Parameter zu bekommen, wie vorher) und ist an
+  // watch(currentTripId, ...) unten angebunden - analog zu stores/spots.ts. Vorher wurde load()
+  // nur einmalig mit einer beim setup() nicht-reaktiv erfassten tripId aufgerufen, wodurch nach
+  // einem Nutzerwechsel im selben Tab (siehe stores/trip.ts's reset()) veraltete Budget-Daten eines
+  // fremden Trip-Kontexts stehen bleiben konnten.
+  async function load() {
+    const tripId = tripStore.currentTripId;
+    if (tripId == null) {
+      users.value = [];
+      expenses.value = [];
+      budgets.value = [];
+      allocations.value = [];
+      transfers.value = [];
+      loaded.value = false;
+      return;
+    }
     try {
       const [u, e, b, a, tr] = await Promise.all([
-        api.get<User[]>('/users'),
+        api.get<User[]>(`/trips/${tripId}/members`),
         api.get<BudgetExpense[]>(`/budget?trip_id=${tripId}`),
         api.get<Budget[]>(`/budget/budgets?trip_id=${tripId}`),
         api.get<BudgetAllocation[]>(`/budget/allocations?trip_id=${tripId}`),
@@ -65,11 +82,28 @@ export const useBudgetStore = defineStore('budget', () => {
       allocations.value = a;
       transfers.value = tr;
     } catch {
-      // Offline und (noch) kein Cache-Eintrag für mindestens einen der Endpunkte - Seite soll
-      // trotzdem mit dem rendern, was da ist (siehe api/client.ts's Offline-Fallback-Konzept).
+      // Fehlschlag (offline ohne Cache, oder 403 durch einen inzwischen ungültigen Trip-Kontext,
+      // siehe stores/trip.ts's reset()) - Arrays leeren statt stillschweigend die Daten des
+      // vorherigen Aufrufs (ggf. eines anderen Trips/Nutzers) stehen zu lassen.
+      users.value = [];
+      expenses.value = [];
+      budgets.value = [];
+      allocations.value = [];
+      transfers.value = [];
     } finally {
       loaded.value = true;
     }
+  }
+
+  watch(() => tripStore.currentTripId, load, { immediate: true });
+
+  function reset() {
+    users.value = [];
+    expenses.value = [];
+    budgets.value = [];
+    allocations.value = [];
+    transfers.value = [];
+    loaded.value = false;
   }
 
   function userName(id: number | null) {
@@ -212,6 +246,7 @@ export const useBudgetStore = defineStore('budget', () => {
     transfers,
     loaded,
     load,
+    reset,
     userName,
     userAvatar,
     budgetLabel,

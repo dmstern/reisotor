@@ -59,7 +59,7 @@ async function load() {
   try {
     const [notesRes, usersRes, likesRes, commentsRes] = await Promise.all([
       api.get<Note[]>(`/notes?trip_id=${tripId}`),
-      api.get<User[]>('/users'),
+      api.get<User[]>(`/trips/${tripId}/members`),
       api.get<NoteLike[]>(`/notes/likes?trip_id=${tripId}`),
       api.get<NoteComment[]>(`/notes/comments?trip_id=${tripId}`),
     ]);

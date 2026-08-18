@@ -153,7 +153,7 @@ onMounted(async () => {
   if (hashId != null) highlightedIds.value.add(hashId);
   try {
     const [usersRes, travelRes, likesRes, commentsRes] = await Promise.all([
-      api.get<User[]>('/users'),
+      api.get<User[]>(`/trips/${tripId}/members`),
       api.get<TravelItem[]>(`/travel?trip_id=${tripId}`),
       api.get<ExcursionLike[]>(`/ideas/likes?trip_id=${tripId}`),
       api.get<ExcursionComment[]>(`/ideas/comments?trip_id=${tripId}`),

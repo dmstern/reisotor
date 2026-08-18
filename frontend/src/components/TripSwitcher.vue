@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { useTripStore, type TripFormData } from '../stores/trip';
-import { useDrawersStore } from '../stores/drawers';
+import { useTripStore } from '../stores/trip';
+import { useTripEditor } from '../composables/useTripEditor';
 import type { Trip } from '../api/types';
 import Modal from './Modal.vue';
 import TripForm from './TripForm.vue';
@@ -12,17 +12,11 @@ import AppIcon from './AppIcon.vue';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 
 const tripStore = useTripStore();
-const drawers = useDrawersStore();
 const open = ref(false);
-const showForm = ref(false);
-const editingTrip = ref<Trip | null>(null);
 const showMembers = ref(false);
 const membersTrip = ref<Trip | null>(null);
-// Bleibt gesetzt, solange nach dem Anlegen eines neuen Urlaubs die Standort-Auflösung fehlschlägt
-// (siehe onSubmit) – ein erneuter Speicherversuch (z. B. mit manuell gesetztem Pin) muss dann den
-// bereits angelegten Urlaub AKTUALISIEREN statt einen zweiten anzulegen.
-const pendingFixTripId = ref<number | null>(null);
-const tripFormLocationError = ref(false);
+const { showForm, editingTrip, tripFormLocationError, openCreate, openEdit, closeForm, onSubmit, onDelete } =
+  useTripEditor();
 
 // Sprungziel für Fremdobjekte (z. B. Urlaub-Einträge im Kalender): öffnet das Edit-Modal
 // des aktuellen Urlaubs, ohne dass die einbettende Sicht selbst editieren muss.
@@ -31,6 +25,7 @@ watch(
   (id) => {
     if (id > 0 && tripStore.currentTrip) {
       openEdit(tripStore.currentTrip);
+      close();
     }
   },
 );
@@ -48,63 +43,10 @@ function selectAndClose(id: number) {
   close();
 }
 
-function openCreate() {
-  editingTrip.value = null;
-  pendingFixTripId.value = null;
-  tripFormLocationError.value = false;
-  showForm.value = true;
-  close();
-}
-
-function openEdit(trip: Trip) {
-  editingTrip.value = trip;
-  pendingFixTripId.value = null;
-  tripFormLocationError.value = false;
-  showForm.value = true;
-  close();
-}
-
 function openMembers(trip: Trip) {
   membersTrip.value = trip;
   showMembers.value = true;
   close();
-}
-
-function closeForm() {
-  showForm.value = false;
-  editingTrip.value = null;
-  pendingFixTripId.value = null;
-  tripFormLocationError.value = false;
-}
-
-async function onSubmit(data: TripFormData) {
-  const result =
-    pendingFixTripId.value != null
-      ? await tripStore.updateTrip(pendingFixTripId.value, data)
-      : editingTrip.value
-        ? await tripStore.updateTrip(editingTrip.value.id, data)
-        : await tripStore.createTrip(data);
-
-  // Serverseitige Auflösung (backend/src/utils/mapsLink.ts) ebenfalls fehlgeschlagen, z. B. weil
-  // Google einen Maps-Kurzlink per Bot-Erkennung blockt – Dialog offen lassen, TripForm zeigt einen
-  // Fehler-Hinweis und öffnet automatisch den manuellen Karten-Picker (LocationPicker.vue).
-  if (data.maps_link && result.lat == null && data.lat == null) {
-    pendingFixTripId.value = result.id;
-    tripFormLocationError.value = true;
-    return;
-  }
-  // Analog zu Unterkunft-/Reise-/Ausflüge-Sicht: signalisiert TripMap.vue (Marker-Refresh) und
-  // ScheduleView.vue (Kalender-Wetter-Refresh), dass sich ein Ort geändert haben könnte.
-  drawers.touchLocations();
-  closeForm();
-}
-
-async function onDelete(trip: Trip) {
-  const confirmed = window.confirm(
-    `Urlaub "${trip.name}" wirklich löschen? Alle zugehörigen Daten (Kalender, Packliste, Touren, Unterkunft, Budget, ...) werden unwiderruflich gelöscht.`,
-  );
-  if (!confirmed) return;
-  await tripStore.deleteTrip(trip.id);
 }
 </script>
 
@@ -135,12 +77,13 @@ async function onDelete(trip: Trip) {
             >
               <AppIcon :icon="FORM_FIELD_ICONS.visibility" :size="15" group="formFields" />
             </button>
-            <EditButton small @click="openEdit(trip)" />
+            <EditButton small @click="() => { openEdit(trip); close(); }" />
             <DeleteButton small @click="onDelete(trip)" />
           </div>
         </div>
         <p v-if="!tripStore.trips.length" class="empty">Noch keine Urlaube.</p>
-        <button type="button" class="new-trip-btn" @click="openCreate">+ Neuer Urlaub</button>
+        <button type="button" class="new-trip-btn" @click="() => { openCreate(); close(); }">+ Neuer Urlaub</button>
+        <router-link to="/trips" class="manage-trips-btn" @click="close">Alle Urlaube verwalten</router-link>
       </div>
     </template>
 
@@ -291,5 +234,22 @@ async function onDelete(trip: Trip) {
 
 .new-trip-btn:hover {
   background: var(--color-primary-tint);
+}
+
+.manage-trips-btn {
+  display: block;
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm-squircle);
+  padding: 6px 8px;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.manage-trips-btn:hover {
+  background: var(--color-hover);
 }
 </style>

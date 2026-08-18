@@ -65,10 +65,15 @@ export async function rawRequest<T>(path: string, options: RequestInit = {}): Pr
   // Arbeitsspeicher gehalten, siehe server.ts). Ohne das hier bekommt der Aufrufer nur eine
   // unbehandelte Promise-Ablehnung und die View bleibt meist für immer im loading-Zustand hängen,
   // da "loading = false" typischerweise erst NACH einem await steht, der bei einem Fehler nie
-  // ankommt. Ein harter Reload auf die Login-Seite ist robuster als jeden Pinia-Store einzeln
-  // manuell zurückzusetzen.
+  // ankommt. Ein CustomEvent statt eines direkten Store-/Router-Imports hier (der eine zirkuläre
+  // Modul-Abhängigkeit client.ts <-> stores/auth.ts <-> router/index.ts erzeugen würde) – App.vue
+  // hört zu und navigiert per router.push('/login'). Bewusst KEIN harter window.location.href-Reload
+  // mehr: der ließ parallel laufende Requests/Watcher während der Navigations-Verzögerung
+  // weiterlaufen und noch auf die bereits im Teardown befindliche Pinia-/Router-Instanz zugreifen
+  // (Ursache der in Issue #77 beobachteten Abstürze). stores/trip.ts's reset() (siehe App.vue)
+  // übernimmt jetzt das Zurücksetzen des Trip-bezogenen State.
   if (res.status === 401 && !AUTH_SELF_HANDLED_PATHS.includes(path) && window.location.pathname !== '/login') {
-    window.location.href = '/login';
+    window.dispatchEvent(new CustomEvent('reisotor:session-expired'));
   }
 
   if (!res.ok) {
