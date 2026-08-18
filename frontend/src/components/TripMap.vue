@@ -1156,7 +1156,11 @@ function dismissTileDownloadResult() {
 let resizeObserver: ResizeObserver | null = null;
 
 onMounted(async () => {
-  const [, , usersRes] = await Promise.all([loadAll(), spotsStore.load(), api.get<User[]>('/users')]);
+  const [, , usersRes] = await Promise.all([
+    loadAll(),
+    spotsStore.load(),
+    api.get<User[]>(`/trips/${tripStore.currentTripId}/members`),
+  ]);
   users.value = usersRes;
 
   if (!mapEl.value) return;

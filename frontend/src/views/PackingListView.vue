@@ -51,7 +51,7 @@ async function load() {
   try {
     const [itemsRes, usersRes] = await Promise.all([
       api.get<PackingItem[]>(`/packing?trip_id=${tripId}`),
-      api.get<User[]>('/users'),
+      api.get<User[]>(`/trips/${tripId}/members`),
     ]);
     items.value = itemsRes;
     users.value = usersRes;

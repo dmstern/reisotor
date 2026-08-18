@@ -35,7 +35,7 @@ function tripDataPaths(tripId: number): string[] {
     `/spots?trip_id=${tripId}`,
     `/spots/likes?trip_id=${tripId}`,
     `/spots/comments?trip_id=${tripId}`,
-    '/users',
+    `/trips/${tripId}/members`,
   ];
 }
 

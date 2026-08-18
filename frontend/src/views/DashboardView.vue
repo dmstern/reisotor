@@ -187,9 +187,9 @@ onMounted(async () => {
         api.get<TravelItem[]>(`/travel?trip_id=${tripId}`),
         api.get<DiaryEntry[]>(`/diary?trip_id=${tripId}`),
         api.get<Note[]>(`/notes?trip_id=${tripId}`),
-        api.get<User[]>('/users'),
+        api.get<User[]>(`/trips/${tripId}/members`),
         spotsStore.load(),
-        budgetStore.load(tripId),
+        budgetStore.load(),
       ]);
     schedule.value = scheduleRes;
     todos.value = todosRes;

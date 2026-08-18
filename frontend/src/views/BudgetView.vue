@@ -45,7 +45,7 @@ async function load() {
     const [, travel] = await Promise.all([
       spotsStore.load(),
       api.get<TravelItem[]>(`/travel?trip_id=${tripId}`),
-      budgetStore.load(tripId),
+      budgetStore.load(),
     ]);
     travelItems.value = travel;
   } catch {
