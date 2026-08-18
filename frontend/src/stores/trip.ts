@@ -2,8 +2,7 @@ import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 import { api } from '../api/client';
 import type { Trip } from '../api/types';
-
-const STORAGE_KEY = 'reisotor-current-trip-id';
+import { useAuthStore } from './auth';
 
 export interface TripFormData {
   name: string;
@@ -18,17 +17,15 @@ export interface TripFormData {
 }
 
 export const useTripStore = defineStore('trip', () => {
+  const auth = useAuthStore();
   const trips = ref<Trip[]>([]);
-  // Synchron aus localStorage vorbelegen statt erst auf loadTrips() zu warten: fast alle Views
-  // lesen currentTripId nicht reaktiv, sondern einmalig bei ihrem eigenen setup() (z. B.
-  // TodoView.vue's "const tripId = tripStore.currentTripId as number"). Bliebe der Wert bis zum
-  // Abschluss von loadTrips() (also bis der /trips-Request durchgelaufen ist - bei instabiler
-  // Verbindung jetzt bis zu REQUEST_TIMEOUT_MS, siehe api/client.ts) auf null, würden diese Views
-  // dauerhaft mit einer leeren/ungültigen trip_id anfragen und leer bleiben, selbst wenn ihr
-  // eigener Offline-Cache-Eintrag längst unter der richtigen trip_id vorläge. loadTrips() unten
-  // validiert/korrigiert den Wert ohnehin, sobald die echten Trips (aus Netz oder Cache) da sind.
-  const storedTripId = Number(localStorage.getItem(STORAGE_KEY));
-  const currentTripId = ref<number | null>(Number.isFinite(storedTripId) ? storedTripId : null);
+  // Kein synchrones Pre-Seeding aus localStorage mehr beim Store-Aufbau: der Schlüssel ist jetzt
+  // pro Nutzer-Id (siehe storageKey() unten), die Nutzer-Id steht beim Store-Aufbau aber noch nicht
+  // fest (auth.checkSession() ist zu dem Zeitpunkt noch nicht durchgelaufen). Unproblematisch, da
+  // laut App.vue's Template ohnehin KEINE Domänen-Ansicht mountet, bevor tripStore.loaded (Ende von
+  // loadTrips() unten) true ist - der frühere "null-Flash vermeiden"-Grund für das Pre-Seeding
+  // entfällt dadurch.
+  const currentTripId = ref<number | null>(null);
   const loaded = ref(false);
   // Zählt hoch, wenn aus einer einbettenden Sicht (z. B. Kalender) zur Urlaub-Bearbeitung
   // gesprungen werden soll. TripSwitcher beobachtet das und öffnet dafür sein Edit-Modal
@@ -37,25 +34,41 @@ export const useTripStore = defineStore('trip', () => {
 
   const currentTrip = computed(() => trips.value.find((t) => t.id === currentTripId.value) ?? null);
 
+  // Pro Nutzer-Id (nicht global): sonst würde reset() unten (bei JEDEM Logout, nicht nur bei einem
+  // echten Nutzerwechsel) die zuletzt angesehene Auswahl löschen, weil ein einziger geteilter
+  // Schlüssel keine Möglichkeit hat, "für wen" der Wert eigentlich galt.
+  function storageKey(): string | null {
+    return auth.user ? `reisotor-current-trip-id:${auth.user.id}` : null;
+  }
+
   function persist() {
+    const key = storageKey();
+    if (!key) return;
     if (currentTripId.value == null) {
-      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(key);
     } else {
-      localStorage.setItem(STORAGE_KEY, String(currentTripId.value));
+      localStorage.setItem(key, String(currentTripId.value));
     }
   }
 
   async function loadTrips() {
     trips.value = await api.get<Trip[]>('/trips');
 
-    const stored = Number(localStorage.getItem(STORAGE_KEY));
+    const key = storageKey();
+    const stored = key ? Number(localStorage.getItem(key)) : NaN;
     const storedIsValid = Number.isFinite(stored) && trips.value.some((t) => t.id === stored);
 
     if (storedIsValid) {
       currentTripId.value = stored;
-    } else {
-      currentTripId.value = trips.value[0]?.id ?? null;
+    } else if (trips.value.length === 1) {
+      // Einzige sinnvolle Wahl - keine Rätselraterei nötig.
+      currentTripId.value = trips.value[0].id;
       persist();
+    } else {
+      // Keine gespeicherte Präferenz für DIESES Gerät (erster Login hier) und kein/mehr als ein
+      // Urlaub - bewusst nicht "irgendeinen" (z. B. den ältesten) raten. App.vue leitet bei null auf
+      // die Urlaubsübersicht (/trips) um, dort wählt der Nutzer bewusst.
+      currentTripId.value = null;
     }
 
     loaded.value = true;
@@ -64,6 +77,20 @@ export const useTripStore = defineStore('trip', () => {
   function selectTrip(id: number) {
     currentTripId.value = id;
     persist();
+  }
+
+  // Bei Login/Logout/Nutzerwechsel aufgerufen (siehe App.vue's Watcher auf auth.user?.id) - ohne
+  // das würde currentTripId/trips eines vorherigen Nutzers für den gesamten SPA-Tab bestehen
+  // bleiben, wenn sich jemand im selben Tab neu anmeldet, ohne dass die Seite hart neu geladen wird
+  // (LoginView.vue navigiert per router.push). Nur In-Memory-State, bewusst OHNE persist(): die
+  // pro-Nutzer localStorage-Präferenz (storageKey() oben) soll einen Logout überleben, damit
+  // derselbe Nutzer beim nächsten Login auf diesem Gerät wieder seinen zuletzt angesehenen Urlaub
+  // sieht, statt ihn bei jedem Ab-/Anmelden neu wählen zu müssen.
+  function reset() {
+    trips.value = [];
+    currentTripId.value = null;
+    loaded.value = false;
+    editTripRequestId.value = 0;
   }
 
   function requestEditTrip() {
@@ -100,6 +127,7 @@ export const useTripStore = defineStore('trip', () => {
     loaded,
     editTripRequestId,
     loadTrips,
+    reset,
     selectTrip,
     requestEditTrip,
     createTrip,

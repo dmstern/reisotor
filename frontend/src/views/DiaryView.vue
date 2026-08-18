@@ -214,7 +214,7 @@ async function load() {
       api.get<DiaryEntry[]>(`/diary?trip_id=${tripId}`),
       api.get<DiaryLike[]>(`/diary/likes?trip_id=${tripId}`),
       api.get<DiaryComment[]>(`/diary/comments?trip_id=${tripId}`),
-      api.get<User[]>('/users'),
+      api.get<User[]>(`/trips/${tripId}/members`),
       excursionsStore.load(),
       spotsStore.load(),
     ]);

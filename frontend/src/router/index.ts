@@ -41,6 +41,7 @@ const router = createRouter({
   routes: [
     { path: '/login', name: 'login', component: () => import('../views/LoginView.vue') },
     { path: '/', name: 'dashboard', component: () => import('../views/DashboardView.vue') },
+    { path: '/trips', name: 'trips', component: () => import('../views/TripsView.vue') },
     // Packliste/Einkauf/ToDo sind zu einer Tab-Ansicht zusammengefasst (siehe ListenView.vue) - die
     // alten Routen bleiben als Redirects erhalten, damit Lesezeichen/Push-Payloads/Querverweise auf
     // sie nicht ins Leere laufen.

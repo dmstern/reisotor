@@ -153,7 +153,7 @@ onMounted(async () => {
   if (hashId != null) highlightedIds.value.add(hashId);
   try {
     const [usersRes, travelRes, likesRes, commentsRes] = await Promise.all([
-      api.get<User[]>('/users'),
+      api.get<User[]>(`/trips/${tripId}/members`),
       api.get<TravelItem[]>(`/travel?trip_id=${tripId}`),
       api.get<ExcursionLike[]>(`/ideas/likes?trip_id=${tripId}`),
       api.get<ExcursionComment[]>(`/ideas/comments?trip_id=${tripId}`),
@@ -2442,8 +2442,12 @@ async function removeSpot(id: number) {
 
   /* .spots-col ist ab hier transparent (s. o.) - die sticky .category-nav liegt hier also direkt auf
      dem Seitenhintergrund statt dem mobilen Bottom-Sheet, braucht deshalb --color-bg statt der
-     --color-surface-Vorgabe oben. */
-  .category-nav {
+     --color-surface-Vorgabe unten. Nachfahren-Selektor (.spots-col .category-nav) statt einfachem
+     .category-nav: gleiche Spezifität wie die spätere Basisregel unten hätte sonst die
+     Deklarations-Reihenfolge im Stylesheet entscheiden lassen statt die @container-Bedingung – exakt
+     die in DESIGN.md ("Abstände", .hint/.places-hint-Beispiel) beschriebene Falle. War genau die
+     Ursache von Issue #87 (Desktop bekam fälschlich --color-surface). */
+  .spots-col .category-nav {
     background: var(--color-bg);
   }
 

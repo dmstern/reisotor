@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { computed, onMounted, onUnmounted, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from './stores/auth';
-import { useTripStore, type TripFormData } from './stores/trip';
+import { useTripStore } from './stores/trip';
+import { useBudgetStore } from './stores/budget';
 import { useDrawersStore } from './stores/drawers';
 import { useLiveSyncStore } from './stores/liveSync';
 import { useLocationSharingStore } from './stores/locationSharing';
@@ -12,13 +13,14 @@ import { SECTION_ICON_DEFS } from './utils/sectionIcons';
 import { prefetchTripDataForOffline } from './utils/offlinePrefetch';
 import AppHeader from './components/AppHeader.vue';
 import NavBar from './components/NavBar.vue';
-import TripForm from './components/TripForm.vue';
 import Drawer from './components/Drawer.vue';
 import ScheduleView from './views/ScheduleView.vue';
 
 const route = useRoute();
+const router = useRouter();
 const auth = useAuthStore();
 const tripStore = useTripStore();
+const budgetStore = useBudgetStore();
 const drawers = useDrawersStore();
 const isDesktop = useIsDesktop();
 // SSE-Verbindung + Präsenz sollen laufen, sobald ein Urlaub geladen ist, unabhängig davon, welche
@@ -35,16 +37,53 @@ useLocationSharingStore();
 // laufender Aufzeichnung greift, exakt wie locationSharing oben.
 useTrackRecordingStore();
 const showNav = computed(() => route.name !== 'login');
+// NavBar/Kalender-Schublade gehören zu den Domänen-Ansichten INNERHALB eines AUSGEWÄHLTEN Urlaubs
+// (Dashboard, Listen, Karte, ...) - auf der Urlaubsverwaltung (/trips, siehe TripsView.vue) sowie
+// solange (noch) kein Urlaub ausgewählt ist (z. B. erster Login auf einem neuen Gerät mit mehreren
+// Urlauben, siehe loadTrips() in stores/trip.ts) ergeben sie keinen Sinn.
+const showTripNav = computed(() => tripStore.currentTripId != null && route.name !== 'trips');
 
+// Reagiert auf die IDENTITÄT des Nutzers statt (wie vorher) nur auf tripStore.loaded - sonst würde
+// tripStore.loadTrips() nur beim allerersten Login der SPA-Session laufen: meldet sich Nutzer A ab
+// und Nutzer B im selben Tab an (kein Hard-Reload, siehe LoginView.vue), bliebe tripStore.loaded
+// weiterhin true und B sähe A's Trips/currentTripId, bis die Seite neu geladen wird.
 watch(
-  () => auth.user,
-  (user) => {
-    if (user && !tripStore.loaded) {
-      tripStore.loadTrips();
+  () => auth.user?.id ?? null,
+  (userId, prevUserId) => {
+    if (userId !== prevUserId) {
+      tripStore.reset();
+      budgetStore.reset();
+    }
+    if (userId) tripStore.loadTrips();
+  },
+  { immediate: true },
+);
+
+// Sobald Trips geladen sind, aber KEIN Urlaub ausgewählt ist, zur Übersichtsseite (TripsView.vue)
+// leiten statt (wie vorher) direkt hier im Template ein Anlegen-Formular ohne Header zu zeigen.
+// Deckt zwei Fälle einheitlich ab: keine Urlaube vorhanden, ODER ≥2 Urlaube ohne gespeicherte
+// Präferenz auf diesem Gerät (siehe loadTrips() in stores/trip.ts - dort wird bewusst nicht
+// geraten). /profile bleibt ausgenommen, damit Logout während der Weiterleitung erreichbar bleibt.
+watch(
+  () => [tripStore.loaded, tripStore.currentTripId, route.name] as const,
+  ([loaded, currentTripId, name]) => {
+    if (loaded && currentTripId == null && name !== 'trips' && name !== 'profile') {
+      router.push({ name: 'trips' });
     }
   },
   { immediate: true },
 );
+
+// Serverseitige Session weg (z. B. Prozess-Neustart, siehe api/client.ts) - client.ts feuert
+// dieses Event statt selbst hart auf /login umzuleiten (window.location.href), damit parallel
+// laufende Requests/Watcher nicht während eines Dokument-Teardowns weiterlaufen und dabei auf eine
+// bereits abgebaute Pinia-/Router-Instanz zugreifen (Ursache der in #77 beobachteten Abstürze).
+function onSessionExpired() {
+  auth.user = null;
+  router.push('/login');
+}
+onMounted(() => window.addEventListener('reisotor:session-expired', onSessionExpired));
+onUnmounted(() => window.removeEventListener('reisotor:session-expired', onSessionExpired));
 
 // Wärmt den Offline-Daten-Cache (api/offline.ts) für den aktuellen Urlaub im Hintergrund vor -
 // sonst bleiben Views, die DashboardView.vue selbst nicht lädt (Touren, Reise-Orte, Budget-
@@ -58,10 +97,6 @@ watch(
   },
   { immediate: true },
 );
-
-async function onCreateFirstTrip(data: TripFormData) {
-  await tripStore.createTrip(data);
-}
 </script>
 
 <template>
@@ -74,21 +109,15 @@ async function onCreateFirstTrip(data: TripFormData) {
          sonst ein Wettlauf, der die "neu"-Hervorhebung nach einem Reload/Deep-Link verlieren kann. -->
     <div class="onboarding"></div>
   </template>
-  <template v-else-if="tripStore.trips.length === 0">
-    <div class="onboarding">
-      <div class="card onboarding-card">
-        <h1>Willkommen bei Reisotor!</h1>
-        <p>Lege deinen ersten Urlaub an, um loszulegen.</p>
-        <TripForm submit-label="Urlaub anlegen" @submit="onCreateFirstTrip" />
-      </div>
-    </div>
-  </template>
   <template v-else>
     <AppHeader />
     <!-- NavBar muss VOR dem Hauptinhalt im DOM stehen: position:sticky "oben" hält ein Element nur
          an seiner natürlichen Fluss-Position fest (direkt unterm Header), es "springt" damit beim
-         Scrollen nicht von einer späteren DOM-Position aus nach oben. -->
-    <NavBar />
+         Scrollen nicht von einer späteren DOM-Position aus nach oben. Ohne Urlaub (trips.length===0,
+         Nutzer wird per Watcher oben nach /trips geleitet) bzw. auf der Urlaubsverwaltung selbst
+         ergibt eine Domänen-Navigation keinen Sinn - Header (für Logout/Profil) bleibt trotzdem
+         immer sichtbar, siehe #75. -->
+    <NavBar v-if="showTripNav" />
     <div class="app-shell">
       <!-- Kalender nur auf Desktop als Schublade gemountet – auf Mobil ersetzt dieselbe Komponente
            stattdessen als eigenständige Seite (/calendar, siehe router/index.ts) den Hauptinhalt.
@@ -97,7 +126,7 @@ async function onCreateFirstTrip(data: TripFormData) {
            läuft. Touren haben seit ihrer Verschmelzung in die Spots-Sicht (ExcursionsView.vue,
            Route /excursions) keine eigene Schublade mehr. -->
       <Drawer
-        v-if="isDesktop"
+        v-if="isDesktop && showTripNav"
         side="left"
         :open="drawers.calendarOpen"
         :width="drawers.calendarWidth"
@@ -124,20 +153,6 @@ async function onCreateFirstTrip(data: TripFormData) {
   justify-content: center;
   padding: var(--space-4);
   background: linear-gradient(160deg, var(--color-primary-tint), var(--color-bg) 60%);
-}
-
-.onboarding-card {
-  max-width: 420px;
-  width: 100%;
-}
-
-.onboarding-card h1 {
-  margin-bottom: var(--space-2);
-}
-
-.onboarding-card p {
-  color: var(--color-text-muted);
-  margin-bottom: var(--space-3);
 }
 
 .app-main {
