@@ -72,11 +72,10 @@ Bei jedem neuen UI-Baustein oder jeder sichtbaren Änderung deshalb aktiv beide 
 - **Größenabhängige Layout-Entscheidungen** (Grid- vs. Bottom-Sheet-Modus, Spalten- vs. Stapel-
   Anordnung, Schubladen vs. eigene Route, …) müssen bei *allen* Kombinationen aus Fenster-/
   Gerätebreite UND gleichzeitig geöffneten Schubladen/Overlays plausibel aussehen – nicht nur beim
-  Standard-Fall (Schublade zu, Fenster maximiert). Konkret aufgetretener Fall: `ExcursionsView.vue`s
-  Umschalt-Schwelle für die Desktop-Spalten-Ansicht war so hoch angesetzt, dass sie bei geöffneter
-  Kalender-Schublade auf gängigen Laptop-Breiten nie griff, obwohl rechnerisch noch genug Platz für
-  eine (schmalere, aber weiterhin brauchbare) Spalten-Ansicht da gewesen wäre – die Ansicht fiel
-  dadurch unnötig auf den beengteren mobilen Sheet-Modus zurück.
+  Standard-Fall (Schublade zu, Fenster maximiert). Konkreter Fall: `ExcursionsView.vue`s
+  Umschalt-Schwelle für die Desktop-Spalten-Ansicht griff bei geöffneter Kalender-Schublade auf
+  gängigen Laptop-Breiten nie, obwohl rechnerisch noch Platz für eine schmalere Spalten-Ansicht
+  gewesen wäre.
 - **Ein Feature, das auf einer Bildschirmgröße lebt, muss auf der anderen einen (ggf. anderen, aber
   gleichwertigen) Zugang haben** – nicht einfach fehlen. Ein schwebendes Overlay, das auf Mobile von
   einem anderen, dort permanenten UI-Element (z. B. einem Bottom-Sheet) verdeckt wird, zählt als
@@ -151,33 +150,26 @@ aneinanderzukleben. Der globale `p`-Grundstil in `style.css` liefert bereits `ma
 var(--space-3)` – reicht meist von allein, sobald keine lokale Regel das wieder auf `margin: 0`
 zurücksetzt.
 
-Genau das ist der häufigste Stolperstein: Views nutzen dieselbe generische `.hint`-Klasse sowohl für
-knapp unter einem Eingabefeld sitzende Mini-Hinweise (dort bewusst `margin: 0`, siehe z. B.
-`TravelView.vue`) als auch für eine Seiten-Einleitung direkt vor der Kartenliste. Bei zwei
-Klassen mit gleicher Spezifität (`.hint` und z. B. `.places-hint`) entscheidet dann die
-Deklarations-Reihenfolge im Stylesheet, nicht die inhaltliche Absicht – eine spätere `.hint`-Regel
-kann so ein vorher gesetztes `margin-bottom` stillschweigend wieder auf 0 kappen. Für einen
-Seiten-Einleitungstext deshalb entweder eine eigene, von `.hint` unabhängige Klasse verwenden, oder
-per Compound-Selektor (`.hint.places-hint { margin-bottom: var(--space-4); }`) höhere Spezifität
-erzwingen, statt sich auf die Regel-Reihenfolge zu verlassen. Bei jeder neuen Einleitungszeile vor
-einer Karten-/Listen-Sektion aktiv im gerenderten Ergebnis nachschauen, ob der Abstand tatsächlich
-ankommt, statt sich auf eine bestehende `margin-bottom`-Deklaration allein zu verlassen.
+Häufigster Stolperstein: Views nutzen dieselbe generische `.hint`-Klasse sowohl für Mini-Hinweise
+knapp unter einem Eingabefeld (dort bewusst `margin: 0`, z. B. `TravelView.vue`) als auch für eine
+Seiten-Einleitung vor der Kartenliste. Bei gleicher Spezifität (`.hint` + z. B. `.places-hint`)
+entscheidet die Deklarations-Reihenfolge im Stylesheet, nicht die Absicht – eine spätere `.hint`-Regel
+kann ein vorher gesetztes `margin-bottom` stillschweigend auf 0 kappen. Für Seiten-Einleitungstext
+deshalb eine eigene, von `.hint` unabhängige Klasse verwenden oder per Compound-Selektor
+(`.hint.places-hint { margin-bottom: var(--space-4); }`) höhere Spezifität erzwingen. Bei jeder neuen
+Einleitungszeile im gerenderten Ergebnis prüfen, ob der Abstand tatsächlich ankommt.
 
 ## Eckenrundung: Squircle-Prinzip
 
 **Grundsatz: nirgends ganz eckige (90°-)Ecken.** Jede eigenständig abgegrenzte Fläche – Card,
 Button, Input, Modal, Drawer, aber auch eine flache Werkzeug-/Navigationsleiste wie
-`ExcursionsView.vue`s `.category-nav` – bekommt eine der beiden Rundungsarten unten (Kreisbogen oder
-Squircle, je nach Elementtyp), nie `border-radius: 0`. Das gilt besonders für Flächen, die beim
-Scrollen über anderem Inhalt schweben (`position: sticky`/`fixed`): ein scharfkantiges Rechteck fällt
-dort noch stärker auf als im ruhenden Layout, speziell wenn die Fläche (wie `.category-nav` im
-"stuck"-Zustand) über einem andersfarbigen Hintergrund liegt – konkret aufgetretener Fall: ein
-eckiger, weißer Balken direkt über dem beigen Seitenhintergrund (Desktop, wo die umschließende
-Sheet-Karte anders als mobil komplett transparent wird) wirkte dadurch wie ein Rendering-Fehler statt
-einer bewussten Fläche. Bei jedem neuen "schwebenden"/sticky positionierten Element deshalb aktiv
-sowohl Rundung als auch Hintergrundfarbe (siehe Abschnitt "Farben" oben – Steuerungselemente bekommen
-`--color-primary-tint`, nicht `--color-surface`) gegen den jeweils dahinterliegenden Hintergrund
-prüfen, nicht nur im eingebetteten Grundzustand.
+`ExcursionsView.vue`s `.category-nav` – bekommt eine der beiden Rundungsarten unten, nie
+`border-radius: 0`. Gilt besonders für `position: sticky`/`fixed`-Flächen, die beim Scrollen über
+anderem Inhalt schweben: ein scharfkantiges Rechteck fällt dort noch stärker auf, speziell über einem
+andersfarbigen Hintergrund (konkreter Fall: `.category-nav` im "stuck"-Zustand wirkte eckig über dem
+Seitenhintergrund wie ein Rendering-Fehler). Bei jedem neuen sticky/schwebenden Element deshalb aktiv
+Rundung UND Hintergrundfarbe (siehe "Farben" oben) gegen den dahinterliegenden Hintergrund prüfen,
+nicht nur im eingebetteten Grundzustand.
 
 Basiswerte `--radius-sm` (10px) bis `--radius-xl` (32px) gelten für alles, was ein **normaler
 Kreisbogen** bleiben soll: komplett runde Elemente (`border-radius: 50%`, z. B. `EditButton.vue`/
@@ -220,11 +212,10 @@ mischen.
 **Über anderen Elementen liegen = Schatten haben.** Jedes Element, das sich sichtbar über den
 Hintergrund/andere Inhalte legt (aufgeklapptes Panel, Schublade im geöffneten Zustand, Dropdown,
 Modal, Popover), braucht einen Schatten (`--shadow-sm`/`-md`) – ohne ihn wirkt es wie ein
-gleichrangiges Layout-Element statt einer bewusst "erhobenen" Fläche, die Nutzer:innen gerade selbst
-geöffnet haben. Konkret aufgetretener Fall: `Drawer.vue`s Desktop-Panel hatte `box-shadow: none`
-(Rest eines älteren Layouts, in dem das Panel randlos in eine feste Spalte floss) – wirkte dadurch
-trotz sichtbarem Öffnen/Schließen-Zustand wie eine flache Nachbarspalte statt einer darüber liegenden
-Schublade. Gilt für jeden neuen "erhobenen" Zustand, nicht nur offensichtliche Overlays.
+gleichrangiges Layout-Element statt einer bewusst "erhobenen" Fläche. Konkreter Fall: `Drawer.vue`s
+Desktop-Panel hatte `box-shadow: none` (Rest eines älteren Layouts) und wirkte dadurch trotz
+sichtbarem Öffnen/Schließen wie eine flache Nachbarspalte statt einer darüberliegenden Schublade.
+Gilt für jeden neuen "erhobenen" Zustand, nicht nur offensichtliche Overlays.
 
 ## Animationen
 
@@ -296,39 +287,25 @@ für diesen Abschnitt (Nutzer-Vergleichsvideo gegen Google Maps' Bottom-Sheet).
    beschriebenen Standard-Stufen. `ease` wirkt hier spürbar mechanischer als bei einem einfachen
    Ein-/Ausblenden, weil die Nutzer:in unmittelbar zuvor selbst mit dem Element interagiert hat.
 
-**Stolperfalle, die es wert ist, dokumentiert zu bleiben**: `transform: translateY()` statt `height`
-für die gezogene Positionierung (Höhen-Zustand collapsed/partial/full) wäre die naheliegende
-zusätzliche Optimierung (GPU-Compositing statt Reflow/Repaint bei jedem Frame) – bei einem Element,
-das eine Leaflet-Karte überlagert oder ihr benachbart ist (aktuell nur `.spots-col`), zeigte ein
-Versuch damit aber ein nicht sauber eingrenzbares Race mit `TripMap.vue`s
-`ResizeObserver`/`invalidateSize()`: die Karte sprang nach einem Fokus-Klick auf einen Spot in ca. 4
-von 5 E2E-Läufen an eine falsche Position. Ursache trotz Analyse nicht abschließend gefunden –
-`height` bleibt deshalb **für diese Höhen-Animation** bewusst die sicherere Wahl. Das betrifft
-ausdrücklich nur `translateY()` für die Höhe, nicht `transform` generell an `.spots-col`: für den
-Zusammen-/Ausklapp-Skalierungseffekt (Breite, `scaleX()`) läuft an genau diesem Element inzwischen
-sehr wohl ein `transform` produktiv, ohne dass das Leaflet-Race dabei auftrat (vermutlich weil dabei
-nur die Breite, nicht wie bei `translateY()` fortlaufend während eines aktiven Ziehens die Höhe
-animiert wird – ungesichert, nur eine Beobachtung, kein bewiesener Kausalzusammenhang). Ein erneuter
-`translateY()`-Versuch für die Höhe bleibt trotzdem offen, aber mit Vorsicht anzugehen.
+**Stolperfalle**: `transform: translateY()` statt `height` für eine gezogene Höhen-Positionierung
+wäre die naheliegende GPU-Compositing-Optimierung – bei `.spots-col` (überlagert/grenzt an die
+Leaflet-Karte) verursachte das aber ein nicht sauber eingrenzbares Race mit `TripMap.vue`s
+`ResizeObserver`/`invalidateSize()` (Karte sprang nach Fokus-Klick auf einen Spot oft an eine falsche
+Position). `height` bleibt deshalb für diese Höhen-Animation bewusst die sicherere Wahl. Betrifft nur
+`translateY()` für Höhe – `scaleX()` für den Breiten-Skalierungseffekt läuft an `.spots-col` bereits
+produktiv, ohne dass das Race auftrat.
 
-**Zweiter, diesmal deterministischer Grund, der gegen `transform` auf `.spots-col` selbst sprach**
-(egal ob für Höhe oder Breite/Skalierung): jedes `transform` außer `none` macht das Element zum
-Containing Block für alle `position: fixed`-Nachfahren (CSS-Spezifikation, kein Bug/Browser-
-Eigenheit) – `.spots-col` enthielt aber `.picker-backdrop` (Kategorie-/Status-/Info-Dropdowns,
-`ExcursionsView.vue`), das bewusst `position: fixed; inset: 0;` nutzt, um den GESAMTEN Viewport
-(inkl. der Karte darüber) statt nur die Sheet-Fläche abzudunkeln/für Außerhalb-Klicks zu schließen.
-Ein `transform` direkt auf `.spots-col` hätte dieses Backdrop auf die (ggf. gerade verkleinerte)
-Sheet-Fläche eingeschränkt. Betraf **jeden** `transform`-Versuch an diesem Element, nicht nur
-`translateY()` für die Höhe, sondern auch `scaleX()` für die Breite (der Anlass, der diesen Absatz
-ursprünglich ergänzt hat) – **inzwischen gelöst**: die drei Picker-Backdrop/-Menu-Paare sind per
-`<Teleport to="body">` aus `.spots-col` herausgelöst, ihre Position wird beim Öffnen einmalig per
-`getBoundingClientRect()` auf den auslösenden Button berechnet und als `position: fixed`
-(`computeMenuStyle()` in `ExcursionsView.vue`) gesetzt statt sich auf `position: absolute` relativ
-zum Button zu verlassen – identisches Muster wie `MapsAppPicker.vue`s Menü, das genau aus demselben
-Grund (dort: `Modal.vue`s `overflow-y: auto` statt eines `transform`) bereits so gebaut war. `.spots-
-col` selbst trägt seitdem `transform: scaleX()` für den Zusammen-/Ausklapp-Skalierungseffekt (siehe
-dortiger Kommentar). Bei künftigen `transform`-Vorhaben an einem Element mit `position: fixed`-
-Nachfahren: dasselbe Teleport-Muster ist der Standardweg, nicht erst neu erfinden.
+**Zweiter, deterministischer Grund gegen `transform` auf Elementen mit `position: fixed`-
+Nachfahren**: jedes `transform` außer `none` macht das Element zum Containing Block für alle
+`position: fixed`-Nachfahren (CSS-Spezifikation). `.spots-col` enthielt `.picker-backdrop`
+(Kategorie-/Status-/Info-Dropdowns, `ExcursionsView.vue`), das bewusst `position: fixed; inset: 0;`
+nutzt, um den gesamten Viewport abzudunkeln – ein `transform` auf `.spots-col` hätte das Backdrop auf
+die Sheet-Fläche eingeschränkt. Lösung, inzwischen umgesetzt: Picker-Backdrop/-Menu-Paare per
+`<Teleport to="body">` herausgelöst, Position beim Öffnen per `getBoundingClientRect()` +
+`position: fixed` berechnet (`computeMenuStyle()` in `ExcursionsView.vue`) statt `position: absolute`
+relativ zum Button – gleiches Muster wie `MapsAppPicker.vue`s Menü (dort: `Modal.vue`s
+`overflow-y: auto` als Auslöser). Bei künftigem `transform` an einem Element mit `position: fixed`-
+Nachfahren: dasselbe Teleport-Muster verwenden, nicht neu erfinden.
 
 ## Weiches Material (taktile Pillen)
 
@@ -393,7 +370,7 @@ nachziehen statt den Browser synthetisieren zu lassen.
 
 Kein zentrales `--breakpoint-*`-Token, aber ein de-facto Standard: **800px** als Desktop-Schwelle
 (`min-width: 800px` in `NavBar.vue`, `Drawer.vue`, `App.vue`; `max-width: 799px` als Gegenstück in
-`AppHeader.vue`) – deckt sich mit dem in `CLAUDE.md` beschriebenen Desktop/Mobil-Split (feste
+`AppHeader.vue`) – deckt sich mit dem in `ARCHITECTURE.md` beschriebenen Desktop/Mobil-Split (feste
 Schubladen vs. eigenständige Mobil-Routen). Ein paar Views weichen bewusst ab, wenn ihr Inhalt bei
 800px noch zu eng wäre (`ShoppingListView.vue`/`TodoView.vue`/`PackingListView.vue`: 900px;
 `CalendarWeek.vue`: 700px). Neue responsive Umbrüche: erst prüfen, ob 800px passt, bevor ein neuer
