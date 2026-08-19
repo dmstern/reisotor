@@ -225,9 +225,10 @@ ist. Nicht als Draft (`draft: false`) erstellen.
 Behebt ein PR ein oder mehrere GitHub-Issues, gehört ein von GitHub erkanntes Closing-Keyword in den
 PR-Body (nicht nur eine bloße Erwähnung wie "Löst #101" oder "Betrifft #101") — sonst bleiben die
 Issues nach dem Merge offen. GitHub erkennt dafür nur englische Schlüsselwörter unmittelbar vor der
-Issue-Nummer, z. B. `Fixes #101`, `Closes #101`, `Resolves #101` (auch kombiniert:
-`Fixes #101, #102, #103`). Bei mehreren Issues in einem PR jedes einzeln mit einem solchen Keyword
-referenzieren.
+Issue-Nummer, z. B. `Fixes #101`, `Closes #101`, `Resolves #101`. Bei mehreren Issues in einem PR
+**vor jeder einzelnen Nummer erneut** ein solches Keyword wiederholen, nicht nur einmal vor der
+ersten: `Fixes #101, #102, #103` schließt beim Merge nur `#101` — `Fixes #101, Fixes #102,
+Fixes #103` (bzw. eine Zeile pro Issue) schließt alle drei.
 
 ## Screenshots im PR selbst
 
