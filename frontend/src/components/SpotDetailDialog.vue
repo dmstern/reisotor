@@ -18,8 +18,7 @@ import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
 // Eigenständige Komponente statt inline in SpotCard.vue, da dieser Dialog auch von anderer Stelle
-// geöffnet werden muss (TripMap.vue's Stationsliste, ExcursionDetailDialog.vue's Stationen) – nicht
-// nur aus der Spots-Übersicht heraus. Zeigt bei Kategorie "Unterkunft" zusätzlich deren
+// geöffnet werden muss (TripMap.vue's Stationsliste) – nicht nur aus der Spots-Übersicht heraus. Zeigt bei Kategorie "Unterkunft" zusätzlich deren
 // Zusatzfelder (Adresse/Zeitraum/Check-in-out/Kontakt/Kosten) – seit der Verschmelzung von
 // Unterkunft in Spots (siehe Migrationskommentar in db/index.ts) ist das kein eigener Dialog mehr,
 // sondern nur noch eine Kategorie wie jede andere.

@@ -12,8 +12,8 @@ import RichTextDisplay from './RichTextDisplay.vue';
 import AppIcon from './AppIcon.vue';
 
 // Eigenständige Komponente statt inline in TravelView.vue, da dieser Dialog auch von anderer Stelle
-// geöffnet werden muss (TripMap.vue's Stationsliste, ExcursionDetailDialog.vue's Stationen, falls
-// der Abflug-/Ankunftsort dort als Ausflug-Station eingeplant ist) – gleiches Vorgehen wie
+// geöffnet werden muss (TripMap.vue's Stationsliste, falls der Abflug-/Ankunftsort dort als
+// Ausflug-Station eingeplant ist) – gleiches Vorgehen wie
 // SpotDetailDialog.vue. Beide Seiten (Abflug/Ankunft) zeigen denselben
 // vollständigen Eintrag, daher hier ein einziger Dialog statt zwei separater.
 defineProps<{

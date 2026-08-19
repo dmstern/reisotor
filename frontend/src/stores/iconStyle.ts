@@ -36,6 +36,7 @@ const GROUPS_KEY = 'reisotor-icon-style-groups';
 const VARIANTS_KEY = 'reisotor-icon-style-variants';
 const NAV_COLORED_KEY = 'reisotor-icon-nav-colored';
 const COLORIZE_WEATHER_KEY = 'reisotor-icon-colorize-weather';
+const COLORIZE_CATEGORIES_KEY = 'reisotor-icon-colorize-categories';
 const DEFAULT_VARIANT: IconVariant = 'outline';
 // Neue Standard-Einstellungen (Issue #74): überall Symbole außer bei Kategorien, die per Default
 // bei Emoji bleiben.
@@ -83,6 +84,11 @@ export const useIconStyleStore = defineStore('iconStyle', () => {
   // Einfärbung passend zur jeweiligen Wetter-Bedingung (Sonne gelb, Regen blau, …), siehe
   // utils/weather.ts/components/WeatherIcon.vue.
   const colorizeWeather = usePersistedRef<boolean>(COLORIZE_WEATHER_KEY, true);
+  // Kategorie-Icons (Spots/CategoryChip.vue) passend zur jeweiligen spotCategoryMeta().color
+  // einfärben (#94) – gleiches Muster wie colorizeWeather oben, Standard AUS statt AN: die
+  // Kategorien-Chips waren bisher immer einfarbig-neutral in der Chip-Hintergrundfarbe, ein
+  // plötzlich bunt eingefärbtes Icon on-top wäre ein sichtbarer Default-Verhaltenswechsel.
+  const colorizeCategories = usePersistedRef<boolean>(COLORIZE_CATEGORIES_KEY, false);
 
   watch(groups, (v) => localStorage.setItem(GROUPS_KEY, JSON.stringify(v)), { deep: true });
   watch(variants, (v) => localStorage.setItem(VARIANTS_KEY, JSON.stringify(v)), { deep: true });
@@ -114,6 +120,7 @@ export const useIconStyleStore = defineStore('iconStyle', () => {
     variants.value = { ...DEFAULT_VARIANTS };
     navColored.value = true;
     colorizeWeather.value = true;
+    colorizeCategories.value = false;
   }
 
   return {
@@ -121,6 +128,7 @@ export const useIconStyleStore = defineStore('iconStyle', () => {
     variants,
     navColored,
     colorizeWeather,
+    colorizeCategories,
     styleForGroup,
     setGroupOverride,
     setAllGroups,
