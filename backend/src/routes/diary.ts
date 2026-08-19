@@ -18,6 +18,7 @@ interface EntryRow {
   date: string;
   created_at: string;
   updated_at: string | null;
+  is_draft: number;
 }
 
 interface EntryBody {
@@ -28,6 +29,7 @@ interface EntryBody {
   images?: string[];
   excursion_ids?: number[];
   date?: string;
+  is_draft?: boolean;
 }
 
 // Zuordnung Tagebucheintrag -> Ausflüge (m:n, analog syncExcursionSpots in ideas.ts): wird bei
@@ -55,6 +57,32 @@ function excursionIdsFor(entryIds: number[]): Map<number, number[]> {
   return map;
 }
 
+// Mit-Bearbeiter:innen (#93) - Haupt-Autorin bleibt author_id, jede:r andere Bearbeiter:in landet
+// zusätzlich hier, geordnet nach erster Bearbeitung.
+function editorIdsFor(entryIds: number[]): Map<number, number[]> {
+  const map = new Map<number, number[]>();
+  if (!entryIds.length) return map;
+  const placeholders = entryIds.map(() => '?').join(',');
+  const rows = db
+    .prepare(
+      `SELECT entry_id, user_id FROM diary_entry_editors WHERE entry_id IN (${placeholders}) ORDER BY edited_at ASC`,
+    )
+    .all(...entryIds) as { entry_id: number; user_id: number }[];
+  for (const row of rows) {
+    const list = map.get(row.entry_id) ?? [];
+    list.push(row.user_id);
+    map.set(row.entry_id, list);
+  }
+  return map;
+}
+
+function recordEditor(entryId: number, userId: number) {
+  db.prepare(
+    `INSERT INTO diary_entry_editors (entry_id, user_id, edited_at) VALUES (?, ?, ?)
+     ON CONFLICT(entry_id, user_id) DO UPDATE SET edited_at = excluded.edited_at`,
+  ).run(entryId, userId, new Date().toISOString());
+}
+
 interface CommentBody {
   content: string;
 }
@@ -70,21 +98,29 @@ const ALLOWED_IMAGE_TYPES: Record<string, string> = {
 };
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
-function serializeEntry(row: EntryRow, excursionIds: number[]) {
-  return { ...row, images: row.images ? (JSON.parse(row.images) as string[]) : [], excursion_ids: excursionIds };
+function serializeEntry(row: EntryRow, excursionIds: number[], editorIds: number[] = []) {
+  return {
+    ...row,
+    images: row.images ? (JSON.parse(row.images) as string[]) : [],
+    excursion_ids: excursionIds,
+    editor_ids: editorIds,
+  };
 }
 
 export const diaryRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: { trip_id?: string } }>('/diary', async (req, reply) => {
     if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
     if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
+    // Entwürfe (is_draft) sind rein persönlich (#89) - nur für die eigene author_id sichtbar.
     const rows = db
       .prepare(
-        'SELECT * FROM diary_entries WHERE trip_id = ? AND deleted_at IS NULL ORDER BY date DESC, created_at DESC, id DESC',
+        'SELECT * FROM diary_entries WHERE trip_id = ? AND deleted_at IS NULL AND (is_draft = 0 OR author_id = ?) ORDER BY date DESC, created_at DESC, id DESC',
       )
-      .all(req.query.trip_id) as EntryRow[];
-    const excursionIds = excursionIdsFor(rows.map((r) => r.id));
-    return rows.map((row) => serializeEntry(row, excursionIds.get(row.id) ?? []));
+      .all(req.query.trip_id, req.session.userId) as EntryRow[];
+    const entryIds = rows.map((r) => r.id);
+    const excursionIds = excursionIdsFor(entryIds);
+    const editorIds = editorIdsFor(entryIds);
+    return rows.map((row) => serializeEntry(row, excursionIds.get(row.id) ?? [], editorIds.get(row.id) ?? []));
   });
 
   // trip_id jetzt erforderlich (vorher lieferten beide Routen ungefiltert ALLE Likes/Kommentare
@@ -144,7 +180,7 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
     const now = new Date().toISOString();
     const result = db
       .prepare(
-        'INSERT INTO diary_entries (trip_id, author_id, title, content, content_format, images, date, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        'INSERT INTO diary_entries (trip_id, author_id, title, content, content_format, images, date, created_at, is_draft) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
       )
       .run(
         trip_id,
@@ -157,6 +193,7 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
         // der Fallback hier greift nur defensiv, falls ein Client das Feld doch mal wegließe.
         date || now.slice(0, 10),
         now,
+        req.body.is_draft ? 1 : 0,
       );
     const entryId = result.lastInsertRowid as number;
     syncDiaryExcursions(entryId, excursion_ids ?? []);
@@ -166,21 +203,28 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
     return serializeEntry(row, excursion_ids ?? []);
   });
 
+  // Bearbeiten ist seit #93 nicht mehr nur der Autorin/dem Autor vorbehalten - jedes Trip-Mitglied
+  // darf z. B. ein falsches Datum korrigieren. Wer nicht selbst die Haupt-Autorin/der Haupt-Autor
+  // ist, wird zusätzlich als Mit-Bearbeiter:in vermerkt (recordEditor) - Löschen bleibt bewusst
+  // author-only (siehe DELETE-Route unten), das ist eine deutlich folgenreichere Aktion.
   app.put<{ Params: { id: string }; Body: EntryBody }>('/diary/:id', async (req, reply) => {
     const entry = db.prepare('SELECT * FROM diary_entries WHERE id = ?').get(req.params.id) as
       | EntryRow
       | undefined;
     if (!entry) return reply.code(404).send({ error: 'Nicht gefunden' });
     if (!requireTripMember(reply, entry.trip_id, req.session.userId)) return;
-    if (entry.author_id !== req.session.userId) {
-      return reply.code(403).send({ error: 'Nur die Autorin/der Autor kann diesen Beitrag bearbeiten' });
+    // Ein Entwurf bleibt rein persönlich (#89) - anders als veröffentlichte Einträge (dort darf seit
+    // #93 jedes Trip-Mitglied mitbearbeiten) darf ihn nur die anlegende Person anfassen.
+    if (entry.is_draft && entry.author_id !== req.session.userId) {
+      return reply.code(403).send({ error: 'Nur die Autorin/der Autor kann diesen Entwurf bearbeiten' });
     }
 
     const { title, content, images, excursion_ids, date } = req.body;
     const isHtml = req.body.content_format === 'html';
     const now = new Date().toISOString();
+    const isDraft = req.body.is_draft !== undefined ? (req.body.is_draft ? 1 : 0) : entry.is_draft;
     db.prepare(
-      'UPDATE diary_entries SET title = ?, content = ?, content_format = ?, images = ?, date = ?, updated_at = ? WHERE id = ?',
+      'UPDATE diary_entries SET title = ?, content = ?, content_format = ?, images = ?, date = ?, updated_at = ?, is_draft = ? WHERE id = ?',
     ).run(
       title ?? null,
       isHtml ? sanitizeHtml(content) : content,
@@ -188,12 +232,17 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
       JSON.stringify(images ?? []),
       date || entry.date,
       now,
+      isDraft,
       req.params.id,
     );
     syncDiaryExcursions(Number(req.params.id), excursion_ids ?? []);
+    if (req.session.userId !== entry.author_id) {
+      recordEditor(Number(req.params.id), req.session.userId!);
+    }
     recordActivity(entry.trip_id, 'diary', Number(req.params.id), 'updated', req.session.userId!);
     const row = db.prepare('SELECT * FROM diary_entries WHERE id = ?').get(req.params.id) as EntryRow;
-    return serializeEntry(row, excursion_ids ?? []);
+    const editorIds = editorIdsFor([Number(req.params.id)]).get(Number(req.params.id)) ?? [];
+    return serializeEntry(row, excursion_ids ?? [], editorIds);
   });
 
   app.delete<{ Params: { id: string } }>('/diary/:id', async (req, reply) => {

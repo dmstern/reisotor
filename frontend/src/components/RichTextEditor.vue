@@ -185,6 +185,18 @@ function isActive(name: string, attrs?: Record<string, unknown>) {
   overflow: hidden;
 }
 
+/* Desktop hat spürbar mehr Platz als das mobile 55vh/480px-Limit hergibt (#88) - Editor darf dort
+   deutlich größer werden, Schrift etwas größer mitwachsen statt bei mobiler Lesegröße zu bleiben. */
+@media (min-width: 800px) {
+  .richtext-editor {
+    max-height: min(65vh, 640px);
+  }
+
+  .richtext-editor :deep(.richtext-content) {
+    font-size: 1.05rem;
+  }
+}
+
 .toolbar {
   display: flex;
   flex-wrap: wrap;

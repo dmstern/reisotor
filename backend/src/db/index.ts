@@ -174,6 +174,16 @@ CREATE TABLE IF NOT EXISTS diary_excursions (
   UNIQUE(entry_id, idea_id)
 );
 
+-- Wer (neben der Haupt-Autorin, author_id auf diary_entries) einen Tagebucheintrag bereits bearbeitet
+-- hat (#93: alle Mitreisenden dürfen bearbeiten, sollen dabei aber als Mit-Autor:innen erkennbar
+-- bleiben). Ein UPSERT pro Bearbeitung aktualisiert nur edited_at, kein Verlauf einzelner Änderungen.
+CREATE TABLE IF NOT EXISTS diary_entry_editors (
+  entry_id INTEGER NOT NULL REFERENCES diary_entries(id) ON DELETE CASCADE,
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  edited_at TEXT NOT NULL,
+  UNIQUE(entry_id, user_id)
+);
+
 CREATE TABLE IF NOT EXISTS idea_likes (
   id INTEGER PRIMARY KEY,
   idea_id INTEGER NOT NULL REFERENCES ideas(id) ON DELETE CASCADE,
@@ -1272,3 +1282,13 @@ db.exec(`
   );
 `);
 db.exec('CREATE INDEX IF NOT EXISTS idx_track_points_track_recorded ON location_track_points (track_id, recorded_at)');
+
+// Entwurfs-Status als sichtbarer, weiterbearbeitbarer Eintrag statt nur der bisherigen, unsichtbaren
+// Zwischenspeicherung in `drafts` (#89: Nutzer-Feedback, ein per useDraftAutosave gesichertes
+// Formular verschwand beim Schließen des Dialogs spurlos - weder in der Übersicht sichtbar noch beim
+// nächsten "Neuer Eintrag" wiederzufinden). Additiv mit Default 0 (kein Backfill nötig): bestehende
+// Notizen/Tagebucheinträge sind alle bereits veröffentlicht. Sichtbarkeit wird in den jeweiligen
+// GET-Routen (routes/notes.ts, routes/diary.ts) auf die eigene user_id/author_id beschränkt - ein
+// Entwurf ist wie ein persönlicher `drafts`-Eintrag nie für andere Trip-Mitglieder sichtbar.
+ensureColumn('notes', 'is_draft', 'INTEGER NOT NULL DEFAULT 0');
+ensureColumn('diary_entries', 'is_draft', 'INTEGER NOT NULL DEFAULT 0');

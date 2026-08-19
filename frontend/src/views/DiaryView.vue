@@ -25,6 +25,7 @@ import Comments from '../components/Comments.vue';
 import UndoDeleteRow from '../components/UndoDeleteRow.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import DraftStatusBar from '../components/DraftStatusBar.vue';
+import DraftBadge from '../components/DraftBadge.vue';
 import PendingSyncBadge from '../components/PendingSyncBadge.vue';
 import AppIcon from '../components/AppIcon.vue';
 import WeatherIcon from '../components/WeatherIcon.vue';
@@ -80,6 +81,15 @@ const editDraft = useDraftAutosave(
   editForm,
   computed(() => editingEntry.value !== null),
 );
+
+// Bereits als Entwurf gesicherter, aber noch nicht veröffentlichter eigener Eintrag (#89) - höchstens
+// einer gleichzeitig, siehe openNewForm()/closeForm() unten, die genau diesen statt eines
+// zusätzlichen zweiten Entwurfs weiterverwenden.
+const myDraft = computed(() => entries.value.find((e) => e.is_draft && e.author_id === auth.user?.id) ?? null);
+
+function hasEntryContent(f: { title: string; content: string; images: string[] }) {
+  return f.title.trim().length > 0 || !isEmptyRichText(f.content) || f.images.length > 0;
+}
 
 // Rein lokale, flüchtige Markierung "in dieser Formular-Sitzung bereits per Spot-Picker
 // hinzugefügt" (siehe pickSpot unten) – dient nur der visuellen Rückmeldung (Häkchen), kein
@@ -243,6 +253,15 @@ function author(id: number) {
   return users.value.find((u) => u.id === id);
 }
 
+// Mit-Bearbeiter:innen für die "bearbeitet von"-Zeile (#93) - author_id selbst zählt nicht als
+// Mit-Bearbeiter:in, auch wenn die Haupt-Autorin/der Haupt-Autor den eigenen Eintrag erneut speichert.
+function coEditorsFor(entry: DiaryEntry): User[] {
+  return entry.editor_ids
+    .filter((id) => id !== entry.author_id)
+    .map((id) => author(id))
+    .filter((u): u is User => !!u);
+}
+
 function likesFor(entryId: number) {
   return likes.value.filter((l) => l.entry_id === entryId);
 }
@@ -300,7 +319,13 @@ function removeImage(target: { images: string[] }, index: number) {
   target.images.splice(index, 1);
 }
 
+// "+ Neuer Eintrag": ein bereits gesicherter eigener Entwurf wird weiterbearbeitet statt einen
+// zweiten, parallelen Entwurf anzulegen (#89).
 function openNewForm() {
+  if (myDraft.value) {
+    startEdit(myDraft.value);
+    return;
+  }
   form.value = emptyForm();
   pickedSpotIds.value = new Set();
   pickedSpotExcursionIds.value = new Set();
@@ -334,8 +359,28 @@ async function submitEntry() {
   newDraft.clear();
 }
 
-function closeForm() {
+// Schließen ohne "Eintragen" verwirft nicht mehr kommentarlos den eingegebenen Inhalt (#89) -
+// stattdessen wird ein echter, für andere Trip-Mitglieder unsichtbarer Entwurfs-Eintrag angelegt
+// (is_draft:true), sichtbar/weiterbearbeitbar über die Tagebuch-Liste. Ganz leere Formulare erzeugen
+// weiterhin keinen Eintrag; markLinkedAsDone() läuft bewusst nicht mit - das "gemacht"-Setzen soll
+// erst beim tatsächlichen Veröffentlichen greifen.
+async function closeForm() {
   showForm.value = false;
+  if (hasEntryContent(form.value)) {
+    const body = {
+      trip_id: tripId,
+      title: form.value.title || undefined,
+      content: form.value.content,
+      content_format: 'html',
+      images: form.value.images,
+      excursion_ids: form.value.excursion_ids,
+      date: form.value.date,
+      is_draft: true,
+    };
+    const created = await api.post<DiaryEntry>('/diary', body);
+    entries.value.unshift(created);
+    sortEntries();
+  }
   form.value = emptyForm();
   newDraft.clear();
 }
@@ -355,6 +400,8 @@ function startEdit(entry: DiaryEntry) {
   editShowSpotPicker.value = false;
 }
 
+// Explizites "Speichern"/"Veröffentlichen" macht aus einem Entwurf immer einen veröffentlichten
+// Eintrag (is_draft:false) - für bereits veröffentlichte Einträge ist das ein No-op, da dort schon 0.
 async function submitEditEntry() {
   if (!editingEntry.value || isEmptyRichText(editForm.value.content)) return;
   const body = {
@@ -364,6 +411,7 @@ async function submitEditEntry() {
     images: editForm.value.images,
     excursion_ids: editForm.value.excursion_ids,
     date: editForm.value.date,
+    is_draft: false,
   };
   const updated = await api.put<DiaryEntry>(`/diary/${editingEntry.value.id}`, body);
   const idx = entries.value.findIndex((e) => e.id === updated.id);
@@ -374,7 +422,25 @@ async function submitEditEntry() {
   editingEntry.value = null;
 }
 
-function closeEditForm() {
+// Schließen ohne "Speichern" bei einem noch unveröffentlichten Entwurf sichert den aktuellen Stand
+// weiterhin als Entwurf (statt die Änderungen zu verwerfen) - bei einem bereits veröffentlichten
+// Eintrag bleibt es wie bisher beim reinen Verwerfen des Bearbeitungs-Zwischenstands.
+async function closeEditForm() {
+  if (editingEntry.value?.is_draft && hasEntryContent(editForm.value)) {
+    const body = {
+      title: editForm.value.title || undefined,
+      content: editForm.value.content,
+      content_format: 'html',
+      images: editForm.value.images,
+      excursion_ids: editForm.value.excursion_ids,
+      date: editForm.value.date,
+      is_draft: true,
+    };
+    const updated = await api.put<DiaryEntry>(`/diary/${editingEntry.value.id}`, body);
+    const idx = entries.value.findIndex((e) => e.id === updated.id);
+    if (idx !== -1) entries.value[idx] = updated;
+    sortEntries();
+  }
   editDraft.clear();
   editingEntry.value = null;
 }
@@ -497,16 +563,27 @@ async function removeComment(id: number) {
             <span class="avatar">{{ author(entry.author_id)?.avatar ?? '❓' }}</span>
             <div class="entry-meta">
               <strong>{{ author(entry.author_id)?.username ?? '?' }}</strong>
-              <span class="date">{{ formatDate(entry.date) }}<span v-if="entry.updated_at"> (bearbeitet)</span></span>
+              <span class="date">
+                {{ formatDate(entry.date) }}
+                <span v-if="coEditorsFor(entry).length" class="edited-by">
+                  · bearbeitet von
+                  <span v-for="(u, i) in coEditorsFor(entry)" :key="u.id" class="edited-by-user">
+                    <span class="edited-by-avatar">{{ u.avatar }}</span
+                    >{{ u.username }}<template v-if="i < coEditorsFor(entry).length - 1">, </template>
+                  </span>
+                </span>
+                <span v-else-if="entry.updated_at"> (bearbeitet)</span>
+              </span>
             </div>
             <PendingSyncBadge v-if="entry._pending" />
-            <div v-if="entry.author_id === auth.user?.id" class="entry-actions">
+            <div class="entry-actions">
               <EditButton small @click="startEdit(entry)" />
-              <DeleteButton small @click="removeEntry(entry.id)" />
+              <DeleteButton v-if="entry.author_id === auth.user?.id" small @click="removeEntry(entry.id)" />
             </div>
           </header>
 
           <h3 v-if="entry.title">{{ entry.title }}</h3>
+          <DraftBadge v-if="entry.is_draft" />
           <RichTextDisplay class="content" :content="entry.content" :format="entry.content_format" />
 
           <div class="gallery" v-if="entry.images.length">
@@ -621,7 +698,7 @@ async function removeComment(id: number) {
           </template>
         </fieldset>
         <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />
-        <button type="submit">Speichern</button>
+        <button type="submit">{{ editingEntry?.is_draft ? 'Veröffentlichen' : 'Speichern' }}</button>
       </form>
     </Modal>
   </div>
@@ -880,6 +957,10 @@ async function removeComment(id: number) {
 .date {
   font-size: 0.78rem;
   color: var(--color-text-muted);
+}
+
+.edited-by-avatar {
+  font-size: 0.9em;
 }
 
 .entry-actions {
