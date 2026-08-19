@@ -31,9 +31,25 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # Playwrights offizielles Image bringt Chromium UND sämtliche System-Bibliotheken dafür schon
+    # fertig mit - erspart bei jedem Lauf das (undgecachte, weil auf einer frischen Runner-VM
+    # jedes Mal neue) `apt-get install` von ~100 Paketen, das vorher den Löwenanteil der Laufzeit
+    # ausmachte (siehe Issue-Diskussion). Image-Tag MUSS exakt zur in e2e/package-lock.json
+    # gepinnten @playwright/test-Version passen (v1.62.1 -> v1.62.1-jammy), sonst driftet die im
+    # Image enthaltene Chromium-Revision von der per npm installierten @playwright/test-Version
+    # auseinander. Bei jedem Playwright-Versions-Bump also diesen Tag mitziehen.
+    container: mcr.microsoft.com/playwright:v1.62.1-jammy
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      # Der Checkout-Schritt läuft (wie jeder Step) im Container, also als root - der Job-Container
+      # selbst wird aber vom Runner-User gestartet, der den ausgecheckten Pfad anlegt. Git verweigert
+      # daher standardmäßig jeden Zugriff darauf als "dubious ownership", inkl. der `git describe`-
+      # Aufrufe in vite.config.ts und backend/scripts/generate-build-info.mjs (dort zwar abgefangen,
+      # bricht aber die Versions-Info bzw. bläht Prozess-Output unnötig auf).
+      - name: Mark repo as safe for git (root inside container)
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -62,16 +78,6 @@ jobs:
       - name: Install e2e dependencies
         working-directory: e2e
         run: npm ci
-
-      - name: Cache Playwright browsers
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('e2e/package-lock.json') }}
-
-      - name: Install Playwright Chromium
-        working-directory: e2e
-        run: npx playwright install --with-deps chromium
 
       - name: Run e2e tests
         working-directory: e2e

@@ -28,7 +28,6 @@ test('wärmt beim Laden des Urlaubs den Offline-Cache für alle Domänen vor, ni
 }) => {
   await page.goto('/');
   await page.waitForSelector('.trip-name');
-  await page.waitForLoadState('networkidle');
 
   const tripId = seeded.trip.id;
   const uncoveredByDashboard = [
@@ -43,12 +42,17 @@ test('wärmt beim Laden des Urlaubs den Offline-Cache für alle Domänen vor, ni
     `/ideas/comments?trip_id=${tripId}`,
   ];
 
-  const cachedFlags = await page.evaluate(
-    (paths) => paths.map((p) => localStorage.getItem(`reisotor-cache:${p}`) !== null),
-    uncoveredByDashboard,
-  );
-
-  for (const [i, path] of uncoveredByDashboard.entries()) {
-    expect(cachedFlags[i], `${path} sollte im Offline-Cache liegen`).toBe(true);
+  // prefetchTripDataForOffline() feuert diese Requests unawaited im Hintergrund ab (siehe dort) -
+  // statt auf 'networkidle' zu warten (von Playwright bei Apps mit langlebiger Verbindung wie
+  // unserem SSE-Stream für den Echtzeit-Sync explizit als unzuverlässig dokumentiert, siehe
+  // https://playwright.dev/docs/actionability#networkidle) direkt auf den erwarteten
+  // localStorage-Cache-Zustand pollen.
+  for (const path of uncoveredByDashboard) {
+    await expect
+      .poll(
+        async () => page.evaluate((p) => localStorage.getItem(`reisotor-cache:${p}`) !== null, path),
+        { message: `${path} sollte im Offline-Cache liegen`, timeout: 10_000 },
+      )
+      .toBe(true);
   }
 });
