@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref, watch, type ComponentPublicInstance, type Ref } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch, type ComponentPublicInstance, type Ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { api } from '../api/client';
 import type { Excursion, ExcursionComment, ExcursionLike, LocationTrack, Spot, TravelItem, User } from '../api/types';
@@ -875,6 +875,86 @@ function onFocusSpotFromMap(spotId: number) {
   expandedSpotId.value = spotId;
   scrollToSpot(spotId);
 }
+
+// Touren-Stationsliste (siehe .tour-station-wrap/.tour-station-line im Template/CSS unten, #100):
+// eine gebogene, gestrichelte SVG-Linie verbindet Kreis-Punkte auf Höhe der jeweiligen Spot-Karten,
+// statt wie zuvor eines starren, per CSS-border-left gezeichneten geraden Strichs über die volle
+// Container-Höhe hinweg (der dadurch abrupt am unteren Rand der letzten Karte endete statt exakt an
+// deren Mitte). Punkte/Pfad werden aus den tatsächlichen DOM-Positionen der Spot-Karten berechnet
+// (per-Excursion in tourLines gespeichert), da deren Höhen variabel sind (Bild ja/nein, aufgeklappt/
+// eingeklappt, Kommentare ein-/ausgeblendet) - ein rein statisches CSS-Muster könnte das nicht
+// abbilden. Gleiche Bogen-Idee wie utils/mapRoute.ts's arcPoints() (Kontrollpunkt senkrecht zur
+// Verbindungslinie versetzt, proportional zum Segmentabstand), hier auf Bildschirm-Pixel statt
+// Geo-Koordinaten angewandt.
+interface TourLineData {
+  width: number;
+  height: number;
+  pathD: string;
+  dots: { x: number; y: number }[];
+}
+const TOUR_LINE_X = 10;
+const TOUR_LINE_WIDTH = 20;
+const tourLines = reactive(new Map<number, TourLineData>());
+const tourWrapRefs = new Map<number, HTMLElement>();
+let tourLineResizeObserver: ResizeObserver | null = null;
+
+function recomputeTourLine(excursionId: number) {
+  const wrapEl = tourWrapRefs.get(excursionId);
+  const listEl = wrapEl?.querySelector<HTMLElement>(':scope > .tour-station-list');
+  const items = listEl ? (Array.from(listEl.children) as HTMLElement[]) : [];
+  if (!items.length) {
+    tourLines.delete(excursionId);
+    return;
+  }
+  const dots = items.map((item) => ({ x: TOUR_LINE_X, y: item.offsetTop + item.offsetHeight / 2 }));
+  const points = [{ x: TOUR_LINE_X, y: 0 }, ...dots];
+  let d = `M ${points[0].x} ${points[0].y}`;
+  for (let i = 0; i < points.length - 1; i++) {
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    const dy = p2.y - p1.y;
+    const controlX = (p1.x + p2.x) / 2 + dy * 0.15;
+    const controlY = (p1.y + p2.y) / 2;
+    d += ` Q ${controlX} ${controlY} ${p2.x} ${p2.y}`;
+  }
+  tourLines.set(excursionId, { width: TOUR_LINE_WIDTH, height: dots[dots.length - 1].y, pathD: d, dots });
+}
+
+function setTourWrapRef(excursionId: number, el: Element | ComponentPublicInstance | null) {
+  const domEl = el && '$el' in el ? (el.$el as HTMLElement) : (el as HTMLElement | null);
+  const previous = tourWrapRefs.get(excursionId);
+  // Vue ruft Funktions-Refs bei JEDEM Re-Render erneut auf, nicht nur beim Mount/Unmount - ohne
+  // dieses Gleichheits-Gate würde recomputeTourLine() bei jedem Aufruf erneut in die reaktive
+  // tourLines-Map schreiben, was wiederum ein Re-Render (und damit den nächsten Ref-Aufruf)
+  // auslöst: eine Endlosschleife, die den Tab einfriert. Nur bei tatsächlichem Element-Wechsel
+  // (Mount/Unmount/Ersetzung) neu beobachten/berechnen.
+  if (domEl === previous) return;
+  if (previous) tourLineResizeObserver?.unobserve(previous);
+  if (domEl instanceof HTMLElement) {
+    tourWrapRefs.set(excursionId, domEl);
+    tourLineResizeObserver?.observe(domEl);
+    nextTick(() => recomputeTourLine(excursionId));
+  } else {
+    tourWrapRefs.delete(excursionId);
+    tourLines.delete(excursionId);
+  }
+}
+
+onMounted(() => {
+  tourLineResizeObserver = new ResizeObserver((entries) => {
+    for (const entry of entries) {
+      const id = [...tourWrapRefs.entries()].find(([, el]) => el === entry.target)?.[0];
+      if (id != null) recomputeTourLine(id);
+    }
+  });
+  for (const [id, el] of tourWrapRefs) tourLineResizeObserver.observe(el);
+});
+onUnmounted(() => tourLineResizeObserver?.disconnect());
+// Neben Größenänderungen einzelner Karten (ResizeObserver oben) auch bei Zuordnungsänderungen
+// (Spot zu Tour hinzugefügt/entfernt/umsortiert) neu berechnen - ändert die Anzahl/Reihenfolge der
+// Kinder, worauf der ResizeObserver nicht zuverlässig anspringt, wenn sich dadurch die
+// Gesamthöhe zufällig nicht ändert.
+watch(spotGroups, () => nextTick(() => { for (const id of tourWrapRefs.keys()) recomputeTourLine(id); }));
 
 // --- Aufteilung Spots-Liste/Karte per Anfasser verschiebbar (nur Desktop-Grid, siehe @container-
 // Query im CSS) ---
@@ -1881,42 +1961,61 @@ async function removeSpot(id: number) {
         <h3 v-else class="category-heading" :ref="(el) => setCategoryRef(grp.category, el)">
           <AppIcon :icon="grp.iconDef" group="categories" /> {{ grp.category }}
         </h3>
-        <!-- Tour-Gruppe: eingerückte, per gestrichelter Linie verbundene vertikale Liste statt des
-             normalen Karten-Grids (siehe .tour-station-list unten) - die Reihenfolge entspricht
-             spotGroups' Sortierung nach der echten Tour-Reihenfolge (spot_ids), macht den Rundgang
-             direkt sichtbar. Ersetzt die früheren Mini-Stations-Chips auf der ExcursionCard selbst
-             (redundant, sobald die echten Spot-Karten direkt darunter erscheinen). -->
-        <TransitionGroup tag="div" name="list" :class="grp.excursion ? 'tour-station-list' : 'grid cards'">
-          <template v-for="item in grp.items" :key="`spot-${item.spot.id}`">
-            <UndoDeleteRow
-              v-if="spotsStore.isPending(item.spot.id)"
-              :label="item.spot.title"
-              @undo="spotsStore.restore(item.spot.id)"
-            />
-            <SpotCard
-              v-else
-              :key="`spot-${item.spot.id}`"
-              :ref="(el) => setSpotRef(item.spot.id, el)"
-              :spot="item.spot"
-              :highlighted="highlightedIds.has(item.spot.id)"
-              :expanded="expandedSpotId === item.spot.id"
-              :scheduled-date="spotScheduledDates.get(item.spot.id) ?? null"
-              :creator-label="creatorLabel(item.spot.created_by)"
-              :payer-label="creatorLabel(item.spot.paid_by_user_id)"
-              :like-count="spotsStore.likeCountFor(item.spot.id)"
-              :liked="spotsStore.likedByMe(item.spot.id, auth.user?.id)"
-              :comments="spotCommentItemsFor(item.spot.id)"
-              @edit="startEditSpot"
-              @remove="removeSpot"
-              @toggle-like="toggleSpotLike(item.spot.id)"
-              @submit-comment="(content) => submitSpotComment(item.spot.id, content)"
-              @remove-comment="removeSpotComment"
-              @open="onSpotCardOpen"
-              @close="expandedSpotId = null"
-              @assign-to-tour="groupMode = 'tours'"
-            />
-          </template>
-        </TransitionGroup>
+        <!-- Tour-Gruppe: eingerückte, per gebogener gestrichelter SVG-Linie verbundene vertikale Liste
+             statt des normalen Karten-Grids (siehe .tour-station-wrap/.tour-station-line unten, #100)
+             - die Reihenfolge entspricht spotGroups' Sortierung nach der echten Tour-Reihenfolge
+             (spot_ids), macht den Rundgang direkt sichtbar. Ersetzt die früheren Mini-Stations-Chips
+             auf der ExcursionCard selbst (redundant, sobald die echten Spot-Karten direkt darunter
+             erscheinen). Das Wrapper-Div (nur bei Touren-Gruppierung gebraucht) ist position:relative
+             und dadurch offsetParent der Spot-Karten - recomputeTourLine() liest deren offsetTop/
+             offsetHeight direkt relativ dazu aus (siehe dortiger Kommentar). -->
+        <div
+          class="tour-station-wrap"
+          :class="{ 'is-tour': grp.excursion }"
+          :ref="(el) => grp.excursion && setTourWrapRef(grp.excursion.id, el)"
+        >
+          <svg
+            v-if="grp.excursion && tourLines.get(grp.excursion.id)"
+            class="tour-station-line"
+            :width="tourLines.get(grp.excursion.id)!.width"
+            :height="tourLines.get(grp.excursion.id)!.height"
+            aria-hidden="true"
+          >
+            <path :d="tourLines.get(grp.excursion.id)!.pathD" />
+            <circle v-for="(dot, i) in tourLines.get(grp.excursion.id)!.dots" :key="i" :cx="dot.x" :cy="dot.y" r="5" />
+          </svg>
+          <TransitionGroup tag="div" name="list" :class="grp.excursion ? 'tour-station-list' : 'grid cards'">
+            <template v-for="item in grp.items" :key="`spot-${item.spot.id}`">
+              <UndoDeleteRow
+                v-if="spotsStore.isPending(item.spot.id)"
+                :label="item.spot.title"
+                @undo="spotsStore.restore(item.spot.id)"
+              />
+              <SpotCard
+                v-else
+                :key="`spot-${item.spot.id}`"
+                :ref="(el) => setSpotRef(item.spot.id, el)"
+                :spot="item.spot"
+                :highlighted="highlightedIds.has(item.spot.id)"
+                :expanded="expandedSpotId === item.spot.id"
+                :scheduled-date="spotScheduledDates.get(item.spot.id) ?? null"
+                :creator-label="creatorLabel(item.spot.created_by)"
+                :payer-label="creatorLabel(item.spot.paid_by_user_id)"
+                :like-count="spotsStore.likeCountFor(item.spot.id)"
+                :liked="spotsStore.likedByMe(item.spot.id, auth.user?.id)"
+                :comments="spotCommentItemsFor(item.spot.id)"
+                @edit="startEditSpot"
+                @remove="removeSpot"
+                @toggle-like="toggleSpotLike(item.spot.id)"
+                @submit-comment="(content) => submitSpotComment(item.spot.id, content)"
+                @remove-comment="removeSpotComment"
+                @open="onSpotCardOpen"
+                @close="expandedSpotId = null"
+                @assign-to-tour="groupMode = 'tours'"
+              />
+            </template>
+          </TransitionGroup>
+        </div>
         <!-- Zwei unterschiedliche Gründe für eine leere Gruppe: entweder ist der Tour wirklich noch
              kein Spot zugeordnet (grp.excursion.spot_ids selbst leer, unabhängig von Kategorie-/
              Status-Filter), oder es sind welche zugeordnet, aber der aktive Filter blendet sie
@@ -2691,17 +2790,51 @@ async function removeSpot(id: number) {
 }
 
 /* Stationen einer Tour: eingerückte, vertikale Liste statt des normalen Karten-Grids (siehe
-   Template), eine durchgehende gestrichelte Linie am linken Rand verbindet die Karten sichtbar in
-   der Reihenfolge der Tour (spotGroups sortiert sie entsprechend). Gleiche Akzentfarbe/Dashing wie
-   die Tour-Route auf der Karte (TripMap.vue's renderRoutes()) und wie ExcursionDetailDialog.vue's
-   .station-connector, nur vertikal statt horizontal. */
+   Template). Wrapper ist bei Nicht-Touren-Gruppen ein reines display:contents-Passepartout (kein
+   zusätzliches Layout-Element), bei Touren-Gruppen position:relative - dadurch offsetParent der
+   Spot-Karten (recomputeTourLine() im Script liest offsetTop/offsetHeight direkt relativ dazu) und
+   Bezugsrahmen für die absolut positionierte .tour-station-line (#100: statt einer starren,
+   geraden CSS-border-left-Linie über die volle Container-Höhe eine per SVG berechnete, gebogene
+   Linie, die exakt an den Kreis-Punkten auf Höhe jeder Spot-Karte endet/startet). Gleiche
+   Akzentfarbe/Bogen-Idee wie die Tour-Route auf der Karte (TripMap.vue's renderRoutes()/
+   utils/mapRoute.ts's arcPoints()) und wie ExcursionDetailDialog.vue's .station-connector, nur
+   vertikal statt horizontal. */
+.tour-station-wrap {
+  display: contents;
+}
+
+.tour-station-wrap.is-tour {
+  display: block;
+  position: relative;
+  margin-left: 18px;
+}
+
 .tour-station-list {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  margin-left: 18px;
-  padding-left: var(--space-3);
-  border-left: 3px dashed var(--color-primary);
+  padding-left: var(--space-4);
+}
+
+.tour-station-line {
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.tour-station-line path {
+  fill: none;
+  stroke: var(--color-primary);
+  stroke-width: 3;
+  stroke-dasharray: 6 6;
+}
+
+.tour-station-line circle {
+  fill: var(--color-primary);
+  stroke: var(--color-surface);
+  stroke-width: 2;
 }
 
 /* Auf schmalen .spots-col-Breiten (Bottom-Sheet auf Mobil, ODER auf Desktop, wenn der Anfasser sehr
