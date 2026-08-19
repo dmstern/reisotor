@@ -43,6 +43,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Der Checkout-Schritt läuft (wie jeder Step) im Container, also als root - der Job-Container
+      # selbst wird aber vom Runner-User gestartet, der den ausgecheckten Pfad anlegt. Git verweigert
+      # daher standardmäßig jeden Zugriff darauf als "dubious ownership", inkl. der `git describe`-
+      # Aufrufe in vite.config.ts und backend/scripts/generate-build-info.mjs (dort zwar abgefangen,
+      # bricht aber die Versions-Info bzw. bläht Prozess-Output unnötig auf).
+      - name: Mark repo as safe for git (root inside container)
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
