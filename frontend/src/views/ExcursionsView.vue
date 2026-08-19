@@ -21,7 +21,6 @@ import ExcursionCard from '../components/ExcursionCard.vue';
 import SegmentedToggle from '../components/SegmentedToggle.vue';
 import SpotOrderPicker from '../components/SpotOrderPicker.vue';
 import UndoDeleteRow from '../components/UndoDeleteRow.vue';
-import DerivedLocationCard from '../components/DerivedLocationCard.vue';
 import TripMap from '../components/TripMap.vue';
 import Modal from '../components/Modal.vue';
 import Combobox from '../components/Combobox.vue';
@@ -37,8 +36,6 @@ import { isEmptyRichText } from '../utils/richText';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
 import { parseLatLngFromMapsLink, tilePreviewUrl } from '../utils/googleMaps';
 import { spotCategoryMeta, SPOT_CATEGORY_SUGGESTIONS } from '../utils/spotCategory';
-import type { DerivedLocation } from '../utils/derivedLocation';
-import { buildTravelDerivedLocations } from '../utils/travelDerivedLocations';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
@@ -338,23 +335,6 @@ async function addSpotToExcursion(excursionId: number, spotId: number) {
   });
 }
 
-// --- Abgeleitete Orte (Reise-Etappen-Enden ohne verknüpften Ort) ---
-// Automatisch als feste Karten in die Spots-Übersicht eingebettet (DerivedLocationCard.vue) – seit
-// der Verschmelzung von Unterkunft/Reise-Orten in Spots (siehe Migrationskommentar in db/index.ts)
-// deckt das nur noch den verbleibenden Freitext-Fallback ab, echte Orte sind längst normale Spots
-// (siehe allSpotItems unten).
-const derivedLocations = computed<DerivedLocation[]>(() => {
-  const result: DerivedLocation[] = [];
-  // buildTravelDerivedLocations() deckt nur noch Etappen-Enden OHNE verknüpften Ort ab (Freitext-
-  // Eingabe) – ein verknüpfter Ort ist seit der Verschmelzung von Reise-Orten in Spots (siehe
-  // Migrationskommentar in db/index.ts) bereits ein normaler Spot und erscheint über
-  // spotsStore.spots (siehe allSpotItems unten), dedupliziert über from_place_id/to_place_id (bzw.
-  // gerundete lat/lng bei Freitext) – ohne das erschien z. B. der Zielflughafen von Hin- UND
-  // Rückflug zweimal als eigene Karte in dieser Liste.
-  result.push(...buildTravelDerivedLocations(travelItems.value));
-  return result;
-});
-
 // --- Spots ---
 const showSpotForm = ref(false);
 const emptySpotForm = () => ({
@@ -448,9 +428,7 @@ const editSpotReferencePoints = computed(() =>
 );
 
 // --- Sortierung, Kategorie-Filter & -Gruppierung der Spots-Übersicht ---
-// Ein "Spots-Item" ist entweder ein echter Spot oder ein abgeleiteter Ort (Unterkunft/Reise) – beide
-// werden gemeinsam sortiert, gefiltert und nach Kategorie gruppiert dargestellt.
-type SpotsGroupItem = { kind: 'spot'; spot: Spot } | { kind: 'derived'; loc: DerivedLocation };
+type SpotsGroupItem = { kind: 'spot'; spot: Spot };
 
 // Ein Spot gilt als "geplant", wenn ein Kalender-Termin (schedule_items) über spot_id auf ihn
 // verweist (analog zu Excursion.date, siehe db/index.ts) – rein clientseitig aus dem bereits
@@ -467,28 +445,24 @@ const spotScheduledDates = computed(() => {
   }
   return map;
 });
-// Unterkunft-/Reise-Orte (kind 'derived') haben kein Kalender-Geplant-Konzept – null statt eines
-// Status heißt "Filter nicht anwendbar", sie bleiben unabhängig vom Status-Filter sichtbar.
-function itemStatus(item: SpotsGroupItem): 'planned' | 'unplanned' | null {
-  if (item.kind !== 'spot') return null;
+function itemStatus(item: SpotsGroupItem): 'planned' | 'unplanned' {
   return spotScheduledDates.value.has(item.spot.id) ? 'planned' : 'unplanned';
 }
 
 function itemCategory(item: SpotsGroupItem): string {
-  return item.kind === 'spot' ? item.spot.category ?? 'Sonstiges' : item.loc.category;
+  return item.spot.category ?? 'Sonstiges';
 }
 function itemTitle(item: SpotsGroupItem): string {
-  return item.kind === 'spot' ? item.spot.title : item.loc.title;
+  return item.spot.title;
 }
 function itemLikeCount(item: SpotsGroupItem): number {
-  return item.kind === 'spot' ? spotsStore.likeCountFor(item.spot.id) : 0;
+  return spotsStore.likeCountFor(item.spot.id);
 }
-// Unterkunft/Reise sind keine "echten" Spot-Kategorien (spotCategoryMeta kennt sie nicht) – eigenes
-// Icon je Sammel-Kategorie, sonst wie gewohnt über spotCategoryMeta. Dieselben Icons wie
-// SECTION_ICONS.accommodation/travel (sectionIcons.ts) für App-weite Konsistenz.
+// Unterkunft ist keine "echte" Spot-Kategorie (spotCategoryMeta kennt sie nicht) – eigenes Icon,
+// sonst wie gewohnt über spotCategoryMeta. Dasselbe Icon wie SECTION_ICONS.accommodation
+// (sectionIcons.ts) für App-weite Konsistenz.
 function groupIconDef(category: string): IconDef {
   if (category === 'Unterkunft') return spotCategoryMeta('Unterkunft').tabler;
-  if (category === 'Reise') return SECTION_ICON_DEFS.travel;
   return spotCategoryMeta(category).tabler;
 }
 
@@ -518,7 +492,6 @@ function markSeenForGroupMode(mode: 'category' | 'tours') {
 watch(groupMode, (mode) => markSeenForGroupMode(mode));
 
 function tourTitlesForItem(item: SpotsGroupItem): string[] {
-  if (item.kind !== 'spot') return [];
   return excursionsStore.excursions.filter((e) => e.spot_ids.includes(item.spot.id)).map((e) => e.title);
 }
 
@@ -592,7 +565,7 @@ function removeStatusFilter(status: 'planned' | 'unplanned' | 'done') {
   statusFilter.value = statusFilter.value.filter((s) => s !== status);
 }
 function itemDone(item: SpotsGroupItem): boolean {
-  return item.kind === 'spot' && !!item.spot.done;
+  return !!item.spot.done;
 }
 
 // Nicht persistiert (anders als sortMode/groupMode/*Filter oben) - ein bewusst flüchtiger UI-
@@ -602,20 +575,17 @@ function itemDone(item: SpotsGroupItem): boolean {
 const filterBarExpanded = ref(false);
 const activeFilterCount = computed(() => categoryFilter.value.length + statusFilter.value.length);
 
-const allSpotItems = computed<SpotsGroupItem[]>(() => [
-  ...spotsStore.spots.map((spot): SpotsGroupItem => ({ kind: 'spot', spot })),
-  ...derivedLocations.value.map((loc): SpotsGroupItem => ({ kind: 'derived', loc })),
-]);
+const allSpotItems = computed<SpotsGroupItem[]>(() =>
+  spotsStore.spots.map((spot): SpotsGroupItem => ({ kind: 'spot', spot })),
+);
 
 const filteredSpotItems = computed(() =>
   allSpotItems.value.filter((item) => {
     if (categoryFilter.value.length && !categoryFilter.value.includes(itemCategory(item))) return false;
     const status = itemStatus(item);
-    // status === null (Unterkunft-/Reise-Orte, kein Kalender-Geplant-Konzept) bleibt unverändert
-    // vom Status-Filter unberührt - nur echte Spots werden gegen die gewählten Filter geprüft.
     // Mehrere gewählte Filter werden per ODER kombiniert (planned/unplanned/done können alle
     // gleichzeitig zutreffen), damit z. B. "Geplant" + "Gemacht" beide Teilmengen gleichzeitig zeigt.
-    if (statusFilter.value.length && status !== null) {
+    if (statusFilter.value.length) {
       const matchesStatus = statusFilter.value.includes(status);
       const matchesDone = statusFilter.value.includes('done') && itemDone(item);
       if (!matchesStatus && !matchesDone) return false;
@@ -624,16 +594,16 @@ const filteredSpotItems = computed(() =>
   }),
 );
 
-// Reihenfolge der Gruppen: die automatisch eingebetteten Unterkunft-/Reise-Orte zuerst (sind
-// bereits anderswo gepflegt, sollen als "kostenloser" Ausgangspunkt sofort ins Auge fallen), dann
-// bekannte Spot-Kategorien (spotCategory.ts-Reihenfolge), dann eigene Freitext-Kategorien
-// alphabetisch, "Sonstiges" (keine Kategorie) zuletzt – bleibt unabhängig von der gewählten
-// Sortierung innerhalb der Gruppen stabil. new Set(...) statt eines rohen Arrays: "Unterkunft" ist
-// selbst auch schon eine bekannte Spot-Kategorie (SPOT_CATEGORY_SUGGESTIONS, spotCategory.ts) - ohne
-// die Deduplizierung tauchte "Unterkunft" zweimal in dieser Liste auf, wodurch sortedCategoryKeys()
-// unten (filter() dedupliziert seine Quelle nicht) dieselbe Gruppe samt Karten zweimal rendert (u. a.
-// als doppelte Kategorie-Nav-Pille sichtbar geworden).
-const CATEGORY_GROUP_ORDER = [...new Set(['Unterkunft', 'Reise', ...SPOT_CATEGORY_SUGGESTIONS])];
+// Reihenfolge der Gruppen: die automatisch eingebettete Unterkunft zuerst (bereits anderswo
+// gepflegt, soll als "kostenloser" Ausgangspunkt sofort ins Auge fallen), dann bekannte
+// Spot-Kategorien (spotCategory.ts-Reihenfolge), dann eigene Freitext-Kategorien alphabetisch,
+// "Sonstiges" (keine Kategorie) zuletzt – bleibt unabhängig von der gewählten Sortierung innerhalb
+// der Gruppen stabil. new Set(...) statt eines rohen Arrays: "Unterkunft" ist selbst auch schon eine
+// bekannte Spot-Kategorie (SPOT_CATEGORY_SUGGESTIONS, spotCategory.ts) - ohne die Deduplizierung
+// tauchte "Unterkunft" zweimal in dieser Liste auf, wodurch sortedCategoryKeys() unten (filter()
+// dedupliziert seine Quelle nicht) dieselbe Gruppe samt Karten zweimal rendert (u. a. als doppelte
+// Kategorie-Nav-Pille sichtbar geworden).
+const CATEGORY_GROUP_ORDER = [...new Set(['Unterkunft', ...SPOT_CATEGORY_SUGGESTIONS])];
 
 function sortedCategoryKeys(categories: Iterable<string>): string[] {
   const set = new Set(categories);
@@ -1917,14 +1887,14 @@ async function removeSpot(id: number) {
              direkt sichtbar. Ersetzt die früheren Mini-Stations-Chips auf der ExcursionCard selbst
              (redundant, sobald die echten Spot-Karten direkt darunter erscheinen). -->
         <TransitionGroup tag="div" name="list" :class="grp.excursion ? 'tour-station-list' : 'grid cards'">
-          <template v-for="item in grp.items" :key="item.kind === 'spot' ? `spot-${item.spot.id}` : item.loc.key">
+          <template v-for="item in grp.items" :key="`spot-${item.spot.id}`">
             <UndoDeleteRow
-              v-if="item.kind === 'spot' && spotsStore.isPending(item.spot.id)"
+              v-if="spotsStore.isPending(item.spot.id)"
               :label="item.spot.title"
               @undo="spotsStore.restore(item.spot.id)"
             />
             <SpotCard
-              v-else-if="item.kind === 'spot'"
+              v-else
               :key="`spot-${item.spot.id}`"
               :ref="(el) => setSpotRef(item.spot.id, el)"
               :spot="item.spot"
@@ -1945,7 +1915,6 @@ async function removeSpot(id: number) {
               @close="expandedSpotId = null"
               @assign-to-tour="groupMode = 'tours'"
             />
-            <DerivedLocationCard v-else :key="item.loc.key" :location="item.loc" />
           </template>
         </TransitionGroup>
         <!-- Zwei unterschiedliche Gründe für eine leere Gruppe: entweder ist der Tour wirklich noch
@@ -2134,7 +2103,7 @@ async function removeSpot(id: number) {
    dieses Race zuerst zuverlässig zu verstehen/zu beheben. */
 .spots-col {
   /* Macht .spots-col selbst zum Container für die Kompakt-Zeile-Entscheidung in SpotCard.vue/
-     DerivedLocationCard.vue/.cards weiter unten (@container-Abfragen dort) – reagiert dadurch auf
+     .cards weiter unten (@container-Abfragen dort) – reagiert dadurch auf
      die TATSÄCHLICHE Breite dieser Spalte (auch beim Verschieben des Anfassers auf Desktop),
      unabhängig von Viewport/anderer-Container-Breite. Gilt unverändert in beiden Modi (Mobil
      fixed/Desktop sticky), da hier nicht zurückgesetzt. Benannt (statt anonym) und die Kompakt-
@@ -2262,7 +2231,7 @@ async function removeSpot(id: number) {
      sonst fast in der Rundung selbst statt sichtbar davor (genau der von Apples "X"-Button
      abweichende Effekt aus dem PR-Review-Screenshot). Oben/seitlich identisch (var(--space-3)
      statt oben --space-3 und seitlich --space-4) - selbes Card-Innenabstand-Maß wie SpotCard.vue/
-     ExcursionCard.vue/DerivedLocationCard.vue u. a. (siehe DESIGN.md, Abschnitt "Abstände") statt
+     ExcursionCard.vue u. a. (siehe DESIGN.md, Abschnitt "Abstände") statt
      eines eigens erfundenen asymmetrischen Werts. */
   padding: var(--space-3) var(--space-3) 0;
   /* Gilt für die ganze Zeile (nicht nur .sheet-handle): ein Zug, der knapp neben dem eigentlichen
@@ -2741,7 +2710,7 @@ async function removeSpot(id: number) {
    am rechten Rand ab, statt sie in eine neue Zeile umbrechen zu lassen. Container-Query statt
    @media (siehe container-type auf .spots-col oben) – reagiert dadurch auf die tatsächliche
    Spalten-Breite, nicht auf die Fenster-/Viewport-Breite. Derselbe Schwellenwert wie in
-   SpotCard.vue/DerivedLocationCard.vue (muss übereinstimmen, sonst driftet die Kompakt-Zeile dort
+   SpotCard.vue (muss übereinstimmen, sonst driftet die Kompakt-Zeile dort
    von der Ein-Spalten-Entscheidung hier auseinander). Explizit "spots-col" statt unbenannt, damit
    eindeutig gegen diesen (statt versehentlich gegen .app-main) ausgewertet wird. */
 @container spots-col (max-width: 480px) {
