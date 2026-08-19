@@ -2305,7 +2305,10 @@ async function removeSpot(id: number) {
 .spots-col-body {
   flex: 1;
   overflow-y: auto;
-  padding: 0 var(--space-3) var(--space-3);
+  /* padding-top = outline-offset (2px) + outline-Breite (2px) von .new-highlight (style.css) -
+     ohne den reservierten Rand schneidet der Scroll-Container den Fokus-Rahmen einer ganz oben
+     stehenden, per Echtzeit-Update hervorgehobenen Karte oben ab (#86). */
+  padding: var(--space-1) var(--space-3) var(--space-3);
   /* Statische, großzügig bemessene Schätzung der gerenderten Höhe der sticky .category-nav-Leiste
      (Icon+Label-Zeile plus Padding/Trennlinie, siehe dortiges CSS) statt einer live gemessenen Höhe
      (z. B. per ResizeObserver) – eine solche wäre im Moment des allerersten Sprungs/Scrolls nach dem

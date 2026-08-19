@@ -63,7 +63,12 @@ const store = useBudgetStore();
   flex-wrap: wrap;
 }
 
+/* Zeilen liegen ohne Abstand aneinander (nur border-bottom) - outline durch inset box-shadow
+   ersetzt, sonst würden zwei gleichzeitig hervorgehobene Nachbar-Zeilen sichtbar überlappen
+   (#98) bzw. an Listen-Rändern abgeschnitten werden (#86). */
 .row.new-highlight {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--color-accent);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
 }

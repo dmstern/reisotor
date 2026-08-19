@@ -646,7 +646,12 @@ textarea:focus {
      dieser Wert stellt sicher, dass es auch dort funktioniert, wo new-highlight allein steht.
      Elemente ohne eigenen Radius (Tabellenzeilen, Listen-Zeilen) überschreiben das gezielt lokal
      mit einem kleineren Wert (siehe z. B. BudgetView.vue/ShoppingListView.vue/TodoView.vue/
-     PackingItem.vue) statt hier einen für alle passenden Wert zu erzwingen. */
+     PackingItem.vue) statt hier einen für alle passenden Wert zu erzwingen. Diese Zeilen sitzen
+     außerdem ohne Abstand (nur border-bottom) direkt aneinander - dort ersetzt die lokale
+     Überschreibung outline zusätzlich durch ein inset box-shadow (bleibt innerhalb der eigenen
+     Row-Box), sonst würden zwei gleichzeitig hervorgehobene Nachbar-Zeilen mit outline-offset
+     sichtbar überlappen (#98) und am oberen/unteren Rand scrollbarer Listen abgeschnitten
+     werden (#86). */
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
 }
