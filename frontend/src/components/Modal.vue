@@ -133,6 +133,10 @@ onUnmounted(() => {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  /* padding-block reserviert Platz für den Fokus-Rahmen (outline-offset 1px + outline-Breite
+     2px, siehe input:focus in style.css) von Feldern ganz oben/unten im Formular - sonst schneidet
+     das eigene overflow-y:auto des Formulars diesen Rahmen ab (#86). */
+  padding-block: var(--space-1);
 }
 
 .modal.full-height .modal-body :slotted(textarea) {
