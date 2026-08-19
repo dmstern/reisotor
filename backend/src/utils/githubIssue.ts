@@ -8,8 +8,109 @@ export type CreateIssueResult =
   | { ok: true; number: number; url: string }
   | { ok: false; error: string };
 
+export type UploadScreenshotResult = { ok: true; url: string } | { ok: false; error: string };
+
 const githubToken = process.env.GITHUB_TOKEN;
 const githubRepo = process.env.GITHUB_REPO ?? 'dmstern/reisotor';
+
+// Eigener, ansonsten ungenutzter Branch statt des Default-Branchs: Screenshots landen so nicht in
+// der normalen Commit-Historie/dem normalen Diff von main, sondern nur in diesem Ablage-Branch.
+const SCREENSHOT_BRANCH = 'feedback-screenshots';
+
+function githubApiHeaders() {
+  return {
+    Authorization: `Bearer ${githubToken}`,
+    Accept: 'application/vnd.github+json',
+    'User-Agent': 'reisotor-feedback',
+  };
+}
+
+// Legt SCREENSHOT_BRANCH beim allerersten Feedback-Screenshot einmalig an (vom Default-Branch
+// abgezweigt) - die Contents-API kann Dateien nur auf einem bereits existierenden Branch anlegen.
+async function ensureScreenshotBranch(): Promise<{ ok: true } | { ok: false; error: string }> {
+  const refRes = await fetch(
+    `https://api.github.com/repos/${githubRepo}/git/ref/heads/${SCREENSHOT_BRANCH}`,
+    { headers: githubApiHeaders(), signal: AbortSignal.timeout(10_000) },
+  );
+  if (refRes.ok) return { ok: true };
+  if (refRes.status !== 404) {
+    return { ok: false, error: `GitHub-Branch-Abfrage fehlgeschlagen (Status ${refRes.status}).` };
+  }
+
+  const repoRes = await fetch(`https://api.github.com/repos/${githubRepo}`, {
+    headers: githubApiHeaders(),
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (!repoRes.ok) {
+    return { ok: false, error: `GitHub-Repo-Abfrage fehlgeschlagen (Status ${repoRes.status}).` };
+  }
+  const { default_branch: defaultBranch } = (await repoRes.json()) as { default_branch: string };
+
+  const defaultRefRes = await fetch(
+    `https://api.github.com/repos/${githubRepo}/git/ref/heads/${defaultBranch}`,
+    { headers: githubApiHeaders(), signal: AbortSignal.timeout(10_000) },
+  );
+  if (!defaultRefRes.ok) {
+    return { ok: false, error: `GitHub-Default-Branch-Abfrage fehlgeschlagen (Status ${defaultRefRes.status}).` };
+  }
+  const { object } = (await defaultRefRes.json()) as { object: { sha: string } };
+
+  const createRefRes = await fetch(`https://api.github.com/repos/${githubRepo}/git/refs`, {
+    method: 'POST',
+    headers: { ...githubApiHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ref: `refs/heads/${SCREENSHOT_BRANCH}`, sha: object.sha }),
+    signal: AbortSignal.timeout(10_000),
+  });
+  // 422 = Branch wurde zwischenzeitlich von einer parallelen Anfrage angelegt - kein echter Fehler.
+  if (!createRefRes.ok && createRefRes.status !== 422) {
+    return { ok: false, error: `GitHub-Branch-Anlage fehlgeschlagen (Status ${createRefRes.status}).` };
+  }
+  return { ok: true };
+}
+
+/** Committet einen Feedback-Screenshot per GitHub Contents API in SCREENSHOT_BRANCH und liefert
+ *  dessen raw.githubusercontent.com-URL zurück. Anders als der frühere Ansatz (Link auf die eigene,
+ *  selbstgehostete /api/uploads/-Datei) hängt die Sichtbarkeit des Bilds im GitHub-Issue damit nicht
+ *  von der externen Erreichbarkeit dieses Servers zum (späteren, von GitHub selbst bestimmten)
+ *  Abrufzeitpunkt ab - raw.githubusercontent.com wird direkt von GitHub ausgeliefert, kein
+ *  Camo-Proxy-Fetch auf eine Fremd-URL nötig. Der GITHUB_TOKEN braucht dafür zusätzlich zu
+ *  "Issues: Read and write" auch "Contents: Read and write" auf diesem Repo (siehe README).
+ */
+export async function uploadFeedbackScreenshot(
+  buffer: Buffer,
+  extension: string,
+  filename = `${Date.now()}.${extension}`,
+): Promise<UploadScreenshotResult> {
+  if (!githubToken) {
+    return { ok: false, error: 'Feedback ist auf diesem Server nicht konfiguriert.' };
+  }
+
+  const branchResult = await ensureScreenshotBranch();
+  if (!branchResult.ok) return branchResult;
+
+  const path = `feedback-screenshots/${filename}`;
+  let res: Response;
+  try {
+    res = await fetch(`https://api.github.com/repos/${githubRepo}/contents/${path}`, {
+      method: 'PUT',
+      headers: { ...githubApiHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: `Feedback-Screenshot hinzufügen: ${filename}`,
+        content: buffer.toString('base64'),
+        branch: SCREENSHOT_BRANCH,
+      }),
+      signal: AbortSignal.timeout(15_000),
+    });
+  } catch {
+    return { ok: false, error: 'Screenshot konnte nicht zu GitHub hochgeladen werden.' };
+  }
+
+  if (!res.ok) {
+    return { ok: false, error: `GitHub hat den Screenshot-Upload abgelehnt (Status ${res.status}).` };
+  }
+
+  return { ok: true, url: `https://raw.githubusercontent.com/${githubRepo}/${SCREENSHOT_BRANCH}/${path}` };
+}
 
 // Wie push.ts's VAPID-Keys: Feature ist optional, ohne gesetzten Token bleibt die App lauffähig,
 // nur ohne In-App-Feedback (siehe routes/feedback.ts).
@@ -19,8 +120,9 @@ export const githubIssuesEnabled = !!githubToken;
  *  (dort ist ein Fehlschlag ein akzeptabler stiller Fallback) wird hier der Fehler an den Aufrufer
  *  durchgereicht – Issue-Erstellung ist der eigentliche Zweck des Aufrufs, kein Nice-to-have. Der
  *  verwendete Token sollte ein fine-grained PAT sein, das ausschließlich "Issues: Read and write"
- *  auf genau diesem Repo erlaubt (siehe README) – selbst bei Kompromittierung dieses Codepfads bleibt
- *  der mögliche Schaden auf Issues beschränkt.
+ *  sowie (für uploadFeedbackScreenshot oben) "Contents: Read and write" auf genau diesem Repo
+ *  erlaubt (siehe README) – selbst bei Kompromittierung dieses Codepfads bleibt der mögliche
+ *  Schaden auf Issues und den feedback-screenshots-Branch beschränkt.
  */
 export async function createGithubIssue(input: CreateIssueInput): Promise<CreateIssueResult> {
   if (!githubToken) {

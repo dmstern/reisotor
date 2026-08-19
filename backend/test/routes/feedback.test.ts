@@ -106,13 +106,21 @@ describe('feedback routes', () => {
     expect(sentBody?.body).not.toContain('![Screenshot]');
   });
 
-  it('uploads an attached screenshot and embeds it as an image link in the issue body', async () => {
+  it('uploads an attached screenshot to the feedback-screenshots branch and embeds it as a raw.githubusercontent.com link', async () => {
     const cookie = await register('feedback-user3', 'fb3@example.com');
     let sentBody: { body: string } | undefined;
     vi.stubGlobal(
       'fetch',
-      vi.fn((_url: string, init: RequestInit) => {
-        sentBody = JSON.parse(init.body as string);
+      vi.fn((url: string, init?: RequestInit) => {
+        if (url.includes('/git/ref/heads/feedback-screenshots')) {
+          return Promise.resolve({ ok: true, status: 200 });
+        }
+        if (url.includes('/contents/feedback-screenshots/')) {
+          expect(init?.method).toBe('PUT');
+          expect(JSON.parse(init!.body as string).branch).toBe('feedback-screenshots');
+          return Promise.resolve({ ok: true, status: 201 });
+        }
+        sentBody = JSON.parse(init!.body as string);
         return Promise.resolve({
           ok: true,
           json: () => Promise.resolve({ number: 8, html_url: 'https://github.com/someone/somerepo/issues/8' }),
@@ -133,7 +141,43 @@ describe('feedback routes', () => {
     });
 
     expect(res.statusCode).toBe(201);
-    expect(sentBody?.body).toMatch(/!\[Screenshot\]\(https?:\/\/.+\/api\/uploads\/.+\.png\)/);
+    expect(sentBody?.body).toMatch(
+      /!\[Screenshot\]\(https:\/\/raw\.githubusercontent\.com\/someone\/somerepo\/feedback-screenshots\/feedback-screenshots\/.+\.png\)/,
+    );
+  });
+
+  it('still creates the issue (with a note) when the screenshot upload to GitHub fails', async () => {
+    const cookie = await register('feedback-user5', 'fb5@example.com');
+    let sentBody: { body: string } | undefined;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string, init?: RequestInit) => {
+        if (url.includes('/git/ref/heads/feedback-screenshots')) {
+          return Promise.resolve({ ok: false, status: 500 });
+        }
+        sentBody = JSON.parse(init!.body as string);
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ number: 11, html_url: 'https://github.com/someone/somerepo/issues/11' }),
+        });
+      }),
+    );
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/feedback',
+      headers: { cookie },
+      payload: {
+        type: 'bug',
+        title: 'Screenshot-Test ohne Upload',
+        description: 'Siehe Bild.',
+        screenshot: `data:image/png;base64,${TINY_PNG_BASE64}`,
+      },
+    });
+
+    expect(res.statusCode).toBe(201);
+    expect(sentBody?.body).not.toContain('![Screenshot]');
+    expect(sentBody?.body).toContain('Screenshot konnte nicht angehängt werden');
   });
 
   it('auto-approves issues from a trusted reporter with the agent-ok label', async () => {

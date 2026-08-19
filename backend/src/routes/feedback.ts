@@ -1,15 +1,15 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { randomUUID } from 'node:crypto';
-import { writeFile } from 'node:fs/promises';
-import path from 'node:path';
 import { db } from '../db/index.js';
-import { uploadsDir } from '../uploads.js';
-import { createGithubIssue } from '../utils/githubIssue.js';
+import { createGithubIssue, uploadFeedbackScreenshot } from '../utils/githubIssue.js';
 
 // Bewusst NICHT trip-gebunden (wie routes/users.ts) – ein Bug/eine Idee betrifft die App als
 // Ganzes, nicht einen einzelnen Urlaub. Nutzt deshalb weder requireTripMember noch das bestehende,
 // an trip_id gebundene attachments-System (siehe routes/attachments.ts); ein Screenshot wird
-// stattdessen direkt hier hochgeladen und als Bild-Link in den GitHub-Issue-Body eingebettet.
+// stattdessen direkt per GitHub Contents API in den feedback-screenshots-Branch committet (siehe
+// utils/githubIssue.ts) und als raw.githubusercontent.com-Bild-Link in den Issue-Body eingebettet -
+// nicht auf diesem Server abgelegt, damit die Sichtbarkeit im Issue nicht von der externen
+// Erreichbarkeit dieses Servers zum (von GitHub selbst bestimmten) Abrufzeitpunkt abhängt (#111).
 
 interface FeedbackBody {
   type: 'bug' | 'feature';
@@ -54,6 +54,7 @@ export const feedbackRoutes: FastifyPluginAsync = async (app) => {
     }
 
     let imageUrl: string | null = null;
+    let screenshotError: string | null = null;
     if (screenshot) {
       const match = /^data:([a-z0-9.+-]+\/[a-z0-9.+-]+);base64,(.+)$/i.exec(screenshot);
       if (!match) return reply.code(400).send({ error: 'Ungültiges Bildformat' });
@@ -66,12 +67,14 @@ export const feedbackRoutes: FastifyPluginAsync = async (app) => {
         return reply.code(413).send({ error: 'Screenshot ist zu groß (max. 8 MB)' });
       }
 
-      const storedFilename = `${randomUUID()}.${extension}`;
-      await writeFile(path.join(uploadsDir, storedFilename), buffer);
-      // Absolute URL nötig (nicht nur der Pfad) - GitHub lädt das Bild von außerhalb dieses
-      // Servers. req.protocol berücksichtigt dank trustProxy:true (app.ts) den von Caddy gesetzten
-      // X-Forwarded-Proto-Header korrekt.
-      imageUrl = `${req.protocol}://${req.hostname}/api/uploads/${storedFilename}`;
+      const uploadResult = await uploadFeedbackScreenshot(buffer, extension, `${randomUUID()}.${extension}`);
+      // Ein fehlgeschlagener Screenshot-Upload soll die Meldung selbst nicht verhindern - die
+      // Beschreibung allein ist immer noch nützlich. Stattdessen landet ein Hinweis im Issue-Body.
+      if (uploadResult.ok) {
+        imageUrl = uploadResult.url;
+      } else {
+        screenshotError = uploadResult.error;
+      }
     }
 
     const reporter = db
@@ -81,6 +84,7 @@ export const feedbackRoutes: FastifyPluginAsync = async (app) => {
     const bodyParts = [
       description.trim(),
       imageUrl ? `\n![Screenshot](${imageUrl})` : '',
+      screenshotError ? `\n_Screenshot konnte nicht angehängt werden: ${screenshotError}_` : '',
       '\n---',
       `Gemeldet von **${reporter?.username ?? 'unbekannt'}**${reporter?.email ? ` (${reporter.email})` : ''} über das In-App-Feedback-Formular.`,
     ];
