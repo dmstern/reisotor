@@ -1040,8 +1040,6 @@ function onSheetDragEnd() {
   window.removeEventListener('pointermove', onSheetDragMove);
   window.removeEventListener('pointerup', onSheetDragEnd);
   const current = sheetDragHeightPx.value;
-  sheetDragHeightPx.value = null;
-  clearSheetHeightOverride();
   // current bleibt null, wenn zwischen Down und Up kein einziges pointermove-Event feuerte – bei
   // einem echten, sehr kurzen/bewegungslosen Antippen (v. a. auf Touch-Geräten üblich) kommt das
   // durchaus vor. Wurde das bisher wie "keine Bewegung erfasst, also gar nichts tun" behandelt
@@ -1052,10 +1050,21 @@ function onSheetDragEnd() {
     // Kaum/keine Bewegung = Tippen statt Ziehen: einen Zustand weiterschalten statt "an derselben
     // Stelle" wieder einzurasten (das wäre sonst ein wirkungsloser Tap gewesen).
     sheetState.value = SHEET_ORDER[(SHEET_ORDER.indexOf(sheetState.value) + 1) % SHEET_ORDER.length];
-    return;
+  } else {
+    // Ab hier laut movedFar-Berechnung oben garantiert nicht null.
+    sheetState.value = resolveSheetTargetState(sheetState.value, current as number);
   }
-  // Ab hier laut movedFar-Berechnung oben garantiert nicht null.
-  sheetState.value = resolveSheetTargetState(sheetState.value, current as number);
+  // Erst NACHDEM sheetState (und damit die Ziel-Höhen-Klasse) im DOM angekommen ist, die
+  // inline-Höhe entfernen (siehe applySheetHeight/clearSheetHeightOverride oben) - vorher hätte das
+  // Entfernen für einen Frame die noch alte Zustands-Klasse (Höhe VOR dem Zug) greifen lassen, bevor
+  // Vue die neue Klasse nachzieht: das Sheet sprang dadurch beim Loslassen sichtbar auf seine
+  // Ausgangshöhe zurück, um erst danach zur echten Zielposition zu animieren (#99, v. a. bei
+  // schnellem Swipe-and-Release auffällig, weil dort die Zeit zwischen Loslassen und Vue-Update am
+  // knappsten ist).
+  nextTick(() => {
+    sheetDragHeightPx.value = null;
+    clearSheetHeightOverride();
+  });
 }
 
 // Wie Apple Maps: solange die Schublade nicht ganz oben ("voll") steht, ist die Liste selbst NICHT
@@ -1109,10 +1118,14 @@ function onSheetBodyPointerUp() {
   sheetBodyDragging = false;
   sheetDragging.value = false;
   const current = sheetDragHeightPx.value;
-  sheetDragHeightPx.value = null;
-  clearSheetHeightOverride();
-  if (current == null) return;
-  sheetState.value = resolveSheetTargetState(sheetState.value, current);
+  if (current != null) sheetState.value = resolveSheetTargetState(sheetState.value, current);
+  // Reihenfolge wie in onSheetDragEnd oben: inline-Höhe erst NACH dem sheetState-Update entfernen
+  // (per nextTick), sonst greift kurz die alte Zustands-Klasse und die Schublade springt sichtbar
+  // zurück, bevor sie zur Zielposition animiert (#99).
+  nextTick(() => {
+    sheetDragHeightPx.value = null;
+    clearSheetHeightOverride();
+  });
 }
 
 // Buttons als Alternative zum Ziehen am Anfasser (weniger präzise auf kleinen Touch-Zielen) –
