@@ -53,15 +53,6 @@ jobs:
             frontend/package-lock.json
             e2e/package-lock.json
 
-      # bcrypt (backend) und better-sqlite3 (backend/e2e) laden i. d. R. vorgebaute Binaries
-      # (prebuild-install) und brauchen dafür keinen Compiler - dieser Schritt ist nur eine
-      # günstige Absicherung für den Fall, dass für eine Node-/libc-Kombination doch kein
-      # passendes Prebuild existiert und auf Source-Build zurückgefallen wird. Deutlich kleinerer
-      # Paket-Umfang als die vorherigen Playwright-System-Deps, fällt bei der Laufzeit kaum ins
-      # Gewicht.
-      - name: Install native build tools (bcrypt/better-sqlite3 fallback)
-        run: apt-get update && apt-get install -y --no-install-recommends python3 make g++
-
       - name: Install & build backend
         working-directory: backend
         run: |
