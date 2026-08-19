@@ -717,3 +717,22 @@ textarea:focus {
 .fade-leave-to {
   opacity: 0;
 }
+
+/* Mobile Spot-Karten-Aufklapp-Animation (#90, siehe ExcursionsView.vue's animateSpotExpand()) - ein
+   flex-direction-Wechsel (Zeile -> Spalte, SpotCard.vue's @container-Regel) lässt sich nicht per
+   simpler CSS-transition animieren, die View-Transitions-API übernimmt das stattdessen (fotografiert
+   Vorher/Nachher, morpht/blendet selbst). ::view-transition-Pseudoelemente wirken IMMER global
+   (können nicht scoped werden), gehören deshalb hier statt in eine Komponente. Nur die eine, gerade
+   wechselnde Karte trägt den Namen (view-transition-name, dynamisch per :style gesetzt) - alles
+   andere läuft über die UA-Default-Root-Transition (::view-transition-old/new(root), bewusst nicht
+   überschrieben: bei nur einer benannten Gruppe bleibt die Root-Ebene ohnehin unsichtbar/leer).
+   Etwas kürzer als der Browser-Default (~250ms statt 400ms), an SpotCard.vue's eigene
+   .image-Transition (0.15s) angelehnt. */
+::view-transition-group(expanding-spot-card) {
+  animation-duration: 0.25s;
+}
+
+::view-transition-old(expanding-spot-card),
+::view-transition-new(expanding-spot-card) {
+  animation-duration: 0.25s;
+}

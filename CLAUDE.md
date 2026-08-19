@@ -210,7 +210,9 @@ Für spontane visuelle Verifikation einer einzelnen Änderung (kein dauerhafter 
 kurze Wegwerf-Spec unter `e2e/tests/scratch/` schreiben (gitignored, nie committen), die zur
 fraglichen Stelle navigiert, interagiert und `page.screenshot({ path: ... })` aufruft. Mit
 `npx playwright test tests/scratch/<name>.spec.ts` ausführen, den Screenshot per Read-Tool selbst
-ansehen und bewerten, Datei danach löschen.
+ansehen und bewerten. Die Wegwerf-**Spec** danach löschen, das erzeugte **PNG** aber aufheben (bleibt
+im gitignoreten `e2e/tests/scratch/`) — bei sichtbaren UI-Änderungen ist das der Kandidat für die
+PR-Screenshots, siehe "Screenshots im PR selbst" unten.
 
 ## PR-Merge-Regel
 
@@ -237,12 +239,17 @@ direkt im PR (Body oder Kommentar) — in den relevanten Viewports (mind. mobil 
 ~1280px, bei reiner Desktop- oder Mobil-Änderung reicht der jeweils betroffene Viewport). Zweck: der
 Nutzer soll das Ergebnis direkt auf GitHub sehen können, bevor überhaupt gemergt/deployt wird.
 
-Technisch: Screenshots per Playwright erzeugen (Wegwerf-Spec-Kniff oben), dann NICHT im
-gitignoreten `e2e/tests/scratch/` belassen, sondern committen (z. B. unter
-`docs/pr-screenshots/<kurzer-slug>/` auf demselben Feature-Branch) und im PR-Body/-Kommentar per
-Markdown-Bild-Syntax auf die `raw.githubusercontent.com`-/Blob-URL dieses Branches verlinken — GitHub
-rendert das inline (kein direkter Bild-Upload-Endpunkt in dieser Umgebung verfügbar). Reine
-Text-/Backend-only-Änderungen brauchen keine Screenshots.
+Technisch: **Erst prüfen, ob aus einem Ad-hoc-Check während der Entwicklung dieses PRs bereits ein
+aktueller Screenshot des betroffenen Bereichs in `e2e/tests/scratch/` liegt** (nach dem letzten
+UI-relevanten Code-Change für diesen Bereich, im passenden Viewport). Falls ja: diesen direkt
+wiederverwenden — kein erneuter Playwright-Lauf nötig. Falls nein (noch keiner vorhanden, seither
+UI-relevanter Code geändert, oder ein benötigter Viewport fehlt noch): wie gewohnt per Playwright
+erzeugen (Wegwerf-Spec-Kniff oben). In beiden Fällen: PNG NICHT im gitignoreten
+`e2e/tests/scratch/` belassen, sondern committen (z. B. unter `docs/pr-screenshots/<kurzer-slug>/`
+auf demselben Feature-Branch) und im PR-Body/-Kommentar per Markdown-Bild-Syntax auf die
+`raw.githubusercontent.com`-/Blob-URL dieses Branches verlinken — GitHub rendert das inline (kein
+direkter Bild-Upload-Endpunkt in dieser Umgebung verfügbar). Reine Text-/Backend-only-Änderungen
+brauchen keine Screenshots.
 
 Dabei bewusst lokal bleiben (Wegwerf-Spec), nicht nach CI verlagern — spart Tokens ohne die
 Trigger-Loop-/Angriffsflächen-Risiken eines CI-Jobs mit Rückschreibrechten auf den PR-Branch. Genauso

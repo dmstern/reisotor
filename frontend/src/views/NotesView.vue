@@ -18,6 +18,7 @@ import UndoDeleteRow from '../components/UndoDeleteRow.vue';
 import FileAttachments from '../components/FileAttachments.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import DraftStatusBar from '../components/DraftStatusBar.vue';
+import DraftBadge from '../components/DraftBadge.vue';
 import PendingSyncBadge from '../components/PendingSyncBadge.vue';
 import { formatDateTime } from '../utils/dateFormat';
 import { useUndoableDelete } from '../composables/useUndoableDelete';
@@ -54,6 +55,15 @@ const editDraft = useDraftAutosave(
   editForm,
   computed(() => editingNote.value !== null),
 );
+
+// Bereits als Entwurf gesicherte, aber noch nicht veröffentlichte eigene Notiz (#89) - höchstens
+// eine gleichzeitig, siehe openNew()/closeForm() unten, die genau diesen Entwurf statt eines
+// zusätzlichen zweiten wiederverwenden.
+const myDraft = computed(() => notes.value.find((n) => n.is_draft && n.created_by === auth.user?.id) ?? null);
+
+function hasFormContent(f: { title: string; content: string }) {
+  return f.title.trim().length > 0 || !isEmptyRichText(f.content);
+}
 
 async function load() {
   try {
@@ -139,6 +149,16 @@ function formatDate(iso: string) {
   return formatDateTime(iso);
 }
 
+// "+ Neue Notiz": ein bereits gesicherter eigener Entwurf wird weiterbearbeitet statt einen
+// zweiten, parallelen Entwurf anzulegen (#89).
+function openNew() {
+  if (myDraft.value) {
+    startEdit(myDraft.value);
+  } else {
+    showForm.value = true;
+  }
+}
+
 async function submit() {
   if (isEmptyRichText(form.value.content)) return;
   const created = await api.post<Note>('/notes', {
@@ -153,8 +173,23 @@ async function submit() {
   newDraft.clear();
 }
 
-function closeForm() {
+// Schließen ohne "Hinzufügen" verwirft nicht mehr kommentarlos den eingegebenen Inhalt (#89:
+// Nutzer-Feedback, die bisherige Autosave-Zwischenspeicherung war weder in der Übersicht sichtbar
+// noch beim nächsten "Neuer Eintrag" wiederzufinden) - stattdessen wird ein echter, für andere
+// Trip-Mitglieder unsichtbarer Entwurfs-Eintrag angelegt (is_draft:true), sichtbar/weiterbearbeitbar
+// über die Notizen-Liste. Ganz leere Formulare erzeugen weiterhin keinen Eintrag.
+async function closeForm() {
   showForm.value = false;
+  if (hasFormContent(form.value)) {
+    const created = await api.post<Note>('/notes', {
+      trip_id: tripId,
+      title: form.value.title || undefined,
+      content: form.value.content,
+      content_format: 'html',
+      is_draft: true,
+    });
+    notes.value.unshift(created);
+  }
   form.value = emptyForm();
   newDraft.clear();
 }
@@ -164,12 +199,15 @@ function startEdit(note: Note) {
   editForm.value = { title: note.title ?? '', content: note.content };
 }
 
+// Explizites "Speichern"/"Veröffentlichen" macht aus einem Entwurf immer eine veröffentlichte Notiz
+// (is_draft:false) - für bereits veröffentlichte Notizen ist das ein No-op, da dort schon 0.
 async function submitEdit() {
   if (!editingNote.value || isEmptyRichText(editForm.value.content)) return;
   const updated = await api.put<Note>(`/notes/${editingNote.value.id}`, {
     title: editForm.value.title || undefined,
     content: editForm.value.content,
     content_format: 'html',
+    is_draft: false,
   });
   const idx = notes.value.findIndex((n) => n.id === updated.id);
   if (idx !== -1) notes.value[idx] = updated;
@@ -177,7 +215,20 @@ async function submitEdit() {
   editingNote.value = null;
 }
 
-function closeEditForm() {
+// Schließen ohne "Speichern" bei einem noch unveröffentlichten Entwurf sichert den aktuellen Stand
+// weiterhin als Entwurf (statt die Änderungen zu verwerfen) - bei einer bereits veröffentlichten
+// Notiz bleibt es wie bisher beim reinen Verwerfen des Bearbeitungs-Zwischenstands.
+async function closeEditForm() {
+  if (editingNote.value?.is_draft && hasFormContent(editForm.value)) {
+    const updated = await api.put<Note>(`/notes/${editingNote.value.id}`, {
+      title: editForm.value.title || undefined,
+      content: editForm.value.content,
+      content_format: 'html',
+      is_draft: true,
+    });
+    const idx = notes.value.findIndex((n) => n.id === updated.id);
+    if (idx !== -1) notes.value[idx] = updated;
+  }
   editDraft.clear();
   editingNote.value = null;
 }
@@ -206,7 +257,7 @@ async function restore(id: number) {
   <div class="page" v-if="!loading">
     <div class="header">
       <h1>Notizen</h1>
-      <button @click="showForm = true">+ Neue Notiz</button>
+      <button @click="openNew">+ Neue Notiz</button>
     </div>
 
     <p v-if="error" class="error">{{ error }}</p>
@@ -228,6 +279,7 @@ async function restore(id: number) {
         <div v-else class="card note-card" :class="{ 'new-highlight': highlightedIds.has(note.id) }">
           <div class="note-head">
             <h3 v-if="note.title">{{ note.title }}</h3>
+            <DraftBadge v-if="note.is_draft" />
             <PendingSyncBadge v-if="note._pending" />
             <div class="note-actions">
               <EditButton small @click="startEdit(note)" />
@@ -268,7 +320,7 @@ async function restore(id: number) {
         <RichTextEditor v-model="editForm.content" />
         <FileAttachments v-if="editingNote" domain="notes" :entity-id="editingNote.id" />
         <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />
-        <button type="submit">Speichern</button>
+        <button type="submit">{{ editingNote?.is_draft ? 'Veröffentlichen' : 'Speichern' }}</button>
       </form>
     </Modal>
   </div>
@@ -304,6 +356,7 @@ async function restore(id: number) {
 
 .note-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   gap: var(--space-2);
 }
@@ -319,6 +372,12 @@ async function restore(id: number) {
   display: flex;
   gap: 4px;
   flex-shrink: 0;
+  /* Rückt die Buttons auch dann ans rechte Zeilenende, wenn kein h3 (flex:1) daneben steht, das
+     sie von selbst dorthin schiebt - z. B. bei einem Entwurf ohne Titel, wo nur DraftBadge.vue's
+     Pille (white-space:nowrap, kein flex:1) davor sitzt. Ohne das drängten Badge+Buttons auf
+     schmalen Karten/Screens ungebremst über den rechten Card-Rand hinaus (siehe flex-wrap oben,
+     das genau für diesen Fall zusätzlich einen Zeilenumbruch statt Überlauf erlaubt). */
+  margin-left: auto;
 }
 
 .error {

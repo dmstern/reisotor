@@ -67,6 +67,11 @@ const emit = defineEmits<{
   // die Elternkomponente (ExcursionsView.vue) besitzt die Gruppierungs-Einstellung (groupMode) und
   // schaltet auf "nach Touren gruppieren" um, damit die Tour-Karten als Drop-Ziele sichtbar werden.
   (e: 'assign-to-tour'): void;
+  // "Auf Karte anzeigen"-Button (Mini- wie aufgeklappte Karte, siehe onShowOnMap unten) – eigene,
+  // explizite Aktion statt (wie vor #109) automatisch beim Aufklappen mitzulaufen: schrumpft das
+  // Sheet auf "angeschnitten" UND zentriert/vergrößert den Pin, unabhängig davon, ob die Karte hier
+  // gerade auf- oder zugeklappt ist.
+  (e: 'show-on-map'): void;
 }>();
 
 const showComments = ref(false);
@@ -156,19 +161,23 @@ const { dragging, ghostStyle, onPointerDown } = usePointerDrag({
   },
 });
 
-// Klick auf die Karte klappt sie auf-/zu, statt (wie zuvor) einen Modal-Dialog zu öffnen – die
+// Klick auf die Karte klappt sie nur auf-/zu, statt (wie zuvor) einen Modal-Dialog zu öffnen – die
 // direkt danebenliegende Karte (TripMap.vue) bleibt dadurch immer interaktiv, auch während man
-// sich die Details eines Spots ansieht. Aufklappen zoomt/zentriert zusätzlich über
-// drawers.openMapAt auf diesen Spot und lässt TripMap.vue seinen Pin dezent vergrößert darstellen;
-// Zuklappen hebt die Hervorhebung wieder auf.
+// sich die Details eines Spots ansieht. Fokussiert die Karte NICHT mehr automatisch (#109 - das
+// vermischte zwei unabhängige Absichten: "Detail ansehen" vs. "auf der Karte zeigen", Letzteres
+// schrumpfte dabei ungewollt ein bereits voll ausgefahrenes Sheet). Zuklappen hebt eine per
+// "Auf Karte anzeigen" gesetzte Hervorhebung auf diesen Spot trotzdem mit auf.
 function onCardClick() {
   if (props.expanded) {
     emit('close');
     if (drawers.mapFocusKey === `spot-${props.spot.id}`) drawers.mapFocusKey = null;
   } else {
     emit('open', props.spot);
-    drawers.openMapAt(`spot-${props.spot.id}`);
   }
+}
+
+function onShowOnMap() {
+  emit('show-on-map');
 }
 </script>
 
@@ -200,6 +209,15 @@ function onCardClick() {
         <h3>{{ spot.title }}</h3>
         <CategoryChip :category="spot.category" />
         <PendingSyncBadge v-if="spot._pending" />
+      </div>
+      <!-- Eigene, explizite Aktion statt am Aufklappen dranzuhängen (#109, siehe onShowOnMap im
+           Script) – in Mini- UND aufgeklappter Karte sichtbar (Textlabel schrumpft im Kompakt-Modus
+           auf reines Icon, siehe @container-Regel unten), gleiche Konvention wie
+           ExcursionCard.vue/SpotDetailDialog.vue's "Auf Karte anzeigen"-Button. -->
+      <div class="links" v-if="spot.lat != null && spot.lng != null">
+        <button type="button" class="card-action-btn show-on-map-btn" @click.stop="onShowOnMap">
+          <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" /> <span class="btn-label">Auf Karte anzeigen</span>
+        </button>
       </div>
       <p v-if="expanded && creatorLabel" class="detail-row"><span class="detail-label">Von</span>{{ creatorLabel }}</p>
       <template v-if="expanded && isAccommodation">
@@ -545,8 +563,9 @@ function onCardClick() {
 }
 
 /* Kompakte Listen-Zeile statt Miniatur-Card auf schmalen .spots-col-Breiten – zeigt nur die
-   wichtigsten Infos (Bild, Titel, Kategorie), sekundäre Aktionen (Notiz, Anfasser,
-   Auf-Karte-Button) erst nach dem Aufklappen (:not(.expanded)). Grob nach demselben Zeilen-Muster
+   wichtigsten Infos (Bild, Titel, Kategorie) plus den auf ein Icon geschrumpften "Auf Karte
+   anzeigen"-Button (#109, bleibt bewusst auch hier erreichbar), sekundäre Aktionen (Notiz,
+   Anfasser) erst nach dem Aufklappen (:not(.expanded)). Grob nach demselben Zeilen-Muster
    wie ExcursionCard.vue (festes Vorschaubild links, Rest daneben). Container-Query statt @media:
    reagiert auf die tatsächliche Breite von .spots-col (container-type dort in ExcursionsView.vue),
    nicht auf die Fenster-/Viewport-Breite – greift dadurch auch, wenn man auf Desktop den Anfasser
@@ -581,10 +600,29 @@ function onCardClick() {
   }
 
   .spot-card:not(.expanded) .note,
-  .spot-card:not(.expanded) .links,
   .spot-card:not(.expanded) .card-actions,
   .spot-card:not(.expanded) .maps-picker {
     display: none;
+  }
+
+  /* Anders als .note/.card-actions/.maps-picker oben bleibt .links (der "Auf Karte
+     anzeigen"-Button) hier bewusst sichtbar (#109 - der Button muss auch auf der Mini-Karte
+     erreichbar sein), schrumpft aber auf einen reinen Icon-Kreis (Textlabel ausgeblendet) statt
+     der vollen Pille - gleiches Verkleinerungs-Muster wie .status unten. */
+  .spot-card:not(.expanded) .links {
+    margin-top: 2px;
+  }
+
+  .spot-card:not(.expanded) .show-on-map-btn .btn-label {
+    display: none;
+  }
+
+  .spot-card:not(.expanded) .show-on-map-btn {
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 50%;
   }
 
   .spot-card:not(.expanded) .social-row {

@@ -11,7 +11,7 @@ import EditButton from './EditButton.vue';
 import DeleteButton from './DeleteButton.vue';
 import SocialRow from './SocialRow.vue';
 import Comments, { type CommentItem } from './Comments.vue';
-import ExcursionDetailDialog from './ExcursionDetailDialog.vue';
+import RichTextDisplay from './RichTextDisplay.vue';
 import SpotImageCollage from './SpotImageCollage.vue';
 import PendingSyncBadge from './PendingSyncBadge.vue';
 import AppIcon from './AppIcon.vue';
@@ -34,6 +34,12 @@ const props = defineProps<{
   stations: Spot[];
   travelItems: TravelItem[];
   highlighted?: boolean;
+  // Analog zu SpotCard.vue's expanded-Prop (dort ausführlich begründet): lebt beim Elternteil
+  // (ExcursionsView.vue), damit ein künftiger Fokus-Sprung von außen (z. B. Karten-Klick auf die
+  // Tour-Route) dieselbe Karte aufklappen könnte, ohne dass diese Komponente von dort direkt
+  // ansprechbar sein müsste. Ersetzt den früheren ExcursionDetailDialog.vue-Modal-Dialog (#92) - an
+  // Ort und Stelle aufklappen statt Overlay, exakt wie bei SpotCard.
+  expanded: boolean;
 }>();
 const emit = defineEmits<{
   (e: 'remove', id: number): void;
@@ -43,10 +49,18 @@ const emit = defineEmits<{
   (e: 'remove-comment', id: number): void;
   (e: 'drop-spot', spotId: number): void;
   (e: 'show-on-map'): void;
-  (e: 'edit-station-spot', spot: Spot): void;
+  (e: 'open', excursion: Excursion): void;
+  (e: 'close'): void;
 }>();
 
-const detailOpen = ref(false);
+// Klick auf die Karte klappt sie auf-/zu, statt (wie zuvor) einen Modal-Dialog zu öffnen (#92) -
+// exakt dasselbe Muster wie SpotCard.vue's onCardClick, nur ohne dessen zusätzlichen
+// Karten-Fokus-Nebeneffekt (der ist dort seit #109 ebenfalls entfernt - "Auf Karte anzeigen"
+// bleibt bewusst eine eigene, explizite Aktion statt am Aufklappen dranzuhängen).
+function onCardClick() {
+  if (props.expanded) emit('close');
+  else emit('open', props.excursion);
+}
 
 const resolvedStations = computed(() =>
   resolveStations(excursionStationKeys(props.excursion.spot_ids), props.stations, props.travelItems),
@@ -153,8 +167,8 @@ function onSpotDrop(event: DragEvent) {
 <template>
   <div
     class="card excursion-card"
-    :class="{ 'drop-target': spotDragOverCount > 0, 'new-highlight': highlighted }"
-    @click="detailOpen = true"
+    :class="{ 'drop-target': spotDragOverCount > 0, 'new-highlight': highlighted, expanded }"
+    @click="onCardClick"
     @dragover.prevent
     @dragenter.prevent="onSpotDragEnter"
     @dragleave="onSpotDragLeave"
@@ -183,6 +197,11 @@ function onSpotDrop(event: DragEvent) {
         <h3>{{ excursion.title }}</h3>
         <PendingSyncBadge v-if="excursion._pending" />
       </div>
+      <!-- Nur in der aufgeklappten Karte (#92, ersetzt den früheren ExcursionDetailDialog.vue) -
+           analog zu SpotCard.vue's "Von <creator>"-Zeile/Notiz, die dort ebenfalls erst beim
+           Aufklappen sichtbar wird. -->
+      <p v-if="expanded && creatorLabel" class="detail-row"><span class="detail-label">Von</span>{{ creatorLabel }}</p>
+      <RichTextDisplay v-if="expanded && excursion.note" class="note" :content="excursion.note" :format="excursion.note_format" />
       <div class="links" v-if="hasMappedStations">
         <button type="button" class="card-action-btn" @click.stop="emit('show-on-map')">
           <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" /> Auf Karte anzeigen
@@ -235,23 +254,6 @@ function onSpotDrop(event: DragEvent) {
         @remove="(id) => emit('remove-comment', id)"
       />
     </div>
-
-    <ExcursionDetailDialog
-      v-model="detailOpen"
-      :excursion="excursion"
-      :creator-label="creatorLabel"
-      :like-count="likeCount"
-      :liked="liked"
-      :comments="comments"
-      :stations="stations"
-      :travel-items="travelItems"
-      @edit="detailOpen = false; emit('edit', excursion)"
-      @toggle-like="emit('toggle-like')"
-      @submit-comment="(content) => emit('submit-comment', content)"
-      @remove-comment="(id) => emit('remove-comment', id)"
-      @show-on-map="emit('show-on-map')"
-      @edit-station-spot="(spot) => emit('edit-station-spot', spot)"
-    />
   </div>
 </template>
 
@@ -279,6 +281,17 @@ function onSpotDrop(event: DragEvent) {
 
 /* Spot per Drag&Drop aus der Spots-Sicht darauf ablegen (SpotCard.vue ist die Drag-Quelle). */
 .excursion-card.drop-target {
+  border-color: var(--color-primary);
+  background: var(--color-primary-tint);
+}
+
+/* Ersetzt den früheren ExcursionDetailDialog.vue-Modal-Dialog (#92): die Karte wächst an Ort und
+   Stelle leicht (zusätzliche Zeilen für Ersteller:in/Notiz, siehe Template), statt einen Dialog
+   über die Karte zu legen - exakt dasselbe Prinzip wie SpotCard.vue's .spot-card.expanded. Fester
+   statt gestrichelter Rahmen (anders als .drop-target oben), damit die beiden Zustände optisch
+   unterscheidbar bleiben. */
+.excursion-card.expanded {
+  border-style: solid;
   border-color: var(--color-primary);
   background: var(--color-primary-tint);
 }
@@ -497,5 +510,9 @@ function onSpotDrop(event: DragEvent) {
   flex-wrap: wrap;
   gap: var(--space-2);
   margin-top: 4px;
+}
+
+.note {
+  overflow-wrap: anywhere;
 }
 </style>

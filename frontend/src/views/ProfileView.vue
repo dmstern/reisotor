@@ -33,7 +33,20 @@ import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import FeedbackDialog from '../components/FeedbackDialog.vue';
 import TabBar from '../components/TabBar.vue';
-import { IconUser, IconUserFilled, IconDeviceDesktop, IconBell, IconBellFilled, IconDatabase, IconInfoCircle, IconInfoCircleFilled } from '@tabler/icons-vue';
+import {
+  IconUser,
+  IconUserFilled,
+  IconDeviceDesktop,
+  IconBell,
+  IconBellFilled,
+  IconDatabase,
+  IconInfoCircle,
+  IconInfoCircleFilled,
+  IconPuzzle,
+  IconCloud,
+  IconBug,
+} from '@tabler/icons-vue';
+import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import type { IconDef } from '../utils/icon';
 
 const auth = useAuthStore();
@@ -50,12 +63,19 @@ const dashboardConfig = useDashboardConfigStore();
 // Anders als bei ListenView.vue sind die Tab-Inhalte hier reine Template-Blöcke derselben
 // Komponente statt eigener Kind-Komponenten - das bestehende einzelne onMounted() unten lädt
 // weiterhin alles unabhängig vom aktiven Tab, die v-ifs zeigen nur, was davon gerade sichtbar ist.
+// Bell-/Puzzle-/Wetter-/Käfer-Icon werden mehrfach gebraucht (Tab-Leiste UND einzelne
+// Karten-Überschriften weiter unten, siehe #94) - einmal hier definiert statt an jeder Stelle neu.
+const BELL_ICON: IconDef = { id: 'bell', emoji: '🔔', outline: IconBell, filled: IconBellFilled };
+const DASHBOARD_TILES_ICON: IconDef = { id: 'puzzle', emoji: '🧩', outline: IconPuzzle };
+const WEATHER_SECTION_ICON: IconDef = { id: 'cloud', emoji: '🌤️', outline: IconCloud };
+const FEEDBACK_ICON: IconDef = { id: 'bug', emoji: '🐛', outline: IconBug };
+
 type Tab = 'account' | 'app' | 'trip' | 'notifications' | 'data' | 'about';
 const TABS: { key: Tab; label: string; icon: IconDef }[] = [
   { key: 'account', label: 'Account', icon: { id: 'user', emoji: '👤', outline: IconUser, filled: IconUserFilled } },
   { key: 'app', label: 'App-Einstellungen', icon: { id: 'device-desktop', emoji: '🖥️', outline: IconDeviceDesktop } },
   { key: 'trip', label: 'Reise-Anzeige', icon: FORM_FIELD_ICONS.date },
-  { key: 'notifications', label: 'Benachrichtigungen', icon: { id: 'bell', emoji: '🔔', outline: IconBell, filled: IconBellFilled } },
+  { key: 'notifications', label: 'Benachrichtigungen', icon: BELL_ICON },
   { key: 'data', label: 'Daten', icon: { id: 'database', emoji: '🗄️', outline: IconDatabase } },
   { key: 'about', label: 'Über', icon: { id: 'info-circle', emoji: 'ℹ️', outline: IconInfoCircle, filled: IconInfoCircleFilled } },
 ];
@@ -495,7 +515,7 @@ async function onImportFileSelected(event: Event) {
       </div>
 
       <div class="card">
-        <h2>🧩 Dashboard-Kacheln</h2>
+        <h2><AppIcon :icon="DASHBOARD_TILES_ICON" group="navigation" :size="20" /> Dashboard-Kacheln</h2>
         <p class="hint nav-config-hint">Reihenfolge und Sichtbarkeit der Dashboard-Kacheln.</p>
         <!-- Eigene dashboard-config-list/-row-Klassen statt der optisch identischen nav-config-list/
              -row oben (gleiche CSS-Regeln per Komma-Selektor, siehe dort) - sonst würden e2e-
@@ -542,7 +562,7 @@ async function onImportFileSelected(event: Event) {
       </div>
 
       <div class="card">
-        <h2>🏖️ Urlaubs-Hinweis</h2>
+        <h2><AppIcon :icon="ACTION_ICONS.vacation" group="navigation" :size="20" /> Urlaubs-Hinweis</h2>
         <p class="hint intro-hint">
           Der Hinweis im Dashboard-Header während des laufenden Urlaubs zeigt standardmäßig immer
           denselben Text - kann hier stattdessen auf einen Countdown der verbleibenden Urlaubstage
@@ -557,7 +577,7 @@ async function onImportFileSelected(event: Event) {
 
     <div v-if="activeTab === 'trip'" class="grid settings-grid">
       <div id="calendar-settings" class="card">
-        <h2>📅 Kalender</h2>
+        <h2><AppIcon :icon="SECTION_ICON_DEFS.calendar" group="navigation" :size="20" /> Kalender</h2>
         <p class="hint intro-hint">Wochenanfang und Zahlenformat für Datumsanzeigen in der ganzen App.</p>
         <div class="nav-position-row">
           <label>
@@ -581,7 +601,7 @@ async function onImportFileSelected(event: Event) {
 
       <!-- id als Sprungziel für den "Anbieter wechseln"-Link im Wetter-Widget (DashboardView.vue) -->
       <div id="weather-provider-settings" class="card">
-        <h2>🌤️ Wetter</h2>
+        <h2><AppIcon :icon="WEATHER_SECTION_ICON" group="navigation" :size="20" /> Wetter</h2>
         <p class="hint intro-hint">
           Wettervorhersage über Open-Meteo, das mehrere echte Wetterdienste bündelt. Zeigt eine
           Vorhersage abweichende Werte gegenüber anderen Wetter-Apps (z. B. Apple Weather), lässt sich
@@ -603,7 +623,7 @@ async function onImportFileSelected(event: Event) {
 
       <!-- id als Sprungziel, analog zu #weather-provider-settings oben -->
       <div id="home-currency-settings" class="card">
-        <h2>💱 Heimatwährung</h2>
+        <h2><AppIcon :icon="ACTION_ICONS.currency" group="navigation" :size="20" /> Heimatwährung</h2>
         <p class="hint intro-hint">
           Wird im Dashboard genutzt, um bei Urlauben mit abweichender Landeswährung den aktuellen
           Wechselkurs anzuzeigen.
@@ -621,7 +641,7 @@ async function onImportFileSelected(event: Event) {
 
     <template v-if="activeTab === 'notifications'">
       <div class="card">
-        <h2>🔔 Meldungen</h2>
+        <h2><AppIcon :icon="BELL_ICON" group="navigation" :size="20" /> Meldungen</h2>
         <p class="hint intro-hint">
           Kurze Meldungen, die bei jedem Laden/Speichern/Löschen kurz unten am Bildschirmrand
           aufblitzen (z. B. "Speichert…"), damit klar wird, dass die App gerade tatsächlich mit dem
@@ -635,7 +655,7 @@ async function onImportFileSelected(event: Event) {
       </div>
 
       <div class="card">
-        <h2>🔔 Push-Benachrichtigungen</h2>
+        <h2><AppIcon :icon="BELL_ICON" group="navigation" :size="20" /> Push-Benachrichtigungen</h2>
         <p class="hint" v-if="!pushSupported">
           Push-Benachrichtigungen werden von diesem Browser nicht unterstützt.
         </p>
@@ -690,7 +710,7 @@ async function onImportFileSelected(event: Event) {
 
     <template v-if="activeTab === 'data'">
       <div class="card">
-        <h2>🗑️ Papierkorb</h2>
+        <h2><AppIcon :icon="ACTION_ICONS.delete" group="navigation" :size="20" /> Papierkorb</h2>
         <p class="hint intro-hint">
           Gelöschte Termine, Ausflüge, Spots und mehr bleiben eine Weile hier erhalten und lassen sich
           wiederherstellen.
@@ -738,7 +758,7 @@ async function onImportFileSelected(event: Event) {
 
     <template v-if="activeTab === 'about'">
       <div class="card">
-        <h2>🐛 Feedback</h2>
+        <h2><AppIcon :icon="FEEDBACK_ICON" group="navigation" :size="20" /> Feedback</h2>
         <p class="hint intro-hint">
           Bug gefunden oder eine Idee für eine neue Funktion? Landet direkt als Issue im
           Reisotor-Repository.
@@ -769,6 +789,16 @@ async function onImportFileSelected(event: Event) {
 <style scoped>
 .page > .card {
   margin-bottom: var(--space-4);
+}
+
+/* Karten-Überschriften, die (#94) ein AppIcon statt eines rohen Emoji-Zeichens voranstellen -
+   h2/h3 sind sonst reine Block-Elemente ohne Flex, das Icon würde ohne das hier leicht
+   unausgerichtet zur Textgrundlinie sitzen (gleiches Muster wie ExcursionsView.vue's
+   .category-heading). */
+.card h2:has(.app-icon) {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 /* Tab-Leiste jetzt die gemeinsame TabBar-Komponente (components/TabBar.vue) statt eines eigenen,

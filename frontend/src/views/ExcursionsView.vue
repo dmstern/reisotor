@@ -183,8 +183,8 @@ function author(id: number) {
   return users.value.find((u) => u.id === id);
 }
 
-// --- Likes/Kommentare Spots (über stores/spots.ts, geteilt mit TripMap.vue/
-// ExcursionDetailDialog.vue, die Spot-Detail-Dialoge außerhalb dieser Sicht öffnen können) ---
+// --- Likes/Kommentare Spots (über stores/spots.ts, geteilt mit TripMap.vue, das Spot-Detail-
+// Dialoge außerhalb dieser Sicht öffnen kann) ---
 function spotCommentItemsFor(spotId: number) {
   return spotsStore.commentsFor(spotId).map((c) => ({
     id: c.id,
@@ -854,6 +854,35 @@ onUnmounted(() => {
 // @focus-spot) dieselbe Karte von außen aufklappen können muss, exakt wie ein Kategorie-Klick
 // scrollToCategory() von außen auslöst (gleiches Ref-Map-Muster wie categoryRefs oben).
 const expandedSpotId = ref<number | null>(null);
+
+// Mobil (Bottom-Sheet, siehe isSheetOverlayMode unten) wechselt eine Karte beim Auf-/Zuklappen
+// zwischen einer Zeilen- und einer Spalten-Anordnung (@container-Regel in SpotCard.vue) - anders
+// als Desktops reine .image-Höhen-Transition lässt sich ein flex-direction-Wechsel nicht per
+// simpler CSS-transition animieren (#90). Die View-Transitions-API (soweit unterstützt, sonst
+// schlichter Sprung als Fallback) übernimmt hier stattdessen den Übergang: sie fotografiert Vorher/
+// Nachher und blendet/morpht selbst über einen echten Layout-Wechsel hinweg - dieselbe Karte trägt
+// dafür kurzzeitig einen festen view-transition-name (siehe :style an der SpotCard-Instanz im
+// Template), IMMER nur eine einzige gleichzeitig (ein Tap wechselt genau eine Karte), Kollisionen
+// mit demselben Namen sind dadurch ausgeschlossen. Nur im Sheet-Overlay-Modus aktiv: Desktop hat
+// bereits seine eigene, ausreichende CSS-Transition, eine zusätzliche View-Transition würde dort
+// nur unnötig doppelt (und ggf. wechselwirkend) animieren.
+const transitioningSpotId = ref<number | null>(null);
+const supportsViewTransition = typeof document !== 'undefined' && 'startViewTransition' in document;
+function animateSpotExpand(targetId: number | null, mutate: () => void) {
+  if (!supportsViewTransition || !isSheetOverlayMode.value) {
+    mutate();
+    return;
+  }
+  transitioningSpotId.value = targetId;
+  const transition = (document as unknown as { startViewTransition: (cb: () => void | Promise<void>) => { finished: Promise<void> } }).startViewTransition(async () => {
+    mutate();
+    await nextTick();
+  });
+  transition.finished.finally(() => {
+    transitioningSpotId.value = null;
+  });
+}
+
 const spotRefs = new Map<number, HTMLElement>();
 function setSpotRef(id: number, el: Element | ComponentPublicInstance | null) {
   const domEl = el && '$el' in el ? (el.$el as HTMLElement) : (el as HTMLElement | null);
@@ -870,9 +899,15 @@ function scrollToSpot(id: number) {
 }
 // Klick auf einen Spot-Pin auf der Karte (TripMap.vue) klappt die passende Karte hier auf und
 // scrollt sie in den Blick – die Pin-Vergrößerung selbst setzt TripMap.vue bereits eigenständig
-// (drawers.mapFocusKey), hier geht es nur um die Liste.
+// (drawers.mapFocusKey), hier geht es nur um die Liste. Mobil ist die Liste dabei ein Bottom-Sheet
+// über der Karte (siehe sheetState unten) – steht es eingeklappt, wäre die aufgeklappte Karte
+// unsichtbar. Öffnet deshalb (Google-Maps-Stil) mindestens "angeschnitten", rührt einen bereits
+// weiter geöffneten Zustand (partial/full) aber nicht an (#104).
 function onFocusSpotFromMap(spotId: number) {
-  expandedSpotId.value = spotId;
+  animateSpotExpand(spotId, () => {
+    expandedSpotId.value = spotId;
+  });
+  if (sheetState.value === 'collapsed') sheetState.value = 'partial';
   scrollToSpot(spotId);
 }
 
@@ -955,6 +990,23 @@ onUnmounted(() => tourLineResizeObserver?.disconnect());
 // Kinder, worauf der ResizeObserver nicht zuverlässig anspringt, wenn sich dadurch die
 // Gesamthöhe zufällig nicht ändert.
 watch(spotGroups, () => nextTick(() => { for (const id of tourWrapRefs.keys()) recomputeTourLine(id); }));
+
+// Welche Tour-Gruppe ist gerade aufgeklappt (ExcursionCard.vue, ersetzt den früheren
+// ExcursionDetailDialog.vue-Modal-Dialog, #92) – analog zu expandedSpotId oben.
+const expandedExcursionId = ref<number | null>(null);
+// Klick auf den Ausflug-Titel im Karten-Fokus-Panel (TripMap.vue's @focus-excursion) klappt die
+// passende ExcursionCard hier auf und scrollt sie in den Blick – exakt dasselbe Muster wie
+// onFocusSpotFromMap oben. Die Gruppen-Überschrift ist nur bei Touren-Gruppierung eine echte
+// ExcursionCard (siehe spotGroups), deshalb hier ggf. zuerst umschalten.
+function onFocusExcursionFromMap(excursionId: number) {
+  groupMode.value = 'tours';
+  expandedExcursionId.value = excursionId;
+  if (sheetState.value === 'collapsed') sheetState.value = 'partial';
+  nextTick(() => {
+    const grp = spotGroups.value.find((g) => g.excursion?.id === excursionId);
+    if (grp) categoryRefs.get(grp.category)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+}
 
 // --- Aufteilung Spots-Liste/Karte per Anfasser verschiebbar (nur Desktop-Grid, siehe @container-
 // Query im CSS) ---
@@ -1120,8 +1172,6 @@ function onSheetDragEnd() {
   window.removeEventListener('pointermove', onSheetDragMove);
   window.removeEventListener('pointerup', onSheetDragEnd);
   const current = sheetDragHeightPx.value;
-  sheetDragHeightPx.value = null;
-  clearSheetHeightOverride();
   // current bleibt null, wenn zwischen Down und Up kein einziges pointermove-Event feuerte – bei
   // einem echten, sehr kurzen/bewegungslosen Antippen (v. a. auf Touch-Geräten üblich) kommt das
   // durchaus vor. Wurde das bisher wie "keine Bewegung erfasst, also gar nichts tun" behandelt
@@ -1132,10 +1182,21 @@ function onSheetDragEnd() {
     // Kaum/keine Bewegung = Tippen statt Ziehen: einen Zustand weiterschalten statt "an derselben
     // Stelle" wieder einzurasten (das wäre sonst ein wirkungsloser Tap gewesen).
     sheetState.value = SHEET_ORDER[(SHEET_ORDER.indexOf(sheetState.value) + 1) % SHEET_ORDER.length];
-    return;
+  } else {
+    // Ab hier laut movedFar-Berechnung oben garantiert nicht null.
+    sheetState.value = resolveSheetTargetState(sheetState.value, current as number);
   }
-  // Ab hier laut movedFar-Berechnung oben garantiert nicht null.
-  sheetState.value = resolveSheetTargetState(sheetState.value, current as number);
+  // Erst NACHDEM sheetState (und damit die Ziel-Höhen-Klasse) im DOM angekommen ist, die
+  // inline-Höhe entfernen (siehe applySheetHeight/clearSheetHeightOverride oben) - vorher hätte das
+  // Entfernen für einen Frame die noch alte Zustands-Klasse (Höhe VOR dem Zug) greifen lassen, bevor
+  // Vue die neue Klasse nachzieht: das Sheet sprang dadurch beim Loslassen sichtbar auf seine
+  // Ausgangshöhe zurück, um erst danach zur echten Zielposition zu animieren (#99, v. a. bei
+  // schnellem Swipe-and-Release auffällig, weil dort die Zeit zwischen Loslassen und Vue-Update am
+  // knappsten ist).
+  nextTick(() => {
+    sheetDragHeightPx.value = null;
+    clearSheetHeightOverride();
+  });
 }
 
 // Wie Apple Maps: solange die Schublade nicht ganz oben ("voll") steht, ist die Liste selbst NICHT
@@ -1189,10 +1250,14 @@ function onSheetBodyPointerUp() {
   sheetBodyDragging = false;
   sheetDragging.value = false;
   const current = sheetDragHeightPx.value;
-  sheetDragHeightPx.value = null;
-  clearSheetHeightOverride();
-  if (current == null) return;
-  sheetState.value = resolveSheetTargetState(sheetState.value, current);
+  if (current != null) sheetState.value = resolveSheetTargetState(sheetState.value, current);
+  // Reihenfolge wie in onSheetDragEnd oben: inline-Höhe erst NACH dem sheetState-Update entfernen
+  // (per nextTick), sonst greift kurz die alte Zustands-Klasse und die Schublade springt sichtbar
+  // zurück, bevor sie zur Zielposition animiert (#99).
+  nextTick(() => {
+    sheetDragHeightPx.value = null;
+    clearSheetHeightOverride();
+  });
 }
 
 // Buttons als Alternative zum Ziehen am Anfasser (weniger präzise auf kleinen Touch-Zielen) –
@@ -1245,13 +1310,30 @@ onUnmounted(() => appMainResizeObserver?.disconnect());
 const isSheetOverlayMode = computed(() => (appMainWidth.value ?? window.innerWidth) < 720);
 const mapCoveredBottomPx = computed(() => (isSheetOverlayMode.value ? currentSheetHeightPx.value : 0));
 
-// Ein Klick auf eine Spot-Karte öffnet sie (siehe SpotCard.vue's onCardClick, das bereits
-// drawers.openMapAt() aufruft) – steht das Sheet dabei auf "voll", verdeckt es die Karte komplett;
-// ein Schritt zurück auf "angeschnitten" gibt genug sichtbare Kartenfläche frei, um den gerade
-// fokussierten Punkt auch tatsächlich zu sehen, ohne die Liste ganz zu verstecken.
+// Ein Klick auf eine Spot-Karte klappt sie nur auf, ohne das Sheet anzurühren oder die Karte zu
+// fokussieren (#109) – beides sind eigenständige Aktionen über den separaten "Auf Karte
+// anzeigen"-Button (siehe onSpotShowOnMap unten), sonst konfligieren "Detail ansehen" und "auf der
+// Karte zeigen" miteinander (ein voll ausgefahrenes Sheet schrumpfte zuvor bei jedem Karten-Klick
+// ungewollt wieder auf "angeschnitten").
 function onSpotCardOpen(spot: Spot) {
-  expandedSpotId.value = spot.id;
-  if (sheetState.value === 'full') sheetState.value = 'partial';
+  animateSpotExpand(spot.id, () => {
+    expandedSpotId.value = spot.id;
+  });
+}
+function onSpotCardClose() {
+  const closingId = expandedSpotId.value;
+  animateSpotExpand(closingId, () => {
+    expandedSpotId.value = null;
+  });
+}
+
+// "Auf Karte anzeigen"-Button (Mini- wie aufgeklappte Karte, siehe SpotCard.vue) – schrumpft das
+// Sheet auf "angeschnitten" (Google-Maps-Stil, genug sichtbare Kartenfläche für den fokussierten
+// Punkt) UND zentriert/vergrößert den Pin (drawers.openMapAt), unabhängig vom Aufklapp-Zustand der
+// Karte selbst.
+function onSpotShowOnMap(spot: Spot) {
+  sheetState.value = 'partial';
+  drawers.openMapAt(`spot-${spot.id}`);
 }
 
 // Ein Tag-/Ausflug-Fokus (ScheduleView.vue's "🗺️ Tag auf Karte anzeigen" bzw. ExcursionCard.vue's
@@ -1949,6 +2031,7 @@ async function removeSpot(id: number) {
           :comments="excursionCommentItemsFor(grp.excursion.id)"
           :stations="spotsStore.spots"
           :travel-items="travelItems"
+          :expanded="expandedExcursionId === grp.excursion.id"
           @edit="startEditExcursion"
           @remove="removeExcursion"
           @toggle-like="toggleExcursionLike(grp.excursion.id)"
@@ -1956,7 +2039,8 @@ async function removeSpot(id: number) {
           @remove-comment="removeExcursionComment"
           @drop-spot="(spotId) => addSpotToExcursion(grp.excursion!.id, spotId)"
           @show-on-map="drawers.openMapForExcursion(grp.excursion.id)"
-          @edit-station-spot="startEditSpot"
+          @open="expandedExcursionId = grp.excursion.id"
+          @close="expandedExcursionId = null"
         />
         <h3 v-else class="category-heading" :ref="(el) => setCategoryRef(grp.category, el)">
           <AppIcon :icon="grp.iconDef" group="categories" /> {{ grp.category }}
@@ -1995,6 +2079,7 @@ async function removeSpot(id: number) {
                 v-else
                 :key="`spot-${item.spot.id}`"
                 :ref="(el) => setSpotRef(item.spot.id, el)"
+                :style="transitioningSpotId === item.spot.id ? { viewTransitionName: 'expanding-spot-card' } : {}"
                 :spot="item.spot"
                 :highlighted="highlightedIds.has(item.spot.id)"
                 :expanded="expandedSpotId === item.spot.id"
@@ -2010,7 +2095,8 @@ async function removeSpot(id: number) {
                 @submit-comment="(content) => submitSpotComment(item.spot.id, content)"
                 @remove-comment="removeSpotComment"
                 @open="onSpotCardOpen"
-                @close="expandedSpotId = null"
+                @close="onSpotCardClose"
+                @show-on-map="onSpotShowOnMap(item.spot)"
                 @assign-to-tour="groupMode = 'tours'"
               />
             </template>
@@ -2148,6 +2234,7 @@ async function removeSpot(id: number) {
         :sheet-overlay-mode="isSheetOverlayMode"
         @edit-spot="startEditSpot"
         @focus-spot="onFocusSpotFromMap"
+        @focus-excursion="onFocusExcursionFromMap"
         @edit-excursion="startEditExcursion"
       />
     </div>

@@ -346,6 +346,8 @@ export interface Note {
   created_by: number | null;
   created_at: string;
   updated_at: string | null;
+  /** Entwurf, nur für created_by sichtbar (#89) - siehe DraftBadge/isDraft-Handling in NotesView.vue. */
+  is_draft: 0 | 1;
   /** Nur clientseitig gesetzt, siehe PackingItem._pending oben. */
   _pending?: boolean;
 }
@@ -378,6 +380,10 @@ export interface DiaryEntry {
   updated_at: string | null;
   /** IDs der Ausflüge, die diesem Eintrag zugeordnet sind (z. B. an diesem Tag unternommen). */
   excursion_ids: number[];
+  /** IDs der Mit-Bearbeiter:innen (jede:r außer author_id, der/die den Eintrag mal gespeichert hat). */
+  editor_ids: number[];
+  /** Entwurf, nur für author_id sichtbar (#89) - siehe DraftBadge/isDraft-Handling in DiaryView.vue. */
+  is_draft: 0 | 1;
   /** Nur clientseitig gesetzt, siehe PackingItem._pending oben. */
   _pending?: boolean;
 }

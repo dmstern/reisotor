@@ -108,14 +108,23 @@ onUnmounted(() => {
   box-shadow: var(--shadow-md);
 }
 
-/* fullHeight-Variante (siehe Prop oben): align-self:stretch überschreibt gezielt nur für dieses
-   Element das align-items:center der .overlay, wodurch die Höhe automatisch auf deren Content-Box
-   wächst (Viewport abzüglich .overlay's eigenem Padding) – kein eigenes vh/dvh-Kalkül nötig. */
+/* fullHeight-Variante (siehe Prop oben): ursprünglich per align-self:stretch auf die volle
+   Viewport-Höhe gestreckt, damit ein enthaltenes <textarea> per :slotted() mitwachsen konnte. Seit
+   alle Anlegen-Formulare RichTextEditor.vue statt eines rohen <textarea> nutzen (das seine Höhe
+   bereits selbst deckelt, siehe dort), hätte der Zwangs-Stretch nur noch ungenutzten Leerraum unter
+   kurzen Formularen erzeugt (#88, konkret bei Notizen: Titel + Editor füllen die gestreckte Höhe
+   nicht annähernd aus) – Höhe wächst jetzt stattdessen wie beim Basis-.modal mit dem Inhalt
+   (max-height:90vh + overflow-y:auto), Desktop bekommt zusätzlich mehr Breite für die inhaltsreichen
+   Formulare, die diese Variante nutzen (Notizen/Tagebuch/Touren/Spots/Reise). */
 .modal.full-height {
-  align-self: stretch;
-  max-height: none;
   display: flex;
   flex-direction: column;
+}
+
+@media (min-width: 800px) {
+  .modal.full-height {
+    max-width: 640px;
+  }
 }
 
 .modal.full-height .modal-body {

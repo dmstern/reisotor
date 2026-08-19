@@ -9,6 +9,7 @@ interface NoteBody {
   title?: string;
   content: string;
   content_format?: 'html' | 'legacy';
+  is_draft?: boolean;
 }
 
 interface CommentBody {
@@ -19,9 +20,13 @@ export const notesRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: { trip_id?: string } }>('/notes', async (req, reply) => {
     if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
     if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
+    // Entwürfe (is_draft) sind rein persönlich (#89) - nur für die eigene created_by sichtbar, damit
+    // sie nicht schon vor dem Veröffentlichen für andere Trip-Mitglieder in der Liste auftauchen.
     return db
-      .prepare('SELECT * FROM notes WHERE trip_id = ? AND deleted_at IS NULL ORDER BY created_at DESC, id DESC')
-      .all(req.query.trip_id);
+      .prepare(
+        'SELECT * FROM notes WHERE trip_id = ? AND deleted_at IS NULL AND (is_draft = 0 OR created_by = ?) ORDER BY created_at DESC, id DESC',
+      )
+      .all(req.query.trip_id, req.session.userId);
   });
 
   app.post<{ Body: NoteBody }>('/notes', async (req, reply) => {
@@ -31,27 +36,41 @@ export const notesRoutes: FastifyPluginAsync = async (app) => {
     const now = new Date().toISOString();
     const result = db
       .prepare(
-        'INSERT INTO notes (trip_id, title, content, content_format, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+        'INSERT INTO notes (trip_id, title, content, content_format, created_by, created_at, is_draft) VALUES (?, ?, ?, ?, ?, ?, ?)',
       )
-      .run(trip_id, title ?? null, isHtml ? sanitizeHtml(content) : content, isHtml ? 'html' : 'legacy', req.session.userId, now);
+      .run(
+        trip_id,
+        title ?? null,
+        isHtml ? sanitizeHtml(content) : content,
+        isHtml ? 'html' : 'legacy',
+        req.session.userId,
+        now,
+        req.body.is_draft ? 1 : 0,
+      );
     recordActivity(trip_id, 'notes', result.lastInsertRowid as number, 'created', req.session.userId!);
     reply.code(201);
     return db.prepare('SELECT * FROM notes WHERE id = ?').get(result.lastInsertRowid);
   });
 
   app.put<{ Params: { id: string }; Body: NoteBody }>('/notes/:id', async (req, reply) => {
-    const existingNote = db.prepare('SELECT trip_id FROM notes WHERE id = ?').get(req.params.id) as
-      | { trip_id: number }
+    const existingNote = db.prepare('SELECT trip_id, created_by, is_draft FROM notes WHERE id = ?').get(req.params.id) as
+      | { trip_id: number; created_by: number | null; is_draft: number }
       | undefined;
     if (!existingNote) return reply.code(404).send({ error: 'Nicht gefunden' });
     if (!requireTripMember(reply, existingNote.trip_id, req.session.userId)) return;
+    // Ein Entwurf bleibt auch beim Bearbeiten rein persönlich - anders als veröffentlichte Notizen
+    // (dort darf jedes Trip-Mitglied mitschreiben) darf ihn nur die anlegende Person anfassen.
+    if (existingNote.is_draft && existingNote.created_by !== req.session.userId) {
+      return reply.code(403).send({ error: 'Nur die Autorin/der Autor kann diesen Entwurf bearbeiten' });
+    }
 
     const { title, content } = req.body;
     const isHtml = req.body.content_format === 'html';
     const now = new Date().toISOString();
+    const isDraft = req.body.is_draft !== undefined ? (req.body.is_draft ? 1 : 0) : existingNote.is_draft;
     const result = db
-      .prepare('UPDATE notes SET title = ?, content = ?, content_format = ?, updated_at = ? WHERE id = ?')
-      .run(title ?? null, isHtml ? sanitizeHtml(content) : content, isHtml ? 'html' : 'legacy', now, req.params.id);
+      .prepare('UPDATE notes SET title = ?, content = ?, content_format = ?, updated_at = ?, is_draft = ? WHERE id = ?')
+      .run(title ?? null, isHtml ? sanitizeHtml(content) : content, isHtml ? 'html' : 'legacy', now, isDraft, req.params.id);
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
     recordActivity(existingNote.trip_id, 'notes', Number(req.params.id), 'updated', req.session.userId!);
     return db.prepare('SELECT * FROM notes WHERE id = ?').get(req.params.id);
@@ -60,11 +79,14 @@ export const notesRoutes: FastifyPluginAsync = async (app) => {
   // Weicher Löschvorgang (Papierkorb, routes/trash.ts): setzt nur deleted_at statt die Zeile
   // wirklich zu entfernen.
   app.delete<{ Params: { id: string } }>('/notes/:id', async (req, reply) => {
-    const existingNote = db.prepare('SELECT trip_id FROM notes WHERE id = ?').get(req.params.id) as
-      | { trip_id: number }
+    const existingNote = db.prepare('SELECT trip_id, created_by, is_draft FROM notes WHERE id = ?').get(req.params.id) as
+      | { trip_id: number; created_by: number | null; is_draft: number }
       | undefined;
     if (!existingNote) return reply.code(404).send({ error: 'Nicht gefunden' });
     if (!requireTripMember(reply, existingNote.trip_id, req.session.userId)) return;
+    if (existingNote.is_draft && existingNote.created_by !== req.session.userId) {
+      return reply.code(403).send({ error: 'Nur die Autorin/der Autor kann diesen Entwurf löschen' });
+    }
 
     const result = db
       .prepare('UPDATE notes SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL')

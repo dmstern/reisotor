@@ -31,9 +31,9 @@ export interface SpotFormData {
 }
 
 // Eigener Store statt lokalem State in ExcursionsView (analog zu stores/excursions.ts): Spots
-// werden jetzt auch außerhalb der Ausflüge-Sicht gebraucht (TripMap.vue's Stationsliste,
-// ExcursionDetailDialog.vue's Stationen-Klick), beide sollen dabei denselben Like-/Kommentar-Stand
-// sehen wie die Spots-Übersicht, ohne eigene Parallel-Fetches.
+// werden jetzt auch außerhalb der Ausflüge-Sicht gebraucht (TripMap.vue's Stationsliste), die
+// dabei denselben Like-/Kommentar-Stand sehen soll wie die Spots-Übersicht, ohne eigene
+// Parallel-Fetches.
 export const useSpotsStore = defineStore('spots', () => {
   const tripStore = useTripStore();
   const liveSync = useLiveSyncStore();

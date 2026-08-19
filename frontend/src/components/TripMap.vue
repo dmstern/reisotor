@@ -11,8 +11,6 @@ import 'leaflet-rotate';
 import { api } from '../api/client';
 import type {
   Excursion,
-  ExcursionComment,
-  ExcursionLike,
   LocationTrack,
   ScheduleItem,
   Spot,
@@ -48,7 +46,6 @@ import { interpolateTrackPosition } from '../utils/trackGeometry';
 import { useIsDesktop } from '../composables/useIsDesktop';
 import SpotDetailDialog from './SpotDetailDialog.vue';
 import MiniStationCard from './MiniStationCard.vue';
-import ExcursionDetailDialog from './ExcursionDetailDialog.vue';
 import TravelDetailDialog from './TravelDetailDialog.vue';
 import CurrentWeatherBadge from './CurrentWeatherBadge.vue';
 import TrackPlayback from './TrackPlayback.vue';
@@ -126,6 +123,10 @@ const emit = defineEmits<{
   // Modal-Dialogs (der die Karte dahinter blockieren würde) klappt die passende Spot-Karte in der
   // Liste auf – die kennt TripMap.vue nicht direkt, daher Emit an die Karte-Hauptsicht.
   (e: 'focus-spot', spotId: number): void;
+  // Klick auf den Ausflug-Titel unter der Karte (#92, ersetzt den früheren ExcursionDetailDialog.vue)
+  // – analog zu focus-spot: die passende ExcursionCard klappt in der Spots-Liste auf/scrollt in den
+  // Blick, statt einen eigenen Dialog zu öffnen.
+  (e: 'focus-excursion', excursionId: number): void;
   // Bearbeiten eines Ausflugs: die Karte besitzt kein eigenes Touren-Formular, lebt aber (wie beim
   // Spot-Formular oben) im selben Komponentenbaum wie die echte Touren-Bearbeiten-Form
   // (ExcursionsView.vue) – kein Routen-/Schubladen-Sprung nötig, nur ein Emit nach oben.
@@ -169,13 +170,6 @@ const scheduleItems = ref<ScheduleItem[]>([]);
 // anderen Views, die /users unabhängig voneinander laden, statt einen weiteren globalen Store
 // dafür anzulegen.
 const users = ref<User[]>([]);
-
-// Likes/Kommentare von Ausflügen liegen (wie in ExcursionsView.vue) nicht im excursions-Store,
-// sondern weiterhin lokal an ideas/idea_likes/idea_comments gebunden – hier eigens geladen, damit
-// der Ausflug-Detail-Dialog (unten, Klick auf den Kartentitel unter der Karte) dieselben Daten
-// zeigen kann wie in der Ausflüge-Sicht.
-const ideaLikes = ref<ExcursionLike[]>([]);
-const ideaComments = ref<ExcursionComment[]>([]);
 
 const mapEl = ref<HTMLDivElement | null>(null);
 let map: L.Map | null = null;
@@ -602,16 +596,12 @@ const focusedExcursionStations = computed<ExcursionStation[]>(() => {
 async function loadAll() {
   const tripId = tripStore.currentTripId;
   if (tripId == null) return;
-  const [travelRes, scheduleRes, ideaLikesRes, ideaCommentsRes] = await Promise.all([
+  const [travelRes, scheduleRes] = await Promise.all([
     api.get<TravelItem[]>(`/travel?trip_id=${tripId}`),
     api.get<ScheduleItem[]>(`/schedule?trip_id=${tripId}`),
-    api.get<ExcursionLike[]>(`/ideas/likes?trip_id=${tripId}`),
-    api.get<ExcursionComment[]>(`/ideas/comments?trip_id=${tripId}`),
   ]);
   travelItems.value = travelRes;
   scheduleItems.value = scheduleRes;
-  ideaLikes.value = ideaLikesRes;
-  ideaComments.value = ideaCommentsRes;
   // Spots kommen jetzt aus dem geteilten spotsStore (reaktiv, wird u. a. von ExcursionsView.vue
   // selbst aktuell gehalten) – kein eigener Fetch/Refresh-Trigger hier mehr nötig.
 }
@@ -663,69 +653,13 @@ function editOpenSpot() {
   emit('edit-spot', openSpot.value);
 }
 
-// Klick auf den Ausflug-Titel unter der Karte öffnet dessen Detail-Dialog (dieselbe Komponente wie
-// in ExcursionsView.vue) – "welcher Ausflug" (openExcursionId) und "ist der Dialog offen"
-// (excursionDetailOpen) bewusst getrennt, gleicher Grund wie bei openSpotId/spotDialogOpen oben.
-const openExcursionId = ref<number | null>(null);
-const excursionDetailOpen = ref(false);
-const openExcursion = computed(() => excursionsStore.excursions.find((e) => e.id === openExcursionId.value) ?? null);
+// Klick auf den Ausflug-Titel unter der Karte: früher öffnete das einen eigenen Detail-Dialog
+// (ExcursionDetailDialog.vue), der seit #92 entfällt (redundant zur ExcursionCard.vue in der
+// Spots-Liste). Verhält sich jetzt wie ein Spot-Pin-Klick (siehe handlePointClick's focus-spot) -
+// Emit an die Karte-Hauptsicht, die die passende ExcursionCard dort aufklappt/in den Blick scrollt.
 function openExcursionDetail() {
   if (!focusedExcursion.value) return;
-  openExcursionId.value = focusedExcursion.value.id;
-  excursionDetailOpen.value = true;
-}
-function ideaCreatorLabel(userId: number | null) {
-  if (userId == null) return null;
-  const u = users.value.find((u) => u.id === userId);
-  return u ? `${u.avatar} ${u.username}` : null;
-}
-function ideaLikeCount(ideaId: number) {
-  return ideaLikes.value.filter((l) => l.idea_id === ideaId).length;
-}
-function ideaLikedByMe(ideaId: number) {
-  return ideaLikes.value.some((l) => l.idea_id === ideaId && l.user_id === auth.user?.id);
-}
-function ideaCommentItemsFor(ideaId: number) {
-  return ideaComments.value
-    .filter((c) => c.idea_id === ideaId)
-    .sort((a, b) => a.created_at.localeCompare(b.created_at))
-    .map((c) => ({
-      id: c.id,
-      avatar: users.value.find((u) => u.id === c.author_id)?.avatar ?? '❓',
-      username: users.value.find((u) => u.id === c.author_id)?.username ?? '?',
-      content: c.content,
-      canRemove: c.author_id === auth.user?.id,
-    }));
-}
-async function toggleIdeaLike(ideaId: number) {
-  const result = await api.post<{ liked: boolean }>(`/ideas/${ideaId}/like`);
-  if (result.liked) {
-    ideaLikes.value.push({ id: Date.now(), idea_id: ideaId, user_id: auth.user!.id });
-  } else {
-    ideaLikes.value = ideaLikes.value.filter((l) => !(l.idea_id === ideaId && l.user_id === auth.user!.id));
-  }
-}
-async function submitIdeaComment(ideaId: number, content: string) {
-  const created = await api.post<ExcursionComment>(`/ideas/${ideaId}/comments`, { content });
-  ideaComments.value.push(created);
-}
-async function removeIdeaComment(id: number) {
-  await api.delete(`/ideas/comments/${id}`);
-  ideaComments.value = ideaComments.value.filter((c) => c.id !== id);
-}
-// Bearbeiten öffnet die echte Touren-Bearbeiten-Form der Karte-Hauptsicht (beide Teil desselben
-// Komponentenbaums, siehe emit-Deklaration oben) – kein Schubladen-Sprung mehr nötig.
-function editExcursionDetail() {
-  if (!openExcursion.value) return;
-  excursionDetailOpen.value = false;
-  emit('edit-excursion', openExcursion.value);
-}
-
-// Bearbeiten einer Tour-Station (Spot) nutzt denselben edit-spot-Emit wie ein direkter Pin-Klick
-// (editOpenSpot oben) – ExcursionDetailDialog.vue liefert dafür bereits den fertigen Spot mit.
-function editStationSpot(spot: Spot) {
-  excursionDetailOpen.value = false;
-  emit('edit-spot', spot);
+  emit('focus-excursion', focusedExcursion.value.id);
 }
 
 const openTravelId = ref<number | null>(null);
@@ -1679,24 +1613,6 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
       @show-on-map="spotDialogOpen = false"
     />
 
-    <ExcursionDetailDialog
-      v-if="openExcursion"
-      v-model="excursionDetailOpen"
-      :excursion="openExcursion"
-      :creator-label="ideaCreatorLabel(openExcursion.created_by)"
-      :like-count="ideaLikeCount(openExcursion.id)"
-      :liked="ideaLikedByMe(openExcursion.id)"
-      :comments="ideaCommentItemsFor(openExcursion.id)"
-      :stations="spotsStore.spots"
-      :travel-items="travelItems"
-      @edit="editExcursionDetail"
-      @toggle-like="toggleIdeaLike(openExcursion.id)"
-      @submit-comment="(content) => submitIdeaComment(openExcursion!.id, content)"
-      @remove-comment="removeIdeaComment"
-      @show-on-map="excursionDetailOpen = false"
-      @edit-station-spot="editStationSpot"
-    />
-
     <TravelDetailDialog
       v-if="openTravel"
       :model-value="travelDialogOpen"
@@ -2082,9 +1998,9 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
   position: static;
 }
 
-/* Kopfzeile: klickbarer Titel-Bereich links (öffnet bei einem Ausflug-Fokus den Detail-Dialog,
-   ExcursionDetailDialog.vue – dieselbe Komponente wie in der Ausflüge-Schublade, hier per eigenem
-   Likes-/Kommentar-Fetch gefüttert), Schließen-Button rechts. Vorher lag der Schließen-Button
+/* Kopfzeile: klickbarer Titel-Bereich links (klappt bei einem Ausflug-Fokus die passende
+   ExcursionCard in der Spots-Liste auf, siehe openExcursionDetail/@focus-excursion – #92, ersetzt
+   den früheren ExcursionDetailDialog.vue), Schließen-Button rechts. Vorher lag der Schließen-Button
    (ursprünglich .focus-banner weiter oben) exakt an derselben Position wie diese ganze Karte
    (beide position:absolute; top/left:10px) – die Karte deckte ihn dadurch komplett zu. Jetzt fest
    in der Kopfzeile verankert, damit er nicht mehr verdeckt werden kann. */
