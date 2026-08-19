@@ -356,6 +356,7 @@ async function restore(id: number) {
 
 .note-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   gap: var(--space-2);
 }
@@ -371,6 +372,12 @@ async function restore(id: number) {
   display: flex;
   gap: 4px;
   flex-shrink: 0;
+  /* Rückt die Buttons auch dann ans rechte Zeilenende, wenn kein h3 (flex:1) daneben steht, das
+     sie von selbst dorthin schiebt - z. B. bei einem Entwurf ohne Titel, wo nur DraftBadge.vue's
+     Pille (white-space:nowrap, kein flex:1) davor sitzt. Ohne das drängten Badge+Buttons auf
+     schmalen Karten/Screens ungebremst über den rechten Card-Rand hinaus (siehe flex-wrap oben,
+     das genau für diesen Fall zusätzlich einen Zeilenumbruch statt Überlauf erlaubt). */
+  margin-left: auto;
 }
 
 .error {
