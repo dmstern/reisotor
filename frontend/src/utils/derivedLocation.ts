@@ -1,15 +1,13 @@
 import type { IconDef } from './icon';
 
-// Ein "abgeleiteter Ort": ein Standort, der bereits anderswo (Unterkunft, Reise-Start-/Zielort)
-// mit Koordinaten hinterlegt ist, aber noch kein eigener Spot ist. Wird in mehreren Komponenten
-// gebraucht (ExcursionsView.vue erzeugt sie, ExcursionCard.vue/SpotOrderPicker.vue nehmen sie als
-// Drop-/Auswahl-Ziel entgegen), daher als gemeinsamer Typ statt mehrfach inline dupliziert.
+// Ein "abgeleiteter Ort": ein Reise-Etappen-Ende ohne verknüpften Spot (Freitext-Von/Nach ohne
+// Wiederverwendung eines bestehenden Orts, siehe travelDerivedLocations.ts), das noch Koordinaten
+// braucht, um als Pin auf TripMap.vue zu erscheinen.
 export interface DerivedLocation {
   key: string;
   title: string;
   icon: string;
-  /** Tabler-Pendant zu icon, für TripMap.vue's Kartenmarker (siehe utils/icon.ts) - additiv, damit
-   *  Aufrufstellen, die nur icon lesen (z. B. DerivedLocationCard.vue), unverändert funktionieren. */
+  /** Tabler-Pendant zu icon, für TripMap.vue's Kartenmarker (siehe utils/icon.ts). */
   tabler: IconDef;
   category: string;
   maps_link: string | null;
