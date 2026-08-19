@@ -31,6 +31,14 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # Playwrights offizielles Image bringt Chromium UND sämtliche System-Bibliotheken dafür schon
+    # fertig mit - erspart bei jedem Lauf das (undgecachte, weil auf einer frischen Runner-VM
+    # jedes Mal neue) `apt-get install` von ~100 Paketen, das vorher den Löwenanteil der Laufzeit
+    # ausmachte (siehe Issue-Diskussion). Image-Tag MUSS exakt zur in e2e/package-lock.json
+    # gepinnten @playwright/test-Version passen (v1.62.1 -> v1.62.1-jammy), sonst driftet die im
+    # Image enthaltene Chromium-Revision von der per npm installierten @playwright/test-Version
+    # auseinander. Bei jedem Playwright-Versions-Bump also diesen Tag mitziehen.
+    container: mcr.microsoft.com/playwright:v1.62.1-jammy
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -44,6 +52,15 @@ jobs:
             backend/package-lock.json
             frontend/package-lock.json
             e2e/package-lock.json
+
+      # bcrypt (backend) und better-sqlite3 (backend/e2e) laden i. d. R. vorgebaute Binaries
+      # (prebuild-install) und brauchen dafür keinen Compiler - dieser Schritt ist nur eine
+      # günstige Absicherung für den Fall, dass für eine Node-/libc-Kombination doch kein
+      # passendes Prebuild existiert und auf Source-Build zurückgefallen wird. Deutlich kleinerer
+      # Paket-Umfang als die vorherigen Playwright-System-Deps, fällt bei der Laufzeit kaum ins
+      # Gewicht.
+      - name: Install native build tools (bcrypt/better-sqlite3 fallback)
+        run: apt-get update && apt-get install -y --no-install-recommends python3 make g++
 
       - name: Install & build backend
         working-directory: backend
@@ -62,16 +79,6 @@ jobs:
       - name: Install e2e dependencies
         working-directory: e2e
         run: npm ci
-
-      - name: Cache Playwright browsers
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('e2e/package-lock.json') }}
-
-      - name: Install Playwright Chromium
-        working-directory: e2e
-        run: npx playwright install --with-deps chromium
 
       - name: Run e2e tests
         working-directory: e2e
