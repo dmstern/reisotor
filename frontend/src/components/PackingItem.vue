@@ -181,14 +181,9 @@ const tallyGroups = computed<number[]>(() => {
 }
 
 /* .row selbst hat (anders als .card) keinen border-radius - die globale .new-highlight-Regel
-   (style.css) würde hier sonst mit ihrem für Karten gedachten Radius overrulen bzw. eckig
-   wirken. Kleinerer, zur schmalen Listen-Zeile passender Wert. Ersetzt außerdem outline durch
-   ein inset box-shadow: Zeilen liegen ohne Abstand aneinander (nur border-bottom), ein nach
-   außen ragendes outline+outline-offset zweier gleichzeitig hervorgehobener Nachbar-Zeilen würde
-   sich sonst überlappen (#98) bzw. an Listen-Rändern abgeschnitten werden (#86). */
+   (style.css, inset box-shadow) würde hier sonst mit ihrem für Karten gedachten Radius overrulen
+   bzw. eckig wirken. Kleinerer, zur schmalen Listen-Zeile passender Wert. */
 .row.new-highlight {
-  outline: none;
-  box-shadow: inset 0 0 0 2px var(--color-accent);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
 }
