@@ -299,6 +299,7 @@ function onSpotDrop(event: DragEvent) {
   position: relative;
   border-radius: var(--radius-md-squircle) 0 0 var(--radius-md-squircle);
   corner-shape: squircle;
+  overflow: hidden;
 }
 
 @media (max-width: 480px) {
