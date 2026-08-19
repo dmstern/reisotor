@@ -913,7 +913,7 @@ function recomputeTourLine(excursionId: number) {
     const p1 = points[i];
     const p2 = points[i + 1];
     const dy = p2.y - p1.y;
-    const controlX = (p1.x + p2.x) / 2 + dy * 0.15;
+    const controlX = (p1.x + p2.x) / 2 - dy * 0.15;
     const controlY = (p1.y + p2.y) / 2;
     d += ` Q ${controlX} ${controlY} ${p2.x} ${p2.y}`;
   }
