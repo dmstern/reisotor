@@ -220,6 +220,15 @@ anhand der im PR angehängten Screenshots, siehe unten, statt direkt auf `dev.re
 testen). Explizit auf einen Merge-Wunsch/eine Freigabe des Nutzers warten, auch wenn CI längst grün
 ist. Nicht als Draft (`draft: false`) erstellen.
 
+## Issues per PR automatisch schließen
+
+Behebt ein PR ein oder mehrere GitHub-Issues, gehört ein von GitHub erkanntes Closing-Keyword in den
+PR-Body (nicht nur eine bloße Erwähnung wie "Löst #101" oder "Betrifft #101") — sonst bleiben die
+Issues nach dem Merge offen. GitHub erkennt dafür nur englische Schlüsselwörter unmittelbar vor der
+Issue-Nummer, z. B. `Fixes #101`, `Closes #101`, `Resolves #101` (auch kombiniert:
+`Fixes #101, #102, #103`). Bei mehreren Issues in einem PR jedes einzeln mit einem solchen Keyword
+referenzieren.
+
 ## Screenshots im PR selbst
 
 Jeder PR mit sichtbarer UI-Änderung/sichtbarem Bugfix bekommt Screenshots des betroffenen Bereichs
