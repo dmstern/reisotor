@@ -136,7 +136,7 @@ watch(() => liveSync.domainVersion.travel, load);
 
 onMounted(async () => {
   highlightedIds.value = liveSync.markSeen('travel');
-  // Querverweis-Sprung (z. B. aus ScheduleView.vue/TripMap.vue/ExcursionDetailDialog.vue) –
+  // Querverweis-Sprung (z. B. aus ScheduleView.vue/TripMap.vue) –
   // dieselbe highlightedIds-Menge wie oben, kein zweites Hervorhebungs-System (hashHighlight.ts).
   const hashId = hashHighlightId(route.hash, 'travel');
   if (hashId != null) highlightedIds.value.add(hashId);

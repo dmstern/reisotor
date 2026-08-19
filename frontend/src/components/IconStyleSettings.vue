@@ -54,6 +54,7 @@ const allGroupsValue = computed(() => {
 
 const navColorRelevant = computed(() => iconStyle.groups.navigation === 'icons');
 const weatherColorRelevant = computed(() => iconStyle.groups.weather === 'icons');
+const categoriesColorRelevant = computed(() => iconStyle.groups.categories === 'icons');
 </script>
 
 <template>
@@ -122,6 +123,17 @@ const weatherColorRelevant = computed(() => iconStyle.groups.weather === 'icons'
             <span class="hint">
               Sonne gelb, Wolken grau, Regen blau, Blitze gelb, … – wirkt sich nur aus, wenn Wetter
               auf Symbole steht (aktuell{{ weatherColorRelevant ? '' : ' nicht' }} der Fall).
+            </span>
+          </span>
+        </label>
+        <label v-if="group.value === 'categories'" class="colorize-row" :class="{ dimmed: !categoriesColorRelevant }">
+          <input type="checkbox" v-model="iconStyle.colorizeCategories" />
+          <span>
+            Kategorie-Icons einfärben
+            <span class="hint">
+              Nutzt dieselbe Akzentfarbe wie der Kategorie-Chip selbst – wirkt sich nur aus, wenn
+              Kategorien auf Symbole stehen (aktuell{{ categoriesColorRelevant ? '' : ' nicht' }} der
+              Fall).
             </span>
           </span>
         </label>
