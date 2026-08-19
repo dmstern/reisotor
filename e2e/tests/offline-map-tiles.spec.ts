@@ -7,6 +7,14 @@ import { E2E_BACKEND_PORT, E2E_PWA_PREVIEW_PORT } from '../constants.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const frontendDir = path.join(__dirname, '..', '..', 'frontend');
 const authFile = path.join(__dirname, '..', '.auth', 'user.json');
+// previewUrl bleibt bei 'localhost' - der storageState aus auth.setup.ts wurde gegen
+// http://localhost:5273 erzeugt, das Session-Cookie ist also an die Domain 'localhost' gebunden;
+// ein Navigieren zu 127.0.0.1 statt localhost würde diese Cookie-Wiederverwendung stillschweigend
+// brechen (andere Origin trotz gleicher Maschine). --host unten zwingt stattdessen den SERVER,
+// zusätzlich explizit auf der IPv4-Loopback-Adresse zu lauschen - manche Container-Umgebungen lösen
+// 'localhost' clientseitig (unser fetch() hier) zu einer anderen Adressfamilie auf als Vites eigener
+// Default, was sonst zu dauerhaftem ECONNREFUSED trotz laufendem Server führt.
+const previewHost = '127.0.0.1';
 const previewUrl = `http://localhost:${E2E_PWA_PREVIEW_PORT}`;
 
 // Braucht wie offline-app-shell.spec.ts einen echten Produktions-Build + `vite preview` statt des
@@ -18,17 +26,21 @@ let previewOutput = '';
 
 async function waitForPreviewServer(): Promise<void> {
   const deadline = Date.now() + 30_000;
+  let lastError: unknown;
   while (Date.now() < deadline) {
     try {
       const res = await fetch(previewUrl);
       if (res.ok) return;
-    } catch {
-      // Server noch nicht bereit - weiter pollen.
+    } catch (err) {
+      // Server noch nicht bereit - weiter pollen, aber den letzten Fehler für eine aussagekräftige
+      // Timeout-Meldung merken (z. B. um ECONNREFUSED von einem DNS-/Adressfamilien-Problem
+      // unterscheiden zu können, statt nur "nicht erreichbar" zu wissen).
+      lastError = err;
     }
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
   throw new Error(
-    `vite preview auf ${previewUrl} nicht innerhalb von 30s erreichbar geworden. Ausgabe:\n${previewOutput}`,
+    `vite preview auf ${previewUrl} nicht innerhalb von 30s erreichbar geworden. Letzter Fehler: ${String(lastError)}. Ausgabe:\n${previewOutput}`,
   );
 }
 
@@ -40,7 +52,7 @@ test.describe.serial('Offline-Kartenkacheln (Workbox Runtime Caching)', () => {
 
     previewProcess = spawn(
       path.join(frontendDir, 'node_modules', '.bin', 'vite'),
-      ['preview', '--port', String(E2E_PWA_PREVIEW_PORT), '--strictPort'],
+      ['preview', '--port', String(E2E_PWA_PREVIEW_PORT), '--strictPort', '--host', previewHost],
       {
         cwd: frontendDir,
         env: { ...process.env, API_PROXY_TARGET: `http://127.0.0.1:${E2E_BACKEND_PORT}` },
