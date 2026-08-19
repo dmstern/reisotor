@@ -784,7 +784,12 @@ function rebuildCategorySectionObserver() {
   intersectingCategories.clear();
   categoryByEl.clear();
   const firstEl = categoryRefs.values().next().value as HTMLElement | undefined;
-  const root = firstEl?.closest('.spots-col-body') ?? null;
+  // .spots-col statt .spots-col-body: Letztere scrollt nur mobil (siehe .spots-col-body-CSS unten),
+  // auf Desktop (≥720px) wird sie per CSS auf overflow-y:visible zurückgesetzt und .spots-col selbst
+  // scrollt (siehe dortiges CSS) - mit .spots-col-body als root berichtete der Observer auf Desktop
+  // nie eine Änderung, activeCategory blieb beim Scrollen unverändert stehen (#102). .spots-col
+  // funktioniert für beide Layouts, siehe identische Begründung bei setCategoryNavSentinelRef oben.
+  const root = firstEl?.closest('.spots-col') ?? null;
   if (!root) return;
   categorySectionObserver = new IntersectionObserver(
     (entries) => {
@@ -797,11 +802,11 @@ function rebuildCategorySectionObserver() {
       const active = spotGroups.value.find((g) => intersectingCategories.has(g.category));
       if (active) activeCategory.value = active.category;
     },
-    // Erkennungslinie knapp unterhalb der sticky Kategorie-Nav (siehe --category-nav-clearance im
-    // CSS unten, derselbe Wert wie beim scroll-margin-top der Gruppen - "aktiv" und "per Klick
-    // angesprungen" greifen dadurch konsistent an derselben Stelle). -65% unten begrenzt die
-    // Erkennungszone auf einen schmalen Streifen statt der kompletten sichtbaren Liste.
-    { root, rootMargin: '-44px 0px -65% 0px', threshold: 0 },
+    // Erkennungslinie knapp unterhalb der sticky Kategorie-Nav (categoryNavHeight, live gemessen -
+    // derselbe Wert wie beim scroll-margin-top der Gruppen über --category-nav-clearance - "aktiv"
+    // und "per Klick angesprungen" greifen dadurch konsistent an derselben Stelle). -65% unten
+    // begrenzt die Erkennungszone auf einen schmalen Streifen statt der kompletten sichtbaren Liste.
+    { root, rootMargin: `-${categoryNavHeight.value}px 0px -65% 0px`, threshold: 0 },
   );
   for (const [category, el] of categoryRefs) {
     categoryByEl.set(el, category);
@@ -827,12 +832,22 @@ function updateCategoryNavUnderline() {
   underlineLeft.value = activeEl.offsetLeft;
   underlineWidth.value = activeEl.offsetWidth;
 }
+// Tatsächlich gerenderte Höhe der .category-nav-Leiste, live gemessen statt (wie zuvor) als starrer
+// CSS-Schätzwert angenommen - Grund für #101 (Kategorie-Klick landete nicht weit genug gescrollt,
+// weil der Schätzwert von der echten Höhe abwich). Default 44px hält den vorherigen Schätzwert nur
+// als Fallback für den allerersten Sprung, bevor der ResizeObserver unten überhaupt einmal gefeuert
+// hat (gleiches Problem/Vorgehen wie bei pageTitleHeight oben). Wird unten als Inline-Style-Var
+// --category-nav-clearance auf .spots-col-body gebunden und ersetzt dort den bisherigen CSS-Fixwert.
+const categoryNavHeight = ref(44);
 let categoryNavResizeObserver: ResizeObserver | null = null;
 function setCategoryNavRef(el: Element | ComponentPublicInstance | null) {
   categoryNavResizeObserver?.disconnect();
   categoryNavResizeObserver = null;
   if (el instanceof HTMLElement) {
-    categoryNavResizeObserver = new ResizeObserver(updateCategoryNavUnderline);
+    categoryNavResizeObserver = new ResizeObserver(() => {
+      updateCategoryNavUnderline();
+      categoryNavHeight.value = el.getBoundingClientRect().height;
+    });
     categoryNavResizeObserver.observe(el);
   }
 }
@@ -840,10 +855,23 @@ watch(activeCategory, () => {
   nextTick(() => {
     updateCategoryNavUnderline();
     const activeEl = activeCategory.value ? navItemRefs.get(activeCategory.value) : null;
-    // 'nearest' statt 'center': scrollt nur, wenn die aktive Pille tatsächlich (teilweise) außerhalb
-    // der sichtbaren Nav-Leiste liegt, und dabei nur innerhalb der Leiste selbst (ihr nächster
-    // scrollender Vorfahre) statt zusätzlich die Spots-Liste dahinter zu verschieben.
-    activeEl?.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' });
+    const navEl = activeEl?.closest('.category-nav') as HTMLElement | null;
+    if (!activeEl || !navEl) return;
+    // Bewusst NICHT activeEl.scrollIntoView({inline:'nearest', block:'nearest'}): das lässt den
+    // Browser den nächsten scrollenden Vorfahren für JEDE Achse einzeln bestimmen - vertikal ist das
+    // .spots-col (Nav-Item steckt selbst in .spots-col-body/.spots-col), nicht nur die Nav-Leiste
+    // selbst. Ein zeitgleich per scrollToCategory() oben ausgelöster vertikaler Sprung (derselbe
+    // Tick, nur einen nextTick später) wurde dadurch von diesem zweiten scrollIntoView()-Aufruf
+    // regelmäßig überschrieben/gekappt (block:'nearest' erkennt die Pille als vertikal bereits
+    // sichtbar und "gewinnt" gegen den noch laufenden vertikalen Scroll) - dadurch landete ein Klick
+    // auf eine Kategorie-Pille kaum oder gar nicht gescrollt (#101). Stattdessen nur die Nav-Leiste
+    // selbst (ihr eigenes scrollLeft) horizontal anpassen, ohne die vertikalen Vorfahren zu berühren.
+    const elLeft = activeEl.offsetLeft;
+    const elRight = elLeft + activeEl.offsetWidth;
+    const viewLeft = navEl.scrollLeft;
+    const viewRight = viewLeft + navEl.clientWidth;
+    if (elLeft < viewLeft) navEl.scrollTo({ left: elLeft, behavior: 'smooth' });
+    else if (elRight > viewRight) navEl.scrollTo({ left: elRight - navEl.clientWidth, behavior: 'smooth' });
   });
 });
 onUnmounted(() => {
@@ -863,7 +891,12 @@ function setSpotRef(id: number, el: Element | ComponentPublicInstance | null) {
   else spotRefs.delete(id);
 }
 function scrollToSpot(id: number) {
-  spotRefs.get(id)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  // 'start' statt 'nearest': Ziel ist, dass die Oberkante der Karte exakt am oberen Rand des
+  // sichtbaren Bereichs landet (siehe .spot-card's scroll-margin-top in SpotCard.vue für die
+  // Kompensation der sticky .category-nav) - 'nearest' scrollte zuvor nur das nötige Minimum ohne
+  // definierte Ausrichtung, dadurch landete die Karte je nach vorheriger Scrollposition uneinheitlich
+  // zu weit oben oder unten (#103).
+  spotRefs.get(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 // Klick auf einen Spot-Pin auf der Karte (TripMap.vue) klappt die passende Karte hier auf und
 // scrollt sie in den Blick – die Pin-Vergrößerung selbst setzt TripMap.vue bereits eigenständig
@@ -1416,6 +1449,7 @@ async function removeSpot(id: number) {
       </div>
       <div
         class="spots-col-body"
+        :style="{ '--category-nav-clearance': `${categoryNavHeight}px` }"
         @pointerdown="onSheetBodyPointerDown"
       >
       <!-- Sprungziel für TripMap.vue's Tag-/Ausflug-Stationen-Liste: mobil (siehe TripMap.vue's
@@ -2309,15 +2343,15 @@ async function removeSpot(id: number) {
      ohne den reservierten Rand schneidet der Scroll-Container den Fokus-Rahmen einer ganz oben
      stehenden, per Echtzeit-Update hervorgehobenen Karte oben ab (#86). */
   padding: var(--space-1) var(--space-3) var(--space-3);
-  /* Statische, großzügig bemessene Schätzung der gerenderten Höhe der sticky .category-nav-Leiste
-     (Icon+Label-Zeile plus Padding/Trennlinie, siehe dortiges CSS) statt einer live gemessenen Höhe
-     (z. B. per ResizeObserver) – eine solche wäre im Moment des allerersten Sprungs/Scrolls nach dem
-     Mounten noch nicht verfügbar (0px). Anders als die frühere "Liquid Glass"-Pille (siehe Git-
-     Historie) ändert die Leiste ihre Höhe nicht mehr zwischen eingebettetem und "stuck"-Zustand,
-     daher genügt hier ein einziger, unveränderlicher Wert. Verwendet von .category-heading/
-     .tour-group-card (scroll-margin-top) unten sowie identisch im Script (rebuildCategorySectionObserver()s
-     rootMargin – muss mit diesem Wert übereinstimmen, damit "aktiv" und "per Klick angesprungen"
-     an derselben Stelle greifen). */
+  /* Live gemessene Höhe der sticky .category-nav-Leiste (Icon+Label-Zeile plus Padding/Trennlinie,
+     siehe dortiges CSS), per ResizeObserver im Script (setCategoryNavRef -> categoryNavHeight) als
+     Inline-Style-Var auf dieses Element gebunden - der 44px-Wert hier ist nur ein Fallback für den
+     Moment vor der ersten Messung (z. B. der allererste Sprung direkt nach dem Mounten). War früher
+     ein starrer, ungemessener Schätzwert; wich dieser von der tatsächlich gerenderten Höhe ab, landete
+     scrollToCategory() nicht weit genug gescrollt (#101). Verwendet von .category-heading/
+     .tour-group-card/.spot-card (scroll-margin-top) unten sowie identisch im Script
+     (rebuildCategorySectionObserver()s rootMargin – muss mit diesem Wert übereinstimmen, damit "aktiv"
+     und "per Klick angesprungen" an derselben Stelle greifen). */
   --category-nav-clearance: 44px;
 }
 
@@ -3024,14 +3058,17 @@ async function removeSpot(id: number) {
   display: flex;
   align-items: center;
   gap: 6px;
-  /* scrollToCategory() landet sonst mit der Überschrift genau unter der fest/sticky positionierten
-     AppHeader (56px) + ggf. der oben positionierten NavBar (--navbar-offset) – dieselbe Formel wie
-     bei .spots-col/.map-col weiter oben und Drawer.vue. --category-nav-clearance (siehe
-     .spots-col-body oben) reserviert zusätzlich Platz für die sticky Kategorie-/Touren-Nav-Leiste
-     selbst – ohne das würde ein Sprung sie sonst teilweise darunter landen lassen. */
-  scroll-margin-top: calc(
-    var(--app-header-height, 56px) + var(--navbar-offset, 0px) + var(--space-2) + var(--category-nav-clearance)
-  );
+  /* scrollToCategory() landet sonst mit der Überschrift teilweise unter der sticky Kategorie-Nav.
+     Bewusst OHNE --app-header-height/--navbar-offset (anders als .spots-col/.map-col weiter oben
+     und Drawer.vue, wo tatsächlich das Fenster/eine eigene Overlay-Ebene relativ zur AppHeader
+     scrollt): .category-heading scrollt dagegen innerhalb von .spots-col bzw. .spots-col-body, die
+     schon selbst unterhalb von AppHeader/NavBar sitzen (Desktop per position:sticky mit
+     entsprechendem top; Mobil als eigenständig positioniertes Sheet ohnehin unabhängig von der
+     AppHeader) - ein zusätzliches Abziehen von deren Höhe landete den Sprung dadurch systematisch zu
+     weit unten (per E2E-Test verifiziert, ursprünglich fälschlich von .spots-col/Drawer.vue
+     übernommen, siehe Git-Historie #101). --category-nav-clearance (siehe .spots-col-body oben)
+     reserviert weiterhin Platz für die sticky Kategorie-/Touren-Nav-Leiste selbst. */
+  scroll-margin-top: calc(var(--space-2) + var(--category-nav-clearance));
 }
 
 /* Tour-Gruppen-Überschrift bei Touren-Gruppierung (ExcursionCard statt reinem Text, siehe Template)
@@ -3039,9 +3076,7 @@ async function removeSpot(id: number) {
    plus Abstand zur darunterliegenden Spot-Card-Grid, die .category-heading dort bereits über ihren
    eigenen margin-bottom bekommt (h3-Element-Default reicht bei einer Card nicht). */
 .tour-group-card {
-  scroll-margin-top: calc(
-    var(--app-header-height, 56px) + var(--navbar-offset, 0px) + var(--space-2) + var(--category-nav-clearance)
-  );
+  scroll-margin-top: calc(var(--space-2) + var(--category-nav-clearance));
   margin-bottom: var(--space-3);
 }
 
