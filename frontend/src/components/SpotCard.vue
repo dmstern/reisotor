@@ -316,6 +316,12 @@ function onCardClick() {
   cursor: pointer;
   border: 2px solid transparent;
   transition: border-color 0.15s ease, background 0.15s ease;
+  /* scrollToSpot() in ExcursionsView.vue (Map-Pin-Klick) landet sonst mit der Karte teilweise unter
+     der sticky .category-nav-Leiste - ohne dieses scroll-margin-top landete die Karte uneinheitlich
+     zu weit oben/unten (#103). Gleiche Formel wie .category-heading/.tour-group-card dort
+     (--category-nav-clearance kaskadiert von .spots-col-body hierher) - bewusst OHNE
+     --app-header-height/--navbar-offset, siehe ausführliche Begründung dort. */
+  scroll-margin-top: calc(var(--space-2) + var(--category-nav-clearance));
 }
 
 /* Ersetzt den früheren Modal-Dialog: die aktive Karte klappt an Ort und Stelle auf (mehr Zeilen,
