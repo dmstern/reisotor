@@ -30,7 +30,6 @@ import { useAuthStore } from '../stores/auth';
 import { useLiveSyncStore } from '../stores/liveSync';
 import { useMapOrientationStore } from '../stores/mapOrientation';
 import { useLocationSharingStore, type ShareDuration } from '../stores/locationSharing';
-import { useWeatherProviderStore } from '../stores/weatherProvider';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { buildTravelDerivedLocations } from '../utils/travelDerivedLocations';
@@ -47,7 +46,6 @@ import { useIsDesktop } from '../composables/useIsDesktop';
 import SpotDetailDialog from './SpotDetailDialog.vue';
 import MiniStationCard from './MiniStationCard.vue';
 import TravelDetailDialog from './TravelDetailDialog.vue';
-import CurrentWeatherBadge from './CurrentWeatherBadge.vue';
 import TrackPlayback from './TrackPlayback.vue';
 import AppIcon from './AppIcon.vue';
 
@@ -161,7 +159,6 @@ const auth = useAuthStore();
 const liveSync = useLiveSyncStore();
 const mapOrientation = useMapOrientationStore();
 const locationSharing = useLocationSharingStore();
-const weatherProvider = useWeatherProviderStore();
 const travelItems = ref<TravelItem[]>([]);
 const scheduleItems = ref<ScheduleItem[]>([]);
 
@@ -1357,14 +1354,6 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
       >
         <AppIcon :icon="trackRecording.recording ? ACTION_ICONS.recordStop : ACTION_ICONS.recordStart" :size="18" group="actions" />
       </button>
-      <!-- Auf Desktop steht dasselbe Wetter bereits ausführlicher in der Kalender-Schublade (siehe
-           CalendarWeek.vue) - die ist dort permanent neben der Karte gemountet. Auf Mobil ist der
-           Kalender stattdessen eine eigene Route (nie gleichzeitig mit der Karte sichtbar), ohne
-           dieses Pill wäre das Wetter-Feature auf Mobil komplett unsichtbar. Bewusst nur der
-           aktuelle Tag statt des ganzen Zeitraums, um die kleine Fläche nicht zu überfrachten. -->
-      <div v-if="!isDesktop" class="current-weather-slot">
-        <CurrentWeatherBadge :lat="tripStore.currentTrip?.lat ?? null" :lng="tripStore.currentTrip?.lng ?? null" :model="weatherProvider.model" />
-      </div>
       <Teleport to="body">
         <template v-if="focusMenuOpen">
           <div class="picker-backdrop" @click="focusMenuOpen = false"></div>
@@ -1642,11 +1631,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
 }
 
 .map-wrap {
-  /* Von .fit-btn UND .current-weather-slot genutzt (siehe dort) - hier statt direkt auf .fit-btn
-     gesetzt, da .current-weather-slot ein Geschwisterelement ist: Custom Properties vererben sich
-     nur von Vorfahren zu Nachfahren, nicht zwischen Geschwistern.
-
-     Eckenabstand/Lücke über --space-3/--space-2 (statt der alten 10px/6px), auf Mobil wie auf
+  /* Eckenabstand/Lücke über --space-3/--space-2 (statt der alten 10px/6px), auf Mobil wie auf
      Desktop einheitlich - nur der Durchmesser selbst bleibt auf Mobil kleiner (@container weiter
      unten hebt ihn auf Desktop auf Apples 44px an, siehe dort). Der Stapel selbst wurde von
      vormals 9 Einzel-Buttons auf 5 verkürzt (Nutzer-Feedback: zu lang/unübersichtlich, einzelne
@@ -1710,16 +1695,6 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
 
 .record-btn {
   top: calc(var(--fit-btn-inset) + 4 * var(--fit-btn-step));
-}
-
-/* Direkt unterhalb des letzten .fit-btn (.record-btn) - der einzige auf Mobil noch freie Bereich:
-   oben links ist bereits durch .focus-banner/.tile-download-pill/.focus-spot-list belegt (bedingt
-   sichtbar), .day-strip unten durch den Tage-Streifen. */
-.current-weather-slot {
-  position: absolute;
-  top: calc(var(--fit-btn-inset) + 5 * var(--fit-btn-step));
-  right: var(--fit-btn-inset);
-  z-index: 1000;
 }
 
 /* Gleiche Akzentfarbe, solange die jeweilige Funktion aktiv ist/läuft - dieselbe wie z. B.

@@ -6,8 +6,8 @@ import AppIcon from './AppIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
 // Zeit-Slider für eine aufgezeichnete Route (TripMap.vue zeigt die Route selbst + einen Marker, der
-// hier per v-model:progress gesteuert wird - reine Anzeigekomponente ohne eigenen Store, analog zu
-// CurrentWeatherBadge.vue). Die tatsächliche Aufzeichnungsdauer kann Stunden betragen - "Abspielen"
+// hier per v-model:progress gesteuert wird - reine Anzeigekomponente ohne eigenen Store). Die
+// tatsächliche Aufzeichnungsdauer kann Stunden betragen - "Abspielen"
 // rafft das auf eine feste, kurze Animationsdauer statt in Echtzeit abzuspielen (wie bei Google
 // Maps Timeline).
 const PLAYBACK_DURATION_MS = 12_000;
