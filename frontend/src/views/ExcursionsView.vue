@@ -1920,13 +1920,10 @@ async function removeSpot(id: number) {
         <div class="filter-bar-rows" :class="{ expanded: filterBarExpanded }">
           <div class="tool-row">
             <span class="tool-label"><AppIcon :icon="ACTION_ICONS.sort" :size="14" group="actions" /> Sortieren</span>
-            <SegmentedToggle
-              v-model="sortMode"
-              :options="[
-                { value: 'alpha', label: 'Alphabetisch', icon: ACTION_ICONS.sortAlpha },
-                { value: 'likes', label: 'Nach Likes', icon: ACTION_ICONS.sortLikes },
-              ]"
-            />
+            <select v-model="sortMode">
+              <option value="alpha">Alphabetisch</option>
+              <option value="likes">Nach Likes</option>
+            </select>
           </div>
 
           <div class="tool-row">
@@ -3385,16 +3382,13 @@ async function removeSpot(id: number) {
 /* display:inline-flex/align-items:center kommen inzwischen aus style.css's globaler button-Regel
    (#95 "Eingabe Elemente cleanup" - vorher hier lokal als Fix für genau dieses Icon+Label+Caret-
    Ausrichtungsproblem nachgezogen, jetzt app-weit für jeden Button gelöst). Nur die kleinere
-   Schriftgröße bleibt als lokale Abweichung. */
+   Schriftgröße bleibt als lokale Abweichung.
+   #156: bewusst OHNE eigenes box-shadow/border-color-Override mehr - button.secondary's Schatten
+   (--shadow-sm) und kräftigerer Rahmen (--color-border-strong) gleichen diese Filter-Dropdowns damit
+   optisch an die Sortieren-/Gruppieren-<select>-Felder in dieser und den anderen Listen-Views an
+   (ShoppingListView.vue/TodoView.vue), statt wie zuvor dezenter/flacher zu wirken. */
 .category-btn {
   font-size: 0.85rem;
-  /* Bewusst OHNE den in #95 eingeführten Schatten/kräftigeren Rahmen von button.secondary im
-     unausgewählten Zustand (Nutzer-Feedback: die beiden Buttons eines Umschalt-Paars - Spots/Touren,
-     Alphabetisch/Nach Likes, Kategorie/Status - sollen sich im Ruhezustand weiterhin dezent in die
-     .filter-bar einfügen statt wie zwei eigenständig erhobene Buttons zu wirken; .category-btn.active
-     hebt sich unten weiterhin per Tint-Hintergrund/Rahmenfarbe ab). */
-  box-shadow: none;
-  border-color: var(--color-border);
 }
 
 /* Kleiner Auf-/Zu-Pfeil rechts neben dem Label, macht auf einen Blick klarer, dass ein Klick ein
