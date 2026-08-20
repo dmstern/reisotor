@@ -52,14 +52,48 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
     await page.locator(`.day[data-date="${today}"]`).click();
     await expect(banner).toBeHidden();
 
-    await expect(toggle).toHaveText('✅ Gemacht');
+    // #147: kein Textlabel mehr im "gemacht"-Zustand (nur noch das Icon) - das Datums-/Status-Badge
+    // auf dem Vorschaubild zeigt den Status bereits an, ein zweites "Gemacht"-Label wäre eine
+    // unnötige Dopplung.
+    await expect(toggle).toHaveText('✅');
     await expect(toggle).toHaveAttribute('aria-pressed', 'true');
     await expect(spotCard.locator('.status.status-done')).toContainText('Besucht am');
 
     await page.reload();
     const spotCardAfterReload = page.locator('.spot-card', { hasText: spotTitle });
     await spotCardAfterReload.locator('h3').click();
-    await expect(spotCardAfterReload.locator('.done-toggle')).toHaveText('✅ Gemacht');
+    await expect(spotCardAfterReload.locator('.done-toggle')).toHaveText('✅');
+  });
+
+  test('Markieren als "gemacht" auf einem bereits geplanten Spot öffnet den Kalender NICHT (#147)', async ({
+    page,
+  }) => {
+    const marker = `E2E-Gemacht-Direkt-${Date.now()}`;
+    const spotTitle = `Bereits geplant ${marker}`;
+    const plannedDate = '2026-03-15';
+
+    const created = await page.request.post('/api/spots', {
+      data: { trip_id: tripId, title: spotTitle, category: 'Sonstiges' },
+    });
+    expect(created.ok()).toBeTruthy();
+    const spot = await created.json();
+    const scheduleRes = await page.request.post('/api/schedule', {
+      data: { trip_id: tripId, date: plannedDate, title: spotTitle, spot_id: spot.id },
+    });
+    expect(scheduleRes.ok()).toBeTruthy();
+
+    await page.goto('/excursions');
+    const spotCard = page.locator('.spot-card', { hasText: spotTitle });
+    await spotCard.locator('h3').click();
+    await expect(spotCard.locator('.status.planned')).toContainText('Geplant für');
+
+    await spotCard.locator('.done-toggle').click();
+
+    // Kein Kalender-Bestätigungs-Flow - das bereits vorhandene geplante Datum wird direkt als
+    // Gemacht-/Besucht-Datum übernommen.
+    await expect(page.locator('.pending-schedule-banner')).toBeHidden();
+    await expect(spotCard.locator('.done-toggle')).toHaveText('✅');
+    await expect(spotCard.locator('.status.status-done')).toContainText('Besucht am 15.03');
   });
 
   test('Abbrechen im Kalender-Bestätigungs-Flow lässt den Status unverändert', async ({ page }) => {
@@ -169,7 +203,7 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
     const spotCard = page.locator('.spot-card', { hasText: spotTitle });
     // Titel statt ganzer Karte anklicken - siehe Kommentar im ersten Test dieser Datei.
     await spotCard.locator('h3').click();
-    await expect(spotCard.locator('.done-toggle')).toHaveText('✅ Gemacht');
+    await expect(spotCard.locator('.done-toggle')).toHaveText('✅');
   });
 
   test.describe('Status-Badges ragen auf schmalen Breiten nicht über das Vorschaubild hinaus', () => {

@@ -186,15 +186,20 @@ function onShowOnMap() {
   emit('show-on-map');
 }
 
-// #106: Status-Kette in Planung -> geplant -> gemacht statt (wie zuvor) eines von geplant/ungeplant
-// unabhängigen Flags - ein Spot darf nicht ohne Datum "gemacht" sein. Zurück auf "geplant" braucht
-// dafür kein neues Datum (setDone(false) direkt), der Übergang zu "gemacht" dagegen IMMER: öffnet
-// den Kalender zur Bestätigung des Besuchstags (drawers.pendingSchedule mode 'confirm-done',
-// ausgewertet in ScheduleView.vue's finishPendingSchedule()) - auch wenn bereits ein geplantes
-// Datum existiert, da der tatsächliche Besuchstag davon abweichen kann.
+// #106/#147: Status-Kette in Planung -> geplant -> gemacht statt (wie zuvor) eines von geplant/
+// ungeplant unabhängigen Flags - ein Spot darf nicht ohne Datum "gemacht" sein. Zurück auf
+// "geplant" braucht dafür kein neues Datum (setDone(false) direkt). Beim Übergang zu "gemacht"
+// entscheidet, ob bereits ein geplantes Datum existiert (#147: ursprünglich öffnete sich der
+// Kalender IMMER, auch wenn schon ein Datum da war - das war unnötig, da das bereits geplante
+// Datum ohnehin als Gemacht-/Besucht-Datum übernommen wird): mit Datum direkt markieren, nur ohne
+// Datum (noch "in Planung") den Kalender zur Bestätigung des Besuchstags öffnen
+// (drawers.pendingSchedule mode 'confirm-done', ausgewertet in ScheduleView.vue's
+// finishPendingSchedule()).
 function onToggleDone() {
   if (props.spot.done) {
     spotsStore.setDone(props.spot.id, false);
+  } else if (props.scheduledDate) {
+    spotsStore.setDone(props.spot.id, true);
   } else {
     drawers.startPendingSchedule('spot', props.spot.id, 'confirm-done');
   }
@@ -302,16 +307,22 @@ function onToggleDone() {
         >
           <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" /> Einplanen
         </button>
+        <!-- #147: kein Textlabel mehr im "gemacht"-Zustand - das Datums-/Status-Badge auf dem
+             Vorschaubild ("Besucht am ...") zeigt den Status bereits an, ein zweites "Gemacht"-Label
+             hier war eine unnötige Dopplung. aria-label/title ersetzen den weggefallenen sichtbaren
+             Text für Screenreader/Tooltip. -->
         <button
           v-if="!isAccommodation"
           type="button"
           class="done-toggle"
           :class="{ active: !!spot.done }"
           :aria-pressed="!!spot.done"
+          :aria-label="spot.done ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'"
+          :title="spot.done ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'"
           @click.stop="onToggleDone"
         >
           <template v-if="spot.done">
-            <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" /> Gemacht
+            <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
           </template>
           <template v-else>
             <AppIcon :icon="ACTION_ICONS.notDone" :size="14" group="actions" /> Als gemacht markieren
