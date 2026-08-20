@@ -855,7 +855,7 @@ function formatDate(date: string) {
         <button type="button" class="card-action-btn" v-if="trip" @click="goToTripDates">
           <AppIcon :icon="ACTION_ICONS.vacation" :size="14" group="actions" /> Urlaub
         </button>
-        <button type="button" @click="openAddForm">+ Neu</button>
+        <button type="button" @click="openAddForm"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Neu</button>
       </div>
     </div>
 

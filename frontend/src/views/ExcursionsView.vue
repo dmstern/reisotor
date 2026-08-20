@@ -1668,7 +1668,7 @@ async function removeSpot(id: number) {
           title="Hochschieben"
           @click="stepSheet(1)"
         >
-          ▲
+          <AppIcon :icon="ACTION_ICONS.chevronUp" :size="16" group="actions" />
         </button>
         <div
           class="sheet-handle"
@@ -1691,7 +1691,7 @@ async function removeSpot(id: number) {
           title="Runterschieben"
           @click="stepSheet(-1)"
         >
-          ▼
+          <AppIcon :icon="ACTION_ICONS.chevronDown" :size="16" group="actions" />
         </button>
       </div>
       <div
@@ -1721,7 +1721,7 @@ async function removeSpot(id: number) {
               aria-label="Was sind Spots?"
               @click="toggleDescription"
             >
-              ℹ️
+              <AppIcon :icon="ACTION_ICONS.info" :size="16" group="actions" />
             </button>
             <Teleport to="body">
               <template v-if="descriptionOpen">
@@ -1741,8 +1741,8 @@ async function removeSpot(id: number) {
           </span>
         </h2>
         <div class="header-actions">
-          <button @click="showSpotForm = true">+ Neuer Spot</button>
-          <button class="secondary" @click="showExcursionForm = true">+ Neue Tour</button>
+          <button @click="showSpotForm = true"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Neuer Spot</button>
+          <button class="secondary" @click="showExcursionForm = true"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Neue Tour</button>
           <!-- Zweiter Einstiegspunkt zum ⏺️/⏹️-Button auf TripMap.vue (Start dort mit Sichtbarkeits-
                Auswahl/Tour-Kopplung): der Karten-Button steckt in einer bereits vollen
                Button-Spalte, die auf Mobil beim Standard-Sheet-Zustand teils vom Bottom-Sheet
@@ -1776,7 +1776,7 @@ async function removeSpot(id: number) {
           @click="tracksSectionOpen = !tracksSectionOpen"
         >
           <span><AppIcon :icon="ACTION_ICONS.history" :size="15" group="actions" /> Aufzeichnungen ({{ tracksStore.tracks.length }})</span>
-          <span class="caret">{{ tracksSectionOpen ? '▾' : '▸' }}</span>
+          <AppIcon :icon="ACTION_ICONS.chevronDown" :size="14" group="actions" class="caret" :class="{ closed: !tracksSectionOpen }" />
         </button>
         <ul v-if="tracksSectionOpen" class="tracks-list">
           <li
@@ -1903,7 +1903,7 @@ async function removeSpot(id: number) {
               ({{ activeFilterCount }} aktiv)</span
             ></span
           >
-          <span class="caret">{{ filterBarExpanded ? '▾' : '▸' }}</span>
+          <AppIcon :icon="ACTION_ICONS.chevronDown" :size="14" group="actions" class="caret" :class="{ closed: !filterBarExpanded }" />
         </button>
 
         <div class="filter-bar-rows" :class="{ expanded: filterBarExpanded }">
@@ -1941,7 +1941,7 @@ async function removeSpot(id: number) {
                 @click="toggleCategoryMenu"
               >
                 <AppIcon :icon="FORM_FIELD_ICONS.category" :size="14" group="formFields" /> Kategorie
-                <span class="caret dropdown-caret">{{ categoryMenuOpen ? '▴' : '▾' }}</span>
+                <AppIcon :icon="ACTION_ICONS.chevronDown" :size="12" group="actions" class="caret dropdown-caret" :class="{ open: categoryMenuOpen }" />
               </button>
               <Teleport to="body">
                 <template v-if="categoryMenuOpen">
@@ -1965,7 +1965,7 @@ async function removeSpot(id: number) {
                 @click="toggleStatusMenu"
               >
                 <AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" /> Status
-                <span class="caret dropdown-caret">{{ statusMenuOpen ? '▴' : '▾' }}</span>
+                <AppIcon :icon="ACTION_ICONS.chevronDown" :size="12" group="actions" class="caret dropdown-caret" :class="{ open: statusMenuOpen }" />
               </button>
               <Teleport to="body">
                 <template v-if="statusMenuOpen">
@@ -2077,7 +2077,8 @@ async function removeSpot(id: number) {
             <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Der Standort konnte auch automatisch nicht ermittelt werden. Bitte tippe unten auf die Karte, um ihn manuell zu setzen.
           </p>
           <button type="button" class="secondary picker-toggle" @click="spotPickerOpen = !spotPickerOpen">
-            <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort manuell setzen {{ spotPickerOpen ? '▲' : '▼' }}
+            <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort manuell setzen
+            <AppIcon :icon="ACTION_ICONS.chevronDown" :size="12" group="actions" class="caret dropdown-caret" :class="{ open: spotPickerOpen }" />
           </button>
           <LocationPicker
             v-if="spotPickerOpen"
@@ -2331,7 +2332,8 @@ async function removeSpot(id: number) {
             <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Der Standort konnte auch automatisch nicht ermittelt werden. Bitte tippe unten auf die Karte, um ihn manuell zu setzen.
           </p>
           <button type="button" class="secondary picker-toggle" @click="editSpotPickerOpen = !editSpotPickerOpen">
-            <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort manuell setzen {{ editSpotPickerOpen ? '▲' : '▼' }}
+            <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort manuell setzen
+            <AppIcon :icon="ACTION_ICONS.chevronDown" :size="12" group="actions" class="caret dropdown-caret" :class="{ open: editSpotPickerOpen }" />
           </button>
           <LocationPicker
             v-if="editSpotPickerOpen"
@@ -3391,12 +3393,14 @@ async function removeSpot(id: number) {
 
 /* Kleiner Auf-/Zu-Pfeil rechts neben dem Label, macht auf einen Blick klarer, dass ein Klick ein
    Dropdown-Menü öffnet/schließt statt z. B. direkt eine Aktion auszulösen (Nutzer:innen-Feedback) -
-   dasselbe Auf/Zu-Symbolpaar wie ProfileView.vue's "Einzeln anpassen ▴/▾". */
+   dasselbe Auf/Zu-Chevron wie ProfileView.vue's "Einzeln anpassen". */
 .dropdown-caret {
   margin-left: 4px;
-  font-size: 0.7rem;
-  line-height: 1;
   opacity: 0.6;
+}
+
+.dropdown-caret.open {
+  transform: rotate(180deg);
 }
 
 .category-heading {

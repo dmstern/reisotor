@@ -23,6 +23,8 @@ import PendingSyncBadge from '../components/PendingSyncBadge.vue';
 import { formatDateTime } from '../utils/dateFormat';
 import { useUndoableDelete } from '../composables/useUndoableDelete';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
+import AppIcon from '../components/AppIcon.vue';
+import { ACTION_ICONS } from '../utils/actionIcons';
 
 const auth = useAuthStore();
 const tripStore = useTripStore();
@@ -257,7 +259,7 @@ async function restore(id: number) {
   <div class="page" v-if="!loading">
     <div class="header">
       <h1>Notizen</h1>
-      <button @click="openNew">+ Neue Notiz</button>
+      <button @click="openNew"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Neue Notiz</button>
     </div>
 
     <p v-if="error" class="error">{{ error }}</p>

@@ -11,6 +11,7 @@ import DeleteButton from './DeleteButton.vue';
 import TripMembersDialog from './TripMembersDialog.vue';
 import AppIcon from './AppIcon.vue';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
+import { ACTION_ICONS } from '../utils/actionIcons';
 
 const tripStore = useTripStore();
 const auth = useAuthStore();
@@ -59,7 +60,7 @@ function openMembers(trip: Trip) {
   <div class="trip-switcher">
     <button type="button" class="switcher-btn" @click="toggle">
       <span class="trip-name">{{ tripStore.currentTrip?.name ?? 'Urlaub wählen' }}</span>
-      <span class="caret">▾</span>
+      <AppIcon :icon="ACTION_ICONS.chevronDown" :size="12" group="actions" class="caret" />
     </button>
 
     <template v-if="open">
@@ -164,7 +165,6 @@ function openMembers(trip: Trip) {
 
 .caret {
   flex-shrink: 0;
-  font-size: 0.7rem;
 }
 
 .backdrop {

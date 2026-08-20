@@ -102,7 +102,7 @@ function updateAllocationAmount(category: string, value: string) {
     </template>
 
     <details class="add-category">
-      <summary>+ Kategorie hinzufügen (optional)</summary>
+      <summary><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Kategorie hinzufügen (optional)</summary>
       <form class="add-category-form" @submit.prevent="addCategory">
         <FormField icon="category" label="Neue Kategorie">
           <input v-model="newCategory" type="text" placeholder="Neue Kategorie" />
@@ -110,7 +110,7 @@ function updateAllocationAmount(category: string, value: string) {
         <FormField icon="amount" label="Ziel">
           <input v-model="newCategoryAmount" type="number" step="0.01" placeholder="Ziel €" />
         </FormField>
-        <button type="submit">+ Hinzufügen</button>
+        <button type="submit"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Hinzufügen</button>
       </form>
     </details>
   </div>

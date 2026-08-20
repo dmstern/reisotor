@@ -90,6 +90,10 @@ import {
   IconArrowBackUp,
   IconChevronLeft,
   IconChevronRight,
+  IconChevronDown,
+  IconChevronUp,
+  IconInfoCircle,
+  IconInfoCircleFilled,
 } from '@tabler/icons-vue';
 import type { IconDef } from './icon';
 
@@ -164,7 +168,10 @@ export type ActionIconKey =
   | 'logout'
   | 'upload'
   | 'scrollLeft'
-  | 'scrollRight';
+  | 'scrollRight'
+  | 'chevronDown'
+  | 'chevronUp'
+  | 'info';
 
 export const ACTION_ICONS: Record<ActionIconKey, IconDef> = {
   edit: { id: 'pencil', emoji: '✏️', outline: IconPencil, filled: IconPencilFilled },
@@ -237,4 +244,10 @@ export const ACTION_ICONS: Record<ActionIconKey, IconDef> = {
   upload: { id: 'upload', emoji: '⬆️', outline: IconUpload },
   scrollLeft: { id: 'chevron-left', emoji: '◀️', outline: IconChevronLeft },
   scrollRight: { id: 'chevron-right', emoji: '▶️', outline: IconChevronRight },
+  // Ein Chevron statt getrennter Auf-/Zu-/Rechts-Glyphen für alle Auf-/Zuklapp-Umschalter im Code
+  // (Picker-Umschalter, Dropdown-Pfeile, Sortierrichtung, Verschieben-Buttons) - Ausrichtung per
+  // CSS-Rotation an der jeweiligen Aufrufstelle statt separater Icon-Varianten pro Winkel.
+  chevronDown: { id: 'chevron-down', emoji: '🔽', outline: IconChevronDown },
+  chevronUp: { id: 'chevron-up', emoji: '🔼', outline: IconChevronUp },
+  info: { id: 'info-circle', emoji: 'ℹ️', outline: IconInfoCircle, filled: IconInfoCircleFilled },
 };

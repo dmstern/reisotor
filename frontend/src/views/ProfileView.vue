@@ -489,7 +489,7 @@ async function onImportFileSelected(event: Event) {
                 title="Nach oben verschieben"
                 @click="navConfig.moveUp(entry.key)"
               >
-                ▲
+                <AppIcon :icon="ACTION_ICONS.chevronUp" :size="14" group="actions" />
               </button>
               <button
                 type="button"
@@ -499,7 +499,7 @@ async function onImportFileSelected(event: Event) {
                 title="Nach unten verschieben"
                 @click="navConfig.moveDown(entry.key)"
               >
-                ▼
+                <AppIcon :icon="ACTION_ICONS.chevronDown" :size="14" group="actions" />
               </button>
               <label class="nav-config-visible">
                 <input
@@ -536,7 +536,7 @@ async function onImportFileSelected(event: Event) {
                 title="Nach oben verschieben"
                 @click="dashboardConfig.moveUp(entry.key)"
               >
-                ▲
+                <AppIcon :icon="ACTION_ICONS.chevronUp" :size="14" group="actions" />
               </button>
               <button
                 type="button"
@@ -546,7 +546,7 @@ async function onImportFileSelected(event: Event) {
                 title="Nach unten verschieben"
                 @click="dashboardConfig.moveDown(entry.key)"
               >
-                ▼
+                <AppIcon :icon="ACTION_ICONS.chevronDown" :size="14" group="actions" />
               </button>
               <label class="nav-config-visible">
                 <input
@@ -686,7 +686,8 @@ async function onImportFileSelected(event: Event) {
               @update:model-value="selectPushLevel"
             />
             <button type="button" class="secondary small push-details-toggle" @click="showPushDetails = !showPushDetails">
-              {{ showPushDetails ? 'Einzeln anpassen ▴' : 'Einzeln anpassen ▾' }}
+              Einzeln anpassen
+              <AppIcon :icon="ACTION_ICONS.chevronDown" :size="12" group="actions" class="push-details-caret" :class="{ open: showPushDetails }" />
             </button>
             <ul v-if="showPushDetails" class="nav-config-list push-domain-list">
               <li v-for="domain in NOTIFICATION_DOMAINS" :key="domain" class="nav-config-row push-domain-row">
@@ -941,6 +942,16 @@ async function onImportFileSelected(event: Event) {
 
 .push-details-toggle {
   margin-top: var(--space-2);
+}
+
+.push-details-caret {
+  margin-left: 4px;
+  opacity: 0.6;
+  transition: transform 0.15s ease;
+}
+
+.push-details-caret.open {
+  transform: rotate(180deg);
 }
 
 .push-domain-list {

@@ -259,7 +259,7 @@ const categoryColors = computed(() => {
     <div class="card">
       <div class="header">
         <h2>Budgets</h2>
-        <button @click="showNewBudgetForm = true">+ Budget anlegen</button>
+        <button @click="showNewBudgetForm = true"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Budget anlegen</button>
       </div>
       <p class="hint">
         Ganz einfach: ein Topf mit nur einer Gesamtsumme. Oder detaillierter: in Kategorien aufteilen,
@@ -304,7 +304,7 @@ const categoryColors = computed(() => {
     <div class="card">
       <div class="header">
         <h2>Bezahlungen</h2>
-        <button @click="showExpenseForm = true">+ Bezahlung eintragen</button>
+        <button @click="showExpenseForm = true"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Bezahlung eintragen</button>
       </div>
 
       <Modal :model-value="showExpenseForm" title="Bezahlung eintragen" @update:model-value="(v) => !v && closeExpenseForm()">
@@ -350,7 +350,7 @@ const categoryColors = computed(() => {
     <div class="card">
       <div class="header">
         <h2>Überweisungen</h2>
-        <button @click="showTransferForm = true">+ Überweisung eintragen</button>
+        <button @click="showTransferForm = true"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Überweisung eintragen</button>
       </div>
 
       <Modal :model-value="showTransferForm" title="Überweisung eintragen" @update:model-value="(v) => !v && closeTransferForm()">

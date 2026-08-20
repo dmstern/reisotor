@@ -116,7 +116,8 @@ function onSubmit() {
       <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Der Standort konnte auch automatisch nicht ermittelt werden. Bitte tippe unten auf die Karte, um ihn manuell zu setzen.
     </p>
     <button type="button" class="secondary picker-toggle" @click="pickerOpen = !pickerOpen">
-      <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort manuell setzen {{ pickerOpen ? '▲' : '▼' }}
+      <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort manuell setzen
+      <AppIcon :icon="ACTION_ICONS.chevronDown" :size="12" group="actions" class="picker-caret" :class="{ open: pickerOpen }" />
     </button>
     <LocationPicker v-if="pickerOpen" v-model="manualPin" />
     <div class="field-group">
@@ -165,6 +166,16 @@ label,
   align-self: flex-start;
   padding: 6px 12px;
   font-size: 0.85rem;
+}
+
+.picker-caret {
+  margin-left: 4px;
+  opacity: 0.6;
+  transition: transform 0.15s ease;
+}
+
+.picker-caret.open {
+  transform: rotate(180deg);
 }
 
 .dates-row {
