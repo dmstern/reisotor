@@ -103,6 +103,16 @@
   --color-highlight-border: #f0d3ac;
   --color-accent-secondary: #5b6ee1;
   --color-accent-secondary-bg: #eef0fd;
+  /* #95 "Eingabe Elemente cleanup": Buttons/Inputs/Selects/Dropdowns bekommen app-weit einen ganz
+     leicht kräftigeren Rahmen als das bisherige --color-border (das bleibt für dezentere Trennlinien
+     wie .richtext-Regeln/Karten-Rand unverändert). --color-border-strong für neutrale Flächen
+     (Inputs/Select/button.secondary/.card-action-btn/Popover-Menüs), --color-button-edge zusätzlich
+     für die farbigen Buttons (primary/danger) selbst - dort würde ein neutraler Beige-/Grauton gegen
+     die satte Hintergrundfarbe kaum wirken, ein dezent abdunkelnder Overlay-Ton (statt Hex, damit er
+     auf jedem --color-primary/--color-danger-Ton gleich funktioniert) zeichnet die Kante dagegen auch
+     auf farbigem Grund sichtbar nach. */
+  --color-border-strong: #d5cabc;
+  --color-button-edge: rgba(0, 0, 0, 0.16);
   /* Eigener Ton für "an diesem Tag ist etwas geplant" (TripMap.vue's Tage-Streifen) - bewusst NICHT
      --color-accent, das app-weit bereits fest für "Echtzeit-Update von jemand anderem"/"wartet auf
      Sync"/Sonstiges-Aufmerksamkeit steht (.new-highlight in diesem File, PendingSyncBadge.vue,
@@ -200,6 +210,8 @@
     --color-accent-secondary: #8b98f0;
     --color-accent-secondary-bg: #23253d;
     --color-scheduled: #52b8ea;
+    --color-border-strong: #4a453c;
+    --color-button-edge: rgba(0, 0, 0, 0.35);
 
     --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.35);
     --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
@@ -228,6 +240,8 @@
   --color-accent-secondary: #8b98f0;
   --color-accent-secondary-bg: #23253d;
   --color-scheduled: #52b8ea;
+  --color-border-strong: #4a453c;
+  --color-button-edge: rgba(0, 0, 0, 0.35);
 
   --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.35);
   --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
@@ -293,16 +307,33 @@ textarea {
   font-size: 1rem;
 }
 
+/* #95 "Eingabe Elemente cleanup": inline-flex + align-items:center statt des geerbten
+   inline-block/Baseline-Layouts - ein Icon (AppIcon/Emoji) direkt neben einem Text-Label saß dadurch
+   bisher sichtbar zu hoch (Baseline des Icons statt dessen vertikaler Mitte trifft die Textzeile).
+   justify-content:center hält reine Text-Buttons optisch identisch zum bisherigen Verhalten (Text war
+   ohnehin schon zentriert). gap: var(--space-1) statt eines lokalen margin zwischen Icon und Label -
+   mehrere Views hatten das bereits einzeln als Bugfix nachgezogen (siehe ExcursionsView.vue's
+   .category-btn vor diesem Commit), jetzt zentral für alle ~50 Icon+Label-Buttons auf einmal. Dazu
+   ein dezenter Schatten (--shadow-sm, siehe DESIGN.md Abschnitt "Schatten") und ein sichtbarerer
+   Rahmen (--color-button-edge) - beides Richtung SegmentedToggle.vue's taktilerem Look, aber bewusst
+   OHNE dessen volle "weiches Material"-Behandlung (--shadow-inset/--shadow-pill-raised/
+   --texture-grain, siehe DESIGN.md Abschnitt "Weiches Material" - dort ausdrücklich nur für
+   Segmented-Controls reserviert). */
 button {
   cursor: pointer;
-  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  border: 1px solid var(--color-button-edge);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   padding: 11px 18px;
   background: var(--color-primary);
   color: white;
   font-weight: 600;
-  transition: background 0.15s ease, transform 0.1s ease;
+  box-shadow: var(--shadow-sm);
+  transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
 
 button:hover {
@@ -313,12 +344,13 @@ button:hover {
    das rein visuelles Feedback ohne Funktionsänderung gibt. */
 button:active {
   transform: scale(0.97);
+  box-shadow: none;
 }
 
 button.secondary {
   background: transparent;
   color: var(--color-primary);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-strong);
 }
 
 button.secondary:hover {
@@ -340,7 +372,7 @@ button.danger {
   align-items: center;
   gap: 4px;
   padding: 4px 10px;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   background: var(--color-primary-tint);
@@ -351,6 +383,7 @@ button.danger {
   white-space: nowrap;
   line-height: 1.3;
   cursor: pointer;
+  box-shadow: var(--shadow-sm);
   transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
@@ -600,11 +633,15 @@ input:not([type='checkbox']):not([type='file']),
 select,
 textarea {
   padding: 9px 12px;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   background: var(--color-surface);
   color: var(--color-text);
+  /* #95: derselbe dezente Schatten wie bei Buttons (--shadow-sm) - macht Eingabefelder/Selects
+     einheitlich mit dem übrigen "leicht erhobenen" Look, egal ob natives <select> oder ein
+     Text-Input daneben in derselben Zeile. */
+  box-shadow: var(--shadow-sm);
   /* Ohne das schrumpfen Eingabefelder (v. a. type=date/number auf iOS Safari) in Flex-Reihen
      nicht unter ihre intrinsische Breite und ragen auf schmalen Bildschirmen über den Rand. */
   min-width: 0;
@@ -615,6 +652,34 @@ textarea {
      "verrutschte" Zeile, sobald beide nebeneinanderstehen (Konsistenz-Prinzip, siehe DESIGN.md).
      Eine gemeinsame Mindesthöhe erzwingt für alle Feldtypen dasselbe Ergebnis. */
   min-height: 44px;
+}
+
+/* #95 Nachschärfung: min-height allein reichte bei type=date/time/datetime-local NICHT immer aus
+   (Nutzer:innen-Feedback, TodoView.vue "Fällig" sichtbar höher als das "Priorität"-<select> daneben,
+   trotz identischem FormField-Wrapper) - Chromiums eigenes Kalender-/Uhr-Icon
+   (::-webkit-calendar-picker-indicator) hat ohne explizite Größe ein größeres intrinsisches Padding
+   als unser 9px/12px, wodurch der Browser die min-height nach oben durchbricht statt sie nur als
+   Untergrenze zu behandeln. Explizite height (statt nur min-height) erzwingt die exakt gleiche Höhe
+   wie bei <select>/Text-Inputs, das verkleinerte Icon sorgt dafür, dass dabei nichts abgeschnitten
+   wird. Nur WebKit/Chromium kennen dieses Pseudo-Element (Firefox' natives Datumsfeld hat das
+   Höhenproblem ohnehin nicht) - dort greift die Regel einfach nicht, kein Fallback nötig. */
+input[type='date'],
+input[type='time'],
+input[type='datetime-local'],
+input[type='month'],
+input[type='week'] {
+  height: 44px;
+}
+
+input[type='date']::-webkit-calendar-picker-indicator,
+input[type='time']::-webkit-calendar-picker-indicator,
+input[type='datetime-local']::-webkit-calendar-picker-indicator,
+input[type='month']::-webkit-calendar-picker-indicator,
+input[type='week']::-webkit-calendar-picker-indicator {
+  padding: 0;
+  margin-left: 4px;
+  width: 16px;
+  height: 16px;
 }
 
 input:focus,

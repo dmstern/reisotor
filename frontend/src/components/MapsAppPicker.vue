@@ -77,7 +77,7 @@ async function toggle() {
   position: fixed;
   min-width: 200px;
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   box-shadow: var(--shadow-md);

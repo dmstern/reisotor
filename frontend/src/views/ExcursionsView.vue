@@ -2994,7 +2994,7 @@ async function removeSpot(id: number) {
   position: fixed;
   min-width: 180px;
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   box-shadow: var(--shadow-md);
@@ -3220,13 +3220,11 @@ async function removeSpot(id: number) {
   display: flex;
 }
 
-/* inline-flex statt des geerbten inline-block: der kleinere .dropdown-caret (0.7rem) sitzt als reines
-   Inline-Element auf der Baseline der umgebenden 0.85rem-Beschriftung - das lässt ihn spürbar tiefer
-   als die visuelle Mitte des Labels erscheinen statt vertikal zentriert (Nutzer:innen-Feedback).
-   align-items:center zentriert Emoji/Label/Caret stattdessen alle gemeinsam auf einer Flex-Achse. */
+/* display:inline-flex/align-items:center kommen inzwischen aus style.css's globaler button-Regel
+   (#95 "Eingabe Elemente cleanup" - vorher hier lokal als Fix für genau dieses Icon+Label+Caret-
+   Ausrichtungsproblem nachgezogen, jetzt app-weit für jeden Button gelöst). Nur die kleinere
+   Schriftgröße bleibt als lokale Abweichung. */
 .category-btn {
-  display: inline-flex;
-  align-items: center;
   font-size: 0.85rem;
 }
 
