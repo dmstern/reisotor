@@ -7,6 +7,7 @@ import { parseContact } from '../utils/contact';
 import { formatDate as formatDateShared } from '../utils/dateFormat';
 import { useSpotsStore } from '../stores/spots';
 import { useDrawersStore } from '../stores/drawers';
+import { useScheduleStore } from '../stores/schedule';
 import DetailModal from './DetailModal.vue';
 import CategoryChip from './CategoryChip.vue';
 import MapsAppPicker from './MapsAppPicker.vue';
@@ -44,6 +45,7 @@ const emit = defineEmits<{
 
 const spotsStore = useSpotsStore();
 const drawers = useDrawersStore();
+const scheduleStore = useScheduleStore();
 const isAccommodation = computed(() => props.spot.category === 'Unterkunft');
 
 function formatDate(d: string | null) {
@@ -51,13 +53,22 @@ function formatDate(d: string | null) {
   return formatDateShared(d);
 }
 
-// #106: Status-Kette in Planung -> geplant -> gemacht statt eines unabhängigen Flags - ein Spot
-// darf nicht ohne Datum "gemacht" sein (siehe gleiches Muster/ausführliche Begründung in
-// SpotCard.vue's onToggleDone). Schließt den Dialog vor dem Öffnen des Kalenders, da beide sonst
-// gleichzeitig übereinander sichtbar wären.
+// Ob dieser Spot bereits über einen Kalender-Termin ein Datum hat (analog zu SpotCard.vue's
+// scheduledDate-Prop, hier aber direkt aus dem ohnehin schon global geladenen scheduleStore
+// abgeleitet statt über eine weitere Prop-Kette durch TripMap.vue gereicht - dieser Dialog wird
+// nur von dort aus geöffnet, ein Doppel-Fetch entsteht dadurch nicht).
+const hasScheduledDate = computed(() => scheduleStore.items.some((i) => i.spot_id === props.spot.id));
+
+// #106/#147: Status-Kette in Planung -> geplant -> gemacht statt eines unabhängigen Flags - ein
+// Spot darf nicht ohne Datum "gemacht" sein (siehe gleiches Muster/ausführliche Begründung in
+// SpotCard.vue's onToggleDone). Mit bereits vorhandenem Datum direkt markieren, nur ohne Datum
+// (noch "in Planung") den Kalender zur Bestätigung öffnen - schließt dafür den Dialog vorher, da
+// beide sonst gleichzeitig übereinander sichtbar wären.
 function onToggleDone() {
   if (props.spot.done) {
     spotsStore.setDone(props.spot.id, false);
+  } else if (hasScheduledDate.value) {
+    spotsStore.setDone(props.spot.id, true);
   } else {
     emit('update:modelValue', false);
     drawers.startPendingSchedule('spot', props.spot.id, 'confirm-done');
