@@ -896,13 +896,29 @@ function animateSpotExpand(targetId: number | null, mutate: () => void) {
     return;
   }
   transitioningSpotId.value = targetId;
-  const transition = (document as unknown as { startViewTransition: (cb: () => void | Promise<void>) => { finished: Promise<void> } }).startViewTransition(async () => {
-    mutate();
-    await nextTick();
-  });
-  transition.finished.finally(() => {
+  // Doppelt abgesichert gegen WebKit-Eigenheiten dieser noch jungen API (#140 - auf Safari/iOS
+  // deutlich unzuverlässiger als auf Chrome): (1) startViewTransition() kann synchron werfen, wenn
+  // der Browser eine vorherige Transition noch nicht als abgeschlossen betrachtet (z. B. bei sehr
+  // schnell aufeinanderfolgenden Klicks) - ohne try/catch bliebe mutate() dann komplett aus, der
+  // Klick hätte sichtbar gar keine Wirkung. (2) transition.finished kann auf manchen WebKit-Ständen
+  // hängen bleiben statt aufzulösen - ohne Timeout-Fallback bliebe transitioningSpotId dauerhaft
+  // gesetzt (die Karte trüge dauerhaft einen aktiven view-transition-name, obwohl gar keine Transition
+  // mehr läuft) statt sich nach der eigentlichen Animation (~250ms, siehe style.css) selbst aufzuräumen.
+  try {
+    const transition = (
+      document as unknown as { startViewTransition: (cb: () => void | Promise<void>) => { finished: Promise<void> } }
+    ).startViewTransition(async () => {
+      mutate();
+      await nextTick();
+    });
+    const settle = () => {
+      transitioningSpotId.value = null;
+    };
+    Promise.race([transition.finished, new Promise((resolve) => setTimeout(resolve, 1000))]).finally(settle);
+  } catch {
     transitioningSpotId.value = null;
-  });
+    mutate();
+  }
 }
 
 const spotRefs = new Map<number, HTMLElement>();
@@ -1088,13 +1104,24 @@ const sheetDragHeightPx = ref<number | null>(null);
 // keinen Vue-Render-Tick pro pointermove abzuwarten.
 const sheetEl = ref<HTMLElement | null>(null);
 
-// Deckelt alle drei Zustände auf den Platz UNTER der Kopfzeile/NavBar (56px App-Header +
-// --navbar-offset, dieselbe Formel wie .map-col's sticky top weiter unten) – ohne diesen Deckel
-// wuchs der "voll"-Zustand (88vh der GESAMTEN Fensterhöhe) auf kurzen Fenstern über die Kopfzeile
-// hinaus, sein oberer Rand landete dann teilweise dahinter/darunter verdeckt.
+// Deckelt alle drei Zustände auf den Platz UNTER der Kopfzeile/NavBar – MUSS exakt dieselbe Formel
+// wie .page's Höhe bzw. .spots-col's CSS-Variable --sheet-max-height (siehe CSS weiter unten:
+// calc(100% - 8px) von .page) verwenden, nicht nur eine Annäherung: onSheetDragStart() liest die
+// Ausgangshöhe für "voll" aus genau dieser Funktion, obwohl der ruhende Grundzustand tatsächlich
+// über die reine CSS-Rechnung gerendert wird (siehe Kommentar an .spots-col im CSS). Vorher fehlte
+// hier --navbar-bottom-offset komplett und --app-header-height war hart auf 56 verdrahtet (statt
+// wie überall sonst aus der CSS-Variable gelesen) - auf Mobil steht die NavBar per Default unten
+// (siehe navPosition.ts), --navbar-bottom-offset ist dort also ungleich 0. Die dadurch zu groß
+// berechnete "voll"-Höhe wich spürbar von der tatsächlich gerenderten Höhe ab: zog man den Anfasser
+// direkt aus dem ruhenden "voll"-Zustand (ohne dass dragHeightPx bereits gesetzt war), sprang die
+// Schublade beim allerersten pointermove auf diese falsche, größere Höhe – sichtbar als kurzes
+// Hochzucken, bevor sie dann dem Finger nach unten folgte (#138).
 function sheetHeightPx(state: SheetState): number {
-  const navbarOffset = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--navbar-offset')) || 0;
-  const maxAvailable = Math.max(160, window.innerHeight - 56 - navbarOffset - 8);
+  const rootStyle = getComputedStyle(document.documentElement);
+  const headerHeight = parseFloat(rootStyle.getPropertyValue('--app-header-height')) || 56;
+  const navbarOffset = parseFloat(rootStyle.getPropertyValue('--navbar-offset')) || 0;
+  const navbarBottomOffset = parseFloat(rootStyle.getPropertyValue('--navbar-bottom-offset')) || 0;
+  const maxAvailable = Math.max(160, window.innerHeight - headerHeight - navbarOffset - navbarBottomOffset - 8);
   // 64px statt der früheren 96px: die Pille zeigt jetzt nur noch die Anfasser-Zeile (siehe
   // .spots-col.collapsed CSS), kein Rest von .spots-col-body ragt mehr hinein.
   if (state === 'collapsed') return Math.min(64, maxAvailable);
@@ -2518,6 +2545,13 @@ async function removeSpot(id: number) {
 .spots-col-body {
   flex: 1;
   overflow-y: auto;
+  /* Verhindert, dass der Browser die Scrollposition beim Auf-/Zuklappen einer Spot-Karte (SpotCard.vue,
+     ändert ihre Höhe drastisch) eigenmächtig "korrigiert" (CSS Scroll Anchoring, standardmäßig an) -
+     kollidiert hier mit der View-Transition (#90, siehe animateSpotExpand() im Script): während die
+     transitionierende Karte kurzzeitig aus dem normalen Layout genommen wird (view-transition-name),
+     kann der Browser den falschen Anker wählen und springt sichtbar zu einer völlig anderen Stelle in
+     der Liste (#140 - "Details verschwinden", auf Safari/iOS deutlich ausgeprägter als auf Chrome). */
+  overflow-anchor: none;
   padding: 0 var(--space-3) var(--space-3);
   /* Live gemessene Höhe der sticky .category-nav-Leiste (Icon+Label-Zeile plus Padding/Trennlinie,
      siehe dortiges CSS), per ResizeObserver im Script (setCategoryNavRef -> categoryNavHeight) als
@@ -2876,6 +2910,11 @@ async function removeSpot(id: number) {
   width: 100%;
   background: none;
   border: none;
+  /* Der globale button-Selektor (style.css) setzt box-shadow/border als Grundausstattung für
+     "echte" Buttons - dieser Toggle ist aber eine flache Zeile innerhalb der bereits eingefärbten
+     .filter-bar (background/border oben schon zurückgesetzt), der geerbte Schatten wirkte dort wie
+     ein optischer Fremdkörper (#139). */
+  box-shadow: none;
   padding: 4px;
   margin: 0;
   font: inherit;
@@ -3116,6 +3155,9 @@ async function removeSpot(id: number) {
   width: 100%;
   background: none;
   border: none;
+  /* Gleiches Muster/derselbe Fix wie .filter-toggle-row oben (#139) - auch hier überschreibt der
+     globale button-Selektor sonst mit seinem Grund-Schatten. */
+  box-shadow: none;
   padding: var(--space-2) var(--space-3);
   font: inherit;
   font-size: 0.85rem;
