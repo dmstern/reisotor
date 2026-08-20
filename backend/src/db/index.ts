@@ -1299,3 +1299,9 @@ ensureColumn('diary_entries', 'is_draft', 'INTEGER NOT NULL DEFAULT 0');
 // localStorage-Zustand), eine eigene Tabelle mit einer Spalte pro Feld wäre hier reiner Overhead.
 // NULL = noch nie gespeichert, Frontend füllt dann seine lokalen Defaults.
 ensureColumn('users', 'icon_settings', 'TEXT');
+
+// #96: konfigurierbare Registrierung (REGISTRATION_MODE=off/full/restricted, siehe
+// registrationConfig.ts). Wird beim Registrieren gesetzt (routes/auth.ts) und bleibt danach
+// bestehen, auch wenn REGISTRATION_MODE später geändert wird – kein Backfill nötig, da additiv mit
+// Default 0 (alle bisherigen Accounts sind unrestricted).
+ensureColumn('users', 'is_restricted', 'INTEGER NOT NULL DEFAULT 0');

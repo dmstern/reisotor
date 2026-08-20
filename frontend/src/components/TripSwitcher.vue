@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { useTripStore } from '../stores/trip';
+import { useAuthStore } from '../stores/auth';
 import { useTripEditor } from '../composables/useTripEditor';
 import type { Trip } from '../api/types';
 import Modal from './Modal.vue';
@@ -12,11 +13,15 @@ import AppIcon from './AppIcon.vue';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 
 const tripStore = useTripStore();
+const auth = useAuthStore();
 const open = ref(false);
 const showMembers = ref(false);
 const membersTrip = ref<Trip | null>(null);
 const { showForm, editingTrip, tripFormLocationError, openCreate, openEdit, closeForm, onSubmit, onDelete } =
   useTripEditor();
+// Issue #96: siehe TripsView.vue's tripCreationBlocked() - dieselbe Regel, hier gedoppelt statt
+// geteilt, weil beide Komponenten bereits unabhängige useTripEditor()-Instanzen halten.
+const tripCreationBlocked = () => !!auth.user?.restricted && tripStore.trips.length > 0;
 
 // Sprungziel für Fremdobjekte (z. B. Urlaub-Einträge im Kalender): öffnet das Edit-Modal
 // des aktuellen Urlaubs, ohne dass die einbettende Sicht selbst editieren muss.
@@ -82,7 +87,15 @@ function openMembers(trip: Trip) {
           </div>
         </div>
         <p v-if="!tripStore.trips.length" class="empty">Noch keine Urlaube.</p>
-        <button type="button" class="new-trip-btn" @click="() => { openCreate(); close(); }">+ Neuer Urlaub</button>
+        <button
+          v-if="!tripCreationBlocked()"
+          type="button"
+          class="new-trip-btn"
+          @click="() => { openCreate(); close(); }"
+        >
+          + Neuer Urlaub
+        </button>
+        <p v-else class="empty">Eingeschränkter Modus - Nur ein Urlaub pro Nutzer</p>
         <router-link to="/trips" class="manage-trips-btn" @click="close">Alle Urlaube verwalten</router-link>
       </div>
     </template>

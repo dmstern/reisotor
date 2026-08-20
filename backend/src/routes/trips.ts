@@ -7,6 +7,14 @@ import { requireTripMember } from '../tripAccess.js';
 import { recordActivity } from '../activity.js';
 import { uploadsDir } from '../uploads.js';
 import { resolveCountry, fetchRegionInfo } from '../utils/regionInfo.js';
+import {
+  isUserRestricted,
+  isTripOwnerRestricted,
+  countTripsCreatedBy,
+  RESTRICTED_MAX_TRIPS,
+  RESTRICTED_MAX_MEMBERS,
+} from '../registrationConfig.js';
+import { refreshTripWeatherSnapshots } from '../weatherSnapshots.js';
 
 interface TripBody {
   name: string;
@@ -25,24 +33,32 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
   // tripAccess.ts) – vorher implizit für alle Nutzer:innen sichtbar (siehe CLAUDE.md-Kommentar in
   // db/index.ts zum Backfill).
   app.get('/trips', async (req) => {
-    return db
+    const trips = db
       .prepare(
         `SELECT trips.* FROM trips
          JOIN trip_members ON trip_members.trip_id = trips.id
          WHERE trip_members.user_id = ?
          ORDER BY trips.id`,
       )
-      .all(req.session.userId);
+      .all(req.session.userId) as { id: number }[];
+    // owner_restricted steuert im Frontend (TripMembersDialog.vue), ob der 3-Mitglieder-Deckel
+    // aus Issue #96 für diesen Urlaub greift – am Urlaub selbst hängend statt nur am eigenen
+    // restricted-Status, da der Deckel von der anlegenden Person abhängt, nicht von der
+    // gerade einladenden.
+    return trips.map((trip) => ({ ...trip, owner_restricted: isTripOwnerRestricted(trip.id) }));
   });
 
   app.get<{ Params: { id: string } }>('/trips/:id', async (req, reply) => {
     if (!requireTripMember(reply, req.params.id, req.session.userId)) return;
     const trip = db.prepare('SELECT * FROM trips WHERE id = ?').get(req.params.id);
     if (!trip) return reply.code(404).send({ error: 'Nicht gefunden' });
-    return trip;
+    return { ...trip, owner_restricted: isTripOwnerRestricted(req.params.id) };
   });
 
   app.post<{ Body: TripBody }>('/trips', async (req, reply) => {
+    if (isUserRestricted(req.session.userId) && countTripsCreatedBy(req.session.userId!) >= RESTRICTED_MAX_TRIPS) {
+      return reply.code(403).send({ error: 'Eingeschränkter Modus - Nur ein Urlaub pro Nutzer' });
+    }
     const { name, destination, start_date, end_date, maps_link } = req.body;
     let { lat, lng, image_url } = req.body;
     if ((lat == null || lng == null) && maps_link) {
@@ -107,6 +123,13 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
     if (!image_url && lat != null && lng != null) {
       image_url = tilePreviewUrl(lat, lng);
     }
+    // Rundung statt exaktem Vergleich, damit ein unveränderter Ort (z.B. maps_link bleibt gleich,
+    // resolveLatLng liefert aber minimal abweichende Nachkommastellen) nicht fälschlich als
+    // Orts-Änderung gilt und unnötig einen Weather-Refresh auslöst.
+    const roundCoord = (v: number | null | undefined) => (v == null ? null : Math.round(v * 10000) / 10000);
+    const locationChanged =
+      roundCoord(lat) !== roundCoord(existing.lat) || roundCoord(lng) !== roundCoord(existing.lng);
+
     const packingCategoryRequired = req.body.packing_category_required !== false ? 1 : 0;
     const result = db
       .prepare(
@@ -125,6 +148,17 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
         req.params.id,
       );
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
+
+    // Ändert sich der Ort, sind zuvor gespeicherte Wetter-Ist-Werte vergangener Tage
+    // (trip_weather_snapshots, siehe weatherSnapshots.ts) noch zum alten Ort gehörig und damit
+    // falsch - sie werden gelöscht und asynchron (nicht blockierend für diese Response) neu geholt.
+    if (locationChanged) {
+      db.prepare('DELETE FROM trip_weather_snapshots WHERE trip_id = ?').run(req.params.id);
+      refreshTripWeatherSnapshots(Number(req.params.id)).catch((err) =>
+        app.log.error(err, `weatherSnapshots: refresh after location change failed for trip ${req.params.id}`),
+      );
+    }
+
     return db.prepare('SELECT * FROM trips WHERE id = ?').get(req.params.id);
   });
 
@@ -217,6 +251,17 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
     if (!requireTripMember(reply, req.params.id, req.session.userId)) return;
     const { user_id } = req.body ?? {};
     if (!user_id) return reply.code(400).send({ error: 'user_id erforderlich' });
+
+    if (isTripOwnerRestricted(req.params.id)) {
+      const memberCount = (
+        db.prepare('SELECT COUNT(*) as count FROM trip_members WHERE trip_id = ?').get(req.params.id) as {
+          count: number;
+        }
+      ).count;
+      if (memberCount >= RESTRICTED_MAX_MEMBERS) {
+        return reply.code(403).send({ error: 'Eingeschränkter Modus - Maximal drei Nutzer pro Urlaub' });
+      }
+    }
 
     const user = db.prepare('SELECT id, username, avatar FROM users WHERE id = ?').get(user_id);
     if (!user) return reply.code(404).send({ error: 'Nutzer:in nicht gefunden' });
