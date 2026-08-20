@@ -1088,13 +1088,24 @@ const sheetDragHeightPx = ref<number | null>(null);
 // keinen Vue-Render-Tick pro pointermove abzuwarten.
 const sheetEl = ref<HTMLElement | null>(null);
 
-// Deckelt alle drei Zustände auf den Platz UNTER der Kopfzeile/NavBar (56px App-Header +
-// --navbar-offset, dieselbe Formel wie .map-col's sticky top weiter unten) – ohne diesen Deckel
-// wuchs der "voll"-Zustand (88vh der GESAMTEN Fensterhöhe) auf kurzen Fenstern über die Kopfzeile
-// hinaus, sein oberer Rand landete dann teilweise dahinter/darunter verdeckt.
+// Deckelt alle drei Zustände auf den Platz UNTER der Kopfzeile/NavBar – MUSS exakt dieselbe Formel
+// wie .page's Höhe bzw. .spots-col's CSS-Variable --sheet-max-height (siehe CSS weiter unten:
+// calc(100% - 8px) von .page) verwenden, nicht nur eine Annäherung: onSheetDragStart() liest die
+// Ausgangshöhe für "voll" aus genau dieser Funktion, obwohl der ruhende Grundzustand tatsächlich
+// über die reine CSS-Rechnung gerendert wird (siehe Kommentar an .spots-col im CSS). Vorher fehlte
+// hier --navbar-bottom-offset komplett und --app-header-height war hart auf 56 verdrahtet (statt
+// wie überall sonst aus der CSS-Variable gelesen) - auf Mobil steht die NavBar per Default unten
+// (siehe navPosition.ts), --navbar-bottom-offset ist dort also ungleich 0. Die dadurch zu groß
+// berechnete "voll"-Höhe wich spürbar von der tatsächlich gerenderten Höhe ab: zog man den Anfasser
+// direkt aus dem ruhenden "voll"-Zustand (ohne dass dragHeightPx bereits gesetzt war), sprang die
+// Schublade beim allerersten pointermove auf diese falsche, größere Höhe – sichtbar als kurzes
+// Hochzucken, bevor sie dann dem Finger nach unten folgte (#138).
 function sheetHeightPx(state: SheetState): number {
-  const navbarOffset = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--navbar-offset')) || 0;
-  const maxAvailable = Math.max(160, window.innerHeight - 56 - navbarOffset - 8);
+  const rootStyle = getComputedStyle(document.documentElement);
+  const headerHeight = parseFloat(rootStyle.getPropertyValue('--app-header-height')) || 56;
+  const navbarOffset = parseFloat(rootStyle.getPropertyValue('--navbar-offset')) || 0;
+  const navbarBottomOffset = parseFloat(rootStyle.getPropertyValue('--navbar-bottom-offset')) || 0;
+  const maxAvailable = Math.max(160, window.innerHeight - headerHeight - navbarOffset - navbarBottomOffset - 8);
   // 64px statt der früheren 96px: die Pille zeigt jetzt nur noch die Anfasser-Zeile (siehe
   // .spots-col.collapsed CSS), kein Rest von .spots-col-body ragt mehr hinein.
   if (state === 'collapsed') return Math.min(64, maxAvailable);
