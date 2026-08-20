@@ -7,6 +7,7 @@ import { requireTripMember } from '../tripAccess.js';
 import { recordActivity } from '../activity.js';
 import { uploadsDir } from '../uploads.js';
 import { resolveCountry, fetchRegionInfo } from '../utils/regionInfo.js';
+import { refreshTripWeatherSnapshots } from '../weatherSnapshots.js';
 
 interface TripBody {
   name: string;
@@ -107,6 +108,13 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
     if (!image_url && lat != null && lng != null) {
       image_url = tilePreviewUrl(lat, lng);
     }
+    // Rundung statt exaktem Vergleich, damit ein unveränderter Ort (z.B. maps_link bleibt gleich,
+    // resolveLatLng liefert aber minimal abweichende Nachkommastellen) nicht fälschlich als
+    // Orts-Änderung gilt und unnötig einen Weather-Refresh auslöst.
+    const roundCoord = (v: number | null | undefined) => (v == null ? null : Math.round(v * 10000) / 10000);
+    const locationChanged =
+      roundCoord(lat) !== roundCoord(existing.lat) || roundCoord(lng) !== roundCoord(existing.lng);
+
     const packingCategoryRequired = req.body.packing_category_required !== false ? 1 : 0;
     const result = db
       .prepare(
@@ -125,6 +133,17 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
         req.params.id,
       );
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
+
+    // Ändert sich der Ort, sind zuvor gespeicherte Wetter-Ist-Werte vergangener Tage
+    // (trip_weather_snapshots, siehe weatherSnapshots.ts) noch zum alten Ort gehörig und damit
+    // falsch - sie werden gelöscht und asynchron (nicht blockierend für diese Response) neu geholt.
+    if (locationChanged) {
+      db.prepare('DELETE FROM trip_weather_snapshots WHERE trip_id = ?').run(req.params.id);
+      refreshTripWeatherSnapshots(Number(req.params.id)).catch((err) =>
+        app.log.error(err, `weatherSnapshots: refresh after location change failed for trip ${req.params.id}`),
+      );
+    }
+
     return db.prepare('SELECT * FROM trips WHERE id = ?').get(req.params.id);
   });
 
