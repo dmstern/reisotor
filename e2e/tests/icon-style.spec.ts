@@ -1,4 +1,10 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, request as playwrightRequest, type Page } from '@playwright/test';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { E2E_FRONTEND_PORT } from '../constants.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const authFile = path.join(__dirname, '..', '.auth', 'user.json');
 
 // Regressionstest für die Emoji↔Tabler-Icons-Einstellung (stores/iconStyle.ts,
 // components/AppIcon.vue, components/IconStyleSettings.vue): jeder Bereich (Navigation, Kategorien,
@@ -21,7 +27,12 @@ import { test, expect, type Page } from '@playwright/test';
 // tests/auth.setup.ts setzt für die restliche Suite bewusst alle Bereiche auf Emoji (damit
 // unabhängige Tests ein Icon beiläufig per festem Emoji-Zeichen identifizieren können) - dieser
 // Spec hier überschreibt das gezielt pro Test, um die tatsächliche Icon-Stil-Funktionalität zu
-// prüfen.
+// prüfen. Seit #105 ist das eine geteilte Account-Einstellung statt (wie zuvor) in localStorage,
+// das per storageState-Snapshot für jeden Test frisch aus tests/.auth/user.json geladen wurde -
+// eine Änderung hier bleibt jetzt über das Ende dieser Datei hinaus für den Rest des Testlaufs
+// bestehen. afterAll unten stellt deshalb die Emoji-Baseline explizit wieder her, statt spätere,
+// unabhängige Specs (z. B. listen-merge.spec.ts, track-recording.spec.ts) auf einem Icon-Stil
+// laufen zu lassen, den zufällig der letzte Test hier zurückgelassen hat.
 
 interface StoredIconSettings {
   groups?: Record<string, string>;
@@ -41,6 +52,24 @@ async function putIconSettings(page: Page, settings: StoredIconSettings): Promis
 }
 
 test.describe('Icon-Stil: Emoji/Symbole', () => {
+  // Eigener APIRequestContext statt der `page`-Fixture: die ist test-scoped und in afterAll() nicht
+  // zuverlässig verfügbar. storageState: authFile lädt dieselben Session-Cookies wie tests/
+  // auth.setup.ts, der PUT läuft also authentifiziert für denselben Account.
+  test.afterAll(async () => {
+    const api = await playwrightRequest.newContext({
+      baseURL: `http://localhost:${E2E_FRONTEND_PORT}`,
+      storageState: authFile,
+    });
+    await api.put('/api/users/me/icon-settings', {
+      data: {
+        settings: {
+          groups: { navigation: 'emoji', categories: 'emoji', weather: 'emoji', formFields: 'emoji', actions: 'emoji' },
+        },
+      },
+    });
+    await api.dispose();
+  });
+
   test('Default ist überall Symbole außer bei Kategorien (Emoji), Bereichs-Toggle ändert das NavBar-Icon und persistiert', async ({
     page,
   }) => {
