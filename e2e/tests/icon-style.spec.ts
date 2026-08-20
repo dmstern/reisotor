@@ -1,4 +1,10 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, request as playwrightRequest, type Page } from '@playwright/test';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { E2E_FRONTEND_PORT } from '../constants.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const authFile = path.join(__dirname, '..', '.auth', 'user.json');
 
 // Regressionstest für die Emoji↔Tabler-Icons-Einstellung (stores/iconStyle.ts,
 // components/AppIcon.vue, components/IconStyleSettings.vue): jeder Bereich (Navigation, Kategorien,
@@ -6,6 +12,10 @@ import { test, expect } from '@playwright/test';
 // siehe Issue #74), Default ist überall Symbole außer bei Kategorien (Emoji). Ein
 // "Für alle Bereiche umstellen"-Bulk-Toggle sowie Einfärben-Checkboxen für Navigation/Wetter und ein
 // Reset-Button runden die Karte ab. Das Nutzer-Avatar bleibt davon in jedem Fall unberührt.
+//
+// Seit #105 kontoweit über /api/users/me/icon-settings persistiert statt in localStorage - die
+// Helper unten sprechen direkt mit der API (page.request teilt sich die Session-Cookies mit page),
+// statt localStorage zu lesen/schreiben.
 //
 // Wichtig für die Selektoren unten: AppIcon.vue setzt seine eigenen Klassen (app-icon, app-icon-
 // tabler/-emoji) direkt auf sein Root-Element - im Tabler-Fall ist das Root-Element bereits das
@@ -17,14 +27,54 @@ import { test, expect } from '@playwright/test';
 // tests/auth.setup.ts setzt für die restliche Suite bewusst alle Bereiche auf Emoji (damit
 // unabhängige Tests ein Icon beiläufig per festem Emoji-Zeichen identifizieren können) - dieser
 // Spec hier überschreibt das gezielt pro Test, um die tatsächliche Icon-Stil-Funktionalität zu
-// prüfen.
+// prüfen. Seit #105 ist das eine geteilte Account-Einstellung statt (wie zuvor) in localStorage,
+// das per storageState-Snapshot für jeden Test frisch aus tests/.auth/user.json geladen wurde -
+// eine Änderung hier bleibt jetzt über das Ende dieser Datei hinaus für den Rest des Testlaufs
+// bestehen. afterAll unten stellt deshalb die Emoji-Baseline explizit wieder her, statt spätere,
+// unabhängige Specs (z. B. listen-merge.spec.ts, track-recording.spec.ts) auf einem Icon-Stil
+// laufen zu lassen, den zufällig der letzte Test hier zurückgelassen hat.
+
+interface StoredIconSettings {
+  groups?: Record<string, string>;
+  variants?: Record<string, string>;
+  navColored?: boolean;
+  colorizeWeather?: boolean;
+  colorizeCategories?: boolean;
+}
+
+async function getIconSettings(page: Page): Promise<StoredIconSettings> {
+  const res = await page.request.get('/api/users/me/icon-settings');
+  return res.json();
+}
+
+async function putIconSettings(page: Page, settings: StoredIconSettings): Promise<void> {
+  await page.request.put('/api/users/me/icon-settings', { data: { settings } });
+}
+
 test.describe('Icon-Stil: Emoji/Symbole', () => {
+  // Eigener APIRequestContext statt der `page`-Fixture: die ist test-scoped und in afterAll() nicht
+  // zuverlässig verfügbar. storageState: authFile lädt dieselben Session-Cookies wie tests/
+  // auth.setup.ts, der PUT läuft also authentifiziert für denselben Account.
+  test.afterAll(async () => {
+    const api = await playwrightRequest.newContext({
+      baseURL: `http://localhost:${E2E_FRONTEND_PORT}`,
+      storageState: authFile,
+    });
+    await api.put('/api/users/me/icon-settings', {
+      data: {
+        settings: {
+          groups: { navigation: 'emoji', categories: 'emoji', weather: 'emoji', formFields: 'emoji', actions: 'emoji' },
+        },
+      },
+    });
+    await api.dispose();
+  });
+
   test('Default ist überall Symbole außer bei Kategorien (Emoji), Bereichs-Toggle ändert das NavBar-Icon und persistiert', async ({
     page,
   }) => {
+    await putIconSettings(page, {});
     await page.goto('/');
-    await page.evaluate(() => localStorage.removeItem('reisotor-icon-style-groups'));
-    await page.reload();
     const dashboardLink = page.locator('.navbar .link').first();
 
     // Default: Navigation-Bereich steht auf Symbole -> SVG, kein Emoji-Text.
@@ -37,11 +87,9 @@ test.describe('Icon-Stil: Emoji/Symbole', () => {
 
     const navRow = iconsCard.locator('.group-override-row', { hasText: 'Navigation & Dashboard' });
     await navRow.locator('.segmented-option', { hasText: 'Emoji' }).click();
-    // Warten, bis der Store-Watcher tatsächlich nach localStorage geschrieben hat, statt sofort zu
-    // lesen (asynchroner Flush, siehe stores/iconStyle.ts's watch()).
-    await expect
-      .poll(async () => JSON.parse((await page.evaluate(() => localStorage.getItem('reisotor-icon-style-groups'))) ?? '{}').navigation)
-      .toBe('emoji');
+    // Warten, bis der Store die Änderung tatsächlich an die API übermittelt hat, statt sofort zu
+    // lesen (persist() ist ein Fire-and-forget-PUT, siehe stores/iconStyle.ts).
+    await expect.poll(async () => (await getIconSettings(page)).groups?.navigation).toBe('emoji');
 
     await page.goto('/');
     const dashboardLinkAfter = page.locator('.navbar .link').first();
@@ -59,32 +107,20 @@ test.describe('Icon-Stil: Emoji/Symbole', () => {
 
     await iconsCard.locator('.all-groups-row .segmented-option', { hasText: 'Emoji' }).click();
     await expect
-      .poll(async () => {
-        const raw = await page.evaluate(() => localStorage.getItem('reisotor-icon-style-groups'));
-        const groups = JSON.parse(raw ?? '{}');
-        return Object.values(groups);
-      })
+      .poll(async () => Object.values((await getIconSettings(page)).groups ?? {}))
       .toEqual(['emoji', 'emoji', 'emoji', 'emoji', 'emoji']);
 
     await iconsCard.locator('.all-groups-row .segmented-option', { hasText: 'Symbole' }).click();
     await expect
-      .poll(async () => {
-        const raw = await page.evaluate(() => localStorage.getItem('reisotor-icon-style-groups'));
-        const groups = JSON.parse(raw ?? '{}');
-        return Object.values(groups);
-      })
+      .poll(async () => Object.values((await getIconSettings(page)).groups ?? {}))
       .toEqual(['icons', 'icons', 'icons', 'icons', 'icons']);
   });
 
   test('Outline/Gefüllt ist pro Bereich einzeln einstellbar, nur sichtbar wenn der Bereich auf Symbole steht', async ({ page }) => {
     // tests/auth.setup.ts setzt für die restliche Suite bewusst alle Bereiche auf Emoji - hier
     // gezielt Navigation auf Symbole zurückstellen, um die Varianten-Zeile testen zu können.
-    await page.goto('/');
-    await page.evaluate(() => {
-      const groups = JSON.parse(localStorage.getItem('reisotor-icon-style-groups') ?? '{}');
-      groups.navigation = 'icons';
-      localStorage.setItem('reisotor-icon-style-groups', JSON.stringify(groups));
-    });
+    const current = await getIconSettings(page);
+    await putIconSettings(page, { ...current, groups: { ...current.groups, navigation: 'icons' } });
     await page.goto('/profile?tab=app');
     const iconsCard = page.locator('.card', { hasText: 'Icons' });
     await expect(iconsCard).toBeVisible();
@@ -103,9 +139,7 @@ test.describe('Icon-Stil: Emoji/Symbole', () => {
 
     await page.goto('/profile?tab=app');
     await navVariantRow.locator('.segmented-option', { hasText: 'Gefüllt' }).click();
-    await expect
-      .poll(async () => JSON.parse((await page.evaluate(() => localStorage.getItem('reisotor-icon-style-variants'))) ?? '{}').navigation)
-      .toBe('filled');
+    await expect.poll(async () => (await getIconSettings(page)).variants?.navigation).toBe('filled');
 
     // fill ist nicht mehr 'none' (siehe @tabler/icons-vue's defaultAttributes.mjs) - der exakte Wert
     // hängt zusätzlich davon ab, ob "Icons in der Navigation einfärben" aktiv ist (Default: an, siehe
@@ -116,7 +150,7 @@ test.describe('Icon-Stil: Emoji/Symbole', () => {
     // Ein anderer Bereich (Kategorien) bleibt von der Navigation-Varianten-Änderung unberührt (jeder
     // Bereich trägt einen eigenen, vollständigen Wert - siehe stores/iconStyle.ts's DEFAULT_VARIANTS).
     await page.goto('/profile?tab=app');
-    expect(await page.evaluate(() => JSON.parse(localStorage.getItem('reisotor-icon-style-variants') ?? '{}').categories)).toBe('outline');
+    expect((await getIconSettings(page)).variants?.categories).toBe('outline');
 
     // Kategorien steht standardmäßig auf Emoji -> keine Varianten-Zeile für diesen Bereich.
     const categoriesRow = iconsCard.locator('.group-override-row', { hasText: 'Kategorien' });
@@ -131,11 +165,8 @@ test.describe('Icon-Stil: Emoji/Symbole', () => {
     expect(avatarText?.trim().length).toBeGreaterThan(0);
     expect(await avatar.locator('svg').count()).toBe(0);
 
-    await page.evaluate(() => {
-      localStorage.setItem(
-        'reisotor-icon-style-groups',
-        JSON.stringify({ navigation: 'icons', categories: 'icons', weather: 'icons', formFields: 'icons', actions: 'icons' }),
-      );
+    await putIconSettings(page, {
+      groups: { navigation: 'icons', categories: 'icons', weather: 'icons', formFields: 'icons', actions: 'icons' },
     });
     await page.reload();
     // Kontrollcheck, dass die Einstellung diesmal tatsächlich griff (Nav-Icon jetzt ein SVG) -
@@ -152,8 +183,8 @@ test.describe('Icon-Stil: Emoji/Symbole', () => {
     const iconsCard = page.locator('.card', { hasText: 'Icons' });
     await expect(iconsCard).toBeVisible();
 
-    // Standard-Zustand (kein localStorage-Eintrag) erzwingen.
-    await page.evaluate(() => localStorage.removeItem('reisotor-icon-style-groups'));
+    // Standard-Zustand (keine gespeicherten Einstellungen) erzwingen.
+    await putIconSettings(page, {});
     await page.reload();
     await expect(iconsCard).toBeVisible();
 
@@ -167,12 +198,8 @@ test.describe('Icon-Stil: Emoji/Symbole', () => {
   test('"Icons in der Navigation einfärben" setzt eine Akzentfarbe auf das NavBar-Icon', async ({ page }) => {
     // tests/auth.setup.ts setzt für die restliche Suite bewusst alle Bereiche auf Emoji - hier
     // gezielt Navigation auf Symbole zurückstellen, sonst gibt es kein SVG zum Einfärben.
-    await page.goto('/');
-    await page.evaluate(() => {
-      const groups = JSON.parse(localStorage.getItem('reisotor-icon-style-groups') ?? '{}');
-      groups.navigation = 'icons';
-      localStorage.setItem('reisotor-icon-style-groups', JSON.stringify(groups));
-    });
+    const current = await getIconSettings(page);
+    await putIconSettings(page, { ...current, groups: { ...current.groups, navigation: 'icons' } });
     await page.goto('/profile?tab=app');
     const iconsCard = page.locator('.card', { hasText: 'Icons' });
     await expect(iconsCard).toBeVisible();
@@ -180,9 +207,7 @@ test.describe('Icon-Stil: Emoji/Symbole', () => {
     // Kontrast zu prüfen).
     const navColorCheckbox = iconsCard.locator('.colorize-row', { hasText: 'Icons in der Navigation einfärben' }).locator('input');
     if (await navColorCheckbox.isChecked()) await navColorCheckbox.uncheck();
-    await expect
-      .poll(async () => page.evaluate(() => localStorage.getItem('reisotor-icon-nav-colored')))
-      .toBe('false');
+    await expect.poll(async () => (await getIconSettings(page)).navColored).toBe(false);
 
     const dashboardIcon = () => page.locator('.navbar .link').first().locator('svg.icon');
     await page.goto('/');
@@ -190,9 +215,7 @@ test.describe('Icon-Stil: Emoji/Symbole', () => {
 
     await page.goto('/profile?tab=app');
     await navColorCheckbox.check();
-    await expect
-      .poll(async () => page.evaluate(() => localStorage.getItem('reisotor-icon-nav-colored')))
-      .toBe('true');
+    await expect.poll(async () => (await getIconSettings(page)).navColored).toBe(true);
 
     await page.goto('/');
     await expect(dashboardIcon()).not.toHaveAttribute('stroke', 'currentColor');
@@ -204,15 +227,13 @@ test.describe('Icon-Stil: Emoji/Symbole', () => {
     await expect(iconsCard).toBeVisible();
 
     await iconsCard.locator('.all-groups-row .segmented-option', { hasText: 'Emoji' }).click();
-    await expect
-      .poll(async () => JSON.parse((await page.evaluate(() => localStorage.getItem('reisotor-icon-style-groups'))) ?? '{}').navigation)
-      .toBe('emoji');
+    await expect.poll(async () => (await getIconSettings(page)).groups?.navigation).toBe('emoji');
 
     await iconsCard.locator('button', { hasText: 'Auf Standard-Einstellungen zurücksetzen' }).click();
 
     await expect
       .poll(async () => {
-        const groups = JSON.parse((await page.evaluate(() => localStorage.getItem('reisotor-icon-style-groups'))) ?? '{}');
+        const groups = (await getIconSettings(page)).groups ?? {};
         return [groups.navigation, groups.categories];
       })
       .toEqual(['icons', 'emoji']);

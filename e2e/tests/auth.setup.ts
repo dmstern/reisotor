@@ -28,11 +28,14 @@ setup('authenticate', async ({ page }) => {
   // selbst geht. stores/iconStyle.ts's Default ist seit Issue #74 überall Symbole außer Kategorien -
   // ohne diesen Fixpunkt würden diese Assertions bei jeder künftigen Default-Änderung erneut
   // brechen. Nur tests/icon-style.spec.ts (testet die Einstellung selbst) überschreibt das gezielt.
-  await page.evaluate(() => {
-    localStorage.setItem(
-      'reisotor-icon-style-groups',
-      JSON.stringify({ navigation: 'emoji', categories: 'emoji', weather: 'emoji', formFields: 'emoji', actions: 'emoji' }),
-    );
+  // Seit #105 kontoweit über die API persistiert statt in localStorage (siehe stores/iconStyle.ts) -
+  // page.request teilt sich die Session-Cookies mit page, der PUT läuft also bereits authentifiziert.
+  await page.request.put('/api/users/me/icon-settings', {
+    data: {
+      settings: {
+        groups: { navigation: 'emoji', categories: 'emoji', weather: 'emoji', formFields: 'emoji', actions: 'emoji' },
+      },
+    },
   });
 
   await page.context().storageState({ path: authFile });

@@ -1293,6 +1293,13 @@ db.exec('CREATE INDEX IF NOT EXISTS idx_track_points_track_recorded ON location_
 ensureColumn('notes', 'is_draft', 'INTEGER NOT NULL DEFAULT 0');
 ensureColumn('diary_entries', 'is_draft', 'INTEGER NOT NULL DEFAULT 0');
 
+// Icon-Stil-Einstellungen (App-Einstellungen-Tab, #105): waren bisher nur in localStorage
+// (stores/iconStyle.ts) und damit pro Gerät statt pro Account. Ein JSON-Blob statt Einzelspalten -
+// die Einstellung wird immer als Ganzes vom Frontend geladen/gespeichert (wie der bisherige
+// localStorage-Zustand), eine eigene Tabelle mit einer Spalte pro Feld wäre hier reiner Overhead.
+// NULL = noch nie gespeichert, Frontend füllt dann seine lokalen Defaults.
+ensureColumn('users', 'icon_settings', 'TEXT');
+
 // Notification-Inbox (#97): merkt sich pro Nutzer:in, welche trip_activity-Zeilen bereits gelesen
 // wurden (Klick auf die Nachricht bzw. "Alle als gelesen markieren", siehe routes/notifications.ts).
 // Komplett neue, additive Tabelle statt einer Spalte auf trip_activity - eine Aktivität wird von
