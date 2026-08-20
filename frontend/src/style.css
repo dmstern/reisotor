@@ -789,10 +789,18 @@ textarea:focus {
    Vorher/Nachher, morpht/blendet selbst). ::view-transition-Pseudoelemente wirken IMMER global
    (können nicht scoped werden), gehören deshalb hier statt in eine Komponente. Nur die eine, gerade
    wechselnde Karte trägt den Namen (view-transition-name, dynamisch per :style gesetzt) - alles
-   andere läuft über die UA-Default-Root-Transition (::view-transition-old/new(root), bewusst nicht
-   überschrieben: bei nur einer benannten Gruppe bleibt die Root-Ebene ohnehin unsichtbar/leer).
-   Etwas kürzer als der Browser-Default (~250ms statt 400ms), an SpotCard.vue's eigene
-   .image-Transition (0.15s) angelehnt. */
+   andere läuft standardmäßig trotzdem über die UA-Default-Root-Transition mit: die Annahme, die
+   Root-Ebene bleibe bei nur einer benannten Gruppe automatisch unsichtbar/leer, stimmte nicht - der
+   Browser blendet ohne Gegenmaßnahme trotzdem einen Vorher-/Nachher-Screenshot der GESAMTEN Seite
+   (Header, Bottom-Nav, Listeninhalte) übereinander, was wie eine kurz aufblitzende weiße/verwaschene
+   Fläche über der ganzen Ansicht aussah (Bug). animation-duration: 0 auf der Root-Gruppe deaktiviert
+   diesen Crossfade, sodass ausschließlich die benannte Karten-Gruppe sichtbar animiert. Etwas kürzer
+   als der Browser-Default (~250ms statt 400ms), an SpotCard.vue's eigene .image-Transition (0.15s)
+   angelehnt. */
+::view-transition-group(root) {
+  animation-duration: 0s;
+}
+
 ::view-transition-group(expanding-spot-card) {
   animation-duration: 0.25s;
 }
