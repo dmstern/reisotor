@@ -27,7 +27,7 @@ import WeatherIcon from './WeatherIcon.vue';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
-import { formatDate as formatDateShared } from '../utils/dateFormat';
+import { formatDate as formatDateShared, toLocalDateString } from '../utils/dateFormat';
 
 const props = defineProps<{
   spot: Spot;
@@ -93,10 +93,24 @@ function formatDate(d: string) {
 // Modell cached; mehrere Karten mit demselben Ort verursachen dadurch ohnehin nur einen echten
 // Request. Best effort wie überall sonst bei Wetter (siehe DashboardView.vue) - ein Fehlschlag
 // blendet nur das Wetter-Suffix aus, nicht die ganze Karte.
+//
+// #145: ohne geplantes Datum wird ersatzweise das AKTUELLE Wetter geholt (heutiges Datum) statt gar
+// keines zu zeigen - im Template klar als "Aktuelles Wetter" gekennzeichnet, damit es nicht mit
+// einer Vorhersage für einen bestimmten Tag verwechselt wird. Ein bereits als "gemacht" markierter
+// Spot ohne Datum (Altbestand vor #106/#147, siehe plannedDateLabel-Kommentar unten) zeigt bewusst
+// KEIN aktuelles Wetter - das wäre kein sinnvoller Bezug zu einem bereits vergangenen Besuch. Nur in
+// der aufgeklappten Karte geholt (props.expanded) - anders als beim geplanten Datum (typischerweise
+// wenige Spots) haben in der Mini-Card-Ansicht potenziell sehr viele Spots gar kein Datum; ein Fetch
+// pro sichtbarer Mini-Card würde unnötig viele Open-Meteo-Requests auf einmal auslösen.
 const weatherProvider = useWeatherProviderStore();
+const weatherDate = computed(() => {
+  if (props.scheduledDate) return props.scheduledDate;
+  if (props.spot.done || !props.expanded) return null;
+  return toLocalDateString(new Date());
+});
 const dayWeather = ref<DailyWeather | null>(null);
 watch(
-  () => [props.scheduledDate, props.spot.lat, props.spot.lng, weatherProvider.model] as const,
+  () => [weatherDate.value, props.spot.lat, props.spot.lng, weatherProvider.model, props.expanded] as const,
   async ([date, lat, lng, model]) => {
     dayWeather.value = null;
     if (!date || lat == null || lng == null) return;
@@ -222,12 +236,22 @@ function onToggleDone() {
            (geplant/besucht), "spot.done && !scheduledDate" ist der Fallback für bereits vor #106
            als "gemacht" markierte Bestandsdaten ohne verknüpftes Datum (kein Backfill möglich, da
            der tatsächliche Tag nicht rekonstruierbar ist). -->
-      <span v-if="scheduledDate || spot.done" class="status" :class="{ planned: scheduledDate && !spot.done, 'status-done': spot.done }">
-        <AppIcon class="status-icon" :size="14" :icon="spot.done ? ACTION_ICONS.done : FORM_FIELD_ICONS.date" group="actions" />
+      <span
+        v-if="scheduledDate || spot.done || dayWeather"
+        class="status"
+        :class="{ planned: scheduledDate && !spot.done, 'status-done': spot.done }"
+      >
+        <AppIcon
+          class="status-icon"
+          :size="14"
+          :icon="spot.done ? ACTION_ICONS.done : scheduledDate ? FORM_FIELD_ICONS.date : ACTION_ICONS.today"
+          group="actions"
+        />
         <span class="status-text">
           <template v-if="spot.done && scheduledDate">Besucht am {{ plannedDateLabel }}</template>
           <template v-else-if="spot.done">Gemacht</template>
-          <template v-else>Geplant für {{ plannedDateLabel }}</template>
+          <template v-else-if="scheduledDate">Geplant für {{ plannedDateLabel }}</template>
+          <template v-else>Aktuelles Wetter</template>
           <template v-if="dayWeather"> · <WeatherIcon :code="dayWeather.weatherCode" :size="14" /> {{ Math.round(dayWeather.tempMax) }}°</template>
         </span>
       </span>
