@@ -33,6 +33,7 @@ describe('useIconStyleStore', () => {
     expect(Object.values(store.variants).every((v) => v === 'outline')).toBe(true);
     expect(store.navColored).toBe(true);
     expect(store.colorizeWeather).toBe(true);
+    expect(store.colorizeCategories).toBe(true);
   });
 
   it('falls back to the default per group when a stored value is not a valid option', async () => {
@@ -99,6 +100,7 @@ describe('useIconStyleStore', () => {
     store.setGroupVariant('actions', 'filled');
     store.navColored = false;
     store.colorizeWeather = false;
+    store.colorizeCategories = false;
 
     store.resetToDefaults();
 
@@ -107,6 +109,7 @@ describe('useIconStyleStore', () => {
     expect(store.variants.actions).toBe('outline');
     expect(store.navColored).toBe(true);
     expect(store.colorizeWeather).toBe(true);
+    expect(store.colorizeCategories).toBe(true);
   });
 
   it('clearOnLogout resets state and allows the next login to load() again', async () => {

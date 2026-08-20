@@ -82,7 +82,7 @@ export const useIconStyleStore = defineStore('iconStyle', () => {
   const variants = ref<Record<IconGroup, IconVariant>>({ ...DEFAULT_VARIANTS });
   const navColoredRaw = ref(true);
   const colorizeWeatherRaw = ref(true);
-  const colorizeCategoriesRaw = ref(false);
+  const colorizeCategoriesRaw = ref(true);
   const loaded = ref(false);
 
   // Best effort wie notificationPreferences.ts's update(): der lokale Zustand ist schon
@@ -179,7 +179,7 @@ export const useIconStyleStore = defineStore('iconStyle', () => {
     variants.value = { ...DEFAULT_VARIANTS };
     navColoredRaw.value = true;
     colorizeWeatherRaw.value = true;
-    colorizeCategoriesRaw.value = false;
+    colorizeCategoriesRaw.value = true;
     persist();
   }
 
@@ -193,7 +193,7 @@ export const useIconStyleStore = defineStore('iconStyle', () => {
     variants.value = { ...DEFAULT_VARIANTS };
     navColoredRaw.value = true;
     colorizeWeatherRaw.value = true;
-    colorizeCategoriesRaw.value = false;
+    colorizeCategoriesRaw.value = true;
     loaded.value = false;
   }
 
