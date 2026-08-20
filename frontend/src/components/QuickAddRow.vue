@@ -16,6 +16,7 @@ const emit = defineEmits<{ (e: 'submit', label: string): void }>();
 const label = ref('');
 const focused = ref(false);
 const inputRef = ref<HTMLInputElement | null>(null);
+const formRef = ref<HTMLFormElement | null>(null);
 
 const expanded = computed(() => focused.value || label.value.trim().length > 0);
 
@@ -27,18 +28,25 @@ function submit() {
   inputRef.value?.focus();
 }
 
-function onBlur() {
+function onBlur(event: FocusEvent) {
+  // Springt der Fokus direkt auf ein Zusatzfeld im "extra"-Slot (z. B. Kategorie/Unterkategorie),
+  // trägt relatedTarget das bereits - dann sofort nicht einklappen. Ohne diese Prüfung riss ein
+  // Klick/Tab direkt in ein noch-leeres Zusatzfeld (Label selbst noch nie befüllt) die Zeile wieder
+  // ein, noch bevor der Timeout unten greifen konnte, und das gerade fokussierte Feld verschwand samt
+  // Fokus mitten in der Eingabe (siehe Bug 126).
+  const next = event.relatedTarget as Node | null;
+  if (next && formRef.value?.contains(next)) return;
   // Leichte Verzögerung: ein Klick auf ein Zusatzfeld im "extra"-Slot (z. B. ein <select>) löst vorher
   // ein blur auf diesem Eingabefeld aus - ohne Verzögerung würde die Zeile schon einklappen, bevor
   // die Auswahl im Zusatzfeld ankommt.
   window.setTimeout(() => {
-    if (!label.value.trim()) focused.value = false;
+    if (!label.value.trim() && !formRef.value?.contains(document.activeElement)) focused.value = false;
   }, 150);
 }
 </script>
 
 <template>
-  <form class="quick-add-row" :class="{ expanded }" @submit.prevent="submit">
+  <form ref="formRef" class="quick-add-row" :class="{ expanded }" @submit.prevent="submit">
     <div class="main-row">
       <span class="plus" aria-hidden="true">+</span>
       <input
