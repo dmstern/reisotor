@@ -104,6 +104,12 @@ const activeIndex = computed(() => props.options.findIndex((o) => o.value === pr
   z-index: 1;
   padding: 5px 10px;
   border: none;
+  /* Explizit zurückgesetzt statt sich auf style.css's globale button-Regel zu verlassen (#95 gab
+     jedem <button> per Default einen Schatten) - hier trägt bereits .segmented-thumb den einzigen
+     gewollten Schatten (--shadow-pill-raised) für die aktive Option; ein zusätzlicher Schatten auf
+     JEDER Option (auch den inaktiven, gegen den flachen Track sichtbar) sah wie ein Rendering-Fehler
+     aus statt einer bewusst erhobenen Pille. */
+  box-shadow: none;
   background: none;
   border-radius: 999px;
   font-size: 0.85rem;
