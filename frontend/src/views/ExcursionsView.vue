@@ -896,13 +896,29 @@ function animateSpotExpand(targetId: number | null, mutate: () => void) {
     return;
   }
   transitioningSpotId.value = targetId;
-  const transition = (document as unknown as { startViewTransition: (cb: () => void | Promise<void>) => { finished: Promise<void> } }).startViewTransition(async () => {
-    mutate();
-    await nextTick();
-  });
-  transition.finished.finally(() => {
+  // Doppelt abgesichert gegen WebKit-Eigenheiten dieser noch jungen API (#140 - auf Safari/iOS
+  // deutlich unzuverlässiger als auf Chrome): (1) startViewTransition() kann synchron werfen, wenn
+  // der Browser eine vorherige Transition noch nicht als abgeschlossen betrachtet (z. B. bei sehr
+  // schnell aufeinanderfolgenden Klicks) - ohne try/catch bliebe mutate() dann komplett aus, der
+  // Klick hätte sichtbar gar keine Wirkung. (2) transition.finished kann auf manchen WebKit-Ständen
+  // hängen bleiben statt aufzulösen - ohne Timeout-Fallback bliebe transitioningSpotId dauerhaft
+  // gesetzt (die Karte trüge dauerhaft einen aktiven view-transition-name, obwohl gar keine Transition
+  // mehr läuft) statt sich nach der eigentlichen Animation (~250ms, siehe style.css) selbst aufzuräumen.
+  try {
+    const transition = (
+      document as unknown as { startViewTransition: (cb: () => void | Promise<void>) => { finished: Promise<void> } }
+    ).startViewTransition(async () => {
+      mutate();
+      await nextTick();
+    });
+    const settle = () => {
+      transitioningSpotId.value = null;
+    };
+    Promise.race([transition.finished, new Promise((resolve) => setTimeout(resolve, 1000))]).finally(settle);
+  } catch {
     transitioningSpotId.value = null;
-  });
+    mutate();
+  }
 }
 
 const spotRefs = new Map<number, HTMLElement>();
@@ -2529,6 +2545,13 @@ async function removeSpot(id: number) {
 .spots-col-body {
   flex: 1;
   overflow-y: auto;
+  /* Verhindert, dass der Browser die Scrollposition beim Auf-/Zuklappen einer Spot-Karte (SpotCard.vue,
+     ändert ihre Höhe drastisch) eigenmächtig "korrigiert" (CSS Scroll Anchoring, standardmäßig an) -
+     kollidiert hier mit der View-Transition (#90, siehe animateSpotExpand() im Script): während die
+     transitionierende Karte kurzzeitig aus dem normalen Layout genommen wird (view-transition-name),
+     kann der Browser den falschen Anker wählen und springt sichtbar zu einer völlig anderen Stelle in
+     der Liste (#140 - "Details verschwinden", auf Safari/iOS deutlich ausgeprägter als auf Chrome). */
+  overflow-anchor: none;
   padding: 0 var(--space-3) var(--space-3);
   /* Live gemessene Höhe der sticky .category-nav-Leiste (Icon+Label-Zeile plus Padding/Trennlinie,
      siehe dortiges CSS), per ResizeObserver im Script (setCategoryNavRef -> categoryNavHeight) als
