@@ -15,6 +15,16 @@ app.use(pinia);
 app.use(router);
 app.mount('#app');
 
+// Statischer Splash aus index.html (siehe dort) - erst hier entfernen, nicht dort per Timer, damit
+// er bis zum tatsächlichen ersten Vue-Render sichtbar bleibt (App.vue zeigt selbst noch einen
+// eigenen SplashScreen.vue, solange Trips/Live-Sync laden - beide reichen sich damit nahtlos die
+// Hand statt einer Lücke dazwischen).
+const splash = document.getElementById('splash');
+if (splash) {
+  splash.classList.add('splash-hide');
+  splash.addEventListener('transitionend', () => splash.remove(), { once: true });
+}
+
 // Service-Worker-Registrierung läuft jetzt über vite-plugin-pwa's virtual:pwa-register-Modul (siehe
 // components/PwaUpdatePrompt.vue, in App.vue gemountet) statt eines manuellen
 // navigator.serviceWorker.register() hier – registriert weiterhin denselben public/sw.js unter

@@ -33,6 +33,14 @@ export default defineConfig({
     // CLAUDE.md).
     screenshot: 'only-on-failure',
     video: 'off',
+    // Splash Screen (SplashScreen.vue/ReisotorRobot.vue's "packing"-Phase, #149) blockt die
+    // eigentliche UI beim allerersten App-Start bis zu ~2s lang, bis die Rucksack-Animation
+    // durchgelaufen ist - respektiert dafür bereits prefers-reduced-motion (nahezu verzögerungsfrei,
+    // siehe dortige @media-Regel). Ohne dieses Flag würden reihenweise Tests (Default-Timeouts oft
+    // 5s) knapp an dieser künstlichen Wartezeit scheitern, allen voran auth.setup.ts direkt nach dem
+    // Login. Global statt nur hier betroffene Specs, da jeder Test nach einem frischen Login/
+    // Urlaubswechsel denselben Splash treffen kann.
+    reducedMotion: 'reduce',
     // Opt-in für Sandboxes mit einer vorinstallierten, von diesem Playwright-Paket abweichenden
     // Chromium-Revision (z. B. Claude-Code-Remote-Umgebungen ohne Internetzugriff für
     // `playwright install`) — no-op, solange die Env-Var nicht gesetzt ist.

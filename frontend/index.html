@@ -13,8 +13,79 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Reisotor" />
     <title>Reisotor</title>
+    <!-- Inline statt über style.css: dieser Splash muss bereits sichtbar sein, BEVOR main.ts (ESM,
+         lädt Vue/Pinia/Router) überhaupt zu laden anfängt - vorher stand hier bis zum ersten Render
+         nur eine komplett leere Seite (#149). Nutzt bewusst dieselbe Gradient-Optik wie
+         LoginView.vue/SplashScreen.vue, aber kein Vue-Bauteil (kann hier noch nicht laufen). Farben
+         hartkodiert (keine CSS-Variablen verfügbar) - Light-Wert aus style.css's --color-bg/
+         --color-primary(-tint), Dark-Gegenpart per prefers-color-scheme (der manuelle [data-theme]-
+         Override aus stores/theme.ts greift erst nach dem Vue-Mount, siehe main.ts). -->
+    <style>
+      #splash {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 20px;
+        background: linear-gradient(160deg, #eaf6f4, #faf8f5 60%);
+        transition: opacity 0.25s ease;
+      }
+      #splash img {
+        width: 96px;
+        height: 96px;
+        animation: splash-bob 3.2s ease-in-out infinite;
+      }
+      #splash .splash-spinner {
+        width: 24px;
+        height: 24px;
+        border: 3px solid rgba(0, 0, 0, 0.12);
+        border-top-color: #2a7f74;
+        border-radius: 50%;
+        animation: splash-spin 0.7s linear infinite;
+      }
+      #splash.splash-hide {
+        opacity: 0;
+        pointer-events: none;
+      }
+      @keyframes splash-bob {
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-8px);
+        }
+      }
+      @keyframes splash-spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      @media (prefers-color-scheme: dark) {
+        #splash {
+          background: linear-gradient(160deg, #1f3634, #181715 60%);
+        }
+        #splash .splash-spinner {
+          border-color: rgba(255, 255, 255, 0.16);
+          border-top-color: #3da296;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #splash img,
+        #splash .splash-spinner {
+          animation: none;
+        }
+      }
+    </style>
   </head>
   <body>
+    <div id="splash">
+      <img src="/reisotor_logo.svg" alt="" width="96" height="96" />
+      <span class="splash-spinner" aria-hidden="true"></span>
+    </div>
     <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>

@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { E2E_BACKEND_PORT, E2E_PWA_PREVIEW_PORT } from '../constants.js';
+import { newContextWithReducedMotion } from './helpers/context';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const frontendDir = path.join(__dirname, '..', '..', 'frontend');
@@ -77,7 +78,7 @@ test.describe.serial('Offline-App-Shell (Workbox-Precaching)', () => {
   });
 
   test('Dashboard rendert nach komplettem Offline-Reload aus dem Service-Worker-Cache', async ({ browser }) => {
-    const context = await browser.newContext({ storageState: authFile });
+    const context = await newContextWithReducedMotion(browser, { storageState: authFile });
     const page = await context.newPage();
 
     await page.goto(previewUrl + '/');
@@ -113,7 +114,7 @@ test.describe.serial('Offline-App-Shell (Workbox-Precaching)', () => {
     const appVuePath = path.join(frontendDir, 'src', 'App.vue');
     const originalAppVue = fs.readFileSync(appVuePath, 'utf-8');
 
-    const context = await browser.newContext({ storageState: authFile });
+    const context = await newContextWithReducedMotion(browser, { storageState: authFile });
     const page = await context.newPage();
     try {
       await page.goto(previewUrl + '/');
