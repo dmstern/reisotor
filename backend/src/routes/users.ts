@@ -28,6 +28,10 @@ interface PasswordBody {
   newPassword: string;
 }
 
+interface IconSettingsBody {
+  settings: Record<string, unknown>;
+}
+
 export const usersRoutes: FastifyPluginAsync = async (app) => {
   app.get('/users', async () => {
     return db.prepare('SELECT id, username, avatar FROM users ORDER BY id').all();
@@ -117,5 +121,30 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
     const hash = bcrypt.hashSync(newPassword, 10);
     db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hash, user.id);
     return reply.code(204).send();
+  });
+
+  // Icon-Stil-Einstellungen (#105): bisher nur in localStorage, jetzt pro Account statt pro Gerät.
+  // Ein JSON-Blob statt Einzelspalten - das Frontend (stores/iconStyle.ts) lädt/speichert immer den
+  // kompletten Einstellungs-Zustand auf einmal. `null` (noch nie gespeichert) liefert `{}`, damit
+  // das Frontend seine lokalen Defaults anwenden kann.
+  app.get('/users/me/icon-settings', async (req) => {
+    const row = db
+      .prepare('SELECT icon_settings FROM users WHERE id = ?')
+      .get(req.session.userId) as { icon_settings: string | null } | undefined;
+    if (!row?.icon_settings) return {};
+    try {
+      return JSON.parse(row.icon_settings);
+    } catch {
+      return {};
+    }
+  });
+
+  app.put<{ Body: IconSettingsBody }>('/users/me/icon-settings', async (req, reply) => {
+    const { settings } = req.body ?? {};
+    if (!settings || typeof settings !== 'object') {
+      return reply.code(400).send({ error: 'Einstellungen erforderlich' });
+    }
+    db.prepare('UPDATE users SET icon_settings = ? WHERE id = ?').run(JSON.stringify(settings), req.session.userId);
+    return settings;
   });
 };

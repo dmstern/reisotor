@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { api, ApiError } from '../api/client';
 import type { User } from '../api/types';
+import { useIconStyleStore } from './iconStyle';
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null);
@@ -36,6 +37,9 @@ export const useAuthStore = defineStore('auth', () => {
       if (!(err instanceof ApiError)) throw err;
     }
     user.value = null;
+    // Gemeinsam genutztes Gerät (App ist ursprünglich für zwei Personen pro Haushalt gebaut):
+    // Icon-Einstellungen der abgemeldeten Person dürfen nicht bis zum nächsten Login stehen bleiben.
+    useIconStyleStore().clearOnLogout();
   }
 
   return { user, checked, checkSession, login, register, logout };

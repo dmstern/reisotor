@@ -1292,3 +1292,10 @@ db.exec('CREATE INDEX IF NOT EXISTS idx_track_points_track_recorded ON location_
 // Entwurf ist wie ein persönlicher `drafts`-Eintrag nie für andere Trip-Mitglieder sichtbar.
 ensureColumn('notes', 'is_draft', 'INTEGER NOT NULL DEFAULT 0');
 ensureColumn('diary_entries', 'is_draft', 'INTEGER NOT NULL DEFAULT 0');
+
+// Icon-Stil-Einstellungen (App-Einstellungen-Tab, #105): waren bisher nur in localStorage
+// (stores/iconStyle.ts) und damit pro Gerät statt pro Account. Ein JSON-Blob statt Einzelspalten -
+// die Einstellung wird immer als Ganzes vom Frontend geladen/gespeichert (wie der bisherige
+// localStorage-Zustand), eine eigene Tabelle mit einer Spalte pro Feld wäre hier reiner Overhead.
+// NULL = noch nie gespeichert, Frontend füllt dann seine lokalen Defaults.
+ensureColumn('users', 'icon_settings', 'TEXT');

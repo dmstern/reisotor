@@ -1,29 +1,29 @@
 import { createPinia, setActivePinia } from 'pinia';
-import { nextTick } from 'vue';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useIconStyleStore } from './iconStyle';
 
-function createMemoryStorage() {
-  const store = new Map<string, string>();
-  return {
-    getItem: (key: string) => (store.has(key) ? store.get(key)! : null),
-    setItem: (key: string, value: string) => {
-      store.set(key, value);
-    },
-    removeItem: (key: string) => {
-      store.delete(key);
-    },
-    clear: () => store.clear(),
-  };
-}
+const apiGet = vi.fn();
+const apiPut = vi.fn();
+// #105: Icon-Einstellungen sind seit diesem Issue eine Account-Einstellung (persistiert über
+// /users/me/icon-settings, siehe backend/src/routes/users.ts) statt localStorage - die api.get/put-
+// Aufrufe werden hier gemockt statt eines echten Netzwerk-/Backend-Zugriffs. vi.mock() wird von
+// Vitest vor die obigen Imports gehoisted, der Store bekommt also von Anfang an das Mock.
+vi.mock('../api/client', () => ({
+  api: {
+    get: (...args: unknown[]) => apiGet(...args),
+    put: (...args: unknown[]) => apiPut(...args),
+  },
+}));
 
 describe('useIconStyleStore', () => {
   beforeEach(() => {
-    vi.stubGlobal('localStorage', createMemoryStorage());
     setActivePinia(createPinia());
+    apiGet.mockReset();
+    apiPut.mockReset();
+    apiPut.mockResolvedValue({});
   });
 
-  it('defaults to icons everywhere except categories (emoji) when nothing is stored', () => {
+  it('defaults to icons everywhere except categories (emoji) before load() resolves', () => {
     const store = useIconStyleStore();
     expect(store.groups.navigation).toBe('icons');
     expect(store.groups.categories).toBe('emoji');
@@ -35,33 +35,54 @@ describe('useIconStyleStore', () => {
     expect(store.colorizeWeather).toBe(true);
   });
 
-  it('falls back to the default per group when the stored value is not a valid option', () => {
-    localStorage.setItem('reisotor-icon-style-groups', JSON.stringify({ navigation: 'garbage', categories: 'emoji' }));
-    localStorage.setItem('reisotor-icon-style-variants', JSON.stringify({ navigation: 'garbage' }));
+  it('falls back to the default per group when a stored value is not a valid option', async () => {
+    apiGet.mockResolvedValue({
+      groups: { navigation: 'garbage', categories: 'emoji' },
+      variants: { navigation: 'garbage' },
+    });
     const store = useIconStyleStore();
+    await store.load();
     expect(store.groups.navigation).toBe('icons');
     expect(store.groups.categories).toBe('emoji');
     expect(store.groups.weather).toBe('icons');
     expect(store.variants.navigation).toBe('outline');
   });
 
-  it('persists per-group style and variant overrides independently to localStorage', async () => {
+  it('applies stored group/variant overrides from the backend on load()', async () => {
+    apiGet.mockResolvedValue({
+      groups: { navigation: 'emoji' },
+      variants: { actions: 'filled' },
+      navColored: false,
+    });
     const store = useIconStyleStore();
-    store.setGroupOverride('categories', 'icons');
-    store.setGroupVariant('categories', 'filled');
-    await nextTick(); // watch() flushes on the next tick, not synchronously
-    expect(JSON.parse(localStorage.getItem('reisotor-icon-style-groups')!).categories).toBe('icons');
-    expect(JSON.parse(localStorage.getItem('reisotor-icon-style-variants')!).categories).toBe('filled');
-  });
-
-  it('round-trips stored group overrides across store re-creation', () => {
-    localStorage.setItem('reisotor-icon-style-groups', JSON.stringify({ navigation: 'emoji' }));
-    localStorage.setItem('reisotor-icon-style-variants', JSON.stringify({ actions: 'filled' }));
-    const store = useIconStyleStore();
+    await store.load();
     expect(store.groups.navigation).toBe('emoji');
     expect(store.groups.categories).toBe('emoji');
     expect(store.variants.actions).toBe('filled');
     expect(store.variants.navigation).toBe('outline');
+    expect(store.navColored).toBe(false);
+  });
+
+  it('load() only fetches once, even when called again', async () => {
+    apiGet.mockResolvedValue({});
+    const store = useIconStyleStore();
+    await store.load();
+    await store.load();
+    expect(apiGet).toHaveBeenCalledTimes(1);
+  });
+
+  it('persists per-group style and variant overrides independently to the backend', () => {
+    const store = useIconStyleStore();
+    store.setGroupOverride('categories', 'icons');
+    expect(apiPut).toHaveBeenLastCalledWith(
+      '/users/me/icon-settings',
+      expect.objectContaining({ settings: expect.objectContaining({ groups: expect.objectContaining({ categories: 'icons' }) }) }),
+    );
+    store.setGroupVariant('categories', 'filled');
+    expect(apiPut).toHaveBeenLastCalledWith(
+      '/users/me/icon-settings',
+      expect.objectContaining({ settings: expect.objectContaining({ variants: expect.objectContaining({ categories: 'filled' }) }) }),
+    );
   });
 
   it('setAllGroups sets every group to the same value at once', () => {
@@ -86,5 +107,20 @@ describe('useIconStyleStore', () => {
     expect(store.variants.actions).toBe('outline');
     expect(store.navColored).toBe(true);
     expect(store.colorizeWeather).toBe(true);
+  });
+
+  it('clearOnLogout resets state and allows the next login to load() again', async () => {
+    apiGet.mockResolvedValue({ groups: { navigation: 'emoji' } });
+    const store = useIconStyleStore();
+    await store.load();
+    expect(store.groups.navigation).toBe('emoji');
+
+    store.clearOnLogout();
+    expect(store.groups.navigation).toBe('icons');
+
+    apiGet.mockResolvedValue({ groups: { navigation: 'emoji' } });
+    await store.load();
+    expect(apiGet).toHaveBeenCalledTimes(2);
+    expect(store.groups.navigation).toBe('emoji');
   });
 });

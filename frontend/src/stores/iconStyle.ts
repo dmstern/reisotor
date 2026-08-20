@@ -1,10 +1,12 @@
 import { defineStore } from 'pinia';
-import { ref, watch } from 'vue';
-import { usePersistedRef } from '../composables/usePersistedRef';
+import { computed, ref } from 'vue';
+import { api } from '../api/client';
 
-// Geräte-/Browser-UI-Einstellung (wie stores/calendarSettings.ts/weatherProvider.ts) statt
-// Account-Daten: bewusst nur lokal in localStorage gehalten (siehe utils/icon.ts für die
-// Auflösungslogik, components/AppIcon.vue für die Render-Stelle).
+// Account-Einstellung statt Geräte-/Browser-UI-Einstellung (#105: war bis dahin analog zu
+// stores/calendarSettings.ts/weatherProvider.ts nur in localStorage, was auf einem zweiten Gerät
+// immer wieder von vorn eingestellt werden musste). Persistiert über /users/me/icon-settings als
+// ein einziger JSON-Blob (siehe backend/src/routes/users.ts) statt Einzelfeldern - das Frontend
+// lädt/speichert den gesamten Einstellungs-Zustand immer auf einmal.
 export const ICON_STYLE_OPTIONS = [
   { value: 'emoji', label: 'Emoji' },
   { value: 'icons', label: 'Symbole (Tabler)' },
@@ -32,11 +34,6 @@ export const ICON_GROUP_OPTIONS = [
 ] as const;
 export type IconGroup = (typeof ICON_GROUP_OPTIONS)[number]['value'];
 
-const GROUPS_KEY = 'reisotor-icon-style-groups';
-const VARIANTS_KEY = 'reisotor-icon-style-variants';
-const NAV_COLORED_KEY = 'reisotor-icon-nav-colored';
-const COLORIZE_WEATHER_KEY = 'reisotor-icon-colorize-weather';
-const COLORIZE_CATEGORIES_KEY = 'reisotor-icon-colorize-categories';
 const DEFAULT_VARIANT: IconVariant = 'outline';
 // Neue Standard-Einstellungen (Issue #74): überall Symbole außer bei Kategorien, die per Default
 // bei Emoji bleiben.
@@ -55,18 +52,23 @@ const DEFAULT_VARIANTS: Record<IconGroup, IconVariant> = {
   actions: DEFAULT_VARIANT,
 };
 
+interface StoredIconSettings {
+  groups: Record<IconGroup, IconStyle>;
+  variants: Record<IconGroup, IconVariant>;
+  navColored: boolean;
+  colorizeWeather: boolean;
+  colorizeCategories: boolean;
+}
+
 // Validiert jeden Bereich einzeln statt das ganze gespeicherte Objekt zu verwerfen - deckt sowohl
-// ganz neue Nutzer:innen (kein Eintrag) als auch Reste in einem älteren/kaputten Format robust ab.
-function loadPerGroup<T extends string>(key: string, validOptions: readonly { value: T }[], defaults: Record<IconGroup, T>): Record<IconGroup, T> {
-  const stored = localStorage.getItem(key);
-  let parsed: Partial<Record<IconGroup, unknown>> = {};
-  if (stored != null) {
-    try {
-      parsed = JSON.parse(stored);
-    } catch {
-      parsed = {};
-    }
-  }
+// ganz neue Nutzer:innen (noch nichts gespeichert) als auch Reste in einem älteren/kaputten Format
+// robust ab.
+function sanitizePerGroup<T extends string>(
+  value: unknown,
+  validOptions: readonly { value: T }[],
+  defaults: Record<IconGroup, T>,
+): Record<IconGroup, T> {
+  const parsed = (value ?? {}) as Partial<Record<IconGroup, unknown>>;
   const result = {} as Record<IconGroup, T>;
   for (const { value: group } of ICON_GROUP_OPTIONS) {
     const candidate = parsed[group];
@@ -76,22 +78,76 @@ function loadPerGroup<T extends string>(key: string, validOptions: readonly { va
 }
 
 export const useIconStyleStore = defineStore('iconStyle', () => {
-  const groups = ref<Record<IconGroup, IconStyle>>(loadPerGroup(GROUPS_KEY, ICON_STYLE_OPTIONS, DEFAULT_GROUPS));
-  const variants = ref<Record<IconGroup, IconVariant>>(loadPerGroup(VARIANTS_KEY, ICON_VARIANT_OPTIONS, DEFAULT_VARIANTS));
-  // Nur für die Navigation (NavBar/Dashboard-Konfig-Liste) relevant, siehe utils/widgetColors.ts's
-  // NAV_LINK_COLORS.
-  const navColored = usePersistedRef<boolean>(NAV_COLORED_KEY, true);
-  // Einfärbung passend zur jeweiligen Wetter-Bedingung (Sonne gelb, Regen blau, …), siehe
-  // utils/weather.ts/components/WeatherIcon.vue.
-  const colorizeWeather = usePersistedRef<boolean>(COLORIZE_WEATHER_KEY, true);
-  // Kategorie-Icons (Spots/CategoryChip.vue) passend zur jeweiligen spotCategoryMeta().color
-  // einfärben (#94) – gleiches Muster wie colorizeWeather oben, Standard AUS statt AN: die
-  // Kategorien-Chips waren bisher immer einfarbig-neutral in der Chip-Hintergrundfarbe, ein
-  // plötzlich bunt eingefärbtes Icon on-top wäre ein sichtbarer Default-Verhaltenswechsel.
-  const colorizeCategories = usePersistedRef<boolean>(COLORIZE_CATEGORIES_KEY, false);
+  const groups = ref<Record<IconGroup, IconStyle>>({ ...DEFAULT_GROUPS });
+  const variants = ref<Record<IconGroup, IconVariant>>({ ...DEFAULT_VARIANTS });
+  const navColoredRaw = ref(true);
+  const colorizeWeatherRaw = ref(true);
+  const colorizeCategoriesRaw = ref(false);
+  const loaded = ref(false);
 
-  watch(groups, (v) => localStorage.setItem(GROUPS_KEY, JSON.stringify(v)), { deep: true });
-  watch(variants, (v) => localStorage.setItem(VARIANTS_KEY, JSON.stringify(v)), { deep: true });
+  // Best effort wie notificationPreferences.ts's update(): der lokale Zustand ist schon
+  // (optimistisch) gesetzt, ein Fehler hier verhindert nur die Cross-Device-Synchronisation der
+  // aktuellen Änderung, nicht die Bedienung selbst.
+  function persist() {
+    api
+      .put('/users/me/icon-settings', {
+        settings: {
+          groups: groups.value,
+          variants: variants.value,
+          navColored: navColoredRaw.value,
+          colorizeWeather: colorizeWeatherRaw.value,
+          colorizeCategories: colorizeCategoriesRaw.value,
+        } satisfies StoredIconSettings,
+      })
+      .catch(() => {});
+  }
+
+  // Computed statt einfacher Refs für die drei Einfärbe-Schalter: v-model="iconStyle.navColored"
+  // in IconStyleSettings.vue bleibt dadurch unverändert nutzbar, jede Änderung löst zusätzlich
+  // persist() aus.
+  const navColored = computed({
+    get: () => navColoredRaw.value,
+    set: (v: boolean) => {
+      navColoredRaw.value = v;
+      persist();
+    },
+  });
+  const colorizeWeather = computed({
+    get: () => colorizeWeatherRaw.value,
+    set: (v: boolean) => {
+      colorizeWeatherRaw.value = v;
+      persist();
+    },
+  });
+  const colorizeCategories = computed({
+    get: () => colorizeCategoriesRaw.value,
+    set: (v: boolean) => {
+      colorizeCategoriesRaw.value = v;
+      persist();
+    },
+  });
+
+  // Lädt die serverseitig gespeicherten Einstellungen einmalig (z. B. beim App-Start nach
+  // erfolgreicher Session-Prüfung, siehe router/index.ts) - bis dahin gelten die obigen Defaults,
+  // damit AppIcon.vue nie auf einen unfertigen Zustand trifft. Kein erneutes Laden bei
+  // wiederholten Aufrufen, ein zwischenzeitlich lokal geänderter Zustand soll dadurch nicht
+  // überschrieben werden.
+  async function load() {
+    if (loaded.value) return;
+    try {
+      const stored = await api.get<Partial<StoredIconSettings>>('/users/me/icon-settings');
+      groups.value = sanitizePerGroup(stored.groups, ICON_STYLE_OPTIONS, DEFAULT_GROUPS);
+      variants.value = sanitizePerGroup(stored.variants, ICON_VARIANT_OPTIONS, DEFAULT_VARIANTS);
+      if (typeof stored.navColored === 'boolean') navColoredRaw.value = stored.navColored;
+      if (typeof stored.colorizeWeather === 'boolean') colorizeWeatherRaw.value = stored.colorizeWeather;
+      if (typeof stored.colorizeCategories === 'boolean') colorizeCategoriesRaw.value = stored.colorizeCategories;
+    } catch {
+      // Netzwerkfehler/offline: bei den lokalen Defaults bleiben, nächster load()-Aufruf (z. B.
+      // nächster App-Start) versucht es erneut.
+    } finally {
+      loaded.value = true;
+    }
+  }
 
   function styleForGroup(group: IconGroup): IconStyle {
     return groups.value[group];
@@ -99,12 +155,14 @@ export const useIconStyleStore = defineStore('iconStyle', () => {
 
   function setGroupOverride(group: IconGroup, value: IconStyle) {
     groups.value = { ...groups.value, [group]: value };
+    persist();
   }
 
   function setAllGroups(value: IconStyle) {
     const next = {} as Record<IconGroup, IconStyle>;
     for (const { value: group } of ICON_GROUP_OPTIONS) next[group] = value;
     groups.value = next;
+    persist();
   }
 
   function styleVariantForGroup(group: IconGroup): IconVariant {
@@ -113,14 +171,30 @@ export const useIconStyleStore = defineStore('iconStyle', () => {
 
   function setGroupVariant(group: IconGroup, value: IconVariant) {
     variants.value = { ...variants.value, [group]: value };
+    persist();
   }
 
   function resetToDefaults() {
     groups.value = { ...DEFAULT_GROUPS };
     variants.value = { ...DEFAULT_VARIANTS };
-    navColored.value = true;
-    colorizeWeather.value = true;
-    colorizeCategories.value = false;
+    navColoredRaw.value = true;
+    colorizeWeatherRaw.value = true;
+    colorizeCategoriesRaw.value = false;
+    persist();
+  }
+
+  // Auf einem gemeinsam genutzten Gerät (App ist ursprünglich für zwei Personen pro Haushalt
+  // gebaut) darf nach dem Logout NICHT der Zustand der abgemeldeten Person stehen bleiben - anders
+  // als bei resetToDefaults() ohne persist() (kein Server-Schreibzugriff mehr ohne Session) und mit
+  // `loaded = false`, damit der nächste Login wieder per load() die Einstellungen der neu
+  // angemeldeten Person holt statt der zwischenzeitlich lokal gehaltenen der vorigen.
+  function clearOnLogout() {
+    groups.value = { ...DEFAULT_GROUPS };
+    variants.value = { ...DEFAULT_VARIANTS };
+    navColoredRaw.value = true;
+    colorizeWeatherRaw.value = true;
+    colorizeCategoriesRaw.value = false;
+    loaded.value = false;
   }
 
   return {
@@ -129,11 +203,14 @@ export const useIconStyleStore = defineStore('iconStyle', () => {
     navColored,
     colorizeWeather,
     colorizeCategories,
+    loaded,
+    load,
     styleForGroup,
     setGroupOverride,
     setAllGroups,
     styleVariantForGroup,
     setGroupVariant,
     resetToDefaults,
+    clearOnLogout,
   };
 });
