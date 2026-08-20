@@ -2887,6 +2887,11 @@ async function removeSpot(id: number) {
   width: 100%;
   background: none;
   border: none;
+  /* Der globale button-Selektor (style.css) setzt box-shadow/border als Grundausstattung für
+     "echte" Buttons - dieser Toggle ist aber eine flache Zeile innerhalb der bereits eingefärbten
+     .filter-bar (background/border oben schon zurückgesetzt), der geerbte Schatten wirkte dort wie
+     ein optischer Fremdkörper (#139). */
+  box-shadow: none;
   padding: 4px;
   margin: 0;
   font: inherit;
@@ -3127,6 +3132,9 @@ async function removeSpot(id: number) {
   width: 100%;
   background: none;
   border: none;
+  /* Gleiches Muster/derselbe Fix wie .filter-toggle-row oben (#139) - auch hier überschreibt der
+     globale button-Selektor sonst mit seinem Grund-Schatten. */
+  box-shadow: none;
   padding: var(--space-2) var(--space-3);
   font: inherit;
   font-size: 0.85rem;
