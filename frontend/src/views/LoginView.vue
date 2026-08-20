@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
-import { ApiError } from '../api/client';
+import { api, ApiError } from '../api/client';
 import PasswordInput from '../components/PasswordInput.vue';
 import ReisotorRobot from '../components/ReisotorRobot.vue';
 import ThemeModeSelect from '../components/ThemeModeSelect.vue';
@@ -17,6 +17,18 @@ const password = ref('');
 const passwordVisible = ref(false);
 const error = ref('');
 const loading = ref(false);
+// Backend-Setting REGISTRATION_MODE (Issue #96) – bis zur Antwort defensiv 'off' annehmen, damit
+// der Registrieren-Umschalter nicht kurz aufblitzt, falls Registrierung tatsächlich deaktiviert ist.
+const registrationMode = ref<'off' | 'full' | 'restricted'>('off');
+
+onMounted(async () => {
+  try {
+    const config = await api.get<{ registrationMode: 'off' | 'full' | 'restricted' }>('/auth/config');
+    registrationMode.value = config.registrationMode;
+  } catch {
+    // Bleibt bei 'off' - Login funktioniert unabhängig davon weiter.
+  }
+});
 
 function toggleMode() {
   mode.value = mode.value === 'login' ? 'register' : 'login';
@@ -48,6 +60,9 @@ async function onSubmit() {
       <ReisotorRobot :covering-eyes="passwordVisible" size="140px" class="logo" />
       <h1>Reisotor</h1>
       <p>{{ mode === 'register' ? 'Erstelle ein Konto, um euren Urlaub zu planen.' : 'Melde dich an, um euren Urlaub zu planen.' }}</p>
+      <p v-if="mode === 'register' && registrationMode === 'restricted'" class="hint">
+        Eingeschränkter Modus - Kein Datei-Upload, nur ein Urlaub, maximal drei Mitglieder pro Urlaub möglich.
+      </p>
 
       <label>
         Benutzername
@@ -76,8 +91,7 @@ async function onSubmit() {
         {{ loading ? (mode === 'register' ? 'Registrieren…' : 'Anmelden…') : mode === 'register' ? 'Registrieren' : 'Anmelden' }}
       </button>
 
-      <button v-if="false" type="button" class="secondary mode-toggle" @click="toggleMode">
-        {{ /* Hide register button for now **/ `&nbsp;` }}
+      <button v-if="registrationMode !== 'off'" type="button" class="secondary mode-toggle" @click="toggleMode">
         {{ mode === 'register' ? 'Schon registriert? Anmelden' : 'Noch kein Konto? Registrieren' }}
       </button>
     </form>
@@ -142,6 +156,12 @@ label,
   gap: var(--space-1);
   font-weight: 600;
   font-size: 0.9rem;
+}
+
+.hint {
+  color: var(--color-text-muted);
+  margin: 0;
+  font-size: 0.85rem;
 }
 
 .error {

@@ -4,6 +4,9 @@ export interface User {
   id: number;
   username: string;
   avatar: string;
+  /** Eingeschränkter Modus (Issue #96, REGISTRATION_MODE=restricted): kein Datei-Upload, max. 1
+   *  selbst angelegter Urlaub, max. 3 Mitglieder in einem selbst angelegten Urlaub. */
+  restricted?: boolean;
 }
 
 export interface Trip {
@@ -17,6 +20,9 @@ export interface Trip {
   lng: number | null;
   image_url: string | null;
   packing_category_required: number;
+  /** Ob die anlegende Person im eingeschränkten Modus ist (Issue #96) – steuert den
+   *  3-Mitglieder-Deckel in TripMembersDialog.vue. */
+  owner_restricted?: boolean;
 }
 
 export type ScheduleCategory = 'trip' | 'excursion' | 'todo' | 'travel' | 'other';

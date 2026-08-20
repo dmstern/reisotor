@@ -1292,3 +1292,9 @@ db.exec('CREATE INDEX IF NOT EXISTS idx_track_points_track_recorded ON location_
 // Entwurf ist wie ein persönlicher `drafts`-Eintrag nie für andere Trip-Mitglieder sichtbar.
 ensureColumn('notes', 'is_draft', 'INTEGER NOT NULL DEFAULT 0');
 ensureColumn('diary_entries', 'is_draft', 'INTEGER NOT NULL DEFAULT 0');
+
+// #96: konfigurierbare Registrierung (REGISTRATION_MODE=off/full/restricted, siehe
+// registrationConfig.ts). Wird beim Registrieren gesetzt (routes/auth.ts) und bleibt danach
+// bestehen, auch wenn REGISTRATION_MODE später geändert wird – kein Backfill nötig, da additiv mit
+// Default 0 (alle bisherigen Accounts sind unrestricted).
+ensureColumn('users', 'is_restricted', 'INTEGER NOT NULL DEFAULT 0');
