@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useTripStore } from '../stores/trip';
+import { useAuthStore } from '../stores/auth';
 import { useTripEditor } from '../composables/useTripEditor';
 import type { Trip } from '../api/types';
 import Modal from '../components/Modal.vue';
@@ -14,10 +15,15 @@ import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 
 const router = useRouter();
 const tripStore = useTripStore();
+const auth = useAuthStore();
 const showMembers = ref(false);
 const membersTrip = ref<Trip | null>(null);
 const { showForm, editingTrip, tripFormLocationError, openCreate, openEdit, closeForm, onSubmit, onDelete } =
   useTripEditor();
+// Issue #96: restricted-Nutzer:innen dürfen nur einen selbst angelegten Urlaub haben - bereits
+// eingeladene Urlaube zählen nicht mit (siehe registrationConfig.ts's countTripsCreatedBy), das
+// Frontend kennt diese Unterscheidung aber nicht, deshalb konservativ ab dem ersten Urlaub sperren.
+const tripCreationBlocked = () => !!auth.user?.restricted && tripStore.trips.length > 0;
 
 function selectTrip(id: number) {
   tripStore.selectTrip(id);
@@ -34,7 +40,8 @@ function openMembers(trip: Trip) {
   <div class="page">
     <div class="header">
       <h1>Meine Urlaube</h1>
-      <button v-if="tripStore.trips.length > 0" @click="openCreate">+ Neuer Urlaub</button>
+      <button v-if="tripStore.trips.length > 0 && !tripCreationBlocked()" @click="openCreate">+ Neuer Urlaub</button>
+      <p v-else-if="tripCreationBlocked()" class="restricted-hint">Eingeschränkter Modus - Nur ein Urlaub pro Nutzer</p>
     </div>
 
     <div v-if="tripStore.trips.length > 0" class="trip-list">
@@ -103,6 +110,12 @@ function openMembers(trip: Trip) {
   align-items: center;
   gap: var(--space-2);
   margin-bottom: var(--space-3);
+}
+
+.restricted-hint {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  margin: 0;
 }
 
 .trip-list {

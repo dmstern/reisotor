@@ -500,7 +500,8 @@ async function removeComment(id: number) {
         <input v-model="form.title" type="text" placeholder="Titel (optional)" />
       </FormField>
       <RichTextEditor v-model="form.content" placeholder="Was ist heute passiert?" />
-      <label class="upload-label">
+      <p v-if="auth.user?.restricted" class="hint">Eingeschränkter Modus - Kein Datei-Upload möglich</p>
+      <label v-else class="upload-label">
         <AppIcon :icon="FORM_FIELD_ICONS.image" :size="14" group="formFields" /> Bilder hinzufügen
         <input type="file" accept="image/*" multiple :disabled="uploading" @change="onNewFilesSelected" />
       </label>
@@ -647,7 +648,8 @@ async function removeComment(id: number) {
           <input v-model="editForm.title" type="text" placeholder="Titel (optional)" />
         </FormField>
         <RichTextEditor v-model="editForm.content" />
-        <label class="upload-label">
+        <p v-if="auth.user?.restricted" class="hint">Eingeschränkter Modus - Kein Datei-Upload möglich</p>
+        <label v-else class="upload-label">
           <AppIcon :icon="FORM_FIELD_ICONS.image" :size="14" group="formFields" /> Bilder hinzufügen
           <input type="file" accept="image/*" multiple :disabled="editUploading" @change="onEditFilesSelected" />
         </label>

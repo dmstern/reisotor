@@ -1,10 +1,14 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-import { api } from '../api/client';
+import { computed, ref, watch } from 'vue';
+import { api, ApiError } from '../api/client';
 import type { Trip, User } from '../api/types';
 import Modal from './Modal.vue';
 import AppIcon from './AppIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
+
+// Deckel aus Issue #96 (registrationConfig.ts's RESTRICTED_MAX_MEMBERS) - hier dupliziert statt
+// importiert, da das Frontend keinen Zugriff auf Backend-Module hat.
+const RESTRICTED_MAX_MEMBERS = 3;
 
 const props = defineProps<{ modelValue: boolean; trip: Trip | null }>();
 const emit = defineEmits<{ (e: 'update:modelValue', value: boolean): void }>();
@@ -15,6 +19,10 @@ const results = ref<User[]>([]);
 const loading = ref(false);
 const error = ref('');
 let searchTimeout: ReturnType<typeof setTimeout> | undefined;
+
+const memberCapReached = computed(
+  () => !!props.trip?.owner_restricted && members.value.length >= RESTRICTED_MAX_MEMBERS,
+);
 
 watch(
   () => props.modelValue,
@@ -59,8 +67,8 @@ async function invite(user: User) {
     members.value.push(user);
     results.value = results.value.filter((u) => u.id !== user.id);
     query.value = '';
-  } catch {
-    error.value = 'Einladen fehlgeschlagen';
+  } catch (err) {
+    error.value = err instanceof ApiError ? err.message : 'Einladen fehlgeschlagen';
   } finally {
     loading.value = false;
   }
@@ -92,7 +100,8 @@ function close() {
         <li v-if="!members.length" class="empty">Noch keine Mitglieder.</li>
       </ul>
 
-      <label>
+      <p v-if="memberCapReached" class="hint">Eingeschränkter Modus - Maximal drei Nutzer pro Urlaub</p>
+      <label v-else>
         Nutzer:in einladen (Benutzername oder E-Mail)
         <input v-model="query" type="text" placeholder="Mind. 2 Zeichen eingeben…" />
       </label>
@@ -156,6 +165,12 @@ label {
   flex-direction: column;
   gap: var(--space-1);
   font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.hint {
+  color: var(--color-text-muted);
+  margin: 0;
   font-size: 0.9rem;
 }
 
