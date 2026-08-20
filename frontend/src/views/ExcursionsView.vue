@@ -3250,6 +3250,13 @@ async function removeSpot(id: number) {
    Schriftgröße bleibt als lokale Abweichung. */
 .category-btn {
   font-size: 0.85rem;
+  /* Bewusst OHNE den in #95 eingeführten Schatten/kräftigeren Rahmen von button.secondary im
+     unausgewählten Zustand (Nutzer-Feedback: die beiden Buttons eines Umschalt-Paars - Spots/Touren,
+     Alphabetisch/Nach Likes, Kategorie/Status - sollen sich im Ruhezustand weiterhin dezent in die
+     .filter-bar einfügen statt wie zwei eigenständig erhobene Buttons zu wirken; .category-btn.active
+     hebt sich unten weiterhin per Tint-Hintergrund/Rahmenfarbe ab). */
+  box-shadow: none;
+  border-color: var(--color-border);
 }
 
 /* Kleiner Auf-/Zu-Pfeil rechts neben dem Label, macht auf einen Blick klarer, dass ein Klick ein
@@ -3348,6 +3355,12 @@ async function removeSpot(id: number) {
   gap: 6px;
   background: none;
   border: none;
+  /* Explizit zurückgesetzt statt sich auf style.css's globale button-Regel zu verlassen (#95 gab
+     jedem <button> per Default Schatten + Squircle-Rundung) - ein flaches Tab-Item einer
+     Tab-Unterstreichungs-Leiste (wie TabBar.vue's .tab) braucht beides nicht, sonst wirkt jedes
+     einzelne Item wie eine eigene erhobene Karte statt Teil einer gemeinsamen Leiste. */
+  box-shadow: none;
+  border-radius: 0;
   padding: var(--space-2) var(--space-3);
   color: var(--color-text-muted);
   font-size: 0.85rem;

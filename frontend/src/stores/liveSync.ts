@@ -65,6 +65,12 @@ export const useLiveSyncStore = defineStore('liveSync', () => {
     Object.fromEntries(LIVE_DOMAINS.map((d) => [d, 0])) as Record<LiveDomain, number>,
   );
   const unseenEntityIds = reactive<Record<LiveDomain, Set<number>>>(emptySets());
+  // Zähler statt Domänen-Set: die Notification-Inbox (#97, stores/notifications.ts) will bei JEDER
+  // fremden Aktivität neu vom Server laden (dieser liefert bereits den read-Zustand pro Nutzer:in
+  // mit), unabhängig davon, ob die Domäne zu den navigierbaren LIVE_DOMAINS unten gehört (z. B.
+  // 'members' für Einladungen ist bewusst NICHT in LIVE_DOMAINS, soll aber trotzdem als Notification
+  // auftauchen).
+  const notificationVersion = ref(0);
   const onlineUserIds = ref<number[]>([]);
   // Live-Standort auf der Karte (TripMap.vue): rein ephemer, kein domainVersion/unseenEntityIds-
   // Eintrag – keyed per userId statt eines Arrays, da jedes Mitglied höchstens einen aktuellen
@@ -104,14 +110,15 @@ export const useLiveSyncStore = defineStore('liveSync', () => {
   }
 
   function applyActivityRow(row: ActivityRow) {
-    if (!isLiveDomain(row.domain)) return;
     // Nur auf ANDERE Mitglieder reagieren: die eigene Session kennt den neuen Stand bereits aus
     // ihrer eigenen optimistischen Aktualisierung (items.value.push(created) o. Ä.) – ein erzwungener
     // Refetch der eigenen Aktion würde dort nur unnötig re-rendern und käme dabei transientem
     // lokalem UI-Zustand in die Quere (z. B. dem 60s-Undo-Platzhalter direkt nach dem eigenen
     // Löschen, siehe useUndoableDelete.ts – ein sofortiger Refetch überschreibt dessen lokale Liste,
-    // bevor der Platzhalter je sichtbar wird).
+    // bevor der Platzhalter je sichtbar wird). Gilt genauso für die Notification-Inbox unten.
     if (row.actor_user_id === auth.user?.id) return;
+    notificationVersion.value++;
+    if (!isLiveDomain(row.domain)) return;
     domainVersion[row.domain]++;
     if (row.entity_id != null) unseenEntityIds[row.domain].add(row.entity_id);
   }
@@ -237,6 +244,7 @@ export const useLiveSyncStore = defineStore('liveSync', () => {
 
   return {
     domainVersion,
+    notificationVersion,
     onlineUserIds,
     memberPositions,
     ready,

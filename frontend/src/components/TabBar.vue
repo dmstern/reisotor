@@ -102,6 +102,11 @@ function onTabClick(key: string, event: MouseEvent) {
      Wechsel 2px in der Höhe springen. */
   border-bottom: 2px solid transparent;
   border-radius: 0;
+  /* Explizit zurückgesetzt statt sich auf style.css's globale button-Regel zu verlassen (#95 gab
+     jedem <button> per Default einen Schatten) - ein flaches Tab-Item einer
+     Tab-Unterstreichungs-Leiste braucht keinen, sonst wirkt jedes Item wie eine eigene erhobene
+     Karte statt Teil einer gemeinsamen Leiste. */
+  box-shadow: none;
   background: none;
   color: var(--color-text-muted);
   font-size: 0.9rem;
