@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { E2E_PASSWORD, E2E_PASSWORD_2, E2E_USERNAME, E2E_USERNAME_2 } from '../constants.js';
+import { newContextWithReducedMotion } from './helpers/context';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const seeded = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'fixtures', 'seeded-data.json'), 'utf-8'));
@@ -19,8 +20,8 @@ const seeded = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'fixtures',
 test('another member creating a todo lights up the ToDo nav badge, which clears and highlights on visit', async ({
   browser,
 }) => {
-  const ctxA = await browser.newContext({ storageState: { cookies: [], origins: [] } });
-  const ctxB = await browser.newContext({ storageState: { cookies: [], origins: [] } });
+  const ctxA = await newContextWithReducedMotion(browser, { storageState: { cookies: [], origins: [] } });
+  const ctxB = await newContextWithReducedMotion(browser, { storageState: { cookies: [], origins: [] } });
   const pageA = await ctxA.newPage();
   const pageB = await ctxB.newPage();
 
@@ -85,8 +86,8 @@ test('another member creating a todo lights up the ToDo nav badge, which clears 
 test('another member creating a tour lights up the Karte nav badge and the Touren toggle, not the Spots one', async ({
   browser,
 }) => {
-  const ctxA = await browser.newContext({ storageState: { cookies: [], origins: [] } });
-  const ctxB = await browser.newContext({ storageState: { cookies: [], origins: [] } });
+  const ctxA = await newContextWithReducedMotion(browser, { storageState: { cookies: [], origins: [] } });
+  const ctxB = await newContextWithReducedMotion(browser, { storageState: { cookies: [], origins: [] } });
   const pageA = await ctxA.newPage();
   const pageB = await ctxB.newPage();
 
@@ -139,8 +140,8 @@ test('another member creating a tour lights up the Karte nav badge and the Toure
 // Regressionsnetz für PresenceAvatars.vue's Umstellung von "nur online" auf "alle Mitreisenden,
 // online/offline unterschieden" (siehe dortiger Kommentar).
 test('presence avatars show an offline member grayed out and mark them online once they connect', async ({ browser }) => {
-  const ctxA = await browser.newContext({ storageState: { cookies: [], origins: [] } });
-  const ctxB = await browser.newContext({ storageState: { cookies: [], origins: [] } });
+  const ctxA = await newContextWithReducedMotion(browser, { storageState: { cookies: [], origins: [] } });
+  const ctxB = await newContextWithReducedMotion(browser, { storageState: { cookies: [], origins: [] } });
   const pageA = await ctxA.newPage();
   const pageB = await ctxB.newPage();
 

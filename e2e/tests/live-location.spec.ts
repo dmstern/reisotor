@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { E2E_PASSWORD, E2E_PASSWORD_2, E2E_USERNAME, E2E_USERNAME_2 } from '../constants.js';
+import { newContextWithReducedMotion } from './helpers/context';
 
 // Regressionsnetz für den Live-Standort auf der Karte (TripMap.vue/backend/src/activity.ts's
 // updatePosition()/routes/realtime.ts's POST /realtime/position): sobald ein Mitglied mit erlaubtem
@@ -10,8 +11,11 @@ import { E2E_PASSWORD, E2E_PASSWORD_2, E2E_USERNAME, E2E_USERNAME_2 } from '../c
 // realtime-sync.spec.ts (dessen storageState:authFile gilt sonst als Default für JEDEN
 // browser.newContext()-Aufruf).
 test('another member sharing their location shows up as a marker on the map', async ({ browser }) => {
-  const ctxA = await browser.newContext({ storageState: { cookies: [], origins: [] } });
-  const ctxB = await browser.newContext({ storageState: { cookies: [], origins: [] }, geolocation: { latitude: 48.2, longitude: 16.37 } });
+  const ctxA = await newContextWithReducedMotion(browser, { storageState: { cookies: [], origins: [] } });
+  const ctxB = await newContextWithReducedMotion(browser, {
+    storageState: { cookies: [], origins: [] },
+    geolocation: { latitude: 48.2, longitude: 16.37 },
+  });
   await ctxA.grantPermissions(['geolocation']);
   await ctxB.grantPermissions(['geolocation']);
   const pageA = await ctxA.newPage();

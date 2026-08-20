@@ -3,6 +3,7 @@ import { execSync, spawn, type ChildProcess } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { E2E_BACKEND_PORT, E2E_PWA_PREVIEW_PORT } from '../constants.js';
+import { newContextWithReducedMotion } from './helpers/context';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const frontendDir = path.join(__dirname, '..', '..', 'frontend');
@@ -81,7 +82,7 @@ test.describe.serial('Offline-Kartenkacheln (Workbox Runtime Caching)', () => {
   );
 
   test('bereits angesehene Kartenkacheln bleiben nach einem Offline-Reload sichtbar', async ({ browser }) => {
-    const context = await browser.newContext({ storageState: authFile });
+    const context = await newContextWithReducedMotion(browser, { storageState: authFile });
     await context.route('https://*.tile.openstreetmap.org/**/*.png', (route) =>
       route.fulfill({ status: 200, contentType: 'image/png', body: FAKE_TILE_PNG }),
     );
@@ -132,7 +133,7 @@ test.describe.serial('Offline-Kartenkacheln (Workbox Runtime Caching)', () => {
   // (echte Requests gegen tile.openstreetmap.org verbietet deren Nutzungsrichtlinie), hier zusätzlich
   // ein Dialog-Handler für den window.confirm()-Bestätigungsdialog vor dem eigentlichen Download.
   test('sichtbarer Kartenausschnitt lässt sich vorab für die Offline-Nutzung herunterladen', async ({ browser }) => {
-    const context = await browser.newContext({ storageState: authFile });
+    const context = await newContextWithReducedMotion(browser, { storageState: authFile });
     await context.route('https://*.tile.openstreetmap.org/**/*.png', (route) =>
       route.fulfill({ status: 200, contentType: 'image/png', body: FAKE_TILE_PNG }),
     );

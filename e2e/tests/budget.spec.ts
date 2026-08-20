@@ -1,6 +1,7 @@
 import { test, expect, type Locator, type Page } from '@playwright/test';
 import { E2E_PASSWORD, E2E_PASSWORD_2, E2E_USERNAME, E2E_USERNAME_2 } from '../constants.js';
 import { VIEWPORTS, expectWithinViewport } from './helpers/layout';
+import { newContextWithReducedMotion } from './helpers/context';
 
 // Regressionsnetz für die überarbeitete Budget-Sicht (siehe CLAUDE.md-Plan "Budget-Sicht:
 // Überarbeitung"): einfacher Modus (nur Gesamtsumme) vs. detaillierter Modus (Kategorien), echte
@@ -105,8 +106,8 @@ test('a budget pot with only a target_amount (simple mode) shows a single meter 
 test('a private budget pot stays invisible to another member, but shared expenses drive a correct settlement suggestion', async ({
   browser,
 }) => {
-  const ctxA = await browser.newContext({ storageState: { cookies: [], origins: [] } });
-  const ctxB = await browser.newContext({ storageState: { cookies: [], origins: [] } });
+  const ctxA = await newContextWithReducedMotion(browser, { storageState: { cookies: [], origins: [] } });
+  const ctxB = await newContextWithReducedMotion(browser, { storageState: { cookies: [], origins: [] } });
   const pageA = await ctxA.newPage();
   const pageB = await ctxB.newPage();
 
