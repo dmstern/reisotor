@@ -6,6 +6,7 @@ import { useNavPositionStore } from '../stores/navPosition';
 import { useIsDesktop } from '../composables/useIsDesktop';
 import TripSwitcher from './TripSwitcher.vue';
 import PresenceAvatars from './PresenceAvatars.vue';
+import NotificationInbox from './NotificationInbox.vue';
 import OfflineIndicator from './OfflineIndicator.vue';
 import TrackRecordingIndicator from './TrackRecordingIndicator.vue';
 import PwaUpdatePrompt from './PwaUpdatePrompt.vue';
@@ -79,6 +80,7 @@ const isNonProd = window.location.hostname !== 'reise.ruebenherz.de';
       </router-link>
       <TripSwitcher class="switcher" />
       <PresenceAvatars />
+      <NotificationInbox />
       <ThemeModeSelect variant="icon" class="theme-toggle" />
       <router-link to="/profile" class="profile-link" title="Profil">
         <span class="avatar">{{ auth.user?.avatar || '👤' }}</span>

@@ -1292,3 +1292,18 @@ db.exec('CREATE INDEX IF NOT EXISTS idx_track_points_track_recorded ON location_
 // Entwurf ist wie ein persönlicher `drafts`-Eintrag nie für andere Trip-Mitglieder sichtbar.
 ensureColumn('notes', 'is_draft', 'INTEGER NOT NULL DEFAULT 0');
 ensureColumn('diary_entries', 'is_draft', 'INTEGER NOT NULL DEFAULT 0');
+
+// Notification-Inbox (#97): merkt sich pro Nutzer:in, welche trip_activity-Zeilen bereits gelesen
+// wurden (Klick auf die Nachricht bzw. "Alle als gelesen markieren", siehe routes/notifications.ts).
+// Komplett neue, additive Tabelle statt einer Spalte auf trip_activity - eine Aktivität wird von
+// mehreren Mitgliedern unabhängig voneinander gelesen, eine einzelne "read"-Spalte auf trip_activity
+// könnte das nicht abbilden. ON DELETE CASCADE auf activity_id, damit purgeOldActivity() (siehe
+// dortiger Kommentar) keine verwaisten Zeilen hinterlässt.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS notification_reads (
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    activity_id INTEGER NOT NULL REFERENCES trip_activity(id) ON DELETE CASCADE,
+    read_at TEXT NOT NULL,
+    PRIMARY KEY (user_id, activity_id)
+  );
+`);

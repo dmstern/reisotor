@@ -420,3 +420,20 @@ export interface Attachment {
   created_at: string;
   url: string;
 }
+
+/** Ein Eintrag der Notification-Inbox (#97) - direkt aus dem bestehenden trip_activity-Log
+ *  (backend/src/activity.ts) abgeleitet, siehe routes/notifications.ts. `domain`/`action` folgen
+ *  denselben Werten wie liveSync.ts's ActivityRow (u. a. 'schedule'/'packing'/…/'members',
+ *  'created'/'updated'/'deleted'/'liked'/'commented'/…). */
+export interface NotificationItem {
+  id: number;
+  trip_id: number;
+  domain: string;
+  entity_id: number | null;
+  action: string;
+  created_at: string;
+  actor: { id: number; username: string; avatar: string | null };
+  domain_label: string;
+  action_label: string;
+  read: boolean;
+}

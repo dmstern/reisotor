@@ -342,6 +342,9 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
       req.session.userId,
       new Date().toISOString(),
     );
+    // Nur beim Liken selbst, nicht beim Zurücknehmen (#97, Notification-Inbox) - ein Un-Like ist kein
+    // neues, benachrichtigungswürdiges Ereignis.
+    recordActivity(spot.trip_id, 'spots', spot.id, 'liked', req.session.userId!);
     return { liked: true };
   });
 
@@ -355,6 +358,7 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
     const result = db
       .prepare('INSERT INTO spot_comments (spot_id, author_id, content, created_at) VALUES (?, ?, ?, ?)')
       .run(req.params.id, req.session.userId, req.body.content, new Date().toISOString());
+    recordActivity(spot.trip_id, 'spots', spot.id, 'commented', req.session.userId!);
     reply.code(201);
     return db.prepare('SELECT * FROM spot_comments WHERE id = ?').get(result.lastInsertRowid);
   });

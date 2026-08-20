@@ -282,6 +282,9 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
       req.session.userId,
       new Date().toISOString(),
     );
+    // Nur beim Liken selbst, nicht beim Zurücknehmen (#97, Notification-Inbox) - ein Un-Like ist kein
+    // neues, benachrichtigungswürdiges Ereignis.
+    recordActivity(entry.trip_id, 'diary', entry.id, 'liked', req.session.userId!);
     return { liked: true };
   });
 
@@ -295,6 +298,7 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
     const result = db
       .prepare('INSERT INTO diary_comments (entry_id, author_id, content, created_at) VALUES (?, ?, ?, ?)')
       .run(req.params.id, req.session.userId, req.body.content, new Date().toISOString());
+    recordActivity(entry.trip_id, 'diary', entry.id, 'commented', req.session.userId!);
     reply.code(201);
     return db.prepare('SELECT * FROM diary_comments WHERE id = ?').get(result.lastInsertRowid);
   });
