@@ -120,6 +120,10 @@ test.describe('Touren-Reihenfolge-Editor: Reihenfolge + Mehrfachbesuch direkt in
     expect(spotB.ok()).toBeTruthy();
 
     await page.goto('/excursions');
+    // #155: "+ Neue Tour" wird nur noch bei aktiver Touren-Gruppierung angezeigt (statt wie zuvor
+    // immer neben "+ Neuer Spot") - erst umschalten, falls eine vorherige Spec im geteilten
+    // localStorage-Zustand die Kategorie-Gruppierung hinterlassen hat.
+    await page.locator('.header h2').getByRole('button', { name: 'Touren' }).click();
     await page.getByRole('button', { name: '+ Neue Tour' }).click();
     const newTourModal = page.locator('.modal', { hasText: 'Neue Tour' });
     await newTourModal.locator('input[placeholder="Titel"]').fill(tourTitle);
@@ -142,9 +146,9 @@ test.describe('Touren-Reihenfolge-Editor: Reihenfolge + Mehrfachbesuch direkt in
     await newTourModal.locator('form.edit-form button[type="submit"]').click();
     await expect(newTourModal).toBeHidden();
 
-    // Nach Kategorien gruppiert (Standard) taucht die neue Tour noch nicht als eigene Karte auf -
-    // erst die Touren-Gruppierung zeigt sie als anklickbare ExcursionCard.
-    await page.getByRole('button', { name: 'Touren' }).click();
+    // Bereits seit dem Umschalten oben in Touren-Gruppierung (Standard wäre Kategorien, dort taucht
+    // die neue Tour noch nicht als eigene Karte auf - erst die Touren-Gruppierung zeigt sie als
+    // anklickbare ExcursionCard).
 
     // Neu laden + erneut bearbeiten: Reihenfolge und Mehrfachbesuch müssen einen vollen
     // Save+Reload-Zyklus überstehen (nicht nur clientseitig im Formular-State vorhanden sein).

@@ -231,44 +231,51 @@ test.describe('Mobile: unten positionierte NavBar schwebt mit Rand statt randlos
   });
 });
 
-test.describe('Mobile: Gruppieren/Sortieren/Filtern auf der Spots-Karte sind standardmäßig eingeklappt', () => {
+test.describe('Mobile: Sortieren/Filtern auf der Spots-Karte sind standardmäßig eingeklappt', () => {
   test.use({ viewport: VIEWPORTS.mobile });
 
-  // Regressionsnetz für die neue Einklapp-Funktion (Nutzer-Feedback: das Werkzeug-Trio verbrauchte
+  // Regressionsnetz für die neue Einklapp-Funktion (Nutzer-Feedback: das Werkzeug-Duo verbrauchte
   // auf Mobil spürbar Platz) - ExcursionsView.vue's filterBarExpanded/.filter-toggle-row. Bewusst
   // ein @media(max-width:799px)-Schwellenwert (nicht der schmalere @container spots-col
   // max-width:480px, der auch für das Karten-Grid gilt) - sonst würde dieselbe Einklapp-Logik
   // fälschlich auch auf Desktop greifen, sobald .spots-col dort schmal gezogen wird (echte
   // Bildschirmhöhe ist dort trotzdem meist reichlich vorhanden, das eigentliche Platzproblem
-  // besteht nur auf kleinen Geräten).
-  test('Werkzeug-Trio ist eingeklappt, lässt sich aufklappen und zeigt dabei den animierten Segmented-Toggle', async ({ page }) => {
+  // besteht nur auf kleinen Geräten). Der Spots-/Touren-Umschalter selbst sitzt seit #155 nicht mehr
+  // in diesem einklappbaren Bereich, sondern immer sichtbar direkt neben der Drawer-Überschrift -
+  // dieser Test prüft deshalb nur noch das verbliebene Sortieren-Werkzeug.
+  test('Werkzeug-Duo ist eingeklappt, lässt sich aufklappen und zeigt dabei den animierten Segmented-Toggle', async ({ page }) => {
     await page.goto('/excursions');
+    // #155: der Spots-/Touren-Umschalter neben der Überschrift ist unabhängig vom Einklapp-Zustand
+    // der Filter-Box immer sichtbar.
+    const groupToggle = page.locator('.header h2').getByRole('button', { name: 'Touren' });
+    await expect(groupToggle).toBeVisible();
+
     const toggle = page.locator('.filter-toggle-row');
     await expect(toggle).toBeVisible();
     await expect(toggle).toHaveAttribute('aria-expanded', 'false');
-    await expect(page.getByRole('button', { name: 'Touren' })).toBeHidden();
+    const sortToggle = page.getByRole('button', { name: 'Nach Likes' });
+    await expect(sortToggle).toBeHidden();
 
     await toggle.click();
     await expect(toggle).toHaveAttribute('aria-expanded', 'true');
-    const groupToggle = page.getByRole('button', { name: 'Touren' });
-    await expect(groupToggle).toBeVisible();
-    await expect(groupToggle).toHaveAttribute('aria-pressed', 'false');
-    await groupToggle.click();
-    await expect(groupToggle).toHaveAttribute('aria-pressed', 'true');
+    await expect(sortToggle).toBeVisible();
+    await expect(sortToggle).toHaveAttribute('aria-pressed', 'false');
+    await sortToggle.click();
+    await expect(sortToggle).toHaveAttribute('aria-pressed', 'true');
 
     await toggle.click();
     await expect(toggle).toHaveAttribute('aria-expanded', 'false');
-    await expect(groupToggle).toBeHidden();
+    await expect(sortToggle).toBeHidden();
   });
 });
 
-test.describe('Desktop: Gruppieren/Sortieren/Filtern bleiben immer offen, kein Einklapp-Umschalter sichtbar', () => {
+test.describe('Desktop: Sortieren/Filtern bleiben immer offen, kein Einklapp-Umschalter sichtbar', () => {
   test.use({ viewport: VIEWPORTS.desktop });
 
-  test('kein "⚙️ Anzeige & Filter"-Umschalter, Werkzeug-Trio direkt sichtbar', async ({ page }) => {
+  test('kein "⚙️ Anzeige & Filter"-Umschalter, Werkzeug-Duo direkt sichtbar', async ({ page }) => {
     await page.goto('/excursions');
     await expect(page.locator('.filter-toggle-row')).toBeHidden();
-    await expect(page.getByRole('button', { name: 'Touren' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Nach Likes' })).toBeVisible();
   });
 });
 
