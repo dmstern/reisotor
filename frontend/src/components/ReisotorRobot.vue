@@ -7,8 +7,9 @@ import { computed } from 'vue';
 
 const props = withDefaults(
   defineProps<{
-    /** idle: schwebt/blinzelt normal. scanning/done: siehe SecurityCheckView.vue. */
-    phase?: 'idle' | 'scanning' | 'done';
+    /** idle: schwebt/blinzelt normal. scanning/done: siehe SecurityCheckView.vue. packing: packt
+     *  einmalig den Rucksack und wirft ihn sich auf den Rücken, siehe SplashScreen.vue. */
+    phase?: 'idle' | 'scanning' | 'done' | 'packing';
     /** Hält sich mit beiden Armen die Augen zu (z. B. während ein Passwort sichtbar ist). */
     coveringEyes?: boolean;
     /** CSS-Breite; Höhe ergibt sich aus dem SVG-Seitenverhältnis. */
@@ -21,13 +22,23 @@ const props = withDefaults(
   },
 );
 
+// Einziges Signal "die Rucksack-Animation ist fertig durchgelaufen" - SplashScreen.vue wartet
+// darauf, bevor die eigentliche UI gezeigt wird (statt einer geschätzten Mindestdauer pauschal
+// abzuwarten). pack-backpack-anim (siehe <style> unten) ist die zeitlich letzte der drei
+// Einmal-Animationen (zwei Gegenstände + Rucksack-Schwung) - ihr Ende markiert deshalb zuverlässig
+// das Ende der gesamten Sequenz.
+const emit = defineEmits<{ packingDone: [] }>();
+function onAnimationEnd(event: AnimationEvent) {
+  if (event.animationName === 'pack-backpack-anim') emit('packingDone');
+}
+
 const mouthPath = computed(() =>
   props.phase === 'done' ? 'M110 150 Q145 188 180 150' : 'M117 155 Q145 170 173 155',
 );
 </script>
 
 <template>
-  <div class="robot-stage" :style="{ width: size }">
+  <div class="robot-stage" :style="{ width: size }" @animationend="onAnimationEnd">
     <span v-if="phase === 'done'" class="sparkle sparkle-1">✨</span>
     <span v-if="phase === 'done'" class="sparkle sparkle-2">✨</span>
     <span v-if="phase === 'done'" class="sparkle sparkle-3">⭐</span>
@@ -109,6 +120,21 @@ const mouthPath = computed(() =>
         <path d="M197,208 Q200,160 177,122" stroke="#2F8F86" stroke-width="14" stroke-linecap="round" fill="none" />
         <circle cx="177" cy="122" r="13" fill="#FDF6EC" stroke="#1F3A3D" stroke-width="2" />
       </g>
+
+      <!-- Rucksack + zwei Gegenstände: nur in Phase "packing" animiert (siehe <style> unten), sonst
+           unsichtbar (opacity 0). Rucksack startet am Boden neben dem rechten Fuß, Gegenstände
+           fliegen nacheinander aus den Händen hinein, danach schwingt der Rucksack auf den Rücken.
+           VOR dem Rumpf im DOM, damit er in der Endposition (hinter dem Rumpf, nur Träger sichtbar)
+           von diesem überdeckt wird. transform-box: view-box (siehe Style) wie bei den Armen oben -
+           Koordinaten unten sind deshalb absolute SVG-Koordinaten, keine lokalen. -->
+      <g class="backpack-group">
+        <rect class="backpack-body" width="46" height="56" rx="12" fill="#F4A261" stroke="#1F3A3D" stroke-width="2" />
+        <rect class="backpack-pocket" x="8" y="30" width="30" height="18" rx="6" fill="#E76F51" />
+        <line x1="6" y1="2" x2="6" y2="54" stroke="#1F3A3D" stroke-width="4" stroke-linecap="round" />
+        <line x1="40" y1="2" x2="40" y2="54" stroke="#1F3A3D" stroke-width="4" stroke-linecap="round" />
+      </g>
+      <circle class="pack-item pack-item-1" r="8" fill="#E76F51" stroke="#1F3A3D" stroke-width="2" />
+      <rect class="pack-item pack-item-2" x="-7" y="-7" width="14" height="14" rx="3" fill="#2F8F86" stroke="#1F3A3D" stroke-width="2" />
 
       <!-- Rumpf -->
       <rect x="89" y="194" width="112" height="80" rx="18" fill="#F4A261" />
@@ -261,6 +287,96 @@ const mouthPath = computed(() =>
 @keyframes armswing {
   0%, 100% { transform: rotate(0deg); }
   50% { transform: rotate(10deg); }
+}
+
+/* Rucksack packen (Phase "packing", siehe SplashScreen.vue): Rucksack + beide Gegenstände sind
+   außerhalb dieser Phase unsichtbar (opacity 0) und liegen an einer neutralen Stelle. Jede
+   Einzel-Animation läuft nur einmal (kein infinite) mit forwards, damit die Endpose (Rucksack auf
+   dem Rücken) stehen bleibt. pack-backpack-anim ist bewusst die zeitlich letzte - ihr animationend
+   (siehe robot-stage-Handler oben im Script) markiert das Ende der gesamten Sequenz. */
+.backpack-group,
+.pack-item {
+  transform-box: view-box;
+  opacity: 0;
+}
+
+.robot.packing .backpack-group {
+  opacity: 1;
+  animation: pack-backpack-anim 2s ease-in-out 1 forwards;
+}
+
+.robot.packing .pack-item-1 {
+  opacity: 1;
+  animation: pack-item-1-anim 0.56s ease-in 1 forwards;
+}
+
+.robot.packing .pack-item-2 {
+  opacity: 1;
+  animation: pack-item-2-anim 0.56s ease-in 0.56s 1 forwards;
+}
+
+.robot.packing .arm-right {
+  animation: pack-reach 0.56s ease-in-out 1;
+}
+
+.robot.packing .arm-left {
+  animation: pack-reach 0.56s ease-in-out 0.56s 1;
+}
+
+/* Boden-Position neben dem rechten Fuß (200,215) -> zwei kurze "Gegenstand gelandet"-Wipper (bei
+   28% bzw. 55%, zeitlich passend zu den beiden Item-Animationen) -> Schwung auf den Rücken
+   (68-100%), endet hinter dem Rumpf (siehe DOM-Reihenfolge oben) leicht schräg hängend. Insgesamt
+   bewusst kurz (2s statt einer ursprünglich geplanten ausladenderen ~4,6s-Fassung) - eine
+   E2E-Testsuite hat überall dort, wo die App gerade frisch geladen wurde, straffe Timeouts
+   (auth.setup.ts z. B. 5s ab Login bis zum sichtbaren Dashboard), die "Splash blockt UI bis
+   Animation fertig" (siehe SplashScreen.vue) sonst reißen würde. */
+@keyframes pack-backpack-anim {
+  0%, 26% { transform: translate(200px, 215px) rotate(0deg) scale(1); }
+  28% { transform: translate(200px, 208px) rotate(-4deg) scale(1.08); }
+  32%, 53% { transform: translate(200px, 215px) rotate(0deg) scale(1); }
+  55% { transform: translate(200px, 208px) rotate(4deg) scale(1.08); }
+  59%, 68% { transform: translate(200px, 215px) rotate(0deg) scale(1); }
+  85% { transform: translate(120px, 150px) rotate(-20deg) scale(1.05); }
+  100% { transform: translate(58px, 185px) rotate(-8deg) scale(0.92); }
+}
+
+/* Startet an der rechten Hand (235,235, Endpunkt von .arm-right), wird "gegriffen" (hochgezogen),
+   fliegt zur Rucksack-Position und verschwindet dort (scale 0). Item 2 unten ist dieselbe Bewegung
+   spiegelbildlich von der linken Hand (55,235) aus, zeitlich versetzt nach Item 1. */
+@keyframes pack-item-1-anim {
+  0%, 20% { transform: translate(235px, 235px) scale(1); opacity: 1; }
+  55% { transform: translate(235px, 180px) scale(1.15); opacity: 1; }
+  90% { transform: translate(205px, 215px) scale(0.8); opacity: 1; }
+  100% { transform: translate(200px, 215px) scale(0); opacity: 0; }
+}
+
+@keyframes pack-item-2-anim {
+  0%, 20% { transform: translate(55px, 235px) scale(1); opacity: 1; }
+  55% { transform: translate(55px, 180px) scale(1.15); opacity: 1; }
+  90% { transform: translate(205px, 215px) scale(0.8); opacity: 1; }
+  100% { transform: translate(200px, 215px) scale(0); opacity: 0; }
+}
+
+@keyframes pack-reach {
+  0%, 15%, 100% { transform: rotate(0deg); }
+  55% { transform: rotate(14deg); }
+}
+
+/* Reduzierte Bewegung: Sequenz läuft technisch weiter (animationend wird für die
+   ready-Benachrichtigung gebraucht, siehe Script), aber praktisch verzögerungsfrei/ohne
+   wahrnehmbare Bewegung statt der vollen 2s-Choreografie. Arme bleiben ganz still. */
+@media (prefers-reduced-motion: reduce) {
+  .robot.packing .backpack-group,
+  .robot.packing .pack-item-1,
+  .robot.packing .pack-item-2 {
+    animation-duration: 0.01s;
+    animation-delay: 0s;
+  }
+
+  .robot.packing .arm-right,
+  .robot.packing .arm-left {
+    animation: none;
+  }
 }
 
 /* Ruhepose <-> Augen-zuhalten-Pose per Opacity-Crossfade statt Pfad-Morphing (die beiden Formen

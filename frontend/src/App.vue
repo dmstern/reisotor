@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from './stores/auth';
 import { useTripStore } from './stores/trip';
@@ -98,17 +98,23 @@ watch(
   },
   { immediate: true },
 );
+
+// Beim allerersten App-Start soll die Rucksack-Animation (SplashScreen.vue/ReisotorRobot.vue's
+// "packing"-Phase) einmal komplett durchlaufen, bevor die eigentliche UI erscheint - danach (z. B.
+// bei einem Urlaubswechsel, der liveSync.ready unten erneut kurz auf false setzt) reicht der
+// schlichte Lade-Spinner ohne die ~2s-Choreografie erneut zu erzwingen.
+const firstLoadDone = ref(false);
 </script>
 
 <template>
   <template v-if="!showNav">
     <router-view />
   </template>
-  <template v-else-if="!tripStore.loaded || !liveSync.ready">
+  <template v-else-if="!tripStore.loaded || !liveSync.ready || !firstLoadDone">
     <!-- liveSync.ready: verhindert, dass eine Domänen-Ansicht mountet und markSeen() aufruft, BEVOR
          das Nachhol-Protokoll (backfill, siehe liveSync.ts) für den aktuellen Urlaub fertig ist –
          sonst ein Wettlauf, der die "neu"-Hervorhebung nach einem Reload/Deep-Link verlieren kann. -->
-    <SplashScreen />
+    <SplashScreen :play-intro="!firstLoadDone" @ready="firstLoadDone = true" />
   </template>
   <template v-else>
     <AppHeader />
