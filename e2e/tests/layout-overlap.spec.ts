@@ -243,7 +243,9 @@ test.describe('Mobile: Sortieren/Filtern auf der Spots-Karte sind standardmäßi
   // besteht nur auf kleinen Geräten). Der Spots-/Touren-Umschalter selbst sitzt seit #155 nicht mehr
   // in diesem einklappbaren Bereich, sondern immer sichtbar direkt neben der Drawer-Überschrift -
   // dieser Test prüft deshalb nur noch das verbliebene Sortieren-Werkzeug.
-  test('Werkzeug-Duo ist eingeklappt, lässt sich aufklappen und zeigt dabei den animierten Segmented-Toggle', async ({ page }) => {
+  // #156: der Sortieren-Umschalter ist seitdem dasselbe native <select> wie in den Listen-Views
+  // (ShoppingListView.vue/TodoView.vue), statt eines eigenen animierten Segmented-Toggle.
+  test('Werkzeug-Duo ist eingeklappt und lässt sich aufklappen', async ({ page }) => {
     await page.goto('/excursions');
     // #155: der Spots-/Touren-Umschalter neben der Überschrift ist unabhängig vom Einklapp-Zustand
     // der Filter-Box immer sichtbar.
@@ -253,19 +255,19 @@ test.describe('Mobile: Sortieren/Filtern auf der Spots-Karte sind standardmäßi
     const toggle = page.locator('.filter-toggle-row');
     await expect(toggle).toBeVisible();
     await expect(toggle).toHaveAttribute('aria-expanded', 'false');
-    const sortToggle = page.getByRole('button', { name: 'Nach Likes' });
-    await expect(sortToggle).toBeHidden();
+    const sortSelect = page.locator('.filter-bar select');
+    await expect(sortSelect).toBeHidden();
 
     await toggle.click();
     await expect(toggle).toHaveAttribute('aria-expanded', 'true');
-    await expect(sortToggle).toBeVisible();
-    await expect(sortToggle).toHaveAttribute('aria-pressed', 'false');
-    await sortToggle.click();
-    await expect(sortToggle).toHaveAttribute('aria-pressed', 'true');
+    await expect(sortSelect).toBeVisible();
+    await expect(sortSelect).toHaveValue('alpha');
+    await sortSelect.selectOption('likes');
+    await expect(sortSelect).toHaveValue('likes');
 
     await toggle.click();
     await expect(toggle).toHaveAttribute('aria-expanded', 'false');
-    await expect(sortToggle).toBeHidden();
+    await expect(sortSelect).toBeHidden();
   });
 });
 
@@ -275,7 +277,7 @@ test.describe('Desktop: Sortieren/Filtern bleiben immer offen, kein Einklapp-Ums
   test('kein "⚙️ Anzeige & Filter"-Umschalter, Werkzeug-Duo direkt sichtbar', async ({ page }) => {
     await page.goto('/excursions');
     await expect(page.locator('.filter-toggle-row')).toBeHidden();
-    await expect(page.getByRole('button', { name: 'Nach Likes' })).toBeVisible();
+    await expect(page.locator('.filter-bar select')).toBeVisible();
   });
 });
 
