@@ -12,7 +12,7 @@ test('clicking a travel entry in the calendar jumps to and highlights the matchi
   const todayIso = new Date().toISOString().slice(0, 10);
 
   await page.goto('/travel');
-  await page.getByRole('button', { name: '+ Neue Fahrt/Flug', exact: true }).click();
+  await page.getByRole('button', { name: 'Neue Fahrt/Flug', exact: true }).click();
   await page.getByPlaceholder('z. B. Hinflug nach Wien').fill('E2E Cross-Reference-Test-Flug');
   await page.locator('.modal input[type="date"]').first().fill(todayIso);
   await page.locator('.modal button[type="submit"]', { hasText: 'Hinzufügen' }).click();

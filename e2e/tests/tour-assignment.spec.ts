@@ -25,7 +25,7 @@ test.describe('Tour-Zuordnung: einfacher Tagging-Modus + Kategorie/Touren-Gruppi
     const tourTitle = `Spaziergang ${marker}`;
 
     await page.goto('/excursions');
-    await page.getByRole('button', { name: '+ Neuer Spot' }).click();
+    await page.getByRole('button', { name: 'Neuer Spot' }).click();
 
     const modal = page.locator('.modal', { hasText: 'Neuer Spot' });
     await modal.locator('input[placeholder="Titel"]').fill(spotTitle);
@@ -124,7 +124,7 @@ test.describe('Touren-Reihenfolge-Editor: Reihenfolge + Mehrfachbesuch direkt in
     // immer neben "+ Neuer Spot") - erst umschalten, falls eine vorherige Spec im geteilten
     // localStorage-Zustand die Kategorie-Gruppierung hinterlassen hat.
     await page.locator('.header h2').getByRole('button', { name: 'Touren' }).click();
-    await page.getByRole('button', { name: '+ Neue Tour' }).click();
+    await page.getByRole('button', { name: 'Neue Tour' }).click();
     const newTourModal = page.locator('.modal', { hasText: 'Neue Tour' });
     await newTourModal.locator('input[placeholder="Titel"]').fill(tourTitle);
 

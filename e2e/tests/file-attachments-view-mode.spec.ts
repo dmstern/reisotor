@@ -6,7 +6,7 @@ import { test, expect } from '@playwright/test';
 // Karten-Ansicht ist der reine Anzeigemodus, das "Notiz bearbeiten"-Formular der Bearbeiten-Modus.
 test('Datei-Upload-Button erscheint nur im Bearbeiten-Formular, nicht in der Karten-Ansicht', async ({ page }) => {
   await page.goto('/notes');
-  await page.getByRole('button', { name: '+ Neue Notiz' }).click();
+  await page.getByRole('button', { name: 'Neue Notiz' }).click();
   const editor = page.locator('.modal .richtext-content[contenteditable="true"]');
   await editor.click();
   await editor.pressSequentially('E2E Ansichtsmodus-Test-Notiz');

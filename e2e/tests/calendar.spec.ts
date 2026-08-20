@@ -70,7 +70,7 @@ test('MapsAppPicker dropdown is not clipped by the modal', async ({ page }) => {
   // Detail-Dialog zu triggern.
   const day = seeded.trip.start_date;
   await page.locator(`.day[data-date="${day}"]`).click();
-  await page.getByRole('button', { name: '+ Neu', exact: true }).click();
+  await page.getByRole('button', { name: 'Neu', exact: true }).click();
   await page.getByPlaceholder('Titel').fill('MapsAppPicker Regressionstest');
   await page.getByPlaceholder('Ort (optional)').fill('Torre de Belém');
   await page.getByPlaceholder('Maps-Link (Google/Apple) (optional)').fill('https://www.google.com/maps/@38.6916,-9.2159,17z');

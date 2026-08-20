@@ -14,7 +14,7 @@ test.describe('Entwurfs-Zwischenspeicherung für Formulare', () => {
     page,
   }) => {
     await page.goto('/notes');
-    await page.getByRole('button', { name: '+ Neue Notiz' }).click();
+    await page.getByRole('button', { name: 'Neue Notiz' }).click();
     const editor = page.locator('.modal .richtext-content[contenteditable="true"]');
     await editor.click();
     await editor.pressSequentially('Angefangener, noch nicht gespeicherter Text');
@@ -23,7 +23,7 @@ test.describe('Entwurfs-Zwischenspeicherung für Formulare', () => {
     await expect(page.locator('.draft-status')).toContainText('Entwurf gesichert', { timeout: 3_000 });
 
     await page.reload();
-    await page.getByRole('button', { name: '+ Neue Notiz' }).click();
+    await page.getByRole('button', { name: 'Neue Notiz' }).click();
 
     await expect(page.locator('.modal .richtext-content[contenteditable="true"]')).toHaveText(
       'Angefangener, noch nicht gespeicherter Text',
@@ -38,7 +38,7 @@ test.describe('Entwurfs-Zwischenspeicherung für Formulare', () => {
 
   test('nach erfolgreichem Speichern bleibt kein Entwurf zurück', async ({ page }) => {
     await page.goto('/notes');
-    await page.getByRole('button', { name: '+ Neue Notiz' }).click();
+    await page.getByRole('button', { name: 'Neue Notiz' }).click();
     const editor = page.locator('.modal .richtext-content[contenteditable="true"]');
     await editor.click();
     await editor.pressSequentially('Wird gleich richtig gespeichert');
@@ -47,14 +47,14 @@ test.describe('Entwurfs-Zwischenspeicherung für Formulare', () => {
     await page.locator('.add-form button[type="submit"]').click();
     await expect(page.locator('.note-card', { hasText: 'Wird gleich richtig gespeichert' })).toBeVisible();
 
-    await page.getByRole('button', { name: '+ Neue Notiz' }).click();
+    await page.getByRole('button', { name: 'Neue Notiz' }).click();
     await expect(page.locator('.modal .richtext-content[contenteditable="true"]')).toHaveText('');
     await expect(page.locator('.draft-status')).toHaveCount(0);
   });
 
   test('eine ungespeicherte Änderung im Bearbeiten-Formular übersteht einen Reload', async ({ page }) => {
     await page.goto('/notes');
-    await page.getByRole('button', { name: '+ Neue Notiz' }).click();
+    await page.getByRole('button', { name: 'Neue Notiz' }).click();
     const newEditor = page.locator('.modal .richtext-content[contenteditable="true"]');
     await newEditor.click();
     await newEditor.pressSequentially('Ursprungstext der Notiz');

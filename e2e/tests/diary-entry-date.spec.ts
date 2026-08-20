@@ -17,7 +17,7 @@ test.describe('Tagebuch: Datum eines Eintrags', () => {
     await page.goto('/diary');
 
     // Erster Eintrag: Datumsfeld unangetastet lassen - muss bereits mit heute vorbelegt sein.
-    await page.getByRole('button', { name: '+ Neuer Eintrag' }).click();
+    await page.getByRole('button', { name: 'Neuer Eintrag' }).click();
     const newModal = page.locator('.modal', { hasText: 'Neuer Tagebucheintrag' });
     const newDateInput = newModal.locator('input[type="date"]');
     const todayValue = await newDateInput.inputValue();
@@ -36,7 +36,7 @@ test.describe('Tagebuch: Datum eines Eintrags', () => {
     past.setDate(past.getDate() - 2);
     const pastDateStr = `${past.getFullYear()}-${String(past.getMonth() + 1).padStart(2, '0')}-${String(past.getDate()).padStart(2, '0')}`;
 
-    await page.getByRole('button', { name: '+ Neuer Eintrag' }).click();
+    await page.getByRole('button', { name: 'Neuer Eintrag' }).click();
     const secondModal = page.locator('.modal', { hasText: 'Neuer Tagebucheintrag' });
     await secondModal.locator('input[type="date"]').fill(pastDateStr);
     await secondModal.locator('input[type="text"][placeholder="Titel (optional)"]').fill(pastTitle);
