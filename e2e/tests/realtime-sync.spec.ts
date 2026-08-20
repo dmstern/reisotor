@@ -116,10 +116,10 @@ test('another member creating a tour lights up the Karte nav badge and the Toure
   // 'ideas' bleibt unbesehen, der äußere Nav-Punkt UND der Touren-Toggle müssen also weiterhin
   // einen Punkt zeigen, der Spots-Toggle dagegen nicht.
   await pageA.goto('/excursions');
-  // .filter-toggle-row (Einklappen der Gruppieren/Sortieren/Filtern-Zeilen) ist nur auf schmalen
-  // Mobil-Breiten sichtbar (siehe ExcursionsView.vue's @media (max-width: 799px)) - auf der
-  // Desktop-Breite dieses Test-Projekts liegt .filter-bar-rows bereits offen, kein Ausklappen nötig.
-  const groupToggle = pageA.locator('.tool-row', { hasText: 'Gruppieren' });
+  // #155: der Spots-/Touren-Umschalter sitzt seither direkt neben der Drawer-Überschrift
+  // (ExcursionsView.vue's .header h2), nicht mehr in der einklappbaren Gruppieren-Zeile der
+  // Anzeige & Filter-Box - dadurch immer sichtbar, unabhängig von Viewport-Breite.
+  const groupToggle = pageA.locator('.header h2');
   await expect(groupToggle).toBeVisible();
   await expect(groupToggle.getByRole('button', { name: 'Spots' }).locator('.segmented-dot')).toHaveCount(0);
   await expect(groupToggle.getByRole('button', { name: 'Touren' }).locator('.segmented-dot')).toBeVisible();

@@ -1707,7 +1707,7 @@ async function removeSpot(id: number) {
       <div id="map-focus-dock" class="map-focus-dock"></div>
       <div class="header">
         <h2>
-          Spots
+          {{ groupMode === 'tours' ? 'Touren' : 'Spots' }}
           <!-- Der frühere, immer sichtbare Erklärtext nahm spürbar Platz weg, v. a. auf mobile
                (Nutzer-Feedback) - jetzt hinter einem Info-Button versteckt, gleiches
                Popover-Muster (Backdrop + .picker-menu) wie die Kategorie-/Status-Filter unten statt
@@ -1739,10 +1739,21 @@ async function removeSpot(id: number) {
               </template>
             </Teleport>
           </span>
+          <!-- #155: der Spots/Touren-Umschalter saß bisher als "Gruppieren"-Zeile in der grünen
+               .filter-bar weiter unten (siehe dortiger Kommentar-Rest) - direkt neben der
+               Drawer-Überschrift ist er als primäre Weiche dieser Ansicht (bestimmt sowohl den
+               Überschriftstext oben als auch den Hinzufügen-Button rechts) besser aufgehoben. -->
+          <SegmentedToggle
+            v-model="groupMode"
+            :options="[
+              { value: 'category', label: 'Spots', icon: FORM_FIELD_ICONS.category, iconGroup: 'formFields', dot: liveSync.hasUnseen('spots') },
+              { value: 'tours', label: 'Touren', icon: SECTION_ICON_DEFS.excursions, iconGroup: 'navigation', dot: liveSync.hasUnseen('ideas') },
+            ]"
+          />
         </h2>
         <div class="header-actions">
-          <button @click="showSpotForm = true"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Neuer Spot</button>
-          <button class="secondary" @click="showExcursionForm = true"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Neue Tour</button>
+          <button v-if="groupMode === 'category'" @click="showSpotForm = true"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Neuer Spot</button>
+          <button v-else class="secondary" @click="showExcursionForm = true"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Neue Tour</button>
           <!-- Zweiter Einstiegspunkt zum ⏺️/⏹️-Button auf TripMap.vue (Start dort mit Sichtbarkeits-
                Auswahl/Tour-Kopplung): der Karten-Button steckt in einer bereits vollen
                Button-Spalte, die auf Mobil beim Standard-Sheet-Zustand teils vom Bottom-Sheet
@@ -1907,17 +1918,6 @@ async function removeSpot(id: number) {
         </button>
 
         <div class="filter-bar-rows" :class="{ expanded: filterBarExpanded }">
-          <div class="tool-row">
-            <span class="tool-label"><AppIcon :icon="ACTION_ICONS.group" :size="14" group="actions" /> Gruppieren</span>
-            <SegmentedToggle
-              v-model="groupMode"
-              :options="[
-                { value: 'category', label: 'Spots', icon: FORM_FIELD_ICONS.category, iconGroup: 'formFields', dot: liveSync.hasUnseen('spots') },
-                { value: 'tours', label: 'Touren', icon: SECTION_ICON_DEFS.excursions, iconGroup: 'navigation', dot: liveSync.hasUnseen('ideas') },
-              ]"
-            />
-          </div>
-
           <div class="tool-row">
             <span class="tool-label"><AppIcon :icon="ACTION_ICONS.sort" :size="14" group="actions" /> Sortieren</span>
             <SegmentedToggle
@@ -2858,6 +2858,12 @@ async function removeSpot(id: number) {
   align-items: center;
   gap: 4px;
   margin: 0;
+}
+
+/* Etwas mehr Abstand als das straffe 4px-gap der Überschrift selbst (dort passend für Text+Info-
+   Icon) - der Umschalter ist ein eigenständiges Steuerungselement, keine Ergänzung des Titels. */
+.header h2 .segmented-toggle {
+  margin-left: var(--space-2);
 }
 
 /* Ersetzt den früheren, immer sichtbaren Erklärtext (siehe .description-popover unten) - reines
