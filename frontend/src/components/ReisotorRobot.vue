@@ -128,13 +128,13 @@ const mouthPath = computed(() =>
            von diesem überdeckt wird. transform-box: view-box (siehe Style) wie bei den Armen oben -
            Koordinaten unten sind deshalb absolute SVG-Koordinaten, keine lokalen. -->
       <g class="backpack-group">
-        <rect class="backpack-body" width="46" height="56" rx="12" fill="#F4A261" stroke="#1F3A3D" stroke-width="2" />
+        <rect class="backpack-body" width="46" height="56" rx="12" fill="#2F8F86" stroke="#1F3A3D" stroke-width="2" />
         <rect class="backpack-pocket" x="8" y="30" width="30" height="18" rx="6" fill="#E76F51" />
         <line x1="6" y1="2" x2="6" y2="54" stroke="#1F3A3D" stroke-width="4" stroke-linecap="round" />
         <line x1="40" y1="2" x2="40" y2="54" stroke="#1F3A3D" stroke-width="4" stroke-linecap="round" />
       </g>
       <circle class="pack-item pack-item-1" r="8" fill="#E76F51" stroke="#1F3A3D" stroke-width="2" />
-      <rect class="pack-item pack-item-2" x="-7" y="-7" width="14" height="14" rx="3" fill="#2F8F86" stroke="#1F3A3D" stroke-width="2" />
+      <rect class="pack-item pack-item-2" x="-7" y="-7" width="14" height="14" rx="3" fill="#FDF6EC" stroke="#1F3A3D" stroke-width="2" />
 
       <!-- Rumpf -->
       <rect x="89" y="194" width="112" height="80" rx="18" fill="#F4A261" />
@@ -294,9 +294,16 @@ const mouthPath = computed(() =>
    Einzel-Animation läuft nur einmal (kein infinite) mit forwards, damit die Endpose (Rucksack auf
    dem Rücken) stehen bleibt. pack-backpack-anim ist bewusst die zeitlich letzte - ihr animationend
    (siehe robot-stage-Handler oben im Script) markiert das Ende der gesamten Sequenz. */
+/* transform-origin explizit auf den eigenen lokalen Ursprung (0,0) - ohne das würde transform-box:
+   view-box wie bei den Armen oben zwar die Koordinaten korrekt in Viewbox-Einheiten interpretieren,
+   aber rotate()/scale() würden per Default um die VIEWBOX-MITTE (150,152) drehen/skalieren statt um
+   den eigenen Anker. In Kombination mit dem gleichzeitigen translate() in denselben Keyframes hätte
+   das die Endposition weit von der beabsichtigten Stelle wegverschoben (anders als bei den Armen,
+   die NUR rotate() ohne translate() nutzen, wo der Unterschied nicht auffällt). */
 .backpack-group,
 .pack-item {
   transform-box: view-box;
+  transform-origin: 0px 0px;
   opacity: 0;
 }
 
@@ -312,7 +319,11 @@ const mouthPath = computed(() =>
 
 .robot.packing .pack-item-2 {
   opacity: 1;
-  animation: pack-item-2-anim 0.56s ease-in 0.56s 1 forwards;
+  /* "both" statt "forwards": pack-item-2 hat 0,56s animation-delay - ohne "backwards" (im "both"
+     enthalten) würde es in dieser Wartezeit kurz an seiner UNTRANSFORMIERTEN Rohposition (lokaler
+     SVG-Ursprung 0,0, also oben links im Kopf-Bereich) aufblitzen, statt schon unsichtbar/an seiner
+     0%-Keyframe-Position zu stehen. */
+  animation: pack-item-2-anim 0.56s ease-in 0.56s 1 both;
 }
 
 .robot.packing .arm-right {

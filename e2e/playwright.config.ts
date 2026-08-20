@@ -34,7 +34,7 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     video: 'off',
     // Splash Screen (SplashScreen.vue/ReisotorRobot.vue's "packing"-Phase, #149) blockt die
-    // eigentliche UI beim allerersten App-Start bis zu ~4,6s lang, bis die Rucksack-Animation
+    // eigentliche UI beim allerersten App-Start bis zu ~2s lang, bis die Rucksack-Animation
     // durchgelaufen ist - respektiert dafür bereits prefers-reduced-motion (nahezu verzögerungsfrei,
     // siehe dortige @media-Regel). Ohne dieses Flag würden reihenweise Tests (Default-Timeouts oft
     // 5s) knapp an dieser künstlichen Wartezeit scheitern, allen voran auth.setup.ts direkt nach dem
