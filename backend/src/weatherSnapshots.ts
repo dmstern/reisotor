@@ -107,6 +107,19 @@ async function snapshotTripWeather(trip: TripRow, today: string) {
   });
 }
 
+/** Holt vergangene Wetter-Ist-Werte für genau einen Trip neu - wird von PUT /trips/:id
+ *  aufgerufen, nachdem sich der Ort (lat/lng) geändert hat und deshalb zuvor gespeicherte
+ *  trip_weather_snapshots-Zeilen (die noch zum alten Ort gehören) gelöscht wurden. Ohne diesen
+ *  Aufruf würden die als "missing" geltenden Tage erst beim nächsten periodischen Lauf (bis zu
+ *  CHECK_INTERVAL_MS später) neu geholt. */
+export async function refreshTripWeatherSnapshots(tripId: number) {
+  const trip = db.prepare('SELECT id, lat, lng, start_date, end_date FROM trips WHERE id = ?').get(tripId) as
+    | TripRow
+    | undefined;
+  if (!trip || trip.lat == null || trip.lng == null) return;
+  await snapshotTripWeather(trip, todayUtcDateStr());
+}
+
 /** Läuft periodisch (startWeatherSnapshotScheduler) über alle Urlaube mit gesetzten Koordinaten,
  *  deren Zeitraum sich mit den letzten ~92 Tagen überschneidet, und sichert fehlende vergangene
  *  Wetter-Ist-Werte dauerhaft in trip_weather_snapshots - macht das Wetter eines Urlaubs auch Monate

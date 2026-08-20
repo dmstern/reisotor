@@ -6,6 +6,9 @@ import { compressImage } from '../utils/imageCompression';
 import { readAsDataUrl, formatFileSize } from '../utils/fileUpload';
 import AppIcon from './AppIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
+import { useAuthStore } from '../stores/auth';
+
+const auth = useAuthStore();
 
 // Wiederverwendbare Datei-Anhänge (Tickets/Dokumente) für Reise/Unterkunft/Notizen/Termine/Budget
 // (siehe backend/src/routes/attachments.ts) – kapselt GET/POST/DELETE /attachments komplett, damit
@@ -84,7 +87,8 @@ async function remove(attachment: Attachment) {
         </button>
       </li>
     </ul>
-    <label v-if="editable" class="upload-label">
+    <p v-if="editable && auth.user?.restricted" class="hint">Eingeschränkter Modus - Kein Datei-Upload möglich</p>
+    <label v-else-if="editable" class="upload-label">
       <input type="file" accept="image/*,application/pdf" multiple :disabled="uploading" @change="onFilesSelected" />
       {{ uploading ? 'Lädt hoch …' : '+ Datei hinzufügen' }}
     </label>
@@ -158,6 +162,12 @@ async function remove(attachment: Attachment) {
 
 .upload-label input {
   display: none;
+}
+
+.hint {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  margin: 0;
 }
 
 .error {

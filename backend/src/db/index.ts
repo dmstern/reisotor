@@ -1307,3 +1307,9 @@ db.exec(`
     PRIMARY KEY (user_id, activity_id)
   );
 `);
+
+// #96: konfigurierbare Registrierung (REGISTRATION_MODE=off/full/restricted, siehe
+// registrationConfig.ts). Wird beim Registrieren gesetzt (routes/auth.ts) und bleibt danach
+// bestehen, auch wenn REGISTRATION_MODE später geändert wird – kein Backfill nötig, da additiv mit
+// Default 0 (alle bisherigen Accounts sind unrestricted).
+ensureColumn('users', 'is_restricted', 'INTEGER NOT NULL DEFAULT 0');

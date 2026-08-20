@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 import bcrypt from 'bcrypt';
 import { db } from '../db/index.js';
+import { REGISTRATION_MODE, isUserRestricted, isUsernameFullAccess } from '../registrationConfig.js';
 
 interface UserRow {
   id: number;
@@ -12,6 +13,12 @@ interface UserRow {
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export const authRoutes: FastifyPluginAsync = async (app) => {
+  // Frontend braucht den Modus schon VOR dem Login, um den Registrieren-Umschalter auf der
+  // Login-Seite (LoginView.vue) überhaupt anzuzeigen – bewusst ungeschützt wie der Rest von /auth/*.
+  app.get('/config', async () => {
+    return { registrationMode: REGISTRATION_MODE };
+  });
+
   // Selbstregistrierung auf der Login-Seite (LoginView.vue) – zusätzlich zum bestehenden, aus dem
   // Profil heraus erreichbaren "Nutzer anlegen" (routes/users.ts, POST /users, braucht bereits
   // eine eingeloggte Session). Loggt direkt ein (wie /login), damit die Registrierung nicht als
@@ -19,6 +26,9 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
   // bestehenden Urlaub bei (siehe db/index.ts's trip_members-Backfill-Kommentar) – ein neuer
   // Urlaub oder eine Einladung ist der einzige Weg zu einem sichtbaren Urlaub.
   app.post<{ Body: { username: string; email: string; password: string } }>('/register', async (req, reply) => {
+    if (REGISTRATION_MODE === 'off') {
+      return reply.code(403).send({ error: 'Registrierung ist aktuell deaktiviert' });
+    }
     const { username, email, password } = req.body ?? {};
     if (!username?.trim() || !email?.trim() || !password) {
       return reply.code(400).send({ error: 'Benutzername, E-Mail und Passwort erforderlich' });
@@ -39,16 +49,18 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(409).send({ error: 'E-Mail-Adresse wird bereits verwendet' });
     }
 
+    const trimmedUsername = username.trim();
+    const restricted = REGISTRATION_MODE === 'restricted' && !isUsernameFullAccess(trimmedUsername) ? 1 : 0;
     const hash = bcrypt.hashSync(password, 10);
     const result = db
-      .prepare('INSERT INTO users (username, email, password_hash, avatar) VALUES (?, ?, ?, ?)')
-      .run(username.trim(), email.trim(), hash, '🙂');
+      .prepare('INSERT INTO users (username, email, password_hash, avatar, is_restricted) VALUES (?, ?, ?, ?, ?)')
+      .run(trimmedUsername, email.trim(), hash, '🙂', restricted);
     const userId = result.lastInsertRowid as number;
 
     req.session.userId = userId;
-    req.session.username = username.trim();
+    req.session.username = trimmedUsername;
     reply.code(201);
-    return { id: userId, username: username.trim(), avatar: '🙂' };
+    return { id: userId, username: trimmedUsername, avatar: '🙂', restricted: isUserRestricted(userId) };
   });
 
   app.post<{ Body: { username: string; password: string } }>('/login', async (req, reply) => {
@@ -67,7 +79,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 
     req.session.userId = user.id;
     req.session.username = user.username;
-    return { id: user.id, username: user.username, avatar: user.avatar };
+    return { id: user.id, username: user.username, avatar: user.avatar, restricted: isUserRestricted(user.id) };
   });
 
   app.post('/logout', async (req, reply) => {
@@ -85,6 +97,6 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     if (!user) {
       return reply.code(401).send({ error: 'Nicht eingeloggt' });
     }
-    return user;
+    return { ...user, restricted: isUserRestricted(user.id) };
   });
 };

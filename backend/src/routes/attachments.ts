@@ -6,6 +6,7 @@ import { db } from '../db/index.js';
 import { uploadsDir } from '../uploads.js';
 import { requireTripMember } from '../tripAccess.js';
 import { recordActivity } from '../activity.js';
+import { isUserRestricted } from '../registrationConfig.js';
 
 export type AttachmentDomain = 'travel' | 'spots' | 'notes' | 'schedule' | 'budget';
 
@@ -95,6 +96,9 @@ export const attachmentsRoutes: FastifyPluginAsync = async (app) => {
     const tripId = tripIdForEntity(domain, entity_id);
     if (tripId == null) return reply.code(404).send({ error: 'Nicht gefunden' });
     if (!requireTripMember(reply, tripId, req.session.userId)) return;
+    if (isUserRestricted(req.session.userId)) {
+      return reply.code(403).send({ error: 'Eingeschränkter Modus - Kein Datei-Upload möglich' });
+    }
 
     const match = /^data:([a-z0-9.+-]+\/[a-z0-9.+-]+);base64,(.+)$/i.exec(req.body?.data ?? '');
     if (!match) return reply.code(400).send({ error: 'Ungültiges Dateiformat' });
