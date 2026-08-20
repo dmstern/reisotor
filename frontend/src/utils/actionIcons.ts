@@ -88,6 +88,8 @@ import {
   IconMessageCircle,
   IconMessageCircleFilled,
   IconArrowBackUp,
+  IconChevronLeft,
+  IconChevronRight,
 } from '@tabler/icons-vue';
 import type { IconDef } from './icon';
 
@@ -160,7 +162,9 @@ export type ActionIconKey =
   | 'priorityDot'
   | 'recommended'
   | 'logout'
-  | 'upload';
+  | 'upload'
+  | 'scrollLeft'
+  | 'scrollRight';
 
 export const ACTION_ICONS: Record<ActionIconKey, IconDef> = {
   edit: { id: 'pencil', emoji: '✏️', outline: IconPencil, filled: IconPencilFilled },
@@ -231,4 +235,6 @@ export const ACTION_ICONS: Record<ActionIconKey, IconDef> = {
   recommended: { id: 'star', emoji: '⭐', outline: IconStar, filled: IconStarFilled },
   logout: { id: 'logout', emoji: '🚪', outline: IconLogout },
   upload: { id: 'upload', emoji: '⬆️', outline: IconUpload },
+  scrollLeft: { id: 'chevron-left', emoji: '◀️', outline: IconChevronLeft },
+  scrollRight: { id: 'chevron-right', emoji: '▶️', outline: IconChevronRight },
 };

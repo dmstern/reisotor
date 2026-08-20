@@ -188,11 +188,15 @@ function onSpotDrop(event: DragEvent) {
     @dragleave="onSpotDragLeave"
     @drop.prevent="onSpotDrop"
   >
-    <DeleteButton floating class="card-delete" @click="emit('remove', excursion.id)" />
+    <!-- Nur in der aufgeklappten Karte sichtbar (#143) - analog zu SpotCard.vue's Bearbeiten-/
+         Löschen-Buttons: in der kompakten Karte überlagerte das Status-Badge (unten, immer sichtbar)
+         bei langem Text (z. B. "Geplant für 20. Aug. · ☁️ 21°") sonst den links daneben schwebenden
+         Bearbeiten-Button, v. a. bei der schmalen 140px-Miniatur im Desktop-Zeilen-Layout. -->
+    <DeleteButton v-if="expanded" floating class="card-delete" @click="emit('remove', excursion.id)" />
     <div class="image" :style="displayImage ? { backgroundImage: `url(${displayImage})` } : {}">
       <SpotImageCollage v-if="showCollage" :images="fallbackImages" />
       <AppIcon v-else-if="!displayImage" class="placeholder" :size="35" :icon="SECTION_ICON_DEFS.excursions" group="categories" />
-      <EditButton floating @click="emit('edit', excursion)" />
+      <EditButton v-if="expanded" floating @click="emit('edit', excursion)" />
       <!-- #106: EIN gemeinsames Datums-/Status-Badge statt zweier unabhängiger Chips (das alte
            separate "Gemacht"-Badge entfällt) - Text/Icon hängen vom Status ab (in Planung/geplant/
            gemacht). "excursion.done && !excursion.date" ist der Fallback für bereits vor #106 als

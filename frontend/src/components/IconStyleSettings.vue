@@ -131,8 +131,9 @@ const categoriesColorRelevant = computed(() => iconStyle.groups.categories === '
           <span>
             Kategorie-Icons einfärben
             <span class="hint">
-              Nutzt dieselbe Akzentfarbe wie der Kategorie-Chip selbst – wirkt sich nur aus, wenn
-              Kategorien auf Symbole stehen (aktuell{{ categoriesColorRelevant ? '' : ' nicht' }} der
+              Färbt die Icons in Kategorie-Überschriften und der Kategorie-Navigation in derselben
+              Akzentfarbe wie die bunten Kategorie-Badges (die sind immer eingefärbt) – wirkt sich nur
+              aus, wenn Kategorien auf Symbole stehen (aktuell{{ categoriesColorRelevant ? '' : ' nicht' }} der
               Fall).
             </span>
           </span>
