@@ -762,6 +762,9 @@ async function removeComment(id: number) {
   width: 100%;
   background: none;
   border: none;
+  /* Gleiches Muster/derselbe Fix wie ExcursionsView.vue's .tracks-toggle/.filter-toggle-row (#139) -
+     der globale button-Selektor überschreibt sonst mit seinem Grund-Schatten. */
+  box-shadow: none;
   padding: 4px;
   margin: 0;
   font: inherit;
