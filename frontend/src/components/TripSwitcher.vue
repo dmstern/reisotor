@@ -133,6 +133,14 @@ function openMembers(trip: Trip) {
   color: var(--color-primary-dark);
   cursor: pointer;
   max-width: 40vw;
+  /* Ohne min-width:0 verweigert der Button als Flex-Kind von .switcher (AppHeader.vue) das
+     Schrumpfen unter die Content-Breite von .trip-name (white-space:nowrap) - max-width:40vw
+     greift dann nicht mehr zuverlässig, sobald .switcher selbst (flex:1) durch weitere Header-Icons
+     (z. B. NotificationInbox.vue's Glocke) auf schmalen Viewports enger wird, wodurch der Button
+     sichtbar über seine eigene Box hinaus in die Nachbar-Icons hineinragte (#97-Regression in
+     layout-overlap.spec.ts). min-width:0 lässt .trip-name's Ellipsis (siehe dort) stattdessen wie
+     vorgesehen greifen. */
+  min-width: 0;
 }
 
 .trip-name {
