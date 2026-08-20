@@ -162,7 +162,7 @@ function openMembers(trip: Trip) {
   transform: translateX(-50%);
   min-width: 240px;
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   box-shadow: var(--shadow-md);
