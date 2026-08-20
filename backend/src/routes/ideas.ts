@@ -316,6 +316,9 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
       req.session.userId,
       new Date().toISOString(),
     );
+    // Nur beim Liken selbst, nicht beim Zurücknehmen (#97, Notification-Inbox) - ein Un-Like ist kein
+    // neues, benachrichtigungswürdiges Ereignis.
+    recordActivity(idea.trip_id, 'ideas', idea.id, 'liked', req.session.userId!);
     return { liked: true };
   });
 
@@ -329,6 +332,7 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
     const result = db
       .prepare('INSERT INTO idea_comments (idea_id, author_id, content, created_at) VALUES (?, ?, ?, ?)')
       .run(req.params.id, req.session.userId, req.body.content, new Date().toISOString());
+    recordActivity(idea.trip_id, 'ideas', idea.id, 'commented', req.session.userId!);
     reply.code(201);
     return db.prepare('SELECT * FROM idea_comments WHERE id = ?').get(result.lastInsertRowid);
   });

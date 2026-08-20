@@ -90,7 +90,10 @@ export function setPushPreferences(userId: number, prefs: Partial<Record<PushPre
   }
 }
 
-const DOMAIN_LABEL: Record<string, string> = {
+// Exportiert (statt modul-privat wie ursprünglich), da routes/notifications.ts dieselben Labels für
+// die Notification-Inbox (#97) braucht - eine einzige Übersetzungsstelle statt zweier
+// auseinanderlaufender Kopien.
+export const DOMAIN_LABEL: Record<string, string> = {
   schedule: 'Kalender',
   packing: 'Packliste',
   shopping: 'Einkaufsliste',
@@ -104,13 +107,15 @@ const DOMAIN_LABEL: Record<string, string> = {
   members: 'Mitglieder',
 };
 
-const ACTION_LABEL: Record<string, string> = {
+export const ACTION_LABEL: Record<string, string> = {
   created: 'etwas hinzugefügt',
   updated: 'etwas geändert',
   deleted: 'etwas gelöscht',
   restored: 'etwas wiederhergestellt',
   member_added: 'jemanden eingeladen',
   member_removed: 'jemanden entfernt',
+  liked: 'etwas geliked',
+  commented: 'einen Kommentar hinterlassen',
 };
 
 interface ActivityPushInfo {
