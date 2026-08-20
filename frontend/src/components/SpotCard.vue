@@ -19,6 +19,7 @@ import RichTextDisplay from './RichTextDisplay.vue';
 import SocialRow from './SocialRow.vue';
 import Comments, { type CommentItem } from './Comments.vue';
 import MapsAppPicker from './MapsAppPicker.vue';
+import TourAssignDropdown from './TourAssignDropdown.vue';
 import FileAttachments from './FileAttachments.vue';
 import PendingSyncBadge from './PendingSyncBadge.vue';
 import AppIcon from './AppIcon.vue';
@@ -47,6 +48,13 @@ const props = defineProps<{
   /** Nur für Kategorie "Unterkunft" mit gesetztem paid_by_user_id relevant (siehe
    *  Migrationskommentar in db/index.ts). */
   payerLabel?: string | null;
+  // Ob die Spots-Liste gerade nach Kategorie oder nach Touren gruppiert ist (ExcursionsView.vue) -
+  // steuert (#106), ob zusätzlich zum "Tour zuordnen"-Dropdown auch der native Drag-Anfasser
+  // gezeigt wird: der ergibt nur in der Touren-Gruppierung Sinn, wo echte Tour-Karten als
+  // Ablageziele sichtbar sind (siehe onDragStart unten).
+  groupMode: 'category' | 'tours';
+  // Alle bestehenden Tour-Titel, fürs "Tour zuordnen"-Dropdown (TourAssignDropdown.vue).
+  tourOptions: string[];
 }>();
 
 const isAccommodation = computed(() => props.spot.category === 'Unterkunft');
@@ -63,10 +71,10 @@ const emit = defineEmits<{
   (e: 'remove-comment', id: number): void;
   (e: 'open', spot: Spot): void;
   (e: 'close'): void;
-  // Tap-Alternative zum nativen Drag auf eine Tour-Karte (siehe onExcursionHandleClick unten) –
-  // die Elternkomponente (ExcursionsView.vue) besitzt die Gruppierungs-Einstellung (groupMode) und
-  // schaltet auf "nach Touren gruppieren" um, damit die Tour-Karten als Drop-Ziele sichtbar werden.
-  (e: 'assign-to-tour'): void;
+  // Sofort-Zuordnung über TourAssignDropdown.vue (#106, siehe Template) – ersetzt den früheren
+  // Tap-Alternative-Mechanismus (Umschalten auf Touren-Gruppierung + manuelles Ablegen), da es
+  // jetzt keine Tour-Drawer/-Karten mehr braucht, um eine Zuordnung vorzunehmen.
+  (e: 'assign-tour', title: string): void;
   // "Auf Karte anzeigen"-Button (Mini- wie aufgeklappte Karte, siehe onShowOnMap unten) – eigene,
   // explizite Aktion statt (wie vor #109) automatisch beim Aufklappen mitzulaufen: schrumpft das
   // Sheet auf "angeschnitten" UND zentriert/vergrößert den Pin, unabhängig davon, ob die Karte hier
@@ -109,23 +117,21 @@ const plannedDateLabel = computed(() => (props.scheduledDate ? formatDate(props.
 
 // Natives Drag (Zuordnen zu einer Tour) startet über einen dedizierten Anfasser (.excursion-drag-
 // handle, siehe Template) statt über die ganze Karte – @click.stop dort verhindert, dass ein reiner
-// (Nicht-Drag-)Klick auf den Anfasser zusätzlich die Detail-Ansicht öffnet. Tour-Karten sind seit
-// der Verschmelzung von Touren/Spots-Sicht direkt in derselben Liste sichtbar (siehe
-// ExcursionsView.vue's groupMode==='tours'), kein Schubladen-Sprung mehr nötig, um ein Ablage-Ziel
-// erreichbar zu machen.
+// (Nicht-Drag-)Klick auf den Anfasser zusätzlich die Detail-Ansicht öffnet. Nur noch in der
+// Touren-Gruppierung sichtbar (#106, siehe groupMode-Prop) – dort sind Tour-Karten direkt in
+// derselben Liste als Ablage-Ziele sichtbar (ExcursionsView.vue's groupMode==='tours'). In der
+// Kategorie-Gruppierung übernimmt stattdessen ausschließlich TourAssignDropdown.vue unten, da dort
+// keine Tour-Karten zum Ablegen sichtbar sind.
 function onDragStart(event: DragEvent) {
   event.dataTransfer?.setData('text/spot-id', String(props.spot.id));
   if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
 }
 
-// Klick-Alternative zum nativen Drag oben: natives HTML5-DnD ist auf Touch-Geräten unzuverlässig
-// (siehe usePointerDrag-Kommentar unten), ein reiner Tap auf den Anfasser schaltet deshalb direkt
-// auf die Touren-Gruppierung um (siehe assign-to-tour-Emit oben), damit die Tour-Karten als
-// Ablage-Ziele sichtbar werden – exakt dasselbe Muster wie der 📅-Einplanen-Anfasser (dort via
-// usePointerDrag's onTap statt eines eigenen Klick-Handlers, weil er zusätzlich ein echtes
-// Pointer-Drag unterstützt).
-function onExcursionHandleClick() {
-  emit('assign-to-tour');
+// TourAssignDropdown.vue's @select (#106) – reicht den gewählten Tour-Titel nur durch, die
+// eigentliche Zuordnung (bestehende Tour ergänzen oder neu anlegen) übernimmt die Elternkomponente
+// (ExcursionsView.vue's assignSpotToTourTitle()), die bereits Zugriff auf den Excursion-Store hat.
+function onTourSelected(title: string) {
+  emit('assign-tour', title);
 }
 
 // Spontanes Einplanen direkt auf einen Kalendertag, ohne vorher einen Ausflug anzulegen: legt
@@ -179,6 +185,20 @@ function onCardClick() {
 function onShowOnMap() {
   emit('show-on-map');
 }
+
+// #106: Status-Kette in Planung -> geplant -> gemacht statt (wie zuvor) eines von geplant/ungeplant
+// unabhängigen Flags - ein Spot darf nicht ohne Datum "gemacht" sein. Zurück auf "geplant" braucht
+// dafür kein neues Datum (setDone(false) direkt), der Übergang zu "gemacht" dagegen IMMER: öffnet
+// den Kalender zur Bestätigung des Besuchstags (drawers.pendingSchedule mode 'confirm-done',
+// ausgewertet in ScheduleView.vue's finishPendingSchedule()) - auch wenn bereits ein geplantes
+// Datum existiert, da der tatsächliche Besuchstag davon abweichen kann.
+function onToggleDone() {
+  if (props.spot.done) {
+    spotsStore.setDone(props.spot.id, false);
+  } else {
+    drawers.startPendingSchedule('spot', props.spot.id, 'confirm-done');
+  }
+}
 </script>
 
 <template>
@@ -192,16 +212,19 @@ function onShowOnMap() {
         <EditButton floating @click="emit('edit', spot)" />
         <DeleteButton floating @click="emit('remove', spot.id)" />
       </template>
-      <span v-if="scheduledDate" class="status planned">
-        <AppIcon class="status-icon" :size="14" :icon="FORM_FIELD_ICONS.date" group="actions" />
-        <span class="status-text"
-          >{{ plannedDateLabel }}<template v-if="dayWeather"
-            > · <WeatherIcon :code="dayWeather.weatherCode" :size="14" /> {{ Math.round(dayWeather.tempMax) }}°</template
-          ></span
-        >
-      </span>
-      <span v-if="spot.done" class="status status-done">
-        <AppIcon class="status-icon" :size="14" :icon="ACTION_ICONS.done" group="actions" /><span class="status-text">Gemacht</span>
+      <!-- #106: EIN gemeinsames Datums-/Status-Badge statt zweier unabhängiger Chips (das alte
+           separate "Gemacht"-Badge unten rechts entfällt) - Text/Icon hängen vom Status ab
+           (geplant/besucht), "spot.done && !scheduledDate" ist der Fallback für bereits vor #106
+           als "gemacht" markierte Bestandsdaten ohne verknüpftes Datum (kein Backfill möglich, da
+           der tatsächliche Tag nicht rekonstruierbar ist). -->
+      <span v-if="scheduledDate || spot.done" class="status" :class="{ planned: scheduledDate && !spot.done, 'status-done': spot.done }">
+        <AppIcon class="status-icon" :size="14" :icon="spot.done ? ACTION_ICONS.done : FORM_FIELD_ICONS.date" group="actions" />
+        <span class="status-text">
+          <template v-if="spot.done && scheduledDate">Besucht am {{ plannedDateLabel }}</template>
+          <template v-else-if="spot.done">Gemacht</template>
+          <template v-else>Geplant für {{ plannedDateLabel }}</template>
+          <template v-if="dayWeather"> · <WeatherIcon :code="dayWeather.weatherCode" :size="14" /> {{ Math.round(dayWeather.tempMax) }}°</template>
+        </span>
       </span>
     </div>
     <div class="body">
@@ -253,17 +276,21 @@ function onShowOnMap() {
       </template>
       <RichTextDisplay v-if="spot.note" class="note" :content="spot.note" :format="spot.note_format" />
       <div class="card-actions">
+        <!-- #106: nur noch in der Touren-Gruppierung sichtbar, da dort echte Tour-Karten als
+             Drag-Ziele existieren (siehe groupMode-Prop/onDragStart im Script). -->
         <button
+          v-if="groupMode === 'tours'"
           type="button"
           class="excursion-drag-handle"
           draggable="true"
           aria-label="Auf eine Tour ziehen, um sie dort als Station hinzuzufügen"
           title="Auf eine Tour ziehen, um sie dort als Station hinzuzufügen"
           @dragstart="onDragStart"
-          @click.stop="onExcursionHandleClick"
+          @click.stop
         >
           <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="14" group="navigation" /> Auf Tour ziehen
         </button>
+        <TourAssignDropdown :options="tourOptions" @select="onTourSelected" />
         <button
           v-if="!isAccommodation"
           type="button"
@@ -281,7 +308,7 @@ function onShowOnMap() {
           class="done-toggle"
           :class="{ active: !!spot.done }"
           :aria-pressed="!!spot.done"
-          @click.stop="spotsStore.setDone(spot.id, !spot.done)"
+          @click.stop="onToggleDone"
         >
           <template v-if="spot.done">
             <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" /> Gemacht
@@ -378,14 +405,15 @@ function onShowOnMap() {
   font-size: 2.2rem;
 }
 
-/* Status-Chip "geplant" (im Kalender eingeplant) mit Datum – dasselbe Muster wie
-   ExcursionCard.vue's .status/.status.planned (inkl. Dark-Mode-Override unten), damit beide
-   Karten-Typen optisch konsistent bleiben. Unten statt oben rechts positioniert: oben rechts
-   sitzt hier bereits der schwebende Löschen-Button (EditButton/DeleteButton floating landen beide
-   im selben .image-Container), anders als bei ExcursionCard.vue, wo der Löschen-Button außerhalb
-   von .image auf Höhe der ganzen (breiteren) Card schwebt. Nur im geplanten Fall sichtbar (siehe
-   v-if im Template) statt immer einen "Nicht geplant"-Chip zu zeigen – ein Spot muss (anders als
-   ein Ausflug) nicht zwangsläufig einmal eingeplant werden. */
+/* Status-/Datums-Chip (#106: EIN gemeinsames Badge statt zweier unabhängiger Chips, ersetzt das
+   frühere separate "Gemacht"-Badge) – dasselbe Muster wie ExcursionCard.vue's .status/.status.planned
+   (inkl. Dark-Mode-Override unten), damit beide Karten-Typen optisch konsistent bleiben. Unten statt
+   oben rechts positioniert: oben rechts sitzt hier bereits der schwebende Löschen-Button
+   (EditButton/DeleteButton floating landen beide im selben .image-Container), anders als bei
+   ExcursionCard.vue, wo der Löschen-Button außerhalb von .image auf Höhe der ganzen (breiteren) Card
+   schwebt. Nur sichtbar, wenn geplant oder gemacht (siehe v-if im Template) statt immer einen
+   "Nicht geplant"-Chip zu zeigen – ein Spot muss (anders als ein Ausflug) nicht zwangsläufig einmal
+   eingeplant werden. */
 .status {
   position: absolute;
   bottom: 8px;
@@ -401,16 +429,8 @@ function onShowOnMap() {
   color: var(--color-text-muted);
 }
 
-.status.planned {
-  color: var(--color-success);
-}
-
-/* Zweiter Status-Chip für "gemacht", unabhängig vom Planungs-Status oben - links statt rechts
-   positioniert (dieselbe Ecke wie .status.planned wäre bei gleichzeitig gesetztem Datum belegt),
-   damit beide Chips gleichzeitig sichtbar bleiben können. */
+.status.planned,
 .status.status-done {
-  right: auto;
-  left: 8px;
   color: var(--color-success);
 }
 

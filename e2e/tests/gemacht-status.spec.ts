@@ -12,13 +12,17 @@ function localDateStr(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-// Regressionsnetz für den neuen unabhängigen "gemacht"-Status auf Spots/Touren (siehe CLAUDE.md,
-// Entscheidungen: eigenes Flag neben geplant/ungeplant, direkt auf beiden Tabellen setzbar, im
-// Tagebuch-Formular per Checkbox/Spot-Picker zusätzlich automatisch gesetzt).
+// Regressionsnetz für die #106-Überarbeitung: Status-Kette in Planung -> geplant -> gemacht statt
+// (wie zuvor) eines von geplant/ungeplant unabhängigen Flags - ein Spot/eine Tour kann nicht ohne
+// Datum "gemacht" sein, der Übergang zu "gemacht" führt deshalb immer erst durch den Kalender
+// (drawers.pendingSchedule mode 'confirm-done', ScheduleView.vue).
 test.describe('"Gemacht"-Status: Spots/Touren', () => {
-  test('lässt sich direkt auf einem nie geplanten Spot umschalten und übersteht ein Neuladen', async ({ page }) => {
+  test('Markieren als "gemacht" öffnet den Kalender zur Datumsbestätigung und übersteht ein Neuladen', async ({
+    page,
+  }) => {
     const marker = `E2E-Gemacht-${Date.now()}`;
     const spotTitle = `Spontanbesuch ${marker}`;
+    const today = localDateStr(new Date());
 
     const created = await page.request.post('/api/spots', {
       data: { trip_id: tripId, title: spotTitle, category: 'Sonstiges' },
@@ -39,14 +43,46 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
     const toggle = spotCard.locator('.done-toggle');
     await expect(toggle).toHaveText('⬜️ Als gemacht markieren');
     await toggle.click();
+
+    // Kalender-Schublade ist auf Desktop bereits offen - der Bestätigungs-Hinweis ersetzt hier den
+    // normalen Einplanen-Hinweis (siehe ScheduleView.vue's pending-schedule-banner).
+    const banner = page.locator('.pending-schedule-banner');
+    await expect(banner).toContainText(spotTitle);
+    await expect(banner).toContainText('besucht');
+    await page.locator(`.day[data-date="${today}"]`).click();
+    await expect(banner).toBeHidden();
+
     await expect(toggle).toHaveText('✅ Gemacht');
     await expect(toggle).toHaveAttribute('aria-pressed', 'true');
-    await expect(spotCard.locator('.status.status-done')).toBeVisible();
+    await expect(spotCard.locator('.status.status-done')).toContainText('Besucht am');
 
     await page.reload();
     const spotCardAfterReload = page.locator('.spot-card', { hasText: spotTitle });
     await spotCardAfterReload.locator('h3').click();
     await expect(spotCardAfterReload.locator('.done-toggle')).toHaveText('✅ Gemacht');
+  });
+
+  test('Abbrechen im Kalender-Bestätigungs-Flow lässt den Status unverändert', async ({ page }) => {
+    const marker = `E2E-Gemacht-Abbrechen-${Date.now()}`;
+    const spotTitle = `Spontanbesuch ${marker}`;
+
+    const created = await page.request.post('/api/spots', {
+      data: { trip_id: tripId, title: spotTitle, category: 'Sonstiges' },
+    });
+    expect(created.ok()).toBeTruthy();
+
+    await page.goto('/excursions');
+    const spotCard = page.locator('.spot-card', { hasText: spotTitle });
+    await spotCard.locator('h3').click();
+    await spotCard.locator('.done-toggle').click();
+
+    const banner = page.locator('.pending-schedule-banner');
+    await expect(banner).toContainText(spotTitle);
+    await banner.getByRole('button', { name: 'Abbrechen' }).click();
+    await expect(banner).toBeHidden();
+
+    await expect(spotCard.locator('.done-toggle')).toHaveText('⬜️ Als gemacht markieren');
+    await expect(spotCard.locator('.status')).toHaveCount(0);
   });
 
   test('Tagebuch: für heute geplante Vorschläge sind als "Empfohlen" markiert, Anhaken setzt automatisch gemacht=true', async ({
@@ -141,11 +177,13 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
 
     // Regressionstest für einen bereits einmal gefixten Bug (siehe SpotCard.vue's .status/
     // .status-text): in der kompakten, nicht aufgeklappten Kartenzeile (@container spots-col
-    // (max-width: 480px)) schrumpft .image auf 64px - die Status-Pillen (Icon+Text) waren dort
-    // strukturell breiter als ihr eigener Positionierungs-Kontext und liefen in den Titel/
-    // Kategorie-Bereich daneben hinein. Deckt beide gleichzeitig sichtbaren Badges ab (geplant UND
-    // gemacht), da beide unabhängig voneinander an je einer unteren Ecke von .image verankert sind.
-    test('geplanter UND gemachter Spot: beide Status-Kreise bleiben innerhalb von .image', async ({ page }) => {
+    // (max-width: 480px)) schrumpft .image auf 64px - die Status-Pille (Icon+Text) war dort
+    // strukturell breiter als ihr eigener Positionierungs-Kontext und lief in den Titel/
+    // Kategorie-Bereich daneben hinein. Seit #106 gibt es nur noch EIN gemeinsames Datums-/
+    // Status-Badge statt zweier gleichzeitig sichtbarer Chips (das alte separate
+    // "Gemacht"-Badge entfiel) - die verlangt ihr eigenes Datum, daher hier erst planen, dann
+    // erst als gemacht markieren (Reihenfolge ist seit #106 verpflichtend).
+    test('gemachter Spot: das Status-Badge bleibt innerhalb von .image', async ({ page }) => {
       const marker = `E2E-StatusOverflow-${Date.now()}`;
       const spotTitle = `Überlauf-Check ${marker}`;
 
@@ -155,13 +193,13 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
       expect(created.ok()).toBeTruthy();
       const spot = await created.json();
 
-      const doneRes = await page.request.post(`/api/spots/${spot.id}/done`, { data: { done: true } });
-      expect(doneRes.ok()).toBeTruthy();
-
       const scheduleRes = await page.request.post('/api/schedule', {
         data: { trip_id: tripId, date: localDateStr(new Date()), title: spotTitle, spot_id: spot.id },
       });
       expect(scheduleRes.ok()).toBeTruthy();
+
+      const doneRes = await page.request.post(`/api/spots/${spot.id}/done`, { data: { done: true } });
+      expect(doneRes.ok()).toBeTruthy();
 
       await page.goto('/excursions');
       const spotCard = page.locator('.spot-card', { hasText: spotTitle });
@@ -170,7 +208,6 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
       await expect(spotCard).toBeVisible();
       const image = spotCard.locator('.image');
       await expectWithinBox(spotCard.locator('.status.status-done'), image);
-      await expectWithinBox(spotCard.locator('.status.planned'), image);
     });
   });
 });
