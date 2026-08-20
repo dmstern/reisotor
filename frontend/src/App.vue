@@ -15,6 +15,7 @@ import AppHeader from './components/AppHeader.vue';
 import NavBar from './components/NavBar.vue';
 import Drawer from './components/Drawer.vue';
 import ScheduleView from './views/ScheduleView.vue';
+import SplashScreen from './components/SplashScreen.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -107,7 +108,7 @@ watch(
     <!-- liveSync.ready: verhindert, dass eine Domänen-Ansicht mountet und markSeen() aufruft, BEVOR
          das Nachhol-Protokoll (backfill, siehe liveSync.ts) für den aktuellen Urlaub fertig ist –
          sonst ein Wettlauf, der die "neu"-Hervorhebung nach einem Reload/Deep-Link verlieren kann. -->
-    <div class="onboarding"></div>
+    <SplashScreen />
   </template>
   <template v-else>
     <AppHeader />
@@ -146,15 +147,6 @@ watch(
 </template>
 
 <style scoped>
-.onboarding {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-4);
-  background: linear-gradient(160deg, var(--color-primary-tint), var(--color-bg) 60%);
-}
-
 .app-main {
   min-width: 0;
   /* container-type global hier statt in einzelnen Views: .app-main ist die einzige Stelle, an der
