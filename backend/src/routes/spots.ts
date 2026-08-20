@@ -223,10 +223,14 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
     return db.prepare('SELECT * FROM spots WHERE id = ?').get(req.params.id);
   });
 
-  // "Gemacht"-Status: unabhängiges Flag neben geplant/ungeplant (das weiterhin rein aus verknüpften
-  // schedule_items abgeleitet wird) - auch spontane, nie geplante Besuche sollen markierbar sein.
-  // Eigener Endpunkt statt Teil von PUT /spots/:id, damit ein Toggle nicht das gesamte Formular
-  // (inkl. aller anderen Felder) erneut mitschicken muss - analog zum bestehenden /like-Toggle.
+  // "Gemacht"-Status (#106): setzbar nur, wenn der Spot bereits über einen verknüpften
+  // schedule_items-Termin ein Datum trägt - ein Spot/eine Tour darf nicht gleichzeitig "gemacht" UND
+  // ohne Datum sein (eindeutige Statuskette in Planung -> geplant -> gemacht). Das Datum selbst wird
+  // NICHT hier gesetzt (bleibt Aufgabe des Kalenders/scheduleStore.setSpotDate), das Frontend führt
+  // vor einem Aufruf mit done=true immer erst durch den Kalender-Bestätigungs-Flow (SpotCard.vue/
+  // ScheduleView.vue), damit ein Datum sicher schon existiert. Eigener Endpunkt statt Teil von
+  // PUT /spots/:id, damit ein Toggle nicht das gesamte Formular erneut mitschicken muss - analog zum
+  // bestehenden /like-Toggle.
   app.post<{ Params: { id: string }; Body: { done: boolean } }>('/spots/:id/done', async (req, reply) => {
     const spot = db.prepare('SELECT id, trip_id FROM spots WHERE id = ?').get(req.params.id) as
       | { id: number; trip_id: number }
@@ -235,6 +239,26 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
     if (!requireTripMember(reply, spot.trip_id, req.session.userId)) return;
 
     const done = req.body.done ? 1 : 0;
+    if (done) {
+      // Zwei Wege zu einem Datum: ein direkt mit dem Spot verknüpfter Termin (normales Einplanen,
+      // siehe schedule_items.spot_id) ODER ein Termin über eine Tour, in der dieser Spot als
+      // Station steckt (u. a. DiaryView.vue's "Spot direkt zuordnen"-Picker, der im Hintergrund
+      // einen mit dem Spot verknüpften Ein-Spot-Ausflug anlegt statt eines direkten Termins, siehe
+      // routes/ideas.ts's plan-spot).
+      const hasDate = db
+        .prepare(
+          `SELECT 1 FROM schedule_items WHERE spot_id = ? AND deleted_at IS NULL
+           UNION
+           SELECT 1 FROM schedule_items
+             JOIN excursion_spots ON excursion_spots.idea_id = schedule_items.idea_id
+             WHERE excursion_spots.spot_id = ? AND schedule_items.deleted_at IS NULL
+           LIMIT 1`,
+        )
+        .get(req.params.id, req.params.id);
+      if (!hasDate) {
+        return reply.code(400).send({ error: 'Für den Status "gemacht" muss zuerst ein Datum gesetzt werden.' });
+      }
+    }
     db.prepare('UPDATE spots SET done = ? WHERE id = ?').run(done, req.params.id);
     recordActivity(spot.trip_id, 'spots', spot.id, 'updated', req.session.userId!);
     return { done: done === 1 };

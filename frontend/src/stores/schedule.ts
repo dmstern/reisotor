@@ -63,6 +63,35 @@ export const useScheduleStore = defineStore('schedule', () => {
     return updated;
   }
 
+  /** Setzt/aktualisiert das (früheste) Datum, an dem ein Spot eingeplant ist (#106: Kalender-
+   *  Bestätigungs-Flow beim Markieren als "gemacht", SpotCard.vue/ScheduleView.vue) -
+   *  überschreibt einen bereits bestehenden Termin statt einen zweiten anzulegen, damit ein
+   *  erneutes Datum-Bestätigen nicht ungewollt einen zusätzlichen Kalendereintrag erzeugt. */
+  async function setSpotDate(spotId: number, tripId: number, title: string, date: string) {
+    const existing = items.value
+      .filter((i) => i.spot_id === spotId)
+      .sort((a, b) => a.date.localeCompare(b.date))[0];
+    if (existing) {
+      await update(existing.id, {
+        trip_id: existing.trip_id,
+        date,
+        end_date: existing.end_date,
+        time: existing.time ?? undefined,
+        end_time: existing.end_time ?? undefined,
+        title: existing.title,
+        note: existing.note ?? undefined,
+        location: existing.location ?? undefined,
+        maps_link: existing.maps_link ?? undefined,
+        lat: existing.lat ?? undefined,
+        lng: existing.lng ?? undefined,
+        spot_id: existing.spot_id,
+        idea_id: existing.idea_id,
+      });
+    } else {
+      await create({ trip_id: tripId, date, title, spot_id: spotId });
+    }
+  }
+
   // Weicher Löschvorgang serverseitig (siehe routes/schedule.ts) + 60s Rückgängig-Fenster
   // clientseitig (useUndoableDelete.ts): das Objekt bleibt in `items` bestehen (ScheduleView.vue
   // zeigt an seiner Stelle einen "Löschen rückgängig machen"-Platzhalter, siehe isPending), erst
@@ -79,5 +108,5 @@ export const useScheduleStore = defineStore('schedule', () => {
     await api.post(`/trash/schedule_item/${id}/restore`);
   }
 
-  return { items, loaded, load, create, update, remove, restore, isPending };
+  return { items, loaded, load, create, update, remove, restore, isPending, setSpotDate };
 });

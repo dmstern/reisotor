@@ -6,6 +6,7 @@ import { renderRichText } from '../utils/richText';
 import { parseContact } from '../utils/contact';
 import { formatDate as formatDateShared } from '../utils/dateFormat';
 import { useSpotsStore } from '../stores/spots';
+import { useDrawersStore } from '../stores/drawers';
 import DetailModal from './DetailModal.vue';
 import CategoryChip from './CategoryChip.vue';
 import MapsAppPicker from './MapsAppPicker.vue';
@@ -42,11 +43,25 @@ const emit = defineEmits<{
 }>();
 
 const spotsStore = useSpotsStore();
+const drawers = useDrawersStore();
 const isAccommodation = computed(() => props.spot.category === 'Unterkunft');
 
 function formatDate(d: string | null) {
   if (!d) return null;
   return formatDateShared(d);
+}
+
+// #106: Status-Kette in Planung -> geplant -> gemacht statt eines unabhängigen Flags - ein Spot
+// darf nicht ohne Datum "gemacht" sein (siehe gleiches Muster/ausführliche Begründung in
+// SpotCard.vue's onToggleDone). Schließt den Dialog vor dem Öffnen des Kalenders, da beide sonst
+// gleichzeitig übereinander sichtbar wären.
+function onToggleDone() {
+  if (props.spot.done) {
+    spotsStore.setDone(props.spot.id, false);
+  } else {
+    emit('update:modelValue', false);
+    drawers.startPendingSchedule('spot', props.spot.id, 'confirm-done');
+  }
 }
 </script>
 
@@ -68,7 +83,7 @@ function formatDate(d: string | null) {
       class="done-toggle"
       :class="{ active: !!spot.done }"
       :aria-pressed="!!spot.done"
-      @click="spotsStore.setDone(spot.id, !spot.done)"
+      @click="onToggleDone"
     >
       <template v-if="spot.done">
         <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" /> Gemacht

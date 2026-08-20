@@ -148,6 +148,10 @@ onMounted(async () => {
   // oben, kein zweites Hervorhebungs-System (siehe hashHighlight.ts).
   const hashId = hashHighlightId(route.hash, 'spot');
   if (hashId != null) highlightedIds.value.add(hashId);
+  // #106: Rücksprung aus dem Kalender (ScheduleView.vue's returnToCard()) nach dem Einplanen/
+  // Bestätigen einer Tour - analog zum bestehenden Spot-Hash oben.
+  const excursionHashId = hashHighlightId(route.hash, 'excursion');
+  if (excursionHashId != null) highlightedIds.value.add(excursionHashId);
   try {
     const [usersRes, travelRes, likesRes, commentsRes] = await Promise.all([
       api.get<User[]>(`/trips/${tripId}/members`),
@@ -171,6 +175,10 @@ onMounted(async () => {
   if (hashId != null) {
     await nextTick();
     onFocusSpotFromMap(hashId);
+  }
+  if (excursionHashId != null) {
+    await nextTick();
+    onFocusExcursionFromMap(excursionHashId);
   }
 });
 
@@ -333,6 +341,20 @@ async function addSpotToExcursion(excursionId: number, spotId: number) {
     date: excursion.date ?? undefined,
     spot_ids: [...excursion.spot_ids, spotId],
   });
+}
+
+// #106: Gegenstück zu addSpotToExcursion oben, für SpotCard.vue's "Tour zuordnen"-Dropdown
+// (TourAssignDropdown.vue) statt Drag&Drop - listet nur bereits bestehende Touren auf (arbeitet mit
+// dem Titel statt einer Id, siehe excursionForGroupTitle), legt aber, falls die Tour zwischen dem
+// Laden der Optionen und der Auswahl gelöscht wurde, defensiv eine neue mit diesem Titel an statt
+// den Klick stillschweigend zu verwerfen.
+async function assignSpotToTourTitle(spotId: number, title: string) {
+  const excursion = excursionForGroupTitle(title);
+  if (excursion) {
+    if (!excursion.spot_ids.includes(spotId)) await addSpotToExcursion(excursion.id, spotId);
+  } else {
+    await excursionsStore.create({ title, spot_ids: [spotId] });
+  }
 }
 
 // --- Spots ---
@@ -2089,6 +2111,8 @@ async function removeSpot(id: number) {
                 :like-count="spotsStore.likeCountFor(item.spot.id)"
                 :liked="spotsStore.likedByMe(item.spot.id, auth.user?.id)"
                 :comments="spotCommentItemsFor(item.spot.id)"
+                :group-mode="groupMode"
+                :tour-options="allTourTitles"
                 @edit="startEditSpot"
                 @remove="removeSpot"
                 @toggle-like="toggleSpotLike(item.spot.id)"
@@ -2097,7 +2121,7 @@ async function removeSpot(id: number) {
                 @open="onSpotCardOpen"
                 @close="onSpotCardClose"
                 @show-on-map="onSpotShowOnMap(item.spot)"
-                @assign-to-tour="groupMode = 'tours'"
+                @assign-tour="(title) => assignSpotToTourTitle(item.spot.id, title)"
               />
             </template>
           </TransitionGroup>

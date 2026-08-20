@@ -22,6 +22,12 @@ test.describe('Spots-Liste: "Gemacht"-Status-Filter', () => {
     });
     expect(doneRes.ok()).toBeTruthy();
     const doneSpot = await doneRes.json();
+    // #106: "gemacht" braucht seither ein verknüpftes Datum - erst einplanen, dann erst markieren
+    // (Reihenfolge ist seit #106 verpflichtend, siehe backend/routes/spots.ts's /done-Endpunkt).
+    const scheduleRes = await page.request.post('/api/schedule', {
+      data: { trip_id: tripId, date: '2026-01-02', title: doneTitle, spot_id: doneSpot.id },
+    });
+    expect(scheduleRes.ok()).toBeTruthy();
     const toggleRes = await page.request.post(`/api/spots/${doneSpot.id}/done`, { data: { done: true } });
     expect(toggleRes.ok()).toBeTruthy();
 

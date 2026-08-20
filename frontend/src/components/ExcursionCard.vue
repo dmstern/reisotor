@@ -138,6 +138,20 @@ const { dragging, ghostStyle, onPointerDown } = usePointerDrag({
   },
 });
 
+// #106: Status-Kette in Planung -> geplant -> gemacht statt (wie zuvor) eines von geplant/ungeplant
+// unabhängigen Flags - eine Tour darf nicht ohne Datum "gemacht" sein. Zurück auf "geplant" braucht
+// dafür kein neues Datum (setDone(false) direkt), der Übergang zu "gemacht" dagegen IMMER: öffnet
+// den Kalender zur Bestätigung des Tages (drawers.pendingSchedule mode 'confirm-done', ausgewertet
+// in ScheduleView.vue's finishPendingSchedule()) - auch wenn bereits ein geplantes Datum existiert,
+// da der tatsächliche Tag davon abweichen kann.
+function onToggleDone() {
+  if (props.excursion.done) {
+    excursionsStore.setDone(props.excursion.id, false);
+  } else {
+    drawers.startPendingSchedule('excursion', props.excursion.id, 'confirm-done');
+  }
+}
+
 // Drop-Zone fürs Zuordnen: ein Spot kann direkt auf diese Karte gezogen werden (SpotCard.vue's
 // "🎒 Auf Tour ziehen"-Anfasser), um ihn als Station hinzuzufügen – "Tour zuordnen" im Spot-Formular
 // (TourAssignPicker.vue, ExcursionsView.vue) bleibt daneben als schnellerer Weg ohne Reihenfolge
@@ -179,17 +193,26 @@ function onSpotDrop(event: DragEvent) {
       <SpotImageCollage v-if="showCollage" :images="fallbackImages" />
       <AppIcon v-else-if="!displayImage" class="placeholder" :size="35" :icon="SECTION_ICON_DEFS.excursions" group="categories" />
       <EditButton floating @click="emit('edit', excursion)" />
-      <span class="status" :class="{ planned: excursion.date }">
-        <template v-if="!excursion.date">In Planung</template>
-        <template v-else>
-          <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="actions" /> {{ statusDateLabel
+      <!-- #106: EIN gemeinsames Datums-/Status-Badge statt zweier unabhängiger Chips (das alte
+           separate "Gemacht"-Badge entfällt) - Text/Icon hängen vom Status ab (in Planung/geplant/
+           gemacht). "excursion.done && !excursion.date" ist der Fallback für bereits vor #106 als
+           "gemacht" markierte Bestandsdaten ohne verknüpften Termin (kein Backfill möglich, da der
+           tatsächliche Tag nicht rekonstruierbar ist). -->
+      <span class="status" :class="{ planned: excursion.date && !excursion.done, 'status-done': excursion.done }">
+        <template v-if="excursion.done && excursion.date">
+          <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" /> Gemacht am {{ statusDateLabel
           }}<template v-if="dayWeather">
             · <WeatherIcon :code="dayWeather.weatherCode" :size="14" /> {{ Math.round(dayWeather.tempMax) }}°</template
           >
         </template>
-      </span>
-      <span v-if="excursion.done" class="status status-done">
-        <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" /> Gemacht
+        <template v-else-if="excursion.done"><AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" /> Gemacht</template>
+        <template v-else-if="excursion.date">
+          <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="actions" /> Geplant für {{ statusDateLabel
+          }}<template v-if="dayWeather">
+            · <WeatherIcon :code="dayWeather.weatherCode" :size="14" /> {{ Math.round(dayWeather.tempMax) }}°</template
+          >
+        </template>
+        <template v-else>In Planung</template>
       </span>
     </div>
     <div class="body">
@@ -223,7 +246,7 @@ function onSpotDrop(event: DragEvent) {
           class="done-toggle"
           :class="{ active: !!excursion.done }"
           :aria-pressed="!!excursion.done"
-          @click.stop="excursionsStore.setDone(excursion.id, !excursion.done)"
+          @click.stop="onToggleDone"
         >
           <template v-if="excursion.done">
             <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" /> Gemacht
@@ -374,16 +397,8 @@ function onSpotDrop(event: DragEvent) {
   color: var(--color-text-muted);
 }
 
-.status.planned {
-  color: var(--color-success);
-}
-
-/* Zweiter Status-Chip für "gemacht", unabhängig vom Planungs-Status oben - unten statt oben
-   positioniert (dieselbe Idee wie SpotCard.vue's .status, nur dort aus Platzgründen fürs
-   Planungs-Badge selbst gebraucht), damit beide Chips gleichzeitig sichtbar bleiben können. */
+.status.planned,
 .status.status-done {
-  top: auto;
-  bottom: 8px;
   color: var(--color-success);
 }
 

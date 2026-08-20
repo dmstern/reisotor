@@ -42,7 +42,7 @@ import { endOfWeek, startOfWeek, toLocalDateString, formatDate as formatDateShar
 // statt in einer kaum bedienbaren Schublade – standalone (per Route-Prop gesetzt) reserviert dafür
 // wie jede andere Seite unten Platz für eine unten fixierte mobile NavBar (siehe .page-Pendant in
 // style.css; im Schubladen-Kontext übernimmt das stattdessen Drawer.vue's eigenes Scroll-Panel).
-defineProps<{ standalone?: boolean }>();
+const props = defineProps<{ standalone?: boolean }>();
 const router = useRouter();
 const tripStore = useTripStore();
 const trip = computed(() => tripStore.currentTrip);
@@ -565,22 +565,57 @@ const selectedDateWeatherEntries = computed(() => (selectedDate.value ? weatherE
 
 // Klick-Alternative zum Drag-Einplanen (ExcursionCard.vue/SpotCard.vue's 📅-Anfasser als Button):
 // wartet ein Einplanen-Vorhaben (drawers.pendingSchedule, per Klick auf den Anfasser gesetzt), löst
-// der nächste Tages-Klick es auf, statt nur den Tag auszuwählen.
+// der nächste Tages-Klick es auf, statt nur den Tag auszuwählen. mode 'confirm-done' (#106) setzt
+// danach zusätzlich den "gemacht"-Status, siehe finishPendingSchedule.
 function selectDay(date: string) {
   selectedDate.value = date;
   const pending = drawers.pendingSchedule;
   if (!pending) return;
+  void finishPendingSchedule(pending, date);
+}
+
+async function finishPendingSchedule(
+  pending: { kind: 'excursion' | 'spot'; id: number; mode: 'plan' | 'confirm-done' },
+  date: string,
+) {
   if (pending.kind === 'excursion') {
-    excursionsStore.setDate(pending.id, date);
+    await excursionsStore.setDate(pending.id, date);
+    if (pending.mode === 'confirm-done') await excursionsStore.setDone(pending.id, true);
   } else {
     // Spot direkt einplanen: legt einen mit dem Spot verknüpften Termin an (statt wie früher
     // einen unsichtbaren Ein-Spot-Ausflug), siehe stores/schedule.ts.
     const spot = spotsStore.spots.find((s) => s.id === pending.id);
     if (spot && tripStore.currentTripId != null) {
-      scheduleStore.create({ trip_id: tripStore.currentTripId, date, title: spot.title, spot_id: spot.id });
+      if (pending.mode === 'confirm-done') {
+        await scheduleStore.setSpotDate(pending.id, tripStore.currentTripId, spot.title, date);
+        await spotsStore.setDone(pending.id, true);
+      } else {
+        await scheduleStore.create({ trip_id: tripStore.currentTripId, date, title: spot.title, spot_id: spot.id });
+      }
     }
   }
   drawers.clearPendingSchedule();
+  returnToCard(pending.kind, pending.id);
+}
+
+// Abbrechen-Button im Banner unten (#106: sowohl beim spontanen Einplanen als auch beim
+// Kalender-Bestätigungs-Flow für "gemacht" muss sich der Vorgang ohne Änderung abbrechen lassen).
+function cancelPendingSchedule() {
+  const pending = drawers.pendingSchedule;
+  if (!pending) return;
+  drawers.clearPendingSchedule();
+  returnToCard(pending.kind, pending.id);
+}
+
+// #106: nach dem Einplanen/Bestätigen (oder Abbrechen) zurück zur Karten-Ansicht mit dem jeweiligen
+// Spot/der jeweiligen Tour, statt (v. a. mobil, wo der Kalender eine eigenständige Seite ist, siehe
+// standalone-Prop) im Kalender hängen zu bleiben. Nutzt denselben Querverweis-Hash-Mechanismus wie
+// sonstige Cross-View-Sprünge (siehe utils/hashHighlight.ts) - ExcursionsView.vue klappt/scrollt die
+// Karte darüber automatisch auf. Auf Desktop (Kalender nur eine Seitenschublade neben dem weiterhin
+// sichtbaren Hauptinhalt) ist kein Rücksprung nötig.
+function returnToCard(kind: 'excursion' | 'spot', id: number) {
+  if (!props.standalone) return;
+  router.push(`/excursions#${kind}-${id}`);
 }
 
 const pendingScheduleLabel = computed(() => {
@@ -785,8 +820,12 @@ function formatDate(date: string) {
     <h2>Kalender</h2>
 
     <div class="pending-schedule-banner" v-if="drawers.pendingSchedule">
-      <span><AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" /> Tippe einen Tag an, um „{{ pendingScheduleLabel }}“ einzuplanen</span>
-      <button type="button" class="secondary" @click="drawers.clearPendingSchedule()">Abbrechen</button>
+      <span v-if="drawers.pendingSchedule.mode === 'confirm-done'">
+        <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" /> Wähle den Tag, an dem „{{ pendingScheduleLabel }}“
+        {{ drawers.pendingSchedule.kind === 'excursion' ? 'gemacht' : 'besucht' }} wurde
+      </span>
+      <span v-else><AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" /> Tippe einen Tag an, um „{{ pendingScheduleLabel }}“ einzuplanen</span>
+      <button type="button" class="secondary" @click="cancelPendingSchedule">Abbrechen</button>
     </div>
 
     <div class="calendar-toolbar">
