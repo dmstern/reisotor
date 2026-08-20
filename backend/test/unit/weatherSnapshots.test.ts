@@ -145,4 +145,119 @@ describe('recordWeatherSnapshots', () => {
     const stored = db.prepare('SELECT date FROM trip_weather_snapshots WHERE trip_id = ?').all(tripId);
     expect(stored).toEqual([]);
   });
+
+  // Regressionstest für #82: eine falsche/ungenaue Anfangs-Koordinate durfte vergangene
+  // Wetter-Snapshots nicht dauerhaft auf falschen Werten einfrieren, sobald der Ort später
+  // korrigiert wird.
+  describe('Wetter-Snapshots bei Orts-Änderung (Issue #82)', () => {
+    it('löscht gespeicherte Wetter-Snapshots und holt sie mit dem neuen Ort erneut, sobald sich lat/lng per PUT ändern', async () => {
+      const tripId = await createTrip({ start_date: isoDateInDays(-5), end_date: isoDateInDays(-1), lat: 50.0, lng: 10.0 });
+
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() =>
+          Promise.resolve(
+            mockOpenMeteoResponse([
+              { date: isoDateInDays(-5), code: 3, max: 14, min: 8, rain: 60 },
+              { date: isoDateInDays(-4), code: 3, max: 15, min: 9, rain: 60 },
+              { date: isoDateInDays(-3), code: 3, max: 14, min: 8, rain: 60 },
+              { date: isoDateInDays(-2), code: 3, max: 15, min: 9, rain: 60 },
+              { date: isoDateInDays(-1), code: 3, max: 14, min: 8, rain: 60 },
+            ]),
+          ),
+        ),
+      );
+      const { recordWeatherSnapshots } = await import('../../src/weatherSnapshots.js');
+      await recordWeatherSnapshots();
+
+      const beforeCorrection = db
+        .prepare('SELECT temp_max FROM trip_weather_snapshots WHERE trip_id = ?')
+        .all(tripId) as { temp_max: number }[];
+      expect(beforeCorrection).toHaveLength(5);
+      expect(beforeCorrection.every((r) => r.temp_max < 20)).toBe(true);
+
+      // Ort wird korrigiert (z.B. Neapel statt der ursprünglich ungenauen Koordinate) - die neue
+      // Antwort spiegelt die tatsächlichen, deutlich höheren Temperaturen wider.
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() =>
+          Promise.resolve(
+            mockOpenMeteoResponse([
+              { date: isoDateInDays(-5), code: 0, max: 35, min: 24, rain: 0 },
+              { date: isoDateInDays(-4), code: 0, max: 36, min: 25, rain: 0 },
+              { date: isoDateInDays(-3), code: 0, max: 34, min: 24, rain: 0 },
+              { date: isoDateInDays(-2), code: 0, max: 35, min: 25, rain: 0 },
+              { date: isoDateInDays(-1), code: 0, max: 36, min: 26, rain: 0 },
+            ]),
+          ),
+        ),
+      );
+      const update = await app.inject({
+        method: 'PUT',
+        url: `/api/trips/${tripId}`,
+        headers: { cookie },
+        payload: {
+          name: 'Test-Trip',
+          start_date: isoDateInDays(-5),
+          end_date: isoDateInDays(-1),
+          lat: 40.85,
+          lng: 14.27,
+        },
+      });
+      expect(update.statusCode).toBe(200);
+
+      // Der Refresh nach der Orts-Änderung läuft fire-and-forget im Hintergrund (siehe
+      // routes/trips.ts) - hier direkt erneut aufgerufen statt auf einen unbestimmten Zeitpunkt zu
+      // warten; da alte Zeilen bereits synchron in der Route gelöscht wurden, holt dieser Aufruf
+      // garantiert (erneut) alle Tage mit den korrigierten Werten.
+      const { refreshTripWeatherSnapshots } = await import('../../src/weatherSnapshots.js');
+      await refreshTripWeatherSnapshots(tripId);
+
+      const afterCorrection = db
+        .prepare('SELECT temp_max FROM trip_weather_snapshots WHERE trip_id = ? ORDER BY date')
+        .all(tripId) as { temp_max: number }[];
+      expect(afterCorrection).toHaveLength(5);
+      expect(afterCorrection.every((r) => r.temp_max >= 34)).toBe(true);
+    });
+
+    it('lässt gespeicherte Wetter-Snapshots unangetastet, wenn sich der Ort per PUT nicht ändert', async () => {
+      const tripId = await createTrip({ start_date: isoDateInDays(-3), end_date: isoDateInDays(-1), lat: 40.85, lng: 14.27 });
+
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() =>
+          Promise.resolve(
+            mockOpenMeteoResponse([
+              { date: isoDateInDays(-3), code: 0, max: 34, min: 24, rain: 0 },
+              { date: isoDateInDays(-2), code: 0, max: 35, min: 25, rain: 0 },
+              { date: isoDateInDays(-1), code: 0, max: 36, min: 26, rain: 0 },
+            ]),
+          ),
+        ),
+      );
+      const { recordWeatherSnapshots } = await import('../../src/weatherSnapshots.js');
+      await recordWeatherSnapshots();
+
+      const fetchMock = vi.fn();
+      vi.stubGlobal('fetch', fetchMock);
+
+      const update = await app.inject({
+        method: 'PUT',
+        url: `/api/trips/${tripId}`,
+        headers: { cookie },
+        payload: {
+          name: 'Umbenannt, aber gleicher Ort',
+          start_date: isoDateInDays(-3),
+          end_date: isoDateInDays(-1),
+          lat: 40.85,
+          lng: 14.27,
+        },
+      });
+      expect(update.statusCode).toBe(200);
+      expect(fetchMock).not.toHaveBeenCalled();
+
+      const stored = db.prepare('SELECT date FROM trip_weather_snapshots WHERE trip_id = ?').all(tripId);
+      expect(stored).toHaveLength(3);
+    });
+  });
 });
