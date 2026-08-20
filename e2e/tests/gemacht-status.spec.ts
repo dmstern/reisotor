@@ -145,7 +145,7 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
     expect(spot.done).toBe(0);
 
     await page.goto('/diary');
-    await page.getByRole('button', { name: '+ Neuer Eintrag' }).click();
+    await page.getByRole('button', { name: 'Neuer Eintrag' }).click();
     const modal = page.locator('.modal', { hasText: 'Neuer Tagebucheintrag' });
     await expect(modal.locator('input[type="date"]')).toHaveValue(today);
 

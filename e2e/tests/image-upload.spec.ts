@@ -12,7 +12,7 @@ test('Spot-Formular: Bild lässt sich direkt hochladen statt nur per URL zu verl
   const spotTitle = `Café ${marker}`;
 
   await page.goto('/excursions');
-  await page.getByRole('button', { name: '+ Neuer Spot' }).click();
+  await page.getByRole('button', { name: 'Neuer Spot' }).click();
 
   const modal = page.locator('.modal', { hasText: 'Neuer Spot' });
   await modal.locator('input[placeholder="Titel"]').fill(spotTitle);

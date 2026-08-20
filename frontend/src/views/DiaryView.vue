@@ -488,7 +488,7 @@ async function removeComment(id: number) {
   <div class="page" v-if="!loading">
     <div class="header">
       <h1>Tagebuch</h1>
-      <button @click="openNewForm">+ Neuer Eintrag</button>
+      <button @click="openNewForm"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Neuer Eintrag</button>
     </div>
 
     <Modal :model-value="showForm" title="Neuer Tagebucheintrag" full-height @update:model-value="(v) => !v && closeForm()">
@@ -517,7 +517,7 @@ async function removeComment(id: number) {
         <legend>
           <button type="button" class="picker-toggle" :aria-expanded="showExcursionPicker" @click="showExcursionPicker = !showExcursionPicker">
             <span><AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="14" group="navigation" /> Touren zuordnen<span v-if="form.excursion_ids.length" class="picker-count"> ({{ form.excursion_ids.length }} ausgewählt)</span></span>
-            <span class="caret">{{ showExcursionPicker ? '▾' : '▸' }}</span>
+            <AppIcon :icon="ACTION_ICONS.chevronDown" :size="14" group="actions" class="caret" :class="{ closed: !showExcursionPicker }" />
           </button>
         </legend>
         <template v-if="showExcursionPicker">
@@ -532,7 +532,7 @@ async function removeComment(id: number) {
         <legend>
           <button type="button" class="picker-toggle" :aria-expanded="showSpotPicker" @click="showSpotPicker = !showSpotPicker">
             <span><AppIcon :icon="FORM_FIELD_ICONS.location" :size="14" group="formFields" /> Spots zuordnen<span v-if="pickedSpotIds.size" class="picker-count"> ({{ pickedSpotIds.size }} ausgewählt)</span></span>
-            <span class="caret">{{ showSpotPicker ? '▾' : '▸' }}</span>
+            <AppIcon :icon="ACTION_ICONS.chevronDown" :size="14" group="actions" class="caret" :class="{ closed: !showSpotPicker }" />
           </button>
         </legend>
         <template v-if="showSpotPicker">
@@ -665,7 +665,7 @@ async function removeComment(id: number) {
           <legend>
             <button type="button" class="picker-toggle" :aria-expanded="editShowExcursionPicker" @click="editShowExcursionPicker = !editShowExcursionPicker">
               <span><AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="14" group="navigation" /> Touren zuordnen<span v-if="editForm.excursion_ids.length" class="picker-count"> ({{ editForm.excursion_ids.length }} ausgewählt)</span></span>
-              <span class="caret">{{ editShowExcursionPicker ? '▾' : '▸' }}</span>
+              <AppIcon :icon="ACTION_ICONS.chevronDown" :size="14" group="actions" class="caret" :class="{ closed: !editShowExcursionPicker }" />
             </button>
           </legend>
           <template v-if="editShowExcursionPicker">
@@ -680,7 +680,7 @@ async function removeComment(id: number) {
           <legend>
             <button type="button" class="picker-toggle" :aria-expanded="editShowSpotPicker" @click="editShowSpotPicker = !editShowSpotPicker">
               <span><AppIcon :icon="FORM_FIELD_ICONS.location" :size="14" group="formFields" /> Spots zuordnen<span v-if="editPickedSpotIds.size" class="picker-count"> ({{ editPickedSpotIds.size }} ausgewählt)</span></span>
-              <span class="caret">{{ editShowSpotPicker ? '▾' : '▸' }}</span>
+              <AppIcon :icon="ACTION_ICONS.chevronDown" :size="14" group="actions" class="caret" :class="{ closed: !editShowSpotPicker }" />
             </button>
           </legend>
           <template v-if="editShowSpotPicker">
@@ -762,6 +762,9 @@ async function removeComment(id: number) {
   width: 100%;
   background: none;
   border: none;
+  /* Gleiches Muster/derselbe Fix wie ExcursionsView.vue's .tracks-toggle/.filter-toggle-row (#139) -
+     der globale button-Selektor überschreibt sonst mit seinem Grund-Schatten. */
+  box-shadow: none;
   padding: 4px;
   margin: 0;
   font: inherit;
@@ -778,6 +781,11 @@ async function removeComment(id: number) {
 
 .caret {
   flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.caret.closed {
+  transform: rotate(-90deg);
 }
 
 .excursion-option {

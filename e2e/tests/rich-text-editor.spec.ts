@@ -16,7 +16,7 @@ test('creating a note with the WYSIWYG editor renders formatting, and a pre-exis
   await expect(legacyCard).toBeVisible();
   await expect(legacyCard.locator('.content')).toContainText('Notfallnummer Portugal: 112.');
 
-  await page.getByRole('button', { name: '+ Neue Notiz' }).click();
+  await page.getByRole('button', { name: 'Neue Notiz' }).click();
   const editor = page.locator('.modal .richtext-content[contenteditable="true"]');
   await editor.click();
   // Formatierung EIN-/AUSschalten vor dem Tippen (statt Text zu tippen und danach per Ctrl+A zu

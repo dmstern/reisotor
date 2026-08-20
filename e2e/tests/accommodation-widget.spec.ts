@@ -21,7 +21,7 @@ test.describe('Unterkunft-Spot: Aktionen, die für eine Unterkunft keinen Sinn e
     const title = `Testunterkunft ${Date.now()}`;
 
     await page.goto('/excursions');
-    await page.getByRole('button', { name: '+ Neuer Spot' }).click();
+    await page.getByRole('button', { name: 'Neuer Spot' }).click();
     const modal = page.locator('.modal', { hasText: 'Neuer Spot' });
     await modal.getByPlaceholder('Titel').fill(title);
     await modal.getByPlaceholder('Kategorie (optional, z. B. Restaurant – oder eigene erstellen)').fill('Unterkunft');

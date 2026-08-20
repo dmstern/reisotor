@@ -12,6 +12,7 @@ import DeleteButton from '../components/DeleteButton.vue';
 import TripMembersDialog from '../components/TripMembersDialog.vue';
 import AppIcon from '../components/AppIcon.vue';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
+import { ACTION_ICONS } from '../utils/actionIcons';
 
 const router = useRouter();
 const tripStore = useTripStore();
@@ -40,7 +41,9 @@ function openMembers(trip: Trip) {
   <div class="page">
     <div class="header">
       <h1>Meine Urlaube</h1>
-      <button v-if="tripStore.trips.length > 0 && !tripCreationBlocked()" @click="openCreate">+ Neuer Urlaub</button>
+      <button v-if="tripStore.trips.length > 0 && !tripCreationBlocked()" @click="openCreate">
+        <AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Neuer Urlaub
+      </button>
       <p v-else-if="tripCreationBlocked()" class="restricted-hint">Eingeschränkter Modus - Nur ein Urlaub pro Nutzer</p>
     </div>
 

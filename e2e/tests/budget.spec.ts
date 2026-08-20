@@ -45,7 +45,7 @@ test('creates a shared budget pot with categories and the KPIs reflect the new e
   const { spent: spentBefore, target: grandTotalBefore } = await overviewValues(page);
 
   const potName = `E2E Geteilter Topf ${Date.now()}`;
-  await page.getByRole('button', { name: '+ Budget anlegen' }).click();
+  await page.getByRole('button', { name: 'Budget anlegen' }).click();
   await page.getByPlaceholder('Name (z. B. Souvenirs)').fill(potName);
   await page.getByRole('button', { name: 'Anlegen', exact: true }).click();
 
@@ -56,7 +56,7 @@ test('creates a shared budget pot with categories and the KPIs reflect the new e
   await potCard.locator('summary').click();
   await potCard.getByPlaceholder('Neue Kategorie').fill('E2E Testkategorie');
   await potCard.getByPlaceholder('Ziel €').fill('100');
-  await potCard.getByRole('button', { name: '+ Hinzufügen' }).click();
+  await potCard.getByRole('button', { name: 'Hinzufügen' }).click();
   await expect(potCard.locator('.category-row')).toHaveCount(1);
 
   await expect(async () => {
@@ -64,7 +64,7 @@ test('creates a shared budget pot with categories and the KPIs reflect the new e
   }).toPass();
 
   // Ausgabe von 40 € gegen diese Kategorie und diesen Topf eintragen.
-  await page.getByRole('button', { name: '+ Bezahlung eintragen' }).click();
+  await page.getByRole('button', { name: 'Bezahlung eintragen' }).click();
   await page.getByPlaceholder('Titel').fill('E2E Testausgabe');
   await page.locator('.add-form').getByPlaceholder('Kategorie', { exact: true }).fill('E2E Testkategorie');
   await page.locator('.add-form').getByPlaceholder('Betrag').fill('40');
@@ -87,7 +87,7 @@ test('a budget pot with only a target_amount (simple mode) shows a single meter 
   const { target: grandTotalBefore } = await overviewValues(page);
 
   const potName = `E2E Einfacher Topf ${Date.now()}`;
-  await page.getByRole('button', { name: '+ Budget anlegen' }).click();
+  await page.getByRole('button', { name: 'Budget anlegen' }).click();
   await page.getByPlaceholder('Name (z. B. Souvenirs)').fill(potName);
   await page.getByPlaceholder('Gesamtziel € (optional)').fill('250');
   await page.getByRole('button', { name: 'Anlegen', exact: true }).click();
@@ -121,7 +121,7 @@ test('a private budget pot stays invisible to another member, but shared expense
 
   // --- Privatsphäre: user1 legt privaten Topf + Kategorie + Ausgabe an, nur für sich selbst. ---
   const privatePotName = `E2E Privater Topf ${Date.now()}`;
-  await pageA.getByRole('button', { name: '+ Budget anlegen' }).click();
+  await pageA.getByRole('button', { name: 'Budget anlegen' }).click();
   await pageA.getByPlaceholder('Name (z. B. Souvenirs)').fill(privatePotName);
   await selectOptionByText(pageA.locator('.new-budget-form select').first(), 'Privat (nur eine Person sieht ihn)');
   await selectOptionByText(pageA.locator('.new-budget-form select').nth(1), E2E_USERNAME);
@@ -129,7 +129,7 @@ test('a private budget pot stays invisible to another member, but shared expense
   await expect(pageA.locator('.pot-card', { hasText: privatePotName })).toBeVisible();
 
   const privateExpenseTitle = `E2E Private Ausgabe ${Date.now()}`;
-  await pageA.getByRole('button', { name: '+ Bezahlung eintragen' }).click();
+  await pageA.getByRole('button', { name: 'Bezahlung eintragen' }).click();
   await pageA.getByPlaceholder('Titel').fill(privateExpenseTitle);
   await pageA.locator('.add-form').getByPlaceholder('Betrag').fill('20');
   await selectOptionByText(pageA.locator('.modal:visible .add-form select').nth(0), E2E_USERNAME);
@@ -148,7 +148,7 @@ test('a private budget pot stays invisible to another member, but shared expense
   const netBBefore = await netFor(pageB, E2E_USERNAME_2);
 
   const sharedExpenseTitle = `E2E Geteilte Ausgabe ${Date.now()}`;
-  await pageA.getByRole('button', { name: '+ Bezahlung eintragen' }).click();
+  await pageA.getByRole('button', { name: 'Bezahlung eintragen' }).click();
   await pageA.getByPlaceholder('Titel').fill(sharedExpenseTitle);
   await pageA.locator('.add-form').getByPlaceholder('Betrag').fill('10');
   await selectOptionByText(pageA.locator('.modal:visible .add-form select').nth(0), E2E_USERNAME);
@@ -164,7 +164,7 @@ test('a private budget pot stays invisible to another member, but shared expense
   }).toPass();
 
   // --- Ausgleich per Überweisung: user2 (Schuldner) zahlt user1 (Gläubiger) genau die Differenz. ---
-  await pageB.getByRole('button', { name: '+ Überweisung eintragen' }).click();
+  await pageB.getByRole('button', { name: 'Überweisung eintragen', exact: true }).click();
   await selectOptionByText(pageB.locator('.modal:visible .add-form select').nth(0), E2E_USERNAME_2);
   await selectOptionByText(pageB.locator('.modal:visible .add-form select').nth(1), E2E_USERNAME);
   await pageB.locator('.modal:visible .add-form').getByPlaceholder('Betrag').fill('5');
@@ -186,7 +186,7 @@ test('clicking a settlement suggestion pre-fills the transfer form', async ({ pa
 
   // Eine unbezahlt bleibende, ausschließlich von user1 getragene Ausgabe erzeugt garantiert einen
   // Ausgleichsvorschlag (unabhängig vom bereits vorhandenen Seed-/Testzustand).
-  await page.getByRole('button', { name: '+ Bezahlung eintragen' }).click();
+  await page.getByRole('button', { name: 'Bezahlung eintragen' }).click();
   await page.getByPlaceholder('Titel').fill(`E2E Suggestion-Ausgabe ${Date.now()}`);
   await page.locator('.add-form').getByPlaceholder('Betrag').fill('30');
   await selectOptionByText(page.locator('.modal:visible .add-form select').nth(0), E2E_USERNAME);

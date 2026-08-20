@@ -11,7 +11,7 @@ import { test, expect } from '@playwright/test';
 // Verhaltens selbst) - hier geht es nur um den eigentlichen Upload/Löschen-Ablauf.
 test('uploading and removing a file attachment on a note (via edit form)', async ({ page }) => {
   await page.goto('/notes');
-  await page.getByRole('button', { name: '+ Neue Notiz' }).click();
+  await page.getByRole('button', { name: 'Neue Notiz' }).click();
   const editor = page.locator('.modal .richtext-content[contenteditable="true"]');
   await editor.click();
   await editor.pressSequentially('E2E Anhang-Test-Notiz');

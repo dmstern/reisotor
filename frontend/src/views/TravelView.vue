@@ -425,7 +425,7 @@ function showDetailToOnMap() {
   <div class="page" v-if="!loading">
     <div class="header">
       <h1>Reise</h1>
-      <button @click="showForm = true">+ Neue Fahrt/Flug</button>
+      <button @click="showForm = true"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Neue Fahrt/Flug</button>
     </div>
 
     <p class="hint places-hint">
@@ -502,7 +502,8 @@ function showDetailToOnMap() {
           <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Der Abflug/Abfahrt-Standort konnte auch automatisch nicht ermittelt werden. Bitte tippe unten auf die Karte, um ihn manuell zu setzen.
         </p>
         <button type="button" class="secondary picker-toggle" @click="fromPickerOpen = !fromPickerOpen">
-          <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Abflug/Abfahrt manuell setzen {{ fromPickerOpen ? '▲' : '▼' }}
+          <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Abflug/Abfahrt manuell setzen
+          <AppIcon :icon="ACTION_ICONS.chevronDown" :size="12" group="actions" class="picker-caret" :class="{ open: fromPickerOpen }" />
         </button>
         <LocationPicker v-if="fromPickerOpen" v-model="manualFromPin" :center="pickerCenter" />
       </template>
@@ -511,7 +512,8 @@ function showDetailToOnMap() {
           <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Der Ankunft-Standort konnte auch automatisch nicht ermittelt werden. Bitte tippe unten auf die Karte, um ihn manuell zu setzen.
         </p>
         <button type="button" class="secondary picker-toggle" @click="toPickerOpen = !toPickerOpen">
-          <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Ankunft manuell setzen {{ toPickerOpen ? '▲' : '▼' }}
+          <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Ankunft manuell setzen
+          <AppIcon :icon="ACTION_ICONS.chevronDown" :size="12" group="actions" class="picker-caret" :class="{ open: toPickerOpen }" />
         </button>
         <LocationPicker v-if="toPickerOpen" v-model="manualToPin" :center="pickerCenter" />
       </template>
@@ -700,7 +702,8 @@ function showDetailToOnMap() {
             <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Der Abflug/Abfahrt-Standort konnte auch automatisch nicht ermittelt werden. Bitte tippe unten auf die Karte, um ihn manuell zu setzen.
           </p>
           <button type="button" class="secondary picker-toggle" @click="fromPickerOpenEdit = !fromPickerOpenEdit">
-            <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Abflug/Abfahrt manuell setzen {{ fromPickerOpenEdit ? '▲' : '▼' }}
+            <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Abflug/Abfahrt manuell setzen
+            <AppIcon :icon="ACTION_ICONS.chevronDown" :size="12" group="actions" class="picker-caret" :class="{ open: fromPickerOpenEdit }" />
           </button>
           <LocationPicker v-if="fromPickerOpenEdit" v-model="manualFromPinEdit" :center="pickerCenter" />
         </template>
@@ -709,7 +712,8 @@ function showDetailToOnMap() {
             <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Der Ankunft-Standort konnte auch automatisch nicht ermittelt werden. Bitte tippe unten auf die Karte, um ihn manuell zu setzen.
           </p>
           <button type="button" class="secondary picker-toggle" @click="toPickerOpenEdit = !toPickerOpenEdit">
-            <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Ankunft manuell setzen {{ toPickerOpenEdit ? '▲' : '▼' }}
+            <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Ankunft manuell setzen
+            <AppIcon :icon="ACTION_ICONS.chevronDown" :size="12" group="actions" class="picker-caret" :class="{ open: toPickerOpenEdit }" />
           </button>
           <LocationPicker v-if="toPickerOpenEdit" v-model="manualToPinEdit" :center="pickerCenter" />
         </template>
@@ -844,6 +848,16 @@ label {
   align-self: flex-start;
   padding: 6px 12px;
   font-size: 0.85rem;
+}
+
+.picker-caret {
+  margin-left: 4px;
+  opacity: 0.6;
+  transition: transform 0.15s ease;
+}
+
+.picker-caret.open {
+  transform: rotate(180deg);
 }
 
 .cards {
