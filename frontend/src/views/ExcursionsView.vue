@@ -12,6 +12,7 @@ import { useLiveSyncStore } from '../stores/liveSync';
 import { useExcursionsStore } from '../stores/excursions';
 import { useTracksStore } from '../stores/tracks';
 import { useTrackRecordingStore } from '../stores/trackRecording';
+import { useIconStyleStore } from '../stores/iconStyle';
 import { formatDateTime } from '../utils/dateFormat';
 import { formatDurationShort } from '../utils/trackGeometry';
 import { usePersistedRef } from '../composables/usePersistedRef';
@@ -59,6 +60,7 @@ const liveSync = useLiveSyncStore();
 const excursionsStore = useExcursionsStore();
 const tracksStore = useTracksStore();
 const trackRecording = useTrackRecordingStore();
+const iconStyle = useIconStyleStore();
 
 const tracksSectionOpen = ref(false);
 
@@ -487,6 +489,15 @@ function groupIconDef(category: string): IconDef {
   if (category === 'Unterkunft') return spotCategoryMeta('Unterkunft').tabler;
   return spotCategoryMeta(category).tabler;
 }
+// Farbe für die Gruppen-Icons in Kategorie-Überschrift/-Navigation (#142): Badges (CategoryChip.vue)
+// sind jetzt immer eingefärbt, das "Kategorie-Icons einfärben"-Setting steuert nur noch diese
+// beiden Stellen. Bei Touren-Gruppierung ist grp.category ein Ausflugs-/"Ohne Tour"-Titel, keine
+// echte Spot-Kategorie - spotCategoryMeta hätte dafür keine sinnvolle Farbe, deshalb dort bei der
+// neutralen Standardfarbe (currentColor, siehe AppIcon.vue-Default) bleiben.
+function groupIconColor(grp: { category: string; excursion: Excursion | null }): string | undefined {
+  if (groupMode.value === 'tours') return undefined;
+  return iconStyle.colorizeCategories ? spotCategoryMeta(grp.category).color : undefined;
+}
 
 // Sortierung/Gruppierung/Filter bleiben über localStorage auch nach einem Reload/erneuten Besuch
 // erhalten (siehe usePersistedRef.ts) - dieselbe "Orte"-Liste, die CLAUDE.md's Backlog meint (es
@@ -832,17 +843,49 @@ function updateCategoryNavUnderline() {
 // --category-nav-clearance auf .spots-col-body gebunden und ersetzt dort den bisherigen CSS-Fixwert.
 const categoryNavHeight = ref(44);
 let categoryNavResizeObserver: ResizeObserver | null = null;
+// Element-Referenz zusätzlich zum ResizeObserver oben gehalten (#144) - die Klick-Pfeile links/
+// rechts (Template) brauchen sie zum tatsächlichen Scrollen (scrollNavBy) sowie zur Sichtbarkeits-
+// Berechnung (updateNavArrows), beides von außerhalb dieser Setter-Funktion.
+const categoryNavEl = ref<HTMLElement | null>(null);
+const canScrollNavLeft = ref(false);
+const canScrollNavRight = ref(false);
+// 1px Toleranz statt exaktem Vergleich - scrollWidth/scrollLeft/clientWidth landen bei fraktionaler
+// Geräte-Pixel-Skalierung (z. B. 125%-Windows-Skalierung) nicht immer exakt auf demselben Wert,
+// obwohl visuell schon ganz durchgescrollt - ein exakter Vergleich ließe den jeweiligen Pfeil dann
+// dauerhaft (fälschlich) sichtbar.
+function updateNavArrows() {
+  const el = categoryNavEl.value;
+  if (!el) return;
+  canScrollNavLeft.value = el.scrollLeft > 1;
+  canScrollNavRight.value = el.scrollLeft + el.clientWidth < el.scrollWidth - 1;
+}
 function setCategoryNavRef(el: Element | ComponentPublicInstance | null) {
   categoryNavResizeObserver?.disconnect();
   categoryNavResizeObserver = null;
+  categoryNavEl.value = el instanceof HTMLElement ? el : null;
   if (el instanceof HTMLElement) {
     categoryNavResizeObserver = new ResizeObserver(() => {
       updateCategoryNavUnderline();
       categoryNavHeight.value = el.getBoundingClientRect().height;
+      updateNavArrows();
     });
     categoryNavResizeObserver.observe(el);
+    updateNavArrows();
   }
 }
+// Scrollt in Sprüngen von ~70% der sichtbaren Breite statt der vollen Breite - hält das letzte Item
+// vor dem Sprung teilweise sichtbar, macht den Zusammenhang zum nächsten Ausschnitt klarer (gleiches
+// Prinzip wie viele native Wisch-Karussells).
+function scrollNavBy(direction: 1 | -1) {
+  const el = categoryNavEl.value;
+  if (!el) return;
+  el.scrollBy({ left: direction * Math.round(el.clientWidth * 0.7), behavior: 'smooth' });
+}
+// Kategorienanzahl kann sich ändern (Gruppieren-Umschalter, Filter), ohne dass die Nav-Leiste
+// selbst ihre eigene Breite ändert - der ResizeObserver in setCategoryNavRef beobachtet nur DEREN
+// Box, nicht ihren Inhalt/scrollWidth, würde einen dadurch neu scrollbar gewordenen Zustand also
+// nicht von selbst erkennen.
+watch(spotGroups, () => nextTick(updateNavArrows));
 watch(activeCategory, () => {
   nextTick(() => {
     updateCategoryNavUnderline();
@@ -890,6 +933,28 @@ const expandedSpotId = ref<number | null>(null);
 // nur unnötig doppelt (und ggf. wechselwirkend) animieren.
 const transitioningSpotId = ref<number | null>(null);
 const supportsViewTransition = typeof document !== 'undefined' && 'startViewTransition' in document;
+// Nutzer-Feedback (nach dem #140-Fix, auf echtem iPhone/Safari beobachtet): gelegentlich bleibt eine
+// Spot-Karte nach dem Auf-/Zuklappen unsichtbar (aber weiterhin normal selektierbar/interaktiv) und
+// wird erst wieder korrekt gezeichnet, sobald sie aus dem sichtbaren Bereich heraus- und wieder
+// hineingescrollt wird - klassisches Symptom eines WebKit-"stale paint"-Bugs (Compositing-Layer wird
+// nach der view-transition-Umstrukturierung nicht neu gezeichnet, Layout/Hit-Testing sind aber schon
+// korrekt, sonst wäre die Karte nicht mehr anklickbar). Kein einzelner offizieller WebKit-Bugreport
+// dafür gefunden, aber dieselbe Bug-Klasse wie andere bekannte WebKit-Repaint-Aussetzer nach
+// Transform-/Layer-Änderungen - Standard-Workaround dafür ist ein erzwungener Repaint direkt nach
+// Abschluss der Transition (hier: kurzzeitige Opacity-Änderung auf dem scrollenden Listen-Container,
+// der WebKit zwingt, dessen Compositing-Layer neu zu zeichnen), analog zum verbreiteten
+// translateZ(0)/opacity-Kick-Trick gegen ähnliche Safari-Rendering-Aussetzer. Best effort wie der
+// restliche #140-Fix - ohne echtes Safari/iOS-Testgerät hier nicht verifizierbar.
+const spotsColBodyEl = ref<HTMLElement | null>(null);
+function nudgeRepaint() {
+  const el = spotsColBodyEl.value;
+  if (!el) return;
+  const prevOpacity = el.style.opacity;
+  el.style.opacity = '0.999';
+  requestAnimationFrame(() => {
+    el.style.opacity = prevOpacity;
+  });
+}
 function animateSpotExpand(targetId: number | null, mutate: () => void) {
   if (!supportsViewTransition || !isSheetOverlayMode.value) {
     mutate();
@@ -913,6 +978,7 @@ function animateSpotExpand(targetId: number | null, mutate: () => void) {
     });
     const settle = () => {
       transitioningSpotId.value = null;
+      nudgeRepaint();
     };
     Promise.race([transition.finished, new Promise((resolve) => setTimeout(resolve, 1000))]).finally(settle);
   } catch {
@@ -1630,6 +1696,7 @@ async function removeSpot(id: number) {
       </div>
       <div
         class="spots-col-body"
+        ref="spotsColBodyEl"
         :style="{ '--category-nav-clearance': `${categoryNavHeight}px` }"
         @pointerdown="onSheetBodyPointerDown"
       >
@@ -2030,32 +2097,50 @@ async function removeSpot(id: number) {
       </Modal>
 
       <div v-if="spotGroups.length > 1" class="category-nav-sentinel" :ref="setCategoryNavSentinelRef"></div>
-      <nav
-        class="category-nav"
-        :class="{ 'is-stuck': isCategoryNavStuck }"
-        v-if="spotGroups.length > 1"
-        aria-label="Zu Kategorie springen"
-        :ref="setCategoryNavRef"
-      >
+      <div class="category-nav-wrap" v-if="spotGroups.length > 1" :class="{ 'is-stuck': isCategoryNavStuck }">
+        <nav class="category-nav" aria-label="Zu Kategorie springen" :ref="setCategoryNavRef" @scroll="updateNavArrows">
+          <button
+            v-for="grp in spotGroups"
+            :key="grp.category"
+            type="button"
+            class="category-nav-item"
+            :class="{ active: activeCategory === grp.category }"
+            :aria-current="activeCategory === grp.category ? 'true' : undefined"
+            :ref="(el) => setNavItemRef(grp.category, el)"
+            @click="scrollToCategory(grp.category)"
+          >
+            <AppIcon class="category-nav-icon" :icon="grp.iconDef" group="categories" :color="groupIconColor(grp)" />
+            <span class="category-nav-label">{{ grp.category }}</span>
+          </button>
+          <span
+            class="category-nav-underline"
+            :style="{ transform: `translateX(${underlineLeft}px)`, width: `${underlineWidth}px` }"
+            aria-hidden="true"
+          ></span>
+        </nav>
+        <!-- Dezente Klick-Flächen statt eines sichtbaren nativen Scrollbalkens (#144, siehe
+             .category-nav's scrollbar-width/::-webkit-scrollbar-Reset im CSS) - nur sichtbar, wenn in
+             die jeweilige Richtung tatsächlich noch etwas zu scrollen ist (canScrollNavLeft/Right,
+             live nachgeführt per @scroll/ResizeObserver/spotGroups-Watcher im Script). -->
         <button
-          v-for="grp in spotGroups"
-          :key="grp.category"
+          v-if="canScrollNavLeft"
           type="button"
-          class="category-nav-item"
-          :class="{ active: activeCategory === grp.category }"
-          :aria-current="activeCategory === grp.category ? 'true' : undefined"
-          :ref="(el) => setNavItemRef(grp.category, el)"
-          @click="scrollToCategory(grp.category)"
+          class="category-nav-arrow left"
+          aria-label="Kategorien nach links scrollen"
+          @click="scrollNavBy(-1)"
         >
-          <AppIcon class="category-nav-icon" :icon="grp.iconDef" group="categories" />
-          <span class="category-nav-label">{{ grp.category }}</span>
+          <AppIcon :icon="ACTION_ICONS.scrollLeft" :size="16" group="actions" />
         </button>
-        <span
-          class="category-nav-underline"
-          :style="{ transform: `translateX(${underlineLeft}px)`, width: `${underlineWidth}px` }"
-          aria-hidden="true"
-        ></span>
-      </nav>
+        <button
+          v-if="canScrollNavRight"
+          type="button"
+          class="category-nav-arrow right"
+          aria-label="Kategorien nach rechts scrollen"
+          @click="scrollNavBy(1)"
+        >
+          <AppIcon :icon="ACTION_ICONS.scrollRight" :size="16" group="actions" />
+        </button>
+      </div>
 
       <section class="group category-group" v-for="grp in spotGroups" :key="grp.category">
         <UndoDeleteRow
@@ -2092,7 +2177,7 @@ async function removeSpot(id: number) {
           @close="expandedExcursionId = null"
         />
         <h3 v-else class="category-heading" :ref="(el) => setCategoryRef(grp.category, el)">
-          <AppIcon :icon="grp.iconDef" group="categories" /> {{ grp.category }}
+          <AppIcon :icon="grp.iconDef" group="categories" :color="groupIconColor(grp)" /> {{ grp.category }}
         </h3>
         <!-- Tour-Gruppe: eingerückte, per gebogener gestrichelter SVG-Linie verbundene vertikale Liste
              statt des normalen Karten-Grids (siehe .tour-station-wrap/.tour-station-line unten, #100)
@@ -2687,15 +2772,18 @@ async function removeSpot(id: number) {
     transition: none;
   }
 
-  /* .spots-col ist ab hier transparent (s. o.) - die sticky .category-nav liegt hier also direkt auf
-     dem Seitenhintergrund statt dem mobilen Bottom-Sheet, braucht deshalb --color-bg statt der
-     --color-surface-Vorgabe unten. Nachfahren-Selektor (.spots-col .category-nav) statt einfachem
-     .category-nav: gleiche Spezifität wie die spätere Basisregel unten hätte sonst die
+  /* .spots-col ist ab hier transparent (s. o.) - der sticky .category-nav-wrap liegt hier also direkt
+     auf dem Seitenhintergrund statt dem mobilen Bottom-Sheet, braucht deshalb --color-bg statt der
+     --color-surface-Vorgabe unten. Nachfahren-Selektor (.spots-col .category-nav-wrap) statt
+     einfachem .category-nav-wrap: gleiche Spezifität wie die spätere Basisregel unten hätte sonst die
      Deklarations-Reihenfolge im Stylesheet entscheiden lassen statt die @container-Bedingung – exakt
      die in DESIGN.md ("Abstände", .hint/.places-hint-Beispiel) beschriebene Falle. War genau die
-     Ursache von Issue #87 (Desktop bekam fälschlich --color-surface). */
-  .spots-col .category-nav {
+     Ursache von Issue #87 (Desktop bekam fälschlich --color-surface). --category-nav-bg (statt nur
+     background) wird hier mit umgeschaltet - die Pfeil-Verläufe (.category-nav-arrow) nutzen dieselbe
+     Variable, sonst wichen sie hier vom jetzt anderen Hintergrund ab (#144). */
+  .spots-col .category-nav-wrap {
     background: var(--color-bg);
+    --category-nav-bg: var(--color-bg);
   }
 
   /* .spots-col.collapsed/.full (höhere Spezifität als die einfache .spots-col-Regel oben, da zwei
@@ -3363,22 +3451,32 @@ async function removeSpot(id: number) {
    .spots-col dort komplett transparent (siehe dortiges background:none), ein weißes Rechteck mit
    90°-Ecken hätte scharf gegen den beigen Seitenhintergrund abgesetzt gewirkt – siehe DESIGN.md,
    Abschnitt "Eckenrundung", "nie ganz eckige Ecken"-Grundsatz. */
-.category-nav {
+/* Sticky-/Hintergrund-/Schatten-Zustand sitzt jetzt am Wrapper statt an .category-nav selbst (#144)
+   - .category-nav bleibt das reine Scroll-Element (overflow-x), die beiden Klick-Pfeile (Template)
+   sind absolut positionierte Geschwister innerhalb desselben Wrappers, brauchen also dieselbe
+   Sticky-Positionierung/denselben Hintergrund wie die Leiste, ohne selbst mitzuscrollen. */
+.category-nav-wrap {
   position: sticky;
-  top: 0;
+  /* -1px statt 0 + 1px zusätzliches Padding oben (kompensiert die Verschiebung, sichtbare Position
+     bleibt gleich): schließt eine von Nutzer:innen gemeldete 1-2px-Lücke, durch die beim Scrollen
+     kurz Spot-Inhalt hinter der Leiste durchschimmerte (#144) - bekanntes Sub-Pixel-Rundungsproblem
+     von position:sticky mit top:0 bei fraktionaler Geräte-Pixel-Skalierung, dieser 1px-Vorzieh-Trick
+     ist die gängige Lösung dafür. */
+  top: -1px;
+  padding-top: 1px;
   z-index: 2;
-  display: flex;
-  align-items: center;
-  overflow-x: auto;
-  overflow-y: hidden;
   margin-bottom: var(--space-3);
+  /* Eigene Variable statt direkt --color-surface, weil die Desktop-Regel weiter unten
+     (.spots-col .category-nav-wrap) sie auf --color-bg umschaltet - Pfeile/Verlauf unten nutzen
+     denselben Wert, damit beide Stellen bei einer künftigen Änderung nicht auseinanderlaufen. */
+  --category-nav-bg: var(--color-surface);
   /* Gleiche Farbe wie der dahinterliegende Untergrund statt eines eigenen Tons (vorher
      --color-primary-tint mit eigener Rundung) - sieht dadurch "transparent" aus wie die anderen
      Tab-/Nav-Leisten der App (NavBar.vue, TabBar.vue), muss aber wegen position:sticky tatsächlich
      blickdicht bleiben, sonst schiene der darunter wegscrollende Inhalt durch. Mobil liegt dahinter
      das Bottom-Sheet (.spots-col mit --color-surface, s. u.), nicht der Seitenhintergrund - erst ab
      der Desktop-Breakpoint-Regel unten (.spots-col wird dort background:none) passt --color-bg. */
-  background: var(--color-surface);
+  background: var(--category-nav-bg);
   border-bottom: 1px solid var(--color-border);
   transition: box-shadow 0.2s ease;
 }
@@ -3386,8 +3484,71 @@ async function removeSpot(id: number) {
 /* Sobald tatsächlich "stuck" (siehe Sentinel/IntersectionObserver oben): ein dezenter Schatten
    zeigt an, dass die Leiste jetzt über scrollendem Inhalt schwebt, statt (wie die frühere Pille) die
    Form komplett zu wechseln. */
-.category-nav.is-stuck {
+.category-nav-wrap.is-stuck {
   box-shadow: var(--shadow-sm);
+}
+
+.category-nav {
+  /* Bleibt selbst positioniert (früher implizit durch position:sticky, das jetzt auf dem Wrapper
+     sitzt) - .category-nav-underline unten ist ein absolut positioniertes Kind INNERHALB dieses
+     scrollenden Elements und muss mit dessen Inhalt mitscrollen (dieselbe Logik wie
+     activeEl.offsetLeft im Script, das ebenfalls relativ zu diesem Element misst). Wäre .category-nav
+     selbst nicht positioniert, würde die Unterstreichung stattdessen relativ zum sticky Wrapper
+     verankert und beim horizontalen Scrollen der Kategorien nicht mitwandern. */
+  position: relative;
+  display: flex;
+  align-items: center;
+  overflow-x: auto;
+  overflow-y: hidden;
+  /* Nativer Scrollbalken wirkte zusammen mit der gleitenden Unterstreichung (.category-nav-underline
+     unten) unruhig/doppelt gemoppelt (#144, Nutzer-Feedback) - die beiden Klick-Pfeile (Template)
+     übernehmen die Scrollbarkeit stattdessen sichtbar/bedienbar, ohne den permanent sichtbaren
+     Balken. scrollbar-width für Firefox, ::-webkit-scrollbar für Chrome/Safari - kein Standard-CSS
+     für beide zugleich. */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.category-nav::-webkit-scrollbar {
+  display: none;
+}
+
+/* Dezente Klick-Fläche mit Verlauf statt eines vollflächigen, hart abgesetzten Buttons (#144) - der
+   Farbverlauf zum jeweiligen Rand hin lässt das letzte teils sichtbare Kategorie-Label unter dem
+   Pfeil sanft ausblenden statt hart abzuschneiden. Volle Höhe des Wrappers (top/bottom:0) statt nur
+   Icon-Größe, damit die Klickfläche nicht winzig ausfällt. */
+.category-nav-arrow {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  width: 32px;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  padding: 0;
+  cursor: pointer;
+  color: var(--color-text-muted);
+}
+
+.category-nav-arrow:hover {
+  color: var(--color-primary-dark);
+}
+
+.category-nav-arrow.left {
+  left: 0;
+  justify-content: flex-start;
+  padding-left: 4px;
+  background: linear-gradient(to right, var(--category-nav-bg) 45%, transparent);
+}
+
+.category-nav-arrow.right {
+  right: 0;
+  justify-content: flex-end;
+  padding-right: 4px;
+  background: linear-gradient(to left, var(--category-nav-bg) 45%, transparent);
 }
 
 .category-nav-item {

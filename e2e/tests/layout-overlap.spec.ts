@@ -137,6 +137,11 @@ test.describe('Mobile: ExcursionCard-Löschen-Button überdeckt nicht den Status
     await page.getByRole('button', { name: 'Touren' }).click();
     const card = page.locator('.excursion-card', { hasText: excursion.title });
     await expect(card).toBeVisible();
+    // .card-delete/.card-edit sind seit #143 (analog zu SpotCard.vue) erst in der aufgeklappten
+    // Karte sichtbar - vorher überlagerte das Status-Badge bei langem Text den Bearbeiten-Button
+    // permanent, nicht nur im expandierten Zustand.
+    await card.locator('h3').click();
+    await expect(card).toHaveClass(/expanded/);
     const statusChip = card.locator('.status');
     const deleteBtn = card.locator('.card-delete');
     // Scrollt gezielt die beiden zu prüfenden Elemente (nicht nur die - ggf. höher als der

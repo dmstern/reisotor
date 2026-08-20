@@ -157,6 +157,10 @@ test.describe('Touren-Reihenfolge-Editor: Reihenfolge + Mehrfachbesuch direkt in
     await tourCard.locator('.card-action-btn', { hasText: 'Auf Karte anzeigen' }).click();
     await expect(page.locator('.focus-banner', { hasText: tourTitle })).toBeVisible();
 
+    // Bearbeiten-/Löschen-Buttons sind erst in der aufgeklappten Karte sichtbar (#143, analog zu
+    // SpotCard.vue) - Klick auf den Titel klappt sie auf, bevor der Button erreichbar ist.
+    await tourCard.locator('h3').click();
+    await expect(tourCard).toHaveClass(/expanded/);
     await tourCard.getByRole('button', { name: 'Bearbeiten' }).click();
     const editModal = page.locator('.modal', { hasText: 'Tour bearbeiten' });
     await expect(editModal.locator('.planned-row .spot-title')).toHaveText([
