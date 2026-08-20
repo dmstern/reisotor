@@ -46,6 +46,7 @@ const visible = defineModel<boolean>('visible', { default: false });
   padding: 0;
   background: transparent;
   border: none;
+  box-shadow: none;
   color: var(--color-text-muted);
   display: flex;
   align-items: center;
@@ -56,6 +57,7 @@ const visible = defineModel<boolean>('visible', { default: false });
 
 .toggle-visibility:hover {
   background: transparent;
+  box-shadow: none;
   color: var(--color-text);
 }
 </style>
