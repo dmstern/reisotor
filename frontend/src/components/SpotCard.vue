@@ -419,11 +419,13 @@ function onToggleDone() {
 }
 
 /* Eigene Rundung statt overflow:hidden auf .spot-card: eine eckige .image würde sonst nicht zu den
-   abgerundeten Kartenecken passen - overflow:hidden auf der Card selbst würde das zwar auch lösen,
-   aber gleichzeitig die .new-highlight-Outline-Markierung (style.css) abschneiden, die auf demselben
-   Element sitzt (Outline liegt außerhalb der Border-Box und wird vom eigenen overflow:hidden
-   mitgeclippt). Nur die oberen Ecken gerundet, da .image hier standardmäßig oben sitzt (Spalten-
-   Layout); die Kompakt-Zeilenansicht unten rundet stattdessen die linken Ecken. */
+   abgerundeten Kartenecken passen. .image sitzt außerdem selbst randlos (kein Abstand zur
+   Kartenkante) und deckt damit ohne Vorschaubild bereits jede .new-highlight-Markierung (style.css)
+   ab, die auf demselben Element sitzt - das ::after-Overlay dort liegt deshalb bewusst ÜBER allen
+   normalen Kind-Elementen statt (wie früher) als eigener box-shadow direkt auf der Karte, sonst
+   würde .image den Rahmen entlang der Bild-Kanten unsichtbar machen (#169). Nur die oberen Ecken
+   gerundet, da .image hier standardmäßig oben sitzt (Spalten-Layout); die Kompakt-Zeilenansicht unten
+   rundet stattdessen die linken Ecken. */
 .image {
   height: 120px;
   background: var(--color-primary-tint) center/cover no-repeat;
