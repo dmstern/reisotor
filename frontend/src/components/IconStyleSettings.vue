@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { useIconStyleStore, ICON_GROUP_OPTIONS, type IconStyle, type IconVariant, type IconGroup } from '../stores/iconStyle';
+import {
+  useIconStyleStore,
+  ICON_GROUP_OPTIONS,
+  type IconStyle,
+  type IconVariant,
+  type ConfigurableIconGroup,
+} from '../stores/iconStyle';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
@@ -22,15 +28,15 @@ const DEMO_ICON = SECTION_ICON_DEFS.calendar;
 // forceStyle/forceVariant sorgen dafür, dass jede Option IMMER ihre eigene Darstellung zeigt
 // (unabhängig vom aktuell aktiven Wert) - gleiches Prinzip wie die große Vorschau oben.
 const STYLE_OPTIONS = [
-  { value: 'emoji', label: 'Emoji', icon: DEMO_ICON, iconGroup: 'navigation' as IconGroup, forceStyle: 'emoji' as IconStyle },
-  { value: 'icons', label: 'Symbole', icon: DEMO_ICON, iconGroup: 'navigation' as IconGroup, forceStyle: 'icons' as IconStyle },
+  { value: 'emoji', label: 'Emoji', icon: DEMO_ICON, iconGroup: 'navigation' as ConfigurableIconGroup, forceStyle: 'emoji' as IconStyle },
+  { value: 'icons', label: 'Symbole', icon: DEMO_ICON, iconGroup: 'navigation' as ConfigurableIconGroup, forceStyle: 'icons' as IconStyle },
 ];
 const VARIANT_OPTIONS = [
   {
     value: 'outline',
     label: 'Outline',
     icon: DEMO_ICON,
-    iconGroup: 'navigation' as IconGroup,
+    iconGroup: 'navigation' as ConfigurableIconGroup,
     forceStyle: 'icons' as IconStyle,
     forceVariant: 'outline' as IconVariant,
   },
@@ -38,7 +44,7 @@ const VARIANT_OPTIONS = [
     value: 'filled',
     label: 'Gefüllt',
     icon: DEMO_ICON,
-    iconGroup: 'navigation' as IconGroup,
+    iconGroup: 'navigation' as ConfigurableIconGroup,
     forceStyle: 'icons' as IconStyle,
     forceVariant: 'filled' as IconVariant,
   },
@@ -61,7 +67,8 @@ const categoriesColorRelevant = computed(() => iconStyle.groups.categories === '
   <div class="card">
     <h2>Icons</h2>
     <p class="hint">
-      Emoji oder Symbole für Navigation, Kategorien und Formulare – dein Profilbild bleibt davon unberührt.
+      Emoji oder Symbole für Navigation, Kategorien und Wetter – dein Profilbild bleibt davon
+      unberührt. Formularfelder und Aktionen/Buttons zeigen immer Symbole.
     </p>
 
     <div class="icon-style-preview-row">
@@ -95,7 +102,7 @@ const categoriesColorRelevant = computed(() => iconStyle.groups.categories === '
           <SegmentedToggle
             :model-value="iconStyle.groups[group.value]"
             :options="STYLE_OPTIONS"
-            @update:model-value="(v) => iconStyle.setGroupOverride(group.value as IconGroup, v as IconStyle)"
+            @update:model-value="(v) => iconStyle.setGroupOverride(group.value as ConfigurableIconGroup, v as IconStyle)"
           />
         </div>
         <div v-if="iconStyle.groups[group.value] === 'icons'" class="group-override-row variant-row">
@@ -103,7 +110,7 @@ const categoriesColorRelevant = computed(() => iconStyle.groups.categories === '
           <SegmentedToggle
             :model-value="iconStyle.variants[group.value]"
             :options="VARIANT_OPTIONS"
-            @update:model-value="(v) => iconStyle.setGroupVariant(group.value as IconGroup, v as IconVariant)"
+            @update:model-value="(v) => iconStyle.setGroupVariant(group.value as ConfigurableIconGroup, v as IconVariant)"
           />
         </div>
         <label v-if="group.value === 'navigation'" class="colorize-row" :class="{ dimmed: !navColorRelevant }">

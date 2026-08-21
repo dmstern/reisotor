@@ -7,11 +7,13 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const authFile = path.join(__dirname, '..', '.auth', 'user.json');
 
 // Regressionstest für die Emoji↔Tabler-Icons-Einstellung (stores/iconStyle.ts,
-// components/AppIcon.vue, components/IconStyleSettings.vue): jeder Bereich (Navigation, Kategorien,
-// Wetter, Formularfelder, Aktionen) hat immer einen konkreten Wert (kein globaler Fallback mehr,
-// siehe Issue #74), Default ist überall Symbole außer bei Kategorien (Emoji). Ein
-// "Für alle Bereiche umstellen"-Bulk-Toggle sowie Einfärben-Checkboxen für Navigation/Wetter und ein
-// Reset-Button runden die Karte ab. Das Nutzer-Avatar bleibt davon in jedem Fall unberührt.
+// components/AppIcon.vue, components/IconStyleSettings.vue): jeder konfigurierbare Bereich
+// (Navigation, Kategorien, Wetter) hat immer einen konkreten Wert (kein globaler Fallback mehr,
+// siehe Issue #74), Default ist überall Symbole außer bei Kategorien (Emoji). Formularfelder und
+// Aktionen/Buttons sind seit #168 NICHT mehr konfigurierbar und zeigen immer Symbole (SVG), egal was
+// im gespeicherten Blob steht. Ein "Für alle Bereiche umstellen"-Bulk-Toggle sowie
+// Einfärben-Checkboxen für Navigation/Wetter und ein Reset-Button runden die Karte ab. Das
+// Nutzer-Avatar bleibt davon in jedem Fall unberührt.
 //
 // Seit #105 kontoweit über /api/users/me/icon-settings persistiert statt in localStorage - die
 // Helper unten sprechen direkt mit der API (page.request teilt sich die Session-Cookies mit page),
@@ -63,7 +65,7 @@ test.describe('Icon-Stil: Emoji/Symbole', () => {
     await api.put('/api/users/me/icon-settings', {
       data: {
         settings: {
-          groups: { navigation: 'emoji', categories: 'emoji', weather: 'emoji', formFields: 'emoji', actions: 'emoji' },
+          groups: { navigation: 'emoji', categories: 'emoji', weather: 'emoji' },
         },
       },
     });
@@ -108,12 +110,12 @@ test.describe('Icon-Stil: Emoji/Symbole', () => {
     await iconsCard.locator('.all-groups-row .segmented-option', { hasText: 'Emoji' }).click();
     await expect
       .poll(async () => Object.values((await getIconSettings(page)).groups ?? {}))
-      .toEqual(['emoji', 'emoji', 'emoji', 'emoji', 'emoji']);
+      .toEqual(['emoji', 'emoji', 'emoji']);
 
     await iconsCard.locator('.all-groups-row .segmented-option', { hasText: 'Symbole' }).click();
     await expect
       .poll(async () => Object.values((await getIconSettings(page)).groups ?? {}))
-      .toEqual(['icons', 'icons', 'icons', 'icons', 'icons']);
+      .toEqual(['icons', 'icons', 'icons']);
   });
 
   test('Outline/Gefüllt ist pro Bereich einzeln einstellbar, nur sichtbar wenn der Bereich auf Symbole steht', async ({ page }) => {
@@ -166,7 +168,7 @@ test.describe('Icon-Stil: Emoji/Symbole', () => {
     expect(await avatar.locator('svg').count()).toBe(0);
 
     await putIconSettings(page, {
-      groups: { navigation: 'icons', categories: 'icons', weather: 'icons', formFields: 'icons', actions: 'icons' },
+      groups: { navigation: 'icons', categories: 'icons', weather: 'icons' },
     });
     await page.reload();
     // Kontrollcheck, dass die Einstellung diesmal tatsächlich griff (Nav-Icon jetzt ein SVG) -
@@ -193,6 +195,28 @@ test.describe('Icon-Stil: Emoji/Symbole', () => {
 
     const navRow = iconsCard.locator('.group-override-row', { hasText: 'Navigation & Dashboard' });
     await expect(navRow.locator('.segmented-option', { hasText: 'Symbole' })).toHaveClass(/active/);
+  });
+
+  test('Formularfelder/Aktionen sind nicht mehr konfigurierbar und zeigen immer Symbole (#168)', async ({ page }) => {
+    // Simuliert einen vor #168 gespeicherten Blob mit altem 'formFields'/'actions'-Eintrag auf
+    // Emoji - das Frontend ignoriert diese Werte jetzt und erzwingt SVG.
+    await putIconSettings(page, {
+      groups: { navigation: 'emoji', categories: 'emoji', weather: 'emoji', formFields: 'emoji', actions: 'emoji' },
+    });
+    await page.goto('/profile?tab=app');
+    const iconsCard = page.locator('.card', { hasText: 'Icons' });
+    await expect(iconsCard).toBeVisible();
+
+    // Keine Einstellungs-Zeilen mehr für diese beiden Bereiche.
+    await expect(iconsCard.locator('.group-override-row', { hasText: 'Formularfelder' })).toHaveCount(0);
+    await expect(iconsCard.locator('.group-override-row', { hasText: 'Aktionen & Buttons' })).toHaveCount(0);
+
+    // Der Reset-Button (group="actions") zeigt trotz gespeichertem 'emoji' ein SVG-Icon
+    // (AppIcon.vue setzt app-icon-tabler/-emoji unabhängig von einer per Aufrufer übergebenen
+    // class, siehe dortiger Kommentar zu den Root-Klassen).
+    const resetButton = iconsCard.locator('button', { hasText: 'Auf Standard-Einstellungen zurücksetzen' });
+    await expect(resetButton.locator('.app-icon-tabler')).toBeVisible();
+    expect(await resetButton.locator('.app-icon-emoji').count()).toBe(0);
   });
 
   test('"Icons in der Navigation einfärben" setzt eine Akzentfarbe auf das NavBar-Icon', async ({ page }) => {

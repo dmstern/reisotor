@@ -25,36 +25,43 @@ export type IconVariant = (typeof ICON_VARIANT_OPTIONS)[number]['value'];
 // bewusst KEINEN globalen Fallback-Wert mehr, jeder Bereich hat immer einen konkreten Wert (siehe
 // DEFAULT_GROUPS/groups unten) - ein "für alle Bereiche umstellen"-Aufruf (setAllGroups) ist nur
 // ein Bulk-Setter, kein eigener persistenter Zustand.
+//
+// #168: "Formularfelder" und "Aktionen & Buttons" sind bewusst NICHT (mehr) konfigurierbar -
+// Emoji statt SVG sah dort bei Interaktionselementen (Buttons, Dropdowns, Status-Labels) zu
+// behämmert aus. Diese beiden Bereiche werden unten in styleForGroup/styleVariantForGroup fest auf
+// 'icons'/'outline' erzwungen, statt hier als Einstellungs-Option zu erscheinen.
 export const ICON_GROUP_OPTIONS = [
   { value: 'navigation', label: 'Navigation & Dashboard' },
   { value: 'categories', label: 'Kategorien (Kalender, Spots, Reise, Kartenmarker)' },
   { value: 'weather', label: 'Wetter' },
-  { value: 'formFields', label: 'Formularfelder' },
-  { value: 'actions', label: 'Aktionen & Buttons' },
 ] as const;
-export type IconGroup = (typeof ICON_GROUP_OPTIONS)[number]['value'];
+export type ConfigurableIconGroup = (typeof ICON_GROUP_OPTIONS)[number]['value'];
+// Zusätzlich zu den konfigurierbaren Bereichen oben gibt es 'formFields'/'actions', die
+// AppIcon.vue-Aufrufstellen weiterhin als `group`-Prop übergeben, deren Stil aber fest auf SVG
+// steht (siehe styleForGroup/styleVariantForGroup unten) statt aus dem Store zu kommen.
+export type IconGroup = ConfigurableIconGroup | 'formFields' | 'actions';
+
+// Icon-Stil für die nicht (mehr) konfigurierbaren Bereiche - immer SVG, nie Emoji (#168).
+const FORCED_STYLE: IconStyle = 'icons';
+const FORCED_VARIANT: IconVariant = 'outline';
 
 const DEFAULT_VARIANT: IconVariant = 'outline';
 // Neue Standard-Einstellungen (Issue #74): überall Symbole außer bei Kategorien, die per Default
 // bei Emoji bleiben.
-const DEFAULT_GROUPS: Record<IconGroup, IconStyle> = {
+const DEFAULT_GROUPS: Record<ConfigurableIconGroup, IconStyle> = {
   navigation: 'icons',
   categories: 'emoji',
   weather: 'icons',
-  formFields: 'icons',
-  actions: 'icons',
 };
-const DEFAULT_VARIANTS: Record<IconGroup, IconVariant> = {
+const DEFAULT_VARIANTS: Record<ConfigurableIconGroup, IconVariant> = {
   navigation: DEFAULT_VARIANT,
   categories: DEFAULT_VARIANT,
   weather: DEFAULT_VARIANT,
-  formFields: DEFAULT_VARIANT,
-  actions: DEFAULT_VARIANT,
 };
 
 interface StoredIconSettings {
-  groups: Record<IconGroup, IconStyle>;
-  variants: Record<IconGroup, IconVariant>;
+  groups: Record<ConfigurableIconGroup, IconStyle>;
+  variants: Record<ConfigurableIconGroup, IconVariant>;
   navColored: boolean;
   colorizeWeather: boolean;
   colorizeCategories: boolean;
@@ -62,14 +69,16 @@ interface StoredIconSettings {
 
 // Validiert jeden Bereich einzeln statt das ganze gespeicherte Objekt zu verwerfen - deckt sowohl
 // ganz neue Nutzer:innen (noch nichts gespeichert) als auch Reste in einem älteren/kaputten Format
-// robust ab.
+// robust ab. Alte, vor #168 gespeicherte Blobs können noch 'formFields'/'actions'-Einträge
+// enthalten - die werden hier stillschweigend ignoriert, da ICON_GROUP_OPTIONS sie nicht mehr
+// auflistet.
 function sanitizePerGroup<T extends string>(
   value: unknown,
   validOptions: readonly { value: T }[],
-  defaults: Record<IconGroup, T>,
-): Record<IconGroup, T> {
-  const parsed = (value ?? {}) as Partial<Record<IconGroup, unknown>>;
-  const result = {} as Record<IconGroup, T>;
+  defaults: Record<ConfigurableIconGroup, T>,
+): Record<ConfigurableIconGroup, T> {
+  const parsed = (value ?? {}) as Partial<Record<ConfigurableIconGroup, unknown>>;
+  const result = {} as Record<ConfigurableIconGroup, T>;
   for (const { value: group } of ICON_GROUP_OPTIONS) {
     const candidate = parsed[group];
     result[group] = validOptions.some((o) => o.value === candidate) ? (candidate as T) : defaults[group];
@@ -78,8 +87,8 @@ function sanitizePerGroup<T extends string>(
 }
 
 export const useIconStyleStore = defineStore('iconStyle', () => {
-  const groups = ref<Record<IconGroup, IconStyle>>({ ...DEFAULT_GROUPS });
-  const variants = ref<Record<IconGroup, IconVariant>>({ ...DEFAULT_VARIANTS });
+  const groups = ref<Record<ConfigurableIconGroup, IconStyle>>({ ...DEFAULT_GROUPS });
+  const variants = ref<Record<ConfigurableIconGroup, IconVariant>>({ ...DEFAULT_VARIANTS });
   const navColoredRaw = ref(true);
   const colorizeWeatherRaw = ref(true);
   const colorizeCategoriesRaw = ref(true);
@@ -149,27 +158,31 @@ export const useIconStyleStore = defineStore('iconStyle', () => {
     }
   }
 
+  // 'formFields'/'actions' sind seit #168 nicht mehr konfigurierbar - dort immer SVG erzwingen,
+  // unabhängig davon, was ggf. noch aus einem alten gespeicherten Blob im Store steht.
   function styleForGroup(group: IconGroup): IconStyle {
+    if (group === 'formFields' || group === 'actions') return FORCED_STYLE;
     return groups.value[group];
   }
 
-  function setGroupOverride(group: IconGroup, value: IconStyle) {
+  function setGroupOverride(group: ConfigurableIconGroup, value: IconStyle) {
     groups.value = { ...groups.value, [group]: value };
     persist();
   }
 
   function setAllGroups(value: IconStyle) {
-    const next = {} as Record<IconGroup, IconStyle>;
+    const next = {} as Record<ConfigurableIconGroup, IconStyle>;
     for (const { value: group } of ICON_GROUP_OPTIONS) next[group] = value;
     groups.value = next;
     persist();
   }
 
   function styleVariantForGroup(group: IconGroup): IconVariant {
+    if (group === 'formFields' || group === 'actions') return FORCED_VARIANT;
     return variants.value[group];
   }
 
-  function setGroupVariant(group: IconGroup, value: IconVariant) {
+  function setGroupVariant(group: ConfigurableIconGroup, value: IconVariant) {
     variants.value = { ...variants.value, [group]: value };
     persist();
   }
