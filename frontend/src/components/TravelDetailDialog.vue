@@ -11,7 +11,7 @@ import FileAttachments from './FileAttachments.vue';
 import RichTextDisplay from './RichTextDisplay.vue';
 import AppIcon from './AppIcon.vue';
 
-// Eigenständige Komponente statt inline in TravelView.vue, da dieser Dialog auch von anderer Stelle
+// Eigenständige Komponente statt inline in TravelSection.vue, da dieser Dialog auch von anderer Stelle
 // geöffnet werden muss (TripMap.vue's Stationsliste, falls der Abflug-/Ankunftsort dort als
 // Ausflug-Station eingeplant ist) – gleiches Vorgehen wie
 // SpotDetailDialog.vue. Beide Seiten (Abflug/Ankunft) zeigen denselben

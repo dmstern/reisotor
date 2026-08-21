@@ -5,7 +5,8 @@ import { expectWithinViewport } from './helpers/layout';
 // utils/hashHighlight.ts): ein Querverweis-Klick soll nicht nur die Ziel-Ansicht öffnen, sondern
 // auch zum referenzierten Element scrollen und es farblich hervorheben (new-highlight-Klasse) –
 // hier am Beispiel des Kalender-Klicks auf einen mit Datum versehenen Reise-Eintrag
-// (ScheduleView.vue's openEntry(), Ziel: /travel#travel-<id>).
+// (ScheduleView.vue's openEntry(), Ziel seit #175: /excursions?group=travel#travel-<id> - Reise lebt
+// eingebettet in ExcursionsView.vue/TravelSection.vue statt einer eigenen Route).
 test('clicking a travel entry in the calendar jumps to and highlights the matching travel card', async ({
   page,
 }) => {
@@ -22,7 +23,7 @@ test('clicking a travel entry in the calendar jumps to and highlights the matchi
   await page.locator(`.day[data-date="${todayIso}"]`).click();
   await page.locator('.day-detail .items .item', { hasText: 'E2E Cross-Reference-Test-Flug' }).click();
 
-  await expect(page).toHaveURL(new RegExp(`/travel#travel-\\d+$`));
+  await expect(page).toHaveURL(new RegExp(`/excursions\\?group=travel#travel-\\d+$`));
   const travelCard = page.locator('.travel-card', { hasText: 'E2E Cross-Reference-Test-Flug' });
   await expect(travelCard).toBeVisible();
   await expect(travelCard).toHaveClass(/new-highlight/);

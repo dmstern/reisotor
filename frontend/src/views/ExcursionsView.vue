@@ -23,6 +23,7 @@ import SegmentedToggle from '../components/SegmentedToggle.vue';
 import SpotOrderPicker from '../components/SpotOrderPicker.vue';
 import UndoDeleteRow from '../components/UndoDeleteRow.vue';
 import TripMap from '../components/TripMap.vue';
+import TravelSection from '../components/TravelSection.vue';
 import Modal from '../components/Modal.vue';
 import Combobox from '../components/Combobox.vue';
 import FormField from '../components/FormField.vue';
@@ -144,6 +145,11 @@ function setCategoryNavSentinelRef(el: Element | ComponentPublicInstance | null)
 }
 
 onMounted(async () => {
+  // Deep-Link von DashboardView.vue's Reise-Kachel / notificationTarget.ts (analog zu ListenView.vue's
+  // ?tab=). groupMode ist persistiert (localStorage), ein Query-Param überschreibt das trotzdem
+  // gezielt - ein Klick auf die Kachel soll immer zur Reise-Ansicht führen, unabhängig davon, welche
+  // Gruppierung zuletzt aktiv war.
+  if (route.query.group === 'travel') groupMode.value = 'travel';
   markSeenForGroupMode(groupMode.value);
   // Querverweis-Sprung (z. B. aus dem Budget bei einem automatisch aus einer Unterkunft erzeugten
   // Ausgabe-Eintrag, siehe BudgetView.vue's autoSourceFor()) – dieselbe highlightedIds-Menge wie
@@ -504,21 +510,27 @@ function groupIconColor(grp: { category: string; excursion: Excursion | null }):
 // gibt keine eigene SpotsView, diese gruppierte/filterbare Liste hier ist die gemeinte Stelle).
 const sortMode = usePersistedRef<'alpha' | 'likes'>('reisotor-excursions-sort-mode', 'alpha');
 
-// Umschalter Kategorie/Touren (siehe spotGroups unten): gruppiert die Spots-Übersicht wahlweise
+// Umschalter Kategorie/Touren/Reise (siehe spotGroups unten): gruppiert die Spots-Übersicht wahlweise
 // nach Kategorie (Standard) oder nach Tour-Zugehörigkeit – letzteres zeigt einen Spot in JEDER Tour,
 // der er zugeordnet ist (mehrfach, da viele-zu-viele), untaggte Spots/abgeleitete Orte landen
-// gemeinsam in "Ohne Tour".
-const groupMode = usePersistedRef<'category' | 'tours'>('reisotor-excursions-group-mode', 'category');
+// gemeinsam in "Ohne Tour". 'travel' blendet stattdessen TravelSection.vue ein (#68: NavBar-Punkt
+// "Reise" entfällt, vollständig in diese Karten-View integriert - TravelSection bleibt technisch
+// vorerst ein eigenständiger, nur eingebetteter Abschnitt statt einer echten Formular-Verschmelzung
+// mit Touren, siehe Konzept-Kommentar in Issue #68/#175).
+const groupMode = usePersistedRef<'category' | 'tours' | 'travel'>('reisotor-excursions-group-mode', 'category');
 const UNASSIGNED_TOUR_GROUP = 'Ohne Tour';
 
-// Spots UND Touren (ideas) teilen sich diese eine Sicht, tracken in liveSync aber als zwei
-// getrennte Domänen. Nur die gerade aktive Gruppierung wird als gesehen markiert (initial in
-// onMounted unten, danach bei jedem Wechsel hier) - die jeweils andere behält ihren "neu"-Punkt
+// Spots, Touren (ideas) UND Reise (travel) teilen sich diese eine Sicht, tracken in liveSync aber
+// als getrennte Domänen. Nur die gerade aktive Gruppierung wird als gesehen markiert (initial in
+// onMounted unten, danach bei jedem Wechsel hier) - die jeweils anderen behalten ihren "neu"-Punkt
 // (siehe Gruppieren-Toggle weiter unten im Template), bis tatsächlich dorthin umgeschaltet wird;
 // sonst würde ein Wechsel auf "Touren" nie einen Punkt zeigen, weil 'ideas' schon beim bloßen
-// Öffnen der Seite unbesehen als gesehen gegolten hätte.
-function markSeenForGroupMode(mode: 'category' | 'tours') {
-  const domain = mode === 'tours' ? 'ideas' : 'spots';
+// Öffnen der Seite unbesehen als gesehen gegolten hätte. TravelSection.vue markiert 'travel' zwar
+// selbst beim eigenen onMounted (übernommen aus der früheren TravelView.vue), aber nur dann, wenn
+// es überhaupt gemountet ist (also groupMode bereits 'travel' ist) - dieser Fall greift hier
+// trotzdem mit, falls die Seite direkt mit ?group=travel geöffnet wird, bevor TravelSection mountet.
+function markSeenForGroupMode(mode: 'category' | 'tours' | 'travel') {
+  const domain = mode === 'tours' ? 'ideas' : mode === 'travel' ? 'travel' : 'spots';
   for (const id of liveSync.markSeen(domain)) highlightedIds.value.add(id);
 }
 
@@ -1707,7 +1719,7 @@ async function removeSpot(id: number) {
       <div id="map-focus-dock" class="map-focus-dock"></div>
       <div class="header">
         <h2>
-          {{ groupMode === 'tours' ? 'Touren' : 'Spots' }}
+          {{ groupMode === 'tours' ? 'Touren' : groupMode === 'travel' ? 'Reise' : 'Spots' }}
           <!-- Der frühere, immer sichtbare Erklärtext nahm spürbar Platz weg, v. a. auf mobile
                (Nutzer-Feedback) - jetzt hinter einem Info-Button versteckt, gleiches
                Popover-Muster (Backdrop + .picker-menu) wie die Kategorie-/Status-Filter unten statt
@@ -1748,12 +1760,17 @@ async function removeSpot(id: number) {
             :options="[
               { value: 'category', label: 'Spots', icon: FORM_FIELD_ICONS.category, iconGroup: 'formFields', dot: liveSync.hasUnseen('spots') },
               { value: 'tours', label: 'Touren', icon: SECTION_ICON_DEFS.excursions, iconGroup: 'navigation', dot: liveSync.hasUnseen('ideas') },
+              { value: 'travel', label: 'Reise', icon: SECTION_ICON_DEFS.travel, iconGroup: 'navigation', dot: liveSync.hasUnseen('travel') },
             ]"
           />
         </h2>
         <div class="header-actions">
           <button v-if="groupMode === 'category'" @click="showSpotForm = true"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Neuer Spot</button>
-          <button v-else class="secondary" @click="showExcursionForm = true"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Neue Tour</button>
+          <button v-else-if="groupMode === 'tours'" class="secondary" @click="showExcursionForm = true"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Neue Tour</button>
+          <!-- Kein eigener Hinzufügen-Button hier für 'travel' - TravelSection.vue bringt ihren
+               eigenen "+ Neue Fahrt/Flug"-Button mit (übernommen aus der früheren TravelView.vue),
+               damit die Formular-/Draft-Logik dort unangetastet bleibt (siehe #175). -->
+
           <!-- Zweiter Einstiegspunkt zum ⏺️/⏹️-Button auf TripMap.vue (Start dort mit Sichtbarkeits-
                Auswahl/Tour-Kopplung): der Karten-Button steckt in einer bereits vollen
                Button-Spalte, die auf Mobil beim Standard-Sheet-Zustand teils vom Bottom-Sheet
@@ -1833,6 +1850,10 @@ async function removeSpot(id: number) {
         </ul>
       </div>
 
+      <!-- Filter/Sortierung, Kategorie-Navi und die Spots-/Touren-Gruppenliste unten gelten nur für
+           die Gruppierungen "Spots"/"Touren" - im 'travel'-Modus rendert stattdessen TravelSection
+           weiter unten (siehe schließendes template dort). -->
+      <template v-if="groupMode !== 'travel'">
       <Modal :model-value="showExcursionForm" title="Neue Tour" full-height @update:model-value="(v) => !v && closeExcursionForm()">
         <form class="edit-form" @submit.prevent="addExcursion">
           <FormField icon="title" label="Titel">
@@ -2255,6 +2276,8 @@ async function removeSpot(id: number) {
         </p>
       </section>
       <p v-if="!spotGroups.length" class="empty">Noch keine Spots angelegt.</p>
+      </template>
+      <TravelSection v-else />
 
       <Modal
         :model-value="editingSpot !== null"

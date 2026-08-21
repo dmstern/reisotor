@@ -69,14 +69,17 @@ watch(() => liveSync.domainVersion.budget, load);
  *  aus Batch 3 nicht direkt editier-/löschbar – stattdessen springt man zur Ursprungssicht. Ein
  *  Unterkunft-Spot lebt seit der Verschmelzung (siehe Migrationskommentar in db/index.ts) in der
  *  normalen Spots-Sicht (/excursions) statt einer eigenen Seite, daher der Hash-Sprung dorthin
- *  (gleiches Muster wie /travel#travel-<id>, siehe hashHighlight.ts). */
+ *  (gleiches Muster wie /excursions?group=travel#travel-<id>, siehe hashHighlight.ts). Reise-Etappen
+ *  leben seit #175 ebenfalls eingebettet in /excursions (TravelSection.vue) statt einer eigenen
+ *  Route. */
 function autoSourceFor(expenseId: number): { label: string; path: string } | null {
   const accommodation = accommodations.value.find((a) => a.budget_expense_id === expenseId);
   if (accommodation) {
     return { label: 'Zur Unterkunft', path: `/excursions#spot-${accommodation.id}` };
   }
-  if (travelItems.value.some((t) => t.budget_expense_id === expenseId)) {
-    return { label: 'Zur Reise', path: '/travel' };
+  const travelItem = travelItems.value.find((t) => t.budget_expense_id === expenseId);
+  if (travelItem) {
+    return { label: 'Zur Reise', path: `/excursions?group=travel#travel-${travelItem.id}` };
   }
   return null;
 }

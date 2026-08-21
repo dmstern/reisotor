@@ -3,7 +3,7 @@ import type { TravelRole } from '../api/types';
 import type { IconDef } from './icon';
 
 // Zentrale Stelle für Label/Icon der Reise-Rolle (Anreise/Abreise/Weiterreise) – wird sowohl im
-// Formular (TravelView.vue) als auch als Badge auf der Karte/Card verwendet.
+// Formular (TravelSection.vue) als auch als Badge auf der Karte/Card verwendet.
 export const TRAVEL_ROLE_META: Record<TravelRole, { icon: string; tabler: IconDef; label: string; hint: string }> = {
   arrival: {
     icon: '🛫',

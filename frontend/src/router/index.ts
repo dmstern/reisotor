@@ -59,7 +59,10 @@ const router = createRouter({
     // Drawer-Chrome. Touren haben seit ihrer Verschmelzung in die Spots-Sicht (/excursions) keine
     // eigene Route mehr.
     { path: '/calendar', name: 'calendar', component: ScheduleView, props: { standalone: true } },
-    { path: '/travel', name: 'travel', component: () => import('../views/TravelView.vue') },
+    // Reise (früher eigene Route+View) lebt seit #175 als TravelSection.vue eingebettet in
+    // ExcursionsView.vue (analog zum Packliste/Einkaufsliste/ToDo-Muster oben) - Redirect statt
+    // Entfernen, damit alte Lesezeichen/Push-Benachrichtigungs-Links weiterhin funktionieren.
+    { path: '/travel', redirect: '/excursions?group=travel' },
     { path: '/budget', name: 'budget', component: () => import('../views/BudgetView.vue') },
     { path: '/notes', name: 'notes', component: () => import('../views/NotesView.vue') },
     { path: '/diary', name: 'diary', component: () => import('../views/DiaryView.vue') },

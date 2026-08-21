@@ -21,7 +21,7 @@ function latLngIdentity(lat: number, lng: number): string {
 // Verschmelzung von Reise-Orten in Spots (siehe Migrationskommentar in db/index.ts) ganz normale
 // Spots und werden bereits über die bestehende Spots-Liste angezeigt – kein eigener Ableitungspfad
 // mehr nötig. Diese Funktion deckt nur noch den Fallback ab: Etappen-Enden OHNE verknüpften Ort
-// (TravelView.vue's "✏️ Manuell eingeben" – reiner Freitext-Von/Nach mit eigenem Maps-Link/Pin).
+// (TravelSection.vue's "✏️ Manuell eingeben" – reiner Freitext-Von/Nach mit eigenem Maps-Link/Pin).
 // Dedupliziert über gerundete lat/lng, falls zwei frei eingetragene Enden zufällig denselben Ort
 // treffen.
 export function buildTravelDerivedLocations(travelItems: TravelItem[]): TravelDerivedLocation[] {

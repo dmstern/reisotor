@@ -422,9 +422,8 @@ function showDetailToOnMap() {
 </script>
 
 <template>
-  <div class="page" v-if="!loading">
+  <div v-if="!loading" class="travel-section">
     <div class="header">
-      <h1>Reise</h1>
       <button @click="showForm = true"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Neue Fahrt/Flug</button>
     </div>
 
@@ -789,7 +788,7 @@ function showDetailToOnMap() {
 .header {
   display: flex;
   flex-wrap: wrap;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   gap: var(--space-2);
   margin-bottom: var(--space-3);
