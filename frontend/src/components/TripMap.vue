@@ -659,7 +659,7 @@ function handlePointClick(point: MapPoint) {
 function editOpenTravel() {
   const id = openTravelId.value;
   travelDialogOpen.value = false;
-  router.push(`/travel#travel-${id}`);
+  router.push(`/excursions?group=travel#travel-${id}`);
 }
 function payerLabelFor(userId: number | null) {
   if (userId == null) return null;

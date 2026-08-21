@@ -15,7 +15,7 @@ const OWN_LOCATION_ICON: IconDef = { id: 'compass', emoji: '🧭', outline: Icon
 
 // Manueller Fallback, falls weder clientseitiges Parsen noch die serverseitige Kurzlink-Auflösung
 // (backend/src/utils/mapsLink.ts) Koordinaten liefern (z. B. wenn Google einen Maps-Kurzlink per
-// Bot-Erkennung mit 403 blockt – siehe TripForm.vue/ExcursionsView.vue/TravelView.vue, die diese
+// Bot-Erkennung mit 403 blockt – siehe TripForm.vue/ExcursionsView.vue/TravelSection.vue, die diese
 // Komponente einbinden). Struktur an ExcursionMiniMap.vue angelehnt
 // (eigenständige, lazy erzeugte Leaflet-Instanz, beim Unmount wieder abgebaut), aber MIT normaler
 // Zoom-Kontrolle statt zoomControl:false, da hier tatsächlich zum präzisen Antippen gezoomt wird.

@@ -234,7 +234,7 @@ export interface Spot {
   created_by: number | null;
   /** Heimat-Seite eines Orts (Flughafen/Bahnhof/Zuhause/…), unabhängig von der Kategorie – ein
    *  Flughafen kann sowohl der heimische Abflughafen als auch der Zielflughafen sein. Nur für als
-   *  Reise-Etappen-Ort verwendete Spots relevant (siehe TravelView.vue), bei gewöhnlichen Spots
+   *  Reise-Etappen-Ort verwendete Spots relevant (siehe TravelSection.vue), bei gewöhnlichen Spots
    *  ungenutzt/0. Das Backend leitet daraus die passende TravelRole (Anreise/Abreise/Weiterreise)
    *  einer Etappe ab (routes/travel.ts's applyPlaces()). */
   is_home: 0 | 1;

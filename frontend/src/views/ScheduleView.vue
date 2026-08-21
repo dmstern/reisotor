@@ -742,12 +742,12 @@ function jumpToTrip() {
 
 function openEntry(entry: CalendarEntry) {
   if (entry.kind === 'trip') jumpToTrip();
-  // Hash-Sprung (#todo-<id>/#travel-<id>) statt bloß der Ziel-Route: TodoView.vue/TravelView.vue
+  // Hash-Sprung (#todo-<id>/#travel-<id>) statt bloß der Ziel-Route: TodoView.vue/TravelSection.vue
   // nehmen die id über hashHighlightId() zusätzlich in ihre bereits bestehende highlightedIds-Menge
   // auf, der Router scrollt automatisch zum Element mit dieser id (siehe router/index.ts's
   // scrollBehavior).
   else if (entry.kind === 'todo') router.push(`/listen?tab=todo#todo-${entry.todoId}`);
-  else if (entry.kind === 'travel') router.push(`/travel#travel-${entry.travelId}`);
+  else if (entry.kind === 'travel') router.push(`/excursions?group=travel#travel-${entry.travelId}`);
   else if (entry.kind === 'schedule') viewingItem.value = entry.scheduleItem;
 }
 

@@ -35,7 +35,7 @@ describe('travel_places -> spots Verschmelzungs-Migration', () => {
         from_place_id INTEGER REFERENCES travel_places(id), to_place_id INTEGER REFERENCES travel_places(id),
         trip_id INTEGER
       );
-      CREATE TABLE ideas (id INTEGER PRIMARY KEY, trip_id INTEGER, title TEXT NOT NULL);
+      CREATE TABLE ideas (id INTEGER PRIMARY KEY, trip_id INTEGER, title TEXT NOT NULL, note TEXT);
       CREATE TABLE excursion_spots (id INTEGER PRIMARY KEY, idea_id INTEGER NOT NULL, station_key TEXT NOT NULL, position INTEGER NOT NULL DEFAULT 0);
     `);
     legacy
