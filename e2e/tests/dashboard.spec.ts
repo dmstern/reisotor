@@ -72,8 +72,11 @@ test.describe('Reiseregion-Widget (kombiniert mit Wetter)', () => {
     );
     await page.goto('/');
     const card = page.locator('.weather-card');
-    await expect(card.getByText('🌍 Reiseregion')).toBeVisible();
-    await expect(card.getByText('💱 Testwährung (TST)')).toBeVisible();
+    // Kein Emoji-Zeichen mehr im Text: die Region-/Währungs-Icons stehen in group="actions", die
+    // seit #168 immer SVG statt Emoji rendert (siehe stores/iconStyle.ts) - der Text daneben bleibt
+    // trotzdem eindeutig identifizierbar.
+    await expect(card.getByText('Reiseregion')).toBeVisible();
+    await expect(card.getByText('Testwährung (TST)')).toBeVisible();
     // Kein Wechselkurs in den Mock-Daten -> keine Nennung/Verlinkung von open.er-api.com.
     await expect(card.locator('.weather-source', { hasText: 'REST Countries' })).toHaveText('Quelle: REST Countries');
     await expect(page.locator('a.weather-source', { hasText: 'REST Countries' })).toHaveCount(0);
@@ -90,7 +93,11 @@ test.describe('Reiseregion-Widget (kombiniert mit Wetter)', () => {
     );
     await page.goto('/');
     await expect(page.getByRole('heading', { name: 'Kalender', exact: true, level: 2 })).toBeVisible();
-    await expect(page.getByText('🌍 Reiseregion')).toHaveCount(0);
+    // .weather-section-label statt page-weitem getByText: DashboardView.vue's Sicherheits-Check-
+    // Kachel enthält den Text "...eure Reiseregion..." ebenfalls (unabhängiger Kontext) - ohne den
+    // Emoji-Präfix (seit #168 immer SVG statt Emoji für group="actions") würde ein ungescoptes
+    // getByText('Reiseregion') beide Stellen treffen.
+    await expect(page.locator('.weather-section-label')).toHaveCount(0);
     await expect(page.getByText('Testland')).toHaveCount(0);
   });
 });
