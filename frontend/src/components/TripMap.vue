@@ -649,15 +649,15 @@ function handlePointClick(point: MapPoint) {
     drawers.mapFocusKey = point.key;
   }
 }
-// Reise bleibt eigene, echte Route (anders als Ausflüge/Spots) – hier weiterhin ein echter Sprung.
-// Hash-Sprung (#travel-<id>) statt bloß der Ziel-Route: die Ziel-Ansicht nimmt die id über
-// hashHighlightId() in ihre highlightedIds-Menge auf und der Router scrollt automatisch zum
-// Element mit dieser id (siehe router/index.ts's scrollBehavior). id vorher sichern, da das
-// Schließen des Dialogs die *Open-Flags zurücksetzt, nicht aber die id-Refs selbst.
+// Reise-Etappen sind seit #176 ganz normale Touren (Touren-Formular öffnet sich in der
+// "Touren"-Gruppierung) - #196 entfernte die frühere eigene "Reise"-Gruppierung, dorthin springt
+// also derselbe #excursion-<id>-Hash wie bei jeder anderen Tour (onFocusExcursionFromMap in
+// ExcursionsView.vue). id vorher sichern, da das Schließen des Dialogs die *Open-Flags zurücksetzt,
+// nicht aber die id-Refs selbst.
 function editOpenTravel() {
   const id = openTravelId.value;
   travelDialogOpen.value = false;
-  router.push(`/excursions?group=travel#travel-${id}`);
+  router.push(`/excursions#excursion-${id}`);
 }
 function payerLabelFor(userId: number | null) {
   if (userId == null) return null;

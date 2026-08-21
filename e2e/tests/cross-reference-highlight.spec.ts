@@ -10,10 +10,11 @@ const seeded = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'fixtures',
 // utils/hashHighlight.ts): ein Querverweis-Klick soll nicht nur die Ziel-Ansicht öffnen, sondern
 // auch zum referenzierten Element scrollen und es farblich hervorheben (new-highlight-Klasse) –
 // hier am Beispiel des Kalender-Klicks auf einen mit Datum versehenen Reise-Eintrag
-// (ScheduleView.vue's openEntry(), Ziel seit #176: /excursions?group=travel#travel-<id> - eine
-// role-getaggte Tour statt der früheren eigenen travel_items-Zeile, siehe Migrationskommentar in
-// db/index.ts). Die Tour selbst wird per API angelegt (zwei Spots + Idea mit role), da das
-// Von/Nach-Formular seit #176 bestehende Spots per <select> statt Freitext erwartet.
+// (ScheduleView.vue's openEntry(), Ziel seit #196: /excursions#excursion-<id> - eine role-getaggte
+// Tour landet als ganz normale Tour-Gruppe in der "Touren"-Gruppierung (keine eigene
+// "Reise"-Gruppierung mehr, siehe Migrationskommentar in db/index.ts). Die Tour selbst wird per API
+// angelegt (zwei Spots + Idea mit role), da das Von/Nach-Formular seit #176 bestehende Spots per
+// <select> statt Freitext erwartet.
 test('clicking a travel entry in the calendar jumps to and highlights the matching travel card', async ({
   page,
 }) => {
@@ -51,7 +52,7 @@ test('clicking a travel entry in the calendar jumps to and highlights the matchi
   await page.locator(`.day[data-date="${todayIso}"]`).click();
   await page.locator('.day-detail .items .item', { hasText: title }).click();
 
-  await expect(page).toHaveURL(new RegExp(`/excursions\\?group=travel#travel-\\d+$`));
+  await expect(page).toHaveURL(new RegExp(`/excursions#excursion-\\d+$`));
   const travelCard = page.locator('.excursion-card', { hasText: title });
   await expect(travelCard).toBeVisible();
   await expect(travelCard).toHaveClass(/new-highlight/);

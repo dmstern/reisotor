@@ -254,6 +254,12 @@ auf demselben Feature-Branch) und im PR-Body/-Kommentar per Markdown-Bild-Syntax
 direkter Bild-Upload-Endpunkt in dieser Umgebung verfügbar). Reine Text-/Backend-only-Änderungen
 brauchen keine Screenshots.
 
+**Syntax-Falle:** `![Label](URL)` — die URL NICHT in Backticks setzen (kein `` ![Label](`URL`) ``).
+Damit rendert GitHub das Bild nicht inline, sondern zeigt nur einen toten Link/Codeblock. Vor dem
+Absenden den PR-Body kurz auf versehentlich mit Backticks umschlossene Bild-URLs prüfen (v. a. wenn
+mehrere Screenshots im selben Body verlinkt werden — nur eines davon falsch zu formatieren passiert
+leicht).
+
 Dabei bewusst lokal bleiben (Wegwerf-Spec), nicht nach CI verlagern — spart Tokens ohne die
 Trigger-Loop-/Angriffsflächen-Risiken eines CI-Jobs mit Rückschreibrechten auf den PR-Branch. Genauso
 bewusst keine persistenten Specs dafür verwenden: Regressionstests unter `e2e/tests/` sollen bei
