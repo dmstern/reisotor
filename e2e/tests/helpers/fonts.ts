@@ -1,30 +1,25 @@
 import type { Page } from '@playwright/test';
 
-/** Alle in frontend/src/style.css deklarierten Fira-Sans-Schnitte (Familie/Stil/Gewicht) — muss bei
- *  neuen Schnitten dort mitgepflegt werden. */
-const FONT_SPECS = [
-  '400 16px "Fira Sans"',
-  'italic 400 16px "Fira Sans"',
-  '500 16px "Fira Sans"',
-  '600 16px "Fira Sans"',
-  '700 16px "Fira Sans"',
-  'italic 500 16px "Fira Sans"',
-  'italic 600 16px "Fira Sans"',
-  'italic 700 16px "Fira Sans"',
-];
-
-/** Vor jedem `page.screenshot()` aufrufen (#197): style.css setzt für Fira Sans bewusst
- *  `font-display: optional` (siehe dortiger Kommentar) — in einem frischen Playwright-Kontext ohne
- *  warmen HTTP-Cache verpasst der Download der Font-Datei damit fast immer das sehr kurze
- *  "block period" dieses Modus, wodurch der Browser für die GESAMTE Seite dauerhaft bei der
- *  Fallback-Schrift bleibt, statt später auf Fira Sans umzuschalten — sichtbar als abweichende
- *  Schriftart nur in Playwright-Screenshots, nie im echten (Font bereits gecachten) Browser.
- *  `document.fonts.load()` umgeht dieses Timing, indem es den Font-Ladevorgang explizit anstößt und
- *  abwartet; anders als der reine `font-display`-Mechanismus rendert der Browser dadurch bereits
- *  vorhandenen Text anschließend mit dem geladenen Font neu. */
-export async function waitForFonts(page: Page): Promise<void> {
-  await page.evaluate(async (specs) => {
-    await Promise.all(specs.map((spec) => document.fonts.load(spec)));
-    await document.fonts.ready;
-  }, FONT_SPECS);
+/** Vor jedem `page.goto()` in einer Wegwerf-Spec aufrufen, die anschließend einen Screenshot macht
+ *  (#197): style.css setzt für Fira Sans bewusst `font-display: optional` (siehe dortiger
+ *  Kommentar). In einem frischen, headless Playwright-Kontext committet Chromium den allerersten
+ *  Seitenaufruf damit praktisch IMMER dauerhaft auf die Fallback-Schrift — auch wenn die Font-Datei
+ *  rechtzeitig eintrifft und `document.fonts` sie danach als "loaded" meldet. `optional` sieht per
+ *  Spec keinen Swap-Zeitraum vor: einmal für die Fallback-Schrift entschieden, wird bereits gemalter
+ *  Text nicht mehr neu gezeichnet, auch nicht durch ein explizites `document.fonts.load()`/`.ready`
+ *  danach (mehrfach isoliert verifiziert, siehe PR #203) oder durch `page.reload()` (derselbe
+ *  Browser-Prozess trifft dieselbe "optional"-Entscheidung erneut). Einzig verlässlicher Weg: den
+ *  `font-display`-Wert der an DIESEN Browser ausgelieferten style.css für die Dauer des Tests durch
+ *  Response-Rewriting auf `block` umschreiben — Chromium wartet dann bis zu 3s auf den Font, bevor
+ *  es auf die Fallback-Schrift ausweicht, und rendert danach zuverlässig mit Fira Sans.
+ *  Production-Verhalten (bzw. der Kommentar dort zum bewussten `optional`) bleibt unangetastet. */
+export async function forceFontDisplayBlock(page: Page): Promise<void> {
+  await page.route('**/style.css', async (route) => {
+    const response = await route.fetch();
+    const body = await response.text();
+    await route.fulfill({
+      response,
+      body: body.replace(/font-display:\s*optional/g, 'font-display: block'),
+    });
+  });
 }
