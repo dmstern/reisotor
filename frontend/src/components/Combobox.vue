@@ -17,7 +17,13 @@ const props = withDefaults(
   }>(),
   { modelValue: '' },
 );
-const emit = defineEmits<{ (e: 'update:modelValue', value: string): void }>();
+const emit = defineEmits<{
+  (e: 'update:modelValue', value: string): void;
+  // Zusätzlich zum modelValue-Update: erlaubt Aufrufern wie TourAssignPicker.vue, eine Auswahl aus
+  // der Liste (im Gegensatz zu laufendem Freitext-Tippen) direkt zu übernehmen, ohne dafür einen
+  // eigenen Bestätigen-Button vorzuhalten.
+  (e: 'select', value: string): void;
+}>();
 
 const open = ref(false);
 
@@ -31,6 +37,7 @@ const filteredOptions = computed(() => {
 
 function selectOption(option: string) {
   emit('update:modelValue', option);
+  emit('select', option);
   open.value = false;
 }
 
@@ -41,6 +48,12 @@ function onBlur() {
     open.value = false;
   }, 150);
 }
+
+// Erlaubt Aufrufern wie TourAssignPicker.vue, die Liste nach einem per Enter übernommenen Eintrag
+// aktiv zu schließen (#207) - ohne Fokuswechsel bliebe "open" sonst true und die Liste würde beim
+// Zurücksetzen von modelValue auf '' erneut ungefiltert alle Optionen zeigen und darunterliegende
+// Elemente überdecken.
+defineExpose({ close: () => { open.value = false; } });
 </script>
 
 <template>

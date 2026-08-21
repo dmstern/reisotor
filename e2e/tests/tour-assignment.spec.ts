@@ -30,11 +30,13 @@ test.describe('Tour-Zuordnung: einfacher Tagging-Modus + Kategorie/Touren-Gruppi
     const modal = page.locator('.modal', { hasText: 'Neuer Spot' });
     await modal.locator('input[placeholder="Titel"]').fill(spotTitle);
 
-    // Tour-Titel tippen und über den eigenen "Hinzufügen"-Button des TourAssignPicker (nicht den
-    // Formular-Submit, der denselben Text trägt) als Chip übernehmen - ein bislang unbekannter
-    // Titel legt beim Speichern eine neue Tour an (siehe ExcursionsView.vue's syncSpotTours()).
-    await modal.locator('.tour-add-row input[type="text"]').fill(tourTitle);
-    await modal.locator('.tour-add-row button').click();
+    // Tour-Titel tippen und per Enter (#207: eigener "Hinzufügen"-Button des TourAssignPicker
+    // entfernt, klebte als Listeneintrag zu eng am Formular-Submit-Button gleichen Namens) als Chip
+    // übernehmen - ein bislang unbekannter Titel legt beim Speichern eine neue Tour an (siehe
+    // ExcursionsView.vue's syncSpotTours()).
+    const tourInput = modal.locator('.tour-assign-picker input[type="text"]');
+    await tourInput.fill(tourTitle);
+    await tourInput.press('Enter');
     await expect(modal.locator('.tour-chip', { hasText: tourTitle })).toBeVisible();
 
     await modal.locator('form.edit-form button[type="submit"]').click();

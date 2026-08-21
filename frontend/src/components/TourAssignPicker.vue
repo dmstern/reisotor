@@ -19,6 +19,7 @@ const emit = defineEmits<{
 }>();
 
 const pendingTitle = ref('');
+const combobox = ref<InstanceType<typeof Combobox> | null>(null);
 
 function addTour() {
   const title = pendingTitle.value.trim();
@@ -27,6 +28,11 @@ function addTour() {
     emit('update:modelValue', [...props.modelValue, title]);
   }
   pendingTitle.value = '';
+  // Ohne den (jetzt entfernten) separaten "Hinzufügen"-Button verliert das Eingabefeld nach dem
+  // Übernehmen (Enter/Auswahl) nicht mehr den Fokus - die Dropdown-Liste aktiv schließen, sonst
+  // zeigt sie wegen des zurückgesetzten leeren Texts sofort wieder ungefiltert alle Touren an und
+  // überdeckt darunterliegende Elemente (z. B. den Formular-Submit-Button).
+  combobox.value?.close();
 }
 
 function removeTour(title: string) {
@@ -44,10 +50,14 @@ function removeTour(title: string) {
         </button>
       </span>
     </div>
-    <div class="tour-add-row">
-      <Combobox v-model="pendingTitle" :options="tourOptions" placeholder="Tour zuordnen (neu oder bestehend)" @keydown.enter.prevent="addTour" />
-      <button type="button" class="secondary" @click="addTour">Hinzufügen</button>
-    </div>
+    <Combobox
+      ref="combobox"
+      v-model="pendingTitle"
+      :options="tourOptions"
+      placeholder="Tour zuordnen (neu oder bestehend)"
+      @keydown.enter.prevent="addTour"
+      @select="addTour"
+    />
   </div>
 </template>
 
@@ -85,11 +95,5 @@ function removeTour(title: string) {
 
 .remove-btn:hover {
   color: var(--color-danger);
-}
-
-.tour-add-row {
-  display: flex;
-  gap: var(--space-2);
-  align-items: flex-start;
 }
 </style>

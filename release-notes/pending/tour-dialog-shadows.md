@@ -1,0 +1,2 @@
+- Störende, zu eng aneinanderklebende Schatten in der Spots-Liste beim Anlegen/Bearbeiten einer Tour entfernt.
+- Den überflüssigen "Hinzufügen"-Button beim Zuordnen einer Tour im Spot-Formular entfernt – Enter oder Klick auf einen Vorschlag reicht jetzt aus.

@@ -257,6 +257,10 @@ function onDragEnd() {
   font-size: 0.9rem;
   background: none;
   border: none;
+  /* #207: der globale `button`-Basisstil (style.css) setzt box-shadow: var(--shadow-sm) - ohne
+     Reset klebten in dieser dichten Liste die Einzelschatten benachbarter Zeilen aneinander und
+     wirkten buggy, statt wie ein einzelnes, flaches Listenelement auszusehen. */
+  box-shadow: none;
   padding: 4px 2px;
   cursor: pointer;
   color: var(--color-text);
