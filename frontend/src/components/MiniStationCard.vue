@@ -58,11 +58,9 @@ defineProps<{ station: ExcursionStation }>();
   font-size: 0.78rem;
   font-weight: 600;
   line-height: 1.2;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
 }
 
 .category {
