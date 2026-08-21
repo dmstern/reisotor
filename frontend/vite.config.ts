@@ -9,7 +9,9 @@ import { readFileSync } from 'node:fs';
 // diesen Standardwert zu verändern.
 const apiProxyTarget = process.env.API_PROXY_TARGET ?? 'http://localhost:3000';
 
-const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf-8'));
+// Version kommt aus der Root-package.json (einzige Versionsquelle fürs ganze Repo, siehe
+// backend/scripts/generate-build-info.mjs) statt aus der lokalen frontend/package.json.
+const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf-8'));
 
 let gitRef = 'unknown';
 try {

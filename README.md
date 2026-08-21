@@ -82,6 +82,7 @@ Das Skript ist idempotent (`INSERT OR IGNORE`) – bereits vorhandene Nutzer/Zei
 | `TRUSTED_FEEDBACK_REPORTERS` | Kommagetrennte Reisotor-Benutzernamen, deren eigene Feedback-Meldungen automatisch das `agent-ok`-Label bekommen (Freigabe für die tägliche Issue-Fix-Routine, siehe unten) – spart bei vertrauenswürdigen Melder:innen das manuelle Nachlabeln im GitHub-UI. Bewusst nur per Server-Env-Var pflegbar, nicht über eine App-Route: Registrierung ist offen, ein Self-Service-Toggle würde jeder registrierten Person erlauben, sich selbst freizuschalten. | – (niemand vorausgewählt) |
 | `REGISTRATION_MODE` | Steuert die offene Selbstregistrierung (`POST /auth/register`, siehe `backend/src/registrationConfig.ts`): `off` deaktiviert sie komplett, `full` erlaubt sie uneingeschränkt, `restricted` erlaubt sie, markiert neu registrierte Accounts aber dauerhaft als eingeschränkt (kein Datei-/Bild-Upload, max. 1 selbst angelegter Urlaub, max. 3 Mitglieder in einem selbst angelegten Urlaub – spart Ressourcen auf dem Pi-Host). Ein unbekannter Wert fällt auf `full` zurück. | `full` |
 | `REGISTRATION_FULL_ACCESS_USERS` | Kommagetrennte Reisotor-Benutzernamen, die von den `restricted`-Einschränkungen ausgenommen sind (dynamisch geprüft, wirkt auch nachträglich auf bereits als eingeschränkt registrierte Accounts). Bewusst nur per Server-Env-Var pflegbar, aus demselben Grund wie `TRUSTED_FEEDBACK_REPORTERS`. | – (niemand ausgenommen) |
+| `HOSTING_LOCATION` | Ort, der im "Über"-Bereich des Profils im Hosting-/Copyright-Hinweis genannt wird (`GET /build-info`, siehe `routes/buildInfo.ts`) – für Betreiber:innen, die die App an einem anderen Ort als Berlin hosten. | `Berlin` |
 
 ## Deployment
 
@@ -145,12 +146,12 @@ Der Frontend-Build läuft **lokal**, nicht auf dem Zielserver – auf schwacher 
 
 ### Automatisiertes Deployment über GitHub Actions + Pi-Cronjob
 
-Zweistufiger Ablauf, damit eine Änderung erst angeschaut werden kann, bevor sie auf der von Nutzer:innen tatsächlich verwendeten Produktion landet:
+Zweistufiger Ablauf, damit eine Änderung erst angeschaut werden kann, bevor sie auf der von Nutzer:innen tatsächlich verwendeten Produktion landet – Versionierung folgt [Semantic Versioning](https://semver.org/), `deploy-staging` bildet dabei immer den aktuellen `main`-Stand ab, `deploy` bekommt ausschließlich benannte Releases:
 
 1. **Push auf `main`** löst `.github/workflows/build-deploy.yml` aus: Frontend und Backend werden gebaut (inkl. Typecheck, der Build schlägt bei Fehlern fehl) und das Ergebnis als einzelner Commit auf den Branch `deploy-staging` veröffentlicht. Der Server pollt diesen Branch per Cronjob (`~/reisotor-deploy-staging.sh`, alle 5 Minuten) und deployt automatisch auf `https://dev.reise.ruebenherz.de` (Basic-Auth-geschützt, eigene Datenbank mit `npm run seed:demo`-Demo-Daten – niemals echte Nutzerdaten).
-2. Sieht das Ergebnis auf Staging gut aus, wird `main` explizit auf den Branch `prod` gepusht (`git push origin main:prod`). Das löst denselben Workflow erneut aus, diesmal mit Ziel-Branch `deploy` – der Server pollt diesen separat (`~/reisotor-deploy.sh`) und deployt auf die echte Produktion `https://reise.ruebenherz.de`.
+2. Sieht das Ergebnis auf Staging gut aus, wird ein Release erstellt: im Actions-Tab den Workflow **„Release"** (`.github/workflows/release.yml`) manuell über „Run workflow" ausführen, Versions-Sprung (`patch`/`minor`/`major`) wählen und kurze, für Endnutzer:innen verständliche Changelog-Stichpunkte eintragen. Der Workflow bumpt die Version in der Root-`package.json`, ergänzt `CHANGELOG.md`, committet beides auf `main` und setzt einen Git-Tag `vX.Y.Z`. Dieser Tag-Push (und nur er) löst `build-deploy.yml` erneut aus, diesmal mit Ziel-Branch `deploy` – der Server pollt diesen separat (`~/reisotor-deploy.sh`) und deployt auf die echte Produktion `https://reise.ruebenherz.de`. Der Release-Workflow lässt sich statt über die Weboberfläche auch programmatisch auslösen (z. B. über die GitHub-API/`gh workflow run`, etwa aus einer Claude-Code-Session heraus).
 
-Kein Laptop/Client muss für den Rollout selbst online sein oder Zugangsdaten zum Server halten – beide Skripte sind zusätzlich manuell auf dem Server ausführbar, falls man nicht auf den nächsten Cron-Tick warten will.
+Kein Laptop/Client muss für den Rollout selbst online sein oder Zugangsdaten zum Server halten – beide Deploy-Skripte sind zusätzlich manuell auf dem Server ausführbar, falls man nicht auf den nächsten Cron-Tick warten will.
 
 Voraussetzung auf dem Server: ein read-only Deploy Key fürs Repo (unter GitHub → Settings → Deploy keys hinterlegt) sowie je ein separater flacher Checkout der beiden Branches (`~/reisotor-deploy-src` für `deploy`, `~/reisotor-deploy-src-staging` für `deploy-staging`).
 
