@@ -202,6 +202,16 @@ function openMembers(trip: Trip) {
   corner-shape: squircle;
 }
 
+/* #193: der globale `button`-Basisstil (style.css) setzt box-shadow: var(--shadow-sm) - der
+   Dropdown-Container selbst trägt bereits --shadow-md (siehe .dropdown oben), ein zusätzlicher
+   Schatten je Listenzeile/Aktions-Button (Trip-Auswahl, Mitglieder/Bearbeiten/Löschen, "+ Neuer
+   Urlaub") wirkte dadurch doppelt erhoben und "doof" (Issue #193). Trifft dank Vues Vererbung des
+   Scope-Attributs an Kind-Komponenten-Root-Elementen auch EditButton.vue/DeleteButton.vue, deren
+   <button> jeweils das Root-Element ist. */
+.dropdown button {
+  box-shadow: none;
+}
+
 .trip-row.active .trip-select {
   color: var(--color-primary-dark);
   font-weight: 700;
