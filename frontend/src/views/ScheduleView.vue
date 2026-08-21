@@ -750,10 +750,12 @@ function openEntry(entry: CalendarEntry) {
   else if (entry.kind === 'todo') router.push(`/listen?tab=todo#todo-${entry.todoId}`);
   // Eine Tour mit gesetzter role (ehemalige Reise-Etappe, #176) bleibt zwar ein echter,
   // schedule_items-basierter kind:'schedule'-Eintrag (siehe calendarEntries.ts), springt beim Klick
-  // aber weiterhin direkt zur Reise-Karte statt den generischen Termin-Dialog zu öffnen - dieselbe
-  // Optik wie vor der Zusammenlegung.
+  // aber weiterhin direkt zur Tour-Karte statt den generischen Termin-Dialog zu öffnen - dieselbe
+  // Optik wie vor der Zusammenlegung. Seit #196 (frühere eigene "Reise"-Gruppierung entfernt) über
+  // denselben #excursion-<id>-Hash wie jede andere Tour (ExcursionsView.vue's
+  // onFocusExcursionFromMap).
   else if (entry.category === 'travel' && entry.ideaId != null) {
-    router.push(`/excursions?group=travel#travel-${entry.ideaId}`);
+    router.push(`/excursions#excursion-${entry.ideaId}`);
   } else if (entry.kind === 'schedule') viewingItem.value = entry.scheduleItem;
 }
 

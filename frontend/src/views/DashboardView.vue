@@ -630,7 +630,7 @@ function formatWeekdayDate(d: string) {
         </router-link>
 
         <!-- Reise (Fahrten/Flüge) -->
-        <router-link v-else-if="key === 'travel'" to="/excursions?group=travel" class="card tile" :style="{ background: `${WIDGET_COLORS.get('travel')}0d` }">
+        <router-link v-else-if="key === 'travel'" to="/excursions?group=tours" class="card tile" :style="{ background: `${WIDGET_COLORS.get('travel')}0d` }">
           <AppIcon
             class="tile-icon"
             :size="18"

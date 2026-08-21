@@ -64,14 +64,14 @@ onMounted(() => {
 
 watch(() => liveSync.domainVersion.budget, load);
 
-/** Bezahlungen, die automatisch aus einem Unterkunft- oder Reise-Eintrag erzeugt wurden
- *  (siehe spots.ts/travel.ts `planBudgetExpense`), sind hier gemäß der Architekturregel
- *  aus Batch 3 nicht direkt editier-/löschbar – stattdessen springt man zur Ursprungssicht. Ein
- *  Unterkunft-Spot lebt seit der Verschmelzung (siehe Migrationskommentar in db/index.ts) in der
- *  normalen Spots-Sicht (/excursions) statt einer eigenen Seite, daher der Hash-Sprung dorthin
- *  (gleiches Muster wie /excursions?group=travel#travel-<id>, siehe hashHighlight.ts). Reise-Etappen
- *  leben seit #175 ebenfalls eingebettet in /excursions (TravelSection.vue) statt einer eigenen
- *  Route. */
+/** Bezahlungen, die automatisch aus einem Unterkunft-Spot oder einer Reise-Etappe (Tour mit
+ *  gesetzter role) erzeugt wurden (siehe spots.ts/ideas.ts `planBudgetExpense`/
+ *  `planIdeaBudgetExpense`), sind hier gemäß der Architekturregel aus Batch 3 nicht direkt
+ *  editier-/löschbar – stattdessen springt man zur Ursprungssicht. Ein Unterkunft-Spot lebt seit der
+ *  Verschmelzung (siehe Migrationskommentar in db/index.ts) in der normalen Spots-Sicht
+ *  (/excursions) statt einer eigenen Seite, eine Reise-Etappe seit #176 als normale Tour in
+ *  derselben Sicht (#196: keine eigene "Reise"-Gruppierung mehr) - beide per Hash-Sprung
+ *  (hashHighlight.ts). */
 function autoSourceFor(expenseId: number): { label: string; path: string } | null {
   const accommodation = accommodations.value.find((a) => a.budget_expense_id === expenseId);
   if (accommodation) {
@@ -79,7 +79,7 @@ function autoSourceFor(expenseId: number): { label: string; path: string } | nul
   }
   const travelItem = travelItems.value.find((t) => t.budget_expense_id === expenseId);
   if (travelItem) {
-    return { label: 'Zur Reise', path: `/excursions?group=travel#travel-${travelItem.id}` };
+    return { label: 'Zur Reise', path: `/excursions#excursion-${travelItem.id}` };
   }
   return null;
 }

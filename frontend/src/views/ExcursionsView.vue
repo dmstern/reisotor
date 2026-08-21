@@ -149,11 +149,11 @@ function setCategoryNavSentinelRef(el: Element | ComponentPublicInstance | null)
 }
 
 onMounted(async () => {
-  // Deep-Link von DashboardView.vue's Reise-Kachel / notificationTarget.ts (analog zu ListenView.vue's
-  // ?tab=). groupMode ist persistiert (localStorage), ein Query-Param überschreibt das trotzdem
-  // gezielt - ein Klick auf die Kachel soll immer zur Reise-Ansicht führen, unabhängig davon, welche
-  // Gruppierung zuletzt aktiv war.
-  if (route.query.group === 'travel') groupMode.value = 'travel';
+  // #196: die frühere eigene "Reise"-Gruppierung (dritte Toggle-Option) entfällt - Touren mit
+  // gesetzter role sind seit #176 ohnehin ganz normale Einträge der "Touren"-Gruppierung. Ein alter
+  // ?group=travel-Deep-Link (DashboardView.vue's Reise-Kachel/notificationTarget.ts/router redirect
+  // von /travel) landet deshalb einfach in der Touren-Ansicht statt einer eigenen.
+  if (route.query.group === 'travel' || route.query.group === 'tours') groupMode.value = 'tours';
   markSeenForGroupMode(groupMode.value);
   // Querverweis-Sprung (z. B. aus dem Budget bei einem automatisch aus einer Unterkunft erzeugten
   // Ausgabe-Eintrag, siehe BudgetView.vue's autoSourceFor()) – dieselbe highlightedIds-Menge wie
@@ -161,15 +161,12 @@ onMounted(async () => {
   const hashId = hashHighlightId(route.hash, 'spot');
   if (hashId != null) highlightedIds.value.add(hashId);
   // #106: Rücksprung aus dem Kalender (ScheduleView.vue's returnToCard()) nach dem Einplanen/
-  // Bestätigen einer Tour - analog zum bestehenden Spot-Hash oben.
-  const excursionHashId = hashHighlightId(route.hash, 'excursion');
+  // Bestätigen einer Tour - analog zum bestehenden Spot-Hash oben. Deckt seit #196 auch Touren mit
+  // gesetzter role ab (früher eigenes Hash-Präfix "travel-" für die inzwischen entfernte
+  // Reise-Gruppierung - alte "travel-<id>"-Links aus derselben Ära werden hier als Fallback
+  // ebenfalls als Tour-id interpretiert).
+  const excursionHashId = hashHighlightId(route.hash, 'excursion') ?? hashHighlightId(route.hash, 'travel');
   if (excursionHashId != null) highlightedIds.value.add(excursionHashId);
-  // Sprung aus dem Kalender bei einer terminierten Tour mit gesetzter role (ehemalige Reise-Etappe,
-  // #176, ScheduleView.vue's openEntry()) - eigenes Hash-Präfix "travel-", da groupMode bereits über
-  // den ?group=travel-Query-Parameter oben umgeschaltet wird (kein onFocus...FromMap()-Umschalten
-  // wie bei excursionHashId nötig, der Router scrollt automatisch zum Element mit dieser id).
-  const travelHashId = hashHighlightId(route.hash, 'travel');
-  if (travelHashId != null) highlightedIds.value.add(travelHashId);
   try {
     const [usersRes, likesRes, commentsRes] = await Promise.all([
       api.get<User[]>(`/trips/${tripId}/members`),
@@ -310,7 +307,7 @@ const editExcursionDraft = useDraftAutosave(
 );
 
 /** travelMode vorbelegt den Transportmittel-Abschnitt aufgeklappt - Einstieg über den "+ Neue
- *  Fahrt/Flug"-Button in der Reise-Gruppierung (siehe Template), spart dort den zusätzlichen Klick
+ *  Fahrt/Flug"-Button in der Touren-Gruppierung (siehe Template), spart dort den zusätzlichen Klick
  *  zum Aufklappen. */
 function openExcursionForm(travelMode = false) {
   excursionForm.value = emptyExcursionForm();
@@ -591,24 +588,19 @@ function groupIconColor(grp: { category: string; excursion: Excursion | null }):
 // gibt keine eigene SpotsView, diese gruppierte/filterbare Liste hier ist die gemeinte Stelle).
 const sortMode = usePersistedRef<'alpha' | 'likes'>('reisotor-excursions-sort-mode', 'alpha');
 
-// Umschalter Kategorie/Touren/Reise (siehe spotGroups unten): gruppiert die Spots-Übersicht wahlweise
-// nach Kategorie (Standard) oder nach Tour-Zugehörigkeit – letzteres zeigt einen Spot in JEDER Tour,
-// der er zugeordnet ist (mehrfach, da viele-zu-viele), untaggte Spots/abgeleitete Orte landen
-// gemeinsam in "Ohne Tour". 'travel' blendet stattdessen TravelSection.vue ein (#68: NavBar-Punkt
-// "Reise" entfällt, vollständig in diese Karten-View integriert - TravelSection bleibt technisch
-// vorerst ein eigenständiger, nur eingebetteter Abschnitt statt einer echten Formular-Verschmelzung
-// mit Touren, siehe Konzept-Kommentar in Issue #68/#175).
-const groupMode = usePersistedRef<'category' | 'tours' | 'travel'>('reisotor-excursions-group-mode', 'category');
+// Umschalter Kategorie/Touren (siehe spotGroups unten): gruppiert die Spots-Übersicht wahlweise nach
+// Kategorie (Standard) oder nach Tour-Zugehörigkeit – letzteres zeigt einen Spot in JEDER Tour, der
+// er zugeordnet ist (mehrfach, da viele-zu-viele), untaggte Spots/abgeleitete Orte landen gemeinsam
+// in "Ohne Tour". Reise-Etappen (Touren mit gesetzter role) sind seit #176 ganz normale Einträge
+// dieser "Touren"-Gruppierung - die früher dritte Toggle-Option "Reise" (#175, TravelSection.vue)
+// wurde dadurch redundant und ist seit #196 wieder entfernt.
+const groupMode = usePersistedRef<'category' | 'tours'>('reisotor-excursions-group-mode', 'category');
 const UNASSIGNED_TOUR_GROUP = 'Ohne Tour';
 
-// Spots UND Touren/Reise (beide "ideas", #176: role-getaggte Touren sind keine eigene Domäne mehr)
-// teilen sich diese eine Sicht, tracken in liveSync aber als getrennte Domänen. Nur die gerade
-// aktive Gruppierung wird als gesehen markiert (initial in onMounted unten, danach bei jedem
-// Wechsel hier) - "Spots" behält ihren eigenen "neu"-Punkt, bis tatsächlich dorthin umgeschaltet
-// wird; "Touren" und "Reise" teilen sich denselben 'ideas'-Punkt (beide zeigen letztlich role-lose
-// bzw. role-getaggte ideas-Zeilen), ein Wechsel zwischen beiden markiert also zwangsläufig auch die
-// jeweils andere Gruppierung als gesehen - kein eigenes Tracking pro Rolle nötig.
-function markSeenForGroupMode(mode: 'category' | 'tours' | 'travel') {
+// Spots UND Touren (beide "ideas", #176: role-getaggte Touren sind keine eigene Domäne mehr) teilen
+// sich diese eine Sicht, tracken in liveSync aber als getrennte Domänen. Nur die gerade aktive
+// Gruppierung wird als gesehen markiert (initial in onMounted unten, danach bei jedem Wechsel hier).
+function markSeenForGroupMode(mode: 'category' | 'tours') {
   const domain = mode === 'category' ? 'spots' : 'ideas';
   for (const id of liveSync.markSeen(domain)) highlightedIds.value.add(id);
 }
@@ -728,26 +720,6 @@ function sortedCategoryKeys(categories: Iterable<string>): string[] {
   const custom = [...set].filter((c) => !CATEGORY_GROUP_ORDER.includes(c) && c !== 'Sonstiges').sort();
   return [...known, ...custom, ...(set.has('Sonstiges') ? ['Sonstiges'] : [])];
 }
-
-// #176: "Reise"-Gruppierung zeigt Touren mit gesetzter role statt der früheren eigenen
-// travel_items-Liste (TravelSection.vue). Feste Position statt rein chronologisch (Konzept-
-// Entscheidung in Issue #68/#176): Anreise immer zuerst, Abreise immer zuletzt, alle Weiterreisen
-// dazwischen chronologisch (ungeplante Weiterreisen ohne Datum ans Ende dieser mittleren Gruppe).
-const ROLE_SORT_ORDER: Record<IdeaRole, number> = { arrival: 0, onward: 1, departure: 2 };
-const travelTours = computed(() =>
-  excursionsStore.excursions
-    .filter((e) => e.role != null)
-    .slice()
-    .sort((a, b) => {
-      const roleDiff = ROLE_SORT_ORDER[a.role!] - ROLE_SORT_ORDER[b.role!];
-      if (roleDiff !== 0) return roleDiff;
-      if (a.role !== 'onward') return 0;
-      if (!a.date && !b.date) return 0;
-      if (!a.date) return 1;
-      if (!b.date) return -1;
-      return a.date.localeCompare(b.date);
-    }),
-);
 
 const spotGroups = computed(() => {
   const groups = new Map<string, SpotsGroupItem[]>();
@@ -1811,7 +1783,7 @@ async function removeSpot(id: number) {
       <div id="map-focus-dock" class="map-focus-dock"></div>
       <div class="header">
         <h2>
-          {{ groupMode === 'tours' ? 'Touren' : groupMode === 'travel' ? 'Reise' : 'Spots' }}
+          {{ groupMode === 'tours' ? 'Touren' : 'Spots' }}
           <!-- Der frühere, immer sichtbare Erklärtext nahm spürbar Platz weg, v. a. auf mobile
                (Nutzer-Feedback) - jetzt hinter einem Info-Button versteckt, gleiches
                Popover-Muster (Backdrop + .picker-menu) wie die Kategorie-/Status-Filter unten statt
@@ -1852,17 +1824,19 @@ async function removeSpot(id: number) {
             :options="[
               { value: 'category', label: 'Spots', icon: FORM_FIELD_ICONS.category, iconGroup: 'formFields', dot: liveSync.hasUnseen('spots') },
               { value: 'tours', label: 'Touren', icon: SECTION_ICON_DEFS.excursions, iconGroup: 'navigation', dot: liveSync.hasUnseen('ideas') },
-              { value: 'travel', label: 'Reise', icon: SECTION_ICON_DEFS.travel, iconGroup: 'navigation', dot: liveSync.hasUnseen('ideas') },
             ]"
           />
         </h2>
         <div class="header-actions">
           <button v-if="groupMode === 'category'" @click="showSpotForm = true"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Neuer Spot</button>
-          <button v-else-if="groupMode === 'tours'" @click="openExcursionForm()"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Neue Tour</button>
-          <!-- #176: dasselbe Touren-Formular wie oben, nur mit vorab aufgeklapptem
-               Transportmittel-Abschnitt (openExcursionForm(true)) - kein eigenes Formular mehr wie
-               zuvor in der separaten TravelView.vue/TravelSection.vue. -->
-          <button v-else-if="groupMode === 'travel'" @click="openExcursionForm(true)"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Neue Fahrt/Flug</button>
+          <template v-else-if="groupMode === 'tours'">
+            <button @click="openExcursionForm()"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Neue Tour</button>
+            <!-- #176/#196: dasselbe Touren-Formular wie "Neue Tour", nur mit vorab aufgeklapptem
+                 Transportmittel-Abschnitt (openExcursionForm(true)) - eigener Schnellzugang für eine
+                 Reise-Etappe (Touren mit gesetzter role sind seit #176 ganz normale Touren, die
+                 frühere eigene "Reise"-Gruppierung/-Formular entfällt seit #196). -->
+            <button class="secondary" @click="openExcursionForm(true)"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Neue Fahrt/Flug</button>
+          </template>
 
           <!-- Zweiter Einstiegspunkt zum ⏺️/⏹️-Button auf TripMap.vue (Start dort mit Sichtbarkeits-
                Auswahl/Tour-Kopplung): der Karten-Button steckt in einer bereits vollen
@@ -2146,10 +2120,6 @@ async function removeSpot(id: number) {
         </form>
       </Modal>
 
-      <!-- Filter/Sortierung, Kategorie-Navi und die Spots-/Touren-Gruppenliste unten gelten nur für
-           die Gruppierungen "Spots"/"Touren" - im 'travel'-Modus rendert stattdessen die Reise-Liste
-           weiter unten (siehe schließendes template dort). -->
-      <template v-if="groupMode !== 'travel'">
       <!-- Filter und Sortierung bewusst direkt hier, unmittelbar über der Kategorie-Navi (statt
            Sortierung z. B. oben im .header): beide wirken auf dieselbe Kategorie-gruppierte Liste,
            sollen deshalb auch räumlich als zusammengehöriges Werkzeug-Paar wahrgenommen werden.
@@ -2497,49 +2467,6 @@ async function removeSpot(id: number) {
         </p>
       </section>
       <p v-if="!spotGroups.length" class="empty">Noch keine Spots angelegt.</p>
-      </template>
-      <!-- #176: Touren mit gesetzter role (Anreise/Abreise/Weiterreise) statt der früheren eigenen
-           travel_items-Liste (TravelSection.vue) - dieselbe ExcursionCard wie bei "Touren" oben,
-           travelTours ist bereits nach Rolle+Datum sortiert (siehe dortiger Kommentar). -->
-      <template v-else>
-        <p class="hint places-hint">
-          Für Von/Nach wählst du unten im Formular direkt einen bestehenden Spot – neue Orte
-          (Flughafen, Bahnhof, Zuhause, …) legst du zuerst als Spot an (Kategorie z. B. "Flughafen"
-          oder "Zuhause").
-        </p>
-        <TransitionGroup tag="div" name="list" class="masonry cards">
-          <template v-for="tour in travelTours" :key="tour.id">
-            <UndoDeleteRow
-              v-if="excursionsStore.isPending(tour.id)"
-              :label="tour.title"
-              @undo="excursionsStore.restore(tour.id)"
-            />
-            <ExcursionCard
-              v-else
-              :id="`travel-${tour.id}`"
-              :excursion="tour"
-              :highlighted="highlightedIds.has(tour.id)"
-              :creator-label="creatorLabel(tour.created_by)"
-              :like-count="excursionLikesFor(tour.id).length"
-              :liked="excursionLikedByMe(tour.id)"
-              :comments="excursionCommentItemsFor(tour.id)"
-              :stations="spotsStore.spots"
-              :travel-items="travelItems"
-              :expanded="expandedExcursionId === tour.id"
-              @edit="startEditExcursion"
-              @remove="removeExcursion"
-              @toggle-like="toggleExcursionLike(tour.id)"
-              @submit-comment="(content) => submitExcursionComment(tour.id, content)"
-              @remove-comment="removeExcursionComment"
-              @drop-spot="(spotId) => addSpotToExcursion(tour.id, spotId)"
-              @show-on-map="drawers.openMapForExcursion(tour.id)"
-              @open="expandedExcursionId = tour.id"
-              @close="expandedExcursionId = null"
-            />
-          </template>
-        </TransitionGroup>
-        <p v-if="!travelTours.length" class="empty">Noch keine Reise-Etappen eingetragen.</p>
-      </template>
 
       <Modal
         :model-value="editingSpot !== null"
