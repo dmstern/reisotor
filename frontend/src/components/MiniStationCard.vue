@@ -49,7 +49,7 @@ defineProps<{ station: ExcursionStation }>();
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: var(--space-1) var(--space-2);
+  padding: 0 var(--space-2);
 }
 
 .title {
