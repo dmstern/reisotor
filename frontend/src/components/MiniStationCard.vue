@@ -28,7 +28,6 @@ defineProps<{ station: ExcursionStation }>();
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
 }
 
 .image {
@@ -49,17 +48,19 @@ defineProps<{ station: ExcursionStation }>();
   display: flex;
   flex-direction: column;
   gap: 2px;
+  /* Ringsherum derselbe Abstand (oben/rechts/unten/links) - der Abstand zum Vorschaubild kommt
+     dadurch automatisch aus diesem Padding statt aus einem zusätzlichen, separaten Gap auf
+     .mini-station-card (das addierte sich vorher ungewollt zum Padding, siehe PR #173). */
+  padding: 0.6em;
 }
 
 .title {
   font-size: 0.78rem;
   font-weight: 600;
   line-height: 1.2;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
 }
 
 .category {
