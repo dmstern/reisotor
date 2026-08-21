@@ -255,3 +255,24 @@ Dabei bewusst lokal bleiben (Wegwerf-Spec), nicht nach CI verlagern — spart To
 Trigger-Loop-/Angriffsflächen-Risiken eines CI-Jobs mit Rückschreibrechten auf den PR-Branch. Genauso
 bewusst keine persistenten Specs dafür verwenden: Regressionstests unter `e2e/tests/` sollen bei
 einer verletzten Erwartung rot werden, nicht nebenbei Bilder für ein manuelles Review erzeugen.
+
+## Releases: Commit-Konvention + Release-Notes-Fragmente
+
+`.github/workflows/release.yml` (per `workflow_dispatch` im Actions-Tab oder programmatisch
+auslösbar, siehe README) ermittelt Versions-Bump und Changelog-Text automatisch, statt sie beim
+Release-Ausführen manuell abzufragen. Damit das funktioniert, brauchen **alle** Commits (dieses
+Repo mergt PRs als echten Merge-Commit, nicht Squash — jeder einzelne Commit landet in der
+Historie und wird gescannt) zwei Dinge:
+
+1. **Commit-Betreff lose im Conventional-Commits-Stil**, sofern der Commit eine funktionale
+   Änderung enthält: `feat: …` für neue Features, `fix: …` für Bugfixes, `feat!: …` bzw. ein
+   `BREAKING CHANGE: …`-Absatz im Body für inkompatible Änderungen. Der Release-Workflow scannt
+   alle Commit-Betreffs/-Bodies seit dem letzten Tag: `!`/`BREAKING CHANGE` → Major-Bump,
+   mindestens ein `feat:` → Minor-Bump, sonst Patch-Bump. Rein interne Änderungen (Refactoring,
+   Doku, Tests) brauchen kein Präfix — sie fließen einfach in den Patch-Bump.
+2. **Release-Notes-Fragment bei sichtbarer Nutzer-Auswirkung**: analog zu den PR-Screenshots
+   oben eine kleine Markdown-Datei unter `release-notes/pending/<kurzer-slug>.md` anlegen, Inhalt
+   ein bis zwei `- `-Stichpunkte in derselben leicht verständlichen End-Nutzer-Sprache wie
+   `CHANGELOG.md` (Deutsch, keine technischen Details). Der Release-Workflow fasst beim nächsten
+   Release alle Fragmente zu einem `CHANGELOG.md`-Eintrag zusammen und löscht sie danach wieder.
+   Rein interne/technische PRs ohne Endnutzer-Sichtbarkeit brauchen kein Fragment.
