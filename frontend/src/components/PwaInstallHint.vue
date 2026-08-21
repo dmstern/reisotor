@@ -17,7 +17,7 @@ const showDialog = ref(false);
     <button type="button" class="pwa-pill-trigger" @click="showDialog = true">
       <AppIcon :icon="ACTION_ICONS.installApp" :size="14" group="actions" /> Als App installierbar
     </button>
-    <button type="button" class="pwa-pill-btn" aria-label="Hinweis schließen" @click="install.dismiss()">
+    <button type="button" class="pwa-pill-dismiss-btn" aria-label="Hinweis schließen" @click="install.dismiss()">
       <AppIcon :icon="ACTION_ICONS.close" :size="14" group="actions" />
     </button>
   </span>
@@ -58,7 +58,7 @@ const showDialog = ref(false);
   cursor: pointer;
 }
 
-.pwa-pill-btn {
+.pwa-pill-dismiss-btn {
   background: rgba(255, 255, 255, 0.25);
   border: none;
   color: inherit;
@@ -70,7 +70,7 @@ const showDialog = ref(false);
   line-height: 1.4;
 }
 
-.pwa-pill-btn:hover {
+.pwa-pill-dismiss-btn:hover {
   background: rgba(255, 255, 255, 0.4);
 }
 </style>
