@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
 import { api } from '../api/client';
-import type { BudgetExpense, TravelItem } from '../api/types';
+import type { BudgetExpense } from '../api/types';
 import { useTripStore } from '../stores/trip';
 import { useAuthStore } from '../stores/auth';
 import { useSpotsStore } from '../stores/spots';
+import { useExcursionsStore } from '../stores/excursions';
 import { useBudgetStore } from '../stores/budget';
 import { useLiveSyncStore } from '../stores/liveSync';
+import { deriveTravelItems } from '../utils/deriveTravelItems';
 import { assignCategoryColors } from '../utils/categoryColors';
 import { toLocalDateString } from '../utils/dateFormat';
 import type { SettlementSuggestion } from '../utils/budgetBalances';
@@ -28,13 +30,16 @@ import { useDraftAutosave } from '../composables/useDraftAutosave';
 const tripStore = useTripStore();
 const auth = useAuthStore();
 const spotsStore = useSpotsStore();
+const excursionsStore = useExcursionsStore();
 const budgetStore = useBudgetStore();
 const liveSync = useLiveSyncStore();
 const tripId = tripStore.currentTripId as number;
 // Unterkunft ist seit der Verschmelzung in Spots (siehe Migrationskommentar in db/index.ts) ganz
 // normal ein Spot der Kategorie "Unterkunft" - kein eigener Fetch mehr nötig.
 const accommodations = computed(() => spotsStore.spots.filter((s) => s.category === 'Unterkunft'));
-const travelItems = ref<TravelItem[]>([]);
+// #176: keine eigene Reise-Etappen-Liste mehr, sondern aus role-getaggten Touren abgeleitet (siehe
+// utils/deriveTravelItems.ts) - excursionsStore lädt automatisch bei erster Verwendung.
+const travelItems = computed(() => deriveTravelItems(excursionsStore.excursions, spotsStore.spots));
 const loading = ref(true);
 const highlightedIds = ref<Set<number>>(new Set());
 
@@ -42,12 +47,7 @@ const today = () => toLocalDateString(new Date());
 
 async function load() {
   try {
-    const [, travel] = await Promise.all([
-      spotsStore.load(),
-      api.get<TravelItem[]>(`/travel?trip_id=${tripId}`),
-      budgetStore.load(),
-    ]);
-    travelItems.value = travel;
+    await Promise.all([spotsStore.load(), budgetStore.load()]);
   } catch {
     // Offline und (noch) kein Cache-Eintrag für mindestens einen der Endpunkte - Seite soll trotzdem
     // rendern (ggf. mit leeren/vorherigen Daten) statt durch das v-if="!loading" unten für immer

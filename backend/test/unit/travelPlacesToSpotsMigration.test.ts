@@ -83,18 +83,27 @@ describe('travel_places -> spots Verschmelzungs-Migration', () => {
       is_home: 1,
     });
 
-    // Die Etappe verweist jetzt auf die neue Spot-Id statt der (nicht mehr existierenden) Orts-Id -
-    // UND behält ihre eigene ursprüngliche Id (id 10), da andere Referenzen (Budget, Anhänge,
-    // Kalender) sich darauf verlassen.
-    const travelItem = db.prepare('SELECT id, from_place_id, to_place_id FROM travel_items WHERE id = 10').get() as
-      | { id: number; from_place_id: number; to_place_id: number | null }
-      | undefined;
-    expect(travelItem?.from_place_id).toBe(spot!.id);
-    expect(travelItem?.to_place_id).toBeNull();
+    // travel_items selbst ist inzwischen (#176) vollständig nach ideas überführt und existiert nicht
+    // mehr - die Etappe (id 10, "Hinflug") lebt jetzt als Tour mit einer Station, die auf denselben,
+    // aus travel_places migrierten Spot zeigt (from_place_id war schon zur Migrationszeit auf die
+    // neue Spot-Id umgeschrieben, siehe oben).
+    const travelTable = db
+      .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'travel_items'")
+      .all();
+    expect(travelTable).toHaveLength(0);
 
-    // Die Ausflug-Station zeigt jetzt direkt auf den Spot statt auf den verschwundenen
-    // travel-place-Schlüssel (excursion_spots ist inzwischen selbst zu einer einfachen
-    // idea_id<->spot_id-Verknüpfung migriert, siehe excursionSpotsMigration.test.ts).
+    const migratedIdea = db.prepare('SELECT id FROM ideas WHERE title = ?').get('Hinflug') as
+      | { id: number }
+      | undefined;
+    expect(migratedIdea).toBeDefined();
+    const travelStations = db
+      .prepare('SELECT spot_id FROM excursion_spots WHERE idea_id = ? ORDER BY position')
+      .all(migratedIdea!.id) as { spot_id: number }[];
+    expect(travelStations.map((s) => s.spot_id)).toEqual([spot!.id]);
+
+    // Die Ausflug-Station (id 20, unabhängig von der Etappe) zeigt jetzt direkt auf den Spot statt
+    // auf den verschwundenen travel-place-Schlüssel (excursion_spots ist inzwischen selbst zu einer
+    // einfachen idea_id<->spot_id-Verknüpfung migriert, siehe excursionSpotsMigration.test.ts).
     const station = db.prepare('SELECT spot_id FROM excursion_spots WHERE idea_id = 20').get() as
       | { spot_id: number }
       | undefined;

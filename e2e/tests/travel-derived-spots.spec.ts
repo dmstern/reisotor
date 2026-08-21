@@ -14,7 +14,8 @@ const seeded = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'fixtures',
 // normaler, in der Spots-Sicht anlegbarer/editierbarer Spot (Kategorie z. B. "Flughafen") statt
 // einer separaten, nur lesend abgeleiteten Karte - travel_items referenziert ihn per
 // from_place_id/to_place_id, die Spots-Liste selbst kennt nur die Spot-Tabelle und dedupliziert
-// dadurch bereits von Natur aus.
+// dadurch bereits von Natur aus - seit #176 referenziert eine Etappe (Tour mit gesetzter role)
+// ihre Von/Nach-Orte per excursion_spots (spot_ids) statt per from_place_id/to_place_id.
 test('Ein von mehreren Etappen referenzierter Reise-Ort-Spot erscheint nur einmal in der Spots-Liste', async ({
   page,
 }) => {
@@ -36,14 +37,16 @@ test('Ein von mehreren Etappen referenzierter Reise-Ort-Spot erscheint nur einma
   const destination = await destinationSpot.json();
 
   // Zwei Etappen (Hin- und Rückflug), die beide dieselben zwei Orte referenzieren - der Bug zeigte
-  // sich erst dadurch, dass ein Ort von MEHREREN Etappen aus referenziert wird.
-  const outbound = await page.request.post('/api/travel', {
-    data: { trip_id: tripId, title: `Hinflug ${marker}`, type: 'Flug', from_place_id: home.id, to_place_id: destination.id },
+  // sich erst dadurch, dass ein Ort von MEHREREN Etappen aus referenziert wird. Seit #176 ist eine
+  // Etappe eine Tour (ideas) mit gesetzter role und genau zwei spot_ids (Von/Nach) statt einer
+  // eigenen travel_items-Zeile mit from_place_id/to_place_id.
+  const outbound = await page.request.post('/api/ideas', {
+    data: { trip_id: tripId, title: `Hinflug ${marker}`, transport_type: 'Flug', role: 'arrival', spot_ids: [home.id, destination.id] },
   });
   expect(outbound.ok()).toBeTruthy();
 
-  const inbound = await page.request.post('/api/travel', {
-    data: { trip_id: tripId, title: `Rückflug ${marker}`, type: 'Flug', from_place_id: destination.id, to_place_id: home.id },
+  const inbound = await page.request.post('/api/ideas', {
+    data: { trip_id: tripId, title: `Rückflug ${marker}`, transport_type: 'Flug', role: 'departure', spot_ids: [destination.id, home.id] },
   });
   expect(inbound.ok()).toBeTruthy();
 

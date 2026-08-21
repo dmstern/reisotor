@@ -2,7 +2,8 @@
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { api } from '../api/client';
-import type { CalendarEntry, ScheduleItem, Spot, TodoItem, TravelItem } from '../api/types';
+import type { CalendarEntry, ScheduleItem, Spot, TodoItem } from '../api/types';
+import { deriveTravelItems } from '../utils/deriveTravelItems';
 import { useTripStore } from '../stores/trip';
 import { useExcursionsStore } from '../stores/excursions';
 import { useSpotsStore } from '../stores/spots';
@@ -57,7 +58,9 @@ const weatherProvider = useWeatherProviderStore();
 // bringt sie bereits mit.
 const accommodations = computed(() => spotsStore.spots.filter((s) => s.category === 'Unterkunft'));
 const todos = ref<TodoItem[]>([]);
-const travelItems = ref<TravelItem[]>([]);
+// #176: keine eigene Reise-Etappen-Liste mehr, sondern aus role-getaggten Touren abgeleitet (siehe
+// utils/deriveTravelItems.ts) - excursionsStore lädt automatisch bei erster Verwendung.
+const travelItems = computed(() => deriveTravelItems(excursionsStore.excursions, spotsStore.spots));
 const selectedDate = ref<string | null>(null);
 const loading = ref(true);
 
@@ -222,14 +225,12 @@ function downloadIcsForEntry(entry: CalendarEntry) {
 async function loadAll() {
   const tripId = tripStore.currentTripId;
   if (tripId == null) return;
-  const [todosRes, travelRes] = await Promise.all([
+  const [todosRes] = await Promise.all([
     api.get<TodoItem[]>(`/todos?trip_id=${tripId}`),
-    api.get<TravelItem[]>(`/travel?trip_id=${tripId}`),
     spotsStore.load(),
     scheduleStore.load(),
   ]);
   todos.value = todosRes;
-  travelItems.value = travelRes;
 }
 
 // Nicht ein einzelner globaler Wetterort mehr, sondern je nach Tag ein anderer: an Urlaubstagen der
@@ -742,13 +743,18 @@ function jumpToTrip() {
 
 function openEntry(entry: CalendarEntry) {
   if (entry.kind === 'trip') jumpToTrip();
-  // Hash-Sprung (#todo-<id>/#travel-<id>) statt bloß der Ziel-Route: TodoView.vue/TravelSection.vue
+  // Hash-Sprung (#todo-<id>/#travel-<id>) statt bloß der Ziel-Route: TodoView.vue/ExcursionsView.vue
   // nehmen die id über hashHighlightId() zusätzlich in ihre bereits bestehende highlightedIds-Menge
   // auf, der Router scrollt automatisch zum Element mit dieser id (siehe router/index.ts's
   // scrollBehavior).
   else if (entry.kind === 'todo') router.push(`/listen?tab=todo#todo-${entry.todoId}`);
-  else if (entry.kind === 'travel') router.push(`/excursions?group=travel#travel-${entry.travelId}`);
-  else if (entry.kind === 'schedule') viewingItem.value = entry.scheduleItem;
+  // Eine Tour mit gesetzter role (ehemalige Reise-Etappe, #176) bleibt zwar ein echter,
+  // schedule_items-basierter kind:'schedule'-Eintrag (siehe calendarEntries.ts), springt beim Klick
+  // aber weiterhin direkt zur Reise-Karte statt den generischen Termin-Dialog zu öffnen - dieselbe
+  // Optik wie vor der Zusammenlegung.
+  else if (entry.category === 'travel' && entry.ideaId != null) {
+    router.push(`/excursions?group=travel#travel-${entry.ideaId}`);
+  } else if (entry.kind === 'schedule') viewingItem.value = entry.scheduleItem;
 }
 
 /** Für die Todo-Checkbox im Kalender (Tages-Detailliste + CalendarWeek.vue's Kompaktzelle): der

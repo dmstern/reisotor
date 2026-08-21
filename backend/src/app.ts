@@ -20,7 +20,6 @@ import { shoppingRoutes } from './routes/shopping.js';
 import { todosRoutes } from './routes/todos.js';
 import { notesRoutes } from './routes/notes.js';
 import { diaryRoutes } from './routes/diary.js';
-import { travelRoutes } from './routes/travel.js';
 import { spotsRoutes } from './routes/spots.js';
 import { buildInfoRoutes } from './routes/buildInfo.js';
 import { trashRoutes } from './routes/trash.js';
@@ -99,7 +98,6 @@ export async function buildApp(opts: { logger?: boolean } = {}) {
         await protectedApi.register(todosRoutes);
         await protectedApi.register(notesRoutes);
         await protectedApi.register(diaryRoutes);
-        await protectedApi.register(travelRoutes);
         await protectedApi.register(spotsRoutes);
         await protectedApi.register(buildInfoRoutes);
         await protectedApi.register(trashRoutes);

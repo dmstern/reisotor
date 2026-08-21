@@ -52,7 +52,6 @@ export const PUSH_PREFERENCE_DOMAINS = [
   'todos',
   'spots',
   'ideas',
-  'travel',
   'budget',
   'diary',
   'notes',

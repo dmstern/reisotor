@@ -20,7 +20,6 @@ const TABLES = [
   'diary_likes',
   'diary_comments',
   'diary_excursions',
-  'travel_items',
   'spots',
   'excursion_spots',
   'idea_likes',
@@ -46,7 +45,6 @@ const DIRECT_TRIP_SCOPED_TABLES = new Set([
   'todo_items',
   'notes',
   'diary_entries',
-  'travel_items',
   'spots',
 ]);
 
@@ -117,12 +115,6 @@ async function resolveMissingCoordinates(data: BackupPayload['data']) {
   }
 
   await Promise.all(data.schedule_items.map((row) => resolveRow(row, 'maps_link', 'lat', 'lng')));
-  await Promise.all(
-    data.travel_items.map(async (row) => {
-      await resolveRow(row, 'from_maps_link', 'from_lat', 'from_lng');
-      await resolveRow(row, 'to_maps_link', 'to_lat', 'to_lng');
-    }),
-  );
 }
 
 // SQL-Fragment "gehört zu einem Urlaub, dessen Mitglied die anfragende Person ist" – als

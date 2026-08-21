@@ -72,7 +72,7 @@ function travelDuration(item: TravelItem) {
       <span v-if="item.paid_by_user_id"> · bezahlt von {{ payerLabel }}</span>
     </p>
     <RichTextDisplay v-if="item.note" class="detail-row note" :content="item.note" :format="item.note_format" />
-    <FileAttachments domain="travel" :entity-id="item.id" :editable="false" />
+    <FileAttachments domain="ideas" :entity-id="item.id" :editable="false" />
     <div class="detail-actions">
       <a v-if="item.link" :href="item.link" target="_blank" rel="noopener" class="card-action-btn">
         {{ linkLabel(item.link) }} ↗

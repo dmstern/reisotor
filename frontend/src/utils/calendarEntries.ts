@@ -58,6 +58,7 @@ export function scheduleItemToEntry(
   travelItems: TravelItem[],
 ): CalendarEntry {
   const linked = item.spot_id != null || item.idea_id != null;
+  const linkedExcursion = item.idea_id != null ? excursions.find((e) => e.id === item.idea_id) : undefined;
   return {
     key: `s-${item.id}`,
     kind: 'schedule',
@@ -71,13 +72,18 @@ export function scheduleItemToEntry(
     // Mit Spot/Tour verknüpfte Termine übernehmen bewusst die "Ausflug"-Kategorie (einheitliche
     // orange Rahmenfarbe) statt einer eigenen – exakt dieselbe Optik, die verknüpfte Termine schon
     // vor der Einführung dieser Verknüpfung hatten (damals als eigenständige "Ausflug"-Einträge).
-    category: linked ? 'excursion' : item.category,
+    // Eine Tour mit gesetzter role (ehemalige Reise-Etappe, #176) bekommt stattdessen weiterhin die
+    // eigene "Reise"-Kategorie (grün/✈️) - dieselbe Optik wie vor der Zusammenlegung, nur jetzt aus
+    // demselben schedule_items-Eintrag abgeleitet statt aus einem eigenen, zweiten Kalender-Eintrag
+    // (siehe entfernte buildTravelEntries()): jede Tour hat GENAU einen Kalender-Eintrag, sonst
+    // erschien eine terminierte Reise-Etappe früher doppelt (einmal als Ausflug-, einmal als
+    // Reise-Eintrag).
+    category: linkedExcursion?.role ? 'travel' : linked ? 'excursion' : item.category,
     icon: resolveScheduleItemIcon(item, spots, excursions, travelItems),
     iconDef: resolveScheduleItemIconDef(item, spots, excursions, travelItems),
     ideaId: item.idea_id,
     spotId: item.spot_id,
     todoId: null,
-    travelId: null,
     scheduleItem: item,
     done: false,
   };
@@ -102,7 +108,6 @@ export function buildTripEntries(trip: Trip | null): CalendarEntry[] {
       ideaId: null,
       spotId: null,
       todoId: null,
-      travelId: null,
       scheduleItem: null,
       done: false,
     },
@@ -122,7 +127,6 @@ export function buildTripEntries(trip: Trip | null): CalendarEntry[] {
       ideaId: null,
       spotId: null,
       todoId: null,
-      travelId: null,
       scheduleItem: null,
       done: false,
     });
@@ -148,34 +152,8 @@ export function buildTodoEntries(todos: TodoItem[]): CalendarEntry[] {
       ideaId: null,
       spotId: null,
       todoId: t.id,
-      travelId: null,
       scheduleItem: null,
       done: !!t.done,
-    }));
-}
-
-// Reise-Einträge (Flug/Zug/Bus/…) mit Datum erscheinen automatisch (nicht editierbar) im Kalender,
-// analog zu Urlaub-Stammdaten und ToDos.
-export function buildTravelEntries(travelItems: TravelItem[]): CalendarEntry[] {
-  return travelItems
-    .filter((t): t is TravelItem & { date: string } => !!t.date)
-    .map((t) => ({
-      key: `travel-${t.id}`,
-      kind: 'travel' as const,
-      date: t.date,
-      endDate: t.date,
-      time: t.departure_time,
-      endTime: t.arrival_time,
-      title: t.title,
-      note: t.note,
-      location: t.from_location && t.to_location ? `${t.from_location} → ${t.to_location}` : null,
-      category: 'travel' as const,
-      ideaId: null,
-      spotId: null,
-      todoId: null,
-      travelId: t.id,
-      scheduleItem: null,
-      done: false,
     }));
 }
 
@@ -191,6 +169,5 @@ export function buildAllEntries(
     ...items.map((item) => scheduleItemToEntry(item, spots, excursions, travelItems)),
     ...buildTripEntries(trip),
     ...buildTodoEntries(todos),
-    ...buildTravelEntries(travelItems),
   ];
 }

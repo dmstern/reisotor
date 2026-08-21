@@ -8,15 +8,19 @@ import { requireTripMember } from '../tripAccess.js';
 import { recordActivity } from '../activity.js';
 import { isUserRestricted } from '../registrationConfig.js';
 
-export type AttachmentDomain = 'travel' | 'spots' | 'notes' | 'schedule' | 'budget';
+export type AttachmentDomain = 'ideas' | 'spots' | 'notes' | 'schedule' | 'budget';
 
 // Mappt jede Domäne auf ihre Tabelle – daraus wird trip_id server-seitig nachgeschlagen (nie vom
 // Client vertraut), das verhindert Spoofing/Cross-Trip-Zugriff über eine falsche trip_id im Body.
 // 'spots' deckt seit der Verschmelzung von Unterkunft in Spots (siehe Migrationskommentar in
 // db/index.ts) auch Unterkunft-Anhänge (Tickets/Buchungsbestätigungen) ab – jeder Spot kann jetzt
-// Datei-Anhänge tragen, nicht mehr nur die vormals eigene Unterkunft-Tabelle.
+// Datei-Anhänge tragen, nicht mehr nur die vormals eigene Unterkunft-Tabelle. 'ideas' deckt seit
+// #176 (Ablösung von travel_items) auch die ehemaligen Reise-Etappen-Anhänge (Tickets/Buchungs-
+// bestätigungen) ab - eine Tour mit gesetztem role trägt jetzt dieselben Anhänge wie zuvor der
+// travel_items-Eintrag (siehe Migrationsblock in db/index.ts, der bestehende domain='travel'-Zeilen
+// einmalig auf domain='ideas' + die neue Tour-Id umhängt).
 const DOMAIN_TABLE: Record<AttachmentDomain, string> = {
-  travel: 'travel_items',
+  ideas: 'ideas',
   spots: 'spots',
   notes: 'notes',
   schedule: 'schedule_items',

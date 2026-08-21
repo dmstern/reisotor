@@ -2,7 +2,10 @@
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch, type ComponentPublicInstance, type Ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { api } from '../api/client';
-import type { Excursion, ExcursionComment, ExcursionLike, LocationTrack, Spot, TravelItem, User } from '../api/types';
+import type { Excursion, ExcursionComment, ExcursionLike, IdeaRole, LocationTrack, Spot, User } from '../api/types';
+import { deriveTravelItems } from '../utils/deriveTravelItems';
+import { TRAVEL_ROLE_META, TRAVEL_ROLE_OPTIONS } from '../utils/travelRole';
+import { travelTypeIcon } from '../utils/travelTypeIcon';
 import { useAuthStore } from '../stores/auth';
 import { useTripStore } from '../stores/trip';
 import { useSpotsStore } from '../stores/spots';
@@ -23,7 +26,6 @@ import SegmentedToggle from '../components/SegmentedToggle.vue';
 import SpotOrderPicker from '../components/SpotOrderPicker.vue';
 import UndoDeleteRow from '../components/UndoDeleteRow.vue';
 import TripMap from '../components/TripMap.vue';
-import TravelSection from '../components/TravelSection.vue';
 import Modal from '../components/Modal.vue';
 import Combobox from '../components/Combobox.vue';
 import FormField from '../components/FormField.vue';
@@ -85,7 +87,9 @@ async function removeTrack(id: number) {
 }
 
 const users = ref<User[]>([]);
-const travelItems = ref<TravelItem[]>([]);
+// #176: keine eigene Reise-Etappen-Liste mehr, sondern aus role-getaggten Touren abgeleitet (siehe
+// utils/deriveTravelItems.ts) - excursionsStore/spotsStore laden bereits unten in onMounted.
+const travelItems = computed(() => deriveTravelItems(excursionsStore.excursions, spotsStore.spots));
 const loading = ref(true);
 const highlightedIds = ref<Set<number>>(new Set());
 // Likes/Kommentare von Touren liegen (wie in TripMap.vue) nicht im excursions-Store, sondern
@@ -160,17 +164,21 @@ onMounted(async () => {
   // Bestätigen einer Tour - analog zum bestehenden Spot-Hash oben.
   const excursionHashId = hashHighlightId(route.hash, 'excursion');
   if (excursionHashId != null) highlightedIds.value.add(excursionHashId);
+  // Sprung aus dem Kalender bei einer terminierten Tour mit gesetzter role (ehemalige Reise-Etappe,
+  // #176, ScheduleView.vue's openEntry()) - eigenes Hash-Präfix "travel-", da groupMode bereits über
+  // den ?group=travel-Query-Parameter oben umgeschaltet wird (kein onFocus...FromMap()-Umschalten
+  // wie bei excursionHashId nötig, der Router scrollt automatisch zum Element mit dieser id).
+  const travelHashId = hashHighlightId(route.hash, 'travel');
+  if (travelHashId != null) highlightedIds.value.add(travelHashId);
   try {
-    const [usersRes, travelRes, likesRes, commentsRes] = await Promise.all([
+    const [usersRes, likesRes, commentsRes] = await Promise.all([
       api.get<User[]>(`/trips/${tripId}/members`),
-      api.get<TravelItem[]>(`/travel?trip_id=${tripId}`),
       api.get<ExcursionLike[]>(`/ideas/likes?trip_id=${tripId}`),
       api.get<ExcursionComment[]>(`/ideas/comments?trip_id=${tripId}`),
       spotsStore.load(),
       excursionsStore.load(),
     ]);
     users.value = usersRes;
-    travelItems.value = travelRes;
     excursionLikes.value = likesRes;
     excursionComments.value = commentsRes;
   } catch {
@@ -261,8 +269,33 @@ async function removeExcursionComment(id: number) {
 
 // --- Touren anlegen/bearbeiten/löschen (aus der früheren Ausflüge-Schublade, views/
 // ExcursionsDrawer.vue, hierher übernommen, siehe Kommentar oben) ---
+// #176: Transportmittel-Abschnitt (aufklappbar) macht aus einer normalen Tour eine ehemalige
+// Reise-Etappe (Anreise/Abreise/Weiterreise) - EIN Formular/Modell statt zweier getrennter, siehe
+// Konzept-Entscheidung in Issue #68/#176. transportEnabled ist reiner Formular-Zustand (steuert nur,
+// ob der Abschnitt aufgeklappt ist), NICHT direkt an role gekoppelt: role bleibt bewusst optional
+// wählbar (z. B. Fährfahrt zur Nachbarinsel = Transportmittel, aber keine der drei Rollen).
+const TRANSPORT_TYPE_OPTIONS = ['Flug', 'Zug', 'Bus', 'Auto', 'Fähre', 'Sonstiges'];
 const showExcursionForm = ref(false);
-const emptyExcursionForm = () => ({ title: '', image_url: '', note: '', date: '', spot_ids: [] as number[] });
+const emptyExcursionForm = () => ({
+  title: '',
+  image_url: '',
+  note: '',
+  date: '',
+  spot_ids: [] as number[],
+  transportEnabled: false,
+  role: '' as IdeaRole | '',
+  transport_type: 'Flug',
+  from_spot_id: '',
+  to_spot_id: '',
+  departure_time: '',
+  arrival_time: '',
+  checkin_info: '',
+  amount: '',
+  paid_by_user_id: '',
+  luggage: '',
+  seat: '',
+  ticket_link: '',
+});
 const excursionForm = ref(emptyExcursionForm());
 
 const editingExcursion = ref<number | null>(null);
@@ -276,47 +309,95 @@ const editExcursionDraft = useDraftAutosave(
   computed(() => editingExcursion.value !== null),
 );
 
+/** travelMode vorbelegt den Transportmittel-Abschnitt aufgeklappt - Einstieg über den "+ Neue
+ *  Fahrt/Flug"-Button in der Reise-Gruppierung (siehe Template), spart dort den zusätzlichen Klick
+ *  zum Aufklappen. */
+function openExcursionForm(travelMode = false) {
+  excursionForm.value = emptyExcursionForm();
+  if (travelMode) excursionForm.value.transportEnabled = true;
+  showExcursionForm.value = true;
+}
+
 function closeExcursionForm() {
   showExcursionForm.value = false;
   excursionForm.value = emptyExcursionForm();
   newExcursionDraft.clear();
 }
 
+/** Baut spot_ids aus dem Von-/Nach-Paar, wenn der Transportmittel-Abschnitt aktiv ist (genau zwei
+ *  Stationen, siehe routes/ideas.ts's Validierung) - sonst bleibt die per SpotOrderPicker gepflegte
+ *  Liste unangetastet. */
+function resolveTourSpotIds(form: ReturnType<typeof emptyExcursionForm>): number[] {
+  if (!form.transportEnabled) return form.spot_ids;
+  return [form.from_spot_id, form.to_spot_id].filter((id): id is string => !!id).map(Number);
+}
+
+function tourPayload(form: ReturnType<typeof emptyExcursionForm>) {
+  const role = form.transportEnabled && form.role ? form.role : undefined;
+  return {
+    title: form.title.trim(),
+    image_url: form.image_url || undefined,
+    note: form.note && !isEmptyRichText(form.note) ? form.note : undefined,
+    note_format: 'html' as const,
+    date: form.date || undefined,
+    spot_ids: resolveTourSpotIds(form),
+    role,
+    transport_type: form.transportEnabled ? form.transport_type : null,
+    departure_time: form.transportEnabled ? form.departure_time || null : null,
+    arrival_time: form.transportEnabled ? form.arrival_time || null : null,
+    checkin_info: form.transportEnabled ? form.checkin_info || null : null,
+    amount: form.transportEnabled && form.amount ? Number(form.amount) : null,
+    paid_by_user_id: form.transportEnabled && form.paid_by_user_id ? Number(form.paid_by_user_id) : null,
+    luggage: form.transportEnabled ? form.luggage || null : null,
+    seat: form.transportEnabled ? form.seat || null : null,
+    ticket_link: form.transportEnabled ? form.ticket_link || null : null,
+  };
+}
+
 async function addExcursion() {
   if (!excursionForm.value.title.trim()) return;
-  await excursionsStore.create({
-    title: excursionForm.value.title.trim(),
-    image_url: excursionForm.value.image_url || undefined,
-    note: excursionForm.value.note && !isEmptyRichText(excursionForm.value.note) ? excursionForm.value.note : undefined,
-    note_format: 'html',
-    date: excursionForm.value.date || undefined,
-    spot_ids: excursionForm.value.spot_ids,
-  });
+  if (excursionForm.value.transportEnabled && excursionForm.value.role && resolveTourSpotIds(excursionForm.value).length !== 2) {
+    return;
+  }
+  await excursionsStore.create(tourPayload(excursionForm.value));
   closeExcursionForm();
 }
 
 function startEditExcursion(excursion: Excursion) {
   editingExcursion.value = excursion.id;
+  const transportEnabled = !!excursion.role || !!excursion.transport_type;
   editExcursionForm.value = {
     title: excursion.title,
     image_url: excursion.image_url ?? '',
     note: excursion.note ?? '',
     date: excursion.date ?? '',
     spot_ids: [...excursion.spot_ids],
+    transportEnabled,
+    role: excursion.role ?? '',
+    transport_type: excursion.transport_type ?? 'Flug',
+    from_spot_id: transportEnabled && excursion.spot_ids[0] != null ? String(excursion.spot_ids[0]) : '',
+    to_spot_id: transportEnabled && excursion.spot_ids[1] != null ? String(excursion.spot_ids[1]) : '',
+    departure_time: excursion.departure_time ?? '',
+    arrival_time: excursion.arrival_time ?? '',
+    checkin_info: excursion.checkin_info ?? '',
+    amount: excursion.amount != null ? String(excursion.amount) : '',
+    paid_by_user_id: excursion.paid_by_user_id != null ? String(excursion.paid_by_user_id) : '',
+    luggage: excursion.luggage ?? '',
+    seat: excursion.seat ?? '',
+    ticket_link: excursion.ticket_link ?? '',
   };
 }
 
 async function submitEditExcursion() {
   if (editingExcursion.value == null || !editExcursionForm.value.title.trim()) return;
-  await excursionsStore.update(editingExcursion.value, {
-    title: editExcursionForm.value.title.trim(),
-    image_url: editExcursionForm.value.image_url || undefined,
-    note:
-      editExcursionForm.value.note && !isEmptyRichText(editExcursionForm.value.note) ? editExcursionForm.value.note : undefined,
-    note_format: 'html',
-    date: editExcursionForm.value.date || undefined,
-    spot_ids: editExcursionForm.value.spot_ids,
-  });
+  if (
+    editExcursionForm.value.transportEnabled &&
+    editExcursionForm.value.role &&
+    resolveTourSpotIds(editExcursionForm.value).length !== 2
+  ) {
+    return;
+  }
+  await excursionsStore.update(editingExcursion.value, tourPayload(editExcursionForm.value));
   editExcursionDraft.clear();
   editingExcursion.value = null;
 }
@@ -520,17 +601,15 @@ const sortMode = usePersistedRef<'alpha' | 'likes'>('reisotor-excursions-sort-mo
 const groupMode = usePersistedRef<'category' | 'tours' | 'travel'>('reisotor-excursions-group-mode', 'category');
 const UNASSIGNED_TOUR_GROUP = 'Ohne Tour';
 
-// Spots, Touren (ideas) UND Reise (travel) teilen sich diese eine Sicht, tracken in liveSync aber
-// als getrennte Domänen. Nur die gerade aktive Gruppierung wird als gesehen markiert (initial in
-// onMounted unten, danach bei jedem Wechsel hier) - die jeweils anderen behalten ihren "neu"-Punkt
-// (siehe Gruppieren-Toggle weiter unten im Template), bis tatsächlich dorthin umgeschaltet wird;
-// sonst würde ein Wechsel auf "Touren" nie einen Punkt zeigen, weil 'ideas' schon beim bloßen
-// Öffnen der Seite unbesehen als gesehen gegolten hätte. TravelSection.vue markiert 'travel' zwar
-// selbst beim eigenen onMounted (übernommen aus der früheren TravelView.vue), aber nur dann, wenn
-// es überhaupt gemountet ist (also groupMode bereits 'travel' ist) - dieser Fall greift hier
-// trotzdem mit, falls die Seite direkt mit ?group=travel geöffnet wird, bevor TravelSection mountet.
+// Spots UND Touren/Reise (beide "ideas", #176: role-getaggte Touren sind keine eigene Domäne mehr)
+// teilen sich diese eine Sicht, tracken in liveSync aber als getrennte Domänen. Nur die gerade
+// aktive Gruppierung wird als gesehen markiert (initial in onMounted unten, danach bei jedem
+// Wechsel hier) - "Spots" behält ihren eigenen "neu"-Punkt, bis tatsächlich dorthin umgeschaltet
+// wird; "Touren" und "Reise" teilen sich denselben 'ideas'-Punkt (beide zeigen letztlich role-lose
+// bzw. role-getaggte ideas-Zeilen), ein Wechsel zwischen beiden markiert also zwangsläufig auch die
+// jeweils andere Gruppierung als gesehen - kein eigenes Tracking pro Rolle nötig.
 function markSeenForGroupMode(mode: 'category' | 'tours' | 'travel') {
-  const domain = mode === 'tours' ? 'ideas' : mode === 'travel' ? 'travel' : 'spots';
+  const domain = mode === 'category' ? 'spots' : 'ideas';
   for (const id of liveSync.markSeen(domain)) highlightedIds.value.add(id);
 }
 
@@ -649,6 +728,26 @@ function sortedCategoryKeys(categories: Iterable<string>): string[] {
   const custom = [...set].filter((c) => !CATEGORY_GROUP_ORDER.includes(c) && c !== 'Sonstiges').sort();
   return [...known, ...custom, ...(set.has('Sonstiges') ? ['Sonstiges'] : [])];
 }
+
+// #176: "Reise"-Gruppierung zeigt Touren mit gesetzter role statt der früheren eigenen
+// travel_items-Liste (TravelSection.vue). Feste Position statt rein chronologisch (Konzept-
+// Entscheidung in Issue #68/#176): Anreise immer zuerst, Abreise immer zuletzt, alle Weiterreisen
+// dazwischen chronologisch (ungeplante Weiterreisen ohne Datum ans Ende dieser mittleren Gruppe).
+const ROLE_SORT_ORDER: Record<IdeaRole, number> = { arrival: 0, onward: 1, departure: 2 };
+const travelTours = computed(() =>
+  excursionsStore.excursions
+    .filter((e) => e.role != null)
+    .slice()
+    .sort((a, b) => {
+      const roleDiff = ROLE_SORT_ORDER[a.role!] - ROLE_SORT_ORDER[b.role!];
+      if (roleDiff !== 0) return roleDiff;
+      if (a.role !== 'onward') return 0;
+      if (!a.date && !b.date) return 0;
+      if (!a.date) return 1;
+      if (!b.date) return -1;
+      return a.date.localeCompare(b.date);
+    }),
+);
 
 const spotGroups = computed(() => {
   const groups = new Map<string, SpotsGroupItem[]>();
@@ -1753,16 +1852,17 @@ async function removeSpot(id: number) {
             :options="[
               { value: 'category', label: 'Spots', icon: FORM_FIELD_ICONS.category, iconGroup: 'formFields', dot: liveSync.hasUnseen('spots') },
               { value: 'tours', label: 'Touren', icon: SECTION_ICON_DEFS.excursions, iconGroup: 'navigation', dot: liveSync.hasUnseen('ideas') },
-              { value: 'travel', label: 'Reise', icon: SECTION_ICON_DEFS.travel, iconGroup: 'navigation', dot: liveSync.hasUnseen('travel') },
+              { value: 'travel', label: 'Reise', icon: SECTION_ICON_DEFS.travel, iconGroup: 'navigation', dot: liveSync.hasUnseen('ideas') },
             ]"
           />
         </h2>
         <div class="header-actions">
           <button v-if="groupMode === 'category'" @click="showSpotForm = true"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Neuer Spot</button>
-          <button v-else-if="groupMode === 'tours'" @click="showExcursionForm = true"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Neue Tour</button>
-          <!-- Kein eigener Hinzufügen-Button hier für 'travel' - TravelSection.vue bringt ihren
-               eigenen "+ Neue Fahrt/Flug"-Button mit (übernommen aus der früheren TravelView.vue),
-               damit die Formular-/Draft-Logik dort unangetastet bleibt (siehe #175). -->
+          <button v-else-if="groupMode === 'tours'" @click="openExcursionForm()"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Neue Tour</button>
+          <!-- #176: dasselbe Touren-Formular wie oben, nur mit vorab aufgeklapptem
+               Transportmittel-Abschnitt (openExcursionForm(true)) - kein eigenes Formular mehr wie
+               zuvor in der separaten TravelView.vue/TravelSection.vue. -->
+          <button v-else-if="groupMode === 'travel'" @click="openExcursionForm(true)"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Neue Fahrt/Flug</button>
 
           <!-- Zweiter Einstiegspunkt zum ⏺️/⏹️-Button auf TripMap.vue (Start dort mit Sichtbarkeits-
                Auswahl/Tour-Kopplung): der Karten-Button steckt in einer bereits vollen
@@ -1843,10 +1943,9 @@ async function removeSpot(id: number) {
         </ul>
       </div>
 
-      <!-- Filter/Sortierung, Kategorie-Navi und die Spots-/Touren-Gruppenliste unten gelten nur für
-           die Gruppierungen "Spots"/"Touren" - im 'travel'-Modus rendert stattdessen TravelSection
-           weiter unten (siehe schließendes template dort). -->
-      <template v-if="groupMode !== 'travel'">
+      <!-- Touren-Formular: für BEIDE Gruppierungen ("Touren" und "Reise") dasselbe Modal/Modell -
+           der aufklappbare Transportmittel-Abschnitt (#176) macht aus einer normalen Tour bei
+           Bedarf eine ehemalige Reise-Etappe, siehe Konzept-Entscheidung in Issue #68/#176. -->
       <Modal :model-value="showExcursionForm" title="Neue Tour" full-height @update:model-value="(v) => !v && closeExcursionForm()">
         <form class="edit-form" @submit.prevent="addExcursion">
           <FormField icon="title" label="Titel">
@@ -1861,8 +1960,80 @@ async function removeSpot(id: number) {
           <FormField icon="date" label="Datum (optional – sonst „In Planung“)">
             <input v-model="excursionForm.date" type="date" />
           </FormField>
+          <label class="checkbox-option">
+            <input type="checkbox" v-model="excursionForm.transportEnabled" />
+            <AppIcon :icon="ACTION_ICONS.recordStart" :size="14" group="actions" /> Transportmittel (Anreise/Abreise/Weiterreise/Fahrt)
+          </label>
+          <template v-if="excursionForm.transportEnabled">
+            <FormField icon="category" label="Art">
+              <select v-model="excursionForm.transport_type">
+                <option v-for="t in TRANSPORT_TYPE_OPTIONS" :key="t" :value="t">{{ travelTypeIcon(t) }} {{ t }}</option>
+              </select>
+            </FormField>
+            <FormField icon="tour" label="Rolle (für Karten-Urlaubsfokus)">
+              <select v-model="excursionForm.role">
+                <option value="">– keine (nur Transportmittel) –</option>
+                <option v-for="r in TRAVEL_ROLE_OPTIONS" :key="r" :value="r">
+                  {{ TRAVEL_ROLE_META[r].icon }} {{ TRAVEL_ROLE_META[r].label }} ({{ TRAVEL_ROLE_META[r].hint }})
+                </option>
+              </select>
+            </FormField>
+            <div class="row">
+              <FormField icon="location" label="Von">
+                <select v-model="excursionForm.from_spot_id">
+                  <option value="">– wählen –</option>
+                  <option v-for="s in spotsStore.spots" :key="s.id" :value="String(s.id)">{{ spotCategoryMeta(s.category).icon }} {{ s.title }}</option>
+                </select>
+              </FormField>
+              <FormField icon="location" label="Nach">
+                <select v-model="excursionForm.to_spot_id">
+                  <option value="">– wählen –</option>
+                  <option v-for="s in spotsStore.spots" :key="s.id" :value="String(s.id)">{{ spotCategoryMeta(s.category).icon }} {{ s.title }}</option>
+                </select>
+              </FormField>
+            </div>
+            <p v-if="excursionForm.role && (!excursionForm.from_spot_id || !excursionForm.to_spot_id)" class="hint error">
+              <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Für Anreise/Abreise/Weiterreise werden Von und Nach benötigt (beide als Spot anlegen, falls noch nicht vorhanden).
+            </p>
+            <div class="row">
+              <FormField icon="time" label="Abfahrt/Abflug">
+                <input v-model="excursionForm.departure_time" type="time" />
+              </FormField>
+              <FormField icon="time" label="Ankunft">
+                <input v-model="excursionForm.arrival_time" type="time" />
+              </FormField>
+            </div>
+            <FormField icon="note" label="Vorher da sein">
+              <input v-model="excursionForm.checkin_info" type="text" placeholder="z. B. 2 Stunden vorher / Check-in ab 10:00" />
+            </FormField>
+            <div class="row">
+              <FormField icon="amount" label="Kosten">
+                <input v-model="excursionForm.amount" type="number" step="0.01" placeholder="optional" />
+              </FormField>
+              <FormField icon="shared" label="Bezahlt von">
+                <select v-model="excursionForm.paid_by_user_id">
+                  <option value="">–</option>
+                  <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
+                </select>
+              </FormField>
+            </div>
+            <p v-if="excursionForm.amount && !excursionForm.paid_by_user_id" class="hint">
+              Ohne Zahler:in wird der Betrag nicht in der Budgetplanung berücksichtigt.
+            </p>
+            <div class="row">
+              <FormField icon="note" label="Gepäck">
+                <input v-model="excursionForm.luggage" type="text" placeholder="z. B. 1x Koffer 23kg, 1x Handgepäck" />
+              </FormField>
+              <FormField icon="note" label="Sitzplatz">
+                <input v-model="excursionForm.seat" type="text" placeholder="z. B. 12A" />
+              </FormField>
+            </div>
+            <FormField icon="link" label="Link (Buchung/Check-in)">
+              <input v-model="excursionForm.ticket_link" type="url" />
+            </FormField>
+          </template>
           <SpotOrderPicker
-            v-if="spotsStore.spots.length"
+            v-if="!excursionForm.transportEnabled && spotsStore.spots.length"
             v-model="excursionForm.spot_ids"
             :spots="spotsStore.spots"
             :like-count="spotsStore.likeCountFor"
@@ -1891,17 +2062,94 @@ async function removeSpot(id: number) {
           <FormField icon="date" label="Datum (optional – sonst „In Planung“)">
             <input v-model="editExcursionForm.date" type="date" />
           </FormField>
+          <label class="checkbox-option">
+            <input type="checkbox" v-model="editExcursionForm.transportEnabled" />
+            <AppIcon :icon="ACTION_ICONS.recordStart" :size="14" group="actions" /> Transportmittel (Anreise/Abreise/Weiterreise/Fahrt)
+          </label>
+          <template v-if="editExcursionForm.transportEnabled">
+            <FormField icon="category" label="Art">
+              <select v-model="editExcursionForm.transport_type">
+                <option v-for="t in TRANSPORT_TYPE_OPTIONS" :key="t" :value="t">{{ travelTypeIcon(t) }} {{ t }}</option>
+              </select>
+            </FormField>
+            <FormField icon="tour" label="Rolle (für Karten-Urlaubsfokus)">
+              <select v-model="editExcursionForm.role">
+                <option value="">– keine (nur Transportmittel) –</option>
+                <option v-for="r in TRAVEL_ROLE_OPTIONS" :key="r" :value="r">
+                  {{ TRAVEL_ROLE_META[r].icon }} {{ TRAVEL_ROLE_META[r].label }} ({{ TRAVEL_ROLE_META[r].hint }})
+                </option>
+              </select>
+            </FormField>
+            <div class="row">
+              <FormField icon="location" label="Von">
+                <select v-model="editExcursionForm.from_spot_id">
+                  <option value="">– wählen –</option>
+                  <option v-for="s in spotsStore.spots" :key="s.id" :value="String(s.id)">{{ spotCategoryMeta(s.category).icon }} {{ s.title }}</option>
+                </select>
+              </FormField>
+              <FormField icon="location" label="Nach">
+                <select v-model="editExcursionForm.to_spot_id">
+                  <option value="">– wählen –</option>
+                  <option v-for="s in spotsStore.spots" :key="s.id" :value="String(s.id)">{{ spotCategoryMeta(s.category).icon }} {{ s.title }}</option>
+                </select>
+              </FormField>
+            </div>
+            <p v-if="editExcursionForm.role && (!editExcursionForm.from_spot_id || !editExcursionForm.to_spot_id)" class="hint error">
+              <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Für Anreise/Abreise/Weiterreise werden Von und Nach benötigt (beide als Spot anlegen, falls noch nicht vorhanden).
+            </p>
+            <div class="row">
+              <FormField icon="time" label="Abfahrt/Abflug">
+                <input v-model="editExcursionForm.departure_time" type="time" />
+              </FormField>
+              <FormField icon="time" label="Ankunft">
+                <input v-model="editExcursionForm.arrival_time" type="time" />
+              </FormField>
+            </div>
+            <FormField icon="note" label="Vorher da sein">
+              <input v-model="editExcursionForm.checkin_info" type="text" placeholder="z. B. 2 Stunden vorher / Check-in ab 10:00" />
+            </FormField>
+            <div class="row">
+              <FormField icon="amount" label="Kosten">
+                <input v-model="editExcursionForm.amount" type="number" step="0.01" placeholder="optional" />
+              </FormField>
+              <FormField icon="shared" label="Bezahlt von">
+                <select v-model="editExcursionForm.paid_by_user_id">
+                  <option value="">–</option>
+                  <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
+                </select>
+              </FormField>
+            </div>
+            <p v-if="editExcursionForm.amount && !editExcursionForm.paid_by_user_id" class="hint">
+              Ohne Zahler:in wird der Betrag nicht in der Budgetplanung berücksichtigt.
+            </p>
+            <div class="row">
+              <FormField icon="note" label="Gepäck">
+                <input v-model="editExcursionForm.luggage" type="text" placeholder="z. B. 1x Koffer 23kg, 1x Handgepäck" />
+              </FormField>
+              <FormField icon="note" label="Sitzplatz">
+                <input v-model="editExcursionForm.seat" type="text" placeholder="z. B. 12A" />
+              </FormField>
+            </div>
+            <FormField icon="link" label="Link (Buchung/Check-in)">
+              <input v-model="editExcursionForm.ticket_link" type="url" />
+            </FormField>
+          </template>
           <SpotOrderPicker
-            v-if="spotsStore.spots.length"
+            v-if="!editExcursionForm.transportEnabled && spotsStore.spots.length"
             v-model="editExcursionForm.spot_ids"
             :spots="spotsStore.spots"
             :like-count="spotsStore.likeCountFor"
           />
+          <FileAttachments v-if="editingExcursion" domain="ideas" :entity-id="editingExcursion" />
           <DraftStatusBar :status="editExcursionDraft.status.value" :restored="editExcursionDraft.restored.value" />
           <button type="submit">Speichern</button>
         </form>
       </Modal>
 
+      <!-- Filter/Sortierung, Kategorie-Navi und die Spots-/Touren-Gruppenliste unten gelten nur für
+           die Gruppierungen "Spots"/"Touren" - im 'travel'-Modus rendert stattdessen die Reise-Liste
+           weiter unten (siehe schließendes template dort). -->
+      <template v-if="groupMode !== 'travel'">
       <!-- Filter und Sortierung bewusst direkt hier, unmittelbar über der Kategorie-Navi (statt
            Sortierung z. B. oben im .header): beide wirken auf dieselbe Kategorie-gruppierte Liste,
            sollen deshalb auch räumlich als zusammengehöriges Werkzeug-Paar wahrgenommen werden.
@@ -2250,7 +2498,48 @@ async function removeSpot(id: number) {
       </section>
       <p v-if="!spotGroups.length" class="empty">Noch keine Spots angelegt.</p>
       </template>
-      <TravelSection v-else />
+      <!-- #176: Touren mit gesetzter role (Anreise/Abreise/Weiterreise) statt der früheren eigenen
+           travel_items-Liste (TravelSection.vue) - dieselbe ExcursionCard wie bei "Touren" oben,
+           travelTours ist bereits nach Rolle+Datum sortiert (siehe dortiger Kommentar). -->
+      <template v-else>
+        <p class="hint places-hint">
+          Für Von/Nach wählst du unten im Formular direkt einen bestehenden Spot – neue Orte
+          (Flughafen, Bahnhof, Zuhause, …) legst du zuerst als Spot an (Kategorie z. B. "Flughafen"
+          oder "Zuhause").
+        </p>
+        <TransitionGroup tag="div" name="list" class="masonry cards">
+          <template v-for="tour in travelTours" :key="tour.id">
+            <UndoDeleteRow
+              v-if="excursionsStore.isPending(tour.id)"
+              :label="tour.title"
+              @undo="excursionsStore.restore(tour.id)"
+            />
+            <ExcursionCard
+              v-else
+              :id="`travel-${tour.id}`"
+              :excursion="tour"
+              :highlighted="highlightedIds.has(tour.id)"
+              :creator-label="creatorLabel(tour.created_by)"
+              :like-count="excursionLikesFor(tour.id).length"
+              :liked="excursionLikedByMe(tour.id)"
+              :comments="excursionCommentItemsFor(tour.id)"
+              :stations="spotsStore.spots"
+              :travel-items="travelItems"
+              :expanded="expandedExcursionId === tour.id"
+              @edit="startEditExcursion"
+              @remove="removeExcursion"
+              @toggle-like="toggleExcursionLike(tour.id)"
+              @submit-comment="(content) => submitExcursionComment(tour.id, content)"
+              @remove-comment="removeExcursionComment"
+              @drop-spot="(spotId) => addSpotToExcursion(tour.id, spotId)"
+              @show-on-map="drawers.openMapForExcursion(tour.id)"
+              @open="expandedExcursionId = tour.id"
+              @close="expandedExcursionId = null"
+            />
+          </template>
+        </TransitionGroup>
+        <p v-if="!travelTours.length" class="empty">Noch keine Reise-Etappen eingetragen.</p>
+      </template>
 
       <Modal
         :model-value="editingSpot !== null"

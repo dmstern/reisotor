@@ -60,10 +60,11 @@ export interface ScheduleItem {
 export interface CalendarEntry {
   key: string;
   /** Herkunft des Eintrags: 'schedule' ist ein echter, editierbarer Kalender-Termin (auch wenn er
-   *  mit einem Spot/einer Tour verknüpft ist); 'trip', 'todo' und 'travel' sind synthetische, nicht
-   *  editierbare Einträge aus anderen Sichten (Architekturregel Batch 3: nur lesend/verknüpfend,
-   *  mit Sprung-Button zur Ursprungssicht). */
-  kind: 'schedule' | 'trip' | 'todo' | 'travel';
+   *  mit einem Spot/einer Tour verknüpft ist, inkl. einer Tour mit gesetzter role - siehe deren
+   *  eigene `category: 'travel'` unten statt eines eigenen kind); 'trip' und 'todo' sind
+   *  synthetische, nicht editierbare Einträge aus anderen Sichten (Architekturregel Batch 3: nur
+   *  lesend/verknüpfend, mit Sprung-Button zur Ursprungssicht). */
+  kind: 'schedule' | 'trip' | 'todo';
   date: string;
   endDate: string;
   time: string | null;
@@ -87,7 +88,6 @@ export interface CalendarEntry {
    *  einer Tour verknüpft ist. */
   spotId: number | null;
   todoId: number | null;
-  travelId: number | null;
   scheduleItem: ScheduleItem | null;
   /** Nur für kind 'todo' aussagekräftig (TodoItem.done) – speist die Checkbox in
    *  CalendarWeek.vue's Kompaktzelle, die selbst keinen Zugriff auf die vollständige
@@ -117,6 +117,12 @@ export interface PackingItem {
   _pending?: boolean;
 }
 
+/** Rolle einer Tour, die eigentlich eine Reise-Etappe ist (#176: ersetzt die frühere eigene
+ *  travel_items-Tabelle) – für die Karten-Fokussierung auf den Urlaubsort ("Urlaubsfokus") muss die
+ *  App wissen, welche Seite (Von/Nach) zuhause ist und welche zum Urlaubsziel gehört. `null`/
+ *  `undefined` = normale Tour ohne Transportmittel-Kontext. */
+export type IdeaRole = 'arrival' | 'departure' | 'onward';
+
 export interface Excursion {
   id: number;
   trip_id: number;
@@ -132,11 +138,26 @@ export interface Excursion {
    *  IMMER ein echter Spot (siehe Migrationskommentar in db/index.ts). Reihenfolge/Mehrfachbesuch
    *  lassen sich per Drag&Drop im Touren-Formular editieren (SpotOrderPicker.vue,
    *  ExcursionsView.vue); TourAssignPicker.vue bietet daneben einen schnelleren Weg, einen Spot
-   *  ohne Reihenfolge einer Tour zuzuordnen. */
+   *  ohne Reihenfolge einer Tour zuzuordnen. Bei gesetzter `role` (siehe unten) genau zwei
+   *  Stationen (Von/Nach). */
   spot_ids: number[];
   /** Unabhängig von `date`/geplant: explizit als tatsächlich unternommen markiert, auch für
    *  spontane, nie geplante Touren nutzbar (siehe stores/excursions.ts's setDone()). */
   done: 0 | 1;
+  // Transportmittel-Kontext (#176) - macht aus einer normalen Tour eine ehemalige Reise-Etappe
+  // (Anreise/Abreise/Weiterreise). role gesetzt => genau zwei spot_ids (Von/Nach), alle anderen
+  // Felder bleiben bei einer normalen Tour null.
+  role: IdeaRole | null;
+  transport_type: string | null;
+  departure_time: string | null;
+  arrival_time: string | null;
+  checkin_info: string | null;
+  amount: number | null;
+  paid_by_user_id: number | null;
+  luggage: string | null;
+  seat: string | null;
+  ticket_link: string | null;
+  budget_expense_id: number | null;
   /** Nur clientseitig gesetzt, siehe PackingItem._pending oben. */
   _pending?: boolean;
 }
@@ -185,10 +206,13 @@ export interface TrackPoint {
   accuracy: number | null;
 }
 
-/** Rolle des Reise-Eintrags: für die Karten-Fokussierung auf den Urlaubsort ("Urlaubsfokus")
- *  muss die App wissen, welche Seite (Von/Nach) zuhause ist und welche zum Urlaubsziel gehört. */
-export type TravelRole = 'arrival' | 'departure' | 'onward';
-
+/** #176: KEIN eigener Backend-Endpunkt mehr (travel_items/routes/travel.ts entfallen) - eine
+ *  "Reise-Etappe" ist seitdem einfach eine Excursion mit gesetzter `role` und genau zwei
+ *  `spot_ids` (Von/Nach). Dieses Shape bleibt aber als gemeinsame, abgeleitete Sicht bestehen
+ *  (siehe utils/deriveTravelItems.ts), damit die vielen bestehenden Verbraucher (TripMap.vue,
+ *  ExcursionCard.vue, calendarEntries.ts, dayStations.ts, excursionStations.ts,
+ *  travelDerivedLocations.ts, BudgetView.vue, DashboardView.vue, ScheduleView.vue) unverändert
+ *  weiterlaufen, statt jeweils einzeln auf Excursion+Spot umgestellt zu werden. */
 export interface TravelItem {
   id: number;
   trip_id: number;
@@ -214,7 +238,7 @@ export interface TravelItem {
   to_maps_link: string | null;
   to_lat: number | null;
   to_lng: number | null;
-  role: TravelRole | null;
+  role: IdeaRole | null;
   from_place_id: number | null;
   to_place_id: number | null;
 }
@@ -233,10 +257,8 @@ export interface Spot {
   lng: number | null;
   created_by: number | null;
   /** Heimat-Seite eines Orts (Flughafen/Bahnhof/Zuhause/…), unabhängig von der Kategorie – ein
-   *  Flughafen kann sowohl der heimische Abflughafen als auch der Zielflughafen sein. Nur für als
-   *  Reise-Etappen-Ort verwendete Spots relevant (siehe TravelSection.vue), bei gewöhnlichen Spots
-   *  ungenutzt/0. Das Backend leitet daraus die passende TravelRole (Anreise/Abreise/Weiterreise)
-   *  einer Etappe ab (routes/travel.ts's applyPlaces()). */
+   *  Flughafen kann sowohl der heimische Abflughafen als auch der Zielflughafen sein. Nur als
+   *  Von/Nach-Station einer Tour mit gesetzter role relevant, bei gewöhnlichen Spots ungenutzt/0. */
   is_home: 0 | 1;
   // Zusatzfelder für Spots der Kategorie "Unterkunft" (ehemals eigene Accommodation-Tabelle, siehe
   // Migrationskommentar in db/index.ts) – bei anderen Kategorien einfach null/ungenutzt.
@@ -411,7 +433,7 @@ export interface DiaryComment {
 /** Domänen, die Datei-Anhänge (Tickets/Dokumente) tragen können – siehe FileAttachments.vue.
  *  'spots' deckt seit der Verschmelzung von Unterkunft in Spots auch Unterkunft-Anhänge ab (siehe
  *  Migrationskommentar in db/index.ts). */
-export type AttachmentDomain = 'travel' | 'spots' | 'notes' | 'schedule' | 'budget';
+export type AttachmentDomain = 'ideas' | 'spots' | 'notes' | 'schedule' | 'budget';
 
 export interface Attachment {
   id: number;

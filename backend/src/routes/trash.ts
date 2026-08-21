@@ -10,7 +10,6 @@ const DOMAIN_BY_TYPE: Record<string, string> = {
   schedule_item: 'schedule',
   excursion: 'ideas',
   spot: 'spots',
-  travel_item: 'travel',
   budget_item: 'budget',
   budget_transfer: 'budget',
   todo: 'todos',
@@ -70,9 +69,13 @@ const TRASH_CONFIG: TrashConfig[] = [
     label: 'Ausflug',
     // Der Kalender-Termin, der den Ausflug als "geplant" markiert, wurde beim Löschen mit
     // weggelöscht (routes/ideas.ts) – ohne diese Kopplung bliebe er dauerhaft im Papierkorb,
-    // obwohl der Ausflug selbst schon wiederhergestellt ist.
-    onRestore: (id) =>
-      db.prepare('UPDATE schedule_items SET deleted_at = NULL WHERE idea_id = ? AND deleted_at IS NOT NULL').run(id),
+    // obwohl der Ausflug selbst schon wiederhergestellt ist. Seit #176 kann eine Tour (role gesetzt,
+    // ehemalige Reise-Etappe) zusätzlich eine eigene budget_expense_id tragen - restoreLinkedBudgetExpense()
+    // ist bei einer normalen Tour ohne Budget-Sync ein No-Op (gleiches Muster wie bei 'spot').
+    onRestore: (id) => {
+      db.prepare('UPDATE schedule_items SET deleted_at = NULL WHERE idea_id = ? AND deleted_at IS NOT NULL').run(id);
+      restoreLinkedBudgetExpense('ideas', id);
+    },
   },
   {
     type: 'spot',
@@ -81,12 +84,6 @@ const TRASH_CONFIG: TrashConfig[] = [
     // Betrifft nur Spots der Kategorie "Unterkunft" (budget_expense_id gesetzt, siehe
     // Migrationskommentar in db/index.ts) – bei gewöhnlichen Spots ist die Spalte leer, restoreLinkedBudgetExpense() ist dann ein No-Op.
     onRestore: (id) => restoreLinkedBudgetExpense('spots', id),
-  },
-  {
-    type: 'travel_item',
-    table: 'travel_items',
-    label: 'Reise-Eintrag',
-    onRestore: (id) => restoreLinkedBudgetExpense('travel_items', id),
   },
   {
     type: 'budget_item',

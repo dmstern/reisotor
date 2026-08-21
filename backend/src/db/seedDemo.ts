@@ -138,72 +138,6 @@ db.prepare(
   accommodationExpenseId,
 );
 
-// --- Reise/Transport: Hin- und Rückflug (inkl. automatisch verknüpfter Budget-Ausgabe) ---
-const insertTravel = db.prepare(
-  `INSERT INTO travel_items
-    (trip_id, title, type, from_location, to_location, date, departure_time, arrival_time, checkin_info, amount,
-     paid_by_user_id, luggage, seat, note, budget_expense_id, role)
-   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-);
-
-const outboundExpenseId = insertExpense.run(
-  tripId,
-  'Hinflug nach Lissabon',
-  'Transport',
-  189,
-  user2.id,
-  fmt(startDate),
-  'Automatisch aus Reise-Eintrag',
-  sharedBudgetId,
-).lastInsertRowid as number;
-insertTravel.run(
-  tripId,
-  'Hinflug nach Lissabon',
-  'flight',
-  'Berlin (BER)',
-  'Lissabon (LIS)',
-  fmt(startDate),
-  '07:20',
-  '10:05',
-  'Online-Check-in ab 24h vorher',
-  189,
-  user2.id,
-  '1x 23kg Koffer',
-  '14C',
-  'Direktflug',
-  outboundExpenseId,
-  'arrival',
-);
-
-const returnExpenseId = insertExpense.run(
-  tripId,
-  'Rückflug nach Berlin',
-  'Transport',
-  189,
-  user1.id,
-  fmt(endDate),
-  'Automatisch aus Reise-Eintrag',
-  sharedBudgetId,
-).lastInsertRowid as number;
-insertTravel.run(
-  tripId,
-  'Rückflug nach Berlin',
-  'flight',
-  'Lissabon (LIS)',
-  'Berlin (BER)',
-  fmt(endDate),
-  '18:40',
-  '22:15',
-  null,
-  189,
-  user1.id,
-  '1x 23kg Koffer',
-  '9A',
-  'Direktflug',
-  returnExpenseId,
-  'departure',
-);
-
 // --- Weitere Budget-Ausgaben (manuell, ohne Verknüpfung) ---
 insertExpense.run(tripId, 'Abendessen Time Out Market', 'Essen & Trinken', 42.5, user1.id, fmt(addDays(startDate, 1)), null, sharedBudgetId);
 insertExpense.run(tripId, 'Tickets Torre de Belém', 'Aktivitäten & Spaß', 12, user2.id, fmt(addDays(startDate, 2)), null, sharedBudgetId);
@@ -288,6 +222,103 @@ db.prepare('INSERT INTO spot_comments (spot_id, author_id, content, created_at) 
   'Unbedingt früh morgens hin, bevor die Reisebusse kommen!',
   new Date().toISOString(),
 );
+
+// --- Reise/Transport: Hin- und Rückflug (#176: Touren mit gesetzter role statt einer eigenen
+// travel_items-Tabelle - Von/Nach sind ganz normale Spots, genau wie bei einer Unterkunft) ---
+const insertHomeSpot = db.prepare(
+  'INSERT INTO spots (trip_id, title, category, is_home) VALUES (?, ?, ?, 1)',
+);
+const berlinSpotId = insertHomeSpot.run(tripId, 'Berlin (BER)', 'Flughafen').lastInsertRowid as number;
+// Eigene Koordinaten statt LISBON (Altstadt-Zentrum) - sonst läge der Flughafen-Pin praktisch
+// deckungsgleich auf dem "Hotel Alfama"-Pin (LISBON.lat/lng + kleinem Offset). Bewusst nur wenige
+// hundert Meter versetzt statt der echten ~7km zum tatsächlichen Flughafen Lissabon: ein Punkt so
+// weit außerhalb der übrigen Spots (Belém/Market, siehe belemLat/marketLat oben) zwingt
+// TripMap.vue's Default-fitBounds zu einem so starken Zoom-Out, dass die übrigen, eng
+// beieinanderliegenden Spot-Pins auf kleinen Viewports (Mobil) sichtbar überlappen (e2e:
+// map-focus-covered-drawer.spec.ts).
+const LISBON_AIRPORT = { lat: 38.735, lng: -9.13 };
+const lisbonAirportSpotId = insertSpot.run(
+  tripId,
+  'Lissabon (LIS)',
+  null,
+  'Flughafen',
+  null,
+  null,
+  LISBON_AIRPORT.lat,
+  LISBON_AIRPORT.lng,
+  user1.id,
+).lastInsertRowid as number;
+
+const insertTravelIdea = db.prepare(
+  `INSERT INTO ideas (
+    trip_id, title, note, created_by, role, transport_type, departure_time, arrival_time,
+    checkin_info, amount, paid_by_user_id, luggage, seat, budget_expense_id
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+);
+const insertTravelStation = db.prepare('INSERT INTO excursion_spots (idea_id, spot_id, position) VALUES (?, ?, ?)');
+const insertTravelSchedule = db.prepare(
+  'INSERT INTO schedule_items (trip_id, date, title, idea_id) VALUES (?, ?, ?, ?)',
+);
+
+const outboundExpenseId = insertExpense.run(
+  tripId,
+  'Hinflug nach Lissabon',
+  'Transport',
+  189,
+  user2.id,
+  fmt(startDate),
+  'Automatisch aus Tour',
+  sharedBudgetId,
+).lastInsertRowid as number;
+const outboundIdeaId = insertTravelIdea.run(
+  tripId,
+  'Hinflug nach Lissabon',
+  'Direktflug',
+  user2.id,
+  'arrival',
+  'Flug',
+  '07:20',
+  '10:05',
+  'Online-Check-in ab 24h vorher',
+  189,
+  user2.id,
+  '1x 23kg Koffer',
+  '14C',
+  outboundExpenseId,
+).lastInsertRowid as number;
+insertTravelStation.run(outboundIdeaId, berlinSpotId, 0);
+insertTravelStation.run(outboundIdeaId, lisbonAirportSpotId, 1);
+insertTravelSchedule.run(tripId, fmt(startDate), 'Hinflug nach Lissabon', outboundIdeaId);
+
+const returnExpenseId = insertExpense.run(
+  tripId,
+  'Rückflug nach Berlin',
+  'Transport',
+  189,
+  user1.id,
+  fmt(endDate),
+  'Automatisch aus Tour',
+  sharedBudgetId,
+).lastInsertRowid as number;
+const returnIdeaId = insertTravelIdea.run(
+  tripId,
+  'Rückflug nach Berlin',
+  'Direktflug',
+  user1.id,
+  'departure',
+  'Flug',
+  '18:40',
+  '22:15',
+  null,
+  189,
+  user1.id,
+  '1x 23kg Koffer',
+  '9A',
+  returnExpenseId,
+).lastInsertRowid as number;
+insertTravelStation.run(returnIdeaId, lisbonAirportSpotId, 0);
+insertTravelStation.run(returnIdeaId, berlinSpotId, 1);
+insertTravelSchedule.run(tripId, fmt(endDate), 'Rückflug nach Berlin', returnIdeaId);
 
 const ideaResult = db
   .prepare('INSERT INTO ideas (trip_id, title, image_url, note, created_by) VALUES (?, ?, ?, ?, ?)')

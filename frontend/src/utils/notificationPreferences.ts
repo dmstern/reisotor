@@ -1,13 +1,13 @@
 import { SECTION_ICONS } from './sectionIcons';
 
-// Dieselben 12 Domain-Keys wie backend/src/push.ts's PUSH_PREFERENCE_DOMAINS - 11
+// Dieselben 11 Domain-Keys wie backend/src/push.ts's PUSH_PREFERENCE_DOMAINS - 10
 // Aktivitäts-Domänen (recordActivity()) plus 'departure' für die Abreise-Erinnerung
-// (departureReminders.ts, kein Aktivitäts-Event).
+// (departureReminders.ts, kein Aktivitäts-Event). 'travel' entfällt seit #176 - Reise-Etappen
+// laufen jetzt als Touren (role gesetzt) über die 'ideas'-Domäne.
 export const NOTIFICATION_DOMAINS = [
   'schedule',
   'members',
   'departure',
-  'travel',
   'budget',
   'ideas',
   'spots',
@@ -36,7 +36,6 @@ export const NOTIFICATION_DOMAIN_META: Record<NotificationDomain, DomainMeta> = 
   schedule: { label: 'Kalender', icon: SECTION_ICONS.calendar },
   members: { label: 'Mitglieder', icon: '👥' },
   departure: { label: 'Abreise-Erinnerung', icon: '✈️' },
-  travel: { label: 'Reise', icon: SECTION_ICONS.travel },
   budget: { label: 'Budget', icon: SECTION_ICONS.budget },
   ideas: { label: 'Touren', icon: SECTION_ICONS.excursions },
   spots: { label: 'Spots', icon: '📍' },
@@ -52,7 +51,7 @@ export const NOTIFICATION_DOMAIN_META: Record<NotificationDomain, DomainMeta> = 
 // Domänen. "chatty" sind die Listen, deren Einträge oft einzeln angehakt werden (Hauptquelle vieler
 // Pushes) - die bleiben bei "Ausgewogen" bewusst aus, aber einzeln zuschaltbar.
 const ESSENTIAL: NotificationDomain[] = ['schedule', 'members', 'departure'];
-const NORMAL: NotificationDomain[] = ['travel', 'budget', 'ideas', 'spots', 'diary', 'notes'];
+const NORMAL: NotificationDomain[] = ['budget', 'ideas', 'spots', 'diary', 'notes'];
 const CHATTY: NotificationDomain[] = ['packing', 'shopping', 'todos'];
 
 export type NotificationLevel = 'essential' | 'balanced' | 'all';

@@ -16,8 +16,9 @@ interface SpotBody {
   lat?: number;
   lng?: number;
   /** Heimat-Seite eines Orts (Flughafen/Bahnhof/Zuhause/…), unabhängig von der Kategorie – ein
-   *  Flughafen kann sowohl der heimische Abflughafen als auch der Zielflughafen sein. Nur für
-   *  Reise-Etappen relevant (routes/travel.ts's applyPlaces()), bei gewöhnlichen Spots ungenutzt. */
+   *  Flughafen kann sowohl der heimische Abflughafen als auch der Zielflughafen sein. Nur für Touren
+   *  mit gesetzter role (ehemalige Reise-Etappen, siehe routes/ideas.ts) relevant, bei gewöhnlichen
+   *  Spots ungenutzt. */
   is_home?: boolean;
   // Zusatzfelder für Spots der Kategorie "Unterkunft" (siehe Migrationskommentar in db/index.ts,
   // Verschmelzung von accommodation in spots) – bei anderen Kategorien ungenutzt.
