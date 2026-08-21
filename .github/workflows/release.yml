@@ -1,29 +1,30 @@
 name: Release
 
-# Erstellt ein neues Semver-Release: bumpt die Version in der Root-package.json (einzige
-# Versionsquelle, siehe backend/scripts/generate-build-info.mjs und frontend/vite.config.ts),
-# ergänzt CHANGELOG.md um den neuen Versions-Abschnitt, committet beides auf main und setzt einen
-# Tag (vX.Y.Z). Der Tag-Push ist der EINZIGE Trigger, der build-deploy.yml dazu bringt, auf die
-# echte Produktion (Branch "deploy") zu deployen - ein normaler Push auf main landet weiterhin nur
-# auf Staging (Branch "deploy-staging"), siehe build-deploy.yml.
+# Erstellt ein neues Semver-Release: ermittelt den Versions-Sprung automatisch aus den
+# Commit-Nachrichten seit dem letzten Tag (lose an Conventional Commits angelehnt, siehe CLAUDE.md),
+# fasst die seit dem letzten Release gesammelten Endnutzer-Stichpunkte aus release-notes/pending/
+# zu einem neuen CHANGELOG.md-Abschnitt zusammen, bumpt die Version in der Root-package.json
+# (einzige Versionsquelle, siehe backend/scripts/generate-build-info.mjs und
+# frontend/vite.config.ts), committet alles auf main und setzt einen Tag (vX.Y.Z). Der Tag-Push
+# ist der EINZIGE Trigger, der build-deploy.yml dazu bringt, auf die echte Produktion (Branch
+# "deploy") zu deployen - ein normaler Push auf main landet weiterhin nur auf Staging (Branch
+# "deploy-staging"), siehe build-deploy.yml.
 #
 # Auslösbar über den "Run workflow"-Button im Actions-Tab (GitHub-Weboberfläche, unabhängig vom
 # eigenen Rechner) oder programmatisch über die GitHub-API/gh CLI (z. B. aus einer Claude-Code-
-# Session heraus).
+# Session heraus). "bump" muss praktisch nie gesetzt werden - Default "auto" reicht für den
+# Normalfall, der Dropdown-Override existiert nur für Sonderfälle (z. B. ein bewusster Major-Bump
+# ohne passenden "!"-Commit).
 
 on:
   workflow_dispatch:
     inputs:
       bump:
-        description: 'Versions-Sprung'
+        description: 'Versions-Sprung (auto = aus Commit-Historie seit letztem Tag ableiten)'
         required: true
         type: choice
-        options: [patch, minor, major]
-        default: patch
-      notes:
-        description: 'Changelog-Stichpunkte für diese Version (eine Zeile pro Punkt, ohne führendes "-")'
-        required: true
-        type: string
+        options: [auto, patch, minor, major]
+        default: auto
 
 permissions:
   contents: write
@@ -43,16 +44,32 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
+      - name: Determine bump type
+        id: detect
+        if: inputs.bump == 'auto'
+        run: |
+          LAST_TAG="$(git describe --tags --abbrev=0 2>/dev/null || true)"
+          RANGE="${LAST_TAG:+$LAST_TAG..}HEAD"
+          LOG="$(git log "$RANGE" --format='%s%n%b')"
+
+          if echo "$LOG" | grep -qE '^[a-z]+(\([^)]*\))?!:|BREAKING CHANGE:'; then
+            BUMP=major
+          elif echo "$LOG" | grep -qE '^feat(\([^)]*\))?:'; then
+            BUMP=minor
+          else
+            BUMP=patch
+          fi
+          echo "bump=$BUMP" >> "$GITHUB_OUTPUT"
+
       - name: Bump version and update changelog
         id: bump
         env:
-          BUMP: ${{ inputs.bump }}
-          NOTES: ${{ inputs.notes }}
+          BUMP: ${{ inputs.bump == 'auto' && steps.detect.outputs.bump || inputs.bump }}
         run: |
           node <<'EOF'
           const fs = require('fs');
+          const path = require('path');
           const bump = process.env.BUMP;
-          const notes = process.env.NOTES.split('\n').map((l) => l.trim()).filter(Boolean);
 
           const pkg = JSON.parse(fs.readFileSync('package.json', 'utf-8'));
           const [major, minor, patch] = pkg.version.split('.').map(Number);
@@ -63,8 +80,19 @@ jobs:
           pkg.version = next;
           fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
 
+          // Seit dem letzten Release gesammelte Endnutzer-Stichpunkte (siehe CLAUDE.md,
+          // "Release-Notes-Fragmente") zu einem Changelog-Eintrag zusammenfassen. Jede Datei kann
+          // mehrere "- "-Zeilen enthalten; Dateien ohne erkennbare Stichpunkte tragen nichts bei.
+          const pendingDir = 'release-notes/pending';
+          const fragmentFiles = fs.readdirSync(pendingDir).filter((f) => f.endsWith('.md'));
+          const notes = fragmentFiles
+            .flatMap((f) => fs.readFileSync(path.join(pendingDir, f), 'utf-8').split('\n'))
+            .map((line) => line.trim())
+            .filter((line) => line.startsWith('- '));
+          if (notes.length === 0) notes.push('- Interne Verbesserungen.');
+
           const date = new Date().toISOString().slice(0, 10);
-          const entry = `## [${next}] - ${date}\n\n${notes.map((n) => `- ${n}`).join('\n')}\n\n`;
+          const entry = `## [${next}] - ${date}\n\n${notes.join('\n')}\n\n`;
           const changelog = fs.readFileSync('CHANGELOG.md', 'utf-8');
           const marker = '\n## [';
           const insertAt = changelog.indexOf(marker);
@@ -73,12 +101,15 @@ jobs:
             : `${changelog.slice(0, insertAt + 1)}${entry}${changelog.slice(insertAt + 1)}`;
           fs.writeFileSync('CHANGELOG.md', updated);
 
+          // Verarbeitete Fragmente entfernen, damit das nächste Release wieder bei null anfängt.
+          for (const f of fragmentFiles) fs.unlinkSync(path.join(pendingDir, f));
+
           fs.appendFileSync(process.env.GITHUB_OUTPUT, `version=${next}\n`);
           EOF
 
       - name: Commit and tag
         run: |
-          git add package.json CHANGELOG.md
+          git add package.json CHANGELOG.md release-notes/pending
           git commit -m "chore(release): v${{ steps.bump.outputs.version }}"
           git tag -a "v${{ steps.bump.outputs.version }}" -m "v${{ steps.bump.outputs.version }}"
           git push origin main
