@@ -20,6 +20,9 @@ import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { formatDate as formatDateShared } from '../utils/dateFormat';
+import { TRAVEL_ROLE_META } from '../utils/travelRole';
+import { travelTypeIconDef } from '../utils/travelTypeIcon';
+import { formatTravelDuration, travelDurationMinutes } from '../utils/travelDuration';
 
 const props = defineProps<{
   excursion: Excursion;
@@ -114,6 +117,19 @@ watch(
 // wie zuvor in einen einzigen, nicht auftrennbaren String einzubacken.
 const statusDateLabel = computed(() => (props.excursion.date ? formatDate(props.excursion.date) : ''));
 
+// #176: Anreise/Abreise/Weiterreise (ehemalige Reise-Etappe) - dieselbe Card wie eine normale Tour,
+// mit zusätzlicher Rollen-/Route-/Dauer-Anzeige (übernommen aus der früheren TravelView.vue).
+// resolvedStations[0]/[1] sind bei gesetzter role immer Von/Nach (siehe routes/ideas.ts's
+// Zwei-Stationen-Validierung).
+const routeLabel = computed(() => {
+  if (!props.excursion.role || resolvedStations.value.length < 2) return null;
+  return `${resolvedStations.value[0].title} → ${resolvedStations.value[1].title}`;
+});
+const travelDuration = computed(() => {
+  const minutes = travelDurationMinutes(props.excursion.departure_time, props.excursion.arrival_time);
+  return minutes == null ? null : formatTravelDuration(minutes);
+});
+
 // Einplanen per Zeige-/Touch-Drag am eigenen Anfasser (📅 Einplanen) statt am gesamten Card-Root:
 // natives HTML5-draggable/dragstart wurde ersetzt, da es auf Touch-Geräten (v. a. Android Chrome)
 // nicht zuverlässig funktioniert. onStart öffnet die Kalender-Schublade automatisch, damit die
@@ -199,7 +215,13 @@ function onSpotDrop(event: DragEvent) {
     <DeleteButton v-if="expanded" floating class="card-delete" @click="emit('remove', excursion.id)" />
     <div class="image" :style="displayImage ? { backgroundImage: `url(${displayImage})` } : {}">
       <SpotImageCollage v-if="showCollage" :images="fallbackImages" />
-      <AppIcon v-else-if="!displayImage" class="placeholder" :size="35" :icon="SECTION_ICON_DEFS.excursions" group="categories" />
+      <AppIcon
+        v-else-if="!displayImage"
+        class="placeholder"
+        :size="35"
+        :icon="excursion.role ? travelTypeIconDef(excursion.transport_type) : SECTION_ICON_DEFS.excursions"
+        group="categories"
+      />
       <EditButton v-if="expanded" floating @click="emit('edit', excursion)" />
       <!-- #106: EIN gemeinsames Datums-/Status-Badge statt zweier unabhängiger Chips (das alte
            separate "Gemacht"-Badge entfällt) - Text/Icon hängen vom Status ab (in Planung/geplant/
@@ -231,6 +253,15 @@ function onSpotDrop(event: DragEvent) {
       <!-- Nur in der aufgeklappten Karte (#92, ersetzt den früheren ExcursionDetailDialog.vue) -
            analog zu SpotCard.vue's "Von <creator>"-Zeile/Notiz, die dort ebenfalls erst beim
            Aufklappen sichtbar wird. -->
+      <span v-if="excursion.role" class="role-badge">
+        <AppIcon :icon="TRAVEL_ROLE_META[excursion.role].tabler" :size="14" group="categories" /> {{ TRAVEL_ROLE_META[excursion.role].label }}
+      </span>
+      <p v-if="routeLabel" class="route">{{ routeLabel }}</p>
+      <p v-if="excursion.role && (excursion.departure_time || excursion.arrival_time)" class="departure-arrival">
+        <AppIcon :icon="FORM_FIELD_ICONS.time" :size="14" group="formFields" />
+        <span v-if="excursion.departure_time">{{ excursion.departure_time }}<span v-if="excursion.arrival_time">–{{ excursion.arrival_time }}</span> Uhr</span>
+        <span v-if="travelDuration" class="duration">({{ travelDuration }})</span>
+      </p>
       <p v-if="expanded && creatorLabel" class="detail-row"><span class="detail-label">Von</span>{{ creatorLabel }}</p>
       <RichTextDisplay v-if="expanded && excursion.note" class="note" :content="excursion.note" :format="excursion.note_format" />
       <div class="links" v-if="hasMappedStations">
@@ -545,5 +576,37 @@ function onSpotDrop(event: DragEvent) {
 
 .note {
   overflow-wrap: anywhere;
+}
+
+.role-badge {
+  align-self: flex-start;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-primary-dark);
+  background: var(--color-primary-tint);
+  border-radius: var(--radius-sm);
+  padding: 2px 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.route {
+  overflow-wrap: anywhere;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.departure-arrival {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.duration {
+  color: var(--color-text-muted);
 }
 </style>

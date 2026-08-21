@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, watch } from 'vue';
 import { api } from '../api/client';
-import type { Excursion } from '../api/types';
+import type { Excursion, IdeaRole } from '../api/types';
 import { useTripStore } from './trip';
 import { useLiveSyncStore } from './liveSync';
 import { useUndoableDelete } from '../composables/useUndoableDelete';
@@ -13,6 +13,17 @@ export interface ExcursionFormData {
   note_format?: 'html' | 'legacy';
   date?: string;
   spot_ids?: number[];
+  // Transportmittel-Kontext (#176) - macht aus einer normalen Tour eine ehemalige Reise-Etappe.
+  role?: IdeaRole | null;
+  transport_type?: string | null;
+  departure_time?: string | null;
+  arrival_time?: string | null;
+  checkin_info?: string | null;
+  amount?: number | null;
+  paid_by_user_id?: number | null;
+  luggage?: string | null;
+  seat?: string | null;
+  ticket_link?: string | null;
 }
 
 // Eigener Store statt lokalem State in ExcursionsView: Ausflüge werden per Drag&Drop aus der
@@ -69,7 +80,9 @@ export const useExcursionsStore = defineStore('excursions', () => {
     await api.post(`/trash/excursion/${id}/restore`);
   }
 
-  /** Setzt/ändert nur das Datum (Drag&Drop auf einen Kalendertag) – restliche Felder bleiben. */
+  /** Setzt/ändert nur das Datum (Drag&Drop auf einen Kalendertag) – restliche Felder bleiben,
+   *  inklusive Transportmittel-Kontext (role/...) einer ehemaligen Reise-Etappe: update() ersetzt
+   *  bei PUT /ideas immer alle Felder, ein Weglassen hier würde sie sonst stillschweigend löschen. */
   async function setDate(id: number, date: string | null) {
     const existing = excursions.value.find((e) => e.id === id);
     if (!existing) return;
@@ -79,6 +92,16 @@ export const useExcursionsStore = defineStore('excursions', () => {
       note: existing.note ?? undefined,
       date: date ?? undefined,
       spot_ids: existing.spot_ids,
+      role: existing.role,
+      transport_type: existing.transport_type,
+      departure_time: existing.departure_time,
+      arrival_time: existing.arrival_time,
+      checkin_info: existing.checkin_info,
+      amount: existing.amount,
+      paid_by_user_id: existing.paid_by_user_id,
+      luggage: existing.luggage,
+      seat: existing.seat,
+      ticket_link: existing.ticket_link,
     });
   }
 

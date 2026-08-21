@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { buildAllEntries, buildTodoEntries, buildTravelEntries, buildTripEntries, scheduleItemToEntry } from './calendarEntries';
-import type { Excursion, ScheduleItem, Spot, TodoItem, TravelItem, Trip } from '../api/types';
+import { buildAllEntries, buildTodoEntries, buildTripEntries, scheduleItemToEntry } from './calendarEntries';
+import type { Excursion, ScheduleItem, Spot, TodoItem, Trip } from '../api/types';
 
 const trip: Trip = {
   id: 1,
@@ -119,12 +119,53 @@ describe('scheduleItemToEntry', () => {
       created_by: null,
       spot_ids: [7],
       done: 0,
+      role: null,
+      transport_type: null,
+      departure_time: null,
+      arrival_time: null,
+      checkin_info: null,
+      amount: null,
+      paid_by_user_id: null,
+      luggage: null,
+      seat: null,
+      ticket_link: null,
+      budget_expense_id: null,
     };
     const item = makeScheduleItem({ idea_id: 3, title: 'Sightseeing' });
     const entry = scheduleItemToEntry(item, [spot], [excursion], []);
     expect(entry.category).toBe('excursion');
     expect(entry.icon).toBe('🍽️');
     expect(entry.ideaId).toBe(3);
+  });
+
+  it('übernimmt bei einer verknüpften Tour mit gesetzter role (#176: ehemalige Reise-Etappe) die eigene "Reise"-Kategorie statt "Ausflug"', () => {
+    const excursion: Excursion = {
+      id: 4,
+      trip_id: 1,
+      title: 'Hinflug',
+      image_url: null,
+      note: null,
+      note_format: 'legacy',
+      date: '2026-08-01',
+      created_by: null,
+      spot_ids: [1, 2],
+      done: 0,
+      role: 'arrival',
+      transport_type: 'Flug',
+      departure_time: '07:20',
+      arrival_time: '10:05',
+      checkin_info: null,
+      amount: null,
+      paid_by_user_id: null,
+      luggage: null,
+      seat: null,
+      ticket_link: null,
+      budget_expense_id: null,
+    };
+    const item = makeScheduleItem({ idea_id: 4, date: '2026-08-01', title: 'Hinflug' });
+    const entry = scheduleItemToEntry(item, [], [excursion], []);
+    expect(entry.category).toBe('travel');
+    expect(entry.ideaId).toBe(4);
   });
 });
 
@@ -155,44 +196,6 @@ describe('buildTodoEntries', () => {
     const entries = buildTodoEntries(todos);
     expect(entries).toHaveLength(1);
     expect(entries[0]).toMatchObject({ kind: 'todo', date: '2026-08-03', title: 'Mit Datum', todoId: 2 });
-  });
-});
-
-describe('buildTravelEntries', () => {
-  it('maps a dated travel item, joining from/to as location', () => {
-    const items: TravelItem[] = [
-      {
-        id: 9,
-        trip_id: 1,
-        title: 'Hinflug',
-        type: 'flight',
-        from_location: 'Berlin',
-        to_location: 'Lissabon',
-        date: '2026-08-01',
-        departure_time: '07:20',
-        arrival_time: '10:05',
-        checkin_info: null,
-        amount: null,
-        paid_by_user_id: null,
-        luggage: null,
-        seat: null,
-        link: null,
-        note: null,
-        budget_expense_id: null,
-        from_maps_link: null,
-        from_lat: null,
-        from_lng: null,
-      } as TravelItem,
-    ];
-    const entries = buildTravelEntries(items);
-    expect(entries).toHaveLength(1);
-    expect(entries[0]).toMatchObject({
-      kind: 'travel',
-      date: '2026-08-01',
-      time: '07:20',
-      location: 'Berlin → Lissabon',
-      travelId: 9,
-    });
   });
 });
 

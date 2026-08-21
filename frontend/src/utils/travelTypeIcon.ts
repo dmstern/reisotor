@@ -1,11 +1,11 @@
 import { IconPlane, IconPlaneFilled, IconTrain, IconTrainFilled, IconBus, IconBusFilled, IconCar, IconCarFilled, IconShip, IconTicket, IconTicketFilled } from '@tabler/icons-vue';
 import type { IconDef } from './icon';
 
-// Icon je Transportmittel eines Reise-Eintrags (travel_items.type) – zentrale Stelle, vorher
-// identisch in TravelSection.vue UND TravelDetailDialog.vue dupliziert; wird jetzt zusätzlich von
-// travelDerivedLocations.ts/excursionStations.ts wiederverwendet, damit Karte und Spots-Liste
-// dasselbe Icon zeigen wie die Reise-Sicht selbst statt eines festen Flugzeug-Icons für jeden
-// Eintrag unabhängig vom tatsächlichen Transportmittel.
+// Icon je Transportmittel einer Tour mit gesetzter role (ideas.transport_type, #176 - vormals
+// travel_items.type) – zentrale Stelle, wird von der Touren-Karte/-Card, TravelDetailDialog.vue,
+// travelDerivedLocations.ts und excursionStations.ts geteilt, damit Karte und Spots-Liste dasselbe
+// Icon zeigen wie die Tour selbst statt eines festen Flugzeug-Icons für jeden Eintrag unabhängig
+// vom tatsächlichen Transportmittel.
 const TYPE_ICONS: Record<string, string> = {
   Flug: '✈️',
   Zug: '🚆',

@@ -14,7 +14,6 @@ export const LIVE_DOMAINS = [
   'todos',
   'spots',
   'ideas',
-  'travel',
   'budget',
   'diary',
   'notes',

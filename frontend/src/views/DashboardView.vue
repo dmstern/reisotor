@@ -8,9 +8,9 @@ import type {
   ScheduleItem,
   ShoppingItem,
   TodoItem,
-  TravelItem,
   User,
 } from '../api/types';
+import { deriveTravelItems } from '../utils/deriveTravelItems';
 import { useAuthStore } from '../stores/auth';
 import { useTripStore } from '../stores/trip';
 import { useExcursionsStore } from '../stores/excursions';
@@ -58,7 +58,9 @@ const schedule = ref<ScheduleItem[]>([]);
 const todos = ref<TodoItem[]>([]);
 const packing = ref<PackingItem[]>([]);
 const shopping = ref<ShoppingItem[]>([]);
-const travelItems = ref<TravelItem[]>([]);
+// #176: keine eigene Reise-Etappen-Liste mehr, sondern aus role-getaggten Touren abgeleitet (siehe
+// utils/deriveTravelItems.ts) - excursionsStore lädt automatisch bei erster Verwendung.
+const travelItems = computed(() => deriveTravelItems(excursionsStore.excursions, spotsStore.spots));
 // Unterkunft ist seit der Verschmelzung in Spots (siehe Migrationskommentar in db/index.ts) ganz
 // normal ein Spot der Kategorie "Unterkunft" - kein eigener Fetch mehr nötig.
 const accommodations = computed(() => spotsStore.spots.filter((s) => s.category === 'Unterkunft'));
@@ -178,13 +180,12 @@ const regionShowsExchange = computed(() => !!(regionInfo.value?.currency && regi
 
 onMounted(async () => {
   try {
-    const [scheduleRes, todosRes, packingRes, shoppingRes, travelRes, diaryRes, notesRes, usersRes] =
+    const [scheduleRes, todosRes, packingRes, shoppingRes, diaryRes, notesRes, usersRes] =
       await Promise.all([
         api.get<ScheduleItem[]>(`/schedule?trip_id=${tripId}`),
         api.get<TodoItem[]>(`/todos?trip_id=${tripId}`),
         api.get<PackingItem[]>(`/packing?trip_id=${tripId}`),
         api.get<ShoppingItem[]>(`/shopping?trip_id=${tripId}`),
-        api.get<TravelItem[]>(`/travel?trip_id=${tripId}`),
         api.get<DiaryEntry[]>(`/diary?trip_id=${tripId}`),
         api.get<Note[]>(`/notes?trip_id=${tripId}`),
         api.get<User[]>(`/trips/${tripId}/members`),
@@ -195,7 +196,6 @@ onMounted(async () => {
     todos.value = todosRes;
     packing.value = packingRes;
     shopping.value = shoppingRes;
-    travelItems.value = travelRes;
     diaryEntries.value = diaryRes;
     notes.value = notesRes;
     users.value = usersRes;

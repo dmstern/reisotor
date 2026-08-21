@@ -19,6 +19,7 @@ import type {
   User,
 } from '../api/types';
 import { buildDayStations } from '../utils/dayStations';
+import { deriveTravelItems } from '../utils/deriveTravelItems';
 import { useTripStore } from '../stores/trip';
 import { useDrawersStore } from '../stores/drawers';
 import { useExcursionsStore } from '../stores/excursions';
@@ -153,7 +154,9 @@ const auth = useAuthStore();
 const liveSync = useLiveSyncStore();
 const mapOrientation = useMapOrientationStore();
 const locationSharing = useLocationSharingStore();
-const travelItems = ref<TravelItem[]>([]);
+// #176: keine eigene Reise-Etappen-Liste mehr, sondern aus role-getaggten Touren abgeleitet (siehe
+// utils/deriveTravelItems.ts) - excursionsStore/spotsStore laden bereits unten.
+const travelItems = computed(() => deriveTravelItems(excursionsStore.excursions, spotsStore.spots));
 const scheduleItems = ref<ScheduleItem[]>([]);
 
 // Eigener kleiner users-Fetch: nur für die Autor-Anzeige im Spot-/Ausflug-Detail-Dialog gebraucht,
@@ -587,12 +590,7 @@ const focusedExcursionStations = computed<ExcursionStation[]>(() => {
 async function loadAll() {
   const tripId = tripStore.currentTripId;
   if (tripId == null) return;
-  const [travelRes, scheduleRes] = await Promise.all([
-    api.get<TravelItem[]>(`/travel?trip_id=${tripId}`),
-    api.get<ScheduleItem[]>(`/schedule?trip_id=${tripId}`),
-  ]);
-  travelItems.value = travelRes;
-  scheduleItems.value = scheduleRes;
+  scheduleItems.value = await api.get<ScheduleItem[]>(`/schedule?trip_id=${tripId}`);
   // Spots kommen jetzt aus dem geteilten spotsStore (reaktiv, wird u. a. von ExcursionsView.vue
   // selbst aktuell gehalten) – kein eigener Fetch/Refresh-Trigger hier mehr nötig.
 }
