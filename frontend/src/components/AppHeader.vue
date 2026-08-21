@@ -10,6 +10,7 @@ import NotificationInbox from './NotificationInbox.vue';
 import OfflineIndicator from './OfflineIndicator.vue';
 import TrackRecordingIndicator from './TrackRecordingIndicator.vue';
 import PwaUpdatePrompt from './PwaUpdatePrompt.vue';
+import PwaInstallHint from './PwaInstallHint.vue';
 import LoadingIndicator from './LoadingIndicator.vue';
 import ThemeModeSelect from './ThemeModeSelect.vue';
 
@@ -66,6 +67,7 @@ const isNonProd = window.location.hostname !== 'reise.ruebenherz.de';
       <OfflineIndicator />
       <TrackRecordingIndicator />
       <PwaUpdatePrompt />
+      <PwaInstallHint />
     </div>
     <!-- Bewusst AUSSERHALB von .status-row: LoadingIndicator.vue rendert seit dem Wechsel auf einen
          freischwebenden Toast (position:fixed, blitzt bei JEDEM Request kurz auf/ab) nicht mehr am

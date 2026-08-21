@@ -32,6 +32,8 @@ import IconStyleSettings from '../components/IconStyleSettings.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import FeedbackDialog from '../components/FeedbackDialog.vue';
+import PwaInstallDialog from '../components/PwaInstallDialog.vue';
+import { usePwaInstallStore } from '../stores/pwaInstall';
 import TabBar from '../components/TabBar.vue';
 import {
   IconUser,
@@ -108,6 +110,8 @@ const calendarSettings = useCalendarSettingsStore();
 const uiSettings = useUiSettingsStore();
 const loading = ref(true);
 const showFeedbackDialog = ref(false);
+const showPwaInstallDialog = ref(false);
+const pwaInstall = usePwaInstallStore();
 
 interface ChangelogEntry {
   version: string;
@@ -775,6 +779,20 @@ async function onImportFileSelected(event: Event) {
       </div>
 
       <div class="card">
+        <h2><AppIcon :icon="ACTION_ICONS.installApp" group="actions" :size="20" /> Als App installieren</h2>
+        <p v-if="pwaInstall.isStandalone" class="hint intro-hint">
+          Du nutzt Reisotor bereits als installierte App auf diesem Gerät. 🎉
+        </p>
+        <template v-else>
+          <p class="hint intro-hint">
+            Installiere Reisotor auf deinem Start-/Homebildschirm für schnelleren Zugriff, ein eigenes App-Icon
+            und Offline-Nutzung.
+          </p>
+          <button type="button" class="secondary" @click="showPwaInstallDialog = true">Anleitung anzeigen</button>
+        </template>
+      </div>
+
+      <div class="card">
         <h2><AppIcon :icon="FEEDBACK_ICON" group="navigation" :size="20" /> Feedback</h2>
         <p class="hint intro-hint">
           Bug gefunden oder eine Idee für eine neue Funktion? Landet direkt als Issue im
@@ -809,6 +827,7 @@ async function onImportFileSelected(event: Event) {
   <ViewLoadingState v-else />
 
   <FeedbackDialog v-model="showFeedbackDialog" />
+  <PwaInstallDialog v-model="showPwaInstallDialog" />
 </template>
 
 <style scoped>

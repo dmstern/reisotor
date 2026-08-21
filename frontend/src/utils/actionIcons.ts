@@ -94,6 +94,9 @@ import {
   IconChevronUp,
   IconInfoCircle,
   IconInfoCircleFilled,
+  IconDeviceMobile,
+  IconShare,
+  IconDotsVertical,
 } from '@tabler/icons-vue';
 import type { IconDef } from './icon';
 
@@ -171,7 +174,10 @@ export type ActionIconKey =
   | 'scrollRight'
   | 'chevronDown'
   | 'chevronUp'
-  | 'info';
+  | 'info'
+  | 'installApp'
+  | 'share'
+  | 'browserMenu';
 
 export const ACTION_ICONS: Record<ActionIconKey, IconDef> = {
   edit: { id: 'pencil', emoji: '✏️', outline: IconPencil, filled: IconPencilFilled },
@@ -250,4 +256,7 @@ export const ACTION_ICONS: Record<ActionIconKey, IconDef> = {
   chevronDown: { id: 'chevron-down', emoji: '🔽', outline: IconChevronDown },
   chevronUp: { id: 'chevron-up', emoji: '🔼', outline: IconChevronUp },
   info: { id: 'info-circle', emoji: 'ℹ️', outline: IconInfoCircle, filled: IconInfoCircleFilled },
+  installApp: { id: 'device-mobile', emoji: '📲', outline: IconDeviceMobile },
+  share: { id: 'share', emoji: '⬆️', outline: IconShare },
+  browserMenu: { id: 'dots-vertical', emoji: '⋮', outline: IconDotsVertical },
 };
