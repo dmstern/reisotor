@@ -1793,7 +1793,11 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
   background: var(--color-surface);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
-  box-shadow: var(--shadow-md);
+  /* --shadow-sm (statt --shadow-md) - dessen 24px-Blur-Radius sprengte das für
+     .focus-spot-list/.map-col/.spots-col-body reservierte Padding (8-16px) und wurde deshalb
+     weiterhin links/rechts abgeschnitten (#158, Folgefeedback). Gleiche Schatten-Stärke wie die
+     übrigen schwebenden Karten hier (.card-Klasse). */
+  box-shadow: var(--shadow-sm);
 }
 
 /* Innerhalb der teleportierten Spots-Schublade (siehe Teleport-Kommentar oben) ist der Streifen
