@@ -28,7 +28,6 @@ defineProps<{ station: ExcursionStation }>();
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
 }
 
 .image {
@@ -49,7 +48,10 @@ defineProps<{ station: ExcursionStation }>();
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 0 var(--space-2);
+  /* Ringsherum derselbe Abstand (oben/rechts/unten/links) - der Abstand zum Vorschaubild kommt
+     dadurch automatisch aus diesem Padding statt aus einem zusätzlichen, separaten Gap auf
+     .mini-station-card (das addierte sich vorher ungewollt zum Padding, siehe PR #173). */
+  padding: 0.6em;
 }
 
 .title {
