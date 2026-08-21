@@ -2882,6 +2882,12 @@ async function removeSpot(id: number) {
   padding: 0;
   border: none;
   background: none;
+  /* #185: ohne explizite Farbe erbte das Icon (currentColor, AppIcon.vue) die weiße Textfarbe des
+     globalen `button`-Basisstils (style.css) - auf der hellen Kopfzeile praktisch unsichtbar. Der
+     globale box-shadow (--shadow-sm) blieb aus demselben Grund (kein Reset) ebenfalls fälschlich
+     sichtbar. */
+  color: var(--color-text-muted);
+  box-shadow: none;
   font-size: 0.95rem;
   line-height: 1;
   cursor: pointer;
@@ -3124,6 +3130,10 @@ async function removeSpot(id: number) {
   text-align: left;
   cursor: pointer;
   width: 100%;
+  /* #183: der globale `button`-Basisstil (style.css) setzt box-shadow: var(--shadow-sm) - ohne
+     Reset trug jeder Menüpunkt hier zusätzlich zum eigenen .picker-menu-Container-Schatten einen
+     eigenen "erhobenen" Schatten (v. a. auf iOS Safari sichtbar). */
+  box-shadow: none;
 }
 
 .picker-menu button:hover {

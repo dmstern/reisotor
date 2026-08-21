@@ -1370,6 +1370,10 @@ function formatDate(date: string) {
   text-align: left;
   cursor: pointer;
   width: 100%;
+  /* #183: der globale `button`-Basisstil (style.css) setzt box-shadow: var(--shadow-sm) - ohne
+     Reset trug jeder Menüpunkt hier zusätzlich zum eigenen .picker-menu-Container-Schatten einen
+     eigenen "erhobenen" Schatten (v. a. auf iOS Safari sichtbar). */
+  box-shadow: none;
 }
 
 .picker-menu a:hover,
