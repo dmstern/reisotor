@@ -613,13 +613,6 @@ function itemDone(item: SpotsGroupItem): boolean {
   return !!item.spot.done;
 }
 
-// Nicht persistiert (anders als sortMode/groupMode/*Filter oben) - ein bewusst flüchtiger UI-
-// Zustand wie DiaryView.vue's showSpotPicker/showExcursionPicker, kein dauerhaftes Nutzer-
-// Vorhaben. Auf breiteren Layouts per CSS ohnehin immer sichtbar (siehe .filter-toggle-row/
-// .filter-bar-rows unten) - der Wert wirkt sich dort erst gar nicht aus.
-const filterBarExpanded = ref(false);
-const activeFilterCount = computed(() => categoryFilter.value.length + statusFilter.value.length);
-
 const allSpotItems = computed<SpotsGroupItem[]>(() =>
   spotsStore.spots.map((spot): SpotsGroupItem => ({ kind: 'spot', spot })),
 );
@@ -1766,7 +1759,7 @@ async function removeSpot(id: number) {
         </h2>
         <div class="header-actions">
           <button v-if="groupMode === 'category'" @click="showSpotForm = true"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Neuer Spot</button>
-          <button v-else-if="groupMode === 'tours'" class="secondary" @click="showExcursionForm = true"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Neue Tour</button>
+          <button v-else-if="groupMode === 'tours'" @click="showExcursionForm = true"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Neue Tour</button>
           <!-- Kein eigener Hinzufügen-Button hier für 'travel' - TravelSection.vue bringt ihren
                eigenen "+ Neue Fahrt/Flug"-Button mit (übernommen aus der früheren TravelView.vue),
                damit die Formular-/Draft-Logik dort unangetastet bleibt (siehe #175). -->
@@ -1911,36 +1904,19 @@ async function removeSpot(id: number) {
 
       <!-- Filter und Sortierung bewusst direkt hier, unmittelbar über der Kategorie-Navi (statt
            Sortierung z. B. oben im .header): beide wirken auf dieselbe Kategorie-gruppierte Liste,
-           sollen deshalb auch räumlich als zusammengehöriges Werkzeug-Trio wahrgenommen werden.
+           sollen deshalb auch räumlich als zusammengehöriges Werkzeug-Paar wahrgenommen werden.
            Sortierung und Filter in getrennten Zeilen (statt einer gemeinsamen, umbrechenden Reihe):
            beides sind konzeptionell unterschiedliche Werkzeuge (eine Reihenfolge vs. eine
            Ein-/Ausblend-Auswahl), ein eigenes Label+Icon je Zeile macht das auf einen Blick klar.
-           Auf schmalen Breiten (@container spots-col unten) kostet dieses Werkzeug-Trio spürbar
-           Platz (Nutzer-Feedback) - dort steckt es hinter .filter-toggle-row (nur dort per CSS
-           sichtbar), auf breiteren Layouts bleibt es wie bisher immer offen. Aktive Filter-Chips
-           bleiben bewusst außerhalb des einklappbaren Bereichs, bleiben also auch eingeklappt
-           sichtbar/entfernbar. -->
+           Immer offen, kein Auf-/Zuklapp-Mechanismus mehr (früher .filter-toggle-row) – auf
+           schmalen Geräten sorgt stattdessen eine feste Label-Spaltenbreite (.tool-label, tabellen-
+           artig ausgerichtet) zusammen mit auf Icons reduzierten Zeilen-/Dropdown-Beschriftungen
+           (siehe @media unten) dafür, dass die beiden Filter-Dropdowns nicht mehr umbrechen/
+           verrutschen (Issue #170). -->
       <div class="filter-bar" v-if="filterCategoryOptions.length">
-        <button
-          type="button"
-          class="filter-toggle-row"
-          :aria-expanded="filterBarExpanded"
-          @click="filterBarExpanded = !filterBarExpanded"
-        >
-          <span
-            ><AppIcon :icon="ACTION_ICONS.filterSettings" :size="15" group="actions" /> Anzeige &amp; Filter<span
-              v-if="activeFilterCount"
-              class="picker-count"
-            >
-              ({{ activeFilterCount }} aktiv)</span
-            ></span
-          >
-          <AppIcon :icon="ACTION_ICONS.chevronDown" :size="14" group="actions" class="caret" :class="{ closed: !filterBarExpanded }" />
-        </button>
-
-        <div class="filter-bar-rows" :class="{ expanded: filterBarExpanded }">
+        <div class="filter-bar-rows">
           <div class="tool-row">
-            <span class="tool-label"><AppIcon :icon="ACTION_ICONS.sort" :size="14" group="actions" /> Sortieren</span>
+            <span class="tool-label" title="Sortieren"><AppIcon :icon="ACTION_ICONS.sort" :size="14" group="actions" /> <span class="tool-label-text">Sortieren</span></span>
             <select v-model="sortMode">
               <option value="alpha">Alphabetisch</option>
               <option value="likes">Nach Likes</option>
@@ -1948,7 +1924,7 @@ async function removeSpot(id: number) {
           </div>
 
           <div class="tool-row">
-            <span class="tool-label"><AppIcon :icon="ACTION_ICONS.filter" :size="14" group="actions" /> Filtern</span>
+            <span class="tool-label" title="Filtern"><AppIcon :icon="ACTION_ICONS.filter" :size="14" group="actions" /> <span class="tool-label-text">Filtern</span></span>
             <div class="dropdown">
               <button
                 ref="categoryBtnRef"
@@ -1958,7 +1934,7 @@ async function removeSpot(id: number) {
                 aria-label="Nach Kategorie filtern"
                 @click="toggleCategoryMenu"
               >
-                <AppIcon :icon="FORM_FIELD_ICONS.category" :size="14" group="formFields" /> Kategorie
+                <AppIcon :icon="FORM_FIELD_ICONS.category" :size="14" group="formFields" /> <span class="dropdown-label-text">Kategorie</span>
                 <AppIcon :icon="ACTION_ICONS.chevronDown" :size="12" group="actions" class="caret dropdown-caret" :class="{ open: categoryMenuOpen }" />
               </button>
               <Teleport to="body">
@@ -1982,7 +1958,7 @@ async function removeSpot(id: number) {
                 aria-label="Nach Status filtern"
                 @click="toggleStatusMenu"
               >
-                <AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" /> Status
+                <AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" /> <span class="dropdown-label-text">Status</span>
                 <AppIcon :icon="ACTION_ICONS.chevronDown" :size="12" group="actions" class="caret dropdown-caret" :class="{ open: statusMenuOpen }" />
               </button>
               <Teleport to="body">
@@ -3021,38 +2997,6 @@ async function removeSpot(id: number) {
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
 }
 
-/* Basis-Regeln VOR dem @container-Query weiter unten definiert (nicht danach) - eine Regel gleicher
-   Spezifität, die textuell SPÄTER im Stylesheet steht, gewinnt bei einem CSS-Tie unabhängig davon,
-   ob sie in einem @container-Block steckt oder nicht. Stünde diese Basis-Regel (unconditional)
-   NACH dem @container-Override, würde sie ihn immer überschreiben, auch wenn die Query zutrifft -
-   exakt das Muster, dem auch .cards oben folgt. */
-.filter-toggle-row {
-  display: none;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-  width: 100%;
-  background: none;
-  border: none;
-  /* Der globale button-Selektor (style.css) setzt box-shadow/border als Grundausstattung für
-     "echte" Buttons - dieser Toggle ist aber eine flache Zeile innerhalb der bereits eingefärbten
-     .filter-bar (background/border oben schon zurückgesetzt), der geerbte Schatten wirkte dort wie
-     ein optischer Fremdkörper (#139). */
-  box-shadow: none;
-  padding: 4px;
-  margin: 0;
-  font: inherit;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
-  cursor: pointer;
-  text-align: left;
-}
-
-.picker-count {
-  font-weight: 400;
-}
-
 .caret {
   flex-shrink: 0;
 }
@@ -3129,29 +3073,6 @@ async function removeSpot(id: number) {
        kürzen. Die explizite 0-Untergrenze erlaubt der Spalte, echt auf die verfügbare Breite zu
        schrumpfen. */
     grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-/* Bewusst @media statt @container spots-col hier (anders als beim .cards-Raster oben): Gruppieren/
-   Sortieren/Filtern sollen nur auf echten schmalen GERÄTEN einklappbar sein (Nutzer-Feedback: "auf
-   mobile"), nicht schon, wenn jemand auf Desktop die .spots-col-Spalte per Anfasser schmal zieht -
-   dort ist trotz schmaler Spalte meist reichlich Bildschirmhöhe vorhanden, das eigentliche Problem
-   (wenig vertikaler Platz) tritt nur auf kleinen Geräten auf. Gleicher 800px-Schwellenwert wie
-   useIsDesktop()/NavBar.vue, damit "mobil" hier dasselbe bedeutet wie überall sonst in der App. */
-@media (max-width: 799px) {
-  /* Gruppieren/Sortieren/Filtern kosten auf schmalen Breiten spürbar Platz (Nutzer-Feedback) -
-     dort per Klick ein-/ausklappbar (Standard: eingeklappt), auf breiteren Layouts (Default-CSS
-     oben, hier nicht überschrieben) bleibt es wie bisher immer offen, kein Toggle sichtbar. */
-  .filter-toggle-row {
-    display: flex;
-  }
-
-  .filter-bar-rows {
-    display: none;
-  }
-
-  .filter-bar-rows.expanded {
-    display: flex;
   }
 }
 
@@ -3364,19 +3285,29 @@ async function removeSpot(id: number) {
 }
 
 /* Je eine Zeile für Sortieren und Filtern, statt einer gemeinsamen umbrechenden Reihe – siehe
-   Kommentar am Template. */
+   Kommentar am Template. flex-wrap:nowrap (statt wrap): die Dropdowns sollen bei wenig Platz auf
+   Icons reduziert werden (siehe @media weiter unten), statt in eine zweite Zeile umzubrechen und
+   sich damit gegenüber der Sortieren-Zeile zu verschieben (Issue #170: "Dropdowns... teilweise
+   verschoben"). */
 .tool-row {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: var(--space-2);
 }
 
+/* Feste Breite statt nur flex-shrink:0 - richtet die Steuerelemente beider Zeilen (Sortieren/
+   Filtern) an derselben gedachten vertikalen Linie aus, tabellenartig statt mit je nach
+   Label-Länge unterschiedlich weit eingerücktem Inhalt (Issue #170, erste Lösungsidee). */
 .tool-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 66px;
+  flex-shrink: 0;
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--color-text-muted);
-  flex-shrink: 0;
 }
 
 .filter-chips {
@@ -3420,6 +3351,36 @@ async function removeSpot(id: number) {
    (ShoppingListView.vue/TodoView.vue), statt wie zuvor dezenter/flacher zu wirken. */
 .category-btn {
   font-size: 0.85rem;
+}
+
+/* Bewusst @media statt @container spots-col (anders als beim .cards-Raster oben): die
+   Icon-only-Reduktion soll nur auf echten schmalen GERÄTEN greifen (Issue #170: "auf mobile"),
+   nicht schon, wenn jemand auf Desktop die .spots-col-Spalte per Anfasser schmal zieht - dort ist
+   trotz schmaler Spalte meist reichlich Platz vorhanden. Gleicher 800px-Schwellenwert wie
+   useIsDesktop()/NavBar.vue, damit "mobil" hier dasselbe bedeutet wie überall sonst in der App.
+   Bewusst NACH den zugehörigen Basis-Regeln (.tool-label/.category-btn oben) statt davor: eine
+   Regel gleicher Spezifität, die textuell SPÄTER im Stylesheet steht, gewinnt bei einem CSS-Tie
+   unabhängig davon, ob sie in einem @media-Block steckt oder nicht - stünde dieser Override VOR
+   den Basis-Regeln, würden die ihn unabhängig vom Viewport immer überschreiben (siehe .cards'
+   analoger Kommentar beim @container-Query weiter oben). */
+@media (max-width: 799px) {
+  /* Sortieren/Filtern bleiben immer offen (kein Ausklappi mehr, siehe Template-Kommentar), sparen
+     sich auf schmalen Breiten stattdessen die Text-Labels (nur noch Icons) - genau das verhindert,
+     dass die beiden Filter-Dropdowns (Kategorie/Status) neben "Filtern" umbrechen bzw. gegenüber
+     der Sortieren-Zeile verrutschen (Issue #170). */
+  .tool-label-text,
+  .dropdown-label-text {
+    display: none;
+  }
+
+  .tool-label {
+    min-width: 0;
+  }
+
+  .category-btn {
+    padding-left: var(--space-2);
+    padding-right: var(--space-2);
+  }
 }
 
 /* Kleiner Auf-/Zu-Pfeil rechts neben dem Label, macht auf einen Blick klarer, dass ein Klick ein
