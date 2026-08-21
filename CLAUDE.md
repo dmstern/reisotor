@@ -208,7 +208,10 @@ geschrieben), nicht hartcodieren — die Demo-Seed-Termine liegen relativ zu "he
 
 Für spontane visuelle Verifikation einer einzelnen Änderung (kein dauerhafter Regressionstest): eine
 kurze Wegwerf-Spec unter `e2e/tests/scratch/` schreiben (gitignored, nie committen), die zur
-fraglichen Stelle navigiert, interagiert und `page.screenshot({ path: ... })` aufruft. Mit
+fraglichen Stelle navigiert, interagiert, vor dem Screenshot `waitForFonts(page)`
+(`e2e/tests/helpers/fonts.ts`) awaitet und dann `page.screenshot({ path: ... })` aufruft — sonst
+bleibt es in einem frischen Playwright-Kontext (kein warmer Font-Cache) oft bei der Fallback-Schrift
+statt Fira Sans, siehe Kommentar in `fonts.ts` (#197). Mit
 `npx playwright test tests/scratch/<name>.spec.ts` ausführen, den Screenshot per Read-Tool selbst
 ansehen und bewerten. Die Wegwerf-**Spec** danach löschen, das erzeugte **PNG** aber aufheben (bleibt
 im gitignoreten `e2e/tests/scratch/`) — bei sichtbaren UI-Änderungen ist das der Kandidat für die
