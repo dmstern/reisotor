@@ -306,12 +306,8 @@ const editExcursionDraft = useDraftAutosave(
   computed(() => editingExcursion.value !== null),
 );
 
-/** travelMode vorbelegt den Transportmittel-Abschnitt aufgeklappt - Einstieg über den "+ Neue
- *  Fahrt/Flug"-Button in der Touren-Gruppierung (siehe Template), spart dort den zusätzlichen Klick
- *  zum Aufklappen. */
-function openExcursionForm(travelMode = false) {
+function openExcursionForm() {
   excursionForm.value = emptyExcursionForm();
-  if (travelMode) excursionForm.value.transportEnabled = true;
   showExcursionForm.value = true;
 }
 
@@ -1831,11 +1827,6 @@ async function removeSpot(id: number) {
           <button v-if="groupMode === 'category'" @click="showSpotForm = true"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Neuer Spot</button>
           <template v-else-if="groupMode === 'tours'">
             <button @click="openExcursionForm()"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Neue Tour</button>
-            <!-- #176/#196: dasselbe Touren-Formular wie "Neue Tour", nur mit vorab aufgeklapptem
-                 Transportmittel-Abschnitt (openExcursionForm(true)) - eigener Schnellzugang für eine
-                 Reise-Etappe (Touren mit gesetzter role sind seit #176 ganz normale Touren, die
-                 frühere eigene "Reise"-Gruppierung/-Formular entfällt seit #196). -->
-            <button class="secondary" @click="openExcursionForm(true)"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Neue Fahrt/Flug</button>
           </template>
 
           <!-- Zweiter Einstiegspunkt zum ⏺️/⏹️-Button auf TripMap.vue (Start dort mit Sichtbarkeits-
