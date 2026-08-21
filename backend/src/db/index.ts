@@ -1327,11 +1327,12 @@ ensureColumn('users', 'is_restricted', 'INTEGER NOT NULL DEFAULT 0');
 // #68: Zusammenführung von Touren/Routen/Reisen. Eine Reise-Etappe (travel_items) ist im Kern eine
 // Tour mit genau zwei Stationen (Von/Nach) plus Transportmittel-Zusatzfeldern – diese Zusatzfelder
 // wandern additiv auf ideas (Touren), als Grundlage für die spätere Ablösung von travel_items/
-// TravelView.vue/dem NavBar-Punkt "Reise" (siehe Konzept-Kommentar in Issue #68). budget_expense_id
-// bleibt bewusst NICHT auf ideas gespiegelt: der Budget-Sync-Eintrag gehört bis zur tatsächlichen
-// Route/UI-Ablösung weiterhin exklusiv dem alten travel_items-Eintrag (routes/travel.ts) – sonst
-// würden zwei Objekte denselben budget_items-Datensatz beanspruchen und sich beim Löschen
-// gegenseitig die Ausgabe wegreißen.
+// TravelView.vue/dem NavBar-Punkt "Reise" (siehe Konzept-Kommentar in Issue #68, UI-Umsetzung in
+// #175). budget_expense_id bleibt bewusst NICHT auf ideas gespiegelt: der Budget-Sync-Eintrag gehört
+// bis zur tatsächlichen Route/UI-Ablösung weiterhin exklusiv dem alten travel_items-Eintrag
+// (routes/travel.ts) – sonst würden zwei Objekte denselben budget_items-Datensatz beanspruchen und
+// sich beim Löschen gegenseitig die Ausgabe wegreißen. Budget-Sync/Anhänge/Kalender-Verknüpfung auf
+// das neue Modell umstellen und travel_items danach entfernen: #176.
 ensureColumn('ideas', 'role', 'TEXT');
 ensureColumn('ideas', 'transport_type', 'TEXT');
 ensureColumn('ideas', 'departure_time', 'TEXT');
