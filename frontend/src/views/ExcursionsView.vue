@@ -1955,7 +1955,7 @@ async function removeSpot(id: number) {
             <ImageUrlInput v-model="excursionForm.image_url" />
           </FormField>
           <FormField icon="note" label="Notiz">
-            <RichTextEditor v-model="excursionForm.note" placeholder="Notiz (optional)" />
+            <RichTextEditor v-model="excursionForm.note" placeholder="Notiz (optional)" compact />
           </FormField>
           <FormField icon="date" label="Datum (optional – sonst „In Planung“)">
             <input v-model="excursionForm.date" type="date" />
@@ -2057,7 +2057,7 @@ async function removeSpot(id: number) {
             <ImageUrlInput v-model="editExcursionForm.image_url" />
           </FormField>
           <FormField icon="note" label="Notiz">
-            <RichTextEditor v-model="editExcursionForm.note" placeholder="Notiz (optional)" />
+            <RichTextEditor v-model="editExcursionForm.note" placeholder="Notiz (optional)" compact />
           </FormField>
           <FormField icon="date" label="Datum (optional – sonst „In Planung“)">
             <input v-model="editExcursionForm.date" type="date" />
@@ -2329,7 +2329,7 @@ async function removeSpot(id: number) {
             :reference-points="spotReferencePoints"
           />
           <FormField icon="note" label="Notiz">
-            <RichTextEditor v-model="spotForm.note" placeholder="Notiz (optional)" />
+            <RichTextEditor v-model="spotForm.note" placeholder="Notiz (optional)" compact />
           </FormField>
           <FormField icon="tour" label="Tour zuordnen">
             <TourAssignPicker v-model="spotForm.tourTitles" :tour-options="allTourTitles" />
@@ -2627,7 +2627,7 @@ async function removeSpot(id: number) {
             :reference-points="editSpotReferencePoints"
           />
           <FormField icon="note" label="Notiz">
-            <RichTextEditor v-model="editSpotForm.note" placeholder="Notiz (optional)" />
+            <RichTextEditor v-model="editSpotForm.note" placeholder="Notiz (optional)" compact />
           </FormField>
           <FormField icon="tour" label="Tour zuordnen">
             <TourAssignPicker v-model="editSpotForm.tourTitles" :tour-options="allTourTitles" />
