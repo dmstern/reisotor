@@ -2370,7 +2370,6 @@ async function removeSpot(id: number) {
         :status-filter="statusFilter"
         :covered-bottom-px="mapCoveredBottomPx"
         :sheet-overlay-mode="isSheetOverlayMode"
-        @edit-spot="startEditSpot"
         @focus-spot="onFocusSpotFromMap"
         @focus-excursion="onFocusExcursionFromMap"
         @edit-excursion="startEditExcursion"
@@ -2758,6 +2757,15 @@ async function removeSpot(id: number) {
        überflüssige Seiten-Scrollbar samt leerem Weißraum am Ende erzeugte. */
     max-height: calc(100vh - var(--app-header-height, 56px) - var(--navbar-offset, 0px) - var(--navbar-bottom-offset, 0px) - var(--page-title-height, 0px) - var(--space-3));
     overflow-y: auto;
+  }
+
+  /* Reserviert Platz links/rechts/unten, damit der Schatten der fokussierten Tagesansicht-Box
+     (TripMap.vue's .focus-spot-list, in .karte statisch unter der Karte fließend) nicht am
+     overflow-x:auto-Rand von .map-col abgeschnitten wird (overflow-y:auto oben setzt overflow-x
+     laut CSS-Spec implizit auf auto, s. Kommentar bei .col-resize-handle) und die Box unten nicht
+     direkt am Rand von .map-col klebt (#158). */
+  .map-col {
+    padding: 0 var(--space-2) var(--space-3);
   }
 
   .spots-col {

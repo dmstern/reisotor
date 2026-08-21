@@ -13,7 +13,6 @@ import type {
   Excursion,
   LocationTrack,
   ScheduleItem,
-  Spot,
   TrackPoint,
   TrackVisibility,
   TravelItem,
@@ -43,7 +42,6 @@ import { formatDate as formatDateShared, toLocalDateString } from '../utils/date
 import { excursionStationKeys, resolveStations, type ExcursionStation } from '../utils/excursionStations';
 import { interpolateTrackPosition } from '../utils/trackGeometry';
 import { useIsDesktop } from '../composables/useIsDesktop';
-import SpotDetailDialog from './SpotDetailDialog.vue';
 import MiniStationCard from './MiniStationCard.vue';
 import TravelDetailDialog from './TravelDetailDialog.vue';
 import TrackPlayback from './TrackPlayback.vue';
@@ -113,10 +111,6 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  // Bearbeiten eines Spots: die Karte besitzt kein eigenes Formular, lebt aber (anders als
-  // Ausflüge/Unterkunft/Reise) im selben Komponentenbaum wie die echte Spots-Bearbeiten-Form
-  // (beide Teil der Karte-Hauptsicht) – kein Routen-Sprung nötig, nur ein Emit nach oben.
-  (e: 'edit-spot', spot: Spot): void;
   // Klick auf einen Spot-Pin (nicht Unterkunft/Reise, siehe handlePointClick): statt eines eigenen
   // Modal-Dialogs (der die Karte dahinter blockieren würde) klappt die passende Spot-Karte in der
   // Liste auf – die kennt TripMap.vue nicht direkt, daher Emit an die Karte-Hauptsicht.
@@ -603,53 +597,6 @@ async function loadAll() {
   // selbst aktuell gehalten) – kein eigener Fetch/Refresh-Trigger hier mehr nötig.
 }
 
-// Ein Klick auf einen Pin (egal ob direkt auf der Karte oder in der Stationsliste eines Fokus-
-// Ausflugs) öffnet den vollständigen Detail-Dialog des jeweiligen Objekts direkt in der Bildschirm-
-// mitte – ein separates kleines Info-Panel gibt es dafür nicht mehr (siehe handlePointClick unten).
-// "welcher Spot" (openSpotId) und "ist der Dialog offen" (spotDialogOpen) bewusst getrennt:
-// SpotDetailDialog.vue braucht ein echtes Spot-Objekt als Prop (nicht nullable), müsste beim
-// Schließen also sonst komplett aus dem DOM entfernt werden (v-if) statt nur unsichtbar zu werden –
-// das würde Modal.vue's eigene Fade-Out-Transition abschneiden, da sie nie zum Abspielen kommt.
-const openSpotId = ref<number | null>(null);
-const spotDialogOpen = ref(false);
-const openSpot = computed(() => spotsStore.spots.find((s) => s.id === openSpotId.value) ?? null);
-// Setzt gleichzeitig drawers.mapFocusKey: der Pin des geöffneten Spots wird dadurch (über iconFor())
-// dezent vergrößert dargestellt, egal ob der Dialog per Pin-Klick oder Stationsliste geöffnet wurde.
-function openSpotDetail(spotId: number) {
-  openSpotId.value = spotId;
-  spotDialogOpen.value = true;
-  drawers.mapFocusKey = `spot-${spotId}`;
-}
-// Schließen NUR über Modal.vue's eigene Wege (✕/Backdrop/Escape) hebt die Pin-Hervorhebung wieder
-// auf – bewusst nicht als pauschaler watch(spotDialogOpen)-Handler, da @show-on-map unten
-// spotDialogOpen ebenfalls auf false setzt, dort aber der Fokus (auf denselben Punkt) bestehen
-// bleiben soll (kein Wettlauf zwischen "schließen löscht Fokus" und "Auf-Karte-anzeigen setzt ihn").
-function onSpotDialogUpdate(v: boolean) {
-  spotDialogOpen.value = v;
-  if (!v) drawers.mapFocusKey = null;
-}
-function spotCreatorLabel(userId: number | null) {
-  if (userId == null) return null;
-  const u = users.value.find((u) => u.id === userId);
-  return u ? `${u.avatar} ${u.username}` : null;
-}
-function spotCommentItemsFor(spotId: number) {
-  return spotsStore.commentsFor(spotId).map((c) => ({
-    id: c.id,
-    avatar: users.value.find((u) => u.id === c.author_id)?.avatar ?? '❓',
-    username: users.value.find((u) => u.id === c.author_id)?.username ?? '?',
-    content: c.content,
-    canRemove: c.author_id === auth.user?.id,
-  }));
-}
-// Bearbeiten öffnet die echte Spots-Bearbeiten-Form der Karte-Hauptsicht (beide Teil desselben
-// Komponentenbaums, siehe emit-Deklaration oben) – kein Routen-Sprung mehr nötig.
-function editOpenSpot() {
-  if (!openSpot.value) return;
-  spotDialogOpen.value = false;
-  emit('edit-spot', openSpot.value);
-}
-
 // Klick auf den Ausflug-Titel unter der Karte: früher öffnete das einen eigenen Detail-Dialog
 // (ExcursionDetailDialog.vue), der seit #92 entfällt (redundant zur ExcursionCard.vue in der
 // Spots-Liste). Verhält sich jetzt wie ein Spot-Pin-Klick (siehe handlePointClick's focus-spot) -
@@ -669,7 +616,10 @@ function onTravelDialogUpdate(v: boolean) {
 
 function openStationDetail(station: ExcursionStation) {
   if (station.kind === 'spot') {
-    openSpotDetail(station.id);
+    // Wie handlePointClick's Pin-Klick (#158): klappt die Card in der Spots-Liste auf/scrollt dahin,
+    // statt den SpotDetailDialog zu öffnen – konsistentes Verhalten für alle Spot-Klickpfade.
+    drawers.mapFocusKey = `spot-${station.id}`;
+    emit('focus-spot', station.id);
   } else if (station.kind === 'schedule') {
     // Kein eigener Detail-Dialog für Termine vorhanden (Architekturregel: fremde Objekte springen
     // zur Ursprungssicht statt inline editierbar zu sein) – öffnet stattdessen die Kalender-Schublade
@@ -1584,23 +1534,6 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
       <TrackPlayback v-else :points="focusedTrackPoints" v-model:progress="trackPlaybackProgress" />
     </div>
     </Teleport>
-
-    <SpotDetailDialog
-      v-if="openSpot"
-      :model-value="spotDialogOpen"
-      @update:model-value="onSpotDialogUpdate"
-      :spot="openSpot"
-      :creator-label="spotCreatorLabel(openSpot.created_by)"
-      :payer-label="payerLabelFor(openSpot.paid_by_user_id)"
-      :like-count="spotsStore.likeCountFor(openSpot.id)"
-      :liked="spotsStore.likedByMe(openSpot.id, auth.user?.id)"
-      :comments="spotCommentItemsFor(openSpot.id)"
-      @edit="editOpenSpot"
-      @toggle-like="spotsStore.toggleLike(openSpot.id, auth.user!.id)"
-      @submit-comment="(content) => spotsStore.submitComment(openSpot!.id, content)"
-      @remove-comment="spotsStore.removeComment"
-      @show-on-map="spotDialogOpen = false"
-    />
 
     <TravelDetailDialog
       v-if="openTravel"
