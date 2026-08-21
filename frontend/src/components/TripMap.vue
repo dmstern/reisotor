@@ -894,8 +894,15 @@ function renderRoutes() {
     return;
   }
 
-  // Im Ausflug-Fokus nur dessen eigene Route zeichnen, nicht die aller anderen Ausflüge.
-  const excursionsToDraw = focusedExcursion.value ? [focusedExcursion.value] : excursionsStore.excursions;
+  // Im Ausflug-Fokus nur dessen eigene Route zeichnen, nicht die aller anderen Ausflüge. Touren mit
+  // gesetzter role (#176: ehemalige Reise-Etappe) sind hier bewusst ausgeschlossen - ihre Route
+  // zeichnet bereits die travelItems-Schleife oben (grün/gestrichelt), ein zweiter, orangener
+  // Streckenzug zwischen denselben zwei Stationen wäre nur eine optisch überlappende Dopplung.
+  const excursionsToDraw = focusedExcursion.value
+    ? focusedExcursion.value.role
+      ? []
+      : [focusedExcursion.value]
+    : excursionsStore.excursions.filter((e) => !e.role);
   for (const excursion of excursionsToDraw) {
     const stations = resolveStations(excursionStationKeys(excursion.spot_ids), spotsStore.spots, travelItems.value);
     const coords: L.LatLngExpression[] = stations

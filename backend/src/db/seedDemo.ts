@@ -229,6 +229,14 @@ const insertHomeSpot = db.prepare(
   'INSERT INTO spots (trip_id, title, category, is_home) VALUES (?, ?, ?, 1)',
 );
 const berlinSpotId = insertHomeSpot.run(tripId, 'Berlin (BER)', 'Flughafen').lastInsertRowid as number;
+// Eigene Koordinaten statt LISBON (Altstadt-Zentrum) - sonst läge der Flughafen-Pin praktisch
+// deckungsgleich auf dem "Hotel Alfama"-Pin (LISBON.lat/lng + kleinem Offset). Bewusst nur wenige
+// hundert Meter versetzt statt der echten ~7km zum tatsächlichen Flughafen Lissabon: ein Punkt so
+// weit außerhalb der übrigen Spots (Belém/Market, siehe belemLat/marketLat oben) zwingt
+// TripMap.vue's Default-fitBounds zu einem so starken Zoom-Out, dass die übrigen, eng
+// beieinanderliegenden Spot-Pins auf kleinen Viewports (Mobil) sichtbar überlappen (e2e:
+// map-focus-covered-drawer.spec.ts).
+const LISBON_AIRPORT = { lat: 38.735, lng: -9.13 };
 const lisbonAirportSpotId = insertSpot.run(
   tripId,
   'Lissabon (LIS)',
@@ -236,8 +244,8 @@ const lisbonAirportSpotId = insertSpot.run(
   'Flughafen',
   null,
   null,
-  LISBON.lat,
-  LISBON.lng,
+  LISBON_AIRPORT.lat,
+  LISBON_AIRPORT.lng,
   user1.id,
 ).lastInsertRowid as number;
 
