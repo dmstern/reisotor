@@ -6,6 +6,7 @@ import { api, ApiError } from '../api/client';
 import PasswordInput from '../components/PasswordInput.vue';
 import ReisotorRobot from '../components/ReisotorRobot.vue';
 import ThemeModeSelect from '../components/ThemeModeSelect.vue';
+import AppFooterLinks from '../components/AppFooterLinks.vue';
 
 const auth = useAuthStore();
 const router = useRouter();
@@ -20,6 +21,9 @@ const loading = ref(false);
 // Backend-Setting REGISTRATION_MODE (Issue #96) – bis zur Antwort defensiv 'off' annehmen, damit
 // der Registrieren-Umschalter nicht kurz aufblitzt, falls Registrierung tatsächlich deaktiviert ist.
 const registrationMode = ref<'off' | 'full' | 'restricted'>('off');
+// __LANDING_URL__ (vite.config.ts's define) lässt sich nicht direkt im Template referenzieren -
+// vue-tsc's Template-Typprüfung löst Ambient-Globals aus einer .d.ts nicht auf, siehe env.d.ts.
+const landingUrl = __LANDING_URL__;
 
 onMounted(async () => {
   try {
@@ -95,6 +99,9 @@ async function onSubmit() {
         {{ mode === 'register' ? 'Schon registriert? Anmelden' : 'Noch kein Konto? Registrieren' }}
       </button>
     </form>
+    <footer class="login-footer">
+      <AppFooterLinks :landing-url="landingUrl" />
+    </footer>
   </div>
 </template>
 
@@ -147,6 +154,13 @@ async function onSubmit() {
 .mode-toggle {
   font-size: 0.85rem;
   font-weight: 400;
+}
+
+.login-footer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: 0.8rem;
 }
 
 label,
