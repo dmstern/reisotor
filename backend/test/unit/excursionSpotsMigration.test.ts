@@ -33,7 +33,7 @@ describe('excursion_spots spot_id-Migration', () => {
       CREATE TABLE trips (id INTEGER PRIMARY KEY, name TEXT NOT NULL, start_date TEXT NOT NULL, end_date TEXT NOT NULL);
       CREATE TABLE users (id INTEGER PRIMARY KEY, username TEXT NOT NULL, avatar TEXT NOT NULL);
       CREATE TABLE spots (id INTEGER PRIMARY KEY, trip_id INTEGER NOT NULL, title TEXT, image_url TEXT, category TEXT, note TEXT, maps_link TEXT, lat REAL, lng REAL, created_by INTEGER);
-      CREATE TABLE ideas (id INTEGER PRIMARY KEY, trip_id INTEGER, title TEXT NOT NULL);
+      CREATE TABLE ideas (id INTEGER PRIMARY KEY, trip_id INTEGER, title TEXT NOT NULL, note TEXT);
       CREATE TABLE travel_places (id INTEGER PRIMARY KEY, trip_id INTEGER NOT NULL, name TEXT NOT NULL, is_home INTEGER NOT NULL DEFAULT 0, type TEXT, maps_link TEXT, lat REAL, lng REAL);
       CREATE TABLE travel_items (id INTEGER PRIMARY KEY, trip_id INTEGER, title TEXT NOT NULL, from_place_id INTEGER, to_place_id INTEGER);
       CREATE TABLE excursion_spots (id INTEGER PRIMARY KEY, idea_id INTEGER NOT NULL, station_key TEXT NOT NULL, position INTEGER NOT NULL DEFAULT 0);

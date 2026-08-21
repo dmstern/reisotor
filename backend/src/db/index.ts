@@ -11,6 +11,7 @@ export const db = new Database(dbPath);
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 
+
 // Migration von der alten Singleton-Tabelle "trip" (immer nur eine Zeile mit id=1)
 // zur neuen Liste "trips" (mehrere Urlaube möglich) – per RENAME bleiben alle
 // bestehenden Daten und die ursprüngliche id erhalten.
@@ -232,21 +233,6 @@ CREATE TABLE IF NOT EXISTS travel_items (
   link TEXT,
   note TEXT,
   budget_expense_id INTEGER REFERENCES budget_items(id)
-);
-
--- Wiederverwendbare Orte für Reise-Etappen (Batch: Reise/Flüge schlauer machen) – statt bei jeder
--- Etappe "Von"/"Nach" samt Maps-Link erneut einzutippen, werden Start/Ziel einmal als Ort angelegt
--- und dann aus mehreren Etappen heraus referenziert (siehe travel_items.from_place_id/to_place_id
--- weiter unten). is_home markiert "zuhause"-Orte, ersetzt für neu angelegte Etappen die bisher
--- manuell zu setzende travel_items.role (die Rolle lässt sich daraus automatisch ableiten).
-CREATE TABLE IF NOT EXISTS travel_places (
-  id INTEGER PRIMARY KEY,
-  trip_id INTEGER NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
-  name TEXT NOT NULL,
-  is_home INTEGER NOT NULL DEFAULT 0,
-  maps_link TEXT,
-  lat REAL,
-  lng REAL
 );
 
 CREATE TABLE IF NOT EXISTS spots (
@@ -481,14 +467,16 @@ ensureColumn('travel_items', 'role', 'TEXT');
 // Ankunftszeit zusätzlich zur Abflugzeit – erlaubt die automatische Reisedauer-Berechnung im
 // Frontend (utils/travelDuration.ts), ohne die Uhrzeit manuell ausrechnen zu müssen.
 ensureColumn('travel_items', 'arrival_time', 'TEXT');
-// Referenz auf einen wiederverwendbaren Ort (travel_places, siehe CREATE TABLE oben) statt erneuter
-// Freitext-Eingabe je Etappe. Rein informativ/bequem: from_location/from_maps_link/from_lat/from_lng
-// (bzw. die "to"-Pendants) bleiben die tatsächliche Quelle für Karte/Kalender & Co. und werden beim
-// Anlegen/Bearbeiten einer Etappe aus dem gewählten Ort übernommen (siehe routes/travel.ts) – so
-// funktioniert jeder bestehende Verbraucher dieser Felder unverändert weiter, ohne sie kennen zu
-// müssen.
-ensureColumn('travel_items', 'from_place_id', 'INTEGER REFERENCES travel_places(id) ON DELETE SET NULL');
-ensureColumn('travel_items', 'to_place_id', 'INTEGER REFERENCES travel_places(id) ON DELETE SET NULL');
+// Referenz auf einen wiederverwendbaren Ort statt erneuter Freitext-Eingabe je Etappe. Rein
+// informativ/bequem: from_location/from_maps_link/from_lat/from_lng (bzw. die "to"-Pendants) bleiben
+// die tatsächliche Quelle für Karte/Kalender & Co. und werden beim Anlegen/Bearbeiten einer Etappe aus
+// dem gewählten Ort übernommen (siehe routes/travel.ts) – so funktioniert jeder bestehende Verbraucher
+// dieser Felder unverändert weiter, ohne sie kennen zu müssen. REFERENCES spots(id) statt des
+// historischen travel_places(id): auf jeder DB, die diese Spalte zum ersten Mal bekommt (frische DB
+// oder eine, die die travel_places-Migration weiter unten schon hinter sich hat), zeigt from_place_id/
+// to_place_id direkt auf einen Spot.
+ensureColumn('travel_items', 'from_place_id', 'INTEGER REFERENCES spots(id) ON DELETE SET NULL');
+ensureColumn('travel_items', 'to_place_id', 'INTEGER REFERENCES spots(id) ON DELETE SET NULL');
 // Ort-Art (Zuhause/Flughafen/Bahnhof/Busbahnhof/Hafen/Raststätte/Sonstiger Zwischenstopp) – rein
 // fürs passende Icon in der Reise-Sicht UND den davon abgeleiteten Karten-/Spots-Einträgen (siehe
 // utils/travelPlaceType.ts). Bewusst UNABHÄNGIG von is_home: is_home bleibt die alleinige Quelle
@@ -498,7 +486,12 @@ ensureColumn('travel_items', 'to_place_id', 'INTEGER REFERENCES travel_places(id
 // type allein könnte das nicht unterscheiden. Keine Migration/kein Backfill nötig, da neu und
 // unabhängig von bestehenden Spalten (NULL = noch keine Art gewählt, Frontend zeigt dann den
 // generischen Pin).
-ensureColumn('travel_places', 'type', 'TEXT');
+// Nur noch relevant auf einer (sehr alten) Prod-DB, die travel_places tatsächlich noch besitzt
+// (siehe Bugfix-Kommentar bei `if (hasTable('travel_places'))` weiter unten) – auf jeder anderen DB
+// existiert die Tabelle nicht (mehr), ensureColumn() würde dort sonst mit "no such table" scheitern.
+if (hasTable('travel_places')) {
+  ensureColumn('travel_places', 'type', 'TEXT');
+}
 
 // Ausflug ist ein reines Container-Objekt (Titel/Bild/Notiz/Spots) – "geplant"/"in Planung" ergibt
 // sich nicht mehr aus einer eigenen Datums-Spalte, sondern daraus, ob ein Kalender-Termin
@@ -776,6 +769,16 @@ for (const table of TRASH_TABLES) {
 // (siehe unten) und muss dafür bereits ihre trip_id-/deleted_at-Spalten besitzen, die erst durch die
 // TRIP_SCOPED_TABLES-/TRASH_TABLES-Schleifen ergänzt werden – sonst schlägt der Neuaufbau auf einer
 // frischen/Test-DB mit "no such column" fehl (siehe CLAUDE.md, Migrations-Reihenfolge).
+//
+// Bugfix (#68-Vorarbeit): travel_places wurde bis eben zusätzlich unconditional per
+// `CREATE TABLE IF NOT EXISTS` im Basis-Schema weiter oben angelegt – dieser Block hier löscht die
+// Tabelle am Ende aber wieder (`DROP TABLE travel_places`). In Kombination bedeutete das: JEDER
+// Backend-Neustart legte travel_places leer neu an, hasTable() war dadurch dauerhaft wahr, und dieser
+// komplette Block lief bei JEDEM Neustart erneut – mit einer LEEREN placeToSpotId-Map, die jedes
+// gesetzte travel_items.from_place_id/to_place_id stillschweigend auf NULL zurücksetzte (echter
+// Datenverlust auf Prod bei jedem Deploy/Neustart). Die `CREATE TABLE IF NOT EXISTS travel_places`-
+// Zeile ist jetzt entfernt – dieser Block läuft dadurch nur noch echt einmalig, nämlich auf einer
+// (sehr alten) Prod-DB, die travel_places tatsächlich noch mit echten Alt-Daten besitzt.
 if (hasTable('travel_places')) {
   interface LegacyTravelPlaceRow {
     id: number;
@@ -1320,3 +1323,120 @@ db.exec(`
 // bestehen, auch wenn REGISTRATION_MODE später geändert wird – kein Backfill nötig, da additiv mit
 // Default 0 (alle bisherigen Accounts sind unrestricted).
 ensureColumn('users', 'is_restricted', 'INTEGER NOT NULL DEFAULT 0');
+
+// #68: Zusammenführung von Touren/Routen/Reisen. Eine Reise-Etappe (travel_items) ist im Kern eine
+// Tour mit genau zwei Stationen (Von/Nach) plus Transportmittel-Zusatzfeldern – diese Zusatzfelder
+// wandern additiv auf ideas (Touren), als Grundlage für die spätere Ablösung von travel_items/
+// TravelView.vue/dem NavBar-Punkt "Reise" (siehe Konzept-Kommentar in Issue #68). budget_expense_id
+// bleibt bewusst NICHT auf ideas gespiegelt: der Budget-Sync-Eintrag gehört bis zur tatsächlichen
+// Route/UI-Ablösung weiterhin exklusiv dem alten travel_items-Eintrag (routes/travel.ts) – sonst
+// würden zwei Objekte denselben budget_items-Datensatz beanspruchen und sich beim Löschen
+// gegenseitig die Ausgabe wegreißen.
+ensureColumn('ideas', 'role', 'TEXT');
+ensureColumn('ideas', 'transport_type', 'TEXT');
+ensureColumn('ideas', 'departure_time', 'TEXT');
+ensureColumn('ideas', 'arrival_time', 'TEXT');
+ensureColumn('ideas', 'checkin_info', 'TEXT');
+ensureColumn('ideas', 'amount', 'REAL');
+ensureColumn('ideas', 'paid_by_user_id', 'INTEGER REFERENCES users(id)');
+ensureColumn('ideas', 'luggage', 'TEXT');
+ensureColumn('ideas', 'seat', 'TEXT');
+ensureColumn('ideas', 'ticket_link', 'TEXT');
+
+// migrated_idea_id markiert, welcher travel_items-Eintrag bereits als Tour (ideas) gespiegelt wurde.
+// Anders als die travel_places-/accommodation-Migrationen weiter oben benennt diese Migration
+// travel_items nicht um, sondern läuft bei jedem Prozessstart erneut – migrated_idea_id ist daher der
+// Idempotenz-Guard, der ein doppeltes Spiegeln verhindert.
+ensureColumn('travel_items', 'migrated_idea_id', 'INTEGER REFERENCES ideas(id) ON DELETE SET NULL');
+
+if (hasTable('travel_items')) {
+  interface UnmigratedTravelRow {
+    id: number;
+    trip_id: number;
+    title: string;
+    type: string | null;
+    note: string | null;
+    note_format: string;
+    role: string | null;
+    departure_time: string | null;
+    arrival_time: string | null;
+    checkin_info: string | null;
+    amount: number | null;
+    paid_by_user_id: number | null;
+    luggage: string | null;
+    seat: string | null;
+    link: string | null;
+    from_location: string | null;
+    from_maps_link: string | null;
+    from_lat: number | null;
+    from_lng: number | null;
+    from_place_id: number | null;
+    to_location: string | null;
+    to_maps_link: string | null;
+    to_lat: number | null;
+    to_lng: number | null;
+    to_place_id: number | null;
+    deleted_at: string | null;
+  }
+
+  const unmigrated = db
+    .prepare('SELECT * FROM travel_items WHERE migrated_idea_id IS NULL')
+    .all() as UnmigratedTravelRow[];
+
+  // Statements erst vorbereiten, wenn wirklich etwas zu migrieren ist - vermeidet, dass diese
+  // Migration auf einer (Test-)DB mit stark reduziertem ideas-Schema (kein travel_items-Datensatz,
+  // also nichts zu tun) allein am Vorbereiten von Spalten scheitert, die dieser Testfall gar nicht
+  // besitzt.
+  if (unmigrated.length > 0) {
+    const insertIdea = db.prepare(`
+      INSERT INTO ideas (
+        title, note, note_format, trip_id, role, transport_type, departure_time, arrival_time,
+        checkin_info, amount, paid_by_user_id, luggage, seat, ticket_link, deleted_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    const insertSpot = db.prepare(
+      'INSERT INTO spots (trip_id, title, maps_link, lat, lng) VALUES (?, ?, ?, ?, ?)',
+    );
+    const insertStation = db.prepare('INSERT INTO excursion_spots (idea_id, spot_id, position) VALUES (?, ?, ?)');
+    const markMigrated = db.prepare('UPDATE travel_items SET migrated_idea_id = ? WHERE id = ?');
+
+    for (const row of unmigrated) {
+      const ideaId = insertIdea.run(
+        row.title,
+        row.note,
+        row.note_format,
+        row.trip_id,
+        row.role,
+        row.type,
+        row.departure_time,
+        row.arrival_time,
+        row.checkin_info,
+        row.amount,
+        row.paid_by_user_id,
+        row.luggage,
+        row.seat,
+        row.link,
+        row.deleted_at,
+      ).lastInsertRowid as number;
+
+      let position = 0;
+      const addStation = (
+        placeId: number | null,
+        location: string | null,
+        mapsLink: string | null,
+        lat: number | null,
+        lng: number | null,
+      ) => {
+        const spotId =
+          placeId ?? (location ? (insertSpot.run(row.trip_id, location, mapsLink, lat, lng).lastInsertRowid as number) : null);
+        if (spotId == null) return;
+        insertStation.run(ideaId, spotId, position);
+        position += 1;
+      };
+      addStation(row.from_place_id, row.from_location, row.from_maps_link, row.from_lat, row.from_lng);
+      addStation(row.to_place_id, row.to_location, row.to_maps_link, row.to_lat, row.to_lng);
+
+      markMigrated.run(ideaId, row.id);
+    }
+  }
+}
