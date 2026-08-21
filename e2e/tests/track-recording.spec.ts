@@ -61,9 +61,11 @@ test.describe('Standort-Aufzeichnung', () => {
     await expect(tracksToggle).toContainText(/Aufzeichnungen \(\d+\)/);
     await tracksToggle.click();
 
+    // Dauer-Text statt Emoji-Zeichen prüfen: das Icon davor (group="actions") rendert seit #168
+    // immer SVG statt Emoji (siehe stores/iconStyle.ts).
     const trackRow = page.locator('.track-row').first();
     await expect(trackRow).toBeVisible();
-    await expect(trackRow.locator('.track-row-meta')).toContainText('⏱️');
+    await expect(trackRow.locator('.track-row-meta')).toContainText(/Min\.|Std\./);
 
     // Klick zeigt die Route + den Zeit-Slider auf der Karte (analog zum Tour-Fokus).
     await trackRow.locator('.track-row-main').click();
@@ -72,11 +74,12 @@ test.describe('Standort-Aufzeichnung', () => {
     await expect(focusCard.locator('.track-playback')).toBeVisible({ timeout: 10_000 });
     await expect(focusCard.locator('.playback-slider')).toBeVisible();
 
-    // Sichtbarkeits-Umschalter: von privat (Standard) auf geteilt.
+    // Sichtbarkeits-Umschalter: von privat (Standard) auf geteilt. aria-label statt Emoji-Text
+    // (group="actions" rendert seit #168 immer SVG, siehe ExcursionsView.vue).
     const visibilityBtn = trackRow.locator('.track-icon-btn').first();
-    await expect(visibilityBtn).toHaveText('🔒');
+    await expect(visibilityBtn).toHaveAttribute('aria-label', 'Mit allen teilen');
     await visibilityBtn.click();
-    await expect(visibilityBtn).toHaveText('🤝');
+    await expect(visibilityBtn).toHaveAttribute('aria-label', 'Teilen zurücknehmen');
   });
 
   // Pausieren (z. B. Stromsparen bei längerem Aufenthalt an einem Ort, Nutzer-Anforderung) hängt
@@ -96,18 +99,20 @@ test.describe('Standort-Aufzeichnung', () => {
     await page.getByRole('button', { name: 'Privat aufzeichnen' }).click();
     await expect(recordBtn).toHaveClass(/active/);
 
+    // aria-label statt Emoji-Text: der Pausieren/Fortsetzen-Button (group="actions") rendert seit
+    // #168 immer SVG statt Emoji (siehe stores/iconStyle.ts).
     const recordingPill = page.locator('.recording-pill');
     await expect(recordingPill).toBeVisible();
     await expect(recordingPill).not.toHaveClass(/paused/);
-    await expect(recordingPill.locator('.recording-pill-label')).toContainText('⏺️');
+    await expect(recordingPill.locator('.recording-pill-label')).not.toContainText('Pausiert');
 
     const pauseBtn = recordingPill.locator('.recording-pill-btn').first();
-    await expect(pauseBtn).toHaveText('⏸️');
+    await expect(pauseBtn).toHaveAttribute('aria-label', 'Aufzeichnung pausieren');
     await pauseBtn.click();
 
     await expect(recordingPill).toHaveClass(/paused/);
     await expect(recordingPill.locator('.recording-pill-label')).toContainText('Pausiert');
-    await expect(pauseBtn).toHaveText('▶️');
+    await expect(pauseBtn).toHaveAttribute('aria-label', 'Aufzeichnung fortsetzen');
     // Bleibt weiterhin "aktiv" (derselbe Track, nicht beendet) - nur GPS-Watch/Flush stehen still.
     await expect(recordBtn).toHaveClass(/active/);
 
@@ -119,8 +124,8 @@ test.describe('Standort-Aufzeichnung', () => {
 
     await pauseBtn.click();
     await expect(recordingPill).not.toHaveClass(/paused/);
-    await expect(recordingPill.locator('.recording-pill-label')).toContainText('⏺️');
-    await expect(pauseBtn).toHaveText('⏸️');
+    await expect(recordingPill.locator('.recording-pill-label')).not.toContainText('Pausiert');
+    await expect(pauseBtn).toHaveAttribute('aria-label', 'Aufzeichnung pausieren');
 
     await page.waitForTimeout(300);
     await context.setGeolocation({ latitude: 48.23, longitude: 16.4 });
@@ -135,6 +140,6 @@ test.describe('Standort-Aufzeichnung', () => {
     const tracksToggle = page.locator('.tracks-toggle');
     await expect(tracksToggle).toBeVisible({ timeout: 10_000 });
     await tracksToggle.click();
-    await expect(page.locator('.track-row').first().locator('.track-row-meta')).toContainText('⏱️');
+    await expect(page.locator('.track-row').first().locator('.track-row-meta')).toContainText(/Min\.|Std\./);
   });
 });

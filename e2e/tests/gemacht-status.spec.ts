@@ -40,8 +40,11 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
     // SocialRow-Buttons (🤍/💬) liegen, die selbst @click.stop setzen und das Aufklappen verhindern.
     await spotCard.locator('h3').click();
 
+    // aria-label statt sichtbarem Text: der Toggle (group="actions") zeigt seit #168 immer ein
+    // SVG-Icon statt eines Emoji-Zeichens (siehe stores/iconStyle.ts), aria-label/title bleiben die
+    // stabile, stilunabhängige Quelle für den Zustand.
     const toggle = spotCard.locator('.done-toggle');
-    await expect(toggle).toHaveText('⬜️ Als gemacht markieren');
+    await expect(toggle).toHaveAttribute('aria-label', 'Als gemacht markieren');
     await toggle.click();
 
     // Kalender-Schublade ist auf Desktop bereits offen - der Bestätigungs-Hinweis ersetzt hier den
@@ -55,14 +58,14 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
     // #147: kein Textlabel mehr im "gemacht"-Zustand (nur noch das Icon) - das Datums-/Status-Badge
     // auf dem Vorschaubild zeigt den Status bereits an, ein zweites "Gemacht"-Label wäre eine
     // unnötige Dopplung.
-    await expect(toggle).toHaveText('✅');
+    await expect(toggle).toHaveAttribute('aria-label', 'Nicht mehr als gemacht markiert');
     await expect(toggle).toHaveAttribute('aria-pressed', 'true');
     await expect(spotCard.locator('.status.status-done')).toContainText('Besucht am');
 
     await page.reload();
     const spotCardAfterReload = page.locator('.spot-card', { hasText: spotTitle });
     await spotCardAfterReload.locator('h3').click();
-    await expect(spotCardAfterReload.locator('.done-toggle')).toHaveText('✅');
+    await expect(spotCardAfterReload.locator('.done-toggle')).toHaveAttribute('aria-label', 'Nicht mehr als gemacht markiert');
   });
 
   test('Markieren als "gemacht" auf einem bereits geplanten Spot öffnet den Kalender NICHT (#147)', async ({
@@ -92,7 +95,7 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
     // Kein Kalender-Bestätigungs-Flow - das bereits vorhandene geplante Datum wird direkt als
     // Gemacht-/Besucht-Datum übernommen.
     await expect(page.locator('.pending-schedule-banner')).toBeHidden();
-    await expect(spotCard.locator('.done-toggle')).toHaveText('✅');
+    await expect(spotCard.locator('.done-toggle')).toHaveAttribute('aria-label', 'Nicht mehr als gemacht markiert');
     await expect(spotCard.locator('.status.status-done')).toContainText('Besucht am 15.03');
   });
 
@@ -115,7 +118,7 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
     await banner.getByRole('button', { name: 'Abbrechen' }).click();
     await expect(banner).toBeHidden();
 
-    await expect(spotCard.locator('.done-toggle')).toHaveText('⬜️ Als gemacht markieren');
+    await expect(spotCard.locator('.done-toggle')).toHaveAttribute('aria-label', 'Als gemacht markieren');
     await expect(spotCard.locator('.status')).toHaveCount(0);
   });
 
@@ -203,7 +206,7 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
     const spotCard = page.locator('.spot-card', { hasText: spotTitle });
     // Titel statt ganzer Karte anklicken - siehe Kommentar im ersten Test dieser Datei.
     await spotCard.locator('h3').click();
-    await expect(spotCard.locator('.done-toggle')).toHaveText('✅');
+    await expect(spotCard.locator('.done-toggle')).toHaveAttribute('aria-label', 'Nicht mehr als gemacht markiert');
   });
 
   test.describe('Status-Badges ragen auf schmalen Breiten nicht über das Vorschaubild hinaus', () => {

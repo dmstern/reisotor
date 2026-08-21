@@ -30,10 +30,12 @@ setup('authenticate', async ({ page }) => {
   // brechen. Nur tests/icon-style.spec.ts (testet die Einstellung selbst) überschreibt das gezielt.
   // Seit #105 kontoweit über die API persistiert statt in localStorage (siehe stores/iconStyle.ts) -
   // page.request teilt sich die Session-Cookies mit page, der PUT läuft also bereits authentifiziert.
+  // 'formFields'/'actions' sind seit #168 nicht mehr konfigurierbar (immer Symbole) und tauchen
+  // deshalb hier nicht mehr auf - Tests dürfen dort also nicht mehr per Emoji-Zeichen identifizieren.
   await page.request.put('/api/users/me/icon-settings', {
     data: {
       settings: {
-        groups: { navigation: 'emoji', categories: 'emoji', weather: 'emoji', formFields: 'emoji', actions: 'emoji' },
+        groups: { navigation: 'emoji', categories: 'emoji', weather: 'emoji' },
       },
     },
   });
