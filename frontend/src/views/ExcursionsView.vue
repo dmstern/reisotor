@@ -1934,7 +1934,7 @@ async function removeSpot(id: number) {
                 aria-label="Nach Kategorie filtern"
                 @click="toggleCategoryMenu"
               >
-                <AppIcon :icon="FORM_FIELD_ICONS.category" :size="14" group="formFields" /> <span class="dropdown-label-text">Kategorie</span>
+                <AppIcon :icon="FORM_FIELD_ICONS.category" :size="14" group="formFields" /> Kategorie
                 <AppIcon :icon="ACTION_ICONS.chevronDown" :size="12" group="actions" class="caret dropdown-caret" :class="{ open: categoryMenuOpen }" />
               </button>
               <Teleport to="body">
@@ -1958,7 +1958,7 @@ async function removeSpot(id: number) {
                 aria-label="Nach Status filtern"
                 @click="toggleStatusMenu"
               >
-                <AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" /> <span class="dropdown-label-text">Status</span>
+                <AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" /> Status
                 <AppIcon :icon="ACTION_ICONS.chevronDown" :size="12" group="actions" class="caret dropdown-caret" :class="{ open: statusMenuOpen }" />
               </button>
               <Teleport to="body">
@@ -3285,13 +3285,15 @@ async function removeSpot(id: number) {
 }
 
 /* Je eine Zeile für Sortieren und Filtern, statt einer gemeinsamen umbrechenden Reihe – siehe
-   Kommentar am Template. flex-wrap:nowrap (statt wrap): die Dropdowns sollen bei wenig Platz auf
-   Icons reduziert werden (siehe @media weiter unten), statt in eine zweite Zeile umzubrechen und
-   sich damit gegenüber der Sortieren-Zeile zu verschieben (Issue #170: "Dropdowns... teilweise
-   verschoben"). */
+   Kommentar am Template. flex-wrap:wrap (nicht nowrap): die Kategorie-/Status-Dropdowns behalten
+   immer ihre volle Beschriftung (Nutzer:innen-Feedback, siehe @media weiter unten) - reicht der
+   Platz neben dem (auf Mobil auf ein Icon reduzierten) Zeilen-Label nicht, bricht der Rest der
+   Zeile innerhalb der GRÜNEN BOX in eine zweite Zeile um, statt seitlich über die Box
+   hinauszuragen (Issue #170: "Dropdown ragt über die grüne Box hinaus - das darf nicht
+   passieren"). */
 .tool-row {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
 }
@@ -3364,22 +3366,16 @@ async function removeSpot(id: number) {
    den Basis-Regeln, würden die ihn unabhängig vom Viewport immer überschreiben (siehe .cards'
    analoger Kommentar beim @container-Query weiter oben). */
 @media (max-width: 799px) {
-  /* Sortieren/Filtern bleiben immer offen (kein Ausklappi mehr, siehe Template-Kommentar), sparen
-     sich auf schmalen Breiten stattdessen die Text-Labels (nur noch Icons) - genau das verhindert,
-     dass die beiden Filter-Dropdowns (Kategorie/Status) neben "Filtern" umbrechen bzw. gegenüber
-     der Sortieren-Zeile verrutschen (Issue #170). */
-  .tool-label-text,
-  .dropdown-label-text {
+  /* Sortieren/Filtern bleiben immer offen (kein Ausklappi mehr, siehe Template-Kommentar) - nur die
+     ZEILEN-Labels ("Sortieren"/"Filtern") sparen sich auf schmalen Breiten ihren Text (nur noch
+     Icon), die Kategorie-/Status-Dropdowns selbst behalten ihre Beschriftung (Nutzer:innen-Feedback:
+     die Dropdown-Labels sollen NICHT verschwinden, nur die Zeilen-Labels). */
+  .tool-label-text {
     display: none;
   }
 
   .tool-label {
     min-width: 0;
-  }
-
-  .category-btn {
-    padding-left: var(--space-2);
-    padding-right: var(--space-2);
   }
 }
 
