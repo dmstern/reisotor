@@ -9,6 +9,14 @@ import { readFileSync } from 'node:fs';
 // diesen Standardwert zu verändern.
 const apiProxyTarget = process.env.API_PROXY_TARGET ?? 'http://localhost:3000';
 
+// Statischer GitHub-Pages-Build (Issue #172, siehe .github/workflows/pages-deploy.yml): 'landing'
+// baut landing.html statt index.html als einzigen Entry-Punkt. Der Demo-Build (VITE_DEMO_MODE,
+// siehe demo/isDemoMode.ts) bleibt bewusst die normale index.html/App.vue - nur mit anderem
+// outDir/base, siehe package.json's build:demo-Skript. Der normale `npm run build` (echtes
+// Backend-Deploy über build-deploy.yml) bleibt dadurch komplett unverändert (kein Env-Var gesetzt).
+const buildTarget = process.env.VITE_BUILD_TARGET;
+const pagesBase = process.env.VITE_BASE;
+
 // Version kommt aus der Root-package.json (einzige Versionsquelle fürs ganze Repo, siehe
 // backend/scripts/generate-build-info.mjs) statt aus der lokalen frontend/package.json.
 const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf-8'));
@@ -21,13 +29,28 @@ try {
 }
 
 export default defineConfig({
+  // Nur für die statischen Pages-Builds gesetzt (dist-landing/dist-demo unter
+  // <owner>.github.io/reisotor/[demo/]) - der normale Build (echtes Backend-Deploy) bleibt bei '/'.
+  base: pagesBase ?? '/',
+  build:
+    buildTarget === 'landing'
+      ? {
+          // Landingpage hat keine eigene PWA/App-Manifest-Notwendigkeit - eigener, schlanker
+          // Entry-Punkt statt index.html/App.vue (siehe landing.html/landing-main.ts).
+          rollupOptions: { input: 'landing.html' },
+        }
+      : undefined,
   plugins: [
     vue(),
     // Volle PWA (Home-Bildschirm-Icon + Offline-App-Shell): injectManifest statt der
     // Standard-generateSW-Strategie, damit der bestehende, handgeschriebene public/sw.js
     // (Web-Push-Handler, siehe dortiger Kommentar) erhalten bleibt und nur um Workbox-Precaching
     // ERWEITERT statt komplett ersetzt wird (siehe self.__WB_MANIFEST-Import in sw.js selbst).
-    VitePWA({
+    // Die Landingpage (landing-main.ts) registriert keinen Service Worker (kein
+    // PwaUpdatePrompt.vue-Import) und braucht kein App-Manifest - Plugin dort komplett weglassen
+    // statt eines für sie irreführenden sw.js/manifest.webmanifest im Build-Output.
+    buildTarget !== 'landing' &&
+      VitePWA({
       strategies: 'injectManifest',
       srcDir: 'public',
       filename: 'sw.js',
@@ -106,6 +129,10 @@ export default defineConfig({
     __APP_VERSION__: JSON.stringify(pkg.version),
     __APP_COMMIT__: JSON.stringify(gitRef),
     __APP_BUILT_AT__: JSON.stringify(new Date().toISOString()),
+    // Fallback für AppFooterLinks.vue, wenn kein backendseitiges build-info verfügbar ist (Login-
+    // Seite vor dem Login, statische Landingpage/Demo-Build auf GitHub Pages) - Issue #172.
+    __REPO_URL__: JSON.stringify(`https://github.com/${process.env.GITHUB_REPO ?? 'dmstern/reisotor'}`),
+    __LANDING_URL__: JSON.stringify(process.env.VITE_LANDING_URL ?? 'https://dmstern.github.io/reisotor/'),
   },
   test: {
     // Alle aktuellen Testziele sind plain Functions auf plain Daten (utils/*.ts) - kein DOM nötig,

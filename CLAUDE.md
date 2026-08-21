@@ -59,6 +59,18 @@ Spawn re-derived den kompletten Kontext neu und kostet dadurch oft mehr Tokens a
 Suche selbst. Subagenten bleiben sinnvoll, wenn der Scope tatsächlich unklar/groß ist oder mehrere
 unabhängige Bereiche parallel durchsucht werden müssen — dort leidet sonst die Trefferquote.
 
+## Marketing-Landingpage + Demo-Build (GitHub Pages)
+
+Neben dem normalen `npm run build` (echtes Backend-Deploy, siehe `build-deploy.yml`) gibt es zwei
+zusätzliche statische Frontend-Builds für GitHub Pages (`frontend/landing.html`+
+`frontend/src/views/LandingView.vue` sowie einen backend-losen Demo-Modus, siehe
+`frontend/src/demo/`), veröffentlicht über `.github/workflows/pages-deploy.yml` bei jedem
+Prod-Release-Tag. `frontend/npm run build:landing`/`build:demo` lokal bauen, `VITE_DEMO_MODE=true
+npm run dev` für den Demo-Modus gegen den normalen Dev-Server. Bei PRs mit größeren UI-/Feature-
+Änderungen prüfen, ob `frontend/public/landing/*`-Screenshots und die Feature-Texte in
+`LandingView.vue` noch aktuell sind (Screenshot-Flow: kurze Playwright-Scratch-Spec wie bei den
+PR-Screenshots, siehe unten) — bewusst nur als manueller Hinweis, kein CI-Enforcement.
+
 ## Konsistenz-Check bei Änderungen
 
 Die App ist über viele Sessions gewachsen; dasselbe Konzept (Icon, Bezeichnung, Layout-/

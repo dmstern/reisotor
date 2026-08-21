@@ -16,6 +16,8 @@ import NavBar from './components/NavBar.vue';
 import Drawer from './components/Drawer.vue';
 import ScheduleView from './views/ScheduleView.vue';
 import SplashScreen from './components/SplashScreen.vue';
+import DemoModeBanner from './components/DemoModeBanner.vue';
+import { DEMO_MODE } from './demo/isDemoMode';
 
 const route = useRoute();
 const router = useRouter();
@@ -107,6 +109,7 @@ const firstLoadDone = ref(false);
 </script>
 
 <template>
+  <DemoModeBanner v-if="DEMO_MODE" />
   <template v-if="!showNav">
     <router-view />
   </template>

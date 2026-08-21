@@ -33,6 +33,7 @@ import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import FeedbackDialog from '../components/FeedbackDialog.vue';
 import PwaInstallDialog from '../components/PwaInstallDialog.vue';
+import AppFooterLinks from '../components/AppFooterLinks.vue';
 import { usePwaInstallStore } from '../stores/pwaInstall';
 import TabBar from '../components/TabBar.vue';
 import {
@@ -127,7 +128,6 @@ interface BuildInfo {
   hostingLocation: string;
 }
 const backendBuildInfo = ref<BuildInfo | null>(null);
-const copyrightYear = new Date().getFullYear();
 const buildTimeFormatter = new Intl.DateTimeFormat('de-DE', { dateStyle: 'medium', timeStyle: 'short' });
 function formatBuildTime(iso: string | null) {
   return iso ? buildTimeFormatter.format(new Date(iso)) : 'unbekannt';
@@ -813,14 +813,11 @@ async function onImportFileSelected(event: Event) {
           </dd>
           <dd v-else>Lädt…</dd>
         </dl>
-        <p v-if="backendBuildInfo" class="hint about-repo-link">
-          <a :href="backendBuildInfo.repoUrl" target="_blank" rel="noopener">Reisotor auf GitHub</a>
-        </p>
-        <p v-if="backendBuildInfo" class="hint about-copyright">
-          © {{ copyrightYear }} <a href="https://github.com/dmstern" target="_blank" rel="noopener">Daniel Morgenstern</a>
-          · gebaut mit Claude Code in {{ backendBuildInfo.hostingLocation }} · gehostet in
-          {{ backendBuildInfo.hostingLocation }}
-        </p>
+        <AppFooterLinks
+          v-if="backendBuildInfo"
+          :repo-url="backendBuildInfo.repoUrl"
+          :hosting-location="backendBuildInfo.hostingLocation"
+        />
       </div>
     </template>
   </div>

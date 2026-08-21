@@ -1,0 +1,3 @@
+- Neu: eine Marketing-Landingpage stellt Reisotor jetzt öffentlich vor und erklärt, wofür die App gedacht ist.
+- Über die Landingpage lässt sich eine Demo-Version ohne eigene Anmeldung und ohne echtes Backend ausprobieren – mit Beispieldaten, nichts wird dauerhaft gespeichert.
+- Die Anmeldeseite zeigt jetzt ebenfalls einen Copyright-Hinweis und einen Link zum Quellcode, auch ohne Login sichtbar.

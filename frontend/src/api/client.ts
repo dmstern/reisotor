@@ -10,6 +10,8 @@ import {
   writeCache,
 } from './offline';
 import { useRequestActivityStore } from '../stores/requestActivity';
+import { DEMO_MODE } from '../demo/isDemoMode';
+import { demoRequest } from '../demo/demoClient';
 
 export class ApiError extends Error {
   status: number;
@@ -48,6 +50,12 @@ export async function fetchWithTimeout(input: string, init: RequestInit = {}): P
 // heraus darf NICHT wieder in dieselbe Warteschlange zurückgequeued werden, deshalb ein eigener,
 // unveränderter Kern statt der öffentlichen request()-Wrapper-Funktion.
 export async function rawRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
+  // Backend-loser Demo-Build (Issue #172): alle Requests gegen die Dummy-Daten aus
+  // demo/demoClient.ts statt gegen ein echtes Backend. Einziger Abzweig - api/offline.ts (Cache/
+  // Outbox) darum herum bleibt unverändert und läuft einfach mit (harmlos, da demoRequest() nie
+  // mit einem Netzwerkfehler fehlschlägt).
+  if (DEMO_MODE) return demoRequest<T>(path, options);
+
   // Content-Type nur setzen, wenn wirklich ein Body gesendet wird – sonst parst Fastify
   // den (nicht vorhandenen) JSON-Body und lehnt mit 400 Bad Request ab (z. B. bei DELETE).
   const headers: HeadersInit = {

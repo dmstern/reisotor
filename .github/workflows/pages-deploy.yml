@@ -1,0 +1,81 @@
+name: Deploy GitHub Pages
+
+# Baut die statische Marketing-Landingpage + eine backend-lose Demo-Version der App (Dummy-Daten,
+# siehe frontend/src/demo/) und veröffentlicht beides über GitHub Pages (Issue #172). Läuft
+# ausschließlich bei einem Prod-Release-Tag-Push (vX.Y.Z, siehe release.yml, das ihn immer von main
+# aus setzt), damit die Landingpage immer den zuletzt tatsächlich released Stand zeigt - plus
+# workflow_dispatch für einen manuellen Re-Deploy ohne neuen Tag (z. B. nach einer reinen
+# Marketing-/Screenshot-Änderung). Komplett unabhängig vom Pi-Cronjob-Deploy in build-deploy.yml -
+# kein Overlap, kein gemeinsamer Job, rührt build-deploy.yml nicht an.
+#
+# Einmaliger manueller Schritt (kann dieser Workflow nicht selbst setzen): Repo-Settings -> Pages ->
+# Source muss auf "GitHub Actions" stehen, damit actions/deploy-pages hier greift.
+
+on:
+  push:
+    tags: ['v*.*.*']
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Nur ein Pages-Deploy gleichzeitig - ein zweiter, während der erste noch läuft, wird nicht
+# abgebrochen (cancel-in-progress: false), sondern reiht sich hinten an, damit kein halb
+# publizierter Stand live geht.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build landing page
+        working-directory: frontend
+        run: npm run build:landing
+
+      - name: Build demo app
+        working-directory: frontend
+        run: npm run build:demo
+
+      - name: Assemble Pages site
+        run: |
+          rm -rf pages-site
+          mkdir -p pages-site/demo
+          cp -r frontend/dist-landing/. pages-site/
+          # landing.html ist der Vite-Entry-Punkt (siehe frontend/landing.html) - GitHub Pages
+          # braucht dagegen ein index.html am Root.
+          mv pages-site/landing.html pages-site/index.html
+          cp -r frontend/dist-demo/. pages-site/demo/
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: pages-site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

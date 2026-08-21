@@ -7,6 +7,10 @@
 declare const __APP_VERSION__: string;
 declare const __APP_COMMIT__: string;
 declare const __APP_BUILT_AT__: string;
+// Fallback-Werte für AppFooterLinks.vue, wenn keine Session/kein Backend-Build-Info verfügbar ist
+// (Login-Seite, statische Landingpage/Demo-Build) - siehe Issue #172.
+declare const __REPO_URL__: string;
+declare const __LANDING_URL__: string;
 
 declare module '*.vue' {
   import type { DefineComponent } from 'vue';
