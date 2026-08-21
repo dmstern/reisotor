@@ -1,0 +1,1 @@
+- Das Notizfeld bei Spots und Touren ist jetzt wieder normal groß statt unnötig riesig – groß bleibt es weiterhin dort, wo Text die Hauptsache ist (Tagebuch, Notizen).

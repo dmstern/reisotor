@@ -11,8 +11,12 @@ import DOMPurify from 'dompurify';
 // sich wie bei einem normalen Textfeld (HTML-String rein/raus), damit bestehende Formulare (inkl.
 // useDraftAutosave) unverändert weiterlaufen. Sanitizing hier UND nochmal serverseitig
 // (backend/src/utils/sanitizeHtml.ts) - Verteidigung in der Tiefe, falls das Frontend umgangen wird.
-const props = withDefaults(defineProps<{ modelValue: string; placeholder?: string }>(), {
+// compact (#194): Notiz-Felder an nebensächlichen Objekten (Spots, Touren, Kalender-Events, ...)
+// sollen NICHT die für Tagebuch/Notizen (#88) eingeführte Desktop-Vergrößerung erben - dort ist das
+// Freitextfeld die Hauptsache des Formulars, hier nur eine ergänzende Randnotiz.
+const props = withDefaults(defineProps<{ modelValue: string; placeholder?: string; compact?: boolean }>(), {
   placeholder: '',
+  compact: false,
 });
 const emit = defineEmits<{ (e: 'update:modelValue', value: string): void }>();
 
@@ -60,7 +64,7 @@ function isActive(name: string, attrs?: Record<string, unknown>) {
 </script>
 
 <template>
-  <div class="richtext-editor">
+  <div class="richtext-editor" :class="{ compact }">
     <!-- Bewusst immer gerendert (kein v-if="editor") statt erst nach der asynchronen
          Editor-Initialisierung zu erscheinen - sonst poppt die Toolbar kurz nach dem ersten Render
          rein und verschiebt den Editor-Inhalt (und alles darunter, z. B. ein Datei-Upload-Feld) nach
@@ -188,13 +192,15 @@ function isActive(name: string, attrs?: Record<string, unknown>) {
 /* Desktop hat spürbar mehr Platz als das mobile 55vh/480px-Limit hergibt (#88) - Editor darf dort
    deutlich größer werden, Schrift etwas größer mitwachsen statt bei mobiler Lesegröße zu bleiben.
    65vh/640px reichte für ein Reisetagebuch-Freitextfeld mit viel Inhalt immer noch nicht (#88 wurde
-   deswegen wieder geöffnet) - nochmal deutlich höher, zusammen mit dem breiteren Modal (Modal.vue). */
+   deswegen wieder geöffnet) - nochmal deutlich höher, zusammen mit dem breiteren Modal (Modal.vue).
+   :not(.compact), weil dieselbe Vergrößerung inzwischen zu konsequent auch auf nebensächliche
+   Notiz-Felder (Spots, Touren, ...) durchschlug (#194) - compact-Instanzen bleiben beim mobilen Limit. */
 @media (min-width: 800px) {
-  .richtext-editor {
+  .richtext-editor:not(.compact) {
     max-height: min(75vh, 860px);
   }
 
-  .richtext-editor :deep(.richtext-content) {
+  .richtext-editor:not(.compact) :deep(.richtext-content) {
     font-size: 1.05rem;
   }
 }
@@ -271,9 +277,10 @@ function isActive(name: string, attrs?: Record<string, unknown>) {
    selbst auf die volle Höhe (siehe Kommentar dort, #88) - eine spürbar größere min-height hier statt
    nur ein höheres max-height (siehe oben) ist deshalb nötig, damit das Freitextfeld auf Desktop
    tatsächlich von Anfang an groß erscheint statt erst beim Volltippen zu wachsen. Muss nach der
-   6em-Basisregel oben stehen, sonst gewinnt bei gleicher Spezifität die spätere Basisregel. */
+   6em-Basisregel oben stehen, sonst gewinnt bei gleicher Spezifität die spätere Basisregel.
+   :not(.compact) siehe Kommentar oben (#194) - compact-Instanzen bleiben bei der 6em-Basisregel. */
 @media (min-width: 800px) {
-  .richtext-editor :deep(.richtext-content) {
+  .richtext-editor:not(.compact) :deep(.richtext-content) {
     min-height: 24em;
   }
 }
