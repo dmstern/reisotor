@@ -704,24 +704,38 @@ textarea:focus {
    gleich gut lesbar bleibt. Bewusst kein zusätzlicher Nav-artiger Punkt hier, der sitzt schon am
    auslösenden Nav-Item selbst (NavBar.vue/Drawer.vue). */
 .new-highlight {
-  /* INSET statt outward outline (frühere Fassung: outline+outline-offset) - bleibt dadurch
-     garantiert innerhalb der eigenen Border-Box, egal wie knapp/verschachtelt der jeweilige
-     Container (Listen-Zeile ohne Abstand zur nächsten, scrollbare Sheet-/Modal-/Spalten-Container
-     mit eigenem Padding/overflow, verschachtelte @container-Breakpoints, …) gerade ist. Ein
-     outward-outline war an jeder dieser Stellen einzeln nachzurüsten (siehe Git-Historie #86: erst
-     Padding-Fixes für Spots-Liste/Modal-Formulare, dann noch eine übersehene Desktop-Variante von
-     .spots-col-body) und überlappte außerdem bei zwei gleichzeitig hervorgehobenen Nachbar-Zeilen
-     ohne Abstand sichtbar (#98) - beide Problemklassen sind mit inset strukturell ausgeschlossen,
-     ganz ohne dass jeder Container einzeln Platz dafür reservieren müsste. */
-  box-shadow: inset 0 0 0 2px var(--color-accent);
-  /* Standard für Karten (SpotCard/ExcursionCard/.card allgemein) - deren border-radius kommt
-     zwar meist schon von .card selbst, aber box-shadow folgt dem ohnehin; dieser Wert stellt
-     sicher, dass es auch dort funktioniert, wo new-highlight allein steht. Elemente ohne eigenen
-     Radius (Tabellenzeilen, Listen-Zeilen) überschreiben das gezielt lokal mit einem kleineren
-     Wert (siehe z. B. BudgetView.vue/ShoppingListView.vue/TodoView.vue/PackingItem.vue) statt hier
-     einen für alle passenden Wert zu erzwingen. */
-  border-radius: var(--radius-md-squircle);
+  /* Eigene Custom Property statt border-radius direkt zu setzen: das darunterstehende ::after
+     braucht denselben Radius-Wert wie die Karte selbst, kann ihn aber (anders als bei
+     border-radius: inherit, das vom ELTERN-Element läse) nur so vom eigenen Element übernehmen.
+     Elemente ohne eigenen Kartenradius (Tabellenzeilen, Listen-Zeilen) überschreiben gezielt lokal
+     nur diese Variable auf einen kleineren Wert (siehe z. B. BudgetView.vue/ShoppingListView.vue/
+     TodoView.vue/PackingItem.vue), statt hier einen für alle passenden Wert zu erzwingen. */
+  --new-highlight-radius: var(--radius-md-squircle);
+  /* Positioniertes Containing-Element fürs ::after unten (sonst würde sich dessen position:absolute
+     an einem weiter oben liegenden positionierten Vorfahren orientieren statt an dieser Karte). */
+  position: relative;
+  border-radius: var(--new-highlight-radius);
   corner-shape: squircle;
+}
+
+/* #169: der Rahmen lag vorher als box-shadow DIREKT auf .new-highlight selbst - damit wird er als
+   Teil von dessen eigenem Hintergrund/Rand gemalt, also VOR allen normalen Kind-Elementen (jedes
+   Vorschaubild/jede Bild-Fläche, z. B. SpotCard.vue/ExcursionCard.vue's .image, die randlos die
+   ganze Kartenbreite einnimmt) - ein deckendes Kind-Element überdeckte den Rahmen dadurch dort
+   vollständig, wo es die Kartenkante berührt. Eigenes, absolut positioniertes ::after-Overlay
+   (deckungsgleich per inset:0) statt box-shadow auf dem Element selbst malt den Rahmen dagegen erst
+   NACH allen normalen Kindern - liegt dadurch garantiert sichtbar oben, unabhängig davon, was die
+   Karte an Inhalt zeigt. pointer-events:none, damit das Overlay keine Klicks/Drags auf der
+   eigentlichen Karte blockiert. */
+.new-highlight::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  border-radius: var(--new-highlight-radius);
+  corner-shape: squircle;
+  box-shadow: inset 0 0 0 2px var(--color-accent);
 }
 
 .page {
