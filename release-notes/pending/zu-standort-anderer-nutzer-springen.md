@@ -1,0 +1,1 @@
+- Im Standort-Menü der Karte lässt sich jetzt auch zum Standort anderer Mitreisender springen, sofern diese ihn gerade teilen.

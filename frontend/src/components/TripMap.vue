@@ -977,6 +977,33 @@ function renderPositions() {
   }
 }
 
+// Andere Mitreisende für den "Zu Standort von …"-Teil des Standort-Popovers (#182) – alle
+// Mitglieder außer einem selbst, unabhängig von Online-/Freigabe-Status (der wird erst pro
+// Menüpunkt per isMemberOnline()/hasMemberPosition() ausgewertet, s. Template). Gleiche
+// Mitglieder-Quelle wie payerLabelFor() oben (users.value, per /trips/:id/members geladen).
+const otherMembers = computed(() => users.value.filter((u) => u.id !== auth.user?.id));
+
+function isMemberOnline(userId: number) {
+  return liveSync.onlineUserIds.includes(userId);
+}
+
+// Nur wer aktuell Standort teilt (liveSync.memberPositions, aus den SSE-position(s)-Events) hat
+// überhaupt ein Sprungziel - Online-Sein allein reicht nicht (Standort-Freigabe ist ein eigener,
+// bewusster Opt-in, siehe stores/locationSharing.ts).
+function hasMemberPosition(userId: number) {
+  return userId in liveSync.memberPositions;
+}
+
+function jumpToMemberLocation(userId: number) {
+  const position = liveSync.memberPositions[userId];
+  if (!map || !position) return;
+  drawers.mapFocusExcursionId = null;
+  drawers.mapFocusDate = null;
+  drawers.mapFocusKey = null;
+  drawers.mapFocusTrackId = null;
+  centerOnPoint([position.lat, position.lng], 16);
+}
+
 // "Zu meinem Standort springen"-Button: nur aktiv, sobald mindestens ein GPS-Fix vorliegt. Dient
 // zusätzlich als Auslöser für die Kompass-Berechtigung auf iOS 13+ (siehe requestCompassPermission
 // oben an startCompass()) - DeviceOrientationEvent.requestPermission() liefert dort NUR innerhalb
@@ -1337,6 +1364,23 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
                    Icon-Stil-Einstellung (siehe DESIGN.md "Icons") - ein frei gewähltes Avatar hat kein
                    sinnvolles festes Tabler-Äquivalent. -->
               <span class="picker-item-emoji" aria-hidden="true">{{ auth.user?.avatar || '📍' }}</span> Zu meinem Standort springen
+            </button>
+            <!-- #182: Sprung zum Standort anderer Mitreisender - immer alle Mitglieder aufgelistet,
+                 aber nur klickbar (bunt), wer gerade tatsächlich Standort teilt (hasMemberPosition);
+                 Online-Status zusätzlich per Punkt markiert, analog zu PresenceAvatars.vue im Header. -->
+            <button
+              v-for="member in otherMembers"
+              :key="member.id"
+              type="button"
+              :disabled="!hasMemberPosition(member.id)"
+              :title="`${member.username} teilt gerade ${hasMemberPosition(member.id) ? '' : 'keinen '}Standort`"
+              @click="selectLocation(() => jumpToMemberLocation(member.id))"
+            >
+              <span class="picker-item-emoji" :class="{ offline: !isMemberOnline(member.id) }" aria-hidden="true">
+                {{ member.avatar }}
+                <span v-if="isMemberOnline(member.id)" class="online-dot" aria-hidden="true" />
+              </span>
+              Zu Standort von {{ member.username }} springen
             </button>
             <button type="button" :class="{ active: mapOrientation.mode === 'north' }" @click="selectLocation(() => setMapOrientationMode('north'))">
               <AppIcon :icon="MAP_TOOL_ICONS.orientationNorth" :size="14" group="actions" /> Norden oben
@@ -1717,6 +1761,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
    (bewusst kein AppIcon, siehe dortiger Template-Kommentar) genauso mit dem Folgetext fluchtet wie
    die AppIcon-Icons in den übrigen Menüpunkten. */
 .picker-item-emoji {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1724,6 +1769,25 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
   font-size: 1.1rem;
   line-height: 1;
   flex-shrink: 0;
+}
+
+/* Mitreisende ohne Online-Präsenz (#182): ausgegraut, analog zu PresenceAvatars.vue's
+   .presence-avatar.offline im Header - Klickbarkeit selbst hängt aber an hasMemberPosition()
+   (:disabled), nicht am Online-Status allein (Standort-Freigabe ist ein eigener Opt-in). */
+.picker-item-emoji.offline {
+  filter: grayscale(1);
+  opacity: 0.6;
+}
+
+.picker-item-emoji .online-dot {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-success);
+  border: 2px solid var(--color-surface);
 }
 
 .picker-menu-hint {
