@@ -131,9 +131,8 @@ test.describe('Mobile: ExcursionCard-Löschen-Button überdeckt nicht den Status
     // Lauf dieser einen Spec.
     const expandBtn = page.getByRole('button', { name: 'Spots-Liste weiter hochschieben' });
     for (let i = 0; i < 2 && (await expandBtn.isEnabled()); i++) await expandBtn.click();
-    // Gruppieren/Sortieren/Filtern stecken auf Mobil standardmäßig hinter "⚙️ Anzeige & Filter"
-    // (siehe ExcursionsView.vue) - erst aufklappen, um "🎒 Touren" überhaupt zu erreichen.
-    await page.locator('.filter-toggle-row').click();
+    // Der Spots-/Touren-Umschalter sitzt seit #155 immer sichtbar direkt neben der
+    // Drawer-Überschrift (kein Aufklappen mehr nötig, um "🎒 Touren" zu erreichen).
     await page.getByRole('button', { name: 'Touren' }).click();
     const card = page.locator('.excursion-card', { hasText: excursion.title });
     await expect(card).toBeVisible();
@@ -231,53 +230,48 @@ test.describe('Mobile: unten positionierte NavBar schwebt mit Rand statt randlos
   });
 });
 
-test.describe('Mobile: Sortieren/Filtern auf der Spots-Karte sind standardmäßig eingeklappt', () => {
-  test.use({ viewport: VIEWPORTS.mobile });
+test.describe('Sortieren/Filtern sind immer offen, kein Einklapp-Umschalter mehr (#170)', () => {
+  // #170: das frühere Einklapp-Ausklappi (filterBarExpanded/.filter-toggle-row) wurde komplett
+  // entfernt - Sortieren/Filtern bleiben auf jedem Viewport immer offen sichtbar, statt auf Mobil
+  // erst per Klick aufgeklappt werden zu müssen. Der Spots-/Touren-Umschalter sitzt seit #155
+  // ohnehin schon immer sichtbar direkt neben der Drawer-Überschrift, unabhängig von dieser Box.
+  for (const [name, viewport] of Object.entries(VIEWPORTS)) {
+    test.describe(name, () => {
+      test.use({ viewport });
 
-  // Regressionsnetz für die neue Einklapp-Funktion (Nutzer-Feedback: das Werkzeug-Duo verbrauchte
-  // auf Mobil spürbar Platz) - ExcursionsView.vue's filterBarExpanded/.filter-toggle-row. Bewusst
-  // ein @media(max-width:799px)-Schwellenwert (nicht der schmalere @container spots-col
-  // max-width:480px, der auch für das Karten-Grid gilt) - sonst würde dieselbe Einklapp-Logik
-  // fälschlich auch auf Desktop greifen, sobald .spots-col dort schmal gezogen wird (echte
-  // Bildschirmhöhe ist dort trotzdem meist reichlich vorhanden, das eigentliche Platzproblem
-  // besteht nur auf kleinen Geräten). Der Spots-/Touren-Umschalter selbst sitzt seit #155 nicht mehr
-  // in diesem einklappbaren Bereich, sondern immer sichtbar direkt neben der Drawer-Überschrift -
-  // dieser Test prüft deshalb nur noch das verbliebene Sortieren-Werkzeug.
-  // #156: der Sortieren-Umschalter ist seitdem dasselbe native <select> wie in den Listen-Views
-  // (ShoppingListView.vue/TodoView.vue), statt eines eigenen animierten Segmented-Toggle.
-  test('Werkzeug-Duo ist eingeklappt und lässt sich aufklappen', async ({ page }) => {
-    await page.goto('/excursions');
-    // #155: der Spots-/Touren-Umschalter neben der Überschrift ist unabhängig vom Einklapp-Zustand
-    // der Filter-Box immer sichtbar.
-    const groupToggle = page.locator('.header h2').getByRole('button', { name: 'Touren' });
-    await expect(groupToggle).toBeVisible();
-
-    const toggle = page.locator('.filter-toggle-row');
-    await expect(toggle).toBeVisible();
-    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
-    const sortSelect = page.locator('.filter-bar select');
-    await expect(sortSelect).toBeHidden();
-
-    await toggle.click();
-    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
-    await expect(sortSelect).toBeVisible();
-    await expect(sortSelect).toHaveValue('alpha');
-    await sortSelect.selectOption('likes');
-    await expect(sortSelect).toHaveValue('likes');
-
-    await toggle.click();
-    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
-    await expect(sortSelect).toBeHidden();
-  });
+      test('kein Einklapp-Umschalter, Sortieren-Select und Filter-Dropdowns direkt sichtbar', async ({ page }) => {
+        await page.goto('/excursions');
+        await expect(page.locator('.filter-toggle-row')).toHaveCount(0);
+        await expect(page.locator('.filter-bar select')).toBeVisible();
+        const categoryBtn = page.getByRole('button', { name: 'Nach Kategorie filtern' });
+        const statusBtn = page.getByRole('button', { name: 'Nach Status filtern' });
+        await expect(categoryBtn).toBeVisible();
+        await expect(statusBtn).toBeVisible();
+      });
+    });
+  }
 });
 
-test.describe('Desktop: Sortieren/Filtern bleiben immer offen, kein Einklapp-Umschalter sichtbar', () => {
-  test.use({ viewport: VIEWPORTS.desktop });
+test.describe('Mobile: Filter-Dropdowns bleiben innerhalb der grünen Werkzeug-Box (#170)', () => {
+  test.use({ viewport: VIEWPORTS.mobile });
 
-  test('kein "⚙️ Anzeige & Filter"-Umschalter, Werkzeug-Duo direkt sichtbar', async ({ page }) => {
+  // Regressionstest für einen vom Nutzer gemeldeten Bug: die Kategorie-/Status-Dropdowns (mit voller
+  // Beschriftung - anders als die auf Mobil auf ein Icon reduzierten Zeilen-Labels "Sortieren"/
+  // "Filtern", siehe .tool-label-text in ExcursionsView.vue) ragten auf schmalen Geräten seitlich
+  // über die grüne .filter-bar-Box hinaus statt innerhalb umzubrechen. .tool-row nutzt seitdem
+  // flex-wrap statt nowrap - reicht der Platz nicht, wandert der Rest der Zeile in eine zweite
+  // Zeile innerhalb der Box.
+  test('Kategorie-/Status-Dropdown ragen nicht aus der Filter-Box heraus, behalten ihre Beschriftung', async ({ page }) => {
     await page.goto('/excursions');
-    await expect(page.locator('.filter-toggle-row')).toBeHidden();
-    await expect(page.locator('.filter-bar select')).toBeVisible();
+    const filterBar = page.locator('.filter-bar');
+    const categoryBtn = page.getByRole('button', { name: 'Nach Kategorie filtern' });
+    const statusBtn = page.getByRole('button', { name: 'Nach Status filtern' });
+    await expect(categoryBtn).toContainText('Kategorie');
+    await expect(statusBtn).toContainText('Status');
+    await expectWithinBox(categoryBtn, filterBar);
+    await expectWithinBox(statusBtn, filterBar);
+    // Die Zeilen-Labels selbst reduzieren sich auf Mobil auf ein reines Icon (kein Text mehr).
+    await expect(page.locator('.tool-label-text:visible')).toHaveCount(0);
   });
 });
 
