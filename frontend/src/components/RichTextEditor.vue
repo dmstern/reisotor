@@ -186,10 +186,12 @@ function isActive(name: string, attrs?: Record<string, unknown>) {
 }
 
 /* Desktop hat spürbar mehr Platz als das mobile 55vh/480px-Limit hergibt (#88) - Editor darf dort
-   deutlich größer werden, Schrift etwas größer mitwachsen statt bei mobiler Lesegröße zu bleiben. */
+   deutlich größer werden, Schrift etwas größer mitwachsen statt bei mobiler Lesegröße zu bleiben.
+   65vh/640px reichte für ein Reisetagebuch-Freitextfeld mit viel Inhalt immer noch nicht (#88 wurde
+   deswegen wieder geöffnet) - nochmal deutlich höher, zusammen mit dem breiteren Modal (Modal.vue). */
 @media (min-width: 800px) {
   .richtext-editor {
-    max-height: min(65vh, 640px);
+    max-height: min(75vh, 860px);
   }
 
   .richtext-editor :deep(.richtext-content) {
@@ -263,5 +265,16 @@ function isActive(name: string, attrs?: Record<string, unknown>) {
   padding: var(--space-2) var(--space-3);
   min-height: 6em;
   outline: none;
+}
+
+/* Das umgebende Modal (Modal.vue) wächst nur mit seinem Inhalt bis max-height, streckt sich nicht
+   selbst auf die volle Höhe (siehe Kommentar dort, #88) - eine spürbar größere min-height hier statt
+   nur ein höheres max-height (siehe oben) ist deshalb nötig, damit das Freitextfeld auf Desktop
+   tatsächlich von Anfang an groß erscheint statt erst beim Volltippen zu wachsen. Muss nach der
+   6em-Basisregel oben stehen, sonst gewinnt bei gleicher Spezifität die spätere Basisregel. */
+@media (min-width: 800px) {
+  .richtext-editor :deep(.richtext-content) {
+    min-height: 24em;
+  }
 }
 </style>

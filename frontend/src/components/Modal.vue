@@ -123,7 +123,10 @@ onUnmounted(() => {
 
 @media (min-width: 800px) {
   .modal.full-height {
-    max-width: 640px;
+    /* #88: 640px verschenkte auf Desktop-Bildschirmen (FullHD+) spürbar Platz links/rechts, gerade
+       für das große Freitextfeld (Tagebuch/Notizen) - deutlich breiter, aber immer noch mit Luft zum
+       Bildschirmrand auf kleineren Laptop-Displays. */
+    max-width: 900px;
   }
 }
 
