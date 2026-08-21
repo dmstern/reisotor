@@ -145,10 +145,17 @@ onUnmounted(() => {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  /* padding-block reserviert Platz für den Fokus-Rahmen (outline-offset 1px + outline-Breite
-     2px, siehe input:focus in style.css) von Feldern ganz oben/unten im Formular - sonst schneidet
-     das eigene overflow-y:auto des Formulars diesen Rahmen ab (#86). */
-  padding-block: var(--space-1);
+  /* padding (NICHT nur padding-block) reserviert Platz für den Fokus-Rahmen (outline-offset 1px +
+     outline-Breite 2px, siehe input:focus in style.css) von Feldern ganz am Rand des Formulars -
+     sonst schneidet das eigene overflow-y:auto des Formulars diesen Rahmen ab. Zwei Achsen statt nur
+     block: overflow-y:auto setzt laut CSS-Spec (Overflow Module Level 3) implizit auch overflow-x
+     auf auto, sobald eine Achse nicht "visible" ist - eine reine Block-Reservierung (frühere Fassung,
+     #86) deckte deshalb nur oben/unten ab, links/rechts blieb der Rahmen z. B. bei zweispaltigen
+     .row-Layouts (TravelSection.vue "Von"/"Nach") weiterhin abgeschnitten (#169). Gilt für jedes
+     full-height-Formular gemeinsam (Notizen/Tagebuch/Touren/Spots/Unterkunft/Reise/...), da alle
+     dieselbe :slotted(form)-Regel hier teilen - der Grund, warum dieser Fix zentral hier statt in
+     jeder einzelnen View ansetzt. */
+  padding: var(--space-1);
 }
 
 .modal.full-height .modal-body :slotted(textarea) {

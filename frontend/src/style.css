@@ -689,6 +689,22 @@ textarea:focus {
   outline-offset: 1px;
 }
 
+/* WICHTIG bei jedem neuen scrollbaren Container (overflow-y: auto/hidden/scroll), der Formularfelder
+   ganz am eigenen Rand enthält: dieser Fokus-Rahmen braucht ca. 3px Platz (outline-offset 1px +
+   outline-Breite 2px, .state-toggle/Checkbox oben sogar 4px) auf JEDER Seite, sonst wird er
+   abgeschnitten - und zwar nicht nur oben/unten, auch links/rechts. Grund: sobald eine Achse
+   (overflow-y) nicht "visible" ist, setzt der Browser laut CSS Overflow Module Level 3 automatisch
+   auch die andere Achse (overflow-x) auf "auto" - eine rein vertikale Scroll-Absicht clippt damit
+   immer auch horizontal, selbst wenn dort gar kein Inhalt überläuft. Deshalb reicht es nicht, nur
+   padding-block auf so einen Container zu setzen (das war der ursprüngliche, unvollständige Fix in
+   #86) - IMMER padding auf beiden Achsen reservieren, siehe Modal.vue's
+   ".modal.full-height .modal-body :slotted(form)" als Vorlage (#169: dort fehlte anfangs genau das
+   für den zweispaltigen "Von"/"Nach"-Bereich in TravelSection.vue). Diese Regel hier ist die einzige
+   zentrale Stelle für den Fokus-Rahmen selbst - die Platzreservierung dagegen muss trotzdem an jedem
+   einzelnen scrollbaren Container lokal erfolgen (CSS kann das nicht global für beliebige, unbekannte
+   Container erzwingen); bei einem neuen Formular-Container deshalb aktiv prüfen, ob er diesen
+   Freiraum bereits hat, statt sich nur auf diese Kommentar-Stelle zu verlassen. */
+
 .card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
