@@ -1,0 +1,85 @@
+name: Release
+
+# Erstellt ein neues Semver-Release: bumpt die Version in der Root-package.json (einzige
+# Versionsquelle, siehe backend/scripts/generate-build-info.mjs und frontend/vite.config.ts),
+# ergänzt CHANGELOG.md um den neuen Versions-Abschnitt, committet beides auf main und setzt einen
+# Tag (vX.Y.Z). Der Tag-Push ist der EINZIGE Trigger, der build-deploy.yml dazu bringt, auf die
+# echte Produktion (Branch "deploy") zu deployen - ein normaler Push auf main landet weiterhin nur
+# auf Staging (Branch "deploy-staging"), siehe build-deploy.yml.
+#
+# Auslösbar über den "Run workflow"-Button im Actions-Tab (GitHub-Weboberfläche, unabhängig vom
+# eigenen Rechner) oder programmatisch über die GitHub-API/gh CLI (z. B. aus einer Claude-Code-
+# Session heraus).
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Versions-Sprung'
+        required: true
+        type: choice
+        options: [patch, minor, major]
+        default: patch
+      notes:
+        description: 'Changelog-Stichpunkte für diese Version (eine Zeile pro Punkt, ohne führendes "-")'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Bump version and update changelog
+        id: bump
+        env:
+          BUMP: ${{ inputs.bump }}
+          NOTES: ${{ inputs.notes }}
+        run: |
+          node <<'EOF'
+          const fs = require('fs');
+          const bump = process.env.BUMP;
+          const notes = process.env.NOTES.split('\n').map((l) => l.trim()).filter(Boolean);
+
+          const pkg = JSON.parse(fs.readFileSync('package.json', 'utf-8'));
+          const [major, minor, patch] = pkg.version.split('.').map(Number);
+          const next =
+            bump === 'major' ? `${major + 1}.0.0` :
+            bump === 'minor' ? `${major}.${minor + 1}.0` :
+            `${major}.${minor}.${patch + 1}`;
+          pkg.version = next;
+          fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+
+          const date = new Date().toISOString().slice(0, 10);
+          const entry = `## [${next}] - ${date}\n\n${notes.map((n) => `- ${n}`).join('\n')}\n\n`;
+          const changelog = fs.readFileSync('CHANGELOG.md', 'utf-8');
+          const marker = '\n## [';
+          const insertAt = changelog.indexOf(marker);
+          const updated = insertAt === -1
+            ? `${changelog.trimEnd()}\n\n${entry}`
+            : `${changelog.slice(0, insertAt + 1)}${entry}${changelog.slice(insertAt + 1)}`;
+          fs.writeFileSync('CHANGELOG.md', updated);
+
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `version=${next}\n`);
+          EOF
+
+      - name: Commit and tag
+        run: |
+          git add package.json CHANGELOG.md
+          git commit -m "chore(release): v${{ steps.bump.outputs.version }}"
+          git tag -a "v${{ steps.bump.outputs.version }}" -m "v${{ steps.bump.outputs.version }}"
+          git push origin main
+          git push origin "v${{ steps.bump.outputs.version }}"

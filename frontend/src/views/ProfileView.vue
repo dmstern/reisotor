@@ -109,12 +109,21 @@ const uiSettings = useUiSettingsStore();
 const loading = ref(true);
 const showFeedbackDialog = ref(false);
 
+interface ChangelogEntry {
+  version: string;
+  date: string;
+  notes: string[];
+}
 interface BuildInfo {
   version: string | null;
   ref: string | null;
   builtAt: string | null;
+  changelog: ChangelogEntry | null;
+  repoUrl: string;
+  hostingLocation: string;
 }
 const backendBuildInfo = ref<BuildInfo | null>(null);
+const copyrightYear = new Date().getFullYear();
 const buildTimeFormatter = new Intl.DateTimeFormat('de-DE', { dateStyle: 'medium', timeStyle: 'short' });
 function formatBuildTime(iso: string | null) {
   return iso ? buildTimeFormatter.format(new Date(iso)) : 'unbekannt';
@@ -758,6 +767,13 @@ async function onImportFileSelected(event: Event) {
     </template>
 
     <template v-if="activeTab === 'about'">
+      <div v-if="backendBuildInfo?.changelog" class="card">
+        <h2>Was ist neu in v{{ backendBuildInfo.changelog.version }}</h2>
+        <ul class="changelog-list">
+          <li v-for="note in backendBuildInfo.changelog.notes" :key="note">{{ note }}</li>
+        </ul>
+      </div>
+
       <div class="card">
         <h2><AppIcon :icon="FEEDBACK_ICON" group="navigation" :size="20" /> Feedback</h2>
         <p class="hint intro-hint">
@@ -779,6 +795,14 @@ async function onImportFileSelected(event: Event) {
           </dd>
           <dd v-else>Lädt…</dd>
         </dl>
+        <p v-if="backendBuildInfo" class="hint about-repo-link">
+          <a :href="backendBuildInfo.repoUrl" target="_blank" rel="noopener">Reisotor auf GitHub</a>
+        </p>
+        <p v-if="backendBuildInfo" class="hint about-copyright">
+          © {{ copyrightYear }} <a href="https://github.com/dmstern" target="_blank" rel="noopener">Daniel Morgenstern</a>
+          · gebaut mit Claude Code in {{ backendBuildInfo.hostingLocation }} · gehostet in
+          {{ backendBuildInfo.hostingLocation }}
+        </p>
       </div>
     </template>
   </div>
@@ -1062,5 +1086,18 @@ label,
 
 .build-info-list dd {
   margin: 0;
+}
+
+.changelog-list {
+  margin: 0;
+  padding-left: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.about-repo-link,
+.about-copyright {
+  margin: var(--space-2) 0 0;
 }
 </style>

@@ -1,10 +1,12 @@
 name: Build & Deploy
 
-# Baut Frontend + Backend bei Push auf main ODER prod und veröffentlicht das Ergebnis als
-# einzigen Commit auf einem Ziel-Branch. Push auf main -> "deploy-staging" (dev.reise.ruebenherz.de,
-# automatisches Gate zum Anschauen einer Änderung). Push auf prod -> "deploy" (reise.ruebenherz.de,
-# die von Nutzer:innen tatsächlich verwendete Produktion). main wird erst manuell auf prod gepusht
-# ("git push origin main:prod"), sobald das Staging-Ergebnis geprüft wurde.
+# Baut Frontend + Backend bei Push auf main ODER bei einem Semver-Tag-Push und veröffentlicht das
+# Ergebnis als einzigen Commit auf einem Ziel-Branch. Push auf main -> "deploy-staging"
+# (dev.reise.ruebenherz.de, automatisches Gate zum Anschauen einer Änderung, bildet IMMER den
+# aktuellen main-Stand ab). Push eines Tags "vX.Y.Z" -> "deploy" (reise.ruebenherz.de, die von
+# Nutzer:innen tatsächlich verwendete Produktion) - ein solcher Tag entsteht ausschließlich über
+# den Release-Workflow (.github/workflows/release.yml), der ihn immer von main aus setzt. Prod
+# bekommt damit nie eine ungeprüfte main-Änderung, sondern nur bewusst geschnittene Releases.
 #
 # Der eigentliche Rollout auf den Ziel-Server (Raspberry Pi) passiert NICHT hier, sondern per
 # Cronjob auf dem Server selbst, der den jeweiligen Branch pollt (siehe README.md, Abschnitt
@@ -21,7 +23,8 @@ name: Build & Deploy
 
 on:
   push:
-    branches: [main, prod]
+    branches: [main]
+    tags: ['v*.*.*']
   pull_request:
     branches: [main]
 
@@ -107,7 +110,7 @@ jobs:
         if: github.event_name == 'push'
         id: target
         run: |
-          if [ "${{ github.ref_name }}" = "prod" ]; then
+          if [ "${{ github.ref_type }}" = "tag" ]; then
             echo "branch=deploy" >> "$GITHUB_OUTPUT"
           else
             echo "branch=deploy-staging" >> "$GITHUB_OUTPUT"
