@@ -157,9 +157,14 @@ function markAllRead() {
   color: #fff;
   font-size: 0.62rem;
   font-weight: 700;
-  line-height: 15px;
-  text-align: center;
   border: 1.5px solid var(--color-surface);
+  /* #195: line-height-basiertes Zentrieren (line-height == height) setzt die Ziffer optisch auf die
+     Zeilen-Baseline statt die vertikale Mitte der Glyphe selbst zu treffen - je nach Schriftmetrik
+     wirkt die Zahl dadurch leicht nach unten verschoben. display:flex zentriert stattdessen die
+     tatsächliche Glyphen-Box, unabhängig von Font-Metriken. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .backdrop {
