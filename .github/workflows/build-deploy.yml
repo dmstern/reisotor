@@ -15,11 +15,16 @@ name: Build & Deploy
 #
 # Zusätzlich auf pull_request gegen main: derselbe komplette Test-Umfang wie bei einem Push
 # (Backend-/Frontend-Unit-Tests + Build UND die volle e2e-Suite) - nur der eigentliche
-# Publish-Schritt (Deploy-Branch) bleibt push-only, ein noch ungemergter Branch darf nie
-# veröffentlicht werden. Ursprünglich gab es hier einen Kompromiss ohne e2e auf PRs (schnellere
-# PR-Checks), der sich aber als falsche Abwägung erwiesen hat: e2e ist das eigentliche
+# Publish-Schritt (Deploy-Branch) bleibt push-/workflow_dispatch-only, ein noch ungemergter Branch
+# darf nie veröffentlicht werden. Ursprünglich gab es hier einen Kompromiss ohne e2e auf PRs
+# (schnellere PR-Checks), der sich aber als falsche Abwägung erwiesen hat: e2e ist das eigentliche
 # Regressionsnetz fürs UI-Verhalten, ohne sie fielen mehrere echte Fehlschläge erst NACH dem
 # Merge auf main auf statt schon vorher auf dem PR.
+#
+# workflow_dispatch (Ref manuell im "Run workflow"-Dialog auf einen Tag stellen) ist ein
+# Fallback/Notausgang, um einen bereits existierenden Release-Tag nachträglich manuell zu
+# deployen, falls der eigentliche Tag-Push aus release.yml den Auto-Trigger verpasst hat (siehe
+# Issue #221 - GITHUB_TOKEN-Pushes lösen laut GitHub bewusst keine Folge-Workflows aus).
 
 on:
   push:
@@ -27,6 +32,7 @@ on:
     tags: ['v*.*.*']
   pull_request:
     branches: [main]
+  workflow_dispatch: {}
 
 permissions:
   contents: write
@@ -97,7 +103,7 @@ jobs:
           retention-days: 7
 
       - name: Assemble release artifact
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         run: |
           rm -rf release
           mkdir -p release/frontend release/backend/dist
@@ -107,7 +113,7 @@ jobs:
           printf '%s %s\n' "${{ github.sha }}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > release/COMMIT
 
       - name: Determine target branch
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         id: target
         run: |
           if [ "${{ github.ref_type }}" = "tag" ]; then
@@ -117,7 +123,7 @@ jobs:
           fi
 
       - name: Publish to deploy branch
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         working-directory: release
         run: |
           TARGET="${{ steps.target.outputs.branch }}"

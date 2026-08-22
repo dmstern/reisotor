@@ -154,6 +154,17 @@ Kein Laptop/Client muss für den Rollout selbst online sein oder Zugangsdaten zu
 
 Voraussetzung auf dem Server: ein read-only Deploy Key fürs Repo (unter GitHub → Settings → Deploy keys hinterlegt) sowie je ein separater flacher Checkout der beiden Branches (`~/reisotor-deploy-src` für `deploy`, `~/reisotor-deploy-src-staging` für `deploy-staging`).
 
+Einmaliger manueller Setup-Schritt in den Repo-Settings, damit der Tag-Push aus `release.yml`
+`build-deploy.yml`/`pages-deploy.yml` überhaupt auslöst: unter Settings → Secrets and variables →
+Actions ein Secret `RELEASE_TOKEN` anlegen (fine-grained Personal Access Token mit „Contents: Read
+and write" auf genau diesem Repo). Grund: ein mit dem automatischen `GITHUB_TOKEN` ausgeführter
+Push löst laut GitHub bewusst keine Folge-Workflows aus (Anti-Rekursions-Schutz) – ohne dieses
+Secret bumpt `release.yml` zwar Version/Changelog und setzt den Tag, aber Prod-Deploy/Pages-Deploy
+müssen dann manuell nachgestoßen werden (siehe Issue #221 für den Workaround: den Tag im
+GitHub-UI löschen und über „Draft a new release" mit demselben Namen neu erzeugen, oder
+`build-deploy.yml` bzw. `pages-deploy.yml` per `workflow_dispatch` mit dem Tag als Ref manuell
+ausführen).
+
 ### Manuelles Deployment mit `deploy.sh`
 
 Alternativ (z. B. wenn kein Internetzugang zu GitHub Actions gewünscht ist oder rein lokal getestet werden soll) automatisiert `deploy.sh` im Repo-Root Build + Kopieren + Neustart **vom eigenen Rechner aus**. Persönliche Werte (SSH-Nutzer, öffentliche Domain, optional ein lokaler Hostname) kommen aus einer lokalen `.env`-Datei (siehe `.env.example`), damit das Skript selbst ohne Infrastruktur-Details versioniert werden kann:

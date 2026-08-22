@@ -15,6 +15,16 @@ name: Release
 # Session heraus). "bump" muss praktisch nie gesetzt werden - Default "auto" reicht für den
 # Normalfall, der Dropdown-Override existiert nur für Sonderfälle (z. B. ein bewusster Major-Bump
 # ohne passenden "!"-Commit).
+#
+# WICHTIG (Issue #221): GitHub löst bei einem Push, der mit dem automatischen GITHUB_TOKEN
+# passiert, bewusst KEINE weiteren Workflow-Läufe aus (Anti-Rekursions-Schutz) - der Tag-Push
+# unten würde build-deploy.yml/pages-deploy.yml sonst nie triggern. Checkout + Push nutzen daher
+# ein Repo-Secret RELEASE_TOKEN (ein fine-grained Personal Access Token mit "Contents:
+# Read and write" auf genau diesem Repo, unter Settings -> Secrets and variables -> Actions
+# anzulegen) statt des Default-Tokens - ein damit ausgeführter Push zählt als "echter" Push.
+# Ohne gesetztes RELEASE_TOKEN-Secret fällt der Workflow auf das alte (kaputte) Verhalten zurück,
+# bricht also nicht, triggert aber weiterhin keine Folge-Workflows - siehe Issue #221 für den
+# manuellen Workaround, bis das Secret hinterlegt ist.
 
 on:
   workflow_dispatch:
@@ -38,6 +48,9 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
+          # Fällt auf den Default-Token zurück, solange das Secret nicht gesetzt ist (siehe
+          # Kommentar oben) - der Workflow bleibt dadurch auch ohne RELEASE_TOKEN lauffähig.
+          token: ${{ secrets.RELEASE_TOKEN || github.token }}
 
       - name: Configure git identity
         run: |
