@@ -1,6 +1,6 @@
 {
   "name": "reisotor",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "private": true,
   "description": "Einzige Versionsquelle für Reisotor (Backend + Frontend) — siehe backend/scripts/generate-build-info.mjs und frontend/vite.config.ts."
 }

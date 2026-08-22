@@ -5,6 +5,10 @@ Format lose an [Keep a Changelog](https://keepachangelog.com/) angelehnt, Versio
 [Semantic Versioning](https://semver.org/). Neue Einträge werden beim Erstellen eines Releases
 (`.github/workflows/release.yml`) oben ergänzt.
 
+## [1.2.2] - 2026-08-22
+
+- Interne Verbesserungen.
+
 ## [1.2.1] - 2026-08-22
 
 - Fix: "Demo zurücksetzen" in der öffentlichen Demo-Version führt nicht mehr zu einer 404-Fehlerseite.
