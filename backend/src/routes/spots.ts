@@ -242,10 +242,9 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
     const done = req.body.done ? 1 : 0;
     if (done) {
       // Zwei Wege zu einem Datum: ein direkt mit dem Spot verknüpfter Termin (normales Einplanen,
-      // siehe schedule_items.spot_id) ODER ein Termin über eine Tour, in der dieser Spot als
-      // Station steckt (u. a. DiaryView.vue's "Spot direkt zuordnen"-Picker, der im Hintergrund
-      // einen mit dem Spot verknüpften Ein-Spot-Ausflug anlegt statt eines direkten Termins, siehe
-      // routes/ideas.ts's plan-spot).
+      // siehe schedule_items.spot_id, auch DiaryView.vue's "Spots zuordnen"-Picker seit #216) ODER
+      // ein Termin über eine Tour, in der dieser Spot als Station steckt (z. B. routes/ideas.ts's
+      // plan-spot).
       const hasDate = db
         .prepare(
           `SELECT 1 FROM schedule_items WHERE spot_id = ? AND deleted_at IS NULL

@@ -730,10 +730,10 @@ const spotGroups = computed(() => {
     }
   }
   if (groupMode.value === 'tours') {
-    // Touren ohne zugeordneten Spot (frisch angelegt, oder rein übers Tagebuch verknüpft, siehe
-    // stores/excursions.ts's planSpotOnDate()-Kommentar) bekommen trotzdem eine (leere) Gruppe -
-    // sonst verschwänden sie komplett aus dieser Ansicht, sobald man nach Touren statt Kategorie
-    // gruppiert, weil die Gruppierung oben rein über die Spot-Zuordnung (tourTitlesForItem) läuft.
+    // Touren ohne zugeordneten Spot (z. B. frisch angelegt, noch ohne Stationen) bekommen trotzdem
+    // eine (leere) Gruppe - sonst verschwänden sie komplett aus dieser Ansicht, sobald man nach
+    // Touren statt Kategorie gruppiert, weil die Gruppierung oben rein über die Spot-Zuordnung
+    // (tourTitlesForItem) läuft.
     for (const ex of excursionsStore.excursions) {
       if (!groups.has(ex.title)) groups.set(ex.title, []);
     }

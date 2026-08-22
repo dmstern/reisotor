@@ -408,6 +408,9 @@ export interface DiaryEntry {
   updated_at: string | null;
   /** IDs der Ausflüge, die diesem Eintrag zugeordnet sind (z. B. an diesem Tag unternommen). */
   excursion_ids: number[];
+  /** IDs der Spots, die diesem Eintrag direkt zugeordnet sind (#216: ohne Umweg über einen im
+   *  Hintergrund angelegten Ein-Spot-Ausflug, siehe DiaryView.vue). */
+  spot_ids: number[];
   /** IDs der Mit-Bearbeiter:innen (jede:r außer author_id, der/die den Eintrag mal gespeichert hat). */
   editor_ids: number[];
   /** Entwurf, nur für author_id sichtbar (#89) - siehe DraftBadge/isDraft-Handling in DiaryView.vue. */

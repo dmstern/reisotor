@@ -344,16 +344,15 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
     return { done: done === 1 };
   });
 
-  // Spontanes Einplanen eines einzelnen Spots im Tagebuch (siehe DiaryView.vue's Spot-Picker), OHNE
-  // dass die Nutzerin vorher einen Ausflug anlegen muss: legt im Hintergrund einen "Ausflug" mit
-  // genau dieser einen Station an – für die Nutzerin unsichtbar, sie sieht nur "der Spot ist an
-  // diesem Tag geplant". NICHT mehr der Weg, auf dem ein Spot im KALENDER eingeplant wird (das
-  // erzeugt jetzt einen direkt mit dem Spot verknüpften Termin, siehe routes/schedule.ts) – bleibt
-  // nur für den Tagebuch-Anwendungsfall bestehen, der einen Ausflug zum Verknüpfen braucht
-  // (diary_excursions referenziert ausschließlich idea_id). Dedupe-Check (exakt EINE Station mit
-  // demselben Spot an trip_id+Termin-Datum) verhindert Duplikate, wenn derselbe Spot mehrfach für
-  // denselben Tag ausgelöst wird – zwei VERSCHIEDENE Spots am selben Tag erzeugen dagegen bewusst
-  // je einen eigenen Ausflug (kein Zusammenlegen).
+  // Spontanes Einplanen eines einzelnen Spots als Ein-Spot-Ausflug, OHNE dass vorher ein Ausflug
+  // angelegt werden muss. NICHT der Weg, auf dem ein Spot im KALENDER eingeplant wird (das erzeugt
+  // einen direkt mit dem Spot verknüpften Termin, siehe routes/schedule.ts) – DiaryView.vue's
+  // Spot-Picker nutzte diesen Endpunkt bis #216 dafür, verknüpft Spots inzwischen direkt (siehe
+  // diary_spots), der Endpunkt bleibt aber als generischer Weg bestehen, einen Spot spontan als
+  // eigenen (Ein-Stations-)Ausflug einzuplanen. Dedupe-Check (exakt EINE Station mit demselben Spot
+  // an trip_id+Termin-Datum) verhindert Duplikate, wenn derselbe Spot mehrfach für denselben Tag
+  // ausgelöst wird – zwei VERSCHIEDENE Spots am selben Tag erzeugen dagegen bewusst je einen
+  // eigenen Ausflug (kein Zusammenlegen).
   app.post<{ Body: PlanSpotBody }>('/ideas/plan-spot', async (req, reply) => {
     const { trip_id, spot_id, date } = req.body;
     if (!requireTripMember(reply, trip_id, req.session.userId)) return;

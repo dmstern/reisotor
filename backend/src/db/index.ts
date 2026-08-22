@@ -175,6 +175,18 @@ CREATE TABLE IF NOT EXISTS diary_excursions (
   UNIQUE(entry_id, idea_id)
 );
 
+-- Zuordnung Tagebucheintrag <-> Spot (m:n, analog diary_excursions) - direkt verknüpft, OHNE dass
+-- dafür (wie früher, siehe DiaryView.vue's "Spot direkt zuordnen"-Picker vor #216) im Hintergrund
+-- ein unsichtbarer Ein-Spot-Ausflug angelegt werden muss. Ein zugeordneter Spot wird stattdessen
+-- direkt über schedule_items.spot_id eingeplant (siehe stores/schedule.ts's setSpotDate), diese
+-- Tabelle hält nur die reine Verknüpfung zum Tagebucheintrag selbst.
+CREATE TABLE IF NOT EXISTS diary_spots (
+  id INTEGER PRIMARY KEY,
+  entry_id INTEGER NOT NULL REFERENCES diary_entries(id) ON DELETE CASCADE,
+  spot_id INTEGER NOT NULL REFERENCES spots(id) ON DELETE CASCADE,
+  UNIQUE(entry_id, spot_id)
+);
+
 -- Wer (neben der Haupt-Autorin, author_id auf diary_entries) einen Tagebucheintrag bereits bearbeitet
 -- hat (#93: alle Mitreisenden dürfen bearbeiten, sollen dabei aber als Mit-Autor:innen erkennbar
 -- bleiben). Ein UPSERT pro Bearbeitung aktualisiert nur edited_at, kein Verlauf einzelner Änderungen.

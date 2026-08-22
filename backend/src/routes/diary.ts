@@ -29,6 +29,7 @@ interface EntryBody {
   content_format?: 'html' | 'legacy';
   images?: string[];
   excursion_ids?: number[];
+  spot_ids?: number[];
   date?: string;
   is_draft?: boolean;
 }
@@ -53,6 +54,31 @@ function excursionIdsFor(entryIds: number[]): Map<number, number[]> {
   for (const row of rows) {
     const list = map.get(row.entry_id) ?? [];
     list.push(row.idea_id);
+    map.set(row.entry_id, list);
+  }
+  return map;
+}
+
+// Zuordnung Tagebucheintrag -> Spots (m:n, gleiches Muster wie syncDiaryExcursions oben) - direkte
+// Verknüpfung OHNE (wie früher, #216) im Hintergrund einen Ein-Spot-Ausflug anzulegen.
+function syncDiarySpots(entryId: number, spotIds: number[]) {
+  db.prepare('DELETE FROM diary_spots WHERE entry_id = ?').run(entryId);
+  const insert = db.prepare('INSERT INTO diary_spots (entry_id, spot_id) VALUES (?, ?)');
+  for (const spotId of spotIds) {
+    insert.run(entryId, spotId);
+  }
+}
+
+function spotIdsFor(entryIds: number[]): Map<number, number[]> {
+  const map = new Map<number, number[]>();
+  if (!entryIds.length) return map;
+  const placeholders = entryIds.map(() => '?').join(',');
+  const rows = db
+    .prepare(`SELECT entry_id, spot_id FROM diary_spots WHERE entry_id IN (${placeholders})`)
+    .all(...entryIds) as { entry_id: number; spot_id: number }[];
+  for (const row of rows) {
+    const list = map.get(row.entry_id) ?? [];
+    list.push(row.spot_id);
     map.set(row.entry_id, list);
   }
   return map;
@@ -99,11 +125,12 @@ const ALLOWED_IMAGE_TYPES: Record<string, string> = {
 };
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
-function serializeEntry(row: EntryRow, excursionIds: number[], editorIds: number[] = []) {
+function serializeEntry(row: EntryRow, excursionIds: number[], spotIds: number[] = [], editorIds: number[] = []) {
   return {
     ...row,
     images: row.images ? (JSON.parse(row.images) as string[]) : [],
     excursion_ids: excursionIds,
+    spot_ids: spotIds,
     editor_ids: editorIds,
   };
 }
@@ -120,8 +147,11 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
       .all(req.query.trip_id, req.session.userId) as EntryRow[];
     const entryIds = rows.map((r) => r.id);
     const excursionIds = excursionIdsFor(entryIds);
+    const spotIds = spotIdsFor(entryIds);
     const editorIds = editorIdsFor(entryIds);
-    return rows.map((row) => serializeEntry(row, excursionIds.get(row.id) ?? [], editorIds.get(row.id) ?? []));
+    return rows.map((row) =>
+      serializeEntry(row, excursionIds.get(row.id) ?? [], spotIds.get(row.id) ?? [], editorIds.get(row.id) ?? []),
+    );
   });
 
   // trip_id jetzt erforderlich (vorher lieferten beide Routen ungefiltert ALLE Likes/Kommentare
@@ -178,7 +208,7 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.post<{ Body: EntryBody }>('/diary', async (req, reply) => {
-    const { trip_id, title, content, images, excursion_ids, date } = req.body;
+    const { trip_id, title, content, images, excursion_ids, spot_ids, date } = req.body;
     if (!requireTripMember(reply, trip_id, req.session.userId)) return;
     const isHtml = req.body.content_format === 'html';
     const now = new Date().toISOString();
@@ -201,10 +231,11 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
       );
     const entryId = result.lastInsertRowid as number;
     syncDiaryExcursions(entryId, excursion_ids ?? []);
+    syncDiarySpots(entryId, spot_ids ?? []);
     recordActivity(trip_id, 'diary', entryId, 'created', req.session.userId!);
     reply.code(201);
     const row = db.prepare('SELECT * FROM diary_entries WHERE id = ?').get(entryId) as EntryRow;
-    return serializeEntry(row, excursion_ids ?? []);
+    return serializeEntry(row, excursion_ids ?? [], spot_ids ?? []);
   });
 
   // Bearbeiten ist seit #93 nicht mehr nur der Autorin/dem Autor vorbehalten - jedes Trip-Mitglied
@@ -223,7 +254,7 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(403).send({ error: 'Nur die Autorin/der Autor kann diesen Entwurf bearbeiten' });
     }
 
-    const { title, content, images, excursion_ids, date } = req.body;
+    const { title, content, images, excursion_ids, spot_ids, date } = req.body;
     const isHtml = req.body.content_format === 'html';
     const now = new Date().toISOString();
     const isDraft = req.body.is_draft !== undefined ? (req.body.is_draft ? 1 : 0) : entry.is_draft;
@@ -240,13 +271,14 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
       req.params.id,
     );
     syncDiaryExcursions(Number(req.params.id), excursion_ids ?? []);
+    syncDiarySpots(Number(req.params.id), spot_ids ?? []);
     if (req.session.userId !== entry.author_id) {
       recordEditor(Number(req.params.id), req.session.userId!);
     }
     recordActivity(entry.trip_id, 'diary', Number(req.params.id), 'updated', req.session.userId!);
     const row = db.prepare('SELECT * FROM diary_entries WHERE id = ?').get(req.params.id) as EntryRow;
     const editorIds = editorIdsFor([Number(req.params.id)]).get(Number(req.params.id)) ?? [];
-    return serializeEntry(row, excursion_ids ?? [], editorIds);
+    return serializeEntry(row, excursion_ids ?? [], spot_ids ?? [], editorIds);
   });
 
   app.delete<{ Params: { id: string } }>('/diary/:id', async (req, reply) => {
