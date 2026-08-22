@@ -1,9 +1,8 @@
 import { db } from './db/index.js';
 
 // #96: offene Registrierung soll per Backend-Env-Var konfigurierbar sein, ohne dafür eine
-// Self-Service-Route zu brauchen (analog zu TRUSTED_FEEDBACK_REPORTERS in routes/feedback.ts –
-// bewusst nur per Server-Env-Var pflegbar, sonst könnte sich jede offen registrierte Person selbst
-// freischalten).
+// Self-Service-Route zu brauchen – bewusst nur per Server-Env-Var pflegbar, sonst könnte sich jede
+// offen registrierte Person selbst freischalten.
 export type RegistrationMode = 'off' | 'full' | 'restricted';
 
 function parseMode(raw: string | undefined): RegistrationMode {
