@@ -50,8 +50,8 @@ onUnmounted(() => {
   resizeObserver?.disconnect();
 });
 
-// Frontend wird identisch für Staging (dev.reise.ruebenherz.de) und Produktion
-// (reise.ruebenherz.de) gebaut (siehe .github/workflows/build-deploy.yml) – der Unterschied lässt
+// Frontend wird identisch für Staging und Produktion
+// gebaut (siehe .github/workflows/build-deploy.yml) – der Unterschied lässt
 // sich also nur zur Laufzeit über den Hostnamen erkennen, nicht über einen Build-Flag/env-Wert.
 // Alles außer der echten Produktions-Domain (Staging, localhost, IPs) gilt als Nicht-Prod.
 const isNonProd = window.location.hostname !== 'reise.ruebenherz.de';

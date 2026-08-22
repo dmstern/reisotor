@@ -163,8 +163,8 @@ Kalendereinträge/andere Querverweise hängen zusätzlich einen `#<domain>-<id>`
 
 Push auf `main` baut via `.github/workflows/build-deploy.yml` (Unit-Tests → Build → E2E-Tests,
 alles gated) und veröffentlicht auf Branch `deploy-staging` (Server pollt das, deployt auf
-`dev.reise.ruebenherz.de`); erst ein expliziter `git push origin main:prod` löst denselben Workflow
-für Branch `deploy` aus (echte Produktion, `reise.ruebenherz.de`). Die SQLite-Datei wird beim
+DEV); erst ein expliziter `git push origin main:prod` löst denselben Workflow
+für Branch `deploy` aus (echte Produktion). Die SQLite-Datei wird beim
 Deploy nie überschrieben. Details/Befehle: `README.md`.
 
 ## Code-Map

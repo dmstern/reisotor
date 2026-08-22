@@ -233,7 +233,7 @@ PR-Screenshots, siehe "Screenshots im PR selbst" unten.
 
 Von Claude Code erstellte PRs gegen `main` **nicht automatisch mergen**, sobald CI grün ist —
 stattdessen offen lassen und auf das Review des Nutzers warten (er checkt bewusst zuerst visuell
-anhand der im PR angehängten Screenshots, siehe unten, statt direkt auf `dev.reise.ruebenherz.de` zu
+anhand der im PR angehängten Screenshots, siehe unten, statt direkt auf DEV zu
 testen). Explizit auf einen Merge-Wunsch/eine Freigabe des Nutzers warten, auch wenn CI längst grün
 ist. Nicht als Draft (`draft: false`) erstellen.
 

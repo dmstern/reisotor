@@ -1,9 +1,9 @@
 name: Build & Deploy
 
 # Baut Frontend + Backend bei Push auf main ODER bei einem Semver-Tag-Push und veröffentlicht das
-# Ergebnis als einzigen Commit auf einem Ziel-Branch. Push auf main -> "deploy-staging"
-# (dev.reise.ruebenherz.de, automatisches Gate zum Anschauen einer Änderung, bildet IMMER den
-# aktuellen main-Stand ab). Push eines Tags "vX.Y.Z" -> "deploy" (reise.ruebenherz.de, die von
+# Ergebnis als einzigen Commit auf einem Ziel-Branch. Push auf main -> "deploy-staging",
+# automatisches Gate zum Anschauen einer Änderung, bildet IMMER den
+# aktuellen main-Stand ab). Push eines Tags "vX.Y.Z" -> "deploy" (die von
 # Nutzer:innen tatsächlich verwendete Produktion) - ein solcher Tag entsteht ausschließlich über
 # den Release-Workflow (.github/workflows/release.yml), der ihn immer von main aus setzt. Prod
 # bekommt damit nie eine ungeprüfte main-Änderung, sondern nur bewusst geschnittene Releases.
