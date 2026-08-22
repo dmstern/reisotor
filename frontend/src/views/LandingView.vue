@@ -29,10 +29,20 @@ const features = [
 
     <section class="screenshots">
       <div class="screenshot-frame">
-        <img src="/landing/screenshot-dashboard.png" alt="Reisotor-Dashboard mit Übersicht über einen Urlaub" loading="lazy" />
+        <!-- Landingpage hat keinen Theme-Umschalter (siehe landing-main.ts) - Dark/Light ergibt sich
+             rein aus der Systemeinstellung, genau wie im Rest der App per prefers-color-scheme
+             (stores/theme.ts's 'system'-Default). <picture> statt JS, damit der Browser nur die
+             passende Variante überhaupt lädt. -->
+        <picture>
+          <source srcset="/landing/screenshot-dashboard-dark.png" media="(prefers-color-scheme: dark)" />
+          <img src="/landing/screenshot-dashboard-light.png" alt="Reisotor-Dashboard mit Übersicht über einen Urlaub" loading="lazy" />
+        </picture>
       </div>
       <div class="screenshot-frame screenshot-frame-mobile">
-        <img src="/landing/screenshot-mobile.png" alt="Reisotor auf dem Smartphone" loading="lazy" />
+        <picture>
+          <source srcset="/landing/screenshot-mobile-dark.png" media="(prefers-color-scheme: dark)" />
+          <img src="/landing/screenshot-mobile-light.png" alt="Reisotor auf dem Smartphone" loading="lazy" />
+        </picture>
       </div>
     </section>
 
