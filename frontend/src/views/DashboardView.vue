@@ -468,7 +468,7 @@ function formatWeekdayDate(d: string) {
         </div>
       </template>
       <p v-else class="hint">
-        Markiere in Reise &gt; Orte einen Ort mit <AppIcon :icon="ACTION_ICONS.home" :size="13" group="actions" /> „Zuhause“, um hier
+        Markiere in der Karte unter Spots einen Spot mit <AppIcon :icon="ACTION_ICONS.home" :size="13" group="actions" /> „Zuhause“, um hier
         zusätzlich das Wetter zuhause gegen Ende des Urlaubs zu sehen.
       </p>
 
