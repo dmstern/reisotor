@@ -38,6 +38,12 @@ describe('demoClient (Issue #172: backend-loser Demo-Build)', () => {
     expect(user.username).toBeTruthy();
   });
 
+  it('liefert /trips/:id/region-info als Objekt statt der generischen []-Fallback-Antwort (Regressionsschutz: DashboardView.vue liest regionInfo.languages.length)', async () => {
+    const info = await demoRequest<{ languages: string[]; currency: { code: string } | null }>('/trips/1/region-info?home_currency=EUR');
+    expect(Array.isArray(info)).toBe(false);
+    expect(info.languages.length).toBeGreaterThan(0);
+  });
+
   it('GET auf eine bekannte Sammlung liefert den vorbefüllten Demo-Datensatz', async () => {
     const todos = await demoRequest<Array<{ id: number; title: string }>>('/todos?trip_id=1');
     expect(todos.length).toBeGreaterThan(0);

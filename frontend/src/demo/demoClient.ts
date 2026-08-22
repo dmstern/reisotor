@@ -115,6 +115,19 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
   if (/^\/trips\/-?\d+\/members$/.test(path.split('?')[0])) {
     return structuredClone(DEMO_USERS) as unknown as T;
   }
+  if (/^\/trips\/-?\d+\/region-info$/.test(path.split('?')[0])) {
+    // Objekt-, nicht Array-förmige Antwort (RegionInfo, siehe utils/regionInfo.ts) - ohne diesen
+    // Sonderfall würde der generische "unbekannter Pfad"-Zweig unten [] liefern, woran
+    // DashboardView.vue's `regionInfo.languages.length` mit einem TypeError scheitert (die Karte
+    // selbst - `regionInfo` truthy als Array - besteht die vorgelagerte `regionInfo &&`-Prüfung).
+    return {
+      countryName: 'Portugal',
+      languages: ['Portugiesisch'],
+      currency: { code: 'EUR', name: 'Euro' },
+      exchangeRate: null,
+      advisory: null,
+    } as unknown as T;
+  }
   if (path.startsWith('/users/search')) {
     const q = (new URLSearchParams(path.split('?')[1] ?? '').get('q') ?? '').toLowerCase();
     return DEMO_USERS.filter((u) => u.username.toLowerCase().includes(q)) as unknown as T;

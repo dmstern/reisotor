@@ -29,7 +29,13 @@ function waitForElement(selector: string, timeoutMs = 3000): Promise<boolean> {
 }
 
 const router = createRouter({
-  history: createWebHistory(),
+  // import.meta.env.BASE_URL statt keinem Argument: entspricht immer dem tatsächlich konfigurierten
+  // Vite-`base` (vite.config.ts) - für den normalen App-Build weiterhin '/', für den Demo-Build
+  // unter GitHub Pages (VITE_BASE=/reisotor/demo/, Issue #172) aber genau dieser Unterpfad. Ohne das
+  // würde createWebHistory() intern auf '/' zurückfallen (kein <base>-Tag im HTML), Vue Router
+  // versucht dann den KOMPLETTEN Pfad inkl. "/reisotor/demo/"-Präfix gegen die Routen (die alle bei
+  // '/' beginnen) zu matchen - schlägt fehl, <router-view> bleibt dauerhaft leer.
+  history: createWebHistory(import.meta.env.BASE_URL),
   // Nur für echte Hash-Sprünge (z. B. der "Anbieter wechseln"-Link im Wetter-Widget,
   // DashboardView.vue -> /profile#weather-provider-settings) – kein genereller Scroll-Reset auf
   // Position 0 bei jeder Navigation, um das bisherige Verhalten (Scroll-Position bleibt bei

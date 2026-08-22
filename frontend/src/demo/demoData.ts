@@ -17,6 +17,11 @@ import type {
   TodoItem,
   User,
 } from '../api/types';
+// Statisches Asset statt eines Kartenausschnitts von einem externen Tile-Server (wie ihn
+// backend/src/utils/mapsLink.ts's tilePreviewUrl() im echten Backend liefert) - der Demo-Build hat
+// kein Backend und soll nicht von externer Netzwerk-Erreichbarkeit abhängen, damit der Trip-Banner
+// zuverlässig und einladend aussieht statt im Zweifel als leerer/grauer Verlauf.
+import demoTripBanner from '../assets/demo-trip-banner.jpg';
 
 function addDays(days: number): string {
   const d = new Date();
@@ -37,7 +42,7 @@ export const DEMO_TRIP = {
   maps_link: 'https://maps.google.com/?q=Lissabon',
   lat: 38.7223,
   lng: -9.1393,
-  image_url: null,
+  image_url: demoTripBanner,
   packing_category_required: 0,
 };
 
