@@ -1790,11 +1790,11 @@ async function removeSpot(id: number) {
               ]" />
             </h2>
             <div class="header-actions">
-              <button class="add-button" v-if="groupMode === 'category'" @click="showSpotForm = true">
+              <button class="add-button" v-if="groupMode === 'category'" aria-label="Neuer Spot" @click="showSpotForm = true">
                 <AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> <span class="add-button__label">Neuer Spot</span>
               </button>
               <template v-else-if="groupMode === 'tours'">
-                <button class="add-button" @click="openExcursionForm()">
+                <button class="add-button" aria-label="Neue Tour" @click="openExcursionForm()">
                   <AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> <span class="add-button__label">Neue Tour</span>
                 </button>
               </template>
