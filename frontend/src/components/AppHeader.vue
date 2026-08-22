@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useAuthStore } from '../stores/auth';
 import { useConnectivityStore } from '../stores/connectivity';
 import { useNavPositionStore } from '../stores/navPosition';
+import { useBuildInfoStore } from '../stores/buildInfo';
 import { useIsDesktop } from '../composables/useIsDesktop';
 import TripSwitcher from './TripSwitcher.vue';
 import PresenceAvatars from './PresenceAvatars.vue';
@@ -50,11 +51,12 @@ onUnmounted(() => {
   resizeObserver?.disconnect();
 });
 
-// Frontend wird identisch für Staging und Produktion
-// gebaut (siehe .github/workflows/build-deploy.yml) – der Unterschied lässt
-// sich also nur zur Laufzeit über den Hostnamen erkennen, nicht über einen Build-Flag/env-Wert.
-// Alles außer der echten Produktions-Domain (Staging, localhost, IPs) gilt als Nicht-Prod.
-const isNonProd = window.location.hostname !== 'reise.ruebenherz.de';
+// Frontend wird identisch für Staging und Produktion gebaut (siehe
+// .github/workflows/build-deploy.yml) – der Unterschied kommt deshalb zur Laufzeit vom Backend
+// (APP_ENV-Env-Var pro Instanz, GET /build-info) statt aus einem Domain-Vergleich, siehe Issue #219.
+const buildInfoStore = useBuildInfoStore();
+buildInfoStore.load();
+const isNonProd = computed(() => buildInfoStore.buildInfo != null && buildInfoStore.buildInfo.environment !== 'production');
 </script>
 
 <template>

@@ -25,6 +25,26 @@ export interface Trip {
   owner_restricted?: boolean;
 }
 
+export interface ChangelogEntry {
+  version: string;
+  date: string;
+  notes: string[];
+}
+
+/** GET /build-info (backend/src/routes/buildInfo.ts). `environment` kommt aus der
+ *  instanzspezifischen APP_ENV-Backend-Env-Var (Default 'production') – das Frontend wird für
+ *  Staging und Produktion identisch gebaut (siehe .github/workflows/build-deploy.yml), kann die
+ *  Umgebung also nicht aus einem Build-Time-Wert erkennen, siehe Issue #219. */
+export interface BuildInfo {
+  version: string | null;
+  ref: string | null;
+  builtAt: string | null;
+  changelog: ChangelogEntry | null;
+  repoUrl: string;
+  hostingLocation: string;
+  environment: string;
+}
+
 export type ScheduleCategory = 'trip' | 'excursion' | 'todo' | 'travel' | 'other';
 
 /** Zeitraum, in dem ein Einkaufs-/ToDo-Eintrag erledigt werden soll: vor oder während des Urlaubs. */
