@@ -48,6 +48,7 @@ import {
   IconPuzzle,
   IconCloud,
   IconBug,
+  IconInfoSquareRounded
 } from '@tabler/icons-vue';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import type { IconDef } from '../utils/icon';
@@ -72,6 +73,7 @@ const BELL_ICON: IconDef = { id: 'bell', emoji: '🔔', outline: IconBell, fille
 const DASHBOARD_TILES_ICON: IconDef = { id: 'puzzle', emoji: '🧩', outline: IconPuzzle };
 const WEATHER_SECTION_ICON: IconDef = { id: 'cloud', emoji: '🌤️', outline: IconCloud };
 const FEEDBACK_ICON: IconDef = { id: 'bug', emoji: '🐛', outline: IconBug };
+const INFO_ICON: IconDef = { id: 'info', emoji: 'ℹ️', outline: IconInfoSquareRounded };
 
 type Tab = 'account' | 'app' | 'trip' | 'notifications' | 'data' | 'about';
 const TABS: { key: Tab; label: string; icon: IconDef }[] = [
@@ -771,13 +773,6 @@ async function onImportFileSelected(event: Event) {
     </template>
 
     <template v-if="activeTab === 'about'">
-      <div v-if="backendBuildInfo?.changelog" class="card">
-        <h2>Was ist neu in v{{ backendBuildInfo.changelog.version }}</h2>
-        <ul class="changelog-list">
-          <li v-for="note in backendBuildInfo.changelog.notes" :key="note">{{ note }}</li>
-        </ul>
-      </div>
-
       <div class="card">
         <h2><AppIcon :icon="ACTION_ICONS.installApp" group="actions" :size="20" /> Als App installieren</h2>
         <p v-if="pwaInstall.isStandalone" class="hint intro-hint">
@@ -802,7 +797,14 @@ async function onImportFileSelected(event: Event) {
       </div>
 
       <div class="card build-info-card">
-        <h2>Build-Info</h2>
+        <div v-if="backendBuildInfo?.changelog" >
+          <h2><AppIcon :icon="INFO_ICON" group="navigation" :size="20" /> Versions-Info</h2>
+          <h3>Was ist neu in v{{ backendBuildInfo.changelog.version }}</h3>
+          <ul class="changelog-list">
+            <li v-for="note in backendBuildInfo.changelog.notes" :key="note">{{ note }}</li>
+          </ul>
+        </div>
+        <h3>Build-Info</h3>
         <dl class="build-info-list">
           <dt>Frontend</dt>
           <dd>v{{ frontendVersion }} ({{ frontendCommit }}) · {{ formatBuildTime(frontendBuiltAt) }}</dd>
@@ -830,6 +832,11 @@ async function onImportFileSelected(event: Event) {
 <style scoped>
 .page > .card {
   margin-bottom: var(--space-4);
+}
+
+h3 {
+  font-size: 1rem;
+  margin: var(--space-4) 0 var(--space-3) 0;
 }
 
 /* Karten-Überschriften, die (#94) ein AppIcon statt eines rohen Emoji-Zeichens voranstellen -
