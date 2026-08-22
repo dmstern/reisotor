@@ -453,7 +453,7 @@ function onToggleDone() {
    eingeplant werden. */
 .status {
   position: absolute;
-  bottom: var(--space-3);
+  bottom: var(--space-2);
   right: var(--space-2);
   display: inline-flex;
   align-items: center;
@@ -464,6 +464,7 @@ function onToggleDone() {
   font-size: 0.75rem;
   font-weight: 600;
   color: var(--color-text-muted);
+
 }
 
 .status.planned,
@@ -493,6 +494,7 @@ function onToggleDone() {
   justify-content: space-between;
   align-items: baseline;
   gap: var(--space-2);
+  margin-bottom: var(--space-2);
 }
 
 /* min-width:0 + Kürzung statt Umbruch: ohne das wechselte ein langer Titel zwischen ein-/
@@ -673,9 +675,9 @@ function onToggleDone() {
      erreichbar sein), schrumpft aber auf einen reinen Icon-Kreis (Textlabel ausgeblendet) statt
      der vollen Pille - gleiches Verkleinerungs-Muster wie .status unten. */
   .spot-card:not(.expanded) .links {
-    margin-top: 2px;
+    margin: var(--space-2) 0;
   }
-
+  
   .spot-card:not(.expanded) .show-on-map-btn .btn-label {
     display: none;
   }
