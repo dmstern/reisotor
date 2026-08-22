@@ -801,6 +801,9 @@ function formatWeekdayDate(d: string) {
 }
 
 .weather-card h3 {
+  display: flex;
+  gap: .5em;
+  align-items: center;
   color: var(--color-primary-dark);
   font-size: 1rem;
   margin-bottom: var(--space-2);
@@ -825,7 +828,9 @@ function formatWeekdayDate(d: string) {
 }
 
 .weather-section-label {
-  margin: 0 0 6px;
+  display: flex;
+  gap: .5em;
+  margin: 0 0 var(--space-2);
   color: var(--color-text-muted);
   font-weight: 600;
   font-size: 0.78rem;
@@ -888,13 +893,15 @@ function formatWeekdayDate(d: string) {
 }
 
 .weather-rain {
+  display: inline-flex;
+  gap: 3px;
   font-size: 0.72rem;
   color: var(--color-accent-secondary);
 }
 
 .weather-source {
   display: inline-block;
-  margin: var(--space-2) 0 0;
+  margin: var(--space-2) 0 var(--space-2);
   font-size: 0.72rem;
   color: var(--color-text-muted);
   text-decoration: underline;
@@ -925,11 +932,11 @@ function formatWeekdayDate(d: string) {
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   padding-top: 22px;
   /* Zeilenabstand größer als der globale .grid-Standard (--space-3, 16px): .tile-icon (unten) ragt
-     22px über den oberen Rand seiner eigenen Kachel hinaus (abgerundetes "Badge"-Icon, halb auf/
+     über den oberen Rand seiner eigenen Kachel hinaus (abgerundetes "Badge"-Icon, halb auf/
      halb über der Kachel) - bei nur 16px Zeilenabstand überdeckt es damit die Kachel der Zeile
-     darüber. --space-4 (24px) lässt 2px Luft; Spaltenabstand bleibt beim schmaleren Standardwert,
+     darüber. Dieser Space hier lässt ein paar Pixel Luft; Spaltenabstand bleibt beim schmaleren Standardwert,
      da dort kein Icon hineinragt. */
-  row-gap: var(--space-4);
+  row-gap: var(--space-5);
   column-gap: var(--space-3);
 }
 
