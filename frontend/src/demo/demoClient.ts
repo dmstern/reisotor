@@ -110,7 +110,10 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
       changelog: null,
       repoUrl: __REPO_URL__,
       hostingLocation: 'GitHub Pages (Demo)',
-      environment: 'demo',
+      // Demo soll bis auf den DemoModeBanner wie Produktion aussehen, nicht wie eine Dev-/Staging-
+      // Instanz - sonst würden DEV-Badge und die orange Header-Umrandung (siehe AppHeader.vue)
+      // fälschlich suggerieren, es handle sich um eine Test-/Vorschau-Version der echten App.
+      environment: 'production',
     } as unknown as T;
   }
   if (/^\/trips\/-?\d+\/members$/.test(path.split('?')[0])) {
