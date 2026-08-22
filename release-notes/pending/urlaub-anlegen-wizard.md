@@ -1,2 +1,0 @@
-- Neuen Urlaub anlegen läuft jetzt als kurzer Assistent mit einzelnen Schritten statt einem langen Formular auf einmal.
-- Der Standort-Schritt erklärt jetzt, wofür er verwendet wird, und lässt sich wie alle optionalen Schritte überspringen und später nachholen.

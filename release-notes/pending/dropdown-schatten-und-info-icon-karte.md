@@ -1,2 +1,0 @@
-- Schatten bei den Menüpunkten in den Auswahl-Menüs der Karte entfernt (fiel v. a. auf dem iPhone auf).
-- Das Info-Symbol neben der "Spots"-Überschrift ist jetzt gut erkennbar statt fast unsichtbar.

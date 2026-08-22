@@ -1,2 +1,0 @@
-- Neuer Hinweis oben im Kopfbereich zeigt, dass sich Reisotor als App installieren lässt - lässt sich wegklicken und erscheint danach nicht mehr.
-- Ein Klick öffnet eine kurze, auf das eigene Gerät/Browser zugeschnittene Installationsanleitung samt Erklärung der Vorteile; auch jederzeit im Profil unter "Über" aufrufbar.

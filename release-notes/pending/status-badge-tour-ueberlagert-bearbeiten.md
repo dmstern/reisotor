@@ -1,1 +1,0 @@
-- Der Status-Badge einer Tour überlagert nicht mehr den Bearbeiten-Button.

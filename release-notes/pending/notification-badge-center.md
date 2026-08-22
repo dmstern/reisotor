@@ -1,1 +1,0 @@
-- Die Zahl im roten Benachrichtigungs-Symbol ist jetzt sauber zentriert.

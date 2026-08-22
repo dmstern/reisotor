@@ -1,4 +1,0 @@
-- Fix: Spots im Tagebuch-Formular zuordnen legt nicht mehr heimlich eine neue Tour an – die Touren-Liste bleibt dadurch übersichtlich.
-- Zugeordnete Touren/Spots werden beim Speichern eines Tagebucheintrags jetzt automatisch als "gemacht" markiert, mit dem Datum des Eintrags.
-- Neuer Button "Tag auf Karte anzeigen" bei jedem Tagebucheintrag.
-- Schatten bei den Spot-Einträgen im Tagebuch-Zuordnen-Dialog entfernt.

@@ -1,1 +1,0 @@
-- Den Button "Neue Fahrt/Flug" in der Touren-Ansicht entfernt – Transportmittel legt man jetzt über den Haken „Transportmittel“ im normalen „Neue Tour“-Dialog an.

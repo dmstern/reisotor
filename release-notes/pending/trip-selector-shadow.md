@@ -1,1 +1,0 @@
-- Die unschönen Schlagschatten an den Einträgen im Urlaub-Auswahlmenü wurden entfernt.
