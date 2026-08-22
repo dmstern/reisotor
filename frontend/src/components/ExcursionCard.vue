@@ -432,9 +432,13 @@ function onSpotDrop(event: DragEvent) {
   gap: var(--space-2);
 }
 
+/* Unten statt oben rechts positioniert (#210): oben links schwebt der Bearbeiten-Button
+   (EditButton.vue's .floating), bei langem Status-Text (z. B. "Gemacht am 20. Aug. · ☁️ 21°") ragte
+   der von rechts wachsende Chip in der schmalen 140px-Miniatur bis dorthin und überlagerte ihn.
+   Gleiches Muster wie SpotCard.vue's .status, dort aus demselben Grund bereits unten positioniert. */
 .status {
   position: absolute;
-  top: 8px;
+  bottom: 8px;
   right: 8px;
   background: rgba(255, 255, 255, 0.9);
   padding: 2px 10px;
@@ -460,18 +464,6 @@ function onSpotDrop(event: DragEvent) {
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) .status {
     background: rgba(35, 34, 32, 0.85);
-  }
-}
-
-/* .image nimmt bei diesem Breakpoint die volle Kartenbreite ein (siehe @media weiter oben), wodurch
-   .status (oben rechts relativ zu .image) und .card-delete (oben rechts relativ zur ganzen Card)
-   sonst exakt dieselbe Ecke träfen. Chip rückt unter den 28px hohen Löschen-Button. Muss NACH der
-   obigen unbedingten .status-Regel im Stylesheet stehen: bei gleicher Selektor-Spezifität
-   entscheidet die Reihenfolge im Stylesheet, nicht ob eine Regel in einer @media-Bedingung steckt –
-   vor der unbedingten Regel platziert, würde diese die hier gesetzte top-Änderung sonst überschreiben. */
-@media (max-width: 480px) {
-  .status {
-    top: 44px;
   }
 }
 
