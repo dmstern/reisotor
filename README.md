@@ -2,11 +2,11 @@
   <img src="./reisotor_logo.svg" alt="Reisotor Logo" width="120" />
 </p>
 
-# Reisotor
+# 🎒 Reisotor 🤖
 
 Web-App zur gemeinsamen Reiseplanung – ein zentraler Ort für alles rund um eine Reise.
 
-[🌍👉 Demo 👈🚀](https://dmstern.github.io/reisotor/)
+[🌍👉 Demo 👈🎒](https://dmstern.github.io/reisotor/)
 
 ## Features
 
