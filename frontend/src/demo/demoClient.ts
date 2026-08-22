@@ -110,6 +110,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
       changelog: null,
       repoUrl: __REPO_URL__,
       hostingLocation: 'GitHub Pages (Demo)',
+      environment: 'demo',
     } as unknown as T;
   }
   if (/^\/trips\/-?\d+\/members$/.test(path.split('?')[0])) {

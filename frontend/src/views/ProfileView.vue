@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { api, ApiError } from '../api/client';
 import type { User } from '../api/types';
 import { useAuthStore } from '../stores/auth';
+import { useBuildInfoStore } from '../stores/buildInfo';
 import { useNavPositionStore } from '../stores/navPosition';
 import { useNavConfigStore } from '../stores/navConfig';
 import { NAV_LINKS } from '../utils/navLinks';
@@ -116,20 +117,8 @@ const showFeedbackDialog = ref(false);
 const showPwaInstallDialog = ref(false);
 const pwaInstall = usePwaInstallStore();
 
-interface ChangelogEntry {
-  version: string;
-  date: string;
-  notes: string[];
-}
-interface BuildInfo {
-  version: string | null;
-  ref: string | null;
-  builtAt: string | null;
-  changelog: ChangelogEntry | null;
-  repoUrl: string;
-  hostingLocation: string;
-}
-const backendBuildInfo = ref<BuildInfo | null>(null);
+const buildInfoStore = useBuildInfoStore();
+const backendBuildInfo = computed(() => buildInfoStore.buildInfo);
 const buildTimeFormatter = new Intl.DateTimeFormat('de-DE', { dateStyle: 'medium', timeStyle: 'short' });
 function formatBuildTime(iso: string | null) {
   return iso ? buildTimeFormatter.format(new Date(iso)) : 'unbekannt';
@@ -234,7 +223,7 @@ const importFileInput = ref<HTMLInputElement | null>(null);
 onMounted(async () => {
   usernameForm.value.username = auth.user?.username ?? '';
   loading.value = false;
-  backendBuildInfo.value = await api.get<BuildInfo>('/build-info');
+  buildInfoStore.load();
   if (pushSupported) {
     pushEnabled.value = !!(await getExistingSubscription());
     if (pushEnabled.value) await notificationPrefs.load();
