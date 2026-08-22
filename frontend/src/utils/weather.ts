@@ -15,6 +15,7 @@ import {
   IconBoltFilled,
 } from '@tabler/icons-vue';
 import { api } from '../api/client';
+import { DEMO_MODE } from '../demo/isDemoMode';
 import { toLocalDateString } from './dateFormat';
 import type { IconDef } from './icon';
 
@@ -129,9 +130,37 @@ let cache: { key: string; promise: Promise<DailyWeather[]> } | null = null;
 // kommerzielle Wetter-Apps (Apple Weather/Google) zeigen (ein Nutzer hatte abweichende Werte/
 // Symbole gegenüber Apple Weather bemerkt, v. a. bei der Bewölkung, dem modellsensibelsten Wert
 // überhaupt). In den Einstellungen (ProfileView.vue) auf ein anderes Modell umstellbar.
+// Deterministisches, überwiegend sonniges Muster (kein echter Netzwerk-Zugriff im backend-losen
+// Demo-Build, siehe demoClient.ts) - sorgt dafür, dass sowohl die echte Live-Demo als auch daraus
+// erzeugte Marketing-Screenshots (siehe DESIGN.md) eine plausible Wetterkarte statt der sonst
+// sichtbaren "Wetterdaten konnten nicht geladen werden"-Fehlermeldung zeigen.
+const DEMO_WEATHER_PATTERN: Pick<DailyWeather, 'weatherCode' | 'tempMax' | 'tempMin' | 'precipitationProbability'>[] = [
+  { weatherCode: 0, tempMax: 27, tempMin: 18, precipitationProbability: 5 },
+  { weatherCode: 0, tempMax: 28, tempMin: 19, precipitationProbability: 5 },
+  { weatherCode: 1, tempMax: 26, tempMin: 18, precipitationProbability: 10 },
+  { weatherCode: 2, tempMax: 24, tempMin: 17, precipitationProbability: 20 },
+  { weatherCode: 0, tempMax: 29, tempMin: 19, precipitationProbability: 5 },
+];
+
+function demoWeatherForecast(): DailyWeather[] {
+  const start = new Date();
+  start.setDate(start.getDate() - 1); // past_days: 1, siehe echte Abfrage unten
+  return Array.from({ length: 17 }, (_, i) => {
+    const date = new Date(start);
+    date.setDate(date.getDate() + i);
+    return { date: toLocalDateString(date), ...DEMO_WEATHER_PATTERN[i % DEMO_WEATHER_PATTERN.length] };
+  });
+}
+
 export function fetchWeatherForecast(lat: number, lng: number, model = 'ecmwf_ifs025'): Promise<DailyWeather[]> {
   const key = `${lat.toFixed(3)},${lng.toFixed(3)},${model}`;
   if (cache?.key === key) return cache.promise;
+
+  if (DEMO_MODE) {
+    const promise = Promise.resolve(demoWeatherForecast());
+    cache = { key, promise };
+    return promise;
+  }
 
   const params = new URLSearchParams({
     latitude: String(lat),
