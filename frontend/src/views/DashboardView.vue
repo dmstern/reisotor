@@ -40,6 +40,7 @@ import ViewLoadingState from '../components/ViewLoadingState.vue';
 import AppIcon from '../components/AppIcon.vue';
 import WeatherIcon from '../components/WeatherIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
+import { DEMO_MODE } from '../demo/isDemoMode';
 
 const auth = useAuthStore();
 const tripStore = useTripStore();
@@ -428,8 +429,12 @@ function formatWeekdayDate(d: string) {
                Bewölkung – eigenes Modell/eigene Quelle statt eines Fehlers, deshalb hier explizit
                benannt (wie DuckDuckGo es bei seinem eigenen Wetter-Widget genauso mit "Quelle: Apple
                Weather" macht). Klickbar statt reinem Text: springt direkt zur Wetter-Anbieter-Auswahl
-               in den Einstellungen, falls der Wert einmal nicht passt. -->
-          <router-link to="/profile?tab=trip#weather-provider-settings" class="weather-source">
+               in den Einstellungen, falls der Wert einmal nicht passt. Im backend-losen Demo-Build
+               (utils/weather.ts's DEMO_MODE-Zweig) sind die Werte erfunden statt echt von Open-Meteo
+               abgefragt - "Anbieter wechseln" wäre dort nur eine Sackgasse (ändert nichts an den
+               Fake-Daten), deshalb eigener, nicht klickbarer Hinweis. -->
+          <p v-if="DEMO_MODE" class="weather-source static">Demo-Wetterdaten (keine echte Vorhersage)</p>
+          <router-link v-else to="/profile?tab=trip#weather-provider-settings" class="weather-source">
             Quelle: Open-Meteo ({{ weatherModelLabel }}) · Anbieter wechseln
           </router-link>
         </template>
