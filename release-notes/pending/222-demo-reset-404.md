@@ -1,0 +1,1 @@
+- Fix: "Demo zurücksetzen" in der öffentlichen Demo-Version führt nicht mehr zu einer 404-Fehlerseite.

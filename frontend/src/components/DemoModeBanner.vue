@@ -9,7 +9,12 @@ const landingUrl = __LANDING_URL__;
 
 function reset() {
   resetDemoStore();
-  window.location.reload();
+  // Statt reload() gezielt zur Demo-Basis-URL navigieren: GitHub Pages liefert für nicht
+  // existierende Pfade (jede tiefere Vue-Router-Route) einen echten 404 zurück, da es kein
+  // serverseitiges SPA-Fallback gibt - ein reload() auf einer tieferen Route (z. B. .../dashboard)
+  // träfe also einen 404 statt die App neu zu laden. import.meta.env.BASE_URL zeigt immer auf
+  // einen tatsächlich vorhandenen Pfad mit index.html (siehe vite.config.ts's VITE_BASE).
+  window.location.href = import.meta.env.BASE_URL;
 }
 </script>
 
