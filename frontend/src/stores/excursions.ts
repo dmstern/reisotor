@@ -105,24 +105,6 @@ export const useExcursionsStore = defineStore('excursions', () => {
     });
   }
 
-  /** NICHT für das Einplanen eines Spots im Kalender (das legt einen direkt mit dem Spot
-   *  verknüpften Termin an, siehe stores/schedule.ts/SpotCard.vue) – nur noch für DiaryView.vue's
-   *  Spot-Picker, der einen Ausflug zum Verknüpfen braucht (diary_excursions referenziert
-   *  ausschließlich idea_id). Legt dafür im Hintergrund einen Ein-Spot-Ausflug an oder gibt einen
-   *  bereits dafür bestehenden zurück (dedupliziert über trip_id+Termin-Datum+Station, siehe
-   *  POST /ideas/plan-spot). */
-  async function planSpotOnDate(spotId: number, date: string) {
-    const excursion = await api.post<Excursion>('/ideas/plan-spot', {
-      trip_id: tripStore.currentTripId,
-      spot_id: spotId,
-      date,
-    });
-    const idx = excursions.value.findIndex((e) => e.id === excursion.id);
-    if (idx !== -1) excursions.value[idx] = excursion;
-    else excursions.value.unshift(excursion);
-    return excursion;
-  }
-
   /** Setzt/entfernt den "gemacht"-Status, unabhängig von geplant/ungeplant (siehe date oben) -
    *  eigener Endpunkt statt eines vollen update(), damit ein Toggle nicht alle anderen Felder
    *  (Titel/Notiz/Spots/Datum) erneut mitschicken muss. */
@@ -132,5 +114,5 @@ export const useExcursionsStore = defineStore('excursions', () => {
     if (existing) existing.done = result.done ? 1 : 0;
   }
 
-  return { excursions, loaded, load, create, update, remove, restore, isPending, setDate, planSpotOnDate, setDone };
+  return { excursions, loaded, load, create, update, remove, restore, isPending, setDate, setDone };
 });

@@ -239,6 +239,7 @@ export const DEMO_DIARY: DiaryEntry[] = [
     created_at: new Date().toISOString(),
     updated_at: null,
     excursion_ids: [],
+    spot_ids: [],
     editor_ids: [],
     is_draft: 0,
   },
