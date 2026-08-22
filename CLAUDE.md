@@ -71,6 +71,25 @@ npm run dev` für den Demo-Modus gegen den normalen Dev-Server. Bei PRs mit grö
 `LandingView.vue` noch aktuell sind (Screenshot-Flow: kurze Playwright-Scratch-Spec wie bei den
 PR-Screenshots, siehe unten) — bewusst nur als manueller Hinweis, kein CI-Enforcement.
 
+Beim Neuaufnehmen von `frontend/public/landing/screenshot-dashboard-*`/`screenshot-mobile-*`
+(gegen `VITE_DEMO_MODE=true npm run dev`, siehe oben) auf folgende Checkliste achten — sonst
+schleichen sich Demo-/Dev-Artefakte ein, die im echten Marketing-Bild nichts verloren haben:
+
+- **Wetter sichtbar**: `utils/weather.ts`'s `fetchWeatherForecast()` liefert im Demo-Modus
+  (`DEMO_MODE`) ein festes Fake-Muster statt eines echten Open-Meteo-Fetches (der im Sandbox-Playwright
+  ohne Internetzugriff sonst scheitert und "Wetterdaten konnten nicht geladen werden" zeigt) — sollte
+  das je entfernt/geändert werden, sicherstellen, dass die Wetter-Karte im Screenshot trotzdem gefüllt ist.
+- **Theme-Variante**: je einen Screenshot mit `colorScheme: 'light'` UND `'dark'` aufnehmen
+  (`browser.newPage({ colorScheme })` in Playwright) — `LandingView.vue` bindet sie per
+  `<picture>`/`<source media="(prefers-color-scheme: dark)">` ein.
+- **Demo-Banner ausblenden**: `.demo-banner { display: none !important; }` per
+  `page.addStyleTag(...)` vor dem Screenshot — der Banner ist ein Hinweis für die echte Live-Demo,
+  kein gewollter Bestandteil des Marketing-Bilds.
+- **PWA-Installationshinweis ausblenden**: ebenso `.pwa-pill.install { display: none !important; }`.
+- **Kein DEV-Badge/keine orange Header-Umrandung**: setzt voraus, dass `demoClient.ts`'s
+  `/build-info`-Stub `environment: 'production'` liefert (siehe Issue #219) — bei einem lokalen Demo-
+  Dev-Server sollte das automatisch der Fall sein, sofern `main` aktuell ist.
+
 ## Konsistenz-Check bei Änderungen
 
 Die App ist über viele Sessions gewachsen; dasselbe Konzept (Icon, Bezeichnung, Layout-/
