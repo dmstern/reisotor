@@ -1,0 +1,1 @@
+import{r as s,y as o}from"./index-qI1D_S65.js";function u(r,e){const t=s(a(r,e));return o(t,n=>{localStorage.setItem(r,JSON.stringify(n))},{flush:"sync"}),t}function a(r,e){const t=localStorage.getItem(r);if(t==null)return e;try{return JSON.parse(t)}catch{return e}}function i(r,e){const t=new RegExp(`^#${e}-(\\d+)$`).exec(r);return t?Number(t[1]):null}export{i as h,u};
