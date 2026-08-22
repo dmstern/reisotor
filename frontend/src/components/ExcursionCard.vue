@@ -438,10 +438,11 @@ function onSpotDrop(event: DragEvent) {
    Gleiches Muster wie SpotCard.vue's .status, dort aus demselben Grund bereits unten positioniert. */
 .status {
   position: absolute;
-  bottom: var(--space-3);
+  bottom: var(--space-2);
   right: var(--space-2);
+  left: var(--space-2);
   background: rgba(255, 255, 255, 0.9);
-  padding: 2px 10px;
+  padding: 3px 10px;
   border-radius: 999px;
   font-size: 0.75rem;
   font-weight: 600;
