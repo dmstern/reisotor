@@ -3317,7 +3317,6 @@ async function removeSpot(id: number) {
   gap: var(--space-2);
   margin: 0 0 var(--space-3);
   padding: var(--space-2) var(--space-3);
-  background: var(--color-primary-tint);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
 }
