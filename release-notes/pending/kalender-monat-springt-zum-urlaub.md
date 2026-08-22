@@ -1,0 +1,1 @@
+- Kalender: Beim Öffnen springt die Monatsansicht jetzt korrekt zum Monat des Urlaubs, wenn der heutige Tag außerhalb des Reisezeitraums liegt (vorher blieb sie fälschlich beim aktuellen Kalendermonat stehen).

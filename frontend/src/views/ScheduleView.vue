@@ -524,11 +524,16 @@ watch(granularity, (next, prev) => {
 
 // Springt so, dass die Woche mit dem übergebenen Datum als erste Woche der Seite sichtbar wird
 // (Woche/2 Wochen) bzw. der entsprechende Monat angezeigt wird (Monat). Gibt zurück, ob das Datum
-// im aktuellen Kalenderbereich gefunden wurde (die Monatsansicht ist unbeschränkt, "findet" also
-// immer).
+// im aktuellen Kalenderbereich gefunden wurde. Für die Monatsansicht heißt das: liegt außerhalb von
+// calendarRange (z. B. "heute" Wochen vor Urlaubsbeginn/-ende) – sonst würde z. B. beim initialen
+// Laden (siehe onMounted) immer der Monat von "heute" gezeigt statt zum Urlaub zu springen.
 function goToDate(dateIso: string): boolean {
   if (granularity.value === 'month') {
-    monthAnchor.value = startOfMonth(new Date(dateIso));
+    const date = new Date(dateIso);
+    if (calendarRange.value && (date < calendarRange.value.start || date > calendarRange.value.end)) {
+      return false;
+    }
+    monthAnchor.value = startOfMonth(date);
     return true;
   }
   const idx = weeks.value.findIndex((week) => week.some((day) => day.date === dateIso));
