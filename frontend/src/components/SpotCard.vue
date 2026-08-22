@@ -453,8 +453,8 @@ function onToggleDone() {
    eingeplant werden. */
 .status {
   position: absolute;
-  bottom: 8px;
-  right: 8px;
+  bottom: var(--space-3);
+  right: var(--space-2);
   display: inline-flex;
   align-items: center;
   gap: 4px;
