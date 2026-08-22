@@ -3213,6 +3213,7 @@ async function removeSpot(id: number) {
 
 .dropdown {
   position: relative;
+  flex: 0 0 auto;
 }
 
 .category-btn.active {
@@ -3432,22 +3433,22 @@ async function removeSpot(id: number) {
    passieren"). */
 .tool-row {
   display: flex;
-  justify-content: space-between;
-  flex-wrap: wrap;
+   gap: 0.5rem;
   align-items: center;
   gap: var(--space-2);
+  width: 100%;
+  min-width: 0;
 }
 
 /* Feste Breite statt nur flex-shrink:0 - richtet die Steuerelemente beider Zeilen (Sortieren/
    Filtern) an derselben gedachten vertikalen Linie aus, tabellenartig statt mit je nach
    Label-Länge unterschiedlich weit eingerücktem Inhalt (Issue #170, erste Lösungsidee). */
 .tool-label {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  flex-grow: 1;
+  flex: 1 1 auto;
   gap: 4px;
-  min-width: 66px;
-  flex-shrink: 0;
+  min-width: 0;
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--color-text-muted);
@@ -3496,29 +3497,11 @@ async function removeSpot(id: number) {
   font-size: 0.85rem;
 }
 
-/* Bewusst @media statt @container spots-col (anders als beim .cards-Raster oben): die
-   Icon-only-Reduktion soll nur auf echten schmalen GERÄTEN greifen (Issue #170: "auf mobile"),
-   nicht schon, wenn jemand auf Desktop die .spots-col-Spalte per Anfasser schmal zieht - dort ist
-   trotz schmaler Spalte meist reichlich Platz vorhanden. Gleicher 800px-Schwellenwert wie
-   useIsDesktop()/NavBar.vue, damit "mobil" hier dasselbe bedeutet wie überall sonst in der App.
-   Bewusst NACH den zugehörigen Basis-Regeln (.tool-label/.category-btn oben) statt davor: eine
-   Regel gleicher Spezifität, die textuell SPÄTER im Stylesheet steht, gewinnt bei einem CSS-Tie
-   unabhängig davon, ob sie in einem @media-Block steckt oder nicht - stünde dieser Override VOR
-   den Basis-Regeln, würden die ihn unabhängig vom Viewport immer überschreiben (siehe .cards'
-   analoger Kommentar beim @container-Query weiter oben). */
-@media (max-width: 799px) {
-
-  /* Sortieren/Filtern bleiben immer offen (kein Ausklappi mehr, siehe Template-Kommentar) - nur die
-     ZEILEN-Labels ("Sortieren"/"Filtern") sparen sich auf schmalen Breiten ihren Text (nur noch
-     Icon), die Kategorie-/Status-Dropdowns selbst behalten ihre Beschriftung (Nutzer:innen-Feedback:
-     die Dropdown-Labels sollen NICHT verschwinden, nur die Zeilen-Labels). */
-  .tool-label-text {
-    display: none;
-  }
-
-  .tool-label {
-    min-width: 0;
-  }
+.tool-label-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Kleiner Auf-/Zu-Pfeil rechts neben dem Label, macht auf einen Blick klarer, dass ein Klick ein
