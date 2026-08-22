@@ -18,7 +18,22 @@ test.beforeEach(async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Kalender', exact: true, level: 2 })).toBeVisible();
 });
 
+// Die Monatsansicht springt beim Laden immer zum Kalendermonat von "heute" (siehe ScheduleView.vue
+// goToDate() - bewusst so, unabhängig vom Urlaubszeitraum, siehe auch calendar-week-start.spec.ts).
+// Die Reise-Termine unten liegen relativ zu "heute" (seedDemo.ts's addDays(today, 14)) und damit oft
+// in einem anderen Kalendermonat - ob deren Tageszellen ohne Navigation sichtbar sind, hängt vom
+// Zufall ab, wie weit das aktuelle Monatsraster in den Folgemonat hineinragt (führende/nachfolgende
+// Tage aus Nachbarmonaten, siehe CalendarWeek.vue's otherMonth). Deshalb hier explizit über den
+// "Urlaub"-Button zum Reisemonat springen, statt uns auf einen zufällig passenden Monatsübergang zu
+// verlassen.
+async function goToTripMonth(page: import('@playwright/test').Page) {
+  // Auf ".jump-row" statt page-weit gescoped: "Urlaub" ist sonst mehrdeutig (u. a. der
+  // Trip-Switcher-Button im Header trägt denselben Trip-Namen als accessible name).
+  await page.locator('.jump-row').getByRole('button', { name: 'Urlaub' }).click();
+}
+
 test('day selection shows the seeded schedule entry for that day', async ({ page }) => {
+  await goToTripMonth(page);
   await page.locator(`.day[data-date="${dinner.date}"]`).click();
   // Gezielt gefiltert statt eines pauschalen toContainText() auf die ganze Liste - andernfalls
   // Strict-Mode-Kollision, sobald mehr als ein .item existiert (z. B. ein per Tag/Datum kollidierender
@@ -28,6 +43,7 @@ test('day selection shows the seeded schedule entry for that day', async ({ page
 });
 
 test('clicking an own schedule entry opens the detail dialog instead of navigating', async ({ page }) => {
+  await goToTripMonth(page);
   await page.locator(`.day[data-date="${dinner.date}"]`).click();
   await page.locator('.item', { hasText: dinner.title }).click();
 
@@ -50,6 +66,7 @@ test('clicking an own schedule entry opens the detail dialog instead of navigati
 });
 
 test('clicking a tour-linked calendar entry opens the detail dialog, not the excursions drawer', async ({ page }) => {
+  await goToTripMonth(page);
   await page.locator(`.day[data-date="${belemDay.date}"]`).click();
   await page.locator('.item', { hasText: excursion.title }).click();
 
@@ -69,6 +86,7 @@ test('MapsAppPicker dropdown is not clipped by the modal', async ({ page }) => {
   // Termin mit Maps-Link anlegen (statt Seed-Daten anzufassen), um den MapsAppPicker im
   // Detail-Dialog zu triggern.
   const day = seeded.trip.start_date;
+  await goToTripMonth(page);
   await page.locator(`.day[data-date="${day}"]`).click();
   await page.getByRole('button', { name: 'Neu', exact: true }).click();
   await page.getByPlaceholder('Titel').fill('MapsAppPicker Regressionstest');
