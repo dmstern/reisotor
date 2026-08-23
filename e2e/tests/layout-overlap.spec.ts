@@ -30,6 +30,7 @@ test.describe('Kalender-Drawer: Kalender-Export-Dropdown wird nicht vom Drawer-P
     // mit nachträglicher Klemmung an den unteren Viewport-Rand — dasselbe etablierte Muster wie
     // MapsAppPicker.vue's Dropdown-vs-Modal-Fix (siehe calendar.spec.ts).
     await page.goto('/');
+    await page.getByRole('button', { name: 'Urlaub', exact: true }).click();
     await page.locator(`.day[data-date="${dinner.date}"]`).click();
     const item = page.locator('.day-detail .items .item', { hasText: dinner.title });
     await item.locator('button[aria-label="Zum eigenen Kalender hinzufügen"]').click();
@@ -270,8 +271,8 @@ test.describe('Mobile: Filter-Dropdowns bleiben innerhalb der grünen Werkzeug-B
     await expect(statusBtn).toContainText('Status');
     await expectWithinBox(categoryBtn, filterBar);
     await expectWithinBox(statusBtn, filterBar);
-    // Die Zeilen-Labels selbst reduzieren sich auf Mobil auf ein reines Icon (kein Text mehr).
-    await expect(page.locator('.tool-label-text:visible')).toHaveCount(0);
+    // Die Zeilen-Labels ("Sortieren"/"Filtern") bleiben auch auf Mobil sichtbar (mit Ellipsis).
+    await expect(page.locator('.tool-label-text').first()).toBeVisible();
   });
 });
 
