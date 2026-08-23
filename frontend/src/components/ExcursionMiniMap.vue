@@ -4,6 +4,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { ExcursionStation } from '../utils/excursionStations';
 import { arcRoute, cachedEmojiPin } from '../utils/mapRoute';
+import { getCssVar } from '../utils/cssVars';
 
 // Kleine, eigenständige Leaflet-Instanz für den Ausflug-Detail-Dialog – bewusst lazy erzeugt (erst
 // beim Mounten des Dialogs) und beim Schließen wieder mit map.remove() abgebaut (Pi-2-Ressourcen-
@@ -33,7 +34,7 @@ function render() {
 
   if (coords.length >= 2) {
     L.polyline(arcRoute(coords), {
-      color: props.routeColor ?? '#e08e45',
+    color: props.routeColor ?? (getCssVar('--color-accent') || '#e08e45'),
       weight: 3,
       opacity: 0.65,
       dashArray: '6 6',

@@ -90,7 +90,7 @@ const emit = defineEmits<{ (e: 'update:modelValue', value: boolean): void; (e: '
   corner-shape: round;
   border: none;
   background: rgba(35, 34, 32, 0.75);
-  color: #f2efe9;
+  color: var(--color-surface-muted, #f2efe9);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -129,7 +129,7 @@ const emit = defineEmits<{ (e: 'update:modelValue', value: boolean): void; (e: '
 .detail-title {
   margin: 0 0 4px;
   font-size: 1.15rem;
-  color: #fff;
+  color: var(--color-on-primary, #fff);
 }
 
 .detail-meta {
