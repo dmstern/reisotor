@@ -229,9 +229,7 @@ soll — nicht mehr automatisch mitschreiben, um bei kleineren/experimentellen �
 unaufgeforderte Testarbeit (und Tokens) zu erzeugen. Gilt auch fürs Umbauen/Erweitern bestehender
 Specs.
 
-**Keine Pixel-Diff-Screenshot-Tests** (`toHaveScreenshot()`) — diese Umgebung ist von Playwright
-nicht offiziell unterstützt (Font-/Rendering-Drift macht Snapshot-Baselines unzuverlässig).
-Stattdessen Interaktion + Zustands-/Sichtbarkeits-/BoundingBox-Assertions.
+**Keine Pixel-Diff-Screenshot-Tests** (`toHaveScreenshot()`) oder statischen Overlap-/BoundingBox-Koordinatentests (`elementFromPoint`, `expectNotCoveredBy`) in die Haupt-E2E-Suite aufnehmen — Rendering-/Font-Drift und Subpixel-Verschiebungen machen solche assertions unzuverlässig und erzeugen Fehlalarme. Visuelle Layout-Prüfungen und Überlappungsschutz erfolgen primär über die Regeln in `DESIGN.md` (Abschnitt "Layout-Containment & Z-Index-Stapelung") sowie ad-hoc Scratch-Specs. Stattdessen Interaktion + funktionale Zustands-/Sichtbarkeits-Assertions verwenden.
 
 Datums-Annahmen aus `e2e/fixtures/seeded-data.json` lesen (zur Laufzeit von `global-setup.ts`
 geschrieben), nicht hartcodieren — die Demo-Seed-Termine liegen relativ zu "heute".
