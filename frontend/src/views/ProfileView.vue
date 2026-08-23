@@ -379,7 +379,7 @@ async function onImportFileSelected(event: Event) {
           </button>
         </form>
 
-        <p>Avatar wählen</p>
+        <h3>Avatar wählen</h3>
         <div class="emoji-scroll">
           <div v-for="cat in EMOJI_CATEGORIES" :key="cat.label" class="emoji-category">
             <p class="emoji-category-label">{{ cat.label }}</p>
@@ -885,7 +885,7 @@ h3 {
 }
 
 .emoji-category-label {
-  margin: 0 0 4px;
+  margin: var(--space-3) 0 var(--space-2);
   font-size: 0.75rem;
   font-weight: 600;
   color: var(--color-text-muted);
