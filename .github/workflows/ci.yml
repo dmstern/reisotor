@@ -78,7 +78,7 @@ jobs:
           retention-days: 1
 
   e2e-tests:
-    name: E2E Tests (Shard ${{ matrix.shard }}/5)
+    name: E2E Tests (Shard ${{ matrix.shard }}/3)
     needs: [backend-unit-and-build, frontend-unit-and-build]
     runs-on: ubuntu-latest
     # Playwrights offizielles Image bringt Chromium UND sämtliche System-Bibliotheken dafür schon
@@ -92,7 +92,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5]
+        shard: [1, 2, 3]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -127,25 +127,37 @@ jobs:
           name: frontend-dist
           path: frontend/dist
 
-      # Nur npm ci, kein erneutes tsc/vite build: dist/ kommt aus backend-unit-and-build/
-      # frontend-unit-and-build oben.
-      # node_modules müssen trotzdem je Shard frisch im Playwright-Container installiert werden
-      # (better-sqlite3/bcrypt-Nativmodule für dieses Image/Node, nicht vom ubuntu-latest-Runner).
+      # Caching von node_modules im selben Playwright-Container (v1.62.1-jammy):
+      # Erspart bei allen Shards nach dem ersten Lauf (oder bei ungaränderten package-lock.json) das
+      # erneute Entpacken & Verlinken der 3 node_modules-Bäume.
+      - name: Cache container node_modules
+        uses: actions/cache@v4
+        id: node-modules-cache
+        with:
+          path: |
+            backend/node_modules
+            frontend/node_modules
+            e2e/node_modules
+          key: node-modules-jammy-v1-${{ hashFiles('backend/package-lock.json', 'frontend/package-lock.json', 'e2e/package-lock.json') }}
+
       - name: Install backend dependencies
+        if: steps.node-modules-cache.outputs.cache-hit != 'true'
         working-directory: backend
         run: npm ci
 
       - name: Install frontend dependencies
+        if: steps.node-modules-cache.outputs.cache-hit != 'true'
         working-directory: frontend
         run: npm ci
 
       - name: Install e2e dependencies
+        if: steps.node-modules-cache.outputs.cache-hit != 'true'
         working-directory: e2e
         run: npm ci
 
-      - name: Run e2e tests (Shard ${{ matrix.shard }}/5)
+      - name: Run e2e tests (Shard ${{ matrix.shard }}/3)
         working-directory: e2e
-        run: npx playwright test --shard=${{ matrix.shard }}/5
+        run: npx playwright test --shard=${{ matrix.shard }}/3
 
       - name: Upload e2e report on failure
         if: failure()

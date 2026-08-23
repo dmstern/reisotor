@@ -28,6 +28,38 @@ try {
   // Kein Git-Kontext beim Build (z. B. Release-Artefakt ohne .git-Verzeichnis) — 'unknown' bleibt.
 }
 
+// Leichter Vite-Plugin zur Optimierung von @tabler/icons-vue Barrel-Imports:
+// Wandelt `import { IconBed, IconSun } from '@tabler/icons-vue'` um in direkte Subpath-Imports
+// `import IconBed from '@tabler/icons-vue/dist/esm/icons/IconBed.mjs'`.
+// Verhindert, dass Rollup beim Build das 6.000+ Icons umfassende Barrel-File parsen muss.
+function tablerIconsOptimizer() {
+  return {
+    name: 'tabler-icons-optimizer',
+    enforce: 'pre' as const,
+    transform(code: string, id: string) {
+      if ((id.endsWith('.vue') || id.endsWith('.ts') || id.endsWith('.js')) && code.includes('@tabler/icons-vue')) {
+        return code.replace(
+          /import\s*\{([^}]+)\}\s*from\s*['"]@tabler\/icons-vue['"];?/g,
+          (match, importsStr) => {
+            const imports = importsStr
+              .split(',')
+              .map((s: string) => s.trim())
+              .filter(Boolean);
+            return imports
+              .map((name: string) => {
+                const parts = name.split(/\s+as\s+/);
+                const originalName = parts[0].trim();
+                const aliasName = parts[1] ? parts[1].trim() : originalName;
+                return `import ${aliasName} from '@tabler/icons-vue/dist/esm/icons/${originalName}.mjs';`;
+              })
+              .join('\n');
+          }
+        );
+      }
+    },
+  };
+}
+
 export default defineConfig({
   // Nur für die statischen Pages-Builds gesetzt (dist-landing/dist-demo unter
   // <owner>.github.io/reisotor/[demo/]) - der normale Build (echtes Backend-Deploy) bleibt bei '/'.
@@ -41,6 +73,7 @@ export default defineConfig({
         }
       : undefined,
   plugins: [
+    tablerIconsOptimizer(),
     vue(),
     // Volle PWA (Home-Bildschirm-Icon + Offline-App-Shell): injectManifest statt der
     // Standard-generateSW-Strategie, damit der bestehende, handgeschriebene public/sw.js
