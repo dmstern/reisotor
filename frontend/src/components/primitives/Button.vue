@@ -36,6 +36,7 @@ withDefaults(
     class="btn"
     :class="[
       `btn--${variant}`,
+      variant === 'card-action' ? 'card-action-btn' : undefined,
       size !== 'md' ? `btn--${size}` : undefined,
     ]"
   >
