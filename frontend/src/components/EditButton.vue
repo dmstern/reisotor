@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import AppIcon from './AppIcon.vue';
+import Button from './primitives/Button.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
 defineProps<{ small?: boolean; floating?: boolean }>();
@@ -12,16 +13,16 @@ defineEmits<{ (e: 'click'): void }>();
        stopPropagation() auf genau diesem Payload auf – würde also crashen. Hier ist $event der
        echte native Klick, .stop ist deshalb sicher und schützt jede Karte, die diesen Button in
        einen jetzt klickbaren Card-Root einbettet (z. B. ExcursionCard.vue). -->
-  <button
-    type="button"
-    class="secondary edit-btn"
+  <Button
+    variant="secondary"
+    class="edit-btn"
     :class="{ small, floating }"
     title="Bearbeiten"
     aria-label="Bearbeiten"
     @click.stop="$emit('click')"
   >
     <AppIcon :icon="ACTION_ICONS.edit" :size="small ? 13 : 15" group="actions" />
-  </button>
+  </Button>
 </template>
 
 <style scoped>

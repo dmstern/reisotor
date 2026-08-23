@@ -1,0 +1,1 @@
+- UI-Komponenten: `Button`-Surface-Primitive (`Button.vue`) eingeführt und in `ExcursionsView.vue`, `ExcursionCard.vue`, `DeleteButton.vue` sowie `EditButton.vue` migriert.

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import AppIcon from './AppIcon.vue';
+import Button from './primitives/Button.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
 defineProps<{ small?: boolean; disabled?: boolean; floating?: boolean }>();
@@ -9,9 +10,9 @@ defineEmits<{ (e: 'click'): void }>();
 <template>
   <!-- .stop hier statt an den Verwendungsstellen – siehe EditButton.vue für die Begründung
        (dort wäre der emittierte Payload undefined, .stop dort würde crashen). -->
-  <button
-    type="button"
-    class="secondary delete-btn"
+  <Button
+    variant="secondary"
+    class="delete-btn"
     :class="{ small, floating }"
     :disabled="disabled"
     :title="disabled ? 'Löschen hier nicht möglich – in der Ursprungssicht bearbeiten' : 'Löschen'"
@@ -19,7 +20,7 @@ defineEmits<{ (e: 'click'): void }>();
     @click.stop="$emit('click')"
   >
     <AppIcon :icon="ACTION_ICONS.delete" :size="small ? 13 : 15" group="actions" />
-  </button>
+  </Button>
 </template>
 
 <style scoped>

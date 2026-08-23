@@ -16,6 +16,7 @@ import SpotImageCollage from './SpotImageCollage.vue';
 import PendingSyncBadge from './PendingSyncBadge.vue';
 import AppIcon from './AppIcon.vue';
 import Card from './primitives/Card.vue';
+import Button from './primitives/Button.vue';
 import WeatherIcon from './WeatherIcon.vue';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
@@ -266,9 +267,9 @@ function onSpotDrop(event: DragEvent) {
       <p v-if="expanded && creatorLabel" class="detail-row"><span class="detail-label">Von</span>{{ creatorLabel }}</p>
       <RichTextDisplay v-if="expanded && excursion.note" class="note" :content="excursion.note" :format="excursion.note_format" />
       <div class="links" v-if="hasMappedStations">
-        <button type="button" class="card-action-btn" @click.stop="emit('show-on-map')">
+        <Button variant="card-action" @click.stop="emit('show-on-map')">
           <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" /> Auf Karte anzeigen
-        </button>
+        </Button>
       </div>
       <div class="card-actions">
         <button
