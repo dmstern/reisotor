@@ -16,6 +16,7 @@ import SpotImageCollage from './SpotImageCollage.vue';
 import PendingSyncBadge from './PendingSyncBadge.vue';
 import AppIcon from './AppIcon.vue';
 import WeatherIcon from './WeatherIcon.vue';
+import Card from './primitives/Card.vue';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
@@ -199,8 +200,8 @@ function onSpotDrop(event: DragEvent) {
 </script>
 
 <template>
-  <div
-    class="card excursion-card"
+  <Card
+    class="excursion-card"
     :class="{ 'drop-target': spotDragOverCount > 0, 'new-highlight': highlighted, expanded }"
     @click="onCardClick"
     @dragover.prevent
@@ -322,7 +323,7 @@ function onSpotDrop(event: DragEvent) {
         @remove="(id) => emit('remove-comment', id)"
       />
     </div>
-  </div>
+  </Card>
 </template>
 
 <style scoped>
@@ -547,7 +548,7 @@ function onSpotDrop(event: DragEvent) {
   transform: translate(-50%, -130%);
   pointer-events: none;
   background: rgba(35, 34, 32, 0.92);
-  color: #f2efe9;
+  color: var(--color-surface-muted, #f2efe9);
   padding: 6px 12px;
   border-radius: 999px;
   font-size: 0.85rem;
