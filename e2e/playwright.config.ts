@@ -72,7 +72,13 @@ export default defineConfig({
       // deshalb hier im Befehl selbst passieren, bevor der Dev-Server die DB öffnet. global-setup.ts
       // liest die Fixture-Daten danach aus (läuft nach diesem webServer-Schritt, DB ist zu dem
       // Zeitpunkt bereits fertig geseedet und stabil).
-      command: `mkdir -p "$(dirname "$DB_PATH")" && rm -f "$DB_PATH"* && npx tsx src/db/seedDemo.ts && npm run dev`,
+      //
+      // In CI (oder bei E2E_PROD_MODE=1) nutzen wir den Produktions-Build (node dist/server.js &
+      // vite preview), um on-the-fly TypeScript-/Vue-Kompilierung während der Tests zu vermeiden.
+      command:
+        process.env.CI || process.env.E2E_PROD_MODE
+          ? `mkdir -p "$(dirname "$DB_PATH")" && rm -f "$DB_PATH"* && npx tsx src/db/seedDemo.ts && node dist/server.js`
+          : `mkdir -p "$(dirname "$DB_PATH")" && rm -f "$DB_PATH"* && npx tsx src/db/seedDemo.ts && npm run dev`,
       cwd: '../backend',
       url: `http://127.0.0.1:${E2E_BACKEND_PORT}/api/auth/me`,
       reuseExistingServer: false,
@@ -96,7 +102,10 @@ export default defineConfig({
     {
       // --strictPort: fail-fast statt dass Vite bei belegtem Port still auf den nächsten
       // ausweicht — Playwrights url-Healthcheck würde sonst nie den richtigen Port erreichen.
-      command: `npm run dev -- --port ${E2E_FRONTEND_PORT} --strictPort`,
+      command:
+        process.env.CI || process.env.E2E_PROD_MODE
+          ? `npm run preview -- --port ${E2E_FRONTEND_PORT} --strictPort`
+          : `npm run dev -- --port ${E2E_FRONTEND_PORT} --strictPort`,
       cwd: '../frontend',
       url: `http://localhost:${E2E_FRONTEND_PORT}`,
       reuseExistingServer: false,

@@ -13,7 +13,7 @@ const apiProxyTarget = process.env.API_PROXY_TARGET ?? 'http://localhost:3000';
 // baut landing.html statt index.html als einzigen Entry-Punkt. Der Demo-Build (VITE_DEMO_MODE,
 // siehe demo/isDemoMode.ts) bleibt bewusst die normale index.html/App.vue - nur mit anderem
 // outDir/base, siehe package.json's build:demo-Skript. Der normale `npm run build` (echtes
-// Backend-Deploy über build-deploy.yml) bleibt dadurch komplett unverändert (kein Env-Var gesetzt).
+// Backend-Deploy über ci.yml) bleibt dadurch komplett unverändert (kein Env-Var gesetzt).
 const buildTarget = process.env.VITE_BUILD_TARGET;
 const pagesBase = process.env.VITE_BASE;
 

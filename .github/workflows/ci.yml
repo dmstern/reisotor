@@ -1,0 +1,217 @@
+name: CI
+
+# PRs und Pushes: Unit-Tests, Build-Artefakte für E2E, sharded Playwright-Suite.
+# Nur bei Push/workflow_dispatch (nicht auf PRs): zusätzlich "Publish to deploy branch" — schreibt
+# Frontend + Backend als Commit auf deploy-staging (main) bzw. deploy (Release-Tag). Der Rollout
+# auf den Raspberry Pi passiert NICHT hier, sondern per Cronjob auf dem Server (README.md).
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*.*.*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e-backend:
+    name: E2E — Backend (Unit Tests & Build)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install & test backend
+        working-directory: backend
+        run: |
+          npm ci
+          npm test
+          npm run build
+
+      - name: Upload backend build for e2e
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-backend-dist
+          path: backend/dist
+          retention-days: 1
+
+  e2e-frontend:
+    name: E2E — Frontend (Unit Tests & Build)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install & test frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npm test
+          npm run build
+
+      - name: Upload frontend build for e2e
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-frontend-dist
+          path: frontend/dist
+          retention-days: 1
+
+  e2e-tests:
+    name: E2E Tests (Shard ${{ matrix.shard }}/5)
+    needs: [e2e-backend, e2e-frontend]
+    runs-on: ubuntu-latest
+    # Playwrights offizielles Image bringt Chromium UND sämtliche System-Bibliotheken dafür schon
+    # fertig mit - erspart bei jedem Lauf das (undgecachte, weil auf einer frischen Runner-VM
+    # jedes Mal neue) `apt-get install` von ~100 Paketen, das vorher den Löwenanteil der Laufzeit
+    # ausmachte (siehe Issue-Diskussion). Image-Tag MUSS exakt zur in e2e/package-lock.json
+    # gepinnten @playwright/test-Version passen (v1.62.1 -> v1.62.1-jammy), sonst driftet die im
+    # Image enthaltene Chromium-Revision von der per npm installierten @playwright/test-Version
+    # auseinander. Bei jedem Playwright-Versions-Bump also diesen Tag mitziehen.
+    container: mcr.microsoft.com/playwright:v1.62.1-jammy
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Der Checkout-Schritt läuft (wie jeder Step) im Container, also als root - der Job-Container
+      # selbst wird aber vom Runner-User gestartet, der den ausgecheckten Pfad anlegt. Git verweigert
+      # daher standardmäßig jeden Zugriff darauf als "dubious ownership", inkl. der `git describe`-
+      # Aufrufe in vite.config.ts und backend/scripts/generate-build-info.mjs (dort zwar abgefangen,
+      # bricht aber die Versions-Info bzw. bläht Prozess-Output unnötig auf).
+      - name: Mark repo as safe for git (root inside container)
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+            e2e/package-lock.json
+
+      - name: Download backend build
+        uses: actions/download-artifact@v4
+        with:
+          name: e2e-backend-dist
+          path: backend/dist
+
+      - name: Download frontend build
+        uses: actions/download-artifact@v4
+        with:
+          name: e2e-frontend-dist
+          path: frontend/dist
+
+      # Nur npm ci, kein erneutes tsc/vite build: dist/ kommt aus e2e-backend/e2e-frontend oben.
+      # node_modules müssen trotzdem je Shard frisch im Playwright-Container installiert werden
+      # (better-sqlite3/bcrypt-Nativmodule für dieses Image/Node, nicht vom ubuntu-latest-Runner).
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Install e2e dependencies
+        working-directory: e2e
+        run: npm ci
+
+      - name: Run e2e tests (Shard ${{ matrix.shard }}/5)
+        working-directory: e2e
+        run: npx playwright test --shard=${{ matrix.shard }}/5
+
+      - name: Upload e2e report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-shard-${{ matrix.shard }}
+          path: |
+            e2e/playwright-report
+            e2e/test-results
+          retention-days: 7
+
+  publish:
+    name: Publish to deploy branch
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: [e2e-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Install & build backend
+        working-directory: backend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Install & build frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Assemble release artifact
+        run: |
+          rm -rf release
+          mkdir -p release/frontend release/backend/dist
+          cp -r frontend/dist/. release/frontend/
+          cp -r backend/dist/. release/backend/dist/
+          cp backend/package.json backend/package-lock.json release/backend/
+          printf '%s %s\n' "${{ github.sha }}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > release/COMMIT
+
+      - name: Determine target branch
+        id: target
+        run: |
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            echo "branch=deploy" >> "$GITHUB_OUTPUT"
+          else
+            echo "branch=deploy-staging" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish to deploy branch
+        working-directory: release
+        run: |
+          TARGET="${{ steps.target.outputs.branch }}"
+          git init -q
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -q -b "$TARGET"
+          git add -A
+          git commit -q -m "Build ${{ github.sha }}"
+          git push --force "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" "$TARGET:$TARGET"

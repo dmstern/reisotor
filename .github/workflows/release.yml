@@ -6,9 +6,9 @@ name: Release
 # zu einem neuen CHANGELOG.md-Abschnitt zusammen, bumpt die Version in der Root-package.json
 # (einzige Versionsquelle, siehe backend/scripts/generate-build-info.mjs und
 # frontend/vite.config.ts), committet alles auf main und setzt einen Tag (vX.Y.Z). Der Tag-Push
-# ist der EINZIGE Trigger, der build-deploy.yml dazu bringt, auf die echte Produktion (Branch
+# ist der EINZIGE Trigger, der ci.yml dazu bringt, auf die echte Produktion (Branch
 # "deploy") zu deployen - ein normaler Push auf main landet weiterhin nur auf Staging (Branch
-# "deploy-staging"), siehe build-deploy.yml.
+# "deploy-staging"), siehe ci.yml.
 #
 # Auslösbar über den "Run workflow"-Button im Actions-Tab (GitHub-Weboberfläche, unabhängig vom
 # eigenen Rechner) oder programmatisch über die GitHub-API/gh CLI (z. B. aus einer Claude-Code-
@@ -18,7 +18,7 @@ name: Release
 #
 # WICHTIG (Issue #221): GitHub löst bei einem Push, der mit dem automatischen GITHUB_TOKEN
 # passiert, bewusst KEINE weiteren Workflow-Läufe aus (Anti-Rekursions-Schutz) - der Tag-Push
-# unten würde build-deploy.yml/pages-deploy.yml sonst nie triggern. Checkout + Push nutzen daher
+# unten würde ci.yml/pages-deploy.yml sonst nie triggern. Checkout + Push nutzen daher
 # ein Repo-Secret RELEASE_TOKEN (ein fine-grained Personal Access Token mit "Contents:
 # Read and write" auf genau diesem Repo, unter Settings -> Secrets and variables -> Actions
 # anzulegen) statt des Default-Tokens - ein damit ausgeführter Push zählt als "echter" Push.

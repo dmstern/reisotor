@@ -33,7 +33,7 @@ export interface ChangelogEntry {
 
 /** GET /build-info (backend/src/routes/buildInfo.ts). `environment` kommt aus der
  *  instanzspezifischen APP_ENV-Backend-Env-Var (Default 'production') – das Frontend wird für
- *  Staging und Produktion identisch gebaut (siehe .github/workflows/build-deploy.yml), kann die
+ *  Staging und Produktion identisch gebaut (siehe .github/workflows/ci.yml), kann die
  *  Umgebung also nicht aus einem Build-Time-Wert erkennen, siehe Issue #219. */
 export interface BuildInfo {
   version: string | null;

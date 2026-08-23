@@ -61,7 +61,7 @@ unabhängige Bereiche parallel durchsucht werden müssen — dort leidet sonst d
 
 ## Marketing-Landingpage + Demo-Build (GitHub Pages)
 
-Neben dem normalen `npm run build` (echtes Backend-Deploy, siehe `build-deploy.yml`) gibt es zwei
+Neben dem normalen `npm run build` (echtes Backend-Deploy, siehe `ci.yml`) gibt es zwei
 zusätzliche statische Frontend-Builds für GitHub Pages (`frontend/landing.html`+
 `frontend/src/views/LandingView.vue` sowie einen backend-losen Demo-Modus, siehe
 `frontend/src/demo/`), veröffentlicht über `.github/workflows/pages-deploy.yml` bei jedem
@@ -126,11 +126,12 @@ es nur implizit im CSS/einer Komponente stehen zu lassen.
 Jede Änderung an `backend/src/db/index.ts` (neue/entfernte Spalte oder Tabelle, umgebautes Feld)
 braucht diesen Check, bevor sie als fertig gilt — nicht erst, wenn explizit danach gefragt wird:
 
-1. **Ist das schon in Prod live?** `git merge-base origin/prod HEAD` (bzw. `origin/main`) gibt den
-   letzten gemeinsamen Commit; `git diff <dieser-commit> HEAD -- backend/src/db/index.ts` zeigt, was
-   seitdem am Schema geändert wurde. Alles, was schon vorher drin war, kann echte Nutzdaten auf der
-   echten `data.sqlite` enthalten (aktiv genutzte App, seit der offenen Registrierung potenziell auch
-   von weiteren, eingeladenen Nutzer:innen).
+1. **Ist das schon in Prod live?** Für Staging: `git merge-base origin/main HEAD`. Für Prod (Branch
+   `deploy`, nur über Release-Tags): `git merge-base $(git describe --tags --match 'v*.*.*' --abbrev=0)
+   HEAD` — der letzte Tag markiert den zuletzt releaseden Stand. `git diff <dieser-commit> HEAD --
+   backend/src/db/index.ts` zeigt, was seitdem am Schema geändert wurde. Alles, was schon vorher drin
+   war, kann echte Nutzdaten auf der echten `data.sqlite` enthalten (aktiv genutzte App, seit der
+   offenen Registrierung potenziell auch von weiteren, eingeladenen Nutzer:innen).
 2. **Rein additiv bleiben, wo möglich.** Neue Spalten/Tabellen nur über `ensureColumn` (nullable
    oder mit `DEFAULT`) bzw. `CREATE TABLE IF NOT EXISTS` — nie eine bestehende Tabelle mit einer
    `NOT NULL`-Spalte ohne Default versehen.
@@ -164,8 +165,8 @@ dem Server nötig.
 Vitest auf beiden Seiten, unabhängig konfiguriert (Backend: `backend/vitest.config.ts`; Frontend:
 `test`-Key in `frontend/vite.config.ts`). Laufen ohne Browser/Server, deterministisch und schnell —
 laufen deshalb automatisch in CI, direkt vor dem jeweiligen Build-Schritt in
-`.github/workflows/build-deploy.yml`. Ein fehlschlagender Unit-Test verhindert damit sowohl den
-`main`→Staging- als auch den `prod`→Produktions-Deploy.
+`.github/workflows/ci.yml`. Ein fehlschlagender Unit-Test verhindert damit sowohl den
+`main`→`deploy-staging`- als auch den Tag→`deploy`-Produktions-Publish.
 
 ```bash
 cd backend && npm test    # bzw. npm run test:watch für Watch-Mode

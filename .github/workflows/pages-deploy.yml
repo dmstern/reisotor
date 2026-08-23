@@ -5,8 +5,8 @@ name: Deploy GitHub Pages
 # ausschließlich bei einem Prod-Release-Tag-Push (vX.Y.Z, siehe release.yml, das ihn immer von main
 # aus setzt), damit die Landingpage immer den zuletzt tatsächlich released Stand zeigt - plus
 # workflow_dispatch für einen manuellen Re-Deploy ohne neuen Tag (z. B. nach einer reinen
-# Marketing-/Screenshot-Änderung). Komplett unabhängig vom Pi-Cronjob-Deploy in build-deploy.yml -
-# kein Overlap, kein gemeinsamer Job, rührt build-deploy.yml nicht an.
+# Marketing-/Screenshot-Änderung). Komplett unabhängig vom Pi-Cronjob-Deploy in ci.yml -
+# kein Overlap, kein gemeinsamer Job, rührt ci.yml nicht an.
 #
 # Einmaliger manueller Schritt (kann dieser Workflow nicht selbst setzen): Repo-Settings -> Pages ->
 # Source muss auf "GitHub Actions" stehen, damit actions/deploy-pages hier greift.
