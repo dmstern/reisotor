@@ -1524,7 +1524,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
           <div v-if="index < focusedExcursionStations.length - 1" class="station-connector" aria-hidden="true"></div>
         </template>
       </div>
-    </div>
+    </Card>
 
     <Card class="card focus-spot-list" v-else-if="drawers.mapFocusDate && focusedDateStations.length">
       <div class="focus-spot-list-header">
@@ -1563,7 +1563,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
           </div>
         </template>
       </div>
-    </div>
+    </Card>
 
     <Card class="card focus-spot-list" v-else-if="focusedTrack">
       <div class="focus-spot-list-header">
