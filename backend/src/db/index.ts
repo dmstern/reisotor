@@ -302,9 +302,8 @@ CREATE TABLE IF NOT EXISTS sessions (
 // Prod-Migrationsmechanismus, kein separater Schritt nötig.
 //
 // Vor jedem dropColumnIfExists/Rename einer Spalte, die schon vor dem letzten Prod-Deploy live war
-// (Check: git diff gegen Merge-Base mit letztem Release-Tag `v*.*.*`, siehe CLAUDE.md): Backfill davor, falls die Spalte echte
-// Werte tragen könnte (siehe packing_items.checked bzw. ideas.date weiter unten als Vorlage) -
-// sonst gehen sie beim nächsten Deploy kommentarlos verloren. Siehe CLAUDE.md, Abschnitt
+// (Check: git diff gegen Merge-Base mit letztem Release-Tag `v*.*.*`, siehe AGENTS.md): Backfill davor, falls die Spalte echte
+// Werte tragen könnte; sonst gehen sie beim nächsten Deploy kommentarlos verloren. Siehe AGENTS.md, Abschnitt
 // "Datenmodell-Änderungen (DB-Migrationen)", für den vollständigen Check.
 function ensureColumn(table: string, column: string, definition: string) {
   const existing = db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
@@ -747,7 +746,7 @@ for (const table of TRASH_TABLES) {
 // Muss NACH den beiden Schleifen oben laufen: die travel_items-Tabelle wird komplett neu angelegt
 // (siehe unten) und muss dafür bereits ihre trip_id-/deleted_at-Spalten besitzen, die erst durch die
 // TRIP_SCOPED_TABLES-/TRASH_TABLES-Schleifen ergänzt werden – sonst schlägt der Neuaufbau auf einer
-// frischen/Test-DB mit "no such column" fehl (siehe CLAUDE.md, Migrations-Reihenfolge).
+// frischen/Test-DB mit "no such column" fehl (siehe AGENTS.md, Migrations-Reihenfolge).
 //
 // Bugfix (#68-Vorarbeit): travel_places wurde bis eben zusätzlich unconditional per
 // `CREATE TABLE IF NOT EXISTS` im Basis-Schema weiter oben angelegt – dieser Block hier löscht die
@@ -1060,7 +1059,7 @@ const ATTACHMENT_DOMAIN_BY_TABLE: Partial<Record<(typeof TRASH_TABLES)[number], 
   budget_items: 'budget',
 };
 
-// Endgültiges Aufräumen (optional, siehe CLAUDE.md-Auftrag "kein Muss"): Objekte, die länger als
+// Endgültiges Aufräumen (optional, siehe AGENTS.md-Auftrag "kein Muss"): Objekte, die länger als
 // 30 Tage im Papierkorb liegen, werden beim Backend-Start hart gelöscht. budget_transfers hat kein
 // trip_id (siehe CREATE TABLE oben), braucht daher keinen Join/Backfill – deleted_at reicht für den
 // Alters-Check bei allen Tabellen gleichermaßen aus. Vor dem Hart-Löschen werden zugehörige
@@ -1181,7 +1180,7 @@ db.exec(`
 // frontend/src/composables/useDraftAutosave.ts. Rein persönlich (pro user_id), nicht über
 // trip_members/Echtzeit-Sync geteilt - ein Entwurf ist kein fertiges Domänen-Objekt, das andere
 // Mitglieder sehen sollen. Kein deleted_at/Papierkorb-Eintrag wie bei den 11 echten Domänen-
-// Tabellen (siehe CLAUDE.md) - ein Entwurf ist Ablage-Infrastruktur wie sessions/
+// Tabellen (siehe AGENTS.md) - ein Entwurf ist Ablage-Infrastruktur wie sessions/
 // push_subscriptions, kein wiederherstellbares Nutzerobjekt.
 db.exec(`
   CREATE TABLE IF NOT EXISTS drafts (
@@ -1198,7 +1197,7 @@ db.exec(`
 // Ob die Packlisten-Kategorie beim Anlegen/Bearbeiten eines Gegenstands Pflichtfeld ist (Standard:
 // ja) - pro Urlaub statt global, da unterschiedliche Trips das unterschiedlich streng handhaben
 // wollen können. NOT NULL DEFAULT 1 statt nullable: additiv unbedenklich (kein Datenverlust, siehe
-// CLAUDE.md "Datenmodell-Änderungen"), und macht "noch nicht konfiguriert" unnötig - alle
+// AGENTS.md "Datenmodell-Änderungen"), und macht "noch nicht konfiguriert" unnötig - alle
 // bestehenden Trips bekommen automatisch die gewünschte neue Standardeinstellung "Pflicht". Gilt nur
 // für neue/bearbeitete Gegenstände, bereits vorhandene Einträge ohne Kategorie werden dadurch nicht
 // rückwirkend zurückgewiesen (siehe routes/packing.ts).

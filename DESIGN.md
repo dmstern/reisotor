@@ -10,7 +10,7 @@ dabei ein neues, wiederverwendbares Prinzip entsteht.
 
 Für architektonische/UX-Ablauf-Muster (Querverweise springen zur Ursprungs-View, Undo-Delete,
 Echtzeit-Highlight, …) siehe stattdessen den Abschnitt "Konsistenz-Check bei Änderungen" in
-`CLAUDE.md` – hier geht es nur um die visuelle Ebene.
+`AGENTS.md` – hier geht es nur um die visuelle Ebene.
 
 ## Konsistenz (wichtigstes Prinzip)
 
@@ -52,7 +52,7 @@ sichtbaren Design-Anpassung aktiv im Rest der App nachschauen, ob es dafür scho
 Komponente/einen Token gibt (grep auf ähnliche Bezeichner/Klassen/Werte, nicht nur an der gerade
 bearbeiteten Stelle schauen) – wiederverwenden statt eine zweite, leicht abweichende Variante
 daneben zu bauen. Wird dabei eine neue Design-Anforderung erkennbar, die auch an anderen, gerade
-nicht angefragten Stellen mit demselben Muster gelten würde: siehe CLAUDE.md, Abschnitt
+nicht angefragten Stellen mit demselben Muster gelten würde: siehe AGENTS.md, Abschnitt
 "Konsistenz-Check bei Änderungen" für das Vorgehen dabei (dort jetzt: aktiv nachfragen statt
 eigenmächtig zu entscheiden, ob mitgezogen wird oder nicht).
 
@@ -344,7 +344,7 @@ normalen Card/Button-Squircle-Regel – ein Segmented-Control ist konzeptionell 
 Card/einem Button.
 
 Aktuell nur auf `SegmentedToggle.vue` angewendet. Eine App-weite Ausweitung dieses weicheren
-Materials auf normale Buttons/Cards wäre eine größere Design-Entscheidung (siehe `CLAUDE.md`,
+Materials auf normale Buttons/Cards wäre eine größere Design-Entscheidung (siehe `AGENTS.md`,
 Abschnitt "Konsistenz-Check bei Änderungen") und sollte erst nach Rücksprache erfolgen, nicht
 automatisch bei der nächsten Gelegenheit an einem Button/einer Card mitgezogen werden.
 
@@ -546,4 +546,4 @@ zusammen.
    Icon/Animations-Timing? → verwenden, nicht neu erfinden.
 2. Handelt es sich um eine Card/Button/Input/Modal/Drawer? → Squircle-Paar setzen (siehe oben).
 3. Neues wiederkehrendes Muster nötig? → hier dokumentieren, damit es beim nächsten Mal gefunden
-   statt neu erfunden wird (siehe auch `CLAUDE.md`, Abschnitt "Konsistenz-Check bei Änderungen").
+   statt neu erfunden wird (siehe auch `AGENTS.md`, Abschnitt "Konsistenz-Check bei Änderungen").
