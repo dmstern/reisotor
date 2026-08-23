@@ -1,30 +1,9 @@
-name: Build & Deploy
+name: CI
 
-# Baut Frontend + Backend bei Push auf main ODER bei einem Semver-Tag-Push und veröffentlicht das
-# Ergebnis als einzigen Commit auf einem Ziel-Branch. Push auf main -> "deploy-staging",
-# automatisches Gate zum Anschauen einer Änderung, bildet IMMER den
-# aktuellen main-Stand ab). Push eines Tags "vX.Y.Z" -> "deploy" (die von
-# Nutzer:innen tatsächlich verwendete Produktion) - ein solcher Tag entsteht ausschließlich über
-# den Release-Workflow (.github/workflows/release.yml), der ihn immer von main aus setzt. Prod
-# bekommt damit nie eine ungeprüfte main-Änderung, sondern nur bewusst geschnittene Releases.
-#
-# Der eigentliche Rollout auf den Ziel-Server (Raspberry Pi) passiert NICHT hier, sondern per
-# Cronjob auf dem Server selbst, der den jeweiligen Branch pollt (siehe README.md, Abschnitt
-# "Automatisiertes Deployment über GitHub Actions + Pi-Cronjob") – so ist der Server nie darauf
-# angewiesen, dass ein Client (Laptop/Handy) online ist oder Zugangsdaten hält.
-#
-# Zusätzlich auf pull_request gegen main: derselbe komplette Test-Umfang wie bei einem Push
-# (Backend-/Frontend-Unit-Tests + Build UND die volle e2e-Suite) - nur der eigentliche
-# Publish-Schritt (Deploy-Branch) bleibt push-/workflow_dispatch-only, ein noch ungemergter Branch
-# darf nie veröffentlicht werden. Ursprünglich gab es hier einen Kompromiss ohne e2e auf PRs
-# (schnellere PR-Checks), der sich aber als falsche Abwägung erwiesen hat: e2e ist das eigentliche
-# Regressionsnetz fürs UI-Verhalten, ohne sie fielen mehrere echte Fehlschläge erst NACH dem
-# Merge auf main auf statt schon vorher auf dem PR.
-#
-# workflow_dispatch (Ref manuell im "Run workflow"-Dialog auf einen Tag stellen) ist ein
-# Fallback/Notausgang, um einen bereits existierenden Release-Tag nachträglich manuell zu
-# deployen, falls der eigentliche Tag-Push aus release.yml den Auto-Trigger verpasst hat (siehe
-# Issue #221 - GITHUB_TOKEN-Pushes lösen laut GitHub bewusst keine Folge-Workflows aus).
+# PRs und Pushes: Unit-Tests, Build-Artefakte für E2E, sharded Playwright-Suite.
+# Nur bei Push/workflow_dispatch (nicht auf PRs): zusätzlich "Publish Release" — schreibt
+# Frontend + Backend als Commit auf deploy-staging (main) bzw. deploy (Release-Tag). Der Rollout
+# auf den Raspberry Pi passiert NICHT hier, sondern per Cronjob auf dem Server (README.md).
 
 on:
   push:
@@ -42,8 +21,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  backend-unit-and-build:
-    name: Backend (Unit Tests & Build)
+  e2e-backend:
+    name: E2E — Backend (Unit Tests & Build)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -66,12 +45,12 @@ jobs:
       - name: Upload backend build for e2e
         uses: actions/upload-artifact@v4
         with:
-          name: backend-dist
+          name: e2e-backend-dist
           path: backend/dist
           retention-days: 1
 
-  frontend-unit-and-build:
-    name: Frontend (Unit Tests & Build)
+  e2e-frontend:
+    name: E2E — Frontend (Unit Tests & Build)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -94,13 +73,13 @@ jobs:
       - name: Upload frontend build for e2e
         uses: actions/upload-artifact@v4
         with:
-          name: frontend-dist
+          name: e2e-frontend-dist
           path: frontend/dist
           retention-days: 1
 
   e2e-tests:
     name: E2E Tests (Shard ${{ matrix.shard }}/5)
-    needs: [backend-unit-and-build, frontend-unit-and-build]
+    needs: [e2e-backend, e2e-frontend]
     runs-on: ubuntu-latest
     # Playwrights offizielles Image bringt Chromium UND sämtliche System-Bibliotheken dafür schon
     # fertig mit - erspart bei jedem Lauf das (undgecachte, weil auf einer frischen Runner-VM
@@ -139,16 +118,16 @@ jobs:
       - name: Download backend build
         uses: actions/download-artifact@v4
         with:
-          name: backend-dist
+          name: e2e-backend-dist
           path: backend/dist
 
       - name: Download frontend build
         uses: actions/download-artifact@v4
         with:
-          name: frontend-dist
+          name: e2e-frontend-dist
           path: frontend/dist
 
-      # Nur npm ci, kein erneutes tsc/vite build: dist/ kommt aus den Unit-Test-Jobs oben.
+      # Nur npm ci, kein erneutes tsc/vite build: dist/ kommt aus e2e-backend/e2e-frontend oben.
       # node_modules müssen trotzdem je Shard frisch im Playwright-Container installiert werden
       # (better-sqlite3/bcrypt-Nativmodule für dieses Image/Node, nicht vom ubuntu-latest-Runner).
       - name: Install backend dependencies
@@ -178,7 +157,7 @@ jobs:
           retention-days: 7
 
   publish:
-    name: Publish Release
+    name: Publish to deploy branch
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     needs: [e2e-tests]
     runs-on: ubuntu-latest
