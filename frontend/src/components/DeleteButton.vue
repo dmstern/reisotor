@@ -54,7 +54,7 @@ defineEmits<{ (e: 'click'): void }>();
      siehe EditButton.vue's identischer Kommentar. */
   corner-shape: round;
   background: rgba(255, 255, 255, 0.9);
-  color: #2b2a28;
+  color: var(--color-text);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -65,13 +65,13 @@ defineEmits<{ (e: 'click'): void }>();
    fest hell+dunkel – bleibt trotzdem über echten Fotos in beiden Modi gut lesbar. */
 :root[data-theme='dark'] .delete-btn.floating {
   background: rgba(35, 34, 32, 0.85);
-  color: #f2efe9;
+  color: var(--color-surface-muted, #f2efe9);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) .delete-btn.floating {
     background: rgba(35, 34, 32, 0.85);
-    color: #f2efe9;
+    color: var(--color-surface-muted, #f2efe9);
   }
 }
 </style>
