@@ -1970,7 +1970,7 @@ async function removeSpot(id: number) {
               <SpotOrderPicker v-if="!excursionForm.transportEnabled && spotsStore.spots.length"
                 v-model="excursionForm.spot_ids" :spots="spotsStore.spots" :like-count="spotsStore.likeCountFor" />
               <DraftStatusBar :status="newExcursionDraft.status.value" :restored="newExcursionDraft.restored.value" />
-              <button type="submit">Hinzufügen</button>
+              <ActionButton type="submit" variant="primary">Hinzufügen</ActionButton>
             </form>
           </Modal>
 
@@ -2074,7 +2074,7 @@ async function removeSpot(id: number) {
                 v-model="editExcursionForm.spot_ids" :spots="spotsStore.spots" :like-count="spotsStore.likeCountFor" />
               <FileAttachments v-if="editingExcursion" domain="ideas" :entity-id="editingExcursion" />
               <DraftStatusBar :status="editExcursionDraft.status.value" :restored="editExcursionDraft.restored.value" />
-              <button type="submit">Speichern</button>
+              <ActionButton type="submit" variant="primary">Speichern</ActionButton>
             </form>
           </Modal>
 
@@ -2263,7 +2263,7 @@ async function removeSpot(id: number) {
                 <TourAssignPicker v-model="spotForm.tourTitles" :tour-options="allTourTitles" />
               </FormField>
               <DraftStatusBar :status="newSpotDraft.status.value" :restored="newSpotDraft.restored.value" />
-              <button type="submit">Hinzufügen</button>
+              <ActionButton type="submit" variant="primary">Hinzufügen</ActionButton>
             </form>
           </Modal>
 
