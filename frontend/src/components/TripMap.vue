@@ -1457,7 +1457,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
         </button>
       </div>
       <div class="focus-banner" v-else-if="drawers.mapFocusDate">
-        <span><AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" /> {{ formatDate(drawers.mapFocusDate) }}</span>
+        <span><AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" /> {{ formatDate(drawers.mapFocusDate!) }}</span>
         <button type="button" class="card-action-btn" @click="drawers.mapFocusDate = null">
           <AppIcon :icon="ACTION_ICONS.close" :size="14" group="actions" /> Fokus verlassen
         </button>
@@ -1569,7 +1569,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
       <div class="focus-spot-list-header">
         <h3 class="focus-spot-list-title">
           <AppIcon :icon="ACTION_ICONS.orientationNorth" :size="16" group="actions" />
-          {{ focusedTrack.title || `Aufzeichnung vom ${formatDate(focusedTrack.started_at.slice(0, 10))}` }}
+          {{ focusedTrack!.title || `Aufzeichnung vom ${formatDate(focusedTrack!.started_at.slice(0, 10))}` }}
         </h3>
         <button
           type="button"
