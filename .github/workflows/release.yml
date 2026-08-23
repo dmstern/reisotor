@@ -1,7 +1,7 @@
 name: Release
 
 # Erstellt ein neues Semver-Release: ermittelt den Versions-Sprung automatisch aus den
-# Commit-Nachrichten seit dem letzten Tag (lose an Conventional Commits angelehnt, siehe CLAUDE.md),
+# Commit-Nachrichten seit dem letzten Tag (lose an Conventional Commits angelehnt, siehe AGENTS.md),
 # fasst die seit dem letzten Release gesammelten Endnutzer-Stichpunkte aus release-notes/pending/
 # zu einem neuen CHANGELOG.md-Abschnitt zusammen, bumpt die Version in der Root-package.json
 # (einzige Versionsquelle, siehe backend/scripts/generate-build-info.mjs und
@@ -93,7 +93,7 @@ jobs:
           pkg.version = next;
           fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
 
-          // Seit dem letzten Release gesammelte Endnutzer-Stichpunkte (siehe CLAUDE.md,
+          // Seit dem letzten Release gesammelte Endnutzer-Stichpunkte (siehe AGENTS.md,
           // "Release-Notes-Fragmente") zu einem Changelog-Eintrag zusammenfassen. Jede Datei kann
           // mehrere "- "-Zeilen enthalten; Dateien ohne erkennbare Stichpunkte tragen nichts bei.
           const pendingDir = 'release-notes/pending';

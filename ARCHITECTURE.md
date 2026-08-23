@@ -1,9 +1,9 @@
 # ARCHITECTURE.md
 
 Ausführliche Architektur-Beschreibung von Reisotor — **nicht automatisch geladen**, im Unterschied
-zu `CLAUDE.md`. Bei Bedarf lesen: vor größeren strukturellen Änderungen, wenn unklar ist, wo etwas
+zu `AGENTS.md`. Bei Bedarf lesen: vor größeren strukturellen Änderungen, wenn unklar ist, wo etwas
 lebt, oder wenn die "Code-Map" unten als Startpunkt für die Suche gebraucht wird. Handlungsanweisungen
-(Befehle, Test-/Migrations-/PR-Workflow, Konsistenz-Check-Policy) stehen weiterhin in `CLAUDE.md`.
+(Befehle, Test-/Migrations-/PR-Workflow, Konsistenz-Check-Policy) stehen weiterhin in `AGENTS.md`.
 
 ## Backend (`backend/src/`)
 
@@ -30,7 +30,7 @@ volle Zielseite ab — umgeht so Googles Bot-Erkennung bei bestimmten Kurzlink-V
 
 Eine SQLite-Datei (`data.sqlite`), Schema wird bei jedem Prozessstart synchron per
 `CREATE TABLE IF NOT EXISTS` + additiven Migrationen (`ensureColumn`, `dropColumnIfExists`)
-angewendet — Konventionen dafür siehe "Datenmodell-Änderungen" in `CLAUDE.md`. Domänen umfassen
+angewendet — Konventionen dafür siehe "Datenmodell-Änderungen" in `AGENTS.md`. Domänen umfassen
 u. a. `trips`, `trip_members`, `schedule_items`, `packing_items`, `ideas` (Ausflugsideen),
 `budget_items`/`budget_transfers`/`budgets`/`budget_allocations`, `shopping_items`, `todo_items`,
 `notes`, `diary_entries` sowie je eigene `*_likes`/`*_comments`-Tabellen für Ausflüge/Notizen/
