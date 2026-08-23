@@ -52,7 +52,7 @@ onUnmounted(() => {
 });
 
 // Frontend wird identisch für Staging und Produktion gebaut (siehe
-// .github/workflows/build-deploy.yml) – der Unterschied kommt deshalb zur Laufzeit vom Backend
+// .github/workflows/ci.yml) – der Unterschied kommt deshalb zur Laufzeit vom Backend
 // (APP_ENV-Env-Var pro Instanz, GET /build-info) statt aus einem Domain-Vergleich, siehe Issue #219.
 const buildInfoStore = useBuildInfoStore();
 buildInfoStore.load();

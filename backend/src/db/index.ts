@@ -302,7 +302,7 @@ CREATE TABLE IF NOT EXISTS sessions (
 // Prod-Migrationsmechanismus, kein separater Schritt nötig.
 //
 // Vor jedem dropColumnIfExists/Rename einer Spalte, die schon vor dem letzten Prod-Deploy live war
-// (Check: git diff gegen den Merge-Base mit origin/prod): Backfill davor, falls die Spalte echte
+// (Check: git diff gegen Merge-Base mit letztem Release-Tag `v*.*.*`, siehe CLAUDE.md): Backfill davor, falls die Spalte echte
 // Werte tragen könnte (siehe packing_items.checked bzw. ideas.date weiter unten als Vorlage) -
 // sonst gehen sie beim nächsten Deploy kommentarlos verloren. Siehe CLAUDE.md, Abschnitt
 // "Datenmodell-Änderungen (DB-Migrationen)", für den vollständigen Check.

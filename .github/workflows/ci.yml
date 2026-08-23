@@ -1,7 +1,7 @@
 name: CI
 
 # PRs und Pushes: Unit-Tests, Build-Artefakte für E2E, sharded Playwright-Suite.
-# Nur bei Push/workflow_dispatch (nicht auf PRs): zusätzlich "Publish Release" — schreibt
+# Nur bei Push/workflow_dispatch (nicht auf PRs): zusätzlich "Publish to deploy branch" — schreibt
 # Frontend + Backend als Commit auf deploy-staging (main) bzw. deploy (Release-Tag). Der Rollout
 # auf den Raspberry Pi passiert NICHT hier, sondern per Cronjob auf dem Server (README.md).
 

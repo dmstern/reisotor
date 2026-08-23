@@ -161,10 +161,10 @@ Kalendereinträge/andere Querverweise hängen zusätzlich einen `#<domain>-<id>`
 
 ## Deployment
 
-Push auf `main` baut via `.github/workflows/build-deploy.yml` (Unit-Tests → Build → E2E-Tests,
+Push auf `main` baut via `.github/workflows/ci.yml` (Workflow „CI": Unit-Tests → Build → E2E-Tests,
 alles gated) und veröffentlicht auf Branch `deploy-staging` (Server pollt das, deployt auf
-DEV); erst ein expliziter `git push origin main:prod` löst denselben Workflow
-für Branch `deploy` aus (echte Produktion). Die SQLite-Datei wird beim
+DEV). Produktion bekommt nur semver-Tags: `release.yml` setzt `vX.Y.Z`, dessen Push den gleichen
+Workflow mit Ziel-Branch `deploy` auslöst (siehe README.md). Die SQLite-Datei wird beim
 Deploy nie überschrieben. Details/Befehle: `README.md`.
 
 ## Code-Map

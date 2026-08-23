@@ -39,7 +39,7 @@ export const buildInfoRoutes: FastifyPluginAsync = async (app) => {
     // Hinweis anpassen können, siehe Issue #171.
     hostingLocation: process.env.HOSTING_LOCATION ?? 'Berlin',
     // Pro Instanz (Prod/Staging) im systemd-Service gesetzt - das Frontend wird für beide identisch
-    // gebaut (siehe .github/workflows/build-deploy.yml), kann die Umgebung also nicht aus einem
+    // gebaut (siehe .github/workflows/ci.yml), kann die Umgebung also nicht aus einem
     // Build-Time-Env-Var erkennen und fragt sie stattdessen hier zur Laufzeit ab, siehe Issue #219.
     environment: process.env.APP_ENV ?? 'production',
   }));
