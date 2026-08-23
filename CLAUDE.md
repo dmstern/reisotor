@@ -61,8 +61,8 @@ unabhängige Bereiche parallel durchsucht werden müssen — dort leidet sonst d
 
 ## Marketing-Landingpage + Demo-Build (GitHub Pages)
 
-Neben dem normalen `npm run build` (echtes Backend-Deploy, siehe `ci.yml`) gibt es zwei
-zusätzliche statische Frontend-Builds für GitHub Pages (`frontend/landing.html`+
+Neben dem normalen `npm run build` (echtes Backend-Deploy, siehe `.github/workflows/ci.yml`)
+gibt es zwei zusätzliche statische Frontend-Builds für GitHub Pages (`frontend/landing.html`+
 `frontend/src/views/LandingView.vue` sowie einen backend-losen Demo-Modus, siehe
 `frontend/src/demo/`), veröffentlicht über `.github/workflows/pages-deploy.yml` bei jedem
 Prod-Release-Tag. `frontend/npm run build:landing`/`build:demo` lokal bauen, `VITE_DEMO_MODE=true
