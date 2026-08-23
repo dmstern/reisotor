@@ -2,6 +2,7 @@
 import type { SettlementSuggestion } from '../utils/budgetBalances';
 import { useBudgetStore } from '../stores/budget';
 import AppIcon from './AppIcon.vue';
+import Card from './primitives/Card.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
 defineEmits<{ (e: 'use-suggestion', suggestion: SettlementSuggestion): void }>();
@@ -10,7 +11,7 @@ const store = useBudgetStore();
 </script>
 
 <template>
-  <div class="card">
+  <Card>
     <h2>Wer schuldet wem?</h2>
 
     <p v-if="!store.settlementSuggestions.length" class="settled">
@@ -40,7 +41,7 @@ const store = useBudgetStore();
       Berechnung: Nur Ausgaben aus geteilten Budgets werden zu gleichen Teilen unter allen Nutzer:innen
       aufgeteilt (private Budgets zählen nicht mit); Überweisungen gleichen das direkt aus.
     </p>
-  </div>
+  </Card>
 </template>
 
 <style scoped>
