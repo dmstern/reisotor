@@ -20,6 +20,7 @@ wurde. Der Nutzer sieht keinen Unterschied zwischen "das ist ein natives `<selec
 eine custom Combobox.vue" – beide sind für ihn einfach "ein Dropdown" und müssen deshalb exakt
 gleich hoch sein und gleich aussehen. Das gilt für jede der unten dokumentierten Kategorien:
 
+- **Primitive Komponenten & Styles**: Surface-Primitives (`Button.vue`, `Card.vue` unter `components/primitives/`) kapseln ihre eigenen Varianten-Styles (Schatten, Varianten-Klassen) intern in der Komponente. Globale Styles in `style.css` enthalten nur minimale Resets – rohe `<button>`-Elemente bekommen z. B. keinen pauschalen Schatten aufgedrückt, um `box-shadow: none`-Overrides zu vermeiden.
 - **Farben**: nur `--color-*`-Variablen, nie ein neuer Hex-Wert lokal (Abschnitt "Farben").
 - **Abstände**: nur `--space-*`-Stufen, kein freier px-Wert (Abschnitt "Abstände").
 - **Formen/Eckenrundung**: Kreisbogen vs. Squircle konsequent nach Elementtyp, nie gemischt

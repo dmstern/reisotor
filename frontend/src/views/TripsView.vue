@@ -11,6 +11,7 @@ import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
 import TripMembersDialog from '../components/TripMembersDialog.vue';
 import AppIcon from '../components/AppIcon.vue';
+import Button from '../components/primitives/Button.vue';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
@@ -41,9 +42,9 @@ function openMembers(trip: Trip) {
   <div class="page">
     <div class="header">
       <h1>Meine Urlaube</h1>
-      <button v-if="tripStore.trips.length > 0 && !tripCreationBlocked()" @click="openCreate">
+      <Button v-if="tripStore.trips.length > 0 && !tripCreationBlocked()" @click="openCreate">
         <AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Neuer Urlaub
-      </button>
+      </Button>
       <p v-else-if="tripCreationBlocked()" class="restricted-hint">Eingeschränkter Modus - Nur ein Urlaub pro Nutzer</p>
     </div>
 
@@ -51,15 +52,15 @@ function openMembers(trip: Trip) {
       <div v-for="trip in tripStore.trips" :key="trip.id" class="card trip-card">
         <button type="button" class="trip-select" @click="selectTrip(trip.id)">{{ trip.name }}</button>
         <div class="row-actions">
-          <button
-            type="button"
-            class="secondary members-btn"
+          <Button
+            variant="secondary"
+            class="members-btn"
             title="Mitglieder verwalten"
             aria-label="Mitglieder verwalten"
             @click="openMembers(trip)"
           >
             <AppIcon :icon="FORM_FIELD_ICONS.visibility" :size="15" group="formFields" />
-          </button>
+          </Button>
           <EditButton small @click="openEdit(trip)" />
           <DeleteButton small @click="onDelete(trip)" />
         </div>

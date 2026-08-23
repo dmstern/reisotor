@@ -45,6 +45,7 @@ import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import type { IconDef } from '../utils/icon';
 import AppIcon from '../components/AppIcon.vue';
+import Button from '../components/primitives/Button.vue';
 
 // Touren-Verwaltung (Anlegen/Bearbeiten/Einplanen) ist seit dem Zurückbau des früheren "erweiterten
 // Touren-Modus" (vormals eine eigenständige Ausflüge-Schublade, views/ExcursionsDrawer.vue) Teil
@@ -1969,7 +1970,7 @@ async function removeSpot(id: number) {
               <SpotOrderPicker v-if="!excursionForm.transportEnabled && spotsStore.spots.length"
                 v-model="excursionForm.spot_ids" :spots="spotsStore.spots" :like-count="spotsStore.likeCountFor" />
               <DraftStatusBar :status="newExcursionDraft.status.value" :restored="newExcursionDraft.restored.value" />
-              <button type="submit">Hinzufügen</button>
+              <Button type="submit">Hinzufügen</Button>
             </form>
           </Modal>
 
@@ -2073,7 +2074,7 @@ async function removeSpot(id: number) {
                 v-model="editExcursionForm.spot_ids" :spots="spotsStore.spots" :like-count="spotsStore.likeCountFor" />
               <FileAttachments v-if="editingExcursion" domain="ideas" :entity-id="editingExcursion" />
               <DraftStatusBar :status="editExcursionDraft.status.value" :restored="editExcursionDraft.restored.value" />
-              <button type="submit">Speichern</button>
+              <Button type="submit">Speichern</Button>
             </form>
           </Modal>
 
@@ -2107,12 +2108,12 @@ async function removeSpot(id: number) {
                     class="tool-label-text">Filtern</span>
                 </span>
                 <div class="dropdown">
-                  <button ref="categoryBtnRef" type="button" class="secondary category-btn"
+                  <Button ref="categoryBtnRef" variant="secondary" class="category-btn"
                     title="Nach Kategorie filtern" aria-label="Nach Kategorie filtern" @click="toggleCategoryMenu">
                     <AppIcon :icon="FORM_FIELD_ICONS.category" :size="14" group="formFields" /> Kategorie
                     <AppIcon :icon="ACTION_ICONS.chevronDown" :size="12" group="actions" class="caret dropdown-caret"
                       :class="{ open: categoryMenuOpen }" />
-                  </button>
+                  </Button>
                   <Teleport to="body">
                     <template v-if="categoryMenuOpen">
                       <div class="picker-backdrop" @click="categoryMenuOpen = false"></div>
@@ -2126,13 +2127,13 @@ async function removeSpot(id: number) {
                   </Teleport>
                 </div>
                 <div class="dropdown">
-                  <button ref="statusBtnRef" type="button" class="secondary category-btn"
+                  <Button ref="statusBtnRef" variant="secondary" class="category-btn"
                     title="Nach Status (geplant/ungeplant/gemacht) filtern" aria-label="Nach Status filtern"
                     @click="toggleStatusMenu">
                     <AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" /> Status
                     <AppIcon :icon="ACTION_ICONS.chevronDown" :size="12" group="actions" class="caret dropdown-caret"
                       :class="{ open: statusMenuOpen }" />
-                  </button>
+                  </Button>
                   <Teleport to="body">
                     <template v-if="statusMenuOpen">
                       <div class="picker-backdrop" @click="statusMenuOpen = false"></div>
@@ -2262,7 +2263,7 @@ async function removeSpot(id: number) {
                 <TourAssignPicker v-model="spotForm.tourTitles" :tour-options="allTourTitles" />
               </FormField>
               <DraftStatusBar :status="newSpotDraft.status.value" :restored="newSpotDraft.restored.value" />
-              <button type="submit">Hinzufügen</button>
+              <Button type="submit">Hinzufügen</Button>
             </form>
           </Modal>
 
