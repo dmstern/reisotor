@@ -222,7 +222,7 @@ function onToggleDone() {
 </script>
 
 <template>
-  <Card class="spot-card" :class="{ expanded, 'new-highlight': highlighted }" @click="onCardClick">
+  <Card class="card spot-card" :class="{ expanded, 'new-highlight': highlighted }" @click="onCardClick">
     <div class="image" :style="spot.image_url ? { backgroundImage: `url(${spot.image_url})` } : {}">
       <AppIcon v-if="!spot.image_url" class="placeholder" :size="35" :icon="spotCategoryMeta(spot.category).tabler" group="categories" />
       <!-- Nur in der aufgeklappten Karte - in der kompakten Mini-Card (v. a. auf mobile knapper
