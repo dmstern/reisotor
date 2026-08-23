@@ -5,8 +5,8 @@
 // scoped-Styles hier würden dank Vue's Attribut-Selektor-Scoping eine höhere Spezifität als .card
 // bekommen und damit unbeabsichtigt Squircle-Radius/Rahmen/Schatten überschreiben.
 defineProps<{
-  /** BEM-Variante, z. B. "muted" → zusätzlich .card--muted (siehe style.css). */
-  variant?: string;
+  /** BEM-Variante, z. B. "muted" → zusätzlich .card--muted (Styles unten, scoped in dieser Datei). */
+  variant?: 'muted';
 }>();
 </script>
 
@@ -15,3 +15,11 @@ defineProps<{
     <slot />
   </div>
 </template>
+
+<style scoped>
+/* Varianten-Styles leben bewusst hier (scoped) statt in der globalen style.css - Card.vue bleibt
+   damit die einzige Quelle, die kennen muss, welche Varianten es gibt und wie sie aussehen. */
+.card--muted {
+  background: var(--color-hover);
+}
+</style>
