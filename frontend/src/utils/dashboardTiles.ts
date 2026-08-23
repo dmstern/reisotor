@@ -19,7 +19,7 @@ export const SECURITY_CHECK_ICON: IconDef = {
   filled: IconShieldCheckFilled,
 };
 
-// Registry der konfigurierbaren Dashboard-Kacheln (siehe stores/dashboardConfig.ts, ProfileView.vue)
+// Registry der konfigurierbaren Dashboard-Kacheln (siehe stores/dashboardConfig.ts, SettingsView.vue)
 // - 1:1 nach dem Muster von utils/navLinks.ts (NavBar-Konfiguration). Reihenfolge hier ist nur der
 // Fallback-Default für neue Installationen bzw. neu hinzukommende Kacheln - die tatsächliche
 // Anzeige-Reihenfolge kommt aus dashboardConfig.ts. Icons entsprechen den auf den Kacheln selbst

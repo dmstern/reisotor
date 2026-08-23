@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, watch } from 'vue';
 
-// Häufige Reisewährungen als Auswahl (ProfileView.vue) – keine vollständige ISO-4217-Liste, deckt
+// Häufige Reisewährungen als Auswahl (SettingsView.vue) – keine vollständige ISO-4217-Liste, deckt
 // aber die in der Praxis relevanten Fälle ab. 'none' = kein Wechselkurs-Vergleich gewünscht (z. B.
 // wenn alle Urlaube ohnehin in derselben Währung wie zuhause liegen).
 export const HOME_CURRENCY_OPTIONS = [

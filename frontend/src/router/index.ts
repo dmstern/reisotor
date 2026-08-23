@@ -7,7 +7,7 @@ import { useIconStyleStore } from '../stores/iconStyle';
 // auslagern, da sie schon Teil des Hauptbundles ist).
 import ScheduleView from '../views/ScheduleView.vue';
 
-// Viele Sichten (z. B. ProfileView.vue) rendern ihr Template erst hinter einem v-if="!loading" nach
+// Viele Sichten (z. B. SettingsView.vue) rendern ihr Template erst hinter einem v-if="!loading" nach
 // einem asynchronen API-Aufruf – ein Sprungziel wie #weather-provider-settings existiert direkt nach
 // dem Routenwechsel deshalb oft noch gar nicht im DOM. Ein fester setTimeout wäre abhängig von der
 // (auf dem Pi ggf. langsameren) API-Antwortzeit unzuverlässig; stattdessen wird auf das Element
@@ -37,7 +37,7 @@ const router = createRouter({
   // '/' beginnen) zu matchen - schlägt fehl, <router-view> bleibt dauerhaft leer.
   history: createWebHistory(import.meta.env.BASE_URL),
   // Nur für echte Hash-Sprünge (z. B. der "Anbieter wechseln"-Link im Wetter-Widget,
-  // DashboardView.vue -> /profile#weather-provider-settings) – kein genereller Scroll-Reset auf
+  // DashboardView.vue -> /settings#weather-provider-settings) – kein genereller Scroll-Reset auf
   // Position 0 bei jeder Navigation, um das bisherige Verhalten (Scroll-Position bleibt bei
   // normaler Navigation unangetastet) nicht zu verändern.
   async scrollBehavior(to) {
@@ -74,7 +74,7 @@ const router = createRouter({
     { path: '/budget', name: 'budget', component: () => import('../views/BudgetView.vue') },
     { path: '/notes', name: 'notes', component: () => import('../views/NotesView.vue') },
     { path: '/diary', name: 'diary', component: () => import('../views/DiaryView.vue') },
-    { path: '/profile', name: 'profile', component: () => import('../views/ProfileView.vue') },
+    { path: '/settings', name: 'settings', component: () => import('../views/SettingsView.vue') },
     { path: '/trash', name: 'trash', component: () => import('../views/TrashView.vue') },
     {
       path: '/security-check',
@@ -92,7 +92,7 @@ router.beforeEach(async (to) => {
   }
 
   // Einmalig nach bestätigter Session laden (load() ist intern gegen Mehrfachaufrufe abgesichert)
-  // - Icons rendern app-weit (AppIcon.vue), nicht erst nach einem Besuch der Profil-Ansicht wie bei
+  // - Icons rendern app-weit (AppIcon.vue), nicht erst nach einem Besuch der Einstellungs-Ansicht wie bei
   // den Push-Präferenzen.
   if (auth.user) {
     useIconStyleStore().load();

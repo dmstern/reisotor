@@ -175,7 +175,7 @@ function markAllRead() {
 }
 
 /* position:fixed statt (wie TripSwitcher.vue's .dropdown) absolut relativ zum eigenen Wrapper: die
-   Glocke sitzt selbst NICHT am rechten Header-Rand (PresenceAvatars/Theme-Toggle/Profil-Avatar
+   Glocke sitzt selbst NICHT am rechten Header-Rand (PresenceAvatars/Theme-Toggle/Avatar
    folgen noch danach), ein "right:0" relativ zum Wrapper würde das Dropdown dadurch zu weit nach
    links schieben (auf schmalen Viewports bis über den linken Bildschirmrand hinaus). --app-header-
    height wird von AppHeader.vue bereits gepflegt (siehe dortiger ResizeObserver), right per

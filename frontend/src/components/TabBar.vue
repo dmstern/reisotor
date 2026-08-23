@@ -6,8 +6,8 @@ import type { IconDef } from '../utils/icon';
 
 // Gemeinsame Tab-Leiste mit gleitender Unterstreichung (JS-gemessene offsetLeft/offsetWidth des
 // aktiven .tab statt eines starren CSS-Grids, da Tab-Label unterschiedlich breit sind) - vorher an
-// mindestens zwei Stellen (ListenView.vue, ProfileView.vue) unabhängig voneinander implementiert.
-// Genau diese Redundanz führte dazu, dass ProfileView's Kopie beim Bau nie die Gleit-Animation
+// mindestens zwei Stellen (ListenView.vue, SettingsView.vue) unabhängig voneinander implementiert.
+// Genau diese Redundanz führte dazu, dass SettingsView's Kopie beim Bau nie die Gleit-Animation
 // bekam (nur ein hart umschaltender border-bottom, siehe Issue #71) - ListenView.vue's Fassung war
 // die einzige, die die Animation tatsächlich hatte. Ein einzelner gemeinsamer Ort für dieses Muster
 // macht ein "geht hier, geht dort nicht" wie dieses strukturell unmöglich.
@@ -145,7 +145,7 @@ function onTabClick(key: string, event: MouseEvent) {
   gap: var(--space-2);
   border-bottom: 1px solid var(--color-border);
   /* Scrollbar statt umbrechend, wenn zu viele/zu lange Tab-Label für die verfügbare Breite reichen
-     (z. B. ProfileView.vue's 6 Tabs) - gleiches Muster wie NavBar.vue's mobile Scroll-Leiste, statt
+     (z. B. SettingsView.vue's 6 Tabs) - gleiches Muster wie NavBar.vue's mobile Scroll-Leiste, statt
      die Tabs auf mehrere Zeilen umbrechen zu lassen. */
   overflow-x: auto;
   overflow-y: hidden;

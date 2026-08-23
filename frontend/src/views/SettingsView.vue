@@ -350,7 +350,7 @@ async function onImportFileSelected(event: Event) {
 
 <template>
   <div class="page" v-if="!loading">
-    <h1>Profil</h1>
+    <h1>Einstellungen</h1>
 
     <div class="tab-bar-wrap">
       <TabBar :tabs="TABS" :active-key="activeTab" @select="selectTab" />

@@ -129,7 +129,7 @@ let cache: { key: string; promise: Promise<DailyWeather[]> } | null = null;
 // abgefragt wird – ECMWF IFS als Default, da es sich in der Praxis am ehesten mit dem deckt, was
 // kommerzielle Wetter-Apps (Apple Weather/Google) zeigen (ein Nutzer hatte abweichende Werte/
 // Symbole gegenüber Apple Weather bemerkt, v. a. bei der Bewölkung, dem modellsensibelsten Wert
-// überhaupt). In den Einstellungen (ProfileView.vue) auf ein anderes Modell umstellbar.
+// überhaupt). In den Einstellungen (SettingsView.vue) auf ein anderes Modell umstellbar.
 // Deterministisches, überwiegend sonniges Muster (kein echter Netzwerk-Zugriff im backend-losen
 // Demo-Build, siehe demoClient.ts) - sorgt dafür, dass sowohl die echte Live-Demo als auch daraus
 // erzeugte Marketing-Screenshots (siehe DESIGN.md) eine plausible Wetterkarte statt der sonst

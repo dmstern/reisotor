@@ -35,7 +35,7 @@ const activeTab = computed<Tab>(() => {
 
 // Icon/unseen-Status für die gemeinsame TabBar-Komponente aufgelöst statt roher SECTION_ICON_DEFS -
 // diese Komponente (statt der bisherigen, lokal duplizierten Gleit-Unterstreichungs-Logik) wird
-// jetzt auch von ProfileView.vue genutzt (siehe dortiger Kommentar zur Redundanz, Issue #71).
+// jetzt auch von SettingsView.vue genutzt (siehe dortiger Kommentar zur Redundanz, Issue #71).
 const tabBarItems = computed<TabBarItem[]>(() =>
   TABS.map((tab) => ({
     key: tab.key,
