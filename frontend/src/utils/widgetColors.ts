@@ -1,4 +1,5 @@
 import { assignCategoryColors } from './categoryColors';
+import { getCssVar } from './cssVars';
 
 // Feste, deterministische Farbzuordnung je Dashboard-Kachel (dataviz-Skill: kategoriale Identität,
 // fixe Reihenfolge statt gewürfelter Farben) – dieselbe validierte Palette wie überall sonst in der
@@ -21,7 +22,7 @@ export const WIDGET_COLORS = assignCategoryColors([
 // reines Spaß-Gimmick, kein echtes Inhalts-Widget – über die kategoriale Palette laufen zu lassen
 // würde bei jeder künftigen Erweiterung dieser Liste die Farben der ECHTEN Widgets mitverschieben
 // (assignCategoryColors sortiert alphabetisch neu). Teal passend zum Reisotor-Roboter-Logo.
-export const SECURITY_TILE_COLOR = '#4FB3A9';
+export const SECURITY_TILE_COLOR = getCssVar('--color-security-tile') || '#4FB3A9';
 
 // Analoge Farbzuordnung für die NavBar (siehe stores/iconStyle.ts's navColored-Einstellung,
 // components/NavBar.vue) - bewusst eine EIGENE assignCategoryColors()-Zuweisung statt WIDGET_COLORS
@@ -33,10 +34,10 @@ export const SECURITY_TILE_COLOR = '#4FB3A9';
 // übernommen statt eine zweite, abweichende zuzuweisen - dieselbe Kategorie soll app-weit dieselbe
 // Farbe tragen.
 export const NAV_LINK_COLORS = new Map<string, string>([
-  ['dashboard', '#2a78d6'],
+  ['dashboard', getCssVar('--nav-color-dashboard') || '#2a78d6'],
   ['calendar', WIDGET_COLORS.get('schedule')!],
-  ['listen', '#e87ba4'],
-  ['excursions', '#008300'],
+  ['listen', getCssVar('--nav-color-listen') || '#e87ba4'],
+  ['excursions', getCssVar('--nav-color-excursions') || '#008300'],
   ['travel', WIDGET_COLORS.get('travel')!],
   ['budget', WIDGET_COLORS.get('budget')!],
   ['diary', WIDGET_COLORS.get('diary')!],
