@@ -54,8 +54,9 @@ const extraCount = computed(() => Math.max(0, props.images.length - 4));
 .more {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  color: #fff;
+  /* token-aware overlay color with a safe hex/rgba fallback */
+  background: var(--color-collage-overlay, rgba(0,0,0,0.45));
+  color: var(--color-on-primary, #fff);
   display: flex;
   align-items: center;
   justify-content: center;
