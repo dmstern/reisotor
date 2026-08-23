@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This file provides guidance to AI Coding Agents (Antigravity, Claude Code, etc.) when working with code in this repository.
+This file provides guidance to AI Coding Agents (Antigravity, Claude Code, Cursor AI, GitHub Copilot, etc.) when working with code in this repository.
 
 Reisotor ist eine Vue 3 + Fastify-Web-App zur gemeinsamen Reiseplanung, ursprünglich für zwei
 Personen pro Haushalt gebaut. Registrierung ist offen (E-Mail-Adresse, `routes/auth.ts`), Zugriff
