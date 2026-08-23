@@ -201,7 +201,7 @@ function onSpotDrop(event: DragEvent) {
 
 <template>
   <Card
-    class="excursion-card"
+    class="card excursion-card"
     :class="{ 'drop-target': spotDragOverCount > 0, 'new-highlight': highlighted, expanded }"
     @click="onCardClick"
     @dragover.prevent
