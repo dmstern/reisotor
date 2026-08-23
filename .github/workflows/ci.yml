@@ -78,7 +78,7 @@ jobs:
           retention-days: 1
 
   e2e-tests:
-    name: E2E Tests (Shard ${{ matrix.shard }}/3)
+    name: E2E Tests (Shard ${{ matrix.shard }}/5)
     needs: [backend-unit-and-build, frontend-unit-and-build]
     runs-on: ubuntu-latest
     # Playwrights offizielles Image bringt Chromium UND sämtliche System-Bibliotheken dafür schon
@@ -92,7 +92,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3]
+        shard: [1, 2, 3, 4, 5]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -150,9 +150,9 @@ jobs:
         working-directory: e2e
         run: npm ci
 
-      - name: Run e2e tests (Shard ${{ matrix.shard }}/3)
+      - name: Run e2e tests (Shard ${{ matrix.shard }}/5)
         working-directory: e2e
-        run: npx playwright test --shard=${{ matrix.shard }}/3
+        run: npx playwright test --shard=${{ matrix.shard }}/5
 
       - name: Upload e2e report on failure
         if: failure()
