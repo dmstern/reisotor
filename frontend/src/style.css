@@ -122,6 +122,15 @@
      Rot-/Orange-Tons, um maximal von --color-accent/--color-danger abzuheben. */
   --color-scheduled: #1e96d1;
 
+  /* Ergänzte semantische On-* Tokens für Fälle, in denen Text/Icon auf farbigem Grund stehen
+     (z. B. Marker-Icons, farbige Buttons). Diese sind absichtlich semantisch und werden in JS/TS
+     statt mit harten Hex-Werten referenziert. Fallbacks in Komponenten/Utils sind zusätzlich
+     vorgesehen, falls eine Variable zur Laufzeit nicht verfügbar ist. */
+  --color-on-surface: var(--color-text);
+  --color-on-primary: #ffffff;
+  --color-on-accent: #ffffff;
+  --color-surface-muted: #f2efe9;
+
   /* Etwas großzügiger als vorher (8/14/22) – Basiswerte, gelten unverändert für alles, was normal
      rund bleibt (Pillen, echte Kreise wie EditButton/DeleteButton mit border-radius:50%, kleine
      Chips/Badges, …). */
