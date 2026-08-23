@@ -1529,7 +1529,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
     <Card class="card focus-spot-list" v-else-if="drawers.mapFocusDate && focusedDateStations.length">
       <div class="focus-spot-list-header">
         <h3 class="focus-spot-list-title">
-          <AppIcon :icon="FORM_FIELD_ICONS.period" :size="16" group="formFields" /> {{ formatDate(drawers.mapFocusDate) }}
+          <AppIcon :icon="FORM_FIELD_ICONS.period" :size="16" group="formFields" /> {{ formatDate(drawers.mapFocusDate!) }}
         </h3>
         <button
           type="button"
