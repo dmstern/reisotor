@@ -4,6 +4,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { IconCompass, IconCompassFilled } from '@tabler/icons-vue';
 import { cachedEmojiPin, LEAFLET_ATTRIBUTION_PREFIX, pulsingEmojiPin } from '../utils/mapRoute';
+import { getCssVar } from '../utils/cssVars';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import AppIcon from './AppIcon.vue';
@@ -55,7 +56,7 @@ function placeMarker(lat: number, lng: number) {
   if (marker) {
     marker.setLatLng([lat, lng]);
   } else {
-    marker = L.marker([lat, lng], { icon: cachedEmojiPin(FORM_FIELD_ICONS.location, '#e08e45') }).addTo(map);
+    marker = L.marker([lat, lng], { icon: cachedEmojiPin(FORM_FIELD_ICONS.location, getCssVar('--color-accent') || '#e08e45') }).addTo(map);
   }
 }
 
@@ -68,7 +69,7 @@ function renderReferencePoints() {
   if (!referenceLayer) referenceLayer = L.layerGroup().addTo(map);
   for (const point of props.referencePoints) {
     L.marker([point.lat, point.lng], {
-      icon: cachedEmojiPin(point.icon ?? FORM_FIELD_ICONS.location, '#8a8a86'),
+      icon: cachedEmojiPin(point.icon ?? FORM_FIELD_ICONS.location, getCssVar('--color-text-muted') || '#8a8a86'),
       interactive: false,
       opacity: 0.7,
     }).addTo(referenceLayer);
@@ -89,7 +90,7 @@ function startOwnLocation() {
       if (ownLocationMarker) {
         ownLocationMarker.setLatLng(latlng);
       } else {
-        ownLocationMarker = L.marker(latlng, { icon: pulsingEmojiPin(OWN_LOCATION_ICON, '#2f6fed'), interactive: false }).addTo(map!);
+        ownLocationMarker = L.marker(latlng, { icon: pulsingEmojiPin(OWN_LOCATION_ICON, getCssVar('--color-scheduled') || '#2f6fed'), interactive: false }).addTo(map!);
       }
     },
     () => {
