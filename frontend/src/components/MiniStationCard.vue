@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { ExcursionStation } from '../utils/excursionStations';
+import Card from './primitives/Card.vue';
 
 // Ganz bewusst ohne Like/Kommentar/Edit/Löschen/Drag – dient in der Ausflug-Stationsliste
 // (TripMap.vue's Ausflug-Fokus-Stationsliste) nur der Übersicht "welche Stationen in welcher
@@ -11,7 +12,7 @@ defineProps<{ station: ExcursionStation }>();
 </script>
 
 <template>
-  <div class="mini-station-card">
+  <Card class="mini-station-card">
     <div class="image" :style="station.imageUrl ? { backgroundImage: `url(${station.imageUrl})` } : {}">
       <span v-if="!station.imageUrl" class="placeholder">{{ station.icon }}</span>
     </div>
@@ -19,7 +20,7 @@ defineProps<{ station: ExcursionStation }>();
       <span class="title">{{ station.title }}</span>
       <span class="category">{{ station.icon }} {{ station.category }}</span>
     </div>
-  </div>
+  </Card>
 </template>
 
 <style scoped>
