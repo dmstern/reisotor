@@ -63,6 +63,13 @@ jobs:
           npm test
           npm run build
 
+      - name: Upload backend build for e2e
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-dist
+          path: backend/dist
+          retention-days: 1
+
   frontend-unit-and-build:
     name: Frontend (Unit Tests & Build)
     runs-on: ubuntu-latest
@@ -83,6 +90,13 @@ jobs:
           npm ci
           npm test
           npm run build
+
+      - name: Upload frontend build for e2e
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+          retention-days: 1
 
   e2e-tests:
     name: E2E Tests (Shard ${{ matrix.shard }}/5)
@@ -122,17 +136,28 @@ jobs:
             frontend/package-lock.json
             e2e/package-lock.json
 
-      - name: Install & build backend
-        working-directory: backend
-        run: |
-          npm ci
-          npm run build
+      - name: Download backend build
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-dist
+          path: backend/dist
 
-      - name: Install & build frontend
+      - name: Download frontend build
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+
+      # Nur npm ci, kein erneutes tsc/vite build: dist/ kommt aus den Unit-Test-Jobs oben.
+      # node_modules müssen trotzdem je Shard frisch im Playwright-Container installiert werden
+      # (better-sqlite3/bcrypt-Nativmodule für dieses Image/Node, nicht vom ubuntu-latest-Runner).
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Install frontend dependencies
         working-directory: frontend
-        run: |
-          npm ci
-          npm run build
+        run: npm ci
 
       - name: Install e2e dependencies
         working-directory: e2e
