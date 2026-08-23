@@ -1583,7 +1583,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
       </div>
       <p v-if="focusedTrackPoints.length < 2" class="focus-spot-list-subtitle">Lädt Route…</p>
       <TrackPlayback v-else :points="focusedTrackPoints" v-model:progress="trackPlaybackProgress" />
-    </div>
+    </Card>
     </Teleport>
 
     <TravelDetailDialog
