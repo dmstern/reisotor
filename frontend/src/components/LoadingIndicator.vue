@@ -91,7 +91,7 @@ const label = computed(() => (visibleKind.value ? LABELS[visibleKind.value] : ''
   gap: 4px;
   font-size: 0.75rem;
   font-weight: 600;
-  color: #fff;
+  color: var(--color-on-primary, #fff);
   background: var(--color-primary);
   padding: 4px 10px;
   border-radius: 999px;
@@ -131,7 +131,7 @@ const label = computed(() => (visibleKind.value ? LABELS[visibleKind.value] : ''
   width: 10px;
   height: 10px;
   border: 2px solid rgba(255, 255, 255, 0.4);
-  border-top-color: #fff;
+  border-top-color: var(--color-on-primary, #fff);
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
   flex-shrink: 0;
