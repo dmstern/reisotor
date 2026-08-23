@@ -45,6 +45,7 @@ import { excursionStationKeys, resolveStations, type ExcursionStation } from '..
 import { interpolateTrackPosition } from '../utils/trackGeometry';
 import { useIsDesktop } from '../composables/useIsDesktop';
 import MiniStationCard from './MiniStationCard.vue';
+import Card from './primitives/Card.vue';
 import TravelDetailDialog from './TravelDetailDialog.vue';
 import TrackPlayback from './TrackPlayback.vue';
 import AppIcon from './AppIcon.vue';
@@ -1490,7 +1491,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
           <span v-if="dayHasContent(day)" class="day-chip-dot" aria-hidden="true"></span>
         </button>
       </div>
-    <div class="card focus-spot-list" v-if="focusedExcursion && focusedExcursionStations.length">
+    <Card class="card focus-spot-list" v-if="focusedExcursion && focusedExcursionStations.length">
       <div class="focus-spot-list-header">
         <button type="button" class="focus-spot-list-title-btn" @click="openExcursionDetail">
           <h3 class="focus-spot-list-title">
@@ -1525,7 +1526,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
       </div>
     </div>
 
-    <div class="card focus-spot-list" v-else-if="drawers.mapFocusDate && focusedDateStations.length">
+    <Card class="card focus-spot-list" v-else-if="drawers.mapFocusDate && focusedDateStations.length">
       <div class="focus-spot-list-header">
         <h3 class="focus-spot-list-title">
           <AppIcon :icon="FORM_FIELD_ICONS.period" :size="16" group="formFields" /> {{ formatDate(drawers.mapFocusDate) }}
@@ -1564,7 +1565,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
       </div>
     </div>
 
-    <div class="card focus-spot-list" v-else-if="focusedTrack">
+    <Card class="card focus-spot-list" v-else-if="focusedTrack">
       <div class="focus-spot-list-header">
         <h3 class="focus-spot-list-title">
           <AppIcon :icon="ACTION_ICONS.orientationNorth" :size="16" group="actions" />
@@ -1932,7 +1933,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
 
 .day-chip.active {
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-on-primary, #fff);
 }
 
 .day-chip.active .day-chip-weekday {
@@ -1940,11 +1941,11 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
 }
 
 .day-chip.active .day-chip-num {
-  color: #fff;
+  color: var(--color-on-primary, #fff);
 }
 
 .day-chip.active .day-chip-dot {
-  background: #fff;
+  background: var(--color-on-primary, #fff);
 }
 
 /* Die OpenStreetMap-Kacheln selbst kennen keinen Dark Mode – ein Farb-Invert nur auf der
@@ -2094,7 +2095,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
   height: 18px;
   border-radius: 50%;
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-on-primary, #fff);
   font-size: 0.68rem;
   font-weight: 700;
   display: flex;
