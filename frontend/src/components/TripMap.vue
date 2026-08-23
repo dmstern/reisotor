@@ -34,6 +34,7 @@ import { spotCategoryMeta } from '../utils/spotCategory';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { buildTravelDerivedLocations } from '../utils/travelDerivedLocations';
 import { arcRoute, cachedEmojiPin, compassPin, LEAFLET_ATTRIBUTION_PREFIX } from '../utils/mapRoute';
+import { getCssVar } from '../utils/cssVars';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { MAP_TOOL_ICONS } from '../utils/mapToolIcons';
@@ -81,7 +82,7 @@ interface MapPoint {
   done?: boolean;
 }
 
-const TRAVEL_COLOR = '#4a3aa7';
+const TRAVEL_COLOR = getCssVar('--color-accent-secondary') || '#4a3aa7';
 
 const props = defineProps<{
   /** Von ExcursionsView.vue durchgereichter Kategorie-Filter der Spots-Liste (leer = alles

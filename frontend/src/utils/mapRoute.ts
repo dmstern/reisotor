@@ -2,6 +2,7 @@ import L from 'leaflet';
 import { useIconStyleStore } from '../stores/iconStyle';
 import { tablerMarkerSvg } from './tablerMarkerSvg';
 import type { IconDef } from './icon';
+import { getCssVar } from './cssVars';
 
 // Leaflets Default-Attribution-Prefix stellt der "Leaflet"-Verlinkung eine kleine
 // Ukraine-Flaggen-SVG voran (Control.Attribution.js, seit 2022 aus Solidarität fest einprogrammiert,
@@ -29,8 +30,9 @@ function markerGlyphHtml(icon: MarkerGlyph, sizePx: number): string {
     return `<span style="font-size:${sizePx}px;line-height:1;">${icon.emoji}</span>`;
   }
   const svg = tablerMarkerSvg(icon.id, iconStyle.styleVariantForGroup('categories'), sizePx);
+  const onPrimary = getCssVar('--color-on-primary') || '#fff';
   return svg
-    ? `<span style="color:#fff;display:inline-flex;width:${sizePx}px;height:${sizePx}px;">${svg}</span>`
+    ? `<span style="color:${onPrimary};display:inline-flex;width:${sizePx}px;height:${sizePx}px;">${svg}</span>`
     : `<span style="font-size:${sizePx}px;line-height:1;">${icon.emoji}</span>`;
 }
 
