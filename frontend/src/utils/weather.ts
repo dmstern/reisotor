@@ -56,14 +56,16 @@ const ICON_UNKNOWN: IconDef = { id: 'temperature', emoji: '🌡️', outline: Ic
 const ICON_DROPLET: IconDef = { id: 'droplet', emoji: '💧', outline: IconDroplet, filled: IconDropletFilled };
 const ICON_BOLT: IconDef = { id: 'bolt', emoji: '⚡', outline: IconBolt, filled: IconBoltFilled };
 
+import { getCssVar } from './cssVars';
+
 // Passend zur jeweiligen Wetter-Bedingung (Issue #74: "sonne gelb, wolken grau, regentropfen blau,
 // blitze gelb"), genutzt von components/WeatherIcon.vue, wenn stores/iconStyle.ts's
-// colorizeWeather aktiv ist.
-const COLOR_SUN = '#f5b100';
-const COLOR_CLOUD = '#8a94a6';
-const COLOR_RAIN = '#3b82f6';
-const COLOR_SNOW = '#7dd3fc';
-const COLOR_BOLT = '#f5b100';
+// colorizeWeather aktiv ist. Read tokens when available so colors can be customized via CSS.
+const COLOR_SUN = getCssVar('--weather-sun') || '#f5b100';
+const COLOR_CLOUD = getCssVar('--weather-cloud') || '#8a94a6';
+const COLOR_RAIN = getCssVar('--weather-rain') || '#3b82f6';
+const COLOR_SNOW = getCssVar('--weather-snow') || '#7dd3fc';
+const COLOR_BOLT = getCssVar('--weather-bolt') || '#f5b100';
 
 export interface WeatherIconPart {
   icon: IconDef;
