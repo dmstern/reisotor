@@ -45,6 +45,7 @@ import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import type { IconDef } from '../utils/icon';
 import AppIcon from '../components/AppIcon.vue';
+import ActionButton from '../components/primitives/ActionButton.vue';
 
 // Touren-Verwaltung (Anlegen/Bearbeiten/Einplanen) ist seit dem Zurückbau des früheren "erweiterten
 // Touren-Modus" (vormals eine eigenständige Ausflüge-Schublade, views/ExcursionsDrawer.vue) Teil
@@ -1790,13 +1791,13 @@ async function removeSpot(id: number) {
               ]" />
             </h2>
             <div class="header-actions">
-              <button class="add-button" v-if="groupMode === 'category'" aria-label="Neuer Spot" @click="showSpotForm = true">
+              <ActionButton class="add-button" v-if="groupMode === 'category'" aria-label="Neuer Spot" @click="showSpotForm = true" variant="primary">
                 <AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> <span class="add-button__label">Neuer Spot</span>
-              </button>
+              </ActionButton>
               <template v-else-if="groupMode === 'tours'">
-                <button class="add-button" aria-label="Neue Tour" @click="openExcursionForm()">
+                <ActionButton class="add-button" aria-label="Neue Tour" @click="openExcursionForm()" variant="primary">
                   <AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> <span class="add-button__label">Neue Tour</span>
-                </button>
+                </ActionButton>
               </template>
 
             </div>
@@ -3051,7 +3052,7 @@ async function removeSpot(id: number) {
 .header-actions button.recording {
   background: var(--color-danger);
   border-color: var(--color-danger);
-  color: #fff;
+  color: var(--color-on-primary, #fff);
 }
 
 .hint {
