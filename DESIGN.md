@@ -98,6 +98,19 @@ Nicht bei jeder trivialen Änderung ein vollständiges Cross-Device-Testprotokol
 jedem neuen Layout-Umbruch/jeder neuen Interaktion aktiv kurz "wie sieht das am jeweils anderen Ende
 aus" durchdenken, statt es erst bei Nutzer:innen-Feedback zu bemerken.
 
+## Layout-Containment & Z-Index-Stapelung (Überlappung vermeiden)
+
+Damit Elemente (Buttons, Status-Badges, Dropdowns, Navigationsleisten) sich nicht gegenseitig verdecken oder aus ihren Containern herausragen:
+
+1. **Keine kollidierenden `position: absolute`-Badges in derselben Ecke**: Auf schmalen Viewports (Mobile) führen mehrere absolut positionierte Elemente in derselben Ecke (z. B. `.card-delete` oben rechts und ein `.status`-Badge auf der Karte) unvermeidbar zu Überlappungen. Buttons und Status-Badges immer in einer strukturierten Flexbox/Grid-Zeile (`flex-wrap: wrap; gap: var(--space-2)`) anordnen statt sie starr absolut in dieselbe Ecke zu heften.
+2. **Container-Overflow-Schutz (`min-width: 0` in Flex-Containern)**: Flex-Items schrumpfen standardmäßig nicht unter ihre minimale Inhaltsbreite (`min-width: auto`). Lange Wörter, Dateipfade oder Buttons in Flex-Zeilen drängen Nachbarelemente aus dem Container oder führen zu horizontalem Overflow. Flex-Childs mit dynamischem Text (z. B. Urlaubsname, Spot-Titel) immer mit `min-width: 0; text-overflow: ellipsis; overflow: hidden;` absichern.
+3. **Z-Index-Stapelung über CSS-Variablen/Teleport**:
+   - Schwebende Menüs & Dropdowns (z. B. `MapsAppPicker.vue`, Kalender-Export-Dropdown) per `<Teleport to="body">` aus scrollbaren Containern oder Modals herauslösen, damit sie nicht von `overflow: hidden`/`auto` des Eltern-Elements abgeschnitten werden.
+   - Z-Index-Ebenen einhalten: Base-Content (`z-index: 1`), Sticky-Header/NavBar (`z-index: 10`), Schubladen/Sheets (`z-index: 20`), Modals/Backdrops (`z-index: 100`), Dropdowns/Popovers (`z-index: 1000`), Toasts/PWA-Prompts (`z-index: 9999`).
+4. **Respektierung variabler Header-/Footer-Offsets**:
+   - Absolute oder sticky Elemente (wie `.spots-col` oder `nav.navbar.mobile-bottom`) dürfen Offsets wie `--app-header-height` oder `--navbar-bottom-offset` nicht hartcodieren (`top: 56px`), sondern müssen dynamische CSS-Variablen nutzen, falls der Header durch Statusmeldungen (z. B. Offline-Pill) höher wird.
+
+
 ## Farben
 
 Alle Farben laufen über CSS-Variablen (`--color-*` im `:root`-Block), nie als Hex-Wert direkt in
