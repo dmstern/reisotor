@@ -70,16 +70,37 @@ export async function expectWithinBox(child: Locator, parent: Locator): Promise<
 // Ecken-Bereich der tatsächlichen Form – dort trifft elementFromPoint() dann fälschlich das
 // dahinterliegende Element (z. B. ein Backdrop), obwohl das Zielelement selbst gar nicht verdeckt
 // ist. Kanten-Mittelpunkte sind von border-radius nie betroffen, unabhängig vom Radius.
-function samplePoints(box: Box): { x: number; y: number }[] {
-  const inset = Math.min(2, box.width / 4, box.height / 4);
-  const midX = box.left + box.width / 2;
-  const midY = box.top + box.height / 2;
+// Nur den sichtbaren Anteil der Box im Viewport sampeln: elementFromPoint() liefert sonst "null"
+// für Koordinaten außerhalb des Viewports (z. B. schmale Mobile-Viewports + leicht überstehende
+// Status-Pills), was zu falschen Fehlschlägen führt — siehe layout-overlap.spec.ts, Kommentar bei
+// statusChip.scrollIntoViewIfNeeded().
+function samplePoints(box: Box, viewport: { width: number; height: number }): { x: number; y: number }[] {
+  const left = Math.max(box.left, 0);
+  const top = Math.max(box.top, 0);
+  const right = Math.min(box.right, viewport.width);
+  const bottom = Math.min(box.bottom, viewport.height);
+  const visible: Box = {
+    x: left,
+    y: top,
+    width: Math.max(0, right - left),
+    height: Math.max(0, bottom - top),
+    left,
+    top,
+    right,
+    bottom,
+  };
+  if (visible.width < 1 || visible.height < 1) {
+    throw new Error('target-Element hat keinen sichtbaren Anteil im Viewport');
+  }
+  const inset = Math.min(2, visible.width / 4, visible.height / 4);
+  const midX = visible.left + visible.width / 2;
+  const midY = visible.top + visible.height / 2;
   return [
     { x: midX, y: midY },
-    { x: midX, y: box.top + inset },
-    { x: midX, y: box.bottom - inset },
-    { x: box.left + inset, y: midY },
-    { x: box.right - inset, y: midY },
+    { x: midX, y: visible.top + inset },
+    { x: midX, y: visible.bottom - inset },
+    { x: visible.left + inset, y: midY },
+    { x: visible.right - inset, y: midY },
   ];
 }
 
@@ -94,8 +115,11 @@ export async function expectNotCoveredBy(page: Page, target: Locator, blocker: L
   expect(targetHandle, 'target-Element nicht auffindbar').not.toBeNull();
   if (!targetHandle) return;
   const box = await boxOf(target);
+  const viewport = page.viewportSize();
+  expect(viewport, 'page.viewportSize() ist null').not.toBeNull();
+  if (!viewport) return;
 
-  for (const point of samplePoints(box)) {
+  for (const point of samplePoints(box, viewport)) {
     const result = await page.evaluate(
       ([el, blockerEl, x, y]) => {
         const hit = document.elementFromPoint(x, y);
