@@ -11,6 +11,8 @@
     "isolatedModules": true,
     "noEmit": true,
     "skipLibCheck": true,
+    "incremental": true,
+    "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo",
     "types": ["vite/client"]
   },
   "include": ["src/**/*.ts", "src/**/*.vue"]
