@@ -43,7 +43,6 @@ const currentOption = computed(() => THEME_MODE_OPTIONS.find((o) => o.value === 
   flex-shrink: 0;
   border-radius: 50%;
   corner-shape: round;
-  border: 1px solid var(--color-border);
   justify-content: center;
 }
 

@@ -139,6 +139,7 @@ function markAllRead() {
   cursor: pointer;
   flex-shrink: 0;
   transition: background 0.15s ease;
+  box-shadow: none;
 }
 
 .bell-btn:hover {
