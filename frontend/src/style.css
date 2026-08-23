@@ -332,7 +332,6 @@ button {
   background: var(--color-primary);
   color: white;
   font-weight: 600;
-  box-shadow: var(--shadow-sm);
   transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
 

@@ -145,7 +145,6 @@ function openMembers(trip: Trip) {
   font-weight: 600;
   color: var(--color-text);
   cursor: pointer;
-  box-shadow: none;
 }
 
 .row-actions {

@@ -228,7 +228,6 @@ function isActive(name: string, attrs?: Record<string, unknown>) {
   font-size: 0.85rem;
   cursor: pointer;
   line-height: 1;
-  box-shadow: none;
 }
 
 .toolbar-btn:hover {
