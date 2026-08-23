@@ -6,6 +6,7 @@ import BudgetMeter from './BudgetMeter.vue';
 import DeleteButton from './DeleteButton.vue';
 import FormField from './FormField.vue';
 import AppIcon from './AppIcon.vue';
+import Card from './primitives/Card.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
 const props = defineProps<{
@@ -56,7 +57,7 @@ function updateAllocationAmount(category: string, value: string) {
 </script>
 
 <template>
-  <div class="card pot-card">
+  <Card class="pot-card">
     <div class="pot-head">
       <div class="pot-title">
         <h3>{{ budget.name }}</h3>
@@ -113,7 +114,7 @@ function updateAllocationAmount(category: string, value: string) {
         <button type="submit"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Hinzufügen</button>
       </form>
     </details>
-  </div>
+  </Card>
 </template>
 
 <style scoped>

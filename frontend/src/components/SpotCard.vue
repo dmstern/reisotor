@@ -23,6 +23,7 @@ import TourAssignDropdown from './TourAssignDropdown.vue';
 import FileAttachments from './FileAttachments.vue';
 import PendingSyncBadge from './PendingSyncBadge.vue';
 import AppIcon from './AppIcon.vue';
+import Card from './primitives/Card.vue';
 import WeatherIcon from './WeatherIcon.vue';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
@@ -221,7 +222,7 @@ function onToggleDone() {
 </script>
 
 <template>
-  <div class="card spot-card" :class="{ expanded, 'new-highlight': highlighted }" @click="onCardClick">
+  <Card class="spot-card" :class="{ expanded, 'new-highlight': highlighted }" @click="onCardClick">
     <div class="image" :style="spot.image_url ? { backgroundImage: `url(${spot.image_url})` } : {}">
       <AppIcon v-if="!spot.image_url" class="placeholder" :size="35" :icon="spotCategoryMeta(spot.category).tabler" group="categories" />
       <!-- Nur in der aufgeklappten Karte - in der kompakten Mini-Card (v. a. auf mobile knapper
@@ -385,7 +386,7 @@ function onToggleDone() {
         <FileAttachments domain="spots" :entity-id="spot.id" :editable="false" />
       </div>
     </div>
-  </div>
+  </Card>
 </template>
 
 <style scoped>
