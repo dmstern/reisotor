@@ -131,6 +131,9 @@
   --color-on-accent: #ffffff;
   --color-surface-muted: #f2efe9;
 
+  /* Overlay used by image collages for the "+N" tile; tokenized so themes can override it centrally */
+  --color-collage-overlay: rgba(0,0,0,0.45);
+
   /* Etwas großzügiger als vorher (8/14/22) – Basiswerte, gelten unverändert für alles, was normal
      rund bleibt (Pillen, echte Kreise wie EditButton/DeleteButton mit border-radius:50%, kleine
      Chips/Badges, …). */
