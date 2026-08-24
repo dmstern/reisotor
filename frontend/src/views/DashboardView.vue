@@ -326,7 +326,7 @@ function addDaysToDateStr(dateStr: string, days: number): string {
 }
 
 // Standardmäßig nur die letzten paar Urlaubstage (Packen/Heimreise im Blick), wahlweise über
-// uiSettings.showHomeWeatherFullTrip (ProfileView.vue) für den kompletten Urlaubszeitraum wie beim
+// uiSettings.showHomeWeatherFullTrip (SettingsView.vue) für den kompletten Urlaubszeitraum wie beim
 // Reiseziel-Wetter oben.
 const HOME_WEATHER_TAIL_DAYS = 3;
 const homeForecastDays = computed(() => {
@@ -434,7 +434,7 @@ function formatWeekdayDate(d: string) {
                abgefragt - "Anbieter wechseln" wäre dort nur eine Sackgasse (ändert nichts an den
                Fake-Daten), deshalb eigener, nicht klickbarer Hinweis. -->
           <p v-if="DEMO_MODE" class="weather-source static">Demo-Wetterdaten (keine echte Vorhersage)</p>
-          <router-link v-else to="/profile?tab=trip#weather-provider-settings" class="weather-source">
+          <router-link v-else to="/settings?tab=trip#weather-provider-settings" class="weather-source">
             Quelle: Open-Meteo ({{ weatherModelLabel }}) · Anbieter wechseln
           </router-link>
         </template>
@@ -500,14 +500,14 @@ function formatWeekdayDate(d: string) {
         <!-- Nennt nur Quellen, die tatsächlich zu einer der Zeilen oben beigetragen haben (siehe
              regionSourceParts) - und verlinkt nur zur Heimatwährungs-Auswahl, wenn ein Wechselkurs
              auch wirklich mit dabei ist (analog zum "Quelle: Open-Meteo"-Hinweis beim Wetter oben). -->
-        <router-link v-if="regionShowsExchange" to="/profile?tab=trip#home-currency-settings" class="weather-source">
+        <router-link v-if="regionShowsExchange" to="/settings?tab=trip#home-currency-settings" class="weather-source">
           Quelle: {{ regionSourceParts.join(' · ') }} · Anbieter wechseln
         </router-link>
         <p v-else class="weather-source static">Quelle: {{ regionSourceParts.join(' · ') }}</p>
       </template>
     </section>
 
-    <!-- Sichtbarkeit + Reihenfolge der Kacheln kommen aus dashboardConfig.ts (ProfileView.vue's
+    <!-- Sichtbarkeit + Reihenfolge der Kacheln kommen aus dashboardConfig.ts (SettingsView.vue's
          "🧩 Dashboard-Kacheln"-Einstellung, 1:1 nach dem Muster der NavBar-Konfiguration/
          navConfig.ts) - jede Kachel behält ihre bisherige, unveränderte Markup/Logik, nur die
          Reihenfolge/Sichtbarkeit ist jetzt datengetrieben statt fest im Template verdrahtet. */-->

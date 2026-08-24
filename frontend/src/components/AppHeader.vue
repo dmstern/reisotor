@@ -20,7 +20,7 @@ const auth = useAuthStore();
 // unabhängig davon laufen, ob gerade eine bestimmte Unteransicht gemountet ist.
 useConnectivityStore();
 
-// Steht die NavBar (per Profil-Einstellung, siehe stores/navPosition.ts) gerade NICHT direkt unter
+// Steht die NavBar (per Einstellung, siehe stores/navPosition.ts) gerade NICHT direkt unter
 // dem Header (sondern unten am Viewport-Rand), fehlt der Header sonst komplett ohne den kräftigeren
 // Schatten, der ihn vom scrollenden Inhalt abhebt (siehe .app-header-Kommentar unten) – die NavBar
 // selbst bekommt in dem Fall ja ihren eigenen, nach oben gerichteten Schatten. Gleiche
@@ -86,7 +86,7 @@ const isNonProd = computed(() => buildInfoStore.buildInfo != null && buildInfoSt
       <PresenceAvatars />
       <NotificationInbox />
       <ThemeModeSelect variant="icon" class="theme-toggle" />
-      <router-link to="/profile" class="profile-link" title="Profil">
+      <router-link to="/settings" class="profile-link" title="Einstellungen">
         <span class="avatar">{{ auth.user?.avatar || '👤' }}</span>
       </router-link>
     </div>
@@ -109,7 +109,7 @@ const isNonProd = computed(() => buildInfoStore.buildInfo != null && buildInfoSt
      den deutlich sichtbaren Schatten, der den fixen Kopfbereich vom scrollenden Inhalt abhebt (siehe
      NavBar.vue) – zwei Schatten kurz hintereinander wirkten redundant/unruhig. Die Trennlinie
      (border-bottom) reicht hier weiterhin als dezente Abgrenzung. Steht die NavBar per
-     Profil-Einstellung dagegen unten (.nav-bottom unten), übernimmt der Header selbst genau
+     Einstellung dagegen unten (.nav-bottom unten), übernimmt der Header selbst genau
      denselben Schatten – sonst fehlt er komplett, weil dann nichts mehr direkt darunter klebt. */
   box-sizing: border-box;
 }
@@ -202,8 +202,8 @@ const isNonProd = computed(() => buildInfoStore.buildInfo != null && buildInfoSt
 }
 
 /* Auf mobile zieht "alle Mitreisenden statt nur online" (PresenceAvatars.vue) potenziell mehr
-   Avatare in den Header als vorher - der Theme-Toggle wandert dafür in die Profil-Einstellungen
-   (ProfileView.vue), auf Desktop bleibt er exklusiv hier im Header (derselbe 800px-Umbruch wie
+   Avatare in den Header als vorher - der Theme-Toggle wandert dafür in die Einstellungen
+   (SettingsView.vue), auf Desktop bleibt er exklusiv hier im Header (derselbe 800px-Umbruch wie
    .wordmark oben/NavBar.vue). */
 @media (max-width: 799px) {
   .theme-toggle {

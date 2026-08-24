@@ -28,7 +28,7 @@ Web-App zur gemeinsamen Reiseplanung – ein zentraler Ort für alles rund um De
 - 📴 **Offline-fähig**: als App installierbar (Icon auf Startbildschirm bei iOS/Android/Desktop), lädt auch ohne Internetverbindung; zuletzt geladene Daten bleiben einsehbar, Änderungen werden bei Wiederverbindung automatisch nachgereicht
 - 🗑️ **Papierkorb**: gelöschte Einträge lassen sich rückgängig machen (60-Sekunden-Fenster direkt an Ort und Stelle) oder später im Papierkorb wiederherstellen
 - 👥 **Mitgliedschaft & Einladung**: offene Registrierung per E-Mail, Zugriff auf einen Urlaub aber nur für eingeladene Mitglieder (Autocomplete-Suche nach Benutzername/E-Mail)
-- 👤 **Profil**: Emoji-Avatar, Passwort ändern, Kalender-Einstellungen (Wochenanfang, Datumsformat)
+- ⚙️ **Einstellungen**: Emoji-Avatar, Passwort ändern, Kalender-Einstellungen (Wochenanfang, Datumsformat)
 - 💾 **Backup**: vollständiger Datenexport/-import als JSON
 
 ## Struktur
@@ -83,7 +83,7 @@ Das Skript ist idempotent (`INSERT OR IGNORE`) – bereits vorhandene Nutzer/Zei
 | `GITHUB_REPO` | `owner/repo`, in dem das Feedback-Formular Issues anlegt | `dmstern/reisotor` |
 | `REGISTRATION_MODE` | Steuert die offene Selbstregistrierung (`POST /auth/register`, siehe `backend/src/registrationConfig.ts`): `off` deaktiviert sie komplett, `full` erlaubt sie uneingeschränkt, `restricted` erlaubt sie, markiert neu registrierte Accounts aber dauerhaft als eingeschränkt (kein Datei-/Bild-Upload, max. 1 selbst angelegter Urlaub, max. 3 Mitglieder in einem selbst angelegten Urlaub – spart Ressourcen auf dem Pi-Host). Ein unbekannter Wert fällt auf `full` zurück. | `full` |
 | `REGISTRATION_FULL_ACCESS_USERS` | Kommagetrennte Reisotor-Benutzernamen, die von den `restricted`-Einschränkungen ausgenommen sind (dynamisch geprüft, wirkt auch nachträglich auf bereits als eingeschränkt registrierte Accounts). Bewusst nur per Server-Env-Var pflegbar: Registrierung ist offen, ein Self-Service-Toggle würde jeder registrierten Person erlauben, sich selbst freizuschalten. | – (niemand ausgenommen) |
-| `HOSTING_LOCATION` | Ort, der im "Über"-Bereich des Profils im Hosting-/Copyright-Hinweis genannt wird (`GET /build-info`, siehe `routes/buildInfo.ts`) – für Betreiber:innen, die die App an einem anderen Ort als Berlin hosten. | `Berlin` |
+| `HOSTING_LOCATION` | Ort, der im "Über"-Bereich der Einstellungen im Hosting-/Copyright-Hinweis genannt wird (`GET /build-info`, siehe `routes/buildInfo.ts`) – für Betreiber:innen, die die App an einem anderen Ort als Berlin hosten. | `Berlin` |
 | `APP_ENV` | Umgebungskennung dieser Instanz (`GET /build-info`, siehe `routes/buildInfo.ts`), z. B. `production`/`staging` – das Frontend wird für alle Instanzen identisch gebaut (siehe unten) und fragt die Umgebung deshalb zur Laufzeit hier ab (z. B. für den DEV-Badge im Header), statt sie aus der Domain zu raten. Auf der Staging-Instanz auf einen von `production` abweichenden Wert setzen. | `production` |
 
 ## Deployment

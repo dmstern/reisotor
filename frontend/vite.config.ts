@@ -153,7 +153,7 @@ export default defineConfig({
       },
     },
   },
-  // Backt Versions-/Build-Zeitpunkt-Infos zur Build-Zeit direkt in den Bundle (siehe ProfileView.vue's
+  // Backt Versions-/Build-Zeitpunkt-Infos zur Build-Zeit direkt in den Bundle (siehe SettingsView.vue's
   // Build-Info-Card) – Gegenstück zu backend/scripts/generate-build-info.mjs, das dasselbe für den
   // Backend-Build in eine build-info.json schreibt (kein Vite-Äquivalent nötig, da der Backend-
   // Prozess einfach eine Datei zur Laufzeit lesen kann, das Frontend als statischer Bundle aber

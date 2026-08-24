@@ -87,7 +87,7 @@ watch(isTop, updateOffset);
 const DASHBOARD_LINK: NavLinkDef = { key: 'dashboard', to: '/', label: 'Übersicht', icon: SECTION_ICON_DEFS.dashboard };
 
 // Sichtbare Einträge in der vom Nutzer konfigurierten Reihenfolge (siehe stores/navConfig.ts,
-// ProfileView.vue) - ausgeblendete Einträge werden hier bereits rausgefiltert, nicht erst im
+// SettingsView.vue) - ausgeblendete Einträge werden hier bereits rausgefiltert, nicht erst im
 // Template, damit z. B. der "Touren neben Karte"-Sondereinschub unten unverändert funktioniert.
 const visibleLinks = computed<NavLinkDef[]>(() =>
   navConfig.entries
@@ -99,7 +99,7 @@ const visibleLinks = computed<NavLinkDef[]>(() =>
 // route.fullPath (nicht nur .path) reicht auch für den seltenen Fall, dass sich nur Query/Hash
 // ändern und `router-link-active` dadurch nicht neu berechnet wird - dann bleibt updateHighlight()
 // einfach ein No-Op, da sich die aktive Klasse nicht verschiebt. visibleLinks zusätzlich beobachten,
-// da sich Breite/Position aller Links ändert, sobald Einträge in ProfileView.vue aus-/eingeblendet
+// da sich Breite/Position aller Links ändert, sobald Einträge in SettingsView.vue aus-/eingeblendet
 // werden.
 watch([() => route.fullPath, visibleLinks], () => nextTick(updateHighlight));
 
@@ -209,7 +209,7 @@ function onLinkClick(event: MouseEvent) {
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
 }
 
-/* Position ist pro Gerätebreite konfigurierbar (Profil-Einstellungen) – Default für beide "oben".
+/* Position ist pro Gerätebreite konfigurierbar (Einstellungen) – Default für beide "oben".
    "Oben" nutzt sticky (die NavBar steht dafür im Markup VOR dem Hauptinhalt, siehe App.vue – nur
    an ihrer natürlichen Fluss-Position hält sticky sie beim Scrollen tatsächlich fest). "Unten"
    braucht dagegen position:fixed, unabhängig von der DOM-Reihenfolge an den Viewport-Rand gepinnt;

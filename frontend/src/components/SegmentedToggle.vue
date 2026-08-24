@@ -34,7 +34,7 @@ const props = defineProps<{
 const emit = defineEmits<{ (e: 'update:modelValue', value: string): void }>();
 
 // -1 (kein Match) statt auf 0 zu klammern, wenn modelValue keiner der options entspricht (z. B.
-// "individuell angepasst" bei den Push-Leveln in ProfileView.vue) - die Pille wird dann komplett
+// "individuell angepasst" bei den Push-Leveln in SettingsView.vue) - die Pille wird dann komplett
 // ausgeblendet statt fälschlich unter der ersten Option zu kleben.
 const activeIndex = computed(() => props.options.findIndex((o) => o.value === props.modelValue));
 </script>

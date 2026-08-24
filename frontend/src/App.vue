@@ -66,11 +66,11 @@ watch(
 // leiten statt (wie vorher) direkt hier im Template ein Anlegen-Formular ohne Header zu zeigen.
 // Deckt zwei Fälle einheitlich ab: keine Urlaube vorhanden, ODER ≥2 Urlaube ohne gespeicherte
 // Präferenz auf diesem Gerät (siehe loadTrips() in stores/trip.ts - dort wird bewusst nicht
-// geraten). /profile bleibt ausgenommen, damit Logout während der Weiterleitung erreichbar bleibt.
+// geraten). /settings bleibt ausgenommen, damit Logout während der Weiterleitung erreichbar bleibt.
 watch(
   () => [tripStore.loaded, tripStore.currentTripId, route.name] as const,
   ([loaded, currentTripId, name]) => {
-    if (loaded && currentTripId == null && name !== 'trips' && name !== 'profile') {
+    if (loaded && currentTripId == null && name !== 'trips' && name !== 'settings') {
       router.push({ name: 'trips' });
     }
   },
@@ -125,7 +125,7 @@ const firstLoadDone = ref(false);
          an seiner natürlichen Fluss-Position fest (direkt unterm Header), es "springt" damit beim
          Scrollen nicht von einer späteren DOM-Position aus nach oben. Ohne Urlaub (trips.length===0,
          Nutzer wird per Watcher oben nach /trips geleitet) bzw. auf der Urlaubsverwaltung selbst
-         ergibt eine Domänen-Navigation keinen Sinn - Header (für Logout/Profil) bleibt trotzdem
+         ergibt eine Domänen-Navigation keinen Sinn - Header (für Logout/Einstellungen) bleibt trotzdem
          immer sichtbar, siehe #75. -->
     <NavBar v-if="showTripNav" />
     <div class="app-shell">

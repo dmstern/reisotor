@@ -365,7 +365,7 @@ const weeks = computed(() => {
   if (!calendarRange.value) return [];
   const { start, end } = calendarRange.value;
 
-  // Wochenanfang respektiert die Profil-Einstellung (Standard: Montag, siehe utils/dateFormat.ts).
+  // Wochenanfang respektiert die Einstellung (Standard: Montag, siehe utils/dateFormat.ts).
   const firstWeekStart = startOfWeek(start);
 
   const result: { date: string; entries: CalendarEntry[]; accommodations: Spot[]; weatherEntries: DayWeatherEntry[] }[][] = [];
@@ -423,7 +423,7 @@ const monthAnchor = ref(startOfMonth(new Date()));
 // Baut ein vollständiges Kalendermonat-Raster: Wochenanfang der Woche mit dem 1. bis Wochenende der
 // Woche mit dem letzten Tag des Monats (führende/nachfolgende Tage aus Nachbarmonaten füllen das
 // Raster auf volle Wochen auf, wie bei jedem üblichen Monatskalender – als otherMonth markiert,
-// siehe CalendarWeek.vue). Wochenanfang respektiert die Profil-Einstellung (Standard: Montag).
+// siehe CalendarWeek.vue). Wochenanfang respektiert die Einstellung (Standard: Montag).
 const monthWeeks = computed<DayCell[][]>(() => {
   const year = monthAnchor.value.getFullYear();
   const month = monthAnchor.value.getMonth();

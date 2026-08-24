@@ -3506,7 +3506,7 @@ async function removeSpot(id: number) {
 
 /* Kleiner Auf-/Zu-Pfeil rechts neben dem Label, macht auf einen Blick klarer, dass ein Klick ein
    Dropdown-Menü öffnet/schließt statt z. B. direkt eine Aktion auszulösen (Nutzer:innen-Feedback) -
-   dasselbe Auf/Zu-Chevron wie ProfileView.vue's "Einzeln anpassen". */
+   dasselbe Auf/Zu-Chevron wie SettingsView.vue's "Einzeln anpassen". */
 .dropdown-caret {
   margin-left: 4px;
   opacity: 0.6;

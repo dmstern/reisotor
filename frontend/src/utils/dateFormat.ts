@@ -14,7 +14,7 @@ export function toLocalDateString(d: Date): string {
 }
 
 /** Zentrale Zahlen-Datumsformatierung, ersetzt die zuvor über die App verstreuten, lokal je Datei
- *  duplizierten `toLocaleDateString('de-DE', ...)`-Aufrufe. Respektiert die in ProfileView.vue
+ *  duplizierten `toLocaleDateString('de-DE', ...)`-Aufrufe. Respektiert die in SettingsView.vue
  *  einstellbare `calendarSettings.dateFormat` (deutsch/ISO/US) statt fest `'de-DE'` zu verwenden. */
 export function formatDate(dateStr: string, { includeYear = true }: { includeYear?: boolean } = {}): string {
   const calendarSettings = useCalendarSettingsStore();

@@ -1,12 +1,12 @@
 import { test, expect } from '@playwright/test';
 
 // Regressionsnetz für die konfigurierbare NavBar (Reihenfolge + Sichtbarkeit, siehe
-// stores/navConfig.ts, ProfileView.vue).
-test('hiding a nav entry in ProfileView removes it from the NavBar', async ({ page }) => {
+// stores/navConfig.ts, SettingsView.vue).
+test('hiding a nav entry in SettingsView removes it from the NavBar', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('nav.navbar a', { hasText: 'Notizen' })).toBeVisible();
 
-  await page.goto('/profile?tab=app');
+  await page.goto('/settings?tab=app');
   const notesRow = page.locator('.nav-config-row', { hasText: 'Notizen' });
   await notesRow.locator('input[type="checkbox"]').uncheck();
 
@@ -14,12 +14,12 @@ test('hiding a nav entry in ProfileView removes it from the NavBar', async ({ pa
   await expect(page.locator('nav.navbar a', { hasText: 'Notizen' })).toHaveCount(0);
 
   // Aufräumen, damit der Zustand nicht in andere Tests dieser Suite durchsickert.
-  await page.goto('/profile?tab=app');
+  await page.goto('/settings?tab=app');
   await page.locator('.nav-config-row', { hasText: 'Notizen' }).locator('input[type="checkbox"]').check();
 });
 
-test('reordering nav entries in ProfileView changes their order in the NavBar', async ({ page }) => {
-  await page.goto('/profile?tab=app');
+test('reordering nav entries in SettingsView changes their order in the NavBar', async ({ page }) => {
+  await page.goto('/settings?tab=app');
   const firstRowLabel = page.locator('.nav-config-row').first().locator('.nav-config-label');
   const initialFirstLabel = await firstRowLabel.textContent();
 
@@ -41,6 +41,6 @@ test('reordering nav entries in ProfileView changes their order in the NavBar', 
   expect(navLabels[1]?.trim()).toBe(newFirstLabel?.trim());
 
   // Aufräumen: wieder zurückverschieben.
-  await page.goto('/profile?tab=app');
+  await page.goto('/settings?tab=app');
   await page.locator('.nav-config-row').first().getByLabel('Nach unten verschieben').click();
 });

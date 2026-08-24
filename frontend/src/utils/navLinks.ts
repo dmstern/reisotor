@@ -11,7 +11,7 @@ export interface NavLinkDef {
   domains?: LiveDomain[];
 }
 
-// Registry der konfigurierbaren NavBar-Einträge (siehe stores/navConfig.ts, ProfileView.vue) -
+// Registry der konfigurierbaren NavBar-Einträge (siehe stores/navConfig.ts, SettingsView.vue) -
 // "Übersicht" (Dashboard) ist bewusst NICHT Teil dieser Liste, sie bleibt als fixer, nicht
 // ausblendbarer/verschiebbarer erster Eintrag direkt in NavBar.vue (zentraler Einstiegspunkt der
 // App). Reihenfolge hier ist nur der Fallback-Default für neue Installationen bzw. neu

@@ -6,7 +6,7 @@ import AppIcon from './AppIcon.vue';
 // icon: kompakter runder Button wie der bisherige Toggle (AppHeader.vue, LoginView.vue) - das
 // eigentliche <select> liegt unsichtbar über dem Icon und fängt den Klick ab, damit sich der
 // gewohnte Header-Platzbedarf nicht ändert. block: normales, beschriftetes <select> im
-// Einstellungen-Listenstil (ProfileView.vue, siehe .nav-position-row dort).
+// Einstellungen-Listenstil (SettingsView.vue, siehe .nav-position-row dort).
 withDefaults(defineProps<{ variant?: 'icon' | 'block' }>(), { variant: 'icon' });
 
 const theme = useThemeStore();
