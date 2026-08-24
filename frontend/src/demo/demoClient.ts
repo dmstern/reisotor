@@ -146,6 +146,26 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
     return DEMO_USERS.filter((u) => u.username.toLowerCase().includes(q)) as unknown as T;
   }
 
+function syncDemoIdeaSchedule(ideaId: number, title: string, date?: string | null) {
+  const schedule = store['/schedule'] as Record<string, unknown>[];
+  const existingIdx = schedule.findIndex((s) => s.idea_id === ideaId);
+  if (date) {
+    if (existingIdx !== -1) {
+      schedule[existingIdx] = { ...schedule[existingIdx], date, title };
+    } else {
+      schedule.push({
+        id: nextId++,
+        trip_id: 1,
+        date,
+        title,
+        idea_id: ideaId,
+      });
+    }
+  } else if (existingIdx !== -1) {
+    schedule.splice(existingIdx, 1);
+  }
+}
+
   const collection = collectionOf(path);
   if (!(collection in store)) {
     // Unbekannter Pfad (z. B. Push-Abo, Standortfreigabe, Entwürfe) - im Demo-Modus bewusst
@@ -160,18 +180,30 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
     const id = nextId++;
     const created = { ...(body ?? {}), id };
     store[collection] = [...store[collection], created];
+    if (collection === '/ideas') {
+      syncDemoIdeaSchedule(id, (body?.title as string) ?? '', body?.date as string | null | undefined);
+    }
     persist();
     return created as unknown as T;
   }
   if (method === 'PUT') {
     const id = idFromPath(path);
     store[collection] = store[collection].map((item) => ((item as { id: number }).id === id ? { ...item, ...(body ?? {}) } : item));
+    if (collection === '/ideas' && id != null) {
+      const updatedIdea = store['/ideas'].find((item) => (item as { id: number }).id === id) as Record<string, unknown> | undefined;
+      if (updatedIdea) {
+        syncDemoIdeaSchedule(id, (updatedIdea.title as string) ?? '', updatedIdea.date as string | null | undefined);
+      }
+    }
     persist();
     return store[collection].find((item) => (item as { id: number }).id === id) as unknown as T;
   }
   if (method === 'DELETE') {
     const id = idFromPath(path);
     store[collection] = store[collection].filter((item) => (item as { id: number }).id !== id);
+    if (collection === '/ideas' && id != null) {
+      syncDemoIdeaSchedule(id, '', null);
+    }
     persist();
     return undefined as T;
   }
