@@ -8,27 +8,20 @@ import type {
   BudgetExpense,
   BudgetTransfer,
   DiaryEntry,
-  DiaryLike,
-  DiaryComment,
   Excursion,
-  ExcursionLike,
-  ExcursionComment,
   Note,
-  NoteComment,
   PackingItem,
   ScheduleItem,
   ShoppingItem,
   Spot,
-  SpotLike,
-  SpotComment,
   TodoItem,
   User,
-} from "../api/types";
+} from '../api/types';
 // Statisches Asset statt eines Kartenausschnitts von einem externen Tile-Server (wie ihn
 // backend/src/utils/mapsLink.ts's tilePreviewUrl() im echten Backend liefert) - der Demo-Build hat
 // kein Backend und soll nicht von externer Netzwerk-Erreichbarkeit abhängen, damit der Trip-Banner
 // zuverlässig und einladend aussieht statt im Zweifel als leerer/grauer Verlauf.
-import demoTripBanner from "../assets/demo-trip-banner.jpg";
+import demoTripBanner from '../assets/demo-trip-banner.jpg';
 
 function addDays(days: number): string {
   const d = new Date();
@@ -36,24 +29,19 @@ function addDays(days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-export const DEMO_USER: User = { id: 1, username: "Mika", avatar: "🧑‍🚀" };
-const DEMO_PARTNER: User = { id: 2, username: "Jo", avatar: "🧑‍🎨" };
-const DEMO_FRIEND_1: User = { id: 3, username: "Alex", avatar: "👨‍🎤" };
-const DEMO_FRIEND_2: User = { id: 4, username: "Sam", avatar: "🕵️" };
-export const DEMO_USERS: User[] = [
-  DEMO_USER,
-  DEMO_PARTNER,
-  DEMO_FRIEND_1,
-  DEMO_FRIEND_2,
-];
+export const DEMO_USER: User = { id: 1, username: 'Mika', avatar: '🧑‍🚀' };
+const DEMO_PARTNER: User = { id: 2, username: 'Jo', avatar: '🧑‍🎨' };
+export const DEMO_USER_3: User = { id: 3, username: 'Alex', avatar: '🐱' };
+export const DEMO_USER_4: User = { id: 4, username: 'Sam', avatar: '🐶' };
+export const DEMO_USERS: User[] = [DEMO_USER, DEMO_PARTNER, DEMO_USER_3, DEMO_USER_4];
 
 export const DEMO_TRIP = {
   id: 1,
-  name: "Sommerurlaub Lissabon",
-  destination: "Lissabon, Portugal",
+  name: 'Sommerurlaub Lissabon',
+  destination: 'Lissabon, Portugal',
   start_date: addDays(3),
   end_date: addDays(10),
-  maps_link: "https://maps.google.com/?q=Lissabon",
+  maps_link: 'https://maps.google.com/?q=Lissabon',
   lat: 38.7223,
   lng: -9.1393,
   image_url: demoTripBanner,
@@ -64,22 +52,22 @@ export const DEMO_SPOTS: Spot[] = [
   {
     id: 1,
     trip_id: 1,
-    title: "Casa Alfama",
+    title: 'Casa Alfama',
     image_url: null,
-    category: "Unterkunft",
-    note: "Gemütliches Apartment in der Altstadt, 2 Min. zur Tram 28.",
-    note_format: "plain",
-    maps_link: "https://maps.google.com/?q=Alfama+Lissabon",
+    category: 'Unterkunft',
+    note: 'Gemütliches Apartment in der Altstadt, 2 Min. zur Tram 28.',
+    note_format: 'plain',
+    maps_link: 'https://maps.google.com/?q=Alfama+Lissabon',
     lat: 38.7124,
     lng: -9.1303,
     created_by: 1,
     is_home: 0,
-    address: "Rua de São Miguel 12, Lissabon",
+    address: 'Rua de São Miguel 12, Lissabon',
     start_date: addDays(3),
     end_date: addDays(10),
-    checkin: "15:00",
-    checkout: "11:00",
-    contact: "+351 21 000 0000",
+    checkin: '15:00',
+    checkout: '11:00',
+    contact: '+351 21 000 0000',
     amount: 560,
     paid_by_user_id: 1,
     budget_expense_id: null,
@@ -88,12 +76,12 @@ export const DEMO_SPOTS: Spot[] = [
   {
     id: 2,
     trip_id: 1,
-    title: "Torre de Belém",
+    title: 'Torre de Belém',
     image_url: null,
-    category: "Sehenswürdigkeit",
-    note: "Unbedingt früh morgens, wird schnell voll.",
-    note_format: "plain",
-    maps_link: "https://maps.google.com/?q=Torre+de+Belem",
+    category: 'Sehenswürdigkeit',
+    note: 'Unbedingt früh morgens, wird schnell voll.',
+    note_format: 'plain',
+    maps_link: 'https://maps.google.com/?q=Torre+de+Belem',
     lat: 38.6916,
     lng: -9.2159,
     created_by: 2,
@@ -112,11 +100,11 @@ export const DEMO_SPOTS: Spot[] = [
   {
     id: 3,
     trip_id: 1,
-    title: "Time Out Market",
+    title: 'Time Out Market',
     image_url: null,
-    category: "Restaurant",
-    note: "Gute Auswahl für beide.",
-    note_format: "plain",
+    category: 'Restaurant',
+    note: 'Gute Auswahl für beide.',
+    note_format: 'plain',
     maps_link: null,
     lat: 38.7069,
     lng: -9.1459,
@@ -136,11 +124,11 @@ export const DEMO_SPOTS: Spot[] = [
   {
     id: 4,
     trip_id: 1,
-    title: "Berlin (BER)",
-    category: "Flughafen",
+    title: 'Flughafen BER',
     image_url: null,
+    category: 'Flughafen',
     note: null,
-    note_format: "plain",
+    note_format: 'plain',
     maps_link: null,
     lat: 52.3667,
     lng: 13.5033,
@@ -160,14 +148,14 @@ export const DEMO_SPOTS: Spot[] = [
   {
     id: 5,
     trip_id: 1,
-    title: "Lissabon (LIS)",
-    category: "Flughafen",
+    title: 'Flughafen LIS',
     image_url: null,
+    category: 'Flughafen',
     note: null,
-    note_format: "plain",
+    note_format: 'plain',
     maps_link: null,
-    lat: 38.735,
-    lng: -9.13,
+    lat: 38.7742,
+    lng: -9.1342,
     created_by: 1,
     is_home: 0,
     address: null,
@@ -184,15 +172,39 @@ export const DEMO_SPOTS: Spot[] = [
   {
     id: 6,
     trip_id: 1,
-    title: "Miradouro das Portas do Sol",
-    category: "Aussichtspunkt",
+    title: 'Praça do Comércio',
     image_url: null,
-    note: "Toller Blick über die Alfama.",
-    note_format: "plain",
+    category: 'Sehenswürdigkeit',
+    note: null,
+    note_format: 'plain',
     maps_link: null,
-    lat: 38.7126,
-    lng: -9.1302,
+    lat: 38.7075,
+    lng: -9.1364,
     created_by: 3,
+    is_home: 0,
+    address: null,
+    start_date: null,
+    end_date: null,
+    checkin: null,
+    checkout: null,
+    contact: null,
+    amount: null,
+    paid_by_user_id: null,
+    budget_expense_id: null,
+    done: 0,
+  },
+  {
+    id: 7,
+    trip_id: 1,
+    title: 'Castelo de São Jorge',
+    image_url: null,
+    category: 'Sehenswürdigkeit',
+    note: 'Tolle Aussicht.',
+    note_format: 'plain',
+    maps_link: null,
+    lat: 38.7139,
+    lng: -9.1333,
+    created_by: 4,
     is_home: 0,
     address: null,
     start_date: null,
@@ -213,15 +225,15 @@ export const DEMO_SCHEDULE: ScheduleItem[] = [
     trip_id: 1,
     date: addDays(4),
     end_date: null,
-    time: "09:00",
-    end_time: "11:00",
-    title: "Torre de Belém besichtigen",
+    time: '09:00',
+    end_time: '11:00',
+    title: 'Torre de Belém besichtigen',
     note: null,
     location: null,
     maps_link: null,
     lat: null,
     lng: null,
-    category: "excursion",
+    category: 'excursion',
     spot_id: 2,
     idea_id: null,
   },
@@ -230,68 +242,17 @@ export const DEMO_SCHEDULE: ScheduleItem[] = [
     trip_id: 1,
     date: addDays(5),
     end_date: null,
-    time: "19:00",
+    time: '19:00',
     end_time: null,
-    title: "Abendessen im Time Out Market",
+    title: 'Abendessen im Time Out Market',
     note: null,
     location: null,
     maps_link: null,
     lat: null,
     lng: null,
-    category: "other",
+    category: 'other',
     spot_id: 3,
     idea_id: null,
-  },
-  {
-    id: 3,
-    trip_id: 1,
-    date: addDays(3),
-    end_date: null,
-    time: "07:20",
-    end_time: "10:05",
-    title: "Hinflug nach Lissabon",
-    note: null,
-    location: null,
-    maps_link: null,
-    lat: null,
-    lng: null,
-    category: "excursion",
-    spot_id: null,
-    idea_id: 2,
-  },
-  {
-    id: 4,
-    trip_id: 1,
-    date: addDays(10),
-    end_date: null,
-    time: "18:40",
-    end_time: "22:15",
-    title: "Rückflug nach Berlin",
-    note: null,
-    location: null,
-    maps_link: null,
-    lat: null,
-    lng: null,
-    category: "excursion",
-    spot_id: null,
-    idea_id: 3,
-  },
-  {
-    id: 5,
-    trip_id: 1,
-    date: addDays(4),
-    end_date: null,
-    time: "14:00",
-    end_time: "18:00",
-    title: "Sightseeing-Tag Belém",
-    note: null,
-    location: null,
-    maps_link: null,
-    lat: null,
-    lng: null,
-    category: "excursion",
-    spot_id: null,
-    idea_id: 4,
   },
 ];
 
@@ -299,10 +260,10 @@ export const DEMO_EXCURSIONS: Excursion[] = [
   {
     id: 1,
     trip_id: 1,
-    title: "Tagestour Sintra",
+    title: 'Tagestour Sintra',
     image_url: null,
-    note: "Mit dem Zug ab Rossio, ca. 40 Minuten.",
-    note_format: "plain",
+    note: 'Mit dem Zug ab Rossio, ca. 40 Minuten.',
+    note_format: 'plain',
     date: addDays(6),
     created_by: 1,
     spot_ids: [],
@@ -322,59 +283,82 @@ export const DEMO_EXCURSIONS: Excursion[] = [
   {
     id: 2,
     trip_id: 1,
-    title: "Hinflug nach Lissabon",
+    title: 'Hinflug',
     image_url: null,
-    note: "Direktflug",
-    note_format: "plain",
+    note: 'Flug TP533',
+    note_format: 'plain',
     date: addDays(3),
-    created_by: 2,
+    created_by: 1,
     spot_ids: [4, 5],
     done: 0,
-    role: "arrival",
-    transport_type: "Flug",
-    departure_time: "07:20",
-    arrival_time: "10:05",
-    checkin_info: "Online-Check-in ab 24h vorher",
-    amount: 189,
-    paid_by_user_id: 2,
-    luggage: "1x 23kg Koffer",
-    seat: "14C",
+    role: 'arrival',
+    transport_type: 'Flugzeug',
+    departure_time: '14:00',
+    arrival_time: '16:30',
+    checkin_info: 'Terminal 1',
+    amount: null,
+    paid_by_user_id: null,
+    luggage: null,
+    seat: '12A, 12B',
     ticket_link: null,
     budget_expense_id: null,
   },
   {
     id: 3,
     trip_id: 1,
-    title: "Rückflug nach Berlin",
+    title: 'Rückflug',
     image_url: null,
-    note: "Direktflug",
-    note_format: "plain",
+    note: 'Flug TP532',
+    note_format: 'plain',
     date: addDays(10),
     created_by: 1,
     spot_ids: [5, 4],
     done: 0,
-    role: "departure",
-    transport_type: "Flug",
-    departure_time: "18:40",
-    arrival_time: "22:15",
+    role: 'departure',
+    transport_type: 'Flugzeug',
+    departure_time: '09:00',
+    arrival_time: '13:30',
     checkin_info: null,
-    amount: 189,
-    paid_by_user_id: 1,
-    luggage: "1x 23kg Koffer",
-    seat: "9A",
+    amount: null,
+    paid_by_user_id: null,
+    luggage: null,
+    seat: '14C, 14D',
     ticket_link: null,
     budget_expense_id: null,
   },
   {
     id: 4,
     trip_id: 1,
-    title: "Sightseeing-Tag Belém",
+    title: 'Alfama Spaziergang',
     image_url: null,
-    note: "Turm + danach im Market essen",
-    note_format: "plain",
+    note: 'Durch die kleinen Gassen',
+    note_format: 'plain',
     date: addDays(4),
-    created_by: 1,
-    spot_ids: [2, 3],
+    created_by: 3,
+    spot_ids: [1, 7],
+    done: 0,
+    role: null,
+    transport_type: null,
+    departure_time: null,
+    arrival_time: null,
+    checkin_info: null,
+    amount: null,
+    paid_by_user_id: null,
+    luggage: null,
+    seat: null,
+    ticket_link: null,
+    budget_expense_id: null,
+  },
+  {
+    id: 5,
+    trip_id: 1,
+    title: 'Innenstadt',
+    image_url: null,
+    note: 'Praça do Comércio und Umgebung',
+    note_format: 'plain',
+    date: addDays(5),
+    created_by: 4,
+    spot_ids: [6, 3],
     done: 0,
     role: null,
     transport_type: null,
@@ -390,185 +374,45 @@ export const DEMO_EXCURSIONS: Excursion[] = [
   },
 ];
 
-export const DEMO_BUDGETS: Budget[] = [
-  {
-    id: 1,
-    trip_id: 1,
-    name: "Gemeinsame Kasse",
-    owner_id: null,
-    target_amount: 1200,
-  },
-];
+export const DEMO_BUDGETS: Budget[] = [{ id: 1, trip_id: 1, name: 'Gemeinsame Kasse', owner_id: null, target_amount: 1200 }];
 export const DEMO_BUDGET_ALLOCATIONS: BudgetAllocation[] = [
-  { id: 1, budget_id: 1, category: "Unterkunft", amount: 560 },
-  { id: 2, budget_id: 1, category: "Essen & Trinken", amount: 350 },
-  { id: 3, budget_id: 1, category: "Aktivitäten", amount: 290 },
+  { id: 1, budget_id: 1, category: 'Unterkunft', amount: 560 },
+  { id: 2, budget_id: 1, category: 'Essen & Trinken', amount: 350 },
+  { id: 3, budget_id: 1, category: 'Aktivitäten', amount: 290 },
 ];
 export const DEMO_BUDGET_EXPENSES: BudgetExpense[] = [
-  {
-    id: 1,
-    trip_id: 1,
-    title: "Anzahlung Apartment",
-    category: "Unterkunft",
-    amount: 200,
-    paid_by_user_id: 1,
-    date: addDays(-10),
-    note: null,
-    budget_id: 1,
-  },
-  {
-    id: 2,
-    trip_id: 1,
-    title: "Zugtickets Sintra",
-    category: "Aktivitäten",
-    amount: 24,
-    paid_by_user_id: 2,
-    date: addDays(-2),
-    note: null,
-    budget_id: 1,
-  },
+  { id: 1, trip_id: 1, title: 'Anzahlung Apartment', category: 'Unterkunft', amount: 200, paid_by_user_id: 1, date: addDays(-10), note: null, budget_id: 1 },
+  { id: 2, trip_id: 1, title: 'Zugtickets Sintra', category: 'Aktivitäten', amount: 24, paid_by_user_id: 2, date: addDays(-2), note: null, budget_id: 1 },
 ];
 export const DEMO_BUDGET_TRANSFERS: BudgetTransfer[] = [];
 
 export const DEMO_PACKING: PackingItem[] = [
-  {
-    id: 1,
-    trip_id: 1,
-    category: "Kleidung",
-    subcategory: null,
-    label: "Badesachen",
-    quantity: 2,
-    laid_out_count: 0,
-    packed_count: 0,
-    owner_id: null,
-  },
-  {
-    id: 2,
-    trip_id: 1,
-    category: "Dokumente",
-    subcategory: null,
-    label: "Personalausweis",
-    quantity: 2,
-    laid_out_count: 2,
-    packed_count: 1,
-    owner_id: null,
-  },
-  {
-    id: 3,
-    trip_id: 1,
-    category: "Technik",
-    subcategory: null,
-    label: "Ladekabel",
-    quantity: 1,
-    laid_out_count: 0,
-    packed_count: 0,
-    owner_id: 1,
-  },
+  { id: 1, trip_id: 1, category: 'Kleidung', subcategory: null, label: 'Badesachen', quantity: 2, laid_out_count: 0, packed_count: 0, owner_id: null },
+  { id: 2, trip_id: 1, category: 'Dokumente', subcategory: null, label: 'Personalausweis', quantity: 2, laid_out_count: 2, packed_count: 1, owner_id: null },
+  { id: 3, trip_id: 1, category: 'Technik', subcategory: null, label: 'Ladekabel', quantity: 1, laid_out_count: 0, packed_count: 0, owner_id: 1 },
 ];
 
 export const DEMO_SHOPPING: ShoppingItem[] = [
-  {
-    id: 1,
-    trip_id: 1,
-    label: "Sonnencreme",
-    assigned_to_user_id: 2,
-    checked: 0,
-    link: null,
-    note: null,
-    shop: null,
-    period: "before",
-  },
-  {
-    id: 2,
-    trip_id: 1,
-    label: "Reiseadapter",
-    assigned_to_user_id: 1,
-    checked: 1,
-    link: null,
-    note: null,
-    shop: null,
-    period: "before",
-  },
+  { id: 1, trip_id: 1, label: 'Sonnencreme', assigned_to_user_id: 2, checked: 0, link: null, note: null, shop: null, period: 'before' },
+  { id: 2, trip_id: 1, label: 'Reiseadapter', assigned_to_user_id: 1, checked: 1, link: null, note: null, shop: null, period: 'before' },
 ];
 
 export const DEMO_TODOS: TodoItem[] = [
-  {
-    id: 1,
-    trip_id: 1,
-    title: "Wohnung gießen lassen",
-    assigned_to_user_id: 1,
-    due_date: addDays(2),
-    priority: "high",
-    note: null,
-    done: 0,
-  },
-  {
-    id: 2,
-    trip_id: 1,
-    title: "Reisepässe prüfen",
-    assigned_to_user_id: 2,
-    due_date: addDays(1),
-    priority: "medium",
-    note: null,
-    done: 1,
-  },
+  { id: 1, trip_id: 1, title: 'Wohnung gießen lassen', assigned_to_user_id: 1, due_date: addDays(2), priority: 'high', note: null, done: 0 },
+  { id: 2, trip_id: 1, title: 'Reisepässe prüfen', assigned_to_user_id: 2, due_date: addDays(1), priority: 'medium', note: null, done: 1 },
 ];
 
 export const DEMO_NOTES: Note[] = [
   {
     id: 1,
     trip_id: 1,
-    title: "Packliste-Ideen",
-    content: "Nicht vergessen: Steckdosenadapter, Regenjacke für den Abend.",
-    content_format: "plain",
+    title: 'Packliste-Ideen',
+    content: 'Nicht vergessen: Steckdosenadapter, Regenjacke für den Abend.',
+    content_format: 'plain',
     created_by: 1,
     created_at: new Date().toISOString(),
     updated_at: null,
     is_draft: 0,
-  },
-];
-
-export const DEMO_SPOT_LIKES: SpotLike[] = [{ id: 1, spot_id: 2, user_id: 2 }];
-export const DEMO_SPOT_COMMENTS: SpotComment[] = [
-  {
-    id: 1,
-    spot_id: 2,
-    author_id: 2,
-    content: "Unbedingt früh morgens hin, bevor die Reisebusse kommen!",
-    created_at: new Date().toISOString(),
-  },
-];
-export const DEMO_EXCURSION_LIKES: ExcursionLike[] = [
-  { id: 1, idea_id: 4, user_id: 2 },
-];
-export const DEMO_EXCURSION_COMMENTS: ExcursionComment[] = [
-  {
-    id: 1,
-    idea_id: 4,
-    author_id: 2,
-    content: "Klingt gut, sollten wir früh starten!",
-    created_at: new Date().toISOString(),
-  },
-];
-export const DEMO_DIARY_LIKES: DiaryLike[] = [
-  { id: 1, entry_id: 1, user_id: 2 },
-];
-export const DEMO_DIARY_COMMENTS: DiaryComment[] = [
-  {
-    id: 1,
-    entry_id: 1,
-    author_id: 2,
-    content: "Sieht traumhaft aus, ich freu mich schon!",
-    created_at: new Date().toISOString(),
-  },
-];
-export const DEMO_NOTE_COMMENTS: NoteComment[] = [
-  {
-    id: 1,
-    note_id: 1,
-    author_id: 3,
-    content: "Habe noch eine Powerbank eingepackt.",
-    created_at: new Date().toISOString(),
   },
 ];
 
@@ -577,10 +421,9 @@ export const DEMO_DIARY: DiaryEntry[] = [
     id: 1,
     trip_id: 1,
     author_id: 1,
-    title: "Ankunft",
-    content:
-      "Nach der Landung direkt in die Altstadt - schon jetzt ein toller erster Eindruck.",
-    content_format: "plain",
+    title: 'Ankunft',
+    content: 'Nach der Landung direkt in die Altstadt - schon jetzt ein toller erster Eindruck.',
+    content_format: 'plain',
     images: [],
     date: addDays(3),
     created_at: new Date().toISOString(),
@@ -590,4 +433,26 @@ export const DEMO_DIARY: DiaryEntry[] = [
     editor_ids: [],
     is_draft: 0,
   },
+];
+
+export const DEMO_SPOT_LIKES = [
+  { id: 1, spot_id: 2, user_id: 3 },
+  { id: 2, spot_id: 2, user_id: 4 }
+];
+export const DEMO_SPOT_COMMENTS = [
+  { id: 1, spot_id: 2, author_id: 3, content: 'Da will ich unbedingt hin!', created_at: new Date().toISOString() }
+];
+
+export const DEMO_EXCURSION_LIKES = [
+  { id: 1, idea_id: 1, user_id: 2 }
+];
+export const DEMO_EXCURSION_COMMENTS = [
+  { id: 1, idea_id: 1, author_id: 2, content: 'Klingt super!', created_at: new Date().toISOString() }
+];
+
+export const DEMO_DIARY_LIKES = [
+  { id: 1, entry_id: 1, user_id: 4 }
+];
+export const DEMO_DIARY_COMMENTS = [
+  { id: 1, entry_id: 1, author_id: 4, content: 'Toller Start!', created_at: new Date().toISOString() }
 ];
