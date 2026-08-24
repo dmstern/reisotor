@@ -258,13 +258,13 @@ async function quickAdd(list: ListGroup, label: string) {
     <div class="lists-grid">
       <section class="list-section" v-for="list in lists" :key="list.key">
         <div class="list-header">
-          <h2>{{ list.title }}</h2>
+          <h2 v-if="users.length > 1">{{ list.title }}</h2>
           <span class="progress">{{ progress(list.items).packed }}/{{ progress(list.items).total }} gepackt</span>
         </div>
 
         <QuickAddRow
           class="card"
-          :placeholder="`Neuer Gegenstand für ${list.title}`"
+          :placeholder="users.length > 1 ? `Neuer Gegenstand für ${list.title}` : 'Neuer Gegenstand'"
           @submit="(label) => quickAdd(list, label)"
         >
           <template #extra>

@@ -266,10 +266,14 @@ const categoryColors = computed(() => {
         <h2>Budgets</h2>
         <Button @click="showNewBudgetForm = true"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Budget anlegen</Button>
       </div>
-      <p class="hint">
+      <p v-if="budgetStore.users.length > 1" class="hint">
         Ganz einfach: ein Topf mit nur einer Gesamtsumme. Oder detaillierter: in Kategorien aufteilen,
         um daraus ein Gesamtbudget zusammenzustellen. Geteilte Töpfe sehen alle Mitreisenden, private
         Töpfe nur die gewählte Person.
+      </p>
+      <p v-else class="hint">
+        Ganz einfach: ein Topf mit nur einer Gesamtsumme. Oder detaillierter: in Kategorien aufteilen,
+        um daraus ein Gesamtbudget zusammenzustellen.
       </p>
 
       <Modal :model-value="showNewBudgetForm" title="Budget anlegen" @update:model-value="(v) => !v && closeNewBudgetForm()">
