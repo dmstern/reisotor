@@ -1,0 +1,1 @@
+- Statische Demo-Version verbessert: Avatar- und Benutzernamens-Änderungen, Liken, Kommentieren, Weg-Aufzeichnungen, Feedback-Formular sowie das Einplanen von Touren und Anlegen neuer Urlaube funktionieren jetzt reibungslos.

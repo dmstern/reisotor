@@ -88,4 +88,81 @@ describe('demoClient (Issue #172: backend-loser Demo-Build)', () => {
     expect(result).toEqual([]);
     await expect(demoRequest('/push/subscribe', { method: 'POST', body: '{}' })).resolves.toBeUndefined();
   });
+
+  it('erlaubt das Ändern von Avatar und Benutzername in der Demo (Issue #234)', async () => {
+    const updatedAvatar = await demoRequest<{ avatar: string }>('/users/me/avatar', {
+      method: 'PUT',
+      body: JSON.stringify({ avatar: '🦊' }),
+    });
+    expect(updatedAvatar.avatar).toBe('🦊');
+
+    const me = await demoRequest<{ avatar: string; username: string }>('/auth/me');
+    expect(me.avatar).toBe('🦊');
+
+    const updatedUser = await demoRequest<{ username: string }>('/users/me/username', {
+      method: 'PUT',
+      body: JSON.stringify({ username: 'NeuerName' }),
+    });
+    expect(updatedUser.username).toBe('NeuerName');
+  });
+
+  it('unterstützt Liken und Kommentieren ohne Fehler (Issue #234)', async () => {
+    const likeRes = await demoRequest<{ liked: boolean }>('/spots/1/like', { method: 'POST' });
+    expect(likeRes.liked).toBeDefined();
+
+    const comment = await demoRequest<{ id: number; content: string; spot_id: number }>('/spots/1/comments', {
+      method: 'POST',
+      body: JSON.stringify({ content: 'Toller Ort!' }),
+    });
+    expect(comment.id).toBeDefined();
+    expect(comment.content).toBe('Toller Ort!');
+    expect(comment.spot_id).toBe(1);
+
+    const comments = await demoRequest<Array<{ content: string }>>('/spots/comments?trip_id=1');
+    expect(comments.some((c) => c.content === 'Toller Ort!')).toBe(true);
+  });
+
+  it('unterstützt Weg-Aufzeichnung inkl. Start/Stop/Punkte (Issue #234)', async () => {
+    const createdTrack = await demoRequest<{ id: number; started_at: string }>('/tracks', {
+      method: 'POST',
+      body: JSON.stringify({ trip_id: 1, visibility: 'private' }),
+    });
+    expect(createdTrack.id).toBeDefined();
+    expect(createdTrack.started_at).toBeTruthy();
+
+    const points = await demoRequest<Array<{ id: number; lat: number; lng: number }>>(`/tracks/${createdTrack.id}/points`, {
+      method: 'POST',
+      body: JSON.stringify({ points: [{ lat: 38.7, lng: -9.1, recorded_at: new Date().toISOString() }] }),
+    });
+    expect(points.length).toBe(1);
+
+    const fetchedPoints = await demoRequest<Array<{ lat: number }>>(`/tracks/${createdTrack.id}/points`);
+    expect(fetchedPoints.length).toBe(1);
+
+    const stoppedTrack = await demoRequest<{ ended_at: string }>(`/tracks/${createdTrack.id}/stop`, { method: 'POST' });
+    expect(stoppedTrack.ended_at).toBeTruthy();
+  });
+
+  it('filtert Daten nach trip_id – ein neu angelegter Urlaub ist initial leer (Issue #234)', async () => {
+    const newTrip = await demoRequest<{ id: number }>('/trips', {
+      method: 'POST',
+      body: JSON.stringify({ name: 'Neuer leerer Urlaub', destination: 'Paris' }),
+    });
+    expect(newTrip.id).toBeDefined();
+
+    const spotsNewTrip = await demoRequest<unknown[]>(`/spots?trip_id=${newTrip.id}`);
+    expect(spotsNewTrip).toEqual([]);
+
+    const spotsDemoTrip = await demoRequest<unknown[]>('/spots?trip_id=1');
+    expect(spotsDemoTrip.length).toBeGreaterThan(0);
+  });
+
+  it('unterstützt Feedback-Absenden in der Demo (Issue #234)', async () => {
+    const res = await demoRequest<{ issueUrl: string }>('/feedback', {
+      method: 'POST',
+      body: JSON.stringify({ title: 'Test Feedback', description: 'Bug report' }),
+    });
+    expect(res.issueUrl).toBeTruthy();
+  });
 });
+
