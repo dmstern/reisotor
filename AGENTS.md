@@ -305,14 +305,24 @@ Repo mergt PRs als echten Merge-Commit, nicht Squash — jeder einzelne Commit l
 Historie und wird gescannt) zwei Dinge:
 
 1. **Commit-Betreff lose im Conventional-Commits-Stil**, sofern der Commit eine funktionale
-   Änderung enthält: `feat: …` für neue Features, `fix: …` für Bugfixes, `feat!: …` bzw. ein
-   `BREAKING CHANGE: …`-Absatz im Body für inkompatible Änderungen. Der Release-Workflow scannt
-   alle Commit-Betreffs/-Bodies seit dem letzten Tag: `!`/`BREAKING CHANGE` → Major-Bump,
-   mindestens ein `feat:` → Minor-Bump, sonst Patch-Bump. Rein interne Änderungen (Refactoring,
-   Doku, Tests) brauchen kein Präfix — sie fließen einfach in den Patch-Bump.
-2. **Release-Notes-Fragment bei sichtbarer Nutzer-Auswirkung**: analog zu den PR-Screenshots
-   oben eine kleine Markdown-Datei unter `release-notes/pending/<kurzer-slug>.md` anlegen, Inhalt
-   ein bis zwei `- `-Stichpunkte in derselben leicht verständlichen End-Nutzer-Sprache wie
-   `CHANGELOG.md` (Deutsch, keine technischen Details). Der Release-Workflow fasst beim nächsten
-   Release alle Fragmente zu einem `CHANGELOG.md`-Eintrag zusammen und löscht sie danach wieder.
-   Rein interne/technische PRs ohne Endnutzer-Sichtbarkeit brauchen kein Fragment.
+   Änderung enthält: `feat: …` für neue Features (in der echten App), `fix: …` für Bugfixes,
+   `feat!: …` bzw. ein `BREAKING CHANGE: …`-Absatz im Body für inkompatible Änderungen. Der
+   Release-Workflow scannt alle Commit-Betreffs/-Bodies seit dem letzten Tag: `!`/`BREAKING CHANGE` →
+   Major-Bump, mindestens ein `feat:` → Minor-Bump, sonst Patch-Bump. Rein interne Änderungen
+   (Refactoring, Doku, Tests, Demo-Daten, CI/Pipelines, Tooling) brauchen kein `feat:`-Präfix (sondern
+   `chore:`, `refactor:`, `docs:`, `test:`, `build:` oder kein Präfix) — sie fließen einfach in den
+   Patch-Bump.
+2. **Release-Notes-Fragment nur bei sichtbarer Auswirkung für echte Endnutzer:innen der App**:
+   - **KEIN Fragment anlegen** für interne/begleitende Bereiche: Änderungen an Demo-Daten
+     (`frontend/src/demo/`, `backend/src/db/seedDemo.ts`), CI/CD-Pipelines (`.github/`), Dev-Workflow,
+     Tooling, Build-Skripte, Infrastruktur/Deployment (`deploy.sh`, systemd, Pi-Skripte), Tests,
+     Refactorings oder reine Dokumentation. Diese betreffen nicht die produktive Nutzung der App.
+   - **Fragment anlegen**: nur wenn sich für Nutzer:innen der produktiven App etwas Sichtbares geändert
+     oder verbessert hat (neue Funktionen, UI-Anpassungen, Bugfixes in App-Views) — analog zu den
+     PR-Screenshots oben eine kleine Markdown-Datei unter `release-notes/pending/<kurzer-slug>.md`
+     anlegen, Inhalt ein bis zwei `- `-Stichpunkte in derselben leicht verständlichen End-Nutzer-Sprache
+     wie `CHANGELOG.md` (Deutsch, keine technischen Details).
+   - **Automatischer Fallback**: Gibt es bis zum Release keine gesammelten Fragmente (weil z. B. nur
+     interne Verbesserungen, Demo-Daten oder Pipeline-Updates stattfanden), fasst der Release-Workflow
+     den Release-Eintrag automatisch endnutzerfreundlich als `- Verbesserungen unter der Haube.`
+     zusammen.
