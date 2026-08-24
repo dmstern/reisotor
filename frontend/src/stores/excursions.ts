@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { ref, watch } from 'vue';
 import { api } from '../api/client';
 import type { Excursion, IdeaRole } from '../api/types';
+import { useScheduleStore } from './schedule';
 import { useTripStore } from './trip';
 import { useLiveSyncStore } from './liveSync';
 import { useUndoableDelete } from '../composables/useUndoableDelete';
@@ -56,6 +57,7 @@ export const useExcursionsStore = defineStore('excursions', () => {
   async function create(body: ExcursionFormData) {
     const created = await api.post<Excursion>('/ideas', { trip_id: tripStore.currentTripId, ...body });
     excursions.value.unshift(created);
+    await useScheduleStore().load();
     return created;
   }
 
@@ -63,6 +65,7 @@ export const useExcursionsStore = defineStore('excursions', () => {
     const updated = await api.put<Excursion>(`/ideas/${id}`, body);
     const idx = excursions.value.findIndex((e) => e.id === id);
     if (idx !== -1) excursions.value[idx] = updated;
+    await useScheduleStore().load();
     return updated;
   }
 
@@ -73,11 +76,13 @@ export const useExcursionsStore = defineStore('excursions', () => {
     markPendingDelete(id, () => {
       excursions.value = excursions.value.filter((e) => e.id !== id);
     });
+    await useScheduleStore().load();
   }
 
   async function restore(id: number) {
     clearPending(id);
     await api.post(`/trash/excursion/${id}/restore`);
+    await useScheduleStore().load();
   }
 
   /** Setzt/ändert nur das Datum (Drag&Drop auf einen Kalendertag) – restliche Felder bleiben,
