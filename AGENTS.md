@@ -241,9 +241,12 @@ Für spontane visuelle Verifikation einer einzelnen Änderung (kein dauerhafter 
 kurze Wegwerf-Spec unter `e2e/tests/scratch/` schreiben (gitignored, nie committen), die **vor**
 `page.goto(...)` `forceFontDisplayBlock(page)` (`e2e/tests/helpers/fonts.ts`) aufruft, dann zur
 fraglichen Stelle navigiert, interagiert und `page.screenshot({ path: ... })` aufruft — sonst bleibt
-es in einem frischen, headless Playwright-Kontext praktisch immer dauerhaft bei der Fallback-Schrift
-statt Fira Sans, siehe Kommentar in `fonts.ts` (#197). Mit
-`npx playwright test tests/scratch/<name>.spec.ts` ausführen, den Screenshot per Read-Tool selbst
+es in einem frischen, headless Playwright-Kontext praktischen immer dauerhaft bei der Fallback-Schrift
+statt Fira Sans, siehe Kommentar in `fonts.ts` (#197). 
+
+**Wichtig bei Screenshots/Scratch-Specs:** `SplashScreen.vue` zeigt beim ersten App-Start die Rucksack-Animation (~2s). In Ad-hoc-Checks für Screenshots vor dem Aufruf von `page.screenshot(...)` stets explizit warten, bis der Splash-Screen verschwunden ist (z. B. `await expect(page.locator('.splash')).toHaveCount(0, { timeout: 15000 })`), oder `reducedMotion: 'reduce'` aktivieren und den Screenshot vor dem Überprüfen mit dem Read-Tool kontrollieren.
+
+Mit `npx playwright test tests/scratch/<name>.spec.ts` ausführen, den Screenshot per Read-Tool selbst
 ansehen und bewerten. Die Wegwerf-**Spec** danach löschen, das erzeugte **PNG** aber aufheben (bleibt
 im gitignoreten `e2e/tests/scratch/`) — bei sichtbaren UI-Änderungen ist das der Kandidat für die
 PR-Screenshots, siehe "Screenshots im PR selbst" unten.
