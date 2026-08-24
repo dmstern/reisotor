@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import AppIcon from './AppIcon.vue';
+import Button from './primitives/Button.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
 // Platzhalter, der für das 60s-Rückgängig-Fenster (useUndoableDelete.ts) genau an der Stelle steht,
@@ -15,7 +16,7 @@ defineEmits<{ (e: 'undo'): void }>();
         · {{ label }}</template
       ></span
     >
-    <button type="button" class="card-action-btn" @click="$emit('undo')">Löschen rückgängig machen</button>
+    <Button variant="card-action" @click="$emit('undo')">Löschen rückgängig machen</Button>
   </div>
 </template>
 

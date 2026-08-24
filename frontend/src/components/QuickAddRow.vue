@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
+import Button from './primitives/Button.vue';
 
 // Wiederverwendbare "Papierlisten"-Inline-Add-Zeile: im Ruhezustand nur ein dezentes "+" und eine
 // dünne Linie statt eines vollen Formularfelds, damit gruppierte Listen (Einkauf, ToDo, Packliste)
@@ -59,7 +60,7 @@ function onBlur(event: FocusEvent) {
         @focus="focused = true"
         @blur="onBlur"
       />
-      <button
+      <Button
         v-if="expanded"
         type="submit"
         class="submit-btn"
@@ -68,7 +69,7 @@ function onBlur(event: FocusEvent) {
         title="Hinzufügen"
       >
         +
-      </button>
+      </Button>
     </div>
     <!-- Eigene, volle Zeile statt Teil von .main-row: die Zusatzfelder (Kategorie/Shop/Zeitraum/…)
          sollen bei wenig Platz (Mobil, offene Tastatur) sauber untereinander umbrechen statt sich

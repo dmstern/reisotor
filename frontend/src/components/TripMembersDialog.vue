@@ -4,6 +4,7 @@ import { api, ApiError } from '../api/client';
 import type { Trip, User } from '../api/types';
 import Modal from './Modal.vue';
 import AppIcon from './AppIcon.vue';
+import Button from './primitives/Button.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
 // Deckel aus Issue #96 (registrationConfig.ts's RESTRICTED_MAX_MEMBERS) - hier dupliziert statt
@@ -93,9 +94,15 @@ function close() {
       <ul class="member-list">
         <li v-for="u in members" :key="u.id">
           <span>{{ u.avatar }} {{ u.username }}</span>
-          <button type="button" class="secondary remove-btn" title="Entfernen" aria-label="Entfernen" @click="removeMember(u)">
+          <Button
+            variant="secondary"
+            class="remove-btn"
+            title="Entfernen"
+            aria-label="Entfernen"
+            @click="removeMember(u)"
+          >
             <AppIcon :icon="ACTION_ICONS.close" :size="14" group="actions" />
-          </button>
+          </Button>
         </li>
         <li v-if="!members.length" class="empty">Noch keine Mitglieder.</li>
       </ul>
@@ -111,7 +118,7 @@ function close() {
       <ul v-if="results.length" class="search-results">
         <li v-for="u in results" :key="u.id">
           <span>{{ u.avatar }} {{ u.username }}</span>
-          <button type="button" :disabled="loading" @click="invite(u)">Einladen</button>
+          <Button :disabled="loading" @click="invite(u)">Einladen</Button>
         </li>
       </ul>
     </div>

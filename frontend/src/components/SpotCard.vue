@@ -23,6 +23,7 @@ import TourAssignDropdown from './TourAssignDropdown.vue';
 import FileAttachments from './FileAttachments.vue';
 import PendingSyncBadge from './PendingSyncBadge.vue';
 import AppIcon from './AppIcon.vue';
+import Button from './primitives/Button.vue';
 import Card from './primitives/Card.vue';
 import WeatherIcon from './WeatherIcon.vue';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
@@ -268,9 +269,9 @@ function onToggleDone() {
            auf reines Icon, siehe @container-Regel unten), gleiche Konvention wie
            ExcursionCard.vue/SpotDetailDialog.vue's "Auf Karte anzeigen"-Button. -->
       <div class="links" v-if="spot.lat != null && spot.lng != null">
-        <button type="button" class="card-action-btn show-on-map-btn" @click.stop="onShowOnMap">
+        <Button variant="card-action" class="show-on-map-btn" @click.stop="onShowOnMap">
           <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" /> <span class="btn-label">Auf Karte anzeigen</span>
-        </button>
+        </Button>
       </div>
       <p v-if="expanded && creatorLabel" class="detail-row"><span class="detail-label">Von</span>{{ creatorLabel }}</p>
       <template v-if="expanded && isAccommodation">

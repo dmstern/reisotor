@@ -7,6 +7,7 @@
 import { computed, onUnmounted, ref } from 'vue';
 import { useTripStore } from '../stores/trip';
 import ReisotorRobot from '../components/ReisotorRobot.vue';
+import Button from '../components/primitives/Button.vue';
 
 const tripStore = useTripStore();
 const destinationLabel = computed(
@@ -147,9 +148,9 @@ function startCheck() {
         </div>
       </Transition>
 
-      <button type="button" :disabled="phase === 'scanning'" @click="startCheck">
+      <Button :disabled="phase === 'scanning'" @click="startCheck">
         {{ phase === 'done' ? '🔁 Nochmal prüfen' : phase === 'scanning' ? 'Scanne …' : '🔍 Sicherheit prüfen' }}
-      </button>
+      </Button>
     </div>
 
     <p class="disclaimer">

@@ -7,6 +7,7 @@ import { cachedEmojiPin, LEAFLET_ATTRIBUTION_PREFIX, pulsingEmojiPin } from '../
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import AppIcon from './AppIcon.vue';
+import Button from './primitives/Button.vue';
 import type { IconDef } from '../utils/icon';
 
 // Eigener Standort während des Antippens (startOwnLocation() unten) - eigenes IconDef statt
@@ -203,7 +204,7 @@ function useOwnLocation() {
     <p v-if="modelValue" class="hint success">
       <AppIcon :icon="FORM_FIELD_ICONS.location" :size="14" group="formFields" />
       Standort gesetzt: {{ modelValue.lat.toFixed(5) }}, {{ modelValue.lng.toFixed(5) }}
-      <button type="button" class="secondary clear-btn" @click="clear">Entfernen</button>
+      <Button variant="secondary" class="clear-btn" @click="clear">Entfernen</Button>
     </p>
   </div>
 </template>

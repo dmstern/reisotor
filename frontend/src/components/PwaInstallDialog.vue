@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import Modal from './Modal.vue';
 import AppIcon from './AppIcon.vue';
+import Button from './primitives/Button.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { usePwaInstallStore } from '../stores/pwaInstall';
 
@@ -108,9 +109,9 @@ function close() {
         <ol v-if="guide.steps.length" class="steps">
           <li v-for="step in guide.steps" :key="step">{{ step }}</li>
         </ol>
-        <button v-if="install.canPromptInstall" type="button" @click="install.promptInstall()">
+        <Button v-if="install.canPromptInstall" @click="install.promptInstall()">
           <AppIcon :icon="ACTION_ICONS.installApp" :size="16" group="actions" /> Jetzt installieren
-        </button>
+        </Button>
       </div>
     </div>
   </Modal>

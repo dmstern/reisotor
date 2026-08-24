@@ -16,6 +16,7 @@ import Comments, { type CommentItem } from './Comments.vue';
 import FileAttachments from './FileAttachments.vue';
 import RichTextDisplay from './RichTextDisplay.vue';
 import AppIcon from './AppIcon.vue';
+import Button from './primitives/Button.vue';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
@@ -114,9 +115,9 @@ function onToggleDone() {
         <span class="detail-label">Adresse</span>{{ spot.address }}
       </p>
       <div v-if="spot.lat != null && spot.lng != null" class="detail-actions map-actions">
-        <button type="button" class="card-action-btn" @click="emit('show-on-map')">
+        <Button variant="card-action" @click="emit('show-on-map')">
           <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" /> Auf Karte anzeigen
-        </button>
+        </Button>
         <MapsAppPicker :lat="spot.lat" :lng="spot.lng" :title="spot.title" :maps-link="spot.maps_link" />
       </div>
       <p v-if="spot.checkin || spot.checkout" class="detail-row">
@@ -155,14 +156,13 @@ function onToggleDone() {
     />
     <FileAttachments domain="spots" :entity-id="spot.id" :editable="false" />
     <div v-if="!isAccommodation" class="detail-actions">
-      <button
+      <Button
         v-if="spot.lat != null && spot.lng != null"
-        type="button"
-        class="card-action-btn"
+        variant="card-action"
         @click="emit('show-on-map')"
       >
         <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" /> Auf Karte anzeigen
-      </button>
+      </Button>
       <MapsAppPicker v-if="spot.lat != null && spot.lng != null" :lat="spot.lat" :lng="spot.lng" :title="spot.title" :maps-link="spot.maps_link" />
     </div>
   </DetailModal>

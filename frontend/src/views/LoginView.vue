@@ -7,6 +7,7 @@ import PasswordInput from '../components/PasswordInput.vue';
 import ReisotorRobot from '../components/ReisotorRobot.vue';
 import ThemeModeSelect from '../components/ThemeModeSelect.vue';
 import AppFooterLinks from '../components/AppFooterLinks.vue';
+import Button from '../components/primitives/Button.vue';
 
 const auth = useAuthStore();
 const router = useRouter();
@@ -91,13 +92,13 @@ async function onSubmit() {
 
       <p v-if="error" class="error">{{ error }}</p>
 
-      <button type="submit" :disabled="loading">
+      <Button type="submit" :disabled="loading">
         {{ loading ? (mode === 'register' ? 'Registrieren…' : 'Anmelden…') : mode === 'register' ? 'Registrieren' : 'Anmelden' }}
-      </button>
+      </Button>
 
-      <button v-if="registrationMode !== 'off'" type="button" class="secondary mode-toggle" @click="toggleMode">
+      <Button v-if="registrationMode !== 'off'" variant="secondary" class="mode-toggle" @click="toggleMode">
         {{ mode === 'register' ? 'Schon registriert? Anmelden' : 'Noch kein Konto? Registrieren' }}
-      </button>
+      </Button>
     </form>
     <footer class="login-footer">
       <AppFooterLinks :landing-url="landingUrl" />

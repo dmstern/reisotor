@@ -10,6 +10,7 @@ import MapsAppPicker from './MapsAppPicker.vue';
 import FileAttachments from './FileAttachments.vue';
 import RichTextDisplay from './RichTextDisplay.vue';
 import AppIcon from './AppIcon.vue';
+import Button from './primitives/Button.vue';
 
 // Eigenständige Komponente statt inline in TravelSection.vue, da dieser Dialog auch von anderer Stelle
 // geöffnet werden muss (TripMap.vue's Stationsliste, falls der Abflug-/Ankunftsort dort als
@@ -77,14 +78,13 @@ function travelDuration(item: TravelItem) {
       <a v-if="item.link" :href="item.link" target="_blank" rel="noopener" class="card-action-btn">
         {{ linkLabel(item.link) }} ↗
       </a>
-      <button
+      <Button
         v-if="item.from_lat != null && item.from_lng != null"
-        type="button"
-        class="card-action-btn"
+        variant="card-action"
         @click="emit('show-on-map-from')"
       >
         <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" /> Abflug auf Karte anzeigen
-      </button>
+      </Button>
       <MapsAppPicker
         v-if="item.from_lat != null && item.from_lng != null"
         :lat="item.from_lat"
@@ -92,14 +92,13 @@ function travelDuration(item: TravelItem) {
         :title="`${item.title} (Abflug/Abfahrt)`"
         :maps-link="item.from_maps_link"
       />
-      <button
+      <Button
         v-if="item.to_lat != null && item.to_lng != null"
-        type="button"
-        class="card-action-btn"
+        variant="card-action"
         @click="emit('show-on-map-to')"
       >
         <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" /> Ankunft auf Karte anzeigen
-      </button>
+      </Button>
       <MapsAppPicker
         v-if="item.to_lat != null && item.to_lng != null"
         :lat="item.to_lat"

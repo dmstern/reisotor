@@ -2,6 +2,7 @@
 // Persistenter Hinweis im backend-losen Demo-Build (Issue #172): macht klar, dass hier nichts
 // wirklich gespeichert wird, und bietet einen Weg zurück zur Marketing-Landingpage.
 import { resetDemoStore } from '../demo/demoClient';
+import Button from './primitives/Button.vue';
 
 // __LANDING_URL__ (vite.config.ts's define) lässt sich nicht direkt im Template referenzieren -
 // vue-tsc's Template-Typprüfung löst Ambient-Globals aus einer .d.ts nicht auf, siehe env.d.ts.
@@ -22,7 +23,7 @@ function reset() {
   <div class="demo-banner">
     <span>🎭 Demo-Modus — nichts wird dauerhaft gespeichert</span>
     <div class="demo-banner-actions">
-      <button type="button" class="secondary" @click="reset">Demo zurücksetzen</button>
+      <Button variant="secondary" size="sm" @click="reset">Demo zurücksetzen</Button>
       <a :href="landingUrl" class="demo-banner-link">Zurück zur Übersicht</a>
     </div>
   </div>
