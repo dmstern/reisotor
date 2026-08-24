@@ -1116,12 +1116,6 @@ function formatDate(date: string) {
           {{ formatDate(viewingItem.date) }}
         </span>
       </template>
-      <p v-if="linkedTitleFor(viewingEntry)" class="detail-row linked-entity-link" @click="navigateToLinkedEntity">
-        <span class="detail-label">Verknüpft</span>
-        <AppIcon :icon="viewingEntry?.iconDef ?? SECTION_ICON_DEFS.excursions" :size="15" group="categories" />
-        <span class="linked-entity-title">{{ linkedTitleFor(viewingEntry) }}</span>
-        <AppIcon :icon="ACTION_ICONS.scrollRight" :size="12" group="actions" class="linked-entity-chevron" />
-      </p>
       <p v-if="viewingItem?.time" class="detail-row">
         <span class="detail-label">Zeit</span>
         <AppIcon :icon="FORM_FIELD_ICONS.time" :size="14" group="formFields" /> {{ viewingItem.time }}<template v-if="viewingItem.end_time"> – {{ viewingItem.end_time }}</template>
@@ -1134,6 +1128,16 @@ function formatDate(date: string) {
         <span class="detail-label">Ort</span>
         <AppIcon :icon="FORM_FIELD_ICONS.location" :size="14" group="formFields" /> {{ viewingItem.location }}
       </p>
+      <div v-if="linkedTitleFor(viewingEntry)" class="detail-row linked-entity-row">
+        <span class="detail-label">
+          {{ viewingEntry?.spotId != null ? 'Verknüpfter Ort' : 'Verknüpfte Tour' }}
+        </span>
+        <Button variant="secondary" size="sm" class="linked-entity-btn" @click="navigateToLinkedEntity">
+          <AppIcon :icon="viewingEntry?.iconDef ?? (viewingEntry?.spotId != null ? FORM_FIELD_ICONS.location : SECTION_ICON_DEFS.excursions)" :size="15" group="categories" />
+          <span class="linked-entity-title">{{ linkedTitleFor(viewingEntry) }}</span>
+          <AppIcon :icon="ACTION_ICONS.scrollRight" :size="12" group="actions" class="linked-entity-chevron" />
+        </Button>
+      </div>
       <div v-if="viewingItem?.note" class="detail-row note">{{ viewingItem.note }}</div>
       <FileAttachments v-if="viewingItem" domain="schedule" :entity-id="viewingItem.id" :editable="false" />
       <div class="detail-actions">
@@ -1435,28 +1439,33 @@ function formatDate(date: string) {
   gap: var(--space-1);
 }
 
-/* --- Verknüpfte Entität anklickbar (#264) --- */
-.linked-entity-link {
-  cursor: pointer;
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  transition: background 0.15s;
+/* --- Verknüpfte Entität Button (#264) --- */
+.linked-entity-row {
+  margin-top: var(--space-2);
+  margin-bottom: var(--space-1);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
 }
 
-.linked-entity-link:hover {
-  background: var(--color-hover);
+.linked-entity-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: 100%;
 }
 
 .linked-entity-title {
-  flex: 1;
-  text-decoration: underline;
-  text-decoration-color: var(--color-text-secondary);
-  text-underline-offset: 2px;
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .linked-entity-chevron {
-  margin-left: auto;
-  opacity: 0.5;
+  margin-left: var(--space-1);
+  opacity: 0.6;
 }
 
 </style>
