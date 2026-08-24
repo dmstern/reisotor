@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { watch } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import { useEditor, EditorContent } from '@tiptap/vue-3';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
 import DOMPurify from 'dompurify';
+import AppIcon from './AppIcon.vue';
+import { ACTION_ICONS } from '../utils/actionIcons';
 
 // Ersetzt die bisherigen <textarea>+renderRichText()-Vorschau-Formularfelder (Notizen, Tagebuch,
 // Reise-/Ausflugs-/Spot-Notizen) durch einen echten WYSIWYG-Editor - Formatierung wird direkt beim
@@ -14,11 +16,36 @@ import DOMPurify from 'dompurify';
 // compact (#194): Notiz-Felder an nebensächlichen Objekten (Spots, Touren, Kalender-Events, ...)
 // sollen NICHT die für Tagebuch/Notizen (#88) eingeführte Desktop-Vergrößerung erben - dort ist das
 // Freitextfeld die Hauptsache des Formulars, hier nur eine ergänzende Randnotiz.
-const props = withDefaults(defineProps<{ modelValue: string; placeholder?: string; compact?: boolean }>(), {
-  placeholder: '',
-  compact: false,
-});
+// expandable (#258): Initial zugeklappt als kompaktes Klickfeld, expandiert erst bei Interaktion.
+const props = withDefaults(
+  defineProps<{
+    modelValue: string;
+    placeholder?: string;
+    compact?: boolean;
+    expandable?: boolean;
+  }>(),
+  {
+    placeholder: '',
+    compact: false,
+    expandable: false,
+  },
+);
 const emit = defineEmits<{ (e: 'update:modelValue', value: string): void }>();
+
+const isExpanded = ref(false);
+
+const hasContent = computed(() => {
+  if (!props.modelValue) return false;
+  const stripped = props.modelValue.replace(/<[^>]+>/g, '').trim();
+  return stripped.length > 0;
+});
+
+function expandAndFocus() {
+  isExpanded.value = true;
+  nextTick(() => {
+    editor.value?.commands.focus('end');
+  });
+}
 
 // Gesetzt während des eigenen onUpdate-Emits, siehe Watcher unten - verhindert, dass das direkt
 // danach vom Formular zurückgespiegelte v-model (identischer Inhalt, ggf. nur durch DOMPurify leicht
@@ -64,7 +91,18 @@ function isActive(name: string, attrs?: Record<string, unknown>) {
 </script>
 
 <template>
-  <div class="richtext-editor" :class="{ compact }">
+  <div
+    v-if="expandable && !isExpanded && !hasContent"
+    class="collapsed-trigger"
+    role="button"
+    tabindex="0"
+    @click="expandAndFocus"
+    @keydown.enter.space.prevent="expandAndFocus"
+  >
+    <AppIcon :icon="ACTION_ICONS.edit" :size="13" group="actions" />
+    <span class="collapsed-placeholder">{{ placeholder || 'Notiz hinzufügen …' }}</span>
+  </div>
+  <div v-else class="richtext-editor" :class="{ compact }">
     <!-- Bewusst immer gerendert (kein v-if="editor") statt erst nach der asynchronen
          Editor-Initialisierung zu erscheinen - sonst poppt die Toolbar kurz nach dem ersten Render
          rein und verschiebt den Editor-Inhalt (und alles darunter, z. B. ein Datei-Upload-Feld) nach
@@ -283,5 +321,36 @@ function isActive(name: string, attrs?: Record<string, unknown>) {
   .richtext-editor:not(.compact) :deep(.richtext-content) {
     min-height: 24em;
   }
+}
+
+.collapsed-trigger {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  min-height: 38px;
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.collapsed-trigger:hover,
+.collapsed-trigger:focus-visible {
+  border-color: var(--color-border-strong);
+  background: var(--color-hover);
+  color: var(--color-text);
+  outline: none;
+}
+
+.collapsed-placeholder {
+  color: var(--color-text-muted);
+  user-select: none;
 }
 </style>

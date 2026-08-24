@@ -120,6 +120,7 @@ onUnmounted(() => {
 .modal.full-height {
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 @media (min-width: 800px) {
@@ -136,6 +137,7 @@ onUnmounted(() => {
   min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 /* Slot-Inhalt gehört der aufrufenden View (Notizen/Tagebuch/Spot-/Touren-/Unterkunft-/Reise-

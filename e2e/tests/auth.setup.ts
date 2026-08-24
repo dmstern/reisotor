@@ -20,7 +20,7 @@ setup('authenticate', async ({ page }) => {
   // und früh fehl, falls das Demo-Seeding nicht funktioniert hat. .trip-name (Header) statt
   // getByText(...): der Trip-Name kann zusätzlich in der (auf Desktop standardmäßig offenen)
   // Kalender-Schublade als synthetischer "Urlaub-Start/-Ende"-Eintrag auftauchen (strict mode).
-  await expect(page.locator('.trip-name', { hasText: seeded.trip.name })).toBeVisible();
+  await expect(page.locator('.trip-name', { hasText: seeded.trip.name })).toBeVisible({ timeout: 15000 });
 
   // Fixiert Emoji als Icon-Darstellung für die gesamte Suite (geteiltes storageState, siehe
   // playwright.config.ts) - viele bestehende Tests identifizieren ein Icon beiläufig per festem

@@ -63,15 +63,25 @@ async function onFileSelected(event: Event) {
 .image-url-input {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-3);
 }
 
 .upload-label {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
   align-self: flex-start;
-  font-size: 0.85rem;
+  font-size: 0.88rem;
   color: var(--color-primary);
   cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  transition: background-color 0.15s;
+}
+
+.upload-label:hover {
+  background: var(--color-primary-tint);
 }
 
 .upload-label input {

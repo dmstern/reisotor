@@ -30,6 +30,8 @@ test.describe('Tour-Zuordnung: einfacher Tagging-Modus + Kategorie/Touren-Gruppi
     const modal = page.locator('.modal', { hasText: 'Neuer Spot' });
     await modal.locator('input[placeholder="Titel"]').fill(spotTitle);
 
+    await modal.locator('.collapsible-toggle', { hasText: 'Touren zuordnen' }).click();
+
     // Tour-Titel tippen und per Enter (#207: eigener "Hinzufügen"-Button des TourAssignPicker
     // entfernt, klebte als Listeneintrag zu eng am Formular-Submit-Button gleichen Namens) als Chip
     // übernehmen - ein bislang unbekannter Titel legt beim Speichern eine neue Tour an (siehe
@@ -130,6 +132,8 @@ test.describe('Touren-Reihenfolge-Editor: Reihenfolge + Mehrfachbesuch direkt in
     const newTourModal = page.locator('.modal', { hasText: 'Neue Tour' });
     await newTourModal.locator('input[placeholder="Titel"]').fill(tourTitle);
 
+    await newTourModal.locator('.collapsible-toggle', { hasText: 'Spots zuordnen' }).click();
+
     // Start UND Ende an derselben Station (Spot A), dazwischen Spot B: Klick fügt IMMER eine
     // weitere Station hinzu (kein Checkbox-Verhalten) - der Reihenfolge-Editor ist seit dem
     // Zurückbau des früheren "erweiterten Touren-Modus" immer verfügbar, kein Umschalten mehr nötig.
@@ -169,6 +173,7 @@ test.describe('Touren-Reihenfolge-Editor: Reihenfolge + Mehrfachbesuch direkt in
     await expect(tourCard).toHaveClass(/expanded/);
     await tourCard.getByRole('button', { name: 'Bearbeiten' }).click();
     const editModal = page.locator('.modal', { hasText: 'Tour bearbeiten' });
+    await editModal.locator('.collapsible-toggle', { hasText: 'Spots zuordnen' }).click();
     await expect(editModal.locator('.planned-row .spot-title')).toHaveText([
       new RegExp(spotATitle),
       new RegExp(spotBTitle),
