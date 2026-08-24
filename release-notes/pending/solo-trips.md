@@ -1,0 +1,1 @@
+- Benutzeroberfläche für Solo-Urlaube angepasst: Kollaborative Elemente (wie geteilte Packlisten, Bearbeiter-/Einkäufer-Auswahl und Überweisungen) werden automatisch erst ab 2 Mitreisenden angezeigt.

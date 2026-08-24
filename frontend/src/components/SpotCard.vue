@@ -57,6 +57,7 @@ const props = defineProps<{
   groupMode: 'category' | 'tours';
   // Alle bestehenden Tour-Titel, fürs "Tour zuordnen"-Dropdown (TourAssignDropdown.vue).
   tourOptions: string[];
+  hasMultipleMembers?: boolean;
 }>();
 
 const isAccommodation = computed(() => props.spot.category === 'Unterkunft');
@@ -323,7 +324,7 @@ function onToggleDone() {
         <p v-if="spot.amount != null" class="detail-row">
           <span class="detail-label">Kosten</span>
           <AppIcon :icon="FORM_FIELD_ICONS.amount" :size="14" group="formFields" /> {{ spot.amount.toFixed(2) }} €
-          <span v-if="spot.paid_by_user_id"> · bezahlt von {{ payerLabel }}</span>
+          <span v-if="hasMultipleMembers !== false && spot.paid_by_user_id"> · bezahlt von {{ payerLabel }}</span>
         </p>
       </template>
       <RichTextDisplay v-if="spot.note" class="note" :content="spot.note" :format="spot.note_format" />

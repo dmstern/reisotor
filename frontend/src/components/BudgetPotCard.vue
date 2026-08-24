@@ -62,7 +62,7 @@ function updateAllocationAmount(category: string, value: string) {
     <div class="pot-head">
       <div class="pot-title">
         <h3>{{ budget.name }}</h3>
-        <span class="kind-badge">
+        <span v-if="store.users.length > 1" class="kind-badge">
           <template v-if="budget.owner_id == null"><AppIcon :icon="ACTION_ICONS.shared" :size="14" group="actions" /> Geteilt</template>
           <template v-else
             ><AppIcon :icon="ACTION_ICONS.private" :size="14" group="actions" /> {{ store.userAvatar(budget.owner_id) }}
