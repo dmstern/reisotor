@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import Button from '../components/primitives/Button.vue';
+import IconButton from '../components/primitives/IconButton.vue';
 import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { api, ApiError } from '../api/client';
@@ -361,7 +362,7 @@ async function onImportFileSelected(event: Event) {
       <div class="card">
         <div class="header">
           <h2>{{ auth.user?.avatar }} {{ auth.user?.username }}</h2>
-          <Button type="button" class="secondary" @click="logout">
+          <Button type="button" variant="secondary" @click="logout">
             <AppIcon :icon="ACTION_ICONS.logout" :size="14" group="actions" /> Abmelden
           </Button>
         </div>
@@ -385,17 +386,17 @@ async function onImportFileSelected(event: Event) {
           <div v-for="cat in EMOJI_CATEGORIES" :key="cat.label" class="emoji-category">
             <p class="emoji-category-label">{{ cat.label }}</p>
             <div class="emoji-grid">
-              <Button
+              <IconButton
                 v-for="emoji in cat.emojis"
                 :key="emoji"
-                type="button"
-                class="emoji-btn secondary"
-                :class="{ active: emoji === auth.user?.avatar }"
+                :active="emoji === auth.user?.avatar"
                 :disabled="avatarSaving"
+                :aria-label="`Avatar ${emoji} auswählen`"
+                :title="`Avatar ${emoji}`"
                 @click="selectAvatar(emoji)"
               >
                 {{ emoji }}
-              </Button>
+              </IconButton>
             </div>
           </div>
         </div>
@@ -486,26 +487,24 @@ async function onImportFileSelected(event: Event) {
             <AppIcon v-if="navLinkIcon(entry.key)" class="nav-config-icon" :icon="navLinkIcon(entry.key)!" group="navigation" />
             <span class="nav-config-label" :class="{ hidden: !entry.visible }">{{ navLinkLabel(entry.key) }}</span>
             <div class="nav-config-actions">
-              <Button
-                type="button"
-                class="secondary small"
+              <IconButton
+                size="sm"
                 :disabled="index === 0"
                 aria-label="Nach oben verschieben"
                 title="Nach oben verschieben"
                 @click="navConfig.moveUp(entry.key)"
               >
                 <AppIcon :icon="ACTION_ICONS.chevronUp" :size="14" group="actions" />
-              </Button>
-              <Button
-                type="button"
-                class="secondary small"
+              </IconButton>
+              <IconButton
+                size="sm"
                 :disabled="index === navConfig.entries.length - 1"
                 aria-label="Nach unten verschieben"
                 title="Nach unten verschieben"
                 @click="navConfig.moveDown(entry.key)"
               >
                 <AppIcon :icon="ACTION_ICONS.chevronDown" :size="14" group="actions" />
-              </Button>
+              </IconButton>
               <label class="nav-config-visible">
                 <input
                   type="checkbox"
@@ -533,26 +532,24 @@ async function onImportFileSelected(event: Event) {
             <AppIcon v-if="dashboardTileIcon(entry.key)" class="nav-config-icon" :icon="dashboardTileIcon(entry.key)!" group="navigation" />
             <span class="nav-config-label" :class="{ hidden: !entry.visible }">{{ dashboardTileLabel(entry.key) }}</span>
             <div class="nav-config-actions">
-              <Button
-                type="button"
-                class="secondary small"
+              <IconButton
+                size="sm"
                 :disabled="index === 0"
                 aria-label="Nach oben verschieben"
                 title="Nach oben verschieben"
                 @click="dashboardConfig.moveUp(entry.key)"
               >
                 <AppIcon :icon="ACTION_ICONS.chevronUp" :size="14" group="actions" />
-              </Button>
-              <Button
-                type="button"
-                class="secondary small"
+              </IconButton>
+              <IconButton
+                size="sm"
                 :disabled="index === dashboardConfig.entries.length - 1"
                 aria-label="Nach unten verschieben"
                 title="Nach unten verschieben"
                 @click="dashboardConfig.moveDown(entry.key)"
               >
                 <AppIcon :icon="ACTION_ICONS.chevronDown" :size="14" group="actions" />
-              </Button>
+              </IconButton>
               <label class="nav-config-visible">
                 <input
                   type="checkbox"
@@ -898,17 +895,6 @@ h3 {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-1);
-}
-
-.emoji-btn {
-  font-size: 1.3rem;
-  padding: 6px 10px;
-  line-height: 1;
-}
-
-.emoji-btn.active {
-  border-color: var(--color-primary);
-  background: var(--color-primary-tint);
 }
 
 .form {

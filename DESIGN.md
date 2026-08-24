@@ -560,6 +560,9 @@ für elementare UI-Bausteine:
 - **`Button.vue`**: Zentrales Primitive für alle Schaltflächen. Unterstützt `variant` (`primary`,
   `secondary`, `danger`, `card-action`, `ghost`) und `size` (`sm`, `md`, `lg`). Kapselt
   Schattierung (`--shadow-sm`) und Squircle-Styling intern.
+- **`IconButton.vue`**: Spezielles Primitive für reine Icon- und Emoji-Schaltflächen (Avatar-Auswahl,
+  Verschiebe-Aktionen, Close-/Toggle-Buttons). Standardmäßig komplett ohne Rahmen, Schatten oder
+  Hintergrund (`variant="ghost"`), mit sanftem Hover- und aktivem Auswahlstatus (`active`).
 - **`Card.vue`**: Basis-Fläche für Spots, Touren, Budget-Töpfe und Fokus-Panels (`variant="muted"`
   für hinterlegte Kacheln).
 - **`Input.vue`**: Wiederverwendbares Primitive für einzeilige Eingabefelder (`text`, `number`,
