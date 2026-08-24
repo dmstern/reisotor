@@ -15,9 +15,12 @@ test('Spot-Formular: Bild lässt sich direkt hochladen statt nur per URL zu verl
   await page.getByRole('button', { name: 'Neuer Spot' }).click();
 
   const modal = page.locator('.modal', { hasText: 'Neuer Spot' });
-  await modal.locator('input[placeholder="Titel"]').fill(spotTitle);
-
-  const imageInput = modal.locator('.image-url-input');
+  await modal.waitFor({ state: 'visible' });
+  await modal.getByRole('button', { name: 'Bild hinzufügen' }).click();
+  const imageSubModal = page.locator('.modal', { hasText: 'Spot-Bild bearbeiten' });
+  await imageSubModal.waitFor({ state: 'visible' });
+  await page.waitForTimeout(300);
+  const imageInput = imageSubModal.locator('.image-url-input');
   const urlField = imageInput.locator('input[type="text"]');
   await expect(urlField).toHaveValue('');
 
@@ -31,8 +34,12 @@ test('Spot-Formular: Bild lässt sich direkt hochladen statt nur per URL zu verl
   // eine manuell eingegebene URL - Upload und Textfeld sind dasselbe image_url-Feld, kein separater
   // Zustand.
   await expect(urlField).toHaveValue(/\/api\/uploads\//, { timeout: 10_000 });
+  await imageSubModal.getByRole('button', { name: 'Fertig' }).click();
+  await expect(imageSubModal).toBeHidden();
+
   await expect(modal.locator('.form-image-banner')).toHaveCSS('background-image', /api\/uploads/);
 
+  await modal.locator('input[placeholder="Titel"]').fill(spotTitle);
   await modal.locator('form.edit-form button[type="submit"]').click();
   await expect(modal).toBeHidden();
 

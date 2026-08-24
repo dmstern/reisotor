@@ -46,6 +46,7 @@ import { ACTION_ICONS } from '../utils/actionIcons';
 import type { IconDef } from '../utils/icon';
 import AppIcon from '../components/AppIcon.vue';
 import Button from '../components/primitives/Button.vue';
+import ButtonGroup from '../components/primitives/ButtonGroup.vue';
 
 // Touren-Verwaltung (Anlegen/Bearbeiten/Einplanen) ist seit dem Zurückbau des früheren "erweiterten
 // Touren-Modus" (vormals eine eigenständige Ausflüge-Schublade, views/ExcursionsDrawer.vue) Teil
@@ -2013,7 +2014,7 @@ async function removeSpot(id: number) {
               </template>
               <fieldset v-if="!excursionForm.transportEnabled && spotsStore.spots.length" class="collapsible-fieldset">
                 <legend>
-                  <Button type="button" variant="ghost" class="picker-toggle" :aria-expanded="showExcursionSpotsSection"
+                  <Button type="button" variant="ghost" class="collapsible-toggle" :aria-expanded="showExcursionSpotsSection"
                     @click="showExcursionSpotsSection = !showExcursionSpotsSection">
                     <span>
                       <AppIcon :icon="FORM_FIELD_ICONS.location" :size="14" group="formFields" />
@@ -2143,7 +2144,7 @@ async function removeSpot(id: number) {
               </template>
               <fieldset v-if="!editExcursionForm.transportEnabled && spotsStore.spots.length" class="collapsible-fieldset">
                 <legend>
-                  <Button type="button" variant="ghost" class="picker-toggle" :aria-expanded="showEditExcursionSpotsSection"
+                  <Button type="button" variant="ghost" class="collapsible-toggle" :aria-expanded="showEditExcursionSpotsSection"
                     @click="showEditExcursionSpotsSection = !showEditExcursionSpotsSection">
                     <span>
                       <AppIcon :icon="FORM_FIELD_ICONS.location" :size="14" group="formFields" />
@@ -2355,7 +2356,7 @@ async function removeSpot(id: number) {
               </FormField>
               <fieldset class="collapsible-fieldset">
                 <legend>
-                  <Button type="button" variant="ghost" class="picker-toggle" :aria-expanded="showSpotToursSection"
+                  <Button type="button" variant="ghost" class="collapsible-toggle" :aria-expanded="showSpotToursSection"
                     @click="showSpotToursSection = !showSpotToursSection">
                     <span>
                       <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="14" group="navigation" />
@@ -2558,7 +2559,8 @@ async function removeSpot(id: number) {
                   @blur="checkEditSpotMapsLink" />
               </FormField>
               <p v-if="editSpotMapsLinkResolved === true" class="hint success">
-                <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort erkannt
+                <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort erkannt – erscheint auf
+                der Karte
               </p>
               <p v-if="editSpotMapsLinkResolved === false" class="hint">
                 Standort wird beim Speichern serverseitig aufgelöst (auch Kurzlinks funktionieren).
@@ -2580,7 +2582,7 @@ async function removeSpot(id: number) {
               </FormField>
               <fieldset class="collapsible-fieldset">
                 <legend>
-                  <Button type="button" variant="ghost" class="picker-toggle" :aria-expanded="showEditSpotToursSection"
+                  <Button type="button" variant="ghost" class="collapsible-toggle" :aria-expanded="showEditSpotToursSection"
                     @click="showEditSpotToursSection = !showEditSpotToursSection">
                     <span>
                       <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="14" group="navigation" />
@@ -2606,9 +2608,9 @@ async function removeSpot(id: number) {
             @update:model-value="(v) => !v && (showSpotImageModal = false)">
             <div class="image-submodal">
               <ImageUrlInput v-model="spotForm.image_url" />
-              <div class="submodal-actions">
+              <ButtonGroup>
                 <Button type="button" @click="showSpotImageModal = false">Fertig</Button>
-              </div>
+              </ButtonGroup>
             </div>
           </Modal>
 
@@ -2616,9 +2618,9 @@ async function removeSpot(id: number) {
             @update:model-value="(v) => !v && (showEditSpotImageModal = false)">
             <div class="image-submodal">
               <ImageUrlInput v-model="editSpotForm.image_url" />
-              <div class="submodal-actions">
+              <ButtonGroup>
                 <Button type="button" @click="showEditSpotImageModal = false">Fertig</Button>
-              </div>
+              </ButtonGroup>
             </div>
           </Modal>
 
@@ -2626,9 +2628,9 @@ async function removeSpot(id: number) {
             @update:model-value="(v) => !v && (showExcursionImageModal = false)">
             <div class="image-submodal">
               <ImageUrlInput v-model="excursionForm.image_url" />
-              <div class="submodal-actions">
+              <ButtonGroup>
                 <Button type="button" @click="showExcursionImageModal = false">Fertig</Button>
-              </div>
+              </ButtonGroup>
             </div>
           </Modal>
 
@@ -2636,9 +2638,9 @@ async function removeSpot(id: number) {
             @update:model-value="(v) => !v && (showEditExcursionImageModal = false)">
             <div class="image-submodal">
               <ImageUrlInput v-model="editExcursionForm.image_url" />
-              <div class="submodal-actions">
+              <ButtonGroup>
                 <Button type="button" @click="showEditExcursionImageModal = false">Fertig</Button>
-              </div>
+              </ButtonGroup>
             </div>
           </Modal>
 
@@ -2663,10 +2665,10 @@ async function removeSpot(id: number) {
                 <input type="checkbox" v-model="trackWarningDismissed" />
                 Diesen Hinweis nicht mehr anzeigen
               </label>
-              <div class="submodal-actions">
+              <ButtonGroup>
                 <Button type="button" variant="secondary" @click="showTrackRecordingWarningModal = false">Abbrechen</Button>
                 <Button type="button" @click="startRecordingConfirmed">Aufzeichnung starten</Button>
-              </div>
+              </ButtonGroup>
             </div>
           </Modal>
         </div>
@@ -3292,17 +3294,132 @@ async function removeSpot(id: number) {
 }
 
 .form-image-banner {
+  position: relative;
   height: 140px;
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   background: var(--color-primary-tint) center/cover no-repeat;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
+  padding: var(--space-2);
+  overflow: hidden;
 }
 
 .form-image-banner .placeholder {
   font-size: 2.2rem;
+  margin-top: auto;
+  margin-bottom: auto;
+}
+
+.form-image-banner .banner-actions {
+  align-self: flex-end;
+  margin-top: auto;
+  display: flex;
+  gap: var(--space-1);
+}
+
+.banner-edit-btn {
+  background: var(--color-surface) !important;
+  color: var(--color-text) !important;
+  font-size: 0.82rem;
+  padding: 4px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  box-shadow: var(--shadow-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.banner-edit-btn:hover {
+  background: var(--color-hover) !important;
+}
+
+.banner-edit-btn.remove {
+  color: var(--color-danger) !important;
+}
+
+.collapsible-fieldset {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md-squircle);
+  corner-shape: squircle;
+  padding: var(--space-2) var(--space-3) var(--space-3);
+  margin: var(--space-2) 0;
+  background: var(--color-bg);
+}
+
+.collapsible-fieldset legend {
+  padding: 0 var(--space-1);
+  margin: 0;
+}
+
+.collapsible-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 4px 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--color-text);
+  background: var(--color-surface) !important;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.collapsible-toggle:hover {
+  background: var(--color-hover) !important;
+}
+
+.collapsible-toggle .picker-count {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.collapsible-content {
+  margin-top: var(--space-2);
+}
+
+.track-warning-modal .track-warning-intro {
+  margin-bottom: var(--space-3);
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: var(--color-text);
+}
+
+.track-warning-modal .track-warning-points {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.track-warning-modal .track-warning-points li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  font-size: 0.88rem;
+  line-height: 1.4;
+  color: var(--color-text);
+}
+
+.track-warning-modal .warning-dismiss {
+  margin-top: var(--space-3);
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.image-submodal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
 }
 
 .syntax-hint {
