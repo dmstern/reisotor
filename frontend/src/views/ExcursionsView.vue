@@ -197,6 +197,29 @@ onMounted(async () => {
   }
 });
 
+// #264: Hash-Sprünge auch reagieren, wenn die View bereits gemountet ist (z. B. Querverweise aus
+// dem Kalender-Detail-Dialog, der auf derselben Route /excursions liegt, oder programmatische
+// router.push-Aufrufe, die nur den Hash ändern).
+watch(
+  () => route.hash,
+  async (newHash) => {
+    if (!newHash) return;
+    const spotId = hashHighlightId(newHash, 'spot');
+    if (spotId != null) {
+      highlightedIds.value.add(spotId);
+      await nextTick();
+      onFocusSpotFromMap(spotId);
+      return;
+    }
+    const excursionId = hashHighlightId(newHash, 'excursion') ?? hashHighlightId(newHash, 'travel');
+    if (excursionId != null) {
+      highlightedIds.value.add(excursionId);
+      await nextTick();
+      onFocusExcursionFromMap(excursionId);
+    }
+  },
+);
+
 function creatorLabel(userId: number | null) {
   if (userId == null) return null;
   const u = users.value.find((u) => u.id === userId);

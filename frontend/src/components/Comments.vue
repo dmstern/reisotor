@@ -2,6 +2,8 @@
 import Button from './primitives/Button.vue';
 import { ref } from 'vue';
 import DeleteButton from './DeleteButton.vue';
+import AppIcon from './AppIcon.vue';
+import { ACTION_ICONS } from '../utils/actionIcons';
 
 export interface CommentItem {
   id: number;
@@ -36,8 +38,18 @@ function submit() {
     </div>
 
     <form class="comment-form" @submit.prevent="submit">
-      <input v-model="draft" type="text" placeholder="Kommentar schreiben…" />
-      <Button type="submit">Senden</Button>
+      <div class="comment-input-wrap">
+        <input v-model="draft" type="text" placeholder="Kommentar schreiben…" />
+        <Button
+          type="submit"
+          class="send-btn"
+          title="Kommentar senden"
+          aria-label="Kommentar senden"
+          :disabled="!draft.trim()"
+        >
+          <AppIcon :icon="ACTION_ICONS.send" :size="14" group="actions" />
+        </Button>
+      </div>
     </form>
   </div>
 </template>
@@ -71,10 +83,38 @@ function submit() {
 
 .comment-form {
   display: flex;
-  gap: var(--space-2);
+  width: 100%;
 }
 
-.comment-form input {
-  flex: 1;
+.comment-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.comment-input-wrap input {
+  width: 100%;
+  padding-right: 38px;
+  box-sizing: border-box;
+}
+
+.comment-input-wrap .send-btn {
+  position: absolute;
+  right: 4px;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: none;
+}
+
+.comment-input-wrap .send-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
 }
 </style>

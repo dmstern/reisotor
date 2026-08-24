@@ -31,6 +31,7 @@ import { fetchMergedWeather, fetchWeatherForecast, weatherCodeMeta, type DailyWe
 import { fetchRegionInfo, type RegionInfo } from '../utils/regionInfo';
 import {
   formatDate as formatDateShared,
+  formatTripDateRange,
   formatWeekdayDate as formatWeekdayDateShared,
   toLocalDateString,
 } from '../utils/dateFormat';
@@ -360,7 +361,7 @@ function formatWeekdayDate(d: string) {
       </Button>
       <h1>{{ trip?.name || 'Euer Urlaub' }}</h1>
       <p v-if="trip?.destination"><AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> {{ trip.destination }}</p>
-      <p v-if="trip">{{ formatDate(trip.start_date) }} – {{ formatDate(trip.end_date) }}</p>
+      <p v-if="trip">{{ formatTripDateRange(trip.start_date, trip.end_date) }}</p>
       <p v-if="departureCountdown?.phase === 'days'" class="countdown">
         Noch {{ departureCountdown.days }} {{ departureCountdown.days === 1 ? 'Tag' : 'Tage' }} bis zur Abreise 🎒
       </p>

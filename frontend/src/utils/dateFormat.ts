@@ -69,3 +69,27 @@ export function endOfWeek(date: Date): Date {
   result.setDate(result.getDate() + 6);
   return result;
 }
+
+/**
+ * Datumsbereich für das Urlaubsbanner (#212).
+ * Regel:
+ * - Vor/während des Urlaubs im selben Kalenderjahr: Jahr weglassen (z. B. "12.08. – 20.08.")
+ * - Im Kalenderjahr vor dem Urlaub (z. B. heute 2025, Urlaub 2026): Jahr anzeigen (z. B. "12.08.2026 – 20.08.2026")
+ * - Zeitraum nach dem Urlaub (auch schon ab dem Folgetag): Jahr anzeigen (z. B. "12.08.2026 – 20.08.2026")
+ * - Jahresübergreifender Urlaub: Jahr anzeigen (z. B. "28.12.2026 – 05.01.2027")
+ */
+export function formatTripDateRange(startDateStr: string, endDateStr: string, now: Date = new Date()): string {
+  const today = toLocalDateString(now);
+  const currentYear = now.getFullYear();
+  const startYear = parseInt(startDateStr.slice(0, 4), 10);
+  const endYear = parseInt(endDateStr.slice(0, 4), 10);
+
+  const isPastTrip = today > endDateStr;
+  const isFutureYearTrip = currentYear < startYear;
+  const isCrossYearTrip = startYear !== endYear;
+
+  const includeYear = isPastTrip || isFutureYearTrip || isCrossYearTrip;
+
+  return `${formatDate(startDateStr, { includeYear })} – ${formatDate(endDateStr, { includeYear })}`;
+}
+

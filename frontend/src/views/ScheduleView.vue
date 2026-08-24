@@ -797,6 +797,17 @@ function linkedTitleFor(entry: CalendarEntry | null): string | null {
   return null;
 }
 
+function navigateToLinkedEntity() {
+  const entry = viewingEntry.value;
+  if (!entry) return;
+  viewingItem.value = null;
+  if (entry.spotId != null) {
+    router.push(`/excursions#spot-${entry.spotId}`);
+  } else if (entry.ideaId != null) {
+    router.push(`/excursions#excursion-${entry.ideaId}`);
+  }
+}
+
 function editViewingItem() {
   if (!viewingItem.value) return;
   startEdit(viewingItem.value);
@@ -1099,11 +1110,12 @@ function formatDate(date: string) {
       :placeholder-icon="viewingEntry ? (viewingEntry.iconDef ?? SCHEDULE_CATEGORY_META[viewingEntry.category].tabler) : undefined"
       @edit="editViewingItem"
     >
-      <p v-if="linkedTitleFor(viewingEntry)" class="detail-row">
-        <span class="detail-label">Verknüpft</span>
-        <AppIcon :icon="viewingEntry?.iconDef ?? SECTION_ICON_DEFS.excursions" :size="15" group="categories" />
-        {{ linkedTitleFor(viewingEntry) }}
-      </p>
+      <template #meta>
+        <span v-if="viewingItem" class="detail-badge">
+          <AppIcon :icon="FORM_FIELD_ICONS.date" :size="12" group="formFields" />
+          {{ formatDate(viewingItem.date) }}
+        </span>
+      </template>
       <p v-if="viewingItem?.time" class="detail-row">
         <span class="detail-label">Zeit</span>
         <AppIcon :icon="FORM_FIELD_ICONS.time" :size="14" group="formFields" /> {{ viewingItem.time }}<template v-if="viewingItem.end_time"> – {{ viewingItem.end_time }}</template>
@@ -1116,6 +1128,16 @@ function formatDate(date: string) {
         <span class="detail-label">Ort</span>
         <AppIcon :icon="FORM_FIELD_ICONS.location" :size="14" group="formFields" /> {{ viewingItem.location }}
       </p>
+      <div v-if="linkedTitleFor(viewingEntry)" class="detail-row linked-entity-row">
+        <span class="detail-label">
+          {{ viewingEntry?.spotId != null ? 'Verknüpfter Ort' : 'Verknüpfte Tour' }}
+        </span>
+        <Button variant="secondary" size="sm" class="linked-entity-btn" @click="navigateToLinkedEntity">
+          <AppIcon :icon="viewingEntry?.iconDef ?? (viewingEntry?.spotId != null ? FORM_FIELD_ICONS.location : SECTION_ICON_DEFS.excursions)" :size="15" group="categories" />
+          <span class="linked-entity-title">{{ linkedTitleFor(viewingEntry) }}</span>
+          <AppIcon :icon="ACTION_ICONS.scrollRight" :size="12" group="actions" class="linked-entity-chevron" />
+        </Button>
+      </div>
       <div v-if="viewingItem?.note" class="detail-row note">{{ viewingItem.note }}</div>
       <FileAttachments v-if="viewingItem" domain="schedule" :entity-id="viewingItem.id" :editable="false" />
       <div class="detail-actions">
@@ -1410,4 +1432,41 @@ function formatDate(date: string) {
   flex: 1 1 100%;
 }
 
+/* --- Termin-Detail-Badge (#264) --- */
+.detail-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+/* --- Verknüpfte Entität Button (#264) --- */
+.linked-entity-row {
+  margin-top: var(--space-2);
+  margin-bottom: var(--space-1);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+}
+
+.linked-entity-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: 100%;
+}
+
+.linked-entity-title {
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.linked-entity-chevron {
+  margin-left: var(--space-1);
+  opacity: 0.6;
+}
+
 </style>
+
