@@ -838,3 +838,10 @@ textarea:focus {
 ::view-transition-new(expanding-spot-card) {
   animation-duration: 0.25s;
 }
+
+
+/* Fix for issue #69 */
+p + button,
+p + .btn {
+  margin-top: var(--space-3);
+}

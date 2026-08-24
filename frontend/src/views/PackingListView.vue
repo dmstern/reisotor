@@ -331,7 +331,7 @@ async function quickAdd(list: ListGroup, label: string) {
             </option>
           </select>
         </FormField>
-        <button type="submit">Speichern</button>
+        <Button type="submit">Speichern</Button>
       </form>
     </Modal>
   </div>

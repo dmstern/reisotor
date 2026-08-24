@@ -10,6 +10,7 @@
 // textarea, siehe unten) wächst mit, alle anderen Felder behalten ihre natürliche Höhe.
 import { onUnmounted, watch } from 'vue';
 import AppIcon from './AppIcon.vue';
+import Button from './primitives/Button.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
 const props = defineProps<{ modelValue: boolean; title?: string; hideHeader?: boolean; fullHeight?: boolean }>();
@@ -50,9 +51,9 @@ onUnmounted(() => {
         <div class="modal" :class="{ 'full-height': fullHeight }">
           <div class="modal-head" v-if="!hideHeader">
             <h2 v-if="title">{{ title }}</h2>
-            <button class="secondary close-btn" @click="close">
+            <Button variant="ghost" class="close-btn" @click="close">
               <AppIcon :icon="ACTION_ICONS.close" :size="16" group="actions" />
-            </button>
+            </Button>
           </div>
           <div class="modal-body">
             <slot :close="close" />

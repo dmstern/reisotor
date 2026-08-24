@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Button from './primitives/Button.vue';
 import { computed, ref } from 'vue';
 import type { Budget } from '../api/types';
 import { useBudgetStore } from '../stores/budget';
@@ -111,7 +112,7 @@ function updateAllocationAmount(category: string, value: string) {
         <FormField icon="amount" label="Ziel">
           <input v-model="newCategoryAmount" type="number" step="0.01" placeholder="Ziel €" />
         </FormField>
-        <button type="submit"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Hinzufügen</button>
+        <Button type="submit"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Hinzufügen</Button>
       </form>
     </details>
   </Card>

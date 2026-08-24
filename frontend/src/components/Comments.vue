@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Button from './primitives/Button.vue';
 import { ref } from 'vue';
 import DeleteButton from './DeleteButton.vue';
 
@@ -36,7 +37,7 @@ function submit() {
 
     <form class="comment-form" @submit.prevent="submit">
       <input v-model="draft" type="text" placeholder="Kommentar schreiben…" />
-      <button type="submit">Senden</button>
+      <Button type="submit">Senden</Button>
     </form>
   </div>
 </template>

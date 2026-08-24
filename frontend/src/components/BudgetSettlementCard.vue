@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Button from './primitives/Button.vue';
 import type { SettlementSuggestion } from '../utils/budgetBalances';
 import { useBudgetStore } from '../stores/budget';
 import AppIcon from './AppIcon.vue';
@@ -25,7 +26,7 @@ const store = useBudgetStore();
           schuldet {{ store.userAvatar(s.to.id) }} <strong>{{ s.to.username }}</strong> noch
           <strong class="debt-amount">{{ s.amount.toFixed(2) }} €</strong>
         </span>
-        <button class="secondary settle-btn" @click="$emit('use-suggestion', s)">Als Überweisung eintragen</button>
+        <Button class="secondary settle-btn" @click="$emit('use-suggestion', s)">Als Überweisung eintragen</Button>
       </li>
     </ul>
 
