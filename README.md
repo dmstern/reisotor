@@ -67,9 +67,27 @@ SEED_USER1=daniel SEED_PASS1=... SEED_USER2=partner SEED_PASS2=... npm run seed
 
 Das Skript ist idempotent (`INSERT OR IGNORE`) – bereits vorhandene Nutzer/Zeilen werden nicht überschrieben.
 
-### Demo-Daten für Sandbox/Testing
+### Demo-Daten für Sandbox/Testing (mit Backend)
 
 `npm run seed:demo` im Backend legt zusätzlich zu den 2 Nutzern einen kompletten Beispiel-Urlaub mit Daten in allen Bereichen an (Unterkunft, Hin-/Rückflug, Kalendertermine, Pack- und Einkaufsliste, Ausflug mit Spots auf der Karte, Budget mit Ausgaben und Überweisung, Tagebucheintrag, Notiz) – praktisch, um Änderungen in einer frischen Sandbox zu sehen, ohne erst alles von Hand anzulegen. Bricht ab, falls schon ein Urlaub existiert (kein Duplizieren). Nicht für Produktionsdaten gedacht.
+
+### Backend-loser Demo-Modus (Frontend only)
+
+Reisotor bietet auch einen vollständig backend-losen Demo-Modus, der alle API-Aufrufe mit Beispieldaten im Arbeitsspeicher simuliert (entspricht der [GitHub-Pages-Live-Demo](https://dmstern.github.io/reisotor/)):
+
+```bash
+# Frontend im Demo-Modus starten (kein Backend erforderlich)
+cd frontend
+npm install
+npm run dev:demo   # Vite Dev-Server mit Watch/Hot-Reloading auf http://localhost:5173
+```
+
+Für einen statischen Produktions-Build der Demo:
+
+```bash
+cd frontend
+npm run build:demo # statischer Build nach dist-demo/
+```
 
 ### Backend-Umgebungsvariablen
 

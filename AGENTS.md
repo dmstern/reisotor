@@ -29,9 +29,10 @@ npm test            # vitest run; npm run test:watch für Watch-Mode
 # Frontend (Vite + Vue 3 + TypeScript, /frontend)
 cd frontend
 npm install
-npm run dev     # Vite auf http://localhost:5173, proxied /api ans Backend
-npm run build   # vue-tsc --noEmit + vite build -> frontend/dist
-npm test        # vitest run
+npm run dev      # Vite auf http://localhost:5173, proxied /api ans Backend
+npm run dev:demo # Vite im backend-losen Demo-Modus (Hot-Reloading, kein Backend nötig)
+npm run build    # vue-tsc --noEmit + vite build -> frontend/dist
+npm test         # vitest run
 
 # E2E (Playwright, /e2e) — siehe eigener Abschnitt unten
 cd e2e && npm install && npx playwright install chromium && npm test
@@ -65,8 +66,8 @@ Neben dem normalen `npm run build` (echtes Backend-Deploy, siehe `.github/workfl
 gibt es zwei zusätzliche statische Frontend-Builds für GitHub Pages (`frontend/landing.html`+
 `frontend/src/views/LandingView.vue` sowie einen backend-losen Demo-Modus, siehe
 `frontend/src/demo/`), veröffentlicht über `.github/workflows/pages-deploy.yml` bei jedem
-Prod-Release-Tag. `frontend/npm run build:landing`/`build:demo` lokal bauen, `VITE_DEMO_MODE=true
-npm run dev` für den Demo-Modus gegen den normalen Dev-Server. Bei PRs mit größeren UI-/Feature-
+Prod-Release-Tag. `frontend/npm run build:landing`/`build:demo` lokal bauen, `npm run dev:demo`
+(oder `VITE_DEMO_MODE=true npm run dev`) für den Demo-Modus gegen den normalen Dev-Server. Bei PRs mit größeren UI-/Feature-
 Änderungen prüfen, ob `frontend/public/landing/*`-Screenshots und die Feature-Texte in
 `LandingView.vue` noch aktuell sind (Screenshot-Flow: kurze Playwright-Scratch-Spec wie bei den
 PR-Screenshots, siehe unten) — bewusst nur als manueller Hinweis, kein CI-Enforcement.

@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:demo": "VITE_DEMO_MODE=true vite",
     "build": "vue-tsc --noEmit && vite build",
     "build:landing": "VITE_BUILD_TARGET=landing VITE_BASE=/reisotor/ vite build --outDir dist-landing",
     "build:demo": "VITE_DEMO_MODE=true VITE_BASE=/reisotor/demo/ vite build --outDir dist-demo",
