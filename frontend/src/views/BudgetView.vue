@@ -24,6 +24,7 @@ import FileAttachments from '../components/FileAttachments.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import DraftStatusBar from '../components/DraftStatusBar.vue';
 import AppIcon from '../components/AppIcon.vue';
+import Button from '../components/primitives/Button.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
 
@@ -262,7 +263,7 @@ const categoryColors = computed(() => {
     <div class="card">
       <div class="header">
         <h2>Budgets</h2>
-        <button @click="showNewBudgetForm = true"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Budget anlegen</button>
+        <Button @click="showNewBudgetForm = true"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Budget anlegen</Button>
       </div>
       <p class="hint">
         Ganz einfach: ein Topf mit nur einer Gesamtsumme. Oder detaillierter: in Kategorien aufteilen,
@@ -293,7 +294,7 @@ const categoryColors = computed(() => {
           <p v-if="showsPrivacyHint" class="privacy-hint">
             <AppIcon :icon="ACTION_ICONS.private" :size="14" group="actions" /> Nur {{ budgetStore.userName(Number(newBudgetForm.owner_id)) }} sieht diesen Topf danach.
           </p>
-          <button type="submit">Anlegen</button>
+          <Button type="submit">Anlegen</Button>
         </form>
       </Modal>
 
@@ -307,7 +308,7 @@ const categoryColors = computed(() => {
     <div class="card">
       <div class="header">
         <h2>Bezahlungen</h2>
-        <button @click="showExpenseForm = true"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Bezahlung eintragen</button>
+        <Button @click="showExpenseForm = true"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Bezahlung eintragen</Button>
       </div>
 
       <Modal :model-value="showExpenseForm" title="Bezahlung eintragen" @update:model-value="(v) => !v && closeExpenseForm()">
@@ -342,7 +343,7 @@ const categoryColors = computed(() => {
             <input v-model="expenseForm.note" type="text" placeholder="Notiz (optional)" />
           </FormField>
           <DraftStatusBar :status="newExpenseDraft.status.value" :restored="newExpenseDraft.restored.value" />
-          <button type="submit">Eintragen</button>
+          <Button type="submit">Eintragen</Button>
         </form>
       </Modal>
 
@@ -353,7 +354,7 @@ const categoryColors = computed(() => {
     <div class="card">
       <div class="header">
         <h2>Überweisungen</h2>
-        <button @click="showTransferForm = true"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Überweisung eintragen</button>
+        <Button @click="showTransferForm = true"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Überweisung eintragen</Button>
       </div>
 
       <Modal :model-value="showTransferForm" title="Überweisung eintragen" @update:model-value="(v) => !v && closeTransferForm()">
@@ -379,7 +380,7 @@ const categoryColors = computed(() => {
           <FormField icon="note" label="Notiz">
             <input v-model="transferForm.note" type="text" placeholder="Notiz (optional)" />
           </FormField>
-          <button type="submit">Eintragen</button>
+          <Button type="submit">Eintragen</Button>
         </form>
       </Modal>
 
@@ -422,7 +423,7 @@ const categoryColors = computed(() => {
           <input v-model="editExpenseForm.note" type="text" placeholder="Notiz (optional)" />
         </FormField>
         <DraftStatusBar :status="editExpenseDraft.status.value" :restored="editExpenseDraft.restored.value" />
-        <button type="submit">Speichern</button>
+        <Button type="submit">Speichern</Button>
       </form>
       <FileAttachments v-if="editingExpense" domain="budget" :entity-id="editingExpense.id" />
     </Modal>

@@ -5,6 +5,7 @@ import { buildOsmLink, parseLatLngFromMapsLink } from '../utils/googleMaps';
 import LocationPicker from './LocationPicker.vue';
 import ImageUrlInput from './ImageUrlInput.vue';
 import AppIcon from './AppIcon.vue';
+import Button from './primitives/Button.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
 // locationError: vom Aufrufer (TripSwitcher.vue) gesetzt, wenn nach dem Speichern auffällt, dass
@@ -165,10 +166,10 @@ function onSubmit() {
         <p v-if="locationError" class="hint error">
           <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Der Standort konnte auch automatisch nicht ermittelt werden. Bitte tippe unten auf die Karte, um ihn manuell zu setzen.
         </p>
-        <button type="button" class="secondary picker-toggle" @click="pickerOpen = !pickerOpen">
+        <Button type="button" variant="ghost" class="picker-toggle" @click="pickerOpen = !pickerOpen">
           <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort manuell setzen
           <AppIcon :icon="ACTION_ICONS.chevronDown" :size="12" group="actions" class="picker-caret" :class="{ open: pickerOpen }" />
-        </button>
+        </Button>
         <LocationPicker v-if="pickerOpen" v-model="manualPin" />
       </div>
     </template>
@@ -185,20 +186,20 @@ function onSubmit() {
     </template>
 
     <div class="form-actions">
-      <button v-if="wizard && step > 0" type="button" class="secondary" @click="goBack">Zurück</button>
+      <Button v-if="wizard && step > 0" type="button" variant="secondary" @click="goBack">Zurück</Button>
       <div class="form-actions-right">
-        <button
+        <Button
           v-if="wizard && currentStepOptional && !isLastStep"
           type="button"
-          class="secondary"
+          variant="secondary"
           @click="goNextOrSubmit"
         >
           Überspringen
-        </button>
-        <button v-if="wizard && !isLastStep" type="button" :disabled="!canProceedBasics" @click="goNextOrSubmit">
+        </Button>
+        <Button v-if="wizard && !isLastStep" type="button" :disabled="!canProceedBasics" @click="goNextOrSubmit">
           Weiter
-        </button>
-        <button v-if="!wizard || isLastStep" type="submit">{{ submitLabel ?? 'Speichern' }}</button>
+        </Button>
+        <Button v-if="!wizard || isLastStep" type="submit">{{ submitLabel ?? 'Speichern' }}</Button>
       </div>
     </div>
   </form>

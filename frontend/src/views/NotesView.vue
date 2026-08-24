@@ -24,6 +24,7 @@ import { formatDateTime } from '../utils/dateFormat';
 import { useUndoableDelete } from '../composables/useUndoableDelete';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
 import AppIcon from '../components/AppIcon.vue';
+import Button from '../components/primitives/Button.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
 const auth = useAuthStore();
@@ -259,7 +260,7 @@ async function restore(id: number) {
   <div class="page" v-if="!loading">
     <div class="header">
       <h1>Notizen</h1>
-      <button @click="openNew"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Neue Notiz</button>
+      <Button @click="openNew"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Neue Notiz</Button>
     </div>
 
     <p v-if="error" class="error">{{ error }}</p>
@@ -271,7 +272,7 @@ async function restore(id: number) {
       </FormField>
       <RichTextEditor v-model="form.content" placeholder="Inhalt" />
       <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
-      <button type="submit">Hinzufügen</button>
+      <Button type="submit">Hinzufügen</Button>
     </form>
     </Modal>
 
@@ -322,7 +323,7 @@ async function restore(id: number) {
         <RichTextEditor v-model="editForm.content" />
         <FileAttachments v-if="editingNote" domain="notes" :entity-id="editingNote.id" />
         <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />
-        <button type="submit">{{ editingNote?.is_draft ? 'Veröffentlichen' : 'Speichern' }}</button>
+        <Button type="submit">{{ editingNote?.is_draft ? 'Veröffentlichen' : 'Speichern' }}</Button>
       </form>
     </Modal>
   </div>

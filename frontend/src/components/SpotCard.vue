@@ -523,7 +523,7 @@ function onToggleDone() {
 }
 
 .social-row {
-  margin-top: var(--space-2);
+  margin-top: var(--space-3);
 }
 
 .card-actions {
@@ -537,7 +537,7 @@ function onToggleDone() {
 /* #161: ohne eigenes margin-top rückte MapsAppPicker.vue's "In Karten-App öffnen"-Button direkt an
    .card-actions (den "Tour zuordnen"-Chip) heran - zu wenig Abstand zwischen den beiden Zeilen. */
 .maps-picker {
-  margin-top: var(--space-2);
+  margin-top: var(--space-3);
 }
 
 /* Zwei Anfasser statt des gesamten Card-Roots als Drag-Quelle: .excursion-drag-handle (natives

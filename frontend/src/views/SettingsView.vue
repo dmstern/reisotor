@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Button from '../components/primitives/Button.vue';
 import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { api, ApiError } from '../api/client';
@@ -360,9 +361,9 @@ async function onImportFileSelected(event: Event) {
       <div class="card">
         <div class="header">
           <h2>{{ auth.user?.avatar }} {{ auth.user?.username }}</h2>
-          <button type="button" class="secondary" @click="logout">
+          <Button type="button" class="secondary" @click="logout">
             <AppIcon :icon="ACTION_ICONS.logout" :size="14" group="actions" /> Abmelden
-          </button>
+          </Button>
         </div>
 
         <form class="form username-form" @submit.prevent="changeUsername">
@@ -374,9 +375,9 @@ async function onImportFileSelected(event: Event) {
           <p v-if="usernameSaved" class="hint success">
             Benutzername geändert <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
           </p>
-          <button type="submit" :disabled="usernameSaving">
+          <Button type="submit" :disabled="usernameSaving">
             {{ usernameSaving ? 'Speichern…' : 'Benutzername speichern' }}
-          </button>
+          </Button>
         </form>
 
         <h3>Avatar wählen</h3>
@@ -384,7 +385,7 @@ async function onImportFileSelected(event: Event) {
           <div v-for="cat in EMOJI_CATEGORIES" :key="cat.label" class="emoji-category">
             <p class="emoji-category-label">{{ cat.label }}</p>
             <div class="emoji-grid">
-              <button
+              <Button
                 v-for="emoji in cat.emojis"
                 :key="emoji"
                 type="button"
@@ -394,7 +395,7 @@ async function onImportFileSelected(event: Event) {
                 @click="selectAvatar(emoji)"
               >
                 {{ emoji }}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -439,9 +440,9 @@ async function onImportFileSelected(event: Event) {
           <p v-if="passwordSaved" class="hint success">
             Passwort geändert <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
           </p>
-          <button type="submit" :disabled="passwordSaving">
+          <Button type="submit" :disabled="passwordSaving">
             {{ passwordSaving ? 'Speichern…' : 'Passwort speichern' }}
-          </button>
+          </Button>
         </form>
       </div>
     </template>
@@ -485,7 +486,7 @@ async function onImportFileSelected(event: Event) {
             <AppIcon v-if="navLinkIcon(entry.key)" class="nav-config-icon" :icon="navLinkIcon(entry.key)!" group="navigation" />
             <span class="nav-config-label" :class="{ hidden: !entry.visible }">{{ navLinkLabel(entry.key) }}</span>
             <div class="nav-config-actions">
-              <button
+              <Button
                 type="button"
                 class="secondary small"
                 :disabled="index === 0"
@@ -494,8 +495,8 @@ async function onImportFileSelected(event: Event) {
                 @click="navConfig.moveUp(entry.key)"
               >
                 <AppIcon :icon="ACTION_ICONS.chevronUp" :size="14" group="actions" />
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 class="secondary small"
                 :disabled="index === navConfig.entries.length - 1"
@@ -504,7 +505,7 @@ async function onImportFileSelected(event: Event) {
                 @click="navConfig.moveDown(entry.key)"
               >
                 <AppIcon :icon="ACTION_ICONS.chevronDown" :size="14" group="actions" />
-              </button>
+              </Button>
               <label class="nav-config-visible">
                 <input
                   type="checkbox"
@@ -532,7 +533,7 @@ async function onImportFileSelected(event: Event) {
             <AppIcon v-if="dashboardTileIcon(entry.key)" class="nav-config-icon" :icon="dashboardTileIcon(entry.key)!" group="navigation" />
             <span class="nav-config-label" :class="{ hidden: !entry.visible }">{{ dashboardTileLabel(entry.key) }}</span>
             <div class="nav-config-actions">
-              <button
+              <Button
                 type="button"
                 class="secondary small"
                 :disabled="index === 0"
@@ -541,8 +542,8 @@ async function onImportFileSelected(event: Event) {
                 @click="dashboardConfig.moveUp(entry.key)"
               >
                 <AppIcon :icon="ACTION_ICONS.chevronUp" :size="14" group="actions" />
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 class="secondary small"
                 :disabled="index === dashboardConfig.entries.length - 1"
@@ -551,7 +552,7 @@ async function onImportFileSelected(event: Event) {
                 @click="dashboardConfig.moveDown(entry.key)"
               >
                 <AppIcon :icon="ACTION_ICONS.chevronDown" :size="14" group="actions" />
-              </button>
+              </Button>
               <label class="nav-config-visible">
                 <input
                   type="checkbox"
@@ -668,31 +669,31 @@ async function onImportFileSelected(event: Event) {
             Benachrichtigt dich, wenn andere Mitglieder eines Urlaubs etwas ändern – auch wenn Reisotor
             gerade nicht offen ist. Über die Stufe lässt sich einstellen, wie viel davon ankommt.
           </p>
-          <button
+          <Button
             v-if="pushEnabled === null"
             class="secondary"
             disabled
           >
             Wird geprüft…
-          </button>
-          <button
+          </Button>
+          <Button
             v-else-if="!pushEnabled"
             class="secondary"
             :disabled="pushLoading"
             @click="selectPushLevel('balanced')"
           >
             {{ pushLoading ? 'Wird aktiviert…' : 'Aktivieren' }}
-          </button>
+          </Button>
           <template v-else>
             <SegmentedToggle
               :model-value="pushLevelValue"
               :options="PUSH_LEVEL_TOGGLE_OPTIONS"
               @update:model-value="selectPushLevel"
             />
-            <button type="button" class="secondary small push-details-toggle" @click="showPushDetails = !showPushDetails">
+            <Button type="button" class="secondary small push-details-toggle" @click="showPushDetails = !showPushDetails">
               Einzeln anpassen
               <AppIcon :icon="ACTION_ICONS.chevronDown" :size="12" group="actions" class="push-details-caret" :class="{ open: showPushDetails }" />
-            </button>
+            </Button>
             <ul v-if="showPushDetails" class="nav-config-list push-domain-list">
               <li v-for="domain in NOTIFICATION_DOMAINS" :key="domain" class="nav-config-row push-domain-row">
                 <span class="nav-config-icon">{{ NOTIFICATION_DOMAIN_META[domain].icon }}</span>
@@ -732,14 +733,14 @@ async function onImportFileSelected(event: Event) {
         </p>
 
         <div class="backup-actions">
-          <button class="secondary" :disabled="exporting" @click="exportBackup">
+          <Button class="secondary" :disabled="exporting" @click="exportBackup">
             <template v-if="exporting">Exportiere…</template>
             <template v-else><AppIcon :icon="ACTION_ICONS.download" :size="14" group="actions" /> Backup exportieren</template>
-          </button>
-          <button class="secondary" :disabled="importing" @click="triggerImportPicker">
+          </Button>
+          <Button class="secondary" :disabled="importing" @click="triggerImportPicker">
             <template v-if="importing">Importiere…</template>
             <template v-else><AppIcon :icon="ACTION_ICONS.upload" :size="14" group="actions" /> Backup importieren</template>
-          </button>
+          </Button>
           <input
             ref="importFileInput"
             type="file"
@@ -772,7 +773,7 @@ async function onImportFileSelected(event: Event) {
             Installiere Reisotor auf deinem Start-/Homebildschirm für schnelleren Zugriff, ein eigenes App-Icon
             und Offline-Nutzung.
           </p>
-          <button type="button" class="secondary" @click="showPwaInstallDialog = true">Anleitung anzeigen</button>
+          <Button type="button" class="secondary" @click="showPwaInstallDialog = true">Anleitung anzeigen</Button>
         </template>
       </div>
 
@@ -782,7 +783,7 @@ async function onImportFileSelected(event: Event) {
           Bug gefunden oder eine Idee für eine neue Funktion? Landet direkt als Issue im
           Reisotor-Repository.
         </p>
-        <button type="button" class="secondary" @click="showFeedbackDialog = true">Feedback geben</button>
+        <Button type="button" class="secondary" @click="showFeedbackDialog = true">Feedback geben</Button>
       </div>
 
       <div class="card build-info-card">
@@ -1038,7 +1039,7 @@ label,
 }
 
 .hint {
-  margin: 0;
+  margin: 0 0 var(--space-3);
   font-size: 0.85rem;
 }
 

@@ -29,6 +29,7 @@ import DraftStatusBar from '../components/DraftStatusBar.vue';
 import DraftBadge from '../components/DraftBadge.vue';
 import PendingSyncBadge from '../components/PendingSyncBadge.vue';
 import AppIcon from '../components/AppIcon.vue';
+import Button from '../components/primitives/Button.vue';
 import WeatherIcon from '../components/WeatherIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
@@ -497,7 +498,7 @@ function showEntryDayOnMap(entry: DiaryEntry) {
   <div class="page" v-if="!loading">
     <div class="header">
       <h1>Tagebuch</h1>
-      <button @click="openNewForm"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Neuer Eintrag</button>
+      <Button @click="openNewForm"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Neuer Eintrag</Button>
     </div>
 
     <Modal :model-value="showForm" title="Neuer Tagebucheintrag" full-height @update:model-value="(v) => !v && closeForm()">
@@ -519,15 +520,15 @@ function showEntryDayOnMap(entry: DiaryEntry) {
       <div class="image-preview" v-if="form.images.length">
         <div class="preview-thumb" v-for="(img, i) in form.images" :key="img">
           <img :src="img" :alt="`Bild ${i + 1}`" />
-          <button type="button" class="remove-thumb" @click="removeImage(form, i)"><AppIcon :icon="ACTION_ICONS.close" :size="13" group="actions" /></button>
+          <Button type="button" variant="ghost" class="remove-thumb" @click="removeImage(form, i)"><AppIcon :icon="ACTION_ICONS.close" :size="13" group="actions" /></Button>
         </div>
       </div>
       <fieldset v-if="excursionsStore.excursions.length" class="excursion-picker">
         <legend>
-          <button type="button" class="picker-toggle" :aria-expanded="showExcursionPicker" @click="showExcursionPicker = !showExcursionPicker">
+          <Button type="button" variant="ghost" class="picker-toggle" :aria-expanded="showExcursionPicker" @click="showExcursionPicker = !showExcursionPicker">
             <span><AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="14" group="navigation" /> Touren zuordnen<span v-if="form.excursion_ids.length" class="picker-count"> ({{ form.excursion_ids.length }} ausgewählt)</span></span>
             <AppIcon :icon="ACTION_ICONS.chevronDown" :size="14" group="actions" class="caret" :class="{ closed: !showExcursionPicker }" />
-          </button>
+          </Button>
         </legend>
         <template v-if="showExcursionPicker">
           <label v-for="ex in pickerExcursions(form.date)" :key="ex.id" class="excursion-option">
@@ -539,13 +540,13 @@ function showEntryDayOnMap(entry: DiaryEntry) {
       </fieldset>
       <fieldset v-if="spotsStore.spots.length" class="excursion-picker">
         <legend>
-          <button type="button" class="picker-toggle" :aria-expanded="showSpotPicker" @click="showSpotPicker = !showSpotPicker">
+          <Button type="button" variant="ghost" class="picker-toggle" :aria-expanded="showSpotPicker" @click="showSpotPicker = !showSpotPicker">
             <span><AppIcon :icon="FORM_FIELD_ICONS.location" :size="14" group="formFields" /> Spots zuordnen<span v-if="form.spot_ids.length" class="picker-count"> ({{ form.spot_ids.length }} ausgewählt)</span></span>
             <AppIcon :icon="ACTION_ICONS.chevronDown" :size="14" group="actions" class="caret" :class="{ closed: !showSpotPicker }" />
-          </button>
+          </Button>
         </legend>
         <template v-if="showSpotPicker">
-          <button
+          <Button
             v-for="spot in pickerSpots(form.date)"
             :key="spot.id"
             type="button"
@@ -557,11 +558,11 @@ function showEntryDayOnMap(entry: DiaryEntry) {
               </span>
             <span v-if="form.spot_ids.includes(spot.id)" class="excursion-option-badge"><AppIcon :icon="ACTION_ICONS.done" :size="13" group="actions" /> hinzugefügt</span>
             <span v-else-if="spotAlreadyPlanned(spot.id, form.date)" class="excursion-option-badge recommended"><AppIcon :icon="ACTION_ICONS.recommended" :size="13" group="actions" /> Empfohlen – an diesem Tag geplant</span>
-          </button>
+          </Button>
         </template>
       </fieldset>
       <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
-      <button type="submit">Eintragen</button>
+      <Button type="submit">Eintragen</Button>
     </form>
     </Modal>
 
@@ -615,10 +616,10 @@ function showEntryDayOnMap(entry: DiaryEntry) {
               <WeatherIcon class="weather-icon" :size="16" :code="weatherForEntry(entry)!.weatherCode" />
               <span class="weather-temp">{{ Math.round(weatherForEntry(entry)!.tempMax) }}° / {{ Math.round(weatherForEntry(entry)!.tempMin) }}°</span>
             </div>
-            <button type="button" class="card-action-btn" @click="showEntryDayOnMap(entry)">
+            <Button type="button" variant="card-action" @click="showEntryDayOnMap(entry)">
               <AppIcon :icon="SECTION_ICON_DEFS.map" :size="14" group="navigation" /> Tag auf Karte anzeigen
-            </button>
-            <button
+            </Button>
+            <Button
               v-for="ex in excursionsForEntry(entry)"
               :key="ex.id"
               type="button"
@@ -632,8 +633,8 @@ function showEntryDayOnMap(entry: DiaryEntry) {
                 <AppIcon v-if="!ex.image_url" :icon="SECTION_ICON_DEFS.excursions" :size="16" group="navigation" />
               </span>
               <span class="excursion-chip-title">{{ ex.title }}</span>
-            </button>
-            <button
+            </Button>
+            <Button
               v-for="spot in spotsForEntry(entry)"
               :key="spot.id"
               type="button"
@@ -647,7 +648,7 @@ function showEntryDayOnMap(entry: DiaryEntry) {
                 <AppIcon v-if="!spot.image_url" :icon="spotCategoryMeta(spot.category).tabler" :size="16" group="categories" />
               </span>
               <span class="excursion-chip-title">{{ spot.title }}</span>
-            </button>
+            </Button>
           </div>
 
           <Comments
@@ -685,15 +686,15 @@ function showEntryDayOnMap(entry: DiaryEntry) {
         <div class="image-preview" v-if="editForm.images.length">
           <div class="preview-thumb" v-for="(img, i) in editForm.images" :key="img">
             <img :src="img" :alt="`Bild ${i + 1}`" />
-            <button type="button" class="remove-thumb" @click="removeImage(editForm, i)"><AppIcon :icon="ACTION_ICONS.close" :size="13" group="actions" /></button>
+            <Button type="button" variant="ghost" class="remove-thumb" @click="removeImage(editForm, i)"><AppIcon :icon="ACTION_ICONS.close" :size="13" group="actions" /></Button>
           </div>
         </div>
         <fieldset v-if="excursionsStore.excursions.length" class="excursion-picker">
           <legend>
-            <button type="button" class="picker-toggle" :aria-expanded="editShowExcursionPicker" @click="editShowExcursionPicker = !editShowExcursionPicker">
+            <Button type="button" variant="ghost" class="picker-toggle" :aria-expanded="editShowExcursionPicker" @click="editShowExcursionPicker = !editShowExcursionPicker">
               <span><AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="14" group="navigation" /> Touren zuordnen<span v-if="editForm.excursion_ids.length" class="picker-count"> ({{ editForm.excursion_ids.length }} ausgewählt)</span></span>
               <AppIcon :icon="ACTION_ICONS.chevronDown" :size="14" group="actions" class="caret" :class="{ closed: !editShowExcursionPicker }" />
-            </button>
+            </Button>
           </legend>
           <template v-if="editShowExcursionPicker">
             <label v-for="ex in pickerExcursions(editForm.date)" :key="ex.id" class="excursion-option">
@@ -705,13 +706,13 @@ function showEntryDayOnMap(entry: DiaryEntry) {
         </fieldset>
         <fieldset v-if="spotsStore.spots.length" class="excursion-picker">
           <legend>
-            <button type="button" class="picker-toggle" :aria-expanded="editShowSpotPicker" @click="editShowSpotPicker = !editShowSpotPicker">
+            <Button type="button" variant="ghost" class="picker-toggle" :aria-expanded="editShowSpotPicker" @click="editShowSpotPicker = !editShowSpotPicker">
               <span><AppIcon :icon="FORM_FIELD_ICONS.location" :size="14" group="formFields" /> Spots zuordnen<span v-if="editForm.spot_ids.length" class="picker-count"> ({{ editForm.spot_ids.length }} ausgewählt)</span></span>
               <AppIcon :icon="ACTION_ICONS.chevronDown" :size="14" group="actions" class="caret" :class="{ closed: !editShowSpotPicker }" />
-            </button>
+            </Button>
           </legend>
           <template v-if="editShowSpotPicker">
-            <button
+            <Button
               v-for="spot in pickerSpots(editForm.date)"
               :key="spot.id"
               type="button"
@@ -723,11 +724,11 @@ function showEntryDayOnMap(entry: DiaryEntry) {
               </span>
               <span v-if="editForm.spot_ids.includes(spot.id)" class="excursion-option-badge"><AppIcon :icon="ACTION_ICONS.done" :size="13" group="actions" /> hinzugefügt</span>
               <span v-else-if="spotAlreadyPlanned(spot.id, editForm.date)" class="excursion-option-badge recommended"><AppIcon :icon="ACTION_ICONS.recommended" :size="13" group="actions" /> Empfohlen – an diesem Tag geplant</span>
-            </button>
+            </Button>
           </template>
         </fieldset>
         <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />
-        <button type="submit">{{ editingEntry?.is_draft ? 'Veröffentlichen' : 'Speichern' }}</button>
+        <Button type="submit">{{ editingEntry?.is_draft ? 'Veröffentlichen' : 'Speichern' }}</Button>
       </form>
     </Modal>
   </div>
@@ -831,7 +832,7 @@ function showEntryDayOnMap(entry: DiaryEntry) {
    toggleSpot) – Button-Grundstil zurücksetzen, damit er optisch zu den Checkbox-Zeilen der
    Ausflüge darüber passt. box-shadow explizit entfernen (#216) - der globale button-Grundstil
    (style.css) hängt sonst jedem Listeneintrag den Standard-Button-Schatten an, den Touren-Zeilen
-   (echte <label>s, keine <button>s) nicht haben. */
+   (echte <label>s, keine <Button>s) nicht haben. */
 .spot-option-btn {
   background: none;
   border: none;

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Button from './primitives/Button.vue';
 import { ref, watch } from 'vue';
 import { api, ApiError } from '../api/client';
 import { compressImage } from '../utils/imageCompression';
@@ -85,7 +86,7 @@ function close() {
           <a :href="result.issue_url" target="_blank" rel="noopener">Issue #{{ result.issue_number }}</a>
           angelegt.
         </p>
-        <button type="button" @click="close">Schließen</button>
+        <Button type="button" @click="close">Schließen</Button>
       </template>
 
       <form v-else class="form" @submit.prevent="submit">
@@ -120,7 +121,7 @@ function close() {
         <div v-else class="screenshot-preview">
           <img :src="screenshot" alt="" />
           <span class="screenshot-name">{{ screenshotName }}</span>
-          <button type="button" class="secondary small" @click="removeScreenshot">Entfernen</button>
+          <Button type="button" class="secondary small" @click="removeScreenshot">Entfernen</Button>
         </div>
 
         <p v-if="error" class="hint error">{{ error }}</p>
