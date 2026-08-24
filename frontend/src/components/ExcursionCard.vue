@@ -2,7 +2,7 @@
 import { computed, ref, watch } from 'vue';
 import type { Excursion, Spot, TravelItem } from '../api/types';
 import { excursionStationKeys, resolveStations } from '../utils/excursionStations';
-import { fetchWeatherForecast, weatherCodeMeta, type DailyWeather } from '../utils/weather';
+import { fetchExcursionWeatherRange, weatherCodeMeta, type ExcursionWeatherRange } from '../utils/weather';
 import { usePointerDrag } from '../composables/usePointerDrag';
 import { useExcursionsStore } from '../stores/excursions';
 import { useDrawersStore } from '../stores/drawers';
@@ -94,22 +94,18 @@ function formatDate(d: string) {
   return formatDateShared(d, { includeYear: false });
 }
 
-// Wetter für den geplanten Tag am Ort der ersten kartierten Station, direkt am Status-Chip (siehe
-// Template) - gleiches Muster wie SpotCard.vue: eigener Fetch statt Prop von der Elternview, da
-// utils/weather.ts's fetchWeatherForecast() modulweit pro Koordinate+Modell cached.
+// Wetter für den geplanten Tag über alle kartierten Stationen des Ausflugs hinweg (Issue #152)
 const weatherProvider = useWeatherProviderStore();
-const weatherStation = computed(() => resolvedStations.value.find((s) => s.lat != null && s.lng != null));
-const dayWeather = ref<DailyWeather | null>(null);
+const weatherRange = ref<ExcursionWeatherRange | null>(null);
 watch(
-  () => [props.excursion.date, weatherStation.value?.lat, weatherStation.value?.lng, weatherProvider.model] as const,
-  async ([date, lat, lng, model]) => {
-    dayWeather.value = null;
-    if (!date || lat == null || lng == null) return;
+  () => [props.excursion.date, resolvedStations.value, weatherProvider.model] as const,
+  async ([date, stations, model]) => {
+    weatherRange.value = null;
+    if (!date || !stations.length) return;
     try {
-      const days = await fetchWeatherForecast(lat, lng, model);
-      dayWeather.value = days.find((d) => d.date === date) ?? null;
+      weatherRange.value = await fetchExcursionWeatherRange(stations, date, props.excursion.trip_id, model);
     } catch {
-      // best effort, siehe Kommentar oben
+      // best effort
     }
   },
   { immediate: true },
@@ -233,15 +229,15 @@ function onSpotDrop(event: DragEvent) {
       <span class="status" :class="{ planned: excursion.date && !excursion.done, 'status-done': excursion.done }">
         <template v-if="excursion.done && excursion.date">
           <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" /> Gemacht am {{ statusDateLabel
-          }}<template v-if="dayWeather">
-            · <WeatherIcon :code="dayWeather.weatherCode" :size="14" /> {{ Math.round(dayWeather.tempMax) }}°</template
+          }}<template v-if="weatherRange">
+            · <WeatherIcon :code="weatherRange.weatherCode" :size="14" /> {{ weatherRange.tempLabel }}</template
           >
         </template>
         <template v-else-if="excursion.done"><AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" /> Gemacht</template>
         <template v-else-if="excursion.date">
           <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="actions" /> Geplant für {{ statusDateLabel
-          }}<template v-if="dayWeather">
-            · <WeatherIcon :code="dayWeather.weatherCode" :size="14" /> {{ Math.round(dayWeather.tempMax) }}°</template
+          }}<template v-if="weatherRange">
+            · <WeatherIcon :code="weatherRange.weatherCode" :size="14" /> {{ weatherRange.tempLabel }}</template
           >
         </template>
         <template v-else>In Planung</template>

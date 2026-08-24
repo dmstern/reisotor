@@ -27,7 +27,7 @@ import { SCHEDULE_CATEGORY_META } from '../utils/scheduleCategory';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { ACCOMMODATION_ICON, SECURITY_CHECK_ICON } from '../utils/dashboardTiles';
 import { spotCategoryMeta } from '../utils/spotCategory';
-import { fetchMergedWeather, fetchWeatherForecast, weatherCodeMeta, type DailyWeather } from '../utils/weather';
+import { fetchMergedWeather, fetchWeatherForecast, fetchWeatherAlerts, weatherCodeMeta, type DailyWeather, type WeatherAlert } from '../utils/weather';
 import { fetchRegionInfo, type RegionInfo } from '../utils/regionInfo';
 import {
   formatDate as formatDateShared,
@@ -73,6 +73,7 @@ const users = ref<User[]>([]);
 const loading = ref(true);
 
 const weatherDays = ref<DailyWeather[] | null>(null);
+const weatherAlerts = ref<WeatherAlert[]>([]);
 const weatherError = ref<string | null>(null);
 const weatherLoading = ref(false);
 
@@ -84,6 +85,7 @@ async function loadWeather() {
   weatherError.value = null;
   try {
     weatherDays.value = await fetchMergedWeather(tripId, trip.value.lat, trip.value.lng, weatherProvider.model);
+    weatherAlerts.value = await fetchWeatherAlerts(trip.value.lat, trip.value.lng, weatherDays.value ?? undefined);
   } catch {
     weatherError.value = 'Wetterdaten konnten nicht geladen werden.';
   } finally {
@@ -401,6 +403,17 @@ function formatWeekdayDate(d: string) {
               <AppIcon :icon="ACTION_ICONS.rain" :size="13" group="actions" />{{ todayWeather.precipitationProbability }}%
             </span>
           </div>
+
+          <div v-if="weatherAlerts.length" class="weather-alerts">
+            <div v-for="alert in weatherAlerts" :key="alert.id" class="weather-alert-item" :class="alert.severity">
+              <AppIcon :icon="ACTION_ICONS.warning" :size="16" group="actions" />
+              <div class="alert-content">
+                <strong>{{ alert.title }}</strong>
+                <span>{{ alert.description }}</span>
+              </div>
+            </div>
+          </div>
+
           <p class="weather-section-label">
             <AppIcon :icon="vacationPhase?.phase === 'over' ? ACTION_ICONS.sun : ACTION_ICONS.vacation" :size="14" group="actions" />
             {{ vacationPhase?.phase === 'over' ? 'Rückblick: Wetter im Urlaub' : 'Wetter im Urlaub' }}
@@ -413,7 +426,16 @@ function formatWeekdayDate(d: string) {
             Für diesen Zeitraum sind keine Wetterdaten gespeichert.
           </p>
           <div v-else class="weather-days">
-            <div class="weather-day" :class="{ past: day.date < todayStr() }" v-for="day in vacationForecastDays" :key="day.date">
+            <a
+              v-for="day in vacationForecastDays"
+              :key="day.date"
+              class="weather-day weather-day-link"
+              :class="{ past: day.date < todayStr() }"
+              href="https://open-meteo.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              :title="`${formatWeekdayDate(day.date)}: ${weatherCodeMeta(day.weatherCode).label} – Details bei Open-Meteo öffnen`"
+            >
               <span class="weather-date">{{ formatWeekdayDate(day.date) }}</span>
               <WeatherIcon
                 class="weather-icon"
@@ -425,7 +447,7 @@ function formatWeekdayDate(d: string) {
               <span v-if="day.precipitationProbability != null" class="weather-rain">
                 <AppIcon :icon="ACTION_ICONS.rain" :size="13" group="actions" />{{ day.precipitationProbability }}%
               </span>
-            </div>
+            </a>
           </div>
           <!-- Andere Wetter-Apps (Apple Weather/Google) können abweichende Werte zeigen, v. a. bei der
                Bewölkung – eigenes Modell/eigene Quelle statt eines Fehlers, deshalb hier explizit
@@ -827,6 +849,40 @@ function formatWeekdayDate(d: string) {
   color: var(--color-text-muted);
   font-weight: 600;
   font-size: 0.9rem;
+}
+
+.weather-alerts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.weather-alert-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+}
+
+.weather-alert-item.warning {
+  background: rgba(245, 177, 0, 0.15);
+  border: 1px solid rgba(245, 177, 0, 0.4);
+  color: var(--color-warning-dark, #b45309);
+}
+
+.weather-alert-item.danger {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: var(--color-danger);
+}
+
+.alert-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
 }
 
 .weather-section-label {

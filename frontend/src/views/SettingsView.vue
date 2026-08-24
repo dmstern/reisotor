@@ -605,9 +605,10 @@ async function onImportFileSelected(event: Event) {
       <div id="weather-provider-settings" class="card">
         <h2><AppIcon :icon="WEATHER_SECTION_ICON" group="navigation" :size="20" /> Wetter</h2>
         <p class="hint intro-hint">
-          Wettervorhersage über Open-Meteo, das mehrere echte Wetterdienste bündelt. Zeigt eine
-          Vorhersage abweichende Werte gegenüber anderen Wetter-Apps (z. B. Apple Weather), lässt sich
-          hier ein anderer Anbieter ausprobieren.
+          Wettervorhersage über Open-Meteo, das mehrere globale und regionale Wettermodelle (ECMWF, ICON, GFS) bündelt.
+          Unterschiedliche Modelle nutzen eigene Auflösungen und physikalische Parametrisierungen (insbesondere bei Bewölkung,
+          Niederschlagsarten und Konvektion), weshalb Werte gegenüber anderen Wetter-Apps (wie Apple Weather) abweichen können.
+          Hier kann gezielt das bevorzugte Modell gewählt werden.
         </p>
         <label class="weather-provider-label">
           Wettermodell

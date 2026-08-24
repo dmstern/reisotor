@@ -50,40 +50,32 @@ function dateRange(startStr: string, endStr: string): string[] {
   return dates;
 }
 
+function round3(v: number | null | undefined): number | null {
+  return v == null ? null : Math.round(v * 1000) / 1000;
+}
+
 const upsertSnapshot = db.prepare(`
-  INSERT INTO trip_weather_snapshots (trip_id, date, weathercode, temp_max, temp_min, precipitation_probability)
-  VALUES (?, ?, ?, ?, ?, ?)
-  ON CONFLICT(trip_id, date) DO UPDATE SET
+  INSERT INTO trip_weather_snapshots (trip_id, date, weathercode, temp_max, temp_min, precipitation_probability, lat, lng)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  ON CONFLICT(trip_id, date, lat, lng) DO UPDATE SET
     weathercode = excluded.weathercode,
     temp_max = excluded.temp_max,
     temp_min = excluded.temp_min,
     precipitation_probability = excluded.precipitation_probability
 `);
 
-/** Ermittelt für einen einzelnen Urlaub, welche strikt vergangenen (abgeschlossenen) Urlaubstage
- *  noch keinen Wetter-Snapshot haben, holt sie bei Bedarf per einem einzigen Open-Meteo-Aufruf und
- *  speichert sie dauerhaft in trip_weather_snapshots. Der heutige Tag wird bewusst NIE gespeichert -
- *  Open-Meteo liefert dafür noch keinen finalen Ist-Wert (Tag ist noch nicht vorbei), das Dashboard
- *  zeigt "heute" stattdessen weiterhin live an (siehe utils/weather.ts/DashboardView.vue). */
-async function snapshotTripWeather(trip: TripRow, today: string) {
-  const yesterday = addDays(today, -1);
-  if (trip.start_date > yesterday) return; // noch kein abgeschlossener Urlaubstag
-
-  const rangeEnd = trip.end_date < yesterday ? trip.end_date : yesterday;
-  const wantedDates = dateRange(trip.start_date, rangeEnd);
-  if (!wantedDates.length) return;
-
-  const existing = db
-    .prepare('SELECT date FROM trip_weather_snapshots WHERE trip_id = ? AND date >= ? AND date <= ?')
-    .all(trip.id, trip.start_date, rangeEnd) as { date: string }[];
-  const existingDates = new Set(existing.map((r) => r.date));
-  const missingDates = wantedDates.filter((d) => !existingDates.has(d));
-  if (!missingDates.length) return; // kein Fetch, wenn ohnehin schon alles gespeichert ist
-
+async function fetchAndStoreLocationWeather(
+  tripId: number,
+  lat: number,
+  lng: number,
+  missingDates: string[],
+  today: string,
+) {
+  if (!missingDates.length) return;
   const pastDays = Math.min(MAX_PAST_DAYS, daysBetween(missingDates[0], today));
   const params = new URLSearchParams({
-    latitude: String(trip.lat),
-    longitude: String(trip.lng),
+    latitude: String(lat),
+    longitude: String(lng),
     daily: 'weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max',
     timezone: 'auto',
     past_days: String(pastDays),
@@ -94,17 +86,84 @@ async function snapshotTripWeather(trip: TripRow, today: string) {
   const data = (await res.json()) as OpenMeteoResponse;
 
   const missingSet = new Set(missingDates);
+  const roundedLat = round3(lat);
+  const roundedLng = round3(lng);
   data.daily.time.forEach((date, i) => {
     if (!missingSet.has(date)) return;
     upsertSnapshot.run(
-      trip.id,
+      tripId,
       date,
       data.daily.weathercode[i],
       data.daily.temperature_2m_max[i],
       data.daily.temperature_2m_min[i],
       data.daily.precipitation_probability_max?.[i] ?? null,
+      roundedLat,
+      roundedLng,
     );
   });
+}
+
+/** Ermittelt für einen einzelnen Urlaub, welche strikt vergangenen (abgeschlossenen) Urlaubstage
+ *  sowie vergangene Termine von Spots/Touren noch keinen Wetter-Snapshot haben, holt sie per
+ *  Open-Meteo und speichert sie dauerhaft in trip_weather_snapshots. */
+async function snapshotTripWeather(trip: TripRow, today: string) {
+  const yesterday = addDays(today, -1);
+
+  // 1. Haupt-Reiseziel des Trips
+  if (trip.start_date <= yesterday && trip.lat != null && trip.lng != null) {
+    const rangeEnd = trip.end_date < yesterday ? trip.end_date : yesterday;
+    const wantedDates = dateRange(trip.start_date, rangeEnd);
+    if (wantedDates.length) {
+      const existing = db
+        .prepare('SELECT date FROM trip_weather_snapshots WHERE trip_id = ? AND (lat IS NULL OR (ROUND(lat,3) = ROUND(?,3) AND ROUND(lng,3) = ROUND(?,3))) AND date >= ? AND date <= ?')
+        .all(trip.id, trip.lat, trip.lng, trip.start_date, rangeEnd) as { date: string }[];
+      const existingDates = new Set(existing.map((r) => r.date));
+      const missingDates = wantedDates.filter((d) => !existingDates.has(d));
+      if (missingDates.length) {
+        await fetchAndStoreLocationWeather(trip.id, trip.lat, trip.lng, missingDates, today);
+      }
+    }
+  }
+
+  // 2. Spots & Touren mit vergangenen Terminen und abweichenden/eigenen Koordinaten (Issue #153)
+  const scheduledLocations = db
+    .prepare(
+      `SELECT DISTINCT schedule_items.date, spots.lat, spots.lng
+       FROM schedule_items
+       JOIN spots ON schedule_items.spot_id = spots.id
+       WHERE schedule_items.trip_id = ? AND schedule_items.date < ?
+         AND spots.lat IS NOT NULL AND spots.lng IS NOT NULL
+         AND schedule_items.deleted_at IS NULL AND spots.deleted_at IS NULL
+       UNION
+       SELECT DISTINCT schedule_items.date, spots.lat, spots.lng
+       FROM schedule_items
+       JOIN excursion_spots ON schedule_items.idea_id = excursion_spots.idea_id
+       JOIN spots ON excursion_spots.spot_id = spots.id
+       WHERE schedule_items.trip_id = ? AND schedule_items.date < ?
+         AND spots.lat IS NOT NULL AND spots.lng IS NOT NULL
+         AND schedule_items.deleted_at IS NULL AND spots.deleted_at IS NULL`,
+    )
+    .all(trip.id, today, trip.id, today) as { date: string; lat: number; lng: number }[];
+
+  const locationGroups = new Map<string, { lat: number; lng: number; dates: string[] }>();
+  for (const item of scheduledLocations) {
+    const key = `${item.lat.toFixed(3)},${item.lng.toFixed(3)}`;
+    if (!locationGroups.has(key)) {
+      locationGroups.set(key, { lat: item.lat, lng: item.lng, dates: [] });
+    }
+    locationGroups.get(key)!.dates.push(item.date);
+  }
+
+  for (const loc of locationGroups.values()) {
+    const existing = db
+      .prepare('SELECT date FROM trip_weather_snapshots WHERE trip_id = ? AND ROUND(lat,3) = ROUND(?,3) AND ROUND(lng,3) = ROUND(?,3)')
+      .all(trip.id, loc.lat, loc.lng) as { date: string }[];
+    const existingDates = new Set(existing.map((r) => r.date));
+    const missingDates = loc.dates.filter((d) => !existingDates.has(d)).sort();
+    if (missingDates.length) {
+      await fetchAndStoreLocationWeather(trip.id, loc.lat, loc.lng, missingDates, today);
+    }
+  }
 }
 
 /** Holt vergangene Wetter-Ist-Werte für genau einen Trip neu - wird von PUT /trips/:id

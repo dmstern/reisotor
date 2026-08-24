@@ -1171,9 +1171,39 @@ db.exec(`
     temp_max REAL NOT NULL,
     temp_min REAL NOT NULL,
     precipitation_probability REAL,
-    UNIQUE(trip_id, date)
+    lat REAL,
+    lng REAL,
+    UNIQUE(trip_id, date, lat, lng)
   );
 `);
+ensureColumn('trip_weather_snapshots', 'lat', 'REAL');
+ensureColumn('trip_weather_snapshots', 'lng', 'REAL');
+
+if (hasTable('trip_weather_snapshots')) {
+  const tableSql = db
+    .prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'trip_weather_snapshots'")
+    .get() as { sql: string } | undefined;
+  if (tableSql && !tableSql.sql.includes('UNIQUE(trip_id, date, lat, lng)')) {
+    db.exec(`
+      ALTER TABLE trip_weather_snapshots RENAME TO trip_weather_snapshots_old;
+      CREATE TABLE trip_weather_snapshots (
+        id INTEGER PRIMARY KEY,
+        trip_id INTEGER NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
+        date TEXT NOT NULL,
+        weathercode INTEGER NOT NULL,
+        temp_max REAL NOT NULL,
+        temp_min REAL NOT NULL,
+        precipitation_probability REAL,
+        lat REAL,
+        lng REAL,
+        UNIQUE(trip_id, date, lat, lng)
+      );
+      INSERT OR IGNORE INTO trip_weather_snapshots (id, trip_id, date, weathercode, temp_max, temp_min, precipitation_probability, lat, lng)
+      SELECT id, trip_id, date, weathercode, temp_max, temp_min, precipitation_probability, lat, lng FROM trip_weather_snapshots_old;
+      DROP TABLE trip_weather_snapshots_old;
+    `);
+  }
+}
 
 // Zwischenspeicher für noch nicht abgeschickte Create-/Edit-Formulare (Nutzer-Feedback: Eingaben
 // sollen bei einem App-Absturz nicht verloren gehen) - siehe routes/drafts.ts und

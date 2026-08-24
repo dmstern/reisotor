@@ -31,6 +31,13 @@ export interface DailyWeather {
   precipitationProbability: number | null;
 }
 
+export interface WeatherAlert {
+  id: string;
+  title: string;
+  description: string;
+  severity: 'warning' | 'danger';
+}
+
 interface OpenMeteoResponse {
   daily: {
     time: string[];
@@ -121,6 +128,61 @@ export function weatherCodeMeta(code: number): WeatherCodeMeta {
   return WEATHER_CODE_META[code] ?? UNKNOWN_META;
 }
 
+export async function fetchWeatherAlerts(
+  lat: number,
+  lng: number,
+  forecastDays?: DailyWeather[],
+): Promise<WeatherAlert[]> {
+  const alerts: WeatherAlert[] = [];
+  const seenIds = new Set<string>();
+
+  if (forecastDays && forecastDays.length > 0) {
+    const today = toLocalDateString(new Date());
+    const nearDays = forecastDays.filter((d) => d.date >= today).slice(0, 7);
+
+    for (const day of nearDays) {
+      if ([82, 95, 96, 99].includes(day.weatherCode)) {
+        const id = `storm-${day.date}`;
+        if (!seenIds.has(id)) {
+          seenIds.add(id);
+          alerts.push({
+            id,
+            title: `Unwetter / Gewitterwarnung (${day.date})`,
+            description: `${weatherCodeMeta(day.weatherCode).label} mit erhöhter Unwettergefahr.`,
+            severity: 'danger',
+          });
+        }
+      }
+      if (day.tempMax >= 33) {
+        const id = `heat-${day.date}`;
+        if (!seenIds.has(id)) {
+          seenIds.add(id);
+          alerts.push({
+            id,
+            title: `Hitzewarnung (${day.date})`,
+            description: `Extrem hohe Temperaturen von bis zu ${Math.round(day.tempMax)} °C erwartet.`,
+            severity: 'warning',
+          });
+        }
+      }
+      if (day.tempMin <= -10 || [75, 86].includes(day.weatherCode)) {
+        const id = `cold-${day.date}`;
+        if (!seenIds.has(id)) {
+          seenIds.add(id);
+          alerts.push({
+            id,
+            title: `Frost- / Schneewarnung (${day.date})`,
+            description: `Extreme Kälte (${Math.round(day.tempMin)} °C) oder starker Schneefall erwartet.`,
+            severity: 'warning',
+          });
+        }
+      }
+    }
+  }
+
+  return alerts;
+}
+
 // Einfacher Modul-Cache statt Store: pro (gerundeter) Koordinate+Modell reicht ein Fetch pro
 // Session, die Vorhersage ändert sich nicht innerhalb eines Dashboard-Aufrufs.
 let cache: { key: string; promise: Promise<DailyWeather[]> } | null = null;
@@ -202,6 +264,60 @@ interface WeatherHistoryRow {
   precipitation_probability: number | null;
 }
 
+export interface ExcursionWeatherRange {
+  weatherCode: number;
+  tempMaxMin: number;
+  tempMaxMax: number;
+  tempLabel: string;
+}
+
+export async function fetchExcursionWeatherRange(
+  stations: { lat: number | null; lng: number | null }[],
+  date: string,
+  tripId?: number,
+  model = 'ecmwf_ifs025',
+): Promise<ExcursionWeatherRange | null> {
+  const mappedStations = stations.filter(
+    (s): s is { lat: number; lng: number } => s.lat != null && s.lng != null,
+  );
+  if (!mappedStations.length || !date) return null;
+
+  const uniqueCoordsMap = new Map<string, { lat: number; lng: number }>();
+  for (const s of mappedStations) {
+    const key = `${s.lat.toFixed(3)},${s.lng.toFixed(3)}`;
+    if (!uniqueCoordsMap.has(key)) uniqueCoordsMap.set(key, s);
+  }
+  const uniqueCoords = Array.from(uniqueCoordsMap.values());
+
+  const weatherPromises = uniqueCoords.map(async (s) => {
+    try {
+      const days = tripId
+        ? await fetchMergedWeather(tripId, s.lat, s.lng, model)
+        : await fetchWeatherForecast(s.lat, s.lng, model);
+      return days.find((d) => d.date === date) ?? null;
+    } catch {
+      return null;
+    }
+  });
+
+  const results = (await Promise.all(weatherPromises)).filter((d): d is DailyWeather => d !== null);
+  if (!results.length) return null;
+
+  const roundedTemps = results.map((d) => Math.round(d.tempMax));
+  const minTemp = Math.min(...roundedTemps);
+  const maxTemp = Math.max(...roundedTemps);
+
+  const tempLabel = minTemp === maxTemp ? `${minTemp}°` : `${minTemp}°–${maxTemp}°`;
+  const weatherCode = results[0].weatherCode;
+
+  return {
+    weatherCode,
+    tempMaxMin: minTemp,
+    tempMaxMax: maxTemp,
+    tempLabel,
+  };
+}
+
 // Ergänzt die live von Open-Meteo geholte Vorhersage (deckt nur ~16 Tage im Voraus + 1 Tag
 // rückwirkend ab) um dauerhaft gespeicherte Ist-Werte vergangener Tage (backend/src/
 // weatherSnapshots.ts, GET /trips/:id/weather-history) – dadurch bleibt das Wetter eines Urlaubs
@@ -212,7 +328,7 @@ interface WeatherHistoryRow {
 export async function fetchMergedWeather(tripId: number, lat: number, lng: number, model?: string): Promise<DailyWeather[]> {
   const [live, history] = await Promise.all([
     fetchWeatherForecast(lat, lng, model),
-    api.get<WeatherHistoryRow[]>(`/trips/${tripId}/weather-history`).catch(() => [] as WeatherHistoryRow[]),
+    api.get<WeatherHistoryRow[]>(`/trips/${tripId}/weather-history?lat=${lat}&lng=${lng}`).catch(() => [] as WeatherHistoryRow[]),
   ]);
 
   const today = toLocalDateString(new Date());

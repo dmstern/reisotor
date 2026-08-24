@@ -220,14 +220,57 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
   // Vorhersage (die selbst nur ~16 Tage im Voraus/1 Tag rückwirkend abdeckt) um beliebig weit
   // zurückliegende Tage, damit das Wetter eines Urlaubs auch lange nach dessen Ende noch anzeigbar
   // bleibt (Dashboard-Rückblick, Tagebuch).
-  app.get<{ Params: { id: string } }>('/trips/:id/weather-history', async (req, reply) => {
-    if (!requireTripMember(reply, req.params.id, req.session.userId)) return;
-    return db
-      .prepare(
-        'SELECT date, weathercode, temp_max, temp_min, precipitation_probability FROM trip_weather_snapshots WHERE trip_id = ? ORDER BY date',
-      )
-      .all(req.params.id);
-  });
+  app.get<{ Params: { id: string }; Querystring: { lat?: string; lng?: string } }>(
+    '/trips/:id/weather-history',
+    async (req, reply) => {
+      if (!requireTripMember(reply, req.params.id, req.session.userId)) return;
+      const { lat, lng } = req.query;
+      type SnapshotRow = {
+        date: string;
+        weathercode: number;
+        temp_max: number;
+        temp_min: number;
+        precipitation_probability: number | null;
+      };
+
+      if (lat != null && lng != null && !isNaN(Number(lat)) && !isNaN(Number(lng))) {
+        const numLat = Number(lat);
+        const numLng = Number(lng);
+        const specific = db
+          .prepare(
+            `SELECT date, weathercode, temp_max, temp_min, precipitation_probability
+             FROM trip_weather_snapshots
+             WHERE trip_id = ? AND ROUND(lat, 3) = ROUND(?, 3) AND ROUND(lng, 3) = ROUND(?, 3)
+             ORDER BY date`,
+          )
+          .all(req.params.id, numLat, numLng) as SnapshotRow[];
+
+        const fallback = db
+          .prepare(
+            `SELECT date, weathercode, temp_max, temp_min, precipitation_probability
+             FROM trip_weather_snapshots
+             WHERE trip_id = ? AND lat IS NULL
+             ORDER BY date`,
+          )
+          .all(req.params.id) as SnapshotRow[];
+
+        const map = new Map<string, SnapshotRow>();
+        for (const item of fallback) map.set(item.date, item);
+        for (const item of specific) map.set(item.date, item);
+        return Array.from(map.values()).sort((a, b) => a.date.localeCompare(b.date));
+      }
+
+      return db
+        .prepare(
+          `SELECT date, weathercode, temp_max, temp_min, precipitation_probability
+           FROM trip_weather_snapshots
+           WHERE trip_id = ?
+           GROUP BY date
+           ORDER BY date`,
+        )
+        .all(req.params.id);
+    },
+  );
 
   // --- Mitgliedschaft/Einladung (Batch: Registrierung + Einladung) ---
 
