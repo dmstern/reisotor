@@ -140,12 +140,13 @@ const editExpenseDraft = useDraftAutosave(
 );
 
 function expenseToBody(f: ReturnType<typeof emptyExpenseForm>) {
+  const fallbackPaidBy = budgetStore.users.length === 1 ? budgetStore.users[0].id : auth.user?.id;
   return {
     trip_id: tripId,
     title: f.title.trim(),
     category: f.category || undefined,
     amount: Number(f.amount),
-    paid_by_user_id: f.paid_by_user_id ? Number(f.paid_by_user_id) : undefined,
+    paid_by_user_id: f.paid_by_user_id ? Number(f.paid_by_user_id) : fallbackPaidBy,
     date: f.date || undefined,
     note: f.note || undefined,
     budget_id: f.budget_id ? Number(f.budget_id) : undefined,
@@ -257,7 +258,7 @@ const categoryColors = computed(() => {
       </p>
     </div>
 
-    <BudgetSettlementCard @use-suggestion="useSettlementSuggestion" />
+    <BudgetSettlementCard v-if="budgetStore.users.length > 1" @use-suggestion="useSettlementSuggestion" />
 
     <!-- Budgets -->
     <div class="card">
@@ -265,10 +266,14 @@ const categoryColors = computed(() => {
         <h2>Budgets</h2>
         <Button @click="showNewBudgetForm = true"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Budget anlegen</Button>
       </div>
-      <p class="hint">
+      <p v-if="budgetStore.users.length > 1" class="hint">
         Ganz einfach: ein Topf mit nur einer Gesamtsumme. Oder detaillierter: in Kategorien aufteilen,
         um daraus ein Gesamtbudget zusammenzustellen. Geteilte Töpfe sehen alle Mitreisenden, private
         Töpfe nur die gewählte Person.
+      </p>
+      <p v-else class="hint">
+        Ganz einfach: ein Topf mit nur einer Gesamtsumme. Oder detaillierter: in Kategorien aufteilen,
+        um daraus ein Gesamtbudget zusammenzustellen.
       </p>
 
       <Modal :model-value="showNewBudgetForm" title="Budget anlegen" @update:model-value="(v) => !v && closeNewBudgetForm()">
@@ -276,13 +281,13 @@ const categoryColors = computed(() => {
           <FormField icon="title" label="Name">
             <input v-model="newBudgetForm.name" type="text" placeholder="Name (z. B. Souvenirs)" required />
           </FormField>
-          <FormField icon="visibility" label="Sichtbarkeit">
+          <FormField v-if="budgetStore.users.length > 1" icon="visibility" label="Sichtbarkeit">
             <select v-model="newBudgetForm.kind">
               <option value="shared">Geteilt (alle sehen ihn)</option>
               <option value="personal">Privat (nur eine Person sieht ihn)</option>
             </select>
           </FormField>
-          <FormField v-if="newBudgetForm.kind === 'personal'" icon="person" label="Person">
+          <FormField v-if="budgetStore.users.length > 1 && newBudgetForm.kind === 'personal'" icon="person" label="Person">
             <select v-model="newBudgetForm.owner_id" required>
               <option value="" disabled>Nutzer:in wählen…</option>
               <option v-for="u in budgetStore.users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
@@ -322,7 +327,7 @@ const categoryColors = computed(() => {
           <FormField icon="amount" label="Betrag">
             <input v-model="expenseForm.amount" type="number" step="0.01" placeholder="Betrag" required />
           </FormField>
-          <FormField icon="shared" label="Bezahlt von">
+          <FormField v-if="budgetStore.users.length > 1" icon="shared" label="Bezahlt von">
             <select v-model="expenseForm.paid_by_user_id" required>
               <option value="" disabled>Bezahlt von…</option>
               <option v-for="u in budgetStore.users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
@@ -351,7 +356,7 @@ const categoryColors = computed(() => {
     </div>
 
     <!-- Überweisungen -->
-    <div class="card">
+    <div v-if="budgetStore.users.length > 1" class="card">
       <div class="header">
         <h2>Überweisungen</h2>
         <Button @click="showTransferForm = true"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Überweisung eintragen</Button>
@@ -402,7 +407,7 @@ const categoryColors = computed(() => {
         <FormField icon="amount" label="Betrag">
           <input v-model="editExpenseForm.amount" type="number" step="0.01" placeholder="Betrag" required />
         </FormField>
-        <FormField icon="shared" label="Bezahlt von">
+        <FormField v-if="budgetStore.users.length > 1" icon="shared" label="Bezahlt von">
           <select v-model="editExpenseForm.paid_by_user_id" required>
             <option value="" disabled>Bezahlt von…</option>
             <option v-for="u in budgetStore.users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>

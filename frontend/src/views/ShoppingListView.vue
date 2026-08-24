@@ -104,6 +104,16 @@ onMounted(() => {
 
 watch(() => liveSync.domainVersion.shopping, load);
 
+watch(
+  () => users.value.length,
+  (len) => {
+    if (len <= 1 && groupBy.value === 'buyer') {
+      groupBy.value = 'shop';
+    }
+  },
+  { immediate: true },
+);
+
 const UNASSIGNED_SHOP = 'Ohne Shop';
 
 function isChecked(item: ShoppingItem) {
@@ -307,7 +317,7 @@ async function quickAddToGroup(group: Group, label: string) {
       <FormField icon="shop" label="Shop">
         <Combobox v-model="newShop" :options="knownShops" placeholder="Shop/Laden (optional)" />
       </FormField>
-      <FormField icon="person" label="Einkäufer:in">
+      <FormField v-if="users.length > 1" icon="person" label="Einkäufer:in">
         <select v-model="newBuyer">
           <option value="">Kein:e Einkäufer:in</option>
           <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
@@ -334,7 +344,7 @@ async function quickAddToGroup(group: Group, label: string) {
       <div class="tool-row">
         <span class="tool-label"><AppIcon :icon="ACTION_ICONS.group" :size="14" group="actions" /> Gruppieren</span>
         <select v-model="groupBy">
-          <option value="buyer">nach Einkäufer:in</option>
+          <option v-if="users.length > 1" value="buyer">nach Einkäufer:in</option>
           <option value="shop">nach Shop</option>
           <option value="period">nach Zeitraum</option>
         </select>
@@ -348,7 +358,7 @@ async function quickAddToGroup(group: Group, label: string) {
         </h2>
         <QuickAddRow class="card group-quick-add" placeholder="Artikel hinzufügen…" @submit="(label) => quickAddToGroup(group, label)">
           <template #extra>
-            <select v-if="groupBy !== 'buyer'" v-model="newBuyer">
+            <select v-if="users.length > 1 && groupBy !== 'buyer'" v-model="newBuyer">
               <option value="">Nicht zugewiesen</option>
               <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
             </select>
@@ -383,7 +393,7 @@ async function quickAddToGroup(group: Group, label: string) {
                 </a>
                 <span v-if="item.note" class="note">{{ item.note }}</span>
                 <select
-                  v-if="groupBy !== 'buyer'"
+                  v-if="users.length > 1 && groupBy !== 'buyer'"
                   class="buyer-select"
                   :value="item.assigned_to_user_id ?? ''"
                   @change="reassign(item, $event)"
