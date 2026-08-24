@@ -1,0 +1,1 @@
+- Demo-Modus mit weiteren Beispiel-Daten ergänzt (Spots, Ausflüge, Likes, Kommentare, Mitglieder)
