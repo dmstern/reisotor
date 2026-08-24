@@ -11,6 +11,7 @@ import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import AppIcon from './AppIcon.vue';
+import Button from './primitives/Button.vue';
 import SegmentedToggle from './SegmentedToggle.vue';
 
 // Issue #74: die Bereichseinstellungen sind der zentrale, immer sichtbare Teil dieser Karte
@@ -148,10 +149,10 @@ const categoriesColorRelevant = computed(() => iconStyle.groups.categories === '
       </template>
     </div>
 
-    <button type="button" class="secondary reset-button" @click="iconStyle.resetToDefaults()">
+    <Button variant="secondary" class="reset-button" @click="iconStyle.resetToDefaults()">
       <AppIcon :icon="ACTION_ICONS.refresh" :size="16" group="actions" />
       Auf Standard-Einstellungen zurücksetzen
-    </button>
+    </Button>
   </div>
 </template>
 

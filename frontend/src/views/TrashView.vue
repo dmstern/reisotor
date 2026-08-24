@@ -5,6 +5,7 @@ import type { User } from '../api/types';
 import { useTripStore } from '../stores/trip';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import AppIcon from '../components/AppIcon.vue';
+import Button from '../components/primitives/Button.vue';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import type { IconDef } from '../utils/icon';
@@ -136,14 +137,13 @@ async function restore(entry: TrashEntry) {
           <span class="trash-title">{{ titleFor(entry) }}</span>
           <span class="trash-meta">{{ entry.label }} · Gelöscht am {{ formatDeletedAt(entry.deletedAt) }}</span>
         </div>
-        <button
-          type="button"
-          class="card-action-btn"
+        <Button
+          variant="card-action"
           :disabled="restoringKey === keyOf(entry)"
           @click="restore(entry)"
         >
           <AppIcon :icon="ACTION_ICONS.restore" :size="14" group="actions" /> Wiederherstellen
-        </button>
+        </Button>
       </li>
     </TransitionGroup>
     <p v-if="!entries.length" class="empty">Der Papierkorb ist leer.</p>

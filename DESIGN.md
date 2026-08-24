@@ -20,7 +20,7 @@ wurde. Der Nutzer sieht keinen Unterschied zwischen "das ist ein natives `<selec
 eine custom Combobox.vue" – beide sind für ihn einfach "ein Dropdown" und müssen deshalb exakt
 gleich hoch sein und gleich aussehen. Das gilt für jede der unten dokumentierten Kategorien:
 
-- **Primitive Komponenten & Styles**: Surface-Primitives (`Button.vue`, `Card.vue` unter `components/primitives/`) kapseln ihre eigenen Varianten-Styles (Schatten, Varianten-Klassen) intern in der Komponente. Globale Styles in `style.css` enthalten nur minimale Resets – rohe `<button>`-Elemente bekommen z. B. keinen pauschalen Schatten aufgedrückt, um `box-shadow: none`-Overrides zu vermeiden.
+- **Primitive Komponenten & Styles**: Surface- und Interaktions-Primitives (`Button.vue`, `Card.vue`, `Input.vue` unter `components/primitives/`) kapseln ihre eigenen Varianten-Styles (Schatten, Varianten-Klassen, Größen, Squircle-Rundung) intern in der Komponente. Globale Styles in `style.css` enthalten nur minimale Resets – rohe `<button>`-Elemente bekommen z. B. keinen pauschalen Schatten aufgedrückt, um `box-shadow: none`-Overrides zu vermeiden.
 - **Farben**: nur `--color-*`-Variablen, nie ein neuer Hex-Wert lokal (Abschnitt "Farben").
 - **Abstände**: nur `--space-*`-Stufen, kein freier px-Wert (Abschnitt "Abstände").
 - **Formen/Eckenrundung**: Kreisbogen vs. Squircle konsequent nach Elementtyp, nie gemischt
@@ -154,7 +154,24 @@ dem jeweiligen Kontext unterordnen statt sich als eigene, andersfarbige Fläche 
 
 `--space-1` (4px) bis `--space-6` (48px), verdoppelnd/gestuft. Für Innenabstände/Gaps immer diese
 Stufen verwenden statt beliebiger px-Werte – macht Layouts über Views hinweg optisch konsistent und
-Design-Anpassungen global statt Datei für Datei nötig.
+Design-Anpassungen global statt Datei für Datei nötig:
+
+- `--space-1` (4px): Mikro-Abstände (Icon neben Label, Badges, kompakte Chip-Gaps).
+- `--space-2` (8px): Standard-Gap für dichte Flex-Zeilen (Formularzeilen, Button-Gruppen, Tag-Listen).
+- `--space-3` (16px): Standard-Padding für Cards, Modals, Listen-Gaps auf Mobile und vertikaler Rhythmus.
+- `--space-4` (24px): Großzügiges Padding für Desktop-Karten, Dialoge, Sektions-Abstände.
+- `--space-5` (32px): Große Trennabstände zwischen Hauptbereichen einer View.
+- `--space-6` (48px): Maximale Außenabstände / Hero-Sektionen.
+
+**Absatz vor Button / Aktion (#69)**: Eine erklärende `<p>`-Zeile direkt vor einem Button oder einer
+Aktionsleiste braucht zwingend sichtbaren Freiraum nach unten (`margin-top: var(--space-3)` via
+`p + button`, `p + .btn`, etc. in `style.css`), damit Handlungsaufruf und Beschreibung optisch
+gegliedert sind und nicht zusammenkleben.
+
+**Karten- & Standort-Picker-Abstand (#161)**: Buttons und Auslöser für Maps-App-Picker
+(`MapsAppPicker.vue`, `.maps-picker`) oder Standort-Karten (`LocationPicker.vue`) benötigen immer
+ausreichend vertikalen Abstand (`margin-top: var(--space-3)` bzw. `.detail-actions { margin-top: var(--space-3); }`)
+zu vorhergehenden Zeilen (z. B. Tour-Zuordnungs-Chips, Adresszeilen, Notizen).
 
 **Beschreibungstext vor einer Karte/Liste/einem Grid**: eine erklärende `<p>`-Zeile direkt unter
 einer Überschrift, gefolgt von der eigentlichen Karten-/Listen-Sektion, braucht sichtbar mehr Luft
@@ -172,6 +189,13 @@ kann ein vorher gesetztes `margin-bottom` stillschweigend auf 0 kappen. Für Sei
 deshalb eine eigene, von `.hint` unabhängige Klasse verwenden oder per Compound-Selektor
 (`.hint.places-hint { margin-bottom: var(--space-4); }`) höhere Spezifität erzwingen. Bei jeder neuen
 Einleitungszeile im gerenderten Ergebnis prüfen, ob der Abstand tatsächlich ankommt.
+
+**Überschriften-Hierarchie & Card-Gutters (#239)**:
+- `h1`: `margin: 0 0 var(--space-3)` (Seiten-Titel).
+- `h2`: `margin: 0 0 var(--space-2)` (Sektions-Überschriften in Cards/Views).
+- `h3`: `margin: 0 0 var(--space-1)` (Kompakte Gruppen-Titel).
+- **Card-Gutters**: In Grids und Listen beträgt der Abstand zwischen Cards `--space-3` (mobil) bzw. `--space-3` bis `--space-4` (Desktop).
+- **Leerzustände (`.empty`)**: Dezent `--color-text-muted` mit mindestens `--space-3` bis `--space-4` vertikalem Innenabstand, um Leere klar als ruhigen Zustand zu vermitteln.
 
 ## Eckenrundung: Squircle-Prinzip
 
@@ -510,7 +534,43 @@ Template, gerendert über `<AppIcon :icon="…" />`. Zwei Gründe, beide nicht v
    Einzige Ausnahme weiterhin das Nutzer-Avatar (siehe "Kartenmarker" oben): ein frei gewähltes
    Emoji ohne festes Tabler-Äquivalent bleibt bewusst immer Emoji, roh, ohne `IconDef`.
 
-## Formularfelder in Anlege-/Bearbeiten-Dialogen
+## Tab-Navigation (`TabBar.vue`)
+
+Für seiteninterne Register-Navigation (z. B. `SettingsView.vue`, `ListenView.vue`) wird zentral
+`components/TabBar.vue` verwendet statt einer lokalen Neuimplementierung (#144):
+
+1. **Gleitende Unterstreichung (`.tab-underline`)**: Die Position und Breite der aktiven
+   Unterstreichung werden per JS gemessen (`offsetLeft`, `offsetWidth`) und mit `0.2s ease` sanft
+   animiert. Verhindert ruckartige Farbumschaltungen und passt sich dynamisch an unterschiedlich
+   breite Tab-Labels an.
+2. **Klick-Pfeile statt nativer Scrollbalken (`.tab-bar-arrow`)**: Wenn mehr Tabs vorhanden sind, als
+   die Viewport-Breite fassen kann (z. B. 6 Tabs auf Mobile in den Einstellungen), scrollt die Leiste
+   horizontal ohne störenden sichtbaren Scrollbalken (`scrollbar-width: none`). Zwei Klick-Pfeile
+   blenden sich automatisch per Gradient (`var(--color-bg)`) am linken/rechten Rand ein, sobald in
+   die jeweilige Richtung noch Tabs verborgen sind (#144).
+3. **Barrierefreiheit & State**: Vollständige ARIA-Semantik (`role="tablist"`, `role="tab"`,
+   `aria-selected`). Unterstützt optionale `unseen`-Badges (roter Punkt) für Änderungen seit dem
+   letzten Besuch via `liveSync.ts`.
+
+## Formularfelder und Design System Primitives
+
+Reisotor etabliert saubere Design-System-Primitives (`frontend/src/components/primitives/`, Issue #239)
+für elementare UI-Bausteine:
+
+- **`Button.vue`**: Zentrales Primitive für alle Schaltflächen. Unterstützt `variant` (`primary`,
+  `secondary`, `danger`, `card-action`, `ghost`) und `size` (`sm`, `md`, `lg`). Kapselt
+  Schattierung (`--shadow-sm`) und Squircle-Styling intern.
+- **`IconButton.vue`**: Spezielles Primitive für reine Icon- und Emoji-Schaltflächen (Avatar-Auswahl,
+  Verschiebe-Aktionen, Close-/Toggle-Buttons). Standardmäßig komplett ohne Rahmen, Schatten oder
+  Hintergrund (`variant="ghost"`), mit sanftem Hover- und aktivem Auswahlstatus (`active`).
+- **`Card.vue`**: Basis-Fläche für Spots, Touren, Budget-Töpfe und Fokus-Panels (`variant="muted"`
+  für hinterlegte Kacheln).
+- **`Input.vue`**: Wiederverwendbares Primitive für einzeilige Eingabefelder (`text`, `number`,
+  `date`, `time`, `datetime-local`, `email`, `url`, `search`, etc.). Behandelt standardmäßiges
+  Squircle-Styling, `min-height: 44px`, Focus-Ringe, Disabled-State, `size` (`sm`, `md`, `lg`),
+  `invalid`-Zustand (`aria-invalid`, rote Umrandung) und den Chromium-Höhenausgleich für
+  Datums-/Zeitauswahlen.
+- **`FormField.vue`**: Einheitlicher Feld-Wrapper für Anlege- und Bearbeiten-Formulare (Icon + Label).
 
 Reine Beschriftung eines Textfelds per HTML-`placeholder` verschwindet, sobald das Feld einen Wert
 trägt – wer einen bereits ausgefüllten Dialog erneut öffnet (Bearbeiten) sieht dann nicht mehr, wofür

@@ -22,6 +22,7 @@ import { useUndoableDelete } from '../composables/useUndoableDelete';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
 import { usePersistedRef } from '../composables/usePersistedRef';
 import AppIcon from '../components/AppIcon.vue';
+import Button from '../components/primitives/Button.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 
@@ -301,7 +302,7 @@ function isOverdue(item: TodoItem) {
       <FormField icon="note" label="Notiz">
         <input v-model="newForm.note" type="text" placeholder="Notiz (optional)" />
       </FormField>
-      <button type="submit">Hinzufügen</button>
+      <Button type="submit">Hinzufügen</Button>
       <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
     </form>
 
@@ -402,7 +403,7 @@ function isOverdue(item: TodoItem) {
           <input v-model="editForm.note" type="text" placeholder="Notiz (optional)" />
         </FormField>
         <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />
-        <button type="submit">Speichern</button>
+        <Button type="submit">Speichern</Button>
       </form>
     </Modal>
   </div>

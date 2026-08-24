@@ -20,6 +20,7 @@ import { useDraftAutosave } from '../composables/useDraftAutosave';
 import { sortWithDoneLast } from '../composables/useCheckedSort';
 import { usePersistedRef } from '../composables/usePersistedRef';
 import AppIcon from '../components/AppIcon.vue';
+import Button from '../components/primitives/Button.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import type { IconDef } from '../utils/icon';
@@ -325,7 +326,7 @@ async function quickAddToGroup(group: Group, label: string) {
       <FormField icon="note" label="Notiz">
         <input v-model="newNote" type="text" placeholder="Notiz (optional)" />
       </FormField>
-      <button type="submit">Hinzufügen</button>
+      <Button type="submit">Hinzufügen</Button>
       <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
     </form>
 
@@ -428,7 +429,7 @@ async function quickAddToGroup(group: Group, label: string) {
           <input v-model="editForm.note" type="text" placeholder="Notiz (optional)" />
         </FormField>
         <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />
-        <button type="submit">Speichern</button>
+        <Button type="submit">Speichern</Button>
       </form>
     </Modal>
   </div>

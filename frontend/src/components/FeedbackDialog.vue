@@ -121,14 +121,14 @@ function close() {
         <div v-else class="screenshot-preview">
           <img :src="screenshot" alt="" />
           <span class="screenshot-name">{{ screenshotName }}</span>
-          <Button type="button" class="secondary small" @click="removeScreenshot">Entfernen</Button>
+          <Button variant="secondary" size="sm" @click="removeScreenshot">Entfernen</Button>
         </div>
 
         <p v-if="error" class="hint error">{{ error }}</p>
 
-        <button type="submit" :disabled="submitting">
+        <Button type="submit" :disabled="submitting">
           {{ submitting ? 'Wird gesendet…' : 'Absenden' }}
-        </button>
+        </Button>
       </form>
     </div>
   </Modal>

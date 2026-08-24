@@ -38,6 +38,7 @@ import { computeDepartureCountdown, computeVacationPhase } from '../utils/depart
 import BudgetMeter from '../components/BudgetMeter.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import AppIcon from '../components/AppIcon.vue';
+import Button from '../components/primitives/Button.vue';
 import WeatherIcon from '../components/WeatherIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { DEMO_MODE } from '../demo/isDemoMode';
@@ -354,9 +355,9 @@ function formatWeekdayDate(d: string) {
       :style="trip?.image_url ? { backgroundImage: `linear-gradient(135deg, rgba(0,0,0,.35), rgba(0,0,0,.15)), url(${trip.image_url})` } : {}"
       :class="{ 'has-image': trip?.image_url }"
     >
-      <button type="button" class="secondary banner-edit-btn" title="Urlaub bearbeiten" @click="jumpToTrip">
+      <Button variant="secondary" class="banner-edit-btn" title="Urlaub bearbeiten" @click="jumpToTrip">
         <AppIcon :icon="ACTION_ICONS.edit" :size="14" group="actions" /> Bearbeiten
-      </button>
+      </Button>
       <h1>{{ trip?.name || 'Euer Urlaub' }}</h1>
       <p v-if="trip?.destination"><AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> {{ trip.destination }}</p>
       <p v-if="trip">{{ formatDate(trip.start_date) }} – {{ formatDate(trip.end_date) }}</p>

@@ -2249,11 +2249,11 @@ async function removeSpot(id: number) {
                 nicht
                 ermittelt werden. Bitte tippe unten auf die Karte, um ihn manuell zu setzen.
               </p>
-              <button type="button" class="secondary picker-toggle" @click="spotPickerOpen = !spotPickerOpen">
+              <Button type="button" variant="secondary" class="picker-toggle" @click="spotPickerOpen = !spotPickerOpen">
                 <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort manuell setzen
                 <AppIcon :icon="ACTION_ICONS.chevronDown" :size="12" group="actions" class="caret dropdown-caret"
                   :class="{ open: spotPickerOpen }" />
-              </button>
+              </Button>
               <LocationPicker v-if="spotPickerOpen" v-model="spotManualPin" :center="spotPickerCenter"
                 :reference-points="spotReferencePoints" />
               <FormField icon="note" label="Notiz">
@@ -2452,11 +2452,11 @@ async function removeSpot(id: number) {
                 nicht
                 ermittelt werden. Bitte tippe unten auf die Karte, um ihn manuell zu setzen.
               </p>
-              <button type="button" class="secondary picker-toggle" @click="editSpotPickerOpen = !editSpotPickerOpen">
+              <Button type="button" variant="secondary" class="picker-toggle" @click="editSpotPickerOpen = !editSpotPickerOpen">
                 <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort manuell setzen
                 <AppIcon :icon="ACTION_ICONS.chevronDown" :size="12" group="actions" class="caret dropdown-caret"
                   :class="{ open: editSpotPickerOpen }" />
-              </button>
+              </Button>
               <LocationPicker v-if="editSpotPickerOpen" v-model="editSpotManualPin" :center="spotPickerCenter"
                 :reference-points="editSpotReferencePoints" />
               <FormField icon="note" label="Notiz">
@@ -2467,7 +2467,7 @@ async function removeSpot(id: number) {
               </FormField>
               <FileAttachments v-if="editingSpot" domain="spots" :entity-id="editingSpot.id" />
               <DraftStatusBar :status="editSpotDraft.status.value" :restored="editSpotDraft.restored.value" />
-              <button type="submit">Speichern</button>
+              <Button type="submit">Speichern</Button>
             </form>
           </Modal>
         </div>

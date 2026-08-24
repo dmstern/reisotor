@@ -24,6 +24,7 @@ import FileAttachments from '../components/FileAttachments.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import DraftStatusBar from '../components/DraftStatusBar.vue';
 import AppIcon from '../components/AppIcon.vue';
+import Button from '../components/primitives/Button.vue';
 import WeatherIcon from '../components/WeatherIcon.vue';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
 import { SCHEDULE_CATEGORY_META } from '../utils/scheduleCategory';
@@ -833,7 +834,7 @@ function formatDate(date: string) {
         {{ drawers.pendingSchedule.kind === 'excursion' ? 'gemacht' : 'besucht' }} wurde
       </span>
       <span v-else><AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" /> Tippe einen Tag an, um „{{ pendingScheduleLabel }}“ einzuplanen</span>
-      <button type="button" class="secondary" @click="cancelPendingSchedule">Abbrechen</button>
+      <Button variant="secondary" @click="cancelPendingSchedule">Abbrechen</Button>
     </div>
 
     <div class="calendar-toolbar">
@@ -857,13 +858,13 @@ function formatDate(date: string) {
         </button>
       </div>
       <div class="jump-row">
-        <button type="button" class="card-action-btn" @click="jumpToToday">
+        <Button variant="card-action" @click="jumpToToday">
           <AppIcon :icon="ACTION_ICONS.today" :size="14" group="actions" /> Heute
-        </button>
-        <button type="button" class="card-action-btn" v-if="trip" @click="goToTripDates">
+        </Button>
+        <Button variant="card-action" v-if="trip" @click="goToTripDates">
           <AppIcon :icon="ACTION_ICONS.vacation" :size="14" group="actions" /> Urlaub
-        </button>
-        <button type="button" @click="openAddForm"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Neu</button>
+        </Button>
+        <Button @click="openAddForm"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Neu</Button>
       </div>
     </div>
 
@@ -882,9 +883,9 @@ function formatDate(date: string) {
       <div class="day-detail-head">
         <h3>{{ formatDay(selectedDate) }}</h3>
         <div class="day-detail-actions">
-          <button type="button" class="card-action-btn" @click="showDayOnMap">
+          <Button variant="card-action" @click="showDayOnMap">
             <AppIcon :icon="SECTION_ICON_DEFS.map" :size="14" group="navigation" /> Tag auf Karte anzeigen
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -1041,7 +1042,7 @@ function formatDate(date: string) {
           <input v-model="newNote" type="text" placeholder="Notiz (optional)" />
         </FormField>
         <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
-        <button type="submit">Hinzufügen</button>
+        <Button type="submit">Hinzufügen</Button>
       </form>
     </Modal>
 
@@ -1087,7 +1088,7 @@ function formatDate(date: string) {
         </FormField>
         <FileAttachments v-if="editingItem" domain="schedule" :entity-id="editingItem.id" />
         <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />
-        <button type="submit">Speichern</button>
+        <Button type="submit">Speichern</Button>
       </form>
     </Modal>
 
