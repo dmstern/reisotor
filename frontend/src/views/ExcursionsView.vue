@@ -517,6 +517,38 @@ const spotCategoryOptions = computed(() => {
   return [...new Set([...SPOT_CATEGORY_SUGGESTIONS, ...used])];
 });
 
+const excursionPreviewImage = computed(() => excursionForm.value.image_url || null);
+const editExcursionPreviewImage = computed(() => editExcursionForm.value.image_url || null);
+
+const showSpotToursSection = ref(false);
+const showEditSpotToursSection = ref(false);
+const showExcursionSpotsSection = ref(false);
+const showEditExcursionSpotsSection = ref(false);
+
+const showSpotImageModal = ref(false);
+const showEditSpotImageModal = ref(false);
+const showExcursionImageModal = ref(false);
+const showEditExcursionImageModal = ref(false);
+
+// Track Recording Hinweis-Modal (#230)
+const showTrackRecordingWarningModal = ref(false);
+const trackWarningDismissed = usePersistedRef<boolean>('reisotor-track-recording-warning-acknowledged', false);
+
+function onRecordButtonClick() {
+  if (trackRecording.recording) {
+    trackRecording.stop();
+  } else if (trackWarningDismissed.value) {
+    trackRecording.start({ visibility: 'private' });
+  } else {
+    showTrackRecordingWarningModal.value = true;
+  }
+}
+
+function startRecordingConfirmed() {
+  showTrackRecordingWarningModal.value = false;
+  trackRecording.start({ visibility: 'private' });
+}
+
 // Andere bereits gespeicherte Spots als gedimmte Referenzpunkte im manuellen Karten-Picker (siehe
 // LocationPicker.vue) – rein zur Orientierung beim Antippen, welche Umgebung man dort gerade setzt.
 // Beim Bearbeiten wird der gerade bearbeitete Spot selbst ausgeschlossen (der zeigt sich ohnehin
@@ -1813,7 +1845,7 @@ async function removeSpot(id: number) {
           </div>
           <div class="subheader">
             <button type="button" class="secondary record-button" :class="{ recording: trackRecording.recording }"
-            @click="trackRecording.recording ? trackRecording.stop() : trackRecording.start({ visibility: 'private' })">
+            @click="onRecordButtonClick">
             <AppIcon :icon="trackRecording.recording ? ACTION_ICONS.recordStop : ACTION_ICONS.recordStart" :size="15"
             group="actions" />
             {{ trackRecording.recording ? 'Aufzeichnung beenden' : 'Weg Aufzeichnen' }}
@@ -1874,11 +1906,23 @@ async function removeSpot(id: number) {
           <Modal :model-value="showExcursionForm" title="Neue Tour" full-height
             @update:model-value="(v) => !v && closeExcursionForm()">
             <form class="edit-form" @submit.prevent="addExcursion">
+              <div class="form-image-banner"
+                :style="excursionPreviewImage ? { backgroundImage: `url(${excursionPreviewImage})` } : {}">
+                <AppIcon v-if="!excursionPreviewImage" class="placeholder" :size="35"
+                  :icon="SECTION_ICON_DEFS.excursions" group="navigation" />
+                <div class="banner-actions">
+                  <Button type="button" variant="ghost" class="banner-edit-btn" @click="showExcursionImageModal = true">
+                    <AppIcon :icon="ACTION_ICONS.edit" :size="13" group="actions" />
+                    {{ excursionForm.image_url ? 'Bild bearbeiten' : 'Bild hinzufügen' }}
+                  </Button>
+                  <Button v-if="excursionForm.image_url" type="button" variant="ghost" class="banner-edit-btn remove"
+                    title="Bild entfernen" aria-label="Bild entfernen" @click="excursionForm.image_url = ''">
+                    <AppIcon :icon="ACTION_ICONS.close" :size="13" group="actions" />
+                  </Button>
+                </div>
+              </div>
               <FormField icon="title" label="Titel">
                 <input v-model="excursionForm.title" type="text" placeholder="Titel" required />
-              </FormField>
-              <FormField icon="image" label="Bild">
-                <ImageUrlInput v-model="excursionForm.image_url" />
               </FormField>
               <FormField icon="note" label="Notiz">
                 <RichTextEditor v-model="excursionForm.note" placeholder="Notiz (optional)" compact />
@@ -1967,8 +2011,23 @@ async function removeSpot(id: number) {
                   <input v-model="excursionForm.ticket_link" type="url" />
                 </FormField>
               </template>
-              <SpotOrderPicker v-if="!excursionForm.transportEnabled && spotsStore.spots.length"
-                v-model="excursionForm.spot_ids" :spots="spotsStore.spots" :like-count="spotsStore.likeCountFor" />
+              <fieldset v-if="!excursionForm.transportEnabled && spotsStore.spots.length" class="collapsible-fieldset">
+                <legend>
+                  <Button type="button" variant="ghost" class="picker-toggle" :aria-expanded="showExcursionSpotsSection"
+                    @click="showExcursionSpotsSection = !showExcursionSpotsSection">
+                    <span>
+                      <AppIcon :icon="FORM_FIELD_ICONS.location" :size="14" group="formFields" />
+                      Spots zuordnen
+                      <span v-if="excursionForm.spot_ids.length" class="picker-count"> ({{ excursionForm.spot_ids.length }} zugeordnet)</span>
+                    </span>
+                    <AppIcon :icon="ACTION_ICONS.chevronDown" :size="14" group="actions" class="caret"
+                      :class="{ closed: !showExcursionSpotsSection }" />
+                  </Button>
+                </legend>
+                <div v-if="showExcursionSpotsSection" class="collapsible-content">
+                  <SpotOrderPicker v-model="excursionForm.spot_ids" :spots="spotsStore.spots" :like-count="spotsStore.likeCountFor" />
+                </div>
+              </fieldset>
               <DraftStatusBar :status="newExcursionDraft.status.value" :restored="newExcursionDraft.restored.value" />
               <Button type="submit">Hinzufügen</Button>
             </form>
@@ -1977,11 +2036,23 @@ async function removeSpot(id: number) {
           <Modal :model-value="editingExcursion !== null" title="Tour bearbeiten" full-height
             @update:model-value="(v) => !v && closeEditExcursionForm()">
             <form class="edit-form" @submit.prevent="submitEditExcursion">
+              <div class="form-image-banner"
+                :style="editExcursionPreviewImage ? { backgroundImage: `url(${editExcursionPreviewImage})` } : {}">
+                <AppIcon v-if="!editExcursionPreviewImage" class="placeholder" :size="35"
+                  :icon="SECTION_ICON_DEFS.excursions" group="navigation" />
+                <div class="banner-actions">
+                  <Button type="button" variant="ghost" class="banner-edit-btn" @click="showEditExcursionImageModal = true">
+                    <AppIcon :icon="ACTION_ICONS.edit" :size="13" group="actions" />
+                    {{ editExcursionForm.image_url ? 'Bild bearbeiten' : 'Bild hinzufügen' }}
+                  </Button>
+                  <Button v-if="editExcursionForm.image_url" type="button" variant="ghost" class="banner-edit-btn remove"
+                    title="Bild entfernen" aria-label="Bild entfernen" @click="editExcursionForm.image_url = ''">
+                    <AppIcon :icon="ACTION_ICONS.close" :size="13" group="actions" />
+                  </Button>
+                </div>
+              </div>
               <FormField icon="title" label="Titel">
                 <input v-model="editExcursionForm.title" type="text" placeholder="Titel" required />
-              </FormField>
-              <FormField icon="image" label="Bild">
-                <ImageUrlInput v-model="editExcursionForm.image_url" />
               </FormField>
               <FormField icon="note" label="Notiz">
                 <RichTextEditor v-model="editExcursionForm.note" placeholder="Notiz (optional)" compact />
@@ -2070,8 +2141,23 @@ async function removeSpot(id: number) {
                   <input v-model="editExcursionForm.ticket_link" type="url" />
                 </FormField>
               </template>
-              <SpotOrderPicker v-if="!editExcursionForm.transportEnabled && spotsStore.spots.length"
-                v-model="editExcursionForm.spot_ids" :spots="spotsStore.spots" :like-count="spotsStore.likeCountFor" />
+              <fieldset v-if="!editExcursionForm.transportEnabled && spotsStore.spots.length" class="collapsible-fieldset">
+                <legend>
+                  <Button type="button" variant="ghost" class="picker-toggle" :aria-expanded="showEditExcursionSpotsSection"
+                    @click="showEditExcursionSpotsSection = !showEditExcursionSpotsSection">
+                    <span>
+                      <AppIcon :icon="FORM_FIELD_ICONS.location" :size="14" group="formFields" />
+                      Spots zuordnen
+                      <span v-if="editExcursionForm.spot_ids.length" class="picker-count"> ({{ editExcursionForm.spot_ids.length }} zugeordnet)</span>
+                    </span>
+                    <AppIcon :icon="ACTION_ICONS.chevronDown" :size="14" group="actions" class="caret"
+                      :class="{ closed: !showEditExcursionSpotsSection }" />
+                  </Button>
+                </legend>
+                <div v-if="showEditExcursionSpotsSection" class="collapsible-content">
+                  <SpotOrderPicker v-model="editExcursionForm.spot_ids" :spots="spotsStore.spots" :like-count="spotsStore.likeCountFor" />
+                </div>
+              </fieldset>
               <FileAttachments v-if="editingExcursion" domain="ideas" :entity-id="editingExcursion" />
               <DraftStatusBar :status="editExcursionDraft.status.value" :restored="editExcursionDraft.restored.value" />
               <Button type="submit">Speichern</Button>
@@ -2181,15 +2267,23 @@ async function removeSpot(id: number) {
                 :style="spotPreviewImage ? { backgroundImage: `url(${spotPreviewImage})` } : {}">
                 <AppIcon v-if="!spotPreviewImage" class="placeholder" :size="35"
                   :icon="spotCategoryMeta(spotForm.category).tabler" group="categories" />
+                <div class="banner-actions">
+                  <Button type="button" variant="ghost" class="banner-edit-btn" @click="showSpotImageModal = true">
+                    <AppIcon :icon="ACTION_ICONS.edit" :size="13" group="actions" />
+                    {{ spotForm.image_url ? 'Bild bearbeiten' : 'Bild hinzufügen' }}
+                  </Button>
+                  <Button v-if="spotForm.image_url" type="button" variant="ghost" class="banner-edit-btn remove"
+                    title="Bild entfernen" aria-label="Bild entfernen" @click="spotForm.image_url = ''">
+                    <AppIcon :icon="ACTION_ICONS.close" :size="13" group="actions" />
+                  </Button>
+                </div>
               </div>
               <FormField icon="title" label="Titel">
                 <input v-model="spotForm.title" type="text" placeholder="Titel" required />
               </FormField>
-              <FormField icon="image" label="Bild">
-                <ImageUrlInput v-model="spotForm.image_url" />
-              </FormField>
               <FormField icon="category" label="Kategorie">
                 <Combobox v-model="spotForm.category" :options="spotCategoryOptions"
+                  :icon-def-for="(c) => spotCategoryMeta(c).tabler" :color-for="(c) => spotCategoryMeta(c).color"
                   placeholder="Kategorie (optional, z. B. Restaurant – oder eigene erstellen)" />
               </FormField>
               <label class="checkbox-option">
@@ -2259,9 +2353,23 @@ async function removeSpot(id: number) {
               <FormField icon="note" label="Notiz">
                 <RichTextEditor v-model="spotForm.note" placeholder="Notiz (optional)" compact />
               </FormField>
-              <FormField icon="tour" label="Tour zuordnen">
-                <TourAssignPicker v-model="spotForm.tourTitles" :tour-options="allTourTitles" />
-              </FormField>
+              <fieldset class="collapsible-fieldset">
+                <legend>
+                  <Button type="button" variant="ghost" class="picker-toggle" :aria-expanded="showSpotToursSection"
+                    @click="showSpotToursSection = !showSpotToursSection">
+                    <span>
+                      <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="14" group="navigation" />
+                      Touren zuordnen
+                      <span v-if="spotForm.tourTitles.length" class="picker-count"> ({{ spotForm.tourTitles.length }} zugeordnet)</span>
+                    </span>
+                    <AppIcon :icon="ACTION_ICONS.chevronDown" :size="14" group="actions" class="caret"
+                      :class="{ closed: !showSpotToursSection }" />
+                  </Button>
+                </legend>
+                <div v-if="showSpotToursSection" class="collapsible-content">
+                  <TourAssignPicker v-model="spotForm.tourTitles" :tour-options="allTourTitles" :category="spotForm.category" :is-home="spotForm.is_home" />
+                </div>
+              </fieldset>
               <DraftStatusBar :status="newSpotDraft.status.value" :restored="newSpotDraft.restored.value" />
               <Button type="submit">Hinzufügen</Button>
             </form>
@@ -2384,15 +2492,23 @@ async function removeSpot(id: number) {
                 :style="editSpotPreviewImage ? { backgroundImage: `url(${editSpotPreviewImage})` } : {}">
                 <AppIcon v-if="!editSpotPreviewImage" class="placeholder" :size="35"
                   :icon="spotCategoryMeta(editSpotForm.category).tabler" group="categories" />
+                <div class="banner-actions">
+                  <Button type="button" variant="ghost" class="banner-edit-btn" @click="showEditSpotImageModal = true">
+                    <AppIcon :icon="ACTION_ICONS.edit" :size="13" group="actions" />
+                    {{ editSpotForm.image_url ? 'Bild bearbeiten' : 'Bild hinzufügen' }}
+                  </Button>
+                  <Button v-if="editSpotForm.image_url" type="button" variant="ghost" class="banner-edit-btn remove"
+                    title="Bild entfernen" aria-label="Bild entfernen" @click="editSpotForm.image_url = ''">
+                    <AppIcon :icon="ACTION_ICONS.close" :size="13" group="actions" />
+                  </Button>
+                </div>
               </div>
               <FormField icon="title" label="Titel">
                 <input v-model="editSpotForm.title" type="text" placeholder="Titel" required />
               </FormField>
-              <FormField icon="image" label="Bild">
-                <ImageUrlInput v-model="editSpotForm.image_url" />
-              </FormField>
               <FormField icon="category" label="Kategorie">
                 <Combobox v-model="editSpotForm.category" :options="spotCategoryOptions"
+                  :icon-def-for="(c) => spotCategoryMeta(c).tabler" :color-for="(c) => spotCategoryMeta(c).color"
                   placeholder="Kategorie (optional, z. B. Restaurant – oder eigene erstellen)" />
               </FormField>
               <label class="checkbox-option">
@@ -2462,13 +2578,96 @@ async function removeSpot(id: number) {
               <FormField icon="note" label="Notiz">
                 <RichTextEditor v-model="editSpotForm.note" placeholder="Notiz (optional)" compact />
               </FormField>
-              <FormField icon="tour" label="Tour zuordnen">
-                <TourAssignPicker v-model="editSpotForm.tourTitles" :tour-options="allTourTitles" />
-              </FormField>
+              <fieldset class="collapsible-fieldset">
+                <legend>
+                  <Button type="button" variant="ghost" class="picker-toggle" :aria-expanded="showEditSpotToursSection"
+                    @click="showEditSpotToursSection = !showEditSpotToursSection">
+                    <span>
+                      <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="14" group="navigation" />
+                      Touren zuordnen
+                      <span v-if="editSpotForm.tourTitles.length" class="picker-count"> ({{ editSpotForm.tourTitles.length }} zugeordnet)</span>
+                    </span>
+                    <AppIcon :icon="ACTION_ICONS.chevronDown" :size="14" group="actions" class="caret"
+                      :class="{ closed: !showEditSpotToursSection }" />
+                  </Button>
+                </legend>
+                <div v-if="showEditSpotToursSection" class="collapsible-content">
+                  <TourAssignPicker v-model="editSpotForm.tourTitles" :tour-options="allTourTitles" :category="editSpotForm.category" :is-home="editSpotForm.is_home" />
+                </div>
+              </fieldset>
               <FileAttachments v-if="editingSpot" domain="spots" :entity-id="editingSpot.id" />
               <DraftStatusBar :status="editSpotDraft.status.value" :restored="editSpotDraft.restored.value" />
               <Button type="submit">Speichern</Button>
             </form>
+          </Modal>
+
+          <!-- Bild-Bearbeiten Sub-Modale (#258) -->
+          <Modal :model-value="showSpotImageModal" title="Spot-Bild bearbeiten"
+            @update:model-value="(v) => !v && (showSpotImageModal = false)">
+            <div class="image-submodal">
+              <ImageUrlInput v-model="spotForm.image_url" />
+              <div class="submodal-actions">
+                <Button type="button" @click="showSpotImageModal = false">Fertig</Button>
+              </div>
+            </div>
+          </Modal>
+
+          <Modal :model-value="showEditSpotImageModal" title="Spot-Bild bearbeiten"
+            @update:model-value="(v) => !v && (showEditSpotImageModal = false)">
+            <div class="image-submodal">
+              <ImageUrlInput v-model="editSpotForm.image_url" />
+              <div class="submodal-actions">
+                <Button type="button" @click="showEditSpotImageModal = false">Fertig</Button>
+              </div>
+            </div>
+          </Modal>
+
+          <Modal :model-value="showExcursionImageModal" title="Tour-Bild bearbeiten"
+            @update:model-value="(v) => !v && (showExcursionImageModal = false)">
+            <div class="image-submodal">
+              <ImageUrlInput v-model="excursionForm.image_url" />
+              <div class="submodal-actions">
+                <Button type="button" @click="showExcursionImageModal = false">Fertig</Button>
+              </div>
+            </div>
+          </Modal>
+
+          <Modal :model-value="showEditExcursionImageModal" title="Tour-Bild bearbeiten"
+            @update:model-value="(v) => !v && (showEditExcursionImageModal = false)">
+            <div class="image-submodal">
+              <ImageUrlInput v-model="editExcursionForm.image_url" />
+              <div class="submodal-actions">
+                <Button type="button" @click="showEditExcursionImageModal = false">Fertig</Button>
+              </div>
+            </div>
+          </Modal>
+
+          <!-- Hinweis-Modal für Standort-Aufzeichnung (#230) -->
+          <Modal :model-value="showTrackRecordingWarningModal" title="Weg aufzeichnen"
+            @update:model-value="(v) => !v && (showTrackRecordingWarningModal = false)">
+            <div class="track-warning-modal">
+              <p class="track-warning-intro">
+                Reisotor zeichnet deinen Weg während des Ausflugs auf. Bitte beachte:
+              </p>
+              <ul class="track-warning-points">
+                <li>
+                  <strong><AppIcon :icon="ACTION_ICONS.myLocation" :size="15" group="actions" /> Standort-Berechtigung:</strong>
+                  Dein Browser benötigt die Berechtigung, auf deinen Standort zuzugreifen.
+                </li>
+                <li>
+                  <strong><AppIcon :icon="ACTION_ICONS.history" :size="15" group="actions" /> App geöffnet lassen:</strong>
+                  Da Reisotor im Browser/als PWA läuft, kann die Aufzeichnung pausieren, wenn der Browser im Hintergrund vollständig geschlossen wird.
+                </li>
+              </ul>
+              <label class="checkbox-option warning-dismiss">
+                <input type="checkbox" v-model="trackWarningDismissed" />
+                Diesen Hinweis nicht mehr anzeigen
+              </label>
+              <div class="submodal-actions">
+                <Button type="button" variant="secondary" @click="showTrackRecordingWarningModal = false">Abbrechen</Button>
+                <Button type="button" @click="startRecordingConfirmed">Aufzeichnung starten</Button>
+              </div>
+            </div>
           </Modal>
         </div>
       </div>

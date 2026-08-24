@@ -131,23 +131,44 @@ watch(
 // einzubacken (der hätte sich nicht zwischen Emoji/Tabler-Icon umschalten lassen).
 const plannedDateLabel = computed(() => (props.scheduledDate ? formatDate(props.scheduledDate) : ''));
 
-// Natives Drag (Zuordnen zu einer Tour) startet über einen dedizierten Anfasser (.excursion-drag-
-// handle, siehe Template) statt über die ganze Karte – @click.stop dort verhindert, dass ein reiner
-// (Nicht-Drag-)Klick auf den Anfasser zusätzlich die Detail-Ansicht öffnet. Nur noch in der
-// Touren-Gruppierung sichtbar (#106, siehe groupMode-Prop) – dort sind Tour-Karten direkt in
-// derselben Liste als Ablage-Ziele sichtbar (ExcursionsView.vue's groupMode==='tours'). In der
-// Kategorie-Gruppierung übernimmt stattdessen ausschließlich TourAssignDropdown.vue unten, da dort
-// keine Tour-Karten zum Ablegen sichtbar sind.
+// Tour-Zuordnungen als Checkliste (#226, #227):
+const tourAssignments = computed(() =>
+  excursionsStore.excursions.map((e) => ({
+    id: e.id,
+    title: e.title,
+    assigned: e.spot_ids.includes(props.spot.id),
+  })),
+);
+
+async function onToggleTour(excursionId: number) {
+  const excursion = excursionsStore.excursions.find((e) => e.id === excursionId);
+  if (!excursion) return;
+  const isAssigned = excursion.spot_ids.includes(props.spot.id);
+  const nextSpotIds = isAssigned
+    ? excursion.spot_ids.filter((id) => id !== props.spot.id)
+    : [...excursion.spot_ids, props.spot.id];
+  await excursionsStore.update(excursionId, {
+    title: excursion.title,
+    image_url: excursion.image_url ?? undefined,
+    note: excursion.note ?? undefined,
+    date: excursion.date ?? undefined,
+    spot_ids: nextSpotIds,
+  });
+}
+
+async function onCreateTour(title: string) {
+  const trimmed = title.trim();
+  if (!trimmed) return;
+  await excursionsStore.create({
+    title: trimmed,
+    spot_ids: [props.spot.id],
+  });
+}
+
+// Natives Drag (Zuordnen zu einer Tour) startet über den Tour-Zuordnen-Anfasser
 function onDragStart(event: DragEvent) {
   event.dataTransfer?.setData('text/spot-id', String(props.spot.id));
   if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
-}
-
-// TourAssignDropdown.vue's @select (#106) – reicht den gewählten Tour-Titel nur durch, die
-// eigentliche Zuordnung (bestehende Tour ergänzen oder neu anlegen) übernimmt die Elternkomponente
-// (ExcursionsView.vue's assignSpotToTourTitle()), die bereits Zugriff auf den Excursion-Store hat.
-function onTourSelected(title: string) {
-  emit('assign-tour', title);
 }
 
 // Spontanes Einplanen direkt auf einen Kalendertag, ohne vorher einen Ausflug anzulegen: legt
@@ -307,21 +328,12 @@ function onToggleDone() {
       </template>
       <RichTextDisplay v-if="spot.note" class="note" :content="spot.note" :format="spot.note_format" />
       <div class="card-actions">
-        <!-- #106: nur noch in der Touren-Gruppierung sichtbar, da dort echte Tour-Karten als
-             Drag-Ziele existieren (siehe groupMode-Prop/onDragStart im Script). -->
-        <button
-          v-if="groupMode === 'tours'"
-          type="button"
-          class="excursion-drag-handle"
-          draggable="true"
-          aria-label="Auf eine Tour ziehen, um sie dort als Station hinzuzufügen"
-          title="Auf eine Tour ziehen, um sie dort als Station hinzuzufügen"
+        <TourAssignDropdown
+          :tours="tourAssignments"
+          @toggle-tour="onToggleTour"
+          @create-tour="onCreateTour"
           @dragstart="onDragStart"
-          @click.stop
-        >
-          <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="14" group="navigation" /> Auf Tour ziehen
-        </button>
-        <TourAssignDropdown :options="tourOptions" @select="onTourSelected" />
+        />
         <button
           v-if="!isAccommodation"
           type="button"

@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
+import type { IconDef } from '../utils/icon';
+import AppIcon from './AppIcon.vue';
 
 // modelValue optional mit Default '': Aufrufer wie PackingListView.vue binden ein Record<string,
 // string>, dessen Schlüssel erst existiert, sobald einmal in das jeweilige Feld reingetippt wurde –
@@ -14,6 +16,8 @@ const props = withDefaults(
     // Dropdown-Liste, der gespeicherte Wert selbst bleibt reiner Text (kein eingebettetes Emoji),
     // damit ein case-insensitiver Lookup weiterhin einfach greift.
     iconFor?: (option: string) => string;
+    iconDefFor?: (option: string) => IconDef | undefined;
+    colorFor?: (option: string) => string | undefined;
   }>(),
   { modelValue: '' },
 );
@@ -68,8 +72,15 @@ defineExpose({ close: () => { open.value = false; } });
     />
     <ul class="options" v-if="open && filteredOptions.length">
       <li v-for="option in filteredOptions" :key="option" @mousedown.prevent="selectOption(option)">
-        <span v-if="iconFor" class="option-icon">{{ iconFor(option) }}</span>
-        {{ option }}
+        <span
+          v-if="iconDefFor?.(option) || iconFor?.(option) || colorFor?.(option)"
+          class="option-icon"
+          :style="colorFor?.(option) ? { color: colorFor(option) } : {}"
+        >
+          <AppIcon v-if="iconDefFor?.(option)" :icon="iconDefFor(option)!" :size="16" group="categories" />
+          <span v-else-if="iconFor?.(option)">{{ iconFor(option) }}</span>
+        </span>
+        <span class="option-label">{{ option }}</span>
       </li>
     </ul>
   </div>
@@ -105,14 +116,24 @@ defineExpose({ close: () => { open.value = false; } });
 }
 
 .options li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   padding: 6px 10px;
   font-size: 0.9rem;
   cursor: pointer;
 }
 
 .option-icon {
-  display: inline-block;
-  width: 1.3em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  flex-shrink: 0;
+}
+
+.option-label {
+  flex: 1;
 }
 
 .options li:hover {
