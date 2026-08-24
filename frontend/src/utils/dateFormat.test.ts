@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
-import { endOfWeek, formatDate, formatDateTime, formatWeekdayDate, startOfWeek } from './dateFormat';
+import { endOfWeek, formatDate, formatDateTime, formatTripDateRange, formatWeekdayDate, startOfWeek } from './dateFormat';
 import { useCalendarSettingsStore } from '../stores/calendarSettings';
 
 // Testumgebung ist 'node' (vite.config.ts), es gibt daher kein globales localStorage – ein
@@ -100,3 +100,45 @@ describe('endOfWeek', () => {
     expect([result.getFullYear(), result.getMonth(), result.getDate()]).toEqual([2026, 2, 7]);
   });
 });
+
+describe('formatTripDateRange (#212)', () => {
+  it('omits the year when before the trip in the same calendar year', () => {
+    const now = new Date(2026, 7, 1); // 01.08.2026
+    expect(formatTripDateRange('2026-08-10', '2026-08-20', now)).toBe('10.08 – 20.08');
+  });
+
+  it('omits the year when currently in the trip in the same calendar year', () => {
+    const now = new Date(2026, 7, 15); // 15.08.2026
+    expect(formatTripDateRange('2026-08-10', '2026-08-20', now)).toBe('10.08 – 20.08');
+  });
+
+  it('omits the year on the last day of the trip in the same calendar year', () => {
+    const now = new Date(2026, 7, 20); // 20.08.2026
+    expect(formatTripDateRange('2026-08-10', '2026-08-20', now)).toBe('10.08 – 20.08');
+  });
+
+  it('includes the year when in a calendar year prior to the trip', () => {
+    const now = new Date(2025, 11, 15); // 15.12.2025
+    expect(formatTripDateRange('2026-08-10', '2026-08-20', now)).toBe('10.08.2026 – 20.08.2026');
+  });
+
+  it('includes the year on the day after the trip ends and beyond', () => {
+    const now = new Date(2026, 7, 21); // 21.08.2026
+    expect(formatTripDateRange('2026-08-10', '2026-08-20', now)).toBe('10.08.2026 – 20.08.2026');
+  });
+
+  it('includes the year when trip spans multiple calendar years', () => {
+    const now = new Date(2026, 11, 29); // 29.12.2026
+    expect(formatTripDateRange('2026-12-28', '2027-01-05', now)).toBe('28.12.2026 – 05.01.2027');
+  });
+
+  it('respects dateFormat setting (iso / us)', () => {
+    const now = new Date(2026, 7, 21);
+    useCalendarSettingsStore().dateFormat = 'iso';
+    expect(formatTripDateRange('2026-08-10', '2026-08-20', now)).toBe('2026-08-10 – 2026-08-20');
+
+    useCalendarSettingsStore().dateFormat = 'us';
+    expect(formatTripDateRange('2026-08-10', '2026-08-20', now)).toBe('08/10/2026 – 08/20/2026');
+  });
+});
+

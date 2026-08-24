@@ -4,6 +4,8 @@ import { ref, watch } from 'vue';
 import { api, ApiError } from '../api/client';
 import { compressImage } from '../utils/imageCompression';
 import Modal from './Modal.vue';
+import AppIcon from './AppIcon.vue';
+import { ACTION_ICONS } from '../utils/actionIcons';
 
 const props = defineProps<{ modelValue: boolean }>();
 const emit = defineEmits<{ (e: 'update:modelValue', value: boolean): void }>();
@@ -127,6 +129,7 @@ function close() {
         <p v-if="error" class="hint error">{{ error }}</p>
 
         <Button type="submit" :disabled="submitting">
+          <AppIcon :icon="ACTION_ICONS.send" :size="15" group="actions" />
           {{ submitting ? 'Wird gesendet…' : 'Absenden' }}
         </Button>
       </form>

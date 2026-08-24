@@ -797,6 +797,17 @@ function linkedTitleFor(entry: CalendarEntry | null): string | null {
   return null;
 }
 
+function navigateToLinkedEntity() {
+  const entry = viewingEntry.value;
+  if (!entry) return;
+  viewingItem.value = null;
+  if (entry.spotId != null) {
+    router.push(`/excursions#spot-${entry.spotId}`);
+  } else if (entry.ideaId != null) {
+    router.push(`/excursions#excursion-${entry.ideaId}`);
+  }
+}
+
 function editViewingItem() {
   if (!viewingItem.value) return;
   startEdit(viewingItem.value);
@@ -1099,10 +1110,17 @@ function formatDate(date: string) {
       :placeholder-icon="viewingEntry ? (viewingEntry.iconDef ?? SCHEDULE_CATEGORY_META[viewingEntry.category].tabler) : undefined"
       @edit="editViewingItem"
     >
-      <p v-if="linkedTitleFor(viewingEntry)" class="detail-row">
+      <template #meta>
+        <span v-if="viewingItem" class="detail-badge">
+          <AppIcon :icon="FORM_FIELD_ICONS.date" :size="12" group="formFields" />
+          {{ formatDate(viewingItem.date) }}
+        </span>
+      </template>
+      <p v-if="linkedTitleFor(viewingEntry)" class="detail-row linked-entity-link" @click="navigateToLinkedEntity">
         <span class="detail-label">Verknüpft</span>
         <AppIcon :icon="viewingEntry?.iconDef ?? SECTION_ICON_DEFS.excursions" :size="15" group="categories" />
-        {{ linkedTitleFor(viewingEntry) }}
+        <span class="linked-entity-title">{{ linkedTitleFor(viewingEntry) }}</span>
+        <AppIcon :icon="ACTION_ICONS.scrollRight" :size="12" group="actions" class="linked-entity-chevron" />
       </p>
       <p v-if="viewingItem?.time" class="detail-row">
         <span class="detail-label">Zeit</span>
@@ -1410,4 +1428,36 @@ function formatDate(date: string) {
   flex: 1 1 100%;
 }
 
+/* --- Termin-Detail-Badge (#264) --- */
+.detail-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+/* --- Verknüpfte Entität anklickbar (#264) --- */
+.linked-entity-link {
+  cursor: pointer;
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  transition: background 0.15s;
+}
+
+.linked-entity-link:hover {
+  background: var(--color-hover);
+}
+
+.linked-entity-title {
+  flex: 1;
+  text-decoration: underline;
+  text-decoration-color: var(--color-text-secondary);
+  text-underline-offset: 2px;
+}
+
+.linked-entity-chevron {
+  margin-left: auto;
+  opacity: 0.5;
+}
+
 </style>
+
