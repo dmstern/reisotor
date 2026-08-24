@@ -113,14 +113,20 @@ function onDragStart(event: DragEvent) {
   align-items: center;
   gap: 6px;
   background: var(--color-hover);
-  border: none;
-  border-radius: 999px;
-  corner-shape: round;
-  padding: 3px 10px 3px 8px;
-  font-size: 0.72rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  padding: 4px 10px 4px 8px;
+  font-size: 0.8rem;
   color: var(--color-text-muted);
   cursor: grab;
   user-select: none;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.tour-assign-btn:hover {
+  background: var(--color-surface);
+  border-color: var(--color-border-strong);
 }
 
 .tour-assign-btn:active {

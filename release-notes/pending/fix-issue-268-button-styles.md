@@ -1,0 +1,1 @@
+- Button-Styles und kleine Aktions-Chips in Karten, Schubladen und Kalenderansichten optisch vereinheitlicht (Fixes #268).

@@ -860,13 +860,13 @@ function formatDate(date: string) {
         />
       </div>
       <div class="pager">
-        <button type="button" class="secondary page-btn" :disabled="!canGoPrev" @click="prevPage" aria-label="Vorherige Wochen">
+        <IconButton variant="secondary" size="sm" :disabled="!canGoPrev" aria-label="Vorherige Wochen" title="Vorherige Wochen" @click="prevPage">
           ‹
-        </button>
+        </IconButton>
         <span class="range-label">{{ visibleRangeLabel }}</span>
-        <button type="button" class="secondary page-btn" :disabled="!canGoNext" @click="nextPage" aria-label="Nächste Wochen">
+        <IconButton variant="secondary" size="sm" :disabled="!canGoNext" aria-label="Nächste Wochen" title="Nächste Wochen" @click="nextPage">
           ›
-        </button>
+        </IconButton>
       </div>
       <div class="jump-row">
         <Button variant="card-action" @click="jumpToToday">

@@ -566,36 +566,48 @@ function onToggleDone() {
   align-items: center;
   gap: 6px;
   background: var(--color-hover);
-  border: none;
-  border-radius: 999px;
-  corner-shape: round;
-  padding: 3px 10px 3px 8px;
-  font-size: 0.72rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  padding: 4px 10px 4px 8px;
+  font-size: 0.8rem;
   color: var(--color-text-muted);
   cursor: grab;
   -webkit-user-select: none;
   user-select: none;
+  transition: background 0.15s ease, border-color 0.15s ease;
 }
 
-/* Toggle statt Anfasser (kein Drag, nur Klick) - gleicher Chip-Grundstil wie die Anfasser oben für
-   optische Konsistenz, .active hebt den bereits gesetzten Status hervor (dieselbe Erfolgs-Farbe wie
-   .status.planned). */
+.calendar-drag-handle:hover,
+.excursion-drag-handle:hover {
+  background: var(--color-surface);
+  border-color: var(--color-border-strong);
+}
+
 .done-toggle {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   background: var(--color-hover);
-  border: none;
-  border-radius: 999px;
-  corner-shape: round;
-  padding: 3px 10px;
-  font-size: 0.72rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  padding: 4px 10px;
+  font-size: 0.8rem;
   color: var(--color-text-muted);
   cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.done-toggle:hover {
+  background: var(--color-surface);
+  border-color: var(--color-border-strong);
 }
 
 .done-toggle.active {
-  color: var(--color-success);
+  background: var(--color-primary-tint);
+  border-color: var(--color-primary);
+  color: var(--color-primary-dark);
   font-weight: 600;
 }
 

@@ -2,6 +2,7 @@
 import { computed, nextTick, watch, ref } from 'vue';
 import { MAX_DRAWER_WIDTH, MIN_DRAWER_WIDTH, useDrawersStore } from '../stores/drawers';
 import AppIcon from './AppIcon.vue';
+import IconButton from './primitives/IconButton.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import type { IconDef } from '../utils/icon';
 
@@ -120,27 +121,28 @@ function onResizeEnd() {
   <div class="drawer" :class="[side, { open, maximized, resizing }]" :style="{ '--drawer-width': `${width}px` }">
     <div class="drawer-backdrop" v-if="open" @click="emit('update:open', false)"></div>
     <div ref="panelEl" class="drawer-panel">
-      <button
+      <IconButton
         v-if="open"
-        type="button"
+        variant="secondary"
+        size="sm"
         class="maximize-btn"
-        :aria-pressed="maximized"
-        :aria-label="(maximized ? 'Verkleinern: ' : 'Maximieren: ') + label"
         :title="maximized ? 'Verkleinern' : 'Maximieren'"
+        :aria-label="(maximized ? 'Verkleinern: ' : 'Maximieren: ') + label"
         @click="toggleMaximize"
       >
-        <AppIcon :icon="maximized ? ACTION_ICONS.minimize : ACTION_ICONS.maximize" :size="16" group="actions" />
-      </button>
-      <button
+        <AppIcon :icon="maximized ? ACTION_ICONS.minimize : ACTION_ICONS.maximize" :size="15" group="actions" />
+      </IconButton>
+      <IconButton
         v-if="open"
-        type="button"
+        variant="secondary"
+        size="sm"
         class="close-drawer-btn"
-        :aria-label="'Schließen: ' + label"
         title="Schließen"
+        :aria-label="'Schließen: ' + label"
         @click="emit('update:open', false)"
       >
-        <AppIcon :icon="ACTION_ICONS.close" :size="16" group="actions" />
-      </button>
+        <AppIcon :icon="ACTION_ICONS.close" :size="15" group="actions" />
+      </IconButton>
       <div class="drawer-content"><slot /></div>
     </div>
     <!-- Bewusst AUSSERHALB von .drawer-panel (statt wie früher darin verschachtelt): .drawer-panel
@@ -357,28 +359,10 @@ function onResizeEnd() {
 }
 
 .close-drawer-btn {
-  display: flex;
   position: absolute;
   top: 8px;
   right: 8px;
   z-index: 14;
-  width: 28px;
-  height: 28px;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm-squircle);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-sm);
-  color: var(--color-text-muted);
-  cursor: pointer;
-  font-size: 0.95rem;
-  line-height: 1;
-}
-
-.close-drawer-btn:hover {
-  color: var(--color-primary-dark);
 }
 
 /* Desktop: Panel wird echtes Flex-Geschwisterelement (schiebt den Arbeitsbereich zur Seite),
@@ -533,23 +517,6 @@ function onResizeEnd() {
     top: 8px;
     right: 44px;
     z-index: 14;
-    width: 28px;
-    height: 28px;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-sm-squircle);
-    background: var(--color-surface);
-    box-shadow: var(--shadow-sm);
-    color: var(--color-text-muted);
-    cursor: pointer;
-    font-size: 0.95rem;
-    line-height: 1;
-  }
-
-  .maximize-btn:hover {
-    color: var(--color-primary-dark);
   }
 
   /* Maximiert: Panel verlässt den Flex-Verbund und legt sich als Vollbild-Overlay über den
