@@ -1926,7 +1926,7 @@ async function removeSpot(id: number) {
                 <input v-model="excursionForm.title" type="text" placeholder="Titel" required />
               </FormField>
               <FormField icon="note" label="Notiz">
-                <RichTextEditor v-model="excursionForm.note" placeholder="Notiz (optional)" compact />
+                <RichTextEditor v-model="excursionForm.note" placeholder="Notiz (optional)" compact expandable />
               </FormField>
               <FormField icon="date" label="Datum (optional – sonst „In Planung“)">
                 <input v-model="excursionForm.date" type="date" />
@@ -2056,7 +2056,7 @@ async function removeSpot(id: number) {
                 <input v-model="editExcursionForm.title" type="text" placeholder="Titel" required />
               </FormField>
               <FormField icon="note" label="Notiz">
-                <RichTextEditor v-model="editExcursionForm.note" placeholder="Notiz (optional)" compact />
+                <RichTextEditor v-model="editExcursionForm.note" placeholder="Notiz (optional)" compact expandable />
               </FormField>
               <FormField icon="date" label="Datum (optional – sonst „In Planung“)">
                 <input v-model="editExcursionForm.date" type="date" />
@@ -2352,7 +2352,7 @@ async function removeSpot(id: number) {
               <LocationPicker v-if="spotPickerOpen" v-model="spotManualPin" :center="spotPickerCenter"
                 :reference-points="spotReferencePoints" />
               <FormField icon="note" label="Notiz">
-                <RichTextEditor v-model="spotForm.note" placeholder="Notiz (optional)" compact />
+                <RichTextEditor v-model="spotForm.note" placeholder="Notiz (optional)" compact expandable />
               </FormField>
               <fieldset class="collapsible-fieldset">
                 <legend>
@@ -2578,7 +2578,7 @@ async function removeSpot(id: number) {
               <LocationPicker v-if="editSpotPickerOpen" v-model="editSpotManualPin" :center="spotPickerCenter"
                 :reference-points="editSpotReferencePoints" />
               <FormField icon="note" label="Notiz">
-                <RichTextEditor v-model="editSpotForm.note" placeholder="Notiz (optional)" compact />
+                <RichTextEditor v-model="editSpotForm.note" placeholder="Notiz (optional)" compact expandable />
               </FormField>
               <fieldset class="collapsible-fieldset">
                 <legend>
@@ -2651,16 +2651,16 @@ async function removeSpot(id: number) {
               <p class="track-warning-intro">
                 Reisotor zeichnet deinen Weg während des Ausflugs auf. Bitte beachte:
               </p>
-              <ul class="track-warning-points">
-                <li>
-                  <strong><AppIcon :icon="ACTION_ICONS.myLocation" :size="15" group="actions" /> Standort-Berechtigung:</strong>
-                  Dein Browser benötigt die Berechtigung, auf deinen Standort zuzugreifen.
-                </li>
-                <li>
-                  <strong><AppIcon :icon="ACTION_ICONS.history" :size="15" group="actions" /> App geöffnet lassen:</strong>
-                  Da Reisotor im Browser/als PWA läuft, kann die Aufzeichnung pausieren, wenn der Browser im Hintergrund vollständig geschlossen wird.
-                </li>
-              </ul>
+              <div class="track-warning-points">
+                <div class="track-warning-point">
+                  <h4><AppIcon :icon="ACTION_ICONS.myLocation" :size="15" group="actions" /> Standort-Berechtigung</h4>
+                  <p>Dein Browser benötigt die Berechtigung, auf deinen Standort zuzugreifen.</p>
+                </div>
+                <div class="track-warning-point">
+                  <h4><AppIcon :icon="ACTION_ICONS.history" :size="15" group="actions" /> App geöffnet lassen</h4>
+                  <p>Da Reisotor im Browser/als PWA läuft, kann die Aufzeichnung pausieren, wenn der Browser im Hintergrund vollständig geschlossen wird.</p>
+                </div>
+              </div>
               <label class="checkbox-option warning-dismiss">
                 <input type="checkbox" v-model="trackWarningDismissed" />
                 Diesen Hinweis nicht mehr anzeigen
@@ -3303,7 +3303,7 @@ async function removeSpot(id: number) {
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-2);
+  padding: var(--space-3);
   overflow: hidden;
 }
 
@@ -3317,7 +3317,7 @@ async function removeSpot(id: number) {
   align-self: flex-end;
   margin-top: auto;
   display: flex;
-  gap: var(--space-1);
+  gap: var(--space-2);
 }
 
 .banner-edit-btn {
@@ -3393,25 +3393,31 @@ async function removeSpot(id: number) {
 }
 
 .track-warning-modal .track-warning-points {
-  list-style: none;
-  padding: 0;
-  margin: 0 0 var(--space-3);
   display: flex;
   flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.track-warning-modal .track-warning-point h4 {
+  margin: 0 0 4px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--color-primary-dark);
+  display: flex;
+  align-items: center;
   gap: var(--space-2);
 }
 
-.track-warning-modal .track-warning-points li {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-2);
+.track-warning-modal .track-warning-point p {
+  margin: 0;
   font-size: 0.88rem;
-  line-height: 1.4;
-  color: var(--color-text);
+  line-height: 1.45;
+  color: var(--color-text-muted);
 }
 
 .track-warning-modal .warning-dismiss {
-  margin-top: var(--space-3);
+  margin-top: var(--space-2);
   font-size: 0.85rem;
   color: var(--color-text-muted);
 }
