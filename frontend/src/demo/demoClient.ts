@@ -107,6 +107,28 @@ function idFromPath(path: string): number | undefined {
 
 let nextId = 1000;
 
+function syncDemoIdeaSchedule(ideaId: number, title: string, date?: string | null, tripId?: number) {
+  const schedule = store['/schedule'] as Record<string, unknown>[];
+  const existingIdx = schedule.findIndex((s) => s.idea_id === ideaId);
+  if (date) {
+    if (existingIdx !== -1) {
+      schedule[existingIdx] = { ...schedule[existingIdx], date, title };
+    } else {
+      schedule.push({
+        id: nextId++,
+        trip_id: tripId ?? 1,
+        date,
+        title,
+        idea_id: ideaId,
+        spot_id: null,
+        category: 'excursion',
+      });
+    }
+  } else if (existingIdx !== -1) {
+    schedule.splice(existingIdx, 1);
+  }
+}
+
 function delay(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 120));
 }
@@ -356,23 +378,8 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
     const created = { ...(body ?? {}), id };
     store[collection] = [...store[collection], created];
 
-    // Synchronisation von Ausflügen/Touren (/ideas) und Kalender (/schedule) beim Einplanen
-    if (collection === '/ideas' && body?.date) {
-      const dateStr = String(body.date);
-      const existingSched = store['/schedule']?.find((s) => s.idea_id === id);
-      if (existingSched) {
-        existingSched.date = dateStr;
-      } else {
-        store['/schedule'].push({
-          id: nextId++,
-          trip_id: body.trip_id ?? 1,
-          date: dateStr,
-          title: body.title ?? '',
-          idea_id: id,
-          spot_id: null,
-          category: 'excursion',
-        });
-      }
+    if (collection === '/ideas') {
+      syncDemoIdeaSchedule(id, (body?.title as string) ?? '', body?.date as string | null | undefined, body?.trip_id as number | undefined);
     } else if (collection === '/schedule' && body?.idea_id) {
       const ideaId = Number(body.idea_id);
       const existingIdea = store['/ideas']?.find((e) => e.id === ideaId);
@@ -388,28 +395,10 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
     store[collection] = store[collection].map((item) => ((item as { id: number }).id === id ? { ...item, ...(body ?? {}) } : item));
     const updated = store[collection].find((item) => (item as { id: number }).id === id);
 
-    // Synchronisation von Ausflügen/Touren (/ideas) und Kalender (/schedule)
     if (collection === '/ideas' && id != null) {
-      if (body && 'date' in body) {
-        const dateVal = body.date ? String(body.date) : null;
-        const existingSched = store['/schedule']?.find((s) => s.idea_id === id);
-        if (dateVal) {
-          if (existingSched) {
-            existingSched.date = dateVal;
-          } else {
-            store['/schedule'].push({
-              id: nextId++,
-              trip_id: (updated as { trip_id?: number })?.trip_id ?? 1,
-              date: dateVal,
-              title: (updated as { title?: string })?.title ?? '',
-              idea_id: id,
-              spot_id: null,
-              category: 'excursion',
-            });
-          }
-        } else if (existingSched) {
-          store['/schedule'] = store['/schedule'].filter((s) => s.idea_id !== id);
-        }
+      const updatedIdea = store['/ideas'].find((item) => (item as { id: number }).id === id) as Record<string, unknown> | undefined;
+      if (updatedIdea) {
+        syncDemoIdeaSchedule(id, (updatedIdea.title as string) ?? '', updatedIdea.date as string | null | undefined, updatedIdea.trip_id as number | undefined);
       }
     } else if (collection === '/schedule' && id != null) {
       const schedItem = updated as { idea_id?: number | null; date?: string } | undefined;
@@ -431,15 +420,15 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
         const idea = store['/ideas']?.find((e) => e.id === schedItem.idea_id);
         if (idea) idea.date = null;
       }
-    } else if (collection === '/ideas' && id != null) {
-      store['/schedule'] = store['/schedule'].filter((s) => s.idea_id !== id);
     }
 
     store[collection] = store[collection].filter((item) => (item as { id: number }).id !== id);
+    if (collection === '/ideas' && id != null) {
+      syncDemoIdeaSchedule(id, '', null);
+    }
     persist();
     return undefined as T;
   }
 
   return undefined as T;
 }
-
