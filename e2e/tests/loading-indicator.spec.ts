@@ -43,8 +43,8 @@ test.describe('Zentrale Lade-Animation', () => {
     await expect(page.locator('.toast-pill.create .label')).toHaveText('Legt an…');
   });
 
-  test('Toast lässt sich in den Profil-Einstellungen abschalten', async ({ page }) => {
-    await page.goto('/profile?tab=notifications');
+  test('Toast lässt sich in den Einstellungen abschalten', async ({ page }) => {
+    await page.goto('/settings?tab=notifications');
     await page.getByLabel('Detaillierte Lade-/Speicher-Meldungen anzeigen').uncheck();
 
     await page.goto('/packing');

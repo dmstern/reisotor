@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 // Regressionsnetz für den weichen Löschvorgang (Papierkorb, siehe CLAUDE.md/routes/trash.ts):
 // Löschen soll nicht endgültig sein, sondern für 60s eine "Löschen rückgängig machen"-Möglichkeit
 // direkt an der Stelle des Objekts bieten sowie dauerhaft über einen Papierkorb im
-// Einstellungsmenü (Profil, Avatar-Klick) wiederherstellbar sein. Nutzt ToDo als Stellvertreter für
+// Einstellungsmenü (Einstellungen, Avatar-Klick) wiederherstellbar sein. Nutzt ToDo als Stellvertreter für
 // alle elf betroffenen Objekttypen (identisches Muster, siehe useUndoableDelete.ts).
 
 test('deleting an item shows an inline "Löschen rückgängig machen" placeholder, and undo restores it', async ({
@@ -41,10 +41,10 @@ test('the trash view (reachable via profile/avatar) lists a deleted item and res
   await page.waitForTimeout(300); // Transition-Group-Übergang abwarten (0.2s, siehe style.css)
   await expect(page.locator('.check', { hasText: 'E2E Papierkorb-Test-Aufgabe' })).toHaveCount(0);
 
-  // Erreichbarkeit über das Einstellungsmenü (Klick auf den Avatar -> Profil -> "Daten"-Tab ->
+  // Erreichbarkeit über das Einstellungsmenü (Klick auf den Avatar -> Einstellungen -> "Daten"-Tab ->
   // Papierkorb-Karte).
   await page.locator('.profile-link').click();
-  await expect(page).toHaveURL(/\/profile$/);
+  await expect(page).toHaveURL(/\/settings$/);
   await page.getByRole('tab', { name: 'Daten' }).click();
   await page.getByRole('link', { name: 'Papierkorb öffnen' }).click();
   await expect(page).toHaveURL(/\/trash$/);

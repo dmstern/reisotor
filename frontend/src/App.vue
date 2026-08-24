@@ -70,7 +70,7 @@ watch(
 watch(
   () => [tripStore.loaded, tripStore.currentTripId, route.name] as const,
   ([loaded, currentTripId, name]) => {
-    if (loaded && currentTripId == null && name !== 'trips' && name !== 'profile') {
+    if (loaded && currentTripId == null && name !== 'trips' && name !== 'settings') {
       router.push({ name: 'trips' });
     }
   },

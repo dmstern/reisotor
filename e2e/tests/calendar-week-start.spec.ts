@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 // Regressionstest für zwei zusammenhängende, per Nutzer-Feedback gemeldete Bugs im Kalender-
 // Monatsraster (ScheduleView.vue's monthWeeks, utils/dateFormat.ts's startOfWeek()):
 //
-// 1. Der Wochenanfang der Monatsansicht wich von der Profil-Einstellung "Wochenanfang" ab (immer
+// 1. Der Wochenanfang der Monatsansicht wich von der Einstellungen-Einstellung "Wochenanfang" ab (immer
 //    ein Tag zu früh) - Ursache war NICHT startOfWeek() selbst (das war schon korrekt), sondern
 //    ScheduleView.vue's toIso()/todayStr(), die `date.toISOString().slice(0, 10)` nutzten. Das
 //    rechnet über UTC um und verschiebt den Kalendertag in jeder Zeitzone östlich von UTC einen Teil
