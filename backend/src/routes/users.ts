@@ -1,6 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify';
 import bcrypt from 'bcrypt';
-import { db } from '../db/index.js';
+import { db, hasColumn, hasTable } from '../db/index.js';
 import { isUserAdmin } from '../registrationConfig.js';
 
 interface UserRow {
@@ -199,7 +199,62 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
     if (!targetUser) {
       return reply.code(404).send({ error: 'Nutzer nicht gefunden' });
     }
-    db.prepare('DELETE FROM users WHERE id = ?').run(targetUserId);
+    const deleteUserTx = db.transaction((id: number) => {
+      const safeSetNull = (table: string, column: string) => {
+        if (hasTable(table) && hasColumn(table, column)) {
+          db.prepare(`UPDATE ${table} SET ${column} = NULL WHERE ${column} = ?`).run(id);
+        }
+      };
+      const safeDelete = (table: string, column: string) => {
+        if (hasTable(table) && hasColumn(table, column)) {
+          db.prepare(`DELETE FROM ${table} WHERE ${column} = ?`).run(id);
+        }
+      };
+
+      // 1. SET NULL für optionale Nutzer-Referenzen
+      safeSetNull('packing_items', 'assigned_to_user_id');
+      safeSetNull('packing_items', 'owner_id');
+      safeSetNull('shopping_items', 'assigned_to_user_id');
+      safeSetNull('todo_items', 'assigned_to_user_id');
+      safeSetNull('ideas', 'created_by');
+      safeSetNull('ideas', 'suggested_by_user_id');
+      safeSetNull('ideas', 'paid_by_user_id');
+      safeSetNull('spots', 'created_by');
+      safeSetNull('spots', 'paid_by_user_id');
+      safeSetNull('notes', 'created_by');
+      safeSetNull('budget_items', 'paid_by_user_id');
+      safeSetNull('accommodation', 'paid_by_user_id');
+      safeSetNull('trip_members', 'invited_by_user_id');
+
+      // 2. Löschen abhängiger Zeilen in Verknüpfungstabellen ohne ON DELETE CASCADE
+      safeDelete('trip_members', 'user_id');
+      safeDelete('trip_activity', 'actor_user_id');
+      safeDelete('sessions', 'user_id');
+      safeDelete('attachments', 'uploaded_by');
+      safeDelete('spot_likes', 'user_id');
+      safeDelete('spot_comments', 'author_id');
+      safeDelete('idea_likes', 'user_id');
+      safeDelete('idea_comments', 'author_id');
+      safeDelete('diary_likes', 'user_id');
+      safeDelete('diary_comments', 'author_id');
+      safeDelete('note_likes', 'user_id');
+      safeDelete('note_comments', 'author_id');
+      safeDelete('diary_entries', 'author_id');
+      safeDelete('diary_entry_editors', 'user_id');
+      if (hasTable('budget_transfers') && hasColumn('budget_transfers', 'from_user_id')) {
+        db.prepare('DELETE FROM budget_transfers WHERE from_user_id = ? OR to_user_id = ?').run(id, id);
+      }
+      safeDelete('push_subscriptions', 'user_id');
+      safeDelete('push_preferences', 'user_id');
+      safeDelete('drafts', 'user_id');
+      safeDelete('location_tracks', 'user_id');
+      safeDelete('user_icon_settings', 'user_id');
+
+      // 3. Nutzerzeile löschen
+      db.prepare('DELETE FROM users WHERE id = ?').run(id);
+    });
+
+    deleteUserTx(targetUserId);
     return reply.code(204).send();
   });
 

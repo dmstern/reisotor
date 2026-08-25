@@ -160,6 +160,37 @@ describe('Admin User Management routes (#224)', () => {
     expect(meRes.json().must_change_password).toBe(false);
   });
 
+  it('allows admin to delete a user with existing foreign key references', async () => {
+    const { db } = await import('../../src/db/index.js');
+
+    // Create user with references
+    const res = db
+      .prepare('INSERT INTO users (username, password_hash, avatar) VALUES (?, ?, ?)')
+      .run('referenced_user', bcrypt.hashSync('pass', 10), '👤');
+    const targetId = res.lastInsertRowid as number;
+
+    // Create dummy trip & references
+    const tripRes = db.prepare('INSERT INTO trips (name, start_date, end_date) VALUES (?, ?, ?)').run('Test Trip FK', '2026-08-01', '2026-08-10');
+    const tripId = tripRes.lastInsertRowid as number;
+
+    db.prepare('INSERT INTO trip_members (trip_id, user_id, created_at) VALUES (?, ?, ?)').run(tripId, targetId, '2026-08-01T00:00:00Z');
+    db.prepare('INSERT INTO packing_items (label, owner_id) VALUES (?, ?)').run('Shirt', targetId);
+
+    // Delete user
+    const delRes = await app.inject({
+      method: 'DELETE',
+      url: `/api/users/${targetId}`,
+      headers: { cookie: adminCookie },
+    });
+    expect(delRes.statusCode).toBe(204);
+
+    // Verify foreign key references were cleaned up/set to NULL
+    const member = db.prepare('SELECT * FROM trip_members WHERE user_id = ?').get(targetId);
+    expect(member).toBeUndefined();
+    const item = db.prepare('SELECT owner_id FROM packing_items WHERE label = ?').get('Shirt') as { owner_id: number | null };
+    expect(item.owner_id).toBeNull();
+  });
+
   it('allows admin to delete a user, but not themselves', async () => {
     // Delete self attempt
     const selfDel = await app.inject({

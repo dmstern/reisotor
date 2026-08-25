@@ -281,7 +281,7 @@ onMounted(async () => {
   usernameForm.value.username = auth.user?.username ?? '';
   loading.value = false;
   buildInfoStore.load();
-  if (auth.user?.is_admin) loadUserList();
+  if (auth.user?.is_admin && activeTab.value === 'users') loadUserList();
   if (pushSupported) {
     pushEnabled.value = !!(await getExistingSubscription());
     if (pushEnabled.value) await notificationPrefs.load();

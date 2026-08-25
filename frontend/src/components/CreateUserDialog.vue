@@ -24,20 +24,27 @@ const error = ref('');
 
 const AVATAR_OPTIONS = ['🙂', '🧑', '👩', '👨', '😎', '🥳', '🤓', '🥸', '🧙', '🦊', '🦁', '🐢', '🐱', '🐶'];
 
+function resetForm() {
+  username.value = '';
+  email.value = '';
+  password.value = '';
+  isAdmin.value = false;
+  avatar.value = '🙂';
+  error.value = '';
+}
+
 watch(
   () => props.modelValue,
   (open) => {
-    if (!open) return;
-    username.value = '';
-    email.value = '';
-    password.value = '';
-    isAdmin.value = false;
-    avatar.value = '🙂';
-    error.value = '';
+    if (open) {
+      resetForm();
+    }
   },
+  { immediate: true },
 );
 
 function close() {
+  resetForm();
   emit('update:modelValue', false);
 }
 
@@ -121,6 +128,8 @@ async function submit() {
             type="button"
             class="avatar-option"
             :class="{ active: avatar === e }"
+            :aria-pressed="avatar === e"
+            :aria-label="`Avatar-Symbol ${e}`"
             @click="avatar = e"
           >
             {{ e }}

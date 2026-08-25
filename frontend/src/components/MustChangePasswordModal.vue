@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+import Modal from './Modal.vue';
 import Button from './primitives/Button.vue';
 import PasswordInput from './PasswordInput.vue';
 import AppIcon from './AppIcon.vue';
@@ -54,94 +55,66 @@ async function onSubmit() {
 </script>
 
 <template>
-  <Teleport to="body">
-    <div class="overlay">
-      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-        <div class="modal-head">
-          <h2 id="modal-title">
-            <AppIcon :icon="ACTION_ICONS.warning" :size="18" group="actions" />
-            Passwortänderung erforderlich
-          </h2>
-        </div>
-        <div class="modal-body">
-          <p class="intro">
-            Du verwendest aktuell ein Standard- oder Initial-Passwort. Bitte vergib ein neues, sicheres Passwort, um Reisotor zu nutzen.
-          </p>
-
-          <form @submit.prevent="onSubmit" class="password-form">
-            <div class="field">
-              <label for="current-pass">Aktuelles Passwort</label>
-              <PasswordInput
-                id="current-pass"
-                v-model="currentPassword"
-                placeholder="Aktuelles Passwort"
-                required
-                autocomplete="current-password"
-              />
-            </div>
-
-            <div class="field">
-              <label for="new-pass">Neues Passwort</label>
-              <PasswordInput
-                id="new-pass"
-                v-model="newPassword"
-                placeholder="Mindestens 6 Zeichen"
-                required
-                autocomplete="new-password"
-              />
-            </div>
-
-            <div class="field">
-              <label for="confirm-pass">Neues Passwort wiederholen</label>
-              <PasswordInput
-                id="confirm-pass"
-                v-model="confirmPassword"
-                placeholder="Neues Passwort wiederholen"
-                required
-                autocomplete="new-password"
-              />
-            </div>
-
-            <p v-if="error" class="error-msg">{{ error }}</p>
-
-            <div class="actions">
-              <Button type="submit" class="primary" :disabled="submitting">
-                <template v-if="submitting">Speichere…</template>
-                <template v-else>Passwort ändern</template>
-              </Button>
-            </div>
-          </form>
-        </div>
-      </div>
+  <Modal :model-value="true" hide-header>
+    <div class="modal-head-custom">
+      <h2>
+        <AppIcon :icon="ACTION_ICONS.warning" :size="18" group="actions" />
+        Passwortänderung erforderlich
+      </h2>
     </div>
-  </Teleport>
+    <p class="intro">
+      Du verwendest aktuell ein Standard- oder Initial-Passwort. Bitte vergib ein neues, sicheres Passwort, um Reisotor zu nutzen.
+    </p>
+
+    <form @submit.prevent="onSubmit" class="password-form">
+      <div class="field">
+        <label for="current-pass">Aktuelles Passwort</label>
+        <PasswordInput
+          id="current-pass"
+          v-model="currentPassword"
+          placeholder="Aktuelles Passwort"
+          required
+          autocomplete="current-password"
+        />
+      </div>
+
+      <div class="field">
+        <label for="new-pass">Neues Passwort</label>
+        <PasswordInput
+          id="new-pass"
+          v-model="newPassword"
+          placeholder="Mindestens 6 Zeichen"
+          required
+          autocomplete="new-password"
+        />
+      </div>
+
+      <div class="field">
+        <label for="confirm-pass">Neues Passwort wiederholen</label>
+        <PasswordInput
+          id="confirm-pass"
+          v-model="confirmPassword"
+          placeholder="Neues Passwort wiederholen"
+          required
+          autocomplete="new-password"
+        />
+      </div>
+
+      <p v-if="error" class="error-msg">{{ error }}</p>
+
+      <div class="actions">
+        <Button type="submit" class="primary" :disabled="submitting">
+          <template v-if="submitting">Speichere…</template>
+          <template v-else>Passwort ändern</template>
+        </Button>
+      </div>
+    </form>
+  </Modal>
 </template>
 
 <style scoped>
-.overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(11, 11, 11, 0.65);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: var(--space-4);
-}
-
-.modal {
-  background: var(--color-surface);
-  border-radius: var(--radius-lg-squircle);
-  corner-shape: squircle;
-  padding: var(--space-5);
-  max-width: 440px;
-  width: 100%;
-  box-shadow: var(--shadow-md);
-}
-
-.modal-head h2 {
-  margin: 0;
+.modal-head-custom h2 {
+  margin: 0 0 var(--space-3) 0;
   font-size: 1.15rem;
   color: var(--color-primary-dark);
   display: flex;

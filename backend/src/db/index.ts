@@ -319,12 +319,12 @@ function dropColumnIfExists(table: string, column: string) {
   }
 }
 
-function hasColumn(table: string, column: string) {
+export function hasColumn(table: string, column: string) {
   const existing = db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
   return existing.some((c) => c.name === column);
 }
 
-function hasTable(name: string) {
+export function hasTable(name: string) {
   return !!db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?").get(name);
 }
 
