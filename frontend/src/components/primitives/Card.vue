@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref, computed } from 'vue';
 import type { IconDef } from '../../utils/icon';
 import AppIcon from '../AppIcon.vue';
 
@@ -6,23 +7,28 @@ import AppIcon from '../AppIcon.vue';
  * Surface-Primitive für alle Karten im Reisotor (SpotCard, ExcursionCard, BudgetPotCard,
  * Dashboard-Kacheln, Tages-Stationen, Focus-Panels, …) – siehe Issue #239.
  */
-withDefaults(
+const props = withDefaults(
   defineProps<{
     /** Card-Variante:
      * - 'default': Standard-Fläche (weiß/surface, shadow-sm, padding var(--space-4))
      * - 'muted': Hinterlegte Fläche (background var(--color-hover))
-     * - 'condensed': Kompaktes Padding (var(--space-2) var(--space-3)) für dichte Listen & Mini-Karten
      * - 'flat': Flacher Rand ohne Schatten
      * - 'elevated': Erhöhter Schatten (shadow-md) für schwebende Overlays
      * - 'tile': Dashboard-Kachel mit leicht transparentem Hintergrund, schwebendem Kreis-Icon & Hover-Lift
      */
-    variant?: 'default' | 'muted' | 'condensed' | 'flat' | 'elevated' | 'tile';
-    /** Optionale URL für ein Bild-Banner am oberen oder linken Rand der Karte. */
+    variant?: 'default' | 'muted' | 'flat' | 'elevated' | 'tile';
+    /** Ob die Karte sich im komprimierten/kompakten Zustand befindet. */
+    condensed?: boolean;
+    /** Ob die Karte sich im aufgeklappten Zustand befindet (Invers zu condensed). */
+    expanded?: boolean;
+    /** Ob die Karte interaktiv per Klick aufklappbar/zuklappbar ist (wie SpotCard/ExcursionCard in der Karten-View). */
+    expandable?: boolean;
+    /** Optionale URL für ein Bild-Banner der Karte. */
     bannerUrl?: string;
     /** Alt-Text für das Bild-Banner. */
     bannerAlt?: string;
-    /** Ausrichtung des Banners: 'top' (oben, Standard) oder 'left' (links als schmale Miniatur/Vorschaubild). */
-    bannerPosition?: 'top' | 'left';
+    /** Ausrichtung des Banners: 'top' (oben), 'left' (links als Schmal-Vorschaubild) oder 'auto' (links wenn condensed, oben wenn expanded). */
+    bannerPosition?: 'top' | 'left' | 'auto';
     /** Hebt die Karte mit dem Notiz/Live-Sync Highlight-Rand hervor (.new-highlight). */
     highlight?: boolean;
     /** Akzentfarbe für die 'tile'-Variante (Hex oder CSS var). */
@@ -32,12 +38,49 @@ withDefaults(
   }>(),
   {
     variant: 'default',
+    condensed: undefined,
+    expanded: undefined,
+    expandable: false,
     bannerAlt: '',
-    bannerPosition: 'top',
+    bannerPosition: 'auto',
     highlight: false,
     tileColor: '#2a7f74',
   },
 );
+
+const emit = defineEmits<{
+  (e: 'update:condensed', value: boolean): void;
+  (e: 'update:expanded', value: boolean): void;
+  (e: 'toggle-expand', value: boolean): void;
+  (e: 'click', event: MouseEvent): void;
+}>();
+
+// Interner Zustand, falls condensed/expanded nicht direkt per Prop/v-model gesteuert werden
+const internalCondensed = ref(true);
+
+const isCondensed = computed(() => {
+  if (props.condensed !== undefined) return props.condensed;
+  if (props.expanded !== undefined) return !props.expanded;
+  return props.expandable ? internalCondensed.value : false;
+});
+
+const isExpanded = computed(() => !isCondensed.value);
+
+const effectiveBannerPosition = computed(() => {
+  if (props.bannerPosition !== 'auto') return props.bannerPosition;
+  return isCondensed.value ? 'left' : 'top';
+});
+
+function handleCardClick(event: MouseEvent) {
+  emit('click', event);
+  if (props.expandable) {
+    const nextCondensed = !isCondensed.value;
+    internalCondensed.value = nextCondensed;
+    emit('update:condensed', nextCondensed);
+    emit('update:expanded', !nextCondensed);
+    emit('toggle-expand', !nextCondensed);
+  }
+}
 </script>
 
 <template>
@@ -46,12 +89,16 @@ withDefaults(
     :class="[
       variant !== 'default' ? `card--${variant}` : undefined,
       {
+        'card--condensed': isCondensed,
+        'card--expanded': isExpanded,
+        'card--expandable': expandable,
         'new-highlight': highlight,
         'card--has-banner': bannerUrl || $slots.banner,
-        'card--banner-left': (bannerUrl || $slots.banner) && bannerPosition === 'left',
+        'card--banner-left': (bannerUrl || $slots.banner) && effectiveBannerPosition === 'left',
       },
     ]"
     :style="variant === 'tile' && tileColor ? { background: tileColor.startsWith('#') ? `${tileColor}0d` : tileColor } : undefined"
+    @click="handleCardClick"
   >
     <!-- Tile Badge Icon (Dashboard Style) -->
     <div
@@ -75,9 +122,24 @@ withDefaults(
       <div v-if="$slots.header" class="card-header">
         <slot name="header" />
       </div>
+
       <div class="card-body">
+        <!-- Hauptinhalt -->
         <slot />
+
+        <!-- Inhalt nur im komprimierten (condensed) Zustand -->
+        <div v-if="isCondensed && $slots.condensed" class="card-condensed-slot">
+          <slot name="condensed" />
+        </div>
+
+        <!-- Details nur im aufgeklappten (expanded) Zustand -->
+        <div v-if="isExpanded && ($slots.expanded || $slots.details)" class="card-expanded-slot">
+          <slot name="expanded">
+            <slot name="details" />
+          </slot>
+        </div>
       </div>
+
       <div v-if="$slots.footer" class="card-footer">
         <slot name="footer" />
       </div>
@@ -86,13 +148,13 @@ withDefaults(
 </template>
 
 <style scoped>
+.card {
+  transition: padding 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
 /* Varianten-Styles von Card.vue */
 .card--muted {
   background: var(--color-hover);
-}
-
-.card--condensed {
-  padding: var(--space-2) var(--space-3);
 }
 
 .card--flat {
@@ -130,6 +192,26 @@ withDefaults(
   justify-content: center;
 }
 
+/* Expandable Interactive Card (Karten-View Spot/Tour Verhalten) */
+.card--expandable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.card--expandable:hover {
+  border-color: var(--color-primary-dark);
+}
+
+.card--expandable.card--expanded {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-md);
+}
+
+/* Condensed (Kompakter Zustand) */
+.card--condensed:not(.card--banner-left) {
+  padding: var(--space-2) var(--space-3);
+}
+
 /* Banner Top Styles */
 .card--has-banner:not(.card--banner-left) {
   padding-top: 0;
@@ -145,6 +227,7 @@ withDefaults(
   overflow: hidden;
   position: relative;
   background: var(--color-hover);
+  transition: height 0.2s ease;
 }
 
 .card--condensed.card--has-banner:not(.card--banner-left) .card-banner {
@@ -174,6 +257,7 @@ withDefaults(
   position: relative;
   overflow: hidden;
   background: var(--color-hover);
+  transition: width 0.2s ease, flex-basis 0.2s ease;
 }
 
 .card--banner-left.card--condensed .card-banner {
@@ -210,5 +294,15 @@ withDefaults(
   margin-top: var(--space-3);
   padding-top: var(--space-2);
   border-top: 1px solid var(--color-border);
+}
+
+.card-expanded-slot {
+  margin-top: var(--space-2);
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 </style>

@@ -9,19 +9,24 @@ const meta: Meta<typeof Card> = {
   argTypes: {
     variant: {
       control: 'select',
-      options: ['default', 'muted', 'condensed', 'flat', 'elevated', 'tile'],
+      options: ['default', 'muted', 'flat', 'elevated', 'tile'],
     },
+    condensed: { control: 'boolean' },
+    expanded: { control: 'boolean' },
+    expandable: { control: 'boolean' },
     bannerUrl: { control: 'text' },
     bannerPosition: {
       control: 'select',
-      options: ['top', 'left'],
+      options: ['auto', 'top', 'left'],
     },
     highlight: { control: 'boolean' },
     tileColor: { control: 'color' },
   },
   args: {
     variant: 'default',
-    bannerPosition: 'top',
+    condensed: false,
+    expandable: false,
+    bannerPosition: 'auto',
     highlight: false,
     tileColor: '#2a7f74',
   },
@@ -56,22 +61,6 @@ export const Muted: Story = {
       <Card v-bind="args" style="max-width: 400px;">
         <h3 style="margin: 0 0 8px;">Hinterlegte Karte (Muted)</h3>
         <p style="margin: 0;">Hinterlegter Hintergrund (--color-hover) für Sekundär-Sektionen oder inaktive Elemente.</p>
-      </Card>
-    `,
-  }),
-};
-
-export const Condensed: Story = {
-  args: { variant: 'condensed' },
-  render: (args) => ({
-    components: { Card },
-    setup() {
-      return { args };
-    },
-    template: `
-      <Card v-bind="args" style="max-width: 400px;">
-        <h4 style="margin: 0 0 4px;">Kompakte Karte (Condensed / Mini)</h4>
-        <p style="margin: 0; font-size: 0.85rem;">Kompakteres Padding für dichte Listen-Einträge, Mini-Spots oder Tages-Stationen.</p>
       </Card>
     `,
   }),
@@ -129,11 +118,12 @@ export const DashboardTile: Story = {
   }),
 };
 
-export const WithBannerTop: Story = {
+export const ExpandableInteractive: Story = {
   args: {
+    expandable: true,
     bannerUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&auto=format&fit=crop',
     bannerAlt: 'Strand im Sonnenuntergang',
-    bannerPosition: 'top',
+    bannerPosition: 'auto',
   },
   render: (args) => ({
     components: { Card },
@@ -141,39 +131,29 @@ export const WithBannerTop: Story = {
       return { args };
     },
     template: `
-      <Card v-bind="args" style="max-width: 400px;">
-        <h3 style="margin: 0 0 8px;">Karte mit Banner oben</h3>
-        <p style="margin: 0;">Integriertes Banner-Bild am oberen Rand mit nahtloser Squircle-Eckenanpassung.</p>
+      <Card v-bind="args" style="max-width: 460px;">
+        <h3 style="margin: 0 0 4px;">Strand von Elafonisi 🏖️</h3>
+        <p style="margin: 0; font-size: 0.85rem;">Rosafarbener Sandstrand auf Kreta</p>
+
+        <template #condensed>
+          <span style="font-size: 0.75rem; color: var(--color-primary-dark); font-weight: 600;">Klicke zum Aufklappen ↗</span>
+        </template>
+
+        <template #expanded>
+          <div style="margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--color-border); font-size: 0.85rem;">
+            <p><strong>Notizen:</strong> Wunderschöner Strand mit seichtem Wasser, ideal zum Schnorcheln.</p>
+            <p style="margin: 0;"><strong>Beste Zeit:</strong> Vormittags vor 11:00 Uhr wegen des Windes.</p>
+          </div>
+        </template>
       </Card>
     `,
   }),
 };
 
-export const WithBannerLeft: Story = {
+export const CondensedState: Story = {
   args: {
+    condensed: true,
     bannerUrl: 'https://images.unsplash.com/photo-1476514525535-ce74f45814ce?w=600&auto=format&fit=crop',
-    bannerAlt: 'Gebirgssee',
-    bannerPosition: 'left',
-  },
-  render: (args) => ({
-    components: { Card },
-    setup() {
-      return { args };
-    },
-    template: `
-      <Card v-bind="args" style="max-width: 480px;">
-        <h3 style="margin: 0 0 4px;">Karte mit Miniatur-Banner links</h3>
-        <p style="margin: 0; font-size: 0.85rem;">Horizontaler Karten-View Stil mit schmalem Vorschaubild auf der linken Seite.</p>
-      </Card>
-    `,
-  }),
-};
-
-export const CondensedWithBannerLeft: Story = {
-  args: {
-    variant: 'condensed',
-    bannerUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&auto=format&fit=crop',
-    bannerAlt: 'Strand',
     bannerPosition: 'left',
   },
   render: (args) => ({
@@ -183,8 +163,8 @@ export const CondensedWithBannerLeft: Story = {
     },
     template: `
       <Card v-bind="args" style="max-width: 420px;">
-        <h4 style="margin: 0 0 2px;">Mini-Karte mit Banner links</h4>
-        <p style="margin: 0; font-size: 0.8rem;">Dichter Karten-View Stil für Ausflugs- & Spot-Listen mit kompakter Bildminiatur.</p>
+        <h4 style="margin: 0 0 2px;">Komprimierter Zustand (Condensed)</h4>
+        <p style="margin: 0; font-size: 0.8rem;">Kompakter Zustand für Listenansichten mit schmalem Miniatur-Banner links.</p>
       </Card>
     `,
   }),

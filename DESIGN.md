@@ -612,10 +612,9 @@ für elementare UI-Bausteine:
   Verschiebe-Aktionen, Close-/Toggle-Buttons). Standardmäßig komplett ohne Rahmen, Schatten oder
   Hintergrund (`variant="ghost"`), mit sanftem Hover- und aktivem Auswahlstatus (`active`).
 - **`Card.vue`**: Basis-Fläche für Spots, Touren, Budget-Töpfe, Notizen und Fokus-Panels. Unterstützt
-  `variant` (`default`, `muted` für hinterlegte Flächen, `condensed` für dichte Listen & Mini-Karten,
-  `flat` ohne Schatten, `elevated` mit verstärktem Schatten `var(--shadow-md)`, `tile` für Dashboard-Kacheln),
-  optionales **Bild-Banner** (`bannerUrl` prop oder `#banner` slot) wahlweise oben (`bannerPosition="top"`) oder
-  als **schmale Miniatur links** (`bannerPosition="left"` für horizontale Karten- & Listenansichten), sowie
+  `variant` (`default`, `muted` für hinterlegte Flächen, `flat` ohne Schatten, `elevated` mit verstärktem Schatten `var(--shadow-md)`,
+  `tile` für Dashboard-Kacheln). **Zustände:** `condensed` ist ein **Zustand/Prop** (komprimiertes Padding & schmale Miniatur-Banner links),
+  der per `expandable` Prop interaktiv per Klick in die volle/aufgeklappte Ansicht wechselt (`#expanded` Slot, analog zu `SpotCard.vue`/`ExcursionCard.vue` in der Karten-View).
   Echtzeit-Highlighting (`highlight` prop / `.new-highlight`).
 - **`Input.vue`**: Wiederverwendbares Primitive für einzeilige Eingabefelder (`text`, `number`,
   `date`, `time`, `datetime-local`, `email`, `url`, `search`, etc.). Behandelt standardmäßiges

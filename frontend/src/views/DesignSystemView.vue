@@ -487,7 +487,7 @@ const avatarCategories = [
         </Card>
 
         <!-- Cards Showcase -->
-        <h3 style="margin-top: 32px;">Card Varianten (Card.vue)</h3>
+        <h3 style="margin-top: 32px;">Card Varianten & Zustände (Card.vue)</h3>
         <div class="card-showcase-grid">
           <!-- Standard Card -->
           <Card variant="default">
@@ -498,16 +498,28 @@ const avatarCategories = [
             </template>
           </Card>
 
+          <!-- Interaktive Aufklapp-Karte (SpotCard / ExcursionCard Muster) -->
+          <Card
+            :expandable="true"
+            banner-url="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&auto=format&fit=crop"
+            banner-alt="Strand"
+          >
+            <h3 style="margin: 0 0 4px;">Interaktive Karte (Aufklappbar)</h3>
+            <p style="font-size: 0.85rem; margin: 0;">Wechselt per Klick zwischen komprimiertem (Condensed) und aufgeklapptem Zustand.</p>
+            <template #condensed>
+              <span style="font-size: 0.75rem; color: var(--color-primary); font-weight: 600;">👆 Klicke zum Aufklappen</span>
+            </template>
+            <template #expanded>
+              <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--color-border); font-size: 0.85rem;">
+                <p style="margin: 0;"><strong>Details & Notizen:</strong> Hier erscheinen zusätzliche Infos, Kommentare und Aktionen beim Aufklappen.</p>
+              </div>
+            </template>
+          </Card>
+
           <!-- Muted Card -->
           <Card variant="muted">
             <h3>Hinterlegte Karte (Muted)</h3>
             <p>Hinterlegter Hintergrund (<code>--color-hover</code>) für Sekundär-Sektionen oder Inaktives.</p>
-          </Card>
-
-          <!-- Condensed / Mini Card -->
-          <Card variant="condensed">
-            <h4 style="margin: 0 0 4px;">Mini / Condensed Karte</h4>
-            <p style="font-size: 0.85rem; margin: 0;">Kompakteres Padding (<code>--space-2 var(--space-3)</code>) für dichte Listen.</p>
           </Card>
 
           <!-- Flat Card -->
@@ -541,15 +553,9 @@ const avatarCategories = [
           </Card>
 
           <!-- Card mit Miniatur-Banner links (Horizontal Layout) -->
-          <Card banner-url="https://images.unsplash.com/photo-1476514525535-ce74f45814ce?w=600&auto=format&fit=crop" banner-alt="See" banner-position="left">
-            <h3>Karte mit Banner links</h3>
-            <p style="font-size: 0.85rem; margin: 0;">Horizontaler Karten-View Stil mit schmaler Bildminiatur auf der linken Seite.</p>
-          </Card>
-
-          <!-- Condensed Mini Card mit Banner links -->
-          <Card variant="condensed" banner-url="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&auto=format&fit=crop" banner-alt="Strand" banner-position="left">
-            <h4 style="margin: 0 0 2px;">Mini-Karte mit Banner links</h4>
-            <p style="font-size: 0.8rem; margin: 0;">Kompakter Karten-View Stil für Ausflüge & Spots mit Vorschaubild links.</p>
+          <Card banner-url="https://images.unsplash.com/photo-1476514525535-ce74f45814ce?w=600&auto=format&fit=crop" banner-alt="See" banner-position="left" :condensed="true">
+            <h3>Mini-Karte (Banner links)</h3>
+            <p style="font-size: 0.85rem; margin: 0;">Kompakter Zustand für Listenansichten mit schmaler Bildminiatur links.</p>
           </Card>
         </div>
       </section>
