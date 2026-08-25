@@ -19,24 +19,39 @@ describe('parseLatLngFromMapsLink', () => {
       lat: 48.2082,
       lng: 16.3738,
     });
-    expect(parseLatLngFromMapsLink('https://maps.apple.com/?coordinate=48.2082%2C16.3738')).toEqual({
+    expect(parseLatLngFromMapsLink('https://maps.apple.com/?coordinate=48.2082%2C16.3738')).toEqual(
+      {
+        lat: 48.2082,
+        lng: 16.3738,
+      }
+    );
+  });
+
+  it('parses ?ll= and ?q= variants', () => {
+    expect(parseLatLngFromMapsLink('https://maps.example/?ll=48.2082,16.3738')).toEqual({
+      lat: 48.2082,
+      lng: 16.3738,
+    });
+    expect(parseLatLngFromMapsLink('https://maps.example/?q=48.2082,16.3738')).toEqual({
       lat: 48.2082,
       lng: 16.3738,
     });
   });
 
-  it('parses ?ll= and ?q= variants', () => {
-    expect(parseLatLngFromMapsLink('https://maps.example/?ll=48.2082,16.3738')).toEqual({ lat: 48.2082, lng: 16.3738 });
-    expect(parseLatLngFromMapsLink('https://maps.example/?q=48.2082,16.3738')).toEqual({ lat: 48.2082, lng: 16.3738 });
-  });
-
   it('falls back to the raw text on malformed percent-encoding instead of throwing', () => {
     expect(() => parseLatLngFromMapsLink('https://maps.example/?q=48.2082,16.3738%')).not.toThrow();
-    expect(parseLatLngFromMapsLink('https://maps.example/?q=48.2082,16.3738%')).toEqual({ lat: 48.2082, lng: 16.3738 });
+    expect(parseLatLngFromMapsLink('https://maps.example/?q=48.2082,16.3738%')).toEqual({
+      lat: 48.2082,
+      lng: 16.3738,
+    });
   });
 
   it('parses an OpenStreetMap ?mlat=&mlon= link (as produced by buildOsmLink)', () => {
-    expect(parseLatLngFromMapsLink('https://www.openstreetmap.org/?mlat=48.2082&mlon=16.3738#map=15/48.2082/16.3738')).toEqual({
+    expect(
+      parseLatLngFromMapsLink(
+        'https://www.openstreetmap.org/?mlat=48.2082&mlon=16.3738#map=15/48.2082/16.3738'
+      )
+    ).toEqual({
       lat: 48.2082,
       lng: 16.3738,
     });
@@ -61,6 +76,8 @@ describe('buildOsmLink', () => {
 
 describe('tilePreviewUrl', () => {
   it('computes the expected OSM tile x/y for a known coordinate/zoom', () => {
-    expect(tilePreviewUrl(48.2082, 16.3738, 15)).toBe('https://tile.openstreetmap.org/15/17874/11362.png');
+    expect(tilePreviewUrl(48.2082, 16.3738, 15)).toBe(
+      'https://tile.openstreetmap.org/15/17874/11362.png'
+    );
   });
 });

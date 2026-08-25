@@ -27,17 +27,23 @@ describe('richtext content_format/note_format Migration', () => {
       CREATE TABLE notes (id INTEGER PRIMARY KEY, trip_id INTEGER, title TEXT, content TEXT NOT NULL, created_by INTEGER, created_at TEXT NOT NULL);
     `);
     legacy
-      .prepare(`INSERT INTO trips (id, name, start_date, end_date) VALUES (1, 'Altreise', '2025-01-01', '2025-01-10')`)
+      .prepare(
+        `INSERT INTO trips (id, name, start_date, end_date) VALUES (1, 'Altreise', '2025-01-01', '2025-01-10')`
+      )
       .run();
     legacy
-      .prepare(`INSERT INTO notes (id, trip_id, title, content, created_by, created_at) VALUES (1, 1, 'Alt', '**fett**', 1, '2025-01-02')`)
+      .prepare(
+        `INSERT INTO notes (id, trip_id, title, content, created_by, created_at) VALUES (1, 1, 'Alt', '**fett**', 1, '2025-01-02')`
+      )
       .run();
     legacy.close();
 
     process.env.DB_PATH = dbPath;
     const { db } = await import('../../src/db/index.js');
 
-    const note = db.prepare('SELECT content_format FROM notes WHERE id = 1').get() as { content_format: string };
+    const note = db.prepare('SELECT content_format FROM notes WHERE id = 1').get() as {
+      content_format: string;
+    };
     expect(note.content_format).toBe('legacy');
   });
 });

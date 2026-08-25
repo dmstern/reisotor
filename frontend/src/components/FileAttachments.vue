@@ -27,7 +27,7 @@ const props = withDefaults(
      *  Datei-Upload-Button gehört ins jeweilige Bearbeiten-Formular, nicht in die reine Ansicht. */
     editable?: boolean;
   }>(),
-  { editable: true },
+  { editable: true }
 );
 
 const attachments = ref<Attachment[]>([]);
@@ -35,7 +35,9 @@ const uploading = ref(false);
 const error = ref('');
 
 async function load() {
-  attachments.value = await api.get<Attachment[]>(`/attachments?domain=${props.domain}&entity_id=${props.entityId}`);
+  attachments.value = await api.get<Attachment[]>(
+    `/attachments?domain=${props.domain}&entity_id=${props.entityId}`
+  );
 }
 
 onMounted(load);
@@ -50,7 +52,9 @@ async function onFilesSelected(event: Event) {
   error.value = '';
   try {
     for (const file of files) {
-      const data = file.type.startsWith('image/') ? await compressImage(file) : await readAsDataUrl(file);
+      const data = file.type.startsWith('image/')
+        ? await compressImage(file)
+        : await readAsDataUrl(file);
       const created = await api.post<Attachment>('/attachments', {
         domain: props.domain,
         entity_id: props.entityId,
@@ -80,7 +84,8 @@ async function remove(attachment: Attachment) {
     <ul v-if="attachments.length" class="attachment-list">
       <li v-for="attachment in attachments" :key="attachment.id" class="attachment-row">
         <a :href="attachment.url" target="_blank" rel="noopener" class="attachment-link">
-          <AppIcon :icon="ACTION_ICONS.attachment" :size="14" group="actions" /> {{ attachment.original_name }}
+          <AppIcon :icon="ACTION_ICONS.attachment" :size="14" group="actions" />
+          {{ attachment.original_name }}
         </a>
         <span class="size">{{ formatFileSize(attachment.size_bytes) }}</span>
         <IconButton
@@ -95,9 +100,17 @@ async function remove(attachment: Attachment) {
         />
       </li>
     </ul>
-    <p v-if="editable && auth.user?.restricted" class="hint">Eingeschränkter Modus - Kein Datei-Upload möglich</p>
+    <p v-if="editable && auth.user?.restricted" class="hint">
+      Eingeschränkter Modus - Kein Datei-Upload möglich
+    </p>
     <label v-else-if="editable" class="upload-label">
-      <input type="file" accept="image/*,application/pdf" multiple :disabled="uploading" @change="onFilesSelected" />
+      <input
+        type="file"
+        accept="image/*,application/pdf"
+        multiple
+        :disabled="uploading"
+        @change="onFilesSelected"
+      />
       {{ uploading ? 'Lädt hoch …' : '+ Datei hinzufügen' }}
     </label>
     <p v-if="error" class="error">{{ error }}</p>

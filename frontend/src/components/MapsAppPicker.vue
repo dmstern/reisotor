@@ -33,8 +33,15 @@ const open = ref(false);
       >
         <AppIcon :icon="ACTION_ICONS.googleMaps" :size="14" group="actions" /> Google Maps
       </a>
-      <a v-if="props.mapsLink" :href="props.mapsLink" target="_blank" rel="noopener" @click="open = false">
-        <AppIcon :icon="FORM_FIELD_ICONS.link" :size="14" group="formFields" /> Ursprünglichen Link öffnen
+      <a
+        v-if="props.mapsLink"
+        :href="props.mapsLink"
+        target="_blank"
+        rel="noopener"
+        @click="open = false"
+      >
+        <AppIcon :icon="FORM_FIELD_ICONS.link" :size="14" group="formFields" /> Ursprünglichen Link
+        öffnen
       </a>
     </div>
   </div>

@@ -5,8 +5,7 @@ export interface CreateIssueInput {
 }
 
 export type CreateIssueResult =
-  | { ok: true; number: number; url: string }
-  | { ok: false; error: string };
+  { ok: true; number: number; url: string } | { ok: false; error: string };
 
 export type UploadScreenshotResult = { ok: true; url: string } | { ok: false; error: string };
 
@@ -30,7 +29,7 @@ function githubApiHeaders() {
 async function ensureScreenshotBranch(): Promise<{ ok: true } | { ok: false; error: string }> {
   const refRes = await fetch(
     `https://api.github.com/repos/${githubRepo}/git/ref/heads/${SCREENSHOT_BRANCH}`,
-    { headers: githubApiHeaders(), signal: AbortSignal.timeout(10_000) },
+    { headers: githubApiHeaders(), signal: AbortSignal.timeout(10_000) }
   );
   if (refRes.ok) return { ok: true };
   if (refRes.status !== 404) {
@@ -48,10 +47,13 @@ async function ensureScreenshotBranch(): Promise<{ ok: true } | { ok: false; err
 
   const defaultRefRes = await fetch(
     `https://api.github.com/repos/${githubRepo}/git/ref/heads/${defaultBranch}`,
-    { headers: githubApiHeaders(), signal: AbortSignal.timeout(10_000) },
+    { headers: githubApiHeaders(), signal: AbortSignal.timeout(10_000) }
   );
   if (!defaultRefRes.ok) {
-    return { ok: false, error: `GitHub-Default-Branch-Abfrage fehlgeschlagen (Status ${defaultRefRes.status}).` };
+    return {
+      ok: false,
+      error: `GitHub-Default-Branch-Abfrage fehlgeschlagen (Status ${defaultRefRes.status}).`,
+    };
   }
   const { object } = (await defaultRefRes.json()) as { object: { sha: string } };
 
@@ -63,7 +65,10 @@ async function ensureScreenshotBranch(): Promise<{ ok: true } | { ok: false; err
   });
   // 422 = Branch wurde zwischenzeitlich von einer parallelen Anfrage angelegt - kein echter Fehler.
   if (!createRefRes.ok && createRefRes.status !== 422) {
-    return { ok: false, error: `GitHub-Branch-Anlage fehlgeschlagen (Status ${createRefRes.status}).` };
+    return {
+      ok: false,
+      error: `GitHub-Branch-Anlage fehlgeschlagen (Status ${createRefRes.status}).`,
+    };
   }
   return { ok: true };
 }
@@ -79,7 +84,7 @@ async function ensureScreenshotBranch(): Promise<{ ok: true } | { ok: false; err
 export async function uploadFeedbackScreenshot(
   buffer: Buffer,
   extension: string,
-  filename = `${Date.now()}.${extension}`,
+  filename = `${Date.now()}.${extension}`
 ): Promise<UploadScreenshotResult> {
   if (!githubToken) {
     return { ok: false, error: 'Feedback ist auf diesem Server nicht konfiguriert.' };
@@ -106,10 +111,16 @@ export async function uploadFeedbackScreenshot(
   }
 
   if (!res.ok) {
-    return { ok: false, error: `GitHub hat den Screenshot-Upload abgelehnt (Status ${res.status}).` };
+    return {
+      ok: false,
+      error: `GitHub hat den Screenshot-Upload abgelehnt (Status ${res.status}).`,
+    };
   }
 
-  return { ok: true, url: `https://raw.githubusercontent.com/${githubRepo}/${SCREENSHOT_BRANCH}/${path}` };
+  return {
+    ok: true,
+    url: `https://raw.githubusercontent.com/${githubRepo}/${SCREENSHOT_BRANCH}/${path}`,
+  };
 }
 
 // Wie push.ts's VAPID-Keys: Feature ist optional, ohne gesetzten Token bleibt die App lauffähig,
@@ -143,7 +154,10 @@ export async function createGithubIssue(input: CreateIssueInput): Promise<Create
       signal: AbortSignal.timeout(10_000),
     });
   } catch {
-    return { ok: false, error: 'Meldung konnte nicht an GitHub übermittelt werden. Bitte später erneut versuchen.' };
+    return {
+      ok: false,
+      error: 'Meldung konnte nicht an GitHub übermittelt werden. Bitte später erneut versuchen.',
+    };
   }
 
   if (!res.ok) {

@@ -12,17 +12,14 @@ withDefaults(
   {
     align: 'end',
     noMargin: false,
-  },
+  }
 );
 </script>
 
 <template>
   <div
     class="button-group"
-    :class="[
-      `button-group--align-${align}`,
-      { 'button-group--no-margin': noMargin },
-    ]"
+    :class="[`button-group--align-${align}`, { 'button-group--no-margin': noMargin }]"
   >
     <slot />
   </div>

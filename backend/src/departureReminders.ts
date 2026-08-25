@@ -30,14 +30,18 @@ export async function checkDepartureReminders() {
   // Grober Vorfilter (nur zukünftige/gerade laufende Urlaube) statt jeden Check über ALLE
   // (potenziell auch längst vergangenen) Urlaube laufen zu lassen - der genaue Schwellwert-Abgleich
   // passiert danach ohnehin exakt über daysUntil().
-  const trips = db.prepare(`SELECT id, name, start_date FROM trips WHERE start_date >= date('now', '-1 day')`).all() as TripRow[];
+  const trips = db
+    .prepare(`SELECT id, name, start_date FROM trips WHERE start_date >= date('now', '-1 day')`)
+    .all() as TripRow[];
 
   for (const trip of trips) {
     const days = daysUntil(trip.start_date);
     if (!REMINDER_THRESHOLDS_DAYS.includes(days)) continue;
 
     const alreadySent = db
-      .prepare('SELECT 1 FROM trip_departure_reminders_sent WHERE trip_id = ? AND threshold_days = ?')
+      .prepare(
+        'SELECT 1 FROM trip_departure_reminders_sent WHERE trip_id = ? AND threshold_days = ?'
+      )
       .get(trip.id, days);
     if (alreadySent) continue;
 
@@ -49,14 +53,12 @@ export async function checkDepartureReminders() {
         body: `Nur noch ${label} bis zur Abreise!`,
         tripId: trip.id,
       },
-      'departure',
+      'departure'
     );
 
-    db.prepare('INSERT INTO trip_departure_reminders_sent (trip_id, threshold_days, sent_at) VALUES (?, ?, ?)').run(
-      trip.id,
-      days,
-      new Date().toISOString(),
-    );
+    db.prepare(
+      'INSERT INTO trip_departure_reminders_sent (trip_id, threshold_days, sent_at) VALUES (?, ?, ?)'
+    ).run(trip.id, days, new Date().toISOString());
   }
 }
 
@@ -66,8 +68,12 @@ export async function checkDepartureReminders() {
 const CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
 
 export function startDepartureReminderScheduler() {
-  checkDepartureReminders().catch((err) => console.error('departureReminders: initial check failed', err));
+  checkDepartureReminders().catch((err) =>
+    console.error('departureReminders: initial check failed', err)
+  );
   setInterval(() => {
-    checkDepartureReminders().catch((err) => console.error('departureReminders: periodic check failed', err));
+    checkDepartureReminders().catch((err) =>
+      console.error('departureReminders: periodic check failed', err)
+    );
   }, CHECK_INTERVAL_MS);
 }

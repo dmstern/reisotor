@@ -11,7 +11,6 @@ export const db = new Database(dbPath);
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 
-
 // Migration von der alten Singleton-Tabelle "trip" (immer nur eine Zeile mit id=1)
 // zur neuen Liste "trips" (mehrere Urlaube möglich) – per RENAME bleiben alle
 // bestehenden Daten und die ursprüngliche id erhalten.
@@ -358,10 +357,14 @@ db.exec(`
   );
 `);
 if (!hadTripMembersTable) {
-  const allTripsForMembershipBackfill = db.prepare('SELECT id FROM trips').all() as { id: number }[];
-  const allUsersForMembershipBackfill = db.prepare('SELECT id FROM users').all() as { id: number }[];
+  const allTripsForMembershipBackfill = db.prepare('SELECT id FROM trips').all() as {
+    id: number;
+  }[];
+  const allUsersForMembershipBackfill = db.prepare('SELECT id FROM users').all() as {
+    id: number;
+  }[];
   const insertBackfillMembership = db.prepare(
-    'INSERT OR IGNORE INTO trip_members (trip_id, user_id, created_at) VALUES (?, ?, ?)',
+    'INSERT OR IGNORE INTO trip_members (trip_id, user_id, created_at) VALUES (?, ?, ?)'
   );
   const membershipBackfillNow = new Date().toISOString();
   for (const trip of allTripsForMembershipBackfill) {
@@ -447,7 +450,7 @@ ensureColumn('packing_items', 'packed_count', 'INTEGER NOT NULL DEFAULT 0');
 if (hasColumn('packing_items', 'checked')) {
   db.exec(
     `UPDATE packing_items SET packed_count = quantity, laid_out_count = quantity
-     WHERE checked = 1 AND packed_count = 0`,
+     WHERE checked = 1 AND packed_count = 0`
   );
   dropColumnIfExists('packing_items', 'checked');
 }
@@ -517,7 +520,7 @@ ensureColumn('spots', 'budget_expense_id', 'INTEGER REFERENCES budget_items(id)'
 // spot_comments) und werden danach sortiert/gruppiert statt nach aktiv/verworfen.
 dropColumnIfExists('spots', 'discarded');
 if (hasColumn('spots', 'name')) {
-  db.exec("UPDATE spots SET title = name WHERE title IS NULL");
+  db.exec('UPDATE spots SET title = name WHERE title IS NULL');
   dropColumnIfExists('spots', 'name');
 }
 dropColumnIfExists('spots', 'link');
@@ -541,7 +544,8 @@ for (const table of TRIP_SCOPED_TABLES) {
 
 // Backfill: bestehende Zeilen (aus der Zeit vor Multi-Urlaub-Unterstützung) dem
 // jeweils ersten/ältesten Urlaub zuordnen, damit keine verwaisten Daten entstehen.
-const firstTrip = db.prepare('SELECT id FROM trips ORDER BY id LIMIT 1').get() as { id: number } | undefined;
+const firstTrip = db.prepare('SELECT id FROM trips ORDER BY id LIMIT 1').get() as
+  { id: number } | undefined;
 if (firstTrip) {
   for (const table of TRIP_SCOPED_TABLES) {
     db.prepare(`UPDATE ${table} SET trip_id = ? WHERE trip_id IS NULL`).run(firstTrip.id);
@@ -579,11 +583,12 @@ export function ensureDefaultSharedBudget(tripId: number): number {
     .get(tripId) as { id: number } | undefined;
   const budgetId =
     existing?.id ??
-    (db.prepare('INSERT INTO budgets (trip_id, name, owner_id) VALUES (?, ?, NULL)').run(tripId, 'Gemeinsames Budget')
-      .lastInsertRowid as number);
+    (db
+      .prepare('INSERT INTO budgets (trip_id, name, owner_id) VALUES (?, ?, NULL)')
+      .run(tripId, 'Gemeinsames Budget').lastInsertRowid as number);
 
   const insertAllocation = db.prepare(
-    'INSERT OR IGNORE INTO budget_allocations (budget_id, category, amount) VALUES (?, ?, 0)',
+    'INSERT OR IGNORE INTO budget_allocations (budget_id, category, amount) VALUES (?, ?, 0)'
   );
   for (const category of DEFAULT_BUDGET_CATEGORIES) {
     insertAllocation.run(budgetId, category);
@@ -610,23 +615,28 @@ if (hasTable('budget_targets')) {
         }[])
       : [];
 
-    const insertBudget = db.prepare('INSERT INTO budgets (trip_id, name, owner_id) VALUES (?, ?, ?)');
+    const insertBudget = db.prepare(
+      'INSERT INTO budgets (trip_id, name, owner_id) VALUES (?, ?, ?)'
+    );
     // upsert statt plain insert: "Sonstiges" kann sowohl aus den alten Kategorie-Zielen als auch
     // aus dem Rundungs-/Rest-Betrag stammen – beide Werte müssen sich addieren statt zu kollidieren.
     const insertAllocation = db.prepare(
       `INSERT INTO budget_allocations (budget_id, category, amount) VALUES (?, ?, ?)
-       ON CONFLICT(budget_id, category) DO UPDATE SET amount = amount + excluded.amount`,
+       ON CONFLICT(budget_id, category) DO UPDATE SET amount = amount + excluded.amount`
     );
     const usernameOf = (id: number) =>
-      (db.prepare('SELECT username FROM users WHERE id = ?').get(id) as { username: string } | undefined)
-        ?.username ?? `Nutzer ${id}`;
+      (
+        db.prepare('SELECT username FROM users WHERE id = ?').get(id) as
+          { username: string } | undefined
+      )?.username ?? `Nutzer ${id}`;
 
     for (const target of targets) {
       if (target.owner_id === null) {
         // Geteiltes Ziel: alte trip-weite Kategorie-Ziele werden zu Kategorien dieses Budgets;
         // eine Differenz zum ehemals manuell eingetragenen Gesamtbetrag landet in "Sonstiges",
         // damit der Zahlenwert nicht verloren geht.
-        const budgetId = insertBudget.run(target.trip_id, 'Gemeinsames Budget', null).lastInsertRowid as number;
+        const budgetId = insertBudget.run(target.trip_id, 'Gemeinsames Budget', null)
+          .lastInsertRowid as number;
         const tripCategoryTargets = categoryTargets.filter((c) => c.trip_id === target.trip_id);
         for (const c of tripCategoryTargets) {
           insertAllocation.run(budgetId, c.category, c.amount);
@@ -640,7 +650,7 @@ if (hasTable('budget_targets')) {
         const budgetId = insertBudget.run(
           target.trip_id,
           `Persönliches Budget (${usernameOf(target.owner_id)})`,
-          target.owner_id,
+          target.owner_id
         ).lastInsertRowid as number;
         insertAllocation.run(budgetId, 'Sonstiges', target.amount);
       }
@@ -665,7 +675,9 @@ for (const trip of allTrips) {
 // der Kategorien-Visualisierung "erraten" – das brach z. B. sobald ein zweites geteiltes Budget
 // existierte. Bereits bestehende Alt-Zeilen werden hier einmalig nachträglich verknüpft.
 const orphanedAutoExpenses = db
-  .prepare("SELECT id, trip_id FROM budget_items WHERE budget_id IS NULL AND note LIKE 'Automatisch%'")
+  .prepare(
+    "SELECT id, trip_id FROM budget_items WHERE budget_id IS NULL AND note LIKE 'Automatisch%'"
+  )
   .all() as { id: number; trip_id: number }[];
 const linkAutoExpense = db.prepare('UPDATE budget_items SET budget_id = ? WHERE id = ?');
 for (const row of orphanedAutoExpenses) {
@@ -692,7 +704,9 @@ db.exec(`
     created_at TEXT NOT NULL
   );
 `);
-db.exec('CREATE INDEX IF NOT EXISTS idx_attachments_domain_entity ON attachments (domain, entity_id)');
+db.exec(
+  'CREATE INDEX IF NOT EXISTS idx_attachments_domain_entity ON attachments (domain, entity_id)'
+);
 
 /** Löscht Anhang-Zeilen + zugehörige Dateien auf der Platte für eine Menge von Objekt-ids einer
  *  Attachment-Domäne (siehe routes/attachments.ts's DOMAIN_TABLE) – aufgerufen, bevor die
@@ -704,7 +718,10 @@ export function purgeAttachmentsForEntities(domain: string, entityIds: number[])
   const rows = db
     .prepare(`SELECT filename FROM attachments WHERE domain = ? AND entity_id IN (${placeholders})`)
     .all(domain, ...entityIds) as { filename: string }[];
-  db.prepare(`DELETE FROM attachments WHERE domain = ? AND entity_id IN (${placeholders})`).run(domain, ...entityIds);
+  db.prepare(`DELETE FROM attachments WHERE domain = ? AND entity_id IN (${placeholders})`).run(
+    domain,
+    ...entityIds
+  );
   for (const row of rows) {
     try {
       fs.unlinkSync(path.join(uploadsDir, row.filename));
@@ -771,7 +788,7 @@ if (hasTable('travel_places')) {
   const places = db.prepare('SELECT * FROM travel_places').all() as LegacyTravelPlaceRow[];
   const placeToSpotId = new Map<number, number>();
   const insertSpot = db.prepare(
-    `INSERT INTO spots (trip_id, title, category, maps_link, lat, lng, is_home) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO spots (trip_id, title, category, maps_link, lat, lng, is_home) VALUES (?, ?, ?, ?, ?, ?, ?)`
   );
   for (const p of places) {
     const result = insertSpot.run(p.trip_id, p.name, p.type, p.maps_link, p.lat, p.lng, p.is_home);
@@ -818,7 +835,10 @@ if (hasTable('travel_places')) {
       deleted_at TEXT
     )
   `);
-  const oldItems = db.prepare('SELECT * FROM travel_items_migrating').all() as Record<string, unknown>[];
+  const oldItems = db.prepare('SELECT * FROM travel_items_migrating').all() as Record<
+    string,
+    unknown
+  >[];
   const insertItem = db.prepare(`
     INSERT INTO travel_items (
       id, title, type, from_location, to_location, date, departure_time, checkin_info, amount,
@@ -827,8 +847,10 @@ if (hasTable('travel_places')) {
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   for (const row of oldItems) {
-    const fromPlaceId = row.from_place_id != null ? placeToSpotId.get(row.from_place_id as number) ?? null : null;
-    const toPlaceId = row.to_place_id != null ? placeToSpotId.get(row.to_place_id as number) ?? null : null;
+    const fromPlaceId =
+      row.from_place_id != null ? (placeToSpotId.get(row.from_place_id as number) ?? null) : null;
+    const toPlaceId =
+      row.to_place_id != null ? (placeToSpotId.get(row.to_place_id as number) ?? null) : null;
     insertItem.run(
       row.id,
       row.title,
@@ -856,7 +878,7 @@ if (hasTable('travel_places')) {
       fromPlaceId,
       toPlaceId,
       row.trip_id,
-      row.deleted_at,
+      row.deleted_at
     );
   }
   db.exec('DROP TABLE travel_items_migrating');
@@ -869,7 +891,9 @@ if (hasTable('travel_places')) {
   // ein unbedingtes SELECT auf station_key würde dort mit "no such column" fehlschlagen.
   if (hasColumn('excursion_spots', 'station_key')) {
     const legacyStationRows = db
-      .prepare(`SELECT id, station_key FROM excursion_spots WHERE station_key LIKE 'travel-place-%'`)
+      .prepare(
+        `SELECT id, station_key FROM excursion_spots WHERE station_key LIKE 'travel-place-%'`
+      )
       .all() as { id: number; station_key: string }[];
     const updateStationKey = db.prepare('UPDATE excursion_spots SET station_key = ? WHERE id = ?');
     for (const row of legacyStationRows) {
@@ -910,7 +934,9 @@ if (hasTable('accommodation')) {
     budget_expense_id: number | null;
     deleted_at: string | null;
   }
-  const accommodations = db.prepare('SELECT * FROM accommodation').all() as LegacyAccommodationRow[];
+  const accommodations = db
+    .prepare('SELECT * FROM accommodation')
+    .all() as LegacyAccommodationRow[];
   const accommodationToSpotId = new Map<number, number>();
   // Statement nur vorbereiten, wenn tatsächlich Zeilen zu übernehmen sind – accommodation existiert
   // dank CREATE TABLE IF NOT EXISTS oben auf JEDER (auch brandneuen/Test-)DB, meist aber leer; ein
@@ -939,7 +965,7 @@ if (hasTable('accommodation')) {
         a.amount,
         a.paid_by_user_id,
         a.budget_expense_id,
-        a.deleted_at,
+        a.deleted_at
       );
       accommodationToSpotId.set(a.id, result.lastInsertRowid as number);
     }
@@ -953,9 +979,13 @@ if (hasTable('accommodation')) {
   // station_key würde dort mit "no such column" fehlschlagen.
   if (hasColumn('excursion_spots', 'station_key')) {
     const legacyAccommodationStationRows = db
-      .prepare(`SELECT id, station_key FROM excursion_spots WHERE station_key LIKE 'accommodation-%'`)
+      .prepare(
+        `SELECT id, station_key FROM excursion_spots WHERE station_key LIKE 'accommodation-%'`
+      )
       .all() as { id: number; station_key: string }[];
-    const updateAccommodationStationKey = db.prepare('UPDATE excursion_spots SET station_key = ? WHERE id = ?');
+    const updateAccommodationStationKey = db.prepare(
+      'UPDATE excursion_spots SET station_key = ? WHERE id = ?'
+    );
     for (const row of legacyAccommodationStationRows) {
       const oldAccommodationId = Number(row.station_key.slice('accommodation-'.length));
       const newSpotId = accommodationToSpotId.get(oldAccommodationId);
@@ -969,7 +999,9 @@ if (hasTable('accommodation')) {
   const legacyAccommodationAttachmentRows = db
     .prepare(`SELECT id, entity_id FROM attachments WHERE domain = 'accommodation'`)
     .all() as { id: number; entity_id: number }[];
-  const updateAttachmentDomain = db.prepare(`UPDATE attachments SET domain = 'spots', entity_id = ? WHERE id = ?`);
+  const updateAttachmentDomain = db.prepare(
+    `UPDATE attachments SET domain = 'spots', entity_id = ? WHERE id = ?`
+  );
   for (const row of legacyAccommodationAttachmentRows) {
     const newSpotId = accommodationToSpotId.get(row.entity_id);
     if (newSpotId != null) updateAttachmentDomain.run(newSpotId, row.id);
@@ -1032,7 +1064,7 @@ if (hasColumn('excursion_spots', 'station_key')) {
     // Unterkunft-Migration oben) – auf einer frischen DB ohne station_key-Spalte greift dieser
     // Zweig ohnehin nie.
     const insertSpotLink = db.prepare(
-      'INSERT INTO excursion_spots (idea_id, spot_id, position) VALUES (?, ?, ?)',
+      'INSERT INTO excursion_spots (idea_id, spot_id, position) VALUES (?, ?, ?)'
     );
     const spotExists = db.prepare('SELECT 1 FROM spots WHERE id = ?');
     for (const row of legacyRows) {
@@ -1073,7 +1105,10 @@ export function purgeOldTrash(maxAgeDays = 30) {
       const staleRows = db
         .prepare(`SELECT id FROM ${table} WHERE deleted_at IS NOT NULL AND deleted_at < ?`)
         .all(cutoff) as { id: number }[];
-      purgeAttachmentsForEntities(attachmentDomain, staleRows.map((r) => r.id));
+      purgeAttachmentsForEntities(
+        attachmentDomain,
+        staleRows.map((r) => r.id)
+      );
     }
     db.prepare(`DELETE FROM ${table} WHERE deleted_at IS NOT NULL AND deleted_at < ?`).run(cutoff);
   }
@@ -1097,7 +1132,9 @@ db.exec(`
     created_at TEXT NOT NULL
   );
 `);
-db.exec('CREATE INDEX IF NOT EXISTS idx_trip_activity_trip_created ON trip_activity (trip_id, created_at)');
+db.exec(
+  'CREATE INDEX IF NOT EXISTS idx_trip_activity_trip_created ON trip_activity (trip_id, created_at)'
+);
 
 export function purgeOldActivity(maxAgeDays = 30) {
   const cutoff = new Date(Date.now() - maxAgeDays * 24 * 60 * 60 * 1000).toISOString();
@@ -1246,7 +1283,7 @@ ensureColumn('spots', 'note_format', "TEXT NOT NULL DEFAULT 'legacy'");
 // übernehmen), nicht nur einen pauschalen Default-Wert, sonst würden alte Einträge alle denselben
 // falschen Tag zeigen. Neue Einträge setzen das Feld immer explizit (siehe routes/diary.ts).
 ensureColumn('diary_entries', 'date', 'TEXT');
-db.exec("UPDATE diary_entries SET date = substr(created_at, 1, 10) WHERE date IS NULL");
+db.exec('UPDATE diary_entries SET date = substr(created_at, 1, 10) WHERE date IS NULL');
 
 // "Gemacht"-Status: unabhängiges Flag neben geplant/ungeplant (das weiterhin rein aus verknüpften
 // schedule_items abgeleitet wird, siehe Kommentar bei den ideas-Migrationen oben) - auch spontane,
@@ -1288,7 +1325,9 @@ db.exec(`
     accuracy REAL
   );
 `);
-db.exec('CREATE INDEX IF NOT EXISTS idx_track_points_track_recorded ON location_track_points (track_id, recorded_at)');
+db.exec(
+  'CREATE INDEX IF NOT EXISTS idx_track_points_track_recorded ON location_track_points (track_id, recorded_at)'
+);
 
 // Entwurfs-Status als sichtbarer, weiterbearbeitbarer Eintrag statt nur der bisherigen, unsichtbaren
 // Zwischenspeicherung in `drafts` (#89: Nutzer-Feedback, ein per useDraftAutosave gesichertes
@@ -1340,7 +1379,6 @@ if (!hasAdmin) {
   db.exec('UPDATE users SET is_admin = 1 WHERE id = (SELECT MIN(id) FROM users)');
 }
 
-
 // #68: Zusammenführung von Touren/Routen/Reisen. Eine Reise-Etappe (travel_items) ist im Kern eine
 // Tour mit genau zwei Stationen (Von/Nach) plus Transportmittel-Zusatzfeldern – diese Zusatzfelder
 // wandern additiv auf ideas (Touren), als Grundlage für die spätere Ablösung von travel_items/
@@ -1375,7 +1413,11 @@ ensureColumn('ideas', 'budget_expense_id', 'INTEGER REFERENCES budget_items(id)'
 // den travel_places-/accommodation-Migrationen oben also EIN Block für Spiegeln UND endgültige
 // Ablösung, weil travel_items hier nie wieder beschrieben wird (routes/travel.ts entfällt komplett).
 if (hasTable('travel_items')) {
-  ensureColumn('travel_items', 'migrated_idea_id', 'INTEGER REFERENCES ideas(id) ON DELETE SET NULL');
+  ensureColumn(
+    'travel_items',
+    'migrated_idea_id',
+    'INTEGER REFERENCES ideas(id) ON DELETE SET NULL'
+  );
 
   interface TravelRow {
     id: number;
@@ -1422,13 +1464,17 @@ if (hasTable('travel_items')) {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     const insertSpot = db.prepare(
-      'INSERT INTO spots (trip_id, title, maps_link, lat, lng) VALUES (?, ?, ?, ?, ?)',
+      'INSERT INTO spots (trip_id, title, maps_link, lat, lng) VALUES (?, ?, ?, ?, ?)'
     );
-    const insertStation = db.prepare('INSERT INTO excursion_spots (idea_id, spot_id, position) VALUES (?, ?, ?)');
+    const insertStation = db.prepare(
+      'INSERT INTO excursion_spots (idea_id, spot_id, position) VALUES (?, ?, ?)'
+    );
     const markMigrated = db.prepare('UPDATE travel_items SET migrated_idea_id = ? WHERE id = ?');
-    const hasSchedule = db.prepare('SELECT 1 FROM schedule_items WHERE idea_id = ? AND deleted_at IS NULL');
+    const hasSchedule = db.prepare(
+      'SELECT 1 FROM schedule_items WHERE idea_id = ? AND deleted_at IS NULL'
+    );
     const insertSchedule = db.prepare(
-      'INSERT INTO schedule_items (trip_id, date, title, idea_id) VALUES (?, ?, ?, ?)',
+      'INSERT INTO schedule_items (trip_id, date, title, idea_id) VALUES (?, ?, ?, ?)'
     );
     const getIdeaBudgetExpense = db.prepare('SELECT budget_expense_id FROM ideas WHERE id = ?');
     const setIdeaBudgetExpense = db.prepare('UPDATE ideas SET budget_expense_id = ? WHERE id = ?');
@@ -1452,7 +1498,7 @@ if (hasTable('travel_items')) {
           row.luggage,
           row.seat,
           row.link,
-          row.deleted_at,
+          row.deleted_at
         ).lastInsertRowid as number;
 
         let position = 0;
@@ -1461,15 +1507,25 @@ if (hasTable('travel_items')) {
           location: string | null,
           mapsLink: string | null,
           lat: number | null,
-          lng: number | null,
+          lng: number | null
         ) => {
           const spotId =
-            placeId ?? (location ? (insertSpot.run(row.trip_id, location, mapsLink, lat, lng).lastInsertRowid as number) : null);
+            placeId ??
+            (location
+              ? (insertSpot.run(row.trip_id, location, mapsLink, lat, lng)
+                  .lastInsertRowid as number)
+              : null);
           if (spotId == null) return;
           insertStation.run(ideaId, spotId, position);
           position += 1;
         };
-        addStation(row.from_place_id, row.from_location, row.from_maps_link, row.from_lat, row.from_lng);
+        addStation(
+          row.from_place_id,
+          row.from_location,
+          row.from_maps_link,
+          row.from_lat,
+          row.from_lng
+        );
         addStation(row.to_place_id, row.to_location, row.to_maps_link, row.to_lat, row.to_lng);
 
         markMigrated.run(ideaId, row.id);
@@ -1484,7 +1540,8 @@ if (hasTable('travel_items')) {
       // Budget-Ausgabe übernehmen (Ownership-Wechsel, keine neue Zeile) statt zu duplizieren - nur
       // falls die Tour noch keine eigene budget_expense_id trägt.
       if (row.budget_expense_id) {
-        const idea = getIdeaBudgetExpense.get(ideaId) as { budget_expense_id: number | null } | undefined;
+        const idea = getIdeaBudgetExpense.get(ideaId) as
+          { budget_expense_id: number | null } | undefined;
         if (idea && idea.budget_expense_id == null) {
           setIdeaBudgetExpense.run(row.budget_expense_id, ideaId);
         }
@@ -1499,9 +1556,12 @@ if (hasTable('travel_items')) {
       .all() as { id: number; entity_id: number }[];
     if (travelAttachments.length > 0) {
       const findMigratedIdea = db.prepare('SELECT migrated_idea_id FROM travel_items WHERE id = ?');
-      const moveAttachment = db.prepare(`UPDATE attachments SET domain = 'ideas', entity_id = ? WHERE id = ?`);
+      const moveAttachment = db.prepare(
+        `UPDATE attachments SET domain = 'ideas', entity_id = ? WHERE id = ?`
+      );
       for (const a of travelAttachments) {
-        const ti = findMigratedIdea.get(a.entity_id) as { migrated_idea_id: number | null } | undefined;
+        const ti = findMigratedIdea.get(a.entity_id) as
+          { migrated_idea_id: number | null } | undefined;
         if (ti?.migrated_idea_id != null) moveAttachment.run(ti.migrated_idea_id, a.id);
       }
     }

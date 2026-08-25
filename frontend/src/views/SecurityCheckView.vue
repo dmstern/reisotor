@@ -11,7 +11,7 @@ import Button from '../components/primitives/Button.vue';
 
 const tripStore = useTripStore();
 const destinationLabel = computed(
-  () => tripStore.currentTrip?.destination || tripStore.currentTrip?.name || 'eure Reiseregion',
+  () => tripStore.currentTrip?.destination || tripStore.currentTrip?.name || 'eure Reiseregion'
 );
 
 type Phase = 'idle' | 'scanning' | 'done';
@@ -93,21 +93,27 @@ function startCheck() {
   const messages = pickRandom(SCAN_MESSAGES, 5);
   messages.forEach((msg, i) => {
     timers.push(
-      window.setTimeout(() => {
-        visibleMessages.value.push(msg);
-      }, MESSAGE_INTERVAL_MS * i + 400),
+      window.setTimeout(
+        () => {
+          visibleMessages.value.push(msg);
+        },
+        MESSAGE_INTERVAL_MS * i + 400
+      )
     );
   });
 
   timers.push(
-    window.setTimeout(() => {
-      results.value = pickRandom(CATEGORIES, 5).map((c) => ({
-        ...c,
-        verdict: VERDICTS[Math.floor(Math.random() * VERDICTS.length)],
-      }));
-      quote.value = QUOTES[Math.floor(Math.random() * QUOTES.length)];
-      phase.value = 'done';
-    }, MESSAGE_INTERVAL_MS * messages.length + 1600),
+    window.setTimeout(
+      () => {
+        results.value = pickRandom(CATEGORIES, 5).map((c) => ({
+          ...c,
+          verdict: VERDICTS[Math.floor(Math.random() * VERDICTS.length)],
+        }));
+        quote.value = QUOTES[Math.floor(Math.random() * QUOTES.length)];
+        phase.value = 'done';
+      },
+      MESSAGE_INTERVAL_MS * messages.length + 1600
+    )
   );
 }
 </script>
@@ -149,12 +155,19 @@ function startCheck() {
       </Transition>
 
       <Button :disabled="phase === 'scanning'" @click="startCheck">
-        {{ phase === 'done' ? '🔁 Nochmal prüfen' : phase === 'scanning' ? 'Scanne …' : '🔍 Sicherheit prüfen' }}
+        {{
+          phase === 'done'
+            ? '🔁 Nochmal prüfen'
+            : phase === 'scanning'
+              ? 'Scanne …'
+              : '🔍 Sicherheit prüfen'
+        }}
       </Button>
     </div>
 
     <p class="disclaimer">
-      Für Sicherheitsfragen jenseits der Reisotor-Zertifizierung hilft auch das Auswärtige Amt weiter.
+      Für Sicherheitsfragen jenseits der Reisotor-Zertifizierung hilft auch das Auswärtige Amt
+      weiter.
     </p>
   </div>
 </template>

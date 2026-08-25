@@ -12,11 +12,31 @@ export const SpacingsScale: Story = {
   render: () => ({
     setup() {
       const spacings = [
-        { var: '--space-1', px: '4px', usage: 'Mikro-Abstände (Icon-Gaps, Badges, Chips, Button-Gap)' },
-        { var: '--space-2', px: '8px', usage: 'Standard-Gap für dichte Flex-Zeilen (Formularfelder, Button-Gruppen)' },
-        { var: '--space-3', px: '16px', usage: 'Standard Card-Padding (Mobil), Listen-Gaps, Fließtext-Abstand' },
-        { var: '--space-4', px: '24px', usage: 'Großzügiges Card-Padding (Desktop), Dialoge, Sektions-Abstände' },
-        { var: '--space-5', px: '32px', usage: 'Große Trennabstände zwischen Hauptbereichen einer View' },
+        {
+          var: '--space-1',
+          px: '4px',
+          usage: 'Mikro-Abstände (Icon-Gaps, Badges, Chips, Button-Gap)',
+        },
+        {
+          var: '--space-2',
+          px: '8px',
+          usage: 'Standard-Gap für dichte Flex-Zeilen (Formularfelder, Button-Gruppen)',
+        },
+        {
+          var: '--space-3',
+          px: '16px',
+          usage: 'Standard Card-Padding (Mobil), Listen-Gaps, Fließtext-Abstand',
+        },
+        {
+          var: '--space-4',
+          px: '24px',
+          usage: 'Großzügiges Card-Padding (Desktop), Dialoge, Sektions-Abstände',
+        },
+        {
+          var: '--space-5',
+          px: '32px',
+          usage: 'Große Trennabstände zwischen Hauptbereichen einer View',
+        },
         { var: '--space-6', px: '48px', usage: 'Maximale Außenabstände / Hero-Layouts' },
       ];
       return { spacings };

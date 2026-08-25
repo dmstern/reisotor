@@ -45,7 +45,7 @@ function readLocal<T>(key: string): DraftEntry<T> | null {
 export function useDraftAutosave<T extends Record<string, unknown>>(
   draftKey: MaybeRefOrGetter<string>,
   formRef: Ref<T>,
-  active: MaybeRefOrGetter<boolean>,
+  active: MaybeRefOrGetter<boolean>
 ) {
   const status = ref<DraftStatus>('idle');
   const restored = ref(false);
@@ -81,7 +81,7 @@ export function useDraftAutosave<T extends Record<string, unknown>>(
             stop();
             resolve(id);
           }
-        },
+        }
       );
     });
   }
@@ -89,7 +89,9 @@ export function useDraftAutosave<T extends Record<string, unknown>>(
   async function restoreIfPresent(tripId: number, key: string) {
     let best = readLocal<T>(storageKey(tripId, key));
     try {
-      const remote = await api.get<{ draft_key: string; data: T; updated_at: string }[]>(`/drafts?trip_id=${tripId}`);
+      const remote = await api.get<{ draft_key: string; data: T; updated_at: string }[]>(
+        `/drafts?trip_id=${tripId}`
+      );
       const match = remote.find((d) => d.draft_key === key);
       if (match && (!best || match.updated_at > best.updated_at)) best = match;
     } catch {
@@ -103,9 +105,16 @@ export function useDraftAutosave<T extends Record<string, unknown>>(
 
   function persist(tripId: number, key: string) {
     const now = new Date().toISOString();
-    localStorage.setItem(storageKey(tripId, key), JSON.stringify({ data: formRef.value, updated_at: now }));
+    localStorage.setItem(
+      storageKey(tripId, key),
+      JSON.stringify({ data: formRef.value, updated_at: now })
+    );
     api
-      .put<{ _pending?: boolean }>('/drafts', { trip_id: tripId, draft_key: key, data: formRef.value })
+      .put<{ _pending?: boolean }>('/drafts', {
+        trip_id: tripId,
+        draft_key: key,
+        data: formRef.value,
+      })
       .then((res) => {
         status.value = res?._pending ? 'offline' : 'saved';
       })
@@ -118,7 +127,9 @@ export function useDraftAutosave<T extends Record<string, unknown>>(
     const tripId = currentTripId();
     if (tripId != null && currentKey) {
       localStorage.removeItem(storageKey(tripId, currentKey));
-      api.delete(`/drafts?trip_id=${tripId}&draft_key=${encodeURIComponent(currentKey)}`).catch(() => {});
+      api
+        .delete(`/drafts?trip_id=${tripId}&draft_key=${encodeURIComponent(currentKey)}`)
+        .catch(() => {});
     }
     if (timer) clearTimeout(timer);
     status.value = 'idle';
@@ -167,10 +178,10 @@ export function useDraftAutosave<T extends Record<string, unknown>>(
           const key = currentKey;
           timer = setTimeout(() => persist(tripId2, key), DEBOUNCE_MS);
         },
-        { deep: true },
+        { deep: true }
       );
     },
-    { immediate: true },
+    { immediate: true }
   );
 
   return { status, restored, clear };

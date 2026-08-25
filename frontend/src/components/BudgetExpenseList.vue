@@ -22,11 +22,16 @@ const store = useBudgetStore();
       </li>
       <li v-else class="row" :class="{ 'new-highlight': highlightedIds.has(e.id) }">
         <div class="row-main">
-          <span class="row-title">{{ e.title }}<span v-if="e.note" class="note"> · {{ e.note }}</span></span>
+          <span class="row-title"
+            >{{ e.title }}<span v-if="e.note" class="note"> · {{ e.note }}</span></span
+          >
           <span class="row-meta">
             <span v-if="e.date" class="tag">{{ e.date }}</span>
             <span v-if="e.category" class="tag">{{ e.category }}</span>
-            <span v-if="store.users.length > 1" class="tag">{{ store.userAvatar(e.paid_by_user_id) }} {{ store.userName(e.paid_by_user_id) }}</span>
+            <span v-if="store.users.length > 1" class="tag"
+              >{{ store.userAvatar(e.paid_by_user_id) }}
+              {{ store.userName(e.paid_by_user_id) }}</span
+            >
           </span>
         </div>
         <strong class="row-amount">{{ e.amount.toFixed(2) }} €</strong>
@@ -43,7 +48,9 @@ const store = useBudgetStore();
         </div>
       </li>
     </template>
-    <li v-if="!store.expenses.length" key="empty" class="empty">Noch keine Bezahlungen eingetragen.</li>
+    <li v-if="!store.expenses.length" key="empty" class="empty">
+      Noch keine Bezahlungen eingetragen.
+    </li>
   </TransitionGroup>
 </template>
 

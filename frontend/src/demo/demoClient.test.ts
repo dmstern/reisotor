@@ -39,7 +39,9 @@ describe('demoClient (Issue #172: backend-loser Demo-Build)', () => {
   });
 
   it('liefert /trips/:id/region-info als Objekt statt der generischen []-Fallback-Antwort (Regressionsschutz: DashboardView.vue liest regionInfo.languages.length)', async () => {
-    const info = await demoRequest<{ languages: string[]; currency: { code: string } | null }>('/trips/1/region-info?home_currency=EUR');
+    const info = await demoRequest<{ languages: string[]; currency: { code: string } | null }>(
+      '/trips/1/region-info?home_currency=EUR'
+    );
     expect(Array.isArray(info)).toBe(false);
     expect(info.languages.length).toBeGreaterThan(0);
   });
@@ -77,7 +79,10 @@ describe('demoClient (Issue #172: backend-loser Demo-Build)', () => {
   });
 
   it('resetDemoStore() macht eine zuvor angelegte Änderung rückgängig', async () => {
-    await demoRequest('/todos?trip_id=1', { method: 'POST', body: JSON.stringify({ title: 'Wird zurückgesetzt' }) });
+    await demoRequest('/todos?trip_id=1', {
+      method: 'POST',
+      body: JSON.stringify({ title: 'Wird zurückgesetzt' }),
+    });
     resetDemoStore();
     const todos = await demoRequest<Array<{ title: string }>>('/todos?trip_id=1');
     expect(todos.some((t) => t.title === 'Wird zurückgesetzt')).toBe(false);
@@ -86,7 +91,9 @@ describe('demoClient (Issue #172: backend-loser Demo-Build)', () => {
   it('unbekannte Pfade schlagen nie fehl (GET liefert [], Mutationen no-op)', async () => {
     const result = await demoRequest<unknown[]>('/push/preferences');
     expect(result).toEqual([]);
-    await expect(demoRequest('/push/subscribe', { method: 'POST', body: '{}' })).resolves.toBeUndefined();
+    await expect(
+      demoRequest('/push/subscribe', { method: 'POST', body: '{}' })
+    ).resolves.toBeUndefined();
   });
 
   it('erlaubt das Ändern von Avatar und Benutzername in der Demo (Issue #234)', async () => {
@@ -110,10 +117,13 @@ describe('demoClient (Issue #172: backend-loser Demo-Build)', () => {
     const likeRes = await demoRequest<{ liked: boolean }>('/spots/1/like', { method: 'POST' });
     expect(likeRes.liked).toBeDefined();
 
-    const comment = await demoRequest<{ id: number; content: string; spot_id: number }>('/spots/1/comments', {
-      method: 'POST',
-      body: JSON.stringify({ content: 'Toller Ort!' }),
-    });
+    const comment = await demoRequest<{ id: number; content: string; spot_id: number }>(
+      '/spots/1/comments',
+      {
+        method: 'POST',
+        body: JSON.stringify({ content: 'Toller Ort!' }),
+      }
+    );
     expect(comment.id).toBeDefined();
     expect(comment.content).toBe('Toller Ort!');
     expect(comment.spot_id).toBe(1);
@@ -130,16 +140,26 @@ describe('demoClient (Issue #172: backend-loser Demo-Build)', () => {
     expect(createdTrack.id).toBeDefined();
     expect(createdTrack.started_at).toBeTruthy();
 
-    const points = await demoRequest<Array<{ id: number; lat: number; lng: number }>>(`/tracks/${createdTrack.id}/points`, {
-      method: 'POST',
-      body: JSON.stringify({ points: [{ lat: 38.7, lng: -9.1, recorded_at: new Date().toISOString() }] }),
-    });
+    const points = await demoRequest<Array<{ id: number; lat: number; lng: number }>>(
+      `/tracks/${createdTrack.id}/points`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          points: [{ lat: 38.7, lng: -9.1, recorded_at: new Date().toISOString() }],
+        }),
+      }
+    );
     expect(points.length).toBe(1);
 
-    const fetchedPoints = await demoRequest<Array<{ lat: number }>>(`/tracks/${createdTrack.id}/points`);
+    const fetchedPoints = await demoRequest<Array<{ lat: number }>>(
+      `/tracks/${createdTrack.id}/points`
+    );
     expect(fetchedPoints.length).toBe(1);
 
-    const stoppedTrack = await demoRequest<{ ended_at: string }>(`/tracks/${createdTrack.id}/stop`, { method: 'POST' });
+    const stoppedTrack = await demoRequest<{ ended_at: string }>(
+      `/tracks/${createdTrack.id}/stop`,
+      { method: 'POST' }
+    );
     expect(stoppedTrack.ended_at).toBeTruthy();
   });
 
@@ -165,4 +185,3 @@ describe('demoClient (Issue #172: backend-loser Demo-Build)', () => {
     expect(res.issueUrl).toBeTruthy();
   });
 });
-

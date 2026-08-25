@@ -28,7 +28,7 @@ const props = withDefaults(
     placeholder: '',
     compact: false,
     expandable: false,
-  },
+  }
 );
 const emit = defineEmits<{ (e: 'update:modelValue', value: string): void }>();
 
@@ -82,7 +82,7 @@ watch(
     }
     if (!editor.value || editor.value.getHTML() === value) return;
     editor.value.commands.setContent(value, { emitUpdate: false });
-  },
+  }
 );
 
 function isActive(name: string, attrs?: Record<string, unknown>) {
@@ -201,7 +201,9 @@ function isActive(name: string, attrs?: Record<string, unknown>) {
       </button>
     </div>
     <editor-content :editor="editor" class="content-scroll" />
-    <p v-if="placeholder && editor?.isEmpty" class="editor-placeholder" aria-hidden="true">{{ placeholder }}</p>
+    <p v-if="placeholder && editor?.isEmpty" class="editor-placeholder" aria-hidden="true">
+      {{ placeholder }}
+    </p>
   </div>
 </template>
 
@@ -338,7 +340,9 @@ function isActive(name: string, attrs?: Record<string, unknown>) {
   font-size: 0.9rem;
   cursor: pointer;
   box-sizing: border-box;
-  transition: border-color 0.15s, background-color 0.15s;
+  transition:
+    border-color 0.15s,
+    background-color 0.15s;
 }
 
 .collapsed-trigger:hover,

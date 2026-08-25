@@ -25,7 +25,7 @@ describe('checkDepartureReminders', () => {
     db.prepare('INSERT INTO users (username, password_hash, avatar) VALUES (?, ?, ?)').run(
       'reminderuser',
       bcrypt.hashSync('correct-horse', 10),
-      '🧪',
+      '🧪'
     );
     const login = await app.inject({
       method: 'POST',
@@ -46,7 +46,11 @@ describe('checkDepartureReminders', () => {
       method: 'POST',
       url: '/api/trips',
       headers: { cookie },
-      payload: { name: 'In-7-Tagen-Trip', start_date: isoDateInDays(7), end_date: isoDateInDays(10) },
+      payload: {
+        name: 'In-7-Tagen-Trip',
+        start_date: isoDateInDays(7),
+        end_date: isoDateInDays(10),
+      },
     });
     const tripId = create.json().id as number;
 
@@ -83,14 +87,20 @@ describe('checkDepartureReminders', () => {
       method: 'POST',
       url: '/api/trips',
       headers: { cookie },
-      payload: { name: 'In-4-Tagen-Trip', start_date: isoDateInDays(4), end_date: isoDateInDays(6) },
+      payload: {
+        name: 'In-4-Tagen-Trip',
+        start_date: isoDateInDays(4),
+        end_date: isoDateInDays(6),
+      },
     });
     const tripId = create.json().id as number;
 
     const { checkDepartureReminders } = await import('../../src/departureReminders.js');
     await checkDepartureReminders();
 
-    const sent = db.prepare('SELECT threshold_days FROM trip_departure_reminders_sent WHERE trip_id = ?').all(tripId);
+    const sent = db
+      .prepare('SELECT threshold_days FROM trip_departure_reminders_sent WHERE trip_id = ?')
+      .all(tripId);
     expect(sent).toEqual([]);
   });
 });

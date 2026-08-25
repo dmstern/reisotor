@@ -17,7 +17,11 @@ describe('useBudgetStore computeds', () => {
   function allocation(budgetId: number, category: string, amount: number): BudgetAllocation {
     return { id: Math.random(), budget_id: budgetId, category, amount };
   }
-  function expense(amount: number, budgetId: number | null, category: string | null = null): BudgetExpense {
+  function expense(
+    amount: number,
+    budgetId: number | null,
+    category: string | null = null
+  ): BudgetExpense {
     return {
       id: Math.random(),
       trip_id: 1,
@@ -36,7 +40,11 @@ describe('useBudgetStore computeds', () => {
     // Topf 1: einfacher Modus (target_amount gewinnt trotz vorhandener Allokationen).
     // Topf 2: detaillierter Modus (kein target_amount, Summe der Allokationen zählt).
     store.budgets = [budget(1, 300), budget(2, null)];
-    store.allocations = [allocation(1, 'Sonstiges', 999), allocation(2, 'Essen', 100), allocation(2, 'Transport', 50)];
+    store.allocations = [
+      allocation(1, 'Sonstiges', 999),
+      allocation(2, 'Essen', 100),
+      allocation(2, 'Transport', 50),
+    ];
     expect(store.grandTotal).toBe(450); // 300 (Topf 1) + 150 (Topf 2)
   });
 

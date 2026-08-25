@@ -43,8 +43,7 @@ interface TrashConfig {
 // Prinzip wie private Budget-Töpfe unten.
 function isTrackVisible(id: string, userId: number | undefined): boolean {
   const row = db.prepare('SELECT user_id, visibility FROM location_tracks WHERE id = ?').get(id) as
-    | { user_id: number; visibility: string }
-    | undefined;
+    { user_id: number; visibility: string } | undefined;
   if (!row) return true; // nicht gefunden - lässt den 404-Pfad des Aufrufers greifen
   return row.user_id === userId || row.visibility === 'shared';
 }
@@ -54,7 +53,7 @@ function isBudgetItemVisible(id: string, userId: number | undefined): boolean {
     .prepare(
       `SELECT bi.budget_id, b.owner_id FROM budget_items bi
        LEFT JOIN budgets b ON b.id = bi.budget_id
-       WHERE bi.id = ?`,
+       WHERE bi.id = ?`
     )
     .get(id) as { budget_id: number | null; owner_id: number | null } | undefined;
   if (!row) return true; // nicht gefunden - lässt den 404-Pfad des Aufrufers greifen
@@ -73,7 +72,9 @@ const TRASH_CONFIG: TrashConfig[] = [
     // ehemalige Reise-Etappe) zusätzlich eine eigene budget_expense_id tragen - restoreLinkedBudgetExpense()
     // ist bei einer normalen Tour ohne Budget-Sync ein No-Op (gleiches Muster wie bei 'spot').
     onRestore: (id) => {
-      db.prepare('UPDATE schedule_items SET deleted_at = NULL WHERE idea_id = ? AND deleted_at IS NOT NULL').run(id);
+      db.prepare(
+        'UPDATE schedule_items SET deleted_at = NULL WHERE idea_id = ? AND deleted_at IS NOT NULL'
+      ).run(id);
       restoreLinkedBudgetExpense('ideas', id);
     },
   },
@@ -97,7 +98,7 @@ const TRASH_CONFIG: TrashConfig[] = [
           `SELECT bi.* FROM budget_items bi
            LEFT JOIN budgets b ON b.id = bi.budget_id
            WHERE bi.trip_id = ? AND bi.deleted_at IS NOT NULL
-             AND (bi.budget_id IS NULL OR b.owner_id IS NULL OR b.owner_id = ?)`,
+             AND (bi.budget_id IS NULL OR b.owner_id IS NULL OR b.owner_id = ?)`
         )
         .all(tripId, userId ?? null) as Record<string, unknown>[],
     checkVisible: isBudgetItemVisible,
@@ -118,7 +119,7 @@ const TRASH_CONFIG: TrashConfig[] = [
       db
         .prepare(
           `SELECT * FROM location_tracks
-           WHERE trip_id = ? AND deleted_at IS NOT NULL AND (user_id = ? OR visibility = 'shared')`,
+           WHERE trip_id = ? AND deleted_at IS NOT NULL AND (user_id = ? OR visibility = 'shared')`
         )
         .all(tripId, userId ?? null) as Record<string, unknown>[],
     checkVisible: isTrackVisible,
@@ -127,12 +128,11 @@ const TRASH_CONFIG: TrashConfig[] = [
 
 function restoreLinkedBudgetExpense(table: string, id: string) {
   const row = db.prepare(`SELECT budget_expense_id FROM ${table} WHERE id = ?`).get(id) as
-    | { budget_expense_id: number | null }
-    | undefined;
+    { budget_expense_id: number | null } | undefined;
   if (row?.budget_expense_id) {
-    db.prepare('UPDATE budget_items SET deleted_at = NULL WHERE id = ? AND deleted_at IS NOT NULL').run(
-      row.budget_expense_id,
-    );
+    db.prepare(
+      'UPDATE budget_items SET deleted_at = NULL WHERE id = ? AND deleted_at IS NOT NULL'
+    ).run(row.budget_expense_id);
   }
 }
 
@@ -162,32 +162,39 @@ export const trashRoutes: FastifyPluginAsync = async (app) => {
     return entries;
   });
 
-  app.post<{ Params: { type: string; id: string } }>('/trash/:type/:id/restore', async (req, reply) => {
-    const config = TRASH_CONFIG.find((c) => c.type === req.params.type);
-    if (!config) return reply.code(400).send({ error: 'Unbekannter Objekttyp' });
+  app.post<{ Params: { type: string; id: string } }>(
+    '/trash/:type/:id/restore',
+    async (req, reply) => {
+      const config = TRASH_CONFIG.find((c) => c.type === req.params.type);
+      if (!config) return reply.code(400).send({ error: 'Unbekannter Objekttyp' });
 
-    const existingRow = db.prepare(`SELECT trip_id FROM ${config.table} WHERE id = ?`).get(req.params.id) as
-      | { trip_id: number }
-      | undefined;
-    if (!existingRow) return reply.code(404).send({ error: 'Nicht gefunden oder nicht gelöscht' });
-    if (!requireTripMember(reply, existingRow.trip_id, req.session.userId)) return;
-    if (config.checkVisible && !config.checkVisible(req.params.id, req.session.userId)) {
-      return reply.code(403).send({ error: 'Kein Zugriff auf dieses Objekt' });
+      const existingRow = db
+        .prepare(`SELECT trip_id FROM ${config.table} WHERE id = ?`)
+        .get(req.params.id) as { trip_id: number } | undefined;
+      if (!existingRow)
+        return reply.code(404).send({ error: 'Nicht gefunden oder nicht gelöscht' });
+      if (!requireTripMember(reply, existingRow.trip_id, req.session.userId)) return;
+      if (config.checkVisible && !config.checkVisible(req.params.id, req.session.userId)) {
+        return reply.code(403).send({ error: 'Kein Zugriff auf dieses Objekt' });
+      }
+
+      const result = db
+        .prepare(
+          `UPDATE ${config.table} SET deleted_at = NULL WHERE id = ? AND deleted_at IS NOT NULL`
+        )
+        .run(req.params.id);
+      if (result.changes === 0)
+        return reply.code(404).send({ error: 'Nicht gefunden oder nicht gelöscht' });
+
+      config.onRestore?.(req.params.id);
+      recordActivity(
+        existingRow.trip_id,
+        DOMAIN_BY_TYPE[req.params.type] ?? req.params.type,
+        Number(req.params.id),
+        'restored',
+        req.session.userId!
+      );
+      return db.prepare(`SELECT * FROM ${config.table} WHERE id = ?`).get(req.params.id);
     }
-
-    const result = db
-      .prepare(`UPDATE ${config.table} SET deleted_at = NULL WHERE id = ? AND deleted_at IS NOT NULL`)
-      .run(req.params.id);
-    if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden oder nicht gelöscht' });
-
-    config.onRestore?.(req.params.id);
-    recordActivity(
-      existingRow.trip_id,
-      DOMAIN_BY_TYPE[req.params.type] ?? req.params.type,
-      Number(req.params.id),
-      'restored',
-      req.session.userId!,
-    );
-    return db.prepare(`SELECT * FROM ${config.table} WHERE id = ?`).get(req.params.id);
-  });
+  );
 };

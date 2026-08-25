@@ -48,7 +48,10 @@ function allTileUrls(bounds: L.LatLngBounds): string[] {
   return urls;
 }
 
-export function estimateTileDownload(bounds: L.LatLngBounds): { count: number; approxBytes: number } {
+export function estimateTileDownload(bounds: L.LatLngBounds): {
+  count: number;
+  approxBytes: number;
+} {
   const count = allTileUrls(bounds).length;
   return { count, approxBytes: count * AVG_TILE_BYTES };
 }
@@ -73,7 +76,7 @@ async function downloadOne(url: string): Promise<boolean> {
 
 export async function downloadTiles(
   bounds: L.LatLngBounds,
-  onProgress: (done: number, total: number) => void,
+  onProgress: (done: number, total: number) => void
 ): Promise<{ downloaded: number; failed: number }> {
   const urls = allTileUrls(bounds);
   let downloaded = 0;

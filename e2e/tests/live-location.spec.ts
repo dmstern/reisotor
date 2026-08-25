@@ -10,8 +10,12 @@ import { newContextWithReducedMotion } from './helpers/context';
 // Zwei unabhängige Browser-Kontexte statt des "chromium"-Projekt-Storage-States, gleiches Muster wie
 // realtime-sync.spec.ts (dessen storageState:authFile gilt sonst als Default für JEDEN
 // browser.newContext()-Aufruf).
-test('another member sharing their location shows up as a marker on the map', async ({ browser }) => {
-  const ctxA = await newContextWithReducedMotion(browser, { storageState: { cookies: [], origins: [] } });
+test('another member sharing their location shows up as a marker on the map', async ({
+  browser,
+}) => {
+  const ctxA = await newContextWithReducedMotion(browser, {
+    storageState: { cookies: [], origins: [] },
+  });
   const ctxB = await newContextWithReducedMotion(browser, {
     storageState: { cookies: [], origins: [] },
     geolocation: { latitude: 48.2, longitude: 16.37 },
@@ -34,7 +38,9 @@ test('another member sharing their location shows up as a marker on the map', as
 
   // pageA never shares its own location - it should still see pageB's marker via SSE.
   await pageA.goto('/excursions');
-  const liveMarkersOnA = pageA.locator('.leaflet-pane.leaflet-live-positions-pane .leaflet-marker-icon');
+  const liveMarkersOnA = pageA.locator(
+    '.leaflet-pane.leaflet-live-positions-pane .leaflet-marker-icon'
+  );
   await expect(liveMarkersOnA).toHaveCount(0);
 
   await pageB.goto('/excursions');

@@ -123,7 +123,12 @@ describe('budget routes', () => {
         method: 'POST',
         url: '/api/budget/transfers',
         headers: { cookie: owner.cookie },
-        payload: { trip_id: tripId, from_user_id: owner.userId, to_user_id: owner.userId, amount: 10 },
+        payload: {
+          trip_id: tripId,
+          from_user_id: owner.userId,
+          to_user_id: owner.userId,
+          amount: 10,
+        },
       });
       expect(selfTransfer.statusCode).toBe(400);
 
@@ -131,7 +136,12 @@ describe('budget routes', () => {
         method: 'POST',
         url: '/api/budget/transfers',
         headers: { cookie: owner.cookie },
-        payload: { trip_id: tripId, from_user_id: owner.userId, to_user_id: outsider.userId, amount: 10 },
+        payload: {
+          trip_id: tripId,
+          from_user_id: owner.userId,
+          to_user_id: outsider.userId,
+          amount: 10,
+        },
       });
       expect(nonMemberTransfer.statusCode).toBe(400);
 
@@ -139,7 +149,12 @@ describe('budget routes', () => {
         method: 'POST',
         url: '/api/budget/transfers',
         headers: { cookie: owner.cookie },
-        payload: { trip_id: tripId, from_user_id: owner.userId, to_user_id: member.userId, amount: 0 },
+        payload: {
+          trip_id: tripId,
+          from_user_id: owner.userId,
+          to_user_id: member.userId,
+          amount: 0,
+        },
       });
       expect(zeroTransfer.statusCode).toBe(400);
 
@@ -147,7 +162,12 @@ describe('budget routes', () => {
         method: 'POST',
         url: '/api/budget/transfers',
         headers: { cookie: owner.cookie },
-        payload: { trip_id: tripId, from_user_id: owner.userId, to_user_id: member.userId, amount: 10 },
+        payload: {
+          trip_id: tripId,
+          from_user_id: owner.userId,
+          to_user_id: member.userId,
+          amount: 10,
+        },
       });
       expect(valid.statusCode).toBe(201);
     });
@@ -240,7 +260,12 @@ describe('budget routes', () => {
         method: 'POST',
         url: '/api/budget',
         headers: { cookie: owner.cookie },
-        payload: { trip_id: tripId, title: 'Geheimes Geschenk', amount: 20, budget_id: privateBudgetId },
+        payload: {
+          trip_id: tripId,
+          title: 'Geheimes Geschenk',
+          amount: 20,
+          budget_id: privateBudgetId,
+        },
       });
       expect(expense.statusCode).toBe(201);
       const expenseId = expense.json().id;
@@ -258,7 +283,9 @@ describe('budget routes', () => {
         url: `/api/budget/allocations?trip_id=${tripId}`,
         headers: { cookie: owner.cookie },
       });
-      expect(ownerAllocations.json().some((a: { budget_id: number }) => a.budget_id === privateBudgetId)).toBe(true);
+      expect(
+        ownerAllocations.json().some((a: { budget_id: number }) => a.budget_id === privateBudgetId)
+      ).toBe(true);
 
       const ownerExpenses = await app.inject({
         method: 'GET',
@@ -273,16 +300,18 @@ describe('budget routes', () => {
         url: `/api/budget/budgets?trip_id=${tripId}`,
         headers: { cookie: member.cookie },
       });
-      expect(memberBudgets.json().some((b: { id: number }) => b.id === privateBudgetId)).toBe(false);
+      expect(memberBudgets.json().some((b: { id: number }) => b.id === privateBudgetId)).toBe(
+        false
+      );
 
       const memberAllocations = await app.inject({
         method: 'GET',
         url: `/api/budget/allocations?trip_id=${tripId}`,
         headers: { cookie: member.cookie },
       });
-      expect(memberAllocations.json().some((a: { budget_id: number }) => a.budget_id === privateBudgetId)).toBe(
-        false,
-      );
+      expect(
+        memberAllocations.json().some((a: { budget_id: number }) => a.budget_id === privateBudgetId)
+      ).toBe(false);
 
       const memberExpenses = await app.inject({
         method: 'GET',
@@ -315,7 +344,12 @@ describe('budget routes', () => {
         method: 'POST',
         url: '/api/budget',
         headers: { cookie: owner.cookie },
-        payload: { trip_id: tripId, title: 'Privatausgabe', amount: 15, budget_id: privateBudgetId },
+        payload: {
+          trip_id: tripId,
+          title: 'Privatausgabe',
+          amount: 15,
+          budget_id: privateBudgetId,
+        },
       });
       const expenseId = expense.json().id;
 
@@ -353,7 +387,12 @@ describe('budget routes', () => {
         method: 'PUT',
         url: `/api/budget/${expenseId}`,
         headers: { cookie: member.cookie },
-        payload: { trip_id: tripId, title: 'Umgeschrieben', amount: 15, budget_id: privateBudgetId },
+        payload: {
+          trip_id: tripId,
+          title: 'Umgeschrieben',
+          amount: 15,
+          budget_id: privateBudgetId,
+        },
       });
       expect(expenseEditAttempt.statusCode).toBe(403);
 
@@ -424,11 +463,20 @@ describe('budget routes', () => {
         method: 'POST',
         url: '/api/budget',
         headers: { cookie: owner.cookie },
-        payload: { trip_id: tripId, title: 'Zu löschende Privatausgabe', amount: 8, budget_id: privateBudgetId },
+        payload: {
+          trip_id: tripId,
+          title: 'Zu löschende Privatausgabe',
+          amount: 8,
+          budget_id: privateBudgetId,
+        },
       });
       const expenseId = expense.json().id;
 
-      await app.inject({ method: 'DELETE', url: `/api/budget/${expenseId}`, headers: { cookie: owner.cookie } });
+      await app.inject({
+        method: 'DELETE',
+        url: `/api/budget/${expenseId}`,
+        headers: { cookie: owner.cookie },
+      });
 
       const memberTrash = await app.inject({
         method: 'GET',
@@ -436,7 +484,9 @@ describe('budget routes', () => {
         headers: { cookie: member.cookie },
       });
       expect(
-        memberTrash.json().some((e: { type: string; id: number }) => e.type === 'budget_item' && e.id === expenseId),
+        memberTrash
+          .json()
+          .some((e: { type: string; id: number }) => e.type === 'budget_item' && e.id === expenseId)
       ).toBe(false);
 
       const ownerTrash = await app.inject({
@@ -445,7 +495,9 @@ describe('budget routes', () => {
         headers: { cookie: owner.cookie },
       });
       expect(
-        ownerTrash.json().some((e: { type: string; id: number }) => e.type === 'budget_item' && e.id === expenseId),
+        ownerTrash
+          .json()
+          .some((e: { type: string; id: number }) => e.type === 'budget_item' && e.id === expenseId)
       ).toBe(true);
     });
   });

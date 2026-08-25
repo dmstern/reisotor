@@ -28,13 +28,42 @@ const emit = defineEmits<{ (e: 'update:modelValue', value: boolean): void; (e: '
 </script>
 
 <template>
-  <Modal :model-value="modelValue" @update:model-value="(v) => emit('update:modelValue', v)" hide-header>
+  <Modal
+    :model-value="modelValue"
+    @update:model-value="(v) => emit('update:modelValue', v)"
+    hide-header
+  >
     <template #default="{ close }">
       <div class="detail-hero" :style="imageUrl ? { backgroundImage: `url(${imageUrl})` } : {}">
-        <SpotImageCollage v-if="!imageUrl && collageImages && collageImages.length > 0" :images="collageImages" />
-        <AppIcon v-else-if="!imageUrl && placeholderIcon" class="placeholder" :size="45" :icon="placeholderIcon" group="categories" />
-        <IconButton variant="ghost" class="detail-close-btn" :icon="actionIcons.close" size="sm" title="Schließen" aria-label="Schließen" @click="close" />
-        <IconButton variant="ghost" class="detail-edit-btn" :icon="actionIcons.edit" size="sm" title="Bearbeiten" aria-label="Bearbeiten" @click="emit('edit')" />
+        <SpotImageCollage
+          v-if="!imageUrl && collageImages && collageImages.length > 0"
+          :images="collageImages"
+        />
+        <AppIcon
+          v-else-if="!imageUrl && placeholderIcon"
+          class="placeholder"
+          :size="45"
+          :icon="placeholderIcon"
+          group="categories"
+        />
+        <IconButton
+          variant="ghost"
+          class="detail-close-btn"
+          :icon="actionIcons.close"
+          size="sm"
+          title="Schließen"
+          aria-label="Schließen"
+          @click="close"
+        />
+        <IconButton
+          variant="ghost"
+          class="detail-edit-btn"
+          :icon="actionIcons.edit"
+          size="sm"
+          title="Bearbeiten"
+          aria-label="Bearbeiten"
+          @click="emit('edit')"
+        />
         <div class="detail-hero-overlay">
           <h2 class="detail-title">{{ title }}</h2>
           <div class="detail-meta" v-if="$slots.meta"><slot name="meta" /></div>

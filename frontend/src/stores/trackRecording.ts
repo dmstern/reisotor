@@ -137,7 +137,7 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
         // Zugriff verweigert/fehlgeschlagen - Aufzeichnung bleibt aktiv, der nächste erfolgreiche
         // Callback (z. B. nach Berechtigungs-Erteilung) sammelt einfach weiter.
       },
-      { enableHighAccuracy: true, maximumAge: 10_000 },
+      { enableHighAccuracy: true, maximumAge: 10_000 }
     );
   }
 
@@ -150,7 +150,10 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
    *  müsste sonst über die generische Outbox mit einer negativen Platzhalter-id antworten (siehe
    *  api/offline.ts), auf die der dedizierte Punkte-Puffer hier nicht aufgebaut ist - eine bereits
    *  laufende Aufzeichnung übersteht dagegen kurze Empfangslöcher problemlos (siehe oben). */
-  async function start(options: { visibility?: TrackVisibility; excursionId?: number | null }): Promise<boolean> {
+  async function start(options: {
+    visibility?: TrackVisibility;
+    excursionId?: number | null;
+  }): Promise<boolean> {
     if (recording.value) return true;
     const tripId = tripStore.currentTripId;
     if (tripId == null) return false;
@@ -164,14 +167,20 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
       if (created.id < 0) {
         // Offline (queueMutation() antwortet nie mit einem Fehler, siehe api/client.ts) - eine
         // Aufzeichnung braucht aber von Anfang an eine echte Server-id für den Punkte-Puffer.
-        startError.value = 'Aufzeichnung braucht eine Verbindung zum Server, bitte später erneut versuchen.';
+        startError.value =
+          'Aufzeichnung braucht eine Verbindung zum Server, bitte später erneut versuchen.';
         return false;
       }
       track.value = created;
       recording.value = true;
       paused.value = false;
       pendingBuffer = [];
-      saveActiveState({ trackId: created.id, tripId, startedAt: created.started_at, paused: false });
+      saveActiveState({
+        trackId: created.id,
+        tripId,
+        startedAt: created.started_at,
+        paused: false,
+      });
       startWatch();
       startFlushLoop();
       // stores/tracks.ts bekäme die neue Aufzeichnung sonst erst beim nächsten Trip-Wechsel/Reload
@@ -219,7 +228,12 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
     await flushBuffer();
     stopFlushLoop();
     paused.value = true;
-    saveActiveState({ trackId: track.value.id, tripId: track.value.trip_id, startedAt: track.value.started_at, paused: true });
+    saveActiveState({
+      trackId: track.value.id,
+      tripId: track.value.trip_id,
+      startedAt: track.value.started_at,
+      paused: true,
+    });
   }
 
   /** Setzt eine pausierte Aufzeichnung fort - hängt weitere Punkte an dieselbe, weiterhin offene
@@ -229,7 +243,12 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
     paused.value = false;
     startWatch();
     startFlushLoop();
-    saveActiveState({ trackId: track.value.id, tripId: track.value.trip_id, startedAt: track.value.started_at, paused: false });
+    saveActiveState({
+      trackId: track.value.id,
+      tripId: track.value.trip_id,
+      startedAt: track.value.started_at,
+      paused: false,
+    });
   }
 
   /** Stellt eine beim letzten Beenden der App noch laufende (ggf. auch pausierte) Aufzeichnung wieder
@@ -275,7 +294,7 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
       // beim initialen Laden (previousTripId noch undefined), nicht bei jedem Wechsel.
       if (previousTripId === undefined && tripId != null) restoreOnLoad();
     },
-    { immediate: true },
+    { immediate: true }
   );
 
   return { track, recording, paused, startError, start, stop, pause, resume };

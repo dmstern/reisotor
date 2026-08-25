@@ -7,12 +7,36 @@ const demoUrl = './demo/';
 const storybookUrl = './storybook/';
 
 const features = [
-  { icon: '📅', title: 'Gemeinsamer Kalender', text: 'Termine, Ausflüge und Reise-Etappen auf einen Blick – live synchron für alle Mitreisenden.' },
-  { icon: '💶', title: 'Budget & Kasse', text: 'Wer hat was bezahlt? Gemeinsame und persönliche Töpfe, Ausgaben und Überweisungen im Griff.' },
-  { icon: '🧳', title: 'Packlisten & Einkauf', text: 'Nichts vergessen – gemeinsame Listen mit Mengen, Zuständigkeiten und Fortschritt.' },
-  { icon: '🎒', title: 'Spots & Touren', text: 'Unterkünfte, Sehenswürdigkeiten und Ausflüge sammeln, auf der Karte verorten, einplanen.' },
-  { icon: '📴', title: 'Offline-first', text: 'Als App installierbar, funktioniert auch ohne Netz – Änderungen synchronisieren sich später.' },
-  { icon: '🤝', title: 'Gemeinsam statt einsam', text: 'Ein Urlaub, mehrere Mitglieder – jede:r sieht denselben aktuellen Stand.' },
+  {
+    icon: '📅',
+    title: 'Gemeinsamer Kalender',
+    text: 'Termine, Ausflüge und Reise-Etappen auf einen Blick – live synchron für alle Mitreisenden.',
+  },
+  {
+    icon: '💶',
+    title: 'Budget & Kasse',
+    text: 'Wer hat was bezahlt? Gemeinsame und persönliche Töpfe, Ausgaben und Überweisungen im Griff.',
+  },
+  {
+    icon: '🧳',
+    title: 'Packlisten & Einkauf',
+    text: 'Nichts vergessen – gemeinsame Listen mit Mengen, Zuständigkeiten und Fortschritt.',
+  },
+  {
+    icon: '🎒',
+    title: 'Spots & Touren',
+    text: 'Unterkünfte, Sehenswürdigkeiten und Ausflüge sammeln, auf der Karte verorten, einplanen.',
+  },
+  {
+    icon: '📴',
+    title: 'Offline-first',
+    text: 'Als App installierbar, funktioniert auch ohne Netz – Änderungen synchronisieren sich später.',
+  },
+  {
+    icon: '🤝',
+    title: 'Gemeinsam statt einsam',
+    text: 'Ein Urlaub, mehrere Mitglieder – jede:r sieht denselben aktuellen Stand.',
+  },
 ];
 </script>
 
@@ -21,11 +45,17 @@ const features = [
     <header class="hero">
       <img src="/reisotor_logo.svg" alt="" width="120" height="120" class="hero-logo" />
       <h1>Reisotor</h1>
-      <p class="tagline">Euren Urlaub gemeinsam planen – Kalender, Budget, Packlisten und Ausflüge an einem Ort.</p>
+      <p class="tagline">
+        Euren Urlaub gemeinsam planen – Kalender, Budget, Packlisten und Ausflüge an einem Ort.
+      </p>
       <div class="hero-actions">
         <a :href="demoUrl" class="cta-primary">Demo ausprobieren</a>
-        <a :href="storybookUrl" target="_blank" rel="noopener" class="cta-secondary">🎨 Storybook (Design System)</a>
-        <a :href="repoUrl" target="_blank" rel="noopener" class="cta-secondary">Auf GitHub ansehen</a>
+        <a :href="storybookUrl" target="_blank" rel="noopener" class="cta-secondary"
+          >🎨 Storybook (Design System)</a
+        >
+        <a :href="repoUrl" target="_blank" rel="noopener" class="cta-secondary"
+          >Auf GitHub ansehen</a
+        >
       </div>
     </header>
 
@@ -36,14 +66,28 @@ const features = [
              (stores/theme.ts's 'system'-Default). <picture> statt JS, damit der Browser nur die
              passende Variante überhaupt lädt. -->
         <picture>
-          <source srcset="/landing/screenshot-dashboard-dark.png" media="(prefers-color-scheme: dark)" />
-          <img src="/landing/screenshot-dashboard-light.png" alt="Reisotor-Dashboard mit Übersicht über einen Urlaub" loading="lazy" />
+          <source
+            srcset="/landing/screenshot-dashboard-dark.png"
+            media="(prefers-color-scheme: dark)"
+          />
+          <img
+            src="/landing/screenshot-dashboard-light.png"
+            alt="Reisotor-Dashboard mit Übersicht über einen Urlaub"
+            loading="lazy"
+          />
         </picture>
       </div>
       <div class="screenshot-frame screenshot-frame-mobile">
         <picture>
-          <source srcset="/landing/screenshot-mobile-dark.png" media="(prefers-color-scheme: dark)" />
-          <img src="/landing/screenshot-mobile-light.png" alt="Reisotor auf dem Smartphone" loading="lazy" />
+          <source
+            srcset="/landing/screenshot-mobile-dark.png"
+            media="(prefers-color-scheme: dark)"
+          />
+          <img
+            src="/landing/screenshot-mobile-light.png"
+            alt="Reisotor auf dem Smartphone"
+            loading="lazy"
+          />
         </picture>
       </div>
     </section>
@@ -69,8 +113,12 @@ const features = [
       <h2>Wie kommt man an Reisotor?</h2>
       <p>
         Reisotor ist Open Source und aktuell nur per Self-Hosting verfügbar. Die
-        <a :href="`${repoUrl}#readme`" target="_blank" rel="noopener">README</a> beschreibt lokale Entwicklung und
-        <a :href="`${repoUrl}/blob/main/README.md#deployment`" target="_blank" rel="noopener">Deployment</a> auf einem eigenen Server.
+        <a :href="`${repoUrl}#readme`" target="_blank" rel="noopener">README</a> beschreibt lokale
+        Entwicklung und
+        <a :href="`${repoUrl}/blob/main/README.md#deployment`" target="_blank" rel="noopener"
+          >Deployment</a
+        >
+        auf einem eigenen Server.
       </p>
     </section>
 
@@ -80,7 +128,11 @@ const features = [
         <a :href="storybookUrl" target="_blank" rel="noopener">Storybook Showcase</a> ·
         <a :href="repoUrl" target="_blank" rel="noopener">Reisotor auf GitHub</a>
       </p>
-      <p class="hint">© {{ new Date().getFullYear() }} <a href="https://github.com/dmstern" target="_blank" rel="noopener">Daniel Morgenstern</a> · gebaut mit Claude Code</p>
+      <p class="hint">
+        © {{ new Date().getFullYear() }}
+        <a href="https://github.com/dmstern" target="_blank" rel="noopener">Daniel Morgenstern</a> ·
+        gebaut mit Claude Code
+      </p>
     </footer>
   </div>
 </template>

@@ -16,7 +16,7 @@ const props = withDefaults(
      *  erneut die 2s erzwingt). */
     playIntro?: boolean;
   }>(),
-  { playIntro: true },
+  { playIntro: true }
 );
 
 // App.vue soll die eigentliche UI erst zeigen, wenn die Rucksack-Animation fertig durchgelaufen ist

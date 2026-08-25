@@ -113,7 +113,14 @@ const weatherDate = computed(() => {
 });
 const dayWeather = ref<DailyWeather | null>(null);
 watch(
-  () => [weatherDate.value, props.spot.lat, props.spot.lng, weatherProvider.model, props.expanded] as const,
+  () =>
+    [
+      weatherDate.value,
+      props.spot.lat,
+      props.spot.lng,
+      weatherProvider.model,
+      props.expanded,
+    ] as const,
   async ([date, lat, lng, model]) => {
     dayWeather.value = null;
     if (!date || lat == null || lng == null) return;
@@ -124,13 +131,15 @@ watch(
       // best effort, siehe Kommentar oben
     }
   },
-  { immediate: true },
+  { immediate: true }
 );
 
 // Nur noch das Datum als String - das Wetter (falls vorhanden) rendert das Template direkt über ein
 // eigenes AppIcon + Temperatur, statt es wie zuvor in einen einzigen, nicht auftrennbaren String
 // einzubacken (der hätte sich nicht zwischen Emoji/Tabler-Icon umschalten lassen).
-const plannedDateLabel = computed(() => (props.scheduledDate ? formatDate(props.scheduledDate) : ''));
+const plannedDateLabel = computed(() =>
+  props.scheduledDate ? formatDate(props.scheduledDate) : ''
+);
 
 // Tour-Zuordnungen als Checkliste (#226, #227):
 const tourAssignments = computed(() =>
@@ -138,7 +147,7 @@ const tourAssignments = computed(() =>
     id: e.id,
     title: e.title,
     assigned: e.spot_ids.includes(props.spot.id),
-  })),
+  }))
 );
 
 async function onToggleTour(excursionId: number) {
@@ -247,7 +256,13 @@ function onToggleDone() {
 <template>
   <Card class="spot-card" :class="{ expanded, 'new-highlight': highlighted }" @click="onCardClick">
     <div class="image" :style="spot.image_url ? { backgroundImage: `url(${spot.image_url})` } : {}">
-      <AppIcon v-if="!spot.image_url" class="placeholder" :size="35" :icon="spotCategoryMeta(spot.category).tabler" group="categories" />
+      <AppIcon
+        v-if="!spot.image_url"
+        class="placeholder"
+        :size="35"
+        :icon="spotCategoryMeta(spot.category).tabler"
+        group="categories"
+      />
       <!-- Nur in der aufgeklappten Karte - in der kompakten Mini-Card (v. a. auf mobile knapper
            Platz) reichen Bild/Titel/Kategorie zur Orientierung, Bearbeiten/Löschen sind erst nach
            dem Aufklappen erreichbar. -->
@@ -268,7 +283,13 @@ function onToggleDone() {
         <AppIcon
           class="status-icon"
           :size="14"
-          :icon="spot.done ? ACTION_ICONS.done : scheduledDate ? FORM_FIELD_ICONS.date : ACTION_ICONS.today"
+          :icon="
+            spot.done
+              ? ACTION_ICONS.done
+              : scheduledDate
+                ? FORM_FIELD_ICONS.date
+                : ACTION_ICONS.today
+          "
           group="actions"
         />
         <span class="status-text">
@@ -276,7 +297,10 @@ function onToggleDone() {
           <template v-else-if="spot.done">Gemacht</template>
           <template v-else-if="scheduledDate">Geplant für {{ plannedDateLabel }}</template>
           <template v-else>Aktuelles Wetter</template>
-          <template v-if="dayWeather"> · <WeatherIcon :code="dayWeather.weatherCode" :size="14" /> {{ Math.round(dayWeather.tempMax) }}°</template>
+          <template v-if="dayWeather">
+            · <WeatherIcon :code="dayWeather.weatherCode" :size="14" />
+            {{ Math.round(dayWeather.tempMax) }}°</template
+          >
         </span>
       </span>
     </div>
@@ -292,17 +316,23 @@ function onToggleDone() {
            ExcursionCard.vue/SpotDetailDialog.vue's "Auf Karte anzeigen"-Button. -->
       <div class="links" v-if="spot.lat != null && spot.lng != null">
         <Button variant="card-action" class="show-on-map-btn" @click.stop="onShowOnMap">
-          <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" /> <span class="btn-label">Auf Karte anzeigen</span>
+          <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" />
+          <span class="btn-label">Auf Karte anzeigen</span>
         </Button>
       </div>
-      <p v-if="expanded && creatorLabel" class="detail-row"><span class="detail-label">Von</span>{{ creatorLabel }}</p>
+      <p v-if="expanded && creatorLabel" class="detail-row">
+        <span class="detail-label">Von</span>{{ creatorLabel }}
+      </p>
       <template v-if="expanded && isAccommodation">
         <p v-if="spot.start_date || spot.end_date" class="detail-row">
           <span class="detail-label">Zeitraum</span>
           <AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" />
-          {{ formatAccommodationDate(spot.start_date) || '?' }} – {{ formatAccommodationDate(spot.end_date) || '?' }}
+          {{ formatAccommodationDate(spot.start_date) || '?' }} –
+          {{ formatAccommodationDate(spot.end_date) || '?' }}
         </p>
-        <p v-if="spot.address" class="detail-row"><span class="detail-label">Adresse</span>{{ spot.address }}</p>
+        <p v-if="spot.address" class="detail-row">
+          <span class="detail-label">Adresse</span>{{ spot.address }}
+        </p>
         <p v-if="spot.checkin || spot.checkout" class="detail-row">
           <span class="detail-label">Check-in/-out</span>
           {{ spot.checkin || '–' }} · {{ spot.checkout || '–' }}
@@ -312,7 +342,10 @@ function onToggleDone() {
           <AppIcon :icon="FORM_FIELD_ICONS.contact" :size="14" group="formFields" />
           <a :href="parseContact(spot.contact).href" @click.stop>{{ spot.contact }}</a>
         </p>
-        <p v-else-if="spot.contact && parseContact(spot.contact).kind === 'email'" class="detail-row">
+        <p
+          v-else-if="spot.contact && parseContact(spot.contact).kind === 'email'"
+          class="detail-row"
+        >
           <span class="detail-label">Kontakt</span>
           <AppIcon :icon="FORM_FIELD_ICONS.email" :size="14" group="formFields" />
           <a :href="parseContact(spot.contact).href" @click.stop>{{ spot.contact }}</a>
@@ -323,11 +356,19 @@ function onToggleDone() {
         </p>
         <p v-if="spot.amount != null" class="detail-row">
           <span class="detail-label">Kosten</span>
-          <AppIcon :icon="FORM_FIELD_ICONS.amount" :size="14" group="formFields" /> {{ spot.amount.toFixed(2) }} €
-          <span v-if="hasMultipleMembers !== false && spot.paid_by_user_id"> · bezahlt von {{ payerLabel }}</span>
+          <AppIcon :icon="FORM_FIELD_ICONS.amount" :size="14" group="formFields" />
+          {{ spot.amount.toFixed(2) }} €
+          <span v-if="hasMultipleMembers !== false && spot.paid_by_user_id">
+            · bezahlt von {{ payerLabel }}</span
+          >
         </p>
       </template>
-      <RichTextDisplay v-if="spot.note" class="note" :content="spot.note" :format="spot.note_format" />
+      <RichTextDisplay
+        v-if="spot.note"
+        class="note"
+        :content="spot.note"
+        :format="spot.note_format"
+      />
       <div class="card-actions">
         <TourAssignDropdown
           :tours="tourAssignments"
@@ -364,7 +405,8 @@ function onToggleDone() {
             <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
           </template>
           <template v-else>
-            <AppIcon :icon="ACTION_ICONS.notDone" :size="14" group="actions" /> Als gemacht markieren
+            <AppIcon :icon="ACTION_ICONS.notDone" :size="14" group="actions" /> Als gemacht
+            markieren
           </template>
         </button>
       </div>
@@ -410,7 +452,9 @@ function onToggleDone() {
   flex-direction: column;
   cursor: pointer;
   border: 2px solid transparent;
-  transition: border-color 0.15s ease, background 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
   /* scrollToSpot() in ExcursionsView.vue (Map-Pin-Klick) landet sonst mit der Karte teilweise unter
      der sticky .category-nav-Leiste - ohne dieses scroll-margin-top landete die Karte uneinheitlich
      zu weit oben/unten (#103). Gleiche Formel wie .category-heading/.tour-group-card dort
@@ -479,7 +523,6 @@ function onToggleDone() {
   font-size: 0.75rem;
   font-weight: 600;
   color: var(--color-text-muted);
-
 }
 
 .status.planned,
@@ -609,10 +652,15 @@ function onToggleDone() {
   flex-shrink: 0;
   width: 6px;
   height: 12px;
-  background-image: radial-gradient(circle, currentColor 1px, transparent 1.3px),
+  background-image:
+    radial-gradient(circle, currentColor 1px, transparent 1.3px),
     radial-gradient(circle, currentColor 1px, transparent 1.3px);
-  background-size: 3px 4px, 3px 4px;
-  background-position: 0 0, 3px 0;
+  background-size:
+    3px 4px,
+    3px 4px;
+  background-position:
+    0 0,
+    3px 0;
   background-repeat: repeat-y, repeat-y;
   opacity: 0.6;
 }
@@ -692,7 +740,7 @@ function onToggleDone() {
   .spot-card:not(.expanded) .links {
     margin: var(--space-2) 0;
   }
-  
+
   .spot-card:not(.expanded) .show-on-map-btn .btn-label {
     display: none;
   }

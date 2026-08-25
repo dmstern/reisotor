@@ -26,7 +26,13 @@ const resolvedIcon = computed<IconDef | undefined>(() => {
        Labeltexts. -->
   <div class="form-field">
     <span class="form-field-label">
-      <AppIcon v-if="resolvedIcon" class="form-field-icon" :size="15" :icon="resolvedIcon" group="formFields" />
+      <AppIcon
+        v-if="resolvedIcon"
+        class="form-field-icon"
+        :size="15"
+        :icon="resolvedIcon"
+        group="formFields"
+      />
       {{ label }}
     </span>
     <slot />

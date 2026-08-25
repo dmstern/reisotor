@@ -56,13 +56,15 @@ const newDraft = useDraftAutosave('notes:new', form, showForm);
 const editDraft = useDraftAutosave(
   () => `notes:edit:${editingNote.value?.id}`,
   editForm,
-  computed(() => editingNote.value !== null),
+  computed(() => editingNote.value !== null)
 );
 
 // Bereits als Entwurf gesicherte, aber noch nicht veröffentlichte eigene Notiz (#89) - höchstens
 // eine gleichzeitig, siehe openNew()/closeForm() unten, die genau diesen Entwurf statt eines
 // zusätzlichen zweiten wiederverwenden.
-const myDraft = computed(() => notes.value.find((n) => n.is_draft && n.created_by === auth.user?.id) ?? null);
+const myDraft = computed(
+  () => notes.value.find((n) => n.is_draft && n.created_by === auth.user?.id) ?? null
+);
 
 function hasFormContent(f: { title: string; content: string }) {
   return f.title.trim().length > 0 || !isEmptyRichText(f.content);
@@ -106,7 +108,9 @@ function likedByMe(noteId: number) {
   return likesFor(noteId).some((l) => l.user_id === auth.user?.id);
 }
 function commentsFor(noteId: number) {
-  return comments.value.filter((c) => c.note_id === noteId).sort((a, b) => a.created_at.localeCompare(b.created_at));
+  return comments.value
+    .filter((c) => c.note_id === noteId)
+    .sort((a, b) => a.created_at.localeCompare(b.created_at));
 }
 function commentItemsFor(noteId: number) {
   return commentsFor(noteId).map((c) => ({
@@ -260,26 +264,41 @@ async function restore(id: number) {
   <div class="page" v-if="!loading">
     <div class="header">
       <h1>Notizen</h1>
-      <Button @click="openNew"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Neue Notiz</Button>
+      <Button @click="openNew"
+        ><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Neue Notiz</Button
+      >
     </div>
 
     <p v-if="error" class="error">{{ error }}</p>
 
-    <Modal :model-value="showForm" title="Neue Notiz" full-height @update:model-value="(v) => !v && closeForm()">
-    <form class="add-form" @submit.prevent="submit">
-      <FormField icon="title" label="Titel">
-        <input v-model="form.title" type="text" placeholder="Titel (optional)" />
-      </FormField>
-      <RichTextEditor v-model="form.content" placeholder="Inhalt" />
-      <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
-      <Button type="submit">Hinzufügen</Button>
-    </form>
+    <Modal
+      :model-value="showForm"
+      title="Neue Notiz"
+      full-height
+      @update:model-value="(v) => !v && closeForm()"
+    >
+      <form class="add-form" @submit.prevent="submit">
+        <FormField icon="title" label="Titel">
+          <input v-model="form.title" type="text" placeholder="Titel (optional)" />
+        </FormField>
+        <RichTextEditor v-model="form.content" placeholder="Inhalt" />
+        <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
+        <Button type="submit">Hinzufügen</Button>
+      </form>
     </Modal>
 
     <TransitionGroup tag="div" name="list" class="masonry cards">
       <template v-for="note in notes" :key="note.id">
-        <UndoDeleteRow v-if="isPending(note.id)" :label="note.title ?? undefined" @undo="restore(note.id)" />
-        <div v-else class="card note-card" :class="{ 'new-highlight': highlightedIds.has(note.id) }">
+        <UndoDeleteRow
+          v-if="isPending(note.id)"
+          :label="note.title ?? undefined"
+          @undo="restore(note.id)"
+        />
+        <div
+          v-else
+          class="card note-card"
+          :class="{ 'new-highlight': highlightedIds.has(note.id) }"
+        >
           <div class="note-head">
             <h3 v-if="note.title">{{ note.title }}</h3>
             <DraftBadge v-if="note.is_draft" />
@@ -290,7 +309,10 @@ async function restore(id: number) {
             </div>
           </div>
           <RichTextDisplay class="content" :content="note.content" :format="note.content_format" />
-          <p class="meta">{{ authorLabel(note.created_by) }} · {{ formatDate(note.updated_at ?? note.created_at) }}</p>
+          <p class="meta">
+            {{ authorLabel(note.created_by) }} ·
+            {{ formatDate(note.updated_at ?? note.created_at) }}
+          </p>
           <FileAttachments domain="notes" :entity-id="note.id" :editable="false" />
           <SocialRow
             :like-count="likesFor(note.id).length"
@@ -412,5 +434,4 @@ async function restore(id: number) {
   font-size: 0.78rem;
   color: var(--color-text-muted);
 }
-
 </style>

@@ -1,8 +1,26 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch, type ComponentPublicInstance, type Ref } from 'vue';
+import {
+  computed,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  reactive,
+  ref,
+  watch,
+  type ComponentPublicInstance,
+  type Ref,
+} from 'vue';
 import { useRoute } from 'vue-router';
 import { api } from '../api/client';
-import type { Excursion, ExcursionComment, ExcursionLike, IdeaRole, LocationTrack, Spot, User } from '../api/types';
+import type {
+  Excursion,
+  ExcursionComment,
+  ExcursionLike,
+  IdeaRole,
+  LocationTrack,
+  Spot,
+  User,
+} from '../api/types';
 import { deriveTravelItems } from '../utils/deriveTravelItems';
 import { TRAVEL_ROLE_META, TRAVEL_ROLE_OPTIONS } from '../utils/travelRole';
 import { travelTypeIcon } from '../utils/travelTypeIcon';
@@ -81,7 +99,9 @@ function trackDurationLabel(track: LocationTrack): string {
 }
 
 async function toggleTrackVisibility(track: LocationTrack) {
-  await tracksStore.update(track.id, { visibility: track.visibility === 'shared' ? 'private' : 'shared' });
+  await tracksStore.update(track.id, {
+    visibility: track.visibility === 'shared' ? 'private' : 'shared',
+  });
 }
 
 async function removeTrack(id: number) {
@@ -145,7 +165,7 @@ function setCategoryNavSentinelRef(el: Element | ComponentPublicInstance | null)
       ([entry]) => {
         isCategoryNavStuck.value = !entry.isIntersecting;
       },
-      { root: el.closest('.spots-col'), threshold: 0 },
+      { root: el.closest('.spots-col'), threshold: 0 }
     );
     categoryNavObserver.observe(el);
   }
@@ -168,7 +188,8 @@ onMounted(async () => {
   // gesetzter role ab (früher eigenes Hash-Präfix "travel-" für die inzwischen entfernte
   // Reise-Gruppierung - alte "travel-<id>"-Links aus derselben Ära werden hier als Fallback
   // ebenfalls als Tour-id interpretiert).
-  const excursionHashId = hashHighlightId(route.hash, 'excursion') ?? hashHighlightId(route.hash, 'travel');
+  const excursionHashId =
+    hashHighlightId(route.hash, 'excursion') ?? hashHighlightId(route.hash, 'travel');
   if (excursionHashId != null) highlightedIds.value.add(excursionHashId);
   try {
     const [usersRes, likesRes, commentsRes] = await Promise.all([
@@ -218,7 +239,7 @@ watch(
       await nextTick();
       onFocusExcursionFromMap(excursionId);
     }
-  },
+  }
 );
 
 function creatorLabel(userId: number | null) {
@@ -278,7 +299,9 @@ async function toggleExcursionLike(ideaId: number) {
   if (result.liked) {
     excursionLikes.value.push({ id: Date.now(), idea_id: ideaId, user_id: auth.user!.id });
   } else {
-    excursionLikes.value = excursionLikes.value.filter((l) => !(l.idea_id === ideaId && l.user_id === auth.user!.id));
+    excursionLikes.value = excursionLikes.value.filter(
+      (l) => !(l.idea_id === ideaId && l.user_id === auth.user!.id)
+    );
   }
 }
 async function submitExcursionComment(ideaId: number, content: string) {
@@ -329,7 +352,7 @@ const newExcursionDraft = useDraftAutosave('excursions:new', excursionForm, show
 const editExcursionDraft = useDraftAutosave(
   () => `excursions:edit:${editingExcursion.value}`,
   editExcursionForm,
-  computed(() => editingExcursion.value !== null),
+  computed(() => editingExcursion.value !== null)
 );
 
 function openExcursionForm() {
@@ -370,7 +393,9 @@ function tourPayload(form: ReturnType<typeof emptyExcursionForm>) {
       form.transportEnabled && form.amount
         ? form.paid_by_user_id
           ? Number(form.paid_by_user_id)
-          : (users.value.length === 1 ? users.value[0].id : (auth.user?.id ?? null))
+          : users.value.length === 1
+            ? users.value[0].id
+            : (auth.user?.id ?? null)
         : null,
     luggage: form.transportEnabled ? form.luggage || null : null,
     seat: form.transportEnabled ? form.seat || null : null,
@@ -380,7 +405,11 @@ function tourPayload(form: ReturnType<typeof emptyExcursionForm>) {
 
 async function addExcursion() {
   if (!excursionForm.value.title.trim()) return;
-  if (excursionForm.value.transportEnabled && excursionForm.value.role && resolveTourSpotIds(excursionForm.value).length !== 2) {
+  if (
+    excursionForm.value.transportEnabled &&
+    excursionForm.value.role &&
+    resolveTourSpotIds(excursionForm.value).length !== 2
+  ) {
     return;
   }
   await excursionsStore.create(tourPayload(excursionForm.value));
@@ -399,8 +428,10 @@ function startEditExcursion(excursion: Excursion) {
     transportEnabled,
     role: excursion.role ?? '',
     transport_type: excursion.transport_type ?? 'Flug',
-    from_spot_id: transportEnabled && excursion.spot_ids[0] != null ? String(excursion.spot_ids[0]) : '',
-    to_spot_id: transportEnabled && excursion.spot_ids[1] != null ? String(excursion.spot_ids[1]) : '',
+    from_spot_id:
+      transportEnabled && excursion.spot_ids[0] != null ? String(excursion.spot_ids[0]) : '',
+    to_spot_id:
+      transportEnabled && excursion.spot_ids[1] != null ? String(excursion.spot_ids[1]) : '',
     departure_time: excursion.departure_time ?? '',
     arrival_time: excursion.arrival_time ?? '',
     checkin_info: excursion.checkin_info ?? '',
@@ -435,7 +466,7 @@ async function removeExcursion(id: number) {
   const excursion = excursionsStore.excursions.find((e) => e.id === id);
   if (excursion?.date) {
     const confirmed = window.confirm(
-      'Diese Tour ist bereits im Kalender eingeplant. Wirklich löschen? Die zugeordneten Spots bleiben erhalten und werden nicht mitgelöscht.',
+      'Diese Tour ist bereits im Kalender eingeplant. Wirklich löschen? Die zugeordneten Spots bleiben erhalten und werden nicht mitgelöscht.'
     );
     if (!confirmed) return;
   }
@@ -514,7 +545,7 @@ const newSpotDraft = useDraftAutosave('spots:new', spotForm, showSpotForm);
 const editSpotDraft = useDraftAutosave(
   () => `spots:edit:${editingSpot.value?.id}`,
   editSpotForm,
-  computed(() => editingSpot.value !== null),
+  computed(() => editingSpot.value !== null)
 );
 const editSpotMapsLinkResolved = ref<boolean | null>(null);
 const editSpotManualPin = ref<{ lat: number; lng: number } | null>(null);
@@ -562,7 +593,10 @@ const showEditExcursionImageModal = ref(false);
 
 // Track Recording Hinweis-Modal (#230)
 const showTrackRecordingWarningModal = ref(false);
-const trackWarningDismissed = usePersistedRef<boolean>('reisotor-track-recording-warning-acknowledged', false);
+const trackWarningDismissed = usePersistedRef<boolean>(
+  'reisotor-track-recording-warning-acknowledged',
+  false
+);
 
 function onRecordButtonClick() {
   if (trackRecording.recording) {
@@ -586,12 +620,20 @@ function startRecordingConfirmed() {
 const spotReferencePoints = computed(() =>
   spotsStore.spots
     .filter((s) => s.lat != null && s.lng != null)
-    .map((s) => ({ lat: s.lat as number, lng: s.lng as number, icon: spotCategoryMeta(s.category).tabler })),
+    .map((s) => ({
+      lat: s.lat as number,
+      lng: s.lng as number,
+      icon: spotCategoryMeta(s.category).tabler,
+    }))
 );
 const editSpotReferencePoints = computed(() =>
   spotsStore.spots
     .filter((s) => s.id !== editingSpot.value?.id && s.lat != null && s.lng != null)
-    .map((s) => ({ lat: s.lat as number, lng: s.lng as number, icon: spotCategoryMeta(s.category).tabler })),
+    .map((s) => ({
+      lat: s.lat as number,
+      lng: s.lng as number,
+      icon: spotCategoryMeta(s.category).tabler,
+    }))
 );
 
 // --- Sortierung, Kategorie-Filter & -Gruppierung der Spots-Übersicht ---
@@ -637,7 +679,10 @@ function groupIconDef(category: string): IconDef {
 // beiden Stellen. Bei Touren-Gruppierung ist grp.category ein Ausflugs-/"Ohne Tour"-Titel, keine
 // echte Spot-Kategorie - spotCategoryMeta hätte dafür keine sinnvolle Farbe, deshalb dort bei der
 // neutralen Standardfarbe (currentColor, siehe AppIcon.vue-Default) bleiben.
-function groupIconColor(grp: { category: string; excursion: Excursion | null }): string | undefined {
+function groupIconColor(grp: {
+  category: string;
+  excursion: Excursion | null;
+}): string | undefined {
   if (groupMode.value === 'tours') return undefined;
   return iconStyle.colorizeCategories ? spotCategoryMeta(grp.category).color : undefined;
 }
@@ -653,7 +698,10 @@ const sortMode = usePersistedRef<'alpha' | 'likes'>('reisotor-excursions-sort-mo
 // in "Ohne Tour". Reise-Etappen (Touren mit gesetzter role) sind seit #176 ganz normale Einträge
 // dieser "Touren"-Gruppierung - die früher dritte Toggle-Option "Reise" (#175, TravelSection.vue)
 // wurde dadurch redundant und ist seit #196 wieder entfernt.
-const groupMode = usePersistedRef<'category' | 'tours'>('reisotor-excursions-group-mode', 'category');
+const groupMode = usePersistedRef<'category' | 'tours'>(
+  'reisotor-excursions-group-mode',
+  'category'
+);
 const UNASSIGNED_TOUR_GROUP = 'Ohne Tour';
 
 // Spots UND Touren (beide "ideas", #176: role-getaggte Touren sind keine eigene Domäne mehr) teilen
@@ -667,7 +715,9 @@ function markSeenForGroupMode(mode: 'category' | 'tours') {
 watch(groupMode, (mode) => markSeenForGroupMode(mode));
 
 function tourTitlesForItem(item: SpotsGroupItem): string[] {
-  return excursionsStore.excursions.filter((e) => e.spot_ids.includes(item.spot.id)).map((e) => e.title);
+  return excursionsStore.excursions
+    .filter((e) => e.spot_ids.includes(item.spot.id))
+    .map((e) => e.title);
 }
 
 // Popover-Menüs der drei Dropdowns unten (Info-Popover, Kategorie-/Status-Filter) werden per
@@ -678,7 +728,11 @@ function tourTitlesForItem(item: SpotsGroupItem): string[] {
 // laut CSS-Spezifikation zum Containing Block für alle position:fixed-Nachfahren - das Backdrop
 // würde sich sonst auf die Sheet-Fläche statt den ganzen Bildschirm beschränken (siehe DESIGN.md,
 // Abschnitt "Zieh-Interaktionen").
-function computeMenuStyle(btnEl: any, event?: MouseEvent, minWidth = 200): { top: string; left: string } {
+function computeMenuStyle(
+  btnEl: any,
+  event?: MouseEvent,
+  minWidth = 200
+): { top: string; left: string } {
   const el = (event?.currentTarget as HTMLElement) || (btnEl as any)?.$el || btnEl;
   if (!el || typeof el.getBoundingClientRect !== 'function') return { top: '0px', left: '0px' };
   const rect = el.getBoundingClientRect();
@@ -742,7 +796,10 @@ function toggleStatusMenu(event?: MouseEvent) {
   }
 }
 
-const statusFilter = usePersistedRef<('planned' | 'unplanned' | 'done')[]>('reisotor-excursions-status-filter', []);
+const statusFilter = usePersistedRef<('planned' | 'unplanned' | 'done')[]>(
+  'reisotor-excursions-status-filter',
+  []
+);
 function removeStatusFilter(status: 'planned' | 'unplanned' | 'done') {
   statusFilter.value = statusFilter.value.filter((s) => s !== status);
 }
@@ -751,12 +808,13 @@ function itemDone(item: SpotsGroupItem): boolean {
 }
 
 const allSpotItems = computed<SpotsGroupItem[]>(() =>
-  spotsStore.spots.map((spot): SpotsGroupItem => ({ kind: 'spot', spot })),
+  spotsStore.spots.map((spot): SpotsGroupItem => ({ kind: 'spot', spot }))
 );
 
 const filteredSpotItems = computed(() =>
   allSpotItems.value.filter((item) => {
-    if (categoryFilter.value.length && !categoryFilter.value.includes(itemCategory(item))) return false;
+    if (categoryFilter.value.length && !categoryFilter.value.includes(itemCategory(item)))
+      return false;
     const status = itemStatus(item);
     // Mehrere gewählte Filter werden per ODER kombiniert (planned/unplanned/done können alle
     // gleichzeitig zutreffen), damit z. B. "Geplant" + "Gemacht" beide Teilmengen gleichzeitig zeigt.
@@ -766,7 +824,7 @@ const filteredSpotItems = computed(() =>
       if (!matchesStatus && !matchesDone) return false;
     }
     return true;
-  }),
+  })
 );
 
 // Reihenfolge der Gruppen: die automatisch eingebettete Unterkunft zuerst (bereits anderswo
@@ -783,16 +841,22 @@ const CATEGORY_GROUP_ORDER = [...new Set(['Unterkunft', ...SPOT_CATEGORY_SUGGEST
 function sortedCategoryKeys(categories: Iterable<string>): string[] {
   const set = new Set(categories);
   const known = CATEGORY_GROUP_ORDER.filter((c) => set.has(c));
-  const custom = [...set].filter((c) => !CATEGORY_GROUP_ORDER.includes(c) && c !== 'Sonstiges').sort();
+  const custom = [...set]
+    .filter((c) => !CATEGORY_GROUP_ORDER.includes(c) && c !== 'Sonstiges')
+    .sort();
   return [...known, ...custom, ...(set.has('Sonstiges') ? ['Sonstiges'] : [])];
 }
 
 const spotGroups = computed(() => {
   const groups = new Map<string, SpotsGroupItem[]>();
-  const groupKeysFor = groupMode.value === 'tours' ? tourTitlesForItem : (item: SpotsGroupItem) => [itemCategory(item)];
+  const groupKeysFor =
+    groupMode.value === 'tours'
+      ? tourTitlesForItem
+      : (item: SpotsGroupItem) => [itemCategory(item)];
   for (const item of filteredSpotItems.value) {
     const keys = groupKeysFor(item);
-    const effectiveKeys = groupMode.value === 'tours' && keys.length === 0 ? [UNASSIGNED_TOUR_GROUP] : keys;
+    const effectiveKeys =
+      groupMode.value === 'tours' && keys.length === 0 ? [UNASSIGNED_TOUR_GROUP] : keys;
     for (const key of effectiveKeys) {
       const list = groups.get(key) ?? [];
       list.push(item);
@@ -814,22 +878,25 @@ const spotGroups = computed(() => {
     // Reihenfolge/den Rundgang direkt in der Liste sichtbar (siehe verbindende gestrichelte Linie
     // im Template unten). Erster Vorkommen-Index gewinnt bei Mehrfachbesuch (derselbe Spot bekommt
     // hier ohnehin nur eine Karte, keine zweite für den Wiederbesuch).
-    const excursion = groupMode.value === 'tours' && key !== UNASSIGNED_TOUR_GROUP ? excursionForGroupTitle(key) : null;
+    const excursion =
+      groupMode.value === 'tours' && key !== UNASSIGNED_TOUR_GROUP
+        ? excursionForGroupTitle(key)
+        : null;
     if (excursion) {
       const order = new Map<number, number>();
       excursion.spot_ids.forEach((id, idx) => {
         if (!order.has(id)) order.set(id, idx);
       });
       list.sort((a, b) => {
-        const ai = a.kind === 'spot' ? order.get(a.spot.id) ?? Infinity : Infinity;
-        const bi = b.kind === 'spot' ? order.get(b.spot.id) ?? Infinity : Infinity;
+        const ai = a.kind === 'spot' ? (order.get(a.spot.id) ?? Infinity) : Infinity;
+        const bi = b.kind === 'spot' ? (order.get(b.spot.id) ?? Infinity) : Infinity;
         return ai - bi;
       });
     } else {
       list.sort((a, b) =>
         sortMode.value === 'likes'
           ? itemLikeCount(b) - itemLikeCount(a) || itemTitle(a).localeCompare(itemTitle(b))
-          : itemTitle(a).localeCompare(itemTitle(b)),
+          : itemTitle(a).localeCompare(itemTitle(b))
       );
     }
   }
@@ -840,7 +907,8 @@ const spotGroups = computed(() => {
     const keys = groups.has(UNASSIGNED_TOUR_GROUP) ? [...known, UNASSIGNED_TOUR_GROUP] : known;
     return keys.map((title) => ({
       category: title,
-      iconDef: title === UNASSIGNED_TOUR_GROUP ? FORM_FIELD_ICONS.location : SECTION_ICON_DEFS.excursions,
+      iconDef:
+        title === UNASSIGNED_TOUR_GROUP ? FORM_FIELD_ICONS.location : SECTION_ICON_DEFS.excursions,
       items: groups.get(title)!,
       // Echte Excursion hinter dem Gruppen-Titel (nur bei Touren-Gruppierung, "Ohne Tour" bleibt
       // null) – die Gruppen-Überschrift rendert damit statt reinem Text eine anklickbare
@@ -856,7 +924,9 @@ const spotGroups = computed(() => {
   }));
 });
 
-const filterCategoryOptions = computed(() => sortedCategoryKeys(allSpotItems.value.map(itemCategory)));
+const filterCategoryOptions = computed(() =>
+  sortedCategoryKeys(allSpotItems.value.map(itemCategory))
+);
 
 // Löst den Gruppen-Titel (siehe spotGroups oben, Gruppierung läuft über den Tour-TITEL, nicht die
 // Id - gleiches Muster wie tourTitlesForItem/TourAssignPicker.vue) auf die tatsächliche Excursion
@@ -908,7 +978,7 @@ watch(
       activeCategory.value = groups[0]?.category ?? null;
     }
   },
-  { immediate: true },
+  { immediate: true }
 );
 
 // Umgekehrte Zuordnung DOM-Element -> Kategorie für den IntersectionObserver-Callback unten
@@ -951,7 +1021,7 @@ function rebuildCategorySectionObserver() {
     // derselbe Wert wie beim scroll-margin-top der Gruppen über --category-nav-clearance - "aktiv"
     // und "per Klick angesprungen" greifen dadurch konsistent an derselben Stelle). -65% unten
     // begrenzt die Erkennungszone auf einen schmalen Streifen statt der kompletten sichtbaren Liste.
-    { root, rootMargin: `-${categoryNavHeight.value}px 0px -65% 0px`, threshold: 0 },
+    { root, rootMargin: `-${categoryNavHeight.value}px 0px -65% 0px`, threshold: 0 }
   );
   for (const [category, el] of categoryRefs) {
     categoryByEl.set(el, category);
@@ -1048,7 +1118,8 @@ watch(activeCategory, () => {
     const viewLeft = navEl.scrollLeft;
     const viewRight = viewLeft + navEl.clientWidth;
     if (elLeft < viewLeft) navEl.scrollTo({ left: elLeft, behavior: 'smooth' });
-    else if (elRight > viewRight) navEl.scrollTo({ left: elRight - navEl.clientWidth, behavior: 'smooth' });
+    else if (elRight > viewRight)
+      navEl.scrollTo({ left: elRight - navEl.clientWidth, behavior: 'smooth' });
   });
 });
 onUnmounted(() => {
@@ -1113,7 +1184,9 @@ function animateSpotExpand(targetId: number | null, mutate: () => void) {
   // mehr läuft) statt sich nach der eigentlichen Animation (~250ms, siehe style.css) selbst aufzuräumen.
   try {
     const transition = (
-      document as unknown as { startViewTransition: (cb: () => void | Promise<void>) => { finished: Promise<void> } }
+      document as unknown as {
+        startViewTransition: (cb: () => void | Promise<void>) => { finished: Promise<void> };
+      }
     ).startViewTransition(async () => {
       mutate();
       await nextTick();
@@ -1122,7 +1195,10 @@ function animateSpotExpand(targetId: number | null, mutate: () => void) {
       transitioningSpotId.value = null;
       nudgeRepaint();
     };
-    Promise.race([transition.finished, new Promise((resolve) => setTimeout(resolve, 1000))]).finally(settle);
+    Promise.race([
+      transition.finished,
+      new Promise((resolve) => setTimeout(resolve, 1000)),
+    ]).finally(settle);
   } catch {
     transitioningSpotId.value = null;
     mutate();
@@ -1198,7 +1274,12 @@ function recomputeTourLine(excursionId: number) {
     const controlY = (p1.y + p2.y) / 2;
     d += ` Q ${controlX} ${controlY} ${p2.x} ${p2.y}`;
   }
-  tourLines.set(excursionId, { width: TOUR_LINE_WIDTH, height: dots[dots.length - 1].y, pathD: d, dots });
+  tourLines.set(excursionId, {
+    width: TOUR_LINE_WIDTH,
+    height: dots[dots.length - 1].y,
+    pathD: d,
+    dots,
+  });
 }
 
 function setTourWrapRef(excursionId: number, el: Element | ComponentPublicInstance | null) {
@@ -1235,7 +1316,11 @@ onUnmounted(() => tourLineResizeObserver?.disconnect());
 // (Spot zu Tour hinzugefügt/entfernt/umsortiert) neu berechnen - ändert die Anzahl/Reihenfolge der
 // Kinder, worauf der ResizeObserver nicht zuverlässig anspringt, wenn sich dadurch die
 // Gesamthöhe zufällig nicht ändert.
-watch(spotGroups, () => nextTick(() => { for (const id of tourWrapRefs.keys()) recomputeTourLine(id); }));
+watch(spotGroups, () =>
+  nextTick(() => {
+    for (const id of tourWrapRefs.keys()) recomputeTourLine(id);
+  })
+);
 
 // Welche Tour-Gruppe ist gerade aufgeklappt (ExcursionCard.vue, ersetzt den früheren
 // ExcursionDetailDialog.vue-Modal-Dialog, #92) – analog zu expandedSpotId oben.
@@ -1290,7 +1375,10 @@ function onColResizeStart(event: PointerEvent) {
 function onColResizeMove(event: PointerEvent) {
   if (!resizingCol.value) return;
   const delta = event.clientX - colStartX;
-  spotsColWidth.value = Math.min(MAX_SPOTS_COL_WIDTH, Math.max(MIN_SPOTS_COL_WIDTH, colStartWidth + delta));
+  spotsColWidth.value = Math.min(
+    MAX_SPOTS_COL_WIDTH,
+    Math.max(MIN_SPOTS_COL_WIDTH, colStartWidth + delta)
+  );
 }
 function onColResizeEnd() {
   resizingCol.value = false;
@@ -1329,7 +1417,10 @@ function sheetHeightPx(state: SheetState): number {
   const headerHeight = parseFloat(rootStyle.getPropertyValue('--app-header-height')) || 56;
   const navbarOffset = parseFloat(rootStyle.getPropertyValue('--navbar-offset')) || 0;
   const navbarBottomOffset = parseFloat(rootStyle.getPropertyValue('--navbar-bottom-offset')) || 0;
-  const maxAvailable = Math.max(160, window.innerHeight - headerHeight - navbarOffset - navbarBottomOffset - 8);
+  const maxAvailable = Math.max(
+    160,
+    window.innerHeight - headerHeight - navbarOffset - navbarBottomOffset - 8
+  );
   // 64px statt der früheren 96px: die Pille zeigt jetzt nur noch die Anfasser-Zeile (siehe
   // .spots-col.collapsed CSS), kein Rest von .spots-col-body ragt mehr hinein.
   if (state === 'collapsed') return Math.min(64, maxAvailable);
@@ -1363,7 +1454,8 @@ function resetDragSamples() {
 function recordDragSample(y: number) {
   const t = performance.now();
   dragSamples.push({ y, t });
-  while (dragSamples.length > 1 && t - dragSamples[0].t > FLICK_SAMPLE_WINDOW_MS) dragSamples.shift();
+  while (dragSamples.length > 1 && t - dragSamples[0].t > FLICK_SAMPLE_WINDOW_MS)
+    dragSamples.shift();
 }
 // px/ms bezogen auf clientY, negativ = Finger bewegt sich nach oben (vergrößert die Sheet-Höhe).
 function dragFlickVelocity(): number {
@@ -1438,7 +1530,8 @@ function onSheetDragEnd() {
   if (!movedFar) {
     // Kaum/keine Bewegung = Tippen statt Ziehen: einen Zustand weiterschalten statt "an derselben
     // Stelle" wieder einzurasten (das wäre sonst ein wirkungsloser Tap gewesen).
-    sheetState.value = SHEET_ORDER[(SHEET_ORDER.indexOf(sheetState.value) + 1) % SHEET_ORDER.length];
+    sheetState.value =
+      SHEET_ORDER[(SHEET_ORDER.indexOf(sheetState.value) + 1) % SHEET_ORDER.length];
   } else {
     // Ab hier laut movedFar-Berechnung oben garantiert nicht null.
     sheetState.value = resolveSheetTargetState(sheetState.value, current as number);
@@ -1474,7 +1567,10 @@ function onSheetBodyPointerDown(event: PointerEvent) {
   // SpotCard.vue's usePointerDrag-Wiring) haben ihre eigene Pointer-Drag-Logik - ohne diesen Ausstieg
   // würden beide gleichzeitig auf dieselbe Zugbewegung reagieren (Karte auf einen Kalendertag ziehen
   // UND gleichzeitig die Schublade verschieben).
-  if ((event.target as HTMLElement).closest('button, a, input, textarea, select, [draggable="true"]')) return;
+  if (
+    (event.target as HTMLElement).closest('button, a, input, textarea, select, [draggable="true"]')
+  )
+    return;
   sheetBodyDragging = false;
   sheetBodyStartY = event.clientY;
   sheetBodyStartHeight = sheetDragHeightPx.value ?? sheetHeightPx(sheetState.value);
@@ -1533,7 +1629,9 @@ const canCollapseSheet = computed(() => sheetState.value !== 'collapsed');
 // dahinter, weil map.setView() die Karten-MITTE nimmt, nicht die tatsächlich sichtbare Restfläche
 // oberhalb des Sheets. Nur auf mobile relevant (Desktop: eigene Spalte statt Overlay, siehe
 // @container weiter unten im CSS).
-const currentSheetHeightPx = computed(() => sheetDragHeightPx.value ?? sheetHeightPx(sheetState.value));
+const currentSheetHeightPx = computed(
+  () => sheetDragHeightPx.value ?? sheetHeightPx(sheetState.value)
+);
 
 // isDesktop (window.matchMedia, siehe useIsDesktop.ts) reicht hier NICHT: ob .spots-col als Sheet-
 // Overlay über der Karte liegt oder als eigene Spalte daneben, entscheidet weiter unten im CSS ein
@@ -1565,7 +1663,9 @@ onUnmounted(() => appMainResizeObserver?.disconnect());
 // Desktop-Spalten-Ansicht, obwohl rechnerisch noch genug Platz für eine schmalere, aber weiterhin
 // benutzbare Spots-Liste + Karte übrig war (siehe MIN_SPOTS_COL_WIDTH).
 const isSheetOverlayMode = computed(() => (appMainWidth.value ?? window.innerWidth) < 720);
-const mapCoveredBottomPx = computed(() => (isSheetOverlayMode.value ? currentSheetHeightPx.value : 0));
+const mapCoveredBottomPx = computed(() =>
+  isSheetOverlayMode.value ? currentSheetHeightPx.value : 0
+);
 
 // Ein Klick auf eine Spot-Karte klappt sie nur auf, ohne das Sheet anzurühren oder die Karte zu
 // fokussieren (#109) – beides sind eigenständige Aktionen über den separaten "Auf Karte
@@ -1599,10 +1699,12 @@ function onSpotShowOnMap(spot: Spot) {
 // eingeklapptem Sheet wäre sie dann aber unsichtbar, deshalb hier automatisch mindestens
 // "angeschnitten" aufklappen.
 watch(
-  () => drawers.mapFocusDate ?? (drawers.mapFocusExcursionId != null ? `excursion-${drawers.mapFocusExcursionId}` : null),
+  () =>
+    drawers.mapFocusDate ??
+    (drawers.mapFocusExcursionId != null ? `excursion-${drawers.mapFocusExcursionId}` : null),
   (focus) => {
     if (focus != null && sheetState.value === 'collapsed') sheetState.value = 'partial';
-  },
+  }
 );
 
 // Live-Vorschau (Titel/echtes Foto statt nur des Kartenausschnitts, siehe backend/src/utils/
@@ -1613,7 +1715,7 @@ async function fetchSpotPreview(mapsLink: string, form: Ref<ReturnType<typeof em
   if (!mapsLink) return;
   try {
     const preview = await api.get<{ name: string | null; imageUrl: string | null }>(
-      `/spots/preview?maps_link=${encodeURIComponent(mapsLink)}`,
+      `/spots/preview?maps_link=${encodeURIComponent(mapsLink)}`
     );
     if (preview.name && !form.value.title.trim()) form.value.title = preview.name;
     if (preview.imageUrl && !form.value.image_url.trim()) form.value.image_url = preview.imageUrl;
@@ -1623,7 +1725,9 @@ async function fetchSpotPreview(mapsLink: string, form: Ref<ReturnType<typeof em
 }
 
 function checkSpotMapsLink() {
-  spotMapsLinkResolved.value = spotForm.value.maps_link ? parseLatLngFromMapsLink(spotForm.value.maps_link) != null : null;
+  spotMapsLinkResolved.value = spotForm.value.maps_link
+    ? parseLatLngFromMapsLink(spotForm.value.maps_link) != null
+    : null;
   if (spotForm.value.maps_link) fetchSpotPreview(spotForm.value.maps_link, spotForm);
 }
 function checkEditSpotMapsLink() {
@@ -1633,7 +1737,10 @@ function checkEditSpotMapsLink() {
   if (editSpotForm.value.maps_link) fetchSpotPreview(editSpotForm.value.maps_link, editSpotForm);
 }
 
-function spotToBody(f: ReturnType<typeof emptySpotForm>, manual?: { lat: number; lng: number } | null) {
+function spotToBody(
+  f: ReturnType<typeof emptySpotForm>,
+  manual?: { lat: number; lng: number } | null
+) {
   const parsed = parseLatLngFromMapsLink(f.maps_link);
   return {
     trip_id: tripId,
@@ -1656,7 +1763,9 @@ function spotToBody(f: ReturnType<typeof emptySpotForm>, manual?: { lat: number;
     paid_by_user_id: f.paid_by_user_id
       ? Number(f.paid_by_user_id)
       : f.amount
-        ? (users.value.length === 1 ? users.value[0].id : (auth.user?.id ?? undefined))
+        ? users.value.length === 1
+          ? users.value[0].id
+          : (auth.user?.id ?? undefined)
         : undefined,
   };
 }
@@ -1698,7 +1807,9 @@ async function syncSpotTours(spotId: number, desiredTitles: string[]) {
     }
   }
   for (const title of desiredTitles) {
-    const existing = excursionsStore.excursions.find((e) => e.title.toLowerCase() === title.toLowerCase());
+    const existing = excursionsStore.excursions.find(
+      (e) => e.title.toLowerCase() === title.toLowerCase()
+    );
     if (!existing) {
       await excursionsStore.create({ title, spot_ids: [spotId] });
     } else if (!existing.spot_ids.includes(spotId)) {
@@ -1802,25 +1913,46 @@ async function removeSpot(id: number) {
     <div class="layout" :style="{ '--spots-col-width': spotsColWidth + 'px' }">
       <div ref="sheetEl" class="spots-col" :class="[sheetState, { dragging: sheetDragging }]">
         <div class="sheet-handle-row">
-          <button type="button" class="sheet-step-btn" :disabled="!canExpandSheet"
-            aria-label="Spots-Liste weiter hochschieben" title="Hochschieben" @click="stepSheet(1)">
+          <button
+            type="button"
+            class="sheet-step-btn"
+            :disabled="!canExpandSheet"
+            aria-label="Spots-Liste weiter hochschieben"
+            title="Hochschieben"
+            @click="stepSheet(1)"
+          >
             <AppIcon :icon="ACTION_ICONS.chevronUp" :size="16" group="actions" />
           </button>
-          <div class="sheet-handle" role="separator" aria-orientation="horizontal"
-            aria-label="Spots-Liste ein-/ausklappen" @pointerdown="onSheetDragStart">
+          <div
+            class="sheet-handle"
+            role="separator"
+            aria-orientation="horizontal"
+            aria-label="Spots-Liste ein-/ausklappen"
+            @pointerdown="onSheetDragStart"
+          >
             <span class="sheet-grip" aria-hidden="true"></span>
             <span class="sheet-summary">
               <AppIcon :icon="FORM_FIELD_ICONS.location" :size="13" group="formFields" />
               {{ filteredSpotItems.length }} {{ filteredSpotItems.length === 1 ? 'Ort' : 'Orte' }}
             </span>
           </div>
-          <button type="button" class="sheet-step-btn" :disabled="!canCollapseSheet"
-            aria-label="Spots-Liste weiter runterschieben" title="Runterschieben" @click="stepSheet(-1)">
+          <button
+            type="button"
+            class="sheet-step-btn"
+            :disabled="!canCollapseSheet"
+            aria-label="Spots-Liste weiter runterschieben"
+            title="Runterschieben"
+            @click="stepSheet(-1)"
+          >
             <AppIcon :icon="ACTION_ICONS.chevronDown" :size="16" group="actions" />
           </button>
         </div>
-        <div class="spots-col-body" ref="spotsColBodyEl"
-          :style="{ '--category-nav-clearance': `${categoryNavHeight}px` }" @pointerdown="onSheetBodyPointerDown">
+        <div
+          class="spots-col-body"
+          ref="spotsColBodyEl"
+          :style="{ '--category-nav-clearance': `${categoryNavHeight}px` }"
+          @pointerdown="onSheetBodyPointerDown"
+        >
           <!-- Sprungziel für TripMap.vue's Tag-/Ausflug-Stationen-Liste: mobil (siehe TripMap.vue's
            Teleport) landet sie hier statt als Overlay über der Karte zu schweben (verdeckte dort
            Kartenausschnitt und teils die Zoom-Steuerung). Auf Desktop bleibt sie unverändert Teil
@@ -1834,8 +1966,14 @@ async function removeSpot(id: number) {
                Popover-Muster (Backdrop + .picker-menu) wie die Kategorie-/Status-Filter unten statt
                eines neuen Tooltip-Mechanismus. -->
               <span class="dropdown info-dropdown">
-                <button ref="descriptionBtnRef" type="button" class="info-btn" title="Was sind Spots?"
-                  aria-label="Was sind Spots?" @click="toggleDescription($event)">
+                <button
+                  ref="descriptionBtnRef"
+                  type="button"
+                  class="info-btn"
+                  title="Was sind Spots?"
+                  aria-label="Was sind Spots?"
+                  @click="toggleDescription($event)"
+                >
                   <AppIcon :icon="ACTION_ICONS.info" :size="16" group="actions" />
                 </button>
                 <Teleport to="body">
@@ -1843,12 +1981,13 @@ async function removeSpot(id: number) {
                     <div class="picker-backdrop" @click="descriptionOpen = false"></div>
                     <div class="picker-menu description-popover" :style="descriptionMenuStyle">
                       <p>
-                        Orte (Restaurant, Sehenswürdigkeit, Strand, …), die du als Stationen bei Touren zuordnen
-                        kannst – auch unabhängig von einer Tour. Eignet sich auch einfach als Ideensammlung –
-                        nicht jeder Spot muss geplant oder besucht werden. Tipp: Ziehe eine Spot-Karte direkt auf
-                        eine Tour oder auf einen Kalendertag, um sie dort als Station bzw. spontan einzuplanen.
-                        Bei Gruppierung nach "🎒 Touren" unten zeigt ein Klick auf die Tour-Karte deren Route auf
-                        der Karte.
+                        Orte (Restaurant, Sehenswürdigkeit, Strand, …), die du als Stationen bei
+                        Touren zuordnen kannst – auch unabhängig von einer Tour. Eignet sich auch
+                        einfach als Ideensammlung – nicht jeder Spot muss geplant oder besucht
+                        werden. Tipp: Ziehe eine Spot-Karte direkt auf eine Tour oder auf einen
+                        Kalendertag, um sie dort als Station bzw. spontan einzuplanen. Bei
+                        Gruppierung nach "🎒 Touren" unten zeigt ein Klick auf die Tour-Karte deren
+                        Route auf der Karte.
                       </p>
                     </div>
                   </template>
@@ -1858,21 +1997,42 @@ async function removeSpot(id: number) {
                .filter-bar weiter unten (siehe dortiger Kommentar-Rest) - direkt neben der
                Drawer-Überschrift ist er als primäre Weiche dieser Ansicht (bestimmt sowohl den
                Überschriftstext oben als auch den Hinzufügen-Button rechts) besser aufgehoben. -->
-              <SegmentedToggle v-model="groupMode" :options="[
-                { value: 'category', label: 'Spots', icon: FORM_FIELD_ICONS.category, iconGroup: 'formFields', dot: liveSync.hasUnseen('spots') },
-                { value: 'tours', label: 'Touren', icon: SECTION_ICON_DEFS.excursions, iconGroup: 'navigation', dot: liveSync.hasUnseen('ideas') },
-              ]" />
+              <SegmentedToggle
+                v-model="groupMode"
+                :options="[
+                  {
+                    value: 'category',
+                    label: 'Spots',
+                    icon: FORM_FIELD_ICONS.category,
+                    iconGroup: 'formFields',
+                    dot: liveSync.hasUnseen('spots'),
+                  },
+                  {
+                    value: 'tours',
+                    label: 'Touren',
+                    icon: SECTION_ICON_DEFS.excursions,
+                    iconGroup: 'navigation',
+                    dot: liveSync.hasUnseen('ideas'),
+                  },
+                ]"
+              />
             </h2>
             <div class="header-actions">
-              <button class="add-button" v-if="groupMode === 'category'" aria-label="Neuer Spot" @click="showSpotForm = true">
-                <AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> <span class="add-button__label">Neuer Spot</span>
+              <button
+                class="add-button"
+                v-if="groupMode === 'category'"
+                aria-label="Neuer Spot"
+                @click="showSpotForm = true"
+              >
+                <AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" />
+                <span class="add-button__label">Neuer Spot</span>
               </button>
               <template v-else-if="groupMode === 'tours'">
                 <button class="add-button" aria-label="Neue Tour" @click="openExcursionForm()">
-                  <AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> <span class="add-button__label">Neue Tour</span>
+                  <AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" />
+                  <span class="add-button__label">Neue Tour</span>
                 </button>
               </template>
-
             </div>
             <!-- Zweiter Einstiegspunkt zum ⏺️/⏹️-Button auf TripMap.vue (Start dort mit Sichtbarkeits-
                Auswahl/Tour-Kopplung): der Karten-Button steckt in einer bereits vollen
@@ -1885,33 +2045,58 @@ async function removeSpot(id: number) {
                Aufzeichnungen-Liste erreichbar. -->
           </div>
           <div class="subheader">
-            <button type="button" class="secondary record-button" :class="{ recording: trackRecording.recording }"
-            @click="onRecordButtonClick">
-            <AppIcon :icon="trackRecording.recording ? ACTION_ICONS.recordStop : ACTION_ICONS.recordStart" :size="15"
-            group="actions" />
-            {{ trackRecording.recording ? 'Aufzeichnung beenden' : 'Weg Aufzeichnen' }}
-          </button>
-        </div>
+            <button
+              type="button"
+              class="secondary record-button"
+              :class="{ recording: trackRecording.recording }"
+              @click="onRecordButtonClick"
+            >
+              <AppIcon
+                :icon="
+                  trackRecording.recording ? ACTION_ICONS.recordStop : ACTION_ICONS.recordStart
+                "
+                :size="15"
+                group="actions"
+              />
+              {{ trackRecording.recording ? 'Aufzeichnung beenden' : 'Weg Aufzeichnen' }}
+            </button>
+          </div>
 
           <!-- Standort-Aufzeichnungen (stores/tracks.ts): eigene, geteilte und mit anderen geteilte
            Tracks - Start/Stop selbst passiert auf der Karte (TripMap.vue's ⏺️-Button), hier nur die
            Übersicht + nachträgliches Teilen/Löschen. Eingeklappt per Default, damit die für die
            meiste Zeit relevantere Spots-Liste nicht verdrängt wird - genau wie .filter-bar oben. -->
           <div class="tracks-section" v-if="tracksStore.tracks.length">
-            <button type="button" class="tracks-toggle" :aria-expanded="tracksSectionOpen"
-              @click="tracksSectionOpen = !tracksSectionOpen">
+            <button
+              type="button"
+              class="tracks-toggle"
+              :aria-expanded="tracksSectionOpen"
+              @click="tracksSectionOpen = !tracksSectionOpen"
+            >
               <span>
-                <AppIcon :icon="ACTION_ICONS.history" :size="15" group="actions" /> Aufzeichnungen ({{
-                  tracksStore.tracks.length
-                }})
+                <AppIcon :icon="ACTION_ICONS.history" :size="15" group="actions" /> Aufzeichnungen
+                ({{ tracksStore.tracks.length }})
               </span>
-              <AppIcon :icon="ACTION_ICONS.chevronDown" :size="14" group="actions" class="caret"
-                :class="{ closed: !tracksSectionOpen }" />
+              <AppIcon
+                :icon="ACTION_ICONS.chevronDown"
+                :size="14"
+                group="actions"
+                class="caret"
+                :class="{ closed: !tracksSectionOpen }"
+              />
             </button>
             <ul v-if="tracksSectionOpen" class="tracks-list">
-              <li v-for="track in tracksStore.tracks" :key="track.id" class="track-row"
-                :class="{ active: drawers.mapFocusTrackId === track.id }">
-                <button type="button" class="track-row-main" @click="drawers.openMapForTrack(track.id)">
+              <li
+                v-for="track in tracksStore.tracks"
+                :key="track.id"
+                class="track-row"
+                :class="{ active: drawers.mapFocusTrackId === track.id }"
+              >
+                <button
+                  type="button"
+                  class="track-row-main"
+                  @click="drawers.openMapForTrack(track.id)"
+                >
                   <span class="track-row-title">{{ trackTitle(track) }}</span>
                   <span class="track-row-meta">
                     <span v-if="!track.ended_at">
@@ -1924,16 +2109,34 @@ async function removeSpot(id: number) {
                   </span>
                 </button>
                 <template v-if="track.user_id === auth.user?.id">
-                  <button type="button" class="track-icon-btn" :title="track.visibility === 'shared'
-                      ? 'Für alle Mitreisenden sichtbar – antippen, um wieder privat zu machen'
-                      : 'Nur für dich sichtbar – antippen, um mit allen zu teilen'
-                    " :aria-label="track.visibility === 'shared' ? 'Teilen zurücknehmen' : 'Mit allen teilen'"
-                    @click="toggleTrackVisibility(track)">
-                    <AppIcon :icon="track.visibility === 'shared' ? ACTION_ICONS.shared : ACTION_ICONS.private"
-                      :size="15" group="actions" />
+                  <button
+                    type="button"
+                    class="track-icon-btn"
+                    :title="
+                      track.visibility === 'shared'
+                        ? 'Für alle Mitreisenden sichtbar – antippen, um wieder privat zu machen'
+                        : 'Nur für dich sichtbar – antippen, um mit allen zu teilen'
+                    "
+                    :aria-label="
+                      track.visibility === 'shared' ? 'Teilen zurücknehmen' : 'Mit allen teilen'
+                    "
+                    @click="toggleTrackVisibility(track)"
+                  >
+                    <AppIcon
+                      :icon="
+                        track.visibility === 'shared' ? ACTION_ICONS.shared : ACTION_ICONS.private
+                      "
+                      :size="15"
+                      group="actions"
+                    />
                   </button>
-                  <button type="button" class="track-icon-btn" title="Aufzeichnung löschen"
-                    aria-label="Aufzeichnung löschen" @click="removeTrack(track.id)">
+                  <button
+                    type="button"
+                    class="track-icon-btn"
+                    title="Aufzeichnung löschen"
+                    aria-label="Aufzeichnung löschen"
+                    @click="removeTrack(track.id)"
+                  >
                     <AppIcon :icon="ACTION_ICONS.delete" :size="15" group="actions" />
                   </button>
                 </template>
@@ -1944,20 +2147,45 @@ async function removeSpot(id: number) {
           <!-- Touren-Formular: für BEIDE Gruppierungen ("Touren" und "Reise") dasselbe Modal/Modell -
            der aufklappbare Transportmittel-Abschnitt (#176) macht aus einer normalen Tour bei
            Bedarf eine ehemalige Reise-Etappe, siehe Konzept-Entscheidung in Issue #68/#176. -->
-          <Modal :model-value="showExcursionForm" title="Neue Tour" full-height
-            @update:model-value="(v) => !v && closeExcursionForm()">
+          <Modal
+            :model-value="showExcursionForm"
+            title="Neue Tour"
+            full-height
+            @update:model-value="(v) => !v && closeExcursionForm()"
+          >
             <form class="edit-form" @submit.prevent="addExcursion">
-              <div class="form-image-banner"
-                :style="excursionPreviewImage ? { backgroundImage: `url(${excursionPreviewImage})` } : {}">
-                <AppIcon v-if="!excursionPreviewImage" class="placeholder" :size="35"
-                  :icon="SECTION_ICON_DEFS.excursions" group="navigation" />
+              <div
+                class="form-image-banner"
+                :style="
+                  excursionPreviewImage ? { backgroundImage: `url(${excursionPreviewImage})` } : {}
+                "
+              >
+                <AppIcon
+                  v-if="!excursionPreviewImage"
+                  class="placeholder"
+                  :size="35"
+                  :icon="SECTION_ICON_DEFS.excursions"
+                  group="navigation"
+                />
                 <div class="banner-actions">
-                  <Button type="button" variant="ghost" class="banner-edit-btn" @click="showExcursionImageModal = true">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    class="banner-edit-btn"
+                    @click="showExcursionImageModal = true"
+                  >
                     <AppIcon :icon="ACTION_ICONS.edit" :size="13" group="actions" />
                     {{ excursionForm.image_url ? 'Bild bearbeiten' : 'Bild hinzufügen' }}
                   </Button>
-                  <Button v-if="excursionForm.image_url" type="button" variant="ghost" class="banner-edit-btn remove"
-                    title="Bild entfernen" aria-label="Bild entfernen" @click="excursionForm.image_url = ''">
+                  <Button
+                    v-if="excursionForm.image_url"
+                    type="button"
+                    variant="ghost"
+                    class="banner-edit-btn remove"
+                    title="Bild entfernen"
+                    aria-label="Bild entfernen"
+                    @click="excursionForm.image_url = ''"
+                  >
                     <AppIcon :icon="ACTION_ICONS.close" :size="13" group="actions" />
                   </Button>
                 </div>
@@ -1966,20 +2194,26 @@ async function removeSpot(id: number) {
                 <input v-model="excursionForm.title" type="text" placeholder="Titel" required />
               </FormField>
               <FormField icon="note" label="Notiz">
-                <RichTextEditor v-model="excursionForm.note" placeholder="Notiz (optional)" compact expandable />
+                <RichTextEditor
+                  v-model="excursionForm.note"
+                  placeholder="Notiz (optional)"
+                  compact
+                  expandable
+                />
               </FormField>
               <FormField icon="date" label="Datum (optional – sonst „In Planung“)">
                 <input v-model="excursionForm.date" type="date" />
               </FormField>
               <label class="checkbox-option">
                 <input type="checkbox" v-model="excursionForm.transportEnabled" />
-                <AppIcon :icon="ACTION_ICONS.recordStart" :size="14" group="actions" /> Transportmittel
-                (Anreise/Abreise/Weiterreise/Fahrt)
+                <AppIcon :icon="ACTION_ICONS.recordStart" :size="14" group="actions" />
+                Transportmittel (Anreise/Abreise/Weiterreise/Fahrt)
               </label>
               <template v-if="excursionForm.transportEnabled">
                 <FormField icon="category" label="Art">
                   <select v-model="excursionForm.transport_type">
-                    <option v-for="t in TRANSPORT_TYPE_OPTIONS" :key="t" :value="t">{{ travelTypeIcon(t) }} {{ t }}
+                    <option v-for="t in TRANSPORT_TYPE_OPTIONS" :key="t" :value="t">
+                      {{ travelTypeIcon(t) }} {{ t }}
                     </option>
                   </select>
                 </FormField>
@@ -1987,7 +2221,9 @@ async function removeSpot(id: number) {
                   <select v-model="excursionForm.role">
                     <option value="">– keine (nur Transportmittel) –</option>
                     <option v-for="r in TRAVEL_ROLE_OPTIONS" :key="r" :value="r">
-                      {{ TRAVEL_ROLE_META[r].icon }} {{ TRAVEL_ROLE_META[r].label }} ({{ TRAVEL_ROLE_META[r].hint }})
+                      {{ TRAVEL_ROLE_META[r].icon }} {{ TRAVEL_ROLE_META[r].label }} ({{
+                        TRAVEL_ROLE_META[r].hint
+                      }})
                     </option>
                   </select>
                 </FormField>
@@ -1996,21 +2232,28 @@ async function removeSpot(id: number) {
                     <select v-model="excursionForm.from_spot_id">
                       <option value="">– wählen –</option>
                       <option v-for="s in spotsStore.spots" :key="s.id" :value="String(s.id)">
-                        {{ spotCategoryMeta(s.category).icon }} {{ s.title }}</option>
+                        {{ spotCategoryMeta(s.category).icon }} {{ s.title }}
+                      </option>
                     </select>
                   </FormField>
                   <FormField icon="location" label="Nach">
                     <select v-model="excursionForm.to_spot_id">
                       <option value="">– wählen –</option>
                       <option v-for="s in spotsStore.spots" :key="s.id" :value="String(s.id)">
-                        {{ spotCategoryMeta(s.category).icon }} {{ s.title }}</option>
+                        {{ spotCategoryMeta(s.category).icon }} {{ s.title }}
+                      </option>
                     </select>
                   </FormField>
                 </div>
-                <p v-if="excursionForm.role && (!excursionForm.from_spot_id || !excursionForm.to_spot_id)"
-                  class="hint error">
-                  <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Für Anreise/Abreise/Weiterreise
-                  werden Von und Nach benötigt (beide als Spot anlegen, falls noch nicht vorhanden).
+                <p
+                  v-if="
+                    excursionForm.role && (!excursionForm.from_spot_id || !excursionForm.to_spot_id)
+                  "
+                  class="hint error"
+                >
+                  <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Für
+                  Anreise/Abreise/Weiterreise werden Von und Nach benötigt (beide als Spot anlegen,
+                  falls noch nicht vorhanden).
                 </p>
                 <div class="row">
                   <FormField icon="time" label="Abfahrt/Abflug">
@@ -2021,28 +2264,43 @@ async function removeSpot(id: number) {
                   </FormField>
                 </div>
                 <FormField icon="note" label="Vorher da sein">
-                  <input v-model="excursionForm.checkin_info" type="text"
-                    placeholder="z. B. 2 Stunden vorher / Check-in ab 10:00" />
+                  <input
+                    v-model="excursionForm.checkin_info"
+                    type="text"
+                    placeholder="z. B. 2 Stunden vorher / Check-in ab 10:00"
+                  />
                 </FormField>
                 <div class="row">
                   <FormField icon="amount" label="Kosten">
-                    <input v-model="excursionForm.amount" type="number" step="0.01" placeholder="optional" />
+                    <input
+                      v-model="excursionForm.amount"
+                      type="number"
+                      step="0.01"
+                      placeholder="optional"
+                    />
                   </FormField>
                   <FormField v-if="users.length > 1" icon="shared" label="Bezahlt von">
                     <select v-model="excursionForm.paid_by_user_id">
                       <option value="">–</option>
-                      <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}
+                      <option v-for="u in users" :key="u.id" :value="String(u.id)">
+                        {{ u.avatar }} {{ u.username }}
                       </option>
                     </select>
                   </FormField>
                 </div>
-                <p v-if="users.length > 1 && excursionForm.amount && !excursionForm.paid_by_user_id" class="hint">
+                <p
+                  v-if="users.length > 1 && excursionForm.amount && !excursionForm.paid_by_user_id"
+                  class="hint"
+                >
                   Ohne Zahler:in wird der Betrag nicht in der Budgetplanung berücksichtigt.
                 </p>
                 <div class="row">
                   <FormField icon="note" label="Gepäck">
-                    <input v-model="excursionForm.luggage" type="text"
-                      placeholder="z. B. 1x Koffer 23kg, 1x Handgepäck" />
+                    <input
+                      v-model="excursionForm.luggage"
+                      type="text"
+                      placeholder="z. B. 1x Koffer 23kg, 1x Handgepäck"
+                    />
                   </FormField>
                   <FormField icon="note" label="Sitzplatz">
                     <input v-model="excursionForm.seat" type="text" placeholder="z. B. 12A" />
@@ -2052,42 +2310,91 @@ async function removeSpot(id: number) {
                   <input v-model="excursionForm.ticket_link" type="url" />
                 </FormField>
               </template>
-              <fieldset v-if="!excursionForm.transportEnabled && spotsStore.spots.length" class="collapsible-fieldset">
+              <fieldset
+                v-if="!excursionForm.transportEnabled && spotsStore.spots.length"
+                class="collapsible-fieldset"
+              >
                 <legend>
-                  <Button type="button" variant="ghost" class="collapsible-toggle" :aria-expanded="showExcursionSpotsSection"
-                    @click="showExcursionSpotsSection = !showExcursionSpotsSection">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    class="collapsible-toggle"
+                    :aria-expanded="showExcursionSpotsSection"
+                    @click="showExcursionSpotsSection = !showExcursionSpotsSection"
+                  >
                     <span>
                       <AppIcon :icon="FORM_FIELD_ICONS.location" :size="14" group="formFields" />
                       Spots zuordnen
-                      <span v-if="excursionForm.spot_ids.length" class="picker-count"> ({{ excursionForm.spot_ids.length }} zugeordnet)</span>
+                      <span v-if="excursionForm.spot_ids.length" class="picker-count">
+                        ({{ excursionForm.spot_ids.length }} zugeordnet)</span
+                      >
                     </span>
-                    <AppIcon :icon="ACTION_ICONS.chevronDown" :size="14" group="actions" class="caret"
-                      :class="{ closed: !showExcursionSpotsSection }" />
+                    <AppIcon
+                      :icon="ACTION_ICONS.chevronDown"
+                      :size="14"
+                      group="actions"
+                      class="caret"
+                      :class="{ closed: !showExcursionSpotsSection }"
+                    />
                   </Button>
                 </legend>
                 <div v-if="showExcursionSpotsSection" class="collapsible-content">
-                  <SpotOrderPicker v-model="excursionForm.spot_ids" :spots="spotsStore.spots" :like-count="spotsStore.likeCountFor" />
+                  <SpotOrderPicker
+                    v-model="excursionForm.spot_ids"
+                    :spots="spotsStore.spots"
+                    :like-count="spotsStore.likeCountFor"
+                  />
                 </div>
               </fieldset>
-              <DraftStatusBar :status="newExcursionDraft.status.value" :restored="newExcursionDraft.restored.value" />
+              <DraftStatusBar
+                :status="newExcursionDraft.status.value"
+                :restored="newExcursionDraft.restored.value"
+              />
               <Button type="submit">Hinzufügen</Button>
             </form>
           </Modal>
 
-          <Modal :model-value="editingExcursion !== null" title="Tour bearbeiten" full-height
-            @update:model-value="(v) => !v && closeEditExcursionForm()">
+          <Modal
+            :model-value="editingExcursion !== null"
+            title="Tour bearbeiten"
+            full-height
+            @update:model-value="(v) => !v && closeEditExcursionForm()"
+          >
             <form class="edit-form" @submit.prevent="submitEditExcursion">
-              <div class="form-image-banner"
-                :style="editExcursionPreviewImage ? { backgroundImage: `url(${editExcursionPreviewImage})` } : {}">
-                <AppIcon v-if="!editExcursionPreviewImage" class="placeholder" :size="35"
-                  :icon="SECTION_ICON_DEFS.excursions" group="navigation" />
+              <div
+                class="form-image-banner"
+                :style="
+                  editExcursionPreviewImage
+                    ? { backgroundImage: `url(${editExcursionPreviewImage})` }
+                    : {}
+                "
+              >
+                <AppIcon
+                  v-if="!editExcursionPreviewImage"
+                  class="placeholder"
+                  :size="35"
+                  :icon="SECTION_ICON_DEFS.excursions"
+                  group="navigation"
+                />
                 <div class="banner-actions">
-                  <Button type="button" variant="ghost" class="banner-edit-btn" @click="showEditExcursionImageModal = true">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    class="banner-edit-btn"
+                    @click="showEditExcursionImageModal = true"
+                  >
                     <AppIcon :icon="ACTION_ICONS.edit" :size="13" group="actions" />
                     {{ editExcursionForm.image_url ? 'Bild bearbeiten' : 'Bild hinzufügen' }}
                   </Button>
-                  <Button v-if="editExcursionForm.image_url" type="button" variant="ghost" class="banner-edit-btn remove"
-                    title="Bild entfernen" aria-label="Bild entfernen" @click="editExcursionForm.image_url = ''">
+                  <Button
+                    v-if="editExcursionForm.image_url"
+                    type="button"
+                    variant="ghost"
+                    class="banner-edit-btn remove"
+                    title="Bild entfernen"
+                    aria-label="Bild entfernen"
+                    @click="editExcursionForm.image_url = ''"
+                  >
                     <AppIcon :icon="ACTION_ICONS.close" :size="13" group="actions" />
                   </Button>
                 </div>
@@ -2096,20 +2403,26 @@ async function removeSpot(id: number) {
                 <input v-model="editExcursionForm.title" type="text" placeholder="Titel" required />
               </FormField>
               <FormField icon="note" label="Notiz">
-                <RichTextEditor v-model="editExcursionForm.note" placeholder="Notiz (optional)" compact expandable />
+                <RichTextEditor
+                  v-model="editExcursionForm.note"
+                  placeholder="Notiz (optional)"
+                  compact
+                  expandable
+                />
               </FormField>
               <FormField icon="date" label="Datum (optional – sonst „In Planung“)">
                 <input v-model="editExcursionForm.date" type="date" />
               </FormField>
               <label class="checkbox-option">
                 <input type="checkbox" v-model="editExcursionForm.transportEnabled" />
-                <AppIcon :icon="ACTION_ICONS.recordStart" :size="14" group="actions" /> Transportmittel
-                (Anreise/Abreise/Weiterreise/Fahrt)
+                <AppIcon :icon="ACTION_ICONS.recordStart" :size="14" group="actions" />
+                Transportmittel (Anreise/Abreise/Weiterreise/Fahrt)
               </label>
               <template v-if="editExcursionForm.transportEnabled">
                 <FormField icon="category" label="Art">
                   <select v-model="editExcursionForm.transport_type">
-                    <option v-for="t in TRANSPORT_TYPE_OPTIONS" :key="t" :value="t">{{ travelTypeIcon(t) }} {{ t }}
+                    <option v-for="t in TRANSPORT_TYPE_OPTIONS" :key="t" :value="t">
+                      {{ travelTypeIcon(t) }} {{ t }}
                     </option>
                   </select>
                 </FormField>
@@ -2117,7 +2430,9 @@ async function removeSpot(id: number) {
                   <select v-model="editExcursionForm.role">
                     <option value="">– keine (nur Transportmittel) –</option>
                     <option v-for="r in TRAVEL_ROLE_OPTIONS" :key="r" :value="r">
-                      {{ TRAVEL_ROLE_META[r].icon }} {{ TRAVEL_ROLE_META[r].label }} ({{ TRAVEL_ROLE_META[r].hint }})
+                      {{ TRAVEL_ROLE_META[r].icon }} {{ TRAVEL_ROLE_META[r].label }} ({{
+                        TRAVEL_ROLE_META[r].hint
+                      }})
                     </option>
                   </select>
                 </FormField>
@@ -2126,21 +2441,29 @@ async function removeSpot(id: number) {
                     <select v-model="editExcursionForm.from_spot_id">
                       <option value="">– wählen –</option>
                       <option v-for="s in spotsStore.spots" :key="s.id" :value="String(s.id)">
-                        {{ spotCategoryMeta(s.category).icon }} {{ s.title }}</option>
+                        {{ spotCategoryMeta(s.category).icon }} {{ s.title }}
+                      </option>
                     </select>
                   </FormField>
                   <FormField icon="location" label="Nach">
                     <select v-model="editExcursionForm.to_spot_id">
                       <option value="">– wählen –</option>
                       <option v-for="s in spotsStore.spots" :key="s.id" :value="String(s.id)">
-                        {{ spotCategoryMeta(s.category).icon }} {{ s.title }}</option>
+                        {{ spotCategoryMeta(s.category).icon }} {{ s.title }}
+                      </option>
                     </select>
                   </FormField>
                 </div>
-                <p v-if="editExcursionForm.role && (!editExcursionForm.from_spot_id || !editExcursionForm.to_spot_id)"
-                  class="hint error">
-                  <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Für Anreise/Abreise/Weiterreise
-                  werden Von und Nach benötigt (beide als Spot anlegen, falls noch nicht vorhanden).
+                <p
+                  v-if="
+                    editExcursionForm.role &&
+                    (!editExcursionForm.from_spot_id || !editExcursionForm.to_spot_id)
+                  "
+                  class="hint error"
+                >
+                  <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Für
+                  Anreise/Abreise/Weiterreise werden Von und Nach benötigt (beide als Spot anlegen,
+                  falls noch nicht vorhanden).
                 </p>
                 <div class="row">
                   <FormField icon="time" label="Abfahrt/Abflug">
@@ -2151,28 +2474,47 @@ async function removeSpot(id: number) {
                   </FormField>
                 </div>
                 <FormField icon="note" label="Vorher da sein">
-                  <input v-model="editExcursionForm.checkin_info" type="text"
-                    placeholder="z. B. 2 Stunden vorher / Check-in ab 10:00" />
+                  <input
+                    v-model="editExcursionForm.checkin_info"
+                    type="text"
+                    placeholder="z. B. 2 Stunden vorher / Check-in ab 10:00"
+                  />
                 </FormField>
                 <div class="row">
                   <FormField icon="amount" label="Kosten">
-                    <input v-model="editExcursionForm.amount" type="number" step="0.01" placeholder="optional" />
+                    <input
+                      v-model="editExcursionForm.amount"
+                      type="number"
+                      step="0.01"
+                      placeholder="optional"
+                    />
                   </FormField>
                   <FormField v-if="users.length > 1" icon="shared" label="Bezahlt von">
                     <select v-model="editExcursionForm.paid_by_user_id">
                       <option value="">–</option>
-                      <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}
+                      <option v-for="u in users" :key="u.id" :value="String(u.id)">
+                        {{ u.avatar }} {{ u.username }}
                       </option>
                     </select>
                   </FormField>
                 </div>
-                <p v-if="users.length > 1 && editExcursionForm.amount && !editExcursionForm.paid_by_user_id" class="hint">
+                <p
+                  v-if="
+                    users.length > 1 &&
+                    editExcursionForm.amount &&
+                    !editExcursionForm.paid_by_user_id
+                  "
+                  class="hint"
+                >
                   Ohne Zahler:in wird der Betrag nicht in der Budgetplanung berücksichtigt.
                 </p>
                 <div class="row">
                   <FormField icon="note" label="Gepäck">
-                    <input v-model="editExcursionForm.luggage" type="text"
-                      placeholder="z. B. 1x Koffer 23kg, 1x Handgepäck" />
+                    <input
+                      v-model="editExcursionForm.luggage"
+                      type="text"
+                      placeholder="z. B. 1x Koffer 23kg, 1x Handgepäck"
+                    />
                   </FormField>
                   <FormField icon="note" label="Sitzplatz">
                     <input v-model="editExcursionForm.seat" type="text" placeholder="z. B. 12A" />
@@ -2182,36 +2524,61 @@ async function removeSpot(id: number) {
                   <input v-model="editExcursionForm.ticket_link" type="url" />
                 </FormField>
               </template>
-              <fieldset v-if="!editExcursionForm.transportEnabled && spotsStore.spots.length" class="collapsible-fieldset">
+              <fieldset
+                v-if="!editExcursionForm.transportEnabled && spotsStore.spots.length"
+                class="collapsible-fieldset"
+              >
                 <legend>
-                  <Button type="button" variant="ghost" class="collapsible-toggle" :aria-expanded="showEditExcursionSpotsSection"
-                    @click="showEditExcursionSpotsSection = !showEditExcursionSpotsSection">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    class="collapsible-toggle"
+                    :aria-expanded="showEditExcursionSpotsSection"
+                    @click="showEditExcursionSpotsSection = !showEditExcursionSpotsSection"
+                  >
                     <span>
                       <AppIcon :icon="FORM_FIELD_ICONS.location" :size="14" group="formFields" />
                       Spots zuordnen
-                      <span v-if="editExcursionForm.spot_ids.length" class="picker-count"> ({{ editExcursionForm.spot_ids.length }} zugeordnet)</span>
+                      <span v-if="editExcursionForm.spot_ids.length" class="picker-count">
+                        ({{ editExcursionForm.spot_ids.length }} zugeordnet)</span
+                      >
                     </span>
-                    <AppIcon :icon="ACTION_ICONS.chevronDown" :size="14" group="actions" class="caret"
-                      :class="{ closed: !showEditExcursionSpotsSection }" />
+                    <AppIcon
+                      :icon="ACTION_ICONS.chevronDown"
+                      :size="14"
+                      group="actions"
+                      class="caret"
+                      :class="{ closed: !showEditExcursionSpotsSection }"
+                    />
                   </Button>
                 </legend>
                 <div v-if="showEditExcursionSpotsSection" class="collapsible-content">
-                  <SpotOrderPicker v-model="editExcursionForm.spot_ids" :spots="spotsStore.spots" :like-count="spotsStore.likeCountFor" />
+                  <SpotOrderPicker
+                    v-model="editExcursionForm.spot_ids"
+                    :spots="spotsStore.spots"
+                    :like-count="spotsStore.likeCountFor"
+                  />
                 </div>
               </fieldset>
-              <FileAttachments v-if="editingExcursion" domain="ideas" :entity-id="editingExcursion" />
-              <DraftStatusBar :status="editExcursionDraft.status.value" :restored="editExcursionDraft.restored.value" />
+              <FileAttachments
+                v-if="editingExcursion"
+                domain="ideas"
+                :entity-id="editingExcursion"
+              />
+              <DraftStatusBar
+                :status="editExcursionDraft.status.value"
+                :restored="editExcursionDraft.restored.value"
+              />
               <Button type="submit">Speichern</Button>
             </form>
           </Modal>
-
 
           <div class="filter-bar" v-if="filterCategoryOptions.length">
             <div class="filter-bar-rows">
               <div class="tool-row">
                 <span class="tool-label" title="Sortieren">
-                  <AppIcon :icon="ACTION_ICONS.sort" :size="14" group="actions" /> <span
-                    class="tool-label-text">Sortieren</span>
+                  <AppIcon :icon="ACTION_ICONS.sort" :size="14" group="actions" />
+                  <span class="tool-label-text">Sortieren</span>
                 </span>
                 <select v-model="sortMode">
                   <option value="alpha">Alphabetisch</option>
@@ -2221,35 +2588,62 @@ async function removeSpot(id: number) {
 
               <div class="tool-row">
                 <span class="tool-label" title="Filtern">
-                  <AppIcon :icon="ACTION_ICONS.filter" :size="14" group="actions" /> <span
-                    class="tool-label-text">Filtern</span>
+                  <AppIcon :icon="ACTION_ICONS.filter" :size="14" group="actions" />
+                  <span class="tool-label-text">Filtern</span>
                 </span>
                 <div class="dropdown">
-                  <Button ref="categoryBtnRef" variant="secondary" class="category-btn"
-                    title="Nach Kategorie filtern" aria-label="Nach Kategorie filtern" @click="toggleCategoryMenu($event)">
-                    <AppIcon :icon="FORM_FIELD_ICONS.category" :size="14" group="formFields" /> Kategorie
-                    <AppIcon :icon="ACTION_ICONS.chevronDown" :size="12" group="actions" class="caret dropdown-caret"
-                      :class="{ open: categoryMenuOpen }" />
+                  <Button
+                    ref="categoryBtnRef"
+                    variant="secondary"
+                    class="category-btn"
+                    title="Nach Kategorie filtern"
+                    aria-label="Nach Kategorie filtern"
+                    @click="toggleCategoryMenu($event)"
+                  >
+                    <AppIcon :icon="FORM_FIELD_ICONS.category" :size="14" group="formFields" />
+                    Kategorie
+                    <AppIcon
+                      :icon="ACTION_ICONS.chevronDown"
+                      :size="12"
+                      group="actions"
+                      class="caret dropdown-caret"
+                      :class="{ open: categoryMenuOpen }"
+                    />
                   </Button>
                   <Teleport to="body">
                     <template v-if="categoryMenuOpen">
                       <div class="picker-backdrop" @click="categoryMenuOpen = false"></div>
                       <div class="picker-menu category-menu" :style="categoryMenuStyle">
-                        <label v-for="cat in filterCategoryOptions" :key="cat" class="category-option">
+                        <label
+                          v-for="cat in filterCategoryOptions"
+                          :key="cat"
+                          class="category-option"
+                        >
                           <input type="checkbox" :value="cat" v-model="categoryFilter" />
-                          <AppIcon :icon="groupIconDef(cat)" :size="14" group="categories" /> {{ cat }}
+                          <AppIcon :icon="groupIconDef(cat)" :size="14" group="categories" />
+                          {{ cat }}
                         </label>
                       </div>
                     </template>
                   </Teleport>
                 </div>
                 <div class="dropdown">
-                  <Button ref="statusBtnRef" variant="secondary" class="category-btn"
-                    title="Nach Status (geplant/ungeplant/gemacht) filtern" aria-label="Nach Status filtern"
-                    @click="toggleStatusMenu($event)">
+                  <Button
+                    ref="statusBtnRef"
+                    variant="secondary"
+                    class="category-btn"
+                    title="Nach Status (geplant/ungeplant/gemacht) filtern"
+                    aria-label="Nach Status filtern"
+                    @click="toggleStatusMenu($event)"
+                  >
                     <AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" /> Status
-                    <AppIcon :icon="ACTION_ICONS.chevronDown" :size="12" group="actions" class="caret dropdown-caret"
-                      :class="{ open: statusMenuOpen }" />
+                    <AppIcon
+                      :icon="ACTION_ICONS.chevronDown"
+                      :size="12"
+                      group="actions"
+                      class="caret dropdown-caret"
+                      :class="{ open: statusMenuOpen }"
+                    />
                   </Button>
                   <Teleport to="body">
                     <template v-if="statusMenuOpen">
@@ -2257,11 +2651,13 @@ async function removeSpot(id: number) {
                       <div class="picker-menu category-menu" :style="statusMenuStyle">
                         <label class="category-option">
                           <input type="checkbox" value="planned" v-model="statusFilter" />
-                          <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" /> Geplant
+                          <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" />
+                          Geplant
                         </label>
                         <label class="category-option">
                           <input type="checkbox" value="unplanned" v-model="statusFilter" />
-                          <AppIcon :icon="FORM_FIELD_ICONS.note" :size="14" group="formFields" /> Ungeplant
+                          <AppIcon :icon="FORM_FIELD_ICONS.note" :size="14" group="formFields" />
+                          Ungeplant
                         </label>
                         <label class="category-option">
                           <input type="checkbox" value="done" v-model="statusFilter" />
@@ -2277,30 +2673,67 @@ async function removeSpot(id: number) {
             <div class="filter-chips" v-if="categoryFilter.length || statusFilter.length">
               <span v-for="cat in categoryFilter" :key="cat" class="filter-chip">
                 <AppIcon :icon="groupIconDef(cat)" :size="13" group="categories" /> {{ cat }}
-                <IconButton variant="ghost" size="sm" :icon="ACTION_ICONS.close" aria-label="Filter entfernen" title="Filter entfernen" @click="removeCategoryFilter(cat)" />
+                <IconButton
+                  variant="ghost"
+                  size="sm"
+                  :icon="ACTION_ICONS.close"
+                  aria-label="Filter entfernen"
+                  title="Filter entfernen"
+                  @click="removeCategoryFilter(cat)"
+                />
               </span>
               <span v-for="status in statusFilter" :key="status" class="filter-chip">
                 <AppIcon :icon="STATUS_FILTER_ICON[status]" :size="13" group="actions" />
                 {{ STATUS_FILTER_LABEL[status] }}
-                <IconButton variant="ghost" size="sm" :icon="ACTION_ICONS.close" aria-label="Filter entfernen" title="Filter entfernen" @click="removeStatusFilter(status)" />
+                <IconButton
+                  variant="ghost"
+                  size="sm"
+                  :icon="ACTION_ICONS.close"
+                  aria-label="Filter entfernen"
+                  title="Filter entfernen"
+                  @click="removeStatusFilter(status)"
+                />
               </span>
             </div>
           </div>
 
-          <Modal :model-value="showSpotForm" title="Neuer Spot" full-height
-            @update:model-value="(v) => !v && closeSpotForm()">
+          <Modal
+            :model-value="showSpotForm"
+            title="Neuer Spot"
+            full-height
+            @update:model-value="(v) => !v && closeSpotForm()"
+          >
             <form class="edit-form" @submit.prevent="addSpot">
-              <div class="form-image-banner"
-                :style="spotPreviewImage ? { backgroundImage: `url(${spotPreviewImage})` } : {}">
-                <AppIcon v-if="!spotPreviewImage" class="placeholder" :size="35"
-                  :icon="spotCategoryMeta(spotForm.category).tabler" group="categories" />
+              <div
+                class="form-image-banner"
+                :style="spotPreviewImage ? { backgroundImage: `url(${spotPreviewImage})` } : {}"
+              >
+                <AppIcon
+                  v-if="!spotPreviewImage"
+                  class="placeholder"
+                  :size="35"
+                  :icon="spotCategoryMeta(spotForm.category).tabler"
+                  group="categories"
+                />
                 <div class="banner-actions">
-                  <Button type="button" variant="ghost" class="banner-edit-btn" @click="showSpotImageModal = true">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    class="banner-edit-btn"
+                    @click="showSpotImageModal = true"
+                  >
                     <AppIcon :icon="ACTION_ICONS.edit" :size="13" group="actions" />
                     {{ spotForm.image_url ? 'Bild bearbeiten' : 'Bild hinzufügen' }}
                   </Button>
-                  <Button v-if="spotForm.image_url" type="button" variant="ghost" class="banner-edit-btn remove"
-                    title="Bild entfernen" aria-label="Bild entfernen" @click="spotForm.image_url = ''">
+                  <Button
+                    v-if="spotForm.image_url"
+                    type="button"
+                    variant="ghost"
+                    class="banner-edit-btn remove"
+                    title="Bild entfernen"
+                    aria-label="Bild entfernen"
+                    @click="spotForm.image_url = ''"
+                  >
                     <AppIcon :icon="ACTION_ICONS.close" :size="13" group="actions" />
                   </Button>
                 </div>
@@ -2309,14 +2742,18 @@ async function removeSpot(id: number) {
                 <input v-model="spotForm.title" type="text" placeholder="Titel" required />
               </FormField>
               <FormField icon="category" label="Kategorie">
-                <Combobox v-model="spotForm.category" :options="spotCategoryOptions"
-                  :icon-def-for="(c) => spotCategoryMeta(c).tabler" :color-for="(c) => spotCategoryMeta(c).color"
-                  placeholder="Kategorie (optional, z. B. Restaurant – oder eigene erstellen)" />
+                <Combobox
+                  v-model="spotForm.category"
+                  :options="spotCategoryOptions"
+                  :icon-def-for="(c) => spotCategoryMeta(c).tabler"
+                  :color-for="(c) => spotCategoryMeta(c).color"
+                  placeholder="Kategorie (optional, z. B. Restaurant – oder eigene erstellen)"
+                />
               </FormField>
               <label class="checkbox-option">
                 <input type="checkbox" v-model="spotForm.is_home" />
-                <AppIcon :icon="ACTION_ICONS.home" :size="14" group="actions" /> Heimat-Seite (z. B. der heimische
-                Flughafen/Bahnhof/Zuhause für Reise-Etappen)
+                <AppIcon :icon="ACTION_ICONS.home" :size="14" group="actions" /> Heimat-Seite (z. B.
+                der heimische Flughafen/Bahnhof/Zuhause für Reise-Etappen)
               </label>
               <template v-if="spotForm.category === 'Unterkunft'">
                 <FormField icon="location" label="Adresse">
@@ -2332,128 +2769,242 @@ async function removeSpot(id: number) {
                 </div>
                 <div class="row">
                   <FormField icon="time" label="Check-in-Zeit">
-                    <input v-model="spotForm.checkin" type="text" placeholder="Check-in (z. B. 15:00)" />
+                    <input
+                      v-model="spotForm.checkin"
+                      type="text"
+                      placeholder="Check-in (z. B. 15:00)"
+                    />
                   </FormField>
                   <FormField icon="time" label="Check-out-Zeit">
-                    <input v-model="spotForm.checkout" type="text" placeholder="Check-out (z. B. 11:00)" />
+                    <input
+                      v-model="spotForm.checkout"
+                      type="text"
+                      placeholder="Check-out (z. B. 11:00)"
+                    />
                   </FormField>
                 </div>
                 <FormField icon="contact" label="Kontakt">
-                  <input v-model="spotForm.contact" type="text" placeholder="Kontakt (Telefon/E-Mail/Text, optional)" />
+                  <input
+                    v-model="spotForm.contact"
+                    type="text"
+                    placeholder="Kontakt (Telefon/E-Mail/Text, optional)"
+                  />
                 </FormField>
                 <div class="row">
                   <FormField icon="amount" label="Kosten">
-                    <input v-model="spotForm.amount" type="number" step="0.01" placeholder="Kosten (€, optional)" />
+                    <input
+                      v-model="spotForm.amount"
+                      type="number"
+                      step="0.01"
+                      placeholder="Kosten (€, optional)"
+                    />
                   </FormField>
                   <FormField v-if="users.length > 1" icon="shared" label="Bezahlt von">
                     <select v-model="spotForm.paid_by_user_id">
                       <option value="">Bezahlt von –</option>
-                      <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}
+                      <option v-for="u in users" :key="u.id" :value="String(u.id)">
+                        {{ u.avatar }} {{ u.username }}
                       </option>
                     </select>
                   </FormField>
                 </div>
               </template>
               <FormField icon="maps" label="Maps-Link">
-                <input v-model="spotForm.maps_link" type="url" placeholder="Maps-Link (Google/Apple) (optional)"
-                  @blur="checkSpotMapsLink" />
+                <input
+                  v-model="spotForm.maps_link"
+                  type="url"
+                  placeholder="Maps-Link (Google/Apple) (optional)"
+                  @blur="checkSpotMapsLink"
+                />
               </FormField>
               <p v-if="spotMapsLinkResolved === true" class="hint success">
-                <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort erkannt – erscheint auf
-                der Karte
+                <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort
+                erkannt – erscheint auf der Karte
               </p>
               <p v-if="spotMapsLinkResolved === false" class="hint">
                 Standort wird beim Speichern serverseitig aufgelöst (auch Kurzlinks funktionieren).
               </p>
               <p v-if="spotLocationError" class="hint error">
-                <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Der Standort konnte auch automatisch
-                nicht
-                ermittelt werden. Bitte tippe unten auf die Karte, um ihn manuell zu setzen.
+                <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Der Standort
+                konnte auch automatisch nicht ermittelt werden. Bitte tippe unten auf die Karte, um
+                ihn manuell zu setzen.
               </p>
-              <Button type="button" variant="secondary" class="picker-toggle" @click="spotPickerOpen = !spotPickerOpen">
-                <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort manuell setzen
-                <AppIcon :icon="ACTION_ICONS.chevronDown" :size="12" group="actions" class="caret dropdown-caret"
-                  :class="{ open: spotPickerOpen }" />
+              <Button
+                type="button"
+                variant="secondary"
+                class="picker-toggle"
+                @click="spotPickerOpen = !spotPickerOpen"
+              >
+                <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort
+                manuell setzen
+                <AppIcon
+                  :icon="ACTION_ICONS.chevronDown"
+                  :size="12"
+                  group="actions"
+                  class="caret dropdown-caret"
+                  :class="{ open: spotPickerOpen }"
+                />
               </Button>
-              <LocationPicker v-if="spotPickerOpen" v-model="spotManualPin" :center="spotPickerCenter"
-                :reference-points="spotReferencePoints" />
+              <LocationPicker
+                v-if="spotPickerOpen"
+                v-model="spotManualPin"
+                :center="spotPickerCenter"
+                :reference-points="spotReferencePoints"
+              />
               <FormField icon="note" label="Notiz">
-                <RichTextEditor v-model="spotForm.note" placeholder="Notiz (optional)" compact expandable />
+                <RichTextEditor
+                  v-model="spotForm.note"
+                  placeholder="Notiz (optional)"
+                  compact
+                  expandable
+                />
               </FormField>
               <fieldset class="collapsible-fieldset">
                 <legend>
-                  <Button type="button" variant="ghost" class="collapsible-toggle" :aria-expanded="showSpotToursSection"
-                    @click="showSpotToursSection = !showSpotToursSection">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    class="collapsible-toggle"
+                    :aria-expanded="showSpotToursSection"
+                    @click="showSpotToursSection = !showSpotToursSection"
+                  >
                     <span>
                       <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="14" group="navigation" />
                       Touren zuordnen
-                      <span v-if="spotForm.tourTitles.length" class="picker-count"> ({{ spotForm.tourTitles.length }} zugeordnet)</span>
+                      <span v-if="spotForm.tourTitles.length" class="picker-count">
+                        ({{ spotForm.tourTitles.length }} zugeordnet)</span
+                      >
                     </span>
-                    <AppIcon :icon="ACTION_ICONS.chevronDown" :size="14" group="actions" class="caret"
-                      :class="{ closed: !showSpotToursSection }" />
+                    <AppIcon
+                      :icon="ACTION_ICONS.chevronDown"
+                      :size="14"
+                      group="actions"
+                      class="caret"
+                      :class="{ closed: !showSpotToursSection }"
+                    />
                   </Button>
                 </legend>
                 <div v-if="showSpotToursSection" class="collapsible-content">
-                  <TourAssignPicker v-model="spotForm.tourTitles" :tour-options="allTourTitles" :category="spotForm.category" :is-home="spotForm.is_home" />
+                  <TourAssignPicker
+                    v-model="spotForm.tourTitles"
+                    :tour-options="allTourTitles"
+                    :category="spotForm.category"
+                    :is-home="spotForm.is_home"
+                  />
                 </div>
               </fieldset>
-              <DraftStatusBar :status="newSpotDraft.status.value" :restored="newSpotDraft.restored.value" />
+              <DraftStatusBar
+                :status="newSpotDraft.status.value"
+                :restored="newSpotDraft.restored.value"
+              />
               <Button type="submit">Hinzufügen</Button>
             </form>
           </Modal>
 
-          <div v-if="spotGroups.length > 1" class="category-nav-sentinel" :ref="setCategoryNavSentinelRef"></div>
-          <div class="category-nav-wrap" v-if="spotGroups.length > 1" :class="{ 'is-stuck': isCategoryNavStuck }">
-            <nav class="category-nav" aria-label="Zu Kategorie springen" :ref="setCategoryNavRef"
-              @scroll="updateNavArrows">
-              <button v-for="grp in spotGroups" :key="grp.category" type="button" class="category-nav-item"
+          <div
+            v-if="spotGroups.length > 1"
+            class="category-nav-sentinel"
+            :ref="setCategoryNavSentinelRef"
+          ></div>
+          <div
+            class="category-nav-wrap"
+            v-if="spotGroups.length > 1"
+            :class="{ 'is-stuck': isCategoryNavStuck }"
+          >
+            <nav
+              class="category-nav"
+              aria-label="Zu Kategorie springen"
+              :ref="setCategoryNavRef"
+              @scroll="updateNavArrows"
+            >
+              <button
+                v-for="grp in spotGroups"
+                :key="grp.category"
+                type="button"
+                class="category-nav-item"
                 :class="{ active: activeCategory === grp.category }"
                 :aria-current="activeCategory === grp.category ? 'true' : undefined"
-                :ref="(el) => setNavItemRef(grp.category, el)" @click="scrollToCategory(grp.category)">
-                <AppIcon class="category-nav-icon" :icon="grp.iconDef" group="categories"
-                  :color="groupIconColor(grp)" />
+                :ref="(el) => setNavItemRef(grp.category, el)"
+                @click="scrollToCategory(grp.category)"
+              >
+                <AppIcon
+                  class="category-nav-icon"
+                  :icon="grp.iconDef"
+                  group="categories"
+                  :color="groupIconColor(grp)"
+                />
                 <span class="category-nav-label">{{ grp.category }}</span>
               </button>
-              <span class="category-nav-underline"
-                :style="{ transform: `translateX(${underlineLeft}px)`, width: `${underlineWidth}px` }"
-                aria-hidden="true"></span>
+              <span
+                class="category-nav-underline"
+                :style="{
+                  transform: `translateX(${underlineLeft}px)`,
+                  width: `${underlineWidth}px`,
+                }"
+                aria-hidden="true"
+              ></span>
             </nav>
             <!-- Dezente Klick-Flächen statt eines sichtbaren nativen Scrollbalkens (#144, siehe
              .category-nav's scrollbar-width/::-webkit-scrollbar-Reset im CSS) - nur sichtbar, wenn in
              die jeweilige Richtung tatsächlich noch etwas zu scrollen ist (canScrollNavLeft/Right,
              live nachgeführt per @scroll/ResizeObserver/spotGroups-Watcher im Script). -->
-            <button v-if="canScrollNavLeft" type="button" class="category-nav-arrow left"
-              aria-label="Kategorien nach links scrollen" @click="scrollNavBy(-1)">
+            <button
+              v-if="canScrollNavLeft"
+              type="button"
+              class="category-nav-arrow left"
+              aria-label="Kategorien nach links scrollen"
+              @click="scrollNavBy(-1)"
+            >
               <AppIcon :icon="ACTION_ICONS.scrollLeft" :size="16" group="actions" />
             </button>
-            <button v-if="canScrollNavRight" type="button" class="category-nav-arrow right"
-              aria-label="Kategorien nach rechts scrollen" @click="scrollNavBy(1)">
+            <button
+              v-if="canScrollNavRight"
+              type="button"
+              class="category-nav-arrow right"
+              aria-label="Kategorien nach rechts scrollen"
+              @click="scrollNavBy(1)"
+            >
               <AppIcon :icon="ACTION_ICONS.scrollRight" :size="16" group="actions" />
             </button>
           </div>
 
           <section class="group category-group" v-for="grp in spotGroups" :key="grp.category">
-            <UndoDeleteRow v-if="grp.excursion && excursionsStore.isPending(grp.excursion.id)" :label="grp.category"
-              @undo="excursionsStore.restore(grp.excursion!.id)" />
+            <UndoDeleteRow
+              v-if="grp.excursion && excursionsStore.isPending(grp.excursion.id)"
+              :label="grp.category"
+              @undo="excursionsStore.restore(grp.excursion!.id)"
+            />
             <!-- Tour-Gruppe: die Gruppen-Überschrift ist eine echte, anklickbare ExcursionCard statt
              reinem Text (siehe Konsolidierung des früheren "erweiterten Touren-Modus" in diese
              Sicht) – Klick visualisiert die Tour auf der Karte (@show-on-map), dieselbe Card bietet
              daneben Bearbeiten/Löschen/Like/Kommentare/Einplanen wie zuvor in der eigenständigen
              Touren-Schublade. "Ohne Tour" (grp.excursion === null) bleibt eine reine Überschrift. -->
-            <ExcursionCard v-else-if="grp.excursion" :ref="(el) => setCategoryRef(grp.category, el)"
-              class="tour-group-card" :excursion="grp.excursion" :highlighted="highlightedIds.has(grp.excursion.id)"
+            <ExcursionCard
+              v-else-if="grp.excursion"
+              :ref="(el) => setCategoryRef(grp.category, el)"
+              class="tour-group-card"
+              :excursion="grp.excursion"
+              :highlighted="highlightedIds.has(grp.excursion.id)"
               :creator-label="creatorLabel(grp.excursion.created_by)"
-              :like-count="excursionLikesFor(grp.excursion.id).length" :liked="excursionLikedByMe(grp.excursion.id)"
-              :comments="excursionCommentItemsFor(grp.excursion.id)" :stations="spotsStore.spots"
-              :travel-items="travelItems" :expanded="expandedExcursionId === grp.excursion.id"
-              @edit="startEditExcursion" @remove="removeExcursion" @toggle-like="toggleExcursionLike(grp.excursion.id)"
+              :like-count="excursionLikesFor(grp.excursion.id).length"
+              :liked="excursionLikedByMe(grp.excursion.id)"
+              :comments="excursionCommentItemsFor(grp.excursion.id)"
+              :stations="spotsStore.spots"
+              :travel-items="travelItems"
+              :expanded="expandedExcursionId === grp.excursion.id"
+              @edit="startEditExcursion"
+              @remove="removeExcursion"
+              @toggle-like="toggleExcursionLike(grp.excursion.id)"
               @submit-comment="(content) => submitExcursionComment(grp.excursion!.id, content)"
               @remove-comment="removeExcursionComment"
               @drop-spot="(spotId) => addSpotToExcursion(grp.excursion!.id, spotId)"
               @show-on-map="drawers.openMapForExcursion(grp.excursion.id)"
-              @open="expandedExcursionId = grp.excursion.id" @close="expandedExcursionId = null" />
+              @open="expandedExcursionId = grp.excursion.id"
+              @close="expandedExcursionId = null"
+            />
             <h3 v-else class="category-heading" :ref="(el) => setCategoryRef(grp.category, el)">
-              <AppIcon :icon="grp.iconDef" group="categories" :color="groupIconColor(grp)" /> {{ grp.category }}
+              <AppIcon :icon="grp.iconDef" group="categories" :color="groupIconColor(grp)" />
+              {{ grp.category }}
             </h3>
             <!-- Tour-Gruppe: eingerückte, per gebogener gestrichelter SVG-Linie verbundene vertikale Liste
              statt des normalen Karten-Grids (siehe .tour-station-wrap/.tour-station-line unten, #100)
@@ -2463,35 +3014,69 @@ async function removeSpot(id: number) {
              erscheinen). Das Wrapper-Div (nur bei Touren-Gruppierung gebraucht) ist position:relative
              und dadurch offsetParent der Spot-Karten - recomputeTourLine() liest deren offsetTop/
              offsetHeight direkt relativ dazu aus (siehe dortiger Kommentar). -->
-            <div class="tour-station-wrap" :class="{ 'is-tour': grp.excursion }"
-              :ref="(el) => grp.excursion && setTourWrapRef(grp.excursion.id, el)">
-              <svg v-if="grp.excursion && tourLines.get(grp.excursion.id)" class="tour-station-line"
-                :width="tourLines.get(grp.excursion.id)!.width" :height="tourLines.get(grp.excursion.id)!.height"
-                aria-hidden="true">
+            <div
+              class="tour-station-wrap"
+              :class="{ 'is-tour': grp.excursion }"
+              :ref="(el) => grp.excursion && setTourWrapRef(grp.excursion.id, el)"
+            >
+              <svg
+                v-if="grp.excursion && tourLines.get(grp.excursion.id)"
+                class="tour-station-line"
+                :width="tourLines.get(grp.excursion.id)!.width"
+                :height="tourLines.get(grp.excursion.id)!.height"
+                aria-hidden="true"
+              >
                 <path :d="tourLines.get(grp.excursion.id)!.pathD" />
-                <circle v-for="(dot, i) in tourLines.get(grp.excursion.id)!.dots" :key="i" :cx="dot.x" :cy="dot.y"
-                  r="5" />
+                <circle
+                  v-for="(dot, i) in tourLines.get(grp.excursion.id)!.dots"
+                  :key="i"
+                  :cx="dot.x"
+                  :cy="dot.y"
+                  r="5"
+                />
               </svg>
-              <TransitionGroup tag="div" name="list" :class="grp.excursion ? 'tour-station-list' : 'grid cards'">
+              <TransitionGroup
+                tag="div"
+                name="list"
+                :class="grp.excursion ? 'tour-station-list' : 'grid cards'"
+              >
                 <template v-for="item in grp.items" :key="`spot-${item.spot.id}`">
-                  <UndoDeleteRow v-if="spotsStore.isPending(item.spot.id)" :label="item.spot.title"
-                    @undo="spotsStore.restore(item.spot.id)" />
-                  <SpotCard v-else :key="`spot-${item.spot.id}`" :ref="(el) => setSpotRef(item.spot.id, el)"
-                    :style="transitioningSpotId === item.spot.id ? { viewTransitionName: 'expanding-spot-card' } : {}"
-                    :spot="item.spot" :highlighted="highlightedIds.has(item.spot.id)"
+                  <UndoDeleteRow
+                    v-if="spotsStore.isPending(item.spot.id)"
+                    :label="item.spot.title"
+                    @undo="spotsStore.restore(item.spot.id)"
+                  />
+                  <SpotCard
+                    v-else
+                    :key="`spot-${item.spot.id}`"
+                    :ref="(el) => setSpotRef(item.spot.id, el)"
+                    :style="
+                      transitioningSpotId === item.spot.id
+                        ? { viewTransitionName: 'expanding-spot-card' }
+                        : {}
+                    "
+                    :spot="item.spot"
+                    :highlighted="highlightedIds.has(item.spot.id)"
                     :expanded="expandedSpotId === item.spot.id"
                     :scheduled-date="spotScheduledDates.get(item.spot.id) ?? null"
                     :creator-label="creatorLabel(item.spot.created_by)"
                     :payer-label="creatorLabel(item.spot.paid_by_user_id)"
                     :like-count="spotsStore.likeCountFor(item.spot.id)"
                     :liked="spotsStore.likedByMe(item.spot.id, auth.user?.id)"
-                    :comments="spotCommentItemsFor(item.spot.id)" :group-mode="groupMode" :tour-options="allTourTitles"
+                    :comments="spotCommentItemsFor(item.spot.id)"
+                    :group-mode="groupMode"
+                    :tour-options="allTourTitles"
                     :has-multiple-members="users.length > 1"
-                    @edit="startEditSpot" @remove="removeSpot" @toggle-like="toggleSpotLike(item.spot.id)"
+                    @edit="startEditSpot"
+                    @remove="removeSpot"
+                    @toggle-like="toggleSpotLike(item.spot.id)"
                     @submit-comment="(content) => submitSpotComment(item.spot.id, content)"
-                    @remove-comment="removeSpotComment" @open="onSpotCardOpen" @close="onSpotCardClose"
+                    @remove-comment="removeSpotComment"
+                    @open="onSpotCardOpen"
+                    @close="onSpotCardClose"
                     @show-on-map="onSpotShowOnMap(item.spot)"
-                    @assign-tour="(title) => assignSpotToTourTitle(item.spot.id, title)" />
+                    @assign-tour="(title) => assignSpotToTourTitle(item.spot.id, title)"
+                  />
                 </template>
               </TransitionGroup>
             </div>
@@ -2501,10 +3086,17 @@ async function removeSpot(id: number) {
              gerade alle aus (grp.items kommt aus filteredSpotItems, spot_ids aus der Excursion
              selbst bleibt dabei unangetastet) - ohne diese Unterscheidung wirkte eine reine
              Filter-Situation fälschlich wie eine leere Tour. -->
-            <p v-if="grp.excursion && !grp.items.length && grp.excursion.spot_ids.length && (categoryFilter.length || statusFilter.length)"
-              class="empty">
-              Die zugeordneten Spots sind gerade durch den Kategorie-/Status-Filter ausgeblendet – Filter
-              zurücksetzen, um sie wieder zu sehen.
+            <p
+              v-if="
+                grp.excursion &&
+                !grp.items.length &&
+                grp.excursion.spot_ids.length &&
+                (categoryFilter.length || statusFilter.length)
+              "
+              class="empty"
+            >
+              Die zugeordneten Spots sind gerade durch den Kategorie-/Status-Filter ausgeblendet –
+              Filter zurücksetzen, um sie wieder zu sehen.
             </p>
             <p v-else-if="grp.excursion && !grp.items.length" class="empty">
               Noch keine Spots zugeordnet – ziehe eine Spot-Karte hierher oder wähle diese Tour beim
@@ -2513,20 +3105,45 @@ async function removeSpot(id: number) {
           </section>
           <p v-if="!spotGroups.length" class="empty">Noch keine Spots angelegt.</p>
 
-          <Modal :model-value="editingSpot !== null" title="Spot bearbeiten" full-height
-            @update:model-value="(v) => !v && closeEditSpotForm()">
+          <Modal
+            :model-value="editingSpot !== null"
+            title="Spot bearbeiten"
+            full-height
+            @update:model-value="(v) => !v && closeEditSpotForm()"
+          >
             <form class="edit-form" @submit.prevent="submitEditSpot">
-              <div class="form-image-banner"
-                :style="editSpotPreviewImage ? { backgroundImage: `url(${editSpotPreviewImage})` } : {}">
-                <AppIcon v-if="!editSpotPreviewImage" class="placeholder" :size="35"
-                  :icon="spotCategoryMeta(editSpotForm.category).tabler" group="categories" />
+              <div
+                class="form-image-banner"
+                :style="
+                  editSpotPreviewImage ? { backgroundImage: `url(${editSpotPreviewImage})` } : {}
+                "
+              >
+                <AppIcon
+                  v-if="!editSpotPreviewImage"
+                  class="placeholder"
+                  :size="35"
+                  :icon="spotCategoryMeta(editSpotForm.category).tabler"
+                  group="categories"
+                />
                 <div class="banner-actions">
-                  <Button type="button" variant="ghost" class="banner-edit-btn" @click="showEditSpotImageModal = true">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    class="banner-edit-btn"
+                    @click="showEditSpotImageModal = true"
+                  >
                     <AppIcon :icon="ACTION_ICONS.edit" :size="13" group="actions" />
                     {{ editSpotForm.image_url ? 'Bild bearbeiten' : 'Bild hinzufügen' }}
                   </Button>
-                  <Button v-if="editSpotForm.image_url" type="button" variant="ghost" class="banner-edit-btn remove"
-                    title="Bild entfernen" aria-label="Bild entfernen" @click="editSpotForm.image_url = ''">
+                  <Button
+                    v-if="editSpotForm.image_url"
+                    type="button"
+                    variant="ghost"
+                    class="banner-edit-btn remove"
+                    title="Bild entfernen"
+                    aria-label="Bild entfernen"
+                    @click="editSpotForm.image_url = ''"
+                  >
                     <AppIcon :icon="ACTION_ICONS.close" :size="13" group="actions" />
                   </Button>
                 </div>
@@ -2535,18 +3152,26 @@ async function removeSpot(id: number) {
                 <input v-model="editSpotForm.title" type="text" placeholder="Titel" required />
               </FormField>
               <FormField icon="category" label="Kategorie">
-                <Combobox v-model="editSpotForm.category" :options="spotCategoryOptions"
-                  :icon-def-for="(c) => spotCategoryMeta(c).tabler" :color-for="(c) => spotCategoryMeta(c).color"
-                  placeholder="Kategorie (optional, z. B. Restaurant – oder eigene erstellen)" />
+                <Combobox
+                  v-model="editSpotForm.category"
+                  :options="spotCategoryOptions"
+                  :icon-def-for="(c) => spotCategoryMeta(c).tabler"
+                  :color-for="(c) => spotCategoryMeta(c).color"
+                  placeholder="Kategorie (optional, z. B. Restaurant – oder eigene erstellen)"
+                />
               </FormField>
               <label class="checkbox-option">
                 <input type="checkbox" v-model="editSpotForm.is_home" />
-                <AppIcon :icon="ACTION_ICONS.home" :size="14" group="actions" /> Heimat-Seite (z. B. der heimische
-                Flughafen/Bahnhof/Zuhause für Reise-Etappen)
+                <AppIcon :icon="ACTION_ICONS.home" :size="14" group="actions" /> Heimat-Seite (z. B.
+                der heimische Flughafen/Bahnhof/Zuhause für Reise-Etappen)
               </label>
               <template v-if="editSpotForm.category === 'Unterkunft'">
                 <FormField icon="location" label="Adresse">
-                  <input v-model="editSpotForm.address" type="text" placeholder="Adresse (optional)" />
+                  <input
+                    v-model="editSpotForm.address"
+                    type="text"
+                    placeholder="Adresse (optional)"
+                  />
                 </FormField>
                 <div class="row">
                   <FormField icon="date" label="Check-in-Datum">
@@ -2558,81 +3183,145 @@ async function removeSpot(id: number) {
                 </div>
                 <div class="row">
                   <FormField icon="time" label="Check-in-Zeit">
-                    <input v-model="editSpotForm.checkin" type="text" placeholder="Check-in (z. B. 15:00)" />
+                    <input
+                      v-model="editSpotForm.checkin"
+                      type="text"
+                      placeholder="Check-in (z. B. 15:00)"
+                    />
                   </FormField>
                   <FormField icon="time" label="Check-out-Zeit">
-                    <input v-model="editSpotForm.checkout" type="text" placeholder="Check-out (z. B. 11:00)" />
+                    <input
+                      v-model="editSpotForm.checkout"
+                      type="text"
+                      placeholder="Check-out (z. B. 11:00)"
+                    />
                   </FormField>
                 </div>
                 <FormField icon="contact" label="Kontakt">
-                  <input v-model="editSpotForm.contact" type="text"
-                    placeholder="Kontakt (Telefon/E-Mail/Text, optional)" />
+                  <input
+                    v-model="editSpotForm.contact"
+                    type="text"
+                    placeholder="Kontakt (Telefon/E-Mail/Text, optional)"
+                  />
                 </FormField>
                 <div class="row">
                   <FormField icon="amount" label="Kosten">
-                    <input v-model="editSpotForm.amount" type="number" step="0.01" placeholder="Kosten (€, optional)" />
+                    <input
+                      v-model="editSpotForm.amount"
+                      type="number"
+                      step="0.01"
+                      placeholder="Kosten (€, optional)"
+                    />
                   </FormField>
                   <FormField v-if="users.length > 1" icon="shared" label="Bezahlt von">
                     <select v-model="editSpotForm.paid_by_user_id">
                       <option value="">Bezahlt von –</option>
-                      <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}
+                      <option v-for="u in users" :key="u.id" :value="String(u.id)">
+                        {{ u.avatar }} {{ u.username }}
                       </option>
                     </select>
                   </FormField>
                 </div>
               </template>
               <FormField icon="maps" label="Maps-Link">
-                <input v-model="editSpotForm.maps_link" type="url" placeholder="Maps-Link (Google/Apple) (optional)"
-                  @blur="checkEditSpotMapsLink" />
+                <input
+                  v-model="editSpotForm.maps_link"
+                  type="url"
+                  placeholder="Maps-Link (Google/Apple) (optional)"
+                  @blur="checkEditSpotMapsLink"
+                />
               </FormField>
               <p v-if="editSpotMapsLinkResolved === true" class="hint success">
-                <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort erkannt – erscheint auf
-                der Karte
+                <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort
+                erkannt – erscheint auf der Karte
               </p>
               <p v-if="editSpotMapsLinkResolved === false" class="hint">
                 Standort wird beim Speichern serverseitig aufgelöst (auch Kurzlinks funktionieren).
               </p>
               <p v-if="editSpotLocationError" class="hint error">
-                <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Der Standort konnte auch automatisch
-                nicht
-                ermittelt werden. Bitte tippe unten auf die Karte, um ihn manuell zu setzen.
+                <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Der Standort
+                konnte auch automatisch nicht ermittelt werden. Bitte tippe unten auf die Karte, um
+                ihn manuell zu setzen.
               </p>
-              <Button type="button" variant="secondary" class="picker-toggle" @click="editSpotPickerOpen = !editSpotPickerOpen">
-                <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort manuell setzen
-                <AppIcon :icon="ACTION_ICONS.chevronDown" :size="12" group="actions" class="caret dropdown-caret"
-                  :class="{ open: editSpotPickerOpen }" />
+              <Button
+                type="button"
+                variant="secondary"
+                class="picker-toggle"
+                @click="editSpotPickerOpen = !editSpotPickerOpen"
+              >
+                <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort
+                manuell setzen
+                <AppIcon
+                  :icon="ACTION_ICONS.chevronDown"
+                  :size="12"
+                  group="actions"
+                  class="caret dropdown-caret"
+                  :class="{ open: editSpotPickerOpen }"
+                />
               </Button>
-              <LocationPicker v-if="editSpotPickerOpen" v-model="editSpotManualPin" :center="spotPickerCenter"
-                :reference-points="editSpotReferencePoints" />
+              <LocationPicker
+                v-if="editSpotPickerOpen"
+                v-model="editSpotManualPin"
+                :center="spotPickerCenter"
+                :reference-points="editSpotReferencePoints"
+              />
               <FormField icon="note" label="Notiz">
-                <RichTextEditor v-model="editSpotForm.note" placeholder="Notiz (optional)" compact expandable />
+                <RichTextEditor
+                  v-model="editSpotForm.note"
+                  placeholder="Notiz (optional)"
+                  compact
+                  expandable
+                />
               </FormField>
               <fieldset class="collapsible-fieldset">
                 <legend>
-                  <Button type="button" variant="ghost" class="collapsible-toggle" :aria-expanded="showEditSpotToursSection"
-                    @click="showEditSpotToursSection = !showEditSpotToursSection">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    class="collapsible-toggle"
+                    :aria-expanded="showEditSpotToursSection"
+                    @click="showEditSpotToursSection = !showEditSpotToursSection"
+                  >
                     <span>
                       <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="14" group="navigation" />
                       Touren zuordnen
-                      <span v-if="editSpotForm.tourTitles.length" class="picker-count"> ({{ editSpotForm.tourTitles.length }} zugeordnet)</span>
+                      <span v-if="editSpotForm.tourTitles.length" class="picker-count">
+                        ({{ editSpotForm.tourTitles.length }} zugeordnet)</span
+                      >
                     </span>
-                    <AppIcon :icon="ACTION_ICONS.chevronDown" :size="14" group="actions" class="caret"
-                      :class="{ closed: !showEditSpotToursSection }" />
+                    <AppIcon
+                      :icon="ACTION_ICONS.chevronDown"
+                      :size="14"
+                      group="actions"
+                      class="caret"
+                      :class="{ closed: !showEditSpotToursSection }"
+                    />
                   </Button>
                 </legend>
                 <div v-if="showEditSpotToursSection" class="collapsible-content">
-                  <TourAssignPicker v-model="editSpotForm.tourTitles" :tour-options="allTourTitles" :category="editSpotForm.category" :is-home="editSpotForm.is_home" />
+                  <TourAssignPicker
+                    v-model="editSpotForm.tourTitles"
+                    :tour-options="allTourTitles"
+                    :category="editSpotForm.category"
+                    :is-home="editSpotForm.is_home"
+                  />
                 </div>
               </fieldset>
               <FileAttachments v-if="editingSpot" domain="spots" :entity-id="editingSpot.id" />
-              <DraftStatusBar :status="editSpotDraft.status.value" :restored="editSpotDraft.restored.value" />
+              <DraftStatusBar
+                :status="editSpotDraft.status.value"
+                :restored="editSpotDraft.restored.value"
+              />
               <Button type="submit">Speichern</Button>
             </form>
           </Modal>
 
           <!-- Bild-Bearbeiten Sub-Modale (#258) -->
-          <Modal :model-value="showSpotImageModal" title="Spot-Bild bearbeiten"
-            @update:model-value="(v) => !v && (showSpotImageModal = false)">
+          <Modal
+            :model-value="showSpotImageModal"
+            title="Spot-Bild bearbeiten"
+            @update:model-value="(v) => !v && (showSpotImageModal = false)"
+          >
             <div class="image-submodal">
               <ImageUrlInput v-model="spotForm.image_url" />
               <ButtonGroup>
@@ -2641,8 +3330,11 @@ async function removeSpot(id: number) {
             </div>
           </Modal>
 
-          <Modal :model-value="showEditSpotImageModal" title="Spot-Bild bearbeiten"
-            @update:model-value="(v) => !v && (showEditSpotImageModal = false)">
+          <Modal
+            :model-value="showEditSpotImageModal"
+            title="Spot-Bild bearbeiten"
+            @update:model-value="(v) => !v && (showEditSpotImageModal = false)"
+          >
             <div class="image-submodal">
               <ImageUrlInput v-model="editSpotForm.image_url" />
               <ButtonGroup>
@@ -2651,8 +3343,11 @@ async function removeSpot(id: number) {
             </div>
           </Modal>
 
-          <Modal :model-value="showExcursionImageModal" title="Tour-Bild bearbeiten"
-            @update:model-value="(v) => !v && (showExcursionImageModal = false)">
+          <Modal
+            :model-value="showExcursionImageModal"
+            title="Tour-Bild bearbeiten"
+            @update:model-value="(v) => !v && (showExcursionImageModal = false)"
+          >
             <div class="image-submodal">
               <ImageUrlInput v-model="excursionForm.image_url" />
               <ButtonGroup>
@@ -2661,8 +3356,11 @@ async function removeSpot(id: number) {
             </div>
           </Modal>
 
-          <Modal :model-value="showEditExcursionImageModal" title="Tour-Bild bearbeiten"
-            @update:model-value="(v) => !v && (showEditExcursionImageModal = false)">
+          <Modal
+            :model-value="showEditExcursionImageModal"
+            title="Tour-Bild bearbeiten"
+            @update:model-value="(v) => !v && (showEditExcursionImageModal = false)"
+          >
             <div class="image-submodal">
               <ImageUrlInput v-model="editExcursionForm.image_url" />
               <ButtonGroup>
@@ -2672,20 +3370,32 @@ async function removeSpot(id: number) {
           </Modal>
 
           <!-- Hinweis-Modal für Standort-Aufzeichnung (#230) -->
-          <Modal :model-value="showTrackRecordingWarningModal" title="Weg aufzeichnen"
-            @update:model-value="(v) => !v && (showTrackRecordingWarningModal = false)">
+          <Modal
+            :model-value="showTrackRecordingWarningModal"
+            title="Weg aufzeichnen"
+            @update:model-value="(v) => !v && (showTrackRecordingWarningModal = false)"
+          >
             <div class="track-warning-modal">
               <p class="track-warning-intro">
                 Reisotor zeichnet deinen Weg während des Ausflugs auf. Bitte beachte:
               </p>
               <div class="track-warning-points">
                 <div class="track-warning-point">
-                  <h4><AppIcon :icon="ACTION_ICONS.myLocation" :size="15" group="actions" /> Standort-Berechtigung</h4>
+                  <h4>
+                    <AppIcon :icon="ACTION_ICONS.myLocation" :size="15" group="actions" />
+                    Standort-Berechtigung
+                  </h4>
                   <p>Dein Browser benötigt die Berechtigung, auf deinen Standort zuzugreifen.</p>
                 </div>
                 <div class="track-warning-point">
-                  <h4><AppIcon :icon="ACTION_ICONS.history" :size="15" group="actions" /> App geöffnet lassen</h4>
-                  <p>Da Reisotor im Browser/als PWA läuft, kann die Aufzeichnung pausieren, wenn der Browser im Hintergrund vollständig geschlossen wird.</p>
+                  <h4>
+                    <AppIcon :icon="ACTION_ICONS.history" :size="15" group="actions" /> App geöffnet
+                    lassen
+                  </h4>
+                  <p>
+                    Da Reisotor im Browser/als PWA läuft, kann die Aufzeichnung pausieren, wenn der
+                    Browser im Hintergrund vollständig geschlossen wird.
+                  </p>
                 </div>
               </div>
               <label class="checkbox-option warning-dismiss">
@@ -2693,7 +3403,12 @@ async function removeSpot(id: number) {
                 Diesen Hinweis nicht mehr anzeigen
               </label>
               <ButtonGroup>
-                <Button type="button" variant="secondary" @click="showTrackRecordingWarningModal = false">Abbrechen</Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  @click="showTrackRecordingWarningModal = false"
+                  >Abbrechen</Button
+                >
                 <Button type="button" @click="startRecordingConfirmed">Aufzeichnung starten</Button>
               </ButtonGroup>
             </div>
@@ -2701,14 +3416,25 @@ async function removeSpot(id: number) {
         </div>
       </div>
 
-      <div class="col-resize-handle resize-grip" role="separator" aria-orientation="vertical"
-        aria-label="Aufteilung zwischen Spots-Liste und Karte anpassen" @pointerdown="onColResizeStart"></div>
+      <div
+        class="col-resize-handle resize-grip"
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Aufteilung zwischen Spots-Liste und Karte anpassen"
+        @pointerdown="onColResizeStart"
+      ></div>
 
       <div class="map-col">
-        <TripMap ref="tripMapRef" :category-filter="categoryFilter" :status-filter="statusFilter"
-          :covered-bottom-px="mapCoveredBottomPx" :sheet-overlay-mode="isSheetOverlayMode"
-          @focus-spot="onFocusSpotFromMap" @focus-excursion="onFocusExcursionFromMap"
-          @edit-excursion="startEditExcursion" />
+        <TripMap
+          ref="tripMapRef"
+          :category-filter="categoryFilter"
+          :status-filter="statusFilter"
+          :covered-bottom-px="mapCoveredBottomPx"
+          :sheet-overlay-mode="isSheetOverlayMode"
+          @focus-spot="onFocusSpotFromMap"
+          @focus-excursion="onFocusExcursionFromMap"
+          @edit-excursion="startEditExcursion"
+        />
       </div>
     </div>
   </div>
@@ -2736,7 +3462,10 @@ async function removeSpot(id: number) {
    tatsächlich für die Karte verbleibenden Platzes. */
 .page {
   position: relative;
-  height: calc(100vh - var(--app-header-height, 56px) - var(--navbar-offset, 0px) - var(--navbar-bottom-offset, 0px));
+  height: calc(
+    100vh - var(--app-header-height, 56px) - var(--navbar-offset, 0px) -
+      var(--navbar-bottom-offset, 0px)
+  );
   overflow: hidden;
   padding: 0;
 }
@@ -3069,7 +3798,7 @@ async function removeSpot(id: number) {
      Titel ist hier weiterhin sinnvoll und bleibt sichtbar. */
   .page-title {
     display: flex;
-    gap: .5rem;
+    gap: 0.5rem;
     margin: 0 0 var(--space-3);
   }
 
@@ -3102,7 +3831,10 @@ async function removeSpot(id: number) {
        samt seines margin-bottom sowie .page's eigenes padding-top (var(--space-3), s. o.) ab – ohne
        das war die Spalte beim ersten Rendern (bevor sie tatsächlich einrastet) zu groß, was eine
        überflüssige Seiten-Scrollbar samt leerem Weißraum am Ende erzeugte. */
-    max-height: calc(100vh - var(--app-header-height, 56px) - var(--navbar-offset, 0px) - var(--navbar-bottom-offset, 0px) - var(--page-title-height, 0px) - var(--space-3));
+    max-height: calc(
+      100vh - var(--app-header-height, 56px) - var(--navbar-offset, 0px) -
+        var(--navbar-bottom-offset, 0px) - var(--page-title-height, 0px) - var(--space-3)
+    );
     overflow-y: auto;
   }
 
@@ -3195,7 +3927,10 @@ async function removeSpot(id: number) {
     display: flex;
     position: sticky;
     top: calc(var(--app-header-height, 56px) + var(--navbar-offset, 0px));
-    height: calc(100vh - var(--app-header-height, 56px) - var(--navbar-offset, 0px) - var(--navbar-bottom-offset, 0px) - var(--page-title-height, 0px) - var(--space-3));
+    height: calc(
+      100vh - var(--app-header-height, 56px) - var(--navbar-offset, 0px) -
+        var(--navbar-bottom-offset, 0px) - var(--page-title-height, 0px) - var(--space-3)
+    );
   }
 }
 
@@ -3213,7 +3948,6 @@ async function removeSpot(id: number) {
   display: flex;
   justify-content: flex-end;
 }
-
 
 .header h2 {
   display: inline-flex;
@@ -3315,7 +4049,7 @@ async function removeSpot(id: number) {
   gap: var(--space-2);
 }
 
-.edit-form .row>* {
+.edit-form .row > * {
   flex: 1;
   min-width: 140px;
 }
@@ -3782,7 +4516,7 @@ async function removeSpot(id: number) {
    passieren"). */
 .tool-row {
   display: flex;
-   gap: 0.5rem;
+  gap: 0.5rem;
   align-items: center;
   gap: var(--space-2);
   width: 100%;
@@ -4068,7 +4802,9 @@ async function removeSpot(id: number) {
   height: 2px;
   background: var(--color-primary);
   border-radius: 2px 2px 0 0;
-  transition: transform 0.2s ease, width 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    width 0.2s ease;
   pointer-events: none;
 }
 </style>

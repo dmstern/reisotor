@@ -12,19 +12,13 @@ describe('Backup Admin restrictions (#224)', () => {
     ({ app } = await buildTestApp());
     const { db } = await import('../../src/db/index.js');
 
-    db.prepare('INSERT INTO users (username, email, password_hash, avatar, is_admin) VALUES (?, ?, ?, ?, 1)').run(
-      'admin_bk',
-      'admin_bk@example.com',
-      bcrypt.hashSync('adminpass', 10),
-      '👑',
-    );
+    db.prepare(
+      'INSERT INTO users (username, email, password_hash, avatar, is_admin) VALUES (?, ?, ?, ?, 1)'
+    ).run('admin_bk', 'admin_bk@example.com', bcrypt.hashSync('adminpass', 10), '👑');
 
-    db.prepare('INSERT INTO users (username, email, password_hash, avatar, is_admin) VALUES (?, ?, ?, ?, 0)').run(
-      'user_bk',
-      'user_bk@example.com',
-      bcrypt.hashSync('userpass', 10),
-      '🧑',
-    );
+    db.prepare(
+      'INSERT INTO users (username, email, password_hash, avatar, is_admin) VALUES (?, ?, ?, ?, 0)'
+    ).run('user_bk', 'user_bk@example.com', bcrypt.hashSync('userpass', 10), '🧑');
 
     const loginAdmin = await app.inject({
       method: 'POST',

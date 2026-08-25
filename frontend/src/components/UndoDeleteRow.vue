@@ -12,7 +12,9 @@ defineEmits<{ (e: 'undo'): void }>();
 <template>
   <div class="undo-delete-row">
     <span class="undo-delete-text"
-      ><AppIcon :icon="ACTION_ICONS.delete" :size="14" group="actions" /> Gelöscht<template v-if="label">
+      ><AppIcon :icon="ACTION_ICONS.delete" :size="14" group="actions" /> Gelöscht<template
+        v-if="label"
+      >
         · {{ label }}</template
       ></span
     >

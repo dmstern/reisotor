@@ -26,7 +26,9 @@ const iconStyle = useIconStyleStore();
 // style.css. Höhe hängt vom Breakpoint (mobil/Desktop) und der jeweiligen Positions-Einstellung
 // ab, daher live per ResizeObserver statt fest verdrahtet.
 const navEl = ref<HTMLElement | null>(null);
-const isTop = computed(() => (isDesktop.value ? navPosition.desktop === 'top' : navPosition.mobile === 'top'));
+const isTop = computed(() =>
+  isDesktop.value ? navPosition.desktop === 'top' : navPosition.mobile === 'top'
+);
 let resizeObserver: ResizeObserver | null = null;
 
 function updateOffset() {
@@ -41,7 +43,10 @@ function updateOffset() {
       ? parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--space-3')) || 0
       : 0;
   document.documentElement.style.setProperty('--navbar-offset', `${isTop.value ? height : 0}px`);
-  document.documentElement.style.setProperty('--navbar-bottom-offset', `${isTop.value ? 0 : height + floatingGap}px`);
+  document.documentElement.style.setProperty(
+    '--navbar-bottom-offset',
+    `${isTop.value ? 0 : height + floatingGap}px`
+  );
 }
 
 // Aktive Hervorhebung gleitet per JS-gemessener transform/width-Animation zwischen den Nav-Punkten
@@ -84,7 +89,12 @@ watch(isTop, updateOffset);
 
 // "Übersicht" (Dashboard) bleibt fix, nicht Teil der konfigurierbaren Liste (siehe navLinks.ts) -
 // zentraler Einstiegspunkt der App, soll nicht ausblendbar/verschiebbar sein.
-const DASHBOARD_LINK: NavLinkDef = { key: 'dashboard', to: '/', label: 'Übersicht', icon: SECTION_ICON_DEFS.dashboard };
+const DASHBOARD_LINK: NavLinkDef = {
+  key: 'dashboard',
+  to: '/',
+  label: 'Übersicht',
+  icon: SECTION_ICON_DEFS.dashboard,
+};
 
 // Sichtbare Einträge in der vom Nutzer konfigurierten Reihenfolge (siehe stores/navConfig.ts,
 // SettingsView.vue) - ausgeblendete Einträge werden hier bereits rausgefiltert, nicht erst im
@@ -93,7 +103,7 @@ const visibleLinks = computed<NavLinkDef[]>(() =>
   navConfig.entries
     .filter((e) => e.visible)
     .map((e) => NAV_LINKS.find((l) => l.key === e.key))
-    .filter((l): l is NavLinkDef => !!l),
+    .filter((l): l is NavLinkDef => !!l)
 );
 
 // route.fullPath (nicht nur .path) reicht auch für den seltenen Fall, dass sich nur Query/Hash
@@ -117,12 +127,20 @@ async function onLogout() {
 // Scrollt ein angeklicktes Nav-Icon vollständig in den sichtbaren Bereich – wichtig auf
 // mobilen Geräten, wo die Leiste horizontal scrollt und rechte Icons teils abgeschnitten sind.
 function onLinkClick(event: MouseEvent) {
-  (event.currentTarget as HTMLElement).scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' });
+  (event.currentTarget as HTMLElement).scrollIntoView({
+    behavior: 'smooth',
+    inline: 'nearest',
+    block: 'nearest',
+  });
 }
 </script>
 
 <template>
-  <nav ref="navEl" class="navbar" :class="[`mobile-${navPosition.mobile}`, `desktop-${navPosition.desktop}`]">
+  <nav
+    ref="navEl"
+    class="navbar"
+    :class="[`mobile-${navPosition.mobile}`, `desktop-${navPosition.desktop}`]"
+  >
     <div class="links" ref="linksEl">
       <!-- Gleitende Hervorhebung hinter den Links (siehe updateHighlight() oben) - ein einzelnes
            Element statt einer Hintergrundfarbe je aktivem .link, damit sich beim Wechseln eine
@@ -162,11 +180,21 @@ function onLinkClick(event: MouseEvent) {
             group="navigation"
             :color="iconStyle.navColored ? NAV_LINK_COLORS.get('calendar') : undefined"
           />
-          <span v-if="liveSync.hasUnseen('schedule')" class="unseen-dot" aria-label="Neue Änderungen" />
+          <span
+            v-if="liveSync.hasUnseen('schedule')"
+            class="unseen-dot"
+            aria-label="Neue Änderungen"
+          />
         </span>
         <span class="label">Kalender</span>
       </router-link>
-      <router-link v-for="link in visibleLinks" :key="link.to" :to="link.to" class="link" @click="onLinkClick">
+      <router-link
+        v-for="link in visibleLinks"
+        :key="link.to"
+        :to="link.to"
+        class="link"
+        @click="onLinkClick"
+      >
         <span class="icon-wrap">
           <AppIcon
             class="icon"
@@ -272,7 +300,10 @@ function onLinkClick(event: MouseEvent) {
   border: 1px solid color-mix(in srgb, var(--color-primary) 45%, transparent);
   border-radius: 999px;
   opacity: 0;
-  transition: transform 0.25s ease, width 0.25s ease, opacity 0.15s ease;
+  transition:
+    transform 0.25s ease,
+    width 0.25s ease,
+    opacity 0.15s ease;
   pointer-events: none;
 }
 

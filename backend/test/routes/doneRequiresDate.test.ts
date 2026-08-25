@@ -83,7 +83,12 @@ describe('done requires date (#106)', () => {
       method: 'POST',
       url: '/api/schedule',
       headers: { cookie },
-      payload: { trip_id: tripId, date: '2026-01-03', title: 'Wird wieder geplant', spot_id: spotId },
+      payload: {
+        trip_id: tripId,
+        date: '2026-01-03',
+        title: 'Wird wieder geplant',
+        spot_id: spotId,
+      },
     });
     await app.inject({
       method: 'POST',

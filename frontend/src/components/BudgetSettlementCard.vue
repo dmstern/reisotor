@@ -16,17 +16,20 @@ const store = useBudgetStore();
     <h2>Wer schuldet wem?</h2>
 
     <p v-if="!store.settlementSuggestions.length" class="settled">
-      <AppIcon :icon="ACTION_ICONS.done" :size="15" group="actions" /> Ausgeglichen – niemand schuldet aktuell etwas.
+      <AppIcon :icon="ACTION_ICONS.done" :size="15" group="actions" /> Ausgeglichen – niemand
+      schuldet aktuell etwas.
     </p>
 
     <ul v-else class="suggestion-list">
       <li v-for="(s, i) in store.settlementSuggestions" :key="i" class="suggestion-row">
         <span class="suggestion-text">
-          {{ store.userAvatar(s.from.id) }} <strong>{{ s.from.username }}</strong>
-          schuldet {{ store.userAvatar(s.to.id) }} <strong>{{ s.to.username }}</strong> noch
+          {{ store.userAvatar(s.from.id) }} <strong>{{ s.from.username }}</strong> schuldet
+          {{ store.userAvatar(s.to.id) }} <strong>{{ s.to.username }}</strong> noch
           <strong class="debt-amount">{{ s.amount.toFixed(2) }} €</strong>
         </span>
-        <Button class="secondary settle-btn" @click="$emit('use-suggestion', s)">Als Überweisung eintragen</Button>
+        <Button class="secondary settle-btn" @click="$emit('use-suggestion', s)"
+          >Als Überweisung eintragen</Button
+        >
       </li>
     </ul>
 
@@ -39,8 +42,9 @@ const store = useBudgetStore();
       </li>
     </ul>
     <p class="hint">
-      Berechnung: Nur Ausgaben aus geteilten Budgets werden zu gleichen Teilen unter allen Nutzer:innen
-      aufgeteilt (private Budgets zählen nicht mit); Überweisungen gleichen das direkt aus.
+      Berechnung: Nur Ausgaben aus geteilten Budgets werden zu gleichen Teilen unter allen
+      Nutzer:innen aufgeteilt (private Budgets zählen nicht mit); Überweisungen gleichen das direkt
+      aus.
     </p>
   </Card>
 </template>

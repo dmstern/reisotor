@@ -1,7 +1,8 @@
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
 
-export type DepartureCountdown = { phase: 'days'; days: number } | { phase: 'hours'; hours: number } | { phase: 'departed' };
+export type DepartureCountdown =
+  { phase: 'days'; days: number } | { phase: 'hours'; hours: number } | { phase: 'departed' };
 
 // Reine Kalendertage-Differenz zweier lokaler Daten (Uhrzeit-Anteil ignoriert) - über Date.UTC()
 // der jeweiligen Y/M/D-Komponenten statt direkter ms-Differenz zweier Date-Objekte, da Letzteres an
@@ -51,7 +52,10 @@ export type VacationPhase =
  *  DST-/Zeitzonen-Sicherheit gilt. Gibt null zurück, solange `now` noch am/vor dem Abreisetag liegt
  *  (dafür bleibt computeDepartureCountdown zuständig) - so bleibt die Funktion auch isoliert
  *  testbar, ohne sich auf die Aufrufreihenfolge in DashboardView.vue verlassen zu müssen. */
-export function computeVacationPhase(trip: { start_date: string; end_date: string }, now: Date): VacationPhase | null {
+export function computeVacationPhase(
+  trip: { start_date: string; end_date: string },
+  now: Date
+): VacationPhase | null {
   const [sy, sm, sd] = trip.start_date.split('-').map(Number);
   const [ey, em, ed] = trip.end_date.split('-').map(Number);
   const dayAfterDeparture = new Date(sy, sm - 1, sd + 1);

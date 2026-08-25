@@ -15,9 +15,18 @@ import { DASHBOARD_TILES } from '../utils/dashboardTiles';
 import { useIsDesktop } from '../composables/useIsDesktop';
 import { useWeatherProviderStore, WEATHER_MODEL_OPTIONS } from '../stores/weatherProvider';
 import { useHomeCurrencyStore, HOME_CURRENCY_OPTIONS } from '../stores/homeCurrency';
-import { useCalendarSettingsStore, WEEK_START_OPTIONS, DATE_FORMAT_OPTIONS } from '../stores/calendarSettings';
+import {
+  useCalendarSettingsStore,
+  WEEK_START_OPTIONS,
+  DATE_FORMAT_OPTIONS,
+} from '../stores/calendarSettings';
 import { useUiSettingsStore } from '../stores/uiSettings';
-import { getExistingSubscription, isPushSupported, subscribeToPush, unsubscribeFromPush } from '../utils/push';
+import {
+  getExistingSubscription,
+  isPushSupported,
+  subscribeToPush,
+  unsubscribeFromPush,
+} from '../utils/push';
 import { useNotificationPreferencesStore } from '../stores/notificationPreferences';
 import {
   NOTIFICATION_DOMAIN_META,
@@ -53,7 +62,7 @@ import {
   IconPuzzle,
   IconCloud,
   IconBug,
-  IconInfoSquareRounded
+  IconInfoSquareRounded,
 } from '@tabler/icons-vue';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import type { IconDef } from '../utils/icon';
@@ -83,13 +92,25 @@ const USERS_ICON: IconDef = { id: 'users', emoji: '👥', outline: IconUsers };
 
 type Tab = 'account' | 'users' | 'app' | 'trip' | 'notifications' | 'data' | 'about';
 const ALL_TABS: { key: Tab; label: string; icon: IconDef; adminOnly?: boolean }[] = [
-  { key: 'account', label: 'Account', icon: { id: 'user', emoji: '👤', outline: IconUser, filled: IconUserFilled } },
+  {
+    key: 'account',
+    label: 'Account',
+    icon: { id: 'user', emoji: '👤', outline: IconUser, filled: IconUserFilled },
+  },
   { key: 'users', label: 'Nutzerverwaltung', icon: USERS_ICON, adminOnly: true },
-  { key: 'app', label: 'App-Einstellungen', icon: { id: 'device-desktop', emoji: '🖥️', outline: IconDeviceDesktop } },
+  {
+    key: 'app',
+    label: 'App-Einstellungen',
+    icon: { id: 'device-desktop', emoji: '🖥️', outline: IconDeviceDesktop },
+  },
   { key: 'trip', label: 'Reise-Anzeige', icon: FORM_FIELD_ICONS.date },
   { key: 'notifications', label: 'Benachrichtigungen', icon: BELL_ICON },
   { key: 'data', label: 'Daten', icon: { id: 'database', emoji: '🗄️', outline: IconDatabase } },
-  { key: 'about', label: 'Über', icon: { id: 'info-circle', emoji: 'ℹ️', outline: IconInfoCircle, filled: IconInfoCircleFilled } },
+  {
+    key: 'about',
+    label: 'Über',
+    icon: { id: 'info-circle', emoji: 'ℹ️', outline: IconInfoCircle, filled: IconInfoCircleFilled },
+  },
 ];
 
 const TABS = computed(() => ALL_TABS.filter((t) => !t.adminOnly || auth.user?.is_admin));
@@ -127,7 +148,10 @@ const pwaInstall = usePwaInstallStore();
 
 const buildInfoStore = useBuildInfoStore();
 const backendBuildInfo = computed(() => buildInfoStore.buildInfo);
-const buildTimeFormatter = new Intl.DateTimeFormat('de-DE', { dateStyle: 'medium', timeStyle: 'short' });
+const buildTimeFormatter = new Intl.DateTimeFormat('de-DE', {
+  dateStyle: 'medium',
+  timeStyle: 'short',
+});
 function formatBuildTime(iso: string | null) {
   return iso ? buildTimeFormatter.format(new Date(iso)) : 'unbekannt';
 }
@@ -142,25 +166,102 @@ const EMOJI_CATEGORIES: { label: string; emojis: string[] }[] = [
   {
     label: 'Menschen',
     emojis: [
-      '🙂', '😎', '🥳', '😄', '🤓', '🥸', '🧑', '👩', '👨', '🧑‍🦱',
-      '👩‍🦰', '🧑‍🦳', '🧔', '👵', '👴', '🧑‍🚀', '🧑‍🎤', '🧑‍🍳', '🥷', '🧙',
+      '🙂',
+      '😎',
+      '🥳',
+      '😄',
+      '🤓',
+      '🥸',
+      '🧑',
+      '👩',
+      '👨',
+      '🧑‍🦱',
+      '👩‍🦰',
+      '🧑‍🦳',
+      '🧔',
+      '👵',
+      '👴',
+      '🧑‍🚀',
+      '🧑‍🎤',
+      '🧑‍🍳',
+      '🥷',
+      '🧙',
     ],
   },
   {
     label: 'Tiere',
     emojis: [
-      '🐨', '🦊', '🐢', '🦁', '🐸', '🐧', '🐶', '🐱', '🐼', '🐰',
-      '🦄', '🐙', '🦉', '🐝', '🦋', '🐳', '🐬', '🦖', '🐺', '🦔',
-      '🐷', '🐮', '🐵', '🦒', '🐘', '🦓', '🦩', '🐌', '🐊', '🦈',
-      '🦥', '🦦', '🦡', '🐿️', '🦫', '🦭', '🐡', '🦑', '🦜', '🦚',
-      '🐴', '🦌', '🐯', '🦍', '🐔',
+      '🐨',
+      '🦊',
+      '🐢',
+      '🦁',
+      '🐸',
+      '🐧',
+      '🐶',
+      '🐱',
+      '🐼',
+      '🐰',
+      '🦄',
+      '🐙',
+      '🦉',
+      '🐝',
+      '🦋',
+      '🐳',
+      '🐬',
+      '🦖',
+      '🐺',
+      '🦔',
+      '🐷',
+      '🐮',
+      '🐵',
+      '🦒',
+      '🐘',
+      '🦓',
+      '🦩',
+      '🐌',
+      '🐊',
+      '🦈',
+      '🦥',
+      '🦦',
+      '🦡',
+      '🐿️',
+      '🦫',
+      '🦭',
+      '🐡',
+      '🦑',
+      '🦜',
+      '🦚',
+      '🐴',
+      '🦌',
+      '🐯',
+      '🦍',
+      '🐔',
     ],
   },
   {
     label: 'Fabelwesen & Berufe',
     emojis: [
-      '🧙‍♀️', '🧙‍♂️', '🧚', '🧝', '🧞', '🧜', '🧛', '🧟', '🦸', '🦹', '🐉',
-      '🧑‍⚕️', '🧑‍🚒', '👮', '🧑‍🌾', '🧑‍🏫', '🧑‍💻', '🧑‍🎨', '🧑‍✈️', '🧑‍🔧', '🧑‍⚖️',
+      '🧙‍♀️',
+      '🧙‍♂️',
+      '🧚',
+      '🧝',
+      '🧞',
+      '🧜',
+      '🧛',
+      '🧟',
+      '🦸',
+      '🦹',
+      '🐉',
+      '🧑‍⚕️',
+      '🧑‍🚒',
+      '👮',
+      '🧑‍🌾',
+      '🧑‍🏫',
+      '🧑‍💻',
+      '🧑‍🎨',
+      '🧑‍✈️',
+      '🧑‍🔧',
+      '🧑‍⚖️',
     ],
   },
 ];
@@ -190,7 +291,9 @@ const notificationPrefs = useNotificationPreferencesStore();
 // Segmented-Control-Wert: 'off' bei fehlendem Abo, sonst die Stufe, die exakt zu den aktuellen
 // Einzel-Präferenzen passt - passt keine der drei Presets (individuell angepasst), matched nichts
 // in PUSH_LEVEL_TOGGLE_OPTIONS und die Toggle zeigt bewusst keinen aktiven Zustand.
-const pushLevelValue = computed(() => (pushEnabled.value ? (notificationPrefs.currentLevel ?? 'custom') : 'off'));
+const pushLevelValue = computed(() =>
+  pushEnabled.value ? (notificationPrefs.currentLevel ?? 'custom') : 'off'
+);
 const PUSH_LEVEL_TOGGLE_OPTIONS = [{ value: 'off', label: 'Aus' }, ...NOTIFICATION_LEVEL_OPTIONS];
 
 /** Bei "Aus" wird komplett abbestellt; bei jeder anderen Stufe wird (falls noch nicht geschehen)
@@ -211,13 +314,17 @@ async function selectPushLevel(level: string) {
       await notificationPrefs.applyLevel(level as NotificationLevel);
     }
   } catch (err) {
-    pushError.value = err instanceof Error ? err.message : 'Push-Benachrichtigungen konnten nicht geändert werden';
+    pushError.value =
+      err instanceof Error ? err.message : 'Push-Benachrichtigungen konnten nicht geändert werden';
   } finally {
     pushLoading.value = false;
   }
 }
 
-async function setDomainPreference(domain: (typeof NOTIFICATION_DOMAINS)[number], enabled: boolean) {
+async function setDomainPreference(
+  domain: (typeof NOTIFICATION_DOMAINS)[number],
+  enabled: boolean
+) {
   await notificationPrefs.update({ [domain]: enabled });
 }
 
@@ -294,11 +401,14 @@ async function changeUsername() {
   if (!usernameForm.value.username.trim()) return;
   usernameSaving.value = true;
   try {
-    const updated = await api.put<User>('/users/me/username', { username: usernameForm.value.username.trim() });
+    const updated = await api.put<User>('/users/me/username', {
+      username: usernameForm.value.username.trim(),
+    });
     if (auth.user) auth.user.username = updated.username;
     usernameSaved.value = true;
   } catch (err) {
-    usernameError.value = err instanceof ApiError ? err.message : 'Benutzername konnte nicht geändert werden';
+    usernameError.value =
+      err instanceof ApiError ? err.message : 'Benutzername konnte nicht geändert werden';
   } finally {
     usernameSaving.value = false;
   }
@@ -337,7 +447,8 @@ async function changePassword() {
     passwordSaved.value = true;
     passwordForm.value = { currentPassword: '', newPassword: '', confirmPassword: '' };
   } catch (err) {
-    passwordError.value = err instanceof ApiError ? err.message : 'Passwort konnte nicht geändert werden';
+    passwordError.value =
+      err instanceof ApiError ? err.message : 'Passwort konnte nicht geändert werden';
   } finally {
     passwordSaving.value = false;
   }
@@ -389,7 +500,7 @@ async function onImportFileSelected(event: Event) {
   }
 
   const confirmed = window.confirm(
-    'Import überschreibt ALLE aktuellen Daten (Urlaub, Kalender, Packlisten, Touren, Unterkünfte, Budget, Nutzer) unwiderruflich mit dem Inhalt der Datei. Fortfahren?',
+    'Import überschreibt ALLE aktuellen Daten (Urlaub, Kalender, Packlisten, Touren, Unterkünfte, Budget, Nutzer) unwiderruflich mit dem Inhalt der Datei. Fortfahren?'
   );
   if (!confirmed) return;
 
@@ -540,7 +651,11 @@ async function onImportFileSelected(event: Event) {
                   </span>
                 </td>
                 <td>
-                  <span v-if="u.must_change_password" class="status-badge warning" title="Passwortänderung beim ersten Login ausstehend">
+                  <span
+                    v-if="u.must_change_password"
+                    class="status-badge warning"
+                    title="Passwortänderung beim ersten Login ausstehend"
+                  >
                     Passwortänderung ausstehend
                   </span>
                   <span v-else class="status-badge active">Aktiv</span>
@@ -586,7 +701,9 @@ async function onImportFileSelected(event: Event) {
 
       <div class="card">
         <h2>Navigation</h2>
-        <p class="hint intro-hint">Position der Navigationsleiste, getrennt für Desktop und mobile Bedienung.</p>
+        <p class="hint intro-hint">
+          Position der Navigationsleiste, getrennt für Desktop und mobile Bedienung.
+        </p>
         <div class="nav-position-row">
           <label>
             Desktop
@@ -605,12 +722,20 @@ async function onImportFileSelected(event: Event) {
         </div>
 
         <p class="hint nav-config-hint">
-          Reihenfolge und Sichtbarkeit der übrigen Einträge ("Übersicht" bleibt immer an erster Stelle).
+          Reihenfolge und Sichtbarkeit der übrigen Einträge ("Übersicht" bleibt immer an erster
+          Stelle).
         </p>
         <ul class="nav-config-list">
           <li v-for="(entry, index) in navConfig.entries" :key="entry.key" class="nav-config-row">
-            <AppIcon v-if="navLinkIcon(entry.key)" class="nav-config-icon" :icon="navLinkIcon(entry.key)!" group="navigation" />
-            <span class="nav-config-label" :class="{ hidden: !entry.visible }">{{ navLinkLabel(entry.key) }}</span>
+            <AppIcon
+              v-if="navLinkIcon(entry.key)"
+              class="nav-config-icon"
+              :icon="navLinkIcon(entry.key)!"
+              group="navigation"
+            />
+            <span class="nav-config-label" :class="{ hidden: !entry.visible }">{{
+              navLinkLabel(entry.key)
+            }}</span>
             <div class="nav-config-actions">
               <IconButton
                 size="sm"
@@ -635,7 +760,9 @@ async function onImportFileSelected(event: Event) {
                   type="checkbox"
                   :checked="entry.visible"
                   :aria-label="`${navLinkLabel(entry.key)} in der Navigation anzeigen`"
-                  @change="navConfig.setVisible(entry.key, ($event.target as HTMLInputElement).checked)"
+                  @change="
+                    navConfig.setVisible(entry.key, ($event.target as HTMLInputElement).checked)
+                  "
                 />
               </label>
             </div>
@@ -644,7 +771,9 @@ async function onImportFileSelected(event: Event) {
       </div>
 
       <div class="card">
-        <h2><AppIcon :icon="DASHBOARD_TILES_ICON" group="navigation" :size="20" /> Dashboard-Kacheln</h2>
+        <h2>
+          <AppIcon :icon="DASHBOARD_TILES_ICON" group="navigation" :size="20" /> Dashboard-Kacheln
+        </h2>
         <p class="hint nav-config-hint">Reihenfolge und Sichtbarkeit der Dashboard-Kacheln.</p>
         <!-- Eigene dashboard-config-list/-row-Klassen statt der optisch identischen nav-config-list/
              -row oben (gleiche CSS-Regeln per Komma-Selektor, siehe dort) - sonst würden e2e-
@@ -653,9 +782,20 @@ async function onImportFileSelected(event: Event) {
              als Kachel). Die inneren Icon-/Label-/Actions-Klassen bleiben geteilt - dort scopen beide
              Tests immer erst über die jeweilige äußere Zeilen-Klasse, keine Kollisionsgefahr. -->
         <ul class="dashboard-config-list">
-          <li v-for="(entry, index) in dashboardConfig.entries" :key="entry.key" class="dashboard-config-row">
-            <AppIcon v-if="dashboardTileIcon(entry.key)" class="nav-config-icon" :icon="dashboardTileIcon(entry.key)!" group="navigation" />
-            <span class="nav-config-label" :class="{ hidden: !entry.visible }">{{ dashboardTileLabel(entry.key) }}</span>
+          <li
+            v-for="(entry, index) in dashboardConfig.entries"
+            :key="entry.key"
+            class="dashboard-config-row"
+          >
+            <AppIcon
+              v-if="dashboardTileIcon(entry.key)"
+              class="nav-config-icon"
+              :icon="dashboardTileIcon(entry.key)!"
+              group="navigation"
+            />
+            <span class="nav-config-label" :class="{ hidden: !entry.visible }">{{
+              dashboardTileLabel(entry.key)
+            }}</span>
             <div class="nav-config-actions">
               <IconButton
                 size="sm"
@@ -680,7 +820,12 @@ async function onImportFileSelected(event: Event) {
                   type="checkbox"
                   :checked="entry.visible"
                   :aria-label="`${dashboardTileLabel(entry.key)} auf dem Dashboard anzeigen`"
-                  @change="dashboardConfig.setVisible(entry.key, ($event.target as HTMLInputElement).checked)"
+                  @change="
+                    dashboardConfig.setVisible(
+                      entry.key,
+                      ($event.target as HTMLInputElement).checked
+                    )
+                  "
                 />
               </label>
             </div>
@@ -689,7 +834,9 @@ async function onImportFileSelected(event: Event) {
       </div>
 
       <div class="card">
-        <h2><AppIcon :icon="ACTION_ICONS.vacation" group="navigation" :size="20" /> Urlaubs-Hinweis</h2>
+        <h2>
+          <AppIcon :icon="ACTION_ICONS.vacation" group="navigation" :size="20" /> Urlaubs-Hinweis
+        </h2>
         <p class="hint intro-hint">
           Der Hinweis im Dashboard-Header während des laufenden Urlaubs zeigt standardmäßig immer
           denselben Text - kann hier stattdessen auf einen Countdown der verbleibenden Urlaubstage
@@ -704,13 +851,21 @@ async function onImportFileSelected(event: Event) {
 
     <div v-if="activeTab === 'trip'" class="grid settings-grid">
       <div id="calendar-settings" class="card">
-        <h2><AppIcon :icon="SECTION_ICON_DEFS.calendar" group="navigation" :size="20" /> Kalender</h2>
-        <p class="hint intro-hint">Wochenanfang und Zahlenformat für Datumsanzeigen in der ganzen App.</p>
+        <h2>
+          <AppIcon :icon="SECTION_ICON_DEFS.calendar" group="navigation" :size="20" /> Kalender
+        </h2>
+        <p class="hint intro-hint">
+          Wochenanfang und Zahlenformat für Datumsanzeigen in der ganzen App.
+        </p>
         <div class="nav-position-row">
           <label>
             Wochenanfang
             <select v-model="calendarSettings.weekStart">
-              <option v-for="option in WEEK_START_OPTIONS" :key="option.value" :value="option.value">
+              <option
+                v-for="option in WEEK_START_OPTIONS"
+                :key="option.value"
+                :value="option.value"
+              >
                 {{ option.label }}
               </option>
             </select>
@@ -718,7 +873,11 @@ async function onImportFileSelected(event: Event) {
           <label>
             Datumsformat
             <select v-model="calendarSettings.dateFormat">
-              <option v-for="option in DATE_FORMAT_OPTIONS" :key="option.value" :value="option.value">
+              <option
+                v-for="option in DATE_FORMAT_OPTIONS"
+                :key="option.value"
+                :value="option.value"
+              >
                 {{ option.label }}
               </option>
             </select>
@@ -731,13 +890,17 @@ async function onImportFileSelected(event: Event) {
         <h2><AppIcon :icon="WEATHER_SECTION_ICON" group="navigation" :size="20" /> Wetter</h2>
         <p class="hint intro-hint">
           Wettervorhersage über Open-Meteo, das mehrere echte Wetterdienste bündelt. Zeigt eine
-          Vorhersage abweichende Werte gegenüber anderen Wetter-Apps (z. B. Apple Weather), lässt sich
-          hier ein anderer Anbieter ausprobieren.
+          Vorhersage abweichende Werte gegenüber anderen Wetter-Apps (z. B. Apple Weather), lässt
+          sich hier ein anderer Anbieter ausprobieren.
         </p>
         <label class="weather-provider-label">
           Wettermodell
           <select v-model="weatherProvider.model">
-            <option v-for="option in WEATHER_MODEL_OPTIONS" :key="option.value" :value="option.value">
+            <option
+              v-for="option in WEATHER_MODEL_OPTIONS"
+              :key="option.value"
+              :value="option.value"
+            >
               {{ option.label }}
             </option>
           </select>
@@ -750,7 +913,9 @@ async function onImportFileSelected(event: Event) {
 
       <!-- id als Sprungziel, analog zu #weather-provider-settings oben -->
       <div id="home-currency-settings" class="card">
-        <h2><AppIcon :icon="ACTION_ICONS.currency" group="navigation" :size="20" /> Heimatwährung</h2>
+        <h2>
+          <AppIcon :icon="ACTION_ICONS.currency" group="navigation" :size="20" /> Heimatwährung
+        </h2>
         <p class="hint intro-hint">
           Wird im Dashboard genutzt, um bei Urlauben mit abweichender Landeswährung den aktuellen
           Wechselkurs anzuzeigen.
@@ -758,7 +923,11 @@ async function onImportFileSelected(event: Event) {
         <label class="weather-provider-label">
           Heimatwährung
           <select v-model="homeCurrency.currency">
-            <option v-for="option in HOME_CURRENCY_OPTIONS" :key="option.value" :value="option.value">
+            <option
+              v-for="option in HOME_CURRENCY_OPTIONS"
+              :key="option.value"
+              :value="option.value"
+            >
               {{ option.label }}
             </option>
           </select>
@@ -773,7 +942,8 @@ async function onImportFileSelected(event: Event) {
           Kurze Meldungen, die bei jedem Laden/Speichern/Löschen kurz unten am Bildschirmrand
           aufblitzen (z. B. "Speichert…"), damit klar wird, dass die App gerade tatsächlich mit dem
           Server arbeitet statt hängengeblieben zu sein. Wer das zu hektisch findet, kann sie hier
-          ausschalten - der dauerhafte Offline-/Update-Hinweis oben im Header bleibt davon unberührt.
+          ausschalten - der dauerhafte Offline-/Update-Hinweis oben im Header bleibt davon
+          unberührt.
         </p>
         <label class="checkbox-option">
           <input type="checkbox" v-model="uiSettings.showActivityToasts" />
@@ -788,16 +958,11 @@ async function onImportFileSelected(event: Event) {
         </p>
         <template v-else>
           <p class="hint intro-hint">
-            Benachrichtigt dich, wenn andere Mitglieder eines Urlaubs etwas ändern – auch wenn Reisotor
-            gerade nicht offen ist. Über die Stufe lässt sich einstellen, wie viel davon ankommt.
+            Benachrichtigt dich, wenn andere Mitglieder eines Urlaubs etwas ändern – auch wenn
+            Reisotor gerade nicht offen ist. Über die Stufe lässt sich einstellen, wie viel davon
+            ankommt.
           </p>
-          <Button
-            v-if="pushEnabled === null"
-            class="secondary"
-            disabled
-          >
-            Wird geprüft…
-          </Button>
+          <Button v-if="pushEnabled === null" class="secondary" disabled> Wird geprüft… </Button>
           <Button
             v-else-if="!pushEnabled"
             class="secondary"
@@ -812,12 +977,26 @@ async function onImportFileSelected(event: Event) {
               :options="PUSH_LEVEL_TOGGLE_OPTIONS"
               @update:model-value="selectPushLevel"
             />
-            <Button type="button" class="secondary small push-details-toggle" @click="showPushDetails = !showPushDetails">
+            <Button
+              type="button"
+              class="secondary small push-details-toggle"
+              @click="showPushDetails = !showPushDetails"
+            >
               Einzeln anpassen
-              <AppIcon :icon="ACTION_ICONS.chevronDown" :size="12" group="actions" class="push-details-caret" :class="{ open: showPushDetails }" />
+              <AppIcon
+                :icon="ACTION_ICONS.chevronDown"
+                :size="12"
+                group="actions"
+                class="push-details-caret"
+                :class="{ open: showPushDetails }"
+              />
             </Button>
             <ul v-if="showPushDetails" class="nav-config-list push-domain-list">
-              <li v-for="domain in NOTIFICATION_DOMAINS" :key="domain" class="nav-config-row push-domain-row">
+              <li
+                v-for="domain in NOTIFICATION_DOMAINS"
+                :key="domain"
+                class="nav-config-row push-domain-row"
+              >
                 <span class="nav-config-icon">{{ NOTIFICATION_DOMAIN_META[domain].icon }}</span>
                 <span class="nav-config-label">{{ NOTIFICATION_DOMAIN_META[domain].label }}</span>
                 <label class="nav-config-visible">
@@ -825,13 +1004,17 @@ async function onImportFileSelected(event: Event) {
                     type="checkbox"
                     :checked="notificationPrefs.preferences?.[domain] ?? true"
                     :aria-label="`${NOTIFICATION_DOMAIN_META[domain].label}-Push aktiv`"
-                    @change="setDomainPreference(domain, ($event.target as HTMLInputElement).checked)"
+                    @change="
+                      setDomainPreference(domain, ($event.target as HTMLInputElement).checked)
+                    "
                   />
                 </label>
               </li>
             </ul>
           </template>
-          <p v-if="pushError || notificationPrefs.error" class="hint error">{{ pushError || notificationPrefs.error }}</p>
+          <p v-if="pushError || notificationPrefs.error" class="hint error">
+            {{ pushError || notificationPrefs.error }}
+          </p>
         </template>
       </div>
     </template>
@@ -840,8 +1023,8 @@ async function onImportFileSelected(event: Event) {
       <div class="card">
         <h2><AppIcon :icon="ACTION_ICONS.delete" group="navigation" :size="20" /> Papierkorb</h2>
         <p class="hint intro-hint">
-          Gelöschte Termine, Ausflüge, Spots und mehr bleiben eine Weile hier erhalten und lassen sich
-          wiederherstellen.
+          Gelöschte Termine, Ausflüge, Spots und mehr bleiben eine Weile hier erhalten und lassen
+          sich wiederherstellen.
         </p>
         <router-link to="/trash" class="card-action-btn">Papierkorb öffnen</router-link>
       </div>
@@ -857,11 +1040,17 @@ async function onImportFileSelected(event: Event) {
         <div class="backup-actions">
           <Button class="secondary" :disabled="exporting" @click="exportBackup">
             <template v-if="exporting">Exportiere…</template>
-            <template v-else><AppIcon :icon="ACTION_ICONS.download" :size="14" group="actions" /> Backup exportieren</template>
+            <template v-else
+              ><AppIcon :icon="ACTION_ICONS.download" :size="14" group="actions" /> Backup
+              exportieren</template
+            >
           </Button>
           <Button class="secondary" :disabled="importing" @click="triggerImportPicker">
             <template v-if="importing">Importiere…</template>
-            <template v-else><AppIcon :icon="ACTION_ICONS.upload" :size="14" group="actions" /> Backup importieren</template>
+            <template v-else
+              ><AppIcon :icon="ACTION_ICONS.upload" :size="14" group="actions" /> Backup
+              importieren</template
+            >
           </Button>
           <input
             ref="importFileInput"
@@ -875,27 +1064,33 @@ async function onImportFileSelected(event: Event) {
         <p v-if="exportError" class="hint error">{{ exportError }}</p>
         <p v-if="importError" class="hint error">{{ importError }}</p>
         <p v-if="importResult" class="hint success">
-          Import erfolgreich ({{ Object.values(importResult).reduce((a, b) => a + b, 0) }} Einträge). Seite
-          wird neu geladen…
+          Import erfolgreich ({{ Object.values(importResult).reduce((a, b) => a + b, 0) }}
+          Einträge). Seite wird neu geladen…
         </p>
         <p class="hint warning">
-          <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Der Import überschreibt alle aktuellen Daten unwiderruflich.
+          <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Der Import
+          überschreibt alle aktuellen Daten unwiderruflich.
         </p>
       </div>
     </template>
 
     <template v-if="activeTab === 'about'">
       <div class="card">
-        <h2><AppIcon :icon="ACTION_ICONS.installApp" group="actions" :size="20" /> Als App installieren</h2>
+        <h2>
+          <AppIcon :icon="ACTION_ICONS.installApp" group="actions" :size="20" /> Als App
+          installieren
+        </h2>
         <p v-if="pwaInstall.isStandalone" class="hint intro-hint">
           Du nutzt Reisotor bereits als installierte App auf diesem Gerät. 🎉
         </p>
         <template v-else>
           <p class="hint intro-hint">
-            Installiere Reisotor auf deinem Start-/Homebildschirm für schnelleren Zugriff, ein eigenes App-Icon
-            und Offline-Nutzung.
+            Installiere Reisotor auf deinem Start-/Homebildschirm für schnelleren Zugriff, ein
+            eigenes App-Icon und Offline-Nutzung.
           </p>
-          <Button type="button" class="secondary" @click="showPwaInstallDialog = true">Anleitung anzeigen</Button>
+          <Button type="button" class="secondary" @click="showPwaInstallDialog = true"
+            >Anleitung anzeigen</Button
+          >
         </template>
       </div>
 
@@ -905,11 +1100,13 @@ async function onImportFileSelected(event: Event) {
           Bug gefunden oder eine Idee für eine neue Funktion? Landet direkt als Issue im
           Reisotor-Repository.
         </p>
-        <Button type="button" class="secondary" @click="showFeedbackDialog = true">Feedback geben</Button>
+        <Button type="button" class="secondary" @click="showFeedbackDialog = true"
+          >Feedback geben</Button
+        >
       </div>
 
       <div class="card build-info-card">
-        <div v-if="backendBuildInfo?.changelog" >
+        <div v-if="backendBuildInfo?.changelog">
           <h2><AppIcon :icon="INFO_ICON" group="navigation" :size="20" /> Versions-Info</h2>
           <h3>Was ist neu in v{{ backendBuildInfo.changelog.version }}</h3>
           <ul class="changelog-list">
@@ -919,7 +1116,9 @@ async function onImportFileSelected(event: Event) {
         <h3>Build-Info</h3>
         <dl class="build-info-list">
           <dt>Frontend</dt>
-          <dd>v{{ frontendVersion }} ({{ frontendCommit }}) · {{ formatBuildTime(frontendBuiltAt) }}</dd>
+          <dd>
+            v{{ frontendVersion }} ({{ frontendCommit }}) · {{ formatBuildTime(frontendBuiltAt) }}
+          </dd>
           <dt>Backend</dt>
           <dd v-if="backendBuildInfo">
             v{{ backendBuildInfo.version }} ({{ backendBuildInfo.ref ?? 'unbekannt' }}) ·

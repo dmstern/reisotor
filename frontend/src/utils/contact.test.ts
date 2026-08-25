@@ -3,7 +3,10 @@ import { parseContact } from './contact';
 
 describe('parseContact', () => {
   it('recognizes a plain email address', () => {
-    expect(parseContact('reservas@hotel.example')).toEqual({ kind: 'email', href: 'mailto:reservas@hotel.example' });
+    expect(parseContact('reservas@hotel.example')).toEqual({
+      kind: 'email',
+      href: 'mailto:reservas@hotel.example',
+    });
   });
 
   it('recognizes a formatted phone number (spaces, parens, dashes) with >=6 digits', () => {

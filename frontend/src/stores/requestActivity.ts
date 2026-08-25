@@ -7,7 +7,12 @@ import { computed, reactive } from 'vue';
 export type RequestKind = 'read' | 'create' | 'update' | 'delete';
 
 export const useRequestActivityStore = defineStore('requestActivity', () => {
-  const counts = reactive<Record<RequestKind, number>>({ read: 0, create: 0, update: 0, delete: 0 });
+  const counts = reactive<Record<RequestKind, number>>({
+    read: 0,
+    create: 0,
+    update: 0,
+    delete: 0,
+  });
 
   function start(kind: RequestKind) {
     counts[kind]++;

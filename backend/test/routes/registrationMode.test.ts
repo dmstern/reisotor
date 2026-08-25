@@ -67,7 +67,12 @@ describe('registration mode: restricted', () => {
       method: 'POST',
       url: '/api/attachments',
       headers: { cookie },
-      payload: { domain: 'notes', entity_id: noteId, data: 'data:image/png;base64,x', filename: 'x.png' },
+      payload: {
+        domain: 'notes',
+        entity_id: noteId,
+        data: 'data:image/png;base64,x',
+        filename: 'x.png',
+      },
     });
     expect(upload.statusCode).toBe(403);
     expect(upload.json()).toEqual({ error: 'Eingeschränkter Modus - Kein Datei-Upload möglich' });
@@ -132,6 +137,8 @@ describe('registration mode: restricted', () => {
       payload: { user_id: memberFourId },
     });
     expect(invite3.statusCode).toBe(403);
-    expect(invite3.json()).toEqual({ error: 'Eingeschränkter Modus - Maximal drei Nutzer pro Urlaub' });
+    expect(invite3.json()).toEqual({
+      error: 'Eingeschränkter Modus - Maximal drei Nutzer pro Urlaub',
+    });
   });
 });

@@ -5,7 +5,9 @@ import { fileURLToPath } from 'node:url';
 import { VIEWPORTS, expectWithinBox } from './helpers/layout';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const seeded = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'fixtures', 'seeded-data.json'), 'utf-8'));
+const seeded = JSON.parse(
+  fs.readFileSync(path.join(__dirname, '..', 'fixtures', 'seeded-data.json'), 'utf-8')
+);
 const tripId = seeded.trip.id;
 
 function localDateStr(d: Date) {
@@ -65,7 +67,10 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
     await page.reload();
     const spotCardAfterReload = page.locator('.spot-card', { hasText: spotTitle });
     await spotCardAfterReload.locator('h3').click();
-    await expect(spotCardAfterReload.locator('.done-toggle')).toHaveAttribute('aria-label', 'Nicht mehr als gemacht markiert');
+    await expect(spotCardAfterReload.locator('.done-toggle')).toHaveAttribute(
+      'aria-label',
+      'Nicht mehr als gemacht markiert'
+    );
   });
 
   test('Markieren als "gemacht" auf einem bereits geplanten Spot öffnet den Kalender NICHT (#147)', async ({
@@ -95,7 +100,10 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
     // Kein Kalender-Bestätigungs-Flow - das bereits vorhandene geplante Datum wird direkt als
     // Gemacht-/Besucht-Datum übernommen.
     await expect(page.locator('.pending-schedule-banner')).toBeHidden();
-    await expect(spotCard.locator('.done-toggle')).toHaveAttribute('aria-label', 'Nicht mehr als gemacht markiert');
+    await expect(spotCard.locator('.done-toggle')).toHaveAttribute(
+      'aria-label',
+      'Nicht mehr als gemacht markiert'
+    );
     await expect(spotCard.locator('.status.status-done')).toContainText('Besucht am 15.03');
   });
 
@@ -118,7 +126,10 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
     await banner.getByRole('button', { name: 'Abbrechen' }).click();
     await expect(banner).toBeHidden();
 
-    await expect(spotCard.locator('.done-toggle')).toHaveAttribute('aria-label', 'Als gemacht markieren');
+    await expect(spotCard.locator('.done-toggle')).toHaveAttribute(
+      'aria-label',
+      'Als gemacht markieren'
+    );
     await expect(spotCard.locator('.status')).toHaveCount(0);
   });
 
@@ -179,7 +190,9 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
     // kommt es nur darauf an, Text in den Editor zu bekommen, nicht das Klick-Verhalten selbst zu
     // prüfen - .focus() setzt den Fokus direkt, ganz ohne Hit-Test an einer Bildschirmposition.
     await editor.focus();
-    await editor.pressSequentially('Wir haben die Altstadt erkundet und sind spontan im Café eingekehrt.');
+    await editor.pressSequentially(
+      'Wir haben die Altstadt erkundet und sind spontan im Café eingekehrt.'
+    );
 
     // Spot-Picker ist standardmäßig eingeklappt (spart Platz, siehe DiaryView.vue), muss also erst
     // aufgeklappt werden, bevor der Picker-Button für den manuellen Spot erreichbar ist.
@@ -189,7 +202,9 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
     const spotButton = modal.locator('.spot-option-btn', { hasText: spotTitle });
     await expect(spotButton.locator('.excursion-option-badge.recommended')).toHaveCount(0);
     await spotButton.click();
-    await expect(spotButton.locator('.excursion-option-badge', { hasText: 'hinzugefügt' })).toBeVisible();
+    await expect(
+      spotButton.locator('.excursion-option-badge', { hasText: 'hinzugefügt' })
+    ).toBeVisible();
 
     await modal.locator('button[type="submit"]').click();
     await expect(modal).toBeHidden();
@@ -206,7 +221,10 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
     const spotCard = page.locator('.spot-card', { hasText: spotTitle });
     // Titel statt ganzer Karte anklicken - siehe Kommentar im ersten Test dieser Datei.
     await spotCard.locator('h3').click();
-    await expect(spotCard.locator('.done-toggle')).toHaveAttribute('aria-label', 'Nicht mehr als gemacht markiert');
+    await expect(spotCard.locator('.done-toggle')).toHaveAttribute(
+      'aria-label',
+      'Nicht mehr als gemacht markiert'
+    );
   });
 
   test.describe('Status-Badges ragen auf schmalen Breiten nicht über das Vorschaubild hinaus', () => {
@@ -231,11 +249,18 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
       const spot = await created.json();
 
       const scheduleRes = await page.request.post('/api/schedule', {
-        data: { trip_id: tripId, date: localDateStr(new Date()), title: spotTitle, spot_id: spot.id },
+        data: {
+          trip_id: tripId,
+          date: localDateStr(new Date()),
+          title: spotTitle,
+          spot_id: spot.id,
+        },
       });
       expect(scheduleRes.ok()).toBeTruthy();
 
-      const doneRes = await page.request.post(`/api/spots/${spot.id}/done`, { data: { done: true } });
+      const doneRes = await page.request.post(`/api/spots/${spot.id}/done`, {
+        data: { done: true },
+      });
       expect(doneRes.ok()).toBeTruthy();
 
       await page.goto('/excursions');

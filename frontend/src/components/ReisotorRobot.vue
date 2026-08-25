@@ -19,7 +19,7 @@ const props = withDefaults(
     phase: 'idle',
     coveringEyes: false,
     size: '200px',
-  },
+  }
 );
 
 // Einziges Signal "die Rucksack-Animation ist fertig durchgelaufen" - SplashScreen.vue wartet
@@ -33,7 +33,7 @@ function onAnimationEnd(event: AnimationEvent) {
 }
 
 const mouthPath = computed(() =>
-  props.phase === 'done' ? 'M110 150 Q145 188 180 150' : 'M117 155 Q145 170 173 155',
+  props.phase === 'done' ? 'M110 150 Q145 188 180 150' : 'M117 155 Q145 170 173 155'
 );
 </script>
 
@@ -50,15 +50,39 @@ const mouthPath = computed(() =>
       aria-hidden="true"
     >
       <!-- Antenne -->
-      <line x1="145" y1="70" x2="145" y2="32" stroke="#2F8F86" stroke-width="5" stroke-linecap="round" />
+      <line
+        x1="145"
+        y1="70"
+        x2="145"
+        y2="32"
+        stroke="#2F8F86"
+        stroke-width="5"
+        stroke-linecap="round"
+      />
       <g class="antenna-tip" transform="translate(145,18)">
         <polygon points="0,-16 6,-4 18,0 6,4 0,16 -6,4 -18,0 -6,-4" fill="#F4A261" />
         <circle r="5" fill="#FDF6EC" />
       </g>
 
       <!-- Radar-Pings während des Scans -->
-      <circle class="ping ping-1" cx="145" cy="191" r="18" fill="none" stroke="#4FB3A9" stroke-width="4" />
-      <circle class="ping ping-2" cx="145" cy="191" r="18" fill="none" stroke="#4FB3A9" stroke-width="4" />
+      <circle
+        class="ping ping-1"
+        cx="145"
+        cy="191"
+        r="18"
+        fill="none"
+        stroke="#4FB3A9"
+        stroke-width="4"
+      />
+      <circle
+        class="ping ping-2"
+        cx="145"
+        cy="191"
+        r="18"
+        fill="none"
+        stroke="#4FB3A9"
+        stroke-width="4"
+      />
 
       <!-- Kopf -->
       <rect class="head" x="71" y="66" width="148" height="126" rx="32" fill="#4FB3A9" />
@@ -80,7 +104,14 @@ const mouthPath = computed(() =>
         </g>
       </g>
 
-      <path class="mouth" :d="mouthPath" fill="none" stroke="#1F3A3D" stroke-width="4" stroke-linecap="round" />
+      <path
+        class="mouth"
+        :d="mouthPath"
+        fill="none"
+        stroke="#1F3A3D"
+        stroke-width="4"
+        stroke-linecap="round"
+      />
 
       <circle cx="85" cy="110" r="7" fill="#F4A261" />
       <circle cx="205" cy="110" r="7" fill="#F4A261" />
@@ -96,13 +127,45 @@ const mouthPath = computed(() =>
            Kontrast. Handkreis bekommt denselben dunklen Rand, damit die helle Hand auch vor dem
            ebenfalls hellen Augenweiß erkennbar bleibt (siehe Augen-zuhalten-Pose unten). -->
       <g class="arm arm-left">
-        <line x1="93" y1="208" x2="55" y2="240" stroke="#1F3A3D" stroke-width="18" stroke-linecap="round" />
-        <line x1="93" y1="208" x2="55" y2="240" stroke="#2F8F86" stroke-width="14" stroke-linecap="round" />
+        <line
+          x1="93"
+          y1="208"
+          x2="55"
+          y2="240"
+          stroke="#1F3A3D"
+          stroke-width="18"
+          stroke-linecap="round"
+        />
+        <line
+          x1="93"
+          y1="208"
+          x2="55"
+          y2="240"
+          stroke="#2F8F86"
+          stroke-width="14"
+          stroke-linecap="round"
+        />
         <circle cx="55" cy="240" r="12" fill="#FDF6EC" stroke="#1F3A3D" stroke-width="2" />
       </g>
       <g class="arm arm-right">
-        <line x1="197" y1="208" x2="235" y2="240" stroke="#1F3A3D" stroke-width="18" stroke-linecap="round" />
-        <line x1="197" y1="208" x2="235" y2="240" stroke="#2F8F86" stroke-width="14" stroke-linecap="round" />
+        <line
+          x1="197"
+          y1="208"
+          x2="235"
+          y2="240"
+          stroke="#1F3A3D"
+          stroke-width="18"
+          stroke-linecap="round"
+        />
+        <line
+          x1="197"
+          y1="208"
+          x2="235"
+          y2="240"
+          stroke="#2F8F86"
+          stroke-width="14"
+          stroke-linecap="round"
+        />
         <circle cx="235" cy="240" r="12" fill="#FDF6EC" stroke="#1F3A3D" stroke-width="2" />
       </g>
 
@@ -111,13 +174,37 @@ const mouthPath = computed(() =>
            die Hand also nie bis zum Auge bringen. Blendet per Opacity-Crossfade mit der Ruhepose um
            (siehe .arm/.arm-cover unten). Dieselbe Outline-Technik wie oben, aus demselben Grund. -->
       <g class="arm-cover arm-cover-left">
-        <path d="M93,208 Q90,160 113,122" stroke="#1F3A3D" stroke-width="18" stroke-linecap="round" fill="none" />
-        <path d="M93,208 Q90,160 113,122" stroke="#2F8F86" stroke-width="14" stroke-linecap="round" fill="none" />
+        <path
+          d="M93,208 Q90,160 113,122"
+          stroke="#1F3A3D"
+          stroke-width="18"
+          stroke-linecap="round"
+          fill="none"
+        />
+        <path
+          d="M93,208 Q90,160 113,122"
+          stroke="#2F8F86"
+          stroke-width="14"
+          stroke-linecap="round"
+          fill="none"
+        />
         <circle cx="113" cy="122" r="13" fill="#FDF6EC" stroke="#1F3A3D" stroke-width="2" />
       </g>
       <g class="arm-cover arm-cover-right">
-        <path d="M197,208 Q200,160 177,122" stroke="#1F3A3D" stroke-width="18" stroke-linecap="round" fill="none" />
-        <path d="M197,208 Q200,160 177,122" stroke="#2F8F86" stroke-width="14" stroke-linecap="round" fill="none" />
+        <path
+          d="M197,208 Q200,160 177,122"
+          stroke="#1F3A3D"
+          stroke-width="18"
+          stroke-linecap="round"
+          fill="none"
+        />
+        <path
+          d="M197,208 Q200,160 177,122"
+          stroke="#2F8F86"
+          stroke-width="14"
+          stroke-linecap="round"
+          fill="none"
+        />
         <circle cx="177" cy="122" r="13" fill="#FDF6EC" stroke="#1F3A3D" stroke-width="2" />
       </g>
 
@@ -128,18 +215,67 @@ const mouthPath = computed(() =>
            von diesem überdeckt wird. transform-box: view-box (siehe Style) wie bei den Armen oben -
            Koordinaten unten sind deshalb absolute SVG-Koordinaten, keine lokalen. -->
       <g class="backpack-group">
-        <rect class="backpack-body" width="46" height="56" rx="12" fill="#2F8F86" stroke="#1F3A3D" stroke-width="2" />
+        <rect
+          class="backpack-body"
+          width="46"
+          height="56"
+          rx="12"
+          fill="#2F8F86"
+          stroke="#1F3A3D"
+          stroke-width="2"
+        />
         <rect class="backpack-pocket" x="8" y="30" width="30" height="18" rx="6" fill="#E76F51" />
-        <line x1="6" y1="2" x2="6" y2="54" stroke="#1F3A3D" stroke-width="4" stroke-linecap="round" />
-        <line x1="40" y1="2" x2="40" y2="54" stroke="#1F3A3D" stroke-width="4" stroke-linecap="round" />
+        <line
+          x1="6"
+          y1="2"
+          x2="6"
+          y2="54"
+          stroke="#1F3A3D"
+          stroke-width="4"
+          stroke-linecap="round"
+        />
+        <line
+          x1="40"
+          y1="2"
+          x2="40"
+          y2="54"
+          stroke="#1F3A3D"
+          stroke-width="4"
+          stroke-linecap="round"
+        />
       </g>
-      <circle class="pack-item pack-item-1" r="8" fill="#E76F51" stroke="#1F3A3D" stroke-width="2" />
-      <rect class="pack-item pack-item-2" x="-7" y="-7" width="14" height="14" rx="3" fill="#FDF6EC" stroke="#1F3A3D" stroke-width="2" />
+      <circle
+        class="pack-item pack-item-1"
+        r="8"
+        fill="#E76F51"
+        stroke="#1F3A3D"
+        stroke-width="2"
+      />
+      <rect
+        class="pack-item pack-item-2"
+        x="-7"
+        y="-7"
+        width="14"
+        height="14"
+        rx="3"
+        fill="#FDF6EC"
+        stroke="#1F3A3D"
+        stroke-width="2"
+      />
 
       <!-- Rumpf -->
       <rect x="89" y="194" width="112" height="80" rx="18" fill="#F4A261" />
       <rect class="badge" x="121" y="182" width="48" height="18" rx="9" fill="#E76F51" />
-      <rect x="89" y="194" width="112" height="80" rx="18" fill="none" stroke="#E76F51" stroke-width="3" />
+      <rect
+        x="89"
+        y="194"
+        width="112"
+        height="80"
+        rx="18"
+        fill="none"
+        stroke="#E76F51"
+        stroke-width="3"
+      />
       <line x1="145" y1="208" x2="145" y2="260" stroke="#E76F51" stroke-width="3" />
 
       <!-- Füße -->
@@ -165,27 +301,47 @@ const mouthPath = computed(() =>
 }
 
 @keyframes bob {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
 }
 
 .robot.scanning {
-  animation: bob 3.2s ease-in-out infinite, tilt 1.1s ease-in-out infinite;
+  animation:
+    bob 3.2s ease-in-out infinite,
+    tilt 1.1s ease-in-out infinite;
 }
 
 @keyframes tilt {
-  0%, 100% { rotate: -4deg; }
-  50% { rotate: 4deg; }
+  0%,
+  100% {
+    rotate: -4deg;
+  }
+  50% {
+    rotate: 4deg;
+  }
 }
 
 .robot.done {
-  animation: bob 3.2s ease-in-out infinite, cheer 0.6s ease-in-out 1;
+  animation:
+    bob 3.2s ease-in-out infinite,
+    cheer 0.6s ease-in-out 1;
 }
 
 @keyframes cheer {
-  0% { transform: scale(1); }
-  40% { transform: scale(1.08) translateY(-10px); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.08) translateY(-10px);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 /* Blinzeln: beide Augen zusammen, selten und kurz (98 % der Zeit offen). */
@@ -196,8 +352,14 @@ const mouthPath = computed(() =>
 }
 
 @keyframes blink {
-  0%, 94%, 100% { transform: scaleY(1); }
-  96% { transform: scaleY(0.1); }
+  0%,
+  94%,
+  100% {
+    transform: scaleY(1);
+  }
+  96% {
+    transform: scaleY(0.1);
+  }
 }
 
 .robot.scanning .eye {
@@ -215,12 +377,25 @@ const mouthPath = computed(() =>
 }
 
 @keyframes look-roll {
-  0%, 100% { transform: translate(0, 0); }
-  15% { transform: translate(-3px, -1px); }
-  30% { transform: translate(-3px, 1px); }
-  50% { transform: translate(0, 0); }
-  65% { transform: translate(3px, -1px); }
-  80% { transform: translate(3px, 1px); }
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  15% {
+    transform: translate(-3px, -1px);
+  }
+  30% {
+    transform: translate(-3px, 1px);
+  }
+  50% {
+    transform: translate(0, 0);
+  }
+  65% {
+    transform: translate(3px, -1px);
+  }
+  80% {
+    transform: translate(3px, 1px);
+  }
 }
 
 .mouth {
@@ -237,8 +412,13 @@ const mouthPath = computed(() =>
 }
 
 @keyframes glow {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.45; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
 }
 
 .ping {
@@ -256,8 +436,14 @@ const mouthPath = computed(() =>
 }
 
 @keyframes ping {
-  0% { transform: scale(0.6); opacity: 0.7; }
-  100% { transform: scale(2.2); opacity: 0; }
+  0% {
+    transform: scale(0.6);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
 }
 
 /* Arme schwingen nur während des Scans etwas – sieht aus, als würde der Reisotor dabei
@@ -285,8 +471,13 @@ const mouthPath = computed(() =>
 }
 
 @keyframes armswing {
-  0%, 100% { transform: rotate(0deg); }
-  50% { transform: rotate(10deg); }
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(10deg);
+  }
 }
 
 /* Rucksack packen (Phase "packing", siehe SplashScreen.vue): Rucksack + beide Gegenstände sind
@@ -342,35 +533,84 @@ const mouthPath = computed(() =>
    (auth.setup.ts z. B. 5s ab Login bis zum sichtbaren Dashboard), die "Splash blockt UI bis
    Animation fertig" (siehe SplashScreen.vue) sonst reißen würde. */
 @keyframes pack-backpack-anim {
-  0%, 26% { transform: translate(200px, 215px) rotate(0deg) scale(1); }
-  28% { transform: translate(200px, 208px) rotate(-4deg) scale(1.08); }
-  32%, 53% { transform: translate(200px, 215px) rotate(0deg) scale(1); }
-  55% { transform: translate(200px, 208px) rotate(4deg) scale(1.08); }
-  59%, 68% { transform: translate(200px, 215px) rotate(0deg) scale(1); }
-  85% { transform: translate(120px, 150px) rotate(-20deg) scale(1.05); }
-  100% { transform: translate(58px, 185px) rotate(-8deg) scale(0.92); }
+  0%,
+  26% {
+    transform: translate(200px, 215px) rotate(0deg) scale(1);
+  }
+  28% {
+    transform: translate(200px, 208px) rotate(-4deg) scale(1.08);
+  }
+  32%,
+  53% {
+    transform: translate(200px, 215px) rotate(0deg) scale(1);
+  }
+  55% {
+    transform: translate(200px, 208px) rotate(4deg) scale(1.08);
+  }
+  59%,
+  68% {
+    transform: translate(200px, 215px) rotate(0deg) scale(1);
+  }
+  85% {
+    transform: translate(120px, 150px) rotate(-20deg) scale(1.05);
+  }
+  100% {
+    transform: translate(58px, 185px) rotate(-8deg) scale(0.92);
+  }
 }
 
 /* Startet an der rechten Hand (235,235, Endpunkt von .arm-right), wird "gegriffen" (hochgezogen),
    fliegt zur Rucksack-Position und verschwindet dort (scale 0). Item 2 unten ist dieselbe Bewegung
    spiegelbildlich von der linken Hand (55,235) aus, zeitlich versetzt nach Item 1. */
 @keyframes pack-item-1-anim {
-  0%, 20% { transform: translate(235px, 235px) scale(1); opacity: 1; }
-  55% { transform: translate(235px, 180px) scale(1.15); opacity: 1; }
-  90% { transform: translate(205px, 215px) scale(0.8); opacity: 1; }
-  100% { transform: translate(200px, 215px) scale(0); opacity: 0; }
+  0%,
+  20% {
+    transform: translate(235px, 235px) scale(1);
+    opacity: 1;
+  }
+  55% {
+    transform: translate(235px, 180px) scale(1.15);
+    opacity: 1;
+  }
+  90% {
+    transform: translate(205px, 215px) scale(0.8);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(200px, 215px) scale(0);
+    opacity: 0;
+  }
 }
 
 @keyframes pack-item-2-anim {
-  0%, 20% { transform: translate(55px, 235px) scale(1); opacity: 1; }
-  55% { transform: translate(55px, 180px) scale(1.15); opacity: 1; }
-  90% { transform: translate(205px, 215px) scale(0.8); opacity: 1; }
-  100% { transform: translate(200px, 215px) scale(0); opacity: 0; }
+  0%,
+  20% {
+    transform: translate(55px, 235px) scale(1);
+    opacity: 1;
+  }
+  55% {
+    transform: translate(55px, 180px) scale(1.15);
+    opacity: 1;
+  }
+  90% {
+    transform: translate(205px, 215px) scale(0.8);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(200px, 215px) scale(0);
+    opacity: 0;
+  }
 }
 
 @keyframes pack-reach {
-  0%, 15%, 100% { transform: rotate(0deg); }
-  55% { transform: rotate(14deg); }
+  0%,
+  15%,
+  100% {
+    transform: rotate(0deg);
+  }
+  55% {
+    transform: rotate(14deg);
+  }
 }
 
 /* Reduzierte Bewegung: Sequenz läuft technisch weiter (animationend wird für die
@@ -419,8 +659,13 @@ const mouthPath = computed(() =>
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
 .sparkle {
@@ -430,13 +675,33 @@ const mouthPath = computed(() =>
   pointer-events: none;
 }
 
-.sparkle-1 { top: 10%; left: 5%; animation-delay: 0s; }
-.sparkle-2 { top: 15%; right: 0; animation-delay: 0.4s; }
-.sparkle-3 { bottom: 25%; left: -5%; animation-delay: 0.8s; }
+.sparkle-1 {
+  top: 10%;
+  left: 5%;
+  animation-delay: 0s;
+}
+.sparkle-2 {
+  top: 15%;
+  right: 0;
+  animation-delay: 0.4s;
+}
+.sparkle-3 {
+  bottom: 25%;
+  left: -5%;
+  animation-delay: 0.8s;
+}
 
 @keyframes float-up {
-  0% { transform: translateY(0) scale(0.7); opacity: 0; }
-  30% { opacity: 1; }
-  100% { transform: translateY(-40px) scale(1.1); opacity: 0; }
+  0% {
+    transform: translateY(0) scale(0.7);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-40px) scale(1.1);
+    opacity: 0;
+  }
 }
 </style>

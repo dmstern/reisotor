@@ -5,7 +5,12 @@ import Modal from './Modal.vue';
 import WeatherIcon from './WeatherIcon.vue';
 import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
-import { fetchHourlyForecast, weatherCodeMeta, type DailyWeather, type HourlyWeather } from '../utils/weather';
+import {
+  fetchHourlyForecast,
+  weatherCodeMeta,
+  type DailyWeather,
+  type HourlyWeather,
+} from '../utils/weather';
 import { formatDate as formatDateShared } from '../utils/dateFormat';
 import { useWeatherProviderStore, WEATHER_MODEL_OPTIONS } from '../stores/weatherProvider';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
@@ -29,7 +34,9 @@ const hourlyList = ref<HourlyWeather[]>([]);
 const loading = ref(false);
 
 const weatherModelLabel = computed(
-  () => WEATHER_MODEL_OPTIONS.find((o) => o.value === weatherProvider.model)?.label ?? weatherProvider.model,
+  () =>
+    WEATHER_MODEL_OPTIONS.find((o) => o.value === weatherProvider.model)?.label ??
+    weatherProvider.model
 );
 
 watch(
@@ -48,7 +55,7 @@ watch(
       loading.value = false;
     }
   },
-  { immediate: true },
+  { immediate: true }
 );
 
 function close() {
@@ -66,7 +73,11 @@ function formatDate(dateStr: string) {
 </script>
 
 <template>
-  <Modal :model-value="modelValue" :title="day ? `Wetter am ${formatDate(day.date)}` : 'Wetter-Details'" @update:model-value="close">
+  <Modal
+    :model-value="modelValue"
+    :title="day ? `Wetter am ${formatDate(day.date)}` : 'Wetter-Details'"
+    @update:model-value="close"
+  >
     <div v-if="day" class="weather-detail-body">
       <!-- Standort-Information -->
       <div v-if="locationLabel" class="location-badge">
@@ -100,7 +111,11 @@ function formatDate(dateStr: string) {
             <span class="time">{{ h.time }}</span>
             <WeatherIcon :code="h.weatherCode" :size="20" />
             <span class="temp">{{ h.temp }}°</span>
-            <span v-if="h.precipitationProbability != null && h.precipitationProbability > 0" class="rain">{{ h.precipitationProbability }}%</span>
+            <span
+              v-if="h.precipitationProbability != null && h.precipitationProbability > 0"
+              class="rain"
+              >{{ h.precipitationProbability }}%</span
+            >
           </div>
         </div>
         <div v-else class="hourly-empty">Kein stündlicher Verlauf verfügbar.</div>
@@ -113,7 +128,8 @@ function formatDate(dateStr: string) {
           <span class="model-sub">Wetterdaten können je nach Modell abweichen.</span>
         </div>
         <Button variant="secondary" size="sm" class="model-btn" @click="goToSettings">
-          <AppIcon :icon="ACTION_ICONS.filterSettings" :size="14" group="actions" /> Modell in Einstellungen ändern
+          <AppIcon :icon="ACTION_ICONS.filterSettings" :size="14" group="actions" /> Modell in
+          Einstellungen ändern
         </Button>
       </div>
     </div>

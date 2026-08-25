@@ -38,7 +38,11 @@ describe('excursion_spots spot_id-Migration', () => {
       CREATE TABLE travel_items (id INTEGER PRIMARY KEY, trip_id INTEGER, title TEXT NOT NULL, from_place_id INTEGER, to_place_id INTEGER);
       CREATE TABLE excursion_spots (id INTEGER PRIMARY KEY, idea_id INTEGER NOT NULL, station_key TEXT NOT NULL, position INTEGER NOT NULL DEFAULT 0);
     `);
-    legacy.prepare(`INSERT INTO trips (id, name, start_date, end_date) VALUES (1, 'Sommerurlaub', '2026-08-01', '2026-08-14')`).run();
+    legacy
+      .prepare(
+        `INSERT INTO trips (id, name, start_date, end_date) VALUES (1, 'Sommerurlaub', '2026-08-01', '2026-08-14')`
+      )
+      .run();
     legacy.prepare(`INSERT INTO users (id, username, avatar) VALUES (1, 'anna', '🦊')`).run();
     legacy.prepare(`INSERT INTO spots (id, trip_id, title) VALUES (5, 1, 'Torre de Belém')`).run();
     legacy.prepare(`INSERT INTO ideas (id, trip_id, title) VALUES (1, 1, 'Sightseeing-Tag')`).run();
@@ -46,23 +50,49 @@ describe('excursion_spots spot_id-Migration', () => {
     // Reise-Ort im alten (Vor-Phase-1) Schema - travel_items.from_place_id verweist noch auf
     // travel_places.id, nicht auf spots.id; wird von der travel_places-Migration (db/index.ts, läuft
     // VOR dieser hier) zu einem neuen Spot + umgeschriebenem from_place_id.
-    legacy.prepare(`INSERT INTO travel_places (id, trip_id, name, is_home, type) VALUES (50, 1, 'Flughafen Lissabon', 0, 'Flughafen')`).run();
+    legacy
+      .prepare(
+        `INSERT INTO travel_places (id, trip_id, name, is_home, type) VALUES (50, 1, 'Flughafen Lissabon', 0, 'Flughafen')`
+      )
+      .run();
     // Etappe MIT verknüpftem Ort (from_place_id -> travel_places 50) und Etappe OHNE (to_place_id
     // NULL, reine Freitext-Ankunft).
     legacy
-      .prepare(`INSERT INTO travel_items (id, trip_id, title, from_place_id, to_place_id) VALUES (9, 1, 'Hinflug', 50, NULL)`)
+      .prepare(
+        `INSERT INTO travel_items (id, trip_id, title, from_place_id, to_place_id) VALUES (9, 1, 'Hinflug', 50, NULL)`
+      )
       .run();
 
     // idea 1: Spot 5 taucht ZWEIMAL auf (Rundgang, Start UND Ende) - muss als zwei Zeilen mit ihrer
     // jeweiligen position erhalten bleiben. Zusätzlich die Etappen-Abflugstation (travel-from-9 ->
     // Flughafen-Spot über from_place_id) dazwischen.
-    legacy.prepare(`INSERT INTO excursion_spots (idea_id, station_key, position) VALUES (1, 'spot-5', 0)`).run();
-    legacy.prepare(`INSERT INTO excursion_spots (idea_id, station_key, position) VALUES (1, 'travel-from-9', 1)`).run();
-    legacy.prepare(`INSERT INTO excursion_spots (idea_id, station_key, position) VALUES (1, 'spot-5', 2)`).run();
+    legacy
+      .prepare(
+        `INSERT INTO excursion_spots (idea_id, station_key, position) VALUES (1, 'spot-5', 0)`
+      )
+      .run();
+    legacy
+      .prepare(
+        `INSERT INTO excursion_spots (idea_id, station_key, position) VALUES (1, 'travel-from-9', 1)`
+      )
+      .run();
+    legacy
+      .prepare(
+        `INSERT INTO excursion_spots (idea_id, station_key, position) VALUES (1, 'spot-5', 2)`
+      )
+      .run();
     // idea 2: Ankunftsstation ohne verknüpften Ort (travel-to-9, to_place_id ist NULL) muss
     // ersatzlos wegfallen, ein Verweis auf einen längst gelöschten Spot ebenfalls.
-    legacy.prepare(`INSERT INTO excursion_spots (idea_id, station_key, position) VALUES (2, 'travel-to-9', 0)`).run();
-    legacy.prepare(`INSERT INTO excursion_spots (idea_id, station_key, position) VALUES (2, 'spot-999', 1)`).run();
+    legacy
+      .prepare(
+        `INSERT INTO excursion_spots (idea_id, station_key, position) VALUES (2, 'travel-to-9', 0)`
+      )
+      .run();
+    legacy
+      .prepare(
+        `INSERT INTO excursion_spots (idea_id, station_key, position) VALUES (2, 'spot-999', 1)`
+      )
+      .run();
     legacy.close();
 
     process.env.DB_PATH = dbPath;
@@ -72,9 +102,9 @@ describe('excursion_spots spot_id-Migration', () => {
     const columns = db.prepare('PRAGMA table_info(excursion_spots)').all() as { name: string }[];
     expect(columns.map((c) => c.name).sort()).toEqual(['id', 'idea_id', 'position', 'spot_id']);
 
-    const airportSpot = db.prepare("SELECT id FROM spots WHERE title = 'Flughafen Lissabon'").get() as
-      | { id: number }
-      | undefined;
+    const airportSpot = db
+      .prepare("SELECT id FROM spots WHERE title = 'Flughafen Lissabon'")
+      .get() as { id: number } | undefined;
     expect(airportSpot).toBeDefined();
 
     // Reihenfolge UND Mehrfachbesuch (Spot 5 zweimal) bleiben erhalten, sortiert nach position.

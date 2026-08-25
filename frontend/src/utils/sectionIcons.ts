@@ -57,8 +57,18 @@ export const SECTION_ICONS: Record<SectionKey, string> = {
 // funktionieren. Nicht jedes Icon hat eine Tabler-Filled-Variante (z. B. Rucksack/Koffer/Notizbuch/
 // Karte) - AppIcon.vue fällt dafür automatisch auf Outline zurück.
 export const SECTION_ICON_DEFS: Record<SectionKey, IconDef> = {
-  dashboard: { id: 'home', emoji: SECTION_ICONS.dashboard, outline: IconHome, filled: IconHomeFilled },
-  calendar: { id: 'calendar', emoji: SECTION_ICONS.calendar, outline: IconCalendar, filled: IconCalendarFilled },
+  dashboard: {
+    id: 'home',
+    emoji: SECTION_ICONS.dashboard,
+    outline: IconHome,
+    filled: IconHomeFilled,
+  },
+  calendar: {
+    id: 'calendar',
+    emoji: SECTION_ICONS.calendar,
+    outline: IconCalendar,
+    filled: IconCalendarFilled,
+  },
   map: { id: 'map-2', emoji: SECTION_ICONS.map, outline: IconMap2 },
   packing: { id: 'luggage', emoji: SECTION_ICONS.packing, outline: IconLuggage },
   shopping: {

@@ -80,7 +80,11 @@ export async function rawRequest<T>(path: string, options: RequestInit = {}): Pr
   // weiterlaufen und noch auf die bereits im Teardown befindliche Pinia-/Router-Instanz zugreifen
   // (Ursache der in Issue #77 beobachteten Abstürze). stores/trip.ts's reset() (siehe App.vue)
   // übernimmt jetzt das Zurücksetzen des Trip-bezogenen State.
-  if (res.status === 401 && !AUTH_SELF_HANDLED_PATHS.includes(path) && window.location.pathname !== '/login') {
+  if (
+    res.status === 401 &&
+    !AUTH_SELF_HANDLED_PATHS.includes(path) &&
+    window.location.pathname !== '/login'
+  ) {
     window.dispatchEvent(new CustomEvent('reisotor:session-expired'));
   }
 
@@ -144,7 +148,10 @@ async function get<T>(path: string): Promise<T> {
     }
     const cached = readCache<T>(path);
     if (cached !== undefined) return withPending(path, cached);
-    throw new ApiError(0, 'Offline und keine zwischengespeicherten Daten für diese Ansicht vorhanden');
+    throw new ApiError(
+      0,
+      'Offline und keine zwischengespeicherten Daten für diese Ansicht vorhanden'
+    );
   } finally {
     activity.finish('read');
   }

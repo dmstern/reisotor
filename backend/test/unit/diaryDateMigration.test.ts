@@ -25,11 +25,13 @@ describe('diary_entries.date Migration', () => {
       CREATE TABLE diary_entries (id INTEGER PRIMARY KEY, trip_id INTEGER, author_id INTEGER NOT NULL, title TEXT, content TEXT NOT NULL, images TEXT, created_at TEXT NOT NULL, updated_at TEXT);
     `);
     legacy
-      .prepare(`INSERT INTO trips (id, name, start_date, end_date) VALUES (1, 'Altreise', '2025-01-01', '2025-01-10')`)
+      .prepare(
+        `INSERT INTO trips (id, name, start_date, end_date) VALUES (1, 'Altreise', '2025-01-01', '2025-01-10')`
+      )
       .run();
     legacy
       .prepare(
-        `INSERT INTO diary_entries (id, trip_id, author_id, title, content, created_at) VALUES (1, 1, 1, 'Alt', 'Hallo', '2025-01-03T18:42:00.000Z')`,
+        `INSERT INTO diary_entries (id, trip_id, author_id, title, content, created_at) VALUES (1, 1, 1, 'Alt', 'Hallo', '2025-01-03T18:42:00.000Z')`
       )
       .run();
     legacy.close();
@@ -37,7 +39,9 @@ describe('diary_entries.date Migration', () => {
     process.env.DB_PATH = dbPath;
     const { db } = await import('../../src/db/index.js');
 
-    const entry = db.prepare('SELECT date FROM diary_entries WHERE id = 1').get() as { date: string };
+    const entry = db.prepare('SELECT date FROM diary_entries WHERE id = 1').get() as {
+      date: string;
+    };
     expect(entry.date).toBe('2025-01-03');
   });
 });

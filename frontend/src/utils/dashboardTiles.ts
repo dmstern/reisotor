@@ -11,7 +11,12 @@ export interface DashboardTileDef {
 // Unterkunft/Sicherheits-Check haben keinen eigenen SECTION_ICON_DEFS-Eintrag (sie sind reine
 // Dashboard-Kacheln, keine eigenständigen App-Bereiche mit Nav-Punkt) - gleiches Icon wie
 // spotCategoryMeta('Unterkunft').tabler bzw. DashboardView.vue's Sicherheits-Check-Kachel.
-export const ACCOMMODATION_ICON: IconDef = { id: 'bed', emoji: '🛏️', outline: IconBed, filled: IconBedFilled };
+export const ACCOMMODATION_ICON: IconDef = {
+  id: 'bed',
+  emoji: '🛏️',
+  outline: IconBed,
+  filled: IconBedFilled,
+};
 export const SECURITY_CHECK_ICON: IconDef = {
   id: 'shield-check',
   emoji: '🛡️',

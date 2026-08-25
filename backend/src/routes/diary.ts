@@ -92,7 +92,7 @@ function editorIdsFor(entryIds: number[]): Map<number, number[]> {
   const placeholders = entryIds.map(() => '?').join(',');
   const rows = db
     .prepare(
-      `SELECT entry_id, user_id FROM diary_entry_editors WHERE entry_id IN (${placeholders}) ORDER BY edited_at ASC`,
+      `SELECT entry_id, user_id FROM diary_entry_editors WHERE entry_id IN (${placeholders}) ORDER BY edited_at ASC`
     )
     .all(...entryIds) as { entry_id: number; user_id: number }[];
   for (const row of rows) {
@@ -106,7 +106,7 @@ function editorIdsFor(entryIds: number[]): Map<number, number[]> {
 function recordEditor(entryId: number, userId: number) {
   db.prepare(
     `INSERT INTO diary_entry_editors (entry_id, user_id, edited_at) VALUES (?, ?, ?)
-     ON CONFLICT(entry_id, user_id) DO UPDATE SET edited_at = excluded.edited_at`,
+     ON CONFLICT(entry_id, user_id) DO UPDATE SET edited_at = excluded.edited_at`
   ).run(entryId, userId, new Date().toISOString());
 }
 
@@ -125,7 +125,12 @@ const ALLOWED_IMAGE_TYPES: Record<string, string> = {
 };
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
-function serializeEntry(row: EntryRow, excursionIds: number[], spotIds: number[] = [], editorIds: number[] = []) {
+function serializeEntry(
+  row: EntryRow,
+  excursionIds: number[],
+  spotIds: number[] = [],
+  editorIds: number[] = []
+) {
   return {
     ...row,
     images: row.images ? (JSON.parse(row.images) as string[]) : [],
@@ -142,7 +147,7 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
     // Entwürfe (is_draft) sind rein persönlich (#89) - nur für die eigene author_id sichtbar.
     const rows = db
       .prepare(
-        'SELECT * FROM diary_entries WHERE trip_id = ? AND deleted_at IS NULL AND (is_draft = 0 OR author_id = ?) ORDER BY date DESC, created_at DESC, id DESC',
+        'SELECT * FROM diary_entries WHERE trip_id = ? AND deleted_at IS NULL AND (is_draft = 0 OR author_id = ?) ORDER BY date DESC, created_at DESC, id DESC'
       )
       .all(req.query.trip_id, req.session.userId) as EntryRow[];
     const entryIds = rows.map((r) => r.id);
@@ -150,7 +155,12 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
     const spotIds = spotIdsFor(entryIds);
     const editorIds = editorIdsFor(entryIds);
     return rows.map((row) =>
-      serializeEntry(row, excursionIds.get(row.id) ?? [], spotIds.get(row.id) ?? [], editorIds.get(row.id) ?? []),
+      serializeEntry(
+        row,
+        excursionIds.get(row.id) ?? [],
+        spotIds.get(row.id) ?? [],
+        editorIds.get(row.id) ?? []
+      )
     );
   });
 
@@ -164,7 +174,7 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
       .prepare(
         `SELECT diary_likes.* FROM diary_likes
          JOIN diary_entries ON diary_entries.id = diary_likes.entry_id
-         WHERE diary_entries.trip_id = ?`,
+         WHERE diary_entries.trip_id = ?`
       )
       .all(req.query.trip_id);
   });
@@ -177,7 +187,7 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
         `SELECT diary_comments.* FROM diary_comments
          JOIN diary_entries ON diary_entries.id = diary_comments.entry_id
          WHERE diary_entries.trip_id = ?
-         ORDER BY diary_comments.created_at ASC, diary_comments.id ASC`,
+         ORDER BY diary_comments.created_at ASC, diary_comments.id ASC`
       )
       .all(req.query.trip_id);
   });
@@ -214,7 +224,7 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
     const now = new Date().toISOString();
     const result = db
       .prepare(
-        'INSERT INTO diary_entries (trip_id, author_id, title, content, content_format, images, date, created_at, is_draft) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        'INSERT INTO diary_entries (trip_id, author_id, title, content, content_format, images, date, created_at, is_draft) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
       )
       .run(
         trip_id,
@@ -227,7 +237,7 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
         // der Fallback hier greift nur defensiv, falls ein Client das Feld doch mal wegließe.
         date || now.slice(0, 10),
         now,
-        req.body.is_draft ? 1 : 0,
+        req.body.is_draft ? 1 : 0
       );
     const entryId = result.lastInsertRowid as number;
     syncDiaryExcursions(entryId, excursion_ids ?? []);
@@ -244,14 +254,15 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
   // author-only (siehe DELETE-Route unten), das ist eine deutlich folgenreichere Aktion.
   app.put<{ Params: { id: string }; Body: EntryBody }>('/diary/:id', async (req, reply) => {
     const entry = db.prepare('SELECT * FROM diary_entries WHERE id = ?').get(req.params.id) as
-      | EntryRow
-      | undefined;
+      EntryRow | undefined;
     if (!entry) return reply.code(404).send({ error: 'Nicht gefunden' });
     if (!requireTripMember(reply, entry.trip_id, req.session.userId)) return;
     // Ein Entwurf bleibt rein persönlich (#89) - anders als veröffentlichte Einträge (dort darf seit
     // #93 jedes Trip-Mitglied mitbearbeiten) darf ihn nur die anlegende Person anfassen.
     if (entry.is_draft && entry.author_id !== req.session.userId) {
-      return reply.code(403).send({ error: 'Nur die Autorin/der Autor kann diesen Entwurf bearbeiten' });
+      return reply
+        .code(403)
+        .send({ error: 'Nur die Autorin/der Autor kann diesen Entwurf bearbeiten' });
     }
 
     const { title, content, images, excursion_ids, spot_ids, date } = req.body;
@@ -259,7 +270,7 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
     const now = new Date().toISOString();
     const isDraft = req.body.is_draft !== undefined ? (req.body.is_draft ? 1 : 0) : entry.is_draft;
     db.prepare(
-      'UPDATE diary_entries SET title = ?, content = ?, content_format = ?, images = ?, date = ?, updated_at = ?, is_draft = ? WHERE id = ?',
+      'UPDATE diary_entries SET title = ?, content = ?, content_format = ?, images = ?, date = ?, updated_at = ?, is_draft = ? WHERE id = ?'
     ).run(
       title ?? null,
       isHtml ? sanitizeHtml(content) : content,
@@ -268,7 +279,7 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
       date || entry.date,
       now,
       isDraft,
-      req.params.id,
+      req.params.id
     );
     syncDiaryExcursions(Number(req.params.id), excursion_ids ?? []);
     syncDiarySpots(Number(req.params.id), spot_ids ?? []);
@@ -276,31 +287,37 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
       recordEditor(Number(req.params.id), req.session.userId!);
     }
     recordActivity(entry.trip_id, 'diary', Number(req.params.id), 'updated', req.session.userId!);
-    const row = db.prepare('SELECT * FROM diary_entries WHERE id = ?').get(req.params.id) as EntryRow;
+    const row = db
+      .prepare('SELECT * FROM diary_entries WHERE id = ?')
+      .get(req.params.id) as EntryRow;
     const editorIds = editorIdsFor([Number(req.params.id)]).get(Number(req.params.id)) ?? [];
     return serializeEntry(row, excursion_ids ?? [], spot_ids ?? [], editorIds);
   });
 
   app.delete<{ Params: { id: string } }>('/diary/:id', async (req, reply) => {
     const entry = db.prepare('SELECT * FROM diary_entries WHERE id = ?').get(req.params.id) as
-      | EntryRow
-      | undefined;
+      EntryRow | undefined;
     if (!entry) return reply.code(404).send({ error: 'Nicht gefunden' });
     if (!requireTripMember(reply, entry.trip_id, req.session.userId)) return;
     if (entry.author_id !== req.session.userId) {
-      return reply.code(403).send({ error: 'Nur die Autorin/der Autor kann diesen Beitrag löschen' });
+      return reply
+        .code(403)
+        .send({ error: 'Nur die Autorin/der Autor kann diesen Beitrag löschen' });
     }
     // Weicher Löschvorgang (Papierkorb, routes/trash.ts): setzt nur deleted_at statt die Zeile
     // wirklich zu entfernen.
-    db.prepare('UPDATE diary_entries SET deleted_at = ? WHERE id = ?').run(new Date().toISOString(), req.params.id);
+    db.prepare('UPDATE diary_entries SET deleted_at = ? WHERE id = ?').run(
+      new Date().toISOString(),
+      req.params.id
+    );
     recordActivity(entry.trip_id, 'diary', Number(req.params.id), 'deleted', req.session.userId!);
     return reply.code(204).send();
   });
 
   app.post<{ Params: { id: string } }>('/diary/:id/like', async (req, reply) => {
-    const entry = db.prepare('SELECT id, trip_id FROM diary_entries WHERE id = ?').get(req.params.id) as
-      | { id: number; trip_id: number }
-      | undefined;
+    const entry = db
+      .prepare('SELECT id, trip_id FROM diary_entries WHERE id = ?')
+      .get(req.params.id) as { id: number; trip_id: number } | undefined;
     if (!entry) return reply.code(404).send({ error: 'Nicht gefunden' });
     if (!requireTripMember(reply, entry.trip_id, req.session.userId)) return;
 
@@ -316,7 +333,7 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
     db.prepare('INSERT INTO diary_likes (entry_id, user_id, created_at) VALUES (?, ?, ?)').run(
       req.params.id,
       req.session.userId,
-      new Date().toISOString(),
+      new Date().toISOString()
     );
     // Nur beim Liken selbst, nicht beim Zurücknehmen (#97, Notification-Inbox) - ein Un-Like ist kein
     // neues, benachrichtigungswürdiges Ereignis.
@@ -324,33 +341,40 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
     return { liked: true };
   });
 
-  app.post<{ Params: { id: string }; Body: CommentBody }>('/diary/:id/comments', async (req, reply) => {
-    const entry = db.prepare('SELECT id, trip_id FROM diary_entries WHERE id = ?').get(req.params.id) as
-      | { id: number; trip_id: number }
-      | undefined;
-    if (!entry) return reply.code(404).send({ error: 'Nicht gefunden' });
-    if (!requireTripMember(reply, entry.trip_id, req.session.userId)) return;
+  app.post<{ Params: { id: string }; Body: CommentBody }>(
+    '/diary/:id/comments',
+    async (req, reply) => {
+      const entry = db
+        .prepare('SELECT id, trip_id FROM diary_entries WHERE id = ?')
+        .get(req.params.id) as { id: number; trip_id: number } | undefined;
+      if (!entry) return reply.code(404).send({ error: 'Nicht gefunden' });
+      if (!requireTripMember(reply, entry.trip_id, req.session.userId)) return;
 
-    const result = db
-      .prepare('INSERT INTO diary_comments (entry_id, author_id, content, created_at) VALUES (?, ?, ?, ?)')
-      .run(req.params.id, req.session.userId, req.body.content, new Date().toISOString());
-    recordActivity(entry.trip_id, 'diary', entry.id, 'commented', req.session.userId!);
-    reply.code(201);
-    return db.prepare('SELECT * FROM diary_comments WHERE id = ?').get(result.lastInsertRowid);
-  });
+      const result = db
+        .prepare(
+          'INSERT INTO diary_comments (entry_id, author_id, content, created_at) VALUES (?, ?, ?, ?)'
+        )
+        .run(req.params.id, req.session.userId, req.body.content, new Date().toISOString());
+      recordActivity(entry.trip_id, 'diary', entry.id, 'commented', req.session.userId!);
+      reply.code(201);
+      return db.prepare('SELECT * FROM diary_comments WHERE id = ?').get(result.lastInsertRowid);
+    }
+  );
 
   app.delete<{ Params: { id: string } }>('/diary/comments/:id', async (req, reply) => {
     const comment = db
       .prepare(
         `SELECT diary_comments.id, diary_comments.author_id, diary_entries.trip_id FROM diary_comments
          JOIN diary_entries ON diary_entries.id = diary_comments.entry_id
-         WHERE diary_comments.id = ?`,
+         WHERE diary_comments.id = ?`
       )
       .get(req.params.id) as { id: number; author_id: number; trip_id: number } | undefined;
     if (!comment) return reply.code(404).send({ error: 'Nicht gefunden' });
     if (!requireTripMember(reply, comment.trip_id, req.session.userId)) return;
     if (comment.author_id !== req.session.userId) {
-      return reply.code(403).send({ error: 'Nur die Autorin/der Autor kann diesen Kommentar löschen' });
+      return reply
+        .code(403)
+        .send({ error: 'Nur die Autorin/der Autor kann diesen Kommentar löschen' });
     }
     db.prepare('DELETE FROM diary_comments WHERE id = ?').run(req.params.id);
     return reply.code(204).send();

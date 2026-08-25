@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { useIconStyleStore, type IconGroup, type IconStyle, type IconVariant } from '../stores/iconStyle';
+import {
+  useIconStyleStore,
+  type IconGroup,
+  type IconStyle,
+  type IconVariant,
+} from '../stores/iconStyle';
 import { resolveIconComponent, type IconDef } from '../utils/icon';
 
 // Zentrale Render-Stelle für ein "Konzept"-Icon (siehe utils/icon.ts) - ersetzt {{ someEmoji }} an
@@ -20,7 +25,7 @@ const props = withDefaults(
     forceStyle?: IconStyle;
     forceVariant?: IconVariant;
   }>(),
-  { size: 20, color: 'currentColor' },
+  { size: 20, color: 'currentColor' }
 );
 
 const iconStyle = useIconStyleStore();
@@ -28,8 +33,8 @@ const component = computed(() =>
   resolveIconComponent(
     props.icon,
     props.forceStyle ?? iconStyle.styleForGroup(props.group),
-    props.forceVariant ?? iconStyle.styleVariantForGroup(props.group),
-  ),
+    props.forceVariant ?? iconStyle.styleVariantForGroup(props.group)
+  )
 );
 </script>
 
@@ -41,7 +46,14 @@ const component = computed(() =>
     aria-hidden="true"
     >{{ icon.emoji }}</span
   >
-  <component :is="component" v-else class="app-icon app-icon-tabler" :size="size" :color="color" aria-hidden="true" />
+  <component
+    :is="component"
+    v-else
+    class="app-icon app-icon-tabler"
+    :size="size"
+    :color="color"
+    aria-hidden="true"
+  />
 </template>
 
 <style scoped>

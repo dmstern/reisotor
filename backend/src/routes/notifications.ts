@@ -51,21 +51,26 @@ export const notificationsRoutes: FastifyPluginAsync = async (app) => {
            ON notification_reads.activity_id = trip_activity.id AND notification_reads.user_id = ?
          WHERE trip_activity.trip_id = ? AND trip_activity.actor_user_id != ?
          ORDER BY trip_activity.created_at DESC
-         LIMIT ?`,
+         LIMIT ?`
       )
-      .all(req.session.userId, req.query.trip_id, req.session.userId, MAX_NOTIFICATIONS) as NotificationRow[];
+      .all(
+        req.session.userId,
+        req.query.trip_id,
+        req.session.userId,
+        MAX_NOTIFICATIONS
+      ) as NotificationRow[];
     return rows.map(toNotification);
   });
 
   app.post<{ Params: { id: string } }>('/notifications/:id/read', async (req, reply) => {
-    const activity = db.prepare('SELECT trip_id FROM trip_activity WHERE id = ?').get(req.params.id) as
-      | { trip_id: number }
-      | undefined;
+    const activity = db
+      .prepare('SELECT trip_id FROM trip_activity WHERE id = ?')
+      .get(req.params.id) as { trip_id: number } | undefined;
     if (!activity) return reply.code(404).send({ error: 'Nicht gefunden' });
     if (!requireTripMember(reply, activity.trip_id, req.session.userId)) return;
     db.prepare(
       `INSERT INTO notification_reads (user_id, activity_id, read_at) VALUES (?, ?, ?)
-       ON CONFLICT(user_id, activity_id) DO NOTHING`,
+       ON CONFLICT(user_id, activity_id) DO NOTHING`
     ).run(req.session.userId, req.params.id, new Date().toISOString());
     return reply.code(204).send();
   });
@@ -79,7 +84,7 @@ export const notificationsRoutes: FastifyPluginAsync = async (app) => {
        SELECT ?, trip_activity.id, ?
        FROM trip_activity
        WHERE trip_activity.trip_id = ? AND trip_activity.actor_user_id != ?
-       ON CONFLICT(user_id, activity_id) DO NOTHING`,
+       ON CONFLICT(user_id, activity_id) DO NOTHING`
     ).run(req.session.userId, now, trip_id, req.session.userId);
     return reply.code(204).send();
   });

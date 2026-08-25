@@ -19,7 +19,7 @@ const props = withDefaults(
     iconDefFor?: (option: string) => IconDef | undefined;
     colorFor?: (option: string) => string | undefined;
   }>(),
-  { modelValue: '' },
+  { modelValue: '' }
 );
 const emit = defineEmits<{
   (e: 'update:modelValue', value: string): void;
@@ -57,7 +57,11 @@ function onBlur() {
 // aktiv zu schließen (#207) - ohne Fokuswechsel bliebe "open" sonst true und die Liste würde beim
 // Zurücksetzen von modelValue auf '' erneut ungefiltert alle Optionen zeigen und darunterliegende
 // Elemente überdecken.
-defineExpose({ close: () => { open.value = false; } });
+defineExpose({
+  close: () => {
+    open.value = false;
+  },
+});
 </script>
 
 <template>
@@ -77,7 +81,12 @@ defineExpose({ close: () => { open.value = false; } });
           class="option-icon"
           :style="colorFor?.(option) ? { color: colorFor(option) } : {}"
         >
-          <AppIcon v-if="iconDefFor?.(option)" :icon="iconDefFor(option)!" :size="16" group="categories" />
+          <AppIcon
+            v-if="iconDefFor?.(option)"
+            :icon="iconDefFor(option)!"
+            :size="16"
+            group="categories"
+          />
           <span v-else-if="iconFor?.(option)">{{ iconFor(option) }}</span>
         </span>
         <span class="option-label">{{ option }}</span>

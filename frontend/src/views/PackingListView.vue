@@ -77,7 +77,9 @@ const categories = computed(() => {
 });
 
 const subcategories = computed(() => {
-  const set = new Set(items.value.map((i) => i.subcategory?.trim()).filter((c): c is string => !!c));
+  const set = new Set(
+    items.value.map((i) => i.subcategory?.trim()).filter((c): c is string => !!c)
+  );
   return [...set].sort((a, b) => a.localeCompare(b, 'de'));
 });
 
@@ -97,9 +99,14 @@ const lists = computed<ListGroup[]>(() => {
   };
   const perUser: ListGroup[] = users.value.map((u) => ({
     key: `user-${u.id}`,
-    title: u.id === auth.user?.id ? `${u.avatar} Meine Packliste` : `${u.avatar} Packliste von ${u.username}`,
+    title:
+      u.id === auth.user?.id
+        ? `${u.avatar} Meine Packliste`
+        : `${u.avatar} Packliste von ${u.username}`,
     ownerId: u.id,
-    items: items.value.filter((i) => i.owner_id === u.id || (users.value.length <= 1 && i.owner_id == null)),
+    items: items.value.filter(
+      (i) => i.owner_id === u.id || (users.value.length <= 1 && i.owner_id == null)
+    ),
   }));
 
   if (users.value.length <= 1) {
@@ -124,7 +131,7 @@ watch(
       }
     }
   },
-  { immediate: true },
+  { immediate: true }
 );
 
 interface SubGroup {
@@ -259,12 +266,16 @@ async function quickAdd(list: ListGroup, label: string) {
       <section class="list-section" v-for="list in lists" :key="list.key">
         <div class="list-header">
           <h2 v-if="users.length > 1">{{ list.title }}</h2>
-          <span class="progress">{{ progress(list.items).packed }}/{{ progress(list.items).total }} gepackt</span>
+          <span class="progress"
+            >{{ progress(list.items).packed }}/{{ progress(list.items).total }} gepackt</span
+          >
         </div>
 
         <QuickAddRow
           class="card"
-          :placeholder="users.length > 1 ? `Neuer Gegenstand für ${list.title}` : 'Neuer Gegenstand'"
+          :placeholder="
+            users.length > 1 ? `Neuer Gegenstand für ${list.title}` : 'Neuer Gegenstand'
+          "
           @submit="(label) => quickAdd(list, label)"
         >
           <template #extra>
@@ -274,21 +285,37 @@ async function quickAdd(list: ListGroup, label: string) {
                 :options="categories"
                 :placeholder="categoryRequired ? 'Kategorie' : 'Kategorie (optional)'"
               />
-              <Combobox v-model="quickAddSubcategories[list.key]" :options="subcategories" placeholder="Unterkategorie (optional)" />
+              <Combobox
+                v-model="quickAddSubcategories[list.key]"
+                :options="subcategories"
+                placeholder="Unterkategorie (optional)"
+              />
               <label class="qty-field quick-add-qty">
-                <input v-model.number="quickAddQuantities[list.key]" type="number" min="1" step="1" placeholder="1" />
+                <input
+                  v-model.number="quickAddQuantities[list.key]"
+                  type="number"
+                  min="1"
+                  step="1"
+                  placeholder="1"
+                />
               </label>
             </div>
           </template>
         </QuickAddRow>
 
-        <div class="card group" v-for="catGroup in groupByCategory(list.items)" :key="catGroup.category">
+        <div
+          class="card group"
+          v-for="catGroup in groupByCategory(list.items)"
+          :key="catGroup.category"
+        >
           <h3>{{ catGroup.category }}</h3>
           <template v-for="sub in catGroup.subgroups" :key="sub.subcategory ?? '_'">
             <h4 v-if="sub.subcategory" class="subcategory">{{ sub.subcategory }}</h4>
             <TransitionGroup tag="ul" name="list" class="list">
               <template v-for="item in sub.items" :key="item.id">
-                <li v-if="isPending(item.id)"><UndoDeleteRow :label="item.label" @undo="restore(item.id)" /></li>
+                <li v-if="isPending(item.id)">
+                  <UndoDeleteRow :label="item.label" @undo="restore(item.id)" />
+                </li>
                 <PackingItemRow
                   v-else
                   :item="item"
@@ -318,7 +345,11 @@ async function quickAdd(list: ListGroup, label: string) {
           <Combobox v-model="editForm.category" :options="categories" placeholder="Kategorie" />
         </FormField>
         <FormField icon="category" label="Unterkategorie">
-          <Combobox v-model="editForm.subcategory" :options="subcategories" placeholder="Unterkategorie (optional, z. B. Outfit Tag 1)" />
+          <Combobox
+            v-model="editForm.subcategory"
+            :options="subcategories"
+            placeholder="Unterkategorie (optional, z. B. Outfit Tag 1)"
+          />
         </FormField>
         <label class="qty-field">
           Anzahl

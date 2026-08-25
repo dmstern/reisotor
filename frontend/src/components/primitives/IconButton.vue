@@ -38,7 +38,7 @@ withDefaults(
     active: false,
     disabled: false,
     type: 'button',
-  },
+  }
 );
 
 const emit = defineEmits<{
@@ -61,7 +61,12 @@ const emit = defineEmits<{
     ]"
     @click="emit('click', $event)"
   >
-    <AppIcon v-if="icon" :icon="icon" group="actions" :size="size === 'sm' ? 16 : size === 'lg' ? 24 : 20" />
+    <AppIcon
+      v-if="icon"
+      :icon="icon"
+      group="actions"
+      :size="size === 'sm' ? 16 : size === 'lg' ? 24 : 20"
+    />
     <slot v-else />
   </button>
 </template>
@@ -83,7 +88,11 @@ const emit = defineEmits<{
   cursor: pointer;
   line-height: 1;
   font-family: inherit;
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.1s ease;
   user-select: none;
   flex-shrink: 0;
 }

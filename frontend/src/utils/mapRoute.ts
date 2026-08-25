@@ -138,7 +138,11 @@ export function compassPin(icon: MarkerGlyph, color: string, headingDeg: number 
 // Sample-Punkte für einen gestrichelten Bogen zwischen zwei Koordinaten (quadratische Bezier-
 // Kurve, Kontrollpunkt senkrecht zur Verbindungslinie versetzt) – rein optisch, wie man es von
 // schematischen Flugrouten-Darstellungen kennt, keine echte Streckenführung/Großkreisberechnung.
-export function arcPoints(from: L.LatLngExpression, to: L.LatLngExpression, segments = 32): L.LatLngExpression[] {
+export function arcPoints(
+  from: L.LatLngExpression,
+  to: L.LatLngExpression,
+  segments = 32
+): L.LatLngExpression[] {
   const [lat1, lng1] = from as [number, number];
   const [lat2, lng2] = to as [number, number];
   const dLat = lat2 - lat1;

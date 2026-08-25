@@ -14,7 +14,10 @@ export interface CommentItem {
 }
 
 defineProps<{ comments: CommentItem[] }>();
-const emit = defineEmits<{ (e: 'submit', content: string): void; (e: 'remove', id: number): void }>();
+const emit = defineEmits<{
+  (e: 'submit', content: string): void;
+  (e: 'remove', id: number): void;
+}>();
 
 const draft = ref('');
 

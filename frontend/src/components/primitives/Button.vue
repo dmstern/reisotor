@@ -25,7 +25,7 @@ withDefaults(
     size: 'md',
     type: 'button',
     disabled: false,
-  },
+  }
 );
 </script>
 
@@ -47,7 +47,11 @@ withDefaults(
 
 <style scoped>
 .btn {
-  transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+  transition:
+    background 0.15s ease,
+    transform 0.1s ease,
+    box-shadow 0.15s ease,
+    opacity 0.15s ease;
   /* Schatten standardmäßig auf Buttons der Primitive (primary, secondary, danger) */
   box-shadow: var(--shadow-sm);
 }

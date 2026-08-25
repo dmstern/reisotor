@@ -24,14 +24,20 @@ export function trackDistanceMeters(points: TrackPoint[]): number {
 
 export function trackDurationMs(points: TrackPoint[]): number {
   if (points.length < 2) return 0;
-  return new Date(points[points.length - 1].recorded_at).getTime() - new Date(points[0].recorded_at).getTime();
+  return (
+    new Date(points[points.length - 1].recorded_at).getTime() -
+    new Date(points[0].recorded_at).getTime()
+  );
 }
 
 /** Position entlang der Aufzeichnung zu einem Fortschritt 0..1 (Zeit-Slider, TrackPlayback.vue) -
  *  interpoliert linear zwischen den beiden zeitlich nächsten Punkten statt nur den nächstgelegenen
  *  Index zu springen, damit sich der Marker bei ungleichmäßigem GPS-Ping-Abstand gleichmäßig
  *  bewegt. */
-export function interpolateTrackPosition(points: TrackPoint[], progress: number): { lat: number; lng: number } | null {
+export function interpolateTrackPosition(
+  points: TrackPoint[],
+  progress: number
+): { lat: number; lng: number } | null {
   if (!points.length) return null;
   if (points.length === 1 || progress <= 0) return { lat: points[0].lat, lng: points[0].lng };
   if (progress >= 1) {

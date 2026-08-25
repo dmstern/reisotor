@@ -12,7 +12,12 @@ import { onUnmounted, watch } from 'vue';
 import IconButton from './primitives/IconButton.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
-const props = defineProps<{ modelValue: boolean; title?: string; hideHeader?: boolean; fullHeight?: boolean }>();
+const props = defineProps<{
+  modelValue: boolean;
+  title?: string;
+  hideHeader?: boolean;
+  fullHeight?: boolean;
+}>();
 const emit = defineEmits<{ (e: 'update:modelValue', value: boolean): void }>();
 
 function close() {
@@ -37,7 +42,11 @@ function unlockBodyScroll() {
   if (openModalCount === 0) document.body.style.overflow = '';
 }
 
-watch(() => props.modelValue, (open) => (open ? lockBodyScroll() : unlockBodyScroll()), { immediate: true });
+watch(
+  () => props.modelValue,
+  (open) => (open ? lockBodyScroll() : unlockBodyScroll()),
+  { immediate: true }
+);
 onUnmounted(() => {
   if (props.modelValue) unlockBodyScroll();
 });
@@ -50,7 +59,15 @@ onUnmounted(() => {
         <div class="modal" :class="{ 'full-height': fullHeight }">
           <div class="modal-head" v-if="!hideHeader">
             <h2 v-if="title">{{ title }}</h2>
-            <IconButton variant="ghost" class="close-btn" :icon="ACTION_ICONS.close" size="sm" title="Schließen" aria-label="Schließen" @click="close" />
+            <IconButton
+              variant="ghost"
+              class="close-btn"
+              :icon="ACTION_ICONS.close"
+              size="sm"
+              title="Schließen"
+              aria-label="Schließen"
+              @click="close"
+            />
           </div>
           <div class="modal-body">
             <slot :close="close" />
@@ -80,7 +97,9 @@ onUnmounted(() => {
 
 .modal-fade-enter-active .modal,
 .modal-fade-leave-active .modal {
-  transition: transform 0.2s ease-in-out, opacity 0.2s ease-in-out;
+  transition:
+    transform 0.2s ease-in-out,
+    opacity 0.2s ease-in-out;
 }
 
 .modal-fade-enter-from,

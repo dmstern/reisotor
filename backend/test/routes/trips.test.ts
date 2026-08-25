@@ -51,7 +51,13 @@ describe('trips routes', () => {
       method: 'POST',
       url: '/api/trips',
       headers: { cookie },
-      payload: { name: 'Direkt', start_date: '2026-01-01', end_date: '2026-01-10', lat: 1.5, lng: 2.5 },
+      payload: {
+        name: 'Direkt',
+        start_date: '2026-01-01',
+        end_date: '2026-01-10',
+        lat: 1.5,
+        lng: 2.5,
+      },
     });
     expect(res.statusCode).toBe(201);
     expect(res.json()).toMatchObject({ lat: 1.5, lng: 2.5 });
@@ -97,7 +103,13 @@ describe('trips routes', () => {
       method: 'POST',
       url: '/api/trips',
       headers: { cookie },
-      payload: { name: 'Wird geleert', start_date: '2026-01-01', end_date: '2026-01-10', lat: 5, lng: 6 },
+      payload: {
+        name: 'Wird geleert',
+        start_date: '2026-01-01',
+        end_date: '2026-01-10',
+        lat: 5,
+        lng: 6,
+      },
     });
     const id = created.json().id;
 
@@ -105,7 +117,12 @@ describe('trips routes', () => {
       method: 'PUT',
       url: `/api/trips/${id}`,
       headers: { cookie },
-      payload: { name: 'Wird geleert', start_date: '2026-01-01', end_date: '2026-01-10', maps_link: '' },
+      payload: {
+        name: 'Wird geleert',
+        start_date: '2026-01-01',
+        end_date: '2026-01-10',
+        maps_link: '',
+      },
     });
     expect(updated.statusCode).toBe(200);
     expect(updated.json()).toMatchObject({ lat: null, lng: null });
@@ -140,7 +157,11 @@ describe('trips routes', () => {
       const outsiderRes = await app.inject({
         method: 'POST',
         url: '/api/auth/register',
-        payload: { username: 'region-outsider', email: 'region-outsider@example.com', password: 'correct-horse' },
+        payload: {
+          username: 'region-outsider',
+          email: 'region-outsider@example.com',
+          password: 'correct-horse',
+        },
       });
       const outsiderCookie = Array.isArray(outsiderRes.headers['set-cookie'])
         ? outsiderRes.headers['set-cookie'].join('; ')
@@ -163,9 +184,19 @@ describe('trips routes', () => {
       });
       const id = created.json().id;
 
-      const res = await app.inject({ method: 'GET', url: `/api/trips/${id}/region-info`, headers: { cookie } });
+      const res = await app.inject({
+        method: 'GET',
+        url: `/api/trips/${id}/region-info`,
+        headers: { cookie },
+      });
       expect(res.statusCode).toBe(200);
-      expect(res.json()).toEqual({ countryName: null, languages: [], currency: null, exchangeRate: null, advisory: null });
+      expect(res.json()).toEqual({
+        countryName: null,
+        languages: [],
+        currency: null,
+        exchangeRate: null,
+        advisory: null,
+      });
     });
 
     it('resolves the country once from lat/lng and returns region info (mocked external APIs)', async () => {
@@ -173,7 +204,13 @@ describe('trips routes', () => {
         method: 'POST',
         url: '/api/trips',
         headers: { cookie },
-        payload: { name: 'Lissabon-Region', start_date: '2026-02-01', end_date: '2026-02-05', lat: 38.7, lng: -9.1 },
+        payload: {
+          name: 'Lissabon-Region',
+          start_date: '2026-02-01',
+          end_date: '2026-02-05',
+          lat: 38.7,
+          lng: -9.1,
+        },
       });
       const id = created.json().id;
 
@@ -189,17 +226,24 @@ describe('trips routes', () => {
           if (url.includes('restcountries.com')) {
             return Promise.resolve({
               ok: true,
-              json: () => Promise.resolve([{ languages: { por: 'Portuguese' }, currencies: { EUR: { name: 'Euro' } } }]),
+              json: () =>
+                Promise.resolve([
+                  { languages: { por: 'Portuguese' }, currencies: { EUR: { name: 'Euro' } } },
+                ]),
             });
           }
           if (url.includes('travel-advisory.info')) {
             return Promise.resolve({ ok: false, status: 503 });
           }
           return Promise.reject(new Error('unexpected URL in test: ' + url));
-        }),
+        })
       );
 
-      const res = await app.inject({ method: 'GET', url: `/api/trips/${id}/region-info`, headers: { cookie } });
+      const res = await app.inject({
+        method: 'GET',
+        url: `/api/trips/${id}/region-info`,
+        headers: { cookie },
+      });
       expect(res.statusCode).toBe(200);
       expect(res.json()).toMatchObject({
         countryName: 'Portugal',

@@ -19,7 +19,10 @@ test('uploading and removing a file attachment on a note (via edit form)', async
 
   const card = page.locator('.note-card', { hasText: 'E2E Anhang-Test-Notiz' });
   await expect(card).toBeVisible();
-  await card.locator('.note-actions').getByRole('button', { name: /bearbeiten/i }).click();
+  await card
+    .locator('.note-actions')
+    .getByRole('button', { name: /bearbeiten/i })
+    .click();
 
   const modal = page.locator('.modal', { hasText: 'Notiz bearbeiten' });
   const fileInput = modal.locator('.file-attachments input[type="file"]');
@@ -28,7 +31,7 @@ test('uploading and removing a file attachment on a note (via edit form)', async
     mimeType: 'image/png',
     buffer: Buffer.from(
       'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
-      'base64',
+      'base64'
     ),
   });
 

@@ -20,13 +20,15 @@ test.describe('Entwurfs-Zwischenspeicherung für Formulare', () => {
     await editor.pressSequentially('Angefangener, noch nicht gespeicherter Text');
 
     // Debounce (600ms in useDraftAutosave.ts) abwarten, bis der Entwurf tatsächlich persistiert ist.
-    await expect(page.locator('.draft-status')).toContainText('Entwurf gesichert', { timeout: 3_000 });
+    await expect(page.locator('.draft-status')).toContainText('Entwurf gesichert', {
+      timeout: 3_000,
+    });
 
     await page.reload();
     await page.getByRole('button', { name: 'Neue Notiz' }).click();
 
     await expect(page.locator('.modal .richtext-content[contenteditable="true"]')).toHaveText(
-      'Angefangener, noch nicht gespeicherter Text',
+      'Angefangener, noch nicht gespeicherter Text'
     );
     await expect(page.locator('.draft-status')).toContainText('Entwurf wiederhergestellt');
 
@@ -42,17 +44,23 @@ test.describe('Entwurfs-Zwischenspeicherung für Formulare', () => {
     const editor = page.locator('.modal .richtext-content[contenteditable="true"]');
     await editor.click();
     await editor.pressSequentially('Wird gleich richtig gespeichert');
-    await expect(page.locator('.draft-status')).toContainText('Entwurf gesichert', { timeout: 3_000 });
+    await expect(page.locator('.draft-status')).toContainText('Entwurf gesichert', {
+      timeout: 3_000,
+    });
 
     await page.locator('.add-form button[type="submit"]').click();
-    await expect(page.locator('.note-card', { hasText: 'Wird gleich richtig gespeichert' })).toBeVisible();
+    await expect(
+      page.locator('.note-card', { hasText: 'Wird gleich richtig gespeichert' })
+    ).toBeVisible();
 
     await page.getByRole('button', { name: 'Neue Notiz' }).click();
     await expect(page.locator('.modal .richtext-content[contenteditable="true"]')).toHaveText('');
     await expect(page.locator('.draft-status')).toHaveCount(0);
   });
 
-  test('eine ungespeicherte Änderung im Bearbeiten-Formular übersteht einen Reload', async ({ page }) => {
+  test('eine ungespeicherte Änderung im Bearbeiten-Formular übersteht einen Reload', async ({
+    page,
+  }) => {
     await page.goto('/notes');
     await page.getByRole('button', { name: 'Neue Notiz' }).click();
     const newEditor = page.locator('.modal .richtext-content[contenteditable="true"]');
@@ -62,18 +70,26 @@ test.describe('Entwurfs-Zwischenspeicherung für Formulare', () => {
     const card = page.locator('.note-card', { hasText: 'Ursprungstext der Notiz' });
     await expect(card).toBeVisible();
 
-    await card.locator('.note-actions').getByRole('button', { name: /bearbeiten/i }).click();
+    await card
+      .locator('.note-actions')
+      .getByRole('button', { name: /bearbeiten/i })
+      .click();
     const modal = page.locator('.modal', { hasText: 'Notiz bearbeiten' });
     const editEditor = modal.locator('.richtext-content[contenteditable="true"]');
     await editEditor.click();
     await editEditor.press('End');
     await editEditor.pressSequentially(' - gerade am Ändern');
-    await expect(modal.locator('.draft-status')).toContainText('Entwurf gesichert', { timeout: 3_000 });
+    await expect(modal.locator('.draft-status')).toContainText('Entwurf gesichert', {
+      timeout: 3_000,
+    });
 
     await page.reload();
-    await card.locator('.note-actions').getByRole('button', { name: /bearbeiten/i }).click();
+    await card
+      .locator('.note-actions')
+      .getByRole('button', { name: /bearbeiten/i })
+      .click();
     await expect(modal.locator('.richtext-content[contenteditable="true"]')).toHaveText(
-      'Ursprungstext der Notiz - gerade am Ändern',
+      'Ursprungstext der Notiz - gerade am Ändern'
     );
     await expect(modal.locator('.draft-status')).toContainText('Entwurf wiederhergestellt');
   });

@@ -59,7 +59,9 @@ function formatDate(d: string | null) {
 // scheduledDate-Prop, hier aber direkt aus dem ohnehin schon global geladenen scheduleStore
 // abgeleitet statt über eine weitere Prop-Kette durch TripMap.vue gereicht - dieser Dialog wird
 // nur von dort aus geöffnet, ein Doppel-Fetch entsteht dadurch nicht).
-const hasScheduledDate = computed(() => scheduleStore.items.some((i) => i.spot_id === props.spot.id));
+const hasScheduledDate = computed(() =>
+  scheduleStore.items.some((i) => i.spot_id === props.spot.id)
+);
 
 // #106/#147: Status-Kette in Planung -> geplant -> gemacht statt eines unabhängigen Flags - ein
 // Spot darf nicht ohne Datum "gemacht" sein (siehe gleiches Muster/ausführliche Begründung in
@@ -87,7 +89,9 @@ function onToggleDone() {
     :placeholder-icon="spotCategoryMeta(spot.category).tabler"
     @edit="emit('edit')"
   >
-    <p v-if="creatorLabel" class="detail-row"><span class="detail-label">Von</span>{{ creatorLabel }}</p>
+    <p v-if="creatorLabel" class="detail-row">
+      <span class="detail-label">Von</span>{{ creatorLabel }}
+    </p>
     <p v-if="spot.category" class="detail-row"><CategoryChip :category="spot.category" /></p>
 
     <button
@@ -119,7 +123,12 @@ function onToggleDone() {
         <Button variant="card-action" @click="emit('show-on-map')">
           <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" /> Auf Karte anzeigen
         </Button>
-        <MapsAppPicker :lat="spot.lat" :lng="spot.lng" :title="spot.title" :maps-link="spot.maps_link" />
+        <MapsAppPicker
+          :lat="spot.lat"
+          :lng="spot.lng"
+          :title="spot.title"
+          :maps-link="spot.maps_link"
+        />
       </div>
       <p v-if="spot.checkin || spot.checkout" class="detail-row">
         <span class="detail-label">Check-in/-out</span>
@@ -141,12 +150,20 @@ function onToggleDone() {
       </p>
       <p v-if="spot.amount != null" class="detail-row">
         <span class="detail-label">Kosten</span>
-        <AppIcon :icon="FORM_FIELD_ICONS.amount" :size="14" group="formFields" /> {{ spot.amount.toFixed(2) }} €
-        <span v-if="hasMultipleMembers !== false && spot.paid_by_user_id"> · bezahlt von {{ payerLabel }}</span>
+        <AppIcon :icon="FORM_FIELD_ICONS.amount" :size="14" group="formFields" />
+        {{ spot.amount.toFixed(2) }} €
+        <span v-if="hasMultipleMembers !== false && spot.paid_by_user_id">
+          · bezahlt von {{ payerLabel }}</span
+        >
       </p>
     </template>
 
-    <RichTextDisplay v-if="spot.note" class="detail-row note" :content="spot.note" :format="spot.note_format" />
+    <RichTextDisplay
+      v-if="spot.note"
+      class="detail-row note"
+      :content="spot.note"
+      :format="spot.note_format"
+    />
     <div class="social-row">
       <LikeButton :count="likeCount" :liked="liked" @toggle="emit('toggle-like')" />
     </div>
@@ -164,7 +181,13 @@ function onToggleDone() {
       >
         <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" /> Auf Karte anzeigen
       </Button>
-      <MapsAppPicker v-if="spot.lat != null && spot.lng != null" :lat="spot.lat" :lng="spot.lng" :title="spot.title" :maps-link="spot.maps_link" />
+      <MapsAppPicker
+        v-if="spot.lat != null && spot.lng != null"
+        :lat="spot.lat"
+        :lng="spot.lng"
+        :title="spot.title"
+        :maps-link="spot.maps_link"
+      />
     </div>
   </DetailModal>
 </template>

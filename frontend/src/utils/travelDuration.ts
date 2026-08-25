@@ -2,7 +2,10 @@
 // eine Ankunftszeit VOR der Abflugzeit als "am Folgetag" interpretiert (z. B. Nachtflug 23:40–01:15),
 // das ist für die allermeisten Reise-Einträge in diesem Kontext (Flug/Zug/Bus an einem Tag) die
 // sinnvollere Annahme als eine negative Dauer.
-export function travelDurationMinutes(departureTime: string | null, arrivalTime: string | null): number | null {
+export function travelDurationMinutes(
+  departureTime: string | null,
+  arrivalTime: string | null
+): number | null {
   if (!departureTime || !arrivalTime) return null;
   const [dh, dm] = departureTime.split(':').map(Number);
   const [ah, am] = arrivalTime.split(':').map(Number);

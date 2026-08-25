@@ -78,7 +78,9 @@ export const useSpotsStore = defineStore('spots', () => {
     return userId != null && likesFor(spotId).some((l) => l.user_id === userId);
   }
   function commentsFor(spotId: number) {
-    return spotComments.value.filter((c) => c.spot_id === spotId).sort((a, b) => a.created_at.localeCompare(b.created_at));
+    return spotComments.value
+      .filter((c) => c.spot_id === spotId)
+      .sort((a, b) => a.created_at.localeCompare(b.created_at));
   }
 
   async function create(body: SpotFormData) {
@@ -113,7 +115,9 @@ export const useSpotsStore = defineStore('spots', () => {
     if (result.liked) {
       spotLikes.value.push({ id: Date.now(), spot_id: spotId, user_id: userId });
     } else {
-      spotLikes.value = spotLikes.value.filter((l) => !(l.spot_id === spotId && l.user_id === userId));
+      spotLikes.value = spotLikes.value.filter(
+        (l) => !(l.spot_id === spotId && l.user_id === userId)
+      );
     }
   }
 

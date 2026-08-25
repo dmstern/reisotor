@@ -63,7 +63,8 @@ async function onSubmit() {
       </h2>
     </div>
     <p class="intro">
-      Du verwendest aktuell ein Standard- oder Initial-Passwort. Bitte vergib ein neues, sicheres Passwort, um Reisotor zu nutzen.
+      Du verwendest aktuell ein Standard- oder Initial-Passwort. Bitte vergib ein neues, sicheres
+      Passwort, um Reisotor zu nutzen.
     </p>
 
     <form @submit.prevent="onSubmit" class="password-form">

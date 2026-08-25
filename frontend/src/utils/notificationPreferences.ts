@@ -58,7 +58,9 @@ export type NotificationLevel = 'essential' | 'balanced' | 'all';
 
 function presetFor(domains: NotificationDomain[]): NotificationPreferences {
   const enabled = new Set(domains);
-  return Object.fromEntries(NOTIFICATION_DOMAINS.map((d) => [d, enabled.has(d)])) as NotificationPreferences;
+  return Object.fromEntries(
+    NOTIFICATION_DOMAINS.map((d) => [d, enabled.has(d)])
+  ) as NotificationPreferences;
 }
 
 export const NOTIFICATION_LEVEL_PRESETS: Record<NotificationLevel, NotificationPreferences> = {

@@ -1,4 +1,16 @@
-import { IconPlane, IconPlaneFilled, IconTrain, IconTrainFilled, IconBus, IconBusFilled, IconCar, IconCarFilled, IconShip, IconTicket, IconTicketFilled } from '@tabler/icons-vue';
+import {
+  IconPlane,
+  IconPlaneFilled,
+  IconTrain,
+  IconTrainFilled,
+  IconBus,
+  IconBusFilled,
+  IconCar,
+  IconCarFilled,
+  IconShip,
+  IconTicket,
+  IconTicketFilled,
+} from '@tabler/icons-vue';
 import type { IconDef } from './icon';
 
 // Icon je Transportmittel einer Tour mit gesetzter role (ideas.transport_type, #176 - vormals
@@ -26,8 +38,16 @@ const TYPE_ICON_DEFS: Record<string, IconDef> = {
   Fähre: { id: 'ship', emoji: TYPE_ICONS.Fähre, outline: IconShip },
 };
 
-const FALLBACK_ICON_DEF: IconDef = { id: 'ticket', emoji: '🎫', outline: IconTicket, filled: IconTicketFilled };
+const FALLBACK_ICON_DEF: IconDef = {
+  id: 'ticket',
+  emoji: '🎫',
+  outline: IconTicket,
+  filled: IconTicketFilled,
+};
 
-export function travelTypeIconDef(type: string | null, fallback: IconDef = FALLBACK_ICON_DEF): IconDef {
+export function travelTypeIconDef(
+  type: string | null,
+  fallback: IconDef = FALLBACK_ICON_DEF
+): IconDef {
   return (type && TYPE_ICON_DEFS[type]) || fallback;
 }

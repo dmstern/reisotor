@@ -86,12 +86,20 @@ describe('useIconStyleStore', () => {
     store.setGroupOverride('categories', 'icons');
     expect(apiPut).toHaveBeenLastCalledWith(
       '/users/me/icon-settings',
-      expect.objectContaining({ settings: expect.objectContaining({ groups: expect.objectContaining({ categories: 'icons' }) }) }),
+      expect.objectContaining({
+        settings: expect.objectContaining({
+          groups: expect.objectContaining({ categories: 'icons' }),
+        }),
+      })
     );
     store.setGroupVariant('categories', 'filled');
     expect(apiPut).toHaveBeenLastCalledWith(
       '/users/me/icon-settings',
-      expect.objectContaining({ settings: expect.objectContaining({ variants: expect.objectContaining({ categories: 'filled' }) }) }),
+      expect.objectContaining({
+        settings: expect.objectContaining({
+          variants: expect.objectContaining({ categories: 'filled' }),
+        }),
+      })
     );
   });
 

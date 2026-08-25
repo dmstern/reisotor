@@ -8,8 +8,12 @@ import { ACTION_ICONS } from '../utils/actionIcons';
 </script>
 
 <template>
-  <span class="draft-badge" title="Entwurf – erst nach dem Veröffentlichen für andere Mitreisende sichtbar">
-    <AppIcon :icon="ACTION_ICONS.private" :size="12" group="actions" /> Entwurf – nur für dich sichtbar
+  <span
+    class="draft-badge"
+    title="Entwurf – erst nach dem Veröffentlichen für andere Mitreisende sichtbar"
+  >
+    <AppIcon :icon="ACTION_ICONS.private" :size="12" group="actions" /> Entwurf – nur für dich
+    sichtbar
   </span>
 </template>
 

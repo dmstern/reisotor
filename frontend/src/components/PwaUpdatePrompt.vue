@@ -64,7 +64,11 @@ function dismissOfflineReady() {
     <AppIcon :icon="ACTION_ICONS.refresh" :size="14" group="actions" /> Update verfügbar
     <button type="button" class="pwa-pill-btn" @click="reload">Neu laden</button>
   </span>
-  <span v-else-if="offlineReady" class="pwa-pill ready" title="Diese App lädt jetzt auch ohne Internetverbindung">
+  <span
+    v-else-if="offlineReady"
+    class="pwa-pill ready"
+    title="Diese App lädt jetzt auch ohne Internetverbindung"
+  >
     <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" /> App ist jetzt offline verfügbar
     <IconButton
       variant="ghost"

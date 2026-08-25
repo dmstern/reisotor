@@ -11,16 +11,21 @@ withDefaults(defineProps<{ variant?: 'icon' | 'block' }>(), { variant: 'icon' })
 
 const theme = useThemeStore();
 
-const currentOption = computed(() => THEME_MODE_OPTIONS.find((o) => o.value === theme.mode) ?? THEME_MODE_OPTIONS[2]);
+const currentOption = computed(
+  () => THEME_MODE_OPTIONS.find((o) => o.value === theme.mode) ?? THEME_MODE_OPTIONS[2]
+);
 </script>
 
 <template>
-  <label
-    class="theme-mode-select"
-    :class="variant"
-    title="Erscheinungsbild"
-  >
-    <AppIcon v-if="variant === 'icon'" class="icon-face" :size="18" :icon="currentOption.tabler" group="navigation" aria-hidden="true" />
+  <label class="theme-mode-select" :class="variant" title="Erscheinungsbild">
+    <AppIcon
+      v-if="variant === 'icon'"
+      class="icon-face"
+      :size="18"
+      :icon="currentOption.tabler"
+      group="navigation"
+      aria-hidden="true"
+    />
     <span v-else class="block-label">Erscheinungsbild</span>
     <select v-model="theme.mode" aria-label="Erscheinungsbild">
       <option v-for="option in THEME_MODE_OPTIONS" :key="option.value" :value="option.value">

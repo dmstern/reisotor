@@ -1,4 +1,12 @@
-import type { CalendarEntry, Excursion, ScheduleItem, Spot, TodoItem, TravelItem, Trip } from '../api/types';
+import type {
+  CalendarEntry,
+  Excursion,
+  ScheduleItem,
+  Spot,
+  TodoItem,
+  TravelItem,
+  Trip,
+} from '../api/types';
 import { excursionStationKeys, resolveStations } from './excursionStations';
 import { spotCategoryMeta } from './spotCategory';
 import type { IconDef } from './icon';
@@ -12,7 +20,7 @@ export function resolveScheduleItemIcon(
   item: ScheduleItem,
   spots: Spot[],
   excursions: Excursion[],
-  travelItems: TravelItem[],
+  travelItems: TravelItem[]
 ): string | undefined {
   if (item.spot_id != null) {
     const spot = spots.find((s) => s.id === item.spot_id);
@@ -21,7 +29,11 @@ export function resolveScheduleItemIcon(
   if (item.idea_id != null) {
     const excursion = excursions.find((e) => e.id === item.idea_id);
     if (excursion) {
-      const stations = resolveStations(excursionStationKeys(excursion.spot_ids), spots, travelItems);
+      const stations = resolveStations(
+        excursionStationKeys(excursion.spot_ids),
+        spots,
+        travelItems
+      );
       return stations.length === 1 ? stations[0].icon : undefined;
     }
   }
@@ -35,7 +47,7 @@ export function resolveScheduleItemIconDef(
   item: ScheduleItem,
   spots: Spot[],
   excursions: Excursion[],
-  travelItems: TravelItem[],
+  travelItems: TravelItem[]
 ): IconDef | undefined {
   if (item.spot_id != null) {
     const spot = spots.find((s) => s.id === item.spot_id);
@@ -44,7 +56,11 @@ export function resolveScheduleItemIconDef(
   if (item.idea_id != null) {
     const excursion = excursions.find((e) => e.id === item.idea_id);
     if (excursion) {
-      const stations = resolveStations(excursionStationKeys(excursion.spot_ids), spots, travelItems);
+      const stations = resolveStations(
+        excursionStationKeys(excursion.spot_ids),
+        spots,
+        travelItems
+      );
       return stations.length === 1 ? stations[0].tabler : undefined;
     }
   }
@@ -55,10 +71,11 @@ export function scheduleItemToEntry(
   item: ScheduleItem,
   spots: Spot[],
   excursions: Excursion[],
-  travelItems: TravelItem[],
+  travelItems: TravelItem[]
 ): CalendarEntry {
   const linked = item.spot_id != null || item.idea_id != null;
-  const linkedExcursion = item.idea_id != null ? excursions.find((e) => e.id === item.idea_id) : undefined;
+  const linkedExcursion =
+    item.idea_id != null ? excursions.find((e) => e.id === item.idea_id) : undefined;
   return {
     key: `s-${item.id}`,
     kind: 'schedule',
@@ -163,7 +180,7 @@ export function buildAllEntries(
   todos: TodoItem[],
   travelItems: TravelItem[],
   excursions: Excursion[],
-  spots: Spot[],
+  spots: Spot[]
 ): CalendarEntry[] {
   return [
     ...items.map((item) => scheduleItemToEntry(item, spots, excursions, travelItems)),

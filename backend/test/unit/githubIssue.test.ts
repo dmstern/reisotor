@@ -19,7 +19,8 @@ describe('createGithubIssue', () => {
     const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);
     vi.resetModules();
-    const { createGithubIssue, githubIssuesEnabled } = await import('../../src/utils/githubIssue.js');
+    const { createGithubIssue, githubIssuesEnabled } =
+      await import('../../src/utils/githubIssue.js');
 
     expect(githubIssuesEnabled).toBe(false);
     const result = await createGithubIssue({ title: 'x', body: 'y', labels: [] });
@@ -41,22 +42,37 @@ describe('createGithubIssue', () => {
       return Promise.resolve({
         ok: true,
         status: 201,
-        json: () => Promise.resolve({ number: 42, html_url: 'https://github.com/someone/somerepo/issues/42' }),
+        json: () =>
+          Promise.resolve({
+            number: 42,
+            html_url: 'https://github.com/someone/somerepo/issues/42',
+          }),
       });
     });
     vi.stubGlobal('fetch', fetchMock);
     vi.resetModules();
     const { createGithubIssue } = await import('../../src/utils/githubIssue.js');
 
-    const result = await createGithubIssue({ title: 'Bug X', body: 'Beschreibung', labels: ['bug', 'from-app'] });
-    expect(result).toEqual({ ok: true, number: 42, url: 'https://github.com/someone/somerepo/issues/42' });
+    const result = await createGithubIssue({
+      title: 'Bug X',
+      body: 'Beschreibung',
+      labels: ['bug', 'from-app'],
+    });
+    expect(result).toEqual({
+      ok: true,
+      number: 42,
+      url: 'https://github.com/someone/somerepo/issues/42',
+    });
   });
 
   it('defaults to the dmstern/reisotor repo when GITHUB_REPO is unset', async () => {
     process.env.GITHUB_TOKEN = 'test-token';
     const fetchMock = vi.fn((url: string) => {
       expect(url).toBe('https://api.github.com/repos/dmstern/reisotor/issues');
-      return Promise.resolve({ ok: true, json: () => Promise.resolve({ number: 1, html_url: 'https://x' }) });
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ number: 1, html_url: 'https://x' }),
+      });
     });
     vi.stubGlobal('fetch', fetchMock);
     vi.resetModules();
@@ -68,7 +84,10 @@ describe('createGithubIssue', () => {
 
   it('returns ok:false with the status when GitHub rejects the request', async () => {
     process.env.GITHUB_TOKEN = 'test-token';
-    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve({ ok: false, status: 422 })));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.resolve({ ok: false, status: 422 }))
+    );
     vi.resetModules();
     const { createGithubIssue } = await import('../../src/utils/githubIssue.js');
 
@@ -79,7 +98,10 @@ describe('createGithubIssue', () => {
 
   it('returns ok:false instead of throwing on a network failure', async () => {
     process.env.GITHUB_TOKEN = 'test-token';
-    vi.stubGlobal('fetch', vi.fn(() => Promise.reject(new TypeError('network down'))));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.reject(new TypeError('network down')))
+    );
     vi.resetModules();
     const { createGithubIssue } = await import('../../src/utils/githubIssue.js');
 
@@ -118,10 +140,15 @@ describe('uploadFeedbackScreenshot', () => {
     process.env.GITHUB_TOKEN = 'test-token';
     process.env.GITHUB_REPO = 'someone/somerepo';
     const fetchMock = vi.fn((url: string, init?: RequestInit) => {
-      if (url === 'https://api.github.com/repos/someone/somerepo/git/ref/heads/feedback-screenshots') {
+      if (
+        url === 'https://api.github.com/repos/someone/somerepo/git/ref/heads/feedback-screenshots'
+      ) {
         return Promise.resolve({ ok: true, status: 200 });
       }
-      if (url === 'https://api.github.com/repos/someone/somerepo/contents/feedback-screenshots/shot.png') {
+      if (
+        url ===
+        'https://api.github.com/repos/someone/somerepo/contents/feedback-screenshots/shot.png'
+      ) {
         const body = JSON.parse(init!.body as string);
         expect(init!.method).toBe('PUT');
         expect(body.branch).toBe('feedback-screenshots');
@@ -147,21 +174,32 @@ describe('uploadFeedbackScreenshot', () => {
     const calledUrls: string[] = [];
     const fetchMock = vi.fn((url: string, init?: RequestInit) => {
       calledUrls.push(url);
-      if (url === 'https://api.github.com/repos/someone/somerepo/git/ref/heads/feedback-screenshots') {
+      if (
+        url === 'https://api.github.com/repos/someone/somerepo/git/ref/heads/feedback-screenshots'
+      ) {
         return Promise.resolve({ ok: false, status: 404 });
       }
       if (url === 'https://api.github.com/repos/someone/somerepo') {
-        return Promise.resolve({ ok: true, json: () => Promise.resolve({ default_branch: 'main' }) });
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ default_branch: 'main' }),
+        });
       }
       if (url === 'https://api.github.com/repos/someone/somerepo/git/ref/heads/main') {
-        return Promise.resolve({ ok: true, json: () => Promise.resolve({ object: { sha: 'abc123' } }) });
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ object: { sha: 'abc123' } }),
+        });
       }
       if (url === 'https://api.github.com/repos/someone/somerepo/git/refs') {
         const body = JSON.parse(init!.body as string);
         expect(body).toEqual({ ref: 'refs/heads/feedback-screenshots', sha: 'abc123' });
         return Promise.resolve({ ok: true, status: 201 });
       }
-      if (url === 'https://api.github.com/repos/someone/somerepo/contents/feedback-screenshots/shot.png') {
+      if (
+        url ===
+        'https://api.github.com/repos/someone/somerepo/contents/feedback-screenshots/shot.png'
+      ) {
         return Promise.resolve({ ok: true, status: 201 });
       }
       throw new Error(`unexpected fetch: ${url}`);
@@ -181,20 +219,28 @@ describe('uploadFeedbackScreenshot', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn((url: string) => {
-        if (url === 'https://api.github.com/repos/someone/somerepo/git/ref/heads/feedback-screenshots') {
+        if (
+          url === 'https://api.github.com/repos/someone/somerepo/git/ref/heads/feedback-screenshots'
+        ) {
           return Promise.resolve({ ok: false, status: 404 });
         }
         if (url === 'https://api.github.com/repos/someone/somerepo') {
-          return Promise.resolve({ ok: true, json: () => Promise.resolve({ default_branch: 'main' }) });
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ default_branch: 'main' }),
+          });
         }
         if (url === 'https://api.github.com/repos/someone/somerepo/git/ref/heads/main') {
-          return Promise.resolve({ ok: true, json: () => Promise.resolve({ object: { sha: 'abc123' } }) });
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ object: { sha: 'abc123' } }),
+          });
         }
         if (url === 'https://api.github.com/repos/someone/somerepo/git/refs') {
           return Promise.resolve({ ok: false, status: 422 });
         }
         return Promise.resolve({ ok: true, status: 201 });
-      }),
+      })
     );
     vi.resetModules();
     const { uploadFeedbackScreenshot } = await import('../../src/utils/githubIssue.js');
@@ -209,11 +255,13 @@ describe('uploadFeedbackScreenshot', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn((url: string) => {
-        if (url === 'https://api.github.com/repos/someone/somerepo/git/ref/heads/feedback-screenshots') {
+        if (
+          url === 'https://api.github.com/repos/someone/somerepo/git/ref/heads/feedback-screenshots'
+        ) {
           return Promise.resolve({ ok: true, status: 200 });
         }
         return Promise.resolve({ ok: false, status: 422 });
-      }),
+      })
     );
     vi.resetModules();
     const { uploadFeedbackScreenshot } = await import('../../src/utils/githubIssue.js');

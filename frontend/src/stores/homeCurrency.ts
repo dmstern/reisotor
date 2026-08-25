@@ -22,7 +22,9 @@ const DEFAULT_CURRENCY: HomeCurrency = 'EUR';
 
 function loadCurrency(): HomeCurrency {
   const stored = localStorage.getItem(STORAGE_KEY);
-  return HOME_CURRENCY_OPTIONS.some((o) => o.value === stored) ? (stored as HomeCurrency) : DEFAULT_CURRENCY;
+  return HOME_CURRENCY_OPTIONS.some((o) => o.value === stored)
+    ? (stored as HomeCurrency)
+    : DEFAULT_CURRENCY;
 }
 
 // Geräte-/Browser-UI-Einstellung (wie stores/weatherProvider.ts/stores/theme.ts) statt Account-

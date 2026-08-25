@@ -20,7 +20,11 @@ export interface IconDef {
 // Vue-Komponenten-Variante genutzt. Der Leaflet-Marker-Pfad (mapRoute.ts/tablerMarkerSvg.ts)
 // braucht dieselbe Fallback-Regel für rohe SVG-Strings statt Komponenten und bildet sie dort
 // separat nach.
-export function resolveIconComponent(def: IconDef, style: IconStyle, variant: IconVariant): Component | null {
+export function resolveIconComponent(
+  def: IconDef,
+  style: IconStyle,
+  variant: IconVariant
+): Component | null {
   if (style === 'emoji') return null;
   return variant === 'filled' && def.filled ? def.filled : def.outline;
 }

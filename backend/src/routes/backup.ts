@@ -133,12 +133,14 @@ function rowsForTable(table: TableName, userId: number): SqlRow[] {
       .prepare(
         `SELECT DISTINCT users.* FROM users
          JOIN trip_members ON trip_members.user_id = users.id
-         WHERE trip_members.trip_id IN (${MEMBER_TRIP_IDS_SUBQUERY})`,
+         WHERE trip_members.trip_id IN (${MEMBER_TRIP_IDS_SUBQUERY})`
       )
       .all(userId) as SqlRow[];
   }
   if (table === 'trips') {
-    return db.prepare(`SELECT * FROM trips WHERE id IN (${MEMBER_TRIP_IDS_SUBQUERY})`).all(userId) as SqlRow[];
+    return db
+      .prepare(`SELECT * FROM trips WHERE id IN (${MEMBER_TRIP_IDS_SUBQUERY})`)
+      .all(userId) as SqlRow[];
   }
   if (DIRECT_TRIP_SCOPED_TABLES.has(table)) {
     return db
@@ -154,7 +156,9 @@ import { isUserAdmin } from '../registrationConfig.js';
 export const backupRoutes: FastifyPluginAsync = async (app) => {
   app.get('/backup/export', async (req, reply) => {
     if (!isUserAdmin(req.session.userId)) {
-      return reply.code(403).send({ error: 'Nur Administrator:innen dürfen Datensicherungen durchführen.' });
+      return reply
+        .code(403)
+        .send({ error: 'Nur Administrator:innen dürfen Datensicherungen durchführen.' });
     }
     const data = {} as BackupPayload['data'];
     for (const table of TABLES) {
@@ -176,7 +180,9 @@ export const backupRoutes: FastifyPluginAsync = async (app) => {
 
   app.post('/backup/import', async (req, reply) => {
     if (!isUserAdmin(req.session.userId)) {
-      return reply.code(403).send({ error: 'Nur Administrator:innen dürfen Datensicherungen durchführen.' });
+      return reply
+        .code(403)
+        .send({ error: 'Nur Administrator:innen dürfen Datensicherungen durchführen.' });
     }
     if (!isValidPayload(req.body)) {
       return reply.code(400).send({ error: 'Ungültige oder unvollständige Backup-Datei' });
@@ -194,10 +200,12 @@ export const backupRoutes: FastifyPluginAsync = async (app) => {
     const allExistingTrips = db.prepare('SELECT id FROM trips').all() as { id: number }[];
     const memberTripIds = new Set(
       (
-        db.prepare('SELECT trip_id FROM trip_members WHERE user_id = ?').all(req.session.userId) as {
+        db
+          .prepare('SELECT trip_id FROM trip_members WHERE user_id = ?')
+          .all(req.session.userId) as {
           trip_id: number;
         }[]
-      ).map((r) => r.trip_id),
+      ).map((r) => r.trip_id)
     );
     if (!allExistingTrips.every((t) => memberTripIds.has(t.id))) {
       return reply.code(403).send({
@@ -218,7 +226,7 @@ export const backupRoutes: FastifyPluginAsync = async (app) => {
           trip_id: trip.id as number,
           user_id: user.id as number,
           created_at: payload.exportedAt,
-        })),
+        }))
       );
     }
 
@@ -241,7 +249,7 @@ export const backupRoutes: FastifyPluginAsync = async (app) => {
           const columns = Object.keys(rows[0]);
           const placeholders = columns.map(() => '?').join(', ');
           const insert = db.prepare(
-            `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${placeholders})`,
+            `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${placeholders})`
           );
           for (const row of rows) {
             insert.run(...columns.map((c) => row[c] as SqlValue));
@@ -253,7 +261,8 @@ export const backupRoutes: FastifyPluginAsync = async (app) => {
     } catch (err) {
       req.log.error(err);
       return reply.code(400).send({
-        error: 'Import fehlgeschlagen – Backup passt nicht zum aktuellen Datenmodell. Es wurde nichts verändert.',
+        error:
+          'Import fehlgeschlagen – Backup passt nicht zum aktuellen Datenmodell. Es wurde nichts verändert.',
       });
     } finally {
       db.pragma('foreign_keys = ON');

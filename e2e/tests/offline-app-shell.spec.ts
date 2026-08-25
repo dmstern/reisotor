@@ -43,7 +43,7 @@ async function waitForPreviewServer(): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
   throw new Error(
-    `vite preview auf ${previewUrl} nicht innerhalb von 30s erreichbar geworden. Letzter Fehler: ${String(lastError)}. Ausgabe:\n${previewOutput}`,
+    `vite preview auf ${previewUrl} nicht innerhalb von 30s erreichbar geworden. Letzter Fehler: ${String(lastError)}. Ausgabe:\n${previewOutput}`
   );
 }
 
@@ -65,7 +65,7 @@ test.describe.serial('Offline-App-Shell (Workbox-Precaching)', () => {
         cwd: frontendDir,
         env: { ...process.env, API_PROXY_TARGET: `http://127.0.0.1:${E2E_BACKEND_PORT}` },
         stdio: 'pipe',
-      },
+      }
     );
     previewProcess.stdout?.on('data', (chunk) => (previewOutput += chunk.toString()));
     previewProcess.stderr?.on('data', (chunk) => (previewOutput += chunk.toString()));
@@ -77,7 +77,9 @@ test.describe.serial('Offline-App-Shell (Workbox-Precaching)', () => {
     previewProcess?.kill();
   });
 
-  test('Dashboard rendert nach komplettem Offline-Reload aus dem Service-Worker-Cache', async ({ browser }) => {
+  test('Dashboard rendert nach komplettem Offline-Reload aus dem Service-Worker-Cache', async ({
+    browser,
+  }) => {
     const context = await newContextWithReducedMotion(browser, { storageState: authFile });
     const page = await context.newPage();
 
@@ -102,7 +104,9 @@ test.describe.serial('Offline-App-Shell (Workbox-Precaching)', () => {
     await context.close();
   });
 
-  test('"Neu laden"-Button aktiviert die neue Version tatsächlich statt nichts zu tun', async ({ browser }) => {
+  test('"Neu laden"-Button aktiviert die neue Version tatsächlich statt nichts zu tun', async ({
+    browser,
+  }) => {
     // Regressionstest für einen vom Nutzer gemeldeten Bug: der Button rief vite-plugin-pwa's
     // updateSW(true) auf, das per workbox-window eine {type:'SKIP_WAITING'}-Nachricht an den
     // wartenden Service Worker schickt - public/sw.js (injectManifest-Strategie, siehe
@@ -139,7 +143,10 @@ test.describe.serial('Offline-App-Shell (Workbox-Precaching)', () => {
 
       // Der eigentliche Kern des Bugs: ohne den sw.js-Fix passiert nach diesem Klick nichts, das
       // Warten auf ein 'load'-Event würde in einen Timeout laufen.
-      await Promise.all([page.waitForEvent('load', { timeout: 10_000 }), page.locator('.pwa-pill-btn').click()]);
+      await Promise.all([
+        page.waitForEvent('load', { timeout: 10_000 }),
+        page.locator('.pwa-pill-btn').click(),
+      ]);
 
       await expect(page.locator('.trip-name')).toBeVisible();
       await expect(page.locator('.pwa-pill.update')).toHaveCount(0);

@@ -27,13 +27,15 @@ const HOME_ICON: IconDef = { id: 'home', emoji: '🏠', outline: IconHome, fille
 export function collectWeatherLocations(
   trip: Trip | null,
   home: { lat: number; lng: number } | null,
-  accommodations: Spot[],
+  accommodations: Spot[]
 ): WeatherLocation[] {
   const locations: WeatherLocation[] = [];
   if (home) locations.push({ key: 'home', lat: home.lat, lng: home.lng });
-  if (trip?.lat != null && trip?.lng != null) locations.push({ key: 'destination', lat: trip.lat, lng: trip.lng });
+  if (trip?.lat != null && trip?.lng != null)
+    locations.push({ key: 'destination', lat: trip.lat, lng: trip.lng });
   for (const a of accommodations) {
-    if (a.lat != null && a.lng != null) locations.push({ key: `accommodation-${a.id}`, lat: a.lat, lng: a.lng });
+    if (a.lat != null && a.lng != null)
+      locations.push({ key: `accommodation-${a.id}`, lat: a.lat, lng: a.lng });
   }
   return locations;
 }
@@ -48,28 +50,62 @@ export function dayWeatherEntries(
   date: string,
   trip: Trip | null,
   accommodations: Spot[],
-  weatherByLocation: Map<string, DailyWeather[]>,
+  weatherByLocation: Map<string, DailyWeather[]>
 ): DayWeatherEntry[] {
   const lookup = (key: string) => weatherByLocation.get(key)?.find((d) => d.date === date);
 
   const accommodation = accommodations.find(
-    (a) => a.start_date && a.end_date && a.start_date <= date && date <= a.end_date && a.lat != null && a.lng != null,
+    (a) =>
+      a.start_date &&
+      a.end_date &&
+      a.start_date <= date &&
+      date <= a.end_date &&
+      a.lat != null &&
+      a.lng != null
   );
   const isVacationRange = !!trip && date >= trip.start_date && date <= trip.end_date;
 
   if (accommodation || isVacationRange) {
     if (accommodation) {
       const weather = lookup(`accommodation-${accommodation.id}`);
-      return weather ? [{ key: `accommodation-${accommodation.id}`, label: 'Urlaubsort', icon: '🏖️', tabler: VACATION_PLACE_ICON, weather }] : [];
+      return weather
+        ? [
+            {
+              key: `accommodation-${accommodation.id}`,
+              label: 'Urlaubsort',
+              icon: '🏖️',
+              tabler: VACATION_PLACE_ICON,
+              weather,
+            },
+          ]
+        : [];
     }
     const weather = trip ? lookup('destination') : undefined;
-    return weather ? [{ key: 'destination', label: 'Urlaubsort', icon: '🏖️', tabler: VACATION_PLACE_ICON, weather }] : [];
+    return weather
+      ? [
+          {
+            key: 'destination',
+            label: 'Urlaubsort',
+            icon: '🏖️',
+            tabler: VACATION_PLACE_ICON,
+            weather,
+          },
+        ]
+      : [];
   }
 
   const entries: DayWeatherEntry[] = [];
   const home = lookup('home');
-  if (home) entries.push({ key: 'home', label: 'Zuhause', icon: '🏠', tabler: HOME_ICON, weather: home });
+  if (home)
+    entries.push({ key: 'home', label: 'Zuhause', icon: '🏠', tabler: HOME_ICON, weather: home });
   const destination = lookup('destination');
-  if (destination) entries.push({ key: 'destination', label: 'Urlaubsort', icon: '🏖️', tabler: VACATION_PLACE_ICON, weather: destination });
+  if (destination)
+    entries.push({
+      key: 'destination',
+      label: 'Urlaubsort',
+      icon: '🏖️',
+      tabler: VACATION_PLACE_ICON,
+      weather: destination,
+    });
   return entries;
 }

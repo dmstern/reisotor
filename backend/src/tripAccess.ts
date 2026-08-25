@@ -2,7 +2,9 @@ import type { FastifyReply } from 'fastify';
 import { db } from './db/index.js';
 
 export function isTripMember(tripId: number, userId: number): boolean {
-  return !!db.prepare('SELECT 1 FROM trip_members WHERE trip_id = ? AND user_id = ?').get(tripId, userId);
+  return !!db
+    .prepare('SELECT 1 FROM trip_members WHERE trip_id = ? AND user_id = ?')
+    .get(tripId, userId);
 }
 
 /** Zentraler Zugriffs-Check für praktisch jede Urlaub-bezogene Route (siehe routes/*.ts): sendet
@@ -12,7 +14,7 @@ export function isTripMember(tripId: number, userId: number): boolean {
 export function requireTripMember(
   reply: FastifyReply,
   tripId: number | string | null | undefined,
-  userId: number | undefined,
+  userId: number | undefined
 ): boolean {
   const id = typeof tripId === 'string' ? Number(tripId) : tripId;
   if (id == null || !Number.isFinite(id) || userId == null || !isTripMember(id, userId)) {

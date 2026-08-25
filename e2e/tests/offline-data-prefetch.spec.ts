@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const seeded = JSON.parse(
-  fs.readFileSync(path.join(__dirname, '..', 'fixtures', 'seeded-data.json'), 'utf-8'),
+  fs.readFileSync(path.join(__dirname, '..', 'fixtures', 'seeded-data.json'), 'utf-8')
 );
 
 // Regressionstest für einen vom Nutzer gemeldeten Bug: die "App ist jetzt offline verfügbar"-
@@ -50,8 +50,9 @@ test('wärmt beim Laden des Urlaubs den Offline-Cache für alle Domänen vor, ni
   for (const path of uncoveredByDashboard) {
     await expect
       .poll(
-        async () => page.evaluate((p) => localStorage.getItem(`reisotor-cache:${p}`) !== null, path),
-        { message: `${path} sollte im Offline-Cache liegen`, timeout: 10_000 },
+        async () =>
+          page.evaluate((p) => localStorage.getItem(`reisotor-cache:${p}`) !== null, path),
+        { message: `${path} sollte im Offline-Cache liegen`, timeout: 10_000 }
       )
       .toBe(true);
   }

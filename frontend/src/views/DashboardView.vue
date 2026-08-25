@@ -27,7 +27,14 @@ import { SCHEDULE_CATEGORY_META } from '../utils/scheduleCategory';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { ACCOMMODATION_ICON, SECURITY_CHECK_ICON } from '../utils/dashboardTiles';
 import { spotCategoryMeta } from '../utils/spotCategory';
-import { detectWeatherAlerts, fetchMergedWeather, fetchWeatherForecast, weatherCodeMeta, type DailyWeather, type WeatherAlert } from '../utils/weather';
+import {
+  detectWeatherAlerts,
+  fetchMergedWeather,
+  fetchWeatherForecast,
+  weatherCodeMeta,
+  type DailyWeather,
+  type WeatherAlert,
+} from '../utils/weather';
 import { fetchRegionInfo, type RegionInfo } from '../utils/regionInfo';
 import {
   formatDate as formatDateShared,
@@ -55,7 +62,9 @@ const weatherProvider = useWeatherProviderStore();
 const homeCurrency = useHomeCurrencyStore();
 const uiSettings = useUiSettingsStore();
 const dashboardConfig = useDashboardConfigStore();
-const visibleTileKeys = computed(() => dashboardConfig.entries.filter((e) => e.visible).map((e) => e.key));
+const visibleTileKeys = computed(() =>
+  dashboardConfig.entries.filter((e) => e.visible).map((e) => e.key)
+);
 const tripId = tripStore.currentTripId as number;
 const trip = computed(() => tripStore.currentTrip);
 const schedule = ref<ScheduleItem[]>([]);
@@ -84,7 +93,12 @@ async function loadWeather() {
   weatherLoading.value = true;
   weatherError.value = null;
   try {
-    weatherDays.value = await fetchMergedWeather(tripId, trip.value.lat, trip.value.lng, weatherProvider.model);
+    weatherDays.value = await fetchMergedWeather(
+      tripId,
+      trip.value.lat,
+      trip.value.lng,
+      weatherProvider.model
+    );
   } catch {
     weatherError.value = 'Wetterdaten konnten nicht geladen werden.';
   } finally {
@@ -110,7 +124,11 @@ async function loadHomeWeather() {
   homeWeatherLoading.value = true;
   homeWeatherError.value = null;
   try {
-    homeWeatherDays.value = await fetchWeatherForecast(home.value.lat, home.value.lng, weatherProvider.model);
+    homeWeatherDays.value = await fetchWeatherForecast(
+      home.value.lat,
+      home.value.lng,
+      weatherProvider.model
+    );
   } catch {
     homeWeatherError.value = 'Wetterdaten konnten nicht geladen werden.';
   } finally {
@@ -130,11 +148,13 @@ watch(
     homeWeatherDays.value = null;
     loadWeather();
     loadHomeWeather();
-  },
+  }
 );
 
 const weatherModelLabel = computed(
-  () => WEATHER_MODEL_OPTIONS.find((o) => o.value === weatherProvider.model)?.label ?? weatherProvider.model,
+  () =>
+    WEATHER_MODEL_OPTIONS.find((o) => o.value === weatherProvider.model)?.label ??
+    weatherProvider.model
 );
 
 const tripWeatherAlerts = computed(() => detectWeatherAlerts(weatherDays.value ?? []));
@@ -171,7 +191,7 @@ watch(
   () => {
     regionInfo.value = null;
     loadRegionInfo();
-  },
+  }
 );
 
 // Sprache/Währung/Sicherheitshinweis sind je nach Land oft nur teilweise oder gar nicht verfügbar
@@ -182,11 +202,14 @@ const regionSourceParts = computed(() => {
   if (!regionInfo.value) return [];
   const parts: string[] = [];
   if (regionInfo.value.languages.length || regionInfo.value.currency) parts.push('REST Countries');
-  if (regionInfo.value.currency && regionInfo.value.exchangeRate != null) parts.push('open.er-api.com');
+  if (regionInfo.value.currency && regionInfo.value.exchangeRate != null)
+    parts.push('open.er-api.com');
   if (regionInfo.value.advisory) parts.push('travel-advisory.info');
   return parts;
 });
-const regionShowsExchange = computed(() => !!(regionInfo.value?.currency && regionInfo.value.exchangeRate != null));
+const regionShowsExchange = computed(
+  () => !!(regionInfo.value?.currency && regionInfo.value.exchangeRate != null)
+);
 
 // WIDGET_COLORS/SECURITY_TILE_COLOR liegen jetzt in utils/widgetColors.ts (NavBar.vue nutzt sie für
 // die optionale Nav-Einfärbung mit, siehe NAV_LINK_COLORS dort).
@@ -238,12 +261,16 @@ onUnmounted(() => {
   if (nowTimer != null) clearInterval(nowTimer);
 });
 
-const departureCountdown = computed(() => (trip.value?.start_date ? computeDepartureCountdown(trip.value.start_date, now.value) : null));
+const departureCountdown = computed(() =>
+  trip.value?.start_date ? computeDepartureCountdown(trip.value.start_date, now.value) : null
+);
 
 // Löst departureCountdown's frühere 'departed'-Phase ab, die dauerhaft "Gute Reise!" zeigte - auch
 // noch mitten im Urlaub oder lange nach dessen Ende. computeVacationPhase() liefert stattdessen
 // eigene Phasen für Ankunft/laufenden Urlaub/letzten Tag/vorbei (siehe dortiger Kommentar).
-const vacationPhase = computed(() => (trip.value ? computeVacationPhase(trip.value, now.value) : null));
+const vacationPhase = computed(() =>
+  trip.value ? computeVacationPhase(trip.value, now.value) : null
+);
 
 // Kalender-Widget: echte Termine + eingebettete synthetische Einträge (Urlaub-Start/-Ende, ToDo
 // mit Fälligkeitsdatum), sortiert, die nächsten drei statt nur den einen nächsten (Batch 12).
@@ -254,11 +281,11 @@ const upcomingEntries = computed(() =>
     todos.value,
     travelItems.value,
     excursionsStore.excursions,
-    spotsStore.spots,
+    spotsStore.spots
   )
     .filter((e) => e.endDate >= todayStr())
     .sort((a, b) => (a.date + (a.time ?? '')).localeCompare(b.date + (b.time ?? '')))
-    .slice(0, 3),
+    .slice(0, 3)
 );
 
 function formatDate(d: string) {
@@ -274,7 +301,12 @@ function progressOf(listItems: PackingItem[]) {
 }
 const packingTotal = computed(() => progressOf(packing.value));
 const packingLists = computed(() => {
-  const shared = { key: 'shared', title: 'Gemeinsam', avatar: '🤝', ...progressOf(packing.value.filter((p) => p.owner_id == null)) };
+  const shared = {
+    key: 'shared',
+    title: 'Gemeinsam',
+    avatar: '🤝',
+    ...progressOf(packing.value.filter((p) => p.owner_id == null)),
+  };
   const perUser = users.value.map((u) => ({
     key: `user-${u.id}`,
     title: u.id === auth.user?.id ? 'Meine Liste' : u.username,
@@ -296,13 +328,18 @@ const todoProgress = computed(() => {
   return { total, done };
 });
 
-const nextTravelItem = computed(() =>
-  [...travelItems.value].filter((t) => t.date && t.date >= todayStr()).sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''))[0],
+const nextTravelItem = computed(
+  () =>
+    [...travelItems.value]
+      .filter((t) => t.date && t.date >= todayStr())
+      .sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''))[0]
 );
 
 const currentOrNextAccommodation = computed(() => {
   const today = todayStr();
-  const current = accommodations.value.find((a) => a.start_date && a.end_date && a.start_date <= today && today <= a.end_date);
+  const current = accommodations.value.find(
+    (a) => a.start_date && a.end_date && a.start_date <= today && today <= a.end_date
+  );
   if (current) return current;
   return [...accommodations.value]
     .filter((a) => a.start_date && a.start_date >= today)
@@ -313,10 +350,11 @@ const currentOrNextAccommodation = computed(() => {
 // Reihenfolge in DiaryView.vue übereinstimmen, sonst zeigt die Kachel hier einen anderen Eintrag
 // als "zuletzt" als den, der dort tatsächlich ganz oben steht (z. B. nach einem rückblickend
 // nachgetragenen Eintrag mit einem älteren Datum).
-const latestDiaryEntry = computed(() =>
-  [...diaryEntries.value].sort(
-    (a, b) => b.date.localeCompare(a.date) || b.created_at.localeCompare(a.created_at),
-  )[0],
+const latestDiaryEntry = computed(
+  () =>
+    [...diaryEntries.value].sort(
+      (a, b) => b.date.localeCompare(a.date) || b.created_at.localeCompare(a.created_at)
+    )[0]
 );
 
 function jumpToTrip() {
@@ -328,7 +366,9 @@ function jumpToTrip() {
 // entfernten Urlauben bleibt die Liste vorerst leer statt falsche/fehlende Tage zu zeigen.
 const vacationForecastDays = computed(() => {
   if (!weatherDays.value || !trip.value) return [];
-  return weatherDays.value.filter((d) => d.date >= trip.value!.start_date && d.date <= trip.value!.end_date);
+  return weatherDays.value.filter(
+    (d) => d.date >= trip.value!.start_date && d.date <= trip.value!.end_date
+  );
 });
 
 function addDaysToDateStr(dateStr: string, days: number): string {
@@ -346,7 +386,9 @@ const homeForecastDays = computed(() => {
   const rangeStart = uiSettings.showHomeWeatherFullTrip
     ? trip.value.start_date
     : addDaysToDateStr(trip.value.end_date, -(HOME_WEATHER_TAIL_DAYS - 1));
-  return homeWeatherDays.value.filter((d) => d.date >= rangeStart && d.date <= trip.value!.end_date);
+  return homeWeatherDays.value.filter(
+    (d) => d.date >= rangeStart && d.date <= trip.value!.end_date
+  );
 });
 
 // Zeigt zusätzlich zur (ggf. noch nicht verfügbaren) Urlaubs-Vorhersage immer auch das aktuelle
@@ -363,26 +405,50 @@ function formatWeekdayDate(d: string) {
   <div class="page" v-if="!loading">
     <header
       class="hero card"
-      :style="trip?.image_url ? { backgroundImage: `linear-gradient(135deg, rgba(0,0,0,.35), rgba(0,0,0,.15)), url(${trip.image_url})` } : {}"
+      :style="
+        trip?.image_url
+          ? {
+              backgroundImage: `linear-gradient(135deg, rgba(0,0,0,.35), rgba(0,0,0,.15)), url(${trip.image_url})`,
+            }
+          : {}
+      "
       :class="{ 'has-image': trip?.image_url }"
     >
-      <Button variant="secondary" class="banner-edit-btn" title="Urlaub bearbeiten" @click="jumpToTrip">
+      <Button
+        variant="secondary"
+        class="banner-edit-btn"
+        title="Urlaub bearbeiten"
+        @click="jumpToTrip"
+      >
         <AppIcon :icon="ACTION_ICONS.edit" :size="14" group="actions" /> Bearbeiten
       </Button>
       <h1>{{ trip?.name || 'Euer Urlaub' }}</h1>
-      <p v-if="trip?.destination"><AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> {{ trip.destination }}</p>
+      <p v-if="trip?.destination">
+        <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" />
+        {{ trip.destination }}
+      </p>
       <p v-if="trip">{{ formatTripDateRange(trip.start_date, trip.end_date) }}</p>
       <p v-if="departureCountdown?.phase === 'days'" class="countdown">
-        Noch {{ departureCountdown.days }} {{ departureCountdown.days === 1 ? 'Tag' : 'Tage' }} bis zur Abreise 🎒
+        Noch {{ departureCountdown.days }} {{ departureCountdown.days === 1 ? 'Tag' : 'Tage' }} bis
+        zur Abreise 🎒
       </p>
       <p v-else-if="departureCountdown?.phase === 'hours'" class="countdown">
-        Noch {{ departureCountdown.hours }} {{ departureCountdown.hours === 1 ? 'Stunde' : 'Stunden' }} bis zur Abreise 🎒
+        Noch {{ departureCountdown.hours }}
+        {{ departureCountdown.hours === 1 ? 'Stunde' : 'Stunden' }} bis zur Abreise 🎒
       </p>
-      <p v-else-if="vacationPhase?.phase === 'arrived'" class="countdown">Der Urlaub hat begonnen! 🌴</p>
-      <p v-else-if="vacationPhase?.phase === 'ongoing' && uiSettings.showVacationCountdown" class="countdown">
-        Noch {{ vacationPhase.daysLeft }} {{ vacationPhase.daysLeft === 1 ? 'Tag' : 'Tage' }} Urlaub 🏖️
+      <p v-else-if="vacationPhase?.phase === 'arrived'" class="countdown">
+        Der Urlaub hat begonnen! 🌴
       </p>
-      <p v-else-if="vacationPhase?.phase === 'ongoing'" class="countdown">Genießt euren Urlaub! 🏖️</p>
+      <p
+        v-else-if="vacationPhase?.phase === 'ongoing' && uiSettings.showVacationCountdown"
+        class="countdown"
+      >
+        Noch {{ vacationPhase.daysLeft }} {{ vacationPhase.daysLeft === 1 ? 'Tag' : 'Tage' }} Urlaub
+        🏖️
+      </p>
+      <p v-else-if="vacationPhase?.phase === 'ongoing'" class="countdown">
+        Genießt euren Urlaub! 🏖️
+      </p>
       <p v-else-if="vacationPhase?.phase === 'lastDay'" class="countdown">Letzter Urlaubstag 🌅</p>
       <p v-else-if="vacationPhase?.phase === 'over'" class="countdown">Der Urlaub ist vorbei 👋</p>
     </header>
@@ -399,22 +465,34 @@ function formatWeekdayDate(d: string) {
         <p v-else-if="weatherError" class="hint error">{{ weatherError }}</p>
         <template v-else>
           <div v-if="todayWeather" class="weather-today">
-            <span class="weather-today-label">Heute{{ trip?.destination ? ` in ${trip.destination}` : '' }}</span>
+            <span class="weather-today-label"
+              >Heute{{ trip?.destination ? ` in ${trip.destination}` : '' }}</span
+            >
             <WeatherIcon
               class="weather-icon"
               :size="22"
               :code="todayWeather.weatherCode"
               :title="weatherCodeMeta(todayWeather.weatherCode).label"
             />
-            <span class="weather-temp">{{ Math.round(todayWeather.tempMax) }}° / {{ Math.round(todayWeather.tempMin) }}°</span>
+            <span class="weather-temp"
+              >{{ Math.round(todayWeather.tempMax) }}° /
+              {{ Math.round(todayWeather.tempMin) }}°</span
+            >
             <span v-if="todayWeather.precipitationProbability != null" class="weather-rain">
-              <AppIcon :icon="ACTION_ICONS.rain" :size="13" group="actions" />{{ todayWeather.precipitationProbability }}%
+              <AppIcon :icon="ACTION_ICONS.rain" :size="13" group="actions" />{{
+                todayWeather.precipitationProbability
+              }}%
             </span>
           </div>
 
           <!-- Unwetter- & Wetter-Warnungen (Issue #134) -->
           <div v-if="tripWeatherAlerts.length" class="weather-alerts">
-            <div v-for="alert in tripWeatherAlerts" :key="alert.id" class="weather-alert-card" :class="alert.severity">
+            <div
+              v-for="alert in tripWeatherAlerts"
+              :key="alert.id"
+              class="weather-alert-card"
+              :class="alert.severity"
+            >
               <AppIcon :icon="ACTION_ICONS.warning" :size="16" group="actions" />
               <div class="alert-content">
                 <strong>{{ alert.title }}</strong>
@@ -424,8 +502,14 @@ function formatWeekdayDate(d: string) {
           </div>
 
           <p class="weather-section-label">
-            <AppIcon :icon="vacationPhase?.phase === 'over' ? ACTION_ICONS.sun : ACTION_ICONS.vacation" :size="14" group="actions" />
-            {{ vacationPhase?.phase === 'over' ? 'Rückblick: Wetter im Urlaub' : 'Wetter im Urlaub' }}
+            <AppIcon
+              :icon="vacationPhase?.phase === 'over' ? ACTION_ICONS.sun : ACTION_ICONS.vacation"
+              :size="14"
+              group="actions"
+            />
+            {{
+              vacationPhase?.phase === 'over' ? 'Rückblick: Wetter im Urlaub' : 'Wetter im Urlaub'
+            }}
           </p>
           <p v-if="!vacationForecastDays.length && vacationPhase?.phase !== 'over'" class="hint">
             Für die Urlaubstage liegt noch keine Vorhersage vor – Open-Meteo deckt nur die kommenden
@@ -449,9 +533,13 @@ function formatWeekdayDate(d: string) {
                 :code="day.weatherCode"
                 :title="weatherCodeMeta(day.weatherCode).label"
               />
-              <span class="weather-temp">{{ Math.round(day.tempMax) }}° / {{ Math.round(day.tempMin) }}°</span>
+              <span class="weather-temp"
+                >{{ Math.round(day.tempMax) }}° / {{ Math.round(day.tempMin) }}°</span
+              >
               <span v-if="day.precipitationProbability != null" class="weather-rain">
-                <AppIcon :icon="ACTION_ICONS.rain" :size="13" group="actions" />{{ day.precipitationProbability }}%
+                <AppIcon :icon="ACTION_ICONS.rain" :size="13" group="actions" />{{
+                  day.precipitationProbability
+                }}%
               </span>
             </div>
           </div>
@@ -463,25 +551,39 @@ function formatWeekdayDate(d: string) {
                (utils/weather.ts's DEMO_MODE-Zweig) sind die Werte erfunden statt echt von Open-Meteo
                abgefragt - "Anbieter wechseln" wäre dort nur eine Sackgasse (ändert nichts an den
                Fake-Daten), deshalb eigener, nicht klickbarer Hinweis. -->
-          <p v-if="DEMO_MODE" class="weather-source static">Demo-Wetterdaten (keine echte Vorhersage)</p>
-          <router-link v-else to="/settings?tab=trip#weather-provider-settings" class="weather-source">
+          <p v-if="DEMO_MODE" class="weather-source static">
+            Demo-Wetterdaten (keine echte Vorhersage)
+          </p>
+          <router-link
+            v-else
+            to="/settings?tab=trip#weather-provider-settings"
+            class="weather-source"
+          >
             Quelle: Open-Meteo ({{ weatherModelLabel }}) · Anbieter wechseln
           </router-link>
         </template>
       </template>
-      <p v-else class="hint">Hinterlege beim Urlaub einen Maps-Link, um hier die Wettervorhersage für die Urlaubstage zu sehen.</p>
+      <p v-else class="hint">
+        Hinterlege beim Urlaub einen Maps-Link, um hier die Wettervorhersage für die Urlaubstage zu
+        sehen.
+      </p>
 
       <!-- Unabhängig vom Trip-Maps-Link oben (kein v-if="trip?.lat...", das bezieht sich nur auf
            das Reiseziel) - Zuhause kommt aus einem eigenen, in Reise > Orte per is_home markierten
            Spot (siehe home-Computed, dasselbe Muster wie ScheduleView.vue's Kalender-Wetter). -->
       <template v-if="home">
-        <p class="weather-section-label"><AppIcon :icon="ACTION_ICONS.home" :size="14" group="actions" /> Wetter zuhause</p>
+        <p class="weather-section-label">
+          <AppIcon :icon="ACTION_ICONS.home" :size="14" group="actions" /> Wetter zuhause
+        </p>
         <p v-if="homeWeatherLoading && !homeWeatherDays" class="hint">Lädt …</p>
         <p v-else-if="homeWeatherError" class="hint error">{{ homeWeatherError }}</p>
         <p v-else-if="!homeForecastDays.length" class="hint">
-          Für {{ uiSettings.showHomeWeatherFullTrip ? 'den Urlaubszeitraum' : 'die letzten Urlaubstage' }}
-          liegt noch keine Vorhersage vor – Open-Meteo deckt nur die kommenden ~16 Tage ab, schau kurz
-          vorher nochmal vorbei.
+          Für
+          {{
+            uiSettings.showHomeWeatherFullTrip ? 'den Urlaubszeitraum' : 'die letzten Urlaubstage'
+          }}
+          liegt noch keine Vorhersage vor – Open-Meteo deckt nur die kommenden ~16 Tage ab, schau
+          kurz vorher nochmal vorbei.
         </p>
         <div v-else class="weather-days">
           <div class="weather-day" v-for="day in homeForecastDays" :key="day.date">
@@ -492,45 +594,67 @@ function formatWeekdayDate(d: string) {
               :code="day.weatherCode"
               :title="weatherCodeMeta(day.weatherCode).label"
             />
-            <span class="weather-temp">{{ Math.round(day.tempMax) }}° / {{ Math.round(day.tempMin) }}°</span>
-            <span v-if="day.precipitationProbability != null" class="weather-rain">💧{{ day.precipitationProbability }}%</span>
+            <span class="weather-temp"
+              >{{ Math.round(day.tempMax) }}° / {{ Math.round(day.tempMin) }}°</span
+            >
+            <span v-if="day.precipitationProbability != null" class="weather-rain"
+              >💧{{ day.precipitationProbability }}%</span
+            >
           </div>
         </div>
       </template>
       <p v-else class="hint">
-        Markiere in der Karte unter Spots einen Spot mit <AppIcon :icon="ACTION_ICONS.home" :size="13" group="actions" /> „Zuhause“, um hier
+        Markiere in der Karte unter Spots einen Spot mit
+        <AppIcon :icon="ACTION_ICONS.home" :size="13" group="actions" /> „Zuhause“, um hier
         zusätzlich das Wetter zuhause gegen Ende des Urlaubs zu sehen.
       </p>
 
       <template v-if="regionLoading && !regionInfo">
-        <p class="weather-section-label"><AppIcon :icon="ACTION_ICONS.region" :size="14" group="actions" /> Reiseregion</p>
+        <p class="weather-section-label">
+          <AppIcon :icon="ACTION_ICONS.region" :size="14" group="actions" /> Reiseregion
+        </p>
         <p class="hint">Lädt …</p>
       </template>
       <template v-else-if="regionError">
-        <p class="weather-section-label"><AppIcon :icon="ACTION_ICONS.region" :size="14" group="actions" /> Reiseregion</p>
+        <p class="weather-section-label">
+          <AppIcon :icon="ACTION_ICONS.region" :size="14" group="actions" /> Reiseregion
+        </p>
         <p class="hint error">{{ regionError }}</p>
       </template>
-      <template v-else-if="regionInfo && (regionInfo.languages.length || regionInfo.currency || regionInfo.advisory)">
-        <p class="weather-section-label"><AppIcon :icon="ACTION_ICONS.region" :size="14" group="actions" /> Reiseregion</p>
+      <template
+        v-else-if="
+          regionInfo && (regionInfo.languages.length || regionInfo.currency || regionInfo.advisory)
+        "
+      >
+        <p class="weather-section-label">
+          <AppIcon :icon="ACTION_ICONS.region" :size="14" group="actions" /> Reiseregion
+        </p>
         <p v-if="regionInfo.languages.length" class="detail-row">
           <span class="detail-label">Sprache</span>{{ regionInfo.languages.join(', ') }}
         </p>
         <p v-if="regionInfo.currency" class="detail-row">
           <span class="detail-label">Währung</span>
-          <AppIcon :icon="ACTION_ICONS.currency" :size="14" group="actions" /> {{ regionInfo.currency.name }} ({{ regionInfo.currency.code }})
+          <AppIcon :icon="ACTION_ICONS.currency" :size="14" group="actions" />
+          {{ regionInfo.currency.name }} ({{ regionInfo.currency.code }})
           <span v-if="regionInfo.exchangeRate != null">
-            · 1 {{ regionInfo.currency.code }} ≈ {{ regionInfo.exchangeRate.toFixed(2) }} {{ homeCurrency.currency }}
+            · 1 {{ regionInfo.currency.code }} ≈ {{ regionInfo.exchangeRate.toFixed(2) }}
+            {{ homeCurrency.currency }}
           </span>
         </p>
         <p v-if="regionInfo.advisory" class="detail-row">
           <span class="detail-label">Sicherheit</span>
-          <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> {{ regionInfo.advisory.message }}
+          <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" />
+          {{ regionInfo.advisory.message }}
           <span class="region-advisory-score">({{ regionInfo.advisory.score.toFixed(1) }}/5)</span>
         </p>
         <!-- Nennt nur Quellen, die tatsächlich zu einer der Zeilen oben beigetragen haben (siehe
              regionSourceParts) - und verlinkt nur zur Heimatwährungs-Auswahl, wenn ein Wechselkurs
              auch wirklich mit dabei ist (analog zum "Quelle: Open-Meteo"-Hinweis beim Wetter oben). -->
-        <router-link v-if="regionShowsExchange" to="/settings?tab=trip#home-currency-settings" class="weather-source">
+        <router-link
+          v-if="regionShowsExchange"
+          to="/settings?tab=trip#home-currency-settings"
+          class="weather-source"
+        >
           Quelle: {{ regionSourceParts.join(' · ') }} · Anbieter wechseln
         </router-link>
         <p v-else class="weather-source static">Quelle: {{ regionSourceParts.join(' · ') }}</p>
@@ -555,7 +679,10 @@ function formatWeekdayDate(d: string) {
           <AppIcon
             class="tile-icon"
             :size="18"
-            :style="{ background: `${WIDGET_COLORS.get('schedule')}26`, borderColor: WIDGET_COLORS.get('schedule') }"
+            :style="{
+              background: `${WIDGET_COLORS.get('schedule')}26`,
+              borderColor: WIDGET_COLORS.get('schedule'),
+            }"
             :icon="SECTION_ICON_DEFS.calendar"
             group="navigation"
             :color="WIDGET_COLORS.get('schedule')"
@@ -563,9 +690,13 @@ function formatWeekdayDate(d: string) {
           <h3>Kalender</h3>
           <ul v-if="upcomingEntries.length" class="mini-list">
             <li v-for="entry in upcomingEntries" :key="entry.key">
-              <span class="mini-dot" :style="{ background: SCHEDULE_CATEGORY_META[entry.category].color }"></span>
+              <span
+                class="mini-dot"
+                :style="{ background: SCHEDULE_CATEGORY_META[entry.category].color }"
+              ></span>
               <span class="entry-text"
-                >{{ formatDate(entry.date) }}<span v-if="entry.time"> · {{ entry.time }}</span> — {{ entry.title }}</span
+                >{{ formatDate(entry.date) }}<span v-if="entry.time"> · {{ entry.time }}</span> —
+                {{ entry.title }}</span
               >
             </li>
           </ul>
@@ -582,7 +713,10 @@ function formatWeekdayDate(d: string) {
           <AppIcon
             class="tile-icon"
             :size="18"
-            :style="{ background: `${WIDGET_COLORS.get('packing')}26`, borderColor: WIDGET_COLORS.get('packing') }"
+            :style="{
+              background: `${WIDGET_COLORS.get('packing')}26`,
+              borderColor: WIDGET_COLORS.get('packing'),
+            }"
             :icon="SECTION_ICON_DEFS.packing"
             group="navigation"
             :color="WIDGET_COLORS.get('packing')"
@@ -596,16 +730,26 @@ function formatWeekdayDate(d: string) {
             :color="WIDGET_COLORS.get('packing')!"
           />
           <ul class="mini-list breakdown">
-            <li v-for="list in packingLists" :key="list.key">{{ list.avatar }} {{ list.title }}: {{ list.checked }}/{{ list.total }}</li>
+            <li v-for="list in packingLists" :key="list.key">
+              {{ list.avatar }} {{ list.title }}: {{ list.checked }}/{{ list.total }}
+            </li>
           </ul>
         </router-link>
 
         <!-- Budget -->
-        <router-link v-else-if="key === 'budget'" to="/budget" class="card tile" :style="{ background: `${WIDGET_COLORS.get('budget')}0d` }">
+        <router-link
+          v-else-if="key === 'budget'"
+          to="/budget"
+          class="card tile"
+          :style="{ background: `${WIDGET_COLORS.get('budget')}0d` }"
+        >
           <AppIcon
             class="tile-icon"
             :size="18"
-            :style="{ background: `${WIDGET_COLORS.get('budget')}26`, borderColor: WIDGET_COLORS.get('budget') }"
+            :style="{
+              background: `${WIDGET_COLORS.get('budget')}26`,
+              borderColor: WIDGET_COLORS.get('budget'),
+            }"
             :icon="SECTION_ICON_DEFS.budget"
             group="navigation"
             :color="WIDGET_COLORS.get('budget')"
@@ -629,7 +773,10 @@ function formatWeekdayDate(d: string) {
           <AppIcon
             class="tile-icon"
             :size="18"
-            :style="{ background: `${WIDGET_COLORS.get('shopping')}26`, borderColor: WIDGET_COLORS.get('shopping') }"
+            :style="{
+              background: `${WIDGET_COLORS.get('shopping')}26`,
+              borderColor: WIDGET_COLORS.get('shopping'),
+            }"
             :icon="SECTION_ICON_DEFS.shopping"
             group="navigation"
             :color="WIDGET_COLORS.get('shopping')"
@@ -645,11 +792,19 @@ function formatWeekdayDate(d: string) {
         </router-link>
 
         <!-- ToDo -->
-        <router-link v-else-if="key === 'todo'" to="/listen?tab=todo" class="card tile" :style="{ background: `${WIDGET_COLORS.get('todo')}0d` }">
+        <router-link
+          v-else-if="key === 'todo'"
+          to="/listen?tab=todo"
+          class="card tile"
+          :style="{ background: `${WIDGET_COLORS.get('todo')}0d` }"
+        >
           <AppIcon
             class="tile-icon"
             :size="18"
-            :style="{ background: `${WIDGET_COLORS.get('todo')}26`, borderColor: WIDGET_COLORS.get('todo') }"
+            :style="{
+              background: `${WIDGET_COLORS.get('todo')}26`,
+              borderColor: WIDGET_COLORS.get('todo'),
+            }"
             :icon="SECTION_ICON_DEFS.todo"
             group="navigation"
             :color="WIDGET_COLORS.get('todo')"
@@ -665,17 +820,27 @@ function formatWeekdayDate(d: string) {
         </router-link>
 
         <!-- Reise (Fahrten/Flüge) -->
-        <router-link v-else-if="key === 'travel'" to="/excursions?group=tours" class="card tile" :style="{ background: `${WIDGET_COLORS.get('travel')}0d` }">
+        <router-link
+          v-else-if="key === 'travel'"
+          to="/excursions?group=tours"
+          class="card tile"
+          :style="{ background: `${WIDGET_COLORS.get('travel')}0d` }"
+        >
           <AppIcon
             class="tile-icon"
             :size="18"
-            :style="{ background: `${WIDGET_COLORS.get('travel')}26`, borderColor: WIDGET_COLORS.get('travel') }"
+            :style="{
+              background: `${WIDGET_COLORS.get('travel')}26`,
+              borderColor: WIDGET_COLORS.get('travel'),
+            }"
             :icon="SECTION_ICON_DEFS.travel"
             group="navigation"
             :color="WIDGET_COLORS.get('travel')"
           />
           <h3>Reise</h3>
-          <p v-if="nextTravelItem">{{ formatDate(nextTravelItem.date!) }} — {{ nextTravelItem.title }}</p>
+          <p v-if="nextTravelItem">
+            {{ formatDate(nextTravelItem.date!) }} — {{ nextTravelItem.title }}
+          </p>
           <p v-else-if="travelItems.length">{{ travelItems.length }} Einträge</p>
           <p v-else>Noch nichts eingetragen</p>
         </router-link>
@@ -686,21 +851,29 @@ function formatWeekdayDate(d: string) {
              ExcursionsView.vue's hashHighlightId-Verdrahtung). -->
         <router-link
           v-else-if="key === 'accommodation'"
-          :to="currentOrNextAccommodation ? `/excursions#spot-${currentOrNextAccommodation.id}` : '/excursions'"
+          :to="
+            currentOrNextAccommodation
+              ? `/excursions#spot-${currentOrNextAccommodation.id}`
+              : '/excursions'
+          "
           class="card tile"
           :style="{ background: `${WIDGET_COLORS.get('accommodation')}0d` }"
         >
           <AppIcon
             class="tile-icon"
             :size="18"
-            :style="{ background: `${WIDGET_COLORS.get('accommodation')}26`, borderColor: WIDGET_COLORS.get('accommodation') }"
+            :style="{
+              background: `${WIDGET_COLORS.get('accommodation')}26`,
+              borderColor: WIDGET_COLORS.get('accommodation'),
+            }"
             :icon="ACCOMMODATION_ICON"
             group="navigation"
             :color="WIDGET_COLORS.get('accommodation')"
           />
           <h3>Unterkunft</h3>
           <p v-if="currentOrNextAccommodation">
-            {{ currentOrNextAccommodation.title }}<span v-if="currentOrNextAccommodation.start_date">
+            {{ currentOrNextAccommodation.title
+            }}<span v-if="currentOrNextAccommodation.start_date">
               · {{ formatDate(currentOrNextAccommodation.start_date) }}</span
             >
           </p>
@@ -709,32 +882,55 @@ function formatWeekdayDate(d: string) {
         </router-link>
 
         <!-- Tagebuch -->
-        <router-link v-else-if="key === 'diary'" to="/diary" class="card tile" :style="{ background: `${WIDGET_COLORS.get('diary')}0d` }">
+        <router-link
+          v-else-if="key === 'diary'"
+          to="/diary"
+          class="card tile"
+          :style="{ background: `${WIDGET_COLORS.get('diary')}0d` }"
+        >
           <AppIcon
             class="tile-icon"
             :size="18"
-            :style="{ background: `${WIDGET_COLORS.get('diary')}26`, borderColor: WIDGET_COLORS.get('diary') }"
+            :style="{
+              background: `${WIDGET_COLORS.get('diary')}26`,
+              borderColor: WIDGET_COLORS.get('diary'),
+            }"
             :icon="SECTION_ICON_DEFS.diary"
             group="navigation"
             :color="WIDGET_COLORS.get('diary')"
           />
           <h3>Tagebuch</h3>
-          <p v-if="diaryEntries.length">{{ diaryEntries.length }} {{ diaryEntries.length === 1 ? 'Eintrag' : 'Einträge' }}<span v-if="latestDiaryEntry"> · zuletzt {{ formatDate(latestDiaryEntry.date) }}</span></p>
+          <p v-if="diaryEntries.length">
+            {{ diaryEntries.length }} {{ diaryEntries.length === 1 ? 'Eintrag' : 'Einträge'
+            }}<span v-if="latestDiaryEntry">
+              · zuletzt {{ formatDate(latestDiaryEntry.date) }}</span
+            >
+          </p>
           <p v-else>Noch nichts geschrieben</p>
         </router-link>
 
         <!-- Notizen -->
-        <router-link v-else-if="key === 'notes'" to="/notes" class="card tile" :style="{ background: `${WIDGET_COLORS.get('notes')}0d` }">
+        <router-link
+          v-else-if="key === 'notes'"
+          to="/notes"
+          class="card tile"
+          :style="{ background: `${WIDGET_COLORS.get('notes')}0d` }"
+        >
           <AppIcon
             class="tile-icon"
             :size="18"
-            :style="{ background: `${WIDGET_COLORS.get('notes')}26`, borderColor: WIDGET_COLORS.get('notes') }"
+            :style="{
+              background: `${WIDGET_COLORS.get('notes')}26`,
+              borderColor: WIDGET_COLORS.get('notes'),
+            }"
             :icon="SECTION_ICON_DEFS.notes"
             group="navigation"
             :color="WIDGET_COLORS.get('notes')"
           />
           <h3>Notizen</h3>
-          <p v-if="notes.length">{{ notes.length }} {{ notes.length === 1 ? 'Notiz' : 'Notizen' }}</p>
+          <p v-if="notes.length">
+            {{ notes.length }} {{ notes.length === 1 ? 'Notiz' : 'Notizen' }}
+          </p>
           <p v-else>Noch nichts notiert</p>
         </router-link>
 
@@ -847,7 +1043,7 @@ function formatWeekdayDate(d: string) {
 
 .weather-card h3 {
   display: flex;
-  gap: .5em;
+  gap: 0.5em;
   align-items: center;
   color: var(--color-primary-dark);
   font-size: 1rem;
@@ -874,7 +1070,7 @@ function formatWeekdayDate(d: string) {
 
 .weather-section-label {
   display: flex;
-  gap: .5em;
+  gap: 0.5em;
   margin: 0 0 var(--space-2);
   color: var(--color-text-muted);
   font-weight: 600;
@@ -989,7 +1185,9 @@ function formatWeekdayDate(d: string) {
   position: relative;
   text-decoration: none;
   color: inherit;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -1018,7 +1216,7 @@ function formatWeekdayDate(d: string) {
   align-items: center;
   justify-content: center;
   font-size: 1.4rem;
-  padding: .5rem;
+  padding: 0.5rem;
 }
 
 .tile h3 {
@@ -1129,7 +1327,9 @@ function formatWeekdayDate(d: string) {
 
 .weather-day.clickable {
   cursor: pointer;
-  transition: transform 0.15s ease, background 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    background 0.15s ease;
 }
 
 .weather-day.clickable:hover {

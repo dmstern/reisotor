@@ -35,10 +35,24 @@ import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { parseLatLngFromMapsLink } from '../utils/googleMaps';
 import { buildAllEntries } from '../utils/calendarEntries';
-import { calendarEventFromEntry, googleCalendarHref, outlookCalendarHref, triggerIcsDownload } from '../utils/calendarExport';
+import {
+  calendarEventFromEntry,
+  googleCalendarHref,
+  outlookCalendarHref,
+  triggerIcsDownload,
+} from '../utils/calendarExport';
 import { fetchWeatherForecast, weatherCodeMeta, type DailyWeather } from '../utils/weather';
-import { collectWeatherLocations, dayWeatherEntries, type DayWeatherEntry } from '../utils/dayWeather';
-import { endOfWeek, startOfWeek, toLocalDateString, formatDate as formatDateShared } from '../utils/dateFormat';
+import {
+  collectWeatherLocations,
+  dayWeatherEntries,
+  type DayWeatherEntry,
+} from '../utils/dayWeather';
+import {
+  endOfWeek,
+  startOfWeek,
+  toLocalDateString,
+  formatDate as formatDateShared,
+} from '../utils/dateFormat';
 
 // Auf Desktop weiterhin eigenständig gemountete Schublade (App.vue, linker Platz). Auf Mobil
 // dagegen dieselbe Komponente als eigenständige Seite (Route /calendar, siehe router/index.ts)
@@ -131,7 +145,7 @@ const editForm = ref({
 const editDraft = useDraftAutosave(
   () => `schedule:edit:${editingItem.value?.id}`,
   editForm,
-  computed(() => editingItem.value !== null),
+  computed(() => editingItem.value !== null)
 );
 
 function parseLinkKey(key: string): { spot_id: number | null; idea_id: number | null } {
@@ -149,7 +163,8 @@ function linkKeyFor(item: Pick<ScheduleItem, 'spot_id' | 'idea_id'>): string {
 function titleForLinkKey(key: string): string | null {
   const { spot_id, idea_id } = parseLinkKey(key);
   if (spot_id != null) return spotsStore.spots.find((s) => s.id === spot_id)?.title ?? null;
-  if (idea_id != null) return excursionsStore.excursions.find((e) => e.id === idea_id)?.title ?? null;
+  if (idea_id != null)
+    return excursionsStore.excursions.find((e) => e.id === idea_id)?.title ?? null;
   return null;
 }
 
@@ -165,7 +180,7 @@ watch(
   (key) => {
     const t = key && titleForLinkKey(key);
     if (t && !editForm.value.title.trim()) editForm.value.title = t;
-  },
+  }
 );
 
 // Wählt man einen bekannten Ort aus der Vorschlagsliste (Combobox, exakter Namenstreffer), wird
@@ -184,7 +199,7 @@ watch(
   (name) => {
     const mapsLink = placeMapsLinkFor(name);
     if (mapsLink) editForm.value.mapsLink = mapsLink;
-  },
+  }
 );
 
 // "Zum eigenen Kalender hinzufügen"-Menü: welcher Eintrag (per key) hat sein Menü gerade offen –
@@ -216,7 +231,10 @@ async function toggleCalendarPicker(key: string, event: MouseEvent) {
   // querySelector.
   const menuRect = document.querySelector('.picker-menu')?.getBoundingClientRect();
   if (menuRect && menuRect.bottom > window.innerHeight - 8) {
-    calendarPickerStyle.value = { ...calendarPickerStyle.value, top: `${Math.max(8, window.innerHeight - menuRect.height - 8)}px` };
+    calendarPickerStyle.value = {
+      ...calendarPickerStyle.value,
+      top: `${Math.max(8, window.innerHeight - menuRect.height - 8)}px`,
+    };
   }
 }
 function downloadIcsForEntry(entry: CalendarEntry) {
@@ -256,7 +274,7 @@ async function loadWeather() {
     locations.map(async (loc) => ({
       key: loc.key,
       days: await fetchWeatherForecast(loc.lat, loc.lng, weatherProvider.model),
-    })),
+    }))
   );
   const map = new Map<string, DailyWeather[]>();
   for (const result of results) {
@@ -276,7 +294,7 @@ watch(
   () => drawers.calendarOpen,
   (open) => {
     if (open) liveSync.markSeen('schedule');
-  },
+  }
 );
 
 onMounted(async () => {
@@ -314,7 +332,7 @@ watch(
   async () => {
     await loadAll();
     loadWeather();
-  },
+  }
 );
 
 // Neu laden, sobald der Wetteranbieter in den Einstellungen gewechselt wird (siehe DashboardView.vue
@@ -327,7 +345,7 @@ function toIso(d: Date) {
 
 function accommodationsForDate(date: string) {
   return accommodations.value.filter(
-    (a) => a.start_date && a.end_date && a.start_date <= date && date <= a.end_date,
+    (a) => a.start_date && a.end_date && a.start_date <= date && date <= a.end_date
   );
 }
 
@@ -338,8 +356,8 @@ const allEntries = computed(() =>
     todos.value,
     travelItems.value,
     excursionsStore.excursions,
-    spotsStore.spots,
-  ),
+    spotsStore.spots
+  )
 );
 
 function entriesForDate(date: string) {
@@ -370,9 +388,19 @@ const weeks = computed(() => {
   // Wochenanfang respektiert die Einstellung (Standard: Montag, siehe utils/dateFormat.ts).
   const firstWeekStart = startOfWeek(start);
 
-  const result: { date: string; entries: CalendarEntry[]; accommodations: Spot[]; weatherEntries: DayWeatherEntry[] }[][] = [];
+  const result: {
+    date: string;
+    entries: CalendarEntry[];
+    accommodations: Spot[];
+    weatherEntries: DayWeatherEntry[];
+  }[][] = [];
   let cursor = new Date(firstWeekStart);
-  let week: { date: string; entries: CalendarEntry[]; accommodations: Spot[]; weatherEntries: DayWeatherEntry[] }[] = [];
+  let week: {
+    date: string;
+    entries: CalendarEntry[];
+    accommodations: Spot[];
+    weatherEntries: DayWeatherEntry[];
+  }[] = [];
 
   while (cursor <= end || week.length % 7 !== 0) {
     const iso = toIso(cursor);
@@ -403,7 +431,9 @@ const weeks = computed(() => {
 type PageGranularity = 'week' | 'twoWeeks' | 'month';
 const WEEKS_PER_PAGE_BY_GRANULARITY: Record<'week' | 'twoWeeks', number> = { week: 1, twoWeeks: 2 };
 const granularity = ref<PageGranularity>('month');
-const weeksPerPage = computed(() => (granularity.value === 'month' ? 4 : WEEKS_PER_PAGE_BY_GRANULARITY[granularity.value]));
+const weeksPerPage = computed(() =>
+  granularity.value === 'month' ? 4 : WEEKS_PER_PAGE_BY_GRANULARITY[granularity.value]
+);
 const pageOffset = ref(0);
 
 interface DayCell {
@@ -456,16 +486,18 @@ const monthWeeks = computed<DayCell[][]>(() => {
   return result;
 });
 
-const monthLabel = computed(() => monthAnchor.value.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' }));
+const monthLabel = computed(() =>
+  monthAnchor.value.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' })
+);
 
 const visibleWeeks = computed<DayCell[][]>(() =>
   granularity.value === 'month'
     ? monthWeeks.value
-    : weeks.value.slice(pageOffset.value, pageOffset.value + weeksPerPage.value),
+    : weeks.value.slice(pageOffset.value, pageOffset.value + weeksPerPage.value)
 );
 const canGoPrev = computed(() => granularity.value === 'month' || pageOffset.value > 0);
 const canGoNext = computed(
-  () => granularity.value === 'month' || pageOffset.value + weeksPerPage.value < weeks.value.length,
+  () => granularity.value === 'month' || pageOffset.value + weeksPerPage.value < weeks.value.length
 );
 
 const visibleRangeLabel = computed(() => {
@@ -484,10 +516,18 @@ function clampOffset(idx: number) {
 }
 
 function prevMonth() {
-  monthAnchor.value = new Date(monthAnchor.value.getFullYear(), monthAnchor.value.getMonth() - 1, 1);
+  monthAnchor.value = new Date(
+    monthAnchor.value.getFullYear(),
+    monthAnchor.value.getMonth() - 1,
+    1
+  );
 }
 function nextMonth() {
-  monthAnchor.value = new Date(monthAnchor.value.getFullYear(), monthAnchor.value.getMonth() + 1, 1);
+  monthAnchor.value = new Date(
+    monthAnchor.value.getFullYear(),
+    monthAnchor.value.getMonth() + 1,
+    1
+  );
 }
 
 function prevPage() {
@@ -561,10 +601,12 @@ function showDayOnMap() {
 }
 
 const dayAccommodations = computed(() =>
-  selectedDate.value ? accommodationsForDate(selectedDate.value) : [],
+  selectedDate.value ? accommodationsForDate(selectedDate.value) : []
 );
 
-const selectedDateWeatherEntries = computed(() => (selectedDate.value ? weatherEntriesFor(selectedDate.value) : []));
+const selectedDateWeatherEntries = computed(() =>
+  selectedDate.value ? weatherEntriesFor(selectedDate.value) : []
+);
 
 // Klick-Alternative zum Drag-Einplanen (ExcursionCard.vue/SpotCard.vue's 📅-Anfasser als Button):
 // wartet ein Einplanen-Vorhaben (drawers.pendingSchedule, per Klick auf den Anfasser gesetzt), löst
@@ -579,7 +621,7 @@ function selectDay(date: string) {
 
 async function finishPendingSchedule(
   pending: { kind: 'excursion' | 'spot'; id: number; mode: 'plan' | 'confirm-done' },
-  date: string,
+  date: string
 ) {
   if (pending.kind === 'excursion') {
     await excursionsStore.setDate(pending.id, date);
@@ -593,7 +635,12 @@ async function finishPendingSchedule(
         await scheduleStore.setSpotDate(pending.id, tripStore.currentTripId, spot.title, date);
         await spotsStore.setDone(pending.id, true);
       } else {
-        await scheduleStore.create({ trip_id: tripStore.currentTripId, date, title: spot.title, spot_id: spot.id });
+        await scheduleStore.create({
+          trip_id: tripStore.currentTripId,
+          date,
+          title: spot.title,
+          spot_id: spot.id,
+        });
       }
     }
   }
@@ -624,7 +671,8 @@ function returnToCard(kind: 'excursion' | 'spot', id: number) {
 const pendingScheduleLabel = computed(() => {
   const pending = drawers.pendingSchedule;
   if (!pending) return null;
-  if (pending.kind === 'excursion') return excursionsStore.excursions.find((e) => e.id === pending.id)?.title ?? null;
+  if (pending.kind === 'excursion')
+    return excursionsStore.excursions.find((e) => e.id === pending.id)?.title ?? null;
   return spotsStore.spots.find((s) => s.id === pending.id)?.title ?? null;
 });
 
@@ -722,8 +770,8 @@ async function submitEdit() {
     note: editForm.value.note || undefined,
     location: linked ? undefined : editForm.value.location || undefined,
     maps_link: linked ? undefined : editForm.value.mapsLink || undefined,
-    lat: linked ? undefined : parsed?.lat ?? editingItem.value.lat ?? undefined,
-    lng: linked ? undefined : parsed?.lng ?? editingItem.value.lng ?? undefined,
+    lat: linked ? undefined : (parsed?.lat ?? editingItem.value.lat ?? undefined),
+    lng: linked ? undefined : (parsed?.lng ?? editingItem.value.lng ?? undefined),
     spot_id,
     idea_id,
   });
@@ -788,13 +836,17 @@ async function toggleTodoDone(todoId: number) {
 // Kärtchen selbst (Spot-/Tour-Verknüpfung, siehe calendarEntries.ts) – statt sie ein zweites Mal
 // separat zu berechnen, wird einfach der schon fertig berechnete CalendarEntry wiederverwendet.
 const viewingEntry = computed(() =>
-  viewingItem.value ? allEntries.value.find((e) => e.scheduleItem?.id === viewingItem.value!.id) ?? null : null,
+  viewingItem.value
+    ? (allEntries.value.find((e) => e.scheduleItem?.id === viewingItem.value!.id) ?? null)
+    : null
 );
 
 function linkedTitleFor(entry: CalendarEntry | null): string | null {
   if (!entry) return null;
-  if (entry.spotId != null) return spotsStore.spots.find((s) => s.id === entry.spotId)?.title ?? null;
-  if (entry.ideaId != null) return excursionsStore.excursions.find((e) => e.id === entry.ideaId)?.title ?? null;
+  if (entry.spotId != null)
+    return spotsStore.spots.find((s) => s.id === entry.spotId)?.title ?? null;
+  if (entry.ideaId != null)
+    return excursionsStore.excursions.find((e) => e.id === entry.ideaId)?.title ?? null;
   return null;
 }
 
@@ -842,10 +894,14 @@ function formatDate(date: string) {
 
     <div class="pending-schedule-banner" v-if="drawers.pendingSchedule">
       <span v-if="drawers.pendingSchedule.mode === 'confirm-done'">
-        <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" /> Wähle den Tag, an dem „{{ pendingScheduleLabel }}“
+        <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" /> Wähle den Tag, an
+        dem „{{ pendingScheduleLabel }}“
         {{ drawers.pendingSchedule.kind === 'excursion' ? 'gemacht' : 'besucht' }} wurde
       </span>
-      <span v-else><AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" /> Tippe einen Tag an, um „{{ pendingScheduleLabel }}“ einzuplanen</span>
+      <span v-else
+        ><AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" /> Tippe einen Tag an,
+        um „{{ pendingScheduleLabel }}“ einzuplanen</span
+      >
       <Button variant="secondary" @click="cancelPendingSchedule">Abbrechen</Button>
     </div>
 
@@ -888,7 +944,9 @@ function formatDate(date: string) {
         <Button variant="secondary" v-if="trip" @click="goToTripDates">
           <AppIcon :icon="ACTION_ICONS.vacation" :size="14" group="actions" /> Urlaub
         </Button>
-        <Button @click="openAddForm"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Neu</Button>
+        <Button @click="openAddForm"
+          ><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Neu</Button
+        >
       </div>
     </div>
 
@@ -908,7 +966,8 @@ function formatDate(date: string) {
         <h3>{{ formatDay(selectedDate) }}</h3>
         <div class="day-detail-actions">
           <Button variant="card-action" @click="showDayOnMap">
-            <AppIcon :icon="SECTION_ICON_DEFS.map" :size="14" group="navigation" /> Tag auf Karte anzeigen
+            <AppIcon :icon="SECTION_ICON_DEFS.map" :size="14" group="navigation" /> Tag auf Karte
+            anzeigen
           </Button>
         </div>
       </div>
@@ -918,12 +977,15 @@ function formatDate(date: string) {
         <WeatherIcon :code="entry.weather.weatherCode" :size="15" />
         {{ Math.round(entry.weather.tempMax) }}° / {{ Math.round(entry.weather.tempMin) }}°
         <span v-if="entry.weather.precipitationProbability != null">
-          · <AppIcon :icon="ACTION_ICONS.rain" :size="13" group="actions" />{{ entry.weather.precipitationProbability }}%
+          · <AppIcon :icon="ACTION_ICONS.rain" :size="13" group="actions" />{{
+            entry.weather.precipitationProbability
+          }}%
         </span>
       </p>
 
       <p v-for="acc in dayAccommodations" :key="acc.id" class="acc-note">
-        <AppIcon :icon="spotCategoryMeta('Unterkunft').tabler" :size="14" group="categories" /> Unterkunft: {{ acc.title }}
+        <AppIcon :icon="spotCategoryMeta('Unterkunft').tabler" :size="14" group="categories" />
+        Unterkunft: {{ acc.title }}
       </p>
 
       <TransitionGroup tag="ul" name="list" class="items">
@@ -935,7 +997,10 @@ function formatDate(date: string) {
             v-if="entry.kind === 'schedule' && scheduleStore.isPending(entry.scheduleItem!.id)"
             class="item"
           >
-            <UndoDeleteRow :label="entry.title" @undo="scheduleStore.restore(entry.scheduleItem!.id)" />
+            <UndoDeleteRow
+              :label="entry.title"
+              @undo="scheduleStore.restore(entry.scheduleItem!.id)"
+            />
           </li>
           <li
             v-else
@@ -964,7 +1029,8 @@ function formatDate(date: string) {
               <strong v-if="entry.time">{{ entry.time }}</strong>
               <span class="title">{{ entry.title }}</span>
               <p v-if="entry.location" class="location">
-                <AppIcon :icon="FORM_FIELD_ICONS.location" :size="13" group="formFields" /> {{ entry.location }}
+                <AppIcon :icon="FORM_FIELD_ICONS.location" :size="13" group="formFields" />
+                {{ entry.location }}
               </p>
               <p v-if="entry.note" class="note">{{ entry.note }}</p>
             </div>
@@ -984,7 +1050,8 @@ function formatDate(date: string) {
                     <div class="picker-backdrop" @click.stop="calendarPickerKey = null"></div>
                     <div class="picker-menu" :style="calendarPickerStyle" @click.stop>
                       <button type="button" @click="downloadIcsForEntry(entry)">
-                        <AppIcon :icon="ACTION_ICONS.apple" :size="14" group="actions" /> Apple/iPhone
+                        <AppIcon :icon="ACTION_ICONS.apple" :size="14" group="actions" />
+                        Apple/iPhone
                       </button>
                       <a
                         :href="googleCalendarHref(calendarEventFromEntry(entry))"
@@ -992,7 +1059,8 @@ function formatDate(date: string) {
                         rel="noopener"
                         @click="calendarPickerKey = null"
                       >
-                        <AppIcon :icon="ACTION_ICONS.googleCalendar" :size="14" group="actions" /> Google Kalender
+                        <AppIcon :icon="ACTION_ICONS.googleCalendar" :size="14" group="actions" />
+                        Google Kalender
                       </a>
                       <a
                         :href="outlookCalendarHref(calendarEventFromEntry(entry))"
@@ -1000,7 +1068,8 @@ function formatDate(date: string) {
                         rel="noopener"
                         @click="calendarPickerKey = null"
                       >
-                        <AppIcon :icon="FORM_FIELD_ICONS.email" :size="14" group="formFields" /> Outlook
+                        <AppIcon :icon="FORM_FIELD_ICONS.email" :size="14" group="formFields" />
+                        Outlook
                       </a>
                       <button type="button" @click="downloadIcsForEntry(entry)">
                         <AppIcon :icon="ACTION_ICONS.android" :size="14" group="actions" /> Android
@@ -1018,7 +1087,9 @@ function formatDate(date: string) {
             </div>
           </li>
         </template>
-        <li v-if="!dayEntries.length" key="empty" class="empty">Noch keine Termine an diesem Tag.</li>
+        <li v-if="!dayEntries.length" key="empty" class="empty">
+          Noch keine Termine an diesem Tag.
+        </li>
       </TransitionGroup>
     </div>
 
@@ -1047,10 +1118,18 @@ function formatDate(date: string) {
           <select v-model="newLinkKey">
             <option value="">🔗 Kein Spot/keine Tour verknüpft</option>
             <optgroup label="Spots" v-if="spotsStore.spots.length">
-              <option v-for="s in spotsStore.spots" :key="`spot:${s.id}`" :value="`spot:${s.id}`">{{ s.title }}</option>
+              <option v-for="s in spotsStore.spots" :key="`spot:${s.id}`" :value="`spot:${s.id}`">
+                {{ s.title }}
+              </option>
             </optgroup>
             <optgroup label="Touren" v-if="excursionsStore.excursions.length">
-              <option v-for="e in excursionsStore.excursions" :key="`idea:${e.id}`" :value="`idea:${e.id}`">{{ e.title }}</option>
+              <option
+                v-for="e in excursionsStore.excursions"
+                :key="`idea:${e.id}`"
+                :value="`idea:${e.id}`"
+              >
+                {{ e.title }}
+              </option>
             </optgroup>
           </select>
         </FormField>
@@ -1059,7 +1138,11 @@ function formatDate(date: string) {
             <Combobox v-model="newLocation" :options="placeNames" placeholder="Ort (optional)" />
           </FormField>
           <FormField icon="maps" label="Maps-Link">
-            <input v-model="newMapsLink" type="url" placeholder="Maps-Link (Google/Apple) (optional)" />
+            <input
+              v-model="newMapsLink"
+              type="url"
+              placeholder="Maps-Link (Google/Apple) (optional)"
+            />
           </FormField>
         </template>
         <FormField icon="note" label="Notiz">
@@ -1092,19 +1175,35 @@ function formatDate(date: string) {
           <select v-model="editForm.linkKey">
             <option value="">🔗 Kein Spot/keine Tour verknüpft</option>
             <optgroup label="Spots" v-if="spotsStore.spots.length">
-              <option v-for="s in spotsStore.spots" :key="`spot:${s.id}`" :value="`spot:${s.id}`">{{ s.title }}</option>
+              <option v-for="s in spotsStore.spots" :key="`spot:${s.id}`" :value="`spot:${s.id}`">
+                {{ s.title }}
+              </option>
             </optgroup>
             <optgroup label="Touren" v-if="excursionsStore.excursions.length">
-              <option v-for="e in excursionsStore.excursions" :key="`idea:${e.id}`" :value="`idea:${e.id}`">{{ e.title }}</option>
+              <option
+                v-for="e in excursionsStore.excursions"
+                :key="`idea:${e.id}`"
+                :value="`idea:${e.id}`"
+              >
+                {{ e.title }}
+              </option>
             </optgroup>
           </select>
         </FormField>
         <template v-if="!editForm.linkKey">
           <FormField icon="location" label="Ort">
-            <Combobox v-model="editForm.location" :options="placeNames" placeholder="Ort (optional)" />
+            <Combobox
+              v-model="editForm.location"
+              :options="placeNames"
+              placeholder="Ort (optional)"
+            />
           </FormField>
           <FormField icon="maps" label="Maps-Link">
-            <input v-model="editForm.mapsLink" type="url" placeholder="Maps-Link (Google/Apple) (optional)" />
+            <input
+              v-model="editForm.mapsLink"
+              type="url"
+              placeholder="Maps-Link (Google/Apple) (optional)"
+            />
           </FormField>
         </template>
         <FormField icon="note" label="Notiz">
@@ -1120,7 +1219,11 @@ function formatDate(date: string) {
       :model-value="viewingItem !== null"
       @update:model-value="(v) => !v && (viewingItem = null)"
       :title="viewingItem?.title ?? ''"
-      :placeholder-icon="viewingEntry ? (viewingEntry.iconDef ?? SCHEDULE_CATEGORY_META[viewingEntry.category].tabler) : undefined"
+      :placeholder-icon="
+        viewingEntry
+          ? (viewingEntry.iconDef ?? SCHEDULE_CATEGORY_META[viewingEntry.category].tabler)
+          : undefined
+      "
       @edit="editViewingItem"
     >
       <template #meta>
@@ -1131,28 +1234,58 @@ function formatDate(date: string) {
       </template>
       <p v-if="viewingItem?.time" class="detail-row">
         <span class="detail-label">Zeit</span>
-        <AppIcon :icon="FORM_FIELD_ICONS.time" :size="14" group="formFields" /> {{ viewingItem.time }}<template v-if="viewingItem.end_time"> – {{ viewingItem.end_time }}</template>
+        <AppIcon :icon="FORM_FIELD_ICONS.time" :size="14" group="formFields" /> {{ viewingItem.time
+        }}<template v-if="viewingItem.end_time"> – {{ viewingItem.end_time }}</template>
       </p>
-      <p v-if="viewingItem?.end_date && viewingItem.end_date !== viewingItem.date" class="detail-row">
+      <p
+        v-if="viewingItem?.end_date && viewingItem.end_date !== viewingItem.date"
+        class="detail-row"
+      >
         <span class="detail-label">Zeitraum</span>
-        <AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" /> {{ formatDate(viewingItem.date) }} – {{ formatDate(viewingItem.end_date) }}
+        <AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" />
+        {{ formatDate(viewingItem.date) }} – {{ formatDate(viewingItem.end_date) }}
       </p>
       <p v-if="!linkedTitleFor(viewingEntry) && viewingItem?.location" class="detail-row">
         <span class="detail-label">Ort</span>
-        <AppIcon :icon="FORM_FIELD_ICONS.location" :size="14" group="formFields" /> {{ viewingItem.location }}
+        <AppIcon :icon="FORM_FIELD_ICONS.location" :size="14" group="formFields" />
+        {{ viewingItem.location }}
       </p>
       <div v-if="linkedTitleFor(viewingEntry)" class="detail-row linked-entity-row">
         <span class="detail-label">
           {{ viewingEntry?.spotId != null ? 'Verknüpfter Ort' : 'Verknüpfte Tour' }}
         </span>
-        <Button variant="secondary" size="sm" class="linked-entity-btn" @click="navigateToLinkedEntity">
-          <AppIcon :icon="viewingEntry?.iconDef ?? (viewingEntry?.spotId != null ? FORM_FIELD_ICONS.location : SECTION_ICON_DEFS.excursions)" :size="15" group="categories" />
+        <Button
+          variant="secondary"
+          size="sm"
+          class="linked-entity-btn"
+          @click="navigateToLinkedEntity"
+        >
+          <AppIcon
+            :icon="
+              viewingEntry?.iconDef ??
+              (viewingEntry?.spotId != null
+                ? FORM_FIELD_ICONS.location
+                : SECTION_ICON_DEFS.excursions)
+            "
+            :size="15"
+            group="categories"
+          />
           <span class="linked-entity-title">{{ linkedTitleFor(viewingEntry) }}</span>
-          <AppIcon :icon="ACTION_ICONS.scrollRight" :size="12" group="actions" class="linked-entity-chevron" />
+          <AppIcon
+            :icon="ACTION_ICONS.scrollRight"
+            :size="12"
+            group="actions"
+            class="linked-entity-chevron"
+          />
         </Button>
       </div>
       <div v-if="viewingItem?.note" class="detail-row note">{{ viewingItem.note }}</div>
-      <FileAttachments v-if="viewingItem" domain="schedule" :entity-id="viewingItem.id" :editable="false" />
+      <FileAttachments
+        v-if="viewingItem"
+        domain="schedule"
+        :entity-id="viewingItem.id"
+        :editable="false"
+      />
       <div class="detail-actions">
         <MapsAppPicker
           v-if="viewingItem?.lat != null && viewingItem?.lng != null"
@@ -1480,6 +1613,4 @@ function formatDate(date: string) {
   margin-left: var(--space-1);
   opacity: 0.6;
 }
-
 </style>
-

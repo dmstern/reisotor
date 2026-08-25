@@ -44,7 +44,12 @@ interface OpenMeteoResponse {
 // Tabler deckt Wetter-Nuancen (z. B. gefrierend vs. normal) nicht 1:1 ab - mehrere Codes teilen sich
 // deshalb bewusst dasselbe IconDef, das Emoji bleibt weiterhin pro Code eindeutig.
 const ICON_SUN: IconDef = { id: 'sun', emoji: '☀️', outline: IconSun, filled: IconSunFilled };
-const ICON_CLOUD: IconDef = { id: 'cloud', emoji: '⛅', outline: IconCloud, filled: IconCloudFilled };
+const ICON_CLOUD: IconDef = {
+  id: 'cloud',
+  emoji: '⛅',
+  outline: IconCloud,
+  filled: IconCloudFilled,
+};
 const ICON_RAIN: IconDef = { id: 'cloud-rain', emoji: '🌧️', outline: IconCloudRain };
 const ICON_SNOW: IconDef = { id: 'cloud-snow', emoji: '🌨️', outline: IconCloudSnow };
 const ICON_SNOWFLAKE: IconDef = { id: 'snowflake', emoji: '❄️', outline: IconSnowflake };
@@ -53,7 +58,12 @@ const ICON_STORM: IconDef = { id: 'cloud-storm', emoji: '⛈️', outline: IconC
 const ICON_UNKNOWN: IconDef = { id: 'temperature', emoji: '🌡️', outline: IconTemperature };
 // filled statt outline für beide (siehe WeatherIconPart.forceFilled unten): als kleines Akzent-Icon
 // über einer Wolke überlagern sich sonst zwei Outline-Umrisse (Wolke + Tropfen/Blitz) unschön.
-const ICON_DROPLET: IconDef = { id: 'droplet', emoji: '💧', outline: IconDroplet, filled: IconDropletFilled };
+const ICON_DROPLET: IconDef = {
+  id: 'droplet',
+  emoji: '💧',
+  outline: IconDroplet,
+  filled: IconDropletFilled,
+};
 const ICON_BOLT: IconDef = { id: 'bolt', emoji: '⚡', outline: IconBolt, filled: IconBoltFilled };
 
 // Passend zur jeweiligen Wetter-Bedingung (Issue #74: "sonne gelb, wolken grau, regentropfen blau,
@@ -91,31 +101,207 @@ const WEATHER_CODE_META: Record<number, WeatherCodeMeta> = {
   3: { icon: '☁️', label: 'Bedeckt', tabler: ICON_CLOUD, color: COLOR_CLOUD },
   45: { icon: '🌫️', label: 'Nebel', tabler: ICON_FOG, color: COLOR_CLOUD },
   48: { icon: '🌫️', label: 'Reifnebel', tabler: ICON_FOG, color: COLOR_CLOUD },
-  51: { icon: '🌦️', label: 'Leichter Nieselregen', tabler: ICON_RAIN, color: COLOR_RAIN, parts: [{ icon: ICON_CLOUD, color: COLOR_CLOUD }, { icon: ICON_DROPLET, color: COLOR_RAIN, forceFilled: true }] },
-  53: { icon: '🌦️', label: 'Nieselregen', tabler: ICON_RAIN, color: COLOR_RAIN, parts: [{ icon: ICON_CLOUD, color: COLOR_CLOUD }, { icon: ICON_DROPLET, color: COLOR_RAIN, forceFilled: true }] },
-  55: { icon: '🌧️', label: 'Starker Nieselregen', tabler: ICON_RAIN, color: COLOR_RAIN, parts: [{ icon: ICON_CLOUD, color: COLOR_CLOUD }, { icon: ICON_DROPLET, color: COLOR_RAIN, forceFilled: true }] },
-  56: { icon: '🌧️', label: 'Gefrierender Nieselregen', tabler: ICON_RAIN, color: COLOR_RAIN, parts: [{ icon: ICON_CLOUD, color: COLOR_CLOUD }, { icon: ICON_DROPLET, color: COLOR_RAIN, forceFilled: true }] },
-  57: { icon: '🌧️', label: 'Starker gefrierender Nieselregen', tabler: ICON_RAIN, color: COLOR_RAIN, parts: [{ icon: ICON_CLOUD, color: COLOR_CLOUD }, { icon: ICON_DROPLET, color: COLOR_RAIN, forceFilled: true }] },
-  61: { icon: '🌦️', label: 'Leichter Regen', tabler: ICON_RAIN, color: COLOR_RAIN, parts: [{ icon: ICON_CLOUD, color: COLOR_CLOUD }, { icon: ICON_DROPLET, color: COLOR_RAIN, forceFilled: true }] },
-  63: { icon: '🌧️', label: 'Regen', tabler: ICON_RAIN, color: COLOR_RAIN, parts: [{ icon: ICON_CLOUD, color: COLOR_CLOUD }, { icon: ICON_DROPLET, color: COLOR_RAIN, forceFilled: true }] },
-  65: { icon: '🌧️', label: 'Starker Regen', tabler: ICON_RAIN, color: COLOR_RAIN, parts: [{ icon: ICON_CLOUD, color: COLOR_CLOUD }, { icon: ICON_DROPLET, color: COLOR_RAIN, forceFilled: true }] },
-  66: { icon: '🌧️', label: 'Gefrierender Regen', tabler: ICON_RAIN, color: COLOR_RAIN, parts: [{ icon: ICON_CLOUD, color: COLOR_CLOUD }, { icon: ICON_DROPLET, color: COLOR_RAIN, forceFilled: true }] },
-  67: { icon: '🌧️', label: 'Starker gefrierender Regen', tabler: ICON_RAIN, color: COLOR_RAIN, parts: [{ icon: ICON_CLOUD, color: COLOR_CLOUD }, { icon: ICON_DROPLET, color: COLOR_RAIN, forceFilled: true }] },
-  71: { icon: '🌨️', label: 'Leichter Schneefall', tabler: ICON_SNOW, color: COLOR_SNOW, parts: [{ icon: ICON_CLOUD, color: COLOR_CLOUD }, { icon: ICON_SNOWFLAKE, color: COLOR_SNOW }] },
-  73: { icon: '🌨️', label: 'Schneefall', tabler: ICON_SNOW, color: COLOR_SNOW, parts: [{ icon: ICON_CLOUD, color: COLOR_CLOUD }, { icon: ICON_SNOWFLAKE, color: COLOR_SNOW }] },
+  51: {
+    icon: '🌦️',
+    label: 'Leichter Nieselregen',
+    tabler: ICON_RAIN,
+    color: COLOR_RAIN,
+    parts: [
+      { icon: ICON_CLOUD, color: COLOR_CLOUD },
+      { icon: ICON_DROPLET, color: COLOR_RAIN, forceFilled: true },
+    ],
+  },
+  53: {
+    icon: '🌦️',
+    label: 'Nieselregen',
+    tabler: ICON_RAIN,
+    color: COLOR_RAIN,
+    parts: [
+      { icon: ICON_CLOUD, color: COLOR_CLOUD },
+      { icon: ICON_DROPLET, color: COLOR_RAIN, forceFilled: true },
+    ],
+  },
+  55: {
+    icon: '🌧️',
+    label: 'Starker Nieselregen',
+    tabler: ICON_RAIN,
+    color: COLOR_RAIN,
+    parts: [
+      { icon: ICON_CLOUD, color: COLOR_CLOUD },
+      { icon: ICON_DROPLET, color: COLOR_RAIN, forceFilled: true },
+    ],
+  },
+  56: {
+    icon: '🌧️',
+    label: 'Gefrierender Nieselregen',
+    tabler: ICON_RAIN,
+    color: COLOR_RAIN,
+    parts: [
+      { icon: ICON_CLOUD, color: COLOR_CLOUD },
+      { icon: ICON_DROPLET, color: COLOR_RAIN, forceFilled: true },
+    ],
+  },
+  57: {
+    icon: '🌧️',
+    label: 'Starker gefrierender Nieselregen',
+    tabler: ICON_RAIN,
+    color: COLOR_RAIN,
+    parts: [
+      { icon: ICON_CLOUD, color: COLOR_CLOUD },
+      { icon: ICON_DROPLET, color: COLOR_RAIN, forceFilled: true },
+    ],
+  },
+  61: {
+    icon: '🌦️',
+    label: 'Leichter Regen',
+    tabler: ICON_RAIN,
+    color: COLOR_RAIN,
+    parts: [
+      { icon: ICON_CLOUD, color: COLOR_CLOUD },
+      { icon: ICON_DROPLET, color: COLOR_RAIN, forceFilled: true },
+    ],
+  },
+  63: {
+    icon: '🌧️',
+    label: 'Regen',
+    tabler: ICON_RAIN,
+    color: COLOR_RAIN,
+    parts: [
+      { icon: ICON_CLOUD, color: COLOR_CLOUD },
+      { icon: ICON_DROPLET, color: COLOR_RAIN, forceFilled: true },
+    ],
+  },
+  65: {
+    icon: '🌧️',
+    label: 'Starker Regen',
+    tabler: ICON_RAIN,
+    color: COLOR_RAIN,
+    parts: [
+      { icon: ICON_CLOUD, color: COLOR_CLOUD },
+      { icon: ICON_DROPLET, color: COLOR_RAIN, forceFilled: true },
+    ],
+  },
+  66: {
+    icon: '🌧️',
+    label: 'Gefrierender Regen',
+    tabler: ICON_RAIN,
+    color: COLOR_RAIN,
+    parts: [
+      { icon: ICON_CLOUD, color: COLOR_CLOUD },
+      { icon: ICON_DROPLET, color: COLOR_RAIN, forceFilled: true },
+    ],
+  },
+  67: {
+    icon: '🌧️',
+    label: 'Starker gefrierender Regen',
+    tabler: ICON_RAIN,
+    color: COLOR_RAIN,
+    parts: [
+      { icon: ICON_CLOUD, color: COLOR_CLOUD },
+      { icon: ICON_DROPLET, color: COLOR_RAIN, forceFilled: true },
+    ],
+  },
+  71: {
+    icon: '🌨️',
+    label: 'Leichter Schneefall',
+    tabler: ICON_SNOW,
+    color: COLOR_SNOW,
+    parts: [
+      { icon: ICON_CLOUD, color: COLOR_CLOUD },
+      { icon: ICON_SNOWFLAKE, color: COLOR_SNOW },
+    ],
+  },
+  73: {
+    icon: '🌨️',
+    label: 'Schneefall',
+    tabler: ICON_SNOW,
+    color: COLOR_SNOW,
+    parts: [
+      { icon: ICON_CLOUD, color: COLOR_CLOUD },
+      { icon: ICON_SNOWFLAKE, color: COLOR_SNOW },
+    ],
+  },
   75: { icon: '❄️', label: 'Starker Schneefall', tabler: ICON_SNOWFLAKE, color: COLOR_SNOW },
   77: { icon: '❄️', label: 'Schneegriesel', tabler: ICON_SNOWFLAKE, color: COLOR_SNOW },
-  80: { icon: '🌦️', label: 'Leichte Regenschauer', tabler: ICON_RAIN, color: COLOR_RAIN, parts: [{ icon: ICON_CLOUD, color: COLOR_CLOUD }, { icon: ICON_DROPLET, color: COLOR_RAIN, forceFilled: true }] },
-  81: { icon: '🌧️', label: 'Regenschauer', tabler: ICON_RAIN, color: COLOR_RAIN, parts: [{ icon: ICON_CLOUD, color: COLOR_CLOUD }, { icon: ICON_DROPLET, color: COLOR_RAIN, forceFilled: true }] },
-  82: { icon: '⛈️', label: 'Heftige Regenschauer', tabler: ICON_STORM, color: COLOR_BOLT, parts: [{ icon: ICON_CLOUD, color: COLOR_CLOUD }, { icon: ICON_BOLT, color: COLOR_BOLT, forceFilled: true }] },
-  85: { icon: '🌨️', label: 'Leichte Schneeschauer', tabler: ICON_SNOW, color: COLOR_SNOW, parts: [{ icon: ICON_CLOUD, color: COLOR_CLOUD }, { icon: ICON_SNOWFLAKE, color: COLOR_SNOW }] },
+  80: {
+    icon: '🌦️',
+    label: 'Leichte Regenschauer',
+    tabler: ICON_RAIN,
+    color: COLOR_RAIN,
+    parts: [
+      { icon: ICON_CLOUD, color: COLOR_CLOUD },
+      { icon: ICON_DROPLET, color: COLOR_RAIN, forceFilled: true },
+    ],
+  },
+  81: {
+    icon: '🌧️',
+    label: 'Regenschauer',
+    tabler: ICON_RAIN,
+    color: COLOR_RAIN,
+    parts: [
+      { icon: ICON_CLOUD, color: COLOR_CLOUD },
+      { icon: ICON_DROPLET, color: COLOR_RAIN, forceFilled: true },
+    ],
+  },
+  82: {
+    icon: '⛈️',
+    label: 'Heftige Regenschauer',
+    tabler: ICON_STORM,
+    color: COLOR_BOLT,
+    parts: [
+      { icon: ICON_CLOUD, color: COLOR_CLOUD },
+      { icon: ICON_BOLT, color: COLOR_BOLT, forceFilled: true },
+    ],
+  },
+  85: {
+    icon: '🌨️',
+    label: 'Leichte Schneeschauer',
+    tabler: ICON_SNOW,
+    color: COLOR_SNOW,
+    parts: [
+      { icon: ICON_CLOUD, color: COLOR_CLOUD },
+      { icon: ICON_SNOWFLAKE, color: COLOR_SNOW },
+    ],
+  },
   86: { icon: '❄️', label: 'Starke Schneeschauer', tabler: ICON_SNOWFLAKE, color: COLOR_SNOW },
-  95: { icon: '⛈️', label: 'Gewitter', tabler: ICON_STORM, color: COLOR_BOLT, parts: [{ icon: ICON_CLOUD, color: COLOR_CLOUD }, { icon: ICON_BOLT, color: COLOR_BOLT, forceFilled: true }] },
-  96: { icon: '⛈️', label: 'Gewitter mit Hagel', tabler: ICON_STORM, color: COLOR_BOLT, parts: [{ icon: ICON_CLOUD, color: COLOR_CLOUD }, { icon: ICON_BOLT, color: COLOR_BOLT, forceFilled: true }] },
-  99: { icon: '⛈️', label: 'Starkes Gewitter mit Hagel', tabler: ICON_STORM, color: COLOR_BOLT, parts: [{ icon: ICON_CLOUD, color: COLOR_CLOUD }, { icon: ICON_BOLT, color: COLOR_BOLT, forceFilled: true }] },
+  95: {
+    icon: '⛈️',
+    label: 'Gewitter',
+    tabler: ICON_STORM,
+    color: COLOR_BOLT,
+    parts: [
+      { icon: ICON_CLOUD, color: COLOR_CLOUD },
+      { icon: ICON_BOLT, color: COLOR_BOLT, forceFilled: true },
+    ],
+  },
+  96: {
+    icon: '⛈️',
+    label: 'Gewitter mit Hagel',
+    tabler: ICON_STORM,
+    color: COLOR_BOLT,
+    parts: [
+      { icon: ICON_CLOUD, color: COLOR_CLOUD },
+      { icon: ICON_BOLT, color: COLOR_BOLT, forceFilled: true },
+    ],
+  },
+  99: {
+    icon: '⛈️',
+    label: 'Starkes Gewitter mit Hagel',
+    tabler: ICON_STORM,
+    color: COLOR_BOLT,
+    parts: [
+      { icon: ICON_CLOUD, color: COLOR_CLOUD },
+      { icon: ICON_BOLT, color: COLOR_BOLT, forceFilled: true },
+    ],
+  },
 };
 
-const UNKNOWN_META: WeatherCodeMeta = { icon: '🌡️', label: 'Unbekannt', tabler: ICON_UNKNOWN, color: COLOR_CLOUD };
+const UNKNOWN_META: WeatherCodeMeta = {
+  icon: '🌡️',
+  label: 'Unbekannt',
+  tabler: ICON_UNKNOWN,
+  color: COLOR_CLOUD,
+};
 
 export function weatherCodeMeta(code: number): WeatherCodeMeta {
   return WEATHER_CODE_META[code] ?? UNKNOWN_META;
@@ -134,7 +320,10 @@ let cache: { key: string; promise: Promise<DailyWeather[]> } | null = null;
 // Demo-Build, siehe demoClient.ts) - sorgt dafür, dass sowohl die echte Live-Demo als auch daraus
 // erzeugte Marketing-Screenshots (siehe DESIGN.md) eine plausible Wetterkarte statt der sonst
 // sichtbaren "Wetterdaten konnten nicht geladen werden"-Fehlermeldung zeigen.
-const DEMO_WEATHER_PATTERN: Pick<DailyWeather, 'weatherCode' | 'tempMax' | 'tempMin' | 'precipitationProbability'>[] = [
+const DEMO_WEATHER_PATTERN: Pick<
+  DailyWeather,
+  'weatherCode' | 'tempMax' | 'tempMin' | 'precipitationProbability'
+>[] = [
   { weatherCode: 0, tempMax: 27, tempMin: 18, precipitationProbability: 5 },
   { weatherCode: 0, tempMax: 28, tempMin: 19, precipitationProbability: 5 },
   { weatherCode: 1, tempMax: 26, tempMin: 18, precipitationProbability: 10 },
@@ -148,11 +337,18 @@ function demoWeatherForecast(): DailyWeather[] {
   return Array.from({ length: 17 }, (_, i) => {
     const date = new Date(start);
     date.setDate(date.getDate() + i);
-    return { date: toLocalDateString(date), ...DEMO_WEATHER_PATTERN[i % DEMO_WEATHER_PATTERN.length] };
+    return {
+      date: toLocalDateString(date),
+      ...DEMO_WEATHER_PATTERN[i % DEMO_WEATHER_PATTERN.length],
+    };
   });
 }
 
-export function fetchWeatherForecast(lat: number, lng: number, model = 'ecmwf_ifs025'): Promise<DailyWeather[]> {
+export function fetchWeatherForecast(
+  lat: number,
+  lng: number,
+  model = 'ecmwf_ifs025'
+): Promise<DailyWeather[]> {
   const key = `${lat.toFixed(3)},${lng.toFixed(3)},${model}`;
   if (cache?.key === key) return cache.promise;
 
@@ -183,7 +379,7 @@ export function fetchWeatherForecast(lat: number, lng: number, model = 'ecmwf_if
         tempMax: data.daily.temperature_2m_max[i],
         tempMin: data.daily.temperature_2m_min[i],
         precipitationProbability: data.daily.precipitation_probability_max?.[i] ?? null,
-      })),
+      }))
     );
   cache = { key, promise };
   // Bei einem Fehlschlag darf der Cache nicht "vergiftet" bleiben – sonst würde ein erneuter
@@ -209,10 +405,17 @@ interface WeatherHistoryRow {
 // weatherSnapshots.ts, GET /trips/:id/weather-history) – dadurch bleibt das Wetter eines Urlaubs
 // auch lange nach dessen Ende noch anzeigbar. Für "heute"/Zukunft bleibt weiterhin die Live-Vorhersage
 // maßgeblich.
-export async function fetchMergedWeather(tripId: number, lat: number, lng: number, model?: string): Promise<DailyWeather[]> {
+export async function fetchMergedWeather(
+  tripId: number,
+  lat: number,
+  lng: number,
+  model?: string
+): Promise<DailyWeather[]> {
   const [live, history] = await Promise.all([
     fetchWeatherForecast(lat, lng, model),
-    api.get<WeatherHistoryRow[]>(`/trips/${tripId}/weather-history`).catch(() => [] as WeatherHistoryRow[]),
+    api
+      .get<WeatherHistoryRow[]>(`/trips/${tripId}/weather-history`)
+      .catch(() => [] as WeatherHistoryRow[]),
   ]);
 
   const today = toLocalDateString(new Date());
@@ -245,7 +448,10 @@ export interface WeatherRangeSummary {
   tempLabel: string;
 }
 
-const WEATHER_CODE_SEVERITY_ORDER = [99, 96, 95, 82, 81, 80, 67, 66, 65, 63, 61, 57, 56, 55, 53, 51, 86, 85, 75, 73, 71, 77, 48, 45, 3, 2, 1, 0];
+const WEATHER_CODE_SEVERITY_ORDER = [
+  99, 96, 95, 82, 81, 80, 67, 66, 65, 63, 61, 57, 56, 55, 53, 51, 86, 85, 75, 73, 71, 77, 48, 45, 3,
+  2, 1, 0,
+];
 
 /** Bildet aus mehreren Tageswetter-Messungen (z. B. für eine Tour mit mehreren Stationen) eine
  *  zusammenfassende Temperatur-Range und bestimmt das prägnanteste Wetter-Icon (Issue #152). */
@@ -382,7 +588,12 @@ interface OpenMeteoHourlyResponse {
 }
 
 /** Holt stündliche Wetterdaten für die Tages-Detail-Ansicht (Issue #133). */
-export async function fetchHourlyForecast(lat: number, lng: number, date: string, model = 'ecmwf_ifs025'): Promise<HourlyWeather[]> {
+export async function fetchHourlyForecast(
+  lat: number,
+  lng: number,
+  date: string,
+  model = 'ecmwf_ifs025'
+): Promise<HourlyWeather[]> {
   if (DEMO_MODE) {
     const hours = ['06:00', '09:00', '12:00', '15:00', '18:00', '21:00'];
     const demoPattern = [
@@ -407,7 +618,8 @@ export async function fetchHourlyForecast(lat: number, lng: number, date: string
   });
 
   const res = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`);
-  if (!res.ok) throw new Error(`Stündliche Wetterdaten konnten nicht geladen werden (${res.status})`);
+  if (!res.ok)
+    throw new Error(`Stündliche Wetterdaten konnten nicht geladen werden (${res.status})`);
   const data = (await res.json()) as OpenMeteoHourlyResponse;
 
   const result: HourlyWeather[] = [];
@@ -427,4 +639,3 @@ export async function fetchHourlyForecast(lat: number, lng: number, date: string
   }
   return result;
 }
-

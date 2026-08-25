@@ -118,7 +118,9 @@ test.describe('Icon-Stil: Emoji/Symbole', () => {
       .toEqual(['icons', 'icons', 'icons']);
   });
 
-  test('Outline/Gefüllt ist pro Bereich einzeln einstellbar, nur sichtbar wenn der Bereich auf Symbole steht', async ({ page }) => {
+  test('Outline/Gefüllt ist pro Bereich einzeln einstellbar, nur sichtbar wenn der Bereich auf Symbole steht', async ({
+    page,
+  }) => {
     // tests/auth.setup.ts setzt für die restliche Suite bewusst alle Bereiche auf Emoji - hier
     // gezielt Navigation auf Symbole zurückstellen, um die Varianten-Zeile testen zu können.
     const current = await getIconSettings(page);
@@ -141,7 +143,9 @@ test.describe('Icon-Stil: Emoji/Symbole', () => {
 
     await page.goto('/settings?tab=app');
     await navVariantRow.locator('.segmented-option', { hasText: 'Gefüllt' }).click();
-    await expect.poll(async () => (await getIconSettings(page)).variants?.navigation).toBe('filled');
+    await expect
+      .poll(async () => (await getIconSettings(page)).variants?.navigation)
+      .toBe('filled');
 
     // fill ist nicht mehr 'none' (siehe @tabler/icons-vue's defaultAttributes.mjs) - der exakte Wert
     // hängt zusätzlich davon ab, ob "Icons in der Navigation einfärben" aktiv ist (Default: an, siehe
@@ -180,7 +184,9 @@ test.describe('Icon-Stil: Emoji/Symbole', () => {
     expect(await page.locator('.app-header .avatar').locator('svg').count()).toBe(0);
   });
 
-  test('Bereichs-Override lässt Kategorien bei Emoji, während andere Bereiche auf Symbole stehen', async ({ page }) => {
+  test('Bereichs-Override lässt Kategorien bei Emoji, während andere Bereiche auf Symbole stehen', async ({
+    page,
+  }) => {
     await page.goto('/settings?tab=app');
     const iconsCard = page.locator('.card', { hasText: 'Icons' });
     await expect(iconsCard).toBeVisible();
@@ -191,35 +197,53 @@ test.describe('Icon-Stil: Emoji/Symbole', () => {
     await expect(iconsCard).toBeVisible();
 
     const categoriesRow = iconsCard.locator('.group-override-row', { hasText: 'Kategorien' });
-    await expect(categoriesRow.locator('.segmented-option', { hasText: 'Emoji' })).toHaveClass(/active/);
+    await expect(categoriesRow.locator('.segmented-option', { hasText: 'Emoji' })).toHaveClass(
+      /active/
+    );
 
     const navRow = iconsCard.locator('.group-override-row', { hasText: 'Navigation & Dashboard' });
     await expect(navRow.locator('.segmented-option', { hasText: 'Symbole' })).toHaveClass(/active/);
   });
 
-  test('Formularfelder/Aktionen sind nicht mehr konfigurierbar und zeigen immer Symbole (#168)', async ({ page }) => {
+  test('Formularfelder/Aktionen sind nicht mehr konfigurierbar und zeigen immer Symbole (#168)', async ({
+    page,
+  }) => {
     // Simuliert einen vor #168 gespeicherten Blob mit altem 'formFields'/'actions'-Eintrag auf
     // Emoji - das Frontend ignoriert diese Werte jetzt und erzwingt SVG.
     await putIconSettings(page, {
-      groups: { navigation: 'emoji', categories: 'emoji', weather: 'emoji', formFields: 'emoji', actions: 'emoji' },
+      groups: {
+        navigation: 'emoji',
+        categories: 'emoji',
+        weather: 'emoji',
+        formFields: 'emoji',
+        actions: 'emoji',
+      },
     });
     await page.goto('/settings?tab=app');
     const iconsCard = page.locator('.card', { hasText: 'Icons' });
     await expect(iconsCard).toBeVisible();
 
     // Keine Einstellungs-Zeilen mehr für diese beiden Bereiche.
-    await expect(iconsCard.locator('.group-override-row', { hasText: 'Formularfelder' })).toHaveCount(0);
-    await expect(iconsCard.locator('.group-override-row', { hasText: 'Aktionen & Buttons' })).toHaveCount(0);
+    await expect(
+      iconsCard.locator('.group-override-row', { hasText: 'Formularfelder' })
+    ).toHaveCount(0);
+    await expect(
+      iconsCard.locator('.group-override-row', { hasText: 'Aktionen & Buttons' })
+    ).toHaveCount(0);
 
     // Der Reset-Button (group="actions") zeigt trotz gespeichertem 'emoji' ein SVG-Icon
     // (AppIcon.vue setzt app-icon-tabler/-emoji unabhängig von einer per Aufrufer übergebenen
     // class, siehe dortiger Kommentar zu den Root-Klassen).
-    const resetButton = iconsCard.locator('button', { hasText: 'Auf Standard-Einstellungen zurücksetzen' });
+    const resetButton = iconsCard.locator('button', {
+      hasText: 'Auf Standard-Einstellungen zurücksetzen',
+    });
     await expect(resetButton.locator('.app-icon-tabler')).toBeVisible();
     expect(await resetButton.locator('.app-icon-emoji').count()).toBe(0);
   });
 
-  test('"Icons in der Navigation einfärben" setzt eine Akzentfarbe auf das NavBar-Icon', async ({ page }) => {
+  test('"Icons in der Navigation einfärben" setzt eine Akzentfarbe auf das NavBar-Icon', async ({
+    page,
+  }) => {
     // tests/auth.setup.ts setzt für die restliche Suite bewusst alle Bereiche auf Emoji - hier
     // gezielt Navigation auf Symbole zurückstellen, sonst gibt es kein SVG zum Einfärben.
     const current = await getIconSettings(page);
@@ -229,7 +253,9 @@ test.describe('Icon-Stil: Emoji/Symbole', () => {
     await expect(iconsCard).toBeVisible();
     // Ausgangspunkt: Einfärben aus (Default ist zwar "an", hier gezielt "aus" gesetzt, um den
     // Kontrast zu prüfen).
-    const navColorCheckbox = iconsCard.locator('.colorize-row', { hasText: 'Icons in der Navigation einfärben' }).locator('input');
+    const navColorCheckbox = iconsCard
+      .locator('.colorize-row', { hasText: 'Icons in der Navigation einfärben' })
+      .locator('input');
     if (await navColorCheckbox.isChecked()) await navColorCheckbox.uncheck();
     await expect.poll(async () => (await getIconSettings(page)).navColored).toBe(false);
 
@@ -253,7 +279,9 @@ test.describe('Icon-Stil: Emoji/Symbole', () => {
     await iconsCard.locator('.all-groups-row .segmented-option', { hasText: 'Emoji' }).click();
     await expect.poll(async () => (await getIconSettings(page)).groups?.navigation).toBe('emoji');
 
-    await iconsCard.locator('button', { hasText: 'Auf Standard-Einstellungen zurücksetzen' }).click();
+    await iconsCard
+      .locator('button', { hasText: 'Auf Standard-Einstellungen zurücksetzen' })
+      .click();
 
     await expect
       .poll(async () => {

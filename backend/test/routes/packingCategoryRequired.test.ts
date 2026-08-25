@@ -17,7 +17,7 @@ describe('packing category required per trip', () => {
     db.prepare('INSERT INTO users (username, password_hash, avatar) VALUES (?, ?, ?)').run(
       'catreqtester',
       bcrypt.hashSync('correct-horse', 10),
-      '🧪',
+      '🧪'
     );
 
     const login = await app.inject({
@@ -38,7 +38,9 @@ describe('packing category required per trip', () => {
   });
 
   it('defaults a newly created trip to requiring a category', () => {
-    const trip = db.prepare('SELECT packing_category_required FROM trips WHERE id = ?').get(tripId) as {
+    const trip = db
+      .prepare('SELECT packing_category_required FROM trips WHERE id = ?')
+      .get(tripId) as {
       packing_category_required: number;
     };
     expect(trip.packing_category_required).toBe(1);
@@ -107,7 +109,12 @@ describe('packing category required per trip', () => {
       method: 'PUT',
       url: `/api/packing/${id}`,
       headers: { cookie },
-      payload: { label: 'War schon vor der Umstellung ohne Kategorie', quantity: 1, packed_count: 1, laid_out_count: 1 },
+      payload: {
+        label: 'War schon vor der Umstellung ohne Kategorie',
+        quantity: 1,
+        packed_count: 1,
+        laid_out_count: 1,
+      },
     });
     expect(res.statusCode).toBe(200);
   });

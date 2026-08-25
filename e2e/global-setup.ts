@@ -31,7 +31,7 @@ export default async function globalSetup() {
   };
   const scheduleItems = db
     .prepare(
-      'SELECT date, time, title, note, location FROM schedule_items WHERE trip_id = ? ORDER BY date, time',
+      'SELECT date, time, title, note, location FROM schedule_items WHERE trip_id = ? ORDER BY date, time'
     )
     .all(trip.id);
   // Ein Ausflug hat kein eigenes Datums-Feld mehr – "geplant"/"in Planung" ergibt sich aus einem
@@ -42,7 +42,7 @@ export default async function globalSetup() {
        FROM ideas
        LEFT JOIN schedule_items ON schedule_items.idea_id = ideas.id
        WHERE ideas.trip_id = ?
-       ORDER BY schedule_items.date`,
+       ORDER BY schedule_items.date`
     )
     .all(trip.id);
   db.close();

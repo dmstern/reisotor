@@ -45,7 +45,10 @@ function loadSeenAt(tripId: number, domain: LiveDomain): string {
 }
 
 function emptySets(): Record<LiveDomain, Set<number>> {
-  return Object.fromEntries(LIVE_DOMAINS.map((d) => [d, new Set<number>()])) as Record<LiveDomain, Set<number>>;
+  return Object.fromEntries(LIVE_DOMAINS.map((d) => [d, new Set<number>()])) as Record<
+    LiveDomain,
+    Set<number>
+  >;
 }
 
 // Echtzeit-Sync zwischen Mitgliedern desselben Urlaubs (siehe CLAUDE.md-Auftrag): ein EventSource
@@ -61,7 +64,7 @@ export const useLiveSyncStore = defineStore('liveSync', () => {
   const auth = useAuthStore();
 
   const domainVersion = reactive<Record<LiveDomain, number>>(
-    Object.fromEntries(LIVE_DOMAINS.map((d) => [d, 0])) as Record<LiveDomain, number>,
+    Object.fromEntries(LIVE_DOMAINS.map((d) => [d, 0])) as Record<LiveDomain, number>
   );
   const unseenEntityIds = reactive<Record<LiveDomain, Set<number>>>(emptySets());
   // Zähler statt Domänen-Set: die Notification-Inbox (#97, stores/notifications.ts) will bei JEDER
@@ -75,7 +78,9 @@ export const useLiveSyncStore = defineStore('liveSync', () => {
   // Eintrag – keyed per userId statt eines Arrays, da jedes Mitglied höchstens einen aktuellen
   // Standort hat (ein neuer Ping überschreibt den alten). Siehe backend/src/activity.ts's
   // lastPositionsByTrip für die Serverseite desselben Konzepts.
-  const memberPositions = reactive<Record<number, { lat: number; lng: number; updatedAt: string }>>({});
+  const memberPositions = reactive<Record<number, { lat: number; lng: number; updatedAt: string }>>(
+    {}
+  );
   // Wird erst true, nachdem das Nachhol-Protokoll (backfill unten) für den aktuellen Urlaub
   // abgeschlossen ist – App.vue blockt das Mounten jeder Domänen-Ansicht so lange (siehe dortiger
   // Kommentar), sonst gäbe es ein Wettrennen: eine Ansicht könnte markSeen() aufrufen, BEVOR
@@ -128,7 +133,9 @@ export const useLiveSyncStore = defineStore('liveSync', () => {
     const oldestSeen = LIVE_DOMAINS.map((d) => loadSeenAt(tripId, d)).sort()[0];
     let rows: ActivityRow[] = [];
     try {
-      rows = await api.get<ActivityRow[]>(`/trip-activity?trip_id=${tripId}&since=${encodeURIComponent(oldestSeen)}`);
+      rows = await api.get<ActivityRow[]>(
+        `/trip-activity?trip_id=${tripId}&since=${encodeURIComponent(oldestSeen)}`
+      );
     } catch {
       return;
     }
@@ -212,7 +219,7 @@ export const useLiveSyncStore = defineStore('liveSync', () => {
       await backfill(tripId);
       ready.value = true;
     },
-    { immediate: true },
+    { immediate: true }
   );
 
   function hasUnseen(domain: LiveDomain): boolean {

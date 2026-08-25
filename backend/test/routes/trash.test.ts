@@ -41,14 +41,28 @@ describe('trash (soft delete + restore)', () => {
     });
     const id = created.json().id;
 
-    const del = await app.inject({ method: 'DELETE', url: `/api/packing/${id}`, headers: { cookie } });
+    const del = await app.inject({
+      method: 'DELETE',
+      url: `/api/packing/${id}`,
+      headers: { cookie },
+    });
     expect(del.statusCode).toBe(204);
 
-    const list = await app.inject({ method: 'GET', url: `/api/packing?trip_id=${tripId}`, headers: { cookie } });
+    const list = await app.inject({
+      method: 'GET',
+      url: `/api/packing?trip_id=${tripId}`,
+      headers: { cookie },
+    });
     expect(list.json().find((i: { id: number }) => i.id === id)).toBeUndefined();
 
-    const trash = await app.inject({ method: 'GET', url: `/api/trash?trip_id=${tripId}`, headers: { cookie } });
-    const entry = trash.json().find((e: { type: string; id: number }) => e.type === 'packing_item' && e.id === id);
+    const trash = await app.inject({
+      method: 'GET',
+      url: `/api/trash?trip_id=${tripId}`,
+      headers: { cookie },
+    });
+    const entry = trash
+      .json()
+      .find((e: { type: string; id: number }) => e.type === 'packing_item' && e.id === id);
     expect(entry).toBeDefined();
     expect(entry.data.label).toBe('Regenjacke');
   });
@@ -70,11 +84,21 @@ describe('trash (soft delete + restore)', () => {
     });
     expect(restore.statusCode).toBe(200);
 
-    const list = await app.inject({ method: 'GET', url: `/api/todos?trip_id=${tripId}`, headers: { cookie } });
+    const list = await app.inject({
+      method: 'GET',
+      url: `/api/todos?trip_id=${tripId}`,
+      headers: { cookie },
+    });
     expect(list.json().find((i: { id: number }) => i.id === id)).toBeDefined();
 
-    const trash = await app.inject({ method: 'GET', url: `/api/trash?trip_id=${tripId}`, headers: { cookie } });
-    expect(trash.json().find((e: { type: string; id: number }) => e.type === 'todo' && e.id === id)).toBeUndefined();
+    const trash = await app.inject({
+      method: 'GET',
+      url: `/api/trash?trip_id=${tripId}`,
+      headers: { cookie },
+    });
+    expect(
+      trash.json().find((e: { type: string; id: number }) => e.type === 'todo' && e.id === id)
+    ).toBeUndefined();
   });
 
   it('deleting an excursion also soft-deletes its linked calendar entry, and restoring it restores both', async () => {
@@ -91,10 +115,16 @@ describe('trash (soft delete + restore)', () => {
       url: `/api/schedule?trip_id=${tripId}`,
       headers: { cookie },
     });
-    const linkedEntry = scheduleBefore.json().find((s: { idea_id: number | null }) => s.idea_id === ideaId);
+    const linkedEntry = scheduleBefore
+      .json()
+      .find((s: { idea_id: number | null }) => s.idea_id === ideaId);
     expect(linkedEntry).toBeDefined();
 
-    const del = await app.inject({ method: 'DELETE', url: `/api/ideas/${ideaId}`, headers: { cookie } });
+    const del = await app.inject({
+      method: 'DELETE',
+      url: `/api/ideas/${ideaId}`,
+      headers: { cookie },
+    });
     expect(del.statusCode).toBe(204);
 
     const scheduleAfterDelete = await app.inject({
@@ -103,7 +133,7 @@ describe('trash (soft delete + restore)', () => {
       headers: { cookie },
     });
     expect(
-      scheduleAfterDelete.json().find((s: { id: number }) => s.id === linkedEntry.id),
+      scheduleAfterDelete.json().find((s: { id: number }) => s.id === linkedEntry.id)
     ).toBeUndefined();
 
     const restore = await app.inject({
@@ -119,12 +149,16 @@ describe('trash (soft delete + restore)', () => {
       headers: { cookie },
     });
     expect(
-      scheduleAfterRestore.json().find((s: { id: number }) => s.id === linkedEntry.id),
+      scheduleAfterRestore.json().find((s: { id: number }) => s.id === linkedEntry.id)
     ).toBeDefined();
   });
 
   it('returns 400 for an unknown trash type on restore', async () => {
-    const res = await app.inject({ method: 'POST', url: '/api/trash/not-a-type/1/restore', headers: { cookie } });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/trash/not-a-type/1/restore',
+      headers: { cookie },
+    });
     expect(res.statusCode).toBe(400);
   });
 

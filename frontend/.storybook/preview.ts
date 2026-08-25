@@ -48,7 +48,8 @@ const preview: Preview = {
       document.body.style.color = isDark ? '#f2efe9' : '#2b2a28';
 
       return {
-        template: '<div style="font-family: var(--font-sans); padding: 16px; border-radius: 8px;"><story /></div>',
+        template:
+          '<div style="font-family: var(--font-sans); padding: 16px; border-radius: 8px;"><story /></div>',
       };
     },
   ],

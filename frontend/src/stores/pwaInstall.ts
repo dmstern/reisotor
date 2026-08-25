@@ -86,5 +86,14 @@ export const usePwaInstallStore = defineStore('pwaInstall', () => {
     localStorage.setItem(DISMISSED_KEY, 'true');
   }
 
-  return { isStandalone, dismissed, canPromptInstall, platform, browser, init, promptInstall, dismiss };
+  return {
+    isStandalone,
+    dismissed,
+    canPromptInstall,
+    platform,
+    browser,
+    init,
+    promptInstall,
+    dismiss,
+  };
 });

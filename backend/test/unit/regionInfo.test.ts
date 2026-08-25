@@ -18,14 +18,16 @@ describe('fetchRegionInfo', () => {
           return Promise.resolve({
             ok: true,
             json: () =>
-              Promise.resolve([{ languages: { por: 'Portuguese' }, currencies: { EUR: { name: 'Euro' } } }]),
+              Promise.resolve([
+                { languages: { por: 'Portuguese' }, currencies: { EUR: { name: 'Euro' } } },
+              ]),
           });
         }
         if (url.includes('travel-advisory.info')) {
           return Promise.resolve({ ok: false, status: 503 });
         }
         return Promise.reject(new Error('unexpected URL in test: ' + url));
-      }),
+      })
     );
 
     const info = await fetchRegionInfo('PT', null);
@@ -37,7 +39,7 @@ describe('fetchRegionInfo', () => {
   it('returns an all-empty result when every external API fails', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(() => Promise.resolve({ ok: false, status: 500 })),
+      vi.fn(() => Promise.resolve({ ok: false, status: 500 }))
     );
 
     const info = await fetchRegionInfo('XX', 'EUR');
@@ -51,17 +53,27 @@ describe('fetchRegionInfo', () => {
         if (url.includes('restcountries.com')) {
           return Promise.resolve({
             ok: true,
-            json: () => Promise.resolve([{ languages: { eng: 'English' }, currencies: { USD: { name: 'US Dollar' } } }]),
+            json: () =>
+              Promise.resolve([
+                { languages: { eng: 'English' }, currencies: { USD: { name: 'US Dollar' } } },
+              ]),
           });
         }
         if (url.includes('open.er-api.com')) {
-          return Promise.resolve({ ok: true, json: () => Promise.resolve({ result: 'success', rates: { EUR: 0.92 } }) });
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ result: 'success', rates: { EUR: 0.92 } }),
+          });
         }
         if (url.includes('travel-advisory.info')) {
-          return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: { XX: { advisory: { score: 2.1, message: 'Ok' } } } }) });
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({ data: { XX: { advisory: { score: 2.1, message: 'Ok' } } } }),
+          });
         }
         return Promise.reject(new Error('unexpected URL in test: ' + url));
-      }),
+      })
     );
 
     const info = await fetchRegionInfo('US', 'EUR');

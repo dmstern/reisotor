@@ -17,17 +17,26 @@ test('hiding a dashboard tile in SettingsView removes it from the Dashboard', as
 
   // Aufräumen, damit der Zustand nicht in andere Tests dieser Suite durchsickert.
   await page.goto('/settings?tab=app');
-  await page.locator('.dashboard-config-row', { hasText: 'Notizen' }).locator('input[type="checkbox"]').check();
+  await page
+    .locator('.dashboard-config-row', { hasText: 'Notizen' })
+    .locator('input[type="checkbox"]')
+    .check();
 });
 
-test('reordering dashboard tiles in SettingsView changes their order on the Dashboard', async ({ page }) => {
+test('reordering dashboard tiles in SettingsView changes their order on the Dashboard', async ({
+  page,
+}) => {
   await page.goto('/settings?tab=app');
   const firstRowLabel = page.locator('.dashboard-config-row').first().locator('.nav-config-label');
   const initialFirstLabel = await firstRowLabel.textContent();
 
   await page.locator('.dashboard-config-row').nth(1).getByLabel('Nach oben verschieben').click();
 
-  const newFirstLabel = await page.locator('.dashboard-config-row').first().locator('.nav-config-label').textContent();
+  const newFirstLabel = await page
+    .locator('.dashboard-config-row')
+    .first()
+    .locator('.nav-config-label')
+    .textContent();
   expect(newFirstLabel).not.toBe(initialFirstLabel);
 
   await page.goto('/');

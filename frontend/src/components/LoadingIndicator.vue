@@ -58,7 +58,7 @@ watch(
       visibleKind.value = kind;
       showTimer = null;
     }, SHOW_DELAY_MS);
-  },
+  }
 );
 
 const icon = computed(() => (visibleKind.value ? ICONS[visibleKind.value] : null));
@@ -67,7 +67,12 @@ const label = computed(() => (visibleKind.value ? LABELS[visibleKind.value] : ''
 
 <template>
   <Transition name="toast">
-    <div v-if="visibleKind && uiSettings.showActivityToasts" class="toast-pill" :class="visibleKind" :title="label">
+    <div
+      v-if="visibleKind && uiSettings.showActivityToasts"
+      class="toast-pill"
+      :class="visibleKind"
+      :title="label"
+    >
       <span class="spinner" />
       <AppIcon v-if="icon" class="icon" :size="13" :icon="icon" group="actions" />
       <span class="label">{{ label }}</span>

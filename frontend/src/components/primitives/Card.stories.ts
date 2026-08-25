@@ -121,7 +121,8 @@ export const DashboardTile: Story = {
 export const ExpandableInteractive: Story = {
   args: {
     expandable: true,
-    bannerUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&auto=format&fit=crop',
+    bannerUrl:
+      'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&auto=format&fit=crop',
     bannerAlt: 'Strand im Sonnenuntergang',
     bannerPosition: 'auto',
   },
@@ -153,7 +154,8 @@ export const ExpandableInteractive: Story = {
 export const CondensedState: Story = {
   args: {
     condensed: true,
-    bannerUrl: 'https://images.unsplash.com/photo-1476514525535-ce74f45814ce?w=600&auto=format&fit=crop',
+    bannerUrl:
+      'https://images.unsplash.com/photo-1476514525535-ce74f45814ce?w=600&auto=format&fit=crop',
     bannerPosition: 'left',
   },
   render: (args) => ({

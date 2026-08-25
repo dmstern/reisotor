@@ -12,17 +12,35 @@ import AppIcon from './AppIcon.vue';
 // aktivierter Einfärbung zwei einzeln eingefärbte Icons, statt das kombinierte Icon pauschal
 // umzufärben. Ohne Einfärbung (Default aus) bleibt exakt das bisherige, einzelne Kombi-Icon
 // bestehen - keine optische Änderung für Nutzer:innen, die das Setting nicht anfassen.
-const props = withDefaults(defineProps<{ code: number; size?: number; title?: string }>(), { size: 20 });
+const props = withDefaults(defineProps<{ code: number; size?: number; title?: string }>(), {
+  size: 20,
+});
 
 const iconStyle = useIconStyleStore();
 const meta = computed(() => weatherCodeMeta(props.code));
-const showParts = computed(() => iconStyle.colorizeWeather && iconStyle.styleForGroup('weather') === 'icons' && !!meta.value.parts);
+const showParts = computed(
+  () =>
+    iconStyle.colorizeWeather &&
+    iconStyle.styleForGroup('weather') === 'icons' &&
+    !!meta.value.parts
+);
 const accentSize = computed(() => Math.round(props.size * 0.62));
 </script>
 
 <template>
-  <span v-if="showParts" class="weather-icon-parts" :style="{ width: size + 'px', height: size + 'px' }" :title="title">
-    <AppIcon class="weather-icon-base" :icon="meta.parts![0].icon" group="weather" :color="meta.parts![0].color" :size="size" />
+  <span
+    v-if="showParts"
+    class="weather-icon-parts"
+    :style="{ width: size + 'px', height: size + 'px' }"
+    :title="title"
+  >
+    <AppIcon
+      class="weather-icon-base"
+      :icon="meta.parts![0].icon"
+      group="weather"
+      :color="meta.parts![0].color"
+      :size="size"
+    />
     <AppIcon
       class="weather-icon-accent"
       :icon="meta.parts![1].icon"

@@ -57,16 +57,23 @@ describe('computeVacationPhase', () => {
   });
 
   it('zeigt "arrived" am ersten vollen Urlaubstag (Tag nach der Abreise)', () => {
-    expect(computeVacationPhase(trip, new Date(2026, 7, 15, 9, 0, 0))).toEqual({ phase: 'arrived' });
+    expect(computeVacationPhase(trip, new Date(2026, 7, 15, 9, 0, 0))).toEqual({
+      phase: 'arrived',
+    });
   });
 
   it('zeigt "ongoing" mit den korrekten Resttagen an einem mittleren Urlaubstag', () => {
     // 2026-08-16, Urlaubsende 2026-08-18 -> noch 2 Kalendertage bis (und mit) dem letzten Tag.
-    expect(computeVacationPhase(trip, new Date(2026, 7, 16, 15, 0, 0))).toEqual({ phase: 'ongoing', daysLeft: 2 });
+    expect(computeVacationPhase(trip, new Date(2026, 7, 16, 15, 0, 0))).toEqual({
+      phase: 'ongoing',
+      daysLeft: 2,
+    });
   });
 
   it('zeigt "lastDay" am end_date', () => {
-    expect(computeVacationPhase(trip, new Date(2026, 7, 18, 8, 0, 0))).toEqual({ phase: 'lastDay' });
+    expect(computeVacationPhase(trip, new Date(2026, 7, 18, 8, 0, 0))).toEqual({
+      phase: 'lastDay',
+    });
   });
 
   it('zeigt "over" ab dem Tag nach end_date', () => {
@@ -76,6 +83,8 @@ describe('computeVacationPhase', () => {
 
   it('bevorzugt "lastDay" vor "arrived" bei sehr kurzen Reisen (Tag nach Abreise == letzter Tag)', () => {
     const shortTrip = { start_date: '2026-08-14', end_date: '2026-08-15' };
-    expect(computeVacationPhase(shortTrip, new Date(2026, 7, 15, 9, 0, 0))).toEqual({ phase: 'lastDay' });
+    expect(computeVacationPhase(shortTrip, new Date(2026, 7, 15, 9, 0, 0))).toEqual({
+      phase: 'lastDay',
+    });
   });
 });

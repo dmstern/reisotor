@@ -6,7 +6,9 @@ import { E2E_PASSWORD, E2E_PASSWORD_2, E2E_USERNAME, E2E_USERNAME_2 } from '../c
 import { newContextWithReducedMotion } from './helpers/context';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const seeded = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'fixtures', 'seeded-data.json'), 'utf-8'));
+const seeded = JSON.parse(
+  fs.readFileSync(path.join(__dirname, '..', 'fixtures', 'seeded-data.json'), 'utf-8')
+);
 
 // Regressionsnetz für den Echtzeit-Sync zwischen Mitgliedern (siehe stores/liveSync.ts,
 // backend/src/activity.ts/routes/realtime.ts): wenn ein Mitglied etwas ändert, sollen die übrigen
@@ -20,8 +22,12 @@ const seeded = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'fixtures',
 test('another member creating a todo lights up the ToDo nav badge, which clears and highlights on visit', async ({
   browser,
 }) => {
-  const ctxA = await newContextWithReducedMotion(browser, { storageState: { cookies: [], origins: [] } });
-  const ctxB = await newContextWithReducedMotion(browser, { storageState: { cookies: [], origins: [] } });
+  const ctxA = await newContextWithReducedMotion(browser, {
+    storageState: { cookies: [], origins: [] },
+  });
+  const ctxB = await newContextWithReducedMotion(browser, {
+    storageState: { cookies: [], origins: [] },
+  });
   const pageA = await ctxA.newPage();
   const pageB = await ctxB.newPage();
 
@@ -86,8 +92,12 @@ test('another member creating a todo lights up the ToDo nav badge, which clears 
 test('another member creating a tour lights up the Karte nav badge and the Touren toggle, not the Spots one', async ({
   browser,
 }) => {
-  const ctxA = await newContextWithReducedMotion(browser, { storageState: { cookies: [], origins: [] } });
-  const ctxB = await newContextWithReducedMotion(browser, { storageState: { cookies: [], origins: [] } });
+  const ctxA = await newContextWithReducedMotion(browser, {
+    storageState: { cookies: [], origins: [] },
+  });
+  const ctxB = await newContextWithReducedMotion(browser, {
+    storageState: { cookies: [], origins: [] },
+  });
   const pageA = await ctxA.newPage();
   const pageB = await ctxB.newPage();
 
@@ -122,15 +132,21 @@ test('another member creating a tour lights up the Karte nav badge and the Toure
   // Anzeige & Filter-Box - dadurch immer sichtbar, unabhängig von Viewport-Breite.
   const groupToggle = pageA.locator('.header h2');
   await expect(groupToggle).toBeVisible();
-  await expect(groupToggle.getByRole('button', { name: 'Spots' }).locator('.segmented-dot')).toHaveCount(0);
-  await expect(groupToggle.getByRole('button', { name: 'Touren' }).locator('.segmented-dot')).toBeVisible();
+  await expect(
+    groupToggle.getByRole('button', { name: 'Spots' }).locator('.segmented-dot')
+  ).toHaveCount(0);
+  await expect(
+    groupToggle.getByRole('button', { name: 'Touren' }).locator('.segmented-dot')
+  ).toBeVisible();
   await expect(excursionsNavLink.locator('.unseen-dot')).toBeVisible();
 
   // Erst der tatsächliche Wechsel auf die Touren-Gruppierung löscht deren Punkt UND (da 'spots' es
   // bereits war) damit auch den äußeren Karte-Punkt vollständig.
   await groupToggle.getByRole('button', { name: 'Touren' }).click();
   await expect(pageA.locator('.excursion-card', { hasText: tourTitle })).toBeVisible();
-  await expect(groupToggle.getByRole('button', { name: 'Touren' }).locator('.segmented-dot')).toHaveCount(0);
+  await expect(
+    groupToggle.getByRole('button', { name: 'Touren' }).locator('.segmented-dot')
+  ).toHaveCount(0);
   await expect(excursionsNavLink.locator('.unseen-dot')).toHaveCount(0);
 
   await ctxA.close();
@@ -139,9 +155,15 @@ test('another member creating a tour lights up the Karte nav badge and the Toure
 
 // Regressionsnetz für PresenceAvatars.vue's Umstellung von "nur online" auf "alle Mitreisenden,
 // online/offline unterschieden" (siehe dortiger Kommentar).
-test('presence avatars show an offline member grayed out and mark them online once they connect', async ({ browser }) => {
-  const ctxA = await newContextWithReducedMotion(browser, { storageState: { cookies: [], origins: [] } });
-  const ctxB = await newContextWithReducedMotion(browser, { storageState: { cookies: [], origins: [] } });
+test('presence avatars show an offline member grayed out and mark them online once they connect', async ({
+  browser,
+}) => {
+  const ctxA = await newContextWithReducedMotion(browser, {
+    storageState: { cookies: [], origins: [] },
+  });
+  const ctxB = await newContextWithReducedMotion(browser, {
+    storageState: { cookies: [], origins: [] },
+  });
   const pageA = await ctxA.newPage();
   const pageB = await ctxB.newPage();
 

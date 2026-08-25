@@ -127,7 +127,9 @@ describe('trip membership + registration + invite', () => {
       url: `/api/users/search?q=fran&trip_id=${tripId}`,
       headers: { cookie: owner.cookie },
     });
-    expect(searchAfter.json().some((u: { username: string }) => u.username === 'frank')).toBe(false);
+    expect(searchAfter.json().some((u: { username: string }) => u.username === 'frank')).toBe(
+      false
+    );
 
     const inviteeList = await app.inject({
       method: 'GET',
@@ -148,6 +150,11 @@ describe('trip membership + registration + invite', () => {
       url: `/api/trips/${tripId}/members`,
       headers: { cookie: owner.cookie },
     });
-    expect(members.json().map((u: { username: string }) => u.username).sort()).toEqual(['erin', 'frank']);
+    expect(
+      members
+        .json()
+        .map((u: { username: string }) => u.username)
+        .sort()
+    ).toEqual(['erin', 'frank']);
   });
 });

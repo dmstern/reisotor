@@ -3,7 +3,11 @@ import { clampCounts } from '../../src/routes/packing.js';
 
 describe('clampCounts', () => {
   it('defaults quantity to 1 when undefined', () => {
-    expect(clampCounts(undefined, undefined, undefined)).toEqual({ quantity: 1, laidOut: 0, packed: 0 });
+    expect(clampCounts(undefined, undefined, undefined)).toEqual({
+      quantity: 1,
+      laidOut: 0,
+      packed: 0,
+    });
   });
 
   it('clamps quantity to a minimum of 1 for zero/negative input', () => {

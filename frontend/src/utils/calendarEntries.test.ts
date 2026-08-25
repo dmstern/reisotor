@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { buildAllEntries, buildTodoEntries, buildTripEntries, scheduleItemToEntry } from './calendarEntries';
+import {
+  buildAllEntries,
+  buildTodoEntries,
+  buildTripEntries,
+  scheduleItemToEntry,
+} from './calendarEntries';
 import type { Excursion, ScheduleItem, Spot, TodoItem, Trip } from '../api/types';
 
 const trip: Trip = {
@@ -177,8 +182,16 @@ describe('buildTripEntries', () => {
   it('builds start and end entries for a trip with different start/end dates', () => {
     const entries = buildTripEntries(trip);
     expect(entries).toHaveLength(2);
-    expect(entries[0]).toMatchObject({ kind: 'trip', date: '2026-08-01', title: 'Urlaub-Start: Sommerurlaub' });
-    expect(entries[1]).toMatchObject({ kind: 'trip', date: '2026-08-10', title: 'Urlaub-Ende: Sommerurlaub' });
+    expect(entries[0]).toMatchObject({
+      kind: 'trip',
+      date: '2026-08-01',
+      title: 'Urlaub-Start: Sommerurlaub',
+    });
+    expect(entries[1]).toMatchObject({
+      kind: 'trip',
+      date: '2026-08-10',
+      title: 'Urlaub-Ende: Sommerurlaub',
+    });
   });
 
   it('collapses to a single entry when start and end date are the same', () => {
@@ -190,18 +203,48 @@ describe('buildTripEntries', () => {
 describe('buildTodoEntries', () => {
   it('excludes todos without a due date', () => {
     const todos: TodoItem[] = [
-      { id: 1, trip_id: 1, title: 'Ohne Datum', assigned_to_user_id: null, due_date: null, priority: 'medium', note: null, done: 0 },
-      { id: 2, trip_id: 1, title: 'Mit Datum', assigned_to_user_id: null, due_date: '2026-08-03', priority: 'medium', note: null, done: 0 },
+      {
+        id: 1,
+        trip_id: 1,
+        title: 'Ohne Datum',
+        assigned_to_user_id: null,
+        due_date: null,
+        priority: 'medium',
+        note: null,
+        done: 0,
+      },
+      {
+        id: 2,
+        trip_id: 1,
+        title: 'Mit Datum',
+        assigned_to_user_id: null,
+        due_date: '2026-08-03',
+        priority: 'medium',
+        note: null,
+        done: 0,
+      },
     ];
     const entries = buildTodoEntries(todos);
     expect(entries).toHaveLength(1);
-    expect(entries[0]).toMatchObject({ kind: 'todo', date: '2026-08-03', title: 'Mit Datum', todoId: 2 });
+    expect(entries[0]).toMatchObject({
+      kind: 'todo',
+      date: '2026-08-03',
+      title: 'Mit Datum',
+      todoId: 2,
+    });
   });
 });
 
 describe('buildAllEntries', () => {
   it('combines schedule items, trip, todos and travel into one array', () => {
-    const scheduleItem = makeScheduleItem({ id: 1, date: '2026-08-01', time: null, title: 'Termin', note: null, location: null });
+    const scheduleItem = makeScheduleItem({
+      id: 1,
+      date: '2026-08-01',
+      time: null,
+      title: 'Termin',
+      note: null,
+      location: null,
+    });
     const entries = buildAllEntries([scheduleItem], trip, [], [], [], [] as Spot[]);
     // 1 schedule + 2 trip (Start/Ende) = 3
     expect(entries).toHaveLength(3);

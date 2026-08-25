@@ -18,10 +18,18 @@ const connectivity = useConnectivityStore();
     title="Änderungen werden nur lokal gespeichert – antippen, um sofort erneut zu versuchen"
     @click="connectivity.checkNow()"
   >
-    <AppIcon :icon="connectivity.checking ? ACTION_ICONS.refresh : ACTION_ICONS.offline" :size="14" group="actions" />
+    <AppIcon
+      :icon="connectivity.checking ? ACTION_ICONS.refresh : ACTION_ICONS.offline"
+      :size="14"
+      group="actions"
+    />
     {{ connectivity.checking ? 'Prüfe…' : 'Offline' }}
   </button>
-  <span v-else-if="connectivity.syncing" class="offline-pill syncing" title="Änderungen werden synchronisiert">
+  <span
+    v-else-if="connectivity.syncing"
+    class="offline-pill syncing"
+    title="Änderungen werden synchronisiert"
+  >
     <AppIcon :icon="ACTION_ICONS.refresh" :size="14" group="actions" /> Synchronisiert…
   </span>
   <span
@@ -29,7 +37,8 @@ const connectivity = useConnectivityStore();
     class="offline-pill"
     :title="`${connectivity.pendingCount} Änderung(en) warten auf Synchronisierung`"
   >
-    <AppIcon :icon="ACTION_ICONS.pending" :size="14" group="actions" /> {{ connectivity.pendingCount }}
+    <AppIcon :icon="ACTION_ICONS.pending" :size="14" group="actions" />
+    {{ connectivity.pendingCount }}
   </span>
 </template>
 

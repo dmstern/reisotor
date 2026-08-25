@@ -4,7 +4,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const seeded = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'fixtures', 'seeded-data.json'), 'utf-8'));
+const seeded = JSON.parse(
+  fs.readFileSync(path.join(__dirname, '..', 'fixtures', 'seeded-data.json'), 'utf-8')
+);
 
 // Regressionstest für einen vom Nutzer gemeldeten Bug (ursprünglich gegen das inzwischen entfernte
 // travel_places-Konzept getestet): ein Reise-Ort, der von mehreren Etappen referenziert wird (z. B.
@@ -25,13 +27,27 @@ test('Ein von mehreren Etappen referenzierter Reise-Ort-Spot erscheint nur einma
   const destinationName = `Zielflughafen ${marker}`;
 
   const homeSpot = await page.request.post('/api/spots', {
-    data: { trip_id: tripId, title: homeName, category: 'Flughafen', is_home: true, lat: 52.52, lng: 13.405 },
+    data: {
+      trip_id: tripId,
+      title: homeName,
+      category: 'Flughafen',
+      is_home: true,
+      lat: 52.52,
+      lng: 13.405,
+    },
   });
   expect(homeSpot.ok()).toBeTruthy();
   const home = await homeSpot.json();
 
   const destinationSpot = await page.request.post('/api/spots', {
-    data: { trip_id: tripId, title: destinationName, category: 'Flughafen', is_home: false, lat: 38.78, lng: -9.14 },
+    data: {
+      trip_id: tripId,
+      title: destinationName,
+      category: 'Flughafen',
+      is_home: false,
+      lat: 38.78,
+      lng: -9.14,
+    },
   });
   expect(destinationSpot.ok()).toBeTruthy();
   const destination = await destinationSpot.json();
@@ -41,12 +57,24 @@ test('Ein von mehreren Etappen referenzierter Reise-Ort-Spot erscheint nur einma
   // Etappe eine Tour (ideas) mit gesetzter role und genau zwei spot_ids (Von/Nach) statt einer
   // eigenen travel_items-Zeile mit from_place_id/to_place_id.
   const outbound = await page.request.post('/api/ideas', {
-    data: { trip_id: tripId, title: `Hinflug ${marker}`, transport_type: 'Flug', role: 'arrival', spot_ids: [home.id, destination.id] },
+    data: {
+      trip_id: tripId,
+      title: `Hinflug ${marker}`,
+      transport_type: 'Flug',
+      role: 'arrival',
+      spot_ids: [home.id, destination.id],
+    },
   });
   expect(outbound.ok()).toBeTruthy();
 
   const inbound = await page.request.post('/api/ideas', {
-    data: { trip_id: tripId, title: `Rückflug ${marker}`, transport_type: 'Flug', role: 'departure', spot_ids: [destination.id, home.id] },
+    data: {
+      trip_id: tripId,
+      title: `Rückflug ${marker}`,
+      transport_type: 'Flug',
+      role: 'departure',
+      spot_ids: [destination.id, home.id],
+    },
   });
   expect(inbound.ok()).toBeTruthy();
 

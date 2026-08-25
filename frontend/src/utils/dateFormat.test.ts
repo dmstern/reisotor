@@ -1,6 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
-import { endOfWeek, formatDate, formatDateTime, formatTripDateRange, formatWeekdayDate, startOfWeek } from './dateFormat';
+import {
+  endOfWeek,
+  formatDate,
+  formatDateTime,
+  formatTripDateRange,
+  formatWeekdayDate,
+  startOfWeek,
+} from './dateFormat';
 import { useCalendarSettingsStore } from '../stores/calendarSettings';
 
 // Testumgebung ist 'node' (vite.config.ts), es gibt daher kein globales localStorage – ein
@@ -141,4 +148,3 @@ describe('formatTripDateRange (#212)', () => {
     expect(formatTripDateRange('2026-08-10', '2026-08-20', now)).toBe('08/10/2026 – 08/20/2026');
   });
 });
-

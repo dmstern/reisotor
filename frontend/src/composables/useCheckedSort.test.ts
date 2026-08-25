@@ -20,7 +20,11 @@ describe('sortWithDoneLast', () => {
 
   it('applies the comparator only within each done/not-done partition', () => {
     const list = [item(1, true, 2), item(2, false, 2), item(3, true, 1), item(4, false, 1)];
-    const sorted = sortWithDoneLast(list, (i) => i.done, (a, b) => a.order - b.order);
+    const sorted = sortWithDoneLast(
+      list,
+      (i) => i.done,
+      (a, b) => a.order - b.order
+    );
     expect(sorted.map((i) => i.id)).toEqual([4, 2, 3, 1]);
   });
 

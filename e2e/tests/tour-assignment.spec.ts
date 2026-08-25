@@ -4,7 +4,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const seeded = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'fixtures', 'seeded-data.json'), 'utf-8'));
+const seeded = JSON.parse(
+  fs.readFileSync(path.join(__dirname, '..', 'fixtures', 'seeded-data.json'), 'utf-8')
+);
 
 // Regressionsnetz für den zentralen Kern-Ablauf des Spots/Touren-Redesigns (siehe CLAUDE.md,
 // "Standardverhalten, nicht Ausnahme"): man kann einen Spot entweder per "Tour zuordnen"-Combobox
@@ -89,7 +91,9 @@ test.describe('Tour-Zuordnung: einfacher Tagging-Modus + Kategorie/Touren-Gruppi
     await page.locator('.picker-backdrop').click();
 
     await expect(group.locator('.spot-card', { hasText: spotTitle })).toHaveCount(0);
-    await expect(group.locator('.empty')).toContainText('durch den Kategorie-/Status-Filter ausgeblendet');
+    await expect(group.locator('.empty')).toContainText(
+      'durch den Kategorie-/Status-Filter ausgeblendet'
+    );
     await expect(group.locator('.empty')).not.toContainText('Noch keine Spots zugeordnet');
 
     // Filter zurücksetzen: der Hinweis verschwindet wieder, der Spot ist erneut sichtbar.
@@ -115,11 +119,23 @@ test.describe('Touren-Reihenfolge-Editor: Reihenfolge + Mehrfachbesuch direkt in
     // Mit Koordinaten angelegt (nicht nur Titel/Kategorie): ExcursionCard.vue zeigt den
     // "🗺️ Auf Karte anzeigen"-Button nur, wenn mindestens eine Station einen Standort hat.
     const spotA = await page.request.post('/api/spots', {
-      data: { trip_id: tripId, title: spotATitle, category: 'Sehenswürdigkeit', lat: 38.7223, lng: -9.1393 },
+      data: {
+        trip_id: tripId,
+        title: spotATitle,
+        category: 'Sehenswürdigkeit',
+        lat: 38.7223,
+        lng: -9.1393,
+      },
     });
     expect(spotA.ok()).toBeTruthy();
     const spotB = await page.request.post('/api/spots', {
-      data: { trip_id: tripId, title: spotBTitle, category: 'Sehenswürdigkeit', lat: 38.7169, lng: -9.1399 },
+      data: {
+        trip_id: tripId,
+        title: spotBTitle,
+        category: 'Sehenswürdigkeit',
+        lat: 38.7169,
+        lng: -9.1399,
+      },
     });
     expect(spotB.ok()).toBeTruthy();
 
@@ -137,7 +153,8 @@ test.describe('Touren-Reihenfolge-Editor: Reihenfolge + Mehrfachbesuch direkt in
     // Start UND Ende an derselben Station (Spot A), dazwischen Spot B: Klick fügt IMMER eine
     // weitere Station hinzu (kein Checkbox-Verhalten) - der Reihenfolge-Editor ist seit dem
     // Zurückbau des früheren "erweiterten Touren-Modus" immer verfügbar, kein Umschalten mehr nötig.
-    const addableRow = (title: string) => newTourModal.locator('.spot-picker .derived-option', { hasText: title });
+    const addableRow = (title: string) =>
+      newTourModal.locator('.spot-picker .derived-option', { hasText: title });
     await addableRow(spotATitle).click();
     await addableRow(spotBTitle).click();
     await addableRow(spotATitle).click();

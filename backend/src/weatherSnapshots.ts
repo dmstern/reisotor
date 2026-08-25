@@ -96,7 +96,7 @@ async function snapshotTripWeather(trip: TripRow, today: string) {
   const spots = db
     .prepare(
       `SELECT lat, lng, start_date, end_date FROM spots
-       WHERE trip_id = ? AND lat IS NOT NULL AND lng IS NOT NULL AND start_date IS NOT NULL AND deleted_at IS NULL`,
+       WHERE trip_id = ? AND lat IS NOT NULL AND lng IS NOT NULL AND start_date IS NOT NULL AND deleted_at IS NULL`
     )
     .all(trip.id) as { lat: number; lng: number; start_date: string; end_date: string | null }[];
 
@@ -114,7 +114,7 @@ async function snapshotTripWeather(trip: TripRow, today: string) {
        JOIN schedule_items s ON s.idea_id = i.id
        JOIN excursion_spots es ON es.idea_id = i.id
        JOIN spots sp ON sp.id = es.spot_id
-       WHERE i.trip_id = ? AND s.date IS NOT NULL AND i.deleted_at IS NULL AND s.deleted_at IS NULL AND sp.deleted_at IS NULL AND sp.lat IS NOT NULL AND sp.lng IS NOT NULL`,
+       WHERE i.trip_id = ? AND s.date IS NOT NULL AND i.deleted_at IS NULL AND s.deleted_at IS NULL AND sp.deleted_at IS NULL AND sp.lat IS NOT NULL AND sp.lng IS NOT NULL`
     )
     .all(trip.id) as { date: string; lat: number; lng: number }[];
 
@@ -132,9 +132,15 @@ async function snapshotTripWeather(trip: TripRow, today: string) {
     const existing = db
       .prepare(
         `SELECT date FROM trip_weather_snapshots
-         WHERE trip_id = ? AND ABS(lat - ?) < 0.001 AND ABS(lng - ?) < 0.001 AND date >= ? AND date <= ?`,
+         WHERE trip_id = ? AND ABS(lat - ?) < 0.001 AND ABS(lng - ?) < 0.001 AND date >= ? AND date <= ?`
       )
-      .all(trip.id, target.lat, target.lng, wantedDates[0], wantedDates[wantedDates.length - 1]) as { date: string }[];
+      .all(
+        trip.id,
+        target.lat,
+        target.lng,
+        wantedDates[0],
+        wantedDates[wantedDates.length - 1]
+      ) as { date: string }[];
     const existingSet = new Set(existing.map((r) => r.date));
     const missingDates = wantedDates.filter((d) => !existingSet.has(d));
     if (!missingDates.length) continue;
@@ -163,7 +169,7 @@ async function snapshotTripWeather(trip: TripRow, today: string) {
         data.daily.weathercode[i],
         data.daily.temperature_2m_max[i],
         data.daily.temperature_2m_min[i],
-        data.daily.precipitation_probability_max?.[i] ?? null,
+        data.daily.precipitation_probability_max?.[i] ?? null
       );
     });
   }
@@ -175,9 +181,9 @@ async function snapshotTripWeather(trip: TripRow, today: string) {
  *  Aufruf würden die als "missing" geltenden Tage erst beim nächsten periodischen Lauf (bis zu
  *  CHECK_INTERVAL_MS später) neu geholt. */
 export async function refreshTripWeatherSnapshots(tripId: number) {
-  const trip = db.prepare('SELECT id, lat, lng, start_date, end_date FROM trips WHERE id = ?').get(tripId) as
-    | TripRow
-    | undefined;
+  const trip = db
+    .prepare('SELECT id, lat, lng, start_date, end_date FROM trips WHERE id = ?')
+    .get(tripId) as TripRow | undefined;
   if (!trip || trip.lat == null || trip.lng == null) return;
   await snapshotTripWeather(trip, todayUtcDateStr());
 }
@@ -195,7 +201,7 @@ export async function recordWeatherSnapshots() {
       `SELECT id, lat, lng, start_date, end_date FROM trips
        WHERE lat IS NOT NULL AND lng IS NOT NULL
          AND end_date >= date('now', '-92 days')
-         AND start_date <= date('now')`,
+         AND start_date <= date('now')`
     )
     .all() as TripRow[];
 
@@ -212,8 +218,12 @@ export async function recordWeatherSnapshots() {
 const CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
 
 export function startWeatherSnapshotScheduler() {
-  recordWeatherSnapshots().catch((err) => console.error('weatherSnapshots: initial run failed', err));
+  recordWeatherSnapshots().catch((err) =>
+    console.error('weatherSnapshots: initial run failed', err)
+  );
   setInterval(() => {
-    recordWeatherSnapshots().catch((err) => console.error('weatherSnapshots: periodic run failed', err));
+    recordWeatherSnapshots().catch((err) =>
+      console.error('weatherSnapshots: periodic run failed', err)
+    );
   }, CHECK_INTERVAL_MS);
 }

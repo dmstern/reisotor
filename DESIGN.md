@@ -3,7 +3,7 @@
 Design-Prinzipien für Reisotor: was neue UI-Elemente über Farben, Abstände, Eckenrundung, Schatten,
 Animationen, Typografie, Icons und Breakpoints hinweg konsistent halten soll. `frontend/src/style.css`
 ist die Quelle der Wahrheit für die tatsächlichen Werte (CSS-Variablen im `:root`-Block) – diese
-Datei hält die *Prinzipien* und *Faustregeln* dahinter fest, damit sie nicht nur implizit im CSS
+Datei hält die _Prinzipien_ und _Faustregeln_ dahinter fest, damit sie nicht nur implizit im CSS
 stehen. Bei jedem neuen UI-Baustein oder jeder sichtbaren UI-Änderung hier kurz nachschauen, ob ein
 bestehendes Muster zutrifft, statt ad hoc neue Werte zu erfinden – und diese Datei ergänzen, wenn
 dabei ein neues, wiederverwendbares Prinzip entsteht.
@@ -30,7 +30,7 @@ gleich hoch sein und gleich aussehen. Das gilt für jede der unten dokumentierte
   Ausblenden & Listen / 0.25–0.3s große Bewegung), immer `ease`/`ease-in-out`, globale
   `list`/`fade`-Transition-Klassen statt lokaler Neuerfindung (Abschnitt "Animationen"). Für
   Zieh-Interaktionen (Anfasser/Sheets) zusätzlich die eigene Faustregel im Unterabschnitt
-  "Zieh-Interaktionen" beachten – dort *bewusst* eine eigene, weichere Einrast-Kurve statt `ease`.
+  "Zieh-Interaktionen" beachten – dort _bewusst_ eine eigene, weichere Einrast-Kurve statt `ease`.
 - **Typografie**: eine Schriftfamilie, Größen/Gewichte an bestehenden Textrollen orientieren
   (Abschnitt "Typografie").
 - **Icons**: Emoji aus den bestehenden Registries (`sectionIcons.ts`, `spotCategory.ts`,
@@ -71,7 +71,7 @@ Bei jedem neuen UI-Baustein oder jeder sichtbaren Änderung deshalb aktiv beide 
 -testen, nicht nur die Breite, an der man gerade selbst entwickelt/screenshotet:
 
 - **Größenabhängige Layout-Entscheidungen** (Grid- vs. Bottom-Sheet-Modus, Spalten- vs. Stapel-
-  Anordnung, Schubladen vs. eigene Route, …) müssen bei *allen* Kombinationen aus Fenster-/
+  Anordnung, Schubladen vs. eigene Route, …) müssen bei _allen_ Kombinationen aus Fenster-/
   Gerätebreite UND gleichzeitig geöffneten Schubladen/Overlays plausibel aussehen – nicht nur beim
   Standard-Fall (Schublade zu, Fenster maximiert). Konkreter Fall: `ExcursionsView.vue`s
   Umschalt-Schwelle für die Desktop-Spalten-Ansicht griff bei geöffneter Kalender-Schublade auf
@@ -85,7 +85,7 @@ Bei jedem neuen UI-Baustein oder jeder sichtbaren Änderung deshalb aktiv beide 
   verwandtes Feature) statt ein zusätzliches, permanent sichtbares Bedienelement obendrauf zu setzen
   ("schlau eingebaut, ohne die Oberfläche zu überfrachten").
 - **Elemente, die sich an der Breite des umgebenden Containers orientieren** (z. B. `flex-basis:
-  100%` für einen Absenden-Button, damit er auf Mobil die volle, gut antippbare Breite bekommt),
+100%` für einen Absenden-Button, damit er auf Mobil die volle, gut antippbare Breite bekommt),
   auf einer breiten Desktop-Karte gegenprüfen – derselbe Wert, der auf Mobil genau richtig wirkt,
   kann auf einer 1400px-Karte überdimensioniert aussehen. Meist reicht ein einzelner
   `@media (min-width: 800px)`-Gegenwert, siehe `ShoppingListView.vue`/`TodoView.vue`.
@@ -110,7 +110,6 @@ Damit Elemente (Buttons, Status-Badges, Dropdowns, Navigationsleisten) sich nich
 4. **Respektierung variabler Header-/Footer-Offsets**:
    - Absolute oder sticky Elemente (wie `.spots-col` oder `nav.navbar.mobile-bottom`) dürfen Offsets wie `--app-header-height` oder `--navbar-bottom-offset` nicht hartcodieren (`top: 56px`), sondern müssen dynamische CSS-Variablen nutzen, falls der Header durch Statusmeldungen (z. B. Offline-Pill) höher wird.
 
-
 ## Farben
 
 Alle Farben laufen über CSS-Variablen (`--color-*` im `:root`-Block), nie als Hex-Wert direkt in
@@ -122,24 +121,24 @@ anlegen, nicht als lokaler Wert in der Komponente.
 
 ### Zentrale Farb-Tokens
 
-| Variable | Bedeutung / Einsatz | Light Mode | Dark Mode |
-|---|---|---|---|
-| `--color-bg` | Haupt-App-Hintergrund | `#faf8f5` | `#181715` |
-| `--color-surface` | Karten, Panels, Modal-Flächen | `#ffffff` | `#232220` |
-| `--color-border` | Standard Trennlinien & dezente Ränder | `#e8e2d9` | `#38352f` |
-| `--color-border-strong` | Eingabefelder, Selects, Secondary-Buttons | `#d5cabc` | `#4a453c` |
-| `--color-text` | Primäre Textfarbe | `#2b2a28` | `#f2efe9` |
-| `--color-text-muted` | Gedämpfter Fließtext & Untertitel | `#726e66` | `#a8a29a` |
-| `--color-primary` | Marken-Grün (Haupt-Buttons & Fokus) | `#2a7f74` | `#3da296` |
-| `--color-primary-dark` | Hover-Status für Marken-Grün | `#1f6059` | `#7dd0c1` |
-| `--color-primary-tint` | Leichter Grünton für Steuerungen & Badges | `#eaf3f1` | `#1c2e2a` |
-| `--color-hover` | Hover-Hintergrund & Muted-Surface | `#f4f1ec` | `#2a2823` |
-| `--color-accent` | Echtzeit-Updates / Aufmerksamkeits-Akzent | `#e08e45` | `#f0a05a` |
-| `--color-danger` | Gefahr / Löschen / Warnungen | `#c1503f` | `#e0685a` |
-| `--color-success` | Erfolg / Fertig-Status | `#3f8f5c` | `#5cb37e` |
-| `--color-scheduled` | Geplant (Kalender & Streifen) | `#1e96d1` | `#52b8ea` |
-| `--color-highlight` | Highlight-Fläche für Notizen | `#fff4e8` | `#332a1c` |
-| `--color-accent-secondary` | Sekundärer Akzent (Indigo) | `#5b6ee1` | `#8b98f0` |
+| Variable                   | Bedeutung / Einsatz                       | Light Mode | Dark Mode |
+| -------------------------- | ----------------------------------------- | ---------- | --------- |
+| `--color-bg`               | Haupt-App-Hintergrund                     | `#faf8f5`  | `#181715` |
+| `--color-surface`          | Karten, Panels, Modal-Flächen             | `#ffffff`  | `#232220` |
+| `--color-border`           | Standard Trennlinien & dezente Ränder     | `#e8e2d9`  | `#38352f` |
+| `--color-border-strong`    | Eingabefelder, Selects, Secondary-Buttons | `#d5cabc`  | `#4a453c` |
+| `--color-text`             | Primäre Textfarbe                         | `#2b2a28`  | `#f2efe9` |
+| `--color-text-muted`       | Gedämpfter Fließtext & Untertitel         | `#726e66`  | `#a8a29a` |
+| `--color-primary`          | Marken-Grün (Haupt-Buttons & Fokus)       | `#2a7f74`  | `#3da296` |
+| `--color-primary-dark`     | Hover-Status für Marken-Grün              | `#1f6059`  | `#7dd0c1` |
+| `--color-primary-tint`     | Leichter Grünton für Steuerungen & Badges | `#eaf3f1`  | `#1c2e2a` |
+| `--color-hover`            | Hover-Hintergrund & Muted-Surface         | `#f4f1ec`  | `#2a2823` |
+| `--color-accent`           | Echtzeit-Updates / Aufmerksamkeits-Akzent | `#e08e45`  | `#f0a05a` |
+| `--color-danger`           | Gefahr / Löschen / Warnungen              | `#c1503f`  | `#e0685a` |
+| `--color-success`          | Erfolg / Fertig-Status                    | `#3f8f5c`  | `#5cb37e` |
+| `--color-scheduled`        | Geplant (Kalender & Streifen)             | `#1e96d1`  | `#52b8ea` |
+| `--color-highlight`        | Highlight-Fläche für Notizen              | `#fff4e8`  | `#332a1c` |
+| `--color-accent-secondary` | Sekundärer Akzent (Indigo)                | `#5b6ee1`  | `#8b98f0` |
 
 Semantische statt beschreibende Namen (`--color-danger`, nicht `--color-red`) – Töne können sich
 ändern, die Bedeutung bleibt.
@@ -177,14 +176,14 @@ dem jeweiligen Kontext unterordnen statt sich als eigene, andersfarbige Fläche 
 Stufen verwenden statt beliebiger px-Werte – macht Layouts über Views hinweg optisch konsistent und
 Design-Anpassungen global statt Datei für Datei nötig:
 
-| Variable | Wert | Typischer Verwendungszweck |
-|---|---|---|
-| `--space-1` | 4px | Mikro-Abstände (Icon-Gaps, Badges, Chips, Button-Gap) |
-| `--space-2` | 8px | Standard-Gap für dichte Flex-Zeilen (Formularfelder, Button-Gruppen) |
-| `--space-3` | 16px | Standard Card-Padding (Mobil), Listen-Gaps, Fließtext-Abstand |
-| `--space-4` | 24px | Großzügiges Card-Padding (Desktop), Dialoge, Sektions-Abstände |
-| `--space-5` | 32px | Große Trennabstände zwischen Hauptbereichen einer View |
-| `--space-6` | 48px | Maximale Außenabstände / Hero-Layouts |
+| Variable    | Wert | Typischer Verwendungszweck                                           |
+| ----------- | ---- | -------------------------------------------------------------------- |
+| `--space-1` | 4px  | Mikro-Abstände (Icon-Gaps, Badges, Chips, Button-Gap)                |
+| `--space-2` | 8px  | Standard-Gap für dichte Flex-Zeilen (Formularfelder, Button-Gruppen) |
+| `--space-3` | 16px | Standard Card-Padding (Mobil), Listen-Gaps, Fließtext-Abstand        |
+| `--space-4` | 24px | Großzügiges Card-Padding (Desktop), Dialoge, Sektions-Abstände       |
+| `--space-5` | 32px | Große Trennabstände zwischen Hauptbereichen einer View               |
+| `--space-6` | 48px | Maximale Außenabstände / Hero-Layouts                                |
 
 **Absatz vor Button / Aktion (#69)**: Eine erklärende `<p>`-Zeile direkt vor einem Button oder einer
 Aktionsleiste braucht zwingend sichtbaren Freiraum nach unten (`margin-top: var(--space-3)` via
@@ -214,6 +213,7 @@ deshalb eine eigene, von `.hint` unabhängige Klasse verwenden oder per Compound
 Einleitungszeile im gerenderten Ergebnis prüfen, ob der Abstand tatsächlich ankommt.
 
 **Überschriften-Hierarchie & Card-Gutters (#239)**:
+
 - `h1`: `margin: 0 0 var(--space-3)` (Seiten-Titel).
 - `h2`: `margin: 0 0 var(--space-2)` (Sektions-Überschriften in Cards/Views).
 - `h3`: `margin: 0 0 var(--space-1)` (Kompakte Gruppen-Titel).
@@ -251,7 +251,7 @@ corner-shape: squircle;
 
 Warum zwei getrennte Variablen-Sets: `corner-shape: squircle` konzentriert die Rundung stärker auf
 den unmittelbaren Eckpunkt als ein Kreisbogen – bei identischem `border-radius`-Wert sieht ein
-Squircle sichtbar *weniger* rund aus. Die `-squircle`-Variablen kompensieren das per `@supports
+Squircle sichtbar _weniger_ rund aus. Die `-squircle`-Variablen kompensieren das per `@supports
 (corner-shape: squircle)`-Feature-Query um Faktor 1.75 (per Pixel-Vergleich ermittelt), damit ein
 Squircle optisch genauso rund wirkt wie ein normaler Kreisbogen mit dem Basis-Radius. Ohne
 Squircle-Unterstützung im Browser fallen `-squircle`-Variablen automatisch auf die Basiswerte
@@ -293,7 +293,7 @@ Größenordnungen hinweg – neue Übergänge an einer dieser drei orientieren, 
   CRUD-/Sortier-Interaktionen in Listen (Ein-/Ausblenden + sanftes Gleiten an die neue Position,
   inkl. `translateY(-6px) scale(0.98)` beim Ein-/Ausblenden) und `<Transition name="fade">` für
   einfaches Ein-/Ausblenden ohne Liste. `Modal.vue`s `modal-fade` folgt demselben `0.2s
-  ease-in-out`, ergänzt um ein leichtes Scale/Translate am `.modal` selbst. Diese globalen Klassen
+ease-in-out`, ergänzt um ein leichtes Scale/Translate am `.modal` selbst. Diese globalen Klassen
   verwenden statt einer lokalen, komponenteneigenen Transition – neue Listen/Modals/Ein-Ausblend-
   Stellen binden sich an `name="list"`/`name="fade"` an, statt eigene Timings zu erfinden.
 - **Größere Bewegungen** (Drawer/Schublade rein-/rausfahren): `0.25s`–`0.3s ease` – etwas länger als
@@ -327,7 +327,7 @@ für diesen Abschnitt (Nutzer-Vergleichsvideo gegen Google Maps' Bottom-Sheet).
    sein, sonst hinkt das Element dem Zeiger mit der vollen Transition-Dauer hinterher, statt 1:1 zu
    folgen. Dafür während des Drags eine eigene Zustands-Klasse setzen, die die Transition abschaltet
    (`.spots-col.dragging { transition: none; }` bzw. `.drawer.resizing .drawer-panel { transition:
-   none; }`) – **und diese Klasse tatsächlich ans Root-/animierte Element binden**; ein reiner
+none; }`) – **und diese Klasse tatsächlich ans Root-/animierte Element binden**; ein reiner
    `resizing`/`dragging`-Ref im Script ohne `:class`-Bindung wirkt nicht (genau dieser Lapsus war der
    kollaterale Bug in `Drawer.vue`, den dieser Abschnitt jetzt festhält).
 2. **Pro Zeigerbewegung direkt aufs DOM-Element schreiben statt über eine reaktive `:style`-Bindung.**
@@ -387,10 +387,11 @@ eigenes Token-Paar:
 zusätzlicher Gewichts-Schatten obendrauf – eine frühere Version hatte beides kombiniert und wirkte
 dadurch eher wie ein glänzender 2000er-Web-Button bzw. Neumorphismus als modern/dezent. Die Faustregel
 für "weich, aber aktuell" statt "retro": **ein** ruhiger, mehrstufiger Drop-Shadow pro Ebene (Träger
-+ mehr Blur/weniger Deckkraft in der zweiten Stufe für einen weichen statt harten Rand) plus reichlich
-Rundung (siehe unten) – keine Lichtkanten, keine gestapelten Inset-Schatten, kein
-Hell/Dunkel-Kontrast, der wie eine physische Fase/Kante aussehen soll. Bei jeder künftigen Anpassung
-dieser Tokens diese Faustregel zuerst gegenprüfen, bevor eine weitere Schatten-Ebene ergänzt wird.
+
+- mehr Blur/weniger Deckkraft in der zweiten Stufe für einen weichen statt harten Rand) plus reichlich
+  Rundung (siehe unten) – keine Lichtkanten, keine gestapelten Inset-Schatten, kein
+  Hell/Dunkel-Kontrast, der wie eine physische Fase/Kante aussehen soll. Bei jeder künftigen Anpassung
+  dieser Tokens diese Faustregel zuerst gegenprüfen, bevor eine weitere Schatten-Ebene ergänzt wird.
 
 Beide wie `--shadow-sm`/`-md` je einmal hell (`:root`) und einmal dunkel (beide Dark-Mode-Blöcke)
 definiert – nie eine eigene `rgba()`/`box-shadow`-Kombination lokal in einer Komponente bauen, und nie
@@ -419,14 +420,14 @@ oben, funktioniert offline). Keine weiteren Schriftfamilien einführen.
 
 ### Schriftgrößen-Skala & CSS-Tokens
 
-| Variable | Wert | Typischer Einsatz |
-|---|---|---|
-| `--font-size-xs` | `0.75rem` (12px) | Pre-Heading Kicker, Badges, Formular-Meta & Labels |
-| `--font-size-sm` | `0.85rem` (13.6px) | Sekundärtexte, Card-Actions (`.card-action-btn`), Hinweise |
-| `--font-size-md` | `1rem` (16px) | Standard Fließtext, Text-Inputs, Haupt-Buttons |
-| `--font-size-lg` | `1.15rem` (18.4px) | H3 Überschriften, Subheadings, Dialog-Titel |
-| `--font-size-xl` | `1.3rem` (20.8px) | H2 Sektions-Überschriften, Kachel-Titel |
-| `--font-size-2xl` | `1.6rem` (25.6px) | H1 Haupt-Seitentitel (700 Bold, `-0.01em` Tracking) |
+| Variable          | Wert               | Typischer Einsatz                                          |
+| ----------------- | ------------------ | ---------------------------------------------------------- |
+| `--font-size-xs`  | `0.75rem` (12px)   | Pre-Heading Kicker, Badges, Formular-Meta & Labels         |
+| `--font-size-sm`  | `0.85rem` (13.6px) | Sekundärtexte, Card-Actions (`.card-action-btn`), Hinweise |
+| `--font-size-md`  | `1rem` (16px)      | Standard Fließtext, Text-Inputs, Haupt-Buttons             |
+| `--font-size-lg`  | `1.15rem` (18.4px) | H3 Überschriften, Subheadings, Dialog-Titel                |
+| `--font-size-xl`  | `1.3rem` (20.8px)  | H2 Sektions-Überschriften, Kachel-Titel                    |
+| `--font-size-2xl` | `1.6rem` (25.6px)  | H1 Haupt-Seitentitel (700 Bold, `-0.01em` Tracking)        |
 
 ### Semantische Textbausteine
 
@@ -496,7 +497,7 @@ zurück). Drei getrennte, in sich konsistente Icon-Systeme:
 
 - **App-Bereiche** (Navigation, Dashboard-Kacheln, Schubladen-Tabs): zentrale Registry in
   `frontend/src/utils/sectionIcons.ts` (`SECTION_ICONS` fürs Emoji, `SECTION_ICON_DEFS` fürs
-  `IconDef`-Pendant). Ein Bereich hat *ein* Icon, das überall identisch verwendet wird – nie ein Icon
+  `IconDef`-Pendant). Ein Bereich hat _ein_ Icon, das überall identisch verwendet wird – nie ein Icon
   lokal in einer Komponente neu hartkodieren, sondern aus dieser Registry importieren. Neuer
   App-Bereich → hier (beide Maps) ergänzen, nicht ad hoc irgendwo inline.
 - **Kategorien innerhalb eines Bereichs** (Kalender-Kategorien, Spot-Kategorien, Transportmittel,
@@ -664,7 +665,7 @@ in derselben Flex-Row) darf ohne Wrapper bleiben.
 Kein zweites, abweichendes Label-Muster parallel zu FormField einführen (z. B. ein eigenes
 `.date-label`/`.field-label` mit eigener Schriftgröße) – selbst wenn optisch ähnlich, ergibt das exakt
 dieselbe Höhen-Inkonsistenz wie beim `<select>` oben, sobald beide Muster in derselben Zeile landen.
-`TripForm.vue`/`TravelView.vue` sind die eine bewusste Ausnahme: dort trägt *jedes* Feld durchgehend
+`TripForm.vue`/`TravelView.vue` sind die eine bewusste Ausnahme: dort trägt _jedes_ Feld durchgehend
 deren eigenes `<label>Text<input/></label>`-Muster (kein Mix mit FormField in derselben Datei), daher
 dort keine Migration nötig.
 
@@ -694,4 +695,3 @@ Zur Vorschau und Dokumentation aller Primitives (`Button.vue`, `IconButton.vue`,
 3. Neues wiederkehrendes Muster nötig? → hier dokumentieren, damit es beim nächsten Mal gefunden
    statt neu erfunden wird (siehe auch `AGENTS.md`, Abschnitt "Konsistenz-Check bei Änderungen").
 4. Neue wiederverwendbare UI-Komponente gebaut? → Story in `*.stories.ts` ergänzen.
-

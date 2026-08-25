@@ -73,24 +73,39 @@ const cache = new Map<string, { expiresAt: number; data: RegionInfo }>();
  *  (Promise.allSettled, gleiches Muster wie das Wetter-Widget: ein Teilausfall blendet nur diesen
  *  Teil aus, statt die ganze Anfrage scheitern zu lassen). Alle drei APIs sind kostenlos/keylos,
  *  passend zum bestehenden Open-Meteo-Präzedenzfall dieser App. */
-export async function fetchRegionInfo(countryCode: string, homeCurrency: string | null): Promise<RegionInfo> {
+export async function fetchRegionInfo(
+  countryCode: string,
+  homeCurrency: string | null
+): Promise<RegionInfo> {
   const cacheKey = `${countryCode}|${homeCurrency ?? ''}`;
   const cached = cache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) return cached.data;
 
   const [countryResult, advisoryResult] = await Promise.allSettled([
-    fetch(`https://restcountries.com/v3.1/alpha/${countryCode}`, { signal: AbortSignal.timeout(5000) }).then((res) =>
-      res.ok ? (res.json() as Promise<RestCountryResponse[]>) : Promise.reject(new Error(String(res.status))),
+    fetch(`https://restcountries.com/v3.1/alpha/${countryCode}`, {
+      signal: AbortSignal.timeout(5000),
+    }).then((res) =>
+      res.ok
+        ? (res.json() as Promise<RestCountryResponse[]>)
+        : Promise.reject(new Error(String(res.status)))
     ),
     fetch(`https://www.travel-advisory.info/api?countrycode=${countryCode}`, {
       signal: AbortSignal.timeout(5000),
-    }).then((res) => (res.ok ? (res.json() as Promise<TravelAdvisoryResponse>) : Promise.reject(new Error(String(res.status))))),
+    }).then((res) =>
+      res.ok
+        ? (res.json() as Promise<TravelAdvisoryResponse>)
+        : Promise.reject(new Error(String(res.status)))
+    ),
   ]);
 
   const languages =
-    countryResult.status === 'fulfilled' ? Object.values(countryResult.value[0]?.languages ?? {}) : [];
+    countryResult.status === 'fulfilled'
+      ? Object.values(countryResult.value[0]?.languages ?? {})
+      : [];
   const currencyEntry =
-    countryResult.status === 'fulfilled' ? Object.entries(countryResult.value[0]?.currencies ?? {})[0] : undefined;
+    countryResult.status === 'fulfilled'
+      ? Object.entries(countryResult.value[0]?.currencies ?? {})[0]
+      : undefined;
   const currency = currencyEntry ? { code: currencyEntry[0], name: currencyEntry[1].name } : null;
 
   let exchangeRate: number | null = null;
@@ -112,7 +127,9 @@ export async function fetchRegionInfo(countryCode: string, homeCurrency: string 
     advisoryResult.status === 'fulfilled'
       ? (() => {
           const entry = Object.values(advisoryResult.value.data ?? {})[0]?.advisory;
-          return entry?.score != null && entry?.message ? { score: entry.score, message: entry.message } : null;
+          return entry?.score != null && entry?.message
+            ? { score: entry.score, message: entry.message }
+            : null;
         })()
       : null;
 

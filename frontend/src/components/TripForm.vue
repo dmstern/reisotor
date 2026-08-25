@@ -11,7 +11,11 @@ import { ACTION_ICONS } from '../utils/actionIcons';
 // locationError: vom Aufrufer (TripSwitcher.vue) gesetzt, wenn nach dem Speichern auffällt, dass
 // auch die serverseitige Maps-Link-Auflösung fehlgeschlagen ist (z. B. Google-Bot-Blocking eines
 // Kurzlinks) – öffnet dann automatisch den manuellen Karten-Picker als Fallback.
-const props = defineProps<{ initial?: TripFormData; submitLabel?: string; locationError?: boolean }>();
+const props = defineProps<{
+  initial?: TripFormData;
+  submitLabel?: string;
+  locationError?: boolean;
+}>();
 const emit = defineEmits<{ (e: 'submit', data: TripFormData): void }>();
 
 // Assistent (Issue #76): nur beim Neuanlegen (kein initial) - beim Bearbeiten eines bestehenden
@@ -30,7 +34,7 @@ const isLastStep = computed(() => step.value === STEPS.length - 1);
 const currentStepOptional = computed(() => STEPS[step.value].optional);
 const showStep = (id: StepId) => !wizard.value || STEPS[step.value].id === id;
 const canProceedBasics = computed(
-  () => !!form.value.name.trim() && !!form.value.start_date && !!form.value.end_date,
+  () => !!form.value.name.trim() && !!form.value.start_date && !!form.value.end_date
 );
 
 function blankForm(): TripFormData {
@@ -58,7 +62,7 @@ watch(
     manualPin.value = null;
     pickerOpen.value = false;
     step.value = 0;
-  },
+  }
 );
 
 // Öffnet den Picker automatisch, sobald der Aufrufer einen Fehlschlag meldet; ein danach gesetzter
@@ -67,7 +71,7 @@ watch(
   () => props.locationError,
   (err) => {
     if (err) pickerOpen.value = true;
-  },
+  }
 );
 // Ein manuell gesetzter Pin übernimmt das Maps-Link-Feld als OpenStreetMap-Link derselben
 // Koordinate – zur besseren Nachvollziehbarkeit, welcher Standort tatsächlich für z. B. die
@@ -160,15 +164,32 @@ function onSubmit() {
           <input v-model="form.maps_link" type="url" @blur="checkMapsLink" />
         </label>
         <p v-if="mapsLinkResolved === true" class="hint success">
-          <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort erkannt – erscheint auf der Karte
+          <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort erkannt –
+          erscheint auf der Karte
         </p>
-        <p v-if="mapsLinkResolved === false" class="hint">Standort konnte nicht automatisch erkannt werden.</p>
+        <p v-if="mapsLinkResolved === false" class="hint">
+          Standort konnte nicht automatisch erkannt werden.
+        </p>
         <p v-if="locationError" class="hint error">
-          <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Der Standort konnte auch automatisch nicht ermittelt werden. Bitte tippe unten auf die Karte, um ihn manuell zu setzen.
+          <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Der Standort konnte
+          auch automatisch nicht ermittelt werden. Bitte tippe unten auf die Karte, um ihn manuell
+          zu setzen.
         </p>
-        <Button type="button" variant="ghost" class="picker-toggle" @click="pickerOpen = !pickerOpen">
-          <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort manuell setzen
-          <AppIcon :icon="ACTION_ICONS.chevronDown" :size="12" group="actions" class="picker-caret" :class="{ open: pickerOpen }" />
+        <Button
+          type="button"
+          variant="ghost"
+          class="picker-toggle"
+          @click="pickerOpen = !pickerOpen"
+        >
+          <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort manuell
+          setzen
+          <AppIcon
+            :icon="ACTION_ICONS.chevronDown"
+            :size="12"
+            group="actions"
+            class="picker-caret"
+            :class="{ open: pickerOpen }"
+          />
         </Button>
         <LocationPicker v-if="pickerOpen" v-model="manualPin" />
       </div>
@@ -186,7 +207,9 @@ function onSubmit() {
     </template>
 
     <div class="form-actions">
-      <Button v-if="wizard && step > 0" type="button" variant="secondary" @click="goBack">Zurück</Button>
+      <Button v-if="wizard && step > 0" type="button" variant="secondary" @click="goBack"
+        >Zurück</Button
+      >
       <div class="form-actions-right">
         <Button
           v-if="wizard && currentStepOptional && !isLastStep"
@@ -196,7 +219,12 @@ function onSubmit() {
         >
           Überspringen
         </Button>
-        <Button v-if="wizard && !isLastStep" type="button" :disabled="!canProceedBasics" @click="goNextOrSubmit">
+        <Button
+          v-if="wizard && !isLastStep"
+          type="button"
+          :disabled="!canProceedBasics"
+          @click="goNextOrSubmit"
+        >
           Weiter
         </Button>
         <Button v-if="!wizard || isLastStep" type="submit">{{ submitLabel ?? 'Speichern' }}</Button>

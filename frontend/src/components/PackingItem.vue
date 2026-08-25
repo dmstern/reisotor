@@ -18,7 +18,9 @@ const isFullyPacked = computed(() => isFullyPackedItem(props.item));
 // Sind bei Anzahl > 1 bereits alle Exemplare rausgelegt (aber noch nicht eingepackt), zeigt der
 // Hochzähl-Button statt des Plus-Icons denselben Punkt wie bei Anzahl 1 kurz vor dem Einpacken –
 // signalisiert "nichts mehr zum Rauslegen übrig, nächster Klick packt ein" statt "weiter hochzählen".
-const allLaidOut = computed(() => !isFullyPacked.value && props.item.laid_out_count >= props.item.quantity);
+const allLaidOut = computed(
+  () => !isFullyPacked.value && props.item.laid_out_count >= props.item.quantity
+);
 
 // Bei Anzahl 1 (die meisten Gegenstände) reicht ein einzelner Klick-Zyklus statt einer Strichliste:
 // ungepackt → rausgelegt → eingepackt → wieder ungepackt. Behält dieselbe Häkchen-Optik wie überall
@@ -103,7 +105,13 @@ const tallyGroups = computed<number[]>(() => {
         role="checkbox"
         :aria-checked="singleState === 'packed'"
         :aria-label="`${item.label}: ${singleState === 'none' ? 'ungepackt' : singleState === 'laidOut' ? 'rausgelegt' : 'eingepackt'}`"
-        :title="singleState === 'none' ? 'Ungepackt – klicken für rausgelegt' : singleState === 'laidOut' ? 'Rausgelegt – klicken für eingepackt' : 'Eingepackt – klicken zum Zurücksetzen'"
+        :title="
+          singleState === 'none'
+            ? 'Ungepackt – klicken für rausgelegt'
+            : singleState === 'laidOut'
+              ? 'Rausgelegt – klicken für eingepackt'
+              : 'Eingepackt – klicken zum Zurücksetzen'
+        "
         @click="cycleSingleState"
       >
         <span v-if="singleState === 'laidOut'" class="laid-out-mark"></span>
@@ -116,7 +124,9 @@ const tallyGroups = computed<number[]>(() => {
         role="checkbox"
         :aria-checked="isFullyPacked"
         :aria-label="`${item.label}: alle ${item.quantity} Exemplare ${isFullyPacked ? 'eingepackt – klicken zum Zurücksetzen' : 'auf einmal einpacken'}`"
-        :title="isFullyPacked ? 'Alle eingepackt – klicken zum Zurücksetzen' : 'Alle auf einmal einpacken'"
+        :title="
+          isFullyPacked ? 'Alle eingepackt – klicken zum Zurücksetzen' : 'Alle auf einmal einpacken'
+        "
         @click="toggleAllPacked"
       ></button>
       <span class="label" :class="{ 'text-done': isFullyPacked }">
@@ -133,8 +143,18 @@ const tallyGroups = computed<number[]>(() => {
         :class="{ laidOut: !isFullyPacked && item.laid_out_count > 0, packed: isFullyPacked }"
         role="checkbox"
         :aria-checked="isFullyPacked"
-        :aria-label="isFullyPacked ? `${item.label}: eingepackt – klicken zum Zurücksetzen` : `${item.label}: ${item.laid_out_count}/${item.quantity} rausgelegt`"
-        :title="isFullyPacked ? 'Eingepackt – klicken zum Zurücksetzen' : item.laid_out_count < item.quantity ? 'Nächstes Exemplar rausgelegt' : 'Alle rausgelegt – klicken zum Einpacken'"
+        :aria-label="
+          isFullyPacked
+            ? `${item.label}: eingepackt – klicken zum Zurücksetzen`
+            : `${item.label}: ${item.laid_out_count}/${item.quantity} rausgelegt`
+        "
+        :title="
+          isFullyPacked
+            ? 'Eingepackt – klicken zum Zurücksetzen'
+            : item.laid_out_count < item.quantity
+              ? 'Nächstes Exemplar rausgelegt'
+              : 'Alle rausgelegt – klicken zum Einpacken'
+        "
         @click="incrementMulti"
       >
         <template v-if="!isFullyPacked">
@@ -219,7 +239,9 @@ const tallyGroups = computed<number[]>(() => {
   background: var(--color-surface);
   cursor: pointer;
   position: relative;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .tally-pill:hover {

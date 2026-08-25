@@ -24,7 +24,9 @@ const DEFAULT_MODEL: WeatherModel = 'ecmwf_ifs025';
 
 function loadModel(): WeatherModel {
   const stored = localStorage.getItem(STORAGE_KEY);
-  return WEATHER_MODEL_OPTIONS.some((o) => o.value === stored) ? (stored as WeatherModel) : DEFAULT_MODEL;
+  return WEATHER_MODEL_OPTIONS.some((o) => o.value === stored)
+    ? (stored as WeatherModel)
+    : DEFAULT_MODEL;
 }
 
 // Geräte-/Browser-UI-Einstellung (wie der Dark-Mode-Toggle in stores/theme.ts bzw. die

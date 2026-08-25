@@ -67,7 +67,12 @@ export type FormFieldIconKey =
 export const FORM_FIELD_ICONS: Record<FormFieldIconKey, IconDef> = {
   title: { id: 'pencil', emoji: '✏️', outline: IconPencil, filled: IconPencilFilled },
   date: { id: 'calendar', emoji: '📅', outline: IconCalendar, filled: IconCalendarFilled },
-  period: { id: 'calendar-week', emoji: '🗓️', outline: IconCalendarWeek, filled: IconCalendarWeekFilled },
+  period: {
+    id: 'calendar-week',
+    emoji: '🗓️',
+    outline: IconCalendarWeek,
+    filled: IconCalendarWeekFilled,
+  },
   time: { id: 'clock', emoji: '🕒', outline: IconClock, filled: IconClockFilled },
   note: { id: 'notes', emoji: '📝', outline: IconNotes },
   person: { id: 'user', emoji: '🧑', outline: IconUser, filled: IconUserFilled },
@@ -79,7 +84,12 @@ export const FORM_FIELD_ICONS: Record<FormFieldIconKey, IconDef> = {
   link: { id: 'link', emoji: '🔗', outline: IconLink, filled: IconLinkFilled },
   location: { id: 'map-pin', emoji: '📍', outline: IconMapPin, filled: IconMapPinFilled },
   tour: { id: 'compass', emoji: '🧭', outline: IconCompass, filled: IconCompassFilled },
-  priority: { id: 'alert-triangle', emoji: '🚦', outline: IconAlertTriangle, filled: IconAlertTriangleFilled },
+  priority: {
+    id: 'alert-triangle',
+    emoji: '🚦',
+    outline: IconAlertTriangle,
+    filled: IconAlertTriangleFilled,
+  },
   contact: { id: 'phone', emoji: '📞', outline: IconPhone, filled: IconPhoneFilled },
   email: { id: 'mail', emoji: '📧', outline: IconMail, filled: IconMailFilled },
   pot: { id: 'pig-money', emoji: '🏺', outline: IconPigMoney },

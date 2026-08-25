@@ -75,13 +75,15 @@ interface StoredIconSettings {
 function sanitizePerGroup<T extends string>(
   value: unknown,
   validOptions: readonly { value: T }[],
-  defaults: Record<ConfigurableIconGroup, T>,
+  defaults: Record<ConfigurableIconGroup, T>
 ): Record<ConfigurableIconGroup, T> {
   const parsed = (value ?? {}) as Partial<Record<ConfigurableIconGroup, unknown>>;
   const result = {} as Record<ConfigurableIconGroup, T>;
   for (const { value: group } of ICON_GROUP_OPTIONS) {
     const candidate = parsed[group];
-    result[group] = validOptions.some((o) => o.value === candidate) ? (candidate as T) : defaults[group];
+    result[group] = validOptions.some((o) => o.value === candidate)
+      ? (candidate as T)
+      : defaults[group];
   }
   return result;
 }
@@ -148,8 +150,10 @@ export const useIconStyleStore = defineStore('iconStyle', () => {
       groups.value = sanitizePerGroup(stored.groups, ICON_STYLE_OPTIONS, DEFAULT_GROUPS);
       variants.value = sanitizePerGroup(stored.variants, ICON_VARIANT_OPTIONS, DEFAULT_VARIANTS);
       if (typeof stored.navColored === 'boolean') navColoredRaw.value = stored.navColored;
-      if (typeof stored.colorizeWeather === 'boolean') colorizeWeatherRaw.value = stored.colorizeWeather;
-      if (typeof stored.colorizeCategories === 'boolean') colorizeCategoriesRaw.value = stored.colorizeCategories;
+      if (typeof stored.colorizeWeather === 'boolean')
+        colorizeWeatherRaw.value = stored.colorizeWeather;
+      if (typeof stored.colorizeCategories === 'boolean')
+        colorizeCategoriesRaw.value = stored.colorizeCategories;
     } catch {
       // Netzwerkfehler/offline: bei den lokalen Defaults bleiben, nächster load()-Aufruf (z. B.
       // nächster App-Start) versucht es erneut.

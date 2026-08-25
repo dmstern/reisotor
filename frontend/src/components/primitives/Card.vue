@@ -45,7 +45,7 @@ const props = withDefaults(
     bannerPosition: 'auto',
     highlight: false,
     tileColor: '#2a7f74',
-  },
+  }
 );
 
 const emit = defineEmits<{
@@ -79,7 +79,11 @@ function handleCardClick(event: MouseEvent) {
   emit('click', event);
   if (props.expandable) {
     const target = event.target as HTMLElement | null;
-    if (target && target !== event.currentTarget && target.closest('button, a, input, textarea, select, [role="button"]')) {
+    if (
+      target &&
+      target !== event.currentTarget &&
+      target.closest('button, a, input, textarea, select, [role="button"]')
+    ) {
       return;
     }
     const nextCondensed = !isCondensed.value;
@@ -94,7 +98,11 @@ function handleCardKeydown(event: KeyboardEvent) {
   if (!props.expandable) return;
   if (event.key === 'Enter' || event.key === ' ') {
     const target = event.target as HTMLElement | null;
-    if (target && target !== event.currentTarget && target.closest('button, a, input, textarea, select, [role="button"]')) {
+    if (
+      target &&
+      target !== event.currentTarget &&
+      target.closest('button, a, input, textarea, select, [role="button"]')
+    ) {
       return;
     }
     event.preventDefault();
@@ -109,15 +117,23 @@ function handleCardKeydown(event: KeyboardEvent) {
     :class="[
       variant !== 'default' ? `card--${variant}` : undefined,
       {
-        'card--condensed': (props.condensed !== undefined || props.expanded !== undefined || props.expandable) && isCondensed,
-        'card--expanded': (props.condensed !== undefined || props.expanded !== undefined || props.expandable) && isExpanded,
+        'card--condensed':
+          (props.condensed !== undefined || props.expanded !== undefined || props.expandable) &&
+          isCondensed,
+        'card--expanded':
+          (props.condensed !== undefined || props.expanded !== undefined || props.expandable) &&
+          isExpanded,
         'card--expandable': expandable,
         'new-highlight': highlight,
         'card--has-banner': bannerUrl || $slots.banner,
         'card--banner-left': (bannerUrl || $slots.banner) && effectiveBannerPosition === 'left',
       },
     ]"
-    :style="variant === 'tile' && tileColor ? { background: tileColor.startsWith('#') ? `${tileColor}0d` : tileColor } : undefined"
+    :style="
+      variant === 'tile' && tileColor
+        ? { background: tileColor.startsWith('#') ? `${tileColor}0d` : tileColor }
+        : undefined
+    "
     :role="expandable ? 'button' : undefined"
     :tabindex="expandable ? 0 : undefined"
     :aria-expanded="expandable ? isExpanded : undefined"
@@ -128,10 +144,19 @@ function handleCardKeydown(event: KeyboardEvent) {
     <div
       v-if="variant === 'tile' && (tileIcon || $slots['tile-icon'])"
       class="card-tile-icon"
-      :style="{ background: tileColor.startsWith('#') ? `${tileColor}26` : 'var(--color-primary-tint)', borderColor: tileColor }"
+      :style="{
+        background: tileColor.startsWith('#') ? `${tileColor}26` : 'var(--color-primary-tint)',
+        borderColor: tileColor,
+      }"
     >
       <slot name="tile-icon">
-        <AppIcon v-if="tileIcon" :icon="tileIcon" group="navigation" :size="18" :color="tileColor" />
+        <AppIcon
+          v-if="tileIcon"
+          :icon="tileIcon"
+          group="navigation"
+          :size="18"
+          :color="tileColor"
+        />
       </slot>
     </div>
 
@@ -191,7 +216,12 @@ function handleCardKeydown(event: KeyboardEvent) {
   corner-shape: squircle;
   padding: var(--space-4);
   box-shadow: var(--shadow-sm);
-  transition: padding 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+  transition:
+    padding 0.2s ease,
+    background 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.15s ease;
 }
 
 /* Varianten-Styles von Card.vue */
@@ -210,7 +240,9 @@ function handleCardKeydown(event: KeyboardEvent) {
 
 .card--tile {
   position: relative;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
   margin-top: 18px;
 }
 
@@ -300,7 +332,10 @@ function handleCardKeydown(event: KeyboardEvent) {
   height: auto;
   position: relative;
   background: var(--color-hover);
-  transition: width 0.2s ease, min-width 0.2s ease, flex-basis 0.2s ease;
+  transition:
+    width 0.2s ease,
+    min-width 0.2s ease,
+    flex-basis 0.2s ease;
 }
 
 .card--banner-left.card--condensed .card-banner {

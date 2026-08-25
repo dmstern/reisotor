@@ -22,7 +22,15 @@ function expense(paidBy: number, amount: number, budgetId: number | null = null)
 }
 
 function transfer(from: number, to: number, amount: number): BudgetTransfer {
-  return { id: Math.random(), trip_id: 1, from_user_id: from, to_user_id: to, amount, date: null, note: null };
+  return {
+    id: Math.random(),
+    trip_id: 1,
+    from_user_id: from,
+    to_user_id: to,
+    amount,
+    date: null,
+    note: null,
+  };
 }
 
 function sharedBudget(id: number): Budget {
@@ -65,7 +73,12 @@ describe('computeBalances', () => {
   });
 
   it('nets both users to 0 for an even split with no transfers', () => {
-    const balances = computeBalances([userA, userB], [expense(userA.id, 50), expense(userB.id, 50)], [], []);
+    const balances = computeBalances(
+      [userA, userB],
+      [expense(userA.id, 50), expense(userB.id, 50)],
+      [],
+      []
+    );
     expect(balances.find((b) => b.user.id === userA.id)!.net).toBeCloseTo(0);
     expect(balances.find((b) => b.user.id === userB.id)!.net).toBeCloseTo(0);
   });
@@ -77,7 +90,12 @@ describe('computeBalances', () => {
   });
 
   it('treats a transfer as debt settlement, not as an expense', () => {
-    const balances = computeBalances([userA, userB], [expense(userA.id, 100)], [transfer(userB.id, userA.id, 50)], []);
+    const balances = computeBalances(
+      [userA, userB],
+      [expense(userA.id, 100)],
+      [transfer(userB.id, userA.id, 50)],
+      []
+    );
     expect(balances.find((b) => b.user.id === userA.id)!.net).toBeCloseTo(0);
     expect(balances.find((b) => b.user.id === userB.id)!.net).toBeCloseTo(0);
   });
@@ -85,9 +103,19 @@ describe('computeBalances', () => {
   it('does not throw when a transfer references a user not in the users array', () => {
     const stranger = 999;
     expect(() =>
-      computeBalances([userA, userB], [expense(userA.id, 100)], [transfer(stranger, userA.id, 20)], []),
+      computeBalances(
+        [userA, userB],
+        [expense(userA.id, 100)],
+        [transfer(stranger, userA.id, 20)],
+        []
+      )
     ).not.toThrow();
-    const balances = computeBalances([userA, userB], [expense(userA.id, 100)], [transfer(stranger, userA.id, 20)], []);
+    const balances = computeBalances(
+      [userA, userB],
+      [expense(userA.id, 100)],
+      [transfer(stranger, userA.id, 20)],
+      []
+    );
     // Der Transfer eines unbekannten Nutzers darf B's Saldo nicht beeinflussen.
     expect(balances.find((b) => b.user.id === userB.id)!.net).toBeCloseTo(-50);
   });
@@ -103,13 +131,18 @@ describe('computeBalances', () => {
 
   it('gives identical results for an expense on a shared budget and a legacy expense without budget_id', () => {
     const budgets = [sharedBudget(1)];
-    const withSharedBudget = computeBalances([userA, userB], [expense(userA.id, 80, 1)], [], budgets);
+    const withSharedBudget = computeBalances(
+      [userA, userB],
+      [expense(userA.id, 80, 1)],
+      [],
+      budgets
+    );
     const legacy = computeBalances([userA, userB], [expense(userA.id, 80, null)], [], []);
     expect(withSharedBudget.find((b) => b.user.id === userA.id)!.net).toBeCloseTo(
-      legacy.find((b) => b.user.id === userA.id)!.net,
+      legacy.find((b) => b.user.id === userA.id)!.net
     );
     expect(withSharedBudget.find((b) => b.user.id === userB.id)!.net).toBeCloseTo(
-      legacy.find((b) => b.user.id === userB.id)!.net,
+      legacy.find((b) => b.user.id === userB.id)!.net
     );
   });
 
@@ -125,7 +158,10 @@ describe('computeBalances', () => {
   });
 });
 
-function applySettlements(balances: Balance[], suggestions: ReturnType<typeof computeSettlementSuggestions>) {
+function applySettlements(
+  balances: Balance[],
+  suggestions: ReturnType<typeof computeSettlementSuggestions>
+) {
   const netByUser = new Map(balances.map((b) => [b.user.id, b.net]));
   for (const s of suggestions) {
     netByUser.set(s.from.id, (netByUser.get(s.from.id) ?? 0) + s.amount);
@@ -136,7 +172,12 @@ function applySettlements(balances: Balance[], suggestions: ReturnType<typeof co
 
 describe('computeSettlementSuggestions', () => {
   it('returns [] when everyone is already settled', () => {
-    const balances = computeBalances([userA, userB], [expense(userA.id, 50), expense(userB.id, 50)], [], []);
+    const balances = computeBalances(
+      [userA, userB],
+      [expense(userA.id, 50), expense(userB.id, 50)],
+      [],
+      []
+    );
     expect(computeSettlementSuggestions(balances)).toEqual([]);
   });
 
@@ -154,7 +195,7 @@ describe('computeSettlementSuggestions', () => {
       [userA, userB, userC],
       [expense(userA.id, 90), expense(userB.id, 30), expense(userC.id, 0)],
       [],
-      [],
+      []
     );
     const suggestions = computeSettlementSuggestions(balances);
     for (const s of suggestions) {
@@ -168,7 +209,7 @@ describe('computeSettlementSuggestions', () => {
       [userA, userB, userC],
       [expense(userA.id, 90), expense(userB.id, 30), expense(userC.id, 0)],
       [],
-      [],
+      []
     );
     const suggestions = computeSettlementSuggestions(balances);
     const resulting = applySettlements(balances, suggestions);
@@ -179,7 +220,12 @@ describe('computeSettlementSuggestions', () => {
 
   it('reduces a genuine 3-way cycle to at most N-1 suggestions and moves no more money than necessary', () => {
     // A zahlt 120, B zahlt 60, C zahlt 0 -> fairShare 60 -> net: A +60, B 0, C -60
-    const balances = computeBalances([userA, userB, userC], [expense(userA.id, 120), expense(userB.id, 60)], [], []);
+    const balances = computeBalances(
+      [userA, userB, userC],
+      [expense(userA.id, 120), expense(userB.id, 60)],
+      [],
+      []
+    );
     const suggestions = computeSettlementSuggestions(balances);
     expect(suggestions.length).toBeLessThanOrEqual(2);
     const totalMoved = suggestions.reduce((s, x) => s + x.amount, 0);
@@ -205,7 +251,7 @@ describe('computeSettlementSuggestions', () => {
       [userA, userB, userC],
       [expense(userA.id, 90), expense(userB.id, 30), expense(userC.id, 0)],
       [],
-      [],
+      []
     );
     const first = computeSettlementSuggestions(balances);
     const second = computeSettlementSuggestions(balances);

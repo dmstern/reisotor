@@ -51,7 +51,11 @@ const overflowCount = computed(() => Math.max(0, otherMembers.value.length - MAX
       {{ user.avatar }}
       <span v-if="isOnline(user)" class="online-dot" aria-hidden="true" />
     </span>
-    <span v-if="overflowCount > 0" class="presence-avatar overflow" :title="`${overflowCount} weitere Mitreisende`">
+    <span
+      v-if="overflowCount > 0"
+      class="presence-avatar overflow"
+      :title="`${overflowCount} weitere Mitreisende`"
+    >
       +{{ overflowCount }}
     </span>
   </div>
@@ -78,7 +82,9 @@ const overflowCount = computed(() => Math.max(0, otherMembers.value.length - MAX
   border: 2px solid var(--color-surface);
   /* Leicht überlappend wie bei Google Docs, statt einzeln nebeneinander zu stehen. */
   margin-left: -10px;
-  transition: opacity 0.15s ease, filter 0.15s ease;
+  transition:
+    opacity 0.15s ease,
+    filter 0.15s ease;
 }
 
 .presence-avatar:first-child {

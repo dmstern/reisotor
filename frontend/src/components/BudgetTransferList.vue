@@ -32,7 +32,9 @@ const store = useBudgetStore();
         </div>
       </li>
     </template>
-    <li v-if="!store.transfers.length" key="empty" class="empty">Noch keine Überweisungen eingetragen.</li>
+    <li v-if="!store.transfers.length" key="empty" class="empty">
+      Noch keine Überweisungen eingetragen.
+    </li>
   </TransitionGroup>
 </template>
 

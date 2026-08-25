@@ -107,7 +107,12 @@ function idFromPath(path: string): number | undefined {
 
 let nextId = 1000;
 
-function syncDemoIdeaSchedule(ideaId: number, title: string, date?: string | null, tripId?: number) {
+function syncDemoIdeaSchedule(
+  ideaId: number,
+  title: string,
+  date?: string | null,
+  tripId?: number
+) {
   const schedule = store['/schedule'] as Record<string, unknown>[];
   const existingIdx = schedule.findIndex((s) => s.idea_id === ideaId);
   if (date) {
@@ -136,13 +141,17 @@ function delay(): Promise<void> {
 export async function demoRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
   await delay();
   const method = (options.method ?? 'GET').toUpperCase();
-  const body = typeof options.body === 'string' ? (JSON.parse(options.body) as Record<string, unknown>) : undefined;
+  const body =
+    typeof options.body === 'string'
+      ? (JSON.parse(options.body) as Record<string, unknown>)
+      : undefined;
   const basePath = path.split('?')[0];
 
   // Einzelfall-Endpunkte, die kein einfaches Collection-CRUD sind.
   if (path === '/auth/me') return structuredClone(DEMO_USER) as unknown as T;
   if (path === '/auth/config') return { registrationMode: 'off' } as unknown as T;
-  if (path === '/auth/login' || path === '/auth/register') return structuredClone(DEMO_USER) as unknown as T;
+  if (path === '/auth/login' || path === '/auth/register')
+    return structuredClone(DEMO_USER) as unknown as T;
   if (path === '/auth/logout') return undefined as T;
   if (path === '/build-info') {
     return {
@@ -182,7 +191,10 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
 
   // --- Feedback & Image upload ---
   if (path === '/feedback' && method === 'POST') {
-    return { issueUrl: 'https://github.com/dmstern/reisotor/issues/demo', issueNumber: 999 } as unknown as T;
+    return {
+      issueUrl: 'https://github.com/dmstern/reisotor/issues/demo',
+      issueNumber: 999,
+    } as unknown as T;
   }
   if (path === '/images' && method === 'POST') {
     return { url: String(body?.data ?? '') } as unknown as T;
@@ -244,11 +256,18 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
     const domain = likeMatch[1];
     const targetId = Number(likeMatch[2]);
     const likesKey = `/${domain === 'ideas' ? 'ideas' : domain}/likes`;
-    const fkKey = domain === 'ideas' ? 'idea_id' : domain === 'diary' ? 'entry_id' : domain === 'notes' ? 'note_id' : 'spot_id';
-    
+    const fkKey =
+      domain === 'ideas'
+        ? 'idea_id'
+        : domain === 'diary'
+          ? 'entry_id'
+          : domain === 'notes'
+            ? 'note_id'
+            : 'spot_id';
+
     if (!(likesKey in store)) store[likesKey] = [];
     const existingIdx = store[likesKey].findIndex(
-      (item) => item[fkKey] === targetId && item.user_id === DEMO_USER.id,
+      (item) => item[fkKey] === targetId && item.user_id === DEMO_USER.id
     );
 
     if (existingIdx !== -1) {
@@ -268,7 +287,14 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
     const domain = commentMatch[1];
     const targetId = Number(commentMatch[2]);
     const commentsKey = `/${domain}/comments`;
-    const fkKey = domain === 'ideas' ? 'idea_id' : domain === 'diary' ? 'entry_id' : domain === 'notes' ? 'note_id' : 'spot_id';
+    const fkKey =
+      domain === 'ideas'
+        ? 'idea_id'
+        : domain === 'diary'
+          ? 'entry_id'
+          : domain === 'notes'
+            ? 'note_id'
+            : 'spot_id';
 
     if (!(commentsKey in store)) store[commentsKey] = [];
     const created = {
@@ -326,7 +352,9 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
     const trackId = Number(trackPointsMatch[1]);
     if (!store['/tracks/points']) store['/tracks/points'] = [];
     if (method === 'GET') {
-      return store['/tracks/points'].filter((p) => (p as { track_id: number }).track_id === trackId) as unknown as T;
+      return store['/tracks/points'].filter(
+        (p) => (p as { track_id: number }).track_id === trackId
+      ) as unknown as T;
     }
     if (method === 'POST') {
       const rawPoints = Array.isArray(body?.points) ? body.points : [];
@@ -335,7 +363,9 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
         track_id: trackId,
         lat: Number((p as { lat: number }).lat),
         lng: Number((p as { lng: number }).lng),
-        recorded_at: String((p as { recorded_at?: string }).recorded_at ?? new Date().toISOString()),
+        recorded_at: String(
+          (p as { recorded_at?: string }).recorded_at ?? new Date().toISOString()
+        ),
         accuracy: (p as { accuracy?: number }).accuracy ?? null,
       }));
       store['/tracks/points'].push(...createdPoints);
@@ -350,7 +380,9 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
     const category = String(body?.category ?? '');
     const amount = Number(body?.amount ?? 0);
     const existing = store['/budget/allocations']?.find(
-      (a) => (a as { budget_id: number; category: string }).budget_id === budgetId && (a as { category: string }).category === category,
+      (a) =>
+        (a as { budget_id: number; category: string }).budget_id === budgetId &&
+        (a as { category: string }).category === category
     );
     if (existing) {
       existing.amount = amount;
@@ -374,32 +406,56 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
   if (method === 'GET') {
     const rawList = store[collection];
     const searchParams = new URLSearchParams(path.includes('?') ? path.split('?')[1] : '');
-    const queryTripId = searchParams.get('trip_id') ? Number(searchParams.get('trip_id')) : undefined;
+    const queryTripId = searchParams.get('trip_id')
+      ? Number(searchParams.get('trip_id'))
+      : undefined;
 
     if (queryTripId !== undefined) {
       // Filtern nach trip_id (oder verknüpfter Eltern-ID für Sub-Collections)
       if (collection === '/spots/likes' || collection === '/spots/comments') {
-        const tripSpotIds = new Set(store['/spots']?.filter((s) => s.trip_id === queryTripId).map((s) => s.id));
-        return structuredClone(rawList.filter((item) => tripSpotIds.has(item.spot_id as number))) as unknown as T;
+        const tripSpotIds = new Set(
+          store['/spots']?.filter((s) => s.trip_id === queryTripId).map((s) => s.id)
+        );
+        return structuredClone(
+          rawList.filter((item) => tripSpotIds.has(item.spot_id as number))
+        ) as unknown as T;
       }
       if (collection === '/ideas/likes' || collection === '/ideas/comments') {
-        const tripIdeaIds = new Set(store['/ideas']?.filter((e) => e.trip_id === queryTripId).map((e) => e.id));
-        return structuredClone(rawList.filter((item) => tripIdeaIds.has(item.idea_id as number))) as unknown as T;
+        const tripIdeaIds = new Set(
+          store['/ideas']?.filter((e) => e.trip_id === queryTripId).map((e) => e.id)
+        );
+        return structuredClone(
+          rawList.filter((item) => tripIdeaIds.has(item.idea_id as number))
+        ) as unknown as T;
       }
       if (collection === '/diary/likes' || collection === '/diary/comments') {
-        const tripEntryIds = new Set(store['/diary']?.filter((d) => d.trip_id === queryTripId).map((d) => d.id));
-        return structuredClone(rawList.filter((item) => tripEntryIds.has(item.entry_id as number))) as unknown as T;
+        const tripEntryIds = new Set(
+          store['/diary']?.filter((d) => d.trip_id === queryTripId).map((d) => d.id)
+        );
+        return structuredClone(
+          rawList.filter((item) => tripEntryIds.has(item.entry_id as number))
+        ) as unknown as T;
       }
       if (collection === '/notes/comments') {
-        const tripNoteIds = new Set(store['/notes']?.filter((n) => n.trip_id === queryTripId).map((n) => n.id));
-        return structuredClone(rawList.filter((item) => tripNoteIds.has(item.note_id as number))) as unknown as T;
+        const tripNoteIds = new Set(
+          store['/notes']?.filter((n) => n.trip_id === queryTripId).map((n) => n.id)
+        );
+        return structuredClone(
+          rawList.filter((item) => tripNoteIds.has(item.note_id as number))
+        ) as unknown as T;
       }
       if (collection === '/budget/allocations') {
-        const tripBudgetIds = new Set(store['/budget/budgets']?.filter((b) => b.trip_id === queryTripId).map((b) => b.id));
-        return structuredClone(rawList.filter((item) => tripBudgetIds.has(item.budget_id as number))) as unknown as T;
+        const tripBudgetIds = new Set(
+          store['/budget/budgets']?.filter((b) => b.trip_id === queryTripId).map((b) => b.id)
+        );
+        return structuredClone(
+          rawList.filter((item) => tripBudgetIds.has(item.budget_id as number))
+        ) as unknown as T;
       }
       // Standard-Filterung für alle Sammlungen mit `trip_id`
-      return structuredClone(rawList.filter((item) => item.trip_id === queryTripId)) as unknown as T;
+      return structuredClone(
+        rawList.filter((item) => item.trip_id === queryTripId)
+      ) as unknown as T;
     }
 
     return structuredClone(rawList) as unknown as T;
@@ -411,7 +467,12 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
     store[collection] = [...store[collection], created];
 
     if (collection === '/ideas') {
-      syncDemoIdeaSchedule(id, (body?.title as string) ?? '', body?.date as string | null | undefined, body?.trip_id as number | undefined);
+      syncDemoIdeaSchedule(
+        id,
+        (body?.title as string) ?? '',
+        body?.date as string | null | undefined,
+        body?.trip_id as number | undefined
+      );
     } else if (collection === '/schedule' && body?.idea_id) {
       const ideaId = Number(body.idea_id);
       const existingIdea = store['/ideas']?.find((e) => e.id === ideaId);
@@ -424,13 +485,21 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
 
   if (method === 'PUT') {
     const id = idFromPath(path);
-    store[collection] = store[collection].map((item) => ((item as { id: number }).id === id ? { ...item, ...(body ?? {}) } : item));
+    store[collection] = store[collection].map((item) =>
+      (item as { id: number }).id === id ? { ...item, ...(body ?? {}) } : item
+    );
     const updated = store[collection].find((item) => (item as { id: number }).id === id);
 
     if (collection === '/ideas' && id != null) {
-      const updatedIdea = store['/ideas'].find((item) => (item as { id: number }).id === id) as Record<string, unknown> | undefined;
+      const updatedIdea = store['/ideas'].find((item) => (item as { id: number }).id === id) as
+        Record<string, unknown> | undefined;
       if (updatedIdea) {
-        syncDemoIdeaSchedule(id, (updatedIdea.title as string) ?? '', updatedIdea.date as string | null | undefined, updatedIdea.trip_id as number | undefined);
+        syncDemoIdeaSchedule(
+          id,
+          (updatedIdea.title as string) ?? '',
+          updatedIdea.date as string | null | undefined,
+          updatedIdea.trip_id as number | undefined
+        );
       }
     } else if (collection === '/schedule' && id != null) {
       const schedItem = updated as { idea_id?: number | null; date?: string } | undefined;
@@ -447,7 +516,8 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
   if (method === 'DELETE') {
     const id = idFromPath(path);
     if (collection === '/schedule' && id != null) {
-      const schedItem = store['/schedule']?.find((s) => s.id === id) as { idea_id?: number | null } | undefined;
+      const schedItem = store['/schedule']?.find((s) => s.id === id) as
+        { idea_id?: number | null } | undefined;
       if (schedItem?.idea_id != null) {
         const idea = store['/ideas']?.find((e) => e.id === schedItem.idea_id);
         if (idea) idea.date = null;

@@ -12,7 +12,10 @@ defineProps<{ station: ExcursionStation }>();
 
 <template>
   <div class="mini-station-card">
-    <div class="image" :style="station.imageUrl ? { backgroundImage: `url(${station.imageUrl})` } : {}">
+    <div
+      class="image"
+      :style="station.imageUrl ? { backgroundImage: `url(${station.imageUrl})` } : {}"
+    >
       <span v-if="!station.imageUrl" class="placeholder">{{ station.icon }}</span>
     </div>
     <div class="body">

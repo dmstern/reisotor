@@ -20,8 +20,16 @@ const tripStore = useTripStore();
 const auth = useAuthStore();
 const showMembers = ref(false);
 const membersTrip = ref<Trip | null>(null);
-const { showForm, editingTrip, tripFormLocationError, openCreate, openEdit, closeForm, onSubmit, onDelete } =
-  useTripEditor();
+const {
+  showForm,
+  editingTrip,
+  tripFormLocationError,
+  openCreate,
+  openEdit,
+  closeForm,
+  onSubmit,
+  onDelete,
+} = useTripEditor();
 // Issue #96: restricted-Nutzer:innen dürfen nur einen selbst angelegten Urlaub haben - bereits
 // eingeladene Urlaube zählen nicht mit (siehe registrationConfig.ts's countTripsCreatedBy), das
 // Frontend kennt diese Unterscheidung aber nicht, deshalb konservativ ab dem ersten Urlaub sperren.
@@ -45,12 +53,16 @@ function openMembers(trip: Trip) {
       <Button v-if="tripStore.trips.length > 0 && !tripCreationBlocked()" @click="openCreate">
         <AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Neuer Urlaub
       </Button>
-      <p v-else-if="tripCreationBlocked()" class="restricted-hint">Eingeschränkter Modus - Nur ein Urlaub pro Nutzer</p>
+      <p v-else-if="tripCreationBlocked()" class="restricted-hint">
+        Eingeschränkter Modus - Nur ein Urlaub pro Nutzer
+      </p>
     </div>
 
     <div v-if="tripStore.trips.length > 0" class="trip-list">
       <div v-for="trip in tripStore.trips" :key="trip.id" class="card trip-card">
-        <button type="button" class="trip-select" @click="selectTrip(trip.id)">{{ trip.name }}</button>
+        <button type="button" class="trip-select" @click="selectTrip(trip.id)">
+          {{ trip.name }}
+        </button>
         <div class="row-actions">
           <Button
             variant="secondary"

@@ -31,7 +31,10 @@ function loadEntries(): DashboardConfigEntry[] {
   const known = new Set(DASHBOARD_TILES.map((t) => t.key));
   const validExisting = parsed.filter((e) => known.has(e.key));
   const existingKeys = new Set(validExisting.map((e) => e.key));
-  const missing = DASHBOARD_TILES.filter((t) => !existingKeys.has(t.key)).map((t) => ({ key: t.key, visible: true }));
+  const missing = DASHBOARD_TILES.filter((t) => !existingKeys.has(t.key)).map((t) => ({
+    key: t.key,
+    visible: true,
+  }));
   return [...validExisting, ...missing];
 }
 

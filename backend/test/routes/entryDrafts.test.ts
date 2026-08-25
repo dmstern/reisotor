@@ -51,7 +51,12 @@ describe('entry-level drafts (notes/diary, #89)', () => {
       method: 'POST',
       url: '/api/notes',
       headers: { cookie: owner.cookie },
-      payload: { trip_id: tripId, content: '<p>Halbfertig</p>', content_format: 'html', is_draft: true },
+      payload: {
+        trip_id: tripId,
+        content: '<p>Halbfertig</p>',
+        content_format: 'html',
+        is_draft: true,
+      },
     });
     expect(createRes.statusCode).toBe(201);
     const noteId = createRes.json().id;

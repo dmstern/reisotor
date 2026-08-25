@@ -18,7 +18,11 @@ describe('Standort-Aufzeichnung (/tracks)', () => {
   let tripId: number;
 
   async function login(username: string, password: string): Promise<string> {
-    const res = await app.inject({ method: 'POST', url: '/api/auth/login', payload: { username, password } });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/auth/login',
+      payload: { username, password },
+    });
     const setCookie = res.headers['set-cookie'];
     return Array.isArray(setCookie) ? setCookie.join('; ') : String(setCookie);
   }
@@ -36,7 +40,7 @@ describe('Standort-Aufzeichnung (/tracks)', () => {
       db.prepare('INSERT INTO users (username, password_hash, avatar) VALUES (?, ?, ?)').run(
         username,
         bcrypt.hashSync('correct-horse', 10),
-        avatar,
+        avatar
       );
     }
     ownerCookie = await login('track-owner', 'correct-horse');
@@ -51,7 +55,9 @@ describe('Standort-Aufzeichnung (/tracks)', () => {
     });
     tripId = create.json().id as number;
 
-    const memberId = db.prepare('SELECT id FROM users WHERE username = ?').get('track-member') as { id: number };
+    const memberId = db.prepare('SELECT id FROM users WHERE username = ?').get('track-member') as {
+      id: number;
+    };
     await app.inject({
       method: 'POST',
       url: `/api/trips/${tripId}/members`,
@@ -253,7 +259,9 @@ describe('Standort-Aufzeichnung (/tracks)', () => {
       url: `/api/trash?trip_id=${tripId}`,
       headers: { cookie: ownerCookie },
     });
-    const trashEntry = trash.json().find((e: { type: string; id: number }) => e.type === 'location_track' && e.id === trackId);
+    const trashEntry = trash
+      .json()
+      .find((e: { type: string; id: number }) => e.type === 'location_track' && e.id === trackId);
     expect(trashEntry).toBeDefined();
 
     const restore = await app.inject({

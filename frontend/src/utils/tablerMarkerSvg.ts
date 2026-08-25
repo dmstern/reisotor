@@ -93,7 +93,9 @@ const RAW_SVG: Record<string, { outline: string; filled?: string }> = {
 // textuell auf die gewünschte Pixelgröße normalisiert werden, sonst würde die Karten-Pin-Größe vom
 // SVG selbst statt vom umschließenden <span> bestimmt.
 function normalize(svg: string, sizePx: number): string {
-  return svg.replace('width="24"', `width="${sizePx}"`).replace('height="24"', `height="${sizePx}"`);
+  return svg
+    .replace('width="24"', `width="${sizePx}"`)
+    .replace('height="24"', `height="${sizePx}"`);
 }
 
 export function tablerMarkerSvg(id: string, variant: 'outline' | 'filled', sizePx: number): string {

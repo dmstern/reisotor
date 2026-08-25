@@ -16,13 +16,17 @@ describe('Admin User Management routes (#224)', () => {
 
     // Admin-Nutzer anlegen
     const adminRes = db
-      .prepare('INSERT INTO users (username, email, password_hash, avatar, is_admin, must_change_password) VALUES (?, ?, ?, ?, 1, 0)')
+      .prepare(
+        'INSERT INTO users (username, email, password_hash, avatar, is_admin, must_change_password) VALUES (?, ?, ?, ?, 1, 0)'
+      )
       .run('admin_user', 'admin@example.com', bcrypt.hashSync('adminpass', 10), '👑');
     adminId = adminRes.lastInsertRowid as number;
 
     // Normalen Nutzer anlegen
     const userRes = db
-      .prepare('INSERT INTO users (username, email, password_hash, avatar, is_admin, must_change_password) VALUES (?, ?, ?, ?, 0, 0)')
+      .prepare(
+        'INSERT INTO users (username, email, password_hash, avatar, is_admin, must_change_password) VALUES (?, ?, ?, ?, 0, 0)'
+      )
       .run('normal_user', 'normal@example.com', bcrypt.hashSync('userpass', 10), '🧑');
     regularUserId = userRes.lastInsertRowid as number;
 
@@ -170,10 +174,16 @@ describe('Admin User Management routes (#224)', () => {
     const targetId = res.lastInsertRowid as number;
 
     // Create dummy trip & references
-    const tripRes = db.prepare('INSERT INTO trips (name, start_date, end_date) VALUES (?, ?, ?)').run('Test Trip FK', '2026-08-01', '2026-08-10');
+    const tripRes = db
+      .prepare('INSERT INTO trips (name, start_date, end_date) VALUES (?, ?, ?)')
+      .run('Test Trip FK', '2026-08-01', '2026-08-10');
     const tripId = tripRes.lastInsertRowid as number;
 
-    db.prepare('INSERT INTO trip_members (trip_id, user_id, created_at) VALUES (?, ?, ?)').run(tripId, targetId, '2026-08-01T00:00:00Z');
+    db.prepare('INSERT INTO trip_members (trip_id, user_id, created_at) VALUES (?, ?, ?)').run(
+      tripId,
+      targetId,
+      '2026-08-01T00:00:00Z'
+    );
     db.prepare('INSERT INTO packing_items (label, owner_id) VALUES (?, ?)').run('Shirt', targetId);
 
     // Delete user
@@ -187,7 +197,9 @@ describe('Admin User Management routes (#224)', () => {
     // Verify foreign key references were cleaned up/set to NULL
     const member = db.prepare('SELECT * FROM trip_members WHERE user_id = ?').get(targetId);
     expect(member).toBeUndefined();
-    const item = db.prepare('SELECT owner_id FROM packing_items WHERE label = ?').get('Shirt') as { owner_id: number | null };
+    const item = db.prepare('SELECT owner_id FROM packing_items WHERE label = ?').get('Shirt') as {
+      owner_id: number | null;
+    };
     expect(item.owner_id).toBeNull();
   });
 

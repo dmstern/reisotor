@@ -42,7 +42,7 @@ const tabBarItems = computed<TabBarItem[]>(() =>
     label: tab.label,
     icon: SECTION_ICON_DEFS[tab.key],
     unseen: liveSync.hasUnseen(tab.domain),
-  })),
+  }))
 );
 
 function selectTab(tab: string) {
