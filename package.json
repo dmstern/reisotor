@@ -9,6 +9,7 @@
     "dev:backend": "npm --prefix backend run dev",
     "dev:frontend": "npm --prefix frontend run dev",
     "dev:demo": "npm --prefix frontend run dev:demo",
+    "dev:landing": "npm --prefix frontend run dev:landing",
     "typecheck": "npm --prefix frontend run typecheck",
     "typecheck:backend": "npm --prefix backend run typecheck",
     "typecheck:all": "npm --prefix frontend run typecheck && npm --prefix backend run typecheck",

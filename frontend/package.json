@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "dev:demo": "VITE_DEMO_MODE=true vite",
+    "dev:landing": "VITE_BUILD_TARGET=landing vite --open landing.html",
     "typecheck": "vue-tsc --noEmit",
     "lint": "eslint .",
     "format:check": "prettier --check .",
