@@ -1,5 +1,87 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
+
+const visualizerWidth = ref(850);
+
+const visualizerBreakpointInfo = computed(() => {
+  const w = visualizerWidth.value;
+  if (w < 480) {
+    return {
+      label: 'Mobil Schmal (Compact)',
+      query: '@media (max-width: 480px)',
+      icon: '📱',
+      color: '#c1503f',
+      mode: 'mobile',
+      desc: 'Karten schalten auf Vertikal-Stapel um. Modals & Sheets füllen 100% Breite.',
+    };
+  }
+  if (w < 700) {
+    return {
+      label: 'Mobil Standard',
+      query: '@media (max-width: 799px)',
+      icon: '📱',
+      color: '#e08e45',
+      mode: 'mobile',
+      desc: 'Untere TabBar + ausziehbare Bottom-Sheets. 1-spaltiger Content.',
+    };
+  }
+  if (w < 800) {
+    return {
+      label: 'Medium / Kalenderwoche',
+      query: '@media (min-width: 700px)',
+      icon: '📅',
+      color: '#1e96d1',
+      mode: 'mobile',
+      desc: 'Kalenderwoche schaltet auf volle 7-Tage Ansicht um. Mobil-Layout bleibt aktiv.',
+    };
+  }
+  if (w < 900) {
+    return {
+      label: 'Desktop Standard (Breakpoint)',
+      query: '@media (min-width: 800px)',
+      icon: '🖥️',
+      color: '#2a7f74',
+      mode: 'desktop',
+      desc: 'Top Header + feste Sidebar-Drawers + Multi-Column Kachel-Grids.',
+    };
+  }
+  if (w < 1400) {
+    return {
+      label: 'Breite Listen & Tabellen',
+      query: '@media (min-width: 900px)',
+      icon: '📊',
+      color: '#5b6ee1',
+      mode: 'desktop',
+      desc: 'Todo-, Pack- & Einkaufslisten schalten auf mehrspaltige Tabellen-Grids um.',
+    };
+  }
+  return {
+    label: 'Ultra Wide / Multi-Column Split',
+    query: '@media (min-width: 1400px)',
+    icon: '🗺️',
+    color: '#3f8f5c',
+    mode: 'desktop',
+    desc: 'Maximale Container-Breite (1400px/1600px) für Karte & Spot-Listen Split-Screen.',
+  };
+});
+
+const breakpointPresets = [
+  { label: 'Mobil 390px', width: 390, icon: '📱' },
+  { label: 'Break 480px', width: 480, icon: '📱' },
+  { label: 'Medium 700px', width: 700, icon: '📅' },
+  { label: 'Desktop 800px', width: 800, icon: '🖥️' },
+  { label: 'Wide 900px', width: 900, icon: '📊' },
+  { label: 'Split 1400px', width: 1400, icon: '🗺️' },
+];
+
+const breakpointBars = [
+  { label: 'Mobil Schmal', width: 480, query: '< 480px', color: '#c1503f' },
+  { label: 'Medium / Kalender', width: 700, query: '≥ 700px', color: '#1e96d1' },
+  { label: 'Desktop Standard', width: 800, query: '≥ 800px', color: '#2a7f74' },
+  { label: 'Breite Tabellen', width: 900, query: '≥ 900px', color: '#5b6ee1' },
+  { label: 'Standard Page', width: 960, query: '.page 960px', color: '#3da296' },
+  { label: 'Wide Multi-Column', width: 1400, query: '1400px', color: '#3f8f5c' },
+];
 import Button from '../components/primitives/Button.vue';
 import IconButton from '../components/primitives/IconButton.vue';
 import Card from '../components/primitives/Card.vue';
@@ -345,23 +427,100 @@ const avatarCategories = [
             </div>
           </div>
 
-          <h4 style="margin-bottom: 12px;">Viewport Breakpoints (@media)</h4>
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-bottom: 24px;">
-            <div style="padding: 12px; border: 1px solid var(--color-border); border-radius: var(--radius-sm-squircle); background: var(--color-hover);">
-              <code style="font-size: 0.85rem; font-weight: bold; color: var(--color-primary-dark);">&lt; 480px</code>
-              <p style="margin: 4px 0 0; font-size: 0.8rem; color: var(--color-text-muted);">Mobil Schmal: Kartenelemente schalten auf Vertikallayout um.</p>
+          <h4 style="margin-bottom: 12px;">Interaktive Breakpoint & Geräte-Vorschau</h4>
+          <div style="padding: 16px; border: 1px solid var(--color-border); border-radius: var(--radius-md-squircle); background: var(--color-bg); margin-bottom: 24px;">
+            <!-- Controls -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 12px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 1.4rem;">{{ visualizerBreakpointInfo.icon }}</span>
+                <div>
+                  <strong style="font-size: 0.95rem;">{{ visualizerBreakpointInfo.label }}</strong>
+                  <code style="font-size: 0.78rem; color: var(--color-primary-dark); display: block;">{{ visualizerBreakpointInfo.query }}</code>
+                </div>
+              </div>
+              <div style="font-size: 1.1rem; font-weight: bold; font-family: monospace; padding: 2px 10px; border-radius: 16px; background: var(--color-primary-tint); color: var(--color-primary-dark);">
+                {{ visualizerWidth }}px
+              </div>
             </div>
-            <div style="padding: 12px; border: 1px solid var(--color-border); border-radius: var(--radius-sm-squircle); background: var(--color-hover);">
-              <code style="font-size: 0.85rem; font-weight: bold; color: var(--color-primary-dark);">&ge; 700px</code>
-              <p style="margin: 4px 0 0; font-size: 0.8rem; color: var(--color-text-muted);">Medium: Kalender schaltet von 3-Tage-Ansicht auf 7-Tage-Woche um.</p>
+
+            <!-- Slider -->
+            <input
+              type="range"
+              v-model.number="visualizerWidth"
+              min="340"
+              max="1400"
+              step="10"
+              style="width: 100%; height: 8px; border-radius: 4px; accent-color: var(--color-primary); cursor: pointer; margin-bottom: 16px;"
+            />
+
+            <!-- Presets -->
+            <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px;">
+              <button
+                v-for="p in breakpointPresets"
+                :key="p.width"
+                @click="visualizerWidth = p.width"
+                style="padding: 4px 10px; border: 1px solid var(--color-border); border-radius: var(--radius-sm-squircle); background: var(--color-surface); font-family: inherit; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.15s ease;"
+                :style="visualizerWidth === p.width ? { background: 'var(--color-primary)', color: 'white', borderColor: 'var(--color-primary)' } : {}"
+              >
+                {{ p.icon }} {{ p.label }}
+              </button>
             </div>
-            <div style="padding: 12px; border: 1px solid var(--color-border); border-radius: var(--radius-sm-squircle); background: var(--color-hover);">
-              <code style="font-size: 0.85rem; font-weight: bold; color: var(--color-primary-dark);">&ge; 800px (Desktop-Standard)</code>
-              <p style="margin: 4px 0 0; font-size: 0.8rem; color: var(--color-text-muted);">Schaltet Mobil (Bottom TabBar) vs. Desktop (Top Sticky Header & feste Sidebars) um.</p>
+
+            <!-- Frame Preview -->
+            <div style="border: 1px solid var(--color-border); border-radius: var(--radius-sm-squircle); background: var(--color-hover); padding: 12px; overflow-x: auto;">
+              <div
+                :style="{
+                  width: 'min(100%, ' + visualizerWidth + 'px)',
+                  minHeight: '180px',
+                  margin: '0 auto',
+                  background: 'var(--color-surface)',
+                  border: '2px solid ' + visualizerBreakpointInfo.color,
+                  borderRadius: 'var(--radius-sm-squircle)',
+                  boxShadow: 'var(--shadow-sm)',
+                  transition: 'width 0.2s ease, border-color 0.2s ease',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  overflow: 'hidden'
+                }"
+              >
+                <div style="height: 32px; background: var(--color-primary-tint); border-bottom: 1px solid var(--color-border); display: flex; align-items: center; justify-content: space-between; padding: 0 10px; font-size: 0.75rem; font-weight: 600;">
+                  <span>🌴 Reisotor Viewport ({{ visualizerWidth }}px)</span>
+                  <span style="font-size: 0.7rem; color: var(--color-primary-dark);">{{ visualizerBreakpointInfo.mode === 'desktop' ? '🖥️ Desktop Layout' : '📱 Mobil Layout' }}</span>
+                </div>
+
+                <div style="flex: 1; display: flex; gap: 8px; padding: 8px;">
+                  <div v-if="visualizerBreakpointInfo.mode === 'desktop'" style="width: 110px; background: var(--color-hover); border-radius: 4px; padding: 6px; display: flex; flex-direction: column; gap: 4px; font-size: 0.68rem;">
+                    <div style="font-weight: bold; color: var(--color-text-muted);">Drawer</div>
+                    <div style="height: 10px; background: var(--color-border); border-radius: 2px;"></div>
+                    <div style="height: 10px; background: var(--color-border); border-radius: 2px;"></div>
+                  </div>
+
+                  <div style="flex: 1; display: flex; flex-direction: column; gap: 6px;">
+                    <div style="font-size: 0.72rem; color: var(--color-text-muted);">
+                      {{ visualizerBreakpointInfo.desc }}
+                    </div>
+                    <div :style="{ display: 'grid', gridTemplateColumns: visualizerWidth >= 800 ? (visualizerWidth >= 1200 ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)') : '1fr', gap: '6px' }">
+                      <div style="padding: 6px; border: 1px solid var(--color-border); border-radius: 4px; background: var(--color-bg); font-size: 0.7rem;">Spot 1</div>
+                      <div style="padding: 6px; border: 1px solid var(--color-border); border-radius: 4px; background: var(--color-bg); font-size: 0.7rem;">Spot 2</div>
+                      <div v-if="visualizerWidth >= 800" style="padding: 6px; border: 1px solid var(--color-border); border-radius: 4px; background: var(--color-bg); font-size: 0.7rem;">Spot 3</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div style="padding: 12px; border: 1px solid var(--color-border); border-radius: var(--radius-sm-squircle); background: var(--color-hover);">
-              <code style="font-size: 0.85rem; font-weight: bold; color: var(--color-primary-dark);">&ge; 900px</code>
-              <p style="margin: 4px 0 0; font-size: 0.8rem; color: var(--color-text-muted);">Breite Listen: Todo-, Pack- & Einkaufslisten schalten auf Tabellen-Grids um.</p>
+          </div>
+
+          <!-- Proportional Scale Bars -->
+          <h4 style="margin-bottom: 12px;">Proportionale Breakpoint-Skala</h4>
+          <div style="padding: 16px; border: 1px solid var(--color-border); border-radius: var(--radius-sm-squircle); background: var(--color-hover); margin-bottom: 24px; display: flex; flex-direction: column; gap: 10px;">
+            <div v-for="bar in breakpointBars" :key="bar.label" style="display: flex; flex-direction: column; gap: 3px;">
+              <div style="display: flex; justify-content: space-between; font-size: 0.78rem;">
+                <strong>{{ bar.label }}</strong>
+                <code :style="{ color: bar.color, fontWeight: 'bold' }">{{ bar.query }}</code>
+              </div>
+              <div style="background: var(--color-surface); height: 14px; border-radius: 8px; overflow: hidden; border: 1px solid var(--color-border);">
+                <div :style="{ width: (bar.width / 1600 * 100) + '%', height: '100%', background: bar.color, borderRadius: '8px', transition: 'width 0.3s ease' }"></div>
+              </div>
             </div>
           </div>
 
