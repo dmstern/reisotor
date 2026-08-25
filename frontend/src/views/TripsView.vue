@@ -12,6 +12,7 @@ import DeleteButton from '../components/DeleteButton.vue';
 import TripMembersDialog from '../components/TripMembersDialog.vue';
 import AppIcon from '../components/AppIcon.vue';
 import Button from '../components/primitives/Button.vue';
+import IconButton from '../components/primitives/IconButton.vue';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
@@ -64,15 +65,13 @@ function openMembers(trip: Trip) {
           {{ trip.name }}
         </button>
         <div class="row-actions">
-          <Button
-            variant="secondary"
-            class="members-btn"
+          <IconButton
+            size="md"
+            :icon="FORM_FIELD_ICONS.visibility"
             title="Mitglieder verwalten"
             aria-label="Mitglieder verwalten"
             @click="openMembers(trip)"
-          >
-            <AppIcon :icon="FORM_FIELD_ICONS.visibility" :size="15" group="formFields" />
-          </Button>
+          />
           <EditButton small @click="openEdit(trip)" />
           <DeleteButton small @click="onDelete(trip)" />
         </div>
@@ -162,13 +161,6 @@ function openMembers(trip: Trip) {
 .row-actions {
   display: flex;
   gap: 4px;
-  flex-shrink: 0;
-}
-
-.members-btn {
-  padding: 4px 8px;
-  font-size: 0.8rem;
-  line-height: 1;
   flex-shrink: 0;
 }
 

@@ -123,12 +123,12 @@ const emit = defineEmits<{
 }
 
 .icon-btn--danger:hover:not(:disabled) {
-  background: var(--color-danger-tint, rgba(239, 68, 68, 0.1));
+  background: var(--color-danger-tint);
   color: var(--color-danger);
 }
 
 .icon-btn--danger.active {
-  background: var(--color-danger-tint, rgba(239, 68, 68, 0.1));
+  background: var(--color-danger-tint);
   border-color: var(--color-danger);
   color: var(--color-danger);
 }

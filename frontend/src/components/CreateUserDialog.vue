@@ -2,6 +2,7 @@
 import { ref, watch } from 'vue';
 import Modal from './Modal.vue';
 import Button from './primitives/Button.vue';
+import IconButton from './primitives/IconButton.vue';
 import PasswordInput from './PasswordInput.vue';
 import AppIcon from './AppIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
@@ -137,18 +138,17 @@ async function submit() {
       <div class="field">
         <label>Avatar / Symbol</label>
         <div class="avatar-picker">
-          <button
+          <IconButton
             v-for="e in AVATAR_OPTIONS"
             :key="e"
-            type="button"
-            class="avatar-option"
-            :class="{ active: avatar === e }"
-            :aria-pressed="avatar === e"
+            :active="avatar === e"
             :aria-label="`Avatar-Symbol ${e}`"
+            :title="`Avatar ${e}`"
+            size="md"
             @click="avatar = e"
           >
             {{ e }}
-          </button>
+          </IconButton>
         </div>
       </div>
 
@@ -162,8 +162,8 @@ async function submit() {
       <p v-if="error" class="error-msg">{{ error }}</p>
 
       <div class="actions">
-        <Button type="button" class="secondary" @click="close">Abbrechen</Button>
-        <Button type="submit" class="primary" :disabled="submitting">
+        <Button type="button" variant="secondary" @click="close">Abbrechen</Button>
+        <Button type="submit" variant="primary" :disabled="submitting">
           <template v-if="submitting">Speichere…</template>
           <template v-else
             ><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Nutzer
@@ -221,26 +221,6 @@ async function submit() {
   gap: var(--space-1);
 }
 
-.avatar-option {
-  background: var(--color-bg);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm-squircle);
-  padding: var(--space-1) var(--space-2);
-  font-size: 1.1rem;
-  cursor: pointer;
-  transition:
-    transform 0.1s ease,
-    border-color 0.1s ease;
-}
-
-.avatar-option:hover {
-  transform: scale(1.1);
-}
-
-.avatar-option.active {
-  border-color: var(--color-accent);
-  background: var(--color-accent-subtle, rgba(59, 130, 246, 0.1));
-}
 
 .checkbox-field {
   margin-top: var(--space-1);

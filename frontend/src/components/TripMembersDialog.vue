@@ -3,9 +3,8 @@ import { computed, ref, watch } from 'vue';
 import { api, ApiError } from '../api/client';
 import type { Trip, User } from '../api/types';
 import Modal from './Modal.vue';
-import AppIcon from './AppIcon.vue';
-import Button from './primitives/Button.vue';
 import IconButton from './primitives/IconButton.vue';
+import Button from './primitives/Button.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
 // Deckel aus Issue #96 (registrationConfig.ts's RESTRICTED_MAX_MEMBERS) - hier dupliziert statt
@@ -165,12 +164,6 @@ function close() {
   padding: 6px 8px;
   font-size: 0.9rem;
   justify-content: flex-start;
-}
-
-.remove-btn {
-  padding: 2px 8px;
-  font-size: 0.8rem;
-  flex-shrink: 0;
 }
 
 label {

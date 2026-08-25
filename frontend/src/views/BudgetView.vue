@@ -25,6 +25,8 @@ import ViewLoadingState from '../components/ViewLoadingState.vue';
 import DraftStatusBar from '../components/DraftStatusBar.vue';
 import AppIcon from '../components/AppIcon.vue';
 import Button from '../components/primitives/Button.vue';
+import Card from '../components/primitives/Card.vue';
+import Input from '../components/primitives/Input.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
 
@@ -265,7 +267,7 @@ const categoryColors = computed(() => {
   <div class="page budget-page" v-if="!loading">
     <h1>Budget</h1>
 
-    <div class="card overview-card">
+    <Card class="overview-card">
       <BudgetMeter
         label="Budget"
         :spent="budgetStore.totalSpent"
@@ -278,7 +280,7 @@ const categoryColors = computed(() => {
       <p v-if="budgetStore.grandTotal > 0 && budgetStore.remaining >= 0" class="remaining-line">
         Noch übrig: <strong>{{ budgetStore.remaining.toFixed(2) }} €</strong>
       </p>
-    </div>
+    </Card>
 
     <BudgetSettlementCard
       v-if="budgetStore.users.length > 1"
@@ -286,7 +288,7 @@ const categoryColors = computed(() => {
     />
 
     <!-- Budgets -->
-    <div class="card">
+    <Card>
       <div class="header">
         <h2>Budgets</h2>
         <Button @click="showNewBudgetForm = true"
@@ -310,12 +312,7 @@ const categoryColors = computed(() => {
       >
         <form class="new-budget-form" @submit.prevent="addBudget">
           <FormField icon="title" label="Name">
-            <input
-              v-model="newBudgetForm.name"
-              type="text"
-              placeholder="Name (z. B. Souvenirs)"
-              required
-            />
+            <Input v-model="newBudgetForm.name" type="text" placeholder="Name (z. B. Souvenirs)" required />
           </FormField>
           <FormField v-if="budgetStore.users.length > 1" icon="visibility" label="Sichtbarkeit">
             <select v-model="newBudgetForm.kind">
@@ -336,12 +333,7 @@ const categoryColors = computed(() => {
             </select>
           </FormField>
           <FormField icon="amount" label="Gesamtziel (optional)">
-            <input
-              v-model="newBudgetForm.target_amount"
-              type="number"
-              step="0.01"
-              placeholder="Gesamtziel € (optional)"
-            />
+            <Input v-model="newBudgetForm.target_amount" type="number" step="0.01" placeholder="Gesamtziel € (optional)" />
           </FormField>
           <p v-if="showsPrivacyHint" class="privacy-hint">
             <AppIcon :icon="ACTION_ICONS.private" :size="14" group="actions" /> Nur
@@ -362,10 +354,10 @@ const categoryColors = computed(() => {
           Noch keine Budgets angelegt.
         </p>
       </TransitionGroup>
-    </div>
+    </Card>
 
     <!-- Bezahlungen -->
-    <div class="card">
+    <Card>
       <div class="header">
         <h2>Bezahlungen</h2>
         <Button @click="showExpenseForm = true"
@@ -381,7 +373,7 @@ const categoryColors = computed(() => {
       >
         <form class="add-form" @submit.prevent="submitExpense">
           <FormField icon="title" label="Titel">
-            <input v-model="expenseForm.title" type="text" placeholder="Titel" required />
+            <Input v-model="expenseForm.title" type="text" placeholder="Titel" required />
           </FormField>
           <FormField icon="category" label="Kategorie">
             <Combobox
@@ -391,13 +383,7 @@ const categoryColors = computed(() => {
             />
           </FormField>
           <FormField icon="amount" label="Betrag">
-            <input
-              v-model="expenseForm.amount"
-              type="number"
-              step="0.01"
-              placeholder="Betrag"
-              required
-            />
+            <Input v-model="expenseForm.amount" type="number" step="0.01" placeholder="Betrag" required />
           </FormField>
           <FormField v-if="budgetStore.users.length > 1" icon="shared" label="Bezahlt von">
             <select v-model="expenseForm.paid_by_user_id" required>
@@ -416,10 +402,10 @@ const categoryColors = computed(() => {
             </select>
           </FormField>
           <FormField icon="date" label="Datum">
-            <input v-model="expenseForm.date" type="date" />
+            <Input v-model="expenseForm.date" type="date" />
           </FormField>
           <FormField icon="note" label="Notiz">
-            <input v-model="expenseForm.note" type="text" placeholder="Notiz (optional)" />
+            <Input v-model="expenseForm.note" type="text" placeholder="Notiz (optional)" />
           </FormField>
           <DraftStatusBar
             :status="newExpenseDraft.status.value"
@@ -434,10 +420,10 @@ const categoryColors = computed(() => {
         :auto-source-for="autoSourceFor"
         @edit="startEditExpense"
       />
-    </div>
+    </Card>
 
     <!-- Überweisungen -->
-    <div v-if="budgetStore.users.length > 1" class="card">
+    <Card v-if="budgetStore.users.length > 1">
       <div class="header">
         <h2>Überweisungen</h2>
         <Button @click="showTransferForm = true"
@@ -469,26 +455,20 @@ const categoryColors = computed(() => {
             </select>
           </FormField>
           <FormField icon="amount" label="Betrag">
-            <input
-              v-model="transferForm.amount"
-              type="number"
-              step="0.01"
-              placeholder="Betrag"
-              required
-            />
+            <Input v-model="transferForm.amount" type="number" step="0.01" placeholder="Betrag" required />
           </FormField>
           <FormField icon="date" label="Datum">
-            <input v-model="transferForm.date" type="date" />
+            <Input v-model="transferForm.date" type="date" />
           </FormField>
           <FormField icon="note" label="Notiz">
-            <input v-model="transferForm.note" type="text" placeholder="Notiz (optional)" />
+            <Input v-model="transferForm.note" type="text" placeholder="Notiz (optional)" />
           </FormField>
           <Button type="submit">Eintragen</Button>
         </form>
       </Modal>
 
       <BudgetTransferList :highlighted-ids="highlightedIds" />
-    </div>
+    </Card>
 
     <Modal
       :model-value="editingExpense !== null"
@@ -497,7 +477,7 @@ const categoryColors = computed(() => {
     >
       <form class="add-form" @submit.prevent="submitEditExpense">
         <FormField icon="title" label="Titel">
-          <input v-model="editExpenseForm.title" type="text" placeholder="Titel" required />
+          <Input v-model="editExpenseForm.title" type="text" placeholder="Titel" required />
         </FormField>
         <FormField icon="category" label="Kategorie">
           <Combobox
@@ -507,13 +487,7 @@ const categoryColors = computed(() => {
           />
         </FormField>
         <FormField icon="amount" label="Betrag">
-          <input
-            v-model="editExpenseForm.amount"
-            type="number"
-            step="0.01"
-            placeholder="Betrag"
-            required
-          />
+          <Input v-model="editExpenseForm.amount" type="number" step="0.01" placeholder="Betrag" required />
         </FormField>
         <FormField v-if="budgetStore.users.length > 1" icon="shared" label="Bezahlt von">
           <select v-model="editExpenseForm.paid_by_user_id" required>
@@ -532,10 +506,10 @@ const categoryColors = computed(() => {
           </select>
         </FormField>
         <FormField icon="date" label="Datum">
-          <input v-model="editExpenseForm.date" type="date" />
+          <Input v-model="editExpenseForm.date" type="date" />
         </FormField>
         <FormField icon="note" label="Notiz">
-          <input v-model="editExpenseForm.note" type="text" placeholder="Notiz (optional)" />
+          <Input v-model="editExpenseForm.note" type="text" placeholder="Notiz (optional)" />
         </FormField>
         <DraftStatusBar
           :status="editExpenseDraft.status.value"

@@ -440,6 +440,7 @@ function onSpotDrop(event: DragEvent) {
     width: auto;
     height: 140px;
     border-radius: var(--radius-md-squircle) var(--radius-md-squircle) 0 0;
+    corner-shape: squircle;
   }
 }
 

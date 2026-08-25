@@ -40,16 +40,17 @@ if (typeof document !== 'undefined') {
 const preview: Preview = {
   decorators: [
     (story, context) => {
-      const bg = context.globals.backgrounds?.value;
-      const isDark = bg === '#181d20' || bg === '#121619' || bg === 'dark';
+      const bgValue = context.globals.backgrounds?.value;
+      const bgName = context.globals.backgrounds?.name;
+      const isDark = bgName === 'dark' || bgValue === '#181d20' || bgValue === '#181715' || bgValue === '#121619';
       const theme = isDark ? 'dark' : 'light';
       document.documentElement.setAttribute('data-theme', theme);
-      document.body.style.backgroundColor = isDark ? '#181d20' : '#f9f8f6';
-      document.body.style.color = isDark ? '#f2efe9' : '#2b2a28';
+      document.body.style.backgroundColor = isDark ? 'var(--color-bg)' : 'var(--color-bg)';
+      document.body.style.color = isDark ? 'var(--color-text)' : 'var(--color-text)';
 
       return {
         template:
-          '<div style="font-family: var(--font-sans); padding: 16px; border-radius: 8px;"><story /></div>',
+          '<div style="font-family: var(--font-sans); padding: var(--space-4); border-radius: var(--radius-md-squircle); corner-shape: squircle;"><story /></div>',
       };
     },
   ],

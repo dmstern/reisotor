@@ -95,8 +95,11 @@
   --color-warning-tint: #fffbeb;
   --color-warning-dark: #92400e;
   --color-danger: #c1503f;
-  --color-danger-tint: #fdf2f0;
+  --color-danger-tint: #fef2f2;
   --color-danger-dark: #991b1b;
+  --color-warning: #f59e0b;
+  --color-warning-tint: #fffbeb;
+  --color-warning-dark: #b45309;
   --color-success: #3f8f5c;
 
   /* Semantische Oberflächen-/Akzent-Töne für wiederkehrende Pastell-Hintergründe
@@ -220,8 +223,11 @@
     --color-warning-tint: #2e2315;
     --color-warning-dark: #fef3c7;
     --color-danger: #e0685a;
-    --color-danger-tint: #2e1c1a;
-    --color-danger-dark: #fecaca;
+    --color-danger-tint: #2e1816;
+    --color-danger-dark: #fca5a5;
+    --color-warning: #f0a05a;
+    --color-warning-tint: #2e2315;
+    --color-warning-dark: #fcd34d;
     --color-success: #5cb37e;
 
     --color-primary-tint: #1c2e2a;
@@ -255,8 +261,16 @@
   --color-warning-tint: #2e2315;
   --color-warning-dark: #fef3c7;
   --color-danger: #e0685a;
+<<<<<<< HEAD
   --color-danger-tint: #2e1c1a;
   --color-danger-dark: #fecaca;
+=======
+  --color-danger-tint: #2e1816;
+  --color-danger-dark: #fca5a5;
+  --color-warning: #f0a05a;
+  --color-warning-tint: #2e2315;
+  --color-warning-dark: #fcd34d;
+>>>>>>> f0c8f5f (refactor(frontend): consolidate primitives, CSS tokens & close buttons (#284))
   --color-success: #5cb37e;
 
   --color-primary-tint: #1c2e2a;
@@ -289,8 +303,16 @@
   --color-warning-tint: #fffbeb;
   --color-warning-dark: #92400e;
   --color-danger: #c1503f;
+<<<<<<< HEAD
   --color-danger-tint: #fdf2f0;
   --color-danger-dark: #991b1b;
+=======
+  --color-danger-tint: #fef2f2;
+  --color-danger-dark: #991b1b;
+  --color-warning: #f59e0b;
+  --color-warning-tint: #fffbeb;
+  --color-warning-dark: #b45309;
+>>>>>>> f0c8f5f (refactor(frontend): consolidate primitives, CSS tokens & close buttons (#284))
   --color-success: #3f8f5c;
   --color-primary-tint: #eaf3f1;
   --color-hover: #f4f1ec;
@@ -492,11 +514,11 @@ button.is-disabled,
 .badge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-1);
   padding: 3px 8px;
   font-size: var(--font-size-xs);
   font-weight: 600;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-pill);
   line-height: 1.2;
   white-space: nowrap;
   background: var(--color-hover);
@@ -511,13 +533,13 @@ button.is-disabled,
 }
 
 .badge--success {
-  background: rgba(63, 143, 92, 0.15);
+  background: var(--color-primary-tint);
   color: var(--color-success);
   border-color: transparent;
 }
 
 .badge--danger {
-  background: rgba(193, 80, 63, 0.15);
+  background: var(--color-danger-tint);
   color: var(--color-danger);
   border-color: transparent;
 }
@@ -605,6 +627,8 @@ button.is-disabled,
    (Padding, Font-Size, Text-Align) behalten dafür weiterhin eine eigene, kleinere .empty-Regel. */
 .empty {
   color: var(--color-text-muted);
+  padding: var(--space-4);
+  text-align: center;
 }
 
 /* Auto-erkannte Links in gerenderten Markdown-Notizen/Tagebuch-/Ausflugs-/Spot-Texten (siehe
