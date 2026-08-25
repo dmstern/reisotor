@@ -1,3 +1,5 @@
+.claude
+
 # Persoenliche Werte fuers Deploy-Skript (Domain, SSH-User, lokaler Hostname).
 # Vorlage: .env.example
 .env
