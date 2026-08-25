@@ -4,7 +4,7 @@ import type { Spot } from '../api/types';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { renderRichText } from '../utils/richText';
 import { parseContact } from '../utils/contact';
-import { fetchWeatherForecast, weatherCodeMeta, type DailyWeather } from '../utils/weather';
+import { fetchMergedWeather, weatherCodeMeta, type DailyWeather } from '../utils/weather';
 import { usePointerDrag } from '../composables/usePointerDrag';
 import { useExcursionsStore } from '../stores/excursions';
 import { useScheduleStore } from '../stores/schedule';
@@ -118,7 +118,7 @@ watch(
     dayWeather.value = null;
     if (!date || lat == null || lng == null) return;
     try {
-      const days = await fetchWeatherForecast(lat, lng, model);
+      const days = await fetchMergedWeather(props.spot.trip_id, lat, lng, model);
       dayWeather.value = days.find((d) => d.date === date) ?? null;
     } catch {
       // best effort, siehe Kommentar oben

@@ -224,7 +224,7 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
     if (!requireTripMember(reply, req.params.id, req.session.userId)) return;
     return db
       .prepare(
-        'SELECT date, weathercode, temp_max, temp_min, precipitation_probability FROM trip_weather_snapshots WHERE trip_id = ? ORDER BY date',
+        'SELECT date, lat, lng, weathercode, temp_max, temp_min, precipitation_probability FROM trip_weather_snapshots WHERE trip_id = ? ORDER BY date',
       )
       .all(req.params.id);
   });
