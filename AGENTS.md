@@ -17,6 +17,26 @@ Arbeits-/Workflow-Konventionen.
 ## Setup & Befehle
 
 ```bash
+# Root-Convenience-Befehle (können direkt aus dem Wurzelverzeichnis ausgeführt werden)
+npm run dev             # Backend & Frontend parallel starten (concurrently)
+npm run dev:backend     # Nur Backend Dev-Server starten (http://localhost:3000)
+npm run dev:frontend    # Nur Frontend Dev-Server starten (http://localhost:5173)
+npm run dev:demo        # Frontend im backend-losen Demo-Modus starten
+npm run seed            # DB Seed (idempotent, 2 Nutzer + leere Trip-Zeile)
+npm run seed:demo       # DB Seed (kompletter Beispiel-Urlaub)
+npm run typecheck       # Frontend Typecheck (vue-tsc --noEmit)
+npm run typecheck:all   # Typecheck für Frontend + Backend
+npm run test            # Backend & Frontend Unit-Tests
+npm run test:backend    # Backend Unit-Tests (vitest run)
+npm run test:frontend   # Frontend Unit-Tests (vitest run)
+npm run test:e2e        # E2E-Tests (playwright test)
+npm run test:all        # Backend + Frontend + E2E Tests
+npm run build           # Backend + Frontend Build
+npm run build:backend   # Backend Build (tsc -> backend/dist)
+npm run build:frontend  # Frontend Build (vue-tsc --noEmit + vite build -> frontend/dist)
+npm run build:demo      # Demo-Mode Statik-Build
+npm run build:landing   # Landingpage Statik-Build
+
 # Backend (Fastify + TypeScript + better-sqlite3, /backend)
 cd backend
 npm install
@@ -35,11 +55,11 @@ npm run build    # vue-tsc --noEmit + vite build -> frontend/dist
 npm test         # vitest run
 
 # E2E (Playwright, /e2e) — siehe eigener Abschnitt unten
-cd e2e && npm install && npx playwright install chromium && npm test
+cd e2e && npm install && npx -y playwright install chromium && npm test
 ```
 
-Einzelnen Test ausführen: `npx vitest run <pfad-zur-datei>` bzw. `npx vitest run -t "<name>"`
-(aus `backend/` oder `frontend/`); für E2E `npx playwright test <pfad-zur-spec>` aus `e2e/`.
+Einzelnen Test ausführen: `npx -y vitest run <pfad-zur-datei>` bzw. `npx -y vitest run -t "<name>"`
+(aus `backend/` oder `frontend/`); für E2E `npx -y playwright test <pfad-zur-spec>` aus `e2e/`.
 
 Node.js 20+ sowie `make`/`gcc`/`python3` nötig (native Module `better-sqlite3`, `bcrypt`). Volle
 Setup-/Deploy-/Env-Var-Details: `README.md`.
@@ -49,8 +69,15 @@ Setup-/Deploy-/Env-Var-Details: `README.md`.
 Nach jeder Frontend-Änderung zuerst den günstigsten Check laufen lassen:
 
 ```bash
-cd frontend && npm run build   # führt vue-tsc --noEmit vor dem Vite-Build aus
+npm run typecheck    # aus dem Root (oder cd frontend && npm run typecheck)
 ```
+
+**Wichtig für AI-Agenten:**
+- Immer `npm run typecheck` oder `npm --prefix frontend run typecheck` bzw. `npm run build` nutzen statt Roh-Aufrufen von `npx vue-tsc`.
+- **Niemals interaktive `npx`-Aufrufe ohne `-y` / `--yes` starten!** Falls `npx` Pakete nachinstallieren will, fordert es eine interaktive Bestätigung an (`Need to install the following packages: ... Ok to proceed? (y)`), was in Hintergrundprozessen/Subagenten ohne TTY zum dauerhaften Aufhängen führt.
+- Falls `npm run build` abbricht mit `vue-tsc: Kommando nicht gefunden`, zuerst `cd frontend && npm install` ausführen.
+- Falls `npx` zwingend für Befehle genutzt werden muss, immer die Option `-y` mitgeben (`npx -y ...`).
+
 
 ## Sparsam mit Subagenten
 
@@ -201,7 +228,7 @@ Fehlschlag wird als Artefakt der HTML-Report samt Screenshots hochgeladen (`play
 **Token-sparend: die volle Suite (`npm test`) nicht routinemäßig lokal laufen lassen.** CI führt sie
 bei jedem Push ohnehin gated aus — ein lokaler Vollauf kostet nur unnötig Tokens (komplette
 Testausgabe landet im Kontextfenster). Lokal stattdessen gezielt einsetzen:
-- `npx playwright test <pfad-zur-spec>` für eine einzelne, gerade geschriebene/geänderte Spec direkt
+- `npx -y playwright test <pfad-zur-spec>` für eine einzelne, gerade geschriebene/geänderte Spec direkt
   nach dem Schreiben verifizieren.
 - Einen CI-E2E-Fehlschlag lokal reproduzieren/debuggen.
 - Eine Wegwerf-Spec unter `e2e/tests/scratch/` für Ad-hoc-Checks/PR-Screenshots (siehe unten).
@@ -209,9 +236,9 @@ Testausgabe landet im Kontextfenster). Lokal stattdessen gezielt einsetzen:
 ```bash
 cd e2e
 npm install                       # einmalig
-npx playwright install chromium   # einmalig pro (frischer) Umgebung
+npx -y playwright install chromium   # einmalig pro (frischer) Umgebung
 npm test                          # komplette Suite, startet/beendet beide Server automatisch
-npx playwright show-report        # HTML-Report des letzten Laufs
+npx -y playwright show-report        # HTML-Report des letzten Laufs
 ```
 
 ### Wann einen neuen/aktualisierten Test schreiben?
@@ -243,7 +270,7 @@ kurze Wegwerf-Spec unter `e2e/tests/scratch/` schreiben (gitignored, nie committ
 fraglichen Stelle navigiert, interagiert und `page.screenshot({ path: ... })` aufruft — sonst bleibt
 es in einem frischen, headless Playwright-Kontext praktisch immer dauerhaft bei der Fallback-Schrift
 statt Fira Sans, siehe Kommentar in `fonts.ts` (#197). Mit
-`npx playwright test tests/scratch/<name>.spec.ts` ausführen, den Screenshot per Read-Tool selbst
+`npx -y playwright test tests/scratch/<name>.spec.ts` ausführen, den Screenshot per Read-Tool selbst
 ansehen und bewerten. Die Wegwerf-**Spec** danach löschen, das erzeugte **PNG** aber aufheben (bleibt
 im gitignoreten `e2e/tests/scratch/`) — bei sichtbaren UI-Änderungen ist das der Kandidat für die
 PR-Screenshots, siehe "Screenshots im PR selbst" unten.

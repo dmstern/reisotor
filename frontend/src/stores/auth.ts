@@ -42,5 +42,11 @@ export const useAuthStore = defineStore('auth', () => {
     useIconStyleStore().clearOnLogout();
   }
 
-  return { user, checked, checkSession, login, register, logout };
+  function clearMustChangePassword(): void {
+    if (user.value) {
+      user.value = { ...user.value, must_change_password: false };
+    }
+  }
+
+  return { user, checked, checkSession, login, register, logout, clearMustChangePassword };
 });

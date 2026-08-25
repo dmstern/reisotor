@@ -17,6 +17,7 @@ import Drawer from './components/Drawer.vue';
 import ScheduleView from './views/ScheduleView.vue';
 import SplashScreen from './components/SplashScreen.vue';
 import DemoModeBanner from './components/DemoModeBanner.vue';
+import MustChangePasswordModal from './components/MustChangePasswordModal.vue';
 import { DEMO_MODE } from './demo/isDemoMode';
 
 const route = useRoute();
@@ -110,6 +111,7 @@ const firstLoadDone = ref(false);
 
 <template>
   <DemoModeBanner v-if="DEMO_MODE" />
+  <MustChangePasswordModal v-if="auth.user?.must_change_password" />
   <template v-if="!showNav">
     <router-view />
   </template>

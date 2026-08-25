@@ -43,33 +43,32 @@ Web-App zur gemeinsamen Reiseplanung – ein zentraler Ort für alles rund um De
 Voraussetzung: Node.js 20+, sowie `make`/`gcc`/`python3` (für die nativen Module `better-sqlite3` und `bcrypt`).
 
 ```bash
-# Backend
-cd backend
+# Einmalige Installation aller Abhängigkeiten
 npm install
-npm run seed   # legt 2 Nutzer + leere Trip-/Unterkunftszeile an
-npm run dev    # Fastify auf http://localhost:3000
+cd backend  && npm install
+cd frontend && npm install
 
-# Frontend (zweites Terminal)
-cd frontend
-npm install
-npm run dev    # Vite auf http://localhost:5173, proxied /api an Backend
+# Startet Backend & Frontend parallel (inkl. automatischem DB-Seed)
+npm run dev
 ```
 
-Die App ist unter `http://localhost:5173` erreichbar.
+Die App ist direkt unter `http://localhost:5173` erreichbar.
 
-### Nutzer anlegen
+### Nutzer & Seeding
 
-`npm run seed` im Backend legt standardmäßig zwei Nutzer an (`user1`/`changeme1`, `user2`/`changeme2`) – das ist nur ein Startpunkt für die lokale Entwicklung. Registrierung ist in der App selbst offen (Login-Seite, E-Mail + Benutzername + Passwort) – jede:r kann sich einen eigenen Account anlegen. Zugriff auf einen konkreten Urlaub ist davon unabhängig: wer einen Urlaub anlegt, ist zunächst allein darauf, weitere Personen müssen erst per Autocomplete-Suche (Benutzername/E-Mail) eingeladen werden. Für echte Zugangsdaten beim Seed folgende Umgebungsvariablen setzen:
+Beim ersten Start von `npm run dev` (bzw. `npm run seed`) werden automatisch zwei Test-Nutzer (`user1`/`changeme1`, `user2`/`changeme2`) idempotent angelegt (`INSERT OR IGNORE` – bereits vorhandene Nutzer werden nicht überschrieben).
+
+Für abweichende Start-Zugangsdaten:
 
 ```bash
 SEED_USER1=daniel SEED_PASS1=... SEED_USER2=partner SEED_PASS2=... npm run seed
 ```
 
-Das Skript ist idempotent (`INSERT OR IGNORE`) – bereits vorhandene Nutzer/Zeilen werden nicht überschrieben.
+Für einen kompletten Beispiel-Urlaub mit Testdaten in allen Bereichen (Kalender, Packliste, Spots auf der Karte, Budget, Notizen):
 
-### Demo-Daten für Sandbox/Testing (mit Backend)
-
-`npm run seed:demo` im Backend legt zusätzlich zu den 2 Nutzern einen kompletten Beispiel-Urlaub mit Daten in allen Bereichen an (Unterkunft, Hin-/Rückflug, Kalendertermine, Pack- und Einkaufsliste, Ausflug mit Spots auf der Karte, Budget mit Ausgaben und Überweisung, Tagebucheintrag, Notiz) – praktisch, um Änderungen in einer frischen Sandbox zu sehen, ohne erst alles von Hand anzulegen. Bricht ab, falls schon ein Urlaub existiert (kein Duplizieren). Nicht für Produktionsdaten gedacht.
+```bash
+npm run seed:demo
+```
 
 ### Backend-loser Demo-Modus (Frontend only)
 

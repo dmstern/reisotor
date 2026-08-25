@@ -201,6 +201,38 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
       advisory: null,
     } as unknown as T;
   }
+  if (path === '/users') {
+    if (method === 'GET') return structuredClone(DEMO_USERS) as unknown as T;
+    if (method === 'POST') {
+      const newUser = {
+        id: Date.now(),
+        username: String(body?.username ?? 'NeuerNutzer'),
+        email: body?.email ? String(body.email) : null,
+        avatar: String(body?.avatar ?? '🙂'),
+        is_admin: Boolean(body?.is_admin),
+        must_change_password: true,
+      };
+      DEMO_USERS.push(newUser as any);
+      return structuredClone(newUser) as unknown as T;
+    }
+  }
+  const adminMatch = /^\/users\/(\d+)\/admin$/.exec(basePath);
+  if (adminMatch && method === 'PUT') {
+    const targetId = Number(adminMatch[1]);
+    const user = DEMO_USERS.find((u) => u.id === targetId);
+    if (user) {
+      user.is_admin = Boolean(body?.is_admin);
+      return structuredClone(user) as unknown as T;
+    }
+  }
+  const deleteUserMatch = /^\/users\/(\d+)$/.exec(basePath);
+  if (deleteUserMatch && method === 'DELETE') {
+    const targetId = Number(deleteUserMatch[1]);
+    const idx = DEMO_USERS.findIndex((u) => u.id === targetId);
+    if (idx !== -1) DEMO_USERS.splice(idx, 1);
+    return {} as T;
+  }
+
   if (path.startsWith('/users/search')) {
     const q = (new URLSearchParams(path.split('?')[1] ?? '').get('q') ?? '').toLowerCase();
     return DEMO_USERS.filter((u) => u.username.toLowerCase().includes(q)) as unknown as T;
