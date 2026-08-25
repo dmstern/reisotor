@@ -18,13 +18,24 @@ Arbeits-/Workflow-Konventionen.
 
 ```bash
 # Root-Convenience-Befehle (können direkt aus dem Wurzelverzeichnis ausgeführt werden)
+npm run dev             # Backend & Frontend parallel starten (concurrently)
+npm run dev:backend     # Nur Backend Dev-Server starten (http://localhost:3000)
+npm run dev:frontend    # Nur Frontend Dev-Server starten (http://localhost:5173)
+npm run dev:demo        # Frontend im backend-losen Demo-Modus starten
+npm run seed            # DB Seed (idempotent, 2 Nutzer + leere Trip-Zeile)
+npm run seed:demo       # DB Seed (kompletter Beispiel-Urlaub)
 npm run typecheck       # Frontend Typecheck (vue-tsc --noEmit)
 npm run typecheck:all   # Typecheck für Frontend + Backend
-npm run test:frontend   # Frontend Unit-Tests (vitest run)
+npm run test            # Backend & Frontend Unit-Tests
 npm run test:backend    # Backend Unit-Tests (vitest run)
+npm run test:frontend   # Frontend Unit-Tests (vitest run)
 npm run test:e2e        # E2E-Tests (playwright test)
-npm run build:frontend  # Frontend Build
-npm run build:backend   # Backend Build
+npm run test:all        # Backend + Frontend + E2E Tests
+npm run build           # Backend + Frontend Build
+npm run build:backend   # Backend Build (tsc -> backend/dist)
+npm run build:frontend  # Frontend Build (vue-tsc --noEmit + vite build -> frontend/dist)
+npm run build:demo      # Demo-Mode Statik-Build
+npm run build:landing   # Landingpage Statik-Build
 
 # Backend (Fastify + TypeScript + better-sqlite3, /backend)
 cd backend

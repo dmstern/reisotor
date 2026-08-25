@@ -4,17 +4,29 @@
   "private": true,
   "description": "Einzige Versionsquelle für Reisotor (Backend + Frontend) — siehe backend/scripts/generate-build-info.mjs und frontend/vite.config.ts.",
   "scripts": {
+    "dev": "concurrently -n \"backend,frontend\" -c \"cyan.bold,magenta.bold\" \"npm --prefix backend run dev\" \"npm --prefix frontend run dev\"",
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev:demo": "npm --prefix frontend run dev:demo",
     "typecheck": "npm --prefix frontend run typecheck",
     "typecheck:backend": "npm --prefix backend run typecheck",
     "typecheck:all": "npm --prefix frontend run typecheck && npm --prefix backend run typecheck",
     "build": "npm --prefix backend run build && npm --prefix frontend run build",
     "build:backend": "npm --prefix backend run build",
     "build:frontend": "npm --prefix frontend run build",
+    "build:landing": "npm --prefix frontend run build:landing",
+    "build:demo": "npm --prefix frontend run build:demo",
     "test": "npm --prefix backend test && npm --prefix frontend test",
     "test:backend": "npm --prefix backend test",
     "test:frontend": "npm --prefix frontend test",
     "test:e2e": "npm --prefix e2e test",
+    "test:all": "npm --prefix backend test && npm --prefix frontend test && npm --prefix e2e test",
     "seed": "npm --prefix backend run seed",
-    "seed:demo": "npm --prefix backend run seed:demo"
+    "seed:demo": "npm --prefix backend run seed:demo",
+    "e2e:install": "npm --prefix e2e run install-browsers",
+    "e2e:report": "npm --prefix e2e run report"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.5"
   }
 }
