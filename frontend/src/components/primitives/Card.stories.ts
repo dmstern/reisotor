@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3';
 import Card from './Card.vue';
+import { SECTION_ICON_DEFS } from '../../utils/sectionIcons';
 
 const meta: Meta<typeof Card> = {
   title: 'Primitives/Card',
@@ -8,14 +9,16 @@ const meta: Meta<typeof Card> = {
   argTypes: {
     variant: {
       control: 'select',
-      options: ['default', 'muted', 'condensed', 'flat', 'elevated'],
+      options: ['default', 'muted', 'condensed', 'flat', 'elevated', 'tile'],
     },
     bannerUrl: { control: 'text' },
     highlight: { control: 'boolean' },
+    tileColor: { control: 'color' },
   },
   args: {
     variant: 'default',
     highlight: false,
+    tileColor: '#2a7f74',
   },
 };
 
@@ -96,6 +99,26 @@ export const Elevated: Story = {
       <Card v-bind="args" style="max-width: 400px;">
         <h3 style="margin: 0 0 8px;">Erhöhte Karte (Elevated)</h3>
         <p style="margin: 0;">Prägnanterer Schatten (--shadow-md) für schwebende Panels oder hervorgehobene Auswahlen.</p>
+      </Card>
+    `,
+  }),
+};
+
+export const DashboardTile: Story = {
+  args: {
+    variant: 'tile',
+    tileColor: '#2a7f74',
+    tileIcon: SECTION_ICON_DEFS.calendar,
+  },
+  render: (args) => ({
+    components: { Card },
+    setup() {
+      return { args };
+    },
+    template: `
+      <Card v-bind="args" style="max-width: 320px; text-align: center; margin-top: 24px;">
+        <h3 style="margin: 12px 0 6px;">Kalender-Kachel</h3>
+        <p style="margin: 0; font-size: 0.85rem;">Dashboard-Stil mit transparent getöntem Hintergrund & schwebendem Kreis-Icon.</p>
       </Card>
     `,
   }),

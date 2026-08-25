@@ -1,7 +1,10 @@
 <script setup lang="ts">
+import type { IconDef } from '../../utils/icon';
+import AppIcon from '../AppIcon.vue';
+
 /**
  * Surface-Primitive für alle Karten im Reisotor (SpotCard, ExcursionCard, BudgetPotCard,
- * Tages-Stationen, Focus-Panels, …) – siehe Issue #239.
+ * Dashboard-Kacheln, Tages-Stationen, Focus-Panels, …) – siehe Issue #239.
  */
 withDefaults(
   defineProps<{
@@ -11,19 +14,25 @@ withDefaults(
      * - 'condensed': Kompaktes Padding (var(--space-2) var(--space-3)) für dichte Listen
      * - 'flat': Flacher Rand ohne Schatten
      * - 'elevated': Erhöhter Schatten (shadow-md) für schwebende Overlays
+     * - 'tile': Dashboard-Kachel mit leicht transparentem Hintergrund, schwebendem Kreis-Icon & Hover-Lift
      */
-    variant?: 'default' | 'muted' | 'condensed' | 'flat' | 'elevated';
+    variant?: 'default' | 'muted' | 'condensed' | 'flat' | 'elevated' | 'tile';
     /** Optionale URL für ein Bild-Banner am oberen Rand der Karte. */
     bannerUrl?: string;
     /** Alt-Text für das Bild-Banner. */
     bannerAlt?: string;
     /** Hebt die Karte mit dem Notiz/Live-Sync Highlight-Rand hervor (.new-highlight). */
     highlight?: boolean;
+    /** Akzentfarbe für die 'tile'-Variante (Hex oder CSS var). */
+    tileColor?: string;
+    /** IconDef für das runde Schwebelogo der 'tile'-Variante. */
+    tileIcon?: IconDef;
   }>(),
   {
     variant: 'default',
     bannerAlt: '',
     highlight: false,
+    tileColor: '#2a7f74',
   },
 );
 </script>
@@ -35,12 +44,26 @@ withDefaults(
       variant !== 'default' ? `card--${variant}` : undefined,
       { 'new-highlight': highlight, 'card--has-banner': bannerUrl || $slots.banner },
     ]"
+    :style="variant === 'tile' && tileColor ? { background: `${tileColor.startsWith('#') ? tileColor + '0d' : tileColor}` } : undefined"
   >
+    <!-- Tile Badge Icon (Dashboard Style) -->
+    <div
+      v-if="variant === 'tile' && (tileIcon || $slots['tile-icon'])"
+      class="card-tile-icon"
+      :style="{ background: tileColor.startsWith('#') ? `${tileColor}26` : 'var(--color-primary-tint)', borderColor: tileColor }"
+    >
+      <slot name="tile-icon">
+        <AppIcon v-if="tileIcon" :icon="tileIcon" group="navigation" :size="18" :color="tileColor" />
+      </slot>
+    </div>
+
+    <!-- Banner -->
     <div v-if="bannerUrl || $slots.banner" class="card-banner">
       <slot name="banner">
         <img v-if="bannerUrl" :src="bannerUrl" :alt="bannerAlt" class="card-banner-img" />
       </slot>
     </div>
+
     <div v-if="$slots.header" class="card-header">
       <slot name="header" />
     </div>
@@ -70,6 +93,32 @@ withDefaults(
 
 .card--elevated {
   box-shadow: var(--shadow-md);
+}
+
+.card--tile {
+  position: relative;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  margin-top: 18px;
+}
+
+.card--tile:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.card-tile-icon {
+  position: absolute;
+  top: -22px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .card--has-banner {

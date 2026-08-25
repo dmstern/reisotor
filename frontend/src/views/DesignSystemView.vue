@@ -522,6 +522,12 @@ const avatarCategories = [
             <p>Prägnanterer Schatten (<code>--shadow-md</code>) für schwebende Panels.</p>
           </Card>
 
+          <!-- Dashboard Tile Card -->
+          <Card variant="tile" tile-color="#2a7f74" :tile-icon="SECTION_ICON_DEFS.calendar">
+            <h3 style="margin: 12px 0 6px; text-align: center;">Dashboard Kachel</h3>
+            <p style="margin: 0; font-size: 0.85rem; text-align: center;">Transparenter Tönungs-Hintergrund, buntes Schwebelogo am oberen Rand & Hover-Lift.</p>
+          </Card>
+
           <!-- Card mit Live-Sync Highlight -->
           <Card :highlight="true">
             <h3>Karte mit Highlight-Rand</h3>
