@@ -682,10 +682,7 @@ zusammen.
 
 ## Dokumentation & Interaktiver Showcase (Issue #269)
 
-Zur Vorschau und Dokumentation aller Primitives (`Button.vue`, `IconButton.vue`, `Card.vue`, `Input.vue`, `ButtonGroup.vue`) und Kern-UI-Komponenten existieren zwei interaktive Zugänge:
-
-1. **Integrierte App-Route (`/design-system`)**: Im Dev- & Demo-Modus direkt über die URL oder über den Button in den Einstellungen (`/settings` -> App-Einstellungen -> "Design System Showcase") aufrufbar (`DesignSystemView.vue`). Bietet Live-Playgrounds mit Prop-Steuerung, Theme- & Icon-Stil-Umschaltung im Header und Copy-to-Clipboard Code-Snippets.
-2. **Storybook Setup (`npm run storybook`)**: Für isolierte Component-Workflows. Die Stories liegen co-located direkt neben den Komponenten (`src/components/**/*.stories.ts`).
+Zur Vorschau und Dokumentation aller Primitives (`Button.vue`, `IconButton.vue`, `Card.vue`, `Input.vue`, `ButtonGroup.vue`), Design-Tokens (Farben, Abstände, Typografie, Schatten, Radien, Viewport-Breakpoints & Grids) und Kern-UI-Komponenten dient **Storybook (`npm run storybook`)** als zentrale Anlaufstelle. Die Stories liegen co-located direkt neben den Komponenten (`src/components/**/*.stories.ts`) sowie unter `src/stories/tokens/*.stories.ts`.
 
 ## Bei neuen Elementen
 
@@ -694,5 +691,5 @@ Zur Vorschau und Dokumentation aller Primitives (`Button.vue`, `IconButton.vue`,
 2. Handelt es sich um eine Card/Button/Input/Modal/Drawer? → Squircle-Paar setzen (siehe oben).
 3. Neues wiederkehrendes Muster nötig? → hier dokumentieren, damit es beim nächsten Mal gefunden
    statt neu erfunden wird (siehe auch `AGENTS.md`, Abschnitt "Konsistenz-Check bei Änderungen").
-4. Neue wiederverwendbare UI-Komponente gebaut? → Story in `*.stories.ts` ergänzen und in `DesignSystemView.vue` aufnehmen.
+4. Neue wiederverwendbare UI-Komponente gebaut? → Story in `*.stories.ts` ergänzen.
 

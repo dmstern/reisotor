@@ -81,11 +81,6 @@ const router = createRouter({
       name: 'security-check',
       component: () => import('../views/SecurityCheckView.vue'),
     },
-    {
-      path: '/design-system',
-      name: 'design-system',
-      component: () => import('../views/DesignSystemView.vue'),
-    },
   ],
 });
 
