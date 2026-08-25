@@ -26,11 +26,12 @@ app.mount('#app');
 const splash = document.getElementById('splash');
 if (splash) {
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (reducedMotion) {
-    // Bei prefers-reduced-motion: reduce (z. B. E2E-Tests mit reducedMotion:'reduce') die
-    // CSS-Transition überspringen und den Splash sofort entfernen. transitionend feuert in
-    // headless Chromium bei reduced-motion nicht immer zuverlässig - ohne diesen Sonderfall
-    // bliebe der Splash bis zum nächsten Repaint sichtbar und würde Screenshots verfälschen.
+  const isWebdriver = Boolean(navigator.webdriver);
+  if (reducedMotion || isWebdriver) {
+    // Bei prefers-reduced-motion: reduce oder in automatisierten E2E-Tests (navigator.webdriver)
+    // die CSS-Transition überspringen und den Splash sofort entfernen. transitionend feuert in
+    // headless Chromium bei reduced-motion / E2E-Tests nicht immer zuverlässig - ohne diesen
+    // Sonderfall bliebe der Splash bis zum nächsten Repaint sichtbar und würde Screenshots verfälschen.
     splash.remove();
   } else {
     splash.classList.add('splash-hide');
