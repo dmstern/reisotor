@@ -450,7 +450,7 @@ einer neuen Stelle, die eine bisher ungenutzte Kombination einführt (neue `font
 `frontend/src` gegen die in `style.css` vorhandenen `@font-face`-Blöcke prüfen, fehlenden Schnitt
 nachziehen statt den Browser synthetisieren zu lassen.
 
-## Breakpoints
+## Breakpoints & Layout-Container
 
 Kein zentrales `--breakpoint-*`-Token, aber ein de-facto Standard: **800px** als Desktop-Schwelle
 (`min-width: 800px` in `NavBar.vue`, `Drawer.vue`, `App.vue`; `max-width: 799px` als Gegenstück in
@@ -460,6 +460,18 @@ Schubladen vs. eigenständige Mobil-Routen). Ein paar Views weichen bewusst ab, 
 `CalendarWeek.vue`: 700px). Neue responsive Umbrüche: erst prüfen, ob 800px passt, bevor ein neuer
 Wert eingeführt wird – Layout-Sprünge sollen möglichst an derselben Fensterbreite passieren wie der
 Rest der App.
+
+### Page Container-Breiten (`max-width`)
+
+- **`.page` (960px)**: Standard-Hülle in `style.css` (`max-width: 960px; margin: 0 auto; padding: var(--space-4)`) für einspaltige Lesbarkeit (Tagebuch, Notizen, Einstellungen, Dashboard).
+- **Wide Page Container (1400px)**: Für mehrspaltige Tabellen- & Listenansichten (`BudgetView.vue`, `ListenView.vue`).
+- **Full-Split Page Container (1600px)**: Maximale Breite für Karte + Spot-Listen Split-Screen (`ExcursionsView.vue`).
+- **Dialog & Modal Container (480px / 900px)**: Standard-Modals (`max-width: 480px` in `Modal.vue`) & breite Formular-Modals (`900px`).
+
+### Raster-Systeme (`.grid` vs. `.masonry`)
+
+- **`.grid`**: Responsive Auto-Fit Grid (`display: grid; gap: var(--space-3); grid-template-columns: repeat(auto-fit, minmax(280px, 1fr))`) für gleichmäßige Kachel-Ansichten.
+- **`.masonry`**: CSS Multi-Column (`column-width: 280px; column-gap: var(--space-3)`) für Karten variabler Höhe (Notizen & Tagebuch).
 
 ## Icons
 

@@ -321,10 +321,32 @@ const avatarCategories = [
         </Card>
 
         <!-- Grid & Masonry Layouts -->
-        <h3 style="margin-top: 32px;">Grid & Masonry Layout-Systeme</h3>
+        <h3 style="margin-top: 32px;">Grid, Page-Container & Layout-Spalten</h3>
         <Card class="ds-card">
-          <p>Reisotor verwendet zwei zentral definierte Raster-Systeme für Karten & Ansichten:</p>
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 16px;">
+          <p>Reisotor definiert klare Standards für Gesamt-Page Containerbreiten (<code>max-width</code>), Layout-Spalten und Responsivität:</p>
+
+          <h4 style="margin-top: 16px; margin-bottom: 12px;">Container-Breiten (max-width)</h4>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-bottom: 24px;">
+            <div style="padding: 12px; border: 1px solid var(--color-border); border-radius: var(--radius-sm-squircle); background: var(--color-hover);">
+              <code style="font-size: 0.85rem; font-weight: bold; color: var(--color-primary-dark);">.page (960px)</code>
+              <p style="margin: 4px 0 0; font-size: 0.8rem; color: var(--color-text-muted);">Standard für einspaltige Lesbarkeit (Tagebuch, Notizen, Einstellungen, Dashboard).</p>
+            </div>
+            <div style="padding: 12px; border: 1px solid var(--color-border); border-radius: var(--radius-sm-squircle); background: var(--color-hover);">
+              <code style="font-size: 0.85rem; font-weight: bold; color: var(--color-primary-dark);">Wide Page (1400px)</code>
+              <p style="margin: 4px 0 0; font-size: 0.8rem; color: var(--color-text-muted);">Für breite Tabellen & mehrspaltige Übersichten (BudgetView, ListenView).</p>
+            </div>
+            <div style="padding: 12px; border: 1px solid var(--color-border); border-radius: var(--radius-sm-squircle); background: var(--color-hover);">
+              <code style="font-size: 0.85rem; font-weight: bold; color: var(--color-primary-dark);">Full-Split (1600px)</code>
+              <p style="margin: 4px 0 0; font-size: 0.8rem; color: var(--color-text-muted);">Maximale Breite für Karte & Spot-Listen Split-Screen (ExcursionsView).</p>
+            </div>
+            <div style="padding: 12px; border: 1px solid var(--color-border); border-radius: var(--radius-sm-squircle); background: var(--color-hover);">
+              <code style="font-size: 0.85rem; font-weight: bold; color: var(--color-primary-dark);">Modals (480px / 900px)</code>
+              <p style="margin: 4px 0 0; font-size: 0.8rem; color: var(--color-text-muted);">Standard-Modals (480px) & breite Formular-Modals (900px).</p>
+            </div>
+          </div>
+
+          <h4 style="margin-bottom: 12px;">Raster-Systeme (.grid & .masonry)</h4>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
             <div style="padding: 16px; border: 1px solid var(--color-border); border-radius: var(--radius-sm-squircle); background: var(--color-hover);">
               <h4 style="margin: 0 0 6px;">1. Responsive Auto-Fit Grid (<code>.grid</code>)</h4>
               <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-muted);">
