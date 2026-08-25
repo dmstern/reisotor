@@ -165,85 +165,65 @@ Der Frontend-Build läuft **lokal**, nicht auf dem Zielserver – auf schwacher 
    ```
    Das Backend sollte dabei nur auf `localhost` lauschen, nicht öffentlich exponiert sein.
 
-### Automatisiertes Deployment über GitHub Actions + Pi-Cronjob
+### Automatisiertes Deployment über GitHub Release Assets + Pi-Cronjob
 
-Zweistufiger Ablauf, damit eine Änderung erst angeschaut werden kann, bevor sie auf der von Nutzer:innen tatsächlich verwendeten Produktion landet – Versionierung folgt [Semantic Versioning](https://semver.org/), `deploy-staging` bildet dabei immer den aktuellen `main`-Stand ab, `deploy` bekommt ausschließlich benannte Releases:
+Zweistufiger Ablauf, damit eine Änderung erst angeschaut werden kann, bevor sie auf der von Nutzer:innen tatsächlich verwendeten Produktion landet – Versionierung folgt [Semantic Versioning](https://semver.org/):
 
-1. **Push auf `main`** löst `.github/workflows/ci.yml` aus: Frontend und Backend werden gebaut (inkl. Typecheck, der Build schlägt bei Fehlern fehl) und das Ergebnis als einzelner Commit auf den Branch `deploy-staging` veröffentlicht. Der Server pollt diesen Branch per Cronjob (`~/reisotor-deploy-staging.sh`, alle 5 Minuten) und deployt automatisch auf DEV (Basic-Auth-geschützt, eigene Datenbank mit `npm run seed:demo`-Demo-Daten – niemals echte Nutzerdaten).
-2. Sieht das Ergebnis auf Staging gut aus, wird ein Release erstellt: im Actions-Tab den Workflow **„Release"** (`.github/workflows/release.yml`) manuell über „Run workflow" ausführen – standardmäßig reicht ein Klick ohne weitere Eingabe. Versions-Sprung (`patch`/`minor`/`major`) wird automatisch aus den Commit-Nachrichten seit dem letzten Tag abgeleitet (lose an [Conventional Commits](https://www.conventionalcommits.org/) angelehnt, siehe `AGENTS.md`) und lässt sich bei Bedarf per Dropdown übersteuern. Die Changelog-Stichpunkte kommen aus den während der Entwicklung gesammelten Fragmenten unter `release-notes/pending/` (siehe `AGENTS.md`) statt aus einer manuellen Eingabe (bzw. automatisch „Verbesserungen unter der Haube.", falls nur interne/technische Änderungen vorliegen). Der Workflow bumpt die Version in der Root-`package.json`, fasst die Fragmente zu einem neuen `CHANGELOG.md`-Abschnitt zusammen, committet beides auf `main`, setzt einen Git-Tag `vX.Y.Z` und leert `release-notes/pending/` wieder. Dieser Tag-Push (und nur er) löst `.github/workflows/ci.yml` erneut aus, diesmal mit Ziel-Branch `deploy` – der Server pollt diesen separat (`~/reisotor-deploy.sh`) und deployt auf die echte Produktion. Der Release-Workflow lässt sich statt über die Weboberfläche auch programmatisch auslösen (z. B. über die GitHub-API/`gh workflow run`, etwa aus einer Agenten-Session heraus).
+1. **Push auf `main`** löst `.github/workflows/ci.yml` aus: Frontend und Backend werden gebaut und als vorgebautes Release-Paket (`reisotor-staging.tar.gz`) an das Pre-Release-Tag `staging` auf GitHub angehängt. Der Server pollt dieses Paket per Cronjob (`~/reisotor-deploy-staging.sh`, alle 5 Minuten per `curl`) und deployt automatisch auf DEV (Basic-Auth-geschützt, eigene Datenbank mit `npm run seed:demo`-Demo-Daten – niemals echte Nutzerdaten).
+2. Sieht das Ergebnis auf Staging gut aus, wird ein Release erstellt: im Actions-Tab den Workflow **„Release"** (`.github/workflows/release.yml`) manuell über „Run workflow" ausführen – standardmäßig reicht ein Klick ohne weitere Eingabe. Versions-Sprung (`patch`/`minor`/`major`) wird automatisch aus den Commit-Nachrichten seit dem letzten Tag abgeleitet (lose an [Conventional Commits](https://www.conventionalcommits.org/) angelehnt, siehe `AGENTS.md`) und lässt sich bei Bedarf per Dropdown übersteuern. Die Changelog-Stichpunkte kommen aus den während der Entwicklung gesammelten Fragmenten unter `release-notes/pending/` (siehe `AGENTS.md`) statt aus einer manuellen Eingabe (bzw. automatisch „Verbesserungen unter der Haube.", falls nur interne/technische Änderungen vorliegen). Der Workflow bumpt die Version in der Root-`package.json`, fasst die Fragmente zu einem neuen `CHANGELOG.md`-Abschnitt zusammen, committet beides auf `main`, setzt einen Git-Tag `vX.Y.Z` und leert `release-notes/pending/` wieder. Dieser Tag-Push löst `.github/workflows/ci.yml` erneut aus – diesmal wird das Paket `reisotor-release.tar.gz` an das neue GitHub Release angehängt. Der Server pollt dieses separat (`~/reisotor-deploy.sh`, per `curl`) und deployt auf die echte Produktion.
 
-Kein Laptop/Client muss für den Rollout selbst online sein oder Zugangsdaten zum Server halten – beide Deploy-Skripte sind zusätzlich manuell auf dem Server ausführbar, falls man nicht auf den nächsten Cron-Tick warten will.
-
-Voraussetzung auf dem Server: ein read-only Deploy Key fürs Repo (unter GitHub → Settings → Deploy keys hinterlegt) sowie je ein separater flacher Checkout der beiden Branches (`~/reisotor-deploy-src` für `deploy`, `~/reisotor-deploy-src-staging` für `deploy-staging`).
-
-Einmaliger manueller Setup-Schritt in den Repo-Settings, damit der Tag-Push aus `release.yml`
-`.github/workflows/ci.yml`/`pages-deploy.yml` überhaupt auslöst: unter Settings → Secrets and variables →
-Actions ein Secret `RELEASE_TOKEN` anlegen (fine-grained Personal Access Token mit „Contents: Read
-and write" auf genau diesem Repo). Grund: ein mit dem automatischen `GITHUB_TOKEN` ausgeführter
-Push löst laut GitHub bewusst keine Folge-Workflows aus (Anti-Rekursions-Schutz) – ohne dieses
-Secret bumpt `release.yml` zwar Version/Changelog und setzt den Tag, aber Prod-Deploy/Pages-Deploy
-müssen dann manuell nachgestoßen werden (siehe Issue #221 für den Workaround: den Tag im
-GitHub-UI löschen und über „Draft a new release" mit demselben Namen neu erzeugen, oder
-`.github/workflows/ci.yml` bzw. `pages-deploy.yml` per `workflow_dispatch` mit dem Tag als Ref manuell
-ausführen).
-
-### Manuelles Deployment mit `deploy.sh`
-
-Alternativ (z. B. wenn kein Internetzugang zu GitHub Actions gewünscht ist oder rein lokal getestet werden soll) automatisiert `deploy.sh` im Repo-Root Build + Kopieren + Neustart **vom eigenen Rechner aus**. Persönliche Werte (SSH-Nutzer, öffentliche Domain, optional ein lokaler Hostname) kommen aus einer lokalen `.env`-Datei (siehe `.env.example`), damit das Skript selbst ohne Infrastruktur-Details versioniert werden kann:
-
-```bash
-cp .env.example .env   # einmalig, dann eigene Werte eintragen
-./deploy.sh
-```
-
-Falls Client und Server im selben lokalen Netz hinter demselben Router hängen, ist die öffentliche Domain von dort aus oft nicht erreichbar (klassisches NAT-Hairpin-Problem). Dagegen helfen zwei Optionen:
-
-- **`LOCAL_HOST`** in der `.env` setzen (z. B. der lokale Hostname/die lokale IP des Servers) – das Skript probiert diesen zuerst und fällt sonst auf `PUBLIC_HOST` zurück.
-- Alternativ (z. B. per `/etc/hosts`) die öffentliche Domain lokal direkt auf die interne IP des Servers auflösen lassen – dann funktioniert auch der Browser-Zugriff auf die App selbst im Heimnetz ohne Umweg, und `LOCAL_HOST` kann in der `.env` weggelassen werden.
+Kein Laptop/Client muss für den Rollout selbst online sein oder Zugangsdaten zum Server halten – auf dem Zielserver werden weder `git`, noch SSH-Keys, Tokens oder Node-Build-Tools benötigt, da der Server nur noch das vorgebaute Paket per `curl` lädt.
 
 ### Automatische Updates per Cronjob (Self-Hosting)
 
-Wenn du Reisotor auf einem eigenen Server betreibst und automatisch auf neue Releases aktualisieren möchtest, kannst du einen Cronjob einrichten, der regelmäßig den `deploy`-Branch prüft (auf diesem Branch liegen stets die getesteten Produktions-Releases) und bei Änderungen zieht sowie neu baut.
+Wenn du Reisotor auf einem eigenen Server betreibst und automatisch auf neue Releases aktualisieren möchtest, kannst du einen Cronjob einrichten, der regelmäßig das vorgebaute `reisotor-release.tar.gz` von GitHub zieht.
 
 **Beispiel-Update-Skript auf dem Server (`/home/<nutzer>/update-reisotor.sh`):**
 
 ```bash
 #!/usr/bin/env bash
-set -e
+set -euo pipefail
 
-CD_PATH="/home/<nutzer>/reisotor"
-cd "$CD_PATH"
+APP_DIR="/home/<nutzer>/reisotor"
+WEB_ROOT="/var/www/reisotor"
+MARKER_FILE="/home/<nutzer>/.reisotor-deployed-commit"
+TMP_DIR="/tmp/reisotor-update-download"
+ASSET_URL="https://github.com/dmstern/reisotor/releases/latest/download/reisotor-release.tar.gz"
 
-# Prüfen, ob ein neues Release auf GitHub vorliegt
-git fetch origin deploy
-LOCAL=$(git rev-parse HEAD)
-REMOTE=$(git rev-parse origin/deploy)
-
-if [ "$LOCAL" != "$REMOTE" ]; then
-    echo "[$(date)] Neues Release auf deploy-Branch gefunden. Starte Update..."
-    git pull origin deploy
-
-    # Backend bauen und neu starten
-    cd "$CD_PATH/backend"
-    npm ci --omit=dev
-    npm run build
-    sudo systemctl restart reisotor
-
-    # Frontend bauen und statische Dateien bereitstellen
-    cd "$CD_PATH/frontend"
-    npm ci
-    npm run build
-    sudo cp -r dist/* /var/www/reisotor/
-
-    echo "[$(date)] Update erfolgreich abgeschlossen."
+mkdir -p "$TMP_DIR"
+if ! curl -sSL -f "$ASSET_URL" -o "$TMP_DIR/release.tar.gz"; then
+  rm -rf "$TMP_DIR"
+  exit 0
 fi
+
+tar -xzf "$TMP_DIR/release.tar.gz" -C "$TMP_DIR"
+REMOTE_COMMIT=$(cat "$TMP_DIR/COMMIT" 2>/dev/null || echo "")
+LOCAL_COMMIT=$(cat "$MARKER_FILE" 2>/dev/null || echo "")
+
+if [ -n "$REMOTE_COMMIT" ] && [ "$REMOTE_COMMIT" = "$LOCAL_COMMIT" ]; then
+  rm -rf "$TMP_DIR"
+  exit 0
+fi
+
+echo "[$(date)] Neues Release ($REMOTE_COMMIT) gefunden. Deploye..."
+rsync -a --delete "$TMP_DIR/frontend/" "$WEB_ROOT/"
+rsync -a --delete "$TMP_DIR/backend/dist/" "$APP_DIR/backend/dist/"
+rsync -a "$TMP_DIR/backend/package.json" "$TMP_DIR/backend/package-lock.json" "$APP_DIR/backend/"
+
+cd "$APP_DIR/backend"
+npm ci --omit=dev
+sudo systemctl restart reisotor
+
+echo "$REMOTE_COMMIT" > "$MARKER_FILE"
+echo "[$(date)] Update erfolgreich abgeschlossen."
+rm -rf "$TMP_DIR"
 ```
 
 **Cronjob einrichten (`crontab -e`):**
 
 ```cron
-# Prüft täglich um 04:00 Uhr nachts auf neue Releases
-0 4 * * * /home/<nutzer>/update-reisotor.sh >> /home/<nutzer>/reisotor-update.log 2>&1
+# Prüft alle 5 Minuten (oder täglich um 04:00 Uhr nachts) auf neue Releases
+*/5 * * * * /home/<nutzer>/update-reisotor.sh >> /home/<nutzer>/reisotor-update.log 2>&1
 ```
 
 ## Bekannte Stolpersteine

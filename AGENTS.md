@@ -196,7 +196,7 @@ Vitest auf beiden Seiten, unabhängig konfiguriert (Backend: `backend/vitest.con
 `test`-Key in `frontend/vite.config.ts`). Laufen ohne Browser/Server, deterministisch und schnell —
 laufen deshalb automatisch in CI, direkt vor dem jeweiligen Build-Schritt in
 `.github/workflows/ci.yml`. Ein fehlschlagender Unit-Test verhindert damit sowohl den
-`main`→`deploy-staging`- als auch den Tag→`deploy`-Produktions-Publish.
+Staging- als auch den Tag-Produktions-Publish.
 
 ```bash
 cd backend && npm test    # bzw. npm run test:watch für Watch-Mode

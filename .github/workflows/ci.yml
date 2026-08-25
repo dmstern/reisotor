@@ -178,7 +178,7 @@ jobs:
           fi
 
   publish:
-    name: Publish to deploy branch
+    name: Publish Release Asset
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     needs: [e2e-tests]
     runs-on: ubuntu-latest
@@ -207,32 +207,40 @@ jobs:
           npm ci
           npm run build
 
-      - name: Assemble release artifact
+      - name: Assemble release package
         run: |
-          rm -rf release
-          mkdir -p release/frontend release/backend/dist
-          cp -r frontend/dist/. release/frontend/
-          cp -r backend/dist/. release/backend/dist/
-          cp backend/package.json backend/package-lock.json release/backend/
-          printf '%s %s\n' "${{ github.sha }}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > release/COMMIT
+          rm -rf release-pack
+          mkdir -p release-pack/frontend release-pack/backend/dist
+          cp -r frontend/dist/. release-pack/frontend/
+          cp -r backend/dist/. release-pack/backend/dist/
+          cp backend/package.json backend/package-lock.json release-pack/backend/
+          printf '%s %s\n' "${{ github.sha }}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > release-pack/COMMIT
 
-      - name: Determine target branch
-        id: target
+      - name: Create Staging archive
+        if: startsWith(github.ref, 'refs/tags/v') == false
         run: |
-          if [ "${{ github.ref_type }}" = "tag" ]; then
-            echo "branch=deploy" >> "$GITHUB_OUTPUT"
-          else
-            echo "branch=deploy-staging" >> "$GITHUB_OUTPUT"
-          fi
+          cd release-pack
+          tar -czf ../reisotor-staging.tar.gz .
 
-      - name: Publish to deploy branch
-        working-directory: release
+      - name: Publish Staging Release Asset
+        if: startsWith(github.ref, 'refs/tags/v') == false
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: staging
+          name: "Staging / Dev Build"
+          prerelease: true
+          files: reisotor-staging.tar.gz
+          token: ${{ secrets.RELEASE_TOKEN || github.token }}
+
+      - name: Create Production archive
+        if: startsWith(github.ref, 'refs/tags/v')
         run: |
-          TARGET="${{ steps.target.outputs.branch }}"
-          git init -q
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout -q -b "$TARGET"
-          git add -A
-          git commit -q -m "Build ${{ github.sha }}"
-          git push --force "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" "$TARGET:$TARGET"
+          cd release-pack
+          tar -czf ../reisotor-release.tar.gz .
+
+      - name: Publish Production Release Asset
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: reisotor-release.tar.gz
+          token: ${{ secrets.RELEASE_TOKEN || github.token }}
