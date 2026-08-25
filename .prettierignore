@@ -1,0 +1,12 @@
+dist
+dist-*
+frontend/dist
+frontend/dist-*
+backend/dist
+node_modules
+coverage
+*.sqlite*
+playwright-report
+test-results
+package-lock.json
+**/package-lock.json

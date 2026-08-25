@@ -4,6 +4,8 @@
   "type": "module",
   "scripts": {
     "test": "playwright test",
+    "lint": "eslint .",
+    "format:check": "prettier --check .",
     "test:headed": "playwright test --headed",
     "playwright": "playwright",
     "install-browsers": "playwright install chromium",

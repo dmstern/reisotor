@@ -21,6 +21,28 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  lint-and-format:
+    name: Lint & Format Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint & format check
+        run: |
+          npm run lint
+          npm run format:check
+
   backend-unit-and-build:
     name: Backend (Unit Tests & Build)
     runs-on: ubuntu-latest
@@ -79,7 +101,7 @@ jobs:
 
   e2e-tests:
     name: E2E Tests (Shard ${{ matrix.shard }}/20)
-    needs: [backend-unit-and-build, frontend-unit-and-build]
+    needs: [lint-and-format, backend-unit-and-build, frontend-unit-and-build]
     runs-on: ubuntu-latest
     # Playwrights offizielles Image bringt Chromium UND sämtliche System-Bibliotheken dafür schon
     # fertig mit - erspart bei jedem Lauf das (undgecachte, weil auf einer frischen Runner-VM
