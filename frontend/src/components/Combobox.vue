@@ -100,19 +100,21 @@ defineExpose({
 
 .combobox input {
   width: 100%;
-  padding-right: 32px;
+  padding-right: 36px;
 }
 
 .combobox-caret {
   position: absolute;
   right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
   pointer-events: none;
   color: var(--color-primary);
   transition: transform 0.2s ease;
 }
 
 .combobox-caret.open {
-  transform: rotate(180deg);
+  transform: translateY(-50%) rotate(180deg);
 }
 
 .options {

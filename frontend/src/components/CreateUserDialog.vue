@@ -141,6 +141,7 @@ async function submit() {
           <IconButton
             v-for="e in AVATAR_OPTIONS"
             :key="e"
+            variant="ghost"
             :active="avatar === e"
             :aria-label="`Avatar-Symbol ${e}`"
             :title="`Avatar ${e}`"

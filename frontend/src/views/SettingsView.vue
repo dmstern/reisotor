@@ -556,6 +556,7 @@ async function onImportFileSelected(event: Event) {
               <IconButton
                 v-for="emoji in cat.emojis"
                 :key="emoji"
+                variant="ghost"
                 :active="emoji === auth.user?.avatar"
                 :disabled="avatarSaving"
                 :aria-label="`Avatar ${emoji} auswählen`"
@@ -740,6 +741,7 @@ async function onImportFileSelected(event: Event) {
             }}</span>
             <div class="nav-config-actions">
               <IconButton
+                variant="ghost"
                 size="sm"
                 :disabled="index === 0"
                 aria-label="Nach oben verschieben"
@@ -749,6 +751,7 @@ async function onImportFileSelected(event: Event) {
                 <AppIcon :icon="ACTION_ICONS.chevronUp" :size="14" group="actions" />
               </IconButton>
               <IconButton
+                variant="ghost"
                 size="sm"
                 :disabled="index === navConfig.entries.length - 1"
                 aria-label="Nach unten verschieben"
@@ -800,6 +803,7 @@ async function onImportFileSelected(event: Event) {
             }}</span>
             <div class="nav-config-actions">
               <IconButton
+                variant="ghost"
                 size="sm"
                 :disabled="index === 0"
                 aria-label="Nach oben verschieben"
@@ -809,6 +813,7 @@ async function onImportFileSelected(event: Event) {
                 <AppIcon :icon="ACTION_ICONS.chevronUp" :size="14" group="actions" />
               </IconButton>
               <IconButton
+                variant="ghost"
                 size="sm"
                 :disabled="index === dashboardConfig.entries.length - 1"
                 aria-label="Nach unten verschieben"
