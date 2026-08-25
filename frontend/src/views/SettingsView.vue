@@ -641,9 +641,11 @@ async function onImportFileSelected(event: Event) {
             </thead>
             <tbody>
               <tr v-for="u in userList" :key="u.id">
-                <td class="user-cell">
-                  <span class="user-avatar">{{ u.avatar }}</span>
-                  <span class="username">{{ u.username }}</span>
+                <td>
+                  <div class="user-cell">
+                    <span class="user-avatar">{{ u.avatar }}</span>
+                    <span class="username">{{ u.username }}</span>
+                  </div>
                 </td>
                 <td class="email-cell">{{ u.email || '—' }}</td>
                 <td>
