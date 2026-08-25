@@ -120,6 +120,27 @@ einer Komponente. Grund: Dark Mode (`@media (prefers-color-scheme: dark)` + manu
 Neue Farbtöne immer als neue `--color-*`-Variable in beiden Blöcken (hell + `@media`/`[data-theme]`)
 anlegen, nicht als lokaler Wert in der Komponente.
 
+### Zentrale Farb-Tokens
+
+| Variable | Bedeutung / Einsatz | Light Mode | Dark Mode |
+|---|---|---|---|
+| `--color-bg` | Haupt-App-Hintergrund | `#faf8f5` | `#181715` |
+| `--color-surface` | Karten, Panels, Modal-Flächen | `#ffffff` | `#232220` |
+| `--color-border` | Standard Trennlinien & dezente Ränder | `#e8e2d9` | `#38352f` |
+| `--color-border-strong` | Eingabefelder, Selects, Secondary-Buttons | `#d5cabc` | `#4a453c` |
+| `--color-text` | Primäre Textfarbe | `#2b2a28` | `#f2efe9` |
+| `--color-text-muted` | Gedämpfter Fließtext & Untertitel | `#726e66` | `#a8a29a` |
+| `--color-primary` | Marken-Grün (Haupt-Buttons & Fokus) | `#2a7f74` | `#3da296` |
+| `--color-primary-dark` | Hover-Status für Marken-Grün | `#1f6059` | `#7dd0c1` |
+| `--color-primary-tint` | Leichter Grünton für Steuerungen & Badges | `#eaf3f1` | `#1c2e2a` |
+| `--color-hover` | Hover-Hintergrund & Muted-Surface | `#f4f1ec` | `#2a2823` |
+| `--color-accent` | Echtzeit-Updates / Aufmerksamkeits-Akzent | `#e08e45` | `#f0a05a` |
+| `--color-danger` | Gefahr / Löschen / Warnungen | `#c1503f` | `#e0685a` |
+| `--color-success` | Erfolg / Fertig-Status | `#3f8f5c` | `#5cb37e` |
+| `--color-scheduled` | Geplant (Kalender & Streifen) | `#1e96d1` | `#52b8ea` |
+| `--color-highlight` | Highlight-Fläche für Notizen | `#fff4e8` | `#332a1c` |
+| `--color-accent-secondary` | Sekundärer Akzent (Indigo) | `#5b6ee1` | `#8b98f0` |
+
 Semantische statt beschreibende Namen (`--color-danger`, nicht `--color-red`) – Töne können sich
 ändern, die Bedeutung bleibt.
 
@@ -156,12 +177,14 @@ dem jeweiligen Kontext unterordnen statt sich als eigene, andersfarbige Fläche 
 Stufen verwenden statt beliebiger px-Werte – macht Layouts über Views hinweg optisch konsistent und
 Design-Anpassungen global statt Datei für Datei nötig:
 
-- `--space-1` (4px): Mikro-Abstände (Icon neben Label, Badges, kompakte Chip-Gaps).
-- `--space-2` (8px): Standard-Gap für dichte Flex-Zeilen (Formularzeilen, Button-Gruppen, Tag-Listen).
-- `--space-3` (16px): Standard-Padding für Cards, Modals, Listen-Gaps auf Mobile und vertikaler Rhythmus.
-- `--space-4` (24px): Großzügiges Padding für Desktop-Karten, Dialoge, Sektions-Abstände.
-- `--space-5` (32px): Große Trennabstände zwischen Hauptbereichen einer View.
-- `--space-6` (48px): Maximale Außenabstände / Hero-Sektionen.
+| Variable | Wert | Typischer Verwendungszweck |
+|---|---|---|
+| `--space-1` | 4px | Mikro-Abstände (Icon-Gaps, Badges, Chips, Button-Gap) |
+| `--space-2` | 8px | Standard-Gap für dichte Flex-Zeilen (Formularfelder, Button-Gruppen) |
+| `--space-3` | 16px | Standard Card-Padding (Mobil), Listen-Gaps, Fließtext-Abstand |
+| `--space-4` | 24px | Großzügiges Card-Padding (Desktop), Dialoge, Sektions-Abstände |
+| `--space-5` | 32px | Große Trennabstände zwischen Hauptbereichen einer View |
+| `--space-6` | 48px | Maximale Außenabstände / Hero-Layouts |
 
 **Absatz vor Button / Aktion (#69)**: Eine erklärende `<p>`-Zeile direkt vor einem Button oder einer
 Aktionsleiste braucht zwingend sichtbaren Freiraum nach unten (`margin-top: var(--space-3)` via
@@ -209,10 +232,11 @@ Seitenhintergrund wie ein Rendering-Fehler). Bei jedem neuen sticky/schwebenden 
 Rundung UND Hintergrundfarbe (siehe "Farben" oben) gegen den dahinterliegenden Hintergrund prüfen,
 nicht nur im eingebetteten Grundzustand.
 
-Basiswerte `--radius-sm` (10px) bis `--radius-xl` (32px) gelten für alles, was ein **normaler
-Kreisbogen** bleiben soll: komplett runde Elemente (`border-radius: 50%`, z. B. `EditButton.vue`/
-`DeleteButton.vue`, meist zusätzlich mit `corner-shape: round;` explizit gemacht), Pillen sowie
-kleine Chips/Badges.
+### Drei Form-Kategorien in Reisotor
+
+1. **Squircle-Superellipsen (`corner-shape: squircle`)**: Cards, (nicht-runde) Buttons, Inputs, Modals und Drawer/Schubladen nutzen `--radius-*-squircle` kombiniert mit `corner-shape: squircle;`.
+2. **Pillen (`--radius-pill: 9999px`)**: Ovale / langgestreckte Pillen für CategoryChips, Badges, TabBar-Indikatoren & SegmentedToggles.
+3. **Kreisrund (`--radius-full: 50%`)**: Exakte Kreise (`aspect-ratio: 1/1` / `width = height`) für Dashboard Tile Card Circle Icons (`44px × 44px`) und runde FAB-Buttons (z. B. in der mobilen Karten-Schublade).
 
 **Cards, (nicht-runde) Buttons, Inputs, Modals und Drawer/Schubladen** bekommen stattdessen die
 "squircle"-Variante (iOS-artige Superellipsen-Rundung statt Kreisbogen) – dafür IMMER beide Teile
@@ -391,6 +415,29 @@ automatisch bei der nächsten Gelegenheit an einem Button/einer Card mitgezogen 
 `--font-sans` (Fira Sans, selbst gehostet als Latin-Subset-WOFF2 – siehe Kommentar in `style.css`
 oben, funktioniert offline). Keine weiteren Schriftfamilien einführen.
 
+### Schriftgrößen-Skala & CSS-Tokens
+
+| Variable | Wert | Typischer Einsatz |
+|---|---|---|
+| `--font-size-xs` | `0.75rem` (12px) | Pre-Heading Kicker, Badges, Formular-Meta & Labels |
+| `--font-size-sm` | `0.85rem` (13.6px) | Sekundärtexte, Card-Actions (`.card-action-btn`), Hinweise |
+| `--font-size-md` | `1rem` (16px) | Standard Fließtext, Text-Inputs, Haupt-Buttons |
+| `--font-size-lg` | `1.15rem` (18.4px) | H3 Überschriften, Subheadings, Dialog-Titel |
+| `--font-size-xl` | `1.3rem` (20.8px) | H2 Sektions-Überschriften, Kachel-Titel |
+| `--font-size-2xl` | `1.6rem` (25.6px) | H1 Haupt-Seitentitel (700 Bold, `-0.01em` Tracking) |
+
+### Semantische Textbausteine
+
+1. **Pre-Heading / Kicker (`.kicker`)**: Sehr kleines Ober-Label (`font-size: var(--font-size-xs)`, `font-weight: 700`, `text-transform: uppercase`, `letter-spacing: 0.04em`, `color: var(--color-text-muted)`).
+2. **Haupt-Seitentitel (`h1`)**: `font-size: var(--font-size-2xl)`, `font-weight: 700`, `letter-spacing: -0.01em`, `margin: 0 0 var(--space-3)`.
+3. **Sektions-Überschrift (`h2`)**: `font-size: var(--font-size-xl)`, `font-weight: 600`, `margin: 0 0 var(--space-2)`.
+4. **Kompakter Gruppen-Titel (`h3`)**: `font-size: var(--font-size-lg)`, `font-weight: 600`, `margin: 0 0 var(--space-1)`.
+5. **Unterüberschrift / Subheading (`h4`)**: `font-size: 1.05rem`, `font-weight: 600`, `margin: var(--space-2) 0 4px`.
+6. **Fließtext / Absatz (`p`)**: Standard-Fließtext in gedämpfter Schriftfarbe (`var(--color-text-muted)`), `margin: 0 0 var(--space-3)`.
+7. **Erklärtext / Hinweise (`.hint` / `.muted`)**: Dezente Erklärungen vor Listen oder unter Eingabefeldern.
+8. **Code & Monospace (`code`)**: Formatiertes Code-Element in `var(--color-bg)` mit 4px Radius.
+9. **Button- & Badge-Labels**: Text in Buttons (`font-weight: 600`) und Badges (`font-weight: 600`, `font-size: var(--font-size-xs)`).
+
 **Alle tatsächlich genutzten (Fettung × Schnitt)-Kombinationen brauchen einen echten `@font-face` -
 nicht nur alle genutzten `font-weight`-Stufen (aktuell 400/500/600/700) normal, sondern dieselben
 Stufen auch **kursiv**, sobald irgendwo `<em>`/`font-style: italic` mit diesem Gewicht zusammentrifft
@@ -404,7 +451,7 @@ einer neuen Stelle, die eine bisher ungenutzte Kombination einführt (neue `font
 `frontend/src` gegen die in `style.css` vorhandenen `@font-face`-Blöcke prüfen, fehlenden Schnitt
 nachziehen statt den Browser synthetisieren zu lassen.
 
-## Breakpoints
+## Breakpoints & Layout-Container
 
 Kein zentrales `--breakpoint-*`-Token, aber ein de-facto Standard: **800px** als Desktop-Schwelle
 (`min-width: 800px` in `NavBar.vue`, `Drawer.vue`, `App.vue`; `max-width: 799px` als Gegenstück in
@@ -414,6 +461,18 @@ Schubladen vs. eigenständige Mobil-Routen). Ein paar Views weichen bewusst ab, 
 `CalendarWeek.vue`: 700px). Neue responsive Umbrüche: erst prüfen, ob 800px passt, bevor ein neuer
 Wert eingeführt wird – Layout-Sprünge sollen möglichst an derselben Fensterbreite passieren wie der
 Rest der App.
+
+### Page Container-Breiten (`max-width`)
+
+- **`.page` (960px)**: Standard-Hülle in `style.css` (`max-width: 960px; margin: 0 auto; padding: var(--space-4)`) für einspaltige Lesbarkeit (Tagebuch, Notizen, Einstellungen, Dashboard).
+- **Wide Page Container (1400px)**: Für mehrspaltige Tabellen- & Listenansichten (`BudgetView.vue`, `ListenView.vue`).
+- **Full-Split Page Container (1600px)**: Maximale Breite für Karte + Spot-Listen Split-Screen (`ExcursionsView.vue`).
+- **Dialog & Modal Container (480px / 900px)**: Standard-Modals (`max-width: 480px` in `Modal.vue`) & breite Formular-Modals (`900px`).
+
+### Raster-Systeme (`.grid` vs. `.masonry`)
+
+- **`.grid`**: Responsive Auto-Fit Grid (`display: grid; gap: var(--space-3); grid-template-columns: repeat(auto-fit, minmax(280px, 1fr))`) für gleichmäßige Kachel-Ansichten.
+- **`.masonry`**: CSS Multi-Column (`column-width: 280px; column-gap: var(--space-3)`) für Karten variabler Höhe (Notizen & Tagebuch).
 
 ## Icons
 
@@ -558,18 +617,25 @@ Reisotor etabliert saubere Design-System-Primitives (`frontend/src/components/pr
 für elementare UI-Bausteine:
 
 - **`Button.vue`**: Zentrales Primitive für alle Schaltflächen. Unterstützt `variant` (`primary`,
-  `secondary`, `danger`, `card-action`, `ghost`) und `size` (`sm`, `md`, `lg`). Kapselt
-  Schattierung (`--shadow-sm`) und Squircle-Styling intern.
+  `secondary`, `danger`, `card-action`, `ghost`), `size` (`sm`, `md`, `lg`) und den **Disabled-Zustand**
+  (`disabled` prop / `:disabled` Pseudo-Klasse). Deaktivierte Buttons werden ausgegraut (`opacity: 0.5`),
+  erhalten `cursor: not-allowed`, deaktiveren Pointer-Events (`pointer-events: none`) und entfernen
+  Schlagschatten sowie Skalierungs-Effekte beim Klicken (`transform: none`).
 - **`IconButton.vue`**: Spezielles Primitive für reine Icon- und Emoji-Schaltflächen (Avatar-Auswahl,
   Verschiebe-Aktionen, Close-/Toggle-Buttons). Standardmäßig komplett ohne Rahmen, Schatten oder
   Hintergrund (`variant="ghost"`), mit sanftem Hover- und aktivem Auswahlstatus (`active`).
-- **`Card.vue`**: Basis-Fläche für Spots, Touren, Budget-Töpfe und Fokus-Panels (`variant="muted"`
-  für hinterlegte Kacheln).
+- **`Card.vue`**: Basis-Fläche für Spots, Touren, Budget-Töpfe, Notizen und Fokus-Panels. Unterstützt
+  `variant` (`default`, `muted` für hinterlegte Flächen, `flat` ohne Schatten, `elevated` mit verstärktem Schatten `var(--shadow-md)`,
+  `tile` für Dashboard-Kacheln). **Zustände:** `condensed` ist ein **Zustand/Prop** (komprimiertes Padding & schmale Miniatur-Banner links),
+  der per `expandable` Prop interaktiv per Klick in die volle/aufgeklappte Ansicht wechselt (`#expanded` Slot, analog zu `SpotCard.vue`/`ExcursionCard.vue` in der Karten-View).
+  Echtzeit-Highlighting (`highlight` prop / `.new-highlight`).
 - **`Input.vue`**: Wiederverwendbares Primitive für einzeilige Eingabefelder (`text`, `number`,
   `date`, `time`, `datetime-local`, `email`, `url`, `search`, etc.). Behandelt standardmäßiges
   Squircle-Styling, `min-height: 44px`, Focus-Ringe, Disabled-State, `size` (`sm`, `md`, `lg`),
   `invalid`-Zustand (`aria-invalid`, rote Umrandung) und den Chromium-Höhenausgleich für
   Datums-/Zeitauswahlen.
+- **Badges & Indikatoren**: `.badge` als leichtgewichtiger Chip für Zustände (`.badge--primary`,
+  `.badge--success`, `.badge--danger`, `.badge--accent`), sowie 🔒 Privat (nur für 1 Person) vs. 🤝 Geteilt (für alle Mitreisenden).
 - **`FormField.vue`**: Einheitlicher Feld-Wrapper für Anlege- und Bearbeiten-Formulare (Icon + Label).
 
 Reine Beschriftung eines Textfelds per HTML-`placeholder` verschwindet, sobald das Feld einen Wert
@@ -614,6 +680,10 @@ die jetzt eine Ebene tiefer in `.form-field` sitzen. Selektor auf `.form-field` 
 Flex-Items eines Flex-Containers reagieren darauf) und das Feld schrumpft auf seine Inhaltsbreite
 zusammen.
 
+## Dokumentation & Interaktiver Showcase (Issue #269)
+
+Zur Vorschau und Dokumentation aller Primitives (`Button.vue`, `IconButton.vue`, `Card.vue`, `Input.vue`, `ButtonGroup.vue`), Design-Tokens (Farben, Abstände, Typografie, Schatten, Radien, Viewport-Breakpoints & Grids) und Kern-UI-Komponenten dient **Storybook (`npm run storybook`)** als zentrale Anlaufstelle. Die Stories liegen co-located direkt neben den Komponenten (`src/components/**/*.stories.ts`) sowie unter `src/stories/tokens/*.stories.ts`.
+
 ## Bei neuen Elementen
 
 1. Existiert schon eine passende Farbe/ein passender Radius-/Schatten-/Abstands-Wert/Breakpoint/
@@ -621,3 +691,5 @@ zusammen.
 2. Handelt es sich um eine Card/Button/Input/Modal/Drawer? → Squircle-Paar setzen (siehe oben).
 3. Neues wiederkehrendes Muster nötig? → hier dokumentieren, damit es beim nächsten Mal gefunden
    statt neu erfunden wird (siehe auch `AGENTS.md`, Abschnitt "Konsistenz-Check bei Änderungen").
+4. Neue wiederverwendbare UI-Komponente gebaut? → Story in `*.stories.ts` ergänzen.
+

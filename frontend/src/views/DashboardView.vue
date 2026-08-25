@@ -27,7 +27,7 @@ import { SCHEDULE_CATEGORY_META } from '../utils/scheduleCategory';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { ACCOMMODATION_ICON, SECURITY_CHECK_ICON } from '../utils/dashboardTiles';
 import { spotCategoryMeta } from '../utils/spotCategory';
-import { fetchMergedWeather, fetchWeatherForecast, weatherCodeMeta, type DailyWeather } from '../utils/weather';
+import { detectWeatherAlerts, fetchMergedWeather, fetchWeatherForecast, weatherCodeMeta, type DailyWeather, type WeatherAlert } from '../utils/weather';
 import { fetchRegionInfo, type RegionInfo } from '../utils/regionInfo';
 import {
   formatDate as formatDateShared,
@@ -41,6 +41,7 @@ import ViewLoadingState from '../components/ViewLoadingState.vue';
 import AppIcon from '../components/AppIcon.vue';
 import Button from '../components/primitives/Button.vue';
 import WeatherIcon from '../components/WeatherIcon.vue';
+import WeatherDayDetailDialog from '../components/WeatherDayDetailDialog.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { DEMO_MODE } from '../demo/isDemoMode';
 
@@ -135,6 +136,15 @@ watch(
 const weatherModelLabel = computed(
   () => WEATHER_MODEL_OPTIONS.find((o) => o.value === weatherProvider.model)?.label ?? weatherProvider.model,
 );
+
+const tripWeatherAlerts = computed(() => detectWeatherAlerts(weatherDays.value ?? []));
+const selectedWeatherDay = ref<DailyWeather | null>(null);
+const weatherDayDialogOpen = ref(false);
+
+function openWeatherDayDialog(day: DailyWeather) {
+  selectedWeatherDay.value = day;
+  weatherDayDialogOpen.value = true;
+}
 
 const regionInfo = ref<RegionInfo | null>(null);
 const regionError = ref<string | null>(null);
@@ -401,6 +411,18 @@ function formatWeekdayDate(d: string) {
               <AppIcon :icon="ACTION_ICONS.rain" :size="13" group="actions" />{{ todayWeather.precipitationProbability }}%
             </span>
           </div>
+
+          <!-- Unwetter- & Wetter-Warnungen (Issue #134) -->
+          <div v-if="tripWeatherAlerts.length" class="weather-alerts">
+            <div v-for="alert in tripWeatherAlerts" :key="alert.id" class="weather-alert-card" :class="alert.severity">
+              <AppIcon :icon="ACTION_ICONS.warning" :size="16" group="actions" />
+              <div class="alert-content">
+                <strong>{{ alert.title }}</strong>
+                <span>{{ alert.description }}</span>
+              </div>
+            </div>
+          </div>
+
           <p class="weather-section-label">
             <AppIcon :icon="vacationPhase?.phase === 'over' ? ACTION_ICONS.sun : ACTION_ICONS.vacation" :size="14" group="actions" />
             {{ vacationPhase?.phase === 'over' ? 'Rückblick: Wetter im Urlaub' : 'Wetter im Urlaub' }}
@@ -413,7 +435,13 @@ function formatWeekdayDate(d: string) {
             Für diesen Zeitraum sind keine Wetterdaten gespeichert.
           </p>
           <div v-else class="weather-days">
-            <div class="weather-day" :class="{ past: day.date < todayStr() }" v-for="day in vacationForecastDays" :key="day.date">
+            <div
+              class="weather-day clickable"
+              :class="{ past: day.date < todayStr() }"
+              v-for="day in vacationForecastDays"
+              :key="day.date"
+              @click="openWeatherDayDialog(day)"
+            >
               <span class="weather-date">{{ formatWeekdayDate(day.date) }}</span>
               <WeatherIcon
                 class="weather-icon"
@@ -732,6 +760,14 @@ function formatWeekdayDate(d: string) {
     </div>
   </div>
   <ViewLoadingState v-else />
+
+  <WeatherDayDetailDialog
+    v-model="weatherDayDialogOpen"
+    :day="selectedWeatherDay"
+    :lat="trip?.lat"
+    :lng="trip?.lng"
+    :location-label="trip?.destination || 'Reiseziel'"
+  />
 </template>
 
 <style scoped>
@@ -1044,5 +1080,53 @@ function formatWeekdayDate(d: string) {
 
 .mini-list.breakdown li {
   gap: 0;
+}
+
+.weather-alerts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.weather-alert-card {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+}
+
+.weather-alert-card.warning {
+  background: var(--color-warning-tint, #fffbeb);
+  color: var(--color-warning-dark, #b45309);
+  border: 1px solid var(--color-warning, #f59e0b);
+}
+
+.weather-alert-card.danger {
+  background: var(--color-danger-tint, #fef2f2);
+  color: var(--color-danger-dark, #991b1b);
+  border: 1px solid var(--color-danger, #ef4444);
+}
+
+.weather-alert-card .alert-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.weather-alert-card .alert-content strong {
+  font-size: 0.85rem;
+}
+
+.weather-day.clickable {
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.weather-day.clickable:hover {
+  background: var(--color-hover);
+  transform: translateY(-2px);
 }
 </style>

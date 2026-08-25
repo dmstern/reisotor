@@ -1,9 +1,14 @@
 <script setup lang="ts">
-// IconButton-Primitive für Icon-only- und Emoji-Buttons (Avatar-Auswahl, Verschiebe-Buttons, Quick-Toggles, …) – siehe Issue #239.
+import type { IconDef } from '../../utils/icon';
+import AppIcon from '../AppIcon.vue';
+
+// IconButton-Primitive für Icon-only-Buttons (Avatar-Auswahl, Verschiebe-Buttons, Quick-Toggles, …) – siehe Issue #239.
 // Kapselt randlose, schattenlose Klick-Buttons ohne Hintergrund (Ghost-Standard), mit dezentem Squircle-Hover- und Active-Status.
 
 withDefaults(
   defineProps<{
+    /** Optionale IconDef-Definition für Tabler-Icon Rendering via AppIcon.vue */
+    icon?: IconDef;
     /**
      * Variante:
      * - 'ghost': Standard (vollständig transparent, kein Schatten, kein Rand)
@@ -52,7 +57,8 @@ const emit = defineEmits<{
     ]"
     @click="emit('click', $event)"
   >
-    <slot />
+    <AppIcon v-if="icon" :icon="icon" group="actions" :size="size === 'sm' ? 16 : size === 'lg' ? 24 : 20" />
+    <slot v-else />
   </button>
 </template>
 
@@ -120,7 +126,6 @@ const emit = defineEmits<{
   height: 28px;
   min-width: 28px;
   min-height: 28px;
-  font-size: 0.9rem;
 }
 
 .icon-btn {
@@ -128,7 +133,6 @@ const emit = defineEmits<{
   height: 36px;
   min-width: 36px;
   min-height: 36px;
-  font-size: 1.25rem;
 }
 
 .icon-btn--lg {
@@ -136,6 +140,5 @@ const emit = defineEmits<{
   height: 44px;
   min-width: 44px;
   min-height: 44px;
-  font-size: 1.5rem;
 }
 </style>

@@ -4,7 +4,7 @@ import type { Spot } from '../api/types';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { renderRichText } from '../utils/richText';
 import { parseContact } from '../utils/contact';
-import { fetchWeatherForecast, weatherCodeMeta, type DailyWeather } from '../utils/weather';
+import { fetchMergedWeather, weatherCodeMeta, type DailyWeather } from '../utils/weather';
 import { usePointerDrag } from '../composables/usePointerDrag';
 import { useExcursionsStore } from '../stores/excursions';
 import { useScheduleStore } from '../stores/schedule';
@@ -57,6 +57,7 @@ const props = defineProps<{
   groupMode: 'category' | 'tours';
   // Alle bestehenden Tour-Titel, fürs "Tour zuordnen"-Dropdown (TourAssignDropdown.vue).
   tourOptions: string[];
+  hasMultipleMembers?: boolean;
 }>();
 
 const isAccommodation = computed(() => props.spot.category === 'Unterkunft');
@@ -117,7 +118,7 @@ watch(
     dayWeather.value = null;
     if (!date || lat == null || lng == null) return;
     try {
-      const days = await fetchWeatherForecast(lat, lng, model);
+      const days = await fetchMergedWeather(props.spot.trip_id, lat, lng, model);
       dayWeather.value = days.find((d) => d.date === date) ?? null;
     } catch {
       // best effort, siehe Kommentar oben
@@ -323,7 +324,7 @@ function onToggleDone() {
         <p v-if="spot.amount != null" class="detail-row">
           <span class="detail-label">Kosten</span>
           <AppIcon :icon="FORM_FIELD_ICONS.amount" :size="14" group="formFields" /> {{ spot.amount.toFixed(2) }} €
-          <span v-if="spot.paid_by_user_id"> · bezahlt von {{ payerLabel }}</span>
+          <span v-if="hasMultipleMembers !== false && spot.paid_by_user_id"> · bezahlt von {{ payerLabel }}</span>
         </p>
       </template>
       <RichTextDisplay v-if="spot.note" class="note" :content="spot.note" :format="spot.note_format" />

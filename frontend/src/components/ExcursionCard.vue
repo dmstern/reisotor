@@ -2,7 +2,7 @@
 import { computed, ref, watch } from 'vue';
 import type { Excursion, Spot, TravelItem } from '../api/types';
 import { excursionStationKeys, resolveStations } from '../utils/excursionStations';
-import { fetchWeatherForecast, weatherCodeMeta, type DailyWeather } from '../utils/weather';
+import { fetchMergedWeather, summarizeWeatherRange, type DailyWeather, type WeatherRangeSummary } from '../utils/weather';
 import { usePointerDrag } from '../composables/usePointerDrag';
 import { useExcursionsStore } from '../stores/excursions';
 import { useDrawersStore } from '../stores/drawers';
@@ -32,18 +32,9 @@ const props = defineProps<{
   likeCount: number;
   liked: boolean;
   comments: CommentItem[];
-  // Roher Spot-Pool (nicht schon aufgelöst) – wird 1:1 an ExcursionDetailDialog.vue durchgereicht
-  // (siehe dort, braucht dieselben Listen für seinen eigenen Stations-Resolver-Aufruf), hier lokal
-  // per resolveStations() zu resolvedStations aufgelöst (Icon/Titel/Bild je nach Spot-Kategorie,
-  // siehe utils/excursionStations.ts).
   stations: Spot[];
   travelItems: TravelItem[];
   highlighted?: boolean;
-  // Analog zu SpotCard.vue's expanded-Prop (dort ausführlich begründet): lebt beim Elternteil
-  // (ExcursionsView.vue), damit ein künftiger Fokus-Sprung von außen (z. B. Karten-Klick auf die
-  // Tour-Route) dieselbe Karte aufklappen könnte, ohne dass diese Komponente von dort direkt
-  // ansprechbar sein müsste. Ersetzt den früheren ExcursionDetailDialog.vue-Modal-Dialog (#92) - an
-  // Ort und Stelle aufklappen statt Overlay, exakt wie bei SpotCard.
   expanded: boolean;
 }>();
 const emit = defineEmits<{
@@ -58,10 +49,6 @@ const emit = defineEmits<{
   (e: 'close'): void;
 }>();
 
-// Klick auf die Karte klappt sie auf-/zu, statt (wie zuvor) einen Modal-Dialog zu öffnen (#92) -
-// exakt dasselbe Muster wie SpotCard.vue's onCardClick, nur ohne dessen zusätzlichen
-// Karten-Fokus-Nebeneffekt (der ist dort seit #109 ebenfalls entfernt - "Auf Karte anzeigen"
-// bleibt bewusst eine eigene, explizite Aktion statt am Aufklappen dranzuhängen).
 function onCardClick() {
   if (props.expanded) emit('close');
   else emit('open', props.excursion);
@@ -73,12 +60,6 @@ const resolvedStations = computed(() =>
 
 const hasMappedStations = computed(() => resolvedStations.value.some((s) => s.lat != null && s.lng != null));
 
-// Fallback-Bilder, falls der Ausflug selbst kein Bild hat: Bilder der zugeordneten Spot-Stationen
-// in der definierten Reihenfolge (bereits die Reihenfolge von resolvedStations, siehe oben).
-// Unterkunft-/Reise-Stationen haben kein eigenes Bild (imageUrl null) und fallen dadurch
-// automatisch raus. Bei ≥2 Bildern eine kleine Collage (SpotImageCollage.vue) statt nur des ersten
-// Bilds – macht auf einen Blick erkennbar, dass hier mehrere Orte drinstecken, statt wie ein
-// einzelner Spot auszusehen.
 const fallbackImages = computed(() =>
   resolvedStations.value.map((s) => s.imageUrl).filter((url): url is string => !!url),
 );
@@ -94,22 +75,35 @@ function formatDate(d: string) {
   return formatDateShared(d, { includeYear: false });
 }
 
-// Wetter für den geplanten Tag am Ort der ersten kartierten Station, direkt am Status-Chip (siehe
-// Template) - gleiches Muster wie SpotCard.vue: eigener Fetch statt Prop von der Elternview, da
-// utils/weather.ts's fetchWeatherForecast() modulweit pro Koordinate+Modell cached.
+// Wetter für den geplanten Tag an allen Orten der kartierten Stationen der Tour (Issue #152)
+// mit Temperatur-Range und prägnantestem Weathercode.
 const weatherProvider = useWeatherProviderStore();
-const weatherStation = computed(() => resolvedStations.value.find((s) => s.lat != null && s.lng != null));
-const dayWeather = ref<DailyWeather | null>(null);
+const mappedStations = computed(() => resolvedStations.value.filter((s) => s.lat != null && s.lng != null));
+const weatherSummary = ref<WeatherRangeSummary | null>(null);
+
 watch(
-  () => [props.excursion.date, weatherStation.value?.lat, weatherStation.value?.lng, weatherProvider.model] as const,
-  async ([date, lat, lng, model]) => {
-    dayWeather.value = null;
-    if (!date || lat == null || lng == null) return;
+  () => [props.excursion.date, mappedStations.value, weatherProvider.model] as const,
+  async ([date, stations, model]) => {
+    weatherSummary.value = null;
+    if (!date || !stations.length) return;
     try {
-      const days = await fetchWeatherForecast(lat, lng, model);
-      dayWeather.value = days.find((d) => d.date === date) ?? null;
+      const stationWeathers: DailyWeather[] = [];
+      const fetchedKeys = new Set<string>();
+
+      for (const st of stations) {
+        if (st.lat == null || st.lng == null) continue;
+        const locKey = `${st.lat.toFixed(3)},${st.lng.toFixed(3)}`;
+        if (fetchedKeys.has(locKey)) continue;
+        fetchedKeys.add(locKey);
+
+        const days = await fetchMergedWeather(props.excursion.trip_id, st.lat, st.lng, model);
+        const match = days.find((d) => d.date === date);
+        if (match) stationWeathers.push(match);
+      }
+
+      weatherSummary.value = summarizeWeatherRange(stationWeathers);
     } catch {
-      // best effort, siehe Kommentar oben
+      // best effort
     }
   },
   { immediate: true },
@@ -233,15 +227,15 @@ function onSpotDrop(event: DragEvent) {
       <span class="status" :class="{ planned: excursion.date && !excursion.done, 'status-done': excursion.done }">
         <template v-if="excursion.done && excursion.date">
           <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" /> Gemacht am {{ statusDateLabel
-          }}<template v-if="dayWeather">
-            · <WeatherIcon :code="dayWeather.weatherCode" :size="14" /> {{ Math.round(dayWeather.tempMax) }}°</template
+          }}<template v-if="weatherSummary">
+            · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" /> {{ weatherSummary.tempLabel }}</template
           >
         </template>
         <template v-else-if="excursion.done"><AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" /> Gemacht</template>
         <template v-else-if="excursion.date">
           <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="actions" /> Geplant für {{ statusDateLabel
-          }}<template v-if="dayWeather">
-            · <WeatherIcon :code="dayWeather.weatherCode" :size="14" /> {{ Math.round(dayWeather.tempMax) }}°</template
+          }}<template v-if="weatherSummary">
+            · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" /> {{ weatherSummary.tempLabel }}</template
           >
         </template>
         <template v-else>In Planung</template>

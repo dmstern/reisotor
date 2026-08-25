@@ -1166,14 +1166,39 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS trip_weather_snapshots (
     id INTEGER PRIMARY KEY,
     trip_id INTEGER NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
+    lat REAL NOT NULL,
+    lng REAL NOT NULL,
     date TEXT NOT NULL,
     weathercode INTEGER NOT NULL,
     temp_max REAL NOT NULL,
     temp_min REAL NOT NULL,
     precipitation_probability REAL,
-    UNIQUE(trip_id, date)
+    UNIQUE(trip_id, lat, lng, date)
   );
 `);
+
+if (!hasColumn('trip_weather_snapshots', 'lat')) {
+  db.exec(`
+    CREATE TABLE trip_weather_snapshots_new (
+      id INTEGER PRIMARY KEY,
+      trip_id INTEGER NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
+      lat REAL NOT NULL,
+      lng REAL NOT NULL,
+      date TEXT NOT NULL,
+      weathercode INTEGER NOT NULL,
+      temp_max REAL NOT NULL,
+      temp_min REAL NOT NULL,
+      precipitation_probability REAL,
+      UNIQUE(trip_id, lat, lng, date)
+    );
+    INSERT INTO trip_weather_snapshots_new (id, trip_id, lat, lng, date, weathercode, temp_max, temp_min, precipitation_probability)
+    SELECT s.id, s.trip_id, COALESCE(t.lat, 0), COALESCE(t.lng, 0), s.date, s.weathercode, s.temp_max, s.temp_min, s.precipitation_probability
+    FROM trip_weather_snapshots s
+    LEFT JOIN trips t ON s.trip_id = t.id;
+    DROP TABLE trip_weather_snapshots;
+    ALTER TABLE trip_weather_snapshots_new RENAME TO trip_weather_snapshots;
+  `);
+}
 
 // Zwischenspeicher für noch nicht abgeschickte Create-/Edit-Formulare (Nutzer-Feedback: Eingaben
 // sollen bei einem App-Absturz nicht verloren gehen) - siehe routes/drafts.ts und

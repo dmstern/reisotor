@@ -365,7 +365,12 @@ function tourPayload(form: ReturnType<typeof emptyExcursionForm>) {
     arrival_time: form.transportEnabled ? form.arrival_time || null : null,
     checkin_info: form.transportEnabled ? form.checkin_info || null : null,
     amount: form.transportEnabled && form.amount ? Number(form.amount) : null,
-    paid_by_user_id: form.transportEnabled && form.paid_by_user_id ? Number(form.paid_by_user_id) : null,
+    paid_by_user_id:
+      form.transportEnabled && form.amount
+        ? form.paid_by_user_id
+          ? Number(form.paid_by_user_id)
+          : (users.value.length === 1 ? users.value[0].id : (auth.user?.id ?? null))
+        : null,
     luggage: form.transportEnabled ? form.luggage || null : null,
     seat: form.transportEnabled ? form.seat || null : null,
     ticket_link: form.transportEnabled ? form.ticket_link || null : null,
@@ -1640,7 +1645,11 @@ function spotToBody(f: ReturnType<typeof emptySpotForm>, manual?: { lat: number;
     checkout: f.checkout || undefined,
     contact: f.contact || undefined,
     amount: f.amount ? Number(f.amount) : undefined,
-    paid_by_user_id: f.paid_by_user_id ? Number(f.paid_by_user_id) : undefined,
+    paid_by_user_id: f.paid_by_user_id
+      ? Number(f.paid_by_user_id)
+      : f.amount
+        ? (users.value.length === 1 ? users.value[0].id : (auth.user?.id ?? undefined))
+        : undefined,
   };
 }
 
@@ -2011,7 +2020,7 @@ async function removeSpot(id: number) {
                   <FormField icon="amount" label="Kosten">
                     <input v-model="excursionForm.amount" type="number" step="0.01" placeholder="optional" />
                   </FormField>
-                  <FormField icon="shared" label="Bezahlt von">
+                  <FormField v-if="users.length > 1" icon="shared" label="Bezahlt von">
                     <select v-model="excursionForm.paid_by_user_id">
                       <option value="">–</option>
                       <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}
@@ -2019,7 +2028,7 @@ async function removeSpot(id: number) {
                     </select>
                   </FormField>
                 </div>
-                <p v-if="excursionForm.amount && !excursionForm.paid_by_user_id" class="hint">
+                <p v-if="users.length > 1 && excursionForm.amount && !excursionForm.paid_by_user_id" class="hint">
                   Ohne Zahler:in wird der Betrag nicht in der Budgetplanung berücksichtigt.
                 </p>
                 <div class="row">
@@ -2141,7 +2150,7 @@ async function removeSpot(id: number) {
                   <FormField icon="amount" label="Kosten">
                     <input v-model="editExcursionForm.amount" type="number" step="0.01" placeholder="optional" />
                   </FormField>
-                  <FormField icon="shared" label="Bezahlt von">
+                  <FormField v-if="users.length > 1" icon="shared" label="Bezahlt von">
                     <select v-model="editExcursionForm.paid_by_user_id">
                       <option value="">–</option>
                       <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}
@@ -2149,7 +2158,7 @@ async function removeSpot(id: number) {
                     </select>
                   </FormField>
                 </div>
-                <p v-if="editExcursionForm.amount && !editExcursionForm.paid_by_user_id" class="hint">
+                <p v-if="users.length > 1 && editExcursionForm.amount && !editExcursionForm.paid_by_user_id" class="hint">
                   Ohne Zahler:in wird der Betrag nicht in der Budgetplanung berücksichtigt.
                 </p>
                 <div class="row">
@@ -2342,7 +2351,7 @@ async function removeSpot(id: number) {
                   <FormField icon="amount" label="Kosten">
                     <input v-model="spotForm.amount" type="number" step="0.01" placeholder="Kosten (€, optional)" />
                   </FormField>
-                  <FormField icon="shared" label="Bezahlt von">
+                  <FormField v-if="users.length > 1" icon="shared" label="Bezahlt von">
                     <select v-model="spotForm.paid_by_user_id">
                       <option value="">Bezahlt von –</option>
                       <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}
@@ -2483,6 +2492,7 @@ async function removeSpot(id: number) {
                     :like-count="spotsStore.likeCountFor(item.spot.id)"
                     :liked="spotsStore.likedByMe(item.spot.id, auth.user?.id)"
                     :comments="spotCommentItemsFor(item.spot.id)" :group-mode="groupMode" :tour-options="allTourTitles"
+                    :has-multiple-members="users.length > 1"
                     @edit="startEditSpot" @remove="removeSpot" @toggle-like="toggleSpotLike(item.spot.id)"
                     @submit-comment="(content) => submitSpotComment(item.spot.id, content)"
                     @remove-comment="removeSpotComment" @open="onSpotCardOpen" @close="onSpotCardClose"
@@ -2568,7 +2578,7 @@ async function removeSpot(id: number) {
                   <FormField icon="amount" label="Kosten">
                     <input v-model="editSpotForm.amount" type="number" step="0.01" placeholder="Kosten (€, optional)" />
                   </FormField>
-                  <FormField icon="shared" label="Bezahlt von">
+                  <FormField v-if="users.length > 1" icon="shared" label="Bezahlt von">
                     <select v-model="editSpotForm.paid_by_user_id">
                       <option value="">Bezahlt von –</option>
                       <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}
