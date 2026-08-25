@@ -149,7 +149,7 @@ function handleCardClick(event: MouseEvent) {
 
 <style scoped>
 .card {
-  transition: padding 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: padding 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
 }
 
 /* Varianten-Styles von Card.vue */
@@ -196,6 +196,10 @@ function handleCardClick(event: MouseEvent) {
 .card--expandable {
   cursor: pointer;
   user-select: none;
+}
+
+.card--expandable:active {
+  transform: scale(0.98);
 }
 
 .card--expandable:hover {

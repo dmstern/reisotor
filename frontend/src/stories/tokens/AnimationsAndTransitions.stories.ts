@@ -69,30 +69,32 @@ export const TransitionsAndMotion: Story = {
         <!-- 2. Fade & Scale Transition (.fade-enter-active) -->
         <h3 style="margin-bottom: 12px; border-bottom: 1px solid var(--color-border); padding-bottom: 4px;">2. Modal & Card Einblenden (.fade)</h3>
         <p style="font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: 16px;">
-          Sanftes Ein- und Ausblenden (<code>opacity: 0</code> + <code>scale(0.98)</code>) für Dialoge, Overlays und Tooltips.
+          Sanftes Ein- und Ausblenden (<code>opacity: 0</code> + <code>scale(0.96)</code>) für Dialoge, Overlays und Tooltips.
         </p>
         <div style="margin-bottom: 36px; padding: 16px; border: 1px solid var(--color-border); border-radius: var(--radius-md-squircle); background: var(--color-surface);">
           <Button variant="secondary" size="sm" @click="showFade = !showFade" style="margin-bottom: 16px;">
             {{ showFade ? 'Card ausblenden' : 'Card einblenden' }}
           </Button>
 
-          <div style="min-height: 80px;">
+          <div style="min-height: 80px; position: relative;">
             <Transition name="fade">
-              <Card v-if="showFade" style="background: var(--color-primary-tint); border-color: var(--color-primary); color: var(--color-primary-dark);">
-                <strong>Sanft blendende Vorschau-Card:</strong> Verwendet die globale <code>.fade</code> Vue-Transition.
-              </Card>
+              <div v-if="showFade" class="fade-demo-wrapper" style="transition: all 0.25s ease;">
+                <Card style="background: var(--color-primary-tint); border-color: var(--color-primary); color: var(--color-primary-dark);">
+                  <strong>Sanft blendende Vorschau-Card:</strong> Klicke den Button oben, um die <code>.fade</code> Vue-Transition mit Opacity & Skalierung live zu testen.
+                </Card>
+              </div>
             </Transition>
           </div>
         </div>
 
         <!-- 3. Taktile Mikro-Interaktionen -->
-        <h3 style="margin-bottom: 12px; border-bottom: 1px solid var(--color-border); padding-bottom: 4px;">3. Taktiles Feedback (:active scale)</h3>
+        <h3 style="margin-bottom: 12px; border-bottom: 1px solid var(--color-border); padding-bottom: 4px;">3. Taktiles Feedback (:active press scale)</h3>
         <p style="font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: 16px;">
-          Buttons und klickbare Cards federn beim Klick/Touch spürbar ein (<code>:active { transform: scale(0.96); }</code>).
+          Buttons und klickbare Cards federn beim gedrückt Halten spürbar ein (<code>:active { transform: scale(0.96); }</code>). Halte die Maus/den Finger gedrückt, um das Einfedern zu sehen.
         </p>
-        <div style="display: flex; gap: 12px; align-items: center; padding: 16px; border: 1px solid var(--color-border); border-radius: var(--radius-md-squircle); background: var(--color-surface); margin-bottom: 36px;">
-          <Button variant="primary" style="transition: transform 0.1s ease;">Klicke mich (Button Federn)</Button>
-          <Card clickable style="padding: 10px 16px; margin: 0;">Klickbare Card (Press Scale)</Card>
+        <div style="display: flex; gap: 16px; align-items: center; padding: 20px; border: 1px solid var(--color-border); border-radius: var(--radius-md-squircle); background: var(--color-surface); margin-bottom: 36px; flex-wrap: wrap;">
+          <Button variant="primary">👉 Gedrückt halten (Button Press)</Button>
+          <Card expandable style="padding: 12px 20px; margin: 0;">👉 Gedrückt halten (Card Press)</Card>
         </div>
 
         <!-- 4. Barrierefreiheit -->
