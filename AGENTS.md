@@ -22,6 +22,7 @@ npm run dev             # Backend & Frontend parallel starten (concurrently)
 npm run dev:backend     # Nur Backend Dev-Server starten (http://localhost:3000)
 npm run dev:frontend    # Nur Frontend Dev-Server starten (http://localhost:5173)
 npm run dev:demo        # Frontend im backend-losen Demo-Modus starten
+npm run dev:landing     # Marketing-Landingpage im Dev-Modus starten
 npm run seed            # DB Seed (idempotent, 2 Nutzer + leere Trip-Zeile)
 npm run seed:demo       # DB Seed (kompletter Beispiel-Urlaub)
 npm run typecheck       # Frontend Typecheck (vue-tsc --noEmit)
@@ -51,6 +52,7 @@ cd frontend
 npm install
 npm run dev      # Vite auf http://localhost:5173, proxied /api ans Backend
 npm run dev:demo # Vite im backend-losen Demo-Modus (Hot-Reloading, kein Backend nötig)
+npm run dev:landing # Vite für die Marketing-Landingpage (landing.html) starten
 npm run build    # vue-tsc --noEmit + vite build -> frontend/dist
 npm test         # vitest run
 
