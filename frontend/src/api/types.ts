@@ -4,6 +4,11 @@ export interface User {
   id: number;
   username: string;
   avatar: string;
+  email?: string | null;
+  /** Admin-Rechte (Issue #224): Zugriff auf Nutzerverwaltung und Datensicherung. */
+  is_admin?: boolean;
+  /** Pflicht zur Passwortänderung (Issue #224): gesetzt bei Erst-Anlegung mit Standard-Passwort. */
+  must_change_password?: boolean;
   /** Eingeschränkter Modus (Issue #96, REGISTRATION_MODE=restricted): kein Datei-Upload, max. 1
    *  selbst angelegter Urlaub, max. 3 Mitglieder in einem selbst angelegten Urlaub. */
   restricted?: boolean;

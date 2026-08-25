@@ -15,6 +15,12 @@ const fixturesPath = path.join(__dirname, 'fixtures', 'seeded-data.json');
 // duplizieren (würde bei jedem Lauf drifted).
 export default async function globalSetup() {
   fs.mkdirSync(path.dirname(fixturesPath), { recursive: true });
+  fs.mkdirSync(path.dirname(dbPath), { recursive: true });
+
+  if (!fs.existsSync(dbPath)) {
+    process.env.DB_PATH = dbPath;
+    await import('../backend/src/db/seedDemo.js');
+  }
 
   const db = new Database(dbPath, { readonly: true });
   const trip = db.prepare('SELECT id, name, start_date, end_date FROM trips LIMIT 1').get() as {

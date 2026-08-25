@@ -29,10 +29,10 @@ function addDays(days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-export const DEMO_USER: User = { id: 1, username: 'Mika', avatar: '🧑‍🚀' };
-const DEMO_PARTNER: User = { id: 2, username: 'Jo', avatar: '🧑‍🎨' };
-export const DEMO_USER_3: User = { id: 3, username: 'Alex', avatar: '🐱' };
-export const DEMO_USER_4: User = { id: 4, username: 'Sam', avatar: '🐶' };
+export const DEMO_USER: User = { id: 1, username: 'Mika', avatar: '🧑‍🚀', email: 'mika@example.com', is_admin: true, must_change_password: false };
+const DEMO_PARTNER: User = { id: 2, username: 'Jo', avatar: '🧑‍🎨', email: 'jo@example.com', is_admin: false, must_change_password: false };
+export const DEMO_USER_3: User = { id: 3, username: 'Alex', avatar: '🐱', email: 'alex@example.com', is_admin: false, must_change_password: false };
+export const DEMO_USER_4: User = { id: 4, username: 'Sam', avatar: '🐶', email: 'sam@example.com', is_admin: false, must_change_password: false };
 export const DEMO_USERS: User[] = [DEMO_USER, DEMO_PARTNER, DEMO_USER_3, DEMO_USER_4];
 
 export const DEMO_TRIP = {
