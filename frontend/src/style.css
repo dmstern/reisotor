@@ -802,7 +802,6 @@ input[type='checkbox']:focus-visible,
 }
 
 input:not([type='checkbox']):not([type='file']),
-select,
 textarea {
   padding: 9px 12px;
   border: 1px solid var(--color-border-strong);
@@ -826,18 +825,44 @@ textarea {
   min-height: 44px;
 }
 
+/* ── Geteilter Dropdown-Stil ──────────────────────────────────────────────────────────────────
+   Einmal definiert, technisch von zwei Stellen genutzt:
+   1. Nativem <select> (via Komma-Selektor direkt hier)
+   2. <Button variant="dropdown"> (fügt .dropdown-field als globale Klasse hinzu, siehe Button.vue)
+
+   Kein Wert wird doppelt geschrieben — wer den Style eines Dropdowns ändern will, ändert ihn
+   nur hier. Nur <select>-spezifische Dinge (appearance, custom Chevron-SVG, padding-right) stehen
+   danach noch einmal im select {}-Block. */
+.dropdown-field,
+select {
+  padding: 9px 12px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-sm);
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 400;
+  height: 44px;
+  min-height: 44px;
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  cursor: pointer;
+}
+
+/* select-spezifisch: browser-eigenes Aussehen entfernen, eigenes Chevron-Icon einsetzen */
 select {
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
-  height: 44px;
-  box-sizing: border-box;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%232a7f74' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 12px center;
   background-size: 16px 16px;
   padding-right: 36px;
-  cursor: pointer;
 }
 
 [data-theme='dark'] select {
