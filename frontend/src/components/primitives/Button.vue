@@ -15,8 +15,9 @@ const props = withDefaults(
      * - 'danger': Gefahrenbutton (gefüllt mit --color-danger + Schatten)
      * - 'card-action': Kompakter Karten-Aktionsbutton (Hintergrund --color-primary-tint)
      * - 'ghost': Dezent ohne Rahmen/Schatten für Toolbars/Untermenüs
+     * - 'dropdown': Optisch identisch mit nativem <select> — gleiche Höhe, Schriftfarbe, Border, Padding
      */
-    variant?: 'primary' | 'secondary' | 'danger' | 'card-action' | 'ghost';
+    variant?: 'primary' | 'secondary' | 'danger' | 'card-action' | 'ghost' | 'dropdown';
     /** Button-Größe: 'sm' (klein), 'md' (Standard), 'lg' (groß). */
     size?: 'sm' | 'md' | 'lg';
     /** Optionale IconDef-Definition für Tabler-Icon Rendering via AppIcon.vue */
@@ -203,6 +204,28 @@ const hasDefaultSlot = () =>
 
 .btn--ghost:hover:not(:disabled) {
   background: var(--color-hover);
+}
+
+/* Dropdown-Trigger-Variante: sieht optisch identisch aus wie das native <select>:
+   neutrale Schriftfarbe, gleicher Rahmen, gleiche Mindesthöhe (44px), gleiches Padding,
+   gleiche Schriftgröße (0.95rem) — damit <Button variant="dropdown"> und <select> in
+   derselben Filter-/Sortier-Zeile nicht mehr auseinanderbrechen. */
+.btn--dropdown {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border-strong);
+  box-shadow: var(--shadow-sm);
+  font-size: 0.95rem;
+  font-weight: 400;
+  padding: 9px 12px;
+  min-height: 44px;
+  height: 44px;
+  box-sizing: border-box;
+}
+
+.btn--dropdown:hover:not(:disabled) {
+  background: var(--color-hover);
+  box-shadow: var(--shadow-sm);
 }
 
 .btn--sm {

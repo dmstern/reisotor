@@ -2594,7 +2594,7 @@ async function removeSpot(id: number) {
                 <div class="dropdown">
                   <Button
                     ref="categoryBtnRef"
-                    variant="secondary"
+                    variant="dropdown"
                     class="category-btn"
                     title="Nach Kategorie filtern"
                     aria-label="Nach Kategorie filtern"
@@ -2630,7 +2630,7 @@ async function removeSpot(id: number) {
                 <div class="dropdown">
                   <Button
                     ref="statusBtnRef"
-                    variant="secondary"
+                    variant="dropdown"
                     class="category-btn"
                     title="Nach Status (geplant/ungeplant/gemacht) filtern"
                     aria-label="Nach Status filtern"
