@@ -5,7 +5,7 @@ withDefaults(
   }>(),
   {
     message: 'Lädt…',
-  },
+  }
 );
 </script>
 

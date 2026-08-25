@@ -312,7 +312,12 @@ const categoryColors = computed(() => {
       >
         <form class="new-budget-form" @submit.prevent="addBudget">
           <FormField icon="title" label="Name">
-            <Input v-model="newBudgetForm.name" type="text" placeholder="Name (z. B. Souvenirs)" required />
+            <Input
+              v-model="newBudgetForm.name"
+              type="text"
+              placeholder="Name (z. B. Souvenirs)"
+              required
+            />
           </FormField>
           <FormField v-if="budgetStore.users.length > 1" icon="visibility" label="Sichtbarkeit">
             <select v-model="newBudgetForm.kind">
@@ -333,7 +338,12 @@ const categoryColors = computed(() => {
             </select>
           </FormField>
           <FormField icon="amount" label="Gesamtziel (optional)">
-            <Input v-model="newBudgetForm.target_amount" type="number" step="0.01" placeholder="Gesamtziel € (optional)" />
+            <Input
+              v-model="newBudgetForm.target_amount"
+              type="number"
+              step="0.01"
+              placeholder="Gesamtziel € (optional)"
+            />
           </FormField>
           <p v-if="showsPrivacyHint" class="privacy-hint">
             <AppIcon :icon="ACTION_ICONS.private" :size="14" group="actions" /> Nur
@@ -383,7 +393,13 @@ const categoryColors = computed(() => {
             />
           </FormField>
           <FormField icon="amount" label="Betrag">
-            <Input v-model="expenseForm.amount" type="number" step="0.01" placeholder="Betrag" required />
+            <Input
+              v-model="expenseForm.amount"
+              type="number"
+              step="0.01"
+              placeholder="Betrag"
+              required
+            />
           </FormField>
           <FormField v-if="budgetStore.users.length > 1" icon="shared" label="Bezahlt von">
             <select v-model="expenseForm.paid_by_user_id" required>
@@ -455,7 +471,13 @@ const categoryColors = computed(() => {
             </select>
           </FormField>
           <FormField icon="amount" label="Betrag">
-            <Input v-model="transferForm.amount" type="number" step="0.01" placeholder="Betrag" required />
+            <Input
+              v-model="transferForm.amount"
+              type="number"
+              step="0.01"
+              placeholder="Betrag"
+              required
+            />
           </FormField>
           <FormField icon="date" label="Datum">
             <Input v-model="transferForm.date" type="date" />
@@ -487,7 +509,13 @@ const categoryColors = computed(() => {
           />
         </FormField>
         <FormField icon="amount" label="Betrag">
-          <Input v-model="editExpenseForm.amount" type="number" step="0.01" placeholder="Betrag" required />
+          <Input
+            v-model="editExpenseForm.amount"
+            type="number"
+            step="0.01"
+            placeholder="Betrag"
+            required
+          />
         </FormField>
         <FormField v-if="budgetStore.users.length > 1" icon="shared" label="Bezahlt von">
           <select v-model="editExpenseForm.paid_by_user_id" required>

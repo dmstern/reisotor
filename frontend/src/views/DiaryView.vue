@@ -521,34 +521,47 @@ function showEntryDayOnMap(entry: DiaryEntry) {
       >
     </div>
 
-    <Modal :model-value="showForm" title="Neuer Tagebucheintrag" full-height @update:model-value="(v) => !v && closeForm()">
-    <form class="add-form" @submit.prevent="submitEntry">
-      <FormField icon="date" label="Datum">
-        <input v-model="form.date" type="date" required />
-      </FormField>
-      <FormField icon="title" label="Titel">
-        <input v-model="form.title" type="text" placeholder="Titel (optional)" />
-      </FormField>
-      <RichTextEditor v-model="form.content" placeholder="Was ist heute passiert?" />
-      <p v-if="auth.user?.restricted" class="hint">Eingeschränkter Modus - Kein Datei-Upload möglich</p>
-      <label v-else class="upload-label">
-        <AppIcon :icon="FORM_FIELD_ICONS.image" :size="14" group="formFields" /> Bilder hinzufügen
-        <input type="file" accept="image/*" multiple :disabled="uploading" @change="onNewFilesSelected" />
-      </label>
-      <p v-if="uploading" class="hint">Bilder werden komprimiert & hochgeladen…</p>
-      <p v-if="uploadError" class="hint error">{{ uploadError }}</p>
-      <div class="image-preview" v-if="form.images.length">
-        <div class="preview-thumb" v-for="(img, i) in form.images" :key="img">
-          <img :src="img" :alt="`Bild ${i + 1}`" />
-          <IconButton
-            size="sm"
-            :icon="ACTION_ICONS.close"
-            class="remove-thumb"
-            title="Bild entfernen"
-            aria-label="Bild entfernen"
-            @click="removeImage(form, i)"
+    <Modal
+      :model-value="showForm"
+      title="Neuer Tagebucheintrag"
+      full-height
+      @update:model-value="(v) => !v && closeForm()"
+    >
+      <form class="add-form" @submit.prevent="submitEntry">
+        <FormField icon="date" label="Datum">
+          <input v-model="form.date" type="date" required />
+        </FormField>
+        <FormField icon="title" label="Titel">
+          <input v-model="form.title" type="text" placeholder="Titel (optional)" />
+        </FormField>
+        <RichTextEditor v-model="form.content" placeholder="Was ist heute passiert?" />
+        <p v-if="auth.user?.restricted" class="hint">
+          Eingeschränkter Modus - Kein Datei-Upload möglich
+        </p>
+        <label v-else class="upload-label">
+          <AppIcon :icon="FORM_FIELD_ICONS.image" :size="14" group="formFields" /> Bilder hinzufügen
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            :disabled="uploading"
+            @change="onNewFilesSelected"
           />
-        </div>
+        </label>
+        <p v-if="uploading" class="hint">Bilder werden komprimiert & hochgeladen…</p>
+        <p v-if="uploadError" class="hint error">{{ uploadError }}</p>
+        <div class="image-preview" v-if="form.images.length">
+          <div class="preview-thumb" v-for="(img, i) in form.images" :key="img">
+            <img :src="img" :alt="`Bild ${i + 1}`" />
+            <IconButton
+              size="sm"
+              :icon="ACTION_ICONS.close"
+              class="remove-thumb"
+              title="Bild entfernen"
+              aria-label="Bild entfernen"
+              @click="removeImage(form, i)"
+            />
+          </div>
         </div>
         <fieldset v-if="excursionsStore.excursions.length" class="excursion-picker">
           <legend>

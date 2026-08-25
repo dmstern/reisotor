@@ -221,7 +221,6 @@ async function submit() {
   gap: var(--space-1);
 }
 
-
 .checkbox-field {
   margin-top: var(--space-1);
 }

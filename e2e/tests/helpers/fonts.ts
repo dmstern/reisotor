@@ -28,9 +28,21 @@ export async function forceFontDisplayBlock(page: Page): Promise<void> {
  *  ausgeblendet/entfernt ist und die eigentliche Benutzeroberfläche (.page / .app-shell) sichtbar ist,
  *  bevor Screenshots aufgenommen werden. */
 export async function waitForAppReady(page: Page): Promise<void> {
-  await page.locator('#splash').waitFor({ state: 'detached', timeout: 10_000 }).catch(() => {});
-  await page.locator('.splash').waitFor({ state: 'detached', timeout: 10_000 }).catch(() => {});
-  await page.locator('.loading-state').waitFor({ state: 'detached', timeout: 10_000 }).catch(() => {});
-  await page.locator('.app-main, .budget-page, .dashboard').first().waitFor({ state: 'attached', timeout: 10_000 });
+  await page
+    .locator('#splash')
+    .waitFor({ state: 'detached', timeout: 10_000 })
+    .catch(() => {});
+  await page
+    .locator('.splash')
+    .waitFor({ state: 'detached', timeout: 10_000 })
+    .catch(() => {});
+  await page
+    .locator('.loading-state')
+    .waitFor({ state: 'detached', timeout: 10_000 })
+    .catch(() => {});
+  await page
+    .locator('.app-main, .budget-page, .dashboard')
+    .first()
+    .waitFor({ state: 'attached', timeout: 10_000 });
   await page.waitForTimeout(500);
 }

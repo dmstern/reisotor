@@ -42,7 +42,11 @@ const preview: Preview = {
     (story, context) => {
       const bgValue = context.globals.backgrounds?.value;
       const bgName = context.globals.backgrounds?.name;
-      const isDark = bgName === 'dark' || bgValue === '#181d20' || bgValue === '#181715' || bgValue === '#121619';
+      const isDark =
+        bgName === 'dark' ||
+        bgValue === '#181d20' ||
+        bgValue === '#181715' ||
+        bgValue === '#121619';
       const theme = isDark ? 'dark' : 'light';
       document.documentElement.setAttribute('data-theme', theme);
       document.body.style.backgroundColor = isDark ? 'var(--color-bg)' : 'var(--color-bg)';
