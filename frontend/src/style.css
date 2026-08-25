@@ -130,6 +130,10 @@
   --radius-lg: 26px;
   --radius-xl: 32px;
 
+  /* Spezielle Radien-Tokens für Pillen (Chips/Badges/Toggles) und exakte Kreise (Dashboard-Icon-Badges/runde FABs) */
+  --radius-pill: 9999px;
+  --radius-full: 50%;
+
   /* Eigene "squircle"-Variante je Radius-Stufe: Default = identisch zum normalen Radius (Fallback
      für Browser ohne corner-shape-Unterstützung, sieht dort wie ein gewöhnlicher Kreisbogen aus).
      Nur Cards/Buttons/Inputs/Modal/Schubladen setzen zusätzlich corner-shape:squircle UND binden
@@ -169,6 +173,12 @@
   --texture-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.35'/%3E%3C/svg%3E");
 
   --font-sans: 'Fira Sans', 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.85rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.15rem;
+  --font-size-xl: 1.3rem;
+  --font-size-2xl: 1.6rem;
 }
 
 /* corner-shape:squircle rendert bei GLEICHEM border-radius-Wert sichtbar WENIGER rund als ein
@@ -248,6 +258,33 @@
   --shadow-inset: inset 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-pill-raised: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 6px rgba(0, 0, 0, 0.25);
   color-scheme: dark;
+}
+
+:root[data-theme='light'] {
+  --color-bg: #faf8f5;
+  --color-surface: #ffffff;
+  --color-border: #e8e2d9;
+  --color-text: #2b2a28;
+  --color-text-muted: #726e66;
+  --color-primary: #2a7f74;
+  --color-primary-dark: #1f6059;
+  --color-accent: #e08e45;
+  --color-danger: #c1503f;
+  --color-success: #3f8f5c;
+  --color-primary-tint: #eaf3f1;
+  --color-hover: #f4f1ec;
+  --color-highlight: #fff4e8;
+  --color-highlight-border: #f0d3ac;
+  --color-accent-secondary: #5b6ee1;
+  --color-accent-secondary-bg: #eef0fd;
+  --color-border-strong: #d5cabc;
+  --color-button-edge: rgba(0, 0, 0, 0.16);
+  --color-scheduled: #1e96d1;
+  --shadow-sm: 0 2px 6px rgba(43, 42, 40, 0.12);
+  --shadow-md: 0 8px 24px rgba(43, 42, 40, 0.16);
+  --shadow-inset: inset 0 1px 2px rgba(43, 42, 40, 0.1);
+  --shadow-pill-raised: 0 1px 2px rgba(43, 42, 40, 0.08), 0 2px 6px rgba(43, 42, 40, 0.08);
+  color-scheme: light;
 }
 
 * {
@@ -390,6 +427,70 @@ button.danger {
   background: var(--color-primary);
   color: white;
   border-color: var(--color-primary);
+}
+
+/* Deaktivierter Button-Zustand: ausgegraut, kein Zeiger, kein Schatten, keine Skalierung */
+button:disabled,
+button[disabled],
+button.is-disabled,
+.card-action-btn:disabled,
+.card-action-btn.is-disabled {
+  opacity: 0.5;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+/* Badges & Status-Chips (Design-System-Utility) */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  line-height: 1.2;
+  white-space: nowrap;
+  background: var(--color-hover);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+}
+
+.badge--primary {
+  background: var(--color-primary-tint);
+  color: var(--color-primary-dark);
+  border-color: transparent;
+}
+
+.badge--success {
+  background: rgba(63, 143, 92, 0.15);
+  color: var(--color-success);
+  border-color: transparent;
+}
+
+.badge--danger {
+  background: rgba(193, 80, 63, 0.15);
+  color: var(--color-danger);
+  border-color: transparent;
+}
+
+.badge--accent {
+  background: var(--color-highlight);
+  color: var(--color-accent);
+  border-color: var(--color-highlight-border);
+}
+
+/* Pre-Heading / Kicker (Design-System-Utility) */
+.kicker {
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-1);
+  display: block;
 }
 
 /* Einheitliche Optik für alle fensterartigen Größen-Anfasser (Drawer.vue's Schubladen-Anfasser,
@@ -804,12 +905,13 @@ textarea:focus {
 
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.2s ease-in-out;
+  transition: opacity 0.25s ease-in-out, transform 0.25s ease-in-out;
 }
 
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+  transform: scale(0.98);
 }
 
 /* Mobile Spot-Karten-Aufklapp-Animation (#90, siehe ExcursionsView.vue's animateSpotExpand()) - ein
