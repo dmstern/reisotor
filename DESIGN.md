@@ -232,10 +232,11 @@ Seitenhintergrund wie ein Rendering-Fehler). Bei jedem neuen sticky/schwebenden 
 Rundung UND Hintergrundfarbe (siehe "Farben" oben) gegen den dahinterliegenden Hintergrund prüfen,
 nicht nur im eingebetteten Grundzustand.
 
-Basiswerte `--radius-sm` (10px) bis `--radius-xl` (32px) gelten für alles, was ein **normaler
-Kreisbogen** bleiben soll: komplett runde Elemente (`border-radius: 50%`, z. B. `EditButton.vue`/
-`DeleteButton.vue`, meist zusätzlich mit `corner-shape: round;` explizit gemacht), Pillen sowie
-kleine Chips/Badges.
+### Drei Form-Kategorien in Reisotor
+
+1. **Squircle-Superellipsen (`corner-shape: squircle`)**: Cards, (nicht-runde) Buttons, Inputs, Modals und Drawer/Schubladen nutzen `--radius-*-squircle` kombiniert mit `corner-shape: squircle;`.
+2. **Pillen (`--radius-pill: 9999px`)**: Ovale / langgestreckte Pillen für CategoryChips, Badges, TabBar-Indikatoren & SegmentedToggles.
+3. **Kreisrund (`--radius-full: 50%`)**: Exakte Kreise (`aspect-ratio: 1/1` / `width = height`) für Dashboard Tile Card Circle Icons (`44px × 44px`) und runde FAB-Buttons (z. B. in der mobilen Karten-Schublade).
 
 **Cards, (nicht-runde) Buttons, Inputs, Modals und Drawer/Schubladen** bekommen stattdessen die
 "squircle"-Variante (iOS-artige Superellipsen-Rundung statt Kreisbogen) – dafür IMMER beide Teile

@@ -209,19 +209,19 @@ const fontSizeTokens = [
 ];
 
 const radiusTokens = [
-  { var: '--radius-sm', px: '10px', usage: 'Kleine Chips, Badges, innere Anordnung' },
-  { var: '--radius-md', px: '16px', usage: 'Standard-Radius (Circle-Fallbacks)' },
-  { var: '--radius-lg', px: '26px', usage: 'Große Modals & Schubladen' },
-  { var: '--radius-xl', px: '32px', usage: 'Maximale Rundung / Bottom-Sheets' },
-  { var: '--radius-sm-squircle', px: '17.5px (Squircle)', usage: 'Card-Action Buttons & kleine Tags' },
-  { var: '--radius-md-squircle', px: '28px (Squircle)', usage: 'Standard Cards, Buttons, Inputs & Modals' },
+  { var: '--radius-sm-squircle', px: '10px / 17.5px (Squircle)', shape: 'squircle', usage: 'Kompakte Buttons, Chips, Badges & Inputs' },
+  { var: '--radius-md-squircle', px: '16px / 28px (Squircle)', shape: 'squircle', usage: 'Standard Cards, Buttons, Inputs & Modals' },
+  { var: '--radius-lg-squircle', px: '26px / 45.5px (Squircle)', shape: 'squircle', usage: 'Große Hero-Container & Fokus-Kacheln' },
+  { var: '--radius-xl-squircle', px: '32px / 56px (Squircle)', shape: 'squircle', usage: 'Modal-Dialoge, Bottom-Sheets & Schubladen' },
+  { var: '--radius-pill', px: '9999px (Pille)', shape: 'pill', usage: 'CategoryChips, Badges, TabBar-Indikatoren & SegmentedToggles' },
+  { var: '--radius-full', px: '50% (Kreisrund)', shape: 'circle', usage: 'Kreisrunde Elemente (Dashboard Tile Card Circle Icons, runde FAB Buttons)' },
 ];
 
 const shadowTokens = [
-  { var: '--shadow-sm', spec: '0 2px 6px rgba(...)', usage: 'Standard Cards, Buttons, Dropdowns' },
-  { var: '--shadow-md', spec: '0 8px 24px rgba(...)', usage: 'Erhöhte Overlays, Modals, Popovers' },
-  { var: '--shadow-inset', spec: 'inset 0 1px 2px rgba(...)', usage: 'Track-Rinne für taktile SegmentedToggles' },
-  { var: '--shadow-pill-raised', spec: '0 1px 2px..., 0 2px 6px...', usage: 'Schwebender Thumb auf SegmentedToggle' },
+  { var: '--shadow-sm', spec: '0 2px 6px rgba(...)', radius: 'var(--radius-md-squircle)', shape: 'squircle', usage: 'Standard Kartenschatten (weich, dezent)' },
+  { var: '--shadow-md', spec: '0 8px 24px rgba(...)', radius: 'var(--radius-md-squircle)', shape: 'squircle', usage: 'Erhöhter Schatten für schwebende Panels, Modals & Hover' },
+  { var: '--shadow-inset', spec: 'inset 0 1px 2px rgba(...)', radius: 'var(--radius-pill)', shape: 'pill', usage: 'Eingesenkter Rinnen-Schatten für taktile SegmentedToggle Tracks' },
+  { var: '--shadow-pill-raised', spec: '0 1px 2px..., 0 2px 6px...', radius: 'var(--radius-pill)', shape: 'pill', usage: 'Erhöhter Schatten für schwebenden SegmentedToggle Thumb & Pillen' },
 ];
 
 // Interactive Controls for Playground
@@ -373,15 +373,15 @@ const avatarCategories = [
           </div>
         </Card>
 
-        <!-- Eckenrundung: Squircle-Prinzip -->
-        <h3 style="margin-top: 32px;">Eckenrundung & Squircle-Prinzip</h3>
+        <!-- Eckenrundung & Form-Prinzipien -->
+        <h3 style="margin-top: 32px;">Eckenrundung & Form-Prinzipien</h3>
         <Card class="ds-card">
-          <p>Nirgends ganz eckige 90°-Ecken. Buttons, Cards, Inputs & Modals binden <code>corner-shape: squircle</code> mit den `-squircle`-Kompensationsvariablen.</p>
+          <p>Drei Form-Kategorien: <strong>Squircle-Superellipsen</strong> (<code>corner-shape: squircle</code> für Cards/Buttons/Modals), <strong>Pillen</strong> (<code>--radius-pill: 9999px</code> für Chips/Badges/TabBar) und <strong>Kreisrund</strong> (<code>--radius-full: 50%</code> für Icon-Badges & runde FABs).</p>
           <div class="radius-grid">
             <div v-for="r in radiusTokens" :key="r.var" class="radius-card" @click="copyToken(`var(${r.var})`)">
               <div
                 class="radius-box"
-                :style="`border-radius: var(${r.var}); ${r.var.includes('squircle') ? 'corner-shape: squircle;' : ''}`"
+                :style="`border-radius: var(${r.var}); ${r.shape === 'squircle' ? 'corner-shape: squircle;' : ''} width: ${r.shape === 'circle' ? '48px' : (r.shape === 'pill' ? '80px' : '56px')}; height: ${r.shape === 'circle' ? '48px' : (r.shape === 'pill' ? '36px' : '56px')};`"
               ></div>
               <code>{{ r.var }}</code>
               <span class="radius-px">{{ r.px }}</span>
@@ -390,12 +390,16 @@ const avatarCategories = [
           </div>
         </Card>
 
-        <!-- Schatten & Material -->
+        <!-- Schatten & Weiches Material -->
         <h3 style="margin-top: 32px;">Schatten & Weiches Material</h3>
         <Card class="ds-card">
+          <p class="hint" style="margin-bottom: 16px;">Vorschau-Kacheln mit weicher Material-Eckenrundung (Squircle oder Pillen-Radius) und taktiler Schattierung.</p>
           <div class="shadow-grid">
             <div v-for="s in shadowTokens" :key="s.var" class="shadow-card" @click="copyToken(`var(${s.var})`)">
-              <div class="shadow-box" :style="{ boxShadow: `var(${s.var})` }"></div>
+              <div
+                class="shadow-box"
+                :style="`box-shadow: var(${s.var}); border-radius: ${s.radius}; ${s.shape === 'squircle' ? 'corner-shape: squircle;' : ''} width: ${s.shape === 'pill' ? '90px' : '64px'}; height: ${s.shape === 'pill' ? '36px' : '64px'};`"
+              ></div>
               <code>{{ s.var }}</code>
               <span class="shadow-usage">{{ s.usage }}</span>
             </div>

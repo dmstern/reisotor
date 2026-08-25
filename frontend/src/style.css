@@ -130,6 +130,10 @@
   --radius-lg: 26px;
   --radius-xl: 32px;
 
+  /* Spezielle Radien-Tokens für Pillen (Chips/Badges/Toggles) und exakte Kreise (Dashboard-Icon-Badges/runde FABs) */
+  --radius-pill: 9999px;
+  --radius-full: 50%;
+
   /* Eigene "squircle"-Variante je Radius-Stufe: Default = identisch zum normalen Radius (Fallback
      für Browser ohne corner-shape-Unterstützung, sieht dort wie ein gewöhnlicher Kreisbogen aus).
      Nur Cards/Buttons/Inputs/Modal/Schubladen setzen zusätzlich corner-shape:squircle UND binden
