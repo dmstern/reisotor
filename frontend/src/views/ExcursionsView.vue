@@ -641,7 +641,7 @@ function groupIconColor(grp: { category: string; excursion: Excursion | null }):
   return iconStyle.colorizeCategories ? spotCategoryMeta(grp.category).color : undefined;
 }
 
-// Sortierung/Gruppierung/Filter bleiben über localStorage auch nach einem Reload/erneuten Besuch
+// Sortierung und Filter bleiben über localStorage auch nach einem Reload/erneuten Besuch
 // erhalten (siehe usePersistedRef.ts) - dieselbe "Orte"-Liste, die CLAUDE.md's Backlog meint (es
 // gibt keine eigene SpotsView, diese gruppierte/filterbare Liste hier ist die gemeinte Stelle).
 const sortMode = usePersistedRef<'alpha' | 'likes'>('reisotor-excursions-sort-mode', 'alpha');
@@ -652,7 +652,9 @@ const sortMode = usePersistedRef<'alpha' | 'likes'>('reisotor-excursions-sort-mo
 // in "Ohne Tour". Reise-Etappen (Touren mit gesetzter role) sind seit #176 ganz normale Einträge
 // dieser "Touren"-Gruppierung - die früher dritte Toggle-Option "Reise" (#175, TravelSection.vue)
 // wurde dadurch redundant und ist seit #196 wieder entfernt.
-const groupMode = usePersistedRef<'category' | 'tours'>('reisotor-excursions-group-mode', 'category');
+// #290: Gruppierung bewusst NICHT persistiert – beim Öffnen der Sicht sollen immer Spots angezeigt
+// werden (= 'category'), unabhängig davon, was zuvor ausgewählt war.
+const groupMode = ref<'category' | 'tours'>('category');
 const UNASSIGNED_TOUR_GROUP = 'Ohne Tour';
 
 // Spots UND Touren (beide "ideas", #176: role-getaggte Touren sind keine eigene Domäne mehr) teilen
