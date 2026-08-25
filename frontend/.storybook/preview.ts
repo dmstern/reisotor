@@ -8,6 +8,35 @@ setup((app) => {
   app.use(pinia);
 });
 
+// Grid-Overlay Fix: Sorgt dafür, dass das Storybook-Raster-Overlay sich per pseudo-element (z-index: 999999)
+// über ALLE Komponenten (auch mit deckendem Karten-Hintergrund wie Card.vue, Button.vue) legt, statt darunter zu verschwinden.
+if (typeof document !== 'undefined') {
+  const styleTag = document.createElement('style');
+  styleTag.id = 'storybook-grid-overlay-fix';
+  styleTag.innerHTML = `
+    body::after,
+    #storybook-root::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 999999;
+      background-image: inherit;
+      background-size: inherit;
+      background-position: inherit;
+      background-repeat: inherit;
+      mix-blend-mode: multiply;
+      opacity: 0.85;
+    }
+    :root[data-theme='dark'] body::after,
+    :root[data-theme='dark'] #storybook-root::after {
+      mix-blend-mode: screen;
+      opacity: 0.65;
+    }
+  `;
+  document.head.appendChild(styleTag);
+}
+
 const preview: Preview = {
   decorators: [
     (story, context) => {
