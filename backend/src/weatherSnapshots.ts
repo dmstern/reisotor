@@ -51,60 +51,122 @@ function dateRange(startStr: string, endStr: string): string[] {
 }
 
 const upsertSnapshot = db.prepare(`
-  INSERT INTO trip_weather_snapshots (trip_id, date, weathercode, temp_max, temp_min, precipitation_probability)
-  VALUES (?, ?, ?, ?, ?, ?)
-  ON CONFLICT(trip_id, date) DO UPDATE SET
+  INSERT INTO trip_weather_snapshots (trip_id, lat, lng, date, weathercode, temp_max, temp_min, precipitation_probability)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  ON CONFLICT(trip_id, lat, lng, date) DO UPDATE SET
     weathercode = excluded.weathercode,
     temp_max = excluded.temp_max,
     temp_min = excluded.temp_min,
     precipitation_probability = excluded.precipitation_probability
 `);
 
-/** Ermittelt für einen einzelnen Urlaub, welche strikt vergangenen (abgeschlossenen) Urlaubstage
- *  noch keinen Wetter-Snapshot haben, holt sie bei Bedarf per einem einzigen Open-Meteo-Aufruf und
- *  speichert sie dauerhaft in trip_weather_snapshots. Der heutige Tag wird bewusst NIE gespeichert -
- *  Open-Meteo liefert dafür noch keinen finalen Ist-Wert (Tag ist noch nicht vorbei), das Dashboard
- *  zeigt "heute" stattdessen weiterhin live an (siehe utils/weather.ts/DashboardView.vue). */
+/** Ermittelt für einen einzelnen Urlaub und dessen zugehörige Orte (Reiseziel, Spots, Touren-Stationen),
+ *  welche strikt vergangenen (abgeschlossenen) Tage noch keinen Wetter-Snapshot haben, holt sie bei Bedarf
+ *  per Open-Meteo und speichert sie dauerhaft in trip_weather_snapshots. Der heutige Tag wird bewusst NIE
+ *  gespeichert - Open-Meteo liefert dafür noch keinen finalen Ist-Wert. */
 async function snapshotTripWeather(trip: TripRow, today: string) {
   const yesterday = addDays(today, -1);
-  if (trip.start_date > yesterday) return; // noch kein abgeschlossener Urlaubstag
+  if (trip.start_date > yesterday) return;
 
   const rangeEnd = trip.end_date < yesterday ? trip.end_date : yesterday;
-  const wantedDates = dateRange(trip.start_date, rangeEnd);
-  if (!wantedDates.length) return;
+  const tripDates = dateRange(trip.start_date, rangeEnd);
 
-  const existing = db
-    .prepare('SELECT date FROM trip_weather_snapshots WHERE trip_id = ? AND date >= ? AND date <= ?')
-    .all(trip.id, trip.start_date, rangeEnd) as { date: string }[];
-  const existingDates = new Set(existing.map((r) => r.date));
-  const missingDates = wantedDates.filter((d) => !existingDates.has(d));
-  if (!missingDates.length) return; // kein Fetch, wenn ohnehin schon alles gespeichert ist
+  // Map von "lat,lng"-Key -> { lat, lng, dates: Set<string> }
+  const locationTargets = new Map<string, { lat: number; lng: number; dates: Set<string> }>();
 
-  const pastDays = Math.min(MAX_PAST_DAYS, daysBetween(missingDates[0], today));
-  const params = new URLSearchParams({
-    latitude: String(trip.lat),
-    longitude: String(trip.lng),
-    daily: 'weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max',
-    timezone: 'auto',
-    past_days: String(pastDays),
-    forecast_days: '1',
-  });
-  const res = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`);
-  if (!res.ok) throw new Error(`Open-Meteo request failed (${res.status})`);
-  const data = (await res.json()) as OpenMeteoResponse;
+  function addTarget(lat: number, lng: number, dates: string[]) {
+    if (lat == null || lng == null || !dates.length) return;
+    const key = `${lat.toFixed(3)},${lng.toFixed(3)}`;
+    let target = locationTargets.get(key);
+    if (!target) {
+      target = { lat, lng, dates: new Set() };
+      locationTargets.set(key, target);
+    }
+    for (const d of dates) {
+      if (d <= yesterday) target.dates.add(d);
+    }
+  }
 
-  const missingSet = new Set(missingDates);
-  data.daily.time.forEach((date, i) => {
-    if (!missingSet.has(date)) return;
-    upsertSnapshot.run(
-      trip.id,
-      date,
-      data.daily.weathercode[i],
-      data.daily.temperature_2m_max[i],
-      data.daily.temperature_2m_min[i],
-      data.daily.precipitation_probability_max?.[i] ?? null,
-    );
-  });
+  // 1. Reiseziel des Trips
+  if (trip.lat != null && trip.lng != null && tripDates.length) {
+    addTarget(trip.lat, trip.lng, tripDates);
+  }
+
+  // 2. Spots mit eignen Koordinaten und verknüpftem Datum
+  const spots = db
+    .prepare(
+      `SELECT lat, lng, start_date, end_date FROM spots
+       WHERE trip_id = ? AND lat IS NOT NULL AND lng IS NOT NULL AND start_date IS NOT NULL AND deleted_at IS NULL`,
+    )
+    .all(trip.id) as { lat: number; lng: number; start_date: string; end_date: string | null }[];
+
+  for (const s of spots) {
+    const sEnd = s.end_date || s.start_date;
+    const sDates = dateRange(s.start_date, sEnd < yesterday ? sEnd : yesterday);
+    addTarget(s.lat, s.lng, sDates);
+  }
+
+  // 3. Touren-Stationen mit eigenen Koordinaten
+  const excursions = db
+    .prepare(
+      `SELECT DISTINCT s.date, sp.lat, sp.lng
+       FROM ideas i
+       JOIN schedule_items s ON s.idea_id = i.id
+       JOIN excursion_spots es ON es.idea_id = i.id
+       JOIN spots sp ON sp.id = es.spot_id
+       WHERE i.trip_id = ? AND s.date IS NOT NULL AND i.deleted_at IS NULL AND s.deleted_at IS NULL AND sp.deleted_at IS NULL AND sp.lat IS NOT NULL AND sp.lng IS NOT NULL`,
+    )
+    .all(trip.id) as { date: string; lat: number; lng: number }[];
+
+  for (const e of excursions) {
+    if (e.date <= yesterday) {
+      addTarget(e.lat, e.lng, [e.date]);
+    }
+  }
+
+  // Pro Ort fehlende Snapshots ermitteln und von Open-Meteo laden
+  for (const target of locationTargets.values()) {
+    const wantedDates = [...target.dates].sort();
+    if (!wantedDates.length) continue;
+
+    const existing = db
+      .prepare(
+        `SELECT date FROM trip_weather_snapshots
+         WHERE trip_id = ? AND ABS(lat - ?) < 0.001 AND ABS(lng - ?) < 0.001 AND date >= ? AND date <= ?`,
+      )
+      .all(trip.id, target.lat, target.lng, wantedDates[0], wantedDates[wantedDates.length - 1]) as { date: string }[];
+    const existingSet = new Set(existing.map((r) => r.date));
+    const missingDates = wantedDates.filter((d) => !existingSet.has(d));
+    if (!missingDates.length) continue;
+
+    const pastDays = Math.min(MAX_PAST_DAYS, daysBetween(missingDates[0], today));
+    const params = new URLSearchParams({
+      latitude: String(target.lat),
+      longitude: String(target.lng),
+      daily: 'weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max',
+      timezone: 'auto',
+      past_days: String(pastDays),
+      forecast_days: '1',
+    });
+    const res = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`);
+    if (!res.ok) throw new Error(`Open-Meteo request failed (${res.status})`);
+    const data = (await res.json()) as OpenMeteoResponse;
+
+    const missingSet = new Set(missingDates);
+    data.daily.time.forEach((date, i) => {
+      if (!missingSet.has(date)) return;
+      upsertSnapshot.run(
+        trip.id,
+        target.lat,
+        target.lng,
+        date,
+        data.daily.weathercode[i],
+        data.daily.temperature_2m_max[i],
+        data.daily.temperature_2m_min[i],
+        data.daily.precipitation_probability_max?.[i] ?? null,
+      );
+    });
+  }
 }
 
 /** Holt vergangene Wetter-Ist-Werte für genau einen Trip neu - wird von PUT /trips/:id
