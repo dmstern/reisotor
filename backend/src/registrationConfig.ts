@@ -42,6 +42,22 @@ export function isUserRestricted(userId: number | null | undefined): boolean {
   return !FULL_ACCESS_USERS.has(user.username);
 }
 
+export function isUserAdmin(userId: number | null | undefined): boolean {
+  if (userId == null) return false;
+  const user = db.prepare('SELECT is_admin FROM users WHERE id = ?').get(userId) as
+    | { is_admin: number }
+    | undefined;
+  return Boolean(user?.is_admin);
+}
+
+export function userMustChangePassword(userId: number | null | undefined): boolean {
+  if (userId == null) return false;
+  const user = db.prepare('SELECT must_change_password FROM users WHERE id = ?').get(userId) as
+    | { must_change_password: number }
+    | undefined;
+  return Boolean(user?.must_change_password);
+}
+
 export function isUsernameFullAccess(username: string): boolean {
   return FULL_ACCESS_USERS.has(username);
 }

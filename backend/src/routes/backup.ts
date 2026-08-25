@@ -149,8 +149,13 @@ function rowsForTable(table: TableName, userId: number): SqlRow[] {
   return db.prepare(`SELECT * FROM ${table} WHERE ${filter}`).all(userId) as SqlRow[];
 }
 
+import { isUserAdmin } from '../registrationConfig.js';
+
 export const backupRoutes: FastifyPluginAsync = async (app) => {
   app.get('/backup/export', async (req, reply) => {
+    if (!isUserAdmin(req.session.userId)) {
+      return reply.code(403).send({ error: 'Nur Administrator:innen dürfen Datensicherungen durchführen.' });
+    }
     const data = {} as BackupPayload['data'];
     for (const table of TABLES) {
       data[table] = rowsForTable(table, req.session.userId!);
@@ -170,6 +175,9 @@ export const backupRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.post('/backup/import', async (req, reply) => {
+    if (!isUserAdmin(req.session.userId)) {
+      return reply.code(403).send({ error: 'Nur Administrator:innen dürfen Datensicherungen durchführen.' });
+    }
     if (!isValidPayload(req.body)) {
       return reply.code(400).send({ error: 'Ungültige oder unvollständige Backup-Datei' });
     }

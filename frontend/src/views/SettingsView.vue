@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Button from '../components/primitives/Button.vue';
 import IconButton from '../components/primitives/IconButton.vue';
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { api, ApiError } from '../api/client';
 import type { User } from '../api/types';
@@ -39,9 +39,11 @@ import PwaInstallDialog from '../components/PwaInstallDialog.vue';
 import AppFooterLinks from '../components/AppFooterLinks.vue';
 import { usePwaInstallStore } from '../stores/pwaInstall';
 import TabBar from '../components/TabBar.vue';
+import CreateUserDialog from '../components/CreateUserDialog.vue';
 import {
   IconUser,
   IconUserFilled,
+  IconUsers,
   IconDeviceDesktop,
   IconBell,
   IconBellFilled,
@@ -77,21 +79,25 @@ const DASHBOARD_TILES_ICON: IconDef = { id: 'puzzle', emoji: '🧩', outline: Ic
 const WEATHER_SECTION_ICON: IconDef = { id: 'cloud', emoji: '🌤️', outline: IconCloud };
 const FEEDBACK_ICON: IconDef = { id: 'bug', emoji: '🐛', outline: IconBug };
 const INFO_ICON: IconDef = { id: 'info', emoji: 'ℹ️', outline: IconInfoSquareRounded };
+const USERS_ICON: IconDef = { id: 'users', emoji: '👥', outline: IconUsers };
 
-type Tab = 'account' | 'app' | 'trip' | 'notifications' | 'data' | 'about';
-const TABS: { key: Tab; label: string; icon: IconDef }[] = [
+type Tab = 'account' | 'users' | 'app' | 'trip' | 'notifications' | 'data' | 'about';
+const ALL_TABS: { key: Tab; label: string; icon: IconDef; adminOnly?: boolean }[] = [
   { key: 'account', label: 'Account', icon: { id: 'user', emoji: '👤', outline: IconUser, filled: IconUserFilled } },
+  { key: 'users', label: 'Nutzerverwaltung', icon: USERS_ICON, adminOnly: true },
   { key: 'app', label: 'App-Einstellungen', icon: { id: 'device-desktop', emoji: '🖥️', outline: IconDeviceDesktop } },
   { key: 'trip', label: 'Reise-Anzeige', icon: FORM_FIELD_ICONS.date },
   { key: 'notifications', label: 'Benachrichtigungen', icon: BELL_ICON },
   { key: 'data', label: 'Daten', icon: { id: 'database', emoji: '🗄️', outline: IconDatabase } },
   { key: 'about', label: 'Über', icon: { id: 'info-circle', emoji: 'ℹ️', outline: IconInfoCircle, filled: IconInfoCircleFilled } },
 ];
-const TAB_KEYS = TABS.map((t) => t.key);
+
+const TABS = computed(() => ALL_TABS.filter((t) => !t.adminOnly || auth.user?.is_admin));
+const TAB_KEYS = computed(() => TABS.value.map((t) => t.key));
 
 const activeTab = computed<Tab>(() => {
   const tab = route.query.tab;
-  return (TAB_KEYS as string[]).includes(tab as string) ? (tab as Tab) : 'account';
+  return (TAB_KEYS.value as string[]).includes(tab as string) ? (tab as Tab) : 'account';
 });
 
 function selectTab(tab: string) {
@@ -222,10 +228,60 @@ const importError = ref('');
 const importResult = ref<Record<string, number> | null>(null);
 const importFileInput = ref<HTMLInputElement | null>(null);
 
+const userList = ref<User[]>([]);
+const loadingUsers = ref(false);
+const userListError = ref('');
+const showCreateUserDialog = ref(false);
+
+async function loadUserList() {
+  if (!auth.user?.is_admin) return;
+  loadingUsers.value = true;
+  userListError.value = '';
+  try {
+    userList.value = await api.get<User[]>('/users');
+  } catch (err) {
+    if (err instanceof ApiError) userListError.value = err.message;
+    else userListError.value = 'Fehler beim Laden der Nutzerliste.';
+  } finally {
+    loadingUsers.value = false;
+  }
+}
+
+async function toggleAdminRole(u: User) {
+  const nextIsAdmin = !u.is_admin;
+  try {
+    const updated = await api.put<User>(`/users/${u.id}/admin`, { is_admin: nextIsAdmin });
+    const idx = userList.value.findIndex((item) => item.id === u.id);
+    if (idx !== -1) userList.value[idx] = updated;
+  } catch (err) {
+    alert(err instanceof ApiError ? err.message : 'Fehler beim Ändern der Admin-Rechte');
+  }
+}
+
+async function deleteUserAccount(u: User) {
+  if (u.id === auth.user?.id) return;
+  if (!confirm(`Möchtest du den Nutzer "${u.username}" wirklich löschen?`)) return;
+  try {
+    await api.delete(`/users/${u.id}`);
+    userList.value = userList.value.filter((item) => item.id !== u.id);
+  } catch (err) {
+    alert(err instanceof ApiError ? err.message : 'Fehler beim Löschen des Nutzers');
+  }
+}
+
+function onUserCreated(newUser: User) {
+  userList.value.push(newUser);
+}
+
+watch(activeTab, (tab) => {
+  if (tab === 'users' && auth.user?.is_admin) loadUserList();
+});
+
 onMounted(async () => {
   usernameForm.value.username = auth.user?.username ?? '';
   loading.value = false;
   buildInfoStore.load();
+  if (auth.user?.is_admin) loadUserList();
   if (pushSupported) {
     pushEnabled.value = !!(await getExistingSubscription());
     if (pushEnabled.value) await notificationPrefs.load();
@@ -445,6 +501,75 @@ async function onImportFileSelected(event: Event) {
             {{ passwordSaving ? 'Speichern…' : 'Passwort speichern' }}
           </Button>
         </form>
+      </div>
+    </template>
+
+    <template v-if="activeTab === 'users' && auth.user?.is_admin">
+      <div class="card users-card">
+        <div class="card-header-row">
+          <h2><AppIcon :icon="USERS_ICON" group="navigation" :size="20" /> Nutzerverwaltung</h2>
+          <Button class="primary" size="sm" @click="showCreateUserDialog = true">
+            <AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Nutzer anlegen
+          </Button>
+        </div>
+
+        <p v-if="userListError" class="hint error">{{ userListError }}</p>
+        <ViewLoadingState v-if="loadingUsers" message="Lade Nutzerliste…" />
+
+        <div v-else-if="userList.length" class="users-table-wrapper">
+          <table class="users-table">
+            <thead>
+              <tr>
+                <th>Nutzer</th>
+                <th>E-Mail</th>
+                <th>Rolle</th>
+                <th>Status</th>
+                <th class="actions-col">Aktionen</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="u in userList" :key="u.id">
+                <td class="user-cell">
+                  <span class="user-avatar">{{ u.avatar }}</span>
+                  <span class="username">{{ u.username }}</span>
+                </td>
+                <td class="email-cell">{{ u.email || '—' }}</td>
+                <td>
+                  <span class="role-badge" :class="{ admin: u.is_admin }">
+                    {{ u.is_admin ? 'Admin' : 'Nutzer' }}
+                  </span>
+                </td>
+                <td>
+                  <span v-if="u.must_change_password" class="status-badge warning" title="Passwortänderung beim ersten Login ausstehend">
+                    Passwortänderung ausstehend
+                  </span>
+                  <span v-else class="status-badge active">Aktiv</span>
+                </td>
+                <td class="actions-col">
+                  <div class="user-actions">
+                    <Button
+                      size="sm"
+                      class="secondary"
+                      :title="u.is_admin ? 'Admin-Rechte entziehen' : 'Zum Admin machen'"
+                      @click="toggleAdminRole(u)"
+                    >
+                      {{ u.is_admin ? 'Admin entziehen' : 'Zum Admin machen' }}
+                    </Button>
+                    <Button
+                      size="sm"
+                      class="danger"
+                      :disabled="u.id === auth.user?.id"
+                      title="Nutzer löschen"
+                      @click="deleteUserAccount(u)"
+                    >
+                      Löschen
+                    </Button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </template>
 
@@ -721,7 +846,7 @@ async function onImportFileSelected(event: Event) {
         <router-link to="/trash" class="card-action-btn">Papierkorb öffnen</router-link>
       </div>
 
-      <div class="card">
+      <div class="card" v-if="auth.user?.is_admin">
         <h2>Datensicherung</h2>
         <p>
           Vor einem Neu-Deployment mit neuen Features könnt ihr hier alle Daten (Urlaub, Kalender,
@@ -814,11 +939,110 @@ async function onImportFileSelected(event: Event) {
 
   <FeedbackDialog v-model="showFeedbackDialog" />
   <PwaInstallDialog v-model="showPwaInstallDialog" />
+  <CreateUserDialog v-model="showCreateUserDialog" @created="onUserCreated" />
 </template>
 
 <style scoped>
 .page > .card {
   margin-bottom: var(--space-4);
+}
+
+.card-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.card-header-row h2 {
+  margin: 0;
+}
+
+.users-table-wrapper {
+  overflow-x: auto;
+}
+
+.users-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.users-table th {
+  text-align: left;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 2px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-weight: 600;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.users-table td {
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: middle;
+}
+
+.user-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 500;
+}
+
+.user-avatar {
+  font-size: 1.2rem;
+}
+
+.email-cell {
+  color: var(--color-text-muted);
+}
+
+.role-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm-squircle);
+  font-size: 0.78rem;
+  font-weight: 600;
+  background: var(--color-bg-secondary, #e5e7eb);
+  color: var(--color-text-muted);
+}
+
+.role-badge.admin {
+  background: rgba(59, 130, 246, 0.15);
+  color: #2563eb;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm-squircle);
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.status-badge.active {
+  background: rgba(16, 185, 129, 0.15);
+  color: #059669;
+}
+
+.status-badge.warning {
+  background: rgba(245, 158, 11, 0.15);
+  color: #d97706;
+}
+
+.actions-col {
+  text-align: right;
+}
+
+.user-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
 }
 
 h3 {

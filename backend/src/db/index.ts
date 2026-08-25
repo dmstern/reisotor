@@ -1328,6 +1328,19 @@ db.exec(`
 // Default 0 (alle bisherigen Accounts sind unrestricted).
 ensureColumn('users', 'is_restricted', 'INTEGER NOT NULL DEFAULT 0');
 
+// #224: Nutzerverwaltung & Rechte-/Rollensystem (is_admin, must_change_password).
+ensureColumn('users', 'is_admin', 'INTEGER NOT NULL DEFAULT 0');
+ensureColumn('users', 'must_change_password', 'INTEGER NOT NULL DEFAULT 0');
+
+// Falls noch kein Nutzer Admin ist (z. B. auf einer bestehenden Instanz nach dem Update),
+// bekommt die erste angelegte Person (MIN(id)) automatisch Admin-Rechte, damit die Instanz
+// nicht ohne Administrator bleibt.
+const hasAdmin = db.prepare('SELECT 1 FROM users WHERE is_admin = 1 LIMIT 1').get();
+if (!hasAdmin) {
+  db.exec('UPDATE users SET is_admin = 1 WHERE id = (SELECT MIN(id) FROM users)');
+}
+
+
 // #68: Zusammenführung von Touren/Routen/Reisen. Eine Reise-Etappe (travel_items) ist im Kern eine
 // Tour mit genau zwei Stationen (Von/Nach) plus Transportmittel-Zusatzfeldern – diese Zusatzfelder
 // wandern additiv auf ideas (Touren), als Grundlage für die spätere Ablösung von travel_items/

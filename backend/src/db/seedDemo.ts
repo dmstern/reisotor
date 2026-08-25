@@ -37,10 +37,11 @@ const users = [
 ];
 
 const insertUser = db.prepare(
-  'INSERT OR IGNORE INTO users (username, password_hash, avatar) VALUES (?, ?, ?)',
+  'INSERT OR IGNORE INTO users (username, password_hash, avatar, is_admin, must_change_password) VALUES (?, ?, ?, ?, ?)',
 );
-for (const u of users) {
-  insertUser.run(u.username, bcrypt.hashSync(u.password, 10), u.avatar);
+for (let i = 0; i < users.length; i++) {
+  const u = users[i];
+  insertUser.run(u.username, bcrypt.hashSync(u.password, 10), u.avatar, i === 0 ? 1 : 0, 1);
 }
 const [user1, user2] = users.map(
   (u) => db.prepare('SELECT id FROM users WHERE username = ?').get(u.username) as { id: number },
