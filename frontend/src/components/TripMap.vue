@@ -257,16 +257,25 @@ const focusMenuStyle = ref({ top: '0px', left: '0px' });
 // des sonst üblichen white-space:nowrap, das die Menübreite an den längsten Eintrag anpassen würde).
 const WIDE_PICKER_MENU_WIDTH = 252;
 
-async function toggleFocusMenu() {
-  focusMenuOpen.value = !focusMenuOpen.value;
-  if (!focusMenuOpen.value) return;
-  await nextTick();
-  const rect = focusButtonRef.value?.getBoundingClientRect();
-  if (!rect) return;
-  focusMenuStyle.value = {
+function computeTeleportMenuPosition(triggerRef: any, event?: MouseEvent, menuWidth = 216) {
+  const el = (event?.currentTarget as HTMLElement) || (triggerRef?.value as any)?.$el || triggerRef?.value;
+  if (!el || typeof el.getBoundingClientRect !== 'function') {
+    return { top: '0px', left: '0px' };
+  }
+  const rect = el.getBoundingClientRect();
+  return {
     top: `${rect.bottom + 6}px`,
-    left: `${Math.max(8, Math.min(rect.left, window.innerWidth - WIDE_PICKER_MENU_WIDTH))}px`,
+    left: `${Math.max(8, Math.min(rect.left, window.innerWidth - menuWidth))}px`,
   };
+}
+
+function toggleFocusMenu(event?: MouseEvent) {
+  if (!focusMenuOpen.value) {
+    focusMenuStyle.value = computeTeleportMenuPosition(focusButtonRef, event, WIDE_PICKER_MENU_WIDTH);
+    focusMenuOpen.value = true;
+  } else {
+    focusMenuOpen.value = false;
+  }
 }
 
 function selectFocus(action: () => void) {
@@ -284,16 +293,13 @@ const locationMenuOpen = ref(false);
 const locationButtonRef = ref<HTMLButtonElement | null>(null);
 const locationMenuStyle = ref({ top: '0px', left: '0px' });
 
-async function toggleLocationMenu() {
-  locationMenuOpen.value = !locationMenuOpen.value;
-  if (!locationMenuOpen.value) return;
-  await nextTick();
-  const rect = locationButtonRef.value?.getBoundingClientRect();
-  if (!rect) return;
-  locationMenuStyle.value = {
-    top: `${rect.bottom + 6}px`,
-    left: `${Math.max(8, Math.min(rect.left, window.innerWidth - WIDE_PICKER_MENU_WIDTH))}px`,
-  };
+function toggleLocationMenu(event?: MouseEvent) {
+  if (!locationMenuOpen.value) {
+    locationMenuStyle.value = computeTeleportMenuPosition(locationButtonRef, event, WIDE_PICKER_MENU_WIDTH);
+    locationMenuOpen.value = true;
+  } else {
+    locationMenuOpen.value = false;
+  }
 }
 
 function selectLocation(action: () => void) {
@@ -320,16 +326,13 @@ const shareDurationLabel = computed(() => {
   return `Standort geteilt bis ${until.toLocaleDateString('de-DE')}`;
 });
 
-async function toggleShareMenu() {
-  shareMenuOpen.value = !shareMenuOpen.value;
-  if (!shareMenuOpen.value) return;
-  await nextTick();
-  const rect = shareButtonRef.value?.getBoundingClientRect();
-  if (!rect) return;
-  shareMenuStyle.value = {
-    top: `${rect.bottom + 6}px`,
-    left: `${Math.max(8, Math.min(rect.left, window.innerWidth - 216))}px`,
-  };
+function toggleShareMenu(event?: MouseEvent) {
+  if (!shareMenuOpen.value) {
+    shareMenuStyle.value = computeTeleportMenuPosition(shareButtonRef, event, 216);
+    shareMenuOpen.value = true;
+  } else {
+    shareMenuOpen.value = false;
+  }
 }
 
 async function chooseShareDuration(duration: ShareDuration) {
@@ -344,20 +347,17 @@ const recordMenuOpen = ref(false);
 const recordButtonRef = ref<HTMLButtonElement | null>(null);
 const recordMenuStyle = ref({ top: '0px', left: '0px' });
 
-async function toggleRecordMenu() {
+async function toggleRecordMenu(event?: MouseEvent) {
   if (trackRecording.recording) {
     await trackRecording.stop();
     return;
   }
-  recordMenuOpen.value = !recordMenuOpen.value;
-  if (!recordMenuOpen.value) return;
-  await nextTick();
-  const rect = recordButtonRef.value?.getBoundingClientRect();
-  if (!rect) return;
-  recordMenuStyle.value = {
-    top: `${rect.bottom + 6}px`,
-    left: `${Math.max(8, Math.min(rect.left, window.innerWidth - 216))}px`,
-  };
+  if (!recordMenuOpen.value) {
+    recordMenuStyle.value = computeTeleportMenuPosition(recordButtonRef, event, 216);
+    recordMenuOpen.value = true;
+  } else {
+    recordMenuOpen.value = false;
+  }
 }
 
 // Ist gerade eine Tour auf der Karte fokussiert (drawers.mapFocusExcursionId, siehe
@@ -1284,7 +1284,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
         title="Kartenausschnitt fokussieren"
         aria-label="Kartenausschnitt fokussieren"
         :disabled="!filteredPoints.length"
-        @click="toggleFocusMenu"
+        @click="toggleFocusMenu($event)"
       >
         <AppIcon :icon="MAP_TOOL_ICONS.focusGroup" :size="18" group="actions" />
       </button>
@@ -1297,7 +1297,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
         class="fit-btn location-btn"
         title="Standort & Ausrichtung"
         aria-label="Standort & Ausrichtung"
-        @click="toggleLocationMenu"
+        @click="toggleLocationMenu($event)"
       >
         <AppIcon :icon="MAP_TOOL_ICONS.locationGroup" :size="18" group="actions" />
       </button>
@@ -1320,7 +1320,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
         :class="{ active: !!locationSharing.shareUntil }"
         :title="shareDurationLabel"
         :aria-label="shareDurationLabel"
-        @click="toggleShareMenu"
+        @click="toggleShareMenu($event)"
       >
         <AppIcon :icon="ACTION_ICONS.shareLocation" :size="18" group="actions" />
       </button>
@@ -1334,7 +1334,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
         :class="{ active: trackRecording.recording }"
         :title="trackRecording.recording ? 'Aufzeichnung beenden' : 'Standort aufzeichnen'"
         :aria-label="trackRecording.recording ? 'Aufzeichnung beenden' : 'Standort aufzeichnen'"
-        @click="toggleRecordMenu"
+        @click="toggleRecordMenu($event)"
       >
         <AppIcon :icon="trackRecording.recording ? ACTION_ICONS.recordStop : ACTION_ICONS.recordStart" :size="18" group="actions" />
       </button>

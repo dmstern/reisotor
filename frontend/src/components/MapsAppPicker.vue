@@ -17,23 +17,26 @@ const buttonRef = ref<HTMLButtonElement | null>(null);
 // overflow-y:auto (nötig für lange Detail-Inhalte) das absolut positionierte Menü am Dialogrand ab.
 const menuStyle = ref({ top: '0px', left: '0px' });
 
-async function toggle() {
-  open.value = !open.value;
-  if (!open.value) return;
-  await nextTick();
-  const targetEl = (buttonRef.value as any)?.$el || buttonRef.value;
-  const rect = targetEl?.getBoundingClientRect?.();
-  if (!rect) return;
-  menuStyle.value = {
-    top: `${rect.bottom + 6}px`,
-    left: `${Math.max(8, Math.min(rect.left, window.innerWidth - 216))}px`,
-  };
+function toggle(event?: MouseEvent) {
+  if (!open.value) {
+    const el = (event?.currentTarget as HTMLElement) || (buttonRef.value as any)?.$el || buttonRef.value;
+    if (el && typeof el.getBoundingClientRect === 'function') {
+      const rect = el.getBoundingClientRect();
+      menuStyle.value = {
+        top: `${rect.bottom + 6}px`,
+        left: `${Math.max(8, Math.min(rect.left, window.innerWidth - 216))}px`,
+      };
+    }
+    open.value = true;
+  } else {
+    open.value = false;
+  }
 }
 </script>
 
 <template>
   <div class="maps-picker">
-    <button ref="buttonRef" type="button" class="card-action-btn" @click="toggle">
+    <button ref="buttonRef" type="button" class="card-action-btn" @click="toggle($event)">
       <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" /> In Karten-App öffnen ↗
     </button>
     <Teleport to="body">
