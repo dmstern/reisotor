@@ -894,18 +894,13 @@ textarea:focus {
 .list-move,
 .list-enter-active,
 .list-leave-active {
-  transition: opacity 0.25s ease-in-out, transform 0.25s ease-in-out;
+  transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
 }
 
 .list-enter-from,
 .list-leave-to {
   opacity: 0;
-  transform: translateY(-10px) scale(0.96);
-}
-
-/* Für sanftes Aufrücken anderer Elemente beim Entfernen eines Listenelements per <TransitionGroup name="list"> */
-.list-leave-active {
-  position: absolute;
+  transform: translateY(-6px) scale(0.98);
 }
 
 .fade-enter-active,
