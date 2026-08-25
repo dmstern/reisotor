@@ -319,6 +319,26 @@ const avatarCategories = [
             </div>
           </div>
         </Card>
+
+        <!-- Grid & Masonry Layouts -->
+        <h3 style="margin-top: 32px;">Grid & Masonry Layout-Systeme</h3>
+        <Card class="ds-card">
+          <p>Reisotor verwendet zwei zentral definierte Raster-Systeme für Karten & Ansichten:</p>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 16px;">
+            <div style="padding: 16px; border: 1px solid var(--color-border); border-radius: var(--radius-sm-squircle); background: var(--color-hover);">
+              <h4 style="margin: 0 0 6px;">1. Responsive Auto-Fit Grid (<code>.grid</code>)</h4>
+              <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-muted);">
+                Nutzt <code>display: grid; gap: var(--space-3)</code> mit <code>repeat(auto-fit, minmax(280px, 1fr))</code> für gleichmäßige Kachel-Raste (Dashboard, Budget, Touren).
+              </p>
+            </div>
+            <div style="padding: 16px; border: 1px solid var(--color-border); border-radius: var(--radius-sm-squircle); background: var(--color-hover);">
+              <h4 style="margin: 0 0 6px;">2. Masonry Multi-Column (<code>.masonry</code>)</h4>
+              <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-muted);">
+                Nutzt CSS Multi-Column (<code>column-width: 280px; column-gap: var(--space-3)</code>) für Notizen & Karten variabler Höhe. Verhindert unschöne vertikale Zeilen-Lücken.
+              </p>
+            </div>
+          </div>
+        </Card>
       </section>
 
       <!-- 2. TYPOGRAFIE & SEMANTISCHE TEXTBAUSTEINE SECTION -->
