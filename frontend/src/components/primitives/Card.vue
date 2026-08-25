@@ -64,7 +64,11 @@ const isCondensed = computed(() => {
   return props.expandable ? internalCondensed.value : false;
 });
 
-const isExpanded = computed(() => !isCondensed.value);
+const isExpanded = computed(() => {
+  if (props.expanded !== undefined) return props.expanded;
+  if (props.condensed !== undefined) return !props.condensed;
+  return props.expandable ? !internalCondensed.value : false;
+});
 
 const effectiveBannerPosition = computed(() => {
   if (props.bannerPosition !== 'auto') return props.bannerPosition;
@@ -89,8 +93,8 @@ function handleCardClick(event: MouseEvent) {
     :class="[
       variant !== 'default' ? `card--${variant}` : undefined,
       {
-        'card--condensed': isCondensed,
-        'card--expanded': isExpanded,
+        'card--condensed': (props.condensed !== undefined || props.expanded !== undefined || props.expandable) && isCondensed,
+        'card--expanded': (props.condensed !== undefined || props.expanded !== undefined || props.expandable) && isExpanded,
         'card--expandable': expandable,
         'new-highlight': highlight,
         'card--has-banner': bannerUrl || $slots.banner,
