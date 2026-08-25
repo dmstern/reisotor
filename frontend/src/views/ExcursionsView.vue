@@ -2809,48 +2809,55 @@ async function removeSpot(id: number) {
                   </FormField>
                 </div>
               </template>
-              <FormField icon="maps" label="Maps-Link">
-                <input
-                  v-model="spotForm.maps_link"
-                  type="url"
-                  placeholder="Maps-Link (Google/Apple) (optional)"
-                  @blur="checkSpotMapsLink"
+              <div class="card location-box">
+                <span class="field-label">Standort (optional)</span>
+                <p class="hint">
+                  Wird für die Position auf der Karte und ggf. das Wetter vor Ort verwendet.
+                </p>
+                <FormField icon="maps" label="Maps-Link (Google/Apple)">
+                  <input
+                    v-model="spotForm.maps_link"
+                    type="url"
+                    placeholder="Maps-Link (Google/Apple) (optional)"
+                    @blur="checkSpotMapsLink"
+                  />
+                </FormField>
+                <p v-if="spotMapsLinkResolved === true" class="hint success">
+                  <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort
+                  erkannt – erscheint auf der Karte
+                </p>
+                <p v-if="spotMapsLinkResolved === false" class="hint">
+                  Standort wird beim Speichern serverseitig aufgelöst (auch Kurzlinks
+                  funktionieren).
+                </p>
+                <p v-if="spotLocationError" class="hint error">
+                  <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Der Standort
+                  konnte auch automatisch nicht ermittelt werden. Bitte tippe unten auf die Karte,
+                  um ihn manuell zu setzen.
+                </p>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  class="picker-toggle"
+                  @click="spotPickerOpen = !spotPickerOpen"
+                >
+                  <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort
+                  manuell setzen
+                  <AppIcon
+                    :icon="ACTION_ICONS.chevronDown"
+                    :size="12"
+                    group="actions"
+                    class="caret dropdown-caret"
+                    :class="{ open: spotPickerOpen }"
+                  />
+                </Button>
+                <LocationPicker
+                  v-if="spotPickerOpen"
+                  v-model="spotManualPin"
+                  :center="spotPickerCenter"
+                  :reference-points="spotReferencePoints"
                 />
-              </FormField>
-              <p v-if="spotMapsLinkResolved === true" class="hint success">
-                <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort
-                erkannt – erscheint auf der Karte
-              </p>
-              <p v-if="spotMapsLinkResolved === false" class="hint">
-                Standort wird beim Speichern serverseitig aufgelöst (auch Kurzlinks funktionieren).
-              </p>
-              <p v-if="spotLocationError" class="hint error">
-                <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Der Standort
-                konnte auch automatisch nicht ermittelt werden. Bitte tippe unten auf die Karte, um
-                ihn manuell zu setzen.
-              </p>
-              <Button
-                type="button"
-                variant="secondary"
-                class="picker-toggle"
-                @click="spotPickerOpen = !spotPickerOpen"
-              >
-                <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort
-                manuell setzen
-                <AppIcon
-                  :icon="ACTION_ICONS.chevronDown"
-                  :size="12"
-                  group="actions"
-                  class="caret dropdown-caret"
-                  :class="{ open: spotPickerOpen }"
-                />
-              </Button>
-              <LocationPicker
-                v-if="spotPickerOpen"
-                v-model="spotManualPin"
-                :center="spotPickerCenter"
-                :reference-points="spotReferencePoints"
-              />
+              </div>
               <FormField icon="note" label="Notiz">
                 <RichTextEditor
                   v-model="spotForm.note"
@@ -3223,48 +3230,55 @@ async function removeSpot(id: number) {
                   </FormField>
                 </div>
               </template>
-              <FormField icon="maps" label="Maps-Link">
-                <input
-                  v-model="editSpotForm.maps_link"
-                  type="url"
-                  placeholder="Maps-Link (Google/Apple) (optional)"
-                  @blur="checkEditSpotMapsLink"
+              <div class="card location-box">
+                <span class="field-label">Standort (optional)</span>
+                <p class="hint">
+                  Wird für die Position auf der Karte und ggf. das Wetter vor Ort verwendet.
+                </p>
+                <FormField icon="maps" label="Maps-Link (Google/Apple)">
+                  <input
+                    v-model="editSpotForm.maps_link"
+                    type="url"
+                    placeholder="Maps-Link (Google/Apple) (optional)"
+                    @blur="checkEditSpotMapsLink"
+                  />
+                </FormField>
+                <p v-if="editSpotMapsLinkResolved === true" class="hint success">
+                  <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort
+                  erkannt – erscheint auf der Karte
+                </p>
+                <p v-if="editSpotMapsLinkResolved === false" class="hint">
+                  Standort wird beim Speichern serverseitig aufgelöst (auch Kurzlinks
+                  funktionieren).
+                </p>
+                <p v-if="editSpotLocationError" class="hint error">
+                  <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Der Standort
+                  konnte auch automatisch nicht ermittelt werden. Bitte tippe unten auf die Karte,
+                  um ihn manuell zu setzen.
+                </p>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  class="picker-toggle"
+                  @click="editSpotPickerOpen = !editSpotPickerOpen"
+                >
+                  <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort
+                  manuell setzen
+                  <AppIcon
+                    :icon="ACTION_ICONS.chevronDown"
+                    :size="12"
+                    group="actions"
+                    class="caret dropdown-caret"
+                    :class="{ open: editSpotPickerOpen }"
+                  />
+                </Button>
+                <LocationPicker
+                  v-if="editSpotPickerOpen"
+                  v-model="editSpotManualPin"
+                  :center="spotPickerCenter"
+                  :reference-points="editSpotReferencePoints"
                 />
-              </FormField>
-              <p v-if="editSpotMapsLinkResolved === true" class="hint success">
-                <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort
-                erkannt – erscheint auf der Karte
-              </p>
-              <p v-if="editSpotMapsLinkResolved === false" class="hint">
-                Standort wird beim Speichern serverseitig aufgelöst (auch Kurzlinks funktionieren).
-              </p>
-              <p v-if="editSpotLocationError" class="hint error">
-                <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Der Standort
-                konnte auch automatisch nicht ermittelt werden. Bitte tippe unten auf die Karte, um
-                ihn manuell zu setzen.
-              </p>
-              <Button
-                type="button"
-                variant="secondary"
-                class="picker-toggle"
-                @click="editSpotPickerOpen = !editSpotPickerOpen"
-              >
-                <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort
-                manuell setzen
-                <AppIcon
-                  :icon="ACTION_ICONS.chevronDown"
-                  :size="12"
-                  group="actions"
-                  class="caret dropdown-caret"
-                  :class="{ open: editSpotPickerOpen }"
-                />
-              </Button>
-              <LocationPicker
-                v-if="editSpotPickerOpen"
-                v-model="editSpotManualPin"
-                :center="spotPickerCenter"
-                :reference-points="editSpotReferencePoints"
-              />
+              </div>
               <FormField icon="note" label="Notiz">
                 <RichTextEditor
                   v-model="editSpotForm.note"

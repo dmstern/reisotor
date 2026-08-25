@@ -619,7 +619,7 @@ async function onImportFileSelected(event: Event) {
       <div class="card users-card">
         <div class="card-header-row">
           <h2><AppIcon :icon="USERS_ICON" group="navigation" :size="20" /> Nutzerverwaltung</h2>
-          <Button class="primary" size="sm" @click="showCreateUserDialog = true">
+          <Button variant="primary" size="sm" @click="showCreateUserDialog = true">
             <AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Nutzer anlegen
           </Button>
         </div>
@@ -664,19 +664,21 @@ async function onImportFileSelected(event: Event) {
                   <div class="user-actions">
                     <Button
                       size="sm"
-                      class="secondary"
+                      variant="secondary"
                       :title="u.is_admin ? 'Admin-Rechte entziehen' : 'Zum Admin machen'"
                       @click="toggleAdminRole(u)"
                     >
+                      <AppIcon :icon="FORM_FIELD_ICONS.person" :size="14" group="formFields" />
                       {{ u.is_admin ? 'Admin entziehen' : 'Zum Admin machen' }}
                     </Button>
                     <Button
                       size="sm"
-                      class="danger"
+                      variant="danger"
                       :disabled="u.id === auth.user?.id"
                       title="Nutzer löschen"
                       @click="deleteUserAccount(u)"
                     >
+                      <AppIcon :icon="ACTION_ICONS.delete" :size="14" group="actions" />
                       Löschen
                     </Button>
                   </div>

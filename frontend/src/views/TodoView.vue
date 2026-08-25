@@ -166,17 +166,17 @@ const groupedItems = computed<Group[]>(() => {
     return [
       {
         key: 'before',
-        label: PERIOD_META.before,
+        label: `⏳ ${PERIOD_META.before}`,
         items: sortItems(items.value.filter((i) => periodFor(i) === 'before')),
       },
       {
         key: 'during',
-        label: PERIOD_META.during,
+        label: `🌴 ${PERIOD_META.during}`,
         items: sortItems(items.value.filter((i) => periodFor(i) === 'during')),
       },
       {
         key: 'none',
-        label: 'Ohne Zeitraum',
+        label: '📋 Ohne Zeitraum',
         items: sortItems(items.value.filter((i) => !periodFor(i))),
       },
     ];

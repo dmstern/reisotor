@@ -84,15 +84,14 @@ function openMembers(trip: Trip) {
             {{ trip.name }}
           </button>
           <div class="row-actions">
-            <button
-              type="button"
-              class="secondary members-btn"
+            <IconButton
+              variant="ghost"
+              size="sm"
+              :icon="FORM_FIELD_ICONS.visibility"
               title="Mitglieder verwalten"
               aria-label="Mitglieder verwalten"
               @click="openMembers(trip)"
-            >
-              <AppIcon :icon="FORM_FIELD_ICONS.visibility" :size="15" group="formFields" />
-            </button>
+            />
             <EditButton
               small
               @click="
@@ -106,9 +105,10 @@ function openMembers(trip: Trip) {
           </div>
         </div>
         <p v-if="!tripStore.trips.length" class="empty">Noch keine Urlaube.</p>
-        <button
+        <Button
           v-if="!tripCreationBlocked()"
           type="button"
+          variant="ghost"
           class="new-trip-btn"
           @click="
             () => {
@@ -118,7 +118,7 @@ function openMembers(trip: Trip) {
           "
         >
           + Neuer Urlaub
-        </button>
+        </Button>
         <p v-else class="empty">Eingeschränkter Modus - Nur ein Urlaub pro Nutzer</p>
         <router-link to="/trips" class="manage-trips-btn" @click="close"
           >Alle Urlaube verwalten</router-link

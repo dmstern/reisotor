@@ -97,11 +97,11 @@ function close() {
     <div class="members-dialog">
       <ul class="member-list">
         <li v-for="u in members" :key="u.id">
-          <span>{{ u.avatar }} {{ u.username }}</span>
+          <span class="member-user">{{ u.avatar }} {{ u.username }}</span>
           <IconButton
-            variant="secondary"
+            variant="danger"
             size="sm"
-            :icon="ACTION_ICONS.close"
+            :icon="ACTION_ICONS.delete"
             title="Entfernen"
             aria-label="Entfernen"
             @click="removeMember(u)"
@@ -122,8 +122,10 @@ function close() {
 
       <ul v-if="results.length" class="search-results">
         <li v-for="u in results" :key="u.id">
-          <span>{{ u.avatar }} {{ u.username }}</span>
-          <Button :disabled="loading" @click="invite(u)">Einladen</Button>
+          <span class="member-user">{{ u.avatar }} {{ u.username }}</span>
+          <Button variant="primary" size="sm" :disabled="loading" @click="invite(u)">
+            <AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Einladen
+          </Button>
         </li>
       </ul>
     </div>

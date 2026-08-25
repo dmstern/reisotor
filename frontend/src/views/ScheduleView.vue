@@ -1036,15 +1036,15 @@ function formatDate(date: string) {
             </div>
             <div class="item-actions">
               <div class="calendar-export">
-                <button
-                  type="button"
-                  class="secondary calendar-btn"
+                <Button
+                  variant="secondary"
+                  class="calendar-btn"
                   title="Zum eigenen Kalender hinzufügen"
                   aria-label="Zum eigenen Kalender hinzufügen"
                   @click.stop="toggleCalendarPicker(entry.key, $event)"
                 >
                   <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" />
-                </button>
+                </Button>
                 <Teleport to="body">
                   <template v-if="calendarPickerKey === entry.key">
                     <div class="picker-backdrop" @click.stop="calendarPickerKey = null"></div>
