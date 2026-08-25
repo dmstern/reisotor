@@ -41,7 +41,7 @@ const insertUser = db.prepare(
 );
 for (let i = 0; i < users.length; i++) {
   const u = users[i];
-  insertUser.run(u.username, bcrypt.hashSync(u.password, 10), u.avatar, i === 0 ? 1 : 0, 1);
+  insertUser.run(u.username, bcrypt.hashSync(u.password, 10), u.avatar, i === 0 ? 1 : 0, 0);
 }
 const [user1, user2] = users.map(
   (u) => db.prepare('SELECT id FROM users WHERE username = ?').get(u.username) as { id: number },

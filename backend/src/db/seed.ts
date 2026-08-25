@@ -22,7 +22,7 @@ for (let i = 0; i < users.length; i++) {
   const u = users[i];
   const hash = bcrypt.hashSync(u.password, 10);
   const isAdmin = i === 0 ? 1 : 0;
-  const mustChangePassword = 1;
+  const mustChangePassword = 0;
   insertUser.run(u.username, hash, u.avatar, isAdmin, mustChangePassword);
 }
 
