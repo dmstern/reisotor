@@ -1,6 +1,17 @@
 import bcrypt from 'bcrypt';
 import { db } from './index.js';
 
+// Falls bereits Nutzer in der Datenbank existieren (und keine expliziten SEED_USER-Env-Vars
+// oder --force übergeben wurden), wird der Seed übersprungen, um bei jedem Server-Start kein
+// unnötiges Bcrypt-Hashing auszuführen.
+const existingUser = db.prepare('SELECT id FROM users LIMIT 1').get();
+const hasCustomEnv = Boolean(process.env.SEED_USER1 || process.env.SEED_PASS1);
+const isForced = process.argv.includes('--force');
+
+if (existingUser && !hasCustomEnv && !isForced) {
+  process.exit(0);
+}
+
 const users = [
   {
     username: process.env.SEED_USER1 ?? 'user1',

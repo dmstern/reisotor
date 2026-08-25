@@ -1,8 +1,8 @@
-.claude
-
 # Persoenliche Werte fuers Deploy-Skript (Domain, SSH-User, lokaler Hostname).
 # Vorlage: .env.example
 .env
+
+node_modules/
 
 # e2e-Testsuite (siehe /e2e): Abhaengigkeiten, wegwerfbare Test-DB, Login-Session, Testartefakte
 # und zur Laufzeit generierte Fixtures/Ad-hoc-Checks werden nie committet.
