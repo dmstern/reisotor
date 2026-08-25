@@ -16,7 +16,7 @@ import {
 } from '@tabler/icons-vue';
 import { api } from '../api/client';
 import { DEMO_MODE } from '../demo/isDemoMode';
-import { toLocalDateString } from './dateFormat';
+import { formatDate as formatDateShared, toLocalDateString } from './dateFormat';
 import type { IconDef } from './icon';
 
 // Wettervorhersage über Open-Meteo (kostenlos, kein API-Key nötig, CORS-freundlich für direkte
