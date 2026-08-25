@@ -511,10 +511,9 @@ function onResizeEnd() {
      Maximieren-Button dazu und rückt dafür etwas nach links, damit beide nebeneinander Platz haben. */
   .maximize-btn {
     display: inline-flex;
-    position: absolute;
-    top: 8px;
-    right: 44px;
-    z-index: 14;
+    position: static;
+    top: auto;
+    right: auto;
   }
 
   /* Maximiert: Panel verlässt den Flex-Verbund und legt sich als Vollbild-Overlay über den

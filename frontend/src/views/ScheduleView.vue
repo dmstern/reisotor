@@ -882,10 +882,10 @@ function formatDate(date: string) {
         />
       </div>
       <div class="jump-row">
-        <Button variant="card-action" @click="jumpToToday">
+        <Button variant="secondary" @click="jumpToToday">
           <AppIcon :icon="ACTION_ICONS.today" :size="14" group="actions" /> Heute
         </Button>
-        <Button variant="card-action" v-if="trip" @click="goToTripDates">
+        <Button variant="secondary" v-if="trip" @click="goToTripDates">
           <AppIcon :icon="ACTION_ICONS.vacation" :size="14" group="actions" /> Urlaub
         </Button>
         <Button @click="openAddForm"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Neu</Button>
