@@ -4607,6 +4607,7 @@ async function removeSpot(id: number) {
 .dropdown-caret {
   margin-left: 4px;
   opacity: 0.6;
+  color: var(--color-primary);
 }
 
 .dropdown-caret.open {

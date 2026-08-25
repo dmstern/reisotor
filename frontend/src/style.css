@@ -853,6 +853,13 @@ select {
   cursor: pointer;
 }
 
+/* Chevron-Icons in Button-Dropdowns (.dropdown-field) sollen dieselbe Farbe haben wie
+   das SVG-Chevron in nativem <select> — beide grün (--color-primary). */
+.dropdown-field .app-icon {
+  color: var(--color-primary);
+  opacity: 0.8;
+}
+
 /* select-spezifisch: browser-eigenes Aussehen entfernen, eigenes Chevron-Icon einsetzen */
 select {
   appearance: none;
