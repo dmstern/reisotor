@@ -78,11 +78,27 @@ const effectiveBannerPosition = computed(() => {
 function handleCardClick(event: MouseEvent) {
   emit('click', event);
   if (props.expandable) {
+    const target = event.target as HTMLElement | null;
+    if (target && target !== event.currentTarget && target.closest('button, a, input, textarea, select, [role="button"]')) {
+      return;
+    }
     const nextCondensed = !isCondensed.value;
     internalCondensed.value = nextCondensed;
     emit('update:condensed', nextCondensed);
     emit('update:expanded', !nextCondensed);
     emit('toggle-expand', !nextCondensed);
+  }
+}
+
+function handleCardKeydown(event: KeyboardEvent) {
+  if (!props.expandable) return;
+  if (event.key === 'Enter' || event.key === ' ') {
+    const target = event.target as HTMLElement | null;
+    if (target && target !== event.currentTarget && target.closest('button, a, input, textarea, select, [role="button"]')) {
+      return;
+    }
+    event.preventDefault();
+    handleCardClick(event as unknown as MouseEvent);
   }
 }
 </script>
@@ -102,7 +118,11 @@ function handleCardClick(event: MouseEvent) {
       },
     ]"
     :style="variant === 'tile' && tileColor ? { background: tileColor.startsWith('#') ? `${tileColor}0d` : tileColor } : undefined"
+    :role="expandable ? 'button' : undefined"
+    :tabindex="expandable ? 0 : undefined"
+    :aria-expanded="expandable ? isExpanded : undefined"
     @click="handleCardClick"
+    @keydown="handleCardKeydown"
   >
     <!-- Tile Badge Icon (Dashboard Style) -->
     <div
