@@ -46,14 +46,100 @@ function toggleWeatherColor() {
   iconStyleStore.colorizeWeather = !iconStyleStore.colorizeWeather;
 }
 
+// Toast Feedback for Token Copying
+const copiedToken = ref<string | null>(null);
+function copyToken(tokenStr: string) {
+  navigator.clipboard.writeText(tokenStr);
+  copiedToken.value = tokenStr;
+  setTimeout(() => {
+    if (copiedToken.value === tokenStr) copiedToken.value = null;
+  }, 1800);
+}
+
 // Navigation Tabs in Showcase
-const currentTab = ref('primitives');
+const currentTab = ref('tokens');
 const showcaseTabs = [
-  { key: 'primitives', label: 'Primitives', icon: ACTION_ICONS.edit },
+  { key: 'tokens', label: 'Tokens & Variablen', icon: ACTION_ICONS.filterSettings },
+  { key: 'typography', label: 'Typografie & Text', icon: FORM_FIELD_ICONS.title },
+  { key: 'primitives', label: 'Buttons & Cards', icon: ACTION_ICONS.edit },
   { key: 'forms', label: 'Formulare & Inputs', icon: SECTION_ICON_DEFS.notes },
-  { key: 'navigation', label: 'Navigation & Icons', icon: SECTION_ICON_DEFS.calendar },
-  { key: 'feedback', label: 'Feedback & Badges', icon: ACTION_ICONS.shared },
+  { key: 'navigation', label: 'Icons & Navigation', icon: SECTION_ICON_DEFS.calendar },
+  { key: 'feedback', label: 'Badges & Feedback', icon: ACTION_ICONS.shared },
   { key: 'overlays', label: 'Dialoge & Overlays', icon: ACTION_ICONS.close },
+];
+
+// Token Data Definition
+const colorTokens = [
+  {
+    category: 'Oberflächen & Ränder',
+    items: [
+      { var: '--color-bg', name: 'Hintergrund (App-BG)', light: '#faf8f5', dark: '#181715' },
+      { var: '--color-surface', name: 'Karten & Panels (Surface)', light: '#ffffff', dark: '#232220' },
+      { var: '--color-border', name: 'Standard Rahmen', light: '#e8e2d9', dark: '#38352f' },
+      { var: '--color-border-strong', name: 'Eingabefeld/Button Rahmen', light: '#d5cabc', dark: '#4a453c' },
+    ],
+  },
+  {
+    category: 'Text & Neutral',
+    items: [
+      { var: '--color-text', name: 'Haupttext', light: '#2b2a28', dark: '#f2efe9' },
+      { var: '--color-text-muted', name: 'Gedämpfter Text (Muted)', light: '#726e66', dark: '#a8a29a' },
+      { var: '--color-hover', name: 'Hover & Muted Surface', light: '#f4f1ec', dark: '#2a2823' },
+    ],
+  },
+  {
+    category: 'Marke & Primär',
+    items: [
+      { var: '--color-primary', name: 'Primärfarbe (Brand Green)', light: '#2a7f74', dark: '#3da296' },
+      { var: '--color-primary-dark', name: 'Primär Dunkel (Hover)', light: '#1f6059', dark: '#7dd0c1' },
+      { var: '--color-primary-tint', name: 'Primär Tint (Leichtes Grün)', light: '#eaf3f1', dark: '#1c2e2a' },
+    ],
+  },
+  {
+    category: 'Akzente & Status',
+    items: [
+      { var: '--color-accent', name: 'Akzent (Sync/Echtzeit)', light: '#e08e45', dark: '#f0a05a' },
+      { var: '--color-danger', name: 'Gefahr / Löschen', light: '#c1503f', dark: '#e0685a' },
+      { var: '--color-success', name: 'Erfolg / Fertig', light: '#3f8f5c', dark: '#5cb37e' },
+      { var: '--color-scheduled', name: 'Geplant (Kalender/Streifen)', light: '#1e96d1', dark: '#52b8ea' },
+      { var: '--color-highlight', name: 'Highlight Hintergrund', light: '#fff4e8', dark: '#332a1c' },
+      { var: '--color-accent-secondary', name: 'Sekundärer Akzent (Indigo)', light: '#5b6ee1', dark: '#8b98f0' },
+    ],
+  },
+];
+
+const spaceTokens = [
+  { var: '--space-1', px: '4px', usage: 'Mikro-Abstände (Icon-Gaps, Badges, Chips)' },
+  { var: '--space-2', px: '8px', usage: 'Dichte Flex-Zeilen (Formularfelder, Button-Gruppen)' },
+  { var: '--space-3', px: '16px', usage: 'Standard Card-Padding (Mobil), Listen-Gaps, Fließtext-Margin' },
+  { var: '--space-4', px: '24px', usage: 'Großzügiges Card-Padding (Desktop), Dialoge, Sektionen' },
+  { var: '--space-5', px: '32px', usage: 'Große Trennabstände zwischen Haupt-Sektionen' },
+  { var: '--space-6', px: '48px', usage: 'Maximale Außenabstände / Hero-Layouts' },
+];
+
+const fontSizeTokens = [
+  { var: '--font-size-xs', val: '0.75rem (12px)', usage: 'Kicker, Badges, Formular-Meta' },
+  { var: '--font-size-sm', val: '0.85rem (13.6px)', usage: 'Sekundärtexte, Card-Actions, Hinweise' },
+  { var: '--font-size-md', val: '1rem (16px)', usage: 'Standard Fließtext, Inputs, Haupt-Buttons' },
+  { var: '--font-size-lg', val: '1.15rem (18.4px)', usage: 'H3 Überschriften, Subheadings, Dialog-Titel' },
+  { var: '--font-size-xl', val: '1.3rem (20.8px)', usage: 'H2 Sektions-Überschriften, Kachel-Titel' },
+  { var: '--font-size-2xl', val: '1.6rem (25.6px)', usage: 'H1 Haupt-Seitentitel (Apples SF-Pro Stil)' },
+];
+
+const radiusTokens = [
+  { var: '--radius-sm', px: '10px', usage: 'Kleine Chips, Badges, innere Anordnung' },
+  { var: '--radius-md', px: '16px', usage: 'Standard-Radius (Circle-Fallbacks)' },
+  { var: '--radius-lg', px: '26px', usage: 'Große Modals & Schubladen' },
+  { var: '--radius-xl', px: '32px', usage: 'Maximale Rundung / Bottom-Sheets' },
+  { var: '--radius-sm-squircle', px: '17.5px (Squircle)', usage: 'Card-Action Buttons & kleine Tags' },
+  { var: '--radius-md-squircle', px: '28px (Squircle)', usage: 'Standard Cards, Buttons, Inputs & Modals' },
+];
+
+const shadowTokens = [
+  { var: '--shadow-sm', spec: '0 2px 6px rgba(...)', usage: 'Standard Cards, Buttons, Dropdowns' },
+  { var: '--shadow-md', spec: '0 8px 24px rgba(...)', usage: 'Erhöhte Overlays, Modals, Popovers' },
+  { var: '--shadow-inset', spec: 'inset 0 1px 2px rgba(...)', usage: 'Track-Rinne für taktile SegmentedToggles' },
+  { var: '--shadow-pill-raised', spec: '0 1px 2px..., 0 2px 6px...', usage: 'Schwebender Thumb auf SegmentedToggle' },
 ];
 
 // Interactive Controls for Playground
@@ -108,11 +194,17 @@ const avatarCategories = [
 
 <template>
   <div class="design-system-view">
+    <!-- Toast Feedback -->
+    <div v-if="copiedToken" class="toast-feedback">
+      📋 <code>{{ copiedToken }}</code> in Zwischenablage kopiert!
+    </div>
+
     <!-- Header & Meta Toolbar -->
     <header class="ds-header">
       <div class="ds-header-title">
+        <span class="kicker">Design System</span>
         <h1>Reisotor Design System</h1>
-        <p class="hint">Interaktive Vorschau aller UI-Primitives & Komponenten</p>
+        <p class="hint">Vollständiges Abbild aller Design-Tokens, Typografie, Primitives & Komponenten</p>
       </div>
 
       <div class="ds-header-tools">
@@ -138,11 +230,153 @@ const avatarCategories = [
 
     <!-- Content Sections -->
     <main class="ds-main">
-      <!-- 1. PRIMITIVES SECTION -->
-      <section v-if="currentTab === 'primitives'" class="ds-section">
-        <h2>1. Button Primitives (Button.vue)</h2>
+      <!-- 1. TOKENS & VARIABLEN SECTION -->
+      <section v-if="currentTab === 'tokens'" class="ds-section">
+        <h2>1. Design-Tokens & CSS-Variablen</h2>
+        <p class="hint">Klicke auf einen Token, um seine CSS-Variable (<code>var(--...)</code>) in die Zwischenablage zu kopieren.</p>
+
+        <!-- Farbpalette -->
+        <h3>Farbpalette (Theme & Akzente)</h3>
+        <div v-for="cat in colorTokens" :key="cat.category" class="token-group">
+          <span class="token-group-title">{{ cat.category }}</span>
+          <div class="swatch-grid">
+            <div
+              v-for="item in cat.items"
+              :key="item.var"
+              class="swatch-card"
+              @click="copyToken(`var(${item.var})`)"
+              title="Klicken zum Kopieren"
+            >
+              <div class="swatch-preview" :style="{ background: `var(${item.var})` }"></div>
+              <div class="swatch-info">
+                <strong>{{ item.name }}</strong>
+                <code>{{ item.var }}</code>
+                <span class="swatch-hex">Light: {{ item.light }} | Dark: {{ item.dark }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Abstände & Gaps -->
+        <h3 style="margin-top: 32px;">Abstände & Gaps (--space-1 bis --space-6)</h3>
         <Card class="ds-card">
-          <h3>Interactive Playground</h3>
+          <div class="space-list">
+            <div v-for="space in spaceTokens" :key="space.var" class="space-item" @click="copyToken(`var(${space.var})`)">
+              <div class="space-label">
+                <code>{{ space.var }}</code>
+                <span>({{ space.px }})</span>
+              </div>
+              <div class="space-bar-container">
+                <div class="space-bar" :style="{ width: space.px }"></div>
+              </div>
+              <span class="space-usage">{{ space.usage }}</span>
+            </div>
+          </div>
+        </Card>
+
+        <!-- Schriftgrößen-Skala -->
+        <h3 style="margin-top: 32px;">Schriftgrößen-Skala (--font-size-*)</h3>
+        <Card class="ds-card">
+          <div class="font-size-list">
+            <div v-for="fs in fontSizeTokens" :key="fs.var" class="font-size-item" @click="copyToken(`var(${fs.var})`)">
+              <div class="font-size-meta">
+                <code>{{ fs.var }}</code>
+                <span>{{ fs.val }}</span>
+              </div>
+              <div class="font-size-sample" :style="{ fontSize: `var(${fs.var})` }">
+                Reisotor Reisepartner
+              </div>
+              <span class="font-size-usage">{{ fs.usage }}</span>
+            </div>
+          </div>
+        </Card>
+
+        <!-- Eckenrundung: Squircle-Prinzip -->
+        <h3 style="margin-top: 32px;">Eckenrundung & Squircle-Prinzip</h3>
+        <Card class="ds-card">
+          <p>Nirgends ganz eckige 90°-Ecken. Buttons, Cards, Inputs & Modals binden <code>corner-shape: squircle</code> mit den `-squircle`-Kompensationsvariablen.</p>
+          <div class="radius-grid">
+            <div v-for="r in radiusTokens" :key="r.var" class="radius-card" @click="copyToken(`var(${r.var})`)">
+              <div
+                class="radius-box"
+                :style="`border-radius: var(${r.var}); ${r.var.includes('squircle') ? 'corner-shape: squircle;' : ''}`"
+              ></div>
+              <code>{{ r.var }}</code>
+              <span class="radius-px">{{ r.px }}</span>
+              <span class="radius-usage">{{ r.usage }}</span>
+            </div>
+          </div>
+        </Card>
+
+        <!-- Schatten & Material -->
+        <h3 style="margin-top: 32px;">Schatten & Weiches Material</h3>
+        <Card class="ds-card">
+          <div class="shadow-grid">
+            <div v-for="s in shadowTokens" :key="s.var" class="shadow-card" @click="copyToken(`var(${s.var})`)">
+              <div class="shadow-box" :style="{ boxShadow: `var(${s.var})` }"></div>
+              <code>{{ s.var }}</code>
+              <span class="shadow-usage">{{ s.usage }}</span>
+            </div>
+          </div>
+        </Card>
+      </section>
+
+      <!-- 2. TYPOGRAFIE & SEMANTISCHE TEXTBAUSTEINE SECTION -->
+      <section v-if="currentTab === 'typography'" class="ds-section">
+        <h2>2. Typografie & Semantische Textbausteine</h2>
+        <p class="hint">Fira Sans Schriftfamilie (selbstgehostet) in allen Gewichten (400, 500, 600, 700) und Kursiv-Schnitten.</p>
+
+        <Card class="ds-card">
+          <span class="kicker">Kicker / Pre-Heading Label</span>
+          <h1>H1 Seitentitel (700 Bold, -0.01em Tracking)</h1>
+          <h2>H2 Sektions-Überschrift (600 Semi-Bold)</h2>
+          <h3>H3 Kompakter Gruppen-Titel (600 Semi-Bold)</h3>
+          <h4>H4 Subheading / Unterüberschrift (600 Semi-Bold)</h4>
+
+          <p style="margin-top: 16px;">
+            Standard-Fließtext (<code>p</code>) in gedämpfter Schriftfarbe (<code>var(--color-text-muted)</code>). Text kann <strong>fett hervorgehoben (700)</strong>, <em>kursiv betont (400 Italic)</em> oder <strong><em>fett-kursiv kombiniert (700 Italic)</em></strong> dargestellt werden.
+          </p>
+
+          <p class="hint">
+            <strong>Hinweistext (.hint / .muted):</strong> Dezenter Erklärtext für Formulare oder Seiten-Einleitungen mit sichtbarem Freiraum nach unten.
+          </p>
+
+          <div style="margin-top: 20px;">
+            <span class="kicker">Monospace & Code-Bausteine</span>
+            <p>Code-Bausteine werden in dezentem <code>code</code>-Span mit hellbepolstertem Hintergrund hervorgehoben.</p>
+          </div>
+
+          <div style="margin-top: 20px;" class="flex-row">
+            <div>
+              <span class="kicker">Button-Label Typografie</span>
+              <Button variant="primary" size="md">Haupt-Button Text (600)</Button>
+            </div>
+            <div>
+              <span class="kicker">Badge-Label Typografie</span>
+              <span class="badge badge--primary">Primary Badge Text (600)</span>
+            </div>
+          </div>
+        </Card>
+
+        <h3 style="margin-top: 24px;">Fira Sans Schriftgewichte & Schnitte</h3>
+        <Card class="ds-card">
+          <div class="font-weight-list">
+            <div class="fw-item" style="font-weight: 400;">Fira Sans 400 Regular – Normaler Fließtext & Absätze</div>
+            <div class="fw-item" style="font-weight: 400; font-style: italic;">Fira Sans 400 Italic – Kursiver Text & Zitate</div>
+            <div class="fw-item" style="font-weight: 500;">Fira Sans 500 Medium – Dezent betonte Formularfeld-Labels</div>
+            <div class="fw-item" style="font-weight: 600;">Fira Sans 600 Semi-Bold – Buttons, Badges, H2/H3 Überschriften</div>
+            <div class="fw-item" style="font-weight: 700;">Fira Sans 700 Bold – H1 Seitentitel & prägnante Kacheln</div>
+          </div>
+        </Card>
+      </section>
+
+      <!-- 3. BUTTONS & CARDS PRIMITIVES SECTION -->
+      <section v-if="currentTab === 'primitives'" class="ds-section">
+        <h2>3. Buttons & Cards Primitives</h2>
+
+        <!-- Interactive Playground -->
+        <Card class="ds-card">
+          <h3>Interactive Button Playground</h3>
           <div class="playground-controls">
             <label>
               <span>Variant:</span>
@@ -166,7 +400,7 @@ const avatarCategories = [
 
             <label class="checkbox-label">
               <input type="checkbox" v-model="btnDisabled" />
-              <span>Disabled</span>
+              <span>Disabled State</span>
             </label>
           </div>
 
@@ -177,46 +411,48 @@ const avatarCategories = [
           </div>
         </Card>
 
-        <h3>Alle Button-Varianten & Größen</h3>
+        <!-- Alle Button-Varianten inkl. Disabled -->
+        <h3>Alle Button-Varianten (Aktiv & Disabled)</h3>
         <Card class="ds-card">
           <div class="grid-table">
             <div class="grid-header">Variante</div>
             <div class="grid-header">sm (Kompakt)</div>
             <div class="grid-header">md (Standard)</div>
-            <div class="grid-header">lg (Groß)</div>
+            <div class="grid-header">Disabled State</div>
 
             <div><strong>Primary</strong></div>
             <div><Button variant="primary" size="sm">Aktion</Button></div>
             <div><Button variant="primary" size="md">Haupt-Aktion</Button></div>
-            <div><Button variant="primary" size="lg">Große Aktion</Button></div>
+            <div><Button variant="primary" size="md" :disabled="true">Deaktiviert</Button></div>
 
             <div><strong>Secondary</strong></div>
             <div><Button variant="secondary" size="sm">Aktion</Button></div>
             <div><Button variant="secondary" size="md">Sekundär</Button></div>
-            <div><Button variant="secondary" size="lg">Große Sekundär</Button></div>
+            <div><Button variant="secondary" size="md" :disabled="true">Deaktiviert</Button></div>
 
             <div><strong>Danger</strong></div>
             <div><Button variant="danger" size="sm">Löschen</Button></div>
             <div><Button variant="danger" size="md">Gefahr / Löschen</Button></div>
-            <div><Button variant="danger" size="lg">Endgültig Löschen</Button></div>
+            <div><Button variant="danger" size="md" :disabled="true">Deaktiviert</Button></div>
 
             <div><strong>Card Action</strong></div>
             <div><Button variant="card-action" size="sm">📌 Tag</Button></div>
             <div><Button variant="card-action" size="md">📌 Karte-Aktion</Button></div>
-            <div><Button variant="card-action" size="lg">📌 Großes Tag</Button></div>
+            <div><Button variant="card-action" size="md" :disabled="true">📌 Deaktiviert</Button></div>
 
             <div><strong>Ghost</strong></div>
             <div><Button variant="ghost" size="sm">Option</Button></div>
             <div><Button variant="ghost" size="md">Dezent / Ghost</Button></div>
-            <div><Button variant="ghost" size="lg">Großes Ghost</Button></div>
+            <div><Button variant="ghost" size="md" :disabled="true">Deaktiviert</Button></div>
           </div>
         </Card>
 
-        <h2>2. Icon Button Primitives (IconButton.vue)</h2>
+        <!-- Icon Buttons & Button Groups -->
+        <h3 style="margin-top: 32px;">IconButtons & ButtonGroups</h3>
         <Card class="ds-card">
           <div class="flex-row">
             <div class="demo-box">
-              <span class="demo-title">Ghost (Default)</span>
+              <span class="demo-title">IconButton Ghost</span>
               <div class="demo-inline">
                 <IconButton size="sm">⚙️</IconButton>
                 <IconButton size="md">⚙️</IconButton>
@@ -225,7 +461,7 @@ const avatarCategories = [
             </div>
 
             <div class="demo-box">
-              <span class="demo-title">Secondary (Border)</span>
+              <span class="demo-title">IconButton Secondary</span>
               <div class="demo-inline">
                 <IconButton variant="secondary" size="sm">✏️</IconButton>
                 <IconButton variant="secondary" size="md">✏️</IconButton>
@@ -234,210 +470,195 @@ const avatarCategories = [
             </div>
 
             <div class="demo-box">
-              <span class="demo-title">Danger (Löschen)</span>
+              <span class="demo-title">IconButton Danger</span>
               <div class="demo-inline">
                 <IconButton variant="danger" size="sm">🗑️</IconButton>
                 <IconButton variant="danger" size="md">🗑️</IconButton>
                 <IconButton variant="danger" size="lg">🗑️</IconButton>
               </div>
             </div>
-
-            <div class="demo-box">
-              <span class="demo-title">Active State</span>
-              <div class="demo-inline">
-                <IconButton :active="true" size="sm">⭐</IconButton>
-                <IconButton :active="true" size="md">⭐</IconButton>
-                <IconButton :active="true" size="lg">⭐</IconButton>
-              </div>
-            </div>
           </div>
+
+          <h4 style="margin-top: 20px;">ButtonGroup (Ausrichtung & Abstände)</h4>
+          <ButtonGroup align="start">
+            <Button variant="secondary">Abbrechen</Button>
+            <Button variant="primary">Speichern</Button>
+          </ButtonGroup>
         </Card>
 
-        <h2>3. Card & Surface Primitives (Card.vue)</h2>
-        <div class="grid-2col">
-          <Card>
-            <h3>Standard Card (.card)</h3>
-            <p>Heller Hintergrund mit Squircle-Eckenrundung und sanftem Schatten (--shadow-sm).</p>
-            <ButtonGroup align="end">
-              <Button variant="secondary" size="sm">Abbrechen</Button>
-              <Button variant="primary" size="sm">Bestätigen</Button>
-            </ButtonGroup>
+        <!-- Cards Showcase -->
+        <h3 style="margin-top: 32px;">Card Varianten (Card.vue)</h3>
+        <div class="card-showcase-grid">
+          <!-- Standard Card -->
+          <Card variant="default">
+            <h3>Standard Karte (Default)</h3>
+            <p>Weißer Hintergrund mit weichem Schatten (<code>--shadow-sm</code>) und Squircle-Ecken.</p>
+            <template #footer>
+              <Button variant="card-action" size="sm">Details ↗</Button>
+            </template>
           </Card>
 
+          <!-- Muted Card -->
           <Card variant="muted">
-            <h3>Muted Card (.card--muted)</h3>
-            <p>Hinterlegter Hintergrund (--color-hover) für untergeordnete Panels oder Widgets.</p>
-            <ButtonGroup align="end">
-              <Button variant="card-action" size="sm">📌 Details</Button>
-            </ButtonGroup>
+            <h3>Hinterlegte Karte (Muted)</h3>
+            <p>Hinterlegter Hintergrund (<code>--color-hover</code>) für Sekundär-Sektionen oder Inaktives.</p>
+          </Card>
+
+          <!-- Condensed / Mini Card -->
+          <Card variant="condensed">
+            <h4 style="margin: 0 0 4px;">Mini / Condensed Karte</h4>
+            <p style="font-size: 0.85rem; margin: 0;">Kompakteres Padding (<code>--space-2 var(--space-3)</code>) für dichte Listen.</p>
+          </Card>
+
+          <!-- Flat Card -->
+          <Card variant="flat">
+            <h3>Flache Karte (Flat)</h3>
+            <p>Kein Schatten, nur mit dezentem Rand. Ideal für verschachtelte Container.</p>
+          </Card>
+
+          <!-- Elevated Card -->
+          <Card variant="elevated">
+            <h3>Erhöhte Karte (Elevated)</h3>
+            <p>Prägnanterer Schatten (<code>--shadow-md</code>) für schwebende Panels.</p>
+          </Card>
+
+          <!-- Card mit Live-Sync Highlight -->
+          <Card :highlight="true">
+            <h3>Karte mit Highlight-Rand</h3>
+            <p>Echtzeit-Akzentrand (<code>.new-highlight</code>) signalisiert frisch aktualisierte Inhalte.</p>
+          </Card>
+
+          <!-- Card mit Banner-Bild -->
+          <Card banner-url="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&auto=format&fit=crop" banner-alt="Strand">
+            <h3>Karte mit Bild-Banner</h3>
+            <p>Nahtlos integriertes Vorschaubild am oberen Rand der Karte.</p>
+          </Card>
+
+          <!-- Condensed Card mit Banner-Bild -->
+          <Card variant="condensed" banner-url="https://images.unsplash.com/photo-1476514525535-ce74f45814ce?w=600&auto=format&fit=crop" banner-alt="See">
+            <h4 style="margin: 0 0 4px;">Condensed mit Banner</h4>
+            <p style="font-size: 0.85rem; margin: 0;">Kompakte Mini-Karte mit integriertem Banner-Bild.</p>
           </Card>
         </div>
-
-        <h2>4. Input Primitives (Input.vue)</h2>
-        <Card class="ds-card">
-          <div class="playground-controls">
-            <label>
-              <span>Größe:</span>
-              <select v-model="inputSize" class="ds-select">
-                <option value="sm">sm (36px)</option>
-                <option value="md">md (44px)</option>
-                <option value="lg">lg (50px)</option>
-              </select>
-            </label>
-            <label class="checkbox-label">
-              <input type="checkbox" v-model="inputDisabled" />
-              <span>Disabled</span>
-            </label>
-            <label class="checkbox-label">
-              <input type="checkbox" v-model="inputInvalid" />
-              <span>Invalid</span>
-            </label>
-          </div>
-
-          <div class="playground-preview">
-            <Input
-              v-model="inputValue"
-              :size="inputSize"
-              :disabled="inputDisabled"
-              :invalid="inputInvalid"
-              placeholder="Textfeld..."
-            />
-          </div>
-        </Card>
       </section>
 
-      <!-- 2. FORMS & INPUTS SECTION -->
+      <!-- 4. FORMULARE & INPUTS SECTION -->
       <section v-if="currentTab === 'forms'" class="ds-section">
-        <h2>Formular-Komponenten (FormField.vue, SegmentedToggle.vue, Combobox.vue)</h2>
+        <h2>4. Formulare, Inputs & Controls</h2>
 
+        <!-- FormField & Input -->
         <Card class="ds-card">
-          <h3>Formularfeld Wrapper (FormField.vue)</h3>
-          <p class="hint">Behält das Label und ein Icon oberhalb des Feldes sichtbar.</p>
-
-          <div class="form-grid">
-            <FormField label="Urlaubs-Titel" icon="title">
-              <Input placeholder="z. B. Sommerurlaub 2026" />
+          <h3>FormField Wrapper (Label + Icon + Input)</h3>
+          <div class="form-demo-grid">
+            <FormField label="Reisezieltitel" icon="title">
+              <Input v-model="inputValue" placeholder="Titel eingeben..." :size="inputSize" :disabled="inputDisabled" :invalid="inputInvalid" />
             </FormField>
 
-            <FormField label="Abreisedatum" icon="date">
-              <Input type="date" model-value="2026-08-25" />
+            <FormField label="Anreisedatum" icon="date">
+              <Input type="date" value="2026-08-25" :size="inputSize" :disabled="inputDisabled" />
             </FormField>
 
-            <FormField label="Budget" icon="amount">
-              <Input type="number" placeholder="500 €" />
+            <FormField label="Kategorie" icon="category">
+              <Combobox v-model="comboboxValue" :options="comboboxOptions" placeholder="Kategorie wählen..." />
             </FormField>
           </div>
         </Card>
 
+        <!-- SegmentedToggle & Controls -->
+        <h3 style="margin-top: 32px;">SegmentedToggle (Taktile Umschalt-Pille)</h3>
         <Card class="ds-card">
-          <h3>Segmented Control (SegmentedToggle.vue)</h3>
-          <p class="hint">Tactile Pill Toggle mit gleitendem Thumb und weichem Material-Schatten.</p>
-
-          <div class="toggle-demo">
+          <p>Weiches Material (<code>--shadow-inset</code> / <code>--shadow-pill-raised</code>) mit gleitender Daumen-Animation.</p>
+          <div class="flex-row" style="margin-top: 16px;">
             <SegmentedToggle
               v-model="toggleValue"
               :options="[
-                { value: 'spots', label: 'Spots', icon: SECTION_ICON_DEFS.excursions },
-                { value: 'tours', label: 'Touren', icon: SECTION_ICON_DEFS.calendar },
+                { value: 'spots', label: 'Spots' },
+                { value: 'tours', label: 'Touren' },
               ]"
             />
-            <p>Ausgewählter Wert: <strong>{{ toggleValue }}</strong></p>
-          </div>
-        </Card>
 
-        <Card class="ds-card">
-          <h3>Suchbare Combobox (Combobox.vue)</h3>
-          <p class="hint">Auto-suggesting Dropdown mit Live-Filterung und Keyboard-Navigation.</p>
-
-          <div style="max-width: 320px;">
-            <Combobox v-model="comboboxValue" :options="comboboxOptions" placeholder="Kategorie wählen..." />
+            <SegmentedToggle
+              v-model="toggleValue"
+              :options="[
+                { value: 'spots', label: 'Alle' },
+                { value: 'active', label: 'Aktiv' },
+                { value: 'done', label: 'Erledigt' },
+              ]"
+            />
           </div>
         </Card>
       </section>
 
-      <!-- 3. NAVIGATION & ICONS SECTION -->
+      <!-- 5. ICONS & NAVIGATION SECTION -->
       <section v-if="currentTab === 'navigation'" class="ds-section">
-        <h2>Tab-Navigation (TabBar.vue)</h2>
-        <Card class="ds-card">
-          <TabBar :tabs="tabBarItems" :active-key="activeTabBarKey" @select="activeTabBarKey = $event" />
-          <div style="padding: 16px 0;">
-            Aktiver Tab: <strong>{{ activeTabBarKey }}</strong>
-          </div>
-        </Card>
+        <h2>5. Icon-System (3 Kanonische Gruppen)</h2>
+        <p class="hint">Reisotor Icon-System gliedert sich in 3 fest definierte Hauptgruppen. Tabler.io bietet über 5.000 verknüpfbare Symbol-Icons.</p>
 
-        <h2>Icons & Entitäten (AppIcon.vue)</h2>
-
-        <!-- Gruppe 1: Navigation & Dashboard -->
+        <!-- Gruppe 1 -->
         <Card class="ds-card">
-          <h3>Gruppe 1: Navigation & Dashboard</h3>
-          <p class="hint">Hauptnavigation, Nav-Bar und Bereichs-Abschnitte (Emoji vs. Tabler Icon)</p>
-          <div class="icon-triple-grid">
-            <div v-for="(def, key) in SECTION_ICON_DEFS" :key="key" class="icon-triple-item">
-              <span class="col-emoji"><AppIcon :icon="def" :size="24" group="navigation" force-style="emoji" /></span>
-              <span class="col-tabler"><AppIcon :icon="def" :size="24" group="navigation" force-style="icons" color="var(--color-text)" /></span>
-              <span class="icon-label">{{ key }}</span>
+          <h3>Gruppe 1: Navigation & Dashboard (sectionIcons.ts)</h3>
+          <div class="icon-gallery-grid">
+            <div v-for="(def, key) in SECTION_ICON_DEFS" :key="key" class="icon-card-box">
+              <AppIcon :icon="def" group="navigation" :size="24" />
+              <span class="icon-box-label">{{ key }}</span>
             </div>
           </div>
         </Card>
 
-        <!-- Gruppe 2: Kategorien (Kalender, Spots, Reise, Kartenmarker & Wetter) -->
-        <Card class="ds-card">
+        <!-- Gruppe 2 -->
+        <Card class="ds-card" style="margin-top: 24px;">
           <h3>Gruppe 2: Kategorien & Wetter</h3>
-          <p class="hint">
-            Kalender-Einträge, Orte- / Spot-Kategorien, Kartenmarker & Wetter-Status.<br />
-            Spalten: <strong>Emoji</strong> | <strong>Tabler Monochrom</strong> | <strong>Tabler Gefärbt</strong>
-          </p>
+          <p class="hint">Kalender, Spot- & Wetter-Kategorien in 3 Spalten (Emoji, Tabler Monochrom, Tabler Gefärbt).</p>
 
-          <h4 class="subgroup-title">Kalender-Kategorien</h4>
+          <h4 class="subgroup-title">Kalender-Kategorien (scheduleCategory.ts)</h4>
           <div class="icon-triple-grid">
             <div v-for="(meta, key) in SCHEDULE_CATEGORY_META" :key="key" class="icon-triple-item">
-              <span class="col-emoji"><AppIcon :icon="meta.tabler" :size="22" group="categories" force-style="emoji" /></span>
-              <span class="col-tabler"><AppIcon :icon="meta.tabler" :size="22" group="categories" force-style="icons" color="var(--color-text)" /></span>
-              <span class="col-colored"><AppIcon :icon="meta.tabler" :size="22" group="categories" force-style="icons" :color="meta.color" /></span>
+              <span class="col-emoji"><AppIcon :icon="meta.tabler" group="categories" force-style="emoji" /></span>
+              <span class="col-tabler"><AppIcon :icon="meta.tabler" group="categories" force-style="icons" color="var(--color-text)" /></span>
+              <span class="col-colored"><AppIcon :icon="meta.tabler" group="categories" force-style="icons" :color="meta.color" /></span>
               <span class="icon-label">{{ meta.label }}</span>
             </div>
           </div>
 
-          <h4 class="subgroup-title" style="margin-top: 20px;">Spot- & Orte-Kategorien</h4>
+          <h4 class="subgroup-title" style="margin-top: 20px;">Spot- & Orte-Kategorien (spotCategory.ts)</h4>
           <div class="icon-triple-grid">
             <div v-for="cat in spotCategories" :key="cat.name" class="icon-triple-item">
-              <span class="col-emoji"><AppIcon :icon="cat.meta.tabler" :size="22" group="categories" force-style="emoji" /></span>
-              <span class="col-tabler"><AppIcon :icon="cat.meta.tabler" :size="22" group="categories" force-style="icons" color="var(--color-text)" /></span>
-              <span class="col-colored"><AppIcon :icon="cat.meta.tabler" :size="22" group="categories" force-style="icons" :color="cat.meta.color" /></span>
+              <span class="col-emoji"><AppIcon :icon="cat.meta.tabler" group="categories" force-style="emoji" /></span>
+              <span class="col-tabler"><AppIcon :icon="cat.meta.tabler" group="categories" force-style="icons" color="var(--color-text)" /></span>
+              <span class="col-colored"><AppIcon :icon="cat.meta.tabler" group="categories" force-style="icons" :color="cat.meta.color" /></span>
               <span class="icon-label">{{ cat.name }}</span>
             </div>
           </div>
 
-          <h4 class="subgroup-title" style="margin-top: 20px;">Wetter-Status Icons</h4>
+          <h4 class="subgroup-title" style="margin-top: 20px;">Wetter-Status Icons (WeatherIcon.vue)</h4>
           <div class="icon-triple-grid">
             <div v-for="w in weatherCodes" :key="w.code" class="icon-triple-item">
-              <span class="col-emoji">{{ w.meta.icon }}</span>
-              <span class="col-tabler"><AppIcon :icon="w.meta.tabler" :size="22" group="weather" force-style="icons" color="var(--color-text)" /></span>
+              <span class="col-emoji" style="font-size: 1.2rem;">{{ w.meta.icon }}</span>
+              <span class="col-tabler"><WeatherIcon :code="w.code" :size="22" /></span>
               <span class="col-colored"><WeatherIcon :code="w.code" :size="22" /></span>
               <span class="icon-label">{{ w.meta.label }}</span>
             </div>
           </div>
         </Card>
 
-        <!-- Gruppe 3: Buttons, Interaktionen, Formularfelder & Profil-Avatare -->
-        <Card class="ds-card">
-          <h3>Gruppe 3: Buttons, Interaktionen, Formularfelder & Profil-Avatare</h3>
-          <p class="hint">Aktions-Buttons, Modals, Formularfelder & wählbare Nutzer-Avatare</p>
+        <!-- Gruppe 3 -->
+        <Card class="ds-card" style="margin-top: 24px;">
+          <h3>Gruppe 3: Aktionen, Formularfelder & Profil-Avatare</h3>
 
-          <h4 class="subgroup-title">Aktions- & Status-Icons</h4>
+          <h4 class="subgroup-title">Aktions- & Status-Icons (actionIcons.ts)</h4>
           <div class="icon-triple-grid">
             <div v-for="(def, key) in ACTION_ICONS" :key="key" class="icon-triple-item">
-              <span class="col-emoji"><AppIcon :icon="def" :size="22" group="actions" force-style="emoji" /></span>
-              <span class="col-tabler"><AppIcon :icon="def" :size="22" group="actions" force-style="icons" color="var(--color-text)" /></span>
+              <span class="col-emoji"><AppIcon :icon="def" group="actions" force-style="emoji" /></span>
+              <span class="col-tabler"><AppIcon :icon="def" group="actions" force-style="icons" color="var(--color-text)" /></span>
               <span class="icon-label">{{ key }}</span>
             </div>
           </div>
 
-          <h4 class="subgroup-title" style="margin-top: 20px;">Formularfeld-Icons</h4>
+          <h4 class="subgroup-title" style="margin-top: 20px;">Formularfeld-Icons (formFieldIcons.ts)</h4>
           <div class="icon-triple-grid">
             <div v-for="(def, key) in FORM_FIELD_ICONS" :key="key" class="icon-triple-item">
-              <span class="col-emoji"><AppIcon :icon="def" :size="22" group="formFields" force-style="emoji" /></span>
-              <span class="col-tabler"><AppIcon :icon="def" :size="22" group="formFields" force-style="icons" color="var(--color-text)" /></span>
+              <span class="col-emoji"><AppIcon :icon="def" group="formFields" force-style="emoji" /></span>
+              <span class="col-tabler"><AppIcon :icon="def" group="formFields" force-style="icons" color="var(--color-text)" /></span>
               <span class="icon-label">{{ key }}</span>
             </div>
           </div>
@@ -452,11 +673,26 @@ const avatarCategories = [
         </Card>
       </section>
 
-      <!-- 4. FEEDBACK & BADGES SECTION -->
+      <!-- 6. BADGES & FEEDBACK SECTION -->
       <section v-if="currentTab === 'feedback'" class="ds-section">
-        <h2>Status-Badges & Feedback-Elemente</h2>
+        <h2>6. Badges, Indikatoren & Feedback</h2>
         <Card class="ds-card">
-          <h3>Badges & Chips</h3>
+          <h3>Status Badges & Chips</h3>
+          <div class="flex-row" style="margin-top: 12px;">
+            <span class="badge">Standard Badge</span>
+            <span class="badge badge--primary">Primary Badge</span>
+            <span class="badge badge--success">Erfolg / Fertig</span>
+            <span class="badge badge--danger">Gefahr / Offen</span>
+            <span class="badge badge--accent">Akzent / Neu</span>
+          </div>
+
+          <h3 style="margin-top: 24px;">Sichtbarkeits-Indikatoren</h3>
+          <div class="flex-row">
+            <span class="badge">🔒 Privat (Nur Ich)</span>
+            <span class="badge badge--primary">🤝 Geteilt (Mitreisende)</span>
+          </div>
+
+          <h3 style="margin-top: 24px;">Spezifische App Badges</h3>
           <div class="flex-row">
             <CategoryChip category="Essen & Trinken" />
             <CategoryChip category="Sehenswürdigkeit" />
@@ -464,15 +700,7 @@ const avatarCategories = [
             <PendingSyncBadge />
           </div>
 
-          <h3 style="margin-top: 24px;">Wetter-Icons (WeatherIcon.vue)</h3>
-          <div class="flex-row">
-            <WeatherIcon :code="0" :size="28" />
-            <WeatherIcon :code="2" :size="28" />
-            <WeatherIcon :code="61" :size="28" />
-            <WeatherIcon :code="95" :size="28" />
-          </div>
-
-          <h3 style="margin-top: 24px;">Ladezustände</h3>
+          <h3 style="margin-top: 24px;">Ladezustände (LoadingIndicator.vue)</h3>
           <div class="flex-row">
             <LoadingIndicator size="sm" />
             <LoadingIndicator size="md" />
@@ -481,9 +709,9 @@ const avatarCategories = [
         </Card>
       </section>
 
-      <!-- 5. DIALOGE & OVERLAYS SECTION -->
+      <!-- 7. DIALOGE & OVERLAYS SECTION -->
       <section v-if="currentTab === 'overlays'" class="ds-section">
-        <h2>Dialoge & Modals (Modal.vue)</h2>
+        <h2>7. Dialoge & Overlays (Modal.vue)</h2>
         <Card class="ds-card">
           <p>Klicke den Button unten, um einen Beispiel-Modal-Dialog mit Backdrop und Squircle-Radius zu testen.</p>
           <Button variant="primary" @click="modalOpen = true">Modal Öffnen</Button>
@@ -505,27 +733,34 @@ const avatarCategories = [
 
 <style scoped>
 .design-system-view {
-  max-width: 1000px;
+  max-width: 1100px;
   margin: 0 auto;
-  padding: var(--space-4) var(--space-3);
+  padding: var(--space-4);
+  padding-bottom: calc(var(--navbar-bottom-offset, 88px) + var(--space-5));
+}
+
+.toast-feedback {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md-squircle);
+  corner-shape: squircle;
+  padding: 10px 16px;
+  box-shadow: var(--shadow-md);
+  font-size: 0.9rem;
+  font-weight: 600;
 }
 
 .ds-header {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: flex-start;
-  flex-wrap: wrap;
   gap: var(--space-3);
   margin-bottom: var(--space-4);
-  padding-bottom: var(--space-3);
-  border-bottom: 1px solid var(--color-border);
-}
-
-.ds-header-title h1 {
-  margin: 0 0 var(--space-1);
-  font-size: 1.6rem;
-  font-weight: 700;
-  color: var(--color-primary-dark);
 }
 
 .ds-header-tools {
@@ -538,65 +773,262 @@ const avatarCategories = [
   margin-bottom: var(--space-4);
 }
 
-.ds-section h2 {
-  font-size: 1.25rem;
-  margin: var(--space-4) 0 var(--space-2);
-  color: var(--color-text);
+.ds-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
 }
 
 .ds-card {
-  margin-bottom: var(--space-4);
-  padding: var(--space-4);
-}
-
-.playground-controls {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-3);
-  background: var(--color-hover);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
   margin-bottom: var(--space-3);
 }
 
-.playground-controls label {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-  font-size: 0.85rem;
-  font-weight: 600;
+/* Tokens Grid & Swatches */
+.token-group {
+  margin-top: 16px;
 }
 
-.checkbox-label {
+.token-group-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.swatch-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.swatch-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.swatch-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-primary);
+}
+
+.swatch-preview {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border-strong);
+  flex-shrink: 0;
+}
+
+.swatch-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+}
+
+.swatch-info strong {
+  font-size: 0.85rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.swatch-info code {
+  font-size: 0.75rem;
+  color: var(--color-primary);
+}
+
+.swatch-hex {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+}
+
+/* Space List */
+.space-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.space-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+}
+
+.space-item:hover {
+  background: var(--color-hover);
+}
+
+.space-label {
+  width: 140px;
+  display: flex;
+  flex-direction: column;
+}
+
+.space-bar-container {
+  width: 120px;
+  background: var(--color-hover);
+  border-radius: 4px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+}
+
+.space-bar {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: 4px;
+}
+
+.space-usage {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+/* Font Size List */
+.font-size-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.font-size-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  border-radius: 6px;
   cursor: pointer;
 }
 
-.ds-select {
-  padding: 4px 8px;
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  border: 1px solid var(--color-border-strong);
-  background: var(--color-surface);
+.font-size-item:hover {
+  background: var(--color-hover);
+}
+
+.font-size-meta {
+  display: flex;
+  gap: 10px;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.font-size-sample {
+  font-weight: 600;
   color: var(--color-text);
 }
 
+.font-size-usage {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+/* Radius & Shadow Grids */
+.radius-grid,
+.shadow-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.radius-card,
+.shadow-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: center;
+}
+
+.radius-box,
+.shadow-box {
+  width: 60px;
+  height: 60px;
+  background: var(--color-primary-tint);
+  border: 1px solid var(--color-primary);
+}
+
+.radius-px,
+.shadow-usage,
+.radius-usage {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+/* Font Weight List */
+.font-weight-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.fw-item {
+  font-size: 1.05rem;
+  padding: 8px 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
+/* Card Showcase Grid */
+.card-showcase-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+/* Playground Controls */
+.playground-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.ds-select {
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+}
+
 .playground-preview {
-  padding: var(--space-4);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-bg);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  margin-bottom: var(--space-3);
+  padding: 24px;
+  background: var(--color-hover);
+  border-radius: 12px;
 }
 
+/* Tables & Flex Utilities */
 .grid-table {
   display: grid;
   grid-template-columns: 140px repeat(3, 1fr);
-  gap: var(--space-2);
+  gap: 12px;
   align-items: center;
 }
 
@@ -604,94 +1036,87 @@ const avatarCategories = [
   font-weight: 700;
   font-size: 0.85rem;
   color: var(--color-text-muted);
-  border-bottom: 1px solid var(--color-border);
-  padding-bottom: var(--space-1);
+  border-bottom: 2px solid var(--color-border);
+  padding-bottom: 8px;
 }
 
 .flex-row {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-3);
+  gap: 12px;
   align-items: center;
 }
 
 .demo-box {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: 6px;
 }
 
 .demo-title {
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--color-text-muted);
 }
 
 .demo-inline {
   display: flex;
-  gap: var(--space-2);
+  gap: 8px;
   align-items: center;
 }
 
-.grid-2col {
+/* Icon Grids */
+.icon-gallery-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: var(--space-3);
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 10px;
 }
 
-.form-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: var(--space-3);
-  margin-top: var(--space-3);
+.icon-card-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font-size: 0.85rem;
 }
 
 .subgroup-title {
-  margin: var(--space-3) 0 var(--space-2);
+  margin: 16px 0 8px;
   font-size: 0.95rem;
-  color: var(--color-primary-dark);
 }
 
 .icon-triple-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-  gap: var(--space-2);
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 8px;
 }
 
 .icon-triple-item {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: 8px;
   padding: 6px 10px;
-  background: var(--color-hover);
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  font-size: 0.82rem;
-}
-
-.col-emoji,
-.col-tabler,
-.col-colored {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 24px;
+  border-radius: 8px;
+  font-size: 0.85rem;
 }
 
 .icon-label {
   font-weight: 600;
-  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-left: 2px;
+  white-space: nowrap;
 }
 
 .avatar-emoji-row {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-top: 6px;
+  margin-top: 4px;
 }
 
 .avatar-emoji-chip {
@@ -700,7 +1125,7 @@ const avatarCategories = [
   justify-content: center;
   width: 32px;
   height: 32px;
-  background: var(--color-hover);
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 8px;
   font-size: 1.15rem;

@@ -169,6 +169,12 @@
   --texture-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.35'/%3E%3C/svg%3E");
 
   --font-sans: 'Fira Sans', 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.85rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.15rem;
+  --font-size-xl: 1.3rem;
+  --font-size-2xl: 1.6rem;
 }
 
 /* corner-shape:squircle rendert bei GLEICHEM border-radius-Wert sichtbar WENIGER rund als ein
@@ -417,6 +423,70 @@ button.danger {
   background: var(--color-primary);
   color: white;
   border-color: var(--color-primary);
+}
+
+/* Deaktivierter Button-Zustand: ausgegraut, kein Zeiger, kein Schatten, keine Skalierung */
+button:disabled,
+button[disabled],
+button.is-disabled,
+.card-action-btn:disabled,
+.card-action-btn.is-disabled {
+  opacity: 0.5;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+/* Badges & Status-Chips (Design-System-Utility) */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  line-height: 1.2;
+  white-space: nowrap;
+  background: var(--color-hover);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+}
+
+.badge--primary {
+  background: var(--color-primary-tint);
+  color: var(--color-primary-dark);
+  border-color: transparent;
+}
+
+.badge--success {
+  background: rgba(63, 143, 92, 0.15);
+  color: var(--color-success);
+  border-color: transparent;
+}
+
+.badge--danger {
+  background: rgba(193, 80, 63, 0.15);
+  color: var(--color-danger);
+  border-color: transparent;
+}
+
+.badge--accent {
+  background: var(--color-highlight);
+  color: var(--color-accent);
+  border-color: var(--color-highlight-border);
+}
+
+/* Pre-Heading / Kicker (Design-System-Utility) */
+.kicker {
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-1);
+  display: block;
 }
 
 /* Einheitliche Optik für alle fensterartigen Größen-Anfasser (Drawer.vue's Schubladen-Anfasser,

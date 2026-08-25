@@ -38,6 +38,7 @@ withDefaults(
       `btn--${variant}`,
       variant === 'card-action' ? 'card-action-btn' : undefined,
       size !== 'md' ? `btn--${size}` : undefined,
+      { 'is-disabled': disabled },
     ]"
   >
     <slot />
@@ -50,13 +51,22 @@ withDefaults(
   box-shadow: var(--shadow-sm);
 }
 
+.btn:disabled,
+.btn.is-disabled {
+  opacity: 0.5;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
 .btn--primary {
   background: var(--color-primary);
   color: white;
   border: 1px solid var(--color-button-edge);
 }
 
-.btn--primary:hover {
+.btn--primary:hover:not(:disabled) {
   background: var(--color-primary-dark);
 }
 
@@ -66,7 +76,7 @@ withDefaults(
   border: 1px solid var(--color-border-strong);
 }
 
-.btn--secondary:hover {
+.btn--secondary:hover:not(:disabled) {
   background: var(--color-surface);
 }
 
@@ -97,7 +107,7 @@ withDefaults(
   box-shadow: none;
 }
 
-.btn--ghost:hover {
+.btn--ghost:hover:not(:disabled) {
   background: var(--color-hover);
 }
 
