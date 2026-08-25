@@ -20,7 +20,11 @@ import SegmentedToggle from './SegmentedToggle.vue';
 // (iconStyle.setAllGroups) auf die einzelnen Bereichs-Werte darunter.
 const iconStyle = useIconStyleStore();
 
-const PREVIEW_ICONS = [SECTION_ICON_DEFS.calendar, SECTION_ICON_DEFS.budget, FORM_FIELD_ICONS.location];
+const PREVIEW_ICONS = [
+  SECTION_ICON_DEFS.calendar,
+  SECTION_ICON_DEFS.budget,
+  FORM_FIELD_ICONS.location,
+];
 // Ein einzelnes, immer gleiches Beispiel-Icon für die Emoji/Symbole- bzw. Outline/Gefüllt-Toggles
 // je Bereich (statt eines bereichs-spezifischen Icons) - der Bereich ist schon per Zeilen-Label
 // benannt, das Beispiel-Icon soll nur zeigen, WIE die jeweilige Option aussieht.
@@ -29,8 +33,20 @@ const DEMO_ICON = SECTION_ICON_DEFS.calendar;
 // forceStyle/forceVariant sorgen dafür, dass jede Option IMMER ihre eigene Darstellung zeigt
 // (unabhängig vom aktuell aktiven Wert) - gleiches Prinzip wie die große Vorschau oben.
 const STYLE_OPTIONS = [
-  { value: 'emoji', label: 'Emoji', icon: DEMO_ICON, iconGroup: 'navigation' as ConfigurableIconGroup, forceStyle: 'emoji' as IconStyle },
-  { value: 'icons', label: 'Symbole', icon: DEMO_ICON, iconGroup: 'navigation' as ConfigurableIconGroup, forceStyle: 'icons' as IconStyle },
+  {
+    value: 'emoji',
+    label: 'Emoji',
+    icon: DEMO_ICON,
+    iconGroup: 'navigation' as ConfigurableIconGroup,
+    forceStyle: 'emoji' as IconStyle,
+  },
+  {
+    value: 'icons',
+    label: 'Symbole',
+    icon: DEMO_ICON,
+    iconGroup: 'navigation' as ConfigurableIconGroup,
+    forceStyle: 'icons' as IconStyle,
+  },
 ];
 const VARIANT_OPTIONS = [
   {
@@ -75,13 +91,27 @@ const categoriesColorRelevant = computed(() => iconStyle.groups.categories === '
     <div class="icon-style-preview-row">
       <div class="icon-style-preview">
         <span class="icon-style-preview-icons">
-          <AppIcon v-for="icon in PREVIEW_ICONS" :key="icon.id" :icon="icon" group="navigation" force-style="emoji" :size="22" />
+          <AppIcon
+            v-for="icon in PREVIEW_ICONS"
+            :key="icon.id"
+            :icon="icon"
+            group="navigation"
+            force-style="emoji"
+            :size="22"
+          />
         </span>
         <span class="icon-style-preview-label">Emoji</span>
       </div>
       <div class="icon-style-preview">
         <span class="icon-style-preview-icons">
-          <AppIcon v-for="icon in PREVIEW_ICONS" :key="icon.id" :icon="icon" group="navigation" force-style="icons" :size="22" />
+          <AppIcon
+            v-for="icon in PREVIEW_ICONS"
+            :key="icon.id"
+            :icon="icon"
+            group="navigation"
+            force-style="icons"
+            :size="22"
+          />
         </span>
         <span class="icon-style-preview-label">Symbole (Tabler)</span>
       </div>
@@ -103,18 +133,31 @@ const categoriesColorRelevant = computed(() => iconStyle.groups.categories === '
           <SegmentedToggle
             :model-value="iconStyle.groups[group.value]"
             :options="STYLE_OPTIONS"
-            @update:model-value="(v) => iconStyle.setGroupOverride(group.value as ConfigurableIconGroup, v as IconStyle)"
+            @update:model-value="
+              (v) =>
+                iconStyle.setGroupOverride(group.value as ConfigurableIconGroup, v as IconStyle)
+            "
           />
         </div>
-        <div v-if="iconStyle.groups[group.value] === 'icons'" class="group-override-row variant-row">
+        <div
+          v-if="iconStyle.groups[group.value] === 'icons'"
+          class="group-override-row variant-row"
+        >
           <span class="group-override-label">Stil</span>
           <SegmentedToggle
             :model-value="iconStyle.variants[group.value]"
             :options="VARIANT_OPTIONS"
-            @update:model-value="(v) => iconStyle.setGroupVariant(group.value as ConfigurableIconGroup, v as IconVariant)"
+            @update:model-value="
+              (v) =>
+                iconStyle.setGroupVariant(group.value as ConfigurableIconGroup, v as IconVariant)
+            "
           />
         </div>
-        <label v-if="group.value === 'navigation'" class="colorize-row" :class="{ dimmed: !navColorRelevant }">
+        <label
+          v-if="group.value === 'navigation'"
+          class="colorize-row"
+          :class="{ dimmed: !navColorRelevant }"
+        >
           <input type="checkbox" v-model="iconStyle.navColored" />
           <span>
             Icons in der Navigation einfärben
@@ -124,7 +167,11 @@ const categoriesColorRelevant = computed(() => iconStyle.groups.categories === '
             </span>
           </span>
         </label>
-        <label v-if="group.value === 'weather'" class="colorize-row" :class="{ dimmed: !weatherColorRelevant }">
+        <label
+          v-if="group.value === 'weather'"
+          class="colorize-row"
+          :class="{ dimmed: !weatherColorRelevant }"
+        >
           <input type="checkbox" v-model="iconStyle.colorizeWeather" />
           <span>
             Wetter-Icons passend einfärben
@@ -134,15 +181,21 @@ const categoriesColorRelevant = computed(() => iconStyle.groups.categories === '
             </span>
           </span>
         </label>
-        <label v-if="group.value === 'categories'" class="colorize-row" :class="{ dimmed: !categoriesColorRelevant }">
+        <label
+          v-if="group.value === 'categories'"
+          class="colorize-row"
+          :class="{ dimmed: !categoriesColorRelevant }"
+        >
           <input type="checkbox" v-model="iconStyle.colorizeCategories" />
           <span>
             Kategorie-Icons einfärben
             <span class="hint">
               Färbt die Icons in Kategorie-Überschriften und der Kategorie-Navigation in derselben
-              Akzentfarbe wie die bunten Kategorie-Badges (die sind immer eingefärbt) – wirkt sich nur
-              aus, wenn Kategorien auf Symbole stehen (aktuell{{ categoriesColorRelevant ? '' : ' nicht' }} der
-              Fall).
+              Akzentfarbe wie die bunten Kategorie-Badges (die sind immer eingefärbt) – wirkt sich
+              nur aus, wenn Kategorien auf Symbole stehen (aktuell{{
+                categoriesColorRelevant ? '' : ' nicht'
+              }}
+              der Fall).
             </span>
           </span>
         </label>

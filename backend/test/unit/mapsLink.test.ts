@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { fetchPlacePreview, parseLatLngFromText, resolveLatLng, tilePreviewUrl } from '../../src/utils/mapsLink.js';
+import {
+  fetchPlacePreview,
+  parseLatLngFromText,
+  resolveLatLng,
+  tilePreviewUrl,
+} from '../../src/utils/mapsLink.js';
 
 describe('parseLatLngFromText', () => {
   it('prefers !3d/!4d over a leading @lat,lng (regression: !3d/!4d is the real pin, @ is just the map viewport)', () => {
@@ -29,13 +34,22 @@ describe('parseLatLngFromText', () => {
   });
 
   it('parses ?ll= and ?q= variants', () => {
-    expect(parseLatLngFromText('https://maps.example/?ll=48.2082,16.3738')).toEqual({ lat: 48.2082, lng: 16.3738 });
-    expect(parseLatLngFromText('https://maps.example/?q=48.2082,16.3738')).toEqual({ lat: 48.2082, lng: 16.3738 });
+    expect(parseLatLngFromText('https://maps.example/?ll=48.2082,16.3738')).toEqual({
+      lat: 48.2082,
+      lng: 16.3738,
+    });
+    expect(parseLatLngFromText('https://maps.example/?q=48.2082,16.3738')).toEqual({
+      lat: 48.2082,
+      lng: 16.3738,
+    });
   });
 
   it('falls back to the raw text on malformed percent-encoding instead of throwing', () => {
     expect(() => parseLatLngFromText('https://maps.example/?q=48.2082,16.3738%')).not.toThrow();
-    expect(parseLatLngFromText('https://maps.example/?q=48.2082,16.3738%')).toEqual({ lat: 48.2082, lng: 16.3738 });
+    expect(parseLatLngFromText('https://maps.example/?q=48.2082,16.3738%')).toEqual({
+      lat: 48.2082,
+      lng: 16.3738,
+    });
   });
 
   it('returns null when no pattern matches', () => {
@@ -46,7 +60,9 @@ describe('parseLatLngFromText', () => {
 
 describe('tilePreviewUrl', () => {
   it('computes the expected OSM tile x/y for a known coordinate/zoom', () => {
-    expect(tilePreviewUrl(48.2082, 16.3738, 15)).toBe('https://tile.openstreetmap.org/15/17874/11362.png');
+    expect(tilePreviewUrl(48.2082, 16.3738, 15)).toBe(
+      'https://tile.openstreetmap.org/15/17874/11362.png'
+    );
   });
 });
 
@@ -62,7 +78,9 @@ describe('resolveLatLng', () => {
   function mockResponse(overrides: { location?: string | null; url?: string }) {
     return {
       url: overrides.url ?? '',
-      headers: { get: (name: string) => (name === 'location' ? overrides.location ?? null : null) },
+      headers: {
+        get: (name: string) => (name === 'location' ? (overrides.location ?? null) : null),
+      },
     };
   }
 
@@ -71,11 +89,15 @@ describe('resolveLatLng', () => {
       expect(options.redirect).toBe('manual');
       if (url === 'https://maps.app.goo.gl/abc123') {
         // Erster Hop: Zwischen-Redirect ohne Koordinate in der Ziel-URL.
-        return Promise.resolve(mockResponse({ location: 'https://www.google.com/maps/consent?continue=xyz' }));
+        return Promise.resolve(
+          mockResponse({ location: 'https://www.google.com/maps/consent?continue=xyz' })
+        );
       }
       if (url === 'https://www.google.com/maps/consent?continue=xyz') {
         // Zweiter Hop: die eigentliche Ziel-URL, Koordinate direkt im Location-Header.
-        return Promise.resolve(mockResponse({ location: 'https://www.google.com/maps/@48.2082,16.3738,15z' }));
+        return Promise.resolve(
+          mockResponse({ location: 'https://www.google.com/maps/@48.2082,16.3738,15z' })
+        );
       }
       return Promise.reject(new Error('unexpected URL in test: ' + url));
     });
@@ -96,7 +118,9 @@ describe('resolveLatLng', () => {
         return Promise.resolve(mockResponse({ location: null }));
       }
       // Fallback-Pfad: die volle, bereits aufgelöste Ziel-URL tragen Koordinaten.
-      return Promise.resolve(mockResponse({ url: 'https://www.google.com/maps/@40.7128,-74.006,15z' }));
+      return Promise.resolve(
+        mockResponse({ url: 'https://www.google.com/maps/@40.7128,-74.006,15z' })
+      );
     });
     vi.stubGlobal('fetch', fetchMock);
 
@@ -111,7 +135,9 @@ describe('resolveLatLng', () => {
       if (options.redirect === 'manual') {
         manualCalls++;
         // Jeder Hop verweist ohne Koordinate auf den nächsten - simuliert eine (defekte) Redirect-Schleife.
-        return Promise.resolve(mockResponse({ location: `https://example.com/hop-${manualCalls}` }));
+        return Promise.resolve(
+          mockResponse({ location: `https://example.com/hop-${manualCalls}` })
+        );
       }
       return Promise.resolve(mockResponse({ url: 'https://example.com/final-without-coords' }));
     });
@@ -127,7 +153,7 @@ describe('resolveLatLng', () => {
   it('returns null on a network error instead of throwing', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(() => Promise.reject(new Error('network down'))),
+      vi.fn(() => Promise.reject(new Error('network down')))
     );
 
     await expect(resolveLatLng('https://maps.app.goo.gl/offline')).resolves.toBeNull();
@@ -149,15 +175,18 @@ describe('fetchPlacePreview', () => {
           url: 'https://www.google.com/maps/place/Caf%C3%A9+Central/@48.2082,16.3738,17z',
           text: () =>
             Promise.resolve(
-              '<html><head><meta property="og:image" content="https://lh3.googleusercontent.com/photo123"></head></html>',
+              '<html><head><meta property="og:image" content="https://lh3.googleusercontent.com/photo123"></head></html>'
             ),
-        }),
-      ),
+        })
+      )
     );
 
     const preview = await fetchPlacePreview('https://maps.app.goo.gl/abc');
 
-    expect(preview).toEqual({ name: 'Café Central', imageUrl: 'https://lh3.googleusercontent.com/photo123' });
+    expect(preview).toEqual({
+      name: 'Café Central',
+      imageUrl: 'https://lh3.googleusercontent.com/photo123',
+    });
   });
 
   it('returns empty fields when the URL has no /maps/place/ segment or og:image tag', async () => {
@@ -167,8 +196,8 @@ describe('fetchPlacePreview', () => {
         Promise.resolve({
           url: 'https://www.google.com/maps/@48.2082,16.3738,17z',
           text: () => Promise.resolve('<html><head></head></html>'),
-        }),
-      ),
+        })
+      )
     );
 
     const preview = await fetchPlacePreview('https://maps.app.goo.gl/abc');
@@ -179,10 +208,13 @@ describe('fetchPlacePreview', () => {
   it('returns empty fields on a network error instead of throwing', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(() => Promise.reject(new Error('network down'))),
+      vi.fn(() => Promise.reject(new Error('network down')))
     );
 
-    await expect(fetchPlacePreview('https://maps.app.goo.gl/abc')).resolves.toEqual({ name: null, imageUrl: null });
+    await expect(fetchPlacePreview('https://maps.app.goo.gl/abc')).resolves.toEqual({
+      name: null,
+      imageUrl: null,
+    });
   });
 
   it('returns empty fields for a missing URL without calling fetch', async () => {

@@ -5,7 +5,12 @@ import { travelTypeIcon, travelTypeIconDef } from './travelTypeIcon';
 import type { IconDef } from './icon';
 
 // Gleicher Fallback wie travelTypeIcon()s '📍' oben - kein eigener Transportmittel-Typ bekannt.
-const LOCATION_FALLBACK_ICON: IconDef = { id: 'map-pin', emoji: '📍', outline: IconMapPin, filled: IconMapPinFilled };
+const LOCATION_FALLBACK_ICON: IconDef = {
+  id: 'map-pin',
+  emoji: '📍',
+  outline: IconMapPin,
+  filled: IconMapPinFilled,
+};
 
 export interface TravelDerivedLocation extends DerivedLocation {
   /** Zuhause-/Heimat-Seite (siehe TravelItem.role) – siehe TripMap.vue's MapPoint.homeSide, hier

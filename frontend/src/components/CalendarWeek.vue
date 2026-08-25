@@ -94,7 +94,8 @@ function onDrop(event: DragEvent, date: string) {
             class="day-weather"
             :title="`${entry.label}: ${weatherCodeMeta(entry.weather.weatherCode).label}`"
           >
-            <AppIcon :icon="entry.tabler" :size="10" group="categories" /> {{ Math.round(entry.weather.tempMax) }}°
+            <AppIcon :icon="entry.tabler" :size="10" group="categories" />
+            {{ Math.round(entry.weather.tempMax) }}°
           </span>
         </div>
       </div>

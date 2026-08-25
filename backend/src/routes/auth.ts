@@ -31,55 +31,65 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
   // separater zweiter Schritt erscheint. Registrierte Nutzer:innen treten dabei bewusst KEINEM
   // bestehenden Urlaub bei (siehe db/index.ts's trip_members-Backfill-Kommentar) – ein neuer
   // Urlaub oder eine Einladung ist der einzige Weg zu einem sichtbaren Urlaub.
-  app.post<{ Body: { username: string; email: string; password: string } }>('/register', async (req, reply) => {
-    if (REGISTRATION_MODE === 'off') {
-      return reply.code(403).send({ error: 'Registrierung ist aktuell deaktiviert' });
-    }
-    const { username, email, password } = req.body ?? {};
-    if (!username?.trim() || !email?.trim() || !password) {
-      return reply.code(400).send({ error: 'Benutzername, E-Mail und Passwort erforderlich' });
-    }
-    if (!EMAIL_PATTERN.test(email.trim())) {
-      return reply.code(400).send({ error: 'Ungültige E-Mail-Adresse' });
-    }
-    if (password.length < 6) {
-      return reply.code(400).send({ error: 'Passwort muss mindestens 6 Zeichen haben' });
-    }
+  app.post<{ Body: { username: string; email: string; password: string } }>(
+    '/register',
+    async (req, reply) => {
+      if (REGISTRATION_MODE === 'off') {
+        return reply.code(403).send({ error: 'Registrierung ist aktuell deaktiviert' });
+      }
+      const { username, email, password } = req.body ?? {};
+      if (!username?.trim() || !email?.trim() || !password) {
+        return reply.code(400).send({ error: 'Benutzername, E-Mail und Passwort erforderlich' });
+      }
+      if (!EMAIL_PATTERN.test(email.trim())) {
+        return reply.code(400).send({ error: 'Ungültige E-Mail-Adresse' });
+      }
+      if (password.length < 6) {
+        return reply.code(400).send({ error: 'Passwort muss mindestens 6 Zeichen haben' });
+      }
 
-    const existingUsername = db.prepare('SELECT id FROM users WHERE username = ?').get(username.trim());
-    if (existingUsername) {
-      return reply.code(409).send({ error: 'Benutzername bereits vergeben' });
+      const existingUsername = db
+        .prepare('SELECT id FROM users WHERE username = ?')
+        .get(username.trim());
+      if (existingUsername) {
+        return reply.code(409).send({ error: 'Benutzername bereits vergeben' });
+      }
+      const existingEmail = db.prepare('SELECT id FROM users WHERE email = ?').get(email.trim());
+      if (existingEmail) {
+        return reply.code(409).send({ error: 'E-Mail-Adresse wird bereits verwendet' });
+      }
+
+      const trimmedUsername = username.trim();
+      const restricted =
+        REGISTRATION_MODE === 'restricted' && !isUsernameFullAccess(trimmedUsername) ? 1 : 0;
+
+      // Der allererste Nutzer in der Datenbank wird automatisch Admin.
+      const userCount = (
+        db.prepare('SELECT COUNT(*) as count FROM users').get() as { count: number }
+      ).count;
+      const isAdmin = userCount === 0 ? 1 : 0;
+
+      const hash = bcrypt.hashSync(password, 10);
+      const result = db
+        .prepare(
+          'INSERT INTO users (username, email, password_hash, avatar, is_restricted, is_admin, must_change_password) VALUES (?, ?, ?, ?, ?, ?, 0)'
+        )
+        .run(trimmedUsername, email.trim(), hash, '🙂', restricted, isAdmin);
+      const userId = result.lastInsertRowid as number;
+
+      req.session.userId = userId;
+      req.session.username = trimmedUsername;
+      reply.code(201);
+      return {
+        id: userId,
+        username: trimmedUsername,
+        avatar: '🙂',
+        restricted: isUserRestricted(userId),
+        is_admin: Boolean(isAdmin),
+        must_change_password: false,
+      };
     }
-    const existingEmail = db.prepare('SELECT id FROM users WHERE email = ?').get(email.trim());
-    if (existingEmail) {
-      return reply.code(409).send({ error: 'E-Mail-Adresse wird bereits verwendet' });
-    }
-
-    const trimmedUsername = username.trim();
-    const restricted = REGISTRATION_MODE === 'restricted' && !isUsernameFullAccess(trimmedUsername) ? 1 : 0;
-
-    // Der allererste Nutzer in der Datenbank wird automatisch Admin.
-    const userCount = (db.prepare('SELECT COUNT(*) as count FROM users').get() as { count: number }).count;
-    const isAdmin = userCount === 0 ? 1 : 0;
-
-    const hash = bcrypt.hashSync(password, 10);
-    const result = db
-      .prepare('INSERT INTO users (username, email, password_hash, avatar, is_restricted, is_admin, must_change_password) VALUES (?, ?, ?, ?, ?, ?, 0)')
-      .run(trimmedUsername, email.trim(), hash, '🙂', restricted, isAdmin);
-    const userId = result.lastInsertRowid as number;
-
-    req.session.userId = userId;
-    req.session.username = trimmedUsername;
-    reply.code(201);
-    return {
-      id: userId,
-      username: trimmedUsername,
-      avatar: '🙂',
-      restricted: isUserRestricted(userId),
-      is_admin: Boolean(isAdmin),
-      must_change_password: false,
-    };
-  });
+  );
 
   app.post<{ Body: { username: string; password: string } }>('/login', async (req, reply) => {
     const { username, password } = req.body ?? {};

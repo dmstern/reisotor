@@ -53,7 +53,7 @@ export const useLocationSharingStore = defineStore('locationSharing', () => {
         // erfolgreicher watchPosition()-Callback, z. B. nach Berechtigungs-Erteilung, greift dann
         // automatisch wieder), nur ohne aktuelle Positions-Updates in der Zwischenzeit.
       },
-      { enableHighAccuracy: true, maximumAge: 10_000 },
+      { enableHighAccuracy: true, maximumAge: 10_000 }
     );
   }
 
@@ -75,7 +75,7 @@ export const useLocationSharingStore = defineStore('locationSharing', () => {
     if (tripId == null) return;
     try {
       const res = await api.get<{ location_share_until: string | null }>(
-        `/realtime/location-share?trip_id=${tripId}`,
+        `/realtime/location-share?trip_id=${tripId}`
       );
       shareUntil.value = res.location_share_until;
     } catch {

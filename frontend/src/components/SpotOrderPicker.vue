@@ -34,9 +34,16 @@ const plannedStations = computed(() =>
   props.modelValue
     .map((spotId) => {
       const spot = props.spots.find((s) => s.id === spotId);
-      return spot ? { id: spotId, title: spot.title, icon: spotCategoryMeta(spot.category).icon, tabler: spotCategoryMeta(spot.category).tabler } : null;
+      return spot
+        ? {
+            id: spotId,
+            title: spot.title,
+            icon: spotCategoryMeta(spot.category).icon,
+            tabler: spotCategoryMeta(spot.category).tabler,
+          }
+        : null;
     })
-    .filter((s): s is { id: number; title: string; icon: string; tabler: IconDef } => !!s),
+    .filter((s): s is { id: number; title: string; icon: string; tabler: IconDef } => !!s)
 );
 
 // Bewusst NICHT mehr gefiltert auf "noch nicht eingeplant" – für einen Rundgang muss derselbe Spot
@@ -44,7 +51,9 @@ const plannedStations = computed(() =>
 // deshalb immer eine weitere Station hinzu statt (wie ein Checkbox-Häkchen) nur ein einziges Mal
 // umschaltbar zu sein.
 const addableSpots = computed(() =>
-  [...props.spots].sort((a, b) => props.likeCount(b.id) - props.likeCount(a.id) || a.title.localeCompare(b.title)),
+  [...props.spots].sort(
+    (a, b) => props.likeCount(b.id) - props.likeCount(a.id) || a.title.localeCompare(b.title)
+  )
 );
 
 function addSpot(id: number) {
@@ -104,10 +113,12 @@ function onDragEnd() {
 <template>
   <div class="spot-order-picker">
     <fieldset v-if="plannedStations.length" class="planned-box">
-      <legend><AppIcon :icon="ACTION_ICONS.order" :size="14" group="actions" /> Tourreihenfolge</legend>
+      <legend>
+        <AppIcon :icon="ACTION_ICONS.order" :size="14" group="actions" /> Tourreihenfolge
+      </legend>
       <p class="order-hint">
-        In dieser Reihenfolge werden die Stationen während der Tour abgeklappert (bestimmt auch
-        die eingezeichnete Route auf der Karte) – zum Sortieren ziehen.
+        In dieser Reihenfolge werden die Stationen während der Tour abgeklappert (bestimmt auch die
+        eingezeichnete Route auf der Karte) – zum Sortieren ziehen.
       </p>
       <template v-for="(station, index) in plannedStations" :key="index">
         <div class="drop-line" v-if="draggedIndex !== null && dropIndicatorIndex === index"></div>
@@ -122,23 +133,44 @@ function onDragEnd() {
         >
           <span class="order-num">{{ index + 1 }}.</span>
           <span class="drag-handle" aria-hidden="true">⠿</span>
-          <span class="spot-title"><AppIcon :icon="station.tabler" :size="14" group="categories" /> {{ station.title }}</span>
-          <button type="button" class="remove-btn" @click="removeSpotAt(index)" aria-label="Aus Tour entfernen">
+          <span class="spot-title"
+            ><AppIcon :icon="station.tabler" :size="14" group="categories" />
+            {{ station.title }}</span
+          >
+          <button
+            type="button"
+            class="remove-btn"
+            @click="removeSpotAt(index)"
+            aria-label="Aus Tour entfernen"
+          >
             <AppIcon :icon="ACTION_ICONS.close" :size="14" group="actions" />
           </button>
         </div>
       </template>
-      <div class="drop-line" v-if="draggedIndex !== null && dropIndicatorIndex === plannedStations.length"></div>
+      <div
+        class="drop-line"
+        v-if="draggedIndex !== null && dropIndicatorIndex === plannedStations.length"
+      ></div>
     </fieldset>
 
     <fieldset v-if="addableSpots.length" class="spot-picker">
-      <legend>Spots hinzufügen – nach Likes sortiert (auch mehrfach möglich, z. B. Start &amp; Ende)</legend>
-      <button v-for="spot in addableSpots" :key="spot.id" type="button" class="derived-option" @click="addSpot(spot.id)">
+      <legend>
+        Spots hinzufügen – nach Likes sortiert (auch mehrfach möglich, z. B. Start &amp; Ende)
+      </legend>
+      <button
+        v-for="spot in addableSpots"
+        :key="spot.id"
+        type="button"
+        class="derived-option"
+        @click="addSpot(spot.id)"
+      >
         <span class="spot-option-title">
-          <AppIcon :icon="spotCategoryMeta(spot.category).tabler" :size="14" group="categories" /> {{ spot.title }}
+          <AppIcon :icon="spotCategoryMeta(spot.category).tabler" :size="14" group="categories" />
+          {{ spot.title }}
         </span>
         <span class="spot-option-likes">
-          <AppIcon :icon="ACTION_ICONS.sortLikes" :size="13" group="actions" /> {{ likeCount(spot.id) }}
+          <AppIcon :icon="ACTION_ICONS.sortLikes" :size="13" group="actions" />
+          {{ likeCount(spot.id) }}
         </span>
         <span class="derived-add" aria-hidden="true">+</span>
       </button>

@@ -5,7 +5,9 @@ import { fileURLToPath } from 'node:url';
 import { VIEWPORTS, expectNotCoveredBy, expectNoOverlap } from './helpers/layout';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const seeded = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'fixtures', 'seeded-data.json'), 'utf-8'));
+const seeded = JSON.parse(
+  fs.readFileSync(path.join(__dirname, '..', 'fixtures', 'seeded-data.json'), 'utf-8')
+);
 const excursion = seeded.ideas.find((i: { title: string }) => i.title === 'Sightseeing-Tag Belém');
 
 // Wählt excursion.date im Kalender aus und klickt "🗺️ Tag auf Karte anzeigen" (ScheduleView.vue's
@@ -44,11 +46,16 @@ async function focusDayViaCalendar(page: Page, viewportName: string) {
 // (VIEWPORTS.mobile, VIEWPORTS.narrowDesktop - Letzteres reproduziert exakt die Schwellen-
 // Diskrepanz, s. o.), sowie alle vier Fokus-Arten (Einzel-Spot, "Alle anzeigen", Ausflug/Tour,
 // Tag).
-for (const [viewportName, viewport] of Object.entries({ mobile: VIEWPORTS.mobile, narrowDesktop: VIEWPORTS.narrowDesktop })) {
+for (const [viewportName, viewport] of Object.entries({
+  mobile: VIEWPORTS.mobile,
+  narrowDesktop: VIEWPORTS.narrowDesktop,
+})) {
   test.describe(`Karten-Fokus berücksichtigt die Spots-Schublade (${viewportName})`, () => {
     test.use({ viewport });
 
-    test('fokussierter Einzelpunkt (Spot-Klick) bleibt oberhalb der Schubladen-Kante sichtbar', async ({ page }) => {
+    test('fokussierter Einzelpunkt (Spot-Klick) bleibt oberhalb der Schubladen-Kante sichtbar', async ({
+      page,
+    }) => {
       await page.goto('/excursions');
       const sheet = page.locator('.spots-col');
       await expect(sheet).toBeVisible();
@@ -64,7 +71,9 @@ for (const [viewportName, viewport] of Object.entries({ mobile: VIEWPORTS.mobile
       await expectNotCoveredBy(page, marker, sheet);
     });
 
-    test('"Alle anzeigen" (mehrere Punkte) bleibt komplett oberhalb der Schubladen-Kante', async ({ page }) => {
+    test('"Alle anzeigen" (mehrere Punkte) bleibt komplett oberhalb der Schubladen-Kante', async ({
+      page,
+    }) => {
       await page.goto('/excursions');
       const sheet = page.locator('.spots-col');
       await expect(sheet).toBeVisible();
@@ -80,7 +89,9 @@ for (const [viewportName, viewport] of Object.entries({ mobile: VIEWPORTS.mobile
       }
     });
 
-    test('fokussierte Tour (Ausflug/Route) bleibt komplett oberhalb der Schubladen-Kante', async ({ page }) => {
+    test('fokussierte Tour (Ausflug/Route) bleibt komplett oberhalb der Schubladen-Kante', async ({
+      page,
+    }) => {
       await page.goto('/excursions');
       const sheet = page.locator('.spots-col');
       await expect(sheet).toBeVisible();

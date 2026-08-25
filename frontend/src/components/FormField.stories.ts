@@ -22,7 +22,9 @@ type Story = StoryObj<typeof FormField>;
 export const Default: Story = {
   render: (args) => ({
     components: { FormField, Input },
-    setup() { return { args }; },
+    setup() {
+      return { args };
+    },
     template: `
       <FormField v-bind="args">
         <Input placeholder="Titel eingeben..." />
@@ -38,7 +40,9 @@ export const WithDateIcon: Story = {
   },
   render: (args) => ({
     components: { FormField, Input },
-    setup() { return { args }; },
+    setup() {
+      return { args };
+    },
     template: `
       <FormField v-bind="args">
         <Input type="date" modelValue="2026-08-25" />

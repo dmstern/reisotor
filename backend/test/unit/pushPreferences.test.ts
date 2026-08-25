@@ -32,12 +32,12 @@ describe('Push-Präferenzen filtern den Versand pro Domäne', () => {
     db.prepare('INSERT INTO users (username, password_hash, avatar) VALUES (?, ?, ?)').run(
       'prefowner',
       bcrypt.hashSync('correct-horse', 10),
-      '🧪',
+      '🧪'
     );
     db.prepare('INSERT INTO users (username, password_hash, avatar) VALUES (?, ?, ?)').run(
       'prefmember',
       bcrypt.hashSync('correct-horse', 10),
-      '🧪',
+      '🧪'
     );
 
     const ownerLogin = await app.inject({
@@ -61,7 +61,9 @@ describe('Push-Präferenzen filtern den Versand pro Domäne', () => {
     });
     tripId = createTrip.json().id as number;
 
-    const memberId = (db.prepare('SELECT id FROM users WHERE username = ?').get('prefmember') as { id: number }).id;
+    const memberId = (
+      db.prepare('SELECT id FROM users WHERE username = ?').get('prefmember') as { id: number }
+    ).id;
     await app.inject({
       method: 'POST',
       url: `/api/trips/${tripId}/members`,
@@ -75,7 +77,10 @@ describe('Push-Präferenzen filtern den Versand pro Domäne', () => {
       method: 'POST',
       url: '/api/push/subscribe',
       headers: { cookie: memberCookie },
-      payload: { endpoint: 'https://push.example/member-endpoint', keys: { p256dh: 'p256dh-key', auth: 'auth-key' } },
+      payload: {
+        endpoint: 'https://push.example/member-endpoint',
+        keys: { p256dh: 'p256dh-key', auth: 'auth-key' },
+      },
     });
   });
 
@@ -149,7 +154,11 @@ describe('Push-Präferenzen filtern den Versand pro Domäne', () => {
       payload: { budget: false },
     });
 
-    const res = await app.inject({ method: 'GET', url: '/api/push/preferences', headers: { cookie: memberCookie } });
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/push/preferences',
+      headers: { cookie: memberCookie },
+    });
     const prefs = res.json();
     expect(prefs.budget).toBe(false);
     expect(prefs.schedule).toBe(true);

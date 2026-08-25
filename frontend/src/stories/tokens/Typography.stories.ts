@@ -12,12 +12,36 @@ export const TypographySystem: Story = {
   render: () => ({
     setup() {
       const fontSizes = [
-        { var: '--font-size-xs', val: '0.75rem (12px)', usage: 'Pre-Heading Kicker, Badges, Formular-Meta & Labels' },
-        { var: '--font-size-sm', val: '0.85rem (13.6px)', usage: 'Sekundärtexte, Card-Actions (.card-action-btn), Hinweise' },
-        { var: '--font-size-md', val: '1rem (16px)', usage: 'Standard Fließtext, Text-Inputs, Haupt-Buttons' },
-        { var: '--font-size-lg', val: '1.15rem (18.4px)', usage: 'H3 Überschriften, Subheadings, Dialog-Titel' },
-        { var: '--font-size-xl', val: '1.3rem (20.8px)', usage: 'H2 Sektions-Überschriften, Kachel-Titel' },
-        { var: '--font-size-2xl', val: '1.6rem (25.6px)', usage: 'H1 Haupt-Seitentitel (700 Bold, -0.01em Tracking)' },
+        {
+          var: '--font-size-xs',
+          val: '0.75rem (12px)',
+          usage: 'Pre-Heading Kicker, Badges, Formular-Meta & Labels',
+        },
+        {
+          var: '--font-size-sm',
+          val: '0.85rem (13.6px)',
+          usage: 'Sekundärtexte, Card-Actions (.card-action-btn), Hinweise',
+        },
+        {
+          var: '--font-size-md',
+          val: '1rem (16px)',
+          usage: 'Standard Fließtext, Text-Inputs, Haupt-Buttons',
+        },
+        {
+          var: '--font-size-lg',
+          val: '1.15rem (18.4px)',
+          usage: 'H3 Überschriften, Subheadings, Dialog-Titel',
+        },
+        {
+          var: '--font-size-xl',
+          val: '1.3rem (20.8px)',
+          usage: 'H2 Sektions-Überschriften, Kachel-Titel',
+        },
+        {
+          var: '--font-size-2xl',
+          val: '1.6rem (25.6px)',
+          usage: 'H1 Haupt-Seitentitel (700 Bold, -0.01em Tracking)',
+        },
       ];
       return { fontSizes };
     },

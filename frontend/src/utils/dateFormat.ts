@@ -16,7 +16,10 @@ export function toLocalDateString(d: Date): string {
 /** Zentrale Zahlen-Datumsformatierung, ersetzt die zuvor über die App verstreuten, lokal je Datei
  *  duplizierten `toLocaleDateString('de-DE', ...)`-Aufrufe. Respektiert die in SettingsView.vue
  *  einstellbare `calendarSettings.dateFormat` (deutsch/ISO/US) statt fest `'de-DE'` zu verwenden. */
-export function formatDate(dateStr: string, { includeYear = true }: { includeYear?: boolean } = {}): string {
+export function formatDate(
+  dateStr: string,
+  { includeYear = true }: { includeYear?: boolean } = {}
+): string {
   const calendarSettings = useCalendarSettingsStore();
   const d = new Date(dateStr);
   const day = pad2(d.getDate());
@@ -56,7 +59,8 @@ export function formatWeekdayDate(dateStr: string): string {
 export function startOfWeek(date: Date): Date {
   const calendarSettings = useCalendarSettingsStore();
   const result = new Date(date);
-  const offset = calendarSettings.weekStart === 'sunday' ? result.getDay() : (result.getDay() + 6) % 7;
+  const offset =
+    calendarSettings.weekStart === 'sunday' ? result.getDay() : (result.getDay() + 6) % 7;
   result.setDate(result.getDate() - offset);
   return result;
 }
@@ -78,7 +82,11 @@ export function endOfWeek(date: Date): Date {
  * - Zeitraum nach dem Urlaub (auch schon ab dem Folgetag): Jahr anzeigen (z. B. "12.08.2026 – 20.08.2026")
  * - Jahresübergreifender Urlaub: Jahr anzeigen (z. B. "28.12.2026 – 05.01.2027")
  */
-export function formatTripDateRange(startDateStr: string, endDateStr: string, now: Date = new Date()): string {
+export function formatTripDateRange(
+  startDateStr: string,
+  endDateStr: string,
+  now: Date = new Date()
+): string {
   const today = toLocalDateString(now);
   const currentYear = now.getFullYear();
   const startYear = parseInt(startDateStr.slice(0, 4), 10);
@@ -92,4 +100,3 @@ export function formatTripDateRange(startDateStr: string, endDateStr: string, no
 
   return `${formatDate(startDateStr, { includeYear })} – ${formatDate(endDateStr, { includeYear })}`;
 }
-

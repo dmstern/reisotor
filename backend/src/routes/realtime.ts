@@ -1,7 +1,13 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { db } from '../db/index.js';
 import { requireTripMember } from '../tripAccess.js';
-import { onlineUserIds, subscribe, positionsFor, updatePosition, clearPosition } from '../activity.js';
+import {
+  onlineUserIds,
+  subscribe,
+  positionsFor,
+  updatePosition,
+  clearPosition,
+} from '../activity.js';
 
 const HEARTBEAT_MS = 25_000;
 
@@ -25,7 +31,9 @@ export const realtimeRoutes: FastifyPluginAsync = async (app) => {
       // Reverse-Proxies (Caddy) puffern Antworten sonst teils, bevor SSE-Chunks beim Client ankommen.
       'X-Accel-Buffering': 'no',
     });
-    reply.raw.write(`event: presence\ndata: ${JSON.stringify({ online: onlineUserIds(tripId) })}\n\n`);
+    reply.raw.write(
+      `event: presence\ndata: ${JSON.stringify({ online: onlineUserIds(tripId) })}\n\n`
+    );
     // Initialer Snapshot bereits geteilter Standorte (Live-Standort auf der Karte, TripMap.vue) –
     // ein frisch verbindender Client bekommt so sofort die Positionen bereits aktiver Mitglieder,
     // statt erst auf deren nächsten GPS-Ping warten zu müssen.
@@ -54,15 +62,18 @@ export const realtimeRoutes: FastifyPluginAsync = async (app) => {
   // dauerhaften Aktivitäts-Log-Eintrag noch eine Push-Benachrichtigung auslösen. Startet, sobald
   // die Kartenansicht mountet, endet beim Unmounten (DELETE) – kein dauerhaftes
   // Hintergrund-Tracking.
-  app.post<{ Body: { trip_id?: number; lat?: number; lng?: number } }>('/realtime/position', async (req, reply) => {
-    const { trip_id, lat, lng } = req.body ?? {};
-    if (!requireTripMember(reply, trip_id, req.session.userId)) return;
-    if (typeof lat !== 'number' || typeof lng !== 'number') {
-      return reply.code(400).send({ error: 'lat und lng erforderlich' });
+  app.post<{ Body: { trip_id?: number; lat?: number; lng?: number } }>(
+    '/realtime/position',
+    async (req, reply) => {
+      const { trip_id, lat, lng } = req.body ?? {};
+      if (!requireTripMember(reply, trip_id, req.session.userId)) return;
+      if (typeof lat !== 'number' || typeof lng !== 'number') {
+        return reply.code(400).send({ error: 'lat und lng erforderlich' });
+      }
+      updatePosition(trip_id!, req.session.userId!, lat, lng);
+      return reply.code(204).send();
     }
-    updatePosition(trip_id!, req.session.userId!, lat, lng);
-    return reply.code(204).send();
-  });
+  );
 
   // Querystring statt Body: api/client.ts's api.delete() sendet grundsätzlich keinen Body mit.
   app.delete<{ Querystring: { trip_id?: string } }>('/realtime/position', async (req, reply) => {
@@ -87,40 +98,51 @@ export const realtimeRoutes: FastifyPluginAsync = async (app) => {
     forever: 50 * 365 * 24 * 60 * 60 * 1000,
   };
 
-  app.put<{ Body: { trip_id?: number; duration?: string } }>('/realtime/location-share', async (req, reply) => {
-    const { trip_id, duration } = req.body ?? {};
-    if (!requireTripMember(reply, trip_id, req.session.userId)) return;
-    if (duration !== 'off' && !(duration! in SHARE_DURATION_MS)) {
-      return reply.code(400).send({ error: 'Ungültige duration' });
+  app.put<{ Body: { trip_id?: number; duration?: string } }>(
+    '/realtime/location-share',
+    async (req, reply) => {
+      const { trip_id, duration } = req.body ?? {};
+      if (!requireTripMember(reply, trip_id, req.session.userId)) return;
+      if (duration !== 'off' && !(duration! in SHARE_DURATION_MS)) {
+        return reply.code(400).send({ error: 'Ungültige duration' });
+      }
+      const shareUntil =
+        duration === 'off'
+          ? null
+          : new Date(
+              Date.now() + SHARE_DURATION_MS[duration as 'day' | 'week' | 'forever']
+            ).toISOString();
+      db.prepare(
+        'UPDATE trip_members SET location_share_until = ? WHERE trip_id = ? AND user_id = ?'
+      ).run(shareUntil, trip_id, req.session.userId);
+      if (shareUntil == null) clearPosition(Number(trip_id), req.session.userId!);
+      return reply.send({ location_share_until: shareUntil });
     }
-    const shareUntil =
-      duration === 'off' ? null : new Date(Date.now() + SHARE_DURATION_MS[duration as 'day' | 'week' | 'forever']).toISOString();
-    db.prepare('UPDATE trip_members SET location_share_until = ? WHERE trip_id = ? AND user_id = ?').run(
-      shareUntil,
-      trip_id,
-      req.session.userId,
-    );
-    if (shareUntil == null) clearPosition(Number(trip_id), req.session.userId!);
-    return reply.send({ location_share_until: shareUntil });
-  });
+  );
 
   app.get<{ Querystring: { trip_id?: string } }>('/realtime/location-share', async (req, reply) => {
     if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
     const row = db
       .prepare('SELECT location_share_until FROM trip_members WHERE trip_id = ? AND user_id = ?')
-      .get(req.query.trip_id, req.session.userId) as { location_share_until: string | null } | undefined;
+      .get(req.query.trip_id, req.session.userId) as
+      { location_share_until: string | null } | undefined;
     return { location_share_until: row?.location_share_until ?? null };
   });
 
   // Nachhol-Protokoll für Clients, die beim Ändern nicht (mehr) verbunden waren (frischer
   // Seitenaufruf, Tab war geschlossen, Verbindung kurz weg) – liefert alles seit `since` nach, damit
   // Nav-Badges/Highlights auch ohne durchgehende SSE-Verbindung korrekt sind.
-  app.get<{ Querystring: { trip_id?: string; since?: string } }>('/trip-activity', async (req, reply) => {
-    if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
-    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
-    const since = req.query.since ?? new Date(0).toISOString();
-    return db
-      .prepare('SELECT * FROM trip_activity WHERE trip_id = ? AND created_at > ? ORDER BY created_at ASC')
-      .all(req.query.trip_id, since);
-  });
+  app.get<{ Querystring: { trip_id?: string; since?: string } }>(
+    '/trip-activity',
+    async (req, reply) => {
+      if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
+      if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
+      const since = req.query.since ?? new Date(0).toISOString();
+      return db
+        .prepare(
+          'SELECT * FROM trip_activity WHERE trip_id = ? AND created_at > ? ORDER BY created_at ASC'
+        )
+        .all(req.query.trip_id, since);
+    }
+  );
 };

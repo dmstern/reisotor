@@ -28,7 +28,9 @@ async function closeDrawerIfOpen(page: Page, label: string) {
 }
 
 test.describe('Standort-Freigabe-Dauer auf der Karte', () => {
-  test('Auswahl "Für einen Tag" markiert den Button als aktiv und übersteht einen Reload', async ({ page }) => {
+  test('Auswahl "Für einen Tag" markiert den Button als aktiv und übersteht einen Reload', async ({
+    page,
+  }) => {
     await page.goto('/excursions');
     await closeDrawerIfOpen(page, 'Kalender');
     const shareBtn = page.locator('.share-location-btn');

@@ -47,7 +47,12 @@ describe('diary co-editing (#93)', () => {
       method: 'POST',
       url: '/api/diary',
       headers: { cookie: owner.cookie },
-      payload: { trip_id: tripId, content: '<p>Toller Tag</p>', content_format: 'html', date: '2026-03-02' },
+      payload: {
+        trip_id: tripId,
+        content: '<p>Toller Tag</p>',
+        content_format: 'html',
+        date: '2026-03-02',
+      },
     });
     expect(entryRes.statusCode).toBe(201);
     const entryId = entryRes.json().id;
@@ -57,7 +62,11 @@ describe('diary co-editing (#93)', () => {
       method: 'PUT',
       url: `/api/diary/${entryId}`,
       headers: { cookie: member.cookie },
-      payload: { content: '<p>Toller Tag, korrigiertes Datum</p>', content_format: 'html', date: '2026-03-03' },
+      payload: {
+        content: '<p>Toller Tag, korrigiertes Datum</p>',
+        content_format: 'html',
+        date: '2026-03-03',
+      },
     });
     expect(editRes.statusCode).toBe(200);
     const edited = editRes.json();

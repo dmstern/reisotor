@@ -68,7 +68,12 @@ describe('feedback routes', () => {
       method: 'POST',
       url: '/api/feedback',
       headers: { cookie },
-      payload: { type: 'bug', title: 'x', description: 'y', screenshot: 'data:text/plain;base64,aGVsbG8=' },
+      payload: {
+        type: 'bug',
+        title: 'x',
+        description: 'y',
+        screenshot: 'data:text/plain;base64,aGVsbG8=',
+      },
     });
     expect(badScreenshotType.statusCode).toBe(400);
 
@@ -84,20 +89,31 @@ describe('feedback routes', () => {
         sentBody = JSON.parse(init.body as string);
         return Promise.resolve({
           ok: true,
-          json: () => Promise.resolve({ number: 7, html_url: 'https://github.com/someone/somerepo/issues/7' }),
+          json: () =>
+            Promise.resolve({
+              number: 7,
+              html_url: 'https://github.com/someone/somerepo/issues/7',
+            }),
         });
-      }),
+      })
     );
 
     const res = await app.inject({
       method: 'POST',
       url: '/api/feedback',
       headers: { cookie },
-      payload: { type: 'feature', title: 'Bitte X hinzufügen', description: 'Wäre praktisch für Y.' },
+      payload: {
+        type: 'feature',
+        title: 'Bitte X hinzufügen',
+        description: 'Wäre praktisch für Y.',
+      },
     });
 
     expect(res.statusCode).toBe(201);
-    expect(res.json()).toEqual({ issue_number: 7, issue_url: 'https://github.com/someone/somerepo/issues/7' });
+    expect(res.json()).toEqual({
+      issue_number: 7,
+      issue_url: 'https://github.com/someone/somerepo/issues/7',
+    });
     expect(sentBody?.labels).toEqual(['enhancement', 'from-app']);
     expect(sentBody?.body).toContain('feedback-user2');
     expect(sentBody?.body).toContain('fb2@example.com');
@@ -121,9 +137,13 @@ describe('feedback routes', () => {
         sentBody = JSON.parse(init!.body as string);
         return Promise.resolve({
           ok: true,
-          json: () => Promise.resolve({ number: 8, html_url: 'https://github.com/someone/somerepo/issues/8' }),
+          json: () =>
+            Promise.resolve({
+              number: 8,
+              html_url: 'https://github.com/someone/somerepo/issues/8',
+            }),
         });
-      }),
+      })
     );
 
     const res = await app.inject({
@@ -140,7 +160,7 @@ describe('feedback routes', () => {
 
     expect(res.statusCode).toBe(201);
     expect(sentBody?.body).toMatch(
-      /!\[Screenshot\]\(https:\/\/raw\.githubusercontent\.com\/someone\/somerepo\/feedback-screenshots\/feedback-screenshots\/.+\.png\)/,
+      /!\[Screenshot\]\(https:\/\/raw\.githubusercontent\.com\/someone\/somerepo\/feedback-screenshots\/feedback-screenshots\/.+\.png\)/
     );
   });
 
@@ -156,9 +176,13 @@ describe('feedback routes', () => {
         sentBody = JSON.parse(init!.body as string);
         return Promise.resolve({
           ok: true,
-          json: () => Promise.resolve({ number: 11, html_url: 'https://github.com/someone/somerepo/issues/11' }),
+          json: () =>
+            Promise.resolve({
+              number: 11,
+              html_url: 'https://github.com/someone/somerepo/issues/11',
+            }),
         });
-      }),
+      })
     );
 
     const res = await app.inject({
@@ -180,7 +204,10 @@ describe('feedback routes', () => {
 
   it('surfaces a 502 when the GitHub API rejects the request', async () => {
     const cookie = await register('feedback-user4', 'fb4@example.com');
-    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve({ ok: false, status: 422 })));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.resolve({ ok: false, status: 422 }))
+    );
 
     const res = await app.inject({
       method: 'POST',

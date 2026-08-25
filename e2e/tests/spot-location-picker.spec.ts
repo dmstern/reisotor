@@ -7,7 +7,9 @@ import { test, expect } from '@playwright/test';
 // bei "Neuer Spot" in ExcursionsView.vue, das TripMap.vue direkt daneben rendert. Die Mini-Karte
 // blieb dadurch komplett leer. Fix: L.map(mapEl.value, {}) statt ohne Options-Objekt.
 test.describe('Standort manuell setzen (Spot-Formular)', () => {
-  test('die Mini-Karte rendert tatsächliche Kartenkacheln statt leer zu bleiben', async ({ page }) => {
+  test('die Mini-Karte rendert tatsächliche Kartenkacheln statt leer zu bleiben', async ({
+    page,
+  }) => {
     const pageErrors: string[] = [];
     page.on('pageerror', (err) => pageErrors.push(err.message));
 
@@ -21,9 +23,14 @@ test.describe('Standort manuell setzen (Spot-Formular)', () => {
     expect(pageErrors.join('\n')).not.toContain("reading 'rotate'");
   });
 
-  test.use({ geolocation: { latitude: 48.2082, longitude: 16.3738 }, permissions: ['geolocation'] });
+  test.use({
+    geolocation: { latitude: 48.2082, longitude: 16.3738 },
+    permissions: ['geolocation'],
+  });
 
-  test('"Meinen aktuellen Standort verwenden" setzt den Pin auf die ermittelte Position', async ({ page }) => {
+  test('"Meinen aktuellen Standort verwenden" setzt den Pin auf die ermittelte Position', async ({
+    page,
+  }) => {
     await page.goto('/excursions');
     await page.getByRole('button', { name: 'Neuer Spot' }).click();
     const modal = page.locator('.modal', { hasText: 'Neuer Spot' });

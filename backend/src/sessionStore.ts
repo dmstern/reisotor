@@ -20,7 +20,7 @@ export class SqliteSessionStore {
       const expires = session.cookie?.expires ? new Date(session.cookie.expires).getTime() : null;
       db.prepare(
         `INSERT INTO sessions (sid, sess, expires) VALUES (?, ?, ?)
-         ON CONFLICT(sid) DO UPDATE SET sess = excluded.sess, expires = excluded.expires`,
+         ON CONFLICT(sid) DO UPDATE SET sess = excluded.sess, expires = excluded.expires`
       ).run(sessionId, JSON.stringify(session), expires);
       callback();
     } catch (err) {
@@ -31,8 +31,7 @@ export class SqliteSessionStore {
   get(sessionId: string, callback: CallbackSession) {
     try {
       const row = db.prepare('SELECT sess, expires FROM sessions WHERE sid = ?').get(sessionId) as
-        | SessionRow
-        | undefined;
+        SessionRow | undefined;
       if (!row) {
         callback(null, null);
         return;

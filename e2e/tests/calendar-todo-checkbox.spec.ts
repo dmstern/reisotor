@@ -3,7 +3,9 @@ import { test, expect } from '@playwright/test';
 // Regressionsnetz für die Todo-Checkbox im Kalender (ScheduleView.vue's Tages-Detailliste,
 // ersetzt das bisherige 📋-Emoji): Abhaken im Kalender muss denselben done-Status setzen wie das
 // Abhaken in TodoView.vue selbst (beide rufen letztlich PUT /todos/:id).
-test('checking off a todo in the calendar day view marks it done in TodoView.vue too', async ({ page }) => {
+test('checking off a todo in the calendar day view marks it done in TodoView.vue too', async ({
+  page,
+}) => {
   const todayIso = new Date().toISOString().slice(0, 10);
 
   await page.goto('/todo');
@@ -15,7 +17,9 @@ test('checking off a todo in the calendar day view marks it done in TodoView.vue
   await page.goto('/');
   await page.locator(`.day[data-date="${todayIso}"]`).click();
 
-  const calendarItem = page.locator('.day-detail .items .item', { hasText: 'E2E Kalender-Checkbox-Test' });
+  const calendarItem = page.locator('.day-detail .items .item', {
+    hasText: 'E2E Kalender-Checkbox-Test',
+  });
   await expect(calendarItem).toBeVisible();
   const checkbox = calendarItem.locator('input[type="checkbox"]');
   await expect(checkbox).not.toBeChecked();

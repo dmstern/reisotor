@@ -122,11 +122,12 @@ bei geschlossenem Tab/Browser.
 ## Offline-Fähigkeit
 
 Zwei bewusst getrennte, nicht überlappende Schichten:
-- *Daten-Ebene*: `api/client.ts`/`api/offline.ts` cachen GET-Antworten in `localStorage` und queuen
+
+- _Daten-Ebene_: `api/client.ts`/`api/offline.ts` cachen GET-Antworten in `localStorage` und queuen
   Mutationen in einer Outbox, die `stores/connectivity.ts` bei Wiedererkennen der Verbindung
   abarbeitet; `components/OfflineIndicator.vue` zeigt den Zustand im Header.
-- *App-Shell-Ebene (volle PWA)*: `vite-plugin-pwa` (`injectManifest`-Strategie, `frontend/
-  vite.config.ts`) erweitert denselben `public/sw.js` (statt ihn zu ersetzen) um
+- _App-Shell-Ebene (volle PWA)_: `vite-plugin-pwa` (`injectManifest`-Strategie, `frontend/
+vite.config.ts`) erweitert denselben `public/sw.js` (statt ihn zu ersetzen) um
   Workbox-Precaching für das komplette Bundle, damit die App auch ohne jedes Netz überhaupt lädt.
   Macht die App auf iOS/Android/Desktop als Icon installierbar (PNG-/Maskable-Icons unter
   `public/icons/`, erzeugt von `scripts/generate-icons.mjs` aus `reisotor_logo.svg`). Bewusst
@@ -172,23 +173,23 @@ Deploy nie überschrieben. Details/Befehle: `README.md`.
 Startpunkt für "wo lebt X" — statt jedes Mal neu zu grep'en/explorieren, erst hier nachschauen.
 Eine Zeile pro Domäne, keine Vollständigkeits-Doku.
 
-| Domäne | Backend-Route | Frontend (Store/View/Komponente) | Kurzbeschreibung |
-|---|---|---|---|
-| Trips/Mitgliedschaft | `routes/trips.ts`, `tripAccess.ts` | `stores/trip.ts`, `TripSwitcher.vue`, `TripMembersDialog.vue` | Trip-CRUD, `requireTripMember()`-Gate, Einladung |
-| Kalender | `routes/schedule.ts` | `stores/schedule.ts`, `ScheduleView.vue`, `CalendarWeek.vue` | Wochenansicht, Termine, Drag&Drop von Ideen |
-| Packliste | `routes/packing.ts` | `PackingListView.vue` | Pro-Nutzer:in + gemeinsame Liste, Kategorien |
-| Einkaufsliste | `routes/shopping.ts` | `ShoppingListView.vue` | Gemeinsame Liste, Käufer:in-Zuweisung |
-| Ausflugsideen/Touren | `routes/ideas.ts` | `stores/excursions.ts`, `ExcursionsView.vue`, `ExcursionCard.vue` | Ideen-Status, Touren-Verwaltung (siehe Frontend-Abschnitt oben) |
-| Spots & Karte (inkl. Unterkunft) | `routes/spots.ts` | `stores/spots.ts`, `TripMap.vue`, `SpotCard.vue` | Koordinaten, Leaflet-Karte, Emoji-`divIcon`s; Unterkunft = Spot-Kategorie mit Zeitraum/Check-in-out/Budget-Sync (keine eigene Route mehr) |
-| Reise/Transport | `routes/travel.ts` | `TravelView.vue` | Flug/Zug, Budget-Sync |
-| Budget | `routes/budget.ts` | `stores/budget.ts`, `BudgetView.vue` | Ziel-/Kategorienbudgets, Splitwise-artige Saldo-Berechnung |
-| Tagebuch | `routes/diary.ts` | `DiaryView.vue` | Einträge mit Bildern, Likes, Kommentaren |
-| Notizen | `routes/notes.ts` | `NotesView.vue` | Rich-Text (fett/kursiv/Listen/Auto-Links) |
-| ToDos | `routes/todos.ts` | `TodoView.vue` | Aufgabenliste |
-| Anhänge | `routes/attachments.ts` | `components/FileAttachments.vue` | Upload/Auslieferung, genutzt von 5 Domänen |
-| Papierkorb | `routes/trash.ts` | `TrashView.vue`, `useUndoableDelete.ts` | Soft-Delete, 60s-Undo + dauerhafte Wiederherstellung |
-| Backup | `routes/backup.ts` | — | Vollständiger JSON-Export/-Import |
-| Nutzer:innen/Suche | `routes/users.ts` | `ProfileView.vue` | Autocomplete-Suche, Profil/Avatar |
-| Auth | `routes/auth.ts`, `auth.ts` | `stores/auth.ts`, `router/index.ts`-Guard | Registrierung/Login, Session-Gate |
-| Echtzeit/Präsenz | `routes/realtime.ts`, `activity.ts` | `stores/liveSync.ts`, `PresenceAvatars.vue` | SSE-Stream, Highlight-Mechanismus |
-| Karten-Icons/Design | — | `utils/sectionIcons.ts`, `utils/spotCategory.ts`, `utils/scheduleCategory.ts` | Icon-Registries, siehe `DESIGN.md` |
+| Domäne                           | Backend-Route                       | Frontend (Store/View/Komponente)                                              | Kurzbeschreibung                                                                                                                          |
+| -------------------------------- | ----------------------------------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Trips/Mitgliedschaft             | `routes/trips.ts`, `tripAccess.ts`  | `stores/trip.ts`, `TripSwitcher.vue`, `TripMembersDialog.vue`                 | Trip-CRUD, `requireTripMember()`-Gate, Einladung                                                                                          |
+| Kalender                         | `routes/schedule.ts`                | `stores/schedule.ts`, `ScheduleView.vue`, `CalendarWeek.vue`                  | Wochenansicht, Termine, Drag&Drop von Ideen                                                                                               |
+| Packliste                        | `routes/packing.ts`                 | `PackingListView.vue`                                                         | Pro-Nutzer:in + gemeinsame Liste, Kategorien                                                                                              |
+| Einkaufsliste                    | `routes/shopping.ts`                | `ShoppingListView.vue`                                                        | Gemeinsame Liste, Käufer:in-Zuweisung                                                                                                     |
+| Ausflugsideen/Touren             | `routes/ideas.ts`                   | `stores/excursions.ts`, `ExcursionsView.vue`, `ExcursionCard.vue`             | Ideen-Status, Touren-Verwaltung (siehe Frontend-Abschnitt oben)                                                                           |
+| Spots & Karte (inkl. Unterkunft) | `routes/spots.ts`                   | `stores/spots.ts`, `TripMap.vue`, `SpotCard.vue`                              | Koordinaten, Leaflet-Karte, Emoji-`divIcon`s; Unterkunft = Spot-Kategorie mit Zeitraum/Check-in-out/Budget-Sync (keine eigene Route mehr) |
+| Reise/Transport                  | `routes/travel.ts`                  | `TravelView.vue`                                                              | Flug/Zug, Budget-Sync                                                                                                                     |
+| Budget                           | `routes/budget.ts`                  | `stores/budget.ts`, `BudgetView.vue`                                          | Ziel-/Kategorienbudgets, Splitwise-artige Saldo-Berechnung                                                                                |
+| Tagebuch                         | `routes/diary.ts`                   | `DiaryView.vue`                                                               | Einträge mit Bildern, Likes, Kommentaren                                                                                                  |
+| Notizen                          | `routes/notes.ts`                   | `NotesView.vue`                                                               | Rich-Text (fett/kursiv/Listen/Auto-Links)                                                                                                 |
+| ToDos                            | `routes/todos.ts`                   | `TodoView.vue`                                                                | Aufgabenliste                                                                                                                             |
+| Anhänge                          | `routes/attachments.ts`             | `components/FileAttachments.vue`                                              | Upload/Auslieferung, genutzt von 5 Domänen                                                                                                |
+| Papierkorb                       | `routes/trash.ts`                   | `TrashView.vue`, `useUndoableDelete.ts`                                       | Soft-Delete, 60s-Undo + dauerhafte Wiederherstellung                                                                                      |
+| Backup                           | `routes/backup.ts`                  | —                                                                             | Vollständiger JSON-Export/-Import                                                                                                         |
+| Nutzer:innen/Suche               | `routes/users.ts`                   | `ProfileView.vue`                                                             | Autocomplete-Suche, Profil/Avatar                                                                                                         |
+| Auth                             | `routes/auth.ts`, `auth.ts`         | `stores/auth.ts`, `router/index.ts`-Guard                                     | Registrierung/Login, Session-Gate                                                                                                         |
+| Echtzeit/Präsenz                 | `routes/realtime.ts`, `activity.ts` | `stores/liveSync.ts`, `PresenceAvatars.vue`                                   | SSE-Stream, Highlight-Mechanismus                                                                                                         |
+| Karten-Icons/Design              | —                                   | `utils/sectionIcons.ts`, `utils/spotCategory.ts`, `utils/scheduleCategory.ts` | Icon-Registries, siehe `DESIGN.md`                                                                                                        |

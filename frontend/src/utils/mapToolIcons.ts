@@ -46,8 +46,18 @@ export const MAP_TOOL_ICONS: Record<MapToolIconKey, IconDef> = {
   orientationHeading: { id: 'telescope', emoji: '🔭', outline: IconTelescope },
   offlineDownload: { id: 'download', emoji: '⬇️', outline: IconDownload },
   shareLocation: { id: 'antenna', emoji: '📡', outline: IconAntenna },
-  record: { id: 'player-record', emoji: '⏺️', outline: IconPlayerRecord, filled: IconPlayerRecordFilled },
-  recordStop: { id: 'player-stop', emoji: '⏹️', outline: IconPlayerStop, filled: IconPlayerStopFilled },
+  record: {
+    id: 'player-record',
+    emoji: '⏺️',
+    outline: IconPlayerRecord,
+    filled: IconPlayerRecordFilled,
+  },
+  recordStop: {
+    id: 'player-stop',
+    emoji: '⏹️',
+    outline: IconPlayerStop,
+    filled: IconPlayerStopFilled,
+  },
   // Gruppen-Trigger (siehe TripMap.vue): fassen mehrere der obigen Werkzeuge hinter einem Popover
   // zusammen, brauchen deshalb ein eigenes, vom Inhalt unabhängiges Icon statt eines der obigen
   // wiederzuverwenden (sonst wirkt es wie genau dieses eine Werkzeug statt einer Auswahl).

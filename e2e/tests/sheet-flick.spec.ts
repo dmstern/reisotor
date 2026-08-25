@@ -12,7 +12,9 @@ import { VIEWPORTS } from './helpers/layout';
 test.describe('Mobile Spots-Sheet: knackiger Flick schaltet einen Zustand weiter statt zurückzupoppen', () => {
   test.use({ viewport: VIEWPORTS.mobile });
 
-  test('kurzer, schneller Wisch nach oben am Anfasser wechselt von "angeschnitten" auf "voll"', async ({ page }) => {
+  test('kurzer, schneller Wisch nach oben am Anfasser wechselt von "angeschnitten" auf "voll"', async ({
+    page,
+  }) => {
     await page.goto('/excursions');
     const sheet = page.locator('.spots-col');
     await expect(sheet).toBeVisible();
@@ -39,7 +41,9 @@ test.describe('Mobile Spots-Sheet: knackiger Flick schaltet einen Zustand weiter
     await expect(sheet).toHaveClass(/full/);
   });
 
-  test('kurzer, schneller Wisch nach unten am Anfasser wechselt von "voll" auf "angeschnitten"', async ({ page }) => {
+  test('kurzer, schneller Wisch nach unten am Anfasser wechselt von "voll" auf "angeschnitten"', async ({
+    page,
+  }) => {
     await page.goto('/excursions');
     const sheet = page.locator('.spots-col');
     await expect(sheet).toBeVisible();

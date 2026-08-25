@@ -68,8 +68,7 @@ const guide = computed<InstallGuide>(() => {
     return {
       heading: 'Installation unter Firefox',
       steps: [],
-      note:
-        'Firefox unterstützt die Installation von Web-Apps auf dem Desktop derzeit nicht. Nutze dafür Chrome, Edge oder (auf dem Mac) Safari.',
+      note: 'Firefox unterstützt die Installation von Web-Apps auf dem Desktop derzeit nicht. Nutze dafür Chrome, Edge oder (auf dem Mac) Safari.',
     };
   }
 
@@ -89,15 +88,25 @@ function close() {
 </script>
 
 <template>
-  <Modal :model-value="modelValue" title="Reisotor als App installieren" @update:model-value="close">
+  <Modal
+    :model-value="modelValue"
+    title="Reisotor als App installieren"
+    @update:model-value="close"
+  >
     <div class="pwa-install-dialog">
       <div class="benefits">
         <h3>Das bringt dir die Installation</h3>
         <ul>
           <li>Eigenes App-Icon auf dem Start-/Home-Bildschirm - kein Adresse-Tippen mehr nötig.</li>
-          <li>Läuft in einem eigenen Fenster ohne Adressleiste/Tabs, fühlt sich wie eine native App an.</li>
+          <li>
+            Läuft in einem eigenen Fenster ohne Adressleiste/Tabs, fühlt sich wie eine native App
+            an.
+          </li>
           <li>Zuletzt geladene Inhalte bleiben auch ohne Internetverbindung sichtbar.</li>
-          <li>Aktualisiert sich beim Öffnen automatisch im Hintergrund - kein App-Store-Download nötig.</li>
+          <li>
+            Aktualisiert sich beim Öffnen automatisch im Hintergrund - kein App-Store-Download
+            nötig.
+          </li>
         </ul>
       </div>
 

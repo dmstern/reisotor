@@ -49,8 +49,12 @@ export async function expectWithinViewport(page: Page, locator: Locator): Promis
   if (!viewport) return;
   expect(box.left, 'Element ragt links aus dem Viewport').toBeGreaterThanOrEqual(-0.5);
   expect(box.top, 'Element ragt oben aus dem Viewport').toBeGreaterThanOrEqual(-0.5);
-  expect(box.right, 'Element ragt rechts aus dem Viewport').toBeLessThanOrEqual(viewport.width + 0.5);
-  expect(box.bottom, 'Element ragt unten aus dem Viewport').toBeLessThanOrEqual(viewport.height + 0.5);
+  expect(box.right, 'Element ragt rechts aus dem Viewport').toBeLessThanOrEqual(
+    viewport.width + 0.5
+  );
+  expect(box.bottom, 'Element ragt unten aus dem Viewport').toBeLessThanOrEqual(
+    viewport.height + 0.5
+  );
 }
 
 /** Das Kind-Element muss vollständig innerhalb der Box des Eltern-/Container-Elements liegen (z. B.
@@ -59,10 +63,18 @@ export async function expectWithinBox(child: Locator, parent: Locator): Promise<
   const childBox = await boxOf(child);
   const parentBox = await boxOf(parent);
   const tolerance = 1;
-  expect(childBox.left, 'Element ragt links aus dem Container').toBeGreaterThanOrEqual(parentBox.left - tolerance);
-  expect(childBox.top, 'Element ragt oben aus dem Container').toBeGreaterThanOrEqual(parentBox.top - tolerance);
-  expect(childBox.right, 'Element ragt rechts aus dem Container').toBeLessThanOrEqual(parentBox.right + tolerance);
-  expect(childBox.bottom, 'Element ragt unten aus dem Container').toBeLessThanOrEqual(parentBox.bottom + tolerance);
+  expect(childBox.left, 'Element ragt links aus dem Container').toBeGreaterThanOrEqual(
+    parentBox.left - tolerance
+  );
+  expect(childBox.top, 'Element ragt oben aus dem Container').toBeGreaterThanOrEqual(
+    parentBox.top - tolerance
+  );
+  expect(childBox.right, 'Element ragt rechts aus dem Container').toBeLessThanOrEqual(
+    parentBox.right + tolerance
+  );
+  expect(childBox.bottom, 'Element ragt unten aus dem Container').toBeLessThanOrEqual(
+    parentBox.bottom + tolerance
+  );
 }
 
 // Mittelpunkte der vier Kanten statt der Ecken: exakte Ecken-Testpunkte fallen bei abgerundeten
@@ -74,7 +86,10 @@ export async function expectWithinBox(child: Locator, parent: Locator): Promise<
 // für Koordinaten außerhalb des Viewports (z. B. schmale Mobile-Viewports + leicht überstehende
 // Status-Pills), was zu falschen Fehlschlägen führt — siehe layout-overlap.spec.ts, Kommentar bei
 // statusChip.scrollIntoViewIfNeeded().
-function samplePoints(box: Box, viewport: { width: number; height: number }): { x: number; y: number }[] {
+function samplePoints(
+  box: Box,
+  viewport: { width: number; height: number }
+): { x: number; y: number }[] {
   const left = Math.max(box.left, 0);
   const top = Math.max(box.top, 0);
   const right = Math.min(box.right, viewport.width);
@@ -109,7 +124,11 @@ function samplePoints(box: Box, viewport: { width: number; height: number }): { 
  *  Dialog) optisch verdeckt zu sein — reine Boxen-Überlappung allein kann das nicht unterscheiden,
  *  da sie nichts über z-index/Render-Reihenfolge aussagt. Testet Mittelpunkt + vier (leicht nach
  *  innen versetzte) Ecken von `target`. */
-export async function expectNotCoveredBy(page: Page, target: Locator, blocker: Locator): Promise<void> {
+export async function expectNotCoveredBy(
+  page: Page,
+  target: Locator,
+  blocker: Locator
+): Promise<void> {
   const targetHandle = await target.elementHandle();
   const blockerHandle = await blocker.elementHandle();
   expect(targetHandle, 'target-Element nicht auffindbar').not.toBeNull();
@@ -124,15 +143,22 @@ export async function expectNotCoveredBy(page: Page, target: Locator, blocker: L
       ([el, blockerEl, x, y]) => {
         const hit = document.elementFromPoint(x, y);
         const visible = !!hit && (hit === el || el.contains(hit) || hit.contains(el));
-        const coveredByBlocker = !!hit && !!blockerEl && (hit === blockerEl || blockerEl.contains(hit));
-        return { visible, coveredByBlocker, hitTag: hit ? hit.tagName + (hit.className ? `.${String(hit.className).split(' ').join('.')}` : '') : null };
+        const coveredByBlocker =
+          !!hit && !!blockerEl && (hit === blockerEl || blockerEl.contains(hit));
+        return {
+          visible,
+          coveredByBlocker,
+          hitTag: hit
+            ? hit.tagName + (hit.className ? `.${String(hit.className).split(' ').join('.')}` : '')
+            : null,
+        };
       },
-      [targetHandle, blockerHandle, point.x, point.y] as const,
+      [targetHandle, blockerHandle, point.x, point.y] as const
     );
     expect(
       result.visible,
       `Punkt (${point.x}, ${point.y}) auf dem Ziel-Element trifft stattdessen "${result.hitTag}"` +
-        (result.coveredByBlocker ? ' (verdeckt durch das als blocker übergebene Element)' : ''),
+        (result.coveredByBlocker ? ' (verdeckt durch das als blocker übergebene Element)' : '')
     ).toBe(true);
   }
 }
@@ -143,6 +169,12 @@ export async function expectNotCoveredBy(page: Page, target: Locator, blocker: L
 export async function expectNoOverlap(a: Locator, b: Locator): Promise<void> {
   const boxA = await boxOf(a);
   const boxB = await boxOf(b);
-  const overlaps = boxA.left < boxB.right && boxA.right > boxB.left && boxA.top < boxB.bottom && boxA.bottom > boxB.top;
-  expect(overlaps, 'Zwei Elemente überlappen sich geometrisch, obwohl sie das nicht sollten').toBe(false);
+  const overlaps =
+    boxA.left < boxB.right &&
+    boxA.right > boxB.left &&
+    boxA.top < boxB.bottom &&
+    boxA.bottom > boxB.top;
+  expect(overlaps, 'Zwei Elemente überlappen sich geometrisch, obwohl sie das nicht sollten').toBe(
+    false
+  );
 }

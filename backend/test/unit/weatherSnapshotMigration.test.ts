@@ -31,17 +31,23 @@ describe('trip_weather_snapshots lat/lng Backfill-Migration', () => {
       );
     `);
     legacy
-      .prepare(`INSERT INTO trips (id, name, start_date, end_date, lat, lng) VALUES (1, 'Lissabon', '2026-08-01', '2026-08-10', 38.72, -9.13)`)
+      .prepare(
+        `INSERT INTO trips (id, name, start_date, end_date, lat, lng) VALUES (1, 'Lissabon', '2026-08-01', '2026-08-10', 38.72, -9.13)`
+      )
       .run();
     legacy
-      .prepare(`INSERT INTO trip_weather_snapshots (id, trip_id, date, weathercode, temp_max, temp_min, precipitation_probability) VALUES (1, 1, '2026-08-05', 0, 28, 18, 5)`)
+      .prepare(
+        `INSERT INTO trip_weather_snapshots (id, trip_id, date, weathercode, temp_max, temp_min, precipitation_probability) VALUES (1, 1, '2026-08-05', 0, 28, 18, 5)`
+      )
       .run();
     legacy.close();
 
     process.env.DB_PATH = dbPath;
     const { db } = await import('../../src/db/index.js');
 
-    const cols = db.prepare('PRAGMA table_info(trip_weather_snapshots)').all() as { name: string }[];
+    const cols = db.prepare('PRAGMA table_info(trip_weather_snapshots)').all() as {
+      name: string;
+    }[];
     expect(cols.some((c) => c.name === 'lat')).toBe(true);
     expect(cols.some((c) => c.name === 'lng')).toBe(true);
 
@@ -49,6 +55,12 @@ describe('trip_weather_snapshots lat/lng Backfill-Migration', () => {
       .prepare('SELECT trip_id, lat, lng, date, temp_max FROM trip_weather_snapshots WHERE id = 1')
       .get() as { trip_id: number; lat: number; lng: number; date: string; temp_max: number };
 
-    expect(snapshot).toEqual({ trip_id: 1, lat: 38.72, lng: -9.13, date: '2026-08-05', temp_max: 28 });
+    expect(snapshot).toEqual({
+      trip_id: 1,
+      lat: 38.72,
+      lng: -9.13,
+      date: '2026-08-05',
+      temp_max: 28,
+    });
   });
 });

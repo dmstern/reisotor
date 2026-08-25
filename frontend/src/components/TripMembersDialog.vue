@@ -23,7 +23,7 @@ const error = ref('');
 let searchTimeout: ReturnType<typeof setTimeout> | undefined;
 
 const memberCapReached = computed(
-  () => !!props.trip?.owner_restricted && members.value.length >= RESTRICTED_MAX_MEMBERS,
+  () => !!props.trip?.owner_restricted && members.value.length >= RESTRICTED_MAX_MEMBERS
 );
 
 watch(
@@ -36,7 +36,7 @@ watch(
       results.value = [];
       error.value = '';
     }
-  },
+  }
 );
 
 async function loadMembers() {
@@ -55,7 +55,7 @@ watch(query, (q) => {
   searchTimeout = setTimeout(async () => {
     if (!props.trip) return;
     results.value = await api.get<User[]>(
-      `/users/search?q=${encodeURIComponent(q.trim())}&trip_id=${props.trip.id}`,
+      `/users/search?q=${encodeURIComponent(q.trim())}&trip_id=${props.trip.id}`
     );
   }, 300);
 });
@@ -90,7 +90,11 @@ function close() {
 </script>
 
 <template>
-  <Modal :model-value="modelValue" :title="`Mitglieder – ${trip?.name ?? ''}`" @update:model-value="close">
+  <Modal
+    :model-value="modelValue"
+    :title="`Mitglieder – ${trip?.name ?? ''}`"
+    @update:model-value="close"
+  >
     <div class="members-dialog">
       <ul class="member-list">
         <li v-for="u in members" :key="u.id">
@@ -107,7 +111,9 @@ function close() {
         <li v-if="!members.length" class="empty">Noch keine Mitglieder.</li>
       </ul>
 
-      <p v-if="memberCapReached" class="hint">Eingeschränkter Modus - Maximal drei Nutzer pro Urlaub</p>
+      <p v-if="memberCapReached" class="hint">
+        Eingeschränkter Modus - Maximal drei Nutzer pro Urlaub
+      </p>
       <label v-else>
         Nutzer:in einladen (Benutzername oder E-Mail)
         <input v-model="query" type="text" placeholder="Mind. 2 Zeichen eingeben…" />

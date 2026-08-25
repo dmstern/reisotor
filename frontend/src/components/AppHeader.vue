@@ -27,7 +27,9 @@ useConnectivityStore();
 // Desktop/Mobil-Weiche wie NavBar.vue's isTop.
 const navPosition = useNavPositionStore();
 const isDesktop = useIsDesktop();
-const navBarIsBottom = computed(() => (isDesktop.value ? navPosition.desktop === 'bottom' : navPosition.mobile === 'bottom'));
+const navBarIsBottom = computed(() =>
+  isDesktop.value ? navPosition.desktop === 'bottom' : navPosition.mobile === 'bottom'
+);
 
 // Der Header ist nur noch 56px hoch, solange die Statuszeile (Offline-/PWA-Update-Hinweis) leer
 // ist – NavBar.vue klebt direkt darunter per position:sticky mit einem fest verdrahteten "top"-Wert
@@ -56,11 +58,17 @@ onUnmounted(() => {
 // (APP_ENV-Env-Var pro Instanz, GET /build-info) statt aus einem Domain-Vergleich, siehe Issue #219.
 const buildInfoStore = useBuildInfoStore();
 buildInfoStore.load();
-const isNonProd = computed(() => buildInfoStore.buildInfo != null && buildInfoStore.buildInfo.environment !== 'production');
+const isNonProd = computed(
+  () => buildInfoStore.buildInfo != null && buildInfoStore.buildInfo.environment !== 'production'
+);
 </script>
 
 <template>
-  <header ref="headerEl" class="app-header" :class="{ 'non-prod': isNonProd, 'nav-bottom': navBarIsBottom }">
+  <header
+    ref="headerEl"
+    class="app-header"
+    :class="{ 'non-prod': isNonProd, 'nav-bottom': navBarIsBottom }"
+  >
     <!-- Eigene Zeile ÜBER der Icon-Zeile statt zwischen TripSwitcher und den Icons rechts
          eingereiht: der TripSwitcher-Button wächst mit dem Urlaubsnamen und schrumpft nicht
          zuverlässig (siehe .switcher-btn in TripSwitcher.vue), wodurch ein hier eingereihter Pill
@@ -80,7 +88,12 @@ const isNonProd = computed(() => buildInfoStore.buildInfo != null && buildInfoSt
       <router-link to="/" class="brand">
         <img src="/reisotor_logo.svg" alt="Reisotor Logo" class="logo" />
         <span class="wordmark">Reisotor</span>
-        <span v-if="isNonProd" class="env-badge" title="Dev-/Staging-Umgebung, nicht die echte Produktion">DEV</span>
+        <span
+          v-if="isNonProd"
+          class="env-badge"
+          title="Dev-/Staging-Umgebung, nicht die echte Produktion"
+          >DEV</span
+        >
       </router-link>
       <TripSwitcher class="switcher" />
       <PresenceAvatars />

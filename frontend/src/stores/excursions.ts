@@ -55,7 +55,10 @@ export const useExcursionsStore = defineStore('excursions', () => {
   watch(() => liveSync.domainVersion.ideas, load);
 
   async function create(body: ExcursionFormData) {
-    const created = await api.post<Excursion>('/ideas', { trip_id: tripStore.currentTripId, ...body });
+    const created = await api.post<Excursion>('/ideas', {
+      trip_id: tripStore.currentTripId,
+      ...body,
+    });
     excursions.value.unshift(created);
     await useScheduleStore().load();
     return created;

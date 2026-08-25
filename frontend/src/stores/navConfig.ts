@@ -30,7 +30,10 @@ function loadEntries(): NavConfigEntry[] {
   const known = new Set(NAV_LINKS.map((l) => l.key));
   const validExisting = parsed.filter((e) => known.has(e.key));
   const existingKeys = new Set(validExisting.map((e) => e.key));
-  const missing = NAV_LINKS.filter((l) => !existingKeys.has(l.key)).map((l) => ({ key: l.key, visible: true }));
+  const missing = NAV_LINKS.filter((l) => !existingKeys.has(l.key)).map((l) => ({
+    key: l.key,
+    visible: true,
+  }));
   return [...validExisting, ...missing];
 }
 

@@ -6,7 +6,9 @@ import { test, expect } from '@playwright/test';
 // überleben, bevor die Outbox (api/offline.ts) wieder gesendet werden konnte, und (c) nach
 // Wiederverbindung automatisch mit dem Server synchronisiert werden (Markierung verschwindet).
 test.describe('Offline angelegte Objekte werden als "nur lokal" markiert und später synchronisiert', () => {
-  test('ein offline angelegtes ToDo übersteht einen Reload und synct sich nach Wiederverbindung', async ({ page }) => {
+  test('ein offline angelegtes ToDo übersteht einen Reload und synct sich nach Wiederverbindung', async ({
+    page,
+  }) => {
     await page.goto('/todo');
     await expect(page.locator('.todo-page')).toBeVisible();
 

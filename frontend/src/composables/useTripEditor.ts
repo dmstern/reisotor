@@ -62,7 +62,7 @@ export function useTripEditor() {
 
   async function onDelete(trip: Trip) {
     const confirmed = window.confirm(
-      `Urlaub "${trip.name}" wirklich löschen? Alle zugehörigen Daten (Kalender, Packliste, Touren, Unterkunft, Budget, ...) werden unwiderruflich gelöscht.`,
+      `Urlaub "${trip.name}" wirklich löschen? Alle zugehörigen Daten (Kalender, Packliste, Touren, Unterkunft, Budget, ...) werden unwiderruflich gelöscht.`
     );
     if (!confirmed) return;
     await tripStore.deleteTrip(trip.id);

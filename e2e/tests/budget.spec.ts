@@ -38,7 +38,9 @@ async function netFor(page: Page, username: string): Promise<number> {
   return /schuldet/.test(text) ? -amount : amount;
 }
 
-test('creates a shared budget pot with categories and the KPIs reflect the new expense correctly', async ({ page }) => {
+test('creates a shared budget pot with categories and the KPIs reflect the new expense correctly', async ({
+  page,
+}) => {
   await page.goto('/budget');
   await expect(page.locator('.budget-page')).toBeVisible();
 
@@ -66,7 +68,10 @@ test('creates a shared budget pot with categories and the KPIs reflect the new e
   // Ausgabe von 40 € gegen diese Kategorie und diesen Topf eintragen.
   await page.getByRole('button', { name: 'Bezahlung eintragen' }).click();
   await page.getByPlaceholder('Titel').fill('E2E Testausgabe');
-  await page.locator('.add-form').getByPlaceholder('Kategorie', { exact: true }).fill('E2E Testkategorie');
+  await page
+    .locator('.add-form')
+    .getByPlaceholder('Kategorie', { exact: true })
+    .fill('E2E Testkategorie');
   await page.locator('.add-form').getByPlaceholder('Betrag').fill('40');
   await selectOptionByText(page.locator('.modal:visible .add-form select').nth(0), E2E_USERNAME);
   await selectOptionByText(page.locator('.modal:visible .add-form select').nth(1), potName);
@@ -81,7 +86,9 @@ test('creates a shared budget pot with categories and the KPIs reflect the new e
   await expect(categoryMeter).toContainText('100.00');
 });
 
-test('a budget pot with only a target_amount (simple mode) shows a single meter without categories', async ({ page }) => {
+test('a budget pot with only a target_amount (simple mode) shows a single meter without categories', async ({
+  page,
+}) => {
   await page.goto('/budget');
   await expect(page.locator('.budget-page')).toBeVisible();
   const { target: grandTotalBefore } = await overviewValues(page);
@@ -106,8 +113,12 @@ test('a budget pot with only a target_amount (simple mode) shows a single meter 
 test('a private budget pot stays invisible to another member, but shared expenses drive a correct settlement suggestion', async ({
   browser,
 }) => {
-  const ctxA = await newContextWithReducedMotion(browser, { storageState: { cookies: [], origins: [] } });
-  const ctxB = await newContextWithReducedMotion(browser, { storageState: { cookies: [], origins: [] } });
+  const ctxA = await newContextWithReducedMotion(browser, {
+    storageState: { cookies: [], origins: [] },
+  });
+  const ctxB = await newContextWithReducedMotion(browser, {
+    storageState: { cookies: [], origins: [] },
+  });
   const pageA = await ctxA.newPage();
   const pageB = await ctxB.newPage();
 
@@ -123,7 +134,10 @@ test('a private budget pot stays invisible to another member, but shared expense
   const privatePotName = `E2E Privater Topf ${Date.now()}`;
   await pageA.getByRole('button', { name: 'Budget anlegen' }).click();
   await pageA.getByPlaceholder('Name (z. B. Souvenirs)').fill(privatePotName);
-  await selectOptionByText(pageA.locator('.new-budget-form select').first(), 'Privat (nur eine Person sieht ihn)');
+  await selectOptionByText(
+    pageA.locator('.new-budget-form select').first(),
+    'Privat (nur eine Person sieht ihn)'
+  );
   await selectOptionByText(pageA.locator('.new-budget-form select').nth(1), E2E_USERNAME);
   await pageA.getByRole('button', { name: 'Anlegen', exact: true }).click();
   await expect(pageA.locator('.pot-card', { hasText: privatePotName })).toBeVisible();
@@ -226,7 +240,9 @@ test('nothing overflows the mobile viewport on the budget view', async ({ page }
     expect(viewport, 'page.viewportSize() ist null').not.toBeNull();
     if (!viewport) return;
     expect(box.x, 'Element ragt links aus dem Viewport').toBeGreaterThanOrEqual(-0.5);
-    expect(box.x + box.width, 'Element ragt rechts aus dem Viewport').toBeLessThanOrEqual(viewport.width + 0.5);
+    expect(box.x + box.width, 'Element ragt rechts aus dem Viewport').toBeLessThanOrEqual(
+      viewport.width + 0.5
+    );
   }
 
   await checkNoOverflow(page.locator('.overview-card'));
@@ -238,12 +254,18 @@ test('nothing overflows the mobile viewport on the budget view', async ({ page }
     await checkNoHorizontalOverflow(firstPotCard);
   }
 
-  const settlementCard = page.locator('.card').filter({ has: page.getByRole('heading', { name: 'Wer schuldet wem?' } ) });
+  const settlementCard = page
+    .locator('.card')
+    .filter({ has: page.getByRole('heading', { name: 'Wer schuldet wem?' }) });
   await checkNoHorizontalOverflow(settlementCard);
 
-  const expensesCard = page.locator('.card').filter({ has: page.getByRole('heading', { name: 'Bezahlungen' }) });
+  const expensesCard = page
+    .locator('.card')
+    .filter({ has: page.getByRole('heading', { name: 'Bezahlungen' }) });
   await checkNoHorizontalOverflow(expensesCard);
 
-  const transfersCard = page.locator('.card').filter({ has: page.getByRole('heading', { name: 'Überweisungen' }) });
+  const transfersCard = page
+    .locator('.card')
+    .filter({ has: page.getByRole('heading', { name: 'Überweisungen' }) });
   await checkNoHorizontalOverflow(transfersCard);
 });

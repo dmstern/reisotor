@@ -21,12 +21,16 @@ const DEFAULT_DATE_FORMAT: DateFormatOption = 'de';
 
 function loadWeekStart(): WeekStart {
   const stored = localStorage.getItem(WEEK_START_KEY);
-  return WEEK_START_OPTIONS.some((o) => o.value === stored) ? (stored as WeekStart) : DEFAULT_WEEK_START;
+  return WEEK_START_OPTIONS.some((o) => o.value === stored)
+    ? (stored as WeekStart)
+    : DEFAULT_WEEK_START;
 }
 
 function loadDateFormat(): DateFormatOption {
   const stored = localStorage.getItem(DATE_FORMAT_KEY);
-  return DATE_FORMAT_OPTIONS.some((o) => o.value === stored) ? (stored as DateFormatOption) : DEFAULT_DATE_FORMAT;
+  return DATE_FORMAT_OPTIONS.some((o) => o.value === stored)
+    ? (stored as DateFormatOption)
+    : DEFAULT_DATE_FORMAT;
 }
 
 // Geräte-/Browser-UI-Einstellung (wie stores/weatherProvider.ts/stores/navPosition.ts) statt

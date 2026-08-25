@@ -114,7 +114,14 @@ describe('buildTravelDerivedLocations', () => {
   });
 
   it('ignoriert Etappen-Enden ohne Koordinaten', () => {
-    const leg = travelItem({ id: 1, title: 'Ohne Standort', from_lat: null, from_lng: null, to_lat: null, to_lng: null });
+    const leg = travelItem({
+      id: 1,
+      title: 'Ohne Standort',
+      from_lat: null,
+      from_lng: null,
+      to_lat: null,
+      to_lng: null,
+    });
 
     const result = buildTravelDerivedLocations([leg]);
 

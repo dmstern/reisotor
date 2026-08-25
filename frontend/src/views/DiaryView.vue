@@ -83,13 +83,15 @@ const newDraft = useDraftAutosave('diary:new', form, showForm);
 const editDraft = useDraftAutosave(
   () => `diary:edit:${editingEntry.value?.id}`,
   editForm,
-  computed(() => editingEntry.value !== null),
+  computed(() => editingEntry.value !== null)
 );
 
 // Bereits als Entwurf gesicherter, aber noch nicht veröffentlichter eigener Eintrag (#89) - höchstens
 // einer gleichzeitig, siehe openNewForm()/closeForm() unten, die genau diesen statt eines
 // zusätzlichen zweiten Entwurfs weiterverwenden.
-const myDraft = computed(() => entries.value.find((e) => e.is_draft && e.author_id === auth.user?.id) ?? null);
+const myDraft = computed(
+  () => entries.value.find((e) => e.is_draft && e.author_id === auth.user?.id) ?? null
+);
 
 function hasEntryContent(f: { title: string; content: string; images: string[] }) {
   return f.title.trim().length > 0 || !isEmptyRichText(f.content) || f.images.length > 0;
@@ -118,7 +120,8 @@ function localDateStr(d: Date) {
 // hängen zu bleiben. created_at/id bleiben als Tiebreaker für mehrere Einträge am selben Tag.
 function sortEntries() {
   entries.value.sort(
-    (a, b) => b.date.localeCompare(a.date) || b.created_at.localeCompare(a.created_at) || b.id - a.id,
+    (a, b) =>
+      b.date.localeCompare(a.date) || b.created_at.localeCompare(a.created_at) || b.id - a.id
   );
 }
 
@@ -159,7 +162,12 @@ const weatherDays = ref<DailyWeather[] | null>(null);
 async function loadDiaryWeather() {
   if (trip.value?.lat == null || trip.value?.lng == null) return;
   try {
-    weatherDays.value = await fetchMergedWeather(tripId, trip.value.lat, trip.value.lng, weatherProvider.model);
+    weatherDays.value = await fetchMergedWeather(
+      tripId,
+      trip.value.lat,
+      trip.value.lng,
+      weatherProvider.model
+    );
   } catch {
     weatherDays.value = null;
   }
@@ -288,7 +296,12 @@ function commentItemsFor(entryId: number) {
 
 /** Komprimiert ausgewählte Bilder im Browser (Canvas-API) und lädt sie hoch – spart Traffic
  *  und vermeidet serverseitige Bildverarbeitung auf dem ressourcenschwachen Pi. */
-async function uploadFiles(fileList: FileList | null, target: { images: string[] }, uploadingRef: typeof uploading, errorRef: typeof uploadError) {
+async function uploadFiles(
+  fileList: FileList | null,
+  target: { images: string[] },
+  uploadingRef: typeof uploading,
+  errorRef: typeof uploadError
+) {
   const files = fileList ? Array.from(fileList) : [];
   if (!files.length) return;
   uploadingRef.value = true;
@@ -333,7 +346,9 @@ function openNewForm() {
   showSpotPicker.value = false;
   // Vorschlag: an diesem Tag geplante Ausflüge direkt vorauswählen, statt sie nur anzuzeigen –
   // meist wird ein Eintrag ja am selben Tag über genau diesen Ausflug geschrieben.
-  form.value.excursion_ids = excursionsStore.excursions.filter((e) => e.date === form.value.date).map((e) => e.id);
+  form.value.excursion_ids = excursionsStore.excursions
+    .filter((e) => e.date === form.value.date)
+    .map((e) => e.id);
   // Picker bei einer Vorauswahl direkt aufklappen, damit die "Empfohlen"-Markierung sichtbar ist
   // (Standard sonst eingeklappt, siehe showExcursionPicker oben).
   showExcursionPicker.value = form.value.excursion_ids.length > 0;
@@ -468,7 +483,9 @@ async function toggleLike(entryId: number) {
   if (result.liked) {
     likes.value.push({ id: Date.now(), entry_id: entryId, user_id: auth.user!.id });
   } else {
-    likes.value = likes.value.filter((l) => !(l.entry_id === entryId && l.user_id === auth.user!.id));
+    likes.value = likes.value.filter(
+      (l) => !(l.entry_id === entryId && l.user_id === auth.user!.id)
+    );
   }
 }
 
@@ -498,78 +515,152 @@ function showEntryDayOnMap(entry: DiaryEntry) {
   <div class="page" v-if="!loading">
     <div class="header">
       <h1>Tagebuch</h1>
-      <Button @click="openNewForm"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Neuer Eintrag</Button>
+      <Button @click="openNewForm"
+        ><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Neuer Eintrag</Button
+      >
     </div>
 
-    <Modal :model-value="showForm" title="Neuer Tagebucheintrag" full-height @update:model-value="(v) => !v && closeForm()">
-    <form class="add-form" @submit.prevent="submitEntry">
-      <FormField icon="date" label="Datum">
-        <input v-model="form.date" type="date" required />
-      </FormField>
-      <FormField icon="title" label="Titel">
-        <input v-model="form.title" type="text" placeholder="Titel (optional)" />
-      </FormField>
-      <RichTextEditor v-model="form.content" placeholder="Was ist heute passiert?" />
-      <p v-if="auth.user?.restricted" class="hint">Eingeschränkter Modus - Kein Datei-Upload möglich</p>
-      <label v-else class="upload-label">
-        <AppIcon :icon="FORM_FIELD_ICONS.image" :size="14" group="formFields" /> Bilder hinzufügen
-        <input type="file" accept="image/*" multiple :disabled="uploading" @change="onNewFilesSelected" />
-      </label>
-      <p v-if="uploading" class="hint">Bilder werden komprimiert & hochgeladen…</p>
-      <p v-if="uploadError" class="hint error">{{ uploadError }}</p>
-      <div class="image-preview" v-if="form.images.length">
-        <div class="preview-thumb" v-for="(img, i) in form.images" :key="img">
-          <img :src="img" :alt="`Bild ${i + 1}`" />
-          <Button type="button" variant="ghost" class="remove-thumb" @click="removeImage(form, i)"><AppIcon :icon="ACTION_ICONS.close" :size="13" group="actions" /></Button>
+    <Modal
+      :model-value="showForm"
+      title="Neuer Tagebucheintrag"
+      full-height
+      @update:model-value="(v) => !v && closeForm()"
+    >
+      <form class="add-form" @submit.prevent="submitEntry">
+        <FormField icon="date" label="Datum">
+          <input v-model="form.date" type="date" required />
+        </FormField>
+        <FormField icon="title" label="Titel">
+          <input v-model="form.title" type="text" placeholder="Titel (optional)" />
+        </FormField>
+        <RichTextEditor v-model="form.content" placeholder="Was ist heute passiert?" />
+        <p v-if="auth.user?.restricted" class="hint">
+          Eingeschränkter Modus - Kein Datei-Upload möglich
+        </p>
+        <label v-else class="upload-label">
+          <AppIcon :icon="FORM_FIELD_ICONS.image" :size="14" group="formFields" /> Bilder hinzufügen
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            :disabled="uploading"
+            @change="onNewFilesSelected"
+          />
+        </label>
+        <p v-if="uploading" class="hint">Bilder werden komprimiert & hochgeladen…</p>
+        <p v-if="uploadError" class="hint error">{{ uploadError }}</p>
+        <div class="image-preview" v-if="form.images.length">
+          <div class="preview-thumb" v-for="(img, i) in form.images" :key="img">
+            <img :src="img" :alt="`Bild ${i + 1}`" />
+            <Button type="button" variant="ghost" class="remove-thumb" @click="removeImage(form, i)"
+              ><AppIcon :icon="ACTION_ICONS.close" :size="13" group="actions"
+            /></Button>
+          </div>
         </div>
-      </div>
-      <fieldset v-if="excursionsStore.excursions.length" class="excursion-picker">
-        <legend>
-          <Button type="button" variant="ghost" class="picker-toggle" :aria-expanded="showExcursionPicker" @click="showExcursionPicker = !showExcursionPicker">
-            <span><AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="14" group="navigation" /> Touren zuordnen<span v-if="form.excursion_ids.length" class="picker-count"> ({{ form.excursion_ids.length }} ausgewählt)</span></span>
-            <AppIcon :icon="ACTION_ICONS.chevronDown" :size="14" group="actions" class="caret" :class="{ closed: !showExcursionPicker }" />
-          </Button>
-        </legend>
-        <template v-if="showExcursionPicker">
-          <label v-for="ex in pickerExcursions(form.date)" :key="ex.id" class="excursion-option">
-            <input type="checkbox" :value="ex.id" v-model="form.excursion_ids" />
-            <span class="excursion-option-title">{{ ex.title }}</span>
-            <span v-if="ex.date === form.date" class="excursion-option-badge recommended"><AppIcon :icon="ACTION_ICONS.recommended" :size="13" group="actions" /> Empfohlen – an diesem Tag geplant</span>
-          </label>
-        </template>
-      </fieldset>
-      <fieldset v-if="spotsStore.spots.length" class="excursion-picker">
-        <legend>
-          <Button type="button" variant="ghost" class="picker-toggle" :aria-expanded="showSpotPicker" @click="showSpotPicker = !showSpotPicker">
-            <span><AppIcon :icon="FORM_FIELD_ICONS.location" :size="14" group="formFields" /> Spots zuordnen<span v-if="form.spot_ids.length" class="picker-count"> ({{ form.spot_ids.length }} ausgewählt)</span></span>
-            <AppIcon :icon="ACTION_ICONS.chevronDown" :size="14" group="actions" class="caret" :class="{ closed: !showSpotPicker }" />
-          </Button>
-        </legend>
-        <template v-if="showSpotPicker">
-          <Button
-            v-for="spot in pickerSpots(form.date)"
-            :key="spot.id"
-            type="button"
-            class="excursion-option spot-option-btn"
-            @click="toggleSpot(spot.id, form)"
-          >
-            <span class="excursion-option-title">
-                <AppIcon :icon="spotCategoryMeta(spot.category).tabler" :size="14" group="categories" /> {{ spot.title }}
+        <fieldset v-if="excursionsStore.excursions.length" class="excursion-picker">
+          <legend>
+            <Button
+              type="button"
+              variant="ghost"
+              class="picker-toggle"
+              :aria-expanded="showExcursionPicker"
+              @click="showExcursionPicker = !showExcursionPicker"
+            >
+              <span
+                ><AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="14" group="navigation" />
+                Touren zuordnen<span v-if="form.excursion_ids.length" class="picker-count">
+                  ({{ form.excursion_ids.length }} ausgewählt)</span
+                ></span
+              >
+              <AppIcon
+                :icon="ACTION_ICONS.chevronDown"
+                :size="14"
+                group="actions"
+                class="caret"
+                :class="{ closed: !showExcursionPicker }"
+              />
+            </Button>
+          </legend>
+          <template v-if="showExcursionPicker">
+            <label v-for="ex in pickerExcursions(form.date)" :key="ex.id" class="excursion-option">
+              <input type="checkbox" :value="ex.id" v-model="form.excursion_ids" />
+              <span class="excursion-option-title">{{ ex.title }}</span>
+              <span v-if="ex.date === form.date" class="excursion-option-badge recommended"
+                ><AppIcon :icon="ACTION_ICONS.recommended" :size="13" group="actions" /> Empfohlen –
+                an diesem Tag geplant</span
+              >
+            </label>
+          </template>
+        </fieldset>
+        <fieldset v-if="spotsStore.spots.length" class="excursion-picker">
+          <legend>
+            <Button
+              type="button"
+              variant="ghost"
+              class="picker-toggle"
+              :aria-expanded="showSpotPicker"
+              @click="showSpotPicker = !showSpotPicker"
+            >
+              <span
+                ><AppIcon :icon="FORM_FIELD_ICONS.location" :size="14" group="formFields" /> Spots
+                zuordnen<span v-if="form.spot_ids.length" class="picker-count">
+                  ({{ form.spot_ids.length }} ausgewählt)</span
+                ></span
+              >
+              <AppIcon
+                :icon="ACTION_ICONS.chevronDown"
+                :size="14"
+                group="actions"
+                class="caret"
+                :class="{ closed: !showSpotPicker }"
+              />
+            </Button>
+          </legend>
+          <template v-if="showSpotPicker">
+            <Button
+              v-for="spot in pickerSpots(form.date)"
+              :key="spot.id"
+              type="button"
+              class="excursion-option spot-option-btn"
+              @click="toggleSpot(spot.id, form)"
+            >
+              <span class="excursion-option-title">
+                <AppIcon
+                  :icon="spotCategoryMeta(spot.category).tabler"
+                  :size="14"
+                  group="categories"
+                />
+                {{ spot.title }}
               </span>
-            <span v-if="form.spot_ids.includes(spot.id)" class="excursion-option-badge"><AppIcon :icon="ACTION_ICONS.done" :size="13" group="actions" /> hinzugefügt</span>
-            <span v-else-if="spotAlreadyPlanned(spot.id, form.date)" class="excursion-option-badge recommended"><AppIcon :icon="ACTION_ICONS.recommended" :size="13" group="actions" /> Empfohlen – an diesem Tag geplant</span>
-          </Button>
-        </template>
-      </fieldset>
-      <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
-      <Button type="submit">Eintragen</Button>
-    </form>
+              <span v-if="form.spot_ids.includes(spot.id)" class="excursion-option-badge"
+                ><AppIcon :icon="ACTION_ICONS.done" :size="13" group="actions" /> hinzugefügt</span
+              >
+              <span
+                v-else-if="spotAlreadyPlanned(spot.id, form.date)"
+                class="excursion-option-badge recommended"
+                ><AppIcon :icon="ACTION_ICONS.recommended" :size="13" group="actions" /> Empfohlen –
+                an diesem Tag geplant</span
+              >
+            </Button>
+          </template>
+        </fieldset>
+        <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
+        <Button type="submit">Eintragen</Button>
+      </form>
     </Modal>
 
     <TransitionGroup tag="div" name="list" class="entries">
       <template v-for="entry in entries" :key="entry.id">
-        <UndoDeleteRow v-if="isPending(entry.id)" :label="entry.title ?? undefined" @undo="restoreEntry(entry.id)" />
-        <article v-else class="card entry" :class="{ 'new-highlight': highlightedIds.has(entry.id) }">
+        <UndoDeleteRow
+          v-if="isPending(entry.id)"
+          :label="entry.title ?? undefined"
+          @undo="restoreEntry(entry.id)"
+        />
+        <article
+          v-else
+          class="card entry"
+          :class="{ 'new-highlight': highlightedIds.has(entry.id) }"
+        >
           <header class="entry-head">
             <span class="avatar">{{ author(entry.author_id)?.avatar ?? '❓' }}</span>
             <div class="entry-meta">
@@ -580,7 +671,8 @@ function showEntryDayOnMap(entry: DiaryEntry) {
                   · bearbeitet von
                   <span v-for="(u, i) in coEditorsFor(entry)" :key="u.id" class="edited-by-user">
                     <span class="edited-by-avatar">{{ u.avatar }}</span
-                    >{{ u.username }}<template v-if="i < coEditorsFor(entry).length - 1">, </template>
+                    >{{ u.username
+                    }}<template v-if="i < coEditorsFor(entry).length - 1">, </template>
                   </span>
                 </span>
                 <span v-else-if="entry.updated_at"> (bearbeitet)</span>
@@ -589,13 +681,21 @@ function showEntryDayOnMap(entry: DiaryEntry) {
             <PendingSyncBadge v-if="entry._pending" />
             <div class="entry-actions">
               <EditButton small @click="startEdit(entry)" />
-              <DeleteButton v-if="entry.author_id === auth.user?.id" small @click="removeEntry(entry.id)" />
+              <DeleteButton
+                v-if="entry.author_id === auth.user?.id"
+                small
+                @click="removeEntry(entry.id)"
+              />
             </div>
           </header>
 
           <h3 v-if="entry.title">{{ entry.title }}</h3>
           <DraftBadge v-if="entry.is_draft" />
-          <RichTextDisplay class="content" :content="entry.content" :format="entry.content_format" />
+          <RichTextDisplay
+            class="content"
+            :content="entry.content"
+            :format="entry.content_format"
+          />
 
           <div class="gallery" v-if="entry.images.length">
             <a v-for="(img, i) in entry.images" :key="i" :href="img" target="_blank" rel="noopener">
@@ -612,12 +712,24 @@ function showEntryDayOnMap(entry: DiaryEntry) {
           />
 
           <div class="excursion-links">
-            <div v-if="weatherForEntry(entry)" class="diary-weather" :title="weatherCodeMeta(weatherForEntry(entry)!.weatherCode).label">
-              <WeatherIcon class="weather-icon" :size="16" :code="weatherForEntry(entry)!.weatherCode" />
-              <span class="weather-temp">{{ Math.round(weatherForEntry(entry)!.tempMax) }}° / {{ Math.round(weatherForEntry(entry)!.tempMin) }}°</span>
+            <div
+              v-if="weatherForEntry(entry)"
+              class="diary-weather"
+              :title="weatherCodeMeta(weatherForEntry(entry)!.weatherCode).label"
+            >
+              <WeatherIcon
+                class="weather-icon"
+                :size="16"
+                :code="weatherForEntry(entry)!.weatherCode"
+              />
+              <span class="weather-temp"
+                >{{ Math.round(weatherForEntry(entry)!.tempMax) }}° /
+                {{ Math.round(weatherForEntry(entry)!.tempMin) }}°</span
+              >
             </div>
             <Button type="button" variant="card-action" @click="showEntryDayOnMap(entry)">
-              <AppIcon :icon="SECTION_ICON_DEFS.map" :size="14" group="navigation" /> Tag auf Karte anzeigen
+              <AppIcon :icon="SECTION_ICON_DEFS.map" :size="14" group="navigation" /> Tag auf Karte
+              anzeigen
             </Button>
             <Button
               v-for="ex in excursionsForEntry(entry)"
@@ -630,7 +742,12 @@ function showEntryDayOnMap(entry: DiaryEntry) {
                 class="excursion-chip-img"
                 :style="ex.image_url ? { backgroundImage: `url(${ex.image_url})` } : {}"
               >
-                <AppIcon v-if="!ex.image_url" :icon="SECTION_ICON_DEFS.excursions" :size="16" group="navigation" />
+                <AppIcon
+                  v-if="!ex.image_url"
+                  :icon="SECTION_ICON_DEFS.excursions"
+                  :size="16"
+                  group="navigation"
+                />
               </span>
               <span class="excursion-chip-title">{{ ex.title }}</span>
             </Button>
@@ -645,7 +762,12 @@ function showEntryDayOnMap(entry: DiaryEntry) {
                 class="excursion-chip-img"
                 :style="spot.image_url ? { backgroundImage: `url(${spot.image_url})` } : {}"
               >
-                <AppIcon v-if="!spot.image_url" :icon="spotCategoryMeta(spot.category).tabler" :size="16" group="categories" />
+                <AppIcon
+                  v-if="!spot.image_url"
+                  :icon="spotCategoryMeta(spot.category).tabler"
+                  :size="16"
+                  group="categories"
+                />
               </span>
               <span class="excursion-chip-title">{{ spot.title }}</span>
             </Button>
@@ -676,39 +798,94 @@ function showEntryDayOnMap(entry: DiaryEntry) {
           <input v-model="editForm.title" type="text" placeholder="Titel (optional)" />
         </FormField>
         <RichTextEditor v-model="editForm.content" />
-        <p v-if="auth.user?.restricted" class="hint">Eingeschränkter Modus - Kein Datei-Upload möglich</p>
+        <p v-if="auth.user?.restricted" class="hint">
+          Eingeschränkter Modus - Kein Datei-Upload möglich
+        </p>
         <label v-else class="upload-label">
           <AppIcon :icon="FORM_FIELD_ICONS.image" :size="14" group="formFields" /> Bilder hinzufügen
-          <input type="file" accept="image/*" multiple :disabled="editUploading" @change="onEditFilesSelected" />
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            :disabled="editUploading"
+            @change="onEditFilesSelected"
+          />
         </label>
         <p v-if="editUploading" class="hint">Bilder werden komprimiert & hochgeladen…</p>
         <p v-if="editUploadError" class="hint error">{{ editUploadError }}</p>
         <div class="image-preview" v-if="editForm.images.length">
           <div class="preview-thumb" v-for="(img, i) in editForm.images" :key="img">
             <img :src="img" :alt="`Bild ${i + 1}`" />
-            <Button type="button" variant="ghost" class="remove-thumb" @click="removeImage(editForm, i)"><AppIcon :icon="ACTION_ICONS.close" :size="13" group="actions" /></Button>
+            <Button
+              type="button"
+              variant="ghost"
+              class="remove-thumb"
+              @click="removeImage(editForm, i)"
+              ><AppIcon :icon="ACTION_ICONS.close" :size="13" group="actions"
+            /></Button>
           </div>
         </div>
         <fieldset v-if="excursionsStore.excursions.length" class="excursion-picker">
           <legend>
-            <Button type="button" variant="ghost" class="picker-toggle" :aria-expanded="editShowExcursionPicker" @click="editShowExcursionPicker = !editShowExcursionPicker">
-              <span><AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="14" group="navigation" /> Touren zuordnen<span v-if="editForm.excursion_ids.length" class="picker-count"> ({{ editForm.excursion_ids.length }} ausgewählt)</span></span>
-              <AppIcon :icon="ACTION_ICONS.chevronDown" :size="14" group="actions" class="caret" :class="{ closed: !editShowExcursionPicker }" />
+            <Button
+              type="button"
+              variant="ghost"
+              class="picker-toggle"
+              :aria-expanded="editShowExcursionPicker"
+              @click="editShowExcursionPicker = !editShowExcursionPicker"
+            >
+              <span
+                ><AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="14" group="navigation" />
+                Touren zuordnen<span v-if="editForm.excursion_ids.length" class="picker-count">
+                  ({{ editForm.excursion_ids.length }} ausgewählt)</span
+                ></span
+              >
+              <AppIcon
+                :icon="ACTION_ICONS.chevronDown"
+                :size="14"
+                group="actions"
+                class="caret"
+                :class="{ closed: !editShowExcursionPicker }"
+              />
             </Button>
           </legend>
           <template v-if="editShowExcursionPicker">
-            <label v-for="ex in pickerExcursions(editForm.date)" :key="ex.id" class="excursion-option">
+            <label
+              v-for="ex in pickerExcursions(editForm.date)"
+              :key="ex.id"
+              class="excursion-option"
+            >
               <input type="checkbox" :value="ex.id" v-model="editForm.excursion_ids" />
               <span class="excursion-option-title">{{ ex.title }}</span>
-              <span v-if="ex.date === editForm.date" class="excursion-option-badge recommended"><AppIcon :icon="ACTION_ICONS.recommended" :size="13" group="actions" /> Empfohlen – an diesem Tag geplant</span>
+              <span v-if="ex.date === editForm.date" class="excursion-option-badge recommended"
+                ><AppIcon :icon="ACTION_ICONS.recommended" :size="13" group="actions" /> Empfohlen –
+                an diesem Tag geplant</span
+              >
             </label>
           </template>
         </fieldset>
         <fieldset v-if="spotsStore.spots.length" class="excursion-picker">
           <legend>
-            <Button type="button" variant="ghost" class="picker-toggle" :aria-expanded="editShowSpotPicker" @click="editShowSpotPicker = !editShowSpotPicker">
-              <span><AppIcon :icon="FORM_FIELD_ICONS.location" :size="14" group="formFields" /> Spots zuordnen<span v-if="editForm.spot_ids.length" class="picker-count"> ({{ editForm.spot_ids.length }} ausgewählt)</span></span>
-              <AppIcon :icon="ACTION_ICONS.chevronDown" :size="14" group="actions" class="caret" :class="{ closed: !editShowSpotPicker }" />
+            <Button
+              type="button"
+              variant="ghost"
+              class="picker-toggle"
+              :aria-expanded="editShowSpotPicker"
+              @click="editShowSpotPicker = !editShowSpotPicker"
+            >
+              <span
+                ><AppIcon :icon="FORM_FIELD_ICONS.location" :size="14" group="formFields" /> Spots
+                zuordnen<span v-if="editForm.spot_ids.length" class="picker-count">
+                  ({{ editForm.spot_ids.length }} ausgewählt)</span
+                ></span
+              >
+              <AppIcon
+                :icon="ACTION_ICONS.chevronDown"
+                :size="14"
+                group="actions"
+                class="caret"
+                :class="{ closed: !editShowSpotPicker }"
+              />
             </Button>
           </legend>
           <template v-if="editShowSpotPicker">
@@ -720,15 +897,29 @@ function showEntryDayOnMap(entry: DiaryEntry) {
               @click="toggleSpot(spot.id, editForm)"
             >
               <span class="excursion-option-title">
-                <AppIcon :icon="spotCategoryMeta(spot.category).tabler" :size="14" group="categories" /> {{ spot.title }}
+                <AppIcon
+                  :icon="spotCategoryMeta(spot.category).tabler"
+                  :size="14"
+                  group="categories"
+                />
+                {{ spot.title }}
               </span>
-              <span v-if="editForm.spot_ids.includes(spot.id)" class="excursion-option-badge"><AppIcon :icon="ACTION_ICONS.done" :size="13" group="actions" /> hinzugefügt</span>
-              <span v-else-if="spotAlreadyPlanned(spot.id, editForm.date)" class="excursion-option-badge recommended"><AppIcon :icon="ACTION_ICONS.recommended" :size="13" group="actions" /> Empfohlen – an diesem Tag geplant</span>
+              <span v-if="editForm.spot_ids.includes(spot.id)" class="excursion-option-badge"
+                ><AppIcon :icon="ACTION_ICONS.done" :size="13" group="actions" /> hinzugefügt</span
+              >
+              <span
+                v-else-if="spotAlreadyPlanned(spot.id, editForm.date)"
+                class="excursion-option-badge recommended"
+                ><AppIcon :icon="ACTION_ICONS.recommended" :size="13" group="actions" /> Empfohlen –
+                an diesem Tag geplant</span
+              >
             </Button>
           </template>
         </fieldset>
         <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />
-        <Button type="submit">{{ editingEntry?.is_draft ? 'Veröffentlichen' : 'Speichern' }}</Button>
+        <Button type="submit">{{
+          editingEntry?.is_draft ? 'Veröffentlichen' : 'Speichern'
+        }}</Button>
       </form>
     </Modal>
   </div>
@@ -1051,5 +1242,4 @@ function showEntryDayOnMap(entry: DiaryEntry) {
   object-fit: cover;
   flex-shrink: 0;
 }
-
 </style>

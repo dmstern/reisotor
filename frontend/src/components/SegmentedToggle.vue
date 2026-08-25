@@ -40,7 +40,10 @@ const activeIndex = computed(() => props.options.findIndex((o) => o.value === pr
 </script>
 
 <template>
-  <div class="segmented-toggle" :style="{ '--count': options.length, '--active-index': Math.max(0, activeIndex) }">
+  <div
+    class="segmented-toggle"
+    :style="{ '--count': options.length, '--active-index': Math.max(0, activeIndex) }"
+  >
     <span v-if="activeIndex !== -1" class="segmented-thumb" aria-hidden="true"></span>
     <button
       v-for="option in options"

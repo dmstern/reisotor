@@ -29,7 +29,13 @@ test.describe('Kalender-Monatsraster: Wochenanfang + "heute"-Hervorhebung', () =
     await openCalendarDrawer(page);
     await expect(page.locator('.week').first()).toBeVisible();
 
-    const firstDayWeekday = await page.locator('.week').first().locator('.day').first().locator('.weekday').textContent();
+    const firstDayWeekday = await page
+      .locator('.week')
+      .first()
+      .locator('.day')
+      .first()
+      .locator('.weekday')
+      .textContent();
     expect(firstDayWeekday?.trim()).toBe('Mo');
   });
 
@@ -40,11 +46,19 @@ test.describe('Kalender-Monatsraster: Wochenanfang + "heute"-Hervorhebung', () =
     await openCalendarDrawer(page);
     await expect(page.locator('.week').first()).toBeVisible();
 
-    const firstDayWeekday = await page.locator('.week').first().locator('.day').first().locator('.weekday').textContent();
+    const firstDayWeekday = await page
+      .locator('.week')
+      .first()
+      .locator('.day')
+      .first()
+      .locator('.weekday')
+      .textContent();
     expect(firstDayWeekday?.trim()).toBe('So');
   });
 
-  test('"heute" wird auch kurz nach lokaler Mitternacht auf dem richtigen Tag hervorgehoben', async ({ page }) => {
+  test('"heute" wird auch kurz nach lokaler Mitternacht auf dem richtigen Tag hervorgehoben', async ({
+    page,
+  }) => {
     // 2026-08-06T22:30:00Z = 2026-08-07 00:30 Uhr Europe/Berlin (CEST, UTC+2) - bewusst kurz nach
     // lokaler Mitternacht, dem Zeitfenster, in dem der toISOString()-Bug zuschlug.
     await page.clock.install({ time: new Date('2026-08-06T22:30:00Z') });

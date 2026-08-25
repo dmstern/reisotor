@@ -83,7 +83,9 @@ describe('notifications routes', () => {
       actor: { username: string };
     }[];
     expect(notifications.every((n) => n.actor.username !== 'mira')).toBe(true);
-    const created = notifications.find((n) => n.entity_id === memberTodoId && n.action === 'created');
+    const created = notifications.find(
+      (n) => n.entity_id === memberTodoId && n.action === 'created'
+    );
     expect(created).toBeTruthy();
     expect(created!.read).toBe(false);
 
@@ -99,7 +101,9 @@ describe('notifications routes', () => {
       url: `/api/notifications?trip_id=${tripId}`,
       headers: { cookie: owner.cookie },
     });
-    expect((afterRead.json() as { id: number; read: boolean }[]).find((n) => n.id === created!.id)?.read).toBe(true);
+    expect(
+      (afterRead.json() as { id: number; read: boolean }[]).find((n) => n.id === created!.id)?.read
+    ).toBe(true);
   });
 
   it('POST /notifications/read-all marks every unread notification of the trip as read', async () => {
@@ -195,9 +199,11 @@ describe('notifications routes', () => {
       headers: { cookie: owner.cookie },
     });
     const notifications = listRes.json() as { domain: string; entity_id: number; action: string }[];
-    expect(notifications).toContainEqual(expect.objectContaining({ domain: 'diary', entity_id: entryId, action: 'liked' }));
     expect(notifications).toContainEqual(
-      expect.objectContaining({ domain: 'diary', entity_id: entryId, action: 'commented' }),
+      expect.objectContaining({ domain: 'diary', entity_id: entryId, action: 'liked' })
+    );
+    expect(notifications).toContainEqual(
+      expect.objectContaining({ domain: 'diary', entity_id: entryId, action: 'commented' })
     );
   });
 });

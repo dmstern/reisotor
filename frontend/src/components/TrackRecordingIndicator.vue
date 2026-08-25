@@ -43,7 +43,7 @@ watch(
     if (recording && !paused) startTicking();
     else stopTicking();
   },
-  { immediate: true },
+  { immediate: true }
 );
 
 const elapsedLabel = computed(() => {
@@ -57,15 +57,27 @@ const elapsedLabel = computed(() => {
 </script>
 
 <template>
-  <div v-if="trackRecording.recording" class="recording-pill" :class="{ paused: trackRecording.paused }">
+  <div
+    v-if="trackRecording.recording"
+    class="recording-pill"
+    :class="{ paused: trackRecording.paused }"
+  >
     <button
       type="button"
       class="recording-pill-btn"
-      :title="trackRecording.paused ? 'Aufzeichnung fortsetzen' : 'Aufzeichnung pausieren (z. B. zum Stromsparen)'"
+      :title="
+        trackRecording.paused
+          ? 'Aufzeichnung fortsetzen'
+          : 'Aufzeichnung pausieren (z. B. zum Stromsparen)'
+      "
       :aria-label="trackRecording.paused ? 'Aufzeichnung fortsetzen' : 'Aufzeichnung pausieren'"
       @click="trackRecording.paused ? trackRecording.resume() : trackRecording.pause()"
     >
-      <AppIcon :icon="trackRecording.paused ? ACTION_ICONS.play : ACTION_ICONS.pause" :size="13" group="actions" />
+      <AppIcon
+        :icon="trackRecording.paused ? ACTION_ICONS.play : ACTION_ICONS.pause"
+        :size="13"
+        group="actions"
+      />
     </button>
     <span class="recording-pill-label">
       <template v-if="trackRecording.paused">

@@ -38,25 +38,45 @@ describe('drafts routes', () => {
       method: 'PUT',
       url: '/api/drafts',
       headers: { cookie: owner.cookie },
-      payload: { trip_id: tripId, draft_key: 'notes:new', data: { title: '', content: 'Halbfertiger Text' } },
+      payload: {
+        trip_id: tripId,
+        draft_key: 'notes:new',
+        data: { title: '', content: 'Halbfertiger Text' },
+      },
     });
     expect(put1.statusCode).toBe(200);
 
-    const get1 = await app.inject({ method: 'GET', url: `/api/drafts?trip_id=${tripId}`, headers: { cookie: owner.cookie } });
+    const get1 = await app.inject({
+      method: 'GET',
+      url: `/api/drafts?trip_id=${tripId}`,
+      headers: { cookie: owner.cookie },
+    });
     const rows1 = get1.json() as { draft_key: string; data: { title: string; content: string } }[];
     expect(rows1).toEqual([
-      { draft_key: 'notes:new', data: { title: '', content: 'Halbfertiger Text' }, updated_at: expect.any(String) },
+      {
+        draft_key: 'notes:new',
+        data: { title: '', content: 'Halbfertiger Text' },
+        updated_at: expect.any(String),
+      },
     ]);
 
     const put2 = await app.inject({
       method: 'PUT',
       url: '/api/drafts',
       headers: { cookie: owner.cookie },
-      payload: { trip_id: tripId, draft_key: 'notes:new', data: { title: '', content: 'Weitergetippt' } },
+      payload: {
+        trip_id: tripId,
+        draft_key: 'notes:new',
+        data: { title: '', content: 'Weitergetippt' },
+      },
     });
     expect(put2.statusCode).toBe(200);
 
-    const get2 = await app.inject({ method: 'GET', url: `/api/drafts?trip_id=${tripId}`, headers: { cookie: owner.cookie } });
+    const get2 = await app.inject({
+      method: 'GET',
+      url: `/api/drafts?trip_id=${tripId}`,
+      headers: { cookie: owner.cookie },
+    });
     const rows2 = get2.json() as { draft_key: string; data: { content: string } }[];
     expect(rows2).toHaveLength(1);
     expect(rows2[0].data.content).toBe('Weitergetippt');
@@ -85,7 +105,11 @@ describe('drafts routes', () => {
     });
     expect(del.statusCode).toBe(204);
 
-    const get = await app.inject({ method: 'GET', url: `/api/drafts?trip_id=${tripId}`, headers: { cookie: owner.cookie } });
+    const get = await app.inject({
+      method: 'GET',
+      url: `/api/drafts?trip_id=${tripId}`,
+      headers: { cookie: owner.cookie },
+    });
     expect(get.json()).toEqual([]);
   });
 
@@ -110,7 +134,11 @@ describe('drafts routes', () => {
       method: 'PUT',
       url: '/api/drafts',
       headers: { cookie: owner.cookie },
-      payload: { trip_id: tripId, draft_key: 'notes:new', data: { content: 'Nur für owner sichtbar' } },
+      payload: {
+        trip_id: tripId,
+        draft_key: 'notes:new',
+        data: { content: 'Nur für owner sichtbar' },
+      },
     });
 
     const getAsOther = await app.inject({

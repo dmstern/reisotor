@@ -8,7 +8,8 @@ const meta: Meta<typeof WeatherIcon> = {
   argTypes: {
     code: {
       control: { type: 'number' },
-      description: 'Open-Meteo Weather Code (0: Sonne, 1-3: Bewölkt, 61: Regen, 95: Gewitter, 71: Schnee)',
+      description:
+        'Open-Meteo Weather Code (0: Sonne, 1-3: Bewölkt, 61: Regen, 95: Gewitter, 71: Schnee)',
     },
     size: {
       control: { type: 'number' },

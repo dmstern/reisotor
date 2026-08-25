@@ -64,14 +64,18 @@ function endDateTime(date: string, time: string, endTime?: string | null): Date 
 }
 
 function icsEscape(text: string): string {
-  return text.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
+  return text
+    .replace(/\\/g, '\\\\')
+    .replace(/;/g, '\\;')
+    .replace(/,/g, '\\,')
+    .replace(/\n/g, '\\n');
 }
 
 function icsContent(event: CalendarEventInput): string {
   const uid = `${dateStamp(event.date)}-${Math.random().toString(36).slice(2)}@reisotor`;
   const now = new Date();
   const dtstamp = `${now.getUTCFullYear()}${pad(now.getUTCMonth() + 1)}${pad(now.getUTCDate())}T${pad(
-    now.getUTCHours(),
+    now.getUTCHours()
   )}${pad(now.getUTCMinutes())}${pad(now.getUTCSeconds())}Z`;
 
   let dtstart: string;
@@ -80,7 +84,7 @@ function icsContent(event: CalendarEventInput): string {
     dtstart = `DTSTART:${dateTimeStamp(event.date, event.time)}`;
     const end = endDateTime(event.date, event.time, event.endTime);
     dtend = `DTEND:${end.getFullYear()}${pad(end.getMonth() + 1)}${pad(end.getDate())}T${pad(end.getHours())}${pad(
-      end.getMinutes(),
+      end.getMinutes()
     )}${pad(end.getSeconds())}`;
   } else {
     dtstart = `DTSTART;VALUE=DATE:${dateStamp(event.date)}`;
@@ -129,7 +133,7 @@ export function googleCalendarHref(event: CalendarEventInput): string {
     const start = dateTimeStamp(event.date, event.time);
     const end = endDateTime(event.date, event.time, event.endTime);
     const endStamp = `${end.getFullYear()}${pad(end.getMonth() + 1)}${pad(end.getDate())}T${pad(end.getHours())}${pad(
-      end.getMinutes(),
+      end.getMinutes()
     )}00`;
     dates = `${start}/${endStamp}`;
   } else {
@@ -153,8 +157,8 @@ export function outlookCalendarHref(event: CalendarEventInput): string {
     params.set(
       'enddt',
       `${end.getFullYear()}-${pad(end.getMonth() + 1)}-${pad(end.getDate())}T${pad(end.getHours())}:${pad(
-        end.getMinutes(),
-      )}:00`,
+        end.getMinutes()
+      )}:00`
     );
   } else {
     params.set('startdt', event.date);

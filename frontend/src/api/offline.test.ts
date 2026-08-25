@@ -1,5 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { enqueue, findCachedItemInCollection, mergePendingIntoList, nextTempId, writeCache } from './offline';
+import {
+  enqueue,
+  findCachedItemInCollection,
+  mergePendingIntoList,
+  nextTempId,
+  writeCache,
+} from './offline';
 
 function createMemoryStorage() {
   const store = new Map<string, string>();
@@ -76,7 +82,11 @@ describe('findCachedItemInCollection', () => {
   it('finds an item by id in a cached GET list for the same collection', () => {
     writeCache('/diary?trip_id=5', [{ id: 42, title: 'Eintrag', author_id: 7 }]);
 
-    expect(findCachedItemInCollection('/diary', 42)).toEqual({ id: 42, title: 'Eintrag', author_id: 7 });
+    expect(findCachedItemInCollection('/diary', 42)).toEqual({
+      id: 42,
+      title: 'Eintrag',
+      author_id: 7,
+    });
   });
 
   it('returns undefined when no cached list contains a matching id', () => {

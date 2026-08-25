@@ -50,7 +50,9 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
     const admin = isUserAdmin(req.session.userId);
     if (admin) {
       const rows = db
-        .prepare('SELECT id, username, email, avatar, is_admin, is_restricted, must_change_password FROM users ORDER BY id')
+        .prepare(
+          'SELECT id, username, email, avatar, is_admin, is_restricted, must_change_password FROM users ORDER BY id'
+        )
         .all() as UserRow[];
       return rows.map((u) => ({
         id: u.id,
@@ -82,7 +84,7 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
          WHERE (username LIKE ? OR email LIKE ?)
            AND (? IS NULL OR id NOT IN (SELECT user_id FROM trip_members WHERE trip_id = ?))
          ORDER BY username COLLATE NOCASE
-         LIMIT 10`,
+         LIMIT 10`
       )
       .all(like, like, excludeTripId, excludeTripId);
   });
@@ -107,7 +109,9 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
     const trimmedUsername = username.trim();
     const trimmedEmail = email?.trim() || null;
 
-    const existingUsername = db.prepare('SELECT id FROM users WHERE username = ?').get(trimmedUsername);
+    const existingUsername = db
+      .prepare('SELECT id FROM users WHERE username = ?')
+      .get(trimmedUsername);
     if (existingUsername) {
       return reply.code(409).send({ error: 'Benutzername bereits vergeben' });
     }
@@ -124,14 +128,16 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
 
     const result = db
       .prepare(
-        'INSERT INTO users (username, email, password_hash, avatar, is_admin, must_change_password) VALUES (?, ?, ?, ?, ?, ?)',
+        'INSERT INTO users (username, email, password_hash, avatar, is_admin, must_change_password) VALUES (?, ?, ?, ?, ?, ?)'
       )
       .run(trimmedUsername, trimmedEmail, hash, avatar ?? '🙂', isAdmin, mustChangePassword);
     const userId = result.lastInsertRowid as number;
 
     reply.code(201);
     const created = db
-      .prepare('SELECT id, username, email, avatar, is_admin, is_restricted, must_change_password FROM users WHERE id = ?')
+      .prepare(
+        'SELECT id, username, email, avatar, is_admin, is_restricted, must_change_password FROM users WHERE id = ?'
+      )
       .get(userId) as UserRow;
     return {
       id: created.id,
@@ -145,46 +151,58 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
   });
 
   // Admin-Rolle ändern (Issue #224)
-  app.put<{ Params: { id: string }; Body: ToggleAdminBody }>('/users/:id/admin', async (req, reply) => {
-    if (!isUserAdmin(req.session.userId)) {
-      return reply.code(403).send({ error: 'Nur Administrator:innen dürfen Admin-Rechte verwalten' });
-    }
-    const targetUserId = Number(req.params.id);
-    const { is_admin: nextIsAdmin } = req.body ?? {};
-
-    const targetUser = db.prepare('SELECT id, is_admin FROM users WHERE id = ?').get(targetUserId) as
-      | { id: number; is_admin: number }
-      | undefined;
-    if (!targetUser) {
-      return reply.code(404).send({ error: 'Nutzer nicht gefunden' });
-    }
-
-    // Schutz vor Aussperrung: Wenn man sich selbst Admin-Rechte entzieht, muss mindestens ein weiterer Admin existieren
-    if (targetUserId === req.session.userId && !nextIsAdmin) {
-      const adminCount = (
-        db.prepare('SELECT COUNT(*) as count FROM users WHERE is_admin = 1').get() as { count: number }
-      ).count;
-      if (adminCount <= 1) {
+  app.put<{ Params: { id: string }; Body: ToggleAdminBody }>(
+    '/users/:id/admin',
+    async (req, reply) => {
+      if (!isUserAdmin(req.session.userId)) {
         return reply
-          .code(400)
-          .send({ error: 'Der letzte Administrator kann sich selbst die Admin-Rechte nicht entziehen' });
+          .code(403)
+          .send({ error: 'Nur Administrator:innen dürfen Admin-Rechte verwalten' });
       }
-    }
+      const targetUserId = Number(req.params.id);
+      const { is_admin: nextIsAdmin } = req.body ?? {};
 
-    db.prepare('UPDATE users SET is_admin = ? WHERE id = ?').run(nextIsAdmin ? 1 : 0, targetUserId);
-    const updated = db
-      .prepare('SELECT id, username, email, avatar, is_admin, is_restricted, must_change_password FROM users WHERE id = ?')
-      .get(targetUserId) as UserRow;
-    return {
-      id: updated.id,
-      username: updated.username,
-      email: updated.email ?? null,
-      avatar: updated.avatar,
-      is_admin: Boolean(updated.is_admin),
-      is_restricted: Boolean(updated.is_restricted),
-      must_change_password: Boolean(updated.must_change_password),
-    };
-  });
+      const targetUser = db
+        .prepare('SELECT id, is_admin FROM users WHERE id = ?')
+        .get(targetUserId) as { id: number; is_admin: number } | undefined;
+      if (!targetUser) {
+        return reply.code(404).send({ error: 'Nutzer nicht gefunden' });
+      }
+
+      // Schutz vor Aussperrung: Wenn man sich selbst Admin-Rechte entzieht, muss mindestens ein weiterer Admin existieren
+      if (targetUserId === req.session.userId && !nextIsAdmin) {
+        const adminCount = (
+          db.prepare('SELECT COUNT(*) as count FROM users WHERE is_admin = 1').get() as {
+            count: number;
+          }
+        ).count;
+        if (adminCount <= 1) {
+          return reply.code(400).send({
+            error: 'Der letzte Administrator kann sich selbst die Admin-Rechte nicht entziehen',
+          });
+        }
+      }
+
+      db.prepare('UPDATE users SET is_admin = ? WHERE id = ?').run(
+        nextIsAdmin ? 1 : 0,
+        targetUserId
+      );
+      const updated = db
+        .prepare(
+          'SELECT id, username, email, avatar, is_admin, is_restricted, must_change_password FROM users WHERE id = ?'
+        )
+        .get(targetUserId) as UserRow;
+      return {
+        id: updated.id,
+        username: updated.username,
+        email: updated.email ?? null,
+        avatar: updated.avatar,
+        is_admin: Boolean(updated.is_admin),
+        is_restricted: Boolean(updated.is_restricted),
+        must_change_password: Boolean(updated.must_change_password),
+      };
+    }
+  );
 
   // Nutzer löschen (Issue #224)
   app.delete<{ Params: { id: string } }>('/users/:id', async (req, reply) => {
@@ -242,7 +260,10 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
       safeDelete('diary_entries', 'author_id');
       safeDelete('diary_entry_editors', 'user_id');
       if (hasTable('budget_transfers') && hasColumn('budget_transfers', 'from_user_id')) {
-        db.prepare('DELETE FROM budget_transfers WHERE from_user_id = ? OR to_user_id = ?').run(id, id);
+        db.prepare('DELETE FROM budget_transfers WHERE from_user_id = ? OR to_user_id = ?').run(
+          id,
+          id
+        );
       }
       safeDelete('push_subscriptions', 'user_id');
       safeDelete('push_preferences', 'user_id');
@@ -277,8 +298,13 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
       .get(username.trim(), req.session.userId);
     if (existing) return reply.code(409).send({ error: 'Benutzername bereits vergeben' });
 
-    db.prepare('UPDATE users SET username = ? WHERE id = ?').run(username.trim(), req.session.userId);
-    return db.prepare('SELECT id, username, avatar FROM users WHERE id = ?').get(req.session.userId);
+    db.prepare('UPDATE users SET username = ? WHERE id = ?').run(
+      username.trim(),
+      req.session.userId
+    );
+    return db
+      .prepare('SELECT id, username, avatar FROM users WHERE id = ?')
+      .get(req.session.userId);
   });
 
   app.put<{ Body: PasswordBody }>('/users/me/password', async (req, reply) => {
@@ -299,7 +325,10 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
     }
 
     const hash = bcrypt.hashSync(newPassword, 10);
-    db.prepare('UPDATE users SET password_hash = ?, must_change_password = 0 WHERE id = ?').run(hash, user.id);
+    db.prepare('UPDATE users SET password_hash = ?, must_change_password = 0 WHERE id = ?').run(
+      hash,
+      user.id
+    );
     return reply.code(204).send();
   });
 
@@ -324,7 +353,10 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
     if (!settings || typeof settings !== 'object') {
       return reply.code(400).send({ error: 'Einstellungen erforderlich' });
     }
-    db.prepare('UPDATE users SET icon_settings = ? WHERE id = ?').run(JSON.stringify(settings), req.session.userId);
+    db.prepare('UPDATE users SET icon_settings = ? WHERE id = ?').run(
+      JSON.stringify(settings),
+      req.session.userId
+    );
     return settings;
   });
 };

@@ -53,9 +53,19 @@ const KNOWN_CATEGORIES: { label: string; icon: string; color: string; tabler: Ic
     label: 'Restaurant',
     icon: '🍽️',
     color: '#e34948',
-    tabler: { id: 'tools-kitchen-2', emoji: '🍽️', outline: IconToolsKitchen2, filled: IconToolsKitchen2Filled },
+    tabler: {
+      id: 'tools-kitchen-2',
+      emoji: '🍽️',
+      outline: IconToolsKitchen2,
+      filled: IconToolsKitchen2Filled,
+    },
   },
-  { label: 'Café', icon: '☕', color: '#c9891f', tabler: { id: 'coffee', emoji: '☕', outline: IconCoffee } },
+  {
+    label: 'Café',
+    icon: '☕',
+    color: '#c9891f',
+    tabler: { id: 'coffee', emoji: '☕', outline: IconCoffee },
+  },
   {
     label: 'Ausflugsziel',
     icon: '🎯',
@@ -86,15 +96,30 @@ const KNOWN_CATEGORIES: { label: string; icon: string; color: string; tabler: Ic
     color: '#a15be0',
     tabler: { id: 'building-castle', emoji: '🏰', outline: IconBuildingCastle },
   },
-  { label: 'Strand', icon: '🏖️', color: '#1ba8c4', tabler: { id: 'beach', emoji: '🏖️', outline: IconBeach } },
-  { label: 'Natur', icon: '🌳', color: '#2f9e44', tabler: { id: 'trees', emoji: '🌳', outline: IconTrees } },
+  {
+    label: 'Strand',
+    icon: '🏖️',
+    color: '#1ba8c4',
+    tabler: { id: 'beach', emoji: '🏖️', outline: IconBeach },
+  },
+  {
+    label: 'Natur',
+    icon: '🌳',
+    color: '#2f9e44',
+    tabler: { id: 'trees', emoji: '🌳', outline: IconTrees },
+  },
   {
     label: 'Aussichtspunkt',
     icon: '🌄',
     color: '#e0763b',
     tabler: { id: 'mountain', emoji: '🌄', outline: IconMountain, filled: IconMountainFilled },
   },
-  { label: 'Wanderweg', icon: '🥾', color: '#6b7a3a', tabler: { id: 'walk', emoji: '🥾', outline: IconWalk } },
+  {
+    label: 'Wanderweg',
+    icon: '🥾',
+    color: '#6b7a3a',
+    tabler: { id: 'walk', emoji: '🥾', outline: IconWalk },
+  },
   {
     label: 'Nachtleben',
     icon: '🍸',
@@ -105,7 +130,12 @@ const KNOWN_CATEGORIES: { label: string; icon: string; color: string; tabler: Ic
     label: 'Supermarkt',
     icon: '🛒',
     color: '#2a78d6',
-    tabler: { id: 'shopping-cart', emoji: '🛒', outline: IconShoppingCart, filled: IconShoppingCartFilled },
+    tabler: {
+      id: 'shopping-cart',
+      emoji: '🛒',
+      outline: IconShoppingCart,
+      filled: IconShoppingCartFilled,
+    },
   },
   {
     label: 'Bäckerei',
@@ -123,7 +153,12 @@ const KNOWN_CATEGORIES: { label: string; icon: string; color: string; tabler: Ic
     label: 'Tankstelle',
     icon: '⛽',
     color: '#5a6b7a',
-    tabler: { id: 'gas-station', emoji: '⛽', outline: IconGasStation, filled: IconGasStationFilled },
+    tabler: {
+      id: 'gas-station',
+      emoji: '⛽',
+      outline: IconGasStation,
+      filled: IconGasStationFilled,
+    },
   },
   // Reise-Orte (ehemals travel_places, siehe Migrationskommentar in db/index.ts) – jetzt ganz
   // normale Spot-Kategorien, damit Flughafen/Bahnhof/Zuhause/… direkt in der Spots-Sicht anlegbar
@@ -132,7 +167,12 @@ const KNOWN_CATEGORIES: { label: string; icon: string; color: string; tabler: Ic
     label: 'Flughafen',
     icon: '✈️',
     color: '#4a3aa7',
-    tabler: { id: 'plane-departure', emoji: '✈️', outline: IconPlaneDeparture, filled: IconPlaneDepartureFilled },
+    tabler: {
+      id: 'plane-departure',
+      emoji: '✈️',
+      outline: IconPlaneDeparture,
+      filled: IconPlaneDepartureFilled,
+    },
   },
   {
     label: 'Bahnhof',
@@ -146,7 +186,12 @@ const KNOWN_CATEGORIES: { label: string; icon: string; color: string; tabler: Ic
     color: '#4a3aa7',
     tabler: { id: 'bus', emoji: '🚌', outline: IconBus, filled: IconBusFilled },
   },
-  { label: 'Hafen', icon: '⛴️', color: '#4a3aa7', tabler: { id: 'anchor', emoji: '⛴️', outline: IconAnchor } },
+  {
+    label: 'Hafen',
+    icon: '⛴️',
+    color: '#4a3aa7',
+    tabler: { id: 'anchor', emoji: '⛴️', outline: IconAnchor },
+  },
   {
     label: 'Raststätte',
     icon: '🛣️',

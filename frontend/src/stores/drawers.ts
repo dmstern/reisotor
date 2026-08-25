@@ -86,11 +86,17 @@ export const useDrawersStore = defineStore('drawers', () => {
   // um beim Markieren als "gemacht" den Besuchs-/Erledigungstag zu bestätigen (ScheduleView.vue's
   // selectDay() setzt danach zusätzlich den "gemacht"-Status) - eigener Banner-Hinweistext und
   // Rücksprung zur Karte gelten für beide Modi gleich (siehe returnToCard in ScheduleView.vue).
-  const pendingSchedule = ref<{ kind: 'excursion' | 'spot'; id: number; mode: 'plan' | 'confirm-done' } | null>(
-    null,
-  );
+  const pendingSchedule = ref<{
+    kind: 'excursion' | 'spot';
+    id: number;
+    mode: 'plan' | 'confirm-done';
+  } | null>(null);
 
-  function startPendingSchedule(kind: 'excursion' | 'spot', id: number, mode: 'plan' | 'confirm-done' = 'plan') {
+  function startPendingSchedule(
+    kind: 'excursion' | 'spot',
+    id: number,
+    mode: 'plan' | 'confirm-done' = 'plan'
+  ) {
     pendingSchedule.value = { kind, id, mode };
     openCalendar();
   }
@@ -112,7 +118,7 @@ export const useDrawersStore = defineStore('drawers', () => {
     (open) => {
       if (!isDesktop()) document.body.style.overflow = open ? 'hidden' : '';
     },
-    { immediate: true },
+    { immediate: true }
   );
 
   // Springt zur Karte-Hauptsicht, falls man gerade woanders ist (z. B. "Auf Karte anzeigen" aus

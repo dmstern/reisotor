@@ -14,12 +14,20 @@ defineProps<{ category: string | null | undefined }>();
   <span
     v-if="category"
     class="category-chip"
-    :style="{ background: `${spotCategoryMeta(category).color}26`, color: spotCategoryMeta(category).color }"
+    :style="{
+      background: `${spotCategoryMeta(category).color}26`,
+      color: spotCategoryMeta(category).color,
+    }"
   >
     <!-- Das Icon im bunten Badge ist immer eingefärbt (#142) - das "Kategorie-Icons einfärben"-
          Setting (iconStyle.colorizeCategories) steuert nur noch die Kategorie-Überschriften/die
          Kategorie-Navigation (siehe ExcursionsView.vue), nicht mehr die Badges selbst. -->
-    <AppIcon :icon="spotCategoryMeta(category).tabler" group="categories" :size="14" :color="spotCategoryMeta(category).color" />
+    <AppIcon
+      :icon="spotCategoryMeta(category).tabler"
+      group="categories"
+      :size="14"
+      :color="spotCategoryMeta(category).color"
+    />
     {{ category }}
   </span>
 </template>

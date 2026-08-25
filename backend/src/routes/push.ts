@@ -15,7 +15,8 @@ import {
 export const pushRoutes: FastifyPluginAsync = async (app) => {
   app.get('/push/vapid-public-key', async (_req, reply) => {
     const key = getVapidPublicKey();
-    if (!key) return reply.code(404).send({ error: 'Push ist auf diesem Server nicht konfiguriert' });
+    if (!key)
+      return reply.code(404).send({ error: 'Push ist auf diesem Server nicht konfiguriert' });
     return { publicKey: key };
   });
 
@@ -29,7 +30,7 @@ export const pushRoutes: FastifyPluginAsync = async (app) => {
       saveSubscription(req.session.userId!, { endpoint, keys });
       reply.code(201);
       return { ok: true };
-    },
+    }
   );
 
   // Query-Param statt Body: der geteilte api/client.ts-Wrapper unterstützt für DELETE bewusst

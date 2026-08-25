@@ -24,7 +24,11 @@ describe('trips.packing_category_required Migration', () => {
     legacy.exec(`
       CREATE TABLE trips (id INTEGER PRIMARY KEY, name TEXT NOT NULL, start_date TEXT NOT NULL, end_date TEXT NOT NULL);
     `);
-    legacy.prepare(`INSERT INTO trips (id, name, start_date, end_date) VALUES (1, 'Altreise', '2025-01-01', '2025-01-10')`).run();
+    legacy
+      .prepare(
+        `INSERT INTO trips (id, name, start_date, end_date) VALUES (1, 'Altreise', '2025-01-01', '2025-01-10')`
+      )
+      .run();
     legacy.close();
 
     process.env.DB_PATH = dbPath;

@@ -38,7 +38,9 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
 
   watch(showActivityToasts, (v) => localStorage.setItem(SHOW_ACTIVITY_TOASTS_KEY, String(v)));
   watch(showVacationCountdown, (v) => localStorage.setItem(SHOW_VACATION_COUNTDOWN_KEY, String(v)));
-  watch(showHomeWeatherFullTrip, (v) => localStorage.setItem(SHOW_HOME_WEATHER_FULL_TRIP_KEY, String(v)));
+  watch(showHomeWeatherFullTrip, (v) =>
+    localStorage.setItem(SHOW_HOME_WEATHER_FULL_TRIP_KEY, String(v))
+  );
 
   return { showActivityToasts, showVacationCountdown, showHomeWeatherFullTrip };
 });

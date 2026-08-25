@@ -3,7 +3,9 @@ import { test, expect } from '@playwright/test';
 // Regressionsnetz für den "Listen"-Merge (Packliste + Einkauf + ToDo -> ein Tab-View, siehe
 // ListenView.vue/router/index.ts/NavBar.vue): die höchste Regressionsfläche in diesem Backlog, da
 // Routing, drei zusammengeführte Views und ein Querverweis gleichzeitig betroffen sind.
-test('old /packing, /shopping, /todo routes redirect into the tabbed Listen view', async ({ page }) => {
+test('old /packing, /shopping, /todo routes redirect into the tabbed Listen view', async ({
+  page,
+}) => {
   await page.goto('/packing');
   await expect(page).toHaveURL(/\/listen\?tab=packing/);
   await expect(page.locator('.packing-page')).toBeVisible();
@@ -17,7 +19,9 @@ test('old /packing, /shopping, /todo routes redirect into the tabbed Listen view
   await expect(page.locator('.todo-page')).toBeVisible();
 });
 
-test('switching tabs mounts the correct list without navigating away from /listen', async ({ page }) => {
+test('switching tabs mounts the correct list without navigating away from /listen', async ({
+  page,
+}) => {
   await page.goto('/listen');
   await expect(page.locator('.packing-page')).toBeVisible();
 
@@ -46,7 +50,9 @@ test('NavBar shows exactly one merged "Listen" entry with the clipboard icon', a
   await expect(page.locator('nav.navbar a[href="/todo"]')).toHaveCount(0);
 });
 
-test('a calendar cross-reference to a todo lands on the todo tab with the item highlighted', async ({ page }) => {
+test('a calendar cross-reference to a todo lands on the todo tab with the item highlighted', async ({
+  page,
+}) => {
   await page.goto('/listen?tab=todo');
   await page.getByPlaceholder('Neue Aufgabe').fill('E2E Listen-Merge Querverweis');
   const todayIso = new Date().toISOString().slice(0, 10);
@@ -56,8 +62,12 @@ test('a calendar cross-reference to a todo lands on the todo tab with the item h
 
   await page.goto('/');
   await page.locator(`.day[data-date="${todayIso}"]`).click();
-  await page.locator('.day-detail .items .item', { hasText: 'E2E Listen-Merge Querverweis' }).click();
+  await page
+    .locator('.day-detail .items .item', { hasText: 'E2E Listen-Merge Querverweis' })
+    .click();
 
   await expect(page).toHaveURL(/\/listen\?tab=todo#todo-\d+/);
-  await expect(page.locator('.row.new-highlight', { hasText: 'E2E Listen-Merge Querverweis' })).toBeVisible();
+  await expect(
+    page.locator('.row.new-highlight', { hasText: 'E2E Listen-Merge Querverweis' })
+  ).toBeVisible();
 });

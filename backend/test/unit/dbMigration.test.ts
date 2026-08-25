@@ -28,9 +28,15 @@ describe('ideas.date -> schedule_items Backfill-Migration', () => {
       CREATE TABLE schedule_items (id INTEGER PRIMARY KEY, trip_id INTEGER, date TEXT NOT NULL, time TEXT, title TEXT NOT NULL, note TEXT, idea_id INTEGER);
     `);
     legacy
-      .prepare(`INSERT INTO trips (id, name, start_date, end_date) VALUES (1, 'Sommerurlaub', '2026-08-01', '2026-08-14')`)
+      .prepare(
+        `INSERT INTO trips (id, name, start_date, end_date) VALUES (1, 'Sommerurlaub', '2026-08-01', '2026-08-14')`
+      )
       .run();
-    legacy.prepare(`INSERT INTO ideas (id, trip_id, title, date) VALUES (1, 1, 'Bootstour', '2026-08-05')`).run();
+    legacy
+      .prepare(
+        `INSERT INTO ideas (id, trip_id, title, date) VALUES (1, 1, 'Bootstour', '2026-08-05')`
+      )
+      .run();
     legacy.close();
 
     process.env.DB_PATH = dbPath;

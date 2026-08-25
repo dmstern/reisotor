@@ -100,14 +100,21 @@ export function mergePendingIntoList<T extends Pendable>(path: string, list: T[]
     const entryCollection = collectionOf(entry.path);
     if (entryCollection !== collection) continue;
     if (entry.method === 'POST' && entry.tempId != null) {
-      result = [...result, { ...(entry.body as object), id: entry.tempId, _pending: true } as unknown as T];
+      result = [
+        ...result,
+        { ...(entry.body as object), id: entry.tempId, _pending: true } as unknown as T,
+      ];
       continue;
     }
     const idMatch = /\/(-?\d+)$/.exec(entry.path.split('?')[0]);
     if (!idMatch) continue;
     const id = Number(idMatch[1]);
     if (entry.method === 'PUT') {
-      result = result.map((item) => (item.id === id ? ({ ...item, ...(entry.body as object), _pending: true } as unknown as T) : item));
+      result = result.map((item) =>
+        item.id === id
+          ? ({ ...item, ...(entry.body as object), _pending: true } as unknown as T)
+          : item
+      );
     } else if (entry.method === 'DELETE') {
       result = result.filter((item) => item.id !== id);
     }
@@ -123,7 +130,10 @@ export function mergePendingIntoList<T extends Pendable>(path: string, list: T[]
  *  Body typischerweise nur die im Formular editierbaren Felder enthält, siehe z. B. DiaryView.vue's
  *  submitEditEntry) beim optimistischen Zurückschreiben keine server-verwalteten Felder wie
  *  created_by/trip_id verliert (siehe queueMutation()). */
-export function findCachedItemInCollection(collection: string, id: number): Record<string, unknown> | undefined {
+export function findCachedItemInCollection(
+  collection: string,
+  id: number
+): Record<string, unknown> | undefined {
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
     if (!key || !key.startsWith(CACHE_PREFIX)) continue;
@@ -159,9 +169,21 @@ export function getOutboxLength(): number {
   return readOutbox().length;
 }
 
-export function enqueue(method: OutboxEntry['method'], path: string, body: unknown, tempId?: number) {
+export function enqueue(
+  method: OutboxEntry['method'],
+  path: string,
+  body: unknown,
+  tempId?: number
+) {
   const list = readOutbox();
-  list.push({ id: crypto.randomUUID(), method, path, body, tempId, createdAt: new Date().toISOString() });
+  list.push({
+    id: crypto.randomUUID(),
+    method,
+    path,
+    body,
+    tempId,
+    createdAt: new Date().toISOString(),
+  });
   writeOutboxList(list);
 }
 
@@ -181,7 +203,7 @@ function remapTempId(list: OutboxEntry[], tempId: number, realId: number) {
  *  und lässt den Rest für den nächsten Versuch stehen, damit die Reihenfolge erhalten bleibt und
  *  nichts übersprungen wird. Gibt zurück, ob die Warteschlange komplett geleert werden konnte. */
 export async function flushOutbox(
-  sendRaw: (method: string, path: string, body: unknown) => Promise<unknown>,
+  sendRaw: (method: string, path: string, body: unknown) => Promise<unknown>
 ): Promise<boolean> {
   let list = readOutbox();
   while (list.length) {

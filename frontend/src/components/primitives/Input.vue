@@ -55,7 +55,7 @@ withDefaults(
     readonly: false,
     size: 'md',
     invalid: false,
-  },
+  }
 );
 
 const emit = defineEmits<{
@@ -90,10 +90,7 @@ function onInput(event: Event) {
     :autocomplete="autocomplete"
     :aria-invalid="invalid || undefined"
     class="input"
-    :class="[
-      size !== 'md' ? `input--${size}` : undefined,
-      invalid ? 'input--invalid' : undefined,
-    ]"
+    :class="[size !== 'md' ? `input--${size}` : undefined, invalid ? 'input--invalid' : undefined]"
     @input="onInput"
     @blur="emit('blur', $event)"
     @focus="emit('focus', $event)"
@@ -118,7 +115,9 @@ function onInput(event: Event) {
   min-height: 44px;
   font-family: inherit;
   font-size: 1rem;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .input:focus {

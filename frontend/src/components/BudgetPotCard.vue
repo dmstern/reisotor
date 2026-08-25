@@ -26,12 +26,16 @@ const effectiveTarget = computed(() => store.budgetTarget(props.budget));
 const totalSpentForBudget = computed(() =>
   allocations.value.length
     ? allocations.value.reduce((s, a) => s + store.spentFor(props.budget, a.category), 0)
-    : store.expenses.filter((e) => e.budget_id === props.budget.id).reduce((s, e) => s + e.amount, 0),
+    : store.expenses
+        .filter((e) => e.budget_id === props.budget.id)
+        .reduce((s, e) => s + e.amount, 0)
 );
 
 const isSimpleMode = computed(() => allocations.value.length === 0);
 
-const targetInput = ref<string>(props.budget.target_amount != null ? String(props.budget.target_amount) : '');
+const targetInput = ref<string>(
+  props.budget.target_amount != null ? String(props.budget.target_amount) : ''
+);
 
 async function updateTargetAmount() {
   const value = targetInput.value.trim();
@@ -47,7 +51,11 @@ const newCategoryAmount = ref('');
 
 async function addCategory() {
   if (!newCategory.value.trim()) return;
-  await store.saveAllocation(props.budget.id, newCategory.value.trim(), Number(newCategoryAmount.value) || 0);
+  await store.saveAllocation(
+    props.budget.id,
+    newCategory.value.trim(),
+    Number(newCategoryAmount.value) || 0
+  );
   newCategory.value = '';
   newCategoryAmount.value = '';
 }
@@ -55,7 +63,7 @@ async function addCategory() {
 const displayBudgetName = computed(() =>
   props.budget.name === 'Gemeinsames Budget' && store.users.length <= 1
     ? 'Hauptbudget'
-    : props.budget.name,
+    : props.budget.name
 );
 
 function updateAllocationAmount(category: string, value: string) {
@@ -69,22 +77,35 @@ function updateAllocationAmount(category: string, value: string) {
       <div class="pot-title">
         <h3>{{ displayBudgetName }}</h3>
         <span v-if="store.users.length > 1" class="kind-badge">
-          <template v-if="budget.owner_id == null"><AppIcon :icon="ACTION_ICONS.shared" :size="14" group="actions" /> Geteilt</template>
+          <template v-if="budget.owner_id == null"
+            ><AppIcon :icon="ACTION_ICONS.shared" :size="14" group="actions" /> Geteilt</template
+          >
           <template v-else
-            ><AppIcon :icon="ACTION_ICONS.private" :size="14" group="actions" /> {{ store.userAvatar(budget.owner_id) }}
-            {{ store.userName(budget.owner_id) }}</template
+            ><AppIcon :icon="ACTION_ICONS.private" :size="14" group="actions" />
+            {{ store.userAvatar(budget.owner_id) }} {{ store.userName(budget.owner_id) }}</template
           >
         </span>
       </div>
       <DeleteButton small @click="store.removeBudget(budget.id)" />
     </div>
 
-    <BudgetMeter label="Gesamt" :spent="totalSpentForBudget" :target="effectiveTarget" color="var(--color-primary-dark)" />
+    <BudgetMeter
+      label="Gesamt"
+      :spent="totalSpentForBudget"
+      :target="effectiveTarget"
+      color="var(--color-primary-dark)"
+    />
 
     <label class="target-input">
       Ziel (gesamt, optional)
       <div class="target-input-row">
-        <input v-model="targetInput" type="number" step="0.01" placeholder="z. B. 500" @change="updateTargetAmount" />
+        <input
+          v-model="targetInput"
+          type="number"
+          step="0.01"
+          placeholder="z. B. 500"
+          @change="updateTargetAmount"
+        />
         <span>€</span>
       </div>
     </label>
@@ -110,7 +131,10 @@ function updateAllocationAmount(category: string, value: string) {
     </template>
 
     <details class="add-category">
-      <summary><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Kategorie hinzufügen (optional)</summary>
+      <summary>
+        <AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Kategorie hinzufügen
+        (optional)
+      </summary>
       <form class="add-category-form" @submit.prevent="addCategory">
         <FormField icon="category" label="Neue Kategorie">
           <input v-model="newCategory" type="text" placeholder="Neue Kategorie" />
@@ -118,7 +142,9 @@ function updateAllocationAmount(category: string, value: string) {
         <FormField icon="amount" label="Ziel">
           <input v-model="newCategoryAmount" type="number" step="0.01" placeholder="Ziel €" />
         </FormField>
-        <Button type="submit"><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Hinzufügen</Button>
+        <Button type="submit"
+          ><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Hinzufügen</Button
+        >
       </form>
     </details>
   </Card>

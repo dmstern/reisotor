@@ -7,7 +7,9 @@ import { test, expect } from '@playwright/test';
 const TINY_PNG_BASE64 =
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
 
-test('Spot-Formular: Bild lässt sich direkt hochladen statt nur per URL zu verlinken', async ({ page }) => {
+test('Spot-Formular: Bild lässt sich direkt hochladen statt nur per URL zu verlinken', async ({
+  page,
+}) => {
   const marker = `E2E-Bild-Upload-${Date.now()}`;
   const spotTitle = `Café ${marker}`;
 

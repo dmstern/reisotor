@@ -50,9 +50,11 @@ function travelDuration(item: TravelItem) {
     </p>
     <p v-if="item.date || item.departure_time" class="detail-row">
       <span class="detail-label">Zeit</span>
-      <AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" /> {{ item.date || '' }}
+      <AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" />
+      {{ item.date || '' }}
       <span v-if="item.departure_time">
-        · {{ item.departure_time }}<span v-if="item.arrival_time">–{{ item.arrival_time }}</span> Uhr
+        · {{ item.departure_time
+        }}<span v-if="item.arrival_time">–{{ item.arrival_time }}</span> Uhr
       </span>
       <span v-if="travelDuration(item)"> ({{ travelDuration(item) }})</span>
     </p>
@@ -70,10 +72,18 @@ function travelDuration(item: TravelItem) {
     </p>
     <p v-if="item.amount != null" class="detail-row">
       <span class="detail-label">Kosten</span>
-      <AppIcon :icon="FORM_FIELD_ICONS.amount" :size="14" group="formFields" /> {{ item.amount.toFixed(2) }} €
-      <span v-if="hasMultipleMembers !== false && item.paid_by_user_id"> · bezahlt von {{ payerLabel }}</span>
+      <AppIcon :icon="FORM_FIELD_ICONS.amount" :size="14" group="formFields" />
+      {{ item.amount.toFixed(2) }} €
+      <span v-if="hasMultipleMembers !== false && item.paid_by_user_id">
+        · bezahlt von {{ payerLabel }}</span
+      >
     </p>
-    <RichTextDisplay v-if="item.note" class="detail-row note" :content="item.note" :format="item.note_format" />
+    <RichTextDisplay
+      v-if="item.note"
+      class="detail-row note"
+      :content="item.note"
+      :format="item.note_format"
+    />
     <FileAttachments domain="ideas" :entity-id="item.id" :editable="false" />
     <div class="detail-actions">
       <a v-if="item.link" :href="item.link" target="_blank" rel="noopener" class="card-action-btn">
@@ -84,7 +94,8 @@ function travelDuration(item: TravelItem) {
         variant="card-action"
         @click="emit('show-on-map-from')"
       >
-        <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" /> Abflug auf Karte anzeigen
+        <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" /> Abflug auf Karte
+        anzeigen
       </Button>
       <MapsAppPicker
         v-if="item.from_lat != null && item.from_lng != null"
@@ -98,7 +109,8 @@ function travelDuration(item: TravelItem) {
         variant="card-action"
         @click="emit('show-on-map-to')"
       >
-        <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" /> Ankunft auf Karte anzeigen
+        <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" /> Ankunft auf Karte
+        anzeigen
       </Button>
       <MapsAppPicker
         v-if="item.to_lat != null && item.to_lng != null"

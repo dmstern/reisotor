@@ -26,7 +26,7 @@ const users = [
 ];
 
 const insertUser = db.prepare(
-  'INSERT OR IGNORE INTO users (username, password_hash, avatar, is_admin, must_change_password) VALUES (?, ?, ?, ?, ?)',
+  'INSERT OR IGNORE INTO users (username, password_hash, avatar, is_admin, must_change_password) VALUES (?, ?, ?, ?, ?)'
 );
 
 for (let i = 0; i < users.length; i++) {

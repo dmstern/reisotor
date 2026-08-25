@@ -28,7 +28,9 @@ const landingUrl = __LANDING_URL__;
 
 onMounted(async () => {
   try {
-    const config = await api.get<{ registrationMode: 'off' | 'full' | 'restricted' }>('/auth/config');
+    const config = await api.get<{ registrationMode: 'off' | 'full' | 'restricted' }>(
+      '/auth/config'
+    );
     registrationMode.value = config.registrationMode;
   } catch {
     // Bleibt bei 'off' - Login funktioniert unabhängig davon weiter.
@@ -51,7 +53,12 @@ async function onSubmit() {
     }
     router.push('/');
   } catch (err) {
-    error.value = err instanceof ApiError ? err.message : mode.value === 'register' ? 'Registrierung fehlgeschlagen' : 'Login fehlgeschlagen';
+    error.value =
+      err instanceof ApiError
+        ? err.message
+        : mode.value === 'register'
+          ? 'Registrierung fehlgeschlagen'
+          : 'Login fehlgeschlagen';
   } finally {
     loading.value = false;
   }
@@ -64,9 +71,16 @@ async function onSubmit() {
     <form class="card login-card" @submit.prevent="onSubmit">
       <ReisotorRobot :covering-eyes="passwordVisible" size="140px" class="logo" />
       <h1>Reisotor</h1>
-      <p>{{ mode === 'register' ? 'Erstelle ein Konto, um euren Urlaub zu planen.' : 'Melde dich an, um euren Urlaub zu planen.' }}</p>
+      <p>
+        {{
+          mode === 'register'
+            ? 'Erstelle ein Konto, um euren Urlaub zu planen.'
+            : 'Melde dich an, um euren Urlaub zu planen.'
+        }}
+      </p>
       <p v-if="mode === 'register' && registrationMode === 'restricted'" class="hint">
-        Eingeschränkter Modus - Kein Datei-Upload, nur ein Urlaub, maximal drei Mitglieder pro Urlaub möglich.
+        Eingeschränkter Modus - Kein Datei-Upload, nur ein Urlaub, maximal drei Mitglieder pro
+        Urlaub möglich.
       </p>
 
       <label>
@@ -93,10 +107,23 @@ async function onSubmit() {
       <p v-if="error" class="error">{{ error }}</p>
 
       <Button type="submit" :disabled="loading">
-        {{ loading ? (mode === 'register' ? 'Registrieren…' : 'Anmelden…') : mode === 'register' ? 'Registrieren' : 'Anmelden' }}
+        {{
+          loading
+            ? mode === 'register'
+              ? 'Registrieren…'
+              : 'Anmelden…'
+            : mode === 'register'
+              ? 'Registrieren'
+              : 'Anmelden'
+        }}
       </Button>
 
-      <Button v-if="registrationMode !== 'off'" variant="secondary" class="mode-toggle" @click="toggleMode">
+      <Button
+        v-if="registrationMode !== 'off'"
+        variant="secondary"
+        class="mode-toggle"
+        @click="toggleMode"
+      >
         {{ mode === 'register' ? 'Schon registriert? Anmelden' : 'Noch kein Konto? Registrieren' }}
       </Button>
     </form>

@@ -59,7 +59,12 @@ describe('attachments routes', () => {
       method: 'POST',
       url: '/api/attachments',
       headers: { cookie: owner.cookie },
-      payload: { domain: 'notes', entity_id: 999999, data: `data:image/png;base64,${TINY_PNG_BASE64}`, filename: 'x.png' },
+      payload: {
+        domain: 'notes',
+        entity_id: 999999,
+        data: `data:image/png;base64,${TINY_PNG_BASE64}`,
+        filename: 'x.png',
+      },
     });
     expect(missingEntity.statusCode).toBe(404);
 
@@ -80,7 +85,12 @@ describe('attachments routes', () => {
       method: 'POST',
       url: '/api/attachments',
       headers: { cookie: owner.cookie },
-      payload: { domain: 'notes', entity_id: noteId, data: 'data:text/plain;base64,aGVsbG8=', filename: 'x.txt' },
+      payload: {
+        domain: 'notes',
+        entity_id: noteId,
+        data: 'data:text/plain;base64,aGVsbG8=',
+        filename: 'x.txt',
+      },
     });
     expect(unsupportedType.statusCode).toBe(400);
 

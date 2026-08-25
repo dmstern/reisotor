@@ -19,7 +19,7 @@ const FULL_ACCESS_USERS = new Set(
   (process.env.REGISTRATION_FULL_ACCESS_USERS ?? '')
     .split(',')
     .map((name) => name.trim())
-    .filter(Boolean),
+    .filter(Boolean)
 );
 
 export const RESTRICTED_MAX_TRIPS = 1;
@@ -36,8 +36,7 @@ interface RestrictedUserRow {
 export function isUserRestricted(userId: number | null | undefined): boolean {
   if (userId == null) return false;
   const user = db.prepare('SELECT username, is_restricted FROM users WHERE id = ?').get(userId) as
-    | RestrictedUserRow
-    | undefined;
+    RestrictedUserRow | undefined;
   if (!user || !user.is_restricted) return false;
   return !FULL_ACCESS_USERS.has(user.username);
 }
@@ -45,16 +44,14 @@ export function isUserRestricted(userId: number | null | undefined): boolean {
 export function isUserAdmin(userId: number | null | undefined): boolean {
   if (userId == null) return false;
   const user = db.prepare('SELECT is_admin FROM users WHERE id = ?').get(userId) as
-    | { is_admin: number }
-    | undefined;
+    { is_admin: number } | undefined;
   return Boolean(user?.is_admin);
 }
 
 export function userMustChangePassword(userId: number | null | undefined): boolean {
   if (userId == null) return false;
   const user = db.prepare('SELECT must_change_password FROM users WHERE id = ?').get(userId) as
-    | { must_change_password: number }
-    | undefined;
+    { must_change_password: number } | undefined;
   return Boolean(user?.must_change_password);
 }
 
@@ -82,7 +79,7 @@ export function countTripsCreatedBy(userId: number): number {
     .prepare(
       `SELECT COUNT(*) as count FROM trip_members tm
        WHERE tm.user_id = ?
-         AND tm.id = (SELECT MIN(id) FROM trip_members WHERE trip_id = tm.trip_id)`,
+         AND tm.id = (SELECT MIN(id) FROM trip_members WHERE trip_id = tm.trip_id)`
     )
     .get(userId) as { count: number };
   return row.count;

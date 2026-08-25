@@ -81,12 +81,7 @@ function onDragStart(event: DragEvent) {
         </li>
       </ul>
       <form class="create-tour-form" @submit.prevent="handleCreate">
-        <input
-          v-model="newTourTitle"
-          type="text"
-          placeholder="Neue Tour…"
-          @click.stop
-        />
+        <input v-model="newTourTitle" type="text" placeholder="Neue Tour…" @click.stop />
         <button
           type="submit"
           class="create-btn"

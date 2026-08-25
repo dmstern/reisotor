@@ -28,7 +28,9 @@ test.describe('Erscheinungsbild: Hell/Dunkel/Systemeinstellung', () => {
     await expect(page.locator('html')).not.toHaveAttribute('data-theme');
   });
 
-  test('Einstellungen (mobile) und Header (Desktop) teilen sich dieselbe Präferenz', async ({ page }) => {
+  test('Einstellungen (mobile) und Header (Desktop) teilen sich dieselbe Präferenz', async ({
+    page,
+  }) => {
     await page.setViewportSize({ width: 500, height: 900 });
     await page.goto('/settings?tab=app');
     const profileSelect = page.locator('.card', { hasText: 'Darstellung' }).locator('select');

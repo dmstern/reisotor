@@ -39,26 +39,30 @@ describe('travel_places -> spots Verschmelzungs-Migration', () => {
       CREATE TABLE excursion_spots (id INTEGER PRIMARY KEY, idea_id INTEGER NOT NULL, station_key TEXT NOT NULL, position INTEGER NOT NULL DEFAULT 0);
     `);
     legacy
-      .prepare(`INSERT INTO trips (id, name, start_date, end_date) VALUES (1, 'Sommerurlaub', '2026-08-01', '2026-08-14')`)
+      .prepare(
+        `INSERT INTO trips (id, name, start_date, end_date) VALUES (1, 'Sommerurlaub', '2026-08-01', '2026-08-14')`
+      )
       .run();
     // Bestehender Reise-Ort mit echten Nutzdaten (Nutzer:innen-Stammdaten, die verlustfrei erhalten
     // bleiben müssen).
     legacy
       .prepare(
         `INSERT INTO travel_places (id, trip_id, name, is_home, type, maps_link, lat, lng)
-         VALUES (5, 1, 'Zuhause', 1, 'Zuhause', 'https://maps.example/zuhause', 48.1, 11.5)`,
+         VALUES (5, 1, 'Zuhause', 1, 'Zuhause', 'https://maps.example/zuhause', 48.1, 11.5)`
       )
       .run();
     // Etappe referenziert den Ort als Startpunkt (id 5) UND als "travel-place-5" in einer
     // Ausflug-Station (vorheriger Batch).
     legacy
       .prepare(
-        `INSERT INTO travel_items (id, title, from_place_id, to_place_id, trip_id) VALUES (10, 'Hinflug', 5, NULL, 1)`,
+        `INSERT INTO travel_items (id, title, from_place_id, to_place_id, trip_id) VALUES (10, 'Hinflug', 5, NULL, 1)`
       )
       .run();
     legacy.prepare(`INSERT INTO ideas (id, trip_id, title) VALUES (20, 1, 'Ankunftstag')`).run();
     legacy
-      .prepare(`INSERT INTO excursion_spots (idea_id, station_key, position) VALUES (20, 'travel-place-5', 0)`)
+      .prepare(
+        `INSERT INTO excursion_spots (idea_id, station_key, position) VALUES (20, 'travel-place-5', 0)`
+      )
       .run();
     legacy.close();
 
@@ -66,12 +70,22 @@ describe('travel_places -> spots Verschmelzungs-Migration', () => {
     const { db } = await import('../../src/db/index.js');
 
     // travel_places existiert nicht mehr.
-    const tables = db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'travel_places'").all();
+    const tables = db
+      .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'travel_places'")
+      .all();
     expect(tables).toHaveLength(0);
 
     // Der Ort ist jetzt ein ganz normaler Spot mit denselben Stammdaten.
     const spot = db.prepare('SELECT * FROM spots WHERE title = ?').get('Zuhause') as
-      | { id: number; trip_id: number; category: string; maps_link: string; lat: number; lng: number; is_home: number }
+      | {
+          id: number;
+          trip_id: number;
+          category: string;
+          maps_link: string;
+          lat: number;
+          lng: number;
+          is_home: number;
+        }
       | undefined;
     expect(spot).toBeDefined();
     expect(spot).toMatchObject({
@@ -93,8 +107,7 @@ describe('travel_places -> spots Verschmelzungs-Migration', () => {
     expect(travelTable).toHaveLength(0);
 
     const migratedIdea = db.prepare('SELECT id FROM ideas WHERE title = ?').get('Hinflug') as
-      | { id: number }
-      | undefined;
+      { id: number } | undefined;
     expect(migratedIdea).toBeDefined();
     const travelStations = db
       .prepare('SELECT spot_id FROM excursion_spots WHERE idea_id = ? ORDER BY position')
@@ -105,8 +118,7 @@ describe('travel_places -> spots Verschmelzungs-Migration', () => {
     // auf den verschwundenen travel-place-Schlüssel (excursion_spots ist inzwischen selbst zu einer
     // einfachen idea_id<->spot_id-Verknüpfung migriert, siehe excursionSpotsMigration.test.ts).
     const station = db.prepare('SELECT spot_id FROM excursion_spots WHERE idea_id = 20').get() as
-      | { spot_id: number }
-      | undefined;
+      { spot_id: number } | undefined;
     expect(station?.spot_id).toBe(spot!.id);
   });
 });

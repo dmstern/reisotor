@@ -12,7 +12,9 @@ function isoDateInDays(days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-function mockOpenMeteoResponse(days: { date: string; code: number; max: number; min: number; rain: number }[]) {
+function mockOpenMeteoResponse(
+  days: { date: string; code: number; max: number; min: number; rain: number }[]
+) {
   return {
     ok: true,
     json: () =>
@@ -40,7 +42,7 @@ describe('recordWeatherSnapshots', () => {
     db.prepare('INSERT INTO users (username, password_hash, avatar) VALUES (?, ?, ?)').run(
       'weatheruser',
       bcrypt.hashSync('correct-horse', 10),
-      '🧪',
+      '🧪'
     );
     const login = await app.inject({
       method: 'POST',
@@ -55,7 +57,15 @@ describe('recordWeatherSnapshots', () => {
     vi.unstubAllGlobals();
   });
 
-  async function createTrip(overrides: Partial<{ name: string; start_date: string; end_date: string; lat: number; lng: number }>) {
+  async function createTrip(
+    overrides: Partial<{
+      name: string;
+      start_date: string;
+      end_date: string;
+      lat: number;
+      lng: number;
+    }>
+  ) {
     const create = await app.inject({
       method: 'POST',
       url: '/api/trips',
@@ -81,8 +91,8 @@ describe('recordWeatherSnapshots', () => {
           { date: isoDateInDays(-2), code: 1, max: 20, min: 12, rain: 10 },
           { date: isoDateInDays(-1), code: 2, max: 21, min: 13, rain: 20 },
           { date: isoDateInDays(0), code: 3, max: 22, min: 14, rain: 30 },
-        ]),
-      ),
+        ])
+      )
     );
     vi.stubGlobal('fetch', fetchMock);
 
@@ -90,7 +100,9 @@ describe('recordWeatherSnapshots', () => {
     await recordWeatherSnapshots();
 
     const stored = db
-      .prepare('SELECT date, weathercode, temp_max, temp_min FROM trip_weather_snapshots WHERE trip_id = ? ORDER BY date')
+      .prepare(
+        'SELECT date, weathercode, temp_max, temp_min FROM trip_weather_snapshots WHERE trip_id = ? ORDER BY date'
+      )
       .all(tripId) as { date: string; weathercode: number; temp_max: number; temp_min: number }[];
     expect(stored.map((r) => r.date)).toEqual([isoDateInDays(-2), isoDateInDays(-1)]);
     expect(stored[0]).toMatchObject({ weathercode: 1, temp_max: 20, temp_min: 12 });
@@ -105,8 +117,8 @@ describe('recordWeatherSnapshots', () => {
           { date: isoDateInDays(-3), code: 0, max: 25, min: 15, rain: 0 },
           { date: isoDateInDays(-2), code: 0, max: 26, min: 16, rain: 0 },
           { date: isoDateInDays(-1), code: 0, max: 27, min: 17, rain: 0 },
-        ]),
-      ),
+        ])
+      )
     );
     vi.stubGlobal('fetch', fetchMock);
 
@@ -114,14 +126,21 @@ describe('recordWeatherSnapshots', () => {
     await recordWeatherSnapshots();
     await recordWeatherSnapshots();
 
-    const stored = db.prepare('SELECT date FROM trip_weather_snapshots WHERE trip_id = ?').all(tripId) as { date: string }[];
+    const stored = db
+      .prepare('SELECT date FROM trip_weather_snapshots WHERE trip_id = ?')
+      .all(tripId) as { date: string }[];
     expect(stored).toHaveLength(3);
     // Zweiter Lauf hätte für diesen Trip nichts mehr zu holen - kein weiterer Fetch-Aufruf nötig.
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it('überspringt Trips ohne lat/lng komplett - kein Fetch-Aufruf', async () => {
-    await createTrip({ start_date: isoDateInDays(-5), end_date: isoDateInDays(-1), lat: undefined, lng: undefined });
+    await createTrip({
+      start_date: isoDateInDays(-5),
+      end_date: isoDateInDays(-1),
+      lat: undefined,
+      lng: undefined,
+    });
 
     const fetchMock = vi.fn(() => Promise.resolve(mockOpenMeteoResponse([])));
     vi.stubGlobal('fetch', fetchMock);
@@ -133,7 +152,10 @@ describe('recordWeatherSnapshots', () => {
   });
 
   it('überspringt Trips außerhalb des 92-Tage-Fensters (weit in der Vergangenheit)', async () => {
-    const tripId = await createTrip({ start_date: isoDateInDays(-200), end_date: isoDateInDays(-190) });
+    const tripId = await createTrip({
+      start_date: isoDateInDays(-200),
+      end_date: isoDateInDays(-190),
+    });
 
     const fetchMock = vi.fn(() => Promise.resolve(mockOpenMeteoResponse([])));
     vi.stubGlobal('fetch', fetchMock);
@@ -142,7 +164,9 @@ describe('recordWeatherSnapshots', () => {
     await recordWeatherSnapshots();
 
     expect(fetchMock).not.toHaveBeenCalled();
-    const stored = db.prepare('SELECT date FROM trip_weather_snapshots WHERE trip_id = ?').all(tripId);
+    const stored = db
+      .prepare('SELECT date FROM trip_weather_snapshots WHERE trip_id = ?')
+      .all(tripId);
     expect(stored).toEqual([]);
   });
 
@@ -151,7 +175,12 @@ describe('recordWeatherSnapshots', () => {
   // korrigiert wird.
   describe('Wetter-Snapshots bei Orts-Änderung (Issue #82)', () => {
     it('löscht gespeicherte Wetter-Snapshots und holt sie mit dem neuen Ort erneut, sobald sich lat/lng per PUT ändern', async () => {
-      const tripId = await createTrip({ start_date: isoDateInDays(-5), end_date: isoDateInDays(-1), lat: 50.0, lng: 10.0 });
+      const tripId = await createTrip({
+        start_date: isoDateInDays(-5),
+        end_date: isoDateInDays(-1),
+        lat: 50.0,
+        lng: 10.0,
+      });
 
       vi.stubGlobal(
         'fetch',
@@ -163,9 +192,9 @@ describe('recordWeatherSnapshots', () => {
               { date: isoDateInDays(-3), code: 3, max: 14, min: 8, rain: 60 },
               { date: isoDateInDays(-2), code: 3, max: 15, min: 9, rain: 60 },
               { date: isoDateInDays(-1), code: 3, max: 14, min: 8, rain: 60 },
-            ]),
-          ),
-        ),
+            ])
+          )
+        )
       );
       const { recordWeatherSnapshots } = await import('../../src/weatherSnapshots.js');
       await recordWeatherSnapshots();
@@ -188,9 +217,9 @@ describe('recordWeatherSnapshots', () => {
               { date: isoDateInDays(-3), code: 0, max: 34, min: 24, rain: 0 },
               { date: isoDateInDays(-2), code: 0, max: 35, min: 25, rain: 0 },
               { date: isoDateInDays(-1), code: 0, max: 36, min: 26, rain: 0 },
-            ]),
-          ),
-        ),
+            ])
+          )
+        )
       );
       const update = await app.inject({
         method: 'PUT',
@@ -221,7 +250,12 @@ describe('recordWeatherSnapshots', () => {
     });
 
     it('lässt gespeicherte Wetter-Snapshots unangetastet, wenn sich der Ort per PUT nicht ändert', async () => {
-      const tripId = await createTrip({ start_date: isoDateInDays(-3), end_date: isoDateInDays(-1), lat: 40.85, lng: 14.27 });
+      const tripId = await createTrip({
+        start_date: isoDateInDays(-3),
+        end_date: isoDateInDays(-1),
+        lat: 40.85,
+        lng: 14.27,
+      });
 
       vi.stubGlobal(
         'fetch',
@@ -231,9 +265,9 @@ describe('recordWeatherSnapshots', () => {
               { date: isoDateInDays(-3), code: 0, max: 34, min: 24, rain: 0 },
               { date: isoDateInDays(-2), code: 0, max: 35, min: 25, rain: 0 },
               { date: isoDateInDays(-1), code: 0, max: 36, min: 26, rain: 0 },
-            ]),
-          ),
-        ),
+            ])
+          )
+        )
       );
       const { recordWeatherSnapshots } = await import('../../src/weatherSnapshots.js');
       await recordWeatherSnapshots();
@@ -256,7 +290,9 @@ describe('recordWeatherSnapshots', () => {
       expect(update.statusCode).toBe(200);
       expect(fetchMock).not.toHaveBeenCalled();
 
-      const stored = db.prepare('SELECT date FROM trip_weather_snapshots WHERE trip_id = ?').all(tripId);
+      const stored = db
+        .prepare('SELECT date FROM trip_weather_snapshots WHERE trip_id = ?')
+        .all(tripId);
       expect(stored).toHaveLength(3);
     });
   });

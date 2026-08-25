@@ -172,7 +172,8 @@
      einfügt statt in Dark Mode zu hell/grau zu wirken (keine separate Dark-Mode-Variante nötig). */
   --texture-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.35'/%3E%3C/svg%3E");
 
-  --font-sans: 'Fira Sans', 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  --font-sans:
+    'Fira Sans', 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
   --font-size-xs: 0.75rem;
   --font-size-sm: 0.85rem;
   --font-size-md: 1rem;
@@ -369,7 +370,11 @@ button {
   background: var(--color-primary);
   color: white;
   font-weight: 600;
-  transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    transform 0.1s ease,
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
 }
 
 button:hover {
@@ -420,7 +425,10 @@ button.danger {
   line-height: 1.3;
   cursor: pointer;
   box-shadow: var(--shadow-sm);
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .card-action-btn:hover {
@@ -678,7 +686,9 @@ input[type='checkbox'],
   background: var(--color-surface);
   cursor: pointer;
   position: relative;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
 }
 
 input[type='checkbox']:hover,
@@ -894,7 +904,9 @@ textarea:focus {
 .list-move,
 .list-enter-active,
 .list-leave-active {
-  transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
+  transition:
+    opacity 0.2s ease-in-out,
+    transform 0.2s ease-in-out;
 }
 
 .list-enter-from,
@@ -905,7 +917,9 @@ textarea:focus {
 
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.25s ease-in-out, transform 0.25s ease-in-out;
+  transition:
+    opacity 0.25s ease-in-out,
+    transform 0.25s ease-in-out;
 }
 
 .fade-enter-from,
@@ -940,7 +954,6 @@ textarea:focus {
 ::view-transition-new(expanding-spot-card) {
   animation-duration: 0.25s;
 }
-
 
 /* Fix for issue #69 */
 p + button,

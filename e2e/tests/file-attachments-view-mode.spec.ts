@@ -4,7 +4,9 @@ import { test, expect } from '@playwright/test';
 // war fälschlich auch im reinen Ansichts-/Detail-Modus von Objekten sichtbar, nicht nur beim
 // Bearbeiten). Notizen als Beispiel-Domäne (siehe attachments.spec.ts für die Begründung) - die
 // Karten-Ansicht ist der reine Anzeigemodus, das "Notiz bearbeiten"-Formular der Bearbeiten-Modus.
-test('Datei-Upload-Button erscheint nur im Bearbeiten-Formular, nicht in der Karten-Ansicht', async ({ page }) => {
+test('Datei-Upload-Button erscheint nur im Bearbeiten-Formular, nicht in der Karten-Ansicht', async ({
+  page,
+}) => {
   await page.goto('/notes');
   await page.getByRole('button', { name: 'Neue Notiz' }).click();
   const editor = page.locator('.modal .richtext-content[contenteditable="true"]');
@@ -21,7 +23,10 @@ test('Datei-Upload-Button erscheint nur im Bearbeiten-Formular, nicht in der Kar
   await expect(card.locator('.file-attachments')).toHaveCount(0);
 
   // Bearbeiten-Modus: Upload-Button ist da.
-  await card.locator('.note-actions').getByRole('button', { name: /bearbeiten/i }).click();
+  await card
+    .locator('.note-actions')
+    .getByRole('button', { name: /bearbeiten/i })
+    .click();
   const modal = page.locator('.modal', { hasText: 'Notiz bearbeiten' });
   await expect(modal.locator('.upload-label')).toBeVisible();
 });

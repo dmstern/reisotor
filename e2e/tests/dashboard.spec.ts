@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const seeded = JSON.parse(
-  fs.readFileSync(path.join(__dirname, '..', 'fixtures', 'seeded-data.json'), 'utf-8'),
+  fs.readFileSync(path.join(__dirname, '..', 'fixtures', 'seeded-data.json'), 'utf-8')
 );
 
 test.describe('unauthenticated', () => {
@@ -68,7 +68,7 @@ test.describe('Reiseregion-Widget (kombiniert mit Wetter)', () => {
           exchangeRate: null,
           advisory: null,
         },
-      }),
+      })
     );
     await page.goto('/');
     const card = page.locator('.weather-card');
@@ -78,21 +78,33 @@ test.describe('Reiseregion-Widget (kombiniert mit Wetter)', () => {
     await expect(card.getByText('Reiseregion')).toBeVisible();
     await expect(card.getByText('Testwährung (TST)')).toBeVisible();
     // Kein Wechselkurs in den Mock-Daten -> keine Nennung/Verlinkung von open.er-api.com.
-    await expect(card.locator('.weather-source', { hasText: 'REST Countries' })).toHaveText('Quelle: REST Countries');
+    await expect(card.locator('.weather-source', { hasText: 'REST Countries' })).toHaveText(
+      'Quelle: REST Countries'
+    );
     await expect(page.locator('a.weather-source', { hasText: 'REST Countries' })).toHaveCount(0);
   });
 
-  test('blendet die Reiseregion komplett aus, wenn das Land zwar aufgelöst wurde, aber keine der Detailzeilen etwas hat', async ({ page }) => {
+  test('blendet die Reiseregion komplett aus, wenn das Land zwar aufgelöst wurde, aber keine der Detailzeilen etwas hat', async ({
+    page,
+  }) => {
     // Der eigentliche gemeldete Fall: countryName war gesetzt (die alte v-else-if-Bedingung griff
     // auf genau dieses Feld), Sprache/Währung/Sicherheitshinweis aber alle leer - übrig blieb nur
     // eine Überschrift mit Ländernamen plus eine pauschale Quellenangabe ohne jeden Inhalt darüber.
     await page.route('**/api/trips/*/region-info*', (route) =>
       route.fulfill({
-        json: { countryName: 'Testland', languages: [], currency: null, exchangeRate: null, advisory: null },
-      }),
+        json: {
+          countryName: 'Testland',
+          languages: [],
+          currency: null,
+          exchangeRate: null,
+          advisory: null,
+        },
+      })
     );
     await page.goto('/');
-    await expect(page.getByRole('heading', { name: 'Kalender', exact: true, level: 2 })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'Kalender', exact: true, level: 2 })
+    ).toBeVisible();
     // .weather-section-label statt page-weitem getByText: DashboardView.vue's Sicherheits-Check-
     // Kachel enthält den Text "...eure Reiseregion..." ebenfalls (unabhängiger Kontext) - ohne den
     // Emoji-Präfix (seit #168 immer SVG statt Emoji für group="actions") würde ein ungescoptes

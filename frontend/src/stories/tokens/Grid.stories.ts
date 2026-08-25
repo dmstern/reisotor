@@ -13,12 +13,37 @@ export const PageContainerWidths: Story = {
   render: () => ({
     setup() {
       const containers = [
-        { name: 'Standard Page (.page)', width: '960px', usage: 'Standard für einspaltige Lesbarkeit (Tagebuch, Notizen, Einstellungen, Dashboard)' },
-        { name: 'Wide Page (Multi-Column)', width: '1400px', usage: 'Für breite Tabellen & mehrspaltige Übersichten (BudgetView, ListenView)' },
-        { name: 'Full-Split Page (Karte + Split)', width: '1600px', usage: 'Maximale Desktop-Breite für Karte & Spot-Listen Split-Screen (ExcursionsView)' },
-        { name: 'Breiter Dialog / Modal', width: '900px', usage: 'Formular-Modals & Fotocollagen-Overlays' },
-        { name: 'Standard Dialog / Modal', width: '480px', usage: 'Bestätigungs-Dialoge, Bearbeiten-Modals (Modal.vue)' },
-        { name: 'Auth / Login Card', width: '360px', usage: 'Kompakte Zentrierung für Login & Registrierungs-Karten' },
+        {
+          name: 'Standard Page (.page)',
+          width: '960px',
+          usage:
+            'Standard für einspaltige Lesbarkeit (Tagebuch, Notizen, Einstellungen, Dashboard)',
+        },
+        {
+          name: 'Wide Page (Multi-Column)',
+          width: '1400px',
+          usage: 'Für breite Tabellen & mehrspaltige Übersichten (BudgetView, ListenView)',
+        },
+        {
+          name: 'Full-Split Page (Karte + Split)',
+          width: '1600px',
+          usage: 'Maximale Desktop-Breite für Karte & Spot-Listen Split-Screen (ExcursionsView)',
+        },
+        {
+          name: 'Breiter Dialog / Modal',
+          width: '900px',
+          usage: 'Formular-Modals & Fotocollagen-Overlays',
+        },
+        {
+          name: 'Standard Dialog / Modal',
+          width: '480px',
+          usage: 'Bestätigungs-Dialoge, Bearbeiten-Modals (Modal.vue)',
+        },
+        {
+          name: 'Auth / Login Card',
+          width: '360px',
+          usage: 'Kompakte Zentrierung für Login & Registrierungs-Karten',
+        },
       ];
       return { containers };
     },
@@ -101,9 +126,18 @@ export const AutoFitGrid: Story = {
     components: { Card },
     setup() {
       const cards = [
-        { title: 'Spot 1: Elafonisi Strand 🏖️', desc: 'Rosafarbener Sandstrand mit kristallklarem Wasser.' },
-        { title: 'Spot 2: Samaria Schlucht 🥾', desc: '16 km lange Wanderung durch Kretas spektakulärste Schlucht.' },
-        { title: 'Spot 3: Balos Lagune 🛥️', desc: 'Malerische Bucht mit türkisblauem Flachwasser.' },
+        {
+          title: 'Spot 1: Elafonisi Strand 🏖️',
+          desc: 'Rosafarbener Sandstrand mit kristallklarem Wasser.',
+        },
+        {
+          title: 'Spot 2: Samaria Schlucht 🥾',
+          desc: '16 km lange Wanderung durch Kretas spektakulärste Schlucht.',
+        },
+        {
+          title: 'Spot 3: Balos Lagune 🛥️',
+          desc: 'Malerische Bucht mit türkisblauem Flachwasser.',
+        },
         { title: 'Spot 4: Knossos Palast 🏛️', desc: 'Minoische Palastanlage nahe Heraklion.' },
       ];
       return { cards };
@@ -131,11 +165,26 @@ export const MasonryLayout: Story = {
     components: { Card },
     setup() {
       const notes = [
-        { title: 'Wichtige Dokumente 📄', text: 'Reisepässe, Buchungsbestätigungen & Mietwagen-Voucher im Handgepäck aufbewahren.' },
-        { title: 'Packliste Notiz 🧳', text: 'Sonnencreme LSF 50, Schnorchelausrüstung, Wanderschuhe & Reiseapotheke nicht vergessen.' },
-        { title: 'Mietwagen Abhebung 🚗', text: 'Termin am Flughafen um 14:30 Uhr. Kautionskreditkarte bereithalten.' },
-        { title: 'Restaurant Tipp 🍷', text: 'Taverna Sunset in Chania reservieren – super Ausblick aufs Meer!' },
-        { title: 'Notfallnummern 🚑', text: '112 Notruf, ADAC Auslandsschutz, Reiseversicherung Polizzennummer.' },
+        {
+          title: 'Wichtige Dokumente 📄',
+          text: 'Reisepässe, Buchungsbestätigungen & Mietwagen-Voucher im Handgepäck aufbewahren.',
+        },
+        {
+          title: 'Packliste Notiz 🧳',
+          text: 'Sonnencreme LSF 50, Schnorchelausrüstung, Wanderschuhe & Reiseapotheke nicht vergessen.',
+        },
+        {
+          title: 'Mietwagen Abhebung 🚗',
+          text: 'Termin am Flughafen um 14:30 Uhr. Kautionskreditkarte bereithalten.',
+        },
+        {
+          title: 'Restaurant Tipp 🍷',
+          text: 'Taverna Sunset in Chania reservieren – super Ausblick aufs Meer!',
+        },
+        {
+          title: 'Notfallnummern 🚑',
+          text: '112 Notruf, ADAC Auslandsschutz, Reiseversicherung Polizzennummer.',
+        },
       ];
       return { notes };
     },

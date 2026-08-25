@@ -39,7 +39,9 @@ const suggestedTours = computed(() => {
       candidates.add(d);
     }
   }
-  return [...candidates].filter((c) => !props.modelValue.some((m) => m.toLowerCase() === c.toLowerCase()));
+  return [...candidates].filter(
+    (c) => !props.modelValue.some((m) => m.toLowerCase() === c.toLowerCase())
+  );
 });
 
 function addTour() {
@@ -63,7 +65,10 @@ function addSuggestedTour(title: string) {
 }
 
 function removeTour(title: string) {
-  emit('update:modelValue', props.modelValue.filter((t) => t !== title));
+  emit(
+    'update:modelValue',
+    props.modelValue.filter((t) => t !== title)
+  );
 }
 </script>
 
@@ -72,7 +77,12 @@ function removeTour(title: string) {
     <div class="tour-chips" v-if="modelValue.length">
       <span v-for="title in modelValue" :key="title" class="tour-chip">
         <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="13" group="navigation" /> {{ title }}
-        <button type="button" class="remove-btn" @click="removeTour(title)" aria-label="Von Tour entfernen">
+        <button
+          type="button"
+          class="remove-btn"
+          @click="removeTour(title)"
+          aria-label="Von Tour entfernen"
+        >
           <AppIcon :icon="ACTION_ICONS.close" :size="13" group="actions" />
         </button>
       </span>

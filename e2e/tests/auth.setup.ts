@@ -7,7 +7,7 @@ import { E2E_PASSWORD, E2E_USERNAME } from '../constants.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const authFile = path.join(__dirname, '..', '.auth', 'user.json');
 const seeded = JSON.parse(
-  fs.readFileSync(path.join(__dirname, '..', 'fixtures', 'seeded-data.json'), 'utf-8'),
+  fs.readFileSync(path.join(__dirname, '..', 'fixtures', 'seeded-data.json'), 'utf-8')
 );
 
 setup('authenticate', async ({ page }) => {
@@ -20,7 +20,9 @@ setup('authenticate', async ({ page }) => {
   // und früh fehl, falls das Demo-Seeding nicht funktioniert hat. .trip-name (Header) statt
   // getByText(...): der Trip-Name kann zusätzlich in der (auf Desktop standardmäßig offenen)
   // Kalender-Schublade als synthetischer "Urlaub-Start/-Ende"-Eintrag auftauchen (strict mode).
-  await expect(page.locator('.trip-name', { hasText: seeded.trip.name })).toBeVisible({ timeout: 15000 });
+  await expect(page.locator('.trip-name', { hasText: seeded.trip.name })).toBeVisible({
+    timeout: 15000,
+  });
 
   // Fixiert Emoji als Icon-Darstellung für die gesamte Suite (geteiltes storageState, siehe
   // playwright.config.ts) - viele bestehende Tests identifizieren ein Icon beiläufig per festem

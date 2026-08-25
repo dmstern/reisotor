@@ -1,4 +1,13 @@
-import { IconLuggage, IconBackpack, IconClipboardList, IconClipboardListFilled, IconPlane, IconPlaneFilled, IconPin, IconPinFilled } from '@tabler/icons-vue';
+import {
+  IconLuggage,
+  IconBackpack,
+  IconClipboardList,
+  IconClipboardListFilled,
+  IconPlane,
+  IconPlaneFilled,
+  IconPin,
+  IconPinFilled,
+} from '@tabler/icons-vue';
 import type { ScheduleCategory } from '../api/types';
 import type { IconDef } from './icon';
 
@@ -11,7 +20,12 @@ export const SCHEDULE_CATEGORY_META: Record<
   ScheduleCategory,
   { icon: string; color: string; label: string; tabler: IconDef }
 > = {
-  trip: { icon: '🧳', color: '#2a78d6', label: 'Urlaub', tabler: { id: 'luggage', emoji: '🧳', outline: IconLuggage } },
+  trip: {
+    icon: '🧳',
+    color: '#2a78d6',
+    label: 'Urlaub',
+    tabler: { id: 'luggage', emoji: '🧳', outline: IconLuggage },
+  },
   excursion: {
     icon: '🎒',
     color: '#eb6834',
@@ -24,7 +38,12 @@ export const SCHEDULE_CATEGORY_META: Record<
     icon: '📋',
     color: '#4a3aa7',
     label: 'ToDo',
-    tabler: { id: 'clipboard-list', emoji: '📋', outline: IconClipboardList, filled: IconClipboardListFilled },
+    tabler: {
+      id: 'clipboard-list',
+      emoji: '📋',
+      outline: IconClipboardList,
+      filled: IconClipboardListFilled,
+    },
   },
   travel: {
     icon: '✈️',

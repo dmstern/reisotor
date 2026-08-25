@@ -37,7 +37,10 @@ function tablerIconsOptimizer() {
     name: 'tabler-icons-optimizer',
     enforce: 'pre' as const,
     transform(code: string, id: string) {
-      if ((id.endsWith('.vue') || id.endsWith('.ts') || id.endsWith('.js')) && code.includes('@tabler/icons-vue')) {
+      if (
+        (id.endsWith('.vue') || id.endsWith('.ts') || id.endsWith('.js')) &&
+        code.includes('@tabler/icons-vue')
+      ) {
         return code.replace(
           /import\s*\{([^}]+)\}\s*from\s*['"]@tabler\/icons-vue['"];?/g,
           (match, importsStr) => {
@@ -84,53 +87,75 @@ export default defineConfig({
     // statt eines für sie irreführenden sw.js/manifest.webmanifest im Build-Output.
     buildTarget !== 'landing' &&
       VitePWA({
-      strategies: 'injectManifest',
-      srcDir: 'public',
-      filename: 'sw.js',
-      // 'public'-Assets werden von Vite ohnehin 1:1 nach dist/ kopiert - injectManifest schreibt
-      // direkt in public/sw.js hinein/liest von dort, daher kein separates outDir nötig.
-      injectManifest: {
-        // Fonts/Logo/Icons zusätzlich zu den von Vite selbst erzeugten Haupt-Bundles precachen -
-        // ohne diese explizite Liste würden nur JS/CSS/index.html erfasst, nicht die unter
-        // public/ liegenden statischen Assets.
-        globPatterns: ['**/*.{js,css,html}', 'icons/*.png', 'fonts/*.woff2', 'reisotor_logo.svg'],
-      },
-      registerType: 'prompt',
-      devOptions: {
-        // Im Dev-Server bewusst deaktiviert - Workbox-Precaching gegen den sich ständig ändernden
-        // Vite-Dev-Bundle sorgt nur für Verwirrung (veraltete gecachte Module); die Offline-
-        // App-Shell ist ein reines Produktions-Build-Feature.
-        enabled: false,
-      },
-      includeAssets: ['reisotor_logo.svg', 'fonts/*.woff2'],
-      manifest: {
-        name: 'Reisotor',
-        short_name: 'Reisotor',
-        description: 'Gemeinsame Reiseplanung',
-        start_url: '/',
-        scope: '/',
-        id: '/',
-        display: 'standalone',
-        orientation: 'any',
-        categories: ['travel', 'productivity'],
-        // Kreis-Hintergrundfarbe des Logos (reisotor_logo.svg) - Splashscreen-Hintergrund beim
-        // Start von Home-Bildschirm/Taskleiste aus.
-        background_color: '#EAF6F4',
-        // style.css's --color-primary (Light-Mode).
-        theme_color: '#2a7f74',
-        icons: [
-          { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
-          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
-          { src: '/icons/maskable-192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
-          { src: '/icons/maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
-        ],
-        shortcuts: [
-          { name: 'Kalender', url: '/calendar', icons: [{ src: '/icons/icon-192.png', sizes: '192x192' }] },
-          { name: 'ToDo', url: '/todo', icons: [{ src: '/icons/icon-192.png', sizes: '192x192' }] },
-          { name: 'Packliste', url: '/packing', icons: [{ src: '/icons/icon-192.png', sizes: '192x192' }] },
-        ],
-      },
-    }),
+        strategies: 'injectManifest',
+        srcDir: 'public',
+        filename: 'sw.js',
+        // 'public'-Assets werden von Vite ohnehin 1:1 nach dist/ kopiert - injectManifest schreibt
+        // direkt in public/sw.js hinein/liest von dort, daher kein separates outDir nötig.
+        injectManifest: {
+          // Fonts/Logo/Icons zusätzlich zu den von Vite selbst erzeugten Haupt-Bundles precachen -
+          // ohne diese explizite Liste würden nur JS/CSS/index.html erfasst, nicht die unter
+          // public/ liegenden statischen Assets.
+          globPatterns: ['**/*.{js,css,html}', 'icons/*.png', 'fonts/*.woff2', 'reisotor_logo.svg'],
+        },
+        registerType: 'prompt',
+        devOptions: {
+          // Im Dev-Server bewusst deaktiviert - Workbox-Precaching gegen den sich ständig ändernden
+          // Vite-Dev-Bundle sorgt nur für Verwirrung (veraltete gecachte Module); die Offline-
+          // App-Shell ist ein reines Produktions-Build-Feature.
+          enabled: false,
+        },
+        includeAssets: ['reisotor_logo.svg', 'fonts/*.woff2'],
+        manifest: {
+          name: 'Reisotor',
+          short_name: 'Reisotor',
+          description: 'Gemeinsame Reiseplanung',
+          start_url: '/',
+          scope: '/',
+          id: '/',
+          display: 'standalone',
+          orientation: 'any',
+          categories: ['travel', 'productivity'],
+          // Kreis-Hintergrundfarbe des Logos (reisotor_logo.svg) - Splashscreen-Hintergrund beim
+          // Start von Home-Bildschirm/Taskleiste aus.
+          background_color: '#EAF6F4',
+          // style.css's --color-primary (Light-Mode).
+          theme_color: '#2a7f74',
+          icons: [
+            { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+            { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+            {
+              src: '/icons/maskable-192.png',
+              sizes: '192x192',
+              type: 'image/png',
+              purpose: 'maskable',
+            },
+            {
+              src: '/icons/maskable-512.png',
+              sizes: '512x512',
+              type: 'image/png',
+              purpose: 'maskable',
+            },
+          ],
+          shortcuts: [
+            {
+              name: 'Kalender',
+              url: '/calendar',
+              icons: [{ src: '/icons/icon-192.png', sizes: '192x192' }],
+            },
+            {
+              name: 'ToDo',
+              url: '/todo',
+              icons: [{ src: '/icons/icon-192.png', sizes: '192x192' }],
+            },
+            {
+              name: 'Packliste',
+              url: '/packing',
+              icons: [{ src: '/icons/icon-192.png', sizes: '192x192' }],
+            },
+          ],
+        },
+      }),
   ],
   server: {
     proxy: {
@@ -164,8 +189,12 @@ export default defineConfig({
     __APP_BUILT_AT__: JSON.stringify(new Date().toISOString()),
     // Fallback für AppFooterLinks.vue, wenn kein backendseitiges build-info verfügbar ist (Login-
     // Seite vor dem Login, statische Landingpage/Demo-Build auf GitHub Pages) - Issue #172.
-    __REPO_URL__: JSON.stringify(`https://github.com/${process.env.GITHUB_REPO ?? 'dmstern/reisotor'}`),
-    __LANDING_URL__: JSON.stringify(process.env.VITE_LANDING_URL ?? 'https://dmstern.github.io/reisotor/'),
+    __REPO_URL__: JSON.stringify(
+      `https://github.com/${process.env.GITHUB_REPO ?? 'dmstern/reisotor'}`
+    ),
+    __LANDING_URL__: JSON.stringify(
+      process.env.VITE_LANDING_URL ?? 'https://dmstern.github.io/reisotor/'
+    ),
   },
   test: {
     // Alle aktuellen Testziele sind plain Functions auf plain Daten (utils/*.ts) - kein DOM nötig,

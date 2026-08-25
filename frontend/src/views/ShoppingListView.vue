@@ -77,7 +77,7 @@ const newDraft = useDraftAutosave('shopping:new', newFormBundle, ref(true));
 const editDraft = useDraftAutosave(
   () => `shopping:edit:${editingItem.value?.id}`,
   editForm,
-  computed(() => editingItem.value !== null),
+  computed(() => editingItem.value !== null)
 );
 
 async function load() {
@@ -111,7 +111,7 @@ watch(
       groupBy.value = 'shop';
     }
   },
-  { immediate: true },
+  { immediate: true }
 );
 
 const UNASSIGNED_SHOP = 'Ohne Shop';
@@ -136,7 +136,9 @@ const groupedItems = computed<Group[]>(() => {
       groups.get(key)!.push(item);
     }
     return [...groups.entries()]
-      .sort(([a], [b]) => (a === UNASSIGNED_SHOP ? 1 : b === UNASSIGNED_SHOP ? -1 : a.localeCompare(b, 'de')))
+      .sort(([a], [b]) =>
+        a === UNASSIGNED_SHOP ? 1 : b === UNASSIGNED_SHOP ? -1 : a.localeCompare(b, 'de')
+      )
       .map(([shop, shopItems]) => ({
         key: shop,
         label: shop,
@@ -146,9 +148,30 @@ const groupedItems = computed<Group[]>(() => {
   }
   if (groupBy.value === 'period') {
     const groups: Group[] = [
-      { key: 'before', label: PERIOD_META.before, items: sortWithDoneLast(items.value.filter((i) => i.period === 'before'), isChecked) },
-      { key: 'during', label: PERIOD_META.during, items: sortWithDoneLast(items.value.filter((i) => i.period === 'during'), isChecked) },
-      { key: 'none', label: 'Ohne Zeitraum', items: sortWithDoneLast(items.value.filter((i) => !i.period), isChecked) },
+      {
+        key: 'before',
+        label: PERIOD_META.before,
+        items: sortWithDoneLast(
+          items.value.filter((i) => i.period === 'before'),
+          isChecked
+        ),
+      },
+      {
+        key: 'during',
+        label: PERIOD_META.during,
+        items: sortWithDoneLast(
+          items.value.filter((i) => i.period === 'during'),
+          isChecked
+        ),
+      },
+      {
+        key: 'none',
+        label: 'Ohne Zeitraum',
+        items: sortWithDoneLast(
+          items.value.filter((i) => !i.period),
+          isChecked
+        ),
+      },
     ];
     return groups;
   }
@@ -156,12 +179,18 @@ const groupedItems = computed<Group[]>(() => {
   const perUser: Group[] = users.value.map((u) => ({
     key: `user-${u.id}`,
     label: `${u.avatar} ${u.username}`,
-    items: sortWithDoneLast(items.value.filter((i) => i.assigned_to_user_id === u.id), isChecked),
+    items: sortWithDoneLast(
+      items.value.filter((i) => i.assigned_to_user_id === u.id),
+      isChecked
+    ),
   }));
   const unassigned: Group = {
     key: 'unassigned',
     label: 'Nicht zugewiesen',
-    items: sortWithDoneLast(items.value.filter((i) => i.assigned_to_user_id == null), isChecked),
+    items: sortWithDoneLast(
+      items.value.filter((i) => i.assigned_to_user_id == null),
+      isChecked
+    ),
   };
   return [...perUser, unassigned];
 });
@@ -290,9 +319,18 @@ async function quickAddToGroup(group: Group, label: string) {
       : newBuyer.value
         ? Number(newBuyer.value)
         : undefined;
-  const shop = groupBy.value === 'shop' ? (group.key === UNASSIGNED_SHOP ? undefined : group.key) : newShop.value || undefined;
+  const shop =
+    groupBy.value === 'shop'
+      ? group.key === UNASSIGNED_SHOP
+        ? undefined
+        : group.key
+      : newShop.value || undefined;
   const period =
-    groupBy.value === 'period' ? (group.key === 'before' || group.key === 'during' ? group.key : undefined) : newPeriod.value || undefined;
+    groupBy.value === 'period'
+      ? group.key === 'before' || group.key === 'during'
+        ? group.key
+        : undefined
+      : newPeriod.value || undefined;
 
   const created = await api.post<ShoppingItem>('/shopping', {
     trip_id: tripId,
@@ -320,7 +358,9 @@ async function quickAddToGroup(group: Group, label: string) {
       <FormField v-if="users.length > 1" icon="person" label="Einkäufer:in">
         <select v-model="newBuyer">
           <option value="">Kein:e Einkäufer:in</option>
-          <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
+          <option v-for="u in users" :key="u.id" :value="String(u.id)">
+            {{ u.avatar }} {{ u.username }}
+          </option>
         </select>
       </FormField>
       <FormField icon="period" label="Zeitraum">
@@ -342,7 +382,9 @@ async function quickAddToGroup(group: Group, label: string) {
 
     <div class="filter-row">
       <div class="tool-row">
-        <span class="tool-label"><AppIcon :icon="ACTION_ICONS.group" :size="14" group="actions" /> Gruppieren</span>
+        <span class="tool-label"
+          ><AppIcon :icon="ACTION_ICONS.group" :size="14" group="actions" /> Gruppieren</span
+        >
         <select v-model="groupBy">
           <option v-if="users.length > 1" value="buyer">nach Einkäufer:in</option>
           <option value="shop">nach Shop</option>
@@ -354,15 +396,27 @@ async function quickAddToGroup(group: Group, label: string) {
     <div class="groups-grid">
       <section class="group-section" v-for="group in groupedItems" :key="group.key">
         <h2>
-          <AppIcon v-if="group.iconDef" :icon="group.iconDef" :size="18" group="categories" /> {{ group.label }}
+          <AppIcon v-if="group.iconDef" :icon="group.iconDef" :size="18" group="categories" />
+          {{ group.label }}
         </h2>
-        <QuickAddRow class="card group-quick-add" placeholder="Artikel hinzufügen…" @submit="(label) => quickAddToGroup(group, label)">
+        <QuickAddRow
+          class="card group-quick-add"
+          placeholder="Artikel hinzufügen…"
+          @submit="(label) => quickAddToGroup(group, label)"
+        >
           <template #extra>
             <select v-if="users.length > 1 && groupBy !== 'buyer'" v-model="newBuyer">
               <option value="">Nicht zugewiesen</option>
-              <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
+              <option v-for="u in users" :key="u.id" :value="String(u.id)">
+                {{ u.avatar }} {{ u.username }}
+              </option>
             </select>
-            <Combobox v-if="groupBy !== 'shop'" v-model="newShop" :options="knownShops" placeholder="Shop" />
+            <Combobox
+              v-if="groupBy !== 'shop'"
+              v-model="newShop"
+              :options="knownShops"
+              placeholder="Shop"
+            />
             <select v-if="groupBy !== 'period'" v-model="newPeriod">
               <option value="">Zeitraum</option>
               <option value="before">{{ PERIOD_META.before }}</option>
@@ -376,17 +430,23 @@ async function quickAddToGroup(group: Group, label: string) {
               <li v-if="isPending(item.id)" class="row">
                 <UndoDeleteRow :label="item.label" @undo="restore(item.id)" />
               </li>
-              <li v-else class="row" :class="{ 'row-done': item.checked, 'new-highlight': highlightedIds.has(item.id) }">
+              <li
+                v-else
+                class="row"
+                :class="{ 'row-done': item.checked, 'new-highlight': highlightedIds.has(item.id) }"
+              >
                 <label class="check">
                   <input type="checkbox" :checked="!!item.checked" @change="toggle(item)" />
                   <span :class="{ 'text-done': item.checked }">{{ item.label }}</span>
                 </label>
                 <PendingSyncBadge v-if="item._pending" />
                 <span v-if="groupBy !== 'shop' && item.shop" class="tag">
-                  <AppIcon :icon="FORM_FIELD_ICONS.shop" :size="13" group="formFields" /> {{ item.shop }}
+                  <AppIcon :icon="FORM_FIELD_ICONS.shop" :size="13" group="formFields" />
+                  {{ item.shop }}
                 </span>
                 <span v-if="groupBy !== 'period' && item.period" class="tag">
-                  <AppIcon :icon="FORM_FIELD_ICONS.period" :size="13" group="formFields" /> {{ PERIOD_META[item.period] }}
+                  <AppIcon :icon="FORM_FIELD_ICONS.period" :size="13" group="formFields" />
+                  {{ PERIOD_META[item.period] }}
                 </span>
                 <a v-if="item.link" :href="item.link" target="_blank" rel="noopener" class="link">
                   <AppIcon :icon="FORM_FIELD_ICONS.link" :size="13" group="formFields" /> Link
@@ -399,7 +459,9 @@ async function quickAddToGroup(group: Group, label: string) {
                   @change="reassign(item, $event)"
                 >
                   <option value="">Nicht zugewiesen</option>
-                  <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
+                  <option v-for="u in users" :key="u.id" :value="String(u.id)">
+                    {{ u.avatar }} {{ u.username }}
+                  </option>
                 </select>
                 <div class="row-actions">
                   <EditButton small @click="startEdit(item)" />
@@ -407,7 +469,9 @@ async function quickAddToGroup(group: Group, label: string) {
                 </div>
               </li>
             </template>
-            <li v-if="!group.items.length" :key="`${group.key}-empty`" class="empty">Noch keine Einträge.</li>
+            <li v-if="!group.items.length" :key="`${group.key}-empty`" class="empty">
+              Noch keine Einträge.
+            </li>
           </TransitionGroup>
         </div>
       </section>
@@ -423,7 +487,11 @@ async function quickAddToGroup(group: Group, label: string) {
           <input v-model="editForm.label" type="text" placeholder="Artikel" required />
         </FormField>
         <FormField icon="shop" label="Shop">
-          <Combobox v-model="editForm.shop" :options="knownShops" placeholder="Shop/Laden (optional)" />
+          <Combobox
+            v-model="editForm.shop"
+            :options="knownShops"
+            placeholder="Shop/Laden (optional)"
+          />
         </FormField>
         <FormField icon="period" label="Zeitraum">
           <select v-model="editForm.period">

@@ -5,17 +5,23 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const seeded = JSON.parse(
-  fs.readFileSync(path.join(__dirname, '..', 'fixtures', 'seeded-data.json'), 'utf-8'),
+  fs.readFileSync(path.join(__dirname, '..', 'fixtures', 'seeded-data.json'), 'utf-8')
 );
-const dinner = seeded.scheduleItems.find((i: { title: string }) => i.title === 'Abendessen im Time Out Market');
-const belemDay = seeded.scheduleItems.find((i: { title: string }) => i.title === 'Torre de Belém besichtigen');
+const dinner = seeded.scheduleItems.find(
+  (i: { title: string }) => i.title === 'Abendessen im Time Out Market'
+);
+const belemDay = seeded.scheduleItems.find(
+  (i: { title: string }) => i.title === 'Torre de Belém besichtigen'
+);
 const excursion = seeded.ideas.find((i: { title: string }) => i.title === 'Sightseeing-Tag Belém');
 
 test.beforeEach(async ({ page }) => {
   // Die Kalender-Schublade ist auf Desktop-Viewports (>= 800px, siehe stores/drawers.ts
   // isDesktop()) standardmäßig bereits offen — kein Klick auf die Dashboard-Kachel nötig.
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Kalender', exact: true, level: 2 })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Kalender', exact: true, level: 2 })
+  ).toBeVisible();
 });
 
 // Die Monatsansicht springt beim Laden immer zum Kalendermonat von "heute" (siehe ScheduleView.vue
@@ -42,7 +48,9 @@ test('day selection shows the seeded schedule entry for that day', async ({ page
   await expect(page.locator('.day-detail .items .item', { hasText: dinner.title })).toBeVisible();
 });
 
-test('clicking an own schedule entry opens the detail dialog instead of navigating', async ({ page }) => {
+test('clicking an own schedule entry opens the detail dialog instead of navigating', async ({
+  page,
+}) => {
   await goToTripMonth(page);
   await page.locator(`.day[data-date="${dinner.date}"]`).click();
   await page.locator('.item', { hasText: dinner.title }).click();
@@ -65,7 +73,9 @@ test('clicking an own schedule entry opens the detail dialog instead of navigati
   await expect(page.locator('.day-detail .detail-row')).toHaveCount(0);
 });
 
-test('clicking a tour-linked calendar entry opens the detail dialog, not the excursions drawer', async ({ page }) => {
+test('clicking a tour-linked calendar entry opens the detail dialog, not the excursions drawer', async ({
+  page,
+}) => {
   await goToTripMonth(page);
   await page.locator(`.day[data-date="${belemDay.date}"]`).click();
   await page.locator('.item', { hasText: excursion.title }).click();
@@ -91,7 +101,9 @@ test('MapsAppPicker dropdown is not clipped by the modal', async ({ page }) => {
   await page.getByRole('button', { name: 'Neu', exact: true }).click();
   await page.getByPlaceholder('Titel').fill('MapsAppPicker Regressionstest');
   await page.getByPlaceholder('Ort (optional)').fill('Torre de Belém');
-  await page.getByPlaceholder('Maps-Link (Google/Apple) (optional)').fill('https://www.google.com/maps/@38.6916,-9.2159,17z');
+  await page
+    .getByPlaceholder('Maps-Link (Google/Apple) (optional)')
+    .fill('https://www.google.com/maps/@38.6916,-9.2159,17z');
   await page.getByRole('button', { name: 'Hinzufügen', exact: true }).click();
 
   await page.locator('.item', { hasText: 'MapsAppPicker Regressionstest' }).click();

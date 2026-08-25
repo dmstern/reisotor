@@ -3,7 +3,9 @@ import { test, expect } from '@playwright/test';
 // Regressionsnetz für die neue Pro-Trip-Einstellung "Kategorie in der Packliste ist Pflichtfeld"
 // (siehe TripForm.vue/routes/packing.ts): Umschalten in den Trip-Einstellungen muss das
 // Packlisten-Formular sofort entsprechend reagieren lassen.
-test('toggling the trip setting makes the packing category field required or optional', async ({ page }) => {
+test('toggling the trip setting makes the packing category field required or optional', async ({
+  page,
+}) => {
   await page.goto('/');
 
   async function setCategoryRequired(required: boolean) {
@@ -32,7 +34,9 @@ test('toggling the trip setting makes the packing category field required or opt
 
   await page.goto('/packing');
   const sharedList2 = page.locator('.list-section', { hasText: 'Gemeinsame Packliste' });
-  const quickAddLabel2 = sharedList2.getByPlaceholder('Neuer Gegenstand für 👥 Gemeinsame Packliste');
+  const quickAddLabel2 = sharedList2.getByPlaceholder(
+    'Neuer Gegenstand für 👥 Gemeinsame Packliste'
+  );
   await quickAddLabel2.click();
   const categoryField = sharedList2.getByPlaceholder('Kategorie', { exact: true });
   await expect(categoryField).toBeVisible();
@@ -43,5 +47,7 @@ test('toggling the trip setting makes the packing category field required or opt
   await categoryField.fill('');
   await quickAddLabel2.fill('E2E Sollte nicht angelegt werden');
   await quickAddLabel2.press('Enter');
-  await expect(sharedList2.locator('.row', { hasText: 'E2E Sollte nicht angelegt werden' })).toHaveCount(0);
+  await expect(
+    sharedList2.locator('.row', { hasText: 'E2E Sollte nicht angelegt werden' })
+  ).toHaveCount(0);
 });

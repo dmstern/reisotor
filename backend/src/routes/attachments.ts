@@ -52,9 +52,9 @@ function serialize(row: AttachmentRow) {
  *  existiert) – entity_id ist polymorph (siehe attachments-Tabelle, analog trip_activity), es gibt
  *  daher keinen SQL-FK, der das automatisch prüfen würde. */
 function tripIdForEntity(domain: AttachmentDomain, entityId: number): number | null {
-  const row = db.prepare(`SELECT trip_id FROM ${DOMAIN_TABLE[domain]} WHERE id = ?`).get(entityId) as
-    | { trip_id: number }
-    | undefined;
+  const row = db
+    .prepare(`SELECT trip_id FROM ${DOMAIN_TABLE[domain]} WHERE id = ?`)
+    .get(entityId) as { trip_id: number } | undefined;
   return row?.trip_id ?? null;
 }
 
@@ -77,20 +77,25 @@ const ALLOWED_MIME_TYPES: Record<string, string> = {
 const MAX_ATTACHMENT_BYTES = 15 * 1024 * 1024;
 
 export const attachmentsRoutes: FastifyPluginAsync = async (app) => {
-  app.get<{ Querystring: { domain?: string; entity_id?: string } }>('/attachments', async (req, reply) => {
-    const { domain, entity_id } = req.query;
-    if (!domain || !entity_id || !isAttachmentDomain(domain)) {
-      return reply.code(400).send({ error: 'domain und entity_id erforderlich' });
-    }
-    const tripId = tripIdForEntity(domain, Number(entity_id));
-    if (tripId == null) return reply.code(404).send({ error: 'Nicht gefunden' });
-    if (!requireTripMember(reply, tripId, req.session.userId)) return;
+  app.get<{ Querystring: { domain?: string; entity_id?: string } }>(
+    '/attachments',
+    async (req, reply) => {
+      const { domain, entity_id } = req.query;
+      if (!domain || !entity_id || !isAttachmentDomain(domain)) {
+        return reply.code(400).send({ error: 'domain und entity_id erforderlich' });
+      }
+      const tripId = tripIdForEntity(domain, Number(entity_id));
+      if (tripId == null) return reply.code(404).send({ error: 'Nicht gefunden' });
+      if (!requireTripMember(reply, tripId, req.session.userId)) return;
 
-    return db
-      .prepare('SELECT * FROM attachments WHERE domain = ? AND entity_id = ? ORDER BY created_at ASC')
-      .all(domain, Number(entity_id))
-      .map((row) => serialize(row as AttachmentRow));
-  });
+      return db
+        .prepare(
+          'SELECT * FROM attachments WHERE domain = ? AND entity_id = ? ORDER BY created_at ASC'
+        )
+        .all(domain, Number(entity_id))
+        .map((row) => serialize(row as AttachmentRow));
+    }
+  );
 
   app.post<{ Body: UploadBody }>('/attachments', async (req, reply) => {
     const { domain, entity_id, filename } = req.body ?? {};
@@ -122,7 +127,7 @@ export const attachmentsRoutes: FastifyPluginAsync = async (app) => {
     const result = db
       .prepare(
         `INSERT INTO attachments (trip_id, domain, entity_id, filename, original_name, mime_type, size_bytes, uploaded_by, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
       .run(
         tripId,
@@ -133,24 +138,31 @@ export const attachmentsRoutes: FastifyPluginAsync = async (app) => {
         mimeType,
         buffer.byteLength,
         req.session.userId,
-        new Date().toISOString(),
+        new Date().toISOString()
       );
     recordActivity(tripId, domain, entity_id, 'attachment_added', req.session.userId!);
     reply.code(201);
-    const row = db.prepare('SELECT * FROM attachments WHERE id = ?').get(result.lastInsertRowid) as AttachmentRow;
+    const row = db
+      .prepare('SELECT * FROM attachments WHERE id = ?')
+      .get(result.lastInsertRowid) as AttachmentRow;
     return serialize(row);
   });
 
   app.delete<{ Params: { id: string } }>('/attachments/:id', async (req, reply) => {
     const existing = db.prepare('SELECT * FROM attachments WHERE id = ?').get(req.params.id) as
-      | AttachmentRow
-      | undefined;
+      AttachmentRow | undefined;
     if (!existing) return reply.code(404).send({ error: 'Nicht gefunden' });
     if (!requireTripMember(reply, existing.trip_id, req.session.userId)) return;
 
     db.prepare('DELETE FROM attachments WHERE id = ?').run(req.params.id);
     await unlink(path.join(uploadsDir, existing.filename)).catch(() => {});
-    recordActivity(existing.trip_id, existing.domain, existing.entity_id, 'attachment_removed', req.session.userId!);
+    recordActivity(
+      existing.trip_id,
+      existing.domain,
+      existing.entity_id,
+      'attachment_removed',
+      req.session.userId!
+    );
     return reply.code(204).send();
   });
 };

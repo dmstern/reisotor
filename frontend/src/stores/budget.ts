@@ -2,7 +2,11 @@ import { defineStore } from 'pinia';
 import { computed, ref, watch } from 'vue';
 import { api } from '../api/client';
 import type { Budget, BudgetAllocation, BudgetExpense, BudgetTransfer, User } from '../api/types';
-import { computeBalances, computeSettlementSuggestions, isSharedExpense } from '../utils/budgetBalances';
+import {
+  computeBalances,
+  computeSettlementSuggestions,
+  isSharedExpense,
+} from '../utils/budgetBalances';
 import { effectiveBudgetTarget, grandTotalTarget } from '../utils/budgetTargets';
 import { useUndoableDelete } from '../composables/useUndoableDelete';
 import { useTripStore } from './trip';
@@ -115,7 +119,9 @@ export const useBudgetStore = defineStore('budget', () => {
     return users.value.find((u) => u.id === id)?.avatar ?? '❓';
   }
   function budgetLabel(budget: Budget) {
-    return budget.owner_id == null ? '🤝 Gemeinsam' : `${userAvatar(budget.owner_id)} ${userName(budget.owner_id)}`;
+    return budget.owner_id == null
+      ? '🤝 Gemeinsam'
+      : `${userAvatar(budget.owner_id)} ${userName(budget.owner_id)}`;
   }
 
   // --- Budgets (persönlich oder geteilt) ---
@@ -133,7 +139,9 @@ export const useBudgetStore = defineStore('budget', () => {
   // nicht "des Urlaubs" Geld, sondern reines Einzel-Tracking. Sichtbare, bewusste Verhaltens-
   // änderung ggü. vorher (dort zählten ausnahmslos alle Ausgaben).
   const totalSpent = computed(() =>
-    expenses.value.filter((e) => isSharedExpense(e, budgets.value)).reduce((s, e) => s + e.amount, 0),
+    expenses.value
+      .filter((e) => isSharedExpense(e, budgets.value))
+      .reduce((s, e) => s + e.amount, 0)
   );
   const remaining = computed(() => grandTotal.value - totalSpent.value);
 
@@ -144,7 +152,8 @@ export const useBudgetStore = defineStore('budget', () => {
     return expenses.value
       .filter((e) => {
         if (e.budget_id === budget.id) return true;
-        if (e.budget_id == null && budget.owner_id == null && (e.category ?? '') === category) return true;
+        if (e.budget_id == null && budget.owner_id == null && (e.category ?? '') === category)
+          return true;
         return false;
       })
       .reduce((s, e) => s + e.amount, 0);
@@ -158,7 +167,9 @@ export const useBudgetStore = defineStore('budget', () => {
   });
 
   // --- Salden / Schulden (Berechnung in utils/budgetBalances.ts) ---
-  const balances = computed(() => computeBalances(users.value, expenses.value, transfers.value, budgets.value));
+  const balances = computed(() =>
+    computeBalances(users.value, expenses.value, transfers.value, budgets.value)
+  );
   const settlementSuggestions = computed(() => computeSettlementSuggestions(balances.value));
 
   async function addBudget(tripId: number, input: BudgetFormInput) {
@@ -181,7 +192,11 @@ export const useBudgetStore = defineStore('budget', () => {
   }
 
   async function saveAllocation(budgetId: number, category: string, amount: number) {
-    const updated = await api.put<BudgetAllocation>('/budget/allocations', { budget_id: budgetId, category, amount });
+    const updated = await api.put<BudgetAllocation>('/budget/allocations', {
+      budget_id: budgetId,
+      category,
+      amount,
+    });
     const idx = allocations.value.findIndex((a) => a.id === updated.id);
     if (idx !== -1) allocations.value[idx] = updated;
     else allocations.value.push(updated);

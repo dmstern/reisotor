@@ -39,7 +39,7 @@ watch(
     screenshotName.value = '';
     error.value = '';
     result.value = null;
-  },
+  }
 );
 
 async function onScreenshotSelected(event: Event) {
@@ -85,7 +85,9 @@ function close() {
       <template v-if="result">
         <p class="hint success">
           Danke! Deine Meldung wurde als
-          <a :href="result.issue_url" target="_blank" rel="noopener">Issue #{{ result.issue_number }}</a>
+          <a :href="result.issue_url" target="_blank" rel="noopener"
+            >Issue #{{ result.issue_number }}</a
+          >
           angelegt.
         </p>
         <Button type="button" @click="close">Schließen</Button>
@@ -102,7 +104,13 @@ function close() {
 
         <label>
           Titel
-          <input v-model="form.title" type="text" required maxlength="200" placeholder="Kurze Zusammenfassung" />
+          <input
+            v-model="form.title"
+            type="text"
+            required
+            maxlength="200"
+            placeholder="Kurze Zusammenfassung"
+          />
         </label>
 
         <label>

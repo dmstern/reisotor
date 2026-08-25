@@ -53,7 +53,10 @@ async function onFileSelected(event: Event) {
     <label class="upload-label">
       <input type="file" accept="image/*" :disabled="uploading" @change="onFileSelected" />
       <template v-if="uploading">Lädt hoch …</template>
-      <template v-else><AppIcon :icon="FORM_FIELD_ICONS.image" :size="14" group="formFields" /> Oder Bild hochladen</template>
+      <template v-else
+        ><AppIcon :icon="FORM_FIELD_ICONS.image" :size="14" group="formFields" /> Oder Bild
+        hochladen</template
+      >
     </label>
     <p v-if="uploadError" class="hint error">{{ uploadError }}</p>
   </div>

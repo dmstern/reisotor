@@ -61,21 +61,29 @@ describe('travel_items -> ideas Vollmigration (#176)', () => {
       );
     `);
     legacy
-      .prepare(`INSERT INTO trips (id, name, start_date, end_date) VALUES (1, 'Sommerurlaub', '2026-08-01', '2026-08-14')`)
+      .prepare(
+        `INSERT INTO trips (id, name, start_date, end_date) VALUES (1, 'Sommerurlaub', '2026-08-01', '2026-08-14')`
+      )
       .run();
     legacy.prepare(`INSERT INTO users (id, username) VALUES (1, 'anna')`).run();
     legacy
-      .prepare(`INSERT INTO budget_items (id, trip_id, title, category, amount, paid_by_user_id, date, note) VALUES (100, 1, 'Anreise mit dem Bus', 'Transport', 25.5, 1, '2026-08-04', 'Automatisch aus Reise-Eintrag')`)
+      .prepare(
+        `INSERT INTO budget_items (id, trip_id, title, category, amount, paid_by_user_id, date, note) VALUES (100, 1, 'Anreise mit dem Bus', 'Transport', 25.5, 1, '2026-08-04', 'Automatisch aus Reise-Eintrag')`
+      )
       .run();
     legacy
       .prepare(
         `INSERT INTO travel_items (id, trip_id, title, type, role, date, departure_time, arrival_time, amount,
            paid_by_user_id, budget_expense_id, from_location, to_location, to_maps_link)
          VALUES (1, 1, 'Anreise mit dem Bus', 'bus', 'arrival', '2026-08-04', '08:00', '12:30', 25.5,
-           1, 100, 'Zuhause', 'Flughafen Palma', 'https://maps.example/palma')`,
+           1, 100, 'Zuhause', 'Flughafen Palma', 'https://maps.example/palma')`
       )
       .run();
-    legacy.prepare(`INSERT INTO attachments (id, domain, entity_id, filename, original_name) VALUES (500, 'travel', 1, 'ticket.pdf', 'Ticket.pdf')`).run();
+    legacy
+      .prepare(
+        `INSERT INTO attachments (id, domain, entity_id, filename, original_name) VALUES (500, 'travel', 1, 'ticket.pdf', 'Ticket.pdf')`
+      )
+      .run();
     legacy.close();
 
     process.env.DB_PATH = dbPath;
@@ -89,7 +97,7 @@ describe('travel_items -> ideas Vollmigration (#176)', () => {
 
     const idea = db
       .prepare(
-        'SELECT id, title, role, transport_type, departure_time, arrival_time, amount, budget_expense_id FROM ideas WHERE title = ?',
+        'SELECT id, title, role, transport_type, departure_time, arrival_time, amount, budget_expense_id FROM ideas WHERE title = ?'
       )
       .get('Anreise mit dem Bus') as {
       id: number;
@@ -114,26 +122,28 @@ describe('travel_items -> ideas Vollmigration (#176)', () => {
     const stations = db
       .prepare(
         `SELECT s.title FROM excursion_spots es JOIN spots s ON s.id = es.spot_id
-         WHERE es.idea_id = ? ORDER BY es.position`,
+         WHERE es.idea_id = ? ORDER BY es.position`
       )
       .all(idea.id) as { title: string }[];
     expect(stations.map((s) => s.title)).toEqual(['Zuhause', 'Flughafen Palma']);
 
     // Kalender-Termin aus travel_items.date nachgezogen statt stillschweigend verloren zu gehen.
-    const schedule = db.prepare('SELECT date, title FROM schedule_items WHERE idea_id = ?').get(idea.id) as
-      | { date: string; title: string }
-      | undefined;
+    const schedule = db
+      .prepare('SELECT date, title FROM schedule_items WHERE idea_id = ?')
+      .get(idea.id) as { date: string; title: string } | undefined;
     expect(schedule).toEqual({ date: '2026-08-04', title: 'Anreise mit dem Bus' });
 
     // Budget-Ausgabe umgehängt (dieselbe Zeile, id 100) statt dupliziert.
     expect(idea.budget_expense_id).toBe(100);
-    const budgetItemCount = db.prepare('SELECT COUNT(*) c FROM budget_items').get() as { c: number };
+    const budgetItemCount = db.prepare('SELECT COUNT(*) c FROM budget_items').get() as {
+      c: number;
+    };
     expect(budgetItemCount.c).toBe(1);
 
     // Anhang auf die neue Tour-Id umgehängt.
-    const attachment = db.prepare('SELECT domain, entity_id FROM attachments WHERE id = 500').get() as
-      | { domain: string; entity_id: number }
-      | undefined;
+    const attachment = db
+      .prepare('SELECT domain, entity_id FROM attachments WHERE id = 500')
+      .get() as { domain: string; entity_id: number } | undefined;
     expect(attachment).toEqual({ domain: 'ideas', entity_id: idea.id });
   });
 });

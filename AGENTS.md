@@ -73,11 +73,11 @@ npm run typecheck    # aus dem Root (oder cd frontend && npm run typecheck)
 ```
 
 **Wichtig für AI-Agenten:**
+
 - Immer `npm run typecheck` oder `npm --prefix frontend run typecheck` bzw. `npm run build` nutzen statt Roh-Aufrufen von `npx vue-tsc`.
 - **Niemals interaktive `npx`-Aufrufe ohne `-y` / `--yes` starten!** Falls `npx` Pakete nachinstallieren will, fordert es eine interaktive Bestätigung an (`Need to install the following packages: ... Ok to proceed? (y)`), was in Hintergrundprozessen/Subagenten ohne TTY zum dauerhaften Aufhängen führt.
 - Falls `npm run build` abbricht mit `vue-tsc: Kommando nicht gefunden`, zuerst `cd frontend && npm install` ausführen.
 - Falls `npx` zwingend für Befehle genutzt werden muss, immer die Option `-y` mitgeben (`npx -y ...`).
-
 
 ## Sparsam mit Subagenten
 
@@ -156,8 +156,8 @@ braucht diesen Check, bevor sie als fertig gilt — nicht erst, wenn explizit da
 
 1. **Ist das schon in Prod live?** Für Staging: `git merge-base origin/main HEAD`. Für Prod (Branch
    `deploy`, nur über Release-Tags): `git merge-base $(git describe --tags --match 'v*.*.*' --abbrev=0)
-   HEAD` — der letzte Tag markiert den zuletzt releaseden Stand. `git diff <dieser-commit> HEAD --
-   backend/src/db/index.ts` zeigt, was seitdem am Schema geändert wurde. Alles, was schon vorher drin
+HEAD` — der letzte Tag markiert den zuletzt releaseden Stand. `git diff <dieser-commit> HEAD --
+backend/src/db/index.ts` zeigt, was seitdem am Schema geändert wurde. Alles, was schon vorher drin
    war, kann echte Nutzdaten auf der echten `data.sqlite` enthalten (aktiv genutzte App, seit der
    offenen Registrierung potenziell auch von weiteren, eingeladenen Nutzer:innen).
 2. **Rein additiv bleiben, wo möglich.** Neue Spalten/Tabellen nur über `ensureColumn` (nullable
@@ -167,14 +167,14 @@ braucht diesen Check, bevor sie als fertig gilt — nicht erst, wenn explizit da
    die Spalte echte Werte tragen könnte, deren fachliche Bedeutung im neuen Modell woanders landet,
    muss ein Backfill (`INSERT`/`UPDATE`) diese Werte migrieren, bevor die Spalte fällt — sonst gehen
    sie beim nächsten Deploy kommentarlos verloren. Muster: `if (hasColumn(table, col)) {
-   db.exec('INSERT/UPDATE ...'); dropColumnIfExists(table, col); }` — die Unterkunft→Spots- oder
+db.exec('INSERT/UPDATE ...'); dropColumnIfExists(table, col); }` — die Unterkunft→Spots- oder
    `packing_items.checked`-Migration in `backend/src/db/index.ts` als Vorlage nehmen. Ein reiner
    No-Op-Drop (Spalte war nie live oder nie befüllt) braucht keinen Backfill.
 4. **Reihenfolge im Skript beachten.** Migrationen laufen beim Backend-Start synchron in
-   Datei-Reihenfolge gegen den *tatsächlichen* aktuellen DB-Zustand, nicht gegen den Skript-Text. Ein
+   Datei-Reihenfolge gegen den _tatsächlichen_ aktuellen DB-Zustand, nicht gegen den Skript-Text. Ein
    Backfill, der eine Spalte braucht, die selbst erst weiter unten per `ensureColumn` ergänzt wird,
    muss hinter diese Stelle gesetzt werden — sonst schlägt er auf einer frischen/Test-DB mit `no such
-   column` fehl (auf der echten Prod-DB fällt das nicht auf, weil die Spalte dort durch frühere
+column` fehl (auf der echten Prod-DB fällt das nicht auf, weil die Spalte dort durch frühere
    Deploys schon längst existiert).
 5. **Migrationstest ergänzen.** Für jeden Backfill einen Test analog zu
    `backend/test/unit/dbMigration.test.ts` schreiben: alten Schema-Stand in einer temporären
@@ -228,6 +228,7 @@ Fehlschlag wird als Artefakt der HTML-Report samt Screenshots hochgeladen (`play
 **Token-sparend: die volle Suite (`npm test`) nicht routinemäßig lokal laufen lassen.** CI führt sie
 bei jedem Push ohnehin gated aus — ein lokaler Vollauf kostet nur unnötig Tokens (komplette
 Testausgabe landet im Kontextfenster). Lokal stattdessen gezielt einsetzen:
+
 - `npx -y playwright test <pfad-zur-spec>` für eine einzelne, gerade geschriebene/geänderte Spec direkt
   nach dem Schreiben verifizieren.
 - Einen CI-E2E-Fehlschlag lokal reproduzieren/debuggen.
@@ -312,7 +313,7 @@ auf demselben Feature-Branch) und im PR-Body/-Kommentar per Markdown-Bild-Syntax
 direkter Bild-Upload-Endpunkt in dieser Umgebung verfügbar). Reine Text-/Backend-only-Änderungen
 brauchen keine Screenshots.
 
-**Syntax-Falle:** `![Label](URL)` — die URL NICHT in Backticks setzen (kein `` ![Label](`URL`) ``).
+**Syntax-Falle:** `![Label](URL)` — die URL NICHT in Backticks setzen (kein ``![Label](`URL`)``).
 Damit rendert GitHub das Bild nicht inline, sondern zeigt nur einen toten Link/Codeblock. Vor dem
 Absenden den PR-Body kurz auf versehentlich mit Backticks umschlossene Bild-URLs prüfen (v. a. wenn
 mehrere Screenshots im selben Body verlinkt werden — nur eines davon falsch zu formatieren passiert

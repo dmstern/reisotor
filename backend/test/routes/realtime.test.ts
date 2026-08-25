@@ -100,9 +100,19 @@ describe('realtime routes (SSE stream + trip-activity backfill)', () => {
       headers: { cookie: owner.cookie },
     });
     expect(activity.statusCode).toBe(200);
-    const rows = activity.json() as { domain: string; entity_id: number; action: string; actor_user_id: number }[];
+    const rows = activity.json() as {
+      domain: string;
+      entity_id: number;
+      action: string;
+      actor_user_id: number;
+    }[];
     expect(rows).toContainEqual(
-      expect.objectContaining({ domain: 'todos', entity_id: todoId, action: 'created', actor_user_id: owner.userId }),
+      expect.objectContaining({
+        domain: 'todos',
+        entity_id: todoId,
+        action: 'created',
+        actor_user_id: owner.userId,
+      })
     );
   });
 

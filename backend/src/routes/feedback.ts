@@ -54,7 +54,11 @@ export const feedbackRoutes: FastifyPluginAsync = async (app) => {
         return reply.code(413).send({ error: 'Screenshot ist zu groß (max. 8 MB)' });
       }
 
-      const uploadResult = await uploadFeedbackScreenshot(buffer, extension, `${randomUUID()}.${extension}`);
+      const uploadResult = await uploadFeedbackScreenshot(
+        buffer,
+        extension,
+        `${randomUUID()}.${extension}`
+      );
       // Ein fehlgeschlagener Screenshot-Upload soll die Meldung selbst nicht verhindern - die
       // Beschreibung allein ist immer noch nützlich. Stattdessen landet ein Hinweis im Issue-Body.
       if (uploadResult.ok) {

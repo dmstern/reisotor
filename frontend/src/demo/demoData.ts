@@ -29,10 +29,38 @@ function addDays(days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-export const DEMO_USER: User = { id: 1, username: 'Mika', avatar: '🧑‍🚀', email: 'mika@example.com', is_admin: true, must_change_password: false };
-const DEMO_PARTNER: User = { id: 2, username: 'Jo', avatar: '🧑‍🎨', email: 'jo@example.com', is_admin: false, must_change_password: false };
-export const DEMO_USER_3: User = { id: 3, username: 'Alex', avatar: '🐱', email: 'alex@example.com', is_admin: false, must_change_password: false };
-export const DEMO_USER_4: User = { id: 4, username: 'Sam', avatar: '🐶', email: 'sam@example.com', is_admin: false, must_change_password: false };
+export const DEMO_USER: User = {
+  id: 1,
+  username: 'Mika',
+  avatar: '🧑‍🚀',
+  email: 'mika@example.com',
+  is_admin: true,
+  must_change_password: false,
+};
+const DEMO_PARTNER: User = {
+  id: 2,
+  username: 'Jo',
+  avatar: '🧑‍🎨',
+  email: 'jo@example.com',
+  is_admin: false,
+  must_change_password: false,
+};
+export const DEMO_USER_3: User = {
+  id: 3,
+  username: 'Alex',
+  avatar: '🐱',
+  email: 'alex@example.com',
+  is_admin: false,
+  must_change_password: false,
+};
+export const DEMO_USER_4: User = {
+  id: 4,
+  username: 'Sam',
+  avatar: '🐶',
+  email: 'sam@example.com',
+  is_admin: false,
+  must_change_password: false,
+};
 export const DEMO_USERS: User[] = [DEMO_USER, DEMO_PARTNER, DEMO_USER_3, DEMO_USER_4];
 
 export const DEMO_TRIP = {
@@ -374,32 +402,122 @@ export const DEMO_EXCURSIONS: Excursion[] = [
   },
 ];
 
-export const DEMO_BUDGETS: Budget[] = [{ id: 1, trip_id: 1, name: 'Gemeinsame Kasse', owner_id: null, target_amount: 1200 }];
+export const DEMO_BUDGETS: Budget[] = [
+  { id: 1, trip_id: 1, name: 'Gemeinsame Kasse', owner_id: null, target_amount: 1200 },
+];
 export const DEMO_BUDGET_ALLOCATIONS: BudgetAllocation[] = [
   { id: 1, budget_id: 1, category: 'Unterkunft', amount: 560 },
   { id: 2, budget_id: 1, category: 'Essen & Trinken', amount: 350 },
   { id: 3, budget_id: 1, category: 'Aktivitäten', amount: 290 },
 ];
 export const DEMO_BUDGET_EXPENSES: BudgetExpense[] = [
-  { id: 1, trip_id: 1, title: 'Anzahlung Apartment', category: 'Unterkunft', amount: 200, paid_by_user_id: 1, date: addDays(-10), note: null, budget_id: 1 },
-  { id: 2, trip_id: 1, title: 'Zugtickets Sintra', category: 'Aktivitäten', amount: 24, paid_by_user_id: 2, date: addDays(-2), note: null, budget_id: 1 },
+  {
+    id: 1,
+    trip_id: 1,
+    title: 'Anzahlung Apartment',
+    category: 'Unterkunft',
+    amount: 200,
+    paid_by_user_id: 1,
+    date: addDays(-10),
+    note: null,
+    budget_id: 1,
+  },
+  {
+    id: 2,
+    trip_id: 1,
+    title: 'Zugtickets Sintra',
+    category: 'Aktivitäten',
+    amount: 24,
+    paid_by_user_id: 2,
+    date: addDays(-2),
+    note: null,
+    budget_id: 1,
+  },
 ];
 export const DEMO_BUDGET_TRANSFERS: BudgetTransfer[] = [];
 
 export const DEMO_PACKING: PackingItem[] = [
-  { id: 1, trip_id: 1, category: 'Kleidung', subcategory: null, label: 'Badesachen', quantity: 2, laid_out_count: 0, packed_count: 0, owner_id: null },
-  { id: 2, trip_id: 1, category: 'Dokumente', subcategory: null, label: 'Personalausweis', quantity: 2, laid_out_count: 2, packed_count: 1, owner_id: null },
-  { id: 3, trip_id: 1, category: 'Technik', subcategory: null, label: 'Ladekabel', quantity: 1, laid_out_count: 0, packed_count: 0, owner_id: 1 },
+  {
+    id: 1,
+    trip_id: 1,
+    category: 'Kleidung',
+    subcategory: null,
+    label: 'Badesachen',
+    quantity: 2,
+    laid_out_count: 0,
+    packed_count: 0,
+    owner_id: null,
+  },
+  {
+    id: 2,
+    trip_id: 1,
+    category: 'Dokumente',
+    subcategory: null,
+    label: 'Personalausweis',
+    quantity: 2,
+    laid_out_count: 2,
+    packed_count: 1,
+    owner_id: null,
+  },
+  {
+    id: 3,
+    trip_id: 1,
+    category: 'Technik',
+    subcategory: null,
+    label: 'Ladekabel',
+    quantity: 1,
+    laid_out_count: 0,
+    packed_count: 0,
+    owner_id: 1,
+  },
 ];
 
 export const DEMO_SHOPPING: ShoppingItem[] = [
-  { id: 1, trip_id: 1, label: 'Sonnencreme', assigned_to_user_id: 2, checked: 0, link: null, note: null, shop: null, period: 'before' },
-  { id: 2, trip_id: 1, label: 'Reiseadapter', assigned_to_user_id: 1, checked: 1, link: null, note: null, shop: null, period: 'before' },
+  {
+    id: 1,
+    trip_id: 1,
+    label: 'Sonnencreme',
+    assigned_to_user_id: 2,
+    checked: 0,
+    link: null,
+    note: null,
+    shop: null,
+    period: 'before',
+  },
+  {
+    id: 2,
+    trip_id: 1,
+    label: 'Reiseadapter',
+    assigned_to_user_id: 1,
+    checked: 1,
+    link: null,
+    note: null,
+    shop: null,
+    period: 'before',
+  },
 ];
 
 export const DEMO_TODOS: TodoItem[] = [
-  { id: 1, trip_id: 1, title: 'Wohnung gießen lassen', assigned_to_user_id: 1, due_date: addDays(2), priority: 'high', note: null, done: 0 },
-  { id: 2, trip_id: 1, title: 'Reisepässe prüfen', assigned_to_user_id: 2, due_date: addDays(1), priority: 'medium', note: null, done: 1 },
+  {
+    id: 1,
+    trip_id: 1,
+    title: 'Wohnung gießen lassen',
+    assigned_to_user_id: 1,
+    due_date: addDays(2),
+    priority: 'high',
+    note: null,
+    done: 0,
+  },
+  {
+    id: 2,
+    trip_id: 1,
+    title: 'Reisepässe prüfen',
+    assigned_to_user_id: 2,
+    due_date: addDays(1),
+    priority: 'medium',
+    note: null,
+    done: 1,
+  },
 ];
 
 export const DEMO_NOTES: Note[] = [
@@ -437,22 +555,36 @@ export const DEMO_DIARY: DiaryEntry[] = [
 
 export const DEMO_SPOT_LIKES = [
   { id: 1, spot_id: 2, user_id: 3 },
-  { id: 2, spot_id: 2, user_id: 4 }
+  { id: 2, spot_id: 2, user_id: 4 },
 ];
 export const DEMO_SPOT_COMMENTS = [
-  { id: 1, spot_id: 2, author_id: 3, content: 'Da will ich unbedingt hin!', created_at: new Date().toISOString() }
+  {
+    id: 1,
+    spot_id: 2,
+    author_id: 3,
+    content: 'Da will ich unbedingt hin!',
+    created_at: new Date().toISOString(),
+  },
 ];
 
-export const DEMO_EXCURSION_LIKES = [
-  { id: 1, idea_id: 1, user_id: 2 }
-];
+export const DEMO_EXCURSION_LIKES = [{ id: 1, idea_id: 1, user_id: 2 }];
 export const DEMO_EXCURSION_COMMENTS = [
-  { id: 1, idea_id: 1, author_id: 2, content: 'Klingt super!', created_at: new Date().toISOString() }
+  {
+    id: 1,
+    idea_id: 1,
+    author_id: 2,
+    content: 'Klingt super!',
+    created_at: new Date().toISOString(),
+  },
 ];
 
-export const DEMO_DIARY_LIKES = [
-  { id: 1, entry_id: 1, user_id: 4 }
-];
+export const DEMO_DIARY_LIKES = [{ id: 1, entry_id: 1, user_id: 4 }];
 export const DEMO_DIARY_COMMENTS = [
-  { id: 1, entry_id: 1, author_id: 4, content: 'Toller Start!', created_at: new Date().toISOString() }
+  {
+    id: 1,
+    entry_id: 1,
+    author_id: 4,
+    content: 'Toller Start!',
+    created_at: new Date().toISOString(),
+  },
 ];

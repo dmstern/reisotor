@@ -21,7 +21,10 @@ async function closeDrawerIfOpen(page: Page, label: string) {
 }
 
 test.describe('Standort-Aufzeichnung', () => {
-  test('Start auf der Karte, laufender Header-Indikator, Stop, Liste + Playback', async ({ page, context }) => {
+  test('Start auf der Karte, laufender Header-Indikator, Stop, Liste + Playback', async ({
+    page,
+    context,
+  }) => {
     await page.goto('/excursions');
     await closeDrawerIfOpen(page, 'Kalender');
 
@@ -140,6 +143,8 @@ test.describe('Standort-Aufzeichnung', () => {
     const tracksToggle = page.locator('.tracks-toggle');
     await expect(tracksToggle).toBeVisible({ timeout: 10_000 });
     await tracksToggle.click();
-    await expect(page.locator('.track-row').first().locator('.track-row-meta')).toContainText(/Min\.|Std\./);
+    await expect(page.locator('.track-row').first().locator('.track-row-meta')).toContainText(
+      /Min\.|Std\./
+    );
   });
 });

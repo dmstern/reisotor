@@ -35,7 +35,7 @@ export function computeBalances(
   users: User[],
   expenses: BudgetExpense[],
   transfers: BudgetTransfer[],
-  budgets: Budget[],
+  budgets: Budget[]
 ): Balance[] {
   const n = users.length;
   if (n === 0) return [];
@@ -43,8 +43,12 @@ export function computeBalances(
   const totalSpent = sharedExpenses.reduce((s, e) => s + e.amount, 0);
   const fairShare = totalSpent / n;
   return users.map((u) => {
-    const paid = sharedExpenses.filter((e) => e.paid_by_user_id === u.id).reduce((s, e) => s + e.amount, 0);
-    const received = transfers.filter((t) => t.to_user_id === u.id).reduce((s, t) => s + t.amount, 0);
+    const paid = sharedExpenses
+      .filter((e) => e.paid_by_user_id === u.id)
+      .reduce((s, e) => s + e.amount, 0);
+    const received = transfers
+      .filter((t) => t.to_user_id === u.id)
+      .reduce((s, t) => s + t.amount, 0);
     const sent = transfers.filter((t) => t.from_user_id === u.id).reduce((s, t) => s + t.amount, 0);
     // Eine Überweisung ist eine Schuldenrückzahlung: wer sendet, baut Schulden ab (net steigt);
     // wer empfängt, hat bereits Ausgleich bekommen (net sinkt).

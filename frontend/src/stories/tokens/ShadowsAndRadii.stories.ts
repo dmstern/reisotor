@@ -12,22 +12,68 @@ export const ShadowsAndRadiiSystem: Story = {
   render: () => ({
     setup() {
       const squircleRadii = [
-        { var: '--radius-sm-squircle', px: '10px / 17.5px (Squircle)', usage: 'Kompakte Buttons, Chips, Badges & Inputs' },
-        { var: '--radius-md-squircle', px: '16px / 28px (Squircle)', usage: 'Standard Cards, Panels & Modals' },
-        { var: '--radius-lg-squircle', px: '26px / 45.5px (Squircle)', usage: 'Große Hero-Container & Fokus-Kacheln' },
-        { var: '--radius-xl-squircle', px: '32px / 56px (Squircle)', usage: 'Modal-Dialoge, Bottom-Sheets & Schubladen' },
+        {
+          var: '--radius-sm-squircle',
+          px: '10px / 17.5px (Squircle)',
+          usage: 'Kompakte Buttons, Chips, Badges & Inputs',
+        },
+        {
+          var: '--radius-md-squircle',
+          px: '16px / 28px (Squircle)',
+          usage: 'Standard Cards, Panels & Modals',
+        },
+        {
+          var: '--radius-lg-squircle',
+          px: '26px / 45.5px (Squircle)',
+          usage: 'Große Hero-Container & Fokus-Kacheln',
+        },
+        {
+          var: '--radius-xl-squircle',
+          px: '32px / 56px (Squircle)',
+          usage: 'Modal-Dialoge, Bottom-Sheets & Schubladen',
+        },
       ];
 
       const specialRadii = [
-        { var: '--radius-pill', px: '9999px', shape: 'pill', usage: 'Ovale Pillen für CategoryChips, Badges, TabBar-Indikatoren & Filter-Toggles' },
-        { var: '--radius-full', px: '50%', shape: 'circle', usage: 'Kreisrunde Elemente (Dashboard Tile Card Circle Icons, runde FAB Buttons)' },
+        {
+          var: '--radius-pill',
+          px: '9999px',
+          shape: 'pill',
+          usage: 'Ovale Pillen für CategoryChips, Badges, TabBar-Indikatoren & Filter-Toggles',
+        },
+        {
+          var: '--radius-full',
+          px: '50%',
+          shape: 'circle',
+          usage: 'Kreisrunde Elemente (Dashboard Tile Card Circle Icons, runde FAB Buttons)',
+        },
       ];
 
       const shadows = [
-        { var: '--shadow-sm', radius: 'var(--radius-md-squircle)', shape: 'squircle', usage: 'Standard Kartenschatten (weich, dezent)' },
-        { var: '--shadow-md', radius: 'var(--radius-md-squircle)', shape: 'squircle', usage: 'Erhöhter Schatten für schwebende Panels, Modals & Hover' },
-        { var: '--shadow-inset', radius: 'var(--radius-pill)', shape: 'pill', usage: 'Eingesenkter Rinnen-Schatten für taktile SegmentedToggle Tracks' },
-        { var: '--shadow-pill-raised', radius: 'var(--radius-pill)', shape: 'pill', usage: 'Erhöhter Schatten für schwebende SegmentedToggle Thumbs & Pillen' },
+        {
+          var: '--shadow-sm',
+          radius: 'var(--radius-md-squircle)',
+          shape: 'squircle',
+          usage: 'Standard Kartenschatten (weich, dezent)',
+        },
+        {
+          var: '--shadow-md',
+          radius: 'var(--radius-md-squircle)',
+          shape: 'squircle',
+          usage: 'Erhöhter Schatten für schwebende Panels, Modals & Hover',
+        },
+        {
+          var: '--shadow-inset',
+          radius: 'var(--radius-pill)',
+          shape: 'pill',
+          usage: 'Eingesenkter Rinnen-Schatten für taktile SegmentedToggle Tracks',
+        },
+        {
+          var: '--shadow-pill-raised',
+          radius: 'var(--radius-pill)',
+          shape: 'pill',
+          usage: 'Erhöhter Schatten für schwebende SegmentedToggle Thumbs & Pillen',
+        },
       ];
 
       return { squircleRadii, specialRadii, shadows };

@@ -132,10 +132,17 @@ async function restore(entry: TrashEntry) {
 
     <TransitionGroup tag="ul" name="list" class="trash-list">
       <li class="card trash-row" v-for="entry in entries" :key="keyOf(entry)">
-        <span class="trash-icon"><AppIcon :icon="TYPE_ICON[entry.type] ?? ACTION_ICONS.delete" :size="18" group="categories" /></span>
+        <span class="trash-icon"
+          ><AppIcon
+            :icon="TYPE_ICON[entry.type] ?? ACTION_ICONS.delete"
+            :size="18"
+            group="categories"
+        /></span>
         <div class="trash-info">
           <span class="trash-title">{{ titleFor(entry) }}</span>
-          <span class="trash-meta">{{ entry.label }} · Gelöscht am {{ formatDeletedAt(entry.deletedAt) }}</span>
+          <span class="trash-meta"
+            >{{ entry.label }} · Gelöscht am {{ formatDeletedAt(entry.deletedAt) }}</span
+          >
         </div>
         <Button
           variant="card-action"

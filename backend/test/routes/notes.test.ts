@@ -60,7 +60,11 @@ describe('notes route HTML sanitizing', () => {
       method: 'POST',
       url: '/api/notes',
       headers: { cookie },
-      payload: { trip_id: tripId, title: 'Legacy-Test', content: '**fett** und <script>bad()</script>' },
+      payload: {
+        trip_id: tripId,
+        title: 'Legacy-Test',
+        content: '**fett** und <script>bad()</script>',
+      },
     });
     expect(res.statusCode).toBe(201);
     const body = res.json();

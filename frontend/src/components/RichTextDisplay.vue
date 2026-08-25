@@ -13,7 +13,7 @@ import { renderRichText } from '../utils/richText';
 const props = defineProps<{ content: string; format?: string | null }>();
 
 const html = computed(() =>
-  props.format === 'html' ? DOMPurify.sanitize(props.content) : renderRichText(props.content),
+  props.format === 'html' ? DOMPurify.sanitize(props.content) : renderRichText(props.content)
 );
 </script>
 

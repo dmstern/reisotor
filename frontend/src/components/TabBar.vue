@@ -69,20 +69,28 @@ onMounted(() => {
 
 onUnmounted(() => resizeObserver?.disconnect());
 
-watch(() => props.activeKey, () => nextTick(updateUnderline));
+watch(
+  () => props.activeKey,
+  () => nextTick(updateUnderline)
+);
 watch(
   () => props.tabs,
-  () => nextTick(() => {
-    updateUnderline();
-    updateScrollArrows();
-  }),
+  () =>
+    nextTick(() => {
+      updateUnderline();
+      updateScrollArrows();
+    })
 );
 
 // Scrollt einen angeklickten, teils außerhalb der (bei vielen Tabs horizontal scrollenden) Leiste
 // liegenden Tab vollständig in Sicht - gleiches Muster wie NavBar.vue's onLinkClick().
 function onTabClick(key: string, event: MouseEvent) {
   emit('select', key);
-  (event.currentTarget as HTMLElement).scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' });
+  (event.currentTarget as HTMLElement).scrollIntoView({
+    behavior: 'smooth',
+    inline: 'nearest',
+    block: 'nearest',
+  });
 }
 </script>
 
@@ -240,7 +248,9 @@ function onTabClick(key: string, event: MouseEvent) {
   height: 2px;
   background: var(--color-primary);
   border-radius: 2px 2px 0 0;
-  transition: transform 0.2s ease, width 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    width 0.2s ease;
   pointer-events: none;
 }
 

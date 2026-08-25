@@ -20,7 +20,7 @@ describe('PUT/GET /realtime/location-share', () => {
     db.prepare('INSERT INTO users (username, password_hash, avatar) VALUES (?, ?, ?)').run(
       'shareuser',
       bcrypt.hashSync('correct-horse', 10),
-      '🧪',
+      '🧪'
     );
     const login = await app.inject({
       method: 'POST',
@@ -107,7 +107,7 @@ describe('PUT/GET /realtime/location-share', () => {
     db.prepare('INSERT INTO users (username, password_hash, avatar) VALUES (?, ?, ?)').run(
       'outsider',
       bcrypt.hashSync('correct-horse', 10),
-      '🧟',
+      '🧟'
     );
     const login = await app.inject({
       method: 'POST',

@@ -2,7 +2,12 @@
 import { computed, ref, watch } from 'vue';
 import type { Excursion, Spot, TravelItem } from '../api/types';
 import { excursionStationKeys, resolveStations } from '../utils/excursionStations';
-import { fetchMergedWeather, summarizeWeatherRange, type DailyWeather, type WeatherRangeSummary } from '../utils/weather';
+import {
+  fetchMergedWeather,
+  summarizeWeatherRange,
+  type DailyWeather,
+  type WeatherRangeSummary,
+} from '../utils/weather';
 import { usePointerDrag } from '../composables/usePointerDrag';
 import { useExcursionsStore } from '../stores/excursions';
 import { useDrawersStore } from '../stores/drawers';
@@ -55,13 +60,15 @@ function onCardClick() {
 }
 
 const resolvedStations = computed(() =>
-  resolveStations(excursionStationKeys(props.excursion.spot_ids), props.stations, props.travelItems),
+  resolveStations(excursionStationKeys(props.excursion.spot_ids), props.stations, props.travelItems)
 );
 
-const hasMappedStations = computed(() => resolvedStations.value.some((s) => s.lat != null && s.lng != null));
+const hasMappedStations = computed(() =>
+  resolvedStations.value.some((s) => s.lat != null && s.lng != null)
+);
 
 const fallbackImages = computed(() =>
-  resolvedStations.value.map((s) => s.imageUrl).filter((url): url is string => !!url),
+  resolvedStations.value.map((s) => s.imageUrl).filter((url): url is string => !!url)
 );
 const showCollage = computed(() => !props.excursion.image_url && fallbackImages.value.length >= 2);
 const displayImage = computed(() => {
@@ -78,7 +85,9 @@ function formatDate(d: string) {
 // Wetter für den geplanten Tag an allen Orten der kartierten Stationen der Tour (Issue #152)
 // mit Temperatur-Range und prägnantestem Weathercode.
 const weatherProvider = useWeatherProviderStore();
-const mappedStations = computed(() => resolvedStations.value.filter((s) => s.lat != null && s.lng != null));
+const mappedStations = computed(() =>
+  resolvedStations.value.filter((s) => s.lat != null && s.lng != null)
+);
 const weatherSummary = ref<WeatherRangeSummary | null>(null);
 
 watch(
@@ -106,12 +115,14 @@ watch(
       // best effort
     }
   },
-  { immediate: true },
+  { immediate: true }
 );
 
 // Nur noch das Datum als String - Icon/Wetter rendert das Template direkt (siehe dort), statt es
 // wie zuvor in einen einzigen, nicht auftrennbaren String einzubacken.
-const statusDateLabel = computed(() => (props.excursion.date ? formatDate(props.excursion.date) : ''));
+const statusDateLabel = computed(() =>
+  props.excursion.date ? formatDate(props.excursion.date) : ''
+);
 
 // #176: Anreise/Abreise/Weiterreise (ehemalige Reise-Etappe) - dieselbe Card wie eine normale Tour,
 // mit zusätzlicher Rollen-/Route-/Dauer-Anzeige (übernommen aus der früheren TravelView.vue).
@@ -122,7 +133,10 @@ const routeLabel = computed(() => {
   return `${resolvedStations.value[0].title} → ${resolvedStations.value[1].title}`;
 });
 const travelDuration = computed(() => {
-  const minutes = travelDurationMinutes(props.excursion.departure_time, props.excursion.arrival_time);
+  const minutes = travelDurationMinutes(
+    props.excursion.departure_time,
+    props.excursion.arrival_time
+  );
   return minutes == null ? null : formatTravelDuration(minutes);
 });
 
@@ -208,14 +222,23 @@ function onSpotDrop(event: DragEvent) {
          Löschen-Buttons: in der kompakten Karte überlagerte das Status-Badge (unten, immer sichtbar)
          bei langem Text (z. B. "Geplant für 20. Aug. · ☁️ 21°") sonst den links daneben schwebenden
          Bearbeiten-Button, v. a. bei der schmalen 140px-Miniatur im Desktop-Zeilen-Layout. -->
-    <DeleteButton v-if="expanded" floating class="card-delete" @click="emit('remove', excursion.id)" />
+    <DeleteButton
+      v-if="expanded"
+      floating
+      class="card-delete"
+      @click="emit('remove', excursion.id)"
+    />
     <div class="image" :style="displayImage ? { backgroundImage: `url(${displayImage})` } : {}">
       <SpotImageCollage v-if="showCollage" :images="fallbackImages" />
       <AppIcon
         v-else-if="!displayImage"
         class="placeholder"
         :size="35"
-        :icon="excursion.role ? travelTypeIconDef(excursion.transport_type) : SECTION_ICON_DEFS.excursions"
+        :icon="
+          excursion.role
+            ? travelTypeIconDef(excursion.transport_type)
+            : SECTION_ICON_DEFS.excursions
+        "
         group="categories"
       />
       <EditButton v-if="expanded" floating @click="emit('edit', excursion)" />
@@ -224,18 +247,27 @@ function onSpotDrop(event: DragEvent) {
            gemacht). "excursion.done && !excursion.date" ist der Fallback für bereits vor #106 als
            "gemacht" markierte Bestandsdaten ohne verknüpften Termin (kein Backfill möglich, da der
            tatsächliche Tag nicht rekonstruierbar ist). -->
-      <span class="status" :class="{ planned: excursion.date && !excursion.done, 'status-done': excursion.done }">
+      <span
+        class="status"
+        :class="{ planned: excursion.date && !excursion.done, 'status-done': excursion.done }"
+      >
         <template v-if="excursion.done && excursion.date">
-          <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" /> Gemacht am {{ statusDateLabel
+          <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" /> Gemacht am
+          {{ statusDateLabel
           }}<template v-if="weatherSummary">
-            · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" /> {{ weatherSummary.tempLabel }}</template
+            · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
+            {{ weatherSummary.tempLabel }}</template
           >
         </template>
-        <template v-else-if="excursion.done"><AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" /> Gemacht</template>
+        <template v-else-if="excursion.done"
+          ><AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" /> Gemacht</template
+        >
         <template v-else-if="excursion.date">
-          <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="actions" /> Geplant für {{ statusDateLabel
+          <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="actions" /> Geplant für
+          {{ statusDateLabel
           }}<template v-if="weatherSummary">
-            · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" /> {{ weatherSummary.tempLabel }}</template
+            · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
+            {{ weatherSummary.tempLabel }}</template
           >
         </template>
         <template v-else>In Planung</template>
@@ -250,16 +282,30 @@ function onSpotDrop(event: DragEvent) {
            analog zu SpotCard.vue's "Von <creator>"-Zeile/Notiz, die dort ebenfalls erst beim
            Aufklappen sichtbar wird. -->
       <span v-if="excursion.role" class="role-badge">
-        <AppIcon :icon="TRAVEL_ROLE_META[excursion.role].tabler" :size="14" group="categories" /> {{ TRAVEL_ROLE_META[excursion.role].label }}
+        <AppIcon :icon="TRAVEL_ROLE_META[excursion.role].tabler" :size="14" group="categories" />
+        {{ TRAVEL_ROLE_META[excursion.role].label }}
       </span>
       <p v-if="routeLabel" class="route">{{ routeLabel }}</p>
-      <p v-if="excursion.role && (excursion.departure_time || excursion.arrival_time)" class="departure-arrival">
+      <p
+        v-if="excursion.role && (excursion.departure_time || excursion.arrival_time)"
+        class="departure-arrival"
+      >
         <AppIcon :icon="FORM_FIELD_ICONS.time" :size="14" group="formFields" />
-        <span v-if="excursion.departure_time">{{ excursion.departure_time }}<span v-if="excursion.arrival_time">–{{ excursion.arrival_time }}</span> Uhr</span>
+        <span v-if="excursion.departure_time"
+          >{{ excursion.departure_time
+          }}<span v-if="excursion.arrival_time">–{{ excursion.arrival_time }}</span> Uhr</span
+        >
         <span v-if="travelDuration" class="duration">({{ travelDuration }})</span>
       </p>
-      <p v-if="expanded && creatorLabel" class="detail-row"><span class="detail-label">Von</span>{{ creatorLabel }}</p>
-      <RichTextDisplay v-if="expanded && excursion.note" class="note" :content="excursion.note" :format="excursion.note_format" />
+      <p v-if="expanded && creatorLabel" class="detail-row">
+        <span class="detail-label">Von</span>{{ creatorLabel }}
+      </p>
+      <RichTextDisplay
+        v-if="expanded && excursion.note"
+        class="note"
+        :content="excursion.note"
+        :format="excursion.note_format"
+      />
       <div class="links" v-if="hasMappedStations">
         <Button variant="card-action" @click.stop="emit('show-on-map')">
           <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" /> Auf Karte anzeigen
@@ -293,13 +339,15 @@ function onSpotDrop(event: DragEvent) {
             <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
           </template>
           <template v-else>
-            <AppIcon :icon="ACTION_ICONS.notDone" :size="14" group="actions" /> Als gemacht markieren
+            <AppIcon :icon="ACTION_ICONS.notDone" :size="14" group="actions" /> Als gemacht
+            markieren
           </template>
         </button>
       </div>
       <Teleport to="body">
         <div v-if="dragging" class="drag-ghost" :style="ghostStyle ?? {}">
-          <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" /> {{ excursion.title }}
+          <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" />
+          {{ excursion.title }}
         </div>
       </Teleport>
       <SocialRow
@@ -334,7 +382,9 @@ function onSpotDrop(event: DragEvent) {
   min-height: 120px;
   border: 2px dashed transparent;
   cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
 }
 
 /* Löschen-Button schwebt in der oberen rechten Ecke der ganzen Card (nicht des Vorschaubilds) –
@@ -520,10 +570,15 @@ function onSpotDrop(event: DragEvent) {
   flex-shrink: 0;
   width: 6px;
   height: 12px;
-  background-image: radial-gradient(circle, currentColor 1px, transparent 1.3px),
+  background-image:
+    radial-gradient(circle, currentColor 1px, transparent 1.3px),
     radial-gradient(circle, currentColor 1px, transparent 1.3px);
-  background-size: 3px 4px, 3px 4px;
-  background-position: 0 0, 3px 0;
+  background-size:
+    3px 4px,
+    3px 4px;
+  background-position:
+    0 0,
+    3px 0;
   background-repeat: repeat-y, repeat-y;
   opacity: 0.6;
 }

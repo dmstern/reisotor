@@ -22,7 +22,7 @@ describe('isEmptyRichText', () => {
 describe('renderRichText', () => {
   it('escapes HTML special characters before any markdown processing', () => {
     expect(renderRichText('<script>alert("hi")</script>')).toBe(
-      '&lt;script&gt;alert(&quot;hi&quot;)&lt;/script&gt;<br>',
+      '&lt;script&gt;alert(&quot;hi&quot;)&lt;/script&gt;<br>'
     );
   });
 

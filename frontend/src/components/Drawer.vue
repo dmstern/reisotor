@@ -19,7 +19,10 @@ const props = defineProps<{
    *  übrig), die Drawer-Komponente unterstützt es aber weiterhin generisch. */
   hideTab?: boolean;
 }>();
-const emit = defineEmits<{ (e: 'update:open', value: boolean): void; (e: 'update:width', value: number): void }>();
+const emit = defineEmits<{
+  (e: 'update:open', value: boolean): void;
+  (e: 'update:width', value: number): void;
+}>();
 
 const drawers = useDrawersStore();
 const panelEl = ref<HTMLDivElement | null>(null);
@@ -33,7 +36,9 @@ function toggle() {
 // da eine maximierte Schublade die jeweils andere automatisch zuklappen und deren Lasche
 // deaktivieren muss (siehe drawers.maximize()).
 const maximized = computed(() => drawers.maximizedSide === props.side);
-const tabDisabled = computed(() => drawers.maximizedSide !== null && drawers.maximizedSide !== props.side);
+const tabDisabled = computed(
+  () => drawers.maximizedSide !== null && drawers.maximizedSide !== props.side
+);
 
 // Der Wechsel zwischen "normal" (sticky, Flex-Geschwister) und "maximiert" (fixed, Vollbild) lässt
 // sich nicht per reiner CSS-Transition animieren – der Sprung von sticky zu fixed ist nicht
@@ -83,7 +88,7 @@ watch(
   () => props.open,
   (open) => {
     if (!open && maximized.value) drawers.restoreMaximized();
-  },
+  }
 );
 
 // Anfasser zum Grösser-/Kleinerziehen der Schublade (Pointer Events statt separater Maus-/Touch-
@@ -118,7 +123,11 @@ function onResizeEnd() {
 </script>
 
 <template>
-  <div class="drawer" :class="[side, { open, maximized, resizing }]" :style="{ '--drawer-width': `${width}px` }">
+  <div
+    class="drawer"
+    :class="[side, { open, maximized, resizing }]"
+    :style="{ '--drawer-width': `${width}px` }"
+  >
     <div class="drawer-backdrop" v-if="open" @click="emit('update:open', false)"></div>
     <div ref="panelEl" class="drawer-panel">
       <div v-if="open" class="drawer-header-actions">
@@ -212,7 +221,12 @@ function onResizeEnd() {
   gap: 4px;
   cursor: pointer;
   color: var(--color-text-muted);
-  transition: left 0.25s ease, right 0.25s ease, width 0.15s ease, min-height 0.15s ease, transform 0.15s ease;
+  transition:
+    left 0.25s ease,
+    right 0.25s ease,
+    width 0.15s ease,
+    min-height 0.15s ease,
+    transform 0.15s ease;
 }
 
 .drawer-tab:hover {
@@ -481,7 +495,10 @@ function onResizeEnd() {
     box-shadow: var(--shadow-md);
     border-radius: 0;
     width: var(--drawer-width);
-    transition: width 0.25s ease, opacity 0.2s ease, box-shadow 0.25s ease;
+    transition:
+      width 0.25s ease,
+      opacity 0.2s ease,
+      box-shadow 0.25s ease;
   }
   /* Während des Ziehens am Breiten-Anfasser (onResizeMove) darf width nicht animiert sein, sonst
      hinkt das Panel dem Mauszeiger mit 0.25s Verzögerung hinterher statt 1:1 zu folgen - gleiches

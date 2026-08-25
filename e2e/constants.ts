@@ -12,8 +12,12 @@ export const E2E_SESSION_SECRET = 'e2e-fixed-secret-not-for-prod-32chars';
 // Bewusst NICHT 3000/5173 (die Ports des normalen lokalen Dev-Servers, siehe .vscode/tasks.json) —
 // die e2e-Suite läuft dank CORS_ORIGIN (backend/src/server.ts) auf eigenen Ports parallel dazu,
 // ohne den echten Dev-Server je stoppen zu müssen.
-export const E2E_BACKEND_PORT = process.env.E2E_BACKEND_PORT ? Number(process.env.E2E_BACKEND_PORT) : 3100;
-export const E2E_FRONTEND_PORT = process.env.E2E_FRONTEND_PORT ? Number(process.env.E2E_FRONTEND_PORT) : 5273;
+export const E2E_BACKEND_PORT = process.env.E2E_BACKEND_PORT
+  ? Number(process.env.E2E_BACKEND_PORT)
+  : 3100;
+export const E2E_FRONTEND_PORT = process.env.E2E_FRONTEND_PORT
+  ? Number(process.env.E2E_FRONTEND_PORT)
+  : 5273;
 // Eigener Port für `vite preview` (Produktions-Build), genutzt von
 // tests/offline-app-shell.spec.ts — läuft neben dem regulären Dev-Server-Port oben, den dieser
 // eine Test bewusst NICHT verwendet (Workbox-Precaching braucht einen echten Build, siehe dortiger

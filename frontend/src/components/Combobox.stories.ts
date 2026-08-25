@@ -11,7 +11,13 @@ const meta: Meta<typeof Combobox> = {
   },
   args: {
     modelValue: '',
-    options: ['Essen & Trinken', 'Sehenswürdigkeiten', 'Natur & Wandern', 'Unterkunft', 'Transport'],
+    options: [
+      'Essen & Trinken',
+      'Sehenswürdigkeiten',
+      'Natur & Wandern',
+      'Unterkunft',
+      'Transport',
+    ],
     placeholder: 'Kategorie suchen oder tippen...',
   },
 };
@@ -25,6 +31,7 @@ export const Default: Story = {
     setup() {
       return { args };
     },
-    template: '<div style="max-width: 300px; min-height: 220px;"><Combobox v-bind="args" @update:modelValue="args.modelValue = $event" /></div>',
+    template:
+      '<div style="max-width: 300px; min-height: 220px;"><Combobox v-bind="args" @update:modelValue="args.modelValue = $event" /></div>',
   }),
 };

@@ -13,20 +13,20 @@ defineProps<{ status: DraftStatus; restored?: boolean }>();
        ist gesichert, das eigentliche Speichern läuft weiterhin über den Submit-Button des Formulars. -->
   <p v-if="status !== 'idle'" class="draft-status" :class="status">
     <template v-if="restored && status === 'saved'"
-      ><AppIcon :icon="FORM_FIELD_ICONS.note" :size="13" group="formFields" /> Entwurf wiederhergestellt – noch nicht
-      gespeichert</template
+      ><AppIcon :icon="FORM_FIELD_ICONS.note" :size="13" group="formFields" /> Entwurf
+      wiederhergestellt – noch nicht gespeichert</template
     >
     <template v-else-if="status === 'dirty'"
-      ><AppIcon :icon="ACTION_ICONS.edit" :size="13" group="actions" /> Noch nicht gespeichert – Entwurf wird
-      gesichert…</template
+      ><AppIcon :icon="ACTION_ICONS.edit" :size="13" group="actions" /> Noch nicht gespeichert –
+      Entwurf wird gesichert…</template
     >
     <template v-else-if="status === 'saved'"
-      ><AppIcon :icon="ACTION_ICONS.edit" :size="13" group="actions" /> Noch nicht gespeichert – Entwurf
-      gesichert</template
+      ><AppIcon :icon="ACTION_ICONS.edit" :size="13" group="actions" /> Noch nicht gespeichert –
+      Entwurf gesichert</template
     >
     <template v-else-if="status === 'offline'"
-      ><AppIcon :icon="ACTION_ICONS.edit" :size="13" group="actions" /> Noch nicht gespeichert – Entwurf nur lokal
-      gesichert (offline)</template
+      ><AppIcon :icon="ACTION_ICONS.edit" :size="13" group="actions" /> Noch nicht gespeichert –
+      Entwurf nur lokal gesichert (offline)</template
     >
   </p>
 </template>

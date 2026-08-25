@@ -31,7 +31,9 @@ test('deleting an item shows an inline "Löschen rückgängig machen" placeholde
   await expect(page.locator('.check', { hasText: 'E2E Undo-Test-Aufgabe' })).toBeVisible();
 });
 
-test('the trash view (reachable via profile/avatar) lists a deleted item and restores it', async ({ page }) => {
+test('the trash view (reachable via profile/avatar) lists a deleted item and restores it', async ({
+  page,
+}) => {
   await page.goto('/todo');
   await page.locator('input[placeholder="Neue Aufgabe"]').fill('E2E Papierkorb-Test-Aufgabe');
   await page.locator('.add-form button[type="submit"]').click();

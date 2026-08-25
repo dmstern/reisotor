@@ -83,7 +83,7 @@ const newDraft = useDraftAutosave('todos:new', newForm, ref(true));
 const editDraft = useDraftAutosave(
   () => `todos:edit:${editingItem.value?.id}`,
   editForm,
-  computed(() => editingItem.value !== null),
+  computed(() => editingItem.value !== null)
 );
 
 async function load() {
@@ -124,7 +124,7 @@ watch(
       if (sortBy.value === 'assignee') sortBy.value = 'priority';
     }
   },
-  { immediate: true },
+  { immediate: true }
 );
 
 function userLabel(id: number | null) {
@@ -134,18 +134,25 @@ function userLabel(id: number | null) {
 }
 
 function sortItems(list: TodoItem[]) {
-  return sortWithDoneLast(list, (i) => !!i.done, (a, b) => {
-    if (sortBy.value === 'due_date') {
-      if (!a.due_date && !b.due_date) return 0;
-      if (!a.due_date) return 1;
-      if (!b.due_date) return -1;
-      return a.due_date.localeCompare(b.due_date);
+  return sortWithDoneLast(
+    list,
+    (i) => !!i.done,
+    (a, b) => {
+      if (sortBy.value === 'due_date') {
+        if (!a.due_date && !b.due_date) return 0;
+        if (!a.due_date) return 1;
+        if (!b.due_date) return -1;
+        return a.due_date.localeCompare(b.due_date);
+      }
+      if (sortBy.value === 'assignee') {
+        return (userLabel(a.assigned_to_user_id) ?? '').localeCompare(
+          userLabel(b.assigned_to_user_id) ?? '',
+          'de'
+        );
+      }
+      return PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
     }
-    if (sortBy.value === 'assignee') {
-      return (userLabel(a.assigned_to_user_id) ?? '').localeCompare(userLabel(b.assigned_to_user_id) ?? '', 'de');
-    }
-    return PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
-  });
+  );
 }
 
 interface Group {
@@ -157,9 +164,21 @@ interface Group {
 const groupedItems = computed<Group[]>(() => {
   if (groupBy.value === 'period') {
     return [
-      { key: 'before', label: PERIOD_META.before, items: sortItems(items.value.filter((i) => periodFor(i) === 'before')) },
-      { key: 'during', label: PERIOD_META.during, items: sortItems(items.value.filter((i) => periodFor(i) === 'during')) },
-      { key: 'none', label: 'Ohne Zeitraum', items: sortItems(items.value.filter((i) => !periodFor(i))) },
+      {
+        key: 'before',
+        label: PERIOD_META.before,
+        items: sortItems(items.value.filter((i) => periodFor(i) === 'before')),
+      },
+      {
+        key: 'during',
+        label: PERIOD_META.during,
+        items: sortItems(items.value.filter((i) => periodFor(i) === 'during')),
+      },
+      {
+        key: 'none',
+        label: 'Ohne Zeitraum',
+        items: sortItems(items.value.filter((i) => !periodFor(i))),
+      },
     ];
   }
   const perUser: Group[] = users.value.map((u) => ({
@@ -210,7 +229,13 @@ const quickAddPriority = ref<TodoPriority>('medium');
 async function quickAddToGroup(group: Group, label: string) {
   if (!label.trim()) return;
   const assigned_to_user_id =
-    groupBy.value === 'assignee' ? (group.key.startsWith('user-') ? Number(group.key.slice(5)) : undefined) : lastAssignee.value ? Number(lastAssignee.value) : undefined;
+    groupBy.value === 'assignee'
+      ? group.key.startsWith('user-')
+        ? Number(group.key.slice(5))
+        : undefined
+      : lastAssignee.value
+        ? Number(lastAssignee.value)
+        : undefined;
   const created = await api.post<TodoItem>('/todos', {
     trip_id: tripId,
     title: label.trim(),
@@ -299,7 +324,9 @@ function isOverdue(item: TodoItem) {
       <FormField v-if="users.length > 1" icon="person" label="Bearbeiter:in">
         <select v-model="newForm.assigned_to_user_id">
           <option value="">Nicht zugewiesen</option>
-          <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
+          <option v-for="u in users" :key="u.id" :value="String(u.id)">
+            {{ u.avatar }} {{ u.username }}
+          </option>
         </select>
       </FormField>
       <FormField icon="date" label="Fällig">
@@ -307,7 +334,9 @@ function isOverdue(item: TodoItem) {
       </FormField>
       <FormField icon="priority" label="Priorität">
         <select v-model="newForm.priority">
-          <option v-for="(meta, key) in PRIORITY_META" :key="key" :value="key">{{ meta.icon }} {{ meta.label }}</option>
+          <option v-for="(meta, key) in PRIORITY_META" :key="key" :value="key">
+            {{ meta.icon }} {{ meta.label }}
+          </option>
         </select>
       </FormField>
       <FormField icon="note" label="Notiz">
@@ -319,14 +348,18 @@ function isOverdue(item: TodoItem) {
 
     <div class="filter-row">
       <div class="tool-row">
-        <span class="tool-label"><AppIcon :icon="ACTION_ICONS.group" :size="14" group="actions" /> Gruppieren</span>
+        <span class="tool-label"
+          ><AppIcon :icon="ACTION_ICONS.group" :size="14" group="actions" /> Gruppieren</span
+        >
         <select v-model="groupBy">
           <option v-if="users.length > 1" value="assignee">nach Bearbeiter:in</option>
           <option value="period">nach Zeitraum</option>
         </select>
       </div>
       <div class="tool-row">
-        <span class="tool-label"><AppIcon :icon="ACTION_ICONS.sort" :size="14" group="actions" /> Sortieren</span>
+        <span class="tool-label"
+          ><AppIcon :icon="ACTION_ICONS.sort" :size="14" group="actions" /> Sortieren</span
+        >
         <select v-model="sortBy">
           <option value="due_date">nach Datum</option>
           <option value="priority">nach Priorität</option>
@@ -338,14 +371,22 @@ function isOverdue(item: TodoItem) {
     <div class="groups-grid">
       <section class="group-section" v-for="group in groupedItems" :key="group.key">
         <h2>{{ group.label }}</h2>
-        <QuickAddRow class="card group-quick-add" placeholder="Aufgabe hinzufügen…" @submit="(label) => quickAddToGroup(group, label)">
+        <QuickAddRow
+          class="card group-quick-add"
+          placeholder="Aufgabe hinzufügen…"
+          @submit="(label) => quickAddToGroup(group, label)"
+        >
           <template #extra>
             <select v-if="users.length > 1 && groupBy !== 'assignee'" v-model="lastAssignee">
               <option value="">Nicht zugewiesen</option>
-              <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
+              <option v-for="u in users" :key="u.id" :value="String(u.id)">
+                {{ u.avatar }} {{ u.username }}
+              </option>
             </select>
             <select v-model="quickAddPriority">
-              <option v-for="(meta, key) in PRIORITY_META" :key="key" :value="key">{{ meta.icon }} {{ meta.label }}</option>
+              <option v-for="(meta, key) in PRIORITY_META" :key="key" :value="key">
+                {{ meta.icon }} {{ meta.label }}
+              </option>
             </select>
           </template>
         </QuickAddRow>
@@ -367,16 +408,29 @@ function isOverdue(item: TodoItem) {
                 </label>
                 <PendingSyncBadge v-if="item._pending" />
                 <span class="priority" :title="PRIORITY_META[item.priority].label">
-                  <AppIcon :icon="ACTION_ICONS.priorityDot" :size="10" :color="PRIORITY_META[item.priority].color" group="actions" />
+                  <AppIcon
+                    :icon="ACTION_ICONS.priorityDot"
+                    :size="10"
+                    :color="PRIORITY_META[item.priority].color"
+                    group="actions"
+                  />
                 </span>
                 <span v-if="item.due_date" class="due" :class="{ overdue: isOverdue(item) }">
-                  <AppIcon :icon="FORM_FIELD_ICONS.date" :size="13" group="formFields" /> {{ formatDate(item.due_date) }}
+                  <AppIcon :icon="FORM_FIELD_ICONS.date" :size="13" group="formFields" />
+                  {{ formatDate(item.due_date) }}
                 </span>
-                <span v-if="users.length > 1 && groupBy !== 'assignee' && userLabel(item.assigned_to_user_id)" class="assignee">{{
-                  userLabel(item.assigned_to_user_id)
-                }}</span>
+                <span
+                  v-if="
+                    users.length > 1 &&
+                    groupBy !== 'assignee' &&
+                    userLabel(item.assigned_to_user_id)
+                  "
+                  class="assignee"
+                  >{{ userLabel(item.assigned_to_user_id) }}</span
+                >
                 <span v-if="groupBy !== 'period' && periodFor(item)" class="assignee">
-                  <AppIcon :icon="FORM_FIELD_ICONS.period" :size="13" group="formFields" /> {{ PERIOD_META[periodFor(item)!] }}
+                  <AppIcon :icon="FORM_FIELD_ICONS.period" :size="13" group="formFields" />
+                  {{ PERIOD_META[periodFor(item)!] }}
                 </span>
                 <span v-if="item.note" class="note">{{ item.note }}</span>
                 <div class="row-actions">
@@ -385,13 +439,19 @@ function isOverdue(item: TodoItem) {
                 </div>
               </li>
             </template>
-            <li v-if="!group.items.length" :key="`${group.key}-empty`" class="empty">Noch keine Aufgaben.</li>
+            <li v-if="!group.items.length" :key="`${group.key}-empty`" class="empty">
+              Noch keine Aufgaben.
+            </li>
           </TransitionGroup>
         </div>
       </section>
     </div>
 
-    <Modal :model-value="editingItem !== null" title="Aufgabe bearbeiten" @update:model-value="(v) => !v && closeEditForm()">
+    <Modal
+      :model-value="editingItem !== null"
+      title="Aufgabe bearbeiten"
+      @update:model-value="(v) => !v && closeEditForm()"
+    >
       <form class="edit-form" @submit.prevent="submitEdit">
         <FormField icon="title" label="Titel">
           <input v-model="editForm.title" type="text" placeholder="Titel" required />
@@ -399,7 +459,9 @@ function isOverdue(item: TodoItem) {
         <FormField v-if="users.length > 1" icon="person" label="Bearbeiter:in">
           <select v-model="editForm.assigned_to_user_id">
             <option value="">Nicht zugewiesen</option>
-            <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
+            <option v-for="u in users" :key="u.id" :value="String(u.id)">
+              {{ u.avatar }} {{ u.username }}
+            </option>
           </select>
         </FormField>
         <FormField icon="date" label="Fällig">
@@ -407,7 +469,9 @@ function isOverdue(item: TodoItem) {
         </FormField>
         <FormField icon="priority" label="Priorität">
           <select v-model="editForm.priority">
-            <option v-for="(meta, key) in PRIORITY_META" :key="key" :value="key">{{ meta.icon }} {{ meta.label }}</option>
+            <option v-for="(meta, key) in PRIORITY_META" :key="key" :value="key">
+              {{ meta.icon }} {{ meta.label }}
+            </option>
           </select>
         </FormField>
         <FormField icon="note" label="Notiz">

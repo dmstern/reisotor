@@ -9,14 +9,19 @@ test.use({ geolocation: { latitude: 48.2, longitude: 16.37 }, permissions: ['geo
 
 function rotationAngleFromMatrix(matrix: string): number {
   // matrix(a, b, c, d, tx, ty) - für eine reine Rotation gilt a=cos(θ), b=sin(θ).
-  const values = matrix.match(/matrix\(([^)]+)\)/)?.[1].split(',').map(Number);
+  const values = matrix
+    .match(/matrix\(([^)]+)\)/)?.[1]
+    .split(',')
+    .map(Number);
   if (!values) return NaN;
   const [a, b] = values;
   return (Math.atan2(b, a) * 180) / Math.PI;
 }
 
 test.describe('Karten-Rotation (Norden/Fahrtrichtung-Umschalter)', () => {
-  test('Fahrtrichtung-Modus dreht die Karte auf den Kompass-Heading, Norden-Modus nicht', async ({ page }) => {
+  test('Fahrtrichtung-Modus dreht die Karte auf den Kompass-Heading, Norden-Modus nicht', async ({
+    page,
+  }) => {
     await page.goto('/excursions');
     // Norden/Fahrtrichtung-Umschalter lebt hinter dem "Standort & Ausrichtung"-Popover (siehe
     // TripMap.vue's .location-btn/locationMenuOpen) statt eines eigenen, immer sichtbaren Buttons.
@@ -30,14 +35,20 @@ test.describe('Karten-Rotation (Norden/Fahrtrichtung-Umschalter)', () => {
     await expect(page.getByRole('button', { name: 'Norden oben' })).toHaveClass(/active/);
     await page.locator('.picker-backdrop').click();
     await page.evaluate(() => {
-      const eventName = 'ondeviceorientationabsolute' in window ? 'deviceorientationabsolute' : 'deviceorientation';
-      const event = new Event(eventName) as DeviceOrientationEvent & { alpha: number; absolute: boolean };
+      const eventName =
+        'ondeviceorientationabsolute' in window ? 'deviceorientationabsolute' : 'deviceorientation';
+      const event = new Event(eventName) as DeviceOrientationEvent & {
+        alpha: number;
+        absolute: boolean;
+      };
       Object.defineProperty(event, 'alpha', { value: 270 }); // Heading = 90°
       Object.defineProperty(event, 'absolute', { value: true });
       window.dispatchEvent(event);
     });
     await page.waitForTimeout(300);
-    const idleTransform = await page.locator('.leaflet-rotate-pane').evaluate((el) => getComputedStyle(el).transform);
+    const idleTransform = await page
+      .locator('.leaflet-rotate-pane')
+      .evaluate((el) => getComputedStyle(el).transform);
     expect(Math.abs(rotationAngleFromMatrix(idleTransform))).toBeLessThan(1);
 
     // Umschalten auf "Fahrtrichtung" (🔭) - ab jetzt dreht sich die Karte mit dem Heading mit.
@@ -48,8 +59,12 @@ test.describe('Karten-Rotation (Norden/Fahrtrichtung-Umschalter)', () => {
     await page.locator('.picker-backdrop').click();
 
     await page.evaluate(() => {
-      const eventName = 'ondeviceorientationabsolute' in window ? 'deviceorientationabsolute' : 'deviceorientation';
-      const event = new Event(eventName) as DeviceOrientationEvent & { alpha: number; absolute: boolean };
+      const eventName =
+        'ondeviceorientationabsolute' in window ? 'deviceorientationabsolute' : 'deviceorientation';
+      const event = new Event(eventName) as DeviceOrientationEvent & {
+        alpha: number;
+        absolute: boolean;
+      };
       Object.defineProperty(event, 'alpha', { value: 270 }); // Heading = 90°
       Object.defineProperty(event, 'absolute', { value: true });
       window.dispatchEvent(event);

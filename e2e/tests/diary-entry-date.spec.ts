@@ -62,7 +62,10 @@ test.describe('Tagebuch: Datum eines Eintrags', () => {
 
     // Nachträgliches Ändern des Datums beim Bearbeiten: der "heutige" Eintrag wird auf morgen
     // vorverlegt und muss danach vor dem vorgestrigen UND weiterhin sichtbar bleiben.
-    await todayEntry.locator('.entry-actions').getByRole('button', { name: /bearbeiten/i }).click();
+    await todayEntry
+      .locator('.entry-actions')
+      .getByRole('button', { name: /bearbeiten/i })
+      .click();
     const editModal = page.locator('.modal', { hasText: 'Eintrag bearbeiten' });
     const editDateInput = editModal.locator('input[type="date"]');
     await expect(editDateInput).toHaveValue(todayValue);

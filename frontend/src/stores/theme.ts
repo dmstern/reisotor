@@ -1,6 +1,12 @@
 import { defineStore } from 'pinia';
 import { ref, watch } from 'vue';
-import { IconSun, IconSunFilled, IconMoon, IconMoonFilled, IconDeviceDesktop } from '@tabler/icons-vue';
+import {
+  IconSun,
+  IconSunFilled,
+  IconMoon,
+  IconMoonFilled,
+  IconDeviceDesktop,
+} from '@tabler/icons-vue';
 import type { IconDef } from '../utils/icon';
 
 // 'system' übernimmt die Geräteeinstellung (@media(prefers-color-scheme) in style.css) statt eines
@@ -9,9 +15,24 @@ import type { IconDef } from '../utils/icon';
 // <option>-Text braucht weiterhin den rohen Emoji-String (native <select>-Elemente können keine
 // Vue-Komponenten rendern), der sichtbare Icon-Button daneben nutzt `tabler` via AppIcon.
 export const THEME_MODE_OPTIONS = [
-  { value: 'light', icon: '☀️', tabler: { id: 'sun', emoji: '☀️', outline: IconSun, filled: IconSunFilled } as IconDef, label: 'Hell' },
-  { value: 'dark', icon: '🌙', tabler: { id: 'moon', emoji: '🌙', outline: IconMoon, filled: IconMoonFilled } as IconDef, label: 'Dunkel' },
-  { value: 'system', icon: '🖥️', tabler: { id: 'device-desktop', emoji: '🖥️', outline: IconDeviceDesktop } as IconDef, label: 'Systemeinstellung' },
+  {
+    value: 'light',
+    icon: '☀️',
+    tabler: { id: 'sun', emoji: '☀️', outline: IconSun, filled: IconSunFilled } as IconDef,
+    label: 'Hell',
+  },
+  {
+    value: 'dark',
+    icon: '🌙',
+    tabler: { id: 'moon', emoji: '🌙', outline: IconMoon, filled: IconMoonFilled } as IconDef,
+    label: 'Dunkel',
+  },
+  {
+    value: 'system',
+    icon: '🖥️',
+    tabler: { id: 'device-desktop', emoji: '🖥️', outline: IconDeviceDesktop } as IconDef,
+    label: 'Systemeinstellung',
+  },
 ] as const;
 export type ThemeMode = (typeof THEME_MODE_OPTIONS)[number]['value'];
 

@@ -60,7 +60,7 @@ watch(
     }
     if (userId) tripStore.loadTrips();
   },
-  { immediate: true },
+  { immediate: true }
 );
 
 // Sobald Trips geladen sind, aber KEIN Urlaub ausgewählt ist, zur Übersichtsseite (TripsView.vue)
@@ -75,7 +75,7 @@ watch(
       router.push({ name: 'trips' });
     }
   },
-  { immediate: true },
+  { immediate: true }
 );
 
 // Serverseitige Session weg (z. B. Prozess-Neustart, siehe api/client.ts) - client.ts feuert
@@ -99,7 +99,7 @@ watch(
   (tripId) => {
     if (tripId && navigator.onLine) prefetchTripDataForOffline(tripId);
   },
-  { immediate: true },
+  { immediate: true }
 );
 
 // Beim allerersten App-Start soll die Rucksack-Animation (SplashScreen.vue/ReisotorRobot.vue's

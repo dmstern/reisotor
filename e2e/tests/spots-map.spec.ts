@@ -4,7 +4,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const seeded = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'fixtures', 'seeded-data.json'), 'utf-8'));
+const seeded = JSON.parse(
+  fs.readFileSync(path.join(__dirname, '..', 'fixtures', 'seeded-data.json'), 'utf-8')
+);
 const tripId = seeded.trip.id;
 
 // Regressionstest für den neuen "✅ Gemacht"-Status-Filter (ExcursionsView.vue's statusFilter/
@@ -28,7 +30,9 @@ test.describe('Spots-Liste: "Gemacht"-Status-Filter', () => {
       data: { trip_id: tripId, date: '2026-01-02', title: doneTitle, spot_id: doneSpot.id },
     });
     expect(scheduleRes.ok()).toBeTruthy();
-    const toggleRes = await page.request.post(`/api/spots/${doneSpot.id}/done`, { data: { done: true } });
+    const toggleRes = await page.request.post(`/api/spots/${doneSpot.id}/done`, {
+      data: { done: true },
+    });
     expect(toggleRes.ok()).toBeTruthy();
 
     const openRes = await page.request.post('/api/spots', {

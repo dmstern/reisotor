@@ -21,7 +21,11 @@ const visible = defineModel<boolean>('visible', { default: false });
       :title="visible ? 'Eingabe verbergen' : 'Eingabe anzeigen'"
       @click="visible = !visible"
     >
-      <AppIcon :icon="visible ? ACTION_ICONS.hidePassword : ACTION_ICONS.showPassword" :size="16" group="actions" />
+      <AppIcon
+        :icon="visible ? ACTION_ICONS.hidePassword : ACTION_ICONS.showPassword"
+        :size="16"
+        group="actions"
+      />
     </button>
   </div>
 </template>

@@ -46,12 +46,16 @@ describe('accommodation -> spots Verschmelzungs-Migration', () => {
         uploaded_by INTEGER NOT NULL, created_at TEXT NOT NULL
       );
     `);
-    legacy.prepare(`INSERT INTO trips (id, name, start_date, end_date) VALUES (1, 'Sommerurlaub', '2026-08-01', '2026-08-14')`).run();
+    legacy
+      .prepare(
+        `INSERT INTO trips (id, name, start_date, end_date) VALUES (1, 'Sommerurlaub', '2026-08-01', '2026-08-14')`
+      )
+      .run();
     legacy.prepare(`INSERT INTO users (id, username, avatar) VALUES (1, 'anna', '🦊')`).run();
     legacy
       .prepare(
         `INSERT INTO budget_items (id, trip_id, title, category, amount, paid_by_user_id, date, note, budget_id)
-         VALUES (50, 1, 'Hotel Meeresblick', 'Unterkunft', 540, 1, '2026-08-02', 'Automatisch aus Unterkunft-Eintrag', 1)`,
+         VALUES (50, 1, 'Hotel Meeresblick', 'Unterkunft', 540, 1, '2026-08-02', 'Automatisch aus Unterkunft-Eintrag', 1)`
       )
       .run();
     legacy
@@ -62,15 +66,19 @@ describe('accommodation -> spots Verschmelzungs-Migration', () => {
          ) VALUES (
            7, 1, 'Hotel Meeresblick', 'Strandpromenade 1', '15:00', '11:00', '+49 123 456', 'Frühstück inklusive',
            40.8, 14.2, '2026-08-02', '2026-08-09', 'https://maps.example/hotel', 540, 1, 50, NULL
-         )`,
+         )`
       )
       .run();
     legacy.prepare(`INSERT INTO ideas (id, trip_id, title) VALUES (20, 1, 'Ankunftstag')`).run();
-    legacy.prepare(`INSERT INTO excursion_spots (idea_id, station_key, position) VALUES (20, 'accommodation-7', 0)`).run();
+    legacy
+      .prepare(
+        `INSERT INTO excursion_spots (idea_id, station_key, position) VALUES (20, 'accommodation-7', 0)`
+      )
+      .run();
     legacy
       .prepare(
         `INSERT INTO attachments (id, trip_id, domain, entity_id, filename, original_name, mime_type, size_bytes, uploaded_by, created_at)
-         VALUES (100, 1, 'accommodation', 7, 'abc.pdf', 'Buchungsbestaetigung.pdf', 'application/pdf', 1234, 1, '2026-07-01T00:00:00.000Z')`,
+         VALUES (100, 1, 'accommodation', 7, 'abc.pdf', 'Buchungsbestaetigung.pdf', 'application/pdf', 1234, 1, '2026-07-01T00:00:00.000Z')`
       )
       .run();
     legacy.close();
@@ -79,7 +87,9 @@ describe('accommodation -> spots Verschmelzungs-Migration', () => {
     const { db } = await import('../../src/db/index.js');
 
     // accommodation existiert nicht mehr.
-    const tables = db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'accommodation'").all();
+    const tables = db
+      .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'accommodation'")
+      .all();
     expect(tables).toHaveLength(0);
 
     // Die Unterkunft ist jetzt ein ganz normaler Spot mit denselben Stammdaten.
@@ -128,15 +138,14 @@ describe('accommodation -> spots Verschmelzungs-Migration', () => {
     // accommodation-Schlüssel (excursion_spots ist inzwischen selbst zu einer einfachen
     // idea_id<->spot_id-Verknüpfung migriert, siehe excursionSpotsMigration.test.ts).
     const station = db.prepare('SELECT spot_id FROM excursion_spots WHERE idea_id = 20').get() as
-      | { spot_id: number }
-      | undefined;
+      { spot_id: number } | undefined;
     expect(station?.spot_id).toBe(spot!.id);
 
     // Der Datei-Anhang verweist jetzt auf domain='spots' + die neue Spot-Id statt auf die
     // verschwundene accommodation-Domäne/-Id.
-    const attachment = db.prepare('SELECT domain, entity_id FROM attachments WHERE id = 100').get() as
-      | { domain: string; entity_id: number }
-      | undefined;
+    const attachment = db
+      .prepare('SELECT domain, entity_id FROM attachments WHERE id = 100')
+      .get() as { domain: string; entity_id: number } | undefined;
     expect(attachment).toMatchObject({ domain: 'spots', entity_id: spot!.id });
   });
 });

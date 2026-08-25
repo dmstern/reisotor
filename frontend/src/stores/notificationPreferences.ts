@@ -18,7 +18,7 @@ export const useNotificationPreferencesStore = defineStore('notificationPreferen
   const error = ref('');
 
   const currentLevel = computed<NotificationLevel | null>(() =>
-    preferences.value ? matchingLevel(preferences.value) : null,
+    preferences.value ? matchingLevel(preferences.value) : null
   );
 
   async function load() {
@@ -41,7 +41,8 @@ export const useNotificationPreferencesStore = defineStore('notificationPreferen
       preferences.value = await api.put<NotificationPreferences>('/push/preferences', partial);
     } catch (err) {
       preferences.value = previous;
-      error.value = err instanceof Error ? err.message : 'Präferenzen konnten nicht gespeichert werden';
+      error.value =
+        err instanceof Error ? err.message : 'Präferenzen konnten nicht gespeichert werden';
     }
   }
 

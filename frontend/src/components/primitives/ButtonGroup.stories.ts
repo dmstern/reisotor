@@ -26,7 +26,9 @@ export const AlignEnd: Story = {
   args: { align: 'end' },
   render: (args) => ({
     components: { ButtonGroup, Button },
-    setup() { return { args }; },
+    setup() {
+      return { args };
+    },
     template: `
       <ButtonGroup v-bind="args">
         <Button variant="secondary">Abbrechen</Button>
@@ -40,7 +42,9 @@ export const Stretch: Story = {
   args: { align: 'stretch' },
   render: (args) => ({
     components: { ButtonGroup, Button },
-    setup() { return { args }; },
+    setup() {
+      return { args };
+    },
     template: `
       <ButtonGroup v-bind="args">
         <Button variant="secondary">Zurück</Button>

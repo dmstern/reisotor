@@ -125,12 +125,12 @@ export function recordActivity(
   domain: string,
   entityId: number | null,
   action: string,
-  actorUserId: number,
+  actorUserId: number
 ): ActivityRow {
   const createdAt = new Date().toISOString();
   const result = db
     .prepare(
-      'INSERT INTO trip_activity (trip_id, domain, entity_id, action, actor_user_id, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+      'INSERT INTO trip_activity (trip_id, domain, entity_id, action, actor_user_id, created_at) VALUES (?, ?, ?, ?, ?, ?)'
     )
     .run(tripId, domain, entityId, action, actorUserId, createdAt);
   const row: ActivityRow = {
@@ -144,10 +144,10 @@ export function recordActivity(
   };
   broadcastActivity(tripId, row);
 
-  const trip = db.prepare('SELECT name FROM trips WHERE id = ?').get(tripId) as { name: string } | undefined;
+  const trip = db.prepare('SELECT name FROM trips WHERE id = ?').get(tripId) as
+    { name: string } | undefined;
   const actor = db.prepare('SELECT username FROM users WHERE id = ?').get(actorUserId) as
-    | { username: string }
-    | undefined;
+    { username: string } | undefined;
   if (trip && actor) {
     notifyTripMembers(tripId, actorUserId, {
       domain,

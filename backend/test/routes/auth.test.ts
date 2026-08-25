@@ -12,7 +12,7 @@ describe('auth routes + requireAuth gating', () => {
     db.prepare('INSERT INTO users (username, password_hash, avatar) VALUES (?, ?, ?)').run(
       'testuser',
       bcrypt.hashSync('correct-horse', 10),
-      '🧪',
+      '🧪'
     );
   });
 

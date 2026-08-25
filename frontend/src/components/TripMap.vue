@@ -33,14 +33,23 @@ import { useLocationSharingStore, type ShareDuration } from '../stores/locationS
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { buildTravelDerivedLocations } from '../utils/travelDerivedLocations';
-import { arcRoute, cachedEmojiPin, compassPin, LEAFLET_ATTRIBUTION_PREFIX } from '../utils/mapRoute';
+import {
+  arcRoute,
+  cachedEmojiPin,
+  compassPin,
+  LEAFLET_ATTRIBUTION_PREFIX,
+} from '../utils/mapRoute';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { MAP_TOOL_ICONS } from '../utils/mapToolIcons';
 import type { IconDef } from '../utils/icon';
 import { downloadTiles, estimateTileDownload, formatApproxSize } from '../utils/offlineMapTiles';
 import { formatDate as formatDateShared, toLocalDateString } from '../utils/dateFormat';
-import { excursionStationKeys, resolveStations, type ExcursionStation } from '../utils/excursionStations';
+import {
+  excursionStationKeys,
+  resolveStations,
+  type ExcursionStation,
+} from '../utils/excursionStations';
 import { interpolateTrackPosition } from '../utils/trackGeometry';
 import { useIsDesktop } from '../composables/useIsDesktop';
 import MiniStationCard from './MiniStationCard.vue';
@@ -211,7 +220,8 @@ const currentBearing = ref(0);
 // webkitCompassHeading, dafür alpha bereits Nord-referenziert über das 'deviceorientationabsolute'-
 // Event; alpha zählt dort gegen den Uhrzeigersinn, daher (360 - alpha) zur Umrechnung.
 function headingFromOrientationEvent(event: DeviceOrientationEvent): number | null {
-  const webkitHeading = (event as DeviceOrientationEvent & { webkitCompassHeading?: number }).webkitCompassHeading;
+  const webkitHeading = (event as DeviceOrientationEvent & { webkitCompassHeading?: number })
+    .webkitCompassHeading;
   if (typeof webkitHeading === 'number') return webkitHeading;
   if (event.alpha == null) return null;
   return (360 - event.alpha) % 360;
@@ -258,7 +268,8 @@ const focusMenuStyle = ref({ top: '0px', left: '0px' });
 const WIDE_PICKER_MENU_WIDTH = 252;
 
 function computeTeleportMenuPosition(triggerRef: any, event?: MouseEvent, menuWidth = 216) {
-  const el = (event?.currentTarget as HTMLElement) || (triggerRef?.value as any)?.$el || triggerRef?.value;
+  const el =
+    (event?.currentTarget as HTMLElement) || (triggerRef?.value as any)?.$el || triggerRef?.value;
   if (!el || typeof el.getBoundingClientRect !== 'function') {
     return { top: '0px', left: '0px' };
   }
@@ -271,7 +282,11 @@ function computeTeleportMenuPosition(triggerRef: any, event?: MouseEvent, menuWi
 
 function toggleFocusMenu(event?: MouseEvent) {
   if (!focusMenuOpen.value) {
-    focusMenuStyle.value = computeTeleportMenuPosition(focusButtonRef, event, WIDE_PICKER_MENU_WIDTH);
+    focusMenuStyle.value = computeTeleportMenuPosition(
+      focusButtonRef,
+      event,
+      WIDE_PICKER_MENU_WIDTH
+    );
     focusMenuOpen.value = true;
   } else {
     focusMenuOpen.value = false;
@@ -295,7 +310,11 @@ const locationMenuStyle = ref({ top: '0px', left: '0px' });
 
 function toggleLocationMenu(event?: MouseEvent) {
   if (!locationMenuOpen.value) {
-    locationMenuStyle.value = computeTeleportMenuPosition(locationButtonRef, event, WIDE_PICKER_MENU_WIDTH);
+    locationMenuStyle.value = computeTeleportMenuPosition(
+      locationButtonRef,
+      event,
+      WIDE_PICKER_MENU_WIDTH
+    );
     locationMenuOpen.value = true;
   } else {
     locationMenuOpen.value = false;
@@ -373,7 +392,8 @@ async function chooseRecordVisibility(visibility: TrackVisibility) {
 // addEventListener nötig) - orientationHandler dient hier nur als "läuft schon?"-Wächter.
 function startCompass() {
   if (orientationHandler) return;
-  orientationEventName = 'ondeviceorientationabsolute' in window ? 'deviceorientationabsolute' : 'deviceorientation';
+  orientationEventName =
+    'ondeviceorientationabsolute' in window ? 'deviceorientationabsolute' : 'deviceorientation';
   orientationHandler = handleOrientation;
   window.addEventListener(orientationEventName, orientationHandler as EventListener);
 }
@@ -514,7 +534,7 @@ const focusedDateStations = computed<ExcursionStation[]>(() => {
     scheduleItems.value,
     excursionsStore.excursions,
     travelItems.value,
-    spotsStore.spots,
+    spotsStore.spots
   );
 });
 
@@ -540,12 +560,17 @@ function dayHasContent(date: string): boolean {
   if (travelItems.value.some((t) => t.date === date)) return true;
   if (
     spotsStore.spots.some(
-      (s) => s.category === 'Unterkunft' && s.start_date && s.end_date && s.start_date <= date && date <= s.end_date,
+      (s) =>
+        s.category === 'Unterkunft' &&
+        s.start_date &&
+        s.end_date &&
+        s.start_date <= date &&
+        date <= s.end_date
     )
   )
     return true;
   return scheduleItems.value.some(
-    (i) => i.lat != null && i.lng != null && i.date <= date && date <= (i.end_date ?? i.date),
+    (i) => i.lat != null && i.lng != null && i.date <= date && date <= (i.end_date ?? i.date)
   );
 }
 
@@ -586,7 +611,11 @@ const visiblePoints = computed(() => {
 const focusedExcursionStations = computed<ExcursionStation[]>(() => {
   const excursion = focusedExcursion.value;
   if (!excursion) return [];
-  return resolveStations(excursionStationKeys(excursion.spot_ids), spotsStore.spots, travelItems.value);
+  return resolveStations(
+    excursionStationKeys(excursion.spot_ids),
+    spotsStore.spots,
+    travelItems.value
+  );
 });
 
 async function loadAll() {
@@ -608,7 +637,9 @@ function openExcursionDetail() {
 
 const openTravelId = ref<number | null>(null);
 const travelDialogOpen = ref(false);
-const openTravel = computed(() => travelItems.value.find((t) => t.id === openTravelId.value) ?? null);
+const openTravel = computed(
+  () => travelItems.value.find((t) => t.id === openTravelId.value) ?? null
+);
 function onTravelDialogUpdate(v: boolean) {
   travelDialogOpen.value = v;
   if (!v) drawers.mapFocusKey = null;
@@ -719,7 +750,9 @@ function fitVacation() {
   }
 }
 
-const accommodationPoints = computed(() => filteredPoints.value.filter((p) => p.category === 'Unterkunft'));
+const accommodationPoints = computed(() =>
+  filteredPoints.value.filter((p) => p.category === 'Unterkunft')
+);
 
 // Zoomt/zentriert nur auf die Unterkünfte – praktisch bei mehreren Unterkünften im selben Urlaub
 // (z. B. Roadtrip), um schnell zwischen ihnen zu vergleichen statt Spots/Reise mit anzuzeigen.
@@ -742,9 +775,13 @@ function fitAccommodations() {
 // dieser Button auf ALLE Ausflüge gleichzeitig, blendet also nichts aus, sondern zoomt nur. Bewusst
 // weiterhin nur auf echte Spot-Stationen beschränkt (Button-Icon 🎒 "Ausflugsziele"), nicht auf
 // Unterkunft/Reise-Stationen – die sind über die eigenen Fokus-Buttons bereits erreichbar.
-const excursionSpotIds = computed(() => new Set(excursionsStore.excursions.flatMap((e) => e.spot_ids)));
+const excursionSpotIds = computed(
+  () => new Set(excursionsStore.excursions.flatMap((e) => e.spot_ids))
+);
 const excursionPoints = computed(() =>
-  filteredPoints.value.filter((p) => p.origin === 'spot' && excursionSpotIds.value.has(Number(p.key.slice('spot-'.length)))),
+  filteredPoints.value.filter(
+    (p) => p.origin === 'spot' && excursionSpotIds.value.has(Number(p.key.slice('spot-'.length)))
+  )
 );
 
 // Zoomt/zentriert nur auf die Spots, die irgendeinem Ausflug zugeordnet sind – praktisch, um sich
@@ -824,7 +861,9 @@ function renderMarkers() {
   // Punkte (die z. B. auch Unterkunft/Reise zur Orientierung enthalten können).
   const excursion = focusedExcursion.value;
   const excursionLatLngs: L.LatLngExpression[] = excursion
-    ? visiblePoints.value.filter((p) => p.origin === 'spot').map((p): L.LatLngExpression => [p.lat, p.lng])
+    ? visiblePoints.value
+        .filter((p) => p.origin === 'spot')
+        .map((p): L.LatLngExpression => [p.lat, p.lng])
     : [];
 
   const dateLatLngs: L.LatLngExpression[] =
@@ -836,7 +875,9 @@ function renderMarkers() {
 
   // "Auf Karte anzeigen"/Pin-Klick setzt drawers.mapFocusKey – hier zentrieren wir dann direkt auf
   // den Punkt (die dezente Pin-Vergrößerung selbst passiert unabhängig davon in iconFor()).
-  const focusPoint = drawers.mapFocusKey ? points.value.find((p) => p.key === drawers.mapFocusKey) : null;
+  const focusPoint = drawers.mapFocusKey
+    ? points.value.find((p) => p.key === drawers.mapFocusKey)
+    : null;
 
   if (excursion) {
     if (excursionLatLngs.length > 1) {
@@ -877,12 +918,18 @@ function renderRoutes() {
   for (const t of travelItems.value) {
     if (drawers.mapFocusDate && t.date !== drawers.mapFocusDate) continue;
     if (t.from_lat != null && t.from_lng != null && t.to_lat != null && t.to_lng != null) {
-      L.polyline(arcRoute([[t.from_lat, t.from_lng], [t.to_lat, t.to_lng]]), {
-        color: TRAVEL_COLOR,
-        weight: 3,
-        opacity: 0.65,
-        dashArray: '6 6',
-      }).addTo(routesLayer);
+      L.polyline(
+        arcRoute([
+          [t.from_lat, t.from_lng],
+          [t.to_lat, t.to_lng],
+        ]),
+        {
+          color: TRAVEL_COLOR,
+          weight: 3,
+          opacity: 0.65,
+          dashArray: '6 6',
+        }
+      ).addTo(routesLayer);
     }
   }
 
@@ -891,7 +938,12 @@ function renderRoutes() {
       .filter((s) => s.lat != null && s.lng != null)
       .map((s): L.LatLngExpression => [s.lat as number, s.lng as number]);
     if (coords.length >= 2) {
-      L.polyline(arcRoute(coords), { color: '#e08e45', weight: 3, opacity: 0.65, dashArray: '6 6' }).addTo(routesLayer);
+      L.polyline(arcRoute(coords), {
+        color: '#e08e45',
+        weight: 3,
+        opacity: 0.65,
+        dashArray: '6 6',
+      }).addTo(routesLayer);
     }
     return;
   }
@@ -906,12 +958,21 @@ function renderRoutes() {
       : [focusedExcursion.value]
     : excursionsStore.excursions.filter((e) => !e.role);
   for (const excursion of excursionsToDraw) {
-    const stations = resolveStations(excursionStationKeys(excursion.spot_ids), spotsStore.spots, travelItems.value);
+    const stations = resolveStations(
+      excursionStationKeys(excursion.spot_ids),
+      spotsStore.spots,
+      travelItems.value
+    );
     const coords: L.LatLngExpression[] = stations
       .filter((s) => s.lat != null && s.lng != null)
       .map((s) => [s.lat as number, s.lng as number]);
     if (coords.length >= 2) {
-      L.polyline(arcRoute(coords), { color: '#e08e45', weight: 3, opacity: 0.65, dashArray: '6 6' }).addTo(routesLayer);
+      L.polyline(arcRoute(coords), {
+        color: '#e08e45',
+        weight: 3,
+        opacity: 0.65,
+        dashArray: '6 6',
+      }).addTo(routesLayer);
     }
   }
 }
@@ -940,7 +1001,10 @@ function updateTrackPlaybackMarker() {
   trackPlaybackLayer.clearLayers();
   const pos = interpolateTrackPosition(focusedTrackPoints.value, trackPlaybackProgress.value);
   if (!pos) return;
-  L.marker([pos.lat, pos.lng], { icon: cachedEmojiPin(FORM_FIELD_ICONS.location, '#2f6fed'), zIndexOffset: 900 }).addTo(trackPlaybackLayer);
+  L.marker([pos.lat, pos.lng], {
+    icon: cachedEmojiPin(FORM_FIELD_ICONS.location, '#2f6fed'),
+    zIndexOffset: 900,
+  }).addTo(trackPlaybackLayer);
 }
 
 // Zeichnet den eigenen (pulsierenden) und die Standort-Marker der anderen gerade auf der Karte
@@ -966,7 +1030,8 @@ function renderPositions() {
     // werden, sonst zeigt er nach einer Kartendrehung in die falsche Richtung. Im Fahrtrichtung-
     // Modus (bearing wird laufend auf den Heading-Wert gesetzt, siehe handleOrientation()) kürzt
     // sich das exakt heraus - der Kegel zeigt dann konstant nach oben.
-    const coneRotation = ownHeading.value == null ? null : (ownHeading.value - currentBearing.value + 360) % 360;
+    const coneRotation =
+      ownHeading.value == null ? null : (ownHeading.value - currentBearing.value + 360) % 360;
     L.marker([ownPosition.value.lat, ownPosition.value.lng], {
       icon: compassPin(auth.user.avatar, '#2f6fed', coneRotation),
       zIndexOffset: 1000,
@@ -1019,8 +1084,9 @@ function jumpToMemberLocation(userId: number) {
 // Nutzer-Klick im Kartenkontext, der sich dafür eignet.
 async function jumpToMyLocation() {
   if (!map || !ownPosition.value) return;
-  const OrientationEventCtor = (window as unknown as { DeviceOrientationEvent?: { requestPermission?: () => Promise<string> } })
-    .DeviceOrientationEvent;
+  const OrientationEventCtor = (
+    window as unknown as { DeviceOrientationEvent?: { requestPermission?: () => Promise<string> } }
+  ).DeviceOrientationEvent;
   if (OrientationEventCtor?.requestPermission && !orientationHandler) {
     try {
       const state = await OrientationEventCtor.requestPermission();
@@ -1051,7 +1117,7 @@ async function downloadOfflineMap() {
   const bounds = map.getBounds();
   const estimate = estimateTileDownload(bounds);
   const confirmed = window.confirm(
-    `Aktuellen Kartenausschnitt für die Offline-Nutzung herunterladen?\n\n${estimate.count} Kacheln, ca. ${formatApproxSize(estimate.approxBytes)}.`,
+    `Aktuellen Kartenausschnitt für die Offline-Nutzung herunterladen?\n\n${estimate.count} Kacheln, ca. ${formatApproxSize(estimate.approxBytes)}.`
   );
   if (!confirmed) return;
 
@@ -1134,7 +1200,7 @@ onMounted(async () => {
         // Zugriff verweigert/fehlgeschlagen – kein Fehlerzustand, die Karte funktioniert weiterhin
         // ohne Live-Standort.
       },
-      { enableHighAccuracy: true, maximumAge: 10_000 },
+      { enableHighAccuracy: true, maximumAge: 10_000 }
     );
   }
 
@@ -1142,8 +1208,9 @@ onMounted(async () => {
   // Berechtigung nutzbar, deshalb hier direkt starten. iOS 13+ ist die Ausnahme (siehe
   // jumpToMyLocation() oben) - dort bleibt DeviceOrientationEvent.requestPermission ungenutzt, bis
   // die Nutzerin dort klickt, ein automatischer Aufruf hier würde ohnehin lautlos verpuffen.
-  const OrientationEventCtor = (window as unknown as { DeviceOrientationEvent?: { requestPermission?: () => Promise<string> } })
-    .DeviceOrientationEvent;
+  const OrientationEventCtor = (
+    window as unknown as { DeviceOrientationEvent?: { requestPermission?: () => Promise<string> } }
+  ).DeviceOrientationEvent;
   if (OrientationEventCtor && !OrientationEventCtor.requestPermission) {
     startCompass();
   }
@@ -1177,14 +1244,14 @@ watch(
     await loadAll();
     renderMarkers();
     renderRoutes();
-  },
+  }
 );
 
 // Fokus-Punkt kann sich ändern, während die Karte bereits sichtbar ist (z. B. zweites
 // "Auf Karte anzeigen" direkt hintereinander).
 watch(
   () => drawers.mapFocusKey,
-  () => renderMarkers(),
+  () => renderMarkers()
 );
 
 // Ausflug-Fokus (Button "Auf Karte anzeigen" in ExcursionCard.vue) blendet andere Spots aus und
@@ -1195,7 +1262,7 @@ watch(
   () => {
     renderMarkers();
     renderRoutes();
-  },
+  }
 );
 
 // Tages-Fokus (ScheduleView.vue's "🗺️ Tag auf Karte anzeigen") – gleicher Grund wie beim
@@ -1205,7 +1272,7 @@ watch(
   () => {
     renderMarkers();
     renderRoutes();
-  },
+  }
 );
 
 // Kategorie-/Status-Filter (ExcursionsView.vue) ändern zwar sofort filteredPoints/visiblePoints
@@ -1218,7 +1285,7 @@ watch(
 watch(
   () => [props.categoryFilter, props.statusFilter],
   () => renderMarkers(),
-  { deep: true },
+  { deep: true }
 );
 
 // Ausflüge werden im excursions-Store gehalten (u. a. für Drag&Drop in die Kalender-Schublade) und
@@ -1227,7 +1294,7 @@ watch(
 watch(
   () => excursionsStore.excursions,
   () => renderRoutes(),
-  { deep: true },
+  { deep: true }
 );
 
 // Unterkunft/Reise/Spots liegen (anders als Ausflüge) nicht in einem gemeinsamen Store, sondern
@@ -1240,12 +1307,16 @@ watch(
     await loadAll();
     renderMarkers();
     renderRoutes();
-  },
+  }
 );
 
 // Standort-Updates anderer Mitglieder (liveSync.ts's position/positions-SSE-Events) – deep, da
 // memberPositions ein reaktives Objekt ist, das in-place mutiert wird (kein Array-Austausch).
-watch(() => liveSync.memberPositions, () => renderPositions(), { deep: true });
+watch(
+  () => liveSync.memberPositions,
+  () => renderPositions(),
+  { deep: true }
+);
 
 // Fokussierte Aufzeichnung wechselt (Klick in ExcursionsView.vue's Aufzeichnungen-Liste, siehe
 // drawers.openMapForTrack()) – Punkte werden erst on-demand geladen (tracksStore.pointsByTrack ist
@@ -1259,12 +1330,15 @@ watch(
       await tracksStore.loadPoints(trackId);
       renderTracks();
     }
-  },
+  }
 );
 // Punkte können auch eintreffen, ohne dass sich mapFocusTrackId selbst ändert (z. B. erneuter
 // Fokus auf einen zuvor schon einmal geladenen, dann aber aktualisierten Track) – reagiert auf die
 // tatsächliche Punkte-Anzahl statt nur auf die Track-id.
-watch(() => focusedTrackPoints.value.length, () => renderTracks());
+watch(
+  () => focusedTrackPoints.value.length,
+  () => renderTracks()
+);
 // Zeit-Slider (TrackPlayback.vue) – nur der leichtgewichtige Marker wird bewegt, nicht die ganze
 // Route neu gezeichnet (siehe updateTrackPlaybackMarker()-Kommentar).
 watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
@@ -1336,20 +1410,34 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
         :aria-label="trackRecording.recording ? 'Aufzeichnung beenden' : 'Standort aufzeichnen'"
         @click="toggleRecordMenu($event)"
       >
-        <AppIcon :icon="trackRecording.recording ? ACTION_ICONS.recordStop : ACTION_ICONS.recordStart" :size="18" group="actions" />
+        <AppIcon
+          :icon="trackRecording.recording ? ACTION_ICONS.recordStop : ACTION_ICONS.recordStart"
+          :size="18"
+          group="actions"
+        />
       </button>
       <Teleport to="body">
         <template v-if="focusMenuOpen">
           <div class="picker-backdrop" @click="focusMenuOpen = false"></div>
           <div class="picker-menu picker-menu-wide" :style="focusMenuStyle">
             <button type="button" :disabled="!filteredPoints.length" @click="selectFocus(fitAll)">
-              <AppIcon :icon="MAP_TOOL_ICONS.fitAll" :size="14" group="actions" /> Alle eingetragenen Orte anzeigen
+              <AppIcon :icon="MAP_TOOL_ICONS.fitAll" :size="14" group="actions" /> Alle
+              eingetragenen Orte anzeigen
             </button>
-            <button type="button" :disabled="!vacationPoints.length" @click="selectFocus(fitVacation)">
+            <button
+              type="button"
+              :disabled="!vacationPoints.length"
+              @click="selectFocus(fitVacation)"
+            >
               <AppIcon :icon="MAP_TOOL_ICONS.vacation" :size="14" group="actions" /> Nur Urlaubsort
             </button>
-            <button type="button" :disabled="!accommodationPoints.length" @click="selectFocus(fitAccommodations)">
-              <AppIcon :icon="MAP_TOOL_ICONS.accommodation" :size="14" group="actions" /> Nur Unterkünfte
+            <button
+              type="button"
+              :disabled="!accommodationPoints.length"
+              @click="selectFocus(fitAccommodations)"
+            >
+              <AppIcon :icon="MAP_TOOL_ICONS.accommodation" :size="14" group="actions" /> Nur
+              Unterkünfte
             </button>
             <button
               v-if="excursionsStore.excursions.length"
@@ -1364,13 +1452,20 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
         <template v-if="locationMenuOpen">
           <div class="picker-backdrop" @click="locationMenuOpen = false"></div>
           <div class="picker-menu picker-menu-wide" :style="locationMenuStyle">
-            <button type="button" :disabled="!ownPosition" @click="selectLocation(jumpToMyLocation)">
+            <button
+              type="button"
+              :disabled="!ownPosition"
+              @click="selectLocation(jumpToMyLocation)"
+            >
               <!-- Eigenes Avatar-Emoji statt eines generischen Pin-/Fadenkreuz-Icons - eindeutiger
                    erkennbar als "das bin ich", konsistent mit dem eigenen Marker auf der Karte selbst
                    (compassPin(), renderPositions() oben). Bewusst immer Emoji, unabhängig von der
                    Icon-Stil-Einstellung (siehe DESIGN.md "Icons") - ein frei gewähltes Avatar hat kein
                    sinnvolles festes Tabler-Äquivalent. -->
-              <span class="picker-item-emoji" aria-hidden="true">{{ auth.user?.avatar || '📍' }}</span> Zu meinem Standort springen
+              <span class="picker-item-emoji" aria-hidden="true">{{
+                auth.user?.avatar || '📍'
+              }}</span>
+              Zu meinem Standort springen
             </button>
             <!-- #182: Sprung zum Standort anderer Mitreisender - immer alle Mitglieder aufgelistet,
                  aber nur klickbar (bunt), wer gerade tatsächlich Standort teilt (hasMemberPosition);
@@ -1383,35 +1478,50 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
               :title="`${member.username} teilt gerade ${hasMemberPosition(member.id) ? '' : 'keinen '}Standort`"
               @click="selectLocation(() => jumpToMemberLocation(member.id))"
             >
-              <span class="picker-item-emoji" :class="{ offline: !isMemberOnline(member.id) }" aria-hidden="true">
+              <span
+                class="picker-item-emoji"
+                :class="{ offline: !isMemberOnline(member.id) }"
+                aria-hidden="true"
+              >
                 {{ member.avatar }}
                 <span v-if="isMemberOnline(member.id)" class="online-dot" aria-hidden="true" />
               </span>
               Zu Standort von {{ member.username }} springen
             </button>
-            <button type="button" :class="{ active: mapOrientation.mode === 'north' }" @click="selectLocation(() => setMapOrientationMode('north'))">
-              <AppIcon :icon="MAP_TOOL_ICONS.orientationNorth" :size="14" group="actions" /> Norden oben
+            <button
+              type="button"
+              :class="{ active: mapOrientation.mode === 'north' }"
+              @click="selectLocation(() => setMapOrientationMode('north'))"
+            >
+              <AppIcon :icon="MAP_TOOL_ICONS.orientationNorth" :size="14" group="actions" /> Norden
+              oben
             </button>
             <button
               type="button"
               :class="{ active: mapOrientation.mode === 'heading' }"
               @click="selectLocation(() => setMapOrientationMode('heading'))"
             >
-              <AppIcon :icon="MAP_TOOL_ICONS.orientationHeading" :size="14" group="actions" /> Fahrtrichtung oben
+              <AppIcon :icon="MAP_TOOL_ICONS.orientationHeading" :size="14" group="actions" />
+              Fahrtrichtung oben
             </button>
           </div>
         </template>
         <template v-if="shareMenuOpen">
           <div class="picker-backdrop" @click="shareMenuOpen = false"></div>
           <div class="picker-menu" :style="shareMenuStyle">
-            <button type="button" :class="{ active: !locationSharing.shareUntil }" @click="chooseShareDuration('off')">
+            <button
+              type="button"
+              :class="{ active: !locationSharing.shareUntil }"
+              @click="chooseShareDuration('off')"
+            >
               <AppIcon :icon="ACTION_ICONS.off" :size="14" group="actions" /> Nicht teilen
             </button>
             <button type="button" @click="chooseShareDuration('day')">
               <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" /> Für einen Tag
             </button>
             <button type="button" @click="chooseShareDuration('week')">
-              <AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" /> Für eine Woche
+              <AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" /> Für eine
+              Woche
             </button>
             <button type="button" @click="chooseShareDuration('forever')">
               <AppIcon :icon="ACTION_ICONS.forever" :size="14" group="actions" /> Dauerhaft
@@ -1422,7 +1532,9 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
           <div class="picker-backdrop" @click="recordMenuOpen = false"></div>
           <div class="picker-menu" :style="recordMenuStyle">
             <p v-if="focusedExcursion" class="picker-menu-hint">
-              <AppIcon :icon="FORM_FIELD_ICONS.link" :size="14" group="formFields" /> wird an „{{ focusedExcursion.title }}" gekoppelt
+              <AppIcon :icon="FORM_FIELD_ICONS.link" :size="14" group="formFields" /> wird an „{{
+                focusedExcursion.title
+              }}" gekoppelt
             </p>
             <button type="button" @click="chooseRecordVisibility('private')">
               <AppIcon :icon="ACTION_ICONS.private" :size="14" group="actions" /> Privat aufzeichnen
@@ -1434,26 +1546,52 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
         </template>
       </Teleport>
       <div class="tile-download-pill" v-if="trackRecording.startError">
-        <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> {{ trackRecording.startError }}
-        <IconButton variant="ghost" size="sm" :icon="ACTION_ICONS.close" aria-label="Meldung schließen" title="Schließen" @click="trackRecording.startError = null" />
+        <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" />
+        {{ trackRecording.startError }}
+        <IconButton
+          variant="ghost"
+          size="sm"
+          :icon="ACTION_ICONS.close"
+          aria-label="Meldung schließen"
+          title="Schließen"
+          @click="trackRecording.startError = null"
+        />
       </div>
       <div class="tile-download-pill" v-if="tileDownloadState === 'downloading'">
-        <AppIcon :icon="ACTION_ICONS.refresh" :size="14" group="actions" /> Lädt Kartenkacheln… {{ tileDownloadProgress.done }}/{{ tileDownloadProgress.total }}
+        <AppIcon :icon="ACTION_ICONS.refresh" :size="14" group="actions" /> Lädt Kartenkacheln…
+        {{ tileDownloadProgress.done }}/{{ tileDownloadProgress.total }}
       </div>
-      <div class="tile-download-pill" v-else-if="tileDownloadState === 'done' && tileDownloadResult">
-        <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" /> {{ tileDownloadResult.downloaded }} Kacheln offline gespeichert{{
+      <div
+        class="tile-download-pill"
+        v-else-if="tileDownloadState === 'done' && tileDownloadResult"
+      >
+        <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
+        {{ tileDownloadResult.downloaded }} Kacheln offline gespeichert{{
           tileDownloadResult.failed ? `, ${tileDownloadResult.failed} fehlgeschlagen` : ''
         }}
-        <IconButton variant="ghost" size="sm" :icon="ACTION_ICONS.close" aria-label="Meldung schließen" title="Schließen" @click="dismissTileDownloadResult" />
+        <IconButton
+          variant="ghost"
+          size="sm"
+          :icon="ACTION_ICONS.close"
+          aria-label="Meldung schließen"
+          title="Schließen"
+          @click="dismissTileDownloadResult"
+        />
       </div>
       <div class="focus-banner" v-if="focusedExcursion">
-        <span><AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="14" group="navigation" /> {{ focusedExcursion.title }}</span>
+        <span
+          ><AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="14" group="navigation" />
+          {{ focusedExcursion.title }}</span
+        >
         <button type="button" class="card-action-btn" @click="drawers.mapFocusExcursionId = null">
           <AppIcon :icon="ACTION_ICONS.close" :size="14" group="actions" /> Fokus verlassen
         </button>
       </div>
       <div class="focus-banner" v-else-if="drawers.mapFocusDate">
-        <span><AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" /> {{ formatDate(drawers.mapFocusDate) }}</span>
+        <span
+          ><AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" />
+          {{ formatDate(drawers.mapFocusDate) }}</span
+        >
         <button type="button" class="card-action-btn" @click="drawers.mapFocusDate = null">
           <AppIcon :icon="ACTION_ICONS.close" :size="14" group="actions" /> Fokus verlassen
         </button>
@@ -1487,99 +1625,117 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
           <span v-if="dayHasContent(day)" class="day-chip-dot" aria-hidden="true"></span>
         </button>
       </div>
-    <Card class="focus-spot-list" v-if="focusedExcursion && focusedExcursionStations.length">
-      <div class="focus-spot-list-header">
-        <button type="button" class="focus-spot-list-title-btn" @click="openExcursionDetail">
-          <h3 class="focus-spot-list-title">
-            <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="16" group="navigation" /> {{ focusedExcursion.title }}
-          </h3>
-          <span class="focus-spot-list-status" :class="{ planned: focusedExcursion.date }">
-            <template v-if="focusedExcursion.date">
-              <AppIcon :icon="FORM_FIELD_ICONS.date" :size="13" group="formFields" /> {{ formatDate(focusedExcursion.date) }}
-            </template>
-            <template v-else>In Planung</template>
-          </span>
-        </button>
-        <IconButton
-          variant="ghost"
-          size="sm"
-          class="focus-spot-list-close"
-          :icon="ACTION_ICONS.close"
-          aria-label="Tour-Fokus schließen"
-          title="Tour-Fokus schließen"
-          @click="drawers.mapFocusExcursionId = null"
-        />
-      </div>
-      <p class="focus-spot-list-subtitle">Stationen</p>
-      <div class="station-timeline">
-        <template v-for="(station, index) in focusedExcursionStations" :key="index">
-          <button type="button" class="station-node" @click="openStationDetail(station)">
-            <span class="station-order">{{ index + 1 }}</span>
-            <MiniStationCard :station="station" />
+      <Card class="focus-spot-list" v-if="focusedExcursion && focusedExcursionStations.length">
+        <div class="focus-spot-list-header">
+          <button type="button" class="focus-spot-list-title-btn" @click="openExcursionDetail">
+            <h3 class="focus-spot-list-title">
+              <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="16" group="navigation" />
+              {{ focusedExcursion.title }}
+            </h3>
+            <span class="focus-spot-list-status" :class="{ planned: focusedExcursion.date }">
+              <template v-if="focusedExcursion.date">
+                <AppIcon :icon="FORM_FIELD_ICONS.date" :size="13" group="formFields" />
+                {{ formatDate(focusedExcursion.date) }}
+              </template>
+              <template v-else>In Planung</template>
+            </span>
           </button>
-          <div v-if="index < focusedExcursionStations.length - 1" class="station-connector" aria-hidden="true"></div>
-        </template>
-      </div>
-    </Card>
+          <IconButton
+            variant="ghost"
+            size="sm"
+            class="focus-spot-list-close"
+            :icon="ACTION_ICONS.close"
+            aria-label="Tour-Fokus schließen"
+            title="Tour-Fokus schließen"
+            @click="drawers.mapFocusExcursionId = null"
+          />
+        </div>
+        <p class="focus-spot-list-subtitle">Stationen</p>
+        <div class="station-timeline">
+          <template v-for="(station, index) in focusedExcursionStations" :key="index">
+            <button type="button" class="station-node" @click="openStationDetail(station)">
+              <span class="station-order">{{ index + 1 }}</span>
+              <MiniStationCard :station="station" />
+            </button>
+            <div
+              v-if="index < focusedExcursionStations.length - 1"
+              class="station-connector"
+              aria-hidden="true"
+            ></div>
+          </template>
+        </div>
+      </Card>
 
-    <Card class="focus-spot-list" v-else-if="drawers.mapFocusDate && focusedDateStations.length">
-      <div class="focus-spot-list-header">
-        <h3 class="focus-spot-list-title">
-          <AppIcon :icon="FORM_FIELD_ICONS.period" :size="16" group="formFields" /> {{ formatDate(drawers.mapFocusDate) }}
-        </h3>
-        <IconButton
-          variant="ghost"
-          size="sm"
-          class="focus-spot-list-close"
-          :icon="ACTION_ICONS.close"
-          aria-label="Tages-Fokus schließen"
-          title="Tages-Fokus schließen"
-          @click="drawers.mapFocusDate = null"
-        />
-      </div>
-      <p class="focus-spot-list-subtitle">Stationen</p>
-      <div class="station-timeline">
-        <template v-for="(station, index) in focusedDateStations" :key="index">
-          <button type="button" class="station-node" @click="openStationDetail(station)">
-            <span class="station-order">{{ index + 1 }}</span>
-            <MiniStationCard :station="station" />
-          </button>
-          <!-- Verbindungslinie trägt (sofern gesetzt) den Namen der verbindenden Reise-Etappe -
+      <Card class="focus-spot-list" v-else-if="drawers.mapFocusDate && focusedDateStations.length">
+        <div class="focus-spot-list-header">
+          <h3 class="focus-spot-list-title">
+            <AppIcon :icon="FORM_FIELD_ICONS.period" :size="16" group="formFields" />
+            {{ formatDate(drawers.mapFocusDate) }}
+          </h3>
+          <IconButton
+            variant="ghost"
+            size="sm"
+            class="focus-spot-list-close"
+            :icon="ACTION_ICONS.close"
+            aria-label="Tages-Fokus schließen"
+            title="Tages-Fokus schließen"
+            @click="drawers.mapFocusDate = null"
+          />
+        </div>
+        <p class="focus-spot-list-subtitle">Stationen</p>
+        <div class="station-timeline">
+          <template v-for="(station, index) in focusedDateStations" :key="index">
+            <button type="button" class="station-node" @click="openStationDetail(station)">
+              <span class="station-order">{{ index + 1 }}</span>
+              <MiniStationCard :station="station" />
+            </button>
+            <!-- Verbindungslinie trägt (sofern gesetzt) den Namen der verbindenden Reise-Etappe -
                ExcursionStation.connector ist auf der ZIEL-Station der Etappe gesetzt (siehe
                dayStations.ts), beschriftet also die Linie DAVOR. -->
-          <div
-            v-if="index < focusedDateStations.length - 1"
-            class="station-connector"
-            :class="{ labeled: !!focusedDateStations[index + 1].connector }"
-          >
-            <span v-if="focusedDateStations[index + 1].connector" class="connector-label">
-              <AppIcon :icon="focusedDateStations[index + 1].connector!.tabler" :size="13" group="categories" />
-              {{ focusedDateStations[index + 1].connector!.label }}
-            </span>
-          </div>
-        </template>
-      </div>
-    </Card>
+            <div
+              v-if="index < focusedDateStations.length - 1"
+              class="station-connector"
+              :class="{ labeled: !!focusedDateStations[index + 1].connector }"
+            >
+              <span v-if="focusedDateStations[index + 1].connector" class="connector-label">
+                <AppIcon
+                  :icon="focusedDateStations[index + 1].connector!.tabler"
+                  :size="13"
+                  group="categories"
+                />
+                {{ focusedDateStations[index + 1].connector!.label }}
+              </span>
+            </div>
+          </template>
+        </div>
+      </Card>
 
-    <Card class="focus-spot-list" v-else-if="focusedTrack">
-      <div class="focus-spot-list-header">
-        <h3 class="focus-spot-list-title">
-          <AppIcon :icon="ACTION_ICONS.orientationNorth" :size="16" group="actions" />
-          {{ focusedTrack.title || `Aufzeichnung vom ${formatDate(focusedTrack.started_at.slice(0, 10))}` }}
-        </h3>
-        <IconButton
-          variant="ghost"
-          size="sm"
-          class="focus-spot-list-close"
-          :icon="ACTION_ICONS.close"
-          aria-label="Aufzeichnung-Fokus schließen"
-          title="Aufzeichnung-Fokus schließen"
-          @click="drawers.mapFocusTrackId = null"
+      <Card class="focus-spot-list" v-else-if="focusedTrack">
+        <div class="focus-spot-list-header">
+          <h3 class="focus-spot-list-title">
+            <AppIcon :icon="ACTION_ICONS.orientationNorth" :size="16" group="actions" />
+            {{
+              focusedTrack.title ||
+              `Aufzeichnung vom ${formatDate(focusedTrack.started_at.slice(0, 10))}`
+            }}
+          </h3>
+          <IconButton
+            variant="ghost"
+            size="sm"
+            class="focus-spot-list-close"
+            :icon="ACTION_ICONS.close"
+            aria-label="Aufzeichnung-Fokus schließen"
+            title="Aufzeichnung-Fokus schließen"
+            @click="drawers.mapFocusTrackId = null"
+          />
+        </div>
+        <p v-if="focusedTrackPoints.length < 2" class="focus-spot-list-subtitle">Lädt Route…</p>
+        <TrackPlayback
+          v-else
+          :points="focusedTrackPoints"
+          v-model:progress="trackPlaybackProgress"
         />
-      </div>
-      <p v-if="focusedTrackPoints.length < 2" class="focus-spot-list-subtitle">Lädt Route…</p>
-      <TrackPlayback v-else :points="focusedTrackPoints" v-model:progress="trackPlaybackProgress" />
-    </Card>
+      </Card>
     </Teleport>
 
     <TravelDetailDialog
@@ -2145,7 +2301,6 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
   border-radius: 999px;
   border: 1px solid var(--color-border);
 }
-
 
 /* Desktop: zurück auf den bisherigen Stand (Karte als eigene, begrenzte Box statt vollflächigem
    Hintergrund – .map-col in ExcursionsView.vue ist hier eine normale sticky Spalte, kein

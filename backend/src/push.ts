@@ -34,12 +34,15 @@ export function saveSubscription(userId: number, sub: PushSubscriptionInput) {
   db.prepare(
     `INSERT INTO push_subscriptions (user_id, endpoint, p256dh, auth, created_at)
      VALUES (?, ?, ?, ?, ?)
-     ON CONFLICT(endpoint) DO UPDATE SET user_id = excluded.user_id, p256dh = excluded.p256dh, auth = excluded.auth`,
+     ON CONFLICT(endpoint) DO UPDATE SET user_id = excluded.user_id, p256dh = excluded.p256dh, auth = excluded.auth`
   ).run(userId, sub.endpoint, sub.keys.p256dh, sub.keys.auth, new Date().toISOString());
 }
 
 export function removeSubscription(endpoint: string, userId: number) {
-  db.prepare('DELETE FROM push_subscriptions WHERE endpoint = ? AND user_id = ?').run(endpoint, userId);
+  db.prepare('DELETE FROM push_subscriptions WHERE endpoint = ? AND user_id = ?').run(
+    endpoint,
+    userId
+  );
 }
 
 // Alle Domänen, für die Push-Präferenzen einstellbar sind: die 11 recordActivity()-Domänen plus
@@ -69,19 +72,23 @@ interface PushPreferenceRow {
  *  angefasst) werden als `true` aufgefüllt (siehe Kommentar an der Tabellendefinition in
  *  db/index.ts). */
 export function getPushPreferences(userId: number): Record<PushPreferenceDomain, boolean> {
-  const rows = db.prepare('SELECT domain, enabled FROM push_preferences WHERE user_id = ?').all(userId) as PushPreferenceRow[];
+  const rows = db
+    .prepare('SELECT domain, enabled FROM push_preferences WHERE user_id = ?')
+    .all(userId) as PushPreferenceRow[];
   const byDomain = new Map(rows.map((r) => [r.domain, !!r.enabled]));
-  return Object.fromEntries(PUSH_PREFERENCE_DOMAINS.map((d) => [d, byDomain.get(d) ?? true])) as Record<
-    PushPreferenceDomain,
-    boolean
-  >;
+  return Object.fromEntries(
+    PUSH_PREFERENCE_DOMAINS.map((d) => [d, byDomain.get(d) ?? true])
+  ) as Record<PushPreferenceDomain, boolean>;
 }
 
 /** Upsert je übergebenem Domain-Key (Teil- oder Vollmenge von PUSH_PREFERENCE_DOMAINS). */
-export function setPushPreferences(userId: number, prefs: Partial<Record<PushPreferenceDomain, boolean>>) {
+export function setPushPreferences(
+  userId: number,
+  prefs: Partial<Record<PushPreferenceDomain, boolean>>
+) {
   const stmt = db.prepare(
     `INSERT INTO push_preferences (user_id, domain, enabled) VALUES (?, ?, ?)
-     ON CONFLICT(user_id, domain) DO UPDATE SET enabled = excluded.enabled`,
+     ON CONFLICT(user_id, domain) DO UPDATE SET enabled = excluded.enabled`
   );
   for (const [domain, enabled] of Object.entries(prefs)) {
     if (enabled === undefined) continue;
@@ -136,7 +143,7 @@ export async function sendPushToTripMembers(
   tripId: number,
   payload: Record<string, unknown>,
   domain: PushPreferenceDomain,
-  excludeUserId?: number,
+  excludeUserId?: number
 ) {
   if (!pushEnabled) return;
   const subs = (
@@ -148,7 +155,7 @@ export async function sendPushToTripMembers(
              LEFT JOIN push_preferences ON push_preferences.user_id = push_subscriptions.user_id
                AND push_preferences.domain = ?
              WHERE trip_members.trip_id = ? AND push_subscriptions.user_id != ?
-               AND (push_preferences.enabled IS NULL OR push_preferences.enabled = 1)`,
+               AND (push_preferences.enabled IS NULL OR push_preferences.enabled = 1)`
           )
           .all(domain, tripId, excludeUserId)
       : db
@@ -158,7 +165,7 @@ export async function sendPushToTripMembers(
              LEFT JOIN push_preferences ON push_preferences.user_id = push_subscriptions.user_id
                AND push_preferences.domain = ?
              WHERE trip_members.trip_id = ?
-               AND (push_preferences.enabled IS NULL OR push_preferences.enabled = 1)`,
+               AND (push_preferences.enabled IS NULL OR push_preferences.enabled = 1)`
           )
           .all(domain, tripId)
   ) as PushSubscriptionRow[];
@@ -168,21 +175,33 @@ export async function sendPushToTripMembers(
   await Promise.all(
     subs.map(async (sub) => {
       try {
-        await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, body);
+        await webpush.sendNotification(
+          { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+          body
+        );
       } catch (err) {
         const statusCode = (err as { statusCode?: number }).statusCode;
         if (statusCode === 404 || statusCode === 410) {
           db.prepare('DELETE FROM push_subscriptions WHERE endpoint = ?').run(sub.endpoint);
         }
       }
-    }),
+    })
   );
 }
 
 /** Best-effort – wird von activity.ts's recordActivity() nach jeder Mutation angestoßen, blockiert
  *  die auslösende Route nie (siehe dortiger .catch()). */
-export async function notifyTripMembers(tripId: number, excludeUserId: number, info: ActivityPushInfo) {
+export async function notifyTripMembers(
+  tripId: number,
+  excludeUserId: number,
+  info: ActivityPushInfo
+) {
   const title = `${DOMAIN_LABEL[info.domain] ?? info.domain} · ${info.tripName}`;
   const body = `${info.actorUsername} hat ${ACTION_LABEL[info.action] ?? 'etwas geändert'}`;
-  await sendPushToTripMembers(tripId, { title, body, tripId }, info.domain as PushPreferenceDomain, excludeUserId);
+  await sendPushToTripMembers(
+    tripId,
+    { title, body, tripId },
+    info.domain as PushPreferenceDomain,
+    excludeUserId
+  );
 }

@@ -4,7 +4,12 @@ import { spotCategoryMeta } from './spotCategory';
 import { travelTypeIcon, travelTypeIconDef } from './travelTypeIcon';
 import type { IconDef } from './icon';
 
-const LOCATION_FALLBACK_ICON: IconDef = { id: 'map-pin', emoji: '📍', outline: IconMapPin, filled: IconMapPinFilled };
+const LOCATION_FALLBACK_ICON: IconDef = {
+  id: 'map-pin',
+  emoji: '📍',
+  outline: IconMapPin,
+  filled: IconMapPinFilled,
+};
 
 // Löst die generischen station_keys eines Ausflugs (aus Excursion.spot_ids via
 // excursionStationKeys() unten abgeleitet, siehe api/types.ts) zu einem einheitlichen
@@ -54,7 +59,11 @@ export function travelEndpointKey(item: TravelItem, side: 'from' | 'to'): string
 
 const TRAVEL_COLOR = '#4a3aa7';
 
-export function resolveStation(key: string, spots: Spot[], travelItems: TravelItem[]): ExcursionStation | null {
+export function resolveStation(
+  key: string,
+  spots: Spot[],
+  travelItems: TravelItem[]
+): ExcursionStation | null {
   if (key.startsWith('spot-')) {
     const id = Number(key.slice('spot-'.length));
     const spot = spots.find((s) => s.id === id);
@@ -98,8 +107,14 @@ export function resolveStation(key: string, spots: Spot[], travelItems: TravelIt
   return null;
 }
 
-export function resolveStations(keys: string[], spots: Spot[], travelItems: TravelItem[]): ExcursionStation[] {
-  return keys.map((key) => resolveStation(key, spots, travelItems)).filter((s): s is ExcursionStation => !!s);
+export function resolveStations(
+  keys: string[],
+  spots: Spot[],
+  travelItems: TravelItem[]
+): ExcursionStation[] {
+  return keys
+    .map((key) => resolveStation(key, spots, travelItems))
+    .filter((s): s is ExcursionStation => !!s);
 }
 
 /** Baut aus einer Tour-Spot-Id-Liste (Excursion.spot_ids, siehe api/types.ts) die generischen

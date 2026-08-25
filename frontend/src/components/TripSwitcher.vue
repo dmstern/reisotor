@@ -18,8 +18,16 @@ const auth = useAuthStore();
 const open = ref(false);
 const showMembers = ref(false);
 const membersTrip = ref<Trip | null>(null);
-const { showForm, editingTrip, tripFormLocationError, openCreate, openEdit, closeForm, onSubmit, onDelete } =
-  useTripEditor();
+const {
+  showForm,
+  editingTrip,
+  tripFormLocationError,
+  openCreate,
+  openEdit,
+  closeForm,
+  onSubmit,
+  onDelete,
+} = useTripEditor();
 // Issue #96: siehe TripsView.vue's tripCreationBlocked() - dieselbe Regel, hier gedoppelt statt
 // geteilt, weil beide Komponenten bereits unabhängige useTripEditor()-Instanzen halten.
 const tripCreationBlocked = () => !!auth.user?.restricted && tripStore.trips.length > 0;
@@ -33,7 +41,7 @@ watch(
       openEdit(tripStore.currentTrip);
       close();
     }
-  },
+  }
 );
 
 function toggle() {
@@ -72,7 +80,9 @@ function openMembers(trip: Trip) {
           class="trip-row"
           :class="{ active: trip.id === tripStore.currentTripId }"
         >
-          <button type="button" class="trip-select" @click="selectAndClose(trip.id)">{{ trip.name }}</button>
+          <button type="button" class="trip-select" @click="selectAndClose(trip.id)">
+            {{ trip.name }}
+          </button>
           <div class="row-actions">
             <button
               type="button"
@@ -83,7 +93,15 @@ function openMembers(trip: Trip) {
             >
               <AppIcon :icon="FORM_FIELD_ICONS.visibility" :size="15" group="formFields" />
             </button>
-            <EditButton small @click="() => { openEdit(trip); close(); }" />
+            <EditButton
+              small
+              @click="
+                () => {
+                  openEdit(trip);
+                  close();
+                }
+              "
+            />
             <DeleteButton small @click="onDelete(trip)" />
           </div>
         </div>
@@ -92,12 +110,19 @@ function openMembers(trip: Trip) {
           v-if="!tripCreationBlocked()"
           type="button"
           class="new-trip-btn"
-          @click="() => { openCreate(); close(); }"
+          @click="
+            () => {
+              openCreate();
+              close();
+            }
+          "
         >
           + Neuer Urlaub
         </button>
         <p v-else class="empty">Eingeschränkter Modus - Nur ein Urlaub pro Nutzer</p>
-        <router-link to="/trips" class="manage-trips-btn" @click="close">Alle Urlaube verwalten</router-link>
+        <router-link to="/trips" class="manage-trips-btn" @click="close"
+          >Alle Urlaube verwalten</router-link
+        >
       </div>
     </template>
 

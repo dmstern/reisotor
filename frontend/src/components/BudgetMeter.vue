@@ -45,7 +45,8 @@ function fmt(n: number) {
     </div>
     <p v-if="!hasTarget" class="no-target">Kein Ziel gesetzt</p>
     <p v-if="isOver" class="over-badge">
-      <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> {{ fmt(overBy) }} über {{ format === 'count' ? 'Ziel' : 'Budget' }}
+      <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> {{ fmt(overBy) }} über
+      {{ format === 'count' ? 'Ziel' : 'Budget' }}
     </p>
   </div>
 </template>

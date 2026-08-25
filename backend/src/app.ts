@@ -46,12 +46,18 @@ export async function buildApp(opts: { logger?: boolean } = {}) {
   // logger per Options-Override abschaltbar (Tests) - Default bleibt true, wie bisher.
   // 20 MB statt 10 MB: Datei-Anhänge (routes/attachments.ts) erlauben bis zu 15 MB Rohdateigröße,
   // Base64-Kodierung hat ~33% Overhead.
-  const app = Fastify({ logger: opts.logger ?? true, bodyLimit: 20 * 1024 * 1024, trustProxy: true });
+  const app = Fastify({
+    logger: opts.logger ?? true,
+    bodyLimit: 20 * 1024 * 1024,
+    trustProxy: true,
+  });
 
   // CORS_ORIGIN erlaubt der e2e-Testsuite (/e2e), Backend+Frontend auf eigenen Ports parallel zum
   // normalen lokalen Dev-Server laufen zu lassen, ohne dessen Origin (Default: Vite auf 5173) zu
   // verändern. Kommagetrennt für mehrere Origins.
-  const devOrigins = process.env.CORS_ORIGIN?.split(',').map((o) => o.trim()) ?? ['http://localhost:5173'];
+  const devOrigins = process.env.CORS_ORIGIN?.split(',').map((o) => o.trim()) ?? [
+    'http://localhost:5173',
+  ];
   await app.register(cors, {
     origin: isProd ? false : devOrigins,
     credentials: true,
@@ -110,7 +116,7 @@ export async function buildApp(opts: { logger?: boolean } = {}) {
         await protectedApi.register(notificationsRoutes);
       });
     },
-    { prefix: '/api' },
+    { prefix: '/api' }
   );
 
   await app.ready();

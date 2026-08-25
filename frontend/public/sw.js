@@ -29,14 +29,15 @@ registerRoute(new NavigationRoute(createHandlerBoundToURL('/index.html')));
 // Offline-Fall) - das kann leicht in die Tausende Kacheln gehen; ein zu knapper Deckel würde gerade
 // erst heruntergeladene Kacheln durch die eigene Downloadschleife selbst wieder verdrängen.
 registerRoute(
-  ({ url }) => url.hostname.endsWith('.tile.openstreetmap.org') && /\/\d+\/\d+\/\d+\.png$/.test(url.pathname),
+  ({ url }) =>
+    url.hostname.endsWith('.tile.openstreetmap.org') && /\/\d+\/\d+\/\d+\.png$/.test(url.pathname),
   new CacheFirst({
     cacheName: 'osm-tiles',
     plugins: [
       new CacheableResponsePlugin({ statuses: [0, 200] }),
       new ExpirationPlugin({ maxEntries: 3000, maxAgeSeconds: 30 * 24 * 60 * 60 }),
     ],
-  }),
+  })
 );
 
 // PwaUpdatePrompt.vue's "Neu laden"-Button ruft vite-plugin-pwa's updateSW(true) auf, das genau
@@ -63,7 +64,7 @@ self.addEventListener('push', (event) => {
       icon: '/icons/icon-192.png',
       badge: '/icons/icon-192.png',
       data: { url: tripId ? '/' : '/' },
-    }),
+    })
   );
 });
 
@@ -78,6 +79,6 @@ self.addEventListener('notificationclick', (event) => {
         if ('focus' in client) return client.focus();
       }
       return self.clients.openWindow(targetUrl);
-    }),
+    })
   );
 });

@@ -25,10 +25,12 @@ export async function getExistingSubscription(): Promise<PushSubscription | null
  *  ans Backend (routes/push.ts) – wirft, falls die Berechtigung verweigert wird oder Push serverseitig
  *  nicht konfiguriert ist (kein VAPID-Schlüssel, siehe push.ts), der Aufrufer zeigt das als Fehler an. */
 export async function subscribeToPush(): Promise<void> {
-  if (!isPushSupported()) throw new Error('Push-Benachrichtigungen werden von diesem Browser nicht unterstützt');
+  if (!isPushSupported())
+    throw new Error('Push-Benachrichtigungen werden von diesem Browser nicht unterstützt');
 
   const permission = await Notification.requestPermission();
-  if (permission !== 'granted') throw new Error('Berechtigung für Benachrichtigungen wurde nicht erteilt');
+  if (permission !== 'granted')
+    throw new Error('Berechtigung für Benachrichtigungen wurde nicht erteilt');
 
   const { publicKey } = await api.get<{ publicKey: string }>('/push/vapid-public-key');
   const registration = await navigator.serviceWorker.ready;

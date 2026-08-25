@@ -13,7 +13,7 @@ export function usePersistedRef<T>(key: string, defaultValue: T): Ref<T> {
     (v) => {
       localStorage.setItem(key, JSON.stringify(v));
     },
-    { flush: 'sync' },
+    { flush: 'sync' }
   );
 
   return value;

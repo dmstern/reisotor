@@ -41,7 +41,7 @@ async function waitForPreviewServer(): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
   throw new Error(
-    `vite preview auf ${previewUrl} nicht innerhalb von 30s erreichbar geworden. Letzter Fehler: ${String(lastError)}. Ausgabe:\n${previewOutput}`,
+    `vite preview auf ${previewUrl} nicht innerhalb von 30s erreichbar geworden. Letzter Fehler: ${String(lastError)}. Ausgabe:\n${previewOutput}`
   );
 }
 
@@ -58,7 +58,7 @@ test.describe.serial('Offline-Kartenkacheln (Workbox Runtime Caching)', () => {
         cwd: frontendDir,
         env: { ...process.env, API_PROXY_TARGET: `http://127.0.0.1:${E2E_BACKEND_PORT}` },
         stdio: 'pipe',
-      },
+      }
     );
     previewProcess.stdout?.on('data', (chunk) => (previewOutput += chunk.toString()));
     previewProcess.stderr?.on('data', (chunk) => (previewOutput += chunk.toString()));
@@ -78,13 +78,15 @@ test.describe.serial('Offline-Kartenkacheln (Workbox Runtime Caching)', () => {
   // ausgehen, nicht direkt von der Seite.
   const FAKE_TILE_PNG = Buffer.from(
     'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
-    'base64',
+    'base64'
   );
 
-  test('bereits angesehene Kartenkacheln bleiben nach einem Offline-Reload sichtbar', async ({ browser }) => {
+  test('bereits angesehene Kartenkacheln bleiben nach einem Offline-Reload sichtbar', async ({
+    browser,
+  }) => {
     const context = await newContextWithReducedMotion(browser, { storageState: authFile });
     await context.route('https://*.tile.openstreetmap.org/**/*.png', (route) =>
-      route.fulfill({ status: 200, contentType: 'image/png', body: FAKE_TILE_PNG }),
+      route.fulfill({ status: 200, contentType: 'image/png', body: FAKE_TILE_PNG })
     );
     const page = await context.newPage();
 
@@ -132,10 +134,12 @@ test.describe.serial('Offline-Kartenkacheln (Workbox Runtime Caching)', () => {
   // Offline-Fall herunterladen, bevor man tatsächlich offline ist) - derselbe Mock-Ansatz wie oben
   // (echte Requests gegen tile.openstreetmap.org verbietet deren Nutzungsrichtlinie), hier zusätzlich
   // ein Dialog-Handler für den window.confirm()-Bestätigungsdialog vor dem eigentlichen Download.
-  test('sichtbarer Kartenausschnitt lässt sich vorab für die Offline-Nutzung herunterladen', async ({ browser }) => {
+  test('sichtbarer Kartenausschnitt lässt sich vorab für die Offline-Nutzung herunterladen', async ({
+    browser,
+  }) => {
     const context = await newContextWithReducedMotion(browser, { storageState: authFile });
     await context.route('https://*.tile.openstreetmap.org/**/*.png', (route) =>
-      route.fulfill({ status: 200, contentType: 'image/png', body: FAKE_TILE_PNG }),
+      route.fulfill({ status: 200, contentType: 'image/png', body: FAKE_TILE_PNG })
     );
     const page = await context.newPage();
     page.on('dialog', (dialog) => dialog.accept());
@@ -146,7 +150,9 @@ test.describe.serial('Offline-Kartenkacheln (Workbox Runtime Caching)', () => {
     await page.waitForFunction(() => navigator.serviceWorker.controller !== null);
 
     await page.locator('.offline-download-btn').click();
-    await expect(page.locator('.tile-download-pill')).toContainText('offline gespeichert', { timeout: 30_000 });
+    await expect(page.locator('.tile-download-pill')).toContainText('offline gespeichert', {
+      timeout: 30_000,
+    });
     await expect(page.locator('.tile-download-pill')).not.toContainText('fehlgeschlagen');
 
     await page.locator('.tile-download-pill button').click();

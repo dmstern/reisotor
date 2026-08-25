@@ -56,7 +56,11 @@ const router = createRouter({
     { path: '/packing', redirect: '/listen?tab=packing' },
     { path: '/shopping', redirect: '/listen?tab=shopping' },
     { path: '/todo', redirect: '/listen?tab=todo' },
-    { path: '/excursions', name: 'excursions', component: () => import('../views/ExcursionsView.vue') },
+    {
+      path: '/excursions',
+      name: 'excursions',
+      component: () => import('../views/ExcursionsView.vue'),
+    },
     // Kalender ist auf Desktop weiterhin eine globale Schublade (App.vue, über die seitliche Lasche
     // erreichbar) – dieselbe Komponente dient hier zusätzlich als eigenständige Mobil-Seite
     // (NavBar.vue verlinkt nur dorthin, auf Desktop bleibt dieser Nav-Punkt ausgeblendet). Kein

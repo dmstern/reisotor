@@ -41,7 +41,8 @@ function onBlur(event: FocusEvent) {
   // ein blur auf diesem Eingabefeld aus - ohne Verzögerung würde die Zeile schon einklappen, bevor
   // die Auswahl im Zusatzfeld ankommt.
   window.setTimeout(() => {
-    if (!label.value.trim() && !formRef.value?.contains(document.activeElement)) focused.value = false;
+    if (!label.value.trim() && !formRef.value?.contains(document.activeElement))
+      focused.value = false;
   }, 150);
 }
 </script>

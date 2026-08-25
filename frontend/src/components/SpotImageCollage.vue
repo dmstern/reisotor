@@ -12,7 +12,12 @@ const extraCount = computed(() => Math.max(0, props.images.length - 4));
 
 <template>
   <div class="collage" :class="`count-${shown.length}`">
-    <div v-for="(img, i) in shown" :key="img + i" class="tile" :style="{ backgroundImage: `url(${img})` }">
+    <div
+      v-for="(img, i) in shown"
+      :key="img + i"
+      class="tile"
+      :style="{ backgroundImage: `url(${img})` }"
+    >
       <span v-if="i === shown.length - 1 && extraCount > 0" class="more">+{{ extraCount }}</span>
     </div>
   </div>

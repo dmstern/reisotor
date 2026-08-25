@@ -22,7 +22,22 @@ const avatar = ref('🙂');
 const submitting = ref(false);
 const error = ref('');
 
-const AVATAR_OPTIONS = ['🙂', '🧑', '👩', '👨', '😎', '🥳', '🤓', '🥸', '🧙', '🦊', '🦁', '🐢', '🐱', '🐶'];
+const AVATAR_OPTIONS = [
+  '🙂',
+  '🧑',
+  '👩',
+  '👨',
+  '😎',
+  '🥳',
+  '🤓',
+  '🥸',
+  '🧙',
+  '🦊',
+  '🦁',
+  '🐢',
+  '🐱',
+  '🐶',
+];
 
 function resetForm() {
   username.value = '';
@@ -40,7 +55,7 @@ watch(
       resetForm();
     }
   },
-  { immediate: true },
+  { immediate: true }
 );
 
 function close() {
@@ -150,7 +165,10 @@ async function submit() {
         <Button type="button" class="secondary" @click="close">Abbrechen</Button>
         <Button type="submit" class="primary" :disabled="submitting">
           <template v-if="submitting">Speichere…</template>
-          <template v-else><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Nutzer anlegen</template>
+          <template v-else
+            ><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Nutzer
+            anlegen</template
+          >
         </Button>
       </div>
     </form>
@@ -210,7 +228,9 @@ async function submit() {
   padding: var(--space-1) var(--space-2);
   font-size: 1.1rem;
   cursor: pointer;
-  transition: transform 0.1s ease, border-color 0.1s ease;
+  transition:
+    transform 0.1s ease,
+    border-color 0.1s ease;
 }
 
 .avatar-option:hover {

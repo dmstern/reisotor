@@ -1,6 +1,12 @@
 import type { Excursion, ScheduleItem, Spot, TravelItem } from '../api/types';
 import { SCHEDULE_CATEGORY_META } from './scheduleCategory';
-import { excursionStationKeys, resolveStation, resolveStations, travelEndpointKey, type ExcursionStation } from './excursionStations';
+import {
+  excursionStationKeys,
+  resolveStation,
+  resolveStations,
+  travelEndpointKey,
+  type ExcursionStation,
+} from './excursionStations';
 import { travelTypeIcon, travelTypeIconDef } from './travelTypeIcon';
 
 /** Alle Orte eines Kalendertages – über alle Quellen hinweg (Termine, Reise-Etappen, Unterkunft,
@@ -13,7 +19,7 @@ export function buildDayStations(
   scheduleItems: ScheduleItem[],
   excursions: Excursion[],
   travelItems: TravelItem[],
-  spots: Spot[],
+  spots: Spot[]
 ): ExcursionStation[] {
   const timed: { time: string | null; station: ExcursionStation }[] = [];
 
@@ -73,7 +79,14 @@ export function buildDayStations(
     if (to) {
       timed.push({
         time: t.arrival_time ?? t.departure_time,
-        station: { ...to, connector: { icon: travelTypeIcon(t.type, '📍'), tabler: travelTypeIconDef(t.type), label: t.title } },
+        station: {
+          ...to,
+          connector: {
+            icon: travelTypeIcon(t.type, '📍'),
+            tabler: travelTypeIconDef(t.type),
+            label: t.title,
+          },
+        },
       });
       previousTravelKey = to.key;
     }
@@ -83,7 +96,12 @@ export function buildDayStations(
   // jedem Tag ihres Aufenthaltszeitraums (start_date..end_date) automatisch eine Station, ohne dass
   // sie einem Ausflug zugeordnet sein müssen.
   for (const s of spots.filter(
-    (s) => s.category === 'Unterkunft' && s.start_date && s.end_date && s.start_date <= date && date <= s.end_date,
+    (s) =>
+      s.category === 'Unterkunft' &&
+      s.start_date &&
+      s.end_date &&
+      s.start_date <= date &&
+      date <= s.end_date
   )) {
     const station = resolveStation(`spot-${s.id}`, spots, travelItems);
     if (station) timed.push({ time: null, station });

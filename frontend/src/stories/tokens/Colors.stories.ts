@@ -28,7 +28,12 @@ export const ColorPalette: Story = {
           tokens: [
             { var: '--color-primary', name: 'Marken-Grün', light: '#2a7f74', dark: '#3da296' },
             { var: '--color-primary-dark', name: 'Hover-Grün', light: '#1f6059', dark: '#7dd0c1' },
-            { var: '--color-primary-tint', name: 'Leichter Grünton', light: '#eaf3f1', dark: '#1c2e2a' },
+            {
+              var: '--color-primary-tint',
+              name: 'Leichter Grünton',
+              light: '#eaf3f1',
+              dark: '#1c2e2a',
+            },
             { var: '--color-hover', name: 'Hover-Fläche', light: '#f4f1ec', dark: '#2a2823' },
           ],
         },
@@ -38,9 +43,24 @@ export const ColorPalette: Story = {
             { var: '--color-accent', name: 'Echtzeit-Update', light: '#e08e45', dark: '#f0a05a' },
             { var: '--color-danger', name: 'Gefahr / Warnung', light: '#c1503f', dark: '#e0685a' },
             { var: '--color-success', name: 'Erfolgs-Status', light: '#3f8f5c', dark: '#5cb37e' },
-            { var: '--color-scheduled', name: 'Geplante Termine', light: '#1e96d1', dark: '#52b8ea' },
-            { var: '--color-highlight', name: 'Notiz-Highlight', light: '#fff4e8', dark: '#332a1c' },
-            { var: '--color-accent-secondary', name: 'Indigo-Akzent', light: '#5b6ee1', dark: '#8b98f0' },
+            {
+              var: '--color-scheduled',
+              name: 'Geplante Termine',
+              light: '#1e96d1',
+              dark: '#52b8ea',
+            },
+            {
+              var: '--color-highlight',
+              name: 'Notiz-Highlight',
+              light: '#fff4e8',
+              dark: '#332a1c',
+            },
+            {
+              var: '--color-accent-secondary',
+              name: 'Indigo-Akzent',
+              light: '#5b6ee1',
+              dark: '#8b98f0',
+            },
           ],
         },
       ];
