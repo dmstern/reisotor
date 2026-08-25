@@ -87,6 +87,7 @@ async function remove(attachment: Attachment) {
           v-if="editable"
           variant="ghost"
           size="sm"
+          class="remove-btn"
           :icon="ACTION_ICONS.close"
           title="Anhang löschen"
           aria-label="Anhang löschen"
