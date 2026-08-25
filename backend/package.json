@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "node scripts/generate-build-info.mjs && tsx watch src/server.ts",
+    "typecheck": "tsc --noEmit",
     "build": "tsc && node scripts/generate-build-info.mjs",
     "start": "node dist/server.js",
     "seed": "tsx src/db/seed.ts",
