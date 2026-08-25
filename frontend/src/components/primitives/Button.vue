@@ -203,6 +203,8 @@ const hasDefaultSlot = () =>
 .btn--sm {
   padding: 6px 12px;
   font-size: 0.85rem;
+  min-height: 32px;
+  box-sizing: border-box;
 }
 
 .btn--lg {
