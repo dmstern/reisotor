@@ -5,6 +5,7 @@ import type { Trip, User } from '../api/types';
 import Modal from './Modal.vue';
 import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
+import IconButton from './primitives/IconButton.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
 // Deckel aus Issue #96 (registrationConfig.ts's RESTRICTED_MAX_MEMBERS) - hier dupliziert statt
@@ -94,15 +95,14 @@ function close() {
       <ul class="member-list">
         <li v-for="u in members" :key="u.id">
           <span>{{ u.avatar }} {{ u.username }}</span>
-          <Button
+          <IconButton
             variant="secondary"
-            class="remove-btn"
+            size="sm"
+            :icon="ACTION_ICONS.close"
             title="Entfernen"
             aria-label="Entfernen"
             @click="removeMember(u)"
-          >
-            <AppIcon :icon="ACTION_ICONS.close" :size="14" group="actions" />
-          </Button>
+          />
         </li>
         <li v-if="!members.length" class="empty">Noch keine Mitglieder.</li>
       </ul>

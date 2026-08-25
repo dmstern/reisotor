@@ -9,8 +9,7 @@
 // Dialog stattdessen auf die verfügbare Höhe; das Formular (und darin per :slotted() jedes
 // textarea, siehe unten) wächst mit, alle anderen Felder behalten ihre natürliche Höhe.
 import { onUnmounted, watch } from 'vue';
-import AppIcon from './AppIcon.vue';
-import Button from './primitives/Button.vue';
+import IconButton from './primitives/IconButton.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
 const props = defineProps<{ modelValue: boolean; title?: string; hideHeader?: boolean; fullHeight?: boolean }>();
@@ -51,9 +50,7 @@ onUnmounted(() => {
         <div class="modal" :class="{ 'full-height': fullHeight }">
           <div class="modal-head" v-if="!hideHeader">
             <h2 v-if="title">{{ title }}</h2>
-            <Button variant="ghost" class="close-btn" @click="close">
-              <AppIcon :icon="ACTION_ICONS.close" :size="16" group="actions" />
-            </Button>
+            <IconButton variant="ghost" class="close-btn" :icon="ACTION_ICONS.close" size="sm" title="Schließen" aria-label="Schließen" @click="close" />
           </div>
           <div class="modal-body">
             <slot :close="close" />

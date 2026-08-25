@@ -47,6 +47,7 @@ import type { IconDef } from '../utils/icon';
 import AppIcon from '../components/AppIcon.vue';
 import Button from '../components/primitives/Button.vue';
 import ButtonGroup from '../components/primitives/ButtonGroup.vue';
+import IconButton from '../components/primitives/IconButton.vue';
 
 // Touren-Verwaltung (Anlegen/Bearbeiten/Einplanen) ist seit dem Zurückbau des früheren "erweiterten
 // Touren-Modus" (vormals eine eigenständige Ausflüge-Schublade, views/ExcursionsDrawer.vue) Teil
@@ -2279,16 +2280,12 @@ async function removeSpot(id: number) {
             <div class="filter-chips" v-if="categoryFilter.length || statusFilter.length">
               <span v-for="cat in categoryFilter" :key="cat" class="filter-chip">
                 <AppIcon :icon="groupIconDef(cat)" :size="13" group="categories" /> {{ cat }}
-                <button type="button" @click="removeCategoryFilter(cat)" aria-label="Filter entfernen">
-                  <AppIcon :icon="ACTION_ICONS.close" :size="12" group="actions" />
-                </button>
+                <IconButton variant="ghost" size="sm" :icon="ACTION_ICONS.close" aria-label="Filter entfernen" title="Filter entfernen" @click="removeCategoryFilter(cat)" />
               </span>
               <span v-for="status in statusFilter" :key="status" class="filter-chip">
                 <AppIcon :icon="STATUS_FILTER_ICON[status]" :size="13" group="actions" />
                 {{ STATUS_FILTER_LABEL[status] }}
-                <button type="button" @click="removeStatusFilter(status)" aria-label="Filter entfernen">
-                  <AppIcon :icon="ACTION_ICONS.close" :size="12" group="actions" />
-                </button>
+                <IconButton variant="ghost" size="sm" :icon="ACTION_ICONS.close" aria-label="Filter entfernen" title="Filter entfernen" @click="removeStatusFilter(status)" />
               </span>
             </div>
           </div>

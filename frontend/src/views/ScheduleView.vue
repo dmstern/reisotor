@@ -25,6 +25,7 @@ import ViewLoadingState from '../components/ViewLoadingState.vue';
 import DraftStatusBar from '../components/DraftStatusBar.vue';
 import AppIcon from '../components/AppIcon.vue';
 import Button from '../components/primitives/Button.vue';
+import IconButton from '../components/primitives/IconButton.vue';
 import WeatherIcon from '../components/WeatherIcon.vue';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
 import { SCHEDULE_CATEGORY_META } from '../utils/scheduleCategory';
@@ -860,13 +861,25 @@ function formatDate(date: string) {
         />
       </div>
       <div class="pager">
-        <button type="button" class="secondary page-btn" :disabled="!canGoPrev" @click="prevPage" aria-label="Vorherige Wochen">
-          ‹
-        </button>
+        <IconButton
+          variant="secondary"
+          size="sm"
+          :disabled="!canGoPrev"
+          :icon="ACTION_ICONS.scrollLeft"
+          aria-label="Vorherige Wochen"
+          title="Vorherige Wochen"
+          @click="prevPage"
+        />
         <span class="range-label">{{ visibleRangeLabel }}</span>
-        <button type="button" class="secondary page-btn" :disabled="!canGoNext" @click="nextPage" aria-label="Nächste Wochen">
-          ›
-        </button>
+        <IconButton
+          variant="secondary"
+          size="sm"
+          :disabled="!canGoNext"
+          :icon="ACTION_ICONS.scrollRight"
+          aria-label="Nächste Wochen"
+          title="Nächste Wochen"
+          @click="nextPage"
+        />
       </div>
       <div class="jump-row">
         <Button variant="card-action" @click="jumpToToday">

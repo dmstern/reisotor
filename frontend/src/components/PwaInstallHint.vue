@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { usePwaInstallStore } from '../stores/pwaInstall';
 import AppIcon from './AppIcon.vue';
+import IconButton from './primitives/IconButton.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import PwaInstallDialog from './PwaInstallDialog.vue';
 
@@ -17,9 +18,14 @@ const showDialog = ref(false);
     <button type="button" class="pwa-pill-trigger" @click="showDialog = true">
       <AppIcon :icon="ACTION_ICONS.installApp" :size="14" group="actions" /> Als App installierbar
     </button>
-    <button type="button" class="pwa-pill-dismiss-btn" aria-label="Hinweis schließen" @click="install.dismiss()">
-      <AppIcon :icon="ACTION_ICONS.close" :size="14" group="actions" />
-    </button>
+    <IconButton
+      variant="ghost"
+      size="sm"
+      :icon="ACTION_ICONS.close"
+      aria-label="Hinweis schließen"
+      title="Hinweis schließen"
+      @click="install.dismiss()"
+    />
   </span>
   <PwaInstallDialog v-model="showDialog" />
 </template>

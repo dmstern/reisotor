@@ -45,6 +45,7 @@ import { interpolateTrackPosition } from '../utils/trackGeometry';
 import { useIsDesktop } from '../composables/useIsDesktop';
 import MiniStationCard from './MiniStationCard.vue';
 import Card from './primitives/Card.vue';
+import IconButton from './primitives/IconButton.vue';
 import TravelDetailDialog from './TravelDetailDialog.vue';
 import TrackPlayback from './TrackPlayback.vue';
 import AppIcon from './AppIcon.vue';
@@ -1434,9 +1435,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
       </Teleport>
       <div class="tile-download-pill" v-if="trackRecording.startError">
         <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> {{ trackRecording.startError }}
-        <button type="button" class="card-action-btn" @click="trackRecording.startError = null">
-          <AppIcon :icon="ACTION_ICONS.close" :size="14" group="actions" />
-        </button>
+        <IconButton variant="ghost" size="sm" :icon="ACTION_ICONS.close" aria-label="Meldung schließen" title="Schließen" @click="trackRecording.startError = null" />
       </div>
       <div class="tile-download-pill" v-if="tileDownloadState === 'downloading'">
         <AppIcon :icon="ACTION_ICONS.refresh" :size="14" group="actions" /> Lädt Kartenkacheln… {{ tileDownloadProgress.done }}/{{ tileDownloadProgress.total }}
@@ -1445,9 +1444,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
         <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" /> {{ tileDownloadResult.downloaded }} Kacheln offline gespeichert{{
           tileDownloadResult.failed ? `, ${tileDownloadResult.failed} fehlgeschlagen` : ''
         }}
-        <button type="button" class="card-action-btn" @click="dismissTileDownloadResult">
-          <AppIcon :icon="ACTION_ICONS.close" :size="14" group="actions" />
-        </button>
+        <IconButton variant="ghost" size="sm" :icon="ACTION_ICONS.close" aria-label="Meldung schließen" title="Schließen" @click="dismissTileDownloadResult" />
       </div>
       <div class="focus-banner" v-if="focusedExcursion">
         <span><AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="14" group="navigation" /> {{ focusedExcursion.title }}</span>
@@ -1503,15 +1500,15 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
             <template v-else>In Planung</template>
           </span>
         </button>
-        <button
-          type="button"
+        <IconButton
+          variant="ghost"
+          size="sm"
           class="focus-spot-list-close"
+          :icon="ACTION_ICONS.close"
           aria-label="Tour-Fokus schließen"
           title="Tour-Fokus schließen"
           @click="drawers.mapFocusExcursionId = null"
-        >
-          <AppIcon :icon="ACTION_ICONS.close" :size="14" group="actions" />
-        </button>
+        />
       </div>
       <p class="focus-spot-list-subtitle">Stationen</p>
       <div class="station-timeline">
@@ -1530,15 +1527,15 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
         <h3 class="focus-spot-list-title">
           <AppIcon :icon="FORM_FIELD_ICONS.period" :size="16" group="formFields" /> {{ formatDate(drawers.mapFocusDate) }}
         </h3>
-        <button
-          type="button"
+        <IconButton
+          variant="ghost"
+          size="sm"
           class="focus-spot-list-close"
+          :icon="ACTION_ICONS.close"
           aria-label="Tages-Fokus schließen"
           title="Tages-Fokus schließen"
           @click="drawers.mapFocusDate = null"
-        >
-          <AppIcon :icon="ACTION_ICONS.close" :size="14" group="actions" />
-        </button>
+        />
       </div>
       <p class="focus-spot-list-subtitle">Stationen</p>
       <div class="station-timeline">
@@ -1570,15 +1567,15 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
           <AppIcon :icon="ACTION_ICONS.orientationNorth" :size="16" group="actions" />
           {{ focusedTrack.title || `Aufzeichnung vom ${formatDate(focusedTrack.started_at.slice(0, 10))}` }}
         </h3>
-        <button
-          type="button"
+        <IconButton
+          variant="ghost"
+          size="sm"
           class="focus-spot-list-close"
+          :icon="ACTION_ICONS.close"
           aria-label="Aufzeichnung-Fokus schließen"
           title="Aufzeichnung-Fokus schließen"
           @click="drawers.mapFocusTrackId = null"
-        >
-          <AppIcon :icon="ACTION_ICONS.close" :size="14" group="actions" />
-        </button>
+        />
       </div>
       <p v-if="focusedTrackPoints.length < 2" class="focus-spot-list-subtitle">Lädt Route…</p>
       <TrackPlayback v-else :points="focusedTrackPoints" v-model:progress="trackPlaybackProgress" />

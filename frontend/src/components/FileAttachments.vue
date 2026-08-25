@@ -5,6 +5,7 @@ import type { Attachment, AttachmentDomain } from '../api/types';
 import { compressImage } from '../utils/imageCompression';
 import { readAsDataUrl, formatFileSize } from '../utils/fileUpload';
 import AppIcon from './AppIcon.vue';
+import IconButton from './primitives/IconButton.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { useAuthStore } from '../stores/auth';
 
@@ -82,9 +83,15 @@ async function remove(attachment: Attachment) {
           <AppIcon :icon="ACTION_ICONS.attachment" :size="14" group="actions" /> {{ attachment.original_name }}
         </a>
         <span class="size">{{ formatFileSize(attachment.size_bytes) }}</span>
-        <button v-if="editable" type="button" class="remove-btn" title="Anhang löschen" @click="remove(attachment)">
-          <AppIcon :icon="ACTION_ICONS.close" :size="14" group="actions" />
-        </button>
+        <IconButton
+          v-if="editable"
+          variant="ghost"
+          size="sm"
+          :icon="ACTION_ICONS.close"
+          title="Anhang löschen"
+          aria-label="Anhang löschen"
+          @click="remove(attachment)"
+        />
       </li>
     </ul>
     <p v-if="editable && auth.user?.restricted" class="hint">Eingeschränkter Modus - Kein Datei-Upload möglich</p>
