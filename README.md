@@ -201,6 +201,51 @@ Falls Client und Server im selben lokalen Netz hinter demselben Router hängen, 
 - **`LOCAL_HOST`** in der `.env` setzen (z. B. der lokale Hostname/die lokale IP des Servers) – das Skript probiert diesen zuerst und fällt sonst auf `PUBLIC_HOST` zurück.
 - Alternativ (z. B. per `/etc/hosts`) die öffentliche Domain lokal direkt auf die interne IP des Servers auflösen lassen – dann funktioniert auch der Browser-Zugriff auf die App selbst im Heimnetz ohne Umweg, und `LOCAL_HOST` kann in der `.env` weggelassen werden.
 
+### Automatische Updates per Cronjob (Self-Hosting)
+
+Wenn du Reisotor auf einem eigenen Server betreibst und automatisch auf neue Releases aktualisieren möchtest, kannst du einen Cronjob einrichten, der regelmäßig den `deploy`-Branch prüft (auf diesem Branch liegen stets die getesteten Produktions-Releases) und bei Änderungen zieht sowie neu baut.
+
+**Beispiel-Update-Skript auf dem Server (`/home/<nutzer>/update-reisotor.sh`):**
+
+```bash
+#!/usr/bin/env bash
+set -e
+
+CD_PATH="/home/<nutzer>/reisotor"
+cd "$CD_PATH"
+
+# Prüfen, ob ein neues Release auf GitHub vorliegt
+git fetch origin deploy
+LOCAL=$(git rev-parse HEAD)
+REMOTE=$(git rev-parse origin/deploy)
+
+if [ "$LOCAL" != "$REMOTE" ]; then
+    echo "[$(date)] Neues Release auf deploy-Branch gefunden. Starte Update..."
+    git pull origin deploy
+
+    # Backend bauen und neu starten
+    cd "$CD_PATH/backend"
+    npm ci --omit=dev
+    npm run build
+    sudo systemctl restart reisotor
+
+    # Frontend bauen und statische Dateien bereitstellen
+    cd "$CD_PATH/frontend"
+    npm ci
+    npm run build
+    sudo cp -r dist/* /var/www/reisotor/
+
+    echo "[$(date)] Update erfolgreich abgeschlossen."
+fi
+```
+
+**Cronjob einrichten (`crontab -e`):**
+
+```cron
+# Prüft täglich um 04:00 Uhr nachts auf neue Releases
+0 4 * * * /home/<nutzer>/update-reisotor.sh >> /home/<nutzer>/reisotor-update.log 2>&1
+```
+
 ## Bekannte Stolpersteine
 
 - **Leaflet-Kartenmarker unsichtbar:** Leaflets `Icon.Default._getIconUrl` versucht automatisch, den Bildpfad aus einer CSS-Regel (`.leaflet-default-icon-path`) zu erkennen und stellt diesen den eigentlichen Icon-URLs voran – auch wenn man über `mergeOptions` bereits vollständige, von Vite aufgelöste URLs gesetzt hat. Das Ergebnis war eine doppelt verschachtelte, 404-URL, wodurch der Browser nur das `alt`-Attribut ("marker icon", abgeschnitten zu "mark") anzeigte. Gelöst durch eigene Emoji-`divIcon`s statt der Standard-Icons.
