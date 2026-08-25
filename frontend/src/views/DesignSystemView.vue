@@ -345,6 +345,26 @@ const avatarCategories = [
             </div>
           </div>
 
+          <h4 style="margin-bottom: 12px;">Viewport Breakpoints (@media)</h4>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-bottom: 24px;">
+            <div style="padding: 12px; border: 1px solid var(--color-border); border-radius: var(--radius-sm-squircle); background: var(--color-hover);">
+              <code style="font-size: 0.85rem; font-weight: bold; color: var(--color-primary-dark);">&lt; 480px</code>
+              <p style="margin: 4px 0 0; font-size: 0.8rem; color: var(--color-text-muted);">Mobil Schmal: Kartenelemente schalten auf Vertikallayout um.</p>
+            </div>
+            <div style="padding: 12px; border: 1px solid var(--color-border); border-radius: var(--radius-sm-squircle); background: var(--color-hover);">
+              <code style="font-size: 0.85rem; font-weight: bold; color: var(--color-primary-dark);">&ge; 700px</code>
+              <p style="margin: 4px 0 0; font-size: 0.8rem; color: var(--color-text-muted);">Medium: Kalender schaltet von 3-Tage-Ansicht auf 7-Tage-Woche um.</p>
+            </div>
+            <div style="padding: 12px; border: 1px solid var(--color-border); border-radius: var(--radius-sm-squircle); background: var(--color-hover);">
+              <code style="font-size: 0.85rem; font-weight: bold; color: var(--color-primary-dark);">&ge; 800px (Desktop-Standard)</code>
+              <p style="margin: 4px 0 0; font-size: 0.8rem; color: var(--color-text-muted);">Schaltet Mobil (Bottom TabBar) vs. Desktop (Top Sticky Header & feste Sidebars) um.</p>
+            </div>
+            <div style="padding: 12px; border: 1px solid var(--color-border); border-radius: var(--radius-sm-squircle); background: var(--color-hover);">
+              <code style="font-size: 0.85rem; font-weight: bold; color: var(--color-primary-dark);">&ge; 900px</code>
+              <p style="margin: 4px 0 0; font-size: 0.8rem; color: var(--color-text-muted);">Breite Listen: Todo-, Pack- & Einkaufslisten schalten auf Tabellen-Grids um.</p>
+            </div>
+          </div>
+
           <h4 style="margin-bottom: 12px;">Raster-Systeme (.grid & .masonry)</h4>
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
             <div style="padding: 16px; border: 1px solid var(--color-border); border-radius: var(--radius-sm-squircle); background: var(--color-hover);">
