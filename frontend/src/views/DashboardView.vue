@@ -808,6 +808,11 @@ function formatWeekdayDate(d: string) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  box-shadow: none;
+}
+
+.banner-edit-btn:hover {
+  box-shadow: var(--shadow-sm);
 }
 
 /* .secondary ist transparent mit --color-primary-Schrift – über einem Foto (statt dem sonst
@@ -819,10 +824,12 @@ function formatWeekdayDate(d: string) {
   background: rgba(20, 20, 18, 0.55);
   color: #fff;
   border-color: rgba(255, 255, 255, 0.5);
+  box-shadow: none;
 }
 
 .hero.has-image .banner-edit-btn:hover {
   background: rgba(20, 20, 18, 0.75);
+  box-shadow: var(--shadow-sm);
 }
 
 .hero h1 {

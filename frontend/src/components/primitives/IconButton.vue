@@ -18,6 +18,8 @@ withDefaults(
     variant?: 'ghost' | 'secondary' | 'danger';
     /** Größe des Buttons: 'sm' (28px), 'md' (36px), 'lg' (44px). */
     size?: 'sm' | 'md' | 'lg';
+    /** Form-Variante: 'squircle' (Standard) oder 'circle' (kreisrund). */
+    shape?: 'squircle' | 'circle';
     /** Ob der Button als aktiv/ausgewählt markiert ist (z. B. ausgewählter Avatar). */
     active?: boolean;
     /** Deaktiviert-Zustand. */
@@ -32,6 +34,7 @@ withDefaults(
   {
     variant: 'ghost',
     size: 'md',
+    shape: 'squircle',
     active: false,
     disabled: false,
     type: 'button',
@@ -53,6 +56,7 @@ const emit = defineEmits<{
     :class="[
       `icon-btn--${variant}`,
       size !== 'md' ? `icon-btn--${size}` : undefined,
+      shape !== 'squircle' ? `icon-btn--${shape}` : undefined,
       { active },
     ]"
     @click="emit('click', $event)"
@@ -118,6 +122,11 @@ const emit = defineEmits<{
   background: var(--color-danger-tint, rgba(239, 68, 68, 0.1));
   border-color: var(--color-danger);
   color: var(--color-danger);
+}
+
+.icon-btn--circle {
+  border-radius: var(--radius-full);
+  corner-shape: round;
 }
 
 /* Größen */

@@ -77,3 +77,14 @@ export const Active: Story = {
     template: '<IconButton v-bind="args" />',
   }),
 };
+
+export const Circle: Story = {
+  args: { shape: 'circle', variant: 'secondary', icon: ACTION_ICONS.close },
+  render: (args) => ({
+    components: { IconButton },
+    setup() {
+      return { args };
+    },
+    template: '<IconButton v-bind="args" />',
+  }),
+};

@@ -236,7 +236,9 @@ nicht nur im eingebetteten Grundzustand.
 
 1. **Squircle-Superellipsen (`corner-shape: squircle`)**: Cards, (nicht-runde) Buttons, Inputs, Modals und Drawer/Schubladen nutzen `--radius-*-squircle` kombiniert mit `corner-shape: squircle;`.
 2. **Pillen (`--radius-pill: 9999px`)**: Ovale / langgestreckte Pillen für CategoryChips, Badges, TabBar-Indikatoren & SegmentedToggles.
-3. **Kreisrund (`--radius-full: 50%`)**: Exakte Kreise (`aspect-ratio: 1/1` / `width = height`) für Dashboard Tile Card Circle Icons (`44px × 44px`) und runde FAB-Buttons (z. B. in der mobilen Karten-Schublade).
+3. **Kreisrund (`--radius-full: 50%`)**: Exakte Kreise (`aspect-ratio: 1/1` / `width = height`) für Dashboard Tile Card Circle Icons (`44px × 44px`), runde FAB-Buttons & `IconButton` (`shape="circle"`).
+
+**Hero-/Overlay-Action-Buttons & Schatten-Elevation**: Banner-, Hero- und Card-Overlay-Buttons (z. B. der Bearbeiten-Button auf dem `TripBanner`) haben initial **keinen** Schatten (`box-shadow: none`). Sie liegen flach über dem Bild/Banner. Erst bei Hover-Interaktion (`:hover`) steigen sie visuell an und erhalten `box-shadow: var(--shadow-sm)`.
 
 **Cards, (nicht-runde) Buttons, Inputs, Modals und Drawer/Schubladen** bekommen stattdessen die
 "squircle"-Variante (iOS-artige Superellipsen-Rundung statt Kreisbogen) – dafür IMMER beide Teile

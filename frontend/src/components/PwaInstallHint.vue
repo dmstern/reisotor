@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { usePwaInstallStore } from '../stores/pwaInstall';
 import AppIcon from './AppIcon.vue';
+import IconButton from './primitives/IconButton.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import PwaInstallDialog from './PwaInstallDialog.vue';
 
@@ -17,9 +18,15 @@ const showDialog = ref(false);
     <button type="button" class="pwa-pill-trigger" @click="showDialog = true">
       <AppIcon :icon="ACTION_ICONS.installApp" :size="14" group="actions" /> Als App installierbar
     </button>
-    <button type="button" class="pwa-pill-dismiss-btn" aria-label="Hinweis schließen" @click="install.dismiss()">
-      <AppIcon :icon="ACTION_ICONS.close" :size="14" group="actions" />
-    </button>
+    <IconButton
+      variant="ghost"
+      size="sm"
+      class="pwa-pill-dismiss-btn"
+      :icon="ACTION_ICONS.close"
+      aria-label="Hinweis schließen"
+      title="Hinweis schließen"
+      @click="install.dismiss()"
+    />
   </span>
   <PwaInstallDialog v-model="showDialog" />
 </template>
@@ -58,19 +65,12 @@ const showDialog = ref(false);
   cursor: pointer;
 }
 
-.pwa-pill-dismiss-btn {
-  background: rgba(255, 255, 255, 0.25);
-  border: none;
-  color: inherit;
-  font: inherit;
-  font-weight: 700;
-  border-radius: 999px;
-  padding: 2px 8px;
-  cursor: pointer;
-  line-height: 1.4;
+.pwa-pill .pwa-pill-dismiss-btn {
+  color: rgba(255, 255, 255, 0.9);
 }
 
-.pwa-pill-dismiss-btn:hover {
-  background: rgba(255, 255, 255, 0.4);
+.pwa-pill .pwa-pill-dismiss-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
 }
 </style>

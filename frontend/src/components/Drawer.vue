@@ -2,6 +2,7 @@
 import { computed, nextTick, watch, ref } from 'vue';
 import { MAX_DRAWER_WIDTH, MIN_DRAWER_WIDTH, useDrawersStore } from '../stores/drawers';
 import AppIcon from './AppIcon.vue';
+import IconButton from './primitives/IconButton.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import type { IconDef } from '../utils/icon';
 
@@ -120,27 +121,27 @@ function onResizeEnd() {
   <div class="drawer" :class="[side, { open, maximized, resizing }]" :style="{ '--drawer-width': `${width}px` }">
     <div class="drawer-backdrop" v-if="open" @click="emit('update:open', false)"></div>
     <div ref="panelEl" class="drawer-panel">
-      <button
-        v-if="open"
-        type="button"
-        class="maximize-btn"
-        :aria-pressed="maximized"
-        :aria-label="(maximized ? 'Verkleinern: ' : 'Maximieren: ') + label"
-        :title="maximized ? 'Verkleinern' : 'Maximieren'"
-        @click="toggleMaximize"
-      >
-        <AppIcon :icon="maximized ? ACTION_ICONS.minimize : ACTION_ICONS.maximize" :size="16" group="actions" />
-      </button>
-      <button
-        v-if="open"
-        type="button"
-        class="close-drawer-btn"
-        :aria-label="'Schließen: ' + label"
-        title="Schließen"
-        @click="emit('update:open', false)"
-      >
-        <AppIcon :icon="ACTION_ICONS.close" :size="16" group="actions" />
-      </button>
+      <div v-if="open" class="drawer-header-actions">
+        <IconButton
+          class="maximize-btn"
+          variant="secondary"
+          size="sm"
+          :icon="maximized ? ACTION_ICONS.minimize : ACTION_ICONS.maximize"
+          :aria-pressed="maximized"
+          :aria-label="(maximized ? 'Verkleinern: ' : 'Maximieren: ') + label"
+          :title="maximized ? 'Verkleinern' : 'Maximieren'"
+          @click="toggleMaximize"
+        />
+        <IconButton
+          class="close-drawer-btn"
+          variant="secondary"
+          size="sm"
+          :icon="ACTION_ICONS.close"
+          :aria-label="'Schließen: ' + label"
+          title="Schließen"
+          @click="emit('update:open', false)"
+        />
+      </div>
       <div class="drawer-content"><slot /></div>
     </div>
     <!-- Bewusst AUSSERHALB von .drawer-panel (statt wie früher darin verschachtelt): .drawer-panel
@@ -347,38 +348,19 @@ function onResizeEnd() {
   display: none;
 }
 
-/* Maximieren gibt es nur auf Desktop (siehe @media unten) – ausgeklappt ist eine Schublade auf
-   Mobil dank voller Breite (.drawer-panel oben) ohnehin bereits gleichbedeutend mit "maximiert",
-   ein zusätzlicher Button dafür wäre dort überflüssig. Schließen dagegen jetzt auch auf Mobil über
-   diesen Button statt (wie vorher) ausschließlich über die (bei offener Schublade jetzt immer
-   ausgeblendete, siehe .drawer.open .drawer-tab oben) Lasche oder den Backdrop-Klick. */
-.maximize-btn {
-  display: none;
-}
-
-.close-drawer-btn {
-  display: flex;
+.drawer-header-actions {
   position: absolute;
   top: 8px;
   right: 8px;
-  z-index: 14;
-  width: 28px;
-  height: 28px;
+  display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 0;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm-squircle);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-sm);
-  color: var(--color-text-muted);
-  cursor: pointer;
-  font-size: 0.95rem;
-  line-height: 1;
+  gap: var(--space-2);
+  z-index: 14;
 }
 
-.close-drawer-btn:hover {
-  color: var(--color-primary-dark);
+/* Maximieren gibt es nur auf Desktop (siehe @media unten) */
+.maximize-btn {
+  display: none;
 }
 
 /* Desktop: Panel wird echtes Flex-Geschwisterelement (schiebt den Arbeitsbereich zur Seite),
@@ -528,28 +510,10 @@ function onResizeEnd() {
      Schließen-Button selbst ist bereits app-weit (auch mobil) fertig gestylt, hier kommt nur der
      Maximieren-Button dazu und rückt dafür etwas nach links, damit beide nebeneinander Platz haben. */
   .maximize-btn {
-    display: flex;
-    position: absolute;
-    top: 8px;
-    right: 44px;
-    z-index: 14;
-    width: 28px;
-    height: 28px;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-sm-squircle);
-    background: var(--color-surface);
-    box-shadow: var(--shadow-sm);
-    color: var(--color-text-muted);
-    cursor: pointer;
-    font-size: 0.95rem;
-    line-height: 1;
-  }
-
-  .maximize-btn:hover {
-    color: var(--color-primary-dark);
+    display: inline-flex;
+    position: static;
+    top: auto;
+    right: auto;
   }
 
   /* Maximiert: Panel verlässt den Flex-Verbund und legt sich als Vollbild-Overlay über den
