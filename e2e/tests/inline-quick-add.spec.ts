@@ -3,11 +3,18 @@ import { test, expect } from '@playwright/test';
 // Regressionsnetz für die neuen Inline-Quick-Add-Zeilen direkt in Gruppen-Kopfzeilen (siehe
 // QuickAddRow.vue) - bisher gab es dieses "auf die Liste weiterschreiben"-Muster nur bei der
 // Packliste, jetzt auch bei Einkauf und ToDo.
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.removeItem('reisotor-shopping-group-by');
+    localStorage.removeItem('reisotor-todo-group-by');
+  });
+});
+
 test('quick-adding into a shopping group creates the item pre-filled with that group’s dimension', async ({ page }) => {
   await page.goto('/shopping');
   await expect(page.locator('.shopping-page')).toBeVisible();
 
-  const group = page.locator('.shopping-page .group-section', { hasText: 'Nicht zugewiesen' });
+  const group = page.locator('.shopping-page .group-section').first();
   await expect(group).toBeVisible();
 
   const quickAdd = group.locator('.quick-add-row').first();
@@ -38,7 +45,7 @@ test('quick-adding into a todo group creates the item assigned to that group’s
   await page.goto('/todo');
   await expect(page.locator('.todo-page')).toBeVisible();
 
-  const group = page.locator('.todo-page .group-section', { hasText: 'Nicht zugewiesen' });
+  const group = page.locator('.todo-page .group-section').first();
   await expect(group).toBeVisible();
 
   const quickAdd = group.locator('.quick-add-row').first();
