@@ -147,6 +147,11 @@ const hasDefaultSlot = () =>
   box-shadow: none;
 }
 
+/* Icon-only secondary: Rahmen ja, aber Icon monochrom statt primärgrün */
+.btn--secondary.icon-only {
+  color: var(--color-text);
+}
+
 .btn--secondary:hover:not(:disabled) {
   background: var(--color-surface);
   box-shadow: var(--shadow-sm);
