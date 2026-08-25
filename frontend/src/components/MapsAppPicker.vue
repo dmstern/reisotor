@@ -1,84 +1,62 @@
 <script setup lang="ts">
-import { nextTick, ref } from 'vue';
+import { ref } from 'vue';
 import AppIcon from './AppIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 
-// Eigenständige Komponente statt Duplikat in jedem Detail-Dialog (Spot/Unterkunft/Reise): zeigt
-// ein kleines Auswahlmenü der gängigen Karten-Apps als offizielle Universal-Links (öffnet die App,
-// falls installiert, sonst die Web-Vorschau) – kein User-Agent-Sniffing nötig. Ursprünglich Teil
-// von TripMap.vue's Info-Panel, das mit der direkten Pin-Klick→Detail-Dialog-Kopplung entfallen
-// ist (siehe TripMap.vue) – hier wiederverwendbar in jedem Detail-Dialog, der Koordinaten besitzt.
+// Eigenständige Komponente (Spot/Unterkunft/Reise): zeigt ein Auswahl-Menü der gängigen Karten-Apps.
+// Nutzt saubere CSS-Relative-Positionierung statt Teleport/JS-Koordinatenberechnung (#285).
 const props = defineProps<{ lat: number; lng: number; title: string; mapsLink?: string | null }>();
 const open = ref(false);
-const buttonRef = ref<HTMLButtonElement | null>(null);
-// Menü wird per Teleport außerhalb des Detail-Dialogs gerendert und per position:fixed anhand der
-// Button-Position platziert, statt relativ zum Button zu hängen – sonst schneidet Modal.vue's
-// overflow-y:auto (nötig für lange Detail-Inhalte) das absolut positionierte Menü am Dialogrand ab.
-const menuStyle = ref({ top: '0px', left: '0px' });
-
-function toggle(event?: MouseEvent) {
-  if (!open.value) {
-    const el = (event?.currentTarget as HTMLElement) || (buttonRef.value as any)?.$el || buttonRef.value;
-    if (el && typeof el.getBoundingClientRect === 'function') {
-      const rect = el.getBoundingClientRect();
-      menuStyle.value = {
-        top: `${rect.bottom + 6}px`,
-        left: `${Math.max(8, Math.min(rect.left, window.innerWidth - 216))}px`,
-      };
-    }
-    open.value = true;
-  } else {
-    open.value = false;
-  }
-}
 </script>
 
 <template>
-  <div class="maps-picker">
-    <button ref="buttonRef" type="button" class="card-action-btn" @click="toggle($event)">
+  <div class="maps-picker" @click.stop>
+    <button type="button" class="card-action-btn" @click="open = !open">
       <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" /> In Karten-App öffnen ↗
     </button>
-    <Teleport to="body">
-      <template v-if="open">
-        <div class="picker-backdrop" @click="open = false"></div>
-        <div class="picker-menu" :style="menuStyle">
-          <a
-            :href="`https://maps.apple.com/?ll=${props.lat},${props.lng}&q=${encodeURIComponent(props.title)}`"
-            target="_blank"
-            rel="noopener"
-            @click="open = false"
-          >
-            <AppIcon :icon="ACTION_ICONS.apple" :size="14" group="actions" /> Apple Maps
-          </a>
-          <a
-            :href="`https://www.google.com/maps/search/?api=1&query=${props.lat},${props.lng}`"
-            target="_blank"
-            rel="noopener"
-            @click="open = false"
-          >
-            <AppIcon :icon="ACTION_ICONS.googleMaps" :size="14" group="actions" /> Google Maps
-          </a>
-          <a v-if="props.mapsLink" :href="props.mapsLink" target="_blank" rel="noopener" @click="open = false">
-            <AppIcon :icon="FORM_FIELD_ICONS.link" :size="14" group="formFields" /> Ursprünglichen Link öffnen
-          </a>
-        </div>
-      </template>
-    </Teleport>
+    <div v-if="open" class="picker-backdrop" @click="open = false"></div>
+    <div v-if="open" class="picker-menu">
+      <a
+        :href="`https://maps.apple.com/?ll=${props.lat},${props.lng}&q=${encodeURIComponent(props.title)}`"
+        target="_blank"
+        rel="noopener"
+        @click="open = false"
+      >
+        <AppIcon :icon="ACTION_ICONS.apple" :size="14" group="actions" /> Apple Maps
+      </a>
+      <a
+        :href="`https://www.google.com/maps/search/?api=1&query=${props.lat},${props.lng}`"
+        target="_blank"
+        rel="noopener"
+        @click="open = false"
+      >
+        <AppIcon :icon="ACTION_ICONS.googleMaps" :size="14" group="actions" /> Google Maps
+      </a>
+      <a v-if="props.mapsLink" :href="props.mapsLink" target="_blank" rel="noopener" @click="open = false">
+        <AppIcon :icon="FORM_FIELD_ICONS.link" :size="14" group="formFields" /> Ursprünglichen Link öffnen
+      </a>
+    </div>
   </div>
 </template>
 
 <style scoped>
+.maps-picker {
+  position: relative;
+  display: inline-flex;
+}
+
 .picker-backdrop {
   position: fixed;
   inset: 0;
-  /* Höher als Modal.vue's Overlay (z-index: 100) – das Menü wird per Teleport neben, nicht
-     innerhalb des Modal-Overlays gerendert und muss auch bei geöffnetem Detail-Dialog obenauf liegen. */
-  z-index: 110;
+  z-index: 99;
 }
 
 .picker-menu {
-  position: fixed;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 100;
   min-width: 200px;
   background: var(--color-surface);
   border: 1px solid var(--color-border-strong);
@@ -86,7 +64,6 @@ function toggle(event?: MouseEvent) {
   corner-shape: squircle;
   box-shadow: var(--shadow-md);
   padding: var(--space-2);
-  z-index: 111;
   display: flex;
   flex-direction: column;
   gap: 2px;
