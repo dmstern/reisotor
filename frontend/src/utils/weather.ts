@@ -196,6 +196,8 @@ export function fetchWeatherForecast(lat: number, lng: number, model = 'ecmwf_if
 
 interface WeatherHistoryRow {
   date: string;
+  lat?: number;
+  lng?: number;
   weathercode: number;
   temp_max: number;
   temp_min: number;
@@ -206,9 +208,7 @@ interface WeatherHistoryRow {
 // rückwirkend ab) um dauerhaft gespeicherte Ist-Werte vergangener Tage (backend/src/
 // weatherSnapshots.ts, GET /trips/:id/weather-history) – dadurch bleibt das Wetter eines Urlaubs
 // auch lange nach dessen Ende noch anzeigbar. Für "heute"/Zukunft bleibt weiterhin die Live-Vorhersage
-// maßgeblich (die gespeicherten Snapshots decken ohnehin nur strikt vergangene, abgeschlossene Tage
-// ab, siehe dortiger Kommentar). Ein Fehlschlag der History-Abfrage darf die Live-Vorhersage nicht
-// verhindern – deshalb kein Promise.all, sondern beide unabhängig behandelt.
+// maßgeblich.
 export async function fetchMergedWeather(tripId: number, lat: number, lng: number, model?: string): Promise<DailyWeather[]> {
   const [live, history] = await Promise.all([
     fetchWeatherForecast(lat, lng, model),
@@ -218,7 +218,14 @@ export async function fetchMergedWeather(tripId: number, lat: number, lng: numbe
   const today = toLocalDateString(new Date());
   const byDate = new Map<string, DailyWeather>();
   for (const day of live) byDate.set(day.date, day);
-  for (const row of history) {
+
+  // Filtere nach passende Standort-Snapshots, falls Ortskoordinaten in der Historie vorliegen
+  const matchingHistory = history.filter((row) => {
+    if (row.lat == null || row.lng == null) return true;
+    return Math.abs(row.lat - lat) < 0.05 && Math.abs(row.lng - lng) < 0.05;
+  });
+
+  for (const row of matchingHistory) {
     if (row.date >= today) continue; // Live-Vorhersage bleibt für heute/Zukunft maßgeblich
     byDate.set(row.date, {
       date: row.date,
@@ -230,3 +237,194 @@ export async function fetchMergedWeather(tripId: number, lat: number, lng: numbe
   }
   return [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
 }
+
+export interface WeatherRangeSummary {
+  weatherCode: number;
+  tempMaxMin: number;
+  tempMaxMax: number;
+  tempLabel: string;
+}
+
+const WEATHER_CODE_SEVERITY_ORDER = [99, 96, 95, 82, 81, 80, 67, 66, 65, 63, 61, 57, 56, 55, 53, 51, 86, 85, 75, 73, 71, 77, 48, 45, 3, 2, 1, 0];
+
+/** Bildet aus mehreren Tageswetter-Messungen (z. B. für eine Tour mit mehreren Stationen) eine
+ *  zusammenfassende Temperatur-Range und bestimmt das prägnanteste Wetter-Icon (Issue #152). */
+export function summarizeWeatherRange(weathers: DailyWeather[]): WeatherRangeSummary | null {
+  if (!weathers.length) return null;
+  const temps = weathers.map((w) => Math.round(w.tempMax));
+  const minTemp = Math.min(...temps);
+  const maxTemp = Math.max(...temps);
+  const tempLabel = minTemp === maxTemp ? `${minTemp}°` : `${minTemp}°–${maxTemp}°`;
+
+  let bestCode = weathers[0].weatherCode;
+  let bestIdx = WEATHER_CODE_SEVERITY_ORDER.indexOf(bestCode);
+  if (bestIdx === -1) bestIdx = 999;
+
+  for (let i = 1; i < weathers.length; i++) {
+    const code = weathers[i].weatherCode;
+    let idx = WEATHER_CODE_SEVERITY_ORDER.indexOf(code);
+    if (idx === -1) idx = 999;
+    if (idx < bestIdx) {
+      bestCode = code;
+      bestIdx = idx;
+    }
+  }
+
+  return {
+    weatherCode: bestCode,
+    tempMaxMin: minTemp,
+    tempMaxMax: maxTemp,
+    tempLabel,
+  };
+}
+
+export interface WeatherAlert {
+  id: string;
+  type: 'heat' | 'storm' | 'rain' | 'snow' | 'cold';
+  severity: 'warning' | 'danger';
+  title: string;
+  description: string;
+  date: string;
+}
+
+/** Erkenne Unwetter- / Wetter-Warnungen (Sturm, extreme Hitze, Starkregen, Schneefall, Kälte)
+ *  aus den Vorhersage-Daten für das Dashboard (Issue #134). */
+export function detectWeatherAlerts(forecast: DailyWeather[]): WeatherAlert[] {
+  const alerts: WeatherAlert[] = [];
+  const today = toLocalDateString(new Date());
+
+  for (const day of forecast) {
+    if (day.date < today) continue;
+    const formattedDate = formatDateShared(day.date, { includeYear: false });
+
+    // Hitze
+    if (day.tempMax >= 35) {
+      alerts.push({
+        id: `heat-danger-${day.date}`,
+        type: 'heat',
+        severity: 'danger',
+        title: 'Extreme Hitze-Warnung',
+        description: `Extreme Hitze bis zu ${Math.round(day.tempMax)}°C am ${formattedDate} erwartet.`,
+        date: day.date,
+      });
+    } else if (day.tempMax >= 31) {
+      alerts.push({
+        id: `heat-warning-${day.date}`,
+        type: 'heat',
+        severity: 'warning',
+        title: 'Hitze-Warnung',
+        description: `Hohe Temperaturen bis zu ${Math.round(day.tempMax)}°C am ${formattedDate}.`,
+        date: day.date,
+      });
+    }
+
+    // Gewitter / Unwetter / Starkregen
+    if ([95, 96, 99].includes(day.weatherCode)) {
+      alerts.push({
+        id: `storm-${day.date}`,
+        type: 'storm',
+        severity: 'danger',
+        title: 'Gewitter- / Unwetter-Warnung',
+        description: `Schwere Gewitter oder Sturmböen am ${formattedDate} erwartet.`,
+        date: day.date,
+      });
+    } else if ([82, 65, 67].includes(day.weatherCode)) {
+      alerts.push({
+        id: `rain-${day.date}`,
+        type: 'rain',
+        severity: 'warning',
+        title: 'Starkregen-Warnung',
+        description: `Heftiger Niederschlag am ${formattedDate} vorhergesagt.`,
+        date: day.date,
+      });
+    } else if ([75, 86].includes(day.weatherCode)) {
+      alerts.push({
+        id: `snow-${day.date}`,
+        type: 'snow',
+        severity: 'warning',
+        title: 'Starker Schneefall',
+        description: `Intensiver Schneefall am ${formattedDate} erwartet.`,
+        date: day.date,
+      });
+    }
+
+    // Kälte
+    if (day.tempMin <= -10) {
+      alerts.push({
+        id: `cold-${day.date}`,
+        type: 'cold',
+        severity: 'warning',
+        title: 'Extreme Kälte-Warnung',
+        description: `Temperaturen fallen bis zu ${Math.round(day.tempMin)}°C am ${formattedDate}.`,
+        date: day.date,
+      });
+    }
+  }
+
+  return alerts;
+}
+
+export interface HourlyWeather {
+  time: string;
+  temp: number;
+  weatherCode: number;
+  precipitationProbability: number | null;
+}
+
+interface OpenMeteoHourlyResponse {
+  hourly: {
+    time: string[];
+    weathercode: number[];
+    temperature_2m: number[];
+    precipitation_probability_max?: number[];
+    precipitation_probability?: number[];
+  };
+}
+
+/** Holt stündliche Wetterdaten für die Tages-Detail-Ansicht (Issue #133). */
+export async function fetchHourlyForecast(lat: number, lng: number, date: string, model = 'ecmwf_ifs025'): Promise<HourlyWeather[]> {
+  if (DEMO_MODE) {
+    const hours = ['06:00', '09:00', '12:00', '15:00', '18:00', '21:00'];
+    const demoPattern = [
+      { temp: 18, weatherCode: 0, precipitationProbability: 5 },
+      { temp: 22, weatherCode: 0, precipitationProbability: 5 },
+      { temp: 26, weatherCode: 1, precipitationProbability: 10 },
+      { temp: 27, weatherCode: 2, precipitationProbability: 15 },
+      { temp: 24, weatherCode: 0, precipitationProbability: 5 },
+      { temp: 20, weatherCode: 0, precipitationProbability: 5 },
+    ];
+    return hours.map((h, i) => ({ time: h, ...demoPattern[i % demoPattern.length] }));
+  }
+
+  const params = new URLSearchParams({
+    latitude: String(lat),
+    longitude: String(lng),
+    hourly: 'weathercode,temperature_2m,precipitation_probability',
+    timezone: 'auto',
+    start_date: date,
+    end_date: date,
+    models: model,
+  });
+
+  const res = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`);
+  if (!res.ok) throw new Error(`Stündliche Wetterdaten konnten nicht geladen werden (${res.status})`);
+  const data = (await res.json()) as OpenMeteoHourlyResponse;
+
+  const result: HourlyWeather[] = [];
+  if (data.hourly?.time) {
+    data.hourly.time.forEach((t, i) => {
+      const hourStr = t.split('T')[1] ?? '';
+      const hourNum = parseInt(hourStr.split(':')[0], 10);
+      if ([6, 9, 12, 15, 18, 21].includes(hourNum)) {
+        result.push({
+          time: hourStr,
+          temp: Math.round(data.hourly.temperature_2m[i]),
+          weatherCode: data.hourly.weathercode[i],
+          precipitationProbability: data.hourly.precipitation_probability?.[i] ?? null,
+        });
+      }
+    });
+  }
+  return result;
+}
+
