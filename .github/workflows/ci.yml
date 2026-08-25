@@ -164,6 +164,19 @@ jobs:
             e2e/test-results
           retention-days: 7
 
+  e2e-required:
+    name: E2E Required
+    if: always()
+    needs: [e2e-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify all E2E shards passed
+        run: |
+          if [ "${{ needs.e2e-tests.result }}" != "success" ]; then
+            echo "One or more E2E shards did not pass."
+            exit 1
+          fi
+
   publish:
     name: Publish to deploy branch
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
