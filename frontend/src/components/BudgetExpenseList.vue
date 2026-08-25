@@ -26,7 +26,7 @@ const store = useBudgetStore();
           <span class="row-meta">
             <span v-if="e.date" class="tag">{{ e.date }}</span>
             <span v-if="e.category" class="tag">{{ e.category }}</span>
-            <span v-if="store.users.length > 1" class="tag">{{ store.userAvatar(e.paid_by_user_id) }} {{ store.userName(e.paid_by_user_id) }}</span>
+            <span class="tag">{{ store.userAvatar(e.paid_by_user_id) }} {{ store.userName(e.paid_by_user_id) }}</span>
           </span>
         </div>
         <strong class="row-amount">{{ e.amount.toFixed(2) }} €</strong>

@@ -116,17 +116,6 @@ onMounted(() => {
 // stores/liveSync.ts) – analog zum bestehenden drawers.locationsVersion-Muster in ScheduleView.vue.
 watch(() => liveSync.domainVersion.todos, load);
 
-watch(
-  () => users.value.length,
-  (len) => {
-    if (len <= 1) {
-      if (groupBy.value === 'assignee') groupBy.value = 'period';
-      if (sortBy.value === 'assignee') sortBy.value = 'priority';
-    }
-  },
-  { immediate: true },
-);
-
 function userLabel(id: number | null) {
   if (id == null) return null;
   const u = users.value.find((u) => u.id === id);
@@ -296,7 +285,7 @@ function isOverdue(item: TodoItem) {
       <FormField icon="title" label="Aufgabe">
         <input v-model="newForm.title" type="text" placeholder="Neue Aufgabe" required />
       </FormField>
-      <FormField v-if="users.length > 1" icon="person" label="Bearbeiter:in">
+      <FormField icon="person" label="Bearbeiter:in">
         <select v-model="newForm.assigned_to_user_id">
           <option value="">Nicht zugewiesen</option>
           <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
@@ -321,7 +310,7 @@ function isOverdue(item: TodoItem) {
       <div class="tool-row">
         <span class="tool-label"><AppIcon :icon="ACTION_ICONS.group" :size="14" group="actions" /> Gruppieren</span>
         <select v-model="groupBy">
-          <option v-if="users.length > 1" value="assignee">nach Bearbeiter:in</option>
+          <option value="assignee">nach Bearbeiter:in</option>
           <option value="period">nach Zeitraum</option>
         </select>
       </div>
@@ -330,7 +319,7 @@ function isOverdue(item: TodoItem) {
         <select v-model="sortBy">
           <option value="due_date">nach Datum</option>
           <option value="priority">nach Priorität</option>
-          <option v-if="users.length > 1" value="assignee">nach Bearbeiter:in</option>
+          <option value="assignee">nach Bearbeiter:in</option>
         </select>
       </div>
     </div>
@@ -340,7 +329,7 @@ function isOverdue(item: TodoItem) {
         <h2>{{ group.label }}</h2>
         <QuickAddRow class="card group-quick-add" placeholder="Aufgabe hinzufügen…" @submit="(label) => quickAddToGroup(group, label)">
           <template #extra>
-            <select v-if="users.length > 1 && groupBy !== 'assignee'" v-model="lastAssignee">
+            <select v-if="groupBy !== 'assignee'" v-model="lastAssignee">
               <option value="">Nicht zugewiesen</option>
               <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>
             </select>
@@ -372,7 +361,7 @@ function isOverdue(item: TodoItem) {
                 <span v-if="item.due_date" class="due" :class="{ overdue: isOverdue(item) }">
                   <AppIcon :icon="FORM_FIELD_ICONS.date" :size="13" group="formFields" /> {{ formatDate(item.due_date) }}
                 </span>
-                <span v-if="users.length > 1 && groupBy !== 'assignee' && userLabel(item.assigned_to_user_id)" class="assignee">{{
+                <span v-if="groupBy !== 'assignee' && userLabel(item.assigned_to_user_id)" class="assignee">{{
                   userLabel(item.assigned_to_user_id)
                 }}</span>
                 <span v-if="groupBy !== 'period' && periodFor(item)" class="assignee">
@@ -396,7 +385,7 @@ function isOverdue(item: TodoItem) {
         <FormField icon="title" label="Titel">
           <input v-model="editForm.title" type="text" placeholder="Titel" required />
         </FormField>
-        <FormField v-if="users.length > 1" icon="person" label="Bearbeiter:in">
+        <FormField icon="person" label="Bearbeiter:in">
           <select v-model="editForm.assigned_to_user_id">
             <option value="">Nicht zugewiesen</option>
             <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.avatar }} {{ u.username }}</option>

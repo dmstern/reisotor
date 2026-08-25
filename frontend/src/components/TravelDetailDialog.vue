@@ -21,7 +21,6 @@ defineProps<{
   modelValue: boolean;
   item: TravelItem;
   payerLabel: string | null;
-  hasMultipleMembers?: boolean;
 }>();
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void;
@@ -71,7 +70,7 @@ function travelDuration(item: TravelItem) {
     <p v-if="item.amount != null" class="detail-row">
       <span class="detail-label">Kosten</span>
       <AppIcon :icon="FORM_FIELD_ICONS.amount" :size="14" group="formFields" /> {{ item.amount.toFixed(2) }} €
-      <span v-if="hasMultipleMembers !== false && item.paid_by_user_id"> · bezahlt von {{ payerLabel }}</span>
+      <span v-if="item.paid_by_user_id"> · bezahlt von {{ payerLabel }}</span>
     </p>
     <RichTextDisplay v-if="item.note" class="detail-row note" :content="item.note" :format="item.note_format" />
     <FileAttachments domain="ideas" :entity-id="item.id" :editable="false" />

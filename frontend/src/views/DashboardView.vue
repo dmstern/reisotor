@@ -913,6 +913,11 @@ function formatWeekdayDate(d: string) {
   padding-bottom: 4px;
 }
 
+.weather-day-link {
+  text-decoration: none;
+  color: inherit;
+}
+
 .weather-day {
   flex: 0 0 auto;
   display: flex;

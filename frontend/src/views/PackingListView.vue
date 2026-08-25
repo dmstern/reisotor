@@ -91,6 +91,9 @@ interface ListGroup {
 const lists = computed<ListGroup[]>(() => {
   const shared: ListGroup = {
     key: 'shared',
+    // 👥 statt gestapelter Einzel-Avatare: passt zur bestehenden Bedeutung des Icons anderswo in der
+    // App (Mitglieder-Button in TripSwitcher.vue) und bleibt bei vielen Mitreisenden trotzdem
+    // kompakt lesbar, statt mit wachsender Personenzahl immer breiter zu werden.
     title: '👥 Gemeinsame Packliste',
     ownerId: null,
     items: items.value.filter((i) => i.owner_id == null),
@@ -99,12 +102,8 @@ const lists = computed<ListGroup[]>(() => {
     key: `user-${u.id}`,
     title: u.id === auth.user?.id ? `${u.avatar} Meine Packliste` : `${u.avatar} Packliste von ${u.username}`,
     ownerId: u.id,
-    items: items.value.filter((i) => i.owner_id === u.id || (users.value.length <= 1 && i.owner_id == null)),
+    items: items.value.filter((i) => i.owner_id === u.id),
   }));
-
-  if (users.value.length <= 1) {
-    return perUser;
-  }
 
   const mine = perUser.filter((l) => l.ownerId === auth.user?.id);
   const others = perUser.filter((l) => l.ownerId !== auth.user?.id);
@@ -258,13 +257,13 @@ async function quickAdd(list: ListGroup, label: string) {
     <div class="lists-grid">
       <section class="list-section" v-for="list in lists" :key="list.key">
         <div class="list-header">
-          <h2 v-if="users.length > 1">{{ list.title }}</h2>
+          <h2>{{ list.title }}</h2>
           <span class="progress">{{ progress(list.items).packed }}/{{ progress(list.items).total }} gepackt</span>
         </div>
 
         <QuickAddRow
           class="card"
-          :placeholder="users.length > 1 ? `Neuer Gegenstand für ${list.title}` : 'Neuer Gegenstand'"
+          :placeholder="`Neuer Gegenstand für ${list.title}`"
           @submit="(label) => quickAdd(list, label)"
         >
           <template #extra>
@@ -324,7 +323,7 @@ async function quickAdd(list: ListGroup, label: string) {
           Anzahl
           <input v-model.number="editForm.quantity" type="number" min="1" step="1" />
         </label>
-        <FormField v-if="users.length > 1" icon="person" label="Liste">
+        <FormField icon="person" label="Liste">
           <select v-model="editForm.ownerId">
             <option value="shared">🤝 Gemeinsam</option>
             <option v-for="u in users" :key="u.id" :value="String(u.id)">

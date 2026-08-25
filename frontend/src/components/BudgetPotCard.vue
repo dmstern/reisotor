@@ -52,12 +52,6 @@ async function addCategory() {
   newCategoryAmount.value = '';
 }
 
-const displayBudgetName = computed(() =>
-  props.budget.name === 'Gemeinsames Budget' && store.users.length <= 1
-    ? 'Hauptbudget'
-    : props.budget.name,
-);
-
 function updateAllocationAmount(category: string, value: string) {
   store.saveAllocation(props.budget.id, category, Number(value) || 0);
 }
@@ -67,8 +61,8 @@ function updateAllocationAmount(category: string, value: string) {
   <Card class="pot-card">
     <div class="pot-head">
       <div class="pot-title">
-        <h3>{{ displayBudgetName }}</h3>
-        <span v-if="store.users.length > 1" class="kind-badge">
+        <h3>{{ budget.name }}</h3>
+        <span class="kind-badge">
           <template v-if="budget.owner_id == null"><AppIcon :icon="ACTION_ICONS.shared" :size="14" group="actions" /> Geteilt</template>
           <template v-else
             ><AppIcon :icon="ACTION_ICONS.private" :size="14" group="actions" /> {{ store.userAvatar(budget.owner_id) }}

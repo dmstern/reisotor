@@ -34,7 +34,6 @@ const props = defineProps<{
   comments: CommentItem[];
   /** Nur für Kategorie "Unterkunft" mit gesetztem paid_by_user_id relevant. */
   payerLabel?: string | null;
-  hasMultipleMembers?: boolean;
 }>();
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void;
@@ -142,7 +141,7 @@ function onToggleDone() {
       <p v-if="spot.amount != null" class="detail-row">
         <span class="detail-label">Kosten</span>
         <AppIcon :icon="FORM_FIELD_ICONS.amount" :size="14" group="formFields" /> {{ spot.amount.toFixed(2) }} €
-        <span v-if="hasMultipleMembers !== false && spot.paid_by_user_id"> · bezahlt von {{ payerLabel }}</span>
+        <span v-if="spot.paid_by_user_id"> · bezahlt von {{ payerLabel }}</span>
       </p>
     </template>
 

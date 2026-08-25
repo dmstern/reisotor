@@ -1591,7 +1591,6 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
       @update:model-value="onTravelDialogUpdate"
       :item="openTravel"
       :payer-label="payerLabelFor(openTravel.paid_by_user_id)"
-      :has-multiple-members="users.length > 1"
       @edit="editOpenTravel"
       @show-on-map-from="travelDialogOpen = false"
       @show-on-map-to="travelDialogOpen = false"
