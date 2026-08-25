@@ -862,7 +862,7 @@ function formatDate(date: string) {
       </div>
       <div class="pager">
         <IconButton
-          variant="secondary"
+          variant="ghost"
           size="sm"
           :disabled="!canGoPrev"
           :icon="ACTION_ICONS.scrollLeft"
@@ -872,7 +872,7 @@ function formatDate(date: string) {
         />
         <span class="range-label">{{ visibleRangeLabel }}</span>
         <IconButton
-          variant="secondary"
+          variant="ghost"
           size="sm"
           :disabled="!canGoNext"
           :icon="ACTION_ICONS.scrollRight"

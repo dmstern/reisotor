@@ -21,6 +21,7 @@ const showDialog = ref(false);
     <IconButton
       variant="ghost"
       size="sm"
+      class="pwa-pill-dismiss-btn"
       :icon="ACTION_ICONS.close"
       aria-label="Hinweis schließen"
       title="Hinweis schließen"
@@ -64,19 +65,12 @@ const showDialog = ref(false);
   cursor: pointer;
 }
 
-.pwa-pill-dismiss-btn {
-  background: rgba(255, 255, 255, 0.25);
-  border: none;
-  color: inherit;
-  font: inherit;
-  font-weight: 700;
-  border-radius: 999px;
-  padding: 2px 8px;
-  cursor: pointer;
-  line-height: 1.4;
+.pwa-pill .pwa-pill-dismiss-btn {
+  color: rgba(255, 255, 255, 0.9);
 }
 
-.pwa-pill-dismiss-btn:hover {
-  background: rgba(255, 255, 255, 0.4);
+.pwa-pill .pwa-pill-dismiss-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
 }
 </style>

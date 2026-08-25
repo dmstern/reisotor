@@ -21,17 +21,27 @@ defineEmits<{ (e: 'click'): void }>();
     :aria-label="disabled ? 'Löschen nicht möglich' : 'Löschen'"
     @click.stop="$emit('click')"
   />
+  <IconButton
+    v-else-if="small"
+    variant="ghost"
+    class="delete-btn small"
+    :icon="ACTION_ICONS.delete"
+    size="sm"
+    :disabled="disabled"
+    :title="disabled ? 'Löschen hier nicht möglich – in der Ursprungssicht bearbeiten' : 'Löschen'"
+    :aria-label="disabled ? 'Löschen nicht möglich' : 'Löschen'"
+    @click.stop="$emit('click')"
+  />
   <Button
     v-else
     variant="secondary"
     class="delete-btn"
-    :class="{ small }"
     :disabled="disabled"
     :title="disabled ? 'Löschen hier nicht möglich – in der Ursprungssicht bearbeiten' : 'Löschen'"
     :aria-label="disabled ? 'Löschen nicht möglich' : 'Löschen'"
     @click.stop="$emit('click')"
   >
-    <AppIcon :icon="ACTION_ICONS.delete" :size="small ? 13 : 15" group="actions" />
+    <AppIcon :icon="ACTION_ICONS.delete" :size="15" group="actions" />
   </Button>
 </template>
 

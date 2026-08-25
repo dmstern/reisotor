@@ -23,16 +23,25 @@ defineEmits<{ (e: 'click'): void }>();
     aria-label="Bearbeiten"
     @click.stop="$emit('click')"
   />
+  <IconButton
+    v-else-if="small"
+    variant="ghost"
+    class="edit-btn small"
+    :icon="ACTION_ICONS.edit"
+    size="sm"
+    title="Bearbeiten"
+    aria-label="Bearbeiten"
+    @click.stop="$emit('click')"
+  />
   <Button
     v-else
     variant="secondary"
     class="edit-btn"
-    :class="{ small }"
     title="Bearbeiten"
     aria-label="Bearbeiten"
     @click.stop="$emit('click')"
   >
-    <AppIcon :icon="ACTION_ICONS.edit" :size="small ? 13 : 15" group="actions" />
+    <AppIcon :icon="ACTION_ICONS.edit" :size="15" group="actions" />
   </Button>
 </template>
 

@@ -218,6 +218,7 @@ function updateAllocationAmount(category: string, value: string) {
 .add-category-form {
   display: flex;
   flex-wrap: wrap;
+  align-items: flex-end;
   gap: var(--space-2);
   margin-top: var(--space-2);
 }

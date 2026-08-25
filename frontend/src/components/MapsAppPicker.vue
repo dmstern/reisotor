@@ -21,7 +21,8 @@ async function toggle() {
   open.value = !open.value;
   if (!open.value) return;
   await nextTick();
-  const rect = buttonRef.value?.getBoundingClientRect();
+  const targetEl = (buttonRef.value as any)?.$el || buttonRef.value;
+  const rect = targetEl?.getBoundingClientRect?.();
   if (!rect) return;
   menuStyle.value = {
     top: `${rect.bottom + 6}px`,

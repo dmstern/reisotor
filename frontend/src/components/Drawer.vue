@@ -121,27 +121,27 @@ function onResizeEnd() {
   <div class="drawer" :class="[side, { open, maximized, resizing }]" :style="{ '--drawer-width': `${width}px` }">
     <div class="drawer-backdrop" v-if="open" @click="emit('update:open', false)"></div>
     <div ref="panelEl" class="drawer-panel">
-      <IconButton
-        v-if="open"
-        class="maximize-btn"
-        variant="secondary"
-        size="sm"
-        :icon="maximized ? ACTION_ICONS.minimize : ACTION_ICONS.maximize"
-        :aria-pressed="maximized"
-        :aria-label="(maximized ? 'Verkleinern: ' : 'Maximieren: ') + label"
-        :title="maximized ? 'Verkleinern' : 'Maximieren'"
-        @click="toggleMaximize"
-      />
-      <IconButton
-        v-if="open"
-        class="close-drawer-btn"
-        variant="secondary"
-        size="sm"
-        :icon="ACTION_ICONS.close"
-        :aria-label="'Schließen: ' + label"
-        title="Schließen"
-        @click="emit('update:open', false)"
-      />
+      <div v-if="open" class="drawer-header-actions">
+        <IconButton
+          class="maximize-btn"
+          variant="secondary"
+          size="sm"
+          :icon="maximized ? ACTION_ICONS.minimize : ACTION_ICONS.maximize"
+          :aria-pressed="maximized"
+          :aria-label="(maximized ? 'Verkleinern: ' : 'Maximieren: ') + label"
+          :title="maximized ? 'Verkleinern' : 'Maximieren'"
+          @click="toggleMaximize"
+        />
+        <IconButton
+          class="close-drawer-btn"
+          variant="secondary"
+          size="sm"
+          :icon="ACTION_ICONS.close"
+          :aria-label="'Schließen: ' + label"
+          title="Schließen"
+          @click="emit('update:open', false)"
+        />
+      </div>
       <div class="drawer-content"><slot /></div>
     </div>
     <!-- Bewusst AUSSERHALB von .drawer-panel (statt wie früher darin verschachtelt): .drawer-panel
@@ -348,20 +348,19 @@ function onResizeEnd() {
   display: none;
 }
 
-/* Maximieren gibt es nur auf Desktop (siehe @media unten) – ausgeklappt ist eine Schublade auf
-   Mobil dank voller Breite (.drawer-panel oben) ohnehin bereits gleichbedeutend mit "maximiert",
-   ein zusätzlicher Button dafür wäre dort überflüssig. Schließen dagegen jetzt auch auf Mobil über
-   diesen Button statt (wie vorher) ausschließlich über die (bei offener Schublade jetzt immer
-   ausgeblendete, siehe .drawer.open .drawer-tab oben) Lasche oder den Backdrop-Klick. */
-.maximize-btn {
-  display: none;
-}
-
-.close-drawer-btn {
+.drawer-header-actions {
   position: absolute;
   top: 8px;
   right: 8px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   z-index: 14;
+}
+
+/* Maximieren gibt es nur auf Desktop (siehe @media unten) */
+.maximize-btn {
+  display: none;
 }
 
 /* Desktop: Panel wird echtes Flex-Geschwisterelement (schiebt den Arbeitsbereich zur Seite),
