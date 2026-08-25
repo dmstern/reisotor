@@ -12,11 +12,16 @@ const meta: Meta<typeof Card> = {
       options: ['default', 'muted', 'condensed', 'flat', 'elevated', 'tile'],
     },
     bannerUrl: { control: 'text' },
+    bannerPosition: {
+      control: 'select',
+      options: ['top', 'left'],
+    },
     highlight: { control: 'boolean' },
     tileColor: { control: 'color' },
   },
   args: {
     variant: 'default',
+    bannerPosition: 'top',
     highlight: false,
     tileColor: '#2a7f74',
   },
@@ -124,10 +129,11 @@ export const DashboardTile: Story = {
   }),
 };
 
-export const WithBanner: Story = {
+export const WithBannerTop: Story = {
   args: {
     bannerUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&auto=format&fit=crop',
     bannerAlt: 'Strand im Sonnenuntergang',
+    bannerPosition: 'top',
   },
   render: (args) => ({
     components: { Card },
@@ -136,8 +142,49 @@ export const WithBanner: Story = {
     },
     template: `
       <Card v-bind="args" style="max-width: 400px;">
-        <h3 style="margin: 0 0 8px;">Karte mit Bild-Banner</h3>
+        <h3 style="margin: 0 0 8px;">Karte mit Banner oben</h3>
         <p style="margin: 0;">Integriertes Banner-Bild am oberen Rand mit nahtloser Squircle-Eckenanpassung.</p>
+      </Card>
+    `,
+  }),
+};
+
+export const WithBannerLeft: Story = {
+  args: {
+    bannerUrl: 'https://images.unsplash.com/photo-1476514525535-ce74f45814ce?w=600&auto=format&fit=crop',
+    bannerAlt: 'Gebirgssee',
+    bannerPosition: 'left',
+  },
+  render: (args) => ({
+    components: { Card },
+    setup() {
+      return { args };
+    },
+    template: `
+      <Card v-bind="args" style="max-width: 480px;">
+        <h3 style="margin: 0 0 4px;">Karte mit Miniatur-Banner links</h3>
+        <p style="margin: 0; font-size: 0.85rem;">Horizontaler Karten-View Stil mit schmalem Vorschaubild auf der linken Seite.</p>
+      </Card>
+    `,
+  }),
+};
+
+export const CondensedWithBannerLeft: Story = {
+  args: {
+    variant: 'condensed',
+    bannerUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&auto=format&fit=crop',
+    bannerAlt: 'Strand',
+    bannerPosition: 'left',
+  },
+  render: (args) => ({
+    components: { Card },
+    setup() {
+      return { args };
+    },
+    template: `
+      <Card v-bind="args" style="max-width: 420px;">
+        <h4 style="margin: 0 0 2px;">Mini-Karte mit Banner links</h4>
+        <p style="margin: 0; font-size: 0.8rem;">Dichter Karten-View Stil für Ausflugs- & Spot-Listen mit kompakter Bildminiatur.</p>
       </Card>
     `,
   }),

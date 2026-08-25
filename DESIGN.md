@@ -613,8 +613,9 @@ für elementare UI-Bausteine:
   Hintergrund (`variant="ghost"`), mit sanftem Hover- und aktivem Auswahlstatus (`active`).
 - **`Card.vue`**: Basis-Fläche für Spots, Touren, Budget-Töpfe, Notizen und Fokus-Panels. Unterstützt
   `variant` (`default`, `muted` für hinterlegte Flächen, `condensed` für dichte Listen & Mini-Karten,
-  `flat` ohne Schatten, `elevated` mit verstärktem Schatten `var(--shadow-md)`), optionales **Bild-Banner**
-  am oberen Kartenrand (`bannerUrl` prop oder `#banner` slot) mit nahtloser Squircle-Eckenanpassung, sowie
+  `flat` ohne Schatten, `elevated` mit verstärktem Schatten `var(--shadow-md)`, `tile` für Dashboard-Kacheln),
+  optionales **Bild-Banner** (`bannerUrl` prop oder `#banner` slot) wahlweise oben (`bannerPosition="top"`) oder
+  als **schmale Miniatur links** (`bannerPosition="left"` für horizontale Karten- & Listenansichten), sowie
   Echtzeit-Highlighting (`highlight` prop / `.new-highlight`).
 - **`Input.vue`**: Wiederverwendbares Primitive für einzeilige Eingabefelder (`text`, `number`,
   `date`, `time`, `datetime-local`, `email`, `url`, `search`, etc.). Behandelt standardmäßiges

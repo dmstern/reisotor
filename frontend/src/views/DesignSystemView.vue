@@ -534,16 +534,22 @@ const avatarCategories = [
             <p>Echtzeit-Akzentrand (<code>.new-highlight</code>) signalisiert frisch aktualisierte Inhalte.</p>
           </Card>
 
-          <!-- Card mit Banner-Bild -->
-          <Card banner-url="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&auto=format&fit=crop" banner-alt="Strand">
-            <h3>Karte mit Bild-Banner</h3>
+          <!-- Card mit Banner-Bild oben -->
+          <Card banner-url="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&auto=format&fit=crop" banner-alt="Strand" banner-position="top">
+            <h3>Karte mit Banner oben</h3>
             <p>Nahtlos integriertes Vorschaubild am oberen Rand der Karte.</p>
           </Card>
 
-          <!-- Condensed Card mit Banner-Bild -->
-          <Card variant="condensed" banner-url="https://images.unsplash.com/photo-1476514525535-ce74f45814ce?w=600&auto=format&fit=crop" banner-alt="See">
-            <h4 style="margin: 0 0 4px;">Condensed mit Banner</h4>
-            <p style="font-size: 0.85rem; margin: 0;">Kompakte Mini-Karte mit integriertem Banner-Bild.</p>
+          <!-- Card mit Miniatur-Banner links (Horizontal Layout) -->
+          <Card banner-url="https://images.unsplash.com/photo-1476514525535-ce74f45814ce?w=600&auto=format&fit=crop" banner-alt="See" banner-position="left">
+            <h3>Karte mit Banner links</h3>
+            <p style="font-size: 0.85rem; margin: 0;">Horizontaler Karten-View Stil mit schmaler Bildminiatur auf der linken Seite.</p>
+          </Card>
+
+          <!-- Condensed Mini Card mit Banner links -->
+          <Card variant="condensed" banner-url="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&auto=format&fit=crop" banner-alt="Strand" banner-position="left">
+            <h4 style="margin: 0 0 2px;">Mini-Karte mit Banner links</h4>
+            <p style="font-size: 0.8rem; margin: 0;">Kompakter Karten-View Stil für Ausflüge & Spots mit Vorschaubild links.</p>
           </Card>
         </div>
       </section>
