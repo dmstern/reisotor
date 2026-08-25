@@ -26,12 +26,15 @@ const users = [
 ];
 
 const insertUser = db.prepare(
-  'INSERT OR IGNORE INTO users (username, password_hash, avatar) VALUES (?, ?, ?)',
+  'INSERT OR IGNORE INTO users (username, password_hash, avatar, is_admin, must_change_password) VALUES (?, ?, ?, ?, ?)',
 );
 
-for (const u of users) {
+for (let i = 0; i < users.length; i++) {
+  const u = users[i];
   const hash = bcrypt.hashSync(u.password, 10);
-  insertUser.run(u.username, hash, u.avatar);
+  const isAdmin = i === 0 ? 1 : 0;
+  const mustChangePassword = 0;
+  insertUser.run(u.username, hash, u.avatar, isAdmin, mustChangePassword);
 }
 
 console.log('Seed abgeschlossen. Nutzer:', users.map((u) => u.username).join(', '));

@@ -1,7 +1,13 @@
 import type { FastifyPluginAsync } from 'fastify';
 import bcrypt from 'bcrypt';
 import { db } from '../db/index.js';
-import { REGISTRATION_MODE, isUserRestricted, isUsernameFullAccess } from '../registrationConfig.js';
+import {
+  REGISTRATION_MODE,
+  isUserRestricted,
+  isUserAdmin,
+  userMustChangePassword,
+  isUsernameFullAccess,
+} from '../registrationConfig.js';
 
 interface UserRow {
   id: number;
@@ -51,16 +57,28 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 
     const trimmedUsername = username.trim();
     const restricted = REGISTRATION_MODE === 'restricted' && !isUsernameFullAccess(trimmedUsername) ? 1 : 0;
+
+    // Der allererste Nutzer in der Datenbank wird automatisch Admin.
+    const userCount = (db.prepare('SELECT COUNT(*) as count FROM users').get() as { count: number }).count;
+    const isAdmin = userCount === 0 ? 1 : 0;
+
     const hash = bcrypt.hashSync(password, 10);
     const result = db
-      .prepare('INSERT INTO users (username, email, password_hash, avatar, is_restricted) VALUES (?, ?, ?, ?, ?)')
-      .run(trimmedUsername, email.trim(), hash, '🙂', restricted);
+      .prepare('INSERT INTO users (username, email, password_hash, avatar, is_restricted, is_admin, must_change_password) VALUES (?, ?, ?, ?, ?, ?, 0)')
+      .run(trimmedUsername, email.trim(), hash, '🙂', restricted, isAdmin);
     const userId = result.lastInsertRowid as number;
 
     req.session.userId = userId;
     req.session.username = trimmedUsername;
     reply.code(201);
-    return { id: userId, username: trimmedUsername, avatar: '🙂', restricted: isUserRestricted(userId) };
+    return {
+      id: userId,
+      username: trimmedUsername,
+      avatar: '🙂',
+      restricted: isUserRestricted(userId),
+      is_admin: Boolean(isAdmin),
+      must_change_password: false,
+    };
   });
 
   app.post<{ Body: { username: string; password: string } }>('/login', async (req, reply) => {
@@ -79,7 +97,14 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 
     req.session.userId = user.id;
     req.session.username = user.username;
-    return { id: user.id, username: user.username, avatar: user.avatar, restricted: isUserRestricted(user.id) };
+    return {
+      id: user.id,
+      username: user.username,
+      avatar: user.avatar,
+      restricted: isUserRestricted(user.id),
+      is_admin: isUserAdmin(user.id),
+      must_change_password: userMustChangePassword(user.id),
+    };
   });
 
   app.post('/logout', async (req, reply) => {
@@ -97,6 +122,11 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     if (!user) {
       return reply.code(401).send({ error: 'Nicht eingeloggt' });
     }
-    return { ...user, restricted: isUserRestricted(user.id) };
+    return {
+      ...user,
+      restricted: isUserRestricted(user.id),
+      is_admin: isUserAdmin(user.id),
+      must_change_password: userMustChangePassword(user.id),
+    };
   });
 };
