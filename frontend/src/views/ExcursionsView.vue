@@ -678,9 +678,10 @@ function tourTitlesForItem(item: SpotsGroupItem): string[] {
 // laut CSS-Spezifikation zum Containing Block für alle position:fixed-Nachfahren - das Backdrop
 // würde sich sonst auf die Sheet-Fläche statt den ganzen Bildschirm beschränken (siehe DESIGN.md,
 // Abschnitt "Zieh-Interaktionen").
-function computeMenuStyle(btnEl: HTMLElement | null, minWidth = 200): { top: string; left: string } {
-  const rect = btnEl?.getBoundingClientRect();
-  if (!rect) return { top: '0px', left: '0px' };
+function computeMenuStyle(btnEl: any, event?: MouseEvent, minWidth = 200): { top: string; left: string } {
+  const el = (event?.currentTarget as HTMLElement) || (btnEl as any)?.$el || btnEl;
+  if (!el || typeof el.getBoundingClientRect !== 'function') return { top: '0px', left: '0px' };
+  const rect = el.getBoundingClientRect();
   return {
     top: `${rect.bottom + 6}px`,
     left: `${Math.max(8, Math.min(rect.left, window.innerWidth - minWidth - 8))}px`,
@@ -688,23 +689,27 @@ function computeMenuStyle(btnEl: HTMLElement | null, minWidth = 200): { top: str
 }
 
 const descriptionOpen = ref(false);
-const descriptionBtnRef = ref<HTMLButtonElement | null>(null);
+const descriptionBtnRef = ref<any>(null);
 const descriptionMenuStyle = ref({ top: '0px', left: '0px' });
-async function toggleDescription() {
-  descriptionOpen.value = !descriptionOpen.value;
-  if (!descriptionOpen.value) return;
-  await nextTick();
-  descriptionMenuStyle.value = computeMenuStyle(descriptionBtnRef.value, 260);
+function toggleDescription(event?: MouseEvent) {
+  if (!descriptionOpen.value) {
+    descriptionMenuStyle.value = computeMenuStyle(descriptionBtnRef.value, event, 260);
+    descriptionOpen.value = true;
+  } else {
+    descriptionOpen.value = false;
+  }
 }
 
 const categoryMenuOpen = ref(false);
-const categoryBtnRef = ref<HTMLButtonElement | null>(null);
+const categoryBtnRef = ref<any>(null);
 const categoryMenuStyle = ref({ top: '0px', left: '0px' });
-async function toggleCategoryMenu() {
-  categoryMenuOpen.value = !categoryMenuOpen.value;
-  if (!categoryMenuOpen.value) return;
-  await nextTick();
-  categoryMenuStyle.value = computeMenuStyle(categoryBtnRef.value, 220);
+function toggleCategoryMenu(event?: MouseEvent) {
+  if (!categoryMenuOpen.value) {
+    categoryMenuStyle.value = computeMenuStyle(categoryBtnRef.value, event, 220);
+    categoryMenuOpen.value = true;
+  } else {
+    categoryMenuOpen.value = false;
+  }
 }
 
 const categoryFilter = usePersistedRef<string[]>('reisotor-excursions-category-filter', []);
@@ -726,13 +731,15 @@ const STATUS_FILTER_ICON: Record<'planned' | 'unplanned' | 'done', IconDef> = {
   done: ACTION_ICONS.done,
 };
 const statusMenuOpen = ref(false);
-const statusBtnRef = ref<HTMLButtonElement | null>(null);
+const statusBtnRef = ref<any>(null);
 const statusMenuStyle = ref({ top: '0px', left: '0px' });
-async function toggleStatusMenu() {
-  statusMenuOpen.value = !statusMenuOpen.value;
-  if (!statusMenuOpen.value) return;
-  await nextTick();
-  statusMenuStyle.value = computeMenuStyle(statusBtnRef.value, 220);
+function toggleStatusMenu(event?: MouseEvent) {
+  if (!statusMenuOpen.value) {
+    statusMenuStyle.value = computeMenuStyle(statusBtnRef.value, event, 220);
+    statusMenuOpen.value = true;
+  } else {
+    statusMenuOpen.value = false;
+  }
 }
 
 const statusFilter = usePersistedRef<('planned' | 'unplanned' | 'done')[]>('reisotor-excursions-status-filter', []);
@@ -1828,7 +1835,7 @@ async function removeSpot(id: number) {
                eines neuen Tooltip-Mechanismus. -->
               <span class="dropdown info-dropdown">
                 <button ref="descriptionBtnRef" type="button" class="info-btn" title="Was sind Spots?"
-                  aria-label="Was sind Spots?" @click="toggleDescription">
+                  aria-label="Was sind Spots?" @click="toggleDescription($event)">
                   <AppIcon :icon="ACTION_ICONS.info" :size="16" group="actions" />
                 </button>
                 <Teleport to="body">
@@ -2198,17 +2205,7 @@ async function removeSpot(id: number) {
             </form>
           </Modal>
 
-          <!-- Filter und Sortierung bewusst direkt hier, unmittelbar über der Kategorie-Navi (statt
-           Sortierung z. B. oben im .header): beide wirken auf dieselbe Kategorie-gruppierte Liste,
-           sollen deshalb auch räumlich als zusammengehöriges Werkzeug-Paar wahrgenommen werden.
-           Sortierung und Filter in getrennten Zeilen (statt einer gemeinsamen, umbrechenden Reihe):
-           beides sind konzeptionell unterschiedliche Werkzeuge (eine Reihenfolge vs. eine
-           Ein-/Ausblend-Auswahl), ein eigenes Label+Icon je Zeile macht das auf einen Blick klar.
-           Immer offen, kein Auf-/Zuklapp-Mechanismus mehr (früher .filter-toggle-row) – auf
-           schmalen Geräten sorgt stattdessen eine feste Label-Spaltenbreite (.tool-label, tabellen-
-           artig ausgerichtet) zusammen mit auf Icons reduzierten Zeilen-/Dropdown-Beschriftungen
-           (siehe @media unten) dafür, dass die beiden Filter-Dropdowns nicht mehr umbrechen/
-           verrutschen (Issue #170). -->
+
           <div class="filter-bar" v-if="filterCategoryOptions.length">
             <div class="filter-bar-rows">
               <div class="tool-row">
@@ -2229,7 +2226,7 @@ async function removeSpot(id: number) {
                 </span>
                 <div class="dropdown">
                   <Button ref="categoryBtnRef" variant="secondary" class="category-btn"
-                    title="Nach Kategorie filtern" aria-label="Nach Kategorie filtern" @click="toggleCategoryMenu">
+                    title="Nach Kategorie filtern" aria-label="Nach Kategorie filtern" @click="toggleCategoryMenu($event)">
                     <AppIcon :icon="FORM_FIELD_ICONS.category" :size="14" group="formFields" /> Kategorie
                     <AppIcon :icon="ACTION_ICONS.chevronDown" :size="12" group="actions" class="caret dropdown-caret"
                       :class="{ open: categoryMenuOpen }" />
@@ -2249,7 +2246,7 @@ async function removeSpot(id: number) {
                 <div class="dropdown">
                   <Button ref="statusBtnRef" variant="secondary" class="category-btn"
                     title="Nach Status (geplant/ungeplant/gemacht) filtern" aria-label="Nach Status filtern"
-                    @click="toggleStatusMenu">
+                    @click="toggleStatusMenu($event)">
                     <AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" /> Status
                     <AppIcon :icon="ACTION_ICONS.chevronDown" :size="12" group="actions" class="caret dropdown-caret"
                       :class="{ open: statusMenuOpen }" />
