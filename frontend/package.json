@@ -13,6 +13,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "storybook": "storybook dev -p 6006 --disable-telemetry",
+    "build:storybook": "storybook build --disable-telemetry -o dist-storybook",
     "build-storybook": "storybook build --disable-telemetry"
   },
   "dependencies": {

@@ -54,15 +54,20 @@ jobs:
         working-directory: frontend
         run: npm run build:demo
 
+      - name: Build storybook
+        working-directory: frontend
+        run: npm run build:storybook
+
       - name: Assemble Pages site
         run: |
           rm -rf pages-site
-          mkdir -p pages-site/demo
+          mkdir -p pages-site/demo pages-site/storybook
           cp -r frontend/dist-landing/. pages-site/
           # landing.html ist der Vite-Entry-Punkt (siehe frontend/landing.html) - GitHub Pages
           # braucht dagegen ein index.html am Root.
           mv pages-site/landing.html pages-site/index.html
           cp -r frontend/dist-demo/. pages-site/demo/
+          cp -r frontend/dist-storybook/. pages-site/storybook/
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
