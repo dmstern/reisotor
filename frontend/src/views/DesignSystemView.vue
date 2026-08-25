@@ -454,27 +454,27 @@ const avatarCategories = [
             <div class="demo-box">
               <span class="demo-title">IconButton Ghost</span>
               <div class="demo-inline">
-                <IconButton size="sm">⚙️</IconButton>
-                <IconButton size="md">⚙️</IconButton>
-                <IconButton size="lg">⚙️</IconButton>
+                <IconButton :icon="ACTION_ICONS.filterSettings" size="sm" />
+                <IconButton :icon="ACTION_ICONS.filterSettings" size="md" />
+                <IconButton :icon="ACTION_ICONS.filterSettings" size="lg" />
               </div>
             </div>
 
             <div class="demo-box">
               <span class="demo-title">IconButton Secondary</span>
               <div class="demo-inline">
-                <IconButton variant="secondary" size="sm">✏️</IconButton>
-                <IconButton variant="secondary" size="md">✏️</IconButton>
-                <IconButton variant="secondary" size="lg">✏️</IconButton>
+                <IconButton :icon="ACTION_ICONS.edit" variant="secondary" size="sm" />
+                <IconButton :icon="ACTION_ICONS.edit" variant="secondary" size="md" />
+                <IconButton :icon="ACTION_ICONS.edit" variant="secondary" size="lg" />
               </div>
             </div>
 
             <div class="demo-box">
               <span class="demo-title">IconButton Danger</span>
               <div class="demo-inline">
-                <IconButton variant="danger" size="sm">🗑️</IconButton>
-                <IconButton variant="danger" size="md">🗑️</IconButton>
-                <IconButton variant="danger" size="lg">🗑️</IconButton>
+                <IconButton :icon="ACTION_ICONS.delete" variant="danger" size="sm" />
+                <IconButton :icon="ACTION_ICONS.delete" variant="danger" size="md" />
+                <IconButton :icon="ACTION_ICONS.delete" variant="danger" size="lg" />
               </div>
             </div>
           </div>

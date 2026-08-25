@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3';
 import IconButton from './IconButton.vue';
+import { ACTION_ICONS } from '../../utils/actionIcons';
 
 const meta: Meta<typeof IconButton> = {
   title: 'Primitives/IconButton',
@@ -26,6 +27,7 @@ const meta: Meta<typeof IconButton> = {
     size: 'md',
     active: false,
     disabled: false,
+    icon: ACTION_ICONS.edit,
   },
 };
 
@@ -33,37 +35,45 @@ export default meta;
 type Story = StoryObj<typeof IconButton>;
 
 export const Ghost: Story = {
-  args: { variant: 'ghost' },
+  args: { variant: 'ghost', icon: ACTION_ICONS.filterSettings },
   render: (args) => ({
     components: { IconButton },
-    setup() { return { args }; },
-    template: '<IconButton v-bind="args">⚙️</IconButton>',
+    setup() {
+      return { args };
+    },
+    template: '<IconButton v-bind="args" />',
   }),
 };
 
 export const Secondary: Story = {
-  args: { variant: 'secondary' },
+  args: { variant: 'secondary', icon: ACTION_ICONS.edit },
   render: (args) => ({
     components: { IconButton },
-    setup() { return { args }; },
-    template: '<IconButton v-bind="args">✏️</IconButton>',
+    setup() {
+      return { args };
+    },
+    template: '<IconButton v-bind="args" />',
   }),
 };
 
 export const Danger: Story = {
-  args: { variant: 'danger' },
+  args: { variant: 'danger', icon: ACTION_ICONS.delete },
   render: (args) => ({
     components: { IconButton },
-    setup() { return { args }; },
-    template: '<IconButton v-bind="args">🗑️</IconButton>',
+    setup() {
+      return { args };
+    },
+    template: '<IconButton v-bind="args" />',
   }),
 };
 
 export const Active: Story = {
-  args: { active: true },
+  args: { active: true, icon: ACTION_ICONS.recommended },
   render: (args) => ({
     components: { IconButton },
-    setup() { return { args }; },
-    template: '<IconButton v-bind="args">⭐</IconButton>',
+    setup() {
+      return { args };
+    },
+    template: '<IconButton v-bind="args" />',
   }),
 };
