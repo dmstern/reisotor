@@ -50,9 +50,6 @@ const features = [
       </p>
       <div class="hero-actions">
         <a :href="demoUrl" class="cta-primary">Demo ausprobieren</a>
-        <a :href="storybookUrl" target="_blank" rel="noopener" class="cta-secondary"
-          >🎨 Storybook (Design System)</a
-        >
         <a :href="repoUrl" target="_blank" rel="noopener" class="cta-secondary"
           >Auf GitHub ansehen</a
         >
@@ -125,7 +122,7 @@ const features = [
     <footer class="landing-footer">
       <p class="hint">
         <a :href="demoUrl">Live Demo</a> ·
-        <a :href="storybookUrl" target="_blank" rel="noopener">Storybook Showcase</a> ·
+        <a :href="storybookUrl" target="_blank" rel="noopener">Storybook (Design System)</a> ·
         <a :href="repoUrl" target="_blank" rel="noopener">Reisotor auf GitHub</a>
       </p>
       <p class="hint">
