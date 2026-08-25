@@ -122,37 +122,55 @@ function handleCardClick(event: MouseEvent) {
       </slot>
     </div>
 
-    <div class="card-content">
-      <div v-if="$slots.header" class="card-header">
-        <slot name="header" />
-      </div>
-
-      <div class="card-body">
-        <!-- Hauptinhalt -->
-        <slot />
-
-        <!-- Inhalt nur im komprimierten (condensed) Zustand -->
-        <div v-if="isCondensed && $slots.condensed" class="card-condensed-slot">
-          <slot name="condensed" />
+    <template v-if="bannerUrl || $slots.banner || $slots.header || $slots.footer">
+      <div class="card-content">
+        <div v-if="$slots.header" class="card-header">
+          <slot name="header" />
         </div>
 
-        <!-- Details nur im aufgeklappten (expanded) Zustand -->
-        <div v-if="isExpanded && ($slots.expanded || $slots.details)" class="card-expanded-slot">
-          <slot name="expanded">
-            <slot name="details" />
-          </slot>
+        <div class="card-body">
+          <slot />
+
+          <div v-if="isCondensed && $slots.condensed" class="card-condensed-slot">
+            <slot name="condensed" />
+          </div>
+
+          <div v-if="isExpanded && ($slots.expanded || $slots.details)" class="card-expanded-slot">
+            <slot name="expanded">
+              <slot name="details" />
+            </slot>
+          </div>
+        </div>
+
+        <div v-if="$slots.footer" class="card-footer">
+          <slot name="footer" />
         </div>
       </div>
+    </template>
+    <template v-else>
+      <slot />
 
-      <div v-if="$slots.footer" class="card-footer">
-        <slot name="footer" />
+      <div v-if="isCondensed && $slots.condensed" class="card-condensed-slot">
+        <slot name="condensed" />
       </div>
-    </div>
+
+      <div v-if="isExpanded && ($slots.expanded || $slots.details)" class="card-expanded-slot">
+        <slot name="expanded">
+          <slot name="details" />
+        </slot>
+      </div>
+    </template>
   </div>
 </template>
 
 <style scoped>
 .card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg-squircle);
+  corner-shape: squircle;
+  padding: var(--space-4);
+  box-shadow: var(--shadow-sm);
   transition: padding 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
 }
 
@@ -256,16 +274,13 @@ function handleCardClick(event: MouseEvent) {
 }
 
 .card--banner-left .card-banner {
-  width: 120px;
-  min-width: 120px;
-  flex: 0 0 120px;
+  width: 140px;
+  min-width: 140px;
+  flex: 0 0 140px;
   height: auto;
-  min-height: 100%;
-  margin: 0;
   position: relative;
-  overflow: hidden;
   background: var(--color-hover);
-  transition: width 0.2s ease, flex-basis 0.2s ease;
+  transition: width 0.2s ease, min-width 0.2s ease, flex-basis 0.2s ease;
 }
 
 .card--banner-left.card--condensed .card-banner {
@@ -310,7 +325,13 @@ function handleCardClick(event: MouseEvent) {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-4px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>
