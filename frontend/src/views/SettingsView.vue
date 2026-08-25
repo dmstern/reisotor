@@ -1326,7 +1326,7 @@ h3 {
 .emoji-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-1);
+  gap: var(--space-2);
 }
 
 .form {

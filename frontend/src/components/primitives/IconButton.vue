@@ -2,15 +2,15 @@
 import type { IconDef } from '../../utils/icon';
 import Button from './Button.vue';
 
-// IconButton-Primitive für Icon-only-Buttons.
-// Delegiert direkt an Button.vue (welches Icon-Only, Varianten und Zustände nun zentral verwaltet).
+// IconButton-Primitive für Icon-only-Buttons (Tabler-Icons oder Emoji-Inhalte).
+// Delegiert an Button.vue und erzwingt das quadratische Icon-Only-Layout (Sizing, Padding, Emoji-Font-Size).
 
 defineProps<{
   /** Optionale IconDef-Definition für Tabler-Icon Rendering via AppIcon.vue */
   icon?: IconDef;
-  /** Variante: 'ghost', 'secondary', 'danger' */
-  variant?: 'ghost' | 'secondary' | 'danger';
-  /** Größe des Buttons: 'sm' (28px), 'md' (36px), 'lg' (44px). */
+  /** Variante: 'ghost', 'secondary', 'danger', 'primary' */
+  variant?: 'ghost' | 'secondary' | 'danger' | 'primary';
+  /** Größe des Buttons: 'sm' (30px), 'md' (38px), 'lg' (46px). */
   size?: 'sm' | 'md' | 'lg';
   /** Form-Variante: 'squircle' (Standard) oder 'circle' (kreisrund). */
   shape?: 'squircle' | 'circle';
@@ -42,6 +42,7 @@ const emit = defineEmits<{
     :type="type"
     :aria-label="ariaLabel"
     :title="title"
+    :icon-only="true"
     @click="emit('click', $event)"
   >
     <slot />

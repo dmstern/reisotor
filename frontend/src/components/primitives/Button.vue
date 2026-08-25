@@ -33,6 +33,8 @@ const props = withDefaults(
     ariaLabel?: string;
     /** Tooltip/Titel. */
     title?: string;
+    /** Ob der Button explizit im quadratischen Icon-Only-Modus gerendert werden soll. */
+    iconOnly?: boolean;
   }>(),
   {
     variant: 'primary',
@@ -41,6 +43,7 @@ const props = withDefaults(
     active: false,
     type: 'button',
     disabled: false,
+    iconOnly: false,
   }
 );
 
@@ -61,7 +64,11 @@ const hasDefaultSlot = () =>
       variant === 'card-action' ? 'card-action-btn' : undefined,
       size !== 'md' ? `btn--${size}` : undefined,
       shape !== 'squircle' ? `btn--${shape}` : undefined,
-      { 'is-disabled': disabled, 'is-active': active, 'icon-only': !hasDefaultSlot() && !!icon },
+      {
+        'is-disabled': disabled,
+        'is-active': active,
+        'icon-only': iconOnly || (!hasDefaultSlot() && !!icon),
+      },
     ]"
   >
     <AppIcon
@@ -112,7 +119,7 @@ const hasDefaultSlot = () =>
 
 .btn.is-active {
   background: var(--color-primary-tint);
-  border-color: var(--color-primary);
+  border: 1.5px solid var(--color-primary);
   color: var(--color-primary-dark);
 }
 
@@ -207,26 +214,26 @@ const hasDefaultSlot = () =>
 .btn.icon-only {
   padding: 0;
   flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
+  min-height: 38px;
+  font-size: 1.3rem;
 }
 
 .btn.icon-only.btn--sm {
-  width: 28px;
-  height: 28px;
-  min-width: 28px;
-  min-height: 28px;
-}
-
-.btn.icon-only {
-  width: 36px;
-  height: 36px;
-  min-width: 36px;
-  min-height: 36px;
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  min-height: 30px;
+  font-size: 1.1rem;
 }
 
 .btn.icon-only.btn--lg {
-  width: 44px;
-  height: 44px;
-  min-width: 44px;
-  min-height: 44px;
+  width: 46px;
+  height: 46px;
+  min-width: 46px;
+  min-height: 46px;
+  font-size: 1.5rem;
 }
 </style>
