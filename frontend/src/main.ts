@@ -25,8 +25,17 @@ app.mount('#app');
 // Hand statt einer Lücke dazwischen).
 const splash = document.getElementById('splash');
 if (splash) {
-  splash.classList.add('splash-hide');
-  splash.addEventListener('transitionend', () => splash.remove(), { once: true });
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reducedMotion) {
+    // Bei prefers-reduced-motion: reduce (z. B. E2E-Tests mit reducedMotion:'reduce') die
+    // CSS-Transition überspringen und den Splash sofort entfernen. transitionend feuert in
+    // headless Chromium bei reduced-motion nicht immer zuverlässig - ohne diesen Sonderfall
+    // bliebe der Splash bis zum nächsten Repaint sichtbar und würde Screenshots verfälschen.
+    splash.remove();
+  } else {
+    splash.classList.add('splash-hide');
+    splash.addEventListener('transitionend', () => splash.remove(), { once: true });
+  }
 }
 
 // Service-Worker-Registrierung läuft jetzt über vite-plugin-pwa's virtual:pwa-register-Modul (siehe
