@@ -2,3 +2,4 @@ node_modules/
 dist/
 dist-landing/
 dist-demo/
+storybook-static/

@@ -575,6 +575,14 @@ async function onImportFileSelected(event: Event) {
           Verbleibende Urlaubstage anzeigen statt festem Hinweis
         </label>
       </div>
+
+      <div class="card">
+        <h2><AppIcon :icon="ACTION_ICONS.edit" group="navigation" :size="20" /> Design System Showcase</h2>
+        <p class="hint intro-hint">
+          Interaktive Vorschau und Dokumentation aller UI-Primitives und wiederverwendbaren Komponenten.
+        </p>
+        <router-link to="/design-system" class="card-action-btn">Design System öffnen</router-link>
+      </div>
     </template>
 
     <div v-if="activeTab === 'trip'" class="grid settings-grid">
