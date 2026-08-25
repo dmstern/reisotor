@@ -5,8 +5,8 @@ import { test, expect } from '@playwright/test';
 // Packliste, jetzt auch bei Einkauf und ToDo.
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
-    localStorage.removeItem('reisotor-shopping-group-by');
-    localStorage.removeItem('reisotor-todo-group-by');
+    localStorage.setItem('reisotor-shopping-group-by', JSON.stringify('buyer'));
+    localStorage.setItem('reisotor-todo-group-by', JSON.stringify('assignee'));
   });
 });
 
