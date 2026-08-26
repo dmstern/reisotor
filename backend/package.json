@@ -1,0 +1,39 @@
+{
+  "name": "reisotor-backend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/generate-build-info.mjs && tsx src/db/seed.ts && tsx watch src/server.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "format:check": "prettier --check .",
+    "build": "tsc && node scripts/generate-build-info.mjs",
+    "start": "node dist/server.js",
+    "seed": "tsx src/db/seed.ts",
+    "seed:demo": "tsx src/db/seedDemo.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@fastify/cookie": "^9.4.0",
+    "@fastify/cors": "^9.0.1",
+    "@fastify/session": "^10.9.0",
+    "@fastify/static": "^7.0.4",
+    "bcrypt": "^5.1.1",
+    "better-sqlite3": "^11.3.0",
+    "fastify": "^4.28.1",
+    "sanitize-html": "^2.17.6",
+    "web-push": "^3.6.7"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "@types/better-sqlite3": "^7.6.11",
+    "@types/node": "^22.7.5",
+    "@types/sanitize-html": "^2.16.1",
+    "@types/web-push": "^3.6.4",
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.3",
+    "vitest": "^4.1.10"
+  }
+}

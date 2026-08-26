@@ -1,0 +1,1 @@
+import{qn as e,tr as t}from"./index-CGJy5ONv.js";function n(n,i){let a=t(r(n,i));return e(a,e=>{localStorage.setItem(n,JSON.stringify(e))},{flush:`sync`}),a}function r(e,t){let n=localStorage.getItem(e);if(n==null)return t;try{return JSON.parse(n)}catch{return t}}function i(e,t){let n=RegExp(`^#${t}-(\\d+)$`).exec(e);return n?Number(n[1]):null}export{n,i as t};
