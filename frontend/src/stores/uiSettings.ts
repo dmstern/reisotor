@@ -21,8 +21,10 @@ export const VIBRANT_PRIMARY_COLOR_PRESETS = [
   { name: 'Bernstein', hex: '#d97706' },
   { name: 'Indigo', hex: '#4f46e5' },
   { name: 'Pink', hex: '#db2777' },
+  { name: 'Aubergine', hex: '#77216f' },
   { name: 'Koralle', hex: '#ea580c' },
   { name: 'Sonnengelb', hex: '#ca8a04' },
+  { name: 'Lime', hex: '#65a30d' },
 ] as const;
 
 export const PASTEL_PRIMARY_COLOR_PRESETS = [
@@ -34,8 +36,10 @@ export const PASTEL_PRIMARY_COLOR_PRESETS = [
   { name: 'Pfirsich', hex: '#f97316' },
   { name: 'Lavendel', hex: '#6366f1' },
   { name: 'Soft-Pink', hex: '#ec4899' },
+  { name: 'Malve', hex: '#c084fc' },
   { name: 'Sand', hex: '#eab308' },
   { name: 'Aquamarin', hex: '#06b6d4' },
+  { name: 'Pistazie', hex: '#84cc16' },
 ] as const;
 
 export const PRIMARY_COLOR_PRESETS = [
