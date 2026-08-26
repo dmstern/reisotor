@@ -264,7 +264,7 @@ function onLinkClick(event: MouseEvent) {
   backdrop-filter: var(--backdrop-blur-md);
   -webkit-backdrop-filter: var(--backdrop-blur-md);
   box-shadow:
-    0 8px 24px rgba(0, 0, 0, 0.25),
+    0 0 24px rgba(0, 0, 0, 0.25),
     inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
