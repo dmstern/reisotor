@@ -14,6 +14,8 @@ import PwaUpdatePrompt from './PwaUpdatePrompt.vue';
 import PwaInstallHint from './PwaInstallHint.vue';
 import LoadingIndicator from './LoadingIndicator.vue';
 import ThemeModeSelect from './ThemeModeSelect.vue';
+import DemoModeBanner from './DemoModeBanner.vue';
+import { DEMO_MODE } from '../demo/isDemoMode';
 
 const auth = useAuthStore();
 // Nur instanziieren, damit die Online/Offline-Listener + der periodische Health-Check (siehe dort)
@@ -69,6 +71,7 @@ const isNonProd = computed(
     class="app-header"
     :class="{ 'non-prod': isNonProd, 'nav-bottom': navBarIsBottom }"
   >
+    <DemoModeBanner v-if="DEMO_MODE" />
     <!-- Eigene Zeile ÜBER der Icon-Zeile statt zwischen TripSwitcher und den Icons rechts
          eingereiht: der TripSwitcher-Button wächst mit dem Urlaubsnamen und schrumpft nicht
          zuverlässig (siehe .switcher-btn in TripSwitcher.vue), wodurch ein hier eingereihter Pill
