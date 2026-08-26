@@ -1,5 +1,5 @@
 import { execSync } from 'node:child_process';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -17,6 +17,27 @@ try {
   ref = execSync('git describe --tags --always', { cwd: rootDir }).toString().trim();
 } catch {
   // Kein Git-Kontext beim Build (z. B. Release-Artefakt ohne .git-Verzeichnis) — 'unknown' bleibt.
+}
+
+const env =
+  process.env.APP_ENV ??
+  (process.env.GITHUB_REF?.startsWith('refs/tags/v') ? 'production' : 'development');
+const versionSuffix = env === 'staging' ? '-staging' : env === 'production' ? '' : '-dev';
+const computedVersion = `${pkg.version}${versionSuffix}`;
+
+function readPendingReleaseNotes() {
+  const pendingDir = path.join(repoRootDir, 'release-notes', 'pending');
+  try {
+    const fragmentFiles = readdirSync(pendingDir).filter((f) => f.endsWith('.md'));
+    const notes = fragmentFiles
+      .flatMap((f) => readFileSync(path.join(pendingDir, f), 'utf-8').split('\n'))
+      .map((line) => line.trim())
+      .filter((line) => line.startsWith('- '))
+      .map((line) => line.slice(2).trim());
+    return notes;
+  } catch {
+    return [];
+  }
 }
 
 // Letzten Eintrag aus der Root-CHANGELOG.md fürs End-Nutzer-"Was ist neu" im About-Tab
@@ -45,11 +66,32 @@ function readLatestChangelogEntry() {
   return { version, date, notes };
 }
 
+function determineChangelog() {
+  if (env === 'staging' || env === 'development') {
+    const pendingNotes = readPendingReleaseNotes();
+    if (pendingNotes.length > 0) {
+      return {
+        version: computedVersion,
+        date: new Date().toISOString().slice(0, 10),
+        notes: pendingNotes,
+      };
+    }
+    const latest = readLatestChangelogEntry();
+    if (latest) {
+      return {
+        ...latest,
+        version: computedVersion,
+      };
+    }
+  }
+  return readLatestChangelogEntry();
+}
+
 const buildInfo = {
-  version: pkg.version,
+  version: computedVersion,
   ref,
   builtAt: new Date().toISOString(),
-  changelog: readLatestChangelogEntry(),
+  changelog: determineChangelog(),
 };
 
 mkdirSync(distDir, { recursive: true });

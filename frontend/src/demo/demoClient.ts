@@ -154,8 +154,11 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
     return structuredClone(DEMO_USER) as unknown as T;
   if (path === '/auth/logout') return undefined as T;
   if (path === '/build-info') {
+    const demoVersion = __APP_VERSION__.includes('(Demo)')
+      ? __APP_VERSION__
+      : `${__APP_VERSION__} (Demo)`;
     return {
-      version: __APP_VERSION__,
+      version: demoVersion,
       ref: __APP_COMMIT__,
       builtAt: __APP_BUILT_AT__,
       changelog: null,

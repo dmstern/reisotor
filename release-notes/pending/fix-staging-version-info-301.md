@@ -1,0 +1,1 @@
+- Fix: In den About-Infos wird auf Staging und im Dev-Modus nun die passende Umgebungsvariante (vX.Y.Z-staging / vX.Y.Z-dev) sowie eine Vorschau ausstehender Release-Notes angezeigt.

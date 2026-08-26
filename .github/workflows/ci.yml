@@ -219,12 +219,16 @@ jobs:
 
       - name: Install & build backend
         working-directory: backend
+        env:
+          APP_ENV: ${{ startsWith(github.ref, 'refs/tags/v') && 'production' || 'staging' }}
         run: |
           npm ci
           npm run build
 
       - name: Install & build frontend
         working-directory: frontend
+        env:
+          APP_ENV: ${{ startsWith(github.ref, 'refs/tags/v') && 'production' || 'staging' }}
         run: |
           npm ci
           npm run build

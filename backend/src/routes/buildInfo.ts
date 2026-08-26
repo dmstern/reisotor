@@ -26,7 +26,11 @@ function readBuildInfo(): BuildInfo {
     // Root-package.json ist die einzige Versionsquelle (siehe generate-build-info.mjs), process.cwd()
     // ist backend/ - daher eine Ebene hoch.
     const pkg = JSON.parse(readFileSync(path.join(process.cwd(), '..', 'package.json'), 'utf-8'));
-    return { version: pkg.version ?? null, ref: null, builtAt: null, changelog: null };
+    const env =
+      process.env.APP_ENV ?? (process.env.NODE_ENV === 'production' ? 'production' : 'development');
+    const versionSuffix = env === 'staging' ? '-staging' : env === 'production' ? '' : '-dev';
+    const fallbackVersion = pkg.version ? `${pkg.version}${versionSuffix}` : null;
+    return { version: fallbackVersion, ref: null, builtAt: null, changelog: null };
   }
 }
 
@@ -41,6 +45,7 @@ export const buildInfoRoutes: FastifyPluginAsync = async (app) => {
     // Pro Instanz (Prod/Staging) im systemd-Service gesetzt - das Frontend wird für beide identisch
     // gebaut (siehe .github/workflows/ci.yml), kann die Umgebung also nicht aus einem
     // Build-Time-Env-Var erkennen und fragt sie stattdessen hier zur Laufzeit ab, siehe Issue #219.
-    environment: process.env.APP_ENV ?? 'production',
+    environment:
+      process.env.APP_ENV ?? (process.env.NODE_ENV === 'production' ? 'production' : 'development'),
   }));
 };

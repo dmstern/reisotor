@@ -16,6 +16,7 @@ const apiProxyTarget = process.env.API_PROXY_TARGET ?? 'http://localhost:3000';
 // Backend-Deploy über ci.yml) bleibt dadurch komplett unverändert (kein Env-Var gesetzt).
 const buildTarget = process.env.VITE_BUILD_TARGET;
 const pagesBase = process.env.VITE_BASE;
+const isDemoMode = process.env.VITE_DEMO_MODE === 'true';
 
 // Version kommt aus der Root-package.json (einzige Versionsquelle fürs ganze Repo, siehe
 // backend/scripts/generate-build-info.mjs) statt aus der lokalen frontend/package.json.
@@ -27,6 +28,17 @@ try {
 } catch {
   // Kein Git-Kontext beim Build (z. B. Release-Artefakt ohne .git-Verzeichnis) — 'unknown' bleibt.
 }
+
+const env =
+  process.env.APP_ENV ??
+  (process.env.GITHUB_REF?.startsWith('refs/tags/v') ? 'production' : 'development');
+const computedFrontendVersion = isDemoMode
+  ? `${pkg.version} (Demo)`
+  : env === 'staging'
+    ? `${pkg.version}-staging`
+    : env === 'production' || buildTarget === 'landing'
+      ? pkg.version
+      : `${pkg.version}-dev`;
 
 // Leichter Vite-Plugin zur Optimierung von @tabler/icons-vue Barrel-Imports:
 // Wandelt `import { IconBed, IconSun } from '@tabler/icons-vue'` um in direkte Subpath-Imports
@@ -184,7 +196,7 @@ export default defineConfig({
   // Prozess einfach eine Datei zur Laufzeit lesen kann, das Frontend als statischer Bundle aber
   // nicht).
   define: {
-    __APP_VERSION__: JSON.stringify(pkg.version),
+    __APP_VERSION__: JSON.stringify(computedFrontendVersion),
     __APP_COMMIT__: JSON.stringify(gitRef),
     __APP_BUILT_AT__: JSON.stringify(new Date().toISOString()),
     // Fallback für AppFooterLinks.vue, wenn kein backendseitiges build-info verfügbar ist (Login-
