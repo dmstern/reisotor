@@ -416,6 +416,7 @@ textarea {
    --texture-grain, siehe DESIGN.md Abschnitt "Weiches Material" - dort ausdrücklich nur für
    Segmented-Controls reserviert). */
 button {
+  --btn-padding-y: 11px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -424,7 +425,7 @@ button {
   border: var(--ui-border-width, 1px) solid var(--color-button-edge);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
-  padding: 11px 18px;
+  padding: var(--btn-padding-y) 18px;
   background: var(--color-primary);
   color: white;
   font-weight: 600;
