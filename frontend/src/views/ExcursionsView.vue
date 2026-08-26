@@ -3468,17 +3468,16 @@ async function removeSpot(id: number) {
 
 /* Mobil (Default) UND Desktop mit stark eingeschränktem .app-main (z. B. beide Schubladen
    gleichzeitig aufgeklappt, siehe @container weiter unten für die genaue Schwelle): .page bekommt
-   eine feste Höhe unterhalb von Kopfzeile/NavBar und wird zum Positionierungsrahmen für Karte +
-   Bottom-Sheet, die beide position:absolute (nicht mehr position:fixed) sind. Der Unterschied ist
-   entscheidend: fixed wäre viewport-weit verankert und würde damit auch über eventuell geöffnete
-   Schubladen (die .app-main als Flex-Geschwister lediglich schmaler machen, siehe Drawer.vue)
-   hinweg alles überlagern – absolute bleibt dagegen innerhalb von .page und damit innerhalb des
-   tatsächlich für die Karte verbleibenden Platzes. */
+   eine feste Höhe unterhalb von Kopfzeile und wird zum Positionierungsrahmen für Karte +
+   Bottom-Sheet, die beide position:absolute (nicht mehr position:fixed) sind.
+   WICHTIG für Issue #302/#303: Auf Mobil darf --navbar-bottom-offset NICHT von .page's Höhe
+   abgezogen werden. .page muss sich bis ganz nach unten zum Bildschirmrand erstrecken, damit die
+   Karten-View (.map-col) unter die schwebende/transparente Bottom-NavBar durchgezogen wird und keine
+   harte opake Fläche dahinter entsteht. */
 .page {
   position: relative;
   height: calc(
-    100vh - var(--app-header-height, 56px) - var(--navbar-offset, 0px) -
-      var(--navbar-bottom-offset, 0px)
+    100vh - var(--app-header-height, 56px) - var(--navbar-offset, 0px)
   );
   overflow: hidden;
   padding: 0;
@@ -3521,7 +3520,7 @@ async function removeSpot(id: number) {
      konsistent mit .page, statt dieselbe Formel ein zweites Mal zu duplizieren. Reine CSS-Rechnung,
      nicht die JS-Berechnung in sheetHeightPx() – die greift nur während eines aktiven Ziehens/beim
      Einrasten, nicht für diesen ruhenden Grundzustand. */
-  --sheet-max-height: calc(100% - 8px);
+  --sheet-max-height: calc(100% - var(--navbar-bottom-offset, 0px) - 8px);
   /* Feste Randbreite als Skalierungsfaktor statt echter Breitenänderung (left/right/width) - ein
      schwankender Layout-Breite hatte SpotCard.vue/ExcursionCard.vue's Titelzeile (~16px zwischen
      eingeklappt/ausgefahren) knapp an ihrer Umbruch-Schwelle vorbei-/dagegenlaufen lassen, je
@@ -3537,8 +3536,9 @@ async function removeSpot(id: number) {
   right: 0;
   /* Wie bei Apple: solange nicht ganz hochgezogen (collapsed/partial, .full überschreibt unten auf
      0) schwebt das Sheet mit demselben Abstand nach unten wie zu den Seiten (--space-2, siehe
-     transform:scaleX() weiter unten) statt am unteren Bildschirmrand zu kleben. */
-  bottom: var(--space-2);
+     transform:scaleX() weiter unten) plus dem Abstand der unteren NavBar (--navbar-bottom-offset).
+     Dadurch liegt der zugeklappte Drawer immer oberhalb der unteren NavBar und wird nie von ihr verdeckt (#303). */
+  bottom: calc(var(--space-2) + var(--navbar-bottom-offset, 0px));
   z-index: 5;
   display: flex;
   flex-direction: column;
@@ -3610,9 +3610,10 @@ async function removeSpot(id: number) {
 /* Ganz hochgezogen: wie bei Apple erst jetzt randlos volle Breite UND -höhe (kein Abstand mehr nach
    unten, sonst wie collapsed/partial), nur noch oben gerundete Ecken (statt der rundum gerundeten
    "schwebenden Karte" oben) - Übergang läuft über dieselben bottom/transform/border-radius-
-   Transitions wie an .spots-col selbst. */
+   Transitions wie an .spots-col selbst. Reicht unten bis var(--navbar-bottom-offset, 0px) hoch,
+   damit die Navbar nicht überfahren wird. */
 .spots-col.full {
-  bottom: 0;
+  bottom: var(--navbar-bottom-offset, 0px);
   transform: scaleX(1);
   border-radius: var(--radius-lg-squircle) var(--radius-lg-squircle) 0 0;
   height: min(88vh, var(--sheet-max-height));
