@@ -3,6 +3,7 @@ import { createPinia, setActivePinia } from 'pinia';
 import App from './App.vue';
 import router from './router';
 import { useThemeStore } from './stores/theme';
+import { useUiSettingsStore } from './stores/uiSettings';
 import { usePwaInstallStore } from './stores/pwaInstall';
 import './style.css';
 
@@ -10,6 +11,7 @@ import './style.css';
 const pinia = createPinia();
 setActivePinia(pinia);
 useThemeStore().init();
+useUiSettingsStore().init();
 // So früh wie möglich, damit das beforeinstallprompt-Event (siehe stores/pwaInstall.ts) sicher
 // abgefangen wird, auch wenn es der Browser schon direkt beim Laden feuert.
 usePwaInstallStore().init();

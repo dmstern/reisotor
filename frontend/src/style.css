@@ -83,13 +83,19 @@
   /* Gegenstück für "unten": Höhe der NavBar, wenn sie unten fixiert ist, sonst 0px – damit eine
      maximierte Schublade (Drawer.vue) auch dort Platz für die NavBar freihält. */
   --navbar-bottom-offset: 0px;
+  --ui-border-width: 1px;
+  --glass-opacity: 0.85;
+  --glass-blur: 12px;
   --color-bg: #faf8f5;
   --color-surface: #ffffff;
+  --color-surface-glass: rgb(255 255 255 / var(--glass-opacity));
+  --color-surface-glass-border: rgb(232 226 217 / calc(var(--glass-opacity) * 0.8));
+  --backdrop-blur-md: blur(var(--glass-blur)) saturate(180%);
   --color-border: #e8e2d9;
   --color-text: #2b2a28;
   --color-text-muted: #726e66;
   --color-primary: #2a7f74;
-  --color-primary-dark: #1f6059;
+  --color-primary-dark: color-mix(in srgb, var(--color-primary) 85%, black);
   --color-accent: #e08e45;
   --color-warning: #d97706;
   --color-warning-tint: #fffbeb;
@@ -107,10 +113,8 @@
   --color-like-tint: rgba(217, 70, 239, 0.12);
   --color-like-border: #e879f9;
 
-  /* Semantische Oberflächen-/Akzent-Töne für wiederkehrende Pastell-Hintergründe
-     (aktiv/ausgewählt, Hover, Hinweis-Highlights, Unterkunfts-Akzent). Zentral als
-     Variablen statt verstreuter Hex-Werte, damit Dark Mode sie gezielt überschreiben kann. */
-  --color-primary-tint: #eaf3f1;
+  /* Semantische Oberflächen-/Akzent-Töne für wiederkehrende Pastell-Hintergründe */
+  --color-primary-tint: color-mix(in srgb, var(--color-primary) 14%, var(--color-surface));
   --color-hover: #f4f1ec;
   --color-highlight: #fff4e8;
   --color-highlight-border: #f0d3ac;
@@ -193,6 +197,11 @@
   --font-size-lg: 1.15rem;
   --font-size-xl: 1.3rem;
   --font-size-2xl: 1.6rem;
+
+  --input-default-height: 44px;
+  --input-height: 44px;
+  --input-width: 44px;
+  --input-default-width: 44px;
 }
 
 /* corner-shape:squircle rendert bei GLEICHEM border-radius-Wert sichtbar WENIGER rund als ein
@@ -218,11 +227,14 @@
   :root:not([data-theme='light']) {
     --color-bg: #181715;
     --color-surface: #232220;
+    --color-surface-glass: rgb(35 34 32 / var(--glass-opacity));
+    --color-surface-glass-border: rgb(56 53 47 / calc(var(--glass-opacity) * 0.8));
+    --backdrop-blur-md: blur(var(--glass-blur)) saturate(180%);
     --color-border: #38352f;
     --color-text: #f2efe9;
     --color-text-muted: #a8a29a;
     --color-primary: #3da296;
-    --color-primary-dark: #7dd0c1;
+    --color-primary-dark: color-mix(in srgb, var(--color-primary) 85%, white);
     --color-accent: #f0a05a;
     --color-warning: #f59e0b;
     --color-warning-tint: #2e2315;
@@ -239,7 +251,7 @@
     --color-like-tint: rgba(240, 171, 252, 0.15);
     --color-like-border: #e879f9;
 
-    --color-primary-tint: #1c2e2a;
+    --color-primary-tint: color-mix(in srgb, var(--color-primary) 18%, var(--color-surface));
     --color-hover: #2a2823;
     --color-highlight: #332a1c;
     --color-highlight-border: #5c4a2c;
@@ -260,11 +272,14 @@
 :root[data-theme='dark'] {
   --color-bg: #181715;
   --color-surface: #232220;
+  --color-surface-glass: rgb(35 34 32 / var(--glass-opacity));
+  --color-surface-glass-border: rgb(56 53 47 / calc(var(--glass-opacity) * 0.8));
+  --backdrop-blur-md: blur(var(--glass-blur)) saturate(180%);
   --color-border: #38352f;
   --color-text: #f2efe9;
   --color-text-muted: #a8a29a;
   --color-primary: #3da296;
-  --color-primary-dark: #7dd0c1;
+  --color-primary-dark: color-mix(in srgb, var(--color-primary) 85%, white);
   --color-accent: #f0a05a;
   --color-danger: #e0685a;
   --color-danger-tint: #2e1816;
@@ -278,7 +293,7 @@
   --color-like-tint: rgba(240, 171, 252, 0.15);
   --color-like-border: #e879f9;
 
-  --color-primary-tint: #1c2e2a;
+  --color-primary-tint: color-mix(in srgb, var(--color-primary) 18%, var(--color-surface));
   --color-hover: #2a2823;
   --color-highlight: #332a1c;
   --color-highlight-border: #5c4a2c;
@@ -298,6 +313,9 @@
 :root[data-theme='light'] {
   --color-bg: #faf8f5;
   --color-surface: #ffffff;
+  --color-surface-glass: rgb(255 255 255 / var(--glass-opacity));
+  --color-surface-glass-border: rgb(232 226 217 / calc(var(--glass-opacity) * 0.8));
+  --backdrop-blur-md: blur(var(--glass-blur)) saturate(180%);
   --color-border: #e8e2d9;
   --color-text: #2b2a28;
   --color-text-muted: #726e66;
@@ -403,7 +421,7 @@ button {
   align-items: center;
   justify-content: center;
   gap: var(--space-1);
-  border: 1px solid var(--color-button-edge);
+  border: var(--ui-border-width, 1px) solid var(--color-button-edge);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   padding: 11px 18px;
@@ -431,7 +449,7 @@ button:active {
 button.secondary {
   background: transparent;
   color: var(--color-primary);
-  border: 1px solid var(--color-border-strong);
+  border: var(--ui-border-width, 1px) solid var(--color-border-strong);
 }
 
 button.secondary:hover {
@@ -471,7 +489,7 @@ button.danger {
   align-items: center;
   gap: 4px;
   padding: 4px 10px;
-  border: 1px solid var(--color-border-strong);
+  border: var(--ui-border-width, 1px) solid var(--color-border-strong);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   background: var(--color-primary-tint);
@@ -548,6 +566,25 @@ button.is-disabled,
   border-color: var(--color-highlight-border);
 }
 
+@keyframes badgePulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(224, 142, 69, 0.6);
+  }
+  70% {
+    transform: scale(1.08);
+    box-shadow: 0 0 0 6px rgba(224, 142, 69, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(224, 142, 69, 0);
+  }
+}
+
+.unseen-dot {
+  animation: badgePulse 2s infinite ease-in-out;
+}
+
 /* Pre-Heading / Kicker (Design-System-Utility) */
 .kicker {
   font-size: var(--font-size-xs);
@@ -584,7 +621,7 @@ button.is-disabled,
 .resize-grip::after {
   content: '';
   width: 4px;
-  height: 44px;
+  height: var(--input-default-height);
   border-radius: 3px;
   background: var(--color-border);
   transition: background 0.15s ease;
@@ -786,6 +823,48 @@ input[type='checkbox']:focus-visible,
   outline-offset: 2px;
 }
 
+input[type='color'] {
+  width: var(--input-width, --input-default-width);
+  height: var(--input-height, --input-default-height);
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  --input-padding: 9px;
+}
+
+input[type='color']::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+input[type='color']::-webkit-color-swatch {
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  box-shadow: var(--shadow-sm);
+}
+
+input[type='color']::-moz-color-swatch {
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  box-shadow: var(--shadow-sm);
+}
+
+input[type='range'],
+.range-input {
+  border-radius: 999px;
+}
+
+input[type='range']:focus-visible,
+.range-input:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+  border-radius: 999px;
+}
+
 /* Ausgegraute Zeile für abgehakte/erledigte/eingepackte Listen-Einträge (ToDo, Packliste, ...) –
    ein Regelsatz statt pro Liste dupliziert. */
 .row-done {
@@ -801,8 +880,8 @@ input[type='checkbox']:focus-visible,
 
 input:not([type='checkbox']):not([type='file']),
 textarea {
-  padding: 9px 12px;
-  border: 1px solid var(--color-border-strong);
+  padding: var(--input-padding, 9px 12px);
+  border: var(--ui-border-width, 1px) solid var(--color-border-strong);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   background: var(--color-surface);
@@ -820,7 +899,7 @@ textarea {
      identischer padding-Werte oft höher als ein normales Text-Eingabefeld gerendert - sichtbar als
      "verrutschte" Zeile, sobald beide nebeneinanderstehen (Konsistenz-Prinzip, siehe DESIGN.md).
      Eine gemeinsame Mindesthöhe erzwingt für alle Feldtypen dasselbe Ergebnis. */
-  min-height: 44px;
+  min-height: var(--input-height, var(--input-default-height));
 }
 
 /* ── Geteilter Dropdown-Stil ──────────────────────────────────────────────────────────────────
@@ -834,7 +913,7 @@ textarea {
 .dropdown-field,
 select {
   padding: 9px 12px;
-  border: 1px solid var(--color-border-strong);
+  border: var(--ui-border-width, 1px) solid var(--color-border-strong);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   background: var(--color-surface);
@@ -843,8 +922,8 @@ select {
   font-family: inherit;
   font-size: 0.95rem;
   font-weight: 400;
-  height: 44px;
-  min-height: 44px;
+  height: var(--input-height, var(--input-default-height));
+  min-height: var(--input-height, var(--input-default-height));
   box-sizing: border-box;
   min-width: 0;
   max-width: 100%;
@@ -888,7 +967,7 @@ input[type='time'],
 input[type='datetime-local'],
 input[type='month'],
 input[type='week'] {
-  height: 44px;
+  height: var(--input-height, var(--input-default-height));
 }
 
 input[type='date']::-webkit-calendar-picker-indicator,
@@ -927,7 +1006,7 @@ textarea:focus {
 
 .card {
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  border: var(--ui-border-width, 1px) solid var(--color-border);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   box-shadow: var(--shadow-sm);

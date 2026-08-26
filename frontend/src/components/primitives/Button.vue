@@ -99,15 +99,20 @@ const hasDefaultSlot = () =>
     background 0.15s ease,
     color 0.15s ease,
     border-color 0.15s ease,
-    transform 0.1s ease,
+    transform 0.12s cubic-bezier(0.2, 0.8, 0.4, 1),
     box-shadow 0.15s ease,
     opacity 0.15s ease;
   user-select: none;
 }
 
+.btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
 .btn:active:not(:disabled) {
-  transform: scale(0.96);
-  box-shadow: none;
+  transform: scale(0.96) translateY(0);
+  box-shadow: var(--shadow-sm);
 }
 
 .btn:disabled,
@@ -121,7 +126,7 @@ const hasDefaultSlot = () =>
 
 .btn.is-active {
   background: var(--color-primary-tint);
-  border: 1.5px solid var(--color-primary);
+  border: var(--ui-border-width, 1.5px) solid var(--color-primary);
   color: var(--color-primary-dark);
 }
 
@@ -133,7 +138,7 @@ const hasDefaultSlot = () =>
 .btn--primary {
   background: var(--color-primary);
   color: white;
-  border: 1px solid var(--color-button-edge);
+  border: var(--ui-border-width, 1px) solid var(--color-button-edge);
   box-shadow: var(--shadow-sm);
 }
 
@@ -145,7 +150,7 @@ const hasDefaultSlot = () =>
 .btn--secondary {
   background: transparent;
   color: var(--color-primary);
-  border: 1px solid var(--color-border-strong);
+  border: var(--ui-border-width, 1px) solid var(--color-border-strong);
   box-shadow: none;
 }
 
@@ -162,7 +167,7 @@ const hasDefaultSlot = () =>
 .btn--danger {
   background: var(--color-danger);
   color: white;
-  border: 1px solid var(--color-button-edge);
+  border: var(--ui-border-width, 1px) solid var(--color-button-edge);
   box-shadow: var(--shadow-sm);
 }
 
@@ -187,7 +192,7 @@ const hasDefaultSlot = () =>
   align-items: center;
   gap: 4px;
   padding: 4px 10px;
-  border: 1px solid var(--color-border-strong);
+  border: var(--ui-border-width, 1px) solid var(--color-border-strong);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   background: var(--color-primary-tint);
