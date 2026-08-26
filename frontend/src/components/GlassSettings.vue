@@ -114,7 +114,7 @@ const previewStyle = computed(() => {
       </div>
     </div>
 
-    <!-- Interaktiver Live-Vorschau-Kasten mit Text/Emojis direkt hinter der Pill -->
+    <!-- Interaktiver Live-Vorschau-Kasten -->
     <div class="preview-stage">
       <div class="preview-bg-content">
         <div class="bg-row header-row">
@@ -147,15 +147,15 @@ const previewStyle = computed(() => {
 
       <div class="preview-glass-pill" :style="previewStyle">
         <div class="preview-pill-item active">
-          <AppIcon :icon="SECTION_ICON_DEFS.dashboard" :size="16" group="navigation" />
+          <AppIcon :icon="SECTION_ICON_DEFS.dashboard" :size="18" group="navigation" />
           <span>Übersicht</span>
         </div>
         <div class="preview-pill-item">
-          <AppIcon :icon="SECTION_ICON_DEFS.todo" :size="16" group="navigation" />
+          <AppIcon :icon="SECTION_ICON_DEFS.todo" :size="18" group="navigation" />
           <span>Listen</span>
         </div>
         <div class="preview-pill-item">
-          <AppIcon :icon="SECTION_ICON_DEFS.budget" :size="16" group="navigation" />
+          <AppIcon :icon="SECTION_ICON_DEFS.budget" :size="18" group="navigation" />
           <span>Budget</span>
         </div>
       </div>
@@ -217,8 +217,8 @@ const previewStyle = computed(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  min-height: 200px;
+  justify-content: flex-start;
+  min-height: 220px;
 }
 
 :root[data-theme='dark'] .preview-stage,
@@ -310,15 +310,15 @@ const previewStyle = computed(() => {
 
 .preview-glass-pill {
   position: absolute;
-  top: 60%;
+  bottom: 16px;
   left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translateX(-50%);
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  padding: 8px 18px;
+  gap: var(--space-4);
+  padding: 10px 24px;
   border-radius: 999px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
   transition:
     background 0.2s ease,
     backdrop-filter 0.2s ease;
@@ -329,8 +329,8 @@ const previewStyle = computed(() => {
 .preview-pill-item {
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 0.78rem;
+  gap: 6px;
+  font-size: 0.88rem;
   font-weight: 600;
   color: var(--color-text-muted);
 }
