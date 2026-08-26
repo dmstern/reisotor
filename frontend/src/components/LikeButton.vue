@@ -23,8 +23,8 @@ const emit = defineEmits<{ (e: 'toggle'): void }>();
 
 <style scoped>
 .like-btn.liked {
-  border-color: var(--color-danger);
-  color: var(--color-danger);
-  background: var(--color-danger-tint);
+  border-color: var(--color-like-border);
+  color: var(--color-like);
+  background: var(--color-like-tint);
 }
 </style>
