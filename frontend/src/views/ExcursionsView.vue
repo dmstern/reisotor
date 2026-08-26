@@ -4555,7 +4555,6 @@ async function removeSpot(id: number) {
   flex-wrap: wrap;
   gap: var(--space-2);
   flex: 1;
-  justify-content: flex-end;
 }
 
 .filter-chip {
