@@ -334,6 +334,7 @@ function onResizeEnd() {
      Button dort, siehe .maximize-btn unten), soll den verfügbaren Platz dafür auch komplett nutzen. */
   width: 100vw;
   background: var(--color-surface);
+  border: var(--ui-border-width, 1px) solid var(--color-border);
   box-shadow: var(--shadow-md);
   corner-shape: squircle;
   z-index: 12;

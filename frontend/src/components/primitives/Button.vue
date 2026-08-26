@@ -126,7 +126,7 @@ const hasDefaultSlot = () =>
 
 .btn.is-active {
   background: var(--color-primary-tint);
-  border: 1.5px solid var(--color-primary);
+  border: var(--ui-border-width, 1.5px) solid var(--color-primary);
   color: var(--color-primary-dark);
 }
 
@@ -138,7 +138,7 @@ const hasDefaultSlot = () =>
 .btn--primary {
   background: var(--color-primary);
   color: white;
-  border: 1px solid var(--color-button-edge);
+  border: var(--ui-border-width, 1px) solid var(--color-button-edge);
   box-shadow: var(--shadow-sm);
 }
 
@@ -150,7 +150,7 @@ const hasDefaultSlot = () =>
 .btn--secondary {
   background: transparent;
   color: var(--color-primary);
-  border: 1px solid var(--color-border-strong);
+  border: var(--ui-border-width, 1px) solid var(--color-border-strong);
   box-shadow: none;
 }
 
@@ -167,7 +167,7 @@ const hasDefaultSlot = () =>
 .btn--danger {
   background: var(--color-danger);
   color: white;
-  border: 1px solid var(--color-button-edge);
+  border: var(--ui-border-width, 1px) solid var(--color-button-edge);
   box-shadow: var(--shadow-sm);
 }
 
@@ -192,7 +192,7 @@ const hasDefaultSlot = () =>
   align-items: center;
   gap: 4px;
   padding: 4px 10px;
-  border: 1px solid var(--color-border-strong);
+  border: var(--ui-border-width, 1px) solid var(--color-border-strong);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   background: var(--color-primary-tint);

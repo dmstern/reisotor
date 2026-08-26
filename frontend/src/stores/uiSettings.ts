@@ -89,16 +89,23 @@ function loadBorderWidth(): number {
   return DEFAULT_BORDER_WIDTH;
 }
 
-export function computeGlassCssValues(style: GlassStyle, opacity: number, blur: number) {
+export function getPresetGlassValues(style: GlassStyle) {
   if (style === 'glass') {
-    return { opacity: 0.85, blur: 12 };
+    return { opacity: 55, blur: 6 };
   } else if (style === 'frosted') {
-    return { opacity: 0.95, blur: 20 };
+    return { opacity: 80, blur: 24 };
   } else if (style === 'opaque') {
-    return { opacity: 1.0, blur: 0 };
-  } else {
-    return { opacity: opacity / 100, blur };
+    return { opacity: 100, blur: 0 };
   }
+  return null;
+}
+
+export function computeGlassCssValues(style: GlassStyle, opacity: number, blur: number) {
+  const preset = getPresetGlassValues(style);
+  if (preset) {
+    return { opacity: preset.opacity / 100, blur: preset.blur };
+  }
+  return { opacity: opacity / 100, blur };
 }
 
 export function applyGlassStyle(style: GlassStyle, opacity: number, blur: number) {

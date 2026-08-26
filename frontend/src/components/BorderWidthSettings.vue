@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import { useUiSettingsStore, DEFAULT_BORDER_WIDTH } from '../stores/uiSettings';
 import SegmentedToggle from './SegmentedToggle.vue';
 import Button from './primitives/Button.vue';
@@ -8,18 +9,16 @@ import { ACTION_ICONS } from '../utils/actionIcons';
 const uiSettings = useUiSettingsStore();
 
 const BORDER_PRESET_OPTIONS = [
-  { value: '0', label: '0px (Rahmenlos)' },
-  { value: '1', label: '1px (Standard)' },
-  { value: '2', label: '2px (Kräftig)' },
-  { value: '4', label: '4px (Markant)' },
+  { value: '0', label: '0px' },
+  { value: '1', label: '1px' },
+  { value: '2', label: '2px' },
+  { value: '4', label: '4px' },
 ];
 
 const currentPresetValue = computed(() => {
   const widthStr = String(uiSettings.borderWidth);
   return BORDER_PRESET_OPTIONS.some((o) => o.value === widthStr) ? widthStr : '';
 });
-
-import { computed } from 'vue';
 </script>
 
 <template>
@@ -38,7 +37,7 @@ import { computed } from 'vue';
       />
     </div>
 
-    <!-- Schieberegler -->
+    <!-- Schieberegler (immer sichtbar) -->
     <div class="slider-wrap">
       <div class="slider-header">
         <label for="border-width-slider">Rahmendicke feineinstellen</label>
@@ -87,7 +86,7 @@ import { computed } from 'vue';
 }
 
 .slider-wrap {
-  margin-top: var(--space-4);
+  margin-top: var(--space-3);
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
