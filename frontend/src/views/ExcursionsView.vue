@@ -3518,7 +3518,7 @@ async function removeSpot(id: number) {
      konsistent mit .page, statt dieselbe Formel ein zweites Mal zu duplizieren. Reine CSS-Rechnung,
      nicht die JS-Berechnung in sheetHeightPx() – die greift nur während eines aktiven Ziehens/beim
      Einrasten, nicht für diesen ruhenden Grundzustand. */
-  --sheet-max-height: calc(100% - var(--navbar-bottom-offset, 0px) - 8px);
+  --sheet-max-height: calc(100% - 8px);
   /* Feste Randbreite als Skalierungsfaktor statt echter Breitenänderung (left/right/width) - ein
      schwankender Layout-Breite hatte SpotCard.vue/ExcursionCard.vue's Titelzeile (~16px zwischen
      eingeklappt/ausgefahren) knapp an ihrer Umbruch-Schwelle vorbei-/dagegenlaufen lassen, je
@@ -3611,10 +3611,14 @@ async function removeSpot(id: number) {
    Transitions wie an .spots-col selbst. Reicht unten bis var(--navbar-bottom-offset, 0px) hoch,
    damit die Navbar nicht überfahren wird. */
 .spots-col.full {
-  bottom: var(--navbar-bottom-offset, 0px);
+  bottom: 0;
   transform: scaleX(1);
   border-radius: var(--radius-lg-squircle) var(--radius-lg-squircle) 0 0;
-  height: min(88vh, var(--sheet-max-height));
+  height: min(100vh, var(--sheet-max-height));
+
+  .spots-col-body {
+    padding-bottom: var(--navbar-bottom-offset, 0px);
+  }
 }
 
 .spots-col.dragging {
