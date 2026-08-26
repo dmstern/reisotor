@@ -137,6 +137,12 @@ const previewStyle = computed(() => {
         <div class="bg-row icon-pattern-row pill-underlay-icons">
           <span>🏖️ 🍕 🍷 🥐 ⛵ 🚴 🏖️ 🍕 🍷 🥐 ⛵ 🚴</span>
         </div>
+        <div class="bg-row text-row pill-underlay-text">
+          <span>🍕 Trattoria Bella • ☀️ Sonnenschein 28°C • 🗺️ Stadtplan</span>
+        </div>
+        <div class="bg-row icon-pattern-row pill-underlay-icons">
+          <span>✈️ 🗺️ 🏨 🧭 🌊 ☀️ 🌴 🍹 🎒 🧗 ⛵ 🚴 📍 🎟️ 📸</span>
+        </div>
       </div>
 
       <div class="preview-glass-pill" :style="previewStyle">
@@ -203,7 +209,7 @@ const previewStyle = computed(() => {
 .preview-stage {
   position: relative;
   margin-top: var(--space-4);
-  padding: var(--space-3) var(--space-3) var(--space-4);
+  padding: var(--space-3);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   background: linear-gradient(135deg, #fef3c7 0%, #dbeafe 50%, #fce7f3 100%);
@@ -211,8 +217,8 @@ const previewStyle = computed(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
-  min-height: 190px;
+  justify-content: center;
+  min-height: 200px;
 }
 
 :root[data-theme='dark'] .preview-stage,
@@ -234,7 +240,6 @@ const previewStyle = computed(() => {
   text-align: center;
   pointer-events: none;
   user-select: none;
-  padding-bottom: 24px;
 }
 
 .bg-row {
@@ -305,7 +310,9 @@ const previewStyle = computed(() => {
 
 .preview-glass-pill {
   position: absolute;
-  bottom: 12px;
+  top: 60%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   display: flex;
   align-items: center;
   gap: var(--space-3);
@@ -316,6 +323,7 @@ const previewStyle = computed(() => {
     background 0.2s ease,
     backdrop-filter 0.2s ease;
   z-index: 2;
+  white-space: nowrap;
 }
 
 .preview-pill-item {
