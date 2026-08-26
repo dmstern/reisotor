@@ -83,11 +83,13 @@
   /* Gegenstück für "unten": Höhe der NavBar, wenn sie unten fixiert ist, sonst 0px – damit eine
      maximierte Schublade (Drawer.vue) auch dort Platz für die NavBar freihält. */
   --navbar-bottom-offset: 0px;
+  --glass-opacity: 0.85;
+  --glass-blur: 12px;
   --color-bg: #faf8f5;
   --color-surface: #ffffff;
-  --color-surface-glass: rgba(255, 255, 255, 0.78);
-  --color-surface-glass-border: rgba(232, 226, 217, 0.6);
-  --backdrop-blur-md: blur(12px) saturate(180%);
+  --color-surface-glass: rgb(255 255 255 / var(--glass-opacity));
+  --color-surface-glass-border: rgb(232 226 217 / calc(var(--glass-opacity) * 0.8));
+  --backdrop-blur-md: blur(var(--glass-blur)) saturate(180%);
   --color-border: #e8e2d9;
   --color-text: #2b2a28;
   --color-text-muted: #726e66;
@@ -221,8 +223,9 @@
   :root:not([data-theme='light']) {
     --color-bg: #181715;
     --color-surface: #232220;
-    --color-surface-glass: rgba(35, 34, 32, 0.82);
-    --color-surface-glass-border: rgba(56, 53, 47, 0.6);
+    --color-surface-glass: rgb(35 34 32 / var(--glass-opacity));
+    --color-surface-glass-border: rgb(56 53 47 / calc(var(--glass-opacity) * 0.8));
+    --backdrop-blur-md: blur(var(--glass-blur)) saturate(180%);
     --color-border: #38352f;
     --color-text: #f2efe9;
     --color-text-muted: #a8a29a;
@@ -265,8 +268,9 @@
 :root[data-theme='dark'] {
   --color-bg: #181715;
   --color-surface: #232220;
-  --color-surface-glass: rgba(35, 34, 32, 0.82);
-  --color-surface-glass-border: rgba(56, 53, 47, 0.6);
+  --color-surface-glass: rgb(35 34 32 / var(--glass-opacity));
+  --color-surface-glass-border: rgb(56 53 47 / calc(var(--glass-opacity) * 0.8));
+  --backdrop-blur-md: blur(var(--glass-blur)) saturate(180%);
   --color-border: #38352f;
   --color-text: #f2efe9;
   --color-text-muted: #a8a29a;
@@ -305,9 +309,9 @@
 :root[data-theme='light'] {
   --color-bg: #faf8f5;
   --color-surface: #ffffff;
-  --color-surface-glass: rgba(255, 255, 255, 0.78);
-  --color-surface-glass-border: rgba(232, 226, 217, 0.6);
-  --backdrop-blur-md: blur(12px) saturate(180%);
+  --color-surface-glass: rgb(255 255 255 / var(--glass-opacity));
+  --color-surface-glass-border: rgb(232 226 217 / calc(var(--glass-opacity) * 0.8));
+  --backdrop-blur-md: blur(var(--glass-blur)) saturate(180%);
   --color-border: #e8e2d9;
   --color-text: #2b2a28;
   --color-text-muted: #726e66;
