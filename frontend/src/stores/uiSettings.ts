@@ -7,8 +7,24 @@ const SHOW_HOME_WEATHER_FULL_TRIP_KEY = 'reisotor-show-home-weather-full-trip';
 const GLASS_STYLE_KEY = 'reisotor-glass-style';
 const GLASS_OPACITY_KEY = 'reisotor-glass-opacity';
 const GLASS_BLUR_KEY = 'reisotor-glass-blur';
+const PRIMARY_COLOR_KEY = 'reisotor-primary-color';
+const BORDER_WIDTH_KEY = 'reisotor-border-width';
 
 export type GlassStyle = 'glass' | 'frosted' | 'opaque' | 'custom';
+
+export const PRIMARY_COLOR_PRESETS = [
+  { name: 'Türkis', hex: '#2a7f74' },
+  { name: 'Ozeanblau', hex: '#2563eb' },
+  { name: 'Violett', hex: '#7c3aed' },
+  { name: 'Smaragd', hex: '#059669' },
+  { name: 'Rubin', hex: '#e11d48' },
+  { name: 'Bernstein', hex: '#d97706' },
+  { name: 'Indigo', hex: '#4f46e5' },
+  { name: 'Pink', hex: '#db2777' },
+] as const;
+
+export const DEFAULT_PRIMARY_COLOR = '#2a7f74';
+export const DEFAULT_BORDER_WIDTH = 1;
 
 function loadShowActivityToasts(): boolean {
   // Kein gespeicherter Wert -> Standard AN (bisheriges Verhalten unverändert für alle, die die
@@ -56,6 +72,23 @@ function loadGlassBlur(): number {
   return 12;
 }
 
+function loadPrimaryColor(): string {
+  const stored = localStorage.getItem(PRIMARY_COLOR_KEY);
+  if (stored && /^#[0-9a-fA-F]{6}$/.test(stored)) {
+    return stored;
+  }
+  return DEFAULT_PRIMARY_COLOR;
+}
+
+function loadBorderWidth(): number {
+  const stored = localStorage.getItem(BORDER_WIDTH_KEY);
+  if (stored !== null) {
+    const parsed = parseInt(stored, 10);
+    if (!isNaN(parsed) && parsed >= 0 && parsed <= 10) return parsed;
+  }
+  return DEFAULT_BORDER_WIDTH;
+}
+
 export function computeGlassCssValues(style: GlassStyle, opacity: number, blur: number) {
   if (style === 'glass') {
     return { opacity: 0.85, blur: 12 };
@@ -74,9 +107,20 @@ export function applyGlassStyle(style: GlassStyle, opacity: number, blur: number
   document.documentElement.style.setProperty('--glass-blur', `${bl}px`);
 }
 
+export function applyPrimaryColor(colorHex: string) {
+  if (/^#[0-9a-fA-F]{6}$/.test(colorHex)) {
+    document.documentElement.style.setProperty('--color-primary', colorHex);
+  } else {
+    document.documentElement.style.removeProperty('--color-primary');
+  }
+}
+
+export function applyBorderWidth(widthPx: number) {
+  document.documentElement.style.setProperty('--ui-border-width', `${widthPx}px`);
+}
+
 // Geräte-/Browser-UI-Einstellung (wie stores/mapOrientation.ts) statt Account-Daten: bewusst nur
-// lokal in localStorage gehalten. showActivityToasts schaltet components/LoadingIndicator.vue's
-// kurzlebige "Lädt…/Speichert…"-Toast-Meldungen an/aus.
+// lokal in localStorage gehalten.
 export const useUiSettingsStore = defineStore('uiSettings', () => {
   const showActivityToasts = ref(loadShowActivityToasts());
   const showVacationCountdown = ref(loadShowVacationCountdown());
@@ -86,8 +130,13 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
   const glassOpacity = ref<number>(loadGlassOpacity());
   const glassBlur = ref<number>(loadGlassBlur());
 
+  const primaryColor = ref<string>(loadPrimaryColor());
+  const borderWidth = ref<number>(loadBorderWidth());
+
   function apply() {
     applyGlassStyle(glassStyle.value, glassOpacity.value, glassBlur.value);
+    applyPrimaryColor(primaryColor.value);
+    applyBorderWidth(borderWidth.value);
   }
 
   function init() {
@@ -113,6 +162,15 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
     apply();
   });
 
+  watch(primaryColor, (v) => {
+    localStorage.setItem(PRIMARY_COLOR_KEY, v);
+    apply();
+  });
+  watch(borderWidth, (v) => {
+    localStorage.setItem(BORDER_WIDTH_KEY, String(v));
+    apply();
+  });
+
   return {
     showActivityToasts,
     showVacationCountdown,
@@ -120,6 +178,8 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
     glassStyle,
     glassOpacity,
     glassBlur,
+    primaryColor,
+    borderWidth,
     init,
     apply,
   };

@@ -83,6 +83,7 @@
   /* Gegenstück für "unten": Höhe der NavBar, wenn sie unten fixiert ist, sonst 0px – damit eine
      maximierte Schublade (Drawer.vue) auch dort Platz für die NavBar freihält. */
   --navbar-bottom-offset: 0px;
+  --ui-border-width: 1px;
   --glass-opacity: 0.85;
   --glass-blur: 12px;
   --color-bg: #faf8f5;
@@ -94,7 +95,7 @@
   --color-text: #2b2a28;
   --color-text-muted: #726e66;
   --color-primary: #2a7f74;
-  --color-primary-dark: #1f6059;
+  --color-primary-dark: color-mix(in srgb, var(--color-primary) 85%, black);
   --color-accent: #e08e45;
   --color-warning: #d97706;
   --color-warning-tint: #fffbeb;
@@ -112,10 +113,8 @@
   --color-like-tint: rgba(217, 70, 239, 0.12);
   --color-like-border: #e879f9;
 
-  /* Semantische Oberflächen-/Akzent-Töne für wiederkehrende Pastell-Hintergründe
-     (aktiv/ausgewählt, Hover, Hinweis-Highlights, Unterkunfts-Akzent). Zentral als
-     Variablen statt verstreuter Hex-Werte, damit Dark Mode sie gezielt überschreiben kann. */
-  --color-primary-tint: #eaf3f1;
+  /* Semantische Oberflächen-/Akzent-Töne für wiederkehrende Pastell-Hintergründe */
+  --color-primary-tint: color-mix(in srgb, var(--color-primary) 14%, var(--color-surface));
   --color-hover: #f4f1ec;
   --color-highlight: #fff4e8;
   --color-highlight-border: #f0d3ac;
@@ -230,7 +229,7 @@
     --color-text: #f2efe9;
     --color-text-muted: #a8a29a;
     --color-primary: #3da296;
-    --color-primary-dark: #7dd0c1;
+    --color-primary-dark: color-mix(in srgb, var(--color-primary) 85%, white);
     --color-accent: #f0a05a;
     --color-warning: #f59e0b;
     --color-warning-tint: #2e2315;
@@ -247,7 +246,7 @@
     --color-like-tint: rgba(240, 171, 252, 0.15);
     --color-like-border: #e879f9;
 
-    --color-primary-tint: #1c2e2a;
+    --color-primary-tint: color-mix(in srgb, var(--color-primary) 18%, var(--color-surface));
     --color-hover: #2a2823;
     --color-highlight: #332a1c;
     --color-highlight-border: #5c4a2c;
@@ -275,7 +274,7 @@
   --color-text: #f2efe9;
   --color-text-muted: #a8a29a;
   --color-primary: #3da296;
-  --color-primary-dark: #7dd0c1;
+  --color-primary-dark: color-mix(in srgb, var(--color-primary) 85%, white);
   --color-accent: #f0a05a;
   --color-danger: #e0685a;
   --color-danger-tint: #2e1816;
@@ -289,7 +288,7 @@
   --color-like-tint: rgba(240, 171, 252, 0.15);
   --color-like-border: #e879f9;
 
-  --color-primary-tint: #1c2e2a;
+  --color-primary-tint: color-mix(in srgb, var(--color-primary) 18%, var(--color-surface));
   --color-hover: #2a2823;
   --color-highlight: #332a1c;
   --color-highlight-border: #5c4a2c;
