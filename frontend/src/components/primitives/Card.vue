@@ -235,7 +235,9 @@ function handleCardKeydown(event: KeyboardEvent) {
 }
 
 .card--elevated {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06), 0 12px 28px rgba(0, 0, 0, 0.08);
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.06),
+    0 12px 28px rgba(0, 0, 0, 0.08);
 }
 
 .card--tile {

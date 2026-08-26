@@ -58,16 +58,17 @@ const currentPresetValue = computed(() => {
     <div class="border-preview-stage">
       <div class="preview-card" :style="{ borderWidth: `${uiSettings.borderWidth}px` }">
         <span class="card-label">Beispiel-Karte (Card / Panel)</span>
-        <Button variant="secondary" size="sm" :style="{ borderWidth: `${uiSettings.borderWidth}px` }">
+        <Button
+          variant="secondary"
+          size="sm"
+          :style="{ borderWidth: `${uiSettings.borderWidth}px` }"
+        >
           Beispiel-Button
         </Button>
       </div>
     </div>
 
-    <div
-      v-if="uiSettings.borderWidth !== DEFAULT_BORDER_WIDTH"
-      class="reset-row"
-    >
+    <div v-if="uiSettings.borderWidth !== DEFAULT_BORDER_WIDTH" class="reset-row">
       <Button
         type="button"
         variant="secondary"

@@ -567,9 +567,18 @@ button.is-disabled,
 }
 
 @keyframes badgePulse {
-  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(224, 142, 69, 0.6); }
-  70% { transform: scale(1.08); box-shadow: 0 0 0 6px rgba(224, 142, 69, 0); }
-  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(224, 142, 69, 0); }
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(224, 142, 69, 0.6);
+  }
+  70% {
+    transform: scale(1.08);
+    box-shadow: 0 0 0 6px rgba(224, 142, 69, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(224, 142, 69, 0);
+  }
 }
 
 .unseen-dot {
@@ -843,7 +852,6 @@ input[type='color']::-moz-color-swatch {
   corner-shape: squircle;
   box-shadow: var(--shadow-sm);
 }
-
 
 input[type='range'],
 .range-input {

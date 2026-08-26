@@ -215,4 +215,3 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
     apply,
   };
 });
-

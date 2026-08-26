@@ -64,8 +64,8 @@ const previewStyle = computed(() => {
     <h2>Glass-Effekt & Transparenz</h2>
     <p class="hint">
       Passe das Erscheinungsbild der schwebenden Navigationsleiste und Overlays an. Wähle zwischen
-      Klassischem Glas, mattem Milchglas (Frosted), komplett blickdicht (Solide) oder passe die Werte
-      direkt per Schieberegler an.
+      Klassischem Glas, mattem Milchglas (Frosted), komplett blickdicht (Solide) oder passe die
+      Werte direkt per Schieberegler an.
     </p>
 
     <!-- Voreinstellungen (Presets) -->
