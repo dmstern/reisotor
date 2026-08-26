@@ -221,7 +221,10 @@ const previewStyle = computed(() => {
   min-height: 220px;
 }
 
-:root[data-theme='dark'] .preview-stage,
+:root[data-theme='dark'] .preview-stage {
+  background: linear-gradient(135deg, #2a2115 0%, #17253d 50%, #2b172a 100%);
+}
+
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) .preview-stage {
     background: linear-gradient(135deg, #2a2115 0%, #17253d 50%, #2b172a 100%);
