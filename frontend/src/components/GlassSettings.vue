@@ -114,7 +114,7 @@ const previewStyle = computed(() => {
       </div>
     </div>
 
-    <!-- Interaktiver Live-Vorschau-Kasten -->
+    <!-- Interaktiver Live-Vorschau-Kasten mit Text/Emojis direkt hinter der Pill -->
     <div class="preview-stage">
       <div class="preview-bg-content">
         <div class="bg-row header-row">
@@ -130,6 +130,12 @@ const previewStyle = computed(() => {
         </div>
         <div class="bg-row icon-pattern-row">
           <span>✈️ 🗺️ 🏨 🧭 🌊 ☀️ 🌴 🍹 🎒 🧗 ⛵ 🚴 📍 🎟️ 📸</span>
+        </div>
+        <div class="bg-row text-row pill-underlay-text">
+          <span>📍 Lisboa • 🏰 Torre de Belém • 🥐 Pastéis de Nátas • 🍷 Vinho Verde</span>
+        </div>
+        <div class="bg-row icon-pattern-row pill-underlay-icons">
+          <span>🏖️ 🍕 🍷 🥐 ⛵ 🚴 🏖️ 🍕 🍷 🥐 ⛵ 🚴</span>
         </div>
       </div>
 
@@ -197,7 +203,7 @@ const previewStyle = computed(() => {
 .preview-stage {
   position: relative;
   margin-top: var(--space-4);
-  padding: var(--space-4) var(--space-3) var(--space-5);
+  padding: var(--space-3) var(--space-3) var(--space-4);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   background: linear-gradient(135deg, #fef3c7 0%, #dbeafe 50%, #fce7f3 100%);
@@ -205,8 +211,8 @@ const previewStyle = computed(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  min-height: 165px;
+  justify-content: flex-start;
+  min-height: 190px;
 }
 
 :root[data-theme='dark'] .preview-stage,
@@ -228,6 +234,7 @@ const previewStyle = computed(() => {
   text-align: center;
   pointer-events: none;
   user-select: none;
+  padding-bottom: 24px;
 }
 
 .bg-row {
@@ -247,6 +254,19 @@ const previewStyle = computed(() => {
 .text-row-sub {
   color: var(--color-text-muted);
   font-size: 0.78rem;
+}
+
+.pill-underlay-text {
+  font-weight: 700;
+  color: var(--color-primary-dark);
+  font-size: 0.85rem;
+  margin-top: 2px;
+}
+
+.pill-underlay-icons {
+  font-size: 1.25rem;
+  letter-spacing: 0.15em;
+  opacity: 1;
 }
 
 .icon-pattern-row {
@@ -285,7 +305,7 @@ const previewStyle = computed(() => {
 
 .preview-glass-pill {
   position: absolute;
-  bottom: var(--space-2);
+  bottom: 12px;
   display: flex;
   align-items: center;
   gap: var(--space-3);
