@@ -84,7 +84,7 @@ test.describe('Icon-Stil: Emoji/Symbole', () => {
     expect(await dashboardLink.locator('span.icon').count()).toBe(0);
 
     await page.goto('/settings?tab=app');
-    const iconsCard = page.locator('.card', { hasText: 'Icons' });
+    const iconsCard = page.locator('.card', { has: page.getByRole('heading', { name: 'Icons', exact: true }) });
     await expect(iconsCard).toBeVisible();
 
     const navRow = iconsCard.locator('.group-override-row', { hasText: 'Navigation & Dashboard' });
@@ -104,7 +104,7 @@ test.describe('Icon-Stil: Emoji/Symbole', () => {
 
   test('"Für alle Bereiche umstellen" setzt alle Bereichs-Toggles auf einmal', async ({ page }) => {
     await page.goto('/settings?tab=app');
-    const iconsCard = page.locator('.card', { hasText: 'Icons' });
+    const iconsCard = page.locator('.card', { has: page.getByRole('heading', { name: 'Icons', exact: true }) });
     await expect(iconsCard).toBeVisible();
 
     await iconsCard.locator('.all-groups-row .segmented-option', { hasText: 'Emoji' }).click();
@@ -126,7 +126,7 @@ test.describe('Icon-Stil: Emoji/Symbole', () => {
     const current = await getIconSettings(page);
     await putIconSettings(page, { ...current, groups: { ...current.groups, navigation: 'icons' } });
     await page.goto('/settings?tab=app');
-    const iconsCard = page.locator('.card', { hasText: 'Icons' });
+    const iconsCard = page.locator('.card', { has: page.getByRole('heading', { name: 'Icons', exact: true }) });
     await expect(iconsCard).toBeVisible();
 
     const navRow = iconsCard.locator('.group-override-row', { hasText: 'Navigation & Dashboard' });
@@ -188,7 +188,7 @@ test.describe('Icon-Stil: Emoji/Symbole', () => {
     page,
   }) => {
     await page.goto('/settings?tab=app');
-    const iconsCard = page.locator('.card', { hasText: 'Icons' });
+    const iconsCard = page.locator('.card', { has: page.getByRole('heading', { name: 'Icons', exact: true }) });
     await expect(iconsCard).toBeVisible();
 
     // Standard-Zustand (keine gespeicherten Einstellungen) erzwingen.
@@ -220,7 +220,7 @@ test.describe('Icon-Stil: Emoji/Symbole', () => {
       },
     });
     await page.goto('/settings?tab=app');
-    const iconsCard = page.locator('.card', { hasText: 'Icons' });
+    const iconsCard = page.locator('.card', { has: page.getByRole('heading', { name: 'Icons', exact: true }) });
     await expect(iconsCard).toBeVisible();
 
     // Keine Einstellungs-Zeilen mehr für diese beiden Bereiche.
@@ -249,7 +249,7 @@ test.describe('Icon-Stil: Emoji/Symbole', () => {
     const current = await getIconSettings(page);
     await putIconSettings(page, { ...current, groups: { ...current.groups, navigation: 'icons' } });
     await page.goto('/settings?tab=app');
-    const iconsCard = page.locator('.card', { hasText: 'Icons' });
+    const iconsCard = page.locator('.card', { has: page.getByRole('heading', { name: 'Icons', exact: true }) });
     await expect(iconsCard).toBeVisible();
     // Ausgangspunkt: Einfärben aus (Default ist zwar "an", hier gezielt "aus" gesetzt, um den
     // Kontrast zu prüfen).
@@ -273,7 +273,7 @@ test.describe('Icon-Stil: Emoji/Symbole', () => {
 
   test('"Auf Standard-Einstellungen zurücksetzen" stellt Defaults wieder her', async ({ page }) => {
     await page.goto('/settings?tab=app');
-    const iconsCard = page.locator('.card', { hasText: 'Icons' });
+    const iconsCard = page.locator('.card', { has: page.getByRole('heading', { name: 'Icons', exact: true }) });
     await expect(iconsCard).toBeVisible();
 
     await iconsCard.locator('.all-groups-row .segmented-option', { hasText: 'Emoji' }).click();

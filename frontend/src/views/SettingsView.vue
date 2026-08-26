@@ -41,6 +41,9 @@ import ThemeModeSelect from '../components/ThemeModeSelect.vue';
 import SegmentedToggle from '../components/SegmentedToggle.vue';
 import AppIcon from '../components/AppIcon.vue';
 import IconStyleSettings from '../components/IconStyleSettings.vue';
+import GlassSettings from '../components/GlassSettings.vue';
+import AccentColorSettings from '../components/AccentColorSettings.vue';
+import BorderWidthSettings from '../components/BorderWidthSettings.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import FeedbackDialog from '../components/FeedbackDialog.vue';
@@ -701,6 +704,12 @@ async function onImportFileSelected(event: Event) {
              weniger Platz. -->
         <ThemeModeSelect variant="block" />
       </div>
+
+      <AccentColorSettings />
+
+      <BorderWidthSettings />
+
+      <GlassSettings />
 
       <IconStyleSettings />
 
