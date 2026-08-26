@@ -3624,7 +3624,7 @@ async function removeSpot(id: number) {
 
 @container spots-col (max-width: 450px) {
   .add-button {
-    padding: 11px; /* TODO: dynamically use button vertical padding */
+    padding: var(--btn-padding-y, 11px);
     border-radius: 999px;
   }
 
