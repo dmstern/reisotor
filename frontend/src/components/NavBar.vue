@@ -258,13 +258,11 @@ function onLinkClick(event: MouseEvent) {
   bottom: var(--space-3);
   padding-top: 10px;
   padding-bottom: 10px;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-surface-glass-border);
   border-radius: 999px;
-  /* color-mix() statt einer zweiten, fest kodierten rgba()-Farbe: bleibt automatisch im jeweils
-     aktiven Theme (hell/dunkel) stimmig, da --color-surface selbst schon themeabhängig ist. */
-  background: color-mix(in srgb, var(--color-surface) 75%, transparent);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  background: var(--color-surface-glass);
+  backdrop-filter: var(--backdrop-blur-md);
+  -webkit-backdrop-filter: var(--backdrop-blur-md);
   box-shadow:
     0 8px 24px rgba(0, 0, 0, 0.25),
     inset 0 1px 0 rgba(255, 255, 255, 0.15);
@@ -361,6 +359,7 @@ function onLinkClick(event: MouseEvent) {
   border-radius: 50%;
   background: var(--color-danger);
   border: 1.5px solid var(--color-surface);
+  animation: badgePulse 2s infinite ease-in-out;
 }
 
 .logout {

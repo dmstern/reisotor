@@ -85,6 +85,9 @@
   --navbar-bottom-offset: 0px;
   --color-bg: #faf8f5;
   --color-surface: #ffffff;
+  --color-surface-glass: rgba(255, 255, 255, 0.78);
+  --color-surface-glass-border: rgba(232, 226, 217, 0.6);
+  --backdrop-blur-md: blur(12px) saturate(180%);
   --color-border: #e8e2d9;
   --color-text: #2b2a28;
   --color-text-muted: #726e66;
@@ -218,6 +221,8 @@
   :root:not([data-theme='light']) {
     --color-bg: #181715;
     --color-surface: #232220;
+    --color-surface-glass: rgba(35, 34, 32, 0.82);
+    --color-surface-glass-border: rgba(56, 53, 47, 0.6);
     --color-border: #38352f;
     --color-text: #f2efe9;
     --color-text-muted: #a8a29a;
@@ -260,6 +265,8 @@
 :root[data-theme='dark'] {
   --color-bg: #181715;
   --color-surface: #232220;
+  --color-surface-glass: rgba(35, 34, 32, 0.82);
+  --color-surface-glass-border: rgba(56, 53, 47, 0.6);
   --color-border: #38352f;
   --color-text: #f2efe9;
   --color-text-muted: #a8a29a;
@@ -298,6 +305,9 @@
 :root[data-theme='light'] {
   --color-bg: #faf8f5;
   --color-surface: #ffffff;
+  --color-surface-glass: rgba(255, 255, 255, 0.78);
+  --color-surface-glass-border: rgba(232, 226, 217, 0.6);
+  --backdrop-blur-md: blur(12px) saturate(180%);
   --color-border: #e8e2d9;
   --color-text: #2b2a28;
   --color-text-muted: #726e66;
@@ -546,6 +556,16 @@ button.is-disabled,
   background: var(--color-highlight);
   color: var(--color-accent);
   border-color: var(--color-highlight-border);
+}
+
+@keyframes badgePulse {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(224, 142, 69, 0.6); }
+  70% { transform: scale(1.08); box-shadow: 0 0 0 6px rgba(224, 142, 69, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(224, 142, 69, 0); }
+}
+
+.unseen-dot {
+  animation: badgePulse 2s infinite ease-in-out;
 }
 
 /* Pre-Heading / Kicker (Design-System-Utility) */

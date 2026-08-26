@@ -217,11 +217,11 @@ function handleCardKeydown(event: KeyboardEvent) {
   padding: var(--space-4);
   box-shadow: var(--shadow-sm);
   transition:
-    padding 0.2s ease,
+    padding 0.2s cubic-bezier(0.16, 1, 0.3, 1),
     background 0.2s ease,
     border-color 0.2s ease,
-    box-shadow 0.2s ease,
-    transform 0.15s ease;
+    box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Varianten-Styles von Card.vue */
@@ -235,14 +235,14 @@ function handleCardKeydown(event: KeyboardEvent) {
 }
 
 .card--elevated {
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06), 0 12px 28px rgba(0, 0, 0, 0.08);
 }
 
 .card--tile {
   position: relative;
   transition:
-    transform 0.15s ease,
-    box-shadow 0.15s ease;
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   margin-top: 18px;
 }
 
@@ -270,14 +270,21 @@ function handleCardKeydown(event: KeyboardEvent) {
 .card--expandable {
   cursor: pointer;
   user-select: none;
-}
-
-.card--expandable:active {
-  transform: scale(0.98);
+  transition:
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.2s ease,
+    background 0.2s ease;
 }
 
 .card--expandable:hover {
+  transform: translateY(-2px);
   border-color: var(--color-primary-dark);
+  box-shadow: var(--shadow-md);
+}
+
+.card--expandable:active {
+  transform: scale(0.98) translateY(0);
 }
 
 .card--expandable.card--expanded {
