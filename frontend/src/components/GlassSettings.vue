@@ -116,10 +116,23 @@ const previewStyle = computed(() => {
 
     <!-- Interaktiver Live-Vorschau-Kasten -->
     <div class="preview-stage">
-      <div class="preview-bg-text">
-        <span class="preview-tag warning">Extreme Hitze 36°C</span>
-        <span>Urlaub am Strand • 14. Juli • Sonnig • Packliste 12/15 erledigt</span>
+      <div class="preview-bg-content">
+        <div class="bg-row header-row">
+          <span class="preview-tag warning">🔥 Extreme Hitze 36°C</span>
+          <span class="preview-tag success">✓ Budget im Grünen</span>
+          <span class="preview-badge">🏖️ Sommerurlaub 2026</span>
+        </div>
+        <div class="bg-row text-row">
+          <span>🏝️ Strandpromenade • 🍕 Trattoria Bella • 🚲 E-Bike Tour 14:00 Uhr</span>
+        </div>
+        <div class="bg-row text-row text-row-sub">
+          <span>🧳 Packliste: Sonnencreme, Badehose, Reisepass, Kamera 📸</span>
+        </div>
+        <div class="bg-row icon-pattern-row">
+          <span>✈️ 🗺️ 🏨 🧭 🌊 ☀️ 🌴 🍹 🎒 🧗 ⛵ 🚴 📍 🎟️ 📸</span>
+        </div>
       </div>
+
       <div class="preview-glass-pill" :style="previewStyle">
         <div class="preview-pill-item active">
           <AppIcon :icon="SECTION_ICON_DEFS.dashboard" :size="16" group="navigation" />
@@ -152,6 +165,7 @@ const previewStyle = computed(() => {
   background: var(--color-hover);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
+  border: var(--ui-border-width, 1px) solid var(--color-border);
 }
 
 .slider-row {
@@ -183,7 +197,7 @@ const previewStyle = computed(() => {
 .preview-stage {
   position: relative;
   margin-top: var(--space-4);
-  padding: var(--space-4) var(--space-3);
+  padding: var(--space-4) var(--space-3) var(--space-5);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   background: linear-gradient(135deg, #fef3c7 0%, #dbeafe 50%, #fce7f3 100%);
@@ -191,8 +205,8 @@ const previewStyle = computed(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  min-height: 110px;
+  justify-content: space-between;
+  min-height: 165px;
 }
 
 :root[data-theme='dark'] .preview-stage,
@@ -202,11 +216,12 @@ const previewStyle = computed(() => {
   }
 }
 
-.preview-bg-text {
+.preview-bg-content {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
+  width: 100%;
   font-size: 0.8rem;
   font-weight: 600;
   color: var(--color-text-muted);
@@ -215,14 +230,57 @@ const previewStyle = computed(() => {
   user-select: none;
 }
 
+.bg-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  line-height: 1.3;
+}
+
+.text-row {
+  color: var(--color-text);
+  font-size: 0.82rem;
+}
+
+.text-row-sub {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+}
+
+.icon-pattern-row {
+  font-size: 1.15rem;
+  letter-spacing: 0.15em;
+  opacity: 0.9;
+  margin-top: 2px;
+}
+
 .preview-tag {
   display: inline-block;
   padding: 2px 8px;
   border-radius: 999px;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 700;
+}
+
+.preview-tag.warning {
   background: #fef3c7;
   color: #92400e;
+}
+
+.preview-tag.success {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.preview-badge {
+  background: #e0f2fe;
+  color: #075985;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
 }
 
 .preview-glass-pill {
@@ -231,19 +289,20 @@ const previewStyle = computed(() => {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding: 6px 16px;
+  padding: 8px 18px;
   border-radius: 999px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
   transition:
     background 0.2s ease,
     backdrop-filter 0.2s ease;
+  z-index: 2;
 }
 
 .preview-pill-item {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   font-weight: 600;
   color: var(--color-text-muted);
 }
