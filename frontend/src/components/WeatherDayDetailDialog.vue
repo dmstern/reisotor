@@ -6,6 +6,7 @@ import WeatherIcon from './WeatherIcon.vue';
 import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
 import {
+  detectWeatherAlerts,
   fetchHourlyForecast,
   weatherCodeMeta,
   type DailyWeather,
@@ -32,6 +33,8 @@ const router = useRouter();
 const weatherProvider = useWeatherProviderStore();
 const hourlyList = ref<HourlyWeather[]>([]);
 const loading = ref(false);
+
+const dayAlerts = computed(() => (props.day ? detectWeatherAlerts([props.day]) : []));
 
 const weatherModelLabel = computed(
   () =>
@@ -82,6 +85,22 @@ function formatDate(dateStr: string) {
       <!-- Standort-Information -->
       <div v-if="locationLabel" class="location-badge">
         <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" /> {{ locationLabel }}
+      </div>
+
+      <!-- Unwetter- / Wetter-Warnungen für diesen Tag (Issue #296) -->
+      <div v-if="dayAlerts.length" class="weather-dialog-alerts">
+        <div
+          v-for="alert in dayAlerts"
+          :key="alert.id"
+          class="weather-alert-card"
+          :class="alert.severity"
+        >
+          <AppIcon :icon="ACTION_ICONS.warning" :size="18" group="actions" />
+          <div class="alert-content">
+            <strong>{{ alert.title }}</strong>
+            <span>{{ alert.description }}</span>
+          </div>
+        </div>
       </div>
 
       <!-- Haupt-Zusammenfassung -->
@@ -141,6 +160,12 @@ function formatDate(dateStr: string) {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+}
+
+.weather-dialog-alerts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
 }
 
 .location-badge {
