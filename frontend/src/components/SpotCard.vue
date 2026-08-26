@@ -451,7 +451,9 @@ function onToggleDone() {
   display: flex;
   flex-direction: column;
   cursor: pointer;
-  border: 2px solid transparent;
+  border-width: var(--ui-border-width, 1px);
+  border-style: solid;
+  border-color: var(--color-border);
   transition:
     border-color 0.15s ease,
     background 0.15s ease;

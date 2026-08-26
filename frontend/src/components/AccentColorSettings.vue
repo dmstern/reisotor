@@ -1,15 +1,31 @@
 <script setup lang="ts">
+import { ref, computed } from 'vue';
 import {
   useUiSettingsStore,
-  PRIMARY_COLOR_PRESETS,
+  VIBRANT_PRIMARY_COLOR_PRESETS,
+  PASTEL_PRIMARY_COLOR_PRESETS,
   DEFAULT_PRIMARY_COLOR,
 } from '../stores/uiSettings';
+import SegmentedToggle from './SegmentedToggle.vue';
 import Button from './primitives/Button.vue';
 import AppIcon from './AppIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 
 const uiSettings = useUiSettingsStore();
+
+const paletteMode = ref<'vibrant' | 'soft'>('vibrant');
+
+const PALETTE_TOGGLE_OPTIONS = [
+  { value: 'vibrant', label: 'Kräftig' },
+  { value: 'soft', label: 'Pastell / Sanft' },
+];
+
+const activePresets = computed(() => {
+  return paletteMode.value === 'vibrant'
+    ? VIBRANT_PRIMARY_COLOR_PRESETS
+    : PASTEL_PRIMARY_COLOR_PRESETS;
+});
 
 function resetColor() {
   uiSettings.primaryColor = DEFAULT_PRIMARY_COLOR;
@@ -23,10 +39,19 @@ function resetColor() {
       Wähle deine persönliche Haupt-Akzentfarbe für Buttons, aktive Toggles, Links und Icons.
     </p>
 
+    <!-- Palette Toggle (Kräftig vs Pastell) -->
+    <div class="palette-toggle-wrap">
+      <SegmentedToggle
+        :model-value="paletteMode"
+        :options="PALETTE_TOGGLE_OPTIONS"
+        @update:model-value="(v) => (paletteMode = v as 'vibrant' | 'soft')"
+      />
+    </div>
+
     <!-- Farbauswahl-Grid -->
     <div class="color-presets-grid">
       <button
-        v-for="preset in PRIMARY_COLOR_PRESETS"
+        v-for="preset in activePresets"
         :key="preset.hex"
         type="button"
         class="color-preset-btn"
@@ -83,6 +108,10 @@ function resetColor() {
 </template>
 
 <style scoped>
+.palette-toggle-wrap {
+  margin-top: var(--space-3);
+}
+
 .color-presets-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
@@ -171,18 +200,37 @@ function resetColor() {
 }
 
 .color-input {
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
   padding: 0;
   border: none;
-  border-radius: 4px;
-  background: none;
+  background: transparent;
   cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.color-input::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.color-input::-webkit-color-swatch {
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  box-shadow: var(--shadow-sm);
+}
+
+.color-input::-moz-color-swatch {
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  box-shadow: var(--shadow-sm);
 }
 
 .hex-code {
   font-family: monospace;
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   font-weight: 700;
   color: var(--color-text-muted);
 }
@@ -210,7 +258,6 @@ function resetColor() {
   font-size: 0.85rem;
   font-weight: 700;
   color: var(--color-text);
-
   flex: 1;
 }
 

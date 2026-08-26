@@ -12,7 +12,7 @@ const BORDER_WIDTH_KEY = 'reisotor-border-width';
 
 export type GlassStyle = 'glass' | 'frosted' | 'opaque' | 'custom';
 
-export const PRIMARY_COLOR_PRESETS = [
+export const VIBRANT_PRIMARY_COLOR_PRESETS = [
   { name: 'Türkis', hex: '#2a7f74' },
   { name: 'Ozeanblau', hex: '#2563eb' },
   { name: 'Violett', hex: '#7c3aed' },
@@ -21,7 +21,27 @@ export const PRIMARY_COLOR_PRESETS = [
   { name: 'Bernstein', hex: '#d97706' },
   { name: 'Indigo', hex: '#4f46e5' },
   { name: 'Pink', hex: '#db2777' },
+  { name: 'Koralle', hex: '#ea580c' },
+  { name: 'Sonnengelb', hex: '#ca8a04' },
 ] as const;
+
+export const PASTEL_PRIMARY_COLOR_PRESETS = [
+  { name: 'Mint-Soft', hex: '#14b8a6' },
+  { name: 'Eisblau', hex: '#3b82f6' },
+  { name: 'Flieder', hex: '#a855f7' },
+  { name: 'Salbei', hex: '#10b981' },
+  { name: 'Altrosa', hex: '#f43f5e' },
+  { name: 'Pfirsich', hex: '#f97316' },
+  { name: 'Lavendel', hex: '#6366f1' },
+  { name: 'Soft-Pink', hex: '#ec4899' },
+  { name: 'Sand', hex: '#eab308' },
+  { name: 'Aquamarin', hex: '#06b6d4' },
+] as const;
+
+export const PRIMARY_COLOR_PRESETS = [
+  ...VIBRANT_PRIMARY_COLOR_PRESETS,
+  ...PASTEL_PRIMARY_COLOR_PRESETS,
+];
 
 export const DEFAULT_PRIMARY_COLOR = '#2a7f74';
 export const DEFAULT_BORDER_WIDTH = 1;
