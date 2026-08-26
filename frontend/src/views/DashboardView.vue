@@ -166,6 +166,11 @@ function openWeatherDayDialog(day: DailyWeather) {
   weatherDayDialogOpen.value = true;
 }
 
+function getDayAlert(day: DailyWeather | null): WeatherAlert | undefined {
+  if (!day) return undefined;
+  return detectWeatherAlerts([day])[0];
+}
+
 const regionInfo = ref<RegionInfo | null>(null);
 const regionError = ref<string | null>(null);
 const regionLoading = ref(false);
@@ -464,16 +469,30 @@ function formatWeekdayDate(d: string) {
         <p v-if="weatherLoading && !weatherDays" class="hint">Lädt …</p>
         <p v-else-if="weatherError" class="hint error">{{ weatherError }}</p>
         <template v-else>
-          <div v-if="todayWeather" class="weather-today">
+          <div
+            v-if="todayWeather"
+            class="weather-today clickable"
+            @click="openWeatherDayDialog(todayWeather)"
+          >
             <span class="weather-today-label"
               >Heute{{ trip?.destination ? ` in ${trip.destination}` : '' }}</span
             >
-            <WeatherIcon
-              class="weather-icon"
-              :size="22"
-              :code="todayWeather.weatherCode"
-              :title="weatherCodeMeta(todayWeather.weatherCode).label"
-            />
+            <div class="weather-icon-wrapper">
+              <WeatherIcon
+                class="weather-icon"
+                :size="22"
+                :code="todayWeather.weatherCode"
+                :title="weatherCodeMeta(todayWeather.weatherCode).label"
+              />
+              <span
+                v-if="getDayAlert(todayWeather)"
+                class="weather-alert-badge"
+                :class="getDayAlert(todayWeather)!.severity"
+                :title="getDayAlert(todayWeather)!.title"
+              >
+                <AppIcon :icon="ACTION_ICONS.warning" :size="10" group="actions" />
+              </span>
+            </div>
             <span class="weather-temp"
               >{{ Math.round(todayWeather.tempMax) }}° /
               {{ Math.round(todayWeather.tempMin) }}°</span
@@ -483,22 +502,6 @@ function formatWeekdayDate(d: string) {
                 todayWeather.precipitationProbability
               }}%
             </span>
-          </div>
-
-          <!-- Unwetter- & Wetter-Warnungen (Issue #134) -->
-          <div v-if="tripWeatherAlerts.length" class="weather-alerts">
-            <div
-              v-for="alert in tripWeatherAlerts"
-              :key="alert.id"
-              class="weather-alert-card"
-              :class="alert.severity"
-            >
-              <AppIcon :icon="ACTION_ICONS.warning" :size="16" group="actions" />
-              <div class="alert-content">
-                <strong>{{ alert.title }}</strong>
-                <span>{{ alert.description }}</span>
-              </div>
-            </div>
           </div>
 
           <p class="weather-section-label">
@@ -527,12 +530,22 @@ function formatWeekdayDate(d: string) {
               @click="openWeatherDayDialog(day)"
             >
               <span class="weather-date">{{ formatWeekdayDate(day.date) }}</span>
-              <WeatherIcon
-                class="weather-icon"
-                :size="22"
-                :code="day.weatherCode"
-                :title="weatherCodeMeta(day.weatherCode).label"
-              />
+              <div class="weather-icon-wrapper">
+                <WeatherIcon
+                  class="weather-icon"
+                  :size="22"
+                  :code="day.weatherCode"
+                  :title="weatherCodeMeta(day.weatherCode).label"
+                />
+                <span
+                  v-if="getDayAlert(day)"
+                  class="weather-alert-badge"
+                  :class="getDayAlert(day)!.severity"
+                  :title="getDayAlert(day)!.title"
+                >
+                  <AppIcon :icon="ACTION_ICONS.warning" :size="10" group="actions" />
+                </span>
+              </div>
               <span class="weather-temp"
                 >{{ Math.round(day.tempMax) }}° / {{ Math.round(day.tempMin) }}°</span
               >
@@ -586,21 +599,22 @@ function formatWeekdayDate(d: string) {
           kurz vorher nochmal vorbei.
         </p>
         <div v-else class="weather-days">
-          <div class="weather-day" v-for="day in homeForecastDays" :key="day.date">
-            <span class="weather-date">{{ formatWeekdayDate(day.date) }}</span>
-            <WeatherIcon
-              class="weather-icon"
-              :size="22"
-              :code="day.weatherCode"
-              :title="weatherCodeMeta(day.weatherCode).label"
-            />
-            <span class="weather-temp"
-              >{{ Math.round(day.tempMax) }}° / {{ Math.round(day.tempMin) }}°</span
-            >
-            <span v-if="day.precipitationProbability != null" class="weather-rain"
-              >💧{{ day.precipitationProbability }}%</span
-            >
-          </div>
+          <div class="weather-day" v-for="day in homeForecastDays" :key="day.date" style="position: relative;">
+  <span class="weather-date">{{ formatWeekdayDate(day.date) }}</span>
+  <WeatherIcon
+    class="weather-icon"
+    :size="22"
+    :code="day.weatherCode"
+    :title="weatherCodeMeta(day.weatherCode).label"
+  />
+  <span class="weather-temp"
+    >{{ Math.round(day.tempMax) }}° / {{ Math.round(day.tempMin) }}°</span>
+  <span v-if="day.precipitationProbability != null" class="weather-rain"
+    >💧{{ day.precipitationProbability }}%</span>
+  <span v-if="getDayAlert(day)" class="day-alert-icon" :class="getDayAlert(day)?.severity">
+    <AppIcon :icon="ACTION_ICONS.warning" :size="12" group="actions" />
+  </span>
+</div>
         </div>
       </template>
       <p v-else class="hint">
@@ -1287,44 +1301,36 @@ function formatWeekdayDate(d: string) {
   gap: 0;
 }
 
-.weather-alerts {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  margin-top: var(--space-2);
+.weather-icon-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.weather-alert-card {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-md);
-  font-size: 0.85rem;
+.weather-alert-badge {
+  position: absolute;
+  top: -4px;
+  right: -6px;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  box-shadow: var(--shadow-sm);
 }
 
-.weather-alert-card.warning {
-  background: var(--color-warning-tint, #fffbeb);
-  color: var(--color-warning-dark, #b45309);
-  border: 1px solid var(--color-warning, #f59e0b);
+.weather-alert-badge.warning {
+  background: var(--color-warning, #f59e0b);
 }
 
-.weather-alert-card.danger {
-  background: var(--color-danger-tint, #fef2f2);
-  color: var(--color-danger-dark, #991b1b);
-  border: 1px solid var(--color-danger, #ef4444);
+.weather-alert-badge.danger {
+  background: var(--color-danger, #e0685a);
 }
 
-.weather-alert-card .alert-content {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.weather-alert-card .alert-content strong {
-  font-size: 0.85rem;
-}
-
+.weather-today.clickable,
 .weather-day.clickable {
   cursor: pointer;
   transition:
@@ -1332,8 +1338,8 @@ function formatWeekdayDate(d: string) {
     background 0.15s ease;
 }
 
+.weather-today.clickable:hover,
 .weather-day.clickable:hover {
-  background: var(--color-hover);
   transform: translateY(-2px);
 }
 </style>
