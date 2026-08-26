@@ -351,10 +351,9 @@ async function quickAdd(list: ListGroup, label: string) {
             placeholder="Unterkategorie (optional, z. B. Outfit Tag 1)"
           />
         </FormField>
-        <label class="qty-field">
-          Anzahl
+        <FormField icon="amount" label="Anzahl">
           <input v-model.number="editForm.quantity" type="number" min="1" step="1" />
-        </label>
+        </FormField>
         <FormField v-if="users.length > 1" icon="person" label="Liste">
           <select v-model="editForm.ownerId">
             <option value="shared">🤝 Gemeinsam</option>

@@ -163,15 +163,6 @@ async function remove(attachment: Attachment) {
 
 .remove-btn {
   margin-left: auto;
-  background: none;
-  border: none;
-  color: var(--color-text-muted);
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.remove-btn:hover {
-  color: var(--color-danger, #c0392b);
 }
 
 .upload-label {

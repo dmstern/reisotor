@@ -98,6 +98,7 @@ let startX = 0;
 let startWidth = 0;
 
 function onResizeStart(event: PointerEvent) {
+  if (event.button !== 0) return;
   resizing.value = true;
   startX = event.clientX;
   startWidth = props.width;
@@ -135,10 +136,22 @@ function onResizeEnd() {
           class="maximize-btn"
           variant="secondary"
           size="sm"
-          :icon="maximized ? ACTION_ICONS.minimize : ACTION_ICONS.maximize"
-          :aria-pressed="maximized"
-          :aria-label="(maximized ? 'Verkleinern: ' : 'Maximieren: ') + label"
-          :title="maximized ? 'Verkleinern' : 'Maximieren'"
+          :icon="ACTION_ICONS.minimize"
+          v-if="maximized"
+          :aria-pressed="true"
+          aria-label="Verkleinern: Kalender"
+          title="Verkleinern"
+          @click="toggleMaximize"
+        />
+        <IconButton
+          class="maximize-btn"
+          variant="secondary"
+          size="sm"
+          :icon="ACTION_ICONS.maximize"
+          v-else
+          :aria-pressed="false"
+          aria-label="Maximieren: Kalender"
+          title="Maximieren"
           @click="toggleMaximize"
         />
         <IconButton

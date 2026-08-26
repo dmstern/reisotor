@@ -556,6 +556,7 @@ async function onImportFileSelected(event: Event) {
               <IconButton
                 v-for="emoji in cat.emojis"
                 :key="emoji"
+                variant="ghost"
                 :active="emoji === auth.user?.avatar"
                 :disabled="avatarSaving"
                 :aria-label="`Avatar ${emoji} auswählen`"
@@ -619,7 +620,7 @@ async function onImportFileSelected(event: Event) {
       <div class="card users-card">
         <div class="card-header-row">
           <h2><AppIcon :icon="USERS_ICON" group="navigation" :size="20" /> Nutzerverwaltung</h2>
-          <Button class="primary" size="sm" @click="showCreateUserDialog = true">
+          <Button variant="primary" size="sm" @click="showCreateUserDialog = true">
             <AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Nutzer anlegen
           </Button>
         </div>
@@ -640,9 +641,11 @@ async function onImportFileSelected(event: Event) {
             </thead>
             <tbody>
               <tr v-for="u in userList" :key="u.id">
-                <td class="user-cell">
-                  <span class="user-avatar">{{ u.avatar }}</span>
-                  <span class="username">{{ u.username }}</span>
+                <td>
+                  <div class="user-cell">
+                    <span class="user-avatar">{{ u.avatar }}</span>
+                    <span class="username">{{ u.username }}</span>
+                  </div>
                 </td>
                 <td class="email-cell">{{ u.email || '—' }}</td>
                 <td>
@@ -664,19 +667,21 @@ async function onImportFileSelected(event: Event) {
                   <div class="user-actions">
                     <Button
                       size="sm"
-                      class="secondary"
+                      variant="secondary"
                       :title="u.is_admin ? 'Admin-Rechte entziehen' : 'Zum Admin machen'"
                       @click="toggleAdminRole(u)"
                     >
+                      <AppIcon :icon="FORM_FIELD_ICONS.person" :size="14" group="formFields" />
                       {{ u.is_admin ? 'Admin entziehen' : 'Zum Admin machen' }}
                     </Button>
                     <Button
                       size="sm"
-                      class="danger"
+                      variant="danger"
                       :disabled="u.id === auth.user?.id"
                       title="Nutzer löschen"
                       @click="deleteUserAccount(u)"
                     >
+                      <AppIcon :icon="ACTION_ICONS.delete" :size="14" group="actions" />
                       Löschen
                     </Button>
                   </div>
@@ -738,6 +743,7 @@ async function onImportFileSelected(event: Event) {
             }}</span>
             <div class="nav-config-actions">
               <IconButton
+                variant="ghost"
                 size="sm"
                 :disabled="index === 0"
                 aria-label="Nach oben verschieben"
@@ -747,6 +753,7 @@ async function onImportFileSelected(event: Event) {
                 <AppIcon :icon="ACTION_ICONS.chevronUp" :size="14" group="actions" />
               </IconButton>
               <IconButton
+                variant="ghost"
                 size="sm"
                 :disabled="index === navConfig.entries.length - 1"
                 aria-label="Nach unten verschieben"
@@ -798,6 +805,7 @@ async function onImportFileSelected(event: Event) {
             }}</span>
             <div class="nav-config-actions">
               <IconButton
+                variant="ghost"
                 size="sm"
                 :disabled="index === 0"
                 aria-label="Nach oben verschieben"
@@ -807,6 +815,7 @@ async function onImportFileSelected(event: Event) {
                 <AppIcon :icon="ACTION_ICONS.chevronUp" :size="14" group="actions" />
               </IconButton>
               <IconButton
+                variant="ghost"
                 size="sm"
                 :disabled="index === dashboardConfig.entries.length - 1"
                 aria-label="Nach unten verschieben"
@@ -1317,7 +1326,7 @@ h3 {
 .emoji-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-1);
+  gap: var(--space-2);
 }
 
 .form {

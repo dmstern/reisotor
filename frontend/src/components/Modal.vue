@@ -194,9 +194,4 @@ onUnmounted(() => {
   font-size: 1.1rem;
   color: var(--color-primary-dark);
 }
-
-.close-btn {
-  padding: 4px 10px;
-  flex-shrink: 0;
-}
 </style>

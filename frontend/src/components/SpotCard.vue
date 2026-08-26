@@ -711,6 +711,7 @@ function onToggleDone() {
     /* Bild sitzt hier links statt oben (Zeilen- statt Spalten-Layout) - deshalb linke statt obere
        Ecken gerundet (siehe .image oben). */
     border-radius: var(--radius-md-squircle) 0 0 var(--radius-md-squircle);
+    corner-shape: squircle;
   }
 
   .spot-card:not(.expanded) .body {

@@ -27,8 +27,8 @@ const store = useBudgetStore();
           {{ store.userAvatar(s.to.id) }} <strong>{{ s.to.username }}</strong> noch
           <strong class="debt-amount">{{ s.amount.toFixed(2) }} €</strong>
         </span>
-        <Button class="secondary settle-btn" @click="$emit('use-suggestion', s)"
-          >Als Überweisung eintragen</Button
+        <Button variant="secondary" class="settle-btn" @click="$emit('use-suggestion', s)">
+          Als Überweisung eintragen</Button
         >
       </li>
     </ul>

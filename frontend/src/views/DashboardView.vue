@@ -1317,6 +1317,38 @@ function formatWeekdayDate(d: string) {
   justify-content: center;
 }
 
+.weather-alert-card {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md-squircle);
+  corner-shape: squircle;
+  font-size: 0.85rem;
+}
+
+.weather-alert-card.warning {
+  background: var(--color-warning-tint);
+  color: var(--color-warning-dark);
+  border: 1px solid var(--color-warning);
+}
+
+.weather-alert-card.danger {
+  background: var(--color-danger-tint);
+  color: var(--color-danger-dark);
+  border: 1px solid var(--color-danger);
+}
+
+.weather-alert-card .alert-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.weather-alert-card .alert-content strong {
+  font-size: 0.85rem;
+}
+
 .weather-alert-badge {
   position: absolute;
   top: -4px;

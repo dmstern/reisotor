@@ -104,7 +104,7 @@ async function onSubmit() {
       <p v-if="error" class="error-msg">{{ error }}</p>
 
       <div class="actions">
-        <Button type="submit" class="primary" :disabled="submitting">
+        <Button type="submit" variant="primary" :disabled="submitting">
           <template v-if="submitting">Speichere…</template>
           <template v-else>Passwort ändern</template>
         </Button>

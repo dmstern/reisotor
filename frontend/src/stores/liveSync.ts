@@ -216,8 +216,11 @@ export const useLiveSyncStore = defineStore('liveSync', () => {
       }
       ready.value = false;
       openStream(tripId);
-      await backfill(tripId);
-      ready.value = true;
+      try {
+        await backfill(tripId);
+      } finally {
+        ready.value = true;
+      }
     },
     { immediate: true }
   );

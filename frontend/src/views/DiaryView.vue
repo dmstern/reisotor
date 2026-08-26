@@ -30,6 +30,7 @@ import DraftBadge from '../components/DraftBadge.vue';
 import PendingSyncBadge from '../components/PendingSyncBadge.vue';
 import AppIcon from '../components/AppIcon.vue';
 import Button from '../components/primitives/Button.vue';
+import IconButton from '../components/primitives/IconButton.vue';
 import WeatherIcon from '../components/WeatherIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
@@ -552,9 +553,14 @@ function showEntryDayOnMap(entry: DiaryEntry) {
         <div class="image-preview" v-if="form.images.length">
           <div class="preview-thumb" v-for="(img, i) in form.images" :key="img">
             <img :src="img" :alt="`Bild ${i + 1}`" />
-            <Button type="button" variant="ghost" class="remove-thumb" @click="removeImage(form, i)"
-              ><AppIcon :icon="ACTION_ICONS.close" :size="13" group="actions"
-            /></Button>
+            <IconButton
+              size="sm"
+              :icon="ACTION_ICONS.close"
+              class="remove-thumb"
+              title="Bild entfernen"
+              aria-label="Bild entfernen"
+              @click="removeImage(form, i)"
+            />
           </div>
         </div>
         <fieldset v-if="excursionsStore.excursions.length" class="excursion-picker">
@@ -816,13 +822,14 @@ function showEntryDayOnMap(entry: DiaryEntry) {
         <div class="image-preview" v-if="editForm.images.length">
           <div class="preview-thumb" v-for="(img, i) in editForm.images" :key="img">
             <img :src="img" :alt="`Bild ${i + 1}`" />
-            <Button
-              type="button"
-              variant="ghost"
+            <IconButton
+              size="sm"
+              :icon="ACTION_ICONS.close"
               class="remove-thumb"
+              title="Bild entfernen"
+              aria-label="Bild entfernen"
               @click="removeImage(editForm, i)"
-              ><AppIcon :icon="ACTION_ICONS.close" :size="13" group="actions"
-            /></Button>
+            />
           </div>
         </div>
         <fieldset v-if="excursionsStore.excursions.length" class="excursion-picker">

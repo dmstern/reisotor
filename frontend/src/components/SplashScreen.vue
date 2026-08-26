@@ -37,14 +37,16 @@ function finish() {
 // Normalfall nie zuschlägt.
 let fallbackTimer: ReturnType<typeof setTimeout> | null = null;
 onMounted(() => {
-  // prefers-reduced-motion direkt hier prüfen statt uns nur auf ReisotorRobot.vue's CSS-Verkürzung
-  // (animation-duration: 0.01s) zu verlassen: ein Browser feuert "animationend" für eine derart
-  // knappe Animation nicht immer zuverlässig (insbesondere direkt nach einer Navigation, während das
-  // Dokument noch sein erstes Layout/Paint macht) - dann würde JEDER Seitenaufruf den vollen
-  // Fallback-Timer unten abwarten müssen, statt sofort weiterzumachen. Betraf konkret die e2e-Suite:
-  // Tests mit mehreren Logins/Reloads (budget.spec.ts, realtime-sync.spec.ts) liefen dadurch reihenweise
-  // in ihre eigenen Timeouts, obwohl Playwright bereits reducedMotion:'reduce' gesetzt hatte.
-  if (props.playIntro && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  // prefers-reduced-motion oder navigator.webdriver (E2E- / Scratch-Tests) direkt hier prüfen statt
+  // uns nur auf ReisotorRobot.vue's CSS-Verkürzung (animation-duration: 0.01s) zu verlassen: ein
+  // Browser feuert "animationend" für eine derart knappe Animation nicht immer zuverlässig (insbesondere
+  // direkt nach einer Navigation, während das Dokument noch sein erstes Layout/Paint macht) - dann würde
+  // JEDER Seitenaufruf den vollen Fallback-Timer unten abwarten müssen, statt sofort weiterzumachen.
+  // In automatisierten E2E- und Scratch-Tests (navigator.webdriver ist true) wird die Animation ebenfalls
+  // sofort beendet, damit Screenshots nicht auf dem Splash hängen bleiben.
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const isWebdriver = Boolean(navigator.webdriver);
+  if (props.playIntro && !reducedMotion && !isWebdriver) {
     fallbackTimer = setTimeout(finish, 4000);
   } else {
     finish();

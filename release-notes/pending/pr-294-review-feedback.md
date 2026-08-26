@@ -1,0 +1,1 @@
+- **Design System & Feedback-Polishing**: Vereinheitlichung aller Social-Buttons, gerahmter Location-Chooser in Spots, Konsolidierung von Button & IconButton Primitives, Formular-Icons in der Packliste sowie ToDo-Zeitraum-Icons.

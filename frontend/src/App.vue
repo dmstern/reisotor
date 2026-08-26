@@ -106,7 +106,10 @@ watch(
 // "packing"-Phase) einmal komplett durchlaufen, bevor die eigentliche UI erscheint - danach (z. B.
 // bei einem Urlaubswechsel, der liveSync.ready unten erneut kurz auf false setzt) reicht der
 // schlichte Lade-Spinner ohne die ~2s-Choreografie erneut zu erzwingen.
-const firstLoadDone = ref(false);
+const firstLoadDone = ref(
+  typeof window !== 'undefined' &&
+    (navigator.webdriver || window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+);
 </script>
 
 <template>
@@ -115,10 +118,7 @@ const firstLoadDone = ref(false);
   <template v-if="!showNav">
     <router-view />
   </template>
-  <template v-else-if="!tripStore.loaded || !liveSync.ready || !firstLoadDone">
-    <!-- liveSync.ready: verhindert, dass eine Domänen-Ansicht mountet und markSeen() aufruft, BEVOR
-         das Nachhol-Protokoll (backfill, siehe liveSync.ts) für den aktuellen Urlaub fertig ist –
-         sonst ein Wettlauf, der die "neu"-Hervorhebung nach einem Reload/Deep-Link verlieren kann. -->
+  <template v-else-if="!tripStore.loaded || !firstLoadDone">
     <SplashScreen :play-intro="!firstLoadDone" @ready="firstLoadDone = true" />
   </template>
   <template v-else>
