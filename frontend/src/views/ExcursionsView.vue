@@ -3476,9 +3476,7 @@ async function removeSpot(id: number) {
    harte opake Fläche dahinter entsteht. */
 .page {
   position: relative;
-  height: calc(
-    100vh - var(--app-header-height, 56px) - var(--navbar-offset, 0px)
-  );
+  height: calc(100vh - var(--app-header-height, 56px) - var(--navbar-offset, 0px));
   overflow: hidden;
   padding: 0;
 }
