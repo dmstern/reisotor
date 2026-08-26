@@ -380,7 +380,9 @@ function onSpotDrop(event: DragEvent) {
   flex-direction: row;
   align-items: stretch;
   min-height: 120px;
-  border: 2px dashed transparent;
+  border-width: var(--ui-border-width, 1px);
+  border-style: solid;
+  border-color: var(--color-border);
   cursor: pointer;
   transition:
     border-color 0.15s ease,
