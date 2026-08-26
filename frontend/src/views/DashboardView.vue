@@ -26,7 +26,6 @@ import { buildAllEntries } from '../utils/calendarEntries';
 import { SCHEDULE_CATEGORY_META } from '../utils/scheduleCategory';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { ACCOMMODATION_ICON, SECURITY_CHECK_ICON } from '../utils/dashboardTiles';
-import { spotCategoryMeta } from '../utils/spotCategory';
 import {
   detectWeatherAlerts,
   fetchMergedWeather,
@@ -157,7 +156,6 @@ const weatherModelLabel = computed(
     weatherProvider.model
 );
 
-const tripWeatherAlerts = computed(() => detectWeatherAlerts(weatherDays.value ?? []));
 const selectedWeatherDay = ref<DailyWeather | null>(null);
 const weatherDayDialogOpen = ref(false);
 
@@ -599,22 +597,33 @@ function formatWeekdayDate(d: string) {
           kurz vorher nochmal vorbei.
         </p>
         <div v-else class="weather-days">
-          <div class="weather-day" v-for="day in homeForecastDays" :key="day.date" style="position: relative;">
-  <span class="weather-date">{{ formatWeekdayDate(day.date) }}</span>
-  <WeatherIcon
-    class="weather-icon"
-    :size="22"
-    :code="day.weatherCode"
-    :title="weatherCodeMeta(day.weatherCode).label"
-  />
-  <span class="weather-temp"
-    >{{ Math.round(day.tempMax) }}° / {{ Math.round(day.tempMin) }}°</span>
-  <span v-if="day.precipitationProbability != null" class="weather-rain"
-    >💧{{ day.precipitationProbability }}%</span>
-  <span v-if="getDayAlert(day)" class="day-alert-icon" :class="getDayAlert(day)?.severity">
-    <AppIcon :icon="ACTION_ICONS.warning" :size="12" group="actions" />
-  </span>
-</div>
+          <div
+            class="weather-day"
+            v-for="day in homeForecastDays"
+            :key="day.date"
+            style="position: relative"
+          >
+            <span class="weather-date">{{ formatWeekdayDate(day.date) }}</span>
+            <WeatherIcon
+              class="weather-icon"
+              :size="22"
+              :code="day.weatherCode"
+              :title="weatherCodeMeta(day.weatherCode).label"
+            />
+            <span class="weather-temp"
+              >{{ Math.round(day.tempMax) }}° / {{ Math.round(day.tempMin) }}°</span
+            >
+            <span v-if="day.precipitationProbability != null" class="weather-rain"
+              >💧{{ day.precipitationProbability }}%</span
+            >
+            <span
+              v-if="getDayAlert(day)"
+              class="day-alert-icon"
+              :class="getDayAlert(day)?.severity"
+            >
+              <AppIcon :icon="ACTION_ICONS.warning" :size="12" group="actions" />
+            </span>
+          </div>
         </div>
       </template>
       <p v-else class="hint">

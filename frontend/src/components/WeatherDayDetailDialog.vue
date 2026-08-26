@@ -162,6 +162,12 @@ function formatDate(dateStr: string) {
   gap: var(--space-3);
 }
 
+.weather-dialog-alerts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
 .location-badge {
   display: inline-flex;
   align-items: center;
