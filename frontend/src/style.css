@@ -102,6 +102,11 @@
   --color-warning-dark: #b45309;
   --color-success: #3f8f5c;
 
+  /* Eigene Farbe für gelikte Elemente (Purple-Magenta) statt Gefahr/Danger */
+  --color-like: #d946ef;
+  --color-like-tint: rgba(217, 70, 239, 0.12);
+  --color-like-border: #e879f9;
+
   /* Semantische Oberflächen-/Akzent-Töne für wiederkehrende Pastell-Hintergründe
      (aktiv/ausgewählt, Hover, Hinweis-Highlights, Unterkunfts-Akzent). Zentral als
      Variablen statt verstreuter Hex-Werte, damit Dark Mode sie gezielt überschreiben kann. */
@@ -230,6 +235,10 @@
     --color-warning-dark: #fcd34d;
     --color-success: #5cb37e;
 
+    --color-like: #f0abfc;
+    --color-like-tint: rgba(240, 171, 252, 0.15);
+    --color-like-border: #e879f9;
+
     --color-primary-tint: #1c2e2a;
     --color-hover: #2a2823;
     --color-highlight: #332a1c;
@@ -264,6 +273,10 @@
   --color-warning-tint: #2e2315;
   --color-warning-dark: #fcd34d;
   --color-success: #5cb37e;
+
+  --color-like: #f0abfc;
+  --color-like-tint: rgba(240, 171, 252, 0.15);
+  --color-like-border: #e879f9;
 
   --color-primary-tint: #1c2e2a;
   --color-hover: #2a2823;
