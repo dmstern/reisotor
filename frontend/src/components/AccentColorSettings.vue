@@ -95,7 +95,7 @@ function resetColor() {
   align-items: center;
   gap: var(--space-2);
   padding: 8px 12px;
-  border: 1px solid var(--color-border);
+  border: var(--ui-border-width, 1px) solid var(--color-border);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   background: var(--color-surface);
@@ -142,7 +142,7 @@ function resetColor() {
   gap: var(--space-3);
   margin-top: var(--space-4);
   padding-top: var(--space-3);
-  border-top: 1px solid var(--color-border);
+  border-top: var(--ui-border-width, 1px) solid var(--color-border);
   flex-wrap: wrap;
 }
 
@@ -164,7 +164,7 @@ function resetColor() {
   align-items: center;
   gap: var(--space-2);
   padding: 4px 8px;
-  border: 1px solid var(--color-border);
+  border: var(--ui-border-width, 1px) solid var(--color-border);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   background: var(--color-surface);
@@ -190,7 +190,7 @@ function resetColor() {
 .color-preview-stage {
   margin-top: var(--space-4);
   padding: var(--space-3);
-  border: 1px solid var(--color-border);
+  border: var(--ui-border-width, 1px) solid var(--color-border);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   background: var(--color-hover);

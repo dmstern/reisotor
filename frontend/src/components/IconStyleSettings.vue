@@ -222,7 +222,7 @@ const categoriesColorRelevant = computed(() => iconStyle.groups.categories === '
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-3);
-  border: 1px solid var(--color-border);
+  border: var(--ui-border-width, 1px) solid var(--color-border);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   background: var(--color-surface);
@@ -263,7 +263,7 @@ const categoriesColorRelevant = computed(() => iconStyle.groups.categories === '
 .all-groups-row {
   padding-bottom: var(--space-2);
   margin-bottom: var(--space-2);
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: var(--ui-border-width, 1px) solid var(--color-border);
 }
 
 .all-groups-row .group-override-label {

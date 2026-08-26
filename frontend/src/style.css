@@ -416,7 +416,7 @@ button {
   align-items: center;
   justify-content: center;
   gap: var(--space-1);
-  border: 1px solid var(--color-button-edge);
+  border: var(--ui-border-width, 1px) solid var(--color-button-edge);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   padding: 11px 18px;
@@ -444,7 +444,7 @@ button:active {
 button.secondary {
   background: transparent;
   color: var(--color-primary);
-  border: 1px solid var(--color-border-strong);
+  border: var(--ui-border-width, 1px) solid var(--color-border-strong);
 }
 
 button.secondary:hover {
@@ -484,7 +484,7 @@ button.danger {
   align-items: center;
   gap: 4px;
   padding: 4px 10px;
-  border: 1px solid var(--color-border-strong);
+  border: var(--ui-border-width, 1px) solid var(--color-border-strong);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   background: var(--color-primary-tint);
@@ -809,6 +809,18 @@ input[type='checkbox']:focus-visible,
   outline-offset: 2px;
 }
 
+input[type='range'],
+.range-input {
+  border-radius: 999px;
+}
+
+input[type='range']:focus-visible,
+.range-input:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+  border-radius: 999px;
+}
+
 /* Ausgegraute Zeile für abgehakte/erledigte/eingepackte Listen-Einträge (ToDo, Packliste, ...) –
    ein Regelsatz statt pro Liste dupliziert. */
 .row-done {
@@ -825,7 +837,7 @@ input[type='checkbox']:focus-visible,
 input:not([type='checkbox']):not([type='file']),
 textarea {
   padding: 9px 12px;
-  border: 1px solid var(--color-border-strong);
+  border: var(--ui-border-width, 1px) solid var(--color-border-strong);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   background: var(--color-surface);
@@ -857,7 +869,7 @@ textarea {
 .dropdown-field,
 select {
   padding: 9px 12px;
-  border: 1px solid var(--color-border-strong);
+  border: var(--ui-border-width, 1px) solid var(--color-border-strong);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   background: var(--color-surface);
@@ -950,7 +962,7 @@ textarea:focus {
 
 .card {
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  border: var(--ui-border-width, 1px) solid var(--color-border);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   box-shadow: var(--shadow-sm);
