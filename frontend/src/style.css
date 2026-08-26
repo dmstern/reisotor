@@ -197,6 +197,11 @@
   --font-size-lg: 1.15rem;
   --font-size-xl: 1.3rem;
   --font-size-2xl: 1.6rem;
+
+  --input-default-height: 44px;
+  --input-height: 44px;
+  --input-width: 44px;
+  --input-default-width: 44px;
 }
 
 /* corner-shape:squircle rendert bei GLEICHEM border-radius-Wert sichtbar WENIGER rund als ein
@@ -607,7 +612,7 @@ button.is-disabled,
 .resize-grip::after {
   content: '';
   width: 4px;
-  height: 44px;
+  height: var(--input-default-height);
   border-radius: 3px;
   background: var(--color-border);
   transition: background 0.15s ease;
@@ -809,6 +814,37 @@ input[type='checkbox']:focus-visible,
   outline-offset: 2px;
 }
 
+input[type='color'] {
+  width: var(--input-width, --input-default-width);
+  height: var(--input-height, --input-default-height);
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  --input-padding: 9px;
+}
+
+input[type='color']::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+input[type='color']::-webkit-color-swatch {
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  box-shadow: var(--shadow-sm);
+}
+
+input[type='color']::-moz-color-swatch {
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  box-shadow: var(--shadow-sm);
+}
+
+
 input[type='range'],
 .range-input {
   border-radius: 999px;
@@ -836,7 +872,7 @@ input[type='range']:focus-visible,
 
 input:not([type='checkbox']):not([type='file']),
 textarea {
-  padding: 9px 12px;
+  padding: var(--input-padding, 9px 12px);
   border: var(--ui-border-width, 1px) solid var(--color-border-strong);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
@@ -855,7 +891,7 @@ textarea {
      identischer padding-Werte oft höher als ein normales Text-Eingabefeld gerendert - sichtbar als
      "verrutschte" Zeile, sobald beide nebeneinanderstehen (Konsistenz-Prinzip, siehe DESIGN.md).
      Eine gemeinsame Mindesthöhe erzwingt für alle Feldtypen dasselbe Ergebnis. */
-  min-height: 44px;
+  min-height: var(--input-height, var(--input-default-height));
 }
 
 /* ── Geteilter Dropdown-Stil ──────────────────────────────────────────────────────────────────
@@ -878,8 +914,8 @@ select {
   font-family: inherit;
   font-size: 0.95rem;
   font-weight: 400;
-  height: 44px;
-  min-height: 44px;
+  height: var(--input-height, var(--input-default-height));
+  min-height: var(--input-height, var(--input-default-height));
   box-sizing: border-box;
   min-width: 0;
   max-width: 100%;
@@ -923,7 +959,7 @@ input[type='time'],
 input[type='datetime-local'],
 input[type='month'],
 input[type='week'] {
-  height: 44px;
+  height: var(--input-height, var(--input-default-height));
 }
 
 input[type='date']::-webkit-calendar-picker-indicator,

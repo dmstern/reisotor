@@ -199,35 +199,6 @@ function resetColor() {
   background: var(--color-surface);
 }
 
-.color-input {
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  appearance: none;
-  -webkit-appearance: none;
-}
-
-.color-input::-webkit-color-swatch-wrapper {
-  padding: 0;
-}
-
-.color-input::-webkit-color-swatch {
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  box-shadow: var(--shadow-sm);
-}
-
-.color-input::-moz-color-swatch {
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  box-shadow: var(--shadow-sm);
-}
-
 .hex-code {
   font-family: monospace;
   font-size: 0.82rem;
