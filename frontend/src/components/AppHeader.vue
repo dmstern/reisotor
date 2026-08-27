@@ -163,13 +163,6 @@ const isNonProd = computed(
   box-sizing: border-box;
 }
 
-/* Einziger optischer Marker für "nicht Produktion" (Staging/lokal) – dezent (nur die
-   Header-Trennlinie, kein flächiger Farbwechsel), damit die grundsätzliche UI nicht gestört wird,
-   aber auf einen Blick von der echten Produktion unterscheidbar bleibt. */
-.app-header.non-prod {
-  border-bottom: 2px solid var(--color-accent);
-}
-
 .brand {
   display: flex;
   align-items: center;
