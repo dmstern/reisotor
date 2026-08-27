@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Card from '../components/primitives/Card.vue';
 import Button from '../components/primitives/Button.vue';
 import IconButton from '../components/primitives/IconButton.vue';
 import { computed, onMounted, ref, watch } from 'vue';
@@ -529,7 +530,7 @@ async function onImportFileSelected(event: Event) {
     </div>
 
     <template v-if="activeTab === 'account'">
-      <div class="card">
+      <Card>
         <div class="header">
           <h2>{{ auth.user?.avatar }} {{ auth.user?.username }}</h2>
           <Button type="button" variant="secondary" @click="logout">
@@ -574,9 +575,9 @@ async function onImportFileSelected(event: Event) {
         <p v-if="avatarSaved" class="hint success">
           Gespeichert <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
         </p>
-      </div>
+      </Card>
 
-      <div class="card">
+      <Card>
         <h2>Passwort ändern</h2>
         <form class="form" @submit.prevent="changePassword">
           <div class="field">
@@ -616,11 +617,11 @@ async function onImportFileSelected(event: Event) {
             {{ passwordSaving ? 'Speichern…' : 'Passwort speichern' }}
           </Button>
         </form>
-      </div>
+      </Card>
     </template>
 
     <template v-if="activeTab === 'users' && auth.user?.is_admin">
-      <div class="card users-card">
+      <Card class="users-card">
         <div class="card-header-row">
           <h2><AppIcon :icon="USERS_ICON" group="navigation" :size="20" /> Nutzerverwaltung</h2>
           <Button variant="primary" size="sm" @click="showCreateUserDialog = true">
@@ -693,14 +694,14 @@ async function onImportFileSelected(event: Event) {
             </tbody>
           </table>
         </div>
-      </div>
+      </Card>
     </template>
 
     <template v-if="activeTab === 'app'">
-      <div class="card">
+      <Card>
         <h2>Darstellung</h2>
         <ThemeModeSelect variant="block" />
-      </div>
+      </Card>
 
       <AccentColorSettings />
 
@@ -710,7 +711,7 @@ async function onImportFileSelected(event: Event) {
 
       <IconStyleSettings />
 
-      <div class="card">
+      <Card>
         <h2>Navigation</h2>
         <p class="hint intro-hint">
           Position der Navigationsleiste, getrennt für Desktop und mobile Bedienung.
@@ -781,9 +782,9 @@ async function onImportFileSelected(event: Event) {
             </div>
           </li>
         </ul>
-      </div>
+      </Card>
 
-      <div class="card">
+      <Card>
         <h2>
           <AppIcon :icon="DASHBOARD_TILES_ICON" group="navigation" :size="20" /> Dashboard-Kacheln
         </h2>
@@ -846,9 +847,9 @@ async function onImportFileSelected(event: Event) {
             </div>
           </li>
         </ul>
-      </div>
+      </Card>
 
-      <div class="card">
+      <Card>
         <h2>
           <AppIcon :icon="ACTION_ICONS.vacation" group="navigation" :size="20" /> Urlaubs-Hinweis
         </h2>
@@ -861,11 +862,11 @@ async function onImportFileSelected(event: Event) {
           <input type="checkbox" v-model="uiSettings.showVacationCountdown" />
           Verbleibende Urlaubstage anzeigen statt festem Hinweis
         </label>
-      </div>
+      </Card>
     </template>
 
     <div v-if="activeTab === 'trip'" class="grid settings-grid">
-      <div id="calendar-settings" class="card">
+      <Card id="calendar-settings">
         <h2>
           <AppIcon :icon="SECTION_ICON_DEFS.calendar" group="navigation" :size="20" /> Kalender
         </h2>
@@ -898,10 +899,10 @@ async function onImportFileSelected(event: Event) {
             </select>
           </label>
         </div>
-      </div>
+      </Card>
 
       <!-- id als Sprungziel für den "Anbieter wechseln"-Link im Wetter-Widget (DashboardView.vue) -->
-      <div id="weather-provider-settings" class="card">
+      <Card id="weather-provider-settings">
         <h2><AppIcon :icon="WEATHER_SECTION_ICON" group="navigation" :size="20" /> Wetter</h2>
         <p class="hint intro-hint">
           Wettervorhersage über Open-Meteo, das mehrere echte Wetterdienste bündelt. Zeigt eine
@@ -924,10 +925,10 @@ async function onImportFileSelected(event: Event) {
           <input type="checkbox" v-model="uiSettings.showHomeWeatherFullTrip" />
           Wetter zuhause für den ganzen Urlaub zeigen (statt nur gegen Ende)
         </label>
-      </div>
+      </Card>
 
       <!-- id als Sprungziel, analog zu #weather-provider-settings oben -->
-      <div id="home-currency-settings" class="card">
+      <Card id="home-currency-settings">
         <h2>
           <AppIcon :icon="ACTION_ICONS.currency" group="navigation" :size="20" /> Heimatwährung
         </h2>
@@ -947,11 +948,11 @@ async function onImportFileSelected(event: Event) {
             </option>
           </select>
         </label>
-      </div>
+      </Card>
     </div>
 
     <template v-if="activeTab === 'notifications'">
-      <div class="card">
+      <Card>
         <h2><AppIcon :icon="BELL_ICON" group="navigation" :size="20" /> Meldungen</h2>
         <p class="hint intro-hint">
           Kurze Meldungen, die bei jedem Laden/Speichern/Löschen kurz unten am Bildschirmrand
@@ -964,9 +965,9 @@ async function onImportFileSelected(event: Event) {
           <input type="checkbox" v-model="uiSettings.showActivityToasts" />
           Detaillierte Lade-/Speicher-Meldungen anzeigen
         </label>
-      </div>
+      </Card>
 
-      <div class="card">
+      <Card>
         <h2><AppIcon :icon="BELL_ICON" group="navigation" :size="20" /> Push-Benachrichtigungen</h2>
         <p class="hint" v-if="!pushSupported">
           Push-Benachrichtigungen werden von diesem Browser nicht unterstützt.
@@ -1031,20 +1032,20 @@ async function onImportFileSelected(event: Event) {
             {{ pushError || notificationPrefs.error }}
           </p>
         </template>
-      </div>
+      </Card>
     </template>
 
     <template v-if="activeTab === 'data'">
-      <div class="card">
+      <Card>
         <h2><AppIcon :icon="ACTION_ICONS.delete" group="navigation" :size="20" /> Papierkorb</h2>
         <p class="hint intro-hint">
           Gelöschte Termine, Ausflüge, Spots und mehr bleiben eine Weile hier erhalten und lassen
           sich wiederherstellen.
         </p>
         <router-link to="/trash" class="card-action-btn">Papierkorb öffnen</router-link>
-      </div>
+      </Card>
 
-      <div class="card" v-if="auth.user?.is_admin">
+      <Card v-if="auth.user?.is_admin">
         <h2>Datensicherung</h2>
         <p>
           Vor einem Neu-Deployment mit neuen Features könnt ihr hier alle Daten (Urlaub, Kalender,
@@ -1086,11 +1087,11 @@ async function onImportFileSelected(event: Event) {
           <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Der Import
           überschreibt alle aktuellen Daten unwiderruflich.
         </p>
-      </div>
+      </Card>
     </template>
 
     <template v-if="activeTab === 'about'">
-      <div class="card">
+      <Card>
         <h2>
           <AppIcon :icon="ACTION_ICONS.installApp" group="actions" :size="20" /> Als App
           installieren
@@ -1107,9 +1108,9 @@ async function onImportFileSelected(event: Event) {
             >Anleitung anzeigen</Button
           >
         </template>
-      </div>
+      </Card>
 
-      <div class="card">
+      <Card>
         <h2><AppIcon :icon="FEEDBACK_ICON" group="navigation" :size="20" /> Feedback</h2>
         <p class="hint intro-hint">
           Bug gefunden oder eine Idee für eine neue Funktion? Landet direkt als Issue im
@@ -1118,9 +1119,9 @@ async function onImportFileSelected(event: Event) {
         <Button type="button" class="secondary" @click="showFeedbackDialog = true"
           >Feedback geben</Button
         >
-      </div>
+      </Card>
 
-      <div class="card build-info-card">
+      <Card class="build-info-card">
         <div v-if="backendBuildInfo?.changelog">
           <h2><AppIcon :icon="INFO_ICON" group="navigation" :size="20" /> Versions-Info</h2>
           <h3>Was ist neu in v{{ backendBuildInfo.changelog.version }}</h3>
@@ -1146,7 +1147,7 @@ async function onImportFileSelected(event: Event) {
           :repo-url="backendBuildInfo.repoUrl"
           :hosting-location="backendBuildInfo.hostingLocation"
         />
-      </div>
+      </Card>
     </template>
   </div>
   <ViewLoadingState v-else />
