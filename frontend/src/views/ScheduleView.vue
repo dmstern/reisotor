@@ -26,6 +26,7 @@ import DraftStatusBar from '../components/DraftStatusBar.vue';
 import AppIcon from '../components/AppIcon.vue';
 import Button from '../components/primitives/Button.vue';
 import IconButton from '../components/primitives/IconButton.vue';
+import DropdownItem from '../components/primitives/DropdownItem.vue';
 import WeatherIcon from '../components/WeatherIcon.vue';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
 import { SCHEDULE_CATEGORY_META } from '../utils/scheduleCategory';
@@ -1051,31 +1052,33 @@ function formatDate(date: string) {
                   <template v-if="calendarPickerKey === entry.key">
                     <div class="picker-backdrop" @click.stop="calendarPickerKey = null"></div>
                     <div class="picker-menu" :style="calendarPickerStyle" @click.stop>
-                      <button type="button" @click="downloadIcsForEntry(entry)">
-                        <AppIcon :icon="ACTION_ICONS.apple" :size="14" group="actions" />
-                        Apple/iPhone
-                      </button>
-                      <a
+                      <DropdownItem
+                        :icon="ACTION_ICONS.apple"
+                        label="Apple/iPhone"
+                        @click="downloadIcsForEntry(entry)"
+                      />
+                      <DropdownItem
                         :href="googleCalendarHref(calendarEventFromEntry(entry))"
                         target="_blank"
                         rel="noopener"
+                        :icon="ACTION_ICONS.googleCalendar"
+                        label="Google Kalender"
                         @click="calendarPickerKey = null"
-                      >
-                        <AppIcon :icon="ACTION_ICONS.googleCalendar" :size="14" group="actions" />
-                        Google Kalender
-                      </a>
-                      <a
+                      />
+                      <DropdownItem
                         :href="outlookCalendarHref(calendarEventFromEntry(entry))"
                         target="_blank"
                         rel="noopener"
+                        :icon="FORM_FIELD_ICONS.email"
+                        icon-group="formFields"
+                        label="Outlook"
                         @click="calendarPickerKey = null"
-                      >
-                        <AppIcon :icon="FORM_FIELD_ICONS.email" :size="14" group="formFields" />
-                        Outlook
-                      </a>
-                      <button type="button" @click="downloadIcsForEntry(entry)">
-                        <AppIcon :icon="ACTION_ICONS.android" :size="14" group="actions" /> Android
-                      </button>
+                      />
+                      <DropdownItem
+                        :icon="ACTION_ICONS.android"
+                        label="Android"
+                        @click="downloadIcsForEntry(entry)"
+                      />
                     </div>
                   </template>
                 </Teleport>

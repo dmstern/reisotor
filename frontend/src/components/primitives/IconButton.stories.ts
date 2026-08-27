@@ -9,7 +9,7 @@ const meta: Meta<typeof IconButton> = {
   argTypes: {
     variant: {
       control: 'select',
-      options: ['ghost', 'secondary', 'danger'],
+      options: ['ghost', 'secondary', 'danger', 'primary', 'floating'],
     },
     size: {
       control: 'select',
@@ -36,6 +36,17 @@ type Story = StoryObj<typeof IconButton>;
 
 export const Ghost: Story = {
   args: { variant: 'ghost', icon: ACTION_ICONS.filterSettings },
+  render: (args) => ({
+    components: { IconButton },
+    setup() {
+      return { args };
+    },
+    template: '<IconButton v-bind="args" />',
+  }),
+};
+
+export const Floating: Story = {
+  args: { shape: 'circle', variant: 'floating', icon: ACTION_ICONS.myLocation },
   render: (args) => ({
     components: { IconButton },
     setup() {

@@ -16,8 +16,10 @@ const props = withDefaults(
      * - 'card-action': Kompakter Karten-Aktionsbutton (Hintergrund --color-primary-tint)
      * - 'ghost': Dezent ohne Rahmen/Schatten für Toolbars/Untermenüs
      * - 'dropdown': Optisch identisch mit nativem <select> — gleiche Höhe, Schriftfarbe, Border, Padding
+     * - 'floating': Runder, schwebender Aktionsbutton (Oberflächen-Hintergrund, dunklerer Rand, Schatten)
      */
-    variant?: 'primary' | 'secondary' | 'danger' | 'card-action' | 'ghost' | 'dropdown';
+    variant?:
+      'primary' | 'secondary' | 'danger' | 'card-action' | 'ghost' | 'dropdown' | 'floating';
     /** Button-Größe: 'sm' (klein), 'md' (Standard), 'lg' (groß). */
     size?: 'sm' | 'md' | 'lg';
     /** Optionale IconDef-Definition für Tabler-Icon Rendering via AppIcon.vue */
@@ -89,10 +91,12 @@ const hasDefaultSlot = () =>
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
+  padding: 11px 18px;
+  font-size: 1rem;
   font-family: inherit;
   font-weight: 600;
+  border-radius: var(--radius-md-squircle);
+  corner-shape: squircle;
   cursor: pointer;
   box-shadow: none;
   transition:
@@ -210,6 +214,25 @@ const hasDefaultSlot = () =>
 
 .btn--ghost:hover:not(:disabled) {
   background: var(--color-hover);
+}
+
+.btn--floating {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 2px solid rgba(0, 0, 0, 0.25);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn--floating:hover:not(:disabled) {
+  background: var(--color-hover);
+  box-shadow: var(--shadow-md);
+}
+
+.btn--floating.is-active,
+.btn--floating.active {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
 }
 
 /* Dropdown-Trigger-Variante: Visuals komplett aus der globalen .dropdown-field-Klasse

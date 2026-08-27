@@ -8,8 +8,8 @@ import Button from './Button.vue';
 defineProps<{
   /** Optionale IconDef-Definition für Tabler-Icon Rendering via AppIcon.vue */
   icon?: IconDef;
-  /** Variante: 'ghost', 'secondary', 'danger', 'primary' */
-  variant?: 'ghost' | 'secondary' | 'danger' | 'primary';
+  /** Variante: 'ghost', 'secondary', 'danger', 'primary', 'card-action', 'dropdown', 'floating' */
+  variant?: 'ghost' | 'secondary' | 'danger' | 'primary' | 'card-action' | 'dropdown' | 'floating';
   /** Größe des Buttons: 'sm' (30px), 'md' (38px), 'lg' (46px). */
   size?: 'sm' | 'md' | 'lg';
   /** Form-Variante: 'squircle' (Standard) oder 'circle' (kreisrund). */
