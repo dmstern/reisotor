@@ -495,8 +495,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
 
     if (collection === '/ideas' && id != null) {
       const updatedIdea = store['/ideas'].find((item) => (item as { id: number }).id === id) as
-        | Record<string, unknown>
-        | undefined;
+        Record<string, unknown> | undefined;
       if (updatedIdea) {
         syncDemoIdeaSchedule(
           id,
@@ -521,8 +520,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
     const id = idFromPath(path);
     if (collection === '/schedule' && id != null) {
       const schedItem = store['/schedule']?.find((s) => s.id === id) as
-        | { idea_id?: number | null }
-        | undefined;
+        { idea_id?: number | null } | undefined;
       if (schedItem?.idea_id != null) {
         const idea = store['/ideas']?.find((e) => e.id === schedItem.idea_id);
         if (idea) idea.date = null;
