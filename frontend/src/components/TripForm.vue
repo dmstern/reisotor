@@ -172,7 +172,7 @@ function onSubmit() {
               <Button
                 type="button"
                 variant="ghost"
-                class="collapsible-toggle"
+                class="collapsible-toggle picker-toggle"
                 :aria-expanded="pickerOpen"
                 @click="pickerOpen = !pickerOpen"
               >

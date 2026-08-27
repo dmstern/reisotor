@@ -2833,7 +2833,7 @@ async function removeSpot(id: number) {
                       <Button
                         type="button"
                         variant="ghost"
-                        class="collapsible-toggle"
+                        class="collapsible-toggle picker-toggle"
                         :aria-expanded="spotPickerOpen"
                         @click="spotPickerOpen = !spotPickerOpen"
                       >
@@ -3254,7 +3254,7 @@ async function removeSpot(id: number) {
                       <Button
                         type="button"
                         variant="ghost"
-                        class="collapsible-toggle"
+                        class="collapsible-toggle picker-toggle"
                         :aria-expanded="editSpotPickerOpen"
                         @click="editSpotPickerOpen = !editSpotPickerOpen"
                       >
