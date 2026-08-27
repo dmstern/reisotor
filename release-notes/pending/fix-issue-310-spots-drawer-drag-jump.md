@@ -1,1 +1,0 @@
-- Behebt ein Problem in der Kartenansicht auf Mobilgeräten, bei dem der Spots-Drawer beim Herunterziehen aus dem maximierten Zustand einen kurzen Höhen-Sprung machte (#310).

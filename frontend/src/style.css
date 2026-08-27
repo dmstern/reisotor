@@ -1184,9 +1184,3 @@ p + .btn {
   font-size: 0.85rem;
   font-weight: 600;
 }
-
-/* Make leaflet copyright text more decent */
-.leaflet-container .leaflet-control-attribution {
-  text-shadow: 0 2px 3px #0009;
-  color: #ddda;
-}
