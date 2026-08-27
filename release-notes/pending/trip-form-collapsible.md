@@ -1,0 +1,1 @@
+- Der mehrstufige Assistent beim Anlegen eines Urlaubs wurde durch ein übersichtliches Formular mit einklappbaren optionalen Feldern ersetzt.

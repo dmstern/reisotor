@@ -12,6 +12,9 @@ test('toggling the trip setting makes the packing category field required or opt
     await page.locator('.switcher-btn').click();
     await page.locator('.trip-row.active').getByLabel('Bearbeiten').click();
     const checkbox = page.getByLabel('Kategorie in der Packliste ist Pflichtfeld');
+    if (!(await checkbox.isVisible())) {
+      await page.getByRole('button', { name: 'Optionale Angaben' }).click();
+    }
     await expect(checkbox).toBeVisible();
     if ((await checkbox.isChecked()) !== required) await checkbox.click();
     await page.getByRole('button', { name: 'Speichern', exact: true }).click();
