@@ -19,8 +19,8 @@ import { refreshTripWeatherSnapshots } from '../weatherSnapshots.js';
 interface TripBody {
   name: string;
   destination?: string;
-  start_date: string;
-  end_date: string;
+  start_date?: string | null;
+  end_date?: string | null;
   maps_link?: string;
   lat?: number;
   lng?: number;
@@ -80,8 +80,8 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
       .run(
         name,
         destination ?? null,
-        start_date,
-        end_date,
+        start_date ?? null,
+        end_date ?? null,
         maps_link ?? null,
         lat ?? null,
         lng ?? null,
@@ -141,8 +141,8 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
       .run(
         name,
         destination ?? null,
-        start_date,
-        end_date,
+        start_date ?? null,
+        end_date ?? null,
         maps_link ?? null,
         lat ?? null,
         lng ?? null,

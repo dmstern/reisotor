@@ -109,7 +109,7 @@ export function scheduleItemToEntry(
 // Urlaub-Stammdaten erscheinen automatisch als (nicht editierbare) Kalender-Items der Kategorie
 // "Urlaub" – synthetisch aus den Trip-Stammdaten erzeugt, nicht in schedule_items gespeichert (Batch 3).
 export function buildTripEntries(trip: Trip | null): CalendarEntry[] {
-  if (!trip) return [];
+  if (!trip || !trip.start_date) return [];
   const entries: CalendarEntry[] = [
     {
       key: 'trip-start',
@@ -129,7 +129,7 @@ export function buildTripEntries(trip: Trip | null): CalendarEntry[] {
       done: false,
     },
   ];
-  if (trip.end_date !== trip.start_date) {
+  if (trip.end_date && trip.end_date !== trip.start_date) {
     entries.push({
       key: 'trip-end',
       kind: 'trip',

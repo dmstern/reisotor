@@ -544,7 +544,7 @@ const focusedDateStations = computed<ExcursionStation[]>(() => {
 // Mechanismus wie dort, hier aber für JEDEN Urlaubstag statt nur für Tage mit geplantem Ausflug.
 const vacationDays = computed<string[]>(() => {
   const trip = tripStore.currentTrip;
-  if (!trip) return [];
+  if (!trip || !trip.start_date || !trip.end_date) return [];
   const days: string[] = [];
   const cursor = new Date(trip.start_date);
   const end = new Date(trip.end_date);

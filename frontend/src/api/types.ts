@@ -18,8 +18,8 @@ export interface Trip {
   id: number;
   name: string;
   destination: string | null;
-  start_date: string;
-  end_date: string;
+  start_date: string | null;
+  end_date: string | null;
   maps_link: string | null;
   lat: number | null;
   lng: number | null;
