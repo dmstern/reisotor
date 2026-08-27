@@ -12,6 +12,7 @@ import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
+import Card from './primitives/Card.vue';
 import SegmentedToggle from './SegmentedToggle.vue';
 
 // Issue #74: die Bereichseinstellungen sind der zentrale, immer sichtbare Teil dieser Karte
@@ -81,7 +82,7 @@ const categoriesColorRelevant = computed(() => iconStyle.groups.categories === '
 </script>
 
 <template>
-  <div class="card">
+  <Card>
     <h2>Icons</h2>
     <p class="hint">
       Emoji oder Symbole für Navigation, Kategorien und Wetter – dein Profilbild bleibt davon
@@ -206,7 +207,7 @@ const categoriesColorRelevant = computed(() => iconStyle.groups.categories === '
       <AppIcon :icon="ACTION_ICONS.refresh" :size="16" group="actions" />
       Auf Standard-Einstellungen zurücksetzen
     </Button>
-  </div>
+  </Card>
 </template>
 
 <style scoped>

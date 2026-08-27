@@ -1,0 +1,1 @@
+- Card-Überschriften in allen Einstellungen und Panels visuell vereinheitlicht.

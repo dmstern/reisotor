@@ -8,6 +8,7 @@ import {
 } from '../stores/uiSettings';
 import SegmentedToggle from './SegmentedToggle.vue';
 import AppIcon from './AppIcon.vue';
+import Card from './primitives/Card.vue';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 
 const uiSettings = useUiSettingsStore();
@@ -60,7 +61,7 @@ const previewStyle = computed(() => {
 </script>
 
 <template>
-  <div class="card">
+  <Card>
     <h2>Glass-Effekt & Transparenz</h2>
     <p class="hint">
       Passe das Erscheinungsbild der schwebenden Navigationsleiste und Overlays an. Wähle zwischen
@@ -160,7 +161,7 @@ const previewStyle = computed(() => {
         </div>
       </div>
     </div>
-  </div>
+  </Card>
 </template>
 
 <style scoped>

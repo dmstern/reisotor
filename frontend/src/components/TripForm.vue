@@ -6,6 +6,7 @@ import LocationPicker from './LocationPicker.vue';
 import ImageUrlInput from './ImageUrlInput.vue';
 import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
+import Card from './primitives/Card.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
 // locationError: vom Aufrufer (TripSwitcher.vue) gesetzt, wenn nach dem Speichern auffällt, dass
@@ -137,7 +138,7 @@ function onSubmit() {
           <input v-model="form.destination" type="text" placeholder="z. B. Toskana" />
         </label>
 
-        <div class="card location-box">
+        <Card class="location-box">
           <span class="field-label">Standort (optional)</span>
           <p class="hint">
             Wird für die Wetter-Anzeige und die Position auf der Karte verwendet. Du kannst das auch
@@ -176,7 +177,7 @@ function onSubmit() {
             />
           </Button>
           <LocationPicker v-if="pickerOpen" v-model="manualPin" />
-        </div>
+        </Card>
 
         <div class="field-group">
           <span class="field-label">Bild für das Dashboard-Banner (optional)</span>
