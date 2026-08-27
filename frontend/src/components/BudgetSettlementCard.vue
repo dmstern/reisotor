@@ -50,11 +50,6 @@ const store = useBudgetStore();
 </template>
 
 <style scoped>
-h2 {
-  font-size: 1.05rem;
-  color: var(--color-primary-dark);
-}
-
 .settled {
   color: var(--color-success);
   font-weight: 600;

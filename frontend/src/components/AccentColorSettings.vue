@@ -8,6 +8,7 @@ import {
 } from '../stores/uiSettings';
 import SegmentedToggle from './SegmentedToggle.vue';
 import Button from './primitives/Button.vue';
+import Card from './primitives/Card.vue';
 import AppIcon from './AppIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
@@ -33,7 +34,7 @@ function resetColor() {
 </script>
 
 <template>
-  <div class="card">
+  <Card>
     <h2>Akzentfarbe</h2>
     <p class="hint">
       Wähle deine persönliche Haupt-Akzentfarbe für Buttons, aktive Toggles, Links und Icons.
@@ -104,7 +105,7 @@ function resetColor() {
         <Button variant="secondary" size="sm">Sekundär-Button</Button>
       </div>
     </div>
-  </div>
+  </Card>
 </template>
 
 <style scoped>
