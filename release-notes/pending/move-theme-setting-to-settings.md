@@ -1,0 +1,1 @@
+- Theme-Umschalter auf Desktop in die App-Einstellungen verschoben.
