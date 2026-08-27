@@ -1,0 +1,1 @@
+- Im Feedback-Formular wird nun ein Hinweis angezeigt, dass Meldungen öffentlich auf GitHub (Coding-Plattform von Microsoft) einsehbar sind und keine privaten Informationen geteilt werden sollten.
