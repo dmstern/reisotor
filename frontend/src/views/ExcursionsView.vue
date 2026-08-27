@@ -4130,8 +4130,7 @@ async function removeSpot(id: number) {
 
 .form-image-banner {
   position: relative;
-  margin: calc(-1 * var(--space-3) - var(--space-1)) calc(-1 * var(--space-4) - var(--space-1))
-    var(--space-2);
+  margin: calc(-1 * var(--space-1)) calc(-1 * var(--space-1)) var(--space-2);
   height: 160px;
   border-radius: var(--radius-md-squircle) var(--radius-md-squircle) 0 0;
   corner-shape: squircle;
