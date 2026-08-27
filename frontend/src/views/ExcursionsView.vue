@@ -2671,6 +2671,7 @@ async function removeSpot(id: number) {
                         <DropdownItem
                           v-for="cat in filterCategoryOptions"
                           :key="cat"
+                          class="category-option"
                           multiselect
                           :icon="groupIconDef(cat)"
                           icon-group="categories"
