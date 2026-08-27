@@ -13,6 +13,7 @@ import TrackRecordingIndicator from './TrackRecordingIndicator.vue';
 import PwaUpdatePrompt from './PwaUpdatePrompt.vue';
 import PwaInstallHint from './PwaInstallHint.vue';
 import LoadingIndicator from './LoadingIndicator.vue';
+import ThemeModeSelect from './ThemeModeSelect.vue';
 import DemoModeBanner from './DemoModeBanner.vue';
 import { DEMO_MODE } from '../demo/isDemoMode';
 
@@ -100,6 +101,7 @@ const isNonProd = computed(
       <TripSwitcher class="switcher" />
       <PresenceAvatars />
       <NotificationInbox />
+      <ThemeModeSelect variant="icon" class="theme-toggle" />
       <router-link to="/settings" class="profile-link" title="Einstellungen">
         <span class="avatar">{{ auth.user?.avatar || '👤' }}</span>
       </router-link>
@@ -211,6 +213,16 @@ const isNonProd = computed(
    TripSwitcher überlagern. Logo (und ein evtl. DEV-Badge) bleiben als kompakte Marke stehen. */
 @media (max-width: 799px) {
   .wordmark {
+    display: none;
+  }
+}
+
+/* Auf mobile zieht "alle Mitreisenden statt nur online" (PresenceAvatars.vue) potenziell mehr
+   Avatare in den Header als vorher - der Theme-Toggle wandert dafür in die Einstellungen
+   (SettingsView.vue), auf Desktop bleibt er exklusiv hier im Header (derselbe 800px-Umbruch wie
+   .wordmark oben/NavBar.vue). */
+@media (max-width: 799px) {
+  .theme-toggle {
     display: none;
   }
 }

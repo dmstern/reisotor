@@ -139,6 +139,12 @@ describe('formatTripDateRange (#212)', () => {
     expect(formatTripDateRange('2026-12-28', '2027-01-05', now)).toBe('28.12.2026 – 05.01.2027');
   });
 
+  it('handles optional / missing dates gracefully (#319)', () => {
+    expect(formatTripDateRange(null, null)).toBe('Datum noch offen');
+    expect(formatTripDateRange('2026-08-10', null)).toBe('10.08.2026');
+    expect(formatTripDateRange(null, '2026-08-20')).toBe('20.08.2026');
+  });
+
   it('respects dateFormat setting (iso / us)', () => {
     const now = new Date(2026, 7, 21);
     useCalendarSettingsStore().dateFormat = 'iso';

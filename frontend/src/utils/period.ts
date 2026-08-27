@@ -13,10 +13,10 @@ export const PERIOD_META: Record<Period, string> = {
  *  keins gesetzt, gibt es keinen passenden Zeitraum (null, wie "kein Zeitraum" bisher). */
 export function computePeriod(
   dueDate: string | null | undefined,
-  trip: { start_date: string; end_date: string } | null | undefined
+  trip: { start_date?: string | null; end_date?: string | null } | null | undefined
 ): Period | null {
-  if (!dueDate || !trip) return null;
+  if (!dueDate || !trip || !trip.start_date) return null;
   if (dueDate < trip.start_date) return 'before';
-  if (dueDate <= trip.end_date) return 'during';
+  if (trip.end_date && dueDate <= trip.end_date) return 'during';
   return null;
 }

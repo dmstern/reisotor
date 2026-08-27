@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useUiSettingsStore, DEFAULT_BORDER_WIDTH } from '../stores/uiSettings';
+import Card from './primitives/Card.vue';
 import SegmentedToggle from './SegmentedToggle.vue';
 import Button from './primitives/Button.vue';
 import AppIcon from './AppIcon.vue';
@@ -22,7 +23,7 @@ const currentPresetValue = computed(() => {
 </script>
 
 <template>
-  <div class="card">
+  <Card>
     <h2>Rahmendicke (Borders)</h2>
     <p class="hint">
       Passe die Rahmendicke für Karten, Panels, Formularfelder und Buttons an (0 bis 10 Pixel).
@@ -78,7 +79,7 @@ const currentPresetValue = computed(() => {
         <AppIcon :icon="ACTION_ICONS.refresh" :size="14" group="actions" /> Standard (1px)
       </Button>
     </div>
-  </div>
+  </Card>
 </template>
 
 <style scoped>

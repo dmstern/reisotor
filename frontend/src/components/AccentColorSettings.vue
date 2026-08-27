@@ -6,6 +6,7 @@ import {
   PASTEL_PRIMARY_COLOR_PRESETS,
   DEFAULT_PRIMARY_COLOR,
 } from '../stores/uiSettings';
+import Card from './primitives/Card.vue';
 import SegmentedToggle from './SegmentedToggle.vue';
 import Button from './primitives/Button.vue';
 import AppIcon from './AppIcon.vue';
@@ -33,7 +34,7 @@ function resetColor() {
 </script>
 
 <template>
-  <div class="card">
+  <Card>
     <h2>Akzentfarbe</h2>
     <p class="hint">
       Wähle deine persönliche Haupt-Akzentfarbe für Buttons, aktive Toggles, Links und Icons.
@@ -104,7 +105,7 @@ function resetColor() {
         <Button variant="secondary" size="sm">Sekundär-Button</Button>
       </div>
     </div>
-  </div>
+  </Card>
 </template>
 
 <style scoped>
