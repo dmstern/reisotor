@@ -1,0 +1,1 @@
+- Card-Überschriften in den Einstellungen an das einheitliche App-Design angepasst.

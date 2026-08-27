@@ -1304,11 +1304,6 @@ h3 {
   cursor: pointer;
 }
 
-.card h2 {
-  font-size: 1.05rem;
-  color: var(--color-primary-dark);
-}
-
 .emoji-scroll {
   max-height: 220px;
   overflow-y: auto;
