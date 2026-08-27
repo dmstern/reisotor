@@ -37,8 +37,18 @@ function loadEntries(): NavConfigEntry[] {
   return [...validExisting, ...missing];
 }
 
-// Geräte-/Browser-UI-Einstellung (wie stores/navPosition.ts/theme.ts) statt Account-Daten - bewusst
-// nur lokal in localStorage gehalten.
+export function sanitizeNavEntries(parsed: NavConfigEntry[]): NavConfigEntry[] {
+  const known = new Set(NAV_LINKS.map((l) => l.key));
+  const validExisting = parsed.filter((e) => known.has(e.key) && typeof e.visible === 'boolean');
+  const existingKeys = new Set(validExisting.map((e) => e.key));
+  const missing = NAV_LINKS.filter((l) => !existingKeys.has(l.key)).map((l) => ({
+    key: l.key,
+    visible: true,
+  }));
+  return [...validExisting, ...missing];
+}
+
+// Account-Einstellung (Issue #324): Persistiert über /users/me/app-settings.
 export const useNavConfigStore = defineStore('navConfig', () => {
   const entries = ref<NavConfigEntry[]>(loadEntries());
 

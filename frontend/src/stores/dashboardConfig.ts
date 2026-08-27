@@ -38,8 +38,18 @@ function loadEntries(): DashboardConfigEntry[] {
   return [...validExisting, ...missing];
 }
 
-// Geräte-/Browser-UI-Einstellung (wie stores/navConfig.ts/navPosition.ts/theme.ts) statt
-// Account-Daten - bewusst nur lokal in localStorage gehalten.
+export function sanitizeDashboardEntries(parsed: DashboardConfigEntry[]): DashboardConfigEntry[] {
+  const known = new Set(DASHBOARD_TILES.map((t) => t.key));
+  const validExisting = parsed.filter((e) => known.has(e.key) && typeof e.visible === 'boolean');
+  const existingKeys = new Set(validExisting.map((e) => e.key));
+  const missing = DASHBOARD_TILES.filter((t) => !existingKeys.has(t.key)).map((t) => ({
+    key: t.key,
+    visible: true,
+  }));
+  return [...validExisting, ...missing];
+}
+
+// Account-Einstellung (Issue #324): Persistiert über /users/me/app-settings.
 export const useDashboardConfigStore = defineStore('dashboardConfig', () => {
   const entries = ref<DashboardConfigEntry[]>(loadEntries());
 

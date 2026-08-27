@@ -1,5 +1,19 @@
 import { defineStore } from 'pinia';
 import { ref, watch } from 'vue';
+import { api } from '../api/client';
+import { useThemeStore, type ThemeMode, THEME_MODE_OPTIONS } from './theme';
+import { useNavPositionStore, type NavPosition } from './navPosition';
+import { useNavConfigStore, sanitizeNavEntries, type NavConfigEntry } from './navConfig';
+import { useDashboardConfigStore, sanitizeDashboardEntries, type DashboardConfigEntry } from './dashboardConfig';
+import {
+  useCalendarSettingsStore,
+  type WeekStart,
+  type DateFormatOption,
+  WEEK_START_OPTIONS,
+  DATE_FORMAT_OPTIONS,
+} from './calendarSettings';
+import { useWeatherProviderStore, type WeatherModel, WEATHER_MODEL_OPTIONS } from './weatherProvider';
+import { useHomeCurrencyStore, type HomeCurrency, HOME_CURRENCY_OPTIONS } from './homeCurrency';
 
 const SHOW_ACTIVITY_TOASTS_KEY = 'reisotor-show-activity-toasts';
 const SHOW_VACATION_COUNTDOWN_KEY = 'reisotor-show-vacation-countdown';
@@ -50,68 +64,6 @@ export const PRIMARY_COLOR_PRESETS = [
 export const DEFAULT_PRIMARY_COLOR = '#2a7f74';
 export const DEFAULT_BORDER_WIDTH = 1;
 
-function loadShowActivityToasts(): boolean {
-  // Kein gespeicherter Wert -> Standard AN (bisheriges Verhalten unverändert für alle, die die
-  // Einstellung noch nie angefasst haben).
-  const stored = localStorage.getItem(SHOW_ACTIVITY_TOASTS_KEY);
-  return stored === null ? true : stored === 'true';
-}
-
-// Kein gespeicherter Wert -> Standard AUS (statischer Hinweis statt Resttage-Countdown während des
-// Urlaubs, siehe DashboardView.vue/utils/departureCountdown.ts's computeVacationPhase()).
-function loadShowVacationCountdown(): boolean {
-  return localStorage.getItem(SHOW_VACATION_COUNTDOWN_KEY) === 'true';
-}
-
-// Kein gespeicherter Wert -> Standard AUS (Wetter zuhause im Dashboard zeigt standardmäßig nur die
-// letzten paar Tage vor der Rückreise statt des kompletten Urlaubszeitraums, siehe
-// DashboardView.vue's homeForecastDays).
-function loadShowHomeWeatherFullTrip(): boolean {
-  return localStorage.getItem(SHOW_HOME_WEATHER_FULL_TRIP_KEY) === 'true';
-}
-
-function loadGlassStyle(): GlassStyle {
-  const stored = localStorage.getItem(GLASS_STYLE_KEY);
-  if (stored === 'glass' || stored === 'frosted' || stored === 'opaque' || stored === 'custom') {
-    return stored as GlassStyle;
-  }
-  return 'glass';
-}
-
-function loadGlassOpacity(): number {
-  const stored = localStorage.getItem(GLASS_OPACITY_KEY);
-  if (stored !== null) {
-    const parsed = parseInt(stored, 10);
-    if (!isNaN(parsed) && parsed >= 20 && parsed <= 100) return parsed;
-  }
-  return 85;
-}
-
-function loadGlassBlur(): number {
-  const stored = localStorage.getItem(GLASS_BLUR_KEY);
-  if (stored !== null) {
-    const parsed = parseInt(stored, 10);
-    if (!isNaN(parsed) && parsed >= 0 && parsed <= 30) return parsed;
-  }
-  return 12;
-}
-
-function loadPrimaryColor(): string {
-  const stored = localStorage.getItem(PRIMARY_COLOR_KEY);
-  if (stored && /^#[0-9a-fA-F]{6}$/.test(stored)) {
-    return stored;
-  }
-  return DEFAULT_PRIMARY_COLOR;
-}
-
-function loadBorderWidth(): number {
-  const stored = localStorage.getItem(BORDER_WIDTH_KEY);
-  if (stored !== null) {
-    const parsed = parseInt(stored, 10);
-    if (!isNaN(parsed) && parsed >= 0 && parsed <= 10) return parsed;
-  }
-  return DEFAULT_BORDER_WIDTH;
-}
 
 export function getPresetGlassValues(style: GlassStyle) {
   if (style === 'glass') {
@@ -132,13 +84,89 @@ export function computeGlassCssValues(style: GlassStyle, opacity: number, blur: 
   return { opacity: opacity / 100, blur };
 }
 
+function safeLocalStorageGet(key: string): string | null {
+  if (typeof localStorage === 'undefined') return null;
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function safeLocalStorageSet(key: string, value: string): void {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // ignore
+  }
+}
+
+function loadShowActivityToasts(): boolean {
+  const stored = safeLocalStorageGet(SHOW_ACTIVITY_TOASTS_KEY);
+  return stored === null ? true : stored === 'true';
+}
+
+function loadShowVacationCountdown(): boolean {
+  return safeLocalStorageGet(SHOW_VACATION_COUNTDOWN_KEY) === 'true';
+}
+
+function loadShowHomeWeatherFullTrip(): boolean {
+  return safeLocalStorageGet(SHOW_HOME_WEATHER_FULL_TRIP_KEY) === 'true';
+}
+
+function loadGlassStyle(): GlassStyle {
+  const stored = safeLocalStorageGet(GLASS_STYLE_KEY);
+  if (stored === 'glass' || stored === 'frosted' || stored === 'opaque' || stored === 'custom') {
+    return stored as GlassStyle;
+  }
+  return 'glass';
+}
+
+function loadGlassOpacity(): number {
+  const stored = safeLocalStorageGet(GLASS_OPACITY_KEY);
+  if (stored !== null) {
+    const parsed = parseInt(stored, 10);
+    if (!isNaN(parsed) && parsed >= 20 && parsed <= 100) return parsed;
+  }
+  return 85;
+}
+
+function loadGlassBlur(): number {
+  const stored = safeLocalStorageGet(GLASS_BLUR_KEY);
+  if (stored !== null) {
+    const parsed = parseInt(stored, 10);
+    if (!isNaN(parsed) && parsed >= 0 && parsed <= 30) return parsed;
+  }
+  return 12;
+}
+
+function loadPrimaryColor(): string {
+  const stored = safeLocalStorageGet(PRIMARY_COLOR_KEY);
+  if (stored && /^#[0-9a-fA-F]{6}$/.test(stored)) {
+    return stored;
+  }
+  return DEFAULT_PRIMARY_COLOR;
+}
+
+function loadBorderWidth(): number {
+  const stored = safeLocalStorageGet(BORDER_WIDTH_KEY);
+  if (stored !== null) {
+    const parsed = parseInt(stored, 10);
+    if (!isNaN(parsed) && parsed >= 0 && parsed <= 10) return parsed;
+  }
+  return DEFAULT_BORDER_WIDTH;
+}
+
 export function applyGlassStyle(style: GlassStyle, opacity: number, blur: number) {
+  if (typeof document === 'undefined') return;
   const { opacity: op, blur: bl } = computeGlassCssValues(style, opacity, blur);
   document.documentElement.style.setProperty('--glass-opacity', op.toFixed(2));
   document.documentElement.style.setProperty('--glass-blur', `${bl}px`);
 }
 
 export function applyPrimaryColor(colorHex: string) {
+  if (typeof document === 'undefined') return;
   if (/^#[0-9a-fA-F]{6}$/.test(colorHex)) {
     document.documentElement.style.setProperty('--color-primary', colorHex);
   } else {
@@ -147,11 +175,37 @@ export function applyPrimaryColor(colorHex: string) {
 }
 
 export function applyBorderWidth(widthPx: number) {
+  if (typeof document === 'undefined') return;
   document.documentElement.style.setProperty('--ui-border-width', `${widthPx}px`);
 }
 
-// Geräte-/Browser-UI-Einstellung (wie stores/mapOrientation.ts) statt Account-Daten: bewusst nur
-// lokal in localStorage gehalten.
+export interface StoredAppSettings {
+  theme?: ThemeMode;
+  showActivityToasts?: boolean;
+  showVacationCountdown?: boolean;
+  showHomeWeatherFullTrip?: boolean;
+  glassStyle?: GlassStyle;
+  glassOpacity?: number;
+  glassBlur?: number;
+  primaryColor?: string;
+  borderWidth?: number;
+  navPosition?: {
+    desktop?: NavPosition;
+    mobile?: NavPosition;
+  };
+  navConfig?: NavConfigEntry[];
+  dashboardConfig?: DashboardConfigEntry[];
+  calendarSettings?: {
+    weekStart?: WeekStart;
+    dateFormat?: DateFormatOption;
+  };
+  weatherModel?: WeatherModel;
+  homeCurrency?: HomeCurrency;
+}
+
+// Persistierte App-Einstellungen am User-Datensatz (Issue #324).
+// Lädt und speichert alle Individualisierungen (Theme, Farben, Rahmendicke, Glass, Nav, Dashboard, etc.)
+// pro Account auf dem Server (/users/me/app-settings) & hält sie synchron.
 export const useUiSettingsStore = defineStore('uiSettings', () => {
   const showActivityToasts = ref(loadShowActivityToasts());
   const showVacationCountdown = ref(loadShowVacationCountdown());
@@ -163,6 +217,8 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
 
   const primaryColor = ref<string>(loadPrimaryColor());
   const borderWidth = ref<number>(loadBorderWidth());
+  const loaded = ref(false);
+  let isInternalSync = false;
 
   function apply() {
     applyGlassStyle(glassStyle.value, glassOpacity.value, glassBlur.value);
@@ -174,33 +230,198 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
     apply();
   }
 
-  watch(showActivityToasts, (v) => localStorage.setItem(SHOW_ACTIVITY_TOASTS_KEY, String(v)));
-  watch(showVacationCountdown, (v) => localStorage.setItem(SHOW_VACATION_COUNTDOWN_KEY, String(v)));
-  watch(showHomeWeatherFullTrip, (v) =>
-    localStorage.setItem(SHOW_HOME_WEATHER_FULL_TRIP_KEY, String(v))
-  );
+  function persist() {
+    if (isInternalSync) return;
+    const themeStore = useThemeStore();
+    const navPosStore = useNavPositionStore();
+    const navCfgStore = useNavConfigStore();
+    const dashCfgStore = useDashboardConfigStore();
+    const calSettingsStore = useCalendarSettingsStore();
+    const weatherStore = useWeatherProviderStore();
+    const homeCurrStore = useHomeCurrencyStore();
+
+    api
+      .put('/users/me/app-settings', {
+        settings: {
+          theme: themeStore.mode,
+          showActivityToasts: showActivityToasts.value,
+          showVacationCountdown: showVacationCountdown.value,
+          showHomeWeatherFullTrip: showHomeWeatherFullTrip.value,
+          glassStyle: glassStyle.value,
+          glassOpacity: glassOpacity.value,
+          glassBlur: glassBlur.value,
+          primaryColor: primaryColor.value,
+          borderWidth: borderWidth.value,
+          navPosition: {
+            desktop: navPosStore.desktop,
+            mobile: navPosStore.mobile,
+          },
+          navConfig: navCfgStore.entries,
+          dashboardConfig: dashCfgStore.entries,
+          calendarSettings: {
+            weekStart: calSettingsStore.weekStart,
+            dateFormat: calSettingsStore.dateFormat,
+          },
+          weatherModel: weatherStore.model,
+          homeCurrency: homeCurrStore.currency,
+        } satisfies StoredAppSettings,
+      })
+      .catch(() => {});
+  }
+
+  async function load() {
+    if (loaded.value) return;
+    try {
+      const stored = await api.get<Partial<StoredAppSettings>>('/users/me/app-settings');
+      isInternalSync = true;
+
+      const themeStore = useThemeStore();
+      const navPosStore = useNavPositionStore();
+      const navCfgStore = useNavConfigStore();
+      const dashCfgStore = useDashboardConfigStore();
+      const calSettingsStore = useCalendarSettingsStore();
+      const weatherStore = useWeatherProviderStore();
+      const homeCurrStore = useHomeCurrencyStore();
+
+      if (stored.theme && THEME_MODE_OPTIONS.some((o) => o.value === stored.theme)) {
+        themeStore.mode = stored.theme;
+      }
+      if (typeof stored.showActivityToasts === 'boolean') {
+        showActivityToasts.value = stored.showActivityToasts;
+      }
+      if (typeof stored.showVacationCountdown === 'boolean') {
+        showVacationCountdown.value = stored.showVacationCountdown;
+      }
+      if (typeof stored.showHomeWeatherFullTrip === 'boolean') {
+        showHomeWeatherFullTrip.value = stored.showHomeWeatherFullTrip;
+      }
+      if (
+        stored.glassStyle === 'glass' ||
+        stored.glassStyle === 'frosted' ||
+        stored.glassStyle === 'opaque' ||
+        stored.glassStyle === 'custom'
+      ) {
+        glassStyle.value = stored.glassStyle;
+      }
+      if (typeof stored.glassOpacity === 'number' && stored.glassOpacity >= 20 && stored.glassOpacity <= 100) {
+        glassOpacity.value = stored.glassOpacity;
+      }
+      if (typeof stored.glassBlur === 'number' && stored.glassBlur >= 0 && stored.glassBlur <= 30) {
+        glassBlur.value = stored.glassBlur;
+      }
+      if (stored.primaryColor && /^#[0-9a-fA-F]{6}$/.test(stored.primaryColor)) {
+        primaryColor.value = stored.primaryColor;
+      }
+      if (typeof stored.borderWidth === 'number' && stored.borderWidth >= 0 && stored.borderWidth <= 10) {
+        borderWidth.value = stored.borderWidth;
+      }
+      if (stored.navPosition) {
+        if (stored.navPosition.desktop === 'top' || stored.navPosition.desktop === 'bottom') {
+          navPosStore.desktop = stored.navPosition.desktop;
+        }
+        if (stored.navPosition.mobile === 'top' || stored.navPosition.mobile === 'bottom') {
+          navPosStore.mobile = stored.navPosition.mobile;
+        }
+      }
+      if (Array.isArray(stored.navConfig)) {
+        navCfgStore.entries = sanitizeNavEntries(stored.navConfig);
+      }
+      if (Array.isArray(stored.dashboardConfig)) {
+        dashCfgStore.entries = sanitizeDashboardEntries(stored.dashboardConfig);
+      }
+      if (stored.calendarSettings) {
+        if (
+          stored.calendarSettings.weekStart &&
+          WEEK_START_OPTIONS.some((o) => o.value === stored.calendarSettings?.weekStart)
+        ) {
+          calSettingsStore.weekStart = stored.calendarSettings.weekStart;
+        }
+        if (
+          stored.calendarSettings.dateFormat &&
+          DATE_FORMAT_OPTIONS.some((o) => o.value === stored.calendarSettings?.dateFormat)
+        ) {
+          calSettingsStore.dateFormat = stored.calendarSettings.dateFormat;
+        }
+      }
+      if (stored.weatherModel && WEATHER_MODEL_OPTIONS.some((o) => o.value === stored.weatherModel)) {
+        weatherStore.model = stored.weatherModel;
+      }
+      if (stored.homeCurrency && HOME_CURRENCY_OPTIONS.some((o) => o.value === stored.homeCurrency)) {
+        homeCurrStore.currency = stored.homeCurrency;
+      }
+
+      apply();
+    } catch {
+      // Offline/Netzwerkfehler: Lokale Werte behalten
+    } finally {
+      isInternalSync = false;
+      loaded.value = true;
+    }
+  }
+
+  function clearOnLogout() {
+    loaded.value = false;
+    // reset/reload when next user logs in
+  }
+
+  watch(showActivityToasts, (v) => {
+    safeLocalStorageSet(SHOW_ACTIVITY_TOASTS_KEY, String(v));
+    persist();
+  });
+  watch(showVacationCountdown, (v) => {
+    safeLocalStorageSet(SHOW_VACATION_COUNTDOWN_KEY, String(v));
+    persist();
+  });
+  watch(showHomeWeatherFullTrip, (v) => {
+    safeLocalStorageSet(SHOW_HOME_WEATHER_FULL_TRIP_KEY, String(v));
+    persist();
+  });
 
   watch(glassStyle, (v) => {
-    localStorage.setItem(GLASS_STYLE_KEY, v);
+    safeLocalStorageSet(GLASS_STYLE_KEY, v);
     apply();
+    persist();
   });
   watch(glassOpacity, (v) => {
-    localStorage.setItem(GLASS_OPACITY_KEY, String(v));
+    safeLocalStorageSet(GLASS_OPACITY_KEY, String(v));
     apply();
+    persist();
   });
   watch(glassBlur, (v) => {
-    localStorage.setItem(GLASS_BLUR_KEY, String(v));
+    safeLocalStorageSet(GLASS_BLUR_KEY, String(v));
     apply();
+    persist();
   });
 
   watch(primaryColor, (v) => {
-    localStorage.setItem(PRIMARY_COLOR_KEY, v);
+    safeLocalStorageSet(PRIMARY_COLOR_KEY, v);
     apply();
+    persist();
   });
   watch(borderWidth, (v) => {
-    localStorage.setItem(BORDER_WIDTH_KEY, String(v));
+    safeLocalStorageSet(BORDER_WIDTH_KEY, String(v));
     apply();
+    persist();
   });
+
+  // Attach watchers to external stores so changes persist automatically
+  const themeStore = useThemeStore();
+  const navPosStore = useNavPositionStore();
+  const navCfgStore = useNavConfigStore();
+  const dashCfgStore = useDashboardConfigStore();
+  const calSettingsStore = useCalendarSettingsStore();
+  const weatherStore = useWeatherProviderStore();
+  const homeCurrStore = useHomeCurrencyStore();
+
+  watch(() => themeStore.mode, () => persist());
+  watch(() => navPosStore.desktop, () => persist());
+  watch(() => navPosStore.mobile, () => persist());
+  watch(() => navCfgStore.entries, () => persist(), { deep: true });
+  watch(() => dashCfgStore.entries, () => persist(), { deep: true });
+  watch(() => calSettingsStore.weekStart, () => persist());
+  watch(() => calSettingsStore.dateFormat, () => persist());
+  watch(() => weatherStore.model, () => persist());
+  watch(() => homeCurrStore.currency, () => persist());
 
   return {
     showActivityToasts,
@@ -211,6 +432,9 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
     glassBlur,
     primaryColor,
     borderWidth,
+    loaded,
+    load,
+    clearOnLogout,
     init,
     apply,
   };
