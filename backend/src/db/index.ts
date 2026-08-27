@@ -752,6 +752,17 @@ for (const table of TRASH_TABLES) {
   ensureColumn(table, 'deleted_at', 'TEXT');
 }
 
+// ⚡ Bolt Performance Optimization:
+// Add database indexes for frequently filtered columns to avoid full table scans O(N).
+// 1. spots (trip_id, deleted_at): queried heavily by spots/map routes and schedule dropdowns.
+// 2. trip_members (user_id, trip_id): queried whenever fetching user trips or checking membership.
+db.exec(
+  'CREATE INDEX IF NOT EXISTS idx_spots_trip_deleted ON spots (trip_id, deleted_at)'
+);
+db.exec(
+  'CREATE INDEX IF NOT EXISTS idx_trip_members_user_trip ON trip_members (user_id, trip_id)'
+);
+
 // Reise-Orte (travel_places) verschmelzen mit Spots: statt einer eigenen, parallelen Orte-Liste nur
 // für Reise-Etappen ist ein "Ort" (Flughafen/Bahnhof/Zuhause/…) jetzt einfach ein ganz normaler Spot
 // mit passender Kategorie – er lässt sich direkt in der Spots-Sicht anlegen und erscheint dort auch
