@@ -581,8 +581,8 @@ const spotCategoryOptions = computed(() => {
 const excursionPreviewImage = computed(() => excursionForm.value.image_url || null);
 const editExcursionPreviewImage = computed(() => editExcursionForm.value.image_url || null);
 
-const showSpotLocationSection = ref(true);
-const showEditSpotLocationSection = ref(true);
+const showSpotLocationSection = ref(false);
+const showEditSpotLocationSection = ref(false);
 const showSpotToursSection = ref(false);
 const showEditSpotToursSection = ref(false);
 const showExcursionSpotsSection = ref(false);
@@ -4119,9 +4119,9 @@ async function removeSpot(id: number) {
 
 .form-image-banner {
   position: relative;
-  margin: calc(-1 * var(--space-1)) calc(-1 * (var(--space-4) + var(--space-1))) var(--space-2);
-  height: 160px;
-  border-radius: 0 0 var(--radius-sm-squircle) var(--radius-sm-squircle);
+  margin: 0 0 var(--space-2);
+  height: 180px;
+  border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   background: var(--color-primary-tint) center/cover no-repeat;
   display: flex;
