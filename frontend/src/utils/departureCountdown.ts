@@ -53,9 +53,10 @@ export type VacationPhase =
  *  (dafür bleibt computeDepartureCountdown zuständig) - so bleibt die Funktion auch isoliert
  *  testbar, ohne sich auf die Aufrufreihenfolge in DashboardView.vue verlassen zu müssen. */
 export function computeVacationPhase(
-  trip: { start_date: string; end_date: string },
+  trip: { start_date?: string | null; end_date?: string | null },
   now: Date
 ): VacationPhase | null {
+  if (!trip.start_date || !trip.end_date) return null;
   const [sy, sm, sd] = trip.start_date.split('-').map(Number);
   const [ey, em, ed] = trip.end_date.split('-').map(Number);
   const dayAfterDeparture = new Date(sy, sm - 1, sd + 1);

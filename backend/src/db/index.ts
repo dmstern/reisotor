@@ -32,8 +32,8 @@ CREATE TABLE IF NOT EXISTS trips (
   id INTEGER PRIMARY KEY,
   name TEXT NOT NULL,
   destination TEXT,
-  start_date TEXT NOT NULL,
-  end_date TEXT NOT NULL
+  start_date TEXT,
+  end_date TEXT
 );
 
 CREATE TABLE IF NOT EXISTS schedule_items (
@@ -1265,6 +1265,57 @@ db.exec(`
 // rückwirkend zurückgewiesen (siehe routes/packing.ts).
 ensureColumn('trips', 'packing_category_required', 'INTEGER NOT NULL DEFAULT 1');
 
+// Migration: start_date und end_date auf trips nullable machen (Issue #319)
+const tripsInfo = db.prepare('PRAGMA table_info(trips)').all() as {
+  name: string;
+  notnull: number;
+}[];
+const startDateCol = tripsInfo.find((c) => c.name === 'start_date');
+if (startDateCol && startDateCol.notnull === 1) {
+  db.exec('PRAGMA foreign_keys = OFF');
+  db.exec(`
+    CREATE TABLE trips_new (
+      id INTEGER PRIMARY KEY,
+      name TEXT NOT NULL,
+      destination TEXT,
+      start_date TEXT,
+      end_date TEXT,
+      maps_link TEXT,
+      lat REAL,
+      lng REAL,
+      image_url TEXT,
+      country_code TEXT,
+      country_name TEXT,
+      packing_category_required INTEGER NOT NULL DEFAULT 1
+    )
+  `);
+  const oldCols = (db.prepare('PRAGMA table_info(trips)').all() as { name: string }[]).map(
+    (c) => c.name
+  );
+  const targetCols = [
+    'id',
+    'name',
+    'destination',
+    'start_date',
+    'end_date',
+    'maps_link',
+    'lat',
+    'lng',
+    'image_url',
+    'country_code',
+    'country_name',
+    'packing_category_required',
+  ].filter((col) => oldCols.includes(col));
+  const colsStr = targetCols.join(', ');
+  db.exec(`
+    INSERT INTO trips_new (${colsStr})
+    SELECT ${colsStr} FROM trips
+  `);
+  db.exec('DROP TABLE trips');
+  db.exec('ALTER TABLE trips_new RENAME TO trips');
+  db.exec('PRAGMA foreign_keys = ON');
+}
+
 // Format der Freitext-/Notizfelder, die früher als reiner Markdown-ähnlicher Text galten und über
 // utils/richText.ts gerendert wurden - der neue WYSIWYG-Editor (RichTextEditor.vue) schreibt
 // stattdessen sanitiztes HTML. 'legacy' (Default) markiert bereits vorhandene Zeilen: sie werden
@@ -1345,6 +1396,10 @@ ensureColumn('diary_entries', 'is_draft', 'INTEGER NOT NULL DEFAULT 0');
 // localStorage-Zustand), eine eigene Tabelle mit einer Spalte pro Feld wäre hier reiner Overhead.
 // NULL = noch nie gespeichert, Frontend füllt dann seine lokalen Defaults.
 ensureColumn('users', 'icon_settings', 'TEXT');
+
+// App-Einstellungen (Issue #324): Persistieren der App-Einstellungen (Erscheinungsbild, Farbakzent,
+// Rahmendicke, Glassmorphism, Navigation, Dashboard-Kacheln, Kalender-Anzeige, etc.) am User-Datensatz.
+ensureColumn('users', 'app_settings', 'TEXT');
 
 // Notification-Inbox (#97): merkt sich pro Nutzer:in, welche trip_activity-Zeilen bereits gelesen
 // wurden (Klick auf die Nachricht bzw. "Alle als gelesen markieren", siehe routes/notifications.ts).

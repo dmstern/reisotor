@@ -7,8 +7,8 @@ import { useAuthStore } from './auth';
 export interface TripFormData {
   name: string;
   destination?: string;
-  start_date: string;
-  end_date: string;
+  start_date?: string | null;
+  end_date?: string | null;
   maps_link?: string;
   lat?: number;
   lng?: number;

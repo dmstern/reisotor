@@ -1,1 +1,0 @@
-- Der Kalender-Drawer auf Desktop schwebt nun im ausgeklappten Zustand frei mit `margin: var(--space-4)` zu allen Rändern und abgerundeten Ecken (`squircle`).

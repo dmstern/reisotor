@@ -83,20 +83,29 @@ export function endOfWeek(date: Date): Date {
  * - Jahresübergreifender Urlaub: Jahr anzeigen (z. B. "28.12.2026 – 05.01.2027")
  */
 export function formatTripDateRange(
-  startDateStr: string,
-  endDateStr: string,
+  startDateStr?: string | null,
+  endDateStr?: string | null,
   now: Date = new Date()
 ): string {
+  if (!startDateStr && !endDateStr) {
+    return 'Datum noch offen';
+  }
+  if (startDateStr && !endDateStr) {
+    return formatDate(startDateStr);
+  }
+  if (!startDateStr && endDateStr) {
+    return formatDate(endDateStr);
+  }
   const today = toLocalDateString(now);
   const currentYear = now.getFullYear();
-  const startYear = parseInt(startDateStr.slice(0, 4), 10);
-  const endYear = parseInt(endDateStr.slice(0, 4), 10);
+  const startYear = parseInt(startDateStr!.slice(0, 4), 10);
+  const endYear = parseInt(endDateStr!.slice(0, 4), 10);
 
-  const isPastTrip = today > endDateStr;
+  const isPastTrip = today > endDateStr!;
   const isFutureYearTrip = currentYear < startYear;
   const isCrossYearTrip = startYear !== endYear;
 
   const includeYear = isPastTrip || isFutureYearTrip || isCrossYearTrip;
 
-  return `${formatDate(startDateStr, { includeYear })} – ${formatDate(endDateStr, { includeYear })}`;
+  return `${formatDate(startDateStr!, { includeYear })} – ${formatDate(endDateStr!, { includeYear })}`;
 }

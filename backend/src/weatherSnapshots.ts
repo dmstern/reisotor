@@ -65,6 +65,7 @@ const upsertSnapshot = db.prepare(`
  *  per Open-Meteo und speichert sie dauerhaft in trip_weather_snapshots. Der heutige Tag wird bewusst NIE
  *  gespeichert - Open-Meteo liefert dafür noch keinen finalen Ist-Wert. */
 async function snapshotTripWeather(trip: TripRow, today: string) {
+  if (!trip.start_date || !trip.end_date) return;
   const yesterday = addDays(today, -1);
   if (trip.start_date > yesterday) return;
 
@@ -184,7 +185,7 @@ export async function refreshTripWeatherSnapshots(tripId: number) {
   const trip = db
     .prepare('SELECT id, lat, lng, start_date, end_date FROM trips WHERE id = ?')
     .get(tripId) as TripRow | undefined;
-  if (!trip || trip.lat == null || trip.lng == null) return;
+  if (!trip || trip.lat == null || trip.lng == null || !trip.start_date || !trip.end_date) return;
   await snapshotTripWeather(trip, todayUtcDateStr());
 }
 
@@ -200,6 +201,8 @@ export async function recordWeatherSnapshots() {
     .prepare(
       `SELECT id, lat, lng, start_date, end_date FROM trips
        WHERE lat IS NOT NULL AND lng IS NOT NULL
+         AND start_date IS NOT NULL AND start_date != ''
+         AND end_date IS NOT NULL AND end_date != ''
          AND end_date >= date('now', '-92 days')
          AND start_date <= date('now')`
     )
