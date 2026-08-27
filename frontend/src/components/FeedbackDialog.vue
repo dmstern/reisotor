@@ -95,8 +95,8 @@ function close() {
 
       <form v-else class="form" @submit.prevent="submit">
         <p class="hint info">
-          Meldungen sind öffentlich auf GitHub (Coding-Plattform von Microsoft) einsehbar.
-          Bitte teile keine privaten Infos, die nicht im Internet landen sollen.
+          Meldungen sind öffentlich auf GitHub (Coding-Plattform von Microsoft) einsehbar. Bitte
+          teile keine privaten Infos, die nicht im Internet landen sollen.
         </p>
 
         <label>
