@@ -479,10 +479,14 @@ function onResizeEnd() {
     width: var(--drawer-handle-gap);
   }
   .drawer.left .resize-handle {
-    left: calc(var(--space-4) + var(--drawer-width) + (var(--space-4) - var(--drawer-handle-gap)) / 2);
+    left: calc(
+      var(--space-4) + var(--drawer-width) + (var(--space-4) - var(--drawer-handle-gap)) / 2
+    );
   }
   .drawer.right .resize-handle {
-    right: calc(var(--space-4) + var(--drawer-width) + (var(--space-4) - var(--drawer-handle-gap)) / 2);
+    right: calc(
+      var(--space-4) + var(--drawer-width) + (var(--space-4) - var(--drawer-handle-gap)) / 2
+    );
   }
 
   .drawer-panel {
@@ -494,8 +498,14 @@ function onResizeEnd() {
     top: calc(var(--app-header-height, 56px) + var(--navbar-offset, 0px) + var(--space-4));
     bottom: auto;
     margin: var(--space-4);
-    height: calc(100vh - var(--app-header-height, 56px) - var(--navbar-offset, 0px) - var(--navbar-bottom-offset, 0px) - var(--space-4) * 2);
-    max-height: calc(100vh - var(--app-header-height, 56px) - var(--navbar-offset, 0px) - var(--navbar-bottom-offset, 0px) - var(--space-4) * 2);
+    height: calc(
+      100vh - var(--app-header-height, 56px) - var(--navbar-offset, 0px) -
+        var(--navbar-bottom-offset, 0px) - var(--space-4) * 2
+    );
+    max-height: calc(
+      100vh - var(--app-header-height, 56px) - var(--navbar-offset, 0px) -
+        var(--navbar-bottom-offset, 0px) - var(--space-4) * 2
+    );
     transform: none;
     box-shadow: var(--shadow-md);
     border-radius: var(--radius-md-squircle);
