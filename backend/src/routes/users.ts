@@ -43,6 +43,10 @@ interface IconSettingsBody {
   settings: Record<string, unknown>;
 }
 
+interface AppSettingsBody {
+  settings: Record<string, unknown>;
+}
+
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export const usersRoutes: FastifyPluginAsync = async (app) => {
@@ -354,6 +358,31 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(400).send({ error: 'Einstellungen erforderlich' });
     }
     db.prepare('UPDATE users SET icon_settings = ? WHERE id = ?').run(
+      JSON.stringify(settings),
+      req.session.userId
+    );
+    return settings;
+  });
+
+  // App-Einstellungen (Issue #324): Persistieren aller App-Einstellungen (Theme, UI, Nav, Dashboard, etc.) pro User
+  app.get('/users/me/app-settings', async (req) => {
+    const row = db
+      .prepare('SELECT app_settings FROM users WHERE id = ?')
+      .get(req.session.userId) as { app_settings: string | null } | undefined;
+    if (!row?.app_settings) return {};
+    try {
+      return JSON.parse(row.app_settings);
+    } catch {
+      return {};
+    }
+  });
+
+  app.put<{ Body: AppSettingsBody }>('/users/me/app-settings', async (req, reply) => {
+    const { settings } = req.body ?? {};
+    if (!settings || typeof settings !== 'object') {
+      return reply.code(400).send({ error: 'Einstellungen erforderlich' });
+    }
+    db.prepare('UPDATE users SET app_settings = ? WHERE id = ?').run(
       JSON.stringify(settings),
       req.session.userId
     );
