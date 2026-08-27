@@ -6,7 +6,9 @@ import { test, expect } from '@playwright/test';
 // Jetzt ein <select> mit drei Optionen (components/ThemeModeSelect.vue), persistiert wie zuvor unter
 // localStorage['reisotor-theme'].
 test.describe('Erscheinungsbild: Hell/Dunkel/Systemeinstellung', () => {
-  test('Auswahl in den Einstellungen setzt data-theme und persistiert über einen Reload', async ({ page }) => {
+  test('Auswahl in den Einstellungen setzt data-theme und persistiert über einen Reload', async ({
+    page,
+  }) => {
     await page.goto('/settings?tab=app');
     const select = page.locator('.card', { hasText: 'Darstellung' }).locator('select');
     await expect(select).toBeVisible();
