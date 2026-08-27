@@ -181,7 +181,9 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
     const result = db.prepare('DELETE FROM trips WHERE id = ?').run(req.params.id);
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
     for (const { filename } of attachmentFiles) {
-      await unlink(path.join(uploadsDir, filename)).catch(() => {});
+      // Path traversal Schutz: Dateiname auf den reinen Basenamen beschränken
+      const safeFilename = path.basename(filename);
+      await unlink(path.join(uploadsDir, safeFilename)).catch(() => {});
     }
     return reply.code(204).send();
   });
