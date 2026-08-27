@@ -368,7 +368,8 @@ function jumpToTrip() {
 // (nur die kommenden ~16 Tage plus 1 Tag rückwirkend, siehe utils/weather.ts) – bei weiter
 // entfernten Urlauben bleibt die Liste vorerst leer statt falsche/fehlende Tage zu zeigen.
 const vacationForecastDays = computed(() => {
-  if (!weatherDays.value || !trip.value || !trip.value.start_date || !trip.value.end_date) return [];
+  if (!weatherDays.value || !trip.value || !trip.value.start_date || !trip.value.end_date)
+    return [];
   const s = trip.value.start_date;
   const e = trip.value.end_date;
   return weatherDays.value.filter((d) => d.date >= s && d.date <= e);
@@ -385,7 +386,8 @@ function addDaysToDateStr(dateStr: string, days: number): string {
 // Reiseziel-Wetter oben.
 const HOME_WEATHER_TAIL_DAYS = 3;
 const homeForecastDays = computed(() => {
-  if (!homeWeatherDays.value || !trip.value || !trip.value.start_date || !trip.value.end_date) return [];
+  if (!homeWeatherDays.value || !trip.value || !trip.value.start_date || !trip.value.end_date)
+    return [];
   const s = trip.value.start_date;
   const e = trip.value.end_date;
   const rangeStart = uiSettings.showHomeWeatherFullTrip

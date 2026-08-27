@@ -1266,7 +1266,10 @@ db.exec(`
 ensureColumn('trips', 'packing_category_required', 'INTEGER NOT NULL DEFAULT 1');
 
 // Migration: start_date und end_date auf trips nullable machen (Issue #319)
-const tripsInfo = db.prepare('PRAGMA table_info(trips)').all() as { name: string; notnull: number }[];
+const tripsInfo = db.prepare('PRAGMA table_info(trips)').all() as {
+  name: string;
+  notnull: number;
+}[];
 const startDateCol = tripsInfo.find((c) => c.name === 'start_date');
 if (startDateCol && startDateCol.notnull === 1) {
   db.exec('PRAGMA foreign_keys = OFF');
