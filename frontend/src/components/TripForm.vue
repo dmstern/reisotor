@@ -148,8 +148,8 @@ function onSubmit() {
             <input v-model="form.maps_link" type="url" @blur="checkMapsLink" />
           </label>
           <p v-if="mapsLinkResolved === true" class="hint success">
-            <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort erkannt –
-            erscheint auf der Karte
+            <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort erkannt
+            – erscheint auf der Karte
           </p>
           <p v-if="mapsLinkResolved === false" class="hint">
             Standort konnte nicht automatisch erkannt werden.
