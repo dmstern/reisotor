@@ -1425,7 +1425,10 @@ function sheetHeightPx(state: SheetState): number {
   // .spots-col.collapsed CSS), kein Rest von .spots-col-body ragt mehr hinein.
   if (state === 'collapsed') return Math.min(64, maxAvailable);
   if (state === 'partial') return Math.min(window.innerHeight * 0.46, maxAvailable);
-  return Math.min(window.innerHeight * 0.88, maxAvailable);
+  // Im 'full'-Zustand reicht das Sheet per CSS (.spots-col.full: bottom: 0, height: min(100vh, var(--sheet-max-height)))
+  // bis ganz nach unten zum Bildschirmrand. navbarBottomOffset wird im 'full'-Zustand als padding-bottom
+  // auf .spots-col-body angewendet, zieht aber nicht die Gesamthöhe des Sheets ab.
+  return Math.max(160, window.innerHeight - headerHeight - navbarOffset - 8);
 }
 
 // Schreibt die Sheet-Höhe während des Ziehens direkt aufs Element (statt über eine reaktive
@@ -1471,7 +1474,11 @@ let sheetStartHeight = 0;
 function onSheetDragStart(event: PointerEvent) {
   sheetDragging.value = true;
   sheetStartY = event.clientY;
-  sheetStartHeight = sheetDragHeightPx.value ?? sheetHeightPx(sheetState.value);
+  sheetStartHeight =
+    sheetDragHeightPx.value ??
+    (sheetEl.value
+      ? sheetEl.value.getBoundingClientRect().height
+      : sheetHeightPx(sheetState.value));
   resetDragSamples();
   recordDragSample(event.clientY);
   window.addEventListener('pointermove', onSheetDragMove);
@@ -1573,7 +1580,11 @@ function onSheetBodyPointerDown(event: PointerEvent) {
     return;
   sheetBodyDragging = false;
   sheetBodyStartY = event.clientY;
-  sheetBodyStartHeight = sheetDragHeightPx.value ?? sheetHeightPx(sheetState.value);
+  sheetBodyStartHeight =
+    sheetDragHeightPx.value ??
+    (sheetEl.value
+      ? sheetEl.value.getBoundingClientRect().height
+      : sheetHeightPx(sheetState.value));
   resetDragSamples();
   recordDragSample(event.clientY);
   window.addEventListener('pointermove', onSheetBodyPointerMove);
