@@ -55,6 +55,7 @@ import { useIsDesktop } from '../composables/useIsDesktop';
 import MiniStationCard from './MiniStationCard.vue';
 import Card from './primitives/Card.vue';
 import IconButton from './primitives/IconButton.vue';
+import DropdownItem from './primitives/DropdownItem.vue';
 import TravelDetailDialog from './TravelDetailDialog.vue';
 import TrackPlayback from './TrackPlayback.vue';
 import AppIcon from './AppIcon.vue';
@@ -1351,129 +1352,110 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
       <!-- Fasst "Alle anzeigen"/"Nur Urlaubsort"/"Nur Unterkünfte"/"Nur Tourziele" hinter einem
            Popover zusammen statt vier eigenen Buttons (Nutzer-Feedback: die Button-Spalte war zu
            lang/unübersichtlich geworden, einzelne Buttons rutschten hinter das Bottom-Sheet). -->
-      <button
+      <IconButton
         ref="focusButtonRef"
-        type="button"
+        variant="floating"
+        shape="circle"
         class="fit-btn focus-btn"
         title="Kartenausschnitt fokussieren"
         aria-label="Kartenausschnitt fokussieren"
         :disabled="!filteredPoints.length"
+        :icon="MAP_TOOL_ICONS.focusGroup"
         @click="toggleFocusMenu($event)"
-      >
-        <AppIcon :icon="MAP_TOOL_ICONS.focusGroup" :size="18" group="actions" />
-      </button>
+      />
       <!-- Fasst "Zu meinem Standort springen" und den Ausrichtungs-Umschalter (Norden/Fahrtrichtung
            oben) hinter einem zweiten Popover zusammen - beide drehen sich um "wo bin ich/wohin
            schaue ich", anders als die reine Datenfokus-Gruppe oben. -->
-      <button
+      <IconButton
         ref="locationButtonRef"
-        type="button"
+        variant="floating"
+        shape="circle"
         class="fit-btn location-btn"
         title="Standort & Ausrichtung"
         aria-label="Standort & Ausrichtung"
+        :icon="MAP_TOOL_ICONS.locationGroup"
         @click="toggleLocationMenu($event)"
-      >
-        <AppIcon :icon="MAP_TOOL_ICONS.locationGroup" :size="18" group="actions" />
-      </button>
-      <button
-        type="button"
+      />
+      <IconButton
+        variant="floating"
+        shape="circle"
         class="fit-btn offline-download-btn"
         title="Sichtbaren Kartenausschnitt für die Offline-Nutzung herunterladen"
         aria-label="Sichtbaren Kartenausschnitt für die Offline-Nutzung herunterladen"
         :disabled="tileDownloadState === 'downloading'"
+        :icon="ACTION_ICONS.download"
         @click="downloadOfflineMap"
-      >
-        <AppIcon :icon="ACTION_ICONS.download" :size="18" group="actions" />
-      </button>
+      />
       <!-- Standort-Freigabe (stores/locationSharing.ts): läuft unabhängig davon, ob diese
            Kartenansicht offen ist - Klick öffnet nur die Dauer-Auswahl. -->
-      <button
+      <IconButton
         ref="shareButtonRef"
-        type="button"
+        variant="floating"
+        shape="circle"
         class="fit-btn share-location-btn"
-        :class="{ active: !!locationSharing.shareUntil }"
+        :active="!!locationSharing.shareUntil"
         :title="shareDurationLabel"
         :aria-label="shareDurationLabel"
+        :icon="ACTION_ICONS.shareLocation"
         @click="toggleShareMenu($event)"
-      >
-        <AppIcon :icon="ACTION_ICONS.shareLocation" :size="18" group="actions" />
-      </button>
+      />
       <!-- Standort-Aufzeichnung (stores/trackRecording.ts): läuft ebenfalls unabhängig von dieser
            Kartenansicht weiter - Klick öffnet bei Nicht-Aufzeichnung nur die Start-Auswahl, beendet
            bei laufender Aufzeichnung direkt (kein Menü nötig). -->
-      <button
+      <IconButton
         ref="recordButtonRef"
-        type="button"
+        variant="floating"
+        shape="circle"
         class="fit-btn record-btn"
-        :class="{ active: trackRecording.recording }"
+        :active="trackRecording.recording"
         :title="trackRecording.recording ? 'Aufzeichnung beenden' : 'Standort aufzeichnen'"
         :aria-label="trackRecording.recording ? 'Aufzeichnung beenden' : 'Standort aufzeichnen'"
+        :icon="trackRecording.recording ? ACTION_ICONS.recordStop : ACTION_ICONS.recordStart"
         @click="toggleRecordMenu($event)"
-      >
-        <AppIcon
-          :icon="trackRecording.recording ? ACTION_ICONS.recordStop : ACTION_ICONS.recordStart"
-          :size="18"
-          group="actions"
-        />
-      </button>
+      />
       <Teleport to="body">
         <template v-if="focusMenuOpen">
           <div class="picker-backdrop" @click="focusMenuOpen = false"></div>
           <div class="picker-menu picker-menu-wide" :style="focusMenuStyle">
-            <button type="button" :disabled="!filteredPoints.length" @click="selectFocus(fitAll)">
-              <AppIcon :icon="MAP_TOOL_ICONS.fitAll" :size="14" group="actions" /> Alle
-              eingetragenen Orte anzeigen
-            </button>
-            <button
-              type="button"
+            <DropdownItem
+              :disabled="!filteredPoints.length"
+              :icon="MAP_TOOL_ICONS.fitAll"
+              label="Alle eingetragenen Orte anzeigen"
+              @click="selectFocus(fitAll)"
+            />
+            <DropdownItem
               :disabled="!vacationPoints.length"
+              :icon="MAP_TOOL_ICONS.vacation"
+              label="Nur Urlaubsort"
               @click="selectFocus(fitVacation)"
-            >
-              <AppIcon :icon="MAP_TOOL_ICONS.vacation" :size="14" group="actions" /> Nur Urlaubsort
-            </button>
-            <button
-              type="button"
+            />
+            <DropdownItem
               :disabled="!accommodationPoints.length"
+              :icon="MAP_TOOL_ICONS.accommodation"
+              label="Nur Unterkünfte"
               @click="selectFocus(fitAccommodations)"
-            >
-              <AppIcon :icon="MAP_TOOL_ICONS.accommodation" :size="14" group="actions" /> Nur
-              Unterkünfte
-            </button>
-            <button
+            />
+            <DropdownItem
               v-if="excursionsStore.excursions.length"
-              type="button"
               :disabled="!excursionPoints.length"
+              :icon="MAP_TOOL_ICONS.excursions"
+              label="Nur Tourziele"
               @click="selectFocus(fitExcursions)"
-            >
-              <AppIcon :icon="MAP_TOOL_ICONS.excursions" :size="14" group="actions" /> Nur Tourziele
-            </button>
+            />
           </div>
         </template>
         <template v-if="locationMenuOpen">
           <div class="picker-backdrop" @click="locationMenuOpen = false"></div>
           <div class="picker-menu picker-menu-wide" :style="locationMenuStyle">
-            <button
-              type="button"
-              :disabled="!ownPosition"
-              @click="selectLocation(jumpToMyLocation)"
-            >
-              <!-- Eigenes Avatar-Emoji statt eines generischen Pin-/Fadenkreuz-Icons - eindeutiger
-                   erkennbar als "das bin ich", konsistent mit dem eigenen Marker auf der Karte selbst
-                   (compassPin(), renderPositions() oben). Bewusst immer Emoji, unabhängig von der
-                   Icon-Stil-Einstellung (siehe DESIGN.md "Icons") - ein frei gewähltes Avatar hat kein
-                   sinnvolles festes Tabler-Äquivalent. -->
+            <DropdownItem :disabled="!ownPosition" @click="selectLocation(jumpToMyLocation)">
               <span class="picker-item-emoji" aria-hidden="true">{{
                 auth.user?.avatar || '📍'
               }}</span>
               Zu meinem Standort springen
-            </button>
-            <!-- #182: Sprung zum Standort anderer Mitreisender - immer alle Mitglieder aufgelistet,
-                 aber nur klickbar (bunt), wer gerade tatsächlich Standort teilt (hasMemberPosition);
-                 Online-Status zusätzlich per Punkt markiert, analog zu PresenceAvatars.vue im Header. -->
-            <button
+            </DropdownItem>
+            <DropdownItem
               v-for="member in otherMembers"
               :key="member.id"
-              type="button"
               :disabled="!hasMemberPosition(member.id)"
               :title="`${member.username} teilt gerade ${hasMemberPosition(member.id) ? '' : 'keinen '}Standort`"
               @click="selectLocation(() => jumpToMemberLocation(member.id))"
@@ -1487,45 +1469,47 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
                 <span v-if="isMemberOnline(member.id)" class="online-dot" aria-hidden="true" />
               </span>
               Zu Standort von {{ member.username }} springen
-            </button>
-            <button
-              type="button"
-              :class="{ active: mapOrientation.mode === 'north' }"
+            </DropdownItem>
+            <DropdownItem
+              :active="mapOrientation.mode === 'north'"
+              :icon="MAP_TOOL_ICONS.orientationNorth"
+              label="Norden oben"
               @click="selectLocation(() => setMapOrientationMode('north'))"
-            >
-              <AppIcon :icon="MAP_TOOL_ICONS.orientationNorth" :size="14" group="actions" /> Norden
-              oben
-            </button>
-            <button
-              type="button"
-              :class="{ active: mapOrientation.mode === 'heading' }"
+            />
+            <DropdownItem
+              :active="mapOrientation.mode === 'heading'"
+              :icon="MAP_TOOL_ICONS.orientationHeading"
+              label="Fahrtrichtung oben"
               @click="selectLocation(() => setMapOrientationMode('heading'))"
-            >
-              <AppIcon :icon="MAP_TOOL_ICONS.orientationHeading" :size="14" group="actions" />
-              Fahrtrichtung oben
-            </button>
+            />
           </div>
         </template>
         <template v-if="shareMenuOpen">
           <div class="picker-backdrop" @click="shareMenuOpen = false"></div>
           <div class="picker-menu" :style="shareMenuStyle">
-            <button
-              type="button"
-              :class="{ active: !locationSharing.shareUntil }"
+            <DropdownItem
+              :active="!locationSharing.shareUntil"
+              :icon="ACTION_ICONS.off"
+              label="Nicht teilen"
               @click="chooseShareDuration('off')"
-            >
-              <AppIcon :icon="ACTION_ICONS.off" :size="14" group="actions" /> Nicht teilen
-            </button>
-            <button type="button" @click="chooseShareDuration('day')">
-              <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" /> Für einen Tag
-            </button>
-            <button type="button" @click="chooseShareDuration('week')">
-              <AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" /> Für eine
-              Woche
-            </button>
-            <button type="button" @click="chooseShareDuration('forever')">
-              <AppIcon :icon="ACTION_ICONS.forever" :size="14" group="actions" /> Dauerhaft
-            </button>
+            />
+            <DropdownItem
+              :icon="FORM_FIELD_ICONS.date"
+              icon-group="formFields"
+              label="Für einen Tag"
+              @click="chooseShareDuration('day')"
+            />
+            <DropdownItem
+              :icon="FORM_FIELD_ICONS.period"
+              icon-group="formFields"
+              label="Für eine Woche"
+              @click="chooseShareDuration('week')"
+            />
+            <DropdownItem
+              :icon="ACTION_ICONS.forever"
+              label="Dauerhaft"
+              @click="chooseShareDuration('forever')"
+            />
           </div>
         </template>
         <template v-if="recordMenuOpen">
@@ -1536,12 +1520,16 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
                 focusedExcursion.title
               }}" gekoppelt
             </p>
-            <button type="button" @click="chooseRecordVisibility('private')">
-              <AppIcon :icon="ACTION_ICONS.private" :size="14" group="actions" /> Privat aufzeichnen
-            </button>
-            <button type="button" @click="chooseRecordVisibility('shared')">
-              <AppIcon :icon="ACTION_ICONS.shared" :size="14" group="actions" /> Geteilt aufzeichnen
-            </button>
+            <DropdownItem
+              :icon="ACTION_ICONS.private"
+              label="Privat aufzeichnen"
+              @click="chooseRecordVisibility('private')"
+            />
+            <DropdownItem
+              :icon="ACTION_ICONS.shared"
+              label="Geteilt aufzeichnen"
+              @click="chooseRecordVisibility('shared')"
+            />
           </div>
         </template>
       </Teleport>

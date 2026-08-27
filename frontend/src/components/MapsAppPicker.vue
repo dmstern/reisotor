@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import AppIcon from './AppIcon.vue';
+import DropdownItem from './primitives/DropdownItem.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 
@@ -17,32 +18,32 @@ const open = ref(false);
     </button>
     <div v-if="open" class="picker-backdrop" @click="open = false"></div>
     <div v-if="open" class="picker-menu">
-      <a
+      <DropdownItem
         :href="`https://maps.apple.com/?ll=${props.lat},${props.lng}&q=${encodeURIComponent(props.title)}`"
         target="_blank"
         rel="noopener"
+        :icon="ACTION_ICONS.apple"
+        label="Apple Maps"
         @click="open = false"
-      >
-        <AppIcon :icon="ACTION_ICONS.apple" :size="14" group="actions" /> Apple Maps
-      </a>
-      <a
+      />
+      <DropdownItem
         :href="`https://www.google.com/maps/search/?api=1&query=${props.lat},${props.lng}`"
         target="_blank"
         rel="noopener"
+        :icon="ACTION_ICONS.googleMaps"
+        label="Google Maps"
         @click="open = false"
-      >
-        <AppIcon :icon="ACTION_ICONS.googleMaps" :size="14" group="actions" /> Google Maps
-      </a>
-      <a
+      />
+      <DropdownItem
         v-if="props.mapsLink"
         :href="props.mapsLink"
         target="_blank"
         rel="noopener"
+        :icon="FORM_FIELD_ICONS.link"
+        icon-group="formFields"
+        label="Ursprünglichen Link öffnen"
         @click="open = false"
-      >
-        <AppIcon :icon="FORM_FIELD_ICONS.link" :size="14" group="formFields" /> Ursprünglichen Link
-        öffnen
-      </a>
+      />
     </div>
   </div>
 </template>

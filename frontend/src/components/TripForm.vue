@@ -3,11 +3,12 @@ import { ref, watch } from 'vue';
 import type { TripFormData } from '../stores/trip';
 import { buildOsmLink, parseLatLngFromMapsLink } from '../utils/googleMaps';
 import LocationPicker from './LocationPicker.vue';
-import ImageUrlInput from './ImageUrlInput.vue';
+import CoverImagePicker from './CoverImagePicker.vue';
 import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
 import Card from './primitives/Card.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
+import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 
 // locationError: vom Aufrufer (TripSwitcher.vue) gesetzt, wenn nach dem Speichern auffällt, dass
 // auch die serverseitige Maps-Link-Auflösung fehlgeschlagen ist (z. B. Google-Bot-Blocking eines
@@ -97,6 +98,12 @@ function onSubmit() {
 
 <template>
   <form class="trip-form" @submit.prevent="onSubmit">
+    <CoverImagePicker
+      v-model="form.image_url"
+      :placeholder-icon="SECTION_ICON_DEFS.dashboard"
+      modal-title="Dashboard-Banner bearbeiten"
+    />
+
     <label>
       Name des Urlaubs
       <input v-model="form.name" type="text" placeholder="z. B. Italien 2026" required />
@@ -160,29 +167,33 @@ function onSubmit() {
             auch automatisch nicht ermittelt werden. Bitte tippe unten auf die Karte, um ihn manuell
             zu setzen.
           </p>
-          <Button
-            type="button"
-            variant="ghost"
-            class="picker-toggle"
-            @click="pickerOpen = !pickerOpen"
-          >
-            <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort manuell
-            setzen
-            <AppIcon
-              :icon="ACTION_ICONS.chevronDown"
-              :size="12"
-              group="actions"
-              class="picker-caret"
-              :class="{ open: pickerOpen }"
-            />
-          </Button>
-          <LocationPicker v-if="pickerOpen" v-model="manualPin" />
+          <fieldset class="collapsible-fieldset">
+            <legend>
+              <Button
+                type="button"
+                variant="ghost"
+                class="collapsible-toggle picker-toggle"
+                :aria-expanded="pickerOpen"
+                @click="pickerOpen = !pickerOpen"
+              >
+                <span>
+                  <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" />
+                  Standort manuell setzen
+                </span>
+                <AppIcon
+                  :icon="ACTION_ICONS.chevronDown"
+                  :size="14"
+                  group="actions"
+                  class="caret"
+                  :class="{ open: pickerOpen }"
+                />
+              </Button>
+            </legend>
+            <div v-if="pickerOpen" class="collapsible-content">
+              <LocationPicker v-model="manualPin" />
+            </div>
+          </fieldset>
         </Card>
-
-        <div class="field-group">
-          <span class="field-label">Bild für das Dashboard-Banner (optional)</span>
-          <ImageUrlInput v-model="form.image_url" placeholder="https://…" />
-        </div>
 
         <label class="checkbox-label">
           <input v-model="form.packing_category_required" type="checkbox" />

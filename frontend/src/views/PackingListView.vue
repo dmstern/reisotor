@@ -10,6 +10,7 @@ import Modal from '../components/Modal.vue';
 import Combobox from '../components/Combobox.vue';
 import QuickAddRow from '../components/QuickAddRow.vue';
 import FormField from '../components/FormField.vue';
+import Button from '../components/primitives/Button.vue';
 import UndoDeleteRow from '../components/UndoDeleteRow.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import { useUndoableDelete } from '../composables/useUndoableDelete';
@@ -362,7 +363,7 @@ async function quickAdd(list: ListGroup, label: string) {
             </option>
           </select>
         </FormField>
-        <Button type="submit">Speichern</Button>
+        <Button type="submit">halloSpeichern</Button>
       </form>
     </Modal>
   </div>
