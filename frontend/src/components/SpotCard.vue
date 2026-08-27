@@ -4,7 +4,7 @@ import type { Spot } from '../api/types';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { renderRichText } from '../utils/richText';
 import { parseContact } from '../utils/contact';
-import { fetchMergedWeather, weatherCodeMeta, type DailyWeather } from '../utils/weather';
+import { fetchMergedWeather, type DailyWeather } from '../utils/weather';
 import { usePointerDrag } from '../composables/usePointerDrag';
 import { useExcursionsStore } from '../stores/excursions';
 import { useScheduleStore } from '../stores/schedule';
@@ -26,7 +26,6 @@ import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
 import Card from './primitives/Card.vue';
 import WeatherIcon from './WeatherIcon.vue';
-import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { formatDate as formatDateShared, toLocalDateString } from '../utils/dateFormat';
@@ -424,6 +423,7 @@ function onToggleDone() {
         </div>
       </Teleport>
       <SocialRow
+        v-if="expanded"
         class="social-row"
         :like-count="likeCount"
         :liked="liked"
@@ -432,12 +432,30 @@ function onToggleDone() {
         @toggle-comments="showComments = !showComments"
       />
       <Comments
-        v-if="showComments"
+        v-if="expanded && showComments"
         :comments="comments"
         @click.stop
         @submit="(content) => emit('submit-comment', content)"
         @remove="(id) => emit('remove-comment', id)"
       />
+      <Button
+        v-if="!expanded"
+        type="button"
+        variant="ghost"
+        size="sm"
+        class="mini-like-btn"
+        :class="{ liked }"
+        :aria-label="liked ? 'Gefällt mir nicht mehr' : 'Gefällt mir'"
+        :title="liked ? 'Gefällt mir nicht mehr' : 'Gefällt mir'"
+        @click.stop="emit('toggle-like')"
+      >
+        <AppIcon
+          :icon="liked ? ACTION_ICONS.liked : ACTION_ICONS.unliked"
+          :size="15"
+          group="actions"
+        />
+        <span v-if="likeCount > 0" class="mini-like-count">{{ likeCount }}</span>
+      </Button>
       <div v-if="expanded" @click.stop>
         <FileAttachments domain="spots" :entity-id="spot.id" :editable="false" />
       </div>
@@ -447,6 +465,7 @@ function onToggleDone() {
 
 <style scoped>
 .spot-card {
+  position: relative;
   padding: 0;
   display: flex;
   flex-direction: column;
@@ -583,6 +602,22 @@ function onToggleDone() {
 
 .social-row {
   margin-top: var(--space-3);
+}
+
+.mini-like-btn {
+  position: absolute;
+  bottom: var(--space-2);
+  right: var(--space-2);
+  z-index: 1;
+  color: var(--color-text-muted);
+}
+
+.mini-like-btn.liked {
+  color: var(--color-like);
+}
+
+.spot-card:not(.expanded) .card-actions {
+  padding-right: 40px;
 }
 
 .card-actions {

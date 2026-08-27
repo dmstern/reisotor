@@ -351,6 +351,7 @@ function onSpotDrop(event: DragEvent) {
         </div>
       </Teleport>
       <SocialRow
+        v-if="expanded"
         class="social-row"
         :like-count="likeCount"
         :liked="liked"
@@ -359,12 +360,30 @@ function onSpotDrop(event: DragEvent) {
         @toggle-comments="showComments = !showComments"
       />
       <Comments
-        v-if="showComments"
+        v-if="expanded && showComments"
         :comments="comments"
         @click.stop
         @submit="(content) => emit('submit-comment', content)"
         @remove="(id) => emit('remove-comment', id)"
       />
+      <Button
+        v-if="!expanded"
+        type="button"
+        variant="ghost"
+        size="sm"
+        class="mini-like-btn"
+        :class="{ liked }"
+        :aria-label="liked ? 'Gefällt mir nicht mehr' : 'Gefällt mir'"
+        :title="liked ? 'Gefällt mir nicht mehr' : 'Gefällt mir'"
+        @click.stop="emit('toggle-like')"
+      >
+        <AppIcon
+          :icon="liked ? ACTION_ICONS.liked : ACTION_ICONS.unliked"
+          :size="15"
+          group="actions"
+        />
+        <span v-if="likeCount > 0" class="mini-like-count">{{ likeCount }}</span>
+      </Button>
     </div>
   </Card>
 </template>
@@ -612,6 +631,18 @@ function onSpotDrop(event: DragEvent) {
 
 .social-row {
   margin-top: var(--space-2);
+}
+
+.mini-like-btn {
+  position: absolute;
+  bottom: var(--space-2);
+  right: var(--space-2);
+  z-index: 1;
+  color: var(--color-text-muted);
+}
+
+.mini-like-btn.liked {
+  color: var(--color-like);
 }
 
 .links {
