@@ -1397,6 +1397,10 @@ ensureColumn('diary_entries', 'is_draft', 'INTEGER NOT NULL DEFAULT 0');
 // NULL = noch nie gespeichert, Frontend füllt dann seine lokalen Defaults.
 ensureColumn('users', 'icon_settings', 'TEXT');
 
+// App-Einstellungen (Issue #324): Persistieren der App-Einstellungen (Erscheinungsbild, Farbakzent,
+// Rahmendicke, Glassmorphism, Navigation, Dashboard-Kacheln, Kalender-Anzeige, etc.) am User-Datensatz.
+ensureColumn('users', 'app_settings', 'TEXT');
+
 // Notification-Inbox (#97): merkt sich pro Nutzer:in, welche trip_activity-Zeilen bereits gelesen
 // wurden (Klick auf die Nachricht bzw. "Alle als gelesen markieren", siehe routes/notifications.ts).
 // Komplett neue, additive Tabelle statt einer Spalte auf trip_activity - eine Aktivität wird von
