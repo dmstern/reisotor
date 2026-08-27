@@ -349,13 +349,13 @@ function onResizeEnd() {
 .drawer.left .drawer-panel {
   left: 0;
   transform: translateX(-100%);
-  border-radius: 0 var(--radius-md-squircle) var(--radius-md-squircle) 0;
+  border-radius: var(--radius-md-squircle);
 }
 
 .drawer.right .drawer-panel {
   right: 0;
   transform: translateX(100%);
-  border-radius: var(--radius-md-squircle) 0 0 var(--radius-md-squircle);
+  border-radius: var(--radius-md-squircle);
 }
 
 .drawer.open .drawer-panel {
