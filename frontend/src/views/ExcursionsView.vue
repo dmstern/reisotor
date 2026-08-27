@@ -66,6 +66,7 @@ import AppIcon from '../components/AppIcon.vue';
 import Button from '../components/primitives/Button.vue';
 import ButtonGroup from '../components/primitives/ButtonGroup.vue';
 import IconButton from '../components/primitives/IconButton.vue';
+import DropdownItem from '../components/primitives/DropdownItem.vue';
 
 // Touren-Verwaltung (Anlegen/Bearbeiten/Einplanen) ist seit dem Zurückbau des früheren "erweiterten
 // Touren-Modus" (vormals eine eigenständige Ausflüge-Schublade, views/ExcursionsDrawer.vue) Teil
@@ -2667,15 +2668,18 @@ async function removeSpot(id: number) {
                     <template v-if="categoryMenuOpen">
                       <div class="picker-backdrop" @click="categoryMenuOpen = false"></div>
                       <div class="picker-menu category-menu" :style="categoryMenuStyle">
-                        <label
+                        <DropdownItem
                           v-for="cat in filterCategoryOptions"
                           :key="cat"
-                          class="category-option"
+                          multiselect
+                          :icon="groupIconDef(cat)"
+                          icon-group="categories"
+                          :label="cat"
                         >
-                          <input type="checkbox" :value="cat" v-model="categoryFilter" />
-                          <AppIcon :icon="groupIconDef(cat)" :size="14" group="categories" />
-                          {{ cat }}
-                        </label>
+                          <template #checkbox>
+                            <input type="checkbox" :value="cat" v-model="categoryFilter" />
+                          </template>
+                        </DropdownItem>
                       </div>
                     </template>
                   </Teleport>
@@ -2702,20 +2706,31 @@ async function removeSpot(id: number) {
                     <template v-if="statusMenuOpen">
                       <div class="picker-backdrop" @click="statusMenuOpen = false"></div>
                       <div class="picker-menu category-menu" :style="statusMenuStyle">
-                        <label class="category-option">
-                          <input type="checkbox" value="planned" v-model="statusFilter" />
-                          <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" />
-                          Geplant
-                        </label>
-                        <label class="category-option">
-                          <input type="checkbox" value="unplanned" v-model="statusFilter" />
-                          <AppIcon :icon="FORM_FIELD_ICONS.note" :size="14" group="formFields" />
-                          Ungeplant
-                        </label>
-                        <label class="category-option">
-                          <input type="checkbox" value="done" v-model="statusFilter" />
-                          <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" /> Gemacht
-                        </label>
+                        <DropdownItem
+                          multiselect
+                          :icon="FORM_FIELD_ICONS.date"
+                          icon-group="formFields"
+                          label="Geplant"
+                        >
+                          <template #checkbox>
+                            <input type="checkbox" value="planned" v-model="statusFilter" />
+                          </template>
+                        </DropdownItem>
+                        <DropdownItem
+                          multiselect
+                          :icon="FORM_FIELD_ICONS.note"
+                          icon-group="formFields"
+                          label="Ungeplant"
+                        >
+                          <template #checkbox>
+                            <input type="checkbox" value="unplanned" v-model="statusFilter" />
+                          </template>
+                        </DropdownItem>
+                        <DropdownItem multiselect :icon="ACTION_ICONS.done" label="Gemacht">
+                          <template #checkbox>
+                            <input type="checkbox" value="done" v-model="statusFilter" />
+                          </template>
+                        </DropdownItem>
                       </div>
                     </template>
                   </Teleport>

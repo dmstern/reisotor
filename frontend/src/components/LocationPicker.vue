@@ -8,6 +8,7 @@ import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
+import IconButton from './primitives/IconButton.vue';
 import type { IconDef } from '../utils/icon';
 
 // Eigener Standort während des Antippens (startOwnLocation() unten) - eigenes IconDef statt
@@ -205,17 +206,17 @@ function useOwnLocation() {
     </p>
     <div class="map-wrap">
       <div ref="mapEl" class="location-picker-map"></div>
-      <button
-        type="button"
+      <IconButton
+        variant="floating"
+        shape="circle"
         class="locate-btn"
         :class="{ locating: locatingSelf }"
         :disabled="locatingSelf"
         title="Meinen aktuellen Standort verwenden"
         aria-label="Meinen aktuellen Standort verwenden"
+        :icon="OWN_LOCATION_ICON"
         @click="useOwnLocation"
-      >
-        <AppIcon :icon="OWN_LOCATION_ICON" :size="16" group="actions" />
-      </button>
+      />
     </div>
     <p v-if="modelValue" class="hint success">
       <AppIcon :icon="FORM_FIELD_ICONS.location" :size="14" group="formFields" />

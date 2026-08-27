@@ -403,19 +403,14 @@ textarea {
   font-size: 1rem;
 }
 
-/* #95 "Eingabe Elemente cleanup": inline-flex + align-items:center statt des geerbten
-   inline-block/Baseline-Layouts - ein Icon (AppIcon/Emoji) direkt neben einem Text-Label saß dadurch
-   bisher sichtbar zu hoch (Baseline des Icons statt dessen vertikaler Mitte trifft die Textzeile).
-   justify-content:center hält reine Text-Buttons optisch identisch zum bisherigen Verhalten (Text war
-   ohnehin schon zentriert). gap: var(--space-1) statt eines lokalen margin zwischen Icon und Label -
-   mehrere Views hatten das bereits einzeln als Bugfix nachgezogen (siehe ExcursionsView.vue's
-   .category-btn vor diesem Commit), jetzt zentral für alle ~50 Icon+Label-Buttons auf einmal. Dazu
-   ein dezenter Schatten (--shadow-sm, siehe DESIGN.md Abschnitt "Schatten") und ein sichtbarerer
-   Rahmen (--color-button-edge) - beides Richtung SegmentedToggle.vue's taktilerem Look, aber bewusst
-   OHNE dessen volle "weiches Material"-Behandlung (--shadow-inset/--shadow-pill-raised/
-   --texture-grain, siehe DESIGN.md Abschnitt "Weiches Material" - dort ausdrücklich nur für
-   Segmented-Controls reserviert). */
 button {
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 1rem;
+}
+
+/* Button-Klasse für alle expliziten Buttons (#314) */
+.btn {
   --btn-padding-y: 11px;
   cursor: pointer;
   display: inline-flex;
@@ -436,28 +431,26 @@ button {
     border-color 0.15s ease;
 }
 
-button:hover {
+.btn:hover {
   background: var(--color-primary-dark);
 }
 
-/* Kurzes, dezentes "Eindrücken" beim Antippen/Klicken – ein sehr Apple-typisches taktiles Detail,
-   das rein visuelles Feedback ohne Funktionsänderung gibt. */
-button:active {
+.btn:active {
   transform: scale(0.97);
   box-shadow: none;
 }
 
-button.secondary {
+.btn.secondary {
   background: transparent;
   color: var(--color-primary);
   border: var(--ui-border-width, 1px) solid var(--color-border-strong);
 }
 
-button.secondary:hover {
+.btn.secondary:hover {
   background: var(--color-surface);
 }
 
-button.danger {
+.btn.danger {
   background: var(--color-danger);
 }
 

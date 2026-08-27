@@ -10,6 +10,7 @@ import EditButton from './EditButton.vue';
 import DeleteButton from './DeleteButton.vue';
 import TripMembersDialog from './TripMembersDialog.vue';
 import AppIcon from './AppIcon.vue';
+import DropdownItem from './primitives/DropdownItem.vue';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
@@ -80,9 +81,12 @@ function openMembers(trip: Trip) {
           class="trip-row"
           :class="{ active: trip.id === tripStore.currentTripId }"
         >
-          <button type="button" class="trip-select" @click="selectAndClose(trip.id)">
-            {{ trip.name }}
-          </button>
+          <DropdownItem
+            :label="trip.name"
+            :active="trip.id === tripStore.currentTripId"
+            class="trip-select"
+            @click="selectAndClose(trip.id)"
+          />
           <div class="row-actions">
             <IconButton
               variant="ghost"
