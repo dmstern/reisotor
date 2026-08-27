@@ -32,8 +32,8 @@ CREATE TABLE IF NOT EXISTS trips (
   id INTEGER PRIMARY KEY,
   name TEXT NOT NULL,
   destination TEXT,
-  start_date TEXT NOT NULL,
-  end_date TEXT NOT NULL
+  start_date TEXT,
+  end_date TEXT
 );
 
 CREATE TABLE IF NOT EXISTS schedule_items (
@@ -1264,6 +1264,54 @@ db.exec(`
 // für neue/bearbeitete Gegenstände, bereits vorhandene Einträge ohne Kategorie werden dadurch nicht
 // rückwirkend zurückgewiesen (siehe routes/packing.ts).
 ensureColumn('trips', 'packing_category_required', 'INTEGER NOT NULL DEFAULT 1');
+
+// Migration: start_date und end_date auf trips nullable machen (Issue #319)
+const tripsInfo = db.prepare('PRAGMA table_info(trips)').all() as { name: string; notnull: number }[];
+const startDateCol = tripsInfo.find((c) => c.name === 'start_date');
+if (startDateCol && startDateCol.notnull === 1) {
+  db.exec('PRAGMA foreign_keys = OFF');
+  db.exec(`
+    CREATE TABLE trips_new (
+      id INTEGER PRIMARY KEY,
+      name TEXT NOT NULL,
+      destination TEXT,
+      start_date TEXT,
+      end_date TEXT,
+      maps_link TEXT,
+      lat REAL,
+      lng REAL,
+      image_url TEXT,
+      country_code TEXT,
+      country_name TEXT,
+      packing_category_required INTEGER NOT NULL DEFAULT 1
+    )
+  `);
+  const oldCols = (db.prepare('PRAGMA table_info(trips)').all() as { name: string }[]).map(
+    (c) => c.name
+  );
+  const targetCols = [
+    'id',
+    'name',
+    'destination',
+    'start_date',
+    'end_date',
+    'maps_link',
+    'lat',
+    'lng',
+    'image_url',
+    'country_code',
+    'country_name',
+    'packing_category_required',
+  ].filter((col) => oldCols.includes(col));
+  const colsStr = targetCols.join(', ');
+  db.exec(`
+    INSERT INTO trips_new (${colsStr})
+    SELECT ${colsStr} FROM trips
+  `);
+  db.exec('DROP TABLE trips');
+  db.exec('ALTER TABLE trips_new RENAME TO trips');
+  db.exec('PRAGMA foreign_keys = ON');
+}
 
 // Format der Freitext-/Notizfelder, die früher als reiner Markdown-ähnlicher Text galten und über
 // utils/richText.ts gerendert wurden - der neue WYSIWYG-Editor (RichTextEditor.vue) schreibt

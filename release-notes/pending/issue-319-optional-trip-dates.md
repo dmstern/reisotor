@@ -1,0 +1,1 @@
+- **Urlaubsdaten optional**: Beim Anlegen oder Bearbeiten eines Urlaubs sind Start- und Enddatum nun optional, um Urlaube auch ohne festes Datum im Voraus planen zu können (#319).

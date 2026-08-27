@@ -31,7 +31,9 @@ export async function checkDepartureReminders() {
   // (potenziell auch längst vergangenen) Urlaube laufen zu lassen - der genaue Schwellwert-Abgleich
   // passiert danach ohnehin exakt über daysUntil().
   const trips = db
-    .prepare(`SELECT id, name, start_date FROM trips WHERE start_date >= date('now', '-1 day')`)
+    .prepare(
+      `SELECT id, name, start_date FROM trips WHERE start_date IS NOT NULL AND start_date != '' AND start_date >= date('now', '-1 day')`
+    )
     .all() as TripRow[];
 
   for (const trip of trips) {

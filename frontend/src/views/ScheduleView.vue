@@ -311,7 +311,7 @@ onMounted(async () => {
   // Beim ersten Laden direkt zur Woche mit dem heutigen Tag blättern statt bei der (ggf. Monate
   // zurückliegenden) ersten Woche zu starten; liegt heute außerhalb des Kalenderbereichs (z. B.
   // Urlaub komplett in der Vergangenheit/Zukunft ohne nahe ToDo-Fälligkeiten), zum Urlaubsstart.
-  if (!goToDate(toLocalDateString(new Date())) && trip.value) {
+  if (!goToDate(toLocalDateString(new Date())) && trip.value?.start_date) {
     goToDate(trip.value.start_date);
   }
   loading.value = false;
@@ -370,11 +370,13 @@ function entriesForDate(date: string) {
 // hinterlegt sind (z. B. ToDos oder Reise-Einträge mit Fälligkeits-/Termin-Datum vor Urlaubsbeginn).
 const calendarRange = computed(() => {
   if (!trip.value) return null;
-  const dates = [
-    new Date(trip.value.start_date),
-    new Date(trip.value.end_date),
-    ...allEntries.value.flatMap((e) => [new Date(e.date), new Date(e.endDate)]),
-  ];
+  const dates: Date[] = [];
+  if (trip.value.start_date) dates.push(new Date(trip.value.start_date));
+  if (trip.value.end_date) dates.push(new Date(trip.value.end_date));
+  dates.push(...allEntries.value.flatMap((e) => [new Date(e.date), new Date(e.endDate)]));
+  if (dates.length === 0) {
+    dates.push(new Date());
+  }
   return {
     start: new Date(Math.min(...dates.map((d) => d.getTime()))),
     end: new Date(Math.max(...dates.map((d) => d.getTime()))),
@@ -560,7 +562,7 @@ watch(granularity, (next, prev) => {
     // aktuellen Wochen-Kalenderbereichs (z. B. "heute" vor Urlaubsbeginn), zum Urlaubsstart springen
     // statt stillschweigend auf der vorherigen Woche-Position stehen zu bleiben.
     const anchorDate = selectedDate.value ?? toIso(monthAnchor.value);
-    if (!goToDate(anchorDate) && trip.value) goToDate(trip.value.start_date);
+    if (!goToDate(anchorDate) && trip.value?.start_date) goToDate(trip.value.start_date);
   }
 });
 
@@ -586,7 +588,7 @@ function jumpToToday() {
 }
 
 function goToTripDates() {
-  if (trip.value) goToDate(trip.value.start_date);
+  if (trip.value?.start_date) goToDate(trip.value.start_date);
 }
 
 const dayEntries = computed(() => (selectedDate.value ? entriesForDate(selectedDate.value) : []));

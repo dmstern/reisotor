@@ -63,7 +63,8 @@ export function dayWeatherEntries(
       a.lat != null &&
       a.lng != null
   );
-  const isVacationRange = !!trip && date >= trip.start_date && date <= trip.end_date;
+  const isVacationRange =
+    !!trip && !!trip.start_date && !!trip.end_date && date >= trip.start_date && date <= trip.end_date;
 
   if (accommodation || isVacationRange) {
     if (accommodation) {

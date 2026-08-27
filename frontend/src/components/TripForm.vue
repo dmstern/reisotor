@@ -33,9 +33,7 @@ const step = ref(0);
 const isLastStep = computed(() => step.value === STEPS.length - 1);
 const currentStepOptional = computed(() => STEPS[step.value].optional);
 const showStep = (id: StepId) => !wizard.value || STEPS[step.value].id === id;
-const canProceedBasics = computed(
-  () => !!form.value.name.trim() && !!form.value.start_date && !!form.value.end_date
-);
+const canProceedBasics = computed(() => !!form.value.name.trim());
 
 function blankForm(): TripFormData {
   return {
@@ -108,13 +106,13 @@ function goNextOrSubmit() {
 }
 
 function onSubmit() {
-  if (!form.value.name.trim() || !form.value.start_date || !form.value.end_date) return;
-  const parsed = parseLatLngFromMapsLink(form.value.maps_link);
+  if (!form.value.name.trim()) return;
+  const parsed = parseLatLngFromMapsLink(form.value.maps_link ?? undefined);
   emit('submit', {
     name: form.value.name.trim(),
     destination: form.value.destination || undefined,
-    start_date: form.value.start_date,
-    end_date: form.value.end_date,
+    start_date: form.value.start_date || undefined,
+    end_date: form.value.end_date || undefined,
     maps_link: form.value.maps_link || undefined,
     lat: manualPin.value?.lat ?? parsed?.lat,
     lng: manualPin.value?.lng ?? parsed?.lng,
@@ -135,12 +133,12 @@ function onSubmit() {
       </label>
       <div class="dates-row">
         <label>
-          Start
-          <input v-model="form.start_date" type="date" required />
+          Start (optional)
+          <input v-model="form.start_date" type="date" />
         </label>
         <label>
-          Ende
-          <input v-model="form.end_date" type="date" required />
+          Ende (optional)
+          <input v-model="form.end_date" type="date" />
         </label>
       </div>
     </template>

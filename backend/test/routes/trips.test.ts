@@ -98,6 +98,39 @@ describe('trips routes', () => {
     expect(updated.json()).toMatchObject({ lat: 10, lng: 20 });
   });
 
+  it('allows creating and updating a trip without start_date and end_date (Issue #319)', async () => {
+    const created = await app.inject({
+      method: 'POST',
+      url: '/api/trips',
+      headers: { cookie },
+      payload: {
+        name: 'Zukunftsplanung ohne Datum',
+      },
+    });
+    expect(created.statusCode).toBe(201);
+    const body = created.json();
+    expect(body.name).toBe('Zukunftsplanung ohne Datum');
+    expect(body.start_date).toBeNull();
+    expect(body.end_date).toBeNull();
+
+    const updated = await app.inject({
+      method: 'PUT',
+      url: `/api/trips/${body.id}`,
+      headers: { cookie },
+      payload: {
+        name: 'Zukunftsplanung mit neuem Namen',
+        start_date: null,
+        end_date: null,
+      },
+    });
+    expect(updated.statusCode).toBe(200);
+    expect(updated.json()).toMatchObject({
+      name: 'Zukunftsplanung mit neuem Namen',
+      start_date: null,
+      end_date: null,
+    });
+  });
+
   it('clears lat/lng when maps_link is explicitly emptied on update', async () => {
     const created = await app.inject({
       method: 'POST',
