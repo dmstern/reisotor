@@ -2033,7 +2033,7 @@ async function removeSpot(id: number) {
               />
             </h2>
             <div class="header-actions">
-              <button
+              <Button
                 class="add-button"
                 v-if="groupMode === 'category'"
                 aria-label="Neuer Spot"
@@ -2041,12 +2041,12 @@ async function removeSpot(id: number) {
               >
                 <AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" />
                 <span class="add-button__label">Neuer Spot</span>
-              </button>
+              </Button>
               <template v-else-if="groupMode === 'tours'">
-                <button class="add-button" aria-label="Neue Tour" @click="openExcursionForm()">
+                <Button class="add-button" aria-label="Neue Tour" @click="openExcursionForm()">
                   <AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" />
                   <span class="add-button__label">Neue Tour</span>
-                </button>
+                </Button>
               </template>
             </div>
             <!-- Zweiter Einstiegspunkt zum ⏺️/⏹️-Button auf TripMap.vue (Start dort mit Sichtbarkeits-
@@ -2060,9 +2060,10 @@ async function removeSpot(id: number) {
                Aufzeichnungen-Liste erreichbar. -->
           </div>
           <div class="subheader">
-            <button
+            <Button
               type="button"
-              class="secondary record-button"
+              variant="secondary"
+              class="record-button"
               :class="{ recording: trackRecording.recording }"
               @click="onRecordButtonClick"
             >
@@ -2074,7 +2075,7 @@ async function removeSpot(id: number) {
                 group="actions"
               />
               {{ trackRecording.recording ? 'Aufzeichnung beenden' : 'Weg Aufzeichnen' }}
-            </button>
+            </Button>
           </div>
 
           <!-- Standort-Aufzeichnungen (stores/tracks.ts): eigene, geteilte und mit anderen geteilte

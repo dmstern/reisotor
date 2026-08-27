@@ -10,6 +10,8 @@ import EditButton from './EditButton.vue';
 import DeleteButton from './DeleteButton.vue';
 import TripMembersDialog from './TripMembersDialog.vue';
 import AppIcon from './AppIcon.vue';
+import Button from './primitives/Button.vue';
+import IconButton from './primitives/IconButton.vue';
 import DropdownItem from './primitives/DropdownItem.vue';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
