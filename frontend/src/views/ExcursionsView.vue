@@ -49,7 +49,7 @@ import Combobox from '../components/Combobox.vue';
 import FormField from '../components/FormField.vue';
 import TourAssignPicker from '../components/TourAssignPicker.vue';
 import LocationPicker from '../components/LocationPicker.vue';
-import ImageUrlInput from '../components/ImageUrlInput.vue';
+import CoverImagePicker from '../components/CoverImagePicker.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import FileAttachments from '../components/FileAttachments.vue';
 import DraftStatusBar from '../components/DraftStatusBar.vue';
@@ -579,9 +579,6 @@ const spotCategoryOptions = computed(() => {
   return [...new Set([...SPOT_CATEGORY_SUGGESTIONS, ...used])];
 });
 
-const excursionPreviewImage = computed(() => excursionForm.value.image_url || null);
-const editExcursionPreviewImage = computed(() => editExcursionForm.value.image_url || null);
-
 const showSpotLocationSection = ref(false);
 const showEditSpotLocationSection = ref(false);
 const showSpotToursSection = ref(false);
@@ -600,11 +597,6 @@ const showEditExcursionTransportSection = computed({
     editExcursionForm.value.transportEnabled = val;
   },
 });
-
-const showSpotImageModal = ref(false);
-const showEditSpotImageModal = ref(false);
-const showExcursionImageModal = ref(false);
-const showEditExcursionImageModal = ref(false);
 
 // Track Recording Hinweis-Modal (#230)
 const showTrackRecordingWarningModal = ref(false);
@@ -1928,16 +1920,17 @@ async function removeSpot(id: number) {
     <div class="layout" :style="{ '--spots-col-width': spotsColWidth + 'px' }">
       <div ref="sheetEl" class="spots-col" :class="[sheetState, { dragging: sheetDragging }]">
         <div class="sheet-handle-row">
-          <button
-            type="button"
+          <IconButton
+            variant="secondary"
+            shape="circle"
+            size="sm"
             class="sheet-step-btn"
             :disabled="!canExpandSheet"
+            :icon="ACTION_ICONS.chevronUp"
             aria-label="Spots-Liste weiter hochschieben"
             title="Hochschieben"
             @click="stepSheet(1)"
-          >
-            <AppIcon :icon="ACTION_ICONS.chevronUp" :size="16" group="actions" />
-          </button>
+          />
           <div
             class="sheet-handle"
             role="separator"
@@ -1951,16 +1944,17 @@ async function removeSpot(id: number) {
               {{ filteredSpotItems.length }} {{ filteredSpotItems.length === 1 ? 'Ort' : 'Orte' }}
             </span>
           </div>
-          <button
-            type="button"
+          <IconButton
+            variant="secondary"
+            shape="circle"
+            size="sm"
             class="sheet-step-btn"
             :disabled="!canCollapseSheet"
+            :icon="ACTION_ICONS.chevronDown"
             aria-label="Spots-Liste weiter runterschieben"
             title="Runterschieben"
             @click="stepSheet(-1)"
-          >
-            <AppIcon :icon="ACTION_ICONS.chevronDown" :size="16" group="actions" />
-          </button>
+          />
         </div>
         <div
           class="spots-col-body"
@@ -2170,42 +2164,11 @@ async function removeSpot(id: number) {
             @update:model-value="(v) => !v && closeExcursionForm()"
           >
             <form class="edit-form" @submit.prevent="addExcursion">
-              <div
-                class="form-image-banner"
-                :style="
-                  excursionPreviewImage ? { backgroundImage: `url(${excursionPreviewImage})` } : {}
-                "
-              >
-                <AppIcon
-                  v-if="!excursionPreviewImage"
-                  class="placeholder"
-                  :size="35"
-                  :icon="SECTION_ICON_DEFS.excursions"
-                  group="navigation"
-                />
-                <div class="banner-actions">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    class="banner-edit-btn"
-                    @click="showExcursionImageModal = true"
-                  >
-                    <AppIcon :icon="ACTION_ICONS.edit" :size="13" group="actions" />
-                    {{ excursionForm.image_url ? 'Bild bearbeiten' : 'Bild hinzufügen' }}
-                  </Button>
-                  <Button
-                    v-if="excursionForm.image_url"
-                    type="button"
-                    variant="ghost"
-                    class="banner-edit-btn remove"
-                    title="Bild entfernen"
-                    aria-label="Bild entfernen"
-                    @click="excursionForm.image_url = ''"
-                  >
-                    <AppIcon :icon="ACTION_ICONS.close" :size="13" group="actions" />
-                  </Button>
-                </div>
-              </div>
+              <CoverImagePicker
+                v-model="excursionForm.image_url"
+                :placeholder-icon="SECTION_ICON_DEFS.excursions"
+                modal-title="Tour-Bild bearbeiten"
+              />
               <FormField icon="title" label="Titel">
                 <input v-model="excursionForm.title" type="text" placeholder="Titel" required />
               </FormField>
@@ -2398,44 +2361,11 @@ async function removeSpot(id: number) {
             @update:model-value="(v) => !v && closeEditExcursionForm()"
           >
             <form class="edit-form" @submit.prevent="submitEditExcursion">
-              <div
-                class="form-image-banner"
-                :style="
-                  editExcursionPreviewImage
-                    ? { backgroundImage: `url(${editExcursionPreviewImage})` }
-                    : {}
-                "
-              >
-                <AppIcon
-                  v-if="!editExcursionPreviewImage"
-                  class="placeholder"
-                  :size="35"
-                  :icon="SECTION_ICON_DEFS.excursions"
-                  group="navigation"
-                />
-                <div class="banner-actions">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    class="banner-edit-btn"
-                    @click="showEditExcursionImageModal = true"
-                  >
-                    <AppIcon :icon="ACTION_ICONS.edit" :size="13" group="actions" />
-                    {{ editExcursionForm.image_url ? 'Bild bearbeiten' : 'Bild hinzufügen' }}
-                  </Button>
-                  <Button
-                    v-if="editExcursionForm.image_url"
-                    type="button"
-                    variant="ghost"
-                    class="banner-edit-btn remove"
-                    title="Bild entfernen"
-                    aria-label="Bild entfernen"
-                    @click="editExcursionForm.image_url = ''"
-                  >
-                    <AppIcon :icon="ACTION_ICONS.close" :size="13" group="actions" />
-                  </Button>
-                </div>
-              </div>
+              <CoverImagePicker
+                v-model="editExcursionForm.image_url"
+                :placeholder-icon="SECTION_ICON_DEFS.excursions"
+                modal-title="Tour-Bild bearbeiten"
+              />
               <FormField icon="title" label="Titel">
                 <input v-model="editExcursionForm.title" type="text" placeholder="Titel" required />
               </FormField>
@@ -2774,40 +2704,12 @@ async function removeSpot(id: number) {
             @update:model-value="(v) => !v && closeSpotForm()"
           >
             <form class="edit-form" @submit.prevent="addSpot">
-              <div
-                class="form-image-banner"
-                :style="spotPreviewImage ? { backgroundImage: `url(${spotPreviewImage})` } : {}"
-              >
-                <AppIcon
-                  v-if="!spotPreviewImage"
-                  class="placeholder"
-                  :size="35"
-                  :icon="groupIconDef(spotForm.category)"
-                  group="categories"
-                />
-                <div class="banner-actions">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    class="banner-edit-btn"
-                    @click="showSpotImageModal = true"
-                  >
-                    <AppIcon :icon="ACTION_ICONS.edit" :size="13" group="actions" />
-                    {{ spotForm.image_url ? 'Bild bearbeiten' : 'Bild hinzufügen' }}
-                  </Button>
-                  <Button
-                    v-if="spotForm.image_url"
-                    type="button"
-                    variant="ghost"
-                    class="banner-edit-btn remove"
-                    title="Bild entfernen"
-                    aria-label="Bild entfernen"
-                    @click="spotForm.image_url = ''"
-                  >
-                    <AppIcon :icon="ACTION_ICONS.close" :size="13" group="actions" />
-                  </Button>
-                </div>
-              </div>
+              <CoverImagePicker
+                v-model="spotForm.image_url"
+                :preview-image="spotPreviewImage"
+                :placeholder-icon="groupIconDef(spotForm.category)"
+                modal-title="Spot-Bild bearbeiten"
+              />
               <FormField icon="title" label="Titel">
                 <input v-model="spotForm.title" type="text" placeholder="Titel" required />
               </FormField>
@@ -2926,28 +2828,36 @@ async function removeSpot(id: number) {
                     konnte auch automatisch nicht ermittelt werden. Bitte tippe unten auf die Karte,
                     um ihn manuell zu setzen.
                   </p>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    class="picker-toggle"
-                    @click="spotPickerOpen = !spotPickerOpen"
-                  >
-                    <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort
-                    manuell setzen
-                    <AppIcon
-                      :icon="ACTION_ICONS.chevronDown"
-                      :size="12"
-                      group="actions"
-                      class="caret dropdown-caret"
-                      :class="{ open: spotPickerOpen }"
-                    />
-                  </Button>
-                  <LocationPicker
-                    v-if="spotPickerOpen"
-                    v-model="spotManualPin"
-                    :center="spotPickerCenter"
-                    :reference-points="spotReferencePoints"
-                  />
+                  <fieldset class="collapsible-fieldset">
+                    <legend>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        class="collapsible-toggle"
+                        :aria-expanded="spotPickerOpen"
+                        @click="spotPickerOpen = !spotPickerOpen"
+                      >
+                        <span>
+                          <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" />
+                          Standort manuell setzen
+                        </span>
+                        <AppIcon
+                          :icon="ACTION_ICONS.chevronDown"
+                          :size="14"
+                          group="actions"
+                          class="caret"
+                          :class="{ closed: !spotPickerOpen }"
+                        />
+                      </Button>
+                    </legend>
+                    <div v-if="spotPickerOpen" class="collapsible-content">
+                      <LocationPicker
+                        v-model="spotManualPin"
+                        :center="spotPickerCenter"
+                        :reference-points="spotReferencePoints"
+                      />
+                    </div>
+                  </fieldset>
                 </div>
               </fieldset>
               <FormField icon="note" label="Notiz">
@@ -3211,42 +3121,12 @@ async function removeSpot(id: number) {
             @update:model-value="(v) => !v && closeEditSpotForm()"
           >
             <form class="edit-form" @submit.prevent="submitEditSpot">
-              <div
-                class="form-image-banner"
-                :style="
-                  editSpotPreviewImage ? { backgroundImage: `url(${editSpotPreviewImage})` } : {}
-                "
-              >
-                <AppIcon
-                  v-if="!editSpotPreviewImage"
-                  class="placeholder"
-                  :size="35"
-                  :icon="groupIconDef(editSpotForm.category)"
-                  group="categories"
-                />
-                <div class="banner-actions">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    class="banner-edit-btn"
-                    @click="showEditSpotImageModal = true"
-                  >
-                    <AppIcon :icon="ACTION_ICONS.edit" :size="13" group="actions" />
-                    {{ editSpotForm.image_url ? 'Bild bearbeiten' : 'Bild hinzufügen' }}
-                  </Button>
-                  <Button
-                    v-if="editSpotForm.image_url"
-                    type="button"
-                    variant="ghost"
-                    class="banner-edit-btn remove"
-                    title="Bild entfernen"
-                    aria-label="Bild entfernen"
-                    @click="editSpotForm.image_url = ''"
-                  >
-                    <AppIcon :icon="ACTION_ICONS.close" :size="13" group="actions" />
-                  </Button>
-                </div>
-              </div>
+              <CoverImagePicker
+                v-model="editSpotForm.image_url"
+                :preview-image="editSpotPreviewImage"
+                :placeholder-icon="groupIconDef(editSpotForm.category)"
+                modal-title="Spot-Bild bearbeiten"
+              />
               <FormField icon="title" label="Titel">
                 <input v-model="editSpotForm.title" type="text" placeholder="Titel" required />
               </FormField>
@@ -3369,28 +3249,36 @@ async function removeSpot(id: number) {
                     konnte auch automatisch nicht ermittelt werden. Bitte tippe unten auf die Karte,
                     um ihn manuell zu setzen.
                   </p>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    class="picker-toggle"
-                    @click="editSpotPickerOpen = !editSpotPickerOpen"
-                  >
-                    <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort
-                    manuell setzen
-                    <AppIcon
-                      :icon="ACTION_ICONS.chevronDown"
-                      :size="12"
-                      group="actions"
-                      class="caret dropdown-caret"
-                      :class="{ open: editSpotPickerOpen }"
-                    />
-                  </Button>
-                  <LocationPicker
-                    v-if="editSpotPickerOpen"
-                    v-model="editSpotManualPin"
-                    :center="spotPickerCenter"
-                    :reference-points="editSpotReferencePoints"
-                  />
+                  <fieldset class="collapsible-fieldset">
+                    <legend>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        class="collapsible-toggle"
+                        :aria-expanded="editSpotPickerOpen"
+                        @click="editSpotPickerOpen = !editSpotPickerOpen"
+                      >
+                        <span>
+                          <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" />
+                          Standort manuell setzen
+                        </span>
+                        <AppIcon
+                          :icon="ACTION_ICONS.chevronDown"
+                          :size="14"
+                          group="actions"
+                          class="caret"
+                          :class="{ closed: !editSpotPickerOpen }"
+                        />
+                      </Button>
+                    </legend>
+                    <div v-if="editSpotPickerOpen" class="collapsible-content">
+                      <LocationPicker
+                        v-model="editSpotManualPin"
+                        :center="spotPickerCenter"
+                        :reference-points="editSpotReferencePoints"
+                      />
+                    </div>
+                  </fieldset>
                 </div>
               </fieldset>
               <FormField icon="note" label="Notiz">
@@ -3442,59 +3330,6 @@ async function removeSpot(id: number) {
               />
               <Button type="submit">Speichern</Button>
             </form>
-          </Modal>
-
-          <!-- Bild-Bearbeiten Sub-Modale (#258) -->
-          <Modal
-            :model-value="showSpotImageModal"
-            title="Spot-Bild bearbeiten"
-            @update:model-value="(v) => !v && (showSpotImageModal = false)"
-          >
-            <div class="image-submodal">
-              <ImageUrlInput v-model="spotForm.image_url" />
-              <ButtonGroup>
-                <Button type="button" @click="showSpotImageModal = false">Fertig</Button>
-              </ButtonGroup>
-            </div>
-          </Modal>
-
-          <Modal
-            :model-value="showEditSpotImageModal"
-            title="Spot-Bild bearbeiten"
-            @update:model-value="(v) => !v && (showEditSpotImageModal = false)"
-          >
-            <div class="image-submodal">
-              <ImageUrlInput v-model="editSpotForm.image_url" />
-              <ButtonGroup>
-                <Button type="button" @click="showEditSpotImageModal = false">Fertig</Button>
-              </ButtonGroup>
-            </div>
-          </Modal>
-
-          <Modal
-            :model-value="showExcursionImageModal"
-            title="Tour-Bild bearbeiten"
-            @update:model-value="(v) => !v && (showExcursionImageModal = false)"
-          >
-            <div class="image-submodal">
-              <ImageUrlInput v-model="excursionForm.image_url" />
-              <ButtonGroup>
-                <Button type="button" @click="showExcursionImageModal = false">Fertig</Button>
-              </ButtonGroup>
-            </div>
-          </Modal>
-
-          <Modal
-            :model-value="showEditExcursionImageModal"
-            title="Tour-Bild bearbeiten"
-            @update:model-value="(v) => !v && (showEditExcursionImageModal = false)"
-          >
-            <div class="image-submodal">
-              <ImageUrlInput v-model="editExcursionForm.image_url" />
-              <ButtonGroup>
-                <Button type="button" @click="showEditExcursionImageModal = false">Fertig</Button>
-              </ButtonGroup>
-            </div>
           </Modal>
 
           <!-- Hinweis-Modal für Standort-Aufzeichnung (#230) -->
@@ -3795,30 +3630,6 @@ async function removeSpot(id: number) {
    im Script). */
 .sheet-step-btn {
   flex-shrink: 0;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  border: 1px solid var(--color-border);
-  border-radius: 50%;
-  corner-shape: round;
-  background: var(--color-surface);
-  color: var(--color-text-muted);
-  font-size: 0.7rem;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-
-.sheet-step-btn:hover:not(:disabled) {
-  border-color: var(--color-primary);
-  color: var(--color-primary-dark);
-}
-
-.sheet-step-btn:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
 }
 
 .sheet-grip {
@@ -4185,59 +3996,6 @@ async function removeSpot(id: number) {
   min-width: 140px;
 }
 
-.form-image-banner {
-  position: relative;
-  margin: 0 0 var(--space-2);
-  height: 6rem;
-  border-radius: var(--radius-md-squircle);
-  corner-shape: squircle;
-  background: var(--color-primary-tint) center/cover no-repeat;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--space-3);
-  overflow: hidden;
-}
-
-.form-image-banner .placeholder {
-  font-size: 2.5rem;
-  margin: auto;
-}
-
-.form-image-banner .banner-actions {
-  position: absolute;
-  right: var(--space-2);
-  bottom: var(--space-2);
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: var(--space-2);
-  z-index: 1;
-}
-
-.banner-edit-btn {
-  background: var(--color-surface) !important;
-  color: var(--color-text) !important;
-  font-size: 0.82rem;
-  padding: 4px 8px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  box-shadow: var(--shadow-sm);
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-}
-
-.banner-edit-btn:hover {
-  background: var(--color-hover) !important;
-}
-
-.banner-edit-btn.remove {
-  color: var(--color-danger) !important;
-}
-
 .collapsible-fieldset {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md-squircle);
@@ -4316,12 +4074,6 @@ async function removeSpot(id: number) {
   margin-top: var(--space-2);
   font-size: 0.85rem;
   color: var(--color-text-muted);
-}
-
-.image-submodal {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
 }
 
 .syntax-hint {

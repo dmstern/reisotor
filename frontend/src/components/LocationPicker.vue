@@ -275,22 +275,6 @@ function useOwnLocation() {
   top: 10px;
   right: 10px;
   z-index: 1000;
-  width: 34px;
-  height: 34px;
-  padding: 0;
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  background: var(--color-surface);
-  border: 2px solid rgba(0, 0, 0, 0.25);
-  color: var(--color-text);
-  font-size: 1rem;
-  line-height: 1;
-  cursor: pointer;
-}
-
-.locate-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 
 /* Dezenter Puls statt Text ("Standort wird ermittelt…") - der Button hat als Icon-Only-Button
