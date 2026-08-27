@@ -11,6 +11,8 @@ import { useTrackRecordingStore } from './stores/trackRecording';
 import { useIsDesktop } from './composables/useIsDesktop';
 import { SECTION_ICON_DEFS } from './utils/sectionIcons';
 import { prefetchTripDataForOffline } from './utils/offlinePrefetch';
+import { useBuildInfoStore } from './stores/buildInfo';
+import { getAppTitle } from './utils/envTitle';
 import AppHeader from './components/AppHeader.vue';
 import NavBar from './components/NavBar.vue';
 import Drawer from './components/Drawer.vue';
@@ -25,6 +27,18 @@ const tripStore = useTripStore();
 const budgetStore = useBudgetStore();
 const drawers = useDrawersStore();
 const isDesktop = useIsDesktop();
+
+const buildInfoStore = useBuildInfoStore();
+buildInfoStore.load();
+
+watch(
+  () => buildInfoStore.buildInfo?.environment,
+  (env) => {
+    document.title = getAppTitle(env);
+  },
+  { immediate: true }
+);
+
 // SSE-Verbindung + Präsenz sollen laufen, sobald ein Urlaub geladen ist, unabhängig davon, welche
 // Unteransicht gerade aktiv ist – Pinia-Stores werden erst beim ersten useXStore()-Aufruf erzeugt,
 // siehe liveSync.ts's watch(currentTripId, ..., { immediate: true }). Wird hier außerdem für die
