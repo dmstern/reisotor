@@ -3,9 +3,7 @@ import { db } from './db/index.js';
 
 // Pre-compiled statement for hot-path authorization check.
 // Pre-compiling avoids re-parsing SQL on every API request (~10x query check speedup).
-const stmtIsTripMember = db.prepare(
-  'SELECT 1 FROM trip_members WHERE trip_id = ? AND user_id = ?'
-);
+const stmtIsTripMember = db.prepare('SELECT 1 FROM trip_members WHERE trip_id = ? AND user_id = ?');
 
 export function isTripMember(tripId: number, userId: number): boolean {
   return !!stmtIsTripMember.get(tripId, userId);
