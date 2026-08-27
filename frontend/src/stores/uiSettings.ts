@@ -4,7 +4,11 @@ import { api } from '../api/client';
 import { useThemeStore, type ThemeMode, THEME_MODE_OPTIONS } from './theme';
 import { useNavPositionStore, type NavPosition } from './navPosition';
 import { useNavConfigStore, sanitizeNavEntries, type NavConfigEntry } from './navConfig';
-import { useDashboardConfigStore, sanitizeDashboardEntries, type DashboardConfigEntry } from './dashboardConfig';
+import {
+  useDashboardConfigStore,
+  sanitizeDashboardEntries,
+  type DashboardConfigEntry,
+} from './dashboardConfig';
 import {
   useCalendarSettingsStore,
   type WeekStart,
@@ -12,7 +16,11 @@ import {
   WEEK_START_OPTIONS,
   DATE_FORMAT_OPTIONS,
 } from './calendarSettings';
-import { useWeatherProviderStore, type WeatherModel, WEATHER_MODEL_OPTIONS } from './weatherProvider';
+import {
+  useWeatherProviderStore,
+  type WeatherModel,
+  WEATHER_MODEL_OPTIONS,
+} from './weatherProvider';
 import { useHomeCurrencyStore, type HomeCurrency, HOME_CURRENCY_OPTIONS } from './homeCurrency';
 
 const SHOW_ACTIVITY_TOASTS_KEY = 'reisotor-show-activity-toasts';
@@ -63,7 +71,6 @@ export const PRIMARY_COLOR_PRESETS = [
 
 export const DEFAULT_PRIMARY_COLOR = '#2a7f74';
 export const DEFAULT_BORDER_WIDTH = 1;
-
 
 export function getPresetGlassValues(style: GlassStyle) {
   if (style === 'glass') {
@@ -303,7 +310,11 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
       ) {
         glassStyle.value = stored.glassStyle;
       }
-      if (typeof stored.glassOpacity === 'number' && stored.glassOpacity >= 20 && stored.glassOpacity <= 100) {
+      if (
+        typeof stored.glassOpacity === 'number' &&
+        stored.glassOpacity >= 20 &&
+        stored.glassOpacity <= 100
+      ) {
         glassOpacity.value = stored.glassOpacity;
       }
       if (typeof stored.glassBlur === 'number' && stored.glassBlur >= 0 && stored.glassBlur <= 30) {
@@ -312,7 +323,11 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
       if (stored.primaryColor && /^#[0-9a-fA-F]{6}$/.test(stored.primaryColor)) {
         primaryColor.value = stored.primaryColor;
       }
-      if (typeof stored.borderWidth === 'number' && stored.borderWidth >= 0 && stored.borderWidth <= 10) {
+      if (
+        typeof stored.borderWidth === 'number' &&
+        stored.borderWidth >= 0 &&
+        stored.borderWidth <= 10
+      ) {
         borderWidth.value = stored.borderWidth;
       }
       if (stored.navPosition) {
@@ -343,10 +358,16 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
           calSettingsStore.dateFormat = stored.calendarSettings.dateFormat;
         }
       }
-      if (stored.weatherModel && WEATHER_MODEL_OPTIONS.some((o) => o.value === stored.weatherModel)) {
+      if (
+        stored.weatherModel &&
+        WEATHER_MODEL_OPTIONS.some((o) => o.value === stored.weatherModel)
+      ) {
         weatherStore.model = stored.weatherModel;
       }
-      if (stored.homeCurrency && HOME_CURRENCY_OPTIONS.some((o) => o.value === stored.homeCurrency)) {
+      if (
+        stored.homeCurrency &&
+        HOME_CURRENCY_OPTIONS.some((o) => o.value === stored.homeCurrency)
+      ) {
         homeCurrStore.currency = stored.homeCurrency;
       }
 
@@ -413,15 +434,44 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
   const weatherStore = useWeatherProviderStore();
   const homeCurrStore = useHomeCurrencyStore();
 
-  watch(() => themeStore.mode, () => persist());
-  watch(() => navPosStore.desktop, () => persist());
-  watch(() => navPosStore.mobile, () => persist());
-  watch(() => navCfgStore.entries, () => persist(), { deep: true });
-  watch(() => dashCfgStore.entries, () => persist(), { deep: true });
-  watch(() => calSettingsStore.weekStart, () => persist());
-  watch(() => calSettingsStore.dateFormat, () => persist());
-  watch(() => weatherStore.model, () => persist());
-  watch(() => homeCurrStore.currency, () => persist());
+  watch(
+    () => themeStore.mode,
+    () => persist()
+  );
+  watch(
+    () => navPosStore.desktop,
+    () => persist()
+  );
+  watch(
+    () => navPosStore.mobile,
+    () => persist()
+  );
+  watch(
+    () => navCfgStore.entries,
+    () => persist(),
+    { deep: true }
+  );
+  watch(
+    () => dashCfgStore.entries,
+    () => persist(),
+    { deep: true }
+  );
+  watch(
+    () => calSettingsStore.weekStart,
+    () => persist()
+  );
+  watch(
+    () => calSettingsStore.dateFormat,
+    () => persist()
+  );
+  watch(
+    () => weatherStore.model,
+    () => persist()
+  );
+  watch(
+    () => homeCurrStore.currency,
+    () => persist()
+  );
 
   return {
     showActivityToasts,

@@ -545,7 +545,8 @@ for (const table of TRIP_SCOPED_TABLES) {
 // Backfill: bestehende Zeilen (aus der Zeit vor Multi-Urlaub-Unterstützung) dem
 // jeweils ersten/ältesten Urlaub zuordnen, damit keine verwaisten Daten entstehen.
 const firstTrip = db.prepare('SELECT id FROM trips ORDER BY id LIMIT 1').get() as
-  { id: number } | undefined;
+  | { id: number }
+  | undefined;
 if (firstTrip) {
   for (const table of TRIP_SCOPED_TABLES) {
     db.prepare(`UPDATE ${table} SET trip_id = ? WHERE trip_id IS NULL`).run(firstTrip.id);
@@ -627,7 +628,8 @@ if (hasTable('budget_targets')) {
     const usernameOf = (id: number) =>
       (
         db.prepare('SELECT username FROM users WHERE id = ?').get(id) as
-          { username: string } | undefined
+          | { username: string }
+          | undefined
       )?.username ?? `Nutzer ${id}`;
 
     for (const target of targets) {
@@ -1545,7 +1547,8 @@ if (hasTable('travel_items')) {
       // falls die Tour noch keine eigene budget_expense_id trägt.
       if (row.budget_expense_id) {
         const idea = getIdeaBudgetExpense.get(ideaId) as
-          { budget_expense_id: number | null } | undefined;
+          | { budget_expense_id: number | null }
+          | undefined;
         if (idea && idea.budget_expense_id == null) {
           setIdeaBudgetExpense.run(row.budget_expense_id, ideaId);
         }
@@ -1565,7 +1568,8 @@ if (hasTable('travel_items')) {
       );
       for (const a of travelAttachments) {
         const ti = findMigratedIdea.get(a.entity_id) as
-          { migrated_idea_id: number | null } | undefined;
+          | { migrated_idea_id: number | null }
+          | undefined;
         if (ti?.migrated_idea_id != null) moveAttachment.run(ti.migrated_idea_id, a.id);
       }
     }
