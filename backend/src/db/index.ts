@@ -545,7 +545,8 @@ for (const table of TRIP_SCOPED_TABLES) {
 // Backfill: bestehende Zeilen (aus der Zeit vor Multi-Urlaub-Unterstützung) dem
 // jeweils ersten/ältesten Urlaub zuordnen, damit keine verwaisten Daten entstehen.
 const firstTrip = db.prepare('SELECT id FROM trips ORDER BY id LIMIT 1').get() as
-  { id: number } | undefined;
+  | { id: number }
+  | undefined;
 if (firstTrip) {
   for (const table of TRIP_SCOPED_TABLES) {
     db.prepare(`UPDATE ${table} SET trip_id = ? WHERE trip_id IS NULL`).run(firstTrip.id);
@@ -627,7 +628,8 @@ if (hasTable('budget_targets')) {
     const usernameOf = (id: number) =>
       (
         db.prepare('SELECT username FROM users WHERE id = ?').get(id) as
-          { username: string } | undefined
+          | { username: string }
+          | undefined
       )?.username ?? `Nutzer ${id}`;
 
     for (const target of targets) {
@@ -756,12 +758,8 @@ for (const table of TRASH_TABLES) {
 // Add database indexes for frequently filtered columns to avoid full table scans O(N).
 // 1. spots (trip_id, deleted_at): queried heavily by spots/map routes and schedule dropdowns.
 // 2. trip_members (user_id, trip_id): queried whenever fetching user trips or checking membership.
-db.exec(
-  'CREATE INDEX IF NOT EXISTS idx_spots_trip_deleted ON spots (trip_id, deleted_at)'
-);
-db.exec(
-  'CREATE INDEX IF NOT EXISTS idx_trip_members_user_trip ON trip_members (user_id, trip_id)'
-);
+db.exec('CREATE INDEX IF NOT EXISTS idx_spots_trip_deleted ON spots (trip_id, deleted_at)');
+db.exec('CREATE INDEX IF NOT EXISTS idx_trip_members_user_trip ON trip_members (user_id, trip_id)');
 
 // Reise-Orte (travel_places) verschmelzen mit Spots: statt einer eigenen, parallelen Orte-Liste nur
 // für Reise-Etappen ist ein "Ort" (Flughafen/Bahnhof/Zuhause/…) jetzt einfach ein ganz normaler Spot
@@ -1607,7 +1605,8 @@ if (hasTable('travel_items')) {
       // falls die Tour noch keine eigene budget_expense_id trägt.
       if (row.budget_expense_id) {
         const idea = getIdeaBudgetExpense.get(ideaId) as
-          { budget_expense_id: number | null } | undefined;
+          | { budget_expense_id: number | null }
+          | undefined;
         if (idea && idea.budget_expense_id == null) {
           setIdeaBudgetExpense.run(row.budget_expense_id, ideaId);
         }
@@ -1627,7 +1626,8 @@ if (hasTable('travel_items')) {
       );
       for (const a of travelAttachments) {
         const ti = findMigratedIdea.get(a.entity_id) as
-          { migrated_idea_id: number | null } | undefined;
+          | { migrated_idea_id: number | null }
+          | undefined;
         if (ti?.migrated_idea_id != null) moveAttachment.run(ti.migrated_idea_id, a.id);
       }
     }

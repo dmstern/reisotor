@@ -1,33 +1,23 @@
 <script setup lang="ts">
-import { computed, useAttrs, useId } from 'vue';
 import AppIcon from './AppIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
 defineOptions({ inheritAttrs: false });
-const props = defineProps<{
-  id?: string;
-}>();
-
-const attrs = useAttrs();
 const model = defineModel<string>({ required: true });
 // Optionales zweites v-model (v-model:visible) – z. B. für LoginView.vue, das den Reisotor die
 // Augen zuhalten lässt, solange das Passwort im Klartext angezeigt wird. Ungenutzt bleibt es ein
 // rein internes Detail wie zuvor (Default false, kein Verhaltensunterschied für bestehende
 // Verwendungsstellen ohne diese Bindung).
 const visible = defineModel<boolean>('visible', { default: false });
-
-const generatedId = useId();
-const inputId = computed(() => props.id || (attrs.id as string | undefined) || generatedId);
 </script>
 
 <template>
   <div class="password-field">
-    <input :id="inputId" v-model="model" :type="visible ? 'text' : 'password'" v-bind="$attrs" />
+    <input v-model="model" :type="visible ? 'text' : 'password'" v-bind="$attrs" />
     <button
       type="button"
       class="toggle-visibility"
       :aria-label="visible ? 'Eingabe verbergen' : 'Eingabe anzeigen'"
-      :aria-controls="inputId"
       :title="visible ? 'Eingabe verbergen' : 'Eingabe anzeigen'"
       @click="visible = !visible"
     >

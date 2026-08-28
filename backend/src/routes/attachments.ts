@@ -155,9 +155,7 @@ export const attachmentsRoutes: FastifyPluginAsync = async (app) => {
     if (!requireTripMember(reply, existing.trip_id, req.session.userId)) return;
 
     db.prepare('DELETE FROM attachments WHERE id = ?').run(req.params.id);
-    // Path traversal Schutz: Dateiname auf den reinen Basenamen beschränken
-    const safeFilename = path.basename(existing.filename);
-    await unlink(path.join(uploadsDir, safeFilename)).catch(() => {});
+    await unlink(path.join(uploadsDir, existing.filename)).catch(() => {});
     recordActivity(
       existing.trip_id,
       existing.domain,
