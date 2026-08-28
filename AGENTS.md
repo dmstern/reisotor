@@ -30,6 +30,7 @@ npm run test            # Backend & Frontend Unit-Tests
 npm run test:backend    # Backend Unit-Tests (vitest run)
 npm run test:frontend   # Frontend Unit-Tests (vitest run)
 npm run test:e2e        # E2E-Tests (playwright test)
+npm run test:a11y       # Accessibility-Tests mit Axe (playwright test tests/accessibility.spec.ts)
 npm run test:all        # Backend + Frontend + E2E Tests
 npm run build           # Backend + Frontend Build
 npm run build:backend   # Backend Build (tsc -> backend/dist)
@@ -64,12 +65,13 @@ Einzelnen Test ausführen: `npx -y vitest run <pfad-zur-datei>` bzw. `npx -y vit
 Node.js 20+ sowie `make`/`gcc`/`python3` nötig (native Module `better-sqlite3`, `bcrypt`). Volle
 Setup-/Deploy-/Env-Var-Details: `README.md`.
 
-## Typecheck
+## Typecheck & Linting
 
 Nach jeder Frontend-Änderung zuerst den günstigsten Check laufen lassen:
 
 ```bash
 npm run typecheck    # aus dem Root (oder cd frontend && npm run typecheck)
+npm run lint         # ESLint inkl. vuejs-accessibility
 ```
 
 **Wichtig für AI-Agenten:**
@@ -212,7 +214,7 @@ Regressionsnetz für echte Logik (Berechnungen, Regex-Parsing, Auth-Gating), kei
 Abdeckung jeder Route/Funktion. Reine CRUD-Routen ohne Verzweigungslogik brauchen i. d. R. keinen
 eigenen Test.
 
-## E2E-Tests (`/e2e`)
+## E2E-Tests & Accessibility-Tests (`/e2e`)
 
 Ergänzt die schnellen, browserlosen Unit-Tests oben um echte Klick-Interaktionen durch einen
 Browser. Committete Playwright-Suite, die beide Dev-Server automatisch startet und gegen eine frisch
@@ -220,6 +222,9 @@ geseedete, isolierte Test-Datenbank läuft (nie gegen echte Nutzdaten) — läuf
 einer Cloud-Sandbox und über die Claude-Mobile-App, da die gesamte Infrastruktur (Server-Autostart,
 Seed-Daten, Login) committet ist. Eigene Ports (Backend 3100, Frontend 5273, über `CORS_ORIGIN` in
 `backend/src/server.ts` konfigurierbar) — kollidiert nicht mit einem laufenden lokalen Dev-Server.
+
+Inklusive automatisierter Barrierefreiheits-Tests via Axe (`@axe-core/playwright`):
+`npm run test:a11y` testet Kernansichten der Anwendung ad-hoc lokal auf WCAG/ARIA-Konformität.
 
 Läuft außerdem automatisch in CI (nach den Unit-Tests, vor dem Assemble-Schritt) — bei einem
 Fehlschlag wird als Artefakt der HTML-Report samt Screenshots hochgeladen (`playwright-report`/
@@ -231,6 +236,7 @@ Testausgabe landet im Kontextfenster). Lokal stattdessen gezielt einsetzen:
 
 - `npx -y playwright test <pfad-zur-spec>` für eine einzelne, gerade geschriebene/geänderte Spec direkt
   nach dem Schreiben verifizieren.
+- `npm run test:a11y` für Barrierefreiheits-Scans.
 - Einen CI-E2E-Fehlschlag lokal reproduzieren/debuggen.
 - Eine Wegwerf-Spec unter `e2e/tests/scratch/` für Ad-hoc-Checks/PR-Screenshots (siehe unten).
 
@@ -239,6 +245,7 @@ cd e2e
 npm install                       # einmalig
 npx -y playwright install chromium   # einmalig pro (frischer) Umgebung
 npm test                          # komplette Suite, startet/beendet beide Server automatisch
+npm run test:a11y                 # nur Accessibility-Scans (tests/accessibility.spec.ts)
 npx -y playwright show-report        # HTML-Report des letzten Laufs
 ```
 
@@ -341,7 +348,7 @@ Historie und wird gescannt) zwei Dinge:
    `chore:`, `refactor:`, `docs:`, `test:`, `build:` oder kein Präfix) — sie fließen einfach in den
    Patch-Bump.
 2. **Release-Notes-Fragment nur bei sichtbarer Auswirkung für echte Endnutzer:innen der App**:
-   - **KEIN Fragment anlegen** für interne/begleitende Bereiche: Änderungen an Demo-Daten
+   - **KEIN Fragment anlegen** for interne/begleitende Bereiche: Änderungen an Demo-Daten
      (`frontend/src/demo/`, `backend/src/db/seedDemo.ts`), CI/CD-Pipelines (`.github/`), Dev-Workflow,
      Tooling, Build-Skripte, Infrastruktur/Deployment (`deploy.sh`, systemd, Pi-Skripte), Tests,
      Refactorings oder reine Dokumentation. Diese betreffen nicht die produktive Nutzung der App.

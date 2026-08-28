@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "test": "playwright test",
+    "test:a11y": "playwright test tests/accessibility.spec.ts",
     "lint": "eslint .",
     "format:check": "prettier --check .",
     "test:headed": "playwright test --headed",
@@ -12,6 +13,7 @@
     "report": "playwright show-report"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@playwright/test": "^1.48.0",
     "better-sqlite3": "^11.3.0"
   }
