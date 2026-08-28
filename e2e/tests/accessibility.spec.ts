@@ -30,7 +30,7 @@ test.describe('Accessibility (a11y)', () => {
   test.describe('authenticated views', () => {
     test('dashboard page accessibility scan', async ({ page }) => {
       await page.goto('/');
-      await page.waitForLoadState('networkidle');
+      await expect(page.locator('.tile-btn', { hasText: 'Kalender' })).toBeVisible();
 
       const results = await new AxeBuilder({ page })
         .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
@@ -42,7 +42,7 @@ test.describe('Accessibility (a11y)', () => {
 
     test('calendar page accessibility scan', async ({ page }) => {
       await page.goto('/calendar');
-      await page.waitForLoadState('networkidle');
+      await expect(page.getByRole('heading', { name: 'Kalender', level: 2 })).toBeVisible();
 
       const results = await new AxeBuilder({ page })
         .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
@@ -52,9 +52,11 @@ test.describe('Accessibility (a11y)', () => {
       expect(results.violations).toEqual([]);
     });
 
-    test('spots page accessibility scan', async ({ page }) => {
-      await page.goto('/spots');
-      await page.waitForLoadState('networkidle');
+    test('excursions (spots) page accessibility scan', async ({ page }) => {
+      await page.goto('/excursions');
+      await expect(
+        page.getByRole('button', { name: 'Nach Kategorie filtern', exact: true })
+      ).toBeVisible();
 
       const results = await new AxeBuilder({ page })
         .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
@@ -66,7 +68,7 @@ test.describe('Accessibility (a11y)', () => {
 
     test('settings page accessibility scan', async ({ page }) => {
       await page.goto('/settings');
-      await page.waitForLoadState('networkidle');
+      await expect(page.getByRole('heading', { name: 'Einstellungen', level: 1 })).toBeVisible();
 
       const results = await new AxeBuilder({ page })
         .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])

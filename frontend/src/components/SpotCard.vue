@@ -314,7 +314,13 @@ function onToggleDone() {
            auf reines Icon, siehe @container-Regel unten), gleiche Konvention wie
            ExcursionCard.vue/SpotDetailDialog.vue's "Auf Karte anzeigen"-Button. -->
       <div class="links" v-if="spot.lat != null && spot.lng != null">
-        <Button variant="card-action" class="show-on-map-btn" @click.stop="onShowOnMap">
+        <Button
+          variant="card-action"
+          class="show-on-map-btn"
+          aria-label="Auf Karte anzeigen"
+          title="Auf Karte anzeigen"
+          @click.stop="onShowOnMap"
+        >
           <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" />
           <span class="btn-label">Auf Karte anzeigen</span>
         </Button>

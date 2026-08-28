@@ -2565,7 +2565,7 @@ async function removeSpot(id: number) {
                   <AppIcon :icon="ACTION_ICONS.sort" :size="14" group="actions" />
                   <span class="tool-label-text">Sortieren</span>
                 </span>
-                <select v-model="sortMode">
+                <select v-model="sortMode" aria-label="Sortierung">
                   <option value="alpha">Alphabetisch</option>
                   <option value="likes">Nach Likes</option>
                 </select>
