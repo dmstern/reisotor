@@ -1,7 +1,16 @@
 import tseslint from 'typescript-eslint';
 import pluginVue from 'eslint-plugin-vue';
+import vuejsAccessibility from 'eslint-plugin-vuejs-accessibility';
 import eslintConfigPrettier from 'eslint-config-prettier';
 import globals from 'globals';
+
+// Convert eslint-plugin-vuejs-accessibility recommended rules to 'warn' so static tips are provided without failing CI
+const a11yWarnRules = Object.fromEntries(
+  Object.keys(vuejsAccessibility.rules || {}).map((ruleName) => [
+    `vuejs-accessibility/${ruleName}`,
+    'warn',
+  ])
+);
 
 export default tseslint.config(
   {
@@ -17,6 +26,7 @@ export default tseslint.config(
   },
   ...tseslint.configs.recommended,
   ...pluginVue.configs['flat/recommended'],
+  ...vuejsAccessibility.configs['flat/recommended'],
   {
     files: ['**/*.vue'],
     languageOptions: {
@@ -42,6 +52,7 @@ export default tseslint.config(
       'vue/require-default-prop': 'off',
       'vue/no-v-html': 'warn',
       'vue/attributes-order': 'off',
+      ...a11yWarnRules,
     },
   },
   eslintConfigPrettier
