@@ -157,4 +157,31 @@ describe('trip membership + registration + invite', () => {
         .sort()
     ).toEqual(['erin', 'frank']);
   });
+
+  it('escapes SQL wildcards (% and _) literally in user search query', async () => {
+    const searcher = await register('grace', 'grace@example.com');
+    await register('user%test', 'usertest1@example.com');
+    await register('user_test', 'usertest2@example.com');
+    await register('userXtest', 'usertest3@example.com');
+
+    const searchPercent = await app.inject({
+      method: 'GET',
+      url: '/api/users/search?q=user%25t',
+      headers: { cookie: searcher.cookie },
+    });
+    expect(searchPercent.statusCode).toBe(200);
+    const resultsPercent = searchPercent.json();
+    expect(resultsPercent.length).toBe(1);
+    expect(resultsPercent[0].username).toBe('user%test');
+
+    const searchUnderscore = await app.inject({
+      method: 'GET',
+      url: '/api/users/search?q=user_t',
+      headers: { cookie: searcher.cookie },
+    });
+    expect(searchUnderscore.statusCode).toBe(200);
+    const resultsUnderscore = searchUnderscore.json();
+    expect(resultsUnderscore.length).toBe(1);
+    expect(resultsUnderscore[0].username).toBe('user_test');
+  });
 });
