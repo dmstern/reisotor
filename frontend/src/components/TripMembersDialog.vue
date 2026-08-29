@@ -146,7 +146,7 @@ function close() {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-2);
 }
 
 .member-list li,
@@ -155,7 +155,7 @@ function close() {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
-  padding: 6px 8px;
+  padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   background: var(--color-primary-tint);
@@ -163,7 +163,7 @@ function close() {
 
 .member-list .empty {
   background: none;
-  padding: 6px 8px;
+  padding: var(--space-2) var(--space-3);
   font-size: 0.9rem;
   justify-content: flex-start;
 }
