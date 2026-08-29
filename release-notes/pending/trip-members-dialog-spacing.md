@@ -1,0 +1,1 @@
+- Verbessertes Layout und angenehmere Abstände in der Mitglieder-Übersicht von Urlauben.
