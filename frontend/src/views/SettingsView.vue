@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import Button from '../components/primitives/Button.vue';
 import IconButton from '../components/primitives/IconButton.vue';
+import Badge from '../components/primitives/Badge.vue';
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { api, ApiError } from '../api/client';
@@ -652,19 +653,19 @@ async function onImportFileSelected(event: Event) {
                 </td>
                 <td class="email-cell">{{ u.email || '—' }}</td>
                 <td>
-                  <span class="badge" :class="u.is_admin ? 'badge--accent-secondary' : ''">
+                  <Badge :variant="u.is_admin ? 'accent-secondary' : 'default'">
                     {{ u.is_admin ? 'Admin' : 'Nutzer' }}
-                  </span>
+                  </Badge>
                 </td>
                 <td>
-                  <span
+                  <Badge
                     v-if="u.must_change_password"
-                    class="badge badge--warning"
+                    variant="warning"
                     title="Passwortänderung beim ersten Login ausstehend"
                   >
                     Passwortänderung ausstehend
-                  </span>
-                  <span v-else class="badge badge--success">Aktiv</span>
+                  </Badge>
+                  <Badge v-else variant="success">Aktiv</Badge>
                 </td>
                 <td class="actions-col">
                   <div class="user-actions">

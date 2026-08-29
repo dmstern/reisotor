@@ -1,27 +1,24 @@
 <script setup lang="ts">
 import { spotCategoryMeta } from '../utils/spotCategory';
 import AppIcon from './AppIcon.vue';
+import Badge from './primitives/Badge.vue';
 
-// Wiederverwendbarer Kategorie-Chip (Icon + Label, eingefärbt nach spotCategoryMeta) – bisher an
-// mehreren Stellen (Mini-Karte, Detail-Dialog, Karten-Gruppen-Überschriften) leicht unterschiedlich
-// dupliziert. Zentral, damit die Optik langfristig konsistent bleibt. Rendert das Icon über
-// AppIcon.vue statt fest per spotCategoryMeta().icon (#94) - respektiert damit denselben
-// Emoji/Symbole-Umschalter wie der Rest der App, statt hier fest an Emoji hängenzubleiben.
+// Wiederverwendbarer Kategorie-Chip (Icon + Label, eingefärbt nach spotCategoryMeta) – nutzt das
+// primitive Badge.vue für konsistente Chip-/Badge-Darstellung.
 defineProps<{ category: string | null | undefined }>();
 </script>
 
 <template>
-  <span
+  <Badge
     v-if="category"
     class="category-chip"
     :style="{
       background: `${spotCategoryMeta(category).color}26`,
       color: spotCategoryMeta(category).color,
+      borderColor: 'transparent',
     }"
   >
-    <!-- Das Icon im bunten Badge ist immer eingefärbt (#142) - das "Kategorie-Icons einfärben"-
-         Setting (iconStyle.colorizeCategories) steuert nur noch die Kategorie-Überschriften/die
-         Kategorie-Navigation (siehe ExcursionsView.vue), nicht mehr die Badges selbst. -->
+    <!-- Das Icon im bunten Badge ist immer eingefärbt (#142) -->
     <AppIcon
       :icon="spotCategoryMeta(category).tabler"
       group="categories"
@@ -29,18 +26,11 @@ defineProps<{ category: string | null | undefined }>();
       :color="spotCategoryMeta(category).color"
     />
     {{ category }}
-  </span>
+  </Badge>
 </template>
 
 <style scoped>
 .category-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
   font-size: 0.72rem;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 999px;
-  white-space: nowrap;
 }
 </style>
