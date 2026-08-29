@@ -11,71 +11,99 @@ import { excursionStationKeys, resolveStations } from './excursionStations';
 import { spotCategoryMeta } from './spotCategory';
 import type { IconDef } from './icon';
 
+export interface CalendarLookupMaps {
+  spotMap?: Map<number, Spot>;
+  excursionMap?: Map<number, Excursion>;
+  travelMap?: Map<number, TravelItem>;
+}
+
+// Löst sowohl emoji-Icon als auch Tabler-IconDef in einem einzigen Durchlauf auf,
+// um redundante Array-Durchläufe und doppelte Stationen-Resolutions zu vermeiden.
+export function resolveScheduleItemIcons(
+  item: ScheduleItem,
+  spots: Spot[],
+  excursions: Excursion[],
+  travelItems: TravelItem[],
+  maps?: CalendarLookupMaps,
+  preloadedExcursion?: Excursion
+): { icon: string | undefined; iconDef: IconDef | undefined } {
+  if (item.spot_id != null) {
+    const spot = maps?.spotMap
+      ? maps.spotMap.get(item.spot_id)
+      : spots.find((s) => s.id === item.spot_id);
+    if (spot) {
+      const meta = spotCategoryMeta(spot.category);
+      return { icon: meta.icon, iconDef: meta.tabler };
+    }
+  }
+  if (item.idea_id != null) {
+    const excursion =
+      preloadedExcursion ??
+      (maps?.excursionMap
+        ? maps.excursionMap.get(item.idea_id)
+        : excursions.find((e) => e.id === item.idea_id));
+    if (excursion) {
+      const stations = resolveStations(
+        excursionStationKeys(excursion.spot_ids),
+        spots,
+        travelItems,
+        maps?.spotMap,
+        maps?.travelMap
+      );
+      if (stations.length === 1) {
+        return { icon: stations[0].icon, iconDef: stations[0].tabler };
+      }
+    }
+  }
+  return { icon: undefined, iconDef: undefined };
+}
+
 // Icon-Override für einen mit Spot/Tour verknüpften Termin: bei einem verknüpften Spot dessen
 // eigenes Kategorie-Icon, bei einer verknüpften Tour mit genau einer Spot-Station deren Icon
-// (sonst das generische 🎒 aus SCHEDULE_CATEGORY_META). Eigene Funktion statt nur inline in
-// scheduleItemToEntry, da ScheduleView.vue denselben Icon-Override auch für den Anzeige-Dialog
-// braucht (dort existiert keine fertige CalendarEntry, nur das rohe ScheduleItem).
+// (sonst das generische 🎒 aus SCHEDULE_CATEGORY_META).
 export function resolveScheduleItemIcon(
   item: ScheduleItem,
   spots: Spot[],
   excursions: Excursion[],
   travelItems: TravelItem[]
 ): string | undefined {
-  if (item.spot_id != null) {
-    const spot = spots.find((s) => s.id === item.spot_id);
-    if (spot) return spotCategoryMeta(spot.category).icon;
-  }
-  if (item.idea_id != null) {
-    const excursion = excursions.find((e) => e.id === item.idea_id);
-    if (excursion) {
-      const stations = resolveStations(
-        excursionStationKeys(excursion.spot_ids),
-        spots,
-        travelItems
-      );
-      return stations.length === 1 ? stations[0].icon : undefined;
-    }
-  }
-  return undefined;
+  return resolveScheduleItemIcons(item, spots, excursions, travelItems).icon;
 }
 
 // Tabler-Pendant zu resolveScheduleItemIcon() oben (siehe CalendarEntry.iconDef, api/types.ts) -
-// dieselbe Verknüpfungs-Logik, nur .tabler statt .icon von spotCategoryMeta()/den
-// ExcursionStation-Objekten gelesen.
+// dieselbe Verknüpfungs-Logik, nur .tabler statt .icon.
 export function resolveScheduleItemIconDef(
   item: ScheduleItem,
   spots: Spot[],
   excursions: Excursion[],
   travelItems: TravelItem[]
 ): IconDef | undefined {
-  if (item.spot_id != null) {
-    const spot = spots.find((s) => s.id === item.spot_id);
-    if (spot) return spotCategoryMeta(spot.category).tabler;
-  }
-  if (item.idea_id != null) {
-    const excursion = excursions.find((e) => e.id === item.idea_id);
-    if (excursion) {
-      const stations = resolveStations(
-        excursionStationKeys(excursion.spot_ids),
-        spots,
-        travelItems
-      );
-      return stations.length === 1 ? stations[0].tabler : undefined;
-    }
-  }
-  return undefined;
+  return resolveScheduleItemIcons(item, spots, excursions, travelItems).iconDef;
 }
 
 export function scheduleItemToEntry(
   item: ScheduleItem,
   spots: Spot[],
   excursions: Excursion[],
-  travelItems: TravelItem[]
+  travelItems: TravelItem[],
+  maps?: CalendarLookupMaps
 ): CalendarEntry {
   const linked = item.spot_id != null || item.idea_id != null;
   const linkedExcursion =
-    item.idea_id != null ? excursions.find((e) => e.id === item.idea_id) : undefined;
+    item.idea_id != null
+      ? maps?.excursionMap
+        ? maps.excursionMap.get(item.idea_id)
+        : excursions.find((e) => e.id === item.idea_id)
+      : undefined;
+  const icons = resolveScheduleItemIcons(
+    item,
+    spots,
+    excursions,
+    travelItems,
+    maps,
+    linkedExcursion
+  );
+
   return {
     key: `s-${item.id}`,
     kind: 'schedule',
@@ -96,8 +124,8 @@ export function scheduleItemToEntry(
     // erschien eine terminierte Reise-Etappe früher doppelt (einmal als Ausflug-, einmal als
     // Reise-Eintrag).
     category: linkedExcursion?.role ? 'travel' : linked ? 'excursion' : item.category,
-    icon: resolveScheduleItemIcon(item, spots, excursions, travelItems),
-    iconDef: resolveScheduleItemIconDef(item, spots, excursions, travelItems),
+    icon: icons.icon,
+    iconDef: icons.iconDef,
     ideaId: item.idea_id,
     spotId: item.spot_id,
     todoId: null,
@@ -182,8 +210,17 @@ export function buildAllEntries(
   excursions: Excursion[],
   spots: Spot[]
 ): CalendarEntry[] {
+  // Erstelle Maps für O(1) Lookups bei der Iteration über alle Kalender-Termine
+  const spotMap = new Map<number, Spot>();
+  for (const s of spots) spotMap.set(s.id, s);
+  const excursionMap = new Map<number, Excursion>();
+  for (const e of excursions) excursionMap.set(e.id, e);
+  const travelMap = new Map<number, TravelItem>();
+  for (const t of travelItems) travelMap.set(t.id, t);
+  const maps: CalendarLookupMaps = { spotMap, excursionMap, travelMap };
+
   return [
-    ...items.map((item) => scheduleItemToEntry(item, spots, excursions, travelItems)),
+    ...items.map((item) => scheduleItemToEntry(item, spots, excursions, travelItems, maps)),
     ...buildTripEntries(trip),
     ...buildTodoEntries(todos),
   ];
