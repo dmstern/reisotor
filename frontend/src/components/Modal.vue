@@ -8,7 +8,7 @@
 // bekämen – oft zu wenig Platz zum Tippen, v. a. mobil mit eingeblendeter Tastatur. Streckt den
 // Dialog stattdessen auf die verfügbare Höhe; das Formular (und darin per :slotted() jedes
 // textarea, siehe unten) wächst mit, alle anderen Felder behalten ihre natürliche Höhe.
-import { onUnmounted, watch, useId } from 'vue';
+import { onUnmounted, watch, useId, ref, nextTick } from 'vue';
 import IconButton from './primitives/IconButton.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
@@ -22,14 +22,52 @@ const props = defineProps<{
 const emit = defineEmits<{ (e: 'update:modelValue', value: boolean): void }>();
 
 const titleId = useId();
+const modalRef = ref<HTMLDivElement | null>(null);
 
 function close() {
   emit('update:modelValue', false);
 }
 
+function getFocusableElements(): HTMLElement[] {
+  if (!modalRef.value) return [];
+  const selector =
+    'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+  const elements = Array.from(modalRef.value.querySelectorAll<HTMLElement>(selector));
+  return elements.filter(
+    (el) => el.offsetWidth > 0 || el.offsetHeight > 0 || el.getClientRects().length > 0
+  );
+}
+
 function handleKeydown(e: KeyboardEvent) {
-  if (e.key === 'Escape' && props.modelValue) {
+  if (!props.modelValue) return;
+
+  if (e.key === 'Escape') {
     close();
+    return;
+  }
+
+  if (e.key === 'Tab') {
+    const focusables = getFocusableElements();
+    if (focusables.length === 0) {
+      e.preventDefault();
+      return;
+    }
+
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    const active = document.activeElement as HTMLElement | null;
+
+    if (e.shiftKey) {
+      if (active === first || !modalRef.value?.contains(active)) {
+        last.focus();
+        e.preventDefault();
+      }
+    } else {
+      if (active === last || !modalRef.value?.contains(active)) {
+        first.focus();
+        e.preventDefault();
+      }
+    }
   }
 }
 
@@ -59,7 +97,19 @@ function unlockBodyScroll() {
 
 watch(
   () => props.modelValue,
-  (open) => (open ? lockBodyScroll() : unlockBodyScroll()),
+  (open) => {
+    if (open) {
+      lockBodyScroll();
+      nextTick(() => {
+        const focusables = getFocusableElements();
+        if (focusables.length > 0) {
+          focusables[0].focus();
+        }
+      });
+    } else {
+      unlockBodyScroll();
+    }
+  },
   { immediate: true }
 );
 onUnmounted(() => {
@@ -72,6 +122,7 @@ onUnmounted(() => {
     <Transition name="modal-fade">
       <div v-if="modelValue" class="overlay" @click.self="close">
         <div
+          ref="modalRef"
           class="modal"
           :class="{ 'full-height': fullHeight }"
           role="dialog"
