@@ -34,7 +34,7 @@ Before writing code, analyze the codebase through these 4 lenses. Fix all identi
 const items = db
   .prepare(
     `
-  SELECT * FROM budget_items
+  SELECT * FROM budget_items 
   WHERE trip_id = ? AND category_id IN (SELECT id FROM categories WHERE active = 1)
 `
   )
