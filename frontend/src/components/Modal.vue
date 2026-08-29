@@ -8,7 +8,7 @@
 // bekämen – oft zu wenig Platz zum Tippen, v. a. mobil mit eingeblendeter Tastatur. Streckt den
 // Dialog stattdessen auf die verfügbare Höhe; das Formular (und darin per :slotted() jedes
 // textarea, siehe unten) wächst mit, alle anderen Felder behalten ihre natürliche Höhe.
-import { onUnmounted, watch } from 'vue';
+import { onUnmounted, watch, useId } from 'vue';
 import IconButton from './primitives/IconButton.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
@@ -17,11 +17,20 @@ const props = defineProps<{
   title?: string;
   hideHeader?: boolean;
   fullHeight?: boolean;
+  ariaLabel?: string;
 }>();
 const emit = defineEmits<{ (e: 'update:modelValue', value: boolean): void }>();
 
+const titleId = useId();
+
 function close() {
   emit('update:modelValue', false);
+}
+
+function handleKeydown(e: KeyboardEvent) {
+  if (e.key === 'Escape' && props.modelValue) {
+    close();
+  }
 }
 
 // Sperrt den Scroll der Hauptseite im Hintergrund, solange mindestens ein Modal offen ist - Zähler
@@ -35,11 +44,17 @@ function close() {
 let openModalCount = 0;
 function lockBodyScroll() {
   openModalCount++;
-  if (openModalCount === 1) document.body.style.overflow = 'hidden';
+  if (openModalCount === 1) {
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', handleKeydown);
+  }
 }
 function unlockBodyScroll() {
   openModalCount = Math.max(0, openModalCount - 1);
-  if (openModalCount === 0) document.body.style.overflow = '';
+  if (openModalCount === 0) {
+    document.body.style.overflow = '';
+    window.removeEventListener('keydown', handleKeydown);
+  }
 }
 
 watch(
@@ -56,9 +71,16 @@ onUnmounted(() => {
   <Teleport to="body">
     <Transition name="modal-fade">
       <div v-if="modelValue" class="overlay" @click.self="close">
-        <div class="modal" :class="{ 'full-height': fullHeight }">
+        <div
+          class="modal"
+          :class="{ 'full-height': fullHeight }"
+          role="dialog"
+          aria-modal="true"
+          :aria-labelledby="title && !hideHeader ? titleId : undefined"
+          :aria-label="!title || hideHeader ? ariaLabel || title || 'Dialog' : undefined"
+        >
           <div class="modal-head" v-if="!hideHeader">
-            <h2 v-if="title">{{ title }}</h2>
+            <h2 v-if="title" :id="titleId">{{ title }}</h2>
             <IconButton
               variant="ghost"
               class="close-btn"
