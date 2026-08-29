@@ -1,0 +1,2 @@
+- Verbesserte Tastatur-Hinweise (`inputmode`, `autocapitalize`, `autocorrect`) für mobile Eingabefelder in Budget, Packliste und Nutzersuche.
+- Neuer Storybook-Eintrag für die `LoadingSpinner`-Primitive.

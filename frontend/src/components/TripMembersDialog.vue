@@ -3,9 +3,14 @@ import { computed, ref, watch } from 'vue';
 import { api, ApiError } from '../api/client';
 import type { Trip, User } from '../api/types';
 import Modal from './Modal.vue';
+import FormField from './FormField.vue';
+import Input from './primitives/Input.vue';
 import IconButton from './primitives/IconButton.vue';
 import Button from './primitives/Button.vue';
+import LoadingSpinner from './primitives/LoadingSpinner.vue';
+import AppIcon from './AppIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
+import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 
 // Deckel aus Issue #96 (registrationConfig.ts's RESTRICTED_MAX_MEMBERS) - hier dupliziert statt
 // importiert, da das Frontend keinen Zugriff auf Backend-Module hat.
@@ -18,6 +23,8 @@ const members = ref<User[]>([]);
 const query = ref('');
 const results = ref<User[]>([]);
 const loading = ref(false);
+const searching = ref(false);
+const hasSearched = ref(false);
 const error = ref('');
 let searchTimeout: ReturnType<typeof setTimeout> | undefined;
 
@@ -34,6 +41,8 @@ watch(
       query.value = '';
       results.value = [];
       error.value = '';
+      searching.value = false;
+      hasSearched.value = false;
     }
   }
 );
@@ -47,15 +56,30 @@ async function loadMembers() {
 // 2 Zeichen ein Ergebnis, siehe routes/users.ts's GET /users/search).
 watch(query, (q) => {
   clearTimeout(searchTimeout);
-  if (q.trim().length < 2) {
+  const trimmed = q.trim();
+  if (trimmed.length < 2) {
     results.value = [];
+    searching.value = false;
+    hasSearched.value = false;
     return;
   }
+  searching.value = true;
+  hasSearched.value = false;
   searchTimeout = setTimeout(async () => {
-    if (!props.trip) return;
-    results.value = await api.get<User[]>(
-      `/users/search?q=${encodeURIComponent(q.trim())}&trip_id=${props.trip.id}`
-    );
+    if (!props.trip) {
+      searching.value = false;
+      return;
+    }
+    try {
+      results.value = await api.get<User[]>(
+        `/users/search?q=${encodeURIComponent(trimmed)}&trip_id=${props.trip.id}`
+      );
+      hasSearched.value = true;
+    } catch {
+      results.value = [];
+    } finally {
+      searching.value = false;
+    }
   }, 300);
 });
 
@@ -95,6 +119,7 @@ function close() {
     @update:model-value="close"
   >
     <div class="members-dialog">
+      <div class="section-title">Aktuelle Mitglieder</div>
       <ul class="member-list">
         <li v-for="u in members" :key="u.id">
           <span class="member-user">{{ u.avatar }} {{ u.username }}</span>
@@ -102,25 +127,41 @@ function close() {
             variant="danger"
             size="sm"
             :icon="ACTION_ICONS.delete"
-            title="Entfernen"
-            aria-label="Entfernen"
+            title="Mitglied entfernen"
+            aria-label="Mitglied entfernen"
             @click="removeMember(u)"
           />
         </li>
         <li v-if="!members.length" class="empty">Noch keine Mitglieder.</li>
       </ul>
 
-      <p v-if="memberCapReached" class="hint">
-        Eingeschränkter Modus - Maximal drei Nutzer pro Urlaub
+      <p v-if="memberCapReached" class="hint warning-hint">
+        Eingeschränkter Modus – Maximal drei Nutzer:innen pro Urlaub
       </p>
-      <label v-else>
-        Nutzer:in einladen (Benutzername oder E-Mail)
-        <input v-model="query" type="text" placeholder="Mind. 2 Zeichen eingeben…" />
-      </label>
+      <div v-else class="invite-section">
+        <FormField :icon="FORM_FIELD_ICONS.person" label="Nutzer:in einladen">
+          <Input
+            v-model="query"
+            type="search"
+            inputmode="search"
+            autocomplete="off"
+            autocapitalize="off"
+            autocorrect="off"
+            placeholder="Benutzername oder E-Mail-Adresse…"
+          />
+        </FormField>
+        <p class="hint">
+          Es können nur bereits registrierte Nutzer:innen gesucht werden (mindestens 2 Zeichen).
+        </p>
+      </div>
 
       <p v-if="error" class="error">{{ error }}</p>
 
-      <ul v-if="results.length" class="search-results">
+      <div v-if="searching" class="search-status">
+        <LoadingSpinner size="sm" /> Suche läuft…
+      </div>
+
+      <ul v-else-if="results.length" class="search-results">
         <li v-for="u in results" :key="u.id">
           <span class="member-user">{{ u.avatar }} {{ u.username }}</span>
           <Button variant="primary" size="sm" :disabled="loading" @click="invite(u)">
@@ -128,6 +169,13 @@ function close() {
           </Button>
         </li>
       </ul>
+
+      <p
+        v-else-if="hasSearched && !searching && query.trim().length >= 2"
+        class="hint empty-search"
+      >
+        Keine registrierten Nutzer:innen für „{{ query.trim() }}“ gefunden.
+      </p>
     </div>
   </Modal>
 </template>
@@ -139,6 +187,14 @@ function close() {
   gap: var(--space-3);
 }
 
+.section-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 .member-list,
 .search-results {
   list-style: none;
@@ -146,7 +202,7 @@ function close() {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-2);
 }
 
 .member-list li,
@@ -155,36 +211,61 @@ function close() {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
-  padding: 6px 8px;
+  padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   background: var(--color-primary-tint);
 }
 
+.member-user {
+  font-weight: 500;
+  color: var(--color-text);
+  font-size: 0.95rem;
+}
+
 .member-list .empty {
   background: none;
-  padding: 6px 8px;
+  padding: var(--space-1) 0;
   font-size: 0.9rem;
+  color: var(--color-text-muted);
   justify-content: flex-start;
 }
 
-label {
+.invite-section {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
-  font-weight: 600;
-  font-size: 0.9rem;
+  gap: 4px;
 }
 
 .hint {
   color: var(--color-text-muted);
   margin: 0;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
+}
+
+.warning-hint {
+  color: var(--color-danger);
+  font-weight: 500;
+}
+
+.empty-search {
+  font-style: italic;
+  padding: var(--space-1) 0;
 }
 
 .error {
   color: var(--color-danger);
   margin: 0;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.search-status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) 0;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
 }
 </style>
