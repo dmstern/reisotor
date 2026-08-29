@@ -62,11 +62,13 @@ const TRAVEL_COLOR = '#4a3aa7';
 export function resolveStation(
   key: string,
   spots: Spot[],
-  travelItems: TravelItem[]
+  travelItems: TravelItem[],
+  spotMap?: Map<number, Spot>,
+  travelMap?: Map<number, TravelItem>
 ): ExcursionStation | null {
   if (key.startsWith('spot-')) {
     const id = Number(key.slice('spot-'.length));
-    const spot = spots.find((s) => s.id === id);
+    const spot = spotMap ? spotMap.get(id) : spots.find((s) => s.id === id);
     if (!spot) return null;
     const meta = spotCategoryMeta(spot.category);
     return {
@@ -87,7 +89,7 @@ export function resolveStation(
   if (key.startsWith('travel-from-') || key.startsWith('travel-to-')) {
     const isFrom = key.startsWith('travel-from-');
     const id = Number(key.slice((isFrom ? 'travel-from-' : 'travel-to-').length));
-    const item = travelItems.find((t) => t.id === id);
+    const item = travelMap ? travelMap.get(id) : travelItems.find((t) => t.id === id);
     if (!item) return null;
     return {
       key,
@@ -110,10 +112,12 @@ export function resolveStation(
 export function resolveStations(
   keys: string[],
   spots: Spot[],
-  travelItems: TravelItem[]
+  travelItems: TravelItem[],
+  spotMap?: Map<number, Spot>,
+  travelMap?: Map<number, TravelItem>
 ): ExcursionStation[] {
   return keys
-    .map((key) => resolveStation(key, spots, travelItems))
+    .map((key) => resolveStation(key, spots, travelItems, spotMap, travelMap))
     .filter((s): s is ExcursionStation => !!s);
 }
 

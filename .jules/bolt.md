@@ -9,3 +9,8 @@
 
 **Learning:** SQLite queries filtering on `spots (trip_id, deleted_at)` and `trip_members (user_id)` were performing full table scans. While `trip_members` had a `UNIQUE(trip_id, user_id)` constraint, SQLite multi-column B-tree indexes only serve queries filtering by prefix (e.g. `trip_id`). Queries searching by `user_id` could not use that index efficiently.
 **Action:** Always add explicit compound indexes tailored to query filter order (`spots(trip_id, deleted_at)` and `trip_members(user_id, trip_id)`).
+
+## 2026-04-02 - Single-pass & Map-based Batch Resolution for Calendar Entries
+
+**Learning:** `buildAllEntries` previously performed repeated $O(M)$ linear searches (`.find()`) across `spots`, `excursions`, and `travelItems` for every schedule item, resolving excursion stations twice per item (once for `icon` and once for `iconDef`). Passing pre-built `Map` lookups and consolidating `icon` and `iconDef` resolution into a single pass converts $O(N \cdot (M + K))$ processing into $O(N + M + K)$.
+**Action:** When mapping over items that reference relational datasets in pure utility functions, pre-construct `Map` lookup tables for batch operations and resolve co-dependent properties in a single pass.
