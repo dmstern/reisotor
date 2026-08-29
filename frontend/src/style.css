@@ -560,6 +560,18 @@ button.is-disabled,
   border-color: var(--color-highlight-border);
 }
 
+.badge--warning {
+  background: var(--color-warning-tint);
+  color: var(--color-warning-dark);
+  border-color: transparent;
+}
+
+.badge--accent-secondary {
+  background: var(--color-accent-secondary-bg);
+  color: var(--color-accent-secondary);
+  border-color: transparent;
+}
+
 @keyframes badgePulse {
   0% {
     transform: scale(1);
