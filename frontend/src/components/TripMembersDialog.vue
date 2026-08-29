@@ -8,7 +8,6 @@ import Input from './primitives/Input.vue';
 import IconButton from './primitives/IconButton.vue';
 import Button from './primitives/Button.vue';
 import LoadingSpinner from './primitives/LoadingSpinner.vue';
-import AppIcon from './AppIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 

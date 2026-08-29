@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue';
 import { useRequestActivityStore, type RequestKind } from '../stores/requestActivity';
 import { useUiSettingsStore } from '../stores/uiSettings';
 import AppIcon from './AppIcon.vue';
+import LoadingSpinner from './primitives/LoadingSpinner.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import type { IconDef } from '../utils/icon';
 
@@ -73,7 +74,7 @@ const label = computed(() => (visibleKind.value ? LABELS[visibleKind.value] : ''
       :class="visibleKind"
       :title="label"
     >
-      <span class="spinner" />
+      <LoadingSpinner size="sm" class="toast-spinner" />
       <AppIcon v-if="icon" class="icon" :size="13" :icon="icon" group="actions" />
       <span class="label">{{ label }}</span>
     </div>
@@ -105,6 +106,11 @@ const label = computed(() => (visibleKind.value ? LABELS[visibleKind.value] : ''
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
 }
 
+.toast-spinner {
+  border-color: rgba(255, 255, 255, 0.4);
+  border-top-color: #fff;
+}
+
 /* Eigene, gedämpftere Farbe für löschende Operationen - kein Rot (das bleibt echten Fehlern
    vorbehalten, siehe OfflineIndicator.vue), aber ein Hauch Warnfarbe, damit sich "hier wird gerade
    etwas entfernt" leicht von "hier wird gerade geladen/gespeichert" absetzt. */
@@ -123,34 +129,5 @@ const label = computed(() => (visibleKind.value ? LABELS[visibleKind.value] : ''
 .toast-leave-to {
   opacity: 0;
   transform: translateX(-50%) translateY(8px);
-}
-
-/* Klassischer rotierender Ring statt eines rotierenden Emojis - Emoji-Glyphen werden je nach
-   Schriftart/Plattform beim Rotieren leicht verzerrt dargestellt. Der Ring ist bewusst die einzige
-   Stelle, die sich unabhängig von der CRUD-Art immer gleich verhält; icon/label unterscheiden die
-   Operation (siehe Kommentar oben in LoadingIndicator.vue) - hier ließe sich später pro Art auch der
-   Ring durch eine kleine Roboter-Animation ersetzen (siehe ReisotorRobot.vue).
-   NICHT scoped bewusst hier weglassen (Vue scoped style deckt trotz position:fixed weiterhin ganz
-   normal ab, da das Element im selben Template-Baum bleibt) - kein Sonderfall nötig. */
-.spinner {
-  width: 10px;
-  height: 10px;
-  border: 2px solid rgba(255, 255, 255, 0.4);
-  border-top-color: #fff;
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-  flex-shrink: 0;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .spinner {
-    animation: none;
-  }
 }
 </style>
