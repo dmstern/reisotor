@@ -156,6 +156,22 @@ describe('trip membership + registration + invite', () => {
         .map((u: { username: string }) => u.username)
         .sort()
     ).toEqual(['erin', 'frank']);
+
+    // Prevent self-removal
+    const selfRemove = await app.inject({
+      method: 'DELETE',
+      url: `/api/trips/${tripId}/members/${owner.userId}`,
+      headers: { cookie: owner.cookie },
+    });
+    expect(selfRemove.statusCode).toBe(400);
+
+    // Allowing removing other member
+    const removeOther = await app.inject({
+      method: 'DELETE',
+      url: `/api/trips/${tripId}/members/${invitee.userId}`,
+      headers: { cookie: owner.cookie },
+    });
+    expect(removeOther.statusCode).toBe(204);
   });
 
   it('escapes SQL wildcards (% and _) literally in user search query', async () => {

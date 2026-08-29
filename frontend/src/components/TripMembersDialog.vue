@@ -2,12 +2,14 @@
 import { computed, ref, watch } from 'vue';
 import { api, ApiError } from '../api/client';
 import type { Trip, User } from '../api/types';
+import { useAuthStore } from '../stores/auth';
 import Modal from './Modal.vue';
 import FormField from './FormField.vue';
 import Input from './primitives/Input.vue';
 import IconButton from './primitives/IconButton.vue';
 import Button from './primitives/Button.vue';
 import LoadingSpinner from './primitives/LoadingSpinner.vue';
+import AppIcon from './AppIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 
@@ -18,6 +20,7 @@ const RESTRICTED_MAX_MEMBERS = 3;
 const props = defineProps<{ modelValue: boolean; trip: Trip | null }>();
 const emit = defineEmits<{ (e: 'update:modelValue', value: boolean): void }>();
 
+const authStore = useAuthStore();
 const members = ref<User[]>([]);
 const query = ref('');
 const results = ref<User[]>([]);
@@ -100,10 +103,18 @@ async function invite(user: User) {
 
 async function removeMember(user: User) {
   if (!props.trip) return;
+  if (user.id === authStore.user?.id) {
+    error.value = 'Du kannst dich nicht selbst aus dem Urlaub entfernen.';
+    return;
+  }
   const confirmed = window.confirm(`"${user.username}" wirklich aus diesem Urlaub entfernen?`);
   if (!confirmed) return;
-  await api.delete(`/trips/${props.trip.id}/members/${user.id}`);
-  members.value = members.value.filter((u) => u.id !== user.id);
+  try {
+    await api.delete(`/trips/${props.trip.id}/members/${user.id}`);
+    members.value = members.value.filter((u) => u.id !== user.id);
+  } catch (err) {
+    error.value = err instanceof ApiError ? err.message : 'Entfernen fehlgeschlagen';
+  }
 }
 
 function close() {
@@ -119,10 +130,11 @@ function close() {
   >
     <div class="members-dialog">
       <div class="section-title">Aktuelle Mitglieder</div>
-      <ul class="member-list">
+      <TransitionGroup tag="ul" name="list" class="member-list">
         <li v-for="u in members" :key="u.id">
           <span class="member-user">{{ u.avatar }} {{ u.username }}</span>
           <IconButton
+            v-if="u.id !== authStore.user?.id"
             variant="danger"
             size="sm"
             :icon="ACTION_ICONS.delete"
@@ -131,8 +143,8 @@ function close() {
             @click="removeMember(u)"
           />
         </li>
-        <li v-if="!members.length" class="empty">Noch keine Mitglieder.</li>
-      </ul>
+        <li v-if="!members.length" key="empty-members" class="empty">Noch keine Mitglieder.</li>
+      </TransitionGroup>
 
       <p v-if="memberCapReached" class="hint warning-hint">
         Eingeschränkter Modus – Maximal drei Nutzer:innen pro Urlaub
@@ -158,14 +170,14 @@ function close() {
 
       <div v-if="searching" class="search-status"><LoadingSpinner size="sm" /> Suche läuft…</div>
 
-      <ul v-else-if="results.length" class="search-results">
+      <TransitionGroup v-else-if="results.length" tag="ul" name="list" class="search-results">
         <li v-for="u in results" :key="u.id">
           <span class="member-user">{{ u.avatar }} {{ u.username }}</span>
           <Button variant="primary" size="sm" :disabled="loading" @click="invite(u)">
             <AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Einladen
           </Button>
         </li>
-      </ul>
+      </TransitionGroup>
 
       <p
         v-else-if="hasSearched && !searching && query.trim().length >= 2"
@@ -200,6 +212,7 @@ function close() {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  position: relative;
 }
 
 .member-list li,
