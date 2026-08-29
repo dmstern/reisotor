@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3';
+import Badge from '../../components/primitives/Badge.vue';
 
 const meta: Meta = {
   title: 'Design Tokens/Typography',
@@ -79,7 +80,7 @@ export const TypographySystem: Story = {
             </div>
             <div>
               <span class="kicker" style="display: block; margin-bottom: 4px;">Badge-Label Typografie</span>
-              <span class="badge badge--primary">Primary Badge Text (600)</span>
+              <Badge variant="primary">Primary Badge Text (600)</Badge>
             </div>
           </div>
         </div>

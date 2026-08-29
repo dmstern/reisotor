@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import Button from '../components/primitives/Button.vue';
 import IconButton from '../components/primitives/IconButton.vue';
+import Badge from '../components/primitives/Badge.vue';
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { api, ApiError } from '../api/client';
@@ -652,19 +653,19 @@ async function onImportFileSelected(event: Event) {
                 </td>
                 <td class="email-cell">{{ u.email || '—' }}</td>
                 <td>
-                  <span class="role-badge" :class="{ admin: u.is_admin }">
+                  <Badge :variant="u.is_admin ? 'accent-secondary' : 'default'">
                     {{ u.is_admin ? 'Admin' : 'Nutzer' }}
-                  </span>
+                  </Badge>
                 </td>
                 <td>
-                  <span
+                  <Badge
                     v-if="u.must_change_password"
-                    class="status-badge warning"
+                    variant="warning"
                     title="Passwortänderung beim ersten Login ausstehend"
                   >
                     Passwortänderung ausstehend
-                  </span>
-                  <span v-else class="status-badge active">Aktiv</span>
+                  </Badge>
+                  <Badge v-else variant="success">Aktiv</Badge>
                 </td>
                 <td class="actions-col">
                   <div class="user-actions">
@@ -1217,39 +1218,6 @@ async function onImportFileSelected(event: Event) {
 
 .email-cell {
   color: var(--color-text-muted);
-}
-
-.role-badge {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: var(--radius-sm-squircle);
-  font-size: 0.78rem;
-  font-weight: 600;
-  background: var(--color-bg-secondary, #e5e7eb);
-  color: var(--color-text-muted);
-}
-
-.role-badge.admin {
-  background: rgba(59, 130, 246, 0.15);
-  color: #2563eb;
-}
-
-.status-badge {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: var(--radius-sm-squircle);
-  font-size: 0.78rem;
-  font-weight: 500;
-}
-
-.status-badge.active {
-  background: rgba(16, 185, 129, 0.15);
-  color: #059669;
-}
-
-.status-badge.warning {
-  background: rgba(245, 158, 11, 0.15);
-  color: #d97706;
 }
 
 .actions-col {
