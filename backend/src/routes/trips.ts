@@ -314,6 +314,11 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
     '/trips/:id/members/:userId',
     async (req, reply) => {
       if (!requireTripMember(reply, req.params.id, req.session.userId)) return;
+      if (Number(req.params.userId) === req.session.userId) {
+        return reply
+          .code(400)
+          .send({ error: 'Du kannst dich nicht selbst aus dem Urlaub entfernen' });
+      }
       db.prepare('DELETE FROM trip_members WHERE trip_id = ? AND user_id = ?').run(
         req.params.id,
         req.params.userId

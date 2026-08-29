@@ -7,6 +7,7 @@
 // ViewLoadingState.vue.
 import { onMounted, onUnmounted } from 'vue';
 import ReisotorRobot from './ReisotorRobot.vue';
+import LoadingSpinner from './primitives/LoadingSpinner.vue';
 
 const props = withDefaults(
   defineProps<{
@@ -61,7 +62,7 @@ onUnmounted(() => {
   <div class="splash" role="status" aria-live="polite">
     <ReisotorRobot size="140px" :phase="playIntro ? 'packing' : 'idle'" @packing-done="finish" />
     <div class="loading">
-      <span class="spinner" />
+      <LoadingSpinner size="md" />
       <span class="text">Lädt…</span>
     </div>
   </div>
@@ -84,26 +85,5 @@ onUnmounted(() => {
   align-items: center;
   gap: var(--space-3);
   color: var(--color-text-muted);
-}
-
-.spinner {
-  width: 24px;
-  height: 24px;
-  border: 3px solid var(--color-border);
-  border-top-color: var(--color-primary);
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .spinner {
-    animation: none;
-  }
 }
 </style>

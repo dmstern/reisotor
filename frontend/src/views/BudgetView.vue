@@ -341,6 +341,7 @@ const categoryColors = computed(() => {
             <Input
               v-model="newBudgetForm.target_amount"
               type="number"
+              inputmode="decimal"
               step="0.01"
               placeholder="Gesamtziel € (optional)"
             />
@@ -396,6 +397,7 @@ const categoryColors = computed(() => {
             <Input
               v-model="expenseForm.amount"
               type="number"
+              inputmode="decimal"
               step="0.01"
               placeholder="Betrag"
               required
@@ -474,6 +476,7 @@ const categoryColors = computed(() => {
             <Input
               v-model="transferForm.amount"
               type="number"
+              inputmode="decimal"
               step="0.01"
               placeholder="Betrag"
               required
@@ -512,6 +515,7 @@ const categoryColors = computed(() => {
           <Input
             v-model="editExpenseForm.amount"
             type="number"
+            inputmode="decimal"
             step="0.01"
             placeholder="Betrag"
             required
