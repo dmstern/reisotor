@@ -68,24 +68,30 @@ defineExpose({
       class="combobox-caret"
       :class="{ open }"
     />
-    <ul class="options" v-if="open && filteredOptions.length">
-      <li v-for="option in filteredOptions" :key="option" @mousedown.prevent="selectOption(option)">
-        <span
-          v-if="iconDefFor?.(option) || iconFor?.(option) || colorFor?.(option)"
-          class="option-icon"
-          :style="colorFor?.(option) ? { color: colorFor(option) } : {}"
+    <Transition name="fade">
+      <ul class="options" v-if="open && filteredOptions.length">
+        <li
+          v-for="option in filteredOptions"
+          :key="option"
+          @mousedown.prevent="selectOption(option)"
         >
-          <AppIcon
-            v-if="iconDefFor?.(option)"
-            :icon="iconDefFor(option)!"
-            :size="16"
-            group="categories"
-          />
-          <span v-else-if="iconFor?.(option)">{{ iconFor(option) }}</span>
-        </span>
-        <span class="option-label">{{ option }}</span>
-      </li>
-    </ul>
+          <span
+            v-if="iconDefFor?.(option) || iconFor?.(option) || colorFor?.(option)"
+            class="option-icon"
+            :style="colorFor?.(option) ? { color: colorFor(option) } : {}"
+          >
+            <AppIcon
+              v-if="iconDefFor?.(option)"
+              :icon="iconDefFor(option)!"
+              :size="16"
+              group="categories"
+            />
+            <span v-else-if="iconFor?.(option)">{{ iconFor(option) }}</span>
+          </span>
+          <span class="option-label">{{ option }}</span>
+        </li>
+      </ul>
+    </Transition>
   </div>
 </template>
 
@@ -142,6 +148,7 @@ defineExpose({
   padding: 6px 10px;
   font-size: 0.9rem;
   cursor: pointer;
+  transition: background 0.15s ease;
 }
 
 .option-icon {

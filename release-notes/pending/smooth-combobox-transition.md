@@ -1,0 +1,1 @@
+- Smooth out `Combobox.vue` dropdown options appearance using `<Transition name="fade">` and hover background transition.
