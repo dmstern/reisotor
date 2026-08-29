@@ -157,9 +157,7 @@ function close() {
 
       <p v-if="error" class="error">{{ error }}</p>
 
-      <div v-if="searching" class="search-status">
-        <LoadingSpinner size="sm" /> Suche läuft…
-      </div>
+      <div v-if="searching" class="search-status"><LoadingSpinner size="sm" /> Suche läuft…</div>
 
       <ul v-else-if="results.length" class="search-results">
         <li v-for="u in results" :key="u.id">
