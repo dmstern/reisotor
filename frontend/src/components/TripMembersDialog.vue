@@ -6,6 +6,7 @@ import Modal from './Modal.vue';
 import IconButton from './primitives/IconButton.vue';
 import Button from './primitives/Button.vue';
 import Input from './primitives/Input.vue';
+import LoadingSpinner from './primitives/LoadingSpinner.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
 // Deckel aus Issue #96 (registrationConfig.ts's RESTRICTED_MAX_MEMBERS) - hier dupliziert statt
@@ -143,7 +144,7 @@ function close() {
         />
       </label>
 
-      <div v-if="searching" class="search-status"><span class="spinner-sm" /> Suche läuft…</div>
+      <div v-if="searching" class="search-status"><LoadingSpinner size="sm" /> Suche läuft…</div>
       <p v-else-if="hasSearched && !results.length && query.trim().length >= 2" class="hint">
         Keine passenden Nutzer:innen gefunden.
       </p>
@@ -218,21 +219,6 @@ label {
   gap: var(--space-2);
   font-size: 0.85rem;
   color: var(--color-text-muted);
-}
-
-.spinner-sm {
-  width: 14px;
-  height: 14px;
-  border: 2px solid var(--color-border-strong);
-  border-top-color: var(--color-primary);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 .error {
