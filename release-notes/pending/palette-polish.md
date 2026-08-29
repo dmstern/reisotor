@@ -1,0 +1,2 @@
+- Verbesserte Tastatur-Hinweise (`inputmode`, `autocapitalize`) für mobile Eingabefelder in Budget, Packliste und Nutzersuche.
+- Neuer Lade- und Leerzustand bei der Nutzersuche in der Mitglieder-Verwaltung.

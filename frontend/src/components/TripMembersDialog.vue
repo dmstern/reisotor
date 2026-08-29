@@ -5,6 +5,7 @@ import type { Trip, User } from '../api/types';
 import Modal from './Modal.vue';
 import IconButton from './primitives/IconButton.vue';
 import Button from './primitives/Button.vue';
+import Input from './primitives/Input.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
 // Deckel aus Issue #96 (registrationConfig.ts's RESTRICTED_MAX_MEMBERS) - hier dupliziert statt
@@ -18,6 +19,8 @@ const members = ref<User[]>([]);
 const query = ref('');
 const results = ref<User[]>([]);
 const loading = ref(false);
+const searching = ref(false);
+const hasSearched = ref(false);
 const error = ref('');
 let searchTimeout: ReturnType<typeof setTimeout> | undefined;
 
@@ -33,6 +36,8 @@ watch(
     } else {
       query.value = '';
       results.value = [];
+      searching.value = false;
+      hasSearched.value = false;
       error.value = '';
     }
   }
@@ -49,13 +54,25 @@ watch(query, (q) => {
   clearTimeout(searchTimeout);
   if (q.trim().length < 2) {
     results.value = [];
+    searching.value = false;
+    hasSearched.value = false;
     return;
   }
+  searching.value = true;
+  hasSearched.value = false;
   searchTimeout = setTimeout(async () => {
-    if (!props.trip) return;
-    results.value = await api.get<User[]>(
-      `/users/search?q=${encodeURIComponent(q.trim())}&trip_id=${props.trip.id}`
-    );
+    if (!props.trip) {
+      searching.value = false;
+      return;
+    }
+    try {
+      results.value = await api.get<User[]>(
+        `/users/search?q=${encodeURIComponent(q.trim())}&trip_id=${props.trip.id}`
+      );
+      hasSearched.value = true;
+    } finally {
+      searching.value = false;
+    }
   }, 300);
 });
 
@@ -115,8 +132,21 @@ function close() {
       </p>
       <label v-else>
         Nutzer:in einladen (Benutzername oder E-Mail)
-        <input v-model="query" type="text" placeholder="Mind. 2 Zeichen eingeben…" />
+        <Input
+          v-model="query"
+          type="search"
+          inputmode="search"
+          autocomplete="off"
+          autocapitalize="off"
+          autocorrect="off"
+          placeholder="Mind. 2 Zeichen eingeben…"
+        />
       </label>
+
+      <div v-if="searching" class="search-status"><span class="spinner-sm" /> Suche läuft…</div>
+      <p v-else-if="hasSearched && !results.length && query.trim().length >= 2" class="hint">
+        Keine passenden Nutzer:innen gefunden.
+      </p>
 
       <p v-if="error" class="error">{{ error }}</p>
 
@@ -180,6 +210,29 @@ label {
   color: var(--color-text-muted);
   margin: 0;
   font-size: 0.9rem;
+}
+
+.search-status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.spinner-sm {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--color-border-strong);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .error {

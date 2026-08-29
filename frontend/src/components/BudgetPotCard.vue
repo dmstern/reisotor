@@ -102,6 +102,7 @@ function updateAllocationAmount(category: string, value: string) {
         <input
           v-model="targetInput"
           type="number"
+          inputmode="decimal"
           step="0.01"
           placeholder="z. B. 500"
           @change="updateTargetAmount"
@@ -121,6 +122,7 @@ function updateAllocationAmount(category: string, value: string) {
         <div class="category-edit">
           <input
             type="number"
+            inputmode="decimal"
             step="0.01"
             :value="a.amount"
             @change="updateAllocationAmount(a.category, ($event.target as HTMLInputElement).value)"
@@ -140,7 +142,13 @@ function updateAllocationAmount(category: string, value: string) {
           <input v-model="newCategory" type="text" placeholder="Neue Kategorie" />
         </FormField>
         <FormField icon="amount" label="Ziel">
-          <input v-model="newCategoryAmount" type="number" step="0.01" placeholder="Ziel €" />
+          <input
+            v-model="newCategoryAmount"
+            type="number"
+            inputmode="decimal"
+            step="0.01"
+            placeholder="Ziel €"
+          />
         </FormField>
         <Button type="submit"
           ><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Hinzufügen</Button

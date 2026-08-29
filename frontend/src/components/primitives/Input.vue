@@ -42,6 +42,12 @@ withDefaults(
     invalid?: boolean;
     /** Automatische Vervollständigung. */
     autocomplete?: string;
+    /** Virtual Keyboard Mode ('decimal', 'numeric', 'search', 'email', 'tel', 'url', 'text', 'none'). */
+    inputmode?: 'none' | 'text' | 'decimal' | 'numeric' | 'tel' | 'search' | 'email' | 'url';
+    /** Auto-Capitalization ('off', 'none', 'sentences', 'words', 'characters'). */
+    autocapitalize?: string;
+    /** Auto-Correction ('on', 'off'). */
+    autocorrect?: string;
     /** Name-Attribut. */
     name?: string;
     /** ID-Attribut. */
@@ -88,6 +94,9 @@ function onInput(event: Event) {
     :max="max"
     :maxlength="maxlength"
     :autocomplete="autocomplete"
+    :inputmode="inputmode"
+    :autocapitalize="autocapitalize"
+    :autocorrect="autocorrect"
     :aria-invalid="invalid || undefined"
     class="input"
     :class="[size !== 'md' ? `input--${size}` : undefined, invalid ? 'input--invalid' : undefined]"

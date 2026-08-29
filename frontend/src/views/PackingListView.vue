@@ -295,6 +295,7 @@ async function quickAdd(list: ListGroup, label: string) {
                 <input
                   v-model.number="quickAddQuantities[list.key]"
                   type="number"
+                  inputmode="numeric"
                   min="1"
                   step="1"
                   placeholder="1"
@@ -353,7 +354,13 @@ async function quickAdd(list: ListGroup, label: string) {
           />
         </FormField>
         <FormField icon="amount" label="Anzahl">
-          <input v-model.number="editForm.quantity" type="number" min="1" step="1" />
+          <input
+            v-model.number="editForm.quantity"
+            type="number"
+            inputmode="numeric"
+            min="1"
+            step="1"
+          />
         </FormField>
         <FormField v-if="users.length > 1" icon="person" label="Liste">
           <select v-model="editForm.ownerId">
