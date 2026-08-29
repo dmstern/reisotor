@@ -32,6 +32,7 @@ const emit = defineEmits<{ (e: 'update:modelValue', value: boolean): void; (e: '
     :model-value="modelValue"
     @update:model-value="(v) => emit('update:modelValue', v)"
     hide-header
+    :aria-label="title"
   >
     <template #default="{ close }">
       <div class="detail-hero" :style="imageUrl ? { backgroundImage: `url(${imageUrl})` } : {}">
