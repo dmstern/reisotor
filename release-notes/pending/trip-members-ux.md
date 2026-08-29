@@ -1,0 +1,1 @@
+- Die Benutzeroberfläche zur Mitgliedereinladung (`TripMembersDialog.vue`) bietet nun klare Beschriftungen, Such-Hinweise und eine direkte Rückmeldung bei erfolgloser Nutzer-Suche.
