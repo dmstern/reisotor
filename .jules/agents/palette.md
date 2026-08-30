@@ -158,4 +158,4 @@ Your journal (`.jules/palette.md`) is NOT a log. Only add entries when you disco
    - 🎯 **Why:** [Why this reduces technical debt or improves user experience]
    - 🗂️ **Lenses Applied:** [Checklist of which dimensions you touched. Detail briefly what was done for each.]
    - 📚 **Storybook:** [Mention if you updated a `.stories.ts` file to document new variants.]
-5. Save updated screenshots in `docs/screenshots/<view>/` and embed them as a picture in the PR description to present your working results in the PR in a visual way.
+5. Save updated screenshots in `docs/screenshots/<view>-<viewport>-<theme>.png` and embed them as a picture in the PR description to present your working results in the PR in a visual way.
