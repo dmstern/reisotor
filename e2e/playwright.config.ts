@@ -17,6 +17,7 @@ const authFile = path.join(__dirname, '.auth', 'user.json');
 
 export default defineConfig({
   testDir: './tests',
+  testIgnore: process.env.INCLUDE_MANUAL ? [] : ['**/tools/**', '**/*.manual.spec.ts'],
   // Alle Specs teilen sich einen Backend-Prozess + eine SQLite-Datei — bewusst seriell, um jede
   // Interferenz zwischen Tests auszuschließen (siehe Plan, Kernentscheidung 7).
   fullyParallel: false,
@@ -95,6 +96,7 @@ export default defineConfig({
         http_proxy: '',
         HTTPS_PROXY: '',
         https_proxy: '',
+        APP_ENV: 'production',
         DB_PATH: dbPath,
         PORT: String(E2E_BACKEND_PORT),
         SESSION_SECRET: E2E_SESSION_SECRET,

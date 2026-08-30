@@ -5,6 +5,7 @@
   "scripts": {
     "test": "playwright test",
     "test:a11y": "playwright test tests/accessibility.spec.ts",
+    "generate:screenshots": "E2E_PROD_MODE=1 INCLUDE_MANUAL=1 playwright test tests/tools/generate-baseline-screenshots.manual.spec.ts",
     "lint": "eslint .",
     "format:check": "prettier --check .",
     "test:headed": "playwright test --headed",
