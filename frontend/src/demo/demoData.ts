@@ -17,11 +17,8 @@ import type {
   TodoItem,
   User,
 } from '../api/types';
-// Statisches Asset statt eines Kartenausschnitts von einem externen Tile-Server (wie ihn
-// backend/src/utils/mapsLink.ts's tilePreviewUrl() im echten Backend liefert) - der Demo-Build hat
-// kein Backend und soll nicht von externer Netzwerk-Erreichbarkeit abhängen, damit der Trip-Banner
-// zuverlässig und einladend aussieht statt im Zweifel als leerer/grauer Verlauf.
-import demoTripBanner from '../assets/demo-trip-banner.jpg';
+// Statisches Asset aus public/demo/ Lissabon-Panorama für den Demo-Build
+const demoTripBanner = `${import.meta.env.BASE_URL}demo/lissabon.jpg`;
 
 function addDays(days: number): string {
   const d = new Date();
