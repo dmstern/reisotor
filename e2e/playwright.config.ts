@@ -44,9 +44,12 @@ export default defineConfig({
     // Opt-in für Sandboxes mit einer vorinstallierten, von diesem Playwright-Paket abweichenden
     // Chromium-Revision (z. B. Claude-Code-Remote-Umgebungen ohne Internetzugriff für
     // `playwright install`) — no-op, solange die Env-Var nicht gesetzt ist.
-    launchOptions: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH
-      ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH }
-      : {},
+    launchOptions: {
+      ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH
+        ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH }
+        : {}),
+      args: ['--proxy-bypass-list=<-loopback>'],
+    },
   },
 
   projects: [
@@ -86,6 +89,12 @@ export default defineConfig({
       stdout: 'pipe',
       stderr: 'pipe',
       env: {
+        NO_PROXY: '127.0.0.1,localhost,::1',
+        no_proxy: '127.0.0.1,localhost,::1',
+        HTTP_PROXY: '',
+        http_proxy: '',
+        HTTPS_PROXY: '',
+        https_proxy: '',
         DB_PATH: dbPath,
         PORT: String(E2E_BACKEND_PORT),
         SESSION_SECRET: E2E_SESSION_SECRET,
@@ -113,6 +122,12 @@ export default defineConfig({
       stdout: 'pipe',
       stderr: 'pipe',
       env: {
+        NO_PROXY: '127.0.0.1,localhost,::1',
+        no_proxy: '127.0.0.1,localhost,::1',
+        HTTP_PROXY: '',
+        http_proxy: '',
+        HTTPS_PROXY: '',
+        https_proxy: '',
         // Vites /api-Proxy zeigt sonst hart auf Port 3000 (frontend/vite.config.ts) — muss auf den
         // e2e-Backend-Port zeigen, sonst laufen alle API-Calls ins Leere oder (schlimmer) gegen
         // einen evtl. echten Dev-Server auf 3000.
