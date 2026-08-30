@@ -1315,15 +1315,16 @@ watch(
 // drawers.openMapForTrack()) – Punkte werden erst on-demand geladen (tracksStore.pointsByTrack ist
 // zunächst leer für einen frisch fokussierten Track), Slider startet jeweils von vorn.
 watch(
-  () => drawers.mapFocusTrackId,
-  async (trackId) => {
+  focusedTrack,
+  async (track) => {
     trackPlaybackProgress.value = 0;
     renderTracks();
-    if (trackId != null && !tracksStore.pointsByTrack[trackId]?.length) {
-      await tracksStore.loadPoints(trackId);
+    if (track && !tracksStore.pointsByTrack[track.id]?.length) {
+      await tracksStore.loadPoints(track.id);
       renderTracks();
     }
-  }
+  },
+  { immediate: true }
 );
 // Punkte können auch eintreffen, ohne dass sich mapFocusTrackId selbst ändert (z. B. erneuter
 // Fokus auf einen zuvor schon einmal geladenen, dann aber aktualisierten Track) – reagiert auf die
