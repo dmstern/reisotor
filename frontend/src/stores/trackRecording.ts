@@ -210,6 +210,24 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
   async function stop() {
     if (!recording.value || !track.value) return;
     stopWatch();
+    if (!pendingBuffer.length && navigator.geolocation) {
+      await new Promise<void>((resolve) => {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            pendingBuffer.push({
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+              recorded_at: new Date().toISOString(),
+              accuracy: position.coords.accuracy ?? undefined,
+            });
+            persistBuffer();
+            resolve();
+          },
+          () => resolve(),
+          { enableHighAccuracy: true, maximumAge: 0, timeout: 1000 }
+        );
+      });
+    }
     await flushBuffer();
     stopFlushLoop();
     try {
