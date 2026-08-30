@@ -137,7 +137,7 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
         // Zugriff verweigert/fehlgeschlagen - Aufzeichnung bleibt aktiv, der nächste erfolgreiche
         // Callback (z. B. nach Berechtigungs-Erteilung) sammelt einfach weiter.
       },
-      { enableHighAccuracy: true, maximumAge: 10_000 }
+      { enableHighAccuracy: true, maximumAge: 0 }
     );
   }
 
