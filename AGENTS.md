@@ -305,7 +305,7 @@ Fixes #103` (bzw. eine Zeile pro Issue) schließt alle drei.
 
 Jeder PR mit sichtbarer UI-Änderung/sichtbarem Bugfix bekommt Screenshots des betroffenen Bereichs
 direkt im PR (Body oder Kommentar) — in den relevanten Viewports (mind. mobil ~390px UND Desktop
-~1280px, bei reiner Desktop- oder Mobil-Änderung reicht der jeweils betroffene Viewport). Zweck: der
+Full HD ~1920x1080px, bei reiner Desktop- oder Mobil-Änderung reicht der jeweils betroffene Viewport). Zweck: der
 Nutzer soll das Ergebnis direkt auf GitHub sehen können, bevor überhaupt gemergt/deployt wird.
 
 Technisch: Screenshots werden im Repo zentral unter `docs/screenshots/<view>/` gepflegt (organisiert nach View, z. B. `dashboard`, `calendar`, `spots`, `lists`, `budget`, `notes`, `diary`, `settings`, `trips`, `landing`). Unter-Dateien folgen dem Schema `desktop-light.png`, `desktop-dark.png`, `mobile-light.png`, `mobile-dark.png` (bzw. gezielten Unter-Element-Bezeichnungen bei Bedarf).
