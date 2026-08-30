@@ -308,17 +308,9 @@ direkt im PR (Body oder Kommentar) — in den relevanten Viewports (mind. mobil 
 ~1280px, bei reiner Desktop- oder Mobil-Änderung reicht der jeweils betroffene Viewport). Zweck: der
 Nutzer soll das Ergebnis direkt auf GitHub sehen können, bevor überhaupt gemergt/deployt wird.
 
-Technisch: **Erst prüfen, ob aus einem Ad-hoc-Check während der Entwicklung dieses PRs bereits ein
-aktueller Screenshot des betroffenen Bereichs in `e2e/tests/scratch/` liegt** (nach dem letzten
-UI-relevanten Code-Change für diesen Bereich, im passenden Viewport). Falls ja: diesen direkt
-wiederverwenden — kein erneuter Playwright-Lauf nötig. Falls nein (noch keiner vorhanden, seither
-UI-relevanter Code geändert, oder ein benötigter Viewport fehlt noch): wie gewohnt per Playwright
-erzeugen (Wegwerf-Spec-Kniff oben). In beiden Fällen: PNG NICHT im gitignoreten
-`e2e/tests/scratch/` belassen, sondern committen (z. B. unter `docs/pr-screenshots/<kurzer-slug>/`
-auf demselben Feature-Branch) und im PR-Body/-Kommentar per Markdown-Bild-Syntax auf die
-`raw.githubusercontent.com`-/Blob-URL dieses Branches verlinken — GitHub rendert das inline (kein
-direkter Bild-Upload-Endpunkt in dieser Umgebung verfügbar). Reine Text-/Backend-only-Änderungen
-brauchen keine Screenshots.
+Technisch: Screenshots werden im Repo zentral unter `docs/screenshots/<view>/` gepflegt (organisiert nach View, z. B. `dashboard`, `calendar`, `spots`, `lists`, `budget`, `notes`, `diary`, `settings`, `trips`, `landing`). Unter-Dateien folgen dem Schema `desktop-light.png`, `desktop-dark.png`, `mobile-light.png`, `mobile-dark.png` (bzw. gezielten Unter-Element-Bezeichnungen bei Bedarf).
+
+Bei UI-Änderungen an einem Bereich wird der entsprechende Screenshot in `docs/screenshots/<view>/<filename>.png` direkt auf dem Feature-Branch aktualisiert und committet. Im PR-Body/-Kommentar per Markdown-Bild-Syntax auf die `raw.githubusercontent.com`-/Blob-URL dieser Datei auf dem Feature-Branch verlinken — GitHub rendert das Bild inline und bietet im PR-Diff zusätzlich den automatischen Vorher/Nachher-Bildvergleich. Nach dem Merge bleibt so stets der aktuelle Stand der Dokumentation ohne veraltete PR-Ordner erhalten. Reine Text-/Backend-only-Änderungen brauchen keine Screenshots.
 
 **Syntax-Falle:** `![Label](URL)` — die URL NICHT in Backticks setzen (kein ``![Label](`URL`)``).
 Damit rendert GitHub das Bild nicht inline, sondern zeigt nur einen toten Link/Codeblock. Vor dem
