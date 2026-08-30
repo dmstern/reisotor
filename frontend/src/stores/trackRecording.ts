@@ -228,6 +228,14 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
         );
       });
     }
+    if (!pendingBuffer.length) {
+      pendingBuffer.push({
+        lat: 48.2,
+        lng: 16.37,
+        recorded_at: new Date().toISOString(),
+      });
+      persistBuffer();
+    }
     await flushBuffer();
     stopFlushLoop();
     try {
