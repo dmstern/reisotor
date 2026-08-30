@@ -1,0 +1,1 @@
+- **Flüssigere Listen-Animationen**: Beim Entfernen von Einträgen aus Listen gleiten die verbleibenden Elemente jetzt weich nach oben.

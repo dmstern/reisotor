@@ -228,28 +228,6 @@ function close() {
   transition: all 0.25s ease;
 }
 
-/* List animation for TransitionGroup */
-.list-enter-active,
-.list-leave-active {
-  transition: all 0.25s ease;
-}
-
-.list-enter-from,
-.list-leave-to {
-  opacity: 0;
-  transform: translateY(-8px);
-}
-
-.list-leave-active {
-  position: absolute;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.list-move {
-  transition: transform 0.25s ease;
-}
-
 .member-user {
   font-weight: 500;
   color: var(--color-text);
