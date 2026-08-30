@@ -23,25 +23,54 @@ const VIEWPORTS = [
 const THEMES = ['light', 'dark'] as const;
 
 test.describe('Generate Clean Production Baseline Screenshots (Full HD)', () => {
-  const bannerBuffer = fs.readFileSync(
-    path.join(process.cwd(), '..', 'frontend', 'src', 'assets', 'demo-trip-banner.jpg')
+  const lissabonBuffer = fs.readFileSync(
+    path.join(process.cwd(), '..', 'frontend', 'public', 'demo', 'lissabon.jpg')
   );
 
   for (const view of VIEWS) {
     test(`Capture screenshots for view: ${view.slug}`, async ({ page }) => {
-      // Mock Open-Meteo weather forecast for rich weather data in all views
+      // 1. Intercept trip API calls to set start_date=today, end_date=today+9 (10 days total), and image_url='/demo/lissabon.jpg'
+      await page.route('**/api/trips*', async (route) => {
+        const response = await route.fetch();
+        const json = await response.json();
+        const today = new Date();
+        const sDate = today.toISOString().slice(0, 10);
+        const endDateObj = new Date(today);
+        endDateObj.setDate(endDateObj.getDate() + 9);
+        const eDate = endDateObj.toISOString().slice(0, 10);
+
+        if (Array.isArray(json)) {
+          for (const t of json) {
+            if (t.id === 1) {
+              t.start_date = sDate;
+              t.end_date = eDate;
+              t.image_url = '/demo/lissabon.jpg';
+            }
+          }
+        } else if (json && typeof json === 'object') {
+          if (json.id === 1) {
+            json.start_date = sDate;
+            json.end_date = eDate;
+            json.image_url = '/demo/lissabon.jpg';
+          }
+        }
+        await route.fulfill({ json });
+      });
+
+      // 2. Mock Open-Meteo weather forecast with 16 days of varied, realistic weather (spanning all 10 trip days)
       await page.route('**/api.open-meteo.com/**', async (route) => {
+        const today = new Date();
         const mockWeather = {
           daily: {
             time: Array.from({ length: 16 }, (_, i) => {
-              const d = new Date();
+              const d = new Date(today);
               d.setDate(d.getDate() - 1 + i);
               return d.toISOString().slice(0, 10);
             }),
-            weathercode: [0, 0, 1, 0, 2, 0, 1, 0, 0, 2, 0, 1, 0, 0, 1, 0],
-            temperature_2m_max: [27, 28, 26, 29, 24, 28, 27, 30, 29, 25, 27, 28, 29, 30, 28, 27],
-            temperature_2m_min: [18, 19, 18, 19, 17, 19, 18, 20, 19, 17, 18, 19, 20, 20, 19, 18],
-            precipitation_probability_max: [5, 5, 10, 0, 20, 5, 10, 0, 0, 15, 5, 10, 0, 0, 5, 5],
+            weathercode: [0, 0, 1, 0, 2, 1, 0, 0, 2, 1, 0, 0, 1, 0, 0, 1],
+            temperature_2m_max: [27, 28, 26, 29, 25, 27, 28, 30, 26, 27, 28, 29, 27, 28, 29, 27],
+            temperature_2m_min: [18, 19, 18, 19, 17, 18, 19, 20, 18, 18, 19, 20, 19, 19, 18, 18],
+            precipitation_probability_max: [5, 5, 10, 0, 20, 10, 5, 0, 15, 10, 5, 0, 10, 5, 0, 5],
           },
         };
         await route.fulfill({
@@ -51,12 +80,12 @@ test.describe('Generate Clean Production Baseline Screenshots (Full HD)', () => 
         });
       });
 
-      // Serve demo trip banner for map tiles and trip cover image requests
+      // 3. Serve lissabon.jpg for map tiles / fallback trip images
       await page.route('**/*.tile.openstreetmap.org/**', (route) =>
-        route.fulfill({ status: 200, contentType: 'image/jpeg', body: bannerBuffer })
+        route.fulfill({ status: 200, contentType: 'image/jpeg', body: lissabonBuffer })
       );
       await page.route('**/maps.wikimedia.org/**', (route) =>
-        route.fulfill({ status: 200, contentType: 'image/jpeg', body: bannerBuffer })
+        route.fulfill({ status: 200, contentType: 'image/jpeg', body: lissabonBuffer })
       );
 
       for (const vp of VIEWPORTS) {
