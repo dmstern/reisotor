@@ -45,9 +45,10 @@ test.describe('Standort-Aufzeichnung', () => {
     // Ein zweiter GPS-Fix an einer anderen Position, damit die Aufzeichnung mindestens zwei
     // unterscheidbare Punkte hat (Playback/TrackPlayback.vue braucht >= 2 Punkte, siehe dortiges
     // v-if) - ein einzelner, statischer Mock-Standort würde watchPosition sonst nur einmal auslösen.
-    await page.waitForTimeout(800);
+    await page.waitForTimeout(500);
     await context.setGeolocation({ latitude: 48.3, longitude: 16.5 });
-    await page.waitForTimeout(1000);
+    await page.evaluate(() => new Promise((r) => navigator.geolocation.getCurrentPosition(r, r)));
+    await page.waitForTimeout(500);
 
     // Stop flusht den Punkte-Puffer sofort (kein Warten auf den periodischen 15s-Flush nötig, siehe
     // stores/trackRecording.ts's stop()).
@@ -123,6 +124,7 @@ test.describe('Standort-Aufzeichnung', () => {
     // UI-Zustand dafür, hier nur sichergestellt, dass eine Standortänderung während der Pause die
     // App nicht durcheinanderbringt.
     await context.setGeolocation({ latitude: 48.22, longitude: 16.39 });
+    await page.evaluate(() => new Promise((r) => navigator.geolocation.getCurrentPosition(r, r)));
     await page.waitForTimeout(300);
 
     await pauseBtn.click();
@@ -132,6 +134,7 @@ test.describe('Standort-Aufzeichnung', () => {
 
     await page.waitForTimeout(300);
     await context.setGeolocation({ latitude: 48.23, longitude: 16.4 });
+    await page.evaluate(() => new Promise((r) => navigator.geolocation.getCurrentPosition(r, r)));
     await page.waitForTimeout(300);
 
     // Stop direkt aus fortgesetztem Zustand heraus (analog zum ersten Test) - beendet dieselbe,
