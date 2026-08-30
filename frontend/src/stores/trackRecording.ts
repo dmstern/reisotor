@@ -122,6 +122,19 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
 
   function startWatch() {
     if (watchId != null || !navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        pendingBuffer.push({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+          recorded_at: new Date().toISOString(),
+          accuracy: position.coords.accuracy ?? undefined,
+        });
+        persistBuffer();
+      },
+      () => {},
+      { enableHighAccuracy: true, maximumAge: 0 }
+    );
     watchId = navigator.geolocation.watchPosition(
       (position) => {
         pendingBuffer.push({
