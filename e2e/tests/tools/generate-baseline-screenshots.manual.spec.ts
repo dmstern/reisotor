@@ -1,5 +1,4 @@
 import { test } from '@playwright/test';
-import fs from 'node:fs';
 import path from 'node:path';
 import { forceFontDisplayBlock, waitForAppReady } from '../helpers/fonts.js';
 
@@ -23,10 +22,6 @@ const VIEWPORTS = [
 const THEMES = ['light', 'dark'] as const;
 
 test.describe('Generate Clean Production Baseline Screenshots (Full HD)', () => {
-  const lissabonBuffer = fs.readFileSync(
-    path.join(process.cwd(), '..', 'frontend', 'public', 'demo', 'lissabon.jpg')
-  );
-
   for (const view of VIEWS) {
     test(`Capture screenshots for view: ${view.slug}`, async ({ page }) => {
       // 1. Intercept trip API calls to set start_date=today, end_date=today+9 (10 days total), and image_url='/demo/lissabon.jpg'
@@ -80,14 +75,6 @@ test.describe('Generate Clean Production Baseline Screenshots (Full HD)', () => 
         });
       });
 
-      // 3. Serve lissabon.jpg for map tiles / fallback trip images
-      await page.route('**/*.tile.openstreetmap.org/**', (route) =>
-        route.fulfill({ status: 200, contentType: 'image/jpeg', body: lissabonBuffer })
-      );
-      await page.route('**/maps.wikimedia.org/**', (route) =>
-        route.fulfill({ status: 200, contentType: 'image/jpeg', body: lissabonBuffer })
-      );
-
       for (const vp of VIEWPORTS) {
         await page.setViewportSize({ width: vp.width, height: vp.height });
         await forceFontDisplayBlock(page);
@@ -113,7 +100,9 @@ test.describe('Generate Clean Production Baseline Screenshots (Full HD)', () => 
         });
 
         for (const theme of THEMES) {
+          await page.emulateMedia({ colorScheme: theme });
           await page.evaluate((t) => {
+            localStorage.setItem('reisotor-theme', t);
             document.documentElement.setAttribute('data-theme', t);
           }, theme);
           await page.waitForTimeout(400);
@@ -153,7 +142,9 @@ test.describe('Generate Clean Production Baseline Screenshots (Full HD)', () => 
       });
 
       for (const theme of THEMES) {
+        await page.emulateMedia({ colorScheme: theme });
         await page.evaluate((t) => {
+          localStorage.setItem('reisotor-theme', t);
           document.documentElement.setAttribute('data-theme', t);
         }, theme);
         await page.waitForTimeout(300);
