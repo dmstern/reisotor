@@ -43,7 +43,7 @@ export const TransitionsAndMotion: Story = {
         <!-- 1. List Transition (.list-move / .list-enter-active) -->
         <h3 style="margin-bottom: 12px; border-bottom: 1px solid var(--color-border); padding-bottom: 4px;">1. FLIP Listen-Übergänge (.list-move & .list-leave-active)</h3>
         <p style="font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: 16px;">
-          Sanftes Einblenden (<code>translateY(-10px) scale(0.96)</code>) und sanftes Gleiten beim Entfernen oder Umsortieren (FLIP).
+          Sanftes Einblenden (<code>translateY(-6px) scale(0.98)</code>) und sanftes Gleiten beim Entfernen oder Umsortieren (FLIP via <code>position: absolute</code> in <code>.list-leave-active</code>).
         </p>
         <div style="margin-bottom: 36px; padding: 16px; border: 1px solid var(--color-border); border-radius: var(--radius-md-squircle); background: var(--color-surface);">
           <div style="display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;">
@@ -57,7 +57,7 @@ export const TransitionsAndMotion: Story = {
                 v-for="(item, i) in listItems"
                 :key="item"
                 variant="muted"
-                style="display: flex; justify-content: space-between; align-items: center; width: 100%; box-sizing: border-box; transition: transform 0.25s ease, opacity 0.25s ease;"
+                style="display: flex; justify-content: space-between; align-items: center; width: 100%; box-sizing: border-box;"
               >
                 <strong style="font-size: 0.9rem; color: var(--color-text);">{{ item }}</strong>
                 <Button variant="danger" size="sm" @click="removeItem(i)">Löschen</Button>

@@ -1046,18 +1046,38 @@ textarea:focus {
    <TransitionGroup name="list"> ein-/ausblenden und beim Umsortieren sanft an ihre neue
    Position gleiten lassen; <Transition name="fade"> für einfaches Ein-/Ausblenden ohne Liste.
    Global statt pro Komponente definiert, damit die Übergänge app-weit konsistent bleiben. */
+[class*='list'],
+.pot-grid,
+.entries,
+.cards,
+.items,
+.result-list,
+.trash-list {
+  position: relative;
+}
+
 .list-move,
 .list-enter-active,
 .list-leave-active {
   transition:
-    opacity 0.2s ease-in-out,
-    transform 0.2s ease-in-out;
+    opacity 0.25s ease-in-out,
+    transform 0.25s ease-in-out;
 }
 
 .list-enter-from,
 .list-leave-to {
   opacity: 0;
   transform: translateY(-6px) scale(0.98);
+}
+
+/* Wichtig für FLIP-Animationen beim Entfernen aus TransitionGroup: Das sich ausblendende Element
+   muss absolut positioniert werden, damit es aus dem Layout-Fluss genommen wird und die verbleibenden
+   Elemente per .list-move weich nachrücken können. Voraussetzung am umschließenden Container ist
+   position: relative. */
+.list-leave-active {
+  position: absolute;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .fade-enter-active,
