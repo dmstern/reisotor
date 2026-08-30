@@ -83,7 +83,7 @@ const currentTimeLabel = computed(() => {
 </script>
 
 <template>
-  <div v-if="points.length > 1" class="track-playback">
+  <div v-if="points.length >= 1" class="track-playback">
     <div class="track-playback-stats">
       <span
         ><AppIcon :icon="ACTION_ICONS.distance" :size="14" group="actions" />
