@@ -575,8 +575,6 @@ function dayHasContent(date: string): boolean {
   );
 }
 
-
-
 function toggleDayFocus(date: string) {
   if (drawers.mapFocusDate === date) {
     drawers.mapFocusDate = null;
@@ -2018,8 +2016,6 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
   z-index: auto;
   margin-bottom: var(--space-2);
 }
-
-
 
 /* Die OpenStreetMap-Kacheln selbst kennen keinen Dark Mode – ein Farb-Invert nur auf der
    Kachel-Ebene (nicht auf Markern/Popups) sorgt für eine abgedunkelte Karte statt eines
