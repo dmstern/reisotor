@@ -3,7 +3,7 @@ import type { BudgetExpense } from '../api/types';
 import { useBudgetStore } from '../stores/budget';
 import EditButton from './EditButton.vue';
 import DeleteButton from './DeleteButton.vue';
-import UndoDeleteRow from './UndoDeleteRow.vue';
+import { useToast } from '../composables/useToast';
 
 defineProps<{
   highlightedIds: Set<number>;
@@ -12,42 +12,48 @@ defineProps<{
 const emit = defineEmits<{ (e: 'edit', expense: BudgetExpense): void }>();
 
 const store = useBudgetStore();
+const { showToast } = useToast();
+
+async function removeExpense(id: number) {
+  await store.removeExpense(id);
+  showToast({ message: 'Bezahlung gelöscht. Sie befindet sich nun im Papierkorb.', type: 'info' });
+}
 </script>
 
 <template>
   <TransitionGroup tag="ul" name="list" class="list">
-    <template v-for="e in store.expenses" :key="e.id">
-      <li v-if="store.expenseUndo.isPending(e.id)" class="row">
-        <UndoDeleteRow :label="e.title" @undo="store.restoreExpense(e.id)" />
-      </li>
-      <li v-else class="row" :class="{ 'new-highlight': highlightedIds.has(e.id) }">
-        <div class="row-main">
-          <span class="row-title"
-            >{{ e.title }}<span v-if="e.note" class="note"> · {{ e.note }}</span></span
+    <li
+      v-for="e in store.expenses"
+      :key="e.id"
+      class="row"
+      :class="{ 'new-highlight': highlightedIds.has(e.id) }"
+    >
+      <div class="row-main">
+        <span class="row-title"
+          >{{ e.title }}<span v-if="e.note" class="note"> · {{ e.note }}</span></span
+        >
+        <span class="row-meta">
+          <span v-if="e.date" class="tag">{{ e.date }}</span>
+          <span v-if="e.category" class="tag">{{ e.category }}</span>
+          <span v-if="store.users.length > 1" class="tag"
+            >{{ store.userAvatar(e.paid_by_user_id) }}
+            {{ store.userName(e.paid_by_user_id) }}</span
           >
-          <span class="row-meta">
-            <span v-if="e.date" class="tag">{{ e.date }}</span>
-            <span v-if="e.category" class="tag">{{ e.category }}</span>
-            <span v-if="store.users.length > 1" class="tag"
-              >{{ store.userAvatar(e.paid_by_user_id) }}
-              {{ store.userName(e.paid_by_user_id) }}</span
-            >
-          </span>
-        </div>
-        <strong class="row-amount">{{ e.amount.toFixed(2) }} €</strong>
-        <div class="row-actions">
-          <template v-if="autoSourceFor(e.id)">
-            <router-link :to="autoSourceFor(e.id)!.path" class="card-action-btn">
-              {{ autoSourceFor(e.id)!.label }}
-            </router-link>
-          </template>
-          <template v-else>
-            <EditButton small @click="emit('edit', e)" />
-            <DeleteButton small @click="store.removeExpense(e.id)" />
-          </template>
-        </div>
-      </li>
-    </template>
+        </span>
+      </div>
+      <strong class="row-amount">{{ e.amount.toFixed(2) }} €</strong>
+      <div class="row-actions">
+        <template v-if="autoSourceFor(e.id)">
+          <router-link :to="autoSourceFor(e.id)!.path" class="card-action-btn">
+            {{ autoSourceFor(e.id)!.label }}
+          </router-link>
+        </template>
+        <template v-else>
+          <EditButton small @click="emit('edit', e)" />
+          <DeleteButton small @click="removeExpense(e.id)" />
+        </template>
+      </div>
+    </li>
     <li v-if="!store.expenses.length" key="empty" class="empty">
       Noch keine Bezahlungen eingetragen.
     </li>

@@ -10,12 +10,11 @@ import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
 import Combobox from '../components/Combobox.vue';
 import FormField from '../components/FormField.vue';
-import UndoDeleteRow from '../components/UndoDeleteRow.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import DraftStatusBar from '../components/DraftStatusBar.vue';
 import QuickAddRow from '../components/QuickAddRow.vue';
 import PendingSyncBadge from '../components/PendingSyncBadge.vue';
-import { useUndoableDelete } from '../composables/useUndoableDelete';
+import { useToast } from '../composables/useToast';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
 import { sortWithDoneLast } from '../composables/useCheckedSort';
 import { usePersistedRef } from '../composables/usePersistedRef';
@@ -29,7 +28,7 @@ const tripStore = useTripStore();
 const liveSync = useLiveSyncStore();
 const tripId = tripStore.currentTripId as number;
 const items = ref<ShoppingItem[]>([]);
-const { isPending, markPendingDelete, clearPending } = useUndoableDelete();
+const { showToast } = useToast();
 const users = ref<User[]>([]);
 const loading = ref(true);
 const highlightedIds = ref<Set<number>>(new Set());
@@ -270,18 +269,10 @@ function closeEditForm() {
   editingItem.value = null;
 }
 
-// Weicher Löschvorgang serverseitig (siehe routes/shopping.ts) + 60s Rückgängig-Fenster clientseitig
-// (useUndoableDelete.ts).
 async function remove(id: number) {
   await api.delete(`/shopping/${id}`);
-  markPendingDelete(id, () => {
-    items.value = items.value.filter((i) => i.id !== id);
-  });
-}
-
-async function restore(id: number) {
-  clearPending(id);
-  await api.post(`/trash/shopping_item/${id}/restore`);
+  items.value = items.value.filter((i) => i.id !== id);
+  showToast({ message: 'Artikel gelöscht. Er befindet sich nun im Papierkorb.', type: 'info' });
 }
 
 async function addItem() {
@@ -426,49 +417,45 @@ async function quickAddToGroup(group: Group, label: string) {
         </QuickAddRow>
         <div class="card">
           <TransitionGroup tag="ul" name="list" class="list">
-            <template v-for="item in group.items" :key="item.id">
-              <li v-if="isPending(item.id)" class="row">
-                <UndoDeleteRow :label="item.label" @undo="restore(item.id)" />
-              </li>
-              <li
-                v-else
-                class="row"
-                :class="{ 'row-done': item.checked, 'new-highlight': highlightedIds.has(item.id) }"
+            <li
+              v-for="item in group.items"
+              :key="item.id"
+              class="row"
+              :class="{ 'row-done': item.checked, 'new-highlight': highlightedIds.has(item.id) }"
+            >
+              <label class="check">
+                <input type="checkbox" :checked="!!item.checked" @change="toggle(item)" />
+                <span :class="{ 'text-done': item.checked }">{{ item.label }}</span>
+              </label>
+              <PendingSyncBadge v-if="item._pending" />
+              <span v-if="groupBy !== 'shop' && item.shop" class="tag">
+                <AppIcon :icon="FORM_FIELD_ICONS.shop" :size="13" group="formFields" />
+                {{ item.shop }}
+              </span>
+              <span v-if="groupBy !== 'period' && item.period" class="tag">
+                <AppIcon :icon="FORM_FIELD_ICONS.period" :size="13" group="formFields" />
+                {{ PERIOD_META[item.period] }}
+              </span>
+              <a v-if="item.link" :href="item.link" target="_blank" rel="noopener" class="link">
+                <AppIcon :icon="FORM_FIELD_ICONS.link" :size="13" group="formFields" /> Link
+              </a>
+              <span v-if="item.note" class="note">{{ item.note }}</span>
+              <select
+                v-if="users.length > 1 && groupBy !== 'buyer'"
+                class="buyer-select"
+                :value="item.assigned_to_user_id ?? ''"
+                @change="reassign(item, $event)"
               >
-                <label class="check">
-                  <input type="checkbox" :checked="!!item.checked" @change="toggle(item)" />
-                  <span :class="{ 'text-done': item.checked }">{{ item.label }}</span>
-                </label>
-                <PendingSyncBadge v-if="item._pending" />
-                <span v-if="groupBy !== 'shop' && item.shop" class="tag">
-                  <AppIcon :icon="FORM_FIELD_ICONS.shop" :size="13" group="formFields" />
-                  {{ item.shop }}
-                </span>
-                <span v-if="groupBy !== 'period' && item.period" class="tag">
-                  <AppIcon :icon="FORM_FIELD_ICONS.period" :size="13" group="formFields" />
-                  {{ PERIOD_META[item.period] }}
-                </span>
-                <a v-if="item.link" :href="item.link" target="_blank" rel="noopener" class="link">
-                  <AppIcon :icon="FORM_FIELD_ICONS.link" :size="13" group="formFields" /> Link
-                </a>
-                <span v-if="item.note" class="note">{{ item.note }}</span>
-                <select
-                  v-if="users.length > 1 && groupBy !== 'buyer'"
-                  class="buyer-select"
-                  :value="item.assigned_to_user_id ?? ''"
-                  @change="reassign(item, $event)"
-                >
-                  <option value="">Nicht zugewiesen</option>
-                  <option v-for="u in users" :key="u.id" :value="String(u.id)">
-                    {{ u.avatar }} {{ u.username }}
-                  </option>
-                </select>
-                <div class="row-actions">
-                  <EditButton small @click="startEdit(item)" />
-                  <DeleteButton small @click="remove(item.id)" />
-                </div>
-              </li>
-            </template>
+                <option value="">Nicht zugewiesen</option>
+                <option v-for="u in users" :key="u.id" :value="String(u.id)">
+                  {{ u.avatar }} {{ u.username }}
+                </option>
+              </select>
+              <div class="row-actions">
+                <EditButton small @click="startEdit(item)" />
+                <DeleteButton small @click="remove(item.id)" />
+              </div>
+            </li>
             <li v-if="!group.items.length" :key="`${group.key}-empty`" class="empty">
               Noch keine Einträge.
             </li>

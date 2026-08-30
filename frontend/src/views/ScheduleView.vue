@@ -19,7 +19,6 @@ import MapsAppPicker from '../components/MapsAppPicker.vue';
 import Combobox from '../components/Combobox.vue';
 import FormField from '../components/FormField.vue';
 import DeleteButton from '../components/DeleteButton.vue';
-import UndoDeleteRow from '../components/UndoDeleteRow.vue';
 import FileAttachments from '../components/FileAttachments.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import DraftStatusBar from '../components/DraftStatusBar.vue';
@@ -42,6 +41,7 @@ import {
   outlookCalendarHref,
   triggerIcsDownload,
 } from '../utils/calendarExport';
+import { useToast } from '../composables/useToast';
 import { fetchWeatherForecast, weatherCodeMeta, type DailyWeather } from '../utils/weather';
 import {
   collectWeatherLocations,
@@ -69,6 +69,7 @@ const spotsStore = useSpotsStore();
 const scheduleStore = useScheduleStore();
 const drawers = useDrawersStore();
 const liveSync = useLiveSyncStore();
+const { showToast } = useToast();
 const weatherProvider = useWeatherProviderStore();
 // Unterkunft ist seit der Verschmelzung in Spots (siehe Migrationskommentar in db/index.ts) ganz
 // normal ein Spot der Kategorie "Unterkunft" - kein eigener Fetch mehr nötig, spotsStore.load()
@@ -874,6 +875,7 @@ async function deleteViewingItem() {
   if (!viewingItem.value) return;
   const ideaId = viewingItem.value.idea_id;
   await scheduleStore.remove(viewingItem.value.id);
+  showToast({ message: 'Termin gelöscht. Er befindet sich nun im Papierkorb.', type: 'info' });
   await syncExcursionsIfLinked(ideaId);
   viewingItem.value = null;
 }
@@ -992,106 +994,93 @@ function formatDate(date: string) {
       </p>
 
       <TransitionGroup tag="ul" name="list" class="items">
-        <template v-for="entry in dayEntries" :key="entry.key">
-          <!-- 60s-Rückgängig-Fenster (useUndoableDelete.ts über stores/schedule.ts): der gelöschte
-               Termin bleibt bis dahin an seiner Stelle in der Liste, zeigt aber nur noch diesen
-               Platzhalter statt der normalen Karte. -->
-          <li
-            v-if="entry.kind === 'schedule' && scheduleStore.isPending(entry.scheduleItem!.id)"
-            class="item"
-          >
-            <UndoDeleteRow
-              :label="entry.title"
-              @undo="scheduleStore.restore(entry.scheduleItem!.id)"
+        <li
+          v-for="entry in dayEntries"
+          :key="entry.key"
+          class="item clickable"
+          :style="{ borderLeftColor: SCHEDULE_CATEGORY_META[entry.category].color }"
+          @click="openEntry(entry)"
+        >
+          <div>
+            <input
+              v-if="entry.kind === 'todo'"
+              type="checkbox"
+              class="category-icon"
+              title="Erledigt"
+              autocomplete="off"
+              :checked="entryDone(entry)"
+              @click.stop="toggleTodoDone(entry.todoId!)"
             />
-          </li>
-          <li
-            v-else
-            class="item clickable"
-            :style="{ borderLeftColor: SCHEDULE_CATEGORY_META[entry.category].color }"
-            @click="openEntry(entry)"
-          >
-            <div>
-              <input
-                v-if="entry.kind === 'todo'"
-                type="checkbox"
-                class="category-icon"
-                title="Erledigt"
-                autocomplete="off"
-                :checked="entryDone(entry)"
-                @click.stop="toggleTodoDone(entry.todoId!)"
-              />
-              <AppIcon
-                v-else
-                class="category-icon"
-                :size="16"
-                :icon="entry.iconDef ?? SCHEDULE_CATEGORY_META[entry.category].tabler"
-                group="categories"
-                :title="SCHEDULE_CATEGORY_META[entry.category].label"
-              />
-              <strong v-if="entry.time">{{ entry.time }}</strong>
-              <span class="title">{{ entry.title }}</span>
-              <p v-if="entry.location" class="location">
-                <AppIcon :icon="FORM_FIELD_ICONS.location" :size="13" group="formFields" />
-                {{ entry.location }}
-              </p>
-              <p v-if="entry.note" class="note">{{ entry.note }}</p>
+            <AppIcon
+              v-else
+              class="category-icon"
+              :size="16"
+              :icon="entry.iconDef ?? SCHEDULE_CATEGORY_META[entry.category].tabler"
+              group="categories"
+              :title="SCHEDULE_CATEGORY_META[entry.category].label"
+            />
+            <strong v-if="entry.time">{{ entry.time }}</strong>
+            <span class="title">{{ entry.title }}</span>
+            <p v-if="entry.location" class="location">
+              <AppIcon :icon="FORM_FIELD_ICONS.location" :size="13" group="formFields" />
+              {{ entry.location }}
+            </p>
+            <p v-if="entry.note" class="note">{{ entry.note }}</p>
+          </div>
+          <div class="item-actions">
+            <div class="calendar-export">
+              <Button
+                variant="secondary"
+                class="calendar-btn"
+                title="Zum eigenen Kalender hinzufügen"
+                aria-label="Zum eigenen Kalender hinzufügen"
+                @click.stop="toggleCalendarPicker(entry.key, $event)"
+              >
+                <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" />
+              </Button>
+              <Teleport to="body">
+                <template v-if="calendarPickerKey === entry.key">
+                  <div class="picker-backdrop" @click.stop="calendarPickerKey = null"></div>
+                  <div class="picker-menu" :style="calendarPickerStyle" @click.stop>
+                    <DropdownItem
+                      :icon="ACTION_ICONS.apple"
+                      label="Apple/iPhone"
+                      @click="downloadIcsForEntry(entry)"
+                    />
+                    <DropdownItem
+                      :href="googleCalendarHref(calendarEventFromEntry(entry))"
+                      target="_blank"
+                      rel="noopener"
+                      :icon="ACTION_ICONS.googleCalendar"
+                      label="Google Kalender"
+                      @click="calendarPickerKey = null"
+                    />
+                    <DropdownItem
+                      :href="outlookCalendarHref(calendarEventFromEntry(entry))"
+                      target="_blank"
+                      rel="noopener"
+                      :icon="FORM_FIELD_ICONS.email"
+                      icon-group="formFields"
+                      label="Outlook"
+                      @click="calendarPickerKey = null"
+                    />
+                    <DropdownItem
+                      :icon="ACTION_ICONS.android"
+                      label="Android"
+                      @click="downloadIcsForEntry(entry)"
+                    />
+                  </div>
+                </template>
+              </Teleport>
             </div>
-            <div class="item-actions">
-              <div class="calendar-export">
-                <Button
-                  variant="secondary"
-                  class="calendar-btn"
-                  title="Zum eigenen Kalender hinzufügen"
-                  aria-label="Zum eigenen Kalender hinzufügen"
-                  @click.stop="toggleCalendarPicker(entry.key, $event)"
-                >
-                  <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" />
-                </Button>
-                <Teleport to="body">
-                  <template v-if="calendarPickerKey === entry.key">
-                    <div class="picker-backdrop" @click.stop="calendarPickerKey = null"></div>
-                    <div class="picker-menu" :style="calendarPickerStyle" @click.stop>
-                      <DropdownItem
-                        :icon="ACTION_ICONS.apple"
-                        label="Apple/iPhone"
-                        @click="downloadIcsForEntry(entry)"
-                      />
-                      <DropdownItem
-                        :href="googleCalendarHref(calendarEventFromEntry(entry))"
-                        target="_blank"
-                        rel="noopener"
-                        :icon="ACTION_ICONS.googleCalendar"
-                        label="Google Kalender"
-                        @click="calendarPickerKey = null"
-                      />
-                      <DropdownItem
-                        :href="outlookCalendarHref(calendarEventFromEntry(entry))"
-                        target="_blank"
-                        rel="noopener"
-                        :icon="FORM_FIELD_ICONS.email"
-                        icon-group="formFields"
-                        label="Outlook"
-                        @click="calendarPickerKey = null"
-                      />
-                      <DropdownItem
-                        :icon="ACTION_ICONS.android"
-                        label="Android"
-                        @click="downloadIcsForEntry(entry)"
-                      />
-                    </div>
-                  </template>
-                </Teleport>
-              </div>
-              <!-- Architekturregel: Fremdobjekte (Urlaub-Stammdaten, ToDos, Reise-Einträge) sind hier
-                   nur lesend/verknüpfend darstellbar – Bearbeitung passiert in der Ursprungssicht.
-                   Mit einem Spot/einer Tour verknüpfte Termine sind dagegen ganz normale, editierbare
-                   Termine (kind bleibt 'schedule') – Klick auf die Karte öffnet für sie wie für jeden
-                   anderen Termin den Anzeige-Dialog (inkl. Löschen-Button dort), kein eigener
-                   Schnell-Entfernen-Button hier nötig. -->
-            </div>
-          </li>
-        </template>
+            <!-- Architekturregel: Fremdobjekte (Urlaub-Stammdaten, ToDos, Reise-Einträge) sind hier
+                 nur lesend/verknüpfend darstellbar – Bearbeitung passiert in der Ursprungssicht.
+                 Mit einem Spot/einer Tour verknüpfte Termine sind dagegen ganz normale, editierbare
+                 Termine (kind bleibt 'schedule') – Klick auf die Karte öffnet für sie wie für jeden
+                 anderen Termin den Anzeige-Dialog (inkl. Löschen-Button dort), kein eigener
+                 Schnell-Entfernen-Button hier nötig. -->
+          </div>
+        </li>
         <li v-if="!dayEntries.length" key="empty" class="empty">
           Noch keine Termine an diesem Tag.
         </li>

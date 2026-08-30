@@ -5,8 +5,7 @@ import type { Excursion, IdeaRole } from '../api/types';
 import { useScheduleStore } from './schedule';
 import { useTripStore } from './trip';
 import { useLiveSyncStore } from './liveSync';
-import { useUndoableDelete } from '../composables/useUndoableDelete';
-
+import { useToast } from '../composables/useToast';
 export interface ExcursionFormData {
   title: string;
   image_url?: string;
@@ -36,7 +35,6 @@ export const useExcursionsStore = defineStore('excursions', () => {
   const liveSync = useLiveSyncStore();
   const excursions = ref<Excursion[]>([]);
   const loaded = ref(false);
-  const { isPending, markPendingDelete, clearPending } = useUndoableDelete();
 
   async function load() {
     const tripId = tripStore.currentTripId;
@@ -72,20 +70,12 @@ export const useExcursionsStore = defineStore('excursions', () => {
     return updated;
   }
 
-  // Weicher Löschvorgang serverseitig (siehe routes/ideas.ts) + 60s Rückgängig-Fenster clientseitig
-  // (useUndoableDelete.ts) – siehe gleiches Muster in stores/schedule.ts.
   async function remove(id: number) {
+    const { showToast } = useToast();
     await api.delete(`/ideas/${id}`);
-    markPendingDelete(id, () => {
-      excursions.value = excursions.value.filter((e) => e.id !== id);
-    });
+    excursions.value = excursions.value.filter((e) => e.id !== id);
     await useScheduleStore().load();
-  }
-
-  async function restore(id: number) {
-    clearPending(id);
-    await api.post(`/trash/excursion/${id}/restore`);
-    await useScheduleStore().load();
+    showToast('Element gelöscht. Es befindet sich nun im Papierkorb.');
   }
 
   /** Setzt/ändert nur das Datum (Drag&Drop auf einen Kalendertag) – restliche Felder bleiben,
@@ -122,5 +112,5 @@ export const useExcursionsStore = defineStore('excursions', () => {
     if (existing) existing.done = result.done ? 1 : 0;
   }
 
-  return { excursions, loaded, load, create, update, remove, restore, isPending, setDate, setDone };
+  return { excursions, loaded, load, create, update, remove, setDate, setDone };
 });

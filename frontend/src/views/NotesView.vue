@@ -14,14 +14,13 @@ import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
 import SocialRow from '../components/SocialRow.vue';
 import Comments from '../components/Comments.vue';
-import UndoDeleteRow from '../components/UndoDeleteRow.vue';
 import FileAttachments from '../components/FileAttachments.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import DraftStatusBar from '../components/DraftStatusBar.vue';
 import DraftBadge from '../components/DraftBadge.vue';
 import PendingSyncBadge from '../components/PendingSyncBadge.vue';
 import { formatDateTime } from '../utils/dateFormat';
-import { useUndoableDelete } from '../composables/useUndoableDelete';
+import { useToast } from '../composables/useToast';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
 import AppIcon from '../components/AppIcon.vue';
 import Button from '../components/primitives/Button.vue';
@@ -32,7 +31,7 @@ const tripStore = useTripStore();
 const liveSync = useLiveSyncStore();
 const tripId = tripStore.currentTripId as number;
 const notes = ref<Note[]>([]);
-const { isPending, markPendingDelete, clearPending } = useUndoableDelete();
+const { showToast } = useToast();
 const users = ref<User[]>([]);
 const likes = ref<NoteLike[]>([]);
 const comments = ref<NoteComment[]>([]);
@@ -240,23 +239,15 @@ async function closeEditForm() {
   editingNote.value = null;
 }
 
-// Weicher Löschvorgang serverseitig (siehe routes/notes.ts) + 60s Rückgängig-Fenster clientseitig
-// (useUndoableDelete.ts).
 async function remove(id: number) {
   error.value = '';
   try {
     await api.delete(`/notes/${id}`);
-    markPendingDelete(id, () => {
-      notes.value = notes.value.filter((n) => n.id !== id);
-    });
+    notes.value = notes.value.filter((n) => n.id !== id);
+    showToast({ message: 'Notiz gelöscht. Sie befindet sich nun im Papierkorb.', type: 'info' });
   } catch (err) {
     error.value = err instanceof ApiError ? err.message : 'Notiz konnte nicht gelöscht werden.';
   }
-}
-
-async function restore(id: number) {
-  clearPending(id);
-  await api.post(`/trash/note/${id}/restore`);
 }
 </script>
 
@@ -288,47 +279,41 @@ async function restore(id: number) {
     </Modal>
 
     <TransitionGroup tag="div" name="list" class="masonry cards">
-      <template v-for="note in notes" :key="note.id">
-        <UndoDeleteRow
-          v-if="isPending(note.id)"
-          :label="note.title ?? undefined"
-          @undo="restore(note.id)"
-        />
-        <div
-          v-else
-          class="card note-card"
-          :class="{ 'new-highlight': highlightedIds.has(note.id) }"
-        >
-          <div class="note-head">
-            <h3 v-if="note.title">{{ note.title }}</h3>
-            <DraftBadge v-if="note.is_draft" />
-            <PendingSyncBadge v-if="note._pending" />
-            <div class="note-actions">
-              <EditButton small @click="startEdit(note)" />
-              <DeleteButton small @click="remove(note.id)" />
-            </div>
+      <div
+        v-for="note in notes"
+        :key="note.id"
+        class="card note-card"
+        :class="{ 'new-highlight': highlightedIds.has(note.id) }"
+      >
+        <div class="note-head">
+          <h3 v-if="note.title">{{ note.title }}</h3>
+          <DraftBadge v-if="note.is_draft" />
+          <PendingSyncBadge v-if="note._pending" />
+          <div class="note-actions">
+            <EditButton small @click="startEdit(note)" />
+            <DeleteButton small @click="remove(note.id)" />
           </div>
-          <RichTextDisplay class="content" :content="note.content" :format="note.content_format" />
-          <p class="meta">
-            {{ authorLabel(note.created_by) }} ·
-            {{ formatDate(note.updated_at ?? note.created_at) }}
-          </p>
-          <FileAttachments domain="notes" :entity-id="note.id" :editable="false" />
-          <SocialRow
-            :like-count="likesFor(note.id).length"
-            :liked="likedByMe(note.id)"
-            :comment-count="commentsFor(note.id).length"
-            @toggle-like="toggleLike(note.id)"
-            @toggle-comments="toggleComments(note.id)"
-          />
-          <Comments
-            v-if="openComments.has(note.id)"
-            :comments="commentItemsFor(note.id)"
-            @submit="(content) => submitComment(note.id, content)"
-            @remove="removeComment"
-          />
         </div>
-      </template>
+        <RichTextDisplay class="content" :content="note.content" :format="note.content_format" />
+        <p class="meta">
+          {{ authorLabel(note.created_by) }} ·
+          {{ formatDate(note.updated_at ?? note.created_at) }}
+        </p>
+        <FileAttachments domain="notes" :entity-id="note.id" :editable="false" />
+        <SocialRow
+          :like-count="likesFor(note.id).length"
+          :liked="likedByMe(note.id)"
+          :comment-count="commentsFor(note.id).length"
+          @toggle-like="toggleLike(note.id)"
+          @toggle-comments="toggleComments(note.id)"
+        />
+        <Comments
+          v-if="openComments.has(note.id)"
+          :comments="commentItemsFor(note.id)"
+          @submit="(content) => submitComment(note.id, content)"
+          @remove="removeComment"
+        />
+      </div>
     </TransitionGroup>
     <p v-if="!notes.length" class="empty">Noch keine Notizen.</p>
 

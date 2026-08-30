@@ -1,37 +1,43 @@
 <script setup lang="ts">
 import { useBudgetStore } from '../stores/budget';
 import DeleteButton from './DeleteButton.vue';
-import UndoDeleteRow from './UndoDeleteRow.vue';
+import { useToast } from '../composables/useToast';
 
 defineProps<{ highlightedIds: Set<number> }>();
 
 const store = useBudgetStore();
+const { showToast } = useToast();
+
+async function removeTransfer(id: number) {
+  await store.removeTransfer(id);
+  showToast({ message: 'Überweisung gelöscht. Sie befindet sich nun im Papierkorb.', type: 'info' });
+}
 </script>
 
 <template>
   <TransitionGroup tag="ul" name="list" class="list">
-    <template v-for="t in store.transfers" :key="t.id">
-      <li v-if="store.transferUndo.isPending(t.id)" class="row">
-        <UndoDeleteRow :label="`${t.amount.toFixed(2)} €`" @undo="store.restoreTransfer(t.id)" />
-      </li>
-      <li v-else class="row" :class="{ 'new-highlight': highlightedIds.has(t.id) }">
-        <div class="row-main">
-          <span class="row-title">
-            {{ store.userAvatar(t.from_user_id) }} {{ store.userName(t.from_user_id) }}
-            →
-            {{ store.userAvatar(t.to_user_id) }} {{ store.userName(t.to_user_id) }}
-          </span>
-          <span v-if="t.date || t.note" class="row-meta">
-            <span v-if="t.date" class="tag">{{ t.date }}</span>
-            <span v-if="t.note" class="note">{{ t.note }}</span>
-          </span>
-        </div>
-        <strong class="row-amount">{{ t.amount.toFixed(2) }} €</strong>
-        <div class="row-actions">
-          <DeleteButton small @click="store.removeTransfer(t.id)" />
-        </div>
-      </li>
-    </template>
+    <li
+      v-for="t in store.transfers"
+      :key="t.id"
+      class="row"
+      :class="{ 'new-highlight': highlightedIds.has(t.id) }"
+    >
+      <div class="row-main">
+        <span class="row-title">
+          {{ store.userAvatar(t.from_user_id) }} {{ store.userName(t.from_user_id) }}
+          →
+          {{ store.userAvatar(t.to_user_id) }} {{ store.userName(t.to_user_id) }}
+        </span>
+        <span v-if="t.date || t.note" class="row-meta">
+          <span v-if="t.date" class="tag">{{ t.date }}</span>
+          <span v-if="t.note" class="note">{{ t.note }}</span>
+        </span>
+      </div>
+      <strong class="row-amount">{{ t.amount.toFixed(2) }} €</strong>
+      <div class="row-actions">
+        <DeleteButton small @click="removeTransfer(t.id)" />
+      </div>
+    </li>
     <li v-if="!store.transfers.length" key="empty" class="empty">
       Noch keine Überweisungen eingetragen.
     </li>

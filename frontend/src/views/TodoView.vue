@@ -12,13 +12,12 @@ import { sortWithDoneLast } from '../composables/useCheckedSort';
 import Modal from '../components/Modal.vue';
 import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
-import UndoDeleteRow from '../components/UndoDeleteRow.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import DraftStatusBar from '../components/DraftStatusBar.vue';
 import QuickAddRow from '../components/QuickAddRow.vue';
 import FormField from '../components/FormField.vue';
 import PendingSyncBadge from '../components/PendingSyncBadge.vue';
-import { useUndoableDelete } from '../composables/useUndoableDelete';
+import { useToast } from '../composables/useToast';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
 import { usePersistedRef } from '../composables/usePersistedRef';
 import AppIcon from '../components/AppIcon.vue';
@@ -31,7 +30,7 @@ const liveSync = useLiveSyncStore();
 const route = useRoute();
 const tripId = tripStore.currentTripId as number;
 const items = ref<TodoItem[]>([]);
-const { isPending, markPendingDelete, clearPending } = useUndoableDelete();
+const { showToast } = useToast();
 const users = ref<User[]>([]);
 const loading = ref(true);
 // Von anderen Mitgliedern seit dem letzten Besuch geänderte ToDos (siehe stores/liveSync.ts) –
@@ -287,18 +286,10 @@ function closeEditForm() {
   editingItem.value = null;
 }
 
-// Weicher Löschvorgang serverseitig (siehe routes/todos.ts) + 60s Rückgängig-Fenster clientseitig
-// (useUndoableDelete.ts).
 async function remove(id: number) {
   await api.delete(`/todos/${id}`);
-  markPendingDelete(id, () => {
-    items.value = items.value.filter((i) => i.id !== id);
-  });
-}
-
-async function restore(id: number) {
-  clearPending(id);
-  await api.post(`/trash/todo/${id}/restore`);
+  items.value = items.value.filter((i) => i.id !== id);
+  showToast({ message: 'Aufgabe gelöscht. Sie befindet sich nun im Papierkorb.', type: 'info' });
 }
 
 function formatDate(d: string | null) {
@@ -392,53 +383,49 @@ function isOverdue(item: TodoItem) {
         </QuickAddRow>
         <div class="card">
           <TransitionGroup tag="ul" name="list" class="list">
-            <template v-for="item in group.items" :key="item.id">
-              <li v-if="isPending(item.id)" class="row">
-                <UndoDeleteRow :label="item.title" @undo="restore(item.id)" />
-              </li>
-              <li
-                v-else
-                :id="`todo-${item.id}`"
-                class="row"
-                :class="{ 'row-done': item.done, 'new-highlight': highlightedIds.has(item.id) }"
+            <li
+              v-for="item in group.items"
+              :key="item.id"
+              :id="`todo-${item.id}`"
+              class="row"
+              :class="{ 'row-done': item.done, 'new-highlight': highlightedIds.has(item.id) }"
+            >
+              <label class="check">
+                <input type="checkbox" :checked="!!item.done" @change="toggleDone(item)" />
+                <span class="title" :class="{ 'text-done': item.done }">{{ item.title }}</span>
+              </label>
+              <PendingSyncBadge v-if="item._pending" />
+              <span class="priority" :title="PRIORITY_META[item.priority].label">
+                <AppIcon
+                  :icon="ACTION_ICONS.priorityDot"
+                  :size="10"
+                  :color="PRIORITY_META[item.priority].color"
+                  group="actions"
+                />
+              </span>
+              <span v-if="item.due_date" class="due" :class="{ overdue: isOverdue(item) }">
+                <AppIcon :icon="FORM_FIELD_ICONS.date" :size="13" group="formFields" />
+                {{ formatDate(item.due_date) }}
+              </span>
+              <span
+                v-if="
+                  users.length > 1 &&
+                  groupBy !== 'assignee' &&
+                  userLabel(item.assigned_to_user_id)
+                "
+                class="assignee"
+                >{{ userLabel(item.assigned_to_user_id) }}</span
               >
-                <label class="check">
-                  <input type="checkbox" :checked="!!item.done" @change="toggleDone(item)" />
-                  <span class="title" :class="{ 'text-done': item.done }">{{ item.title }}</span>
-                </label>
-                <PendingSyncBadge v-if="item._pending" />
-                <span class="priority" :title="PRIORITY_META[item.priority].label">
-                  <AppIcon
-                    :icon="ACTION_ICONS.priorityDot"
-                    :size="10"
-                    :color="PRIORITY_META[item.priority].color"
-                    group="actions"
-                  />
-                </span>
-                <span v-if="item.due_date" class="due" :class="{ overdue: isOverdue(item) }">
-                  <AppIcon :icon="FORM_FIELD_ICONS.date" :size="13" group="formFields" />
-                  {{ formatDate(item.due_date) }}
-                </span>
-                <span
-                  v-if="
-                    users.length > 1 &&
-                    groupBy !== 'assignee' &&
-                    userLabel(item.assigned_to_user_id)
-                  "
-                  class="assignee"
-                  >{{ userLabel(item.assigned_to_user_id) }}</span
-                >
-                <span v-if="groupBy !== 'period' && periodFor(item)" class="assignee">
-                  <AppIcon :icon="FORM_FIELD_ICONS.period" :size="13" group="formFields" />
-                  {{ PERIOD_META[periodFor(item)!] }}
-                </span>
-                <span v-if="item.note" class="note">{{ item.note }}</span>
-                <div class="row-actions">
-                  <EditButton small @click="startEdit(item)" />
-                  <DeleteButton small @click="remove(item.id)" />
-                </div>
-              </li>
-            </template>
+              <span v-if="groupBy !== 'period' && periodFor(item)" class="assignee">
+                <AppIcon :icon="FORM_FIELD_ICONS.period" :size="13" group="formFields" />
+                {{ PERIOD_META[periodFor(item)!] }}
+              </span>
+              <span v-if="item.note" class="note">{{ item.note }}</span>
+              <div class="row-actions">
+                <EditButton small @click="startEdit(item)" />
+                <DeleteButton small @click="remove(item.id)" />
+              </div>
+            </li>
             <li v-if="!group.items.length" :key="`${group.key}-empty`" class="empty">
               Noch keine Aufgaben.
             </li>

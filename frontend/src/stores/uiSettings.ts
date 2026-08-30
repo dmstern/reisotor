@@ -26,6 +26,7 @@ import { useHomeCurrencyStore, type HomeCurrency, HOME_CURRENCY_OPTIONS } from '
 const SHOW_ACTIVITY_TOASTS_KEY = 'reisotor-show-activity-toasts';
 const SHOW_VACATION_COUNTDOWN_KEY = 'reisotor-show-vacation-countdown';
 const SHOW_HOME_WEATHER_FULL_TRIP_KEY = 'reisotor-show-home-weather-full-trip';
+const TOAST_TIMEOUT_KEY = 'reisotor-toast-timeout';
 const GLASS_STYLE_KEY = 'reisotor-glass-style';
 const GLASS_OPACITY_KEY = 'reisotor-glass-opacity';
 const GLASS_BLUR_KEY = 'reisotor-glass-blur';
@@ -71,6 +72,16 @@ export const PRIMARY_COLOR_PRESETS = [
 
 export const DEFAULT_PRIMARY_COLOR = '#2a7f74';
 export const DEFAULT_BORDER_WIDTH = 1;
+export const DEFAULT_TOAST_TIMEOUT = 5; // Sekunden
+
+export const TOAST_TIMEOUT_OPTIONS = [
+  { value: 2, label: '2 Sekunden' },
+  { value: 3, label: '3 Sekunden' },
+  { value: 5, label: '5 Sekunden (Standard)' },
+  { value: 8, label: '8 Sekunden' },
+  { value: 10, label: '10 Sekunden' },
+  { value: 15, label: '15 Sekunden' },
+];
 
 export function getPresetGlassValues(style: GlassStyle) {
   if (style === 'glass') {
@@ -120,6 +131,15 @@ function loadShowVacationCountdown(): boolean {
 
 function loadShowHomeWeatherFullTrip(): boolean {
   return safeLocalStorageGet(SHOW_HOME_WEATHER_FULL_TRIP_KEY) === 'true';
+}
+
+function loadToastTimeout(): number {
+  const stored = safeLocalStorageGet(TOAST_TIMEOUT_KEY);
+  if (stored !== null) {
+    const parsed = parseInt(stored, 10);
+    if (!isNaN(parsed) && parsed >= 2 && parsed <= 15) return parsed;
+  }
+  return DEFAULT_TOAST_TIMEOUT;
 }
 
 function loadGlassStyle(): GlassStyle {
@@ -191,6 +211,7 @@ export interface StoredAppSettings {
   showActivityToasts?: boolean;
   showVacationCountdown?: boolean;
   showHomeWeatherFullTrip?: boolean;
+  toastTimeout?: number;
   glassStyle?: GlassStyle;
   glassOpacity?: number;
   glassBlur?: number;
@@ -217,6 +238,7 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
   const showActivityToasts = ref(loadShowActivityToasts());
   const showVacationCountdown = ref(loadShowVacationCountdown());
   const showHomeWeatherFullTrip = ref(loadShowHomeWeatherFullTrip());
+  const toastTimeout = ref<number>(loadToastTimeout());
 
   const glassStyle = ref<GlassStyle>(loadGlassStyle());
   const glassOpacity = ref<number>(loadGlassOpacity());
@@ -254,6 +276,7 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
           showActivityToasts: showActivityToasts.value,
           showVacationCountdown: showVacationCountdown.value,
           showHomeWeatherFullTrip: showHomeWeatherFullTrip.value,
+          toastTimeout: toastTimeout.value,
           glassStyle: glassStyle.value,
           glassOpacity: glassOpacity.value,
           glassBlur: glassBlur.value,
@@ -301,6 +324,13 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
       }
       if (typeof stored.showHomeWeatherFullTrip === 'boolean') {
         showHomeWeatherFullTrip.value = stored.showHomeWeatherFullTrip;
+      }
+      if (
+        typeof stored.toastTimeout === 'number' &&
+        stored.toastTimeout >= 2 &&
+        stored.toastTimeout <= 15
+      ) {
+        toastTimeout.value = stored.toastTimeout;
       }
       if (
         stored.glassStyle === 'glass' ||
@@ -397,6 +427,10 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
     safeLocalStorageSet(SHOW_HOME_WEATHER_FULL_TRIP_KEY, String(v));
     persist();
   });
+  watch(toastTimeout, (v) => {
+    safeLocalStorageSet(TOAST_TIMEOUT_KEY, String(v));
+    persist();
+  });
 
   watch(glassStyle, (v) => {
     safeLocalStorageSet(GLASS_STYLE_KEY, v);
@@ -477,6 +511,7 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
     showActivityToasts,
     showVacationCountdown,
     showHomeWeatherFullTrip,
+    toastTimeout,
     glassStyle,
     glassOpacity,
     glassBlur,
