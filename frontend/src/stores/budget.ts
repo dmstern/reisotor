@@ -8,8 +8,8 @@ import {
   isSharedExpense,
 } from '../utils/budgetBalances';
 import { effectiveBudgetTarget, grandTotalTarget } from '../utils/budgetTargets';
-import { useUndoableDelete } from '../composables/useUndoableDelete';
 import { useTripStore } from './trip';
+import { useToast } from '../composables/useToast';
 
 export interface BudgetFormInput {
   name: string;
@@ -49,12 +49,6 @@ export const useBudgetStore = defineStore('budget', () => {
   const allocations = ref<BudgetAllocation[]>([]);
   const transfers = ref<BudgetTransfer[]>([]);
   const loaded = ref(false);
-
-  // Weicher Löschvorgang serverseitig (siehe routes/budget.ts) + 60s Rückgängig-Fenster
-  // clientseitig (useUndoableDelete.ts) - eigene Instanz für Ausgaben und Überweisungen, da beide
-  // Listen unabhängig voneinander per Id nummeriert sind.
-  const expenseUndo = useUndoableDelete();
-  const transferUndo = useUndoableDelete();
 
   // Liest currentTripId selbst (statt eine tripId per Parameter zu bekommen, wie vorher) und ist an
   // watch(currentTripId, ...) unten angebunden - analog zu stores/spots.ts. Vorher wurde load()
@@ -186,9 +180,11 @@ export const useBudgetStore = defineStore('budget', () => {
   }
 
   async function removeBudget(id: number) {
+    const { showToast } = useToast();
     await api.delete(`/budget/budgets/${id}`);
     budgets.value = budgets.value.filter((b) => b.id !== id);
     allocations.value = allocations.value.filter((a) => a.budget_id !== id);
+    showToast({ message: 'Budget gelöscht. Es befindet sich nun im Papierkorb.', type: 'info' });
   }
 
   async function saveAllocation(budgetId: number, category: string, amount: number) {
@@ -224,14 +220,7 @@ export const useBudgetStore = defineStore('budget', () => {
 
   async function removeExpense(id: number) {
     await api.delete(`/budget/${id}`);
-    expenseUndo.markPendingDelete(id, () => {
-      expenses.value = expenses.value.filter((e) => e.id !== id);
-    });
-  }
-
-  async function restoreExpense(id: number) {
-    expenseUndo.clearPending(id);
-    await api.post(`/trash/budget_item/${id}/restore`);
+    expenses.value = expenses.value.filter((e) => e.id !== id);
   }
 
   // --- Überweisungen ---
@@ -243,14 +232,7 @@ export const useBudgetStore = defineStore('budget', () => {
 
   async function removeTransfer(id: number) {
     await api.delete(`/budget/transfers/${id}`);
-    transferUndo.markPendingDelete(id, () => {
-      transfers.value = transfers.value.filter((t) => t.id !== id);
-    });
-  }
-
-  async function restoreTransfer(id: number) {
-    transferUndo.clearPending(id);
-    await api.post(`/trash/budget_transfer/${id}/restore`);
+    transfers.value = transfers.value.filter((t) => t.id !== id);
   }
 
   return {
@@ -282,11 +264,7 @@ export const useBudgetStore = defineStore('budget', () => {
     submitExpense,
     updateExpense,
     removeExpense,
-    restoreExpense,
-    expenseUndo,
     submitTransfer,
     removeTransfer,
-    restoreTransfer,
-    transferUndo,
   };
 });

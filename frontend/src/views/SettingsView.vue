@@ -21,7 +21,7 @@ import {
   WEEK_START_OPTIONS,
   DATE_FORMAT_OPTIONS,
 } from '../stores/calendarSettings';
-import { useUiSettingsStore } from '../stores/uiSettings';
+import { useUiSettingsStore, TOAST_TIMEOUT_OPTIONS } from '../stores/uiSettings';
 import {
   getExistingSubscription,
   isPushSupported,
@@ -968,6 +968,18 @@ async function onImportFileSelected(event: Event) {
         <label class="checkbox-option">
           <input type="checkbox" v-model="uiSettings.showActivityToasts" />
           Detaillierte Lade-/Speicher-Meldungen anzeigen
+        </label>
+        <label class="weather-provider-label" style="margin-top: var(--space-3)">
+          Anzeigedauer von Toast-Benachrichtigungen
+          <select v-model.number="uiSettings.toastTimeout">
+            <option
+              v-for="option in TOAST_TIMEOUT_OPTIONS"
+              :key="option.value"
+              :value="option.value"
+            >
+              {{ option.label }}
+            </option>
+          </select>
         </label>
       </div>
 

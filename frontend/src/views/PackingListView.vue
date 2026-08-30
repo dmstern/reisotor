@@ -11,9 +11,8 @@ import Combobox from '../components/Combobox.vue';
 import QuickAddRow from '../components/QuickAddRow.vue';
 import FormField from '../components/FormField.vue';
 import Button from '../components/primitives/Button.vue';
-import UndoDeleteRow from '../components/UndoDeleteRow.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
-import { useUndoableDelete } from '../composables/useUndoableDelete';
+import { useToast } from '../composables/useToast';
 import { sortWithDoneLast } from '../composables/useCheckedSort';
 import { isFullyPacked } from '../utils/packing';
 
@@ -22,7 +21,7 @@ const tripStore = useTripStore();
 const liveSync = useLiveSyncStore();
 const tripId = tripStore.currentTripId as number;
 const items = ref<PackingItem[]>([]);
-const { isPending, markPendingDelete, clearPending } = useUndoableDelete();
+const { showToast } = useToast();
 const users = ref<User[]>([]);
 const loading = ref(true);
 const highlightedIds = ref<Set<number>>(new Set());
@@ -224,18 +223,10 @@ async function submitEdit() {
   editingItem.value = null;
 }
 
-// Weicher Löschvorgang serverseitig (siehe routes/packing.ts) + 60s Rückgängig-Fenster clientseitig
-// (useUndoableDelete.ts).
 async function remove(id: number) {
   await api.delete(`/packing/${id}`);
-  markPendingDelete(id, () => {
-    items.value = items.value.filter((i) => i.id !== id);
-  });
-}
-
-async function restore(id: number) {
-  clearPending(id);
-  await api.post(`/trash/packing_item/${id}/restore`);
+  items.value = items.value.filter((i) => i.id !== id);
+  showToast({ message: 'Gegenstand gelöscht. Er befindet sich nun im Papierkorb.', type: 'info' });
 }
 
 async function quickAdd(list: ListGroup, label: string) {
@@ -314,19 +305,15 @@ async function quickAdd(list: ListGroup, label: string) {
           <template v-for="sub in catGroup.subgroups" :key="sub.subcategory ?? '_'">
             <h4 v-if="sub.subcategory" class="subcategory">{{ sub.subcategory }}</h4>
             <TransitionGroup tag="ul" name="list" class="list">
-              <template v-for="item in sub.items" :key="item.id">
-                <li v-if="isPending(item.id)">
-                  <UndoDeleteRow :label="item.label" @undo="restore(item.id)" />
-                </li>
-                <PackingItemRow
-                  v-else
-                  :item="item"
-                  :highlighted="highlightedIds.has(item.id)"
-                  @update-counts="updateCounts"
-                  @remove="remove"
-                  @edit="startEdit"
-                />
-              </template>
+              <PackingItemRow
+                v-for="item in sub.items"
+                :key="item.id"
+                :item="item"
+                :highlighted="highlightedIds.has(item.id)"
+                @update-counts="updateCounts"
+                @remove="remove"
+                @edit="startEdit"
+              />
             </TransitionGroup>
           </template>
         </div>

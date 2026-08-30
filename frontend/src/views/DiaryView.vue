@@ -23,7 +23,6 @@ import EditButton from '../components/EditButton.vue';
 import DeleteButton from '../components/DeleteButton.vue';
 import SocialRow from '../components/SocialRow.vue';
 import Comments from '../components/Comments.vue';
-import UndoDeleteRow from '../components/UndoDeleteRow.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import DraftStatusBar from '../components/DraftStatusBar.vue';
 import DraftBadge from '../components/DraftBadge.vue';
@@ -35,7 +34,7 @@ import WeatherIcon from '../components/WeatherIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
-import { useUndoableDelete } from '../composables/useUndoableDelete';
+import { useToast } from '../composables/useToast';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
 
 const auth = useAuthStore();
@@ -49,7 +48,7 @@ const liveSync = useLiveSyncStore();
 const weatherProvider = useWeatherProviderStore();
 const trip = computed(() => tripStore.currentTrip);
 const entries = ref<DiaryEntry[]>([]);
-const { isPending, markPendingDelete, clearPending } = useUndoableDelete();
+const { showToast } = useToast();
 const likes = ref<DiaryLike[]>([]);
 const comments = ref<DiaryComment[]>([]);
 const users = ref<User[]>([]);
@@ -465,18 +464,13 @@ async function closeEditForm() {
   editingEntry.value = null;
 }
 
-// Weicher Löschvorgang serverseitig (siehe routes/diary.ts) + 60s Rückgängig-Fenster clientseitig
-// (useUndoableDelete.ts).
 async function removeEntry(id: number) {
   await api.delete(`/diary/${id}`);
-  markPendingDelete(id, () => {
-    entries.value = entries.value.filter((e) => e.id !== id);
+  entries.value = entries.value.filter((e) => e.id !== id);
+  showToast({
+    message: 'Tagebucheintrag gelöscht. Er befindet sich nun im Papierkorb.',
+    type: 'info',
   });
-}
-
-async function restoreEntry(id: number) {
-  clearPending(id);
-  await api.post(`/trash/diary_entry/${id}/restore`);
 }
 
 async function toggleLike(entryId: number) {
@@ -656,137 +650,126 @@ function showEntryDayOnMap(entry: DiaryEntry) {
     </Modal>
 
     <TransitionGroup tag="div" name="list" class="entries">
-      <template v-for="entry in entries" :key="entry.id">
-        <UndoDeleteRow
-          v-if="isPending(entry.id)"
-          :label="entry.title ?? undefined"
-          @undo="restoreEntry(entry.id)"
-        />
-        <article
-          v-else
-          class="card entry"
-          :class="{ 'new-highlight': highlightedIds.has(entry.id) }"
-        >
-          <header class="entry-head">
-            <span class="avatar">{{ author(entry.author_id)?.avatar ?? '❓' }}</span>
-            <div class="entry-meta">
-              <strong>{{ author(entry.author_id)?.username ?? '?' }}</strong>
-              <span class="date">
-                {{ formatDate(entry.date) }}
-                <span v-if="coEditorsFor(entry).length" class="edited-by">
-                  · bearbeitet von
-                  <span v-for="(u, i) in coEditorsFor(entry)" :key="u.id" class="edited-by-user">
-                    <span class="edited-by-avatar">{{ u.avatar }}</span
-                    >{{ u.username
-                    }}<template v-if="i < coEditorsFor(entry).length - 1">, </template>
-                  </span>
+      <article
+        v-for="entry in entries"
+        :key="entry.id"
+        class="card entry"
+        :class="{ 'new-highlight': highlightedIds.has(entry.id) }"
+      >
+        <header class="entry-head">
+          <span class="avatar">{{ author(entry.author_id)?.avatar ?? '❓' }}</span>
+          <div class="entry-meta">
+            <strong>{{ author(entry.author_id)?.username ?? '?' }}</strong>
+            <span class="date">
+              {{ formatDate(entry.date) }}
+              <span v-if="coEditorsFor(entry).length" class="edited-by">
+                · bearbeitet von
+                <span v-for="(u, i) in coEditorsFor(entry)" :key="u.id" class="edited-by-user">
+                  <span class="edited-by-avatar">{{ u.avatar }}</span
+                  >{{ u.username }}<template v-if="i < coEditorsFor(entry).length - 1">, </template>
                 </span>
-                <span v-else-if="entry.updated_at"> (bearbeitet)</span>
               </span>
-            </div>
-            <PendingSyncBadge v-if="entry._pending" />
-            <div class="entry-actions">
-              <EditButton small @click="startEdit(entry)" />
-              <DeleteButton
-                v-if="entry.author_id === auth.user?.id"
-                small
-                @click="removeEntry(entry.id)"
-              />
-            </div>
-          </header>
-
-          <h3 v-if="entry.title">{{ entry.title }}</h3>
-          <DraftBadge v-if="entry.is_draft" />
-          <RichTextDisplay
-            class="content"
-            :content="entry.content"
-            :format="entry.content_format"
-          />
-
-          <div class="gallery" v-if="entry.images.length">
-            <a v-for="(img, i) in entry.images" :key="i" :href="img" target="_blank" rel="noopener">
-              <img :src="img" :alt="`Bild ${i + 1}`" loading="lazy" />
-            </a>
+              <span v-else-if="entry.updated_at"> (bearbeitet)</span>
+            </span>
           </div>
+          <PendingSyncBadge v-if="entry._pending" />
+          <div class="entry-actions">
+            <EditButton small @click="startEdit(entry)" />
+            <DeleteButton
+              v-if="entry.author_id === auth.user?.id"
+              small
+              @click="removeEntry(entry.id)"
+            />
+          </div>
+        </header>
 
-          <SocialRow
-            :like-count="likesFor(entry.id).length"
-            :liked="likedByMe(entry.id)"
-            :comment-count="commentsFor(entry.id).length"
-            @toggle-like="toggleLike(entry.id)"
-            @toggle-comments="toggleComments(entry.id)"
-          />
+        <h3 v-if="entry.title">{{ entry.title }}</h3>
+        <DraftBadge v-if="entry.is_draft" />
+        <RichTextDisplay class="content" :content="entry.content" :format="entry.content_format" />
 
-          <div class="excursion-links">
-            <div
-              v-if="weatherForEntry(entry)"
-              class="diary-weather"
-              :title="weatherCodeMeta(weatherForEntry(entry)!.weatherCode).label"
+        <div class="gallery" v-if="entry.images.length">
+          <a v-for="(img, i) in entry.images" :key="i" :href="img" target="_blank" rel="noopener">
+            <img :src="img" :alt="`Bild ${i + 1}`" loading="lazy" />
+          </a>
+        </div>
+
+        <SocialRow
+          :like-count="likesFor(entry.id).length"
+          :liked="likedByMe(entry.id)"
+          :comment-count="commentsFor(entry.id).length"
+          @toggle-like="toggleLike(entry.id)"
+          @toggle-comments="toggleComments(entry.id)"
+        />
+
+        <div class="excursion-links">
+          <div
+            v-if="weatherForEntry(entry)"
+            class="diary-weather"
+            :title="weatherCodeMeta(weatherForEntry(entry)!.weatherCode).label"
+          >
+            <WeatherIcon
+              class="weather-icon"
+              :size="16"
+              :code="weatherForEntry(entry)!.weatherCode"
+            />
+            <span class="weather-temp"
+              >{{ Math.round(weatherForEntry(entry)!.tempMax) }}° /
+              {{ Math.round(weatherForEntry(entry)!.tempMin) }}°</span
             >
-              <WeatherIcon
-                class="weather-icon"
+          </div>
+          <Button type="button" variant="card-action" @click="showEntryDayOnMap(entry)">
+            <AppIcon :icon="SECTION_ICON_DEFS.map" :size="14" group="navigation" /> Tag auf Karte
+            anzeigen
+          </Button>
+          <Button
+            v-for="ex in excursionsForEntry(entry)"
+            :key="ex.id"
+            type="button"
+            class="excursion-chip"
+            @click="drawers.openMapForExcursion(ex.id)"
+          >
+            <span
+              class="excursion-chip-img"
+              :style="ex.image_url ? { backgroundImage: `url(${ex.image_url})` } : {}"
+            >
+              <AppIcon
+                v-if="!ex.image_url"
+                :icon="SECTION_ICON_DEFS.excursions"
                 :size="16"
-                :code="weatherForEntry(entry)!.weatherCode"
+                group="navigation"
               />
-              <span class="weather-temp"
-                >{{ Math.round(weatherForEntry(entry)!.tempMax) }}° /
-                {{ Math.round(weatherForEntry(entry)!.tempMin) }}°</span
-              >
-            </div>
-            <Button type="button" variant="card-action" @click="showEntryDayOnMap(entry)">
-              <AppIcon :icon="SECTION_ICON_DEFS.map" :size="14" group="navigation" /> Tag auf Karte
-              anzeigen
-            </Button>
-            <Button
-              v-for="ex in excursionsForEntry(entry)"
-              :key="ex.id"
-              type="button"
-              class="excursion-chip"
-              @click="drawers.openMapForExcursion(ex.id)"
+            </span>
+            <span class="excursion-chip-title">{{ ex.title }}</span>
+          </Button>
+          <Button
+            v-for="spot in spotsForEntry(entry)"
+            :key="spot.id"
+            type="button"
+            class="excursion-chip"
+            @click="drawers.openMapAt(`spot-${spot.id}`)"
+          >
+            <span
+              class="excursion-chip-img"
+              :style="spot.image_url ? { backgroundImage: `url(${spot.image_url})` } : {}"
             >
-              <span
-                class="excursion-chip-img"
-                :style="ex.image_url ? { backgroundImage: `url(${ex.image_url})` } : {}"
-              >
-                <AppIcon
-                  v-if="!ex.image_url"
-                  :icon="SECTION_ICON_DEFS.excursions"
-                  :size="16"
-                  group="navigation"
-                />
-              </span>
-              <span class="excursion-chip-title">{{ ex.title }}</span>
-            </Button>
-            <Button
-              v-for="spot in spotsForEntry(entry)"
-              :key="spot.id"
-              type="button"
-              class="excursion-chip"
-              @click="drawers.openMapAt(`spot-${spot.id}`)"
-            >
-              <span
-                class="excursion-chip-img"
-                :style="spot.image_url ? { backgroundImage: `url(${spot.image_url})` } : {}"
-              >
-                <AppIcon
-                  v-if="!spot.image_url"
-                  :icon="spotCategoryMeta(spot.category).tabler"
-                  :size="16"
-                  group="categories"
-                />
-              </span>
-              <span class="excursion-chip-title">{{ spot.title }}</span>
-            </Button>
-          </div>
+              <AppIcon
+                v-if="!spot.image_url"
+                :icon="spotCategoryMeta(spot.category).tabler"
+                :size="16"
+                group="categories"
+              />
+            </span>
+            <span class="excursion-chip-title">{{ spot.title }}</span>
+          </Button>
+        </div>
 
-          <Comments
-            v-if="openComments.has(entry.id)"
-            :comments="commentItemsFor(entry.id)"
-            @submit="(content) => submitComment(entry.id, content)"
-            @remove="removeComment"
-          />
-        </article>
-      </template>
+        <Comments
+          v-if="openComments.has(entry.id)"
+          :comments="commentItemsFor(entry.id)"
+          @submit="(content) => submitComment(entry.id, content)"
+          @remove="removeComment"
+        />
+      </article>
     </TransitionGroup>
     <p v-if="!entries.length" class="empty">Noch keine Tagebuch-Einträge.</p>
 

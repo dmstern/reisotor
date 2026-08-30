@@ -19,6 +19,7 @@ import Drawer from './components/Drawer.vue';
 import ScheduleView from './views/ScheduleView.vue';
 import SplashScreen from './components/SplashScreen.vue';
 import MustChangePasswordModal from './components/MustChangePasswordModal.vue';
+import ToastNotification from './components/ToastNotification.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -125,6 +126,7 @@ const firstLoadDone = ref(
 </script>
 
 <template>
+  <ToastNotification />
   <MustChangePasswordModal v-if="auth.user?.must_change_password" />
   <template v-if="!showNav">
     <router-view />

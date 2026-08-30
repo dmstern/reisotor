@@ -42,7 +42,6 @@ import SpotCard from '../components/SpotCard.vue';
 import ExcursionCard from '../components/ExcursionCard.vue';
 import SegmentedToggle from '../components/SegmentedToggle.vue';
 import SpotOrderPicker from '../components/SpotOrderPicker.vue';
-import UndoDeleteRow from '../components/UndoDeleteRow.vue';
 import TripMap from '../components/TripMap.vue';
 import Modal from '../components/Modal.vue';
 import Combobox from '../components/Combobox.vue';
@@ -2978,18 +2977,13 @@ async function removeSpot(id: number) {
           </div>
 
           <section class="group category-group" v-for="grp in spotGroups" :key="grp.category">
-            <UndoDeleteRow
-              v-if="grp.excursion && excursionsStore.isPending(grp.excursion.id)"
-              :label="grp.category"
-              @undo="excursionsStore.restore(grp.excursion!.id)"
-            />
             <!-- Tour-Gruppe: die Gruppen-Überschrift ist eine echte, anklickbare ExcursionCard statt
              reinem Text (siehe Konsolidierung des früheren "erweiterten Touren-Modus" in diese
              Sicht) – Klick visualisiert die Tour auf der Karte (@show-on-map), dieselbe Card bietet
              daneben Bearbeiten/Löschen/Like/Kommentare/Einplanen wie zuvor in der eigenständigen
              Touren-Schublade. "Ohne Tour" (grp.excursion === null) bleibt eine reine Überschrift. -->
             <ExcursionCard
-              v-else-if="grp.excursion"
+              v-if="grp.excursion"
               :ref="(el) => setCategoryRef(grp.category, el)"
               class="tour-group-card"
               :excursion="grp.excursion"
@@ -3050,14 +3044,7 @@ async function removeSpot(id: number) {
                 :class="grp.excursion ? 'tour-station-list' : 'grid cards'"
               >
                 <template v-for="item in grp.items" :key="`spot-${item.spot.id}`">
-                  <UndoDeleteRow
-                    v-if="spotsStore.isPending(item.spot.id)"
-                    :label="item.spot.title"
-                    @undo="spotsStore.restore(item.spot.id)"
-                  />
                   <SpotCard
-                    v-else
-                    :key="`spot-${item.spot.id}`"
                     :ref="(el) => setSpotRef(item.spot.id, el)"
                     :style="
                       transitioningSpotId === item.spot.id
