@@ -349,13 +349,13 @@ function onResizeEnd() {
 .drawer.left .drawer-panel {
   left: 0;
   transform: translateX(-100%);
-  border-radius: 0 var(--radius-md-squircle) var(--radius-md-squircle) 0;
+  border-radius: var(--radius-md-squircle);
 }
 
 .drawer.right .drawer-panel {
   right: 0;
   transform: translateX(100%);
-  border-radius: var(--radius-md-squircle) 0 0 var(--radius-md-squircle);
+  border-radius: var(--radius-md-squircle);
 }
 
 .drawer.open .drawer-panel {
@@ -474,43 +474,47 @@ function onResizeEnd() {
   .resize-handle {
     display: flex;
     position: fixed;
-    top: calc(var(--app-header-height, 56px) + var(--navbar-offset, 0px));
-    bottom: 0;
+    top: calc(var(--app-header-height, 56px) + var(--navbar-offset, 0px) + var(--space-4));
+    bottom: calc(var(--navbar-bottom-offset, 0px) + var(--space-4));
     width: var(--drawer-handle-gap);
   }
   .drawer.left .resize-handle {
-    left: var(--drawer-width);
+    left: calc(
+      var(--space-4) + var(--drawer-width) + (var(--space-4) - var(--drawer-handle-gap)) / 2
+    );
   }
   .drawer.right .resize-handle {
-    right: var(--drawer-width);
+    right: calc(
+      var(--space-4) + var(--drawer-width) + (var(--space-4) - var(--drawer-handle-gap)) / 2
+    );
   }
 
   .drawer-panel {
-    /* sticky + max-height statt einfach relative: ohne eigene Höhenbegrenzung strecken
-       align-items:stretch (.drawer/.app-shell) das Panel sonst auf die volle Höhe des
-       Hauptinhalts – bei langen Seiten ragt das blickdichte Panel dann über den sichtbaren
-       Bereich hinaus und überdeckt (höherer z-index) eine unten fixierte NavBar links/rechts.
-       sticky hält es zusätzlich beim Scrollen des Hauptinhalts im Blickfeld. top/max-height
-       beziehen zusätzlich --navbar-offset (NavBar.vue) ein: klebt die NavBar selbst "oben" fest,
-       hat sie denselben sticky-top wie das Panel – ohne den Offset würde das Panel (höherer
-       z-index) sie beim Scrollen überdecken statt sich darunter einzuordnen. */
+    /* Floating Drawer (#311): Auf Desktop nimmt die ausgeklappte Schublade stets die volle Höhe ein,
+       schwebt aber frei mit margin: var(--space-4) zu allen Seiten und abgerundeten Ecken
+       (Squircle). top/height beziehen --navbar-offset/--navbar-bottom-offset ein, damit der Header
+       und eine evtl. unten positionierte NavBar nie überdeckt werden. */
     position: sticky;
-    top: calc(var(--app-header-height, 56px) + var(--navbar-offset, 0px));
+    top: calc(var(--app-header-height, 56px) + var(--navbar-offset, 0px) + var(--space-4));
     bottom: auto;
-    max-height: calc(100vh - var(--app-header-height, 56px) - var(--navbar-offset, 0px));
+    margin: var(--space-4);
+    height: calc(
+      100vh - var(--app-header-height, 56px) - var(--navbar-offset, 0px) -
+        var(--navbar-bottom-offset, 0px) - var(--space-4) * 2
+    );
+    max-height: calc(
+      100vh - var(--app-header-height, 56px) - var(--navbar-offset, 0px) -
+        var(--navbar-bottom-offset, 0px) - var(--space-4) * 2
+    );
     transform: none;
-    /* --shadow-md statt none: das Panel legt sich beim Ausklappen über den Hauptinhalt (der
-       schiebt zwar zur Seite, bekommt aber keinen eigenen Rand) - ein sichtbar "über dem
-       Hintergrund liegendes" Element braucht einen Schatten, sonst wirkt der Bereichswechsel wie
-       zwei gleichrangige Spalten statt einer bewusst geöffneten Schublade (siehe DESIGN.md,
-       Abschnitt "Schatten": Elemente, die über anderen liegen, bekommen einen Schatten). In der
-       Transition unten mit, damit er beim Auf-/Zuklappen sanft ein-/ausblendet statt hart zu
-       springen. */
     box-shadow: var(--shadow-md);
-    border-radius: 0;
+    border-radius: var(--radius-md-squircle);
+    corner-shape: squircle;
+    border: var(--ui-border-width, 1px) solid var(--color-border);
     width: var(--drawer-width);
     transition:
       width 0.25s ease,
+      margin 0.25s ease,
       opacity 0.2s ease,
       box-shadow 0.25s ease;
   }
@@ -531,6 +535,7 @@ function onResizeEnd() {
 
   .drawer:not(.open) .drawer-panel {
     width: 0;
+    margin: 0;
     opacity: 0;
     overflow: hidden;
     pointer-events: none;
@@ -548,21 +553,22 @@ function onResizeEnd() {
   }
 
   /* Maximiert: Panel verlässt den Flex-Verbund und legt sich als Vollbild-Overlay über den
-     Hauptbereich (ähnlich der mobilen Darstellung) – lässt aber oben/unten Platz für Header
-     und NavBar frei (--navbar-offset/--navbar-bottom-offset, NavBar.vue), die auf Desktop im
-     Gegensatz zu Mobil stets sichtbar bleiben sollen. Höherer z-index als Tabs (13) und Header/
-     NavBar (11/10), damit die (bereits automatisch zugeklappte, deaktivierte) andere Lasche nicht
-     mehr sichtbar durchscheint. */
+     Hauptbereich (ähnlich der mobilen Darstellung) – lässt aber nach allen Seiten margin: var(--space-4)
+     und Platz für Header und NavBar frei (--navbar-offset/--navbar-bottom-offset). */
   .drawer.maximized .drawer-panel {
     position: fixed;
     top: calc(var(--app-header-height, 56px) + var(--navbar-offset, 0px));
     bottom: var(--navbar-bottom-offset, 0px);
     left: 0;
     right: 0;
+    margin: var(--space-4);
     width: auto;
+    height: auto;
     max-height: none;
     transform: none;
-    border-radius: 0;
+    border-radius: var(--radius-md-squircle);
+    corner-shape: squircle;
+    border: var(--ui-border-width, 1px) solid var(--color-border);
     z-index: 16;
   }
 
