@@ -1705,7 +1705,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
             @click="drawers.mapFocusTrackId = null"
           />
         </div>
-        <p v-if="focusedTrackPoints.length < 2" class="focus-spot-list-subtitle">Lädt Route…</p>
+        <p v-if="focusedTrackPoints.length < 1" class="focus-spot-list-subtitle">Lädt Route…</p>
         <TrackPlayback
           v-else
           :points="focusedTrackPoints"
