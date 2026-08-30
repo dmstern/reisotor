@@ -24,9 +24,7 @@ const resolvedRepoUrl = props.repoUrl ?? __REPO_URL__;
   <p class="hint app-footer-copyright">
     © {{ copyrightYear }}
     <a href="https://github.com/dmstern" target="_blank" rel="noopener">Daniel Morgenstern</a> ·
-    agentic-coded<template v-if="hostingLocation">
-      · gehostet in {{ hostingLocation }}</template
-    >
+    agentic-coded<template v-if="hostingLocation"> · gehostet in {{ hostingLocation }}</template>
   </p>
 </template>
 
