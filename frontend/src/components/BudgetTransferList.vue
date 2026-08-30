@@ -10,7 +10,10 @@ const { showToast } = useToast();
 
 async function removeTransfer(id: number) {
   await store.removeTransfer(id);
-  showToast({ message: 'Überweisung gelöscht. Sie befindet sich nun im Papierkorb.', type: 'info' });
+  showToast({
+    message: 'Überweisung gelöscht. Sie befindet sich nun im Papierkorb.',
+    type: 'info',
+  });
 }
 </script>
 

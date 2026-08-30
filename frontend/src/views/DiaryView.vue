@@ -467,7 +467,10 @@ async function closeEditForm() {
 async function removeEntry(id: number) {
   await api.delete(`/diary/${id}`);
   entries.value = entries.value.filter((e) => e.id !== id);
-  showToast({ message: 'Tagebucheintrag gelöscht. Er befindet sich nun im Papierkorb.', type: 'info' });
+  showToast({
+    message: 'Tagebucheintrag gelöscht. Er befindet sich nun im Papierkorb.',
+    type: 'info',
+  });
 }
 
 async function toggleLike(entryId: number) {
@@ -663,8 +666,7 @@ function showEntryDayOnMap(entry: DiaryEntry) {
                 · bearbeitet von
                 <span v-for="(u, i) in coEditorsFor(entry)" :key="u.id" class="edited-by-user">
                   <span class="edited-by-avatar">{{ u.avatar }}</span
-                  >{{ u.username
-                  }}<template v-if="i < coEditorsFor(entry).length - 1">, </template>
+                  >{{ u.username }}<template v-if="i < coEditorsFor(entry).length - 1">, </template>
                 </span>
               </span>
               <span v-else-if="entry.updated_at"> (bearbeitet)</span>
@@ -683,11 +685,7 @@ function showEntryDayOnMap(entry: DiaryEntry) {
 
         <h3 v-if="entry.title">{{ entry.title }}</h3>
         <DraftBadge v-if="entry.is_draft" />
-        <RichTextDisplay
-          class="content"
-          :content="entry.content"
-          :format="entry.content_format"
-        />
+        <RichTextDisplay class="content" :content="entry.content" :format="entry.content_format" />
 
         <div class="gallery" v-if="entry.images.length">
           <a v-for="(img, i) in entry.images" :key="i" :href="img" target="_blank" rel="noopener">

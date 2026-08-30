@@ -409,9 +409,7 @@ function isOverdue(item: TodoItem) {
               </span>
               <span
                 v-if="
-                  users.length > 1 &&
-                  groupBy !== 'assignee' &&
-                  userLabel(item.assigned_to_user_id)
+                  users.length > 1 && groupBy !== 'assignee' && userLabel(item.assigned_to_user_id)
                 "
                 class="assignee"
                 >{{ userLabel(item.assigned_to_user_id) }}</span

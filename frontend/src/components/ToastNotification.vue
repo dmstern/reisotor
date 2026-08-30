@@ -58,7 +58,11 @@ const { toasts, removeToast } = useToast();
   border: var(--ui-border-width, 1px) solid var(--color-border, #e2e8f0);
   border-radius: var(--radius-lg-squircle, 16px);
   corner-shape: squircle;
-  box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06));
+  box-shadow: var(
+    --shadow-md,
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06)
+  );
   font-size: var(--font-size-sm, 0.85rem);
   line-height: 1.4;
 }
@@ -96,7 +100,9 @@ const { toasts, removeToast } = useToast();
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.15s ease, background-color 0.15s ease;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease;
 }
 
 .toast-close:hover {

@@ -19,7 +19,10 @@ export const InteractiveDemo: Story = {
       const { showToast } = useToast();
 
       function triggerInfo() {
-        showToast({ message: 'Element gelöscht. Es befindet sich nun im Papierkorb.', type: 'info' });
+        showToast({
+          message: 'Element gelöscht. Es befindet sich nun im Papierkorb.',
+          type: 'info',
+        });
       }
 
       function triggerSuccess() {
@@ -27,7 +30,10 @@ export const InteractiveDemo: Story = {
       }
 
       function triggerWarning() {
-        showToast({ message: 'Achtung: Eingaben sind noch nicht synchronisiert.', type: 'warning' });
+        showToast({
+          message: 'Achtung: Eingaben sind noch nicht synchronisiert.',
+          type: 'warning',
+        });
       }
 
       function triggerError() {

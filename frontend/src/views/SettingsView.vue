@@ -969,7 +969,7 @@ async function onImportFileSelected(event: Event) {
           <input type="checkbox" v-model="uiSettings.showActivityToasts" />
           Detaillierte Lade-/Speicher-Meldungen anzeigen
         </label>
-        <label class="weather-provider-label" style="margin-top: var(--space-3);">
+        <label class="weather-provider-label" style="margin-top: var(--space-3)">
           Anzeigedauer von Toast-Benachrichtigungen
           <select v-model.number="uiSettings.toastTimeout">
             <option

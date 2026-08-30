@@ -3045,7 +3045,6 @@ async function removeSpot(id: number) {
               >
                 <template v-for="item in grp.items" :key="`spot-${item.spot.id}`">
                   <SpotCard
-                    :key="`spot-${item.spot.id}`"
                     :ref="(el) => setSpotRef(item.spot.id, el)"
                     :style="
                       transitioningSpotId === item.spot.id
