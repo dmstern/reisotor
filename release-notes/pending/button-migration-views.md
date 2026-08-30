@@ -1,1 +1,0 @@
-- Buttons & Spacing: Alle verbleibenden Standard-Buttons auf die neue `Button`-Komponente umgestellt und vertikale Abstände über Buttons sowie in der Spot-Karte vereinheitlicht (#69, #161, #239).

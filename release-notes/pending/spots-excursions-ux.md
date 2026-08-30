@@ -1,4 +1,0 @@
-- Dialoge für neue Spots und Touren übersichtlicher gestaltet: Bilder können separat bearbeitet werden und Zuordnungen sind einklappbar.
-- Touren-Zuordnung direkt auf Spot-Karten als übersichtliche Checkliste und mit Tour-Vorschlägen für die An- und Heimreise.
-- Bunte Kategorie-Auswahl mit passenden Icons im Spot-Formular.
-- Hilfreicher Hinweis vor dem Start der Weg-Aufzeichnung bezüglich Standortzugriff und App-Aktivität.

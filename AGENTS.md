@@ -348,15 +348,24 @@ Historie und wird gescannt) zwei Dinge:
    `chore:`, `refactor:`, `docs:`, `test:`, `build:` oder kein Präfix) — sie fließen einfach in den
    Patch-Bump.
 2. **Release-Notes-Fragment nur bei sichtbarer Auswirkung für echte Endnutzer:innen der App**:
-   - **KEIN Fragment anlegen** for interne/begleitende Bereiche: Änderungen an Demo-Daten
+   - **KEIN Fragment anlegen** für interne/begleitende Bereiche: Änderungen an Demo-Daten
      (`frontend/src/demo/`, `backend/src/db/seedDemo.ts`), CI/CD-Pipelines (`.github/`), Dev-Workflow,
      Tooling, Build-Skripte, Infrastruktur/Deployment (`deploy.sh`, systemd, Pi-Skripte), Tests,
      Refactorings oder reine Dokumentation. Diese betreffen nicht die produktive Nutzung der App.
-   - **Fragment anlegen**: nur wenn sich für Nutzer:innen der produktiven App etwas Sichtbares geändert
-     oder verbessert hat (neue Funktionen, UI-Anpassungen, Bugfixes in App-Views) — analog zu den
-     PR-Screenshots oben eine kleine Markdown-Datei unter `release-notes/pending/<kurzer-slug>.md`
-     anlegen, Inhalt ein bis zwei `- `-Stichpunkte in derselben leicht verständlichen End-Nutzer-Sprache
-     wie `CHANGELOG.md` (Deutsch, keine technischen Details).
+   - **VOR dem Anlegen bestehende Fragmente prüfen**: Vor dem Erstellen einer neuen Datei unter
+     `release-notes/pending/` immer die dort bereits vorhandenen Dateien lesen! Existiert bereits ein
+     Eintrag für denselben Bereich (z. B. "UI-Konsistenz in Formularfeldern verbessert" oder "Wettervorhersage-Anzeige
+     optimiert"), diesen bestehenden Eintrag ergänzen/zusammenfassen statt ein zweites, ähnliches Fragment
+     danebenzulegen. Ein neues Fragment wird NUR angelegt, wenn die Änderung für Endnutzer:innen tatsächlich
+     neu/interessant ist und noch nicht von bestehenden pending Release Notes abgedeckt wird.
+   - **Verständliche Sprache ohne technische Details**: Die Zielgruppe sind nicht-technisch-versierte
+     Endnutzer:innen. Die Stichpunkte müssen einfach, klar und aus Nutzerperspektive formuliert sein
+     ("Was bedeutet das konkret für die Person, die die App nutzt?"). **Absolut KEINE technischen Details**
+     wie Komponentennamen (z. B. `Button.vue`), Refactoring-Begriffe, PR-/Issue-Nummern (`#123`), CSS-Klassen,
+     Datenbank-Spalten, interne Skripte oder Entwickler-Tools (z. B. Storybook) verwenden!
+   - **Fragment-Format**: Eine kleine Markdown-Datei unter `release-notes/pending/<kurzer-slug>.md`
+     anlegen oder anpassen, Inhalt ein bis zwei `- `-Stichpunkte in leicht verständlicher Endnutzer-Sprache
+     wie `CHANGELOG.md` (Deutsch).
    - **Automatischer Fallback**: Gibt es bis zum Release keine gesammelten Fragmente (weil z. B. nur
      interne Verbesserungen, Demo-Daten oder Pipeline-Updates stattfanden), fasst der Release-Workflow
      den Release-Eintrag automatisch endnutzerfreundlich als `- Verbesserungen unter der Haube.`

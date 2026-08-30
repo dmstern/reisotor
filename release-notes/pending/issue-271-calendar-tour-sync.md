@@ -1,1 +1,0 @@
-- Eingeplante Touren sind sofort nach dem Einplanen im Kalender sichtbar, ohne dass die Seite neu geladen werden muss.

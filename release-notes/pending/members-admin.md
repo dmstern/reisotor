@@ -1,0 +1,1 @@
+- **Mitreisende & Verwaltung**: Verbessertes Einladen von Mitreisenden und neue Nutzerverwaltung für Administrator:innen mit Passwortwechsel beim ersten Login.

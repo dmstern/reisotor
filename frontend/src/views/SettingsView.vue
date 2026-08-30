@@ -38,6 +38,7 @@ import {
 import { toLocalDateString } from '../utils/dateFormat';
 import PasswordInput from '../components/PasswordInput.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
+import RichTextDisplay from '../components/RichTextDisplay.vue';
 import ThemeModeSelect from '../components/ThemeModeSelect.vue';
 import SegmentedToggle from '../components/SegmentedToggle.vue';
 import AppIcon from '../components/AppIcon.vue';
@@ -1128,9 +1129,14 @@ async function onImportFileSelected(event: Event) {
         <div v-if="backendBuildInfo?.changelog">
           <h2><AppIcon :icon="INFO_ICON" group="navigation" :size="20" /> Versions-Info</h2>
           <h3>Was ist neu in v{{ backendBuildInfo.changelog.version }}</h3>
-          <ul class="changelog-list">
-            <li v-for="note in backendBuildInfo.changelog.notes" :key="note">{{ note }}</li>
-          </ul>
+          <RichTextDisplay
+            class="changelog-notes"
+            :content="
+              backendBuildInfo.changelog.notes
+                .map((note) => (note.startsWith('- ') ? note : `- ${note}`))
+                .join('\n')
+            "
+          />
         </div>
         <h3>Build-Info</h3>
         <dl class="build-info-list">
