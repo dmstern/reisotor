@@ -1,0 +1,1 @@
+- **Touren & Spots auf der Karte**: Eingeplante Touren erscheinen sofort im Kalender. Neue Vorschläge für An- und Abreise sowie bunte Kategorien erleichtern das Auswählen.

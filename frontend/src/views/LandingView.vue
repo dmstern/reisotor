@@ -128,7 +128,7 @@ const features = [
       <p class="hint">
         © {{ new Date().getFullYear() }}
         <a href="https://github.com/dmstern" target="_blank" rel="noopener">Daniel Morgenstern</a> ·
-        gebaut mit Claude Code
+        agentic-coded
       </p>
     </footer>
   </div>

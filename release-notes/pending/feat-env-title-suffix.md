@@ -1,1 +1,0 @@
-- Feat: Suffix für local-dev (" (Local Dev)"), demo (" (Demo)") und staging (" (Staging)") im HTML-Seitentitel (`document.title`) hinzugefügt.

@@ -1,1 +1,0 @@
-- Unwetter- und Wetter-Warnungen werden jetzt als prägnantes Warn-Icon an den betroffenen Tagen in der Wettervorhersage hervorgehoben.

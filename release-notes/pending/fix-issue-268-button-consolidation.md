@@ -1,1 +1,0 @@
-- Schaltflächen und Schließen-Buttons in Schubladen, Dialogen, Kalender-Ansichten und Karten-Panels optisch vereinheitlicht.

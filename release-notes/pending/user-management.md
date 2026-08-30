@@ -1,3 +1,0 @@
-- Nutzerverwaltung für Administrator:innen: Neue Nutzer anlegen, Admin-Rechte vergeben und Nutzerkonten verwalten.
-- Erst-Login mit Standard-Passwort erfordert nun die Vergabe eines neuen Passworts.
-- Datensicherung (Export/Import) ist zur Erhöhung der Datensicherheit auf Administrator:innen beschränkt.

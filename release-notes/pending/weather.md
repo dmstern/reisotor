@@ -1,0 +1,2 @@
+- **Wetter-Vorhersage & Warnungen**: Temperaturspannen für Ausflüge mit mehreren Orten, Rückblick auf vergangenes Wetter sowie Warnhinweise bei extremer Hitze, Sturm oder Starkregen.
+- **Tagesverlauf**: Stündliche Detailansicht des Wetterverlaufs per Klick auf einen Vorhersage-Tag abrufbar.

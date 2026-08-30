@@ -1,1 +1,0 @@
-- Behebt ein Problem auf Mobilgeräten, bei dem hinter der unteren Navigationsleiste in der Kartenansicht ein opaker Bereich sichtbar war, sowie die Überlagerung des Spots-Drawers im Demo-Modus.

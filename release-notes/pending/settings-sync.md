@@ -1,0 +1,1 @@
+- **Einstellungen speichern**: Erscheinungsbild (Dark Mode), Farbakzente, Navigation und Einheiten werden jetzt an deinem Konto gespeichert und geräteübergreifend synchronisiert.

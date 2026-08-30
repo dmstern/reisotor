@@ -1,1 +1,0 @@
-- Design-System-Vereinheitlichung & Inkonsistenz-Refactoring: Schließen- & Aktions-Buttons in Modals, Schubladen und Overlays auf `IconButton.vue` vereinheitlicht, fehlende semantische Farb-Tokens ergänzt und Squircle-Radien app-weit konsolidiert (#284).

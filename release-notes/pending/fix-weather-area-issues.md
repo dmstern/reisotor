@@ -1,2 +1,0 @@
-- **Wetter an mehreren Orten & Historie**: Bei Ausflügen mit verschiedenen Stationen wird nun die Temperatur-Spanne aller Orte angezeigt. Vergangenes Wetter bleibt auch für individuelle Spots und Touren-Orte rückblickend gespeichert.
-- **Unwetter-Warnungen & Tages-Detailansicht**: Auf dem Dashboard informieren Warnhinweise bei extremer Hitze, Sturm oder Starkregen. Ein Klick auf einen Vorhersage-Tag öffnet eine stündliche Detailansicht des Tagesverlaufs.

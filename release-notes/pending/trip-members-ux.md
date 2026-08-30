@@ -1,1 +1,0 @@
-- Die Benutzeroberfläche zur Mitgliedereinladung (`TripMembersDialog.vue`) bietet nun klare Beschriftungen, Such-Hinweise, Ladeanzeige sowie eine direkte Rückmeldung bei erfolgloser Nutzer-Suche und nutzt einheitliche Spacing-Scale-Tokens.

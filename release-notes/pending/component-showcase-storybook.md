@@ -1,1 +1,0 @@
-- Neue Storybook-Komponentendokumentation & Design-System-Vorschau (`npm run storybook`) für UI-Primitives und Design-Tokens (Farben, Typografie, Radien, Schatten, Viewport-Breakpoints).
