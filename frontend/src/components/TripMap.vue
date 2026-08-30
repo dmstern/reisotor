@@ -1319,7 +1319,7 @@ watch(
   async (trackId) => {
     trackPlaybackProgress.value = 0;
     renderTracks();
-    if (trackId != null && !tracksStore.pointsByTrack[trackId]) {
+    if (trackId != null && !tracksStore.pointsByTrack[trackId]?.length) {
       await tracksStore.loadPoints(trackId);
       renderTracks();
     }
