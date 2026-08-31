@@ -41,6 +41,7 @@ import { hashHighlightId } from '../utils/hashHighlight';
 import SpotCard from '../components/SpotCard.vue';
 import ExcursionCard from '../components/ExcursionCard.vue';
 import SegmentedToggle from '../components/SegmentedToggle.vue';
+import SearchFilterBar from '../components/SearchFilterBar.vue';
 import SpotOrderPicker from '../components/SpotOrderPicker.vue';
 import TripMap from '../components/TripMap.vue';
 import Modal from '../components/Modal.vue';
@@ -760,18 +761,6 @@ function toggleDescription(event?: MouseEvent) {
   }
 }
 
-const categoryMenuOpen = ref(false);
-const categoryBtnRef = ref<any>(null);
-const categoryMenuStyle = ref({ top: '0px', left: '0px' });
-function toggleCategoryMenu(event?: MouseEvent) {
-  if (!categoryMenuOpen.value) {
-    categoryMenuStyle.value = computeMenuStyle(categoryBtnRef.value, event, 220);
-    categoryMenuOpen.value = true;
-  } else {
-    categoryMenuOpen.value = false;
-  }
-}
-
 const categoryFilter = usePersistedRef<string[]>('reisotor-excursions-category-filter', []);
 function removeCategoryFilter(cat: string) {
   categoryFilter.value = categoryFilter.value.filter((c) => c !== cat);
@@ -790,17 +779,6 @@ const STATUS_FILTER_ICON: Record<'planned' | 'unplanned' | 'done', IconDef> = {
   unplanned: FORM_FIELD_ICONS.note,
   done: ACTION_ICONS.done,
 };
-const statusMenuOpen = ref(false);
-const statusBtnRef = ref<any>(null);
-const statusMenuStyle = ref({ top: '0px', left: '0px' });
-function toggleStatusMenu(event?: MouseEvent) {
-  if (!statusMenuOpen.value) {
-    statusMenuStyle.value = computeMenuStyle(statusBtnRef.value, event, 220);
-    statusMenuOpen.value = true;
-  } else {
-    statusMenuOpen.value = false;
-  }
-}
 
 const statusFilter = usePersistedRef<('planned' | 'unplanned' | 'done')[]>(
   'reisotor-excursions-status-filter',
@@ -812,6 +790,8 @@ function removeStatusFilter(status: 'planned' | 'unplanned' | 'done') {
 function itemDone(item: SpotsGroupItem): boolean {
   return !!item.spot.done;
 }
+
+const searchQuery = ref('');
 
 const allSpotItems = computed<SpotsGroupItem[]>(() =>
   spotsStore.spots.map((spot): SpotsGroupItem => ({ kind: 'spot', spot }))
@@ -828,6 +808,13 @@ const filteredSpotItems = computed(() =>
       const matchesStatus = statusFilter.value.includes(status);
       const matchesDone = statusFilter.value.includes('done') && itemDone(item);
       if (!matchesStatus && !matchesDone) return false;
+    }
+    if (searchQuery.value.trim()) {
+      const q = searchQuery.value.trim().toLowerCase();
+      const title = itemTitle(item).toLowerCase();
+      const category = itemCategory(item).toLowerCase();
+      const note = (item.spot.note ?? '').toLowerCase();
+      if (!title.includes(q) && !category.includes(q) && !note.includes(q)) return false;
     }
     return true;
   })
@@ -874,8 +861,13 @@ const spotGroups = computed(() => {
     // eine (leere) Gruppe - sonst verschwänden sie komplett aus dieser Ansicht, sobald man nach
     // Touren statt Kategorie gruppiert, weil die Gruppierung oben rein über die Spot-Zuordnung
     // (tourTitlesForItem) läuft.
+    const q = searchQuery.value.trim().toLowerCase();
     for (const ex of excursionsStore.excursions) {
-      if (!groups.has(ex.title)) groups.set(ex.title, []);
+      if (!groups.has(ex.title)) {
+        if (!q || ex.title.toLowerCase().includes(q) || (ex.note ?? '').toLowerCase().includes(q)) {
+          groups.set(ex.title, []);
+        }
+      }
     }
   }
   for (const [key, list] of groups) {
@@ -2565,116 +2557,14 @@ async function removeSpot(id: number) {
           </Modal>
 
           <div class="filter-bar" v-if="filterCategoryOptions.length">
-            <div class="filter-bar-rows">
-              <div class="tool-row">
-                <span class="tool-label" title="Sortieren">
-                  <AppIcon :icon="ACTION_ICONS.sort" :size="14" group="actions" />
-                  <span class="tool-label-text">Sortieren</span>
-                </span>
-                <select v-model="sortMode" aria-label="Sortierung">
-                  <option value="alpha">Alphabetisch</option>
-                  <option value="likes">Nach Likes</option>
-                </select>
-              </div>
-
-              <div class="tool-row">
-                <span class="tool-label" title="Filtern">
-                  <AppIcon :icon="ACTION_ICONS.filter" :size="14" group="actions" />
-                  <span class="tool-label-text">Filtern</span>
-                </span>
-                <div class="dropdown">
-                  <Button
-                    ref="categoryBtnRef"
-                    variant="dropdown"
-                    class="category-btn"
-                    title="Nach Kategorie filtern"
-                    aria-label="Nach Kategorie filtern"
-                    @click="toggleCategoryMenu($event)"
-                  >
-                    <AppIcon :icon="FORM_FIELD_ICONS.category" :size="14" group="formFields" />
-                    Kategorie
-                    <AppIcon
-                      :icon="ACTION_ICONS.chevronDown"
-                      :size="12"
-                      group="actions"
-                      class="caret dropdown-caret"
-                      :class="{ open: categoryMenuOpen }"
-                    />
-                  </Button>
-                  <Teleport to="body">
-                    <template v-if="categoryMenuOpen">
-                      <div class="picker-backdrop" @click="categoryMenuOpen = false"></div>
-                      <div class="picker-menu category-menu" :style="categoryMenuStyle">
-                        <DropdownItem
-                          v-for="cat in filterCategoryOptions"
-                          :key="cat"
-                          class="category-option"
-                          multiselect
-                          :icon="groupIconDef(cat)"
-                          icon-group="categories"
-                          :label="cat"
-                        >
-                          <template #checkbox>
-                            <input type="checkbox" :value="cat" v-model="categoryFilter" />
-                          </template>
-                        </DropdownItem>
-                      </div>
-                    </template>
-                  </Teleport>
-                </div>
-                <div class="dropdown">
-                  <Button
-                    ref="statusBtnRef"
-                    variant="dropdown"
-                    class="category-btn"
-                    title="Nach Status (geplant/ungeplant/gemacht) filtern"
-                    aria-label="Nach Status filtern"
-                    @click="toggleStatusMenu($event)"
-                  >
-                    <AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" /> Status
-                    <AppIcon
-                      :icon="ACTION_ICONS.chevronDown"
-                      :size="12"
-                      group="actions"
-                      class="caret dropdown-caret"
-                      :class="{ open: statusMenuOpen }"
-                    />
-                  </Button>
-                  <Teleport to="body">
-                    <template v-if="statusMenuOpen">
-                      <div class="picker-backdrop" @click="statusMenuOpen = false"></div>
-                      <div class="picker-menu category-menu" :style="statusMenuStyle">
-                        <DropdownItem
-                          multiselect
-                          :icon="FORM_FIELD_ICONS.date"
-                          icon-group="formFields"
-                          label="Geplant"
-                        >
-                          <template #checkbox>
-                            <input type="checkbox" value="planned" v-model="statusFilter" />
-                          </template>
-                        </DropdownItem>
-                        <DropdownItem
-                          multiselect
-                          :icon="FORM_FIELD_ICONS.note"
-                          icon-group="formFields"
-                          label="Ungeplant"
-                        >
-                          <template #checkbox>
-                            <input type="checkbox" value="unplanned" v-model="statusFilter" />
-                          </template>
-                        </DropdownItem>
-                        <DropdownItem multiselect :icon="ACTION_ICONS.done" label="Gemacht">
-                          <template #checkbox>
-                            <input type="checkbox" value="done" v-model="statusFilter" />
-                          </template>
-                        </DropdownItem>
-                      </div>
-                    </template>
-                  </Teleport>
-                </div>
-              </div>
-            </div>
+            <SearchFilterBar
+              v-model:searchQuery="searchQuery"
+              v-model:sortMode="sortMode"
+              v-model:categoryFilter="categoryFilter"
+              v-model:statusFilter="statusFilter"
+              :categoryOptions="filterCategoryOptions"
+              searchPlaceholder="Spots oder Touren suchen..."
+            />
 
             <div class="filter-chips" v-if="categoryFilter.length || statusFilter.length">
               <span v-for="cat in categoryFilter" :key="cat" class="filter-chip">

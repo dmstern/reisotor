@@ -143,7 +143,9 @@ im Rest der App nachschauen, was es dafür schon gibt (grep auf ähnliche Kompon
 Konzepte), statt eine zweite, leicht abweichende Variante danebenzubauen — siehe `DESIGN.md`,
 Abschnitt "Konsistenz", für konkret schon aufgetretene Fälle (native `<select>` vs. custom
 `Combobox.vue`, mehrere parallele Label-Stile, uneinheitliche Filter-/Gruppieren-/Sortieren-
-Präsentation je View).
+Präsentation je View). Beim Erstellen neuer wiederverwendbarer UI-Komponenten (`frontend/src/components/*.vue`)
+immer direkt eine zugehörige Storybook-Story-Datei (`*.stories.ts`) anlegen, damit Zustände der Komponente
+isoliert getestet und dokumentiert sind.
 
 Für Datenmodell-Änderungen gilt zusätzlich der Migrations-Check im nächsten Abschnitt. Bei neuen
 UI-Elementen oder sichtbaren UI-Anpassungen zusätzlich `DESIGN.md` (Projekt-Root) konsultieren —

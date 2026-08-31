@@ -834,7 +834,8 @@ input[type='range']:focus-visible,
   color: var(--color-text-muted);
 }
 
-input:not([type='checkbox']):not([type='file']),
+input:where(:not([type='checkbox']):not([type='file'])),
+.input-field,
 textarea {
   padding: var(--input-padding, 9px 12px);
   border: var(--ui-border-width, 1px) solid var(--color-border-strong);
