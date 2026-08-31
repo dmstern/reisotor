@@ -141,6 +141,15 @@ const emit = defineEmits<{
 
 const router = useRouter();
 const isDesktop = useIsDesktop();
+const drawers = useDrawersStore();
+
+const calendarOffset = computed(() => {
+  return isDesktop.value && drawers.calendarOpen ? drawers.calendarWidth : 0;
+});
+
+const calendarMargin = computed(() => {
+  return isDesktop.value && drawers.calendarOpen ? 'calc(var(--space-4) * 2)' : 'var(--drawer-tab-width)';
+});
 // Steuert den Teleport der Stationen-Liste unten (siehe sheetOverlayMode-Prop-Dokumentation oben) -
 // mit props.sheetOverlayMode statt des rohen isDesktop, sobald ExcursionsView.vue diesen Wert
 // mitgibt (immer der Fall, da TripMap.vue aktuell nur von dort aus verwendet wird); Fallback auf das
@@ -158,7 +167,6 @@ onMounted(() => {
   });
 });
 const tripStore = useTripStore();
-const drawers = useDrawersStore();
 const excursionsStore = useExcursionsStore();
 const spotsStore = useSpotsStore();
 const tracksStore = useTracksStore();
@@ -1361,7 +1369,14 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
 </script>
 
 <template>
-  <div class="karte">
+  <div
+    class="karte"
+    :class="{ 'sheet-overlay-mode': isNarrowLayout }"
+    :style="{ 
+      '--calendar-offset': `${calendarOffset}px`,
+      '--calendar-margin': calendarMargin
+    }"
+  >
     <div class="map-wrap">
       <div ref="mapEl" class="map"></div>
       <!-- Fasst "Alle anzeigen"/"Nur Urlaubsort"/"Nur Unterkünfte"/"Nur Tourziele" hinter einem
@@ -2044,6 +2059,21 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
   filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.9);
 }
 
+/* Hintergrund der Karte anpassen, damit beim Nachladen der Kacheln 
+   keine weiße Fläche aufblitzt. var(--color-bg) passt sich automatisch 
+   dem aktuellen Theme (Light/Dark) an. */
+.map,
+:deep(.leaflet-container) {
+  background: var(--color-bg);
+}
+
+/* Ein weicherer Fade-In für nachladende Kacheln, um das visuelle Erlebnis
+   beim schnellen Scrollen/Zoomen weiter zu verbessern. */
+:deep(.leaflet-fade-anim .leaflet-tile) {
+  transition: opacity 0.3s ease-in-out;
+}
+
+
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) .map :deep(.leaflet-tile-pane) {
     filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.9);
@@ -2065,6 +2095,62 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+
+/* Anpassung der Leaflet Zoom-Buttons an den Reisotor Styleguide */
+:deep(.leaflet-bar) {
+  border: 1px solid var(--color-border) !important;
+  box-shadow: var(--shadow-sm) !important;
+  border-radius: var(--radius-md-squircle) !important;
+  overflow: hidden;
+  background-color: var(--color-surface) !important;
+}
+
+:deep(.leaflet-bar a) {
+  background-color: var(--color-surface) !important;
+  color: var(--color-text) !important;
+  border-bottom: 1px solid var(--color-border) !important;
+  width: 34px !important;
+  height: 34px !important;
+  line-height: 34px !important;
+}
+
+:deep(.leaflet-bar a:hover) {
+  background-color: var(--color-hover) !important;
+  color: var(--color-text) !important;
+}
+
+:deep(.leaflet-bar a:last-child) {
+  border-bottom: none !important;
+}
+
+:deep(.leaflet-bar a.leaflet-disabled) {
+  color: var(--color-text-muted) !important;
+  background-color: var(--color-surface) !important;
+}
+
+/* Dezenter Copyright-Hinweis wie bei Google Maps (ohne Kasten, nur Text mit leichtem Halo-Effekt
+   für Lesbarkeit auf beliebigen Kartenuntergründen) */
+:deep(.leaflet-control-attribution) {
+  background: transparent !important;
+  color: var(--color-text) !important;
+  text-shadow: 
+    -1px -1px 0 var(--color-surface),
+     1px -1px 0 var(--color-surface),
+    -1px  1px 0 var(--color-surface),
+     1px  1px 0 var(--color-surface),
+     0 0 4px var(--color-surface) !important;
+  font-size: 0.7rem;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+:deep(.leaflet-control-attribution:hover) {
+  opacity: 1;
+}
+
+:deep(.leaflet-control-attribution a) {
+  color: var(--color-text) !important;
 }
 
 /* Mobil per Teleport in die Spots-Schublade verschoben (siehe Template oben, ExcursionsView.vue's
@@ -2248,21 +2334,9 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
    ExcursionsView.vue (dort samt Begründung) UND deren isSheetOverlayMode-JS-Spiegelung entsprechen,
    sonst schaltet dieser Bereich hier (Karte/Tage-Streifen) bei einer anderen Breite auf Desktop-Optik
    um als der umgebende Spalten-Grid, was zu einer inkonsistenten Zwischenbreite führen würde. */
-@container (min-width: 720px) {
-  .karte {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-3);
-  }
-
+@container app-main (min-width: 720px) {
   .map-wrap {
-    position: relative;
-    inset: auto;
-    /* Auf Desktop ist die Karte eine eigene Karte mit sichtbar gerundeter Ecke (s. u.) statt
-       randlos wie auf Mobil, UND es gibt deutlich mehr Höhe (min. 420px statt der schmalen
-       Mobil-Kartenfläche vor dem Bottom-Sheet, das es hier ohnehin nicht gibt - .spots-col ist auf
-       dieser Breite eine normale Spalte statt eines Overlays, siehe ExcursionsView.vue). Eckenabstand/
-       Lücke sind schon auf Mobil (.map-wrap oben) auf Apples Maß, hier reicht der Platz zusätzlich
+    /* Eckenabstand/Lücke sind schon auf Mobil (.map-wrap oben) auf Apples Maß, hier reicht der Platz zusätzlich
        für den größeren Durchmesser: 44px (dasselbe "großer runder Icon-Button"-Maß wie
        DashboardView.vue's .tile-icon) statt der auf Mobil aus Platznot nötigen 34px. */
     --fit-btn-size: 44px;
@@ -2272,20 +2346,35 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
     font-size: 1.2rem;
   }
 
-  .map {
-    height: 70vh;
-    min-height: 420px;
-    border-radius: var(--radius-md-squircle);
-    corner-shape: squircle;
-    border: 1px solid var(--color-border);
-  }
-
-  .focus-spot-list {
-    position: static;
-  }
-
+  /* Auf Desktop schwebt der day-strip als zentrierte Pille im verfügbaren Kartenbereich (neben dem Drawer) */
   .day-strip {
-    position: static;
+    left: calc(var(--calendar-offset, 0px) + var(--spots-col-width, 400px));
+    right: 0;
+    margin: 0 auto;
+    width: fit-content;
+    max-width: calc(100vw - var(--calendar-offset, 0px) - var(--spots-col-width, 400px) - 40px);
+    border-radius: 999px;
+    bottom: 24px;
+    padding: 8px 16px;
+  }
+
+  /* Zoom-Buttons rechts neben den Drawer schieben */
+  :deep(.leaflet-left) {
+    /* Nutzt die dynamische Margin (drawer-tab-width bei geschlossenem Kalender, 2*space-4 bei offenem) 
+       für korrekte Platzierung rechts neben der Spots-Schublade. */
+    left: calc(var(--calendar-margin, var(--drawer-tab-width)) + var(--calendar-offset, 0px) + var(--spots-col-width, 400px) + var(--space-4) + var(--space-3)) !important;
+  }
+  
+  :deep(.leaflet-top) {
+    top: var(--space-4) !important;
+  }
+  
+  :deep(.leaflet-left .leaflet-control) {
+    margin-left: 0 !important;
+  }
+  
+  :deep(.leaflet-top .leaflet-control) {
+    margin-top: 0 !important;
   }
 }
 </style>

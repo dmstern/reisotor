@@ -169,8 +169,12 @@
   --space-5: 32px;
   --space-6: 48px;
 
+  /* Dynamische UI-Größen für positionsabhängige Berechnungen (z.B. in TripMap.vue) */
+  --drawer-tab-width: 32px;
+
   --shadow-sm: 0 2px 6px rgba(43, 42, 40, 0.12);
   --shadow-md: 0 8px 24px rgba(43, 42, 40, 0.16);
+  --shadow-lg: 0 16px 48px rgba(43, 42, 40, 0.22);
 
   /* Zweites, "weicheres" Schatten-Paar für taktile Pillen-Elemente (aktuell: SegmentedToggle.vue,
      siehe DESIGN.md Abschnitt "Weiches Material") - getrennt von --shadow-sm/md (die sind für
@@ -263,6 +267,7 @@
 
     --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.35);
     --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
+    --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.55);
     --shadow-inset: inset 0 1px 2px rgba(0, 0, 0, 0.4);
     --shadow-pill-raised: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 6px rgba(0, 0, 0, 0.25);
     color-scheme: dark;
@@ -305,6 +310,7 @@
 
   --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.35);
   --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.55);
   --shadow-inset: inset 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-pill-raised: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 6px rgba(0, 0, 0, 0.25);
   color-scheme: dark;
@@ -341,6 +347,7 @@
   --color-scheduled: #1e96d1;
   --shadow-sm: 0 2px 6px rgba(43, 42, 40, 0.12);
   --shadow-md: 0 8px 24px rgba(43, 42, 40, 0.16);
+  --shadow-lg: 0 16px 48px rgba(43, 42, 40, 0.22);
   --shadow-inset: inset 0 1px 2px rgba(43, 42, 40, 0.1);
   --shadow-pill-raised: 0 1px 2px rgba(43, 42, 40, 0.08), 0 2px 6px rgba(43, 42, 40, 0.08);
   color-scheme: light;

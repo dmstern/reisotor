@@ -221,7 +221,7 @@ function onResizeEnd() {
   transform: translateY(-50%);
   z-index: 13;
   min-height: 72px;
-  width: 32px;
+  width: var(--drawer-tab-width);
   padding: 8px 3px;
   border: 1px solid var(--color-border);
   corner-shape: squircle;
@@ -254,7 +254,7 @@ function onResizeEnd() {
 }
 
 .drawer-tab:disabled:hover {
-  width: 32px;
+  width: var(--drawer-tab-width);
   min-height: 72px;
   color: var(--color-text-muted);
 }

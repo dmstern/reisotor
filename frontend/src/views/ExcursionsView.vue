@@ -1467,6 +1467,9 @@ function dragFlickVelocity(): number {
 let sheetStartY = 0;
 let sheetStartHeight = 0;
 function onSheetDragStart(event: PointerEvent) {
+  // Maus-Drag auf Desktop unterdrücken (verhindert versehentliches Resize bei Rechtsklick u. ä.).
+  // Touch/Pen bleibt immer erlaubt - auch auf Tablets/breiten Geräten im Overlay-Modus.
+  if (event.pointerType === 'mouse' && !isSheetOverlayMode.value) return;
   sheetDragging.value = true;
   sheetStartY = event.clientY;
   sheetStartHeight = sheetDragHeightPx.value ?? sheetHeightPx(sheetState.value);
@@ -1560,6 +1563,9 @@ let sheetBodyStartY = 0;
 let sheetBodyStartHeight = 0;
 
 function onSheetBodyPointerDown(event: PointerEvent) {
+  // Maus-Drag auf Desktop unterdrücken - body-drag ist auf Desktop nicht vorgesehen (kein Sheet-Overlay).
+  // Touch/Pen bleibt immer erlaubt.
+  if (event.pointerType === 'mouse' && !isSheetOverlayMode.value) return;
   if (sheetState.value === 'full') return; // voll ausgeklappt: Liste scrollt ganz normal.
   // Eigene Zug-Ziele innerhalb der Liste (Kalender-/Touren-Anfasser einer Spot-Karte, siehe
   // SpotCard.vue's usePointerDrag-Wiring) haben ihre eigene Pointer-Drag-Logik - ohne diesen Ausstieg
@@ -3380,7 +3386,7 @@ async function removeSpot(id: number) {
      sich die Kante der Karte gegen eine bunte Karte im Hintergrund, der box-shadow allein reicht
      dafür nicht. Gleiches --color-border-Muster wie z. B. Drawer.vue's/.picker-menu's Buttons. */
   border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-lg);
   height: min(46vh, var(--sheet-max-height));
   /* Wie bei Apple Maps' Suchleisten-Schublade: solange nicht ganz hochgezogen (collapsed/partial,
      .full überschreibt beide Werte unten auf scaleX(1)/nur obere Ecken), schwebt das Sheet als
@@ -3607,111 +3613,70 @@ async function removeSpot(id: number) {
    mobilen Sheet-Modus zurück, obwohl noch genug Platz für eine (wenn auch schmalere) Spots-Liste +
    Karte nebeneinander da war. */
 @container app-main (min-width: 720px) {
+  /* .page bleibt wie auf Mobil absolute und vollbild, Karte füllt den Bereich aus */
   .page {
-    position: static;
-    height: auto;
-    overflow: visible;
-    max-width: 1600px;
-    /* Die globale .page-Regel (style.css) bringt padding-bottom:88px für normal scrollende Seiten
-       mit (Platz z. B. für eine untere mobile Navigation) – hier unnötig und der Hauptgrund für den
-       sichtbaren leeren Weißraum am Seitenende, da .layout's Inhalt (sticky) sich schon selbst
-       begrenzt. padding-top wird stattdessen unten in der max-height-Rechnung berücksichtigt
-       (statt es hier auf 0 zu setzen), damit der Titel nicht direkt am Seitenrand klebt. */
-    padding: var(--space-3) var(--space-4) 0;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    position: relative;
   }
 
-  /* Auf Desktop gibt es keine vollflächige Hintergrund-Karte (siehe .map-col weiter unten) – der
-     Titel ist hier weiterhin sinnvoll und bleibt sichtbar. */
+  /* Auf Desktop ist der Titel visuell ausgeblendet, bleibt aber für Screenreader lesbar */
   .page-title {
-    display: flex;
-    gap: 0.5rem;
-    margin: 0 0 var(--space-3);
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
   }
 
   .layout {
-    display: grid;
-    /* min(..., 75cqw) statt einfach var(--spots-col-width): deckelt die Spots-Spalte zusätzlich
-       relativ zur tatsächlichen Container-Breite (derselbe Container wie die @container-Query hier,
-       .app-main in App.vue) – ohne das könnte die Karte auf schmaleren Containern komplett verdrängt
-       werden, wenn spotsColWidth (JS, siehe MAX_SPOTS_COL_WIDTH) großzügiger als der verfügbare
-       Platz gewählt wurde. 75cqw erlaubt der Liste bis zu 3/4 des Platzes, wenn gewünscht. */
-    grid-template-columns: min(var(--spots-col-width), 75cqw) 20px 1fr;
-    align-items: start;
-    gap: 0;
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
   }
 
-  /* Beide Spalten scrollen ab hier unabhängig voneinander statt gemeinsam mit der Seite – dieselbe
-     Sticky-Offset-Formel wie Drawer.vue's Desktop-Panel (56px NavBar + evtl. zusätzlicher
-     --navbar-offset, falls die NavBar selbst "oben" positioniert ist). Auch der komplette Reset
-     der mobilen Bottom-Sheet-/Vollbild-Eigenschaften (fixed-Positionierung, Höhe, Hintergrund, …)
-     zurück auf den bisherigen Stand. */
-  .spots-col,
   .map-col {
-    position: sticky;
-    left: auto;
-    right: auto;
-    bottom: auto;
-    z-index: auto;
+    position: fixed;
     top: calc(var(--app-header-height, 56px) + var(--navbar-offset, 0px));
-    /* Zieht zusätzlich die (live gemessene, siehe pageTitleHeight im Script) Höhe des Seitentitels
-       samt seines margin-bottom sowie .page's eigenes padding-top (var(--space-3), s. o.) ab – ohne
-       das war die Spalte beim ersten Rendern (bevor sie tatsächlich einrastet) zu groß, was eine
-       überflüssige Seiten-Scrollbar samt leerem Weißraum am Ende erzeugte. */
-    max-height: calc(
-      100vh - var(--app-header-height, 56px) - var(--navbar-offset, 0px) -
-        var(--navbar-bottom-offset, 0px) - var(--page-title-height, 0px) - var(--space-3)
-    );
-    overflow-y: auto;
-  }
-
-  /* Reserviert Platz links/rechts/unten, damit der Schatten der fokussierten Tagesansicht-Box
-     (TripMap.vue's .focus-spot-list, in .karte statisch unter der Karte fließend) nicht am
-     overflow-x:auto-Rand von .map-col abgeschnitten wird (overflow-y:auto oben setzt overflow-x
-     laut CSS-Spec implizit auf auto, s. Kommentar bei .col-resize-handle) und die Box unten nicht
-     direkt am Rand von .map-col klebt (#158). */
-  .map-col {
-    padding: 0 var(--space-2) var(--space-3);
+    bottom: var(--navbar-bottom-offset, 0px);
+    left: 0;
+    right: 0;
+    z-index: 1;
+    pointer-events: auto;
   }
 
   .spots-col {
-    /* Der native Scrollbalken sitzt sonst direkt auf dem Kartenrand – etwas Luft, damit er nicht
-       am Inhalt klebt. */
-    padding-right: var(--space-3);
-    display: block;
+    position: absolute;
+    left: var(--space-4);
+    top: var(--space-4);
+    bottom: var(--space-4);
     height: auto;
-    background: none;
-    border: none;
-    border-radius: 0;
-    box-shadow: none;
+    max-height: none;
+    z-index: 5;
+    background: var(--color-surface);
+    border-radius: var(--radius-md-squircle);
+    box-shadow: var(--shadow-md);
+    width: var(--spots-col-width);
+    pointer-events: auto;
+
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+
+    /* Override mobile transforms and bottom offsets */
     transform: none;
     transition: none;
   }
 
-  /* .spots-col ist ab hier transparent (s. o.) - der sticky .category-nav-wrap liegt hier also direkt
-     auf dem Seitenhintergrund statt dem mobilen Bottom-Sheet, braucht deshalb --color-bg statt der
-     --color-surface-Vorgabe unten. Nachfahren-Selektor (.spots-col .category-nav-wrap) statt
-     einfachem .category-nav-wrap: gleiche Spezifität wie die spätere Basisregel unten hätte sonst die
-     Deklarations-Reihenfolge im Stylesheet entscheiden lassen statt die @container-Bedingung – exakt
-     die in DESIGN.md ("Abstände", .hint/.places-hint-Beispiel) beschriebene Falle. War genau die
-     Ursache von Issue #87 (Desktop bekam fälschlich --color-surface). --category-nav-bg (statt nur
-     background) wird hier mit umgeschaltet - die Pfeil-Verläufe (.category-nav-arrow) nutzen dieselbe
-     Variable, sonst wichen sie hier vom jetzt anderen Hintergrund ab (#144). */
+  /* .spots-col ist auf Desktop undurchsichtig, keine speziellen Hintergrundanpassungen nötig. */
   .spots-col .category-nav-wrap {
-    background: var(--color-bg);
-    --category-nav-bg: var(--color-bg);
-  }
-
-  /* .spots-col.collapsed/.full (höhere Spezifität als die einfache .spots-col-Regel oben, da zwei
-     statt einer Klasse) würden das dortige height:auto sonst weiterhin überschreiben, falls
-     sheetState beim Wechsel in den Desktop-Modus zufällig "collapsed"/"full" war (z. B. nach
-     Schließen einer Schublade, während die Karte vorher im mobilen Modus auf "voll" stand). Aus
-     demselben Grund jetzt auch bottom: .spots-col.full setzt mobil bottom:0 (siehe dort) - würde
-     ohne dieses Reset hier das .spots-col-weite bottom:auto (oben) aus genau demselben
-     Spezifitäts-Grund überschreiben und die sticky Spalte auf Desktop verschieben. */
-  .spots-col.collapsed,
-  .spots-col.full {
-    height: auto;
-    bottom: auto;
+    background: var(--color-surface);
+    --category-nav-bg: var(--color-surface);
   }
 
   .sheet-handle-row {
@@ -3719,44 +3684,26 @@ async function removeSpot(id: number) {
   }
 
   .spots-col-body {
-    flex: none;
-    overflow-y: visible;
-    padding: 0;
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--space-3);
   }
 
-  /* Reset des mobilen "nur im voll-Zustand scrollbar"-Verhaltens (siehe dortiger Kommentar) - auf
-     Desktop gibt es keinen Sheet-Zustand, die Liste soll unabhängig davon immer normal scrollen/
-     Zeigereignisse normal durchlassen. Gleiche Selektor-Spezifität + späterer Quellort wie die
-     mobile Regel, damit dieser Reset zuverlässig gewinnt statt an Spezifität zu scheitern. */
   .spots-col.collapsed .spots-col-body,
   .spots-col.partial .spots-col-body {
-    overflow-y: visible;
+    overflow-y: auto;
     touch-action: auto;
   }
 
-  /* Dieselbe Sticky-Formel wie die beiden Inhaltsspalten – hier aber als explizite `height` statt
-     nur `max-height`: .spots-col/.map-col bekommen ihre Höhe automatisch von ihrem (teils langen)
-     Inhalt, ein leeres Element wie dieses hätte ohne erzwungene `height` sonst nur eine Höhe nahe 0
-     (Grid-`align-items: start` auf .layout streckt Items nicht automatisch) – der Anfasser wäre
-     dadurch praktisch unsichtbar/nicht greifbar gewesen. Nur Positionierung/Größe hier – die
-     eigentliche Anfasser-Optik (Hover-Hintergrund, Griff-Strich) kommt aus der geteilten
-     .resize-grip-Klasse (style.css), damit sie überall identisch aussieht (Drawer.vue's
-     Schubladen-Anfasser nutzt dieselbe Klasse). display:flex MUSS hier trotzdem explizit gesetzt
-     bleiben (nicht der globalen .resize-grip-Regel überlassen): der unconditional Mobil-Default
-     weiter oben (.col-resize-handle { display: none; }) hat dieselbe Spezifität wie .resize-grip's
-     eigenes display:flex, und scoped Component-Styles gewinnen bei einem Unentschieden gegen
-     globale Styles typischerweise unabhängig von der Lade-Reihenfolge – ohne dieses explizite
-     Zurücksetzen blieb der Anfasser dadurch auch auf Desktop display:none, wodurch er als
-     Grid-Element komplett wegfiel und .map-col in seine 20px-Spalte statt die eigentliche
-     1fr-Spalte rutschte (dadurch wirkte die Karte winzig). */
   .col-resize-handle {
     display: flex;
-    position: sticky;
-    top: calc(var(--app-header-height, 56px) + var(--navbar-offset, 0px));
-    height: calc(
-      100vh - var(--app-header-height, 56px) - var(--navbar-offset, 0px) -
-        var(--navbar-bottom-offset, 0px) - var(--page-title-height, 0px) - var(--space-3)
-    );
+    position: absolute;
+    left: calc(var(--space-4) + var(--spots-col-width));
+    top: calc(var(--app-header-height, 56px) + var(--navbar-offset, 0px) + var(--space-4));
+    bottom: var(--space-4);
+    height: auto;
+    z-index: 10;
+    pointer-events: auto;
   }
 }
 
@@ -3815,7 +3762,9 @@ async function removeSpot(id: number) {
 .title-swipe-up-leave-active,
 .title-swipe-down-enter-active,
 .title-swipe-down-leave-active {
-  transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.18s ease;
+  transition:
+    transform 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.18s ease;
 }
 
 .title-swipe-up-enter-from {
@@ -4493,6 +4442,14 @@ async function removeSpot(id: number) {
   padding-top: 1px;
   z-index: 2;
   margin-bottom: var(--space-3);
+  
+  /* Die Leiste auf die volle Breite der Schublade aufziehen, um auch das seitliche Scroll-Padding
+     abzudecken, falls Inhalte drunterscrollen. */
+  margin-left: calc(var(--space-3) * -1);
+  margin-right: calc(var(--space-3) * -1);
+  padding-left: var(--space-3);
+  padding-right: var(--space-3);
+
   /* Eigene Variable statt direkt --color-surface, weil die Desktop-Regel weiter unten
      (.spots-col .category-nav-wrap) sie auf --color-bg umschaltet - Pfeile/Verlauf unten nutzen
      denselben Wert, damit beide Stellen bei einer künftigen Änderung nicht auseinanderlaufen. */
@@ -4510,9 +4467,13 @@ async function removeSpot(id: number) {
 
 /* Sobald tatsächlich "stuck" (siehe Sentinel/IntersectionObserver oben): ein dezenter Schatten
    zeigt an, dass die Leiste jetzt über scrollendem Inhalt schwebt, statt (wie die frühere Pille) die
-   Form komplett zu wechseln. */
+   Form komplett zu wechseln. 
+   Zusätzlich deckt ein solider Schatten nach oben den padding-top Bereich von .spots-col-body ab,
+   damit die drunterscrollenden Karten dort nicht sichtbar werden. */
 .category-nav-wrap.is-stuck {
-  box-shadow: var(--shadow-sm);
+  box-shadow: 
+    0 calc(var(--space-3) * -1) 0 0 var(--category-nav-bg),
+    var(--shadow-sm);
 }
 
 .category-nav {
