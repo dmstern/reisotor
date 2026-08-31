@@ -313,6 +313,7 @@ function onSpotDrop(event: DragEvent) {
       </div>
       <div class="card-actions">
         <button
+          v-if="!excursion.date"
           type="button"
           class="calendar-drag-handle"
           aria-label="Auf Kalender ziehen zum Einplanen"
