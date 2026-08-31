@@ -68,7 +68,7 @@ const isNonProd = computed(
   <header
     ref="headerEl"
     class="app-header"
-    :class="{ 'non-prod': isNonProd, 'nav-bottom': navBarIsBottom }"
+    :class="{ 'nav-bottom': navBarIsBottom }"
   >
     <DemoModeBanner v-if="DEMO_MODE" />
     <!-- Eigene Zeile ÜBER der Icon-Zeile statt zwischen TripSwitcher und den Icons rechts
@@ -159,13 +159,6 @@ const isNonProd = computed(
   gap: var(--space-2);
   padding: 0 var(--space-4);
   box-sizing: border-box;
-}
-
-/* Einziger optischer Marker für "nicht Produktion" (Staging/lokal) – dezent (nur die
-   Header-Trennlinie, kein flächiger Farbwechsel), damit die grundsätzliche UI nicht gestört wird,
-   aber auf einen Blick von der echten Produktion unterscheidbar bleibt. */
-.app-header.non-prod {
-  border-bottom: 2px solid var(--color-accent);
 }
 
 .brand {
