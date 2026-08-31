@@ -45,11 +45,10 @@ const overflowCount = computed(() => Math.max(0, otherMembers.value.length - MAX
       v-for="user in visibleMembers"
       :key="user.id"
       class="presence-avatar"
-      :class="{ offline: !isOnline(user) }"
+      :class="{ offline: !isOnline(user), online: isOnline(user) }"
       :title="`${user.username} ist gerade ${isOnline(user) ? 'online' : 'offline'}`"
     >
       {{ user.avatar }}
-      <span v-if="isOnline(user)" class="online-dot" aria-hidden="true" />
     </span>
     <span
       v-if="overflowCount > 0"
@@ -91,6 +90,10 @@ const overflowCount = computed(() => Math.max(0, otherMembers.value.length - MAX
   margin-left: 0;
 }
 
+.presence-avatar.online {
+  border: 2px solid color-mix(in srgb, var(--color-success) 50%, transparent);
+}
+
 .presence-avatar.offline {
   filter: grayscale(1);
   opacity: 0.5;
@@ -102,14 +105,5 @@ const overflowCount = computed(() => Math.max(0, otherMembers.value.length - MAX
   color: var(--color-text-muted);
 }
 
-.online-dot {
-  position: absolute;
-  bottom: -1px;
-  right: -1px;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--color-success);
-  border: 2px solid var(--color-surface);
-}
+
 </style>
