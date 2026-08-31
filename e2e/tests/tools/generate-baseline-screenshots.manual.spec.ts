@@ -1,6 +1,54 @@
-import { test } from '@playwright/test';
+import { test, type Page } from '@playwright/test';
+import fs from 'node:fs';
 import path from 'node:path';
+import { PNG } from 'pngjs';
+import pixelmatch from 'pixelmatch';
 import { forceFontDisplayBlock, waitForAppReady } from '../helpers/fonts.js';
+
+async function saveScreenshotIfChanged(
+  page: Page,
+  screenshotPath: string,
+  options: { fullPage?: boolean; maxDiffPixels?: number } = {}
+): Promise<{ status: 'created' | 'updated' | 'unchanged'; diffPixels?: number }> {
+  const { fullPage = false, maxDiffPixels = 5 } = options;
+  const newBuffer = await page.screenshot({ fullPage });
+
+  if (!fs.existsSync(screenshotPath)) {
+    fs.mkdirSync(path.dirname(screenshotPath), { recursive: true });
+    fs.writeFileSync(screenshotPath, newBuffer);
+    console.log(`[Created] ${path.basename(screenshotPath)}`);
+    return { status: 'created' };
+  }
+
+  try {
+    const existingBuffer = fs.readFileSync(screenshotPath);
+    const img1 = PNG.sync.read(existingBuffer);
+    const img2 = PNG.sync.read(newBuffer);
+
+    if (img1.width !== img2.width || img1.height !== img2.height) {
+      fs.writeFileSync(screenshotPath, newBuffer);
+      console.log(`[Updated: dimensions changed] ${path.basename(screenshotPath)}`);
+      return { status: 'updated' };
+    }
+
+    const numDiffPixels = pixelmatch(img1.data, img2.data, null, img1.width, img1.height, {
+      threshold: 0.1,
+    });
+
+    if (numDiffPixels > maxDiffPixels) {
+      fs.writeFileSync(screenshotPath, newBuffer);
+      console.log(`[Updated: ${numDiffPixels} px diff] ${path.basename(screenshotPath)}`);
+      return { status: 'updated', diffPixels: numDiffPixels };
+    } else {
+      console.log(`[Unchanged: ${numDiffPixels} px diff] ${path.basename(screenshotPath)}`);
+      return { status: 'unchanged', diffPixels: numDiffPixels };
+    }
+  } catch {
+    fs.writeFileSync(screenshotPath, newBuffer);
+    console.log(`[Updated: fallback] ${path.basename(screenshotPath)}`);
+    return { status: 'updated' };
+  }
+}
 
 const VIEWS = [
   { slug: 'dashboard', path: '/' },
@@ -115,7 +163,7 @@ test.describe('Generate Clean Production Baseline Screenshots (Full HD)', () => 
             `${view.slug}-${vp.name}-${theme}.png`
           );
 
-          await page.screenshot({ path: screenshotPath, fullPage: false });
+          await saveScreenshotIfChanged(page, screenshotPath, { fullPage: false });
         }
       }
     });
@@ -157,8 +205,9 @@ test.describe('Generate Clean Production Baseline Screenshots (Full HD)', () => 
           `landing-${vp.name}-${theme}.png`
         );
 
-        await page.screenshot({ path: screenshotPath, fullPage: false });
+        await saveScreenshotIfChanged(page, screenshotPath, { fullPage: false });
       }
     }
   });
 });
+
