@@ -52,6 +52,22 @@ export default tseslint.config(
       'vue/require-default-prop': 'off',
       'vue/no-v-html': 'warn',
       'vue/attributes-order': 'off',
+      'vue/no-undef-components': [
+        'error',
+        {
+          ignorePatterns: [
+            'router-link',
+            'router-view',
+            'Teleport',
+            'Transition',
+            'TransitionGroup',
+            'KeepAlive',
+            'Suspense',
+            'component',
+            'slot',
+          ],
+        },
+      ],
       ...a11yWarnRules,
     },
   },
