@@ -52,6 +52,7 @@ import {
 } from '../utils/excursionStations';
 import { interpolateTrackPosition } from '../utils/trackGeometry';
 import { useIsDesktop } from '../composables/useIsDesktop';
+import { usePersistedRef } from '../composables/usePersistedRef';
 import MiniStationCard from './MiniStationCard.vue';
 import Card from './primitives/Card.vue';
 import IconButton from './primitives/IconButton.vue';
@@ -60,6 +61,7 @@ import TravelDetailDialog from './TravelDetailDialog.vue';
 import DayChip from './DayChip.vue';
 import TrackPlayback from './TrackPlayback.vue';
 import AppIcon from './AppIcon.vue';
+import TrackRecordingWarningModal from './TrackRecordingWarningModal.vue';
 
 // Die Karte ist ein generischer, reiner Pin-Layer (kein Anlegen/Bearbeiten hier): sie zeigt
 // automatisch jedes Objekt des aktuellen Urlaubs mit hinterlegtem Standort – Unterkunft, Reise
@@ -375,6 +377,12 @@ async function chooseShareDuration(duration: ShareDuration) {
 const recordMenuOpen = ref(false);
 const recordButtonRef = ref<HTMLButtonElement | null>(null);
 const recordMenuStyle = ref({ top: '0px', left: '0px' });
+const showTrackRecordingWarningModal = ref(false);
+const pendingRecordVisibility = ref<TrackVisibility>('private');
+const trackWarningDismissed = usePersistedRef<boolean>(
+  'reisotor-track-recording-warning-acknowledged',
+  false
+);
 
 async function toggleRecordMenu(event?: MouseEvent) {
   if (trackRecording.recording) {
@@ -395,7 +403,20 @@ async function toggleRecordMenu(event?: MouseEvent) {
 // zusätzliches Auswahl-Steuerelement im ohnehin schon kleinen Menü zu brauchen.
 async function chooseRecordVisibility(visibility: TrackVisibility) {
   recordMenuOpen.value = false;
-  await trackRecording.start({ visibility, excursionId: drawers.mapFocusExcursionId });
+  if (trackWarningDismissed.value) {
+    await trackRecording.start({ visibility, excursionId: drawers.mapFocusExcursionId });
+  } else {
+    pendingRecordVisibility.value = visibility;
+    showTrackRecordingWarningModal.value = true;
+  }
+}
+
+async function startRecordingConfirmed() {
+  showTrackRecordingWarningModal.value = false;
+  await trackRecording.start({
+    visibility: pendingRecordVisibility.value,
+    excursionId: drawers.mapFocusExcursionId,
+  });
 }
 
 // Einmal gestartet, läuft der Kompass unabhängig von weiteren Klicks weiter (kein erneutes
@@ -1563,6 +1584,10 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
           </div>
         </template>
       </Teleport>
+      <TrackRecordingWarningModal
+        v-model="showTrackRecordingWarningModal"
+        @confirm="startRecordingConfirmed"
+      />
       <div class="tile-download-pill" v-if="trackRecording.startError">
         <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" />
         {{ trackRecording.startError }}

@@ -48,6 +48,7 @@ import Modal from '../components/Modal.vue';
 import Combobox from '../components/Combobox.vue';
 import FormField from '../components/FormField.vue';
 import TourAssignPicker from '../components/TourAssignPicker.vue';
+import TrackRecordingWarningModal from '../components/TrackRecordingWarningModal.vue';
 import LocationPicker from '../components/LocationPicker.vue';
 import CoverImagePicker from '../components/CoverImagePicker.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
@@ -3223,49 +3224,10 @@ async function removeSpot(id: number) {
           </Modal>
 
           <!-- Hinweis-Modal für Standort-Aufzeichnung (#230) -->
-          <Modal
-            :model-value="showTrackRecordingWarningModal"
-            title="Weg aufzeichnen"
-            @update:model-value="(v) => !v && (showTrackRecordingWarningModal = false)"
-          >
-            <div class="track-warning-modal">
-              <p class="track-warning-intro">
-                Reisotor zeichnet deinen Weg während des Ausflugs auf. Bitte beachte:
-              </p>
-              <div class="track-warning-points">
-                <div class="track-warning-point">
-                  <h4>
-                    <AppIcon :icon="ACTION_ICONS.myLocation" :size="15" group="actions" />
-                    Standort-Berechtigung
-                  </h4>
-                  <p>Dein Browser benötigt die Berechtigung, auf deinen Standort zuzugreifen.</p>
-                </div>
-                <div class="track-warning-point">
-                  <h4>
-                    <AppIcon :icon="ACTION_ICONS.history" :size="15" group="actions" /> App geöffnet
-                    lassen
-                  </h4>
-                  <p>
-                    Da Reisotor im Browser/als PWA läuft, kann die Aufzeichnung pausieren, wenn der
-                    Browser im Hintergrund vollständig geschlossen wird.
-                  </p>
-                </div>
-              </div>
-              <label class="checkbox-option warning-dismiss">
-                <input type="checkbox" v-model="trackWarningDismissed" />
-                Diesen Hinweis nicht mehr anzeigen
-              </label>
-              <ButtonGroup>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  @click="showTrackRecordingWarningModal = false"
-                  >Abbrechen</Button
-                >
-                <Button type="button" @click="startRecordingConfirmed">Aufzeichnung starten</Button>
-              </ButtonGroup>
-            </div>
-          </Modal>
+          <TrackRecordingWarningModal
+            v-model="showTrackRecordingWarningModal"
+            @confirm="startRecordingConfirmed"
+          />
         </div>
       </div>
 
