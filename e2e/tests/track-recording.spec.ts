@@ -50,7 +50,11 @@ test.describe('Standort-Aufzeichnung', () => {
     await page.evaluate(
       () =>
         new Promise((r) =>
-          navigator.geolocation.getCurrentPosition(r, r, { timeout: 2000, maximumAge: 0 })
+          navigator.geolocation.getCurrentPosition(r, r, {
+            enableHighAccuracy: true,
+            timeout: 5000,
+            maximumAge: 0,
+          })
         )
     );
     await page.waitForTimeout(500);
@@ -132,7 +136,11 @@ test.describe('Standort-Aufzeichnung', () => {
     await page.evaluate(
       () =>
         new Promise((r) =>
-          navigator.geolocation.getCurrentPosition(r, r, { timeout: 2000, maximumAge: 0 })
+          navigator.geolocation.getCurrentPosition(r, r, {
+            enableHighAccuracy: true,
+            timeout: 5000,
+            maximumAge: 0,
+          })
         )
     );
     await page.waitForTimeout(300);
@@ -147,7 +155,11 @@ test.describe('Standort-Aufzeichnung', () => {
     await page.evaluate(
       () =>
         new Promise((r) =>
-          navigator.geolocation.getCurrentPosition(r, r, { timeout: 2000, maximumAge: 0 })
+          navigator.geolocation.getCurrentPosition(r, r, {
+            enableHighAccuracy: true,
+            timeout: 5000,
+            maximumAge: 0,
+          })
         )
     );
     await page.waitForTimeout(300);
