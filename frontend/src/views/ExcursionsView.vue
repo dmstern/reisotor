@@ -1374,13 +1374,13 @@ function onColResizeStart(event: PointerEvent) {
   event.preventDefault();
 }
 function updateSpotsColRight() {
-  if (isSheetOverlayMode.value || !sheetEl.value || !tripMapRef.value?.$el) {
+  if (isSheetOverlayMode.value || !sheetEl.value) {
     spotsColRightPx.value = 0;
     return;
   }
   const spotsRect = sheetEl.value.getBoundingClientRect();
-  const mapRect = tripMapRef.value.$el.getBoundingClientRect();
-  spotsColRightPx.value = Math.max(0, Math.round(spotsRect.right - mapRect.left));
+  const mapLeft = tripMapRef.value?.$el?.getBoundingClientRect().left ?? 0;
+  spotsColRightPx.value = Math.max(0, Math.round(spotsRect.right - mapLeft));
 }
 
 function onColResizeMove(event: PointerEvent) {
@@ -1682,7 +1682,12 @@ onMounted(() => {
     spotsColResizeObserver.observe(sheetEl.value);
   }
   window.addEventListener('resize', updateSpotsColRight);
-  nextTick(updateSpotsColRight);
+  updateSpotsColRight();
+  nextTick(() => {
+    updateSpotsColRight();
+    setTimeout(updateSpotsColRight, 50);
+    setTimeout(updateSpotsColRight, 300);
+  });
 });
 
 onUnmounted(() => {
@@ -1707,13 +1712,14 @@ const mapCoveredLeftPx = computed(() =>
   isSheetOverlayMode.value ? 0 : spotsColRightPx.value
 );
 
-watch([isSheetOverlayMode, spotsColWidth], () => nextTick(updateSpotsColRight));
+watch([isSheetOverlayMode, spotsColWidth, tripMapRef], () => nextTick(updateSpotsColRight));
 watch(
   () => [drawers.calendarOpen, drawers.calendarWidth],
   () => {
     nextTick(updateSpotsColRight);
     setTimeout(updateSpotsColRight, 260);
-  }
+  },
+  { immediate: true }
 );
 
 // Ein Klick auf eine Spot-Karte klappt sie nur auf, ohne das Sheet anzurühren oder die Karte zu

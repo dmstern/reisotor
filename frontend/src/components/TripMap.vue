@@ -794,7 +794,64 @@ function fitExcursions() {
   }
 }
 
-// Zentriert auf einen einzelnen Punkt UND schiebt den sichtbaren Ausschnitt danach so weit nach
+let isProgrammaticMove = false;
+
+function checkFocusOutOfBounds() {
+  if (!map) return;
+
+  const hasFocus =
+    drawers.mapFocusExcursionId != null ||
+    drawers.mapFocusDate != null ||
+    drawers.mapFocusKey != null ||
+    drawers.mapFocusTrackId != null;
+
+  if (!hasFocus) return;
+
+  let focusedLatLngs: [number, number][] = [];
+
+  if (focusedExcursion.value) {
+    focusedLatLngs = visiblePoints.value
+      .filter((p) => p.origin === 'spot')
+      .map((p) => [p.lat, p.lng]);
+  } else if (drawers.mapFocusDate) {
+    focusedLatLngs = focusedDateStations.value
+      .filter((s) => s.lat != null && s.lng != null)
+      .map((s) => [s.lat as number, s.lng as number]);
+  } else if (drawers.mapFocusKey) {
+    const p = points.value.find((pt) => pt.key === drawers.mapFocusKey);
+    if (p) focusedLatLngs = [[p.lat, p.lng]];
+  } else if (focusedTrack.value) {
+    focusedLatLngs = focusedTrackPoints.value.map((pt) => [pt.lat, pt.lng]);
+  }
+
+  if (!focusedLatLngs.length) return;
+
+  const coveredLeftPx = props.coveredLeftPx ?? 0;
+  const coveredBottomPx = props.coveredBottomPx ?? 0;
+  const mapSize = map.getSize();
+
+  let isAnyOutOfBounds = false;
+  for (const [lat, lng] of focusedLatLngs) {
+    const pt = map.latLngToContainerPoint([lat, lng]);
+    if (
+      pt.x < coveredLeftPx ||
+      pt.x > mapSize.x ||
+      pt.y < 0 ||
+      pt.y > mapSize.y - coveredBottomPx
+    ) {
+      isAnyOutOfBounds = true;
+      break;
+    }
+  }
+
+  if (isAnyOutOfBounds) {
+    drawers.mapFocusExcursionId = null;
+    drawers.mapFocusDate = null;
+    drawers.mapFocusKey = null;
+    drawers.mapFocusTrackId = null;
+  }
+}
+
 // Zentriert auf einen einzelnen Punkt UND schiebt den sichtbaren Ausschnitt danach so weit nach
 // oben/rechts, dass der Punkt in der Mitte der tatsächlich sichtbaren Fläche landet – nicht in der Mitte
 // des gesamten Karten-Containers, dessen unterer Teil auf mobile von der Spots-Schublade verdeckt
@@ -803,6 +860,7 @@ function fitExcursions() {
 // aufgeklappter Schublade optisch dahinter statt im sichtbaren freien Kartenbereich.
 function centerOnPoint(latlng: L.LatLngExpression, zoom: number) {
   if (!map) return;
+  isProgrammaticMove = true;
   const coveredBottomPx = props.coveredBottomPx ?? 0;
   const coveredLeftPx = props.coveredLeftPx ?? 0;
   if (!coveredBottomPx && !coveredLeftPx) {
@@ -832,6 +890,7 @@ function centerOnPoint(latlng: L.LatLngExpression, zoom: number) {
 // Rechnung von centerOnPoint() zu duplizieren.
 function fitBoundsWithCoveredBottom(bounds: L.LatLngBoundsExpression) {
   if (!map) return;
+  isProgrammaticMove = true;
   const coveredBottomPx = props.coveredBottomPx ?? 0;
   const coveredLeftPx = props.coveredLeftPx ?? 0;
   map.fitBounds(bounds, {
@@ -1212,6 +1271,15 @@ onMounted(async () => {
     startCompass();
   }
 
+  // Automatische Fokus-Rücksetzung, wenn die Nutzerin manuell von fokussierten Orten wegscrolled
+  map.on('moveend', () => {
+    if (isProgrammaticMove) {
+      isProgrammaticMove = false;
+      return;
+    }
+    checkFocusOutOfBounds();
+  });
+
   // Leaflet misst die Containergröße nur einmal beim Initialisieren und merkt sich das intern –
   // ändert sich die Größe danach (Fenster wird verändert, Layout-Spalten ändern ihr Verhältnis),
   // rendert die Karte sonst nur den halben Ausschnitt statt sich neu zu berechnen. ResizeObserver
@@ -1269,6 +1337,20 @@ watch(
   () => {
     renderMarkers();
     renderRoutes();
+  }
+);
+
+// Erneuter Aufruf von "Auf Karte anzeigen" – zentriert den Ausschnitt auch dann neu,
+// wenn sich die Fokus-Id im Store selbst nicht geändert hat.
+watch(
+  () => drawers.focusVersion,
+  () => {
+    if (!map) return;
+    renderMarkers();
+    renderRoutes();
+    if (focusedTrackPoints.value.length >= 2) {
+      renderTracks();
+    }
   }
 );
 
