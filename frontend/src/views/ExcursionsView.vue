@@ -1983,8 +1983,8 @@ async function removeSpot(id: number) {
                   ref="descriptionBtnRef"
                   type="button"
                   class="info-btn"
-                  title="Was sind Spots?"
-                  aria-label="Was sind Spots?"
+                  :title="groupMode === 'tours' ? 'Was sind Touren?' : 'Was sind Spots?'"
+                  :aria-label="groupMode === 'tours' ? 'Was sind Touren?' : 'Was sind Spots?'"
                   @click="toggleDescription($event)"
                 >
                   <AppIcon :icon="ACTION_ICONS.info" :size="16" group="actions" />
@@ -1993,15 +1993,26 @@ async function removeSpot(id: number) {
                   <template v-if="descriptionOpen">
                     <div class="picker-backdrop" @click="descriptionOpen = false"></div>
                     <div class="picker-menu description-popover" :style="descriptionMenuStyle">
-                      <p>
-                        Orte (Restaurant, Sehenswürdigkeit, Strand, …), die du als Stationen bei
-                        Touren zuordnen kannst – auch unabhängig von einer Tour. Eignet sich auch
-                        einfach als Ideensammlung – nicht jeder Spot muss geplant oder besucht
-                        werden. Tipp: Ziehe eine Spot-Karte direkt auf eine Tour oder auf einen
-                        Kalendertag, um sie dort als Station bzw. spontan einzuplanen. Bei
-                        Gruppierung nach "🎒 Touren" unten zeigt ein Klick auf die Tour-Karte deren
-                        Route auf der Karte.
-                      </p>
+                      <template v-if="groupMode === 'tours'">
+                        <p>
+                          <strong>Touren</strong> fassen mehrere Spots zu einer gemeinsamen Route
+                          oder einem Tagesausflug zusammen. Eignet sich bspw. auch, um An- oder Abreise auf der Karte zu visualisieren.
+                        </p>
+                        <p class="popover-tip">
+                          💡 <strong>Tipp:</strong> Klicke auf eine Tour-Kachel, um deren Route und
+                          Wege auf der Karte anzuzeigen.
+                        </p>
+                      </template>
+                      <template v-else>
+                        <p>
+                          <strong>Spots</strong> sind einzelne Orte (Restaurants,
+                          Sehenswürdigkeiten, Strände, …) – als Ideensammlung oder zur Reiseplanung.
+                        </p>
+                        <p class="popover-tip">
+                          💡 <strong>Tipp:</strong> Ziehe eine Spot-Karte direkt auf einen
+                          Kalendertag oder eine Tour, um sie einzutakten.
+                        </p>
+                      </template>
                     </div>
                   </template>
                 </Teleport>
@@ -3738,6 +3749,10 @@ async function removeSpot(id: number) {
   font-size: 0.85rem;
   line-height: 1.4;
   color: var(--color-text-muted);
+}
+
+.description-popover p + p {
+  margin-top: var(--space-2);
 }
 
 .header-actions {
