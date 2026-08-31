@@ -374,6 +374,7 @@ function onResizeEnd() {
    Größenänderung gibt es nicht. Erst auf Desktop wieder eingeblendet (siehe @media unten). */
 .resize-handle {
   display: none;
+  z-index: 5;
 }
 
 .drawer-header-actions {
