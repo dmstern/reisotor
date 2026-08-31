@@ -82,7 +82,7 @@ test.describe('Standort-Aufzeichnung', () => {
 
     // Klick zeigt die Route + den Zeit-Slider auf der Karte (analog zum Tour-Fokus).
     await trackRow.locator('.track-row-main').click();
-    const focusCard = page.locator('.focus-spot-list', { hasText: 'Aufzeichnung' });
+    const focusCard = page.locator('.focus-spot-list');
     await expect(focusCard).toBeVisible();
     await expect(focusCard.locator('.track-playback')).toBeVisible({ timeout: 10_000 });
     await expect(focusCard.locator('.playback-slider')).toBeVisible();

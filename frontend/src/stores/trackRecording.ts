@@ -92,8 +92,8 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
     writeBuffer(track.value.id, pendingBuffer);
   }
 
-  async function flushBuffer() {
-    if (!track.value || !pendingBuffer.length) return;
+  async function flushBuffer(): Promise<boolean> {
+    if (!track.value || !pendingBuffer.length) return true;
     const toSend = pendingBuffer;
     try {
       await rawRequest(`/tracks/${track.value.id}/points`, {
@@ -104,9 +104,11 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
       // hinzugekommen sein (watchPosition läuft parallel weiter).
       pendingBuffer = pendingBuffer.slice(toSend.length);
       persistBuffer();
+      return true;
     } catch {
       // Bleibt im Puffer stehen, der nächste Tick versucht es erneut - kein Datenverlust bei einem
       // kurzzeitigen Empfangsloch.
+      return false;
     }
   }
 
@@ -236,7 +238,11 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
       });
       persistBuffer();
     }
-    await flushBuffer();
+    const flushed = await flushBuffer();
+    if (!flushed) {
+      await new Promise((r) => setTimeout(r, 200));
+      await flushBuffer();
+    }
     stopFlushLoop();
     try {
       await api.post(`/tracks/${track.value.id}/stop`);
