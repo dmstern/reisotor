@@ -42,9 +42,13 @@ export const useTracksStore = defineStore('tracks', () => {
   watch(() => liveSync.domainVersion.ideas, load);
 
   async function loadPoints(trackId: number): Promise<TrackPoint[]> {
-    const points = await api.get<TrackPoint[]>(`/tracks/${trackId}/points`);
-    pointsByTrack.value = { ...pointsByTrack.value, [trackId]: points };
-    return points;
+    try {
+      const points = await api.get<TrackPoint[]>(`/tracks/${trackId}/points`);
+      pointsByTrack.value = { ...pointsByTrack.value, [trackId]: points };
+      return points;
+    } catch {
+      return pointsByTrack.value[trackId] ?? [];
+    }
   }
 
   async function update(id: number, body: TrackUpdateData) {

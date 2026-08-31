@@ -1320,16 +1320,18 @@ watch(
     trackPlaybackProgress.value = 0;
     renderTracks();
     if (track && !tracksStore.getPointsForTrack(track.id).length) {
-      const points = await tracksStore.loadPoints(track.id);
-      renderTracks();
-      if (!points.length) {
-        setTimeout(async () => {
-          if (focusedTrack.value?.id === track.id) {
-            await tracksStore.loadPoints(track.id);
-            renderTracks();
-          }
-        }, 600);
-      }
+      try {
+        const points = await tracksStore.loadPoints(track.id);
+        renderTracks();
+        if (!points.length) {
+          setTimeout(async () => {
+            if (focusedTrack.value?.id === track.id) {
+              await tracksStore.loadPoints(track.id).catch(() => []);
+              renderTracks();
+            }
+          }, 600);
+        }
+      } catch {}
     }
   },
   { immediate: true }
