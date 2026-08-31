@@ -1968,7 +1968,14 @@ async function removeSpot(id: number) {
           <div id="map-focus-dock" class="map-focus-dock"></div>
           <div class="header">
             <h2>
-              {{ groupMode === 'tours' ? 'Touren' : 'Spots' }}
+              <span class="title-label-container">
+                <span class="title-label-sizer" aria-hidden="true">Touren</span>
+                <Transition :name="groupMode === 'tours' ? 'title-swipe-up' : 'title-swipe-down'">
+                  <span :key="groupMode" class="title-label-text">
+                    {{ groupMode === 'tours' ? 'Touren' : 'Spots' }}
+                  </span>
+                </Transition>
+              </span>
               <!-- Der frühere, immer sichtbare Erklärtext nahm spürbar Platz weg, v. a. auf mobile
                (Nutzer-Feedback) - jetzt hinter einem Info-Button versteckt, gleiches
                Popover-Muster (Backdrop + .picker-menu) wie die Kategorie-/Status-Filter unten statt
@@ -3883,6 +3890,62 @@ async function removeSpot(id: number) {
   align-items: center;
   gap: 4px;
   margin: 0;
+}
+
+/* Feste/gleiche Breite für den "Spots"/"Touren"-Titel, damit der Umschalter beim Wechsel
+   nicht hin und her springt, kombiniert mit einer vertikalen Swipe-Animation (#220). */
+.title-label-container {
+  display: inline-grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.title-label-sizer {
+  grid-area: 1 / 1;
+  visibility: hidden;
+  pointer-events: none;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.title-label-text {
+  grid-area: 1 / 1;
+  white-space: nowrap;
+  display: inline-block;
+  will-change: transform, opacity;
+}
+
+/* Vertikale Swipe-Animationen für den Titelwechsel:
+   - Wechsel zu Touren: schiebt nach oben (altes nach oben raus, neues von unten rein)
+   - Wechsel zu Spots: schiebt nach unten (altes nach unten raus, neues von oben rein) */
+.title-swipe-up-enter-active,
+.title-swipe-up-leave-active,
+.title-swipe-down-enter-active,
+.title-swipe-down-leave-active {
+  transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.18s ease;
+}
+
+.title-swipe-up-enter-from {
+  transform: translateY(100%);
+  opacity: 0;
+}
+
+.title-swipe-up-leave-to {
+  transform: translateY(-100%);
+  opacity: 0;
+}
+
+.title-swipe-down-enter-from {
+  transform: translateY(-100%);
+  opacity: 0;
+}
+
+.title-swipe-down-leave-to {
+  transform: translateY(100%);
+  opacity: 0;
 }
 
 /* Etwas mehr Abstand als das straffe 4px-gap der Überschrift selbst (dort passend für Text+Info-
