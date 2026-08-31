@@ -1699,10 +1699,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
         <div class="focus-spot-list-header">
           <h3 class="focus-spot-list-title">
             <AppIcon :icon="ACTION_ICONS.orientationNorth" :size="16" group="actions" />
-            {{
-              focusedTrack.title ||
-              `Aufzeichnung vom ${formatDate(focusedTrack.started_at)}`
-            }}
+            {{ focusedTrack.title || `Aufzeichnung vom ${formatDate(focusedTrack.started_at)}` }}
           </h3>
           <IconButton
             variant="ghost"
