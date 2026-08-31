@@ -22,6 +22,8 @@ export default tseslint.config(
       '**/test-results/**',
       '**/coverage/**',
       '**/*.sqlite*',
+      '**/storybook-static/**',
+      '.claude',
     ],
   },
   ...tseslint.configs.recommended,
