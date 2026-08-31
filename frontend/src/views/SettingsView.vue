@@ -699,11 +699,8 @@ async function onImportFileSelected(event: Event) {
     </template>
 
     <template v-if="activeTab === 'app'">
-      <div class="card" v-if="!isDesktop">
+      <div class="card">
         <h2>Darstellung</h2>
-        <!-- Nur auf mobile: auf Desktop bleibt der Toggle exklusiv im Header (AppHeader.vue), auf
-             mobile ist dort seit "alle Mitreisenden statt nur online" (PresenceAvatars.vue) potenziell
-             weniger Platz. -->
         <ThemeModeSelect variant="block" />
       </div>
 
