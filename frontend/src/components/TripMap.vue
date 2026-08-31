@@ -53,13 +53,11 @@ import {
 import { interpolateTrackPosition } from '../utils/trackGeometry';
 import { useIsDesktop } from '../composables/useIsDesktop';
 import { usePersistedRef } from '../composables/usePersistedRef';
-import MiniStationCard from './MiniStationCard.vue';
 import Card from './primitives/Card.vue';
 import IconButton from './primitives/IconButton.vue';
 import DropdownItem from './primitives/DropdownItem.vue';
 import TravelDetailDialog from './TravelDetailDialog.vue';
 import DayChip from './DayChip.vue';
-import TrackPlayback from './TrackPlayback.vue';
 import AppIcon from './AppIcon.vue';
 import TrackRecordingWarningModal from './TrackRecordingWarningModal.vue';
 
@@ -114,6 +112,9 @@ const props = defineProps<{
    *  ExcursionsView.vue durchgereicht (0/undefined auf Desktop, wo die Schublade eine eigene Spalte
    *  statt eines Overlays ist) – siehe centerOnPoint() unten. */
   coveredBottomPx?: number;
+  /** Breite (px) des von schwebenden Schubladen/Spalten verdeckten linken Kartenbereichs (auf Desktop),
+   *  von ExcursionsView.vue durchgereicht – siehe centerOnPoint() unten. */
+  coveredLeftPx?: number;
   /** Von ExcursionsView.vue durchgereicht: rendert .spots-col gerade als mobiles Overlay-Sheet statt
    *  als eigene Desktop-Spalte (misst .app-main's tatsächliche Breite gegen dieselbe 900px-Schwelle
    *  wie der @container-Query unten, siehe dortiger Kommentar zu isSheetOverlayMode). Steuert den
@@ -124,7 +125,7 @@ const props = defineProps<{
    *  mobilen Overlay-Stil nutzt – deckte dabei teils fokussierte Marker ab. Fällt ohne übergebenen
    *  Wert auf das alte, reine isDesktop-Verhalten zurück. */
   sheetOverlayMode?: boolean;
-}>();
+} >();
 
 const emit = defineEmits<{
   // Klick auf einen Spot-Pin (nicht Unterkunft/Reise, siehe handlePointClick): statt eines eigenen
@@ -637,36 +638,12 @@ const visiblePoints = computed(() => {
   return filteredPoints.value;
 });
 
-// Stationsliste unter der Karte bei Ausflug-Fokus: in spot_ids-Reihenfolge (= Route/Abklapper-
-// Reihenfolge), als aufgelöste ExcursionStation-Objekte (statt MapPoint) für MiniStationCard und
-// damit derselbe Spot mehrfach vorkommen kann (Rundgang, z. B. Start UND Ende an der Unterkunft) –
-// ein MapPoint-Lookup per Key wäre dafür ungeeignet, da mehrere Stationen dann denselben Key/
-// dieselbe Referenz teilen.
-const focusedExcursionStations = computed<ExcursionStation[]>(() => {
-  const excursion = focusedExcursion.value;
-  if (!excursion) return [];
-  return resolveStations(
-    excursionStationKeys(excursion.spot_ids),
-    spotsStore.spots,
-    travelItems.value
-  );
-});
-
 async function loadAll() {
   const tripId = tripStore.currentTripId;
   if (tripId == null) return;
   scheduleItems.value = await api.get<ScheduleItem[]>(`/schedule?trip_id=${tripId}`);
   // Spots kommen jetzt aus dem geteilten spotsStore (reaktiv, wird u. a. von ExcursionsView.vue
   // selbst aktuell gehalten) – kein eigener Fetch/Refresh-Trigger hier mehr nötig.
-}
-
-// Klick auf den Ausflug-Titel unter der Karte: früher öffnete das einen eigenen Detail-Dialog
-// (ExcursionDetailDialog.vue), der seit #92 entfällt (redundant zur ExcursionCard.vue in der
-// Spots-Liste). Verhält sich jetzt wie ein Spot-Pin-Klick (siehe handlePointClick's focus-spot) -
-// Emit an die Karte-Hauptsicht, die die passende ExcursionCard dort aufklappt/in den Blick scrollt.
-function openExcursionDetail() {
-  if (!focusedExcursion.value) return;
-  emit('focus-excursion', focusedExcursion.value.id);
 }
 
 const openTravelId = ref<number | null>(null);
@@ -679,24 +656,7 @@ function onTravelDialogUpdate(v: boolean) {
   if (!v) drawers.mapFocusKey = null;
 }
 
-function openStationDetail(station: ExcursionStation) {
-  if (station.kind === 'spot') {
-    // Wie handlePointClick's Pin-Klick (#158): klappt die Card in der Spots-Liste auf/scrollt dahin,
-    // statt den SpotDetailDialog zu öffnen – konsistentes Verhalten für alle Spot-Klickpfade.
-    drawers.mapFocusKey = `spot-${station.id}`;
-    emit('focus-spot', station.id);
-  } else if (station.kind === 'schedule') {
-    // Kein eigener Detail-Dialog für Termine vorhanden (Architekturregel: fremde Objekte springen
-    // zur Ursprungssicht statt inline editierbar zu sein) – öffnet stattdessen die Kalender-Schublade
-    // (Desktop) bzw. navigiert zur Kalender-Seite (Mobil, siehe drawers.openCalendar()).
-    drawers.openCalendar();
-    drawers.mapFocusKey = station.key;
-  } else {
-    openTravelId.value = station.id;
-    travelDialogOpen.value = true;
-    drawers.mapFocusKey = station.key;
-  }
-}
+
 
 // Klick auf einen Pin direkt auf der Karte (nicht in der Stationsliste): bei Spots (inkl. Kategorie
 // "Unterkunft", seit deren Verschmelzung in Spots ganz normale Spots) klappt statt eines eigenen
@@ -835,28 +795,33 @@ function fitExcursions() {
 }
 
 // Zentriert auf einen einzelnen Punkt UND schiebt den sichtbaren Ausschnitt danach so weit nach
-// oben, dass der Punkt in der Mitte der tatsächlich sichtbaren Fläche landet – nicht in der Mitte
+// Zentriert auf einen einzelnen Punkt UND schiebt den sichtbaren Ausschnitt danach so weit nach
+// oben/rechts, dass der Punkt in der Mitte der tatsächlich sichtbaren Fläche landet – nicht in der Mitte
 // des gesamten Karten-Containers, dessen unterer Teil auf mobile von der Spots-Schublade verdeckt
-// wird (siehe props.coveredBottomPx, von ExcursionsView.vue durchgereicht). Ohne diesen Ausgleich
-// landete ein fokussierter Punkt bei aufgeklappter Schublade optisch dahinter statt im sichtbaren
-// oberen Kartenbereich.
+// wird (siehe props.coveredBottomPx) und dessen linker Teil auf Desktop von den schwebenden Schubladen
+// verdeckt wird (siehe props.coveredLeftPx). Ohne diesen Ausgleich landete ein fokussierter Punkt bei
+// aufgeklappter Schublade optisch dahinter statt im sichtbaren freien Kartenbereich.
 function centerOnPoint(latlng: L.LatLngExpression, zoom: number) {
   if (!map) return;
-  const coveredBottomPx = props.coveredBottomPx;
-  if (!coveredBottomPx) {
+  const coveredBottomPx = props.coveredBottomPx ?? 0;
+  const coveredLeftPx = props.coveredLeftPx ?? 0;
+  if (!coveredBottomPx && !coveredLeftPx) {
     map.setView(latlng, zoom, { animate: false });
     return;
   }
   // Direkte Projektions-Rechnung statt map.setView()+map.panBy(): der Zielpunkt soll nicht im
   // Zentrum des gesamten Karten-Containers landen, sondern im Zentrum der tatsächlich sichtbaren
-  // Fläche (Container abzüglich der unten überlagernden Schublade) – dafür muss der neue
-  // Karten-MITTELPUNKT um die Hälfte des verdeckten Bereichs "unter" dem Zielpunkt liegen (project()/
-  // unproject() arbeiten in einem containerunabhängigen Weltpixel-Raum, in dem sich Y-Versätze 1:1
+  // Fläche (Container abzüglich der unten/links überlagernden Schubladen) – dafür muss der neue
+  // Karten-MITTELPUNKT um die Hälfte des verdeckten Bereichs verschoben werden (project()/
+  // unproject() arbeiten in einem containerunabhängigen Weltpixel-Raum, in dem sich Versätze 1:1
   // wie Bildschirmpixel verhalten). map.panBy() wurde hier bewusst NICHT verwendet: bei größeren,
   // nicht animierten Offsets nimmt es einen internen Kurzschluss-Pfad, dessen Pixel-Verhalten sich
   // in Tests als nicht zuverlässig vorhersagbar erwiesen hat.
   const targetPoint = map.project(latlng, zoom);
-  const shiftedCenter = map.unproject(targetPoint.add([0, coveredBottomPx / 2]), zoom);
+  const shiftedCenter = map.unproject(
+    targetPoint.add([-coveredLeftPx / 2, coveredBottomPx / 2]),
+    zoom
+  );
   map.setView(shiftedCenter, zoom, { animate: false });
 }
 
@@ -864,15 +829,13 @@ function centerOnPoint(latlng: L.LatLngExpression, zoom: number) {
 // fitBounds()-padding-Option wirkt standardmäßig symmetrisch auf alle vier Seiten - Leaflet
 // unterstützt für genau diesen ungleichen Fall aber bereits eingebautes asymmetrisches Padding über
 // paddingTopLeft/paddingBottomRight, das reicht hier vollständig aus, ohne die project()/unproject()-
-// Rechnung von centerOnPoint() zu duplizieren. Vorher nutzten ALLE fitBounds()-Aufrufe (Ausflug-/Tages-
-// Fokus mit ≥2 Stationen, "Alle anzeigen", Kategorie-/Unterkunfts-/Ausflugsziele-Fokus) einheitlich
-// symmetrisches padding:[32,32] - der untere Rand des Ausschnitts landete bei aufgeklappter
-// Spots-Schublade dadurch trotzdem dahinter verdeckt, genau wie ursprünglich bei centerOnPoint().
+// Rechnung von centerOnPoint() zu duplizieren.
 function fitBoundsWithCoveredBottom(bounds: L.LatLngBoundsExpression) {
   if (!map) return;
   const coveredBottomPx = props.coveredBottomPx ?? 0;
+  const coveredLeftPx = props.coveredLeftPx ?? 0;
   map.fitBounds(bounds, {
-    paddingTopLeft: [32, 32],
+    paddingTopLeft: [32 + coveredLeftPx, 32],
     paddingBottomRight: [32, 32 + coveredBottomPx],
   });
 }
@@ -1322,6 +1285,20 @@ watch(
   { deep: true }
 );
 
+// Verdeckter Bereich der Karte ändert sich (z. B. Kalender-Schublade auf Desktop geöffnet/geschlossen
+// oder Spots-Schublade auf Mobil umgestuft) – zentriert sichtbare Marker/Aufzeichnungen im neuen
+// freien Bereich neu.
+watch(
+  () => [props.coveredBottomPx, props.coveredLeftPx],
+  () => {
+    if (!map) return;
+    renderMarkers();
+    if (focusedTrackPoints.value.length >= 2) {
+      renderTracks();
+    }
+  }
+);
+
 // Ausflüge werden im excursions-Store gehalten (u. a. für Drag&Drop in die Kalender-Schublade) und
 // erst asynchron geladen – ändert sich die Liste (z. B. Spot-Zuordnung bearbeitet), müssen die
 // Ausflugs-Routen neu gezeichnet werden.
@@ -1668,110 +1645,6 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
           @click="toggleDayFocus(day)"
         />
       </div>
-      <Card class="focus-spot-list" v-if="focusedTrack">
-        <div class="focus-spot-list-header">
-          <h3 class="focus-spot-list-title">
-            <AppIcon :icon="ACTION_ICONS.orientationNorth" :size="16" group="actions" />
-            {{ focusedTrack.title || `Aufzeichnung vom ${formatDate(focusedTrack.started_at)}` }}
-          </h3>
-          <IconButton
-            variant="ghost"
-            size="sm"
-            class="focus-spot-list-close"
-            :icon="ACTION_ICONS.close"
-            aria-label="Aufzeichnung-Fokus schließen"
-            title="Aufzeichnung-Fokus schließen"
-            @click="drawers.mapFocusTrackId = null"
-          />
-        </div>
-        <p v-if="focusedTrackPoints.length < 1" class="focus-spot-list-subtitle">Lädt Route…</p>
-        <TrackPlayback :points="focusedTrackPoints" v-model:progress="trackPlaybackProgress" />
-      </Card>
-
-      <Card class="focus-spot-list" v-else-if="focusedExcursion && focusedExcursionStations.length">
-        <div class="focus-spot-list-header">
-          <button type="button" class="focus-spot-list-title-btn" @click="openExcursionDetail">
-            <h3 class="focus-spot-list-title">
-              <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="16" group="navigation" />
-              {{ focusedExcursion.title }}
-            </h3>
-            <span class="focus-spot-list-status" :class="{ planned: focusedExcursion.date }">
-              <template v-if="focusedExcursion.date">
-                <AppIcon :icon="FORM_FIELD_ICONS.date" :size="13" group="formFields" />
-                {{ formatDate(focusedExcursion.date) }}
-              </template>
-              <template v-else>In Planung</template>
-            </span>
-          </button>
-          <IconButton
-            variant="ghost"
-            size="sm"
-            class="focus-spot-list-close"
-            :icon="ACTION_ICONS.close"
-            aria-label="Tour-Fokus schließen"
-            title="Tour-Fokus schließen"
-            @click="drawers.mapFocusExcursionId = null"
-          />
-        </div>
-        <p class="focus-spot-list-subtitle">Stationen</p>
-        <div class="station-timeline">
-          <template v-for="(station, index) in focusedExcursionStations" :key="index">
-            <button type="button" class="station-node" @click="openStationDetail(station)">
-              <span class="station-order">{{ index + 1 }}</span>
-              <MiniStationCard :station="station" />
-            </button>
-            <div
-              v-if="index < focusedExcursionStations.length - 1"
-              class="station-connector"
-              aria-hidden="true"
-            ></div>
-          </template>
-        </div>
-      </Card>
-
-      <Card class="focus-spot-list" v-else-if="drawers.mapFocusDate && focusedDateStations.length">
-        <div class="focus-spot-list-header">
-          <h3 class="focus-spot-list-title">
-            <AppIcon :icon="FORM_FIELD_ICONS.period" :size="16" group="formFields" />
-            {{ formatDate(drawers.mapFocusDate) }}
-          </h3>
-          <IconButton
-            variant="ghost"
-            size="sm"
-            class="focus-spot-list-close"
-            :icon="ACTION_ICONS.close"
-            aria-label="Tages-Fokus schließen"
-            title="Tages-Fokus schließen"
-            @click="drawers.mapFocusDate = null"
-          />
-        </div>
-        <p class="focus-spot-list-subtitle">Stationen</p>
-        <div class="station-timeline">
-          <template v-for="(station, index) in focusedDateStations" :key="index">
-            <button type="button" class="station-node" @click="openStationDetail(station)">
-              <span class="station-order">{{ index + 1 }}</span>
-              <MiniStationCard :station="station" />
-            </button>
-            <!-- Verbindungslinie trägt (sofern gesetzt) den Namen der verbindenden Reise-Etappe -
-               ExcursionStation.connector ist auf der ZIEL-Station der Etappe gesetzt (siehe
-               dayStations.ts), beschriftet also die Linie DAVOR. -->
-            <div
-              v-if="index < focusedDateStations.length - 1"
-              class="station-connector"
-              :class="{ labeled: !!focusedDateStations[index + 1].connector }"
-            >
-              <span v-if="focusedDateStations[index + 1].connector" class="connector-label">
-                <AppIcon
-                  :icon="focusedDateStations[index + 1].connector!.tabler"
-                  :size="13"
-                  group="categories"
-                />
-                {{ focusedDateStations[index + 1].connector!.label }}
-              </span>
-            </div>
-          </template>
-        </div>
-      </Card>
     </Teleport>
 
     <TravelDetailDialog
@@ -2117,23 +1990,6 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
   }
 }
 
-/* Mobil (Default): schwebt als eigene Karte ÜBER der (jetzt vollflächigen) Karte, statt wie bisher
-   als normales Flow-Element darunter zu stehen – dafür ist auf dem mobilen Vollbild-Hintergrund
-   kein Platz mehr. Bewusst einfach oben verankert statt an die Bottom-Sheet-Höhe der Spots-Liste
-   gekoppelt (ExcursionsView.vue) – Ausflug-/Tag-Fokus ist der seltenere Pfad, eine dynamische
-   Kopplung wäre hier unverhältnismäßig viel zusätzliche Komplexität. Auf Desktop (@container
-   weiter unten) wieder normales Flow-Element wie bisher. */
-.focus-spot-list {
-  position: absolute;
-  top: var(--space-4);
-  left: 10px;
-  right: 10px;
-  z-index: 1000;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
 /* Anpassung der Leaflet Zoom-Buttons an den Reisotor Styleguide */
 :deep(.leaflet-bar) {
   border: 1px solid var(--color-border) !important;
@@ -2190,176 +2046,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
   color: var(--color-text) !important;
 }
 
-/* Mobil per Teleport in die Spots-Schublade verschoben (siehe Template oben, ExcursionsView.vue's
-   #map-focus-dock) – dort ist sie ein normales Flow-Element innerhalb der Schublade statt eines
-   Overlays über der Karte, braucht also die obige absolute Positionierung nicht. */
-#map-focus-dock .focus-spot-list {
-  position: static;
-}
 
-/* Kopfzeile: klickbarer Titel-Bereich links (klappt bei einem Ausflug-Fokus die passende
-   ExcursionCard in der Spots-Liste auf, siehe openExcursionDetail/@focus-excursion – #92, ersetzt
-   den früheren ExcursionDetailDialog.vue), Schließen-Button rechts. Vorher lag der Schließen-Button
-   (ursprünglich .focus-banner weiter oben) exakt an derselben Position wie diese ganze Karte
-   (beide position:absolute; top/left:10px) – die Karte deckte ihn dadurch komplett zu. Jetzt fest
-   in der Kopfzeile verankert, damit er nicht mehr verdeckt werden kann. */
-.focus-spot-list-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-}
-
-.focus-spot-list-title-btn {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  min-width: 0;
-  flex: 1;
-  background: none;
-  border: none;
-  padding: 4px;
-  margin: -4px 0 -4px -4px;
-  border-radius: var(--radius-sm-squircle);
-  cursor: pointer;
-  text-align: left;
-}
-
-.focus-spot-list-title-btn:hover {
-  background: var(--color-hover);
-}
-
-.focus-spot-list-close {
-  flex-shrink: 0;
-  width: 26px;
-  height: 26px;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm-squircle);
-  background: var(--color-surface);
-  color: var(--color-text-muted);
-  font-size: 0.85rem;
-  line-height: 1;
-  cursor: pointer;
-}
-
-.focus-spot-list-close:hover {
-  color: var(--color-primary-dark);
-  border-color: var(--color-primary);
-}
-
-.focus-spot-list-title {
-  margin: 0;
-  font-size: 0.95rem;
-  color: var(--color-primary-dark);
-}
-
-.focus-spot-list-status {
-  flex-shrink: 0;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
-  white-space: nowrap;
-}
-
-.focus-spot-list-status.planned {
-  color: var(--color-success);
-}
-
-.focus-spot-list-subtitle {
-  margin: 0 0 4px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-}
-
-/* Timeline-Optik identisch zu ExcursionDetailDialog.vue's Stationsliste (Nummern-Badge +
-   Mini-Vorschaubild + gestrichelte Verbindung) – bewusst dieselben Klassen/Werte, damit dieselbe
-   Ausflug-Reihenfolge überall gleich aussieht. */
-.station-timeline {
-  display: flex;
-  align-items: center;
-  overflow-x: auto;
-  padding: 12px 10px 8px 14px;
-}
-
-.station-node {
-  position: relative;
-  flex-shrink: 0;
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  text-align: left;
-}
-
-.station-order {
-  position: absolute;
-  top: -6px;
-  left: -6px;
-  z-index: 1;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: var(--color-primary);
-  color: #fff;
-  font-size: 0.68rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.station-connector {
-  flex: 0 0 24px;
-  height: 0;
-  border-top: 3px dashed var(--color-primary);
-  margin: 0 4px;
-  align-self: center;
-}
-
-/* Beschriftete Verbindung (Tages-Fokus, Name der verbindenden Reise-Etappe): die gestrichelte Linie
-   wandert auf ein absolut positioniertes ::before (statt border-top direkt auf .station-connector),
-   damit das Label als kleine Pille MIT eigenem Hintergrund darüber sitzen kann, statt die Linie
-   einfach zu durchqueren. */
-.station-connector.labeled {
-  flex: 0 0 auto;
-  height: auto;
-  border-top: none;
-  min-width: 76px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-}
-
-.station-connector.labeled::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 50%;
-  border-top: 3px dashed var(--color-primary);
-  z-index: 0;
-}
-
-.connector-label {
-  position: relative;
-  z-index: 1;
-  background: var(--color-surface);
-  color: var(--color-text-muted);
-  font-size: 0.68rem;
-  font-weight: 600;
-  white-space: nowrap;
-  padding: 2px 6px;
-  border-radius: 999px;
-  border: 1px solid var(--color-border);
-}
 
 /* Desktop: zurück auf den bisherigen Stand (Karte als eigene, begrenzte Box statt vollflächigem
    Hintergrund – .map-col in ExcursionsView.vue ist hier eine normale sticky Spalte, kein
@@ -2395,10 +2082,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
     padding: 8px 16px;
   }
 
-  /* Focus-Spot-List (Aufzeichnungs-Anzeige) rechts neben die Schubladen schieben */
-  .focus-spot-list {
-    left: calc(var(--calendar-margin, var(--drawer-tab-width)) + var(--calendar-offset, 0px) + var(--spots-col-width, 400px) + var(--space-4) + var(--space-3));
-  }
+
 
   /* Zoom-Buttons rechts neben den Drawer schieben */
   :deep(.leaflet-left) {

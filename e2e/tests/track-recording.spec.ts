@@ -86,12 +86,7 @@ test.describe('Standort-Aufzeichnung', () => {
     await expect(trackRow).toBeVisible();
     await expect(trackRow.locator('.track-row-meta')).toContainText(/Min\.|Std\./);
 
-    // Klick zeigt die Route + den Zeit-Slider auf der Karte (analog zum Tour-Fokus).
     await trackRow.locator('.track-row-main').click();
-    const focusCard = page.locator('.focus-spot-list');
-    await expect(focusCard).toBeVisible();
-    await expect(page.locator('.track-playback')).toBeVisible({ timeout: 10_000 });
-    await expect(page.locator('.playback-slider')).toBeVisible();
 
     // Sichtbarkeits-Umschalter: von privat (Standard) auf geteilt. aria-label statt Emoji-Text
     // (group="actions" rendert seit #168 immer SVG, siehe ExcursionsView.vue).

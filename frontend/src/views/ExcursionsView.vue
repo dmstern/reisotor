@@ -1373,6 +1373,16 @@ function onColResizeStart(event: PointerEvent) {
   window.addEventListener('pointerup', onColResizeEnd);
   event.preventDefault();
 }
+function updateSpotsColRight() {
+  if (isSheetOverlayMode.value || !sheetEl.value || !tripMapRef.value?.$el) {
+    spotsColRightPx.value = 0;
+    return;
+  }
+  const spotsRect = sheetEl.value.getBoundingClientRect();
+  const mapRect = tripMapRef.value.$el.getBoundingClientRect();
+  spotsColRightPx.value = Math.max(0, Math.round(spotsRect.right - mapRect.left));
+}
+
 function onColResizeMove(event: PointerEvent) {
   if (!resizingCol.value) return;
   const delta = event.clientX - colStartX;
@@ -1380,6 +1390,7 @@ function onColResizeMove(event: PointerEvent) {
     MAX_SPOTS_COL_WIDTH,
     Math.max(MIN_SPOTS_COL_WIDTH, colStartWidth + delta)
   );
+  updateSpotsColRight();
 }
 function onColResizeEnd() {
   resizingCol.value = false;
@@ -1649,17 +1660,36 @@ const currentSheetHeightPx = computed(
 // weiterhin als Overlay rendert - fokussierte Punkte/Routen landeten dann zu weit unten, teils
 // hinter der Sheet-Kante.
 const appMainWidth = ref<number | null>(null);
+const spotsColRightPx = ref(0);
 let appMainResizeObserver: ResizeObserver | null = null;
+let spotsColResizeObserver: ResizeObserver | null = null;
+
+
+
 onMounted(() => {
   const appMainEl = document.querySelector('.app-main');
   if (appMainEl) {
     appMainResizeObserver = new ResizeObserver((entries) => {
       appMainWidth.value = entries[0]?.contentRect.width ?? null;
+      updateSpotsColRight();
     });
     appMainResizeObserver.observe(appMainEl);
   }
+  if (sheetEl.value) {
+    spotsColResizeObserver = new ResizeObserver(() => {
+      updateSpotsColRight();
+    });
+    spotsColResizeObserver.observe(sheetEl.value);
+  }
+  window.addEventListener('resize', updateSpotsColRight);
+  nextTick(updateSpotsColRight);
 });
-onUnmounted(() => appMainResizeObserver?.disconnect());
+
+onUnmounted(() => {
+  appMainResizeObserver?.disconnect();
+  spotsColResizeObserver?.disconnect();
+  window.removeEventListener('resize', updateSpotsColRight);
+});
 
 // Spiegelt exakt die 720px-Schwelle des @container app-main-Queries weiter unten im <style> - beide
 // Signale müssen übereinstimmen, sonst rechnet TripMap.vue mit einem falschen coveredBottomPx (siehe
@@ -1672,6 +1702,18 @@ onUnmounted(() => appMainResizeObserver?.disconnect());
 const isSheetOverlayMode = computed(() => (appMainWidth.value ?? window.innerWidth) < 720);
 const mapCoveredBottomPx = computed(() =>
   isSheetOverlayMode.value ? currentSheetHeightPx.value : 0
+);
+const mapCoveredLeftPx = computed(() =>
+  isSheetOverlayMode.value ? 0 : spotsColRightPx.value
+);
+
+watch([isSheetOverlayMode, spotsColWidth], () => nextTick(updateSpotsColRight));
+watch(
+  () => [drawers.calendarOpen, drawers.calendarWidth],
+  () => {
+    nextTick(updateSpotsColRight);
+    setTimeout(updateSpotsColRight, 260);
+  }
 );
 
 // Ein Klick auf eine Spot-Karte klappt sie nur auf, ohne das Sheet anzurühren oder die Karte zu
@@ -3253,6 +3295,7 @@ async function removeSpot(id: number) {
           :category-filter="categoryFilter"
           :status-filter="statusFilter"
           :covered-bottom-px="mapCoveredBottomPx"
+          :covered-left-px="mapCoveredLeftPx"
           :sheet-overlay-mode="isSheetOverlayMode"
           @focus-spot="onFocusSpotFromMap"
           @focus-excursion="onFocusExcursionFromMap"
