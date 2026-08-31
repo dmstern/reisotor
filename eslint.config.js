@@ -1,6 +1,8 @@
 import tseslint from 'typescript-eslint';
 import pluginVue from 'eslint-plugin-vue';
-import vuejsAccessibility from 'eslint-plugin-vuejs-accessibility';
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
+const vuejsAccessibility = require('eslint-plugin-vuejs-accessibility');
 import eslintConfigPrettier from 'eslint-config-prettier';
 import globals from 'globals';
 
