@@ -10,7 +10,7 @@ async function saveScreenshotIfChanged(
   screenshotPath: string,
   options: { fullPage?: boolean; maxDiffPixels?: number } = {}
 ): Promise<{ status: 'created' | 'updated' | 'unchanged'; diffPixels?: number }> {
-  const { fullPage = false, maxDiffPixels = 5 } = options;
+  const { fullPage = false, maxDiffPixels = 100 } = options;
   const newBuffer = await page.screenshot({ fullPage });
 
   if (!fs.existsSync(screenshotPath)) {
