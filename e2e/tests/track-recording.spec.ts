@@ -76,7 +76,7 @@ test.describe('Standort-Aufzeichnung', () => {
 
     // Dauer-Text statt Emoji-Zeichen prüfen: das Icon davor (group="actions") rendert seit #168
     // immer SVG statt Emoji (siehe stores/iconStyle.ts).
-    const trackRow = page.locator('.track-row').first();
+    const trackRow = page.locator('.track-row').filter({ hasText: '0 Min.' }).first();
     await expect(trackRow).toBeVisible();
     await expect(trackRow.locator('.track-row-meta')).toContainText(/Min\.|Std\./);
 
@@ -173,8 +173,8 @@ test.describe('Standort-Aufzeichnung', () => {
     const tracksToggle = page.locator('.tracks-toggle');
     await expect(tracksToggle).toBeVisible({ timeout: 10_000 });
     await tracksToggle.click();
-    await expect(page.locator('.track-row').first().locator('.track-row-meta')).toContainText(
-      /Min\.|Std\./
-    );
+    await expect(
+      page.locator('.track-row').filter({ hasText: '0 Min.' }).first().locator('.track-row-meta')
+    ).toContainText(/Min\.|Std\./);
   });
 });
