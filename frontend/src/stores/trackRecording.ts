@@ -201,7 +201,7 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
       // stores/tracks.ts bekäme die neue Aufzeichnung sonst erst beim nächsten Trip-Wechsel/Reload
       // mit - eigene Mutationen lösen (anders als bei fremden) keinen liveSync-Refresh aus (siehe
       // stores/tracks.ts's domainVersion-Watch, der genau die eigene actor_user_id herausfiltert).
-      tracksStore.load().catch(() => {});
+      await tracksStore.load().catch(() => {});
       return true;
     } catch {
       startError.value = 'Aufzeichnung konnte nicht gestartet werden.';
@@ -259,7 +259,7 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
     pendingBuffer = [];
     // Aktualisiert u. a. den "🔴 läuft"-Status auf "⏱️ <Dauer>" in ExcursionsView.vue's
     // Aufzeichnungen-Liste (siehe Kommentar in start() oben).
-    tracksStore.load().catch(() => {});
+    await tracksStore.load().catch(() => {});
   }
 
   /** Pausiert eine laufende Aufzeichnung, ohne sie zu beenden (z. B. Stromsparen, während man länger
