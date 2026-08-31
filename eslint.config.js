@@ -1,6 +1,8 @@
 import tseslint from 'typescript-eslint';
 import pluginVue from 'eslint-plugin-vue';
-import vuejsAccessibility from 'eslint-plugin-vuejs-accessibility';
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
+const vuejsAccessibility = require('eslint-plugin-vuejs-accessibility');
 import eslintConfigPrettier from 'eslint-config-prettier';
 import globals from 'globals';
 
@@ -22,6 +24,8 @@ export default tseslint.config(
       '**/test-results/**',
       '**/coverage/**',
       '**/*.sqlite*',
+      '**/storybook-static/**',
+      '.claude',
     ],
   },
   ...tseslint.configs.recommended,
@@ -52,6 +56,22 @@ export default tseslint.config(
       'vue/require-default-prop': 'off',
       'vue/no-v-html': 'warn',
       'vue/attributes-order': 'off',
+      'vue/no-undef-components': [
+        'error',
+        {
+          ignorePatterns: [
+            'router-link',
+            'router-view',
+            'Teleport',
+            'Transition',
+            'TransitionGroup',
+            'KeepAlive',
+            'Suspense',
+            'component',
+            'slot',
+          ],
+        },
+      ],
       ...a11yWarnRules,
     },
   },

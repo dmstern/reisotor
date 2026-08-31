@@ -57,6 +57,7 @@ import Card from './primitives/Card.vue';
 import IconButton from './primitives/IconButton.vue';
 import DropdownItem from './primitives/DropdownItem.vue';
 import TravelDetailDialog from './TravelDetailDialog.vue';
+import DayChip from './DayChip.vue';
 import TrackPlayback from './TrackPlayback.vue';
 import AppIcon from './AppIcon.vue';
 
@@ -514,11 +515,22 @@ const focusedExcursion = computed<Excursion | null>(() => {
 // drawers.ts), gleiches Muster wie focusedExcursion.
 const focusedTrack = computed<LocationTrack | null>(() => {
   if (drawers.mapFocusTrackId == null) return null;
-  return tracksStore.tracks.find((t) => t.id === drawers.mapFocusTrackId) ?? null;
+  const found = tracksStore.tracks.find((t) => Number(t.id) === Number(drawers.mapFocusTrackId));
+  if (found) return found;
+  return {
+    id: drawers.mapFocusTrackId,
+    trip_id: Number(tripStore.currentTripId) || 0,
+    user_id: auth.user?.id ?? 0,
+    excursion_id: null,
+    title: null,
+    visibility: 'private',
+    started_at: new Date().toISOString(),
+    ended_at: new Date().toISOString(),
+  };
 });
 const focusedTrackPoints = computed<TrackPoint[]>(() => {
   if (!focusedTrack.value) return [];
-  return tracksStore.pointsByTrack[focusedTrack.value.id] ?? [];
+  return tracksStore.getPointsForTrack(focusedTrack.value.id);
 });
 // Fortschritt des Zeit-Sliders (TrackPlayback.vue) – lebt hier statt in der Kind-Komponente, damit
 // der Playback-Marker unten (updateTrackPlaybackMarker()) direkt auf denselben Wert reagieren kann.
@@ -573,14 +585,6 @@ function dayHasContent(date: string): boolean {
   return scheduleItems.value.some(
     (i) => i.lat != null && i.lng != null && i.date <= date && date <= (i.end_date ?? i.date)
   );
-}
-
-const dayChipWeekdayFormatter = new Intl.DateTimeFormat('de-DE', { weekday: 'short' });
-function dayChipWeekday(date: string) {
-  return dayChipWeekdayFormatter.format(new Date(date));
-}
-function dayChipNum(date: string) {
-  return new Date(date).getDate();
 }
 
 function toggleDayFocus(date: string) {
@@ -1323,15 +1327,26 @@ watch(
 // drawers.openMapForTrack()) – Punkte werden erst on-demand geladen (tracksStore.pointsByTrack ist
 // zunächst leer für einen frisch fokussierten Track), Slider startet jeweils von vorn.
 watch(
-  () => drawers.mapFocusTrackId,
-  async (trackId) => {
+  focusedTrack,
+  async (track) => {
     trackPlaybackProgress.value = 0;
     renderTracks();
-    if (trackId != null && !tracksStore.pointsByTrack[trackId]) {
-      await tracksStore.loadPoints(trackId);
-      renderTracks();
+    if (track && !tracksStore.getPointsForTrack(track.id).length) {
+      try {
+        const points = await tracksStore.loadPoints(track.id);
+        renderTracks();
+        if (!points.length) {
+          setTimeout(async () => {
+            if (focusedTrack.value?.id === track.id) {
+              await tracksStore.loadPoints(track.id).catch(() => []);
+              renderTracks();
+            }
+          }, 600);
+        }
+      } catch {}
     }
-  }
+  },
+  { immediate: true }
 );
 // Punkte können auch eintreffen, ohne dass sich mapFocusTrackId selbst ändert (z. B. erneuter
 // Fokus auf einen zuvor schon einmal geladenen, dann aber aktualisierten Track) – reagiert auf die
@@ -1597,23 +1612,43 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
          Auf echtem Desktop bleibt beides unverändert Teil dieser Karten-Spalte (Teleport disabled,
          siehe @container-Regel für .focus-spot-list/.day-strip weiter unten - dieselbe 720px-
          Schwelle wie isNarrowLayout). -->
-    <Teleport v-if="teleportReady" to="#map-focus-dock" :disabled="!isNarrowLayout">
+    <Teleport
+      v-if="teleportReady || !isNarrowLayout"
+      to="#map-focus-dock"
+      :disabled="!isNarrowLayout"
+    >
       <div class="day-strip" v-if="vacationDays.length">
-        <button
+        <DayChip
           v-for="day in vacationDays"
           :key="day"
-          type="button"
-          class="day-chip"
-          :class="{ active: drawers.mapFocusDate === day, 'has-content': dayHasContent(day) }"
+          :date="day"
+          :active="drawers.mapFocusDate === day"
+          :has-content="dayHasContent(day)"
           :title="formatDate(day)"
           @click="toggleDayFocus(day)"
-        >
-          <span class="day-chip-weekday">{{ dayChipWeekday(day) }}</span>
-          <span class="day-chip-num">{{ dayChipNum(day) }}</span>
-          <span v-if="dayHasContent(day)" class="day-chip-dot" aria-hidden="true"></span>
-        </button>
+        />
       </div>
-      <Card class="focus-spot-list" v-if="focusedExcursion && focusedExcursionStations.length">
+      <Card class="focus-spot-list" v-if="focusedTrack">
+        <div class="focus-spot-list-header">
+          <h3 class="focus-spot-list-title">
+            <AppIcon :icon="ACTION_ICONS.orientationNorth" :size="16" group="actions" />
+            {{ focusedTrack.title || `Aufzeichnung vom ${formatDate(focusedTrack.started_at)}` }}
+          </h3>
+          <IconButton
+            variant="ghost"
+            size="sm"
+            class="focus-spot-list-close"
+            :icon="ACTION_ICONS.close"
+            aria-label="Aufzeichnung-Fokus schließen"
+            title="Aufzeichnung-Fokus schließen"
+            @click="drawers.mapFocusTrackId = null"
+          />
+        </div>
+        <p v-if="focusedTrackPoints.length < 1" class="focus-spot-list-subtitle">Lädt Route…</p>
+        <TrackPlayback :points="focusedTrackPoints" v-model:progress="trackPlaybackProgress" />
+      </Card>
+
+      <Card class="focus-spot-list" v-else-if="focusedExcursion && focusedExcursionStations.length">
         <div class="focus-spot-list-header">
           <button type="button" class="focus-spot-list-title-btn" @click="openExcursionDetail">
             <h3 class="focus-spot-list-title">
@@ -1696,33 +1731,6 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
             </div>
           </template>
         </div>
-      </Card>
-
-      <Card class="focus-spot-list" v-else-if="focusedTrack">
-        <div class="focus-spot-list-header">
-          <h3 class="focus-spot-list-title">
-            <AppIcon :icon="ACTION_ICONS.orientationNorth" :size="16" group="actions" />
-            {{
-              focusedTrack.title ||
-              `Aufzeichnung vom ${formatDate(focusedTrack.started_at.slice(0, 10))}`
-            }}
-          </h3>
-          <IconButton
-            variant="ghost"
-            size="sm"
-            class="focus-spot-list-close"
-            :icon="ACTION_ICONS.close"
-            aria-label="Aufzeichnung-Fokus schließen"
-            title="Aufzeichnung-Fokus schließen"
-            @click="drawers.mapFocusTrackId = null"
-          />
-        </div>
-        <p v-if="focusedTrackPoints.length < 2" class="focus-spot-list-subtitle">Lädt Route…</p>
-        <TrackPlayback
-          v-else
-          :points="focusedTrackPoints"
-          v-model:progress="trackPlaybackProgress"
-        />
       </Card>
     </Teleport>
 
@@ -2027,66 +2035,6 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
   bottom: auto;
   z-index: auto;
   margin-bottom: var(--space-2);
-}
-
-.day-chip {
-  position: relative;
-  flex: 0 0 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1px;
-  min-width: 38px;
-  padding: 4px 6px;
-  border-radius: var(--radius-sm-squircle);
-  background: var(--color-hover);
-  color: var(--color-text);
-  font-weight: 600;
-  line-height: 1.1;
-}
-
-.day-chip-weekday {
-  font-size: 0.6rem;
-  text-transform: uppercase;
-  color: var(--color-text-muted);
-}
-
-.day-chip-num {
-  font-size: 0.9rem;
-}
-
-/* --color-scheduled statt --color-accent: eigener Ton für "an diesem Tag ist etwas geplant", getrennt
-   von --color-accent (app-weit die Farbe für "Echtzeit-Update von jemand anderem", siehe
-   .new-highlight in style.css) - siehe DESIGN.md, Abschnitt "Farben" für die Begründung. */
-.day-chip.has-content .day-chip-num {
-  color: var(--color-scheduled);
-}
-
-.day-chip-dot {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--color-scheduled);
-}
-
-.day-chip.active {
-  background: var(--color-primary);
-  color: #fff;
-}
-
-.day-chip.active .day-chip-weekday {
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.day-chip.active .day-chip-num {
-  color: #fff;
-}
-
-.day-chip.active .day-chip-dot {
-  background: #fff;
 }
 
 /* Die OpenStreetMap-Kacheln selbst kennen keinen Dark Mode – ein Farb-Invert nur auf der

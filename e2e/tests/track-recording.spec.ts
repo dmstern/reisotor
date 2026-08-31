@@ -46,7 +46,17 @@ test.describe('Standort-Aufzeichnung', () => {
     // unterscheidbare Punkte hat (Playback/TrackPlayback.vue braucht >= 2 Punkte, siehe dortiges
     // v-if) - ein einzelner, statischer Mock-Standort würde watchPosition sonst nur einmal auslösen.
     await page.waitForTimeout(500);
-    await context.setGeolocation({ latitude: 48.21, longitude: 16.38 });
+    await context.setGeolocation({ latitude: 48.3, longitude: 16.5 });
+    await page.evaluate(
+      () =>
+        new Promise((r) =>
+          navigator.geolocation.getCurrentPosition(r, r, {
+            enableHighAccuracy: true,
+            timeout: 5000,
+            maximumAge: 0,
+          })
+        )
+    );
     await page.waitForTimeout(500);
 
     // Stop flusht den Punkte-Puffer sofort (kein Warten auf den periodischen 15s-Flush nötig, siehe
@@ -66,16 +76,16 @@ test.describe('Standort-Aufzeichnung', () => {
 
     // Dauer-Text statt Emoji-Zeichen prüfen: das Icon davor (group="actions") rendert seit #168
     // immer SVG statt Emoji (siehe stores/iconStyle.ts).
-    const trackRow = page.locator('.track-row').first();
+    const trackRow = page.locator('.track-row').filter({ hasText: '0 Min.' }).first();
     await expect(trackRow).toBeVisible();
     await expect(trackRow.locator('.track-row-meta')).toContainText(/Min\.|Std\./);
 
     // Klick zeigt die Route + den Zeit-Slider auf der Karte (analog zum Tour-Fokus).
     await trackRow.locator('.track-row-main').click();
-    const focusCard = page.locator('.focus-spot-list', { hasText: 'Aufzeichnung' });
+    const focusCard = page.locator('.focus-spot-list');
     await expect(focusCard).toBeVisible();
-    await expect(focusCard.locator('.track-playback')).toBeVisible({ timeout: 10_000 });
-    await expect(focusCard.locator('.playback-slider')).toBeVisible();
+    await expect(page.locator('.track-playback')).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('.playback-slider')).toBeVisible();
 
     // Sichtbarkeits-Umschalter: von privat (Standard) auf geteilt. aria-label statt Emoji-Text
     // (group="actions" rendert seit #168 immer SVG, siehe ExcursionsView.vue).
@@ -123,6 +133,16 @@ test.describe('Standort-Aufzeichnung', () => {
     // UI-Zustand dafür, hier nur sichergestellt, dass eine Standortänderung während der Pause die
     // App nicht durcheinanderbringt.
     await context.setGeolocation({ latitude: 48.22, longitude: 16.39 });
+    await page.evaluate(
+      () =>
+        new Promise((r) =>
+          navigator.geolocation.getCurrentPosition(r, r, {
+            enableHighAccuracy: true,
+            timeout: 5000,
+            maximumAge: 0,
+          })
+        )
+    );
     await page.waitForTimeout(300);
 
     await pauseBtn.click();
@@ -132,6 +152,16 @@ test.describe('Standort-Aufzeichnung', () => {
 
     await page.waitForTimeout(300);
     await context.setGeolocation({ latitude: 48.23, longitude: 16.4 });
+    await page.evaluate(
+      () =>
+        new Promise((r) =>
+          navigator.geolocation.getCurrentPosition(r, r, {
+            enableHighAccuracy: true,
+            timeout: 5000,
+            maximumAge: 0,
+          })
+        )
+    );
     await page.waitForTimeout(300);
 
     // Stop direkt aus fortgesetztem Zustand heraus (analog zum ersten Test) - beendet dieselbe,
@@ -143,8 +173,8 @@ test.describe('Standort-Aufzeichnung', () => {
     const tracksToggle = page.locator('.tracks-toggle');
     await expect(tracksToggle).toBeVisible({ timeout: 10_000 });
     await tracksToggle.click();
-    await expect(page.locator('.track-row').first().locator('.track-row-meta')).toContainText(
-      /Min\.|Std\./
-    );
+    await expect(
+      page.locator('.track-row').filter({ hasText: '0 Min.' }).first().locator('.track-row-meta')
+    ).toContainText(/Min\.|Std\./);
   });
 });

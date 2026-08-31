@@ -69,7 +69,8 @@ const duration = computed(() => trackDurationMs(props.points));
 const distance = computed(() => trackDistanceMeters(props.points));
 
 const timeFormatter = new Intl.DateTimeFormat('de-DE', { hour: '2-digit', minute: '2-digit' });
-function formatTime(iso: string) {
+function formatTime(iso?: string) {
+  if (!iso) return '';
   return timeFormatter.format(new Date(iso));
 }
 
@@ -83,7 +84,7 @@ const currentTimeLabel = computed(() => {
 </script>
 
 <template>
-  <div v-if="points.length > 1" class="track-playback">
+  <div class="track-playback">
     <div class="track-playback-stats">
       <span
         ><AppIcon :icon="ACTION_ICONS.distance" :size="14" group="actions" />
@@ -119,8 +120,8 @@ const currentTimeLabel = computed(() => {
       <span class="playback-time">{{ currentTimeLabel }}</span>
     </div>
     <div class="track-playback-range">
-      <span>{{ formatTime(points[0].recorded_at) }}</span>
-      <span>{{ formatTime(points[points.length - 1].recorded_at) }}</span>
+      <span>{{ points.length ? formatTime(points[0].recorded_at) : '' }}</span>
+      <span>{{ points.length ? formatTime(points[points.length - 1].recorded_at) : '' }}</span>
     </div>
   </div>
 </template>

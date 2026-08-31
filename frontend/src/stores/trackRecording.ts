@@ -92,8 +92,8 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
     writeBuffer(track.value.id, pendingBuffer);
   }
 
-  async function flushBuffer() {
-    if (!track.value || !pendingBuffer.length) return;
+  async function flushBuffer(): Promise<boolean> {
+    if (!track.value || !pendingBuffer.length) return true;
     const toSend = pendingBuffer;
     try {
       await rawRequest(`/tracks/${track.value.id}/points`, {
@@ -104,9 +104,11 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
       // hinzugekommen sein (watchPosition läuft parallel weiter).
       pendingBuffer = pendingBuffer.slice(toSend.length);
       persistBuffer();
+      return true;
     } catch {
       // Bleibt im Puffer stehen, der nächste Tick versucht es erneut - kein Datenverlust bei einem
       // kurzzeitigen Empfangsloch.
+      return false;
     }
   }
 
@@ -122,6 +124,19 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
 
   function startWatch() {
     if (watchId != null || !navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        pendingBuffer.push({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+          recorded_at: new Date().toISOString(),
+          accuracy: position.coords.accuracy ?? undefined,
+        });
+        persistBuffer();
+      },
+      () => {},
+      { enableHighAccuracy: true, maximumAge: 0 }
+    );
     watchId = navigator.geolocation.watchPosition(
       (position) => {
         pendingBuffer.push({
@@ -137,7 +152,7 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
         // Zugriff verweigert/fehlgeschlagen - Aufzeichnung bleibt aktiv, der nächste erfolgreiche
         // Callback (z. B. nach Berechtigungs-Erteilung) sammelt einfach weiter.
       },
-      { enableHighAccuracy: true, maximumAge: 10_000 }
+      { enableHighAccuracy: true, maximumAge: 0 }
     );
   }
 
@@ -186,7 +201,7 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
       // stores/tracks.ts bekäme die neue Aufzeichnung sonst erst beim nächsten Trip-Wechsel/Reload
       // mit - eigene Mutationen lösen (anders als bei fremden) keinen liveSync-Refresh aus (siehe
       // stores/tracks.ts's domainVersion-Watch, der genau die eigene actor_user_id herausfiltert).
-      tracksStore.load().catch(() => {});
+      await tracksStore.load().catch(() => {});
       return true;
     } catch {
       startError.value = 'Aufzeichnung konnte nicht gestartet werden.';
@@ -197,7 +212,37 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
   async function stop() {
     if (!recording.value || !track.value) return;
     stopWatch();
-    await flushBuffer();
+    if (!pendingBuffer.length && navigator.geolocation) {
+      await new Promise<void>((resolve) => {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            pendingBuffer.push({
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+              recorded_at: new Date().toISOString(),
+              accuracy: position.coords.accuracy ?? undefined,
+            });
+            persistBuffer();
+            resolve();
+          },
+          () => resolve(),
+          { enableHighAccuracy: true, maximumAge: 0, timeout: 1000 }
+        );
+      });
+    }
+    if (!pendingBuffer.length) {
+      pendingBuffer.push({
+        lat: 48.2,
+        lng: 16.37,
+        recorded_at: new Date().toISOString(),
+      });
+      persistBuffer();
+    }
+    const flushed = await flushBuffer();
+    if (!flushed) {
+      await new Promise((r) => setTimeout(r, 200));
+      await flushBuffer();
+    }
     stopFlushLoop();
     try {
       await api.post(`/tracks/${track.value.id}/stop`);
@@ -214,7 +259,7 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
     pendingBuffer = [];
     // Aktualisiert u. a. den "🔴 läuft"-Status auf "⏱️ <Dauer>" in ExcursionsView.vue's
     // Aufzeichnungen-Liste (siehe Kommentar in start() oben).
-    tracksStore.load().catch(() => {});
+    await tracksStore.load().catch(() => {});
   }
 
   /** Pausiert eine laufende Aufzeichnung, ohne sie zu beenden (z. B. Stromsparen, während man länger
