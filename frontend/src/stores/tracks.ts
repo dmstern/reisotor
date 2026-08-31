@@ -62,5 +62,9 @@ export const useTracksStore = defineStore('tracks', () => {
     pointsByTrack.value = nextPoints;
   }
 
-  return { tracks, loaded, pointsByTrack, load, loadPoints, update, remove };
+  function getPointsForTrack(trackId: number): TrackPoint[] {
+    return pointsByTrack.value[trackId] ?? [];
+  }
+
+  return { tracks, loaded, pointsByTrack, getPointsForTrack, load, loadPoints, update, remove };
 });

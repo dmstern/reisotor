@@ -518,7 +518,7 @@ const focusedTrack = computed<LocationTrack | null>(() => {
 });
 const focusedTrackPoints = computed<TrackPoint[]>(() => {
   if (!focusedTrack.value) return [];
-  return tracksStore.pointsByTrack[focusedTrack.value.id] ?? [];
+  return tracksStore.getPointsForTrack(focusedTrack.value.id);
 });
 // Fortschritt des Zeit-Sliders (TrackPlayback.vue) – lebt hier statt in der Kind-Komponente, damit
 // der Playback-Marker unten (updateTrackPlaybackMarker()) direkt auf denselben Wert reagieren kann.
@@ -1319,7 +1319,7 @@ watch(
   async (track) => {
     trackPlaybackProgress.value = 0;
     renderTracks();
-    if (track && !tracksStore.pointsByTrack[track.id]?.length) {
+    if (track && !tracksStore.getPointsForTrack(track.id).length) {
       const points = await tracksStore.loadPoints(track.id);
       renderTracks();
       if (!points.length) {
