@@ -514,7 +514,18 @@ const focusedExcursion = computed<Excursion | null>(() => {
 // drawers.ts), gleiches Muster wie focusedExcursion.
 const focusedTrack = computed<LocationTrack | null>(() => {
   if (drawers.mapFocusTrackId == null) return null;
-  return tracksStore.tracks.find((t) => Number(t.id) === Number(drawers.mapFocusTrackId)) ?? null;
+  const found = tracksStore.tracks.find((t) => Number(t.id) === Number(drawers.mapFocusTrackId));
+  if (found) return found;
+  return {
+    id: drawers.mapFocusTrackId,
+    trip_id: Number(tripStore.currentTripId) || 0,
+    user_id: auth.user?.id ?? 0,
+    excursion_id: null,
+    title: null,
+    visibility: 'private',
+    started_at: new Date().toISOString(),
+    ended_at: new Date().toISOString(),
+  };
 });
 const focusedTrackPoints = computed<TrackPoint[]>(() => {
   if (!focusedTrack.value) return [];
@@ -1600,7 +1611,11 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
          Auf echtem Desktop bleibt beides unverändert Teil dieser Karten-Spalte (Teleport disabled,
          siehe @container-Regel für .focus-spot-list/.day-strip weiter unten - dieselbe 720px-
          Schwelle wie isNarrowLayout). -->
-    <Teleport v-if="teleportReady" to="#map-focus-dock" :disabled="!isNarrowLayout">
+    <Teleport
+      v-if="teleportReady || !isNarrowLayout"
+      to="#map-focus-dock"
+      :disabled="!isNarrowLayout"
+    >
       <div class="day-strip" v-if="vacationDays.length">
         <DayChip
           v-for="day in vacationDays"
