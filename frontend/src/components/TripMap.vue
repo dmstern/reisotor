@@ -58,7 +58,7 @@ import IconButton from './primitives/IconButton.vue';
 import DropdownItem from './primitives/DropdownItem.vue';
 import TravelDetailDialog from './TravelDetailDialog.vue';
 import DayChip from './DayChip.vue';
-// import TrackPlayback from './TrackPlayback.vue';
+import TrackPlayback from './TrackPlayback.vue';
 import AppIcon from './AppIcon.vue';
 
 // Die Karte ist ein generischer, reiner Pin-Layer (kein Anlegen/Bearbeiten hier): sie zeigt
