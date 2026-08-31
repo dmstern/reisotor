@@ -2099,7 +2099,7 @@ async function removeSpot(id: number) {
                 v-for="track in tracksStore.tracks"
                 :key="track.id"
                 class="track-row"
-                :class="{ active: drawers.mapFocusTrackId === track.id }"
+                :class="{ active: Number(drawers.mapFocusTrackId) === Number(track.id) }"
               >
                 <button
                   type="button"

@@ -514,7 +514,7 @@ const focusedExcursion = computed<Excursion | null>(() => {
 // drawers.ts), gleiches Muster wie focusedExcursion.
 const focusedTrack = computed<LocationTrack | null>(() => {
   if (drawers.mapFocusTrackId == null) return null;
-  return tracksStore.tracks.find((t) => t.id === drawers.mapFocusTrackId) ?? null;
+  return tracksStore.tracks.find((t) => Number(t.id) === Number(drawers.mapFocusTrackId)) ?? null;
 });
 const focusedTrackPoints = computed<TrackPoint[]>(() => {
   if (!focusedTrack.value) return [];
