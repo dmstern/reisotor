@@ -31,7 +31,7 @@ async function saveScreenshotIfChanged(
       return { status: 'updated' };
     }
 
-    const numDiffPixels = pixelmatch(img1.data, img2.data, null, img1.width, img1.height, {
+    const numDiffPixels = pixelmatch(img1.data, img2.data, undefined, img1.width, img1.height, {
       threshold: 0.1,
     });
 
