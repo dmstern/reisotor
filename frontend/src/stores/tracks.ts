@@ -22,7 +22,7 @@ export const useTracksStore = defineStore('tracks', () => {
 
   const tracks = ref<LocationTrack[]>([]);
   const loaded = ref(false);
-  const pointsByTrack = reactive<Record<number, TrackPoint[]>>({});
+  const pointsByTrack = ref<Record<number, TrackPoint[]>>({});
 
   async function load() {
     const tripId = tripStore.currentTripId;
@@ -43,7 +43,7 @@ export const useTracksStore = defineStore('tracks', () => {
 
   async function loadPoints(trackId: number): Promise<TrackPoint[]> {
     const points = await api.get<TrackPoint[]>(`/tracks/${trackId}/points`);
-    pointsByTrack[trackId] = points;
+    pointsByTrack.value = { ...pointsByTrack.value, [trackId]: points };
     return points;
   }
 
@@ -57,7 +57,9 @@ export const useTracksStore = defineStore('tracks', () => {
   async function remove(id: number) {
     await api.delete(`/tracks/${id}`);
     tracks.value = tracks.value.filter((t) => t.id !== id);
-    delete pointsByTrack[id];
+    const nextPoints = { ...pointsByTrack.value };
+    delete nextPoints[id];
+    pointsByTrack.value = nextPoints;
   }
 
   return { tracks, loaded, pointsByTrack, load, loadPoints, update, remove };
