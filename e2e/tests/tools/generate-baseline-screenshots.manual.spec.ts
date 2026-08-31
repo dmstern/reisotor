@@ -210,4 +210,3 @@ test.describe('Generate Clean Production Baseline Screenshots (Full HD)', () => 
     }
   });
 });
-
