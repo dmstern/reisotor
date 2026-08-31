@@ -7,6 +7,9 @@
     "vue"
   ],
   "eslint.workingDirectories": [
-    { "mode": "auto" }
-  ]
+    { "pattern": "./*" },
+    { "pattern": "./frontend" },
+    { "pattern": "./backend" }
+  ],
+  "eslint.useFlatConfig": true
 }
