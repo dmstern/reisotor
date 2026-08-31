@@ -49,6 +49,7 @@ import Combobox from '../components/Combobox.vue';
 import FormField from '../components/FormField.vue';
 import TourAssignPicker from '../components/TourAssignPicker.vue';
 import TrackRecordingWarningModal from '../components/TrackRecordingWarningModal.vue';
+import ResizeHandle from '../components/ResizeHandle.vue';
 import LocationPicker from '../components/LocationPicker.vue';
 import CoverImagePicker from '../components/CoverImagePicker.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
@@ -3231,13 +3232,12 @@ async function removeSpot(id: number) {
         </div>
       </div>
 
-      <div
-        class="col-resize-handle resize-grip"
-        role="separator"
-        aria-orientation="vertical"
-        aria-label="Aufteilung zwischen Spots-Liste und Karte anpassen"
+      <ResizeHandle
+        label="Aufteilung zwischen Spots-Liste und Karte anpassen"
+        :is-resizing="resizingCol"
+        class="col-resize-handle"
         @pointerdown="onColResizeStart"
-      ></div>
+      />
 
       <div class="map-col">
         <TripMap
@@ -3660,8 +3660,10 @@ async function removeSpot(id: number) {
   .col-resize-handle {
     display: flex;
     position: absolute;
-    left: calc(var(--space-4) + var(--spots-col-width));
-    top: calc(var(--app-header-height, 56px) + var(--navbar-offset, 0px) + var(--space-4));
+    left: calc(
+      var(--space-4) + var(--spots-col-width) + (var(--space-4) - var(--drawer-handle-gap, 12px)) / 2
+    );
+    top: var(--space-4);
     bottom: var(--space-4);
     height: auto;
     z-index: 10;
