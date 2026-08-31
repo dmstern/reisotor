@@ -84,8 +84,8 @@ test.describe('Standort-Aufzeichnung', () => {
     await trackRow.locator('.track-row-main').click();
     const focusCard = page.locator('.focus-spot-list');
     await expect(focusCard).toBeVisible();
-    await expect(focusCard.locator('.track-playback')).toBeVisible({ timeout: 10_000 });
-    await expect(focusCard.locator('.playback-slider')).toBeVisible();
+    await expect(page.locator('.track-playback')).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('.playback-slider')).toBeVisible();
 
     // Sichtbarkeits-Umschalter: von privat (Standard) auf geteilt. aria-label statt Emoji-Text
     // (group="actions" rendert seit #168 immer SVG, siehe ExcursionsView.vue).
