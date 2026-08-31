@@ -1320,8 +1320,16 @@ watch(
     trackPlaybackProgress.value = 0;
     renderTracks();
     if (track && !tracksStore.pointsByTrack[track.id]?.length) {
-      await tracksStore.loadPoints(track.id);
+      const points = await tracksStore.loadPoints(track.id);
       renderTracks();
+      if (!points.length) {
+        setTimeout(async () => {
+          if (focusedTrack.value?.id === track.id) {
+            await tracksStore.loadPoints(track.id);
+            renderTracks();
+          }
+        }, 600);
+      }
     }
   },
   { immediate: true }
@@ -1693,7 +1701,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
             <AppIcon :icon="ACTION_ICONS.orientationNorth" :size="16" group="actions" />
             {{
               focusedTrack.title ||
-              `Aufzeichnung vom ${formatDate(focusedTrack.started_at.slice(0, 10))}`
+              `Aufzeichnung vom ${formatDate(focusedTrack.started_at)}`
             }}
           </h3>
           <IconButton
