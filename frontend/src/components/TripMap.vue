@@ -1612,7 +1612,27 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
           @click="toggleDayFocus(day)"
         />
       </div>
-      <Card class="focus-spot-list" v-if="focusedExcursion && focusedExcursionStations.length">
+      <Card class="focus-spot-list" v-if="focusedTrack">
+        <div class="focus-spot-list-header">
+          <h3 class="focus-spot-list-title">
+            <AppIcon :icon="ACTION_ICONS.orientationNorth" :size="16" group="actions" />
+            {{ focusedTrack.title || `Aufzeichnung vom ${formatDate(focusedTrack.started_at)}` }}
+          </h3>
+          <IconButton
+            variant="ghost"
+            size="sm"
+            class="focus-spot-list-close"
+            :icon="ACTION_ICONS.close"
+            aria-label="Aufzeichnung-Fokus schließen"
+            title="Aufzeichnung-Fokus schließen"
+            @click="drawers.mapFocusTrackId = null"
+          />
+        </div>
+        <p v-if="focusedTrackPoints.length < 1" class="focus-spot-list-subtitle">Lädt Route…</p>
+        <TrackPlayback :points="focusedTrackPoints" v-model:progress="trackPlaybackProgress" />
+      </Card>
+
+      <Card class="focus-spot-list" v-else-if="focusedExcursion && focusedExcursionStations.length">
         <div class="focus-spot-list-header">
           <button type="button" class="focus-spot-list-title-btn" @click="openExcursionDetail">
             <h3 class="focus-spot-list-title">
@@ -1695,26 +1715,6 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
             </div>
           </template>
         </div>
-      </Card>
-
-      <Card class="focus-spot-list" v-else-if="focusedTrack">
-        <div class="focus-spot-list-header">
-          <h3 class="focus-spot-list-title">
-            <AppIcon :icon="ACTION_ICONS.orientationNorth" :size="16" group="actions" />
-            {{ focusedTrack.title || `Aufzeichnung vom ${formatDate(focusedTrack.started_at)}` }}
-          </h3>
-          <IconButton
-            variant="ghost"
-            size="sm"
-            class="focus-spot-list-close"
-            :icon="ACTION_ICONS.close"
-            aria-label="Aufzeichnung-Fokus schließen"
-            title="Aufzeichnung-Fokus schließen"
-            @click="drawers.mapFocusTrackId = null"
-          />
-        </div>
-        <p v-if="focusedTrackPoints.length < 1" class="focus-spot-list-subtitle">Lädt Route…</p>
-        <TrackPlayback :points="focusedTrackPoints" v-model:progress="trackPlaybackProgress" />
       </Card>
     </Teleport>
 
