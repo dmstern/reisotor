@@ -2113,7 +2113,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
    weiter unten) wieder normales Flow-Element wie bisher. */
 .focus-spot-list {
   position: absolute;
-  top: 10px;
+  top: var(--space-4);
   left: 10px;
   right: 10px;
   z-index: 1000;
@@ -2381,6 +2381,11 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
     border-radius: 999px;
     bottom: 24px;
     padding: 8px 16px;
+  }
+
+  /* Focus-Spot-List (Aufzeichnungs-Anzeige) rechts neben die Schubladen schieben */
+  .focus-spot-list {
+    left: calc(var(--calendar-margin, var(--drawer-tab-width)) + var(--calendar-offset, 0px) + var(--spots-col-width, 400px) + var(--space-4) + var(--space-3));
   }
 
   /* Zoom-Buttons rechts neben den Drawer schieben */

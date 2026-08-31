@@ -65,6 +65,7 @@ import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import type { IconDef } from '../utils/icon';
 import AppIcon from '../components/AppIcon.vue';
+import AnimatedText from '../components/AnimatedText.vue';
 import Button from '../components/primitives/Button.vue';
 import ButtonGroup from '../components/primitives/ButtonGroup.vue';
 import IconButton from '../components/primitives/IconButton.vue';
@@ -1968,14 +1969,11 @@ async function removeSpot(id: number) {
           <div id="map-focus-dock" class="map-focus-dock"></div>
           <div class="header">
             <h2>
-              <span class="title-label-container">
-                <span class="title-label-sizer" aria-hidden="true">Touren</span>
-                <Transition :name="groupMode === 'tours' ? 'title-swipe-up' : 'title-swipe-down'">
-                  <span :key="groupMode" class="title-label-text">
-                    {{ groupMode === 'tours' ? 'Touren' : 'Spots' }}
-                  </span>
-                </Transition>
-              </span>
+              <AnimatedText
+                :text="groupMode === 'tours' ? 'Touren' : 'Spots'"
+                :options="['Spots', 'Touren']"
+                :direction="groupMode === 'tours' ? 'up' : 'down'"
+              />
               <!-- Der frühere, immer sichtbare Erklärtext nahm spürbar Platz weg, v. a. auf mobile
                (Nutzer-Feedback) - jetzt hinter einem Info-Button versteckt, gleiches
                Popover-Muster (Backdrop + .picker-menu) wie die Kategorie-/Status-Filter unten statt
@@ -2035,19 +2033,18 @@ async function removeSpot(id: number) {
             <div class="header-actions">
               <Button
                 class="add-button"
-                v-if="groupMode === 'category'"
-                aria-label="Neuer Spot"
-                @click="showSpotForm = true"
+                :aria-label="groupMode === 'tours' ? 'Neue Tour' : 'Neuer Spot'"
+                @click="groupMode === 'tours' ? openExcursionForm() : (showSpotForm = true)"
               >
                 <AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" />
-                <span class="add-button__label">Neuer Spot</span>
+                <span class="add-button__label">
+                  <AnimatedText
+                    :text="groupMode === 'tours' ? 'Neue Tour' : 'Neuer Spot'"
+                    :options="['Neuer Spot', 'Neue Tour']"
+                    :direction="groupMode === 'tours' ? 'up' : 'down'"
+                  />
+                </span>
               </Button>
-              <template v-else-if="groupMode === 'tours'">
-                <Button class="add-button" aria-label="Neue Tour" @click="openExcursionForm()">
-                  <AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" />
-                  <span class="add-button__label">Neue Tour</span>
-                </Button>
-              </template>
             </div>
             <!-- Zweiter Einstiegspunkt zum ⏺️/⏹️-Button auf TripMap.vue (Start dort mit Sichtbarkeits-
                Auswahl/Tour-Kopplung): der Karten-Button steckt in einer bereits vollen
@@ -3695,61 +3692,7 @@ async function removeSpot(id: number) {
 
 /* Feste/gleiche Breite für den "Spots"/"Touren"-Titel, damit der Umschalter beim Wechsel
    nicht hin und her springt, kombiniert mit einer vertikalen Swipe-Animation (#220). */
-.title-label-container {
-  display: inline-grid;
-  grid-template-columns: 1fr;
-  grid-template-rows: 1fr;
-  align-items: center;
-  position: relative;
-  overflow: hidden;
-}
 
-.title-label-sizer {
-  grid-area: 1 / 1;
-  visibility: hidden;
-  pointer-events: none;
-  white-space: nowrap;
-  user-select: none;
-}
-
-.title-label-text {
-  grid-area: 1 / 1;
-  white-space: nowrap;
-  display: inline-block;
-  will-change: transform, opacity;
-}
-
-/* Vertikale Swipe-Animationen für den Titelwechsel:
-   - Wechsel zu Touren: schiebt nach oben (altes nach oben raus, neues von unten rein)
-   - Wechsel zu Spots: schiebt nach unten (altes nach unten raus, neues von oben rein) */
-.title-swipe-up-enter-active,
-.title-swipe-up-leave-active,
-.title-swipe-down-enter-active,
-.title-swipe-down-leave-active {
-  transition:
-    transform 0.22s cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 0.18s ease;
-}
-
-.title-swipe-up-enter-from {
-  transform: translateY(100%);
-  opacity: 0;
-}
-
-.title-swipe-up-leave-to {
-  transform: translateY(-100%);
-  opacity: 0;
-}
-
-.title-swipe-down-enter-from {
-  transform: translateY(-100%);
-  opacity: 0;
-}
-
-.title-swipe-down-leave-to {
-  transform: translateY(100%);
-  opacity: 0;
-}
 
 /* Etwas mehr Abstand als das straffe 4px-gap der Überschrift selbst (dort passend für Text+Info-
    Icon) - der Umschalter ist ein eigenständiges Steuerungselement, keine Ergänzung des Titels. */
