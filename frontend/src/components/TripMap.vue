@@ -2020,6 +2020,8 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
   position: absolute;
   top: var(--space-3);
   left: var(--space-3);
+  bottom: unset;
+  right: unset;
   z-index: 1000;
   display: flex;
   align-items: center;
@@ -2034,6 +2036,16 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
   color: var(--color-primary-dark);
   max-width: calc(100% - 60px);
 }
+
+@media screen and (min-width: 720px) {
+  .focus-banner {
+    bottom: var(--space-4);
+    right: var(--space-4);
+    top: unset;
+    left: unset;
+  }
+}
+
 
 .focus-banner span {
   overflow: hidden;
