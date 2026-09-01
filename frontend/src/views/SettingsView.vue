@@ -79,7 +79,7 @@ const router = useRouter();
 const route = useRoute();
 const navPosition = useNavPositionStore();
 const navConfig = useNavConfigStore();
-const isDesktop = useIsDesktop();
+const _isDesktop = useIsDesktop();
 const dashboardConfig = useDashboardConfigStore();
 
 // Themengruppen statt einer langen, gleichrangigen Karten-Liste (Nutzer-Feedback) - gleiches Muster
@@ -585,9 +585,14 @@ async function onImportFileSelected(event: Event) {
         </div>
 
         <form class="form username-form" @submit.prevent="changeUsername">
-          <label>
+          <label for="auto-id-1788301175449-26">
             Benutzername
-            <input v-model="usernameForm.username" type="text" required />
+            <input
+              id="auto-id-1788301175449-26"
+              v-model="usernameForm.username"
+              type="text"
+              required
+            />
           </label>
           <p v-if="usernameError" class="hint error">{{ usernameError }}</p>
           <p v-if="usernameSaved" class="hint success">
@@ -627,6 +632,7 @@ async function onImportFileSelected(event: Event) {
         <h2>Passwort ändern</h2>
         <form class="form" @submit.prevent="changePassword">
           <div class="field">
+            <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
             <label for="profile-current-password">Aktuelles Passwort</label>
             <PasswordInput
               id="profile-current-password"
@@ -636,6 +642,7 @@ async function onImportFileSelected(event: Event) {
             />
           </div>
           <div class="field">
+            <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
             <label for="profile-new-password">Neues Passwort</label>
             <PasswordInput
               id="profile-new-password"
@@ -646,6 +653,7 @@ async function onImportFileSelected(event: Event) {
             />
           </div>
           <div class="field">
+            <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
             <label for="profile-confirm-password">Neues Passwort bestätigen</label>
             <PasswordInput
               id="profile-confirm-password"
@@ -763,16 +771,16 @@ async function onImportFileSelected(event: Event) {
           Position der Navigationsleiste, getrennt für Desktop und mobile Bedienung.
         </p>
         <div class="nav-position-row">
-          <label>
+          <label for="auto-id-1788301151989-29">
             Desktop
-            <select v-model="navPosition.desktop">
+            <select id="auto-id-1788301151989-29" v-model="navPosition.desktop">
               <option value="top">Oben</option>
               <option value="bottom">Unten</option>
             </select>
           </label>
-          <label>
+          <label for="auto-id-1788301151989-30">
             Mobil
-            <select v-model="navPosition.mobile">
+            <select id="auto-id-1788301151989-30" v-model="navPosition.mobile">
               <option value="top">Oben</option>
               <option value="bottom">Unten</option>
             </select>
@@ -815,8 +823,9 @@ async function onImportFileSelected(event: Event) {
               >
                 <AppIcon :icon="ACTION_ICONS.chevronDown" :size="14" group="actions" />
               </IconButton>
-              <label class="nav-config-visible">
+              <label for="auto-id-1788301175449-27" class="nav-config-visible">
                 <input
+                  id="auto-id-1788301175449-27"
                   type="checkbox"
                   :checked="entry.visible"
                   :aria-label="`${navLinkLabel(entry.key)} in der Navigation anzeigen`"
@@ -877,8 +886,9 @@ async function onImportFileSelected(event: Event) {
               >
                 <AppIcon :icon="ACTION_ICONS.chevronDown" :size="14" group="actions" />
               </IconButton>
-              <label class="nav-config-visible">
+              <label for="auto-id-1788301175449-28" class="nav-config-visible">
                 <input
+                  id="auto-id-1788301175449-28"
                   type="checkbox"
                   :checked="entry.visible"
                   :aria-label="`${dashboardTileLabel(entry.key)} auf dem Dashboard anzeigen`"
@@ -904,8 +914,12 @@ async function onImportFileSelected(event: Event) {
           denselben Text - kann hier stattdessen auf einen Countdown der verbleibenden Urlaubstage
           umgeschaltet werden.
         </p>
-        <label class="checkbox-option">
-          <input type="checkbox" v-model="uiSettings.showVacationCountdown" />
+        <label for="auto-id-1788301175449-29" class="checkbox-option">
+          <input
+            id="auto-id-1788301175449-29"
+            type="checkbox"
+            v-model="uiSettings.showVacationCountdown"
+          />
           Verbleibende Urlaubstage anzeigen statt festem Hinweis
         </label>
       </div>
@@ -920,9 +934,9 @@ async function onImportFileSelected(event: Event) {
           Wochenanfang und Zahlenformat für Datumsanzeigen in der ganzen App.
         </p>
         <div class="nav-position-row">
-          <label>
+          <label for="auto-id-1788301151989-34">
             Wochenanfang
-            <select v-model="calendarSettings.weekStart">
+            <select id="auto-id-1788301151989-34" v-model="calendarSettings.weekStart">
               <option
                 v-for="option in WEEK_START_OPTIONS"
                 :key="option.value"
@@ -932,9 +946,9 @@ async function onImportFileSelected(event: Event) {
               </option>
             </select>
           </label>
-          <label>
+          <label for="auto-id-1788301151989-35">
             Datumsformat
-            <select v-model="calendarSettings.dateFormat">
+            <select id="auto-id-1788301151989-35" v-model="calendarSettings.dateFormat">
               <option
                 v-for="option in DATE_FORMAT_OPTIONS"
                 :key="option.value"
@@ -955,9 +969,9 @@ async function onImportFileSelected(event: Event) {
           Vorhersage abweichende Werte gegenüber anderen Wetter-Apps (z. B. Apple Weather), lässt
           sich hier ein anderer Anbieter ausprobieren.
         </p>
-        <label class="weather-provider-label">
+        <label for="auto-id-1788301151989-36" class="weather-provider-label">
           Wettermodell
-          <select v-model="weatherProvider.model">
+          <select id="auto-id-1788301151989-36" v-model="weatherProvider.model">
             <option
               v-for="option in WEATHER_MODEL_OPTIONS"
               :key="option.value"
@@ -967,8 +981,12 @@ async function onImportFileSelected(event: Event) {
             </option>
           </select>
         </label>
-        <label class="checkbox-option">
-          <input type="checkbox" v-model="uiSettings.showHomeWeatherFullTrip" />
+        <label for="auto-id-1788301175449-30" class="checkbox-option">
+          <input
+            id="auto-id-1788301175449-30"
+            type="checkbox"
+            v-model="uiSettings.showHomeWeatherFullTrip"
+          />
           Wetter zuhause für den ganzen Urlaub zeigen (statt nur gegen Ende)
         </label>
       </div>
@@ -982,9 +1000,9 @@ async function onImportFileSelected(event: Event) {
           Wird im Dashboard genutzt, um bei Urlauben mit abweichender Landeswährung den aktuellen
           Wechselkurs anzuzeigen.
         </p>
-        <label class="weather-provider-label">
+        <label for="auto-id-1788301151989-38" class="weather-provider-label">
           Heimatwährung
-          <select v-model="homeCurrency.currency">
+          <select id="auto-id-1788301151989-38" v-model="homeCurrency.currency">
             <option
               v-for="option in HOME_CURRENCY_OPTIONS"
               :key="option.value"
@@ -1007,13 +1025,21 @@ async function onImportFileSelected(event: Event) {
           ausschalten - der dauerhafte Offline-/Update-Hinweis oben im Header bleibt davon
           unberührt.
         </p>
-        <label class="checkbox-option">
-          <input type="checkbox" v-model="uiSettings.showActivityToasts" />
+        <label for="auto-id-1788301175449-31" class="checkbox-option">
+          <input
+            id="auto-id-1788301175449-31"
+            type="checkbox"
+            v-model="uiSettings.showActivityToasts"
+          />
           Detaillierte Lade-/Speicher-Meldungen anzeigen
         </label>
-        <label class="weather-provider-label" style="margin-top: var(--space-3)">
+        <label
+          for="auto-id-1788301175449-32"
+          class="weather-provider-label"
+          style="margin-top: var(--space-3)"
+        >
           Anzeigedauer von Toast-Benachrichtigungen
-          <select v-model.number="uiSettings.toastTimeout">
+          <select id="auto-id-1788301175449-32" v-model.number="uiSettings.toastTimeout">
             <option
               v-for="option in TOAST_TIMEOUT_OPTIONS"
               :key="option.value"
@@ -1073,8 +1099,9 @@ async function onImportFileSelected(event: Event) {
               >
                 <span class="nav-config-icon">{{ NOTIFICATION_DOMAIN_META[domain].icon }}</span>
                 <span class="nav-config-label">{{ NOTIFICATION_DOMAIN_META[domain].label }}</span>
-                <label class="nav-config-visible">
+                <label for="auto-id-1788301175449-33" class="nav-config-visible">
                   <input
+                    id="auto-id-1788301175449-33"
                     type="checkbox"
                     :checked="notificationPrefs.preferences?.[domain] ?? true"
                     :aria-label="`${NOTIFICATION_DOMAIN_META[domain].label}-Push aktiv`"
@@ -1126,6 +1153,7 @@ async function onImportFileSelected(event: Event) {
               importieren</template
             >
           </Button>
+          <!-- eslint-disable-next-line vuejs-accessibility/form-control-has-label -->
           <input
             ref="importFileInput"
             type="file"

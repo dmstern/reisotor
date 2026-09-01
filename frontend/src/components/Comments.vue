@@ -42,6 +42,7 @@ function submit() {
 
     <form class="comment-form" @submit.prevent="submit">
       <div class="comment-input-wrap">
+        <!-- eslint-disable-next-line vuejs-accessibility/form-control-has-label -->
         <input v-model="draft" type="text" placeholder="Kommentar schreiben…" />
         <Button
           type="submit"

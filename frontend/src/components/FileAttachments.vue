@@ -103,8 +103,9 @@ async function remove(attachment: Attachment) {
     <p v-if="editable && auth.user?.restricted" class="hint">
       Eingeschränkter Modus - Kein Datei-Upload möglich
     </p>
-    <label v-else-if="editable" class="upload-label">
+    <label for="auto-id-1788301175437-7" v-else-if="editable" class="upload-label">
       <input
+        id="auto-id-1788301175437-7"
         type="file"
         accept="image/*,application/pdf"
         multiple

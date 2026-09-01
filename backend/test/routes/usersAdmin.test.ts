@@ -55,7 +55,7 @@ describe('Admin User Management routes (#224)', () => {
     expect(res.statusCode).toBe(200);
     const users = res.json();
     expect(Array.isArray(users)).toBe(true);
-    expect(users.find((u: any) => u.username === 'admin_user')).toMatchObject({
+    expect(users.find((u: { username: string }) => u.username === 'admin_user')).toMatchObject({
       is_admin: true,
       email: 'admin@example.com',
     });

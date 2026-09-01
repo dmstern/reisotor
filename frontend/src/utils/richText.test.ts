@@ -1,5 +1,12 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { formatInline, isEmptyRichText, renderRichText } from './richText';
+
+// DOMPurify benötigt ein DOM/window-Objekt, das in der Node-Testumgebung nicht verfügbar ist.
+// Da wir hier das Markdown-Rendering testen (nicht DOMPurify selbst), mocken wir es als
+// einfachen Passthrough -- die Sanitization wird im Browser durch DOMPurify übernommen.
+vi.mock('dompurify', () => ({
+  default: { sanitize: (html: string) => html },
+}));
 
 describe('isEmptyRichText', () => {
   it('treats an empty Tiptap paragraph as empty', () => {

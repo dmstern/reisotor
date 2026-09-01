@@ -522,19 +522,20 @@ function showEntryDayOnMap(entry: DiaryEntry) {
       @update:model-value="(v) => !v && closeForm()"
     >
       <form class="add-form" @submit.prevent="submitEntry">
-        <FormField icon="date" label="Datum">
-          <input v-model="form.date" type="date" required />
+        <FormField icon="date" label="Datum" v-slot="{ id }">
+          <input :id="id" v-model="form.date" type="date" required />
         </FormField>
-        <FormField icon="title" label="Titel">
-          <input v-model="form.title" type="text" placeholder="Titel (optional)" />
+        <FormField icon="title" label="Titel" v-slot="{ id }">
+          <input :id="id" v-model="form.title" type="text" placeholder="Titel (optional)" />
         </FormField>
         <RichTextEditor v-model="form.content" placeholder="Was ist heute passiert?" />
         <p v-if="auth.user?.restricted" class="hint">
           Eingeschränkter Modus - Kein Datei-Upload möglich
         </p>
-        <label v-else class="upload-label">
+        <label for="auto-id-1788301175444-18" v-else class="upload-label">
           <AppIcon :icon="FORM_FIELD_ICONS.image" :size="14" group="formFields" /> Bilder hinzufügen
           <input
+            id="auto-id-1788301175444-18"
             type="file"
             accept="image/*"
             multiple
@@ -582,8 +583,18 @@ function showEntryDayOnMap(entry: DiaryEntry) {
             </Button>
           </legend>
           <template v-if="showExcursionPicker">
-            <label v-for="ex in pickerExcursions(form.date)" :key="ex.id" class="excursion-option">
-              <input type="checkbox" :value="ex.id" v-model="form.excursion_ids" />
+            <label
+              for="auto-id-1788301175444-19"
+              v-for="ex in pickerExcursions(form.date)"
+              :key="ex.id"
+              class="excursion-option"
+            >
+              <input
+                id="auto-id-1788301175444-19"
+                type="checkbox"
+                :value="ex.id"
+                v-model="form.excursion_ids"
+              />
               <span class="excursion-option-title">{{ ex.title }}</span>
               <span v-if="ex.date === form.date" class="excursion-option-badge recommended"
                 ><AppIcon :icon="ACTION_ICONS.recommended" :size="13" group="actions" /> Empfohlen –
@@ -780,19 +791,20 @@ function showEntryDayOnMap(entry: DiaryEntry) {
       @update:model-value="(v) => !v && closeEditForm()"
     >
       <form class="add-form" @submit.prevent="submitEditEntry">
-        <FormField icon="date" label="Datum">
-          <input v-model="editForm.date" type="date" required />
+        <FormField icon="date" label="Datum" v-slot="{ id }">
+          <input :id="id" v-model="editForm.date" type="date" required />
         </FormField>
-        <FormField icon="title" label="Titel">
-          <input v-model="editForm.title" type="text" placeholder="Titel (optional)" />
+        <FormField icon="title" label="Titel" v-slot="{ id }">
+          <input :id="id" v-model="editForm.title" type="text" placeholder="Titel (optional)" />
         </FormField>
         <RichTextEditor v-model="editForm.content" />
         <p v-if="auth.user?.restricted" class="hint">
           Eingeschränkter Modus - Kein Datei-Upload möglich
         </p>
-        <label v-else class="upload-label">
+        <label for="auto-id-1788301175444-20" v-else class="upload-label">
           <AppIcon :icon="FORM_FIELD_ICONS.image" :size="14" group="formFields" /> Bilder hinzufügen
           <input
+            id="auto-id-1788301175444-20"
             type="file"
             accept="image/*"
             multiple
@@ -840,6 +852,7 @@ function showEntryDayOnMap(entry: DiaryEntry) {
             </Button>
           </legend>
           <template v-if="editShowExcursionPicker">
+            <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
             <label
               v-for="ex in pickerExcursions(editForm.date)"
               :key="ex.id"

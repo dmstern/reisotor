@@ -472,7 +472,11 @@ function formatWeekdayDate(d: string) {
           <div
             v-if="todayWeather"
             class="weather-today clickable"
+            role="button"
+            tabindex="0"
             @click="openWeatherDayDialog(todayWeather)"
+            @keydown.enter.prevent="openWeatherDayDialog(todayWeather)"
+            @keydown.space.prevent="openWeatherDayDialog(todayWeather)"
           >
             <span class="weather-today-label"
               >Heute{{ trip?.destination ? ` in ${trip.destination}` : '' }}</span
@@ -527,7 +531,11 @@ function formatWeekdayDate(d: string) {
               :class="{ past: day.date < todayStr() }"
               v-for="day in vacationForecastDays"
               :key="day.date"
+              role="button"
+              tabindex="0"
               @click="openWeatherDayDialog(day)"
+              @keydown.enter.prevent="openWeatherDayDialog(day)"
+              @keydown.space.prevent="openWeatherDayDialog(day)"
             >
               <span class="weather-date">{{ formatWeekdayDate(day.date) }}</span>
               <div class="weather-icon-wrapper">

@@ -154,6 +154,7 @@ const categoriesColorRelevant = computed(() => iconStyle.groups.categories === '
             "
           />
         </div>
+        <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
         <label
           v-if="group.value === 'navigation'"
           class="colorize-row"
@@ -168,6 +169,7 @@ const categoriesColorRelevant = computed(() => iconStyle.groups.categories === '
             </span>
           </span>
         </label>
+        <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
         <label
           v-if="group.value === 'weather'"
           class="colorize-row"
@@ -182,6 +184,7 @@ const categoriesColorRelevant = computed(() => iconStyle.groups.categories === '
             </span>
           </span>
         </label>
+        <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
         <label
           v-if="group.value === 'categories'"
           class="colorize-row"

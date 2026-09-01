@@ -209,8 +209,9 @@ export default defineConfig({
     ),
   },
   test: {
-    // Alle aktuellen Testziele sind plain Functions auf plain Daten (utils/*.ts) - kein DOM nötig,
-    // daher kein jsdom/@vue/test-utils. Bei künftigen Komponenten-Tests hier auf 'jsdom' wechseln.
+    // Grundsätzlich plain Node-Umgebung (keine DOM-API nötig für die meisten Utils-Tests).
+    // Einzelne Testdateien, die DOM brauchen (z. B. richText.test.ts wegen DOMPurify),
+    // überschreiben das per "@vitest-environment jsdom"-Kommentar am Dateianfang.
     environment: 'node',
   },
 });

@@ -301,8 +301,8 @@ async function remove(id: number) {
       @update:model-value="(v) => !v && closeEditForm()"
     >
       <form class="add-form" @submit.prevent="submitEdit">
-        <FormField icon="title" label="Titel">
-          <input v-model="editForm.title" type="text" placeholder="Titel (optional)" />
+        <FormField icon="title" label="Titel" v-slot="{ id }">
+          <input :id="id" v-model="editForm.title" type="text" placeholder="Titel (optional)" />
         </FormField>
         <RichTextEditor v-model="editForm.content" />
         <FileAttachments v-if="editingNote" domain="notes" :entity-id="editingNote.id" />

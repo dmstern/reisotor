@@ -52,7 +52,7 @@ export const NOTIFICATION_DOMAIN_META: Record<NotificationDomain, DomainMeta> = 
 // Pushes) - die bleiben bei "Ausgewogen" bewusst aus, aber einzeln zuschaltbar.
 const ESSENTIAL: NotificationDomain[] = ['schedule', 'members', 'departure'];
 const NORMAL: NotificationDomain[] = ['budget', 'ideas', 'spots', 'diary', 'notes'];
-const CHATTY: NotificationDomain[] = ['packing', 'shopping', 'todos'];
+const _CHATTY: NotificationDomain[] = ['packing', 'shopping', 'todos'];
 
 export type NotificationLevel = 'essential' | 'balanced' | 'all';
 

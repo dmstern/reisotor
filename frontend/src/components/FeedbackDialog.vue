@@ -99,17 +99,18 @@ function close() {
           teile keine privaten Infos, die nicht im Internet landen sollen.
         </p>
 
-        <label>
+        <label for="auto-id-1788301151970-4">
           Art der Meldung
-          <select v-model="form.type">
+          <select id="auto-id-1788301151970-4" v-model="form.type">
             <option value="bug">🐛 Bug melden</option>
             <option value="feature">💡 Feature vorschlagen</option>
           </select>
         </label>
 
-        <label>
+        <label for="auto-id-1788301175436-4">
           Titel
           <input
+            id="auto-id-1788301175436-4"
             v-model="form.title"
             type="text"
             required
@@ -118,9 +119,10 @@ function close() {
           />
         </label>
 
-        <label>
+        <label for="auto-id-1788301175436-5">
           Beschreibung
           <textarea
+            id="auto-id-1788301175436-5"
             v-model="form.description"
             required
             rows="5"
@@ -129,8 +131,14 @@ function close() {
           />
         </label>
 
-        <label v-if="!screenshot" class="upload-label">
-          <input type="file" accept="image/*" class="hidden-input" @change="onScreenshotSelected" />
+        <label for="auto-id-1788301175436-6" v-if="!screenshot" class="upload-label">
+          <input
+            id="auto-id-1788301175436-6"
+            type="file"
+            accept="image/*"
+            class="hidden-input"
+            @change="onScreenshotSelected"
+          />
           + Screenshot hinzufügen
         </label>
         <div v-else class="screenshot-preview">

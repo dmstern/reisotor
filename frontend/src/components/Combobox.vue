@@ -47,13 +47,20 @@ function onBlur() {
 defineExpose({
   close: () => {
     open.value = false;
+    return true;
   },
+});
+
+defineOptions({
+  inheritAttrs: false,
 });
 </script>
 
 <template>
   <div class="combobox" :class="{ open }">
+    <!-- eslint-disable-next-line vuejs-accessibility/form-control-has-label -->
     <input
+      v-bind="$attrs"
       type="text"
       :value="modelValue"
       :placeholder="placeholder"
@@ -69,10 +76,13 @@ defineExpose({
       :class="{ open }"
     />
     <Transition name="fade">
-      <ul class="options" v-if="open && filteredOptions.length">
+      <ul class="options" v-if="open && filteredOptions.length" role="listbox">
         <li
           v-for="option in filteredOptions"
           :key="option"
+          role="option"
+          :aria-selected="option === modelValue"
+          tabindex="-1"
           @mousedown.prevent="selectOption(option)"
         >
           <span

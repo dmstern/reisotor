@@ -49,9 +49,16 @@ async function onFileSelected(event: Event) {
     <!-- type="text" statt "url": das Feld kann seit dem Datei-Upload oben auch eine relative
          /api/uploads/…-URL enthalten (kein eigenes Schema/Host), das würde die native
          type="url"-Validierung des Browsers sonst ablehnen und das Formular blockieren. -->
+    <!-- eslint-disable-next-line vuejs-accessibility/form-control-has-label -->
     <input v-model="urlValue" type="text" :placeholder="placeholder ?? 'Bild-URL (optional)'" />
-    <label class="upload-label">
-      <input type="file" accept="image/*" :disabled="uploading" @change="onFileSelected" />
+    <label for="auto-id-1788301175437-9" class="upload-label">
+      <input
+        id="auto-id-1788301175437-9"
+        type="file"
+        accept="image/*"
+        :disabled="uploading"
+        @change="onFileSelected"
+      />
       <template v-if="uploading">Lädt hoch …</template>
       <template v-else
         ><AppIcon :icon="FORM_FIELD_ICONS.image" :size="14" group="formFields" /> Oder Bild

@@ -17,7 +17,12 @@ const currentOption = computed(
 </script>
 
 <template>
-  <label class="theme-mode-select" :class="variant" title="Erscheinungsbild">
+  <label
+    for="auto-id-1788301151985-11"
+    class="theme-mode-select"
+    :class="variant"
+    title="Erscheinungsbild"
+  >
     <AppIcon
       v-if="variant === 'icon'"
       class="icon-face"
@@ -27,7 +32,7 @@ const currentOption = computed(
       aria-hidden="true"
     />
     <span v-else class="block-label">Erscheinungsbild</span>
-    <select v-model="theme.mode" aria-label="Erscheinungsbild">
+    <select id="auto-id-1788301151985-11" v-model="theme.mode" aria-label="Erscheinungsbild">
       <option v-for="option in THEME_MODE_OPTIONS" :key="option.value" :value="option.value">
         {{ option.icon }} {{ option.label }}
       </option>

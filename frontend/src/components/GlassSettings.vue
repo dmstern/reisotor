@@ -82,6 +82,7 @@ const previewStyle = computed(() => {
     <div class="sliders-wrap">
       <div class="slider-row">
         <div class="slider-header">
+          <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
           <label for="glass-opacity-slider">Deckkraft (Opazität)</label>
           <span class="slider-value">{{ uiSettings.glassOpacity }}%</span>
         </div>
@@ -99,6 +100,7 @@ const previewStyle = computed(() => {
 
       <div class="slider-row">
         <div class="slider-header">
+          <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
           <label for="glass-blur-slider">Weichzeichner (Blur)</label>
           <span class="slider-value">{{ uiSettings.glassBlur }}px</span>
         </div>

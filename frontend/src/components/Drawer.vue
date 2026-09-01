@@ -130,7 +130,15 @@ function onResizeEnd() {
     :class="[side, { open, maximized, resizing }]"
     :style="{ '--drawer-width': `${width}px` }"
   >
-    <div class="drawer-backdrop" v-if="open" @click="emit('update:open', false)"></div>
+    <div
+      class="drawer-backdrop"
+      v-if="open"
+      role="button"
+      tabindex="0"
+      @click="emit('update:open', false)"
+      @keydown.enter.prevent="emit('update:open', false)"
+      @keydown.space.prevent="emit('update:open', false)"
+    ></div>
     <div ref="panelEl" class="drawer-panel">
       <div v-if="open" class="drawer-header-actions">
         <IconButton

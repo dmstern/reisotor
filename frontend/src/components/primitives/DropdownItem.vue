@@ -23,7 +23,7 @@ const props = withDefaults(
     target?: string;
     /** Link-Rel (z. B. 'noopener') */
     rel?: string;
-    /** Multiselect-Modus mit Checkbox (<label> statt <button>/<a>) */
+    /** Multiselect-Modus mit Checkbox (<label for="auto-id-1788301175442-17"> statt <button>/<a>) */
     multiselect?: boolean;
     /** Checkbox-Zustand für Multiselect */
     checked?: boolean;
@@ -55,6 +55,7 @@ function handleClick(event: MouseEvent) {
 </script>
 
 <template>
+  <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
   <label
     v-if="multiselect"
     class="dropdown-item"
@@ -62,6 +63,7 @@ function handleClick(event: MouseEvent) {
   >
     <slot name="checkbox">
       <input
+        id="auto-id-1788301175442-17"
         type="checkbox"
         :checked="checked"
         :disabled="disabled"

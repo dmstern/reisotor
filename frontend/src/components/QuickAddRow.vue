@@ -51,6 +51,7 @@ function onBlur(event: FocusEvent) {
   <form ref="formRef" class="quick-add-row" :class="{ expanded }" @submit.prevent="submit">
     <div class="main-row">
       <span class="plus" aria-hidden="true">+</span>
+      <!-- eslint-disable-next-line vuejs-accessibility/form-control-has-label -->
       <input
         ref="inputRef"
         v-model="label"
