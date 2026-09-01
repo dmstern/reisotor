@@ -2346,11 +2346,7 @@ async function removeSpot(id: number) {
                       />
                     </FormField>
                     <FormField icon="note" label="Sitzplatz">
-                      <input
-                        v-model="excursionForm.seat"
-                        type="text"
-                        placeholder="z. B. 12A"
-                      />
+                      <input v-model="excursionForm.seat" type="text" placeholder="z. B. 12A" />
                     </FormField>
                   </div>
                   <FormField icon="link" label="Link (Buchung/Check-in)">
@@ -2549,11 +2545,7 @@ async function removeSpot(id: number) {
                       />
                     </FormField>
                     <FormField icon="note" label="Sitzplatz">
-                      <input
-                        v-model="editExcursionForm.seat"
-                        type="text"
-                        placeholder="z. B. 12A"
-                      />
+                      <input v-model="editExcursionForm.seat" type="text" placeholder="z. B. 12A" />
                     </FormField>
                   </div>
                   <FormField icon="link" label="Link (Buchung/Check-in)">
@@ -2973,61 +2965,59 @@ async function removeSpot(id: number) {
                   :class="{ 'is-tour': grp.excursion }"
                   :ref="(el) => grp.excursion && setTourWrapRef(grp.excursion.id, el)"
                 >
-              <svg
-                v-if="grp.excursion && tourLines.get(grp.excursion.id)"
-                class="tour-station-line"
-                :width="tourLines.get(grp.excursion.id)!.width"
-                :height="tourLines.get(grp.excursion.id)!.height"
-                aria-hidden="true"
-              >
-                <path :d="tourLines.get(grp.excursion.id)!.pathD" />
-                <circle
-                  v-for="(dot, i) in tourLines.get(grp.excursion.id)!.dots"
-                  :key="i"
-                  :cx="dot.x"
-                  :cy="dot.y"
-                  r="5"
-                />
-              </svg>
-              <TransitionGroup
-                tag="div"
-                name="list"
-                :class="grp.excursion ? 'tour-station-list' : 'grid cards'"
-              >
-                <template v-for="(item, index) in grp.items" :key="`spot-${item.spot.id}`">
-                  <SpotCard
-                    :ref="(el) => setSpotRef(item.spot.id, el)"
-                    class="staggered-spot"
-                    :style="[
-                      { '--stagger-idx': index, '--stagger-total': grp.items.length }
-                    ]"
-                    :spot="item.spot"
-                    :highlighted="highlightedIds.has(item.spot.id)"
-                    :expanded="expandedSpotId === item.spot.id"
-                    :scheduled-date="spotScheduledDates.get(item.spot.id) ?? null"
-                    :creator-label="creatorLabel(item.spot.created_by)"
-                    :payer-label="creatorLabel(item.spot.paid_by_user_id)"
-                    :like-count="spotsStore.likeCountFor(item.spot.id)"
-                    :liked="spotsStore.likedByMe(item.spot.id, auth.user?.id)"
-                    :comments="spotCommentItemsFor(item.spot.id)"
-                    :group-mode="groupMode"
-                    :tour-options="allTourTitles"
-                    :has-multiple-members="users.length > 1"
-                    @edit="startEditSpot"
-                    @remove="removeSpot"
-                    @toggle-like="toggleSpotLike(item.spot.id)"
-                    @submit-comment="(content) => submitSpotComment(item.spot.id, content)"
-                    @remove-comment="removeSpotComment"
-                    @open="onSpotCardOpen(item.spot)"
-                    @close="onSpotCardClose"
-                    @show-on-map="onSpotShowOnMap(item.spot)"
-                    @assign-tour="(title) => assignSpotToTourTitle(item.spot.id, title)"
-                  />
-                </template>
-              </TransitionGroup>
+                  <svg
+                    v-if="grp.excursion && tourLines.get(grp.excursion.id)"
+                    class="tour-station-line"
+                    :width="tourLines.get(grp.excursion.id)!.width"
+                    :height="tourLines.get(grp.excursion.id)!.height"
+                    aria-hidden="true"
+                  >
+                    <path :d="tourLines.get(grp.excursion.id)!.pathD" />
+                    <circle
+                      v-for="(dot, i) in tourLines.get(grp.excursion.id)!.dots"
+                      :key="i"
+                      :cx="dot.x"
+                      :cy="dot.y"
+                      r="5"
+                    />
+                  </svg>
+                  <TransitionGroup
+                    tag="div"
+                    name="list"
+                    :class="grp.excursion ? 'tour-station-list' : 'grid cards'"
+                  >
+                    <template v-for="(item, index) in grp.items" :key="`spot-${item.spot.id}`">
+                      <SpotCard
+                        :ref="(el) => setSpotRef(item.spot.id, el)"
+                        class="staggered-spot"
+                        :style="[{ '--stagger-idx': index, '--stagger-total': grp.items.length }]"
+                        :spot="item.spot"
+                        :highlighted="highlightedIds.has(item.spot.id)"
+                        :expanded="expandedSpotId === item.spot.id"
+                        :scheduled-date="spotScheduledDates.get(item.spot.id) ?? null"
+                        :creator-label="creatorLabel(item.spot.created_by)"
+                        :payer-label="creatorLabel(item.spot.paid_by_user_id)"
+                        :like-count="spotsStore.likeCountFor(item.spot.id)"
+                        :liked="spotsStore.likedByMe(item.spot.id, auth.user?.id)"
+                        :comments="spotCommentItemsFor(item.spot.id)"
+                        :group-mode="groupMode"
+                        :tour-options="allTourTitles"
+                        :has-multiple-members="users.length > 1"
+                        @edit="startEditSpot"
+                        @remove="removeSpot"
+                        @toggle-like="toggleSpotLike(item.spot.id)"
+                        @submit-comment="(content) => submitSpotComment(item.spot.id, content)"
+                        @remove-comment="removeSpotComment"
+                        @open="onSpotCardOpen(item.spot)"
+                        @close="onSpotCardClose"
+                        @show-on-map="onSpotShowOnMap(item.spot)"
+                        @assign-tour="(title) => assignSpotToTourTitle(item.spot.id, title)"
+                      />
+                    </template>
+                  </TransitionGroup>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
             <!-- Zwei unterschiedliche Gründe für eine leere Gruppe: entweder ist der Tour wirklich noch
              kein Spot zugeordnet (grp.excursion.spot_ids selbst leer, unabhängig von Kategorie-/
              Status-Filter), oder es sind welche zugeordnet, aber der aktive Filter blendet sie
@@ -3999,7 +3989,9 @@ async function removeSpot(id: number) {
 }
 
 .tour-station-accordion .staggered-spot {
-  transition: opacity 0.4s ease, transform 0.4s ease;
+  transition:
+    opacity 0.4s ease,
+    transform 0.4s ease;
   opacity: 0;
   transform: translateY(-20px) scale(0.97);
   transition-delay: calc((var(--stagger-total) - var(--stagger-idx) - 1) * 30ms);

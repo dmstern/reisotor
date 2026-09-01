@@ -344,7 +344,10 @@ function onToggleDone() {
               <span class="detail-label">Check-in/-out</span>
               {{ spot.checkin || '–' }} · {{ spot.checkout || '–' }}
             </p>
-            <p v-if="spot.contact && parseContact(spot.contact).kind === 'phone'" class="detail-row">
+            <p
+              v-if="spot.contact && parseContact(spot.contact).kind === 'phone'"
+              class="detail-row"
+            >
               <span class="detail-label">Kontakt</span>
               <AppIcon :icon="FORM_FIELD_ICONS.contact" :size="14" group="formFields" />
               <a :href="parseContact(spot.contact).href" @click.stop>{{ spot.contact }}</a>
@@ -455,7 +458,7 @@ function onToggleDone() {
           <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" /> {{ spot.title }}
         </div>
       </Teleport>
-      
+
       <Transition name="fade">
         <Button
           v-if="!expanded"
@@ -866,7 +869,9 @@ function onToggleDone() {
   }
 
   .mobile-only-accordion-inner > * {
-    transition: opacity 0.4s ease, transform 0.4s ease;
+    transition:
+      opacity 0.4s ease,
+      transform 0.4s ease;
     opacity: 0;
     transform: translateY(-10px);
   }
@@ -898,7 +903,9 @@ function onToggleDone() {
 /* Einfaden und Slide-in für die Inhalte */
 .spot-accordion-inner > *,
 .excursion-accordion-inner > * {
-  transition: opacity 0.4s ease, transform 0.4s ease;
+  transition:
+    opacity 0.4s ease,
+    transform 0.4s ease;
   opacity: 0;
   transform: translateY(-10px);
 }
@@ -912,7 +919,9 @@ function onToggleDone() {
 /* Fallback-Slide-Fade für absolute Buttons */
 .slide-fade-enter-active,
 .slide-fade-leave-active {
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
 }
 .slide-fade-enter-from,
 .slide-fade-leave-to {

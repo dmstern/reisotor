@@ -813,7 +813,9 @@ function onSpotDrop(event: DragEvent) {
 }
 
 .excursion-accordion-inner > * {
-  transition: opacity 0.4s ease, transform 0.4s ease;
+  transition:
+    opacity 0.4s ease,
+    transform 0.4s ease;
   opacity: 0;
   transform: translateY(-10px);
 }
@@ -825,7 +827,9 @@ function onSpotDrop(event: DragEvent) {
 
 .slide-fade-enter-active,
 .slide-fade-leave-active {
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
 }
 .slide-fade-enter-from,
 .slide-fade-leave-to {
