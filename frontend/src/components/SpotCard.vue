@@ -382,11 +382,7 @@ function onToggleDone() {
         </div>
       </div>
 
-      <div
-        class="mobile-only-accordion"
-        :class="{ 'is-expanded': expanded }"
-        :inert="!expanded"
-      >
+      <div class="mobile-only-accordion" :class="{ 'is-expanded': expanded }" :inert="!expanded">
         <div class="mobile-only-accordion-inner">
           <div class="card-actions">
             <TourAssignDropdown
