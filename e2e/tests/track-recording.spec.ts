@@ -111,6 +111,12 @@ test.describe('Standort-Aufzeichnung', () => {
     await expect(recordBtn).toBeVisible({ timeout: 10_000 });
     await recordBtn.click();
     await page.getByRole('button', { name: 'Privat aufzeichnen' }).click();
+
+    const warningModal = page.locator('.track-warning-modal');
+    if (await warningModal.isVisible()) {
+      await warningModal.getByRole('button', { name: 'Aufzeichnung starten' }).click();
+    }
+
     await expect(recordBtn).toHaveClass(/active/);
 
     // aria-label statt Emoji-Text: der Pausieren/Fortsetzen-Button (group="actions") rendert seit
