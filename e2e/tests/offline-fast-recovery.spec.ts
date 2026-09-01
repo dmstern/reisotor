@@ -52,12 +52,14 @@ test.describe('Offline-Erkennung merkt sich einen Fehlschlag statt jedes Mal neu
     await page.route('**/api/**', (route) => route.abort());
     // Der periodische Health-Check (alle 6s, siehe stores/connectivity.ts) erkennt den Ausfall auch
     // ohne eigenes Zutun - etwas großzügiger Timeout, da CI-Runner langsamer sein können.
-    await expect(page.locator('.offline-pill-btn')).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('.offline-badge')).toBeVisible({ timeout: 15_000 });
 
     await page.unroute('**/api/**');
     const retryStart = Date.now();
-    await page.locator('.offline-pill-btn').click();
-    await expect(page.locator('.offline-pill-btn')).toHaveCount(0, { timeout: 3_000 });
+    await page.locator('.profile-link').click(); // Zu den Einstellungen
+    await expect(page.locator('.settings-page')).toBeVisible();
+    await page.locator('.retry-btn').click();
+    await expect(page.locator('.offline-badge')).toHaveCount(0, { timeout: 3_000 });
     // Muss deutlich schneller sein als das nächste reguläre Health-Check-Intervall (6s) - genau der
     // Sinn des manuellen Retry-Buttons.
     expect(Date.now() - retryStart).toBeLessThan(3_000);

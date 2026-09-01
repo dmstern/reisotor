@@ -106,12 +106,7 @@ const isNonProd = computed(
       >
         <div class="avatar-wrapper">
           <span class="avatar">{{ auth.user?.avatar || '👤' }}</span>
-          <div
-            v-if="!connectivity.isOnline"
-            class="offline-badge offline-pill-btn"
-            title="Offline – Klicken zum erneuten Verbinden"
-            @click.stop.prevent="connectivity.checkNow()"
-          >
+          <div v-if="!connectivity.isOnline" class="offline-badge">
             <AppIcon :icon="ACTION_ICONS.offline" :size="12" group="actions" />
           </div>
         </div>
