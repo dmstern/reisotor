@@ -44,8 +44,9 @@ test.describe('Spots-Liste: "Gemacht"-Status-Filter', () => {
     await expect(page.locator('.spot-card', { hasText: doneTitle })).toBeVisible();
     await expect(page.locator('.spot-card', { hasText: openTitle })).toBeVisible();
 
+    await page.waitForSelector('.search-filter-bar');
     await page.getByRole('button', { name: 'Nach Kategorie filtern' }).click();
-    await page.getByRole('checkbox', { name: 'Gemacht' }).check();
+    await page.getByRole('checkbox', { name: /Gemacht/ }).check();
     await page.locator('.picker-backdrop').click();
 
     await expect(page.locator('.spot-card', { hasText: doneTitle })).toBeVisible();
@@ -53,7 +54,7 @@ test.describe('Spots-Liste: "Gemacht"-Status-Filter', () => {
 
     // Aufräumen: Filter zurücksetzen, damit er nicht in andere Tests dieser Suite durchsickert.
     await page.getByRole('button', { name: 'Nach Kategorie filtern' }).click();
-    await page.getByRole('checkbox', { name: 'Gemacht' }).uncheck();
+    await page.getByRole('checkbox', { name: /Gemacht/ }).uncheck();
     await page.locator('.picker-backdrop').click();
   });
 });
@@ -75,10 +76,16 @@ test.describe('Spots-Karte: Kategorie-Filter wird zuverlässig auf die Marker an
     const beforeCount = await markers.count();
     expect(beforeCount).toBeGreaterThan(1);
 
+    await page.waitForSelector('.search-filter-bar');
     await page.getByRole('button', { name: 'Nach Kategorie filtern' }).click();
     // Erste Kategorie-Checkbox aus dem Menü wählen - welche das genau ist, ist für diesen Test
     // irrelevant, nur dass danach WENIGER Marker als vorher sichtbar sind.
-    await page.locator('.category-option').first().locator('input[type="checkbox"]').check();
+    await page.locator('.category-option').first().waitFor();
+    await page
+      .locator('.category-option')
+      .first()
+      .locator('input[type="checkbox"]')
+      .check({ force: true });
     await page.locator('.picker-backdrop').click();
 
     await expect(async () => {
