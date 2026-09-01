@@ -700,7 +700,7 @@ function groupIconColor(grp: {
 // Sortierung/Gruppierung/Filter bleiben über localStorage auch nach einem Reload/erneuten Besuch
 // erhalten (siehe usePersistedRef.ts) - dieselbe "Orte"-Liste, die CLAUDE.md's Backlog meint (es
 // gibt keine eigene SpotsView, diese gruppierte/filterbare Liste hier ist die gemeinte Stelle).
-const sortMode = usePersistedRef<'alpha' | 'likes'>('reisotor-excursions-sort-mode', 'alpha');
+const sortMode = usePersistedRef<'alpha' | 'likes' | 'date'>('reisotor-excursions-sort-mode', 'date');
 
 // Umschalter Kategorie/Touren (siehe spotGroups unten): gruppiert die Spots-Übersicht wahlweise nach
 // Kategorie (Standard) oder nach Tour-Zugehörigkeit – letzteres zeigt einen Spot in JEDER Tour, der
@@ -894,17 +894,32 @@ const spotGroups = computed(() => {
         return ai - bi;
       });
     } else {
-      list.sort((a, b) =>
-        sortMode.value === 'likes'
-          ? itemLikeCount(b) - itemLikeCount(a) || itemTitle(a).localeCompare(itemTitle(b))
-          : itemTitle(a).localeCompare(itemTitle(b))
-      );
+      list.sort((a, b) => {
+        if (sortMode.value === 'date') {
+          const dateA = spotScheduledDates.value.get(a.spot.id) || '\uFFFF';
+          const dateB = spotScheduledDates.value.get(b.spot.id) || '\uFFFF';
+          return dateA.localeCompare(dateB) || itemTitle(a).localeCompare(itemTitle(b));
+        }
+        if (sortMode.value === 'likes') {
+          return itemLikeCount(b) - itemLikeCount(a) || itemTitle(a).localeCompare(itemTitle(b));
+        }
+        return itemTitle(a).localeCompare(itemTitle(b));
+      });
     }
   }
   if (groupMode.value === 'tours') {
     // "Ohne Tour" bewusst zuletzt statt alphabetisch einsortiert – die eigentlichen Touren sind der
     // interessante Teil dieser Gruppierung, die Sammelgruppe für untaggte Spots bildet den Abschluss.
-    const known = [...groups.keys()].filter((k) => k !== UNASSIGNED_TOUR_GROUP).sort();
+    const known = [...groups.keys()].filter((k) => k !== UNASSIGNED_TOUR_GROUP).sort((a, b) => {
+      if (sortMode.value === 'date') {
+        const ea = excursionForGroupTitle(a);
+        const eb = excursionForGroupTitle(b);
+        const da = ea?.date || '\uFFFF';
+        const db = eb?.date || '\uFFFF';
+        return da.localeCompare(db) || a.localeCompare(b);
+      }
+      return a.localeCompare(b);
+    });
     const keys = groups.has(UNASSIGNED_TOUR_GROUP) ? [...known, UNASSIGNED_TOUR_GROUP] : known;
     return keys.map((title) => ({
       category: title,
