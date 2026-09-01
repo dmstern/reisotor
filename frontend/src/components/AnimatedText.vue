@@ -59,11 +59,7 @@ const sizerOptions = computed(() => {
 <template>
   <component :is="tag" class="animated-text">
     <span class="animated-text__sizer" aria-hidden="true">
-      <span
-        v-for="(opt, idx) in sizerOptions"
-        :key="idx"
-        class="animated-text__sizer-item"
-      >
+      <span v-for="(opt, idx) in sizerOptions" :key="idx" class="animated-text__sizer-item">
         {{ opt }}
       </span>
     </span>

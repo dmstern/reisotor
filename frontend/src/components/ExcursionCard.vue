@@ -285,7 +285,11 @@ function onSpotDrop(event: DragEvent) {
         <div class="title-row">
           <h3>{{ excursion.title }}</h3>
           <span v-if="excursion.role" class="role-badge">
-            <AppIcon :icon="TRAVEL_ROLE_META[excursion.role].tabler" :size="14" group="categories" />
+            <AppIcon
+              :icon="TRAVEL_ROLE_META[excursion.role].tabler"
+              :size="14"
+              group="categories"
+            />
             {{ TRAVEL_ROLE_META[excursion.role].label }}
           </span>
           <span v-else class="tour-type-badge" title="Tour / Ausflug">
@@ -293,109 +297,112 @@ function onSpotDrop(event: DragEvent) {
           </span>
           <PendingSyncBadge v-if="excursion._pending" />
         </div>
-      <p v-if="routeLabel" class="route">{{ routeLabel }}</p>
-      <p
-        v-if="excursion.role && (excursion.departure_time || excursion.arrival_time)"
-        class="departure-arrival"
-      >
-        <AppIcon :icon="FORM_FIELD_ICONS.time" :size="14" group="formFields" />
-        <span v-if="excursion.departure_time"
-          >{{ excursion.departure_time
-          }}<span v-if="excursion.arrival_time">–{{ excursion.arrival_time }}</span> Uhr</span
+        <p v-if="routeLabel" class="route">{{ routeLabel }}</p>
+        <p
+          v-if="excursion.role && (excursion.departure_time || excursion.arrival_time)"
+          class="departure-arrival"
         >
-        <span v-if="travelDuration" class="duration">({{ travelDuration }})</span>
-      </p>
-      <p v-if="expanded && creatorLabel" class="detail-row">
-        <span class="detail-label">Von</span>{{ creatorLabel }}
-      </p>
-      <RichTextDisplay
-        v-if="expanded && excursion.note"
-        class="note"
-        :content="excursion.note"
-        :format="excursion.note_format"
-      />
-      <div class="links" v-if="hasMappedStations">
-        <Button variant="card-action" @click.stop="emit('show-on-map')">
-          <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" /> Auf Karte anzeigen
-        </Button>
-      </div>
-      <div class="card-actions">
-        <button
-          v-if="!excursion.date"
-          type="button"
-          class="calendar-drag-handle"
-          aria-label="Auf Kalender ziehen zum Einplanen"
-          title="Auf Kalender ziehen zum Einplanen"
-          @pointerdown="onPointerDown"
-          @click.stop
-        >
-          <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" /> Einplanen
-        </button>
-        <!-- #147: kein Textlabel mehr im "gemacht"-Zustand - das Datums-/Status-Badge auf dem
+          <AppIcon :icon="FORM_FIELD_ICONS.time" :size="14" group="formFields" />
+          <span v-if="excursion.departure_time"
+            >{{ excursion.departure_time
+            }}<span v-if="excursion.arrival_time">–{{ excursion.arrival_time }}</span> Uhr</span
+          >
+          <span v-if="travelDuration" class="duration">({{ travelDuration }})</span>
+        </p>
+        <p v-if="expanded && creatorLabel" class="detail-row">
+          <span class="detail-label">Von</span>{{ creatorLabel }}
+        </p>
+        <RichTextDisplay
+          v-if="expanded && excursion.note"
+          class="note"
+          :content="excursion.note"
+          :format="excursion.note_format"
+        />
+        <div class="links" v-if="hasMappedStations">
+          <Button variant="card-action" @click.stop="emit('show-on-map')">
+            <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" /> Auf Karte
+            anzeigen
+          </Button>
+        </div>
+        <div class="card-actions">
+          <button
+            v-if="!excursion.date"
+            type="button"
+            class="calendar-drag-handle"
+            aria-label="Auf Kalender ziehen zum Einplanen"
+            title="Auf Kalender ziehen zum Einplanen"
+            @pointerdown="onPointerDown"
+            @click.stop
+          >
+            <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" /> Einplanen
+          </button>
+          <!-- #147: kein Textlabel mehr im "gemacht"-Zustand - das Datums-/Status-Badge auf dem
              Vorschaubild ("Gemacht am ...") zeigt den Status bereits an, ein zweites "Gemacht"-Label
              hier war eine unnötige Dopplung. aria-label/title ersetzen den weggefallenen sichtbaren
              Text für Screenreader/Tooltip. -->
-        <button
-          type="button"
-          class="done-toggle"
-          :class="{ active: !!excursion.done }"
-          :aria-pressed="!!excursion.done"
-          :aria-label="excursion.done ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'"
-          :title="excursion.done ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'"
-          @click.stop="onToggleDone"
-        >
-          <template v-if="excursion.done">
-            <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
-          </template>
-          <template v-else>
-            <AppIcon :icon="ACTION_ICONS.notDone" :size="14" group="actions" /> Als gemacht
-            markieren
-          </template>
-        </button>
-      </div>
-      <Teleport to="body">
-        <div v-if="dragging" class="drag-ghost" :style="ghostStyle ?? {}">
-          <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" />
-          {{ excursion.title }}
+          <button
+            type="button"
+            class="done-toggle"
+            :class="{ active: !!excursion.done }"
+            :aria-pressed="!!excursion.done"
+            :aria-label="
+              excursion.done ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'
+            "
+            :title="excursion.done ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'"
+            @click.stop="onToggleDone"
+          >
+            <template v-if="excursion.done">
+              <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
+            </template>
+            <template v-else>
+              <AppIcon :icon="ACTION_ICONS.notDone" :size="14" group="actions" /> Als gemacht
+              markieren
+            </template>
+          </button>
         </div>
-      </Teleport>
-      <SocialRow
-        v-if="expanded"
-        class="social-row"
-        :like-count="likeCount"
-        :liked="liked"
-        :comment-count="comments.length"
-        @toggle-like="emit('toggle-like')"
-        @toggle-comments="showComments = !showComments"
-      />
-      <Comments
-        v-if="expanded && showComments"
-        :comments="comments"
-        @click.stop
-        @submit="(content) => emit('submit-comment', content)"
-        @remove="(id) => emit('remove-comment', id)"
-      />
-      <Button
-        v-if="!expanded"
-        type="button"
-        variant="ghost"
-        size="sm"
-        class="mini-like-btn"
-        :class="{ liked }"
-        :aria-label="liked ? 'Gefällt mir nicht mehr' : 'Gefällt mir'"
-        :title="liked ? 'Gefällt mir nicht mehr' : 'Gefällt mir'"
-        @click.stop="emit('toggle-like')"
-      >
-        <AppIcon
-          :icon="liked ? ACTION_ICONS.liked : ACTION_ICONS.unliked"
-          :size="15"
-          group="actions"
+        <Teleport to="body">
+          <div v-if="dragging" class="drag-ghost" :style="ghostStyle ?? {}">
+            <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" />
+            {{ excursion.title }}
+          </div>
+        </Teleport>
+        <SocialRow
+          v-if="expanded"
+          class="social-row"
+          :like-count="likeCount"
+          :liked="liked"
+          :comment-count="comments.length"
+          @toggle-like="emit('toggle-like')"
+          @toggle-comments="showComments = !showComments"
         />
-        <span v-if="likeCount > 0" class="mini-like-count">{{ likeCount }}</span>
-      </Button>
+        <Comments
+          v-if="expanded && showComments"
+          :comments="comments"
+          @click.stop
+          @submit="(content) => emit('submit-comment', content)"
+          @remove="(id) => emit('remove-comment', id)"
+        />
+        <Button
+          v-if="!expanded"
+          type="button"
+          variant="ghost"
+          size="sm"
+          class="mini-like-btn"
+          :class="{ liked }"
+          :aria-label="liked ? 'Gefällt mir nicht mehr' : 'Gefällt mir'"
+          :title="liked ? 'Gefällt mir nicht mehr' : 'Gefällt mir'"
+          @click.stop="emit('toggle-like')"
+        >
+          <AppIcon
+            :icon="liked ? ACTION_ICONS.liked : ACTION_ICONS.unliked"
+            :size="15"
+            group="actions"
+          />
+          <span v-if="likeCount > 0" class="mini-like-count">{{ likeCount }}</span>
+        </Button>
+      </div>
     </div>
-  </div>
-</Card>
+  </Card>
 </template>
 
 <style scoped>

@@ -64,11 +64,7 @@ const isNonProd = computed(
 </script>
 
 <template>
-  <header
-    ref="headerEl"
-    class="app-header"
-    :class="{ 'nav-bottom': navBarIsBottom }"
-  >
+  <header ref="headerEl" class="app-header" :class="{ 'nav-bottom': navBarIsBottom }">
     <DemoModeBanner v-if="DEMO_MODE" />
     <!-- Eigene Zeile ÜBER der Icon-Zeile statt zwischen TripSwitcher und den Icons rechts
          eingereiht: der TripSwitcher-Button wächst mit dem Urlaubsnamen und schrumpft nicht
@@ -104,7 +100,7 @@ const isNonProd = computed(
         :class="{
           'is-online': connectivity.isOnline && !connectivity.syncing && !connectivity.checking,
           'is-offline': !connectivity.isOnline,
-          'is-retrying': connectivity.syncing || connectivity.checking
+          'is-retrying': connectivity.syncing || connectivity.checking,
         }"
         title="Einstellungen"
       >
@@ -230,7 +226,9 @@ const isNonProd = computed(
   background: var(--color-primary-tint);
   text-decoration: none;
   flex-shrink: 0;
-  transition: background 0.15s ease, filter 0.2s ease;
+  transition:
+    background 0.15s ease,
+    filter 0.2s ease;
   position: relative;
   box-sizing: border-box;
   z-index: 1;
@@ -258,7 +256,11 @@ const isNonProd = computed(
   left: -2px;
   z-index: -1;
   border-radius: 50%;
-  background: conic-gradient(var(--color-success) 0deg, var(--color-success) 90deg, transparent 180deg);
+  background: conic-gradient(
+    var(--color-success) 0deg,
+    var(--color-success) 90deg,
+    transparent 180deg
+  );
   animation: spin 1s linear infinite;
   mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #fff calc(100% - 2px));
   -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #fff 0);
@@ -266,8 +268,12 @@ const isNonProd = computed(
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .avatar-wrapper {

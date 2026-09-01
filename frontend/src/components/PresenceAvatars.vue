@@ -104,6 +104,4 @@ const overflowCount = computed(() => Math.max(0, otherMembers.value.length - MAX
   font-weight: 700;
   color: var(--color-text-muted);
 }
-
-
 </style>
