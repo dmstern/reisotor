@@ -4007,7 +4007,7 @@ async function removeSpot(id: number) {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  padding-left: var(--space-4);
+  padding: var(--space-2) 12px 24px var(--space-4);
 }
 
 .tour-station-line {
