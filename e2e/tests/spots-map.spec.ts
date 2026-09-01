@@ -44,7 +44,7 @@ test.describe('Spots-Liste: "Gemacht"-Status-Filter', () => {
     await expect(page.locator('.spot-card', { hasText: doneTitle })).toBeVisible();
     await expect(page.locator('.spot-card', { hasText: openTitle })).toBeVisible();
 
-    await page.getByRole('button', { name: 'Nach Status filtern' }).click();
+    await page.getByRole('button', { name: 'Nach Kategorie filtern' }).click();
     await page.getByRole('checkbox', { name: 'Gemacht' }).check();
     await page.locator('.picker-backdrop').click();
 
@@ -52,7 +52,7 @@ test.describe('Spots-Liste: "Gemacht"-Status-Filter', () => {
     await expect(page.locator('.spot-card', { hasText: openTitle })).toHaveCount(0);
 
     // Aufräumen: Filter zurücksetzen, damit er nicht in andere Tests dieser Suite durchsickert.
-    await page.getByRole('button', { name: 'Nach Status filtern' }).click();
+    await page.getByRole('button', { name: 'Nach Kategorie filtern' }).click();
     await page.getByRole('checkbox', { name: 'Gemacht' }).uncheck();
     await page.locator('.picker-backdrop').click();
   });
