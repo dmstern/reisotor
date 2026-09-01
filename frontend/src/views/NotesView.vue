@@ -216,7 +216,9 @@ async function closeEditForm() {
     } else {
       // Prüfen, ob Dateianhänge existieren - wenn nein, den leeren Entwurf löschen.
       try {
-        const attachments = await api.get<Attachment[]>(`/trips/${tripId}/attachments?domain=notes&entity_id=${editingNote.value.id}`);
+        const attachments = await api.get<Attachment[]>(
+          `/trips/${tripId}/attachments?domain=notes&entity_id=${editingNote.value.id}`
+        );
         if (attachments.length === 0) {
           await api.delete(`/notes/${editingNote.value.id}`);
           notes.value = notes.value.filter((n) => n.id !== editingNote.value!.id);
