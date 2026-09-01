@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, useId } from 'vue';
 import { FORM_FIELD_ICONS, type FormFieldIconKey } from '../utils/formFieldIcons';
 import type { IconDef } from '../utils/icon';
 import AppIcon from './AppIcon.vue';
@@ -16,16 +16,14 @@ const resolvedIcon = computed<IconDef | undefined>(() => {
   if (!props.icon) return undefined;
   return typeof props.icon === 'string' ? FORM_FIELD_ICONS[props.icon] : props.icon;
 });
+
+const id = useId();
 </script>
 
 <template>
-  <!-- div statt label: der Slot-Inhalt ist mal ein einzelnes natives Eingabefeld, mal eine
-       zusammengesetzte Komponente mit mehreren eigenen Controls (ImageUrlInput's verstecktes
-       Datei-Input, Combobox). Ein umschließendes <label> würde bei mehreren Controls nur eines
-       davon (das erste) aktivieren - uneindeutig und potenziell überraschend beim Antippen des
-       Labeltexts. -->
   <div class="form-field">
-    <span class="form-field-label">
+    <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
+    <label :for="id" class="form-field-label">
       <AppIcon
         v-if="resolvedIcon"
         class="form-field-icon"
@@ -34,8 +32,8 @@ const resolvedIcon = computed<IconDef | undefined>(() => {
         group="formFields"
       />
       {{ label }}
-    </span>
-    <slot />
+    </label>
+    <slot :id="id" />
   </div>
 </template>
 

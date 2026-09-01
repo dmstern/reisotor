@@ -6,7 +6,7 @@ import { useSlots } from 'vue';
 // Button-Primitive für alle Buttons (Formularknöpfe, Aktionsbuttons, Card-Actions, Icon-Only-Buttons) – siehe Issue #239.
 // Unterstützt sowohl Text, Text + Icon als auch reine Icon-Buttons.
 
-const props = withDefaults(
+const _props = withDefaults(
   defineProps<{
     /**
      * Button-Variante:

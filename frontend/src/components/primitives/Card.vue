@@ -112,6 +112,7 @@ function handleCardKeydown(event: KeyboardEvent) {
 </script>
 
 <template>
+  <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
   <div
     class="card"
     :class="[

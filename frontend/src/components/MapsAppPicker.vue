@@ -16,7 +16,15 @@ const open = ref(false);
     <button type="button" class="card-action-btn" @click="open = !open">
       <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" /> In Karten-App öffnen ↗
     </button>
-    <div v-if="open" class="picker-backdrop" @click="open = false"></div>
+    <div
+      v-if="open"
+      class="picker-backdrop"
+      role="button"
+      tabindex="0"
+      @click="open = false"
+      @keydown.enter.prevent="open = false"
+      @keydown.space.prevent="open = false"
+    ></div>
     <div v-if="open" class="picker-menu">
       <DropdownItem
         :href="`https://maps.apple.com/?ll=${props.lat},${props.lng}&q=${encodeURIComponent(props.title)}`"

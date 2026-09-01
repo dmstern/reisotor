@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, type ComponentPublicInstance } from 'vue';
 import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
 import DropdownItem from './primitives/DropdownItem.vue';
@@ -40,11 +40,11 @@ const emit = defineEmits<{
 
 // Popover states
 const filterMenuOpen = ref(false);
-const filterBtnRef = ref<any>(null);
+const filterBtnRef = ref<HTMLElement | ComponentPublicInstance | null>(null);
 const filterMenuStyle = ref({ top: '0px', left: '0px' });
 
 const sortMenuOpen = ref(false);
-const sortBtnRef = ref<any>(null);
+const sortBtnRef = ref<HTMLElement | ComponentPublicInstance | null>(null);
 const sortMenuStyle = ref({ top: '0px', left: '0px' });
 
 function computeMenuStyle(
@@ -66,7 +66,9 @@ function toggleFilterMenu(event?: MouseEvent) {
   if (!filterMenuOpen.value) {
     sortMenuOpen.value = false;
     const target =
-      (event?.currentTarget as HTMLElement) || filterBtnRef.value?.$el || filterBtnRef.value;
+      (event?.currentTarget as HTMLElement) ||
+      (filterBtnRef.value as ComponentPublicInstance)?.$el ||
+      (filterBtnRef.value as HTMLElement);
     filterMenuStyle.value = computeMenuStyle(target, 230);
     filterMenuOpen.value = true;
   } else {
@@ -78,7 +80,9 @@ function toggleSortMenu(event?: MouseEvent) {
   if (!sortMenuOpen.value) {
     filterMenuOpen.value = false;
     const target =
-      (event?.currentTarget as HTMLElement) || sortBtnRef.value?.$el || sortBtnRef.value;
+      (event?.currentTarget as HTMLElement) ||
+      (sortBtnRef.value as ComponentPublicInstance)?.$el ||
+      (sortBtnRef.value as HTMLElement);
     sortMenuStyle.value = computeMenuStyle(target, 180);
     sortMenuOpen.value = true;
   } else {
@@ -172,7 +176,14 @@ function clearFilters() {
 
       <Teleport to="body">
         <template v-if="filterMenuOpen">
-          <div class="picker-backdrop" @click="filterMenuOpen = false"></div>
+          <div
+            class="picker-backdrop"
+            role="button"
+            tabindex="0"
+            @click="filterMenuOpen = false"
+            @keydown.enter.prevent="filterMenuOpen = false"
+            @keydown.space.prevent="filterMenuOpen = false"
+          ></div>
           <div class="picker-menu filter-popover-menu" :style="filterMenuStyle">
             <div class="popover-section-header">Filtern nach</div>
 
@@ -248,7 +259,14 @@ function clearFilters() {
 
       <Teleport to="body">
         <template v-if="sortMenuOpen">
-          <div class="picker-backdrop" @click="sortMenuOpen = false"></div>
+          <div
+            class="picker-backdrop"
+            role="button"
+            tabindex="0"
+            @click="sortMenuOpen = false"
+            @keydown.enter.prevent="sortMenuOpen = false"
+            @keydown.space.prevent="sortMenuOpen = false"
+          ></div>
           <div class="picker-menu sort-popover-menu" :style="sortMenuStyle">
             <div class="popover-section-header">Sortieren nach</div>
             <button

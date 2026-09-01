@@ -282,8 +282,9 @@ async function quickAdd(list: ListGroup, label: string) {
                 :options="subcategories"
                 placeholder="Unterkategorie (optional)"
               />
-              <label class="qty-field quick-add-qty">
+              <label for="auto-id-1788301175448-25" class="qty-field quick-add-qty">
                 <input
+                  id="auto-id-1788301175448-25"
                   v-model.number="quickAddQuantities[list.key]"
                   type="number"
                   inputmode="numeric"
@@ -327,21 +328,28 @@ async function quickAdd(list: ListGroup, label: string) {
       @update:model-value="(v) => !v && (editingItem = null)"
     >
       <form class="edit-form" @submit.prevent="submitEdit">
-        <FormField icon="title" label="Gegenstand">
-          <input v-model="editForm.label" type="text" placeholder="Gegenstand" required />
+        <FormField icon="title" label="Gegenstand" v-slot="{ id }">
+          <input :id="id" v-model="editForm.label" type="text" placeholder="Gegenstand" required />
         </FormField>
-        <FormField icon="category" label="Kategorie">
-          <Combobox v-model="editForm.category" :options="categories" placeholder="Kategorie" />
-        </FormField>
-        <FormField icon="category" label="Unterkategorie">
+        <FormField icon="category" label="Kategorie" v-slot="{ id }">
           <Combobox
+            :id="id"
+            v-model="editForm.category"
+            :options="categories"
+            placeholder="Kategorie"
+          />
+        </FormField>
+        <FormField icon="category" label="Unterkategorie" v-slot="{ id }">
+          <Combobox
+            :id="id"
             v-model="editForm.subcategory"
             :options="subcategories"
             placeholder="Unterkategorie (optional, z. B. Outfit Tag 1)"
           />
         </FormField>
-        <FormField icon="amount" label="Anzahl">
+        <FormField icon="amount" label="Anzahl" v-slot="{ id }">
           <input
+            :id="id"
             v-model.number="editForm.quantity"
             type="number"
             inputmode="numeric"
@@ -349,8 +357,8 @@ async function quickAdd(list: ListGroup, label: string) {
             step="1"
           />
         </FormField>
-        <FormField v-if="users.length > 1" icon="person" label="Liste">
-          <select v-model="editForm.ownerId">
+        <FormField v-if="users.length > 1" icon="person" label="Liste" v-slot="{ id }">
+          <select :id="id" v-model="editForm.ownerId">
             <option value="shared">🤝 Gemeinsam</option>
             <option v-for="u in users" :key="u.id" :value="String(u.id)">
               {{ u.avatar }} {{ u.id === auth.user?.id ? 'Meine Liste' : u.username }}

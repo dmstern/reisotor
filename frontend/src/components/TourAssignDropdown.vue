@@ -44,6 +44,7 @@ function onDragStart(event: DragEvent) {
 </script>
 
 <template>
+  <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
   <div class="tour-assign-dropdown" @click.stop>
     <button
       type="button"
@@ -57,6 +58,7 @@ function onDragStart(event: DragEvent) {
     >
       <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="14" group="navigation" /> Tour zuordnen
     </button>
+    <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
     <div class="options-backdrop" v-if="open" @click="open = false" />
     <div class="options-popup" v-if="open">
       <div class="popup-head">
@@ -69,18 +71,16 @@ function onDragStart(event: DragEvent) {
           :key="tour.id"
           class="tour-item"
           :class="{ selected: tour.assigned }"
-          @click="handleToggle(tour.id)"
         >
-          <input
-            type="checkbox"
-            :checked="tour.assigned"
-            @click.stop
-            @change="handleToggle(tour.id)"
-          />
-          <span class="tour-name">{{ tour.title }}</span>
+          <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
+          <label class="tour-item-label">
+            <input type="checkbox" :checked="tour.assigned" @change="handleToggle(tour.id)" />
+            <span class="tour-name">{{ tour.title }}</span>
+          </label>
         </li>
       </ul>
       <form class="create-tour-form" @submit.prevent="handleCreate">
+        <!-- eslint-disable-next-line vuejs-accessibility/form-control-has-label -->
         <input v-model="newTourTitle" type="text" placeholder="Neue Tour…" @click.stop />
         <button
           type="submit"
@@ -171,14 +171,21 @@ function onDragStart(event: DragEvent) {
 }
 
 .tour-item {
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.tour-item-label {
   display: flex;
   align-items: center;
   gap: var(--space-2);
   padding: 5px 6px;
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
   font-size: 0.85rem;
   cursor: pointer;
+  width: 100%;
 }
 
 .tour-item:hover {

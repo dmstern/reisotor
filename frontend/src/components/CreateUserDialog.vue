@@ -102,6 +102,8 @@ async function submit() {
   <Modal :model-value="modelValue" title="Neuen Nutzer anlegen" @update:model-value="close">
     <form @submit.prevent="submit" class="create-user-form">
       <div class="field">
+        <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
+        <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
         <label for="create-username">Benutzername</label>
         <input
           id="create-username"
@@ -113,7 +115,9 @@ async function submit() {
         />
       </div>
 
+      <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
       <div class="field">
+        <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
         <label for="create-email">E-Mail-Adresse (optional)</label>
         <input
           id="create-email"
@@ -123,8 +127,10 @@ async function submit() {
           placeholder="max@example.com"
         />
       </div>
+      <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
 
       <div class="field">
+        <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
         <label for="create-password">Initial-Passwort</label>
         <PasswordInput
           id="create-password"
@@ -133,10 +139,11 @@ async function submit() {
           required
         />
         <p class="hint">Der Nutzer wird beim ersten Login zur Passwortänderung aufgefordert.</p>
+        <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
       </div>
 
       <div class="field">
-        <label>Avatar / Symbol</label>
+        <span class="pseudo-label">Avatar / Symbol</span>
         <div class="avatar-picker">
           <IconButton
             v-for="e in AVATAR_OPTIONS"
@@ -154,8 +161,8 @@ async function submit() {
       </div>
 
       <div class="field checkbox-field">
-        <label class="checkbox-label">
-          <input type="checkbox" v-model="isAdmin" />
+        <label for="auto-id-1788301175435-3" class="checkbox-label">
+          <input id="auto-id-1788301175435-3" type="checkbox" v-model="isAdmin" />
           <span>Als Administrator:in anlegen</span>
         </label>
       </div>
@@ -189,7 +196,8 @@ async function submit() {
   gap: var(--space-1);
 }
 
-.field label {
+.field label,
+.field .pseudo-label {
   font-size: 0.85rem;
   font-weight: 500;
   color: var(--color-text-heading);

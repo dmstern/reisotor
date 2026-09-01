@@ -13,6 +13,7 @@ const visible = defineModel<boolean>('visible', { default: false });
 
 <template>
   <div class="password-field">
+    <!-- eslint-disable-next-line vuejs-accessibility/form-control-has-label -->
     <input v-model="model" :type="visible ? 'text' : 'password'" v-bind="$attrs" />
     <button
       type="button"

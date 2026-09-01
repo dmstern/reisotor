@@ -6,7 +6,7 @@ import Button from './primitives/Button.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { usePwaInstallStore } from '../stores/pwaInstall';
 
-const props = defineProps<{ modelValue: boolean }>();
+defineProps<{ modelValue: boolean }>();
 const emit = defineEmits<{ (e: 'update:modelValue', value: boolean): void }>();
 
 const install = usePwaInstallStore();

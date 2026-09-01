@@ -1,5 +1,14 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import {
+  computed,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  ref,
+  watch,
+  type Ref,
+  type ComponentPublicInstance,
+} from 'vue';
 import { useRouter } from 'vue-router';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -15,7 +24,6 @@ import type {
   ScheduleItem,
   TrackPoint,
   TrackVisibility,
-  TravelItem,
   User,
 } from '../api/types';
 import { buildDayStations } from '../utils/dayStations';
@@ -53,7 +61,7 @@ import {
 import { interpolateTrackPosition } from '../utils/trackGeometry';
 import { useIsDesktop } from '../composables/useIsDesktop';
 import { usePersistedRef } from '../composables/usePersistedRef';
-import Card from './primitives/Card.vue';
+import _Card from './primitives/Card.vue';
 import IconButton from './primitives/IconButton.vue';
 import DropdownItem from './primitives/DropdownItem.vue';
 import TravelDetailDialog from './TravelDetailDialog.vue';
@@ -282,9 +290,15 @@ const focusMenuStyle = ref({ top: '0px', left: '0px' });
 // des sonst üblichen white-space:nowrap, das die Menübreite an den längsten Eintrag anpassen würde).
 const WIDE_PICKER_MENU_WIDTH = 252;
 
-function computeTeleportMenuPosition(triggerRef: any, event?: MouseEvent, menuWidth = 216) {
+function computeTeleportMenuPosition(
+  triggerRef: Ref<HTMLElement | ComponentPublicInstance | null> | null,
+  event?: MouseEvent,
+  menuWidth = 216
+) {
   const el =
-    (event?.currentTarget as HTMLElement) || (triggerRef?.value as any)?.$el || triggerRef?.value;
+    (event?.currentTarget as HTMLElement) ||
+    (triggerRef?.value as ComponentPublicInstance)?.$el ||
+    (triggerRef?.value as HTMLElement);
   if (!el || typeof el.getBoundingClientRect !== 'function') {
     return { top: '0px', left: '0px' };
   }
@@ -1525,7 +1539,14 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
       />
       <Teleport to="body">
         <template v-if="focusMenuOpen">
-          <div class="picker-backdrop" @click="focusMenuOpen = false"></div>
+          <div
+            class="picker-backdrop"
+            role="button"
+            tabindex="0"
+            @click="focusMenuOpen = false"
+            @keydown.enter.prevent="focusMenuOpen = false"
+            @keydown.space.prevent="focusMenuOpen = false"
+          ></div>
           <div class="picker-menu picker-menu-wide" :style="focusMenuStyle">
             <DropdownItem
               :disabled="!filteredPoints.length"
@@ -1555,7 +1576,14 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
           </div>
         </template>
         <template v-if="locationMenuOpen">
-          <div class="picker-backdrop" @click="locationMenuOpen = false"></div>
+          <div
+            class="picker-backdrop"
+            role="button"
+            tabindex="0"
+            @click="locationMenuOpen = false"
+            @keydown.enter.prevent="locationMenuOpen = false"
+            @keydown.space.prevent="locationMenuOpen = false"
+          ></div>
           <div class="picker-menu picker-menu-wide" :style="locationMenuStyle">
             <DropdownItem :disabled="!ownPosition" @click="selectLocation(jumpToMyLocation)">
               <span class="picker-item-emoji" aria-hidden="true">{{
@@ -1595,7 +1623,14 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
           </div>
         </template>
         <template v-if="shareMenuOpen">
-          <div class="picker-backdrop" @click="shareMenuOpen = false"></div>
+          <div
+            class="picker-backdrop"
+            role="button"
+            tabindex="0"
+            @click="shareMenuOpen = false"
+            @keydown.enter.prevent="shareMenuOpen = false"
+            @keydown.space.prevent="shareMenuOpen = false"
+          ></div>
           <div class="picker-menu" :style="shareMenuStyle">
             <DropdownItem
               :active="!locationSharing.shareUntil"
@@ -1623,7 +1658,14 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
           </div>
         </template>
         <template v-if="recordMenuOpen">
-          <div class="picker-backdrop" @click="recordMenuOpen = false"></div>
+          <div
+            class="picker-backdrop"
+            role="button"
+            tabindex="0"
+            @click="recordMenuOpen = false"
+            @keydown.enter.prevent="recordMenuOpen = false"
+            @keydown.space.prevent="recordMenuOpen = false"
+          ></div>
           <div class="picker-menu" :style="recordMenuStyle">
             <p v-if="focusedExcursion" class="picker-menu-hint">
               <AppIcon :icon="FORM_FIELD_ICONS.link" :size="14" group="formFields" /> wird an „{{

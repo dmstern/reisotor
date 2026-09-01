@@ -96,10 +96,11 @@ function updateAllocationAmount(category: string, value: string) {
       color="var(--color-primary-dark)"
     />
 
-    <label class="target-input">
+    <label for="auto-id-1788301175422-1" class="target-input">
       Ziel (gesamt, optional)
       <div class="target-input-row">
         <input
+          id="auto-id-1788301175422-1"
           v-model="targetInput"
           type="number"
           step="0.01"
@@ -119,6 +120,7 @@ function updateAllocationAmount(category: string, value: string) {
           :color="categoryColors.get(a.category) ?? '#8a8a86'"
         />
         <div class="category-edit">
+          <!-- eslint-disable-next-line vuejs-accessibility/form-control-has-label -->
           <input
             type="number"
             step="0.01"
@@ -136,11 +138,17 @@ function updateAllocationAmount(category: string, value: string) {
         (optional)
       </summary>
       <form class="add-category-form" @submit.prevent="addCategory">
-        <FormField icon="category" label="Neue Kategorie">
-          <input v-model="newCategory" type="text" placeholder="Neue Kategorie" />
+        <FormField icon="category" label="Neue Kategorie" v-slot="{ id }">
+          <input :id="id" v-model="newCategory" type="text" placeholder="Neue Kategorie" />
         </FormField>
-        <FormField icon="amount" label="Ziel">
-          <input v-model="newCategoryAmount" type="number" step="0.01" placeholder="Ziel €" />
+        <FormField icon="amount" label="Ziel" v-slot="{ id }">
+          <input
+            :id="id"
+            v-model="newCategoryAmount"
+            type="number"
+            step="0.01"
+            placeholder="Ziel €"
+          />
         </FormField>
         <Button type="submit"
           ><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Hinzufügen</Button

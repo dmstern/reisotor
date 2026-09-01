@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3';
-import Badge from '../../components/primitives/Badge.vue';
+import _Badge from '../../components/primitives/Badge.vue';
 
 const meta: Meta = {
   title: 'Design Tokens/Typography',

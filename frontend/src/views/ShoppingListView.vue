@@ -340,32 +340,37 @@ async function quickAddToGroup(group: Group, label: string) {
     <p>{{ progress.checked }}/{{ progress.total }} gekauft</p>
 
     <form class="add-form card" @submit.prevent="addItem">
-      <FormField icon="title" label="Artikel">
-        <input v-model="newLabel" type="text" placeholder="Neuer Artikel" required />
+      <FormField icon="title" label="Artikel" v-slot="{ id }">
+        <input :id="id" v-model="newLabel" type="text" placeholder="Neuer Artikel" required />
       </FormField>
-      <FormField icon="shop" label="Shop">
-        <Combobox v-model="newShop" :options="knownShops" placeholder="Shop/Laden (optional)" />
+      <FormField icon="shop" label="Shop" v-slot="{ id }">
+        <Combobox
+          :id="id"
+          v-model="newShop"
+          :options="knownShops"
+          placeholder="Shop/Laden (optional)"
+        />
       </FormField>
-      <FormField v-if="users.length > 1" icon="person" label="Einkäufer:in">
-        <select v-model="newBuyer">
+      <FormField v-if="users.length > 1" icon="person" label="Einkäufer:in" v-slot="{ id }">
+        <select :id="id" v-model="newBuyer">
           <option value="">Kein:e Einkäufer:in</option>
           <option v-for="u in users" :key="u.id" :value="String(u.id)">
             {{ u.avatar }} {{ u.username }}
           </option>
         </select>
       </FormField>
-      <FormField icon="period" label="Zeitraum">
-        <select v-model="newPeriod">
+      <FormField icon="period" label="Zeitraum" v-slot="{ id }">
+        <select :id="id" v-model="newPeriod">
           <option value="">Kein Zeitraum</option>
           <option value="before">{{ PERIOD_META.before }}</option>
           <option value="during">{{ PERIOD_META.during }}</option>
         </select>
       </FormField>
-      <FormField icon="link" label="Link">
-        <input v-model="newLink" type="url" placeholder="Link (optional, z. B. Amazon)" />
+      <FormField icon="link" label="Link" v-slot="{ id }">
+        <input :id="id" v-model="newLink" type="url" placeholder="Link (optional, z. B. Amazon)" />
       </FormField>
-      <FormField icon="note" label="Notiz">
-        <input v-model="newNote" type="text" placeholder="Notiz (optional)" />
+      <FormField icon="note" label="Notiz" v-slot="{ id }">
+        <input :id="id" v-model="newNote" type="text" placeholder="Notiz (optional)" />
       </FormField>
       <Button type="submit">Hinzufügen</Button>
       <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
@@ -376,7 +381,7 @@ async function quickAddToGroup(group: Group, label: string) {
         <span class="tool-label"
           ><AppIcon :icon="ACTION_ICONS.group" :size="14" group="actions" /> Gruppieren</span
         >
-        <select v-model="groupBy">
+        <select v-model="groupBy" aria-label="Gruppieren">
           <option v-if="users.length > 1" value="buyer">nach Einkäufer:in</option>
           <option value="shop">nach Shop</option>
           <option value="period">nach Zeitraum</option>
@@ -396,7 +401,11 @@ async function quickAddToGroup(group: Group, label: string) {
           @submit="(label) => quickAddToGroup(group, label)"
         >
           <template #extra>
-            <select v-if="users.length > 1 && groupBy !== 'buyer'" v-model="newBuyer">
+            <select
+              v-if="users.length > 1 && groupBy !== 'buyer'"
+              v-model="newBuyer"
+              aria-label="Käufer:in"
+            >
               <option value="">Nicht zugewiesen</option>
               <option v-for="u in users" :key="u.id" :value="String(u.id)">
                 {{ u.avatar }} {{ u.username }}
@@ -408,7 +417,7 @@ async function quickAddToGroup(group: Group, label: string) {
               :options="knownShops"
               placeholder="Shop"
             />
-            <select v-if="groupBy !== 'period'" v-model="newPeriod">
+            <select v-if="groupBy !== 'period'" v-model="newPeriod" aria-label="Zeitraum">
               <option value="">Zeitraum</option>
               <option value="before">{{ PERIOD_META.before }}</option>
               <option value="during">{{ PERIOD_META.during }}</option>
@@ -423,8 +432,13 @@ async function quickAddToGroup(group: Group, label: string) {
               class="row"
               :class="{ 'row-done': item.checked, 'new-highlight': highlightedIds.has(item.id) }"
             >
-              <label class="check">
-                <input type="checkbox" :checked="!!item.checked" @change="toggle(item)" />
+              <label for="auto-id-1788301175450-34" class="check">
+                <input
+                  id="auto-id-1788301175450-34"
+                  type="checkbox"
+                  :checked="!!item.checked"
+                  @change="toggle(item)"
+                />
                 <span :class="{ 'text-done': item.checked }">{{ item.label }}</span>
               </label>
               <PendingSyncBadge v-if="item._pending" />
@@ -440,8 +454,10 @@ async function quickAddToGroup(group: Group, label: string) {
                 <AppIcon :icon="FORM_FIELD_ICONS.link" :size="13" group="formFields" /> Link
               </a>
               <span v-if="item.note" class="note">{{ item.note }}</span>
+              <!-- eslint-disable-next-line vuejs-accessibility/no-onchange -->
               <select
                 v-if="users.length > 1 && groupBy !== 'buyer'"
+                aria-label="Käufer:in"
                 class="buyer-select"
                 :value="item.assigned_to_user_id ?? ''"
                 @change="reassign(item, $event)"
@@ -470,28 +486,29 @@ async function quickAddToGroup(group: Group, label: string) {
       @update:model-value="(v) => !v && closeEditForm()"
     >
       <form class="edit-form" @submit.prevent="submitEdit">
-        <FormField icon="title" label="Artikel">
-          <input v-model="editForm.label" type="text" placeholder="Artikel" required />
+        <FormField icon="title" label="Artikel" v-slot="{ id }">
+          <input :id="id" v-model="editForm.label" type="text" placeholder="Artikel" required />
         </FormField>
-        <FormField icon="shop" label="Shop">
+        <FormField icon="shop" label="Shop" v-slot="{ id }">
           <Combobox
+            :id="id"
             v-model="editForm.shop"
             :options="knownShops"
             placeholder="Shop/Laden (optional)"
           />
         </FormField>
-        <FormField icon="period" label="Zeitraum">
-          <select v-model="editForm.period">
+        <FormField icon="period" label="Zeitraum" v-slot="{ id }">
+          <select :id="id" v-model="editForm.period">
             <option value="">Kein Zeitraum</option>
             <option value="before">{{ PERIOD_META.before }}</option>
             <option value="during">{{ PERIOD_META.during }}</option>
           </select>
         </FormField>
-        <FormField icon="link" label="Link">
-          <input v-model="editForm.link" type="url" placeholder="Link (optional)" />
+        <FormField icon="link" label="Link" v-slot="{ id }">
+          <input :id="id" v-model="editForm.link" type="url" placeholder="Link (optional)" />
         </FormField>
-        <FormField icon="note" label="Notiz">
-          <input v-model="editForm.note" type="text" placeholder="Notiz (optional)" />
+        <FormField icon="note" label="Notiz" v-slot="{ id }">
+          <input :id="id" v-model="editForm.note" type="text" placeholder="Notiz (optional)" />
         </FormField>
         <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />
         <Button type="submit">Speichern</Button>

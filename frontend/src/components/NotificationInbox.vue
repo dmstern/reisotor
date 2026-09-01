@@ -78,7 +78,14 @@ function markAllRead() {
     </button>
 
     <template v-if="open">
-      <div class="backdrop" @click="close"></div>
+      <div
+        class="backdrop"
+        role="button"
+        tabindex="0"
+        @click="close"
+        @keydown.enter.prevent="close"
+        @keydown.space.prevent="close"
+      ></div>
       <div class="dropdown">
         <div class="dropdown-header">
           <span class="dropdown-title">Benachrichtigungen</span>

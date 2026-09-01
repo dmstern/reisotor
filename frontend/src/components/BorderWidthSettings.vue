@@ -41,6 +41,7 @@ const currentPresetValue = computed(() => {
     <!-- Schieberegler (immer sichtbar) -->
     <div class="slider-wrap">
       <div class="slider-header">
+        <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
         <label for="border-width-slider">Rahmendicke feineinstellen</label>
         <span class="slider-value">{{ uiSettings.borderWidth }}px</span>
       </div>

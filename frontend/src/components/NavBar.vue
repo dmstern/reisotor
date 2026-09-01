@@ -12,8 +12,8 @@ import { NAV_LINK_COLORS } from '../utils/widgetColors';
 import { useIconStyleStore } from '../stores/iconStyle';
 import AppIcon from './AppIcon.vue';
 
-const auth = useAuthStore();
-const router = useRouter();
+const _auth = useAuthStore();
+const _router = useRouter();
 const route = useRoute();
 const navPosition = useNavPositionStore();
 const navConfig = useNavConfigStore();
@@ -117,11 +117,6 @@ function hasUnseenAny(link: NavLinkDef): boolean {
   if (link.domain) return liveSync.hasUnseen(link.domain);
   if (link.domains) return link.domains.some((d) => liveSync.hasUnseen(d));
   return false;
-}
-
-async function onLogout() {
-  await auth.logout();
-  router.push('/login');
 }
 
 // Scrollt ein angeklicktes Nav-Icon vollständig in den sichtbaren Bereich – wichtig auf

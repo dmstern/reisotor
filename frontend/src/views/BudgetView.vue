@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
-import { api } from '../api/client';
+import { _api } from '../api/client';
 import type { BudgetExpense } from '../api/types';
 import { useTripStore } from '../stores/trip';
 import { useAuthStore } from '../stores/auth';
@@ -319,8 +319,13 @@ const categoryColors = computed(() => {
               required
             />
           </FormField>
-          <FormField v-if="budgetStore.users.length > 1" icon="visibility" label="Sichtbarkeit">
-            <select v-model="newBudgetForm.kind">
+          <FormField
+            v-if="budgetStore.users.length > 1"
+            icon="visibility"
+            label="Sichtbarkeit"
+            v-slot="{ id }"
+          >
+            <select :id="id" v-model="newBudgetForm.kind">
               <option value="shared">Geteilt (alle sehen ihn)</option>
               <option value="personal">Privat (nur eine Person sieht ihn)</option>
             </select>
@@ -329,8 +334,9 @@ const categoryColors = computed(() => {
             v-if="budgetStore.users.length > 1 && newBudgetForm.kind === 'personal'"
             icon="person"
             label="Person"
+            v-slot="{ id }"
           >
-            <select v-model="newBudgetForm.owner_id" required>
+            <select :id="id" v-model="newBudgetForm.owner_id" required>
               <option value="" disabled>Nutzer:in wählen…</option>
               <option v-for="u in budgetStore.users" :key="u.id" :value="String(u.id)">
                 {{ u.avatar }} {{ u.username }}
@@ -386,8 +392,9 @@ const categoryColors = computed(() => {
           <FormField icon="title" label="Titel">
             <Input v-model="expenseForm.title" type="text" placeholder="Titel" required />
           </FormField>
-          <FormField icon="category" label="Kategorie">
+          <FormField icon="category" label="Kategorie" v-slot="{ id }">
             <Combobox
+              :id="id"
               v-model="expenseForm.category"
               :options="budgetStore.expenseCategories"
               placeholder="Kategorie"
@@ -403,16 +410,21 @@ const categoryColors = computed(() => {
               required
             />
           </FormField>
-          <FormField v-if="budgetStore.users.length > 1" icon="shared" label="Bezahlt von">
-            <select v-model="expenseForm.paid_by_user_id" required>
+          <FormField
+            v-if="budgetStore.users.length > 1"
+            icon="shared"
+            label="Bezahlt von"
+            v-slot="{ id }"
+          >
+            <select :id="id" v-model="expenseForm.paid_by_user_id" required>
               <option value="" disabled>Bezahlt von…</option>
               <option v-for="u in budgetStore.users" :key="u.id" :value="String(u.id)">
                 {{ u.avatar }} {{ u.username }}
               </option>
             </select>
           </FormField>
-          <FormField icon="pot" label="Budget-Topf">
-            <select v-model="expenseForm.budget_id">
+          <FormField icon="pot" label="Budget-Topf" v-slot="{ id }">
+            <select :id="id" v-model="expenseForm.budget_id">
               <option value="">Kein Budget</option>
               <option v-for="b in budgetStore.budgets" :key="b.id" :value="String(b.id)">
                 {{ b.name }} ({{ budgetStore.budgetLabel(b) }})
@@ -456,16 +468,16 @@ const categoryColors = computed(() => {
         @update:model-value="(v) => !v && closeTransferForm()"
       >
         <form class="add-form" @submit.prevent="submitTransfer">
-          <FormField icon="person" label="Von">
-            <select v-model="transferForm.from_user_id" required>
+          <FormField icon="person" label="Von" v-slot="{ id }">
+            <select :id="id" v-model="transferForm.from_user_id" required>
               <option value="" disabled>Von…</option>
               <option v-for="u in budgetStore.users" :key="u.id" :value="String(u.id)">
                 {{ u.avatar }} {{ u.username }}
               </option>
             </select>
           </FormField>
-          <FormField icon="person" label="An">
-            <select v-model="transferForm.to_user_id" required>
+          <FormField icon="person" label="An" v-slot="{ id }">
+            <select :id="id" v-model="transferForm.to_user_id" required>
               <option value="" disabled>An…</option>
               <option v-for="u in budgetStore.users" :key="u.id" :value="String(u.id)">
                 {{ u.avatar }} {{ u.username }}
@@ -504,8 +516,9 @@ const categoryColors = computed(() => {
         <FormField icon="title" label="Titel">
           <Input v-model="editExpenseForm.title" type="text" placeholder="Titel" required />
         </FormField>
-        <FormField icon="category" label="Kategorie">
+        <FormField icon="category" label="Kategorie" v-slot="{ id }">
           <Combobox
+            :id="id"
             v-model="editExpenseForm.category"
             :options="budgetStore.expenseCategories"
             placeholder="Kategorie"
@@ -521,16 +534,21 @@ const categoryColors = computed(() => {
             required
           />
         </FormField>
-        <FormField v-if="budgetStore.users.length > 1" icon="shared" label="Bezahlt von">
-          <select v-model="editExpenseForm.paid_by_user_id" required>
+        <FormField
+          v-if="budgetStore.users.length > 1"
+          icon="shared"
+          label="Bezahlt von"
+          v-slot="{ id }"
+        >
+          <select :id="id" v-model="editExpenseForm.paid_by_user_id" required>
             <option value="" disabled>Bezahlt von…</option>
             <option v-for="u in budgetStore.users" :key="u.id" :value="String(u.id)">
               {{ u.avatar }} {{ u.username }}
             </option>
           </select>
         </FormField>
-        <FormField icon="pot" label="Budget-Topf">
-          <select v-model="editExpenseForm.budget_id">
+        <FormField icon="pot" label="Budget-Topf" v-slot="{ id }">
+          <select :id="id" v-model="editExpenseForm.budget_id">
             <option value="">Kein Budget</option>
             <option v-for="b in budgetStore.budgets" :key="b.id" :value="String(b.id)">
               {{ b.name }} ({{ budgetStore.budgetLabel(b) }})

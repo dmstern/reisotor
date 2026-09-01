@@ -146,6 +146,7 @@ function onToggleDone() {
       </p>
       <p v-else-if="spot.contact" class="detail-row">
         <span class="detail-label">Kontakt</span>
+        <!-- eslint-disable-next-line vue/no-v-html -->
         <span class="contact-text richtext" v-html="renderRichText(spot.contact)"></span>
       </p>
       <p v-if="spot.amount != null" class="detail-row">

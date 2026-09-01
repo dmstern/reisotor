@@ -73,6 +73,25 @@ export default tseslint.config(
         },
       ],
       ...a11yWarnRules,
+      'vuejs-accessibility/label-has-for': [
+        'warn',
+        {
+          controlComponents: [
+            'PasswordInput',
+            'Combobox',
+            'ImageUrlInput',
+            'FileAttachments',
+            'DropZone',
+            'TourAssignDropdown',
+          ],
+        },
+      ],
+      'vuejs-accessibility/form-control-has-label': [
+        'warn',
+        {
+          labelComponents: ['FormField'],
+        },
+      ],
     },
   },
   eslintConfigPrettier

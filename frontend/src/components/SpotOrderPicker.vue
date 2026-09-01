@@ -122,6 +122,7 @@ function onDragEnd() {
       </p>
       <template v-for="(station, index) in plannedStations" :key="index">
         <div class="drop-line" v-if="draggedIndex !== null && dropIndicatorIndex === index"></div>
+        <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
         <div
           class="planned-row"
           :class="{ dragging: draggedIndex === index }"

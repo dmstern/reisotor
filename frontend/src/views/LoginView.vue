@@ -83,17 +83,30 @@ async function onSubmit() {
         Urlaub möglich.
       </p>
 
-      <label>
+      <label for="auto-id-1788301175448-23">
         Benutzername
-        <input v-model="username" type="text" autocomplete="username" required />
+        <input
+          id="auto-id-1788301175448-23"
+          v-model="username"
+          type="text"
+          autocomplete="username"
+          required
+        />
       </label>
 
-      <label v-if="mode === 'register'">
+      <label for="auto-id-1788301175448-24" v-if="mode === 'register'">
         E-Mail-Adresse
-        <input v-model="email" type="email" autocomplete="email" required />
+        <input
+          id="auto-id-1788301175448-24"
+          v-model="email"
+          type="email"
+          autocomplete="email"
+          required
+        />
       </label>
 
       <div class="field">
+        <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
         <label for="login-password">Passwort</label>
         <PasswordInput
           id="login-password"

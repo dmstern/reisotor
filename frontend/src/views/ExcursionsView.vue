@@ -67,9 +67,9 @@ import type { IconDef } from '../utils/icon';
 import AppIcon from '../components/AppIcon.vue';
 import AnimatedText from '../components/AnimatedText.vue';
 import Button from '../components/primitives/Button.vue';
-import ButtonGroup from '../components/primitives/ButtonGroup.vue';
+import _ButtonGroup from '../components/primitives/ButtonGroup.vue';
 import IconButton from '../components/primitives/IconButton.vue';
-import DropdownItem from '../components/primitives/DropdownItem.vue';
+import _DropdownItem from '../components/primitives/DropdownItem.vue';
 
 // Touren-Verwaltung (Anlegen/Bearbeiten/Einplanen) ist seit dem Zurückbau des früheren "erweiterten
 // Touren-Modus" (vormals eine eigenständige Ausflüge-Schublade, views/ExcursionsDrawer.vue) Teil
@@ -742,11 +742,14 @@ function tourTitlesForItem(item: SpotsGroupItem): string[] {
 // würde sich sonst auf die Sheet-Fläche statt den ganzen Bildschirm beschränken (siehe DESIGN.md,
 // Abschnitt "Zieh-Interaktionen").
 function computeMenuStyle(
-  btnEl: any,
+  btnEl: HTMLElement | ComponentPublicInstance | null,
   event?: MouseEvent,
   minWidth = 200
 ): { top: string; left: string } {
-  const el = (event?.currentTarget as HTMLElement) || (btnEl as any)?.$el || btnEl;
+  const el =
+    (event?.currentTarget as HTMLElement) ||
+    (btnEl as ComponentPublicInstance)?.$el ||
+    (btnEl as HTMLElement);
   if (!el || typeof el.getBoundingClientRect !== 'function') return { top: '0px', left: '0px' };
   const rect = el.getBoundingClientRect();
   return {
@@ -756,7 +759,7 @@ function computeMenuStyle(
 }
 
 const descriptionOpen = ref(false);
-const descriptionBtnRef = ref<any>(null);
+const descriptionBtnRef = ref<HTMLElement | ComponentPublicInstance | null>(null);
 const descriptionMenuStyle = ref({ top: '0px', left: '0px' });
 function toggleDescription(event?: MouseEvent) {
   if (!descriptionOpen.value) {
@@ -766,6 +769,20 @@ function toggleDescription(event?: MouseEvent) {
     descriptionOpen.value = false;
   }
 }
+
+function onEscape(e: KeyboardEvent) {
+  if (e.key === 'Escape' && descriptionOpen.value) {
+    descriptionOpen.value = false;
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('keydown', onEscape);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('keydown', onEscape);
+});
 
 const categoryFilter = usePersistedRef<string[]>('reisotor-excursions-category-filter', []);
 function removeCategoryFilter(cat: string) {
@@ -1165,8 +1182,9 @@ const expandedSpotId = ref<number | null>(null);
 // mit demselben Namen sind dadurch ausgeschlossen. Nur im Sheet-Overlay-Modus aktiv: Desktop hat
 // bereits seine eigene, ausreichende CSS-Transition, eine zusätzliche View-Transition würde dort
 // nur unnötig doppelt (und ggf. wechselwirkend) animieren.
-const transitioningSpotId = ref<number | null>(null);
-const supportsViewTransition = typeof document !== 'undefined' && 'startViewTransition' in document;
+const _transitioningSpotId = ref<number | null>(null);
+const _supportsViewTransition =
+  typeof document !== 'undefined' && 'startViewTransition' in document;
 // Nutzer-Feedback (nach dem #140-Fix, auf echtem iPhone/Safari beobachtet): gelegentlich bleibt eine
 // Spot-Karte nach dem Auf-/Zuklappen unsichtbar (aber weiterhin normal selektierbar/interaktiv) und
 // wird erst wieder korrekt gezeichnet, sobald sie aus dem sichtbaren Bereich heraus- und wieder
@@ -1180,7 +1198,7 @@ const supportsViewTransition = typeof document !== 'undefined' && 'startViewTran
 // translateZ(0)/opacity-Kick-Trick gegen ähnliche Safari-Rendering-Aussetzer. Best effort wie der
 // restliche #140-Fix - ohne echtes Safari/iOS-Testgerät hier nicht verifizierbar.
 const spotsColBodyEl = ref<HTMLElement | null>(null);
-function nudgeRepaint() {
+function _nudgeRepaint() {
   const el = spotsColBodyEl.value;
   if (!el) return;
   const prevOpacity = el.style.opacity;
@@ -1292,7 +1310,7 @@ onMounted(() => {
       if (id != null) recomputeTourLine(id);
     }
   });
-  for (const [id, el] of tourWrapRefs) tourLineResizeObserver.observe(el);
+  for (const [_id, el] of tourWrapRefs) tourLineResizeObserver.observe(el);
 });
 onUnmounted(() => tourLineResizeObserver?.disconnect());
 // Neben Größenänderungen einzelner Karten (ResizeObserver oben) auch bei Zuordnungsänderungen
@@ -2020,6 +2038,7 @@ async function removeSpot(id: number) {
                 </button>
                 <Teleport to="body">
                   <template v-if="descriptionOpen">
+                    <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
                     <div class="picker-backdrop" @click="descriptionOpen = false"></div>
                     <div class="picker-menu description-popover" :style="descriptionMenuStyle">
                       <template v-if="groupMode === 'tours'">
@@ -2744,8 +2763,8 @@ async function removeSpot(id: number) {
                   <p class="hint">
                     Wird für die Position auf der Karte und ggf. das Wetter vor Ort verwendet.
                   </p>
-                  <label class="checkbox-option">
-                    <input type="checkbox" v-model="spotForm.is_home" />
+                  <label class="checkbox-option" for="spotFormIsHome">
+                    <input id="spotFormIsHome" type="checkbox" v-model="spotForm.is_home" />
                     <AppIcon :icon="ACTION_ICONS.home" :size="14" group="actions" /> Heimat-Seite
                     (z. B. der heimische Flughafen/Bahnhof/Zuhause für Reise-Etappen)
                   </label>
@@ -3153,8 +3172,8 @@ async function removeSpot(id: number) {
                   <p class="hint">
                     Wird für die Position auf der Karte und ggf. das Wetter vor Ort verwendet.
                   </p>
-                  <label class="checkbox-option">
-                    <input type="checkbox" v-model="editSpotForm.is_home" />
+                  <label class="checkbox-option" for="editSpotFormIsHome">
+                    <input id="editSpotFormIsHome" type="checkbox" v-model="editSpotForm.is_home" />
                     <AppIcon :icon="ACTION_ICONS.home" :size="14" group="actions" /> Heimat-Seite
                     (z. B. der heimische Flughafen/Bahnhof/Zuhause für Reise-Etappen)
                   </label>

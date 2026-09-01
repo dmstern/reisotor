@@ -120,6 +120,7 @@ onUnmounted(() => {
 <template>
   <Teleport to="body">
     <Transition name="modal-fade">
+      <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
       <div v-if="modelValue" class="overlay" @click.self="close">
         <div
           ref="modalRef"

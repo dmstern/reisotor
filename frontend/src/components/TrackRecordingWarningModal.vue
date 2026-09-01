@@ -54,8 +54,8 @@ function handleConfirm() {
           </p>
         </div>
       </div>
-      <label class="checkbox-option warning-dismiss">
-        <input type="checkbox" v-model="trackWarningDismissed" />
+      <label for="auto-id-1788301175439-10" class="checkbox-option warning-dismiss">
+        <input id="auto-id-1788301175439-10" type="checkbox" v-model="trackWarningDismissed" />
         Diesen Hinweis nicht mehr anzeigen
       </label>
       <ButtonGroup>

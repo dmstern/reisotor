@@ -227,7 +227,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
         is_admin: Boolean(body?.is_admin),
         must_change_password: true,
       };
-      DEMO_USERS.push(newUser as any);
+      DEMO_USERS.push(newUser as unknown as User);
       return structuredClone(newUser) as unknown as T;
     }
   }

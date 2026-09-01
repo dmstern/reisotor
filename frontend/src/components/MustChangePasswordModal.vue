@@ -69,6 +69,7 @@ async function onSubmit() {
 
     <form @submit.prevent="onSubmit" class="password-form">
       <div class="field">
+        <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
         <label for="current-pass">Aktuelles Passwort</label>
         <PasswordInput
           id="current-pass"
@@ -80,6 +81,7 @@ async function onSubmit() {
       </div>
 
       <div class="field">
+        <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
         <label for="new-pass">Neues Passwort</label>
         <PasswordInput
           id="new-pass"
@@ -91,6 +93,7 @@ async function onSubmit() {
       </div>
 
       <div class="field">
+        <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
         <label for="confirm-pass">Neues Passwort wiederholen</label>
         <PasswordInput
           id="confirm-pass"

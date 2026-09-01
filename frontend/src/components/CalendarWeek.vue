@@ -71,6 +71,8 @@ function onDrop(event: DragEvent, date: string) {
       v-for="day in days"
       :key="day.date"
       class="day"
+      role="button"
+      tabindex="0"
       :data-date="day.date"
       :class="{
         active: day.date === selectedDate,
@@ -79,6 +81,8 @@ function onDrop(event: DragEvent, date: string) {
         'other-month': day.otherMonth,
       }"
       @click="emit('select', day.date)"
+      @keydown.enter.prevent="emit('select', day.date)"
+      @keydown.space.prevent="emit('select', day.date)"
       @dragover.prevent
       @dragenter.prevent="onDragEnter(day.date)"
       @dragleave="onDragLeave(day.date)"
