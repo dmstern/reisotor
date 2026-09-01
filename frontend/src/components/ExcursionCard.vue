@@ -228,63 +228,71 @@ function onSpotDrop(event: DragEvent) {
       class="card-delete"
       @click="emit('remove', excursion.id)"
     />
-    <div class="image" :style="displayImage ? { backgroundImage: `url(${displayImage})` } : {}">
-      <SpotImageCollage v-if="showCollage" :images="fallbackImages" />
-      <AppIcon
-        v-else-if="!displayImage"
-        class="placeholder"
-        :size="35"
-        :icon="
-          excursion.role
-            ? travelTypeIconDef(excursion.transport_type)
-            : SECTION_ICON_DEFS.excursions
-        "
-        group="categories"
-      />
-      <EditButton v-if="expanded" floating @click="emit('edit', excursion)" />
-      <!-- #106: EIN gemeinsames Datums-/Status-Badge statt zweier unabhängiger Chips (das alte
-           separate "Gemacht"-Badge entfällt) - Text/Icon hängen vom Status ab (in Planung/geplant/
-           gemacht). "excursion.done && !excursion.date" ist der Fallback für bereits vor #106 als
-           "gemacht" markierte Bestandsdaten ohne verknüpften Termin (kein Backfill möglich, da der
-           tatsächliche Tag nicht rekonstruierbar ist). -->
-      <span
-        class="status"
-        :class="{ planned: excursion.date && !excursion.done, 'status-done': excursion.done }"
-      >
-        <template v-if="excursion.done && excursion.date">
-          <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" /> Gemacht am
-          {{ statusDateLabel
-          }}<template v-if="weatherSummary">
-            · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
-            {{ weatherSummary.tempLabel }}</template
-          >
-        </template>
-        <template v-else-if="excursion.done"
-          ><AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" /> Gemacht</template
-        >
-        <template v-else-if="excursion.date">
-          <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="actions" /> Geplant für
-          {{ statusDateLabel
-          }}<template v-if="weatherSummary">
-            · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
-            {{ weatherSummary.tempLabel }}</template
-          >
-        </template>
-        <template v-else>In Planung</template>
-      </span>
-    </div>
-    <div class="body">
-      <div class="title-row">
-        <h3>{{ excursion.title }}</h3>
-        <PendingSyncBadge v-if="excursion._pending" />
+    <!-- Dicker rötlich-violetter Akzentbalken an der abgerundeten linken Kante mit Rucksack-Icon -->
+    <div class="tour-accent-bar" title="Tour / Ausflug" aria-hidden="true">
+      <div class="tour-accent-badge">
+        <AppIcon :icon="SECTION_ICON_DEFS.excursions" group="categories" :size="14" />
       </div>
-      <!-- Nur in der aufgeklappten Karte (#92, ersetzt den früheren ExcursionDetailDialog.vue) -
-           analog zu SpotCard.vue's "Von <creator>"-Zeile/Notiz, die dort ebenfalls erst beim
-           Aufklappen sichtbar wird. -->
-      <span v-if="excursion.role" class="role-badge">
-        <AppIcon :icon="TRAVEL_ROLE_META[excursion.role].tabler" :size="14" group="categories" />
-        {{ TRAVEL_ROLE_META[excursion.role].label }}
-      </span>
+      <span class="tour-bar-label">TOUR</span>
+    </div>
+    <div class="tour-card-main">
+      <div class="image" :style="displayImage ? { backgroundImage: `url(${displayImage})` } : {}">
+        <SpotImageCollage v-if="showCollage" :images="fallbackImages" />
+        <AppIcon
+          v-else-if="!displayImage"
+          class="placeholder"
+          :size="35"
+          :icon="
+            excursion.role
+              ? travelTypeIconDef(excursion.transport_type)
+              : SECTION_ICON_DEFS.excursions
+          "
+          group="categories"
+        />
+        <EditButton v-if="expanded" floating @click="emit('edit', excursion)" />
+        <!-- #106: EIN gemeinsames Datums-/Status-Badge statt zweier unabhängiger Chips (das alte
+             separate "Gemacht"-Badge entfällt) - Text/Icon hängen vom Status ab (in Planung/geplant/
+             gemacht). "excursion.done && !excursion.date" ist der Fallback für bereits vor #106 als
+             "gemacht" markierte Bestandsdaten ohne verknüpften Termin (kein Backfill möglich, da der
+             tatsächliche Tag nicht rekonstruierbar ist). -->
+        <span
+          class="status"
+          :class="{ planned: excursion.date && !excursion.done, 'status-done': excursion.done }"
+        >
+          <template v-if="excursion.done && excursion.date">
+            <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" /> Gemacht am
+            {{ statusDateLabel
+            }}<template v-if="weatherSummary">
+              · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
+              {{ weatherSummary.tempLabel }}</template
+            >
+          </template>
+          <template v-else-if="excursion.done"
+            ><AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" /> Gemacht</template
+          >
+          <template v-else-if="excursion.date">
+            <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="actions" /> Geplant für
+            {{ statusDateLabel
+            }}<template v-if="weatherSummary">
+              · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
+              {{ weatherSummary.tempLabel }}</template
+            >
+          </template>
+          <template v-else>In Planung</template>
+        </span>
+      </div>
+      <div class="body">
+        <div class="title-row">
+          <h3>{{ excursion.title }}</h3>
+          <span v-if="excursion.role" class="role-badge">
+            <AppIcon :icon="TRAVEL_ROLE_META[excursion.role].tabler" :size="14" group="categories" />
+            {{ TRAVEL_ROLE_META[excursion.role].label }}
+          </span>
+          <span v-else class="tour-type-badge" title="Tour / Ausflug">
+            <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="12" group="categories" /> Tour
+          </span>
+          <PendingSyncBadge v-if="excursion._pending" />
+        </div>
       <p v-if="routeLabel" class="route">{{ routeLabel }}</p>
       <p
         v-if="excursion.role && (excursion.departure_time || excursion.arrival_time)"
@@ -386,7 +394,8 @@ function onSpotDrop(event: DragEvent) {
         <span v-if="likeCount > 0" class="mini-like-count">{{ likeCount }}</span>
       </Button>
     </div>
-  </Card>
+  </div>
+</Card>
 </template>
 
 <style scoped>
@@ -402,11 +411,73 @@ function onSpotDrop(event: DragEvent) {
   min-height: 120px;
   border-width: var(--ui-border-width, 1px);
   border-style: solid;
-  border-color: var(--color-border);
+  border-color: var(--color-tour-accent-border);
+  background: var(--color-surface);
   cursor: pointer;
+  overflow: hidden;
   transition:
     border-color 0.15s ease,
-    background 0.15s ease;
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.excursion-card:hover {
+  border-color: var(--color-tour-accent);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Dicker rötlich-violetter Akzentbalken an der abgerundeten linken Kante */
+.tour-accent-bar {
+  width: 32px;
+  flex-shrink: 0;
+  background: linear-gradient(
+    180deg,
+    var(--color-tour-accent) 0%,
+    var(--color-tour-accent-dark) 100%
+  );
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: var(--space-2);
+  gap: 8px;
+  border-radius: var(--radius-md-squircle) 0 0 var(--radius-md-squircle);
+  corner-shape: squircle;
+  user-select: none;
+  z-index: 1;
+}
+
+.tour-accent-badge {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.tour-bar-label {
+  writing-mode: vertical-lr;
+  transform: rotate(180deg);
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.95);
+  opacity: 0.9;
+  margin-top: 2px;
+}
+
+.tour-card-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
 }
 
 /* Löschen-Button schwebt in der oberen rechten Ecke der ganzen Card (nicht des Vorschaubilds) –
@@ -417,8 +488,8 @@ function onSpotDrop(event: DragEvent) {
 
 /* Spot per Drag&Drop aus der Spots-Sicht darauf ablegen (SpotCard.vue ist die Drag-Quelle). */
 .excursion-card.drop-target {
-  border-color: var(--color-primary);
-  background: var(--color-primary-tint);
+  border-color: var(--color-tour-accent);
+  background: var(--color-tour-accent-tint);
 }
 
 /* Ersetzt den früheren ExcursionDetailDialog.vue-Modal-Dialog (#92): die Karte wächst an Ort und
@@ -428,18 +499,10 @@ function onSpotDrop(event: DragEvent) {
    unterscheidbar bleiben. */
 .excursion-card.expanded {
   border-style: solid;
-  border-color: var(--color-primary);
-  background: var(--color-primary-tint);
+  border-color: var(--color-tour-accent);
+  background: var(--color-tour-accent-tint);
 }
 
-/* Eigene Rundung statt overflow:hidden auf .excursion-card: eine eckige .image würde sonst nicht zu
-   den abgerundeten Kartenecken passen. .image sitzt außerdem selbst randlos (kein Abstand zur
-   Kartenkante) und deckt damit ohne Vorschaubild bereits jede .new-highlight-Markierung (style.css)
-   ab, die auf demselben Element sitzt - das ::after-Overlay dort liegt deshalb bewusst ÜBER allen
-   normalen Kind-Elementen statt (wie früher) als eigener box-shadow direkt auf der Karte, sonst würde
-   .image den Rahmen entlang der Bild-Kanten unsichtbar machen (#169). Linke Ecken gerundet, da .image
-   hier links sitzt (Zeilen-Layout); die @media-Umschaltung unten auf Spalten-Layout rundet
-   stattdessen die oberen Ecken. */
 .image {
   width: 140px;
   flex-shrink: 0;
@@ -448,22 +511,41 @@ function onSpotDrop(event: DragEvent) {
   align-items: center;
   justify-content: center;
   position: relative;
-  border-radius: var(--radius-md-squircle) 0 0 var(--radius-md-squircle);
-  corner-shape: squircle;
+  border-radius: 0;
   overflow: hidden;
 }
 
 @media (max-width: 480px) {
-  .excursion-card {
+  .tour-card-main {
     flex-direction: column;
   }
 
   .image {
     width: auto;
     height: 140px;
-    border-radius: var(--radius-md-squircle) var(--radius-md-squircle) 0 0;
-    corner-shape: squircle;
+    border-radius: 0;
   }
+
+  .tour-accent-bar {
+    width: 28px;
+  }
+}
+
+.tour-type-badge {
+  flex-shrink: 0;
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--color-tour-accent-tint);
+  color: var(--color-tour-accent);
+  border: 1px solid var(--color-tour-accent-border);
 }
 
 .placeholder {
@@ -480,14 +562,16 @@ function onSpotDrop(event: DragEvent) {
      h3-Ellipsis unten greift erst, wenn .body überhaupt auf die verfügbare Breite schrumpfen darf
      (gleicher Fix wie SpotCard.vue's identisches .body). */
   min-width: 0;
+  width: 100%;
 }
 
 /* min-width:0 + Kürzung statt Umbruch, gleiches Muster wie SpotCard.vue's .head h3 (siehe dortiger
    Kommentar) - langer Titel wechselte sonst zwischen ein-/zweizeilig je nach eingeklappter/
    ausgefahrener Bottom-Sheet-Breite. */
+.title-row h3,
 .body h3 {
   font-size: 1rem;
-  margin-bottom: 0;
+  margin: 0;
   flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
@@ -498,7 +582,9 @@ function onSpotDrop(event: DragEvent) {
 .title-row {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: var(--space-2);
+  width: 100%;
 }
 
 /* Unten statt oben rechts positioniert (#210): oben links schwebt der Bearbeiten-Button
@@ -658,7 +744,8 @@ function onSpotDrop(event: DragEvent) {
 }
 
 .role-badge {
-  align-self: flex-start;
+  flex-shrink: 0;
+  margin-left: auto;
   font-size: 0.78rem;
   font-weight: 600;
   color: var(--color-primary-dark);
