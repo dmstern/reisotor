@@ -2145,7 +2145,7 @@ async function removeSpot(id: number) {
               :aria-expanded="tracksSectionOpen"
               @click="tracksSectionOpen = !tracksSectionOpen"
             >
-              <span>
+              <span class="tracks-toggle-label">
                 <AppIcon :icon="ACTION_ICONS.history" :size="15" group="actions" /> Aufzeichnungen
                 ({{ tracksStore.tracks.length }})
               </span>
@@ -4179,6 +4179,12 @@ async function removeSpot(id: number) {
   color: var(--color-primary-dark);
   cursor: pointer;
   text-align: left;
+}
+
+.tracks-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
 }
 
 /* Dateninhalt (je eine echte Aufzeichnung), daher --color-surface statt der Steuerungsfarbe der
