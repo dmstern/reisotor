@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
 import { api, ApiError } from '../api/client';
-import type { Note, NoteComment, NoteLike, User } from '../api/types';
+import type { Note, NoteComment, NoteLike, User, Attachment } from '../api/types';
 import { useAuthStore } from '../stores/auth';
 import { useTripStore } from '../stores/trip';
 import { useLiveSyncStore } from '../stores/liveSync';
@@ -36,13 +36,11 @@ const users = ref<User[]>([]);
 const likes = ref<NoteLike[]>([]);
 const comments = ref<NoteComment[]>([]);
 const loading = ref(true);
-const showForm = ref(false);
 const error = ref('');
 const openComments = ref<Set<number>>(new Set());
 const highlightedIds = ref<Set<number>>(new Set());
 
 const emptyForm = () => ({ title: '', content: '' });
-const form = ref(emptyForm());
 
 const editingNote = ref<Note | null>(null);
 const editForm = ref(emptyForm());
@@ -51,7 +49,7 @@ const editForm = ref(emptyForm());
 // verloren gehen) - siehe composables/useDraftAutosave.ts. draftKey der Edit-Instanz wird erst beim
 // Öffnen ausgewertet (editingNote ist zu dem Zeitpunkt bereits gesetzt), daher als Getter statt
 // eines statischen Strings.
-const newDraft = useDraftAutosave('notes:new', form, showForm);
+// Entwurfs-Zwischenspeicherung (Nutzer-Feedback: Eingaben sollen bei einem App-Absturz nicht
 const editDraft = useDraftAutosave(
   () => `notes:edit:${editingNote.value?.id}`,
   editForm,
@@ -156,48 +154,26 @@ function formatDate(iso: string) {
 }
 
 // "+ Neue Notiz": ein bereits gesicherter eigener Entwurf wird weiterbearbeitet statt einen
-// zweiten, parallelen Entwurf anzulegen (#89).
-function openNew() {
+// zweiten, parallelen Entwurf anzulegen (#89). Ansonsten wird direkt ein neuer Entwurf in
+// der Datenbank angelegt, damit sofort Anhänge (Bilder/Dateien) hochgeladen werden können.
+async function openNew() {
   if (myDraft.value) {
     startEdit(myDraft.value);
   } else {
-    showForm.value = true;
+    try {
+      const created = await api.post<Note>('/notes', {
+        trip_id: tripId,
+        title: undefined,
+        content: '',
+        content_format: 'html',
+        is_draft: true,
+      });
+      notes.value.unshift(created);
+      startEdit(created);
+    } catch (err) {
+      error.value = err instanceof ApiError ? err.message : 'Fehler beim Anlegen der Notiz.';
+    }
   }
-}
-
-async function submit() {
-  if (isEmptyRichText(form.value.content)) return;
-  const created = await api.post<Note>('/notes', {
-    trip_id: tripId,
-    title: form.value.title || undefined,
-    content: form.value.content,
-    content_format: 'html',
-  });
-  notes.value.unshift(created);
-  form.value = emptyForm();
-  showForm.value = false;
-  newDraft.clear();
-}
-
-// Schließen ohne "Hinzufügen" verwirft nicht mehr kommentarlos den eingegebenen Inhalt (#89:
-// Nutzer-Feedback, die bisherige Autosave-Zwischenspeicherung war weder in der Übersicht sichtbar
-// noch beim nächsten "Neuer Eintrag" wiederzufinden) - stattdessen wird ein echter, für andere
-// Trip-Mitglieder unsichtbarer Entwurfs-Eintrag angelegt (is_draft:true), sichtbar/weiterbearbeitbar
-// über die Notizen-Liste. Ganz leere Formulare erzeugen weiterhin keinen Eintrag.
-async function closeForm() {
-  showForm.value = false;
-  if (hasFormContent(form.value)) {
-    const created = await api.post<Note>('/notes', {
-      trip_id: tripId,
-      title: form.value.title || undefined,
-      content: form.value.content,
-      content_format: 'html',
-      is_draft: true,
-    });
-    notes.value.unshift(created);
-  }
-  form.value = emptyForm();
-  newDraft.clear();
 }
 
 function startEdit(note: Note) {
@@ -224,16 +200,33 @@ async function submitEdit() {
 // Schließen ohne "Speichern" bei einem noch unveröffentlichten Entwurf sichert den aktuellen Stand
 // weiterhin als Entwurf (statt die Änderungen zu verwerfen) - bei einer bereits veröffentlichten
 // Notiz bleibt es wie bisher beim reinen Verwerfen des Bearbeitungs-Zwischenstands.
+// Leere Entwürfe (ohne Titel/Inhalt und ohne Anhänge) werden automatisch wieder gelöscht,
+// um die Übersicht nicht mit Dateileichen zu füllen.
 async function closeEditForm() {
-  if (editingNote.value?.is_draft && hasFormContent(editForm.value)) {
-    const updated = await api.put<Note>(`/notes/${editingNote.value.id}`, {
-      title: editForm.value.title || undefined,
-      content: editForm.value.content,
-      content_format: 'html',
-      is_draft: true,
-    });
-    const idx = notes.value.findIndex((n) => n.id === updated.id);
-    if (idx !== -1) notes.value[idx] = updated;
+  if (editingNote.value?.is_draft) {
+    if (hasFormContent(editForm.value)) {
+      const updated = await api.put<Note>(`/notes/${editingNote.value.id}`, {
+        title: editForm.value.title || undefined,
+        content: editForm.value.content,
+        content_format: 'html',
+        is_draft: true,
+      });
+      const idx = notes.value.findIndex((n) => n.id === updated.id);
+      if (idx !== -1) notes.value[idx] = updated;
+    } else {
+      // Prüfen, ob Dateianhänge existieren - wenn nein, den leeren Entwurf löschen.
+      try {
+        const attachments = await api.get<Attachment[]>(
+          `/trips/${tripId}/attachments?domain=notes&entity_id=${editingNote.value.id}`
+        );
+        if (attachments.length === 0) {
+          await api.delete(`/notes/${editingNote.value.id}`);
+          notes.value = notes.value.filter((n) => n.id !== editingNote.value!.id);
+        }
+      } catch (e) {
+        console.error('Fehler beim Aufräumen des leeren Entwurfs', e);
+      }
+    }
   }
   editDraft.clear();
   editingNote.value = null;
@@ -261,22 +254,6 @@ async function remove(id: number) {
     </div>
 
     <p v-if="error" class="error">{{ error }}</p>
-
-    <Modal
-      :model-value="showForm"
-      title="Neue Notiz"
-      full-height
-      @update:model-value="(v) => !v && closeForm()"
-    >
-      <form class="add-form" @submit.prevent="submit">
-        <FormField icon="title" label="Titel">
-          <input v-model="form.title" type="text" placeholder="Titel (optional)" />
-        </FormField>
-        <RichTextEditor v-model="form.content" placeholder="Inhalt" />
-        <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
-        <Button type="submit">Hinzufügen</Button>
-      </form>
-    </Modal>
 
     <TransitionGroup tag="div" name="list" class="masonry cards">
       <div

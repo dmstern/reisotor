@@ -8,7 +8,7 @@ import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { spotCategoryMeta } from '../utils/spotCategory';
 
 export interface SortOption {
-  value: 'alpha' | 'likes';
+  value: 'alpha' | 'likes' | 'date';
   label: string;
 }
 
@@ -16,7 +16,7 @@ const props = withDefaults(
   defineProps<{
     searchQuery?: string;
     searchPlaceholder?: string;
-    sortMode?: 'alpha' | 'likes';
+    sortMode?: 'alpha' | 'likes' | 'date';
     categoryFilter?: string[];
     categoryOptions?: string[];
     statusFilter?: ('planned' | 'unplanned' | 'done')[];
@@ -24,7 +24,7 @@ const props = withDefaults(
   {
     searchQuery: '',
     searchPlaceholder: 'Spots oder Touren suchen...',
-    sortMode: 'alpha',
+    sortMode: 'date',
     categoryFilter: () => [],
     categoryOptions: () => [],
     statusFilter: () => [],
@@ -33,7 +33,7 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   (e: 'update:searchQuery', value: string): void;
-  (e: 'update:sortMode', value: 'alpha' | 'likes'): void;
+  (e: 'update:sortMode', value: 'alpha' | 'likes' | 'date'): void;
   (e: 'update:categoryFilter', value: string[]): void;
   (e: 'update:statusFilter', value: ('planned' | 'unplanned' | 'done')[]): void;
 }>();
@@ -94,7 +94,7 @@ const activeFilterCount = computed(() => {
   return (props.categoryFilter?.length || 0) + (props.statusFilter?.length || 0);
 });
 
-const isSortActive = computed(() => props.sortMode !== 'alpha');
+const isSortActive = computed(() => props.sortMode !== 'date');
 
 function toggleCategory(cat: string) {
   const current = [...(props.categoryFilter || [])];
@@ -118,7 +118,7 @@ function toggleStatus(st: 'planned' | 'unplanned' | 'done') {
   emit('update:statusFilter', current);
 }
 
-function selectSort(mode: 'alpha' | 'likes') {
+function selectSort(mode: 'alpha' | 'likes' | 'date') {
   emit('update:sortMode', mode);
   sortMenuOpen.value = false;
 }
@@ -251,6 +251,21 @@ function clearFilters() {
           <div class="picker-backdrop" @click="sortMenuOpen = false"></div>
           <div class="picker-menu sort-popover-menu" :style="sortMenuStyle">
             <div class="popover-section-header">Sortieren nach</div>
+            <button
+              type="button"
+              class="sort-option-item"
+              :class="{ selected: sortMode === 'date' }"
+              @click="selectSort('date')"
+            >
+              <span>Nach Datum</span>
+              <AppIcon
+                v-if="sortMode === 'date'"
+                :icon="ACTION_ICONS.done"
+                :size="14"
+                group="actions"
+                class="check-icon"
+              />
+            </button>
             <button
               type="button"
               class="sort-option-item"

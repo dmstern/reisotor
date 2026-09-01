@@ -44,7 +44,7 @@ test('creating a note with the WYSIWYG editor renders formatting, and a pre-exis
   await expect(editor).toBeFocused();
   await editor.pressSequentially('Erster Listenpunkt');
 
-  await page.getByRole('button', { name: 'Hinzufügen', exact: true }).click();
+  await page.getByRole('button', { name: 'Veröffentlichen', exact: true }).click();
 
   const newCard = page.locator('.note-card', { hasText: 'Wichtiger Punkt' });
   await expect(newCard).toBeVisible();

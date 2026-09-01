@@ -368,8 +368,9 @@ function onToggleDone() {
           >
         </p>
       </template>
+      <!-- Nur in der aufgeklappten Karte sichtbar -->
       <RichTextDisplay
-        v-if="spot.note"
+        v-if="expanded && spot.note"
         class="note"
         :content="spot.note"
         :format="spot.note_format"
