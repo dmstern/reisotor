@@ -162,8 +162,8 @@ function clearFilters() {
         shape="circle"
         :active="activeFilterCount > 0"
         :icon="ACTION_ICONS.filter"
-        title="Filtern"
-        aria-label="Filtern"
+        title="Nach Kategorie filtern"
+        aria-label="Nach Kategorie filtern"
         class="bar-icon-btn"
         @click="toggleFilterMenu($event)"
       >
