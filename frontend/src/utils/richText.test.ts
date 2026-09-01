@@ -21,8 +21,10 @@ describe('isEmptyRichText', () => {
 
 describe('renderRichText', () => {
   it('escapes HTML special characters before any markdown processing', () => {
+    // DOMPurify renormalisiert &quot; → " innerhalb von bereits escapeten Tags (kein Risiko,
+    // da der Tag selbst als &lt;script&gt; escaped bleibt und nie als echter Tag interpretiert wird).
     expect(renderRichText('<script>alert("hi")</script>')).toBe(
-      '&lt;script&gt;alert(&quot;hi&quot;)&lt;/script&gt;<br>'
+      '&lt;script&gt;alert("hi")&lt;/script&gt;<br>'
     );
   });
 

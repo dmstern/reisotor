@@ -209,8 +209,8 @@ export default defineConfig({
     ),
   },
   test: {
-    // Alle aktuellen Testziele sind plain Functions auf plain Daten (utils/*.ts) - kein DOM nötig,
-    // daher kein jsdom/@vue/test-utils. Bei künftigen Komponenten-Tests hier auf 'jsdom' wechseln.
-    environment: 'node',
+    // Da utils/richText.ts nun DOMPurify nutzt (was ein Window-Objekt zur HTML-Bereinigung braucht),
+    // müssen die Tests im DOM-Environment (jsdom) laufen statt in reinem Node.
+    environment: 'jsdom',
   },
 });
