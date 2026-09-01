@@ -44,7 +44,7 @@ import {
   triggerIcsDownload,
 } from '../utils/calendarExport';
 import { useToast } from '../composables/useToast';
-import { fetchWeatherForecast, weatherCodeMeta, type DailyWeather } from '../utils/weather';
+import { fetchWeatherForecast, type DailyWeather } from '../utils/weather';
 import {
   collectWeatherLocations,
   dayWeatherEntries,

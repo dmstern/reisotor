@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
-import { api } from '../api/client';
 import type { BudgetExpense } from '../api/types';
 import { useTripStore } from '../stores/trip';
 import { useAuthStore } from '../stores/auth';
