@@ -2958,6 +2958,7 @@ async function removeSpot(id: number) {
             <div
               class="tour-station-accordion"
               :class="{ 'is-expanded': !grp.excursion || expandedExcursionId === grp.excursion.id }"
+              :aria-hidden="!!(grp.excursion && expandedExcursionId !== grp.excursion.id)"
             >
               <div class="tour-station-accordion-inner">
                 <div
