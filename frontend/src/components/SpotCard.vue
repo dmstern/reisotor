@@ -382,7 +382,7 @@ function onToggleDone() {
           @dragstart="onDragStart"
         />
         <button
-          v-if="!isAccommodation"
+          v-if="!isAccommodation && !scheduledDate"
           type="button"
           class="calendar-drag-handle"
           aria-label="Auf Kalender ziehen zum spontanen Einplanen"

@@ -105,6 +105,10 @@ const activeIndex = computed(() => props.options.findIndex((o) => o.value === pr
 .segmented-option {
   position: relative;
   z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
   padding: 5px 10px;
   border: none;
   /* Explizit zurückgesetzt statt sich auf style.css's globale button-Regel zu verlassen (#95 gab
@@ -117,10 +121,17 @@ const activeIndex = computed(() => props.options.findIndex((o) => o.value === pr
   border-radius: 999px;
   font-size: 0.85rem;
   font-weight: 600;
+  line-height: 1;
   color: var(--color-text-muted);
   white-space: nowrap;
   cursor: pointer;
   transition: color 0.15s ease;
+}
+
+.segmented-option-label {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
 }
 
 .segmented-option.active {

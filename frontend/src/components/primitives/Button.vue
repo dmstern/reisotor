@@ -71,7 +71,7 @@ const hasDefaultSlot = () =>
       {
         'is-disabled': disabled,
         'is-active': active,
-        'icon-only': iconOnly || (!hasDefaultSlot() && !!icon),
+        'icon-only': iconOnly || shape === 'circle' || (!hasDefaultSlot() && !!icon),
       },
     ]"
   >
@@ -137,6 +137,14 @@ const hasDefaultSlot = () =>
 .btn--circle {
   border-radius: var(--radius-full);
   corner-shape: round;
+  padding: 0;
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
+  min-height: 38px;
+  aspect-ratio: 1 / 1;
+  box-sizing: border-box;
 }
 
 .btn--primary {

@@ -143,7 +143,9 @@ im Rest der App nachschauen, was es dafür schon gibt (grep auf ähnliche Kompon
 Konzepte), statt eine zweite, leicht abweichende Variante danebenzubauen — siehe `DESIGN.md`,
 Abschnitt "Konsistenz", für konkret schon aufgetretene Fälle (native `<select>` vs. custom
 `Combobox.vue`, mehrere parallele Label-Stile, uneinheitliche Filter-/Gruppieren-/Sortieren-
-Präsentation je View).
+Präsentation je View). Beim Erstellen neuer wiederverwendbarer UI-Komponenten (`frontend/src/components/*.vue`)
+immer direkt eine zugehörige Storybook-Story-Datei (`*.stories.ts`) anlegen, damit Zustände der Komponente
+isoliert getestet und dokumentiert sind.
 
 Für Datenmodell-Änderungen gilt zusätzlich der Migrations-Check im nächsten Abschnitt. Bei neuen
 UI-Elementen oder sichtbaren UI-Anpassungen zusätzlich `DESIGN.md` (Projekt-Root) konsultieren —
@@ -258,13 +260,10 @@ Abdeckung. Einen Test ergänzen/anpassen, wenn eine Änderung sichtbares Nutzerv
 oder grundlegend ändert und das wert ist, gegen stille Regression abzusichern. Triviale visuelle/
 Text-Anpassungen brauchen keinen neuen Test.
 
-**Vorschlagen statt automatisch schreiben:** Fällt während der Umsetzung eines Features ein Use
-Case auf, bei dem sich ein persistenter e2e-Test lohnen würde (neuer Kern-Ablauf, ein gerade selbst
-gefundener/gefixter Bug mit echtem Regressionsrisiko, ein Zusammenspiel mehrerer Komponenten, das
-leicht wieder kaputtgehen kann), das am Ende kurz erwähnen und fragen, ob der Test ergänzt werden
-soll — nicht mehr automatisch mitschreiben, um bei kleineren/experimentellen Änderungen keine
-unaufgeforderte Testarbeit (und Tokens) zu erzeugen. Gilt auch fürs Umbauen/Erweitern bestehender
-Specs.
+**Bestehende Tests immer direkt mit anpassen!** Wenn UI-Elemente (z.B. Buttons, Bezeichner, Icons) oder Funktionalitäten geändert, verschoben oder entfernt werden, MUSS die KI bei der Umsetzung **immer selbstständig kurz prüfen**, ob es für diesen Bereich bereits einen existierenden E2E-Test (`e2e/tests/*.spec.ts`) gibt. Ist das der Fall, muss der betroffene Test **direkt im selben Arbeitsschritt mit angepasst werden**, damit die CI danach nicht fehlschlägt.
+Diese Test-Anpassungen müssen stets in einem separaten Commit vorgenommen werden (nach Conventional Commits geprefixt mit z. B. `test(<Context>): `).
+
+**Neue Tests vorschlagen statt automatisch schreiben:** Nur wenn ein komplett neuer Use Case auffällt (neuer Kern-Ablauf, neu gefundener Bug), bei dem sich ein persistenter E2E-Test lohnen würde, dies am Ende kurz erwähnen und fragen, ob der Test **neu** ergänzt werden soll — keine unaufgeforderte Testarbeit für komplett neue Tests.
 
 **Keine Pixel-Diff-Screenshot-Tests** (`toHaveScreenshot()`) oder statischen Overlap-/BoundingBox-Koordinatentests (`elementFromPoint`, `expectNotCoveredBy`) in die Haupt-E2E-Suite aufnehmen — Rendering-/Font-Drift und Subpixel-Verschiebungen machen solche assertions unzuverlässig und erzeugen Fehlalarme. Visuelle Layout-Prüfungen und Überlappungsschutz erfolgen primär über die Regeln in `DESIGN.md` (Abschnitt "Layout-Containment & Z-Index-Stapelung") sowie ad-hoc Scratch-Specs. Stattdessen Interaktion + funktionale Zustands-/Sichtbarkeits-Assertions verwenden.
 

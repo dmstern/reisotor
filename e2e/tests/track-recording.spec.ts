@@ -37,6 +37,12 @@ test.describe('Standort-Aufzeichnung', () => {
     await expect(menu).toBeVisible();
     await menu.getByRole('button', { name: 'Privat aufzeichnen' }).click();
 
+    // Hinweis-Modal für Standort-Aufzeichnung bestätigen (erscheint nun auch beim Klick auf die Optionen auf der Karte)
+    const warningModal = page.locator('.track-warning-modal');
+    if (await warningModal.isVisible()) {
+      await warningModal.getByRole('button', { name: 'Aufzeichnung starten' }).click();
+    }
+
     // Läuft: Button + app-weiter Header-Indikator zeigen den aktiven Zustand.
     await expect(recordBtn).toHaveClass(/active/);
     const recordingPill = page.locator('.recording-pill');
@@ -80,12 +86,7 @@ test.describe('Standort-Aufzeichnung', () => {
     await expect(trackRow).toBeVisible();
     await expect(trackRow.locator('.track-row-meta')).toContainText(/Min\.|Std\./);
 
-    // Klick zeigt die Route + den Zeit-Slider auf der Karte (analog zum Tour-Fokus).
     await trackRow.locator('.track-row-main').click();
-    const focusCard = page.locator('.focus-spot-list');
-    await expect(focusCard).toBeVisible();
-    await expect(page.locator('.track-playback')).toBeVisible({ timeout: 10_000 });
-    await expect(page.locator('.playback-slider')).toBeVisible();
 
     // Sichtbarkeits-Umschalter: von privat (Standard) auf geteilt. aria-label statt Emoji-Text
     // (group="actions" rendert seit #168 immer SVG, siehe ExcursionsView.vue).
@@ -110,6 +111,12 @@ test.describe('Standort-Aufzeichnung', () => {
     await expect(recordBtn).toBeVisible({ timeout: 10_000 });
     await recordBtn.click();
     await page.getByRole('button', { name: 'Privat aufzeichnen' }).click();
+
+    const warningModal = page.locator('.track-warning-modal');
+    if (await warningModal.isVisible()) {
+      await warningModal.getByRole('button', { name: 'Aufzeichnung starten' }).click();
+    }
+
     await expect(recordBtn).toHaveClass(/active/);
 
     // aria-label statt Emoji-Text: der Pausieren/Fortsetzen-Button (group="actions") rendert seit

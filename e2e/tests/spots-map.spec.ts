@@ -44,17 +44,22 @@ test.describe('Spots-Liste: "Gemacht"-Status-Filter', () => {
     await expect(page.locator('.spot-card', { hasText: doneTitle })).toBeVisible();
     await expect(page.locator('.spot-card', { hasText: openTitle })).toBeVisible();
 
-    await page.getByRole('button', { name: 'Nach Status filtern' }).click();
-    await page.getByRole('checkbox', { name: 'Gemacht' }).check();
-    await page.locator('.picker-backdrop').click();
+    await page.waitForSelector('.search-filter-bar');
+    await page.getByRole('button', { name: 'Nach Kategorie filtern' }).click();
+    const gemachtOption = page.locator('.dropdown-item', { hasText: 'Gemacht' });
+    await gemachtOption.evaluate((el: HTMLElement) => el.click());
+    await page.locator('.picker-backdrop').click({ position: { x: 10, y: 10 } });
+    await expect(page.locator('.picker-backdrop')).toBeHidden();
 
     await expect(page.locator('.spot-card', { hasText: doneTitle })).toBeVisible();
     await expect(page.locator('.spot-card', { hasText: openTitle })).toHaveCount(0);
 
     // Aufräumen: Filter zurücksetzen, damit er nicht in andere Tests dieser Suite durchsickert.
-    await page.getByRole('button', { name: 'Nach Status filtern' }).click();
-    await page.getByRole('checkbox', { name: 'Gemacht' }).uncheck();
-    await page.locator('.picker-backdrop').click();
+    await page.getByRole('button', { name: 'Nach Kategorie filtern' }).click();
+    const gemachtOptionReset = page.locator('.dropdown-item', { hasText: 'Gemacht' });
+    await gemachtOptionReset.evaluate((el: HTMLElement) => el.click());
+    await page.locator('.picker-backdrop').click({ position: { x: 10, y: 10 } });
+    await expect(page.locator('.picker-backdrop')).toBeHidden();
   });
 });
 
@@ -75,11 +80,15 @@ test.describe('Spots-Karte: Kategorie-Filter wird zuverlässig auf die Marker an
     const beforeCount = await markers.count();
     expect(beforeCount).toBeGreaterThan(1);
 
+    await page.waitForSelector('.search-filter-bar');
     await page.getByRole('button', { name: 'Nach Kategorie filtern' }).click();
     // Erste Kategorie-Checkbox aus dem Menü wählen - welche das genau ist, ist für diesen Test
     // irrelevant, nur dass danach WENIGER Marker als vorher sichtbar sind.
-    await page.locator('.category-option').first().locator('input[type="checkbox"]').check();
-    await page.locator('.picker-backdrop').click();
+    const firstCatOption = page.locator('.category-option').first();
+    await firstCatOption.waitFor();
+    await firstCatOption.evaluate((el: HTMLElement) => el.click());
+    await page.locator('.picker-backdrop').click({ position: { x: 10, y: 10 } });
+    await expect(page.locator('.picker-backdrop')).toBeHidden();
 
     await expect(async () => {
       const afterCount = await markers.count();

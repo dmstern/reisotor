@@ -7,6 +7,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { api, ApiError } from '../api/client';
 import type { User } from '../api/types';
 import { useAuthStore } from '../stores/auth';
+import { useConnectivityStore } from '../stores/connectivity';
 import { useBuildInfoStore } from '../stores/buildInfo';
 import { useNavPositionStore } from '../stores/navPosition';
 import { useNavConfigStore } from '../stores/navConfig';
@@ -73,6 +74,7 @@ import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import type { IconDef } from '../utils/icon';
 
 const auth = useAuthStore();
+const connectivity = useConnectivityStore();
 const router = useRouter();
 const route = useRoute();
 const navPosition = useNavPositionStore();
@@ -532,9 +534,52 @@ async function onImportFileSelected(event: Event) {
 
     <template v-if="activeTab === 'account'">
       <div class="card">
-        <div class="header">
-          <h2>{{ auth.user?.avatar }} {{ auth.user?.username }}</h2>
-          <Button type="button" variant="secondary" @click="logout">
+        <div class="header account-header">
+          <div class="user-info">
+            <div class="name-and-status">
+              <h2>{{ auth.user?.avatar }} {{ auth.user?.username }}</h2>
+              <div
+                class="status-badge"
+                :class="{
+                  online: connectivity.isOnline && !connectivity.syncing && !connectivity.checking,
+                  retrying: connectivity.syncing || connectivity.checking,
+                  offline: !connectivity.isOnline,
+                }"
+              >
+                <span class="status-dot"></span>
+                <span class="status-text">
+                  <template
+                    v-if="connectivity.isOnline && !connectivity.syncing && !connectivity.checking"
+                    >Online</template
+                  >
+                  <template v-else-if="connectivity.syncing || connectivity.checking"
+                    >Verbinde…</template
+                  >
+                  <template v-else>Offline</template>
+                </span>
+              </div>
+              <Button
+                v-if="!connectivity.isOnline"
+                size="sm"
+                variant="secondary"
+                :disabled="connectivity.checking"
+                @click="connectivity.checkNow()"
+                class="retry-btn"
+              >
+                <AppIcon
+                  :icon="connectivity.checking ? ACTION_ICONS.refresh : ACTION_ICONS.offline"
+                  :size="14"
+                  group="actions"
+                />
+                {{ connectivity.checking ? 'Prüfe…' : 'Jetzt prüfen' }}
+              </Button>
+            </div>
+            <p v-if="!connectivity.isOnline" class="offline-description hint">
+              Änderungen werden lokal gespeichert. Die App versucht alle 6 Sekunden automatisch,
+              sich wieder zu verbinden.
+            </p>
+          </div>
+          <Button type="button" variant="secondary" @click="logout" class="logout-btn">
             <AppIcon :icon="ACTION_ICONS.logout" :size="14" group="actions" /> Abmelden
           </Button>
         </div>
@@ -699,11 +744,8 @@ async function onImportFileSelected(event: Event) {
     </template>
 
     <template v-if="activeTab === 'app'">
-      <div class="card" v-if="!isDesktop">
+      <div class="card">
         <h2>Darstellung</h2>
-        <!-- Nur auf mobile: auf Desktop bleibt der Toggle exklusiv im Header (AppHeader.vue), auf
-             mobile ist dort seit "alle Mitreisenden statt nur online" (PresenceAvatars.vue) potenziell
-             weniger Platz. -->
         <ThemeModeSelect variant="block" />
       </div>
 
@@ -1491,6 +1533,76 @@ label,
   justify-content: space-between;
   align-items: center;
   gap: var(--space-2);
+}
+
+.account-header {
+  align-items: flex-start;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.name-and-status {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.name-and-status h2 {
+  margin: 0;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.status-badge.online .status-dot {
+  background-color: var(--color-success);
+}
+.status-badge.offline .status-dot {
+  background-color: var(--color-text-muted);
+}
+.status-badge.retrying .status-dot {
+  background: conic-gradient(
+    var(--color-success) 0deg,
+    var(--color-success) 90deg,
+    transparent 180deg
+  );
+  animation: spin 1s linear infinite;
+  border-radius: 50%;
+}
+
+.offline-description {
+  margin: 0;
+  max-width: 350px;
+  line-height: 1.4;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .build-info-list {

@@ -22,6 +22,8 @@ import DeleteButton from '../components/DeleteButton.vue';
 import FileAttachments from '../components/FileAttachments.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import DraftStatusBar from '../components/DraftStatusBar.vue';
+import RichTextEditor from '../components/RichTextEditor.vue';
+import RichTextDisplay from '../components/RichTextDisplay.vue';
 import AppIcon from '../components/AppIcon.vue';
 import Button from '../components/primitives/Button.vue';
 import IconButton from '../components/primitives/IconButton.vue';
@@ -101,6 +103,8 @@ const newMapsLink = ref('');
 // Felder), siehe parseLinkKey/linkKeyFor.
 const newLinkKey = ref('');
 const showAddForm = ref(false);
+const showAddDetailsSection = ref(false);
+const showEditDetailsSection = ref(false);
 
 // Entwurfs-Zwischenspeicherung (siehe composables/useDraftAutosave.ts): das Create-Formular besteht
 // (anders als in den meisten anderen Domänen) aus lauter einzelnen Refs statt eines Objekt-Refs -
@@ -692,11 +696,13 @@ function onDropExcursion(date: string, excursionId: number) {
 // Startdatum vorausgefüllt, sonst bleibt das Feld leer und muss manuell gesetzt werden.
 function openAddForm() {
   newStartDate.value = selectedDate.value ?? '';
+  showAddDetailsSection.value = false;
   showAddForm.value = true;
 }
 
 function closeAddForm() {
   showAddForm.value = false;
+  showAddDetailsSection.value = false;
   newStartDate.value = '';
   newTime.value = '';
   newEndTime.value = '';
@@ -756,6 +762,11 @@ function startEdit(item: ScheduleItem) {
     mapsLink: item.maps_link ?? '',
     linkKey: linkKeyFor(item),
   };
+  showEditDetailsSection.value = !!(
+    editForm.value.endDate ||
+    editForm.value.endTime ||
+    editForm.value.mapsLink
+  );
 }
 
 async function submitEdit() {
@@ -789,6 +800,7 @@ async function submitEdit() {
 function closeEditForm() {
   editDraft.clear();
   editingItem.value = null;
+  showEditDetailsSection.value = false;
 }
 
 function jumpToTrip() {
@@ -1096,52 +1108,83 @@ function formatDate(date: string) {
         <FormField icon="title" label="Titel">
           <input v-model="newTitle" type="text" placeholder="Titel" required />
         </FormField>
-        <FormField icon="date" label="Startdatum">
-          <input v-model="newStartDate" type="date" required />
-        </FormField>
-        <FormField icon="date" label="Enddatum">
-          <input v-model="newEndDate" type="date" :min="newStartDate || undefined" />
-        </FormField>
-        <FormField icon="time" label="Startzeit">
-          <input v-model="newTime" type="time" />
-        </FormField>
-        <FormField icon="time" label="Enduhrzeit">
-          <input v-model="newEndTime" type="time" />
-        </FormField>
-        <FormField icon="link" label="Verknüpft">
-          <select v-model="newLinkKey">
-            <option value="">🔗 Kein Spot/keine Tour verknüpft</option>
-            <optgroup label="Spots" v-if="spotsStore.spots.length">
-              <option v-for="s in spotsStore.spots" :key="`spot:${s.id}`" :value="`spot:${s.id}`">
-                {{ s.title }}
-              </option>
-            </optgroup>
-            <optgroup label="Touren" v-if="excursionsStore.excursions.length">
-              <option
-                v-for="e in excursionsStore.excursions"
-                :key="`idea:${e.id}`"
-                :value="`idea:${e.id}`"
-              >
-                {{ e.title }}
-              </option>
-            </optgroup>
-          </select>
-        </FormField>
-        <template v-if="!newLinkKey">
-          <FormField icon="location" label="Ort">
+        <div class="row">
+          <FormField icon="date" label="Startdatum">
+            <input v-model="newStartDate" type="date" required />
+          </FormField>
+          <FormField icon="time" label="Startzeit">
+            <input v-model="newTime" type="time" />
+          </FormField>
+        </div>
+        <div class="row">
+          <FormField icon="maps" label="Karte">
+            <select v-model="newLinkKey">
+              <option value="">Kein Spot/keine Tour verknüpft</option>
+              <optgroup label="Spots" v-if="spotsStore.spots.length">
+                <option v-for="s in spotsStore.spots" :key="`spot:${s.id}`" :value="`spot:${s.id}`">
+                  {{ s.title }}
+                </option>
+              </optgroup>
+              <optgroup label="Touren" v-if="excursionsStore.excursions.length">
+                <option
+                  v-for="e in excursionsStore.excursions"
+                  :key="`idea:${e.id}`"
+                  :value="`idea:${e.id}`"
+                >
+                  {{ e.title }}
+                </option>
+              </optgroup>
+            </select>
+          </FormField>
+          <FormField v-if="!newLinkKey" icon="location" label="Ort (Freitext)">
             <Combobox v-model="newLocation" :options="placeNames" placeholder="Ort (optional)" />
           </FormField>
-          <FormField icon="maps" label="Maps-Link">
-            <input
-              v-model="newMapsLink"
-              type="url"
-              placeholder="Maps-Link (Google/Apple) (optional)"
-            />
-          </FormField>
-        </template>
+        </div>
         <FormField icon="note" label="Notiz">
-          <input v-model="newNote" type="text" placeholder="Notiz (optional)" />
+          <RichTextEditor v-model="newNote" placeholder="Notiz (optional)" compact expandable />
         </FormField>
+        <fieldset class="collapsible-fieldset">
+          <legend>
+            <Button
+              type="button"
+              variant="ghost"
+              class="collapsible-toggle"
+              :aria-expanded="showAddDetailsSection"
+              @click="showAddDetailsSection = !showAddDetailsSection"
+            >
+              <span>
+                <AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" />
+                Weitere Angaben (Enddatum, Enduhrzeit<template v-if="!newLinkKey"
+                  >, Maps-Link</template
+                >)
+              </span>
+              <AppIcon
+                :icon="ACTION_ICONS.chevronDown"
+                :size="14"
+                group="actions"
+                class="caret"
+                :class="{ closed: !showAddDetailsSection }"
+              />
+            </Button>
+          </legend>
+          <div v-if="showAddDetailsSection" class="collapsible-content">
+            <div class="row">
+              <FormField icon="date" label="Enddatum">
+                <input v-model="newEndDate" type="date" :min="newStartDate || undefined" />
+              </FormField>
+              <FormField icon="time" label="Enduhrzeit">
+                <input v-model="newEndTime" type="time" />
+              </FormField>
+            </div>
+            <FormField v-if="!newLinkKey" icon="maps" label="Maps-Link">
+              <input
+                v-model="newMapsLink"
+                type="url"
+                placeholder="Maps-Link (Google/Apple) (optional)"
+              />
+            </FormField>
+          </div>
+        </fieldset>
         <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
         <Button type="submit">Hinzufügen</Button>
       </form>
@@ -1156,53 +1199,92 @@ function formatDate(date: string) {
         <FormField icon="title" label="Titel">
           <input v-model="editForm.title" type="text" placeholder="Titel" required />
         </FormField>
-        <FormField icon="date" label="Enddatum">
-          <input v-model="editForm.endDate" type="date" :min="editingItem?.date" />
-        </FormField>
-        <FormField icon="time" label="Startzeit">
-          <input v-model="editForm.time" type="time" />
-        </FormField>
-        <FormField icon="time" label="Enduhrzeit">
-          <input v-model="editForm.endTime" type="time" />
-        </FormField>
-        <FormField icon="link" label="Verknüpft">
-          <select v-model="editForm.linkKey">
-            <option value="">🔗 Kein Spot/keine Tour verknüpft</option>
-            <optgroup label="Spots" v-if="spotsStore.spots.length">
-              <option v-for="s in spotsStore.spots" :key="`spot:${s.id}`" :value="`spot:${s.id}`">
-                {{ s.title }}
-              </option>
-            </optgroup>
-            <optgroup label="Touren" v-if="excursionsStore.excursions.length">
-              <option
-                v-for="e in excursionsStore.excursions"
-                :key="`idea:${e.id}`"
-                :value="`idea:${e.id}`"
-              >
-                {{ e.title }}
-              </option>
-            </optgroup>
-          </select>
-        </FormField>
-        <template v-if="!editForm.linkKey">
-          <FormField icon="location" label="Ort">
+        <div class="row">
+          <FormField icon="date" label="Startdatum">
+            <input :value="editingItem?.date" type="date" disabled read-only />
+          </FormField>
+          <FormField icon="time" label="Startzeit">
+            <input v-model="editForm.time" type="time" />
+          </FormField>
+        </div>
+        <div class="row">
+          <FormField icon="maps" label="Karte">
+            <select v-model="editForm.linkKey">
+              <option value="">Kein Spot/keine Tour verknüpft</option>
+              <optgroup label="Spots" v-if="spotsStore.spots.length">
+                <option v-for="s in spotsStore.spots" :key="`spot:${s.id}`" :value="`spot:${s.id}`">
+                  {{ s.title }}
+                </option>
+              </optgroup>
+              <optgroup label="Touren" v-if="excursionsStore.excursions.length">
+                <option
+                  v-for="e in excursionsStore.excursions"
+                  :key="`idea:${e.id}`"
+                  :value="`idea:${e.id}`"
+                >
+                  {{ e.title }}
+                </option>
+              </optgroup>
+            </select>
+          </FormField>
+          <FormField v-if="!editForm.linkKey" icon="location" label="Ort (Freitext)">
             <Combobox
               v-model="editForm.location"
               :options="placeNames"
               placeholder="Ort (optional)"
             />
           </FormField>
-          <FormField icon="maps" label="Maps-Link">
-            <input
-              v-model="editForm.mapsLink"
-              type="url"
-              placeholder="Maps-Link (Google/Apple) (optional)"
-            />
-          </FormField>
-        </template>
+        </div>
         <FormField icon="note" label="Notiz">
-          <input v-model="editForm.note" type="text" placeholder="Notiz (optional)" />
+          <RichTextEditor
+            v-model="editForm.note"
+            placeholder="Notiz (optional)"
+            compact
+            expandable
+          />
         </FormField>
+        <fieldset class="collapsible-fieldset">
+          <legend>
+            <Button
+              type="button"
+              variant="ghost"
+              class="collapsible-toggle"
+              :aria-expanded="showEditDetailsSection"
+              @click="showEditDetailsSection = !showEditDetailsSection"
+            >
+              <span>
+                <AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" />
+                Weitere Angaben (Enddatum, Enduhrzeit<template v-if="!editForm.linkKey"
+                  >, Maps-Link</template
+                >)
+              </span>
+              <AppIcon
+                :icon="ACTION_ICONS.chevronDown"
+                :size="14"
+                group="actions"
+                class="caret"
+                :class="{ closed: !showEditDetailsSection }"
+              />
+            </Button>
+          </legend>
+          <div v-if="showEditDetailsSection" class="collapsible-content">
+            <div class="row">
+              <FormField icon="date" label="Enddatum">
+                <input v-model="editForm.endDate" type="date" :min="editingItem?.date" />
+              </FormField>
+              <FormField icon="time" label="Enduhrzeit">
+                <input v-model="editForm.endTime" type="time" />
+              </FormField>
+            </div>
+            <FormField v-if="!editForm.linkKey" icon="maps" label="Maps-Link">
+              <input
+                v-model="editForm.mapsLink"
+                type="url"
+                placeholder="Maps-Link (Google/Apple) (optional)"
+              />
+            </FormField>
+          </div>
+        </fieldset>
         <FileAttachments v-if="editingItem" domain="schedule" :entity-id="editingItem.id" />
         <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />
         <Button type="submit">Speichern</Button>
@@ -1273,7 +1355,11 @@ function formatDate(date: string) {
           />
         </Button>
       </div>
-      <div v-if="viewingItem?.note" class="detail-row note">{{ viewingItem.note }}</div>
+      <RichTextDisplay
+        v-if="viewingItem?.note"
+        :content="viewingItem.note"
+        class="detail-row note"
+      />
       <FileAttachments
         v-if="viewingItem"
         domain="schedule"
@@ -1554,14 +1640,68 @@ function formatDate(date: string) {
 
 .edit-form {
   display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.edit-form .row {
+  display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
 }
 
-.edit-form input[type='text'],
-.edit-form .form-field {
+.edit-form .row > * {
   flex: 1;
   min-width: 140px;
+}
+
+.collapsible-fieldset {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md-squircle);
+  corner-shape: squircle;
+  padding: var(--space-2) var(--space-3) var(--space-3);
+  margin: var(--space-1) 0;
+  background: var(--color-bg);
+}
+
+.collapsible-fieldset legend {
+  padding: 0 var(--space-1);
+  margin: 0;
+}
+
+.collapsible-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 4px 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--color-text);
+  background: var(--color-surface) !important;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.collapsible-toggle:hover {
+  background: var(--color-hover) !important;
+}
+
+.collapsible-toggle .caret {
+  transition: transform 0.2s ease;
+}
+
+.collapsible-toggle .caret.closed {
+  transform: rotate(-90deg);
+}
+
+.collapsible-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
 }
 
 /* Ohne eigenes FormField-Label würde der Absenden-Button, sobald er in derselben umgebrochenen

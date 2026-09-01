@@ -182,12 +182,12 @@ test('presence avatars show an offline member grayed out and mark them online on
   const memberAvatar = pageA.locator(`.presence-avatar[title*="${E2E_USERNAME_2}"]`);
   await expect(memberAvatar).toBeVisible();
   await expect(memberAvatar).toHaveClass(/offline/);
-  await expect(memberAvatar.locator('.online-dot')).toHaveCount(0);
+  await expect(memberAvatar).not.toHaveClass(/online/);
 
   await login(pageB, E2E_USERNAME_2, E2E_PASSWORD_2);
 
   await expect(memberAvatar).not.toHaveClass(/offline/);
-  await expect(memberAvatar.locator('.online-dot')).toBeVisible();
+  await expect(memberAvatar).toHaveClass(/online/);
 
   await ctxB.close();
 

@@ -2,6 +2,7 @@
 import { computed, nextTick, watch, ref } from 'vue';
 import { MAX_DRAWER_WIDTH, MIN_DRAWER_WIDTH, useDrawersStore } from '../stores/drawers';
 import AppIcon from './AppIcon.vue';
+import ResizeHandle from './ResizeHandle.vue';
 import IconButton from './primitives/IconButton.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import type { IconDef } from '../utils/icon';
@@ -173,14 +174,12 @@ function onResizeEnd() {
          unsichtbar/nicht klickbar. Als Geschwister-Element mit eigener fixed-Positionierung (analog
          zu .drawer-panel selbst) liegt er stattdessen im eigens dafür vorgesehenen Zwischenraum
          zwischen Panel und Lasche (siehe --drawer-handle-gap unten), außerhalb jeder Clip-Box. -->
-    <div
+    <ResizeHandle
       v-if="open"
-      class="resize-handle resize-grip"
-      role="separator"
-      aria-orientation="vertical"
-      :aria-label="`Breite von ${label} anpassen`"
+      :label="`Breite von ${label} anpassen`"
+      :is-resizing="resizing"
       @pointerdown="onResizeStart"
-    ></div>
+    />
     <button
       v-if="!hideTab"
       type="button"
@@ -221,7 +220,7 @@ function onResizeEnd() {
   transform: translateY(-50%);
   z-index: 13;
   min-height: 72px;
-  width: 32px;
+  width: var(--drawer-tab-width);
   padding: 8px 3px;
   border: 1px solid var(--color-border);
   corner-shape: squircle;
@@ -254,7 +253,7 @@ function onResizeEnd() {
 }
 
 .drawer-tab:disabled:hover {
-  width: 32px;
+  width: var(--drawer-tab-width);
   min-height: 72px;
   color: var(--color-text-muted);
 }
@@ -374,6 +373,7 @@ function onResizeEnd() {
    Größenänderung gibt es nicht. Erst auf Desktop wieder eingeblendet (siehe @media unten). */
 .resize-handle {
   display: none;
+  z-index: 5;
 }
 
 .drawer-header-actions {

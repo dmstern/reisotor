@@ -76,6 +76,7 @@
 
 :root {
   color-scheme: light;
+  --drawer-handle-gap: 12px;
   /* Von NavBar.vue live per ResizeObserver gepflegt: tatsächliche Höhe der NavBar, wenn sie
      (je nach Breakpoint/Einstellung) oben klebt – 0px, wenn sie unten fixiert ist. Schubladen
      (Drawer.vue) addieren das zur Header-Höhe, damit sie die NavBar nie überdecken. */
@@ -120,6 +121,12 @@
   --color-highlight-border: #f0d3ac;
   --color-accent-secondary: #5b6ee1;
   --color-accent-secondary-bg: #eef0fd;
+
+  /* Rötlich-violette Akzentfarben für Tour-Kacheln (ExcursionCard) zur Unterscheidung von Spots */
+  --color-tour-accent: #a21caf;
+  --color-tour-accent-dark: #86198f;
+  --color-tour-accent-tint: rgba(162, 28, 175, 0.08);
+  --color-tour-accent-border: rgba(162, 28, 175, 0.3);
   /* #95 "Eingabe Elemente cleanup": Buttons/Inputs/Selects/Dropdowns bekommen app-weit einen ganz
      leicht kräftigeren Rahmen als das bisherige --color-border (das bleibt für dezentere Trennlinien
      wie .richtext-Regeln/Karten-Rand unverändert). --color-border-strong für neutrale Flächen
@@ -169,8 +176,12 @@
   --space-5: 32px;
   --space-6: 48px;
 
+  /* Dynamische UI-Größen für positionsabhängige Berechnungen (z.B. in TripMap.vue) */
+  --drawer-tab-width: 32px;
+
   --shadow-sm: 0 2px 6px rgba(43, 42, 40, 0.12);
   --shadow-md: 0 8px 24px rgba(43, 42, 40, 0.16);
+  --shadow-lg: 0 16px 48px rgba(43, 42, 40, 0.22);
 
   /* Zweites, "weicheres" Schatten-Paar für taktile Pillen-Elemente (aktuell: SegmentedToggle.vue,
      siehe DESIGN.md Abschnitt "Weiches Material") - getrennt von --shadow-sm/md (die sind für
@@ -257,12 +268,17 @@
     --color-highlight-border: #5c4a2c;
     --color-accent-secondary: #8b98f0;
     --color-accent-secondary-bg: #23253d;
+    --color-tour-accent: #e879f9;
+    --color-tour-accent-dark: #d946ef;
+    --color-tour-accent-tint: rgba(232, 121, 249, 0.14);
+    --color-tour-accent-border: rgba(232, 121, 249, 0.4);
     --color-scheduled: #52b8ea;
     --color-border-strong: #4a453c;
     --color-button-edge: rgba(0, 0, 0, 0.35);
 
     --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.35);
     --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
+    --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.55);
     --shadow-inset: inset 0 1px 2px rgba(0, 0, 0, 0.4);
     --shadow-pill-raised: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 6px rgba(0, 0, 0, 0.25);
     color-scheme: dark;
@@ -305,6 +321,7 @@
 
   --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.35);
   --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.55);
   --shadow-inset: inset 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-pill-raised: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 6px rgba(0, 0, 0, 0.25);
   color-scheme: dark;
@@ -336,11 +353,16 @@
   --color-highlight-border: #f0d3ac;
   --color-accent-secondary: #5b6ee1;
   --color-accent-secondary-bg: #eef0fd;
+  --color-tour-accent: #a21caf;
+  --color-tour-accent-dark: #86198f;
+  --color-tour-accent-tint: rgba(162, 28, 175, 0.08);
+  --color-tour-accent-border: rgba(162, 28, 175, 0.3);
   --color-border-strong: #d5cabc;
   --color-button-edge: rgba(0, 0, 0, 0.16);
   --color-scheduled: #1e96d1;
   --shadow-sm: 0 2px 6px rgba(43, 42, 40, 0.12);
   --shadow-md: 0 8px 24px rgba(43, 42, 40, 0.16);
+  --shadow-lg: 0 16px 48px rgba(43, 42, 40, 0.22);
   --shadow-inset: inset 0 1px 2px rgba(43, 42, 40, 0.1);
   --shadow-pill-raised: 0 1px 2px rgba(43, 42, 40, 0.08), 0 2px 6px rgba(43, 42, 40, 0.08);
   color-scheme: light;
@@ -570,7 +592,8 @@ button.is-disabled,
 }
 
 .resize-grip:hover,
-.resize-grip:active {
+.resize-grip:active,
+.resize-grip.resizing {
   background: var(--color-hover);
 }
 
@@ -584,7 +607,8 @@ button.is-disabled,
 }
 
 .resize-grip:hover::after,
-.resize-grip:active::after {
+.resize-grip:active::after,
+.resize-grip.resizing::after {
   background: var(--color-primary);
 }
 
@@ -595,6 +619,10 @@ button.is-disabled,
 .detail-row {
   margin: 0 0 var(--space-2);
   font-size: 0.92rem;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .detail-label {
@@ -603,7 +631,9 @@ button.is-disabled,
   color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.02em;
-  display: block;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 .detail-actions {
@@ -834,7 +864,8 @@ input[type='range']:focus-visible,
   color: var(--color-text-muted);
 }
 
-input:not([type='checkbox']):not([type='file']),
+input:where(:not([type='checkbox']):not([type='file'])),
+.input-field,
 textarea {
   padding: var(--input-padding, 9px 12px);
   border: var(--ui-border-width, 1px) solid var(--color-border-strong);

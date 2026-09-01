@@ -41,7 +41,7 @@ export async function waitForAppReady(page: Page): Promise<void> {
     .waitFor({ state: 'detached', timeout: 10_000 })
     .catch(() => {});
   await page
-    .locator('.app-main, .budget-page, .dashboard')
+    .locator('.app-main, .budget-page, .dashboard, .page')
     .first()
     .waitFor({ state: 'attached', timeout: 10_000 });
   await page.waitForTimeout(500);

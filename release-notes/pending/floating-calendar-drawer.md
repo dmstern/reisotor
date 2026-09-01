@@ -1,1 +1,1 @@
-Der Kalender-Drawer auf Desktop schwebt nun im ausgeklappten Zustand frei mit `margin: var(--space-4)` zu allen Rändern und abgerundeten Ecken (`squircle`).
+- **Einheitliche Schubladen-Größenanpassung**: Die Anfasser zum Anpassen der Breite von Kalender und Spots-Liste besitzen nun ein einheitliches Erscheinungsbild und fügen sich nahtlos an die Ränder der jeweiligen Karten an.

@@ -8,19 +8,17 @@ import { useIsDesktop } from '../composables/useIsDesktop';
 import TripSwitcher from './TripSwitcher.vue';
 import PresenceAvatars from './PresenceAvatars.vue';
 import NotificationInbox from './NotificationInbox.vue';
-import OfflineIndicator from './OfflineIndicator.vue';
 import TrackRecordingIndicator from './TrackRecordingIndicator.vue';
 import PwaUpdatePrompt from './PwaUpdatePrompt.vue';
 import PwaInstallHint from './PwaInstallHint.vue';
 import LoadingIndicator from './LoadingIndicator.vue';
-import ThemeModeSelect from './ThemeModeSelect.vue';
 import DemoModeBanner from './DemoModeBanner.vue';
+import AppIcon from './AppIcon.vue';
+import { ACTION_ICONS } from '../utils/actionIcons';
 import { DEMO_MODE } from '../demo/isDemoMode';
 
 const auth = useAuthStore();
-// Nur instanziieren, damit die Online/Offline-Listener + der periodische Health-Check (siehe dort)
-// unabhängig davon laufen, ob gerade eine bestimmte Unteransicht gemountet ist.
-useConnectivityStore();
+const connectivity = useConnectivityStore();
 
 // Steht die NavBar (per Einstellung, siehe stores/navPosition.ts) gerade NICHT direkt unter
 // dem Header (sondern unten am Viewport-Rand), fehlt der Header sonst komplett ohne den kräftigeren
@@ -66,18 +64,13 @@ const isNonProd = computed(
 </script>
 
 <template>
-  <header
-    ref="headerEl"
-    class="app-header"
-    :class="{ 'non-prod': isNonProd, 'nav-bottom': navBarIsBottom }"
-  >
+  <header ref="headerEl" class="app-header" :class="{ 'nav-bottom': navBarIsBottom }">
     <DemoModeBanner v-if="DEMO_MODE" />
     <!-- Eigene Zeile ÜBER der Icon-Zeile statt zwischen TripSwitcher und den Icons rechts
          eingereiht: der TripSwitcher-Button wächst mit dem Urlaubsnamen und schrumpft nicht
          zuverlässig (siehe .switcher-btn in TripSwitcher.vue), wodurch ein hier eingereihter Pill
          auf schmalen Viewports vom TripSwitcher überlagert statt danebengestellt wurde. -->
     <div class="status-row">
-      <OfflineIndicator />
       <TrackRecordingIndicator />
       <PwaUpdatePrompt />
       <PwaInstallHint />
@@ -101,9 +94,22 @@ const isNonProd = computed(
       <TripSwitcher class="switcher" />
       <PresenceAvatars />
       <NotificationInbox />
-      <ThemeModeSelect variant="icon" class="theme-toggle" />
-      <router-link to="/settings" class="profile-link" title="Einstellungen">
-        <span class="avatar">{{ auth.user?.avatar || '👤' }}</span>
+      <router-link
+        to="/settings"
+        class="profile-link"
+        :class="{
+          'is-online': connectivity.isOnline && !connectivity.syncing && !connectivity.checking,
+          'is-offline': !connectivity.isOnline,
+          'is-retrying': connectivity.syncing || connectivity.checking,
+        }"
+        title="Einstellungen"
+      >
+        <div class="avatar-wrapper">
+          <span class="avatar">{{ auth.user?.avatar || '👤' }}</span>
+          <div v-if="!connectivity.isOnline" class="offline-badge">
+            <AppIcon :icon="ACTION_ICONS.offline" :size="12" group="actions" />
+          </div>
+        </div>
       </router-link>
     </div>
   </header>
@@ -150,7 +156,7 @@ const isNonProd = computed(
   gap: var(--space-2);
 }
 
-.status-row:has(.offline-pill, .pwa-pill) {
+.status-row:has(.pwa-pill) {
   padding: 6px var(--space-4) 0;
 }
 
@@ -161,13 +167,6 @@ const isNonProd = computed(
   gap: var(--space-2);
   padding: 0 var(--space-4);
   box-sizing: border-box;
-}
-
-/* Einziger optischer Marker für "nicht Produktion" (Staging/lokal) – dezent (nur die
-   Header-Trennlinie, kein flächiger Farbwechsel), damit die grundsätzliche UI nicht gestört wird,
-   aber auf einen Blick von der echten Produktion unterscheidbar bleibt. */
-.app-header.non-prod {
-  border-bottom: 2px solid var(--color-accent);
 }
 
 .brand {
@@ -217,27 +216,90 @@ const isNonProd = computed(
   }
 }
 
-/* Auf mobile zieht "alle Mitreisenden statt nur online" (PresenceAvatars.vue) potenziell mehr
-   Avatare in den Header als vorher - der Theme-Toggle wandert dafür in die Einstellungen
-   (SettingsView.vue), auf Desktop bleibt er exklusiv hier im Header (derselbe 800px-Umbruch wie
-   .wordmark oben/NavBar.vue). */
-@media (max-width: 799px) {
-  .theme-toggle {
-    display: none;
-  }
-}
-
 .profile-link {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   background: var(--color-primary-tint);
   text-decoration: none;
   flex-shrink: 0;
-  transition: background 0.15s ease;
+  transition:
+    background 0.15s ease,
+    filter 0.2s ease;
+  position: relative;
+  box-sizing: border-box;
+  z-index: 1;
+}
+
+.profile-link.is-online {
+  border: 2px solid color-mix(in srgb, var(--color-success) 50%, transparent);
+}
+
+.profile-link.is-offline {
+  filter: grayscale(1) opacity(0.8);
+  border: 2px solid transparent;
+}
+
+.profile-link.is-retrying {
+  border: 2px solid transparent;
+}
+
+.profile-link.is-retrying::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  bottom: -2px;
+  left: -2px;
+  z-index: -1;
+  border-radius: 50%;
+  background: conic-gradient(
+    var(--color-success) 0deg,
+    var(--color-success) 90deg,
+    transparent 180deg
+  );
+  animation: spin 1s linear infinite;
+  mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #fff calc(100% - 2px));
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #fff 0);
+  opacity: 0.5;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.avatar-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: inherit;
+}
+
+.offline-badge {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  background: var(--color-surface);
+  color: var(--color-text-light);
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 2px var(--color-surface);
 }
 
 .profile-link:hover,

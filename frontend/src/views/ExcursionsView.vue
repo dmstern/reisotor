@@ -41,12 +41,15 @@ import { hashHighlightId } from '../utils/hashHighlight';
 import SpotCard from '../components/SpotCard.vue';
 import ExcursionCard from '../components/ExcursionCard.vue';
 import SegmentedToggle from '../components/SegmentedToggle.vue';
+import SearchFilterBar from '../components/SearchFilterBar.vue';
 import SpotOrderPicker from '../components/SpotOrderPicker.vue';
 import TripMap from '../components/TripMap.vue';
 import Modal from '../components/Modal.vue';
 import Combobox from '../components/Combobox.vue';
 import FormField from '../components/FormField.vue';
 import TourAssignPicker from '../components/TourAssignPicker.vue';
+import TrackRecordingWarningModal from '../components/TrackRecordingWarningModal.vue';
+import ResizeHandle from '../components/ResizeHandle.vue';
 import LocationPicker from '../components/LocationPicker.vue';
 import CoverImagePicker from '../components/CoverImagePicker.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
@@ -62,6 +65,7 @@ import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import type { IconDef } from '../utils/icon';
 import AppIcon from '../components/AppIcon.vue';
+import AnimatedText from '../components/AnimatedText.vue';
 import Button from '../components/primitives/Button.vue';
 import ButtonGroup from '../components/primitives/ButtonGroup.vue';
 import IconButton from '../components/primitives/IconButton.vue';
@@ -760,18 +764,6 @@ function toggleDescription(event?: MouseEvent) {
   }
 }
 
-const categoryMenuOpen = ref(false);
-const categoryBtnRef = ref<any>(null);
-const categoryMenuStyle = ref({ top: '0px', left: '0px' });
-function toggleCategoryMenu(event?: MouseEvent) {
-  if (!categoryMenuOpen.value) {
-    categoryMenuStyle.value = computeMenuStyle(categoryBtnRef.value, event, 220);
-    categoryMenuOpen.value = true;
-  } else {
-    categoryMenuOpen.value = false;
-  }
-}
-
 const categoryFilter = usePersistedRef<string[]>('reisotor-excursions-category-filter', []);
 function removeCategoryFilter(cat: string) {
   categoryFilter.value = categoryFilter.value.filter((c) => c !== cat);
@@ -790,17 +782,6 @@ const STATUS_FILTER_ICON: Record<'planned' | 'unplanned' | 'done', IconDef> = {
   unplanned: FORM_FIELD_ICONS.note,
   done: ACTION_ICONS.done,
 };
-const statusMenuOpen = ref(false);
-const statusBtnRef = ref<any>(null);
-const statusMenuStyle = ref({ top: '0px', left: '0px' });
-function toggleStatusMenu(event?: MouseEvent) {
-  if (!statusMenuOpen.value) {
-    statusMenuStyle.value = computeMenuStyle(statusBtnRef.value, event, 220);
-    statusMenuOpen.value = true;
-  } else {
-    statusMenuOpen.value = false;
-  }
-}
 
 const statusFilter = usePersistedRef<('planned' | 'unplanned' | 'done')[]>(
   'reisotor-excursions-status-filter',
@@ -812,6 +793,8 @@ function removeStatusFilter(status: 'planned' | 'unplanned' | 'done') {
 function itemDone(item: SpotsGroupItem): boolean {
   return !!item.spot.done;
 }
+
+const searchQuery = ref('');
 
 const allSpotItems = computed<SpotsGroupItem[]>(() =>
   spotsStore.spots.map((spot): SpotsGroupItem => ({ kind: 'spot', spot }))
@@ -828,6 +811,13 @@ const filteredSpotItems = computed(() =>
       const matchesStatus = statusFilter.value.includes(status);
       const matchesDone = statusFilter.value.includes('done') && itemDone(item);
       if (!matchesStatus && !matchesDone) return false;
+    }
+    if (searchQuery.value.trim()) {
+      const q = searchQuery.value.trim().toLowerCase();
+      const title = itemTitle(item).toLowerCase();
+      const category = itemCategory(item).toLowerCase();
+      const note = (item.spot.note ?? '').toLowerCase();
+      if (!title.includes(q) && !category.includes(q) && !note.includes(q)) return false;
     }
     return true;
   })
@@ -874,8 +864,13 @@ const spotGroups = computed(() => {
     // eine (leere) Gruppe - sonst verschwänden sie komplett aus dieser Ansicht, sobald man nach
     // Touren statt Kategorie gruppiert, weil die Gruppierung oben rein über die Spot-Zuordnung
     // (tourTitlesForItem) läuft.
+    const q = searchQuery.value.trim().toLowerCase();
     for (const ex of excursionsStore.excursions) {
-      if (!groups.has(ex.title)) groups.set(ex.title, []);
+      if (!groups.has(ex.title)) {
+        if (!q || ex.title.toLowerCase().includes(q) || (ex.note ?? '').toLowerCase().includes(q)) {
+          groups.set(ex.title, []);
+        }
+      }
     }
   }
   for (const [key, list] of groups) {
@@ -1378,6 +1373,16 @@ function onColResizeStart(event: PointerEvent) {
   window.addEventListener('pointerup', onColResizeEnd);
   event.preventDefault();
 }
+function updateSpotsColRight() {
+  if (isSheetOverlayMode.value || !sheetEl.value) {
+    spotsColRightPx.value = 0;
+    return;
+  }
+  const spotsRect = sheetEl.value.getBoundingClientRect();
+  const mapLeft = tripMapRef.value?.$el?.getBoundingClientRect().left ?? 0;
+  spotsColRightPx.value = Math.max(0, Math.round(spotsRect.right - mapLeft));
+}
+
 function onColResizeMove(event: PointerEvent) {
   if (!resizingCol.value) return;
   const delta = event.clientX - colStartX;
@@ -1385,6 +1390,7 @@ function onColResizeMove(event: PointerEvent) {
     MAX_SPOTS_COL_WIDTH,
     Math.max(MIN_SPOTS_COL_WIDTH, colStartWidth + delta)
   );
+  updateSpotsColRight();
 }
 function onColResizeEnd() {
   resizingCol.value = false;
@@ -1475,6 +1481,9 @@ function dragFlickVelocity(): number {
 let sheetStartY = 0;
 let sheetStartHeight = 0;
 function onSheetDragStart(event: PointerEvent) {
+  // Maus-Drag auf Desktop unterdrücken (verhindert versehentliches Resize bei Rechtsklick u. ä.).
+  // Touch/Pen bleibt immer erlaubt - auch auf Tablets/breiten Geräten im Overlay-Modus.
+  if (event.pointerType === 'mouse' && !isSheetOverlayMode.value) return;
   sheetDragging.value = true;
   sheetStartY = event.clientY;
   sheetStartHeight = sheetDragHeightPx.value ?? sheetHeightPx(sheetState.value);
@@ -1568,6 +1577,9 @@ let sheetBodyStartY = 0;
 let sheetBodyStartHeight = 0;
 
 function onSheetBodyPointerDown(event: PointerEvent) {
+  // Maus-Drag auf Desktop unterdrücken - body-drag ist auf Desktop nicht vorgesehen (kein Sheet-Overlay).
+  // Touch/Pen bleibt immer erlaubt.
+  if (event.pointerType === 'mouse' && !isSheetOverlayMode.value) return;
   if (sheetState.value === 'full') return; // voll ausgeklappt: Liste scrollt ganz normal.
   // Eigene Zug-Ziele innerhalb der Liste (Kalender-/Touren-Anfasser einer Spot-Karte, siehe
   // SpotCard.vue's usePointerDrag-Wiring) haben ihre eigene Pointer-Drag-Logik - ohne diesen Ausstieg
@@ -1648,17 +1660,39 @@ const currentSheetHeightPx = computed(
 // weiterhin als Overlay rendert - fokussierte Punkte/Routen landeten dann zu weit unten, teils
 // hinter der Sheet-Kante.
 const appMainWidth = ref<number | null>(null);
+const spotsColRightPx = ref(0);
 let appMainResizeObserver: ResizeObserver | null = null;
+let spotsColResizeObserver: ResizeObserver | null = null;
+
 onMounted(() => {
   const appMainEl = document.querySelector('.app-main');
   if (appMainEl) {
     appMainResizeObserver = new ResizeObserver((entries) => {
       appMainWidth.value = entries[0]?.contentRect.width ?? null;
+      updateSpotsColRight();
     });
     appMainResizeObserver.observe(appMainEl);
   }
+  if (sheetEl.value) {
+    spotsColResizeObserver = new ResizeObserver(() => {
+      updateSpotsColRight();
+    });
+    spotsColResizeObserver.observe(sheetEl.value);
+  }
+  window.addEventListener('resize', updateSpotsColRight);
+  updateSpotsColRight();
+  nextTick(() => {
+    updateSpotsColRight();
+    setTimeout(updateSpotsColRight, 50);
+    setTimeout(updateSpotsColRight, 300);
+  });
 });
-onUnmounted(() => appMainResizeObserver?.disconnect());
+
+onUnmounted(() => {
+  appMainResizeObserver?.disconnect();
+  spotsColResizeObserver?.disconnect();
+  window.removeEventListener('resize', updateSpotsColRight);
+});
 
 // Spiegelt exakt die 720px-Schwelle des @container app-main-Queries weiter unten im <style> - beide
 // Signale müssen übereinstimmen, sonst rechnet TripMap.vue mit einem falschen coveredBottomPx (siehe
@@ -1671,6 +1705,17 @@ onUnmounted(() => appMainResizeObserver?.disconnect());
 const isSheetOverlayMode = computed(() => (appMainWidth.value ?? window.innerWidth) < 720);
 const mapCoveredBottomPx = computed(() =>
   isSheetOverlayMode.value ? currentSheetHeightPx.value : 0
+);
+const mapCoveredLeftPx = computed(() => (isSheetOverlayMode.value ? 0 : spotsColRightPx.value));
+
+watch([isSheetOverlayMode, spotsColWidth, tripMapRef], () => nextTick(updateSpotsColRight));
+watch(
+  () => [drawers.calendarOpen, drawers.calendarWidth],
+  () => {
+    nextTick(updateSpotsColRight);
+    setTimeout(updateSpotsColRight, 260);
+  },
+  { immediate: true }
 );
 
 // Ein Klick auf eine Spot-Karte klappt sie nur auf, ohne das Sheet anzurühren oder die Karte zu
@@ -1968,7 +2013,11 @@ async function removeSpot(id: number) {
           <div id="map-focus-dock" class="map-focus-dock"></div>
           <div class="header">
             <h2>
-              {{ groupMode === 'tours' ? 'Touren' : 'Spots' }}
+              <AnimatedText
+                :text="groupMode === 'tours' ? 'Touren' : 'Spots'"
+                :options="['Spots', 'Touren']"
+                :direction="groupMode === 'tours' ? 'up' : 'down'"
+              />
               <!-- Der frühere, immer sichtbare Erklärtext nahm spürbar Platz weg, v. a. auf mobile
                (Nutzer-Feedback) - jetzt hinter einem Info-Button versteckt, gleiches
                Popover-Muster (Backdrop + .picker-menu) wie die Kategorie-/Status-Filter unten statt
@@ -1978,8 +2027,8 @@ async function removeSpot(id: number) {
                   ref="descriptionBtnRef"
                   type="button"
                   class="info-btn"
-                  title="Was sind Spots?"
-                  aria-label="Was sind Spots?"
+                  :title="groupMode === 'tours' ? 'Was sind Touren?' : 'Was sind Spots?'"
+                  :aria-label="groupMode === 'tours' ? 'Was sind Touren?' : 'Was sind Spots?'"
                   @click="toggleDescription($event)"
                 >
                   <AppIcon :icon="ACTION_ICONS.info" :size="16" group="actions" />
@@ -1988,15 +2037,27 @@ async function removeSpot(id: number) {
                   <template v-if="descriptionOpen">
                     <div class="picker-backdrop" @click="descriptionOpen = false"></div>
                     <div class="picker-menu description-popover" :style="descriptionMenuStyle">
-                      <p>
-                        Orte (Restaurant, Sehenswürdigkeit, Strand, …), die du als Stationen bei
-                        Touren zuordnen kannst – auch unabhängig von einer Tour. Eignet sich auch
-                        einfach als Ideensammlung – nicht jeder Spot muss geplant oder besucht
-                        werden. Tipp: Ziehe eine Spot-Karte direkt auf eine Tour oder auf einen
-                        Kalendertag, um sie dort als Station bzw. spontan einzuplanen. Bei
-                        Gruppierung nach "🎒 Touren" unten zeigt ein Klick auf die Tour-Karte deren
-                        Route auf der Karte.
-                      </p>
+                      <template v-if="groupMode === 'tours'">
+                        <p>
+                          <strong>Touren</strong> fassen mehrere Spots zu einer gemeinsamen Route
+                          oder einem Tagesausflug zusammen. Eignet sich bspw. auch, um An- oder
+                          Abreise auf der Karte zu visualisieren.
+                        </p>
+                        <p class="popover-tip">
+                          💡 <strong>Tipp:</strong> Klicke auf eine Tour-Kachel, um deren Route und
+                          Wege auf der Karte anzuzeigen.
+                        </p>
+                      </template>
+                      <template v-else>
+                        <p>
+                          <strong>Spots</strong> sind einzelne Orte (Restaurants,
+                          Sehenswürdigkeiten, Strände, …) – als Ideensammlung oder zur Reiseplanung.
+                        </p>
+                        <p class="popover-tip">
+                          💡 <strong>Tipp:</strong> Ziehe eine Spot-Karte direkt auf einen
+                          Kalendertag oder eine Tour, um sie einzutakten.
+                        </p>
+                      </template>
                     </div>
                   </template>
                 </Teleport>
@@ -2028,19 +2089,18 @@ async function removeSpot(id: number) {
             <div class="header-actions">
               <Button
                 class="add-button"
-                v-if="groupMode === 'category'"
-                aria-label="Neuer Spot"
-                @click="showSpotForm = true"
+                :aria-label="groupMode === 'tours' ? 'Neue Tour' : 'Neuer Spot'"
+                @click="groupMode === 'tours' ? openExcursionForm() : (showSpotForm = true)"
               >
                 <AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" />
-                <span class="add-button__label">Neuer Spot</span>
+                <span class="add-button__label">
+                  <AnimatedText
+                    :text="groupMode === 'tours' ? 'Neue Tour' : 'Neuer Spot'"
+                    :options="['Neuer Spot', 'Neue Tour']"
+                    :direction="groupMode === 'tours' ? 'up' : 'down'"
+                  />
+                </span>
               </Button>
-              <template v-else-if="groupMode === 'tours'">
-                <Button class="add-button" aria-label="Neue Tour" @click="openExcursionForm()">
-                  <AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" />
-                  <span class="add-button__label">Neue Tour</span>
-                </Button>
-              </template>
             </div>
             <!-- Zweiter Einstiegspunkt zum ⏺️/⏹️-Button auf TripMap.vue (Start dort mit Sichtbarkeits-
                Auswahl/Tour-Kopplung): der Karten-Button steckt in einer bereits vollen
@@ -2082,7 +2142,7 @@ async function removeSpot(id: number) {
               :aria-expanded="tracksSectionOpen"
               @click="tracksSectionOpen = !tracksSectionOpen"
             >
-              <span>
+              <span class="tracks-toggle-label">
                 <AppIcon :icon="ACTION_ICONS.history" :size="15" group="actions" /> Aufzeichnungen
                 ({{ tracksStore.tracks.length }})
               </span>
@@ -2558,116 +2618,14 @@ async function removeSpot(id: number) {
           </Modal>
 
           <div class="filter-bar" v-if="filterCategoryOptions.length">
-            <div class="filter-bar-rows">
-              <div class="tool-row">
-                <span class="tool-label" title="Sortieren">
-                  <AppIcon :icon="ACTION_ICONS.sort" :size="14" group="actions" />
-                  <span class="tool-label-text">Sortieren</span>
-                </span>
-                <select v-model="sortMode" aria-label="Sortierung">
-                  <option value="alpha">Alphabetisch</option>
-                  <option value="likes">Nach Likes</option>
-                </select>
-              </div>
-
-              <div class="tool-row">
-                <span class="tool-label" title="Filtern">
-                  <AppIcon :icon="ACTION_ICONS.filter" :size="14" group="actions" />
-                  <span class="tool-label-text">Filtern</span>
-                </span>
-                <div class="dropdown">
-                  <Button
-                    ref="categoryBtnRef"
-                    variant="dropdown"
-                    class="category-btn"
-                    title="Nach Kategorie filtern"
-                    aria-label="Nach Kategorie filtern"
-                    @click="toggleCategoryMenu($event)"
-                  >
-                    <AppIcon :icon="FORM_FIELD_ICONS.category" :size="14" group="formFields" />
-                    Kategorie
-                    <AppIcon
-                      :icon="ACTION_ICONS.chevronDown"
-                      :size="12"
-                      group="actions"
-                      class="caret dropdown-caret"
-                      :class="{ open: categoryMenuOpen }"
-                    />
-                  </Button>
-                  <Teleport to="body">
-                    <template v-if="categoryMenuOpen">
-                      <div class="picker-backdrop" @click="categoryMenuOpen = false"></div>
-                      <div class="picker-menu category-menu" :style="categoryMenuStyle">
-                        <DropdownItem
-                          v-for="cat in filterCategoryOptions"
-                          :key="cat"
-                          class="category-option"
-                          multiselect
-                          :icon="groupIconDef(cat)"
-                          icon-group="categories"
-                          :label="cat"
-                        >
-                          <template #checkbox>
-                            <input type="checkbox" :value="cat" v-model="categoryFilter" />
-                          </template>
-                        </DropdownItem>
-                      </div>
-                    </template>
-                  </Teleport>
-                </div>
-                <div class="dropdown">
-                  <Button
-                    ref="statusBtnRef"
-                    variant="dropdown"
-                    class="category-btn"
-                    title="Nach Status (geplant/ungeplant/gemacht) filtern"
-                    aria-label="Nach Status filtern"
-                    @click="toggleStatusMenu($event)"
-                  >
-                    <AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" /> Status
-                    <AppIcon
-                      :icon="ACTION_ICONS.chevronDown"
-                      :size="12"
-                      group="actions"
-                      class="caret dropdown-caret"
-                      :class="{ open: statusMenuOpen }"
-                    />
-                  </Button>
-                  <Teleport to="body">
-                    <template v-if="statusMenuOpen">
-                      <div class="picker-backdrop" @click="statusMenuOpen = false"></div>
-                      <div class="picker-menu category-menu" :style="statusMenuStyle">
-                        <DropdownItem
-                          multiselect
-                          :icon="FORM_FIELD_ICONS.date"
-                          icon-group="formFields"
-                          label="Geplant"
-                        >
-                          <template #checkbox>
-                            <input type="checkbox" value="planned" v-model="statusFilter" />
-                          </template>
-                        </DropdownItem>
-                        <DropdownItem
-                          multiselect
-                          :icon="FORM_FIELD_ICONS.note"
-                          icon-group="formFields"
-                          label="Ungeplant"
-                        >
-                          <template #checkbox>
-                            <input type="checkbox" value="unplanned" v-model="statusFilter" />
-                          </template>
-                        </DropdownItem>
-                        <DropdownItem multiselect :icon="ACTION_ICONS.done" label="Gemacht">
-                          <template #checkbox>
-                            <input type="checkbox" value="done" v-model="statusFilter" />
-                          </template>
-                        </DropdownItem>
-                      </div>
-                    </template>
-                  </Teleport>
-                </div>
-              </div>
-            </div>
+            <SearchFilterBar
+              v-model:search-query="searchQuery"
+              v-model:sort-mode="sortMode"
+              v-model:category-filter="categoryFilter"
+              v-model:status-filter="statusFilter"
+              :category-options="filterCategoryOptions"
+              search-placeholder="Spots oder Touren suchen..."
+            />
 
             <div class="filter-chips" v-if="categoryFilter.length || statusFilter.length">
               <span v-for="cat in categoryFilter" :key="cat" class="filter-chip">
@@ -3320,59 +3278,19 @@ async function removeSpot(id: number) {
           </Modal>
 
           <!-- Hinweis-Modal für Standort-Aufzeichnung (#230) -->
-          <Modal
-            :model-value="showTrackRecordingWarningModal"
-            title="Weg aufzeichnen"
-            @update:model-value="(v) => !v && (showTrackRecordingWarningModal = false)"
-          >
-            <div class="track-warning-modal">
-              <p class="track-warning-intro">
-                Reisotor zeichnet deinen Weg während des Ausflugs auf. Bitte beachte:
-              </p>
-              <div class="track-warning-points">
-                <div class="track-warning-point">
-                  <h4>
-                    <AppIcon :icon="ACTION_ICONS.myLocation" :size="15" group="actions" />
-                    Standort-Berechtigung
-                  </h4>
-                  <p>Dein Browser benötigt die Berechtigung, auf deinen Standort zuzugreifen.</p>
-                </div>
-                <div class="track-warning-point">
-                  <h4>
-                    <AppIcon :icon="ACTION_ICONS.history" :size="15" group="actions" /> App geöffnet
-                    lassen
-                  </h4>
-                  <p>
-                    Da Reisotor im Browser/als PWA läuft, kann die Aufzeichnung pausieren, wenn der
-                    Browser im Hintergrund vollständig geschlossen wird.
-                  </p>
-                </div>
-              </div>
-              <label class="checkbox-option warning-dismiss">
-                <input type="checkbox" v-model="trackWarningDismissed" />
-                Diesen Hinweis nicht mehr anzeigen
-              </label>
-              <ButtonGroup>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  @click="showTrackRecordingWarningModal = false"
-                  >Abbrechen</Button
-                >
-                <Button type="button" @click="startRecordingConfirmed">Aufzeichnung starten</Button>
-              </ButtonGroup>
-            </div>
-          </Modal>
+          <TrackRecordingWarningModal
+            v-model="showTrackRecordingWarningModal"
+            @confirm="startRecordingConfirmed"
+          />
         </div>
       </div>
 
-      <div
-        class="col-resize-handle resize-grip"
-        role="separator"
-        aria-orientation="vertical"
-        aria-label="Aufteilung zwischen Spots-Liste und Karte anpassen"
+      <ResizeHandle
+        label="Aufteilung zwischen Spots-Liste und Karte anpassen"
+        :is-resizing="resizingCol"
+        class="col-resize-handle"
         @pointerdown="onColResizeStart"
-      ></div>
+      />
 
       <div class="map-col">
         <TripMap
@@ -3380,6 +3298,7 @@ async function removeSpot(id: number) {
           :category-filter="categoryFilter"
           :status-filter="statusFilter"
           :covered-bottom-px="mapCoveredBottomPx"
+          :covered-left-px="mapCoveredLeftPx"
           :sheet-overlay-mode="isSheetOverlayMode"
           @focus-spot="onFocusSpotFromMap"
           @focus-excursion="onFocusExcursionFromMap"
@@ -3483,7 +3402,7 @@ async function removeSpot(id: number) {
      sich die Kante der Karte gegen eine bunte Karte im Hintergrund, der box-shadow allein reicht
      dafür nicht. Gleiches --color-border-Muster wie z. B. Drawer.vue's/.picker-menu's Buttons. */
   border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-lg);
   height: min(46vh, var(--sheet-max-height));
   /* Wie bei Apple Maps' Suchleisten-Schublade: solange nicht ganz hochgezogen (collapsed/partial,
      .full überschreibt beide Werte unten auf scaleX(1)/nur obere Ecken), schwebt das Sheet als
@@ -3710,111 +3629,70 @@ async function removeSpot(id: number) {
    mobilen Sheet-Modus zurück, obwohl noch genug Platz für eine (wenn auch schmalere) Spots-Liste +
    Karte nebeneinander da war. */
 @container app-main (min-width: 720px) {
+  /* .page bleibt wie auf Mobil absolute und vollbild, Karte füllt den Bereich aus */
   .page {
-    position: static;
-    height: auto;
-    overflow: visible;
-    max-width: 1600px;
-    /* Die globale .page-Regel (style.css) bringt padding-bottom:88px für normal scrollende Seiten
-       mit (Platz z. B. für eine untere mobile Navigation) – hier unnötig und der Hauptgrund für den
-       sichtbaren leeren Weißraum am Seitenende, da .layout's Inhalt (sticky) sich schon selbst
-       begrenzt. padding-top wird stattdessen unten in der max-height-Rechnung berücksichtigt
-       (statt es hier auf 0 zu setzen), damit der Titel nicht direkt am Seitenrand klebt. */
-    padding: var(--space-3) var(--space-4) 0;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    position: relative;
   }
 
-  /* Auf Desktop gibt es keine vollflächige Hintergrund-Karte (siehe .map-col weiter unten) – der
-     Titel ist hier weiterhin sinnvoll und bleibt sichtbar. */
+  /* Auf Desktop ist der Titel visuell ausgeblendet, bleibt aber für Screenreader lesbar */
   .page-title {
-    display: flex;
-    gap: 0.5rem;
-    margin: 0 0 var(--space-3);
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
   }
 
   .layout {
-    display: grid;
-    /* min(..., 75cqw) statt einfach var(--spots-col-width): deckelt die Spots-Spalte zusätzlich
-       relativ zur tatsächlichen Container-Breite (derselbe Container wie die @container-Query hier,
-       .app-main in App.vue) – ohne das könnte die Karte auf schmaleren Containern komplett verdrängt
-       werden, wenn spotsColWidth (JS, siehe MAX_SPOTS_COL_WIDTH) großzügiger als der verfügbare
-       Platz gewählt wurde. 75cqw erlaubt der Liste bis zu 3/4 des Platzes, wenn gewünscht. */
-    grid-template-columns: min(var(--spots-col-width), 75cqw) 20px 1fr;
-    align-items: start;
-    gap: 0;
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
   }
 
-  /* Beide Spalten scrollen ab hier unabhängig voneinander statt gemeinsam mit der Seite – dieselbe
-     Sticky-Offset-Formel wie Drawer.vue's Desktop-Panel (56px NavBar + evtl. zusätzlicher
-     --navbar-offset, falls die NavBar selbst "oben" positioniert ist). Auch der komplette Reset
-     der mobilen Bottom-Sheet-/Vollbild-Eigenschaften (fixed-Positionierung, Höhe, Hintergrund, …)
-     zurück auf den bisherigen Stand. */
-  .spots-col,
   .map-col {
-    position: sticky;
-    left: auto;
-    right: auto;
-    bottom: auto;
-    z-index: auto;
+    position: fixed;
     top: calc(var(--app-header-height, 56px) + var(--navbar-offset, 0px));
-    /* Zieht zusätzlich die (live gemessene, siehe pageTitleHeight im Script) Höhe des Seitentitels
-       samt seines margin-bottom sowie .page's eigenes padding-top (var(--space-3), s. o.) ab – ohne
-       das war die Spalte beim ersten Rendern (bevor sie tatsächlich einrastet) zu groß, was eine
-       überflüssige Seiten-Scrollbar samt leerem Weißraum am Ende erzeugte. */
-    max-height: calc(
-      100vh - var(--app-header-height, 56px) - var(--navbar-offset, 0px) -
-        var(--navbar-bottom-offset, 0px) - var(--page-title-height, 0px) - var(--space-3)
-    );
-    overflow-y: auto;
-  }
-
-  /* Reserviert Platz links/rechts/unten, damit der Schatten der fokussierten Tagesansicht-Box
-     (TripMap.vue's .focus-spot-list, in .karte statisch unter der Karte fließend) nicht am
-     overflow-x:auto-Rand von .map-col abgeschnitten wird (overflow-y:auto oben setzt overflow-x
-     laut CSS-Spec implizit auf auto, s. Kommentar bei .col-resize-handle) und die Box unten nicht
-     direkt am Rand von .map-col klebt (#158). */
-  .map-col {
-    padding: 0 var(--space-2) var(--space-3);
+    bottom: var(--navbar-bottom-offset, 0px);
+    left: 0;
+    right: 0;
+    z-index: 1;
+    pointer-events: auto;
   }
 
   .spots-col {
-    /* Der native Scrollbalken sitzt sonst direkt auf dem Kartenrand – etwas Luft, damit er nicht
-       am Inhalt klebt. */
-    padding-right: var(--space-3);
-    display: block;
+    position: absolute;
+    left: var(--space-4);
+    top: var(--space-4);
+    bottom: var(--space-4);
     height: auto;
-    background: none;
-    border: none;
-    border-radius: 0;
-    box-shadow: none;
+    max-height: none;
+    z-index: 5;
+    background: var(--color-surface);
+    border-radius: var(--radius-md-squircle);
+    box-shadow: var(--shadow-md);
+    width: var(--spots-col-width);
+    pointer-events: auto;
+
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+
+    /* Override mobile transforms and bottom offsets */
     transform: none;
     transition: none;
   }
 
-  /* .spots-col ist ab hier transparent (s. o.) - der sticky .category-nav-wrap liegt hier also direkt
-     auf dem Seitenhintergrund statt dem mobilen Bottom-Sheet, braucht deshalb --color-bg statt der
-     --color-surface-Vorgabe unten. Nachfahren-Selektor (.spots-col .category-nav-wrap) statt
-     einfachem .category-nav-wrap: gleiche Spezifität wie die spätere Basisregel unten hätte sonst die
-     Deklarations-Reihenfolge im Stylesheet entscheiden lassen statt die @container-Bedingung – exakt
-     die in DESIGN.md ("Abstände", .hint/.places-hint-Beispiel) beschriebene Falle. War genau die
-     Ursache von Issue #87 (Desktop bekam fälschlich --color-surface). --category-nav-bg (statt nur
-     background) wird hier mit umgeschaltet - die Pfeil-Verläufe (.category-nav-arrow) nutzen dieselbe
-     Variable, sonst wichen sie hier vom jetzt anderen Hintergrund ab (#144). */
+  /* .spots-col ist auf Desktop undurchsichtig, keine speziellen Hintergrundanpassungen nötig. */
   .spots-col .category-nav-wrap {
-    background: var(--color-bg);
-    --category-nav-bg: var(--color-bg);
-  }
-
-  /* .spots-col.collapsed/.full (höhere Spezifität als die einfache .spots-col-Regel oben, da zwei
-     statt einer Klasse) würden das dortige height:auto sonst weiterhin überschreiben, falls
-     sheetState beim Wechsel in den Desktop-Modus zufällig "collapsed"/"full" war (z. B. nach
-     Schließen einer Schublade, während die Karte vorher im mobilen Modus auf "voll" stand). Aus
-     demselben Grund jetzt auch bottom: .spots-col.full setzt mobil bottom:0 (siehe dort) - würde
-     ohne dieses Reset hier das .spots-col-weite bottom:auto (oben) aus genau demselben
-     Spezifitäts-Grund überschreiben und die sticky Spalte auf Desktop verschieben. */
-  .spots-col.collapsed,
-  .spots-col.full {
-    height: auto;
-    bottom: auto;
+    background: var(--color-surface);
+    --category-nav-bg: var(--color-surface);
   }
 
   .sheet-handle-row {
@@ -3822,44 +3700,29 @@ async function removeSpot(id: number) {
   }
 
   .spots-col-body {
-    flex: none;
-    overflow-y: visible;
-    padding: 0;
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--space-3);
   }
 
-  /* Reset des mobilen "nur im voll-Zustand scrollbar"-Verhaltens (siehe dortiger Kommentar) - auf
-     Desktop gibt es keinen Sheet-Zustand, die Liste soll unabhängig davon immer normal scrollen/
-     Zeigereignisse normal durchlassen. Gleiche Selektor-Spezifität + späterer Quellort wie die
-     mobile Regel, damit dieser Reset zuverlässig gewinnt statt an Spezifität zu scheitern. */
   .spots-col.collapsed .spots-col-body,
   .spots-col.partial .spots-col-body {
-    overflow-y: visible;
+    overflow-y: auto;
     touch-action: auto;
   }
 
-  /* Dieselbe Sticky-Formel wie die beiden Inhaltsspalten – hier aber als explizite `height` statt
-     nur `max-height`: .spots-col/.map-col bekommen ihre Höhe automatisch von ihrem (teils langen)
-     Inhalt, ein leeres Element wie dieses hätte ohne erzwungene `height` sonst nur eine Höhe nahe 0
-     (Grid-`align-items: start` auf .layout streckt Items nicht automatisch) – der Anfasser wäre
-     dadurch praktisch unsichtbar/nicht greifbar gewesen. Nur Positionierung/Größe hier – die
-     eigentliche Anfasser-Optik (Hover-Hintergrund, Griff-Strich) kommt aus der geteilten
-     .resize-grip-Klasse (style.css), damit sie überall identisch aussieht (Drawer.vue's
-     Schubladen-Anfasser nutzt dieselbe Klasse). display:flex MUSS hier trotzdem explizit gesetzt
-     bleiben (nicht der globalen .resize-grip-Regel überlassen): der unconditional Mobil-Default
-     weiter oben (.col-resize-handle { display: none; }) hat dieselbe Spezifität wie .resize-grip's
-     eigenes display:flex, und scoped Component-Styles gewinnen bei einem Unentschieden gegen
-     globale Styles typischerweise unabhängig von der Lade-Reihenfolge – ohne dieses explizite
-     Zurücksetzen blieb der Anfasser dadurch auch auf Desktop display:none, wodurch er als
-     Grid-Element komplett wegfiel und .map-col in seine 20px-Spalte statt die eigentliche
-     1fr-Spalte rutschte (dadurch wirkte die Karte winzig). */
   .col-resize-handle {
     display: flex;
-    position: sticky;
-    top: calc(var(--app-header-height, 56px) + var(--navbar-offset, 0px));
-    height: calc(
-      100vh - var(--app-header-height, 56px) - var(--navbar-offset, 0px) -
-        var(--navbar-bottom-offset, 0px) - var(--page-title-height, 0px) - var(--space-3)
+    position: absolute;
+    left: calc(
+      var(--space-4) + var(--spots-col-width) + (var(--space-4) - var(--drawer-handle-gap, 12px)) /
+        2
     );
+    top: var(--space-4);
+    bottom: var(--space-4);
+    height: auto;
+    z-index: 10;
+    pointer-events: auto;
   }
 }
 
@@ -3884,6 +3747,9 @@ async function removeSpot(id: number) {
   gap: 4px;
   margin: 0;
 }
+
+/* Feste/gleiche Breite für den "Spots"/"Touren"-Titel, damit der Umschalter beim Wechsel
+   nicht hin und her springt, kombiniert mit einer vertikalen Swipe-Animation (#220). */
 
 /* Etwas mehr Abstand als das straffe 4px-gap der Überschrift selbst (dort passend für Text+Info-
    Icon) - der Umschalter ist ein eigenständiges Steuerungselement, keine Ergänzung des Titels. */
@@ -3929,6 +3795,10 @@ async function removeSpot(id: number) {
   font-size: 0.85rem;
   line-height: 1.4;
   color: var(--color-text-muted);
+}
+
+.description-popover p + p {
+  margin-top: var(--space-2);
 }
 
 .header-actions {
@@ -4308,6 +4178,12 @@ async function removeSpot(id: number) {
   text-align: left;
 }
 
+.tracks-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
 /* Dateninhalt (je eine echte Aufzeichnung), daher --color-surface statt der Steuerungsfarbe der
    umgebenden .tracks-section - gleiches Prinzip wie SpotCard.vue/ExcursionCard.vue. */
 .tracks-list {
@@ -4540,6 +4416,14 @@ async function removeSpot(id: number) {
   padding-top: 1px;
   z-index: 2;
   margin-bottom: var(--space-3);
+
+  /* Die Leiste auf die volle Breite der Schublade aufziehen, um auch das seitliche Scroll-Padding
+     abzudecken, falls Inhalte drunterscrollen. */
+  margin-left: calc(var(--space-3) * -1);
+  margin-right: calc(var(--space-3) * -1);
+  padding-left: var(--space-3);
+  padding-right: var(--space-3);
+
   /* Eigene Variable statt direkt --color-surface, weil die Desktop-Regel weiter unten
      (.spots-col .category-nav-wrap) sie auf --color-bg umschaltet - Pfeile/Verlauf unten nutzen
      denselben Wert, damit beide Stellen bei einer künftigen Änderung nicht auseinanderlaufen. */
@@ -4557,9 +4441,13 @@ async function removeSpot(id: number) {
 
 /* Sobald tatsächlich "stuck" (siehe Sentinel/IntersectionObserver oben): ein dezenter Schatten
    zeigt an, dass die Leiste jetzt über scrollendem Inhalt schwebt, statt (wie die frühere Pille) die
-   Form komplett zu wechseln. */
+   Form komplett zu wechseln. 
+   Zusätzlich deckt ein solider Schatten nach oben den padding-top Bereich von .spots-col-body ab,
+   damit die drunterscrollenden Karten dort nicht sichtbar werden. */
 .category-nav-wrap.is-stuck {
-  box-shadow: var(--shadow-sm);
+  box-shadow:
+    0 calc(var(--space-3) * -1) 0 0 var(--category-nav-bg),
+    var(--shadow-sm);
 }
 
 .category-nav {

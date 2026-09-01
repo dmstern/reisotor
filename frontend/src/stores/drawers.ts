@@ -128,11 +128,18 @@ export const useDrawersStore = defineStore('drawers', () => {
     if (router.currentRoute.value.name !== 'excursions') router.push('/excursions');
   }
 
+  const focusVersion = ref(0);
+
+  function triggerFocusChange() {
+    focusVersion.value++;
+  }
+
   function openMapAt(key: string) {
     mapFocusKey.value = key;
     mapFocusExcursionId.value = null;
     mapFocusDate.value = null;
     mapFocusTrackId.value = null;
+    triggerFocusChange();
     ensureMapRoute();
   }
 
@@ -141,6 +148,7 @@ export const useDrawersStore = defineStore('drawers', () => {
     mapFocusKey.value = null;
     mapFocusDate.value = null;
     mapFocusTrackId.value = null;
+    triggerFocusChange();
     ensureMapRoute();
   }
 
@@ -152,6 +160,7 @@ export const useDrawersStore = defineStore('drawers', () => {
     mapFocusKey.value = null;
     mapFocusExcursionId.value = null;
     mapFocusTrackId.value = null;
+    triggerFocusChange();
     ensureMapRoute();
   }
 
@@ -162,6 +171,7 @@ export const useDrawersStore = defineStore('drawers', () => {
     mapFocusKey.value = null;
     mapFocusExcursionId.value = null;
     mapFocusDate.value = null;
+    triggerFocusChange();
     ensureMapRoute();
   }
 
@@ -183,6 +193,7 @@ export const useDrawersStore = defineStore('drawers', () => {
     mapFocusExcursionId,
     mapFocusDate,
     mapFocusTrackId,
+    focusVersion,
     calendarWidth,
     maximizedSide,
     locationsVersion,
