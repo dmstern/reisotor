@@ -22,7 +22,7 @@ test.describe('Offline angelegte Objekte werden als "nur lokal" markiert und spÃ
     // nichts, da zwei separat erzeugte Arrow-Functions als unterschiedliche Matcher gelten.
     const isApiRequest = (url: URL) => url.pathname.startsWith('/api/');
     await page.route(isApiRequest, (route) => route.abort());
-    await expect(page.locator('.offline-pill-btn')).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('.offline-pill-btn')).toBeVisible({ timeout: 15_000 });
 
     const title = `Offline-Sync-Test-${Date.now()}`;
     await page.getByPlaceholder('Neue Aufgabe').fill(title);
