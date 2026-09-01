@@ -31,11 +31,7 @@ function handleConfirm() {
 </script>
 
 <template>
-  <Modal
-    :model-value="modelValue"
-    title="Weg aufzeichnen"
-    @update:model-value="close"
-  >
+  <Modal :model-value="modelValue" title="Weg aufzeichnen" @update:model-value="close">
     <div class="track-warning-modal">
       <p class="track-warning-intro">
         Reisotor zeichnet deinen Weg während des Ausflugs auf. Bitte beachte:
@@ -50,12 +46,11 @@ function handleConfirm() {
         </div>
         <div class="track-warning-point">
           <h4>
-            <AppIcon :icon="ACTION_ICONS.history" :size="15" group="actions" /> App geöffnet
-            lassen
+            <AppIcon :icon="ACTION_ICONS.history" :size="15" group="actions" /> App geöffnet lassen
           </h4>
           <p>
-            Da Reisotor im Browser/als PWA läuft, kann die Aufzeichnung pausieren, wenn der
-            Browser im Hintergrund vollständig geschlossen wird.
+            Da Reisotor im Browser/als PWA läuft, kann die Aufzeichnung pausieren, wenn der Browser
+            im Hintergrund vollständig geschlossen wird.
           </p>
         </div>
       </div>
@@ -64,16 +59,8 @@ function handleConfirm() {
         Diesen Hinweis nicht mehr anzeigen
       </label>
       <ButtonGroup>
-        <Button
-          type="button"
-          variant="secondary"
-          @click="close"
-        >
-          Abbrechen
-        </Button>
-        <Button type="button" @click="handleConfirm">
-          Aufzeichnung starten
-        </Button>
+        <Button type="button" variant="secondary" @click="close"> Abbrechen </Button>
+        <Button type="button" @click="handleConfirm"> Aufzeichnung starten </Button>
       </ButtonGroup>
     </div>
   </Modal>

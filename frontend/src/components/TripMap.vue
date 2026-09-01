@@ -125,7 +125,7 @@ const props = defineProps<{
    *  mobilen Overlay-Stil nutzt – deckte dabei teils fokussierte Marker ab. Fällt ohne übergebenen
    *  Wert auf das alte, reine isDesktop-Verhalten zurück. */
   sheetOverlayMode?: boolean;
-} >();
+}>();
 
 const emit = defineEmits<{
   // Klick auf einen Spot-Pin (nicht Unterkunft/Reise, siehe handlePointClick): statt eines eigenen
@@ -151,7 +151,9 @@ const calendarOffset = computed(() => {
 });
 
 const calendarMargin = computed(() => {
-  return isDesktop.value && drawers.calendarOpen ? 'calc(var(--space-4) * 2)' : 'var(--drawer-tab-width)';
+  return isDesktop.value && drawers.calendarOpen
+    ? 'calc(var(--space-4) * 2)'
+    : 'var(--drawer-tab-width)';
 });
 // Steuert den Teleport der Stationen-Liste unten (siehe sheetOverlayMode-Prop-Dokumentation oben) -
 // mit props.sheetOverlayMode statt des rohen isDesktop, sobald ExcursionsView.vue diesen Wert
@@ -655,8 +657,6 @@ function onTravelDialogUpdate(v: boolean) {
   travelDialogOpen.value = v;
   if (!v) drawers.mapFocusKey = null;
 }
-
-
 
 // Klick auf einen Pin direkt auf der Karte (nicht in der Stationsliste): bei Spots (inkl. Kategorie
 // "Unterkunft", seit deren Verschmelzung in Spots ganz normale Spots) klappt statt eines eigenen
@@ -1452,9 +1452,9 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
   <div
     class="karte"
     :class="{ 'sheet-overlay-mode': isNarrowLayout }"
-    :style="{ 
+    :style="{
       '--calendar-offset': `${calendarOffset}px`,
-      '--calendar-margin': calendarMargin
+      '--calendar-margin': calendarMargin,
     }"
   >
     <div class="map-wrap">
@@ -2001,7 +2001,6 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
   }
 }
 
-
 .focus-banner span {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2065,7 +2064,6 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
   transition: opacity 0.3s ease-in-out;
 }
 
-
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) .map :deep(.leaflet-tile-pane) {
     filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.9);
@@ -2109,12 +2107,12 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
 :deep(.leaflet-control-attribution) {
   background: transparent !important;
   color: var(--color-text) !important;
-  text-shadow: 
+  text-shadow:
     -1px -1px 0 var(--color-surface),
-     1px -1px 0 var(--color-surface),
-    -1px  1px 0 var(--color-surface),
-     1px  1px 0 var(--color-surface),
-     0 0 4px var(--color-surface) !important;
+    1px -1px 0 var(--color-surface),
+    -1px 1px 0 var(--color-surface),
+    1px 1px 0 var(--color-surface),
+    0 0 4px var(--color-surface) !important;
   font-size: 0.7rem;
   opacity: 0.7;
   transition: opacity 0.2s ease;
@@ -2127,8 +2125,6 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
 :deep(.leaflet-control-attribution a) {
   color: var(--color-text) !important;
 }
-
-
 
 /* Desktop: zurück auf den bisherigen Stand (Karte als eigene, begrenzte Box statt vollflächigem
    Hintergrund – .map-col in ExcursionsView.vue ist hier eine normale sticky Spalte, kein
@@ -2164,23 +2160,24 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
     padding: 8px 16px;
   }
 
-
-
   /* Zoom-Buttons rechts neben den Drawer schieben */
   :deep(.leaflet-left) {
     /* Nutzt die dynamische Margin (drawer-tab-width bei geschlossenem Kalender, 2*space-4 bei offenem) 
        für korrekte Platzierung rechts neben der Spots-Schublade. */
-    left: calc(var(--calendar-margin, var(--drawer-tab-width)) + var(--calendar-offset, 0px) + var(--spots-col-width, 400px) + var(--space-4) + var(--space-3)) !important;
+    left: calc(
+      var(--calendar-margin, var(--drawer-tab-width)) + var(--calendar-offset, 0px) +
+        var(--spots-col-width, 400px) + var(--space-4) + var(--space-3)
+    ) !important;
   }
-  
+
   :deep(.leaflet-top) {
     top: var(--space-4) !important;
   }
-  
+
   :deep(.leaflet-left .leaflet-control) {
     margin-left: 0 !important;
   }
-  
+
   :deep(.leaflet-top .leaflet-control) {
     margin-top: 0 !important;
   }

@@ -66,9 +66,7 @@ function toggleFilterMenu(event?: MouseEvent) {
   if (!filterMenuOpen.value) {
     sortMenuOpen.value = false;
     const target =
-      (event?.currentTarget as HTMLElement) ||
-      filterBtnRef.value?.$el ||
-      filterBtnRef.value;
+      (event?.currentTarget as HTMLElement) || filterBtnRef.value?.$el || filterBtnRef.value;
     filterMenuStyle.value = computeMenuStyle(target, 230);
     filterMenuOpen.value = true;
   } else {
@@ -80,9 +78,7 @@ function toggleSortMenu(event?: MouseEvent) {
   if (!sortMenuOpen.value) {
     filterMenuOpen.value = false;
     const target =
-      (event?.currentTarget as HTMLElement) ||
-      sortBtnRef.value?.$el ||
-      sortBtnRef.value;
+      (event?.currentTarget as HTMLElement) || sortBtnRef.value?.$el || sortBtnRef.value;
     sortMenuStyle.value = computeMenuStyle(target, 180);
     sortMenuOpen.value = true;
   } else {

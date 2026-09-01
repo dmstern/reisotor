@@ -1664,8 +1664,6 @@ const spotsColRightPx = ref(0);
 let appMainResizeObserver: ResizeObserver | null = null;
 let spotsColResizeObserver: ResizeObserver | null = null;
 
-
-
 onMounted(() => {
   const appMainEl = document.querySelector('.app-main');
   if (appMainEl) {
@@ -1708,9 +1706,7 @@ const isSheetOverlayMode = computed(() => (appMainWidth.value ?? window.innerWid
 const mapCoveredBottomPx = computed(() =>
   isSheetOverlayMode.value ? currentSheetHeightPx.value : 0
 );
-const mapCoveredLeftPx = computed(() =>
-  isSheetOverlayMode.value ? 0 : spotsColRightPx.value
-);
+const mapCoveredLeftPx = computed(() => (isSheetOverlayMode.value ? 0 : spotsColRightPx.value));
 
 watch([isSheetOverlayMode, spotsColWidth, tripMapRef], () => nextTick(updateSpotsColRight));
 watch(
@@ -2044,7 +2040,8 @@ async function removeSpot(id: number) {
                       <template v-if="groupMode === 'tours'">
                         <p>
                           <strong>Touren</strong> fassen mehrere Spots zu einer gemeinsamen Route
-                          oder einem Tagesausflug zusammen. Eignet sich bspw. auch, um An- oder Abreise auf der Karte zu visualisieren.
+                          oder einem Tagesausflug zusammen. Eignet sich bspw. auch, um An- oder
+                          Abreise auf der Karte zu visualisieren.
                         </p>
                         <p class="popover-tip">
                           💡 <strong>Tipp:</strong> Klicke auf eine Tour-Kachel, um deren Route und
@@ -3718,7 +3715,8 @@ async function removeSpot(id: number) {
     display: flex;
     position: absolute;
     left: calc(
-      var(--space-4) + var(--spots-col-width) + (var(--space-4) - var(--drawer-handle-gap, 12px)) / 2
+      var(--space-4) + var(--spots-col-width) + (var(--space-4) - var(--drawer-handle-gap, 12px)) /
+        2
     );
     top: var(--space-4);
     bottom: var(--space-4);
@@ -3752,7 +3750,6 @@ async function removeSpot(id: number) {
 
 /* Feste/gleiche Breite für den "Spots"/"Touren"-Titel, damit der Umschalter beim Wechsel
    nicht hin und her springt, kombiniert mit einer vertikalen Swipe-Animation (#220). */
-
 
 /* Etwas mehr Abstand als das straffe 4px-gap der Überschrift selbst (dort passend für Text+Info-
    Icon) - der Umschalter ist ein eigenständiges Steuerungselement, keine Ergänzung des Titels. */
@@ -4419,7 +4416,7 @@ async function removeSpot(id: number) {
   padding-top: 1px;
   z-index: 2;
   margin-bottom: var(--space-3);
-  
+
   /* Die Leiste auf die volle Breite der Schublade aufziehen, um auch das seitliche Scroll-Padding
      abzudecken, falls Inhalte drunterscrollen. */
   margin-left: calc(var(--space-3) * -1);
@@ -4448,7 +4445,7 @@ async function removeSpot(id: number) {
    Zusätzlich deckt ein solider Schatten nach oben den padding-top Bereich von .spots-col-body ab,
    damit die drunterscrollenden Karten dort nicht sichtbar werden. */
 .category-nav-wrap.is-stuck {
-  box-shadow: 
+  box-shadow:
     0 calc(var(--space-3) * -1) 0 0 var(--category-nav-bg),
     var(--shadow-sm);
 }

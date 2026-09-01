@@ -1141,12 +1141,7 @@ function formatDate(date: string) {
           </FormField>
         </div>
         <FormField icon="note" label="Notiz">
-          <RichTextEditor
-            v-model="newNote"
-            placeholder="Notiz (optional)"
-            compact
-            expandable
-          />
+          <RichTextEditor v-model="newNote" placeholder="Notiz (optional)" compact expandable />
         </FormField>
         <fieldset class="collapsible-fieldset">
           <legend>
@@ -1159,7 +1154,9 @@ function formatDate(date: string) {
             >
               <span>
                 <AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" />
-                Weitere Angaben (Enddatum, Enduhrzeit<template v-if="!newLinkKey">, Maps-Link</template>)
+                Weitere Angaben (Enddatum, Enduhrzeit<template v-if="!newLinkKey"
+                  >, Maps-Link</template
+                >)
               </span>
               <AppIcon
                 :icon="ACTION_ICONS.chevronDown"
@@ -1257,7 +1254,9 @@ function formatDate(date: string) {
             >
               <span>
                 <AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" />
-                Weitere Angaben (Enddatum, Enduhrzeit<template v-if="!editForm.linkKey">, Maps-Link</template>)
+                Weitere Angaben (Enddatum, Enduhrzeit<template v-if="!editForm.linkKey"
+                  >, Maps-Link</template
+                >)
               </span>
               <AppIcon
                 :icon="ACTION_ICONS.chevronDown"
@@ -1356,7 +1355,11 @@ function formatDate(date: string) {
           />
         </Button>
       </div>
-      <RichTextDisplay v-if="viewingItem?.note" :content="viewingItem.note" class="detail-row note" />
+      <RichTextDisplay
+        v-if="viewingItem?.note"
+        :content="viewingItem.note"
+        class="detail-row note"
+      />
       <FileAttachments
         v-if="viewingItem"
         domain="schedule"

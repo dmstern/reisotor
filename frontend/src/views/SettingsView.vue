@@ -538,25 +538,44 @@ async function onImportFileSelected(event: Event) {
           <div class="user-info">
             <div class="name-and-status">
               <h2>{{ auth.user?.avatar }} {{ auth.user?.username }}</h2>
-              <div class="status-badge" :class="{
-                online: connectivity.isOnline && !connectivity.syncing && !connectivity.checking,
-                retrying: connectivity.syncing || connectivity.checking,
-                offline: !connectivity.isOnline
-              }">
+              <div
+                class="status-badge"
+                :class="{
+                  online: connectivity.isOnline && !connectivity.syncing && !connectivity.checking,
+                  retrying: connectivity.syncing || connectivity.checking,
+                  offline: !connectivity.isOnline,
+                }"
+              >
                 <span class="status-dot"></span>
                 <span class="status-text">
-                  <template v-if="connectivity.isOnline && !connectivity.syncing && !connectivity.checking">Online</template>
-                  <template v-else-if="connectivity.syncing || connectivity.checking">Verbinde…</template>
+                  <template
+                    v-if="connectivity.isOnline && !connectivity.syncing && !connectivity.checking"
+                    >Online</template
+                  >
+                  <template v-else-if="connectivity.syncing || connectivity.checking"
+                    >Verbinde…</template
+                  >
                   <template v-else>Offline</template>
                 </span>
               </div>
             </div>
             <div v-if="!connectivity.isOnline" class="offline-actions">
               <p class="offline-description hint">
-                Änderungen werden lokal gespeichert. Die App versucht alle 6 Sekunden automatisch, sich wieder zu verbinden.
+                Änderungen werden lokal gespeichert. Die App versucht alle 6 Sekunden automatisch,
+                sich wieder zu verbinden.
               </p>
-              <Button size="sm" variant="secondary" :disabled="connectivity.checking" @click="connectivity.checkNow()" class="retry-btn">
-                <AppIcon :icon="connectivity.checking ? ACTION_ICONS.refresh : ACTION_ICONS.offline" :size="14" group="actions" />
+              <Button
+                size="sm"
+                variant="secondary"
+                :disabled="connectivity.checking"
+                @click="connectivity.checkNow()"
+                class="retry-btn"
+              >
+                <AppIcon
+                  :icon="connectivity.checking ? ACTION_ICONS.refresh : ACTION_ICONS.offline"
+                  :size="14"
+                  group="actions"
+                />
                 {{ connectivity.checking ? 'Prüfe…' : 'Jetzt prüfen' }}
               </Button>
             </div>
@@ -1563,7 +1582,11 @@ label,
   background-color: var(--color-text-muted);
 }
 .status-badge.retrying .status-dot {
-  background: conic-gradient(var(--color-success) 0deg, var(--color-success) 90deg, transparent 180deg);
+  background: conic-gradient(
+    var(--color-success) 0deg,
+    var(--color-success) 90deg,
+    transparent 180deg
+  );
   animation: spin 1s linear infinite;
   border-radius: 50%;
 }
@@ -1582,8 +1605,12 @@ label,
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .build-info-list {
