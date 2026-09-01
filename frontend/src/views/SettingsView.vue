@@ -558,13 +558,8 @@ async function onImportFileSelected(event: Event) {
                   <template v-else>Offline</template>
                 </span>
               </div>
-            </div>
-            <div v-if="!connectivity.isOnline" class="offline-actions">
-              <p class="offline-description hint">
-                Änderungen werden lokal gespeichert. Die App versucht alle 6 Sekunden automatisch,
-                sich wieder zu verbinden.
-              </p>
               <Button
+                v-if="!connectivity.isOnline"
                 size="sm"
                 variant="secondary"
                 :disabled="connectivity.checking"
@@ -579,6 +574,10 @@ async function onImportFileSelected(event: Event) {
                 {{ connectivity.checking ? 'Prüfe…' : 'Jetzt prüfen' }}
               </Button>
             </div>
+            <p v-if="!connectivity.isOnline" class="offline-description hint">
+              Änderungen werden lokal gespeichert. Die App versucht alle 6 Sekunden automatisch,
+              sich wieder zu verbinden.
+            </p>
           </div>
           <Button type="button" variant="secondary" @click="logout" class="logout-btn">
             <AppIcon :icon="ACTION_ICONS.logout" :size="14" group="actions" /> Abmelden
@@ -1591,12 +1590,7 @@ label,
   border-radius: 50%;
 }
 
-.offline-actions {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-2);
-}
+
 
 .offline-description {
   margin: 0;

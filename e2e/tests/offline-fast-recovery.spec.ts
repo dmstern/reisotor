@@ -57,7 +57,7 @@ test.describe('Offline-Erkennung merkt sich einen Fehlschlag statt jedes Mal neu
     await page.unroute('**/api/**');
     const retryStart = Date.now();
     await page.locator('.profile-link').click(); // Zu den Einstellungen
-    await expect(page.locator('.settings-page')).toBeVisible();
+    await expect(page.locator('h1', { hasText: 'Einstellungen' })).toBeVisible();
     await page.locator('.retry-btn').click();
     await expect(page.locator('.offline-badge')).toHaveCount(0, { timeout: 3_000 });
     // Muss deutlich schneller sein als das nächste reguläre Health-Check-Intervall (6s) - genau der

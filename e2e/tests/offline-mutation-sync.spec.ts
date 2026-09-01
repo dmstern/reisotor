@@ -45,7 +45,7 @@ test.describe('Offline angelegte Objekte werden als "nur lokal" markiert und sp√
     // Sync sofort an statt auf den n√§chsten periodischen Health-Check zu warten.
     await page.unroute(isApiRequest);
     await page.locator('.profile-link').click(); // Zu den Einstellungen
-    await expect(page.locator('.settings-page')).toBeVisible();
+    await expect(page.locator('h1', { hasText: 'Einstellungen' })).toBeVisible();
     await page.locator('.retry-btn').click();
     await page.goBack();
 
