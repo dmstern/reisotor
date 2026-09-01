@@ -66,7 +66,7 @@ Einzelnen Test ausführen: `npx -y vitest run <pfad-zur-datei>` bzw. `npx -y vit
 Node.js 20+ sowie `make`/`gcc`/`python3` nötig (native Module `better-sqlite3`, `bcrypt`). Volle
 Setup-/Deploy-/Env-Var-Details: `README.md`.
 
-## Typecheck & Linting
+## Typecheck, Linting & Formatting
 
 Nach jeder Frontend-Änderung zuerst den günstigsten Check laufen lassen:
 
@@ -77,6 +77,7 @@ npm run lint         # ESLint inkl. vuejs-accessibility
 
 **Wichtig für AI-Agenten:**
 
+- **Zwingende Formatierung vor jedem Commit:** Da die CI-Pipeline bei Code-Style-Abweichungen (Prettier) fehlschlägt, MUSS vor jedem `git commit` zwingend der Code formatiert werden. Führe dazu immer `npm run format` im Root-Verzeichnis aus, bevor du Änderungen committest. Es ist deutlich sauberer, wenn die korrekte Formatierung direkt Teil deines eigentlichen Feature- oder Bugfix-Commits ist, statt einen zusätzlichen "chore(Format)"-Commit oben auf den PR zu pushen.
 - Immer `npm run typecheck` oder `npm --prefix frontend run typecheck` bzw. `npm run build` nutzen statt Roh-Aufrufen von `npx vue-tsc`.
 - **Niemals interaktive `npx`-Aufrufe ohne `-y` / `--yes` starten!** Falls `npx` Pakete nachinstallieren will, fordert es eine interaktive Bestätigung an (`Need to install the following packages: ... Ok to proceed? (y)`), was in Hintergrundprozessen/Subagenten ohne TTY zum dauerhaften Aufhängen führt.
 - Falls `npm run build` abbricht mit `vue-tsc: Kommando nicht gefunden`, zuerst `cd frontend && npm install` ausführen.
