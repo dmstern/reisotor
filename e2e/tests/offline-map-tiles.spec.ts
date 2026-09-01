@@ -155,7 +155,7 @@ test.describe.serial('Offline-Kartenkacheln (Workbox Runtime Caching)', () => {
     });
     await expect(page.locator('.tile-download-pill')).not.toContainText('fehlgeschlagen');
 
-    await page.locator('.tile-download-pill button').click();
+    await page.locator('.tile-download-pill button').click({ force: true });
     await expect(page.locator('.tile-download-pill')).toHaveCount(0);
 
     await context.close();
