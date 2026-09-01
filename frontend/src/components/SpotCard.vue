@@ -253,16 +253,7 @@ function onToggleDone() {
 </script>
 
 <template>
-  <Card
-    class="spot-card"
-    :class="{ expanded, 'new-highlight': highlighted }"
-    role="button"
-    tabindex="0"
-    :aria-expanded="expanded"
-    @click="onCardClick"
-    @keydown.enter.prevent="onCardClick"
-    @keydown.space.prevent="onCardClick"
-  >
+  <Card class="spot-card" :class="{ expanded, 'new-highlight': highlighted }" @click="onCardClick">
     <div class="image" :style="spot.image_url ? { backgroundImage: `url(${spot.image_url})` } : {}">
       <AppIcon
         v-if="!spot.image_url"
@@ -334,7 +325,7 @@ function onToggleDone() {
         </Button>
       </div>
 
-      <div class="spot-accordion" :class="{ 'is-expanded': expanded }" :aria-hidden="!expanded">
+      <div class="spot-accordion" :class="{ 'is-expanded': expanded }" :inert="!expanded">
         <div class="spot-accordion-inner">
           <p v-if="creatorLabel" class="detail-row">
             <span class="detail-label">Von</span>{{ creatorLabel }}
@@ -394,7 +385,7 @@ function onToggleDone() {
       <div
         class="mobile-only-accordion"
         :class="{ 'is-expanded': expanded }"
-        :aria-hidden="!expanded"
+        :inert="!expanded"
       >
         <div class="mobile-only-accordion-inner">
           <div class="card-actions">
@@ -445,7 +436,7 @@ function onToggleDone() {
         </div>
       </div>
 
-      <div class="spot-accordion" :class="{ 'is-expanded': expanded }" :aria-hidden="!expanded">
+      <div class="spot-accordion" :class="{ 'is-expanded': expanded }" :inert="!expanded">
         <div class="spot-accordion-inner">
           <SocialRow
             class="social-row"

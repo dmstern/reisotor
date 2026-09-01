@@ -212,12 +212,7 @@ function onSpotDrop(event: DragEvent) {
   <Card
     class="excursion-card"
     :class="{ 'drop-target': spotDragOverCount > 0, 'new-highlight': highlighted, expanded }"
-    role="button"
-    tabindex="0"
-    :aria-expanded="expanded"
     @click="onCardClick"
-    @keydown.enter.prevent="onCardClick"
-    @keydown.space.prevent="onCardClick"
     @dragover.prevent
     @dragenter.prevent="onSpotDragEnter"
     @dragleave="onSpotDragLeave"
@@ -320,7 +315,7 @@ function onSpotDrop(event: DragEvent) {
         <div
           class="excursion-accordion"
           :class="{ 'is-expanded': expanded }"
-          :aria-hidden="!expanded"
+          :inert="!expanded"
         >
           <div class="excursion-accordion-inner">
             <p v-if="creatorLabel" class="detail-row">
@@ -387,7 +382,7 @@ function onSpotDrop(event: DragEvent) {
         <div
           class="excursion-accordion"
           :class="{ 'is-expanded': expanded }"
-          :aria-hidden="!expanded"
+          :inert="!expanded"
         >
           <div class="excursion-accordion-inner">
             <SocialRow
