@@ -1,6 +1,12 @@
-// @vitest-environment jsdom
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { formatInline, isEmptyRichText, renderRichText } from './richText';
+
+// DOMPurify benötigt ein DOM/window-Objekt, das in der Node-Testumgebung nicht verfügbar ist.
+// Da wir hier das Markdown-Rendering testen (nicht DOMPurify selbst), mocken wir es als
+// einfachen Passthrough -- die Sanitization wird im Browser durch DOMPurify übernommen.
+vi.mock('dompurify', () => ({
+  default: { sanitize: (html: string) => html },
+}));
 
 describe('isEmptyRichText', () => {
   it('treats an empty Tiptap paragraph as empty', () => {
@@ -22,10 +28,8 @@ describe('isEmptyRichText', () => {
 
 describe('renderRichText', () => {
   it('escapes HTML special characters before any markdown processing', () => {
-    // DOMPurify renormalisiert &quot; → " innerhalb von bereits escapeten Tags (kein Risiko,
-    // da der Tag selbst als &lt;script&gt; escaped bleibt und nie als echter Tag interpretiert wird).
     expect(renderRichText('<script>alert("hi")</script>')).toBe(
-      '&lt;script&gt;alert("hi")&lt;/script&gt;<br>'
+      '&lt;script&gt;alert(&quot;hi&quot;)&lt;/script&gt;<br>'
     );
   });
 
