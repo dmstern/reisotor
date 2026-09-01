@@ -88,7 +88,8 @@ test.describe('Tour-Zuordnung: einfacher Tagging-Modus + Kategorie/Touren-Gruppi
     // hat weiterhin einen zugeordneten Spot, er ist nur gerade nicht sichtbar.
     await page.getByRole('button', { name: 'Nach Kategorie filtern' }).click();
     await page.getByRole('checkbox', { name: 'Restaurant' }).first().check();
-    await page.locator('.picker-backdrop').click({ force: true });
+    await page.locator('.picker-backdrop').click({ position: { x: 10, y: 10 } });
+    await expect(page.locator('.picker-backdrop')).toBeHidden();
 
     await expect(group.locator('.spot-card', { hasText: spotTitle })).toHaveCount(0);
     await expect(group.locator('.empty')).toContainText(
@@ -99,7 +100,8 @@ test.describe('Tour-Zuordnung: einfacher Tagging-Modus + Kategorie/Touren-Gruppi
     // Filter zurücksetzen: der Hinweis verschwindet wieder, der Spot ist erneut sichtbar.
     await page.getByRole('button', { name: 'Nach Kategorie filtern' }).click();
     await page.getByRole('checkbox', { name: 'Restaurant' }).first().uncheck();
-    await page.locator('.picker-backdrop').click({ force: true });
+    await page.locator('.picker-backdrop').click({ position: { x: 10, y: 10 } });
+    await expect(page.locator('.picker-backdrop')).toBeHidden();
     await expect(group.locator('.spot-card', { hasText: spotTitle })).toBeVisible();
     await expect(group.locator('.empty')).toHaveCount(0);
 
