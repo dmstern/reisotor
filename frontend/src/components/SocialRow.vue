@@ -11,7 +11,14 @@ const emit = defineEmits<{ (e: 'toggle-like'): void; (e: 'toggle-comments'): voi
 <template>
   <div class="social-row">
     <LikeButton :count="likeCount" :liked="liked" @toggle="emit('toggle-like')" />
-    <Button variant="secondary" size="sm" class="comment-btn" @click.stop="emit('toggle-comments')">
+    <Button
+      variant="secondary"
+      size="sm"
+      class="comment-btn"
+      aria-label="Kommentare anzeigen"
+      title="Kommentare"
+      @click.stop="emit('toggle-comments')"
+    >
       <AppIcon :icon="ACTION_ICONS.comment" :size="15" group="actions" /> {{ commentCount || '' }}
     </Button>
   </div>

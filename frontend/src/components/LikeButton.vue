@@ -14,6 +14,8 @@ const emit = defineEmits<{ (e: 'toggle'): void }>();
     size="sm"
     class="like-btn"
     :class="{ liked }"
+    :aria-label="liked ? 'Gefällt mir nicht mehr' : 'Gefällt mir'"
+    :title="liked ? 'Gefällt mir nicht mehr' : 'Gefällt mir'"
     @click.stop="emit('toggle')"
   >
     <AppIcon :icon="liked ? ACTION_ICONS.liked : ACTION_ICONS.unliked" :size="15" group="actions" />
