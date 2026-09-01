@@ -317,7 +317,11 @@ function onSpotDrop(event: DragEvent) {
           <span v-if="travelDuration" class="duration">({{ travelDuration }})</span>
         </p>
 
-        <div class="excursion-accordion" :class="{ 'is-expanded': expanded }" :aria-hidden="!expanded">
+        <div
+          class="excursion-accordion"
+          :class="{ 'is-expanded': expanded }"
+          :aria-hidden="!expanded"
+        >
           <div class="excursion-accordion-inner">
             <p v-if="creatorLabel" class="detail-row">
               <span class="detail-label">Von</span>{{ creatorLabel }}
@@ -380,7 +384,11 @@ function onSpotDrop(event: DragEvent) {
           </div>
         </Teleport>
 
-        <div class="excursion-accordion" :class="{ 'is-expanded': expanded }" :aria-hidden="!expanded">
+        <div
+          class="excursion-accordion"
+          :class="{ 'is-expanded': expanded }"
+          :aria-hidden="!expanded"
+        >
           <div class="excursion-accordion-inner">
             <SocialRow
               class="social-row"
