@@ -249,7 +249,9 @@ function onSpotDrop(event: DragEvent) {
           "
           group="categories"
         />
-        <EditButton v-if="expanded" floating @click="emit('edit', excursion)" />
+        <Transition name="fade">
+          <EditButton v-if="expanded" floating @click="emit('edit', excursion)" />
+        </Transition>
         <!-- #106: EIN gemeinsames Datums-/Status-Badge statt zweier unabhängiger Chips (das alte
              separate "Gemacht"-Badge entfällt) - Text/Icon hängen vom Status ab (in Planung/geplant/
              gemacht). "excursion.done && !excursion.date" ist der Fallback für bereits vor #106 als
@@ -309,15 +311,21 @@ function onSpotDrop(event: DragEvent) {
           >
           <span v-if="travelDuration" class="duration">({{ travelDuration }})</span>
         </p>
-        <p v-if="expanded && creatorLabel" class="detail-row">
-          <span class="detail-label">Von</span>{{ creatorLabel }}
-        </p>
-        <RichTextDisplay
-          v-if="expanded && excursion.note"
-          class="note"
-          :content="excursion.note"
-          :format="excursion.note_format"
-        />
+
+        <div class="excursion-accordion" :class="{ 'is-expanded': expanded }">
+          <div class="excursion-accordion-inner">
+            <p v-if="creatorLabel" class="detail-row">
+              <span class="detail-label">Von</span>{{ creatorLabel }}
+            </p>
+            <RichTextDisplay
+              v-if="excursion.note"
+              class="note"
+              :content="excursion.note"
+              :format="excursion.note_format"
+            />
+          </div>
+        </div>
+
         <div class="links" v-if="hasMappedStations">
           <Button variant="card-action" @click.stop="emit('show-on-map')">
             <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" /> Auf Karte
@@ -366,40 +374,47 @@ function onSpotDrop(event: DragEvent) {
             {{ excursion.title }}
           </div>
         </Teleport>
-        <SocialRow
-          v-if="expanded"
-          class="social-row"
-          :like-count="likeCount"
-          :liked="liked"
-          :comment-count="comments.length"
-          @toggle-like="emit('toggle-like')"
-          @toggle-comments="showComments = !showComments"
-        />
-        <Comments
-          v-if="expanded && showComments"
-          :comments="comments"
-          @click.stop
-          @submit="(content) => emit('submit-comment', content)"
-          @remove="(id) => emit('remove-comment', id)"
-        />
-        <Button
-          v-if="!expanded"
-          type="button"
-          variant="ghost"
-          size="sm"
-          class="mini-like-btn"
-          :class="{ liked }"
-          :aria-label="liked ? 'Gefällt mir nicht mehr' : 'Gefällt mir'"
-          :title="liked ? 'Gefällt mir nicht mehr' : 'Gefällt mir'"
-          @click.stop="emit('toggle-like')"
-        >
-          <AppIcon
-            :icon="liked ? ACTION_ICONS.liked : ACTION_ICONS.unliked"
-            :size="15"
-            group="actions"
-          />
-          <span v-if="likeCount > 0" class="mini-like-count">{{ likeCount }}</span>
-        </Button>
+
+        <div class="excursion-accordion" :class="{ 'is-expanded': expanded }">
+          <div class="excursion-accordion-inner">
+            <SocialRow
+              class="social-row"
+              :like-count="likeCount"
+              :liked="liked"
+              :comment-count="comments.length"
+              @toggle-like="emit('toggle-like')"
+              @toggle-comments="showComments = !showComments"
+            />
+            <Comments
+              v-if="showComments"
+              :comments="comments"
+              @click.stop
+              @submit="(content) => emit('submit-comment', content)"
+              @remove="(id) => emit('remove-comment', id)"
+            />
+          </div>
+        </div>
+
+        <Transition name="fade">
+          <Button
+            v-if="!expanded"
+            type="button"
+            variant="ghost"
+            size="sm"
+            class="mini-like-btn"
+            :class="{ liked }"
+            :aria-label="liked ? 'Gefällt mir nicht mehr' : 'Gefällt mir'"
+            :title="liked ? 'Gefällt mir nicht mehr' : 'Gefällt mir'"
+            @click.stop="emit('toggle-like')"
+          >
+            <AppIcon
+              :icon="liked ? ACTION_ICONS.liked : ACTION_ICONS.unliked"
+              :size="15"
+              group="actions"
+            />
+            <span v-if="likeCount > 0" class="mini-like-count">{{ likeCount }}</span>
+          </Button>
+        </Transition>
       </div>
     </div>
   </Card>
@@ -431,6 +446,20 @@ function onSpotDrop(event: DragEvent) {
 .excursion-card:hover {
   border-color: var(--color-tour-accent);
   box-shadow: var(--shadow-sm);
+}
+
+.excursion-accordion {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.excursion-accordion.is-expanded {
+  grid-template-rows: 1fr;
+}
+
+.excursion-accordion-inner {
+  overflow: hidden;
 }
 
 /* Dicker rötlich-violetter Akzentbalken an der abgerundeten linken Kante */
@@ -781,5 +810,26 @@ function onSpotDrop(event: DragEvent) {
 
 .duration {
   color: var(--color-text-muted);
+}
+
+.excursion-accordion-inner > * {
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.excursion-accordion.is-expanded .excursion-accordion-inner > * {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.slide-fade-enter-active,
+.slide-fade-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.slide-fade-enter-from,
+.slide-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
 }
 </style>

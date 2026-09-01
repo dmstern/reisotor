@@ -262,13 +262,12 @@ function onToggleDone() {
         :icon="spotCategoryMeta(spot.category).tabler"
         group="categories"
       />
-      <!-- Nur in der aufgeklappten Karte - in der kompakten Mini-Card (v. a. auf mobile knapper
-           Platz) reichen Bild/Titel/Kategorie zur Orientierung, Bearbeiten/Löschen sind erst nach
-           dem Aufklappen erreichbar. -->
-      <template v-if="expanded">
-        <EditButton floating @click="emit('edit', spot)" />
-        <DeleteButton floating @click="emit('remove', spot.id)" />
-      </template>
+      <Transition name="slide-fade">
+        <EditButton v-if="expanded" floating @click="emit('edit', spot)" />
+      </Transition>
+      <Transition name="slide-fade">
+        <DeleteButton v-if="expanded" floating @click="emit('remove', spot.id)" />
+      </Transition>
       <!-- #106: EIN gemeinsames Datums-/Status-Badge statt zweier unabhängiger Chips (das alte
            separate "Gemacht"-Badge unten rechts entfällt) - Text/Icon hängen vom Status ab
            (geplant/besucht), "spot.done && !scheduledDate" ist der Fallback für bereits vor #106
@@ -325,147 +324,158 @@ function onToggleDone() {
           <span class="btn-label">Auf Karte anzeigen</span>
         </Button>
       </div>
-      <p v-if="expanded && creatorLabel" class="detail-row">
-        <span class="detail-label">Von</span>{{ creatorLabel }}
-      </p>
-      <template v-if="expanded && isAccommodation">
-        <p v-if="spot.start_date || spot.end_date" class="detail-row">
-          <span class="detail-label">Zeitraum</span>
-          <AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" />
-          {{ formatAccommodationDate(spot.start_date) || '?' }} –
-          {{ formatAccommodationDate(spot.end_date) || '?' }}
-        </p>
-        <p v-if="spot.address" class="detail-row">
-          <span class="detail-label">Adresse</span>{{ spot.address }}
-        </p>
-        <p v-if="spot.checkin || spot.checkout" class="detail-row">
-          <span class="detail-label">Check-in/-out</span>
-          {{ spot.checkin || '–' }} · {{ spot.checkout || '–' }}
-        </p>
-        <p v-if="spot.contact && parseContact(spot.contact).kind === 'phone'" class="detail-row">
-          <span class="detail-label">Kontakt</span>
-          <AppIcon :icon="FORM_FIELD_ICONS.contact" :size="14" group="formFields" />
-          <a :href="parseContact(spot.contact).href" @click.stop>{{ spot.contact }}</a>
-        </p>
-        <p
-          v-else-if="spot.contact && parseContact(spot.contact).kind === 'email'"
-          class="detail-row"
-        >
-          <span class="detail-label">Kontakt</span>
-          <AppIcon :icon="FORM_FIELD_ICONS.email" :size="14" group="formFields" />
-          <a :href="parseContact(spot.contact).href" @click.stop>{{ spot.contact }}</a>
-        </p>
-        <p v-else-if="spot.contact" class="detail-row">
-          <span class="detail-label">Kontakt</span>
-          <span class="contact-text richtext" v-html="renderRichText(spot.contact)"></span>
-        </p>
-        <p v-if="spot.amount != null" class="detail-row">
-          <span class="detail-label">Kosten</span>
-          <AppIcon :icon="FORM_FIELD_ICONS.amount" :size="14" group="formFields" />
-          {{ spot.amount.toFixed(2) }} €
-          <span v-if="hasMultipleMembers !== false && spot.paid_by_user_id">
-            · bezahlt von {{ payerLabel }}</span
-          >
-        </p>
-      </template>
-      <!-- Nur in der aufgeklappten Karte sichtbar -->
-      <RichTextDisplay
-        v-if="expanded && spot.note"
-        class="note"
-        :content="spot.note"
-        :format="spot.note_format"
-      />
-      <div class="card-actions">
-        <TourAssignDropdown
-          :tours="tourAssignments"
-          @toggle-tour="onToggleTour"
-          @create-tour="onCreateTour"
-          @dragstart="onDragStart"
-        />
-        <button
-          v-if="!isAccommodation && !scheduledDate"
-          type="button"
-          class="calendar-drag-handle"
-          aria-label="Auf Kalender ziehen zum spontanen Einplanen"
-          title="Auf Kalender ziehen zum spontanen Einplanen"
-          @pointerdown="onPointerDown"
-          @click.stop
-        >
-          <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" /> Einplanen
-        </button>
-        <!-- #147: kein Textlabel mehr im "gemacht"-Zustand - das Datums-/Status-Badge auf dem
-             Vorschaubild ("Besucht am ...") zeigt den Status bereits an, ein zweites "Gemacht"-Label
-             hier war eine unnötige Dopplung. aria-label/title ersetzen den weggefallenen sichtbaren
-             Text für Screenreader/Tooltip. -->
-        <button
-          v-if="!isAccommodation"
-          type="button"
-          class="done-toggle"
-          :class="{ active: !!spot.done }"
-          :aria-pressed="!!spot.done"
-          :aria-label="spot.done ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'"
-          :title="spot.done ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'"
-          @click.stop="onToggleDone"
-        >
-          <template v-if="spot.done">
-            <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
+
+      <div class="spot-accordion" :class="{ 'is-expanded': expanded }">
+        <div class="spot-accordion-inner">
+          <p v-if="creatorLabel" class="detail-row">
+            <span class="detail-label">Von</span>{{ creatorLabel }}
+          </p>
+          <template v-if="isAccommodation">
+            <p v-if="spot.start_date || spot.end_date" class="detail-row">
+              <span class="detail-label">Zeitraum</span>
+              <AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" />
+              {{ formatAccommodationDate(spot.start_date) || '?' }} –
+              {{ formatAccommodationDate(spot.end_date) || '?' }}
+            </p>
+            <p v-if="spot.address" class="detail-row">
+              <span class="detail-label">Adresse</span>{{ spot.address }}
+            </p>
+            <p v-if="spot.checkin || spot.checkout" class="detail-row">
+              <span class="detail-label">Check-in/-out</span>
+              {{ spot.checkin || '–' }} · {{ spot.checkout || '–' }}
+            </p>
+            <p v-if="spot.contact && parseContact(spot.contact).kind === 'phone'" class="detail-row">
+              <span class="detail-label">Kontakt</span>
+              <AppIcon :icon="FORM_FIELD_ICONS.contact" :size="14" group="formFields" />
+              <a :href="parseContact(spot.contact).href" @click.stop>{{ spot.contact }}</a>
+            </p>
+            <p
+              v-else-if="spot.contact && parseContact(spot.contact).kind === 'email'"
+              class="detail-row"
+            >
+              <span class="detail-label">Kontakt</span>
+              <AppIcon :icon="FORM_FIELD_ICONS.email" :size="14" group="formFields" />
+              <a :href="parseContact(spot.contact).href" @click.stop>{{ spot.contact }}</a>
+            </p>
+            <p v-else-if="spot.contact" class="detail-row">
+              <span class="detail-label">Kontakt</span>
+              <span class="contact-text richtext" v-html="renderRichText(spot.contact)"></span>
+            </p>
+            <p v-if="spot.amount != null" class="detail-row">
+              <span class="detail-label">Kosten</span>
+              <AppIcon :icon="FORM_FIELD_ICONS.amount" :size="14" group="formFields" />
+              {{ spot.amount.toFixed(2) }} €
+              <span v-if="hasMultipleMembers !== false && spot.paid_by_user_id">
+                · bezahlt von {{ payerLabel }}</span
+              >
+            </p>
           </template>
-          <template v-else>
-            <AppIcon :icon="ACTION_ICONS.notDone" :size="14" group="actions" /> Als gemacht
-            markieren
-          </template>
-        </button>
+          <RichTextDisplay
+            v-if="spot.note"
+            class="note"
+            :content="spot.note"
+            :format="spot.note_format"
+          />
+        </div>
       </div>
-      <MapsAppPicker
-        v-if="spot.lat != null && spot.lng != null"
-        :lat="spot.lat"
-        :lng="spot.lng"
-        :title="spot.title"
-        :maps-link="spot.maps_link"
-        @click.stop
-      />
+
+      <div class="mobile-only-accordion" :class="{ 'is-expanded': expanded }">
+        <div class="mobile-only-accordion-inner">
+          <div class="card-actions">
+            <TourAssignDropdown
+              :tours="tourAssignments"
+              @toggle-tour="onToggleTour"
+              @create-tour="onCreateTour"
+              @dragstart="onDragStart"
+            />
+            <button
+              v-if="!isAccommodation && !scheduledDate"
+              type="button"
+              class="calendar-drag-handle"
+              aria-label="Auf Kalender ziehen zum spontanen Einplanen"
+              title="Auf Kalender ziehen zum spontanen Einplanen"
+              @pointerdown="onPointerDown"
+              @click.stop
+            >
+              <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" /> Einplanen
+            </button>
+            <button
+              v-if="!isAccommodation"
+              type="button"
+              class="done-toggle"
+              :class="{ active: !!spot.done }"
+              :aria-pressed="!!spot.done"
+              :aria-label="spot.done ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'"
+              :title="spot.done ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'"
+              @click.stop="onToggleDone"
+            >
+              <template v-if="spot.done">
+                <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
+              </template>
+              <template v-else>
+                <AppIcon :icon="ACTION_ICONS.notDone" :size="14" group="actions" /> Als gemacht
+                markieren
+              </template>
+            </button>
+          </div>
+          <MapsAppPicker
+            v-if="spot.lat != null && spot.lng != null"
+            :lat="spot.lat"
+            :lng="spot.lng"
+            :title="spot.title"
+            :maps-link="spot.maps_link"
+            @click.stop
+          />
+        </div>
+      </div>
+
+      <div class="spot-accordion" :class="{ 'is-expanded': expanded }">
+        <div class="spot-accordion-inner">
+          <SocialRow
+            class="social-row"
+            :like-count="likeCount"
+            :liked="liked"
+            :comment-count="comments.length"
+            @toggle-like="emit('toggle-like')"
+            @toggle-comments="showComments = !showComments"
+          />
+          <Comments
+            v-if="showComments"
+            :comments="comments"
+            @click.stop
+            @submit="(content) => emit('submit-comment', content)"
+            @remove="(id) => emit('remove-comment', id)"
+          />
+          <FileAttachments domain="spots" :entity-id="spot.id" :editable="false" />
+        </div>
+      </div>
+
       <Teleport to="body">
         <div v-if="dragging" class="drag-ghost" :style="ghostStyle ?? {}">
           <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" /> {{ spot.title }}
         </div>
       </Teleport>
-      <SocialRow
-        v-if="expanded"
-        class="social-row"
-        :like-count="likeCount"
-        :liked="liked"
-        :comment-count="comments.length"
-        @toggle-like="emit('toggle-like')"
-        @toggle-comments="showComments = !showComments"
-      />
-      <Comments
-        v-if="expanded && showComments"
-        :comments="comments"
-        @click.stop
-        @submit="(content) => emit('submit-comment', content)"
-        @remove="(id) => emit('remove-comment', id)"
-      />
-      <Button
-        v-if="!expanded"
-        type="button"
-        variant="ghost"
-        size="sm"
-        class="mini-like-btn"
-        :class="{ liked }"
-        :aria-label="liked ? 'Gefällt mir nicht mehr' : 'Gefällt mir'"
-        :title="liked ? 'Gefällt mir nicht mehr' : 'Gefällt mir'"
-        @click.stop="emit('toggle-like')"
-      >
-        <AppIcon
-          :icon="liked ? ACTION_ICONS.liked : ACTION_ICONS.unliked"
-          :size="15"
-          group="actions"
-        />
-        <span v-if="likeCount > 0" class="mini-like-count">{{ likeCount }}</span>
-      </Button>
-      <div v-if="expanded" @click.stop>
-        <FileAttachments domain="spots" :entity-id="spot.id" :editable="false" />
-      </div>
+      
+      <Transition name="fade">
+        <Button
+          v-if="!expanded"
+          type="button"
+          variant="ghost"
+          size="sm"
+          class="mini-like-btn"
+          :class="{ liked }"
+          :aria-label="liked ? 'Gefällt mir nicht mehr' : 'Gefällt mir'"
+          :title="liked ? 'Gefällt mir nicht mehr' : 'Gefällt mir'"
+          @click.stop="emit('toggle-like')"
+        >
+          <AppIcon
+            :icon="liked ? ACTION_ICONS.liked : ACTION_ICONS.unliked"
+            :size="15"
+            group="actions"
+          />
+          <span v-if="likeCount > 0" class="mini-like-count">{{ likeCount }}</span>
+        </Button>
+      </Transition>
     </div>
   </Card>
 </template>
@@ -483,36 +493,14 @@ function onToggleDone() {
   transition:
     border-color 0.15s ease,
     background 0.15s ease;
-  /* scrollToSpot() in ExcursionsView.vue (Map-Pin-Klick) landet sonst mit der Karte teilweise unter
-     der sticky .category-nav-Leiste - ohne dieses scroll-margin-top landete die Karte uneinheitlich
-     zu weit oben/unten (#103). Gleiche Formel wie .category-heading/.tour-group-card dort
-     (--category-nav-clearance kaskadiert von .spots-col-body hierher) - bewusst OHNE
-     --app-header-height/--navbar-offset, siehe ausführliche Begründung dort. */
   scroll-margin-top: calc(var(--space-2) + var(--category-nav-clearance));
 }
 
-/* Ersetzt den früheren Modal-Dialog: die aktive Karte klappt an Ort und Stelle auf (mehr Zeilen,
-   größeres Bild) statt einen Dialog über die Karte zu legen, die dadurch immer interaktiv bleibt
-   (siehe onCardClick im Script). Bleibt bewusst in der bestehenden Grid-Spalte (kein grid-column:
-   span 2 mehr) – die Karte soll sich nur durch Rahmen/Hintergrund als fokussiert zeigen, nicht die
-   volle Breite einnehmen. */
 .spot-card.expanded {
   border-color: var(--color-primary);
   background: var(--color-primary-tint);
 }
 
-.spot-card.expanded .image {
-  height: 200px;
-}
-
-/* Eigene Rundung statt overflow:hidden auf .spot-card: eine eckige .image würde sonst nicht zu den
-   abgerundeten Kartenecken passen. .image sitzt außerdem selbst randlos (kein Abstand zur
-   Kartenkante) und deckt damit ohne Vorschaubild bereits jede .new-highlight-Markierung (style.css)
-   ab, die auf demselben Element sitzt - das ::after-Overlay dort liegt deshalb bewusst ÜBER allen
-   normalen Kind-Elementen statt (wie früher) als eigener box-shadow direkt auf der Karte, sonst
-   würde .image den Rahmen entlang der Bild-Kanten unsichtbar machen (#169). Nur die oberen Ecken
-   gerundet, da .image hier standardmäßig oben sitzt (Spalten-Layout); die Kompakt-Zeilenansicht unten
-   rundet stattdessen die linken Ecken. */
 .image {
   height: 120px;
   background: var(--color-primary-tint) center/cover no-repeat;
@@ -523,6 +511,43 @@ function onToggleDone() {
   transition: height 0.15s ease;
   border-radius: var(--radius-md-squircle) var(--radius-md-squircle) 0 0;
   corner-shape: squircle;
+}
+
+.spot-card.expanded .image {
+  height: 200px;
+}
+
+.spot-accordion {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.3s ease;
+}
+
+.spot-accordion.is-expanded {
+  grid-template-rows: 1fr;
+}
+
+.spot-accordion-inner {
+  overflow: hidden;
+}
+
+.slide-fade-enter-active,
+.slide-fade-leave-active {
+  transition: all 0.2s ease;
+}
+.slide-fade-enter-from,
+.slide-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 
 .placeholder {
@@ -825,5 +850,73 @@ function onToggleDone() {
   .spot-card.expanded .image {
     height: 160px;
   }
+
+  .mobile-only-accordion {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .mobile-only-accordion.is-expanded {
+    grid-template-rows: 1fr;
+  }
+
+  .mobile-only-accordion-inner {
+    overflow: hidden;
+  }
+
+  .mobile-only-accordion-inner > * {
+    transition: opacity 0.4s ease, transform 0.4s ease;
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  .mobile-only-accordion.is-expanded .mobile-only-accordion-inner > * {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.mobile-only-accordion {
+  display: contents; /* Auf Desktop komplett durchlässig */
+}
+
+.spot-accordion {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.spot-accordion.is-expanded {
+  grid-template-rows: 1fr;
+}
+
+.spot-accordion-inner {
+  overflow: hidden;
+}
+
+/* Einfaden und Slide-in für die Inhalte */
+.spot-accordion-inner > *,
+.excursion-accordion-inner > * {
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.spot-accordion.is-expanded .spot-accordion-inner > *,
+.excursion-accordion.is-expanded .excursion-accordion-inner > * {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Fallback-Slide-Fade für absolute Buttons */
+.slide-fade-enter-active,
+.slide-fade-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.slide-fade-enter-from,
+.slide-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
 }
 </style>
