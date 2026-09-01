@@ -1590,8 +1590,6 @@ label,
   border-radius: 50%;
 }
 
-
-
 .offline-description {
   margin: 0;
   max-width: 350px;

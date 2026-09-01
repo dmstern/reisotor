@@ -2619,12 +2619,12 @@ async function removeSpot(id: number) {
 
           <div class="filter-bar" v-if="filterCategoryOptions.length">
             <SearchFilterBar
-              v-model:searchQuery="searchQuery"
-              v-model:sortMode="sortMode"
-              v-model:categoryFilter="categoryFilter"
-              v-model:statusFilter="statusFilter"
-              :categoryOptions="filterCategoryOptions"
-              searchPlaceholder="Spots oder Touren suchen..."
+              v-model:search-query="searchQuery"
+              v-model:sort-mode="sortMode"
+              v-model:category-filter="categoryFilter"
+              v-model:status-filter="statusFilter"
+              :category-options="filterCategoryOptions"
+              search-placeholder="Spots oder Touren suchen..."
             />
 
             <div class="filter-chips" v-if="categoryFilter.length || statusFilter.length">
