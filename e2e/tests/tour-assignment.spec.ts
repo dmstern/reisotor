@@ -63,6 +63,7 @@ test.describe('Tour-Zuordnung: einfacher Tagging-Modus + Kategorie/Touren-Gruppi
     await page.locator('.segmented-option', { hasText: 'Touren' }).click();
     const tourGroupCard = page.locator('.excursion-card', { hasText: tourTitle });
     await expect(tourGroupCard).toBeVisible();
+    await tourGroupCard.locator('h3').click();
     await expect(spotCard).toBeVisible();
 
     await page.locator('.segmented-option', { hasText: 'Spots' }).click();
@@ -88,6 +89,7 @@ test.describe('Tour-Zuordnung: einfacher Tagging-Modus + Kategorie/Touren-Gruppi
     await page.goto('/excursions');
     await page.locator('.segmented-option', { hasText: 'Touren' }).click();
     const group = page.locator('.category-group', { hasText: tourTitle });
+    await group.locator('.excursion-card h3').click();
     await expect(group.locator('.spot-card', { hasText: spotTitle })).toBeVisible();
     await expect(group.locator('.empty')).toHaveCount(0);
 

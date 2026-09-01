@@ -1189,42 +1189,6 @@ function nudgeRepaint() {
     el.style.opacity = prevOpacity;
   });
 }
-function animateSpotExpand(targetId: number | null, mutate: () => void) {
-  if (!supportsViewTransition || !isSheetOverlayMode.value) {
-    mutate();
-    return;
-  }
-  transitioningSpotId.value = targetId;
-  // Doppelt abgesichert gegen WebKit-Eigenheiten dieser noch jungen API (#140 - auf Safari/iOS
-  // deutlich unzuverlässiger als auf Chrome): (1) startViewTransition() kann synchron werfen, wenn
-  // der Browser eine vorherige Transition noch nicht als abgeschlossen betrachtet (z. B. bei sehr
-  // schnell aufeinanderfolgenden Klicks) - ohne try/catch bliebe mutate() dann komplett aus, der
-  // Klick hätte sichtbar gar keine Wirkung. (2) transition.finished kann auf manchen WebKit-Ständen
-  // hängen bleiben statt aufzulösen - ohne Timeout-Fallback bliebe transitioningSpotId dauerhaft
-  // gesetzt (die Karte trüge dauerhaft einen aktiven view-transition-name, obwohl gar keine Transition
-  // mehr läuft) statt sich nach der eigentlichen Animation (~250ms, siehe style.css) selbst aufzuräumen.
-  try {
-    const transition = (
-      document as unknown as {
-        startViewTransition: (cb: () => void | Promise<void>) => { finished: Promise<void> };
-      }
-    ).startViewTransition(async () => {
-      mutate();
-      await nextTick();
-    });
-    const settle = () => {
-      transitioningSpotId.value = null;
-      nudgeRepaint();
-    };
-    Promise.race([
-      transition.finished,
-      new Promise((resolve) => setTimeout(resolve, 1000)),
-    ]).finally(settle);
-  } catch {
-    transitioningSpotId.value = null;
-    mutate();
-  }
-}
 
 const spotRefs = new Map<number, HTMLElement>();
 function setSpotRef(id: number, el: Element | ComponentPublicInstance | null) {
@@ -1247,9 +1211,7 @@ function scrollToSpot(id: number) {
 // unsichtbar. Öffnet deshalb (Google-Maps-Stil) mindestens "angeschnitten", rührt einen bereits
 // weiter geöffneten Zustand (partial/full) aber nicht an (#104).
 function onFocusSpotFromMap(spotId: number) {
-  animateSpotExpand(spotId, () => {
-    expandedSpotId.value = spotId;
-  });
+  expandedSpotId.value = spotId;
   if (sheetState.value === 'collapsed') sheetState.value = 'partial';
   scrollToSpot(spotId);
 }
@@ -1343,9 +1305,17 @@ watch(spotGroups, () =>
   })
 );
 
-// Welche Tour-Gruppe ist gerade aufgeklappt (ExcursionCard.vue, ersetzt den früheren
-// ExcursionDetailDialog.vue-Modal-Dialog, #92) – analog zu expandedSpotId oben.
+// Welcher Ausflug (Tour) ist in der Karten-Liste gerade fokussiert/aufgeklappt?
+// Die Liste (ExcursionsView) und die Karte (TripMap) synchronisieren sich über diesen State.
+// Nur für Touren verwendet (groupMode === 'tours').
 const expandedExcursionId = ref<number | null>(null);
+
+watch(expandedExcursionId, (newId) => {
+  if (newId != null) {
+    nextTick(() => recomputeTourLine(newId));
+  }
+});
+
 // Klick auf den Ausflug-Titel im Karten-Fokus-Panel (TripMap.vue's @focus-excursion) klappt die
 // passende ExcursionCard hier auf und scrollt sie in den Blick – exakt dasselbe Muster wie
 // onFocusSpotFromMap oben. Die Gruppen-Überschrift ist nur bei Touren-Gruppierung eine echte
@@ -1719,7 +1689,7 @@ onUnmounted(() => {
 // centerOnPoint()/fitBoundsWithCoveredBottom() dort). window.innerWidth dient nur als Fallback, bis
 // der ResizeObserver beim Mounten seinen ersten Wert liefert. Absichtlich niedriger als die
 // ursprünglichen 900px: bei geöffneter Kalender-Schublade (Standardbreite 360px, siehe
-// stores/drawers.ts) reichte .app-main auf gängigen Laptop-/Desktop-Breiten sonst oft nicht für die
+// stores/drawers.ts) reichte .app-main on gängigen Laptop-/Desktop-Breiten sonst oft nicht für die
 // Desktop-Spalten-Ansicht, obwohl rechnerisch noch genug Platz für eine schmalere, aber weiterhin
 // benutzbare Spots-Liste + Karte übrig war (siehe MIN_SPOTS_COL_WIDTH).
 const isSheetOverlayMode = computed(() => (appMainWidth.value ?? window.innerWidth) < 720);
@@ -1744,15 +1714,10 @@ watch(
 // Karte zeigen" miteinander (ein voll ausgefahrenes Sheet schrumpfte zuvor bei jedem Karten-Klick
 // ungewollt wieder auf "angeschnitten").
 function onSpotCardOpen(spot: Spot) {
-  animateSpotExpand(spot.id, () => {
-    expandedSpotId.value = spot.id;
-  });
+  expandedSpotId.value = spot.id;
 }
 function onSpotCardClose() {
-  const closingId = expandedSpotId.value;
-  animateSpotExpand(closingId, () => {
-    expandedSpotId.value = null;
-  });
+  expandedSpotId.value = null;
 }
 
 // "Auf Karte anzeigen"-Button (Mini- wie aufgeklappte Karte, siehe SpotCard.vue) – schrumpft das
@@ -2955,11 +2920,6 @@ async function removeSpot(id: number) {
           </div>
 
           <section class="group category-group" v-for="grp in spotGroups" :key="grp.category">
-            <!-- Tour-Gruppe: die Gruppen-Überschrift ist eine echte, anklickbare ExcursionCard statt
-             reinem Text (siehe Konsolidierung des früheren "erweiterten Touren-Modus" in diese
-             Sicht) – Klick visualisiert die Tour auf der Karte (@show-on-map), dieselbe Card bietet
-             daneben Bearbeiten/Löschen/Like/Kommentare/Einplanen wie zuvor in der eigenständigen
-             Touren-Schublade. "Ohne Tour" (grp.excursion === null) bleibt eine reine Überschrift. -->
             <ExcursionCard
               v-if="grp.excursion"
               :ref="(el) => setCategoryRef(grp.category, el)"
@@ -2996,63 +2956,68 @@ async function removeSpot(id: number) {
              und dadurch offsetParent der Spot-Karten - recomputeTourLine() liest deren offsetTop/
              offsetHeight direkt relativ dazu aus (siehe dortiger Kommentar). -->
             <div
-              class="tour-station-wrap"
-              :class="{ 'is-tour': grp.excursion }"
-              :ref="(el) => grp.excursion && setTourWrapRef(grp.excursion.id, el)"
+              class="tour-station-accordion"
+              :class="{ 'is-expanded': !grp.excursion || expandedExcursionId === grp.excursion.id }"
+              :inert="!!(grp.excursion && expandedExcursionId !== grp.excursion.id)"
             >
-              <svg
-                v-if="grp.excursion && tourLines.get(grp.excursion.id)"
-                class="tour-station-line"
-                :width="tourLines.get(grp.excursion.id)!.width"
-                :height="tourLines.get(grp.excursion.id)!.height"
-                aria-hidden="true"
-              >
-                <path :d="tourLines.get(grp.excursion.id)!.pathD" />
-                <circle
-                  v-for="(dot, i) in tourLines.get(grp.excursion.id)!.dots"
-                  :key="i"
-                  :cx="dot.x"
-                  :cy="dot.y"
-                  r="5"
-                />
-              </svg>
-              <TransitionGroup
-                tag="div"
-                name="list"
-                :class="grp.excursion ? 'tour-station-list' : 'grid cards'"
-              >
-                <template v-for="item in grp.items" :key="`spot-${item.spot.id}`">
-                  <SpotCard
-                    :ref="(el) => setSpotRef(item.spot.id, el)"
-                    :style="
-                      transitioningSpotId === item.spot.id
-                        ? { viewTransitionName: 'expanding-spot-card' }
-                        : {}
-                    "
-                    :spot="item.spot"
-                    :highlighted="highlightedIds.has(item.spot.id)"
-                    :expanded="expandedSpotId === item.spot.id"
-                    :scheduled-date="spotScheduledDates.get(item.spot.id) ?? null"
-                    :creator-label="creatorLabel(item.spot.created_by)"
-                    :payer-label="creatorLabel(item.spot.paid_by_user_id)"
-                    :like-count="spotsStore.likeCountFor(item.spot.id)"
-                    :liked="spotsStore.likedByMe(item.spot.id, auth.user?.id)"
-                    :comments="spotCommentItemsFor(item.spot.id)"
-                    :group-mode="groupMode"
-                    :tour-options="allTourTitles"
-                    :has-multiple-members="users.length > 1"
-                    @edit="startEditSpot"
-                    @remove="removeSpot"
-                    @toggle-like="toggleSpotLike(item.spot.id)"
-                    @submit-comment="(content) => submitSpotComment(item.spot.id, content)"
-                    @remove-comment="removeSpotComment"
-                    @open="onSpotCardOpen"
-                    @close="onSpotCardClose"
-                    @show-on-map="onSpotShowOnMap(item.spot)"
-                    @assign-tour="(title) => assignSpotToTourTitle(item.spot.id, title)"
-                  />
-                </template>
-              </TransitionGroup>
+              <div class="tour-station-accordion-inner">
+                <div
+                  class="tour-station-wrap"
+                  :class="{ 'is-tour': grp.excursion }"
+                  :ref="(el) => grp.excursion && setTourWrapRef(grp.excursion.id, el)"
+                >
+                  <svg
+                    v-if="grp.excursion && tourLines.get(grp.excursion.id)"
+                    class="tour-station-line"
+                    :width="tourLines.get(grp.excursion.id)!.width"
+                    :height="tourLines.get(grp.excursion.id)!.height"
+                    aria-hidden="true"
+                  >
+                    <path :d="tourLines.get(grp.excursion.id)!.pathD" />
+                    <circle
+                      v-for="(dot, i) in tourLines.get(grp.excursion.id)!.dots"
+                      :key="i"
+                      :cx="dot.x"
+                      :cy="dot.y"
+                      r="5"
+                    />
+                  </svg>
+                  <TransitionGroup
+                    tag="div"
+                    name="list"
+                    :class="grp.excursion ? 'tour-station-list' : 'grid cards'"
+                  >
+                    <template v-for="(item, index) in grp.items" :key="`spot-${item.spot.id}`">
+                      <SpotCard
+                        :ref="(el) => setSpotRef(item.spot.id, el)"
+                        class="staggered-spot"
+                        :style="[{ '--stagger-idx': index, '--stagger-total': grp.items.length }]"
+                        :spot="item.spot"
+                        :highlighted="highlightedIds.has(item.spot.id)"
+                        :expanded="expandedSpotId === item.spot.id"
+                        :scheduled-date="spotScheduledDates.get(item.spot.id) ?? null"
+                        :creator-label="creatorLabel(item.spot.created_by)"
+                        :payer-label="creatorLabel(item.spot.paid_by_user_id)"
+                        :like-count="spotsStore.likeCountFor(item.spot.id)"
+                        :liked="spotsStore.likedByMe(item.spot.id, auth.user?.id)"
+                        :comments="spotCommentItemsFor(item.spot.id)"
+                        :group-mode="groupMode"
+                        :tour-options="allTourTitles"
+                        :has-multiple-members="users.length > 1"
+                        @edit="startEditSpot"
+                        @remove="removeSpot"
+                        @toggle-like="toggleSpotLike(item.spot.id)"
+                        @submit-comment="(content) => submitSpotComment(item.spot.id, content)"
+                        @remove-comment="removeSpotComment"
+                        @open="onSpotCardOpen(item.spot)"
+                        @close="onSpotCardClose"
+                        @show-on-map="onSpotShowOnMap(item.spot)"
+                        @assign-tour="(title) => assignSpotToTourTitle(item.spot.id, title)"
+                      />
+                    </template>
+                  </TransitionGroup>
+                </div>
+              </div>
             </div>
             <!-- Zwei unterschiedliche Gründe für eine leere Gruppe: entweder ist der Tour wirklich noch
              kein Spot zugeordnet (grp.excursion.spot_ids selbst leer, unabhängig von Kategorie-/
@@ -4010,11 +3975,40 @@ async function removeSpot(id: number) {
   margin-left: 18px;
 }
 
+.tour-station-accordion {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tour-station-accordion.is-expanded {
+  grid-template-rows: 1fr;
+}
+
+.tour-station-accordion-inner {
+  overflow: hidden;
+}
+
+.tour-station-accordion .staggered-spot {
+  transition:
+    opacity 0.4s ease,
+    transform 0.4s ease;
+  opacity: 0;
+  transform: translateY(-20px) scale(0.97);
+  transition-delay: calc((var(--stagger-total) - var(--stagger-idx) - 1) * 30ms);
+}
+
+.tour-station-accordion.is-expanded .staggered-spot {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transition-delay: calc(var(--stagger-idx) * 50ms);
+}
+
 .tour-station-list {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  padding-left: var(--space-4);
+  padding: var(--space-2) 12px 24px var(--space-4);
 }
 
 .tour-station-line {
