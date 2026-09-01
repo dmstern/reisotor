@@ -96,15 +96,60 @@ function planBudgetExpense(tripId: number, existingBudgetExpenseId: number | nul
   return { budgetExpenseId: result.lastInsertRowid as number, staleIdToDelete: null };
 }
 
+// Top-level pre-compiled statements for hot paths
+const selectSpotsByTripStmt = db.prepare(
+  'SELECT * FROM spots WHERE trip_id = ? AND deleted_at IS NULL ORDER BY title COLLATE NOCASE'
+);
+const selectSpotByIdStmt = db.prepare('SELECT * FROM spots WHERE id = ?');
+const selectSpotForUpdateStmt = db.prepare(
+  'SELECT id, trip_id, lat, lng, budget_expense_id FROM spots WHERE id = ?'
+);
+const selectSpotTripIdStmt = db.prepare('SELECT id, trip_id FROM spots WHERE id = ?');
+const selectSpotForDeleteStmt = db.prepare(
+  'SELECT trip_id, budget_expense_id FROM spots WHERE id = ?'
+);
+const softDeleteSpotStmt = db.prepare(
+  'UPDATE spots SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL'
+);
+const softDeleteBudgetItemStmt = db.prepare(
+  'UPDATE budget_items SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL'
+);
+const deleteBudgetItemStmt = db.prepare('DELETE FROM budget_items WHERE id = ?');
+
+const selectSpotLikeStmt = db.prepare(
+  'SELECT id FROM spot_likes WHERE spot_id = ? AND user_id = ?'
+);
+const deleteSpotLikeStmt = db.prepare('DELETE FROM spot_likes WHERE id = ?');
+const insertSpotLikeStmt = db.prepare(
+  'INSERT INTO spot_likes (spot_id, user_id, created_at) VALUES (?, ?, ?)'
+);
+
+const insertSpotCommentStmt = db.prepare(
+  'INSERT INTO spot_comments (spot_id, author_id, content, created_at) VALUES (?, ?, ?, ?)'
+);
+const selectSpotCommentByIdStmt = db.prepare('SELECT * FROM spot_comments WHERE id = ?');
+const selectSpotCommentWithTripStmt = db.prepare(
+  `SELECT spot_comments.id, spot_comments.author_id, spots.trip_id FROM spot_comments
+   JOIN spots ON spots.id = spot_comments.spot_id
+   WHERE spot_comments.id = ?`
+);
+const deleteSpotCommentStmt = db.prepare('DELETE FROM spot_comments WHERE id = ?');
+
+const hasScheduleDateStmt = db.prepare(
+  `SELECT 1 FROM schedule_items WHERE spot_id = ? AND deleted_at IS NULL
+   UNION
+   SELECT 1 FROM schedule_items
+     JOIN excursion_spots ON excursion_spots.idea_id = schedule_items.idea_id
+     WHERE excursion_spots.spot_id = ? AND schedule_items.deleted_at IS NULL
+   LIMIT 1`
+);
+const updateSpotDoneStmt = db.prepare('UPDATE spots SET done = ? WHERE id = ?');
+
 export const spotsRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: { trip_id?: string } }>('/spots', async (req, reply) => {
     if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
     if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
-    return db
-      .prepare(
-        'SELECT * FROM spots WHERE trip_id = ? AND deleted_at IS NULL ORDER BY title COLLATE NOCASE'
-      )
-      .all(req.query.trip_id);
+    return selectSpotsByTripStmt.all(req.query.trip_id);
   });
 
   // Live-Vorschau (Titel/Foto) für ExcursionsView.vue's Spot-Anlegen-Formular, sobald ein Maps-Link
@@ -169,13 +214,11 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
       req.session.userId!
     );
     reply.code(201);
-    return db.prepare('SELECT * FROM spots WHERE id = ?').get(result.lastInsertRowid);
+    return selectSpotByIdStmt.get(result.lastInsertRowid);
   });
 
   app.put<{ Params: { id: string }; Body: SpotBody }>('/spots/:id', async (req, reply) => {
-    const existing = db
-      .prepare('SELECT id, trip_id, lat, lng, budget_expense_id FROM spots WHERE id = ?')
-      .get(req.params.id) as SpotRow | undefined;
+    const existing = selectSpotForUpdateStmt.get(req.params.id) as SpotRow | undefined;
     if (!existing) return reply.code(404).send({ error: 'Nicht gefunden' });
     if (!requireTripMember(reply, existing.trip_id, req.session.userId)) return;
 
@@ -232,7 +275,7 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
 
     // Erst jetzt löschen: die spots-Zeile verweist nicht mehr auf die alte Ausgabe.
     if (staleIdToDelete) {
-      db.prepare('DELETE FROM budget_items WHERE id = ?').run(staleIdToDelete);
+      deleteBudgetItemStmt.run(staleIdToDelete);
     }
 
     recordActivity(
@@ -242,7 +285,7 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
       'updated',
       req.session.userId!
     );
-    return db.prepare('SELECT * FROM spots WHERE id = ?').get(req.params.id);
+    return selectSpotByIdStmt.get(req.params.id);
   });
 
   // "Gemacht"-Status (#106): setzbar nur, wenn der Spot bereits über einen verknüpften
@@ -256,7 +299,7 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
   app.post<{ Params: { id: string }; Body: { done: boolean } }>(
     '/spots/:id/done',
     async (req, reply) => {
-      const spot = db.prepare('SELECT id, trip_id FROM spots WHERE id = ?').get(req.params.id) as
+      const spot = selectSpotTripIdStmt.get(req.params.id) as
         { id: number; trip_id: number } | undefined;
       if (!spot) return reply.code(404).send({ error: 'Nicht gefunden' });
       if (!requireTripMember(reply, spot.trip_id, req.session.userId)) return;
@@ -267,23 +310,14 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
         // siehe schedule_items.spot_id, auch DiaryView.vue's "Spots zuordnen"-Picker seit #216) ODER
         // ein Termin über eine Tour, in der dieser Spot als Station steckt (z. B. routes/ideas.ts's
         // plan-spot).
-        const hasDate = db
-          .prepare(
-            `SELECT 1 FROM schedule_items WHERE spot_id = ? AND deleted_at IS NULL
-           UNION
-           SELECT 1 FROM schedule_items
-             JOIN excursion_spots ON excursion_spots.idea_id = schedule_items.idea_id
-             WHERE excursion_spots.spot_id = ? AND schedule_items.deleted_at IS NULL
-           LIMIT 1`
-          )
-          .get(req.params.id, req.params.id);
+        const hasDate = hasScheduleDateStmt.get(req.params.id, req.params.id);
         if (!hasDate) {
           return reply
             .code(400)
             .send({ error: 'Für den Status "gemacht" muss zuerst ein Datum gesetzt werden.' });
         }
       }
-      db.prepare('UPDATE spots SET done = ? WHERE id = ?').run(done, req.params.id);
+      updateSpotDoneStmt.run(done, req.params.id);
       recordActivity(spot.trip_id, 'spots', spot.id, 'updated', req.session.userId!);
       return { done: done === 1 };
     }
@@ -298,22 +332,16 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
   // oben) wird dabei mit "weggelöscht" (gleiches Muster wie ehemals routes/accommodation.ts) –
   // routes/trash.ts's restore() macht das beim Wiederherstellen wieder rückgängig.
   app.delete<{ Params: { id: string } }>('/spots/:id', async (req, reply) => {
-    const existing = db
-      .prepare('SELECT trip_id, budget_expense_id FROM spots WHERE id = ?')
-      .get(req.params.id) as { trip_id: number; budget_expense_id: number | null } | undefined;
+    const existing = selectSpotForDeleteStmt.get(req.params.id) as
+      { trip_id: number; budget_expense_id: number | null } | undefined;
     if (!existing) return reply.code(404).send({ error: 'Nicht gefunden' });
     if (!requireTripMember(reply, existing.trip_id, req.session.userId)) return;
 
     const now = new Date().toISOString();
-    const result = db
-      .prepare('UPDATE spots SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL')
-      .run(now, req.params.id);
+    const result = softDeleteSpotStmt.run(now, req.params.id);
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
     if (existing.budget_expense_id) {
-      db.prepare('UPDATE budget_items SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL').run(
-        now,
-        existing.budget_expense_id
-      );
+      softDeleteBudgetItemStmt.run(now, existing.budget_expense_id);
     }
     recordActivity(
       existing.trip_id,
@@ -353,25 +381,20 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.post<{ Params: { id: string } }>('/spots/:id/like', async (req, reply) => {
-    const spot = db.prepare('SELECT id, trip_id FROM spots WHERE id = ?').get(req.params.id) as
+    const spot = selectSpotTripIdStmt.get(req.params.id) as
       { id: number; trip_id: number } | undefined;
     if (!spot) return reply.code(404).send({ error: 'Nicht gefunden' });
     if (!requireTripMember(reply, spot.trip_id, req.session.userId)) return;
 
-    const existing = db
-      .prepare('SELECT id FROM spot_likes WHERE spot_id = ? AND user_id = ?')
-      .get(req.params.id, req.session.userId) as { id: number } | undefined;
+    const existing = selectSpotLikeStmt.get(req.params.id, req.session.userId) as
+      { id: number } | undefined;
 
     if (existing) {
-      db.prepare('DELETE FROM spot_likes WHERE id = ?').run(existing.id);
+      deleteSpotLikeStmt.run(existing.id);
       return { liked: false };
     }
 
-    db.prepare('INSERT INTO spot_likes (spot_id, user_id, created_at) VALUES (?, ?, ?)').run(
-      req.params.id,
-      req.session.userId,
-      new Date().toISOString()
-    );
+    insertSpotLikeStmt.run(req.params.id, req.session.userId, new Date().toISOString());
     // Nur beim Liken selbst, nicht beim Zurücknehmen (#97, Notification-Inbox) - ein Un-Like ist kein
     // neues, benachrichtigungswürdiges Ereignis.
     recordActivity(spot.trip_id, 'spots', spot.id, 'liked', req.session.userId!);
@@ -381,30 +404,26 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
   app.post<{ Params: { id: string }; Body: CommentBody }>(
     '/spots/:id/comments',
     async (req, reply) => {
-      const spot = db.prepare('SELECT id, trip_id FROM spots WHERE id = ?').get(req.params.id) as
+      const spot = selectSpotTripIdStmt.get(req.params.id) as
         { id: number; trip_id: number } | undefined;
       if (!spot) return reply.code(404).send({ error: 'Nicht gefunden' });
       if (!requireTripMember(reply, spot.trip_id, req.session.userId)) return;
 
-      const result = db
-        .prepare(
-          'INSERT INTO spot_comments (spot_id, author_id, content, created_at) VALUES (?, ?, ?, ?)'
-        )
-        .run(req.params.id, req.session.userId, req.body.content, new Date().toISOString());
+      const result = insertSpotCommentStmt.run(
+        req.params.id,
+        req.session.userId,
+        req.body.content,
+        new Date().toISOString()
+      );
       recordActivity(spot.trip_id, 'spots', spot.id, 'commented', req.session.userId!);
       reply.code(201);
-      return db.prepare('SELECT * FROM spot_comments WHERE id = ?').get(result.lastInsertRowid);
+      return selectSpotCommentByIdStmt.get(result.lastInsertRowid);
     }
   );
 
   app.delete<{ Params: { id: string } }>('/spots/comments/:id', async (req, reply) => {
-    const comment = db
-      .prepare(
-        `SELECT spot_comments.id, spot_comments.author_id, spots.trip_id FROM spot_comments
-         JOIN spots ON spots.id = spot_comments.spot_id
-         WHERE spot_comments.id = ?`
-      )
-      .get(req.params.id) as { id: number; author_id: number; trip_id: number } | undefined;
+    const comment = selectSpotCommentWithTripStmt.get(req.params.id) as
+      { id: number; author_id: number; trip_id: number } | undefined;
     if (!comment) return reply.code(404).send({ error: 'Nicht gefunden' });
     if (!requireTripMember(reply, comment.trip_id, req.session.userId)) return;
     if (comment.author_id !== req.session.userId) {
@@ -412,7 +431,7 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
         .code(403)
         .send({ error: 'Nur die Autorin/der Autor kann diesen Kommentar löschen' });
     }
-    db.prepare('DELETE FROM spot_comments WHERE id = ?').run(req.params.id);
+    deleteSpotCommentStmt.run(req.params.id);
     return reply.code(204).send();
   });
 };

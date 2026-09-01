@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { reactive, ref, watch } from 'vue';
+import { ref, shallowRef, watch } from 'vue';
 import { api } from '../api/client';
 import type { LocationTrack, TrackPoint, TrackVisibility } from '../api/types';
 import { useTripStore } from './trip';
@@ -20,9 +20,9 @@ export const useTracksStore = defineStore('tracks', () => {
   const tripStore = useTripStore();
   const liveSync = useLiveSyncStore();
 
-  const tracks = ref<LocationTrack[]>([]);
+  const tracks = shallowRef<LocationTrack[]>([]);
   const loaded = ref(false);
-  const pointsByTrack = ref<Record<number, TrackPoint[]>>({});
+  const pointsByTrack = shallowRef<Record<number, TrackPoint[]>>({});
 
   async function load() {
     const tripId = tripStore.currentTripId;
@@ -54,7 +54,11 @@ export const useTracksStore = defineStore('tracks', () => {
   async function update(id: number, body: TrackUpdateData) {
     const updated = await api.put<LocationTrack>(`/tracks/${id}`, body);
     const idx = tracks.value.findIndex((t) => t.id === id);
-    if (idx !== -1) tracks.value[idx] = updated;
+    if (idx !== -1) {
+      const next = [...tracks.value];
+      next[idx] = updated;
+      tracks.value = next;
+    }
     return updated;
   }
 

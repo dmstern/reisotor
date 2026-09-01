@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref, watch } from 'vue';
+import { ref, shallowRef, watch } from 'vue';
 import { api } from '../api/client';
 import type { Spot, SpotComment, SpotLike } from '../api/types';
 import { useTripStore } from './trip';
@@ -36,9 +36,9 @@ export interface SpotFormData {
 export const useSpotsStore = defineStore('spots', () => {
   const tripStore = useTripStore();
   const liveSync = useLiveSyncStore();
-  const spots = ref<Spot[]>([]);
-  const spotLikes = ref<SpotLike[]>([]);
-  const spotComments = ref<SpotComment[]>([]);
+  const spots = shallowRef<Spot[]>([]);
+  const spotLikes = shallowRef<SpotLike[]>([]);
+  const spotComments = shallowRef<SpotComment[]>([]);
   const loaded = ref(false);
 
   async function load() {
@@ -83,14 +83,18 @@ export const useSpotsStore = defineStore('spots', () => {
 
   async function create(body: SpotFormData) {
     const created = await api.post<Spot>('/spots', body);
-    spots.value.unshift(created);
+    spots.value = [created, ...spots.value];
     return created;
   }
 
   async function update(id: number, body: SpotFormData) {
     const updated = await api.put<Spot>(`/spots/${id}`, body);
     const idx = spots.value.findIndex((s) => s.id === id);
-    if (idx !== -1) spots.value[idx] = updated;
+    if (idx !== -1) {
+      const next = [...spots.value];
+      next[idx] = updated;
+      spots.value = next;
+    }
     return updated;
   }
 
@@ -104,7 +108,7 @@ export const useSpotsStore = defineStore('spots', () => {
   async function toggleLike(spotId: number, userId: number) {
     const result = await api.post<{ liked: boolean }>(`/spots/${spotId}/like`);
     if (result.liked) {
-      spotLikes.value.push({ id: Date.now(), spot_id: spotId, user_id: userId });
+      spotLikes.value = [...spotLikes.value, { id: Date.now(), spot_id: spotId, user_id: userId }];
     } else {
       spotLikes.value = spotLikes.value.filter(
         (l) => !(l.spot_id === spotId && l.user_id === userId)
@@ -114,7 +118,7 @@ export const useSpotsStore = defineStore('spots', () => {
 
   async function submitComment(spotId: number, content: string) {
     const created = await api.post<SpotComment>(`/spots/${spotId}/comments`, { content });
-    spotComments.value.push(created);
+    spotComments.value = [...spotComments.value, created];
     return created;
   }
 
@@ -128,8 +132,12 @@ export const useSpotsStore = defineStore('spots', () => {
    *  statt eines vollen update(), damit ein Toggle nicht alle anderen Felder erneut mitschicken muss. */
   async function setDone(id: number, done: boolean) {
     const result = await api.post<{ done: boolean }>(`/spots/${id}/done`, { done });
-    const existing = spots.value.find((s) => s.id === id);
-    if (existing) existing.done = result.done ? 1 : 0;
+    const idx = spots.value.findIndex((s) => s.id === id);
+    if (idx !== -1) {
+      const next = [...spots.value];
+      next[idx] = { ...next[idx], done: result.done ? 1 : 0 };
+      spots.value = next;
+    }
   }
 
   return {
