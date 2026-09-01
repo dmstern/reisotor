@@ -209,8 +209,9 @@ export default defineConfig({
     ),
   },
   test: {
-    // Da utils/richText.ts nun DOMPurify nutzt (was ein Window-Objekt zur HTML-Bereinigung braucht),
-    // müssen die Tests im DOM-Environment (jsdom) laufen statt in reinem Node.
-    environment: 'jsdom',
+    // Grundsätzlich plain Node-Umgebung (keine DOM-API nötig für die meisten Utils-Tests).
+    // Einzelne Testdateien, die DOM brauchen (z. B. richText.test.ts wegen DOMPurify),
+    // überschreiben das per "@vitest-environment jsdom"-Kommentar am Dateianfang.
+    environment: 'node',
   },
 });
