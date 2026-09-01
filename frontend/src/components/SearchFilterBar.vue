@@ -187,16 +187,9 @@ function clearFilters() {
                   :icon="groupIconDef(cat)"
                   icon-group="categories"
                   :label="cat"
-                  @click="toggleCategory(cat)"
-                >
-                  <template #checkbox>
-                    <input
-                      type="checkbox"
-                      :checked="categoryFilter.includes(cat)"
-                      @change="toggleCategory(cat)"
-                    />
-                  </template>
-                </DropdownItem>
+                  :checked="categoryFilter.includes(cat)"
+                  @update:checked="toggleCategory(cat)"
+                />
               </div>
             </template>
 
@@ -207,47 +200,26 @@ function clearFilters() {
                 :icon="FORM_FIELD_ICONS.date"
                 icon-group="formFields"
                 label="Geplant"
-                @click="toggleStatus('planned')"
-              >
-                <template #checkbox>
-                  <input
-                    type="checkbox"
-                    :checked="statusFilter.includes('planned')"
-                    @change="toggleStatus('planned')"
-                  />
-                </template>
-              </DropdownItem>
+                :checked="statusFilter.includes('planned')"
+                @update:checked="toggleStatus('planned')"
+              />
 
               <DropdownItem
                 multiselect
                 :icon="FORM_FIELD_ICONS.note"
                 icon-group="formFields"
                 label="Ungeplant"
-                @click="toggleStatus('unplanned')"
-              >
-                <template #checkbox>
-                  <input
-                    type="checkbox"
-                    :checked="statusFilter.includes('unplanned')"
-                    @change="toggleStatus('unplanned')"
-                  />
-                </template>
-              </DropdownItem>
+                :checked="statusFilter.includes('unplanned')"
+                @update:checked="toggleStatus('unplanned')"
+              />
 
               <DropdownItem
                 multiselect
                 :icon="ACTION_ICONS.done"
                 label="Gemacht"
-                @click="toggleStatus('done')"
-              >
-                <template #checkbox>
-                  <input
-                    type="checkbox"
-                    :checked="statusFilter.includes('done')"
-                    @change="toggleStatus('done')"
-                  />
-                </template>
-              </DropdownItem>
+                :checked="statusFilter.includes('done')"
+                @update:checked="toggleStatus('done')"
+              />
             </div>
 
             <div v-if="activeFilterCount > 0" class="popover-footer">
@@ -436,6 +408,8 @@ function clearFilters() {
 :global(.sort-popover-menu) {
   min-width: 210px;
   max-width: 280px;
+  max-height: calc(100vh - 70px);
+  overflow-y: auto;
 }
 
 .popover-section-header {
@@ -459,7 +433,7 @@ function clearFilters() {
 .popover-options-list {
   display: flex;
   flex-direction: column;
-  max-height: 220px;
+  max-height: 140px;
   overflow-y: auto;
 }
 

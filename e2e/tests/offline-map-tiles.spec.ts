@@ -148,6 +148,7 @@ test.describe.serial('Offline-Kartenkacheln (Workbox Runtime Caching)', () => {
     await page.waitForFunction(() => navigator.serviceWorker.ready.then(() => true));
     await page.reload();
     await page.waitForFunction(() => navigator.serviceWorker.controller !== null);
+    await page.waitForSelector('.leaflet-container');
 
     await page.locator('.offline-download-btn').click();
     await expect(page.locator('.tile-download-pill')).toContainText('offline gespeichert', {
@@ -155,7 +156,10 @@ test.describe.serial('Offline-Kartenkacheln (Workbox Runtime Caching)', () => {
     });
     await expect(page.locator('.tile-download-pill')).not.toContainText('fehlgeschlagen');
 
-    await page.locator('.tile-download-pill button').click({ force: true });
+    await page
+      .locator('.tile-download-pill', { hasText: 'offline gespeichert' })
+      .locator('button')
+      .evaluate((btn: HTMLElement) => btn.click());
     await expect(page.locator('.tile-download-pill')).toHaveCount(0);
 
     await context.close();

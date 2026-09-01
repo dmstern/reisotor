@@ -1993,7 +1993,8 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
 }
 
 @media screen and (min-width: 720px) {
-  .focus-banner {
+  .focus-banner,
+  .tile-download-pill {
     bottom: var(--space-4);
     right: var(--space-4);
     top: unset;
