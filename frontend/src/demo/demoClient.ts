@@ -25,6 +25,7 @@ import {
   DEMO_DIARY_LIKES,
   DEMO_DIARY_COMMENTS,
 } from './demoData';
+import type { User } from '../api/types';
 
 const STORAGE_KEY = 'reisotor-demo-store';
 
