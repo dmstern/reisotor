@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import type { TripFormData } from '../stores/trip';
 import { buildOsmLink, parseLatLngFromMapsLink } from '../utils/googleMaps';
 import LocationPicker from './LocationPicker.vue';
@@ -37,6 +37,13 @@ const mapsLinkResolved = ref<boolean | null>(null);
 const manualPin = ref<{ lat: number; lng: number } | null>(null);
 const pickerOpen = ref(false);
 const showOptional = ref(false);
+
+const dateError = computed(() => {
+  if (form.value.start_date && form.value.end_date && form.value.start_date > form.value.end_date) {
+    return 'Das Enddatum darf nicht vor dem Startdatum liegen.';
+  }
+  return '';
+});
 
 watch(
   () => props.initial,
@@ -81,6 +88,10 @@ function checkMapsLink() {
 
 function onSubmit() {
   if (!form.value.name.trim()) return;
+  if (dateError.value) {
+    showOptional.value = true;
+    return;
+  }
   const parsed = parseLatLngFromMapsLink(form.value.maps_link ?? undefined);
   emit('submit', {
     name: form.value.name.trim(),
@@ -145,6 +156,10 @@ function onSubmit() {
             <input id="auto-id-1788301175440-13" v-model="form.end_date" type="date" />
           </label>
         </div>
+        <p v-if="dateError" class="hint error">
+          <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" />
+          {{ dateError }}
+        </p>
 
         <label for="auto-id-1788301175440-14">
           Ziel (optional)
