@@ -651,9 +651,23 @@ watch(editingSpot, (val) => {
   }
 });
 
-async function addSpotToDate(dateEvent: Event) {
-  const target = dateEvent.target as HTMLInputElement;
-  const date = target.value;
+const addSchedulePopoverOpen = ref(false);
+const addScheduleDateVal = ref('');
+const addScheduleBtnRef = ref<HTMLElement | null>(null);
+const addScheduleMenuStyle = ref({ top: '0px', left: '0px' });
+
+function toggleAddSchedulePopover(event?: MouseEvent) {
+  if (!addSchedulePopoverOpen.value) {
+    addScheduleDateVal.value = '';
+    addScheduleMenuStyle.value = computeMenuStyle(addScheduleBtnRef.value, event, 220);
+    addSchedulePopoverOpen.value = true;
+  } else {
+    addSchedulePopoverOpen.value = false;
+  }
+}
+
+async function submitAddSpotToDate() {
+  const date = addScheduleDateVal.value;
   if (!date || !editingSpot.value || !tripStore.currentTripId) return;
   await scheduleStore.create({
     trip_id: tripStore.currentTripId,
@@ -661,7 +675,8 @@ async function addSpotToDate(dateEvent: Event) {
     title: editingSpot.value.title,
     spot_id: editingSpot.value.id,
   });
-  target.value = '';
+  addScheduleDateVal.value = '';
+  addSchedulePopoverOpen.value = false;
 }
 const showExcursionTransportSection = computed({
   get: () => excursionForm.value.transportEnabled,
@@ -2873,15 +2888,60 @@ async function removeSpot(id: number) {
                         <AppIcon :icon="ACTION_ICONS.close" :size="12" group="actions" />
                       </button>
                     </span>
-                    <label class="add-schedule-chip" title="Zu anderem Datum hinzufügen">
+                    <button
+                      ref="addScheduleBtnRef"
+                      type="button"
+                      class="add-schedule-chip"
+                      title="Zu anderem Datum hinzufügen"
+                      @click="toggleAddSchedulePopover($event)"
+                    >
                       <AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" />
                       <span>Datum hinzufügen</span>
-                      <input
-                        type="date"
-                        class="date-picker-overlay-input"
-                        @change="addSpotToDate"
-                      />
-                    </label>
+                    </button>
+                    <Teleport to="body">
+                      <template v-if="addSchedulePopoverOpen">
+                        <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
+                        <div class="picker-backdrop" @click="addSchedulePopoverOpen = false"></div>
+                        <div class="picker-menu add-schedule-popover" :style="addScheduleMenuStyle">
+                          <label
+                            style="
+                              display: block;
+                              font-size: 0.85rem;
+                              font-weight: 500;
+                              margin-bottom: var(--space-2);
+                            "
+                          >
+                            Datum auswählen:
+                          </label>
+                          <input
+                            type="date"
+                            v-model="addScheduleDateVal"
+                            class="field-input"
+                            style="width: 100%; margin-bottom: var(--space-3)"
+                            @keyup.enter="submitAddSpotToDate"
+                          />
+                          <ButtonGroup align="end" noMargin>
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              small
+                              @click="addSchedulePopoverOpen = false"
+                            >
+                              Abbrechen
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="primary"
+                              small
+                              :disabled="!addScheduleDateVal"
+                              @click="submitAddSpotToDate"
+                            >
+                              Hinzufügen
+                            </Button>
+                          </ButtonGroup>
+                        </div>
+                      </template>
+                    </Teleport>
                   </div>
                 </div>
               </fieldset>
@@ -4599,10 +4659,9 @@ async function removeSpot(id: number) {
   color: var(--color-primary-dark);
 }
 
-.date-picker-overlay-input {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  cursor: pointer;
+.add-schedule-popover {
+  width: 240px;
+  padding: var(--space-3);
+  z-index: 1100;
 }
 </style>
