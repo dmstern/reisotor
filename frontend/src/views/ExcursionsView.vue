@@ -56,6 +56,7 @@ import LocationPicker from '../components/LocationPicker.vue';
 import CoverImagePicker from '../components/CoverImagePicker.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import FileAttachments from '../components/FileAttachments.vue';
+import DeleteButton from '../components/DeleteButton.vue';
 import DraftStatusBar from '../components/DraftStatusBar.vue';
 import RichTextEditor from '../components/RichTextEditor.vue';
 import RichTextDisplay from '../components/RichTextDisplay.vue';
@@ -572,22 +573,42 @@ const editSpotScheduledItems = computed(() => {
   return scheduleStore.items.filter((i) => i.spot_id === editingSpot.value!.id);
 });
 
-async function removeScheduledItem(id: number) {
-  if (confirm('Möchtest du diesen Termin wirklich aus dem Kalender entfernen?')) {
-    await scheduleStore.remove(id);
+async function removeScheduledItem(item: ScheduleItem) {
+  const choice = prompt(
+    `Möchtest du den Termin am ${formatDate(item.date)} komplett löschen oder nur die Verknüpfung zu diesem Spot aufheben?\n\n1 = Nur Verknüpfung aufheben\n2 = Termin komplett löschen\nAbbrechen = Keine Änderung`,
+    '1'
+  );
+  if (choice === '1') {
+    await scheduleStore.update(item.id, {
+      trip_id: item.trip_id,
+      date: item.date,
+      end_date: item.end_date,
+      time: item.time ?? undefined,
+      end_time: item.end_time ?? undefined,
+      title: item.title,
+      note: item.note ?? undefined,
+      location: item.location ?? undefined,
+      maps_link: item.maps_link ?? undefined,
+      lat: item.lat ?? undefined,
+      lng: item.lng ?? undefined,
+      spot_id: null,
+      idea_id: item.idea_id,
+    });
+  } else if (choice === '2') {
+    await scheduleStore.remove(item.id);
   }
 }
 
-// Öffnet die Karte des manuellen Pickers direkt im Urlaubsgebiet statt einer leeren Weltkarte,
-// sobald die Trip-Koordinaten bekannt sind.
+function openCalendarScheduleEdit(item: ScheduleItem) {
+  viewingScheduledItem.value = null;
+  drawers.openCalendar();
+}
+
 const spotPickerCenter = computed(() => {
   const t = tripStore.currentTrip;
   return t?.lat != null && t?.lng != null ? { lat: t.lat, lng: t.lng } : undefined;
 });
 
-// Live-Vorschau im Anlege-/Bearbeiten-Dialog (Bild-Banner, wie bei der Card): eigenes Bild, sonst
-// Kachel-Vorschau der Koordinate, sofern der Maps-Link clientseitig parsbar ist (bei Kurzlinks
-// erst nach dem Speichern möglich, siehe resolveLatLng serverseitig).
 const spotPreviewImage = computed(() => {
   if (spotForm.value.image_url) return spotForm.value.image_url;
   const parsed = parseLatLngFromMapsLink(spotForm.value.maps_link);
@@ -2839,7 +2860,7 @@ async function removeSpot(id: number) {
                         type="button"
                         title="Verknüpfung aufheben"
                         aria-label="Verknüpfung aufheben"
-                        @click.stop="removeScheduledItem(item.id)"
+                        @click.stop="removeScheduledItem(item)"
                       >
                         <AppIcon :icon="ACTION_ICONS.close" :size="12" group="actions" />
                       </button>
@@ -2921,6 +2942,7 @@ async function removeSpot(id: number) {
             @update:model-value="(v) => !v && (viewingScheduledItem = null)"
             :title="viewingScheduledItem?.title ?? ''"
             :placeholder-icon="FORM_FIELD_ICONS.date"
+            @edit="viewingScheduledItem && openCalendarScheduleEdit(viewingScheduledItem)"
           >
             <template #meta>
               <span v-if="viewingScheduledItem" class="detail-badge">
@@ -2959,6 +2981,16 @@ async function removeSpot(id: number) {
               :entity-id="viewingScheduledItem.id"
               :editable="false"
             />
+            <div class="detail-actions">
+              <DeleteButton
+                v-if="viewingScheduledItem"
+                small
+                @click="
+                  removeScheduledItem(viewingScheduledItem);
+                  viewingScheduledItem = null;
+                "
+              />
+            </div>
           </DetailModal>
 
           <div
