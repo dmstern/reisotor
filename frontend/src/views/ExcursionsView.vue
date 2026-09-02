@@ -46,7 +46,6 @@ import SearchFilterBar from '../components/SearchFilterBar.vue';
 import SpotOrderPicker from '../components/SpotOrderPicker.vue';
 import TripMap from '../components/TripMap.vue';
 import Modal from '../components/Modal.vue';
-import DetailModal from '../components/DetailModal.vue';
 import Combobox from '../components/Combobox.vue';
 import FormField from '../components/FormField.vue';
 import TourAssignPicker from '../components/TourAssignPicker.vue';
@@ -607,15 +606,9 @@ async function deleteScheduledItemCompletely() {
   unlinkingScheduledItem.value = null;
 }
 
-async function deleteScheduledItemDirectly(item: ScheduleItem) {
-  if (confirm(`Möchtest du den Termin am ${formatDate(item.date)} wirklich löschen?`)) {
-    await scheduleStore.remove(item.id);
-  }
-}
-
-function openCalendarScheduleEdit(item: ScheduleItem) {
-  viewingScheduledItem.value = null;
+function openScheduledItemDetail(item: ScheduleItem) {
   drawers.openCalendar();
+  scheduleStore.openDetail(item);
 }
 
 const spotPickerCenter = computed(() => {
@@ -2881,7 +2874,7 @@ async function removeSpot(id: number) {
                       v-for="item in editSpotScheduledItems"
                       :key="item.id"
                       class="scheduled-chip"
-                      @click="viewingScheduledItem = item"
+                      @click="openScheduledItemDetail(item)"
                     >
                       <AppIcon :icon="FORM_FIELD_ICONS.date" :size="12" group="formFields" />
                       <span class="scheduled-chip-date">{{ formatDate(item.date) }}</span>
@@ -3010,62 +3003,6 @@ async function removeSpot(id: number) {
               <Button type="submit">{{ editingSpot !== null ? 'Speichern' : 'Hinzufügen' }}</Button>
             </form>
           </Modal>
-
-          <DetailModal
-            :model-value="viewingScheduledItem !== null"
-            @update:model-value="(v) => !v && (viewingScheduledItem = null)"
-            :title="viewingScheduledItem?.title ?? ''"
-            :placeholder-icon="FORM_FIELD_ICONS.date"
-            @edit="viewingScheduledItem && openCalendarScheduleEdit(viewingScheduledItem)"
-          >
-            <template #meta>
-              <span v-if="viewingScheduledItem" class="detail-badge">
-                <AppIcon :icon="FORM_FIELD_ICONS.date" :size="12" group="formFields" />
-                {{ formatDate(viewingScheduledItem.date) }}
-              </span>
-            </template>
-            <p v-if="viewingScheduledItem?.time" class="detail-row">
-              <span class="detail-label">Zeit</span>
-              <AppIcon :icon="FORM_FIELD_ICONS.time" :size="14" group="formFields" />
-              {{ viewingScheduledItem.time
-              }}<template v-if="viewingScheduledItem.end_time">
-                – {{ viewingScheduledItem.end_time }}</template
-              >
-            </p>
-            <p
-              v-if="
-                viewingScheduledItem?.end_date &&
-                viewingScheduledItem.end_date !== viewingScheduledItem.date
-              "
-              class="detail-row"
-            >
-              <span class="detail-label">Zeitraum</span>
-              <AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" />
-              {{ formatDate(viewingScheduledItem.date) }} –
-              {{ formatDate(viewingScheduledItem.end_date) }}
-            </p>
-            <RichTextDisplay
-              v-if="viewingScheduledItem?.note"
-              :content="viewingScheduledItem.note"
-              class="detail-row note"
-            />
-            <FileAttachments
-              v-if="viewingScheduledItem"
-              domain="schedule"
-              :entity-id="viewingScheduledItem.id"
-              :editable="false"
-            />
-            <div class="detail-actions">
-              <DeleteButton
-                v-if="viewingScheduledItem"
-                small
-                @click="
-                  deleteScheduledItemDirectly(viewingScheduledItem);
-                  viewingScheduledItem = null;
-                "
-              />
-            </div>
-          </DetailModal>
 
           <Modal
             :model-value="unlinkingScheduledItem !== null"

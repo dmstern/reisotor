@@ -94,5 +94,27 @@ export const useScheduleStore = defineStore('schedule', () => {
     items.value = items.value.filter((i) => i.id !== id);
   }
 
-  return { items, loaded, load, create, update, remove, setSpotDate };
+  const selectedItemId = ref<number | null>(null);
+
+  function openDetail(itemOrId: ScheduleItem | number) {
+    const id = typeof itemOrId === 'number' ? itemOrId : itemOrId.id;
+    selectedItemId.value = id;
+  }
+
+  function closeDetail() {
+    selectedItemId.value = null;
+  }
+
+  return {
+    items,
+    loaded,
+    selectedItemId,
+    load,
+    create,
+    update,
+    remove,
+    setSpotDate,
+    openDetail,
+    closeDetail,
+  };
 });

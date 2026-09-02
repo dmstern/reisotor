@@ -138,6 +138,25 @@ const newDraft = useDraftAutosave('schedule:new', newFormBundle, showAddForm);
 
 const editingItem = ref<ScheduleItem | null>(null);
 const viewingItem = ref<ScheduleItem | null>(null);
+
+watch(
+  [() => scheduleStore.selectedItemId, () => scheduleStore.items],
+  ([id]) => {
+    if (id != null) {
+      const item = scheduleStore.items.find((i: ScheduleItem) => i.id === id);
+      if (item) {
+        viewingItem.value = item;
+      }
+    }
+  },
+  { immediate: true }
+);
+
+watch(viewingItem, (val) => {
+  if (val === null && scheduleStore.selectedItemId !== null) {
+    scheduleStore.closeDetail();
+  }
+});
 const editForm = ref({
   time: '',
   endTime: '',
