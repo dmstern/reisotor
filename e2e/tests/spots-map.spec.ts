@@ -40,7 +40,7 @@ test.describe('Spots-Liste: "Gemacht"-Status-Filter', () => {
     });
     expect(openRes.ok()).toBeTruthy();
 
-    await page.goto('/excursions');
+    await page.goto('/abc-123/excursions');
     await expect(page.locator('.spot-card', { hasText: doneTitle })).toBeVisible();
     await expect(page.locator('.spot-card', { hasText: openTitle })).toBeVisible();
 
@@ -72,7 +72,7 @@ test.describe('Spots-Karte: Kategorie-Filter wird zuverlässig auf die Marker an
   // zufällig ebenfalls ein renderMarkers() auslöste. Fix: eigener watch() auf
   // categoryFilter/statusFilter in TripMap.vue.
   test('Marker-Anzahl sinkt sofort, wenn eine Kategorie gefiltert wird', async ({ page }) => {
-    await page.goto('/excursions');
+    await page.goto('/abc-123/excursions');
     await page.waitForSelector('.leaflet-marker-icon');
     // Kurze Ruhe, bis alle Marker (Spots + Unterkunft/Reise) tatsächlich gezeichnet sind.
     await page.waitForTimeout(300);

@@ -23,7 +23,7 @@ test('toggling the trip setting makes the packing category field required or opt
 
   await setCategoryRequired(false);
 
-  await page.goto('/packing');
+  await page.goto('/abc-123/packing');
   const sharedList = page.locator('.list-section', { hasText: 'Gemeinsame Packliste' });
   const quickAddLabel = sharedList.getByPlaceholder('Neuer Gegenstand für 👥 Gemeinsame Packliste');
   await quickAddLabel.click();
@@ -35,7 +35,7 @@ test('toggling the trip setting makes the packing category field required or opt
 
   await setCategoryRequired(true);
 
-  await page.goto('/packing');
+  await page.goto('/abc-123/packing');
   const sharedList2 = page.locator('.list-section', { hasText: 'Gemeinsame Packliste' });
   const quickAddLabel2 = sharedList2.getByPlaceholder(
     'Neuer Gegenstand für 👥 Gemeinsame Packliste'

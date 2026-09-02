@@ -6,7 +6,7 @@ test('hiding a nav entry in SettingsView removes it from the NavBar', async ({ p
   await page.goto('/');
   await expect(page.locator('nav.navbar a', { hasText: 'Notizen' })).toBeVisible();
 
-  await page.goto('/settings?tab=app');
+  await page.goto('/abc-123/settings?tab=app');
   const notesRow = page.locator('.nav-config-row', { hasText: 'Notizen' });
   await notesRow.locator('input[type="checkbox"]').uncheck();
 
@@ -14,7 +14,7 @@ test('hiding a nav entry in SettingsView removes it from the NavBar', async ({ p
   await expect(page.locator('nav.navbar a', { hasText: 'Notizen' })).toHaveCount(0);
 
   // Aufräumen, damit der Zustand nicht in andere Tests dieser Suite durchsickert.
-  await page.goto('/settings?tab=app');
+  await page.goto('/abc-123/settings?tab=app');
   await page
     .locator('.nav-config-row', { hasText: 'Notizen' })
     .locator('input[type="checkbox"]')
@@ -24,7 +24,7 @@ test('hiding a nav entry in SettingsView removes it from the NavBar', async ({ p
 test('reordering nav entries in SettingsView changes their order in the NavBar', async ({
   page,
 }) => {
-  await page.goto('/settings?tab=app');
+  await page.goto('/abc-123/settings?tab=app');
   const firstRowLabel = page.locator('.nav-config-row').first().locator('.nav-config-label');
   const initialFirstLabel = await firstRowLabel.textContent();
 
@@ -50,6 +50,6 @@ test('reordering nav entries in SettingsView changes their order in the NavBar',
   expect(navLabels[1]?.trim()).toBe(newFirstLabel?.trim());
 
   // Aufräumen: wieder zurückverschieben.
-  await page.goto('/settings?tab=app');
+  await page.goto('/abc-123/settings?tab=app');
   await page.locator('.nav-config-row').first().getByLabel('Nach unten verschieben').click();
 });

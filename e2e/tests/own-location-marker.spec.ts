@@ -8,7 +8,7 @@ test.use({ geolocation: { latitude: 48.2, longitude: 16.37 }, permissions: ['geo
 
 test.describe('Eigener Standort-Marker', () => {
   test('rendert als Kreis-Marker statt als Emoji-Pin-Ballon', async ({ page }) => {
-    await page.goto('/excursions');
+    await page.goto('/abc-123/excursions');
     const ownMarker = page.locator(
       '.leaflet-pane.leaflet-live-positions-pane .own-location-marker'
     );
@@ -16,7 +16,7 @@ test.describe('Eigener Standort-Marker', () => {
   });
 
   test('zeigt einen Richtungskegel, sobald ein Kompass-Wert vorliegt', async ({ page }) => {
-    await page.goto('/excursions');
+    await page.goto('/abc-123/excursions');
     const ownMarker = page.locator(
       '.leaflet-pane.leaflet-live-positions-pane .own-location-marker'
     );

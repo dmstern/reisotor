@@ -10,7 +10,7 @@ import { test, expect } from '@playwright/test';
 // aus (siehe file-attachments-view-mode.spec.ts für den dedizierten Regressionstest dieses
 // Verhaltens selbst) - hier geht es nur um den eigentlichen Upload/Löschen-Ablauf.
 test('uploading and removing a file attachment on a note (via edit form)', async ({ page }) => {
-  await page.goto('/notes');
+  await page.goto('/abc-123/notes');
   await page.getByRole('button', { name: 'Neue Notiz' }).click();
   const editor = page.locator('.modal .richtext-content[contenteditable="true"]');
   await editor.click();

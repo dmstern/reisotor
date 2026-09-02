@@ -15,7 +15,7 @@ test.describe('Mobile Spots-Sheet: knackiger Flick schaltet einen Zustand weiter
   test('kurzer, schneller Wisch nach oben am Anfasser wechselt von "angeschnitten" auf "voll"', async ({
     page,
   }) => {
-    await page.goto('/excursions');
+    await page.goto('/abc-123/excursions');
     const sheet = page.locator('.spots-col');
     await expect(sheet).toBeVisible();
     await expect(sheet).not.toHaveClass(/full/);
@@ -44,7 +44,7 @@ test.describe('Mobile Spots-Sheet: knackiger Flick schaltet einen Zustand weiter
   test('kurzer, schneller Wisch nach unten am Anfasser wechselt von "voll" auf "angeschnitten"', async ({
     page,
   }) => {
-    await page.goto('/excursions');
+    await page.goto('/abc-123/excursions');
     const sheet = page.locator('.spots-col');
     await expect(sheet).toBeVisible();
 

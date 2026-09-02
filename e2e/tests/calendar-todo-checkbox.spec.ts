@@ -8,7 +8,7 @@ test('checking off a todo in the calendar day view marks it done in TodoView.vue
 }) => {
   const todayIso = new Date().toISOString().slice(0, 10);
 
-  await page.goto('/todo');
+  await page.goto('/abc-123/todo');
   await page.getByPlaceholder('Neue Aufgabe').fill('E2E Kalender-Checkbox-Test');
   await page.locator('input[type="date"]').first().fill(todayIso);
   await page.getByRole('button', { name: 'Hinzufügen', exact: true }).click();
@@ -26,7 +26,7 @@ test('checking off a todo in the calendar day view marks it done in TodoView.vue
   await checkbox.click();
   await expect(checkbox).toBeChecked();
 
-  await page.goto('/todo');
+  await page.goto('/abc-123/todo');
   const todoRow = page.locator('.row', { hasText: 'E2E Kalender-Checkbox-Test' });
   await expect(todoRow).toHaveClass(/row-done/);
   await expect(todoRow.locator('input[type="checkbox"]')).toBeChecked();

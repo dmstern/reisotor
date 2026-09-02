@@ -31,7 +31,7 @@ test.describe('Standort-Freigabe-Dauer auf der Karte', () => {
   test('Auswahl "Für einen Tag" markiert den Button als aktiv und übersteht einen Reload', async ({
     page,
   }) => {
-    await page.goto('/excursions');
+    await page.goto('/abc-123/excursions');
     await closeDrawerIfOpen(page, 'Kalender');
     const shareBtn = page.locator('.share-location-btn');
     await expect(shareBtn).toBeVisible({ timeout: 10_000 });
@@ -52,7 +52,7 @@ test.describe('Standort-Freigabe-Dauer auf der Karte', () => {
   });
 
   test('Auswahl "Nicht teilen" deaktiviert die Freigabe wieder', async ({ page }) => {
-    await page.goto('/excursions');
+    await page.goto('/abc-123/excursions');
     await closeDrawerIfOpen(page, 'Kalender');
     const shareBtn = page.locator('.share-location-btn');
     await expect(shareBtn).toBeVisible({ timeout: 10_000 });

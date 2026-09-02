@@ -13,7 +13,7 @@ test.describe('Entwurfs-Zwischenspeicherung für Formulare', () => {
   test('ein noch nicht abgeschickter neuer Text übersteht einen Reload und wird beim erneuten Öffnen wiederhergestellt', async ({
     page,
   }) => {
-    await page.goto('/notes');
+    await page.goto('/abc-123/notes');
     await page.getByRole('button', { name: 'Neue Notiz' }).click();
     const editor = page.locator('.modal .richtext-content[contenteditable="true"]');
     await editor.click();
@@ -39,7 +39,7 @@ test.describe('Entwurfs-Zwischenspeicherung für Formulare', () => {
   });
 
   test('nach erfolgreichem Speichern bleibt kein Entwurf zurück', async ({ page }) => {
-    await page.goto('/notes');
+    await page.goto('/abc-123/notes');
     await page.getByRole('button', { name: 'Neue Notiz' }).click();
     const editor = page.locator('.modal .richtext-content[contenteditable="true"]');
     await editor.click();
@@ -61,7 +61,7 @@ test.describe('Entwurfs-Zwischenspeicherung für Formulare', () => {
   test('eine ungespeicherte Änderung im Bearbeiten-Formular übersteht einen Reload', async ({
     page,
   }) => {
-    await page.goto('/notes');
+    await page.goto('/abc-123/notes');
     await page.getByRole('button', { name: 'Neue Notiz' }).click();
     const newEditor = page.locator('.modal .richtext-content[contenteditable="true"]');
     await newEditor.click();

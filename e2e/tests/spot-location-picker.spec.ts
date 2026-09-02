@@ -13,7 +13,7 @@ test.describe('Standort manuell setzen (Spot-Formular)', () => {
     const pageErrors: string[] = [];
     page.on('pageerror', (err) => pageErrors.push(err.message));
 
-    await page.goto('/excursions');
+    await page.goto('/abc-123/excursions');
     await page.getByRole('button', { name: 'Neuer Spot' }).click();
     const modal = page.locator('.modal', { hasText: 'Neuer Spot' });
     await modal.locator('.location-fieldset .collapsible-toggle').click();
@@ -32,7 +32,7 @@ test.describe('Standort manuell setzen (Spot-Formular)', () => {
   test('"Meinen aktuellen Standort verwenden" setzt den Pin auf die ermittelte Position', async ({
     page,
   }) => {
-    await page.goto('/excursions');
+    await page.goto('/abc-123/excursions');
     await page.getByRole('button', { name: 'Neuer Spot' }).click();
     const modal = page.locator('.modal', { hasText: 'Neuer Spot' });
     await modal.locator('.location-fieldset .collapsible-toggle').click();

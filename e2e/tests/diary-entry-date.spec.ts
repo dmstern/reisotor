@@ -14,7 +14,7 @@ test.describe('Tagebuch: Datum eines Eintrags', () => {
     const todayTitle = `Heute ${marker}`;
     const pastTitle = `Vorgestern ${marker}`;
 
-    await page.goto('/diary');
+    await page.goto('/abc-123/diary');
 
     // Erster Eintrag: Datumsfeld unangetastet lassen - muss bereits mit heute vorbelegt sein.
     await page.getByRole('button', { name: 'Neuer Eintrag' }).click();

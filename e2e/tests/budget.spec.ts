@@ -41,7 +41,7 @@ async function netFor(page: Page, username: string): Promise<number> {
 test('creates a shared budget pot with categories and the KPIs reflect the new expense correctly', async ({
   page,
 }) => {
-  await page.goto('/budget');
+  await page.goto('/abc-123/budget');
   await expect(page.locator('.budget-page')).toBeVisible();
 
   const { spent: spentBefore, target: grandTotalBefore } = await overviewValues(page);
@@ -89,7 +89,7 @@ test('creates a shared budget pot with categories and the KPIs reflect the new e
 test('a budget pot with only a target_amount (simple mode) shows a single meter without categories', async ({
   page,
 }) => {
-  await page.goto('/budget');
+  await page.goto('/abc-123/budget');
   await expect(page.locator('.budget-page')).toBeVisible();
   const { target: grandTotalBefore } = await overviewValues(page);
 
@@ -125,8 +125,8 @@ test('a private budget pot stays invisible to another member, but shared expense
   await login(pageA, E2E_USERNAME, E2E_PASSWORD);
   await login(pageB, E2E_USERNAME_2, E2E_PASSWORD_2);
 
-  await pageA.goto('/budget');
-  await pageB.goto('/budget');
+  await pageA.goto('/abc-123/budget');
+  await pageB.goto('/abc-123/budget');
   await expect(pageA.locator('.budget-page')).toBeVisible();
   await expect(pageB.locator('.budget-page')).toBeVisible();
 
@@ -195,7 +195,7 @@ test('a private budget pot stays invisible to another member, but shared expense
 });
 
 test('clicking a settlement suggestion pre-fills the transfer form', async ({ page }) => {
-  await page.goto('/budget');
+  await page.goto('/abc-123/budget');
   await expect(page.locator('.budget-page')).toBeVisible();
 
   // Eine unbezahlt bleibende, ausschließlich von user1 getragene Ausgabe erzeugt garantiert einen
@@ -218,7 +218,7 @@ test('clicking a settlement suggestion pre-fills the transfer form', async ({ pa
 
 test('nothing overflows the mobile viewport on the budget view', async ({ page }) => {
   await page.setViewportSize(VIEWPORTS.mobile);
-  await page.goto('/budget');
+  await page.goto('/abc-123/budget');
   await expect(page.locator('.budget-page')).toBeVisible();
 
   // Die Seite ist länger als der Viewport (normales vertikales Scrollen) - jedes Element erst in

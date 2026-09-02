@@ -22,7 +22,7 @@ test.describe('Karten-Rotation (Norden/Fahrtrichtung-Umschalter)', () => {
   test('Fahrtrichtung-Modus dreht die Karte auf den Kompass-Heading, Norden-Modus nicht', async ({
     page,
   }) => {
-    await page.goto('/excursions');
+    await page.goto('/abc-123/excursions');
     // Norden/Fahrtrichtung-Umschalter lebt hinter dem "Standort & Ausrichtung"-Popover (siehe
     // TripMap.vue's .location-btn/locationMenuOpen) statt eines eigenen, immer sichtbaren Buttons.
     const locationBtn = page.locator('.location-btn');

@@ -10,7 +10,7 @@ test.describe('Offline-Erkennung merkt sich einen Fehlschlag statt jedes Mal neu
   test('zweite View lädt nach einem ersten Fehlschlag sofort aus dem Cache statt erneut den Timeout abzuwarten', async ({
     page,
   }) => {
-    await page.goto('/listen?tab=todo');
+    await page.goto('/abc-123/listen?tab=todo');
     await expect(page.locator('.todo-page')).toBeVisible();
     // Zweite View schon einmal online besuchen, damit ihr Cache-Eintrag existiert - der eigentliche
     // Test soll nur die Geschwindigkeit des ZWEITEN (bereits als offline bekannten) Requests prüfen,
@@ -46,7 +46,7 @@ test.describe('Offline-Erkennung merkt sich einen Fehlschlag statt jedes Mal neu
   test('Klick auf das Offline-Symbol im Header erkennt eine Wiederverbindung sofort statt auf den nächsten Health-Check zu warten', async ({
     page,
   }) => {
-    await page.goto('/todo');
+    await page.goto('/abc-123/todo');
     await expect(page.locator('.todo-page')).toBeVisible();
 
     await page.route('**/api/**', (route) => route.abort());

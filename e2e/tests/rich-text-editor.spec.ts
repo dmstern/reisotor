@@ -9,7 +9,7 @@ import { test, expect } from '@playwright/test';
 test('creating a note with the WYSIWYG editor renders formatting, and a pre-existing legacy note still displays', async ({
   page,
 }) => {
-  await page.goto('/notes');
+  await page.goto('/abc-123/notes');
 
   // Legacy-Pfad: bereits vor der Umstellung angelegte Notiz rendert weiterhin über renderRichText().
   const legacyCard = page.locator('.note-card', { hasText: 'WLAN & Notfallkontakte' });

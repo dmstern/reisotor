@@ -54,8 +54,8 @@ const LISBON = { lat: 38.7223, lng: -9.1393 };
 
 const tripResult = db
   .prepare(
-    `INSERT INTO trips (name, destination, start_date, end_date, maps_link, lat, lng, image_url)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO trips (name, destination, start_date, end_date, maps_link, lat, lng, image_url, uuid)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
   )
   .run(
     'Sommerurlaub Lissabon',
@@ -98,7 +98,7 @@ for (const [category, amount] of Object.entries(allocations)) {
 
 const insertExpense = db.prepare(
   `INSERT INTO budget_items (trip_id, title, category, amount, paid_by_user_id, date, note, budget_id)
-   VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
 );
 
 // --- Unterkunft (inkl. automatisch verknüpfter Budget-Ausgabe, analog spots.ts's planBudgetExpense)
@@ -224,7 +224,7 @@ insertPacking.run(tripId, 'Dokumente', 'Reisepass', user2.id, 0, 0);
 
 // --- Einkaufsliste ---
 const insertShopping = db.prepare(
-  'INSERT INTO shopping_items (trip_id, label, assigned_to_user_id, checked, link, note, shop, period) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+  'INSERT INTO shopping_items (trip_id, label, assigned_to_user_id, checked, link, note, shop, period) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
 );
 insertShopping.run(tripId, 'Sonnencreme', user2.id, 0, null, null, 'dm', 'before');
 insertShopping.run(tripId, 'Reiseführer Lissabon', user1.id, 1, null, null, null, 'before');

@@ -78,7 +78,7 @@ test('Ein von mehreren Etappen referenzierter Reise-Ort-Spot erscheint nur einma
   });
   expect(inbound.ok()).toBeTruthy();
 
-  await page.goto('/excursions');
+  await page.goto('/abc-123/excursions');
 
   // Genau zwei Spots angelegt -> genau zwei Karten, unabhängig davon, dass vier Etappen-Enden
   // (Hinflug Von/Nach, Rückflug Von/Nach) auf sie verweisen.

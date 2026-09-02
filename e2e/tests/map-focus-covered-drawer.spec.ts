@@ -16,9 +16,9 @@ const excursion = seeded.ideas.find((i: { title: string }) => i.title === 'Sight
 // der Karte zu öffnende Schublade (siehe CLAUDE.md, "Responsive Besonderheit").
 async function focusDayViaCalendar(page: Page, viewportName: string) {
   if (viewportName === 'mobile') {
-    await page.goto('/calendar');
+    await page.goto('/abc-123/calendar');
   } else {
-    await page.goto('/excursions');
+    await page.goto('/abc-123/excursions');
     const tab = page.locator('.drawer-tab[aria-label*="Kalender"]');
     if ((await tab.getAttribute('aria-expanded')) === 'false') await tab.click();
   }
@@ -56,7 +56,7 @@ for (const [viewportName, viewport] of Object.entries({
     test('fokussierter Einzelpunkt (Spot-Klick) bleibt oberhalb der Schubladen-Kante sichtbar', async ({
       page,
     }) => {
-      await page.goto('/excursions');
+      await page.goto('/abc-123/excursions');
       const sheet = page.locator('.spots-col');
       await expect(sheet).toBeVisible();
 
@@ -74,7 +74,7 @@ for (const [viewportName, viewport] of Object.entries({
     test('"Alle anzeigen" (mehrere Punkte) bleibt komplett oberhalb der Schubladen-Kante', async ({
       page,
     }) => {
-      await page.goto('/excursions');
+      await page.goto('/abc-123/excursions');
       const sheet = page.locator('.spots-col');
       await expect(sheet).toBeVisible();
 
@@ -92,7 +92,7 @@ for (const [viewportName, viewport] of Object.entries({
     test('fokussierte Tour (Ausflug/Route) bleibt komplett oberhalb der Schubladen-Kante', async ({
       page,
     }) => {
-      await page.goto('/excursions');
+      await page.goto('/abc-123/excursions');
       const sheet = page.locator('.spots-col');
       await expect(sheet).toBeVisible();
 

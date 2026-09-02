@@ -26,7 +26,7 @@ test.describe('Tour-Zuordnung: einfacher Tagging-Modus + Kategorie/Touren-Gruppi
     const spotTitle = `Café ${marker}`;
     const tourTitle = `Spaziergang ${marker}`;
 
-    await page.goto('/excursions');
+    await page.goto('/abc-123/excursions');
     if (
       (await page
         .locator('.segmented-option', { hasText: 'Touren' })
@@ -86,7 +86,7 @@ test.describe('Tour-Zuordnung: einfacher Tagging-Modus + Kategorie/Touren-Gruppi
     });
     expect(tourRes.ok()).toBeTruthy();
 
-    await page.goto('/excursions');
+    await page.goto('/abc-123/excursions');
     await page.locator('.segmented-option', { hasText: 'Touren' }).click();
     const group = page.locator('.category-group', { hasText: tourTitle });
     await group.locator('.excursion-card h3').click();
@@ -152,7 +152,7 @@ test.describe('Touren-Reihenfolge-Editor: Reihenfolge + Mehrfachbesuch direkt in
     });
     expect(spotB.ok()).toBeTruthy();
 
-    await page.goto('/excursions');
+    await page.goto('/abc-123/excursions');
     // #155: "+ Neue Tour" wird nur noch bei aktiver Touren-Gruppierung angezeigt (statt wie zuvor
     // immer neben "+ Neuer Spot") - erst umschalten, falls eine vorherige Spec im geteilten
     // localStorage-Zustand die Kategorie-Gruppierung hinterlassen hat.

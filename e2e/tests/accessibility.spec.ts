@@ -41,7 +41,7 @@ test.describe('Accessibility (a11y)', () => {
     });
 
     test('calendar page accessibility scan', async ({ page }) => {
-      await page.goto('/calendar');
+      await page.goto('/abc-123/calendar');
       await expect(page.getByRole('heading', { name: 'Kalender', level: 2 })).toBeVisible();
 
       const results = await new AxeBuilder({ page })
@@ -53,7 +53,7 @@ test.describe('Accessibility (a11y)', () => {
     });
 
     test('excursions (spots) page accessibility scan', async ({ page }) => {
-      await page.goto('/excursions');
+      await page.goto('/abc-123/excursions');
       await expect(
         page.getByRole('button', { name: 'Nach Kategorie filtern', exact: true })
       ).toBeVisible();
@@ -67,7 +67,7 @@ test.describe('Accessibility (a11y)', () => {
     });
 
     test('settings page accessibility scan', async ({ page }) => {
-      await page.goto('/settings');
+      await page.goto('/abc-123/settings');
       await expect(page.getByRole('heading', { name: 'Einstellungen', level: 1 })).toBeVisible();
 
       const results = await new AxeBuilder({ page })

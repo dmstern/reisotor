@@ -6,7 +6,7 @@ import { test, expect } from '@playwright/test';
 test('checking an item in the shopping list sinks it to the bottom of its group and grays it out', async ({
   page,
 }) => {
-  await page.goto('/shopping');
+  await page.goto('/abc-123/shopping');
 
   const group = page.locator('.group-section', { hasText: 'Nicht zugewiesen' });
   const rowA = group.locator('.row', { hasText: 'E2E Sort A' });
@@ -54,7 +54,7 @@ test('checking an item in the shopping list sinks it to the bottom of its group 
 test('marking a packing item as packed sinks it to the bottom of its category group and grays it out', async ({
   page,
 }) => {
-  await page.goto('/packing');
+  await page.goto('/abc-123/packing');
 
   const sharedList = page.locator('.list-section', { hasText: 'Gemeinsame Packliste' });
   const quickAddLabel = sharedList.getByPlaceholder('Neuer Gegenstand für 👥 Gemeinsame Packliste');
@@ -94,7 +94,7 @@ test('marking a packing item as packed sinks it to the bottom of its category gr
 test('a quantity>1 packing item can be marked fully packed with a single toggle click', async ({
   page,
 }) => {
-  await page.goto('/packing');
+  await page.goto('/abc-123/packing');
 
   const sharedList = page.locator('.list-section', { hasText: 'Gemeinsame Packliste' });
   const quickAddLabel = sharedList.getByPlaceholder('Neuer Gegenstand für 👥 Gemeinsame Packliste');

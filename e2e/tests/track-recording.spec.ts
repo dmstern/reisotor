@@ -25,7 +25,7 @@ test.describe('Standort-Aufzeichnung', () => {
     page,
     context,
   }) => {
-    await page.goto('/excursions');
+    await page.goto('/abc-123/excursions');
     await closeDrawerIfOpen(page, 'Kalender');
 
     const recordBtn = page.locator('.record-btn');
@@ -104,7 +104,7 @@ test.describe('Standort-Aufzeichnung', () => {
     page,
     context,
   }) => {
-    await page.goto('/excursions');
+    await page.goto('/abc-123/excursions');
     await closeDrawerIfOpen(page, 'Kalender');
 
     const recordBtn = page.locator('.record-btn');

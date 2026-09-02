@@ -9,7 +9,7 @@ test.describe('Offline angelegte Objekte werden als "nur lokal" markiert und sp�
   test('ein offline angelegtes ToDo übersteht einen Reload und synct sich nach Wiederverbindung', async ({
     page,
   }) => {
-    await page.goto('/todo');
+    await page.goto('/abc-123/todo');
     await expect(page.locator('.todo-page')).toBeVisible();
 
     // Alle Backend-Requests schlagen künftig fehl (route.abort() -> fetch wirft TypeError, siehe

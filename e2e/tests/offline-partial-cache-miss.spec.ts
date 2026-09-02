@@ -18,7 +18,7 @@ const seeded = JSON.parse(
 test('rendert die Seite auch, wenn der Cache für einen ihrer Endpunkte fehlt, statt für immer leer zu bleiben', async ({
   page,
 }) => {
-  await page.goto('/todo');
+  await page.goto('/abc-123/todo');
   await expect(page.locator('.todo-page')).toBeVisible();
 
   // Genau den einen Cache-Eintrag entfernen (Rest der App bleibt online/gecacht) und den

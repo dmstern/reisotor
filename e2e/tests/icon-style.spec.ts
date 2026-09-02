@@ -83,7 +83,7 @@ test.describe('Icon-Stil: Emoji/Symbole', () => {
     await expect(dashboardLink.locator('svg.icon')).toBeVisible();
     expect(await dashboardLink.locator('span.icon').count()).toBe(0);
 
-    await page.goto('/settings?tab=app');
+    await page.goto('/abc-123/settings?tab=app');
     const iconsCard = page.locator('.card', {
       has: page.getByRole('heading', { name: 'Icons', exact: true }),
     });
@@ -105,7 +105,7 @@ test.describe('Icon-Stil: Emoji/Symbole', () => {
   });
 
   test('"Für alle Bereiche umstellen" setzt alle Bereichs-Toggles auf einmal', async ({ page }) => {
-    await page.goto('/settings?tab=app');
+    await page.goto('/abc-123/settings?tab=app');
     const iconsCard = page.locator('.card', {
       has: page.getByRole('heading', { name: 'Icons', exact: true }),
     });
@@ -129,7 +129,7 @@ test.describe('Icon-Stil: Emoji/Symbole', () => {
     // gezielt Navigation auf Symbole zurückstellen, um die Varianten-Zeile testen zu können.
     const current = await getIconSettings(page);
     await putIconSettings(page, { ...current, groups: { ...current.groups, navigation: 'icons' } });
-    await page.goto('/settings?tab=app');
+    await page.goto('/abc-123/settings?tab=app');
     const iconsCard = page.locator('.card', {
       has: page.getByRole('heading', { name: 'Icons', exact: true }),
     });
@@ -147,7 +147,7 @@ test.describe('Icon-Stil: Emoji/Symbole', () => {
     await page.goto('/');
     await expect(dashboardIcon()).toHaveAttribute('fill', 'none');
 
-    await page.goto('/settings?tab=app');
+    await page.goto('/abc-123/settings?tab=app');
     await navVariantRow.locator('.segmented-option', { hasText: 'Gefüllt' }).click();
     await expect
       .poll(async () => (await getIconSettings(page)).variants?.navigation)
@@ -161,7 +161,7 @@ test.describe('Icon-Stil: Emoji/Symbole', () => {
 
     // Ein anderer Bereich (Kategorien) bleibt von der Navigation-Varianten-Änderung unberührt (jeder
     // Bereich trägt einen eigenen, vollständigen Wert - siehe stores/iconStyle.ts's DEFAULT_VARIANTS).
-    await page.goto('/settings?tab=app');
+    await page.goto('/abc-123/settings?tab=app');
     expect((await getIconSettings(page)).variants?.categories).toBe('outline');
 
     // Kategorien steht standardmäßig auf Emoji -> keine Varianten-Zeile für diesen Bereich.
@@ -193,7 +193,7 @@ test.describe('Icon-Stil: Emoji/Symbole', () => {
   test('Bereichs-Override lässt Kategorien bei Emoji, während andere Bereiche auf Symbole stehen', async ({
     page,
   }) => {
-    await page.goto('/settings?tab=app');
+    await page.goto('/abc-123/settings?tab=app');
     const iconsCard = page.locator('.card', {
       has: page.getByRole('heading', { name: 'Icons', exact: true }),
     });
@@ -227,7 +227,7 @@ test.describe('Icon-Stil: Emoji/Symbole', () => {
         actions: 'emoji',
       },
     });
-    await page.goto('/settings?tab=app');
+    await page.goto('/abc-123/settings?tab=app');
     const iconsCard = page.locator('.card', {
       has: page.getByRole('heading', { name: 'Icons', exact: true }),
     });
@@ -258,7 +258,7 @@ test.describe('Icon-Stil: Emoji/Symbole', () => {
     // gezielt Navigation auf Symbole zurückstellen, sonst gibt es kein SVG zum Einfärben.
     const current = await getIconSettings(page);
     await putIconSettings(page, { ...current, groups: { ...current.groups, navigation: 'icons' } });
-    await page.goto('/settings?tab=app');
+    await page.goto('/abc-123/settings?tab=app');
     const iconsCard = page.locator('.card', {
       has: page.getByRole('heading', { name: 'Icons', exact: true }),
     });
@@ -275,7 +275,7 @@ test.describe('Icon-Stil: Emoji/Symbole', () => {
     await page.goto('/');
     await expect(dashboardIcon()).toHaveAttribute('stroke', 'currentColor');
 
-    await page.goto('/settings?tab=app');
+    await page.goto('/abc-123/settings?tab=app');
     await navColorCheckbox.check();
     await expect.poll(async () => (await getIconSettings(page)).navColored).toBe(true);
 
@@ -284,7 +284,7 @@ test.describe('Icon-Stil: Emoji/Symbole', () => {
   });
 
   test('"Auf Standard-Einstellungen zurücksetzen" stellt Defaults wieder her', async ({ page }) => {
-    await page.goto('/settings?tab=app');
+    await page.goto('/abc-123/settings?tab=app');
     const iconsCard = page.locator('.card', {
       has: page.getByRole('heading', { name: 'Icons', exact: true }),
     });

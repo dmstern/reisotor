@@ -7,7 +7,7 @@ import { test, expect } from '@playwright/test';
 test('Datei-Upload-Button erscheint nur im Bearbeiten-Formular, nicht in der Karten-Ansicht', async ({
   page,
 }) => {
-  await page.goto('/notes');
+  await page.goto('/abc-123/notes');
   await page.getByRole('button', { name: 'Neue Notiz' }).click();
   const editor = page.locator('.modal .richtext-content[contenteditable="true"]');
   await editor.click();

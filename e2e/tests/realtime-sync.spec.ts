@@ -49,7 +49,7 @@ test('another member creating a todo lights up the ToDo nav badge, which clears 
   await expect(listenNavLink.locator('.unseen-dot')).toHaveCount(0);
 
   // pageA never visits /todo itself - it should still learn about the change via SSE.
-  await pageB.goto('/todo');
+  await pageB.goto('/abc-123/todo');
   await pageB.locator('input[placeholder="Neue Aufgabe"]').fill('E2E Realtime-Sync-Test-Todo');
   await pageB.locator('.add-form button[type="submit"]').click();
   await expect(pageB.locator('li.row', { hasText: 'E2E Realtime-Sync-Test-Todo' })).toBeVisible();
@@ -59,7 +59,7 @@ test('another member creating a todo lights up the ToDo nav badge, which clears 
   // Innerhalb von "Listen" muss der Punkt am ToDo-Tab selbst zu sehen sein, NICHT an den beiden
   // unbeteiligten Tabs - sonst müsste man alle drei Tabs nacheinander abklappern, um die
   // betroffene Liste zu finden (siehe ListenView.vue's TABS/liveSync.hasUnseen()-Verdrahtung).
-  await pageA.goto('/listen');
+  await pageA.goto('/abc-123/listen');
   await expect(pageA.getByRole('tab', { name: 'Packliste' }).locator('.unseen-dot')).toHaveCount(0);
   await expect(pageA.getByRole('tab', { name: 'Einkauf' }).locator('.unseen-dot')).toHaveCount(0);
   await expect(pageA.getByRole('tab', { name: 'ToDo' }).locator('.unseen-dot')).toBeVisible();
@@ -126,7 +126,7 @@ test('another member creating a tour lights up the Karte nav badge and the Toure
   // Öffnen der Karte-Sicht im Default-Modus (Kategorie/Spots) markiert nur 'spots' als gesehen -
   // 'ideas' bleibt unbesehen, der äußere Nav-Punkt UND der Touren-Toggle müssen also weiterhin
   // einen Punkt zeigen, der Spots-Toggle dagegen nicht.
-  await pageA.goto('/excursions');
+  await pageA.goto('/abc-123/excursions');
   // #155: der Spots-/Touren-Umschalter sitzt seither direkt neben der Drawer-Überschrift
   // (ExcursionsView.vue's .header h2), nicht mehr in der einklappbaren Gruppieren-Zeile der
   // Anzeige & Filter-Box - dadurch immer sichtbar, unabhängig von Viewport-Breite.

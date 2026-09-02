@@ -7,7 +7,7 @@ import { test, expect } from '@playwright/test';
 // alle elf betroffenen Objekttypen (identisches Muster, siehe useUndoableDelete.ts).
 
 test('deleting an item shows a toast notification and removes the item', async ({ page }) => {
-  await page.goto('/todo');
+  await page.goto('/abc-123/todo');
   await page.locator('input[placeholder="Neue Aufgabe"]').fill('E2E Undo-Test-Aufgabe');
   await page.locator('.add-form button[type="submit"]').click();
 
@@ -26,7 +26,7 @@ test('deleting an item shows a toast notification and removes the item', async (
 test('the trash view (reachable via profile/avatar) lists a deleted item and restores it', async ({
   page,
 }) => {
-  await page.goto('/todo');
+  await page.goto('/abc-123/todo');
   await page.locator('input[placeholder="Neue Aufgabe"]').fill('E2E Papierkorb-Test-Aufgabe');
   await page.locator('.add-form button[type="submit"]').click();
   const row = page.locator('li.row', { hasText: 'E2E Papierkorb-Test-Aufgabe' });
@@ -48,6 +48,6 @@ test('the trash view (reachable via profile/avatar) lists a deleted item and res
   await trashRow.getByRole('button', { name: 'Wiederherstellen' }).click();
   await expect(trashRow).toHaveCount(0);
 
-  await page.goto('/todo');
+  await page.goto('/abc-123/todo');
   await expect(page.locator('li.row', { hasText: 'E2E Papierkorb-Test-Aufgabe' })).toBeVisible();
 });

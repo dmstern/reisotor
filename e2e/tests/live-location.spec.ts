@@ -37,13 +37,13 @@ test('another member sharing their location shows up as a marker on the map', as
   await login(pageB, E2E_USERNAME_2, E2E_PASSWORD_2);
 
   // pageA never shares its own location - it should still see pageB's marker via SSE.
-  await pageA.goto('/excursions');
+  await pageA.goto('/abc-123/excursions');
   const liveMarkersOnA = pageA.locator(
     '.leaflet-pane.leaflet-live-positions-pane .leaflet-marker-icon'
   );
   await expect(liveMarkersOnA).toHaveCount(0);
 
-  await pageB.goto('/excursions');
+  await pageB.goto('/abc-123/excursions');
   await expect(liveMarkersOnA).toHaveCount(1, { timeout: 10_000 });
 
   // Leaving the map view stops sharing (DELETE /realtime/position on unmount) - the marker

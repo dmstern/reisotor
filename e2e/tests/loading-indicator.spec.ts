@@ -6,7 +6,7 @@ import { test, expect } from '@playwright/test';
 // was wie ein Einfrieren der App wirkte.
 test.describe('Zentrale Lade-Animation', () => {
   test('View-Wechsel zeigt einen Lade-Platzhalter statt einer leeren Seite', async ({ page }) => {
-    await page.goto('/listen?tab=todo');
+    await page.goto('/abc-123/listen?tab=todo');
     await expect(page.locator('.todo-page')).toBeVisible();
 
     // Alle API-Antworten künstlich verzögern, um den Ladezustand sichtbar zu machen.
@@ -28,7 +28,7 @@ test.describe('Zentrale Lade-Animation', () => {
   });
 
   test('Toast unterscheidet Lesen von Anlegen', async ({ page }) => {
-    await page.goto('/packing');
+    await page.goto('/abc-123/packing');
     await expect(page.locator('.packing-page')).toBeVisible();
 
     await page.route('**/api/**', async (route) => {
@@ -44,10 +44,10 @@ test.describe('Zentrale Lade-Animation', () => {
   });
 
   test('Toast lässt sich in den Einstellungen abschalten', async ({ page }) => {
-    await page.goto('/settings?tab=notifications');
+    await page.goto('/abc-123/settings?tab=notifications');
     await page.getByLabel('Detaillierte Lade-/Speicher-Meldungen anzeigen').uncheck();
 
-    await page.goto('/packing');
+    await page.goto('/abc-123/packing');
     await expect(page.locator('.packing-page')).toBeVisible();
 
     await page.route('**/api/**', async (route) => {

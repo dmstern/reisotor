@@ -31,7 +31,7 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
     });
     expect(created.ok()).toBeTruthy();
 
-    await page.goto('/excursions');
+    await page.goto('/abc-123/excursions');
     const spotCard = page.locator('.spot-card', { hasText: spotTitle });
     await expect(spotCard).toBeVisible();
     // Karte aufklappen, damit der Umschalt-Button (nur im aufgeklappten Zustand sichtbar) erreichbar
@@ -90,7 +90,7 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
     });
     expect(scheduleRes.ok()).toBeTruthy();
 
-    await page.goto('/excursions');
+    await page.goto('/abc-123/excursions');
     const spotCard = page.locator('.spot-card', { hasText: spotTitle });
     await spotCard.locator('h3').click();
     await expect(spotCard.locator('.status.planned')).toContainText('Geplant für');
@@ -116,7 +116,7 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
     });
     expect(created.ok()).toBeTruthy();
 
-    await page.goto('/excursions');
+    await page.goto('/abc-123/excursions');
     const spotCard = page.locator('.spot-card', { hasText: spotTitle });
     await spotCard.locator('h3').click();
     await spotCard.locator('.done-toggle').click();
@@ -158,7 +158,7 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
     const spot = await spotRes.json();
     expect(spot.done).toBe(0);
 
-    await page.goto('/diary');
+    await page.goto('/abc-123/diary');
     await page.getByRole('button', { name: 'Neuer Eintrag' }).click();
     const modal = page.locator('.modal', { hasText: 'Neuer Tagebucheintrag' });
     await expect(modal.locator('input[type="date"]')).toHaveValue(today);
@@ -212,12 +212,12 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
     // Beide verknüpften Objekte müssen jetzt automatisch als "gemacht" markiert sein. Touren-Karten
     // leben seit der Verschmelzung des früheren "erweiterten Touren-Modus" in der Spots-Sicht
     // (/excursions, Touren-Gruppierung) statt in einer eigenständigen Touren-Route.
-    await page.goto('/excursions');
+    await page.goto('/abc-123/excursions');
     await page.getByRole('button', { name: 'Touren' }).click();
     const tourCard = page.locator('.excursion-card', { hasText: tourTitle });
     await expect(tourCard.locator('.status.status-done')).toBeVisible();
 
-    await page.goto('/excursions');
+    await page.goto('/abc-123/excursions');
     const spotCard = page.locator('.spot-card', { hasText: spotTitle });
     // Titel statt ganzer Karte anklicken - siehe Kommentar im ersten Test dieser Datei.
     await spotCard.locator('h3').click();
@@ -263,7 +263,7 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
       });
       expect(doneRes.ok()).toBeTruthy();
 
-      await page.goto('/excursions');
+      await page.goto('/abc-123/excursions');
       const spotCard = page.locator('.spot-card', { hasText: spotTitle });
       // NICHT aufklappen - die kompakte, nicht-expandierte Kartenzeile ist genau der Fall, in dem
       // der Bug auftrat (.spot-card.expanded nutzt weiterhin die volle Pillen-Darstellung).

@@ -6,7 +6,7 @@ import { test, expect } from '@playwright/test';
 test('quick-adding into a shopping group creates the item pre-filled with that group’s dimension', async ({
   page,
 }) => {
-  await page.goto('/shopping');
+  await page.goto('/abc-123/shopping');
   await expect(page.locator('.shopping-page')).toBeVisible();
 
   // Gruppierung explizit auf 'buyer' (Einkäufer:in) stellen, falls sie durch vorherige Tests im localStorage abweicht.
@@ -42,7 +42,7 @@ test('quick-adding into a shopping group creates the item pre-filled with that g
 test('quick-adding into a todo group creates the item assigned to that group’s person', async ({
   page,
 }) => {
-  await page.goto('/todo');
+  await page.goto('/abc-123/todo');
   await expect(page.locator('.todo-page')).toBeVisible();
 
   // Gruppierung explizit auf 'assignee' (Bearbeiter:in) stellen.

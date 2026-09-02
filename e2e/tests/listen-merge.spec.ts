@@ -6,15 +6,15 @@ import { test, expect } from '@playwright/test';
 test('old /packing, /shopping, /todo routes redirect into the tabbed Listen view', async ({
   page,
 }) => {
-  await page.goto('/packing');
+  await page.goto('/abc-123/packing');
   await expect(page).toHaveURL(/\/listen\?tab=packing/);
   await expect(page.locator('.packing-page')).toBeVisible();
 
-  await page.goto('/shopping');
+  await page.goto('/abc-123/shopping');
   await expect(page).toHaveURL(/\/listen\?tab=shopping/);
   await expect(page.locator('.shopping-page')).toBeVisible();
 
-  await page.goto('/todo');
+  await page.goto('/abc-123/todo');
   await expect(page).toHaveURL(/\/listen\?tab=todo/);
   await expect(page.locator('.todo-page')).toBeVisible();
 });
@@ -22,7 +22,7 @@ test('old /packing, /shopping, /todo routes redirect into the tabbed Listen view
 test('switching tabs mounts the correct list without navigating away from /listen', async ({
   page,
 }) => {
-  await page.goto('/listen');
+  await page.goto('/abc-123/listen');
   await expect(page.locator('.packing-page')).toBeVisible();
 
   await page.getByRole('tab', { name: 'Einkauf' }).click();
@@ -53,7 +53,7 @@ test('NavBar shows exactly one merged "Listen" entry with the clipboard icon', a
 test('a calendar cross-reference to a todo lands on the todo tab with the item highlighted', async ({
   page,
 }) => {
-  await page.goto('/listen?tab=todo');
+  await page.goto('/abc-123/listen?tab=todo');
   await page.getByPlaceholder('Neue Aufgabe').fill('E2E Listen-Merge Querverweis');
   const todayIso = new Date().toISOString().slice(0, 10);
   await page.locator('input[type="date"]').first().fill(todayIso);
