@@ -1,15 +1,3 @@
-<script lang="ts">
-// Modulweiter Zustand statt Pinia-Store, da Modal.vue z-Index und Scroll-Sperre über alle
-// offenen Dialoge hinweg zentral koordinieren muss.
-let openModalCount = 0;
-let modalZIndexCounter = 100;
-const activeZIndices: number[] = [];
-
-function getTopModalZIndex(): number {
-  return activeZIndices.length ? activeZIndices[activeZIndices.length - 1] : 100;
-}
-</script>
-
 <script setup lang="ts">
 // hideHeader: für DetailModal.vue, dessen Bild-Banner randlos bis ganz oben reichen soll – die
 // normale .modal-head-Zeile (auch ohne title nur der Close-Button) würde dafür immer eine Lücke
@@ -20,9 +8,10 @@ function getTopModalZIndex(): number {
 // bekämen – oft zu wenig Platz zum Tippen, v. a. mobil mit eingeblendeter Tastatur. Streckt den
 // Dialog stattdessen auf die verfügbare Höhe; das Formular (und darin per :slotted() jedes
 // textarea, siehe unten) wächst mit, alle anderen Felder behalten ihre natürliche Höhe.
-import { onUnmounted, watch, useId, ref, nextTick } from 'vue';
+import { onUnmounted, watch, useId, ref, nextTick, computed } from 'vue';
 import IconButton from './primitives/IconButton.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
+import { useModalStore } from '../stores/modal';
 
 const props = defineProps<{
   modelValue: boolean;
@@ -33,7 +22,9 @@ const props = defineProps<{
 }>();
 const emit = defineEmits<{ (e: 'update:modelValue', value: boolean): void }>();
 
-const titleId = useId();
+const modalStore = useModalStore();
+const modalId = useId();
+const titleId = `${modalId}-title`;
 const modalRef = ref<HTMLDivElement | null>(null);
 
 function close() {
@@ -50,43 +41,18 @@ function getFocusableElements(): HTMLElement[] {
   );
 }
 
-const modalZIndex = ref(100);
-
-function lockBodyScroll() {
-  openModalCount++;
-  modalZIndexCounter += 10;
-  modalZIndex.value = modalZIndexCounter;
-  activeZIndices.push(modalZIndex.value);
-  if (openModalCount === 1) {
-    document.body.style.overflow = 'hidden';
-  }
-  window.addEventListener('keydown', handleKeydown);
-}
-function unlockBodyScroll() {
-  openModalCount = Math.max(0, openModalCount - 1);
-  const idx = activeZIndices.indexOf(modalZIndex.value);
-  if (idx !== -1) {
-    activeZIndices.splice(idx, 1);
-  }
-  window.removeEventListener('keydown', handleKeydown);
-  if (openModalCount === 0) {
-    document.body.style.overflow = '';
-    modalZIndexCounter = 100;
-  }
-}
-
 function handleKeydown(e: KeyboardEvent) {
   if (!props.modelValue) return;
 
   if (e.key === 'Escape') {
-    if (modalZIndex.value === getTopModalZIndex()) {
+    if (modalStore.isTop(modalId)) {
       close();
     }
     return;
   }
 
   if (e.key === 'Tab') {
-    if (modalZIndex.value !== getTopModalZIndex()) return;
+    if (!modalStore.isTop(modalId)) return;
     const focusables = getFocusableElements();
     if (focusables.length === 0) {
       e.preventDefault();
@@ -111,33 +77,50 @@ function handleKeydown(e: KeyboardEvent) {
   }
 }
 
+let isRegistered = false;
+
 watch(
   () => props.modelValue,
   (open) => {
     if (open) {
-      lockBodyScroll();
-      nextTick(() => {
-        const focusables = getFocusableElements();
-        if (focusables.length > 0) {
-          focusables[0].focus();
-        }
-      });
+      if (!isRegistered) {
+        isRegistered = true;
+        modalStore.register(modalId);
+        window.addEventListener('keydown', handleKeydown);
+        nextTick(() => {
+          const focusables = getFocusableElements();
+          if (focusables.length > 0) {
+            focusables[0].focus();
+          }
+        });
+      }
     } else {
-      unlockBodyScroll();
+      if (isRegistered) {
+        isRegistered = false;
+        window.removeEventListener('keydown', handleKeydown);
+        modalStore.unregister(modalId);
+      }
     }
   },
   { immediate: true }
 );
+
 onUnmounted(() => {
-  if (props.modelValue) unlockBodyScroll();
+  if (isRegistered) {
+    isRegistered = false;
+    window.removeEventListener('keydown', handleKeydown);
+    modalStore.unregister(modalId);
+  }
 });
+
+const currentZIndex = computed(() => modalStore.getZIndex(modalId));
 </script>
 
 <template>
   <Teleport to="body">
     <Transition name="modal-fade">
       <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
-      <div v-if="modelValue" class="overlay" :style="{ zIndex: modalZIndex }" @click.self="close">
+      <div v-if="modelValue" class="overlay" :style="{ zIndex: currentZIndex }" @click.self="close">
         <div
           ref="modalRef"
           class="modal"
