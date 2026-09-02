@@ -18,6 +18,7 @@ import type {
   ExcursionLike,
   IdeaRole,
   LocationTrack,
+  ScheduleItem,
   Spot,
   User,
 } from '../api/types';
@@ -45,6 +46,7 @@ import SearchFilterBar from '../components/SearchFilterBar.vue';
 import SpotOrderPicker from '../components/SpotOrderPicker.vue';
 import TripMap from '../components/TripMap.vue';
 import Modal from '../components/Modal.vue';
+import DetailModal from '../components/DetailModal.vue';
 import Combobox from '../components/Combobox.vue';
 import FormField from '../components/FormField.vue';
 import TourAssignPicker from '../components/TourAssignPicker.vue';
@@ -56,6 +58,7 @@ import ViewLoadingState from '../components/ViewLoadingState.vue';
 import FileAttachments from '../components/FileAttachments.vue';
 import DraftStatusBar from '../components/DraftStatusBar.vue';
 import RichTextEditor from '../components/RichTextEditor.vue';
+import RichTextDisplay from '../components/RichTextDisplay.vue';
 import { isEmptyRichText } from '../utils/richText';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
 import { parseLatLngFromMapsLink, tilePreviewUrl } from '../utils/googleMaps';
@@ -602,18 +605,35 @@ const spotCategoryOptions = computed(() => {
 });
 
 const showSpotLocationSection = ref(false);
+const showEditSpotScheduledSection = ref(false);
 const showEditSpotLocationSection = ref(false);
 const showSpotToursSection = ref(false);
 const showEditSpotToursSection = ref(false);
 const showExcursionSpotsSection = ref(false);
 const showEditExcursionSpotsSection = ref(false);
 
+const viewingScheduledItem = ref<ScheduleItem | null>(null);
+
 watch(editingSpot, (val) => {
   if (val) {
+    showEditSpotScheduledSection.value = false;
     showEditSpotLocationSection.value = !!val.maps_link || !!val.is_home;
     showEditSpotToursSection.value = editSpotForm.value.tourTitles.length > 0;
   }
 });
+
+async function addSpotToDate(dateEvent: Event) {
+  const target = dateEvent.target as HTMLInputElement;
+  const date = target.value;
+  if (!date || !editingSpot.value || !tripStore.currentTripId) return;
+  await scheduleStore.create({
+    trip_id: tripStore.currentTripId,
+    date,
+    title: editingSpot.value.title,
+    spot_id: editingSpot.value.id,
+  });
+  target.value = '';
+}
 const showExcursionTransportSection = computed({
   get: () => excursionForm.value.transportEnabled,
   set: (val: boolean) => {
@@ -2776,46 +2796,64 @@ async function removeSpot(id: number) {
                   expandable
                 />
               </FormField>
-              <fieldset
-                v-if="editingSpot !== null && editSpotScheduledItems.length"
-                class="collapsible-fieldset"
-              >
+              <fieldset v-if="editingSpot !== null" class="collapsible-fieldset">
                 <legend>
-                  <Button type="button" variant="ghost" class="collapsible-toggle">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    class="collapsible-toggle"
+                    :aria-expanded="showEditSpotScheduledSection"
+                    @click="showEditSpotScheduledSection = !showEditSpotScheduledSection"
+                  >
                     <span>
                       <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" />
                       Eingeplant am
+                      <span v-if="editSpotScheduledItems.length" class="picker-count">
+                        ({{ editSpotScheduledItems.length }}
+                        {{ editSpotScheduledItems.length === 1 ? 'Termin' : 'Termine' }})</span
+                      >
                     </span>
+                    <AppIcon
+                      :icon="ACTION_ICONS.chevronDown"
+                      :size="14"
+                      group="actions"
+                      class="caret"
+                      :class="{ closed: !showEditSpotScheduledSection }"
+                    />
                   </Button>
                 </legend>
-                <div class="collapsible-content">
+                <div v-if="showEditSpotScheduledSection" class="collapsible-content">
                   <p class="hint">
-                    Dieser Spot ist als Termin im Kalender eingetragen. Du kannst den Termin hier
-                    entfernen, um ihn wieder in die Planung zurückzuschieben, oder ihn direkt im
-                    Kalender auf ein neues Datum verschieben.
+                    Dieser Spot ist an folgenden Tagen als Termin im Kalender eingetragen.
                   </p>
-                  <ul class="scheduled-items-list">
-                    <li
+                  <div class="scheduled-chips">
+                    <span
                       v-for="item in editSpotScheduledItems"
                       :key="item.id"
-                      class="scheduled-item"
+                      class="scheduled-chip"
+                      @click="viewingScheduledItem = item"
                     >
-                      <span
-                        >{{ formatDate(item.date) }}
-                        <span v-if="item.title !== activeSpotForm.title" class="scheduled-title"
-                          >({{ item.title }})</span
-                        ></span
-                      >
-                      <Button
+                      <AppIcon :icon="FORM_FIELD_ICONS.date" :size="12" group="formFields" />
+                      <span class="scheduled-chip-date">{{ formatDate(item.date) }}</span>
+                      <button
                         type="button"
-                        variant="ghost"
-                        class="icon-button"
-                        @click="removeScheduledItem(item.id)"
+                        title="Verknüpfung aufheben"
+                        aria-label="Verknüpfung aufheben"
+                        @click.stop="removeScheduledItem(item.id)"
                       >
-                        <AppIcon :icon="ACTION_ICONS.delete" :size="16" group="actions" />
-                      </Button>
-                    </li>
-                  </ul>
+                        <AppIcon :icon="ACTION_ICONS.close" :size="12" group="actions" />
+                      </button>
+                    </span>
+                    <label class="add-schedule-chip" title="Zu anderem Datum hinzufügen">
+                      <AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" />
+                      <span>Datum hinzufügen</span>
+                      <input
+                        type="date"
+                        class="date-picker-overlay-input"
+                        @change="addSpotToDate"
+                      />
+                    </label>
+                  </div>
                 </div>
               </fieldset>
               <fieldset class="collapsible-fieldset">
@@ -2877,6 +2915,51 @@ async function removeSpot(id: number) {
               <Button type="submit">{{ editingSpot !== null ? 'Speichern' : 'Hinzufügen' }}</Button>
             </form>
           </Modal>
+
+          <DetailModal
+            :model-value="viewingScheduledItem !== null"
+            @update:model-value="(v) => !v && (viewingScheduledItem = null)"
+            :title="viewingScheduledItem?.title ?? ''"
+            :placeholder-icon="FORM_FIELD_ICONS.date"
+          >
+            <template #meta>
+              <span v-if="viewingScheduledItem" class="detail-badge">
+                <AppIcon :icon="FORM_FIELD_ICONS.date" :size="12" group="formFields" />
+                {{ formatDate(viewingScheduledItem.date) }}
+              </span>
+            </template>
+            <p v-if="viewingScheduledItem?.time" class="detail-row">
+              <span class="detail-label">Zeit</span>
+              <AppIcon :icon="FORM_FIELD_ICONS.time" :size="14" group="formFields" />
+              {{ viewingScheduledItem.time
+              }}<template v-if="viewingScheduledItem.end_time">
+                – {{ viewingScheduledItem.end_time }}</template
+              >
+            </p>
+            <p
+              v-if="
+                viewingScheduledItem?.end_date &&
+                viewingScheduledItem.end_date !== viewingScheduledItem.date
+              "
+              class="detail-row"
+            >
+              <span class="detail-label">Zeitraum</span>
+              <AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" />
+              {{ formatDate(viewingScheduledItem.date) }} –
+              {{ formatDate(viewingScheduledItem.end_date) }}
+            </p>
+            <RichTextDisplay
+              v-if="viewingScheduledItem?.note"
+              :content="viewingScheduledItem.note"
+              class="detail-row note"
+            />
+            <FileAttachments
+              v-if="viewingScheduledItem"
+              domain="schedule"
+              :entity-id="viewingScheduledItem.id"
+              :editable="false"
+            />
+          </DetailModal>
 
           <div
             v-if="spotGroups.length > 1"
@@ -4391,25 +4474,73 @@ async function removeSpot(id: number) {
     width 0.2s ease;
   pointer-events: none;
 }
-</style>
 
-<style scoped>
-/* Additional scoped styles for ExcursionsView scheduled items */
-.scheduled-items-list {
-  margin-top: 8px;
-  list-style: none;
-  padding: 0;
-}
-
-.scheduled-item {
+/* Scoped styles for ExcursionsView scheduled items chips */
+.scheduled-chips {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 4px 0;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: 8px;
 }
 
-.scheduled-title {
-  color: var(--color-text-dimmed);
-  font-size: 0.9em;
+.scheduled-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--color-primary-tint);
+  border: 1px solid var(--color-primary);
+  color: var(--color-primary-dark);
+  border-radius: 999px;
+  padding: 3px 8px 3px 10px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.scheduled-chip:hover {
+  background: var(--color-bg);
+}
+
+.scheduled-chip button {
+  background: none;
+  border: none;
+  padding: 2px;
+  color: inherit;
+  cursor: pointer;
+  font-size: 0.75rem;
+  line-height: 1;
+  display: flex;
+}
+
+.scheduled-chip button:hover {
+  opacity: 0.7;
+}
+
+.add-schedule-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  border: 1px dashed var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.add-schedule-chip:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary-dark);
+}
+
+.date-picker-overlay-input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
 }
 </style>
