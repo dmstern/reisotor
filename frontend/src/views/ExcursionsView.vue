@@ -607,6 +607,13 @@ const showSpotToursSection = ref(false);
 const showEditSpotToursSection = ref(false);
 const showExcursionSpotsSection = ref(false);
 const showEditExcursionSpotsSection = ref(false);
+
+watch(editingSpot, (val) => {
+  if (val) {
+    showEditSpotLocationSection.value = !!val.maps_link || !!val.is_home;
+    showEditSpotToursSection.value = editSpotForm.value.tourTitles.length > 0;
+  }
+});
 const showExcursionTransportSection = computed({
   get: () => excursionForm.value.transportEnabled,
   set: (val: boolean) => {
