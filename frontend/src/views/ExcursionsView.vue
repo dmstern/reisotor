@@ -34,7 +34,7 @@ import { useExcursionsStore } from '../stores/excursions';
 import { useTracksStore } from '../stores/tracks';
 import { useTrackRecordingStore } from '../stores/trackRecording';
 import { useIconStyleStore } from '../stores/iconStyle';
-import { formatDateTime } from '../utils/dateFormat';
+import { formatDateTime, formatDate } from '../utils/dateFormat';
 import { formatDurationShort } from '../utils/trackGeometry';
 import { usePersistedRef } from '../composables/usePersistedRef';
 import { hashHighlightId } from '../utils/hashHighlight';
@@ -555,6 +555,17 @@ const editSpotMapsLinkResolved = ref<boolean | null>(null);
 const editSpotManualPin = ref<{ lat: number; lng: number } | null>(null);
 const editSpotPickerOpen = ref(false);
 const editSpotLocationError = ref(false);
+
+const editSpotScheduledItems = computed(() => {
+  if (!editingSpot.value) return [];
+  return scheduleStore.items.filter((i) => i.spot_id === editingSpot.value!.id);
+});
+
+async function removeScheduledItem(id: number) {
+  if (confirm('Möchtest du diesen Termin wirklich aus dem Kalender entfernen?')) {
+    await scheduleStore.remove(id);
+  }
+}
 
 // Öffnet die Karte des manuellen Pickers direkt im Urlaubsgebiet statt einer leeren Weltkarte,
 // sobald die Trip-Koordinaten bekannt sind.
@@ -2829,6 +2840,54 @@ async function removeSpot(id: number) {
                   expandable
                 />
               </FormField>
+              <fieldset v-if="editSpotScheduledItems.length" class="collapsible-fieldset">
+                <legend>
+                  <Button type="button" variant="ghost" class="collapsible-toggle">
+                    <span>
+                      <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" />
+                      Eingeplant am
+                    </span>
+                  </Button>
+                </legend>
+                <div class="collapsible-content">
+                  <p class="hint">
+                    Dieser Spot ist als Termin im Kalender eingetragen. Du kannst den Termin hier
+                    entfernen, um ihn wieder in die Planung zurückzuschieben, oder ihn direkt im
+                    Kalender auf ein neues Datum verschieben.
+                  </p>
+                  <ul class="scheduled-items-list" style="margin-top: 8px">
+                    <li
+                      v-for="item in editSpotScheduledItems"
+                      :key="item.id"
+                      class="scheduled-item"
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        padding: 4px 0;
+                      "
+                    >
+                      <span
+                        >{{ formatDate(item.date) }}
+                        <span
+                          v-if="item.title !== editSpotForm.title"
+                          class="scheduled-title"
+                          style="color: var(--color-text-dimmed); font-size: 0.9em"
+                          >({{ item.title }})</span
+                        ></span
+                      >
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        class="icon-button"
+                        @click="removeScheduledItem(item.id)"
+                      >
+                        <AppIcon :icon="ACTION_ICONS.delete" :size="16" group="actions" />
+                      </Button>
+                    </li>
+                  </ul>
+                </div>
+              </fieldset>
               <fieldset class="collapsible-fieldset">
                 <legend>
                   <Button
