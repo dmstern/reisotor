@@ -317,7 +317,7 @@ function onToggleDone() {
           <template v-else-if="spot.done">Gemacht</template>
           <template v-else-if="scheduledDate">
             <template v-if="scheduledDaysCount > 1"
-              >Geplant an {{ scheduledDaysCount }} Tage</template
+              >Geplant an {{ scheduledDaysCount }} Tagen</template
             >
             <template v-else>Geplant für {{ plannedDateLabel }}</template>
           </template>

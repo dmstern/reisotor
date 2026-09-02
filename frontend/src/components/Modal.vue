@@ -1,3 +1,15 @@
+<script lang="ts">
+// Modulweiter Zustand statt Pinia-Store, da Modal.vue z-Index und Scroll-Sperre über alle
+// offenen Dialoge hinweg zentral koordinieren muss.
+let openModalCount = 0;
+let modalZIndexCounter = 100;
+const activeZIndices: number[] = [];
+
+function getTopModalZIndex(): number {
+  return activeZIndices.length ? activeZIndices[activeZIndices.length - 1] : 100;
+}
+</script>
+
 <script setup lang="ts">
 // hideHeader: für DetailModal.vue, dessen Bild-Banner randlos bis ganz oben reichen soll – die
 // normale .modal-head-Zeile (auch ohne title nur der Close-Button) würde dafür immer eine Lücke
@@ -38,15 +50,13 @@ function getFocusableElements(): HTMLElement[] {
   );
 }
 
-let openModalCount = 0;
-let modalZIndexCounter = 100;
-
 const modalZIndex = ref(100);
 
 function lockBodyScroll() {
   openModalCount++;
   modalZIndexCounter += 10;
   modalZIndex.value = modalZIndexCounter;
+  activeZIndices.push(modalZIndex.value);
   if (openModalCount === 1) {
     document.body.style.overflow = 'hidden';
   }
@@ -54,6 +64,10 @@ function lockBodyScroll() {
 }
 function unlockBodyScroll() {
   openModalCount = Math.max(0, openModalCount - 1);
+  const idx = activeZIndices.indexOf(modalZIndex.value);
+  if (idx !== -1) {
+    activeZIndices.splice(idx, 1);
+  }
   window.removeEventListener('keydown', handleKeydown);
   if (openModalCount === 0) {
     document.body.style.overflow = '';
@@ -65,14 +79,14 @@ function handleKeydown(e: KeyboardEvent) {
   if (!props.modelValue) return;
 
   if (e.key === 'Escape') {
-    if (modalZIndex.value === modalZIndexCounter) {
+    if (modalZIndex.value === getTopModalZIndex()) {
       close();
     }
     return;
   }
 
   if (e.key === 'Tab') {
-    if (modalZIndex.value !== modalZIndexCounter) return;
+    if (modalZIndex.value !== getTopModalZIndex()) return;
     const focusables = getFocusableElements();
     if (focusables.length === 0) {
       e.preventDefault();
