@@ -573,30 +573,38 @@ const editSpotScheduledItems = computed(() => {
   return scheduleStore.items.filter((i) => i.spot_id === editingSpot.value!.id);
 });
 
-async function removeScheduledItem(item: ScheduleItem) {
-  const choice = prompt(
-    `Möchtest du den Termin am ${formatDate(item.date)} komplett löschen oder nur die Verknüpfung zu diesem Spot aufheben?\n\n1 = Nur Verknüpfung aufheben\n2 = Termin komplett löschen\nAbbrechen = Keine Änderung`,
-    '1'
-  );
-  if (choice === '1') {
-    await scheduleStore.update(item.id, {
-      trip_id: item.trip_id,
-      date: item.date,
-      end_date: item.end_date,
-      time: item.time ?? undefined,
-      end_time: item.end_time ?? undefined,
-      title: item.title,
-      note: item.note ?? undefined,
-      location: item.location ?? undefined,
-      maps_link: item.maps_link ?? undefined,
-      lat: item.lat ?? undefined,
-      lng: item.lng ?? undefined,
-      spot_id: null,
-      idea_id: item.idea_id,
-    });
-  } else if (choice === '2') {
-    await scheduleStore.remove(item.id);
-  }
+const unlinkingScheduledItem = ref<ScheduleItem | null>(null);
+
+function promptUnlinkScheduledItem(item: ScheduleItem) {
+  unlinkingScheduledItem.value = item;
+}
+
+async function unlinkScheduledItem() {
+  const item = unlinkingScheduledItem.value;
+  if (!item) return;
+  await scheduleStore.update(item.id, {
+    trip_id: item.trip_id,
+    date: item.date,
+    end_date: item.end_date,
+    time: item.time ?? undefined,
+    end_time: item.end_time ?? undefined,
+    title: item.title,
+    note: item.note ?? undefined,
+    location: item.location ?? undefined,
+    maps_link: item.maps_link ?? undefined,
+    lat: item.lat ?? undefined,
+    lng: item.lng ?? undefined,
+    spot_id: null,
+    idea_id: item.idea_id,
+  });
+  unlinkingScheduledItem.value = null;
+}
+
+async function deleteScheduledItemCompletely() {
+  const item = unlinkingScheduledItem.value;
+  if (!item) return;
+  await scheduleStore.remove(item.id);
+  unlinkingScheduledItem.value = null;
 }
 
 function openCalendarScheduleEdit(item: ScheduleItem) {
@@ -2858,9 +2866,9 @@ async function removeSpot(id: number) {
                       <span class="scheduled-chip-date">{{ formatDate(item.date) }}</span>
                       <button
                         type="button"
-                        title="Verknüpfung aufheben"
-                        aria-label="Verknüpfung aufheben"
-                        @click.stop="removeScheduledItem(item)"
+                        title="Verknüpfung aufheben / löschen"
+                        aria-label="Verknüpfung aufheben oder löschen"
+                        @click.stop="promptUnlinkScheduledItem(item)"
                       >
                         <AppIcon :icon="ACTION_ICONS.close" :size="12" group="actions" />
                       </button>
@@ -2986,12 +2994,41 @@ async function removeSpot(id: number) {
                 v-if="viewingScheduledItem"
                 small
                 @click="
-                  removeScheduledItem(viewingScheduledItem);
+                  promptUnlinkScheduledItem(viewingScheduledItem);
                   viewingScheduledItem = null;
                 "
               />
             </div>
           </DetailModal>
+
+          <Modal
+            :model-value="unlinkingScheduledItem !== null"
+            @update:model-value="(v) => !v && (unlinkingScheduledItem = null)"
+            title="Termin-Verknüpfung verwalten"
+          >
+            <p v-if="unlinkingScheduledItem">
+              Möchtest du die Verknüpfung zum Spot für den Termin am
+              <strong>{{ formatDate(unlinkingScheduledItem.date) }}</strong> aufheben oder den
+              Termin komplett aus dem Kalender löschen?
+            </p>
+            <div
+              style="
+                display: flex;
+                flex-direction: column;
+                gap: var(--space-2);
+                margin-top: var(--space-4);
+              "
+            >
+              <Button type="button" variant="secondary" @click="unlinkScheduledItem">
+                <AppIcon :icon="ACTION_ICONS.close" :size="16" group="actions" />
+                Nur Verknüpfung aufheben
+              </Button>
+              <Button type="button" variant="danger" @click="deleteScheduledItemCompletely">
+                <AppIcon :icon="ACTION_ICONS.delete" :size="16" group="actions" />
+                Termin komplett löschen
+              </Button>
+            </div>
+          </Modal>
 
           <div
             v-if="spotGroups.length > 1"
