@@ -677,6 +677,8 @@ async function submitAddSpotToDate() {
     date,
     title: editingSpot.value.title,
     spot_id: editingSpot.value.id,
+    auto_created: 1,
+    user_modified: 0,
   });
   addScheduleDateVal.value = '';
   addSchedulePopoverOpen.value = false;

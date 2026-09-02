@@ -78,4 +78,19 @@ describe('isAutoCreatedUnmodifiedScheduleItem', () => {
     const item = createMockItem({ maps_link: 'https://maps.google.com/xyz' });
     expect(isAutoCreatedUnmodifiedScheduleItem(item, 'Eiffelturm')).toBe(false);
   });
+
+  it('returns false if user_modified is true/1', () => {
+    const item = createMockItem({ user_modified: 1 });
+    expect(isAutoCreatedUnmodifiedScheduleItem(item, 'Eiffelturm')).toBe(false);
+  });
+
+  it('returns false if auto_created is false/0', () => {
+    const item = createMockItem({ auto_created: 0 });
+    expect(isAutoCreatedUnmodifiedScheduleItem(item, 'Eiffelturm')).toBe(false);
+  });
+
+  it('returns true if auto_created is 1 and user_modified is 0 without edits', () => {
+    const item = createMockItem({ auto_created: 1, user_modified: 0 });
+    expect(isAutoCreatedUnmodifiedScheduleItem(item, 'Eiffelturm')).toBe(true);
+  });
 });

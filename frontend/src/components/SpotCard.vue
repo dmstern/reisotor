@@ -225,6 +225,8 @@ const { dragging, ghostStyle, onPointerDown } = usePointerDrag({
       date: dayEl.dataset.date,
       title: props.spot.title,
       spot_id: props.spot.id,
+      auto_created: 1,
+      user_modified: 0,
     });
   },
   // Klick-Alternative zum Drag: öffnet die Kalender-Schublade und merkt sich den Spot, der beim

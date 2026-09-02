@@ -667,6 +667,8 @@ async function finishPendingSchedule(
           date,
           title: spot.title,
           spot_id: spot.id,
+          auto_created: 1,
+          user_modified: 0,
         });
       }
     }
@@ -808,6 +810,7 @@ async function submitEdit() {
     lng: linked ? undefined : (parsed?.lng ?? editingItem.value.lng ?? undefined),
     spot_id,
     idea_id,
+    user_modified: 1,
   });
   // Beide IDs (alt UND neu): eine Tour-Verknüpfung kann sich ändern (andere Tour ausgewählt) oder
   // ganz entfernt werden – in beiden Fällen muss die vorher verknüpfte Tour ihr Datum verlieren.
@@ -1057,6 +1060,13 @@ function formatDate(date: string) {
             />
             <strong v-if="entry.time">{{ entry.time }}</strong>
             <span class="title">{{ entry.title }}</span>
+            <span
+              v-if="entry.scheduleItem?.auto_created"
+              class="auto-created-pill"
+              title="Automatisch durch Einplanen eines Spots angelegt"
+            >
+              Automatisch angelegt
+            </span>
             <p v-if="entry.location" class="location">
               <AppIcon :icon="FORM_FIELD_ICONS.location" :size="13" group="formFields" />
               {{ entry.location }}
@@ -1342,11 +1352,22 @@ function formatDate(date: string) {
       @edit="editViewingItem"
     >
       <template #meta>
+        <span v-if="viewingItem?.auto_created" class="detail-badge auto-created-badge">
+          <AppIcon :icon="ACTION_ICONS.sparkles" :size="12" group="actions" />
+          Automatisch angelegt
+        </span>
         <span v-if="viewingItem" class="detail-badge">
           <AppIcon :icon="FORM_FIELD_ICONS.date" :size="12" group="formFields" />
           {{ formatDate(viewingItem.date) }}
         </span>
       </template>
+      <p v-if="viewingItem?.auto_created" class="detail-row auto-created-row">
+        <span class="detail-label">Herkunft</span>
+        <span>
+          <AppIcon :icon="ACTION_ICONS.sparkles" :size="13" group="actions" />
+          Automatisch angelegt
+        </span>
+      </p>
       <p v-if="viewingItem?.time" class="detail-row">
         <span class="detail-label">Zeit</span>
         <AppIcon :icon="FORM_FIELD_ICONS.time" :size="14" group="formFields" /> {{ viewingItem.time
@@ -1753,6 +1774,31 @@ function formatDate(date: string) {
 
 /* --- Termin-Detail-Badge (#264) --- */
 .detail-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.detail-badge.auto-created-badge {
+  background: rgba(0, 0, 0, 0.45);
+  color: var(--color-primary-tint, #a8d5ba);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.auto-created-pill {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.72rem;
+  font-weight: 500;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm-squircle, 4px);
+  background: var(--color-surface-sunken, rgba(255, 255, 255, 0.08));
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  margin-left: var(--space-2);
+}
+
+.auto-created-row span {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);

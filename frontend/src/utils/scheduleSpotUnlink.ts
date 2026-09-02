@@ -18,6 +18,16 @@ export function isAutoCreatedUnmodifiedScheduleItem(
   item: ScheduleItem,
   spotTitle: string
 ): boolean {
+  // Wurde der Termin jemals vom Nutzer angefasst/bearbeitet, bleibt er auf jeden Fall erhalten
+  if (Boolean(item.user_modified)) {
+    return false;
+  }
+
+  // Wurde der Termin manuell vom Nutzer angelegt und nur verknüpft (auto_created = false/0)
+  if (item.auto_created === false || item.auto_created === 0) {
+    return false;
+  }
+
   if (item.title.trim().toLowerCase() !== spotTitle.trim().toLowerCase()) {
     return false;
   }
