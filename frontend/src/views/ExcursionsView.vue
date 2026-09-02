@@ -607,6 +607,12 @@ async function deleteScheduledItemCompletely() {
   unlinkingScheduledItem.value = null;
 }
 
+async function deleteScheduledItemDirectly(item: ScheduleItem) {
+  if (confirm(`Möchtest du den Termin am ${formatDate(item.date)} wirklich löschen?`)) {
+    await scheduleStore.remove(item.id);
+  }
+}
+
 function openCalendarScheduleEdit(item: ScheduleItem) {
   viewingScheduledItem.value = null;
   drawers.openCalendar();
@@ -3054,7 +3060,7 @@ async function removeSpot(id: number) {
                 v-if="viewingScheduledItem"
                 small
                 @click="
-                  promptUnlinkScheduledItem(viewingScheduledItem);
+                  deleteScheduledItemDirectly(viewingScheduledItem);
                   viewingScheduledItem = null;
                 "
               />
