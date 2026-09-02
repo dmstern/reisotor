@@ -2551,53 +2551,62 @@ async function removeSpot(id: number) {
           </div>
 
           <Modal
-            :model-value="showSpotForm"
-            title="Neuer Spot"
+            :model-value="showSpotForm || editingSpot !== null"
+            :title="editingSpot !== null ? 'Spot bearbeiten' : 'Neuer Spot'"
             full-height
-            @update:model-value="(v) => !v && closeSpotForm()"
+            @update:model-value="
+              (v) => !v && (editingSpot !== null ? closeEditSpotForm() : closeSpotForm())
+            "
           >
-            <form class="edit-form" @submit.prevent="addSpot">
+            <form
+              class="edit-form"
+              @submit.prevent="editingSpot !== null ? submitEditSpot() : addSpot()"
+            >
               <CoverImagePicker
-                v-model="spotForm.image_url"
-                :preview-image="spotPreviewImage"
-                :placeholder-icon="groupIconDef(spotForm.category)"
+                v-model="activeSpotForm.image_url"
+                :preview-image="editingSpot !== null ? editSpotPreviewImage : spotPreviewImage"
+                :placeholder-icon="groupIconDef(activeSpotForm.category)"
                 modal-title="Spot-Bild bearbeiten"
               />
               <FormField icon="title" label="Titel">
-                <input v-model="spotForm.title" type="text" placeholder="Titel" required />
+                <input v-model="activeSpotForm.title" type="text" placeholder="Titel" required />
               </FormField>
               <FormField icon="category" label="Kategorie">
                 <Combobox
-                  v-model="spotForm.category"
+                  v-model="activeSpotForm.category"
                   :options="spotCategoryOptions"
                   :icon-def-for="(c) => spotCategoryMeta(c).tabler"
                   :color-for="(c) => spotCategoryMeta(c).color"
                   placeholder="Kategorie (optional, z. B. Restaurant – oder eigene erstellen)"
                 />
               </FormField>
-              <template v-if="spotForm.category === 'Unterkunft'">
+              <template v-if="activeSpotForm.category === 'Unterkunft'">
                 <FormField icon="location" label="Adresse">
-                  <input v-model="spotForm.address" type="text" placeholder="Adresse (optional)" />
+                  <input
+                    v-model="activeSpotForm.address"
+                    type="text"
+                    placeholder="Adresse (optional)"
+                  />
                 </FormField>
                 <div class="row">
                   <FormField icon="date" label="Check-in-Datum">
-                    <input v-model="spotForm.start_date" type="date" />
+                    <input v-model="activeSpotForm.start_date" type="date" />
                   </FormField>
                   <FormField icon="date" label="Check-out-Datum">
-                    <input v-model="spotForm.end_date" type="date" />
+                    <input v-model="activeSpotForm.end_date" type="date" />
                   </FormField>
                 </div>
                 <div class="row">
                   <FormField icon="time" label="Check-in-Zeit">
                     <input
-                      v-model="spotForm.checkin"
+                      v-model="activeSpotForm.checkin"
                       type="text"
                       placeholder="Check-in (z. B. 15:00)"
                     />
                   </FormField>
                   <FormField icon="time" label="Check-out-Zeit">
                     <input
-                      v-model="spotForm.checkout"
+                      v-model="activeSpotForm.checkout"
                       type="text"
                       placeholder="Check-out (z. B. 11:00)"
                     />
@@ -2605,7 +2614,7 @@ async function removeSpot(id: number) {
                 </div>
                 <FormField icon="contact" label="Kontakt">
                   <input
-                    v-model="spotForm.contact"
+                    v-model="activeSpotForm.contact"
                     type="text"
                     placeholder="Kontakt (Telefon/E-Mail/Text, optional)"
                   />
@@ -2613,14 +2622,14 @@ async function removeSpot(id: number) {
                 <div class="row">
                   <FormField icon="amount" label="Kosten">
                     <input
-                      v-model="spotForm.amount"
+                      v-model="activeSpotForm.amount"
                       type="number"
                       step="0.01"
                       placeholder="Kosten (€, optional)"
                     />
                   </FormField>
                   <FormField v-if="users.length > 1" icon="shared" label="Bezahlt von">
-                    <select v-model="spotForm.paid_by_user_id">
+                    <select v-model="activeSpotForm.paid_by_user_id">
                       <option value="">Bezahlt von –</option>
                       <option v-for="u in users" :key="u.id" :value="String(u.id)">
                         {{ u.avatar }} {{ u.username }}
@@ -2635,8 +2644,14 @@ async function removeSpot(id: number) {
                     type="button"
                     variant="ghost"
                     class="collapsible-toggle"
-                    :aria-expanded="showSpotLocationSection"
-                    @click="showSpotLocationSection = !showSpotLocationSection"
+                    :aria-expanded="
+                      editingSpot !== null ? showEditSpotLocationSection : showSpotLocationSection
+                    "
+                    @click="
+                      editingSpot !== null
+                        ? (showEditSpotLocationSection = !showEditSpotLocationSection)
+                        : (showSpotLocationSection = !showSpotLocationSection)
+                    "
                   >
                     <span>
                       <AppIcon :icon="FORM_FIELD_ICONS.location" :size="14" group="formFields" />
@@ -2647,36 +2662,60 @@ async function removeSpot(id: number) {
                       :size="14"
                       group="actions"
                       class="caret"
-                      :class="{ closed: !showSpotLocationSection }"
+                      :class="{
+                        closed: !(editingSpot !== null
+                          ? showEditSpotLocationSection
+                          : showSpotLocationSection),
+                      }"
                     />
                   </Button>
                 </legend>
-                <div v-if="showSpotLocationSection" class="collapsible-content">
+                <div
+                  v-if="
+                    editingSpot !== null ? showEditSpotLocationSection : showSpotLocationSection
+                  "
+                  class="collapsible-content"
+                >
                   <p class="hint">
                     Wird für die Position auf der Karte und ggf. das Wetter vor Ort verwendet.
                   </p>
                   <label class="checkbox-option" for="spotFormIsHome">
-                    <input id="spotFormIsHome" type="checkbox" v-model="spotForm.is_home" />
+                    <input id="spotFormIsHome" type="checkbox" v-model="activeSpotForm.is_home" />
                     <AppIcon :icon="ACTION_ICONS.home" :size="14" group="actions" /> Heimat-Seite
                     (z. B. der heimische Flughafen/Bahnhof/Zuhause für Reise-Etappen)
                   </label>
                   <FormField icon="maps" label="Maps-Link (Google/Apple)">
                     <input
-                      v-model="spotForm.maps_link"
+                      v-model="activeSpotForm.maps_link"
                       type="url"
                       placeholder="Maps-Link (Google/Apple) (optional)"
-                      @blur="checkSpotMapsLink"
+                      @blur="editingSpot !== null ? checkEditSpotMapsLink() : checkSpotMapsLink()"
                     />
                   </FormField>
-                  <p v-if="spotMapsLinkResolved === true" class="hint success">
+                  <p
+                    v-if="
+                      (editingSpot !== null ? editSpotMapsLinkResolved : spotMapsLinkResolved) ===
+                      true
+                    "
+                    class="hint success"
+                  >
                     <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort
                     erkannt – erscheint auf der Karte
                   </p>
-                  <p v-if="spotMapsLinkResolved === false" class="hint">
+                  <p
+                    v-if="
+                      (editingSpot !== null ? editSpotMapsLinkResolved : spotMapsLinkResolved) ===
+                      false
+                    "
+                    class="hint"
+                  >
                     Standort wird beim Speichern serverseitig aufgelöst (auch Kurzlinks
                     funktionieren).
                   </p>
-                  <p v-if="spotLocationError" class="hint error">
+                  <p
+                    v-if="editingSpot !== null ? editSpotLocationError : spotLocationError"
+                    class="hint error"
+                  >
                     <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Der Standort
                     konnte auch automatisch nicht ermittelt werden. Bitte tippe unten auf die Karte,
                     um ihn manuell zu setzen.
@@ -2687,8 +2726,12 @@ async function removeSpot(id: number) {
                         type="button"
                         variant="ghost"
                         class="collapsible-toggle picker-toggle"
-                        :aria-expanded="spotPickerOpen"
-                        @click="spotPickerOpen = !spotPickerOpen"
+                        :aria-expanded="editingSpot !== null ? editSpotPickerOpen : spotPickerOpen"
+                        @click="
+                          editingSpot !== null
+                            ? (editSpotPickerOpen = !editSpotPickerOpen)
+                            : (spotPickerOpen = !spotPickerOpen)
+                        "
                       >
                         <span>
                           <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" />
@@ -2699,12 +2742,24 @@ async function removeSpot(id: number) {
                           :size="14"
                           group="actions"
                           class="caret"
-                          :class="{ closed: !spotPickerOpen }"
+                          :class="{
+                            closed: !(editingSpot !== null ? editSpotPickerOpen : spotPickerOpen),
+                          }"
                         />
                       </Button>
                     </legend>
-                    <div v-if="spotPickerOpen" class="collapsible-content">
+                    <div
+                      v-if="editingSpot !== null ? editSpotPickerOpen : spotPickerOpen"
+                      class="collapsible-content"
+                    >
                       <LocationPicker
+                        v-if="editingSpot !== null"
+                        v-model="editSpotManualPin"
+                        :center="spotPickerCenter"
+                        :reference-points="editSpotReferencePoints"
+                      />
+                      <LocationPicker
+                        v-else
                         v-model="spotManualPin"
                         :center="spotPickerCenter"
                         :reference-points="spotReferencePoints"
@@ -2715,13 +2770,16 @@ async function removeSpot(id: number) {
               </fieldset>
               <FormField icon="note" label="Notiz">
                 <RichTextEditor
-                  v-model="spotForm.note"
+                  v-model="activeSpotForm.note"
                   placeholder="Notiz (optional)"
                   compact
                   expandable
                 />
               </FormField>
-              <fieldset v-if="editSpotScheduledItems.length" class="collapsible-fieldset">
+              <fieldset
+                v-if="editingSpot !== null && editSpotScheduledItems.length"
+                class="collapsible-fieldset"
+              >
                 <legend>
                   <Button type="button" variant="ghost" class="collapsible-toggle">
                     <span>
