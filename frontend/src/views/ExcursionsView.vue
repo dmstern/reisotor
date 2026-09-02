@@ -73,6 +73,8 @@ import Button from '../components/primitives/Button.vue';
 import ButtonGroup from '../components/primitives/ButtonGroup.vue';
 import IconButton from '../components/primitives/IconButton.vue';
 import _DropdownItem from '../components/primitives/DropdownItem.vue';
+import { useToast } from '../composables/useToast';
+import { isAutoCreatedUnmodifiedScheduleItem } from '../utils/scheduleSpotUnlink';
 
 // Touren-Verwaltung (Anlegen/Bearbeiten/Einplanen) ist seit dem Zurückbau des früheren "erweiterten
 // Touren-Modus" (vormals eine eigenständige Ausflüge-Schublade, views/ExcursionsDrawer.vue) Teil
@@ -83,6 +85,7 @@ import _DropdownItem from '../components/primitives/DropdownItem.vue';
 const auth = useAuthStore();
 const tripStore = useTripStore();
 const route = useRoute();
+const { showToast } = useToast();
 const tripId = tripStore.currentTripId as number;
 const spotsStore = useSpotsStore();
 const scheduleStore = useScheduleStore();
@@ -572,38 +575,39 @@ const editSpotScheduledItems = computed(() => {
   return scheduleStore.items.filter((i) => i.spot_id === editingSpot.value!.id);
 });
 
-const unlinkingScheduledItem = ref<ScheduleItem | null>(null);
+async function removeScheduledItemFromSpot(item: ScheduleItem) {
+  if (!editingSpot.value) return;
 
-function promptUnlinkScheduledItem(item: ScheduleItem) {
-  unlinkingScheduledItem.value = item;
-}
+  const isAutoUnmodified = isAutoCreatedUnmodifiedScheduleItem(item, editingSpot.value.title);
 
-async function unlinkScheduledItem() {
-  const item = unlinkingScheduledItem.value;
-  if (!item) return;
-  await scheduleStore.update(item.id, {
-    trip_id: item.trip_id,
-    date: item.date,
-    end_date: item.end_date,
-    time: item.time ?? undefined,
-    end_time: item.end_time ?? undefined,
-    title: item.title,
-    note: item.note ?? undefined,
-    location: item.location ?? undefined,
-    maps_link: item.maps_link ?? undefined,
-    lat: item.lat ?? undefined,
-    lng: item.lng ?? undefined,
-    spot_id: null,
-    idea_id: item.idea_id,
-  });
-  unlinkingScheduledItem.value = null;
-}
-
-async function deleteScheduledItemCompletely() {
-  const item = unlinkingScheduledItem.value;
-  if (!item) return;
-  await scheduleStore.remove(item.id);
-  unlinkingScheduledItem.value = null;
+  if (isAutoUnmodified) {
+    await scheduleStore.remove(item.id);
+    showToast({
+      message: 'Termin wurde gelöscht, da er vorher automatisch vom Reisotor angelegt wurde.',
+      type: 'info',
+    });
+  } else {
+    await scheduleStore.update(item.id, {
+      trip_id: item.trip_id,
+      date: item.date,
+      end_date: item.end_date,
+      time: item.time ?? undefined,
+      end_time: item.end_time ?? undefined,
+      title: item.title,
+      note: item.note ?? undefined,
+      location: item.location ?? undefined,
+      maps_link: item.maps_link ?? undefined,
+      lat: item.lat ?? undefined,
+      lng: item.lng ?? undefined,
+      spot_id: null,
+      idea_id: item.idea_id,
+    });
+    showToast({
+      message:
+        'Termin-Verknüpfung entfernt. Der Termin selbst lässt sich noch im Kalender bearbeiten.',
+      type: 'info',
+    });
+  }
 }
 
 function openScheduledItemDetail(item: ScheduleItem) {
@@ -2880,9 +2884,9 @@ async function removeSpot(id: number) {
                       <span class="scheduled-chip-date">{{ formatDate(item.date) }}</span>
                       <button
                         type="button"
-                        title="Verknüpfung aufheben / löschen"
-                        aria-label="Verknüpfung aufheben oder löschen"
-                        @click.stop="promptUnlinkScheduledItem(item)"
+                        title="Termin entfernen"
+                        aria-label="Termin entfernen"
+                        @click.stop="removeScheduledItemFromSpot(item)"
                       >
                         <AppIcon :icon="ACTION_ICONS.close" :size="12" group="actions" />
                       </button>
@@ -3002,28 +3006,6 @@ async function removeSpot(id: number) {
               />
               <Button type="submit">{{ editingSpot !== null ? 'Speichern' : 'Hinzufügen' }}</Button>
             </form>
-          </Modal>
-
-          <Modal
-            :model-value="unlinkingScheduledItem !== null"
-            @update:model-value="(v) => !v && (unlinkingScheduledItem = null)"
-            title="Termin-Verknüpfung verwalten"
-          >
-            <p v-if="unlinkingScheduledItem">
-              Möchtest du die Verknüpfung zum Spot für den Termin am
-              <strong>{{ formatDate(unlinkingScheduledItem.date) }}</strong> aufheben oder den
-              Termin komplett aus dem Kalender löschen?
-            </p>
-            <ButtonGroup align="stretch">
-              <Button type="button" variant="secondary" @click="unlinkScheduledItem">
-                <AppIcon :icon="ACTION_ICONS.close" :size="16" group="actions" />
-                Nur Verknüpfung aufheben
-              </Button>
-              <Button type="button" variant="danger" @click="deleteScheduledItemCompletely">
-                <AppIcon :icon="ACTION_ICONS.delete" :size="16" group="actions" />
-                Termin komplett löschen
-              </Button>
-            </ButtonGroup>
           </Modal>
 
           <div
