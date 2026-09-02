@@ -2736,24 +2736,15 @@ async function removeSpot(id: number) {
                     entfernen, um ihn wieder in die Planung zurückzuschieben, oder ihn direkt im
                     Kalender auf ein neues Datum verschieben.
                   </p>
-                  <ul class="scheduled-items-list" style="margin-top: 8px">
+                  <ul class="scheduled-items-list">
                     <li
                       v-for="item in editSpotScheduledItems"
                       :key="item.id"
                       class="scheduled-item"
-                      style="
-                        display: flex;
-                        justify-content: space-between;
-                        align-items: center;
-                        padding: 4px 0;
-                      "
                     >
                       <span
                         >{{ formatDate(item.date) }}
-                        <span
-                          v-if="item.title !== editSpotForm.title"
-                          class="scheduled-title"
-                          style="color: var(--color-text-dimmed); font-size: 0.9em"
+                        <span v-if="item.title !== activeSpotForm.title" class="scheduled-title"
                           >({{ item.title }})</span
                         ></span
                       >
@@ -2775,14 +2766,20 @@ async function removeSpot(id: number) {
                     type="button"
                     variant="ghost"
                     class="collapsible-toggle"
-                    :aria-expanded="showSpotToursSection"
-                    @click="showSpotToursSection = !showSpotToursSection"
+                    :aria-expanded="
+                      editingSpot !== null ? showEditSpotToursSection : showSpotToursSection
+                    "
+                    @click="
+                      editingSpot !== null
+                        ? (showEditSpotToursSection = !showEditSpotToursSection)
+                        : (showSpotToursSection = !showSpotToursSection)
+                    "
                   >
                     <span>
                       <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="14" group="navigation" />
                       Touren zuordnen
-                      <span v-if="spotForm.tourTitles.length" class="picker-count">
-                        ({{ spotForm.tourTitles.length }} zugeordnet)</span
+                      <span v-if="activeSpotForm.tourTitles.length" class="picker-count">
+                        ({{ activeSpotForm.tourTitles.length }} zugeordnet)</span
                       >
                     </span>
                     <AppIcon
@@ -2790,24 +2787,36 @@ async function removeSpot(id: number) {
                       :size="14"
                       group="actions"
                       class="caret"
-                      :class="{ closed: !showSpotToursSection }"
+                      :class="{
+                        closed: !(editingSpot !== null
+                          ? showEditSpotToursSection
+                          : showSpotToursSection),
+                      }"
                     />
                   </Button>
                 </legend>
-                <div v-if="showSpotToursSection" class="collapsible-content">
+                <div
+                  v-if="editingSpot !== null ? showEditSpotToursSection : showSpotToursSection"
+                  class="collapsible-content"
+                >
                   <TourAssignPicker
-                    v-model="spotForm.tourTitles"
+                    v-model="activeSpotForm.tourTitles"
                     :tour-options="allTourTitles"
-                    :category="spotForm.category"
-                    :is-home="spotForm.is_home"
+                    :category="activeSpotForm.category"
+                    :is-home="activeSpotForm.is_home"
                   />
                 </div>
               </fieldset>
+              <FileAttachments v-if="editingSpot" domain="spots" :entity-id="editingSpot.id" />
               <DraftStatusBar
-                :status="newSpotDraft.status.value"
-                :restored="newSpotDraft.restored.value"
+                :status="
+                  editingSpot !== null ? editSpotDraft.status.value : newSpotDraft.status.value
+                "
+                :restored="
+                  editingSpot !== null ? editSpotDraft.restored.value : newSpotDraft.restored.value
+                "
               />
-              <Button type="submit">Hinzufügen</Button>
+              <Button type="submit">{{ editingSpot !== null ? 'Speichern' : 'Hinzufügen' }}</Button>
             </form>
           </Modal>
 
@@ -4323,5 +4332,26 @@ async function removeSpot(id: number) {
     transform 0.2s ease,
     width 0.2s ease;
   pointer-events: none;
+}
+</style>
+
+<style scoped>
+/* Additional scoped styles for ExcursionsView scheduled items */
+.scheduled-items-list {
+  margin-top: 8px;
+  list-style: none;
+  padding: 0;
+}
+
+.scheduled-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+}
+
+.scheduled-title {
+  color: var(--color-text-dimmed);
+  font-size: 0.9em;
 }
 </style>
