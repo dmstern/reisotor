@@ -38,15 +38,41 @@ function getFocusableElements(): HTMLElement[] {
   );
 }
 
+let openModalCount = 0;
+let modalZIndexCounter = 100;
+
+const modalZIndex = ref(100);
+
+function lockBodyScroll() {
+  openModalCount++;
+  modalZIndexCounter += 10;
+  modalZIndex.value = modalZIndexCounter;
+  if (openModalCount === 1) {
+    document.body.style.overflow = 'hidden';
+  }
+  window.addEventListener('keydown', handleKeydown);
+}
+function unlockBodyScroll() {
+  openModalCount = Math.max(0, openModalCount - 1);
+  window.removeEventListener('keydown', handleKeydown);
+  if (openModalCount === 0) {
+    document.body.style.overflow = '';
+    modalZIndexCounter = 100;
+  }
+}
+
 function handleKeydown(e: KeyboardEvent) {
   if (!props.modelValue) return;
 
   if (e.key === 'Escape') {
-    close();
+    if (modalZIndex.value === modalZIndexCounter) {
+      close();
+    }
     return;
   }
 
   if (e.key === 'Tab') {
+    if (modalZIndex.value !== modalZIndexCounter) return;
     const focusables = getFocusableElements();
     if (focusables.length === 0) {
       e.preventDefault();
@@ -68,30 +94,6 @@ function handleKeydown(e: KeyboardEvent) {
         e.preventDefault();
       }
     }
-  }
-}
-
-// Sperrt den Scroll der Hauptseite im Hintergrund, solange mindestens ein Modal offen ist - Zähler
-// statt Boolean, da mehrere Modals gleichzeitig gemountet sein können (z. B. DetailModal.vue
-// innerhalb einer Ansicht, die selbst schon einen Formular-Dialog offen hat); nur beim Wechsel von 0
-// auf 1 (bzw. zurück auf 0) tatsächlich sperren/entsperren, damit ein zweites offenes Modal die
-// Sperre des ersten nicht vorzeitig aufhebt. Modulweiter Zustand statt Pinia-Store, da Modal.vue
-// ohnehin nur einmal pro App-Instanz geladen wird - anders als stores/drawers.ts' ähnliches Muster
-// bewusst nicht auf Desktop/Mobile beschränkt, ein zentrierter Overlay soll auf jeder Breite jedes
-// Durchscrollen des Hintergrunds verhindern.
-let openModalCount = 0;
-function lockBodyScroll() {
-  openModalCount++;
-  if (openModalCount === 1) {
-    document.body.style.overflow = 'hidden';
-    window.addEventListener('keydown', handleKeydown);
-  }
-}
-function unlockBodyScroll() {
-  openModalCount = Math.max(0, openModalCount - 1);
-  if (openModalCount === 0) {
-    document.body.style.overflow = '';
-    window.removeEventListener('keydown', handleKeydown);
   }
 }
 
@@ -121,7 +123,7 @@ onUnmounted(() => {
   <Teleport to="body">
     <Transition name="modal-fade">
       <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
-      <div v-if="modelValue" class="overlay" @click.self="close">
+      <div v-if="modelValue" class="overlay" :style="{ zIndex: modalZIndex }" @click.self="close">
         <div
           ref="modalRef"
           class="modal"
