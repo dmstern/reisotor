@@ -71,7 +71,7 @@ import type { IconDef } from '../utils/icon';
 import AppIcon from '../components/AppIcon.vue';
 import AnimatedText from '../components/AnimatedText.vue';
 import Button from '../components/primitives/Button.vue';
-import _ButtonGroup from '../components/primitives/ButtonGroup.vue';
+import ButtonGroup from '../components/primitives/ButtonGroup.vue';
 import IconButton from '../components/primitives/IconButton.vue';
 import _DropdownItem from '../components/primitives/DropdownItem.vue';
 
@@ -3011,14 +3011,7 @@ async function removeSpot(id: number) {
               <strong>{{ formatDate(unlinkingScheduledItem.date) }}</strong> aufheben oder den
               Termin komplett aus dem Kalender löschen?
             </p>
-            <div
-              style="
-                display: flex;
-                flex-direction: column;
-                gap: var(--space-2);
-                margin-top: var(--space-4);
-              "
-            >
+            <ButtonGroup align="stretch">
               <Button type="button" variant="secondary" @click="unlinkScheduledItem">
                 <AppIcon :icon="ACTION_ICONS.close" :size="16" group="actions" />
                 Nur Verknüpfung aufheben
@@ -3027,7 +3020,7 @@ async function removeSpot(id: number) {
                 <AppIcon :icon="ACTION_ICONS.delete" :size="16" group="actions" />
                 Termin komplett löschen
               </Button>
-            </div>
+            </ButtonGroup>
           </Modal>
 
           <div
