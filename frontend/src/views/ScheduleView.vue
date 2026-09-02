@@ -1682,7 +1682,6 @@ function formatDate(date: string) {
   text-decoration: none;
   font-size: 0.85rem;
   white-space: nowrap;
-  background: none;
   border: none;
   text-align: left;
   cursor: pointer;

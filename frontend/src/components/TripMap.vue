@@ -1924,7 +1924,6 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
   padding: 6px 8px;
   border-radius: var(--radius-sm-squircle);
   border: none;
-  background: none;
   color: var(--color-text);
   text-align: left;
   font-size: 0.85rem;

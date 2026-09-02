@@ -4037,7 +4037,6 @@ async function removeSpot(id: number) {
   color: var(--color-text);
   font-size: 0.85rem;
   white-space: nowrap;
-  background: none;
   border: none;
   text-align: left;
   cursor: pointer;
