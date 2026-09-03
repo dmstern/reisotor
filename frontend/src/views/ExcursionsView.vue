@@ -636,20 +636,40 @@ const spotCategoryOptions = computed(() => {
 });
 
 const showSpotLocationSection = ref(false);
-const showEditSpotScheduledSection = ref(false);
 const showEditSpotLocationSection = ref(false);
-const showSpotToursSection = ref(false);
-const showEditSpotToursSection = ref(false);
+// Kombinierte "Einplanen"-Sektion (Touren + Termine): ersetzt die früheren showSpotToursSection,
+// showEditSpotToursSection und showEditSpotScheduledSection (die zwei Fieldsets wurden zu einem
+// zusammengeführt).
+const showSpotScheduleSection = ref(false);
 const showExcursionSpotsSection = ref(false);
 const showEditExcursionSpotsSection = ref(false);
 
 watch(editingSpot, (val) => {
   if (val) {
-    showEditSpotScheduledSection.value = false;
     showEditSpotLocationSection.value = !!val.maps_link || !!val.is_home;
-    showEditSpotToursSection.value = editSpotForm.value.tourTitles.length > 0;
+    // Einplanen-Sektion (Touren + Termine) automatisch öffnen, wenn bereits Touren oder Termine
+    // vorhanden sind, damit der User den bestehenden Stand sofort sieht.
+    showSpotScheduleSection.value =
+      editSpotForm.value.tourTitles.length > 0 || editSpotScheduledItems.value.length > 0;
+  } else {
+    showSpotScheduleSection.value = false;
   }
 });
+
+function getTourDate(title: string): string | null {
+  const tour = excursionsStore.excursions.find(
+    (e) => e.title.toLowerCase() === title.trim().toLowerCase()
+  );
+  return tour?.date ?? null;
+}
+
+function removeTourTitle(title: string) {
+  if (editingSpot.value !== null) {
+    editSpotForm.value.tourTitles = editSpotForm.value.tourTitles.filter((t) => t !== title);
+  } else {
+    spotForm.value.tourTitles = spotForm.value.tourTitles.filter((t) => t !== title);
+  }
+}
 
 const addSchedulePopoverOpen = ref(false);
 const addScheduleDateVal = ref('');
@@ -1924,6 +1944,7 @@ function closeSpotForm() {
   spotPickerOpen.value = false;
   spotLocationError.value = false;
   spotPendingFixId.value = null;
+  showSpotScheduleSection.value = false;
   newSpotDraft.clear();
 }
 
@@ -2844,164 +2865,198 @@ async function removeSpot(id: number) {
                   expandable
                 />
               </FormField>
-              <fieldset v-if="editingSpot !== null" class="collapsible-fieldset">
-                <legend>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    class="collapsible-toggle"
-                    :aria-expanded="showEditSpotScheduledSection"
-                    @click="showEditSpotScheduledSection = !showEditSpotScheduledSection"
-                  >
-                    <span>
-                      <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" />
-                      Eingeplant am
-                      <span v-if="editSpotScheduledItems.length" class="picker-count">
-                        ({{ editSpotScheduledItems.length }}
-                        {{ editSpotScheduledItems.length === 1 ? 'Termin' : 'Termine' }})</span
-                      >
-                    </span>
-                    <AppIcon
-                      :icon="ACTION_ICONS.chevronDown"
-                      :size="14"
-                      group="actions"
-                      class="caret"
-                      :class="{ closed: !showEditSpotScheduledSection }"
-                    />
-                  </Button>
-                </legend>
-                <div v-if="showEditSpotScheduledSection" class="collapsible-content">
-                  <p class="hint">
-                    Dieser Spot ist an folgenden Tagen als Termin im Kalender eingetragen.
-                  </p>
-                  <div class="scheduled-chips">
-                    <button
-                      v-for="item in editSpotScheduledItems"
-                      :key="item.id"
-                      type="button"
-                      class="scheduled-chip"
-                      @click="openScheduledItemDetail(item)"
-                    >
-                      <AppIcon :icon="FORM_FIELD_ICONS.date" :size="12" group="formFields" />
-                      <span class="scheduled-chip-date">{{ formatDate(item.date) }}</span>
-                      <button
-                        type="button"
-                        title="Termin entfernen"
-                        aria-label="Termin entfernen"
-                        @click.stop="removeScheduledItemFromSpot(item)"
-                      >
-                        <AppIcon :icon="ACTION_ICONS.close" :size="12" group="actions" />
-                      </button>
-                    </button>
-                    <button
-                      ref="addScheduleBtnRef"
-                      type="button"
-                      class="add-schedule-chip"
-                      title="Zu anderem Datum hinzufügen"
-                      @click="toggleAddSchedulePopover($event)"
-                    >
-                      <AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" />
-                      <span>Datum hinzufügen</span>
-                    </button>
-                    <Teleport to="body">
-                      <template v-if="addSchedulePopoverOpen">
-                        <PickerMenu
-                          class="add-schedule-popover"
-                          :style="addScheduleMenuStyle"
-                          @close="addSchedulePopoverOpen = false"
-                        >
-                          <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
-                          <label
-                            style="
-                              display: block;
-                              font-size: 0.85rem;
-                              font-weight: 500;
-                              margin-bottom: var(--space-2);
-                            "
-                          >
-                            <span>Datum auswählen:</span>
-                            <input
-                              type="date"
-                              v-model="addScheduleDateVal"
-                              class="field-input"
-                              style="
-                                width: 100%;
-                                margin-top: var(--space-2);
-                                margin-bottom: var(--space-3);
-                              "
-                              @keyup.enter="submitAddSpotToDate"
-                            />
-                          </label>
-                          <ButtonGroup align="end" no-margin>
-                            <Button
-                              type="button"
-                              variant="secondary"
-                              small
-                              @click="addSchedulePopoverOpen = false"
-                            >
-                              Abbrechen
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="primary"
-                              small
-                              :disabled="!addScheduleDateVal"
-                              @click="submitAddSpotToDate"
-                            >
-                              Hinzufügen
-                            </Button>
-                          </ButtonGroup>
-                        </PickerMenu>
-                      </template>
-                    </Teleport>
-                  </div>
-                </div>
-              </fieldset>
+              <!-- Kombiniertes "Einplanen"-Fieldset: Touren zuordnen + Datum einplanen in einem
+                   Bereich, damit klar wird, dass beide Konzepte Alternativen zum selben Zweck sind. -->
               <fieldset class="collapsible-fieldset">
                 <legend>
                   <Button
                     type="button"
                     variant="ghost"
                     class="collapsible-toggle"
-                    :aria-expanded="
-                      editingSpot !== null ? showEditSpotToursSection : showSpotToursSection
-                    "
-                    @click="
-                      editingSpot !== null
-                        ? (showEditSpotToursSection = !showEditSpotToursSection)
-                        : (showSpotToursSection = !showSpotToursSection)
-                    "
+                    :aria-expanded="showSpotScheduleSection"
+                    @click="showSpotScheduleSection = !showSpotScheduleSection"
                   >
                     <span>
-                      <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="14" group="navigation" />
-                      Touren zuordnen
-                      <span v-if="activeSpotForm.tourTitles.length" class="picker-count">
-                        ({{ activeSpotForm.tourTitles.length }} zugeordnet)</span
+                      <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" />
+                      Einplanen
+                      <template
+                        v-if="activeSpotForm.tourTitles.length || editSpotScheduledItems.length"
                       >
+                        <span class="picker-count">
+                          ({{
+                            [
+                              activeSpotForm.tourTitles.length
+                                ? `${activeSpotForm.tourTitles.length} ${activeSpotForm.tourTitles.length === 1 ? 'Tour' : 'Touren'}`
+                                : '',
+                              editSpotScheduledItems.length && editingSpot !== null
+                                ? `${editSpotScheduledItems.length} ${editSpotScheduledItems.length === 1 ? 'Termin' : 'Termine'}`
+                                : '',
+                            ]
+                              .filter(Boolean)
+                              .join(', ')
+                          }})</span
+                        >
+                      </template>
                     </span>
                     <AppIcon
                       :icon="ACTION_ICONS.chevronDown"
                       :size="14"
                       group="actions"
                       class="caret"
-                      :class="{
-                        closed: !(editingSpot !== null
-                          ? showEditSpotToursSection
-                          : showSpotToursSection),
-                      }"
+                      :class="{ closed: !showSpotScheduleSection }"
                     />
                   </Button>
                 </legend>
-                <div
-                  v-if="editingSpot !== null ? showEditSpotToursSection : showSpotToursSection"
-                  class="collapsible-content"
-                >
-                  <TourAssignPicker
-                    v-model="activeSpotForm.tourTitles"
-                    :tour-options="allTourTitles"
-                    :category="activeSpotForm.category"
-                    :is-home="activeSpotForm.is_home"
-                  />
+                <div v-if="showSpotScheduleSection" class="collapsible-content">
+                  <p class="schedule-hint">
+                    <AppIcon :icon="ACTION_ICONS.info" :size="12" group="actions" />
+                    Ordne den Spot einer Tour zu oder plane ihn direkt für ein Datum ein (ohne
+                    Tour).
+                  </p>
+
+                  <!-- Oben: Datum-Hinzufügen-Button (nur im Edit-Modus) & Tour-zuordnen-Combobox -->
+                  <div class="schedule-controls">
+                    <div v-if="editingSpot !== null" class="schedule-actions-row">
+                      <button
+                        ref="addScheduleBtnRef"
+                        type="button"
+                        class="add-schedule-btn"
+                        title="Zu einem Datum einplanen"
+                        @click="toggleAddSchedulePopover($event)"
+                      >
+                        <AppIcon :icon="ACTION_ICONS.add" :size="13" group="actions" />
+                        <span>Datum hinzufügen</span>
+                      </button>
+                      <Teleport to="body">
+                        <template v-if="addSchedulePopoverOpen">
+                          <PickerMenu
+                            class="add-schedule-popover"
+                            :style="addScheduleMenuStyle"
+                            @close="addSchedulePopoverOpen = false"
+                          >
+                            <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
+                            <label
+                              style="
+                                display: block;
+                                font-size: 0.85rem;
+                                font-weight: 500;
+                                margin-bottom: var(--space-2);
+                              "
+                            >
+                              <span>Datum auswählen:</span>
+                              <input
+                                type="date"
+                                v-model="addScheduleDateVal"
+                                class="field-input"
+                                style="
+                                  width: 100%;
+                                  margin-top: var(--space-2);
+                                  margin-bottom: var(--space-3);
+                                "
+                                @keyup.enter="submitAddSpotToDate"
+                              />
+                            </label>
+                            <ButtonGroup align="end" no-margin>
+                              <Button
+                                type="button"
+                                variant="secondary"
+                                small
+                                @click="addSchedulePopoverOpen = false"
+                              >
+                                Abbrechen
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="primary"
+                                small
+                                :disabled="!addScheduleDateVal"
+                                @click="submitAddSpotToDate"
+                              >
+                                Hinzufügen
+                              </Button>
+                            </ButtonGroup>
+                          </PickerMenu>
+                        </template>
+                      </Teleport>
+                    </div>
+
+                    <!-- Tour zuordnen (Combobox, in beiden Modi: Neu + Edit) -->
+                    <TourAssignPicker
+                      v-model="activeSpotForm.tourTitles"
+                      :tour-options="allTourTitles"
+                      :category="activeSpotForm.category"
+                      :is-home="activeSpotForm.is_home"
+                      :hide-chips="true"
+                      :hide-hint="true"
+                    />
+                  </div>
+
+                  <!-- Danach: Gemeinsame Chips für ausgewählte Touren (orange) & Termine (grau) -->
+                  <div
+                    v-if="
+                      activeSpotForm.tourTitles.length ||
+                      (editingSpot !== null && editSpotScheduledItems.length)
+                    "
+                    class="assign-chips"
+                  >
+                    <!-- Tour-Chips: orange (--color-calendar-tour) -->
+                    <span
+                      v-for="title in activeSpotForm.tourTitles"
+                      :key="'tour-' + title"
+                      class="assign-chip assign-chip--tour tour-chip"
+                    >
+                      <span class="assign-chip-action">
+                        <AppIcon
+                          :icon="SECTION_ICON_DEFS.excursions"
+                          :size="12"
+                          group="navigation"
+                        />
+                        <span class="assign-chip-label">
+                          {{ title
+                          }}<template v-if="getTourDate(title)">
+                            &nbsp;·&nbsp;{{ formatDate(getTourDate(title)!) }}</template
+                          >
+                        </span>
+                      </span>
+                      <button
+                        type="button"
+                        class="assign-chip-remove"
+                        :aria-label="`Von Tour '${title}' entfernen`"
+                        title="Von Tour entfernen"
+                        @click="removeTourTitle(title)"
+                      >
+                        <AppIcon :icon="ACTION_ICONS.close" :size="11" group="actions" />
+                      </button>
+                    </span>
+
+                    <!-- Termin-Chips: grau (--color-calendar-appointment), nur im Edit-Modus -->
+                    <template v-if="editingSpot !== null">
+                      <span
+                        v-for="item in editSpotScheduledItems"
+                        :key="'sched-' + item.id"
+                        class="assign-chip assign-chip--schedule"
+                      >
+                        <button
+                          type="button"
+                          class="assign-chip-action"
+                          title="Termin im Kalender öffnen"
+                          @click="openScheduledItemDetail(item)"
+                        >
+                          <AppIcon :icon="FORM_FIELD_ICONS.date" :size="12" group="formFields" />
+                          <span class="assign-chip-label">{{ formatDate(item.date) }}</span>
+                        </button>
+                        <button
+                          type="button"
+                          class="assign-chip-remove"
+                          :aria-label="`Termin am ${formatDate(item.date)} entfernen`"
+                          title="Termin entfernen"
+                          @click="removeScheduledItemFromSpot(item)"
+                        >
+                          <AppIcon :icon="ACTION_ICONS.close" :size="11" group="actions" />
+                        </button>
+                      </span>
+                    </template>
+                  </div>
                 </div>
               </fieldset>
               <FileAttachments v-if="editingSpot" domain="spots" :entity-id="editingSpot.id" />
@@ -4458,73 +4513,128 @@ async function removeSpot(id: number) {
   pointer-events: none;
 }
 
-/* Scoped styles for ExcursionsView scheduled items chips */
-.scheduled-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  margin-top: 8px;
-}
-
-.scheduled-chip {
+/* Einplanen-Fieldset: Hinweis, Controls & vereinheitlichte Chips (Touren + Termine) */
+.schedule-hint {
+  margin: 0 0 var(--space-2);
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
   display: flex;
   align-items: center;
   gap: 6px;
-  background: var(--color-primary-tint);
-  border: 1px solid var(--color-primary);
-  color: var(--color-primary-dark);
-  border-radius: 999px;
-  padding: 3px 8px 3px 10px;
-  font-size: 0.82rem;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: inherit;
-  text-align: left;
+  line-height: 1.3;
 }
 
-.scheduled-chip:hover {
-  background: var(--color-bg);
-}
-
-.scheduled-chip > button {
-  background: none;
-  border: none;
-  padding: 2px;
-  color: inherit;
-  cursor: pointer;
-  font-size: 0.75rem;
-  line-height: 1;
+.schedule-controls {
   display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
 }
 
-.scheduled-chip > button:hover {
-  opacity: 0.7;
-}
-
-.add-schedule-chip {
-  position: relative;
+.add-schedule-btn {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 3px 10px;
-  border-radius: 999px;
+  gap: 6px;
+  align-self: flex-start;
+  padding: 5px 12px;
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
   font-size: 0.82rem;
   font-weight: 500;
-  border: 1px dashed var(--color-border);
-  background: var(--color-bg);
-  color: var(--color-text-muted);
+  border: 1px dashed var(--color-border-strong);
+  background: var(--color-hover);
+  color: var(--color-text);
   cursor: pointer;
-  overflow: hidden;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
 }
 
-.add-schedule-chip:hover {
-  border-color: var(--color-primary);
-  color: var(--color-primary-dark);
+.add-schedule-btn:hover {
+  background: var(--color-surface);
+  border-color: var(--color-calendar-appointment);
+  color: var(--color-calendar-appointment);
 }
 
 .add-schedule-popover {
   width: 240px;
   padding: var(--space-3);
   z-index: 1100;
+}
+
+/* Vereinheitlichte Chips für Touren und Termine (DRY-Prinzip) */
+.assign-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.assign-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 999px;
+  padding: 3px 6px 3px 10px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border: 1px solid;
+  line-height: 1.2;
+}
+
+/* Touren-Chip: orange (Farbe aus dem Kalender, SCHEDULE_CATEGORY_META.excursion.color) */
+.assign-chip--tour {
+  background: var(--color-calendar-tour-tint);
+  border-color: var(--color-calendar-tour-border);
+  color: var(--color-calendar-tour);
+}
+
+/* Termin-Chip: grau (Farbe aus dem Kalender, SCHEDULE_CATEGORY_META.other.color) */
+.assign-chip--schedule {
+  background: var(--color-calendar-appointment-tint);
+  border-color: var(--color-calendar-appointment-border);
+  color: var(--color-calendar-appointment);
+}
+
+.assign-chip-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  font-weight: inherit;
+  cursor: pointer;
+}
+
+.assign-chip-action:hover {
+  text-decoration: underline;
+}
+
+.assign-chip-label {
+  display: inline-flex;
+  align-items: center;
+}
+
+.assign-chip-remove {
+  background: none;
+  border: none;
+  padding: 2px 3px;
+  margin-left: 2px;
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  line-height: 1;
+  opacity: 0.7;
+  transition: opacity 0.15s ease;
+}
+
+.assign-chip-remove:hover {
+  opacity: 1;
 }
 </style>

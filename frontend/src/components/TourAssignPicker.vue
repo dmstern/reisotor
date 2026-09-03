@@ -15,6 +15,10 @@ const props = defineProps<{
   tourOptions: string[];
   category?: string;
   isHome?: boolean;
+  /** Blendet die internen Chips aus (z. B. wenn Chips extern in einer gemeinsamen Liste gerendert werden) */
+  hideChips?: boolean;
+  /** Blendet den unteren Hinweistext aus */
+  hideHint?: boolean;
 }>();
 const emit = defineEmits<{
   (e: 'update:modelValue', value: string[]): void;
@@ -74,7 +78,7 @@ function removeTour(title: string) {
 
 <template>
   <div class="tour-assign-picker">
-    <div class="tour-chips" v-if="modelValue.length">
+    <div class="tour-chips" v-if="!hideChips && modelValue.length">
       <span v-for="title in modelValue" :key="title" class="tour-chip">
         <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="13" group="navigation" /> {{ title }}
         <button
@@ -110,7 +114,7 @@ function removeTour(title: string) {
       @select="addTour"
     />
 
-    <p class="tour-info-hint">
+    <p v-if="!hideHint" class="tour-info-hint">
       <AppIcon :icon="ACTION_ICONS.info" :size="12" group="actions" />
       Touren eignen sich auch, um Anreise- oder Heimreise-Routen mit Zwischenstopps zu planen.
     </p>
