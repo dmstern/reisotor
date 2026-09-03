@@ -28,6 +28,7 @@ import AppIcon from '../components/AppIcon.vue';
 import Button from '../components/primitives/Button.vue';
 import IconButton from '../components/primitives/IconButton.vue';
 import DropdownItem from '../components/primitives/DropdownItem.vue';
+import PickerMenu from '../components/primitives/PickerMenu.vue';
 import Badge from '../components/primitives/Badge.vue';
 import WeatherIcon from '../components/WeatherIcon.vue';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
@@ -1080,10 +1081,7 @@ function formatDate(date: string) {
               </Button>
               <Teleport to="body">
                 <template v-if="calendarPickerKey === entry.key">
-                  <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
-                  <div class="picker-backdrop" @click.stop="calendarPickerKey = null"></div>
-                  <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
-                  <div class="picker-menu" :style="calendarPickerStyle" @click.stop>
+                  <PickerMenu :style="calendarPickerStyle" @close="calendarPickerKey = null">
                     <DropdownItem
                       :icon="ACTION_ICONS.apple"
                       label="Apple/iPhone"
@@ -1111,7 +1109,7 @@ function formatDate(date: string) {
                       label="Android"
                       @click="downloadIcsForEntry(entry)"
                     />
-                  </div>
+                  </PickerMenu>
                 </template>
               </Teleport>
             </div>
@@ -1637,51 +1635,6 @@ function formatDate(date: string) {
   padding: 4px 8px;
   font-size: 0.9rem;
   line-height: 1;
-}
-
-.picker-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 20;
-}
-
-.picker-menu {
-  position: fixed;
-  min-width: 180px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md-squircle);
-  corner-shape: squircle;
-  box-shadow: var(--shadow-md);
-  padding: var(--space-2);
-  z-index: 21;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.picker-menu a,
-.picker-menu button {
-  padding: 6px 8px;
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  color: var(--color-text);
-  text-decoration: none;
-  font-size: 0.85rem;
-  white-space: nowrap;
-  border: none;
-  text-align: left;
-  cursor: pointer;
-  width: 100%;
-  /* #183: der globale `button`-Basisstil (style.css) setzt box-shadow: var(--shadow-sm) - ohne
-     Reset trug jeder Menüpunkt hier zusätzlich zum eigenen .picker-menu-Container-Schatten einen
-     eigenen "erhobenen" Schatten (v. a. auf iOS Safari sichtbar). */
-  box-shadow: none;
-}
-
-.picker-menu a:hover,
-.picker-menu button:hover {
-  background: var(--color-hover);
 }
 
 .edit-form {

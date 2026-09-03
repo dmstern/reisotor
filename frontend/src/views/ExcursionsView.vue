@@ -73,6 +73,7 @@ import Button from '../components/primitives/Button.vue';
 import ButtonGroup from '../components/primitives/ButtonGroup.vue';
 import IconButton from '../components/primitives/IconButton.vue';
 import _DropdownItem from '../components/primitives/DropdownItem.vue';
+import PickerMenu from '../components/primitives/PickerMenu.vue';
 import { useToast } from '../composables/useToast';
 import { isAutoCreatedUnmodifiedScheduleItem } from '../utils/scheduleSpotUnlink';
 
@@ -2133,9 +2134,11 @@ async function removeSpot(id: number) {
                 </button>
                 <Teleport to="body">
                   <template v-if="descriptionOpen">
-                    <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
-                    <div class="picker-backdrop" @click="descriptionOpen = false"></div>
-                    <div class="picker-menu description-popover" :style="descriptionMenuStyle">
+                    <PickerMenu
+                      class="description-popover"
+                      :style="descriptionMenuStyle"
+                      @close="descriptionOpen = false"
+                    >
                       <template v-if="groupMode === 'tours'">
                         <p>
                           <strong>Touren</strong> fassen mehrere Spots zu einer gemeinsamen Route
@@ -2157,7 +2160,7 @@ async function removeSpot(id: number) {
                           Kalendertag oder eine Tour, um sie einzutakten.
                         </p>
                       </template>
-                    </div>
+                    </PickerMenu>
                   </template>
                 </Teleport>
               </span>
@@ -2905,9 +2908,12 @@ async function removeSpot(id: number) {
                     </button>
                     <Teleport to="body">
                       <template v-if="addSchedulePopoverOpen">
-                        <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
-                        <div class="picker-backdrop" @click="addSchedulePopoverOpen = false"></div>
-                        <div class="picker-menu add-schedule-popover" :style="addScheduleMenuStyle">
+                        <PickerMenu
+                          class="add-schedule-popover"
+                          :style="addScheduleMenuStyle"
+                          @close="addSchedulePopoverOpen = false"
+                        >
+                          <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
                           <label
                             style="
                               display: block;
@@ -2916,16 +2922,20 @@ async function removeSpot(id: number) {
                               margin-bottom: var(--space-2);
                             "
                           >
-                            Datum auswählen:
+                            <span>Datum auswählen:</span>
+                            <input
+                              type="date"
+                              v-model="addScheduleDateVal"
+                              class="field-input"
+                              style="
+                                width: 100%;
+                                margin-top: var(--space-2);
+                                margin-bottom: var(--space-3);
+                              "
+                              @keyup.enter="submitAddSpotToDate"
+                            />
                           </label>
-                          <input
-                            type="date"
-                            v-model="addScheduleDateVal"
-                            class="field-input"
-                            style="width: 100%; margin-bottom: var(--space-3)"
-                            @keyup.enter="submitAddSpotToDate"
-                          />
-                          <ButtonGroup align="end" noMargin>
+                          <ButtonGroup align="end" no-margin>
                             <Button
                               type="button"
                               variant="secondary"
@@ -2944,7 +2954,7 @@ async function removeSpot(id: number) {
                               Hinzufügen
                             </Button>
                           </ButtonGroup>
-                        </div>
+                        </PickerMenu>
                       </template>
                     </Teleport>
                   </div>
@@ -4002,78 +4012,6 @@ async function removeSpot(id: number) {
   background: var(--color-primary-tint);
   border-color: var(--color-primary);
   color: var(--color-primary-dark);
-}
-
-/* Per Teleport nach <body> gerendert (siehe computeMenuStyle()/toggle*()-Funktionen im Script) -
-   position:fixed übers ganze Sichtfeld statt wie zuvor relativ zu .spots-col positioniert, das wäre
-   sobald .spots-col selbst ein transform bekommt nicht mehr zuverlässig (siehe Kommentar dort).
-   z-index deutlich höher als die bisherigen 20/21: als Teleport-Kind von <body> konkurriert das
-   jetzt mit AppHeader.vue (25) statt nur innerhalb von .spots-col (dort z-index:5) - gleiches Maß
-   wie MapsAppPicker.vue's Teleport-Menü (110/111, bewusst über Modal.vue's 100). */
-.picker-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 110;
-}
-
-.picker-menu {
-  position: fixed;
-  min-width: 180px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-md-squircle);
-  corner-shape: squircle;
-  box-shadow: var(--shadow-md);
-  padding: var(--space-2);
-  z-index: 111;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.picker-menu button {
-  padding: 6px 8px;
-  border-radius: var(--radius-sm-squircle);
-  color: var(--color-text);
-  font-size: 0.85rem;
-  white-space: nowrap;
-  border: none;
-  text-align: left;
-  cursor: pointer;
-  width: 100%;
-  /* #183: der globale `button`-Basisstil (style.css) setzt box-shadow: var(--shadow-sm) - ohne
-     Reset trug jeder Menüpunkt hier zusätzlich zum eigenen .picker-menu-Container-Schatten einen
-     eigenen "erhobenen" Schatten (v. a. auf iOS Safari sichtbar). */
-  box-shadow: none;
-}
-
-.picker-menu button:hover {
-  background: var(--color-hover);
-}
-
-.picker-menu button.active {
-  color: var(--color-primary-dark);
-  font-weight: 600;
-}
-
-.category-menu {
-  min-width: 220px;
-}
-
-.category-option {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: 6px 8px;
-  font-size: 0.9rem;
-  font-weight: 400;
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  cursor: pointer;
-}
-
-.category-option:hover {
-  background: var(--color-hover);
 }
 
 .checkbox-option {
