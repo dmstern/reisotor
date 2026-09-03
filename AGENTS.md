@@ -122,7 +122,7 @@ schleichen sich Demo-/Dev-Artefakte ein, die im echten Marketing-Bild nichts ver
   `/build-info`-Stub `environment: 'production'` liefert (siehe Issue #219) — bei einem lokalen Demo-
   Dev-Server sollte das automatisch der Fall sein, sofern `main` aktuell ist.
 
-## Konsistenz-Check bei Änderungen
+## Konsistenz & DRY-Prinzip (Redundanzvermeidung)
 
 Die App ist über viele Sessions gewachsen; dasselbe Konzept (Icon, Bezeichnung, Layout-/
 Verhaltensmuster, Datenmodell-Feld) taucht oft an mehreren Stellen zugleich auf, ohne dass das
@@ -131,6 +131,11 @@ zentral dokumentiert ist. Bei jeder Änderung an UI-Bausteinen oder am Datenmode
 vorkommt (kurz grep auf Icon/Bezeichner/Komponente, nicht nur an der ursprünglich angefragten
 Stelle):
 
+- **DRY-Prinzip (Don't Repeat Yourself) & Single Source of Truth**: Logik, Datenstrukturen,
+  Berechnungen und Styles dürfen nicht redundant an mehreren Stellen dupliziert werden. Sobald ein
+  Algorithmus, ein Validierungsmuster oder eine UI-Struktur in mehr als einer Komponente gebraucht
+  wird, gehört er in eine gemeinsame Quelle (Composable, Utility-Funktion unter `utils/`, Pinia-Store
+  oder Primitiv-Komponente unter `frontend/src/components/primitives/`).
 - **Offensichtlich sinnvolle Folgeanpassung** (identisches Icon/Konzept an anderer Stelle, exakt
   gleiches Bug-Muster, klar auf dieselbe Baustelle begrenzt): direkt mit umsetzen, danach kurz
   erwähnen, was zusätzlich angepasst wurde — nicht vorher nachfragen.
@@ -154,6 +159,9 @@ Präsentation je View).
 - **Alte Element-Selektoren bereinigen**: Wird ein Bereich auf Primitives umgestellt (z. B. `DropdownItem`
   oder `Button` statt nativer HTML-Tags), müssen veraltete Selektoren wie `.picker-menu button` oder
   `.card button` im umgebenden CSS restlos entfernt werden, um Spezifitätskonflikte und Geisterstile zu verhindern.
+- **Proaktives Clean-Code-Refactoring**: Fallen beim Arbeiten an einer Stelle redundante Kopien
+  auf (wie ehemals verstreute `.picker-menu`-Blöcke), diese nicht durch einen weiteren Klon ergänzen,
+  sondern in eine wiederverwendbare Abstraktion überführen.
 
 Beim Erstellen neuer wiederverwendbarer UI-Komponenten (`frontend/src/components/*.vue`)
 immer direkt eine zugehörige Storybook-Story-Datei (`*.stories.ts`) anlegen, damit Zustände der Komponente
