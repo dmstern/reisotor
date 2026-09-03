@@ -11,9 +11,8 @@ const actionIcons = ACTION_ICONS;
 // Dünner Wrapper um Modal.vue für Read-Only-Detail-Ansichten (Ausflug/Spot/Unterkunft/Reise):
 // Bild als echtes Vollbild-Banner (Bleed über Modal.vue's eigenes Padding hinaus), Titel + optionale
 // Meta-Infos (Autor, Status, Zeitraum, …) als Overlay darüber – wie beim Urlaubsbanner im
-// Dashboard. Bearbeiten-Button schwebt fest oben rechts übers Bild, konsistent in allen vier
-// Detail-Dialogen (Ausflug/Spot/Unterkunft/Reise), statt an jeder Verwendungsstelle einzeln in
-// den Aktionen unten zu stehen.
+// Dashboard. Bearbeiten-Button links, Schließen-Button rechts (konsistent mit Spot-Cards und
+// üblichen Dialog-Konventionen).
 defineProps<{
   modelValue: boolean;
   title: string;
@@ -49,21 +48,21 @@ const emit = defineEmits<{ (e: 'update:modelValue', value: boolean): void; (e: '
         />
         <IconButton
           variant="ghost"
-          class="detail-close-btn"
-          :icon="actionIcons.close"
-          size="sm"
-          title="Schließen"
-          aria-label="Schließen"
-          @click="close"
-        />
-        <IconButton
-          variant="ghost"
           class="detail-edit-btn"
           :icon="actionIcons.edit"
           size="sm"
           title="Bearbeiten"
           aria-label="Bearbeiten"
           @click="emit('edit')"
+        />
+        <IconButton
+          variant="ghost"
+          class="detail-close-btn"
+          :icon="actionIcons.close"
+          size="sm"
+          title="Schließen"
+          aria-label="Schließen"
+          @click="close"
         />
         <div class="detail-hero-overlay">
           <h2 class="detail-title">{{ title }}</h2>
@@ -133,16 +132,11 @@ const emit = defineEmits<{ (e: 'update:modelValue', value: boolean): void; (e: '
 }
 
 .detail-edit-btn {
-  right: 10px;
+  left: 10px;
 }
 
-/* Links statt rechts (üblicher Platz für einen Schließen-Button): Modal.vue's eigener Close-Button
-   ist hier bewusst ausgeblendet (hide-header), da die normale .modal-head-Zeile eine Lücke über
-   dem randlosen Bild-Banner offen ließe – dieser Button übernimmt seine Funktion. Rechts oben
-   bleibt für den Bearbeiten-Button reserviert (App-weite Konvention, siehe DetailModal-Header-
-   Kommentar oben). */
 .detail-close-btn {
-  left: 10px;
+  right: 10px;
 }
 
 .detail-hero-overlay {
