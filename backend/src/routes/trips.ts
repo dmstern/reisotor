@@ -63,6 +63,9 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(403).send({ error: 'Eingeschränkter Modus - Nur ein Urlaub pro Nutzer' });
     }
     const { name, destination, start_date, end_date, maps_link } = req.body;
+    if (!name?.trim()) {
+      return reply.code(400).send({ error: 'Name ist erforderlich' });
+    }
     if (start_date && end_date && start_date > end_date) {
       return reply.code(400).send({ error: 'Das Enddatum darf nicht vor dem Startdatum liegen' });
     }
@@ -111,6 +114,9 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
     if (!existing) return reply.code(404).send({ error: 'Nicht gefunden' });
 
     const { name, destination, start_date, end_date, maps_link } = req.body;
+    if (!name?.trim()) {
+      return reply.code(400).send({ error: 'Name ist erforderlich' });
+    }
     if (start_date && end_date && start_date > end_date) {
       return reply.code(400).send({ error: 'Das Enddatum darf nicht vor dem Startdatum liegen' });
     }

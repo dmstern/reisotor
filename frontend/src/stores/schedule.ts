@@ -18,6 +18,8 @@ export interface ScheduleFormData {
   lng?: number;
   spot_id?: number | null;
   idea_id?: number | null;
+  auto_created?: number | boolean | null;
+  user_modified?: number | boolean | null;
 }
 
 // Eigener Store statt (wie zuvor) lokalem State in ScheduleView.vue: ein Spot/eine Tour auf einen
@@ -85,7 +87,14 @@ export const useScheduleStore = defineStore('schedule', () => {
         idea_id: existing.idea_id,
       });
     } else {
-      await create({ trip_id: tripId, date, title, spot_id: spotId });
+      await create({
+        trip_id: tripId,
+        date,
+        title,
+        spot_id: spotId,
+        auto_created: 1,
+        user_modified: 0,
+      });
     }
   }
 
@@ -94,5 +103,27 @@ export const useScheduleStore = defineStore('schedule', () => {
     items.value = items.value.filter((i) => i.id !== id);
   }
 
-  return { items, loaded, load, create, update, remove, setSpotDate };
+  const selectedItemId = ref<number | null>(null);
+
+  function openDetail(itemOrId: ScheduleItem | number) {
+    const id = typeof itemOrId === 'number' ? itemOrId : itemOrId.id;
+    selectedItemId.value = id;
+  }
+
+  function closeDetail() {
+    selectedItemId.value = null;
+  }
+
+  return {
+    items,
+    loaded,
+    selectedItemId,
+    load,
+    create,
+    update,
+    remove,
+    setSpotDate,
+    openDetail,
+    closeDetail,
+  };
 });

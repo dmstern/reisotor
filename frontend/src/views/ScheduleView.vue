@@ -28,6 +28,8 @@ import AppIcon from '../components/AppIcon.vue';
 import Button from '../components/primitives/Button.vue';
 import IconButton from '../components/primitives/IconButton.vue';
 import DropdownItem from '../components/primitives/DropdownItem.vue';
+import PickerMenu from '../components/primitives/PickerMenu.vue';
+import Badge from '../components/primitives/Badge.vue';
 import WeatherIcon from '../components/WeatherIcon.vue';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
 import { SCHEDULE_CATEGORY_META } from '../utils/scheduleCategory';
@@ -56,6 +58,7 @@ import {
   toLocalDateString,
   formatDate as formatDateShared,
 } from '../utils/dateFormat';
+import { isEmptyRichText } from '../utils/richText';
 
 // Auf Desktop weiterhin eigenständig gemountete Schublade (App.vue, linker Platz). Auf Mobil
 // dagegen dieselbe Komponente als eigenständige Seite (Route /calendar, siehe router/index.ts)
@@ -138,6 +141,25 @@ const newDraft = useDraftAutosave('schedule:new', newFormBundle, showAddForm);
 
 const editingItem = ref<ScheduleItem | null>(null);
 const viewingItem = ref<ScheduleItem | null>(null);
+
+watch(
+  [() => scheduleStore.selectedItemId, () => scheduleStore.items],
+  ([id]) => {
+    if (id != null) {
+      const item = scheduleStore.items.find((i: ScheduleItem) => i.id === id);
+      if (item) {
+        viewingItem.value = item;
+      }
+    }
+  },
+  { immediate: true }
+);
+
+watch(viewingItem, (val) => {
+  if (val === null && scheduleStore.selectedItemId !== null) {
+    scheduleStore.closeDetail();
+  }
+});
 const editForm = ref({
   time: '',
   endTime: '',
@@ -648,6 +670,8 @@ async function finishPendingSchedule(
           date,
           title: spot.title,
           spot_id: spot.id,
+          auto_created: 1,
+          user_modified: 0,
         });
       }
     }
@@ -789,6 +813,7 @@ async function submitEdit() {
     lng: linked ? undefined : (parsed?.lng ?? editingItem.value.lng ?? undefined),
     spot_id,
     idea_id,
+    user_modified: 1,
   });
   // Beide IDs (alt UND neu): eine Tour-Verknüpfung kann sich ändern (andere Tour ausgewählt) oder
   // ganz entfernt werden – in beiden Fällen muss die vorher verknüpfte Tour ihr Datum verlieren.
@@ -1042,7 +1067,12 @@ function formatDate(date: string) {
               <AppIcon :icon="FORM_FIELD_ICONS.location" :size="13" group="formFields" />
               {{ entry.location }}
             </p>
-            <p v-if="entry.note" class="note">{{ entry.note }}</p>
+            <RichTextDisplay
+              v-if="entry.note && !isEmptyRichText(entry.note)"
+              :content="entry.note"
+              format="html"
+              class="note"
+            />
           </div>
           <div class="item-actions">
             <div class="calendar-export">
@@ -1057,10 +1087,7 @@ function formatDate(date: string) {
               </Button>
               <Teleport to="body">
                 <template v-if="calendarPickerKey === entry.key">
-                  <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
-                  <div class="picker-backdrop" @click.stop="calendarPickerKey = null"></div>
-                  <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
-                  <div class="picker-menu" :style="calendarPickerStyle" @click.stop>
+                  <PickerMenu :style="calendarPickerStyle" @close="calendarPickerKey = null">
                     <DropdownItem
                       :icon="ACTION_ICONS.apple"
                       label="Apple/iPhone"
@@ -1088,7 +1115,7 @@ function formatDate(date: string) {
                       label="Android"
                       @click="downloadIcsForEntry(entry)"
                     />
-                  </div>
+                  </PickerMenu>
                 </template>
               </Teleport>
             </div>
@@ -1323,6 +1350,10 @@ function formatDate(date: string) {
       @edit="editViewingItem"
     >
       <template #meta>
+        <Badge v-if="viewingItem?.auto_created" variant="primary" size="sm">
+          <AppIcon :icon="ACTION_ICONS.sparkles" :size="12" group="actions" />
+          Automatisch angelegt
+        </Badge>
         <span v-if="viewingItem" class="detail-badge">
           <AppIcon :icon="FORM_FIELD_ICONS.date" :size="12" group="formFields" />
           {{ formatDate(viewingItem.date) }}
@@ -1376,8 +1407,9 @@ function formatDate(date: string) {
         </Button>
       </div>
       <RichTextDisplay
-        v-if="viewingItem?.note"
+        v-if="viewingItem?.note && !isEmptyRichText(viewingItem.note)"
         :content="viewingItem.note"
+        format="html"
         class="detail-row note"
       />
       <FileAttachments
@@ -1610,52 +1642,6 @@ function formatDate(date: string) {
   padding: 4px 8px;
   font-size: 0.9rem;
   line-height: 1;
-}
-
-.picker-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 20;
-}
-
-.picker-menu {
-  position: fixed;
-  min-width: 180px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md-squircle);
-  corner-shape: squircle;
-  box-shadow: var(--shadow-md);
-  padding: var(--space-2);
-  z-index: 21;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.picker-menu a,
-.picker-menu button {
-  padding: 6px 8px;
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  color: var(--color-text);
-  text-decoration: none;
-  font-size: 0.85rem;
-  white-space: nowrap;
-  background: none;
-  border: none;
-  text-align: left;
-  cursor: pointer;
-  width: 100%;
-  /* #183: der globale `button`-Basisstil (style.css) setzt box-shadow: var(--shadow-sm) - ohne
-     Reset trug jeder Menüpunkt hier zusätzlich zum eigenen .picker-menu-Container-Schatten einen
-     eigenen "erhobenen" Schatten (v. a. auf iOS Safari sichtbar). */
-  box-shadow: none;
-}
-
-.picker-menu a:hover,
-.picker-menu button:hover {
-  background: var(--color-hover);
 }
 
 .edit-form {

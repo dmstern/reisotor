@@ -1,6 +1,7 @@
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useTripStore, type TripFormData } from '../stores/trip';
 import { useDrawersStore } from '../stores/drawers';
+import { useDraftAutosave } from './useDraftAutosave';
 import type { Trip } from '../api/types';
 
 /** Bündelt die Anlegen-/Bearbeiten-/Löschen-Logik für Urlaube, die TripSwitcher.vue (Header-
@@ -11,6 +12,32 @@ export function useTripEditor() {
   const drawers = useDrawersStore();
   const showForm = ref(false);
   const editingTrip = ref<Trip | null>(null);
+
+  const emptyTripForm = (): TripFormData => ({
+    name: '',
+    destination: '',
+    start_date: '',
+    end_date: '',
+    maps_link: '',
+    image_url: '',
+    packing_category_required: true,
+  });
+
+  const tripForm = ref<TripFormData>(emptyTripForm());
+  const editTripForm = ref<TripFormData>(emptyTripForm());
+
+  const newDraft = useDraftAutosave(
+    'trips:new',
+    tripForm,
+    computed(() => showForm.value && editingTrip.value === null)
+  );
+
+  const editDraft = useDraftAutosave(
+    () => `trips:edit:${editingTrip.value?.id}`,
+    editTripForm,
+    computed(() => showForm.value && editingTrip.value !== null)
+  );
+
   // Bleibt gesetzt, solange nach dem Anlegen eines neuen Urlaubs die Standort-Auflösung fehlschlägt
   // (siehe onSubmit) – ein erneuter Speicherversuch (z. B. mit manuell gesetztem Pin) muss dann den
   // bereits angelegten Urlaub AKTUALISIEREN statt einen zweiten anzulegen.
@@ -26,6 +53,15 @@ export function useTripEditor() {
 
   function openEdit(trip: Trip) {
     editingTrip.value = trip;
+    editTripForm.value = {
+      name: trip.name,
+      destination: trip.destination ?? '',
+      start_date: trip.start_date ?? '',
+      end_date: trip.end_date ?? '',
+      maps_link: trip.maps_link ?? '',
+      image_url: trip.image_url ?? '',
+      packing_category_required: trip.packing_category_required !== 0,
+    };
     pendingFixTripId.value = null;
     tripFormLocationError.value = false;
     showForm.value = true;
@@ -33,6 +69,11 @@ export function useTripEditor() {
 
   function closeForm() {
     showForm.value = false;
+    if (editingTrip.value) {
+      editDraft.clear();
+    } else {
+      newDraft.clear();
+    }
     editingTrip.value = null;
     pendingFixTripId.value = null;
     tripFormLocationError.value = false;

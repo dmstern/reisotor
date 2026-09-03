@@ -104,8 +104,36 @@ function formatDate(d: string) {
 // der aufgeklappten Karte geholt (props.expanded) - anders als beim geplanten Datum (typischerweise
 // wenige Spots) haben in der Mini-Card-Ansicht potenziell sehr viele Spots gar kein Datum; ein Fetch
 // pro sichtbarer Mini-Card würde unnötig viele Open-Meteo-Requests auf einmal auslösen.
+const excursionsStore = useExcursionsStore();
+const scheduleStore = useScheduleStore();
+const spotsStore = useSpotsStore();
+const tripStore = useTripStore();
+const drawers = useDrawersStore();
+
+const scheduledDatesForSpot = computed(() => {
+  const dates = new Set<string>();
+  for (const item of scheduleStore.items) {
+    if (item.spot_id === props.spot.id && item.date) {
+      if (item.end_date && item.end_date > item.date) {
+        let cur = new Date(`${item.date}T00:00:00`);
+        const end = new Date(`${item.end_date}T00:00:00`);
+        while (cur <= end) {
+          dates.add(toLocalDateString(cur));
+          cur.setDate(cur.getDate() + 1);
+        }
+      } else {
+        dates.add(item.date);
+      }
+    }
+  }
+  return dates;
+});
+
+const scheduledDaysCount = computed(() => scheduledDatesForSpot.value.size);
+
 const weatherProvider = useWeatherProviderStore();
 const weatherDate = computed(() => {
+  if (scheduledDaysCount.value > 1) return null;
   if (props.scheduledDate) return props.scheduledDate;
   if (props.spot.done || !props.expanded) return null;
   return toLocalDateString(new Date());
@@ -185,12 +213,6 @@ function onDragStart(event: DragEvent) {
 // Hintergrund einen unsichtbaren Ein-Spot-Ausflug – 1:1 nach dem Muster von ExcursionCard.vue's
 // 📅-Einplanen-Anfasser (eigener Pointer-Events-Drag statt nativem HTML5-DnD, da Letzteres auf
 // Touch-Geräten unzuverlässig ist). Eigenständig neben dem bestehenden nativen
-// draggable/dragstart oben (Zuordnen zu einem Ausflug) – kein Ersatz dafür.
-const excursionsStore = useExcursionsStore();
-const scheduleStore = useScheduleStore();
-const spotsStore = useSpotsStore();
-const tripStore = useTripStore();
-const drawers = useDrawersStore();
 const { dragging, ghostStyle, onPointerDown } = usePointerDrag({
   onStart: () => {
     drawers.calendarOpen = true;
@@ -203,6 +225,8 @@ const { dragging, ghostStyle, onPointerDown } = usePointerDrag({
       date: dayEl.dataset.date,
       title: props.spot.title,
       spot_id: props.spot.id,
+      auto_created: 1,
+      user_modified: 0,
     });
   },
   // Klick-Alternative zum Drag: öffnet die Kalender-Schublade und merkt sich den Spot, der beim
@@ -293,9 +317,14 @@ function onToggleDone() {
         <span class="status-text">
           <template v-if="spot.done && scheduledDate">Besucht am {{ plannedDateLabel }}</template>
           <template v-else-if="spot.done">Gemacht</template>
-          <template v-else-if="scheduledDate">Geplant für {{ plannedDateLabel }}</template>
+          <template v-else-if="scheduledDate">
+            <template v-if="scheduledDaysCount > 1"
+              >Geplant an {{ scheduledDaysCount }} Tagen</template
+            >
+            <template v-else>Geplant für {{ plannedDateLabel }}</template>
+          </template>
           <template v-else>Aktuelles Wetter</template>
-          <template v-if="dayWeather">
+          <template v-if="dayWeather && scheduledDaysCount <= 1">
             · <WeatherIcon :code="dayWeather.weatherCode" :size="14" />
             {{ Math.round(dayWeather.tempMax) }}°</template
           >
@@ -311,7 +340,7 @@ function onToggleDone() {
       <!-- Eigene, explizite Aktion statt am Aufklappen dranzuhängen (#109, siehe onShowOnMap im
            Script) – in Mini- UND aufgeklappter Karte sichtbar (Textlabel schrumpft im Kompakt-Modus
            auf reines Icon, siehe @container-Regel unten), gleiche Konvention wie
-           ExcursionCard.vue/SpotDetailDialog.vue's "Auf Karte anzeigen"-Button. -->
+           ExcursionCard.vue's "Auf Karte anzeigen"-Button. -->
       <div class="links" v-if="spot.lat != null && spot.lng != null">
         <Button
           variant="card-action"

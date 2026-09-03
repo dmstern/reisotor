@@ -59,6 +59,7 @@ import {
   IconRuler2,
   IconPlayerPlay,
   IconPlayerPlayFilled,
+  IconSparkles,
   IconAlertTriangle,
   IconAlertTriangleFilled,
   IconArrowsExchange,
@@ -178,6 +179,7 @@ export type ActionIconKey =
   | 'chevronUp'
   | 'info'
   | 'installApp'
+  | 'sparkles'
   | 'share'
   | 'browserMenu'
   | 'send';
@@ -320,6 +322,7 @@ export const ACTION_ICONS: Record<ActionIconKey, IconDef> = {
   chevronUp: { id: 'chevron-up', emoji: '🔼', outline: IconChevronUp },
   info: { id: 'info-circle', emoji: 'ℹ️', outline: IconInfoCircle, filled: IconInfoCircleFilled },
   installApp: { id: 'device-mobile', emoji: '📲', outline: IconDeviceMobile },
+  sparkles: { id: 'sparkles', emoji: '✨', outline: IconSparkles },
   share: { id: 'share', emoji: '⬆️', outline: IconShare },
   browserMenu: { id: 'dots-vertical', emoji: '⋮', outline: IconDotsVertical },
   send: { id: 'send', emoji: '✈️', outline: IconSend, filled: IconSendFilled },

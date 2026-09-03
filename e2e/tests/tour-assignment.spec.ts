@@ -39,7 +39,7 @@ test.describe('Tour-Zuordnung: einfacher Tagging-Modus + Kategorie/Touren-Gruppi
     const modal = page.locator('.modal', { hasText: 'Neuer Spot' });
     await modal.locator('input[placeholder="Titel"]').fill(spotTitle);
 
-    await modal.locator('.collapsible-toggle', { hasText: 'Touren zuordnen' }).click();
+    await modal.locator('.collapsible-toggle', { hasText: 'Einplanen' }).click();
 
     // Tour-Titel tippen und per Enter (#207: eigener "Hinzufügen"-Button des TourAssignPicker
     // entfernt, klebte als Listeneintrag zu eng am Formular-Submit-Button gleichen Namens) als Chip

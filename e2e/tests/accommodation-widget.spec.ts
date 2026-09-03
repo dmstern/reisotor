@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 // Regressionsnetz für einen vom Nutzer gemeldeten Punkt: "Einplanen" (Kalender) und "Als gemacht
 // markieren" ergaben für eine Unterkunft (kein Ausflugsziel, das man "besucht"/einplant) keinen
 // Sinn und wurden entfernt - sowohl in der Spots-Übersicht (SpotCard.vue) als auch im Detail-Dialog
-// (SpotDetailDialog.vue, von dort wiederverwendet u. a. in ExcursionDetailDialog.vue/TripMap.vue).
+// (ExcursionDetailDialog.vue/TripMap.vue).
 // Die Möglichkeit, eine Unterkunft einer Tour zuzuordnen, bleibt bewusst erhalten (eine Unterkunft
 // kann sinnvoll Station einer Tour sein) - seit #106 über das "Tour zuordnen"-Dropdown
 // (TourAssignDropdown.vue) statt des früheren "Auf Tour ziehen"-Anfassers, der in der
