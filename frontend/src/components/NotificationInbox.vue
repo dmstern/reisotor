@@ -82,6 +82,7 @@ function markAllRead() {
         class="backdrop"
         role="button"
         tabindex="0"
+        aria-label="Benachrichtigungen schließen"
         @click="close"
         @keydown.enter.prevent="close"
         @keydown.space.prevent="close"
@@ -93,6 +94,8 @@ function markAllRead() {
             v-if="notifications.unreadCount > 0"
             type="button"
             class="mark-all-btn"
+            title="Alle als gelesen markieren"
+            aria-label="Alle als gelesen markieren"
             @click="markAllRead"
           >
             Alle als gelesen markieren
@@ -151,6 +154,11 @@ function markAllRead() {
 
 .bell-btn:hover {
   background: var(--color-hover);
+}
+
+.bell-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .unread-badge {
@@ -225,10 +233,16 @@ function markAllRead() {
   font-size: 0.78rem;
   cursor: pointer;
   padding: 2px 4px;
+  border-radius: var(--radius-sm-squircle);
 }
 
 .mark-all-btn:hover {
   text-decoration: underline;
+}
+
+.mark-all-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
 }
 
 .notification-list {
@@ -251,10 +265,16 @@ function markAllRead() {
   corner-shape: squircle;
   cursor: pointer;
   position: relative;
+  transition: background 0.15s ease;
 }
 
 .notification-row:hover {
   background: var(--color-hover);
+}
+
+.notification-row:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
 }
 
 .notification-row.unread {
