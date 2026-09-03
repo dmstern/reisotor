@@ -144,7 +144,18 @@ im Rest der App nachschauen, was es dafür schon gibt (grep auf ähnliche Kompon
 Konzepte), statt eine zweite, leicht abweichende Variante danebenzubauen — siehe `DESIGN.md`,
 Abschnitt "Konsistenz", für konkret schon aufgetretene Fälle (native `<select>` vs. custom
 `Combobox.vue`, mehrere parallele Label-Stile, uneinheitliche Filter-/Gruppieren-/Sortieren-
-Präsentation je View). Beim Erstellen neuer wiederverwendbarer UI-Komponenten (`frontend/src/components/*.vue`)
+Präsentation je View).
+
+- **Keine CSS-Kopien zwischen Views ("Scoped styles werden nicht geteilt, daher eigene Kopie"-Anti-Pattern)**:
+  Wenn ein Oberflächen-, Popover- oder Interaktionsmuster (wie Popover-Menüs, Dropdowns, Card-Surfaces,
+  Backdrops, Badges) in mehr als einer Komponente gebraucht wird, darf der CSS-Block NIEMALS in die
+  nächste Datei kopiert werden. Stattdessen immer eine Primitiv-Komponente unter `frontend/src/components/primitives/`
+  verwenden oder extrahieren (z. B. `PickerMenu.vue`, `DropdownItem.vue`, `Card.vue`, `Button.vue`, `Badge.vue`).
+- **Alte Element-Selektoren bereinigen**: Wird ein Bereich auf Primitives umgestellt (z. B. `DropdownItem`
+  oder `Button` statt nativer HTML-Tags), müssen veraltete Selektoren wie `.picker-menu button` oder
+  `.card button` im umgebenden CSS restlos entfernt werden, um Spezifitätskonflikte und Geisterstile zu verhindern.
+
+Beim Erstellen neuer wiederverwendbarer UI-Komponenten (`frontend/src/components/*.vue`)
 immer direkt eine zugehörige Storybook-Story-Datei (`*.stories.ts`) anlegen, damit Zustände der Komponente
 isoliert getestet und dokumentiert sind.
 
