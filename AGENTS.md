@@ -122,7 +122,38 @@ schleichen sich Demo-/Dev-Artefakte ein, die im echten Marketing-Bild nichts ver
   `/build-info`-Stub `environment: 'production'` liefert (siehe Issue #219) — bei einem lokalen Demo-
   Dev-Server sollte das automatisch der Fall sein, sofern `main` aktuell ist.
 
-## Konsistenz & DRY-Prinzip (Redundanzvermeidung)
+## Clean Code, Software-Design & Konsistenz (SoC, SRP, DRY, KISS)
+
+Für alle Änderungen – egal ob neue Features, Refactorings oder Bugfixes – gelten folgende
+Software-Design-Prinzipien als verbindliche Richtschnur:
+
+- **Clean Code**: Code muss selbsterklärend, leicht lesbar und intentionsklar sein.
+  Aussagekräftige Variablen- und Funktionsnamen verwenden, keine magischen Zahlen/Strings ohne
+  Kontext, kleine und fokussierte Funktionen statt monolithischer Blöcke schreiben. Keinen toten
+  Code, auskommentierte Altlasten oder ungenutzte Imports im Codebase hinterlassen.
+- **Separation of Concerns (SoC)**: Klare Trennung der Verantwortlichkeiten:
+  - _Views / Komponenten_: Reine Darstellung, Layout, Zugänglichkeit (ARIA) und Ereignis-Trigger.
+  - _Pinia-Stores (`frontend/src/stores/`)_: Globaler Anwendungs- und UI-Zustand, Caching und Synchronisation.
+  - _Composables & Utils (`frontend/src/utils/`)_: Fachliche Berechnungen, Formatierungen, Parsing und
+    wiederverwendbare Hilfslogik (isoliert testbar, frei von UI-Bindings).
+  - _Primitives (`components/primitives/`)_: Generische UI-Bausteine (Buttons, DropdownItem, PickerMenu,
+    Badges, Cards), entkoppelt von Fachdomänen.
+  - _Backend_: Routen (`backend/src/routes/`) für Request-Handling, Auth-Gating und Validierung;
+    Datenbankintegrität und SQL-Queries in `backend/src/db/`.
+- **Single Responsibility Principle (SRP)**: Jede Komponente, Funktion und jedes Modul hat genau
+  eine klar abgegrenzte Aufgabe. Eine Popover-Komponente kümmert sich um Container, Backdrop und
+  Tastatur-Events, nicht um fachliche Detailaktionen; ein Datumsformatierer formatiert Daten und
+  führt keine Netzwerk-Calls aus.
+- **KISS-Prinzip (Keep It Simple, Stupid) & YAGNI (You Aren't Gonna Need It)**: Immer die einfachste,
+  direkteste Lösung wählen, die das Problem zuverlässig löst. Kein Über-Engineering, keine unnötigen
+  Abstraktionsschichten, Wrapper oder verfrühten Verallgemeinerungen für hypothetische Zukunftsszenarien.
+  Bestehende, bewährte Muster der App (Pinia, Composables, `better-sqlite3`) nutzen statt neue
+  Muster ad hoc einzuführen.
+- **DRY-Prinzip (Don't Repeat Yourself) & Single Source of Truth**: Logik, Datenstrukturen,
+  Berechnungen und Styles dürfen nicht redundant an mehreren Stellen dupliziert werden. Sobald ein
+  Algorithmus, ein Validierungsmuster oder eine UI-Struktur in mehr als einer Komponente gebraucht
+  wird, gehört er in eine gemeinsame Quelle (Composable, Utility-Funktion unter `utils/`, Pinia-Store
+  oder Primitiv-Komponente unter `frontend/src/components/primitives/`).
 
 Die App ist über viele Sessions gewachsen; dasselbe Konzept (Icon, Bezeichnung, Layout-/
 Verhaltensmuster, Datenmodell-Feld) taucht oft an mehreren Stellen zugleich auf, ohne dass das
@@ -131,11 +162,6 @@ zentral dokumentiert ist. Bei jeder Änderung an UI-Bausteinen oder am Datenmode
 vorkommt (kurz grep auf Icon/Bezeichner/Komponente, nicht nur an der ursprünglich angefragten
 Stelle):
 
-- **DRY-Prinzip (Don't Repeat Yourself) & Single Source of Truth**: Logik, Datenstrukturen,
-  Berechnungen und Styles dürfen nicht redundant an mehreren Stellen dupliziert werden. Sobald ein
-  Algorithmus, ein Validierungsmuster oder eine UI-Struktur in mehr als einer Komponente gebraucht
-  wird, gehört er in eine gemeinsame Quelle (Composable, Utility-Funktion unter `utils/`, Pinia-Store
-  oder Primitiv-Komponente unter `frontend/src/components/primitives/`).
 - **Offensichtlich sinnvolle Folgeanpassung** (identisches Icon/Konzept an anderer Stelle, exakt
   gleiches Bug-Muster, klar auf dieselbe Baustelle begrenzt): direkt mit umsetzen, danach kurz
   erwähnen, was zusätzlich angepasst wurde — nicht vorher nachfragen.
