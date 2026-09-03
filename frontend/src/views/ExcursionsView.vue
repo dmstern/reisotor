@@ -55,10 +55,8 @@ import LocationPicker from '../components/LocationPicker.vue';
 import CoverImagePicker from '../components/CoverImagePicker.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import FileAttachments from '../components/FileAttachments.vue';
-import DeleteButton from '../components/DeleteButton.vue';
 import DraftStatusBar from '../components/DraftStatusBar.vue';
 import RichTextEditor from '../components/RichTextEditor.vue';
-import RichTextDisplay from '../components/RichTextDisplay.vue';
 import { isEmptyRichText } from '../utils/richText';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
 import { parseLatLngFromMapsLink, tilePreviewUrl } from '../utils/googleMaps';
@@ -644,8 +642,6 @@ const showSpotToursSection = ref(false);
 const showEditSpotToursSection = ref(false);
 const showExcursionSpotsSection = ref(false);
 const showEditExcursionSpotsSection = ref(false);
-
-const viewingScheduledItem = ref<ScheduleItem | null>(null);
 
 watch(editingSpot, (val) => {
   if (val) {
@@ -2879,9 +2875,10 @@ async function removeSpot(id: number) {
                     Dieser Spot ist an folgenden Tagen als Termin im Kalender eingetragen.
                   </p>
                   <div class="scheduled-chips">
-                    <span
+                    <button
                       v-for="item in editSpotScheduledItems"
                       :key="item.id"
+                      type="button"
                       class="scheduled-chip"
                       @click="openScheduledItemDetail(item)"
                     >
@@ -2895,7 +2892,7 @@ async function removeSpot(id: number) {
                       >
                         <AppIcon :icon="ACTION_ICONS.close" :size="12" group="actions" />
                       </button>
-                    </span>
+                    </button>
                     <button
                       ref="addScheduleBtnRef"
                       type="button"
@@ -4481,13 +4478,15 @@ async function removeSpot(id: number) {
   font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
+  font-family: inherit;
+  text-align: left;
 }
 
 .scheduled-chip:hover {
   background: var(--color-bg);
 }
 
-.scheduled-chip button {
+.scheduled-chip > button {
   background: none;
   border: none;
   padding: 2px;
@@ -4498,7 +4497,7 @@ async function removeSpot(id: number) {
   display: flex;
 }
 
-.scheduled-chip button:hover {
+.scheduled-chip > button:hover {
   opacity: 0.7;
 }
 
