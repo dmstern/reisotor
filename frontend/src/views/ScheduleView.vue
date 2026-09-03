@@ -58,6 +58,7 @@ import {
   toLocalDateString,
   formatDate as formatDateShared,
 } from '../utils/dateFormat';
+import { isEmptyRichText } from '../utils/richText';
 
 // Auf Desktop weiterhin eigenständig gemountete Schublade (App.vue, linker Platz). Auf Mobil
 // dagegen dieselbe Komponente als eigenständige Seite (Route /calendar, siehe router/index.ts)
@@ -1066,7 +1067,12 @@ function formatDate(date: string) {
               <AppIcon :icon="FORM_FIELD_ICONS.location" :size="13" group="formFields" />
               {{ entry.location }}
             </p>
-            <p v-if="entry.note" class="note">{{ entry.note }}</p>
+            <RichTextDisplay
+              v-if="entry.note && !isEmptyRichText(entry.note)"
+              :content="entry.note"
+              format="html"
+              class="note"
+            />
           </div>
           <div class="item-actions">
             <div class="calendar-export">
@@ -1401,8 +1407,9 @@ function formatDate(date: string) {
         </Button>
       </div>
       <RichTextDisplay
-        v-if="viewingItem?.note"
+        v-if="viewingItem?.note && !isEmptyRichText(viewingItem.note)"
         :content="viewingItem.note"
+        format="html"
         class="detail-row note"
       />
       <FileAttachments
