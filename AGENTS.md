@@ -122,7 +122,38 @@ schleichen sich Demo-/Dev-Artefakte ein, die im echten Marketing-Bild nichts ver
   `/build-info`-Stub `environment: 'production'` liefert (siehe Issue #219) — bei einem lokalen Demo-
   Dev-Server sollte das automatisch der Fall sein, sofern `main` aktuell ist.
 
-## Konsistenz-Check bei Änderungen
+## Clean Code, Software-Design & Konsistenz (SoC, SRP, DRY, KISS)
+
+Für alle Änderungen – egal ob neue Features, Refactorings oder Bugfixes – gelten folgende
+Software-Design-Prinzipien als verbindliche Richtschnur:
+
+- **Clean Code**: Code muss selbsterklärend, leicht lesbar und intentionsklar sein.
+  Aussagekräftige Variablen- und Funktionsnamen verwenden, keine magischen Zahlen/Strings ohne
+  Kontext, kleine und fokussierte Funktionen statt monolithischer Blöcke schreiben. Keinen toten
+  Code, auskommentierte Altlasten oder ungenutzte Imports im Codebase hinterlassen.
+- **Separation of Concerns (SoC)**: Klare Trennung der Verantwortlichkeiten:
+  - _Views / Komponenten_: Reine Darstellung, Layout, Zugänglichkeit (ARIA) und Ereignis-Trigger.
+  - _Pinia-Stores (`frontend/src/stores/`)_: Globaler Anwendungs- und UI-Zustand, Caching und Synchronisation.
+  - _Composables & Utils (`frontend/src/utils/`)_: Fachliche Berechnungen, Formatierungen, Parsing und
+    wiederverwendbare Hilfslogik (isoliert testbar, frei von UI-Bindings).
+  - _Primitives (`components/primitives/`)_: Generische UI-Bausteine (Buttons, DropdownItem, PickerMenu,
+    Badges, Cards), entkoppelt von Fachdomänen.
+  - _Backend_: Routen (`backend/src/routes/`) für Request-Handling, Auth-Gating und Validierung;
+    Datenbankintegrität und SQL-Queries in `backend/src/db/`.
+- **Single Responsibility Principle (SRP)**: Jede Komponente, Funktion und jedes Modul hat genau
+  eine klar abgegrenzte Aufgabe. Eine Popover-Komponente kümmert sich um Container, Backdrop und
+  Tastatur-Events, nicht um fachliche Detailaktionen; ein Datumsformatierer formatiert Daten und
+  führt keine Netzwerk-Calls aus.
+- **KISS-Prinzip (Keep It Simple, Stupid) & YAGNI (You Aren't Gonna Need It)**: Immer die einfachste,
+  direkteste Lösung wählen, die das Problem zuverlässig löst. Kein Über-Engineering, keine unnötigen
+  Abstraktionsschichten, Wrapper oder verfrühten Verallgemeinerungen für hypothetische Zukunftsszenarien.
+  Bestehende, bewährte Muster der App (Pinia, Composables, `better-sqlite3`) nutzen statt neue
+  Muster ad hoc einzuführen.
+- **DRY-Prinzip (Don't Repeat Yourself) & Single Source of Truth**: Logik, Datenstrukturen,
+  Berechnungen und Styles dürfen nicht redundant an mehreren Stellen dupliziert werden. Sobald ein
+  Algorithmus, ein Validierungsmuster oder eine UI-Struktur in mehr als einer Komponente gebraucht
+  wird, gehört er in eine gemeinsame Quelle (Composable, Utility-Funktion unter `utils/`, Pinia-Store
+  oder Primitiv-Komponente unter `frontend/src/components/primitives/`).
 
 Die App ist über viele Sessions gewachsen; dasselbe Konzept (Icon, Bezeichnung, Layout-/
 Verhaltensmuster, Datenmodell-Feld) taucht oft an mehreren Stellen zugleich auf, ohne dass das
@@ -144,7 +175,21 @@ im Rest der App nachschauen, was es dafür schon gibt (grep auf ähnliche Kompon
 Konzepte), statt eine zweite, leicht abweichende Variante danebenzubauen — siehe `DESIGN.md`,
 Abschnitt "Konsistenz", für konkret schon aufgetretene Fälle (native `<select>` vs. custom
 `Combobox.vue`, mehrere parallele Label-Stile, uneinheitliche Filter-/Gruppieren-/Sortieren-
-Präsentation je View). Beim Erstellen neuer wiederverwendbarer UI-Komponenten (`frontend/src/components/*.vue`)
+Präsentation je View).
+
+- **Keine CSS-Kopien zwischen Views ("Scoped styles werden nicht geteilt, daher eigene Kopie"-Anti-Pattern)**:
+  Wenn ein Oberflächen-, Popover- oder Interaktionsmuster (wie Popover-Menüs, Dropdowns, Card-Surfaces,
+  Backdrops, Badges) in mehr als einer Komponente gebraucht wird, darf der CSS-Block NIEMALS in die
+  nächste Datei kopiert werden. Stattdessen immer eine Primitiv-Komponente unter `frontend/src/components/primitives/`
+  verwenden oder extrahieren (z. B. `PickerMenu.vue`, `DropdownItem.vue`, `Card.vue`, `Button.vue`, `Badge.vue`).
+- **Alte Element-Selektoren bereinigen**: Wird ein Bereich auf Primitives umgestellt (z. B. `DropdownItem`
+  oder `Button` statt nativer HTML-Tags), müssen veraltete Selektoren wie `.picker-menu button` oder
+  `.card button` im umgebenden CSS restlos entfernt werden, um Spezifitätskonflikte und Geisterstile zu verhindern.
+- **Proaktives Clean-Code-Refactoring**: Fallen beim Arbeiten an einer Stelle redundante Kopien
+  auf (wie ehemals verstreute `.picker-menu`-Blöcke), diese nicht durch einen weiteren Klon ergänzen,
+  sondern in eine wiederverwendbare Abstraktion überführen.
+
+Beim Erstellen neuer wiederverwendbarer UI-Komponenten (`frontend/src/components/*.vue`)
 immer direkt eine zugehörige Storybook-Story-Datei (`*.stories.ts`) anlegen, damit Zustände der Komponente
 isoliert getestet und dokumentiert sind.
 

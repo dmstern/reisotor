@@ -145,6 +145,16 @@
      beiden Bedeutungen gerade gemeint ist. Sattes/"saftiges" Hellblau statt eines weiteren
      Rot-/Orange-Tons, um maximal von --color-accent/--color-danger abzuheben. */
   --color-scheduled: #1e96d1;
+  --color-scheduled-tint: rgba(30, 150, 209, 0.1);
+
+  /* Kalender-Kategorie-Farben (Konsistenz mit utils/scheduleCategory.ts):
+     Orange für Touren/Ausflüge, Grau für Termine/Sonstiges */
+  --color-calendar-tour: #eb6834;
+  --color-calendar-tour-tint: rgba(235, 104, 52, 0.1);
+  --color-calendar-tour-border: rgba(235, 104, 52, 0.35);
+  --color-calendar-appointment: #8a8a86;
+  --color-calendar-appointment-tint: rgba(138, 138, 134, 0.1);
+  --color-calendar-appointment-border: rgba(138, 138, 134, 0.35);
 
   /* Etwas großzügiger als vorher (8/14/22) – Basiswerte, gelten unverändert für alles, was normal
      rund bleibt (Pillen, echte Kreise wie EditButton/DeleteButton mit border-radius:50%, kleine
@@ -273,6 +283,13 @@
     --color-tour-accent-tint: rgba(232, 121, 249, 0.14);
     --color-tour-accent-border: rgba(232, 121, 249, 0.4);
     --color-scheduled: #52b8ea;
+    --color-scheduled-tint: rgba(82, 184, 234, 0.14);
+    --color-calendar-tour: #f08254;
+    --color-calendar-tour-tint: rgba(240, 130, 84, 0.16);
+    --color-calendar-tour-border: rgba(240, 130, 84, 0.4);
+    --color-calendar-appointment: #a8a8a4;
+    --color-calendar-appointment-tint: rgba(168, 168, 164, 0.16);
+    --color-calendar-appointment-border: rgba(168, 168, 164, 0.4);
     --color-border-strong: #4a453c;
     --color-button-edge: rgba(0, 0, 0, 0.35);
 
@@ -316,6 +333,13 @@
   --color-accent-secondary: #8b98f0;
   --color-accent-secondary-bg: #23253d;
   --color-scheduled: #52b8ea;
+  --color-scheduled-tint: rgba(82, 184, 234, 0.14);
+  --color-calendar-tour: #f08254;
+  --color-calendar-tour-tint: rgba(240, 130, 84, 0.16);
+  --color-calendar-tour-border: rgba(240, 130, 84, 0.4);
+  --color-calendar-appointment: #a8a8a4;
+  --color-calendar-appointment-tint: rgba(168, 168, 164, 0.16);
+  --color-calendar-appointment-border: rgba(168, 168, 164, 0.4);
   --color-border-strong: #4a453c;
   --color-button-edge: rgba(0, 0, 0, 0.35);
 
@@ -360,6 +384,13 @@
   --color-border-strong: #d5cabc;
   --color-button-edge: rgba(0, 0, 0, 0.16);
   --color-scheduled: #1e96d1;
+  --color-scheduled-tint: rgba(30, 150, 209, 0.1);
+  --color-calendar-tour: #eb6834;
+  --color-calendar-tour-tint: rgba(235, 104, 52, 0.1);
+  --color-calendar-tour-border: rgba(235, 104, 52, 0.35);
+  --color-calendar-appointment: #8a8a86;
+  --color-calendar-appointment-tint: rgba(138, 138, 134, 0.1);
+  --color-calendar-appointment-border: rgba(138, 138, 134, 0.35);
   --shadow-sm: 0 2px 6px rgba(43, 42, 40, 0.12);
   --shadow-md: 0 8px 24px rgba(43, 42, 40, 0.16);
   --shadow-lg: 0 16px 48px rgba(43, 42, 40, 0.22);

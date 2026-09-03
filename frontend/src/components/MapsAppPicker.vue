@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import AppIcon from './AppIcon.vue';
 import DropdownItem from './primitives/DropdownItem.vue';
+import PickerMenu from './primitives/PickerMenu.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 
@@ -16,16 +17,7 @@ const open = ref(false);
     <button type="button" class="card-action-btn" @click="open = !open">
       <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" /> In Karten-App öffnen ↗
     </button>
-    <div
-      v-if="open"
-      class="picker-backdrop"
-      role="button"
-      tabindex="0"
-      @click="open = false"
-      @keydown.enter.prevent="open = false"
-      @keydown.space.prevent="open = false"
-    ></div>
-    <div v-if="open" class="picker-menu">
+    <PickerMenu v-if="open" position="absolute" @close="open = false">
       <DropdownItem
         :href="`https://maps.apple.com/?ll=${props.lat},${props.lng}&q=${encodeURIComponent(props.title)}`"
         target="_blank"
@@ -52,7 +44,7 @@ const open = ref(false);
         label="Ursprünglichen Link öffnen"
         @click="open = false"
       />
-    </div>
+    </PickerMenu>
   </div>
 </template>
 
@@ -60,42 +52,5 @@ const open = ref(false);
 .maps-picker {
   position: relative;
   display: inline-flex;
-}
-
-.picker-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 99;
-}
-
-.picker-menu {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  z-index: 100;
-  min-width: 200px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-md-squircle);
-  corner-shape: squircle;
-  box-shadow: var(--shadow-md);
-  padding: var(--space-2);
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.picker-menu a {
-  padding: 6px 8px;
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  color: var(--color-text);
-  text-decoration: none;
-  font-size: 0.85rem;
-  white-space: nowrap;
-}
-
-.picker-menu a:hover {
-  background: var(--color-hover);
 }
 </style>

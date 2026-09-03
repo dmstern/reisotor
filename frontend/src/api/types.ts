@@ -75,6 +75,10 @@ export interface ScheduleItem {
   /** Verknüpfte Tour (Ausflug) – z. B. wenn die Tour auf einen Kalendertag gezogen wurde
    *  (drawers/excursionsStore.setDate) statt manuell einen Termin anzulegen. */
   idea_id: number | null;
+  /** Ob der Termin automatisch vom Reisotor durch das Einplanen eines Spots angelegt wurde */
+  auto_created?: number | boolean | null;
+  /** Ob der Termin nach der automatischen Anlage vom Nutzer editiert/angefasst wurde */
+  user_modified?: number | boolean | null;
 }
 
 /** Vereinheitlichte Darstellung für die Kalenderansicht: entweder ein echter Kalender-Termin

@@ -419,6 +419,8 @@ ensureColumn('schedule_items', 'spot_id', 'INTEGER REFERENCES spots(id) ON DELET
 // Enduhrzeit zusätzlich zur Startuhrzeit (analog zu travel_items.arrival_time) – ein Termin kann
 // damit einen echten Zeitraum statt nur eines Startpunkts abbilden.
 ensureColumn('schedule_items', 'end_time', 'TEXT');
+ensureColumn('schedule_items', 'auto_created', 'INTEGER DEFAULT 0');
+ensureColumn('schedule_items', 'user_modified', 'INTEGER DEFAULT 0');
 ensureColumn('trips', 'maps_link', 'TEXT');
 ensureColumn('trips', 'lat', 'REAL');
 ensureColumn('trips', 'lng', 'REAL');

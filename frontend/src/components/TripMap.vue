@@ -64,6 +64,7 @@ import { usePersistedRef } from '../composables/usePersistedRef';
 import _Card from './primitives/Card.vue';
 import IconButton from './primitives/IconButton.vue';
 import DropdownItem from './primitives/DropdownItem.vue';
+import PickerMenu from './primitives/PickerMenu.vue';
 import TravelDetailDialog from './TravelDetailDialog.vue';
 import DayChip from './DayChip.vue';
 import AppIcon from './AppIcon.vue';
@@ -1539,15 +1540,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
       />
       <Teleport to="body">
         <template v-if="focusMenuOpen">
-          <div
-            class="picker-backdrop"
-            role="button"
-            tabindex="0"
-            @click="focusMenuOpen = false"
-            @keydown.enter.prevent="focusMenuOpen = false"
-            @keydown.space.prevent="focusMenuOpen = false"
-          ></div>
-          <div class="picker-menu picker-menu-wide" :style="focusMenuStyle">
+          <PickerMenu wide :style="focusMenuStyle" @close="focusMenuOpen = false">
             <DropdownItem
               :disabled="!filteredPoints.length"
               :icon="MAP_TOOL_ICONS.fitAll"
@@ -1573,18 +1566,10 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
               label="Nur Tourziele"
               @click="selectFocus(fitExcursions)"
             />
-          </div>
+          </PickerMenu>
         </template>
         <template v-if="locationMenuOpen">
-          <div
-            class="picker-backdrop"
-            role="button"
-            tabindex="0"
-            @click="locationMenuOpen = false"
-            @keydown.enter.prevent="locationMenuOpen = false"
-            @keydown.space.prevent="locationMenuOpen = false"
-          ></div>
-          <div class="picker-menu picker-menu-wide" :style="locationMenuStyle">
+          <PickerMenu wide :style="locationMenuStyle" @close="locationMenuOpen = false">
             <DropdownItem :disabled="!ownPosition" @click="selectLocation(jumpToMyLocation)">
               <span class="picker-item-emoji" aria-hidden="true">{{
                 auth.user?.avatar || '📍'
@@ -1620,18 +1605,10 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
               label="Fahrtrichtung oben"
               @click="selectLocation(() => setMapOrientationMode('heading'))"
             />
-          </div>
+          </PickerMenu>
         </template>
         <template v-if="shareMenuOpen">
-          <div
-            class="picker-backdrop"
-            role="button"
-            tabindex="0"
-            @click="shareMenuOpen = false"
-            @keydown.enter.prevent="shareMenuOpen = false"
-            @keydown.space.prevent="shareMenuOpen = false"
-          ></div>
-          <div class="picker-menu" :style="shareMenuStyle">
+          <PickerMenu :style="shareMenuStyle" @close="shareMenuOpen = false">
             <DropdownItem
               :active="!locationSharing.shareUntil"
               :icon="ACTION_ICONS.off"
@@ -1655,18 +1632,10 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
               label="Dauerhaft"
               @click="chooseShareDuration('forever')"
             />
-          </div>
+          </PickerMenu>
         </template>
         <template v-if="recordMenuOpen">
-          <div
-            class="picker-backdrop"
-            role="button"
-            tabindex="0"
-            @click="recordMenuOpen = false"
-            @keydown.enter.prevent="recordMenuOpen = false"
-            @keydown.space.prevent="recordMenuOpen = false"
-          ></div>
-          <div class="picker-menu" :style="recordMenuStyle">
+          <PickerMenu :style="recordMenuStyle" @close="recordMenuOpen = false">
             <p v-if="focusedExcursion" class="picker-menu-hint">
               <AppIcon :icon="FORM_FIELD_ICONS.link" :size="14" group="formFields" /> wird an „{{
                 focusedExcursion.title
@@ -1682,7 +1651,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
               label="Geteilt aufzeichnen"
               @click="chooseRecordVisibility('shared')"
             />
-          </div>
+          </PickerMenu>
         </template>
       </Teleport>
       <TrackRecordingWarningModal
@@ -1873,81 +1842,6 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
 .record-btn.active {
   background: var(--color-primary);
   border-color: var(--color-primary);
-}
-
-/* Gleiches Dropdown-Muster wie MapsAppPicker.vue/ExcursionsView.vue's Sortier-/Filter-Menüs -
-   scoped styles werden nicht komponentenübergreifend geteilt, daher eigene Kopie hier. */
-.picker-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 110;
-}
-
-.picker-menu {
-  position: fixed;
-  min-width: 200px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md-squircle);
-  corner-shape: squircle;
-  box-shadow: var(--shadow-md);
-  padding: var(--space-2);
-  z-index: 111;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-/* Fokus-/Standort-Popover (siehe WIDE_PICKER_MENU_WIDTH im Script, muss mit der Breite hier
-   übereinstimmen): eine feste statt einer sich am Inhalt orientierenden Breite, weil die
-   Menüpunkte hier ("Alle eingetragenen Orte anzeigen", "Zu meinem Standort springen", …) spürbar
-   länger sind als bei den übrigen (schmaleren) Popover-Menüs unten - ohne festes width + erlaubten
-   Zeilenumbruch würde die Menübreite sich am längsten Eintrag ausrichten und auf schmalen
-   Mobilbreiten seitlich über den Bildschirmrand hinausragen. */
-.picker-menu-wide {
-  width: 236px;
-}
-
-/* Compound-Selektor (zwei Klassen statt einer) statt .picker-menu-wide button allein: braucht
-   höhere Spezifität als .picker-menu button (white-space:nowrap, weiter unten deklariert) - bei
-   gleicher Spezifität hätte sonst allein die spätere Reihenfolge im Stylesheet gewonnen, nicht die
-   inhaltliche Absicht (derselbe Stolperstein wie DESIGN.md, Abschnitt "Abstände" ihn für .hint
-   dokumentiert). */
-.picker-menu.picker-menu-wide button {
-  white-space: normal;
-}
-
-.picker-menu button {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 8px;
-  border-radius: var(--radius-sm-squircle);
-  border: none;
-  background: none;
-  color: var(--color-text);
-  text-align: left;
-  font-size: 0.85rem;
-  white-space: nowrap;
-  cursor: pointer;
-  /* #183: der globale `button`-Basisstil (style.css) setzt box-shadow: var(--shadow-sm) - ohne
-     Reset trug jeder Menüpunkt hier zusätzlich zum eigenen .picker-menu-Container-Schatten einen
-     eigenen "erhobenen" Schatten (v. a. auf iOS Safari sichtbar). */
-  box-shadow: none;
-}
-
-.picker-menu button:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.picker-menu button:hover {
-  background: var(--color-hover);
-}
-
-.picker-menu button.active {
-  background: var(--color-primary);
-  color: white;
 }
 
 /* Größe an AppIcon.vue's Default (20px) angeglichen, damit das Avatar-Emoji im Standort-Menü

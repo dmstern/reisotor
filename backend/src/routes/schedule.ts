@@ -17,6 +17,8 @@ interface ScheduleBody {
   lng?: number;
   spot_id?: number | null;
   idea_id?: number | null;
+  auto_created?: number | boolean | null;
+  user_modified?: number | boolean | null;
 }
 
 // Ist der Termin mit einem Spot verknüpft, kommen Standort-Koordinaten/Maps-Link vom Spot selbst
@@ -55,14 +57,16 @@ export const scheduleRoutes: FastifyPluginAsync = async (app) => {
       lng,
       spot_id,
       idea_id,
+      auto_created,
+      user_modified,
     } = req.body;
     if (!requireTripMember(reply, trip_id, req.session.userId)) return;
     const spot = locationFromSpot(spot_id);
     const result = db
       .prepare(
         `INSERT INTO schedule_items
-          (trip_id, date, end_date, time, end_time, title, note, location, maps_link, lat, lng, spot_id, idea_id)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+          (trip_id, date, end_date, time, end_time, title, note, location, maps_link, lat, lng, spot_id, idea_id, auto_created, user_modified)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
       .run(
         trip_id,
@@ -77,7 +81,9 @@ export const scheduleRoutes: FastifyPluginAsync = async (app) => {
         spot?.lat ?? lat ?? null,
         spot?.lng ?? lng ?? null,
         spot_id ?? null,
-        idea_id ?? null
+        idea_id ?? null,
+        auto_created ? 1 : 0,
+        user_modified ? 1 : 0
       );
     recordActivity(
       trip_id,
@@ -92,8 +98,9 @@ export const scheduleRoutes: FastifyPluginAsync = async (app) => {
 
   app.put<{ Params: { id: string }; Body: ScheduleBody }>('/schedule/:id', async (req, reply) => {
     const existingItem = db
-      .prepare('SELECT trip_id FROM schedule_items WHERE id = ?')
-      .get(req.params.id) as { trip_id: number } | undefined;
+      .prepare('SELECT * FROM schedule_items WHERE id = ?')
+      .get(req.params.id) as
+      { trip_id: number; auto_created?: number; user_modified?: number } | undefined;
     if (!existingItem) return reply.code(404).send({ error: 'Nicht gefunden' });
     if (!requireTripMember(reply, existingItem.trip_id, req.session.userId)) return;
 
@@ -110,13 +117,20 @@ export const scheduleRoutes: FastifyPluginAsync = async (app) => {
       lng,
       spot_id,
       idea_id,
+      auto_created,
+      user_modified,
     } = req.body;
     const spot = locationFromSpot(spot_id);
+    const resolvedUserModified =
+      user_modified !== undefined ? (user_modified ? 1 : 0) : (existingItem.user_modified ?? 1);
+    const resolvedAutoCreated =
+      auto_created !== undefined ? (auto_created ? 1 : 0) : (existingItem.auto_created ?? 0);
+
     const result = db
       .prepare(
         `UPDATE schedule_items
          SET date = ?, end_date = ?, time = ?, end_time = ?, title = ?, note = ?, location = ?, maps_link = ?, lat = ?, lng = ?,
-             spot_id = ?, idea_id = ?
+             spot_id = ?, idea_id = ?, auto_created = ?, user_modified = ?
          WHERE id = ?`
       )
       .run(
@@ -132,6 +146,8 @@ export const scheduleRoutes: FastifyPluginAsync = async (app) => {
         spot?.lng ?? lng ?? null,
         spot_id ?? null,
         idea_id ?? null,
+        resolvedAutoCreated,
+        resolvedUserModified,
         req.params.id
       );
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });

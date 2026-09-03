@@ -3,6 +3,7 @@ import { ref, computed, type ComponentPublicInstance } from 'vue';
 import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
 import DropdownItem from './primitives/DropdownItem.vue';
+import PickerMenu from './primitives/PickerMenu.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { spotCategoryMeta } from '../utils/spotCategory';
@@ -176,16 +177,11 @@ function clearFilters() {
 
       <Teleport to="body">
         <template v-if="filterMenuOpen">
-          <div
-            class="picker-backdrop"
-            role="button"
-            tabindex="0"
-            aria-label="Filtermenü schließen"
-            @click="filterMenuOpen = false"
-            @keydown.enter.prevent="filterMenuOpen = false"
-            @keydown.space.prevent="filterMenuOpen = false"
-          ></div>
-          <div class="picker-menu filter-popover-menu" :style="filterMenuStyle">
+          <PickerMenu
+            class="filter-popover-menu"
+            :style="filterMenuStyle"
+            @close="filterMenuOpen = false"
+          >
             <div class="popover-section-header">Filtern nach</div>
 
             <template v-if="categoryOptions.length">
@@ -239,7 +235,7 @@ function clearFilters() {
                 Filter zurücksetzen
               </button>
             </div>
-          </div>
+          </PickerMenu>
         </template>
       </Teleport>
     </div>
@@ -260,16 +256,11 @@ function clearFilters() {
 
       <Teleport to="body">
         <template v-if="sortMenuOpen">
-          <div
-            class="picker-backdrop"
-            role="button"
-            tabindex="0"
-            aria-label="Sortiermenü schließen"
-            @click="sortMenuOpen = false"
-            @keydown.enter.prevent="sortMenuOpen = false"
-            @keydown.space.prevent="sortMenuOpen = false"
-          ></div>
-          <div class="picker-menu sort-popover-menu" :style="sortMenuStyle">
+          <PickerMenu
+            class="sort-popover-menu"
+            :style="sortMenuStyle"
+            @close="sortMenuOpen = false"
+          >
             <div class="popover-section-header">Sortieren nach</div>
             <DropdownItem
               label="Nach Datum"
@@ -289,7 +280,7 @@ function clearFilters() {
               :icon="sortMode === 'likes' ? ACTION_ICONS.done : undefined"
               @click="selectSort('likes')"
             />
-          </div>
+          </PickerMenu>
         </template>
       </Teleport>
     </div>
@@ -389,27 +380,6 @@ function clearFilters() {
   font-weight: 700;
   line-height: 16px;
   text-align: center;
-}
-
-:global(.picker-backdrop) {
-  position: fixed;
-  inset: 0;
-  z-index: 110;
-}
-
-:global(.picker-menu) {
-  position: fixed;
-  min-width: 180px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-md-squircle);
-  corner-shape: squircle;
-  box-shadow: var(--shadow-md);
-  padding: var(--space-2);
-  z-index: 111;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
 }
 
 :global(.filter-popover-menu),
