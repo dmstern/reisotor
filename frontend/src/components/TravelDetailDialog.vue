@@ -14,8 +14,7 @@ import Button from './primitives/Button.vue';
 
 // Eigenständige Komponente statt inline in TravelSection.vue, da dieser Dialog auch von anderer Stelle
 // geöffnet werden muss (TripMap.vue's Stationsliste, falls der Abflug-/Ankunftsort dort als
-// Ausflug-Station eingeplant ist) – gleiches Vorgehen wie
-// SpotDetailDialog.vue. Beide Seiten (Abflug/Ankunft) zeigen denselben
+// Ausflug-Station eingeplant ist). Beide Seiten (Abflug/Ankunft) zeigen denselben
 // vollständigen Eintrag, daher hier ein einziger Dialog statt zwei separater.
 defineProps<{
   modelValue: boolean;

@@ -22,7 +22,7 @@ const props = withDefaults(
     entityId: number;
     /** Steuert, ob Hinzufügen/Löschen von Anhängen möglich ist - Standard AN, damit bestehende
      *  Einbindungen ohne diese Prop unverändert funktionieren. Detail-/Ansichts-Dialoge (kein
-     *  Bearbeiten-Kontext, z. B. SpotDetailDialog.vue/TravelDetailDialog.vue) setzen das explizit
+     *  Bearbeiten-Kontext, z. B. TravelDetailDialog.vue) setzen das explizit
      *  aus: Anhänge bleiben dort weiterhin sichtbar/herunterladbar, nur eben nicht änderbar - der
      *  Datei-Upload-Button gehört ins jeweilige Bearbeiten-Formular, nicht in die reine Ansicht. */
     editable?: boolean;

@@ -340,7 +340,7 @@ function onToggleDone() {
       <!-- Eigene, explizite Aktion statt am Aufklappen dranzuhängen (#109, siehe onShowOnMap im
            Script) – in Mini- UND aufgeklappter Karte sichtbar (Textlabel schrumpft im Kompakt-Modus
            auf reines Icon, siehe @container-Regel unten), gleiche Konvention wie
-           ExcursionCard.vue/SpotDetailDialog.vue's "Auf Karte anzeigen"-Button. -->
+           ExcursionCard.vue's "Auf Karte anzeigen"-Button. -->
       <div class="links" v-if="spot.lat != null && spot.lng != null">
         <Button
           variant="card-action"
