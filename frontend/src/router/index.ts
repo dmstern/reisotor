@@ -5,6 +5,8 @@ import { useIconStyleStore } from '../stores/iconStyle';
 // bereits statisch für die Desktop-Kalender-Schublade ein – ein zusätzlicher dynamischer Import
 // hier würde sie nur unnötig erneut anfordern (Vite kann sie ohnehin nicht in einen separaten Chunk
 // auslagern, da sie schon Teil des Hauptbundles ist).
+import { useTripStore } from '../stores/trip';
+import { useToast } from '../composables/useToast';
 import ScheduleView from '../views/ScheduleView.vue';
 
 // Viele Sichten (z. B. SettingsView.vue) rendern ihr Template erst hinter einem v-if="!loading" nach
@@ -47,44 +49,108 @@ const router = createRouter({
   },
   routes: [
     { path: '/login', name: 'login', component: () => import('../views/LoginView.vue') },
-    { path: '/', name: 'dashboard', component: () => import('../views/DashboardView.vue') },
     { path: '/trips', name: 'trips', component: () => import('../views/TripsView.vue') },
-    // Packliste/Einkauf/ToDo sind zu einer Tab-Ansicht zusammengefasst (siehe ListenView.vue) - die
-    // alten Routen bleiben als Redirects erhalten, damit Lesezeichen/Push-Payloads/Querverweise auf
-    // sie nicht ins Leere laufen.
-    { path: '/listen', name: 'listen', component: () => import('../views/ListenView.vue') },
-    { path: '/packing', redirect: '/listen?tab=packing' },
-    { path: '/shopping', redirect: '/listen?tab=shopping' },
-    { path: '/todo', redirect: '/listen?tab=todo' },
-    {
-      path: '/excursions',
-      name: 'excursions',
-      component: () => import('../views/ExcursionsView.vue'),
-    },
-    // Kalender ist auf Desktop weiterhin eine globale Schublade (App.vue, über die seitliche Lasche
-    // erreichbar) – dieselbe Komponente dient hier zusätzlich als eigenständige Mobil-Seite
-    // (NavBar.vue verlinkt nur dorthin, auf Desktop bleibt dieser Nav-Punkt ausgeblendet). Kein
-    // separates Wrapper-/Duplikat-Component nötig: ScheduleView.vue ist bereits eine eigenständige,
-    // in sich responsive (Container-Queries) Komponente ohne Abhängigkeit von der umgebenden
-    // Drawer-Chrome. Touren haben seit ihrer Verschmelzung in die Spots-Sicht (/excursions) keine
-    // eigene Route mehr.
-    { path: '/calendar', name: 'calendar', component: ScheduleView, props: { standalone: true } },
-    // Reise (früher eigene Route+View) lebt seit #176 als Touren mit gesetzter role in
-    // ExcursionsView.vue's "Touren"-Gruppierung (#196: die zwischenzeitliche eigene
-    // "Reise"-Gruppierung aus #175 entfiel wieder, da redundant) - Redirect statt Entfernen, damit
-    // alte Lesezeichen/Push-Benachrichtigungs-Links weiterhin funktionieren. ExcursionsView.vue's
-    // onMounted() bildet ?group=travel weiterhin auf die Touren-Gruppierung ab.
-    { path: '/travel', redirect: '/excursions?group=tours' },
-    { path: '/budget', name: 'budget', component: () => import('../views/BudgetView.vue') },
-    { path: '/notes', name: 'notes', component: () => import('../views/NotesView.vue') },
-    { path: '/diary', name: 'diary', component: () => import('../views/DiaryView.vue') },
     { path: '/settings', name: 'settings', component: () => import('../views/SettingsView.vue') },
-    { path: '/trash', name: 'trash', component: () => import('../views/TrashView.vue') },
     {
       path: '/security-check',
       name: 'security-check',
       component: () => import('../views/SecurityCheckView.vue'),
     },
+
+    // Deeplinks zu bestimmten Urlauben (#368): /trip/:tripId/...
+    {
+      path: '/trip/:tripId',
+      name: 'dashboard',
+      component: () => import('../views/DashboardView.vue'),
+    },
+    {
+      path: '/trip/:tripId/listen',
+      name: 'listen',
+      component: () => import('../views/ListenView.vue'),
+    },
+    {
+      path: '/trip/:tripId/packing',
+      redirect: (to) => ({
+        path: `/trip/${to.params.tripId}/listen`,
+        query: { ...to.query, tab: 'packing' },
+      }),
+    },
+    {
+      path: '/trip/:tripId/shopping',
+      redirect: (to) => ({
+        path: `/trip/${to.params.tripId}/listen`,
+        query: { ...to.query, tab: 'shopping' },
+      }),
+    },
+    {
+      path: '/trip/:tripId/todo',
+      redirect: (to) => ({
+        path: `/trip/${to.params.tripId}/listen`,
+        query: { ...to.query, tab: 'todo' },
+      }),
+    },
+    {
+      path: '/trip/:tripId/excursions',
+      name: 'excursions',
+      component: () => import('../views/ExcursionsView.vue'),
+    },
+    {
+      path: '/trip/:tripId/calendar',
+      name: 'calendar',
+      component: ScheduleView,
+      props: { standalone: true },
+    },
+    {
+      path: '/trip/:tripId/travel',
+      redirect: (to) => ({
+        path: `/trip/${to.params.tripId}/excursions`,
+        query: { ...to.query, group: 'tours' },
+      }),
+    },
+    {
+      path: '/trip/:tripId/budget',
+      name: 'budget',
+      component: () => import('../views/BudgetView.vue'),
+    },
+    {
+      path: '/trip/:tripId/notes',
+      name: 'notes',
+      component: () => import('../views/NotesView.vue'),
+    },
+    {
+      path: '/trip/:tripId/diary',
+      name: 'diary',
+      component: () => import('../views/DiaryView.vue'),
+    },
+    {
+      path: '/trip/:tripId/trash',
+      name: 'trash',
+      component: () => import('../views/TrashView.vue'),
+    },
+
+    // Legacy-Routen ohne :tripId: Platzhalter-Pfade, werden im beforeEach Guard auf
+    // /trip/:currentTripId/... weitergeleitet
+    { path: '/', name: 'legacy-dashboard', component: () => import('../views/DashboardView.vue') },
+    { path: '/listen', name: 'legacy-listen', component: () => import('../views/ListenView.vue') },
+    { path: '/packing', redirect: '/listen?tab=packing' },
+    { path: '/shopping', redirect: '/listen?tab=shopping' },
+    { path: '/todo', redirect: '/listen?tab=todo' },
+    {
+      path: '/excursions',
+      name: 'legacy-excursions',
+      component: () => import('../views/ExcursionsView.vue'),
+    },
+    {
+      path: '/calendar',
+      name: 'legacy-calendar',
+      component: ScheduleView,
+      props: { standalone: true },
+    },
+    { path: '/travel', redirect: '/excursions?group=tours' },
+    { path: '/budget', name: 'legacy-budget', component: () => import('../views/BudgetView.vue') },
+    { path: '/notes', name: 'legacy-notes', component: () => import('../views/NotesView.vue') },
+    { path: '/diary', name: 'legacy-diary', component: () => import('../views/DiaryView.vue') },
+    { path: '/trash', name: 'legacy-trash', component: () => import('../views/TrashView.vue') },
   ],
 });
 
@@ -107,7 +173,46 @@ router.beforeEach(async (to) => {
   }
 
   if (to.name === 'login' && auth.user) {
-    return { name: 'dashboard' };
+    const tripStore = useTripStore();
+    await tripStore.ensureLoaded();
+    if (tripStore.currentTripId != null) {
+      return { path: `/trip/${tripStore.currentTripId}` };
+    }
+    return { name: 'trips' };
+  }
+
+  // Für alle nicht-Login Routen bei eingeloggtem Nutzer: sicherstellen, dass Trips geladen sind
+  if (auth.user && to.name !== 'trips' && to.name !== 'settings' && to.name !== 'security-check') {
+    const tripStore = useTripStore();
+    await tripStore.ensureLoaded();
+
+    // 1. Wenn eine :tripId in den Parametern übergeben wurde
+    if (to.params.tripId) {
+      const paramTripId = Number(to.params.tripId);
+      if (!Number.isFinite(paramTripId) || !tripStore.hasTrip(paramTripId)) {
+        useToast().showToast({
+          message: 'Kein Zugriff auf diesen Urlaub oder nicht gefunden',
+          type: 'error',
+        });
+        return { name: 'trips' };
+      }
+
+      if (tripStore.currentTripId !== paramTripId) {
+        tripStore.selectTrip(paramTripId);
+      }
+    } else {
+      // 2. Legacy-Routen ohne :tripId (z. B. /, /listen, /excursions, ...)
+      const subpath = to.path === '/' ? '' : to.path;
+      if (tripStore.currentTripId != null) {
+        return {
+          path: `/trip/${tripStore.currentTripId}${subpath}`,
+          query: to.query,
+          hash: to.hash,
+        };
+      } else {
+        return { name: 'trips' };
+      }
+    }
   }
 
   // Auf Desktop ist der Kalender bereits als globale Schublade gemountet (App.vue) – ein direkter
@@ -115,7 +220,8 @@ router.beforeEach(async (to) => {
   // Desktop) würde dieselbe Komponente sonst ein zweites Mal unabhängig mounten (doppelte
   // API-Aufrufe, zwei auseinanderlaufende lokale Zustände).
   if (to.name === 'calendar' && window.matchMedia('(min-width: 800px)').matches) {
-    return { name: 'dashboard' };
+    const tripId = to.params.tripId ? String(to.params.tripId) : '';
+    return tripId ? { path: `/trip/${tripId}` } : { name: 'trips' };
   }
 
   return true;

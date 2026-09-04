@@ -7,6 +7,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { api, ApiError } from '../api/client';
 import type { User } from '../api/types';
 import { useAuthStore } from '../stores/auth';
+import { useTripStore } from '../stores/trip';
 import { useConnectivityStore } from '../stores/connectivity';
 import { useBuildInfoStore } from '../stores/buildInfo';
 import { useNavPositionStore } from '../stores/navPosition';
@@ -74,6 +75,7 @@ import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import type { IconDef } from '../utils/icon';
 
 const auth = useAuthStore();
+const tripStore = useTripStore();
 const connectivity = useConnectivityStore();
 const router = useRouter();
 const route = useRoute();
@@ -1157,7 +1159,12 @@ async function onImportFileSelected(event: Event) {
           Gelöschte Termine, Ausflüge, Spots und mehr bleiben eine Weile hier erhalten und lassen
           sich wiederherstellen.
         </p>
-        <router-link to="/trash" class="card-action-btn">Papierkorb öffnen</router-link>
+        <router-link
+          :to="tripStore.currentTripId ? `/trip/${tripStore.currentTripId}/trash` : '/trash'"
+          class="card-action-btn"
+        >
+          Papierkorb öffnen
+        </router-link>
       </div>
 
       <div class="card" v-if="auth.user?.is_admin">

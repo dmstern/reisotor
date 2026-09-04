@@ -69,7 +69,7 @@ self.addEventListener('push', (event) => {
       body,
       icon: '/icons/icon-192.png',
       badge: '/icons/icon-192.png',
-      data: { url: tripId ? '/' : '/' },
+      data: { url: tripId ? `/trip/${tripId}` : '/' },
     })
   );
 });

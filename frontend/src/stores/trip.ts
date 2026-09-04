@@ -51,27 +51,46 @@ export const useTripStore = defineStore('trip', () => {
     }
   }
 
+  let loadingPromise: Promise<void> | null = null;
+
   async function loadTrips() {
-    trips.value = await api.get<Trip[]>('/trips');
+    loadingPromise = (async () => {
+      trips.value = await api.get<Trip[]>('/trips');
 
-    const key = storageKey();
-    const stored = key ? Number(localStorage.getItem(key)) : NaN;
-    const storedIsValid = Number.isFinite(stored) && trips.value.some((t) => t.id === stored);
+      const key = storageKey();
+      const stored = key ? Number(localStorage.getItem(key)) : NaN;
+      const storedIsValid = Number.isFinite(stored) && trips.value.some((t) => t.id === stored);
 
-    if (storedIsValid) {
-      currentTripId.value = stored;
-    } else if (trips.value.length === 1) {
-      // Einzige sinnvolle Wahl - keine Rätselraterei nötig.
-      currentTripId.value = trips.value[0].id;
-      persist();
-    } else {
-      // Keine gespeicherte Präferenz für DIESES Gerät (erster Login hier) und kein/mehr als ein
-      // Urlaub - bewusst nicht "irgendeinen" (z. B. den ältesten) raten. App.vue leitet bei null auf
-      // die Urlaubsübersicht (/trips) um, dort wählt der Nutzer bewusst.
-      currentTripId.value = null;
+      if (storedIsValid) {
+        currentTripId.value = stored;
+      } else if (trips.value.length === 1) {
+        // Einzige sinnvolle Wahl - keine Rätselraterei nötig.
+        currentTripId.value = trips.value[0].id;
+        persist();
+      } else {
+        // Keine gespeicherte Präferenz für DIESES Gerät (erster Login hier) und kein/mehr als ein
+        // Urlaub - bewusst nicht "irgendeinen" (z. B. den ältesten) raten. App.vue leitet bei null auf
+        // die Urlaubsübersicht (/trips) um, dort wählt der Nutzer bewusst.
+        currentTripId.value = null;
+      }
+
+      loaded.value = true;
+    })();
+    await loadingPromise;
+    loadingPromise = null;
+  }
+
+  async function ensureLoaded() {
+    if (loaded.value) return;
+    if (loadingPromise) {
+      await loadingPromise;
+      return;
     }
+    await loadTrips();
+  }
 
-    loaded.value = true;
+  function hasTrip(id: number): boolean {
+    return trips.value.some((t) => t.id === id);
   }
 
   function selectTrip(id: number) {
@@ -90,6 +109,7 @@ export const useTripStore = defineStore('trip', () => {
     trips.value = [];
     currentTripId.value = null;
     loaded.value = false;
+    loadingPromise = null;
     editTripRequestId.value = 0;
   }
 
@@ -131,6 +151,8 @@ export const useTripStore = defineStore('trip', () => {
     loaded,
     editTripRequestId,
     loadTrips,
+    ensureLoaded,
+    hasTrip,
     reset,
     selectTrip,
     requestEditTrip,

@@ -11,25 +11,26 @@ import type { NotificationItem } from '../api/types';
  *  navigiert dann einfach nicht, sondern markiert nur als gelesen. */
 export function notificationTarget(n: NotificationItem): string | null {
   const id = n.entity_id;
+  const prefix = n.trip_id ? `/trip/${n.trip_id}` : '';
   switch (n.domain) {
     case 'packing':
-      return '/listen?tab=packing';
+      return `${prefix}/listen?tab=packing`;
     case 'shopping':
-      return '/listen?tab=shopping';
+      return `${prefix}/listen?tab=shopping`;
     case 'todos':
-      return id != null ? `/listen?tab=todo#todo-${id}` : '/listen?tab=todo';
+      return id != null ? `${prefix}/listen?tab=todo#todo-${id}` : `${prefix}/listen?tab=todo`;
     case 'spots':
-      return id != null ? `/excursions#spot-${id}` : '/excursions';
+      return id != null ? `${prefix}/excursions#spot-${id}` : `${prefix}/excursions`;
     case 'ideas':
       // Deckt auch Touren mit gesetzter role ab (Reise-Etappen, #176) - eigene 'travel'-Domain gibt
       // es seit #176 nicht mehr, eine eigene "Reise"-Gruppierung seit #196 ebenfalls nicht mehr.
-      return id != null ? `/excursions#excursion-${id}` : '/excursions';
+      return id != null ? `${prefix}/excursions#excursion-${id}` : `${prefix}/excursions`;
     case 'budget':
-      return '/budget';
+      return `${prefix}/budget`;
     case 'diary':
-      return '/diary';
+      return `${prefix}/diary`;
     case 'notes':
-      return '/notes';
+      return `${prefix}/notes`;
     default:
       return null;
   }

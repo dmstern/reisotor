@@ -10,6 +10,7 @@ import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { NAV_LINKS, type NavLinkDef } from '../utils/navLinks';
 import { NAV_LINK_COLORS } from '../utils/widgetColors';
 import { useIconStyleStore } from '../stores/iconStyle';
+import { useTripStore } from '../stores/trip';
 import AppIcon from './AppIcon.vue';
 
 const _auth = useAuthStore();
@@ -18,6 +19,7 @@ const route = useRoute();
 const navPosition = useNavPositionStore();
 const navConfig = useNavConfigStore();
 const liveSync = useLiveSyncStore();
+const tripStore = useTripStore();
 const isDesktop = useIsDesktop();
 const iconStyle = useIconStyleStore();
 
@@ -149,7 +151,11 @@ function onLinkClick(event: MouseEvent) {
       <!-- Übersicht (Dashboard) ganz links, noch vor dem mobilen Kalender-Link: der zentrale
            Einstiegspunkt der App soll auf mobile immer der allererste (am wenigsten wegscrollte)
            Nav-Punkt sein. -->
-      <router-link :to="DASHBOARD_LINK.to" class="link" @click="onLinkClick">
+      <router-link
+        :to="tripStore.currentTripId ? `/trip/${tripStore.currentTripId}` : '/'"
+        class="link"
+        @click="onLinkClick"
+      >
         <AppIcon
           class="icon"
           :icon="DASHBOARD_LINK.icon"
@@ -167,7 +173,11 @@ function onLinkClick(event: MouseEvent) {
            Kalender erreicht man dort weiterhin nur über die Lasche). Direkt nach Übersicht. Touren
            haben seit ihrer Verschmelzung in die Spots-Sicht ("Karte", /excursions) keinen eigenen
            Nav-Punkt mehr - Touren anlegen/Spots zuordnen geht bereits direkt dort. -->
-      <router-link to="/calendar" class="link mobile-page-link" @click="onLinkClick">
+      <router-link
+        :to="tripStore.currentTripId ? `/trip/${tripStore.currentTripId}/calendar` : '/calendar'"
+        class="link mobile-page-link"
+        @click="onLinkClick"
+      >
         <span class="icon-wrap">
           <AppIcon
             class="icon"
@@ -186,7 +196,7 @@ function onLinkClick(event: MouseEvent) {
       <router-link
         v-for="link in visibleLinks"
         :key="link.to"
-        :to="link.to"
+        :to="tripStore.currentTripId ? `/trip/${tripStore.currentTripId}${link.to}` : link.to"
         class="link"
         @click="onLinkClick"
       >

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { useTripStore } from '../stores/trip';
 import { useAuthStore } from '../stores/auth';
 import { useTripEditor } from '../composables/useTripEditor';
@@ -47,6 +48,9 @@ watch(
   }
 );
 
+const router = useRouter();
+const route = useRoute();
+
 function toggle() {
   open.value = !open.value;
 }
@@ -58,6 +62,16 @@ function close() {
 function selectAndClose(id: number) {
   tripStore.selectTrip(id);
   close();
+  if (route.params.tripId) {
+    router.push({
+      name: route.name ?? undefined,
+      params: { ...route.params, tripId: id },
+      query: route.query,
+      hash: route.hash,
+    });
+  } else {
+    router.push(`/trip/${id}`);
+  }
 }
 
 function openMembers(trip: Trip) {

@@ -739,7 +739,7 @@ function formatWeekdayDate(d: string) {
         <!-- Packliste (zusammengefasst) -->
         <router-link
           v-else-if="key === 'packing'"
-          to="/listen?tab=packing"
+          :to="`/trip/${tripId}/listen?tab=packing`"
           class="card tile"
           :style="{ background: `${WIDGET_COLORS.get('packing')}0d` }"
         >
@@ -772,7 +772,7 @@ function formatWeekdayDate(d: string) {
         <!-- Budget -->
         <router-link
           v-else-if="key === 'budget'"
-          to="/budget"
+          :to="`/trip/${tripId}/budget`"
           class="card tile"
           :style="{ background: `${WIDGET_COLORS.get('budget')}0d` }"
         >
@@ -799,7 +799,7 @@ function formatWeekdayDate(d: string) {
         <!-- Einkaufsliste -->
         <router-link
           v-else-if="key === 'shopping'"
-          to="/listen?tab=shopping"
+          :to="`/trip/${tripId}/listen?tab=shopping`"
           class="card tile"
           :style="{ background: `${WIDGET_COLORS.get('shopping')}0d` }"
         >
@@ -827,7 +827,7 @@ function formatWeekdayDate(d: string) {
         <!-- ToDo -->
         <router-link
           v-else-if="key === 'todo'"
-          to="/listen?tab=todo"
+          :to="`/trip/${tripId}/listen?tab=todo`"
           class="card tile"
           :style="{ background: `${WIDGET_COLORS.get('todo')}0d` }"
         >
@@ -855,7 +855,7 @@ function formatWeekdayDate(d: string) {
         <!-- Reise (Fahrten/Flüge) -->
         <router-link
           v-else-if="key === 'travel'"
-          to="/excursions?group=tours"
+          :to="`/trip/${tripId}/excursions?group=tours`"
           class="card tile"
           :style="{ background: `${WIDGET_COLORS.get('travel')}0d` }"
         >
@@ -886,8 +886,8 @@ function formatWeekdayDate(d: string) {
           v-else-if="key === 'accommodation'"
           :to="
             currentOrNextAccommodation
-              ? `/excursions#spot-${currentOrNextAccommodation.id}`
-              : '/excursions'
+              ? `/trip/${tripId}/excursions#spot-${currentOrNextAccommodation.id}`
+              : `/trip/${tripId}/excursions`
           "
           class="card tile"
           :style="{ background: `${WIDGET_COLORS.get('accommodation')}0d` }"
@@ -917,7 +917,7 @@ function formatWeekdayDate(d: string) {
         <!-- Tagebuch -->
         <router-link
           v-else-if="key === 'diary'"
-          to="/diary"
+          :to="`/trip/${tripId}/diary`"
           class="card tile"
           :style="{ background: `${WIDGET_COLORS.get('diary')}0d` }"
         >
@@ -945,7 +945,7 @@ function formatWeekdayDate(d: string) {
         <!-- Notizen -->
         <router-link
           v-else-if="key === 'notes'"
-          to="/notes"
+          :to="`/trip/${tripId}/notes`"
           class="card tile"
           :style="{ background: `${WIDGET_COLORS.get('notes')}0d` }"
         >
