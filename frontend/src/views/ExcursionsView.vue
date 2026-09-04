@@ -58,6 +58,8 @@ import CoverImagePicker from '../components/CoverImagePicker.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import FileAttachments from '../components/FileAttachments.vue';
 import DraftStatusBar from '../components/DraftStatusBar.vue';
+import EditButton from '../components/EditButton.vue';
+import LegTransportModal from '../components/LegTransportModal.vue';
 import RichTextEditor from '../components/RichTextEditor.vue';
 import { isEmptyRichText } from '../utils/richText';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
@@ -1399,6 +1401,100 @@ function getTourLayover(
   const outLeg = getTourLeg(excursion, currSpotId, nextSpotId);
   if (!inLeg?.arrival_time || !outLeg?.departure_time) return null;
   return travelDurationMinutes(inLeg.arrival_time, outLeg.departure_time);
+}
+
+const expandedLegKey = ref<string | null>(null);
+
+function toggleLegExpanded(key: string, excursionId: number) {
+  expandedLegKey.value = expandedLegKey.value === key ? null : key;
+  nextTick(() => recomputeTourLine(excursionId));
+}
+
+const editingCardLeg = ref<{
+  excursion: Excursion;
+  fromSpot: Spot;
+  toSpot: Spot;
+  leg: ExcursionLeg;
+} | null>(null);
+const showCardLegModal = ref(false);
+
+function openCardLegModal(excursion: Excursion, fromSpot: Spot, toSpot: Spot) {
+  const existing = getTourLeg(excursion, fromSpot.id, toSpot.id);
+  const leg: ExcursionLeg = existing
+    ? { ...existing }
+    : {
+        from_spot_id: fromSpot.id,
+        to_spot_id: toSpot.id,
+        position: 0,
+      };
+  editingCardLeg.value = { excursion, fromSpot, toSpot, leg };
+  showCardLegModal.value = true;
+}
+
+async function onSaveCardLeg(savedLeg: ExcursionLeg) {
+  if (!editingCardLeg.value) return;
+  const exc = editingCardLeg.value.excursion;
+  const nextLegs = [...(exc.legs || [])];
+  const idx = nextLegs.findIndex(
+    (l) => l.from_spot_id === savedLeg.from_spot_id && l.to_spot_id === savedLeg.to_spot_id
+  );
+  if (idx !== -1) {
+    nextLegs[idx] = savedLeg;
+  } else {
+    nextLegs.push(savedLeg);
+  }
+  await excursionsStore.update(exc.id, {
+    title: exc.title,
+    image_url: exc.image_url ?? undefined,
+    note: exc.note ?? undefined,
+    date: exc.date ?? undefined,
+    spot_ids: exc.spot_ids,
+    legs: nextLegs,
+    role: exc.role,
+    transport_type: exc.transport_type,
+    departure_time: exc.departure_time,
+    arrival_time: exc.arrival_time,
+    checkin_info: exc.checkin_info,
+    amount: exc.amount,
+    paid_by_user_id: exc.paid_by_user_id,
+    luggage: exc.luggage,
+    seat: exc.seat,
+    ticket_link: exc.ticket_link,
+  });
+  showCardLegModal.value = false;
+  editingCardLeg.value = null;
+  nextTick(() => recomputeTourLine(exc.id));
+}
+
+async function onDeleteCardLeg() {
+  if (!editingCardLeg.value) return;
+  const exc = editingCardLeg.value.excursion;
+  const fromId = editingCardLeg.value.fromSpot.id;
+  const toId = editingCardLeg.value.toSpot.id;
+  const nextLegs = (exc.legs || []).filter(
+    (l) => !(l.from_spot_id === fromId && l.to_spot_id === toId)
+  );
+  await excursionsStore.update(exc.id, {
+    title: exc.title,
+    image_url: exc.image_url ?? undefined,
+    note: exc.note ?? undefined,
+    date: exc.date ?? undefined,
+    spot_ids: exc.spot_ids,
+    legs: nextLegs,
+    role: exc.role,
+    transport_type: exc.transport_type,
+    departure_time: exc.departure_time,
+    arrival_time: exc.arrival_time,
+    checkin_info: exc.checkin_info,
+    amount: exc.amount,
+    paid_by_user_id: exc.paid_by_user_id,
+    luggage: exc.luggage,
+    seat: exc.seat,
+    ticket_link: exc.ticket_link,
+  });
+  showCardLegModal.value = false;
+  editingCardLeg.value = null;
+  nextTick(() => recomputeTourLine(exc.id));
 }
 // Neben Größenänderungen einzelner Karten (ResizeObserver oben) auch bei Zuordnungsänderungen
 // (Spot zu Tour hinzugefügt/entfernt/umsortiert) neu berechnen - ändert die Anzahl/Reihenfolge der
@@ -3093,6 +3189,7 @@ async function removeSpot(id: number) {
                         </span>
                       </div>
                       <!-- Teilstrecke zwischen dieser und der nächsten Station -->
+                      <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
                       <div
                         v-if="
                           grp.excursion &&
@@ -3101,7 +3198,46 @@ async function removeSpot(id: number) {
                         "
                         :key="`leg-${item.spot.id}-${grp.items[index + 1].spot.id}`"
                         class="tour-leg-card"
+                        :class="{
+                          'is-expanded':
+                            expandedLegKey ===
+                            `${grp.excursion.id}-${item.spot.id}-${grp.items[index + 1].spot.id}`,
+                        }"
+                        tabindex="0"
+                        role="button"
+                        :aria-expanded="
+                          expandedLegKey ===
+                          `${grp.excursion.id}-${item.spot.id}-${grp.items[index + 1].spot.id}`
+                        "
+                        @click="
+                          toggleLegExpanded(
+                            `${grp.excursion.id}-${item.spot.id}-${grp.items[index + 1].spot.id}`,
+                            grp.excursion.id
+                          )
+                        "
+                        @keydown.enter.self="
+                          toggleLegExpanded(
+                            `${grp.excursion.id}-${item.spot.id}-${grp.items[index + 1].spot.id}`,
+                            grp.excursion.id
+                          )
+                        "
+                        @keydown.space.self.prevent="
+                          toggleLegExpanded(
+                            `${grp.excursion.id}-${item.spot.id}-${grp.items[index + 1].spot.id}`,
+                            grp.excursion.id
+                          )
+                        "
                       >
+                        <EditButton
+                          v-if="
+                            expandedLegKey ===
+                            `${grp.excursion.id}-${item.spot.id}-${grp.items[index + 1].spot.id}`
+                          "
+                          floating
+                          @click="
+                            openCardLegModal(grp.excursion, item.spot, grp.items[index + 1].spot)
+                          "
+                        />
                         <div class="tour-leg-header">
                           <span class="tour-leg-type">
                             {{
@@ -3175,101 +3311,184 @@ async function removeSpot(id: number) {
                           </span>
                         </div>
                         <div
-                          v-if="
-                            hasLegDetails(
-                              getTourLeg(grp.excursion, item.spot.id, grp.items[index + 1].spot.id)!
-                            )
+                          class="tour-leg-accordion"
+                          :class="{
+                            'is-expanded':
+                              expandedLegKey ===
+                              `${grp.excursion.id}-${item.spot.id}-${grp.items[index + 1].spot.id}`,
+                          }"
+                          :inert="
+                            expandedLegKey !==
+                            `${grp.excursion.id}-${item.spot.id}-${grp.items[index + 1].spot.id}`
                           "
-                          class="tour-leg-details"
                         >
-                          <span
-                            v-if="
-                              getTourLeg(grp.excursion, item.spot.id, grp.items[index + 1].spot.id)!
-                                .checkin_info
-                            "
-                            class="tour-leg-detail"
-                          >
-                            <AppIcon :icon="FORM_FIELD_ICONS.time" :size="12" group="formFields" />
-                            {{
-                              getTourLeg(grp.excursion, item.spot.id, grp.items[index + 1].spot.id)!
-                                .checkin_info
-                            }}
-                          </span>
-                          <span
-                            v-if="
-                              getTourLeg(grp.excursion, item.spot.id, grp.items[index + 1].spot.id)!
-                                .seat
-                            "
-                            class="tour-leg-detail"
-                          >
-                            Sitz:
-                            {{
-                              getTourLeg(grp.excursion, item.spot.id, grp.items[index + 1].spot.id)!
-                                .seat
-                            }}
-                          </span>
-                          <span
-                            v-if="
-                              getTourLeg(grp.excursion, item.spot.id, grp.items[index + 1].spot.id)!
-                                .luggage
-                            "
-                            class="tour-leg-detail"
-                          >
-                            Gepäck:
-                            {{
-                              getTourLeg(grp.excursion, item.spot.id, grp.items[index + 1].spot.id)!
-                                .luggage
-                            }}
-                          </span>
-                          <a
-                            v-if="
-                              getTourLeg(grp.excursion, item.spot.id, grp.items[index + 1].spot.id)!
-                                .ticket_link
-                            "
-                            :href="
-                              getTourLeg(grp.excursion, item.spot.id, grp.items[index + 1].spot.id)!
-                                .ticket_link!
-                            "
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            class="tour-leg-link"
-                          >
-                            <AppIcon :icon="FORM_FIELD_ICONS.link" :size="12" group="formFields" />
-                            Ticket/Buchung
-                          </a>
-                          <span
-                            v-if="
-                              getTourLeg(grp.excursion, item.spot.id, grp.items[index + 1].spot.id)!
-                                .amount != null &&
-                              getTourLeg(grp.excursion, item.spot.id, grp.items[index + 1].spot.id)!
-                                .paid_by_user_id
-                            "
-                            class="tour-leg-detail"
-                          >
-                            bezahlt von
-                            {{
-                              creatorLabel(
+                          <div class="tour-leg-accordion-inner">
+                            <div
+                              v-if="
+                                hasLegDetails(
+                                  getTourLeg(
+                                    grp.excursion,
+                                    item.spot.id,
+                                    grp.items[index + 1].spot.id
+                                  )!
+                                )
+                              "
+                              class="tour-leg-details"
+                            >
+                              <span
+                                v-if="
+                                  getTourLeg(
+                                    grp.excursion,
+                                    item.spot.id,
+                                    grp.items[index + 1].spot.id
+                                  )!.checkin_info
+                                "
+                                class="tour-leg-detail"
+                              >
+                                <AppIcon
+                                  :icon="FORM_FIELD_ICONS.time"
+                                  :size="12"
+                                  group="formFields"
+                                />
+                                {{
+                                  getTourLeg(
+                                    grp.excursion,
+                                    item.spot.id,
+                                    grp.items[index + 1].spot.id
+                                  )!.checkin_info
+                                }}
+                              </span>
+                              <span
+                                v-if="
+                                  getTourLeg(
+                                    grp.excursion,
+                                    item.spot.id,
+                                    grp.items[index + 1].spot.id
+                                  )!.seat
+                                "
+                                class="tour-leg-detail"
+                              >
+                                Sitz:
+                                {{
+                                  getTourLeg(
+                                    grp.excursion,
+                                    item.spot.id,
+                                    grp.items[index + 1].spot.id
+                                  )!.seat
+                                }}
+                              </span>
+                              <span
+                                v-if="
+                                  getTourLeg(
+                                    grp.excursion,
+                                    item.spot.id,
+                                    grp.items[index + 1].spot.id
+                                  )!.luggage
+                                "
+                                class="tour-leg-detail"
+                              >
+                                Gepäck:
+                                {{
+                                  getTourLeg(
+                                    grp.excursion,
+                                    item.spot.id,
+                                    grp.items[index + 1].spot.id
+                                  )!.luggage
+                                }}
+                              </span>
+                              <a
+                                v-if="
+                                  getTourLeg(
+                                    grp.excursion,
+                                    item.spot.id,
+                                    grp.items[index + 1].spot.id
+                                  )!.ticket_link
+                                "
+                                :href="
+                                  getTourLeg(
+                                    grp.excursion,
+                                    item.spot.id,
+                                    grp.items[index + 1].spot.id
+                                  )!.ticket_link!
+                                "
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="tour-leg-link"
+                                @click.stop
+                              >
+                                <AppIcon
+                                  :icon="FORM_FIELD_ICONS.link"
+                                  :size="12"
+                                  group="formFields"
+                                />
+                                Ticket/Buchung
+                              </a>
+                              <span
+                                v-if="
+                                  getTourLeg(
+                                    grp.excursion,
+                                    item.spot.id,
+                                    grp.items[index + 1].spot.id
+                                  )!.amount != null &&
+                                  getTourLeg(
+                                    grp.excursion,
+                                    item.spot.id,
+                                    grp.items[index + 1].spot.id
+                                  )!.paid_by_user_id
+                                "
+                                class="tour-leg-detail"
+                              >
+                                bezahlt von
+                                {{
+                                  creatorLabel(
+                                    getTourLeg(
+                                      grp.excursion,
+                                      item.spot.id,
+                                      grp.items[index + 1].spot.id
+                                    )!.paid_by_user_id ?? null
+                                  )
+                                }}
+                              </span>
+                            </div>
+                            <p
+                              v-if="
                                 getTourLeg(
                                   grp.excursion,
                                   item.spot.id,
                                   grp.items[index + 1].spot.id
-                                )!.paid_by_user_id ?? null
-                              )
-                            }}
-                          </span>
+                                )!.note
+                              "
+                              class="tour-leg-note"
+                            >
+                              {{
+                                getTourLeg(
+                                  grp.excursion,
+                                  item.spot.id,
+                                  grp.items[index + 1].spot.id
+                                )!.note
+                              }}
+                            </p>
+                            <FileAttachments
+                              v-if="
+                                getTourLeg(
+                                  grp.excursion,
+                                  item.spot.id,
+                                  grp.items[index + 1].spot.id
+                                )!.id
+                              "
+                              domain="excursion_legs"
+                              :entity-id="
+                                getTourLeg(
+                                  grp.excursion,
+                                  item.spot.id,
+                                  grp.items[index + 1].spot.id
+                                )!.id!
+                              "
+                              :editable="false"
+                              @click.stop
+                            />
+                          </div>
                         </div>
-                        <p
-                          v-if="
-                            getTourLeg(grp.excursion, item.spot.id, grp.items[index + 1].spot.id)!
-                              .note
-                          "
-                          class="tour-leg-note"
-                        >
-                          {{
-                            getTourLeg(grp.excursion, item.spot.id, grp.items[index + 1].spot.id)!
-                              .note
-                          }}
-                        </p>
                       </div>
                     </template>
                   </TransitionGroup>
@@ -3305,6 +3524,18 @@ async function removeSpot(id: number) {
           <TrackRecordingWarningModal
             v-model="showTrackRecordingWarningModal"
             @confirm="startRecordingConfirmed"
+          />
+
+          <!-- Schnelles Bearbeiten einer Teilstrecke direkt aus der Leg-Card (#361) -->
+          <LegTransportModal
+            v-if="editingCardLeg"
+            v-model="showCardLegModal"
+            :from-spot="editingCardLeg.fromSpot"
+            :to-spot="editingCardLeg.toSpot"
+            :leg="editingCardLeg.leg"
+            :users="users"
+            @save="onSaveCardLeg"
+            @delete="onDeleteCardLeg"
           />
         </div>
       </div>
@@ -4091,6 +4322,7 @@ async function removeSpot(id: number) {
 }
 
 .tour-leg-card {
+  position: relative;
   margin-left: var(--space-2);
   padding: var(--space-2) var(--space-3);
   background: var(--color-surface-sunken);
@@ -4100,6 +4332,47 @@ async function removeSpot(id: number) {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.tour-leg-card:hover {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+.tour-leg-card.is-expanded {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.tour-leg-card.is-expanded .tour-leg-header {
+  padding-left: 32px;
+  min-height: 28px;
+}
+
+.tour-leg-accordion {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tour-leg-accordion.is-expanded {
+  grid-template-rows: 1fr;
+}
+
+.tour-leg-accordion-inner {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-top: var(--space-2);
+  border-top: 1px dashed var(--color-border-subtle);
+  margin-top: var(--space-1);
 }
 
 .tour-leg-header {
@@ -4108,6 +4381,7 @@ async function removeSpot(id: number) {
   flex-wrap: wrap;
   gap: var(--space-2);
   font-size: 0.8125rem;
+  transition: padding-left 0.2s ease;
 }
 
 .tour-leg-type {

@@ -484,7 +484,8 @@ export interface DiaryComment {
 /** Domänen, die Datei-Anhänge (Tickets/Dokumente) tragen können – siehe FileAttachments.vue.
  *  'spots' deckt seit der Verschmelzung von Unterkunft in Spots auch Unterkunft-Anhänge ab (siehe
  *  Migrationskommentar in db/index.ts). */
-export type AttachmentDomain = 'ideas' | 'spots' | 'notes' | 'schedule' | 'budget';
+export type AttachmentDomain =
+  'ideas' | 'spots' | 'notes' | 'schedule' | 'budget' | 'excursion_legs';
 
 export interface Attachment {
   id: number;

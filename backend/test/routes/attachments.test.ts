@@ -162,4 +162,73 @@ describe('attachments routes', () => {
     });
     expect(deleted.statusCode).toBe(204);
   });
+
+  it('supports attachments for domain excursion_legs with correct trip access', async () => {
+    const owner = await register('leguser', 'leguser@example.com');
+    const tripRes = await app.inject({
+      method: 'POST',
+      url: '/api/trips',
+      headers: { cookie: owner.cookie },
+      payload: { name: 'Leg-Trip', start_date: '2026-06-01', end_date: '2026-06-10' },
+    });
+    const tripId = tripRes.json().id;
+
+    const spot1 = await app.inject({
+      method: 'POST',
+      url: '/api/spots',
+      headers: { cookie: owner.cookie },
+      payload: { trip_id: tripId, title: 'Spot A', category: 'Aktivität' },
+    });
+    const spot2 = await app.inject({
+      method: 'POST',
+      url: '/api/spots',
+      headers: { cookie: owner.cookie },
+      payload: { trip_id: tripId, title: 'Spot B', category: 'Aktivität' },
+    });
+
+    const ideaRes = await app.inject({
+      method: 'POST',
+      url: '/api/ideas',
+      headers: { cookie: owner.cookie },
+      payload: {
+        trip_id: tripId,
+        title: 'Tour with Leg',
+        spot_ids: [spot1.json().id, spot2.json().id],
+        legs: [
+          {
+            from_spot_id: spot1.json().id,
+            to_spot_id: spot2.json().id,
+            transport_type: 'Zug',
+          },
+        ],
+      },
+    });
+    const legs = ideaRes.json().legs;
+    expect(legs.length).toBe(1);
+    const legId = legs[0].id;
+    expect(legId).toBeDefined();
+
+    const uploadRes = await app.inject({
+      method: 'POST',
+      url: '/api/attachments',
+      headers: { cookie: owner.cookie },
+      payload: {
+        domain: 'excursion_legs',
+        entity_id: legId,
+        filename: 'train-ticket.png',
+        data: `data:image/png;base64,${TINY_PNG_BASE64}`,
+      },
+    });
+    expect(uploadRes.statusCode).toBe(201);
+    expect(uploadRes.json().original_name).toBe('train-ticket.png');
+
+    const getRes = await app.inject({
+      method: 'GET',
+      url: `/api/attachments?domain=excursion_legs&entity_id=${legId}`,
+      headers: { cookie: owner.cookie },
+    });
+    expect(getRes.statusCode).toBe(200);
+    expect(getRes.json().length).toBe(1);
+    expect(getRes.json()[0].original_name).toBe('train-ticket.png');
+  });
 });

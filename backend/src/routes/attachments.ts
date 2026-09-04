@@ -8,7 +8,8 @@ import { requireTripMember } from '../tripAccess.js';
 import { recordActivity } from '../activity.js';
 import { isUserRestricted } from '../registrationConfig.js';
 
-export type AttachmentDomain = 'ideas' | 'spots' | 'notes' | 'schedule' | 'budget';
+export type AttachmentDomain =
+  'ideas' | 'spots' | 'notes' | 'schedule' | 'budget' | 'excursion_legs';
 
 // Mappt jede Domäne auf ihre Tabelle – daraus wird trip_id server-seitig nachgeschlagen (nie vom
 // Client vertraut), das verhindert Spoofing/Cross-Trip-Zugriff über eine falsche trip_id im Body.
@@ -19,12 +20,14 @@ export type AttachmentDomain = 'ideas' | 'spots' | 'notes' | 'schedule' | 'budge
 // bestätigungen) ab - eine Tour mit gesetztem role trägt jetzt dieselben Anhänge wie zuvor der
 // travel_items-Eintrag (siehe Migrationsblock in db/index.ts, der bestehende domain='travel'-Zeilen
 // einmalig auf domain='ideas' + die neue Tour-Id umhängt).
+// 'excursion_legs' erlaubt Datei-Anhänge (Tickets, Buchungen) pro einzelner Teilstrecke (#361).
 const DOMAIN_TABLE: Record<AttachmentDomain, string> = {
   ideas: 'ideas',
   spots: 'spots',
   notes: 'notes',
   schedule: 'schedule_items',
   budget: 'budget_items',
+  excursion_legs: 'excursion_legs',
 };
 
 function isAttachmentDomain(domain: string): domain is AttachmentDomain {
@@ -52,6 +55,14 @@ function serialize(row: AttachmentRow) {
  *  existiert) – entity_id ist polymorph (siehe attachments-Tabelle, analog trip_activity), es gibt
  *  daher keinen SQL-FK, der das automatisch prüfen würde. */
 function tripIdForEntity(domain: AttachmentDomain, entityId: number): number | null {
+  if (domain === 'excursion_legs') {
+    const row = db
+      .prepare(
+        'SELECT i.trip_id FROM excursion_legs el JOIN ideas i ON el.idea_id = i.id WHERE el.id = ?'
+      )
+      .get(entityId) as { trip_id: number } | undefined;
+    return row?.trip_id ?? null;
+  }
   const row = db
     .prepare(`SELECT trip_id FROM ${DOMAIN_TABLE[domain]} WHERE id = ?`)
     .get(entityId) as { trip_id: number } | undefined;

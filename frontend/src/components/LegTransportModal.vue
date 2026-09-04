@@ -5,6 +5,7 @@ import Modal from './Modal.vue';
 import FormField from './FormField.vue';
 import Button from './primitives/Button.vue';
 import AppIcon from './AppIcon.vue';
+import FileAttachments from './FileAttachments.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { travelTypeIcon } from '../utils/travelTypeIcon';
 import { spotCategoryMeta } from '../utils/spotCategory';
@@ -226,6 +227,12 @@ function onDelete() {
         <input v-model="form.note" type="text" placeholder="Tipps zum Umstieg, Buchungscode etc." />
       </FormField>
 
+      <FileAttachments v-if="leg?.id" domain="excursion_legs" :entity-id="leg.id" />
+      <p v-else class="attachments-hint">
+        Anhänge (Tickets, Buchungsbestätigungen etc.) können hochgeladen werden, sobald die Tour
+        gespeichert wurde.
+      </p>
+
       <div class="actions-row">
         <Button v-if="hasExistingData" type="button" variant="danger" size="sm" @click="onDelete">
           <AppIcon :icon="ACTION_ICONS.delete" :size="14" group="actions" /> Teilstrecke leeren
@@ -280,6 +287,13 @@ function onDelete() {
   margin: 0;
   font-size: 0.8rem;
   color: var(--color-text-muted);
+}
+
+.attachments-hint {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+  font-style: italic;
 }
 
 .actions-row {

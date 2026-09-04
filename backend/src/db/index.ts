@@ -1135,10 +1135,24 @@ export function purgeOldTrash(maxAgeDays = 30) {
       const staleRows = db
         .prepare(`SELECT id FROM ${table} WHERE deleted_at IS NOT NULL AND deleted_at < ?`)
         .all(cutoff) as { id: number }[];
-      purgeAttachmentsForEntities(
-        attachmentDomain,
-        staleRows.map((r) => r.id)
-      );
+      if (staleRows.length) {
+        purgeAttachmentsForEntities(
+          attachmentDomain,
+          staleRows.map((r) => r.id)
+        );
+        if (table === 'ideas') {
+          const placeholders = staleRows.map(() => '?').join(',');
+          const legRows = db
+            .prepare(`SELECT id FROM excursion_legs WHERE idea_id IN (${placeholders})`)
+            .all(...staleRows.map((r) => r.id)) as { id: number }[];
+          if (legRows.length) {
+            purgeAttachmentsForEntities(
+              'excursion_legs',
+              legRows.map((r) => r.id)
+            );
+          }
+        }
+      }
     }
     db.prepare(`DELETE FROM ${table} WHERE deleted_at IS NOT NULL AND deleted_at < ?`).run(cutoff);
   }

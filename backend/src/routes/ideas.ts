@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify';
-import { db, ensureDefaultSharedBudget } from '../db/index.js';
+import { db, ensureDefaultSharedBudget, purgeAttachmentsForEntities } from '../db/index.js';
 import { requireTripMember } from '../tripAccess.js';
 import { recordActivity } from '../activity.js';
 import { sanitizeHtml } from '../utils/sanitizeHtml.js';
@@ -96,7 +96,7 @@ const deleteExcursionSpotsStmt = db.prepare('DELETE FROM excursion_spots WHERE i
 const insertExcursionSpotStmt = db.prepare(
   'INSERT INTO excursion_spots (idea_id, spot_id, position) VALUES (?, ?, ?)'
 );
-const deleteExcursionLegsStmt = db.prepare('DELETE FROM excursion_legs WHERE idea_id = ?');
+const deleteExcursionLegByIdStmt = db.prepare('DELETE FROM excursion_legs WHERE id = ?');
 const selectLegsByIdeaStmt = db.prepare(
   'SELECT * FROM excursion_legs WHERE idea_id = ? ORDER BY position ASC'
 );
@@ -109,6 +109,13 @@ const insertExcursionLegStmt = db.prepare(
     departure_time, arrival_time, checkin_info, seat, luggage,
     ticket_link, note, amount, paid_by_user_id, budget_expense_id
   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+);
+const updateExcursionLegStmt = db.prepare(
+  `UPDATE excursion_legs SET
+    position = ?, from_spot_id = ?, to_spot_id = ?, transport_type = ?,
+    departure_time = ?, arrival_time = ?, checkin_info = ?, seat = ?, luggage = ?,
+    ticket_link = ?, note = ?, amount = ?, paid_by_user_id = ?, budget_expense_id = ?
+   WHERE id = ?`
 );
 const selectScheduleByIdeaStmt = db.prepare(
   'SELECT id FROM schedule_items WHERE idea_id = ? AND deleted_at IS NULL'
@@ -303,8 +310,7 @@ function syncExcursionLegs(
     existingLegs.map((l) => l.budget_expense_id).filter((id): id is number => id != null)
   );
   const preservedBudgetIds = new Set<number>();
-
-  deleteExcursionLegsStmt.run(ideaId);
+  const preservedLegIds = new Set<number>();
 
   if (legs && legs.length > 0) {
     const selectSpotTitle = db.prepare('SELECT title FROM spots WHERE id = ?');
@@ -347,24 +353,66 @@ function syncExcursionLegs(
         deleteBudgetItemStmt.run(matchingExistingBudgetId);
       }
 
-      insertExcursionLegStmt.run(
-        ideaId,
-        index,
-        leg.from_spot_id,
-        leg.to_spot_id,
-        leg.transport_type ?? null,
-        leg.departure_time ?? null,
-        leg.arrival_time ?? null,
-        leg.checkin_info ?? null,
-        leg.seat ?? null,
-        leg.luggage ?? null,
-        leg.ticket_link ?? null,
-        leg.note ?? null,
-        leg.amount ?? null,
-        leg.paid_by_user_id ?? null,
-        budgetExpenseId
-      );
+      const matchingLeg =
+        (leg.id ? existingLegs.find((el) => el.id === leg.id) : null) ??
+        existingLegs.find(
+          (el) =>
+            el.from_spot_id === leg.from_spot_id &&
+            el.to_spot_id === leg.to_spot_id &&
+            !preservedLegIds.has(el.id)
+        );
+
+      if (matchingLeg) {
+        updateExcursionLegStmt.run(
+          index,
+          leg.from_spot_id,
+          leg.to_spot_id,
+          leg.transport_type ?? null,
+          leg.departure_time ?? null,
+          leg.arrival_time ?? null,
+          leg.checkin_info ?? null,
+          leg.seat ?? null,
+          leg.luggage ?? null,
+          leg.ticket_link ?? null,
+          leg.note ?? null,
+          leg.amount ?? null,
+          leg.paid_by_user_id ?? null,
+          budgetExpenseId,
+          matchingLeg.id
+        );
+        preservedLegIds.add(matchingLeg.id);
+      } else {
+        const insertRes = insertExcursionLegStmt.run(
+          ideaId,
+          index,
+          leg.from_spot_id,
+          leg.to_spot_id,
+          leg.transport_type ?? null,
+          leg.departure_time ?? null,
+          leg.arrival_time ?? null,
+          leg.checkin_info ?? null,
+          leg.seat ?? null,
+          leg.luggage ?? null,
+          leg.ticket_link ?? null,
+          leg.note ?? null,
+          leg.amount ?? null,
+          leg.paid_by_user_id ?? null,
+          budgetExpenseId
+        );
+        preservedLegIds.add(insertRes.lastInsertRowid as number);
+      }
     }
+  }
+
+  const removedLegs = existingLegs.filter((el) => !preservedLegIds.has(el.id));
+  if (removedLegs.length > 0) {
+    for (const rl of removedLegs) {
+      deleteExcursionLegByIdStmt.run(rl.id);
+    }
+    purgeAttachmentsForEntities(
+      'excursion_legs',
+      removedLegs.map((rl) => rl.id)
+    );
   }
 
   for (const oldBudgetId of existingBudgetIds) {
