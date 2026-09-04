@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { computed, ref } from 'vue';
+import { computed, ref, shallowRef } from 'vue';
 import { api } from '../api/client';
 import type { Trip } from '../api/types';
 import { useAuthStore } from './auth';
@@ -18,7 +18,7 @@ export interface TripFormData {
 
 export const useTripStore = defineStore('trip', () => {
   const auth = useAuthStore();
-  const trips = ref<Trip[]>([]);
+  const trips = shallowRef<Trip[]>([]);
   // Kein synchrones Pre-Seeding aus localStorage mehr beim Store-Aufbau: der Schlüssel ist jetzt
   // pro Nutzer-Id (siehe storageKey() unten), die Nutzer-Id steht beim Store-Aufbau aber noch nicht
   // fest (auth.checkSession() ist zu dem Zeitpunkt noch nicht durchgelaufen). Unproblematisch, da
@@ -99,7 +99,7 @@ export const useTripStore = defineStore('trip', () => {
 
   async function createTrip(body: TripFormData) {
     const created = await api.post<Trip>('/trips', body);
-    trips.value.push(created);
+    trips.value = [...trips.value, created];
     selectTrip(created.id);
     return created;
   }
@@ -107,7 +107,11 @@ export const useTripStore = defineStore('trip', () => {
   async function updateTrip(id: number, body: TripFormData) {
     const updated = await api.put<Trip>(`/trips/${id}`, body);
     const idx = trips.value.findIndex((t) => t.id === id);
-    if (idx !== -1) trips.value[idx] = updated;
+    if (idx !== -1) {
+      const next = [...trips.value];
+      next[idx] = updated;
+      trips.value = next;
+    }
     return updated;
   }
 

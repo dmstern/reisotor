@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref, watch } from 'vue';
+import { ref, shallowRef, watch } from 'vue';
 import { api } from '../api/client';
 import type { ScheduleItem } from '../api/types';
 import { useTripStore } from './trip';
@@ -29,7 +29,7 @@ export interface ScheduleFormData {
 export const useScheduleStore = defineStore('schedule', () => {
   const tripStore = useTripStore();
   const liveSync = useLiveSyncStore();
-  const items = ref<ScheduleItem[]>([]);
+  const items = shallowRef<ScheduleItem[]>([]);
   const loaded = ref(false);
 
   async function load() {
@@ -51,14 +51,18 @@ export const useScheduleStore = defineStore('schedule', () => {
 
   async function create(body: ScheduleFormData) {
     const created = await api.post<ScheduleItem>('/schedule', body);
-    items.value.push(created);
+    items.value = [...items.value, created];
     return created;
   }
 
   async function update(id: number, body: ScheduleFormData) {
     const updated = await api.put<ScheduleItem>(`/schedule/${id}`, body);
     const idx = items.value.findIndex((i) => i.id === id);
-    if (idx !== -1) items.value[idx] = updated;
+    if (idx !== -1) {
+      const next = [...items.value];
+      next[idx] = updated;
+      items.value = next;
+    }
     return updated;
   }
 

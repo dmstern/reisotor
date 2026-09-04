@@ -16,17 +16,59 @@ interface CommentBody {
   content: string;
 }
 
+const selectNotesByTripStmt = db.prepare(
+  'SELECT * FROM notes WHERE trip_id = ? AND deleted_at IS NULL AND (is_draft = 0 OR created_by = ?) ORDER BY created_at DESC, id DESC'
+);
+const insertNoteStmt = db.prepare(
+  'INSERT INTO notes (trip_id, title, content, content_format, created_by, created_at, is_draft) VALUES (?, ?, ?, ?, ?, ?, ?)'
+);
+const selectNoteByIdStmt = db.prepare('SELECT * FROM notes WHERE id = ?');
+const selectNoteForAuthStmt = db.prepare(
+  'SELECT trip_id, created_by, is_draft FROM notes WHERE id = ?'
+);
+const updateNoteStmt = db.prepare(
+  'UPDATE notes SET title = ?, content = ?, content_format = ?, updated_at = ?, is_draft = ? WHERE id = ?'
+);
+const softDeleteNoteStmt = db.prepare(
+  'UPDATE notes SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL'
+);
+const selectNoteLikesByTripStmt = db.prepare(
+  `SELECT note_likes.* FROM note_likes
+   JOIN notes ON notes.id = note_likes.note_id
+   WHERE notes.trip_id = ? AND notes.deleted_at IS NULL`
+);
+const selectNoteCommentsByTripStmt = db.prepare(
+  `SELECT note_comments.* FROM note_comments
+   JOIN notes ON notes.id = note_comments.note_id
+   WHERE notes.trip_id = ? AND notes.deleted_at IS NULL
+   ORDER BY note_comments.created_at ASC, note_comments.id ASC`
+);
+const selectNoteTripIdStmt = db.prepare('SELECT id, trip_id FROM notes WHERE id = ?');
+const selectNoteLikeStmt = db.prepare(
+  'SELECT id FROM note_likes WHERE note_id = ? AND user_id = ?'
+);
+const deleteNoteLikeStmt = db.prepare('DELETE FROM note_likes WHERE id = ?');
+const insertNoteLikeStmt = db.prepare(
+  'INSERT INTO note_likes (note_id, user_id, created_at) VALUES (?, ?, ?)'
+);
+const insertNoteCommentStmt = db.prepare(
+  'INSERT INTO note_comments (note_id, author_id, content, created_at) VALUES (?, ?, ?, ?)'
+);
+const selectNoteCommentByIdStmt = db.prepare('SELECT * FROM note_comments WHERE id = ?');
+const selectNoteCommentAuthStmt = db.prepare(
+  `SELECT note_comments.id, note_comments.author_id, notes.trip_id FROM note_comments
+   JOIN notes ON notes.id = note_comments.note_id
+   WHERE note_comments.id = ?`
+);
+const deleteNoteCommentStmt = db.prepare('DELETE FROM note_comments WHERE id = ?');
+
 export const notesRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: { trip_id?: string } }>('/notes', async (req, reply) => {
     if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
     if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
     // Entwürfe (is_draft) sind rein persönlich (#89) - nur für die eigene created_by sichtbar, damit
     // sie nicht schon vor dem Veröffentlichen für andere Trip-Mitglieder in der Liste auftauchen.
-    return db
-      .prepare(
-        'SELECT * FROM notes WHERE trip_id = ? AND deleted_at IS NULL AND (is_draft = 0 OR created_by = ?) ORDER BY created_at DESC, id DESC'
-      )
-      .all(req.query.trip_id, req.session.userId);
+    return selectNotesByTripStmt.all(req.query.trip_id, req.session.userId);
   });
 
   app.post<{ Body: NoteBody }>('/notes', async (req, reply) => {
@@ -34,19 +76,15 @@ export const notesRoutes: FastifyPluginAsync = async (app) => {
     if (!requireTripMember(reply, trip_id, req.session.userId)) return;
     const isHtml = req.body.content_format === 'html';
     const now = new Date().toISOString();
-    const result = db
-      .prepare(
-        'INSERT INTO notes (trip_id, title, content, content_format, created_by, created_at, is_draft) VALUES (?, ?, ?, ?, ?, ?, ?)'
-      )
-      .run(
-        trip_id,
-        title ?? null,
-        isHtml ? sanitizeHtml(content) : content,
-        isHtml ? 'html' : 'legacy',
-        req.session.userId,
-        now,
-        req.body.is_draft ? 1 : 0
-      );
+    const result = insertNoteStmt.run(
+      trip_id,
+      title ?? null,
+      isHtml ? sanitizeHtml(content) : content,
+      isHtml ? 'html' : 'legacy',
+      req.session.userId,
+      now,
+      req.body.is_draft ? 1 : 0
+    );
     recordActivity(
       trip_id,
       'notes',
@@ -55,13 +93,11 @@ export const notesRoutes: FastifyPluginAsync = async (app) => {
       req.session.userId!
     );
     reply.code(201);
-    return db.prepare('SELECT * FROM notes WHERE id = ?').get(result.lastInsertRowid);
+    return selectNoteByIdStmt.get(result.lastInsertRowid);
   });
 
   app.put<{ Params: { id: string }; Body: NoteBody }>('/notes/:id', async (req, reply) => {
-    const existingNote = db
-      .prepare('SELECT trip_id, created_by, is_draft FROM notes WHERE id = ?')
-      .get(req.params.id) as
+    const existingNote = selectNoteForAuthStmt.get(req.params.id) as
       { trip_id: number; created_by: number | null; is_draft: number } | undefined;
     if (!existingNote) return reply.code(404).send({ error: 'Nicht gefunden' });
     if (!requireTripMember(reply, existingNote.trip_id, req.session.userId)) return;
@@ -78,18 +114,14 @@ export const notesRoutes: FastifyPluginAsync = async (app) => {
     const now = new Date().toISOString();
     const isDraft =
       req.body.is_draft !== undefined ? (req.body.is_draft ? 1 : 0) : existingNote.is_draft;
-    const result = db
-      .prepare(
-        'UPDATE notes SET title = ?, content = ?, content_format = ?, updated_at = ?, is_draft = ? WHERE id = ?'
-      )
-      .run(
-        title ?? null,
-        isHtml ? sanitizeHtml(content) : content,
-        isHtml ? 'html' : 'legacy',
-        now,
-        isDraft,
-        req.params.id
-      );
+    const result = updateNoteStmt.run(
+      title ?? null,
+      isHtml ? sanitizeHtml(content) : content,
+      isHtml ? 'html' : 'legacy',
+      now,
+      isDraft,
+      req.params.id
+    );
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
     recordActivity(
       existingNote.trip_id,
@@ -98,15 +130,13 @@ export const notesRoutes: FastifyPluginAsync = async (app) => {
       'updated',
       req.session.userId!
     );
-    return db.prepare('SELECT * FROM notes WHERE id = ?').get(req.params.id);
+    return selectNoteByIdStmt.get(req.params.id);
   });
 
   // Weicher Löschvorgang (Papierkorb, routes/trash.ts): setzt nur deleted_at statt die Zeile
   // wirklich zu entfernen.
   app.delete<{ Params: { id: string } }>('/notes/:id', async (req, reply) => {
-    const existingNote = db
-      .prepare('SELECT trip_id, created_by, is_draft FROM notes WHERE id = ?')
-      .get(req.params.id) as
+    const existingNote = selectNoteForAuthStmt.get(req.params.id) as
       { trip_id: number; created_by: number | null; is_draft: number } | undefined;
     if (!existingNote) return reply.code(404).send({ error: 'Nicht gefunden' });
     if (!requireTripMember(reply, existingNote.trip_id, req.session.userId)) return;
@@ -116,9 +146,7 @@ export const notesRoutes: FastifyPluginAsync = async (app) => {
         .send({ error: 'Nur die Autorin/der Autor kann diesen Entwurf löschen' });
     }
 
-    const result = db
-      .prepare('UPDATE notes SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL')
-      .run(new Date().toISOString(), req.params.id);
+    const result = softDeleteNoteStmt.run(new Date().toISOString(), req.params.id);
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
     recordActivity(
       existingNote.trip_id,
@@ -133,48 +161,30 @@ export const notesRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: { trip_id?: string } }>('/notes/likes', async (req, reply) => {
     if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
     if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
-    return db
-      .prepare(
-        `SELECT note_likes.* FROM note_likes
-         JOIN notes ON notes.id = note_likes.note_id
-         WHERE notes.trip_id = ? AND notes.deleted_at IS NULL`
-      )
-      .all(req.query.trip_id);
+    return selectNoteLikesByTripStmt.all(req.query.trip_id);
   });
 
   app.get<{ Querystring: { trip_id?: string } }>('/notes/comments', async (req, reply) => {
     if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
     if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
-    return db
-      .prepare(
-        `SELECT note_comments.* FROM note_comments
-         JOIN notes ON notes.id = note_comments.note_id
-         WHERE notes.trip_id = ? AND notes.deleted_at IS NULL
-         ORDER BY note_comments.created_at ASC, note_comments.id ASC`
-      )
-      .all(req.query.trip_id);
+    return selectNoteCommentsByTripStmt.all(req.query.trip_id);
   });
 
   app.post<{ Params: { id: string } }>('/notes/:id/like', async (req, reply) => {
-    const note = db.prepare('SELECT id, trip_id FROM notes WHERE id = ?').get(req.params.id) as
+    const note = selectNoteTripIdStmt.get(req.params.id) as
       { id: number; trip_id: number } | undefined;
     if (!note) return reply.code(404).send({ error: 'Nicht gefunden' });
     if (!requireTripMember(reply, note.trip_id, req.session.userId)) return;
 
-    const existing = db
-      .prepare('SELECT id FROM note_likes WHERE note_id = ? AND user_id = ?')
-      .get(req.params.id, req.session.userId) as { id: number } | undefined;
+    const existing = selectNoteLikeStmt.get(req.params.id, req.session.userId) as
+      { id: number } | undefined;
 
     if (existing) {
-      db.prepare('DELETE FROM note_likes WHERE id = ?').run(existing.id);
+      deleteNoteLikeStmt.run(existing.id);
       return { liked: false };
     }
 
-    db.prepare('INSERT INTO note_likes (note_id, user_id, created_at) VALUES (?, ?, ?)').run(
-      req.params.id,
-      req.session.userId,
-      new Date().toISOString()
-    );
+    insertNoteLikeStmt.run(req.params.id, req.session.userId, new Date().toISOString());
     // Nur beim Liken selbst, nicht beim Zurücknehmen (#97, Notification-Inbox) - ein Un-Like ist kein
     // neues, benachrichtigungswürdiges Ereignis.
     recordActivity(note.trip_id, 'notes', note.id, 'liked', req.session.userId!);
@@ -184,30 +194,26 @@ export const notesRoutes: FastifyPluginAsync = async (app) => {
   app.post<{ Params: { id: string }; Body: CommentBody }>(
     '/notes/:id/comments',
     async (req, reply) => {
-      const note = db.prepare('SELECT id, trip_id FROM notes WHERE id = ?').get(req.params.id) as
+      const note = selectNoteTripIdStmt.get(req.params.id) as
         { id: number; trip_id: number } | undefined;
       if (!note) return reply.code(404).send({ error: 'Nicht gefunden' });
       if (!requireTripMember(reply, note.trip_id, req.session.userId)) return;
 
-      const result = db
-        .prepare(
-          'INSERT INTO note_comments (note_id, author_id, content, created_at) VALUES (?, ?, ?, ?)'
-        )
-        .run(req.params.id, req.session.userId, req.body.content, new Date().toISOString());
+      const result = insertNoteCommentStmt.run(
+        req.params.id,
+        req.session.userId,
+        req.body.content,
+        new Date().toISOString()
+      );
       recordActivity(note.trip_id, 'notes', note.id, 'commented', req.session.userId!);
       reply.code(201);
-      return db.prepare('SELECT * FROM note_comments WHERE id = ?').get(result.lastInsertRowid);
+      return selectNoteCommentByIdStmt.get(result.lastInsertRowid);
     }
   );
 
   app.delete<{ Params: { id: string } }>('/notes/comments/:id', async (req, reply) => {
-    const comment = db
-      .prepare(
-        `SELECT note_comments.id, note_comments.author_id, notes.trip_id FROM note_comments
-         JOIN notes ON notes.id = note_comments.note_id
-         WHERE note_comments.id = ?`
-      )
-      .get(req.params.id) as { id: number; author_id: number; trip_id: number } | undefined;
+    const comment = selectNoteCommentAuthStmt.get(req.params.id) as
+      { id: number; author_id: number; trip_id: number } | undefined;
     if (!comment) return reply.code(404).send({ error: 'Nicht gefunden' });
     if (!requireTripMember(reply, comment.trip_id, req.session.userId)) return;
     if (comment.author_id !== req.session.userId) {
@@ -215,7 +221,7 @@ export const notesRoutes: FastifyPluginAsync = async (app) => {
         .code(403)
         .send({ error: 'Nur die Autorin/der Autor kann diesen Kommentar löschen' });
     }
-    db.prepare('DELETE FROM note_comments WHERE id = ?').run(req.params.id);
+    deleteNoteCommentStmt.run(req.params.id);
     return reply.code(204).send();
   });
 };

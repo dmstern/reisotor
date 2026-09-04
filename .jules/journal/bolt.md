@@ -14,3 +14,8 @@
 
 **Learning:** `buildAllEntries` previously performed repeated $O(M)$ linear searches (`.find()`) across `spots`, `excursions`, and `travelItems` for every schedule item, resolving excursion stations twice per item (once for `icon` and once for `iconDef`). Passing pre-built `Map` lookups and consolidating `icon` and `iconDef` resolution into a single pass converts $O(N \cdot (M + K))$ processing into $O(N + M + K)$.
 **Action:** When mapping over items that reference relational datasets in pure utility functions, pre-construct `Map` lookup tables for batch operations and resolve co-dependent properties in a single pass.
+
+## 2026-09-04 - Store Reactivity with shallowRef for Dataset Lists
+
+**Learning:** Pinia stores managing dataset collections using deep `ref<T[]>` force Vue to recursively observe all properties of every item. Converting these to `shallowRef<T[]>` avoids deep proxy wrapping overhead while maintaining reactive updates when assigning new array references on mutations.
+**Action:** Use `shallowRef` for array data properties in Pinia stores and update store mutation helpers to assign new array instances (`list.value = [...list.value, item]` or `const next = [...list.value]; next[idx] = updated; list.value = next;`).
