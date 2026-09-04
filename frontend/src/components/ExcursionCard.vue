@@ -130,7 +130,12 @@ const statusDateLabel = computed(() =>
 // Zwei-Stationen-Validierung).
 const routeLabel = computed(() => {
   if (!props.excursion.role || resolvedStations.value.length < 2) return null;
-  return `${resolvedStations.value[0].title} → ${resolvedStations.value[1].title}`;
+  if (resolvedStations.value.length === 2) {
+    return `${resolvedStations.value[0].title} → ${resolvedStations.value[1].title}`;
+  }
+  const stopCount = resolvedStations.value.length - 2;
+  const stopText = stopCount === 1 ? '1 Zwischenstopp' : `${stopCount} Zwischenstopps`;
+  return `${resolvedStations.value[0].title} → ${resolvedStations.value[resolvedStations.value.length - 1].title} · ${stopText}`;
 });
 const travelDuration = computed(() => {
   const minutes = travelDurationMinutes(
@@ -301,7 +306,10 @@ function onSpotDrop(event: DragEvent) {
         </div>
         <p v-if="routeLabel" class="route">{{ routeLabel }}</p>
         <p
-          v-if="excursion.role && (excursion.departure_time || excursion.arrival_time)"
+          v-if="
+            (excursion.role || excursion.legs?.length) &&
+            (excursion.departure_time || excursion.arrival_time)
+          "
           class="departure-arrival"
         >
           <AppIcon :icon="FORM_FIELD_ICONS.time" :size="14" group="formFields" />

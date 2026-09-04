@@ -14,7 +14,7 @@ export function deriveTravelItems(excursions: Excursion[], spots: Spot[]): Trave
     .filter((e) => e.role != null)
     .map((e): TravelItem => {
       const fromId = e.spot_ids[0] ?? null;
-      const toId = e.spot_ids[1] ?? null;
+      const toId = e.spot_ids.length > 1 ? (e.spot_ids[e.spot_ids.length - 1] ?? null) : null;
       const from = fromId != null ? spotById.get(fromId) : undefined;
       const to = toId != null ? spotById.get(toId) : undefined;
       return {

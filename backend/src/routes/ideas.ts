@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify';
-import { db, ensureDefaultSharedBudget } from '../db/index.js';
+import { db, ensureDefaultSharedBudget, purgeAttachmentsForEntities } from '../db/index.js';
 import { requireTripMember } from '../tripAccess.js';
 import { recordActivity } from '../activity.js';
 import { sanitizeHtml } from '../utils/sanitizeHtml.js';
@@ -9,6 +9,43 @@ import { sanitizeHtml } from '../utils/sanitizeHtml.js';
 // die Transportmittel-Zusatzfelder, siehe Konzept-Kommentar in Issue #68.
 type IdeaRole = 'arrival' | 'departure' | 'onward';
 
+interface ExcursionLegInput {
+  id?: number;
+  position?: number;
+  from_spot_id: number;
+  to_spot_id: number;
+  transport_type?: string | null;
+  departure_time?: string | null;
+  arrival_time?: string | null;
+  checkin_info?: string | null;
+  seat?: string | null;
+  luggage?: string | null;
+  ticket_link?: string | null;
+  note?: string | null;
+  amount?: number | null;
+  paid_by_user_id?: number | null;
+  budget_expense_id?: number | null;
+}
+
+interface ExcursionLegRow {
+  id: number;
+  idea_id: number;
+  position: number;
+  from_spot_id: number;
+  to_spot_id: number;
+  transport_type: string | null;
+  departure_time: string | null;
+  arrival_time: string | null;
+  checkin_info: string | null;
+  seat: string | null;
+  luggage: string | null;
+  ticket_link: string | null;
+  note: string | null;
+  amount: number | null;
+  paid_by_user_id: number | null;
+  budget_expense_id: number | null;
+}
+
 interface IdeaBody {
   trip_id: number;
   title: string;
@@ -17,6 +54,7 @@ interface IdeaBody {
   note_format?: 'html' | 'legacy';
   date?: string;
   spot_ids?: number[];
+  legs?: ExcursionLegInput[];
   role?: IdeaRole | null;
   transport_type?: string | null;
   departure_time?: string | null;
@@ -57,6 +95,27 @@ interface PlanSpotBody {
 const deleteExcursionSpotsStmt = db.prepare('DELETE FROM excursion_spots WHERE idea_id = ?');
 const insertExcursionSpotStmt = db.prepare(
   'INSERT INTO excursion_spots (idea_id, spot_id, position) VALUES (?, ?, ?)'
+);
+const deleteExcursionLegByIdStmt = db.prepare('DELETE FROM excursion_legs WHERE id = ?');
+const selectLegsByIdeaStmt = db.prepare(
+  'SELECT * FROM excursion_legs WHERE idea_id = ? ORDER BY position ASC'
+);
+const selectLegBudgetExpensesByIdeaStmt = db.prepare(
+  'SELECT budget_expense_id FROM excursion_legs WHERE idea_id = ? AND budget_expense_id IS NOT NULL'
+);
+const insertExcursionLegStmt = db.prepare(
+  `INSERT INTO excursion_legs (
+    idea_id, position, from_spot_id, to_spot_id, transport_type,
+    departure_time, arrival_time, checkin_info, seat, luggage,
+    ticket_link, note, amount, paid_by_user_id, budget_expense_id
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+);
+const updateExcursionLegStmt = db.prepare(
+  `UPDATE excursion_legs SET
+    position = ?, from_spot_id = ?, to_spot_id = ?, transport_type = ?,
+    departure_time = ?, arrival_time = ?, checkin_info = ?, seat = ?, luggage = ?,
+    ticket_link = ?, note = ?, amount = ?, paid_by_user_id = ?, budget_expense_id = ?
+   WHERE id = ?`
 );
 const selectScheduleByIdeaStmt = db.prepare(
   'SELECT id FROM schedule_items WHERE idea_id = ? AND deleted_at IS NULL'
@@ -169,6 +228,23 @@ function spotIdsFor(ideaIds: number[]): Map<number, number[]> {
   return map;
 }
 
+function legsFor(ideaIds: number[]): Map<number, ExcursionLegRow[]> {
+  const map = new Map<number, ExcursionLegRow[]>();
+  if (!ideaIds.length) return map;
+  const placeholders = ideaIds.map(() => '?').join(',');
+  const rows = db
+    .prepare(
+      `SELECT * FROM excursion_legs WHERE idea_id IN (${placeholders}) ORDER BY idea_id, position ASC`
+    )
+    .all(...ideaIds) as ExcursionLegRow[];
+  for (const row of rows) {
+    const list = map.get(row.idea_id) ?? [];
+    list.push(row);
+    map.set(row.idea_id, list);
+  }
+  return map;
+}
+
 // Ein Ausflug ist "geplant", wenn genau ein Kalender-Termin (schedule_items) über idea_id auf ihn
 // verweist – kein eigenes Datums-Feld mehr auf dem Ausflug selbst (siehe Kommentar in db/index.ts).
 // Bündelt dieselbe Batch-Abfrage-Optik wie spotIdsFor oben.
@@ -213,8 +289,137 @@ function setIdeaScheduleDate(
   }
 }
 
-function serializeIdea(row: IdeaRow, spotIds: number[], date: string | null) {
-  return { ...row, spot_ids: spotIds, date };
+function serializeIdea(
+  row: IdeaRow,
+  spotIds: number[],
+  legs: ExcursionLegRow[],
+  date: string | null
+) {
+  return { ...row, spot_ids: spotIds, legs, date };
+}
+
+function syncExcursionLegs(
+  ideaId: number,
+  tripId: number,
+  legs: ExcursionLegInput[] | undefined,
+  tourTitle: string,
+  tourDate?: string | null
+) {
+  const existingLegs = selectLegsByIdeaStmt.all(ideaId) as ExcursionLegRow[];
+  const existingBudgetIds = new Set(
+    existingLegs.map((l) => l.budget_expense_id).filter((id): id is number => id != null)
+  );
+  const preservedBudgetIds = new Set<number>();
+  const preservedLegIds = new Set<number>();
+
+  if (legs && legs.length > 0) {
+    const selectSpotTitle = db.prepare('SELECT title FROM spots WHERE id = ?');
+    for (let index = 0; index < legs.length; index++) {
+      const leg = legs[index];
+      let budgetExpenseId: number | null = null;
+      const hasAmount = leg.amount != null && leg.amount > 0 && leg.paid_by_user_id != null;
+
+      let matchingExistingBudgetId: number | null = null;
+      if (leg.budget_expense_id && existingBudgetIds.has(leg.budget_expense_id)) {
+        matchingExistingBudgetId = leg.budget_expense_id;
+      } else if (leg.id) {
+        const found = existingLegs.find((el) => el.id === leg.id);
+        if (found?.budget_expense_id && existingBudgetIds.has(found.budget_expense_id)) {
+          matchingExistingBudgetId = found.budget_expense_id;
+        }
+      }
+
+      if (hasAmount) {
+        const fromTitle =
+          (selectSpotTitle.get(leg.from_spot_id) as { title: string } | undefined)?.title ?? '';
+        const toTitle =
+          (selectSpotTitle.get(leg.to_spot_id) as { title: string } | undefined)?.title ?? '';
+        const legBudgetTitle =
+          fromTitle && toTitle
+            ? `${leg.transport_type || 'Transport'}: ${fromTitle} → ${toTitle}`
+            : tourTitle;
+
+        const { budgetExpenseId: plannedId } = planIdeaBudgetExpense(
+          tripId,
+          matchingExistingBudgetId,
+          legBudgetTitle,
+          tourDate,
+          leg.amount,
+          leg.paid_by_user_id
+        );
+        budgetExpenseId = plannedId;
+        if (budgetExpenseId) preservedBudgetIds.add(budgetExpenseId);
+      } else if (matchingExistingBudgetId) {
+        deleteBudgetItemStmt.run(matchingExistingBudgetId);
+      }
+
+      const matchingLeg =
+        (leg.id ? existingLegs.find((el) => el.id === leg.id) : null) ??
+        existingLegs.find(
+          (el) =>
+            el.from_spot_id === leg.from_spot_id &&
+            el.to_spot_id === leg.to_spot_id &&
+            !preservedLegIds.has(el.id)
+        );
+
+      if (matchingLeg) {
+        updateExcursionLegStmt.run(
+          index,
+          leg.from_spot_id,
+          leg.to_spot_id,
+          leg.transport_type ?? null,
+          leg.departure_time ?? null,
+          leg.arrival_time ?? null,
+          leg.checkin_info ?? null,
+          leg.seat ?? null,
+          leg.luggage ?? null,
+          leg.ticket_link ?? null,
+          leg.note ?? null,
+          leg.amount ?? null,
+          leg.paid_by_user_id ?? null,
+          budgetExpenseId,
+          matchingLeg.id
+        );
+        preservedLegIds.add(matchingLeg.id);
+      } else {
+        const insertRes = insertExcursionLegStmt.run(
+          ideaId,
+          index,
+          leg.from_spot_id,
+          leg.to_spot_id,
+          leg.transport_type ?? null,
+          leg.departure_time ?? null,
+          leg.arrival_time ?? null,
+          leg.checkin_info ?? null,
+          leg.seat ?? null,
+          leg.luggage ?? null,
+          leg.ticket_link ?? null,
+          leg.note ?? null,
+          leg.amount ?? null,
+          leg.paid_by_user_id ?? null,
+          budgetExpenseId
+        );
+        preservedLegIds.add(insertRes.lastInsertRowid as number);
+      }
+    }
+  }
+
+  const removedLegs = existingLegs.filter((el) => !preservedLegIds.has(el.id));
+  if (removedLegs.length > 0) {
+    for (const rl of removedLegs) {
+      deleteExcursionLegByIdStmt.run(rl.id);
+    }
+    purgeAttachmentsForEntities(
+      'excursion_legs',
+      removedLegs.map((rl) => rl.id)
+    );
+  }
+
+  for (const oldBudgetId of existingBudgetIds) {
+    if (!preservedBudgetIds.has(oldBudgetId)) {
+      deleteBudgetItemStmt.run(oldBudgetId);
+    }
+  }
 }
 
 /** Budget-Sync für Touren mit gesetztem role (ehemalige Reise-Etappen) - Gegenstück zu
@@ -272,9 +477,15 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
     if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
     const rows = selectIdeasByTripStmt.all(req.query.trip_id) as IdeaRow[];
     const spotIds = spotIdsFor(rows.map((r) => r.id));
+    const legs = legsFor(rows.map((r) => r.id));
     const dates = scheduleDatesForIdeas(rows.map((r) => r.id));
     return rows.map((row) =>
-      serializeIdea(row, spotIds.get(row.id) ?? [], dates.get(row.id) ?? null)
+      serializeIdea(
+        row,
+        spotIds.get(row.id) ?? [],
+        legs.get(row.id) ?? [],
+        dates.get(row.id) ?? null
+      )
     );
   });
 
@@ -286,6 +497,7 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
       note,
       date,
       spot_ids,
+      legs,
       role,
       transport_type,
       departure_time,
@@ -298,13 +510,11 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
       ticket_link,
     } = req.body;
     if (!requireTripMember(reply, trip_id, req.session.userId)) return;
-    // Rolle (Anreise/Abreise/Weiterreise) nur mit genau zwei Stationen (Von/Nach) - siehe
-    // Konzept-Entscheidung in Issue #68/#176. Eine normale Tour (role nicht gesetzt) bleibt frei in
-    // der Stationsanzahl.
-    if (role && (spot_ids?.length ?? 0) !== 2) {
+    // Rolle (Anreise/Abreise/Weiterreise) mit mindestens zwei Stationen (Von/Nach)
+    if (role && (spot_ids?.length ?? 0) < 2) {
       return reply.code(400).send({
         error:
-          'Eine Tour mit Rolle (Anreise/Abreise/Weiterreise) braucht genau zwei Stationen (Von/Nach).',
+          'Eine Tour mit Rolle (Anreise/Abreise/Weiterreise) braucht mindestens zwei Stationen (Von/Nach).',
       });
     }
     const isHtml = req.body.note_format === 'html';
@@ -316,6 +526,16 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
       amount,
       paid_by_user_id
     );
+
+    const effectiveDepTime =
+      departure_time || legs?.find((l) => !!l.departure_time)?.departure_time || null;
+    const effectiveArrTime =
+      arrival_time ||
+      [...(legs ?? [])].reverse().find((l) => !!l.arrival_time)?.arrival_time ||
+      null;
+    const effectiveTransportType =
+      transport_type || legs?.find((l) => !!l.transport_type)?.transport_type || null;
+
     const result = insertIdeaStmt.run(
       trip_id,
       title,
@@ -324,9 +544,9 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
       isHtml ? 'html' : 'legacy',
       req.session.userId,
       role ?? null,
-      transport_type ?? null,
-      departure_time ?? null,
-      arrival_time ?? null,
+      effectiveTransportType,
+      effectiveDepTime,
+      effectiveArrTime,
       checkin_info ?? null,
       amount ?? null,
       paid_by_user_id ?? null,
@@ -337,11 +557,13 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
     );
     const ideaId = result.lastInsertRowid as number;
     syncExcursionSpots(ideaId, spot_ids ?? []);
+    syncExcursionLegs(ideaId, trip_id, legs, title, date);
     setIdeaScheduleDate(ideaId, trip_id, title, date, req.session.userId);
     recordActivity(trip_id, 'ideas', ideaId, 'created', req.session.userId!);
     reply.code(201);
     const row = selectIdeaByIdStmt.get(ideaId) as IdeaRow;
-    return serializeIdea(row, spot_ids ?? [], date ?? null);
+    const savedLegs = legsFor([ideaId]).get(ideaId) ?? [];
+    return serializeIdea(row, spot_ids ?? [], savedLegs, date ?? null);
   });
 
   app.put<{ Params: { id: string }; Body: IdeaBody }>('/ideas/:id', async (req, reply) => {
@@ -356,6 +578,7 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
       note,
       date,
       spot_ids,
+      legs,
       role,
       transport_type,
       departure_time,
@@ -367,10 +590,10 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
       seat,
       ticket_link,
     } = req.body;
-    if (role && (spot_ids?.length ?? 0) !== 2) {
+    if (role && (spot_ids?.length ?? 0) < 2) {
       return reply.code(400).send({
         error:
-          'Eine Tour mit Rolle (Anreise/Abreise/Weiterreise) braucht genau zwei Stationen (Von/Nach).',
+          'Eine Tour mit Rolle (Anreise/Abreise/Weiterreise) braucht mindestens zwei Stationen (Von/Nach).',
       });
     }
     const isHtml = req.body.note_format === 'html';
@@ -382,15 +605,25 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
       amount,
       paid_by_user_id
     );
+
+    const effectiveDepTime =
+      departure_time || legs?.find((l) => !!l.departure_time)?.departure_time || null;
+    const effectiveArrTime =
+      arrival_time ||
+      [...(legs ?? [])].reverse().find((l) => !!l.arrival_time)?.arrival_time ||
+      null;
+    const effectiveTransportType =
+      transport_type || legs?.find((l) => !!l.transport_type)?.transport_type || null;
+
     const result = updateIdeaStmt.run(
       title,
       image_url ?? null,
       note ? (isHtml ? sanitizeHtml(note) : note) : null,
       isHtml ? 'html' : 'legacy',
       role ?? null,
-      transport_type ?? null,
-      departure_time ?? null,
-      arrival_time ?? null,
+      effectiveTransportType,
+      effectiveDepTime,
+      effectiveArrTime,
       checkin_info ?? null,
       amount ?? null,
       paid_by_user_id ?? null,
@@ -408,10 +641,12 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
     }
     const ideaId = Number(req.params.id);
     syncExcursionSpots(ideaId, spot_ids ?? []);
+    syncExcursionLegs(ideaId, existingIdea.trip_id, legs, title, date);
     const row = selectIdeaByIdStmt.get(ideaId) as IdeaRow;
     setIdeaScheduleDate(ideaId, row.trip_id as number, title, date, req.session.userId);
     recordActivity(existingIdea.trip_id, 'ideas', ideaId, 'updated', req.session.userId!);
-    return serializeIdea(row, spot_ids ?? [], date ?? null);
+    const savedLegs = legsFor([ideaId]).get(ideaId) ?? [];
+    return serializeIdea(row, spot_ids ?? [], savedLegs, date ?? null);
   });
 
   // Weicher Löschvorgang (Papierkorb, routes/trash.ts): setzt nur deleted_at statt die Zeilen
@@ -432,6 +667,12 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
       softDeleteScheduleByIdeaStmt.run(now, id);
       if (existingIdea.budget_expense_id) {
         softDeleteBudgetItemStmt.run(now, existingIdea.budget_expense_id);
+      }
+      const legBudgets = selectLegBudgetExpensesByIdeaStmt.all(id) as {
+        budget_expense_id: number;
+      }[];
+      for (const b of legBudgets) {
+        softDeleteBudgetItemStmt.run(now, b.budget_expense_id);
       }
       return softDeleteIdeaStmt.run(now, id);
     });
@@ -517,7 +758,7 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
 
     if (existing) {
       const row = selectIdeaByIdStmt.get(existing.id) as IdeaRow;
-      return serializeIdea(row, [spot_id], date);
+      return serializeIdea(row, [spot_id], [], date);
     }
 
     const spot = selectSpotTitleByIdStmt.get(spot_id) as { title: string } | undefined;
@@ -530,7 +771,7 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
     recordActivity(trip_id, 'ideas', ideaId, 'created', req.session.userId!);
     reply.code(201);
     const row = selectIdeaByIdStmt.get(ideaId) as IdeaRow;
-    return serializeIdea(row, [spot_id], date);
+    return serializeIdea(row, [spot_id], [], date);
   });
 
   app.get<{ Querystring: { trip_id?: string } }>('/ideas/likes', async (req, reply) => {
