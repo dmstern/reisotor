@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router';
+import { createRouter, createWebHistory, createMemoryHistory } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import { useIconStyleStore } from '../stores/iconStyle';
 // Statisch (nicht dynamisch wie die übrigen Routen) importiert: App.vue bindet dieselbe Komponente
@@ -37,7 +37,11 @@ const router = createRouter({
   // würde createWebHistory() intern auf '/' zurückfallen (kein <base>-Tag im HTML), Vue Router
   // versucht dann den KOMPLETTEN Pfad inkl. "/reisotor/demo/"-Präfix gegen die Routen (die alle bei
   // '/' beginnen) zu matchen - schlägt fehl, <router-view> bleibt dauerhaft leer.
-  history: createWebHistory(import.meta.env.BASE_URL),
+  // In isolierten Unit-Testumgebungen (Node.js) wird createMemoryHistory verwendet.
+  history:
+    typeof window !== 'undefined'
+      ? createWebHistory(import.meta.env.BASE_URL)
+      : createMemoryHistory(import.meta.env.BASE_URL),
   // Nur für echte Hash-Sprünge (z. B. der "Anbieter wechseln"-Link im Wetter-Widget,
   // DashboardView.vue -> /settings#weather-provider-settings) – kein genereller Scroll-Reset auf
   // Position 0 bei jeder Navigation, um das bisherige Verhalten (Scroll-Position bleibt bei
