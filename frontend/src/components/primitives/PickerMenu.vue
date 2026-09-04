@@ -24,8 +24,8 @@ withDefaults(
     backdrop: true,
     wide: false,
     position: 'fixed',
-    zIndex: 111,
-    backdropZIndex: 110,
+    zIndex: 1001,
+    backdropZIndex: 1000,
     role: 'menu',
   }
 );
