@@ -1,7 +1,12 @@
 import { defineStore } from 'pinia';
-import { onMounted, onUnmounted, ref } from 'vue';
+import { ref } from 'vue';
 import { fetchWithTimeout, rawRequest } from '../api/client';
-import { flushOutbox, getOutboxLength, setConfirmedOffline } from '../api/offline';
+import {
+  flushOutbox,
+  getOutboxLength,
+  isConfirmedOffline,
+  setConfirmedOffline,
+} from '../api/offline';
 import { useLiveSyncStore } from './liveSync';
 
 // Absichtlich niedrig gehalten (statt z. B. 15-30s): api/client.ts's isConfirmedOffline()-Flag
@@ -38,15 +43,42 @@ export const useConnectivityStore = defineStore('connectivity', () => {
     setConfirmedOffline(!value);
   }
 
+  function handleOutboxChanged() {
+    pendingCount.value = getOutboxLength();
+    if (isOnline.value && !isConfirmedOffline() && !syncing.value && pendingCount.value > 0) {
+      trySync();
+    }
+  }
+
+  function handleStorage(e: StorageEvent) {
+    if (e.key === 'reisotor-outbox') {
+      handleOutboxChanged();
+    }
+  }
+
   async function trySync() {
+    pendingCount.value = getOutboxLength();
     if (syncing.value || pendingCount.value === 0) return;
     syncing.value = true;
+    const initialCount = pendingCount.value;
     try {
       const drained = await flushOutbox(sendRaw);
       pendingCount.value = getOutboxLength();
-      if (drained) useLiveSyncStore().refreshAll();
+      if (drained || pendingCount.value < initialCount) {
+        useLiveSyncStore().refreshAll();
+      }
     } finally {
       syncing.value = false;
+    }
+  }
+
+  /** Stößt sofort eine Synchronisation an – falls wir bereits online sind direkt per trySync(),
+   *  andernfalls erst per checkNow() zur Prüfung der Erreichbarkeit und anschließendem Sync. */
+  async function syncNow() {
+    if (isOnline.value && !isConfirmedOffline()) {
+      await trySync();
+    } else {
+      await checkNow();
     }
   }
 
@@ -60,7 +92,7 @@ export const useConnectivityStore = defineStore('connectivity', () => {
     try {
       await fetchWithTimeout('/api/auth/me', { credentials: 'include' });
       setOnline(true);
-      trySync();
+      await trySync();
     } catch {
       setOnline(false);
     } finally {
@@ -83,20 +115,40 @@ export const useConnectivityStore = defineStore('connectivity', () => {
 
   let healthCheck: ReturnType<typeof setInterval> | null = null;
 
-  onMounted(() => {
+  function initListeners() {
+    if (typeof window === 'undefined') return;
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
+    window.addEventListener('reisotor:outbox-changed', handleOutboxChanged);
+    window.addEventListener('storage', handleStorage);
     healthCheck = setInterval(checkNow, HEALTH_CHECK_MS);
     // Direkt beim Start prüfen statt HEALTH_CHECK_MS zu warten - z. B. falls der zuletzt gespeicherte
     // Zustand veraltet ist oder noch Einträge aus einer vorherigen Sitzung in der Outbox liegen.
     checkNow();
-  });
+  }
 
-  onUnmounted(() => {
+  function destroyListeners() {
+    if (typeof window === 'undefined') return;
     window.removeEventListener('online', handleOnline);
     window.removeEventListener('offline', handleOffline);
-    if (healthCheck != null) clearInterval(healthCheck);
-  });
+    window.removeEventListener('reisotor:outbox-changed', handleOutboxChanged);
+    window.removeEventListener('storage', handleStorage);
+    if (healthCheck != null) {
+      clearInterval(healthCheck);
+      healthCheck = null;
+    }
+  }
 
-  return { isOnline, pendingCount, syncing, checking, trySync, checkNow };
+  initListeners();
+
+  return {
+    isOnline,
+    pendingCount,
+    syncing,
+    checking,
+    trySync,
+    syncNow,
+    checkNow,
+    destroyListeners,
+  };
 });

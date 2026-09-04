@@ -61,6 +61,14 @@ buildInfoStore.load();
 const isNonProd = computed(
   () => buildInfoStore.buildInfo != null && buildInfoStore.buildInfo.environment !== 'production'
 );
+
+const profileTitle = computed(() => {
+  if (!connectivity.isOnline) return 'Offline – Einstellungen';
+  if (connectivity.pendingCount > 0) {
+    return `${connectivity.pendingCount} ausstehende Synchronisation(en) – Einstellungen`;
+  }
+  return 'Einstellungen';
+});
 </script>
 
 <template>
@@ -102,12 +110,24 @@ const isNonProd = computed(
           'is-offline': !connectivity.isOnline,
           'is-retrying': connectivity.syncing || connectivity.checking,
         }"
-        title="Einstellungen"
+        :title="profileTitle"
       >
         <div class="avatar-wrapper">
           <span class="avatar">{{ auth.user?.avatar || '👤' }}</span>
-          <div v-if="!connectivity.isOnline" class="offline-badge">
+          <div v-if="!connectivity.isOnline" class="offline-badge" title="Offline">
             <AppIcon :icon="ACTION_ICONS.offline" :size="12" group="actions" />
+          </div>
+          <div
+            v-else-if="connectivity.pendingCount > 0"
+            class="pending-badge"
+            :title="`${connectivity.pendingCount} ausstehende Synchronisation(en)`"
+          >
+            <AppIcon
+              :icon="ACTION_ICONS.syncPending"
+              :size="11"
+              group="actions"
+              :class="{ 'is-spinning': connectivity.syncing }"
+            />
           </div>
         </div>
       </router-link>
@@ -300,6 +320,31 @@ const isNonProd = computed(
   align-items: center;
   justify-content: center;
   box-shadow: 0 0 0 2px var(--color-surface);
+}
+
+.pending-badge {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  background: var(--color-accent);
+  color: #fff;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 2px var(--color-surface);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.pending-badge:hover {
+  transform: scale(1.15);
+}
+
+.pending-badge .is-spinning {
+  animation: spin 1s linear infinite;
 }
 
 .profile-link:hover,

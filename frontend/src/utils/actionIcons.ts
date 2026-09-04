@@ -9,6 +9,7 @@ import {
   IconBeach,
   IconRefresh,
   IconRepeat,
+  IconRotateClockwise2,
   IconSearch,
   IconAdjustments,
   IconAdjustmentsFilled,
@@ -149,6 +150,7 @@ export type ActionIconKey =
   | 'liked'
   | 'unliked'
   | 'pending'
+  | 'syncPending'
   | 'distance'
   | 'play'
   | 'warning'
@@ -272,6 +274,7 @@ export const ACTION_ICONS: Record<ActionIconKey, IconDef> = {
   liked: { id: 'heart-filled', emoji: '❤️', outline: IconHeartFilled, filled: IconHeartFilled },
   unliked: { id: 'heart', emoji: '🤍', outline: IconHeart, filled: IconHeart },
   pending: { id: 'hourglass', emoji: '⏳', outline: IconHourglass, filled: IconHourglassFilled },
+  syncPending: { id: 'rotate-clockwise-2', emoji: '🔄', outline: IconRotateClockwise2 },
   distance: { id: 'ruler-2', emoji: '📏', outline: IconRuler2 },
   play: { id: 'player-play', emoji: '▶️', outline: IconPlayerPlay, filled: IconPlayerPlayFilled },
   warning: {

@@ -155,6 +155,9 @@ export function findCachedItemInCollection(
 
 function writeOutboxList(list: OutboxEntry[]) {
   localStorage.setItem(OUTBOX_KEY, JSON.stringify(list));
+  if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+    window.dispatchEvent(new CustomEvent('reisotor:outbox-changed'));
+  }
 }
 
 let tempIdSeq = 0;
@@ -191,8 +194,13 @@ function remapTempId(list: OutboxEntry[], tempId: number, realId: number) {
   for (const entry of list) {
     entry.path = entry.path.replace(`/${tempId}`, `/${realId}`);
     if (entry.body && typeof entry.body === 'object') {
-      for (const [key, value] of Object.entries(entry.body as Record<string, unknown>)) {
-        if (value === tempId) (entry.body as Record<string, unknown>)[key] = realId;
+      const bodyObj = entry.body as Record<string, unknown>;
+      for (const [key, value] of Object.entries(bodyObj)) {
+        if (value === tempId) {
+          bodyObj[key] = realId;
+        } else if (Array.isArray(value)) {
+          bodyObj[key] = value.map((v) => (v === tempId ? realId : v));
+        }
       }
     }
   }
@@ -201,7 +209,9 @@ function remapTempId(list: OutboxEntry[], tempId: number, realId: number) {
 /** Sendet die Warteschlange der Reihe nach über `sendRaw` (die echte Netzwerk-Funktion, ohne
  *  Offline-Fallback – siehe api/client.ts's rawRequest) – bricht beim ersten erneuten Fehlschlag ab
  *  und lässt den Rest für den nächsten Versuch stehen, damit die Reihenfolge erhalten bleibt und
- *  nichts übersprungen wird. Gibt zurück, ob die Warteschlange komplett geleert werden konnte. */
+ *  nichts übersprungen wird. Endgültig vom Server abgelehnte Client-Fehler (4xx außer 408/429)
+ *  werden übersprungen, damit sie die Warteschlange nicht dauerhaft blockieren.
+ *  Gibt zurück, ob die Warteschlange komplett geleert werden konnte. */
 export async function flushOutbox(
   sendRaw: (method: string, path: string, body: unknown) => Promise<unknown>
 ): Promise<boolean> {
@@ -211,7 +221,27 @@ export async function flushOutbox(
     let response: unknown;
     try {
       response = await sendRaw(entry.method, entry.path, entry.body);
-    } catch {
+    } catch (err: unknown) {
+      // Unbehebbare Client-Fehler (4xx wie 400 Bad Request, 404 Not Found, 422 etc., außer
+      // 408 Request Timeout und 429 Too Many Requests): der Server lehnt diese Mutation endgültig ab.
+      // Würde dieser Eintrag in der Outbox verbleiben, blockiert er alle nachfolgenden Mutationen
+      // dauerhaft. Daher überspringen und aus der Outbox entfernen.
+      const status =
+        typeof err === 'object' &&
+        err !== null &&
+        'status' in err &&
+        typeof (err as { status: unknown }).status === 'number'
+          ? (err as { status: number }).status
+          : undefined;
+      if (status != null && status >= 400 && status < 500 && status !== 408 && status !== 429) {
+        console.warn(
+          `Outbox-Eintrag vom Server dauerhaft abgelehnt (HTTP ${status}), wird übersprungen:`,
+          entry
+        );
+        list = list.slice(1);
+        writeOutboxList(list);
+        continue;
+      }
       return false;
     }
     if (entry.tempId != null && response && typeof response === 'object' && 'id' in response) {

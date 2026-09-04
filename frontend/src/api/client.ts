@@ -174,9 +174,9 @@ function queueMutation<T>(method: MutateMethod, path: string, body: unknown): T 
     enqueue('POST', path, body, tempId);
     return { ...(body as object), id: tempId, _pending: true } as T;
   }
-  // PUT: die id steht schon in der URL (z. B. /todos/123) – kein eigener Platzhalter nötig, die
+  // PUT: die id steht schon in der URL (z. B. /todos/123 oder /spots/-123) – kein eigener Platzhalter nötig, die
   // Zeile existiert (aus Sicht des Clients) bereits.
-  const idMatch = /(\d+)(?:\?.*)?$/.exec(path);
+  const idMatch = /(-?\d+)(?:\?.*)?$/.exec(path);
   enqueue('PUT', path, body);
   const id = idMatch ? Number(idMatch[1]) : undefined;
   // body enthält meist nur die im Formular editierbaren Felder (siehe z. B. DiaryView.vue's
