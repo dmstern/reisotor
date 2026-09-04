@@ -54,12 +54,102 @@ interface PlanSpotBody {
 // ProfileView.vue) sich dasselbe Datenmodell teilen. spot_ids ist daher weiterhin ein geordnetes
 // Array (Duplikate erlaubt), nicht nur eine Menge. Wird bei jedem Anlegen/Bearbeiten komplett neu
 // geschrieben (einfacher als Diffing) – kleine Anzahl Zeilen pro Tour.
+const deleteExcursionSpotsStmt = db.prepare('DELETE FROM excursion_spots WHERE idea_id = ?');
+const insertExcursionSpotStmt = db.prepare(
+  'INSERT INTO excursion_spots (idea_id, spot_id, position) VALUES (?, ?, ?)'
+);
+const selectScheduleByIdeaStmt = db.prepare(
+  'SELECT id FROM schedule_items WHERE idea_id = ? AND deleted_at IS NULL'
+);
+const updateScheduleDateTitleStmt = db.prepare(
+  'UPDATE schedule_items SET date = ?, title = ? WHERE id = ?'
+);
+const insertScheduleIdeaStmt = db.prepare(
+  'INSERT INTO schedule_items (trip_id, date, title, idea_id) VALUES (?, ?, ?, ?)'
+);
+const deleteScheduleItemStmt = db.prepare('DELETE FROM schedule_items WHERE id = ?');
+const updateBudgetItemForIdeaStmt = db.prepare(
+  'UPDATE budget_items SET title = ?, category = ?, amount = ?, paid_by_user_id = ?, date = ?, budget_id = ? WHERE id = ?'
+);
+const insertBudgetItemForIdeaStmt = db.prepare(
+  `INSERT INTO budget_items (trip_id, title, category, amount, paid_by_user_id, date, note, budget_id)
+   VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+);
+
+const selectIdeasByTripStmt = db.prepare(
+  'SELECT * FROM ideas WHERE trip_id = ? AND deleted_at IS NULL ORDER BY id DESC'
+);
+const insertIdeaStmt = db.prepare(
+  `INSERT INTO ideas (
+    trip_id, title, image_url, note, note_format, created_by,
+    role, transport_type, departure_time, arrival_time, checkin_info,
+    amount, paid_by_user_id, luggage, seat, ticket_link, budget_expense_id
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+);
+const selectIdeaByIdStmt = db.prepare('SELECT * FROM ideas WHERE id = ?');
+const selectIdeaAuthStmt = db.prepare('SELECT trip_id, budget_expense_id FROM ideas WHERE id = ?');
+const updateIdeaStmt = db.prepare(
+  `UPDATE ideas SET title = ?, image_url = ?, note = ?, note_format = ?,
+    role = ?, transport_type = ?, departure_time = ?, arrival_time = ?, checkin_info = ?,
+    amount = ?, paid_by_user_id = ?, luggage = ?, seat = ?, ticket_link = ?, budget_expense_id = ?
+   WHERE id = ?`
+);
+const deleteBudgetItemStmt = db.prepare('DELETE FROM budget_items WHERE id = ?');
+const selectScheduleItemsByIdeaStmt = db.prepare(
+  'SELECT id FROM schedule_items WHERE idea_id = ? AND deleted_at IS NULL'
+);
+const softDeleteScheduleByIdeaStmt = db.prepare(
+  'UPDATE schedule_items SET deleted_at = ? WHERE idea_id = ? AND deleted_at IS NULL'
+);
+const softDeleteBudgetItemStmt = db.prepare(
+  'UPDATE budget_items SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL'
+);
+const softDeleteIdeaStmt = db.prepare(
+  'UPDATE ideas SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL'
+);
+const selectIdeaTripIdStmt = db.prepare('SELECT id, trip_id FROM ideas WHERE id = ?');
+const selectScheduleForDoneStmt = db.prepare(
+  'SELECT 1 FROM schedule_items WHERE idea_id = ? AND deleted_at IS NULL LIMIT 1'
+);
+const updateIdeaDoneStmt = db.prepare('UPDATE ideas SET done = ? WHERE id = ?');
+const selectSpotTitleByIdStmt = db.prepare(
+  'SELECT title FROM spots WHERE id = ? AND deleted_at IS NULL'
+);
+const insertIdeaForSpotStmt = db.prepare(
+  'INSERT INTO ideas (trip_id, title, created_by) VALUES (?, ?, ?)'
+);
+const selectIdeaLikesByTripStmt = db.prepare(
+  `SELECT idea_likes.* FROM idea_likes
+   JOIN ideas ON ideas.id = idea_likes.idea_id
+   WHERE ideas.trip_id = ?`
+);
+const selectIdeaCommentsByTripStmt = db.prepare(
+  `SELECT idea_comments.* FROM idea_comments
+   JOIN ideas ON ideas.id = idea_comments.idea_id
+   WHERE ideas.trip_id = ?
+   ORDER BY idea_comments.created_at ASC, idea_comments.id ASC`
+);
+const selectIdeaLikeStmt = db.prepare(
+  'SELECT id FROM idea_likes WHERE idea_id = ? AND user_id = ?'
+);
+const deleteIdeaLikeStmt = db.prepare('DELETE FROM idea_likes WHERE id = ?');
+const insertIdeaLikeStmt = db.prepare(
+  'INSERT INTO idea_likes (idea_id, user_id, created_at) VALUES (?, ?, ?)'
+);
+const insertIdeaCommentStmt = db.prepare(
+  'INSERT INTO idea_comments (idea_id, author_id, content, created_at) VALUES (?, ?, ?, ?)'
+);
+const selectIdeaCommentByIdStmt = db.prepare('SELECT * FROM idea_comments WHERE id = ?');
+const selectIdeaCommentAuthStmt = db.prepare(
+  `SELECT idea_comments.id, idea_comments.author_id, ideas.trip_id FROM idea_comments
+   JOIN ideas ON ideas.id = idea_comments.idea_id
+   WHERE idea_comments.id = ?`
+);
+const deleteIdeaCommentStmt = db.prepare('DELETE FROM idea_comments WHERE id = ?');
+
 function syncExcursionSpots(ideaId: number, spotIds: number[]) {
-  db.prepare('DELETE FROM excursion_spots WHERE idea_id = ?').run(ideaId);
-  const insert = db.prepare(
-    'INSERT INTO excursion_spots (idea_id, spot_id, position) VALUES (?, ?, ?)'
-  );
-  spotIds.forEach((spotId, index) => insert.run(ideaId, spotId, index));
+  deleteExcursionSpotsStmt.run(ideaId);
+  spotIds.forEach((spotId, index) => insertExcursionSpotStmt.run(ideaId, spotId, index));
 }
 
 function spotIdsFor(ideaIds: number[]): Map<number, number[]> {
@@ -107,26 +197,18 @@ function setIdeaScheduleDate(
   date: string | null | undefined,
   userId?: number
 ) {
-  const existing = db
-    .prepare('SELECT id FROM schedule_items WHERE idea_id = ? AND deleted_at IS NULL')
-    .get(ideaId) as { id: number } | undefined;
+  const existing = selectScheduleByIdeaStmt.get(ideaId) as { id: number } | undefined;
   if (date) {
     if (existing) {
-      db.prepare('UPDATE schedule_items SET date = ?, title = ? WHERE id = ?').run(
-        date,
-        title,
-        existing.id
-      );
+      updateScheduleDateTitleStmt.run(date, title, existing.id);
       if (userId) recordActivity(tripId, 'schedule', existing.id, 'updated', userId);
     } else {
-      const result = db
-        .prepare('INSERT INTO schedule_items (trip_id, date, title, idea_id) VALUES (?, ?, ?, ?)')
-        .run(tripId, date, title, ideaId);
+      const result = insertScheduleIdeaStmt.run(tripId, date, title, ideaId);
       if (userId)
         recordActivity(tripId, 'schedule', result.lastInsertRowid as number, 'created', userId);
     }
   } else if (existing) {
-    db.prepare('DELETE FROM schedule_items WHERE id = ?').run(existing.id);
+    deleteScheduleItemStmt.run(existing.id);
     if (userId) recordActivity(tripId, 'schedule', existing.id, 'deleted', userId);
   }
 }
@@ -159,9 +241,7 @@ function planIdeaBudgetExpense(
   const sharedBudgetId = ensureDefaultSharedBudget(tripId);
 
   if (existingBudgetExpenseId) {
-    db.prepare(
-      'UPDATE budget_items SET title = ?, category = ?, amount = ?, paid_by_user_id = ?, date = ?, budget_id = ? WHERE id = ?'
-    ).run(
+    updateBudgetItemForIdeaStmt.run(
       title,
       'Transport',
       amount,
@@ -173,21 +253,16 @@ function planIdeaBudgetExpense(
     return { budgetExpenseId: existingBudgetExpenseId, staleIdToDelete: null };
   }
 
-  const result = db
-    .prepare(
-      `INSERT INTO budget_items (trip_id, title, category, amount, paid_by_user_id, date, note, budget_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-    )
-    .run(
-      tripId,
-      title,
-      'Transport',
-      amount,
-      paidByUserId,
-      date ?? null,
-      'Automatisch aus Tour',
-      sharedBudgetId
-    );
+  const result = insertBudgetItemForIdeaStmt.run(
+    tripId,
+    title,
+    'Transport',
+    amount,
+    paidByUserId,
+    date ?? null,
+    'Automatisch aus Tour',
+    sharedBudgetId
+  );
   return { budgetExpenseId: result.lastInsertRowid as number, staleIdToDelete: null };
 }
 
@@ -195,9 +270,7 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: { trip_id?: string } }>('/ideas', async (req, reply) => {
     if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
     if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
-    const rows = db
-      .prepare('SELECT * FROM ideas WHERE trip_id = ? AND deleted_at IS NULL ORDER BY id DESC')
-      .all(req.query.trip_id) as IdeaRow[];
+    const rows = selectIdeasByTripStmt.all(req.query.trip_id) as IdeaRow[];
     const spotIds = spotIdsFor(rows.map((r) => r.id));
     const dates = scheduleDatesForIdeas(rows.map((r) => r.id));
     return rows.map((row) =>
@@ -243,46 +316,37 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
       amount,
       paid_by_user_id
     );
-    const result = db
-      .prepare(
-        `INSERT INTO ideas (
-          trip_id, title, image_url, note, note_format, created_by,
-          role, transport_type, departure_time, arrival_time, checkin_info,
-          amount, paid_by_user_id, luggage, seat, ticket_link, budget_expense_id
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-      )
-      .run(
-        trip_id,
-        title,
-        image_url ?? null,
-        note ? (isHtml ? sanitizeHtml(note) : note) : null,
-        isHtml ? 'html' : 'legacy',
-        req.session.userId,
-        role ?? null,
-        transport_type ?? null,
-        departure_time ?? null,
-        arrival_time ?? null,
-        checkin_info ?? null,
-        amount ?? null,
-        paid_by_user_id ?? null,
-        luggage ?? null,
-        seat ?? null,
-        ticket_link ?? null,
-        budgetExpenseId
-      );
+    const result = insertIdeaStmt.run(
+      trip_id,
+      title,
+      image_url ?? null,
+      note ? (isHtml ? sanitizeHtml(note) : note) : null,
+      isHtml ? 'html' : 'legacy',
+      req.session.userId,
+      role ?? null,
+      transport_type ?? null,
+      departure_time ?? null,
+      arrival_time ?? null,
+      checkin_info ?? null,
+      amount ?? null,
+      paid_by_user_id ?? null,
+      luggage ?? null,
+      seat ?? null,
+      ticket_link ?? null,
+      budgetExpenseId
+    );
     const ideaId = result.lastInsertRowid as number;
     syncExcursionSpots(ideaId, spot_ids ?? []);
     setIdeaScheduleDate(ideaId, trip_id, title, date, req.session.userId);
     recordActivity(trip_id, 'ideas', ideaId, 'created', req.session.userId!);
     reply.code(201);
-    const row = db.prepare('SELECT * FROM ideas WHERE id = ?').get(ideaId) as IdeaRow;
+    const row = selectIdeaByIdStmt.get(ideaId) as IdeaRow;
     return serializeIdea(row, spot_ids ?? [], date ?? null);
   });
 
   app.put<{ Params: { id: string }; Body: IdeaBody }>('/ideas/:id', async (req, reply) => {
-    const existingIdea = db
-      .prepare('SELECT trip_id, budget_expense_id FROM ideas WHERE id = ?')
-      .get(req.params.id) as { trip_id: number; budget_expense_id: number | null } | undefined;
+    const existingIdea = selectIdeaAuthStmt.get(req.params.id) as
+      { trip_id: number; budget_expense_id: number | null } | undefined;
     if (!existingIdea) return reply.code(404).send({ error: 'Nicht gefunden' });
     if (!requireTripMember(reply, existingIdea.trip_id, req.session.userId)) return;
 
@@ -318,40 +382,33 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
       amount,
       paid_by_user_id
     );
-    const result = db
-      .prepare(
-        `UPDATE ideas SET title = ?, image_url = ?, note = ?, note_format = ?,
-          role = ?, transport_type = ?, departure_time = ?, arrival_time = ?, checkin_info = ?,
-          amount = ?, paid_by_user_id = ?, luggage = ?, seat = ?, ticket_link = ?, budget_expense_id = ?
-         WHERE id = ?`
-      )
-      .run(
-        title,
-        image_url ?? null,
-        note ? (isHtml ? sanitizeHtml(note) : note) : null,
-        isHtml ? 'html' : 'legacy',
-        role ?? null,
-        transport_type ?? null,
-        departure_time ?? null,
-        arrival_time ?? null,
-        checkin_info ?? null,
-        amount ?? null,
-        paid_by_user_id ?? null,
-        luggage ?? null,
-        seat ?? null,
-        ticket_link ?? null,
-        budgetExpenseId,
-        req.params.id
-      );
+    const result = updateIdeaStmt.run(
+      title,
+      image_url ?? null,
+      note ? (isHtml ? sanitizeHtml(note) : note) : null,
+      isHtml ? 'html' : 'legacy',
+      role ?? null,
+      transport_type ?? null,
+      departure_time ?? null,
+      arrival_time ?? null,
+      checkin_info ?? null,
+      amount ?? null,
+      paid_by_user_id ?? null,
+      luggage ?? null,
+      seat ?? null,
+      ticket_link ?? null,
+      budgetExpenseId,
+      req.params.id
+    );
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
     // Erst jetzt löschen: die ideas-Zeile verweist nicht mehr auf die alte Ausgabe (gleiches Muster
     // wie zuvor in routes/travel.ts).
     if (staleIdToDelete) {
-      db.prepare('DELETE FROM budget_items WHERE id = ?').run(staleIdToDelete);
+      deleteBudgetItemStmt.run(staleIdToDelete);
     }
     const ideaId = Number(req.params.id);
     syncExcursionSpots(ideaId, spot_ids ?? []);
-    const row = db.prepare('SELECT * FROM ideas WHERE id = ?').get(ideaId) as IdeaRow;
+    const row = selectIdeaByIdStmt.get(ideaId) as IdeaRow;
     setIdeaScheduleDate(ideaId, row.trip_id as number, title, date, req.session.userId);
     recordActivity(existingIdea.trip_id, 'ideas', ideaId, 'updated', req.session.userId!);
     return serializeIdea(row, spot_ids ?? [], date ?? null);
@@ -363,29 +420,20 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
   // blieben sie als Karteileichen sichtbar, während der Ausflug selbst im Papierkorb liegt.
   // routes/trash.ts's restore() macht beide Kopplungen beim Wiederherstellen wieder rückgängig.
   app.delete<{ Params: { id: string } }>('/ideas/:id', async (req, reply) => {
-    const existingIdea = db
-      .prepare('SELECT trip_id, budget_expense_id FROM ideas WHERE id = ?')
-      .get(req.params.id) as { trip_id: number; budget_expense_id: number | null } | undefined;
+    const existingIdea = selectIdeaAuthStmt.get(req.params.id) as
+      { trip_id: number; budget_expense_id: number | null } | undefined;
     if (!existingIdea) return reply.code(404).send({ error: 'Nicht gefunden' });
     if (!requireTripMember(reply, existingIdea.trip_id, req.session.userId)) return;
 
     let linkedScheduleItems: { id: number }[] = [];
     const deleteWithSchedule = db.transaction((id: string) => {
       const now = new Date().toISOString();
-      linkedScheduleItems = db
-        .prepare('SELECT id FROM schedule_items WHERE idea_id = ? AND deleted_at IS NULL')
-        .all(id) as { id: number }[];
-      db.prepare(
-        'UPDATE schedule_items SET deleted_at = ? WHERE idea_id = ? AND deleted_at IS NULL'
-      ).run(now, id);
+      linkedScheduleItems = selectScheduleItemsByIdeaStmt.all(id) as { id: number }[];
+      softDeleteScheduleByIdeaStmt.run(now, id);
       if (existingIdea.budget_expense_id) {
-        db.prepare(
-          'UPDATE budget_items SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL'
-        ).run(now, existingIdea.budget_expense_id);
+        softDeleteBudgetItemStmt.run(now, existingIdea.budget_expense_id);
       }
-      return db
-        .prepare('UPDATE ideas SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL')
-        .run(now, id);
+      return softDeleteIdeaStmt.run(now, id);
     });
     const result = deleteWithSchedule(req.params.id);
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
@@ -412,23 +460,21 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
   app.post<{ Params: { id: string }; Body: { done: boolean } }>(
     '/ideas/:id/done',
     async (req, reply) => {
-      const idea = db.prepare('SELECT id, trip_id FROM ideas WHERE id = ?').get(req.params.id) as
+      const idea = selectIdeaTripIdStmt.get(req.params.id) as
         { id: number; trip_id: number } | undefined;
       if (!idea) return reply.code(404).send({ error: 'Nicht gefunden' });
       if (!requireTripMember(reply, idea.trip_id, req.session.userId)) return;
 
       const done = req.body.done ? 1 : 0;
       if (done) {
-        const hasDate = db
-          .prepare('SELECT 1 FROM schedule_items WHERE idea_id = ? AND deleted_at IS NULL LIMIT 1')
-          .get(req.params.id);
+        const hasDate = selectScheduleForDoneStmt.get(req.params.id);
         if (!hasDate) {
           return reply
             .code(400)
             .send({ error: 'Für den Status "gemacht" muss zuerst ein Datum gesetzt werden.' });
         }
       }
-      db.prepare('UPDATE ideas SET done = ? WHERE id = ?').run(done, req.params.id);
+      updateIdeaDoneStmt.run(done, req.params.id);
       recordActivity(idea.trip_id, 'ideas', idea.id, 'updated', req.session.userId!);
       return { done: done === 1 };
     }
@@ -470,72 +516,50 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
     }
 
     if (existing) {
-      const row = db.prepare('SELECT * FROM ideas WHERE id = ?').get(existing.id) as IdeaRow;
+      const row = selectIdeaByIdStmt.get(existing.id) as IdeaRow;
       return serializeIdea(row, [spot_id], date);
     }
 
-    const spot = db
-      .prepare('SELECT title FROM spots WHERE id = ? AND deleted_at IS NULL')
-      .get(spot_id) as { title: string } | undefined;
+    const spot = selectSpotTitleByIdStmt.get(spot_id) as { title: string } | undefined;
     if (!spot) return reply.code(404).send({ error: 'Spot nicht gefunden' });
 
-    const result = db
-      .prepare('INSERT INTO ideas (trip_id, title, created_by) VALUES (?, ?, ?)')
-      .run(trip_id, spot.title, req.session.userId);
+    const result = insertIdeaForSpotStmt.run(trip_id, spot.title, req.session.userId);
     const ideaId = result.lastInsertRowid as number;
     syncExcursionSpots(ideaId, [spot_id]);
     setIdeaScheduleDate(ideaId, trip_id, spot.title, date, req.session.userId);
     recordActivity(trip_id, 'ideas', ideaId, 'created', req.session.userId!);
     reply.code(201);
-    const row = db.prepare('SELECT * FROM ideas WHERE id = ?').get(ideaId) as IdeaRow;
+    const row = selectIdeaByIdStmt.get(ideaId) as IdeaRow;
     return serializeIdea(row, [spot_id], date);
   });
 
   app.get<{ Querystring: { trip_id?: string } }>('/ideas/likes', async (req, reply) => {
     if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
     if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
-    return db
-      .prepare(
-        `SELECT idea_likes.* FROM idea_likes
-         JOIN ideas ON ideas.id = idea_likes.idea_id
-         WHERE ideas.trip_id = ?`
-      )
-      .all(req.query.trip_id);
+    return selectIdeaLikesByTripStmt.all(req.query.trip_id);
   });
 
   app.get<{ Querystring: { trip_id?: string } }>('/ideas/comments', async (req, reply) => {
     if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
     if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
-    return db
-      .prepare(
-        `SELECT idea_comments.* FROM idea_comments
-         JOIN ideas ON ideas.id = idea_comments.idea_id
-         WHERE ideas.trip_id = ?
-         ORDER BY idea_comments.created_at ASC, idea_comments.id ASC`
-      )
-      .all(req.query.trip_id);
+    return selectIdeaCommentsByTripStmt.all(req.query.trip_id);
   });
 
   app.post<{ Params: { id: string } }>('/ideas/:id/like', async (req, reply) => {
-    const idea = db.prepare('SELECT id, trip_id FROM ideas WHERE id = ?').get(req.params.id) as
+    const idea = selectIdeaTripIdStmt.get(req.params.id) as
       { id: number; trip_id: number } | undefined;
     if (!idea) return reply.code(404).send({ error: 'Nicht gefunden' });
     if (!requireTripMember(reply, idea.trip_id, req.session.userId)) return;
 
-    const existing = db
-      .prepare('SELECT id FROM idea_likes WHERE idea_id = ? AND user_id = ?')
-      .get(req.params.id, req.session.userId) as { id: number } | undefined;
+    const existing = selectIdeaLikeStmt.get(req.params.id, req.session.userId) as
+      { id: number } | undefined;
 
     if (existing) {
-      db.prepare('DELETE FROM idea_likes WHERE id = ?').run(existing.id);
+      deleteIdeaLikeStmt.run(existing.id);
       return { liked: false };
     }
 
-    db.prepare('INSERT INTO idea_likes (idea_id, user_id, created_at) VALUES (?, ?, ?)').run(
-      req.params.id,
-      req.session.userId,
-      new Date().toISOString()
-    );
+    insertIdeaLikeStmt.run(req.params.id, req.session.userId, new Date().toISOString());
     // Nur beim Liken selbst, nicht beim Zurücknehmen (#97, Notification-Inbox) - ein Un-Like ist kein
     // neues, benachrichtigungswürdiges Ereignis.
     recordActivity(idea.trip_id, 'ideas', idea.id, 'liked', req.session.userId!);
@@ -545,30 +569,26 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
   app.post<{ Params: { id: string }; Body: CommentBody }>(
     '/ideas/:id/comments',
     async (req, reply) => {
-      const idea = db.prepare('SELECT id, trip_id FROM ideas WHERE id = ?').get(req.params.id) as
+      const idea = selectIdeaTripIdStmt.get(req.params.id) as
         { id: number; trip_id: number } | undefined;
       if (!idea) return reply.code(404).send({ error: 'Nicht gefunden' });
       if (!requireTripMember(reply, idea.trip_id, req.session.userId)) return;
 
-      const result = db
-        .prepare(
-          'INSERT INTO idea_comments (idea_id, author_id, content, created_at) VALUES (?, ?, ?, ?)'
-        )
-        .run(req.params.id, req.session.userId, req.body.content, new Date().toISOString());
+      const result = insertIdeaCommentStmt.run(
+        req.params.id,
+        req.session.userId,
+        req.body.content,
+        new Date().toISOString()
+      );
       recordActivity(idea.trip_id, 'ideas', idea.id, 'commented', req.session.userId!);
       reply.code(201);
-      return db.prepare('SELECT * FROM idea_comments WHERE id = ?').get(result.lastInsertRowid);
+      return selectIdeaCommentByIdStmt.get(result.lastInsertRowid);
     }
   );
 
   app.delete<{ Params: { id: string } }>('/ideas/comments/:id', async (req, reply) => {
-    const comment = db
-      .prepare(
-        `SELECT idea_comments.id, idea_comments.author_id, ideas.trip_id FROM idea_comments
-         JOIN ideas ON ideas.id = idea_comments.idea_id
-         WHERE idea_comments.id = ?`
-      )
-      .get(req.params.id) as { id: number; author_id: number; trip_id: number } | undefined;
+    const comment = selectIdeaCommentAuthStmt.get(req.params.id) as
+      { id: number; author_id: number; trip_id: number } | undefined;
     if (!comment) return reply.code(404).send({ error: 'Nicht gefunden' });
     if (!requireTripMember(reply, comment.trip_id, req.session.userId)) return;
     if (comment.author_id !== req.session.userId) {
@@ -576,7 +596,7 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
         .code(403)
         .send({ error: 'Nur die Autorin/der Autor kann diesen Kommentar löschen' });
     }
-    db.prepare('DELETE FROM idea_comments WHERE id = ?').run(req.params.id);
+    deleteIdeaCommentStmt.run(req.params.id);
     return reply.code(204).send();
   });
 };

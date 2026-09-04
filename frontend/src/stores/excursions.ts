@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref, watch } from 'vue';
+import { ref, shallowRef, watch } from 'vue';
 import { api } from '../api/client';
 import type { Excursion, IdeaRole } from '../api/types';
 import { useScheduleStore } from './schedule';
@@ -33,7 +33,7 @@ export interface ExcursionFormData {
 export const useExcursionsStore = defineStore('excursions', () => {
   const tripStore = useTripStore();
   const liveSync = useLiveSyncStore();
-  const excursions = ref<Excursion[]>([]);
+  const excursions = shallowRef<Excursion[]>([]);
   const loaded = ref(false);
 
   async function load() {
@@ -57,7 +57,7 @@ export const useExcursionsStore = defineStore('excursions', () => {
       trip_id: tripStore.currentTripId,
       ...body,
     });
-    excursions.value.unshift(created);
+    excursions.value = [created, ...excursions.value];
     await useScheduleStore().load();
     return created;
   }
@@ -65,7 +65,11 @@ export const useExcursionsStore = defineStore('excursions', () => {
   async function update(id: number, body: ExcursionFormData) {
     const updated = await api.put<Excursion>(`/ideas/${id}`, body);
     const idx = excursions.value.findIndex((e) => e.id === id);
-    if (idx !== -1) excursions.value[idx] = updated;
+    if (idx !== -1) {
+      const next = [...excursions.value];
+      next[idx] = updated;
+      excursions.value = next;
+    }
     await useScheduleStore().load();
     return updated;
   }
@@ -108,8 +112,12 @@ export const useExcursionsStore = defineStore('excursions', () => {
    *  (Titel/Notiz/Spots/Datum) erneut mitschicken muss. */
   async function setDone(id: number, done: boolean) {
     const result = await api.post<{ done: boolean }>(`/ideas/${id}/done`, { done });
-    const existing = excursions.value.find((e) => e.id === id);
-    if (existing) existing.done = result.done ? 1 : 0;
+    const idx = excursions.value.findIndex((e) => e.id === id);
+    if (idx !== -1) {
+      const next = [...excursions.value];
+      next[idx] = { ...next[idx], done: result.done ? 1 : 0 };
+      excursions.value = next;
+    }
   }
 
   return { excursions, loaded, load, create, update, remove, setDate, setDone };

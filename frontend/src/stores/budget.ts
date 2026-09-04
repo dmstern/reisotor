@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { computed, ref, watch } from 'vue';
+import { computed, ref, shallowRef, watch } from 'vue';
 import { api } from '../api/client';
 import type { Budget, BudgetAllocation, BudgetExpense, BudgetTransfer, User } from '../api/types';
 import {
@@ -43,11 +43,11 @@ export interface TransferInput {
  *  unabhängig von einer Pinia-Instanz testbar bleibt). */
 export const useBudgetStore = defineStore('budget', () => {
   const tripStore = useTripStore();
-  const users = ref<User[]>([]);
-  const expenses = ref<BudgetExpense[]>([]);
-  const budgets = ref<Budget[]>([]);
-  const allocations = ref<BudgetAllocation[]>([]);
-  const transfers = ref<BudgetTransfer[]>([]);
+  const users = shallowRef<User[]>([]);
+  const expenses = shallowRef<BudgetExpense[]>([]);
+  const budgets = shallowRef<Budget[]>([]);
+  const allocations = shallowRef<BudgetAllocation[]>([]);
+  const transfers = shallowRef<BudgetTransfer[]>([]);
   const loaded = ref(false);
 
   // Liest currentTripId selbst (statt eine tripId per Parameter zu bekommen, wie vorher) und ist an
@@ -168,14 +168,18 @@ export const useBudgetStore = defineStore('budget', () => {
 
   async function addBudget(tripId: number, input: BudgetFormInput) {
     const created = await api.post<Budget>('/budget/budgets', { trip_id: tripId, ...input });
-    budgets.value.push(created);
+    budgets.value = [...budgets.value, created];
     return created;
   }
 
   async function updateBudget(id: number, input: BudgetFormInput) {
     const updated = await api.put<Budget>(`/budget/budgets/${id}`, input);
     const idx = budgets.value.findIndex((b) => b.id === id);
-    if (idx !== -1) budgets.value[idx] = updated;
+    if (idx !== -1) {
+      const next = [...budgets.value];
+      next[idx] = updated;
+      budgets.value = next;
+    }
     return updated;
   }
 
@@ -194,8 +198,13 @@ export const useBudgetStore = defineStore('budget', () => {
       amount,
     });
     const idx = allocations.value.findIndex((a) => a.id === updated.id);
-    if (idx !== -1) allocations.value[idx] = updated;
-    else allocations.value.push(updated);
+    if (idx !== -1) {
+      const next = [...allocations.value];
+      next[idx] = updated;
+      allocations.value = next;
+    } else {
+      allocations.value = [...allocations.value, updated];
+    }
     return updated;
   }
 
@@ -207,14 +216,18 @@ export const useBudgetStore = defineStore('budget', () => {
   // --- Ausgaben (Bezahlungen) ---
   async function submitExpense(body: ExpenseInput) {
     const created = await api.post<BudgetExpense>('/budget', body);
-    expenses.value.unshift(created);
+    expenses.value = [created, ...expenses.value];
     return created;
   }
 
   async function updateExpense(id: number, body: ExpenseInput) {
     const updated = await api.put<BudgetExpense>(`/budget/${id}`, body);
     const idx = expenses.value.findIndex((e) => e.id === updated.id);
-    if (idx !== -1) expenses.value[idx] = updated;
+    if (idx !== -1) {
+      const next = [...expenses.value];
+      next[idx] = updated;
+      expenses.value = next;
+    }
     return updated;
   }
 
@@ -226,7 +239,7 @@ export const useBudgetStore = defineStore('budget', () => {
   // --- Überweisungen ---
   async function submitTransfer(body: TransferInput) {
     const created = await api.post<BudgetTransfer>('/budget/transfers', body);
-    transfers.value.unshift(created);
+    transfers.value = [created, ...transfers.value];
     return created;
   }
 
