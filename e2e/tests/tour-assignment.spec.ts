@@ -161,7 +161,7 @@ test.describe('Touren-Reihenfolge-Editor: Reihenfolge + Mehrfachbesuch direkt in
     const newTourModal = page.locator('.modal', { hasText: 'Neue Tour' });
     await newTourModal.locator('input[placeholder="Titel"]').fill(tourTitle);
 
-    await newTourModal.locator('.collapsible-toggle', { hasText: 'Spots zuordnen' }).click();
+    await newTourModal.locator('.collapsible-toggle', { hasText: 'Stationen & Route' }).click();
 
     // Start UND Ende an derselben Station (Spot A), dazwischen Spot B: Klick fügt IMMER eine
     // weitere Station hinzu (kein Checkbox-Verhalten) - der Reihenfolge-Editor ist seit dem
@@ -203,7 +203,7 @@ test.describe('Touren-Reihenfolge-Editor: Reihenfolge + Mehrfachbesuch direkt in
     await expect(tourCard).toHaveClass(/expanded/);
     await tourCard.getByRole('button', { name: 'Bearbeiten' }).click();
     const editModal = page.locator('.modal', { hasText: 'Tour bearbeiten' });
-    await editModal.locator('.collapsible-toggle', { hasText: 'Spots zuordnen' }).click();
+    await editModal.locator('.collapsible-toggle', { hasText: 'Stationen & Route' }).click();
     await expect(editModal.locator('.planned-row .spot-title')).toHaveText([
       new RegExp(spotATitle),
       new RegExp(spotBTitle),
