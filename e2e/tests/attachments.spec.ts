@@ -38,6 +38,18 @@ test('uploading and removing a file attachment on a note (via edit form)', async
   const attachmentRow = modal.locator('.attachment-row', { hasText: 'ticket.png' });
   await expect(attachmentRow).toBeVisible();
 
+  // Klick auf den Anhang öffnet den Vorschau-Dialog (#364)
+  await attachmentRow.locator('.attachment-link').click();
+
+  const previewModal = page.getByRole('dialog', { name: 'ticket.png' });
+  await expect(previewModal).toBeVisible();
+  await expect(previewModal.locator('.preview-img')).toBeVisible();
+  await expect(previewModal.getByRole('button', { name: 'Herunterladen' })).toBeVisible();
+
+  // Vorschau-Dialog schließen
+  await previewModal.locator('.close-btn').click();
+  await expect(previewModal).toHaveCount(0);
+
   await attachmentRow.locator('.remove-btn').click();
   await expect(attachmentRow).toHaveCount(0);
 });

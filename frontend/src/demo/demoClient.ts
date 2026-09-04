@@ -462,12 +462,39 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
       ) as unknown as T;
     }
 
+    if (collection === '/attachments') {
+      const domain = searchParams.get('domain');
+      const entityId = searchParams.get('entity_id')
+        ? Number(searchParams.get('entity_id'))
+        : undefined;
+      return structuredClone(
+        rawList.filter(
+          (item) =>
+            (!domain || (item as { domain?: string }).domain === domain) &&
+            (entityId === undefined || (item as { entity_id?: number }).entity_id === entityId)
+        )
+      ) as unknown as T;
+    }
+
     return structuredClone(rawList) as unknown as T;
   }
 
   if (method === 'POST') {
     const id = nextId++;
     const created = { ...(body ?? {}), id };
+
+    if (collection === '/attachments') {
+      const dataUrl = String(body?.data ?? '');
+      const mimeMatch = /^data:([^;]+);base64,/i.exec(dataUrl);
+      const mimeType = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
+      const sizeBytes = Math.round((dataUrl.length * 3) / 4);
+      (created as Record<string, unknown>).url = dataUrl;
+      (created as Record<string, unknown>).original_name = String(body?.filename ?? 'attachment');
+      (created as Record<string, unknown>).mime_type = mimeType;
+      (created as Record<string, unknown>).size_bytes = sizeBytes;
+      (created as Record<string, unknown>).created_at = new Date().toISOString();
+    }
+
     store[collection] = [...store[collection], created];
 
     if (collection === '/ideas') {

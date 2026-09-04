@@ -29,11 +29,12 @@ import DraftBadge from '../components/DraftBadge.vue';
 import PendingSyncBadge from '../components/PendingSyncBadge.vue';
 import AppIcon from '../components/AppIcon.vue';
 import Button from '../components/primitives/Button.vue';
-import IconButton from '../components/primitives/IconButton.vue';
 import WeatherIcon from '../components/WeatherIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
+import AttachmentPreviewModal from '../components/AttachmentPreviewModal.vue';
+import AttachmentThumbnails from '../components/AttachmentThumbnails.vue';
 import { useToast } from '../composables/useToast';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
 
@@ -70,11 +71,23 @@ const emptyForm = () => ({
 const form = ref(emptyForm());
 const uploading = ref(false);
 const uploadError = ref('');
+const newFileInputRef = ref<HTMLInputElement | null>(null);
 
 const editingEntry = ref<DiaryEntry | null>(null);
 const editForm = ref(emptyForm());
 const editUploading = ref(false);
 const editUploadError = ref('');
+const editFileInputRef = ref<HTMLInputElement | null>(null);
+
+const diaryPreviewOpen = ref(false);
+const diaryPreviewImages = ref<string[]>([]);
+const diaryPreviewIndex = ref(0);
+
+function openDiaryPreview(images: string[], index: number) {
+  diaryPreviewImages.value = images;
+  diaryPreviewIndex.value = index;
+  diaryPreviewOpen.value = true;
+}
 
 // Entwurfs-Zwischenspeicherung (siehe composables/useDraftAutosave.ts) - images/excursion_ids/
 // spot_ids sind bereits gespeicherte Bild-URLs bzw. ids, nicht der flüchtige Upload-Fortschritt
@@ -532,32 +545,37 @@ function showEntryDayOnMap(entry: DiaryEntry) {
         <p v-if="auth.user?.restricted" class="hint">
           Eingeschränkter Modus - Kein Datei-Upload möglich
         </p>
-        <label for="auto-id-1788301175444-18" v-else class="upload-label">
-          <AppIcon :icon="FORM_FIELD_ICONS.image" :size="14" group="formFields" /> Bilder hinzufügen
+        <div v-else class="upload-control">
           <input
-            id="auto-id-1788301175444-18"
+            ref="newFileInputRef"
             type="file"
+            class="file-input-hidden"
             accept="image/*"
             multiple
+            aria-label="Bilder auswählen"
             :disabled="uploading"
             @change="onNewFilesSelected"
           />
-        </label>
-        <p v-if="uploading" class="hint">Bilder werden komprimiert & hochgeladen…</p>
-        <p v-if="uploadError" class="hint error">{{ uploadError }}</p>
-        <div class="image-preview" v-if="form.images.length">
-          <div class="preview-thumb" v-for="(img, i) in form.images" :key="img">
-            <img :src="img" :alt="`Bild ${i + 1}`" />
-            <IconButton
-              size="sm"
-              :icon="ACTION_ICONS.close"
-              class="remove-thumb"
-              title="Bild entfernen"
-              aria-label="Bild entfernen"
-              @click="removeImage(form, i)"
-            />
-          </div>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            :icon="FORM_FIELD_ICONS.image"
+            :disabled="uploading"
+            @click="newFileInputRef?.click()"
+          >
+            {{ uploading ? 'Bilder werden hochgeladen …' : 'Bilder hinzufügen' }}
+          </Button>
         </div>
+        <p v-if="uploadError" class="hint error">{{ uploadError }}</p>
+        <AttachmentThumbnails
+          v-if="form.images.length"
+          :items="form.images"
+          remove-title="Bild entfernen"
+          remove-aria-label="Bild entfernen"
+          @click="(idx) => openDiaryPreview(form.images, idx)"
+          @remove="(idx) => removeImage(form, idx)"
+        />
         <fieldset v-if="excursionsStore.excursions.length" class="excursion-picker">
           <legend>
             <Button
@@ -699,9 +717,16 @@ function showEntryDayOnMap(entry: DiaryEntry) {
         <RichTextDisplay class="content" :content="entry.content" :format="entry.content_format" />
 
         <div class="gallery" v-if="entry.images.length">
-          <a v-for="(img, i) in entry.images" :key="i" :href="img" target="_blank" rel="noopener">
+          <button
+            v-for="(img, i) in entry.images"
+            :key="i"
+            type="button"
+            class="gallery-item-btn"
+            :aria-label="`Bild ${i + 1} vergrößern`"
+            @click="openDiaryPreview(entry.images, i)"
+          >
             <img :src="img" :alt="`Bild ${i + 1}`" loading="lazy" />
-          </a>
+          </button>
         </div>
 
         <SocialRow
@@ -801,32 +826,37 @@ function showEntryDayOnMap(entry: DiaryEntry) {
         <p v-if="auth.user?.restricted" class="hint">
           Eingeschränkter Modus - Kein Datei-Upload möglich
         </p>
-        <label for="auto-id-1788301175444-20" v-else class="upload-label">
-          <AppIcon :icon="FORM_FIELD_ICONS.image" :size="14" group="formFields" /> Bilder hinzufügen
+        <div v-else class="upload-control">
           <input
-            id="auto-id-1788301175444-20"
+            ref="editFileInputRef"
             type="file"
+            class="file-input-hidden"
             accept="image/*"
             multiple
+            aria-label="Bilder auswählen"
             :disabled="editUploading"
             @change="onEditFilesSelected"
           />
-        </label>
-        <p v-if="editUploading" class="hint">Bilder werden komprimiert & hochgeladen…</p>
-        <p v-if="editUploadError" class="hint error">{{ editUploadError }}</p>
-        <div class="image-preview" v-if="editForm.images.length">
-          <div class="preview-thumb" v-for="(img, i) in editForm.images" :key="img">
-            <img :src="img" :alt="`Bild ${i + 1}`" />
-            <IconButton
-              size="sm"
-              :icon="ACTION_ICONS.close"
-              class="remove-thumb"
-              title="Bild entfernen"
-              aria-label="Bild entfernen"
-              @click="removeImage(editForm, i)"
-            />
-          </div>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            :icon="FORM_FIELD_ICONS.image"
+            :disabled="editUploading"
+            @click="editFileInputRef?.click()"
+          >
+            {{ editUploading ? 'Bilder werden hochgeladen …' : 'Bilder hinzufügen' }}
+          </Button>
         </div>
+        <p v-if="editUploadError" class="hint error">{{ editUploadError }}</p>
+        <AttachmentThumbnails
+          v-if="editForm.images.length"
+          :items="editForm.images"
+          remove-title="Bild entfernen"
+          remove-aria-label="Bild entfernen"
+          @click="(idx) => openDiaryPreview(editForm.images, idx)"
+          @remove="(idx) => removeImage(editForm, idx)"
+        />
         <fieldset v-if="excursionsStore.excursions.length" class="excursion-picker">
           <legend>
             <Button
@@ -925,6 +955,11 @@ function showEntryDayOnMap(entry: DiaryEntry) {
         }}</Button>
       </form>
     </Modal>
+    <AttachmentPreviewModal
+      v-model="diaryPreviewOpen"
+      :attachments="diaryPreviewImages"
+      :initial-index="diaryPreviewIndex"
+    />
   </div>
   <ViewLoadingState v-else />
 </template>
@@ -946,13 +981,8 @@ function showEntryDayOnMap(entry: DiaryEntry) {
   margin-bottom: var(--space-4);
 }
 
-.upload-label {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
+.file-input-hidden {
+  display: none;
 }
 
 .excursion-picker {
@@ -1132,44 +1162,6 @@ function showEntryDayOnMap(entry: DiaryEntry) {
   color: var(--color-danger);
 }
 
-.image-preview {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-}
-
-.preview-thumb {
-  position: relative;
-  width: 80px;
-  height: 80px;
-}
-
-.preview-thumb img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: var(--radius-sm);
-}
-
-.remove-thumb {
-  position: absolute;
-  top: -6px;
-  right: -6px;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  corner-shape: round;
-  border: none;
-  background: var(--color-danger);
-  color: white;
-  font-size: 0.7rem;
-  line-height: 1;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
 .entries {
   display: flex;
   flex-direction: column;
@@ -1236,6 +1228,26 @@ function showEntryDayOnMap(entry: DiaryEntry) {
   gap: var(--space-2);
   overflow-x: auto;
   margin-bottom: var(--space-2);
+}
+
+.gallery-item-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  display: flex;
+  flex-shrink: 0;
+  box-shadow: none;
+  border-radius: var(--radius-sm);
+  transition:
+    transform 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.gallery-item-btn:hover {
+  transform: scale(1.02);
+  opacity: 0.92;
 }
 
 .gallery img {

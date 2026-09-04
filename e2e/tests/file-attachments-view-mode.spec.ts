@@ -19,7 +19,7 @@ test('Datei-Upload-Button erscheint nur im Bearbeiten-Formular, nicht in der Kar
 
   // Ansichtsmodus (Karte): kein Upload-Button, da noch kein Anhang existiert bleibt der ganze
   // Anhänge-Bereich komplett weg (siehe FileAttachments.vue's editable-Fallback).
-  await expect(card.locator('.upload-label')).toHaveCount(0);
+  await expect(card.getByRole('button', { name: /Datei hinzufügen/i })).toHaveCount(0);
   await expect(card.locator('.file-attachments')).toHaveCount(0);
 
   // Bearbeiten-Modus: Upload-Button ist da.
@@ -28,5 +28,5 @@ test('Datei-Upload-Button erscheint nur im Bearbeiten-Formular, nicht in der Kar
     .getByRole('button', { name: /bearbeiten/i })
     .click();
   const modal = page.locator('.modal', { hasText: 'Notiz bearbeiten' });
-  await expect(modal.locator('.upload-label')).toBeVisible();
+  await expect(modal.getByRole('button', { name: /Datei hinzufügen/i })).toBeVisible();
 });
