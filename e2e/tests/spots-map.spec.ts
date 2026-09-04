@@ -95,4 +95,48 @@ test.describe('Spots-Karte: Kategorie-Filter wird zuverlässig auf die Marker an
       expect(afterCount).toBeLessThan(beforeCount);
     }).toPass({ timeout: 5000 });
   });
+
+  test('MapsAppPicker in SpotCard is not clipped by the card or accordion', async ({ page }) => {
+    const marker = `E2E-SpotMapPicker-${Date.now()}`;
+    const spotRes = await page.request.post('/api/spots', {
+      data: {
+        trip_id: tripId,
+        title: `Spot ${marker}`,
+        category: 'Sonstiges',
+        lat: 38.6916,
+        lng: -9.2159,
+        maps_link: 'https://www.google.com/maps/@38.6916,-9.2159,17z',
+      },
+    });
+    expect(spotRes.ok()).toBeTruthy();
+
+    await page.goto('/excursions');
+    const card = page.locator('.spot-card', { hasText: `Spot ${marker}` });
+    await expect(card).toBeVisible();
+
+    // Aufklappen der Card
+    await card.click();
+    await expect(card).toHaveClass(/expanded/);
+
+    // Button "In Karten-App öffnen" klicken
+    const mapsBtn = card.getByRole('button', { name: 'In Karten-App öffnen' });
+    await expect(mapsBtn).toBeVisible();
+    await mapsBtn.click();
+
+    // Menü per Teleport gerendert und sichtbar
+    const appleMaps = page.getByRole('link', { name: 'Apple Maps' });
+    const googleMaps = page.getByRole('link', { name: 'Google Maps' });
+    await expect(appleMaps).toBeVisible();
+    await expect(googleMaps).toBeVisible();
+
+    const menuBox = await page.locator('.maps-picker-menu').boundingBox();
+    const viewport = page.viewportSize();
+    expect(menuBox).not.toBeNull();
+    expect(viewport).not.toBeNull();
+    if (menuBox && viewport) {
+      expect(menuBox.x).toBeGreaterThanOrEqual(0);
+      expect(menuBox.y).toBeGreaterThanOrEqual(0);
+      expect(menuBox.x + menuBox.width).toBeLessThanOrEqual(viewport.width);
+    }
+  });
 });
