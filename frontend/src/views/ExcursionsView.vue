@@ -15,6 +15,7 @@ import { api } from '../api/client';
 import type {
   Excursion,
   ExcursionComment,
+  ExcursionLeg,
   ExcursionLike,
   IdeaRole,
   LocationTrack,
@@ -23,6 +24,7 @@ import type {
   User,
 } from '../api/types';
 import { deriveTravelItems } from '../utils/deriveTravelItems';
+import { formatTravelDuration, travelDurationMinutes } from '../utils/travelDuration';
 import { TRAVEL_ROLE_META, TRAVEL_ROLE_OPTIONS } from '../utils/travelRole';
 import { travelTypeIcon } from '../utils/travelTypeIcon';
 import { useAuthStore } from '../stores/auth';
@@ -325,11 +327,9 @@ async function removeExcursionComment(id: number) {
 // --- Touren anlegen/bearbeiten/löschen (aus der früheren Ausflüge-Schublade, views/
 // ExcursionsDrawer.vue, hierher übernommen, siehe Kommentar oben) ---
 // #176: Transportmittel-Abschnitt (aufklappbar) macht aus einer normalen Tour eine ehemalige
-// Reise-Etappe (Anreise/Abreise/Weiterreise) - EIN Formular/Modell statt zweier getrennter, siehe
-// Konzept-Entscheidung in Issue #68/#176. transportEnabled ist reiner Formular-Zustand (steuert nur,
-// ob der Abschnitt aufgeklappt ist), NICHT direkt an role gekoppelt: role bleibt bewusst optional
-// wählbar (z. B. Fährfahrt zur Nachbarinsel = Transportmittel, aber keine der drei Rollen).
-const TRANSPORT_TYPE_OPTIONS = ['Flug', 'Zug', 'Bus', 'Auto', 'Fähre', 'Sonstiges'];
+// Issue #361: Touren können beliebig viele Stationen haben und individuelle Teilstrecken (legs)
+// zwischen aufeinanderfolgenden Stationen führen (Verkehrsmittel, Zeiten, Kosten, Gepäck/Sitz).
+// Die optionale Rolle (Anreise/Abreise/Weiterreise) kategorisiert die Tour für Kalender und Karten.
 const showExcursionForm = ref(false);
 const emptyExcursionForm = () => ({
   title: '',
@@ -337,19 +337,8 @@ const emptyExcursionForm = () => ({
   note: '',
   date: '',
   spot_ids: [] as number[],
-  transportEnabled: false,
   role: '' as IdeaRole | '',
-  transport_type: 'Flug',
-  from_spot_id: '',
-  to_spot_id: '',
-  departure_time: '',
-  arrival_time: '',
-  checkin_info: '',
-  amount: '',
-  paid_by_user_id: '',
-  luggage: '',
-  seat: '',
-  ticket_link: '',
+  legs: [] as ExcursionLeg[],
 });
 const excursionForm = ref(emptyExcursionForm());
 
@@ -370,6 +359,7 @@ const editExcursionDraft = useDraftAutosave(
 
 function openExcursionForm() {
   excursionForm.value = emptyExcursionForm();
+  showExcursionSpotsSection.value = false;
   showExcursionForm.value = true;
 }
 
@@ -379,50 +369,22 @@ function closeExcursionForm() {
   newExcursionDraft.clear();
 }
 
-/** Baut spot_ids aus dem Von-/Nach-Paar, wenn der Transportmittel-Abschnitt aktiv ist (genau zwei
- *  Stationen, siehe routes/ideas.ts's Validierung) - sonst bleibt die per SpotOrderPicker gepflegte
- *  Liste unangetastet. */
-function resolveTourSpotIds(form: ReturnType<typeof emptyExcursionForm>): number[] {
-  if (!form.transportEnabled) return form.spot_ids;
-  return [form.from_spot_id, form.to_spot_id].filter((id): id is string => !!id).map(Number);
-}
-
 function tourPayload(form: ReturnType<typeof emptyExcursionForm>) {
-  const role = form.transportEnabled && form.role ? form.role : undefined;
   return {
     title: form.title.trim(),
     image_url: form.image_url || undefined,
     note: form.note && !isEmptyRichText(form.note) ? form.note : undefined,
     note_format: 'html' as const,
     date: form.date || undefined,
-    spot_ids: resolveTourSpotIds(form),
-    role,
-    transport_type: form.transportEnabled ? form.transport_type : null,
-    departure_time: form.transportEnabled ? form.departure_time || null : null,
-    arrival_time: form.transportEnabled ? form.arrival_time || null : null,
-    checkin_info: form.transportEnabled ? form.checkin_info || null : null,
-    amount: form.transportEnabled && form.amount ? Number(form.amount) : null,
-    paid_by_user_id:
-      form.transportEnabled && form.amount
-        ? form.paid_by_user_id
-          ? Number(form.paid_by_user_id)
-          : users.value.length === 1
-            ? users.value[0].id
-            : (auth.user?.id ?? null)
-        : null,
-    luggage: form.transportEnabled ? form.luggage || null : null,
-    seat: form.transportEnabled ? form.seat || null : null,
-    ticket_link: form.transportEnabled ? form.ticket_link || null : null,
+    spot_ids: form.spot_ids,
+    role: form.role ? form.role : null,
+    legs: form.legs,
   };
 }
 
 async function addExcursion() {
   if (!excursionForm.value.title.trim()) return;
-  if (
-    excursionForm.value.transportEnabled &&
-    excursionForm.value.role &&
-    resolveTourSpotIds(excursionForm.value).length !== 2
-  ) {
+  if (excursionForm.value.role && excursionForm.value.spot_ids.length < 2) {
     return;
   }
   await excursionsStore.create(tourPayload(excursionForm.value));
@@ -431,38 +393,21 @@ async function addExcursion() {
 
 function startEditExcursion(excursion: Excursion) {
   editingExcursion.value = excursion.id;
-  const transportEnabled = !!excursion.role || !!excursion.transport_type;
+  showEditExcursionSpotsSection.value = false;
   editExcursionForm.value = {
     title: excursion.title,
     image_url: excursion.image_url ?? '',
     note: excursion.note ?? '',
     date: excursion.date ?? '',
     spot_ids: [...excursion.spot_ids],
-    transportEnabled,
     role: excursion.role ?? '',
-    transport_type: excursion.transport_type ?? 'Flug',
-    from_spot_id:
-      transportEnabled && excursion.spot_ids[0] != null ? String(excursion.spot_ids[0]) : '',
-    to_spot_id:
-      transportEnabled && excursion.spot_ids[1] != null ? String(excursion.spot_ids[1]) : '',
-    departure_time: excursion.departure_time ?? '',
-    arrival_time: excursion.arrival_time ?? '',
-    checkin_info: excursion.checkin_info ?? '',
-    amount: excursion.amount != null ? String(excursion.amount) : '',
-    paid_by_user_id: excursion.paid_by_user_id != null ? String(excursion.paid_by_user_id) : '',
-    luggage: excursion.luggage ?? '',
-    seat: excursion.seat ?? '',
-    ticket_link: excursion.ticket_link ?? '',
+    legs: excursion.legs ? excursion.legs.map((l) => ({ ...l })) : [],
   };
 }
 
 async function submitEditExcursion() {
   if (editingExcursion.value == null || !editExcursionForm.value.title.trim()) return;
-  if (
-    editExcursionForm.value.transportEnabled &&
-    editExcursionForm.value.role &&
-    resolveTourSpotIds(editExcursionForm.value).length !== 2
-  ) {
+  if (editExcursionForm.value.role && editExcursionForm.value.spot_ids.length < 2) {
     return;
   }
   await excursionsStore.update(editingExcursion.value, tourPayload(editExcursionForm.value));
@@ -700,18 +645,6 @@ async function submitAddSpotToDate() {
   addScheduleDateVal.value = '';
   addSchedulePopoverOpen.value = false;
 }
-const showExcursionTransportSection = computed({
-  get: () => excursionForm.value.transportEnabled,
-  set: (val: boolean) => {
-    excursionForm.value.transportEnabled = val;
-  },
-});
-const showEditExcursionTransportSection = computed({
-  get: () => editExcursionForm.value.transportEnabled,
-  set: (val: boolean) => {
-    editExcursionForm.value.transportEnabled = val;
-  },
-});
 
 // Track Recording Hinweis-Modal (#230)
 const showTrackRecordingWarningModal = ref(false);
@@ -1371,7 +1304,11 @@ let tourLineResizeObserver: ResizeObserver | null = null;
 function recomputeTourLine(excursionId: number) {
   const wrapEl = tourWrapRefs.get(excursionId);
   const listEl = wrapEl?.querySelector<HTMLElement>(':scope > .tour-station-list');
-  const items = listEl ? (Array.from(listEl.children) as HTMLElement[]) : [];
+  const items = listEl
+    ? (Array.from(listEl.children).filter((el) =>
+        el.classList.contains('staggered-spot')
+      ) as HTMLElement[])
+    : [];
   if (!items.length) {
     tourLines.delete(excursionId);
     return;
@@ -1425,6 +1362,44 @@ onMounted(() => {
   for (const [_id, el] of tourWrapRefs) tourLineResizeObserver.observe(el);
 });
 onUnmounted(() => tourLineResizeObserver?.disconnect());
+
+function getTourLeg(
+  excursion: Excursion,
+  fromSpotId: number,
+  toSpotId: number
+): ExcursionLeg | undefined {
+  return excursion.legs?.find((l) => l.from_spot_id === fromSpotId && l.to_spot_id === toSpotId);
+}
+
+function getLegDuration(leg: ExcursionLeg): string | null {
+  const mins = travelDurationMinutes(leg.departure_time ?? null, leg.arrival_time ?? null);
+  return mins != null ? formatTravelDuration(mins) : null;
+}
+
+function hasLegDetails(leg: ExcursionLeg): boolean {
+  return !!(
+    leg.checkin_info ||
+    leg.seat ||
+    leg.luggage ||
+    leg.ticket_link ||
+    (leg.amount != null && leg.paid_by_user_id)
+  );
+}
+
+function getTourLayover(
+  excursion: Excursion,
+  items: Array<{ spot: Spot }>,
+  index: number
+): number | null {
+  if (index <= 0 || index >= items.length - 1) return null;
+  const prevSpotId = items[index - 1].spot.id;
+  const currSpotId = items[index].spot.id;
+  const nextSpotId = items[index + 1].spot.id;
+  const inLeg = getTourLeg(excursion, prevSpotId, currSpotId);
+  const outLeg = getTourLeg(excursion, currSpotId, nextSpotId);
+  if (!inLeg?.arrival_time || !outLeg?.departure_time) return null;
+  return travelDurationMinutes(inLeg.arrival_time, outLeg.departure_time);
+}
 // Neben Größenänderungen einzelner Karten (ResizeObserver oben) auch bei Zuordnungsänderungen
 // (Spot zu Tour hinzugefügt/entfernt/umsortiert) neu berechnen - ändert die Anzahl/Reihenfolge der
 // Kinder, worauf der ResizeObserver nicht zuverlässig anspringt, wenn sich dadurch die
@@ -2372,162 +2347,24 @@ async function removeSpot(id: number) {
               <FormField icon="date" label="Datum (optional – sonst „In Planung“)">
                 <input v-model="activeExcursionForm.date" type="date" />
               </FormField>
-              <fieldset class="collapsible-fieldset">
-                <legend>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    class="collapsible-toggle"
-                    :aria-expanded="
-                      editingExcursion !== null
-                        ? showEditExcursionTransportSection
-                        : showExcursionTransportSection
-                    "
-                    @click="
-                      editingExcursion !== null
-                        ? (showEditExcursionTransportSection = !showEditExcursionTransportSection)
-                        : (showExcursionTransportSection = !showExcursionTransportSection)
-                    "
-                  >
-                    <span>
-                      <AppIcon :icon="ACTION_ICONS.recordStart" :size="14" group="actions" />
-                      Transportmittel (Anreise/Abreise/Weiterreise/Fahrt)
-                    </span>
-                    <AppIcon
-                      :icon="ACTION_ICONS.chevronDown"
-                      :size="14"
-                      group="actions"
-                      class="caret"
-                      :class="{
-                        closed: !(editingExcursion !== null
-                          ? showEditExcursionTransportSection
-                          : showExcursionTransportSection),
-                      }"
-                    />
-                  </Button>
-                </legend>
-                <div
-                  v-if="
-                    editingExcursion !== null
-                      ? showEditExcursionTransportSection
-                      : showExcursionTransportSection
-                  "
-                  class="collapsible-content"
-                >
-                  <FormField icon="category" label="Art">
-                    <select v-model="activeExcursionForm.transport_type">
-                      <option v-for="t in TRANSPORT_TYPE_OPTIONS" :key="t" :value="t">
-                        {{ travelTypeIcon(t) }} {{ t }}
-                      </option>
-                    </select>
-                  </FormField>
-                  <FormField icon="tour" label="Rolle (für Karten-Urlaubsfokus)">
-                    <select v-model="activeExcursionForm.role">
-                      <option value="">– keine (nur Transportmittel) –</option>
-                      <option v-for="r in TRAVEL_ROLE_OPTIONS" :key="r" :value="r">
-                        {{ TRAVEL_ROLE_META[r].icon }} {{ TRAVEL_ROLE_META[r].label }} ({{
-                          TRAVEL_ROLE_META[r].hint
-                        }})
-                      </option>
-                    </select>
-                  </FormField>
-                  <div class="row">
-                    <FormField icon="location" label="Von">
-                      <select v-model="activeExcursionForm.from_spot_id">
-                        <option value="">– wählen –</option>
-                        <option v-for="s in spotsStore.spots" :key="s.id" :value="String(s.id)">
-                          {{ spotCategoryMeta(s.category).icon }} {{ s.title }}
-                        </option>
-                      </select>
-                    </FormField>
-                    <FormField icon="location" label="Nach">
-                      <select v-model="activeExcursionForm.to_spot_id">
-                        <option value="">– wählen –</option>
-                        <option v-for="s in spotsStore.spots" :key="s.id" :value="String(s.id)">
-                          {{ spotCategoryMeta(s.category).icon }} {{ s.title }}
-                        </option>
-                      </select>
-                    </FormField>
-                  </div>
-                  <p
-                    v-if="
-                      activeExcursionForm.role &&
-                      (!activeExcursionForm.from_spot_id || !activeExcursionForm.to_spot_id)
-                    "
-                    class="hint error"
-                  >
-                    <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Für
-                    Anreise/Abreise/Weiterreise werden Von und Nach benötigt (beide als Spot
-                    anlegen, falls noch nicht vorhanden).
-                  </p>
-                  <div class="row">
-                    <FormField icon="time" label="Abfahrt/Abflug">
-                      <input v-model="activeExcursionForm.departure_time" type="time" />
-                    </FormField>
-                    <FormField icon="time" label="Ankunft">
-                      <input v-model="activeExcursionForm.arrival_time" type="time" />
-                    </FormField>
-                  </div>
-                  <FormField icon="note" label="Vorher da sein">
-                    <input
-                      v-model="activeExcursionForm.checkin_info"
-                      type="text"
-                      placeholder="z. B. 2 Stunden vorher / Check-in ab 10:00"
-                    />
-                  </FormField>
-                  <div class="row">
-                    <FormField icon="amount" label="Kosten">
-                      <input
-                        v-model="activeExcursionForm.amount"
-                        type="number"
-                        step="0.01"
-                        placeholder="optional"
-                      />
-                    </FormField>
-                    <FormField v-if="users.length > 1" icon="shared" label="Bezahlt von">
-                      <select v-model="activeExcursionForm.paid_by_user_id">
-                        <option value="">–</option>
-                        <option v-for="u in users" :key="u.id" :value="String(u.id)">
-                          {{ u.avatar }} {{ u.username }}
-                        </option>
-                      </select>
-                    </FormField>
-                  </div>
-                  <p
-                    v-if="
-                      users.length > 1 &&
-                      activeExcursionForm.amount &&
-                      !activeExcursionForm.paid_by_user_id
-                    "
-                    class="hint"
-                  >
-                    Ohne Zahler:in wird der Betrag nicht in der Budgetplanung berücksichtigt.
-                  </p>
-                  <div class="row">
-                    <FormField icon="note" label="Gepäck">
-                      <input
-                        v-model="activeExcursionForm.luggage"
-                        type="text"
-                        placeholder="z. B. 1x Koffer 23kg, 1x Handgepäck"
-                      />
-                    </FormField>
-                    <FormField icon="note" label="Sitzplatz">
-                      <input
-                        v-model="activeExcursionForm.seat"
-                        type="text"
-                        placeholder="z. B. 12A"
-                      />
-                    </FormField>
-                  </div>
-                  <FormField icon="link" label="Link (Buchung/Check-in)">
-                    <input v-model="activeExcursionForm.ticket_link" type="url" />
-                  </FormField>
-                </div>
-              </fieldset>
-              <fieldset
-                v-if="!activeExcursionForm.transportEnabled && spotsStore.spots.length"
-                class="collapsible-fieldset"
+              <FormField icon="tour" label="Rolle (optional)">
+                <select v-model="activeExcursionForm.role">
+                  <option value="">– Normaler Ausflug –</option>
+                  <option v-for="r in TRAVEL_ROLE_OPTIONS" :key="r" :value="r">
+                    {{ TRAVEL_ROLE_META[r].icon }} {{ TRAVEL_ROLE_META[r].label }} ({{
+                      TRAVEL_ROLE_META[r].hint
+                    }})
+                  </option>
+                </select>
+              </FormField>
+              <p
+                v-if="activeExcursionForm.role && activeExcursionForm.spot_ids.length < 2"
+                class="hint error"
               >
+                <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Für
+                Anreise/Abreise/Weiterreise werden mindestens Start- und Zielstation benötigt.
+              </p>
+              <fieldset v-if="spotsStore.spots.length" class="collapsible-fieldset">
                 <legend>
                   <Button
                     type="button"
@@ -2546,7 +2383,7 @@ async function removeSpot(id: number) {
                   >
                     <span>
                       <AppIcon :icon="FORM_FIELD_ICONS.location" :size="14" group="formFields" />
-                      Spots zuordnen
+                      Stationen &amp; Route
                       <span v-if="activeExcursionForm.spot_ids.length" class="picker-count">
                         ({{ activeExcursionForm.spot_ids.length }} zugeordnet)</span
                       >
@@ -2574,8 +2411,10 @@ async function removeSpot(id: number) {
                 >
                   <SpotOrderPicker
                     v-model="activeExcursionForm.spot_ids"
+                    v-model:legs="activeExcursionForm.legs"
                     :spots="spotsStore.spots"
                     :like-count="spotsStore.likeCountFor"
+                    :users="users"
                   />
                 </div>
               </fieldset>
@@ -3234,6 +3073,204 @@ async function removeSpot(id: number) {
                         @show-on-map="onSpotShowOnMap(item.spot)"
                         @assign-tour="(title) => assignSpotToTourTitle(item.spot.id, title)"
                       />
+                      <!-- Umsteige-/Aufenthaltszeit an Zwischenstationen -->
+                      <div
+                        v-if="
+                          grp.excursion &&
+                          index > 0 &&
+                          index < grp.items.length - 1 &&
+                          getTourLayover(grp.excursion, grp.items, index) != null
+                        "
+                        :key="`layover-${item.spot.id}-${index}`"
+                        class="tour-layover-wrap"
+                      >
+                        <span class="tour-layover-badge">
+                          ⏱️
+                          {{
+                            formatTravelDuration(getTourLayover(grp.excursion, grp.items, index)!)
+                          }}
+                          Umstiegszeit
+                        </span>
+                      </div>
+                      <!-- Teilstrecke zwischen dieser und der nächsten Station -->
+                      <div
+                        v-if="
+                          grp.excursion &&
+                          index < grp.items.length - 1 &&
+                          getTourLeg(grp.excursion, item.spot.id, grp.items[index + 1].spot.id)
+                        "
+                        :key="`leg-${item.spot.id}-${grp.items[index + 1].spot.id}`"
+                        class="tour-leg-card"
+                      >
+                        <div class="tour-leg-header">
+                          <span class="tour-leg-type">
+                            {{
+                              travelTypeIcon(
+                                getTourLeg(
+                                  grp.excursion,
+                                  item.spot.id,
+                                  grp.items[index + 1].spot.id
+                                )!.transport_type ?? null
+                              )
+                            }}
+                            {{
+                              getTourLeg(grp.excursion, item.spot.id, grp.items[index + 1].spot.id)!
+                                .transport_type || 'Teilstrecke'
+                            }}
+                          </span>
+                          <span
+                            v-if="
+                              getTourLeg(grp.excursion, item.spot.id, grp.items[index + 1].spot.id)!
+                                .departure_time ||
+                              getTourLeg(grp.excursion, item.spot.id, grp.items[index + 1].spot.id)!
+                                .arrival_time
+                            "
+                            class="tour-leg-times"
+                          >
+                            <AppIcon :icon="FORM_FIELD_ICONS.time" :size="13" group="formFields" />
+                            {{
+                              getTourLeg(grp.excursion, item.spot.id, grp.items[index + 1].spot.id)!
+                                .departure_time || '?'
+                            }}–{{
+                              getTourLeg(grp.excursion, item.spot.id, grp.items[index + 1].spot.id)!
+                                .arrival_time || '?'
+                            }}
+                            Uhr
+                            <span
+                              v-if="
+                                getLegDuration(
+                                  getTourLeg(
+                                    grp.excursion,
+                                    item.spot.id,
+                                    grp.items[index + 1].spot.id
+                                  )!
+                                )
+                              "
+                              class="tour-leg-duration"
+                            >
+                              ({{
+                                getLegDuration(
+                                  getTourLeg(
+                                    grp.excursion,
+                                    item.spot.id,
+                                    grp.items[index + 1].spot.id
+                                  )!
+                                )
+                              }})
+                            </span>
+                          </span>
+                          <span
+                            v-if="
+                              getTourLeg(grp.excursion, item.spot.id, grp.items[index + 1].spot.id)!
+                                .amount != null
+                            "
+                            class="tour-leg-cost"
+                          >
+                            {{
+                              getTourLeg(grp.excursion, item.spot.id, grp.items[index + 1].spot.id)!
+                                .amount!.toFixed(2)
+                                .replace('.', ',')
+                            }}
+                            €
+                          </span>
+                        </div>
+                        <div
+                          v-if="
+                            hasLegDetails(
+                              getTourLeg(grp.excursion, item.spot.id, grp.items[index + 1].spot.id)!
+                            )
+                          "
+                          class="tour-leg-details"
+                        >
+                          <span
+                            v-if="
+                              getTourLeg(grp.excursion, item.spot.id, grp.items[index + 1].spot.id)!
+                                .checkin_info
+                            "
+                            class="tour-leg-detail"
+                          >
+                            <AppIcon :icon="FORM_FIELD_ICONS.time" :size="12" group="formFields" />
+                            {{
+                              getTourLeg(grp.excursion, item.spot.id, grp.items[index + 1].spot.id)!
+                                .checkin_info
+                            }}
+                          </span>
+                          <span
+                            v-if="
+                              getTourLeg(grp.excursion, item.spot.id, grp.items[index + 1].spot.id)!
+                                .seat
+                            "
+                            class="tour-leg-detail"
+                          >
+                            Sitz:
+                            {{
+                              getTourLeg(grp.excursion, item.spot.id, grp.items[index + 1].spot.id)!
+                                .seat
+                            }}
+                          </span>
+                          <span
+                            v-if="
+                              getTourLeg(grp.excursion, item.spot.id, grp.items[index + 1].spot.id)!
+                                .luggage
+                            "
+                            class="tour-leg-detail"
+                          >
+                            Gepäck:
+                            {{
+                              getTourLeg(grp.excursion, item.spot.id, grp.items[index + 1].spot.id)!
+                                .luggage
+                            }}
+                          </span>
+                          <a
+                            v-if="
+                              getTourLeg(grp.excursion, item.spot.id, grp.items[index + 1].spot.id)!
+                                .ticket_link
+                            "
+                            :href="
+                              getTourLeg(grp.excursion, item.spot.id, grp.items[index + 1].spot.id)!
+                                .ticket_link!
+                            "
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="tour-leg-link"
+                          >
+                            <AppIcon :icon="FORM_FIELD_ICONS.link" :size="12" group="formFields" />
+                            Ticket/Buchung
+                          </a>
+                          <span
+                            v-if="
+                              getTourLeg(grp.excursion, item.spot.id, grp.items[index + 1].spot.id)!
+                                .amount != null &&
+                              getTourLeg(grp.excursion, item.spot.id, grp.items[index + 1].spot.id)!
+                                .paid_by_user_id
+                            "
+                            class="tour-leg-detail"
+                          >
+                            bezahlt von
+                            {{
+                              creatorLabel(
+                                getTourLeg(
+                                  grp.excursion,
+                                  item.spot.id,
+                                  grp.items[index + 1].spot.id
+                                )!.paid_by_user_id ?? null
+                              )
+                            }}
+                          </span>
+                        </div>
+                        <p
+                          v-if="
+                            getTourLeg(grp.excursion, item.spot.id, grp.items[index + 1].spot.id)!
+                              .note
+                          "
+                          class="tour-leg-note"
+                        >
+                          {{
+                            getTourLeg(grp.excursion, item.spot.id, grp.items[index + 1].spot.id)!
+                              .note
+                          }}
+                        </p>
+                      </div>
                     </template>
                   </TransitionGroup>
                 </div>
@@ -4032,6 +4069,104 @@ async function removeSpot(id: number) {
   fill: var(--color-primary);
   stroke: var(--color-surface);
   stroke-width: 2;
+}
+
+.tour-layover-wrap {
+  display: flex;
+  justify-content: center;
+  margin: calc(var(--space-1) * -1) 0;
+}
+
+.tour-layover-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 10px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-sunken);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+}
+
+.tour-leg-card {
+  margin-left: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface-sunken);
+  border: 1px solid var(--color-border-subtle);
+  border-left: 3px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.tour-leg-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  font-size: 0.8125rem;
+}
+
+.tour-leg-type {
+  font-weight: 600;
+  color: var(--color-text);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.tour-leg-times {
+  color: var(--color-text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tour-leg-duration {
+  color: var(--color-text-subtle);
+  font-size: 0.75rem;
+}
+
+.tour-leg-cost {
+  margin-left: auto;
+  font-weight: 600;
+  color: var(--color-primary);
+  font-size: 0.8125rem;
+}
+
+.tour-leg-details {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.tour-leg-detail {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tour-leg-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.tour-leg-note {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  margin: 0;
+  white-space: pre-wrap;
+  font-style: italic;
 }
 
 /* Auf schmalen .spots-col-Breiten (Bottom-Sheet auf Mobil, ODER auf Desktop, wenn der Anfasser sehr

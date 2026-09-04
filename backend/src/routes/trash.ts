@@ -76,6 +76,16 @@ const TRASH_CONFIG: TrashConfig[] = [
         'UPDATE schedule_items SET deleted_at = NULL WHERE idea_id = ? AND deleted_at IS NOT NULL'
       ).run(id);
       restoreLinkedBudgetExpense('ideas', id);
+      const legs = db
+        .prepare('SELECT budget_expense_id FROM excursion_legs WHERE idea_id = ?')
+        .all(id) as { budget_expense_id: number | null }[];
+      for (const leg of legs) {
+        if (leg.budget_expense_id) {
+          db.prepare(
+            'UPDATE budget_items SET deleted_at = NULL WHERE id = ? AND deleted_at IS NOT NULL'
+          ).run(leg.budget_expense_id);
+        }
+      }
     },
   },
   {

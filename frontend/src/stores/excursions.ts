@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, shallowRef, watch } from 'vue';
 import { api } from '../api/client';
-import type { Excursion, IdeaRole } from '../api/types';
+import type { Excursion, ExcursionLeg, IdeaRole } from '../api/types';
 import { useScheduleStore } from './schedule';
 import { useTripStore } from './trip';
 import { useLiveSyncStore } from './liveSync';
@@ -13,6 +13,7 @@ export interface ExcursionFormData {
   note_format?: 'html' | 'legacy';
   date?: string;
   spot_ids?: number[];
+  legs?: ExcursionLeg[];
   // Transportmittel-Kontext (#176) - macht aus einer normalen Tour eine ehemalige Reise-Etappe.
   role?: IdeaRole | null;
   transport_type?: string | null;
@@ -94,6 +95,7 @@ export const useExcursionsStore = defineStore('excursions', () => {
       note: existing.note ?? undefined,
       date: date ?? undefined,
       spot_ids: existing.spot_ids,
+      legs: existing.legs,
       role: existing.role,
       transport_type: existing.transport_type,
       departure_time: existing.departure_time,

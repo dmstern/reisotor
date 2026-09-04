@@ -152,6 +152,24 @@ export interface PackingItem {
  *  `undefined` = normale Tour ohne Transportmittel-Kontext. */
 export type IdeaRole = 'arrival' | 'departure' | 'onward';
 
+export interface ExcursionLeg {
+  id?: number;
+  position: number;
+  from_spot_id: number;
+  to_spot_id: number;
+  transport_type?: string | null;
+  departure_time?: string | null;
+  arrival_time?: string | null;
+  checkin_info?: string | null;
+  seat?: string | null;
+  luggage?: string | null;
+  ticket_link?: string | null;
+  note?: string | null;
+  amount?: number | null;
+  paid_by_user_id?: number | null;
+  budget_expense_id?: number | null;
+}
+
 export interface Excursion {
   id: number;
   trip_id: number;
@@ -167,14 +185,15 @@ export interface Excursion {
    *  IMMER ein echter Spot (siehe Migrationskommentar in db/index.ts). Reihenfolge/Mehrfachbesuch
    *  lassen sich per Drag&Drop im Touren-Formular editieren (SpotOrderPicker.vue,
    *  ExcursionsView.vue); TourAssignPicker.vue bietet daneben einen schnelleren Weg, einen Spot
-   *  ohne Reihenfolge einer Tour zuzuordnen. Bei gesetzter `role` (siehe unten) genau zwei
+   *  ohne Reihenfolge einer Tour zuzuordnen. Bei gesetzter `role` (siehe unten) mindestens zwei
    *  Stationen (Von/Nach). */
   spot_ids: number[];
+  legs?: ExcursionLeg[];
   /** Unabhängig von `date`/geplant: explizit als tatsächlich unternommen markiert, auch für
    *  spontane, nie geplante Touren nutzbar (siehe stores/excursions.ts's setDone()). */
   done: 0 | 1;
   // Transportmittel-Kontext (#176) - macht aus einer normalen Tour eine ehemalige Reise-Etappe
-  // (Anreise/Abreise/Weiterreise). role gesetzt => genau zwei spot_ids (Von/Nach), alle anderen
+  // (Anreise/Abreise/Weiterreise). role gesetzt => mindestens zwei spot_ids (Von/Nach), alle anderen
   // Felder bleiben bei einer normalen Tour null.
   role: IdeaRole | null;
   transport_type: string | null;

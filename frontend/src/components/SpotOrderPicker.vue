@@ -1,22 +1,36 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import type { Spot } from '../api/types';
+import type { ExcursionLeg, Spot, User } from '../api/types';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { ACTION_ICONS } from '../utils/actionIcons';
+import { travelTypeIcon } from '../utils/travelTypeIcon';
+import { formatTravelDuration, travelDurationMinutes } from '../utils/travelDuration';
 import type { IconDef } from '../utils/icon';
 import AppIcon from './AppIcon.vue';
+import LegTransportModal from './LegTransportModal.vue';
 
 // Drag&Drop-Reihenfolge-Editor fürs Touren-Formular (ExcursionsView.vue) – TourAssignPicker.vue
 // bietet daneben im Spot-Formular einen schnelleren Weg, einen Spot ohne Reihenfolge einer Tour
 // zuzuordnen. Eine Tour-Station ist seit der Verschmelzung von Unterkunft/Reise-Orten in Spots
 // (siehe Migrationskommentar in db/index.ts) immer ein echter Spot.
-const props = defineProps<{
-  modelValue: number[];
-  spots: Spot[];
-  likeCount: (spotId: number) => number;
-}>();
+// Issue #361: Unterstützt zusätzlich Teilstrecken (legs) zwischen je zwei aufeinanderfolgenden
+// Stationen mit individuellen Verkehrsmitteln, Zeiten, Sitzplatz, Kosten und Umsteigedauer.
+const props = withDefaults(
+  defineProps<{
+    modelValue: number[];
+    spots: Spot[];
+    likeCount: (spotId: number) => number;
+    legs?: ExcursionLeg[];
+    users?: User[];
+  }>(),
+  {
+    legs: () => [],
+    users: () => [],
+  }
+);
 const emit = defineEmits<{
   (e: 'update:modelValue', value: number[]): void;
+  (e: 'update:legs', value: ExcursionLeg[]): void;
 }>();
 
 // Schreibbarer Computed statt einzelner add/remove-Emits: die Checkboxen der "weitere Spots"-Liste
@@ -37,13 +51,16 @@ const plannedStations = computed(() =>
       return spot
         ? {
             id: spotId,
+            spot,
             title: spot.title,
             icon: spotCategoryMeta(spot.category).icon,
             tabler: spotCategoryMeta(spot.category).tabler,
           }
         : null;
     })
-    .filter((s): s is { id: number; title: string; icon: string; tabler: IconDef } => !!s)
+    .filter(
+      (s): s is { id: number; spot: Spot; title: string; icon: string; tabler: IconDef } => !!s
+    )
 );
 
 // Bewusst NICHT mehr gefiltert auf "noch nicht eingeplant" – für einen Rundgang muss derselbe Spot
@@ -60,10 +77,22 @@ function addSpot(id: number) {
   selected.value = [...selected.value, id];
 }
 
+function cleanupLegsForSpots(newSpotIds: number[]) {
+  const adjacentPairs = new Set<string>();
+  for (let i = 0; i < newSpotIds.length - 1; i++) {
+    adjacentPairs.add(`${newSpotIds[i]}-${newSpotIds[i + 1]}`);
+  }
+  const updated = (props.legs || [])
+    .filter((leg) => adjacentPairs.has(`${leg.from_spot_id}-${leg.to_spot_id}`))
+    .map((leg, idx) => ({ ...leg, position: idx }));
+  emit('update:legs', updated);
+}
+
 function removeSpotAt(index: number) {
   const next = [...selected.value];
   next.splice(index, 1);
   selected.value = next;
+  cleanupLegsForSpots(next);
 }
 
 // Drag&Drop-Umsortierung innerhalb der geplanten Liste – rein lokal (kein Component-übergreifendes
@@ -99,6 +128,7 @@ function onDrop() {
     const [moved] = next.splice(draggedIndex.value, 1);
     next.splice(targetIndex, 0, moved);
     selected.value = next;
+    cleanupLegsForSpots(next);
   }
   draggedIndex.value = null;
   dropIndicatorIndex.value = null;
@@ -107,6 +137,66 @@ function onDrop() {
 function onDragEnd() {
   draggedIndex.value = null;
   dropIndicatorIndex.value = null;
+}
+
+// --- Teilstrecken-Verkehrsmittel Modal-Verwaltung (Issue #361) ---
+const editingLegFromIndex = ref<number | null>(null);
+const showLegModal = ref(false);
+
+function getLegBetween(fromId: number, toId: number): ExcursionLeg | undefined {
+  return props.legs.find((l) => l.from_spot_id === fromId && l.to_spot_id === toId);
+}
+
+function getLayover(index: number): number | null {
+  if (index <= 0 || index >= props.modelValue.length - 1) return null;
+  const prevSpotId = props.modelValue[index - 1];
+  const currSpotId = props.modelValue[index];
+  const nextSpotId = props.modelValue[index + 1];
+  const inLeg = getLegBetween(prevSpotId, currSpotId);
+  const outLeg = getLegBetween(currSpotId, nextSpotId);
+  if (!inLeg?.arrival_time || !outLeg?.departure_time) return null;
+  return travelDurationMinutes(inLeg.arrival_time, outLeg.departure_time);
+}
+
+const currentModalFromSpot = computed(() => {
+  if (editingLegFromIndex.value == null) return null;
+  return plannedStations.value[editingLegFromIndex.value]?.spot ?? null;
+});
+
+const currentModalToSpot = computed(() => {
+  if (editingLegFromIndex.value == null) return null;
+  return plannedStations.value[editingLegFromIndex.value + 1]?.spot ?? null;
+});
+
+const currentModalLeg = computed(() => {
+  if (!currentModalFromSpot.value || !currentModalToSpot.value) return null;
+  return getLegBetween(currentModalFromSpot.value.id, currentModalToSpot.value.id) ?? null;
+});
+
+function openLegModal(index: number) {
+  editingLegFromIndex.value = index;
+  showLegModal.value = true;
+}
+
+function onSaveLeg(savedLeg: ExcursionLeg) {
+  const nextLegs = [...props.legs];
+  const idx = nextLegs.findIndex(
+    (l) => l.from_spot_id === savedLeg.from_spot_id && l.to_spot_id === savedLeg.to_spot_id
+  );
+  if (idx !== -1) {
+    nextLegs[idx] = savedLeg;
+  } else {
+    nextLegs.push(savedLeg);
+  }
+  emit('update:legs', nextLegs);
+}
+
+function onDeleteLeg() {
+  if (editingLegFromIndex.value == null) return;
+  const fromId = props.modelValue[editingLegFromIndex.value];
+  const toId = props.modelValue[editingLegFromIndex.value + 1];
+  const nextLegs = props.legs.filter((l) => !(l.from_spot_id === fromId && l.to_spot_id === toId));
+  emit('update:legs', nextLegs);
 }
 </script>
 
@@ -134,10 +224,17 @@ function onDragEnd() {
         >
           <span class="order-num">{{ index + 1 }}.</span>
           <span class="drag-handle" aria-hidden="true">⠿</span>
-          <span class="spot-title"
-            ><AppIcon :icon="station.tabler" :size="14" group="categories" />
-            {{ station.title }}</span
+          <span class="spot-title">
+            <AppIcon :icon="station.tabler" :size="14" group="categories" />
+            {{ station.title }}
+          </span>
+          <span
+            v-if="getLayover(index) != null"
+            class="layover-badge"
+            title="Aufenthalts-/Umsteigezeit"
           >
+            ⏱️ {{ formatTravelDuration(getLayover(index)!) }} Umstieg
+          </span>
           <button
             type="button"
             class="remove-btn"
@@ -146,6 +243,67 @@ function onDragEnd() {
           >
             <AppIcon :icon="ACTION_ICONS.close" :size="14" group="actions" />
           </button>
+        </div>
+
+        <!-- Teilstrecken-Verbinder zwischen zwei Stationen (Issue #361) -->
+        <div v-if="index < plannedStations.length - 1" class="leg-connector">
+          <div class="leg-connector-line"></div>
+          <button
+            type="button"
+            class="leg-btn"
+            :class="{
+              'has-data': !!getLegBetween(station.id, plannedStations[index + 1].id),
+            }"
+            @click="openLegModal(index)"
+          >
+            <template v-if="getLegBetween(station.id, plannedStations[index + 1].id)">
+              <span class="leg-pill">
+                {{
+                  travelTypeIcon(
+                    getLegBetween(station.id, plannedStations[index + 1].id)!.transport_type ?? null
+                  )
+                }}
+                <span class="leg-type">
+                  {{
+                    getLegBetween(station.id, plannedStations[index + 1].id)!.transport_type ||
+                    'Verkehrsmittel'
+                  }}
+                </span>
+                <span
+                  v-if="
+                    getLegBetween(station.id, plannedStations[index + 1].id)!.departure_time ||
+                    getLegBetween(station.id, plannedStations[index + 1].id)!.arrival_time
+                  "
+                  class="leg-times"
+                >
+                  {{
+                    getLegBetween(station.id, plannedStations[index + 1].id)!.departure_time || '?'
+                  }}–{{
+                    getLegBetween(station.id, plannedStations[index + 1].id)!.arrival_time || '?'
+                  }}
+                </span>
+                <span
+                  v-if="getLegBetween(station.id, plannedStations[index + 1].id)!.amount"
+                  class="leg-cost"
+                >
+                  ·
+                  {{
+                    getLegBetween(station.id, plannedStations[index + 1].id)!
+                      .amount!.toFixed(2)
+                      .replace('.', ',')
+                  }}
+                  €
+                </span>
+              </span>
+            </template>
+            <template v-else>
+              <span class="leg-empty">
+                <AppIcon :icon="ACTION_ICONS.recordStart" :size="12" group="actions" /> +
+                Verkehrsmittel
+              </span>
+            </template>
+          </button>
+          <div class="leg-connector-line"></div>
         </div>
       </template>
       <div
@@ -176,6 +334,16 @@ function onDragEnd() {
         <span class="derived-add" aria-hidden="true">+</span>
       </button>
     </fieldset>
+
+    <LegTransportModal
+      v-model="showLegModal"
+      :from-spot="currentModalFromSpot"
+      :to-spot="currentModalToSpot"
+      :leg="currentModalLeg"
+      :users="props.users"
+      @save="onSaveLeg"
+      @delete="onDeleteLeg"
+    />
   </div>
 </template>
 
@@ -184,6 +352,87 @@ function onDragEnd() {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+}
+
+.leg-connector {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 2px 0 2px 28px;
+}
+
+.leg-connector-line {
+  flex: 0 0 12px;
+  height: 1px;
+  background: var(--color-primary-dark, #ccc);
+  opacity: 0.3;
+}
+
+.leg-btn {
+  display: inline-flex;
+  align-items: center;
+  background: none;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  padding: 3px 8px;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  box-shadow: none;
+  transition: all 0.15s ease;
+}
+
+.leg-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary-dark);
+  background: var(--color-surface);
+}
+
+.leg-btn.has-data {
+  border-style: solid;
+  border-color: var(--color-primary);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-sm);
+}
+
+.leg-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 500;
+}
+
+.leg-type {
+  font-weight: 600;
+}
+
+.leg-times {
+  color: var(--color-text-muted);
+}
+
+.leg-cost {
+  font-weight: 600;
+  color: var(--color-scheduled);
+}
+
+.leg-empty {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.layover-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  background: var(--color-surface-hover, rgba(0, 0, 0, 0.05));
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  padding: 2px 6px;
+  margin-left: auto;
+  white-space: nowrap;
 }
 
 .planned-box,

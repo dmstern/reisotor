@@ -267,6 +267,27 @@ CREATE TABLE IF NOT EXISTS excursion_spots (
   position INTEGER NOT NULL DEFAULT 0
 );
 
+-- Teilstrecken einer Tour (Issue #361): Teilstrecke zwischen Station i und i+1 mit individuellen
+-- Verkehrsmitteln, Zeiten, Sitzplatz, Gepäck, Notiz, Kosten/Budget etc.
+CREATE TABLE IF NOT EXISTS excursion_legs (
+  id INTEGER PRIMARY KEY,
+  idea_id INTEGER NOT NULL REFERENCES ideas(id) ON DELETE CASCADE,
+  position INTEGER NOT NULL DEFAULT 0,
+  from_spot_id INTEGER NOT NULL REFERENCES spots(id) ON DELETE CASCADE,
+  to_spot_id INTEGER NOT NULL REFERENCES spots(id) ON DELETE CASCADE,
+  transport_type TEXT,
+  departure_time TEXT,
+  arrival_time TEXT,
+  checkin_info TEXT,
+  seat TEXT,
+  luggage TEXT,
+  ticket_link TEXT,
+  note TEXT,
+  amount REAL,
+  paid_by_user_id INTEGER REFERENCES users(id),
+  budget_expense_id INTEGER REFERENCES budget_items(id)
+);
+
 -- Likes/Kommentare für Spots (analog idea_likes/idea_comments): ersetzt den bisherigen
 -- Verworfen-Status – Spots werden per Like-Anzahl statt eines aktiv/verworfen-Flags sortiert.
 CREATE TABLE IF NOT EXISTS spot_likes (
@@ -1632,4 +1653,75 @@ if (hasTable('travel_items')) {
   }
 
   db.exec('DROP TABLE travel_items');
+}
+
+// Issue #361: Backfill für bestehende Touren mit Transport-Infos auf der ideas-Tabelle
+// Falls eine Tour Transportmittel/Zeiten/Kosten und mindestens 2 Stationen in excursion_spots hat,
+// aber noch keine Einträge in excursion_legs existieren, wird die erste Teilstrecke (Leg 0) erzeugt.
+const ideasWithTransport = db
+  .prepare(
+    `SELECT i.id, i.transport_type, i.departure_time, i.arrival_time, i.checkin_info,
+            i.seat, i.luggage, i.ticket_link, i.amount, i.paid_by_user_id, i.budget_expense_id
+     FROM ideas i
+     WHERE (i.role IS NOT NULL OR i.transport_type IS NOT NULL)
+       AND NOT EXISTS (SELECT 1 FROM excursion_legs el WHERE el.idea_id = i.id)`
+  )
+  .all() as {
+  id: number;
+  transport_type: string | null;
+  departure_time: string | null;
+  arrival_time: string | null;
+  checkin_info: string | null;
+  seat: string | null;
+  luggage: string | null;
+  ticket_link: string | null;
+  amount: number | null;
+  paid_by_user_id: number | null;
+  budget_expense_id: number | null;
+}[];
+
+if (ideasWithTransport.length > 0) {
+  const selectSpotsStmt = db.prepare(
+    'SELECT spot_id FROM excursion_spots WHERE idea_id = ? ORDER BY position ASC LIMIT 2'
+  );
+  const insertLegStmt = db.prepare(
+    `INSERT INTO excursion_legs (
+      idea_id, position, from_spot_id, to_spot_id,
+      transport_type, departure_time, arrival_time, checkin_info,
+      seat, luggage, ticket_link, amount, paid_by_user_id, budget_expense_id
+    ) VALUES (?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  );
+
+  const checkUserExists = db.prepare('SELECT 1 FROM users WHERE id = ?');
+  const checkBudgetExists = db.prepare('SELECT 1 FROM budget_items WHERE id = ?');
+
+  for (const idea of ideasWithTransport) {
+    const spots = selectSpotsStmt.all(idea.id) as { spot_id: number }[];
+    if (spots.length >= 2) {
+      const validUserId =
+        idea.paid_by_user_id && checkUserExists.get(idea.paid_by_user_id)
+          ? idea.paid_by_user_id
+          : null;
+      const validBudgetId =
+        idea.budget_expense_id && checkBudgetExists.get(idea.budget_expense_id)
+          ? idea.budget_expense_id
+          : null;
+
+      insertLegStmt.run(
+        idea.id,
+        spots[0].spot_id,
+        spots[1].spot_id,
+        idea.transport_type,
+        idea.departure_time,
+        idea.arrival_time,
+        idea.checkin_info,
+        idea.seat,
+        idea.luggage,
+        idea.ticket_link,
+        idea.amount,
+        validUserId,
+        validBudgetId
+      );
+    }
+  }
 }

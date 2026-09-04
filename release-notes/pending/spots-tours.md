@@ -1,2 +1,3 @@
 - **Touren & Spots auf der Karte**: Eingeplante Touren erscheinen sofort im Kalender. Neue Vorschläge für An- und Abreise sowie bunte Kategorien erleichtern das Auswählen.
 - **Kompakte Filter- & Suchleiste**: Spots und Touren können jetzt direkt durchsucht werden; Sortierung und Filter sind übersichtlich in Popover-Menüs zusammengefasst.
+- **Touren mit Zwischenstopps & Teilstrecken**: Mehrteilige Routen unterstützen individuelle Verkehrsmittel, Abfahrts-/Ankunftszeiten, Sitzplätze, Ticket-Kosten sowie automatische Umsteigezeiten an Zwischenstationen (#361).
