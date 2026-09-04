@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { computed, ref, watch } from 'vue';
+import { computed, ref, shallowRef, watch } from 'vue';
 import { api } from '../api/client';
 import type { NotificationItem } from '../api/types';
 import { useTripStore } from './trip';
@@ -14,7 +14,7 @@ export const useNotificationsStore = defineStore('notifications', () => {
   const tripStore = useTripStore();
   const liveSync = useLiveSyncStore();
 
-  const items = ref<NotificationItem[]>([]);
+  const items = shallowRef<NotificationItem[]>([]);
   const loaded = ref(false);
   const unreadCount = computed(() => items.value.filter((n) => !n.read).length);
 
@@ -41,9 +41,11 @@ export const useNotificationsStore = defineStore('notifications', () => {
   /** Von NotificationInbox.vue beim Klick auf einen Eintrag aufgerufen - optimistisch lokal
    *  markieren (Badge/Highlight verschwinden sofort), Server-Aufruf best effort im Hintergrund. */
   async function markRead(id: number) {
-    const item = items.value.find((n) => n.id === id);
-    if (!item || item.read) return;
-    item.read = true;
+    const idx = items.value.findIndex((n) => n.id === id);
+    if (idx === -1 || items.value[idx].read) return;
+    const next = [...items.value];
+    next[idx] = { ...next[idx], read: true };
+    items.value = next;
     try {
       await api.post(`/notifications/${id}/read`);
     } catch {
@@ -54,7 +56,7 @@ export const useNotificationsStore = defineStore('notifications', () => {
   async function markAllRead() {
     const tripId = tripStore.currentTripId;
     if (tripId == null) return;
-    for (const item of items.value) item.read = true;
+    items.value = items.value.map((item) => (item.read ? item : { ...item, read: true }));
     try {
       await api.post('/notifications/read-all', { trip_id: tripId });
     } catch {
