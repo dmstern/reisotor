@@ -148,6 +148,22 @@ export const attachmentsRoutes: FastifyPluginAsync = async (app) => {
     return serialize(row);
   });
 
+  app.get<{ Params: { id: string } }>('/attachments/:id/download', async (req, reply) => {
+    const existing = db.prepare('SELECT * FROM attachments WHERE id = ?').get(req.params.id) as
+      AttachmentRow | undefined;
+    if (!existing) return reply.code(404).send({ error: 'Nicht gefunden' });
+    if (!requireTripMember(reply, existing.trip_id, req.session.userId)) return;
+
+    const safeAsciiName = existing.original_name.replace(/["\\]/g, '_');
+    const encodedName = encodeURIComponent(existing.original_name);
+    reply.header(
+      'Content-Disposition',
+      `attachment; filename="${safeAsciiName}"; filename*=UTF-8''${encodedName}`
+    );
+    reply.type(existing.mime_type);
+    return reply.sendFile(existing.filename, uploadsDir);
+  });
+
   app.delete<{ Params: { id: string } }>('/attachments/:id', async (req, reply) => {
     const existing = db.prepare('SELECT * FROM attachments WHERE id = ?').get(req.params.id) as
       AttachmentRow | undefined;

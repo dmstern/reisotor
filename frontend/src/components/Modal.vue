@@ -13,13 +13,17 @@ import IconButton from './primitives/IconButton.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { useModalStore } from '../stores/modal';
 
-const props = defineProps<{
-  modelValue: boolean;
-  title?: string;
-  hideHeader?: boolean;
-  fullHeight?: boolean;
-  ariaLabel?: string;
-}>();
+const props = withDefaults(
+  defineProps<{
+    modelValue: boolean;
+    title?: string;
+    hideHeader?: boolean;
+    fullHeight?: boolean;
+    ariaLabel?: string;
+    size?: 'sm' | 'md' | 'lg' | 'xl';
+  }>(),
+  { size: 'md' }
+);
 const emit = defineEmits<{ (e: 'update:modelValue', value: boolean): void }>();
 
 const modalStore = useModalStore();
@@ -124,7 +128,7 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
         <div
           ref="modalRef"
           class="modal"
-          :class="{ 'full-height': fullHeight }"
+          :class="[{ 'full-height': fullHeight }, `size-${size}`]"
           role="dialog"
           aria-modal="true"
           :aria-labelledby="title && !hideHeader ? titleId : undefined"
@@ -197,6 +201,22 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: var(--shadow-md);
+}
+
+.modal.size-sm {
+  max-width: 360px;
+}
+
+.modal.size-md {
+  max-width: 480px;
+}
+
+.modal.size-lg {
+  max-width: 720px;
+}
+
+.modal.size-xl {
+  max-width: 900px;
 }
 
 /* fullHeight-Variante (siehe Prop oben): ursprünglich per align-self:stretch auf die volle

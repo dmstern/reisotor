@@ -125,6 +125,29 @@ describe('attachments routes', () => {
     expect(list.statusCode).toBe(200);
     expect(list.json()).toHaveLength(1);
 
+    const downloadMissing = await app.inject({
+      method: 'GET',
+      url: '/api/attachments/999999/download',
+      headers: { cookie: owner.cookie },
+    });
+    expect(downloadMissing.statusCode).toBe(404);
+
+    const downloadForbidden = await app.inject({
+      method: 'GET',
+      url: `/api/attachments/${attachment.id}/download`,
+      headers: { cookie: outsider.cookie },
+    });
+    expect(downloadForbidden.statusCode).toBe(403);
+
+    const downloadSuccess = await app.inject({
+      method: 'GET',
+      url: `/api/attachments/${attachment.id}/download`,
+      headers: { cookie: owner.cookie },
+    });
+    expect(downloadSuccess.statusCode).toBe(200);
+    expect(downloadSuccess.headers['content-disposition']).toContain('attachment');
+    expect(downloadSuccess.headers['content-disposition']).toContain('ticket.png');
+
     const deleteForbidden = await app.inject({
       method: 'DELETE',
       url: `/api/attachments/${attachment.id}`,

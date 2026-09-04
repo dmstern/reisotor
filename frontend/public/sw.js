@@ -14,7 +14,13 @@ import { CacheableResponsePlugin } from 'workbox-cacheable-response';
 precacheAndRoute(self.__WB_MANIFEST);
 // SPA-Fallback: jede Navigation (auch ein Deep-Link wie /todo ohne Netz) liefert die gecachte
 // index.html aus, der Client-seitige Router (vue-router) übernimmt danach normal.
-registerRoute(new NavigationRoute(createHandlerBoundToURL('/index.html')));
+// /api/* ist explizit per denylist ausgenommen, damit Navigationen/Downloads dorthin nicht die
+// SPA-Shell ausliefern (#364).
+registerRoute(
+  new NavigationRoute(createHandlerBoundToURL('/index.html'), {
+    denylist: [/^\/api\//],
+  })
+);
 
 // Kartenkacheln (TripMap.vue/ExcursionMiniMap.vue, Leaflet gegen den öffentlichen
 // OSM-Tile-Server) sind weder Teil des obigen App-Shell-Precache (nur JS/CSS/HTML/Icons/Fonts)

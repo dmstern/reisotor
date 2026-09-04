@@ -3,11 +3,12 @@ import { onMounted, ref } from 'vue';
 import { api } from '../api/client';
 import type { Attachment, AttachmentDomain } from '../api/types';
 import { compressImage } from '../utils/imageCompression';
-import { readAsDataUrl, formatFileSize } from '../utils/fileUpload';
-import AppIcon from './AppIcon.vue';
-import IconButton from './primitives/IconButton.vue';
+import { readAsDataUrl } from '../utils/fileUpload';
+import Button from './primitives/Button.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { useAuthStore } from '../stores/auth';
+import AttachmentPreviewModal from './AttachmentPreviewModal.vue';
+import AttachmentThumbnails from './AttachmentThumbnails.vue';
 
 const auth = useAuthStore();
 
@@ -33,6 +34,14 @@ const props = withDefaults(
 const attachments = ref<Attachment[]>([]);
 const uploading = ref(false);
 const error = ref('');
+const previewOpen = ref(false);
+const previewIndex = ref(0);
+const fileInputRef = ref<HTMLInputElement | null>(null);
+
+function openPreview(index: number) {
+  previewIndex.value = index;
+  previewOpen.value = true;
+}
 
 async function load() {
   attachments.value = await api.get<Attachment[]>(
@@ -81,39 +90,46 @@ async function remove(attachment: Attachment) {
        leeren "Anhänge"-Überschrift ohne Inhalt und ohne Möglichkeit, etwas hinzuzufügen. -->
   <div v-if="editable || attachments.length" class="file-attachments">
     <h4 class="heading">Anhänge</h4>
-    <ul v-if="attachments.length" class="attachment-list">
-      <li v-for="attachment in attachments" :key="attachment.id" class="attachment-row">
-        <a :href="attachment.url" target="_blank" rel="noopener" class="attachment-link">
-          <AppIcon :icon="ACTION_ICONS.attachment" :size="14" group="actions" />
-          {{ attachment.original_name }}
-        </a>
-        <span class="size">{{ formatFileSize(attachment.size_bytes) }}</span>
-        <IconButton
-          v-if="editable"
-          variant="ghost"
-          size="sm"
-          class="remove-btn"
-          :icon="ACTION_ICONS.close"
-          title="Anhang löschen"
-          aria-label="Anhang löschen"
-          @click="remove(attachment)"
-        />
-      </li>
-    </ul>
+    <AttachmentThumbnails
+      v-if="attachments.length"
+      :items="attachments"
+      :editable="editable"
+      remove-title="Anhang löschen"
+      remove-aria-label="Anhang löschen"
+      @click="openPreview"
+      @remove="(index) => remove(attachments[index])"
+    />
+
+    <AttachmentPreviewModal
+      v-model="previewOpen"
+      :attachments="attachments"
+      :initial-index="previewIndex"
+    />
     <p v-if="editable && auth.user?.restricted" class="hint">
       Eingeschränkter Modus - Kein Datei-Upload möglich
     </p>
-    <label for="auto-id-1788301175437-7" v-else-if="editable" class="upload-label">
+    <div v-else-if="editable" class="upload-control">
       <input
-        id="auto-id-1788301175437-7"
+        ref="fileInputRef"
         type="file"
+        class="file-input-hidden"
         accept="image/*,application/pdf"
         multiple
+        aria-label="Datei auswählen"
         :disabled="uploading"
         @change="onFilesSelected"
       />
-      {{ uploading ? 'Lädt hoch …' : '+ Datei hinzufügen' }}
-    </label>
+      <Button
+        variant="secondary"
+        size="sm"
+        :icon="ACTION_ICONS.add"
+        :disabled="uploading"
+        type="button"
+        @click="fileInputRef?.click()"
+      >
+        {{ uploading ? 'Lädt hoch …' : '+ Datei hinzufügen' }}
+      </Button>
+    </div>
     <p v-if="error" class="error">{{ error }}</p>
   </div>
 </template>
@@ -129,51 +145,7 @@ async function remove(attachment: Attachment) {
   margin-bottom: var(--space-2);
 }
 
-.attachment-list {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  margin-bottom: var(--space-2);
-}
-
-.attachment-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: 0.9rem;
-}
-
-.attachment-link {
-  color: var(--color-primary);
-  text-decoration: none;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.attachment-link:hover {
-  text-decoration: underline;
-}
-
-.size {
-  color: var(--color-text-muted);
-  font-size: 0.75rem;
-  flex-shrink: 0;
-}
-
-.remove-btn {
-  margin-left: auto;
-}
-
-.upload-label {
-  display: inline-block;
-  font-size: 0.85rem;
-  color: var(--color-primary);
-  cursor: pointer;
-}
-
-.upload-label input {
+.file-input-hidden {
   display: none;
 }
 
