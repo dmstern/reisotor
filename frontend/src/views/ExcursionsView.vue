@@ -4084,7 +4084,7 @@ async function removeSpot(id: number) {
   font-size: 0.75rem;
   font-weight: 600;
   padding: 2px 10px;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-sm);
   background: var(--color-surface-sunken);
   color: var(--color-text-muted);
   border: 1px solid var(--color-border);

@@ -147,11 +147,18 @@ function getLegBetween(fromId: number, toId: number): ExcursionLeg | undefined {
   return props.legs.find((l) => l.from_spot_id === fromId && l.to_spot_id === toId);
 }
 
+function getLegDuration(fromId: number, toId: number): string | null {
+  const leg = getLegBetween(fromId, toId);
+  if (!leg?.departure_time || !leg?.arrival_time) return null;
+  const mins = travelDurationMinutes(leg.departure_time, leg.arrival_time);
+  return mins != null ? formatTravelDuration(mins) : null;
+}
+
 function getLayover(index: number): number | null {
-  if (index <= 0 || index >= props.modelValue.length - 1) return null;
-  const prevSpotId = props.modelValue[index - 1];
-  const currSpotId = props.modelValue[index];
-  const nextSpotId = props.modelValue[index + 1];
+  if (index <= 0 || index >= plannedStations.value.length - 1) return null;
+  const prevSpotId = plannedStations.value[index - 1].id;
+  const currSpotId = plannedStations.value[index].id;
+  const nextSpotId = plannedStations.value[index + 1].id;
   const inLeg = getLegBetween(prevSpotId, currSpotId);
   const outLeg = getLegBetween(currSpotId, nextSpotId);
   if (!inLeg?.arrival_time || !outLeg?.departure_time) return null;
@@ -233,7 +240,7 @@ function onDeleteLeg() {
             class="layover-badge"
             title="Aufenthalts-/Umsteigezeit"
           >
-            ⏱️ {{ formatTravelDuration(getLayover(index)!) }} Umstieg
+            ⏱️ {{ formatTravelDuration(getLayover(index)!) }} Umstiegszeit
           </span>
           <button
             type="button"
@@ -281,6 +288,12 @@ function onDeleteLeg() {
                   }}–{{
                     getLegBetween(station.id, plannedStations[index + 1].id)!.arrival_time || '?'
                   }}
+                  <span
+                    v-if="getLegDuration(station.id, plannedStations[index + 1].id)"
+                    class="leg-duration"
+                  >
+                    ({{ getLegDuration(station.id, plannedStations[index + 1].id) }})
+                  </span>
                 </span>
                 <span
                   v-if="getLegBetween(station.id, plannedStations[index + 1].id)!.amount"
@@ -410,6 +423,14 @@ function onDeleteLeg() {
 
 .leg-times {
   color: var(--color-text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.leg-duration {
+  color: var(--color-text-subtle);
+  font-size: 0.72rem;
 }
 
 .leg-cost {
