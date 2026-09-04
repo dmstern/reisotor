@@ -573,10 +573,40 @@ async function onImportFileSelected(event: Event) {
                 />
                 {{ connectivity.checking ? 'Prüfe…' : 'Jetzt prüfen' }}
               </Button>
+              <Button
+                v-if="connectivity.pendingCount > 0"
+                size="sm"
+                variant="secondary"
+                :disabled="connectivity.syncing"
+                @click="connectivity.syncNow()"
+                class="pending-sync-btn"
+                :title="
+                  connectivity.syncing
+                    ? 'Synchronisiere…'
+                    : 'Ausstehende Änderungen jetzt synchronisieren'
+                "
+              >
+                <AppIcon
+                  :icon="ACTION_ICONS.syncPending"
+                  :size="14"
+                  group="actions"
+                  :class="{ 'is-spinning': connectivity.syncing }"
+                />
+                {{
+                  connectivity.syncing
+                    ? 'Synchronisiere…'
+                    : `${connectivity.pendingCount} ausstehend`
+                }}
+              </Button>
             </div>
             <p v-if="!connectivity.isOnline" class="offline-description hint">
               Änderungen werden lokal gespeichert. Die App versucht alle 6 Sekunden automatisch,
               sich wieder zu verbinden.
+            </p>
+            <p v-else-if="connectivity.pendingCount > 0" class="pending-description hint">
+              {{ connectivity.pendingCount }}
+              {{ connectivity.pendingCount === 1 ? 'Änderung ist' : 'Änderungen sind' }}
+              noch nicht mit dem Server synchronisiert.
             </p>
           </div>
           <Button type="button" variant="secondary" @click="logout" class="logout-btn">
@@ -1622,6 +1652,20 @@ label,
   margin: 0;
   max-width: 350px;
   line-height: 1.4;
+}
+
+.pending-description {
+  margin: 0;
+  max-width: 350px;
+  line-height: 1.4;
+}
+
+.pending-sync-btn {
+  color: var(--color-accent);
+}
+
+.pending-sync-btn .is-spinning {
+  animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
