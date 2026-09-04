@@ -45,9 +45,9 @@ const groupBy = usePersistedRef<GroupBy>('reisotor-todo-group-by', 'assignee');
 const sortBy = usePersistedRef<SortBy>('reisotor-todo-sort-by', 'priority');
 
 const PRIORITY_META: Record<TodoPriority, { label: string; icon: string; color: string }> = {
-  low: { label: 'Niedrig', icon: '🟢', color: '#2f9e44' },
-  medium: { label: 'Mittel', icon: '🟡', color: '#e8a30c' },
-  high: { label: 'Hoch', icon: '🔴', color: '#d6336c' },
+  low: { label: 'Niedrig', icon: '🟢', color: 'var(--color-success)' },
+  medium: { label: 'Mittel', icon: '🟡', color: 'var(--color-accent)' },
+  high: { label: 'Hoch', icon: '🔴', color: 'var(--color-danger)' },
 };
 const PRIORITY_ORDER: Record<TodoPriority, number> = { high: 0, medium: 1, low: 2 };
 

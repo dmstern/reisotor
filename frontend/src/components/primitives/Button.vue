@@ -104,13 +104,14 @@ const hasDefaultSlot = () =>
     color 0.15s ease,
     border-color 0.15s ease,
     transform 0.12s cubic-bezier(0.2, 0.8, 0.4, 1),
+    translate 0.12s cubic-bezier(0.2, 0.8, 0.4, 1),
     box-shadow 0.15s ease,
     opacity 0.15s ease;
   user-select: none;
 }
 
 .btn:hover:not(:disabled) {
-  transform: translateY(-1px);
+  translate: 0 -1px;
   box-shadow: var(--shadow-md);
 }
 

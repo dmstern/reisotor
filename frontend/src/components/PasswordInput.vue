@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import AppIcon from './AppIcon.vue';
+import IconButton from './primitives/IconButton.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
 defineOptions({ inheritAttrs: false });
@@ -15,19 +15,16 @@ const visible = defineModel<boolean>('visible', { default: false });
   <div class="password-field">
     <!-- eslint-disable-next-line vuejs-accessibility/form-control-has-label -->
     <input v-model="model" :type="visible ? 'text' : 'password'" v-bind="$attrs" />
-    <button
+    <IconButton
       type="button"
+      variant="ghost"
+      size="sm"
       class="toggle-visibility"
       :aria-label="visible ? 'Eingabe verbergen' : 'Eingabe anzeigen'"
       :title="visible ? 'Eingabe verbergen' : 'Eingabe anzeigen'"
+      :icon="visible ? ACTION_ICONS.hidePassword : ACTION_ICONS.showPassword"
       @click="visible = !visible"
-    >
-      <AppIcon
-        :icon="visible ? ACTION_ICONS.hidePassword : ACTION_ICONS.showPassword"
-        :size="16"
-        group="actions"
-      />
-    </button>
+    />
   </div>
 </template>
 
@@ -44,25 +41,13 @@ const visible = defineModel<boolean>('visible', { default: false });
 
 .toggle-visibility {
   position: absolute;
-  top: 0;
-  right: 0;
-  height: 100%;
-  width: 36px;
-  padding: 0;
-  background: transparent;
-  border: none;
-  box-shadow: none;
+  top: 50%;
+  right: 4px;
+  transform: translateY(-50%);
   color: var(--color-text-muted);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1rem;
-  line-height: 1;
 }
 
 .toggle-visibility:hover {
-  background: transparent;
-  box-shadow: none;
   color: var(--color-text);
 }
 </style>

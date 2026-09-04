@@ -262,51 +262,24 @@ function clearFilters() {
             @close="sortMenuOpen = false"
           >
             <div class="popover-section-header">Sortieren nach</div>
-            <button
-              type="button"
-              class="sort-option-item"
-              :class="{ selected: sortMode === 'date' }"
+            <DropdownItem
+              label="Nach Datum"
+              :active="sortMode === 'date'"
+              :icon="sortMode === 'date' ? ACTION_ICONS.done : undefined"
               @click="selectSort('date')"
-            >
-              <span>Nach Datum</span>
-              <AppIcon
-                v-if="sortMode === 'date'"
-                :icon="ACTION_ICONS.done"
-                :size="14"
-                group="actions"
-                class="check-icon"
-              />
-            </button>
-            <button
-              type="button"
-              class="sort-option-item"
-              :class="{ selected: sortMode === 'alpha' }"
+            />
+            <DropdownItem
+              label="Alphabetisch"
+              :active="sortMode === 'alpha'"
+              :icon="sortMode === 'alpha' ? ACTION_ICONS.done : undefined"
               @click="selectSort('alpha')"
-            >
-              <span>Alphabetisch</span>
-              <AppIcon
-                v-if="sortMode === 'alpha'"
-                :icon="ACTION_ICONS.done"
-                :size="14"
-                group="actions"
-                class="check-icon"
-              />
-            </button>
-            <button
-              type="button"
-              class="sort-option-item"
-              :class="{ selected: sortMode === 'likes' }"
+            />
+            <DropdownItem
+              label="Nach Likes"
+              :active="sortMode === 'likes'"
+              :icon="sortMode === 'likes' ? ACTION_ICONS.done : undefined"
               @click="selectSort('likes')"
-            >
-              <span>Nach Likes</span>
-              <AppIcon
-                v-if="sortMode === 'likes'"
-                :icon="ACTION_ICONS.done"
-                :size="14"
-                group="actions"
-                class="check-icon"
-              />
-            </button>
+            />
           </PickerMenu>
         </template>
       </Teleport>
@@ -423,16 +396,16 @@ function clearFilters() {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--color-text-muted);
-  padding: 4px 8px 8px;
+  padding: var(--space-1) var(--space-2) var(--space-2);
   border-bottom: 1px solid var(--color-border);
-  margin-bottom: 4px;
+  margin-bottom: var(--space-1);
 }
 
 .popover-group-title {
   font-size: 0.75rem;
   font-weight: 600;
-  color: var(--color-text-secondary, var(--color-text-muted));
-  padding: 6px 8px 2px;
+  color: var(--color-text-muted);
+  padding: var(--space-1) var(--space-2);
 }
 
 .popover-options-list {
@@ -443,14 +416,14 @@ function clearFilters() {
 }
 
 .popover-footer {
-  margin-top: 6px;
-  padding-top: 6px;
+  margin-top: var(--space-1);
+  padding-top: var(--space-1);
   border-top: 1px solid var(--color-border);
 }
 
 .clear-filters-btn {
   width: 100%;
-  padding: 6px 8px;
+  padding: var(--space-1) var(--space-2);
   border: none;
   background: transparent;
   color: var(--color-text-muted);
@@ -461,35 +434,7 @@ function clearFilters() {
 }
 
 .clear-filters-btn:hover {
-  color: var(--color-danger, #ef4444);
+  color: var(--color-danger);
   background: var(--color-hover);
-}
-
-.sort-option-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  padding: 8px 10px;
-  border: none;
-  background: transparent;
-  color: var(--color-text);
-  font-size: 0.85rem;
-  cursor: pointer;
-  border-radius: var(--radius-sm-squircle);
-  text-align: left;
-}
-
-.sort-option-item:hover {
-  background: var(--color-hover);
-}
-
-.sort-option-item.selected {
-  font-weight: 600;
-  color: var(--color-primary);
-}
-
-.check-icon {
-  color: var(--color-primary);
 }
 </style>
