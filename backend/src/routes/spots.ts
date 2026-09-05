@@ -152,9 +152,10 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
     return selectSpotsByTripStmt.all(req.query.trip_id);
   });
 
-  // Live-Vorschau (Titel/Foto) für ExcursionsView.vue's Spot-Anlegen-Formular, sobald ein Maps-Link
-  // eingetippt wurde - kein trip_id-Bezug nötig (liest keine Trip-Daten), daher genügt die globale
-  // requireAuth-preHandler-Gruppe (app.ts) ohne zusätzliche requireTripMember-Prüfung.
+  // SECURITY AUDIT (Sentinel): Live-Vorschau (Titel/Foto) für ExcursionsView.vue's Spot-Anlegen-Formular,
+  // sobald ein Maps-Link eingetippt wurde. Dieser Endpunkt erfordert zwar Authentifizierung (via requireAuth in app.ts),
+  // hat aber bewusst keinen trip_id-Bezug, da er lediglich ein öffentliches Vorschau-Snippet aus einem Link auflöst
+  // und keine Datenbank- oder Trip-Daten liest. Daher ist requireTripMember hier nicht erforderlich.
   app.get<{ Querystring: { maps_link?: string } }>('/spots/preview', async (req) => {
     return fetchPlacePreview(req.query.maps_link);
   });
