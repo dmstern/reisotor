@@ -57,7 +57,7 @@ test('clicking an own schedule entry opens the detail dialog instead of navigati
 
   // Card-Klick statt separatem "Bearbeiten"/Nav-Button (siehe ScheduleView.vue openEntry()) —
   // darf nicht navigieren, das Drawer/die Seite bleiben unverändert.
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/trip\/\d+$/);
 
   const modal = page.locator('.overlay .modal');
   await expect(modal).toBeVisible();
@@ -83,7 +83,7 @@ test('clicking a tour-linked calendar entry opens the detail dialog, not the exc
   // Ein mit einer Tour verknüpfter Termin ist ein ganz normaler, editierbarer Kalender-Termin
   // (siehe ScheduleView.vue openEntry()) – Klick öffnet den Anzeige-Dialog statt zur Karte zu
   // springen, mit einer Zeile zur verknüpften Tour.
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/trip\/\d+$/);
   const modal = page.locator('.overlay .modal');
   await expect(modal).toBeVisible();
   await expect(modal.getByText('Verknüpft')).toBeVisible();

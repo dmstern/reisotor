@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { api } from '../api/client';
 import type { User } from '../api/types';
 import { useTripStore } from '../stores/trip';
@@ -22,7 +22,7 @@ interface TrashEntry {
 }
 
 const tripStore = useTripStore();
-const tripId = tripStore.currentTripId as number;
+const tripId = computed(() => tripStore.currentTripId as number);
 const entries = ref<TrashEntry[]>([]);
 const users = ref<User[]>([]);
 const loading = ref(true);
@@ -84,10 +84,11 @@ function formatDeletedAt(iso: string) {
 }
 
 async function load() {
+  if (tripId.value == null) return;
   try {
     const [entriesRes, usersRes] = await Promise.all([
-      api.get<TrashEntry[]>(`/trash?trip_id=${tripId}`),
-      api.get<User[]>(`/trips/${tripId}/members`),
+      api.get<TrashEntry[]>(`/trash?trip_id=${tripId.value}`),
+      api.get<User[]>(`/trips/${tripId.value}/members`),
     ]);
     entries.value = entriesRes;
     users.value = usersRes;
@@ -101,6 +102,10 @@ async function load() {
 }
 
 onMounted(load);
+watch(tripId, () => {
+  loading.value = true;
+  load();
+});
 
 function keyOf(entry: TrashEntry) {
   return `${entry.type}-${entry.id}`;

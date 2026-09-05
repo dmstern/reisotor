@@ -38,7 +38,7 @@ const tripCreationBlocked = () => !!auth.user?.restricted && tripStore.trips.len
 
 function selectTrip(id: number) {
   tripStore.selectTrip(id);
-  router.push('/');
+  router.push(`/trip/${id}`);
 }
 
 function openMembers(trip: Trip) {
