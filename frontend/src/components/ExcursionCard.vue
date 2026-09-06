@@ -233,12 +233,22 @@ function onSpotDrop(event: DragEvent) {
       class="card-delete"
       @click="emit('remove', excursion.id)"
     />
-    <!-- Dicker rötlich-violetter Akzentbalken an der abgerundeten linken Kante mit Rucksack-Icon -->
-    <div class="tour-accent-bar" title="Tour / Ausflug" aria-hidden="true">
+    <!-- Dicker rötlich-violetter Akzentbalken an der abgerundeten linken Kante mit Rollen-/Rucksack-Icon -->
+    <div
+      class="tour-accent-bar"
+      :title="excursion.role ? TRAVEL_ROLE_META[excursion.role].label : 'Tour / Ausflug'"
+      aria-hidden="true"
+    >
       <div class="tour-accent-badge">
-        <AppIcon :icon="SECTION_ICON_DEFS.excursions" group="categories" :size="14" />
+        <AppIcon
+          :icon="
+            excursion.role ? TRAVEL_ROLE_META[excursion.role].tabler : SECTION_ICON_DEFS.excursions
+          "
+          group="categories"
+          :size="14"
+        />
       </div>
-      <span class="tour-bar-label">TOUR</span>
+      <span class="tour-bar-label">{{ excursion.role ? 'REISE' : 'TOUR' }}</span>
     </div>
     <div class="tour-card-main">
       <div class="image" :style="displayImage ? { backgroundImage: `url(${displayImage})` } : {}">
