@@ -62,8 +62,46 @@ const highlightLeft = ref(0);
 const highlightWidth = ref(0);
 const highlightVisible = ref(false);
 
+const isTravelActive = computed(() => {
+  if (!route.path.includes('/excursions')) return false;
+  const tourRole = route.query.tourRole;
+  if (!tourRole) return false;
+  const roles = (Array.isArray(tourRole) ? tourRole.join(',') : String(tourRole)).split(',');
+  return roles.includes('arrival') || roles.includes('departure') || roles.includes('onward');
+});
+
+function isLinkActive(link: NavLinkDef): boolean {
+  if (link.key === 'travel') {
+    return isTravelActive.value;
+  }
+  if (link.key === 'excursions') {
+    const travelVisible = visibleLinks.value.some((l) => l.key === 'travel');
+    if (travelVisible && isTravelActive.value) return false;
+    return route.path.includes('/excursions');
+  }
+  const targetPath = tripStore.currentTripId
+    ? `/trip/${tripStore.currentTripId}${link.to}`
+    : link.to;
+  return route.path.startsWith(targetPath);
+}
+
+function getLinkTarget(link: NavLinkDef) {
+  if (link.key === 'travel') {
+    const basePath = tripStore.currentTripId
+      ? `/trip/${tripStore.currentTripId}/excursions`
+      : '/excursions';
+    return {
+      path: basePath,
+      query: { group: 'tours', tourRole: 'arrival,departure,onward' },
+    };
+  }
+  return tripStore.currentTripId ? `/trip/${tripStore.currentTripId}${link.to}` : link.to;
+}
+
 function updateHighlight() {
-  const activeEl = linksEl.value?.querySelector<HTMLElement>('.link.router-link-active');
+  const activeEl = linksEl.value?.querySelector<HTMLElement>(
+    '.link.active, .link.router-link-active:not(.custom-inactive)'
+  );
   if (!activeEl) {
     highlightVisible.value = false;
     return;
@@ -195,9 +233,10 @@ function onLinkClick(event: MouseEvent) {
       </router-link>
       <router-link
         v-for="link in visibleLinks"
-        :key="link.to"
-        :to="tripStore.currentTripId ? `/trip/${tripStore.currentTripId}${link.to}` : link.to"
+        :key="link.key"
+        :to="getLinkTarget(link)"
         class="link"
+        :class="{ active: isLinkActive(link), 'custom-inactive': !isLinkActive(link) }"
         @click="onLinkClick"
       >
         <span class="icon-wrap">
@@ -330,7 +369,8 @@ function onLinkClick(event: MouseEvent) {
   white-space: nowrap;
 }
 
-.link.router-link-active {
+.link.active,
+.link.router-link-active:not(.custom-inactive) {
   color: var(--color-primary-dark);
 }
 
@@ -339,7 +379,8 @@ function onLinkClick(event: MouseEvent) {
    die Tabler-Variante. Wirkt bewusst NICHT bei aktivierter navColored-Einstellung (dort setzt
    AppIcon einen expliziten Farb-Prop pro Bereich, der als Inline-Style immer gewinnt) und auch
    nicht für die Emoji-Variante (Emoji ignorieren CSS color ohnehin). */
-.link.router-link-active .icon {
+.link.active .icon,
+.link.router-link-active:not(.custom-inactive) .icon {
   color: var(--color-primary);
 }
 

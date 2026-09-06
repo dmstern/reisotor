@@ -9,6 +9,7 @@ export interface NavLinkDef {
   icon: IconDef;
   domain?: LiveDomain;
   domains?: LiveDomain[];
+  defaultVisible?: boolean;
 }
 
 // Registry der konfigurierbaren NavBar-Einträge (siehe stores/navConfig.ts, SettingsView.vue) -
@@ -33,6 +34,14 @@ export const NAV_LINKS: NavLinkDef[] = [
     label: 'Karte',
     icon: SECTION_ICON_DEFS.map,
     domains: ['spots', 'ideas'],
+  },
+  {
+    key: 'travel',
+    to: '/travel',
+    label: 'An-/Abreise',
+    icon: SECTION_ICON_DEFS.travel,
+    domains: ['ideas'],
+    defaultVisible: false,
   },
   {
     key: 'budget',

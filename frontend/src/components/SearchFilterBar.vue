@@ -7,6 +7,7 @@ import PickerMenu from './primitives/PickerMenu.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { spotCategoryMeta } from '../utils/spotCategory';
+import { TOUR_ROLE_META, TOUR_ROLE_OPTIONS, type TourRoleFilterOption } from '../utils/travelRole';
 
 export interface SortOption {
   value: 'alpha' | 'likes' | 'date';
@@ -21,6 +22,7 @@ const props = withDefaults(
     categoryFilter?: string[];
     categoryOptions?: string[];
     statusFilter?: ('planned' | 'unplanned' | 'done')[];
+    tourRoleFilter?: TourRoleFilterOption[];
   }>(),
   {
     searchQuery: '',
@@ -29,6 +31,7 @@ const props = withDefaults(
     categoryFilter: () => [],
     categoryOptions: () => [],
     statusFilter: () => [],
+    tourRoleFilter: () => [],
   }
 );
 
@@ -37,6 +40,7 @@ const emit = defineEmits<{
   (e: 'update:sortMode', value: 'alpha' | 'likes' | 'date'): void;
   (e: 'update:categoryFilter', value: string[]): void;
   (e: 'update:statusFilter', value: ('planned' | 'unplanned' | 'done')[]): void;
+  (e: 'update:tourRoleFilter', value: TourRoleFilterOption[]): void;
 }>();
 
 // Popover states
@@ -96,7 +100,11 @@ function groupIconDef(category: string) {
 }
 
 const activeFilterCount = computed(() => {
-  return (props.categoryFilter?.length || 0) + (props.statusFilter?.length || 0);
+  return (
+    (props.categoryFilter?.length || 0) +
+    (props.statusFilter?.length || 0) +
+    (props.tourRoleFilter?.length || 0)
+  );
 });
 
 const isSortActive = computed(() => props.sortMode !== 'date');
@@ -123,6 +131,17 @@ function toggleStatus(st: 'planned' | 'unplanned' | 'done') {
   emit('update:statusFilter', current);
 }
 
+function toggleTourRole(role: TourRoleFilterOption) {
+  const current = [...(props.tourRoleFilter || [])];
+  const idx = current.indexOf(role);
+  if (idx >= 0) {
+    current.splice(idx, 1);
+  } else {
+    current.push(role);
+  }
+  emit('update:tourRoleFilter', current);
+}
+
 function selectSort(mode: 'alpha' | 'likes' | 'date') {
   emit('update:sortMode', mode);
   sortMenuOpen.value = false;
@@ -131,6 +150,7 @@ function selectSort(mode: 'alpha' | 'likes' | 'date') {
 function clearFilters() {
   emit('update:categoryFilter', []);
   emit('update:statusFilter', []);
+  emit('update:tourRoleFilter', []);
 }
 </script>
 
@@ -185,7 +205,7 @@ function clearFilters() {
             <div class="popover-section-header">Filtern nach</div>
 
             <template v-if="categoryOptions.length">
-              <div class="popover-group-title">Kategorie</div>
+              <div class="popover-group-title">Spots</div>
               <div class="popover-options-list">
                 <DropdownItem
                   v-for="cat in categoryOptions"
@@ -227,6 +247,20 @@ function clearFilters() {
                 label="Gemacht"
                 :checked="statusFilter.includes('done')"
                 @update:checked="toggleStatus('done')"
+              />
+            </div>
+
+            <div class="popover-group-title">Touren</div>
+            <div class="popover-options-list">
+              <DropdownItem
+                v-for="role in TOUR_ROLE_OPTIONS"
+                :key="role"
+                multiselect
+                :icon="TOUR_ROLE_META[role].tabler"
+                icon-group="categories"
+                :label="TOUR_ROLE_META[role].label"
+                :checked="tourRoleFilter.includes(role)"
+                @update:checked="toggleTourRole(role)"
               />
             </div>
 

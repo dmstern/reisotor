@@ -10,7 +10,7 @@ import {
   type ComponentPublicInstance,
   type Ref,
 } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { api } from '../api/client';
 import type {
   Excursion,
@@ -25,7 +25,13 @@ import type {
 } from '../api/types';
 import { deriveTravelItems } from '../utils/deriveTravelItems';
 import { formatTravelDuration, travelDurationMinutes } from '../utils/travelDuration';
-import { TRAVEL_ROLE_META, TRAVEL_ROLE_OPTIONS } from '../utils/travelRole';
+import {
+  TRAVEL_ROLE_META,
+  TRAVEL_ROLE_OPTIONS,
+  TOUR_ROLE_META,
+  TOUR_ROLE_OPTIONS,
+  type TourRoleFilterOption,
+} from '../utils/travelRole';
 import { travelTypeIcon } from '../utils/travelTypeIcon';
 import { useAuthStore } from '../stores/auth';
 import { useTripStore } from '../stores/trip';
@@ -88,6 +94,7 @@ import { isAutoCreatedUnmodifiedScheduleItem } from '../utils/scheduleSpotUnlink
 const auth = useAuthStore();
 const tripStore = useTripStore();
 const route = useRoute();
+const router = useRouter();
 const { showToast } = useToast();
 const tripId = tripStore.currentTripId as number;
 const spotsStore = useSpotsStore();
@@ -185,11 +192,7 @@ function setCategoryNavSentinelRef(el: Element | ComponentPublicInstance | null)
 }
 
 onMounted(async () => {
-  // #196: die frühere eigene "Reise"-Gruppierung (dritte Toggle-Option) entfällt - Touren mit
-  // gesetzter role sind seit #176 ohnehin ganz normale Einträge der "Touren"-Gruppierung. Ein alter
-  // ?group=travel-Deep-Link (DashboardView.vue's Reise-Kachel/notificationTarget.ts/router redirect
-  // von /travel) landet deshalb einfach in der Touren-Ansicht statt einer eigenen.
-  if (route.query.group === 'travel' || route.query.group === 'tours') groupMode.value = 'tours';
+  applyRouteQuery();
   markSeenForGroupMode(groupMode.value);
   // Querverweis-Sprung (z. B. aus dem Budget bei einem automatisch aus einer Unterkunft erzeugten
   // Ausgabe-Eintrag, siehe BudgetView.vue's autoSourceFor()) – dieselbe highlightedIds-Menge wie
@@ -857,6 +860,114 @@ const statusFilter = usePersistedRef<('planned' | 'unplanned' | 'done')[]>(
 function removeStatusFilter(status: 'planned' | 'unplanned' | 'done') {
   statusFilter.value = statusFilter.value.filter((s) => s !== status);
 }
+
+const tourRoleFilter = ref<TourRoleFilterOption[]>([]);
+function removeTourRoleFilter(role: TourRoleFilterOption) {
+  tourRoleFilter.value = tourRoleFilter.value.filter((r) => r !== role);
+}
+function tourRoleIconDef(role: TourRoleFilterOption): IconDef {
+  return TOUR_ROLE_META[role].tabler;
+}
+function tourRoleLabel(role: TourRoleFilterOption): string {
+  return TOUR_ROLE_META[role].label;
+}
+
+let isSyncingQuery = false;
+
+function applyRouteQuery() {
+  isSyncingQuery = true;
+  const q = route.query;
+
+  if (q.group === 'tours') {
+    groupMode.value = 'tours';
+  } else if (q.group === 'category') {
+    groupMode.value = 'category';
+  } else if (q.group === 'travel') {
+    groupMode.value = 'tours';
+  }
+
+  if (q.tourRole) {
+    const roles = String(q.tourRole)
+      .split(',')
+      .filter((r): r is TourRoleFilterOption =>
+        TOUR_ROLE_OPTIONS.includes(r as TourRoleFilterOption)
+      );
+    tourRoleFilter.value = roles;
+  } else if (q.group === 'travel') {
+    tourRoleFilter.value = ['arrival', 'departure', 'onward'];
+  } else {
+    tourRoleFilter.value = [];
+  }
+
+  if (q.category) {
+    categoryFilter.value = String(q.category).split(',').filter(Boolean);
+  }
+  if (q.status) {
+    statusFilter.value = String(q.status)
+      .split(',')
+      .filter((s): s is 'planned' | 'unplanned' | 'done' =>
+        ['planned', 'unplanned', 'done'].includes(s)
+      );
+  }
+
+  nextTick(() => {
+    isSyncingQuery = false;
+  });
+}
+
+function updateRouteQuery() {
+  if (isSyncingQuery) return;
+  const newQuery: Record<string, string> = {};
+  for (const [k, v] of Object.entries(route.query)) {
+    if (v != null) newQuery[k] = Array.isArray(v) ? v.join(',') : String(v);
+  }
+
+  if (groupMode.value === 'tours') {
+    newQuery.group = 'tours';
+  } else {
+    delete newQuery.group;
+  }
+
+  if (tourRoleFilter.value.length) {
+    newQuery.tourRole = tourRoleFilter.value.join(',');
+  } else {
+    delete newQuery.tourRole;
+  }
+
+  if (categoryFilter.value.length) {
+    newQuery.category = categoryFilter.value.join(',');
+  } else {
+    delete newQuery.category;
+  }
+
+  if (statusFilter.value.length) {
+    newQuery.status = statusFilter.value.join(',');
+  } else {
+    delete newQuery.status;
+  }
+
+  const currentEntries = Object.entries(route.query);
+  const newEntries = Object.entries(newQuery);
+  const isDiff =
+    currentEntries.length !== newEntries.length ||
+    newEntries.some(([k, v]) => route.query[k] !== v);
+
+  if (isDiff) {
+    router.replace({ query: newQuery });
+  }
+}
+
+watch([groupMode, tourRoleFilter, categoryFilter, statusFilter], () => {
+  updateRouteQuery();
+});
+
+watch(
+  () => route.query,
+  () => {
+    applyRouteQuery();
+  }
+);
+
 function itemDone(item: SpotsGroupItem): boolean {
   return !!item.spot.done;
 }
@@ -878,6 +989,13 @@ const filteredSpotItems = computed(() =>
       const matchesStatus = statusFilter.value.includes(status);
       const matchesDone = statusFilter.value.includes('done') && itemDone(item);
       if (!matchesStatus && !matchesDone) return false;
+    }
+    if (tourRoleFilter.value.length) {
+      const spotTours = excursionsStore.excursions.filter((e) => e.spot_ids.includes(item.spot.id));
+      const matchesTourRole = spotTours.some((t) =>
+        t.role ? tourRoleFilter.value.includes(t.role) : tourRoleFilter.value.includes('excursion')
+      );
+      if (!matchesTourRole) return false;
     }
     if (searchQuery.value.trim()) {
       const q = searchQuery.value.trim().toLowerCase();
@@ -912,31 +1030,45 @@ function sortedCategoryKeys(categories: Iterable<string>): string[] {
 
 const spotGroups = computed(() => {
   const groups = new Map<string, SpotsGroupItem[]>();
-  const groupKeysFor =
-    groupMode.value === 'tours'
-      ? tourTitlesForItem
-      : (item: SpotsGroupItem) => [itemCategory(item)];
-  for (const item of filteredSpotItems.value) {
-    const keys = groupKeysFor(item);
-    const effectiveKeys =
-      groupMode.value === 'tours' && keys.length === 0 ? [UNASSIGNED_TOUR_GROUP] : keys;
-    for (const key of effectiveKeys) {
-      const list = groups.get(key) ?? [];
-      list.push(item);
-      groups.set(key, list);
-    }
-  }
   if (groupMode.value === 'tours') {
+    const isTourRoleMatch = (role: IdeaRole | null | undefined) => {
+      if (!tourRoleFilter.value.length) return true;
+      return role
+        ? tourRoleFilter.value.includes(role)
+        : tourRoleFilter.value.includes('excursion');
+    };
+    const matchingExcursions = excursionsStore.excursions.filter((ex) => isTourRoleMatch(ex.role));
+    const matchingTitles = new Set(matchingExcursions.map((e) => e.title));
+    for (const item of filteredSpotItems.value) {
+      const keys = tourTitlesForItem(item).filter((t) => matchingTitles.has(t));
+      if (keys.length === 0 && !tourRoleFilter.value.length) {
+        keys.push(UNASSIGNED_TOUR_GROUP);
+      }
+      for (const key of keys) {
+        const list = groups.get(key) ?? [];
+        list.push(item);
+        groups.set(key, list);
+      }
+    }
     // Touren ohne zugeordneten Spot (z. B. frisch angelegt, noch ohne Stationen) bekommen trotzdem
     // eine (leere) Gruppe - sonst verschwänden sie komplett aus dieser Ansicht, sobald man nach
     // Touren statt Kategorie gruppiert, weil die Gruppierung oben rein über die Spot-Zuordnung
     // (tourTitlesForItem) läuft.
     const q = searchQuery.value.trim().toLowerCase();
-    for (const ex of excursionsStore.excursions) {
+    for (const ex of matchingExcursions) {
       if (!groups.has(ex.title)) {
         if (!q || ex.title.toLowerCase().includes(q) || (ex.note ?? '').toLowerCase().includes(q)) {
           groups.set(ex.title, []);
         }
+      }
+    }
+  } else {
+    for (const item of filteredSpotItems.value) {
+      const keys = [itemCategory(item)];
+      for (const key of keys) {
+        const list = groups.get(key) ?? [];
+        list.push(item);
+        groups.set(key, list);
       }
     }
   }
@@ -990,16 +1122,26 @@ const spotGroups = computed(() => {
         return a.localeCompare(b);
       });
     const keys = groups.has(UNASSIGNED_TOUR_GROUP) ? [...known, UNASSIGNED_TOUR_GROUP] : known;
-    return keys.map((title) => ({
-      category: title,
-      iconDef:
-        title === UNASSIGNED_TOUR_GROUP ? FORM_FIELD_ICONS.location : SECTION_ICON_DEFS.excursions,
-      items: groups.get(title)!,
-      // Echte Excursion hinter dem Gruppen-Titel (nur bei Touren-Gruppierung, "Ohne Tour" bleibt
-      // null) – die Gruppen-Überschrift rendert damit statt reinem Text eine anklickbare
-      // ExcursionCard (siehe Template unten), Klick visualisiert die Tour auf der Karte.
-      excursion: title === UNASSIGNED_TOUR_GROUP ? null : excursionForGroupTitle(title),
-    }));
+    return keys.map((title) => {
+      const excursion = title === UNASSIGNED_TOUR_GROUP ? null : excursionForGroupTitle(title);
+      let iconDef = FORM_FIELD_ICONS.location;
+      if (title !== UNASSIGNED_TOUR_GROUP) {
+        if (excursion?.role && TRAVEL_ROLE_META[excursion.role]) {
+          iconDef = TRAVEL_ROLE_META[excursion.role].tabler;
+        } else {
+          iconDef = SECTION_ICON_DEFS.excursions;
+        }
+      }
+      return {
+        category: title,
+        iconDef,
+        items: groups.get(title)!,
+        // Echte Excursion hinter dem Gruppen-Titel (nur bei Touren-Gruppierung, "Ohne Tour" bleibt
+        // null) – die Gruppen-Überschrift rendert damit statt reinem Text eine anklickbare
+        // ExcursionCard (siehe Template unten), Klick visualisiert die Tour auf der Karte.
+        excursion,
+      };
+    });
   }
   return sortedCategoryKeys(groups.keys()).map((category) => ({
     category,
@@ -2537,17 +2679,24 @@ async function removeSpot(id: number) {
             </form>
           </Modal>
 
-          <div class="filter-bar" v-if="filterCategoryOptions.length">
+          <div
+            class="filter-bar"
+            v-if="filterCategoryOptions.length || excursionsStore.excursions.length"
+          >
             <SearchFilterBar
               v-model:search-query="searchQuery"
               v-model:sort-mode="sortMode"
               v-model:category-filter="categoryFilter"
               v-model:status-filter="statusFilter"
+              v-model:tour-role-filter="tourRoleFilter"
               :category-options="filterCategoryOptions"
               search-placeholder="Spots oder Touren suchen..."
             />
 
-            <div class="filter-chips" v-if="categoryFilter.length || statusFilter.length">
+            <div
+              class="filter-chips"
+              v-if="categoryFilter.length || statusFilter.length || tourRoleFilter.length"
+            >
               <span v-for="cat in categoryFilter" :key="cat" class="filter-chip">
                 <AppIcon :icon="groupIconDef(cat)" :size="13" group="categories" /> {{ cat }}
                 <IconButton
@@ -2569,6 +2718,18 @@ async function removeSpot(id: number) {
                   aria-label="Filter entfernen"
                   title="Filter entfernen"
                   @click="removeStatusFilter(status)"
+                />
+              </span>
+              <span v-for="role in tourRoleFilter" :key="role" class="filter-chip">
+                <AppIcon :icon="tourRoleIconDef(role)" :size="13" group="categories" />
+                {{ tourRoleLabel(role) }}
+                <IconButton
+                  variant="ghost"
+                  size="sm"
+                  :icon="ACTION_ICONS.close"
+                  aria-label="Filter entfernen"
+                  title="Filter entfernen"
+                  @click="removeTourRoleFilter(role)"
                 />
               </span>
             </div>
@@ -3518,7 +3679,13 @@ async function removeSpot(id: number) {
               Bearbeiten eines Spots über "Tour zuordnen".
             </p>
           </section>
-          <p v-if="!spotGroups.length" class="empty">Noch keine Spots angelegt.</p>
+          <p v-if="!spotGroups.length" class="empty">
+            <template v-if="groupMode === 'tours' && tourRoleFilter.length">
+              Keine An- oder Abreise mit diesem Filter gefunden.
+            </template>
+            <template v-else-if="groupMode === 'tours'"> Noch keine Touren angelegt. </template>
+            <template v-else> Noch keine Spots angelegt. </template>
+          </p>
 
           <!-- Hinweis-Modal für Standort-Aufzeichnung (#230) -->
           <TrackRecordingWarningModal
@@ -3552,6 +3719,7 @@ async function removeSpot(id: number) {
           ref="tripMapRef"
           :category-filter="categoryFilter"
           :status-filter="statusFilter"
+          :tour-role-filter="tourRoleFilter"
           :covered-bottom-px="mapCoveredBottomPx"
           :covered-left-px="mapCoveredLeftPx"
           :sheet-overlay-mode="isSheetOverlayMode"

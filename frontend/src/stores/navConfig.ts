@@ -10,7 +10,7 @@ export interface NavConfigEntry {
 }
 
 function defaultEntries(): NavConfigEntry[] {
-  return NAV_LINKS.map((l) => ({ key: l.key, visible: true }));
+  return NAV_LINKS.map((l) => ({ key: l.key, visible: l.defaultVisible ?? true }));
 }
 
 function loadEntries(): NavConfigEntry[] {
@@ -25,14 +25,14 @@ function loadEntries(): NavConfigEntry[] {
   }
   // Nur bekannte Keys aus dem gespeicherten Zustand übernehmen (Reihenfolge + Sichtbarkeit); Keys,
   // die es beim letzten Speichern noch nicht gab (z. B. ein künftig neu hinzugekommener Nav-Punkt),
-  // werden sichtbar ans Ende angehängt - sonst würden neue Bereiche für bestehende Nutzer:innen
-  // sofort unsichtbar bleiben, ohne dass sie das je bewusst ausgeblendet hätten.
+  // werden standardmäßig gemäß l.defaultVisible angehängt (standardmäßig true, außer explizit false
+  // wie bei An-/Abreise).
   const known = new Set(NAV_LINKS.map((l) => l.key));
   const validExisting = parsed.filter((e) => known.has(e.key));
   const existingKeys = new Set(validExisting.map((e) => e.key));
   const missing = NAV_LINKS.filter((l) => !existingKeys.has(l.key)).map((l) => ({
     key: l.key,
-    visible: true,
+    visible: l.defaultVisible ?? true,
   }));
   return [...validExisting, ...missing];
 }
@@ -43,7 +43,7 @@ export function sanitizeNavEntries(parsed: NavConfigEntry[]): NavConfigEntry[] {
   const existingKeys = new Set(validExisting.map((e) => e.key));
   const missing = NAV_LINKS.filter((l) => !existingKeys.has(l.key)).map((l) => ({
     key: l.key,
-    visible: true,
+    visible: l.defaultVisible ?? true,
   }));
   return [...validExisting, ...missing];
 }

@@ -108,7 +108,7 @@ const router = createRouter({
       path: '/trip/:tripId/travel',
       redirect: (to) => ({
         path: `/trip/${to.params.tripId}/excursions`,
-        query: { ...to.query, group: 'tours' },
+        query: { ...to.query, group: 'tours', tourRole: 'arrival,departure,onward' },
       }),
     },
     {
@@ -150,7 +150,13 @@ const router = createRouter({
       component: ScheduleView,
       props: { standalone: true },
     },
-    { path: '/travel', redirect: '/excursions?group=tours' },
+    {
+      path: '/travel',
+      redirect: (to) => ({
+        path: '/excursions',
+        query: { ...to.query, group: 'tours', tourRole: 'arrival,departure,onward' },
+      }),
+    },
     { path: '/budget', name: 'legacy-budget', component: () => import('../views/BudgetView.vue') },
     { path: '/notes', name: 'legacy-notes', component: () => import('../views/NotesView.vue') },
     { path: '/diary', name: 'legacy-diary', component: () => import('../views/DiaryView.vue') },

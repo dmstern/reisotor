@@ -117,6 +117,8 @@ const props = defineProps<{
    *  von ExcursionsView.vue (gleiches Muster wie die übrige, bewusst duplizierte Datenladung
    *  zwischen beiden Sichten). */
   statusFilter?: ('planned' | 'unplanned' | 'done')[];
+  /** Von ExcursionsView.vue durchgereichter Touren-Rollen-Filter (Anreise/Abreise/Weiterreise/Ausflug). */
+  tourRoleFilter?: string[];
   /** Höhe (px) des von der mobilen Spots-Schublade verdeckten unteren Kartenbereichs, von
    *  ExcursionsView.vue durchgereicht (0/undefined auf Desktop, wo die Schublade eine eigene Spalte
    *  statt eines Overlays ist) – siehe centerOnPoint() unten. */
@@ -530,7 +532,8 @@ const spotScheduledDates = computed(() => {
 const filteredPoints = computed(() => {
   const categoryFilterActive = props.categoryFilter && props.categoryFilter.length > 0;
   const statusFilterActive = props.statusFilter && props.statusFilter.length > 0;
-  if (!categoryFilterActive && !statusFilterActive) return points.value;
+  const tourRoleFilterActive = props.tourRoleFilter && props.tourRoleFilter.length > 0;
+  if (!categoryFilterActive && !statusFilterActive && !tourRoleFilterActive) return points.value;
   return points.value.filter((p) => {
     if (categoryFilterActive && !props.categoryFilter!.includes(p.category)) return false;
     if (statusFilterActive && p.origin === 'spot') {
@@ -541,6 +544,24 @@ const filteredPoints = computed(() => {
       const matchesStatus = props.statusFilter!.includes(status);
       const matchesDone = props.statusFilter!.includes('done') && !!p.done;
       if (!matchesStatus && !matchesDone) return false;
+    }
+    if (tourRoleFilterActive) {
+      if (p.origin === 'travel') {
+        const matchesTravel = travelItems.value.some((t) => {
+          const tRole = t.role ?? 'arrival';
+          return props.tourRoleFilter!.includes(tRole);
+        });
+        if (!matchesTravel) return false;
+      } else if (p.origin === 'spot') {
+        const spotId = Number(p.key.slice('spot-'.length));
+        const spotTours = excursionsStore.excursions.filter((e) => e.spot_ids.includes(spotId));
+        const matchesTourRole = spotTours.some((t) =>
+          t.role
+            ? props.tourRoleFilter!.includes(t.role)
+            : props.tourRoleFilter!.includes('excursion')
+        );
+        if (!matchesTourRole) return false;
+      }
     }
     return true;
   });
@@ -986,8 +1007,13 @@ function renderRoutes() {
   // Im Tages-Fokus nur die Reise-Etappen DIESES Tages zeichnen - sonst blieben irrelevante
   // Hin-/Rückflug-Strecken anderer Tage als zusätzliche gestrichelte Linien sichtbar, obwohl der
   // Fokus laut Marker-Filterung (visiblePoints) eigentlich nur die Orte dieses einen Tages zeigen soll.
+  const tourRoleFilterActive = props.tourRoleFilter && props.tourRoleFilter.length > 0;
   for (const t of travelItems.value) {
     if (drawers.mapFocusDate && t.date !== drawers.mapFocusDate) continue;
+    if (tourRoleFilterActive) {
+      const tRole = t.role ?? 'arrival';
+      if (!props.tourRoleFilter!.includes(tRole)) continue;
+    }
     if (t.from_lat != null && t.from_lng != null && t.to_lat != null && t.to_lng != null) {
       L.polyline(
         arcRoute([
@@ -1027,7 +1053,11 @@ function renderRoutes() {
     ? focusedExcursion.value.role
       ? []
       : [focusedExcursion.value]
-    : excursionsStore.excursions.filter((e) => !e.role);
+    : excursionsStore.excursions.filter((e) => {
+        if (e.role) return false;
+        if (tourRoleFilterActive && !props.tourRoleFilter!.includes('excursion')) return false;
+        return true;
+      });
   for (const excursion of excursionsToDraw) {
     const stations = resolveStations(
       excursionStationKeys(excursion.spot_ids),
@@ -1369,7 +1399,7 @@ watch(
   }
 );
 
-// Kategorie-/Status-Filter (ExcursionsView.vue) ändern zwar sofort filteredPoints/visiblePoints
+// Kategorie-/Status-/TourRole-Filter (ExcursionsView.vue) ändern zwar sofort filteredPoints/visiblePoints
 // (beides computed), das bewirkt aber für sich allein KEIN erneutes Zeichnen der Leaflet-Marker –
 // renderMarkers() ist eine reine, imperative Funktion, kein reaktiver Template-Ausdruck, sie muss
 // explizit erneut aufgerufen werden. Ohne diesen Watcher blieb die Karte auf dem zuletzt
@@ -1377,8 +1407,11 @@ watch(
 // zufällig ebenfalls ein renderMarkers() auslöste – daher wirkte der Filter auf der Karte "nur
 // manchmal" statt zuverlässig angewendet.
 watch(
-  () => [props.categoryFilter, props.statusFilter],
-  () => renderMarkers(),
+  () => [props.categoryFilter, props.statusFilter, props.tourRoleFilter],
+  () => {
+    renderMarkers();
+    renderRoutes();
+  },
   { deep: true }
 );
 
