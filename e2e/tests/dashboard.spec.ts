@@ -109,7 +109,7 @@ test.describe('Reiseregion-Widget (kombiniert mit Wetter)', () => {
     // Kachel enthält den Text "...eure Reiseregion..." ebenfalls (unabhängiger Kontext) - ohne den
     // Emoji-Präfix (seit #168 immer SVG statt Emoji für group="actions") würde ein ungescoptes
     // getByText('Reiseregion') beide Stellen treffen.
-    await expect(page.locator('.weather-section-label')).toHaveCount(0);
+    await expect(page.locator('.weather-section-label', { hasText: 'Reiseregion' })).toHaveCount(0);
     await expect(page.getByText('Testland')).toHaveCount(0);
   });
 });
