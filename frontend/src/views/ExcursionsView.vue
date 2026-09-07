@@ -82,6 +82,7 @@ import ButtonGroup from '../components/primitives/ButtonGroup.vue';
 import IconButton from '../components/primitives/IconButton.vue';
 import _DropdownItem from '../components/primitives/DropdownItem.vue';
 import PickerMenu from '../components/primitives/PickerMenu.vue';
+import Accordion from '../components/primitives/Accordion.vue';
 import { useToast } from '../composables/useToast';
 import { isAutoCreatedUnmodifiedScheduleItem } from '../utils/scheduleSpotUnlink';
 
@@ -2486,63 +2487,67 @@ async function removeSpot(id: number) {
                 :class="{ closed: !tracksSectionOpen }"
               />
             </button>
-            <ul v-if="tracksSectionOpen" class="tracks-list">
-              <li
-                v-for="track in tracksStore.tracks"
-                :key="track.id"
-                class="track-row"
-                :class="{ active: Number(drawers.mapFocusTrackId) === Number(track.id) }"
-              >
-                <button
-                  type="button"
-                  class="track-row-main"
-                  @click="drawers.openMapForTrack(track.id)"
+            <Accordion :expanded="tracksSectionOpen">
+              <ul class="tracks-list accordion-stagger">
+                <li
+                  v-for="(track, index) in tracksStore.tracks"
+                  :key="track.id"
+                  class="track-row staggered-item"
+                  :style="{ '--stagger-idx': index, '--stagger-total': tracksStore.tracks.length }"
+                  :class="{ active: Number(drawers.mapFocusTrackId) === Number(track.id) }"
                 >
-                  <span class="track-row-title">{{ trackTitle(track) }}</span>
-                  <span class="track-row-meta">
-                    <span v-if="!track.ended_at">
-                      <AppIcon :icon="ACTION_ICONS.recordStart" :size="12" group="actions" /> läuft
-                    </span>
-                    <span v-else-if="trackDurationLabel(track)">
-                      <AppIcon :icon="ACTION_ICONS.duration" :size="12" group="actions" />
-                      {{ trackDurationLabel(track) }}
-                    </span>
-                  </span>
-                </button>
-                <template v-if="track.user_id === auth.user?.id">
                   <button
                     type="button"
-                    class="track-icon-btn"
-                    :title="
-                      track.visibility === 'shared'
-                        ? 'Für alle Mitreisenden sichtbar – antippen, um wieder privat zu machen'
-                        : 'Nur für dich sichtbar – antippen, um mit allen zu teilen'
-                    "
-                    :aria-label="
-                      track.visibility === 'shared' ? 'Teilen zurücknehmen' : 'Mit allen teilen'
-                    "
-                    @click="toggleTrackVisibility(track)"
+                    class="track-row-main"
+                    @click="drawers.openMapForTrack(track.id)"
                   >
-                    <AppIcon
-                      :icon="
-                        track.visibility === 'shared' ? ACTION_ICONS.shared : ACTION_ICONS.private
+                    <span class="track-row-title">{{ trackTitle(track) }}</span>
+                    <span class="track-row-meta">
+                      <span v-if="!track.ended_at">
+                        <AppIcon :icon="ACTION_ICONS.recordStart" :size="12" group="actions" />
+                        läuft
+                      </span>
+                      <span v-else-if="trackDurationLabel(track)">
+                        <AppIcon :icon="ACTION_ICONS.duration" :size="12" group="actions" />
+                        {{ trackDurationLabel(track) }}
+                      </span>
+                    </span>
+                  </button>
+                  <template v-if="track.user_id === auth.user?.id">
+                    <button
+                      type="button"
+                      class="track-icon-btn"
+                      :title="
+                        track.visibility === 'shared'
+                          ? 'Für alle Mitreisenden sichtbar – antippen, um wieder privat zu machen'
+                          : 'Nur für dich sichtbar – antippen, um mit allen zu teilen'
                       "
-                      :size="15"
-                      group="actions"
-                    />
-                  </button>
-                  <button
-                    type="button"
-                    class="track-icon-btn"
-                    title="Aufzeichnung löschen"
-                    aria-label="Aufzeichnung löschen"
-                    @click="removeTrack(track.id)"
-                  >
-                    <AppIcon :icon="ACTION_ICONS.delete" :size="15" group="actions" />
-                  </button>
-                </template>
-              </li>
-            </ul>
+                      :aria-label="
+                        track.visibility === 'shared' ? 'Teilen zurücknehmen' : 'Mit allen teilen'
+                      "
+                      @click="toggleTrackVisibility(track)"
+                    >
+                      <AppIcon
+                        :icon="
+                          track.visibility === 'shared' ? ACTION_ICONS.shared : ACTION_ICONS.private
+                        "
+                        :size="15"
+                        group="actions"
+                      />
+                    </button>
+                    <button
+                      type="button"
+                      class="track-icon-btn"
+                      title="Aufzeichnung löschen"
+                      aria-label="Aufzeichnung löschen"
+                      @click="removeTrack(track.id)"
+                    >
+                      <AppIcon :icon="ACTION_ICONS.delete" :size="15" group="actions" />
+                    </button>
+                  </template>
+                </li>
+              </ul>
+            </Accordion>
           </div>
 
           <!-- Touren-Formular: für BEIDE Gruppierungen ("Touren" und "Reise") dasselbe Modal/Modell -
@@ -3483,7 +3488,7 @@ async function removeSpot(id: number) {
                             `${grp.excursion.id}-${item.spot.id}-${grp.items[index + 1].spot.id}`
                           "
                         >
-                          <div class="tour-leg-accordion-inner">
+                          <div class="tour-leg-accordion-inner accordion-stagger">
                             <div
                               v-if="
                                 hasLegDetails(
@@ -4702,6 +4707,14 @@ async function removeSpot(id: number) {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+}
+
+.tracks-toggle .caret {
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tracks-toggle .caret.closed {
+  transform: rotate(-90deg);
 }
 
 /* Dateninhalt (je eine echte Aufzeichnung), daher --color-surface statt der Steuerungsfarbe der
