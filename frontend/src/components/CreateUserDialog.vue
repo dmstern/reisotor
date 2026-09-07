@@ -3,6 +3,8 @@ import { ref, watch } from 'vue';
 import Modal from './Modal.vue';
 import Button from './primitives/Button.vue';
 import IconButton from './primitives/IconButton.vue';
+import Input from './primitives/Input.vue';
+import FormField from './FormField.vue';
 import PasswordInput from './PasswordInput.vue';
 import AppIcon from './AppIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
@@ -101,37 +103,21 @@ async function submit() {
 <template>
   <Modal :model-value="modelValue" title="Neuen Nutzer anlegen" @update:model-value="close">
     <form @submit.prevent="submit" class="create-user-form">
-      <div class="field">
-        <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
-        <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
-        <label for="create-username">Benutzername</label>
-        <input
+      <FormField icon="person" label="Benutzername">
+        <Input
           id="create-username"
           v-model="username"
           type="text"
-          class="input"
           placeholder="z. B. max_muster"
           required
         />
-      </div>
+      </FormField>
 
-      <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
-      <div class="field">
-        <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
-        <label for="create-email">E-Mail-Adresse (optional)</label>
-        <input
-          id="create-email"
-          v-model="email"
-          type="email"
-          class="input"
-          placeholder="max@example.com"
-        />
-      </div>
-      <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
+      <FormField icon="email" label="E-Mail-Adresse (optional)">
+        <Input id="create-email" v-model="email" type="email" placeholder="max@example.com" />
+      </FormField>
 
-      <div class="field">
-        <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
-        <label for="create-password">Initial-Passwort</label>
+      <FormField icon="title" label="Initial-Passwort">
         <PasswordInput
           id="create-password"
           v-model="password"
@@ -139,8 +125,7 @@ async function submit() {
           required
         />
         <p class="hint">Der Nutzer wird beim ersten Login zur Passwortänderung aufgefordert.</p>
-        <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
-      </div>
+      </FormField>
 
       <div class="field">
         <span class="pseudo-label">Avatar / Symbol</span>
@@ -161,8 +146,8 @@ async function submit() {
       </div>
 
       <div class="field checkbox-field">
-        <label for="auto-id-1788301175435-3" class="checkbox-label">
-          <input id="auto-id-1788301175435-3" type="checkbox" v-model="isAdmin" />
+        <label for="create-is-admin" class="checkbox-label">
+          <input id="create-is-admin" type="checkbox" v-model="isAdmin" />
           <span>Als Administrator:in anlegen</span>
         </label>
       </div>
@@ -173,10 +158,9 @@ async function submit() {
         <Button type="button" variant="secondary" @click="close">Abbrechen</Button>
         <Button type="submit" variant="primary" :disabled="submitting">
           <template v-if="submitting">Speichere…</template>
-          <template v-else
-            ><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Nutzer
-            anlegen</template
-          >
+          <template v-else>
+            <AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Nutzer anlegen
+          </template>
         </Button>
       </div>
     </form>
@@ -250,7 +234,7 @@ async function submit() {
 }
 
 .error-msg {
-  color: var(--color-danger, #d93838);
+  color: var(--color-danger);
   font-size: 0.85rem;
   margin: 0;
 }

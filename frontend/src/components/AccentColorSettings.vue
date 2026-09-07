@@ -9,6 +9,7 @@ import {
 import SegmentedToggle from './SegmentedToggle.vue';
 import Button from './primitives/Button.vue';
 import Card from './primitives/Card.vue';
+import Badge from './primitives/Badge.vue';
 import AppIcon from './AppIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
@@ -98,7 +99,7 @@ function resetColor() {
       <div class="preview-header">
         <AppIcon :icon="SECTION_ICON_DEFS.dashboard" :size="20" group="navigation" />
         <span class="preview-title">Live Vorschau</span>
-        <span class="preview-badge">Aktiv</span>
+        <Badge variant="primary">Aktiv</Badge>
       </div>
       <div class="preview-actions">
         <Button variant="primary" size="sm">Primär-Button</Button>
@@ -231,16 +232,6 @@ function resetColor() {
   font-weight: 700;
   color: var(--color-text);
   flex: 1;
-}
-
-.preview-badge {
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  background: var(--color-primary-tint);
-  color: var(--color-primary);
-  border: 1px solid var(--color-primary);
 }
 
 .preview-actions {
