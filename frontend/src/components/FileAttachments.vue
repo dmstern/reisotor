@@ -127,7 +127,7 @@ async function remove(attachment: Attachment) {
         type="button"
         @click="fileInputRef?.click()"
       >
-        {{ uploading ? 'Lädt hoch …' : '+ Datei hinzufügen' }}
+        {{ uploading ? 'Lädt hoch …' : 'Datei hinzufügen' }}
       </Button>
     </div>
     <p v-if="error" class="error">{{ error }}</p>
@@ -156,7 +156,7 @@ async function remove(attachment: Attachment) {
 }
 
 .error {
-  color: var(--color-danger, #c0392b);
+  color: var(--color-danger);
   font-size: 0.8rem;
   margin-top: var(--space-1);
 }

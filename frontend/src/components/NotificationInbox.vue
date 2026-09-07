@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router';
 import { IconBell, IconBellFilled } from '@tabler/icons-vue';
 import { useNotificationsStore } from '../stores/notifications';
 import { useDrawersStore } from '../stores/drawers';
-import AppIcon from './AppIcon.vue';
+import IconButton from './primitives/IconButton.vue';
 import type { NotificationItem } from '../api/types';
 import { notificationTarget } from '../utils/notificationTarget';
 import { formatDateTime } from '../utils/dateFormat';
@@ -64,18 +64,24 @@ function markAllRead() {
 
 <template>
   <div class="notification-inbox">
-    <button
-      type="button"
-      class="bell-btn"
-      title="Benachrichtigungen"
-      aria-label="Benachrichtigungen"
-      @click="toggle"
-    >
-      <AppIcon :icon="BELL_ICON" group="navigation" :size="22" />
-      <span v-if="notifications.unreadCount > 0" class="unread-badge">{{
+    <div class="bell-btn-wrap">
+      <IconButton
+        variant="ghost"
+        shape="circle"
+        :icon="BELL_ICON"
+        title="Benachrichtigungen"
+        :aria-label="
+          notifications.unreadCount > 0
+            ? `Benachrichtigungen (${notifications.unreadCount} ungelesen)`
+            : 'Benachrichtigungen'
+        "
+        class="bell-btn"
+        @click="toggle"
+      />
+      <span v-if="notifications.unreadCount > 0" class="unread-badge" aria-hidden="true">{{
         notifications.unreadCount > 9 ? '9+' : notifications.unreadCount
       }}</span>
-    </button>
+    </div>
 
     <template v-if="open">
       <div
@@ -135,30 +141,9 @@ function markAllRead() {
   display: flex;
 }
 
-.bell-btn {
+.bell-btn-wrap {
   position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: none;
-  border: none;
-  color: var(--color-text);
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: background 0.15s ease;
-  box-shadow: none;
-}
-
-.bell-btn:hover {
-  background: var(--color-hover);
-}
-
-.bell-btn:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  display: inline-flex;
 }
 
 .unread-badge {

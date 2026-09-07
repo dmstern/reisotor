@@ -1374,11 +1374,11 @@ function formatWeekdayDate(d: string) {
 }
 
 .weather-alert-badge.warning {
-  background: var(--color-warning, #f59e0b);
+  background: var(--color-warning);
 }
 
 .weather-alert-badge.danger {
-  background: var(--color-danger, #e0685a);
+  background: var(--color-danger);
 }
 
 .weather-today.clickable,
