@@ -331,7 +331,7 @@ function onSpotDrop(event: DragEvent) {
         </p>
 
         <div class="excursion-accordion" :class="{ 'is-expanded': expanded }" :inert="!expanded">
-          <div class="excursion-accordion-inner">
+          <div class="excursion-accordion-inner accordion-stagger">
             <p v-if="creatorLabel" class="detail-row">
               <span class="detail-label">Von</span>{{ creatorLabel }}
             </p>
@@ -394,7 +394,7 @@ function onSpotDrop(event: DragEvent) {
         </Teleport>
 
         <div class="excursion-accordion" :class="{ 'is-expanded': expanded }" :inert="!expanded">
-          <div class="excursion-accordion-inner">
+          <div class="excursion-accordion-inner accordion-stagger">
             <SocialRow
               class="social-row"
               :like-count="likeCount"
@@ -832,15 +832,17 @@ function onSpotDrop(event: DragEvent) {
 
 .excursion-accordion-inner > * {
   transition:
-    opacity 0.4s ease,
-    transform 0.4s ease;
+    opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   opacity: 0;
-  transform: translateY(-10px);
+  transform: translateY(-12px) scale(0.98);
+  transition-delay: calc((var(--stagger-total, 6) - var(--stagger-idx, 0) - 1) * 20ms);
 }
 
 .excursion-accordion.is-expanded .excursion-accordion-inner > * {
   opacity: 1;
-  transform: translateY(0);
+  transform: translateY(0) scale(1);
+  transition-delay: calc(var(--stagger-idx, 0) * 35ms);
 }
 
 .slide-fade-enter-active,
