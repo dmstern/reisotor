@@ -634,11 +634,31 @@ async function quickAddToGroup(group: Group, label: string) {
   flex-wrap: wrap;
 }
 
-/* .row selbst hat (anders als .card) keinen border-radius - die globale .new-highlight-Regel
-   (style.css, --new-highlight-radius) würde hier sonst mit ihrem für Karten gedachten Radius
-   overrulen bzw. eckig wirken. Kleinerer, zur schmalen Listen-Zeile passender Wert. */
 .row.new-highlight {
   --new-highlight-radius: var(--radius-sm-squircle);
+  position: relative;
+  border-radius: var(--new-highlight-radius);
+  corner-shape: squircle;
+}
+
+.row.new-highlight::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  border-radius: var(--new-highlight-radius);
+  corner-shape: squircle;
+  box-shadow: inset 0 0 0 2px var(--color-accent);
+}
+
+.row-done {
+  opacity: 0.6;
+}
+
+.text-done {
+  text-decoration: line-through;
+  color: var(--color-text-muted);
 }
 
 .row:last-child {

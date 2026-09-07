@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import AppIcon from './AppIcon.vue';
+import UnseenDot from './primitives/UnseenDot.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import type { IconDef } from '../utils/icon';
 
@@ -109,7 +110,7 @@ function onTabClick(key: string, event: MouseEvent) {
       >
         <span class="icon-wrap">
           <AppIcon class="icon" :icon="tab.icon" :size="16" group="navigation" />
-          <span v-if="tab.unseen" class="unseen-dot" aria-label="Neue Änderungen" />
+          <UnseenDot v-if="tab.unseen" />
         </span>
         {{ tab.label }}
       </button>
@@ -257,18 +258,5 @@ function onTabClick(key: string, event: MouseEvent) {
 .icon-wrap {
   position: relative;
   display: inline-flex;
-}
-
-/* Gleiches Aussehen wie NavBar.vue's .unseen-dot (eigener scoped Style, da Vue-Styles nicht
-   komponentenübergreifend gelten). */
-.unseen-dot {
-  position: absolute;
-  top: -2px;
-  right: -4px;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--color-danger);
-  border: 1.5px solid var(--color-surface);
 }
 </style>

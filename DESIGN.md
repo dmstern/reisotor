@@ -20,7 +20,7 @@ wurde. Der Nutzer sieht keinen Unterschied zwischen "das ist ein natives `<selec
 eine custom Combobox.vue" – beide sind für ihn einfach "ein Dropdown" und müssen deshalb exakt
 gleich hoch sein und gleich aussehen. Das gilt für jede der unten dokumentierten Kategorien:
 
-- **Primitive Komponenten & Styles**: Surface- und Interaktions-Primitives (`Button.vue`, `Card.vue`, `Input.vue`, `PickerMenu.vue`, `DropdownItem.vue`, `Badge.vue` unter `components/primitives/`) kapseln ihre eigenen Varianten-Styles (Schatten, Varianten-Klassen, Größen, Squircle-Rundung) intern in der Komponente. Globale Styles in `style.css` enthalten nur minimale Resets – rohe `<button>`-Elemente bekommen z. B. keinen pauschalen Schatten aufgedrückt, um `box-shadow: none`-Overrides zu vermeiden.
+- **Primitive Komponenten & Styles**: Surface-, Layout- und Interaktions-Primitives (`Button.vue`, `Card.vue`, `Input.vue`, `PickerMenu.vue`, `DropdownItem.vue`, `Badge.vue`, `UnseenDot.vue`, `DetailRow.vue`, `EmptyState.vue`, `Kicker.vue`, `PageContainer.vue` unter `components/primitives/`) kapseln ihre eigenen Styles (Schatten, Varianten, Padding, Squircle-Rundung) intern in der Komponente. Globale Styles in `style.css` enthalten AUSSCHLIESSLICH globale Dokument-Resets (`html`, `body`, `#app`, `h1`-`h6`, `p`, `a`), native Formularelement-Defaults (`button`, `input`, `select`, `textarea`), Basis-Fokus-Ringe, globale `<Transition>`-Klassen und CSS-Tokens (`:root`). Komponenten- und Layout-Klassen gehören strikt in `.vue`-Dateien, niemals in `style.css`!
   - _Anti-Pattern "Scoped styles werden nicht geteilt, daher Kopie" strikt verboten:_ Niemals identische CSS-Klassen und DOM-Strukturen (wie ehemals `.picker-menu`, `.picker-backdrop`) über mehrere Views duplizieren. Sobald ein Oberflächen- oder Menü-Container an mehr als einer Stelle benötigt wird, gehört er als Primitive nach `components/primitives/`.
   - _Keine konkurrierenden Kind-Selektoren:_ Container-Komponenten dürfen Kind-Elemente von Primitives nicht über generische Tag-Selektoren (z. B. `.picker-menu button`) umstylen; Anpassungen gehören über Props oder gezielte Klassen in das Primitive selbst.
 - **Farben**: nur `--color-*`-Variablen, nie ein neuer Hex-Wert lokal (Abschnitt "Farben").
@@ -469,15 +469,15 @@ Rest der App.
 
 ### Page Container-Breiten (`max-width`)
 
-- **`.page` (960px)**: Standard-Hülle in `style.css` (`max-width: 960px; margin: 0 auto; padding: var(--space-4)`) für einspaltige Lesbarkeit (Tagebuch, Notizen, Einstellungen, Dashboard).
+- **`.page` / `<PageContainer>` (960px)**: Standard-Hülle gekapselt in `components/primitives/PageContainer.vue` (`max-width: 960px; margin: 0 auto; padding: var(--space-4)`) für einspaltige Lesbarkeit (Tagebuch, Notizen, Einstellungen, Dashboard).
 - **Wide Page Container (1400px)**: Für mehrspaltige Tabellen- & Listenansichten (`BudgetView.vue`, `ListenView.vue`).
 - **Full-Split Page Container (1600px)**: Maximale Breite für Karte + Spot-Listen Split-Screen (`ExcursionsView.vue`).
 - **Dialog & Modal Container (480px / 900px)**: Standard-Modals (`max-width: 480px` in `Modal.vue`) & breite Formular-Modals (`900px`).
 
 ### Raster-Systeme (`.grid` vs. `.masonry`)
 
-- **`.grid`**: Responsive Auto-Fit Grid (`display: grid; gap: var(--space-3); grid-template-columns: repeat(auto-fit, minmax(280px, 1fr))`) für gleichmäßige Kachel-Ansichten.
-- **`.masonry`**: CSS Multi-Column (`column-width: 280px; column-gap: var(--space-3)`) für Karten variabler Höhe (Notizen & Tagebuch).
+- **`.grid`**: Responsive Auto-Fit Grid (`display: grid; gap: var(--space-3); grid-template-columns: repeat(auto-fit, minmax(280px, 1fr))`) für gleichmäßige Kachel-Ansichten (in Views wie `DashboardView.vue` oder `SettingsView.vue` gekapselt).
+- **`.masonry`**: CSS Multi-Column (`column-width: 280px; column-gap: var(--space-3)`) für Karten variabler Höhe (in `NotesView.vue` gekapselt).
 
 ## Icons
 

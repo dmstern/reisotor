@@ -28,6 +28,8 @@ import AppIcon from '../components/AppIcon.vue';
 import Button from '../components/primitives/Button.vue';
 import IconButton from '../components/primitives/IconButton.vue';
 import DropdownItem from '../components/primitives/DropdownItem.vue';
+import DetailRow from '../components/primitives/DetailRow.vue';
+import EmptyState from '../components/primitives/EmptyState.vue';
 import PickerMenu from '../components/primitives/PickerMenu.vue';
 import Badge from '../components/primitives/Badge.vue';
 import WeatherIcon from '../components/WeatherIcon.vue';
@@ -1127,9 +1129,9 @@ function formatDate(date: string) {
                  Schnell-Entfernen-Button hier nötig. -->
           </div>
         </li>
-        <li v-if="!dayEntries.length" key="empty" class="empty">
+        <EmptyState v-if="!dayEntries.length" key="empty" tag="li">
           Noch keine Termine an diesem Tag.
-        </li>
+        </EmptyState>
       </TransitionGroup>
     </div>
 
@@ -1359,28 +1361,27 @@ function formatDate(date: string) {
           {{ formatDate(viewingItem.date) }}
         </span>
       </template>
-      <p v-if="viewingItem?.time" class="detail-row">
-        <span class="detail-label">Zeit</span>
+      <DetailRow v-if="viewingItem?.time" label="Zeit">
         <AppIcon :icon="FORM_FIELD_ICONS.time" :size="14" group="formFields" /> {{ viewingItem.time
         }}<template v-if="viewingItem.end_time"> – {{ viewingItem.end_time }}</template>
-      </p>
-      <p
+      </DetailRow>
+      <DetailRow
         v-if="viewingItem?.end_date && viewingItem.end_date !== viewingItem.date"
-        class="detail-row"
+        label="Zeitraum"
       >
-        <span class="detail-label">Zeitraum</span>
         <AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" />
         {{ formatDate(viewingItem.date) }} – {{ formatDate(viewingItem.end_date) }}
-      </p>
-      <p v-if="!linkedTitleFor(viewingEntry) && viewingItem?.location" class="detail-row">
-        <span class="detail-label">Ort</span>
+      </DetailRow>
+      <DetailRow v-if="!linkedTitleFor(viewingEntry) && viewingItem?.location" label="Ort">
         <AppIcon :icon="FORM_FIELD_ICONS.location" :size="14" group="formFields" />
         {{ viewingItem.location }}
-      </p>
-      <div v-if="linkedTitleFor(viewingEntry)" class="detail-row linked-entity-row">
-        <span class="detail-label">
-          {{ viewingEntry?.spotId != null ? 'Verknüpfter Ort' : 'Verknüpfte Tour' }}
-        </span>
+      </DetailRow>
+      <DetailRow
+        v-if="linkedTitleFor(viewingEntry)"
+        :label="viewingEntry?.spotId != null ? 'Verknüpfter Ort' : 'Verknüpfte Tour'"
+        tag="div"
+        class="linked-entity-row"
+      >
         <Button
           variant="secondary"
           size="sm"
@@ -1405,7 +1406,7 @@ function formatDate(date: string) {
             class="linked-entity-chevron"
           />
         </Button>
-      </div>
+      </DetailRow>
       <RichTextDisplay
         v-if="viewingItem?.note && !isEmptyRichText(viewingItem.note)"
         :content="viewingItem.note"
@@ -1544,11 +1545,16 @@ function formatDate(date: string) {
   margin-bottom: var(--space-3);
 }
 
-.day-detail-actions {
+.day-detail-actions,
+.detail-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
+}
+
+.detail-actions {
+  margin-top: var(--space-3);
 }
 
 .day-detail h3 {

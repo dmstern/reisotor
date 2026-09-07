@@ -35,6 +35,8 @@ const props = withDefaults(
     tileColor?: string;
     /** IconDef für das runde Schwebelogo der 'tile'-Variante. */
     tileIcon?: IconDef;
+    /** HTML-Tag für das Card-Wurzelelement (Standard: 'div', z. B. 'section', 'li'). */
+    tag?: string;
   }>(),
   {
     variant: 'default',
@@ -45,6 +47,7 @@ const props = withDefaults(
     bannerPosition: 'auto',
     highlight: false,
     tileColor: '#2a7f74',
+    tag: 'div',
   }
 );
 
@@ -113,7 +116,8 @@ function handleCardKeydown(event: KeyboardEvent) {
 
 <template>
   <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
-  <div
+  <component
+    :is="tag"
     class="card"
     :class="[
       variant !== 'default' ? `card--${variant}` : undefined,
@@ -206,14 +210,14 @@ function handleCardKeydown(event: KeyboardEvent) {
         </slot>
       </div>
     </template>
-  </div>
+  </component>
 </template>
 
-<style scoped>
+<style>
 .card {
   background: var(--color-surface);
   border: var(--ui-border-width, 1px) solid var(--color-border);
-  border-radius: var(--radius-lg-squircle);
+  border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   padding: var(--space-4);
   box-shadow: var(--shadow-sm);
@@ -225,6 +229,26 @@ function handleCardKeydown(event: KeyboardEvent) {
     transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.card.new-highlight {
+  --new-highlight-radius: var(--radius-md-squircle);
+  position: relative;
+  border-radius: var(--new-highlight-radius);
+  corner-shape: squircle;
+}
+
+.card.new-highlight::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  border-radius: var(--new-highlight-radius);
+  corner-shape: squircle;
+  box-shadow: inset 0 0 0 2px var(--color-accent);
+}
+</style>
+
+<style scoped>
 /* Varianten-Styles von Card.vue */
 .card--muted {
   background: var(--color-hover);

@@ -325,6 +325,70 @@ function isActive(name: string, attrs?: Record<string, unknown>) {
   }
 }
 
+.richtext-editor :deep(.richtext-content > :first-child) {
+  margin-top: 0;
+}
+
+.richtext-editor :deep(.richtext-content ul),
+.richtext-editor :deep(.richtext-content ol) {
+  margin: 4px 0;
+  padding-left: 1.3em;
+}
+
+.richtext-editor :deep(.richtext-content h1),
+.richtext-editor :deep(.richtext-content h2),
+.richtext-editor :deep(.richtext-content h3),
+.richtext-editor :deep(.richtext-content h4),
+.richtext-editor :deep(.richtext-content h5),
+.richtext-editor :deep(.richtext-content h6) {
+  margin: var(--space-2) 0 4px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--color-text);
+}
+
+.richtext-editor :deep(.richtext-content h1) {
+  font-size: 1.3rem;
+}
+
+.richtext-editor :deep(.richtext-content h2) {
+  font-size: 1.15rem;
+}
+
+.richtext-editor :deep(.richtext-content h3) {
+  font-size: 1.05rem;
+}
+
+.richtext-editor :deep(.richtext-content h4),
+.richtext-editor :deep(.richtext-content h5),
+.richtext-editor :deep(.richtext-content h6) {
+  font-size: 0.95rem;
+}
+
+.richtext-editor :deep(.richtext-content blockquote) {
+  margin: 4px 0;
+  padding: 2px 0 2px 10px;
+  border-left: 3px solid var(--color-border);
+  color: var(--color-text-muted);
+}
+
+.richtext-editor :deep(.richtext-content hr) {
+  margin: var(--space-2) 0;
+  border: none;
+  border-top: 1px solid var(--color-border);
+}
+
+.richtext-editor :deep(.richtext-content code) {
+  background: var(--color-bg);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 0.9em;
+}
+
+.richtext-editor :deep(.richtext-content del) {
+  color: var(--color-text-muted);
+}
+
 .collapsed-trigger {
   display: flex;
   align-items: center;

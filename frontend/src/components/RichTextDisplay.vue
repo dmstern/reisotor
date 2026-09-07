@@ -21,3 +21,77 @@ const html = computed(() =>
   <!-- eslint-disable-next-line vue/no-v-html -->
   <div class="richtext" v-html="html"></div>
 </template>
+
+<style scoped>
+.richtext :deep(> :first-child) {
+  margin-top: 0;
+}
+
+.richtext :deep(ul),
+.richtext :deep(ol) {
+  margin: 4px 0;
+  padding-left: 1.3em;
+}
+
+.richtext :deep(h1),
+.richtext :deep(h2),
+.richtext :deep(h3),
+.richtext :deep(h4),
+.richtext :deep(h5),
+.richtext :deep(h6) {
+  margin: var(--space-2) 0 4px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--color-text);
+}
+
+.richtext :deep(h1) {
+  font-size: 1.3rem;
+}
+
+.richtext :deep(h2) {
+  font-size: 1.15rem;
+}
+
+.richtext :deep(h3) {
+  font-size: 1.05rem;
+}
+
+.richtext :deep(h4),
+.richtext :deep(h5),
+.richtext :deep(h6) {
+  font-size: 0.95rem;
+}
+
+.richtext :deep(blockquote) {
+  margin: 4px 0;
+  padding: 2px 0 2px 10px;
+  border-left: 3px solid var(--color-border);
+  color: var(--color-text-muted);
+}
+
+.richtext :deep(hr) {
+  margin: var(--space-2) 0;
+  border: none;
+  border-top: 1px solid var(--color-border);
+}
+
+.richtext :deep(code) {
+  background: var(--color-bg);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 0.9em;
+}
+
+.richtext :deep(del) {
+  color: var(--color-text-muted);
+}
+
+.richtext :deep(> br:last-child) {
+  display: none;
+}
+
+.richtext :deep(.richtext-link) {
+  vertical-align: middle;
+}
+</style>

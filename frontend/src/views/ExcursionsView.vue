@@ -5228,3 +5228,18 @@ async function removeSpot(id: number) {
   opacity: 1;
 }
 </style>
+
+<style>
+::view-transition-group(root) {
+  animation-duration: 0s;
+}
+
+::view-transition-group(expanding-spot-card) {
+  animation-duration: 0.25s;
+}
+
+::view-transition-old(expanding-spot-card),
+::view-transition-new(expanding-spot-card) {
+  animation-duration: 0.25s;
+}
+</style>

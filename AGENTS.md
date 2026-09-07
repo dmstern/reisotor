@@ -188,6 +188,9 @@ Präsentation je View).
 - **Proaktives Clean-Code-Refactoring**: Fallen beim Arbeiten an einer Stelle redundante Kopien
   auf (wie ehemals verstreute `.picker-menu`-Blöcke), diese nicht durch einen weiteren Klon ergänzen,
   sondern in eine wiederverwendbare Abstraktion überführen.
+- **`style.css` ist strikt für globale Basis-Stile und Design-Tokens reserviert**:
+  `frontend/src/style.css` darf AUSSCHLIESSLICH globale Dokument-Resets, native HTML-Element-Defaults (`html`, `body`, `#app`, `h1`-`h6`, `p`, `a`, native Formularelemente wie `button`, `input`, `select`, `textarea`, Basis-Fokus-Ringe und globale `<Transition>`-Klassen) sowie CSS-Design-Tokens (`:root`, Theme-Variablen) enthalten.
+  Komponenten-Stile, Klassen für UI-Bausteine oder Layout-Muster (wie Buttons, Karten, Badges, Detail-Zeilen, Leerzustände, Header-Kicker, Wetterkarten etc.) dürfen **niemals** in `style.css` abgelegt werden. Sie gehören immer als Scoped/Component-Styles in die entsprechende `.vue`-Komponente oder eine Primitiv-Komponente unter `frontend/src/components/primitives/` (z. B. `Button.vue`, `Card.vue`, `DetailRow.vue`, `EmptyState.vue`, `Kicker.vue`, `UnseenDot.vue`, `PageContainer.vue`, `WeatherAlertCard.vue`).
 
 Beim Erstellen neuer wiederverwendbarer UI-Komponenten (`frontend/src/components/*.vue`)
 immer direkt eine zugehörige Storybook-Story-Datei (`*.stories.ts`) anlegen, damit Zustände der Komponente

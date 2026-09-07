@@ -462,110 +462,19 @@ button {
   font-size: 1rem;
 }
 
-/* Button-Klasse für alle expliziten Buttons (#314) */
-.btn {
-  --btn-padding-y: 11px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-1);
-  border: var(--ui-border-width, 1px) solid var(--color-button-edge);
-  border-radius: var(--radius-md-squircle);
-  corner-shape: squircle;
-  padding: var(--btn-padding-y) 18px;
-  background: var(--color-primary);
-  color: white;
-  font-weight: 600;
-  transition:
-    background 0.15s ease,
-    transform 0.1s ease,
-    box-shadow 0.15s ease,
-    border-color 0.15s ease;
-}
-
-.btn:hover {
-  background: var(--color-primary-dark);
-}
-
-.btn:active {
-  transform: scale(0.97);
-  box-shadow: none;
-}
-
-.btn.secondary {
-  background: transparent;
-  color: var(--color-primary);
-  border: var(--ui-border-width, 1px) solid var(--color-border-strong);
-}
-
-.btn.secondary:hover {
-  background: var(--color-surface);
-}
-
-.btn.danger {
-  background: var(--color-danger);
-}
-
-/* Einheitlicher Stil für kleine Karten-Aktions-Buttons ("Extern öffnen ↗", "Auf Karte anzeigen",
-   "Verwerfen", "Zur Reise", ...) – ob <a> oder <button>, ob externer Link oder interne Aktion.
-   Zentral statt in jeder Karten-Komponente separat dupliziert (vorher u. a. .external-link-btn,
-   mehrfach .map-btn, .jump-btn, .jump-btn-sm mit leicht abweichenden Werten). Das ↗-Symbol im
-   Linktext reicht als Hinweis auf externe Links – ein zusätzlicher optischer Unterschied zu
-   normalen Aktions-Buttons wirkt eher inkonsistent als hilfreich. */
-.weather-day {
-  position: relative;
-}
-
-.day-alert-icon {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-}
-
-.day-alert-icon.warning {
-  color: var(--color-warning-dark);
-}
-
-.day-alert-icon.danger {
-  color: var(--color-danger-dark);
-}
-
-.card-action-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
-  border: var(--ui-border-width, 1px) solid var(--color-border-strong);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  background: var(--color-primary-tint);
-  color: var(--color-primary-dark);
-  font-size: 0.85rem;
-  font-weight: 600;
-  text-decoration: none;
-  white-space: nowrap;
-  line-height: 1.3;
-  cursor: pointer;
-  box-shadow: var(--shadow-sm);
-  transition:
-    background 0.15s ease,
-    color 0.15s ease,
-    border-color 0.15s ease;
-}
-
-.card-action-btn:hover {
-  background: var(--color-primary);
-  color: white;
-  border-color: var(--color-primary);
-}
+/* ========================================================================= */
+/* GLOBAL BASE STYLES ONLY                                                  */
+/* Only document-level resets, typography elements (h1-h6, p, a),          */
+/* native form controls reset (input, select, textarea, button),           */
+/* and design system tokens (:root) belong in this file.                    */
+/* All component or primitive styles MUST reside in their respective .vue  */
+/* files (e.g. Button.vue, Card.vue, EmptyState.vue) to avoid redundancy.  */
+/* ========================================================================= */
 
 /* Deaktivierter Button-Zustand: ausgegraut, kein Zeiger, kein Schatten, keine Skalierung */
 button:disabled,
 button[disabled],
-button.is-disabled,
-.card-action-btn:disabled,
-.card-action-btn.is-disabled {
+button.is-disabled {
   opacity: 0.5;
   cursor: not-allowed !important;
   pointer-events: none !important;
@@ -573,221 +482,10 @@ button.is-disabled,
   transform: none !important;
 }
 
-/* Badges & Status-Chips (Primitives/Badge.vue) */
-
-@keyframes badgePulse {
-  0% {
-    transform: scale(1);
-    box-shadow: 0 0 0 0 rgba(224, 142, 69, 0.6);
-  }
-  70% {
-    transform: scale(1.08);
-    box-shadow: 0 0 0 6px rgba(224, 142, 69, 0);
-  }
-  100% {
-    transform: scale(1);
-    box-shadow: 0 0 0 0 rgba(224, 142, 69, 0);
-  }
-}
-
-.unseen-dot {
-  animation: badgePulse 2s infinite ease-in-out;
-}
-
-/* Pre-Heading / Kicker (Design-System-Utility) */
-.kicker {
-  font-size: var(--font-size-xs);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--color-text-muted);
-  margin-bottom: var(--space-1);
-  display: block;
-}
-
-/* Einheitliche Optik für alle fensterartigen Größen-Anfasser (Drawer.vue's Schubladen-Anfasser,
-   ExcursionsView.vue's Anfasser zwischen Spots-Liste und Karte, …) – zentral statt je Stelle mit
-   leicht abweichenden Werten dupliziert. Erwartet einen Flex-Container mit definierter Höhe/Breite
-   (Größe/Position bleibt bewusst Sache der jeweiligen Verwendungsstelle, z. B. position:sticky vs.
-   position:absolute); nur die Interaktions-/Hover-Optik selbst (Hover-Hintergrund über den ganzen
-   Anfasser statt nur eine dünne Linie, kurzer zentrierter Griff-Strich statt einer über die volle
-   Höhe laufenden Linie) lebt hier. */
-.resize-grip {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: col-resize;
-  touch-action: none;
-  border-radius: var(--radius-sm);
-  transition: background 0.15s ease;
-}
-
-.resize-grip:hover,
-.resize-grip:active,
-.resize-grip.resizing {
-  background: var(--color-hover);
-}
-
-.resize-grip::after {
-  content: '';
-  width: 4px;
-  height: var(--input-default-height);
-  border-radius: 3px;
-  background: var(--color-border);
-  transition: background 0.15s ease;
-}
-
-.resize-grip:hover::after,
-.resize-grip:active::after,
-.resize-grip.resizing::after {
-  background: var(--color-primary);
-}
-
-/* Gemeinsame Read-Only-Feld-Optik für die Detail-Dialoge (Ausflug/Spot/Unterkunft/Reise,
-   DetailModal.vue) – global statt scoped, da vier verschiedene Views dieselbe Optik brauchen.
-   Bild-Banner/Titel sitzen inzwischen direkt in DetailModal.vue selbst (scoped, als Hero-Overlay),
-   hier bleiben nur noch die Klassen für den restlichen Read-Only-Inhalt darunter. */
-.detail-row {
-  margin: 0 0 var(--space-2);
-  font-size: 0.92rem;
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.detail-label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-  display: inline-flex;
-  align-items: center;
-  flex-shrink: 0;
-}
-
-.detail-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  margin-top: var(--space-3);
-}
-
-/* Gemeinsame Leerzustands-Optik (".Noch keine X" o. Ä.) – war in ~13 Views/Components lokal
-   dupliziert, global statt pro Datei definiert. Views mit zusätzlichem lokalem Feintuning
-   (Padding, Font-Size, Text-Align) behalten dafür weiterhin eine eigene, kleinere .empty-Regel. */
-.empty {
-  color: var(--color-text-muted);
-  padding: var(--space-4);
-  text-align: center;
-}
-
-/* Auto-erkannte Links in gerenderten Markdown-Notizen/Tagebuch-/Ausflugs-/Spot-Texten (siehe
-   utils/richText.ts) nutzen dieselbe Pill-Optik, stehen aber mitten im Fließtext statt in einer
-   eigenen Aktions-Reihe – vertical-align sorgt dafür, dass sie sich sauber an der Textzeile statt
-   an ihrer Grundlinie ausrichten. */
-.richtext-link {
-  vertical-align: middle;
-}
-
-/* Gemeinsame Optik für alle von renderRichText() (utils/richText.ts) erzeugten Markdown-Elemente.
-   Alle v-html-Container quer durch die App (Notizen, Tagebuch, Ausflugs-/Spot-/Unterkunfts-Notizen,
-   Kontaktfeld) bekommen zusätzlich zu ihrer lokalen Klasse (.content/.note/.contact-text) die
-   Klasse .richtext, damit Überschriften/Zitate/Trennlinien/Listen/Code überall gleich aussehen statt
-   in sieben Komponenten dupliziert zu werden. v-html-Inhalt bekommt beim Kompilieren keine
-   scoped-Style-Attribute, ein globales (nicht scoped) Regelwerk hier trifft es trotzdem direkt, ganz
-   ohne :deep(). .richtext h1/h2/h3 gewinnt gegen das globale h1,h2,h3-Rule oben per Selektor-
-   Spezifität, Seitentitel bleiben also unangetastet. */
-.richtext > :first-child {
-  margin-top: 0;
-}
-
-.richtext ul,
-.richtext ol {
-  margin: 4px 0;
-  padding-left: 1.3em;
-}
-
-.richtext h1,
-.richtext h2,
-.richtext h3,
-.richtext h4,
-.richtext h5,
-.richtext h6 {
-  margin: var(--space-2) 0 4px;
-  font-weight: 600;
-  line-height: 1.25;
-  color: var(--color-text);
-}
-
-.richtext h1 {
-  font-size: 1.3rem;
-}
-
-.richtext h2 {
-  font-size: 1.15rem;
-}
-
-.richtext h3 {
-  font-size: 1.05rem;
-}
-
-.richtext h4,
-.richtext h5,
-.richtext h6 {
-  font-size: 0.95rem;
-}
-
-.richtext blockquote {
-  margin: 4px 0;
-  padding: 2px 0 2px 10px;
-  border-left: 3px solid var(--color-border);
-  color: var(--color-text-muted);
-}
-
-.richtext hr {
-  margin: var(--space-2) 0;
-  border: none;
-  border-top: 1px solid var(--color-border);
-}
-
-.richtext code {
-  background: var(--color-bg);
-  border-radius: 4px;
-  padding: 1px 5px;
-  font-size: 0.9em;
-}
-
-.richtext del {
-  color: var(--color-text-muted);
-}
-
-/* Nur der Direct-Child-Selektor (>) statt Nachfahren-Selektor: ein <br> INNERHALB eines
-   <blockquote> (Zeilentrenner zwischen mehreren Zitat-Zeilen, siehe renderRichText) ist für
-   :last-child unter Umständen ebenfalls "letztes Element-Kind" (Textknoten zählen für :last-child
-   nicht mit) und würde sonst fälschlich mitversteckt – hier geht es nur um den einen, wirklich
-   überzähligen <br> ganz am Ende des gerenderten Textes selbst. */
-.richtext > br:last-child {
-  display: none;
-}
-
 /* Einheitliche Häkchen-Optik für alle "abgehakt"-Checkboxen der App (ToDo, Packliste,
    Einkaufsliste, ...) statt des nicht gestalteten, je nach Betriebssystem/Browser unterschiedlich
-   aussehenden nativen Kästchens – appearance:none + eigener Rahmen/Haken statt dessen. Global statt
-   pro Liste dupliziert, damit "abgehakt" app-weit immer gleich aussieht. Multi-Select-Filter-
-   Checkboxen (z. B. Kategorie-Filter) bekommen dieselbe Optik mit, das ist hier gewollt: eine
-   einzige, konsistente Häkchen-Sprache statt zweier verschiedener.
-   .state-toggle (Packliste, Anzahl 1, components/PackingItem.vue) ist aus UI-Gründen ein eigenes
-   <button>-Element statt einer echten Checkbox (drei statt zwei Zustände: ungepackt/rausgelegt/
-   eingepackt), hat aber im Ruhezustand exakt dieselbe 20×20-Grundform und teilt sie sich deshalb
-   direkt mit statt sie lokal zu duplizieren. .tally-pill (Anzahl > 1) hat eine eigene, breitere
-   Pillenform und bleibt deshalb bei der Grundform lokal – nur ihr "eingepackt"-Endzustand
-   (Hintergrund/Rahmenfarbe + Häkchen-Form) teilt sich mit .state-toggle.packed denselben
-   Regelsatz. Die Häkchen-Positionierung selbst bleibt für beide Buttons lokal in PackingItem.vue
-   (dort per Flex-Zentrierung statt der absoluten Position, die echte Checkboxen nutzen). */
-input[type='checkbox'],
-.state-toggle {
+   aussehenden nativen Kästchens – appearance:none + eigener Rahmen/Haken statt dessen. */
+input[type='checkbox'] {
   appearance: none;
   -webkit-appearance: none;
   flex-shrink: 0;
@@ -805,37 +503,28 @@ input[type='checkbox'],
     border-color 0.15s ease;
 }
 
-input[type='checkbox']:hover,
-.state-toggle:hover {
+input[type='checkbox']:hover {
   border-color: var(--color-primary);
 }
 
-input[type='checkbox']:checked,
-.state-toggle.packed,
-.tally-pill.packed {
+input[type='checkbox']:checked {
   background: var(--color-primary);
   border-color: var(--color-primary);
 }
 
-input[type='checkbox']:checked::after,
-.state-toggle.packed::after,
-.tally-pill.packed::after {
+input[type='checkbox']:checked::after {
   content: '';
   width: 5px;
   height: 10px;
   border: solid #fff;
   border-width: 0 2px 2px 0;
-}
-
-input[type='checkbox']:checked::after {
   position: absolute;
   left: 6px;
   top: 2px;
   transform: rotate(45deg);
 }
 
-input[type='checkbox']:focus-visible,
-.state-toggle:focus-visible {
+input[type='checkbox']:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
@@ -870,33 +559,17 @@ input[type='color']::-moz-color-swatch {
   box-shadow: var(--shadow-sm);
 }
 
-input[type='range'],
-.range-input {
+input[type='range'] {
   border-radius: 999px;
 }
 
-input[type='range']:focus-visible,
-.range-input:focus-visible {
+input[type='range']:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 3px;
   border-radius: 999px;
 }
 
-/* Ausgegraute Zeile für abgehakte/erledigte/eingepackte Listen-Einträge (ToDo, Packliste, ...) –
-   ein Regelsatz statt pro Liste dupliziert. */
-.row-done {
-  opacity: 0.6;
-}
-
-/* Durchgestrichener, gedämpfter Text für abgehakte/erledigte Einträge (ToDo, Packliste,
-   Einkaufsliste, ...) – ein Regelsatz statt pro Liste dupliziert. */
-.text-done {
-  text-decoration: line-through;
-  color: var(--color-text-muted);
-}
-
 input:where(:not([type='checkbox']):not([type='file'])),
-.input-field,
 textarea {
   padding: var(--input-padding, 9px 12px);
   border: var(--ui-border-width, 1px) solid var(--color-border-strong);
@@ -920,15 +593,6 @@ textarea {
   min-height: var(--input-height, var(--input-default-height));
 }
 
-/* ── Geteilter Dropdown-Stil ──────────────────────────────────────────────────────────────────
-   Einmal definiert, technisch von zwei Stellen genutzt:
-   1. Nativem <select> (via Komma-Selektor direkt hier)
-   2. <Button variant="dropdown"> (fügt .dropdown-field als globale Klasse hinzu, siehe Button.vue)
-
-   Kein Wert wird doppelt geschrieben — wer den Style eines Dropdowns ändern will, ändert ihn
-   nur hier. Nur <select>-spezifische Dinge (appearance, custom Chevron-SVG, padding-right) stehen
-   danach noch einmal im select {}-Block. */
-.dropdown-field,
 select {
   padding: 9px 12px;
   border: var(--ui-border-width, 1px) solid var(--color-border-strong);
@@ -946,17 +610,6 @@ select {
   min-width: 0;
   max-width: 100%;
   cursor: pointer;
-}
-
-/* Chevron-Icons in Button-Dropdowns (.dropdown-field) sollen dieselbe Farbe haben wie
-   das SVG-Chevron in nativem <select> — beide grün (--color-primary). */
-.dropdown-field .app-icon {
-  color: var(--color-primary);
-  opacity: 0.8;
-}
-
-/* select-spezifisch: browser-eigenes Aussehen entfernen, eigenes Chevron-Icon einsetzen */
-select {
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
@@ -1004,104 +657,6 @@ select:focus,
 textarea:focus {
   outline: 2px solid var(--color-primary);
   outline-offset: 1px;
-}
-
-/* WICHTIG bei jedem neuen scrollbaren Container (overflow-y: auto/hidden/scroll), der Formularfelder
-   ganz am eigenen Rand enthält: dieser Fokus-Rahmen braucht ca. 3px Platz (outline-offset 1px +
-   outline-Breite 2px, .state-toggle/Checkbox oben sogar 4px) auf JEDER Seite, sonst wird er
-   abgeschnitten - und zwar nicht nur oben/unten, auch links/rechts. Grund: sobald eine Achse
-   (overflow-y) nicht "visible" ist, setzt der Browser laut CSS Overflow Module Level 3 automatisch
-   auch die andere Achse (overflow-x) auf "auto" - eine rein vertikale Scroll-Absicht clippt damit
-   immer auch horizontal, selbst wenn dort gar kein Inhalt überläuft. Deshalb reicht es nicht, nur
-   padding-block auf so einen Container zu setzen (das war der ursprüngliche, unvollständige Fix in
-   #86) - IMMER padding auf beiden Achsen reservieren, siehe Modal.vue's
-   ".modal.full-height .modal-body :slotted(form)" als Vorlage (#169: dort fehlte anfangs genau das
-   für den zweispaltigen "Von"/"Nach"-Bereich in TravelSection.vue). Diese Regel hier ist die einzige
-   zentrale Stelle für den Fokus-Rahmen selbst - die Platzreservierung dagegen muss trotzdem an jedem
-   einzelnen scrollbaren Container lokal erfolgen (CSS kann das nicht global für beliebige, unbekannte
-   Container erzwingen); bei einem neuen Formular-Container deshalb aktiv prüfen, ob er diesen
-   Freiraum bereits hat, statt sich nur auf diese Kommentar-Stelle zu verlassen. */
-
-.card {
-  background: var(--color-surface);
-  border: var(--ui-border-width, 1px) solid var(--color-border);
-  border-radius: var(--radius-md-squircle);
-  corner-shape: squircle;
-  box-shadow: var(--shadow-sm);
-  padding: var(--space-4);
-}
-
-/* Markiert Objekte, die seit dem letzten Besuch dieser Ansicht von einer anderen Person geändert
-   wurden (Echtzeit-Sync, siehe stores/liveSync.ts's markSeen()) – ein farbiger Rand statt eines
-   flächigen Hintergrunds, damit er über allen Karten-Varianten (Bild-Karten, reine Text-Karten)
-   gleich gut lesbar bleibt. Bewusst kein zusätzlicher Nav-artiger Punkt hier, der sitzt schon am
-   auslösenden Nav-Item selbst (NavBar.vue/Drawer.vue). */
-.new-highlight {
-  /* Eigene Custom Property statt border-radius direkt zu setzen: das darunterstehende ::after
-     braucht denselben Radius-Wert wie die Karte selbst, kann ihn aber (anders als bei
-     border-radius: inherit, das vom ELTERN-Element läse) nur so vom eigenen Element übernehmen.
-     Elemente ohne eigenen Kartenradius (Tabellenzeilen, Listen-Zeilen) überschreiben gezielt lokal
-     nur diese Variable auf einen kleineren Wert (siehe z. B. BudgetView.vue/ShoppingListView.vue/
-     TodoView.vue/PackingItem.vue), statt hier einen für alle passenden Wert zu erzwingen. */
-  --new-highlight-radius: var(--radius-md-squircle);
-  /* Positioniertes Containing-Element fürs ::after unten (sonst würde sich dessen position:absolute
-     an einem weiter oben liegenden positionierten Vorfahren orientieren statt an dieser Karte). */
-  position: relative;
-  border-radius: var(--new-highlight-radius);
-  corner-shape: squircle;
-}
-
-/* #169: der Rahmen lag vorher als box-shadow DIREKT auf .new-highlight selbst - damit wird er als
-   Teil von dessen eigenem Hintergrund/Rand gemalt, also VOR allen normalen Kind-Elementen (jedes
-   Vorschaubild/jede Bild-Fläche, z. B. SpotCard.vue/ExcursionCard.vue's .image, die randlos die
-   ganze Kartenbreite einnimmt) - ein deckendes Kind-Element überdeckte den Rahmen dadurch dort
-   vollständig, wo es die Kartenkante berührt. Eigenes, absolut positioniertes ::after-Overlay
-   (deckungsgleich per inset:0) statt box-shadow auf dem Element selbst malt den Rahmen dagegen erst
-   NACH allen normalen Kindern - liegt dadurch garantiert sichtbar oben, unabhängig davon, was die
-   Karte an Inhalt zeigt. pointer-events:none, damit das Overlay keine Klicks/Drags auf der
-   eigentlichen Karte blockiert. */
-.new-highlight::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  border-radius: var(--new-highlight-radius);
-  corner-shape: squircle;
-  box-shadow: inset 0 0 0 2px var(--color-accent);
-}
-
-.page {
-  max-width: 960px;
-  margin: 0 auto;
-  padding: var(--space-4);
-  /* --navbar-bottom-offset (NavBar.vue) bildet nur die eigene Höhe der NavBar ab (0px, wenn sie oben
-     steht) - ohne den zusätzlichen --space-4 klebt der letzte Inhalt sonst randlos an der NavBar
-     bzw. bei oben stehender NavBar direkt am Viewport-Rand. */
-  padding-bottom: calc(var(--navbar-bottom-offset, 88px) + var(--space-4));
-}
-
-.grid {
-  display: grid;
-  gap: var(--space-3);
-}
-
-/* Masonry-artiges Kachel-Layout für Karten unterschiedlicher Höhe (Notizen, Unterkünfte,
-   Reise-Einträge): ein normales Grid streckt jede Zeile auf die Höhe ihrer höchsten Karte (bzw.
-   lässt bei align-items:start hässlichen Leerraum darunter), sobald z. B. eine lange Notiz neben
-   zwei kurzen liegt. CSS Multi-Column packt dagegen jede Spalte unabhängig von den anderen von oben
-   nach unten durch – jede Karte bekommt exakt ihre benötigte Höhe, ohne Zeilen-Zwang. Die
-   Spaltenbreite (bisher grid-template-columns: repeat(auto-fill, minmax(...))) setzt weiterhin jede
-   Sicht lokal über ihre eigene .cards-Klasse (jetzt column-width statt grid-template-columns) –
-   die SpaltenANZAHL passt sich dadurch weiterhin responsiv an die verfügbare Breite an. Bewusst statt
-   .grid verwendet (nicht zusätzlich dazu): display:grid und columns schließen sich gegenseitig aus. */
-.masonry {
-  column-gap: var(--space-3);
-}
-
-.masonry > * {
-  break-inside: avoid;
-  margin-bottom: var(--space-3);
 }
 
 /* Wiederverwendbare Übergänge für CRUD-/Sortier-Interaktionen (Batch 7): Elemente per
@@ -1155,69 +710,7 @@ textarea:focus {
   transform: scale(0.98);
 }
 
-/* Mobile Spot-Karten-Aufklapp-Animation (#90, siehe ExcursionsView.vue's animateSpotExpand()) - ein
-   flex-direction-Wechsel (Zeile -> Spalte, SpotCard.vue's @container-Regel) lässt sich nicht per
-   simpler CSS-transition animieren, die View-Transitions-API übernimmt das stattdessen (fotografiert
-   Vorher/Nachher, morpht/blendet selbst). ::view-transition-Pseudoelemente wirken IMMER global
-   (können nicht scoped werden), gehören deshalb hier statt in eine Komponente. Nur die eine, gerade
-   wechselnde Karte trägt den Namen (view-transition-name, dynamisch per :style gesetzt) - alles
-   andere läuft standardmäßig trotzdem über die UA-Default-Root-Transition mit: die Annahme, die
-   Root-Ebene bleibe bei nur einer benannten Gruppe automatisch unsichtbar/leer, stimmte nicht - der
-   Browser blendet ohne Gegenmaßnahme trotzdem einen Vorher-/Nachher-Screenshot der GESAMTEN Seite
-   (Header, Bottom-Nav, Listeninhalte) übereinander, was wie eine kurz aufblitzende weiße/verwaschene
-   Fläche über der ganzen Ansicht aussah (Bug). animation-duration: 0 auf der Root-Gruppe deaktiviert
-   diesen Crossfade, sodass ausschließlich die benannte Karten-Gruppe sichtbar animiert. Etwas kürzer
-   als der Browser-Default (~250ms statt 400ms), an SpotCard.vue's eigene .image-Transition (0.15s)
-   angelehnt. */
-::view-transition-group(root) {
-  animation-duration: 0s;
-}
-
-::view-transition-group(expanding-spot-card) {
-  animation-duration: 0.25s;
-}
-
-::view-transition-old(expanding-spot-card),
-::view-transition-new(expanding-spot-card) {
-  animation-duration: 0.25s;
-}
-
 /* Fix for issue #69 */
-p + button,
-p + .btn {
+p + button {
   margin-top: var(--space-3);
-}
-
-/* Base styling for weather alerts (Issue #296) */
-.weather-alert-card {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-md-squircle);
-  corner-shape: squircle;
-  font-size: 0.85rem;
-}
-
-.weather-alert-card.warning {
-  background: var(--color-warning-tint);
-  color: var(--color-warning-dark);
-  border: 1px solid var(--color-warning);
-}
-
-.weather-alert-card.danger {
-  background: var(--color-danger-tint);
-  color: var(--color-danger-dark);
-  border: 1px solid var(--color-danger);
-}
-
-.weather-alert-card .alert-content {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.weather-alert-card .alert-content strong {
-  font-size: 0.85rem;
-  font-weight: 600;
 }

@@ -4,6 +4,7 @@ import { MAX_DRAWER_WIDTH, MIN_DRAWER_WIDTH, useDrawersStore } from '../stores/d
 import AppIcon from './AppIcon.vue';
 import ResizeHandle from './ResizeHandle.vue';
 import IconButton from './primitives/IconButton.vue';
+import UnseenDot from './primitives/UnseenDot.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import type { IconDef } from '../utils/icon';
 
@@ -199,7 +200,7 @@ function onResizeEnd() {
     >
       <span class="tab-icon-wrap">
         <AppIcon class="tab-icon" :size="18" :icon="icon" group="navigation" />
-        <span v-if="hasUnseen" class="unseen-dot" aria-label="Neue Änderungen" />
+        <UnseenDot v-if="hasUnseen" />
       </span>
       <span class="tab-label">{{ label }}</span>
     </button>
@@ -295,19 +296,6 @@ function onResizeEnd() {
 .tab-icon {
   font-size: 1.1rem;
   line-height: 1;
-}
-
-/* Gegenstück zu NavBar.vue's .unseen-dot – dieselbe Bedeutung (jemand hat seit dem letzten Besuch
-   etwas in dieser Schublade geändert), hier auf der seitlichen Lasche statt einem Nav-Item. */
-.unseen-dot {
-  position: absolute;
-  top: -2px;
-  right: -3px;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--color-danger);
-  border: 1.5px solid var(--color-surface);
 }
 
 .tab-label {

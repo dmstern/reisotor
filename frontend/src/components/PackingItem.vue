@@ -205,6 +205,29 @@ const tallyGroups = computed<number[]>(() => {
    overrulen bzw. eckig wirken. Kleinerer, zur schmalen Listen-Zeile passender Wert. */
 .row.new-highlight {
   --new-highlight-radius: var(--radius-sm-squircle);
+  position: relative;
+  border-radius: var(--new-highlight-radius);
+  corner-shape: squircle;
+}
+
+.row.new-highlight::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  border-radius: var(--new-highlight-radius);
+  corner-shape: squircle;
+  box-shadow: inset 0 0 0 2px var(--color-accent);
+}
+
+.row-done {
+  opacity: 0.6;
+}
+
+.text-done {
+  text-decoration: line-through;
+  color: var(--color-text-muted);
 }
 
 .row:last-child {
@@ -219,21 +242,14 @@ const tallyGroups = computed<number[]>(() => {
   min-width: 140px;
 }
 
-/* .state-toggle (Anzahl 1) teilt sich Grundform, Zustandsfarben und Häkchen-Optik jetzt mit der
-   globalen input[type=checkbox]-Regel (style.css) statt sie lokal zu duplizieren – hier bleibt nur
-   noch die Flex-Zentrierung für die Häkchen-Positionierung (echte Checkboxen positionieren ihr
-   Häkchen absolut, dieser Button zentriert es stattdessen über den Elterncontainer). .tally-pill
-   (Anzahl > 1) hat eine eigene, breitere Pillenform und bleibt deshalb im Ruhezustand lokal
-   definiert; nur ihr "eingepackt"-Endzustand (Farben + Häkchen-Form) teilt sich mit .state-toggle
-   denselben globalen Regelsatz, damit Gegenstände mit Anzahl 1 und Anzahl > 1 optisch als derselbe
-   Zustandsautomat erkennbar bleiben statt wie zwei unabhängige UI-Muster zu wirken. */
 .state-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.tally-pill {
+  appearance: none;
+  -webkit-appearance: none;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  padding: 0;
   border: 2px solid var(--color-border);
   border-radius: 6px;
   background: var(--color-surface);
@@ -242,30 +258,33 @@ const tallyGroups = computed<number[]>(() => {
   transition:
     background 0.15s ease,
     border-color 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.tally-pill:hover {
+.state-toggle:hover {
   border-color: var(--color-primary);
 }
 
-.state-toggle.laidOut,
-.tally-pill.laidOut {
-  border-color: var(--color-accent);
-  background: var(--color-highlight);
+.state-toggle:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
-.laid-out-mark {
-  flex-shrink: 0;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--color-accent);
+.state-toggle.packed,
+.tally-pill.packed {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
 }
 
-/* Häkchen-Farben/-Form global (style.css) – hier nur noch der Positionierungs-Feinschliff, den die
-   Flex-Zentrierung dieser Buttons braucht (echte Checkboxen positionieren stattdessen absolut). */
 .state-toggle.packed::after,
 .tally-pill.packed::after {
+  content: '';
+  width: 5px;
+  height: 10px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
   transform: rotate(45deg) translate(-1px, -1px);
 }
 

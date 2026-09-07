@@ -5,6 +5,7 @@ import Modal from './Modal.vue';
 import WeatherIcon from './WeatherIcon.vue';
 import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
+import WeatherAlertCard from './WeatherAlertCard.vue';
 import {
   detectWeatherAlerts,
   fetchHourlyForecast,
@@ -89,18 +90,13 @@ function formatDate(dateStr: string) {
 
       <!-- Unwetter- / Wetter-Warnungen für diesen Tag (Issue #296) -->
       <div v-if="dayAlerts.length" class="weather-dialog-alerts">
-        <div
+        <WeatherAlertCard
           v-for="alert in dayAlerts"
           :key="alert.id"
-          class="weather-alert-card"
-          :class="alert.severity"
-        >
-          <AppIcon :icon="ACTION_ICONS.warning" :size="18" group="actions" />
-          <div class="alert-content">
-            <strong>{{ alert.title }}</strong>
-            <span>{{ alert.description }}</span>
-          </div>
-        </div>
+          :severity="alert.severity"
+          :title="alert.title"
+          :description="alert.description"
+        />
       </div>
 
       <!-- Haupt-Zusammenfassung -->

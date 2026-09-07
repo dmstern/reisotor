@@ -22,6 +22,7 @@ import PendingSyncBadge from './PendingSyncBadge.vue';
 import AppIcon from './AppIcon.vue';
 import Card from './primitives/Card.vue';
 import Button from './primitives/Button.vue';
+import DetailRow from './primitives/DetailRow.vue';
 import WeatherIcon from './WeatherIcon.vue';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
@@ -332,9 +333,9 @@ function onSpotDrop(event: DragEvent) {
 
         <div class="excursion-accordion" :class="{ 'is-expanded': expanded }" :inert="!expanded">
           <div class="excursion-accordion-inner accordion-stagger">
-            <p v-if="creatorLabel" class="detail-row">
-              <span class="detail-label">Von</span>{{ creatorLabel }}
-            </p>
+            <DetailRow v-if="creatorLabel" label="Von">
+              {{ creatorLabel }}
+            </DetailRow>
             <RichTextDisplay
               v-if="excursion.note"
               class="note"

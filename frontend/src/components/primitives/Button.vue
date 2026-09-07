@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import type { IconDef } from '../../utils/icon';
+import type { RouteLocationRaw } from 'vue-router';
 import AppIcon from '../AppIcon.vue';
 import { useSlots } from 'vue';
 
 // Button-Primitive für alle Buttons (Formularknöpfe, Aktionsbuttons, Card-Actions, Icon-Only-Buttons) – siehe Issue #239.
-// Unterstützt sowohl Text, Text + Icon als auch reine Icon-Buttons.
+// Unterstützt sowohl Text, Text + Icon als auch reine Icon-Buttons, sowie Link-Rendering (to/href).
 
 const _props = withDefaults(
   defineProps<{
@@ -38,6 +39,12 @@ const _props = withDefaults(
     title?: string;
     /** Ob der Button explizit im quadratischen Icon-Only-Modus gerendert werden soll. */
     iconOnly?: boolean;
+    /** Vue-Router Ziel für Link-Buttons. */
+    to?: RouteLocationRaw | string;
+    /** Externer Link für a-Buttons. */
+    href?: string;
+    /** Expliziter HTML-Tag (Fallback). */
+    as?: string;
   }>(),
   {
     variant: 'primary',
@@ -47,6 +54,9 @@ const _props = withDefaults(
     type: 'button',
     disabled: false,
     iconOnly: false,
+    to: undefined,
+    href: undefined,
+    as: undefined,
   }
 );
 
@@ -56,9 +66,12 @@ const hasDefaultSlot = () =>
 </script>
 
 <template>
-  <button
-    :type="type"
-    :disabled="disabled"
+  <component
+    :is="to ? 'router-link' : href ? 'a' : as || 'button'"
+    :to="to"
+    :href="href"
+    :type="!to && !href ? type : undefined"
+    :disabled="!to && !href ? disabled : undefined"
     :aria-label="ariaLabel"
     :title="title"
     class="btn"
@@ -82,7 +95,7 @@ const hasDefaultSlot = () =>
       :size="size === 'sm' ? 15 : size === 'lg' ? 22 : 18"
     />
     <slot />
-  </button>
+  </component>
 </template>
 
 <style scoped>
@@ -200,7 +213,8 @@ const hasDefaultSlot = () =>
   box-shadow: var(--shadow-sm);
 }
 
-.btn--card-action {
+.btn--card-action,
+.card-action-btn {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -211,7 +225,23 @@ const hasDefaultSlot = () =>
   background: var(--color-primary-tint);
   color: var(--color-primary-dark);
   font-size: 0.85rem;
-  box-shadow: none;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  line-height: 1.3;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.btn--card-action:hover:not(:disabled),
+.card-action-btn:hover:not(:disabled) {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
 }
 
 .btn--ghost {
@@ -244,14 +274,50 @@ const hasDefaultSlot = () =>
   border-color: var(--color-primary);
 }
 
-/* Dropdown-Trigger-Variante: Visuals komplett aus der globalen .dropdown-field-Klasse
-   in style.css — kein einziger Wert wird hier dupliziert. */
-.btn--dropdown {
+.btn--dropdown,
+.dropdown-field {
+  padding: 9px 12px;
+  border: var(--ui-border-width, 1px) solid var(--color-border-strong);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-sm);
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 400;
+  height: var(--input-height, var(--input-default-height));
+  min-height: var(--input-height, var(--input-default-height));
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
   cursor: pointer;
 }
 
-.btn--dropdown:hover:not(:disabled) {
+.btn--dropdown:hover:not(:disabled),
+.dropdown-field:hover:not(:disabled) {
   background: var(--color-hover);
+}
+
+.btn--dropdown :deep(.app-icon),
+.dropdown-field :deep(.app-icon) {
+  color: var(--color-primary);
+  opacity: 0.8;
+}
+
+.btn.secondary {
+  background: transparent;
+  color: var(--color-primary);
+  border: var(--ui-border-width, 1px) solid var(--color-border-strong);
+}
+
+.btn.secondary:hover:not(:disabled) {
+  background: var(--color-surface);
+}
+
+.btn.danger {
+  background: var(--color-danger);
+  color: white;
 }
 
 .btn--sm {
