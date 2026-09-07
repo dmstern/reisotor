@@ -130,7 +130,7 @@
   /* #95 "Eingabe Elemente cleanup": Buttons/Inputs/Selects/Dropdowns bekommen app-weit einen ganz
      leicht kräftigeren Rahmen als das bisherige --color-border (das bleibt für dezentere Trennlinien
      wie .richtext-Regeln/Karten-Rand unverändert). --color-border-strong für neutrale Flächen
-     (Inputs/Select/button.secondary/.card-action-btn/Popover-Menüs), --color-button-edge zusätzlich
+     (Inputs/Select/button.secondary/.btn--card-action/Popover-Menüs), --color-button-edge zusätzlich
      für die farbigen Buttons (primary/danger) selbst - dort würde ein neutraler Beige-/Grauton gegen
      die satte Hintergrundfarbe kaum wirken, ein dezent abdunkelnder Overlay-Ton (statt Hex, damit er
      auf jedem --color-primary/--color-danger-Ton gleich funktioniert) zeichnet die Kante dagegen auch

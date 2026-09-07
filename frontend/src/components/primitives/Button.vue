@@ -2,7 +2,7 @@
 import type { IconDef } from '../../utils/icon';
 import { RouterLink, type RouteLocationRaw } from 'vue-router';
 import AppIcon from '../AppIcon.vue';
-import { useSlots } from 'vue';
+import { useSlots, computed } from 'vue';
 
 // Button-Primitive für alle Buttons (Formularknöpfe, Aktionsbuttons, Card-Actions, Icon-Only-Buttons) – siehe Issue #239.
 // Unterstützt sowohl Text, Text + Icon als auch reine Icon-Buttons, sowie Link-Rendering (to/href).
@@ -63,30 +63,61 @@ const _props = withDefaults(
 const slots = useSlots();
 const hasDefaultSlot = () =>
   !!slots.default && slots.default().some((node) => node.type !== Comment);
+
+const btnClasses = computed(() => [
+  `btn--${_props.variant}`,
+  _props.variant === 'dropdown' ? 'dropdown-field' : undefined,
+  _props.size !== 'md' ? `btn--${_props.size}` : undefined,
+  _props.shape !== 'squircle' ? `btn--${_props.shape}` : undefined,
+  {
+    'is-disabled': _props.disabled,
+    'is-active': _props.active,
+    'icon-only':
+      _props.iconOnly || _props.shape === 'circle' || (!hasDefaultSlot() && !!_props.icon),
+  },
+]);
 </script>
 
 <template>
-  <component
-    :is="to ? RouterLink : href ? 'a' : as || 'button'"
+  <RouterLink
+    v-if="to"
     :to="to"
-    :href="href"
-    :type="!to && !href ? type : undefined"
-    :disabled="!to && !href ? disabled : undefined"
     :aria-label="ariaLabel"
     :title="title"
     class="btn"
-    :class="[
-      `btn--${variant}`,
-      variant === 'card-action' ? 'card-action-btn' : undefined,
-      variant === 'dropdown' ? 'dropdown-field' : undefined,
-      size !== 'md' ? `btn--${size}` : undefined,
-      shape !== 'squircle' ? `btn--${shape}` : undefined,
-      {
-        'is-disabled': disabled,
-        'is-active': active,
-        'icon-only': iconOnly || shape === 'circle' || (!hasDefaultSlot() && !!icon),
-      },
-    ]"
+    :class="btnClasses"
+  >
+    <AppIcon
+      v-if="icon"
+      :icon="icon"
+      group="actions"
+      :size="size === 'sm' ? 15 : size === 'lg' ? 22 : 18"
+    />
+    <slot />
+  </RouterLink>
+  <a
+    v-else-if="href"
+    :href="href"
+    :aria-label="ariaLabel"
+    :title="title"
+    class="btn"
+    :class="btnClasses"
+  >
+    <AppIcon
+      v-if="icon"
+      :icon="icon"
+      group="actions"
+      :size="size === 'sm' ? 15 : size === 'lg' ? 22 : 18"
+    />
+    <slot />
+  </a>
+  <component
+    v-else-if="as"
+    :is="as"
+    :aria-label="ariaLabel"
+    :title="title"
+    class="btn"
+    :class="btnClasses"
   >
     <AppIcon
       v-if="icon"
@@ -96,38 +127,24 @@ const hasDefaultSlot = () =>
     />
     <slot />
   </component>
+  <button
+    v-else
+    :type="type"
+    :disabled="disabled"
+    :aria-label="ariaLabel"
+    :title="title"
+    class="btn"
+    :class="btnClasses"
+  >
+    <AppIcon
+      v-if="icon"
+      :icon="icon"
+      group="actions"
+      :size="size === 'sm' ? 15 : size === 'lg' ? 22 : 18"
+    />
+    <slot />
+  </button>
 </template>
-
-<style>
-.card-action-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
-  border: var(--ui-border-width, 1px) solid var(--color-border-strong);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  background: var(--color-primary-tint);
-  color: var(--color-primary-dark);
-  font-size: 0.85rem;
-  font-weight: 600;
-  text-decoration: none;
-  white-space: nowrap;
-  line-height: 1.3;
-  cursor: pointer;
-  box-shadow: var(--shadow-sm);
-  transition:
-    background 0.15s ease,
-    color 0.15s ease,
-    border-color 0.15s ease;
-}
-
-.card-action-btn:hover:not(:disabled) {
-  background: var(--color-primary);
-  color: white;
-  border-color: var(--color-primary);
-}
-</style>
 
 <style scoped>
 .btn {
@@ -244,8 +261,7 @@ const hasDefaultSlot = () =>
   box-shadow: var(--shadow-sm);
 }
 
-.btn--card-action,
-.card-action-btn {
+.btn--card-action {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -268,8 +284,7 @@ const hasDefaultSlot = () =>
     border-color 0.15s ease;
 }
 
-.btn--card-action:hover:not(:disabled),
-.card-action-btn:hover:not(:disabled) {
+.btn--card-action:hover:not(:disabled) {
   background: var(--color-primary);
   color: white;
   border-color: var(--color-primary);

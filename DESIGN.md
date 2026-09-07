@@ -422,14 +422,14 @@ oben, funktioniert offline). Keine weiteren Schriftfamilien einführen.
 
 ### Schriftgrößen-Skala & CSS-Tokens
 
-| Variable          | Wert               | Typischer Einsatz                                          |
-| ----------------- | ------------------ | ---------------------------------------------------------- |
-| `--font-size-xs`  | `0.75rem` (12px)   | Pre-Heading Kicker, Badges, Formular-Meta & Labels         |
-| `--font-size-sm`  | `0.85rem` (13.6px) | Sekundärtexte, Card-Actions (`.card-action-btn`), Hinweise |
-| `--font-size-md`  | `1rem` (16px)      | Standard Fließtext, Text-Inputs, Haupt-Buttons             |
-| `--font-size-lg`  | `1.15rem` (18.4px) | H3 Überschriften, Subheadings, Dialog-Titel                |
-| `--font-size-xl`  | `1.3rem` (20.8px)  | H2 Sektions-Überschriften, Kachel-Titel                    |
-| `--font-size-2xl` | `1.6rem` (25.6px)  | H1 Haupt-Seitentitel (700 Bold, `-0.01em` Tracking)        |
+| Variable          | Wert               | Typischer Einsatz                                           |
+| ----------------- | ------------------ | ----------------------------------------------------------- |
+| `--font-size-xs`  | `0.75rem` (12px)   | Pre-Heading Kicker, Badges, Formular-Meta & Labels          |
+| `--font-size-sm`  | `0.85rem` (13.6px) | Sekundärtexte, Card-Actions (`.btn--card-action`), Hinweise |
+| `--font-size-md`  | `1rem` (16px)      | Standard Fließtext, Text-Inputs, Haupt-Buttons              |
+| `--font-size-lg`  | `1.15rem` (18.4px) | H3 Überschriften, Subheadings, Dialog-Titel                 |
+| `--font-size-xl`  | `1.3rem` (20.8px)  | H2 Sektions-Überschriften, Kachel-Titel                     |
+| `--font-size-2xl` | `1.6rem` (25.6px)  | H1 Haupt-Seitentitel (700 Bold, `-0.01em` Tracking)         |
 
 ### Semantische Textbausteine
 

@@ -194,7 +194,7 @@ test.describe('Touren-Reihenfolge-Editor: Reihenfolge + Mehrfachbesuch direkt in
     await expect(tourCard).toBeVisible();
 
     // Klick auf die Tour-Karte visualisiert die Tour auf der Karte (kein extra Touren-View nötig).
-    await tourCard.locator('.card-action-btn', { hasText: 'Auf Karte anzeigen' }).click();
+    await tourCard.locator('.btn--card-action', { hasText: 'Auf Karte anzeigen' }).click();
     await expect(page.locator('.focus-banner', { hasText: tourTitle })).toBeVisible();
 
     // Bearbeiten-/Löschen-Buttons sind erst in der aufgeklappten Karte sichtbar (#143, analog zu

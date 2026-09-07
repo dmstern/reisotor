@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, onUnmounted, nextTick } from 'vue';
 import AppIcon from './AppIcon.vue';
+import Button from './primitives/Button.vue';
 import DropdownItem from './primitives/DropdownItem.vue';
 import PickerMenu from './primitives/PickerMenu.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
@@ -12,7 +13,7 @@ import { computePopoverPosition } from '../utils/popoverPosition';
 // das Menü weder von Modal.vue's overflow-y:auto noch von Card-/Akkordeon-overflow:hidden abgeschnitten wird.
 const props = defineProps<{ lat: number; lng: number; title: string; mapsLink?: string | null }>();
 const open = ref(false);
-const buttonRef = ref<HTMLButtonElement | null>(null);
+const buttonRef = ref<InstanceType<typeof Button> | null>(null);
 const menuStyle = ref<{ top: string; left: string }>({ top: '0px', left: '0px' });
 
 async function toggle(event?: MouseEvent) {
@@ -20,7 +21,9 @@ async function toggle(event?: MouseEvent) {
     open.value = false;
     return;
   }
-  const triggerEl = (event?.currentTarget as HTMLElement) || buttonRef.value;
+  const triggerEl =
+    (event?.currentTarget as HTMLElement) ||
+    ((buttonRef.value?.$el as HTMLElement | undefined) ?? null);
   if (!triggerEl) return;
 
   // Erste synchrone Berechnung mit geschätzter Menühöhe
@@ -58,9 +61,9 @@ onUnmounted(() => {
 
 <template>
   <div class="maps-picker" @click.stop>
-    <button ref="buttonRef" type="button" class="card-action-btn" @click="toggle($event)">
+    <Button ref="buttonRef" variant="card-action" @click="toggle($event)">
       <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" /> In Karten-App öffnen ↗
-    </button>
+    </Button>
     <Teleport to="body">
       <PickerMenu v-if="open" class="maps-picker-menu" :style="menuStyle" @close="close">
         <DropdownItem
