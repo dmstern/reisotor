@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { IconDef } from '../../utils/icon';
-import type { RouteLocationRaw } from 'vue-router';
+import { RouterLink, type RouteLocationRaw } from 'vue-router';
 import AppIcon from '../AppIcon.vue';
 import { useSlots } from 'vue';
 
@@ -67,7 +67,7 @@ const hasDefaultSlot = () =>
 
 <template>
   <component
-    :is="to ? 'router-link' : href ? 'a' : as || 'button'"
+    :is="to ? RouterLink : href ? 'a' : as || 'button'"
     :to="to"
     :href="href"
     :type="!to && !href ? type : undefined"
@@ -97,6 +97,37 @@ const hasDefaultSlot = () =>
     <slot />
   </component>
 </template>
+
+<style>
+.card-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: var(--ui-border-width, 1px) solid var(--color-border-strong);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  background: var(--color-primary-tint);
+  color: var(--color-primary-dark);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  line-height: 1.3;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.card-action-btn:hover:not(:disabled) {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+</style>
 
 <style scoped>
 .btn {

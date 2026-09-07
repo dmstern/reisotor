@@ -1159,12 +1159,12 @@ async function onImportFileSelected(event: Event) {
           Gelöschte Termine, Ausflüge, Spots und mehr bleiben eine Weile hier erhalten und lassen
           sich wiederherstellen.
         </p>
-        <Button
-          variant="card-action"
+        <router-link
           :to="tripStore.currentTripId ? `/trip/${tripStore.currentTripId}/trash` : '/trash'"
+          class="card-action-btn"
         >
           Papierkorb öffnen
-        </Button>
+        </router-link>
       </div>
 
       <div class="card" v-if="auth.user?.is_admin">
