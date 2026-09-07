@@ -1,54 +1,49 @@
-/**
- * @vitest-environment jsdom
- */
 /* eslint-disable vue/one-component-per-file */
 import { describe, it, expect } from 'vitest';
 import { createApp, h } from 'vue';
 import { createRouter, createMemoryHistory } from 'vue-router';
+import { renderToString } from 'vue/server-renderer';
 import Button from './Button.vue';
 
 describe('Button primitive', () => {
-  it('renders a button element by default', () => {
+  it('renders a button element by default', async () => {
     const app = createApp({
       render: () => h(Button, null, () => 'Click me'),
     });
-    const el = document.createElement('div');
-    app.mount(el);
-    const btn = el.querySelector('button');
-    expect(btn).not.toBeNull();
-    expect(btn?.textContent?.trim()).toBe('Click me');
-    expect(btn?.classList.contains('btn')).toBe(true);
-    expect(btn?.classList.contains('btn--primary')).toBe(true);
+    const html = await renderToString(app);
+    expect(html).toContain('<button');
+    expect(html).toContain('Click me');
+    expect(html).toContain('btn');
+    expect(html).toContain('btn--primary');
   });
 
-  it('renders an anchor tag when href is passed', () => {
+  it('renders an anchor tag when href is passed', async () => {
     const app = createApp({
       render: () => h(Button, { href: 'https://example.com' }, () => 'Link'),
     });
-    const el = document.createElement('div');
-    app.mount(el);
-    const a = el.querySelector('a');
-    expect(a).not.toBeNull();
-    expect(a?.getAttribute('href')).toBe('https://example.com');
+    const html = await renderToString(app);
+    expect(html).toContain('<a');
+    expect(html).toContain('href="https://example.com"');
+    expect(html).toContain('Link');
   });
 
-  it('renders a router-link (anchor tag) when to is passed', async () => {
+  it('renders a router-link (anchor tag with href) when to is passed', async () => {
     const router = createRouter({
       history: createMemoryHistory(),
       routes: [{ path: '/trash', component: { template: '<div>Trash</div>' } }],
     });
     await router.push('/trash');
     await router.isReady();
+
     const app = createApp({
       render: () => h(Button, { to: '/trash', variant: 'card-action' }, () => 'Papierkorb öffnen'),
     });
     app.use(router);
-    const el = document.createElement('div');
-    app.mount(el);
 
-    const link = el.querySelector('a');
-    expect(link).not.toBeNull();
-    expect(link?.getAttribute('href')).toBe('/trash');
-    expect(link?.classList.contains('btn--card-action')).toBe(true);
+    const html = await renderToString(app);
+    expect(html).toContain('<a');
+    expect(html).toContain('href="/trash"');
+    expect(html).toContain('btn--card-action');
+    expect(html).toContain('Papierkorb öffnen');
   });
 });
