@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { reactive, ref, shallowRef, watch } from 'vue';
+import { reactive, ref, watch } from 'vue';
 import { api } from '../api/client';
 import { useTripStore } from './trip';
 import { useAuthStore } from './auth';
@@ -73,7 +73,7 @@ export const useLiveSyncStore = defineStore('liveSync', () => {
   // 'members' für Einladungen ist bewusst NICHT in LIVE_DOMAINS, soll aber trotzdem als Notification
   // auftauchen).
   const notificationVersion = ref(0);
-  const onlineUserIds = shallowRef<number[]>([]);
+  const onlineUserIds = ref<number[]>([]);
   // Live-Standort auf der Karte (TripMap.vue): rein ephemer, kein domainVersion/unseenEntityIds-
   // Eintrag – keyed per userId statt eines Arrays, da jedes Mitglied höchstens einen aktuellen
   // Standort hat (ein neuer Ping überschreibt den alten). Siehe backend/src/activity.ts's
