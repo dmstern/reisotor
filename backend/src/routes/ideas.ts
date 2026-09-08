@@ -205,6 +205,7 @@ const selectIdeaCommentAuthStmt = db.prepare(
    WHERE idea_comments.id = ?`
 );
 const deleteIdeaCommentStmt = db.prepare('DELETE FROM idea_comments WHERE id = ?');
+const selectSpotTitleByIdForLegsStmt = db.prepare('SELECT title FROM spots WHERE id = ?');
 
 function syncExcursionSpots(ideaId: number, spotIds: number[]) {
   deleteExcursionSpotsStmt.run(ideaId);
@@ -313,7 +314,6 @@ function syncExcursionLegs(
   const preservedLegIds = new Set<number>();
 
   if (legs && legs.length > 0) {
-    const selectSpotTitle = db.prepare('SELECT title FROM spots WHERE id = ?');
     for (let index = 0; index < legs.length; index++) {
       const leg = legs[index];
       let budgetExpenseId: number | null = null;
@@ -331,9 +331,9 @@ function syncExcursionLegs(
 
       if (hasAmount) {
         const fromTitle =
-          (selectSpotTitle.get(leg.from_spot_id) as { title: string } | undefined)?.title ?? '';
+          (selectSpotTitleByIdForLegsStmt.get(leg.from_spot_id) as { title: string } | undefined)?.title ?? '';
         const toTitle =
-          (selectSpotTitle.get(leg.to_spot_id) as { title: string } | undefined)?.title ?? '';
+          (selectSpotTitleByIdForLegsStmt.get(leg.to_spot_id) as { title: string } | undefined)?.title ?? '';
         const legBudgetTitle =
           fromTitle && toTitle
             ? `${leg.transport_type || 'Transport'}: ${fromTitle} → ${toTitle}`
