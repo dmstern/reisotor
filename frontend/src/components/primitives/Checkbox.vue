@@ -6,7 +6,7 @@ import { computed } from 'vue';
 const props = withDefaults(
   defineProps<{
     modelValue?: unknown;
-    checked?: boolean;
+    checked?: unknown;
     value?: unknown;
     trueValue?: boolean | string | number;
     falseValue?: boolean | string | number;
@@ -31,7 +31,7 @@ const emit = defineEmits<{
 
 const isChecked = computed(() => {
   if (props.checked !== undefined) {
-    return props.checked;
+    return Boolean(props.checked);
   }
   if (Array.isArray(props.modelValue)) {
     return props.modelValue.includes(props.value);
