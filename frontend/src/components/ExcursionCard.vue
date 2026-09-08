@@ -13,7 +13,6 @@ import { useExcursionsStore } from '../stores/excursions';
 import { useDrawersStore } from '../stores/drawers';
 import { useWeatherProviderStore } from '../stores/weatherProvider';
 import EditButton from './EditButton.vue';
-import DeleteButton from './DeleteButton.vue';
 import SocialRow from './SocialRow.vue';
 import Comments, { type CommentItem } from './Comments.vue';
 import RichTextDisplay from './RichTextDisplay.vue';
@@ -44,7 +43,6 @@ const props = defineProps<{
   expanded: boolean;
 }>();
 const emit = defineEmits<{
-  (e: 'remove', id: number): void;
   (e: 'edit', excursion: Excursion): void;
   (e: 'toggle-like'): void;
   (e: 'submit-comment', content: string): void;
@@ -224,16 +222,6 @@ function onSpotDrop(event: DragEvent) {
     @dragleave="onSpotDragLeave"
     @drop.prevent="onSpotDrop"
   >
-    <!-- Nur in der aufgeklappten Karte sichtbar (#143) - analog zu SpotCard.vue's Bearbeiten-/
-         Löschen-Buttons: in der kompakten Karte überlagerte das Status-Badge (unten, immer sichtbar)
-         bei langem Text (z. B. "Geplant für 20. Aug. · ☁️ 21°") sonst den links daneben schwebenden
-         Bearbeiten-Button, v. a. bei der schmalen 140px-Miniatur im Desktop-Zeilen-Layout. -->
-    <DeleteButton
-      v-if="expanded"
-      floating
-      class="card-delete"
-      @click="emit('remove', excursion.id)"
-    />
     <!-- Akzentbalken an der abgerundeten linken Kante mit Rollen-/Rucksack-Icon -->
     <div
       class="tour-accent-bar"
@@ -529,12 +517,6 @@ function onSpotDrop(event: DragEvent) {
   display: flex;
   flex-direction: row;
   align-items: stretch;
-}
-
-/* Löschen-Button schwebt in der oberen rechten Ecke der ganzen Card (nicht des Vorschaubilds) –
-   .excursion-card ist dafür position:relative. */
-.card-delete {
-  z-index: 1;
 }
 
 /* Spot per Drag&Drop aus der Spots-Sicht darauf ablegen (SpotCard.vue ist die Drag-Quelle). */

@@ -13,7 +13,6 @@ import { useDrawersStore } from '../stores/drawers';
 import { useWeatherProviderStore } from '../stores/weatherProvider';
 import CategoryChip from './CategoryChip.vue';
 import EditButton from './EditButton.vue';
-import DeleteButton from './DeleteButton.vue';
 import RichTextDisplay from './RichTextDisplay.vue';
 import SocialRow from './SocialRow.vue';
 import Comments, { type CommentItem } from './Comments.vue';
@@ -67,7 +66,6 @@ function formatAccommodationDate(d: string | null) {
 }
 const emit = defineEmits<{
   (e: 'edit', spot: Spot): void;
-  (e: 'remove', id: number): void;
   (e: 'toggle-like'): void;
   (e: 'submit-comment', content: string): void;
   (e: 'remove-comment', id: number): void;
@@ -288,9 +286,6 @@ function onToggleDone() {
       />
       <Transition name="slide-fade">
         <EditButton v-if="expanded" floating @click="emit('edit', spot)" />
-      </Transition>
-      <Transition name="slide-fade">
-        <DeleteButton v-if="expanded" floating @click="emit('remove', spot.id)" />
       </Transition>
       <!-- #106: EIN gemeinsames Datums-/Status-Badge statt zweier unabhängiger Chips (das alte
            separate "Gemacht"-Badge unten rechts entfällt) - Text/Icon hängen vom Status ab
@@ -583,10 +578,7 @@ function onToggleDone() {
 /* Status-/Datums-Chip (#106: EIN gemeinsames Badge statt zweier unabhängiger Chips, ersetzt das
    frühere separate "Gemacht"-Badge) – dasselbe Muster wie ExcursionCard.vue's .status/.status.planned
    (inkl. Dark-Mode-Override unten), damit beide Karten-Typen optisch konsistent bleiben. Unten statt
-   oben rechts positioniert: oben rechts sitzt hier bereits der schwebende Löschen-Button
-   (EditButton/DeleteButton floating landen beide im selben .image-Container), anders als bei
-   ExcursionCard.vue, wo der Löschen-Button außerhalb von .image auf Höhe der ganzen (breiteren) Card
-   schwebt. Nur sichtbar, wenn geplant oder gemacht (siehe v-if im Template) statt immer einen
+   oben positioniert. Nur sichtbar, wenn geplant oder gemacht (siehe v-if im Template) statt immer einen
    "Nicht geplant"-Chip zu zeigen – ein Spot muss (anders als ein Ausflug) nicht zwangsläufig einmal
    eingeplant werden. */
 .status {

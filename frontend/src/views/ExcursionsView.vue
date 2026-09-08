@@ -429,7 +429,9 @@ function closeEditExcursionForm() {
   editingExcursion.value = null;
 }
 
-async function removeExcursion(id: number) {
+async function deleteEditingExcursion() {
+  if (editingExcursion.value === null) return;
+  const id = editingExcursion.value;
   const excursion = excursionsStore.excursions.find((e) => e.id === id);
   if (excursion?.date) {
     const confirmed = window.confirm(
@@ -438,6 +440,7 @@ async function removeExcursion(id: number) {
     if (!confirmed) return;
   }
   await excursionsStore.remove(id);
+  closeEditExcursionForm();
 }
 
 // Spot per Drag&Drop aus der Spots-Liste auf eine Tour-Karte fallen lassen (ExcursionCard.vue ist
@@ -2283,9 +2286,12 @@ watch(editSpotManualPin, (pin) => {
   if (pin && editSpotLocationError.value) submitEditSpot();
 });
 
-async function removeSpot(id: number) {
+async function deleteEditingSpot() {
+  if (!editingSpot.value) return;
+  const id = editingSpot.value.id;
   await spotsStore.remove(id);
   drawers.touchLocations();
+  closeEditSpotForm();
 }
 </script>
 
@@ -2681,9 +2687,22 @@ async function removeSpot(id: number) {
                     : newExcursionDraft.restored.value
                 "
               />
-              <Button type="submit">{{
-                editingExcursion !== null ? 'Speichern' : 'Hinzufügen'
-              }}</Button>
+              <div class="actions-row">
+                <Button
+                  v-if="editingExcursion !== null"
+                  type="button"
+                  variant="danger"
+                  size="sm"
+                  :icon="ACTION_ICONS.delete"
+                  @click="deleteEditingExcursion"
+                >
+                  Löschen
+                </Button>
+                <div class="spacer"></div>
+                <Button type="submit">{{
+                  editingExcursion !== null ? 'Speichern' : 'Hinzufügen'
+                }}</Button>
+              </div>
             </form>
           </Modal>
 
@@ -3172,7 +3191,22 @@ async function removeSpot(id: number) {
                   editingSpot !== null ? editSpotDraft.restored.value : newSpotDraft.restored.value
                 "
               />
-              <Button type="submit">{{ editingSpot !== null ? 'Speichern' : 'Hinzufügen' }}</Button>
+              <div class="actions-row">
+                <Button
+                  v-if="editingSpot !== null"
+                  type="button"
+                  variant="danger"
+                  size="sm"
+                  :icon="ACTION_ICONS.delete"
+                  @click="deleteEditingSpot"
+                >
+                  Löschen
+                </Button>
+                <div class="spacer"></div>
+                <Button type="submit">{{
+                  editingSpot !== null ? 'Speichern' : 'Hinzufügen'
+                }}</Button>
+              </div>
             </form>
           </Modal>
 
@@ -3258,7 +3292,6 @@ async function removeSpot(id: number) {
               :travel-items="travelItems"
               :expanded="expandedExcursionId === grp.excursion.id"
               @edit="startEditExcursion"
-              @remove="removeExcursion"
               @toggle-like="toggleExcursionLike(grp.excursion.id)"
               @submit-comment="(content) => submitExcursionComment(grp.excursion!.id, content)"
               @remove-comment="removeExcursionComment"
@@ -3329,7 +3362,6 @@ async function removeSpot(id: number) {
                         :tour-options="allTourTitles"
                         :has-multiple-members="users.length > 1"
                         @edit="startEditSpot"
-                        @remove="removeSpot"
                         @toggle-like="toggleSpotLike(item.spot.id)"
                         @submit-comment="(content) => submitSpotComment(item.spot.id, content)"
                         @remove-comment="removeSpotComment"
@@ -4282,6 +4314,19 @@ async function removeSpot(id: number) {
 .edit-form .row > * {
   flex: 1;
   min-width: 140px;
+}
+
+.actions-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-border);
+}
+
+.spacer {
+  flex: 1;
 }
 
 .collapsible-fieldset {
