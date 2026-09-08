@@ -237,7 +237,7 @@ function onDelete() {
 
       <div class="actions-row">
         <Button v-if="hasExistingData" type="button" variant="danger" size="sm" @click="onDelete">
-          <AppIcon :icon="ACTION_ICONS.delete" :size="14" group="actions" /> Teilstrecke leeren
+          <AppIcon :icon="ACTION_ICONS.delete" :size="14" group="actions" /> Löschen
         </Button>
         <div class="spacer"></div>
         <Button type="button" variant="ghost" @click="emit('update:modelValue', false)">
