@@ -234,7 +234,7 @@ function onSpotDrop(event: DragEvent) {
       class="card-delete"
       @click="emit('remove', excursion.id)"
     />
-    <!-- Dicker rötlich-violetter Akzentbalken an der abgerundeten linken Kante mit Rollen-/Rucksack-Icon -->
+    <!-- Akzentbalken an der abgerundeten linken Kante mit Rollen-/Rucksack-Icon -->
     <div
       class="tour-accent-bar"
       :title="excursion.role ? TRAVEL_ROLE_META[excursion.role].label : 'Tour / Ausflug'"
@@ -452,7 +452,7 @@ function onSpotDrop(event: DragEvent) {
   min-height: 120px;
   border-width: var(--ui-border-width, 1px);
   border-style: solid;
-  border-color: var(--color-tour-accent-border);
+  border-color: var(--color-tour-border);
   background: var(--color-surface);
   cursor: pointer;
   overflow: hidden;
@@ -463,7 +463,7 @@ function onSpotDrop(event: DragEvent) {
 }
 
 .excursion-card:hover {
-  border-color: var(--color-tour-accent);
+  border-color: var(--color-tour);
   box-shadow: var(--shadow-sm);
 }
 
@@ -481,15 +481,11 @@ function onSpotDrop(event: DragEvent) {
   overflow: hidden;
 }
 
-/* Dicker rötlich-violetter Akzentbalken an der abgerundeten linken Kante */
+/* Akzentbalken an der abgerundeten linken Kante */
 .tour-accent-bar {
   width: 32px;
   flex-shrink: 0;
-  background: linear-gradient(
-    180deg,
-    var(--color-tour-accent) 0%,
-    var(--color-tour-accent-dark) 100%
-  );
+  background: linear-gradient(180deg, var(--color-tour) 0%, var(--color-tour-dark) 100%);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -543,8 +539,8 @@ function onSpotDrop(event: DragEvent) {
 
 /* Spot per Drag&Drop aus der Spots-Sicht darauf ablegen (SpotCard.vue ist die Drag-Quelle). */
 .excursion-card.drop-target {
-  border-color: var(--color-tour-accent);
-  background: var(--color-tour-accent-tint);
+  border-color: var(--color-tour);
+  background: var(--color-tour-tint);
 }
 
 /* Ersetzt den früheren ExcursionDetailDialog.vue-Modal-Dialog (#92): die Karte wächst an Ort und
@@ -554,8 +550,8 @@ function onSpotDrop(event: DragEvent) {
    unterscheidbar bleiben. */
 .excursion-card.expanded {
   border-style: solid;
-  border-color: var(--color-tour-accent);
-  background: var(--color-tour-accent-tint);
+  border-color: var(--color-tour);
+  background: var(--color-tour-tint);
 }
 
 .image {
@@ -598,9 +594,9 @@ function onSpotDrop(event: DragEvent) {
   letter-spacing: 0.04em;
   padding: 1px 7px;
   border-radius: 999px;
-  background: var(--color-tour-accent-tint);
-  color: var(--color-tour-accent);
-  border: 1px solid var(--color-tour-accent-border);
+  background: var(--color-tour-tint);
+  color: var(--color-tour);
+  border: 1px solid var(--color-tour-border);
 }
 
 .placeholder {

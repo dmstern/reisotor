@@ -3103,7 +3103,7 @@ async function removeSpot(id: number) {
                     "
                     class="assign-chips"
                   >
-                    <!-- Tour-Chips: orange (--color-calendar-tour) -->
+                    <!-- Tour-Chips: orange (--color-tour) -->
                     <span
                       v-for="title in activeSpotForm.tourTitles"
                       :key="'tour-' + title"
@@ -5175,11 +5175,11 @@ async function removeSpot(id: number) {
   line-height: 1.2;
 }
 
-/* Touren-Chip: orange (Farbe aus dem Kalender, SCHEDULE_CATEGORY_META.excursion.color) */
+/* Touren-Chip: orange (Zentrale Tour-Farbe --color-tour / SCHEDULE_CATEGORY_META.excursion.color) */
 .assign-chip--tour {
-  background: var(--color-calendar-tour-tint);
-  border-color: var(--color-calendar-tour-border);
-  color: var(--color-calendar-tour);
+  background: var(--color-tour-tint);
+  border-color: var(--color-tour-border);
+  color: var(--color-tour);
 }
 
 /* Termin-Chip: grau (Farbe aus dem Kalender, SCHEDULE_CATEGORY_META.other.color) */

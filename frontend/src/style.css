@@ -122,11 +122,23 @@
   --color-accent-secondary: #5b6ee1;
   --color-accent-secondary-bg: #eef0fd;
 
-  /* Rötlich-violette Akzentfarben für Tour-Kacheln (ExcursionCard) zur Unterscheidung von Spots */
-  --color-tour-accent: #a21caf;
-  --color-tour-accent-dark: #86198f;
-  --color-tour-accent-tint: rgba(162, 28, 175, 0.08);
-  --color-tour-accent-border: rgba(162, 28, 175, 0.3);
+  /* Tour-/Ausflugs-Farben (Single Source of Truth für Tour-Kacheln, Kalender-Einträge
+     und Tour-Chips bei den Spot-Daten – Konsistenz mit utils/scheduleCategory.ts):
+     Orange für Touren/Ausflüge (#eb6834 in Light, #f08254 in Dark) */
+  --color-tour: #eb6834;
+  --color-tour-dark: #d95826;
+  --color-tour-tint: rgba(235, 104, 52, 0.1);
+  --color-tour-border: rgba(235, 104, 52, 0.35);
+
+  /* Abwärtskompatible Aliase */
+  --color-tour-accent: var(--color-tour);
+  --color-tour-accent-dark: var(--color-tour-dark);
+  --color-tour-accent-tint: var(--color-tour-tint);
+  --color-tour-accent-border: var(--color-tour-border);
+  --color-calendar-tour: var(--color-tour);
+  --color-calendar-tour-tint: var(--color-tour-tint);
+  --color-calendar-tour-border: var(--color-tour-border);
+
   /* #95 "Eingabe Elemente cleanup": Buttons/Inputs/Selects/Dropdowns bekommen app-weit einen ganz
      leicht kräftigeren Rahmen als das bisherige --color-border (das bleibt für dezentere Trennlinien
      wie .richtext-Regeln/Karten-Rand unverändert). --color-border-strong für neutrale Flächen
@@ -148,10 +160,7 @@
   --color-scheduled-tint: rgba(30, 150, 209, 0.1);
 
   /* Kalender-Kategorie-Farben (Konsistenz mit utils/scheduleCategory.ts):
-     Orange für Touren/Ausflüge, Grau für Termine/Sonstiges */
-  --color-calendar-tour: #eb6834;
-  --color-calendar-tour-tint: rgba(235, 104, 52, 0.1);
-  --color-calendar-tour-border: rgba(235, 104, 52, 0.35);
+     Grau für Termine/Sonstiges (Touren nutzen die zentrale --color-tour oben) */
   --color-calendar-appointment: #8a8a86;
   --color-calendar-appointment-tint: rgba(138, 138, 134, 0.1);
   --color-calendar-appointment-border: rgba(138, 138, 134, 0.35);
@@ -278,15 +287,12 @@
     --color-highlight-border: #5c4a2c;
     --color-accent-secondary: #8b98f0;
     --color-accent-secondary-bg: #23253d;
-    --color-tour-accent: #e879f9;
-    --color-tour-accent-dark: #d946ef;
-    --color-tour-accent-tint: rgba(232, 121, 249, 0.14);
-    --color-tour-accent-border: rgba(232, 121, 249, 0.4);
+    --color-tour: #f08254;
+    --color-tour-dark: #eb6834;
+    --color-tour-tint: rgba(240, 130, 84, 0.16);
+    --color-tour-border: rgba(240, 130, 84, 0.4);
     --color-scheduled: #52b8ea;
     --color-scheduled-tint: rgba(82, 184, 234, 0.14);
-    --color-calendar-tour: #f08254;
-    --color-calendar-tour-tint: rgba(240, 130, 84, 0.16);
-    --color-calendar-tour-border: rgba(240, 130, 84, 0.4);
     --color-calendar-appointment: #a8a8a4;
     --color-calendar-appointment-tint: rgba(168, 168, 164, 0.16);
     --color-calendar-appointment-border: rgba(168, 168, 164, 0.4);
@@ -334,9 +340,10 @@
   --color-accent-secondary-bg: #23253d;
   --color-scheduled: #52b8ea;
   --color-scheduled-tint: rgba(82, 184, 234, 0.14);
-  --color-calendar-tour: #f08254;
-  --color-calendar-tour-tint: rgba(240, 130, 84, 0.16);
-  --color-calendar-tour-border: rgba(240, 130, 84, 0.4);
+  --color-tour: #f08254;
+  --color-tour-dark: #eb6834;
+  --color-tour-tint: rgba(240, 130, 84, 0.16);
+  --color-tour-border: rgba(240, 130, 84, 0.4);
   --color-calendar-appointment: #a8a8a4;
   --color-calendar-appointment-tint: rgba(168, 168, 164, 0.16);
   --color-calendar-appointment-border: rgba(168, 168, 164, 0.4);
@@ -377,17 +384,14 @@
   --color-highlight-border: #f0d3ac;
   --color-accent-secondary: #5b6ee1;
   --color-accent-secondary-bg: #eef0fd;
-  --color-tour-accent: #a21caf;
-  --color-tour-accent-dark: #86198f;
-  --color-tour-accent-tint: rgba(162, 28, 175, 0.08);
-  --color-tour-accent-border: rgba(162, 28, 175, 0.3);
+  --color-tour: #eb6834;
+  --color-tour-dark: #d95826;
+  --color-tour-tint: rgba(235, 104, 52, 0.1);
+  --color-tour-border: rgba(235, 104, 52, 0.35);
   --color-border-strong: #d5cabc;
   --color-button-edge: rgba(0, 0, 0, 0.16);
   --color-scheduled: #1e96d1;
   --color-scheduled-tint: rgba(30, 150, 209, 0.1);
-  --color-calendar-tour: #eb6834;
-  --color-calendar-tour-tint: rgba(235, 104, 52, 0.1);
-  --color-calendar-tour-border: rgba(235, 104, 52, 0.35);
   --color-calendar-appointment: #8a8a86;
   --color-calendar-appointment-tint: rgba(138, 138, 134, 0.1);
   --color-calendar-appointment-border: rgba(138, 138, 134, 0.35);
