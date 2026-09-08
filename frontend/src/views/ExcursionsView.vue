@@ -83,6 +83,8 @@ import IconButton from '../components/primitives/IconButton.vue';
 import _DropdownItem from '../components/primitives/DropdownItem.vue';
 import PickerMenu from '../components/primitives/PickerMenu.vue';
 import Accordion from '../components/primitives/Accordion.vue';
+import Select from '../components/primitives/Select.vue';
+import Checkbox from '../components/primitives/Checkbox.vue';
 import { useToast } from '../composables/useToast';
 import { isAutoCreatedUnmodifiedScheduleItem } from '../utils/scheduleSpotUnlink';
 
@@ -2591,14 +2593,14 @@ async function removeSpot(id: number) {
                 <input v-model="activeExcursionForm.date" type="date" />
               </FormField>
               <FormField icon="tour" label="Rolle (optional)">
-                <select v-model="activeExcursionForm.role">
+                <Select v-model="activeExcursionForm.role">
                   <option value="">– Normaler Ausflug –</option>
                   <option v-for="r in TRAVEL_ROLE_OPTIONS" :key="r" :value="r">
                     {{ TRAVEL_ROLE_META[r].icon }} {{ TRAVEL_ROLE_META[r].label }} ({{
                       TRAVEL_ROLE_META[r].hint
                     }})
                   </option>
-                </select>
+                </Select>
               </FormField>
               <p
                 v-if="activeExcursionForm.role && activeExcursionForm.spot_ids.length < 2"
@@ -2819,12 +2821,12 @@ async function removeSpot(id: number) {
                     />
                   </FormField>
                   <FormField v-if="users.length > 1" icon="shared" label="Bezahlt von">
-                    <select v-model="activeSpotForm.paid_by_user_id">
+                    <Select v-model="activeSpotForm.paid_by_user_id">
                       <option value="">Bezahlt von –</option>
                       <option v-for="u in users" :key="u.id" :value="String(u.id)">
                         {{ u.avatar }} {{ u.username }}
                       </option>
-                    </select>
+                    </Select>
                   </FormField>
                 </div>
               </template>
@@ -2870,7 +2872,7 @@ async function removeSpot(id: number) {
                     Wird für die Position auf der Karte und ggf. das Wetter vor Ort verwendet.
                   </p>
                   <label class="checkbox-option" for="spotFormIsHome">
-                    <input id="spotFormIsHome" type="checkbox" v-model="activeSpotForm.is_home" />
+                    <Checkbox id="spotFormIsHome" v-model="activeSpotForm.is_home" />
                     <AppIcon :icon="ACTION_ICONS.home" :size="14" group="actions" /> Heimat-Seite
                     (z. B. der heimische Flughafen/Bahnhof/Zuhause für Reise-Etappen)
                   </label>

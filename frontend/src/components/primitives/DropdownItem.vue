@@ -2,6 +2,7 @@
 import type { IconDef } from '../../utils/icon';
 import type { IconGroup } from '../../stores/iconStyle';
 import AppIcon from '../AppIcon.vue';
+import Checkbox from './Checkbox.vue';
 
 const props = withDefaults(
   defineProps<{
@@ -62,12 +63,12 @@ function handleClick(event: MouseEvent) {
     :class="{ 'is-active': active, 'is-disabled': disabled }"
   >
     <slot name="checkbox">
-      <input
+      <Checkbox
         id="auto-id-1788301175442-17"
-        type="checkbox"
         :checked="checked"
         :disabled="disabled"
         :value="value"
+        @update:checked="$emit('update:checked', $event)"
         @change="$emit('update:checked', ($event.target as HTMLInputElement).checked)"
       />
     </slot>
@@ -177,10 +178,5 @@ function handleClick(event: MouseEvent) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.dropdown-item input[type='checkbox'] {
-  margin: 0;
-  flex-shrink: 0;
 }
 </style>

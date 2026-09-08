@@ -7,6 +7,7 @@ import CoverImagePicker from './CoverImagePicker.vue';
 import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
 import Card from './primitives/Card.vue';
+import Checkbox from './primitives/Checkbox.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 
@@ -227,11 +228,7 @@ function onSubmit() {
         </Card>
 
         <label for="auto-id-1788301175440-16" class="checkbox-label">
-          <input
-            id="auto-id-1788301175440-16"
-            v-model="form.packing_category_required"
-            type="checkbox"
-          />
+          <Checkbox id="auto-id-1788301175440-16" v-model="form.packing_category_required" />
           Kategorie in der Packliste ist Pflichtfeld
         </label>
       </div>

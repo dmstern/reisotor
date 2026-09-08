@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+import Checkbox from './primitives/Checkbox.vue';
 import AppIcon from './AppIcon.vue';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
@@ -74,7 +75,7 @@ function onDragStart(event: DragEvent) {
         >
           <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
           <label class="tour-item-label">
-            <input type="checkbox" :checked="tour.assigned" @change="handleToggle(tour.id)" />
+            <Checkbox :checked="tour.assigned" @change="handleToggle(tour.id)" />
             <span class="tour-name">{{ tour.title }}</span>
           </label>
         </li>
@@ -190,11 +191,6 @@ function onDragStart(event: DragEvent) {
 
 .tour-item:hover {
   background: var(--color-hover);
-}
-
-.tour-item input[type='checkbox'] {
-  cursor: pointer;
-  margin: 0;
 }
 
 .tour-name {

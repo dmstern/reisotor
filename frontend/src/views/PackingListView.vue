@@ -11,6 +11,8 @@ import Combobox from '../components/Combobox.vue';
 import QuickAddRow from '../components/QuickAddRow.vue';
 import FormField from '../components/FormField.vue';
 import Button from '../components/primitives/Button.vue';
+import Select from '../components/primitives/Select.vue';
+import Input from '../components/primitives/Input.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import { useToast } from '../composables/useToast';
 import { sortWithDoneLast } from '../composables/useCheckedSort';
@@ -329,7 +331,7 @@ async function quickAdd(list: ListGroup, label: string) {
     >
       <form class="edit-form" @submit.prevent="submitEdit">
         <FormField icon="title" label="Gegenstand" v-slot="{ id }">
-          <input :id="id" v-model="editForm.label" type="text" placeholder="Gegenstand" required />
+          <Input :id="id" v-model="editForm.label" type="text" placeholder="Gegenstand" required />
         </FormField>
         <FormField icon="category" label="Kategorie" v-slot="{ id }">
           <Combobox
@@ -348,7 +350,7 @@ async function quickAdd(list: ListGroup, label: string) {
           />
         </FormField>
         <FormField icon="amount" label="Anzahl" v-slot="{ id }">
-          <input
+          <Input
             :id="id"
             v-model.number="editForm.quantity"
             type="number"
@@ -358,14 +360,14 @@ async function quickAdd(list: ListGroup, label: string) {
           />
         </FormField>
         <FormField v-if="users.length > 1" icon="person" label="Liste" v-slot="{ id }">
-          <select :id="id" v-model="editForm.ownerId">
+          <Select :id="id" v-model="editForm.ownerId">
             <option value="shared">🤝 Gemeinsam</option>
             <option v-for="u in users" :key="u.id" :value="String(u.id)">
               {{ u.avatar }} {{ u.id === auth.user?.id ? 'Meine Liste' : u.username }}
             </option>
-          </select>
+          </Select>
         </FormField>
-        <Button type="submit">halloSpeichern</Button>
+        <Button type="submit">Speichern</Button>
       </form>
     </Modal>
   </div>
@@ -408,24 +410,24 @@ async function quickAdd(list: ListGroup, label: string) {
 
 .quick-add-qty input {
   width: 56px;
+  padding: 4px 8px;
+  font-size: 0.85rem;
+  border: var(--ui-border-width, 1px) solid var(--color-border);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.quick-add-qty input:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
 }
 
 .edit-form {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-}
-
-.qty-field {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-
-.qty-field input {
-  width: 80px;
 }
 
 .lists-grid {

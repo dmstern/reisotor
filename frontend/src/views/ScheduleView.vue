@@ -28,6 +28,9 @@ import AppIcon from '../components/AppIcon.vue';
 import Button from '../components/primitives/Button.vue';
 import IconButton from '../components/primitives/IconButton.vue';
 import DropdownItem from '../components/primitives/DropdownItem.vue';
+import Checkbox from '../components/primitives/Checkbox.vue';
+import Select from '../components/primitives/Select.vue';
+import Input from '../components/primitives/Input.vue';
 import DetailRow from '../components/primitives/DetailRow.vue';
 import EmptyState from '../components/primitives/EmptyState.vue';
 import PickerMenu from '../components/primitives/PickerMenu.vue';
@@ -1045,13 +1048,10 @@ function formatDate(date: string) {
           @keydown.space.prevent="openEntry(entry)"
         >
           <div>
-            <input
+            <Checkbox
               v-if="entry.kind === 'todo'"
-              type="checkbox"
               class="category-icon"
-              title="Erledigt"
               aria-label="Erledigt"
-              autocomplete="off"
               :checked="entryDone(entry)"
               @click.stop="toggleTodoDone(entry.todoId!)"
             />
@@ -1142,19 +1142,19 @@ function formatDate(date: string) {
     >
       <form class="edit-form" @submit.prevent="addItem">
         <FormField icon="title" label="Titel" v-slot="{ id }">
-          <input :id="id" v-model="newTitle" type="text" placeholder="Titel" required />
+          <Input :id="id" v-model="newTitle" type="text" placeholder="Titel" required />
         </FormField>
         <div class="row">
           <FormField icon="date" label="Startdatum" v-slot="{ id }">
-            <input :id="id" v-model="newStartDate" type="date" required />
+            <Input :id="id" v-model="newStartDate" type="date" required />
           </FormField>
           <FormField icon="time" label="Startzeit" v-slot="{ id }">
-            <input :id="id" v-model="newTime" type="time" />
+            <Input :id="id" v-model="newTime" type="time" />
           </FormField>
         </div>
         <div class="row">
           <FormField icon="maps" label="Karte" v-slot="{ id }">
-            <select :id="id" v-model="newLinkKey">
+            <Select :id="id" v-model="newLinkKey">
               <option value="">Kein Spot/keine Tour verknüpft</option>
               <optgroup label="Spots" v-if="spotsStore.spots.length">
                 <option v-for="s in spotsStore.spots" :key="`spot:${s.id}`" :value="`spot:${s.id}`">
@@ -1170,7 +1170,7 @@ function formatDate(date: string) {
                   {{ e.title }}
                 </option>
               </optgroup>
-            </select>
+            </Select>
           </FormField>
           <FormField v-if="!newLinkKey" icon="location" label="Ort (Freitext)" v-slot="{ id }">
             <Combobox
@@ -1211,14 +1211,14 @@ function formatDate(date: string) {
           <div v-if="showAddDetailsSection" class="collapsible-content">
             <div class="row">
               <FormField icon="date" label="Enddatum" v-slot="{ id }">
-                <input :id="id" v-model="newEndDate" type="date" :min="newStartDate || undefined" />
+                <Input :id="id" v-model="newEndDate" type="date" :min="newStartDate || undefined" />
               </FormField>
               <FormField icon="time" label="Enduhrzeit" v-slot="{ id }">
-                <input :id="id" v-model="newEndTime" type="time" />
+                <Input :id="id" v-model="newEndTime" type="time" />
               </FormField>
             </div>
             <FormField v-if="!newLinkKey" icon="maps" label="Maps-Link" v-slot="{ id }">
-              <input
+              <Input
                 :id="id"
                 v-model="newMapsLink"
                 type="url"
@@ -1239,19 +1239,19 @@ function formatDate(date: string) {
     >
       <form class="edit-form" @submit.prevent="submitEdit">
         <FormField icon="title" label="Titel" v-slot="{ id }">
-          <input :id="id" v-model="editForm.title" type="text" placeholder="Titel" required />
+          <Input :id="id" v-model="editForm.title" type="text" placeholder="Titel" required />
         </FormField>
         <div class="row">
           <FormField icon="date" label="Startdatum" v-slot="{ id }">
-            <input :id="id" :value="editingItem?.date" type="date" disabled read-only />
+            <Input :id="id" :model-value="editingItem?.date" type="date" disabled readonly />
           </FormField>
           <FormField icon="time" label="Startzeit" v-slot="{ id }">
-            <input :id="id" v-model="editForm.time" type="time" />
+            <Input :id="id" v-model="editForm.time" type="time" />
           </FormField>
         </div>
         <div class="row">
           <FormField icon="maps" label="Karte" v-slot="{ id }">
-            <select :id="id" v-model="editForm.linkKey">
+            <Select :id="id" v-model="editForm.linkKey">
               <option value="">Kein Spot/keine Tour verknüpft</option>
               <optgroup label="Spots" v-if="spotsStore.spots.length">
                 <option v-for="s in spotsStore.spots" :key="`spot:${s.id}`" :value="`spot:${s.id}`">
@@ -1267,7 +1267,7 @@ function formatDate(date: string) {
                   {{ e.title }}
                 </option>
               </optgroup>
-            </select>
+            </Select>
           </FormField>
           <FormField
             v-if="!editForm.linkKey"
@@ -1318,14 +1318,14 @@ function formatDate(date: string) {
           <div v-if="showEditDetailsSection" class="collapsible-content">
             <div class="row">
               <FormField icon="date" label="Enddatum" v-slot="{ id }">
-                <input :id="id" v-model="editForm.endDate" type="date" :min="editingItem?.date" />
+                <Input :id="id" v-model="editForm.endDate" type="date" :min="editingItem?.date" />
               </FormField>
               <FormField icon="time" label="Enduhrzeit" v-slot="{ id }">
-                <input :id="id" v-model="editForm.endTime" type="time" />
+                <Input :id="id" v-model="editForm.endTime" type="time" />
               </FormField>
             </div>
             <FormField v-if="!editForm.linkKey" icon="maps" label="Maps-Link" v-slot="{ id }">
-              <input
+              <Input
                 :id="id"
                 v-model="editForm.mapsLink"
                 type="url"
@@ -1624,17 +1624,6 @@ function formatDate(date: string) {
 
 .empty {
   padding: var(--space-2);
-}
-
-.add-form {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-}
-
-.add-form input[type='text'] {
-  flex: 1;
-  min-width: 140px;
 }
 
 .item-actions {

@@ -2,6 +2,8 @@
 import Button from '../components/primitives/Button.vue';
 import IconButton from '../components/primitives/IconButton.vue';
 import Badge from '../components/primitives/Badge.vue';
+import Select from '../components/primitives/Select.vue';
+import Checkbox from '../components/primitives/Checkbox.vue';
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { api, ApiError } from '../api/client';
@@ -805,17 +807,17 @@ async function onImportFileSelected(event: Event) {
         <div class="nav-position-row">
           <label for="auto-id-1788301151989-29">
             Desktop
-            <select id="auto-id-1788301151989-29" v-model="navPosition.desktop">
+            <Select id="auto-id-1788301151989-29" v-model="navPosition.desktop">
               <option value="top">Oben</option>
               <option value="bottom">Unten</option>
-            </select>
+            </Select>
           </label>
           <label for="auto-id-1788301151989-30">
             Mobil
-            <select id="auto-id-1788301151989-30" v-model="navPosition.mobile">
+            <Select id="auto-id-1788301151989-30" v-model="navPosition.mobile">
               <option value="top">Oben</option>
               <option value="bottom">Unten</option>
-            </select>
+            </Select>
           </label>
         </div>
 
@@ -824,7 +826,12 @@ async function onImportFileSelected(event: Event) {
           Stelle).
         </p>
         <ul class="nav-config-list">
-          <li v-for="(entry, index) in navConfig.entries" :key="entry.key" class="nav-config-row">
+          <li
+            v-for="(entry, index) in navConfig.entries"
+            :key="entry.key"
+            class="nav-config-row"
+            :class="{ disabled: !entry.visible }"
+          >
             <AppIcon
               v-if="navLinkIcon(entry.key)"
               class="nav-config-icon"
@@ -856,9 +863,8 @@ async function onImportFileSelected(event: Event) {
                 <AppIcon :icon="ACTION_ICONS.chevronDown" :size="14" group="actions" />
               </IconButton>
               <label for="auto-id-1788301175449-27" class="nav-config-visible">
-                <input
+                <Checkbox
                   id="auto-id-1788301175449-27"
-                  type="checkbox"
                   :checked="entry.visible"
                   :aria-label="`${navLinkLabel(entry.key)} in der Navigation anzeigen`"
                   @change="
@@ -919,9 +925,8 @@ async function onImportFileSelected(event: Event) {
                 <AppIcon :icon="ACTION_ICONS.chevronDown" :size="14" group="actions" />
               </IconButton>
               <label for="auto-id-1788301175449-28" class="nav-config-visible">
-                <input
+                <Checkbox
                   id="auto-id-1788301175449-28"
-                  type="checkbox"
                   :checked="entry.visible"
                   :aria-label="`${dashboardTileLabel(entry.key)} auf dem Dashboard anzeigen`"
                   @change="
@@ -947,11 +952,7 @@ async function onImportFileSelected(event: Event) {
           umgeschaltet werden.
         </p>
         <label for="auto-id-1788301175449-29" class="checkbox-option">
-          <input
-            id="auto-id-1788301175449-29"
-            type="checkbox"
-            v-model="uiSettings.showVacationCountdown"
-          />
+          <Checkbox id="auto-id-1788301175449-29" v-model="uiSettings.showVacationCountdown" />
           Verbleibende Urlaubstage anzeigen statt festem Hinweis
         </label>
       </div>
@@ -968,7 +969,7 @@ async function onImportFileSelected(event: Event) {
         <div class="nav-position-row">
           <label for="auto-id-1788301151989-34">
             Wochenanfang
-            <select id="auto-id-1788301151989-34" v-model="calendarSettings.weekStart">
+            <Select id="auto-id-1788301151989-34" v-model="calendarSettings.weekStart">
               <option
                 v-for="option in WEEK_START_OPTIONS"
                 :key="option.value"
@@ -976,11 +977,11 @@ async function onImportFileSelected(event: Event) {
               >
                 {{ option.label }}
               </option>
-            </select>
+            </Select>
           </label>
           <label for="auto-id-1788301151989-35">
             Datumsformat
-            <select id="auto-id-1788301151989-35" v-model="calendarSettings.dateFormat">
+            <Select id="auto-id-1788301151989-35" v-model="calendarSettings.dateFormat">
               <option
                 v-for="option in DATE_FORMAT_OPTIONS"
                 :key="option.value"
@@ -988,7 +989,7 @@ async function onImportFileSelected(event: Event) {
               >
                 {{ option.label }}
               </option>
-            </select>
+            </Select>
           </label>
         </div>
       </div>
@@ -1003,7 +1004,7 @@ async function onImportFileSelected(event: Event) {
         </p>
         <label for="auto-id-1788301151989-36" class="weather-provider-label">
           Wettermodell
-          <select id="auto-id-1788301151989-36" v-model="weatherProvider.model">
+          <Select id="auto-id-1788301151989-36" v-model="weatherProvider.model">
             <option
               v-for="option in WEATHER_MODEL_OPTIONS"
               :key="option.value"
@@ -1011,14 +1012,10 @@ async function onImportFileSelected(event: Event) {
             >
               {{ option.label }}
             </option>
-          </select>
+          </Select>
         </label>
         <label for="auto-id-1788301175449-30" class="checkbox-option">
-          <input
-            id="auto-id-1788301175449-30"
-            type="checkbox"
-            v-model="uiSettings.showHomeWeatherFullTrip"
-          />
+          <Checkbox id="auto-id-1788301175449-30" v-model="uiSettings.showHomeWeatherFullTrip" />
           Wetter zuhause für den ganzen Urlaub zeigen (statt nur gegen Ende)
         </label>
       </div>
@@ -1034,7 +1031,7 @@ async function onImportFileSelected(event: Event) {
         </p>
         <label for="auto-id-1788301151989-38" class="weather-provider-label">
           Heimatwährung
-          <select id="auto-id-1788301151989-38" v-model="homeCurrency.currency">
+          <Select id="auto-id-1788301151989-38" v-model="homeCurrency.currency">
             <option
               v-for="option in HOME_CURRENCY_OPTIONS"
               :key="option.value"
@@ -1042,7 +1039,7 @@ async function onImportFileSelected(event: Event) {
             >
               {{ option.label }}
             </option>
-          </select>
+          </Select>
         </label>
       </div>
     </div>
@@ -1058,11 +1055,7 @@ async function onImportFileSelected(event: Event) {
           unberührt.
         </p>
         <label for="auto-id-1788301175449-31" class="checkbox-option">
-          <input
-            id="auto-id-1788301175449-31"
-            type="checkbox"
-            v-model="uiSettings.showActivityToasts"
-          />
+          <Checkbox id="auto-id-1788301175449-31" v-model="uiSettings.showActivityToasts" />
           Detaillierte Lade-/Speicher-Meldungen anzeigen
         </label>
         <label
@@ -1071,7 +1064,7 @@ async function onImportFileSelected(event: Event) {
           style="margin-top: var(--space-3)"
         >
           Anzeigedauer von Toast-Benachrichtigungen
-          <select id="auto-id-1788301175449-32" v-model.number="uiSettings.toastTimeout">
+          <Select id="auto-id-1788301175449-32" v-model.number="uiSettings.toastTimeout">
             <option
               v-for="option in TOAST_TIMEOUT_OPTIONS"
               :key="option.value"
@@ -1079,7 +1072,7 @@ async function onImportFileSelected(event: Event) {
             >
               {{ option.label }}
             </option>
-          </select>
+          </Select>
         </label>
       </div>
 
@@ -1132,9 +1125,8 @@ async function onImportFileSelected(event: Event) {
                 <span class="nav-config-icon">{{ NOTIFICATION_DOMAIN_META[domain].icon }}</span>
                 <span class="nav-config-label">{{ NOTIFICATION_DOMAIN_META[domain].label }}</span>
                 <label for="auto-id-1788301175449-33" class="nav-config-visible">
-                  <input
+                  <Checkbox
                     id="auto-id-1788301175449-33"
-                    type="checkbox"
                     :checked="notificationPrefs.preferences?.[domain] ?? true"
                     :aria-label="`${NOTIFICATION_DOMAIN_META[domain].label}-Push aktiv`"
                     @change="

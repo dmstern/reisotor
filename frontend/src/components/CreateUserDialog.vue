@@ -4,6 +4,7 @@ import Modal from './Modal.vue';
 import Button from './primitives/Button.vue';
 import IconButton from './primitives/IconButton.vue';
 import Input from './primitives/Input.vue';
+import Checkbox from './primitives/Checkbox.vue';
 import FormField from './FormField.vue';
 import PasswordInput from './PasswordInput.vue';
 import AppIcon from './AppIcon.vue';
@@ -147,7 +148,7 @@ async function submit() {
 
       <div class="field checkbox-field">
         <label for="create-is-admin" class="checkbox-label">
-          <input id="create-is-admin" type="checkbox" v-model="isAdmin" />
+          <Checkbox id="create-is-admin" v-model="isAdmin" />
           <span>Als Administrator:in anlegen</span>
         </label>
       </div>
@@ -224,13 +225,6 @@ async function submit() {
   gap: var(--space-2);
   cursor: pointer;
   font-size: 0.9rem;
-}
-
-.checkbox-label input[type='checkbox'] {
-  width: 16px;
-  height: 16px;
-  accent-color: var(--color-accent);
-  cursor: pointer;
 }
 
 .error-msg {

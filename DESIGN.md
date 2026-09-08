@@ -615,7 +615,9 @@ Für seiteninterne Register-Navigation (z. B. `SettingsView.vue`, `ListenView.vu
 ## Formularfelder und Design System Primitives
 
 Reisotor etabliert saubere Design-System-Primitives (`frontend/src/components/primitives/`, Issue #239)
-für elementare UI-Bausteine:
+für elementare UI-Bausteine. Formularelemente werden **nicht** über globale Tag-Styles in `style.css` mit
+Reisotor-Design (Rahmen, Schatten, Squircle-Formen) versehen, sondern ausschließlich über die Primitives, um
+unerwünschte Vererbungen in Spezialfällen (z. B. ungerahmte Inputs in `QuickAddRow.vue`) zu vermeiden:
 
 - **`Button.vue`**: Zentrales Primitive für alle Schaltflächen. Unterstützt `variant` (`primary`,
   `secondary`, `danger`, `card-action`, `ghost`), `size` (`sm`, `md`, `lg`) und den **Disabled-Zustand**
@@ -625,16 +627,24 @@ für elementare UI-Bausteine:
 - **`IconButton.vue`**: Spezielles Primitive für reine Icon- und Emoji-Schaltflächen (Avatar-Auswahl,
   Verschiebe-Aktionen, Close-/Toggle-Buttons). Standardmäßig komplett ohne Rahmen, Schatten oder
   Hintergrund (`variant="ghost"`), mit sanftem Hover- und aktivem Auswahlstatus (`active`).
-- **`Card.vue`**: Basis-Fläche für Spots, Touren, Budget-Töpfe, Notizen und Fokus-Panels. Unterstützt
-  `variant` (`default`, `muted` für hinterlegte Flächen, `flat` ohne Schatten, `elevated` mit verstärktem Schatten `var(--shadow-md)`,
-  `tile` für Dashboard-Kacheln). **Zustände:** `condensed` ist ein **Zustand/Prop** (komprimiertes Padding & schmale Miniatur-Banner links),
-  der per `expandable` Prop interaktiv per Klick in die volle/aufgeklappte Ansicht wechselt (`#expanded` Slot, analog zu `SpotCard.vue`/`ExcursionCard.vue` in der Karten-View).
-  Echtzeit-Highlighting (`highlight` prop / `.new-highlight`).
 - **`Input.vue`**: Wiederverwendbares Primitive für einzeilige Eingabefelder (`text`, `number`,
   `date`, `time`, `datetime-local`, `email`, `url`, `search`, etc.). Behandelt standardmäßiges
   Squircle-Styling, `min-height: 44px`, Focus-Ringe, Disabled-State, `size` (`sm`, `md`, `lg`),
   `invalid`-Zustand (`aria-invalid`, rote Umrandung) und den Chromium-Höhenausgleich für
   Datums-/Zeitauswahlen.
+- **`Select.vue`**: Dropdown-Auswahlfeld-Primitive. Kapselt Squircle-Styling, Höhenkonsistenz mit `Input.vue`
+  (`min-height: 44px`), benutzerdefiniertes Pfeil-Icon (automatisch hell/dunkel je nach Theme), Fokus-Ringe,
+  `size` (`sm`, `md`, `lg`) sowie `invalid`-Zustand.
+- **`Textarea.vue`**: Mehrzeiliges Texteingabefeld-Primitive für längere Texte (z. B. Feedback). Kapselt Squircle-Styling,
+  Fokus-Ringe, Resize-Verhalten (`vertical`) und Fehlerzustände.
+- **`Checkbox.vue`**: Checkbox-Primitive für alle Abhake- und Auswahl-Interaktionen der App (ToDo, Packliste,
+  Einkauf, Einstellungen etc.). Kapselt die Reisotor-Custom-Häkchen-Optik (`appearance: none`, SVG-Häkchen,
+  Squircle-Eckenrundung) und unterstützt sowohl Booleans als auch Array-Bindungen (`v-model`) sowie `checked`-Props.
+- **`Card.vue`**: Basis-Fläche für Spots, Touren, Budget-Töpfe, Notizen und Fokus-Panels. Unterstützt
+  `variant` (`default`, `muted` für hinterlegte Flächen, `flat` ohne Schatten, `elevated` mit verstärktem Schatten `var(--shadow-md)`,
+  `tile` für Dashboard-Kacheln). **Zustände:** `condensed` ist ein **Zustand/Prop** (komprimiertes Padding & schmale Miniatur-Banner links),
+  der per `expandable` Prop interaktiv per Klick in die volle/aufgeklappte Ansicht wechselt (`#expanded` Slot, analog zu `SpotCard.vue`/`ExcursionCard.vue` in der Karten-View).
+  Echtzeit-Highlighting (`highlight` prop / `.new-highlight`).
 - **`Badge.vue` & Indikatoren**: `.badge` als leichtgewichtiger Chip für Zustände (`.badge--primary`,
   `.badge--success`, `.badge--danger`, `.badge--accent`), sowie 🔒 Privat (nur für 1 Person) vs. 🤝 Geteilt (für alle Mitreisenden).
 - **`PageContainer.vue`**: Seiten-Container-Primitive für die standardisierte zentrierte 960px-Seitenhülle ([`.page`](file:///home/daenu/projects/reisotor/frontend/src/style.css#L662)).

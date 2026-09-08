@@ -113,6 +113,13 @@ const currentPresetValue = computed(() => {
   width: 100%;
   accent-color: var(--color-primary);
   cursor: pointer;
+  border-radius: 999px;
+}
+
+.range-input:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+  border-radius: 999px;
 }
 
 .border-preview-stage {

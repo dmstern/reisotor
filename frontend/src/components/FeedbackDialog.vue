@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import Button from './primitives/Button.vue';
+import Input from './primitives/Input.vue';
+import Select from './primitives/Select.vue';
+import Textarea from './primitives/Textarea.vue';
 import { ref, watch } from 'vue';
 import { api, ApiError } from '../api/client';
 import { compressImage } from '../utils/imageCompression';
@@ -101,32 +104,32 @@ function close() {
 
         <label for="auto-id-1788301151970-4">
           Art der Meldung
-          <select id="auto-id-1788301151970-4" v-model="form.type">
+          <Select id="auto-id-1788301151970-4" v-model="form.type">
             <option value="bug">🐛 Bug melden</option>
             <option value="feature">💡 Feature vorschlagen</option>
-          </select>
+          </Select>
         </label>
 
         <label for="auto-id-1788301175436-4">
           Titel
-          <input
+          <Input
             id="auto-id-1788301175436-4"
             v-model="form.title"
             type="text"
             required
-            maxlength="200"
+            :maxlength="200"
             placeholder="Kurze Zusammenfassung"
           />
         </label>
 
         <label for="auto-id-1788301175436-5">
           Beschreibung
-          <textarea
+          <Textarea
             id="auto-id-1788301175436-5"
             v-model="form.description"
             required
-            rows="5"
-            maxlength="5000"
+            :rows="5"
+            :maxlength="5000"
             placeholder="Was ist passiert, was hättest du erwartet? Bzw.: Was soll die neue Funktion können?"
           />
         </label>

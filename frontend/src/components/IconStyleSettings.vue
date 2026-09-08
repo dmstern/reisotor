@@ -13,6 +13,7 @@ import { ACTION_ICONS } from '../utils/actionIcons';
 import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
 import Card from './primitives/Card.vue';
+import Checkbox from './primitives/Checkbox.vue';
 import SegmentedToggle from './SegmentedToggle.vue';
 
 // Issue #74: die Bereichseinstellungen sind der zentrale, immer sichtbare Teil dieser Karte
@@ -160,7 +161,7 @@ const categoriesColorRelevant = computed(() => iconStyle.groups.categories === '
           class="colorize-row"
           :class="{ dimmed: !navColorRelevant }"
         >
-          <input type="checkbox" v-model="iconStyle.navColored" />
+          <Checkbox v-model="iconStyle.navColored" />
           <span>
             Icons in der Navigation einfärben
             <span class="hint">
@@ -175,7 +176,7 @@ const categoriesColorRelevant = computed(() => iconStyle.groups.categories === '
           class="colorize-row"
           :class="{ dimmed: !weatherColorRelevant }"
         >
-          <input type="checkbox" v-model="iconStyle.colorizeWeather" />
+          <Checkbox v-model="iconStyle.colorizeWeather" />
           <span>
             Wetter-Icons passend einfärben
             <span class="hint">
@@ -190,7 +191,7 @@ const categoriesColorRelevant = computed(() => iconStyle.groups.categories === '
           class="colorize-row"
           :class="{ dimmed: !categoriesColorRelevant }"
         >
-          <input type="checkbox" v-model="iconStyle.colorizeCategories" />
+          <Checkbox v-model="iconStyle.colorizeCategories" />
           <span>
             Kategorie-Icons einfärben
             <span class="hint">

@@ -3,6 +3,7 @@ import Modal from './Modal.vue';
 import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
 import ButtonGroup from './primitives/ButtonGroup.vue';
+import Checkbox from './primitives/Checkbox.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { usePersistedRef } from '../composables/usePersistedRef';
 
@@ -55,7 +56,7 @@ function handleConfirm() {
         </div>
       </div>
       <label for="auto-id-1788301175439-10" class="checkbox-option warning-dismiss">
-        <input id="auto-id-1788301175439-10" type="checkbox" v-model="trackWarningDismissed" />
+        <Checkbox id="auto-id-1788301175439-10" v-model="trackWarningDismissed" />
         Diesen Hinweis nicht mehr anzeigen
       </label>
       <ButtonGroup>

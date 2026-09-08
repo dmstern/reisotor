@@ -29,6 +29,7 @@ import DraftBadge from '../components/DraftBadge.vue';
 import PendingSyncBadge from '../components/PendingSyncBadge.vue';
 import AppIcon from '../components/AppIcon.vue';
 import Button from '../components/primitives/Button.vue';
+import Checkbox from '../components/primitives/Checkbox.vue';
 import WeatherIcon from '../components/WeatherIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
@@ -607,12 +608,7 @@ function showEntryDayOnMap(entry: DiaryEntry) {
               :key="ex.id"
               class="excursion-option"
             >
-              <input
-                id="auto-id-1788301175444-19"
-                type="checkbox"
-                :value="ex.id"
-                v-model="form.excursion_ids"
-              />
+              <Checkbox id="auto-id-1788301175444-19" :value="ex.id" v-model="form.excursion_ids" />
               <span class="excursion-option-title">{{ ex.title }}</span>
               <span v-if="ex.date === form.date" class="excursion-option-badge recommended"
                 ><AppIcon :icon="ACTION_ICONS.recommended" :size="13" group="actions" /> Empfohlen –
@@ -888,7 +884,7 @@ function showEntryDayOnMap(entry: DiaryEntry) {
               :key="ex.id"
               class="excursion-option"
             >
-              <input type="checkbox" :value="ex.id" v-model="editForm.excursion_ids" />
+              <Checkbox :value="ex.id" v-model="editForm.excursion_ids" />
               <span class="excursion-option-title">{{ ex.title }}</span>
               <span v-if="ex.date === editForm.date" class="excursion-option-badge recommended"
                 ><AppIcon :icon="ACTION_ICONS.recommended" :size="13" group="actions" /> Empfohlen –
