@@ -659,55 +659,6 @@ textarea:focus {
   outline-offset: 1px;
 }
 
-.card {
-  background: var(--color-surface);
-  border: var(--ui-border-width, 1px) solid var(--color-border);
-  border-radius: var(--radius-md-squircle);
-  corner-shape: squircle;
-  box-shadow: var(--shadow-sm);
-  padding: var(--space-4);
-}
-
-/* Markiert Objekte, die seit dem letzten Besuch dieser Ansicht von einer anderen Person geändert
-   wurden (Echtzeit-Sync, siehe stores/liveSync.ts's markSeen()) – ein farbiger Rand statt eines
-   flächigen Hintergrunds, damit er über allen Karten-Varianten (Bild-Karten, reine Text-Karten)
-   gleich gut lesbar bleibt. Bewusst kein zusätzlicher Nav-artiger Punkt hier, der sitzt schon am
-   auslösenden Nav-Item selbst (NavBar.vue/Drawer.vue). */
-.new-highlight {
-  /* Eigene Custom Property statt border-radius direkt zu setzen: das darunterstehende ::after
-     braucht denselben Radius-Wert wie die Karte selbst, kann ihn aber (anders als bei
-     border-radius: inherit, das vom ELTERN-Element läse) nur so vom eigenen Element übernehmen.
-     Elemente ohne eigenen Kartenradius (Tabellenzeilen, Listen-Zeilen) überschreiben gezielt lokal
-     nur diese Variable auf einen kleineren Wert (siehe z. B. BudgetView.vue/ShoppingListView.vue/
-     TodoView.vue/PackingItem.vue), statt hier einen für alle passenden Wert zu erzwingen. */
-  --new-highlight-radius: var(--radius-md-squircle);
-  /* Positioniertes Containing-Element fürs ::after unten (sonst würde sich dessen position:absolute
-     an einem weiter oben liegenden positionierten Vorfahren orientieren statt an dieser Karte). */
-  position: relative;
-  border-radius: var(--new-highlight-radius);
-  corner-shape: squircle;
-}
-
-/* #169: der Rahmen lag vorher als box-shadow DIREKT auf .new-highlight selbst - damit wird er als
-   Teil von dessen eigenem Hintergrund/Rand gemalt, also VOR allen normalen Kind-Elementen (jedes
-   Vorschaubild/jede Bild-Fläche, z. B. SpotCard.vue/ExcursionCard.vue's .image, die randlos die
-   ganze Kartenbreite einnimmt) - ein deckendes Kind-Element überdeckte den Rahmen dadurch dort
-   vollständig, wo es die Kartenkante berührt. Eigenes, absolut positioniertes ::after-Overlay
-   (deckungsgleich per inset:0) statt box-shadow auf dem Element selbst malt den Rahmen dagegen erst
-   NACH allen normalen Kindern - liegt dadurch garantiert sichtbar oben, unabhängig davon, was die
-   Karte an Inhalt zeigt. pointer-events:none, damit das Overlay keine Klicks/Drags auf der
-   eigentlichen Karte blockiert. */
-.new-highlight::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  border-radius: var(--new-highlight-radius);
-  corner-shape: squircle;
-  box-shadow: inset 0 0 0 2px var(--color-accent);
-}
-
 .page {
   max-width: 960px;
   margin: 0 auto;

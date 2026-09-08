@@ -189,8 +189,8 @@ Präsentation je View).
   auf (wie ehemals verstreute `.picker-menu`-Blöcke), diese nicht durch einen weiteren Klon ergänzen,
   sondern in eine wiederverwendbare Abstraktion überführen.
 - **`style.css` für globale Basis-Stile, Design-Tokens und Layout-Grundgerüste**:
-  `frontend/src/style.css` enthält globale Dokument-Resets, native HTML-Element-Defaults (`html`, `body`, `#app`, `h1`-`h6`, `p`, `a`, Formularelemente wie `button`, `input`, `select`, `textarea`, Fokus-Ringe und `<Transition>`-Klassen), Design-Tokens (`:root`, Theme-Variablen) sowie die app-weiten Layout- und Surface-Grundklassen (`.page`, `.grid`, `.masonry`, `.card`, `.new-highlight`), die allen Views als gemeinsames Grundgerüst dienen.
-  Spezifische Komponenten-Stile und fachliche UI-Bausteine (wie Badges, Dropdowns, Detail-Zeilen, Leerzustände, Header-Kicker, Wetterkarten etc.) gehören immer als Scoped/Component-Styles in die entsprechende `.vue`-Komponente oder eine Primitiv-Komponente unter `frontend/src/components/primitives/`.
+  `frontend/src/style.css` enthält NUR grundsätzliche, globale Seiten-Styles und Layout-Infos: globale Dokument-Resets, native HTML-Element-Defaults (`html`, `body`, `#app`, `h1`-`h6`, `p`, `a`, Formularelemente wie `button`, `input`, `select`, `textarea`, Fokus-Ringe und `<Transition>`-Klassen), Design-Tokens (`:root`, Theme-Variablen) sowie universelle Layout-Grundklassen (`.page`, `.grid`, `.masonry`).
+  Style für wiederverwendbare Komponenten (wie z. B. `Card.vue`, `Button.vue`, `Badge.vue`, `DropdownItem.vue`, `DetailRow.vue`, `EmptyState.vue` etc.) gehört zwingend in die jeweilige Komponente unter `frontend/src/components/`!
 
 Beim Erstellen neuer wiederverwendbarer UI-Komponenten (`frontend/src/components/*.vue`)
 immer direkt eine zugehörige Storybook-Story-Datei (`*.stories.ts`) anlegen, damit Zustände der Komponente
