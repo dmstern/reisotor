@@ -85,6 +85,7 @@ import PickerMenu from '../components/primitives/PickerMenu.vue';
 import Accordion from '../components/primitives/Accordion.vue';
 import Select from '../components/primitives/Select.vue';
 import Checkbox from '../components/primitives/Checkbox.vue';
+import Input from '../components/primitives/Input.vue';
 import { useToast } from '../composables/useToast';
 import { isAutoCreatedUnmodifiedScheduleItem } from '../utils/scheduleSpotUnlink';
 
@@ -2574,7 +2575,7 @@ async function removeSpot(id: number) {
                 modal-title="Tour-Bild bearbeiten"
               />
               <FormField icon="title" label="Titel">
-                <input
+                <Input
                   v-model="activeExcursionForm.title"
                   type="text"
                   placeholder="Titel"
@@ -2590,7 +2591,7 @@ async function removeSpot(id: number) {
                 />
               </FormField>
               <FormField icon="date" label="Datum (optional – sonst „In Planung“)">
-                <input v-model="activeExcursionForm.date" type="date" />
+                <Input v-model="activeExcursionForm.date" type="date" />
               </FormField>
               <FormField icon="tour" label="Rolle (optional)">
                 <Select v-model="activeExcursionForm.role">
@@ -2761,7 +2762,7 @@ async function removeSpot(id: number) {
                 modal-title="Spot-Bild bearbeiten"
               />
               <FormField icon="title" label="Titel">
-                <input v-model="activeSpotForm.title" type="text" placeholder="Titel" required />
+                <Input v-model="activeSpotForm.title" type="text" placeholder="Titel" required />
               </FormField>
               <FormField icon="category" label="Kategorie">
                 <Combobox
@@ -2774,7 +2775,7 @@ async function removeSpot(id: number) {
               </FormField>
               <template v-if="activeSpotForm.category === 'Unterkunft'">
                 <FormField icon="location" label="Adresse">
-                  <input
+                  <Input
                     v-model="activeSpotForm.address"
                     type="text"
                     placeholder="Adresse (optional)"
@@ -2782,22 +2783,22 @@ async function removeSpot(id: number) {
                 </FormField>
                 <div class="row">
                   <FormField icon="date" label="Check-in-Datum">
-                    <input v-model="activeSpotForm.start_date" type="date" />
+                    <Input v-model="activeSpotForm.start_date" type="date" />
                   </FormField>
                   <FormField icon="date" label="Check-out-Datum">
-                    <input v-model="activeSpotForm.end_date" type="date" />
+                    <Input v-model="activeSpotForm.end_date" type="date" />
                   </FormField>
                 </div>
                 <div class="row">
                   <FormField icon="time" label="Check-in-Zeit">
-                    <input
+                    <Input
                       v-model="activeSpotForm.checkin"
                       type="text"
                       placeholder="Check-in (z. B. 15:00)"
                     />
                   </FormField>
                   <FormField icon="time" label="Check-out-Zeit">
-                    <input
+                    <Input
                       v-model="activeSpotForm.checkout"
                       type="text"
                       placeholder="Check-out (z. B. 11:00)"
@@ -2805,7 +2806,7 @@ async function removeSpot(id: number) {
                   </FormField>
                 </div>
                 <FormField icon="contact" label="Kontakt">
-                  <input
+                  <Input
                     v-model="activeSpotForm.contact"
                     type="text"
                     placeholder="Kontakt (Telefon/E-Mail/Text, optional)"
@@ -2813,7 +2814,7 @@ async function removeSpot(id: number) {
                 </FormField>
                 <div class="row">
                   <FormField icon="amount" label="Kosten">
-                    <input
+                    <Input
                       v-model="activeSpotForm.amount"
                       type="number"
                       step="0.01"
@@ -2877,7 +2878,7 @@ async function removeSpot(id: number) {
                     (z. B. der heimische Flughafen/Bahnhof/Zuhause für Reise-Etappen)
                   </label>
                   <FormField icon="maps" label="Maps-Link (Google/Apple)">
-                    <input
+                    <Input
                       v-model="activeSpotForm.maps_link"
                       type="url"
                       placeholder="Maps-Link (Google/Apple) (optional)"
@@ -3047,7 +3048,7 @@ async function removeSpot(id: number) {
                               "
                             >
                               <span>Datum auswählen:</span>
-                              <input
+                              <Input
                                 type="date"
                                 v-model="addScheduleDateVal"
                                 class="field-input"

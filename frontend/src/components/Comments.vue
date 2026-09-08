@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import Button from './primitives/Button.vue';
+import Input from './primitives/Input.vue';
 import { ref } from 'vue';
 import DeleteButton from './DeleteButton.vue';
 import AppIcon from './AppIcon.vue';
@@ -43,7 +44,12 @@ function submit() {
     <form class="comment-form" @submit.prevent="submit">
       <div class="comment-input-wrap">
         <!-- eslint-disable-next-line vuejs-accessibility/form-control-has-label -->
-        <input v-model="draft" type="text" placeholder="Kommentar schreiben…" />
+        <Input
+          v-model="draft"
+          type="text"
+          placeholder="Kommentar schreiben…"
+          class="comment-input"
+        />
         <Button
           type="submit"
           class="send-btn"
@@ -97,7 +103,7 @@ function submit() {
   width: 100%;
 }
 
-.comment-input-wrap input {
+.comment-input {
   width: 100%;
   padding-right: 38px;
   box-sizing: border-box;

@@ -4,6 +4,7 @@ import IconButton from '../components/primitives/IconButton.vue';
 import Badge from '../components/primitives/Badge.vue';
 import Select from '../components/primitives/Select.vue';
 import Checkbox from '../components/primitives/Checkbox.vue';
+import Input from '../components/primitives/Input.vue';
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { api, ApiError } from '../api/client';
@@ -621,7 +622,7 @@ async function onImportFileSelected(event: Event) {
         <form class="form username-form" @submit.prevent="changeUsername">
           <label for="auto-id-1788301175449-26">
             Benutzername
-            <input
+            <Input
               id="auto-id-1788301175449-26"
               v-model="usernameForm.username"
               type="text"

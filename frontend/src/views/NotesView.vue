@@ -26,6 +26,7 @@ import AppIcon from '../components/AppIcon.vue';
 import Button from '../components/primitives/Button.vue';
 import Card from '../components/primitives/Card.vue';
 import EmptyState from '../components/primitives/EmptyState.vue';
+import Input from '../components/primitives/Input.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
 const auth = useAuthStore();
@@ -304,7 +305,7 @@ async function remove(id: number) {
     >
       <form class="add-form" @submit.prevent="submitEdit">
         <FormField icon="title" label="Titel" v-slot="{ id }">
-          <input :id="id" v-model="editForm.title" type="text" placeholder="Titel (optional)" />
+          <Input :id="id" v-model="editForm.title" type="text" placeholder="Titel (optional)" />
         </FormField>
         <RichTextEditor v-model="editForm.content" />
         <FileAttachments v-if="editingNote" domain="notes" :entity-id="editingNote.id" />

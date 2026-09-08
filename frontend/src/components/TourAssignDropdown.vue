@@ -82,7 +82,13 @@ function onDragStart(event: DragEvent) {
       </ul>
       <form class="create-tour-form" @submit.prevent="handleCreate">
         <!-- eslint-disable-next-line vuejs-accessibility/form-control-has-label -->
-        <input v-model="newTourTitle" type="text" placeholder="Neue Tour…" @click.stop />
+        <input
+          v-model="newTourTitle"
+          type="text"
+          class="create-tour-input"
+          placeholder="Neue Tour…"
+          @click.stop
+        />
         <button
           type="submit"
           class="create-btn"
@@ -216,7 +222,7 @@ function onDragStart(event: DragEvent) {
   border-top: 1px solid var(--color-border);
 }
 
-.create-tour-form input {
+.create-tour-input {
   flex: 1;
   min-width: 0;
   font-size: 0.8rem;

@@ -8,6 +8,7 @@ import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
 import Card from './primitives/Card.vue';
 import Checkbox from './primitives/Checkbox.vue';
+import Input from './primitives/Input.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 
@@ -118,7 +119,7 @@ function onSubmit() {
 
     <label for="auto-id-1788301175440-11">
       Name des Urlaubs
-      <input
+      <Input
         id="auto-id-1788301175440-11"
         v-model="form.name"
         type="text"
@@ -150,11 +151,11 @@ function onSubmit() {
         <div class="dates-row">
           <label for="auto-id-1788301175440-12">
             Start (optional)
-            <input id="auto-id-1788301175440-12" v-model="form.start_date" type="date" />
+            <Input id="auto-id-1788301175440-12" v-model="form.start_date" type="date" />
           </label>
           <label for="auto-id-1788301175440-13">
             Ende (optional)
-            <input id="auto-id-1788301175440-13" v-model="form.end_date" type="date" />
+            <Input id="auto-id-1788301175440-13" v-model="form.end_date" type="date" />
           </label>
         </div>
         <p v-if="dateError" class="hint error">
@@ -164,7 +165,7 @@ function onSubmit() {
 
         <label for="auto-id-1788301175440-14">
           Ziel (optional)
-          <input
+          <Input
             id="auto-id-1788301175440-14"
             v-model="form.destination"
             type="text"
@@ -180,7 +181,7 @@ function onSubmit() {
           </p>
           <label for="auto-id-1788301175440-15">
             Maps-Link (Google/Apple)
-            <input
+            <Input
               id="auto-id-1788301175440-15"
               v-model="form.maps_link"
               type="url"

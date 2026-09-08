@@ -258,12 +258,37 @@ function onDrop(event: DragEvent, date: string) {
 }
 
 .item-checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  flex-shrink: 0;
   width: 9px;
   height: 9px;
-  margin-right: 1px;
+  margin: 0 2px 0 0;
+  padding: 0;
+  border: 1.5px solid var(--color-border-strong);
+  border-radius: 2px;
+  background: var(--color-surface);
+  position: relative;
   vertical-align: -1px;
   /* Rein informativ, siehe Template-Kommentar oben – Klicks fallen durch zum Tages-@click. */
   pointer-events: none;
+}
+
+.item-checkbox:checked {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.item-checkbox:checked::after {
+  content: '';
+  width: 2px;
+  height: 5px;
+  border: solid #fff;
+  border-width: 0 1.5px 1.5px 0;
+  position: absolute;
+  left: 2px;
+  top: 0px;
+  transform: rotate(45deg);
 }
 
 .time {

@@ -30,6 +30,7 @@ import PendingSyncBadge from '../components/PendingSyncBadge.vue';
 import AppIcon from '../components/AppIcon.vue';
 import Button from '../components/primitives/Button.vue';
 import Checkbox from '../components/primitives/Checkbox.vue';
+import Input from '../components/primitives/Input.vue';
 import WeatherIcon from '../components/WeatherIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
@@ -537,10 +538,10 @@ function showEntryDayOnMap(entry: DiaryEntry) {
     >
       <form class="add-form" @submit.prevent="submitEntry">
         <FormField icon="date" label="Datum" v-slot="{ id }">
-          <input :id="id" v-model="form.date" type="date" required />
+          <Input :id="id" v-model="form.date" type="date" required />
         </FormField>
         <FormField icon="title" label="Titel" v-slot="{ id }">
-          <input :id="id" v-model="form.title" type="text" placeholder="Titel (optional)" />
+          <Input :id="id" v-model="form.title" type="text" placeholder="Titel (optional)" />
         </FormField>
         <RichTextEditor v-model="form.content" placeholder="Was ist heute passiert?" />
         <p v-if="auth.user?.restricted" class="hint">
@@ -813,10 +814,10 @@ function showEntryDayOnMap(entry: DiaryEntry) {
     >
       <form class="add-form" @submit.prevent="submitEditEntry">
         <FormField icon="date" label="Datum" v-slot="{ id }">
-          <input :id="id" v-model="editForm.date" type="date" required />
+          <Input :id="id" v-model="editForm.date" type="date" required />
         </FormField>
         <FormField icon="title" label="Titel" v-slot="{ id }">
-          <input :id="id" v-model="editForm.title" type="text" placeholder="Titel (optional)" />
+          <Input :id="id" v-model="editForm.title" type="text" placeholder="Titel (optional)" />
         </FormField>
         <RichTextEditor v-model="editForm.content" />
         <p v-if="auth.user?.restricted" class="hint">

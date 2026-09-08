@@ -3,6 +3,7 @@ import { computed, ref } from 'vue';
 import { api } from '../api/client';
 import { compressImage } from '../utils/imageCompression';
 import AppIcon from './AppIcon.vue';
+import Input from './primitives/Input.vue';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 
 // Ergänzt das reine Bild-URL-Textfeld (extern gehostetes Bild) um einen direkten Datei-Upload -
@@ -50,7 +51,7 @@ async function onFileSelected(event: Event) {
          /api/uploads/…-URL enthalten (kein eigenes Schema/Host), das würde die native
          type="url"-Validierung des Browsers sonst ablehnen und das Formular blockieren. -->
     <!-- eslint-disable-next-line vuejs-accessibility/form-control-has-label -->
-    <input v-model="urlValue" type="text" :placeholder="placeholder ?? 'Bild-URL (optional)'" />
+    <Input v-model="urlValue" type="text" :placeholder="placeholder ?? 'Bild-URL (optional)'" />
     <label for="auto-id-1788301175437-9" class="upload-label">
       <input
         id="auto-id-1788301175437-9"

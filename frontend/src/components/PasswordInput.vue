@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import IconButton from './primitives/IconButton.vue';
+import Input from './primitives/Input.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
 defineOptions({ inheritAttrs: false });
@@ -14,7 +15,12 @@ const visible = defineModel<boolean>('visible', { default: false });
 <template>
   <div class="password-field">
     <!-- eslint-disable-next-line vuejs-accessibility/form-control-has-label -->
-    <input v-model="model" :type="visible ? 'text' : 'password'" v-bind="$attrs" />
+    <Input
+      v-model="model"
+      :type="visible ? 'text' : 'password'"
+      class="password-input"
+      v-bind="$attrs"
+    />
     <IconButton
       type="button"
       variant="ghost"
@@ -34,8 +40,9 @@ const visible = defineModel<boolean>('visible', { default: false });
   display: flex;
 }
 
-.password-field input {
+.password-input {
   flex: 1;
+  width: 100%;
   padding-right: 40px;
 }
 

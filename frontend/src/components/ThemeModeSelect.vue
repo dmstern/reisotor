@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { useThemeStore, THEME_MODE_OPTIONS } from '../stores/theme';
 import AppIcon from './AppIcon.vue';
+import Select from './primitives/Select.vue';
 
 // icon: kompakter runder Button wie der bisherige Toggle (AppHeader.vue, LoginView.vue) - das
 // eigentliche <select> liegt unsichtbar über dem Icon und fängt den Klick ab, damit sich der
@@ -23,20 +24,28 @@ const currentOption = computed(
     :class="variant"
     title="Erscheinungsbild"
   >
-    <AppIcon
-      v-if="variant === 'icon'"
-      class="icon-face"
-      :size="18"
-      :icon="currentOption.tabler"
-      group="navigation"
-      aria-hidden="true"
-    />
-    <span v-else class="block-label">Erscheinungsbild</span>
-    <select id="auto-id-1788301151985-11" v-model="theme.mode" aria-label="Erscheinungsbild">
-      <option v-for="option in THEME_MODE_OPTIONS" :key="option.value" :value="option.value">
-        {{ option.icon }} {{ option.label }}
-      </option>
-    </select>
+    <template v-if="variant === 'icon'">
+      <AppIcon
+        class="icon-face"
+        :size="18"
+        :icon="currentOption.tabler"
+        group="navigation"
+        aria-hidden="true"
+      />
+      <select id="auto-id-1788301151985-11" v-model="theme.mode" aria-label="Erscheinungsbild">
+        <option v-for="option in THEME_MODE_OPTIONS" :key="option.value" :value="option.value">
+          {{ option.icon }} {{ option.label }}
+        </option>
+      </select>
+    </template>
+    <template v-else>
+      <span class="block-label">Erscheinungsbild</span>
+      <Select id="auto-id-1788301151985-11" v-model="theme.mode" aria-label="Erscheinungsbild">
+        <option v-for="option in THEME_MODE_OPTIONS" :key="option.value" :value="option.value">
+          {{ option.icon }} {{ option.label }}
+        </option>
+      </Select>
+    </template>
   </label>
 </template>
 

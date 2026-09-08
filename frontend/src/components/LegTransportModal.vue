@@ -226,7 +226,7 @@ function onDelete() {
       </p>
 
       <FormField icon="note" label="Notiz zur Teilstrecke">
-        <input v-model="form.note" type="text" placeholder="Tipps zum Umstieg, Buchungscode etc." />
+        <Input v-model="form.note" type="text" placeholder="Tipps zum Umstieg, Buchungscode etc." />
       </FormField>
 
       <FileAttachments v-if="leg?.id" domain="excursion_legs" :entity-id="leg.id" />
