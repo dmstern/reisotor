@@ -14,7 +14,7 @@ withDefaults(
 <template>
   <component :is="tag" class="detail-row">
     <slot name="label">
-      <span v-if="label" class="detail-row__label detail-label">{{ label }}</span>
+      <span v-if="label" class="detail-row__label">{{ label }}</span>
     </slot>
     <slot />
   </component>
@@ -30,8 +30,7 @@ withDefaults(
   gap: 6px;
 }
 
-.detail-row__label,
-.detail-label {
+.detail-row__label {
   font-size: 0.75rem;
   font-weight: 600;
   color: var(--color-text-muted);

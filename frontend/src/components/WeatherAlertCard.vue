@@ -17,9 +17,9 @@ withDefaults(
 </script>
 
 <template>
-  <div class="weather-alert-card" :class="[`weather-alert-card--${severity}`, severity]">
+  <div class="weather-alert-card" :class="`weather-alert-card--${severity}`">
     <AppIcon :icon="ACTION_ICONS.warning" :size="18" group="actions" />
-    <div class="weather-alert-card__alert-content alert-content">
+    <div class="weather-alert-card__alert-content">
       <strong v-if="title">{{ title }}</strong>
       <slot>
         <span v-if="description">{{ description }}</span>
@@ -39,29 +39,25 @@ withDefaults(
   font-size: 0.85rem;
 }
 
-.weather-alert-card--warning,
-.weather-alert-card.warning {
+.weather-alert-card--warning {
   background: var(--color-warning-tint);
   color: var(--color-warning-dark);
   border: 1px solid var(--color-warning);
 }
 
-.weather-alert-card--danger,
-.weather-alert-card.danger {
+.weather-alert-card--danger {
   background: var(--color-danger-tint);
   color: var(--color-danger-dark);
   border: 1px solid var(--color-danger);
 }
 
-.weather-alert-card__alert-content,
-.weather-alert-card .alert-content {
+.weather-alert-card__alert-content {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
-.weather-alert-card__alert-content strong,
-.weather-alert-card .alert-content strong {
+.weather-alert-card__alert-content strong {
   font-size: 0.85rem;
   font-weight: 600;
 }
