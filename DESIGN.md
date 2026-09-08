@@ -465,7 +465,7 @@ Rest der App.
 
 ### Page Container-Breiten (`max-width`)
 
-- **`.page` / `<PageContainer>` (960px)**: Standard-Hülle für einspaltige Lesbarkeit (Tagebuch, Notizen, Einstellungen, Dashboard) – als globale Layout-Klasse `.page` in `style.css` definiert (`max-width: 960px; margin: 0 auto; padding: var(--space-4)`) und optional als Vue-Primitive `components/primitives/PageContainer.vue` gekapselt.
+- **`.page` (960px)**: Standard-Hülle für einspaltige Lesbarkeit (Tagebuch, Notizen, Einstellungen, Dashboard) – als globale Layout-Klasse `.page` in `style.css` definiert (`max-width: 960px; margin: 0 auto; padding: var(--space-4)`).
 - **Wide Page Container (1400px)**: Für mehrspaltige Tabellen- & Listenansichten (`BudgetView.vue`, `ListenView.vue`).
 - **Full-Split Page Container (1600px)**: Maximale Breite für Karte + Spot-Listen Split-Screen (`ExcursionsView.vue`).
 - **Dialog & Modal Container (480px / 900px)**: Standard-Modals (`max-width: 480px` in `Modal.vue`) & breite Formular-Modals (`900px`).
@@ -647,8 +647,9 @@ unerwünschte Vererbungen in Spezialfällen (z. B. ungerahmte Inputs in `QuickAd
   Echtzeit-Highlighting (`highlight` prop / `.new-highlight`).
 - **`Badge.vue` & Indikatoren**: `.badge` als leichtgewichtiger Chip für Zustände (`.badge--primary`,
   `.badge--success`, `.badge--danger`, `.badge--accent`), sowie 🔒 Privat (nur für 1 Person) vs. 🤝 Geteilt (für alle Mitreisenden).
-- **`PageContainer.vue`**: Seiten-Container-Primitive für die standardisierte zentrierte 960px-Seitenhülle ([`.page`](file:///home/daenu/projects/reisotor/frontend/src/style.css#L662)).
+- **`Dropdown.vue`**: Dropdown-Trigger-Container-Primitive. Kapselt `.dropdown`, `.dropdown__button` und `.dropdown__field` gemäß BEM-System mit Slot für Menüs (`PickerMenu.vue`).
 - **`PickerMenu.vue` & `DropdownItem.vue`**: Wiederverwendbare Popover-Menüs und Menü-Einträge für Filter-, Aktionen- und Options-Menüs mit Fokus-Management und Backdrop.
+- **`CheckableListItem.vue`**: Wiederverwendbare Primitive für abhakbare Listeneinträge (`ShoppingListView`, `TodoView`, `PackingItem`). Kapselt Zeilen-Layout, Trennlinien, Strikethrough-Text (`row__text--done`), Done-Transparenz (`row--done`) und Echtzeit-Highlighting (`row--highlighted`).
 - **`DetailRow.vue`**: Standardisierte Schlüssel-Wert-Zeile mit Icon, Label und Wert für Detailansichten, Modals und Listen.
 - **`EmptyState.vue`**: Einheitlicher Leerzustand mit Icon, Titel, Beschreibung und optionaler Aktions-Schaltfläche.
 - **`Kicker.vue`**: Kleiner Eyebrow-/Kicker-Text (`.kicker`) oberhalb von Hauptüberschriften.

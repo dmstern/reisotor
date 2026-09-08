@@ -207,13 +207,13 @@ const previewStyle = computed(() => {
   width: 100%;
   accent-color: var(--color-primary);
   cursor: pointer;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 
 .range-input:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 3px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 
 .preview-stage {

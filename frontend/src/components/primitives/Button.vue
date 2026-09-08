@@ -16,11 +16,9 @@ const _props = withDefaults(
      * - 'danger': Gefahrenbutton (gefüllt mit --color-danger + Schatten)
      * - 'card-action': Kompakter Karten-Aktionsbutton (Hintergrund --color-primary-tint)
      * - 'ghost': Dezent ohne Rahmen/Schatten für Toolbars/Untermenüs
-     * - 'dropdown': Optisch identisch mit nativem <select> — gleiche Höhe, Schriftfarbe, Border, Padding
      * - 'floating': Runder, schwebender Aktionsbutton (Oberflächen-Hintergrund, dunklerer Rand, Schatten)
      */
-    variant?:
-      'primary' | 'secondary' | 'danger' | 'card-action' | 'ghost' | 'dropdown' | 'floating';
+    variant?: 'primary' | 'secondary' | 'danger' | 'card-action' | 'ghost' | 'floating';
     /** Button-Größe: 'sm' (klein), 'md' (Standard), 'lg' (groß). */
     size?: 'sm' | 'md' | 'lg';
     /** Optionale IconDef-Definition für Tabler-Icon Rendering via AppIcon.vue */
@@ -66,12 +64,13 @@ const hasDefaultSlot = () =>
 
 const btnClasses = computed(() => [
   `btn--${_props.variant}`,
-  _props.variant === 'dropdown' ? 'dropdown-field' : undefined,
   _props.size !== 'md' ? `btn--${_props.size}` : undefined,
   _props.shape !== 'squircle' ? `btn--${_props.shape}` : undefined,
   {
     'is-disabled': _props.disabled,
     'is-active': _props.active,
+    'btn--icon-only':
+      _props.iconOnly || _props.shape === 'circle' || (!hasDefaultSlot() && !!_props.icon),
     'icon-only':
       _props.iconOnly || _props.shape === 'circle' || (!hasDefaultSlot() && !!_props.icon),
   },
@@ -229,6 +228,7 @@ const btnClasses = computed(() => [
 }
 
 /* Icon-only secondary: Rahmen ja, aber Icon monochrom statt primärgrün */
+.btn--secondary.btn--icon-only,
 .btn--secondary.icon-only {
   color: var(--color-text);
 }
@@ -320,52 +320,6 @@ const btnClasses = computed(() => [
   border-color: var(--color-primary);
 }
 
-.btn--dropdown,
-.dropdown-field {
-  padding: 9px 12px;
-  border: var(--ui-border-width, 1px) solid var(--color-border-strong);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  background: var(--color-surface);
-  color: var(--color-text);
-  box-shadow: var(--shadow-sm);
-  font-family: inherit;
-  font-size: 0.95rem;
-  font-weight: 400;
-  height: var(--input-height, var(--input-default-height));
-  min-height: var(--input-height, var(--input-default-height));
-  box-sizing: border-box;
-  min-width: 0;
-  max-width: 100%;
-  cursor: pointer;
-}
-
-.btn--dropdown:hover:not(:disabled),
-.dropdown-field:hover:not(:disabled) {
-  background: var(--color-hover);
-}
-
-.btn--dropdown :deep(.app-icon),
-.dropdown-field :deep(.app-icon) {
-  color: var(--color-primary);
-  opacity: 0.8;
-}
-
-.btn.secondary {
-  background: transparent;
-  color: var(--color-primary);
-  border: var(--ui-border-width, 1px) solid var(--color-border-strong);
-}
-
-.btn.secondary:hover:not(:disabled) {
-  background: var(--color-surface);
-}
-
-.btn.danger {
-  background: var(--color-danger);
-  color: white;
-}
-
 .btn--sm {
   padding: 6px 12px;
   font-size: 0.85rem;
@@ -379,6 +333,7 @@ const btnClasses = computed(() => [
 }
 
 /* Icon-only Modus */
+.btn--icon-only,
 .btn.icon-only {
   padding: 0;
   flex-shrink: 0;
@@ -389,6 +344,7 @@ const btnClasses = computed(() => [
   font-size: 1.3rem;
 }
 
+.btn--icon-only.btn--sm,
 .btn.icon-only.btn--sm {
   width: 30px;
   height: 30px;
@@ -397,6 +353,7 @@ const btnClasses = computed(() => [
   font-size: 1.1rem;
 }
 
+.btn--icon-only.btn--lg,
 .btn.icon-only.btn--lg {
   width: 46px;
   height: 46px;

@@ -5,6 +5,7 @@ import { isFullyPacked as isFullyPackedItem } from '../utils/packing';
 import DeleteButton from './DeleteButton.vue';
 import EditButton from './EditButton.vue';
 import PendingSyncBadge from './PendingSyncBadge.vue';
+import CheckableListItem from './primitives/CheckableListItem.vue';
 
 const props = defineProps<{ item: PackingItem; highlighted?: boolean }>();
 const emit = defineEmits<{
@@ -95,7 +96,7 @@ const tallyGroups = computed<number[]>(() => {
 </script>
 
 <template>
-  <li class="row" :class="{ 'row-done': isFullyPacked, 'new-highlight': highlighted }">
+  <CheckableListItem :done="isFullyPacked" :highlighted="highlighted">
     <div class="main">
       <button
         v-if="item.quantity <= 1"
@@ -129,7 +130,7 @@ const tallyGroups = computed<number[]>(() => {
         "
         @click="toggleAllPacked"
       ></button>
-      <span class="label" :class="{ 'text-done': isFullyPacked }">
+      <span class="label" :class="{ 'row__text--done': isFullyPacked, 'text-done': isFullyPacked }">
         {{ item.label }}
         <span v-if="item.quantity > 1" class="qty">×{{ item.quantity }}</span>
       </span>
@@ -186,54 +187,10 @@ const tallyGroups = computed<number[]>(() => {
       <EditButton small @click="emit('edit', item)" />
       <DeleteButton small @click="emit('remove', item.id)" />
     </div>
-  </li>
+  </CheckableListItem>
 </template>
 
 <style scoped>
-.row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  padding: var(--space-2);
-  border-bottom: 1px solid var(--color-border);
-}
-
-/* .row selbst hat (anders als .card) keinen border-radius - die globale .new-highlight-Regel
-   (style.css, --new-highlight-radius) würde hier sonst mit ihrem für Karten gedachten Radius
-   overrulen bzw. eckig wirken. Kleinerer, zur schmalen Listen-Zeile passender Wert. */
-.row.new-highlight {
-  --new-highlight-radius: var(--radius-sm-squircle);
-  position: relative;
-  border-radius: var(--new-highlight-radius);
-  corner-shape: squircle;
-}
-
-.row.new-highlight::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  border-radius: var(--new-highlight-radius);
-  corner-shape: squircle;
-  box-shadow: inset 0 0 0 2px var(--color-accent);
-}
-
-.row-done {
-  opacity: 0.6;
-}
-
-.text-done {
-  text-decoration: line-through;
-  color: var(--color-text-muted);
-}
-
-.row:last-child {
-  border-bottom: none;
-}
-
 .main {
   display: flex;
   align-items: center;
@@ -403,11 +360,5 @@ const tallyGroups = computed<number[]>(() => {
 .tally-minus:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
-}
-
-.row-actions {
-  display: flex;
-  gap: var(--space-1);
-  flex-shrink: 0;
 }
 </style>

@@ -21,6 +21,7 @@ import { usePersistedRef } from '../composables/usePersistedRef';
 import AppIcon from '../components/AppIcon.vue';
 import Button from '../components/primitives/Button.vue';
 import Checkbox from '../components/primitives/Checkbox.vue';
+import CheckableListItem from '../components/primitives/CheckableListItem.vue';
 import Select from '../components/primitives/Select.vue';
 import Input from '../components/primitives/Input.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
@@ -431,19 +432,22 @@ async function quickAddToGroup(group: Group, label: string) {
         </QuickAddRow>
         <div class="card">
           <TransitionGroup tag="ul" name="list" class="list">
-            <li
+            <CheckableListItem
               v-for="item in group.items"
               :key="item.id"
-              class="row"
-              :class="{ 'row-done': item.checked, 'new-highlight': highlightedIds.has(item.id) }"
+              :done="!!item.checked"
+              :highlighted="highlightedIds.has(item.id)"
             >
-              <label for="auto-id-1788301175450-34" class="check">
+              <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
+              <label :for="'shopping-item-' + item.id" class="check">
                 <Checkbox
-                  id="auto-id-1788301175450-34"
+                  :id="'shopping-item-' + item.id"
                   :checked="!!item.checked"
                   @change="toggle(item)"
                 />
-                <span :class="{ 'text-done': item.checked }">{{ item.label }}</span>
+                <span :class="{ 'row__text--done': item.checked, 'text-done': item.checked }">
+                  {{ item.label }}
+                </span>
               </label>
               <PendingSyncBadge v-if="item._pending" />
               <span v-if="groupBy !== 'shop' && item.shop" class="tag">
@@ -475,7 +479,7 @@ async function quickAddToGroup(group: Group, label: string) {
                 <EditButton small @click="startEdit(item)" />
                 <DeleteButton small @click="remove(item.id)" />
               </div>
-            </li>
+            </CheckableListItem>
             <li v-if="!group.items.length" :key="`${group.key}-empty`" class="empty">
               Noch keine Einträge.
             </li>
@@ -629,46 +633,6 @@ async function quickAddToGroup(group: Group, label: string) {
   padding: 0;
 }
 
-.row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) 0;
-  border-bottom: 1px solid var(--color-border);
-  flex-wrap: wrap;
-}
-
-.row.new-highlight {
-  --new-highlight-radius: var(--radius-sm-squircle);
-  position: relative;
-  border-radius: var(--new-highlight-radius);
-  corner-shape: squircle;
-}
-
-.row.new-highlight::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  border-radius: var(--new-highlight-radius);
-  corner-shape: squircle;
-  box-shadow: inset 0 0 0 2px var(--color-accent);
-}
-
-.row-done {
-  opacity: 0.6;
-}
-
-.text-done {
-  text-decoration: line-through;
-  color: var(--color-text-muted);
-}
-
-.row:last-child {
-  border-bottom: none;
-}
-
 .check {
   display: flex;
   align-items: center;
@@ -693,12 +657,6 @@ async function quickAddToGroup(group: Group, label: string) {
   /* Kompaktes Inline-Select direkt in der Listenzeile (kein Formularfeld) - überschreibt
      style.css's globale min-height (44px). */
   min-height: 0;
-}
-
-.row-actions {
-  display: flex;
-  gap: 4px;
-  flex-shrink: 0;
 }
 
 .edit-form {
