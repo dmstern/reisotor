@@ -8,9 +8,9 @@ stehen. Bei jedem neuen UI-Baustein oder jeder sichtbaren UI-Änderung hier kurz
 bestehendes Muster zutrifft, statt ad hoc neue Werte zu erfinden – und diese Datei ergänzen, wenn
 dabei ein neues, wiederverwendbares Prinzip entsteht.
 
-Für architektonische/UX-Ablauf-Muster (Querverweise springen zur Ursprungs-View, Undo-Delete,
-Echtzeit-Highlight, …) siehe stattdessen den Abschnitt "Konsistenz-Check bei Änderungen" in
-`AGENTS.md` – hier geht es nur um die visuelle Ebene.
+Für architektonische Leitplanken, Kapselungsregeln (`style.css` vs. Komponenten-Styles), Clean-Code-Prinzipien
+und den Entwickler-Workflow siehe `AGENTS.md` – diese Datei (`DESIGN.md`) beschränkt sich strikt auf die visuelle
+Ebene, Design-Tokens und die Spezifikation des Design Systems.
 
 ## Konsistenz (wichtigstes Prinzip)
 
@@ -20,9 +20,11 @@ wurde. Der Nutzer sieht keinen Unterschied zwischen "das ist ein natives `<selec
 eine custom Combobox.vue" – beide sind für ihn einfach "ein Dropdown" und müssen deshalb exakt
 gleich hoch sein und gleich aussehen. Das gilt für jede der unten dokumentierten Kategorien:
 
-- **Primitive Komponenten & Styles**: Surface-, Layout- und Interaktions-Primitives (`Button.vue`, `Card.vue`, `Input.vue`, `PickerMenu.vue`, `DropdownItem.vue`, `Badge.vue`, `UnseenDot.vue`, `DetailRow.vue`, `EmptyState.vue`, `Kicker.vue` unter `components/primitives/`) kapseln ihre eigenen Styles (Schatten, Varianten, Padding, Squircle-Rundung) intern in der Komponente. In `style.css` gehören NUR grundsätzliche, globale Seiten-Styles und Layout-Infos: globale Dokument-Resets (`html`, `body`, `#app`, `h1`-`h6`, `p`, `a`), native Formularelement-Defaults (`button`, `input`, `select`, `textarea`), Basis-Fokus-Ringe, globale `<Transition>`-Klassen, CSS-Tokens (`:root`) sowie universelle Layout-Grundgerüste (`.page`, `.grid`, `.masonry`). Wiederverwendbare Komponenten- und Surface-Styles (wie `.card`) gehören strikt in die jeweilige `.vue`-Komponente!
-  - _Anti-Pattern "Scoped styles werden nicht geteilt, daher Kopie" strikt verboten:_ Niemals identische CSS-Klassen und DOM-Strukturen (wie ehemals `.picker-menu`, `.picker-backdrop`) über mehrere Views duplizieren. Sobald ein Oberflächen- oder Menü-Container an mehr als einer Stelle benötigt wird, gehört er als Primitive nach `components/primitives/`.
-  - _Keine konkurrierenden Kind-Selektoren:_ Container-Komponenten dürfen Kind-Elemente von Primitives nicht über generische Tag-Selektoren (z. B. `.picker-menu button`) umstylen; Anpassungen gehören über Props oder gezielte Klassen in das Primitive selbst.
+- **UI-Primitives & Komponenten**: Wiederkehrende Oberflächen-, Layout- und Interaktionsbausteine
+  (`Button.vue`, `IconButton.vue`, `Card.vue`, `Input.vue`, `PickerMenu.vue`, `DropdownItem.vue`,
+  `Badge.vue`, `DetailRow.vue`, `EmptyState.vue`, etc. unter `components/primitives/`) teilen dieselbe
+  visuelle Sprache (Schatten, Padding, Squircle-Rundung, Zustände) und werden zentral über diese Primitives
+  konsistent gehalten. (Die architektonische Kapselungsgrenze zu `style.css` ist verbindlich in `AGENTS.md` geregelt.)
 - **Farben**: nur `--color-*`-Variablen, nie ein neuer Hex-Wert lokal (Abschnitt "Farben").
 - **Abstände**: nur `--space-*`-Stufen, kein freier px-Wert (Abschnitt "Abstände").
 - **Formen/Eckenrundung**: Kreisbogen vs. Squircle konsequent nach Elementtyp, nie gemischt
@@ -50,14 +52,8 @@ gleich hoch sein und gleich aussehen. Das gilt für jede der unten dokumentierte
   keinen eigenen Abschnitt dafür gibt. Beim Bauen aktiv mitdenken statt nur die oben gelisteten
   Kategorien als abschließend zu behandeln.
 
-**Praktische Konsequenz beim Bauen/Ändern von UI:** vor jedem neuen UI-Baustein oder jeder
-sichtbaren Design-Anpassung aktiv im Rest der App nachschauen, ob es dafür schon ein Muster/eine
-Komponente/einen Token gibt (grep auf ähnliche Bezeichner/Klassen/Werte, nicht nur an der gerade
-bearbeiteten Stelle schauen) – wiederverwenden statt eine zweite, leicht abweichende Variante
-daneben zu bauen. Wird dabei eine neue Design-Anforderung erkennbar, die auch an anderen, gerade
-nicht angefragten Stellen mit demselben Muster gelten würde: siehe AGENTS.md, Abschnitt
-"Konsistenz-Check bei Änderungen" für das Vorgehen dabei (dort jetzt: aktiv nachfragen statt
-eigenmächtig zu entscheiden, ob mitgezogen wird oder nicht).
+Vor dem Hinzufügen neuer Farben, Abstände oder Komponenten immer erst die bestehenden Tokens und
+Primitives in diesem Dokument prüfen (siehe Workflow-Regeln in `AGENTS.md`).
 
 ## Desktop UND Mobile – nie nur eines im Kopf
 
