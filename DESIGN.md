@@ -469,15 +469,15 @@ Rest der App.
 
 ### Page Container-Breiten (`max-width`)
 
-- **`.page` / `<PageContainer>` (960px)**: Standard-Hülle gekapselt in `components/primitives/PageContainer.vue` (`max-width: 960px; margin: 0 auto; padding: var(--space-4)`) für einspaltige Lesbarkeit (Tagebuch, Notizen, Einstellungen, Dashboard).
+- **`.page` / `<PageContainer>` (960px)**: Standard-Hülle für einspaltige Lesbarkeit (Tagebuch, Notizen, Einstellungen, Dashboard) – als globale Layout-Klasse `.page` in `style.css` definiert (`max-width: 960px; margin: 0 auto; padding: var(--space-4)`) und optional als Vue-Primitive `components/primitives/PageContainer.vue` gekapselt.
 - **Wide Page Container (1400px)**: Für mehrspaltige Tabellen- & Listenansichten (`BudgetView.vue`, `ListenView.vue`).
 - **Full-Split Page Container (1600px)**: Maximale Breite für Karte + Spot-Listen Split-Screen (`ExcursionsView.vue`).
 - **Dialog & Modal Container (480px / 900px)**: Standard-Modals (`max-width: 480px` in `Modal.vue`) & breite Formular-Modals (`900px`).
 
 ### Raster-Systeme (`.grid` vs. `.masonry`)
 
-- **`.grid`**: Responsive Auto-Fit Grid (`display: grid; gap: var(--space-3); grid-template-columns: repeat(auto-fit, minmax(280px, 1fr))`) für gleichmäßige Kachel-Ansichten (in Views wie `DashboardView.vue` oder `SettingsView.vue` gekapselt).
-- **`.masonry`**: CSS Multi-Column (`column-width: 280px; column-gap: var(--space-3)`) für Karten variabler Höhe (in `NotesView.vue` gekapselt).
+- **`.grid`**: Globales CSS-Grid-Grundgerüst in `style.css` (`display: grid; gap: var(--space-3);`) für gleichmäßige Kachel- und Raster-Ansichten. Spezifische Spaltenkonfigurationen (z. B. `grid-template-columns: repeat(auto-fit, minmax(240px, 1fr))` für Dashboard-Kacheln) setzt die jeweilige View über ihre Inhalts-Klasse (wie `.cards`).
+- **`.masonry`**: Globales CSS Multi-Column-Grundgerüst in `style.css` (`column-gap: var(--space-3); break-inside: avoid;`) für Karten variabler Höhe (z. B. Notizen in `NotesView.vue`). Die responsive Spaltenbreite (`column-width: 280px`) steuert die View über ihre Inhalts-Klasse.
 
 ## Icons
 
@@ -639,8 +639,15 @@ für elementare UI-Bausteine:
   Squircle-Styling, `min-height: 44px`, Focus-Ringe, Disabled-State, `size` (`sm`, `md`, `lg`),
   `invalid`-Zustand (`aria-invalid`, rote Umrandung) und den Chromium-Höhenausgleich für
   Datums-/Zeitauswahlen.
-- **Badges & Indikatoren**: `.badge` als leichtgewichtiger Chip für Zustände (`.badge--primary`,
+- **`Badge.vue` & Indikatoren**: `.badge` als leichtgewichtiger Chip für Zustände (`.badge--primary`,
   `.badge--success`, `.badge--danger`, `.badge--accent`), sowie 🔒 Privat (nur für 1 Person) vs. 🤝 Geteilt (für alle Mitreisenden).
+- **`PageContainer.vue`**: Seiten-Container-Primitive für die standardisierte zentrierte 960px-Seitenhülle ([`.page`](file:///home/daenu/projects/reisotor/frontend/src/style.css#L662)).
+- **`PickerMenu.vue` & `DropdownItem.vue`**: Wiederverwendbare Popover-Menüs und Menü-Einträge für Filter-, Aktionen- und Options-Menüs mit Fokus-Management und Backdrop.
+- **`DetailRow.vue`**: Standardisierte Schlüssel-Wert-Zeile mit Icon, Label und Wert für Detailansichten, Modals und Listen.
+- **`EmptyState.vue`**: Einheitlicher Leerzustand mit Icon, Titel, Beschreibung und optionaler Aktions-Schaltfläche.
+- **`Kicker.vue`**: Kleiner Eyebrow-/Kicker-Text (`.kicker`) oberhalb von Hauptüberschriften.
+- **`UnseenDot.vue`**: Diskreter Indikator-Punkt für ungesehene bzw. geänderte Inhalte aus dem Echtzeit-Sync.
+- **`WeatherAlertCard.vue`**: Dedizierte Komponente (`frontend/src/components/WeatherAlertCard.vue`) für Wetterwarnungen (`warning`, `danger`).
 - **`FormField.vue`**: Einheitlicher Feld-Wrapper für Anlege- und Bearbeiten-Formulare (Icon + Label).
 
 Reine Beschriftung eines Textfelds per HTML-`placeholder` verschwindet, sobald das Feld einen Wert
