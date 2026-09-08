@@ -167,6 +167,15 @@ const currentTimeLabel = computed(() => {
 .playback-slider {
   flex: 1;
   min-width: 0;
+  accent-color: var(--color-primary);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+}
+
+.playback-slider:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+  border-radius: var(--radius-pill);
 }
 
 .playback-time {

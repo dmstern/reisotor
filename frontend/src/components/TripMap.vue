@@ -62,6 +62,7 @@ import { interpolateTrackPosition } from '../utils/trackGeometry';
 import { useIsDesktop } from '../composables/useIsDesktop';
 import { usePersistedRef } from '../composables/usePersistedRef';
 import _Card from './primitives/Card.vue';
+import Button from './primitives/Button.vue';
 import IconButton from './primitives/IconButton.vue';
 import DropdownItem from './primitives/DropdownItem.vue';
 import PickerMenu from './primitives/PickerMenu.vue';
@@ -1729,18 +1730,18 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
           ><AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="14" group="navigation" />
           {{ focusedExcursion.title }}</span
         >
-        <button type="button" class="card-action-btn" @click="drawers.mapFocusExcursionId = null">
+        <Button variant="card-action" @click="drawers.mapFocusExcursionId = null">
           <AppIcon :icon="ACTION_ICONS.close" :size="14" group="actions" /> Fokus verlassen
-        </button>
+        </Button>
       </div>
       <div class="focus-banner" v-else-if="drawers.mapFocusDate">
         <span
           ><AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" />
           {{ formatDate(drawers.mapFocusDate) }}</span
         >
-        <button type="button" class="card-action-btn" @click="drawers.mapFocusDate = null">
+        <Button variant="card-action" @click="drawers.mapFocusDate = null">
           <AppIcon :icon="ACTION_ICONS.close" :size="14" group="actions" /> Fokus verlassen
-        </button>
+        </Button>
       </div>
     </div>
 

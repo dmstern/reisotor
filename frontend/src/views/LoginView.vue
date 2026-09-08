@@ -8,6 +8,7 @@ import ReisotorRobot from '../components/ReisotorRobot.vue';
 import ThemeModeSelect from '../components/ThemeModeSelect.vue';
 import AppFooterLinks from '../components/AppFooterLinks.vue';
 import Button from '../components/primitives/Button.vue';
+import Input from '../components/primitives/Input.vue';
 
 const auth = useAuthStore();
 const router = useRouter();
@@ -85,7 +86,7 @@ async function onSubmit() {
 
       <label for="auto-id-1788301175448-23">
         Benutzername
-        <input
+        <Input
           id="auto-id-1788301175448-23"
           v-model="username"
           type="text"
@@ -96,7 +97,7 @@ async function onSubmit() {
 
       <label for="auto-id-1788301175448-24" v-if="mode === 'register'">
         E-Mail-Adresse
-        <input
+        <Input
           id="auto-id-1788301175448-24"
           v-model="email"
           type="email"

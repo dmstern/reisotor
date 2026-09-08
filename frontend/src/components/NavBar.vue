@@ -12,6 +12,7 @@ import { NAV_LINK_COLORS } from '../utils/widgetColors';
 import { useIconStyleStore } from '../stores/iconStyle';
 import { useTripStore } from '../stores/trip';
 import AppIcon from './AppIcon.vue';
+import UnseenDot from './primitives/UnseenDot.vue';
 
 const _auth = useAuthStore();
 const _router = useRouter();
@@ -223,11 +224,7 @@ function onLinkClick(event: MouseEvent) {
             group="navigation"
             :color="iconStyle.navColored ? NAV_LINK_COLORS.get('calendar') : undefined"
           />
-          <span
-            v-if="liveSync.hasUnseen('schedule')"
-            class="unseen-dot"
-            aria-label="Neue Änderungen"
-          />
+          <UnseenDot v-if="liveSync.hasUnseen('schedule')" />
         </span>
         <span class="label">Kalender</span>
       </router-link>
@@ -246,7 +243,7 @@ function onLinkClick(event: MouseEvent) {
             group="navigation"
             :color="iconStyle.navColored ? NAV_LINK_COLORS.get(link.key) : undefined"
           />
-          <span v-if="hasUnseenAny(link)" class="unseen-dot" aria-label="Neue Änderungen" />
+          <UnseenDot v-if="hasUnseenAny(link)" />
         </span>
         <span class="label">{{ link.label }}</span>
       </router-link>
@@ -391,21 +388,6 @@ function onLinkClick(event: MouseEvent) {
 
 .icon {
   font-size: 1.2rem;
-}
-
-/* Roter Punkt: eine andere Person hat seit dem letzten Besuch dieses Bereichs etwas geändert
-   (Echtzeit-Sync, siehe stores/liveSync.ts). Verschwindet, sobald die Zielansicht gemountet wird
-   (markSeen() dort) – ein Klick auf dieses Nav-Item reicht also, um ihn wieder loszuwerden. */
-.unseen-dot {
-  position: absolute;
-  top: -2px;
-  right: -4px;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--color-danger);
-  border: 1.5px solid var(--color-surface);
-  animation: badgePulse 2s infinite ease-in-out;
 }
 
 .logout {

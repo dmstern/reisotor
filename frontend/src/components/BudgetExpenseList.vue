@@ -3,6 +3,7 @@ import type { BudgetExpense } from '../api/types';
 import { useBudgetStore } from '../stores/budget';
 import EditButton from './EditButton.vue';
 import DeleteButton from './DeleteButton.vue';
+import Button from './primitives/Button.vue';
 import { useToast } from '../composables/useToast';
 
 defineProps<{
@@ -43,9 +44,9 @@ async function removeExpense(id: number) {
       <strong class="row-amount">{{ e.amount.toFixed(2) }} €</strong>
       <div class="row-actions">
         <template v-if="autoSourceFor(e.id)">
-          <router-link :to="autoSourceFor(e.id)!.path" class="card-action-btn">
+          <Button variant="card-action" :to="autoSourceFor(e.id)!.path">
             {{ autoSourceFor(e.id)!.label }}
-          </router-link>
+          </Button>
         </template>
         <template v-else>
           <EditButton small @click="emit('edit', e)" />
@@ -75,11 +76,22 @@ async function removeExpense(id: number) {
   flex-wrap: wrap;
 }
 
-/* .row selbst hat (anders als .card) keinen border-radius - die globale .new-highlight-Regel
-   (style.css, --new-highlight-radius) würde hier sonst mit ihrem für Karten gedachten Radius
-   overrulen bzw. eckig wirken. Kleinerer, zur schmalen Listen-Zeile passender Wert. */
 .row.new-highlight {
   --new-highlight-radius: var(--radius-sm-squircle);
+  position: relative;
+  border-radius: var(--new-highlight-radius);
+  corner-shape: squircle;
+}
+
+.row.new-highlight::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  border-radius: var(--new-highlight-radius);
+  corner-shape: squircle;
+  box-shadow: inset 0 0 0 2px var(--color-accent);
 }
 
 .row:last-child {

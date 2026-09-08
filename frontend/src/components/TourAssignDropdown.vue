@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+import Checkbox from './primitives/Checkbox.vue';
 import AppIcon from './AppIcon.vue';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
@@ -74,14 +75,20 @@ function onDragStart(event: DragEvent) {
         >
           <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
           <label class="tour-item-label">
-            <input type="checkbox" :checked="tour.assigned" @change="handleToggle(tour.id)" />
+            <Checkbox :checked="tour.assigned" @change="handleToggle(tour.id)" />
             <span class="tour-name">{{ tour.title }}</span>
           </label>
         </li>
       </ul>
       <form class="create-tour-form" @submit.prevent="handleCreate">
         <!-- eslint-disable-next-line vuejs-accessibility/form-control-has-label -->
-        <input v-model="newTourTitle" type="text" placeholder="Neue Tour…" @click.stop />
+        <input
+          v-model="newTourTitle"
+          type="text"
+          class="create-tour-input"
+          placeholder="Neue Tour…"
+          @click.stop
+        />
         <button
           type="submit"
           class="create-btn"
@@ -192,11 +199,6 @@ function onDragStart(event: DragEvent) {
   background: var(--color-hover);
 }
 
-.tour-item input[type='checkbox'] {
-  cursor: pointer;
-  margin: 0;
-}
-
 .tour-name {
   flex: 1;
   overflow: hidden;
@@ -220,7 +222,7 @@ function onDragStart(event: DragEvent) {
   border-top: 1px solid var(--color-border);
 }
 
-.create-tour-form input {
+.create-tour-input {
   flex: 1;
   min-width: 0;
   font-size: 0.8rem;

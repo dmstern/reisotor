@@ -22,6 +22,10 @@ import { useDraftAutosave } from '../composables/useDraftAutosave';
 import { usePersistedRef } from '../composables/usePersistedRef';
 import AppIcon from '../components/AppIcon.vue';
 import Button from '../components/primitives/Button.vue';
+import Checkbox from '../components/primitives/Checkbox.vue';
+import CheckableListItem from '../components/primitives/CheckableListItem.vue';
+import Select from '../components/primitives/Select.vue';
+import Input from '../components/primitives/Input.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 
@@ -310,28 +314,28 @@ function isOverdue(item: TodoItem) {
 
     <form class="add-form card" @submit.prevent="addItem">
       <FormField icon="title" label="Aufgabe" v-slot="{ id }">
-        <input :id="id" v-model="newForm.title" type="text" placeholder="Neue Aufgabe" required />
+        <Input :id="id" v-model="newForm.title" type="text" placeholder="Neue Aufgabe" required />
       </FormField>
       <FormField v-if="users.length > 1" icon="person" label="Bearbeiter:in" v-slot="{ id }">
-        <select :id="id" v-model="newForm.assigned_to_user_id">
+        <Select :id="id" v-model="newForm.assigned_to_user_id">
           <option value="">Nicht zugewiesen</option>
           <option v-for="u in users" :key="u.id" :value="String(u.id)">
             {{ u.avatar }} {{ u.username }}
           </option>
-        </select>
+        </Select>
       </FormField>
       <FormField icon="date" label="Fällig" v-slot="{ id }">
-        <input :id="id" v-model="newForm.due_date" type="date" />
+        <Input :id="id" v-model="newForm.due_date" type="date" />
       </FormField>
       <FormField icon="priority" label="Priorität" v-slot="{ id }">
-        <select :id="id" v-model="newForm.priority">
+        <Select :id="id" v-model="newForm.priority">
           <option v-for="(meta, key) in PRIORITY_META" :key="key" :value="key">
             {{ meta.icon }} {{ meta.label }}
           </option>
-        </select>
+        </Select>
       </FormField>
       <FormField icon="note" label="Notiz" v-slot="{ id }">
-        <input :id="id" v-model="newForm.note" type="text" placeholder="Notiz (optional)" />
+        <Input :id="id" v-model="newForm.note" type="text" placeholder="Notiz (optional)" />
       </FormField>
       <Button type="submit">Hinzufügen</Button>
       <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
@@ -342,20 +346,20 @@ function isOverdue(item: TodoItem) {
         <span class="tool-label"
           ><AppIcon :icon="ACTION_ICONS.group" :size="14" group="actions" /> Gruppieren</span
         >
-        <select v-model="groupBy" aria-label="Gruppieren">
+        <Select v-model="groupBy" aria-label="Gruppieren">
           <option v-if="users.length > 1" value="assignee">nach Bearbeiter:in</option>
           <option value="period">nach Zeitraum</option>
-        </select>
+        </Select>
       </div>
       <div class="tool-row">
         <span class="tool-label"
           ><AppIcon :icon="ACTION_ICONS.sort" :size="14" group="actions" /> Sortieren</span
         >
-        <select v-model="sortBy" aria-label="Sortieren">
+        <Select v-model="sortBy" aria-label="Sortieren">
           <option value="due_date">nach Datum</option>
           <option value="priority">nach Priorität</option>
           <option v-if="users.length > 1" value="assignee">nach Bearbeiter:in</option>
-        </select>
+        </Select>
       </div>
     </div>
 
@@ -368,40 +372,46 @@ function isOverdue(item: TodoItem) {
           @submit="(label) => quickAddToGroup(group, label)"
         >
           <template #extra>
-            <select
+            <Select
               v-if="users.length > 1 && groupBy !== 'assignee'"
               v-model="lastAssignee"
               aria-label="Zuweisung"
+              size="sm"
             >
               <option value="">Nicht zugewiesen</option>
               <option v-for="u in users" :key="u.id" :value="String(u.id)">
                 {{ u.avatar }} {{ u.username }}
               </option>
-            </select>
-            <select v-model="quickAddPriority" aria-label="Priorität">
+            </Select>
+            <Select v-model="quickAddPriority" aria-label="Priorität" size="sm">
               <option v-for="(meta, key) in PRIORITY_META" :key="key" :value="key">
                 {{ meta.icon }} {{ meta.label }}
               </option>
-            </select>
+            </Select>
           </template>
         </QuickAddRow>
         <div class="card">
           <TransitionGroup tag="ul" name="list" class="list">
-            <li
+            <CheckableListItem
               v-for="item in group.items"
               :key="item.id"
               :id="`todo-${item.id}`"
-              class="row"
-              :class="{ 'row-done': item.done, 'new-highlight': highlightedIds.has(item.id) }"
+              :done="!!item.done"
+              :highlighted="highlightedIds.has(item.id)"
             >
-              <label for="auto-id-1788301175451-35" class="check">
-                <input
-                  id="auto-id-1788301175451-35"
-                  type="checkbox"
+              <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
+              <label :for="'todo-item-' + item.id" class="check">
+                <Checkbox
+                  :id="'todo-item-' + item.id"
                   :checked="!!item.done"
                   @change="toggleDone(item)"
                 />
-                <span class="title" :class="{ 'text-done': item.done }">{{ item.title }}</span>
+                <span
+                  class="title"
+                  :class="{ 'row__text--done': item.done, 'text-done': item.done }"
+                >
+                  {{ item.title }}
+                </span>
               </label>
               <PendingSyncBadge v-if="item._pending" />
               <span class="priority" :title="PRIORITY_META[item.priority].label">
@@ -432,7 +442,7 @@ function isOverdue(item: TodoItem) {
                 <EditButton small @click="startEdit(item)" />
                 <DeleteButton small @click="remove(item.id)" />
               </div>
-            </li>
+            </CheckableListItem>
             <li v-if="!group.items.length" :key="`${group.key}-empty`" class="empty">
               Noch keine Aufgaben.
             </li>
@@ -448,28 +458,28 @@ function isOverdue(item: TodoItem) {
     >
       <form class="edit-form" @submit.prevent="submitEdit">
         <FormField icon="title" label="Titel" v-slot="{ id }">
-          <input :id="id" v-model="editForm.title" type="text" placeholder="Titel" required />
+          <Input :id="id" v-model="editForm.title" type="text" placeholder="Titel" required />
         </FormField>
         <FormField v-if="users.length > 1" icon="person" label="Bearbeiter:in" v-slot="{ id }">
-          <select :id="id" v-model="editForm.assigned_to_user_id">
+          <Select :id="id" v-model="editForm.assigned_to_user_id">
             <option value="">Nicht zugewiesen</option>
             <option v-for="u in users" :key="u.id" :value="String(u.id)">
               {{ u.avatar }} {{ u.username }}
             </option>
-          </select>
+          </Select>
         </FormField>
         <FormField icon="date" label="Fällig" v-slot="{ id }">
-          <input :id="id" v-model="editForm.due_date" type="date" />
+          <Input :id="id" v-model="editForm.due_date" type="date" />
         </FormField>
         <FormField icon="priority" label="Priorität" v-slot="{ id }">
-          <select :id="id" v-model="editForm.priority">
+          <Select :id="id" v-model="editForm.priority">
             <option v-for="(meta, key) in PRIORITY_META" :key="key" :value="key">
               {{ meta.icon }} {{ meta.label }}
             </option>
-          </select>
+          </Select>
         </FormField>
         <FormField icon="note" label="Notiz" v-slot="{ id }">
-          <input :id="id" v-model="editForm.note" type="text" placeholder="Notiz (optional)" />
+          <Input :id="id" v-model="editForm.note" type="text" placeholder="Notiz (optional)" />
         </FormField>
         <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />
         <Button type="submit">Speichern</Button>
@@ -574,26 +584,6 @@ function isOverdue(item: TodoItem) {
   list-style: none;
   margin: 0;
   padding: 0;
-}
-
-.row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) 0;
-  border-bottom: 1px solid var(--color-border);
-  flex-wrap: wrap;
-}
-
-/* .row selbst hat (anders als .card) keinen border-radius - die globale .new-highlight-Regel
-   (style.css, --new-highlight-radius) würde hier sonst mit ihrem für Karten gedachten Radius
-   overrulen bzw. eckig wirken. Kleinerer, zur schmalen Listen-Zeile passender Wert. */
-.row.new-highlight {
-  --new-highlight-radius: var(--radius-sm-squircle);
-}
-
-.row:last-child {
-  border-bottom: none;
 }
 
 .check {

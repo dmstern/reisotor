@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3';
 import _Badge from '../../components/primitives/Badge.vue';
+import Kicker from '../../components/primitives/Kicker.vue';
 
 const meta: Meta = {
   title: 'Design Tokens/Typography',
@@ -11,6 +12,7 @@ type Story = StoryObj;
 
 export const TypographySystem: Story = {
   render: () => ({
+    components: { Badge: _Badge, Kicker },
     setup() {
       const fontSizes = [
         {
@@ -21,7 +23,7 @@ export const TypographySystem: Story = {
         {
           var: '--font-size-sm',
           val: '0.85rem (13.6px)',
-          usage: 'Sekundärtexte, Card-Actions (.card-action-btn), Hinweise',
+          usage: 'Sekundärtexte, Card-Actions (.btn--card-action), Hinweise',
         },
         {
           var: '--font-size-md',
@@ -54,7 +56,7 @@ export const TypographySystem: Story = {
         <!-- Semantische Textbausteine -->
         <h3 style="margin-bottom: 16px; border-bottom: 1px solid var(--color-border); padding-bottom: 4px;">Semantische Textbausteine</h3>
         <div style="padding: 20px; border: 1px solid var(--color-border); border-radius: var(--radius-md-squircle); background: var(--color-surface); box-shadow: var(--shadow-sm); margin-bottom: 32px;">
-          <span class="kicker">Kicker / Pre-Heading Label</span>
+          <Kicker>Kicker / Pre-Heading Label</Kicker>
           <h1 style="margin-bottom: 12px;">H1 Seitentitel (700 Bold, -0.01em Tracking)</h1>
           <h2 style="margin-bottom: 10px;">H2 Sektions-Überschrift (600 Semi-Bold)</h2>
           <h3 style="margin-bottom: 8px;">H3 Kompakter Gruppen-Titel (600 Semi-Bold)</h3>
@@ -69,17 +71,17 @@ export const TypographySystem: Story = {
           </p>
 
           <div style="margin-top: 20px;">
-            <span class="kicker">Monospace & Code-Bausteine</span>
+            <Kicker>Monospace & Code-Bausteine</Kicker>
             <p style="margin: 4px 0 0;">Code-Bausteine werden in dezentem <code style="padding: 2px 6px; background: var(--color-hover); border-radius: 4px;">code</code>-Span mit hellbepolstertem Hintergrund hervorgehoben.</p>
           </div>
 
           <div style="margin-top: 20px; display: flex; gap: 24px; flex-wrap: wrap;">
             <div>
-              <span class="kicker" style="display: block; margin-bottom: 4px;">Button-Label Typografie</span>
+              <Kicker style="display: block; margin-bottom: 4px;">Button-Label Typografie</Kicker>
               <button style="padding: 8px 16px; background: var(--color-primary); color: white; border: none; border-radius: var(--radius-sm-squircle); font-weight: 600; font-family: inherit; font-size: 0.9rem;">Haupt-Button Text (600)</button>
             </div>
             <div>
-              <span class="kicker" style="display: block; margin-bottom: 4px;">Badge-Label Typografie</span>
+              <Kicker style="display: block; margin-bottom: 4px;">Badge-Label Typografie</Kicker>
               <Badge variant="primary">Primary Badge Text (600)</Badge>
             </div>
           </div>

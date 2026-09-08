@@ -46,6 +46,7 @@ import BudgetMeter from '../components/BudgetMeter.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import AppIcon from '../components/AppIcon.vue';
 import Button from '../components/primitives/Button.vue';
+import DetailRow from '../components/primitives/DetailRow.vue';
 import WeatherIcon from '../components/WeatherIcon.vue';
 import WeatherDayDetailDialog from '../components/WeatherDayDetailDialog.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
@@ -662,24 +663,22 @@ function formatWeekdayDate(d: string) {
         <p class="weather-section-label">
           <AppIcon :icon="ACTION_ICONS.region" :size="14" group="actions" /> Reiseregion
         </p>
-        <p v-if="regionInfo.languages.length" class="detail-row">
-          <span class="detail-label">Sprache</span>{{ regionInfo.languages.join(', ') }}
-        </p>
-        <p v-if="regionInfo.currency" class="detail-row">
-          <span class="detail-label">Währung</span>
+        <DetailRow v-if="regionInfo.languages.length" label="Sprache">
+          {{ regionInfo.languages.join(', ') }}
+        </DetailRow>
+        <DetailRow v-if="regionInfo.currency" label="Währung">
           <AppIcon :icon="ACTION_ICONS.currency" :size="14" group="actions" />
           {{ regionInfo.currency.name }} ({{ regionInfo.currency.code }})
           <span v-if="regionInfo.exchangeRate != null">
             · 1 {{ regionInfo.currency.code }} ≈ {{ regionInfo.exchangeRate.toFixed(2) }}
             {{ homeCurrency.currency }}
           </span>
-        </p>
-        <p v-if="regionInfo.advisory" class="detail-row">
-          <span class="detail-label">Sicherheit</span>
+        </DetailRow>
+        <DetailRow v-if="regionInfo.advisory" label="Sicherheit">
           <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" />
           {{ regionInfo.advisory.message }}
           <span class="region-advisory-score">({{ regionInfo.advisory.score.toFixed(1) }}/5)</span>
-        </p>
+        </DetailRow>
         <!-- Nennt nur Quellen, die tatsächlich zu einer der Zeilen oben beigetragen haben (siehe
              regionSourceParts) - und verlinkt nur zur Heimatwährungs-Auswahl, wenn ein Wechselkurs
              auch wirklich mit dabei ist (analog zum "Quelle: Open-Meteo"-Hinweis beim Wetter oben). -->
@@ -1130,6 +1129,7 @@ function formatWeekdayDate(d: string) {
 }
 
 .weather-day {
+  position: relative;
   flex: 0 0 auto;
   display: flex;
   flex-direction: column;
@@ -1140,6 +1140,20 @@ function formatWeekdayDate(d: string) {
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   background: var(--color-hover);
+}
+
+.day-alert-icon {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+}
+
+.day-alert-icon.warning {
+  color: var(--color-warning-dark);
+}
+
+.day-alert-icon.danger {
+  color: var(--color-danger-dark);
 }
 
 /* Bereits vergangene Urlaubstage (Rückblick-Modus, siehe vacationPhase 'over') optisch abgesetzt -
@@ -1325,38 +1339,6 @@ function formatWeekdayDate(d: string) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-}
-
-.weather-alert-card {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-md-squircle);
-  corner-shape: squircle;
-  font-size: 0.85rem;
-}
-
-.weather-alert-card.warning {
-  background: var(--color-warning-tint);
-  color: var(--color-warning-dark);
-  border: 1px solid var(--color-warning);
-}
-
-.weather-alert-card.danger {
-  background: var(--color-danger-tint);
-  color: var(--color-danger-dark);
-  border: 1px solid var(--color-danger);
-}
-
-.weather-alert-card .alert-content {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.weather-alert-card .alert-content strong {
-  font-size: 0.85rem;
 }
 
 .weather-alert-badge {

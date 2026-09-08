@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue';
 import type { IconDef } from '../utils/icon';
 import AppIcon from './AppIcon.vue';
+import Input from './primitives/Input.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
 // Combobox.vue: Custom Dropdown-/Freitext-Auswahlfeld mit einheitlichem Styling.
@@ -15,19 +16,28 @@ const props = withDefaults(
     iconFor?: (option: string) => string;
     iconDefFor?: (option: string) => IconDef | undefined;
     colorFor?: (option: string) => string | undefined;
+    size?: 'sm' | 'md' | 'lg';
+    disabled?: boolean;
+    required?: boolean;
+    invalid?: boolean;
+    id?: string;
+    name?: string;
   }>(),
-  { modelValue: '' }
+  { modelValue: '', size: 'md', disabled: false, required: false, invalid: false }
 );
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: string): void;
   (e: 'select', value: string): void;
+  (e: 'blur', event: FocusEvent): void;
+  (e: 'focus', event: FocusEvent): void;
 }>();
 
 const open = ref(false);
+const inputRef = ref<InstanceType<typeof Input> | null>(null);
 
 const filteredOptions = computed(() => {
-  const q = props.modelValue.trim().toLowerCase();
+  const q = (props.modelValue ?? '').trim().toLowerCase();
   if (!q) return props.options;
   return props.options.filter((o) => o.toLowerCase().includes(q));
 });
@@ -38,16 +48,25 @@ function selectOption(option: string) {
   open.value = false;
 }
 
-function onBlur() {
+function onBlur(event: FocusEvent) {
   window.setTimeout(() => {
     open.value = false;
   }, 150);
+  emit('blur', event);
+}
+
+function onFocus(event: FocusEvent) {
+  open.value = true;
+  emit('focus', event);
 }
 
 defineExpose({
   close: () => {
     open.value = false;
     return true;
+  },
+  focus: () => {
+    inputRef.value?.$el?.focus();
   },
 });
 
@@ -57,20 +76,27 @@ defineOptions({
 </script>
 
 <template>
-  <div class="combobox" :class="{ open }">
-    <!-- eslint-disable-next-line vuejs-accessibility/form-control-has-label -->
-    <input
+  <div class="combobox" :class="[{ open }, size !== 'md' ? `combobox--${size}` : undefined]">
+    <Input
+      ref="inputRef"
       v-bind="$attrs"
+      :id="id"
+      :name="name"
       type="text"
-      :value="modelValue"
+      :model-value="modelValue ?? ''"
       :placeholder="placeholder"
-      @input="emit('update:modelValue', ($event.target as HTMLInputElement).value)"
-      @focus="open = true"
+      :size="size"
+      :disabled="disabled"
+      :required="required"
+      :invalid="invalid"
+      class="combobox-input"
+      @update:model-value="emit('update:modelValue', $event)"
+      @focus="onFocus"
       @blur="onBlur"
     />
     <AppIcon
       :icon="ACTION_ICONS.chevronDown"
-      :size="14"
+      :size="size === 'sm' ? 12 : 14"
       group="actions"
       class="combobox-caret"
       :class="{ open }"
@@ -114,9 +140,20 @@ defineOptions({
   align-items: center;
 }
 
-.combobox input {
+.combobox :deep(.combobox-input),
+.combobox :deep(input) {
   width: 100%;
   padding-right: 36px;
+}
+
+.combobox--sm :deep(.combobox-input),
+.combobox--sm :deep(input) {
+  padding-right: 28px;
+}
+
+.combobox--lg :deep(.combobox-input),
+.combobox--lg :deep(input) {
+  padding-right: 42px;
 }
 
 .combobox-caret {
@@ -131,6 +168,10 @@ defineOptions({
 
 .combobox-caret.open {
   transform: translateY(-50%) rotate(180deg);
+}
+
+.combobox--sm .combobox-caret {
+  right: 8px;
 }
 
 .options {

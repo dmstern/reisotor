@@ -8,9 +8,9 @@ stehen. Bei jedem neuen UI-Baustein oder jeder sichtbaren UI-Änderung hier kurz
 bestehendes Muster zutrifft, statt ad hoc neue Werte zu erfinden – und diese Datei ergänzen, wenn
 dabei ein neues, wiederverwendbares Prinzip entsteht.
 
-Für architektonische/UX-Ablauf-Muster (Querverweise springen zur Ursprungs-View, Undo-Delete,
-Echtzeit-Highlight, …) siehe stattdessen den Abschnitt "Konsistenz-Check bei Änderungen" in
-`AGENTS.md` – hier geht es nur um die visuelle Ebene.
+Für architektonische Leitplanken, Kapselungsregeln (`style.css` vs. Komponenten-Styles), Clean-Code-Prinzipien
+und den Entwickler-Workflow siehe `AGENTS.md` – diese Datei (`DESIGN.md`) beschränkt sich strikt auf die visuelle
+Ebene, Design-Tokens und die Spezifikation des Design Systems.
 
 ## Konsistenz (wichtigstes Prinzip)
 
@@ -20,9 +20,11 @@ wurde. Der Nutzer sieht keinen Unterschied zwischen "das ist ein natives `<selec
 eine custom Combobox.vue" – beide sind für ihn einfach "ein Dropdown" und müssen deshalb exakt
 gleich hoch sein und gleich aussehen. Das gilt für jede der unten dokumentierten Kategorien:
 
-- **Primitive Komponenten & Styles**: Surface- und Interaktions-Primitives (`Button.vue`, `Card.vue`, `Input.vue`, `PickerMenu.vue`, `DropdownItem.vue`, `Badge.vue` unter `components/primitives/`) kapseln ihre eigenen Varianten-Styles (Schatten, Varianten-Klassen, Größen, Squircle-Rundung) intern in der Komponente. Globale Styles in `style.css` enthalten nur minimale Resets – rohe `<button>`-Elemente bekommen z. B. keinen pauschalen Schatten aufgedrückt, um `box-shadow: none`-Overrides zu vermeiden.
-  - _Anti-Pattern "Scoped styles werden nicht geteilt, daher Kopie" strikt verboten:_ Niemals identische CSS-Klassen und DOM-Strukturen (wie ehemals `.picker-menu`, `.picker-backdrop`) über mehrere Views duplizieren. Sobald ein Oberflächen- oder Menü-Container an mehr als einer Stelle benötigt wird, gehört er als Primitive nach `components/primitives/`.
-  - _Keine konkurrierenden Kind-Selektoren:_ Container-Komponenten dürfen Kind-Elemente von Primitives nicht über generische Tag-Selektoren (z. B. `.picker-menu button`) umstylen; Anpassungen gehören über Props oder gezielte Klassen in das Primitive selbst.
+- **UI-Primitives & Komponenten**: Wiederkehrende Oberflächen-, Layout- und Interaktionsbausteine
+  (`Button.vue`, `IconButton.vue`, `Card.vue`, `Input.vue`, `PickerMenu.vue`, `DropdownItem.vue`,
+  `Badge.vue`, `DetailRow.vue`, `EmptyState.vue`, etc. unter `components/primitives/`) teilen dieselbe
+  visuelle Sprache (Schatten, Padding, Squircle-Rundung, Zustände) und werden zentral über diese Primitives
+  konsistent gehalten. (Die architektonische Kapselungsgrenze zu `style.css` ist verbindlich in `AGENTS.md` geregelt.)
 - **Farben**: nur `--color-*`-Variablen, nie ein neuer Hex-Wert lokal (Abschnitt "Farben").
 - **Abstände**: nur `--space-*`-Stufen, kein freier px-Wert (Abschnitt "Abstände").
 - **Formen/Eckenrundung**: Kreisbogen vs. Squircle konsequent nach Elementtyp, nie gemischt
@@ -50,14 +52,8 @@ gleich hoch sein und gleich aussehen. Das gilt für jede der unten dokumentierte
   keinen eigenen Abschnitt dafür gibt. Beim Bauen aktiv mitdenken statt nur die oben gelisteten
   Kategorien als abschließend zu behandeln.
 
-**Praktische Konsequenz beim Bauen/Ändern von UI:** vor jedem neuen UI-Baustein oder jeder
-sichtbaren Design-Anpassung aktiv im Rest der App nachschauen, ob es dafür schon ein Muster/eine
-Komponente/einen Token gibt (grep auf ähnliche Bezeichner/Klassen/Werte, nicht nur an der gerade
-bearbeiteten Stelle schauen) – wiederverwenden statt eine zweite, leicht abweichende Variante
-daneben zu bauen. Wird dabei eine neue Design-Anforderung erkennbar, die auch an anderen, gerade
-nicht angefragten Stellen mit demselben Muster gelten würde: siehe AGENTS.md, Abschnitt
-"Konsistenz-Check bei Änderungen" für das Vorgehen dabei (dort jetzt: aktiv nachfragen statt
-eigenmächtig zu entscheiden, ob mitgezogen wird oder nicht).
+Vor dem Hinzufügen neuer Farben, Abstände oder Komponenten immer erst die bestehenden Tokens und
+Primitives in diesem Dokument prüfen (siehe Workflow-Regeln in `AGENTS.md`).
 
 ## Desktop UND Mobile – nie nur eines im Kopf
 
@@ -422,14 +418,14 @@ oben, funktioniert offline). Keine weiteren Schriftfamilien einführen.
 
 ### Schriftgrößen-Skala & CSS-Tokens
 
-| Variable          | Wert               | Typischer Einsatz                                          |
-| ----------------- | ------------------ | ---------------------------------------------------------- |
-| `--font-size-xs`  | `0.75rem` (12px)   | Pre-Heading Kicker, Badges, Formular-Meta & Labels         |
-| `--font-size-sm`  | `0.85rem` (13.6px) | Sekundärtexte, Card-Actions (`.card-action-btn`), Hinweise |
-| `--font-size-md`  | `1rem` (16px)      | Standard Fließtext, Text-Inputs, Haupt-Buttons             |
-| `--font-size-lg`  | `1.15rem` (18.4px) | H3 Überschriften, Subheadings, Dialog-Titel                |
-| `--font-size-xl`  | `1.3rem` (20.8px)  | H2 Sektions-Überschriften, Kachel-Titel                    |
-| `--font-size-2xl` | `1.6rem` (25.6px)  | H1 Haupt-Seitentitel (700 Bold, `-0.01em` Tracking)        |
+| Variable          | Wert               | Typischer Einsatz                                           |
+| ----------------- | ------------------ | ----------------------------------------------------------- |
+| `--font-size-xs`  | `0.75rem` (12px)   | Pre-Heading Kicker, Badges, Formular-Meta & Labels          |
+| `--font-size-sm`  | `0.85rem` (13.6px) | Sekundärtexte, Card-Actions (`.btn--card-action`), Hinweise |
+| `--font-size-md`  | `1rem` (16px)      | Standard Fließtext, Text-Inputs, Haupt-Buttons              |
+| `--font-size-lg`  | `1.15rem` (18.4px) | H3 Überschriften, Subheadings, Dialog-Titel                 |
+| `--font-size-xl`  | `1.3rem` (20.8px)  | H2 Sektions-Überschriften, Kachel-Titel                     |
+| `--font-size-2xl` | `1.6rem` (25.6px)  | H1 Haupt-Seitentitel (700 Bold, `-0.01em` Tracking)         |
 
 ### Semantische Textbausteine
 
@@ -469,15 +465,15 @@ Rest der App.
 
 ### Page Container-Breiten (`max-width`)
 
-- **`.page` (960px)**: Standard-Hülle in `style.css` (`max-width: 960px; margin: 0 auto; padding: var(--space-4)`) für einspaltige Lesbarkeit (Tagebuch, Notizen, Einstellungen, Dashboard).
+- **`.page` (960px)**: Standard-Hülle für einspaltige Lesbarkeit (Tagebuch, Notizen, Einstellungen, Dashboard) – als globale Layout-Klasse `.page` in `style.css` definiert (`max-width: 960px; margin: 0 auto; padding: var(--space-4)`).
 - **Wide Page Container (1400px)**: Für mehrspaltige Tabellen- & Listenansichten (`BudgetView.vue`, `ListenView.vue`).
 - **Full-Split Page Container (1600px)**: Maximale Breite für Karte + Spot-Listen Split-Screen (`ExcursionsView.vue`).
 - **Dialog & Modal Container (480px / 900px)**: Standard-Modals (`max-width: 480px` in `Modal.vue`) & breite Formular-Modals (`900px`).
 
 ### Raster-Systeme (`.grid` vs. `.masonry`)
 
-- **`.grid`**: Responsive Auto-Fit Grid (`display: grid; gap: var(--space-3); grid-template-columns: repeat(auto-fit, minmax(280px, 1fr))`) für gleichmäßige Kachel-Ansichten.
-- **`.masonry`**: CSS Multi-Column (`column-width: 280px; column-gap: var(--space-3)`) für Karten variabler Höhe (Notizen & Tagebuch).
+- **`.grid`**: Globales CSS-Grid-Grundgerüst in `style.css` (`display: grid; gap: var(--space-3);`) für gleichmäßige Kachel- und Raster-Ansichten. Spezifische Spaltenkonfigurationen (z. B. `grid-template-columns: repeat(auto-fit, minmax(240px, 1fr))` für Dashboard-Kacheln) setzt die jeweilige View über ihre Inhalts-Klasse (wie `.cards`).
+- **`.masonry`**: Globales CSS Multi-Column-Grundgerüst in `style.css` (`column-gap: var(--space-3); break-inside: avoid;`) für Karten variabler Höhe (z. B. Notizen in `NotesView.vue`). Die responsive Spaltenbreite (`column-width: 280px`) steuert die View über ihre Inhalts-Klasse.
 
 ## Icons
 
@@ -619,7 +615,9 @@ Für seiteninterne Register-Navigation (z. B. `SettingsView.vue`, `ListenView.vu
 ## Formularfelder und Design System Primitives
 
 Reisotor etabliert saubere Design-System-Primitives (`frontend/src/components/primitives/`, Issue #239)
-für elementare UI-Bausteine:
+für elementare UI-Bausteine. Formularelemente werden **nicht** über globale Tag-Styles in `style.css` mit
+Reisotor-Design (Rahmen, Schatten, Squircle-Formen) versehen, sondern ausschließlich über die Primitives, um
+unerwünschte Vererbungen in Spezialfällen (z. B. ungerahmte Inputs in `QuickAddRow.vue`) zu vermeiden:
 
 - **`Button.vue`**: Zentrales Primitive für alle Schaltflächen. Unterstützt `variant` (`primary`,
   `secondary`, `danger`, `card-action`, `ghost`), `size` (`sm`, `md`, `lg`) und den **Disabled-Zustand**
@@ -629,18 +627,34 @@ für elementare UI-Bausteine:
 - **`IconButton.vue`**: Spezielles Primitive für reine Icon- und Emoji-Schaltflächen (Avatar-Auswahl,
   Verschiebe-Aktionen, Close-/Toggle-Buttons). Standardmäßig komplett ohne Rahmen, Schatten oder
   Hintergrund (`variant="ghost"`), mit sanftem Hover- und aktivem Auswahlstatus (`active`).
-- **`Card.vue`**: Basis-Fläche für Spots, Touren, Budget-Töpfe, Notizen und Fokus-Panels. Unterstützt
-  `variant` (`default`, `muted` für hinterlegte Flächen, `flat` ohne Schatten, `elevated` mit verstärktem Schatten `var(--shadow-md)`,
-  `tile` für Dashboard-Kacheln). **Zustände:** `condensed` ist ein **Zustand/Prop** (komprimiertes Padding & schmale Miniatur-Banner links),
-  der per `expandable` Prop interaktiv per Klick in die volle/aufgeklappte Ansicht wechselt (`#expanded` Slot, analog zu `SpotCard.vue`/`ExcursionCard.vue` in der Karten-View).
-  Echtzeit-Highlighting (`highlight` prop / `.new-highlight`).
 - **`Input.vue`**: Wiederverwendbares Primitive für einzeilige Eingabefelder (`text`, `number`,
   `date`, `time`, `datetime-local`, `email`, `url`, `search`, etc.). Behandelt standardmäßiges
   Squircle-Styling, `min-height: 44px`, Focus-Ringe, Disabled-State, `size` (`sm`, `md`, `lg`),
   `invalid`-Zustand (`aria-invalid`, rote Umrandung) und den Chromium-Höhenausgleich für
   Datums-/Zeitauswahlen.
-- **Badges & Indikatoren**: `.badge` als leichtgewichtiger Chip für Zustände (`.badge--primary`,
+- **`Select.vue`**: Dropdown-Auswahlfeld-Primitive. Kapselt Squircle-Styling, Höhenkonsistenz mit `Input.vue`
+  (`min-height: 44px`), benutzerdefiniertes Pfeil-Icon (automatisch hell/dunkel je nach Theme), Fokus-Ringe,
+  `size` (`sm`, `md`, `lg`) sowie `invalid`-Zustand.
+- **`Textarea.vue`**: Mehrzeiliges Texteingabefeld-Primitive für längere Texte (z. B. Feedback). Kapselt Squircle-Styling,
+  Fokus-Ringe, Resize-Verhalten (`vertical`) und Fehlerzustände.
+- **`Checkbox.vue`**: Checkbox-Primitive für alle Abhake- und Auswahl-Interaktionen der App (ToDo, Packliste,
+  Einkauf, Einstellungen etc.). Kapselt die Reisotor-Custom-Häkchen-Optik (`appearance: none`, SVG-Häkchen,
+  Squircle-Eckenrundung) und unterstützt sowohl Booleans als auch Array-Bindungen (`v-model`) sowie `checked`-Props.
+- **`Card.vue`**: Basis-Fläche für Spots, Touren, Budget-Töpfe, Notizen und Fokus-Panels. Unterstützt
+  `variant` (`default`, `muted` für hinterlegte Flächen, `flat` ohne Schatten, `elevated` mit verstärktem Schatten `var(--shadow-md)`,
+  `tile` für Dashboard-Kacheln). **Zustände:** `condensed` ist ein **Zustand/Prop** (komprimiertes Padding & schmale Miniatur-Banner links),
+  der per `expandable` Prop interaktiv per Klick in die volle/aufgeklappte Ansicht wechselt (`#expanded` Slot, analog zu `SpotCard.vue`/`ExcursionCard.vue` in der Karten-View).
+  Echtzeit-Highlighting (`highlight` prop / `.new-highlight`).
+- **`Badge.vue` & Indikatoren**: `.badge` als leichtgewichtiger Chip für Zustände (`.badge--primary`,
   `.badge--success`, `.badge--danger`, `.badge--accent`), sowie 🔒 Privat (nur für 1 Person) vs. 🤝 Geteilt (für alle Mitreisenden).
+- **`Dropdown.vue`**: Dropdown-Trigger-Container-Primitive. Kapselt `.dropdown`, `.dropdown__button` und `.dropdown__field` gemäß BEM-System mit Slot für Menüs (`PickerMenu.vue`).
+- **`PickerMenu.vue` & `DropdownItem.vue`**: Wiederverwendbare Popover-Menüs und Menü-Einträge für Filter-, Aktionen- und Options-Menüs mit Fokus-Management und Backdrop.
+- **`CheckableListItem.vue`**: Wiederverwendbare Primitive für abhakbare Listeneinträge (`ShoppingListView`, `TodoView`, `PackingItem`). Kapselt Zeilen-Layout, Trennlinien, Strikethrough-Text (`row__text--done`), Done-Transparenz (`row--done`) und Echtzeit-Highlighting (`row--highlighted`).
+- **`DetailRow.vue`**: Standardisierte Schlüssel-Wert-Zeile mit Icon, Label und Wert für Detailansichten, Modals und Listen.
+- **`EmptyState.vue`**: Einheitlicher Leerzustand mit Icon, Titel, Beschreibung und optionaler Aktions-Schaltfläche.
+- **`Kicker.vue`**: Kleiner Eyebrow-/Kicker-Text (`.kicker`) oberhalb von Hauptüberschriften.
+- **`UnseenDot.vue`**: Diskreter Indikator-Punkt für ungesehene bzw. geänderte Inhalte aus dem Echtzeit-Sync.
+- **`WeatherAlertCard.vue`**: Dedizierte Komponente (`frontend/src/components/WeatherAlertCard.vue`) für Wetterwarnungen (`warning`, `danger`).
 - **`FormField.vue`**: Einheitlicher Feld-Wrapper für Anlege- und Bearbeiten-Formulare (Icon + Label).
 
 Reine Beschriftung eines Textfelds per HTML-`placeholder` verschwindet, sobald das Feld einen Wert

@@ -8,9 +8,11 @@ const meta: Meta<typeof Combobox> = {
   argTypes: {
     modelValue: { control: 'text' },
     placeholder: { control: 'text' },
+    size: { control: 'select', options: ['sm', 'md', 'lg'] },
   },
   args: {
     modelValue: '',
+    size: 'md',
     options: [
       'Essen & Trinken',
       'Sehenswürdigkeiten',
@@ -26,6 +28,20 @@ export default meta;
 type Story = StoryObj<typeof Combobox>;
 
 export const Default: Story = {
+  render: (args) => ({
+    components: { Combobox },
+    setup() {
+      return { args };
+    },
+    template:
+      '<div style="max-width: 300px; min-height: 220px;"><Combobox v-bind="args" @update:modelValue="args.modelValue = $event" /></div>',
+  }),
+};
+
+export const Small: Story = {
+  args: {
+    size: 'sm',
+  },
   render: (args) => ({
     components: { Combobox },
     setup() {

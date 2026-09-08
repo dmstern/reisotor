@@ -170,13 +170,6 @@ Stelle):
   mehrerer Views mit bisher unterschiedlichem Muster): die Beobachtung nennen und (z. B. per
   `AskUserQuestion`) nachfragen statt eigenmächtig zu entscheiden oder mitzuändern.
 
-**Neue UI-Bausteine/Design-Anforderungen** (nicht nur reines Bugfix-Nachziehen): vor dem Bauen aktiv
-im Rest der App nachschauen, was es dafür schon gibt (grep auf ähnliche Komponenten/Klassen/
-Konzepte), statt eine zweite, leicht abweichende Variante danebenzubauen — siehe `DESIGN.md`,
-Abschnitt "Konsistenz", für konkret schon aufgetretene Fälle (native `<select>` vs. custom
-`Combobox.vue`, mehrere parallele Label-Stile, uneinheitliche Filter-/Gruppieren-/Sortieren-
-Präsentation je View).
-
 - **Keine CSS-Kopien zwischen Views ("Scoped styles werden nicht geteilt, daher eigene Kopie"-Anti-Pattern)**:
   Wenn ein Oberflächen-, Popover- oder Interaktionsmuster (wie Popover-Menüs, Dropdowns, Card-Surfaces,
   Backdrops, Badges) in mehr als einer Komponente gebraucht wird, darf der CSS-Block NIEMALS in die
@@ -188,17 +181,18 @@ Präsentation je View).
 - **Proaktives Clean-Code-Refactoring**: Fallen beim Arbeiten an einer Stelle redundante Kopien
   auf (wie ehemals verstreute `.picker-menu`-Blöcke), diese nicht durch einen weiteren Klon ergänzen,
   sondern in eine wiederverwendbare Abstraktion überführen.
-
-Beim Erstellen neuer wiederverwendbarer UI-Komponenten (`frontend/src/components/*.vue`)
-immer direkt eine zugehörige Storybook-Story-Datei (`*.stories.ts`) anlegen, damit Zustände der Komponente
-isoliert getestet und dokumentiert sind.
-
-Für Datenmodell-Änderungen gilt zusätzlich der Migrations-Check im nächsten Abschnitt. Bei neuen
-UI-Elementen oder sichtbaren UI-Anpassungen zusätzlich `DESIGN.md` (Projekt-Root) konsultieren —
-hält Farben/Abstände/Eckenrundung (Squircle-Prinzip)/Typografie/Breakpoints/Icon-Konventionen als
-wiederverwendbare Prinzipien fest, damit neue Elemente bestehende Tokens/Muster nutzen statt neue
-Werte ad hoc zu erfinden. Entsteht dabei ein neues, wiederverwendbares Prinzip, dort ergänzen statt
-es nur implizit im CSS/einer Komponente stehen zu lassen.
+- **`style.css` für globale Basis-Stile, Design-Tokens und Layout-Grundgerüste**:
+  `frontend/src/style.css` enthält NUR grundsätzliche, globale Seiten-Styles und Layout-Infos: globale Dokument-Resets, native HTML-Element-Defaults (`html`, `body`, `#app`, `h1`-`h6`, `p`, `a`, Formularelemente wie `button`, `input`, `select`, `textarea`, Fokus-Ringe und `<Transition>`-Klassen), Design-Tokens (`:root`, Theme-Variablen) sowie universelle Layout-Grundklassen (`.page`, `.grid`, `.masonry`).
+  Style für wiederverwendbare Komponenten (wie z. B. `Card.vue`, `Button.vue`, `Badge.vue`, `DropdownItem.vue`, `DetailRow.vue`, `EmptyState.vue` etc.) gehört zwingend in die jeweilige Komponente unter `frontend/src/components/`!
+- **Neue UI-Bausteine, Styling & `DESIGN.md`**: Vor dem Bauen neuer UI-Elemente aktiv im Rest der App
+  nachschauen (grep auf bestehende Komponenten/Klassen), statt Varianten danebenzubauen. Bei neuen
+  UI-Elementen oder sichtbaren UI-Anpassungen stets `DESIGN.md` (Projekt-Root) konsultieren: dort
+  sind Design-Tokens (Farben, Abstände, Squircle-Formen, Schatten, Typografie, Breakpoints), Icons
+  und die Spezifikationen der Primitives verbindlich dokumentiert. Entsteht dabei ein neues, wiederverwendbares
+  Prinzip, dort ergänzen statt es nur implizit im Code zu hinterlassen.
+- **Storybook für neue Komponenten**: Beim Erstellen neuer wiederverwendbarer UI-Komponenten
+  (`frontend/src/components/*.vue` bzw. `primitives/`) immer direkt eine zugehörige Storybook-Story-Datei
+  (`*.stories.ts`) anlegen, damit Zustände isoliert getestet und dokumentiert sind.
 
 ## Datenmodell-Änderungen (DB-Migrationen)
 

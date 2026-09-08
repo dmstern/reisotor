@@ -170,6 +170,7 @@ test.describe('Generate Clean Production Baseline Screenshots (Full HD)', () => 
   }
 
   test('Capture screenshots for landing page', async ({ page }) => {
+    test.setTimeout(90000);
     for (const vp of VIEWPORTS) {
       await page.setViewportSize({ width: vp.width, height: vp.height });
       await forceFontDisplayBlock(page);

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import Button from './primitives/Button.vue';
+import Input from './primitives/Input.vue';
 import { computed, ref } from 'vue';
 import type { Budget } from '../api/types';
 import { useBudgetStore } from '../stores/budget';
@@ -99,11 +100,13 @@ function updateAllocationAmount(category: string, value: string) {
     <label for="auto-id-1788301175422-1" class="target-input">
       Ziel (gesamt, optional)
       <div class="target-input-row">
-        <input
+        <Input
           id="auto-id-1788301175422-1"
           v-model="targetInput"
           type="number"
           step="0.01"
+          size="sm"
+          class="target-input-field"
           placeholder="z. B. 500"
           @change="updateTargetAmount"
         />
@@ -121,10 +124,12 @@ function updateAllocationAmount(category: string, value: string) {
         />
         <div class="category-edit">
           <!-- eslint-disable-next-line vuejs-accessibility/form-control-has-label -->
-          <input
+          <Input
             type="number"
             step="0.01"
-            :value="a.amount"
+            size="sm"
+            class="category-amount-input"
+            :model-value="String(a.amount)"
             @change="updateAllocationAmount(a.category, ($event.target as HTMLInputElement).value)"
           />
           <DeleteButton small @click="store.removeAllocation(a.id)" />
@@ -139,10 +144,10 @@ function updateAllocationAmount(category: string, value: string) {
       </summary>
       <form class="add-category-form" @submit.prevent="addCategory">
         <FormField icon="category" label="Neue Kategorie" v-slot="{ id }">
-          <input :id="id" v-model="newCategory" type="text" placeholder="Neue Kategorie" />
+          <Input :id="id" v-model="newCategory" type="text" placeholder="Neue Kategorie" />
         </FormField>
         <FormField icon="amount" label="Ziel" v-slot="{ id }">
-          <input
+          <Input
             :id="id"
             v-model="newCategoryAmount"
             type="number"
@@ -211,7 +216,7 @@ function updateAllocationAmount(category: string, value: string) {
   gap: var(--space-1);
 }
 
-.target-input input {
+.target-input-field {
   width: 120px;
   max-width: 100%;
 }
@@ -235,7 +240,7 @@ function updateAllocationAmount(category: string, value: string) {
   flex-shrink: 0;
 }
 
-.category-edit input {
+.category-amount-input {
   width: 90px;
   max-width: 30vw;
 }

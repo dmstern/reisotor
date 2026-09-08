@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import type { IconDef } from '../../utils/icon';
+import { RouterLink, type RouteLocationRaw } from 'vue-router';
 import AppIcon from '../AppIcon.vue';
-import { useSlots } from 'vue';
+import { useSlots, computed, Comment } from 'vue';
 
 // Button-Primitive für alle Buttons (Formularknöpfe, Aktionsbuttons, Card-Actions, Icon-Only-Buttons) – siehe Issue #239.
-// Unterstützt sowohl Text, Text + Icon als auch reine Icon-Buttons.
+// Unterstützt sowohl Text, Text + Icon als auch reine Icon-Buttons, sowie Link-Rendering (to/href).
 
 const _props = withDefaults(
   defineProps<{
@@ -15,11 +16,9 @@ const _props = withDefaults(
      * - 'danger': Gefahrenbutton (gefüllt mit --color-danger + Schatten)
      * - 'card-action': Kompakter Karten-Aktionsbutton (Hintergrund --color-primary-tint)
      * - 'ghost': Dezent ohne Rahmen/Schatten für Toolbars/Untermenüs
-     * - 'dropdown': Optisch identisch mit nativem <select> — gleiche Höhe, Schriftfarbe, Border, Padding
      * - 'floating': Runder, schwebender Aktionsbutton (Oberflächen-Hintergrund, dunklerer Rand, Schatten)
      */
-    variant?:
-      'primary' | 'secondary' | 'danger' | 'card-action' | 'ghost' | 'dropdown' | 'floating';
+    variant?: 'primary' | 'secondary' | 'danger' | 'card-action' | 'ghost' | 'floating';
     /** Button-Größe: 'sm' (klein), 'md' (Standard), 'lg' (groß). */
     size?: 'sm' | 'md' | 'lg';
     /** Optionale IconDef-Definition für Tabler-Icon Rendering via AppIcon.vue */
@@ -38,6 +37,12 @@ const _props = withDefaults(
     title?: string;
     /** Ob der Button explizit im quadratischen Icon-Only-Modus gerendert werden soll. */
     iconOnly?: boolean;
+    /** Vue-Router Ziel für Link-Buttons. */
+    to?: RouteLocationRaw | string;
+    /** Externer Link für a-Buttons. */
+    href?: string;
+    /** Expliziter HTML-Tag (Fallback). */
+    as?: string;
   }>(),
   {
     variant: 'primary',
@@ -47,33 +52,88 @@ const _props = withDefaults(
     type: 'button',
     disabled: false,
     iconOnly: false,
+    to: undefined,
+    href: undefined,
+    as: undefined,
   }
 );
 
 const slots = useSlots();
 const hasDefaultSlot = () =>
   !!slots.default && slots.default().some((node) => node.type !== Comment);
+
+const btnClasses = computed(() => [
+  `btn--${_props.variant}`,
+  _props.size !== 'md' ? `btn--${_props.size}` : undefined,
+  _props.shape !== 'squircle' ? `btn--${_props.shape}` : undefined,
+  {
+    'is-disabled': _props.disabled,
+    'is-active': _props.active,
+    'btn--icon-only':
+      _props.iconOnly || _props.shape === 'circle' || (!hasDefaultSlot() && !!_props.icon),
+    'icon-only':
+      _props.iconOnly || _props.shape === 'circle' || (!hasDefaultSlot() && !!_props.icon),
+  },
+]);
 </script>
 
 <template>
+  <RouterLink
+    v-if="to"
+    :to="to"
+    :aria-label="ariaLabel"
+    :title="title"
+    class="btn"
+    :class="btnClasses"
+  >
+    <AppIcon
+      v-if="icon"
+      :icon="icon"
+      group="actions"
+      :size="size === 'sm' ? 15 : size === 'lg' ? 22 : 18"
+    />
+    <slot />
+  </RouterLink>
+  <a
+    v-else-if="href"
+    :href="href"
+    :aria-label="ariaLabel"
+    :title="title"
+    class="btn"
+    :class="btnClasses"
+  >
+    <AppIcon
+      v-if="icon"
+      :icon="icon"
+      group="actions"
+      :size="size === 'sm' ? 15 : size === 'lg' ? 22 : 18"
+    />
+    <slot />
+  </a>
+  <component
+    v-else-if="as"
+    :is="as"
+    :aria-label="ariaLabel"
+    :title="title"
+    class="btn"
+    :class="btnClasses"
+  >
+    <AppIcon
+      v-if="icon"
+      :icon="icon"
+      group="actions"
+      :size="size === 'sm' ? 15 : size === 'lg' ? 22 : 18"
+    />
+    <slot />
+  </component>
   <button
+    v-else
     :type="type"
     :disabled="disabled"
     :aria-label="ariaLabel"
     :title="title"
     class="btn"
-    :class="[
-      `btn--${variant}`,
-      variant === 'card-action' ? 'card-action-btn' : undefined,
-      variant === 'dropdown' ? 'dropdown-field' : undefined,
-      size !== 'md' ? `btn--${size}` : undefined,
-      shape !== 'squircle' ? `btn--${shape}` : undefined,
-      {
-        'is-disabled': disabled,
-        'is-active': active,
-        'icon-only': iconOnly || shape === 'circle' || (!hasDefaultSlot() && !!icon),
-      },
-    ]"
+    :class="btnClasses"
   >
     <AppIcon
       v-if="icon"
@@ -168,6 +228,7 @@ const hasDefaultSlot = () =>
 }
 
 /* Icon-only secondary: Rahmen ja, aber Icon monochrom statt primärgrün */
+.btn--secondary.btn--icon-only,
 .btn--secondary.icon-only {
   color: var(--color-text);
 }
@@ -211,7 +272,22 @@ const hasDefaultSlot = () =>
   background: var(--color-primary-tint);
   color: var(--color-primary-dark);
   font-size: 0.85rem;
-  box-shadow: none;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  line-height: 1.3;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.btn--card-action:hover:not(:disabled) {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
 }
 
 .btn--ghost {
@@ -244,16 +320,6 @@ const hasDefaultSlot = () =>
   border-color: var(--color-primary);
 }
 
-/* Dropdown-Trigger-Variante: Visuals komplett aus der globalen .dropdown-field-Klasse
-   in style.css — kein einziger Wert wird hier dupliziert. */
-.btn--dropdown {
-  cursor: pointer;
-}
-
-.btn--dropdown:hover:not(:disabled) {
-  background: var(--color-hover);
-}
-
 .btn--sm {
   padding: 6px 12px;
   font-size: 0.85rem;
@@ -267,6 +333,7 @@ const hasDefaultSlot = () =>
 }
 
 /* Icon-only Modus */
+.btn--icon-only,
 .btn.icon-only {
   padding: 0;
   flex-shrink: 0;
@@ -277,6 +344,7 @@ const hasDefaultSlot = () =>
   font-size: 1.3rem;
 }
 
+.btn--icon-only.btn--sm,
 .btn.icon-only.btn--sm {
   width: 30px;
   height: 30px;
@@ -285,6 +353,7 @@ const hasDefaultSlot = () =>
   font-size: 1.1rem;
 }
 
+.btn--icon-only.btn--lg,
 .btn.icon-only.btn--lg {
   width: 46px;
   height: 46px;

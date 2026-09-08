@@ -24,6 +24,7 @@ import PendingSyncBadge from './PendingSyncBadge.vue';
 import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
 import Card from './primitives/Card.vue';
+import DetailRow from './primitives/DetailRow.vue';
 import WeatherIcon from './WeatherIcon.vue';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
@@ -355,51 +356,45 @@ function onToggleDone() {
 
       <div class="spot-accordion" :class="{ 'is-expanded': expanded }" :inert="!expanded">
         <div class="spot-accordion-inner accordion-stagger">
-          <p v-if="creatorLabel" class="detail-row">
-            <span class="detail-label">Von</span>{{ creatorLabel }}
-          </p>
+          <DetailRow v-if="creatorLabel" label="Von">
+            {{ creatorLabel }}
+          </DetailRow>
           <template v-if="isAccommodation">
-            <p v-if="spot.start_date || spot.end_date" class="detail-row">
-              <span class="detail-label">Zeitraum</span>
+            <DetailRow v-if="spot.start_date || spot.end_date" label="Zeitraum">
               <AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" />
               {{ formatAccommodationDate(spot.start_date) || '?' }} –
               {{ formatAccommodationDate(spot.end_date) || '?' }}
-            </p>
-            <p v-if="spot.address" class="detail-row">
-              <span class="detail-label">Adresse</span>{{ spot.address }}
-            </p>
-            <p v-if="spot.checkin || spot.checkout" class="detail-row">
-              <span class="detail-label">Check-in/-out</span>
+            </DetailRow>
+            <DetailRow v-if="spot.address" label="Adresse">
+              {{ spot.address }}
+            </DetailRow>
+            <DetailRow v-if="spot.checkin || spot.checkout" label="Check-in/-out">
               {{ spot.checkin || '–' }} · {{ spot.checkout || '–' }}
-            </p>
-            <p
+            </DetailRow>
+            <DetailRow
               v-if="spot.contact && parseContact(spot.contact).kind === 'phone'"
-              class="detail-row"
+              label="Kontakt"
             >
-              <span class="detail-label">Kontakt</span>
               <AppIcon :icon="FORM_FIELD_ICONS.contact" :size="14" group="formFields" />
               <a :href="parseContact(spot.contact).href" @click.stop>{{ spot.contact }}</a>
-            </p>
-            <p
+            </DetailRow>
+            <DetailRow
               v-else-if="spot.contact && parseContact(spot.contact).kind === 'email'"
-              class="detail-row"
+              label="Kontakt"
             >
-              <span class="detail-label">Kontakt</span>
               <AppIcon :icon="FORM_FIELD_ICONS.email" :size="14" group="formFields" />
               <a :href="parseContact(spot.contact).href" @click.stop>{{ spot.contact }}</a>
-            </p>
-            <p v-else-if="spot.contact" class="detail-row">
-              <span class="detail-label">Kontakt</span>
+            </DetailRow>
+            <DetailRow v-else-if="spot.contact" label="Kontakt">
               <RichTextDisplay class="contact-text" :content="spot.contact" />
-            </p>
-            <p v-if="spot.amount != null" class="detail-row">
-              <span class="detail-label">Kosten</span>
+            </DetailRow>
+            <DetailRow v-if="spot.amount != null" label="Kosten">
               <AppIcon :icon="FORM_FIELD_ICONS.amount" :size="14" group="formFields" />
               {{ spot.amount.toFixed(2) }} €
               <span v-if="hasMultipleMembers !== false && spot.paid_by_user_id">
                 · bezahlt von {{ payerLabel }}</span
               >
-            </p>
+            </DetailRow>
           </template>
           <RichTextDisplay
             v-if="spot.note"

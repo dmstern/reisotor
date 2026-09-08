@@ -11,6 +11,7 @@ import FileAttachments from './FileAttachments.vue';
 import RichTextDisplay from './RichTextDisplay.vue';
 import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
+import DetailRow from './primitives/DetailRow.vue';
 
 // Eigenständige Komponente statt inline in TravelSection.vue, da dieser Dialog auch von anderer Stelle
 // geöffnet werden muss (TripMap.vue's Stationsliste, falls der Abflug-/Ankunftsort dort als
@@ -43,12 +44,10 @@ function travelDuration(item: TravelItem) {
     :placeholder-icon="travelTypeIconDef(item.type)"
     @edit="emit('edit')"
   >
-    <p v-if="item.from_location || item.to_location" class="detail-row">
-      <span class="detail-label">Strecke</span>
+    <DetailRow v-if="item.from_location || item.to_location" label="Strecke">
       {{ item.from_location || '?' }} → {{ item.to_location || '?' }}
-    </p>
-    <p v-if="item.date || item.departure_time" class="detail-row">
-      <span class="detail-label">Zeit</span>
+    </DetailRow>
+    <DetailRow v-if="item.date || item.departure_time" label="Zeit">
       <AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" />
       {{ item.date || '' }}
       <span v-if="item.departure_time">
@@ -56,27 +55,23 @@ function travelDuration(item: TravelItem) {
         }}<span v-if="item.arrival_time">–{{ item.arrival_time }}</span> Uhr
       </span>
       <span v-if="travelDuration(item)"> ({{ travelDuration(item) }})</span>
-    </p>
-    <p v-if="item.checkin_info" class="detail-row">
-      <span class="detail-label">Vorher da sein</span>
+    </DetailRow>
+    <DetailRow v-if="item.checkin_info" label="Vorher da sein">
       <AppIcon :icon="ACTION_ICONS.duration" :size="14" group="actions" /> {{ item.checkin_info }}
-    </p>
-    <p v-if="item.luggage" class="detail-row">
-      <span class="detail-label">Gepäck</span>
+    </DetailRow>
+    <DetailRow v-if="item.luggage" label="Gepäck">
       <AppIcon :icon="ACTION_ICONS.luggage" :size="14" group="actions" /> {{ item.luggage }}
-    </p>
-    <p v-if="item.seat" class="detail-row">
-      <span class="detail-label">Sitzplatz</span>
+    </DetailRow>
+    <DetailRow v-if="item.seat" label="Sitzplatz">
       <AppIcon :icon="ACTION_ICONS.seat" :size="14" group="actions" /> {{ item.seat }}
-    </p>
-    <p v-if="item.amount != null" class="detail-row">
-      <span class="detail-label">Kosten</span>
+    </DetailRow>
+    <DetailRow v-if="item.amount != null" label="Kosten">
       <AppIcon :icon="FORM_FIELD_ICONS.amount" :size="14" group="formFields" />
       {{ item.amount.toFixed(2) }} €
       <span v-if="hasMultipleMembers !== false && item.paid_by_user_id">
         · bezahlt von {{ payerLabel }}</span
       >
-    </p>
+    </DetailRow>
     <RichTextDisplay
       v-if="item.note"
       class="detail-row note"
@@ -85,9 +80,15 @@ function travelDuration(item: TravelItem) {
     />
     <FileAttachments domain="ideas" :entity-id="item.id" :editable="false" />
     <div class="detail-actions">
-      <a v-if="item.link" :href="item.link" target="_blank" rel="noopener" class="card-action-btn">
+      <Button
+        v-if="item.link"
+        :href="item.link"
+        target="_blank"
+        rel="noopener"
+        variant="card-action"
+      >
         {{ linkLabel(item.link) }} ↗
-      </a>
+      </Button>
       <Button
         v-if="item.from_lat != null && item.from_lng != null"
         variant="card-action"
@@ -125,5 +126,12 @@ function travelDuration(item: TravelItem) {
 <style scoped>
 .note {
   overflow-wrap: anywhere;
+}
+
+.detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
 }
 </style>

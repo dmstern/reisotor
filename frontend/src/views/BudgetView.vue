@@ -26,6 +26,7 @@ import AppIcon from '../components/AppIcon.vue';
 import Button from '../components/primitives/Button.vue';
 import Card from '../components/primitives/Card.vue';
 import Input from '../components/primitives/Input.vue';
+import Select from '../components/primitives/Select.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
 
@@ -324,10 +325,10 @@ const categoryColors = computed(() => {
             label="Sichtbarkeit"
             v-slot="{ id }"
           >
-            <select :id="id" v-model="newBudgetForm.kind">
+            <Select :id="id" v-model="newBudgetForm.kind">
               <option value="shared">Geteilt (alle sehen ihn)</option>
               <option value="personal">Privat (nur eine Person sieht ihn)</option>
-            </select>
+            </Select>
           </FormField>
           <FormField
             v-if="budgetStore.users.length > 1 && newBudgetForm.kind === 'personal'"
@@ -335,12 +336,12 @@ const categoryColors = computed(() => {
             label="Person"
             v-slot="{ id }"
           >
-            <select :id="id" v-model="newBudgetForm.owner_id" required>
+            <Select :id="id" v-model="newBudgetForm.owner_id" required>
               <option value="" disabled>Nutzer:in wählen…</option>
               <option v-for="u in budgetStore.users" :key="u.id" :value="String(u.id)">
                 {{ u.avatar }} {{ u.username }}
               </option>
-            </select>
+            </Select>
           </FormField>
           <FormField icon="amount" label="Gesamtziel (optional)">
             <Input
@@ -415,20 +416,20 @@ const categoryColors = computed(() => {
             label="Bezahlt von"
             v-slot="{ id }"
           >
-            <select :id="id" v-model="expenseForm.paid_by_user_id" required>
+            <Select :id="id" v-model="expenseForm.paid_by_user_id" required>
               <option value="" disabled>Bezahlt von…</option>
               <option v-for="u in budgetStore.users" :key="u.id" :value="String(u.id)">
                 {{ u.avatar }} {{ u.username }}
               </option>
-            </select>
+            </Select>
           </FormField>
           <FormField icon="pot" label="Budget-Topf" v-slot="{ id }">
-            <select :id="id" v-model="expenseForm.budget_id">
+            <Select :id="id" v-model="expenseForm.budget_id">
               <option value="">Kein Budget</option>
               <option v-for="b in budgetStore.budgets" :key="b.id" :value="String(b.id)">
                 {{ b.name }} ({{ budgetStore.budgetLabel(b) }})
               </option>
-            </select>
+            </Select>
           </FormField>
           <FormField icon="date" label="Datum">
             <Input v-model="expenseForm.date" type="date" />
@@ -468,20 +469,20 @@ const categoryColors = computed(() => {
       >
         <form class="add-form" @submit.prevent="submitTransfer">
           <FormField icon="person" label="Von" v-slot="{ id }">
-            <select :id="id" v-model="transferForm.from_user_id" required>
+            <Select :id="id" v-model="transferForm.from_user_id" required>
               <option value="" disabled>Von…</option>
               <option v-for="u in budgetStore.users" :key="u.id" :value="String(u.id)">
                 {{ u.avatar }} {{ u.username }}
               </option>
-            </select>
+            </Select>
           </FormField>
           <FormField icon="person" label="An" v-slot="{ id }">
-            <select :id="id" v-model="transferForm.to_user_id" required>
+            <Select :id="id" v-model="transferForm.to_user_id" required>
               <option value="" disabled>An…</option>
               <option v-for="u in budgetStore.users" :key="u.id" :value="String(u.id)">
                 {{ u.avatar }} {{ u.username }}
               </option>
-            </select>
+            </Select>
           </FormField>
           <FormField icon="amount" label="Betrag">
             <Input
@@ -539,20 +540,20 @@ const categoryColors = computed(() => {
           label="Bezahlt von"
           v-slot="{ id }"
         >
-          <select :id="id" v-model="editExpenseForm.paid_by_user_id" required>
+          <Select :id="id" v-model="editExpenseForm.paid_by_user_id" required>
             <option value="" disabled>Bezahlt von…</option>
             <option v-for="u in budgetStore.users" :key="u.id" :value="String(u.id)">
               {{ u.avatar }} {{ u.username }}
             </option>
-          </select>
+          </Select>
         </FormField>
         <FormField icon="pot" label="Budget-Topf" v-slot="{ id }">
-          <select :id="id" v-model="editExpenseForm.budget_id">
+          <Select :id="id" v-model="editExpenseForm.budget_id">
             <option value="">Kein Budget</option>
             <option v-for="b in budgetStore.budgets" :key="b.id" :value="String(b.id)">
               {{ b.name }} ({{ budgetStore.budgetLabel(b) }})
             </option>
-          </select>
+          </Select>
         </FormField>
         <FormField icon="date" label="Datum">
           <Input v-model="editExpenseForm.date" type="date" />

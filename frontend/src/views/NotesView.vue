@@ -24,6 +24,9 @@ import { useToast } from '../composables/useToast';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
 import AppIcon from '../components/AppIcon.vue';
 import Button from '../components/primitives/Button.vue';
+import Card from '../components/primitives/Card.vue';
+import EmptyState from '../components/primitives/EmptyState.vue';
+import Input from '../components/primitives/Input.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
 const auth = useAuthStore();
@@ -256,11 +259,11 @@ async function remove(id: number) {
     <p v-if="error" class="error">{{ error }}</p>
 
     <TransitionGroup tag="div" name="list" class="masonry cards">
-      <div
+      <Card
         v-for="note in notes"
         :key="note.id"
-        class="card note-card"
-        :class="{ 'new-highlight': highlightedIds.has(note.id) }"
+        class="note-card"
+        :highlight="highlightedIds.has(note.id)"
       >
         <div class="note-head">
           <h3 v-if="note.title">{{ note.title }}</h3>
@@ -290,9 +293,9 @@ async function remove(id: number) {
           @submit="(content) => submitComment(note.id, content)"
           @remove="removeComment"
         />
-      </div>
+      </Card>
     </TransitionGroup>
-    <p v-if="!notes.length" class="empty">Noch keine Notizen.</p>
+    <EmptyState v-if="!notes.length">Noch keine Notizen.</EmptyState>
 
     <Modal
       :model-value="editingNote !== null"
@@ -302,7 +305,7 @@ async function remove(id: number) {
     >
       <form class="add-form" @submit.prevent="submitEdit">
         <FormField icon="title" label="Titel" v-slot="{ id }">
-          <input :id="id" v-model="editForm.title" type="text" placeholder="Titel (optional)" />
+          <Input :id="id" v-model="editForm.title" type="text" placeholder="Titel (optional)" />
         </FormField>
         <RichTextEditor v-model="editForm.content" />
         <FileAttachments v-if="editingNote" domain="notes" :entity-id="editingNote.id" />

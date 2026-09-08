@@ -4,6 +4,8 @@ import type { ExcursionLeg, Spot, User } from '../api/types';
 import Modal from './Modal.vue';
 import FormField from './FormField.vue';
 import Button from './primitives/Button.vue';
+import Select from './primitives/Select.vue';
+import Input from './primitives/Input.vue';
 import AppIcon from './AppIcon.vue';
 import FileAttachments from './FileAttachments.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
@@ -159,24 +161,24 @@ function onDelete() {
       </div>
 
       <FormField icon="category" label="Verkehrsmittel">
-        <select v-model="form.transport_type">
+        <Select v-model="form.transport_type">
           <option v-for="t in TRANSPORT_TYPE_OPTIONS" :key="t" :value="t">
             {{ travelTypeIcon(t) }} {{ t }}
           </option>
-        </select>
+        </Select>
       </FormField>
 
       <div class="row">
         <FormField icon="time" label="Abfahrt / Abflug">
-          <input v-model="form.departure_time" type="time" />
+          <Input v-model="form.departure_time" type="time" />
         </FormField>
         <FormField icon="time" label="Ankunft">
-          <input v-model="form.arrival_time" type="time" />
+          <Input v-model="form.arrival_time" type="time" />
         </FormField>
       </div>
 
       <FormField icon="note" label="Vorher da sein / Treffpunkt">
-        <input
+        <Input
           v-model="form.checkin_info"
           type="text"
           placeholder="z. B. Gleis 4 / 2 Std. vorher am Flughafen"
@@ -185,10 +187,10 @@ function onDelete() {
 
       <div class="row">
         <FormField icon="note" label="Sitzplatz">
-          <input v-model="form.seat" type="text" placeholder="z. B. Wagen 21, Platz 44" />
+          <Input v-model="form.seat" type="text" placeholder="z. B. Wagen 21, Platz 44" />
         </FormField>
         <FormField icon="note" label="Gepäck">
-          <input
+          <Input
             v-model="form.luggage"
             type="text"
             placeholder="z. B. 1x Koffer 23kg, Handgepäck"
@@ -197,12 +199,12 @@ function onDelete() {
       </div>
 
       <FormField icon="link" label="Buchungslink / Ticket-URL">
-        <input v-model="form.ticket_link" type="url" placeholder="https://..." />
+        <Input v-model="form.ticket_link" type="url" placeholder="https://..." />
       </FormField>
 
       <div class="row">
         <FormField icon="amount" label="Ticketkosten (€)">
-          <input
+          <Input
             v-model="form.amount"
             type="number"
             step="0.01"
@@ -211,12 +213,12 @@ function onDelete() {
           />
         </FormField>
         <FormField v-if="users.length > 1" icon="shared" label="Bezahlt von">
-          <select v-model="form.paid_by_user_id">
+          <Select v-model="form.paid_by_user_id">
             <option value="">– wählen –</option>
             <option v-for="u in users" :key="u.id" :value="String(u.id)">
               {{ u.avatar }} {{ u.username }}
             </option>
-          </select>
+          </Select>
         </FormField>
       </div>
       <p v-if="users.length > 1 && form.amount && !form.paid_by_user_id" class="hint">
@@ -224,7 +226,7 @@ function onDelete() {
       </p>
 
       <FormField icon="note" label="Notiz zur Teilstrecke">
-        <input v-model="form.note" type="text" placeholder="Tipps zum Umstieg, Buchungscode etc." />
+        <Input v-model="form.note" type="text" placeholder="Tipps zum Umstieg, Buchungscode etc." />
       </FormField>
 
       <FileAttachments v-if="leg?.id" domain="excursion_legs" :entity-id="leg.id" />
