@@ -156,24 +156,34 @@ function onBlur(event: FocusEvent) {
   margin-left: 22px;
 }
 
-.extra-fields :deep(select) {
-  font-size: 0.78rem;
-  padding: 3px 6px;
+.extra-fields :deep(select),
+.extra-fields :deep(.select) {
+  font-size: 0.85rem;
+  height: 36px;
+  min-height: 36px;
+  padding: 6px 30px 6px 10px;
+  background-position: right 8px center;
+  background-size: 14px 14px;
   min-width: 0;
   width: auto;
-  min-height: 0;
 }
 
-/* Getrennt von select oben: ein <select> öffnet auf iOS ein natives Auswahlrad statt der
-   Tastatur (kein Zoom-Risiko), ein <input> würde bei derselben kleinen font-size wie oben aber
-   denselben Auto-Zoom-Bug wie .label-input auslösen (siehe dort) - deshalb hier mindestens 16px,
-   auch wenn aktuell keine Verwendungsstelle einen Text-Input in diesen Slot steckt. */
-.extra-fields :deep(input) {
-  font-size: 1rem;
-  padding: 3px 6px;
+.extra-fields :deep(.combobox) {
   min-width: 0;
-  width: auto;
-  min-height: 0;
+}
+
+.extra-fields :deep(.combobox-input),
+.extra-fields :deep(.combobox input),
+.extra-fields :deep(.combobox .input) {
+  font-size: 0.85rem;
+  height: 36px;
+  min-height: 36px;
+  padding: 6px 28px 6px 10px;
+  width: 100%;
+}
+
+.extra-fields :deep(.combobox-caret) {
+  right: 8px;
 }
 
 .submit-btn {

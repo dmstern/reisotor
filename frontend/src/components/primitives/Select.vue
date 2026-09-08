@@ -119,6 +119,8 @@ function onChange(event: Event) {
 .select--sm {
   padding: 6px 10px;
   padding-right: 30px;
+  background-position: right 8px center;
+  background-size: 14px 14px;
   height: 36px;
   min-height: 36px;
   font-size: 0.85rem;

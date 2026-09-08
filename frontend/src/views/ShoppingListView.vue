@@ -344,7 +344,7 @@ async function quickAddToGroup(group: Group, label: string) {
 
     <form class="add-form card" @submit.prevent="addItem">
       <FormField icon="title" label="Artikel" v-slot="{ id }">
-        <input :id="id" v-model="newLabel" type="text" placeholder="Neuer Artikel" required />
+        <Input :id="id" v-model="newLabel" type="text" placeholder="Neuer Artikel" required />
       </FormField>
       <FormField icon="shop" label="Shop" v-slot="{ id }">
         <Combobox
@@ -408,6 +408,7 @@ async function quickAddToGroup(group: Group, label: string) {
               v-if="users.length > 1 && groupBy !== 'buyer'"
               v-model="newBuyer"
               aria-label="Käufer:in"
+              size="sm"
             >
               <option value="">Nicht zugewiesen</option>
               <option v-for="u in users" :key="u.id" :value="String(u.id)">
@@ -419,8 +420,9 @@ async function quickAddToGroup(group: Group, label: string) {
               v-model="newShop"
               :options="knownShops"
               placeholder="Shop"
+              size="sm"
             />
-            <Select v-if="groupBy !== 'period'" v-model="newPeriod" aria-label="Zeitraum">
+            <Select v-if="groupBy !== 'period'" v-model="newPeriod" aria-label="Zeitraum" size="sm">
               <option value="">Zeitraum</option>
               <option value="before">{{ PERIOD_META.before }}</option>
               <option value="during">{{ PERIOD_META.during }}</option>

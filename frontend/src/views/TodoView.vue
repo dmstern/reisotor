@@ -375,13 +375,14 @@ function isOverdue(item: TodoItem) {
               v-if="users.length > 1 && groupBy !== 'assignee'"
               v-model="lastAssignee"
               aria-label="Zuweisung"
+              size="sm"
             >
               <option value="">Nicht zugewiesen</option>
               <option v-for="u in users" :key="u.id" :value="String(u.id)">
                 {{ u.avatar }} {{ u.username }}
               </option>
             </Select>
-            <Select v-model="quickAddPriority" aria-label="Priorität">
+            <Select v-model="quickAddPriority" aria-label="Priorität" size="sm">
               <option v-for="(meta, key) in PRIORITY_META" :key="key" :value="key">
                 {{ meta.icon }} {{ meta.label }}
               </option>

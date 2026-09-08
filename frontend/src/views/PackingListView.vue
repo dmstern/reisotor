@@ -278,14 +278,16 @@ async function quickAdd(list: ListGroup, label: string) {
                 v-model="quickAddCategories[list.key]"
                 :options="categories"
                 :placeholder="categoryRequired ? 'Kategorie' : 'Kategorie (optional)'"
+                size="sm"
               />
               <Combobox
                 v-model="quickAddSubcategories[list.key]"
                 :options="subcategories"
                 placeholder="Unterkategorie (optional)"
+                size="sm"
               />
               <label for="auto-id-1788301175448-25" class="qty-field quick-add-qty">
-                <input
+                <Input
                   id="auto-id-1788301175448-25"
                   v-model.number="quickAddQuantities[list.key]"
                   type="number"
@@ -293,6 +295,7 @@ async function quickAdd(list: ListGroup, label: string) {
                   min="1"
                   step="1"
                   placeholder="1"
+                  size="sm"
                 />
               </label>
             </div>
@@ -408,8 +411,11 @@ async function quickAdd(list: ListGroup, label: string) {
   margin: 0;
 }
 
-.quick-add-qty input {
+.quick-add-qty input,
+.quick-add-qty :deep(input) {
   width: 56px;
+  height: 36px;
+  min-height: 36px;
   padding: 4px 8px;
   font-size: 0.85rem;
   border: var(--ui-border-width, 1px) solid var(--color-border);
@@ -417,9 +423,11 @@ async function quickAdd(list: ListGroup, label: string) {
   corner-shape: squircle;
   background: var(--color-surface);
   color: var(--color-text);
+  box-sizing: border-box;
 }
 
-.quick-add-qty input:focus {
+.quick-add-qty input:focus,
+.quick-add-qty :deep(input:focus) {
   outline: 2px solid var(--color-primary);
   outline-offset: 1px;
 }
