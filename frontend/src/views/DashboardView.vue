@@ -1341,11 +1341,6 @@ function formatWeekdayDate(d: string) {
   justify-content: center;
 }
 
-.grid {
-  display: grid;
-  gap: var(--space-3);
-}
-
 .weather-alert-badge {
   position: absolute;
   top: -4px;

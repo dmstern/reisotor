@@ -398,13 +398,4 @@ async function remove(id: number) {
   font-size: 0.78rem;
   color: var(--color-text-muted);
 }
-
-.masonry {
-  column-gap: var(--space-3);
-}
-
-.masonry > * {
-  break-inside: avoid;
-  margin-bottom: var(--space-3);
-}
 </style>

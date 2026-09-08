@@ -78,20 +78,6 @@ async function removeExpense(id: number) {
 
 .row.new-highlight {
   --new-highlight-radius: var(--radius-sm-squircle);
-  position: relative;
-  border-radius: var(--new-highlight-radius);
-  corner-shape: squircle;
-}
-
-.row.new-highlight::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  border-radius: var(--new-highlight-radius);
-  corner-shape: squircle;
-  box-shadow: inset 0 0 0 2px var(--color-accent);
 }
 
 .row:last-child {

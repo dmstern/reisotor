@@ -659,6 +659,88 @@ textarea:focus {
   outline-offset: 1px;
 }
 
+.card {
+  background: var(--color-surface);
+  border: var(--ui-border-width, 1px) solid var(--color-border);
+  border-radius: var(--radius-md-squircle);
+  corner-shape: squircle;
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-4);
+}
+
+/* Markiert Objekte, die seit dem letzten Besuch dieser Ansicht von einer anderen Person geändert
+   wurden (Echtzeit-Sync, siehe stores/liveSync.ts's markSeen()) – ein farbiger Rand statt eines
+   flächigen Hintergrunds, damit er über allen Karten-Varianten (Bild-Karten, reine Text-Karten)
+   gleich gut lesbar bleibt. Bewusst kein zusätzlicher Nav-artiger Punkt hier, der sitzt schon am
+   auslösenden Nav-Item selbst (NavBar.vue/Drawer.vue). */
+.new-highlight {
+  /* Eigene Custom Property statt border-radius direkt zu setzen: das darunterstehende ::after
+     braucht denselben Radius-Wert wie die Karte selbst, kann ihn aber (anders als bei
+     border-radius: inherit, das vom ELTERN-Element läse) nur so vom eigenen Element übernehmen.
+     Elemente ohne eigenen Kartenradius (Tabellenzeilen, Listen-Zeilen) überschreiben gezielt lokal
+     nur diese Variable auf einen kleineren Wert (siehe z. B. BudgetView.vue/ShoppingListView.vue/
+     TodoView.vue/PackingItem.vue), statt hier einen für alle passenden Wert zu erzwingen. */
+  --new-highlight-radius: var(--radius-md-squircle);
+  /* Positioniertes Containing-Element fürs ::after unten (sonst würde sich dessen position:absolute
+     an einem weiter oben liegenden positionierten Vorfahren orientieren statt an dieser Karte). */
+  position: relative;
+  border-radius: var(--new-highlight-radius);
+  corner-shape: squircle;
+}
+
+/* #169: der Rahmen lag vorher als box-shadow DIREKT auf .new-highlight selbst - damit wird er als
+   Teil von dessen eigenem Hintergrund/Rand gemalt, also VOR allen normalen Kind-Elementen (jedes
+   Vorschaubild/jede Bild-Fläche, z. B. SpotCard.vue/ExcursionCard.vue's .image, die randlos die
+   ganze Kartenbreite einnimmt) - ein deckendes Kind-Element überdeckte den Rahmen dadurch dort
+   vollständig, wo es die Kartenkante berührt. Eigenes, absolut positioniertes ::after-Overlay
+   (deckungsgleich per inset:0) statt box-shadow auf dem Element selbst malt den Rahmen dagegen erst
+   NACH allen normalen Kindern - liegt dadurch garantiert sichtbar oben, unabhängig davon, was die
+   Karte an Inhalt zeigt. pointer-events:none, damit das Overlay keine Klicks/Drags auf der
+   eigentlichen Karte blockiert. */
+.new-highlight::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  border-radius: var(--new-highlight-radius);
+  corner-shape: squircle;
+  box-shadow: inset 0 0 0 2px var(--color-accent);
+}
+
+.page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: var(--space-4);
+  /* --navbar-bottom-offset (NavBar.vue) bildet nur die eigene Höhe der NavBar ab (0px, wenn sie oben
+     steht) - ohne den zusätzlichen --space-4 klebt der letzte Inhalt sonst randlos an der NavBar
+     bzw. bei oben stehender NavBar direkt am Viewport-Rand. */
+  padding-bottom: calc(var(--navbar-bottom-offset, 88px) + var(--space-4));
+}
+
+.grid {
+  display: grid;
+  gap: var(--space-3);
+}
+
+/* Masonry-artiges Kachel-Layout für Karten unterschiedlicher Höhe (Notizen, Unterkünfte,
+   Reise-Einträge): ein normales Grid streckt jede Zeile auf die Höhe ihrer höchsten Karte (bzw.
+   lässt bei align-items:start hässlichen Leerraum darunter), sobald z. B. eine lange Notiz neben
+   zwei kurzen liegt. CSS Multi-Column packt dagegen jede Spalte unabhängig von den anderen von oben
+   nach unten durch – jede Karte bekommt exakt ihre benötigte Höhe, ohne Zeilen-Zwang. Die
+   Spaltenbreite (bisher grid-template-columns: repeat(auto-fill, minmax(...))) setzt weiterhin jede
+   Sicht lokal über ihre eigene .cards-Klasse (jetzt column-width statt grid-template-columns) –
+   die SpaltenANZAHL passt sich dadurch weiterhin responsiv an die verfügbare Breite an. Bewusst statt
+   .grid verwendet (nicht zusätzlich dazu): display:grid und columns schließen sich gegenseitig aus. */
+.masonry {
+  column-gap: var(--space-3);
+}
+
+.masonry > * {
+  break-inside: avoid;
+  margin-bottom: var(--space-3);
+}
+
 /* Wiederverwendbare Übergänge für CRUD-/Sortier-Interaktionen (Batch 7): Elemente per
    <TransitionGroup name="list"> ein-/ausblenden und beim Umsortieren sanft an ihre neue
    Position gleiten lassen; <Transition name="fade"> für einfaches Ein-/Ausblenden ohne Liste.
@@ -711,6 +793,7 @@ textarea:focus {
 }
 
 /* Fix for issue #69 */
-p + button {
+p + button,
+p + .btn {
   margin-top: var(--space-3);
 }
