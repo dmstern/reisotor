@@ -38,6 +38,7 @@ const effectivePreview = computed(() => {
 
 function removeImage() {
   emit('update:modelValue', '');
+  showModal.value = false;
 }
 </script>
 
@@ -59,17 +60,6 @@ function removeImage() {
           <AppIcon :icon="ACTION_ICONS.edit" :size="13" group="actions" />
           {{ modelValue ? 'Bild bearbeiten' : 'Bild hinzufügen' }}
         </Button>
-        <Button
-          v-if="modelValue"
-          type="button"
-          variant="ghost"
-          class="banner-edit-btn remove"
-          title="Bild entfernen"
-          aria-label="Bild entfernen"
-          @click="removeImage"
-        >
-          <AppIcon :icon="ACTION_ICONS.close" :size="13" group="actions" />
-        </Button>
       </div>
     </div>
 
@@ -84,6 +74,16 @@ function removeImage() {
           @update:model-value="(val) => emit('update:modelValue', val)"
         />
         <ButtonGroup>
+          <Button
+            v-if="modelValue"
+            type="button"
+            variant="danger"
+            :icon="ACTION_ICONS.delete"
+            @click="removeImage"
+          >
+            Bild entfernen
+          </Button>
+          <div v-if="modelValue" class="spacer" />
           <Button type="button" @click="showModal = false">Fertig</Button>
         </ButtonGroup>
       </div>
@@ -145,13 +145,13 @@ function removeImage() {
   background: var(--color-hover) !important;
 }
 
-.banner-edit-btn.remove {
-  color: var(--color-danger) !important;
-}
-
 .image-submodal {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+}
+
+.image-submodal .spacer {
+  flex: 1;
 }
 </style>
