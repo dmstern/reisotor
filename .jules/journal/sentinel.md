@@ -11,3 +11,9 @@
 **Vulnerability:** Endpoint `/spots/preview` lacks `requireTripMember` checks, which could raise security concerns during access control audits.
 **Learning:** Utility routes that perform public link preview fetches (e.g. Google Maps preview) do not touch database entities or trip state, so `requireTripMember` is intentionally absent while `requireAuth` protects against unauthenticated abuse.
 **Prevention:** Clearly comment security rationale on utility routes that intentionally omit trip membership checks to prevent false positives and maintain defense-in-depth documentation.
+
+## 2026-09-09 - SSRF Hardening on Maps Link Resolution & Restricted Mode Consistency
+
+**Vulnerability:** Maps link resolution and preview utilities accepted arbitrary URL input for server-side `fetch()`, introducing Server-Side Request Forgery (SSRF) risk to internal/loopback endpoints (`localhost`, `127.0.0.1`, `169.254.169.254`). Additionally, generic image upload (`POST /images`) lacked restricted user mode checks.
+**Learning:** Any server-side fetching utility must strictly validate target protocols and destination IP ranges before issuing requests or following redirects. Restricted user mode limits must be checked across all upload endpoints uniformly.
+**Prevention:** Always validate URLs against `isSafeUrl` before `fetch()` calls in server-side helpers, and enforce `isUserRestricted` checks on all file/image upload handlers.

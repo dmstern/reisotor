@@ -89,7 +89,10 @@ export const feedbackRoutes: FastifyPluginAsync = async (app) => {
     });
 
     if (!result.ok) {
-      return reply.code(502).send({ error: result.error });
+      req.log.error({ err: result.error }, 'Feedback issue creation failed');
+      return reply
+        .code(502)
+        .send({ error: 'Meldung konnte nicht an den Feedback-Dienst übermittelt werden.' });
     }
 
     reply.code(201);
