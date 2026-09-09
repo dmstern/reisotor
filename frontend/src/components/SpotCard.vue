@@ -828,7 +828,7 @@ function onToggleDone() {
 
   .spot-card:not(.expanded) .image {
     width: 64px;
-    height: 64px;
+    height: 100%;
     border-radius: var(--radius-md-squircle) 0 0 var(--radius-md-squircle);
     corner-shape: squircle;
     /* Beim Zuklappen: Bild wartet kurz, bis das Akkordeon eingefahren ist (Stufe 2) */

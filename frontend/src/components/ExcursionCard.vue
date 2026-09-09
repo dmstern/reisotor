@@ -580,86 +580,6 @@ function onSpotDrop(event: DragEvent) {
     height 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s;
 }
 
-@container spots-col (max-width: 480px) {
-  .tour-accent-bar {
-    width: 28px;
-  }
-
-  .excursion-card:not(.expanded) {
-    min-height: 64px;
-  }
-
-  .excursion-card:not(.expanded) .image {
-    width: 64px;
-    height: 64px;
-    border-radius: 0;
-  }
-
-  .excursion-card.expanded .image {
-    width: 100%;
-    height: 160px;
-  }
-
-  .excursion-card:not(.expanded) .body {
-    margin-left: 64px;
-    margin-top: 0;
-    min-height: 64px;
-    padding: 6px var(--space-2);
-    justify-content: center;
-    gap: 2px;
-  }
-
-  .excursion-card.expanded .body {
-    margin-left: 0;
-    margin-top: 160px;
-    padding: var(--space-3);
-  }
-
-  .excursion-card:not(.expanded) .status {
-    width: 22px;
-    height: 22px;
-    padding: 0;
-    justify-content: center;
-    border-radius: 50%;
-    transition:
-      width 0.2s cubic-bezier(0.32, 0.72, 0, 1) 0s,
-      height 0.2s cubic-bezier(0.32, 0.72, 0, 1) 0s,
-      padding 0.2s cubic-bezier(0.32, 0.72, 0, 1) 0s,
-      border-radius 0.2s ease 0s;
-  }
-
-  .excursion-card:not(.expanded) .status-text {
-    max-width: 0;
-    opacity: 0;
-    transition:
-      max-width 0.18s cubic-bezier(0.32, 0.72, 0, 1) 0s,
-      opacity 0.14s ease 0s;
-  }
-
-  .excursion-card:not(.expanded) .show-on-map-btn {
-    width: 22px;
-    height: 22px;
-    min-width: 22px;
-    padding: 0;
-    justify-content: center;
-    border-radius: 50%;
-  }
-
-  .excursion-card:not(.expanded) .show-on-map-btn .btn-label {
-    max-width: 0;
-    opacity: 0;
-    margin: 0;
-  }
-
-  .excursion-card:not(.expanded) .links {
-    margin: 0;
-  }
-
-  .excursion-card:not(.expanded) .card-actions {
-    display: none;
-  }
-}
-
 .tour-type-badge {
   flex-shrink: 0;
   margin-left: auto;
@@ -970,6 +890,86 @@ function onSpotDrop(event: DragEvent) {
   opacity: 1;
   transform: translateY(0) scale(1);
   transition-delay: calc(var(--stagger-idx, 0) * 35ms + 140ms);
+}
+
+@container spots-col (max-width: 480px) {
+  .tour-accent-bar {
+    width: 28px;
+  }
+
+  .excursion-card:not(.expanded) {
+    min-height: 64px;
+  }
+
+  .excursion-card:not(.expanded) .image {
+    width: 64px;
+    height: 100%;
+    border-radius: 0;
+  }
+
+  .excursion-card.expanded .image {
+    width: 100%;
+    height: 160px;
+  }
+
+  .excursion-card:not(.expanded) .body {
+    margin-left: 64px;
+    margin-top: 0;
+    min-height: 64px;
+    padding: 6px var(--space-2);
+    justify-content: center;
+    gap: 2px;
+  }
+
+  .excursion-card.expanded .body {
+    margin-left: 0;
+    margin-top: 160px;
+    padding: var(--space-3);
+  }
+
+  .excursion-card:not(.expanded) .status {
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 50%;
+    transition:
+      width 0.2s cubic-bezier(0.32, 0.72, 0, 1) 0s,
+      height 0.2s cubic-bezier(0.32, 0.72, 0, 1) 0s,
+      padding 0.2s cubic-bezier(0.32, 0.72, 0, 1) 0s,
+      border-radius 0.2s ease 0s;
+  }
+
+  .excursion-card:not(.expanded) .status-text {
+    max-width: 0;
+    opacity: 0;
+    transition:
+      max-width 0.18s cubic-bezier(0.32, 0.72, 0, 1) 0s,
+      opacity 0.14s ease 0s;
+  }
+
+  .excursion-card:not(.expanded) .show-on-map-btn {
+    width: 22px;
+    height: 22px;
+    min-width: 22px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 50%;
+  }
+
+  .excursion-card:not(.expanded) .show-on-map-btn .btn-label {
+    max-width: 0;
+    opacity: 0;
+    margin: 0;
+  }
+
+  .excursion-card:not(.expanded) .links {
+    margin: 0;
+  }
+
+  .excursion-card:not(.expanded) .card-actions {
+    display: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
