@@ -609,7 +609,6 @@ function onSpotDrop(event: DragEvent) {
   flex-direction: column;
   gap: var(--space-1);
   min-width: 0;
-  width: 100%;
   box-sizing: border-box;
   margin-left: 0;
   margin-top: 200px;
@@ -624,6 +623,7 @@ function onSpotDrop(event: DragEvent) {
   margin-left: 140px;
   margin-top: 0;
   min-height: 120px;
+  overflow: hidden;
   /* Beim Zuklappen: wartet synchron mit Bild auf Akkordeon (Stufe 2) */
   transition:
     margin-left 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s,
@@ -849,7 +849,7 @@ function onSpotDrop(event: DragEvent) {
   font-weight: 600;
   color: var(--color-primary-dark);
   background: var(--color-primary-tint);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-pill);
   padding: 2px 8px;
   display: inline-flex;
   align-items: center;
@@ -919,6 +919,12 @@ function onSpotDrop(event: DragEvent) {
     padding: 6px var(--space-2);
     justify-content: center;
     gap: 2px;
+    overflow: hidden;
+  }
+
+  .role-badge {
+    font-size: 0.72rem;
+    padding: 1px 7px;
   }
 
   .excursion-card.expanded .body {
