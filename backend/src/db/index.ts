@@ -1390,6 +1390,19 @@ db.exec('UPDATE diary_entries SET date = substr(created_at, 1, 10) WHERE date IS
 ensureColumn('spots', 'done', 'INTEGER NOT NULL DEFAULT 0');
 ensureColumn('ideas', 'done', 'INTEGER NOT NULL DEFAULT 0');
 
+// schedule_items.done: ermöglicht das gezielte Abhaken einzelner Termine (z. B. wenn ein Spot für
+// mehrere Tage eingeplant ist und an verschiedenen Tagen besucht/nicht besucht wurde).
+const hadScheduleItemsDone = hasColumn('schedule_items', 'done');
+ensureColumn('schedule_items', 'done', 'INTEGER NOT NULL DEFAULT 0');
+if (!hadScheduleItemsDone) {
+  db.exec(`
+    UPDATE schedule_items
+    SET done = 1
+    WHERE spot_id IS NOT NULL
+      AND spot_id IN (SELECT id FROM spots WHERE done = 1)
+  `);
+}
+
 // Standort-Aufzeichnung ("wo war ich wirklich?", im Gegensatz zum rein ephemeren Live-Standort in
 // activity.ts's lastPositionsByTrip): eine Aufzeichnungs-Sitzung (location_tracks) plus die dabei
 // gesammelten GPS-Punkte (location_track_points). Komplett neue Tabellen, kein Backfill nötig.

@@ -531,6 +531,10 @@ const editSpotScheduledItems = computed(() => {
   return scheduleStore.items.filter((i) => i.spot_id === editingSpot.value!.id);
 });
 
+async function toggleScheduledItemDone(item: ScheduleItem) {
+  await scheduleStore.setDone(item.id, !item.done);
+}
+
 async function removeScheduledItemFromSpot(item: ScheduleItem) {
   if (!editingSpot.value) return;
 
@@ -3158,14 +3162,31 @@ async function deleteEditingSpot() {
                         v-for="item in editSpotScheduledItems"
                         :key="'sched-' + item.id"
                         class="assign-chip assign-chip--schedule"
+                        :class="{ 'is-done': !!item.done }"
                       >
+                        <button
+                          type="button"
+                          class="assign-chip-done-toggle"
+                          :title="
+                            item.done ? 'Als nicht besucht markieren' : 'Als besucht markieren'
+                          "
+                          :aria-label="
+                            item.done ? 'Als nicht besucht markieren' : 'Als besucht markieren'
+                          "
+                          @click.stop="toggleScheduledItemDone(item)"
+                        >
+                          <AppIcon
+                            :icon="item.done ? ACTION_ICONS.done : ACTION_ICONS.notDone"
+                            :size="13"
+                            group="actions"
+                          />
+                        </button>
                         <button
                           type="button"
                           class="assign-chip-action"
                           title="Termin im Kalender öffnen"
                           @click="openScheduledItemDetail(item)"
                         >
-                          <AppIcon :icon="FORM_FIELD_ICONS.date" :size="12" group="formFields" />
                           <span class="assign-chip-label">{{ formatDate(item.date) }}</span>
                         </button>
                         <button
@@ -5266,6 +5287,40 @@ async function deleteEditingSpot() {
   background: var(--color-calendar-appointment-tint);
   border-color: var(--color-calendar-appointment-border);
   color: var(--color-calendar-appointment);
+}
+
+.assign-chip--schedule.is-done {
+  background: rgba(46, 125, 50, 0.18);
+  border-color: rgba(46, 125, 50, 0.45);
+  color: #2e7d32;
+}
+
+:root[data-theme='dark'] .assign-chip--schedule.is-done {
+  background: rgba(76, 175, 80, 0.18);
+  border-color: rgba(76, 175, 80, 0.45);
+  color: #81c784;
+}
+
+.assign-chip-done-toggle {
+  background: none;
+  border: none;
+  padding: 1px 2px;
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  line-height: 1;
+  opacity: 0.85;
+  transition:
+    transform 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.assign-chip-done-toggle:hover {
+  opacity: 1;
+  transform: scale(1.15);
 }
 
 .assign-chip-action {

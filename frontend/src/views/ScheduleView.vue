@@ -666,7 +666,13 @@ async function finishPendingSchedule(
     const spot = spotsStore.spots.find((s) => s.id === pending.id);
     if (spot && tripStore.currentTripId != null) {
       if (pending.mode === 'confirm-done') {
-        await scheduleStore.setSpotDate(pending.id, tripStore.currentTripId, spot.title, date);
+        await scheduleStore.setSpotDate(
+          pending.id,
+          tripStore.currentTripId,
+          spot.title,
+          date,
+          true
+        );
         await spotsStore.setDone(pending.id, true);
       } else {
         await scheduleStore.create({

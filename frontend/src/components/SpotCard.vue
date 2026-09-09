@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
-import type { Spot } from '../api/types';
+import { computed, nextTick, ref, watch } from 'vue';
+import type { ScheduleItem, Spot } from '../api/types';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { parseContact } from '../utils/contact';
 import { fetchMergedWeather, type DailyWeather } from '../utils/weather';
@@ -22,12 +22,16 @@ import FileAttachments from './FileAttachments.vue';
 import PendingSyncBadge from './PendingSyncBadge.vue';
 import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
+import ButtonGroup from './primitives/ButtonGroup.vue';
+import Input from './primitives/Input.vue';
+import PickerMenu from './primitives/PickerMenu.vue';
 import Card from './primitives/Card.vue';
 import DetailRow from './primitives/DetailRow.vue';
 import WeatherIcon from './WeatherIcon.vue';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { formatDate as formatDateShared, toLocalDateString } from '../utils/dateFormat';
+import { computePopoverPosition } from '../utils/popoverPosition';
 
 const props = defineProps<{
   spot: Spot;
@@ -254,23 +258,115 @@ function onShowOnMap() {
   emit('show-on-map');
 }
 
-// #106/#147: Status-Kette in Planung -> geplant -> gemacht statt (wie zuvor) eines von geplant/
-// ungeplant unabhängigen Flags - ein Spot darf nicht ohne Datum "gemacht" sein. Zurück auf
-// "geplant" braucht dafür kein neues Datum (setDone(false) direkt). Beim Übergang zu "gemacht"
-// entscheidet, ob bereits ein geplantes Datum existiert (#147: ursprünglich öffnete sich der
-// Kalender IMMER, auch wenn schon ein Datum da war - das war unnötig, da das bereits geplante
-// Datum ohnehin als Gemacht-/Besucht-Datum übernommen wird): mit Datum direkt markieren, nur ohne
-// Datum (noch "in Planung") den Kalender zur Bestätigung des Besuchstags öffnen
-// (drawers.pendingSchedule mode 'confirm-done', ausgewertet in ScheduleView.vue's
-// finishPendingSchedule()).
-function onToggleDone() {
-  if (props.spot.done) {
-    spotsStore.setDone(props.spot.id, false);
-  } else if (props.scheduledDate) {
-    spotsStore.setDone(props.spot.id, true);
-  } else {
-    drawers.startPendingSchedule('spot', props.spot.id, 'confirm-done');
+const scheduledItemsForSpot = computed(() => {
+  return scheduleStore.items
+    .filter((i) => i.spot_id === props.spot.id && i.date)
+    .sort((a, b) => a.date.localeCompare(b.date));
+});
+
+const totalItemsCount = computed(() => scheduledItemsForSpot.value.length);
+const doneItemsCount = computed(() => scheduledItemsForSpot.value.filter((i) => !!i.done).length);
+const allItemsDone = computed(
+  () => totalItemsCount.value > 0 && doneItemsCount.value === totalItemsCount.value
+);
+const isSpotDone = computed(() => {
+  if (totalItemsCount.value > 0) return allItemsDone.value;
+  return !!props.spot.done;
+});
+const isSpotPartiallyDone = computed(() => {
+  return totalItemsCount.value > 1 && doneItemsCount.value > 0 && !allItemsDone.value;
+});
+
+const datesPopoverOpen = ref(false);
+const datesPopoverStyle = ref<{ top: string; left: string }>({ top: '0px', left: '0px' });
+
+const unplannedPopoverOpen = ref(false);
+const unplannedPopoverStyle = ref<{ top: string; left: string }>({ top: '0px', left: '0px' });
+
+const defaultDate = computed(() => {
+  const trip = tripStore.currentTrip;
+  const today = toLocalDateString(new Date());
+  if (trip && trip.start_date && trip.end_date) {
+    if (today >= trip.start_date && today <= trip.end_date) return today;
+    return trip.start_date;
   }
+  return today;
+});
+const unplannedDoneDate = ref(defaultDate.value);
+watch(defaultDate, (d) => {
+  unplannedDoneDate.value = d;
+});
+
+// #106/#147: Status-Kette in Planung -> geplant -> gemacht.
+// Bei mehreren Terminen (>1): Klick öffnet ein Popover mit Checkliste, um Tage einzeln abzuhaken.
+// Bei 1 Termin: Klick hakt direkt diesen Termin ab.
+// Bei ungeplant (0 Termine): Klick öffnet Popover zur schnellen Datumswahl (oder Kalender-Absprung).
+async function onToggleDone(event?: MouseEvent) {
+  if (totalItemsCount.value > 1) {
+    const triggerEl = (event?.currentTarget as HTMLElement | undefined) ?? null;
+    if (triggerEl) {
+      datesPopoverStyle.value = computePopoverPosition(triggerEl, {
+        menuWidth: 270,
+        menuHeight: 220,
+      });
+    }
+    datesPopoverOpen.value = true;
+    await nextTick();
+    const menuEl = document.querySelector('.spot-dates-popover') as HTMLElement | null;
+    if (menuEl && triggerEl) {
+      const rect = menuEl.getBoundingClientRect();
+      datesPopoverStyle.value = computePopoverPosition(triggerEl, {
+        menuWidth: rect.width,
+        menuHeight: rect.height,
+      });
+    }
+  } else if (totalItemsCount.value === 1) {
+    const item = scheduledItemsForSpot.value[0];
+    await scheduleStore.setDone(item.id, !item.done);
+  } else if (props.scheduledDate) {
+    await spotsStore.setDone(props.spot.id, !props.spot.done);
+  } else {
+    const triggerEl = (event?.currentTarget as HTMLElement | undefined) ?? null;
+    if (triggerEl) {
+      unplannedPopoverStyle.value = computePopoverPosition(triggerEl, {
+        menuWidth: 260,
+        menuHeight: 180,
+      });
+    }
+    unplannedPopoverOpen.value = true;
+    await nextTick();
+    const menuEl = document.querySelector('.spot-unplanned-popover') as HTMLElement | null;
+    if (menuEl && triggerEl) {
+      const rect = menuEl.getBoundingClientRect();
+      unplannedPopoverStyle.value = computePopoverPosition(triggerEl, {
+        menuWidth: rect.width,
+        menuHeight: rect.height,
+      });
+    }
+  }
+}
+
+async function toggleScheduledItemDone(item: ScheduleItem) {
+  await scheduleStore.setDone(item.id, !item.done);
+}
+
+async function submitUnplannedDone() {
+  if (!unplannedDoneDate.value) return;
+  if (tripStore.currentTripId != null) {
+    await scheduleStore.setSpotDate(
+      props.spot.id,
+      tripStore.currentTripId,
+      props.spot.title,
+      unplannedDoneDate.value,
+      true
+    );
+  }
+  unplannedPopoverOpen.value = false;
+}
+
+function openCalendarConfirmDone() {
+  unplannedPopoverOpen.value = false;
+  drawers.startPendingSchedule('spot', props.spot.id, 'confirm-done');
 }
 </script>
 
@@ -317,31 +413,38 @@ function onToggleDone() {
       <!-- Collapsed Zustand: Passives Status-Badge unten rechts (#106) -->
       <template v-else>
         <span
-          v-if="scheduledDate || spot.done || dayWeather"
+          v-if="scheduledDate || totalItemsCount > 0 || isSpotDone || dayWeather"
           class="status"
-          :class="{ planned: scheduledDate && !spot.done, 'status-done': spot.done }"
+          :class="{
+            planned: (scheduledDate || totalItemsCount > 0) && !isSpotDone && !isSpotPartiallyDone,
+            'status-done': isSpotDone || isSpotPartiallyDone,
+          }"
         >
           <AppIcon
             class="status-icon"
             :size="14"
             :icon="
-              spot.done
+              isSpotDone || isSpotPartiallyDone
                 ? ACTION_ICONS.done
-                : scheduledDate
+                : scheduledDate || totalItemsCount > 0
                   ? FORM_FIELD_ICONS.date
                   : ACTION_ICONS.today
             "
             group="actions"
           />
           <span class="status-text">
-            <template v-if="spot.done && scheduledDate">Besucht am {{ plannedDateLabel }}</template>
-            <template v-else-if="spot.done">Gemacht</template>
-            <template v-else-if="scheduledDate">
-              <template v-if="scheduledDaysCount > 1"
-                >Geplant an {{ scheduledDaysCount }} Tagen</template
-              >
-              <template v-else>Geplant für {{ plannedDateLabel }}</template>
+            <template v-if="totalItemsCount > 1">
+              <template v-if="allItemsDone">Besucht an {{ totalItemsCount }} Tagen</template>
+              <template v-else-if="doneItemsCount > 0">
+                {{ doneItemsCount }} von {{ totalItemsCount }} Tagen besucht
+              </template>
+              <template v-else>Geplant an {{ totalItemsCount }} Tagen</template>
             </template>
+            <template v-else-if="isSpotDone && scheduledDate">
+              Besucht am {{ plannedDateLabel }}
+            </template>
+            <template v-else-if="isSpotDone">Gemacht</template>
+            <template v-else-if="scheduledDate">Geplant für {{ plannedDateLabel }}</template>
             <template v-else>Aktuelles Wetter</template>
             <template v-if="dayWeather && scheduledDaysCount <= 1">
               · <WeatherIcon :code="dayWeather.weatherCode" :size="14" />
@@ -452,17 +555,37 @@ function onToggleDone() {
               type="button"
               class="done-toggle"
               :class="{
-                status: expanded && !!(scheduledDate || spot.done),
-                planned: expanded && !!(scheduledDate && !spot.done),
-                'status-done': expanded && !!spot.done,
-                active: !!spot.done,
+                status:
+                  expanded &&
+                  !!(scheduledDate || totalItemsCount > 0 || isSpotDone || isSpotPartiallyDone),
+                planned:
+                  expanded &&
+                  !!((scheduledDate || totalItemsCount > 0) && !isSpotDone && !isSpotPartiallyDone),
+                'status-done': expanded && (isSpotDone || isSpotPartiallyDone),
+                active: isSpotDone,
               }"
-              :aria-pressed="!!spot.done"
-              :aria-label="spot.done ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'"
-              :title="spot.done ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'"
+              :aria-pressed="isSpotDone"
+              :aria-label="isSpotDone ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'"
+              :title="isSpotDone ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'"
               @click.stop="onToggleDone"
             >
-              <template v-if="spot.done">
+              <template v-if="totalItemsCount > 1">
+                <template v-if="allItemsDone">
+                  <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
+                  <span class="status-text">Besucht an {{ totalItemsCount }} Tagen</span>
+                </template>
+                <template v-else-if="doneItemsCount > 0">
+                  <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
+                  <span class="status-text">
+                    Besucht an {{ doneItemsCount }} von {{ totalItemsCount }} Tagen
+                  </span>
+                </template>
+                <template v-else>
+                  <AppIcon :icon="ACTION_ICONS.notDone" :size="14" group="actions" />
+                  <span class="status-text">Geplant an {{ totalItemsCount }} Tagen</span>
+                </template>
+              </template>
+              <template v-else-if="isSpotDone">
                 <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
                 <span class="status-text">
                   <template v-if="scheduledDate">Besucht am {{ plannedDateLabel }}</template>
@@ -473,13 +596,10 @@ function onToggleDone() {
                   </template>
                 </span>
               </template>
-              <template v-else-if="scheduledDate">
+              <template v-else-if="scheduledDate || totalItemsCount === 1">
                 <AppIcon :icon="ACTION_ICONS.notDone" :size="14" group="actions" />
                 <span class="status-text">
-                  <template v-if="scheduledDaysCount > 1"
-                    >Geplant an {{ scheduledDaysCount }} Tagen</template
-                  >
-                  <template v-else>Geplant für {{ plannedDateLabel }}</template>
+                  Geplant für {{ plannedDateLabel }}
                   <template v-if="dayWeather && scheduledDaysCount <= 1">
                     · <WeatherIcon :code="dayWeather.weatherCode" :size="14" />
                     {{ Math.round(dayWeather.tempMax) }}°
@@ -528,6 +648,87 @@ function onToggleDone() {
         <div v-if="dragging" class="drag-ghost" :style="ghostStyle ?? {}">
           <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" /> {{ spot.title }}
         </div>
+        <!-- Popover zur Datumsauswahl für ungeplante Spots -->
+        <PickerMenu
+          v-if="unplannedPopoverOpen"
+          class="spot-unplanned-popover"
+          :style="unplannedPopoverStyle"
+          @close="unplannedPopoverOpen = false"
+        >
+          <div class="unplanned-popover-content">
+            <div class="popover-title-row">
+              <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
+              <span class="popover-heading">Spot als besucht markieren</span>
+            </div>
+            <p class="popover-subtext">An welchem Tag wurde dieser Spot besucht?</p>
+            <Input
+              v-model="unplannedDoneDate"
+              type="date"
+              class="popover-date-input"
+              @keyup.enter="submitUnplannedDone"
+            />
+            <div class="popover-buttons">
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                :disabled="!unplannedDoneDate"
+                @click="submitUnplannedDone"
+              >
+                Als besucht markieren
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                class="calendar-alt-link"
+                @click="openCalendarConfirmDone"
+              >
+                <AppIcon :icon="FORM_FIELD_ICONS.date" :size="12" group="formFields" />
+                Im Kalender auswählen
+              </Button>
+            </div>
+          </div>
+        </PickerMenu>
+
+        <!-- Popover zum Abhaken einzelner Termine bei Multi-Datum-Spots -->
+        <PickerMenu
+          v-if="datesPopoverOpen"
+          class="spot-dates-popover"
+          :style="datesPopoverStyle"
+          @close="datesPopoverOpen = false"
+        >
+          <div class="dates-popover-content">
+            <div class="popover-title-row">
+              <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
+              <span class="popover-heading">Besuche abhaken</span>
+            </div>
+            <p class="popover-subtext">Wähle die Tage aus, an denen dieser Spot besucht wurde:</p>
+            <div class="dates-checklist">
+              <button
+                v-for="item in scheduledItemsForSpot"
+                :key="item.id"
+                type="button"
+                class="date-check-item"
+                :class="{ checked: !!item.done }"
+                @click="toggleScheduledItemDone(item)"
+              >
+                <AppIcon
+                  :icon="item.done ? ACTION_ICONS.done : ACTION_ICONS.notDone"
+                  :size="15"
+                  group="actions"
+                />
+                <span class="date-check-date">{{ formatDateShared(item.date) }}</span>
+                <span class="date-check-status">{{ item.done ? 'Besucht' : 'Geplant' }}</span>
+              </button>
+            </div>
+            <div class="popover-buttons">
+              <Button type="button" variant="secondary" size="sm" @click="datesPopoverOpen = false">
+                Fertig
+              </Button>
+            </div>
+          </div>
+        </PickerMenu>
       </Teleport>
 
       <Transition name="fade">
@@ -1236,5 +1437,105 @@ function onToggleDone() {
 .slide-fade-leave-to {
   opacity: 0;
   transform: translateY(-10px);
+}
+
+.unplanned-popover-content,
+.dates-popover-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  min-width: 250px;
+}
+
+.popover-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.popover-subtext {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.popover-date-input {
+  width: 100%;
+}
+
+.popover-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+}
+
+.calendar-alt-link {
+  font-size: 0.78rem !important;
+  color: var(--color-text-muted) !important;
+  justify-content: center;
+}
+
+.calendar-alt-link:hover {
+  color: var(--color-primary) !important;
+}
+
+.dates-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.date-check-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-2-5);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  text-align: left;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+  font-size: 0.84rem;
+  color: var(--color-text);
+  width: 100%;
+}
+
+.date-check-item:hover {
+  background: var(--color-surface-hover, var(--color-surface-raised));
+  border-color: var(--color-border-hover, var(--color-primary));
+}
+
+.date-check-item.checked {
+  background: rgba(46, 125, 50, 0.08);
+  border-color: rgba(46, 125, 50, 0.4);
+  color: #2e7d32;
+}
+
+:root[data-theme='dark'] .date-check-item.checked {
+  background: rgba(76, 175, 80, 0.15);
+  border-color: rgba(76, 175, 80, 0.4);
+  color: #81c784;
+}
+
+.date-check-date {
+  flex: 1;
+  font-weight: 500;
+}
+
+.date-check-status {
+  font-size: 0.75rem;
+  opacity: 0.8;
 }
 </style>

@@ -144,6 +144,9 @@ const hasScheduleDateStmt = db.prepare(
    LIMIT 1`
 );
 const updateSpotDoneStmt = db.prepare('UPDATE spots SET done = ? WHERE id = ?');
+const updateScheduleDoneBySpotStmt = db.prepare(
+  'UPDATE schedule_items SET done = ? WHERE spot_id = ? AND deleted_at IS NULL'
+);
 
 export const spotsRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: { trip_id?: string } }>('/spots', async (req, reply) => {
@@ -319,6 +322,7 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
         }
       }
       updateSpotDoneStmt.run(done, req.params.id);
+      updateScheduleDoneBySpotStmt.run(done, req.params.id);
       recordActivity(spot.trip_id, 'spots', spot.id, 'updated', req.session.userId!);
       return { done: done === 1 };
     }

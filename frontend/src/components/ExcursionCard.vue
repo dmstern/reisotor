@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import type { Excursion, Spot, TravelItem } from '../api/types';
 import { excursionStationKeys, resolveStations } from '../utils/excursionStations';
 import {
@@ -11,6 +11,7 @@ import {
 import { usePointerDrag } from '../composables/usePointerDrag';
 import { useExcursionsStore } from '../stores/excursions';
 import { useDrawersStore } from '../stores/drawers';
+import { useTripStore } from '../stores/trip';
 import { useWeatherProviderStore } from '../stores/weatherProvider';
 import EditButton from './EditButton.vue';
 import SocialRow from './SocialRow.vue';
@@ -21,12 +22,15 @@ import PendingSyncBadge from './PendingSyncBadge.vue';
 import AppIcon from './AppIcon.vue';
 import Card from './primitives/Card.vue';
 import Button from './primitives/Button.vue';
+import Input from './primitives/Input.vue';
+import PickerMenu from './primitives/PickerMenu.vue';
 import DetailRow from './primitives/DetailRow.vue';
 import WeatherIcon from './WeatherIcon.vue';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
-import { formatDate as formatDateShared } from '../utils/dateFormat';
+import { formatDate as formatDateShared, toLocalDateString } from '../utils/dateFormat';
+import { computePopoverPosition } from '../utils/popoverPosition';
 import { TRAVEL_ROLE_META } from '../utils/travelRole';
 import { travelTypeIconDef } from '../utils/travelTypeIcon';
 import { formatTravelDuration, travelDurationMinutes } from '../utils/travelDuration';
@@ -168,22 +172,64 @@ const { dragging, ghostStyle, onPointerDown } = usePointerDrag({
   },
 });
 
+const tripStore = useTripStore();
+const unplannedPopoverOpen = ref(false);
+const unplannedPopoverStyle = ref<{ top: string; left: string }>({ top: '0px', left: '0px' });
+const defaultDate = computed(() => {
+  const trip = tripStore.currentTrip;
+  const today = toLocalDateString(new Date());
+  if (trip && trip.start_date && trip.end_date) {
+    if (today >= trip.start_date && today <= trip.end_date) return today;
+    return trip.start_date;
+  }
+  return today;
+});
+const unplannedDoneDate = ref(defaultDate.value);
+watch(defaultDate, (d) => {
+  unplannedDoneDate.value = d;
+});
+
 // #106/#147: Status-Kette in Planung -> geplant -> gemacht statt (wie zuvor) eines von geplant/
 // ungeplant unabhängigen Flags - eine Tour darf nicht ohne Datum "gemacht" sein. Zurück auf
-// "geplant" braucht dafür kein neues Datum (setDone(false) direkt). Beim Übergang zu "gemacht"
-// entscheidet, ob bereits ein geplantes Datum existiert (#147: ursprünglich öffnete sich der
-// Kalender IMMER, auch wenn schon ein Datum da war - das war unnötig, da das bereits geplante
-// Datum ohnehin als Gemacht-Datum übernommen wird): mit Datum direkt markieren, nur ohne Datum
-// (noch "in Planung") den Kalender zur Bestätigung des Tages öffnen (drawers.pendingSchedule mode
-// 'confirm-done', ausgewertet in ScheduleView.vue's finishPendingSchedule()).
-function onToggleDone() {
+// "geplant" braucht dafür kein neues Datum (setDone(false) direkt). Beim Übergang zu "gemacht":
+// mit Datum direkt markieren; ohne Datum (noch "in Planung") öffnet sich direkt ein kompaktes
+// Popover zur Datumsauswahl (inkl. Option, in den Kalender abzuspringen).
+async function onToggleDone(event?: MouseEvent) {
   if (props.excursion.done) {
-    excursionsStore.setDone(props.excursion.id, false);
+    await excursionsStore.setDone(props.excursion.id, false);
   } else if (props.excursion.date) {
-    excursionsStore.setDone(props.excursion.id, true);
+    await excursionsStore.setDone(props.excursion.id, true);
   } else {
-    drawers.startPendingSchedule('excursion', props.excursion.id, 'confirm-done');
+    const triggerEl = (event?.currentTarget as HTMLElement | undefined) ?? null;
+    if (triggerEl) {
+      unplannedPopoverStyle.value = computePopoverPosition(triggerEl, {
+        menuWidth: 260,
+        menuHeight: 180,
+      });
+    }
+    unplannedPopoverOpen.value = true;
+    await nextTick();
+    const menuEl = document.querySelector('.tour-unplanned-popover') as HTMLElement | null;
+    if (menuEl && triggerEl) {
+      const rect = menuEl.getBoundingClientRect();
+      unplannedPopoverStyle.value = computePopoverPosition(triggerEl, {
+        menuWidth: rect.width,
+        menuHeight: rect.height,
+      });
+    }
   }
+}
+
+async function submitUnplannedDone() {
+  if (!unplannedDoneDate.value) return;
+  await excursionsStore.setDate(props.excursion.id, unplannedDoneDate.value);
+  await excursionsStore.setDone(props.excursion.id, true);
+  unplannedPopoverOpen.value = false;
+}
+
+function openCalendarConfirmDone() {
+  unplannedPopoverOpen.value = false;
+  drawers.startPendingSchedule('excursion', props.excursion.id, 'confirm-done');
 }
 
 // Drop-Zone fürs Zuordnen: ein Spot kann direkt auf diese Karte gezogen werden (SpotCard.vue's
@@ -447,6 +493,47 @@ function onSpotDrop(event: DragEvent) {
             <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" />
             {{ excursion.title }}
           </div>
+          <PickerMenu
+            v-if="unplannedPopoverOpen"
+            class="tour-unplanned-popover"
+            :style="unplannedPopoverStyle"
+            @close="unplannedPopoverOpen = false"
+          >
+            <div class="unplanned-popover-content">
+              <div class="popover-title-row">
+                <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
+                <span class="popover-heading">Tour als gemacht markieren</span>
+              </div>
+              <p class="popover-subtext">An welchem Tag wurde diese Tour gemacht?</p>
+              <Input
+                v-model="unplannedDoneDate"
+                type="date"
+                class="popover-date-input"
+                @keyup.enter="submitUnplannedDone"
+              />
+              <div class="popover-buttons">
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="sm"
+                  :disabled="!unplannedDoneDate"
+                  @click="submitUnplannedDone"
+                >
+                  Als gemacht markieren
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  class="calendar-alt-link"
+                  @click="openCalendarConfirmDone"
+                >
+                  <AppIcon :icon="FORM_FIELD_ICONS.date" :size="12" group="formFields" />
+                  Im Kalender auswählen
+                </Button>
+              </div>
+            </div>
+          </PickerMenu>
         </Teleport>
 
         <div class="excursion-accordion" :class="{ 'is-expanded': expanded }" :inert="!expanded">
@@ -1179,5 +1266,50 @@ function onSpotDrop(event: DragEvent) {
 .slide-fade-leave-to {
   opacity: 0;
   transform: translateY(-10px);
+}
+
+.unplanned-popover-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  min-width: 250px;
+}
+
+.popover-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.popover-subtext {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.popover-date-input {
+  width: 100%;
+}
+
+.popover-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+}
+
+.calendar-alt-link {
+  font-size: 0.78rem !important;
+  color: var(--color-text-muted) !important;
+  justify-content: center;
+}
+
+.calendar-alt-link:hover {
+  color: var(--color-primary) !important;
 }
 </style>
