@@ -49,6 +49,10 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
     await expect(toggle).toHaveAttribute('aria-label', 'Als gemacht markieren');
     await toggle.click();
 
+    // Klick auf "Als gemacht markieren" bei ungeplantem Spot öffnet das Datumsauswahl-Popover;
+    // von dort aus kann "Im Kalender auswählen" gewählt werden.
+    await page.locator('.spot-unplanned-popover .calendar-alt-link').click();
+
     // Kalender-Schublade ist auf Desktop bereits offen - der Bestätigungs-Hinweis ersetzt hier den
     // normalen Einplanen-Hinweis (siehe ScheduleView.vue's pending-schedule-banner).
     const banner = page.locator('.pending-schedule-banner');
@@ -120,6 +124,7 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
     const spotCard = page.locator('.spot-card', { hasText: spotTitle });
     await spotCard.locator('h3').click();
     await spotCard.locator('.done-toggle').click();
+    await page.locator('.spot-unplanned-popover .calendar-alt-link').click();
 
     const banner = page.locator('.pending-schedule-banner');
     await expect(banner).toContainText(spotTitle);
@@ -131,6 +136,114 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
       'Als gemacht markieren'
     );
     await expect(spotCard.locator('.status')).toHaveCount(0);
+  });
+
+  test('Markieren als "gemacht" über direktes Datumsfeld im Popover bei ungeplantem Spot', async ({
+    page,
+  }) => {
+    const marker = `E2E-Gemacht-Popover-${Date.now()}`;
+    const spotTitle = `Direkteingabe ${marker}`;
+    const targetDate = '2026-06-12';
+
+    const created = await page.request.post('/api/spots', {
+      data: { trip_id: tripId, title: spotTitle, category: 'Sonstiges' },
+    });
+    expect(created.ok()).toBeTruthy();
+
+    await page.goto('/excursions');
+    const spotCard = page.locator('.spot-card', { hasText: spotTitle });
+    await spotCard.locator('h3').click();
+
+    const toggle = spotCard.locator('.done-toggle');
+    await expect(toggle).toHaveAttribute('aria-label', 'Als gemacht markieren');
+    await toggle.click();
+
+    const popover = page.locator('.spot-unplanned-popover');
+    await expect(popover).toBeVisible();
+
+    const dateInput = popover.locator('input[type="date"]');
+    await dateInput.fill(targetDate);
+    await popover.getByRole('button', { name: 'Als besucht markieren' }).click();
+
+    await expect(popover).toBeHidden();
+    await expect(toggle).toHaveAttribute('aria-label', 'Nicht mehr als gemacht markiert');
+    await expect(spotCard.locator('.status.status-done')).toContainText('Besucht am 12.06');
+
+    await page.reload();
+    const spotCardAfterReload = page.locator('.spot-card', { hasText: spotTitle });
+    await spotCardAfterReload.locator('h3').click();
+    await expect(spotCardAfterReload.locator('.done-toggle')).toHaveAttribute(
+      'aria-label',
+      'Nicht mehr als gemacht markiert'
+    );
+  });
+
+  test('Multi-Datum-Spot: Popover erlaubt individuelles Abhaken einzelner Termine', async ({
+    page,
+  }) => {
+    const marker = `E2E-MultiDate-${Date.now()}`;
+    const spotTitle = `Multi-Termin Spot ${marker}`;
+    const date1 = '2026-07-10';
+    const date2 = '2026-07-20';
+
+    const created = await page.request.post('/api/spots', {
+      data: { trip_id: tripId, title: spotTitle, category: 'Sonstiges' },
+    });
+    expect(created.ok()).toBeTruthy();
+    const spot = await created.json();
+
+    const s1 = await page.request.post('/api/schedule', {
+      data: { trip_id: tripId, date: date1, title: spotTitle, spot_id: spot.id },
+    });
+    expect(s1.ok()).toBeTruthy();
+    const s2 = await page.request.post('/api/schedule', {
+      data: { trip_id: tripId, date: date2, title: spotTitle, spot_id: spot.id },
+    });
+    expect(s2.ok()).toBeTruthy();
+
+    await page.goto('/excursions');
+    const spotCard = page.locator('.spot-card', { hasText: spotTitle });
+    await spotCard.locator('h3').click();
+
+    // Toggle-Button zeigt initial "Geplant an 2 Tagen"
+    const toggle = spotCard.locator('.done-toggle');
+    await expect(toggle).toContainText('Geplant an 2 Tagen');
+
+    // Klick auf den Toggle öffnet das Termine-Popover
+    await toggle.click();
+    const popover = page.locator('.spot-dates-popover');
+    await expect(popover).toBeVisible();
+
+    const checkItems = popover.locator('.date-check-item');
+    await expect(checkItems).toHaveCount(2);
+
+    // Ersten Termin abhaken (10.07.)
+    await checkItems.first().click();
+    await expect(checkItems.first()).toHaveClass(/checked/);
+
+    // Popover schließen
+    await popover.getByRole('button', { name: 'Fertig' }).click();
+    await expect(popover).toBeHidden();
+
+    // Status aktualisiert auf 1 von 2 Tagen besucht
+    await expect(toggle).toContainText('Besucht an 1 von 2 Tagen');
+
+    // Erneut öffnen und zweiten Termin auch abhaken
+    await toggle.click();
+    await expect(popover).toBeVisible();
+    await checkItems.nth(1).click();
+    await expect(checkItems.nth(1)).toHaveClass(/checked/);
+    await popover.getByRole('button', { name: 'Fertig' }).click();
+
+    // Nun sind alle 2 Tage besucht
+    await expect(toggle).toContainText('Besucht an 2 Tagen');
+    await expect(spotCard.locator('.status.status-done')).toContainText('Besucht an 2 Tagen');
+
+    // Nach Reload verifizieren
+    await page.reload();
+    const spotCardReloaded = page.locator('.spot-card', { hasText: spotTitle });
+    await spotCardReloaded.locator('h3').click();
+    await expect(spotCardReloaded.locator('.done-toggle')).toContainText('Besucht an 2 Tagen');
   });
 
   test('Tagebuch: für heute geplante Vorschläge sind als "Empfohlen" markiert, Anhaken setzt automatisch gemacht=true', async ({
