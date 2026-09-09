@@ -284,50 +284,76 @@ function onToggleDone() {
         :icon="spotCategoryMeta(spot.category).tabler"
         group="categories"
       />
-      <Transition name="slide-fade">
-        <EditButton v-if="expanded" floating @click="emit('edit', spot)" />
-      </Transition>
-      <!-- #106: EIN gemeinsames Datums-/Status-Badge statt zweier unabhängiger Chips (das alte
-           separate "Gemacht"-Badge unten rechts entfällt) - Text/Icon hängen vom Status ab
-           (geplant/besucht), "spot.done && !scheduledDate" ist der Fallback für bereits vor #106
-           als "gemacht" markierte Bestandsdaten ohne verknüpftes Datum (kein Backfill möglich, da
-           der tatsächliche Tag nicht rekonstruierbar ist). -->
-      <span
-        v-if="scheduledDate || spot.done || dayWeather"
-        class="status"
-        :class="{ planned: scheduledDate && !spot.done, 'status-done': spot.done }"
-      >
-        <AppIcon
-          class="status-icon"
-          :size="14"
-          :icon="
-            spot.done
-              ? ACTION_ICONS.done
-              : scheduledDate
-                ? FORM_FIELD_ICONS.date
-                : ACTION_ICONS.today
-          "
-          group="actions"
-        />
-        <span class="status-text">
-          <template v-if="spot.done && scheduledDate">Besucht am {{ plannedDateLabel }}</template>
-          <template v-else-if="spot.done">Gemacht</template>
-          <template v-else-if="scheduledDate">
-            <template v-if="scheduledDaysCount > 1"
-              >Geplant an {{ scheduledDaysCount }} Tagen</template
+
+      <!-- Expanded Cover Overlay: zeigt Titel, Kategorie, Autor & Metadaten direkt über dem Bild -->
+      <div v-if="expanded" class="image-expanded-overlay">
+        <div class="overlay-top-row">
+          <div class="overlay-badge-group">
+            <CategoryChip :category="spot.category" />
+            <PendingSyncBadge v-if="spot._pending" />
+          </div>
+          <Transition name="slide-fade">
+            <EditButton floating @click="emit('edit', spot)" />
+          </Transition>
+        </div>
+        <div class="overlay-bottom-content">
+          <h3 class="overlay-title">{{ spot.title }}</h3>
+          <div class="overlay-meta-row">
+            <span v-if="creatorLabel" class="overlay-author">Von {{ creatorLabel }}</span>
+            <span
+              v-if="isAccommodation && (spot.start_date || spot.end_date)"
+              class="overlay-submeta"
             >
-            <template v-else>Geplant für {{ plannedDateLabel }}</template>
-          </template>
-          <template v-else>Aktuelles Wetter</template>
-          <template v-if="dayWeather && scheduledDaysCount <= 1">
-            · <WeatherIcon :code="dayWeather.weatherCode" :size="14" />
-            {{ Math.round(dayWeather.tempMax) }}°</template
-          >
+              {{ formatAccommodationDate(spot.start_date) || '?' }} –
+              {{ formatAccommodationDate(spot.end_date) || '?' }}
+            </span>
+            <span v-else-if="spot.address" class="overlay-submeta">
+              {{ spot.address }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Collapsed Zustand: Passives Status-Badge unten rechts (#106) -->
+      <template v-else>
+        <span
+          v-if="scheduledDate || spot.done || dayWeather"
+          class="status"
+          :class="{ planned: scheduledDate && !spot.done, 'status-done': spot.done }"
+        >
+          <AppIcon
+            class="status-icon"
+            :size="14"
+            :icon="
+              spot.done
+                ? ACTION_ICONS.done
+                : scheduledDate
+                  ? FORM_FIELD_ICONS.date
+                  : ACTION_ICONS.today
+            "
+            group="actions"
+          />
+          <span class="status-text">
+            <template v-if="spot.done && scheduledDate">Besucht am {{ plannedDateLabel }}</template>
+            <template v-else-if="spot.done">Gemacht</template>
+            <template v-else-if="scheduledDate">
+              <template v-if="scheduledDaysCount > 1"
+                >Geplant an {{ scheduledDaysCount }} Tagen</template
+              >
+              <template v-else>Geplant für {{ plannedDateLabel }}</template>
+            </template>
+            <template v-else>Aktuelles Wetter</template>
+            <template v-if="dayWeather && scheduledDaysCount <= 1">
+              · <WeatherIcon :code="dayWeather.weatherCode" :size="14" />
+              {{ Math.round(dayWeather.tempMax) }}°</template
+            >
+          </span>
         </span>
-      </span>
+      </template>
     </div>
     <div class="body">
-      <div class="head">
+      <!-- Im aufgeklappten Zustand bereits im Cover-Overlay vorhanden; spart Platz im Body -->
+      <div v-if="!expanded" class="head">
         <h3>{{ spot.title }}</h3>
         <CategoryChip :category="spot.category" />
         <PendingSyncBadge v-if="spot._pending" />
@@ -351,7 +377,7 @@ function onToggleDone() {
 
       <div class="spot-accordion" :class="{ 'is-expanded': expanded }" :inert="!expanded">
         <div class="spot-accordion-inner accordion-stagger">
-          <DetailRow v-if="creatorLabel" label="Von">
+          <DetailRow v-if="creatorLabel && !expanded" label="Von">
             {{ creatorLabel }}
           </DetailRow>
           <template v-if="isAccommodation">
@@ -420,11 +446,17 @@ function onToggleDone() {
             >
               <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" /> Einplanen
             </button>
+            <!-- Verschmolzener Status-Button (Geplant-Status + Gemacht-Checkbox) -->
             <button
               v-if="!isAccommodation"
               type="button"
               class="done-toggle"
-              :class="{ active: !!spot.done }"
+              :class="{
+                status: expanded && !!(scheduledDate || spot.done),
+                planned: expanded && !!(scheduledDate && !spot.done),
+                'status-done': expanded && !!spot.done,
+                active: !!spot.done,
+              }"
               :aria-pressed="!!spot.done"
               :aria-label="spot.done ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'"
               :title="spot.done ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'"
@@ -432,10 +464,31 @@ function onToggleDone() {
             >
               <template v-if="spot.done">
                 <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
+                <span class="status-text">
+                  <template v-if="scheduledDate">Besucht am {{ plannedDateLabel }}</template>
+                  <template v-else>Gemacht</template>
+                  <template v-if="dayWeather && scheduledDaysCount <= 1">
+                    · <WeatherIcon :code="dayWeather.weatherCode" :size="14" />
+                    {{ Math.round(dayWeather.tempMax) }}°
+                  </template>
+                </span>
+              </template>
+              <template v-else-if="scheduledDate">
+                <AppIcon :icon="ACTION_ICONS.notDone" :size="14" group="actions" />
+                <span class="status-text">
+                  <template v-if="scheduledDaysCount > 1"
+                    >Geplant an {{ scheduledDaysCount }} Tagen</template
+                  >
+                  <template v-else>Geplant für {{ plannedDateLabel }}</template>
+                  <template v-if="dayWeather && scheduledDaysCount <= 1">
+                    · <WeatherIcon :code="dayWeather.weatherCode" :size="14" />
+                    {{ Math.round(dayWeather.tempMax) }}°
+                  </template>
+                </span>
               </template>
               <template v-else>
-                <AppIcon :icon="ACTION_ICONS.notDone" :size="14" group="actions" /> Als gemacht
-                markieren
+                <AppIcon :icon="ACTION_ICONS.notDone" :size="14" group="actions" />
+                <span>Als gemacht markieren</span>
               </template>
             </button>
           </div>
@@ -573,6 +626,97 @@ function onToggleDone() {
 
 .placeholder {
   font-size: 2.2rem;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
+}
+
+.spot-card.expanded .placeholder {
+  position: absolute;
+  opacity: 0.15;
+  transform: scale(1.8);
+  pointer-events: none;
+}
+
+/* Expanded Cover Overlay: Halbdunkles Gradient-Overlay mit Titel, Kategorie und Autor */
+.image-expanded-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: var(--space-3);
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.5) 0%,
+    rgba(0, 0, 0, 0.15) 35%,
+    rgba(0, 0, 0, 0.85) 100%
+  );
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.image-expanded-overlay > * {
+  pointer-events: auto;
+}
+
+.overlay-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.overlay-top-row :deep(.edit-btn.floating) {
+  position: static;
+  top: auto;
+  left: auto;
+}
+
+.overlay-badge-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.overlay-bottom-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.overlay-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #ffffff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.overlay-meta-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+  flex-wrap: wrap;
+}
+
+.overlay-author {
+  font-weight: 600;
+}
+
+.overlay-submeta {
+  opacity: 0.85;
 }
 
 /* Status-/Datums-Chip (#106: EIN gemeinsames Badge statt zweier unabhängiger Chips, ersetzt das
@@ -724,26 +868,55 @@ function onToggleDone() {
   user-select: none;
 }
 
-/* Toggle statt Anfasser (kein Drag, nur Klick) - gleicher Chip-Grundstil wie die Anfasser oben für
-   optische Konsistenz, .active hebt den bereits gesetzten Status hervor (dieselbe Erfolgs-Farbe wie
-   .status.planned). */
+/* Verschmolzener Status-Toggle (Geplant-Status + Gemacht-Checkbox) */
 .done-toggle {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   background: var(--color-hover);
-  border: none;
+  border: 1px solid var(--color-border);
   border-radius: 999px;
   corner-shape: round;
   padding: 3px 10px;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   color: var(--color-text-muted);
   cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
-.done-toggle.active {
+.done-toggle:hover {
+  background: var(--color-surface);
+  border-color: var(--color-primary);
+  color: var(--color-text);
+}
+
+.done-toggle.planned {
+  color: var(--color-text);
+  border-color: var(--color-border);
+  background: var(--color-surface);
+}
+
+.done-toggle.planned:hover {
+  border-color: var(--color-success);
+  color: var(--color-success);
+}
+
+.done-toggle.active,
+.done-toggle.status-done {
   color: var(--color-success);
   font-weight: 600;
+  background: var(--color-primary-tint);
+  border-color: var(--color-success);
+}
+
+.card-actions .done-toggle.status {
+  position: static;
+  bottom: auto;
+  right: auto;
 }
 
 .calendar-drag-handle {

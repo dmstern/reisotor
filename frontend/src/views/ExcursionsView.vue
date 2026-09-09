@@ -4546,10 +4546,11 @@ async function deleteEditingSpot() {
   position: relative;
   margin-left: var(--space-2);
   padding: var(--space-2) var(--space-3);
-  background: var(--color-surface-sunken);
-  border: 1px solid var(--color-border-subtle);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-left: 3px solid var(--color-primary);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-xs);
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
@@ -4560,14 +4561,47 @@ async function deleteEditingSpot() {
     box-shadow 0.2s ease;
 }
 
+/* Leichte gestrichelte Linien zur visuellen Verbindung mit den Stationen oben und unten */
+.tour-leg-card::before,
+.tour-leg-card::after {
+  content: '';
+  position: absolute;
+  left: 20px;
+  width: 0;
+  border-left: 2px dashed var(--color-border);
+  pointer-events: none;
+  z-index: 0;
+  transition: border-color 0.2s ease;
+}
+
+.tour-leg-card::before {
+  top: -8px;
+  height: 8px;
+}
+
+.tour-leg-card::after {
+  bottom: -8px;
+  height: 8px;
+}
+
 .tour-leg-card:hover {
   background: var(--color-surface);
   border-color: var(--color-border);
+  border-left-color: var(--color-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.tour-leg-card:hover::before,
+.tour-leg-card:hover::after,
+.tour-leg-card.is-expanded::before,
+.tour-leg-card.is-expanded::after {
+  border-left-color: var(--color-primary);
 }
 
 .tour-leg-card.is-expanded {
   background: var(--color-surface);
   border-color: var(--color-border);
+  border-left-color: var(--color-primary);
   box-shadow: var(--shadow-sm);
 }
 
