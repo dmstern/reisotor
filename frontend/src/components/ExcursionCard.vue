@@ -266,25 +266,33 @@ function onSpotDrop(event: DragEvent) {
           :class="{ planned: excursion.date && !excursion.done, 'status-done': excursion.done }"
         >
           <template v-if="excursion.done && excursion.date">
-            <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" /> Gemacht am
-            {{ statusDateLabel
-            }}<template v-if="weatherSummary">
-              · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
-              {{ weatherSummary.tempLabel }}</template
-            >
+            <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
+            <span class="status-text">
+              Gemacht am {{ statusDateLabel
+              }}<template v-if="weatherSummary">
+                · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
+                {{ weatherSummary.tempLabel }}</template
+              >
+            </span>
           </template>
-          <template v-else-if="excursion.done"
-            ><AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" /> Gemacht</template
-          >
+          <template v-else-if="excursion.done">
+            <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
+            <span class="status-text">Gemacht</span>
+          </template>
           <template v-else-if="excursion.date">
-            <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="actions" /> Geplant für
-            {{ statusDateLabel
-            }}<template v-if="weatherSummary">
-              · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
-              {{ weatherSummary.tempLabel }}</template
-            >
+            <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="actions" />
+            <span class="status-text">
+              Geplant für {{ statusDateLabel
+              }}<template v-if="weatherSummary">
+                · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
+                {{ weatherSummary.tempLabel }}</template
+              >
+            </span>
           </template>
-          <template v-else>In Planung</template>
+          <template v-else>
+            <AppIcon :icon="ACTION_ICONS.today" :size="14" group="actions" />
+            <span class="status-text">In Planung</span>
+          </template>
         </span>
       </div>
       <div class="body">
@@ -334,9 +342,15 @@ function onSpotDrop(event: DragEvent) {
         </div>
 
         <div class="links" v-if="hasMappedStations">
-          <Button variant="card-action" @click.stop="emit('show-on-map')">
-            <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" /> Auf Karte
-            anzeigen
+          <Button
+            variant="card-action"
+            class="show-on-map-btn"
+            aria-label="Auf Karte anzeigen"
+            title="Auf Karte anzeigen"
+            @click.stop="emit('show-on-map')"
+          >
+            <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" />
+            <span class="btn-label">Auf Karte anzeigen</span>
           </Button>
         </div>
         <div class="card-actions">
@@ -458,11 +472,14 @@ function onSpotDrop(event: DragEvent) {
 .excursion-accordion {
   display: grid;
   grid-template-rows: 0fr;
-  transition: grid-template-rows 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Beim Zuklappen sofort zusammenfalten (Stufe 1) */
+  transition: grid-template-rows 0.22s cubic-bezier(0.32, 0.72, 0, 1) 0s;
 }
 
 .excursion-accordion.is-expanded {
   grid-template-rows: 1fr;
+  /* Beim Aufklappen nach Bild-Morph entfalten (Stufe 2) */
+  transition: grid-template-rows 0.35s cubic-bezier(0.32, 0.72, 0, 1) 0.14s;
 }
 
 .excursion-accordion-inner {
@@ -515,8 +532,8 @@ function onSpotDrop(event: DragEvent) {
   flex: 1;
   min-width: 0;
   display: flex;
-  flex-direction: row;
-  align-items: stretch;
+  flex-direction: column;
+  position: relative;
 }
 
 /* Spot per Drag&Drop aus der Spots-Sicht darauf ablegen (SpotCard.vue ist die Drag-Quelle). */
@@ -537,30 +554,109 @@ function onSpotDrop(event: DragEvent) {
 }
 
 .image {
-  width: 140px;
-  flex-shrink: 0;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 200px;
   background: var(--color-primary-tint) center/cover no-repeat;
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
-  border-radius: 0;
   overflow: hidden;
+  border-radius: 0;
+  /* Beim Aufklappen: Bild morpht sofort zum Vollbild-Banner oben (Stufe 1) */
+  transition:
+    width 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s,
+    height 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s;
 }
 
-@media (max-width: 480px) {
-  .tour-card-main {
-    flex-direction: column;
+.excursion-card:not(.expanded) .image {
+  width: 140px;
+  height: 100%;
+  /* Beim Zuklappen: Bild wartet kurz auf Akkordeon (Stufe 2) */
+  transition:
+    width 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s,
+    height 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s;
+}
+
+@container spots-col (max-width: 480px) {
+  .tour-accent-bar {
+    width: 28px;
   }
 
-  .image {
-    width: auto;
-    height: 140px;
+  .excursion-card:not(.expanded) {
+    min-height: 64px;
+  }
+
+  .excursion-card:not(.expanded) .image {
+    width: 64px;
+    height: 64px;
     border-radius: 0;
   }
 
-  .tour-accent-bar {
-    width: 28px;
+  .excursion-card.expanded .image {
+    width: 100%;
+    height: 160px;
+  }
+
+  .excursion-card:not(.expanded) .body {
+    margin-left: 64px;
+    margin-top: 0;
+    min-height: 64px;
+    padding: 6px var(--space-2);
+    justify-content: center;
+    gap: 2px;
+  }
+
+  .excursion-card.expanded .body {
+    margin-left: 0;
+    margin-top: 160px;
+    padding: var(--space-3);
+  }
+
+  .excursion-card:not(.expanded) .status {
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 50%;
+    transition:
+      width 0.2s cubic-bezier(0.32, 0.72, 0, 1) 0s,
+      height 0.2s cubic-bezier(0.32, 0.72, 0, 1) 0s,
+      padding 0.2s cubic-bezier(0.32, 0.72, 0, 1) 0s,
+      border-radius 0.2s ease 0s;
+  }
+
+  .excursion-card:not(.expanded) .status-text {
+    max-width: 0;
+    opacity: 0;
+    transition:
+      max-width 0.18s cubic-bezier(0.32, 0.72, 0, 1) 0s,
+      opacity 0.14s ease 0s;
+  }
+
+  .excursion-card:not(.expanded) .show-on-map-btn {
+    width: 22px;
+    height: 22px;
+    min-width: 22px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 50%;
+  }
+
+  .excursion-card:not(.expanded) .show-on-map-btn .btn-label {
+    max-width: 0;
+    opacity: 0;
+    margin: 0;
+  }
+
+  .excursion-card:not(.expanded) .links {
+    margin: 0;
+  }
+
+  .excursion-card:not(.expanded) .card-actions {
+    display: none;
   }
 }
 
@@ -586,21 +682,36 @@ function onSpotDrop(event: DragEvent) {
 }
 
 .body {
+  position: relative;
+  z-index: 1;
   padding: var(--space-3);
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  /* Ohne das bleibt .body (Flex-Item in der Zeile neben dem fest breiten .image, siehe
-     .excursion-card oben) auf seiner automatischen, vom Titel bestimmten Mindestbreite stehen - die
-     h3-Ellipsis unten greift erst, wenn .body überhaupt auf die verfügbare Breite schrumpfen darf
-     (gleicher Fix wie SpotCard.vue's identisches .body). */
   min-width: 0;
   width: 100%;
+  box-sizing: border-box;
+  margin-left: 0;
+  margin-top: 200px;
+  /* Beim Aufklappen: gleitet sofort nach unten (Stufe 1) */
+  transition:
+    margin-left 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s,
+    margin-top 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s,
+    padding 0.32s ease 0s;
 }
 
-/* min-width:0 + Kürzung statt Umbruch, gleiches Muster wie SpotCard.vue's .head h3 (siehe dortiger
-   Kommentar) - langer Titel wechselte sonst zwischen ein-/zweizeilig je nach eingeklappter/
-   ausgefahrener Bottom-Sheet-Breite. */
+.excursion-card:not(.expanded) .body {
+  margin-left: 140px;
+  margin-top: 0;
+  min-height: 120px;
+  /* Beim Zuklappen: wartet synchron mit Bild auf Akkordeon (Stufe 2) */
+  transition:
+    margin-left 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s,
+    margin-top 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s,
+    padding 0.28s ease 0.12s;
+}
+
+/* min-width:0 + Kürzung statt Umbruch, gleiches Muster wie SpotCard.vue's .head h3 */
 .title-row h3,
 .body h3 {
   font-size: 1rem;
@@ -620,21 +731,60 @@ function onSpotDrop(event: DragEvent) {
   width: 100%;
 }
 
-/* Unten statt oben rechts positioniert (#210): oben links schwebt der Bearbeiten-Button
-   (EditButton.vue's .floating), bei langem Status-Text (z. B. "Gemacht am 20. Aug. · ☁️ 21°") ragte
-   der von rechts wachsende Chip in der schmalen 140px-Miniatur bis dorthin und überlagerte ihn.
-   Gleiches Muster wie SpotCard.vue's .status, dort aus demselben Grund bereits unten positioniert. */
+.show-on-map-btn {
+  transition:
+    width 0.28s cubic-bezier(0.32, 0.72, 0, 1),
+    height 0.28s cubic-bezier(0.32, 0.72, 0, 1),
+    border-radius 0.28s ease,
+    padding 0.28s ease;
+}
+
+.show-on-map-btn .btn-label {
+  display: inline-block;
+  max-width: 140px;
+  opacity: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  transition:
+    max-width 0.28s cubic-bezier(0.32, 0.72, 0, 1),
+    opacity 0.2s ease,
+    margin 0.28s ease;
+}
+
+/* Unten statt oben rechts positioniert (#210, analog zu SpotCard.vue) */
 .status {
   position: absolute;
   bottom: var(--space-2);
   right: var(--space-2);
-  left: var(--space-2);
+  max-width: calc(100% - var(--space-4));
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   background: rgba(255, 255, 255, 0.9);
-  padding: 3px 10px;
+  padding: 2px 10px;
   border-radius: 999px;
   font-size: 0.75rem;
   font-weight: 600;
   color: var(--color-text-muted);
+  box-sizing: border-box;
+  /* Beim Aufklappen: Text entfaltet sich erst, wenn Banner Breite gewonnen hat */
+  transition:
+    width 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.08s,
+    height 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.08s,
+    padding 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.08s,
+    border-radius 0.28s ease 0.08s;
+}
+
+.status-text {
+  display: inline-block;
+  max-width: 260px;
+  opacity: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  transition:
+    max-width 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s,
+    opacity 0.2s ease 0.14s;
 }
 
 .status.planned,
@@ -642,10 +792,6 @@ function onSpotDrop(event: DragEvent) {
   color: var(--color-success);
 }
 
-/* Der immer-helle Hintergrund (für Kontrast über beliebigen Vorschaubildern) kollidiert im Dark
-   Mode mit der hell eingefärbten --color-text-muted/--color-success-Schrift (für dunkle
-   Hintergründe gedacht) – zu wenig Kontrast. Gleiches Muster wie bei den schwebenden
-   Bearbeiten-/Löschen-Buttons: im Dark Mode ein dunkler halbtransparenter Chip statt fest hell. */
 :root[data-theme='dark'] .status {
   background: rgba(35, 34, 32, 0.85);
 }
@@ -811,17 +957,32 @@ function onSpotDrop(event: DragEvent) {
 
 .excursion-accordion-inner > * {
   transition:
-    opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    opacity 0.2s ease 0s,
+    transform 0.2s ease 0s;
   opacity: 0;
   transform: translateY(-12px) scale(0.98);
-  transition-delay: calc((var(--stagger-total, 6) - var(--stagger-idx, 0) - 1) * 20ms);
 }
 
 .excursion-accordion.is-expanded .excursion-accordion-inner > * {
+  transition:
+    opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   opacity: 1;
   transform: translateY(0) scale(1);
-  transition-delay: calc(var(--stagger-idx, 0) * 35ms);
+  transition-delay: calc(var(--stagger-idx, 0) * 35ms + 140ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .image,
+  .body,
+  .excursion-accordion,
+  .status,
+  .status-text,
+  .show-on-map-btn,
+  .show-on-map-btn .btn-label,
+  .excursion-accordion-inner > * {
+    transition: none !important;
+  }
 }
 
 .slide-fade-enter-active,
