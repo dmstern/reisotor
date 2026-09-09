@@ -918,9 +918,10 @@ function onSpotDrop(event: DragEvent) {
     margin-top: 0;
     min-height: 64px;
     padding: 6px var(--space-2);
-    justify-content: center;
+    justify-content: flex-start;
     gap: 2px;
     overflow: hidden;
+    height: 100%;
   }
 
   .role-badge {
