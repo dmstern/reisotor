@@ -529,7 +529,7 @@ function onToggleDone() {
   align-items: center;
   justify-content: center;
   position: relative;
-  transition: height 0.15s ease;
+  transition: height 0.3s cubic-bezier(0.32, 0.72, 0, 1);
   border-radius: var(--radius-md-squircle) var(--radius-md-squircle) 0 0;
   corner-shape: squircle;
 }
@@ -594,6 +594,22 @@ function onToggleDone() {
   font-size: 0.75rem;
   font-weight: 600;
   color: var(--color-text-muted);
+  transition:
+    width 0.3s cubic-bezier(0.32, 0.72, 0, 1),
+    height 0.3s cubic-bezier(0.32, 0.72, 0, 1),
+    padding 0.3s cubic-bezier(0.32, 0.72, 0, 1),
+    border-radius 0.3s ease;
+}
+
+.status-text {
+  display: inline-block;
+  max-width: 240px;
+  opacity: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  transition:
+    max-width 0.3s cubic-bezier(0.32, 0.72, 0, 1),
+    opacity 0.2s ease;
 }
 
 .status.planned,
@@ -786,97 +802,171 @@ function onToggleDone() {
    nicht auf die Fenster-/Viewport-Breite – greift dadurch auch, wenn man auf Desktop den Anfasser
    zwischen Spots-Liste und Karte weit zur Karte hin zieht, nicht nur auf echtem Mobil. */
 @container spots-col (max-width: 480px) {
-  .spot-card:not(.expanded) {
-    flex-direction: row;
-    align-items: stretch;
+  /* Bild ist absolut am Kopf positioniert und morpht flüssig von der linken 64px-Miniatur
+     zum vollen 160px-Banner oben */
+  .image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 160px;
+    border-radius: var(--radius-md-squircle) var(--radius-md-squircle) 0 0;
+    corner-shape: squircle;
+    overflow: hidden;
+    /* Beim Aufklappen: Bild morpht sofort (Stufe 1) */
+    transition:
+      width 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s,
+      height 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s,
+      border-radius 0.32s ease 0s;
+  }
+
+  .spot-card.expanded .image {
+    width: 100%;
+    height: 160px;
+    border-radius: var(--radius-md-squircle) var(--radius-md-squircle) 0 0;
   }
 
   .spot-card:not(.expanded) .image {
     width: 64px;
-    height: auto;
-    flex-shrink: 0;
-    /* Bild sitzt hier links statt oben (Zeilen- statt Spalten-Layout) - deshalb linke statt obere
-       Ecken gerundet (siehe .image oben). */
+    height: 64px;
     border-radius: var(--radius-md-squircle) 0 0 var(--radius-md-squircle);
     corner-shape: squircle;
+    /* Beim Zuklappen: Bild wartet kurz, bis das Akkordeon eingefahren ist (Stufe 2) */
+    transition:
+      width 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s,
+      height 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s,
+      border-radius 0.28s ease 0.12s;
+  }
+
+  /* Der Inhalt (Titel, Aktionen, Akkordeon) sitzt im normalen Layout-Fluss und gleitet
+     beim Aufklappen unter das 160px-Banner bzw. beim Zuklappen wieder neben die 64px-Miniatur */
+  .body {
+    position: relative;
+    z-index: 1;
+    margin-left: 0;
+    margin-top: 160px;
+    padding: var(--space-3);
+    min-width: 0;
+    /* Beim Aufklappen: gleitet sofort nach unten (Stufe 1) */
+    transition:
+      margin-left 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s,
+      margin-top 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s,
+      padding 0.32s ease 0s;
   }
 
   .spot-card:not(.expanded) .body {
-    padding: var(--space-2);
+    margin-left: 64px;
+    margin-top: 0;
+    padding: 6px var(--space-2);
+    min-height: 64px;
+    justify-content: center;
     gap: 2px;
-    /* Ohne das bleibt .body (jetzt ein Flex-Item in der Zeile statt in der Spalte, siehe
-       .spot-card:not(.expanded) oben) auf seiner automatischen Mindestbreite stehen - die entspricht
-       ohne explizites min-width:0 dem eigenen min-content (rekursiv über .head bis zum Titel
-       berechnet), bei einem langen, per white-space:nowrap absichtlich nicht umbrechenden Titel also
-       dessen volle Textbreite. .head h3 kürzt zwar selbst schon per Ellipsis (siehe dortiges CSS),
-       das greift aber erst, wenn .body überhaupt auf die verfügbare Breite schrumpfen darf - sonst
-       ragte die ganze Karte (und mit ihr die komplette Spots-Liste) auf schmalen Mobilbreiten seitlich
-       über den Bildschirmrand hinaus (horizontale Scrollleiste statt gekürztem Titel). */
-    min-width: 0;
+    overflow: hidden;
+    /* Beim Zuklappen: wartet synchron mit dem Bild auf das Akkordeon (Stufe 2) */
+    transition:
+      margin-left 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s,
+      margin-top 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s,
+      padding 0.28s ease 0.12s;
   }
 
-  .spot-card:not(.expanded) .note,
-  .spot-card:not(.expanded) .card-actions,
-  .spot-card:not(.expanded) .maps-picker {
-    display: none;
+  .spot-card:not(.expanded) .head {
+    margin-bottom: 0;
   }
 
-  /* Anders als .note/.card-actions/.maps-picker oben bleibt .links (der "Auf Karte
-     anzeigen"-Button) hier bewusst sichtbar (#109 - der Button muss auch auf der Mini-Karte
-     erreichbar sein), schrumpft aber auf einen reinen Icon-Kreis (Textlabel ausgeblendet) statt
-     der vollen Pille - gleiches Verkleinerungs-Muster wie .status unten. */
+  /* Anders als zuvor bleibt .links (der "Auf Karte anzeigen"-Button) hier bewusst sichtbar (#109),
+     morpht aber flüssig zwischen Kreis-Icon und voller Pille mit Textlabel. */
   .spot-card:not(.expanded) .links {
-    margin: var(--space-2) 0;
+    margin: 0;
   }
 
-  .spot-card:not(.expanded) .show-on-map-btn .btn-label {
-    display: none;
+  .show-on-map-btn {
+    transition:
+      width 0.28s cubic-bezier(0.32, 0.72, 0, 1),
+      height 0.28s cubic-bezier(0.32, 0.72, 0, 1),
+      border-radius 0.28s ease,
+      padding 0.28s ease;
+  }
+
+  .show-on-map-btn .btn-label {
+    display: inline-block;
+    max-width: 140px;
+    opacity: 1;
+    overflow: hidden;
+    white-space: nowrap;
+    transition:
+      max-width 0.28s cubic-bezier(0.32, 0.72, 0, 1),
+      opacity 0.2s ease,
+      margin 0.28s ease;
   }
 
   .spot-card:not(.expanded) .show-on-map-btn {
     width: 22px;
     height: 22px;
+    min-width: 22px;
     padding: 0;
     justify-content: center;
     border-radius: 50%;
+  }
+
+  .spot-card:not(.expanded) .show-on-map-btn .btn-label {
+    max-width: 0;
+    opacity: 0;
+    margin: 0;
   }
 
   .spot-card:not(.expanded) .social-row {
     margin-top: 0;
   }
 
-  /* Ohne diesen Fix ragten die Status-Pillen (Text+Icon, ~90-110px breit) über das auf 64px
-     geschrumpfte Vorschaubild hinaus in den Titel/Kategorie-Bereich daneben - hier stattdessen zu
-     reinen Icon-Kreisen (ohne Text/Datum/Wetter-Detail) verkleinert, die garantiert innerhalb der
-     64px passen. Das Detail bleibt beim Aufklappen der Karte sichtbar (.spot-card.expanded nutzt
-     weiterhin die volle Pillen-Darstellung von .status oben), analog zum bereits bestehenden Muster,
-     dass .note/.links/.card-actions/.maps-picker im Kompakt-Modus ausgeblendet werden. */
+  /* Status-Pille schrumpft in der Miniatur zum runden Icon-Kreis und morpht zur Pille */
+  .status {
+    /* Beim Aufklappen: Text entfaltet sich erst, wenn das Banner bereits Breite gewonnen hat */
+    transition:
+      width 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.08s,
+      height 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.08s,
+      padding 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.08s,
+      border-radius 0.28s ease 0.08s;
+  }
+
+  .status-text {
+    transition:
+      max-width 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s,
+      opacity 0.2s ease 0.14s;
+  }
+
   .spot-card:not(.expanded) .status {
     width: 22px;
     height: 22px;
     padding: 0;
     justify-content: center;
     border-radius: 50%;
+    /* Beim Zuklappen: Pille schrumpft sofort zum Kreis, bevor das Bild nach links gleitet */
+    transition:
+      width 0.2s cubic-bezier(0.32, 0.72, 0, 1) 0s,
+      height 0.2s cubic-bezier(0.32, 0.72, 0, 1) 0s,
+      padding 0.2s cubic-bezier(0.32, 0.72, 0, 1) 0s,
+      border-radius 0.2s ease 0s;
   }
 
   .spot-card:not(.expanded) .status-text {
-    display: none;
-  }
-
-  /* Etwas kleiner als der Desktop-Wert (200px) aus der Aufklapp-Ansicht, damit das Bild auf
-     schmalen Bildschirmen nicht zu dominant wirkt. */
-  .spot-card.expanded .image {
-    height: 160px;
+    max-width: 0;
+    opacity: 0;
+    transition:
+      max-width 0.18s cubic-bezier(0.32, 0.72, 0, 1) 0s,
+      opacity 0.14s ease 0s;
   }
 
   .mobile-only-accordion {
     display: grid;
     grid-template-rows: 0fr;
-    transition: grid-template-rows 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Beim Zuklappen: faltet sich sofort zusammen (Stufe 1) */
+    transition: grid-template-rows 0.22s cubic-bezier(0.32, 0.72, 0, 1) 0s;
   }
 
   .mobile-only-accordion.is-expanded {
     grid-template-rows: 1fr;
+    /* Beim Aufklappen: entfaltet sich nach Bild-Morph (Stufe 2) */
+    transition: grid-template-rows 0.35s cubic-bezier(0.32, 0.72, 0, 1) 0.14s;
   }
 
   .mobile-only-accordion-inner {
@@ -885,17 +975,19 @@ function onToggleDone() {
 
   .mobile-only-accordion-inner > * {
     transition:
-      opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-      transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      opacity 0.2s ease 0s,
+      transform 0.2s ease 0s;
     opacity: 0;
     transform: translateY(-12px) scale(0.98);
-    transition-delay: calc((var(--stagger-total, 6) - var(--stagger-idx, 0) - 1) * 20ms);
   }
 
   .mobile-only-accordion.is-expanded .mobile-only-accordion-inner > * {
+    transition:
+      opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+      transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
     opacity: 1;
     transform: translateY(0) scale(1);
-    transition-delay: calc(var(--stagger-idx, 0) * 35ms);
+    transition-delay: calc(var(--stagger-idx, 0) * 35ms + 140ms);
   }
 }
 
@@ -906,11 +998,14 @@ function onToggleDone() {
 .spot-accordion {
   display: grid;
   grid-template-rows: 0fr;
-  transition: grid-template-rows 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Beim Zuklappen sofort zusammenfalten (Stufe 1) */
+  transition: grid-template-rows 0.22s cubic-bezier(0.32, 0.72, 0, 1) 0s;
 }
 
 .spot-accordion.is-expanded {
   grid-template-rows: 1fr;
+  /* Beim Aufklappen nach dem Bild-Morph entfalten (Stufe 2) */
+  transition: grid-template-rows 0.35s cubic-bezier(0.32, 0.72, 0, 1) 0.14s;
 }
 
 .spot-accordion-inner {
@@ -921,18 +1016,35 @@ function onToggleDone() {
 .spot-accordion-inner > *,
 .excursion-accordion-inner > * {
   transition:
-    opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    opacity 0.2s ease 0s,
+    transform 0.2s ease 0s;
   opacity: 0;
   transform: translateY(-12px) scale(0.98);
-  transition-delay: calc((var(--stagger-total, 6) - var(--stagger-idx, 0) - 1) * 20ms);
 }
 
 .spot-accordion.is-expanded .spot-accordion-inner > *,
 .excursion-accordion.is-expanded .excursion-accordion-inner > * {
+  transition:
+    opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   opacity: 1;
   transform: translateY(0) scale(1);
-  transition-delay: calc(var(--stagger-idx, 0) * 35ms);
+  transition-delay: calc(var(--stagger-idx, 0) * 35ms + 140ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .image,
+  .body,
+  .spot-accordion,
+  .mobile-only-accordion,
+  .status,
+  .status-text,
+  .show-on-map-btn,
+  .show-on-map-btn .btn-label,
+  .spot-accordion-inner > *,
+  .mobile-only-accordion-inner > * {
+    transition: none !important;
+  }
 }
 
 /* Fallback-Slide-Fade für absolute Buttons */
