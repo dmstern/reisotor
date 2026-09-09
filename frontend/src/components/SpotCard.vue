@@ -598,6 +598,7 @@ function onToggleDone() {
     width 0.3s cubic-bezier(0.32, 0.72, 0, 1),
     height 0.3s cubic-bezier(0.32, 0.72, 0, 1),
     padding 0.3s cubic-bezier(0.32, 0.72, 0, 1),
+    gap 0.3s cubic-bezier(0.32, 0.72, 0, 1),
     border-radius 0.3s ease;
 }
 
@@ -904,6 +905,7 @@ function onToggleDone() {
     height: 22px;
     min-width: 22px;
     padding: 0;
+    gap: 0;
     justify-content: center;
     border-radius: 50%;
   }
@@ -925,6 +927,7 @@ function onToggleDone() {
       width 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.08s,
       height 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.08s,
       padding 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.08s,
+      gap 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.08s,
       border-radius 0.28s ease 0.08s;
   }
 
@@ -938,6 +941,7 @@ function onToggleDone() {
     width: 22px;
     height: 22px;
     padding: 0;
+    gap: 0;
     justify-content: center;
     border-radius: 50%;
     /* Beim Zuklappen: Pille schrumpft sofort zum Kreis, bevor das Bild nach links gleitet */
@@ -945,6 +949,7 @@ function onToggleDone() {
       width 0.2s cubic-bezier(0.32, 0.72, 0, 1) 0s,
       height 0.2s cubic-bezier(0.32, 0.72, 0, 1) 0s,
       padding 0.2s cubic-bezier(0.32, 0.72, 0, 1) 0s,
+      gap 0.2s cubic-bezier(0.32, 0.72, 0, 1) 0s,
       border-radius 0.2s ease 0s;
   }
 

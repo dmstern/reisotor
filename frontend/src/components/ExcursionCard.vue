@@ -692,6 +692,7 @@ function onSpotDrop(event: DragEvent) {
     width 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.08s,
     height 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.08s,
     padding 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.08s,
+    gap 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.08s,
     border-radius 0.28s ease 0.08s;
 }
 
@@ -937,12 +938,14 @@ function onSpotDrop(event: DragEvent) {
     width: 22px;
     height: 22px;
     padding: 0;
+    gap: 0;
     justify-content: center;
     border-radius: 50%;
     transition:
       width 0.2s cubic-bezier(0.32, 0.72, 0, 1) 0s,
       height 0.2s cubic-bezier(0.32, 0.72, 0, 1) 0s,
       padding 0.2s cubic-bezier(0.32, 0.72, 0, 1) 0s,
+      gap 0.2s cubic-bezier(0.32, 0.72, 0, 1) 0s,
       border-radius 0.2s ease 0s;
   }
 
@@ -959,6 +962,7 @@ function onSpotDrop(event: DragEvent) {
     height: 22px;
     min-width: 22px;
     padding: 0;
+    gap: 0;
     justify-content: center;
     border-radius: 50%;
   }
