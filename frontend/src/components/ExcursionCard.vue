@@ -301,94 +301,83 @@ function onSpotDrop(event: DragEvent) {
         />
 
         <!-- Expanded Cover Overlay: zeigt Titel, Kategorie/Rolle, Autor & Tour-Metadaten direkt über dem Bild -->
-        <div v-if="expanded" class="image-expanded-overlay">
-          <div class="overlay-top-row">
-            <div class="overlay-badge-group">
-              <span v-if="excursion.role" class="role-badge">
-                <AppIcon
-                  :icon="TRAVEL_ROLE_META[excursion.role].tabler"
-                  :size="14"
-                  group="categories"
-                />
-                {{ TRAVEL_ROLE_META[excursion.role].label }}
-              </span>
-              <span v-else class="tour-type-badge" title="Tour / Ausflug">
-                <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="12" group="categories" /> Tour
-              </span>
-              <PendingSyncBadge v-if="excursion._pending" />
+        <!-- Expanded Cover Overlay: zeigt Titel, Autor & Tour-Metadaten direkt über dem Bild -->
+        <Transition name="overlay-fade">
+          <div v-if="expanded" class="image-expanded-overlay">
+            <div class="overlay-top-row">
+              <EditButton floating class="overlay-edit-btn" @click="emit('edit', excursion)" />
             </div>
-            <Transition name="fade">
-              <EditButton floating @click="emit('edit', excursion)" />
-            </Transition>
-          </div>
-          <div class="overlay-bottom-content">
-            <h3 class="overlay-title">{{ excursion.title }}</h3>
-            <div class="overlay-meta-row">
-              <span v-if="creatorLabel" class="overlay-author">Von {{ creatorLabel }}</span>
-              <span v-if="routeLabel" class="overlay-submeta">{{ routeLabel }}</span>
-              <span v-else-if="resolvedStations.length" class="overlay-submeta">
-                {{ resolvedStations.length }}
-                {{ resolvedStations.length === 1 ? 'Station' : 'Stationen' }}
-              </span>
-              <span v-if="travelDuration" class="overlay-submeta">· {{ travelDuration }}</span>
+            <div class="overlay-bottom-content">
+              <h3 class="overlay-title">{{ excursion.title }}</h3>
+              <div class="overlay-meta-row">
+                <span v-if="creatorLabel" class="overlay-author">Von {{ creatorLabel }}</span>
+                <span v-if="routeLabel" class="overlay-submeta">{{ routeLabel }}</span>
+                <span v-else-if="resolvedStations.length" class="overlay-submeta">
+                  {{ resolvedStations.length }}
+                  {{ resolvedStations.length === 1 ? 'Station' : 'Stationen' }}
+                </span>
+                <span v-if="travelDuration" class="overlay-submeta">· {{ travelDuration }}</span>
+              </div>
             </div>
           </div>
-        </div>
+        </Transition>
 
         <!-- Collapsed Zustand: Passives Status-Badge unten rechts (#106) -->
-        <template v-else>
-          <span
-            class="status"
-            :class="{ planned: excursion.date && !excursion.done, 'status-done': excursion.done }"
-          >
-            <template v-if="excursion.done && excursion.date">
-              <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
-              <span class="status-text">
-                Gemacht am {{ statusDateLabel
-                }}<template v-if="weatherSummary">
-                  · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
-                  {{ weatherSummary.tempLabel }}</template
-                >
-              </span>
-            </template>
-            <template v-else-if="excursion.done">
-              <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
-              <span class="status-text">Gemacht</span>
-            </template>
-            <template v-else-if="excursion.date">
-              <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="actions" />
-              <span class="status-text">
-                Geplant für {{ statusDateLabel
-                }}<template v-if="weatherSummary">
-                  · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
-                  {{ weatherSummary.tempLabel }}</template
-                >
-              </span>
-            </template>
-            <template v-else>
-              <AppIcon :icon="ACTION_ICONS.today" :size="14" group="actions" />
-              <span class="status-text">In Planung</span>
-            </template>
-          </span>
-        </template>
+        <span
+          v-if="!expanded"
+          class="status"
+          :class="{ planned: excursion.date && !excursion.done, 'status-done': excursion.done }"
+        >
+          <template v-if="excursion.done && excursion.date">
+            <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
+            <span class="status-text">
+              Gemacht am {{ statusDateLabel
+              }}<template v-if="weatherSummary">
+                · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
+                {{ weatherSummary.tempLabel }}</template
+              >
+            </span>
+          </template>
+          <template v-else-if="excursion.done">
+            <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
+            <span class="status-text">Gemacht</span>
+          </template>
+          <template v-else-if="excursion.date">
+            <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="actions" />
+            <span class="status-text">
+              Geplant für {{ statusDateLabel
+              }}<template v-if="weatherSummary">
+                · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
+                {{ weatherSummary.tempLabel }}</template
+              >
+            </span>
+          </template>
+          <template v-else>
+            <AppIcon :icon="ACTION_ICONS.today" :size="14" group="actions" />
+            <span class="status-text">In Planung</span>
+          </template>
+        </span>
       </div>
+
+      <!-- Gleitende Badge-Gruppe: Ein einziges Element, das nahtlos zwischen Body und Cover-Ecke gleitet -->
+      <div class="card-badge-group">
+        <span v-if="excursion.role" class="role-badge">
+          <AppIcon :icon="TRAVEL_ROLE_META[excursion.role].tabler" :size="14" group="categories" />
+          {{ TRAVEL_ROLE_META[excursion.role].label }}
+        </span>
+        <span v-else class="tour-type-badge" title="Tour / Ausflug">
+          <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="12" group="categories" /> Tour
+        </span>
+        <PendingSyncBadge v-if="excursion._pending" />
+      </div>
+
       <div class="body">
-        <!-- Im aufgeklappten Zustand bereits im Cover-Overlay vorhanden; spart Platz im Body -->
-        <div v-if="!expanded" class="title-row">
-          <h3>{{ excursion.title }}</h3>
-          <span v-if="excursion.role" class="role-badge">
-            <AppIcon
-              :icon="TRAVEL_ROLE_META[excursion.role].tabler"
-              :size="14"
-              group="categories"
-            />
-            {{ TRAVEL_ROLE_META[excursion.role].label }}
-          </span>
-          <span v-else class="tour-type-badge" title="Tour / Ausflug">
-            <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="12" group="categories" /> Tour
-          </span>
-          <PendingSyncBadge v-if="excursion._pending" />
-        </div>
+        <!-- Im collapsed Zustand sichtbar; blendet beim Aufklappen sanft aus -->
+        <Transition name="fade">
+          <div v-if="!expanded" class="title-row">
+            <h3>{{ excursion.title }}</h3>
+          </div>
+        </Transition>
         <p v-if="!expanded && routeLabel" class="route">{{ routeLabel }}</p>
         <p
           v-if="
@@ -751,6 +740,17 @@ function onSpotDrop(event: DragEvent) {
   pointer-events: none;
 }
 
+.overlay-fade-enter-active {
+  transition: opacity 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.overlay-fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+.overlay-fade-enter-from,
+.overlay-fade-leave-to {
+  opacity: 0;
+}
+
 /* Expanded Cover Overlay: Halbdunkles Gradient-Overlay mit Titel, Kategorie/Rolle und Metadaten */
 .image-expanded-overlay {
   position: absolute;
@@ -777,27 +777,40 @@ function onSpotDrop(event: DragEvent) {
 .overlay-top-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
+  justify-content: flex-start;
 }
 
-.overlay-top-row :deep(.edit-btn.floating) {
-  position: static;
-  top: auto;
-  left: auto;
+.overlay-edit-btn {
+  animation: editBtnSlideIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) 0.08s both;
 }
 
-.overlay-badge-group {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  flex-wrap: wrap;
+@keyframes editBtnSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .overlay-bottom-content {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  animation: bottomContentSlideIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) 0.06s both;
+}
+
+@keyframes bottomContentSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .overlay-title {
@@ -880,6 +893,59 @@ function onSpotDrop(event: DragEvent) {
   justify-content: space-between;
   gap: var(--space-2);
   width: 100%;
+  padding-right: 70px;
+  max-height: 40px;
+  overflow: hidden;
+  opacity: 1;
+  transition:
+    opacity 0.22s ease 0.12s,
+    max-height 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s;
+}
+
+.excursion-card.expanded .title-row {
+  max-height: 0;
+  margin-bottom: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.18s ease 0s,
+    max-height 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0s;
+}
+
+/* Card Badge Group: gleitet sanft zwischen Body und Cover-Ecke */
+.card-badge-group {
+  position: absolute;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  pointer-events: none;
+  top: var(--space-3);
+  right: var(--space-3);
+  transition:
+    top 0.32s cubic-bezier(0.32, 0.72, 0, 1),
+    right 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.card-badge-group > * {
+  pointer-events: auto;
+}
+
+.excursion-card.expanded .card-badge-group .role-badge,
+.excursion-card.expanded .card-badge-group .tour-type-badge {
+  background: rgba(0, 0, 0, 0.45) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+.card-badge-group .role-badge,
+.card-badge-group .tour-type-badge {
+  transition:
+    background 0.3s ease,
+    border-color 0.3s ease,
+    box-shadow 0.3s ease;
 }
 
 .show-on-map-btn {
@@ -1187,6 +1253,22 @@ function onSpotDrop(event: DragEvent) {
   .role-badge {
     font-size: 0.72rem;
     padding: 1px 7px;
+  }
+
+  .excursion-card:not(.expanded) .card-badge-group {
+    top: 8px;
+    right: var(--space-2);
+    transition:
+      top 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s,
+      right 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s;
+  }
+
+  .excursion-card.expanded .card-badge-group {
+    top: var(--space-3);
+    right: var(--space-3);
+    transition:
+      top 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s,
+      right 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s;
   }
 
   .excursion-card.expanded .body {

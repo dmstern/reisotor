@@ -381,86 +381,87 @@ function openCalendarConfirmDone() {
         group="categories"
       />
 
-      <!-- Expanded Cover Overlay: zeigt Titel, Kategorie, Autor & Metadaten direkt über dem Bild -->
-      <div v-if="expanded" class="image-expanded-overlay">
-        <div class="overlay-top-row">
-          <div class="overlay-badge-group">
-            <CategoryChip :category="spot.category" />
-            <PendingSyncBadge v-if="spot._pending" />
+      <!-- Expanded Cover Overlay: Halbdunkles Gradient-Overlay mit Titel, Autor & Metadaten -->
+      <Transition name="overlay-fade">
+        <div v-if="expanded" class="image-expanded-overlay">
+          <div class="overlay-top-row">
+            <EditButton floating class="overlay-edit-btn" @click="emit('edit', spot)" />
           </div>
-          <Transition name="slide-fade">
-            <EditButton floating @click="emit('edit', spot)" />
-          </Transition>
-        </div>
-        <div class="overlay-bottom-content">
-          <h3 class="overlay-title">{{ spot.title }}</h3>
-          <div class="overlay-meta-row">
-            <span v-if="creatorLabel" class="overlay-author">Von {{ creatorLabel }}</span>
-            <span
-              v-if="isAccommodation && (spot.start_date || spot.end_date)"
-              class="overlay-submeta"
-            >
-              {{ formatAccommodationDate(spot.start_date) || '?' }} –
-              {{ formatAccommodationDate(spot.end_date) || '?' }}
-            </span>
-            <span v-else-if="spot.address" class="overlay-submeta">
-              {{ spot.address }}
-            </span>
+          <div class="overlay-bottom-content">
+            <h3 class="overlay-title">{{ spot.title }}</h3>
+            <div class="overlay-meta-row">
+              <span v-if="creatorLabel" class="overlay-author">Von {{ creatorLabel }}</span>
+              <span
+                v-if="isAccommodation && (spot.start_date || spot.end_date)"
+                class="overlay-submeta"
+              >
+                {{ formatAccommodationDate(spot.start_date) || '?' }} –
+                {{ formatAccommodationDate(spot.end_date) || '?' }}
+              </span>
+              <span v-else-if="spot.address" class="overlay-submeta">
+                {{ spot.address }}
+              </span>
+            </div>
           </div>
         </div>
-      </div>
+      </Transition>
 
       <!-- Collapsed Zustand: Passives Status-Badge unten rechts (#106) -->
-      <template v-else>
-        <span
-          v-if="scheduledDate || totalItemsCount > 0 || isSpotDone || dayWeather"
-          class="status"
-          :class="{
-            planned: (scheduledDate || totalItemsCount > 0) && !isSpotDone && !isSpotPartiallyDone,
-            'status-done': isSpotDone || isSpotPartiallyDone,
-          }"
-        >
-          <AppIcon
-            class="status-icon"
-            :size="14"
-            :icon="
-              isSpotDone || isSpotPartiallyDone
-                ? ACTION_ICONS.done
-                : scheduledDate || totalItemsCount > 0
-                  ? FORM_FIELD_ICONS.date
-                  : ACTION_ICONS.today
-            "
-            group="actions"
-          />
-          <span class="status-text">
-            <template v-if="totalItemsCount > 1">
-              <template v-if="allItemsDone">Besucht an {{ totalItemsCount }} Tagen</template>
-              <template v-else-if="doneItemsCount > 0">
-                {{ doneItemsCount }} von {{ totalItemsCount }} Tagen besucht
-              </template>
-              <template v-else>Geplant an {{ totalItemsCount }} Tagen</template>
+      <span
+        v-if="!expanded && (scheduledDate || totalItemsCount > 0 || isSpotDone || dayWeather)"
+        class="status"
+        :class="{
+          planned: (scheduledDate || totalItemsCount > 0) && !isSpotDone && !isSpotPartiallyDone,
+          'status-done': isSpotDone || isSpotPartiallyDone,
+        }"
+      >
+        <AppIcon
+          class="status-icon"
+          :size="14"
+          :icon="
+            isSpotDone || isSpotPartiallyDone
+              ? ACTION_ICONS.done
+              : scheduledDate || totalItemsCount > 0
+                ? FORM_FIELD_ICONS.date
+                : ACTION_ICONS.today
+          "
+          group="actions"
+        />
+        <span class="status-text">
+          <template v-if="totalItemsCount > 1">
+            <template v-if="allItemsDone">Besucht an {{ totalItemsCount }} Tagen</template>
+            <template v-else-if="doneItemsCount > 0">
+              {{ doneItemsCount }} von {{ totalItemsCount }} Tagen besucht
             </template>
-            <template v-else-if="isSpotDone && scheduledDate">
-              Besucht am {{ plannedDateLabel }}
-            </template>
-            <template v-else-if="isSpotDone">Gemacht</template>
-            <template v-else-if="scheduledDate">Geplant für {{ plannedDateLabel }}</template>
-            <template v-else>Aktuelles Wetter</template>
-            <template v-if="dayWeather && scheduledDaysCount <= 1">
-              · <WeatherIcon :code="dayWeather.weatherCode" :size="14" />
-              {{ Math.round(dayWeather.tempMax) }}°</template
-            >
-          </span>
+            <template v-else>Geplant an {{ totalItemsCount }} Tagen</template>
+          </template>
+          <template v-else-if="isSpotDone && scheduledDate">
+            Besucht am {{ plannedDateLabel }}
+          </template>
+          <template v-else-if="isSpotDone">Gemacht</template>
+          <template v-else-if="scheduledDate">Geplant für {{ plannedDateLabel }}</template>
+          <template v-else>Aktuelles Wetter</template>
+          <template v-if="dayWeather && scheduledDaysCount <= 1">
+            · <WeatherIcon :code="dayWeather.weatherCode" :size="14" />
+            {{ Math.round(dayWeather.tempMax) }}°</template
+          >
         </span>
-      </template>
+      </span>
     </div>
+
+    <!-- Gleitende Badge-Gruppe: Ein einziges Element, das nahtlos zwischen Body und Cover-Ecke gleitet -->
+    <div class="card-badge-group">
+      <CategoryChip :category="spot.category" />
+      <PendingSyncBadge v-if="spot._pending" />
+    </div>
+
     <div class="body">
-      <!-- Im aufgeklappten Zustand bereits im Cover-Overlay vorhanden; spart Platz im Body -->
-      <div v-if="!expanded" class="head">
-        <h3>{{ spot.title }}</h3>
-        <CategoryChip :category="spot.category" />
-        <PendingSyncBadge v-if="spot._pending" />
-      </div>
+      <!-- Im collapsed Zustand sichtbar; blendet beim Aufklappen sanft aus -->
+      <Transition name="fade">
+        <div v-if="!expanded" class="head">
+          <h3>{{ spot.title }}</h3>
+        </div>
+      </Transition>
       <!-- Eigene, explizite Aktion statt am Aufklappen dranzuhängen (#109, siehe onShowOnMap im
            Script) – in Mini- UND aufgeklappter Karte sichtbar (Textlabel schrumpft im Kompakt-Modus
            auf reines Icon, siehe @container-Regel unten), gleiche Konvention wie
@@ -825,6 +826,17 @@ function openCalendarConfirmDone() {
   opacity: 0;
 }
 
+.overlay-fade-enter-active {
+  transition: opacity 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.overlay-fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+.overlay-fade-enter-from,
+.overlay-fade-leave-to {
+  opacity: 0;
+}
+
 .placeholder {
   font-size: 2.2rem;
   transition:
@@ -839,7 +851,7 @@ function openCalendarConfirmDone() {
   pointer-events: none;
 }
 
-/* Expanded Cover Overlay: Halbdunkles Gradient-Overlay mit Titel, Kategorie und Autor */
+/* Expanded Cover Overlay: Halbdunkles Gradient-Overlay mit Titel, Autor & Metadaten */
 .image-expanded-overlay {
   position: absolute;
   inset: 0;
@@ -865,27 +877,40 @@ function openCalendarConfirmDone() {
 .overlay-top-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
+  justify-content: flex-start;
 }
 
-.overlay-top-row :deep(.edit-btn.floating) {
-  position: static;
-  top: auto;
-  left: auto;
+.overlay-edit-btn {
+  animation: editBtnSlideIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) 0.08s both;
 }
 
-.overlay-badge-group {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  flex-wrap: wrap;
+@keyframes editBtnSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .overlay-bottom-content {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  animation: bottomContentSlideIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) 0.06s both;
+}
+
+@keyframes bottomContentSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .overlay-title {
@@ -973,6 +998,52 @@ function openCalendarConfirmDone() {
   }
 }
 
+/* Card Badge Group: gleitet sanft zwischen Body und Cover-Ecke */
+.card-badge-group {
+  position: absolute;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  pointer-events: none;
+}
+
+.card-badge-group > * {
+  pointer-events: auto;
+}
+
+/* Auf Desktop (> 480px): Collapsed im Body unter dem 120px-Bild, Expanded im Cover-Overlay */
+.spot-card:not(.expanded) .card-badge-group {
+  top: calc(120px + var(--space-3));
+  right: var(--space-3);
+  transition:
+    top 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s,
+    right 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s;
+}
+
+.spot-card.expanded .card-badge-group {
+  top: var(--space-3);
+  right: var(--space-3);
+  transition:
+    top 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s,
+    right 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s;
+}
+
+.spot-card.expanded .card-badge-group :deep(.category-chip) {
+  background: rgba(0, 0, 0, 0.45) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+.card-badge-group :deep(.category-chip) {
+  transition:
+    background 0.3s ease,
+    border-color 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
 .body {
   padding: var(--space-3);
   display: flex;
@@ -986,6 +1057,25 @@ function openCalendarConfirmDone() {
   align-items: baseline;
   gap: var(--space-2);
   margin-bottom: var(--space-2);
+  padding-right: 90px;
+  max-height: 40px;
+  overflow: hidden;
+  opacity: 1;
+  transition:
+    opacity 0.22s ease 0.12s,
+    max-height 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s,
+    margin-bottom 0.28s ease 0.12s;
+}
+
+.spot-card.expanded .head {
+  max-height: 0;
+  margin-bottom: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.18s ease 0s,
+    max-height 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0s,
+    margin-bottom 0.28s ease 0s;
 }
 
 /* min-width:0 + Kürzung statt Umbruch: ohne das wechselte ein langer Titel zwischen ein-/
@@ -1246,6 +1336,22 @@ function openCalendarConfirmDone() {
 
   .spot-card:not(.expanded) .head {
     margin-bottom: 0;
+  }
+
+  .spot-card:not(.expanded) .card-badge-group {
+    top: 8px;
+    right: var(--space-2);
+    transition:
+      top 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s,
+      right 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s;
+  }
+
+  .spot-card.expanded .card-badge-group {
+    top: var(--space-3);
+    right: var(--space-3);
+    transition:
+      top 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s,
+      right 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s;
   }
 
   /* Anders als zuvor bleibt .links (der "Auf Karte anzeigen"-Button) hier bewusst sichtbar (#109),
