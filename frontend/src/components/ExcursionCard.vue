@@ -300,24 +300,11 @@ function onSpotDrop(event: DragEvent) {
           group="categories"
         />
 
-        <!-- Expanded Cover Overlay: zeigt Titel, Kategorie/Rolle, Autor & Tour-Metadaten direkt über dem Bild -->
-        <!-- Expanded Cover Overlay: zeigt Titel, Autor & Tour-Metadaten direkt über dem Bild -->
+        <!-- Expanded Cover Overlay: Halbdunkles Gradient-Overlay mit Edit-Button -->
         <Transition name="overlay-fade">
           <div v-if="expanded" class="image-expanded-overlay">
             <div class="overlay-top-row">
               <EditButton floating class="overlay-edit-btn" @click="emit('edit', excursion)" />
-            </div>
-            <div class="overlay-bottom-content">
-              <h3 class="overlay-title">{{ excursion.title }}</h3>
-              <div class="overlay-meta-row">
-                <span v-if="creatorLabel" class="overlay-author">Von {{ creatorLabel }}</span>
-                <span v-if="routeLabel" class="overlay-submeta">{{ routeLabel }}</span>
-                <span v-else-if="resolvedStations.length" class="overlay-submeta">
-                  {{ resolvedStations.length }}
-                  {{ resolvedStations.length === 1 ? 'Station' : 'Stationen' }}
-                </span>
-                <span v-if="travelDuration" class="overlay-submeta">· {{ travelDuration }}</span>
-              </div>
             </div>
           </div>
         </Transition>
@@ -372,12 +359,27 @@ function onSpotDrop(event: DragEvent) {
       </div>
 
       <div class="body">
-        <!-- Im collapsed Zustand sichtbar; blendet beim Aufklappen sanft aus -->
-        <Transition name="fade">
-          <div v-if="!expanded" class="title-row">
-            <h3>{{ excursion.title }}</h3>
-          </div>
-        </Transition>
+        <!-- Einheitlicher Card-Titel: gleitet beim Expandieren nahtlos vom Body in den Cover-Header -->
+        <div class="card-title-block">
+          <h3 class="card-title" :title="excursion.title">{{ excursion.title }}</h3>
+          <Transition name="fade">
+            <div
+              v-if="
+                expanded &&
+                (creatorLabel || routeLabel || resolvedStations.length || travelDuration)
+              "
+              class="card-title-meta"
+            >
+              <span v-if="creatorLabel" class="overlay-author">Von {{ creatorLabel }}</span>
+              <span v-if="routeLabel" class="overlay-submeta">{{ routeLabel }}</span>
+              <span v-else-if="resolvedStations.length" class="overlay-submeta">
+                {{ resolvedStations.length }}
+                {{ resolvedStations.length === 1 ? 'Station' : 'Stationen' }}
+              </span>
+              <span v-if="travelDuration" class="overlay-submeta">· {{ travelDuration }}</span>
+            </div>
+          </Transition>
+        </div>
         <p v-if="!expanded && routeLabel" class="route">{{ routeLabel }}</p>
         <p
           v-if="
@@ -767,7 +769,7 @@ function onSpotDrop(event: DragEvent) {
   );
   border-radius: inherit;
   pointer-events: none;
-  z-index: 2;
+  z-index: 1;
 }
 
 .image-expanded-overlay > * {
@@ -795,48 +797,6 @@ function onSpotDrop(event: DragEvent) {
   }
 }
 
-.overlay-bottom-content {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  animation: bottomContentSlideIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) 0.06s both;
-}
-
-@keyframes bottomContentSlideIn {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.overlay-title {
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #ffffff;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
-  line-height: 1.25;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-}
-
-.overlay-meta-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: 0.8125rem;
-  color: rgba(255, 255, 255, 0.9);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
-  flex-wrap: wrap;
-}
-
 .overlay-author {
   font-weight: 600;
 }
@@ -847,7 +807,7 @@ function onSpotDrop(event: DragEvent) {
 
 .body {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   padding: var(--space-3);
   display: flex;
   flex-direction: column;
@@ -875,47 +835,75 @@ function onSpotDrop(event: DragEvent) {
     padding 0.28s ease 0.12s;
 }
 
-/* min-width:0 + Kürzung statt Umbruch, gleiches Muster wie SpotCard.vue's .head h3 */
-.title-row h3,
-.body h3 {
-  font-size: 1rem;
+/* Einheitlicher Card-Titel: gleitet beim Expandieren nahtlos vom Body in den Cover-Header */
+.card-title-block {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: var(--space-1);
+  padding-right: 70px;
+  transform: translate3d(0, 0, 0);
+  transition:
+    transform 0.32s cubic-bezier(0.32, 0.72, 0, 1),
+    margin-bottom 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+  pointer-events: none;
+}
+
+.card-title-block > * {
+  pointer-events: auto;
+}
+
+.excursion-card.expanded .card-title-block {
+  transform: translateY(calc(-100% - var(--space-3) * 2));
+  margin-bottom: -28px;
+  padding-right: 90px;
+}
+
+.card-title {
   margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--color-text);
   flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  transition:
+    color 0.28s ease,
+    font-size 0.32s cubic-bezier(0.32, 0.72, 0, 1),
+    line-height 0.32s cubic-bezier(0.32, 0.72, 0, 1),
+    text-shadow 0.28s ease;
 }
 
-.title-row {
+.excursion-card.expanded .card-title {
+  color: #ffffff;
+  font-size: 1.25rem;
+  line-height: 1.25;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.card-title-meta {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--space-2);
-  width: 100%;
-  padding-right: 70px;
-  max-height: 40px;
-  overflow: hidden;
-  opacity: 1;
-  transition:
-    opacity 0.22s ease 0.12s,
-    max-height 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s;
-}
-
-.excursion-card.expanded .title-row {
-  max-height: 0;
-  margin-bottom: 0;
-  opacity: 0;
-  pointer-events: none;
-  transition:
-    opacity 0.18s ease 0s,
-    max-height 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0s;
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+  flex-wrap: wrap;
 }
 
 /* Card Badge Group: gleitet sanft zwischen Body und Cover-Ecke */
 .card-badge-group {
   position: absolute;
-  z-index: 3;
+  z-index: 4;
   display: flex;
   align-items: center;
   gap: var(--space-2);
