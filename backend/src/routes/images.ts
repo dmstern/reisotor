@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { uploadsDir } from '../uploads.js';
+import { isUserRestricted } from '../registrationConfig.js';
 
 interface ImageUploadBody {
   data: string;
@@ -26,6 +27,9 @@ export const imagesRoutes: FastifyPluginAsync = async (app) => {
   // komprimiertes Bild als Data-URL entgegen und legt es als Datei ab – bewusst kein serverseitiges
   // Resizing (z. B. via sharp), das ist auf dem ressourcenschwachen Raspberry Pi 2 zu teuer.
   app.post<{ Body: ImageUploadBody }>('/images', async (req, reply) => {
+    if (isUserRestricted(req.session.userId)) {
+      return reply.code(403).send({ error: 'Eingeschränkter Modus - Kein Datei-Upload möglich' });
+    }
     const match = /^data:(image\/[a-z]+);base64,(.+)$/.exec(req.body?.data ?? '');
     if (!match) return reply.code(400).send({ error: 'Ungültiges Bildformat' });
 

@@ -1,3 +1,5 @@
+import { isIP } from 'node:net';
+
 export interface LatLng {
   lat: number;
   lng: number;
@@ -48,6 +50,56 @@ const FETCH_HEADERS = {
 };
 const MAX_REDIRECT_HOPS = 5;
 
+/** Prüft, ob eine URL sicher für serverseitige Fetch-Anfragen ist (SSRF-Schutz). */
+export function isSafeUrl(urlString: string): boolean {
+  let parsed: URL;
+  try {
+    parsed = new URL(urlString);
+  } catch {
+    return false;
+  }
+
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    return false;
+  }
+
+  const hostname = parsed.hostname.toLowerCase().replace(/^\[|\]$/g, '');
+
+  if (
+    hostname === 'localhost' ||
+    hostname.endsWith('.localhost') ||
+    hostname.endsWith('.local') ||
+    hostname.endsWith('.internal')
+  ) {
+    return false;
+  }
+
+  const ipType = isIP(hostname);
+  if (ipType === 4) {
+    const parts = hostname.split('.').map(Number);
+    const [a, b] = parts;
+    if (a === 127) return false; // 127.0.0.0/8
+    if (a === 10) return false; // 10.0.0.0/8
+    if (a === 172 && b >= 16 && b <= 31) return false; // 172.16.0.0/12
+    if (a === 192 && b === 168) return false; // 192.168.0.0/16
+    if (a === 169 && b === 254) return false; // 169.254.0.0/16
+    if (a === 0) return false; // 0.0.0.0/8
+  } else if (ipType === 6) {
+    if (
+      hostname === '::1' ||
+      hostname.startsWith('fe80:') ||
+      hostname.startsWith('fc00:') ||
+      hostname.startsWith('fd00:')
+    ) {
+      return false;
+    }
+  } else if (/^(0x[0-9a-f]+|\d+)$/i.test(hostname)) {
+    return false;
+  }
+
+  return true;
+}
+
 /** Folgt dem Redirect eines Kurzlinks manuell, Hop für Hop, und parst NUR den `Location`-Header
  *  jeder Zwischenantwort – ohne die volle (JS-lastige) Zielseite selbst abzurufen. Google kodiert
  *  die Zielkoordinate bereits in der Redirect-Ziel-URL selbst (z. B. .../@lat,lng,zoom oder
@@ -56,9 +108,13 @@ const MAX_REDIRECT_HOPS = 5;
  *  bestimmten Kurzlink-Varianten (siehe g_st=ic unten) ansetzt. redirect:'manual' liefert in Node
  *  (anders als im Browser, wo CORS einen undurchsichtigen "opaqueredirect"-Response erzwingt) einen
  *  normal lesbaren Response mit Location-Header, kein Sonderfall nötig. */
+/** Folgt dem Redirect eines Kurzlinks manuell, Hop für Hop, und parst NUR den `Location`-Header
+ *  jeder Zwischenantwort – ohne die volle (JS-lastige) Zielseite selbst abzurufen. Erzwingt isSafeUrl
+ *  auf jedem Hop (SSRF-Schutz). */
 async function resolveViaRedirectHeaders(url: string): Promise<LatLng | null> {
   let current = url;
   for (let hop = 0; hop < MAX_REDIRECT_HOPS; hop++) {
+    if (!isSafeUrl(current)) return null;
     let res: Response;
     try {
       res = await fetch(current, {
@@ -91,13 +147,8 @@ export async function resolveLatLng(url: string | null | undefined): Promise<Lat
   const direct = parseLatLngFromText(url);
   if (direct) return direct;
 
-  // Best-effort, unbewiesene Theorie: "g_st=ic" markiert einen über das native Teilen-Menü ("in
-  // context") erzeugten Kurzlink – genau diese Variante wurde wiederholt mit einem echten 403 von
-  // Google blockiert (Bot-Erkennung), auch mit realistischem Browser-User-Agent. Den Parameter vor
-  // dem Redirect-Follow zu entfernen kostet nichts und könnte in manchen Fällen helfen, ist aber
-  // KEIN verlässlicher Fix – der eigentliche Fallback bleibt der manuelle Karten-Picker im Frontend
-  // (LocationPicker.vue).
   const strippedUrl = url.replace(/([?&])g_st=[^&]*&?/, '$1').replace(/[?&]$/, '');
+  if (!isSafeUrl(strippedUrl)) return null;
 
   const viaHeaders = await resolveViaRedirectHeaders(strippedUrl);
   if (viaHeaders) return viaHeaders;
@@ -108,6 +159,7 @@ export async function resolveLatLng(url: string | null | undefined): Promise<Lat
       signal: AbortSignal.timeout(5000),
       headers: FETCH_HEADERS,
     });
+    if (!isSafeUrl(res.url)) return null;
     return parseLatLngFromText(res.url);
   } catch {
     return null;
@@ -156,12 +208,14 @@ function extractOgImage(html: string): string | null {
 export async function fetchPlacePreview(url: string | null | undefined): Promise<PlacePreview> {
   if (!url) return { name: null, imageUrl: null };
   const strippedUrl = url.replace(/([?&])g_st=[^&]*&?/, '$1').replace(/[?&]$/, '');
+  if (!isSafeUrl(strippedUrl)) return { name: null, imageUrl: null };
   try {
     const res = await fetch(strippedUrl, {
       redirect: 'follow',
       signal: AbortSignal.timeout(5000),
       headers: FETCH_HEADERS,
     });
+    if (!isSafeUrl(res.url)) return { name: null, imageUrl: null };
     const html = await res.text();
     return { name: extractPlaceNameFromUrl(res.url), imageUrl: extractOgImage(html) };
   } catch {

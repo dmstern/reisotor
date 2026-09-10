@@ -217,7 +217,9 @@ describe('feedback routes', () => {
     });
 
     expect(res.statusCode).toBe(502);
-    expect(res.json().error).toContain('422');
+    expect(res.json().error).toBe(
+      'Meldung konnte nicht an den Feedback-Dienst übermittelt werden.'
+    );
   });
 
   it('requires authentication', async () => {
