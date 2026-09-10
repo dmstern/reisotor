@@ -23,7 +23,6 @@ import Card from './primitives/Card.vue';
 import Button from './primitives/Button.vue';
 import Input from './primitives/Input.vue';
 import PickerMenu from './primitives/PickerMenu.vue';
-import DetailRow from './primitives/DetailRow.vue';
 import WeatherIcon from './WeatherIcon.vue';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
@@ -507,18 +506,14 @@ function onSpotDrop(event: DragEvent) {
           </p>
         </template>
 
-        <div class="excursion-accordion" :class="{ 'is-expanded': expanded }" :inert="!expanded">
-          <div class="excursion-accordion-inner accordion-stagger">
-            <DetailRow v-if="creatorLabel && !expanded" label="Von">
-              {{ creatorLabel }}
-            </DetailRow>
-            <RichTextDisplay
-              v-if="excursion.note"
-              class="note"
-              :content="excursion.note"
-              :format="excursion.note_format"
-            />
-          </div>
+        <!-- Tour-Notiz: Im collapsed Zustand 1-2-zeilig mit Ellipsis, klappt beim Aufklappen weich auf (#235) -->
+        <div v-if="excursion.note" class="tour-note-container" :class="{ 'is-expanded': expanded }">
+          <RichTextDisplay
+            class="note"
+            :class="{ 'is-clamped': !expanded }"
+            :content="excursion.note"
+            :format="excursion.note_format"
+          />
         </div>
 
         <div class="links" v-if="hasMappedStations">
@@ -1345,8 +1340,61 @@ function onSpotDrop(event: DragEvent) {
   margin-top: 4px;
 }
 
+/* Tour-Notiz: Fließender Übergang zwischen 1-2-zeiligem Teaser und voller Höhe (#235) */
+.tour-note-container {
+  display: block;
+  position: relative;
+  margin-top: 2px;
+  overflow: hidden;
+  transition:
+    max-height 0.35s cubic-bezier(0.32, 0.72, 0, 1),
+    margin 0.25s ease;
+}
+
+.tour-note-container:not(.is-expanded) {
+  max-height: 2.8em;
+}
+
+.tour-note-container.is-expanded {
+  max-height: 2000px;
+}
+
 .note {
   overflow-wrap: anywhere;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--color-text);
+  transition: color 0.2s ease;
+}
+
+.note.is-clamped {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  color: var(--color-text-muted);
+}
+
+.note.is-clamped :deep(.richtext) {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.note.is-clamped :deep(p),
+.note.is-clamped :deep(div) {
+  display: inline;
+  margin: 0;
+}
+
+.note.is-clamped :deep(p + p::before),
+.note.is-clamped :deep(div + div::before) {
+  content: ' ';
 }
 
 .role-badge {
@@ -1711,6 +1759,20 @@ function onSpotDrop(event: DragEvent) {
   .polaroid-caption {
     font-size: 0.4rem;
   }
+
+  .tour-note-container:not(.is-expanded) {
+    max-height: 1.4em;
+  }
+
+  .note.is-clamped {
+    -webkit-line-clamp: 1;
+    font-size: 0.78rem;
+    line-height: 1.3;
+  }
+
+  .note.is-clamped :deep(.richtext) {
+    -webkit-line-clamp: 1;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1724,7 +1786,8 @@ function onSpotDrop(event: DragEvent) {
   .excursion-accordion-inner > *,
   .polaroid-tile,
   .tour-stations-preview,
-  .tour-stations-preview.is-fanned-out .polaroid-tile {
+  .tour-stations-preview.is-fanned-out .polaroid-tile,
+  .tour-note-container {
     transform: none !important;
     transition: opacity 0.15s ease !important;
   }
