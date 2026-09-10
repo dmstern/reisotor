@@ -592,6 +592,8 @@ function onSpotDrop(event: DragEvent) {
    links statt großem Banner oben, damit es bei voller Breite nicht unnötig gestreckt wirkt. */
 .excursion-card {
   position: relative;
+  z-index: 1;
+  isolation: isolate;
   padding: 0;
   display: flex;
   flex-direction: row;

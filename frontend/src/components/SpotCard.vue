@@ -786,6 +786,8 @@ function openCalendarConfirmDone() {
 <style scoped>
 .spot-card {
   position: relative;
+  z-index: 1;
+  isolation: isolate;
   padding: 0;
   display: flex;
   flex-direction: column;

@@ -215,6 +215,7 @@ function handleCardKeydown(event: KeyboardEvent) {
 
 <style>
 .card {
+  isolation: isolate;
   background: var(--color-surface);
   border: var(--ui-border-width, 1px) solid var(--color-border);
   border-radius: var(--radius-md-squircle);

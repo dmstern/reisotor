@@ -5269,7 +5269,7 @@ async function deleteEditingSpot() {
      ist die gängige Lösung dafür. */
   top: -1px;
   padding-top: 1px;
-  z-index: 2;
+  z-index: 10;
   margin-bottom: var(--space-3);
 
   /* Die Leiste auf die volle Breite der Schublade aufziehen, um auch das seitliche Scroll-Padding
