@@ -346,42 +346,6 @@ function onSpotDrop(event: DragEvent) {
             </div>
           </div>
         </Transition>
-
-        <!-- Collapsed Zustand: Passives Status-Badge unten rechts (#106) -->
-        <span
-          v-if="!expanded"
-          class="status"
-          :class="{ planned: excursion.date && !excursion.done, 'status-done': excursion.done }"
-        >
-          <template v-if="excursion.done && excursion.date">
-            <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
-            <span class="status-text">
-              Gemacht am {{ statusDateLabel
-              }}<template v-if="weatherSummary">
-                · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
-                {{ weatherSummary.tempLabel }}</template
-              >
-            </span>
-          </template>
-          <template v-else-if="excursion.done">
-            <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
-            <span class="status-text">Gemacht</span>
-          </template>
-          <template v-else-if="excursion.date">
-            <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="actions" />
-            <span class="status-text">
-              Geplant für {{ statusDateLabel
-              }}<template v-if="weatherSummary">
-                · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
-                {{ weatherSummary.tempLabel }}</template
-              >
-            </span>
-          </template>
-          <template v-else>
-            <AppIcon :icon="ACTION_ICONS.today" :size="14" group="actions" />
-            <span class="status-text">In Planung</span>
-          </template>
-        </span>
       </div>
 
       <!-- Gleitende Badge-Gruppe: Ein einziges Element, das nahtlos zwischen Body und Cover-Ecke gleitet -->
@@ -541,14 +505,14 @@ function onSpotDrop(event: DragEvent) {
             >
               <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" /> Einplanen
             </button>
-            <!-- Verschmolzener Status-Button (Geplant-Status + Gemacht-Checkbox) -->
+            <!-- Verschmolzener Status-Button (Geplant-Status + Gemacht-Checkbox) – in beiden Zuständen -->
             <button
               type="button"
               class="done-toggle"
               :class="{
-                status: expanded && !!(excursion.date || excursion.done),
-                planned: expanded && !!(excursion.date && !excursion.done),
-                'status-done': expanded && !!excursion.done,
+                status: !!(excursion.date || excursion.done),
+                planned: !!(excursion.date && !excursion.done),
+                'status-done': !!excursion.done,
                 active: !!excursion.done,
               }"
               :aria-pressed="!!excursion.done"
@@ -1120,14 +1084,11 @@ function onSpotDrop(event: DragEvent) {
 
 .status-text {
   display: inline-block;
-  max-width: 260px;
   opacity: 1;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  transition:
-    max-width 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s,
-    opacity 0.2s ease 0.14s;
+  transition: opacity 0.2s ease 0.14s;
 }
 
 .status.planned,
@@ -1683,29 +1644,6 @@ function onSpotDrop(event: DragEvent) {
     margin-left: 0;
     margin-top: 160px;
     padding: var(--space-3);
-  }
-
-  .excursion-card:not(.expanded) .status {
-    width: 22px;
-    height: 22px;
-    padding: 0;
-    gap: 0;
-    justify-content: center;
-    border-radius: 50%;
-    transition:
-      width 0.2s cubic-bezier(0.32, 0.72, 0, 1) 0s,
-      height 0.2s cubic-bezier(0.32, 0.72, 0, 1) 0s,
-      padding 0.2s cubic-bezier(0.32, 0.72, 0, 1) 0s,
-      gap 0.2s cubic-bezier(0.32, 0.72, 0, 1) 0s,
-      border-radius 0.2s ease 0s;
-  }
-
-  .excursion-card:not(.expanded) .status-text {
-    max-width: 0;
-    opacity: 0;
-    transition:
-      max-width 0.18s cubic-bezier(0.32, 0.72, 0, 1) 0s,
-      opacity 0.14s ease 0s;
   }
 
   .excursion-card:not(.expanded) .show-on-map-btn {
