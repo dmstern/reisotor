@@ -46,6 +46,7 @@ import { useIconStyleStore } from '../stores/iconStyle';
 import { formatDateTime, formatDate } from '../utils/dateFormat';
 import { formatDurationShort } from '../utils/trackGeometry';
 import { usePersistedRef } from '../composables/usePersistedRef';
+import { useIsDesktop } from '../composables/useIsDesktop';
 import { hashHighlightId } from '../utils/hashHighlight';
 import SpotCard from '../components/SpotCard.vue';
 import ExcursionCard from '../components/ExcursionCard.vue';
@@ -109,6 +110,7 @@ const excursionsStore = useExcursionsStore();
 const tracksStore = useTracksStore();
 const trackRecording = useTrackRecordingStore();
 const iconStyle = useIconStyleStore();
+const isDesktop = useIsDesktop();
 
 const tracksSectionOpen = ref(false);
 
@@ -429,7 +431,9 @@ function closeEditExcursionForm() {
   editingExcursion.value = null;
 }
 
-async function removeExcursion(id: number) {
+async function deleteEditingExcursion() {
+  if (editingExcursion.value === null) return;
+  const id = editingExcursion.value;
   const excursion = excursionsStore.excursions.find((e) => e.id === id);
   if (excursion?.date) {
     const confirmed = window.confirm(
@@ -438,6 +442,7 @@ async function removeExcursion(id: number) {
     if (!confirmed) return;
   }
   await excursionsStore.remove(id);
+  closeEditExcursionForm();
 }
 
 // Spot per Drag&Drop aus der Spots-Liste auf eine Tour-Karte fallen lassen (ExcursionCard.vue ist
@@ -527,6 +532,10 @@ const editSpotScheduledItems = computed(() => {
   if (!editingSpot.value) return [];
   return scheduleStore.items.filter((i) => i.spot_id === editingSpot.value!.id);
 });
+
+async function toggleScheduledItemDone(item: ScheduleItem) {
+  await scheduleStore.setDone(item.id, !item.done);
+}
 
 async function removeScheduledItemFromSpot(item: ScheduleItem) {
   if (!editingSpot.value) return;
@@ -2031,15 +2040,21 @@ onUnmounted(() => {
   window.removeEventListener('resize', updateSpotsColRight);
 });
 
-// Spiegelt exakt die 720px-Schwelle des @container app-main-Queries weiter unten im <style> - beide
-// Signale müssen übereinstimmen, sonst rechnet TripMap.vue mit einem falschen coveredBottomPx (siehe
-// centerOnPoint()/fitBoundsWithCoveredBottom() dort). window.innerWidth dient nur als Fallback, bis
-// der ResizeObserver beim Mounten seinen ersten Wert liefert. Absichtlich niedriger als die
-// ursprünglichen 900px: bei geöffneter Kalender-Schublade (Standardbreite 360px, siehe
-// stores/drawers.ts) reichte .app-main on gängigen Laptop-/Desktop-Breiten sonst oft nicht für die
-// Desktop-Spalten-Ansicht, obwohl rechnerisch noch genug Platz für eine schmalere, aber weiterhin
-// benutzbare Spots-Liste + Karte übrig war (siehe MIN_SPOTS_COL_WIDTH).
-const isSheetOverlayMode = computed(() => (appMainWidth.value ?? window.innerWidth) < 720);
+// Desktop- vs. Mobil-Modus: solange Spots-Drawer und Kalender-Drawer nebeneinander passen, sind
+// wir im Desktop-Modus und die vollflächige Karte wird über die gesamte Bildschirmbreite angezeigt.
+// Auf Mobil (<800px) ist die Spots-Liste immer ein Bottom-Sheet-Overlay. Auf Desktop (≥800px)
+// reicht der Platz für beide Schubladen nebeneinander, solange die Restbreite von .app-main
+// mindestens die Standardbreite des Spots-Drawers inklusive Puffer aufnehmen kann (gespiegelt in
+// der @container app-main (min-width: 500px)-Regel unten).
+const availableAppMainWidth = computed(() => {
+  if (appMainWidth.value !== null) return appMainWidth.value;
+  const calWidth = isDesktop.value && drawers.calendarOpen ? drawers.calendarWidth + 44 : 0;
+  return window.innerWidth - calWidth;
+});
+const isSheetOverlayMode = computed(() => {
+  if (!isDesktop.value) return true;
+  return availableAppMainWidth.value < 500;
+});
 const mapCoveredBottomPx = computed(() =>
   isSheetOverlayMode.value ? currentSheetHeightPx.value : 0
 );
@@ -2283,9 +2298,12 @@ watch(editSpotManualPin, (pin) => {
   if (pin && editSpotLocationError.value) submitEditSpot();
 });
 
-async function removeSpot(id: number) {
+async function deleteEditingSpot() {
+  if (!editingSpot.value) return;
+  const id = editingSpot.value.id;
   await spotsStore.remove(id);
   drawers.touchLocations();
+  closeEditSpotForm();
 }
 </script>
 
@@ -2681,9 +2699,22 @@ async function removeSpot(id: number) {
                     : newExcursionDraft.restored.value
                 "
               />
-              <Button type="submit">{{
-                editingExcursion !== null ? 'Speichern' : 'Hinzufügen'
-              }}</Button>
+              <div class="actions-row">
+                <Button
+                  v-if="editingExcursion !== null"
+                  type="button"
+                  variant="danger"
+                  size="sm"
+                  :icon="ACTION_ICONS.delete"
+                  @click="deleteEditingExcursion"
+                >
+                  Löschen
+                </Button>
+                <div class="spacer"></div>
+                <Button type="submit">{{
+                  editingExcursion !== null ? 'Speichern' : 'Hinzufügen'
+                }}</Button>
+              </div>
             </form>
           </Modal>
 
@@ -3103,7 +3134,7 @@ async function removeSpot(id: number) {
                     "
                     class="assign-chips"
                   >
-                    <!-- Tour-Chips: orange (--color-calendar-tour) -->
+                    <!-- Tour-Chips: orange (--color-tour) -->
                     <span
                       v-for="title in activeSpotForm.tourTitles"
                       :key="'tour-' + title"
@@ -3139,14 +3170,31 @@ async function removeSpot(id: number) {
                         v-for="item in editSpotScheduledItems"
                         :key="'sched-' + item.id"
                         class="assign-chip assign-chip--schedule"
+                        :class="{ 'is-done': !!item.done }"
                       >
+                        <button
+                          type="button"
+                          class="assign-chip-done-toggle"
+                          :title="
+                            item.done ? 'Als nicht besucht markieren' : 'Als besucht markieren'
+                          "
+                          :aria-label="
+                            item.done ? 'Als nicht besucht markieren' : 'Als besucht markieren'
+                          "
+                          @click.stop="toggleScheduledItemDone(item)"
+                        >
+                          <AppIcon
+                            :icon="item.done ? ACTION_ICONS.done : ACTION_ICONS.notDone"
+                            :size="13"
+                            group="actions"
+                          />
+                        </button>
                         <button
                           type="button"
                           class="assign-chip-action"
                           title="Termin im Kalender öffnen"
                           @click="openScheduledItemDetail(item)"
                         >
-                          <AppIcon :icon="FORM_FIELD_ICONS.date" :size="12" group="formFields" />
                           <span class="assign-chip-label">{{ formatDate(item.date) }}</span>
                         </button>
                         <button
@@ -3172,7 +3220,22 @@ async function removeSpot(id: number) {
                   editingSpot !== null ? editSpotDraft.restored.value : newSpotDraft.restored.value
                 "
               />
-              <Button type="submit">{{ editingSpot !== null ? 'Speichern' : 'Hinzufügen' }}</Button>
+              <div class="actions-row">
+                <Button
+                  v-if="editingSpot !== null"
+                  type="button"
+                  variant="danger"
+                  size="sm"
+                  :icon="ACTION_ICONS.delete"
+                  @click="deleteEditingSpot"
+                >
+                  Löschen
+                </Button>
+                <div class="spacer"></div>
+                <Button type="submit">{{
+                  editingSpot !== null ? 'Speichern' : 'Hinzufügen'
+                }}</Button>
+              </div>
             </form>
           </Modal>
 
@@ -3258,7 +3321,6 @@ async function removeSpot(id: number) {
               :travel-items="travelItems"
               :expanded="expandedExcursionId === grp.excursion.id"
               @edit="startEditExcursion"
-              @remove="removeExcursion"
               @toggle-like="toggleExcursionLike(grp.excursion.id)"
               @submit-comment="(content) => submitExcursionComment(grp.excursion!.id, content)"
               @remove-comment="removeExcursionComment"
@@ -3329,7 +3391,6 @@ async function removeSpot(id: number) {
                         :tour-options="allTourTitles"
                         :has-multiple-members="users.length > 1"
                         @edit="startEditSpot"
-                        @remove="removeSpot"
                         @toggle-like="toggleSpotLike(item.spot.id)"
                         @submit-comment="(content) => submitSpotComment(item.spot.id, content)"
                         @remove-comment="removeSpotComment"
@@ -4054,106 +4115,110 @@ async function removeSpot(id: number) {
    geöffneten Schubladen auf Desktop liegt) macht ein enges 2-Spalten-Grid weniger Sinn als eine
    große Karte mit Sheet darüber. Die feinere "wie schmal darf .spots-col selbst werden"-Frage
    (Kompakt-Zeile, Ein-Spalten-Raster) bleibt weiterhin ein separates @container(spots-col)-Query. */
-/* 720px statt der ursprünglichen 900px (siehe isSheetOverlayMode im Script-Block für die exakt
-   gespiegelte JS-Seite dieser Schwelle): bei geöffneter Kalender-Schublade (Standard 360px) blieb
-   .app-main auf gängigen Desktop-/Laptop-Breiten sonst oft unter 900px und die Ansicht fiel auf den
-   mobilen Sheet-Modus zurück, obwohl noch genug Platz für eine (wenn auch schmalere) Spots-Liste +
-   Karte nebeneinander da war. */
-@container app-main (min-width: 720px) {
-  /* .page bleibt wie auf Mobil absolute und vollbild, Karte füllt den Bereich aus */
-  .page {
-    max-width: none;
-    margin: 0;
-    padding: 0;
-    position: relative;
-  }
+/* Desktop: solange Spots-Drawer und Kalender-Drawer nebeneinander passen (≥500px in .app-main),
+   sind wir im Desktop-Modus. Die Karte (.map-col) ist auf Desktop stets vollflächig über die
+   gesamte Bildschirmbreite (position:fixed von left:0 bis right:0), sodass hinter der schwebenden
+   Kalender-Schublade nie ein grauer Hintergrund entsteht, sondern die Karte durchgängig sichtbar
+   bleibt. */
+@media (min-width: 800px) {
+  @container app-main (min-width: 500px) {
+    /* .page bleibt wie auf Mobil absolute und vollbild, Karte füllt den Bereich aus */
+    .page {
+      max-width: none;
+      margin: 0;
+      padding: 0;
+      position: relative;
+    }
 
-  /* Auf Desktop ist der Titel visuell ausgeblendet, bleibt aber für Screenreader lesbar */
-  .page-title {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border-width: 0;
-  }
+    /* Auf Desktop ist der Titel visuell ausgeblendet, bleibt aber für Screenreader lesbar */
+    .page-title {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border-width: 0;
+    }
 
-  .layout {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-  }
+    .layout {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
 
-  .map-col {
-    position: fixed;
-    top: calc(var(--app-header-height, 56px) + var(--navbar-offset, 0px));
-    bottom: var(--navbar-bottom-offset, 0px);
-    left: 0;
-    right: 0;
-    z-index: 1;
-    pointer-events: auto;
-  }
+    .map-col {
+      position: fixed;
+      top: calc(var(--app-header-height, 56px) + var(--navbar-offset, 0px));
+      bottom: var(--navbar-bottom-offset, 0px);
+      left: 0;
+      right: 0;
+      z-index: 1;
+      pointer-events: auto;
+    }
 
-  .spots-col {
-    position: absolute;
-    left: var(--space-4);
-    top: var(--space-4);
-    bottom: var(--space-4);
-    height: auto;
-    max-height: none;
-    z-index: 5;
-    background: var(--color-surface);
-    border-radius: var(--radius-md-squircle);
-    box-shadow: var(--shadow-md);
-    width: var(--spots-col-width);
-    pointer-events: auto;
+    .spots-col {
+      position: absolute;
+      left: var(--space-4);
+      top: var(--space-4);
+      bottom: var(--space-4);
+      height: auto;
+      max-height: none;
+      z-index: 5;
+      background: var(--color-surface);
+      border-radius: var(--radius-md-squircle);
+      box-shadow: var(--shadow-md);
+      width: var(--spots-col-width);
+      max-width: calc(100% - var(--space-4) * 2);
+      min-width: min(var(--spots-col-width), 280px);
+      pointer-events: auto;
 
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
 
-    /* Override mobile transforms and bottom offsets */
-    transform: none;
-    transition: none;
-  }
+      /* Override mobile transforms and bottom offsets */
+      transform: none;
+      transition: none;
+    }
 
-  /* .spots-col ist auf Desktop undurchsichtig, keine speziellen Hintergrundanpassungen nötig. */
-  .spots-col .category-nav-wrap {
-    background: var(--color-surface);
-    --category-nav-bg: var(--color-surface);
-  }
+    /* .spots-col ist auf Desktop undurchsichtig, keine speziellen Hintergrundanpassungen nötig. */
+    .spots-col .category-nav-wrap {
+      background: var(--color-surface);
+      --category-nav-bg: var(--color-surface);
+    }
 
-  .sheet-handle-row {
-    display: none;
-  }
+    .sheet-handle-row {
+      display: none;
+    }
 
-  .spots-col-body {
-    flex: 1;
-    overflow-y: auto;
-    padding: var(--space-3);
-  }
+    .spots-col-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--space-3);
+    }
 
-  .spots-col.collapsed .spots-col-body,
-  .spots-col.partial .spots-col-body {
-    overflow-y: auto;
-    touch-action: auto;
-  }
+    .spots-col.collapsed .spots-col-body,
+    .spots-col.partial .spots-col-body {
+      overflow-y: auto;
+      touch-action: auto;
+    }
 
-  .col-resize-handle {
-    display: flex;
-    position: absolute;
-    left: calc(
-      var(--space-4) + var(--spots-col-width) + (var(--space-4) - var(--drawer-handle-gap, 12px)) /
-        2
-    );
-    top: var(--space-4);
-    bottom: var(--space-4);
-    height: auto;
-    z-index: 10;
-    pointer-events: auto;
+    .col-resize-handle {
+      display: flex;
+      position: absolute;
+      left: calc(
+        var(--space-4) + min(var(--spots-col-width), calc(100% - var(--space-4) * 2)) +
+          (var(--space-4) - var(--drawer-handle-gap, 12px)) / 2
+      );
+      top: var(--space-4);
+      bottom: var(--space-4);
+      height: auto;
+      z-index: 10;
+      pointer-events: auto;
+    }
   }
 }
 
@@ -4282,6 +4347,19 @@ async function removeSpot(id: number) {
 .edit-form .row > * {
   flex: 1;
   min-width: 140px;
+}
+
+.actions-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-border);
+}
+
+.spacer {
+  flex: 1;
 }
 
 .collapsible-fieldset {
@@ -4501,10 +4579,11 @@ async function removeSpot(id: number) {
   position: relative;
   margin-left: var(--space-2);
   padding: var(--space-2) var(--space-3);
-  background: var(--color-surface-sunken);
-  border: 1px solid var(--color-border-subtle);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-left: 3px solid var(--color-primary);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-xs);
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
@@ -4515,14 +4594,47 @@ async function removeSpot(id: number) {
     box-shadow 0.2s ease;
 }
 
+/* Leichte gestrichelte Linien zur visuellen Verbindung mit den Stationen oben und unten */
+.tour-leg-card::before,
+.tour-leg-card::after {
+  content: '';
+  position: absolute;
+  left: 20px;
+  width: 0;
+  border-left: 2px dashed var(--color-border);
+  pointer-events: none;
+  z-index: 0;
+  transition: border-color 0.2s ease;
+}
+
+.tour-leg-card::before {
+  top: -8px;
+  height: 8px;
+}
+
+.tour-leg-card::after {
+  bottom: -8px;
+  height: 8px;
+}
+
 .tour-leg-card:hover {
   background: var(--color-surface);
   border-color: var(--color-border);
+  border-left-color: var(--color-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.tour-leg-card:hover::before,
+.tour-leg-card:hover::after,
+.tour-leg-card.is-expanded::before,
+.tour-leg-card.is-expanded::after {
+  border-left-color: var(--color-primary);
 }
 
 .tour-leg-card.is-expanded {
   background: var(--color-surface);
   border-color: var(--color-border);
+  border-left-color: var(--color-primary);
   box-shadow: var(--shadow-sm);
 }
 
@@ -5175,11 +5287,11 @@ async function removeSpot(id: number) {
   line-height: 1.2;
 }
 
-/* Touren-Chip: orange (Farbe aus dem Kalender, SCHEDULE_CATEGORY_META.excursion.color) */
+/* Touren-Chip: orange (Zentrale Tour-Farbe --color-tour / SCHEDULE_CATEGORY_META.excursion.color) */
 .assign-chip--tour {
-  background: var(--color-calendar-tour-tint);
-  border-color: var(--color-calendar-tour-border);
-  color: var(--color-calendar-tour);
+  background: var(--color-tour-tint);
+  border-color: var(--color-tour-border);
+  color: var(--color-tour);
 }
 
 /* Termin-Chip: grau (Farbe aus dem Kalender, SCHEDULE_CATEGORY_META.other.color) */
@@ -5187,6 +5299,40 @@ async function removeSpot(id: number) {
   background: var(--color-calendar-appointment-tint);
   border-color: var(--color-calendar-appointment-border);
   color: var(--color-calendar-appointment);
+}
+
+.assign-chip--schedule.is-done {
+  background: rgba(46, 125, 50, 0.18);
+  border-color: rgba(46, 125, 50, 0.45);
+  color: #2e7d32;
+}
+
+:root[data-theme='dark'] .assign-chip--schedule.is-done {
+  background: rgba(76, 175, 80, 0.18);
+  border-color: rgba(76, 175, 80, 0.45);
+  color: #81c784;
+}
+
+.assign-chip-done-toggle {
+  background: none;
+  border: none;
+  padding: 1px 2px;
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  line-height: 1;
+  opacity: 0.85;
+  transition:
+    transform 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.assign-chip-done-toggle:hover {
+  opacity: 1;
+  transform: scale(1.15);
 }
 
 .assign-chip-action {

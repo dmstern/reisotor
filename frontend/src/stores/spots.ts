@@ -4,6 +4,7 @@ import { api } from '../api/client';
 import type { Spot, SpotComment, SpotLike } from '../api/types';
 import { useTripStore } from './trip';
 import { useLiveSyncStore } from './liveSync';
+import { useScheduleStore } from './schedule';
 import { useToast } from '../composables/useToast';
 export interface SpotFormData {
   trip_id: number;
@@ -137,6 +138,18 @@ export const useSpotsStore = defineStore('spots', () => {
       const next = [...spots.value];
       next[idx] = { ...next[idx], done: result.done ? 1 : 0 };
       spots.value = next;
+    }
+    const scheduleStore = useScheduleStore();
+    let hasScheduleChanges = false;
+    const nextSchedule = scheduleStore.items.map((item) => {
+      if (item.spot_id === id && (item.done ? 1 : 0) !== (result.done ? 1 : 0)) {
+        hasScheduleChanges = true;
+        return { ...item, done: result.done ? 1 : 0 };
+      }
+      return item;
+    });
+    if (hasScheduleChanges) {
+      scheduleStore.items = nextSchedule;
     }
   }
 

@@ -66,7 +66,12 @@ test('clicking an own schedule entry opens the detail dialog instead of navigati
   await expect(modal.getByText('Ort')).toBeVisible();
   await expect(modal).toContainText(dinner.location);
   await expect(modal.locator('button[aria-label="Bearbeiten"]')).toBeVisible();
-  await expect(modal.locator('button[aria-label="Löschen"]')).toBeVisible();
+  // Löschen ist nach der Vereinheitlichung nur noch im Bearbeiten-Dialog erreichbar:
+  await expect(modal.locator('button[aria-label="Löschen"]')).toHaveCount(0);
+  await modal.locator('button[aria-label="Bearbeiten"]').click();
+  const editModal = page.locator('.overlay .modal', { hasText: 'Termin bearbeiten' });
+  await expect(editModal).toBeVisible();
+  await expect(editModal.getByRole('button', { name: 'Löschen' })).toBeVisible();
 
   // Regression: die Detail-Felder (.detail-row, Zeit/Ort-Labels) duerfen nur im Modal auftauchen,
   // nicht in der Tagesliste selbst (die zeigt nur .title/.location/.note, siehe ScheduleView.vue).

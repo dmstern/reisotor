@@ -2,3 +2,5 @@
 - **Kompakte Filter- & Suchleiste**: Spots und Touren können jetzt direkt durchsucht werden; Sortierung und Filter sind übersichtlich in Popover-Menüs zusammengefasst.
 - **Touren mit Zwischenstopps & Teilstrecken**: Mehrteilige Routen unterstützen individuelle Verkehrsmittel, Abfahrts-/Ankunftszeiten, Sitzplätze, Ticket-Kosten sowie automatische Umsteigezeiten an Zwischenstationen (#361).
 - **An- und Abreise auf einen Blick**: Reisedaten wie An-, Ab- und Weiterreise lassen sich in der Karten- und Tourenansicht jetzt gezielt nach Rolle filtern. In der Hauptnavigation kann zudem ein eigener Schnellzugriff für An- und Abreise aktiviert werden.
+- **Card-Morph-Animationen & Header-Overlays**: Flüssige Transitions beim Aufklappen von Spots und Touren, dynamisch gleitender Titel und Kategorie-Badges sowie platzsparende Cover-Header-Overlays (#267).
+- **Flexibler "Gemacht"-Status für Termine**: Spots mit mehreren geplanten Terminen können nun differenziert pro Reisetag als besucht abgehakt werden; schnelles Datums-Popover für ungeplante Spots und Touren.

@@ -119,24 +119,25 @@ anlegen, nicht als lokaler Wert in der Komponente.
 
 ### Zentrale Farb-Tokens
 
-| Variable                   | Bedeutung / Einsatz                       | Light Mode | Dark Mode |
-| -------------------------- | ----------------------------------------- | ---------- | --------- |
-| `--color-bg`               | Haupt-App-Hintergrund                     | `#faf8f5`  | `#181715` |
-| `--color-surface`          | Karten, Panels, Modal-Flächen             | `#ffffff`  | `#232220` |
-| `--color-border`           | Standard Trennlinien & dezente Ränder     | `#e8e2d9`  | `#38352f` |
-| `--color-border-strong`    | Eingabefelder, Selects, Secondary-Buttons | `#d5cabc`  | `#4a453c` |
-| `--color-text`             | Primäre Textfarbe                         | `#2b2a28`  | `#f2efe9` |
-| `--color-text-muted`       | Gedämpfter Fließtext & Untertitel         | `#726e66`  | `#a8a29a` |
-| `--color-primary`          | Marken-Grün (Haupt-Buttons & Fokus)       | `#2a7f74`  | `#3da296` |
-| `--color-primary-dark`     | Hover-Status für Marken-Grün              | `#1f6059`  | `#7dd0c1` |
-| `--color-primary-tint`     | Leichter Grünton für Steuerungen & Badges | `#eaf3f1`  | `#1c2e2a` |
-| `--color-hover`            | Hover-Hintergrund & Muted-Surface         | `#f4f1ec`  | `#2a2823` |
-| `--color-accent`           | Echtzeit-Updates / Aufmerksamkeits-Akzent | `#e08e45`  | `#f0a05a` |
-| `--color-danger`           | Gefahr / Löschen / Warnungen              | `#c1503f`  | `#e0685a` |
-| `--color-success`          | Erfolg / Fertig-Status                    | `#3f8f5c`  | `#5cb37e` |
-| `--color-scheduled`        | Geplant (Kalender & Streifen)             | `#1e96d1`  | `#52b8ea` |
-| `--color-highlight`        | Highlight-Fläche für Notizen              | `#fff4e8`  | `#332a1c` |
-| `--color-accent-secondary` | Sekundärer Akzent (Indigo)                | `#5b6ee1`  | `#8b98f0` |
+| Variable                   | Bedeutung / Einsatz                          | Light Mode | Dark Mode |
+| -------------------------- | -------------------------------------------- | ---------- | --------- |
+| `--color-bg`               | Haupt-App-Hintergrund                        | `#faf8f5`  | `#181715` |
+| `--color-surface`          | Karten, Panels, Modal-Flächen                | `#ffffff`  | `#232220` |
+| `--color-border`           | Standard Trennlinien & dezente Ränder        | `#e8e2d9`  | `#38352f` |
+| `--color-border-strong`    | Eingabefelder, Selects, Secondary-Buttons    | `#d5cabc`  | `#4a453c` |
+| `--color-text`             | Primäre Textfarbe                            | `#2b2a28`  | `#f2efe9` |
+| `--color-text-muted`       | Gedämpfter Fließtext & Untertitel            | `#726e66`  | `#a8a29a` |
+| `--color-primary`          | Marken-Grün (Haupt-Buttons & Fokus)          | `#2a7f74`  | `#3da296` |
+| `--color-primary-dark`     | Hover-Status für Marken-Grün                 | `#1f6059`  | `#7dd0c1` |
+| `--color-primary-tint`     | Leichter Grünton für Steuerungen & Badges    | `#eaf3f1`  | `#1c2e2a` |
+| `--color-hover`            | Hover-Hintergrund & Muted-Surface            | `#f4f1ec`  | `#2a2823` |
+| `--color-accent`           | Echtzeit-Updates / Aufmerksamkeits-Akzent    | `#e08e45`  | `#f0a05a` |
+| `--color-danger`           | Gefahr / Löschen / Warnungen                 | `#c1503f`  | `#e0685a` |
+| `--color-success`          | Erfolg / Fertig-Status                       | `#3f8f5c`  | `#5cb37e` |
+| `--color-scheduled`        | Geplant (Kalender & Streifen)                | `#1e96d1`  | `#52b8ea` |
+| `--color-tour`             | Touren / Ausflüge (Kacheln, Kalender, Spots) | `#eb6834`  | `#f08254` |
+| `--color-highlight`        | Highlight-Fläche für Notizen                 | `#fff4e8`  | `#332a1c` |
+| `--color-accent-secondary` | Sekundärer Akzent (Indigo)                   | `#5b6ee1`  | `#8b98f0` |
 
 Semantische statt beschreibende Namen (`--color-danger`, nicht `--color-red`) – Töne können sich
 ändern, die Bedeutung bleibt.

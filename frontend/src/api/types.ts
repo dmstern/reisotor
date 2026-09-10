@@ -79,6 +79,8 @@ export interface ScheduleItem {
   auto_created?: number | boolean | null;
   /** Ob der Termin nach der automatischen Anlage vom Nutzer editiert/angefasst wurde */
   user_modified?: number | boolean | null;
+  /** Ob der Termin als erledigt / besucht markiert wurde */
+  done?: number | boolean | null;
 }
 
 /** Vereinheitlichte Darstellung für die Kalenderansicht: entweder ein echter Kalender-Termin

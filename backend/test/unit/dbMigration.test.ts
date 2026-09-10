@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import Database from 'better-sqlite3';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Reproduziert den Schema-Stand einer bereits laufenden Prod-Instanz VOR der Migration, die
 // ideas.date durch einen verknüpften schedule_items-Termin ersetzt (siehe db/index.ts): ein
@@ -11,6 +11,10 @@ import { afterEach, describe, expect, it } from 'vitest';
 // Deploy stillschweigend verloren.
 describe('ideas.date -> schedule_items Backfill-Migration', () => {
   let dbPath: string | undefined;
+
+  beforeEach(() => {
+    vi.resetModules();
+  });
 
   afterEach(() => {
     delete process.env.DB_PATH;
@@ -50,5 +54,39 @@ describe('ideas.date -> schedule_items Backfill-Migration', () => {
       .get() as { trip_id: number; date: string; title: string; idea_id: number } | undefined;
 
     expect(scheduleRow).toEqual({ trip_id: 1, date: '2026-08-05', title: 'Bootstour', idea_id: 1 });
+  });
+
+  it('überträgt spots.done auf verknüpfte schedule_items bei der Migration', async () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'reisotor-migration-test-done-'));
+    dbPath = path.join(dir, 'legacy.sqlite');
+
+    const legacy = new Database(dbPath);
+    legacy.exec(`
+      CREATE TABLE trips (id INTEGER PRIMARY KEY, name TEXT NOT NULL, start_date TEXT NOT NULL, end_date TEXT NOT NULL);
+      CREATE TABLE spots (id INTEGER PRIMARY KEY, trip_id INTEGER, title TEXT NOT NULL, done INTEGER NOT NULL DEFAULT 1);
+      CREATE TABLE schedule_items (id INTEGER PRIMARY KEY, trip_id INTEGER, date TEXT NOT NULL, title TEXT NOT NULL, spot_id INTEGER);
+    `);
+    legacy
+      .prepare(
+        `INSERT INTO trips (id, name, start_date, end_date) VALUES (1, 'Sommerurlaub', '2026-08-01', '2026-08-14')`
+      )
+      .run();
+    legacy
+      .prepare(`INSERT INTO spots (id, trip_id, title, done) VALUES (10, 1, 'Museum', 1)`)
+      .run();
+    legacy
+      .prepare(
+        `INSERT INTO schedule_items (id, trip_id, date, title, spot_id) VALUES (100, 1, '2026-08-03', 'Museum', 10)`
+      )
+      .run();
+    legacy.close();
+
+    process.env.DB_PATH = dbPath;
+    const { db } = await import('../../src/db/index.js');
+
+    const scheduleRow = db.prepare('SELECT id, done FROM schedule_items WHERE id = 100').get() as
+      { id: number; done: number } | undefined;
+
+    expect(scheduleRow?.done).toBe(1);
   });
 });

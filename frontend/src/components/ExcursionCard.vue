@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import type { Excursion, Spot, TravelItem } from '../api/types';
 import { excursionStationKeys, resolveStations } from '../utils/excursionStations';
 import {
@@ -11,9 +11,9 @@ import {
 import { usePointerDrag } from '../composables/usePointerDrag';
 import { useExcursionsStore } from '../stores/excursions';
 import { useDrawersStore } from '../stores/drawers';
+import { useTripStore } from '../stores/trip';
 import { useWeatherProviderStore } from '../stores/weatherProvider';
 import EditButton from './EditButton.vue';
-import DeleteButton from './DeleteButton.vue';
 import SocialRow from './SocialRow.vue';
 import Comments, { type CommentItem } from './Comments.vue';
 import RichTextDisplay from './RichTextDisplay.vue';
@@ -22,12 +22,15 @@ import PendingSyncBadge from './PendingSyncBadge.vue';
 import AppIcon from './AppIcon.vue';
 import Card from './primitives/Card.vue';
 import Button from './primitives/Button.vue';
+import Input from './primitives/Input.vue';
+import PickerMenu from './primitives/PickerMenu.vue';
 import DetailRow from './primitives/DetailRow.vue';
 import WeatherIcon from './WeatherIcon.vue';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
-import { formatDate as formatDateShared } from '../utils/dateFormat';
+import { formatDate as formatDateShared, toLocalDateString } from '../utils/dateFormat';
+import { computePopoverPosition } from '../utils/popoverPosition';
 import { TRAVEL_ROLE_META } from '../utils/travelRole';
 import { travelTypeIconDef } from '../utils/travelTypeIcon';
 import { formatTravelDuration, travelDurationMinutes } from '../utils/travelDuration';
@@ -44,7 +47,6 @@ const props = defineProps<{
   expanded: boolean;
 }>();
 const emit = defineEmits<{
-  (e: 'remove', id: number): void;
   (e: 'edit', excursion: Excursion): void;
   (e: 'toggle-like'): void;
   (e: 'submit-comment', content: string): void;
@@ -170,22 +172,64 @@ const { dragging, ghostStyle, onPointerDown } = usePointerDrag({
   },
 });
 
+const tripStore = useTripStore();
+const unplannedPopoverOpen = ref(false);
+const unplannedPopoverStyle = ref<{ top: string; left: string }>({ top: '0px', left: '0px' });
+const defaultDate = computed(() => {
+  const trip = tripStore.currentTrip;
+  const today = toLocalDateString(new Date());
+  if (trip && trip.start_date && trip.end_date) {
+    if (today >= trip.start_date && today <= trip.end_date) return today;
+    return trip.start_date;
+  }
+  return today;
+});
+const unplannedDoneDate = ref(defaultDate.value);
+watch(defaultDate, (d) => {
+  unplannedDoneDate.value = d;
+});
+
 // #106/#147: Status-Kette in Planung -> geplant -> gemacht statt (wie zuvor) eines von geplant/
 // ungeplant unabhängigen Flags - eine Tour darf nicht ohne Datum "gemacht" sein. Zurück auf
-// "geplant" braucht dafür kein neues Datum (setDone(false) direkt). Beim Übergang zu "gemacht"
-// entscheidet, ob bereits ein geplantes Datum existiert (#147: ursprünglich öffnete sich der
-// Kalender IMMER, auch wenn schon ein Datum da war - das war unnötig, da das bereits geplante
-// Datum ohnehin als Gemacht-Datum übernommen wird): mit Datum direkt markieren, nur ohne Datum
-// (noch "in Planung") den Kalender zur Bestätigung des Tages öffnen (drawers.pendingSchedule mode
-// 'confirm-done', ausgewertet in ScheduleView.vue's finishPendingSchedule()).
-function onToggleDone() {
+// "geplant" braucht dafür kein neues Datum (setDone(false) direkt). Beim Übergang zu "gemacht":
+// mit Datum direkt markieren; ohne Datum (noch "in Planung") öffnet sich direkt ein kompaktes
+// Popover zur Datumsauswahl (inkl. Option, in den Kalender abzuspringen).
+async function onToggleDone(event?: MouseEvent) {
   if (props.excursion.done) {
-    excursionsStore.setDone(props.excursion.id, false);
+    await excursionsStore.setDone(props.excursion.id, false);
   } else if (props.excursion.date) {
-    excursionsStore.setDone(props.excursion.id, true);
+    await excursionsStore.setDone(props.excursion.id, true);
   } else {
-    drawers.startPendingSchedule('excursion', props.excursion.id, 'confirm-done');
+    const triggerEl = (event?.currentTarget as HTMLElement | undefined) ?? null;
+    if (triggerEl) {
+      unplannedPopoverStyle.value = computePopoverPosition(triggerEl, {
+        menuWidth: 260,
+        menuHeight: 180,
+      });
+    }
+    unplannedPopoverOpen.value = true;
+    await nextTick();
+    const menuEl = document.querySelector('.tour-unplanned-popover') as HTMLElement | null;
+    if (menuEl && triggerEl) {
+      const rect = menuEl.getBoundingClientRect();
+      unplannedPopoverStyle.value = computePopoverPosition(triggerEl, {
+        menuWidth: rect.width,
+        menuHeight: rect.height,
+      });
+    }
   }
+}
+
+async function submitUnplannedDone() {
+  if (!unplannedDoneDate.value) return;
+  await excursionsStore.setDate(props.excursion.id, unplannedDoneDate.value);
+  await excursionsStore.setDone(props.excursion.id, true);
+  unplannedPopoverOpen.value = false;
+}
+
+function openCalendarConfirmDone() {
+  unplannedPopoverOpen.value = false;
+  drawers.startPendingSchedule('excursion', props.excursion.id, 'confirm-done');
 }
 
 // Drop-Zone fürs Zuordnen: ein Spot kann direkt auf diese Karte gezogen werden (SpotCard.vue's
@@ -224,17 +268,7 @@ function onSpotDrop(event: DragEvent) {
     @dragleave="onSpotDragLeave"
     @drop.prevent="onSpotDrop"
   >
-    <!-- Nur in der aufgeklappten Karte sichtbar (#143) - analog zu SpotCard.vue's Bearbeiten-/
-         Löschen-Buttons: in der kompakten Karte überlagerte das Status-Badge (unten, immer sichtbar)
-         bei langem Text (z. B. "Geplant für 20. Aug. · ☁️ 21°") sonst den links daneben schwebenden
-         Bearbeiten-Button, v. a. bei der schmalen 140px-Miniatur im Desktop-Zeilen-Layout. -->
-    <DeleteButton
-      v-if="expanded"
-      floating
-      class="card-delete"
-      @click="emit('remove', excursion.id)"
-    />
-    <!-- Dicker rötlich-violetter Akzentbalken an der abgerundeten linken Kante mit Rollen-/Rucksack-Icon -->
+    <!-- Akzentbalken an der abgerundeten linken Kante mit Rollen-/Rucksack-Icon -->
     <div
       class="tour-accent-bar"
       :title="excursion.role ? TRAVEL_ROLE_META[excursion.role].label : 'Tour / Ausflug'"
@@ -265,59 +299,91 @@ function onSpotDrop(event: DragEvent) {
           "
           group="categories"
         />
-        <Transition name="fade">
-          <EditButton v-if="expanded" floating @click="emit('edit', excursion)" />
+
+        <!-- Expanded Cover Overlay: Halbdunkles Gradient-Overlay mit Edit-Button -->
+        <Transition name="overlay-fade">
+          <div v-if="expanded" class="image-expanded-overlay">
+            <div class="overlay-top-row">
+              <EditButton floating class="overlay-edit-btn" @click="emit('edit', excursion)" />
+            </div>
+          </div>
         </Transition>
-        <!-- #106: EIN gemeinsames Datums-/Status-Badge statt zweier unabhängiger Chips (das alte
-             separate "Gemacht"-Badge entfällt) - Text/Icon hängen vom Status ab (in Planung/geplant/
-             gemacht). "excursion.done && !excursion.date" ist der Fallback für bereits vor #106 als
-             "gemacht" markierte Bestandsdaten ohne verknüpften Termin (kein Backfill möglich, da der
-             tatsächliche Tag nicht rekonstruierbar ist). -->
+
+        <!-- Collapsed Zustand: Passives Status-Badge unten rechts (#106) -->
         <span
+          v-if="!expanded"
           class="status"
           :class="{ planned: excursion.date && !excursion.done, 'status-done': excursion.done }"
         >
           <template v-if="excursion.done && excursion.date">
-            <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" /> Gemacht am
-            {{ statusDateLabel
-            }}<template v-if="weatherSummary">
-              · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
-              {{ weatherSummary.tempLabel }}</template
-            >
+            <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
+            <span class="status-text">
+              Gemacht am {{ statusDateLabel
+              }}<template v-if="weatherSummary">
+                · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
+                {{ weatherSummary.tempLabel }}</template
+              >
+            </span>
           </template>
-          <template v-else-if="excursion.done"
-            ><AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" /> Gemacht</template
-          >
+          <template v-else-if="excursion.done">
+            <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
+            <span class="status-text">Gemacht</span>
+          </template>
           <template v-else-if="excursion.date">
-            <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="actions" /> Geplant für
-            {{ statusDateLabel
-            }}<template v-if="weatherSummary">
-              · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
-              {{ weatherSummary.tempLabel }}</template
-            >
+            <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="actions" />
+            <span class="status-text">
+              Geplant für {{ statusDateLabel
+              }}<template v-if="weatherSummary">
+                · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
+                {{ weatherSummary.tempLabel }}</template
+              >
+            </span>
           </template>
-          <template v-else>In Planung</template>
+          <template v-else>
+            <AppIcon :icon="ACTION_ICONS.today" :size="14" group="actions" />
+            <span class="status-text">In Planung</span>
+          </template>
         </span>
       </div>
+
+      <!-- Gleitende Badge-Gruppe: Ein einziges Element, das nahtlos zwischen Body und Cover-Ecke gleitet -->
+      <div class="card-badge-group">
+        <span v-if="excursion.role" class="role-badge">
+          <AppIcon :icon="TRAVEL_ROLE_META[excursion.role].tabler" :size="14" group="categories" />
+          {{ TRAVEL_ROLE_META[excursion.role].label }}
+        </span>
+        <span v-else class="tour-type-badge" title="Tour / Ausflug">
+          <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="12" group="categories" /> Tour
+        </span>
+        <PendingSyncBadge v-if="excursion._pending" />
+      </div>
+
       <div class="body">
-        <div class="title-row">
-          <h3>{{ excursion.title }}</h3>
-          <span v-if="excursion.role" class="role-badge">
-            <AppIcon
-              :icon="TRAVEL_ROLE_META[excursion.role].tabler"
-              :size="14"
-              group="categories"
-            />
-            {{ TRAVEL_ROLE_META[excursion.role].label }}
-          </span>
-          <span v-else class="tour-type-badge" title="Tour / Ausflug">
-            <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="12" group="categories" /> Tour
-          </span>
-          <PendingSyncBadge v-if="excursion._pending" />
+        <!-- Einheitlicher Card-Titel: gleitet beim Expandieren nahtlos vom Body in den Cover-Header -->
+        <div class="card-title-block">
+          <h3 class="card-title" :title="excursion.title">{{ excursion.title }}</h3>
+          <Transition name="fade">
+            <div
+              v-if="
+                expanded &&
+                (creatorLabel || routeLabel || resolvedStations.length || travelDuration)
+              "
+              class="card-title-meta"
+            >
+              <span v-if="creatorLabel" class="overlay-author">Von {{ creatorLabel }}</span>
+              <span v-if="routeLabel" class="overlay-submeta">{{ routeLabel }}</span>
+              <span v-else-if="resolvedStations.length" class="overlay-submeta">
+                {{ resolvedStations.length }}
+                {{ resolvedStations.length === 1 ? 'Station' : 'Stationen' }}
+              </span>
+              <span v-if="travelDuration" class="overlay-submeta">· {{ travelDuration }}</span>
+            </div>
+          </Transition>
         </div>
-        <p v-if="routeLabel" class="route">{{ routeLabel }}</p>
+        <p v-if="!expanded && routeLabel" class="route">{{ routeLabel }}</p>
         <p
           v-if="
+            !expanded &&
             (excursion.role || excursion.legs?.length) &&
             (excursion.departure_time || excursion.arrival_time)
           "
@@ -333,7 +399,7 @@ function onSpotDrop(event: DragEvent) {
 
         <div class="excursion-accordion" :class="{ 'is-expanded': expanded }" :inert="!expanded">
           <div class="excursion-accordion-inner accordion-stagger">
-            <DetailRow v-if="creatorLabel" label="Von">
+            <DetailRow v-if="creatorLabel && !expanded" label="Von">
               {{ creatorLabel }}
             </DetailRow>
             <RichTextDisplay
@@ -346,9 +412,15 @@ function onSpotDrop(event: DragEvent) {
         </div>
 
         <div class="links" v-if="hasMappedStations">
-          <Button variant="card-action" @click.stop="emit('show-on-map')">
-            <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" /> Auf Karte
-            anzeigen
+          <Button
+            variant="card-action"
+            class="show-on-map-btn"
+            aria-label="Auf Karte anzeigen"
+            title="Auf Karte anzeigen"
+            @click.stop="emit('show-on-map')"
+          >
+            <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" />
+            <span class="btn-label">Auf Karte anzeigen</span>
           </Button>
         </div>
         <div class="card-actions">
@@ -363,14 +435,16 @@ function onSpotDrop(event: DragEvent) {
           >
             <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" /> Einplanen
           </button>
-          <!-- #147: kein Textlabel mehr im "gemacht"-Zustand - das Datums-/Status-Badge auf dem
-             Vorschaubild ("Gemacht am ...") zeigt den Status bereits an, ein zweites "Gemacht"-Label
-             hier war eine unnötige Dopplung. aria-label/title ersetzen den weggefallenen sichtbaren
-             Text für Screenreader/Tooltip. -->
+          <!-- Verschmolzener Status-Button (Geplant-Status + Gemacht-Checkbox) -->
           <button
             type="button"
             class="done-toggle"
-            :class="{ active: !!excursion.done }"
+            :class="{
+              status: expanded && !!(excursion.date || excursion.done),
+              planned: expanded && !!(excursion.date && !excursion.done),
+              'status-done': expanded && !!excursion.done,
+              active: !!excursion.done,
+            }"
             :aria-pressed="!!excursion.done"
             :aria-label="
               excursion.done ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'
@@ -380,10 +454,28 @@ function onSpotDrop(event: DragEvent) {
           >
             <template v-if="excursion.done">
               <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
+              <span class="status-text">
+                <template v-if="excursion.date">Gemacht am {{ statusDateLabel }}</template>
+                <template v-else>Gemacht</template>
+                <template v-if="weatherSummary">
+                  · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
+                  {{ weatherSummary.tempLabel }}
+                </template>
+              </span>
+            </template>
+            <template v-else-if="excursion.date">
+              <AppIcon :icon="ACTION_ICONS.notDone" :size="14" group="actions" />
+              <span class="status-text">
+                Geplant für {{ statusDateLabel }}
+                <template v-if="weatherSummary">
+                  · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
+                  {{ weatherSummary.tempLabel }}
+                </template>
+              </span>
             </template>
             <template v-else>
-              <AppIcon :icon="ACTION_ICONS.notDone" :size="14" group="actions" /> Als gemacht
-              markieren
+              <AppIcon :icon="ACTION_ICONS.notDone" :size="14" group="actions" />
+              <span>Als gemacht markieren</span>
             </template>
           </button>
         </div>
@@ -392,6 +484,47 @@ function onSpotDrop(event: DragEvent) {
             <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" />
             {{ excursion.title }}
           </div>
+          <PickerMenu
+            v-if="unplannedPopoverOpen"
+            class="tour-unplanned-popover"
+            :style="unplannedPopoverStyle"
+            @close="unplannedPopoverOpen = false"
+          >
+            <div class="unplanned-popover-content">
+              <div class="popover-title-row">
+                <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
+                <span class="popover-heading">Tour als gemacht markieren</span>
+              </div>
+              <p class="popover-subtext">An welchem Tag wurde diese Tour gemacht?</p>
+              <Input
+                v-model="unplannedDoneDate"
+                type="date"
+                class="popover-date-input"
+                @keyup.enter="submitUnplannedDone"
+              />
+              <div class="popover-buttons">
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="sm"
+                  :disabled="!unplannedDoneDate"
+                  @click="submitUnplannedDone"
+                >
+                  Als gemacht markieren
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  class="calendar-alt-link"
+                  @click="openCalendarConfirmDone"
+                >
+                  <AppIcon :icon="FORM_FIELD_ICONS.date" :size="12" group="formFields" />
+                  Im Kalender auswählen
+                </Button>
+              </div>
+            </div>
+          </PickerMenu>
         </Teleport>
 
         <div class="excursion-accordion" :class="{ 'is-expanded': expanded }" :inert="!expanded">
@@ -452,7 +585,7 @@ function onSpotDrop(event: DragEvent) {
   min-height: 120px;
   border-width: var(--ui-border-width, 1px);
   border-style: solid;
-  border-color: var(--color-tour-accent-border);
+  border-color: var(--color-tour-border);
   background: var(--color-surface);
   cursor: pointer;
   overflow: hidden;
@@ -463,33 +596,32 @@ function onSpotDrop(event: DragEvent) {
 }
 
 .excursion-card:hover {
-  border-color: var(--color-tour-accent);
+  border-color: var(--color-tour);
   box-shadow: var(--shadow-sm);
 }
 
 .excursion-accordion {
   display: grid;
   grid-template-rows: 0fr;
-  transition: grid-template-rows 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Beim Zuklappen sofort zusammenfalten (Stufe 1) */
+  transition: grid-template-rows 0.22s cubic-bezier(0.32, 0.72, 0, 1) 0s;
 }
 
 .excursion-accordion.is-expanded {
   grid-template-rows: 1fr;
+  /* Beim Aufklappen nach Bild-Morph entfalten (Stufe 2) */
+  transition: grid-template-rows 0.35s cubic-bezier(0.32, 0.72, 0, 1) 0.14s;
 }
 
 .excursion-accordion-inner {
   overflow: hidden;
 }
 
-/* Dicker rötlich-violetter Akzentbalken an der abgerundeten linken Kante */
+/* Akzentbalken an der abgerundeten linken Kante */
 .tour-accent-bar {
   width: 32px;
   flex-shrink: 0;
-  background: linear-gradient(
-    180deg,
-    var(--color-tour-accent) 0%,
-    var(--color-tour-accent-dark) 100%
-  );
+  background: linear-gradient(180deg, var(--color-tour) 0%, var(--color-tour-dark) 100%);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -531,20 +663,14 @@ function onSpotDrop(event: DragEvent) {
   flex: 1;
   min-width: 0;
   display: flex;
-  flex-direction: row;
-  align-items: stretch;
-}
-
-/* Löschen-Button schwebt in der oberen rechten Ecke der ganzen Card (nicht des Vorschaubilds) –
-   .excursion-card ist dafür position:relative. */
-.card-delete {
-  z-index: 1;
+  flex-direction: column;
+  position: relative;
 }
 
 /* Spot per Drag&Drop aus der Spots-Sicht darauf ablegen (SpotCard.vue ist die Drag-Quelle). */
 .excursion-card.drop-target {
-  border-color: var(--color-tour-accent);
-  background: var(--color-tour-accent-tint);
+  border-color: var(--color-tour);
+  background: var(--color-tour-tint);
 }
 
 /* Ersetzt den früheren ExcursionDetailDialog.vue-Modal-Dialog (#92): die Karte wächst an Ort und
@@ -554,36 +680,35 @@ function onSpotDrop(event: DragEvent) {
    unterscheidbar bleiben. */
 .excursion-card.expanded {
   border-style: solid;
-  border-color: var(--color-tour-accent);
-  background: var(--color-tour-accent-tint);
+  border-color: var(--color-tour);
+  background: var(--color-tour-tint);
 }
 
 .image {
-  width: 140px;
-  flex-shrink: 0;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 200px;
   background: var(--color-primary-tint) center/cover no-repeat;
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
-  border-radius: 0;
   overflow: hidden;
+  border-radius: 0;
+  /* Beim Aufklappen: Bild morpht sofort zum Vollbild-Banner oben (Stufe 1) */
+  transition:
+    width 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s,
+    height 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s;
 }
 
-@media (max-width: 480px) {
-  .tour-card-main {
-    flex-direction: column;
-  }
-
-  .image {
-    width: auto;
-    height: 140px;
-    border-radius: 0;
-  }
-
-  .tour-accent-bar {
-    width: 28px;
-  }
+.excursion-card:not(.expanded) .image {
+  width: 140px;
+  height: 100%;
+  /* Beim Zuklappen: Bild wartet kurz auf Akkordeon (Stufe 2) */
+  transition:
+    width 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s,
+    height 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s;
 }
 
 .tour-type-badge {
@@ -598,65 +723,274 @@ function onSpotDrop(event: DragEvent) {
   letter-spacing: 0.04em;
   padding: 1px 7px;
   border-radius: 999px;
-  background: var(--color-tour-accent-tint);
-  color: var(--color-tour-accent);
-  border: 1px solid var(--color-tour-accent-border);
+  background: var(--color-tour-tint);
+  color: var(--color-tour);
+  border: 1px solid var(--color-tour-border);
 }
 
 .placeholder {
   font-size: 2.5rem;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
+}
+
+.excursion-card.expanded .placeholder {
+  position: absolute;
+  opacity: 0.15;
+  transform: scale(1.8);
+  pointer-events: none;
+}
+
+.overlay-fade-enter-active {
+  transition: opacity 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.overlay-fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+.overlay-fade-enter-from,
+.overlay-fade-leave-to {
+  opacity: 0;
+}
+
+/* Expanded Cover Overlay: Halbdunkles Gradient-Overlay mit Titel, Kategorie/Rolle und Metadaten */
+.image-expanded-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: var(--space-3);
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.5) 0%,
+    rgba(0, 0, 0, 0.15) 35%,
+    rgba(0, 0, 0, 0.85) 100%
+  );
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.image-expanded-overlay > * {
+  pointer-events: auto;
+}
+
+.overlay-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.overlay-edit-btn {
+  animation: editBtnSlideIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) 0.08s both;
+}
+
+@keyframes editBtnSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.overlay-author {
+  font-weight: 600;
+}
+
+.overlay-submeta {
+  opacity: 0.85;
 }
 
 .body {
+  position: relative;
+  z-index: 2;
   padding: var(--space-3);
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  /* Ohne das bleibt .body (Flex-Item in der Zeile neben dem fest breiten .image, siehe
-     .excursion-card oben) auf seiner automatischen, vom Titel bestimmten Mindestbreite stehen - die
-     h3-Ellipsis unten greift erst, wenn .body überhaupt auf die verfügbare Breite schrumpfen darf
-     (gleicher Fix wie SpotCard.vue's identisches .body). */
   min-width: 0;
-  width: 100%;
+  box-sizing: border-box;
+  margin-left: 0;
+  margin-top: 200px;
+  /* Beim Aufklappen: gleitet sofort nach unten (Stufe 1) */
+  transition:
+    margin-left 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s,
+    margin-top 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s,
+    padding 0.32s ease 0s;
 }
 
-/* min-width:0 + Kürzung statt Umbruch, gleiches Muster wie SpotCard.vue's .head h3 (siehe dortiger
-   Kommentar) - langer Titel wechselte sonst zwischen ein-/zweizeilig je nach eingeklappter/
-   ausgefahrener Bottom-Sheet-Breite. */
-.title-row h3,
-.body h3 {
-  font-size: 1rem;
+.excursion-card:not(.expanded) .body {
+  margin-left: 140px;
+  margin-top: 0;
+  min-height: 120px;
+  overflow: hidden;
+  /* Beim Zuklappen: wartet synchron mit Bild auf Akkordeon (Stufe 2) */
+  transition:
+    margin-left 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s,
+    margin-top 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s,
+    padding 0.28s ease 0.12s;
+}
+
+/* Einheitlicher Card-Titel: gleitet beim Expandieren nahtlos vom Body in den Cover-Header */
+.card-title-block {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: var(--space-1);
+  padding-right: 70px;
+  transform: translate3d(0, 0, 0);
+  transition:
+    transform 0.32s cubic-bezier(0.32, 0.72, 0, 1),
+    margin-bottom 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+  pointer-events: none;
+}
+
+.card-title-block > * {
+  pointer-events: auto;
+}
+
+.excursion-card.expanded .card-title-block {
+  transform: translateY(calc(-100% - var(--space-3) * 2));
+  margin-bottom: -28px;
+  padding-right: 90px;
+}
+
+.card-title {
   margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--color-text);
   flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  transition:
+    color 0.28s ease,
+    font-size 0.32s cubic-bezier(0.32, 0.72, 0, 1),
+    line-height 0.32s cubic-bezier(0.32, 0.72, 0, 1),
+    text-shadow 0.28s ease;
 }
 
-.title-row {
+.excursion-card.expanded .card-title {
+  color: #ffffff;
+  font-size: 1.25rem;
+  line-height: 1.25;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.card-title-meta {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--space-2);
-  width: 100%;
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+  flex-wrap: wrap;
 }
 
-/* Unten statt oben rechts positioniert (#210): oben links schwebt der Bearbeiten-Button
-   (EditButton.vue's .floating), bei langem Status-Text (z. B. "Gemacht am 20. Aug. · ☁️ 21°") ragte
-   der von rechts wachsende Chip in der schmalen 140px-Miniatur bis dorthin und überlagerte ihn.
-   Gleiches Muster wie SpotCard.vue's .status, dort aus demselben Grund bereits unten positioniert. */
+/* Card Badge Group: gleitet sanft zwischen Body und Cover-Ecke */
+.card-badge-group {
+  position: absolute;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  pointer-events: none;
+  top: var(--space-3);
+  right: var(--space-3);
+  transition:
+    top 0.32s cubic-bezier(0.32, 0.72, 0, 1),
+    right 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.card-badge-group > * {
+  pointer-events: auto;
+}
+
+.excursion-card.expanded .card-badge-group .role-badge,
+.excursion-card.expanded .card-badge-group .tour-type-badge {
+  background: rgba(0, 0, 0, 0.45) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+.card-badge-group .role-badge,
+.card-badge-group .tour-type-badge {
+  transition:
+    background 0.3s ease,
+    border-color 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+.show-on-map-btn {
+  transition:
+    width 0.28s cubic-bezier(0.32, 0.72, 0, 1),
+    height 0.28s cubic-bezier(0.32, 0.72, 0, 1),
+    border-radius 0.28s ease,
+    padding 0.28s ease;
+}
+
+.show-on-map-btn .btn-label {
+  display: inline-block;
+  max-width: 140px;
+  opacity: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  transition:
+    max-width 0.28s cubic-bezier(0.32, 0.72, 0, 1),
+    opacity 0.2s ease,
+    margin 0.28s ease;
+}
+
+/* Unten statt oben rechts positioniert (#210, analog zu SpotCard.vue) */
 .status {
   position: absolute;
   bottom: var(--space-2);
   right: var(--space-2);
-  left: var(--space-2);
+  max-width: calc(100% - var(--space-4));
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   background: rgba(255, 255, 255, 0.9);
-  padding: 3px 10px;
+  padding: 2px 10px;
   border-radius: 999px;
   font-size: 0.75rem;
   font-weight: 600;
   color: var(--color-text-muted);
+  box-sizing: border-box;
+  /* Beim Aufklappen: Text entfaltet sich erst, wenn Banner Breite gewonnen hat */
+  transition:
+    width 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.08s,
+    height 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.08s,
+    padding 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.08s,
+    gap 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.08s,
+    border-radius 0.28s ease 0.08s;
+}
+
+.status-text {
+  display: inline-block;
+  max-width: 260px;
+  opacity: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  transition:
+    max-width 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s,
+    opacity 0.2s ease 0.14s;
 }
 
 .status.planned,
@@ -664,10 +998,6 @@ function onSpotDrop(event: DragEvent) {
   color: var(--color-success);
 }
 
-/* Der immer-helle Hintergrund (für Kontrast über beliebigen Vorschaubildern) kollidiert im Dark
-   Mode mit der hell eingefärbten --color-text-muted/--color-success-Schrift (für dunkle
-   Hintergründe gedacht) – zu wenig Kontrast. Gleiches Muster wie bei den schwebenden
-   Bearbeiten-/Löschen-Buttons: im Dark Mode ein dunkler halbtransparenter Chip statt fest hell. */
 :root[data-theme='dark'] .status {
   background: rgba(35, 34, 32, 0.85);
 }
@@ -707,26 +1037,55 @@ function onSpotDrop(event: DragEvent) {
   user-select: none;
 }
 
-/* Toggle statt Anfasser (kein Drag, nur Klick) - gleicher Chip-Grundstil wie
-   .calendar-drag-handle für optische Konsistenz, .active hebt den bereits gesetzten Status hervor
-   (dieselbe Erfolgs-Farbe wie .status.planned). */
+/* Verschmolzener Status-Toggle (Geplant-Status + Gemacht-Checkbox) */
 .done-toggle {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   background: var(--color-hover);
-  border: none;
+  border: 1px solid var(--color-border);
   border-radius: 999px;
   corner-shape: round;
   padding: 3px 10px;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   color: var(--color-text-muted);
   cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
-.done-toggle.active {
+.done-toggle:hover {
+  background: var(--color-surface);
+  border-color: var(--color-tour);
+  color: var(--color-text);
+}
+
+.done-toggle.planned {
+  color: var(--color-text);
+  border-color: var(--color-border);
+  background: var(--color-surface);
+}
+
+.done-toggle.planned:hover {
+  border-color: var(--color-success);
+  color: var(--color-success);
+}
+
+.done-toggle.active,
+.done-toggle.status-done {
   color: var(--color-success);
   font-weight: 600;
+  background: var(--color-tour-tint);
+  border-color: var(--color-success);
+}
+
+.card-actions .done-toggle.status {
+  position: static;
+  bottom: auto;
+  right: auto;
 }
 
 .calendar-drag-handle::before {
@@ -805,7 +1164,7 @@ function onSpotDrop(event: DragEvent) {
   font-weight: 600;
   color: var(--color-primary-dark);
   background: var(--color-primary-tint);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-pill);
   padding: 2px 8px;
   display: inline-flex;
   align-items: center;
@@ -833,17 +1192,138 @@ function onSpotDrop(event: DragEvent) {
 
 .excursion-accordion-inner > * {
   transition:
-    opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    opacity 0.2s ease 0s,
+    transform 0.2s ease 0s;
   opacity: 0;
   transform: translateY(-12px) scale(0.98);
-  transition-delay: calc((var(--stagger-total, 6) - var(--stagger-idx, 0) - 1) * 20ms);
 }
 
 .excursion-accordion.is-expanded .excursion-accordion-inner > * {
+  transition:
+    opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   opacity: 1;
   transform: translateY(0) scale(1);
-  transition-delay: calc(var(--stagger-idx, 0) * 35ms);
+  transition-delay: calc(var(--stagger-idx, 0) * 35ms + 140ms);
+}
+
+@container spots-col (max-width: 480px) {
+  .tour-accent-bar {
+    width: 28px;
+  }
+
+  .excursion-card:not(.expanded) {
+    min-height: 64px;
+  }
+
+  .excursion-card:not(.expanded) .image {
+    width: 64px;
+    height: 100%;
+    border-radius: 0;
+  }
+
+  .excursion-card.expanded .image {
+    width: 100%;
+    height: 160px;
+  }
+
+  .excursion-card:not(.expanded) .body {
+    margin-left: 64px;
+    margin-top: 0;
+    min-height: 64px;
+    padding: 6px var(--space-2);
+    justify-content: flex-start;
+    gap: 2px;
+    overflow: hidden;
+    height: 100%;
+  }
+
+  .role-badge {
+    font-size: 0.72rem;
+    padding: 1px 7px;
+  }
+
+  .excursion-card:not(.expanded) .card-badge-group {
+    top: 8px;
+    right: var(--space-2);
+    transition:
+      top 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s,
+      right 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s;
+  }
+
+  .excursion-card.expanded .card-badge-group {
+    top: var(--space-3);
+    right: var(--space-3);
+    transition:
+      top 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s,
+      right 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s;
+  }
+
+  .excursion-card.expanded .body {
+    margin-left: 0;
+    margin-top: 160px;
+    padding: var(--space-3);
+  }
+
+  .excursion-card:not(.expanded) .status {
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    gap: 0;
+    justify-content: center;
+    border-radius: 50%;
+    transition:
+      width 0.2s cubic-bezier(0.32, 0.72, 0, 1) 0s,
+      height 0.2s cubic-bezier(0.32, 0.72, 0, 1) 0s,
+      padding 0.2s cubic-bezier(0.32, 0.72, 0, 1) 0s,
+      gap 0.2s cubic-bezier(0.32, 0.72, 0, 1) 0s,
+      border-radius 0.2s ease 0s;
+  }
+
+  .excursion-card:not(.expanded) .status-text {
+    max-width: 0;
+    opacity: 0;
+    transition:
+      max-width 0.18s cubic-bezier(0.32, 0.72, 0, 1) 0s,
+      opacity 0.14s ease 0s;
+  }
+
+  .excursion-card:not(.expanded) .show-on-map-btn {
+    width: 22px;
+    height: 22px;
+    min-width: 22px;
+    padding: 0;
+    gap: 0;
+    justify-content: center;
+    border-radius: 50%;
+  }
+
+  .excursion-card:not(.expanded) .show-on-map-btn .btn-label {
+    max-width: 0;
+    opacity: 0;
+    margin: 0;
+  }
+
+  .excursion-card:not(.expanded) .links {
+    margin: 0;
+  }
+
+  .excursion-card:not(.expanded) .card-actions {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .image,
+  .body,
+  .excursion-accordion,
+  .status,
+  .status-text,
+  .show-on-map-btn,
+  .show-on-map-btn .btn-label,
+  .excursion-accordion-inner > * {
+    transition: none !important;
+  }
 }
 
 .slide-fade-enter-active,
@@ -856,5 +1336,50 @@ function onSpotDrop(event: DragEvent) {
 .slide-fade-leave-to {
   opacity: 0;
   transform: translateY(-10px);
+}
+
+.unplanned-popover-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  min-width: 250px;
+}
+
+.popover-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.popover-subtext {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.popover-date-input {
+  width: 100%;
+}
+
+.popover-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+}
+
+.calendar-alt-link {
+  font-size: 0.78rem !important;
+  color: var(--color-text-muted) !important;
+  justify-content: center;
+}
+
+.calendar-alt-link:hover {
+  color: var(--color-primary) !important;
 }
 </style>

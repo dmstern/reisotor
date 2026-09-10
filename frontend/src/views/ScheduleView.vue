@@ -18,7 +18,6 @@ import DetailModal from '../components/DetailModal.vue';
 import MapsAppPicker from '../components/MapsAppPicker.vue';
 import Combobox from '../components/Combobox.vue';
 import FormField from '../components/FormField.vue';
-import DeleteButton from '../components/DeleteButton.vue';
 import FileAttachments from '../components/FileAttachments.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import DraftStatusBar from '../components/DraftStatusBar.vue';
@@ -667,7 +666,13 @@ async function finishPendingSchedule(
     const spot = spotsStore.spots.find((s) => s.id === pending.id);
     if (spot && tripStore.currentTripId != null) {
       if (pending.mode === 'confirm-done') {
-        await scheduleStore.setSpotDate(pending.id, tripStore.currentTripId, spot.title, date);
+        await scheduleStore.setSpotDate(
+          pending.id,
+          tripStore.currentTripId,
+          spot.title,
+          date,
+          true
+        );
         await spotsStore.setDone(pending.id, true);
       } else {
         await scheduleStore.create({
@@ -913,13 +918,13 @@ function editViewingItem() {
   viewingItem.value = null;
 }
 
-async function deleteViewingItem() {
-  if (!viewingItem.value) return;
-  const ideaId = viewingItem.value.idea_id;
-  await scheduleStore.remove(viewingItem.value.id);
+async function deleteEditingItem() {
+  if (!editingItem.value) return;
+  const ideaId = editingItem.value.idea_id;
+  await scheduleStore.remove(editingItem.value.id);
   showToast({ message: 'Termin gelöscht. Er befindet sich nun im Papierkorb.', type: 'info' });
   await syncExcursionsIfLinked(ideaId);
-  viewingItem.value = null;
+  closeEditForm();
 }
 
 function formatDay(date: string) {
@@ -1336,7 +1341,19 @@ function formatDate(date: string) {
         </fieldset>
         <FileAttachments v-if="editingItem" domain="schedule" :entity-id="editingItem.id" />
         <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />
-        <Button type="submit">Speichern</Button>
+        <div class="actions-row">
+          <Button
+            type="button"
+            variant="danger"
+            size="sm"
+            :icon="ACTION_ICONS.delete"
+            @click="deleteEditingItem"
+          >
+            Löschen
+          </Button>
+          <div class="spacer"></div>
+          <Button type="submit">Speichern</Button>
+        </div>
       </form>
     </Modal>
 
@@ -1419,15 +1436,13 @@ function formatDate(date: string) {
         :entity-id="viewingItem.id"
         :editable="false"
       />
-      <div class="detail-actions">
+      <div v-if="viewingItem?.lat != null && viewingItem?.lng != null" class="detail-actions">
         <MapsAppPicker
-          v-if="viewingItem?.lat != null && viewingItem?.lng != null"
           :lat="viewingItem.lat"
           :lng="viewingItem.lng"
           :title="viewingItem.title"
           :maps-link="viewingItem.maps_link"
         />
-        <DeleteButton small @click="deleteViewingItem" />
       </div>
     </DetailModal>
   </div>
@@ -1711,6 +1726,23 @@ function formatDate(date: string) {
    eine eigene, volle Zeile - Absenden-Button bekommt so app-weit dieselbe, natürliche Höhe. */
 .edit-form button[type='submit'] {
   flex: 1 1 100%;
+}
+
+.actions-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-border);
+}
+
+.spacer {
+  flex: 1;
+}
+
+.actions-row button[type='submit'] {
+  flex: initial;
 }
 
 /* --- Termin-Detail-Badge (#264) --- */

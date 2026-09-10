@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
-import type { Spot } from '../api/types';
+import { computed, nextTick, ref, watch } from 'vue';
+import type { ScheduleItem, Spot } from '../api/types';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { parseContact } from '../utils/contact';
 import { fetchMergedWeather, type DailyWeather } from '../utils/weather';
@@ -13,7 +13,6 @@ import { useDrawersStore } from '../stores/drawers';
 import { useWeatherProviderStore } from '../stores/weatherProvider';
 import CategoryChip from './CategoryChip.vue';
 import EditButton from './EditButton.vue';
-import DeleteButton from './DeleteButton.vue';
 import RichTextDisplay from './RichTextDisplay.vue';
 import SocialRow from './SocialRow.vue';
 import Comments, { type CommentItem } from './Comments.vue';
@@ -23,12 +22,15 @@ import FileAttachments from './FileAttachments.vue';
 import PendingSyncBadge from './PendingSyncBadge.vue';
 import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
+import Input from './primitives/Input.vue';
+import PickerMenu from './primitives/PickerMenu.vue';
 import Card from './primitives/Card.vue';
 import DetailRow from './primitives/DetailRow.vue';
 import WeatherIcon from './WeatherIcon.vue';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { formatDate as formatDateShared, toLocalDateString } from '../utils/dateFormat';
+import { computePopoverPosition } from '../utils/popoverPosition';
 
 const props = defineProps<{
   spot: Spot;
@@ -67,7 +69,6 @@ function formatAccommodationDate(d: string | null) {
 }
 const emit = defineEmits<{
   (e: 'edit', spot: Spot): void;
-  (e: 'remove', id: number): void;
   (e: 'toggle-like'): void;
   (e: 'submit-comment', content: string): void;
   (e: 'remove-comment', id: number): void;
@@ -256,23 +257,115 @@ function onShowOnMap() {
   emit('show-on-map');
 }
 
-// #106/#147: Status-Kette in Planung -> geplant -> gemacht statt (wie zuvor) eines von geplant/
-// ungeplant unabhängigen Flags - ein Spot darf nicht ohne Datum "gemacht" sein. Zurück auf
-// "geplant" braucht dafür kein neues Datum (setDone(false) direkt). Beim Übergang zu "gemacht"
-// entscheidet, ob bereits ein geplantes Datum existiert (#147: ursprünglich öffnete sich der
-// Kalender IMMER, auch wenn schon ein Datum da war - das war unnötig, da das bereits geplante
-// Datum ohnehin als Gemacht-/Besucht-Datum übernommen wird): mit Datum direkt markieren, nur ohne
-// Datum (noch "in Planung") den Kalender zur Bestätigung des Besuchstags öffnen
-// (drawers.pendingSchedule mode 'confirm-done', ausgewertet in ScheduleView.vue's
-// finishPendingSchedule()).
-function onToggleDone() {
-  if (props.spot.done) {
-    spotsStore.setDone(props.spot.id, false);
-  } else if (props.scheduledDate) {
-    spotsStore.setDone(props.spot.id, true);
-  } else {
-    drawers.startPendingSchedule('spot', props.spot.id, 'confirm-done');
+const scheduledItemsForSpot = computed(() => {
+  return scheduleStore.items
+    .filter((i) => i.spot_id === props.spot.id && i.date)
+    .sort((a, b) => a.date.localeCompare(b.date));
+});
+
+const totalItemsCount = computed(() => scheduledItemsForSpot.value.length);
+const doneItemsCount = computed(() => scheduledItemsForSpot.value.filter((i) => !!i.done).length);
+const allItemsDone = computed(
+  () => totalItemsCount.value > 0 && doneItemsCount.value === totalItemsCount.value
+);
+const isSpotDone = computed(() => {
+  if (totalItemsCount.value > 0) return allItemsDone.value;
+  return !!props.spot.done;
+});
+const isSpotPartiallyDone = computed(() => {
+  return totalItemsCount.value > 1 && doneItemsCount.value > 0 && !allItemsDone.value;
+});
+
+const datesPopoverOpen = ref(false);
+const datesPopoverStyle = ref<{ top: string; left: string }>({ top: '0px', left: '0px' });
+
+const unplannedPopoverOpen = ref(false);
+const unplannedPopoverStyle = ref<{ top: string; left: string }>({ top: '0px', left: '0px' });
+
+const defaultDate = computed(() => {
+  const trip = tripStore.currentTrip;
+  const today = toLocalDateString(new Date());
+  if (trip && trip.start_date && trip.end_date) {
+    if (today >= trip.start_date && today <= trip.end_date) return today;
+    return trip.start_date;
   }
+  return today;
+});
+const unplannedDoneDate = ref(defaultDate.value);
+watch(defaultDate, (d) => {
+  unplannedDoneDate.value = d;
+});
+
+// #106/#147: Status-Kette in Planung -> geplant -> gemacht.
+// Bei mehreren Terminen (>1): Klick öffnet ein Popover mit Checkliste, um Tage einzeln abzuhaken.
+// Bei 1 Termin: Klick hakt direkt diesen Termin ab.
+// Bei ungeplant (0 Termine): Klick öffnet Popover zur schnellen Datumswahl (oder Kalender-Absprung).
+async function onToggleDone(event?: MouseEvent) {
+  if (totalItemsCount.value > 1) {
+    const triggerEl = (event?.currentTarget as HTMLElement | undefined) ?? null;
+    if (triggerEl) {
+      datesPopoverStyle.value = computePopoverPosition(triggerEl, {
+        menuWidth: 270,
+        menuHeight: 220,
+      });
+    }
+    datesPopoverOpen.value = true;
+    await nextTick();
+    const menuEl = document.querySelector('.spot-dates-popover') as HTMLElement | null;
+    if (menuEl && triggerEl) {
+      const rect = menuEl.getBoundingClientRect();
+      datesPopoverStyle.value = computePopoverPosition(triggerEl, {
+        menuWidth: rect.width,
+        menuHeight: rect.height,
+      });
+    }
+  } else if (totalItemsCount.value === 1) {
+    const item = scheduledItemsForSpot.value[0];
+    await scheduleStore.setDone(item.id, !item.done);
+  } else if (props.scheduledDate) {
+    await spotsStore.setDone(props.spot.id, !props.spot.done);
+  } else {
+    const triggerEl = (event?.currentTarget as HTMLElement | undefined) ?? null;
+    if (triggerEl) {
+      unplannedPopoverStyle.value = computePopoverPosition(triggerEl, {
+        menuWidth: 260,
+        menuHeight: 180,
+      });
+    }
+    unplannedPopoverOpen.value = true;
+    await nextTick();
+    const menuEl = document.querySelector('.spot-unplanned-popover') as HTMLElement | null;
+    if (menuEl && triggerEl) {
+      const rect = menuEl.getBoundingClientRect();
+      unplannedPopoverStyle.value = computePopoverPosition(triggerEl, {
+        menuWidth: rect.width,
+        menuHeight: rect.height,
+      });
+    }
+  }
+}
+
+async function toggleScheduledItemDone(item: ScheduleItem) {
+  await scheduleStore.setDone(item.id, !item.done);
+}
+
+async function submitUnplannedDone() {
+  if (!unplannedDoneDate.value) return;
+  if (tripStore.currentTripId != null) {
+    await scheduleStore.setSpotDate(
+      props.spot.id,
+      tripStore.currentTripId,
+      props.spot.title,
+      unplannedDoneDate.value,
+      true
+    );
+  }
+  unplannedPopoverOpen.value = false;
+}
+
+function openCalendarConfirmDone() {
+  unplannedPopoverOpen.value = false;
+  drawers.startPendingSchedule('spot', props.spot.id, 'confirm-done');
 }
 </script>
 
@@ -286,43 +379,50 @@ function onToggleDone() {
         :icon="spotCategoryMeta(spot.category).tabler"
         group="categories"
       />
-      <Transition name="slide-fade">
-        <EditButton v-if="expanded" floating @click="emit('edit', spot)" />
+
+      <!-- Expanded Cover Overlay: Halbdunkles Gradient-Overlay mit Edit-Button -->
+      <Transition name="overlay-fade">
+        <div v-if="expanded" class="image-expanded-overlay">
+          <div class="overlay-top-row">
+            <EditButton floating class="overlay-edit-btn" @click="emit('edit', spot)" />
+          </div>
+        </div>
       </Transition>
-      <Transition name="slide-fade">
-        <DeleteButton v-if="expanded" floating @click="emit('remove', spot.id)" />
-      </Transition>
-      <!-- #106: EIN gemeinsames Datums-/Status-Badge statt zweier unabhängiger Chips (das alte
-           separate "Gemacht"-Badge unten rechts entfällt) - Text/Icon hängen vom Status ab
-           (geplant/besucht), "spot.done && !scheduledDate" ist der Fallback für bereits vor #106
-           als "gemacht" markierte Bestandsdaten ohne verknüpftes Datum (kein Backfill möglich, da
-           der tatsächliche Tag nicht rekonstruierbar ist). -->
+
+      <!-- Collapsed Zustand: Passives Status-Badge unten rechts (#106) -->
       <span
-        v-if="scheduledDate || spot.done || dayWeather"
+        v-if="!expanded && (scheduledDate || totalItemsCount > 0 || isSpotDone || dayWeather)"
         class="status"
-        :class="{ planned: scheduledDate && !spot.done, 'status-done': spot.done }"
+        :class="{
+          planned: (scheduledDate || totalItemsCount > 0) && !isSpotDone && !isSpotPartiallyDone,
+          'status-done': isSpotDone || isSpotPartiallyDone,
+        }"
       >
         <AppIcon
           class="status-icon"
           :size="14"
           :icon="
-            spot.done
+            isSpotDone || isSpotPartiallyDone
               ? ACTION_ICONS.done
-              : scheduledDate
+              : scheduledDate || totalItemsCount > 0
                 ? FORM_FIELD_ICONS.date
                 : ACTION_ICONS.today
           "
           group="actions"
         />
         <span class="status-text">
-          <template v-if="spot.done && scheduledDate">Besucht am {{ plannedDateLabel }}</template>
-          <template v-else-if="spot.done">Gemacht</template>
-          <template v-else-if="scheduledDate">
-            <template v-if="scheduledDaysCount > 1"
-              >Geplant an {{ scheduledDaysCount }} Tagen</template
-            >
-            <template v-else>Geplant für {{ plannedDateLabel }}</template>
+          <template v-if="totalItemsCount > 1">
+            <template v-if="allItemsDone">Besucht an {{ totalItemsCount }} Tagen</template>
+            <template v-else-if="doneItemsCount > 0">
+              {{ doneItemsCount }} von {{ totalItemsCount }} Tagen besucht
+            </template>
+            <template v-else>Geplant an {{ totalItemsCount }} Tagen</template>
           </template>
+          <template v-else-if="isSpotDone && scheduledDate">
+            Besucht am {{ plannedDateLabel }}
+          </template>
+          <template v-else-if="isSpotDone">Gemacht</template>
+          <template v-else-if="scheduledDate">Geplant für {{ plannedDateLabel }}</template>
           <template v-else>Aktuelles Wetter</template>
           <template v-if="dayWeather && scheduledDaysCount <= 1">
             · <WeatherIcon :code="dayWeather.weatherCode" :size="14" />
@@ -331,11 +431,40 @@ function onToggleDone() {
         </span>
       </span>
     </div>
+
+    <!-- Gleitende Badge-Gruppe: Ein einziges Element, das nahtlos zwischen Body und Cover-Ecke gleitet -->
+    <div class="card-badge-group">
+      <CategoryChip :category="spot.category" />
+      <PendingSyncBadge v-if="spot._pending" />
+    </div>
+
     <div class="body">
-      <div class="head">
-        <h3>{{ spot.title }}</h3>
-        <CategoryChip :category="spot.category" />
-        <PendingSyncBadge v-if="spot._pending" />
+      <!-- Einheitlicher Card-Titel: gleitet beim Expandieren nahtlos vom Body in den Cover-Header -->
+      <div class="card-title-block">
+        <h3 class="card-title" :title="spot.title">{{ spot.title }}</h3>
+        <Transition name="fade">
+          <div
+            v-if="
+              expanded &&
+              (creatorLabel ||
+                (isAccommodation && (spot.start_date || spot.end_date)) ||
+                spot.address)
+            "
+            class="card-title-meta"
+          >
+            <span v-if="creatorLabel" class="overlay-author">Von {{ creatorLabel }}</span>
+            <span
+              v-if="isAccommodation && (spot.start_date || spot.end_date)"
+              class="overlay-submeta"
+            >
+              {{ formatAccommodationDate(spot.start_date) || '?' }} –
+              {{ formatAccommodationDate(spot.end_date) || '?' }}
+            </span>
+            <span v-else-if="spot.address" class="overlay-submeta">
+              {{ spot.address }}
+            </span>
+          </div>
+        </Transition>
       </div>
       <!-- Eigene, explizite Aktion statt am Aufklappen dranzuhängen (#109, siehe onShowOnMap im
            Script) – in Mini- UND aufgeklappter Karte sichtbar (Textlabel schrumpft im Kompakt-Modus
@@ -356,7 +485,7 @@ function onToggleDone() {
 
       <div class="spot-accordion" :class="{ 'is-expanded': expanded }" :inert="!expanded">
         <div class="spot-accordion-inner accordion-stagger">
-          <DetailRow v-if="creatorLabel" label="Von">
+          <DetailRow v-if="creatorLabel && !expanded" label="Von">
             {{ creatorLabel }}
           </DetailRow>
           <template v-if="isAccommodation">
@@ -425,22 +554,66 @@ function onToggleDone() {
             >
               <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" /> Einplanen
             </button>
+            <!-- Verschmolzener Status-Button (Geplant-Status + Gemacht-Checkbox) -->
             <button
               v-if="!isAccommodation"
               type="button"
               class="done-toggle"
-              :class="{ active: !!spot.done }"
-              :aria-pressed="!!spot.done"
-              :aria-label="spot.done ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'"
-              :title="spot.done ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'"
+              :class="{
+                status:
+                  expanded &&
+                  !!(scheduledDate || totalItemsCount > 0 || isSpotDone || isSpotPartiallyDone),
+                planned:
+                  expanded &&
+                  !!((scheduledDate || totalItemsCount > 0) && !isSpotDone && !isSpotPartiallyDone),
+                'status-done': expanded && (isSpotDone || isSpotPartiallyDone),
+                active: isSpotDone,
+              }"
+              :aria-pressed="isSpotDone"
+              :aria-label="isSpotDone ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'"
+              :title="isSpotDone ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'"
               @click.stop="onToggleDone"
             >
-              <template v-if="spot.done">
+              <template v-if="totalItemsCount > 1">
+                <template v-if="allItemsDone">
+                  <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
+                  <span class="status-text">Besucht an {{ totalItemsCount }} Tagen</span>
+                </template>
+                <template v-else-if="doneItemsCount > 0">
+                  <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
+                  <span class="status-text">
+                    Besucht an {{ doneItemsCount }} von {{ totalItemsCount }} Tagen
+                  </span>
+                </template>
+                <template v-else>
+                  <AppIcon :icon="ACTION_ICONS.notDone" :size="14" group="actions" />
+                  <span class="status-text">Geplant an {{ totalItemsCount }} Tagen</span>
+                </template>
+              </template>
+              <template v-else-if="isSpotDone">
                 <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
+                <span class="status-text">
+                  <template v-if="scheduledDate">Besucht am {{ plannedDateLabel }}</template>
+                  <template v-else>Gemacht</template>
+                  <template v-if="dayWeather && scheduledDaysCount <= 1">
+                    · <WeatherIcon :code="dayWeather.weatherCode" :size="14" />
+                    {{ Math.round(dayWeather.tempMax) }}°
+                  </template>
+                </span>
+              </template>
+              <template v-else-if="scheduledDate || totalItemsCount === 1">
+                <AppIcon :icon="ACTION_ICONS.notDone" :size="14" group="actions" />
+                <span class="status-text">
+                  Geplant für {{ plannedDateLabel }}
+                  <template v-if="dayWeather && scheduledDaysCount <= 1">
+                    · <WeatherIcon :code="dayWeather.weatherCode" :size="14" />
+                    {{ Math.round(dayWeather.tempMax) }}°
+                  </template>
+                </span>
               </template>
               <template v-else>
-                <AppIcon :icon="ACTION_ICONS.notDone" :size="14" group="actions" /> Als gemacht
-                markieren
+                <AppIcon :icon="ACTION_ICONS.notDone" :size="14" group="actions" />
+                <span>Als gemacht markieren</span>
               </template>
             </button>
           </div>
@@ -480,6 +653,87 @@ function onToggleDone() {
         <div v-if="dragging" class="drag-ghost" :style="ghostStyle ?? {}">
           <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" /> {{ spot.title }}
         </div>
+        <!-- Popover zur Datumsauswahl für ungeplante Spots -->
+        <PickerMenu
+          v-if="unplannedPopoverOpen"
+          class="spot-unplanned-popover"
+          :style="unplannedPopoverStyle"
+          @close="unplannedPopoverOpen = false"
+        >
+          <div class="unplanned-popover-content">
+            <div class="popover-title-row">
+              <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
+              <span class="popover-heading">Spot als besucht markieren</span>
+            </div>
+            <p class="popover-subtext">An welchem Tag wurde dieser Spot besucht?</p>
+            <Input
+              v-model="unplannedDoneDate"
+              type="date"
+              class="popover-date-input"
+              @keyup.enter="submitUnplannedDone"
+            />
+            <div class="popover-buttons">
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                :disabled="!unplannedDoneDate"
+                @click="submitUnplannedDone"
+              >
+                Als besucht markieren
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                class="calendar-alt-link"
+                @click="openCalendarConfirmDone"
+              >
+                <AppIcon :icon="FORM_FIELD_ICONS.date" :size="12" group="formFields" />
+                Im Kalender auswählen
+              </Button>
+            </div>
+          </div>
+        </PickerMenu>
+
+        <!-- Popover zum Abhaken einzelner Termine bei Multi-Datum-Spots -->
+        <PickerMenu
+          v-if="datesPopoverOpen"
+          class="spot-dates-popover"
+          :style="datesPopoverStyle"
+          @close="datesPopoverOpen = false"
+        >
+          <div class="dates-popover-content">
+            <div class="popover-title-row">
+              <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
+              <span class="popover-heading">Besuche abhaken</span>
+            </div>
+            <p class="popover-subtext">Wähle die Tage aus, an denen dieser Spot besucht wurde:</p>
+            <div class="dates-checklist">
+              <button
+                v-for="item in scheduledItemsForSpot"
+                :key="item.id"
+                type="button"
+                class="date-check-item"
+                :class="{ checked: !!item.done }"
+                @click="toggleScheduledItemDone(item)"
+              >
+                <AppIcon
+                  :icon="item.done ? ACTION_ICONS.done : ACTION_ICONS.notDone"
+                  :size="15"
+                  group="actions"
+                />
+                <span class="date-check-date">{{ formatDateShared(item.date) }}</span>
+                <span class="date-check-status">{{ item.done ? 'Besucht' : 'Geplant' }}</span>
+              </button>
+            </div>
+            <div class="popover-buttons">
+              <Button type="button" variant="secondary" size="sm" @click="datesPopoverOpen = false">
+                Fertig
+              </Button>
+            </div>
+          </div>
+        </PickerMenu>
       </Teleport>
 
       <Transition name="fade">
@@ -534,7 +788,7 @@ function onToggleDone() {
   align-items: center;
   justify-content: center;
   position: relative;
-  transition: height 0.15s ease;
+  transition: height 0.3s cubic-bezier(0.32, 0.72, 0, 1);
   border-radius: var(--radius-md-squircle) var(--radius-md-squircle) 0 0;
   corner-shape: squircle;
 }
@@ -576,17 +830,97 @@ function onToggleDone() {
   opacity: 0;
 }
 
+.overlay-fade-enter-active {
+  transition: opacity 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.overlay-fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+.overlay-fade-enter-from,
+.overlay-fade-leave-to {
+  opacity: 0;
+}
+
 .placeholder {
   font-size: 2.2rem;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
+}
+
+.spot-card.expanded .placeholder {
+  position: absolute;
+  opacity: 0.15;
+  transform: scale(1.8);
+  pointer-events: none;
+}
+
+/* Expanded Cover Overlay: Halbdunkles Gradient-Overlay mit Titel, Autor & Metadaten */
+.image-expanded-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: var(--space-3);
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.5) 0%,
+    rgba(0, 0, 0, 0.15) 35%,
+    rgba(0, 0, 0, 0.85) 100%
+  );
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.image-expanded-overlay > * {
+  pointer-events: auto;
+}
+
+.overlay-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.overlay-edit-btn {
+  animation: editBtnSlideIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) 0.08s both;
+}
+
+@keyframes editBtnSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.overlay-meta-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+  flex-wrap: wrap;
+}
+
+.overlay-author {
+  font-weight: 600;
+}
+
+.overlay-submeta {
+  opacity: 0.85;
 }
 
 /* Status-/Datums-Chip (#106: EIN gemeinsames Badge statt zweier unabhängiger Chips, ersetzt das
    frühere separate "Gemacht"-Badge) – dasselbe Muster wie ExcursionCard.vue's .status/.status.planned
    (inkl. Dark-Mode-Override unten), damit beide Karten-Typen optisch konsistent bleiben. Unten statt
-   oben rechts positioniert: oben rechts sitzt hier bereits der schwebende Löschen-Button
-   (EditButton/DeleteButton floating landen beide im selben .image-Container), anders als bei
-   ExcursionCard.vue, wo der Löschen-Button außerhalb von .image auf Höhe der ganzen (breiteren) Card
-   schwebt. Nur sichtbar, wenn geplant oder gemacht (siehe v-if im Template) statt immer einen
+   oben positioniert. Nur sichtbar, wenn geplant oder gemacht (siehe v-if im Template) statt immer einen
    "Nicht geplant"-Chip zu zeigen – ein Spot muss (anders als ein Ausflug) nicht zwangsläufig einmal
    eingeplant werden. */
 .status {
@@ -602,6 +936,23 @@ function onToggleDone() {
   font-size: 0.75rem;
   font-weight: 600;
   color: var(--color-text-muted);
+  transition:
+    width 0.3s cubic-bezier(0.32, 0.72, 0, 1),
+    height 0.3s cubic-bezier(0.32, 0.72, 0, 1),
+    padding 0.3s cubic-bezier(0.32, 0.72, 0, 1),
+    gap 0.3s cubic-bezier(0.32, 0.72, 0, 1),
+    border-radius 0.3s ease;
+}
+
+.status-text {
+  display: inline-block;
+  max-width: 240px;
+  opacity: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  transition:
+    max-width 0.3s cubic-bezier(0.32, 0.72, 0, 1),
+    opacity 0.2s ease;
 }
 
 .status.planned,
@@ -619,35 +970,123 @@ function onToggleDone() {
   }
 }
 
+/* Card Badge Group: gleitet sanft zwischen Body und Cover-Ecke */
+.card-badge-group {
+  position: absolute;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  pointer-events: none;
+}
+
+.card-badge-group > * {
+  pointer-events: auto;
+}
+
+/* Auf Desktop (> 480px): Collapsed im Body unter dem 120px-Bild, Expanded im Cover-Overlay */
+.spot-card:not(.expanded) .card-badge-group {
+  top: calc(120px + var(--space-3));
+  right: var(--space-3);
+  transition:
+    top 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s,
+    right 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s;
+}
+
+.spot-card.expanded .card-badge-group {
+  top: var(--space-3);
+  right: var(--space-3);
+  transition:
+    top 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s,
+    right 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s;
+}
+
+.spot-card.expanded .card-badge-group :deep(.category-chip) {
+  background: rgba(0, 0, 0, 0.45) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+.card-badge-group :deep(.category-chip) {
+  transition:
+    background 0.3s ease,
+    border-color 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
 .body {
+  position: relative;
+  z-index: 2;
   padding: var(--space-3);
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
 }
 
-.head {
+/* Einheitlicher Card-Titel: gleitet beim Expandieren nahtlos vom Body in den Cover-Header */
+.card-title-block {
+  position: relative;
+  z-index: 2;
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: var(--space-2);
+  flex-direction: column;
+  gap: 4px;
   margin-bottom: var(--space-2);
+  padding-right: 90px;
+  transform: translate3d(0, 0, 0);
+  transition:
+    transform 0.32s cubic-bezier(0.32, 0.72, 0, 1),
+    margin-bottom 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+  pointer-events: none;
 }
 
-/* min-width:0 + Kürzung statt Umbruch: ohne das wechselte ein langer Titel zwischen ein-/
-   zweizeilig abhängig von der paar Pixel schmaleren/breiteren .spots-col-Breite (Bottom-Sheet
-   eingeklappt/ausgefahren, siehe ExcursionsView.vue) - wirkte beim Hoch-/Runterziehen wie ein
-   hässlicher Layout-Sprung, obwohl sich der eigentlich verfügbare Platz kaum geändert hatte. Titel
-   schrumpft jetzt statt umzubrechen, CategoryChip/PendingSyncBadge daneben behalten ihre feste
-   Breite (Default flex-shrink:1 auf so kleinen Chips macht dort praktisch keinen Unterschied). */
-.head h3 {
+.card-title-block > * {
+  pointer-events: auto;
+}
+
+.spot-card.expanded .card-title-block {
+  transform: translateY(calc(-100% - var(--space-3) * 2));
+  margin-bottom: -32px;
+}
+
+.card-title {
   margin: 0;
-  font-size: 1rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--color-text);
   flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  transition:
+    color 0.28s ease,
+    font-size 0.32s cubic-bezier(0.32, 0.72, 0, 1),
+    line-height 0.32s cubic-bezier(0.32, 0.72, 0, 1),
+    text-shadow 0.28s ease;
+}
+
+.spot-card.expanded .card-title {
+  color: #ffffff;
+  font-size: 1.25rem;
+  line-height: 1.25;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.card-title-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+  flex-wrap: wrap;
 }
 
 .note {
@@ -715,26 +1154,55 @@ function onToggleDone() {
   user-select: none;
 }
 
-/* Toggle statt Anfasser (kein Drag, nur Klick) - gleicher Chip-Grundstil wie die Anfasser oben für
-   optische Konsistenz, .active hebt den bereits gesetzten Status hervor (dieselbe Erfolgs-Farbe wie
-   .status.planned). */
+/* Verschmolzener Status-Toggle (Geplant-Status + Gemacht-Checkbox) */
 .done-toggle {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   background: var(--color-hover);
-  border: none;
+  border: 1px solid var(--color-border);
   border-radius: 999px;
   corner-shape: round;
   padding: 3px 10px;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   color: var(--color-text-muted);
   cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
-.done-toggle.active {
+.done-toggle:hover {
+  background: var(--color-surface);
+  border-color: var(--color-primary);
+  color: var(--color-text);
+}
+
+.done-toggle.planned {
+  color: var(--color-text);
+  border-color: var(--color-border);
+  background: var(--color-surface);
+}
+
+.done-toggle.planned:hover {
+  border-color: var(--color-success);
+  color: var(--color-success);
+}
+
+.done-toggle.active,
+.done-toggle.status-done {
   color: var(--color-success);
   font-weight: 600;
+  background: var(--color-primary-tint);
+  border-color: var(--color-success);
+}
+
+.card-actions .done-toggle.status {
+  position: static;
+  bottom: auto;
+  right: auto;
 }
 
 .calendar-drag-handle {
@@ -794,97 +1262,192 @@ function onToggleDone() {
    nicht auf die Fenster-/Viewport-Breite – greift dadurch auch, wenn man auf Desktop den Anfasser
    zwischen Spots-Liste und Karte weit zur Karte hin zieht, nicht nur auf echtem Mobil. */
 @container spots-col (max-width: 480px) {
-  .spot-card:not(.expanded) {
-    flex-direction: row;
-    align-items: stretch;
+  /* Bild ist absolut am Kopf positioniert und morpht flüssig von der linken 64px-Miniatur
+     zum vollen 160px-Banner oben */
+  .image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 160px;
+    border-radius: var(--radius-md-squircle) var(--radius-md-squircle) 0 0;
+    corner-shape: squircle;
+    overflow: hidden;
+    /* Beim Aufklappen: Bild morpht sofort (Stufe 1) */
+    transition:
+      width 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s,
+      height 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s,
+      border-radius 0.32s ease 0s;
+  }
+
+  .spot-card.expanded .image {
+    width: 100%;
+    height: 160px;
+    border-radius: var(--radius-md-squircle) var(--radius-md-squircle) 0 0;
   }
 
   .spot-card:not(.expanded) .image {
     width: 64px;
-    height: auto;
-    flex-shrink: 0;
-    /* Bild sitzt hier links statt oben (Zeilen- statt Spalten-Layout) - deshalb linke statt obere
-       Ecken gerundet (siehe .image oben). */
+    height: 100%;
     border-radius: var(--radius-md-squircle) 0 0 var(--radius-md-squircle);
     corner-shape: squircle;
+    /* Beim Zuklappen: Bild wartet kurz, bis das Akkordeon eingefahren ist (Stufe 2) */
+    transition:
+      width 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s,
+      height 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s,
+      border-radius 0.28s ease 0.12s;
+  }
+
+  /* Der Inhalt (Titel, Aktionen, Akkordeon) sitzt im normalen Layout-Fluss und gleitet
+     beim Aufklappen unter das 160px-Banner bzw. beim Zuklappen wieder neben die 64px-Miniatur */
+  .body {
+    position: relative;
+    z-index: 1;
+    margin-left: 0;
+    margin-top: 160px;
+    padding: var(--space-3);
+    min-width: 0;
+    /* Beim Aufklappen: gleitet sofort nach unten (Stufe 1) */
+    transition:
+      margin-left 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s,
+      margin-top 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s,
+      padding 0.32s ease 0s;
   }
 
   .spot-card:not(.expanded) .body {
-    padding: var(--space-2);
+    margin-left: 64px;
+    margin-top: 0;
+    padding: 6px var(--space-2);
+    min-height: 64px;
+    justify-content: center;
     gap: 2px;
-    /* Ohne das bleibt .body (jetzt ein Flex-Item in der Zeile statt in der Spalte, siehe
-       .spot-card:not(.expanded) oben) auf seiner automatischen Mindestbreite stehen - die entspricht
-       ohne explizites min-width:0 dem eigenen min-content (rekursiv über .head bis zum Titel
-       berechnet), bei einem langen, per white-space:nowrap absichtlich nicht umbrechenden Titel also
-       dessen volle Textbreite. .head h3 kürzt zwar selbst schon per Ellipsis (siehe dortiges CSS),
-       das greift aber erst, wenn .body überhaupt auf die verfügbare Breite schrumpfen darf - sonst
-       ragte die ganze Karte (und mit ihr die komplette Spots-Liste) auf schmalen Mobilbreiten seitlich
-       über den Bildschirmrand hinaus (horizontale Scrollleiste statt gekürztem Titel). */
-    min-width: 0;
+    overflow: hidden;
+    /* Beim Zuklappen: wartet synchron mit dem Bild auf das Akkordeon (Stufe 2) */
+    transition:
+      margin-left 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s,
+      margin-top 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s,
+      padding 0.28s ease 0.12s;
   }
 
-  .spot-card:not(.expanded) .note,
-  .spot-card:not(.expanded) .card-actions,
-  .spot-card:not(.expanded) .maps-picker {
-    display: none;
+  .spot-card:not(.expanded) .card-title-block {
+    margin-bottom: 0;
+    padding-right: 75px;
   }
 
-  /* Anders als .note/.card-actions/.maps-picker oben bleibt .links (der "Auf Karte
-     anzeigen"-Button) hier bewusst sichtbar (#109 - der Button muss auch auf der Mini-Karte
-     erreichbar sein), schrumpft aber auf einen reinen Icon-Kreis (Textlabel ausgeblendet) statt
-     der vollen Pille - gleiches Verkleinerungs-Muster wie .status unten. */
+  .spot-card:not(.expanded) .card-badge-group {
+    top: 8px;
+    right: var(--space-2);
+    transition:
+      top 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s,
+      right 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s;
+  }
+
+  .spot-card.expanded .card-badge-group {
+    top: var(--space-3);
+    right: var(--space-3);
+    transition:
+      top 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s,
+      right 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s;
+  }
+
+  /* Anders als zuvor bleibt .links (der "Auf Karte anzeigen"-Button) hier bewusst sichtbar (#109),
+     morpht aber flüssig zwischen Kreis-Icon und voller Pille mit Textlabel. */
   .spot-card:not(.expanded) .links {
-    margin: var(--space-2) 0;
+    margin: 0;
   }
 
-  .spot-card:not(.expanded) .show-on-map-btn .btn-label {
-    display: none;
+  .show-on-map-btn {
+    transition:
+      width 0.28s cubic-bezier(0.32, 0.72, 0, 1),
+      height 0.28s cubic-bezier(0.32, 0.72, 0, 1),
+      border-radius 0.28s ease,
+      padding 0.28s ease;
+  }
+
+  .show-on-map-btn .btn-label {
+    display: inline-block;
+    max-width: 140px;
+    opacity: 1;
+    overflow: hidden;
+    white-space: nowrap;
+    transition:
+      max-width 0.28s cubic-bezier(0.32, 0.72, 0, 1),
+      opacity 0.2s ease,
+      margin 0.28s ease;
   }
 
   .spot-card:not(.expanded) .show-on-map-btn {
     width: 22px;
     height: 22px;
+    min-width: 22px;
     padding: 0;
+    gap: 0;
     justify-content: center;
     border-radius: 50%;
+  }
+
+  .spot-card:not(.expanded) .show-on-map-btn .btn-label {
+    max-width: 0;
+    opacity: 0;
+    margin: 0;
   }
 
   .spot-card:not(.expanded) .social-row {
     margin-top: 0;
   }
 
-  /* Ohne diesen Fix ragten die Status-Pillen (Text+Icon, ~90-110px breit) über das auf 64px
-     geschrumpfte Vorschaubild hinaus in den Titel/Kategorie-Bereich daneben - hier stattdessen zu
-     reinen Icon-Kreisen (ohne Text/Datum/Wetter-Detail) verkleinert, die garantiert innerhalb der
-     64px passen. Das Detail bleibt beim Aufklappen der Karte sichtbar (.spot-card.expanded nutzt
-     weiterhin die volle Pillen-Darstellung von .status oben), analog zum bereits bestehenden Muster,
-     dass .note/.links/.card-actions/.maps-picker im Kompakt-Modus ausgeblendet werden. */
+  /* Status-Pille schrumpft in der Miniatur zum runden Icon-Kreis und morpht zur Pille */
+  .status {
+    /* Beim Aufklappen: Text entfaltet sich erst, wenn das Banner bereits Breite gewonnen hat */
+    transition:
+      width 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.08s,
+      height 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.08s,
+      padding 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.08s,
+      gap 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.08s,
+      border-radius 0.28s ease 0.08s;
+  }
+
+  .status-text {
+    transition:
+      max-width 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s,
+      opacity 0.2s ease 0.14s;
+  }
+
   .spot-card:not(.expanded) .status {
     width: 22px;
     height: 22px;
     padding: 0;
+    gap: 0;
     justify-content: center;
     border-radius: 50%;
+    /* Beim Zuklappen: Pille schrumpft sofort zum Kreis, bevor das Bild nach links gleitet */
+    transition:
+      width 0.2s cubic-bezier(0.32, 0.72, 0, 1) 0s,
+      height 0.2s cubic-bezier(0.32, 0.72, 0, 1) 0s,
+      padding 0.2s cubic-bezier(0.32, 0.72, 0, 1) 0s,
+      gap 0.2s cubic-bezier(0.32, 0.72, 0, 1) 0s,
+      border-radius 0.2s ease 0s;
   }
 
   .spot-card:not(.expanded) .status-text {
-    display: none;
-  }
-
-  /* Etwas kleiner als der Desktop-Wert (200px) aus der Aufklapp-Ansicht, damit das Bild auf
-     schmalen Bildschirmen nicht zu dominant wirkt. */
-  .spot-card.expanded .image {
-    height: 160px;
+    max-width: 0;
+    opacity: 0;
+    transition:
+      max-width 0.18s cubic-bezier(0.32, 0.72, 0, 1) 0s,
+      opacity 0.14s ease 0s;
   }
 
   .mobile-only-accordion {
     display: grid;
     grid-template-rows: 0fr;
-    transition: grid-template-rows 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Beim Zuklappen: faltet sich sofort zusammen (Stufe 1) */
+    transition: grid-template-rows 0.22s cubic-bezier(0.32, 0.72, 0, 1) 0s;
   }
 
   .mobile-only-accordion.is-expanded {
     grid-template-rows: 1fr;
+    /* Beim Aufklappen: entfaltet sich nach Bild-Morph (Stufe 2) */
+    transition: grid-template-rows 0.35s cubic-bezier(0.32, 0.72, 0, 1) 0.14s;
   }
 
   .mobile-only-accordion-inner {
@@ -893,17 +1456,19 @@ function onToggleDone() {
 
   .mobile-only-accordion-inner > * {
     transition:
-      opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-      transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      opacity 0.2s ease 0s,
+      transform 0.2s ease 0s;
     opacity: 0;
     transform: translateY(-12px) scale(0.98);
-    transition-delay: calc((var(--stagger-total, 6) - var(--stagger-idx, 0) - 1) * 20ms);
   }
 
   .mobile-only-accordion.is-expanded .mobile-only-accordion-inner > * {
+    transition:
+      opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+      transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
     opacity: 1;
     transform: translateY(0) scale(1);
-    transition-delay: calc(var(--stagger-idx, 0) * 35ms);
+    transition-delay: calc(var(--stagger-idx, 0) * 35ms + 140ms);
   }
 }
 
@@ -914,11 +1479,14 @@ function onToggleDone() {
 .spot-accordion {
   display: grid;
   grid-template-rows: 0fr;
-  transition: grid-template-rows 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Beim Zuklappen sofort zusammenfalten (Stufe 1) */
+  transition: grid-template-rows 0.22s cubic-bezier(0.32, 0.72, 0, 1) 0s;
 }
 
 .spot-accordion.is-expanded {
   grid-template-rows: 1fr;
+  /* Beim Aufklappen nach dem Bild-Morph entfalten (Stufe 2) */
+  transition: grid-template-rows 0.35s cubic-bezier(0.32, 0.72, 0, 1) 0.14s;
 }
 
 .spot-accordion-inner {
@@ -929,18 +1497,35 @@ function onToggleDone() {
 .spot-accordion-inner > *,
 .excursion-accordion-inner > * {
   transition:
-    opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    opacity 0.2s ease 0s,
+    transform 0.2s ease 0s;
   opacity: 0;
   transform: translateY(-12px) scale(0.98);
-  transition-delay: calc((var(--stagger-total, 6) - var(--stagger-idx, 0) - 1) * 20ms);
 }
 
 .spot-accordion.is-expanded .spot-accordion-inner > *,
 .excursion-accordion.is-expanded .excursion-accordion-inner > * {
+  transition:
+    opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   opacity: 1;
   transform: translateY(0) scale(1);
-  transition-delay: calc(var(--stagger-idx, 0) * 35ms);
+  transition-delay: calc(var(--stagger-idx, 0) * 35ms + 140ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .image,
+  .body,
+  .spot-accordion,
+  .mobile-only-accordion,
+  .status,
+  .status-text,
+  .show-on-map-btn,
+  .show-on-map-btn .btn-label,
+  .spot-accordion-inner > *,
+  .mobile-only-accordion-inner > * {
+    transition: none !important;
+  }
 }
 
 /* Fallback-Slide-Fade für absolute Buttons */
@@ -954,5 +1539,105 @@ function onToggleDone() {
 .slide-fade-leave-to {
   opacity: 0;
   transform: translateY(-10px);
+}
+
+.unplanned-popover-content,
+.dates-popover-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  min-width: 250px;
+}
+
+.popover-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.popover-subtext {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.popover-date-input {
+  width: 100%;
+}
+
+.popover-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+}
+
+.calendar-alt-link {
+  font-size: 0.78rem !important;
+  color: var(--color-text-muted) !important;
+  justify-content: center;
+}
+
+.calendar-alt-link:hover {
+  color: var(--color-primary) !important;
+}
+
+.dates-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.date-check-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-2-5);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  text-align: left;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+  font-size: 0.84rem;
+  color: var(--color-text);
+  width: 100%;
+}
+
+.date-check-item:hover {
+  background: var(--color-surface-hover, var(--color-surface-raised));
+  border-color: var(--color-border-hover, var(--color-primary));
+}
+
+.date-check-item.checked {
+  background: rgba(46, 125, 50, 0.08);
+  border-color: rgba(46, 125, 50, 0.4);
+  color: #2e7d32;
+}
+
+:root[data-theme='dark'] .date-check-item.checked {
+  background: rgba(76, 175, 80, 0.15);
+  border-color: rgba(76, 175, 80, 0.4);
+  color: #81c784;
+}
+
+.date-check-date {
+  flex: 1;
+  font-weight: 500;
+}
+
+.date-check-status {
+  font-size: 0.75rem;
+  opacity: 0.8;
 }
 </style>

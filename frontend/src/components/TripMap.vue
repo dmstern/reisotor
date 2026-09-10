@@ -2097,60 +2097,60 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
   color: var(--color-text) !important;
 }
 
-/* Desktop: zurück auf den bisherigen Stand (Karte als eigene, begrenzte Box statt vollflächigem
-   Hintergrund – .map-col in ExcursionsView.vue ist hier eine normale sticky Spalte, kein
-   fixed-Vollbild-Container mehr, siehe dort). Wieder @container(app-main) statt @media: jetzt, wo
-   .map-col in ExcursionsView.vue position:absolute (statt fixed) innerhalb von .page bleibt, ist
-   ein knappes .app-main (z. B. beide Schubladen offen) kein Problem mehr – die Karte quetscht sich
-   dann einfach mit in den mobilen Vollbild-Modus, statt überdeckt zu werden (siehe dort für die
-   ausführliche Begründung). 720px statt 900px - muss exakt der @container app-main-Schwelle in
-   ExcursionsView.vue (dort samt Begründung) UND deren isSheetOverlayMode-JS-Spiegelung entsprechen,
-   sonst schaltet dieser Bereich hier (Karte/Tage-Streifen) bei einer anderen Breite auf Desktop-Optik
-   um als der umgebende Spalten-Grid, was zu einer inkonsistenten Zwischenbreite führen würde. */
-@container app-main (min-width: 720px) {
-  .map-wrap {
-    /* Eckenabstand/Lücke sind schon auf Mobil (.map-wrap oben) auf Apples Maß, hier reicht der Platz zusätzlich
-       für den größeren Durchmesser: 44px (dasselbe "großer runder Icon-Button"-Maß wie
-       DashboardView.vue's .tile-icon) statt der auf Mobil aus Platznot nötigen 34px. */
-    --fit-btn-size: 44px;
-  }
+/* Desktop: solange Spots-Drawer und Kalender-Drawer nebeneinander passen, schwebt der
+   Tage-Streifen als Pille und die Zoom-Buttons sitzen rechts neben den Drawers.
+   Spiegelt exakt die Schwelle (500px in .app-main unter @media (min-width: 800px)) aus
+   ExcursionsView.vue UND deren isSheetOverlayMode-JS-Spiegelung, sonst schalten beide Bereiche
+   bei unterschiedlichen Breiten um. */
+@media (min-width: 800px) {
+  @container app-main (min-width: 500px) {
+    .map-wrap {
+      /* Eckenabstand/Lücke sind schon auf Mobil (.map-wrap oben) auf Apples Maß, hier reicht der Platz zusätzlich
+         für den größeren Durchmesser: 44px (dasselbe "großer runder Icon-Button"-Maß wie
+         DashboardView.vue's .tile-icon) statt der auf Mobil aus Platznot nötigen 34px. */
+      --fit-btn-size: 44px;
+    }
 
-  .fit-btn {
-    font-size: 1.2rem;
-  }
+    .fit-btn {
+      font-size: 1.2rem;
+    }
 
-  /* Auf Desktop schwebt der day-strip als zentrierte Pille im verfügbaren Kartenbereich (neben dem Drawer) */
-  .day-strip {
-    left: calc(var(--calendar-offset, 0px) + var(--spots-col-width, 400px));
-    right: 0;
-    margin: 0 auto;
-    width: fit-content;
-    max-width: calc(100vw - var(--calendar-offset, 0px) - var(--spots-col-width, 400px) - 40px);
-    border-radius: 999px;
-    bottom: 24px;
-    padding: 8px 16px;
-  }
+    /* Auf Desktop schwebt der day-strip als zentrierte Pille im verfügbaren Kartenbereich (neben dem Drawer) */
+    .day-strip {
+      left: calc(var(--calendar-offset, 0px) + var(--spots-col-width, 400px));
+      right: 0;
+      margin: 0 auto;
+      width: fit-content;
+      max-width: calc(100vw - var(--calendar-offset, 0px) - var(--spots-col-width, 400px) - 40px);
+      border-radius: 999px;
+      bottom: 24px;
+      padding: 8px 16px;
+    }
 
-  /* Zoom-Buttons rechts neben den Drawer schieben */
-  :deep(.leaflet-left) {
-    /* Nutzt die dynamische Margin (drawer-tab-width bei geschlossenem Kalender, 2*space-4 bei offenem) 
-       für korrekte Platzierung rechts neben der Spots-Schublade. */
-    left: calc(
-      var(--calendar-margin, var(--drawer-tab-width)) + var(--calendar-offset, 0px) +
-        var(--spots-col-width, 400px) + var(--space-4) + var(--space-3)
-    ) !important;
-  }
+    /* Zoom-Buttons rechts neben den Drawer schieben */
+    :deep(.leaflet-left) {
+      /* Nutzt die dynamische Margin (drawer-tab-width bei geschlossenem Kalender, 2*space-4 bei offenem) 
+         für korrekte Platzierung rechts neben der Spots-Schublade. */
+      left: min(
+        calc(
+          var(--calendar-margin, var(--drawer-tab-width)) + var(--calendar-offset, 0px) +
+            var(--spots-col-width, 400px) + var(--space-4) + var(--space-3)
+        ),
+        calc(100vw - 60px)
+      ) !important;
+    }
 
-  :deep(.leaflet-top) {
-    top: var(--space-4) !important;
-  }
+    :deep(.leaflet-top) {
+      top: var(--space-4) !important;
+    }
 
-  :deep(.leaflet-left .leaflet-control) {
-    margin-left: 0 !important;
-  }
+    :deep(.leaflet-left .leaflet-control) {
+      margin-left: 0 !important;
+    }
 
-  :deep(.leaflet-top .leaflet-control) {
-    margin-top: 0 !important;
+    :deep(.leaflet-top .leaflet-control) {
+      margin-top: 0 !important;
+    }
   }
 }
 </style>
