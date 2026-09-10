@@ -198,12 +198,16 @@ function onSaveLeg(savedLeg: ExcursionLeg) {
   emit('update:legs', nextLegs);
 }
 
-function onDeleteLeg() {
-  if (editingLegFromIndex.value == null) return;
-  const fromId = props.modelValue[editingLegFromIndex.value];
-  const toId = props.modelValue[editingLegFromIndex.value + 1];
-  const nextLegs = props.legs.filter((l) => !(l.from_spot_id === fromId && l.to_spot_id === toId));
+function removeLegBetween(fromSpotId: number, toSpotId: number) {
+  const nextLegs = props.legs.filter(
+    (l) => !(l.from_spot_id === fromSpotId && l.to_spot_id === toSpotId)
+  );
   emit('update:legs', nextLegs);
+}
+
+function onDeleteLeg() {
+  if (!currentModalFromSpot.value || !currentModalToSpot.value) return;
+  removeLegBetween(currentModalFromSpot.value.id, currentModalToSpot.value.id);
 }
 </script>
 
@@ -255,67 +259,81 @@ function onDeleteLeg() {
         <!-- Teilstrecken-Verbinder zwischen zwei Stationen (Issue #361) -->
         <div v-if="index < plannedStations.length - 1" class="leg-connector">
           <div class="leg-connector-line"></div>
-          <button
-            type="button"
-            class="leg-btn"
-            :class="{
-              'has-data': !!getLegBetween(station.id, plannedStations[index + 1].id),
-            }"
-            @click="openLegModal(index)"
-          >
-            <template v-if="getLegBetween(station.id, plannedStations[index + 1].id)">
-              <span class="leg-pill">
-                {{
-                  travelTypeIcon(
-                    getLegBetween(station.id, plannedStations[index + 1].id)!.transport_type ?? null
-                  )
-                }}
-                <span class="leg-type">
+          <div class="leg-item-wrap">
+            <button
+              type="button"
+              class="leg-btn"
+              :class="{
+                'has-data': !!getLegBetween(station.id, plannedStations[index + 1].id),
+              }"
+              @click="openLegModal(index)"
+            >
+              <template v-if="getLegBetween(station.id, plannedStations[index + 1].id)">
+                <span class="leg-pill">
                   {{
-                    getLegBetween(station.id, plannedStations[index + 1].id)!.transport_type ||
-                    'Verkehrsmittel'
+                    travelTypeIcon(
+                      getLegBetween(station.id, plannedStations[index + 1].id)!.transport_type ??
+                        null
+                    )
                   }}
-                </span>
-                <span
-                  v-if="
-                    getLegBetween(station.id, plannedStations[index + 1].id)!.departure_time ||
-                    getLegBetween(station.id, plannedStations[index + 1].id)!.arrival_time
-                  "
-                  class="leg-times"
-                >
-                  {{
-                    getLegBetween(station.id, plannedStations[index + 1].id)!.departure_time || '?'
-                  }}–{{
-                    getLegBetween(station.id, plannedStations[index + 1].id)!.arrival_time || '?'
-                  }}
+                  <span class="leg-type">
+                    {{
+                      getLegBetween(station.id, plannedStations[index + 1].id)!.transport_type ||
+                      'Verkehrsmittel'
+                    }}
+                  </span>
                   <span
-                    v-if="getLegDuration(station.id, plannedStations[index + 1].id)"
-                    class="leg-duration"
+                    v-if="
+                      getLegBetween(station.id, plannedStations[index + 1].id)!.departure_time ||
+                      getLegBetween(station.id, plannedStations[index + 1].id)!.arrival_time
+                    "
+                    class="leg-times"
                   >
-                    ({{ getLegDuration(station.id, plannedStations[index + 1].id) }})
+                    {{
+                      getLegBetween(station.id, plannedStations[index + 1].id)!.departure_time ||
+                      '?'
+                    }}–{{
+                      getLegBetween(station.id, plannedStations[index + 1].id)!.arrival_time || '?'
+                    }}
+                    <span
+                      v-if="getLegDuration(station.id, plannedStations[index + 1].id)"
+                      class="leg-duration"
+                    >
+                      ({{ getLegDuration(station.id, plannedStations[index + 1].id) }})
+                    </span>
+                  </span>
+                  <span
+                    v-if="getLegBetween(station.id, plannedStations[index + 1].id)!.amount"
+                    class="leg-cost"
+                  >
+                    ·
+                    {{
+                      getLegBetween(station.id, plannedStations[index + 1].id)!
+                        .amount!.toFixed(2)
+                        .replace('.', ',')
+                    }}
+                    €
                   </span>
                 </span>
-                <span
-                  v-if="getLegBetween(station.id, plannedStations[index + 1].id)!.amount"
-                  class="leg-cost"
-                >
-                  ·
-                  {{
-                    getLegBetween(station.id, plannedStations[index + 1].id)!
-                      .amount!.toFixed(2)
-                      .replace('.', ',')
-                  }}
-                  €
+              </template>
+              <template v-else>
+                <span class="leg-empty">
+                  <AppIcon :icon="ACTION_ICONS.recordStart" :size="12" group="actions" /> +
+                  Verkehrsmittel
                 </span>
-              </span>
-            </template>
-            <template v-else>
-              <span class="leg-empty">
-                <AppIcon :icon="ACTION_ICONS.recordStart" :size="12" group="actions" /> +
-                Verkehrsmittel
-              </span>
-            </template>
-          </button>
+              </template>
+            </button>
+            <button
+              v-if="getLegBetween(station.id, plannedStations[index + 1].id)"
+              type="button"
+              class="remove-btn leg-remove-btn"
+              title="Teilstrecke entfernen"
+              aria-label="Teilstrecke entfernen"
+              @click.stop="removeLegBetween(station.id, plannedStations[index + 1].id)"
+            >
+              <AppIcon :icon="ACTION_ICONS.close" :size="12" group="actions" />
+            </button>
+          </div>
           <div class="leg-connector-line"></div>
         </div>
       </template>
@@ -379,6 +397,23 @@ function onDeleteLeg() {
   height: 1px;
   background: var(--color-primary-dark, #ccc);
   opacity: 0.3;
+}
+
+.leg-item-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.leg-remove-btn {
+  padding: 3px 5px;
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
 }
 
 .leg-btn {
