@@ -4674,17 +4674,17 @@ async function deleteEditingSpot() {
 
 .tour-station-accordion .staggered-spot {
   transition:
-    opacity 0.4s ease,
-    transform 0.4s ease;
+    opacity 0.35s ease,
+    transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   opacity: 0;
-  transform: translateY(-20px) scale(0.97);
-  transition-delay: calc((var(--stagger-total) - var(--stagger-idx) - 1) * 30ms);
+  transform: translateY(-24px) scale(0.95);
+  transition-delay: calc((var(--stagger-total) - var(--stagger-idx) - 1) * 25ms);
 }
 
 .tour-station-accordion.is-expanded .staggered-spot {
   opacity: 1;
   transform: translateY(0) scale(1);
-  transition-delay: calc(var(--stagger-idx) * 50ms);
+  transition-delay: calc(var(--stagger-idx) * 50ms + 50ms);
 }
 
 .tour-station-list {

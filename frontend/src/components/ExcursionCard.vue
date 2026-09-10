@@ -147,6 +147,41 @@ const travelDuration = computed(() => {
   return minutes == null ? null : formatTravelDuration(minutes);
 });
 
+// Polaroid-Kacheln für die Spots der Tour im collapsed Zustand (#235)
+const polaroidStations = computed(() => resolvedStations.value.slice(0, 4));
+const extraStationCount = computed(() =>
+  Math.max(0, resolvedStations.value.length - polaroidStations.value.length)
+);
+
+const stationsSummaryText = computed(() => {
+  if (!resolvedStations.value.length) return null;
+  if (resolvedStations.value.length === 1) {
+    return resolvedStations.value[0].title;
+  }
+  if (resolvedStations.value.length === 2) {
+    return `${resolvedStations.value[0].title} → ${resolvedStations.value[1].title}`;
+  }
+  const stopCount = resolvedStations.value.length - 2;
+  const stopText = stopCount === 1 ? '1 Zwischenstopp' : `${stopCount} Zwischenstopps`;
+  return `${resolvedStations.value[0].title} → ${resolvedStations.value[resolvedStations.value.length - 1].title} · ${stopText}`;
+});
+
+function polaroidStyle(idx: number, total: number) {
+  if (total === 1) {
+    return {
+      transform: 'rotate(-2deg) translate(0px, 0px)',
+      zIndex: 1,
+    };
+  }
+  const angles = [-8, 6, -3, 7];
+  const xOffsets = [-6, 4, 1, 6];
+  const yOffsets = [2, -2, 1, 0];
+  return {
+    transform: `rotate(${angles[idx % angles.length]}deg) translate(${xOffsets[idx % xOffsets.length]}px, ${yOffsets[idx % yOffsets.length]}px)`,
+    zIndex: idx + 1,
+  };
+}
+
 // Einplanen per Zeige-/Touch-Drag am eigenen Anfasser (📅 Einplanen) statt am gesamten Card-Root:
 // natives HTML5-draggable/dragstart wurde ersetzt, da es auf Touch-Geräten (v. a. Android Chrome)
 // nicht zuverlässig funktioniert. onStart öffnet die Kalender-Schublade automatisch, damit die
@@ -260,7 +295,12 @@ function onSpotDrop(event: DragEvent) {
 <template>
   <Card
     class="excursion-card"
-    :class="{ 'drop-target': spotDragOverCount > 0, 'new-highlight': highlighted, expanded }"
+    :class="{
+      'drop-target': spotDragOverCount > 0,
+      'new-highlight': highlighted,
+      expanded,
+      'has-role': !!excursion.role,
+    }"
     @click="onCardClick"
     @dragover.prevent
     @dragenter.prevent="onSpotDragEnter"
@@ -379,22 +419,93 @@ function onSpotDrop(event: DragEvent) {
             </div>
           </Transition>
         </div>
-        <p v-if="!expanded && routeLabel" class="route">{{ routeLabel }}</p>
-        <p
-          v-if="
-            !expanded &&
-            (excursion.role || excursion.legs?.length) &&
-            (excursion.departure_time || excursion.arrival_time)
-          "
-          class="departure-arrival"
+        <!-- Stationen-Vorschau mit Polaroid-Stapel (#235) -->
+        <div
+          v-if="resolvedStations.length"
+          class="tour-stations-preview"
+          :class="{ 'is-fanned-out': expanded }"
         >
-          <AppIcon :icon="FORM_FIELD_ICONS.time" :size="14" group="formFields" />
-          <span v-if="excursion.departure_time"
-            >{{ excursion.departure_time
-            }}<span v-if="excursion.arrival_time">–{{ excursion.arrival_time }}</span> Uhr</span
+          <!-- Polaroid-Stapel: Mini-Polaroids im collapsed Zustand, morpht beim Aufklappen -->
+          <div
+            class="tour-polaroid-stack"
+            :class="{ 'has-multiple': polaroidStations.length > 1 }"
+            :title="`${resolvedStations.length} Stationen`"
+            aria-hidden="true"
           >
-          <span v-if="travelDuration" class="duration">({{ travelDuration }})</span>
-        </p>
+            <div
+              v-for="(st, idx) in polaroidStations"
+              :key="st.key"
+              class="polaroid-tile"
+              :style="polaroidStyle(idx, polaroidStations.length)"
+            >
+              <div class="polaroid-photo-frame">
+                <img
+                  v-if="st.imageUrl"
+                  :src="st.imageUrl"
+                  class="polaroid-photo"
+                  alt=""
+                  loading="lazy"
+                />
+                <div
+                  v-else
+                  class="polaroid-placeholder"
+                  :style="{ backgroundColor: st.color || 'var(--color-primary-tint)' }"
+                >
+                  <AppIcon :icon="st.tabler" :size="16" group="categories" />
+                </div>
+              </div>
+              <div class="polaroid-chin">
+                <span class="polaroid-caption">{{ st.title }}</span>
+              </div>
+              <span
+                v-if="idx === polaroidStations.length - 1 && extraStationCount > 0"
+                class="polaroid-badge"
+              >
+                +{{ extraStationCount }}
+              </span>
+            </div>
+          </div>
+
+          <div class="tour-stations-meta" v-if="!expanded">
+            <p v-if="routeLabel" class="route">{{ routeLabel }}</p>
+            <p v-else-if="stationsSummaryText" class="route tour-stations-summary">
+              {{ stationsSummaryText }}
+            </p>
+            <p
+              v-if="
+                (excursion.role || excursion.legs?.length) &&
+                (excursion.departure_time || excursion.arrival_time)
+              "
+              class="departure-arrival"
+            >
+              <AppIcon :icon="FORM_FIELD_ICONS.time" :size="14" group="formFields" />
+              <span v-if="excursion.departure_time"
+                >{{ excursion.departure_time
+                }}<span v-if="excursion.arrival_time">–{{ excursion.arrival_time }}</span> Uhr</span
+              >
+              <span v-if="travelDuration" class="duration">({{ travelDuration }})</span>
+            </p>
+          </div>
+        </div>
+
+        <template v-else>
+          <p v-if="!expanded && routeLabel" class="route">{{ routeLabel }}</p>
+          <p
+            v-if="
+              !expanded &&
+              (excursion.role || excursion.legs?.length) &&
+              (excursion.departure_time || excursion.arrival_time)
+            "
+            class="departure-arrival"
+          >
+            <AppIcon :icon="FORM_FIELD_ICONS.time" :size="14" group="formFields" />
+            <span v-if="excursion.departure_time"
+              >{{ excursion.departure_time
+              }}<span v-if="excursion.arrival_time">–{{ excursion.arrival_time }}</span> Uhr</span
+            >
+            <span v-if="travelDuration" class="duration">({{ travelDuration }})</span>
+          </p>
+        </template>
 
         <div class="excursion-accordion" :class="{ 'is-expanded': expanded }" :inert="!expanded">
           <div class="excursion-accordion-inner accordion-stagger">
@@ -860,12 +971,16 @@ function onSpotDrop(event: DragEvent) {
   flex-direction: column;
   gap: 4px;
   margin-bottom: var(--space-1);
-  padding-right: 70px;
+  padding-right: 52px;
   transform: translate3d(0, 0, 0);
   transition:
     transform 0.32s cubic-bezier(0.32, 0.72, 0, 1),
     margin-bottom 0.32s cubic-bezier(0.32, 0.72, 0, 1);
   pointer-events: none;
+}
+
+.excursion-card.has-role .card-title-block {
+  padding-right: 74px;
 }
 
 .card-title-block > * {
@@ -1267,6 +1382,186 @@ function onSpotDrop(event: DragEvent) {
   color: var(--color-text-muted);
 }
 
+/* Stationen-Vorschau mit Polaroid-Stapel (#235) */
+.tour-stations-preview {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: var(--space-1) 0;
+  position: relative;
+  transition:
+    max-height 0.35s cubic-bezier(0.32, 0.72, 0, 1),
+    margin 0.35s ease,
+    opacity 0.25s ease;
+}
+
+.tour-stations-preview.is-fanned-out {
+  max-height: 0;
+  margin: 0;
+  opacity: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.tour-polaroid-stack {
+  position: relative;
+  width: 58px;
+  height: 68px;
+  flex-shrink: 0;
+  cursor: pointer;
+  perspective: 600px;
+}
+
+.polaroid-tile {
+  position: absolute;
+  top: 2px;
+  left: 3px;
+  width: 52px;
+  height: 62px;
+  background: #ffffff;
+  border-radius: var(--radius-sm-squircle, 6px);
+  corner-shape: squircle;
+  padding: 3px 3px 10px 3px;
+  box-sizing: border-box;
+  box-shadow:
+    0 4px 10px rgba(0, 0, 0, 0.16),
+    0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  transform-origin: center bottom;
+  transition:
+    transform 0.35s cubic-bezier(0.34, 1.3, 0.64, 1),
+    box-shadow 0.25s ease,
+    opacity 0.25s ease;
+  user-select: none;
+  pointer-events: none;
+}
+
+:root[data-theme='dark'] .polaroid-tile {
+  background: #f1f5f9;
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.45),
+    0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .polaroid-tile {
+    background: #f1f5f9;
+    border-color: rgba(255, 255, 255, 0.15);
+    box-shadow:
+      0 4px 12px rgba(0, 0, 0, 0.45),
+      0 1px 3px rgba(0, 0, 0, 0.25);
+  }
+}
+
+.polaroid-photo-frame {
+  width: 100%;
+  height: 40px;
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+  background: var(--color-surface-sunken);
+}
+
+.polaroid-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.polaroid-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+}
+
+.polaroid-placeholder :deep(svg) {
+  color: #ffffff;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+}
+
+.polaroid-chin {
+  height: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 0 1px;
+  margin-top: 1px;
+}
+
+.polaroid-caption {
+  font-size: 0.45rem;
+  font-weight: 700;
+  color: #334155;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  line-height: 1;
+}
+
+.polaroid-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: var(--color-tour);
+  color: #ffffff;
+  font-size: 0.55rem;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 999px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  border: 1.5px solid #ffffff;
+}
+
+/* Hover-Effekt auf der Collapsed Card: Sanftes Auffächern der Polaroids */
+.excursion-card:not(.expanded):hover .polaroid-tile:nth-child(1) {
+  transform: rotate(-12deg) translate(-7px, 2px) scale(1.02);
+}
+.excursion-card:not(.expanded):hover .polaroid-tile:nth-child(2) {
+  transform: rotate(8deg) translate(6px, -2px) scale(1.02);
+}
+.excursion-card:not(.expanded):hover .polaroid-tile:nth-child(3) {
+  transform: rotate(-4deg) translate(2px, 0px) scale(1.03);
+}
+.excursion-card:not(.expanded):hover .polaroid-tile:nth-child(4) {
+  transform: rotate(11deg) translate(9px, -1px) scale(1.03);
+}
+
+/* Morph-Animation beim Aufklappen */
+.tour-stations-preview.is-fanned-out .polaroid-tile {
+  transform: translateY(32px) rotate(0deg) scale(1.15) !important;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.22s ease;
+}
+
+.tour-stations-meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tour-stations-summary {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+}
+
 .excursion-accordion-inner > * {
   transition:
     opacity 0.2s ease 0s,
@@ -1388,6 +1683,34 @@ function onSpotDrop(event: DragEvent) {
   .excursion-card:not(.expanded) .card-actions {
     display: none;
   }
+
+  .tour-stations-preview {
+    gap: var(--space-2);
+    margin: 2px 0;
+  }
+
+  .tour-polaroid-stack {
+    width: 46px;
+    height: 56px;
+  }
+
+  .polaroid-tile {
+    width: 42px;
+    height: 52px;
+    padding: 2px 2px 8px 2px;
+  }
+
+  .polaroid-photo-frame {
+    height: 34px;
+  }
+
+  .polaroid-chin {
+    height: 8px;
+  }
+
+  .polaroid-caption {
+    font-size: 0.4rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1398,8 +1721,12 @@ function onSpotDrop(event: DragEvent) {
   .status-text,
   .show-on-map-btn,
   .show-on-map-btn .btn-label,
-  .excursion-accordion-inner > * {
-    transition: none !important;
+  .excursion-accordion-inner > *,
+  .polaroid-tile,
+  .tour-stations-preview,
+  .tour-stations-preview.is-fanned-out .polaroid-tile {
+    transform: none !important;
+    transition: opacity 0.15s ease !important;
   }
 }
 
