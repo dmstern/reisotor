@@ -500,6 +500,7 @@ function onSpotDrop(event: DragEvent) {
                 v-model="unplannedDoneDate"
                 type="date"
                 class="popover-date-input"
+                aria-label="Datum der gemachten Tour"
                 @keyup.enter="submitUnplannedDone"
               />
               <div class="popover-buttons">

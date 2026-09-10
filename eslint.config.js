@@ -77,6 +77,10 @@ export default tseslint.config(
         'warn',
         {
           controlComponents: [
+            'Checkbox',
+            'Input',
+            'Select',
+            'Textarea',
             'PasswordInput',
             'Combobox',
             'ImageUrlInput',

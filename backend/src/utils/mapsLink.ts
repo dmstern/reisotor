@@ -50,7 +50,7 @@ const FETCH_HEADERS = {
 };
 const MAX_REDIRECT_HOPS = 5;
 
-function isPrivateIpv4(a: number, b: number, c: number, d: number): boolean {
+function isPrivateIpv4(a: number, b: number): boolean {
   if (a === 0) return true; // 0.0.0.0/8 (aktuelles Netzwerk)
   if (a === 10) return true; // 10.0.0.0/8 (privat)
   if (a === 127) return true; // 127.0.0.0/8 (Loopback)
@@ -75,7 +75,7 @@ function isPrivateIpv6(hostname: string): boolean {
     if (rest.includes('.')) {
       const parts = rest.split('.').map(Number);
       if (parts.length === 4 && parts.every((p) => Number.isInteger(p) && p >= 0 && p <= 255)) {
-        return isPrivateIpv4(parts[0], parts[1], parts[2], parts[3]);
+        return isPrivateIpv4(parts[0], parts[1]);
       }
       return true;
     }
@@ -84,7 +84,7 @@ function isPrivateIpv6(hostname: string): boolean {
       const h1 = parseInt(hexParts[0], 16);
       const h2 = parseInt(hexParts[1], 16);
       if (!Number.isNaN(h1) && !Number.isNaN(h2)) {
-        return isPrivateIpv4((h1 >> 8) & 0xff, h1 & 0xff, (h2 >> 8) & 0xff, h2 & 0xff);
+        return isPrivateIpv4((h1 >> 8) & 0xff, h1 & 0xff);
       }
     }
     return true;
@@ -153,7 +153,7 @@ export function isSafeUrl(urlString: string): boolean {
   const ipType = isIP(hostname);
   if (ipType === 4) {
     const parts = hostname.split('.').map(Number);
-    return !isPrivateIpv4(parts[0], parts[1], parts[2], parts[3]);
+    return !isPrivateIpv4(parts[0], parts[1]);
   } else if (ipType === 6) {
     return !isPrivateIpv6(hostname);
   } else if (/^(0x[0-9a-f]+|\d+)$/i.test(hostname)) {
