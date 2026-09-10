@@ -944,9 +944,15 @@ function renderMarkers() {
   for (const point of visiblePoints.value) {
     const latlng: L.LatLngExpression = [point.lat, point.lng];
     latLngs.push(latlng);
-    L.marker(latlng, { icon: iconFor(point) })
+    const marker = L.marker(latlng, { icon: iconFor(point), title: point.title })
       .addTo(markersLayer)
       .on('click', () => handlePointClick(point));
+    marker.bindTooltip(point.title, {
+      direction: 'top',
+      offset: [0, -18],
+      opacity: 0.95,
+      className: 'map-marker-tooltip',
+    });
   }
 
   // Ausflug-Fokus hat Vorrang vor mapFocusKey (schließen sich laut drawers-Store ohnehin
@@ -1963,7 +1969,13 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
 }
 
 @media screen and (min-width: 720px) {
-  .focus-banner,
+  .focus-banner {
+    bottom: calc(54px + var(--space-2));
+    right: var(--space-3);
+    top: unset;
+    left: unset;
+  }
+
   .tile-download-pill {
     bottom: var(--space-4);
     right: var(--space-4);
@@ -2173,5 +2185,34 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
     transform: scale(1.6);
     opacity: 0;
   }
+}
+
+.leaflet-tooltip.map-marker-tooltip {
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  box-shadow: var(--shadow-sm);
+  padding: 4px 8px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.leaflet-tooltip.map-marker-tooltip::before {
+  border-top-color: var(--color-surface);
+}
+
+:root[data-theme='dark'] .leaflet-tooltip.map-marker-tooltip {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+
+:root[data-theme='dark'] .leaflet-tooltip.map-marker-tooltip::before {
+  border-top-color: var(--color-surface);
 }
 </style>

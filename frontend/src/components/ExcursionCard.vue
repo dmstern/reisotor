@@ -590,6 +590,7 @@ function onSpotDrop(event: DragEvent) {
   background: var(--color-surface);
   cursor: pointer;
   overflow: hidden;
+  scroll-margin-top: calc(var(--space-2) + var(--category-nav-clearance, 48px));
   transition:
     border-color 0.15s ease,
     background 0.15s ease,
@@ -922,11 +923,20 @@ function onSpotDrop(event: DragEvent) {
 
 .excursion-card.expanded .card-badge-group .role-badge,
 .excursion-card.expanded .card-badge-group .tour-type-badge {
-  background: rgba(0, 0, 0, 0.45) !important;
+  background: rgba(0, 0, 0, 0.55) !important;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+.excursion-card.expanded .card-badge-group .role-badge :deep(.app-icon),
+.excursion-card.expanded .card-badge-group .tour-type-badge :deep(.app-icon),
+.excursion-card.expanded .card-badge-group .role-badge :deep(svg),
+.excursion-card.expanded .card-badge-group .tour-type-badge :deep(svg) {
+  color: #ffffff !important;
 }
 
 .card-badge-group .role-badge,
@@ -934,6 +944,7 @@ function onSpotDrop(event: DragEvent) {
   transition:
     background 0.3s ease,
     border-color 0.3s ease,
+    color 0.3s ease,
     box-shadow 0.3s ease;
 }
 

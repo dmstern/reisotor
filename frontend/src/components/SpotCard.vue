@@ -1003,17 +1003,25 @@ function openCalendarConfirmDone() {
 }
 
 .spot-card.expanded .card-badge-group :deep(.category-chip) {
-  background: rgba(0, 0, 0, 0.45) !important;
+  background: rgba(0, 0, 0, 0.55) !important;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+.spot-card.expanded .card-badge-group :deep(.category-chip .app-icon),
+.spot-card.expanded .card-badge-group :deep(.category-chip svg) {
+  color: #ffffff !important;
 }
 
 .card-badge-group :deep(.category-chip) {
   transition:
     background 0.3s ease,
     border-color 0.3s ease,
+    color 0.3s ease,
     box-shadow 0.3s ease;
 }
 
@@ -1332,7 +1340,14 @@ function openCalendarConfirmDone() {
 
   .spot-card:not(.expanded) .card-title-block {
     margin-bottom: 0;
-    padding-right: 75px;
+    padding-right: 125px;
+  }
+
+  .spot-card:not(.expanded) .card-badge-group :deep(.category-chip) {
+    max-width: 115px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .spot-card:not(.expanded) .card-badge-group {

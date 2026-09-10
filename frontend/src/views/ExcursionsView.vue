@@ -494,6 +494,8 @@ const emptySpotForm = () => ({
   // Touren, denen dieser Spot zugeordnet ist – Titel statt Ids, siehe TourAssignPicker.vue/
   // syncSpotTours() unten (creatable: ein neuer Titel legt beim Speichern eine neue Tour an).
   tourTitles: [] as string[],
+  // Direktes Kalender-Datum bei Neuanlage
+  scheduledDate: '',
 });
 const spotForm = ref(emptySpotForm());
 const spotMapsLinkResolved = ref<boolean | null>(null);
@@ -986,6 +988,22 @@ function itemDone(item: SpotsGroupItem): boolean {
 }
 
 const searchQuery = ref('');
+
+const hasActiveFilters = computed(() => {
+  return (
+    searchQuery.value.trim().length > 0 ||
+    categoryFilter.value.length > 0 ||
+    statusFilter.value.length > 0 ||
+    tourRoleFilter.value.length > 0
+  );
+});
+
+function clearAllFilters() {
+  searchQuery.value = '';
+  categoryFilter.value = [];
+  statusFilter.value = [];
+  tourRoleFilter.value = [];
+}
 
 const allSpotItems = computed<SpotsGroupItem[]>(() =>
   spotsStore.spots.map((spot): SpotsGroupItem => ({ kind: 'spot', spot }))
@@ -2105,6 +2123,44 @@ watch(
   }
 );
 
+const dayFocusHighlightedIds = ref<Set<number>>(new Set());
+
+watch(
+  () => drawers.mapFocusDate,
+  (date) => {
+    dayFocusHighlightedIds.value = new Set();
+    if (date) {
+      const matchingExcursions = excursionsStore.excursions.filter((e) => e.date === date);
+      const matchingSpotIds = scheduleStore.items
+        .filter((s) => s.date === date && s.spot_id != null)
+        .map((s) => s.spot_id as number);
+
+      const next = new Set<number>();
+      for (const e of matchingExcursions) {
+        next.add(e.id);
+      }
+      for (const sid of matchingSpotIds) {
+        next.add(sid);
+      }
+      dayFocusHighlightedIds.value = next;
+
+      nextTick(() => {
+        if (groupMode.value === 'tours' && matchingExcursions.length > 0) {
+          const firstExcursion = matchingExcursions[0];
+          const catRef = categoryRefs.get(`tour-${firstExcursion.id}`);
+          if (catRef) {
+            catRef.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            return;
+          }
+        }
+        if (matchingSpotIds.length > 0) {
+          scrollToSpot(matchingSpotIds[0]);
+        }
+      });
+    }
+  }
+);
+
 // Live-Vorschau (Titel/echtes Foto statt nur des Kartenausschnitts, siehe backend/src/utils/
 // mapsLink.ts's fetchPlacePreview()) - Best-effort, überschreibt nie bereits eingetippte Werte
 // (z. B. wenn der Titel schon vor dem Maps-Link gesetzt wurde). Keine Kategorie-Erkennung: dafür
@@ -2241,6 +2297,14 @@ async function addSpot() {
     return;
   }
   await syncSpotTours(result.id, spotForm.value.tourTitles);
+  if (spotForm.value.scheduledDate) {
+    await scheduleStore.create({
+      trip_id: tripId,
+      date: spotForm.value.scheduledDate,
+      title: result.title,
+      spot_id: result.id,
+    });
+  }
   closeSpotForm();
 }
 
@@ -2266,6 +2330,7 @@ function startEditSpot(spot: Spot) {
     amount: spot.amount != null ? String(spot.amount) : '',
     paid_by_user_id: spot.paid_by_user_id != null ? String(spot.paid_by_user_id) : '',
     tourTitles: tourTitlesFor(spot.id),
+    scheduledDate: spotScheduledDates.value.get(spot.id) ?? '',
   };
   editSpotMapsLinkResolved.value = null;
   editSpotManualPin.value = null;
@@ -2442,6 +2507,27 @@ async function deleteEditingSpot() {
             </h2>
             <div class="header-actions">
               <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                class="record-button"
+                :class="{ recording: trackRecording.recording }"
+                :title="trackRecording.recording ? 'Aufzeichnung beenden' : 'Weg aufzeichnen'"
+                :aria-label="trackRecording.recording ? 'Aufzeichnung beenden' : 'Weg aufzeichnen'"
+                @click="onRecordButtonClick"
+              >
+                <AppIcon
+                  :icon="
+                    trackRecording.recording ? ACTION_ICONS.recordStop : ACTION_ICONS.recordStart
+                  "
+                  :size="14"
+                  group="actions"
+                />
+                <span class="record-button__label">
+                  {{ trackRecording.recording ? 'Beenden' : 'Aufzeichnen' }}
+                </span>
+              </Button>
+              <Button
                 class="add-button"
                 :aria-label="groupMode === 'tours' ? 'Neue Tour' : 'Neuer Spot'"
                 @click="groupMode === 'tours' ? openExcursionForm() : (showSpotForm = true)"
@@ -2456,33 +2542,12 @@ async function deleteEditingSpot() {
                 </span>
               </Button>
             </div>
-            <!-- Zweiter Einstiegspunkt zum ⏺️/⏹️-Button auf TripMap.vue (Start dort mit Sichtbarkeits-
-               Auswahl/Tour-Kopplung): der Karten-Button steckt in einer bereits vollen
-               Button-Spalte, die auf Mobil beim Standard-Sheet-Zustand teils vom Bottom-Sheet
-               verdeckt wird (siehe dortiger CSS-Kommentar zu .share-location-btn) - "Standort
-               aufzeichnen" ist aber gerade das unterwegs/mobil wichtigste neue Kern-Feature, braucht
-               daher einen immer erreichbaren zweiten Zugang (siehe DESIGN.md, Abschnitt "Desktop UND
-               Mobile"). Startet direkt privat/ungekoppelt statt eines eigenen Menüs - Teilen/Tour-
-               Kopplung bleiben über den Karten-Button bzw. den Sichtbarkeits-Umschalter in der
-               Aufzeichnungen-Liste erreichbar. -->
           </div>
-          <div class="subheader">
-            <Button
-              type="button"
-              variant="secondary"
-              class="record-button"
-              :class="{ recording: trackRecording.recording }"
-              @click="onRecordButtonClick"
-            >
-              <AppIcon
-                :icon="
-                  trackRecording.recording ? ACTION_ICONS.recordStop : ACTION_ICONS.recordStart
-                "
-                :size="15"
-                group="actions"
-              />
-              {{ trackRecording.recording ? 'Aufzeichnung beenden' : 'Weg Aufzeichnen' }}
-            </Button>
+          <div class="subheader" v-if="trackRecording.recording">
+            <div class="active-recording-banner">
+              <span class="recording-pulse-dot" aria-hidden="true"></span>
+              <span class="recording-banner-text">Standortaufzeichnung aktiv</span>
+            </div>
           </div>
 
           <!-- Standort-Aufzeichnungen (stores/tracks.ts): eigene, geteilte und mit anderen geteilte
@@ -3114,6 +3179,15 @@ async function deleteEditingSpot() {
                         </template>
                       </Teleport>
                     </div>
+                    <div v-else class="new-spot-schedule-row">
+                      <FormField icon="date" label="Direkt für Datum einplanen (optional)">
+                        <Input
+                          type="date"
+                          v-model="spotForm.scheduledDate"
+                          placeholder="Datum auswählen"
+                        />
+                      </FormField>
+                    </div>
 
                     <!-- Tour zuordnen (Combobox, in beiden Modi: Neu + Edit) -->
                     <TourAssignPicker
@@ -3312,7 +3386,9 @@ async function deleteEditingSpot() {
               :ref="(el) => setCategoryRef(grp.category, el)"
               class="tour-group-card"
               :excursion="grp.excursion"
-              :highlighted="highlightedIds.has(grp.excursion.id)"
+              :highlighted="
+                highlightedIds.has(grp.excursion.id) || dayFocusHighlightedIds.has(grp.excursion.id)
+              "
               :creator-label="creatorLabel(grp.excursion.created_by)"
               :like-count="excursionLikesFor(grp.excursion.id).length"
               :liked="excursionLikedByMe(grp.excursion.id)"
@@ -3379,7 +3455,10 @@ async function deleteEditingSpot() {
                         class="staggered-spot"
                         :style="[{ '--stagger-idx': index, '--stagger-total': grp.items.length }]"
                         :spot="item.spot"
-                        :highlighted="highlightedIds.has(item.spot.id)"
+                        :highlighted="
+                          highlightedIds.has(item.spot.id) ||
+                          dayFocusHighlightedIds.has(item.spot.id)
+                        "
                         :expanded="expandedSpotId === item.spot.id"
                         :scheduled-date="spotScheduledDates.get(item.spot.id) ?? null"
                         :creator-label="creatorLabel(item.spot.created_by)"
@@ -3720,6 +3799,24 @@ async function deleteEditingSpot() {
                           </div>
                         </div>
                       </div>
+                      <div
+                        v-else-if="grp.excursion && index < grp.items.length - 1"
+                        :key="`add-leg-${item.spot.id}-${grp.items[index + 1].spot.id}`"
+                        class="tour-leg-add-wrap"
+                      >
+                        <button
+                          type="button"
+                          class="tour-leg-add-btn"
+                          title="Teilstrecke erfassen"
+                          aria-label="Teilstrecke erfassen"
+                          @click.stop="
+                            openCardLegModal(grp.excursion, item.spot, grp.items[index + 1].spot)
+                          "
+                        >
+                          <AppIcon :icon="ACTION_ICONS.add" :size="12" group="actions" />
+                          <span>Teilstrecke erfassen</span>
+                        </button>
+                      </div>
                     </template>
                   </TransitionGroup>
                 </div>
@@ -3748,13 +3845,26 @@ async function deleteEditingSpot() {
               Bearbeiten eines Spots über "Tour zuordnen".
             </p>
           </section>
-          <p v-if="!spotGroups.length" class="empty">
-            <template v-if="groupMode === 'tours' && tourRoleFilter.length">
-              Keine An- oder Abreise mit diesem Filter gefunden.
-            </template>
-            <template v-else-if="groupMode === 'tours'"> Noch keine Touren angelegt. </template>
-            <template v-else> Noch keine Spots angelegt. </template>
-          </p>
+          <div v-if="!spotGroups.length" class="empty-state-wrap">
+            <p class="empty">
+              <template v-if="hasActiveFilters">
+                Keine {{ groupMode === 'tours' ? 'Touren' : 'Spots' }} für die aktuellen Filter oder
+                Suchbegriffe gefunden.
+              </template>
+              <template v-else-if="groupMode === 'tours'"> Noch keine Touren angelegt. </template>
+              <template v-else> Noch keine Spots angelegt. </template>
+            </p>
+            <Button
+              v-if="hasActiveFilters"
+              variant="secondary"
+              size="sm"
+              class="clear-filters-btn"
+              @click="clearAllFilters"
+            >
+              <AppIcon :icon="ACTION_ICONS.close" :size="13" group="actions" />
+              <span>Filter zurücksetzen</span>
+            </Button>
+          </div>
 
           <!-- Hinweis-Modal für Standort-Aufzeichnung (#230) -->
           <TrackRecordingWarningModal
@@ -3973,12 +4083,14 @@ async function deleteEditingSpot() {
 }
 
 @container spots-col (max-width: 450px) {
-  .add-button {
+  .add-button,
+  .record-button {
     padding: var(--btn-padding-y, 11px);
     border-radius: 999px;
   }
 
-  .add-button__label {
+  .add-button__label,
+  .record-button__label {
     display: none;
   }
 }
@@ -4304,12 +4416,59 @@ async function deleteEditingSpot() {
   gap: var(--space-2);
 }
 
+.record-button {
+  gap: var(--space-1);
+}
+
 /* Gleicher Rec-Ton wie TrackRecordingIndicator.vue's .recording-pill, damit "läuft gerade" app-weit
    dieselbe Farbe trägt. */
 .header-actions button.recording {
   background: var(--color-danger);
   border-color: var(--color-danger);
   color: #fff;
+}
+
+.subheader {
+  display: flex;
+  flex-direction: column;
+}
+
+.active-recording-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 6px 12px;
+  background: color-mix(in srgb, var(--color-danger) 10%, var(--color-surface));
+  border: 1px solid color-mix(in srgb, var(--color-danger) 30%, var(--color-border));
+  border-radius: var(--radius-sm);
+  color: var(--color-danger);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  margin-top: var(--space-2);
+}
+
+.recording-pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--color-danger);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-danger) 70%, transparent);
+  animation: recording-pulse 1.5s infinite;
+}
+
+@keyframes recording-pulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-danger) 70%, transparent);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--color-danger) 0%, transparent);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-danger) 0%, transparent);
+  }
 }
 
 .hint {
@@ -4588,10 +4747,58 @@ async function deleteEditingSpot() {
   flex-direction: column;
   gap: var(--space-1);
   cursor: pointer;
+  scroll-margin-top: calc(var(--space-2) + var(--category-nav-clearance, 48px));
   transition:
     background-color 0.2s ease,
     border-color 0.2s ease,
     box-shadow 0.2s ease;
+}
+
+.tour-leg-add-wrap {
+  display: flex;
+  justify-content: center;
+  margin: calc(var(--space-1) * -1) 0;
+  margin-left: var(--space-2);
+  position: relative;
+  scroll-margin-top: calc(var(--space-2) + var(--category-nav-clearance, 48px));
+}
+
+.tour-leg-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill, 9999px);
+  background: var(--color-surface-sunken);
+  color: var(--color-text-muted);
+  border: 1px dashed var(--color-border);
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.tour-leg-add-btn:hover {
+  background: var(--color-surface);
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-xs);
+}
+
+.empty-state-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4);
+}
+
+.empty-state-wrap .empty {
+  padding: 0;
 }
 
 /* Leichte gestrichelte Linien zur visuellen Verbindung mit den Stationen oben und unten */
