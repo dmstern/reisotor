@@ -14,7 +14,6 @@ import { useDrawersStore } from '../stores/drawers';
 import { useTripStore } from '../stores/trip';
 import { useWeatherProviderStore } from '../stores/weatherProvider';
 import EditButton from './EditButton.vue';
-import SocialRow from './SocialRow.vue';
 import Comments, { type CommentItem } from './Comments.vue';
 import RichTextDisplay from './RichTextDisplay.vue';
 import SpotImageCollage from './SpotImageCollage.vue';
@@ -423,62 +422,101 @@ function onSpotDrop(event: DragEvent) {
             <span class="btn-label">Auf Karte anzeigen</span>
           </Button>
         </div>
-        <div class="card-actions">
-          <button
-            v-if="!excursion.date"
-            type="button"
-            class="calendar-drag-handle"
-            aria-label="Auf Kalender ziehen zum Einplanen"
-            title="Auf Kalender ziehen zum Einplanen"
-            @pointerdown="onPointerDown"
-            @click.stop
-          >
-            <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" /> Einplanen
-          </button>
-          <!-- Verschmolzener Status-Button (Geplant-Status + Gemacht-Checkbox) -->
-          <button
-            type="button"
-            class="done-toggle"
-            :class="{
-              status: expanded && !!(excursion.date || excursion.done),
-              planned: expanded && !!(excursion.date && !excursion.done),
-              'status-done': expanded && !!excursion.done,
-              active: !!excursion.done,
-            }"
-            :aria-pressed="!!excursion.done"
-            :aria-label="
-              excursion.done ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'
-            "
-            :title="excursion.done ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'"
-            @click.stop="onToggleDone"
-          >
-            <template v-if="excursion.done">
-              <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
-              <span class="status-text">
-                <template v-if="excursion.date">Gemacht am {{ statusDateLabel }}</template>
-                <template v-else>Gemacht</template>
-                <template v-if="weatherSummary">
-                  · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
-                  {{ weatherSummary.tempLabel }}
-                </template>
-              </span>
-            </template>
-            <template v-else-if="excursion.date">
-              <AppIcon :icon="ACTION_ICONS.notDone" :size="14" group="actions" />
-              <span class="status-text">
-                Geplant für {{ statusDateLabel }}
-                <template v-if="weatherSummary">
-                  · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
-                  {{ weatherSummary.tempLabel }}
-                </template>
-              </span>
-            </template>
-            <template v-else>
-              <AppIcon :icon="ACTION_ICONS.notDone" :size="14" group="actions" />
-              <span>Als gemacht markieren</span>
-            </template>
-          </button>
+        <div class="card-actions-wrapper">
+          <div class="card-actions">
+            <button
+              v-if="!excursion.date"
+              type="button"
+              class="calendar-drag-handle"
+              aria-label="Auf Kalender ziehen zum Einplanen"
+              title="Auf Kalender ziehen zum Einplanen"
+              @pointerdown="onPointerDown"
+              @click.stop
+            >
+              <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" /> Einplanen
+            </button>
+            <!-- Verschmolzener Status-Button (Geplant-Status + Gemacht-Checkbox) -->
+            <button
+              type="button"
+              class="done-toggle"
+              :class="{
+                status: expanded && !!(excursion.date || excursion.done),
+                planned: expanded && !!(excursion.date && !excursion.done),
+                'status-done': expanded && !!excursion.done,
+                active: !!excursion.done,
+              }"
+              :aria-pressed="!!excursion.done"
+              :aria-label="
+                excursion.done ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'
+              "
+              :title="excursion.done ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'"
+              @click.stop="onToggleDone"
+            >
+              <template v-if="excursion.done">
+                <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
+                <span class="status-text">
+                  <template v-if="excursion.date">Gemacht am {{ statusDateLabel }}</template>
+                  <template v-else>Gemacht</template>
+                  <template v-if="weatherSummary">
+                    · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
+                    {{ weatherSummary.tempLabel }}
+                  </template>
+                </span>
+              </template>
+              <template v-else-if="excursion.date">
+                <AppIcon :icon="ACTION_ICONS.notDone" :size="14" group="actions" />
+                <span class="status-text">
+                  Geplant für {{ statusDateLabel }}
+                  <template v-if="weatherSummary">
+                    · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
+                    {{ weatherSummary.tempLabel }}
+                  </template>
+                </span>
+              </template>
+              <template v-else>
+                <AppIcon :icon="ACTION_ICONS.notDone" :size="14" group="actions" />
+                <span>Als gemacht markieren</span>
+              </template>
+            </button>
+          </div>
+
+          <div class="card-social-actions" :class="{ 'is-expanded': expanded }">
+            <Transition name="comment-pop">
+              <Button
+                v-if="expanded"
+                type="button"
+                variant="ghost"
+                size="sm"
+                class="comment-btn"
+                :class="{ 'has-comments': comments.length > 0, active: showComments }"
+                aria-label="Kommentare anzeigen"
+                :title="comments.length ? `${comments.length} Kommentare` : 'Kommentar schreiben'"
+                @click.stop="showComments = !showComments"
+              >
+                <AppIcon :icon="ACTION_ICONS.comment" :size="15" group="actions" />
+                <span v-if="comments.length > 0" class="social-count">{{ comments.length }}</span>
+              </Button>
+            </Transition>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              class="like-btn"
+              :class="{ liked }"
+              :aria-label="liked ? 'Gefällt mir nicht mehr' : 'Gefällt mir'"
+              :title="liked ? 'Gefällt mir nicht mehr' : 'Gefällt mir'"
+              @click.stop="emit('toggle-like')"
+            >
+              <AppIcon
+                :icon="liked ? ACTION_ICONS.liked : ACTION_ICONS.unliked"
+                :size="15"
+                group="actions"
+              />
+              <span v-if="likeCount > 0" class="social-count">{{ likeCount }}</span>
+            </Button>
+          </div>
         </div>
+
         <Teleport to="body">
           <div v-if="dragging" class="drag-ghost" :style="ghostStyle ?? {}">
             <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" />
@@ -528,16 +566,12 @@ function onSpotDrop(event: DragEvent) {
           </PickerMenu>
         </Teleport>
 
-        <div class="excursion-accordion" :class="{ 'is-expanded': expanded }" :inert="!expanded">
+        <div
+          class="excursion-accordion"
+          :class="{ 'is-expanded': expanded && showComments }"
+          :inert="!expanded || !showComments"
+        >
           <div class="excursion-accordion-inner accordion-stagger">
-            <SocialRow
-              class="social-row"
-              :like-count="likeCount"
-              :liked="liked"
-              :comment-count="comments.length"
-              @toggle-like="emit('toggle-like')"
-              @toggle-comments="showComments = !showComments"
-            />
             <Comments
               v-if="showComments"
               :comments="comments"
@@ -547,27 +581,6 @@ function onSpotDrop(event: DragEvent) {
             />
           </div>
         </div>
-
-        <Transition name="fade">
-          <Button
-            v-if="!expanded"
-            type="button"
-            variant="ghost"
-            size="sm"
-            class="mini-like-btn"
-            :class="{ liked }"
-            :aria-label="liked ? 'Gefällt mir nicht mehr' : 'Gefällt mir'"
-            :title="liked ? 'Gefällt mir nicht mehr' : 'Gefällt mir'"
-            @click.stop="emit('toggle-like')"
-          >
-            <AppIcon
-              :icon="liked ? ACTION_ICONS.liked : ACTION_ICONS.unliked"
-              :size="15"
-              group="actions"
-            />
-            <span v-if="likeCount > 0" class="mini-like-count">{{ likeCount }}</span>
-          </Button>
-        </Transition>
       </div>
     </div>
   </Card>
@@ -1142,20 +1155,70 @@ function onSpotDrop(event: DragEvent) {
   box-shadow: var(--shadow-md);
 }
 
-.social-row {
-  margin-top: var(--space-2);
+.card-actions-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: auto;
+  position: relative;
+  z-index: 2;
 }
 
-.mini-like-btn {
-  position: absolute;
-  bottom: var(--space-2);
-  right: var(--space-2);
-  z-index: 1;
+.card-social-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.like-btn,
+.comment-btn {
   color: var(--color-text-muted);
 }
 
-.mini-like-btn.liked {
+.like-btn.liked {
   color: var(--color-like);
+}
+
+.like-btn.liked:hover {
+  background: var(--color-like-tint);
+}
+
+.comment-btn.active,
+.comment-btn.has-comments {
+  color: var(--color-primary);
+}
+
+.social-count {
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-left: 2px;
+}
+
+.comment-pop-enter-active,
+.comment-pop-leave-active {
+  transition:
+    opacity 0.2s cubic-bezier(0.32, 0.72, 0, 1),
+    transform 0.2s cubic-bezier(0.32, 0.72, 0, 1),
+    max-width 0.25s cubic-bezier(0.32, 0.72, 0, 1);
+  overflow: hidden;
+}
+
+.comment-pop-enter-from,
+.comment-pop-leave-to {
+  opacity: 0;
+  max-width: 0;
+  transform: scale(0.85) translateX(6px);
+}
+
+.comment-pop-enter-to,
+.comment-pop-leave-from {
+  opacity: 1;
+  max-width: 65px;
+  transform: scale(1) translateX(0);
 }
 
 .links {

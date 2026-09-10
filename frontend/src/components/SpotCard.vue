@@ -14,7 +14,6 @@ import { useWeatherProviderStore } from '../stores/weatherProvider';
 import CategoryChip from './CategoryChip.vue';
 import EditButton from './EditButton.vue';
 import RichTextDisplay from './RichTextDisplay.vue';
-import SocialRow from './SocialRow.vue';
 import Comments, { type CommentItem } from './Comments.vue';
 import MapsAppPicker from './MapsAppPicker.vue';
 import TourAssignDropdown from './TourAssignDropdown.vue';
@@ -534,110 +533,150 @@ function openCalendarConfirmDone() {
         </div>
       </div>
 
-      <div class="mobile-only-accordion" :class="{ 'is-expanded': expanded }" :inert="!expanded">
-        <div class="mobile-only-accordion-inner accordion-stagger">
-          <div class="card-actions">
-            <TourAssignDropdown
-              :tours="tourAssignments"
-              @toggle-tour="onToggleTour"
-              @create-tour="onCreateTour"
-              @dragstart="onDragStart"
-            />
-            <button
-              v-if="!isAccommodation && !scheduledDate"
-              type="button"
-              class="calendar-drag-handle"
-              aria-label="Auf Kalender ziehen zum spontanen Einplanen"
-              title="Auf Kalender ziehen zum spontanen Einplanen"
-              @pointerdown="onPointerDown"
-              @click.stop
-            >
-              <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" /> Einplanen
-            </button>
-            <!-- Verschmolzener Status-Button (Geplant-Status + Gemacht-Checkbox) -->
-            <button
-              v-if="!isAccommodation"
-              type="button"
-              class="done-toggle"
-              :class="{
-                status:
-                  expanded &&
-                  !!(scheduledDate || totalItemsCount > 0 || isSpotDone || isSpotPartiallyDone),
-                planned:
-                  expanded &&
-                  !!((scheduledDate || totalItemsCount > 0) && !isSpotDone && !isSpotPartiallyDone),
-                'status-done': expanded && (isSpotDone || isSpotPartiallyDone),
-                active: isSpotDone,
-              }"
-              :aria-pressed="isSpotDone"
-              :aria-label="isSpotDone ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'"
-              :title="isSpotDone ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'"
-              @click.stop="onToggleDone"
-            >
-              <template v-if="totalItemsCount > 1">
-                <template v-if="allItemsDone">
-                  <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
-                  <span class="status-text">Besucht an {{ totalItemsCount }} Tagen</span>
+      <div class="card-actions-wrapper">
+        <div class="mobile-only-accordion" :class="{ 'is-expanded': expanded }" :inert="!expanded">
+          <div class="mobile-only-accordion-inner accordion-stagger">
+            <div class="card-actions">
+              <TourAssignDropdown
+                :tours="tourAssignments"
+                @toggle-tour="onToggleTour"
+                @create-tour="onCreateTour"
+                @dragstart="onDragStart"
+              />
+              <button
+                v-if="!isAccommodation && !scheduledDate"
+                type="button"
+                class="calendar-drag-handle"
+                aria-label="Auf Kalender ziehen zum spontanen Einplanen"
+                title="Auf Kalender ziehen zum spontanen Einplanen"
+                @pointerdown="onPointerDown"
+                @click.stop
+              >
+                <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" /> Einplanen
+              </button>
+              <!-- Verschmolzener Status-Button (Geplant-Status + Gemacht-Checkbox) -->
+              <button
+                v-if="!isAccommodation"
+                type="button"
+                class="done-toggle"
+                :class="{
+                  status:
+                    expanded &&
+                    !!(scheduledDate || totalItemsCount > 0 || isSpotDone || isSpotPartiallyDone),
+                  planned:
+                    expanded &&
+                    !!(
+                      (scheduledDate || totalItemsCount > 0) &&
+                      !isSpotDone &&
+                      !isSpotPartiallyDone
+                    ),
+                  'status-done': expanded && (isSpotDone || isSpotPartiallyDone),
+                  active: isSpotDone,
+                }"
+                :aria-pressed="isSpotDone"
+                :aria-label="
+                  isSpotDone ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'
+                "
+                :title="isSpotDone ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'"
+                @click.stop="onToggleDone"
+              >
+                <template v-if="totalItemsCount > 1">
+                  <template v-if="allItemsDone">
+                    <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
+                    <span class="status-text">Besucht an {{ totalItemsCount }} Tagen</span>
+                  </template>
+                  <template v-else-if="doneItemsCount > 0">
+                    <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
+                    <span class="status-text">
+                      Besucht an {{ doneItemsCount }} von {{ totalItemsCount }} Tagen
+                    </span>
+                  </template>
+                  <template v-else>
+                    <AppIcon :icon="ACTION_ICONS.notDone" :size="14" group="actions" />
+                    <span class="status-text">Geplant an {{ totalItemsCount }} Tagen</span>
+                  </template>
                 </template>
-                <template v-else-if="doneItemsCount > 0">
+                <template v-else-if="isSpotDone">
                   <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
                   <span class="status-text">
-                    Besucht an {{ doneItemsCount }} von {{ totalItemsCount }} Tagen
+                    <template v-if="scheduledDate">Besucht am {{ plannedDateLabel }}</template>
+                    <template v-else>Gemacht</template>
+                    <template v-if="dayWeather && scheduledDaysCount <= 1">
+                      · <WeatherIcon :code="dayWeather.weatherCode" :size="14" />
+                      {{ Math.round(dayWeather.tempMax) }}°
+                    </template>
+                  </span>
+                </template>
+                <template v-else-if="scheduledDate || totalItemsCount === 1">
+                  <AppIcon :icon="ACTION_ICONS.notDone" :size="14" group="actions" />
+                  <span class="status-text">
+                    Geplant für {{ plannedDateLabel }}
+                    <template v-if="dayWeather && scheduledDaysCount <= 1">
+                      · <WeatherIcon :code="dayWeather.weatherCode" :size="14" />
+                      {{ Math.round(dayWeather.tempMax) }}°
+                    </template>
                   </span>
                 </template>
                 <template v-else>
                   <AppIcon :icon="ACTION_ICONS.notDone" :size="14" group="actions" />
-                  <span class="status-text">Geplant an {{ totalItemsCount }} Tagen</span>
+                  <span>Als gemacht markieren</span>
                 </template>
-              </template>
-              <template v-else-if="isSpotDone">
-                <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
-                <span class="status-text">
-                  <template v-if="scheduledDate">Besucht am {{ plannedDateLabel }}</template>
-                  <template v-else>Gemacht</template>
-                  <template v-if="dayWeather && scheduledDaysCount <= 1">
-                    · <WeatherIcon :code="dayWeather.weatherCode" :size="14" />
-                    {{ Math.round(dayWeather.tempMax) }}°
-                  </template>
-                </span>
-              </template>
-              <template v-else-if="scheduledDate || totalItemsCount === 1">
-                <AppIcon :icon="ACTION_ICONS.notDone" :size="14" group="actions" />
-                <span class="status-text">
-                  Geplant für {{ plannedDateLabel }}
-                  <template v-if="dayWeather && scheduledDaysCount <= 1">
-                    · <WeatherIcon :code="dayWeather.weatherCode" :size="14" />
-                    {{ Math.round(dayWeather.tempMax) }}°
-                  </template>
-                </span>
-              </template>
-              <template v-else>
-                <AppIcon :icon="ACTION_ICONS.notDone" :size="14" group="actions" />
-                <span>Als gemacht markieren</span>
-              </template>
-            </button>
+              </button>
+            </div>
+            <MapsAppPicker
+              v-if="spot.lat != null && spot.lng != null"
+              :lat="spot.lat"
+              :lng="spot.lng"
+              :title="spot.title"
+              :maps-link="spot.maps_link"
+              @click.stop
+            />
           </div>
-          <MapsAppPicker
-            v-if="spot.lat != null && spot.lng != null"
-            :lat="spot.lat"
-            :lng="spot.lng"
-            :title="spot.title"
-            :maps-link="spot.maps_link"
-            @click.stop
-          />
+        </div>
+
+        <div class="card-social-actions" :class="{ 'is-expanded': expanded }">
+          <Transition name="comment-pop">
+            <Button
+              v-if="expanded"
+              type="button"
+              variant="ghost"
+              size="sm"
+              class="comment-btn"
+              :class="{ 'has-comments': comments.length > 0, active: showComments }"
+              aria-label="Kommentare anzeigen"
+              :title="comments.length ? `${comments.length} Kommentare` : 'Kommentar schreiben'"
+              @click.stop="showComments = !showComments"
+            >
+              <AppIcon :icon="ACTION_ICONS.comment" :size="15" group="actions" />
+              <span v-if="comments.length > 0" class="social-count">{{ comments.length }}</span>
+            </Button>
+          </Transition>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            class="like-btn"
+            :class="{ liked }"
+            :aria-label="liked ? 'Gefällt mir nicht mehr' : 'Gefällt mir'"
+            :title="liked ? 'Gefällt mir nicht mehr' : 'Gefällt mir'"
+            @click.stop="emit('toggle-like')"
+          >
+            <AppIcon
+              :icon="liked ? ACTION_ICONS.liked : ACTION_ICONS.unliked"
+              :size="15"
+              group="actions"
+            />
+            <span v-if="likeCount > 0" class="social-count">{{ likeCount }}</span>
+          </Button>
         </div>
       </div>
 
-      <div class="spot-accordion" :class="{ 'is-expanded': expanded }" :inert="!expanded">
+      <div
+        class="spot-accordion"
+        :class="{ 'is-expanded': expanded && showComments }"
+        :inert="!expanded || !showComments"
+      >
         <div class="spot-accordion-inner accordion-stagger">
-          <SocialRow
-            class="social-row"
-            :like-count="likeCount"
-            :liked="liked"
-            :comment-count="comments.length"
-            @toggle-like="emit('toggle-like')"
-            @toggle-comments="showComments = !showComments"
-          />
           <Comments
             v-if="showComments"
             :comments="comments"
@@ -645,6 +684,10 @@ function openCalendarConfirmDone() {
             @submit="(content) => emit('submit-comment', content)"
             @remove="(id) => emit('remove-comment', id)"
           />
+        </div>
+      </div>
+      <div class="spot-accordion" :class="{ 'is-expanded': expanded }" :inert="!expanded">
+        <div class="spot-accordion-inner accordion-stagger">
           <FileAttachments domain="spots" :entity-id="spot.id" :editable="false" />
         </div>
       </div>
@@ -736,27 +779,6 @@ function openCalendarConfirmDone() {
           </div>
         </PickerMenu>
       </Teleport>
-
-      <Transition name="fade">
-        <Button
-          v-if="!expanded"
-          type="button"
-          variant="ghost"
-          size="sm"
-          class="mini-like-btn"
-          :class="{ liked }"
-          :aria-label="liked ? 'Gefällt mir nicht mehr' : 'Gefällt mir'"
-          :title="liked ? 'Gefällt mir nicht mehr' : 'Gefällt mir'"
-          @click.stop="emit('toggle-like')"
-        >
-          <AppIcon
-            :icon="liked ? ACTION_ICONS.liked : ACTION_ICONS.unliked"
-            :size="15"
-            group="actions"
-          />
-          <span v-if="likeCount > 0" class="mini-like-count">{{ likeCount }}</span>
-        </Button>
-      </Transition>
     </div>
   </Card>
 </template>
@@ -1106,24 +1128,70 @@ function openCalendarConfirmDone() {
   display: none;
 }
 
-.social-row {
-  margin-top: var(--space-3);
+.card-actions-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: auto;
+  position: relative;
+  z-index: 2;
 }
 
-.mini-like-btn {
-  position: absolute;
-  bottom: var(--space-2);
-  right: var(--space-2);
-  z-index: 1;
+.card-social-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.like-btn,
+.comment-btn {
   color: var(--color-text-muted);
 }
 
-.mini-like-btn.liked {
+.like-btn.liked {
   color: var(--color-like);
 }
 
-.spot-card:not(.expanded) .card-actions {
-  padding-right: 40px;
+.like-btn.liked:hover {
+  background: var(--color-like-tint);
+}
+
+.comment-btn.active,
+.comment-btn.has-comments {
+  color: var(--color-primary);
+}
+
+.social-count {
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-left: 2px;
+}
+
+.comment-pop-enter-active,
+.comment-pop-leave-active {
+  transition:
+    opacity 0.2s cubic-bezier(0.32, 0.72, 0, 1),
+    transform 0.2s cubic-bezier(0.32, 0.72, 0, 1),
+    max-width 0.25s cubic-bezier(0.32, 0.72, 0, 1);
+  overflow: hidden;
+}
+
+.comment-pop-enter-from,
+.comment-pop-leave-to {
+  opacity: 0;
+  max-width: 0;
+  transform: scale(0.85) translateX(6px);
+}
+
+.comment-pop-enter-to,
+.comment-pop-leave-from {
+  opacity: 1;
+  max-width: 65px;
+  transform: scale(1) translateX(0);
 }
 
 .card-actions {
@@ -1488,7 +1556,8 @@ function openCalendarConfirmDone() {
   }
 }
 
-.mobile-only-accordion {
+.mobile-only-accordion,
+.mobile-only-accordion-inner {
   display: contents; /* Auf Desktop komplett durchlässig */
 }
 
