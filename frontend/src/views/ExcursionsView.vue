@@ -1478,6 +1478,36 @@ const tourWrapRefs = new Map<number, HTMLElement>();
 const tourWrapWidths = reactive(new Map<number, number>());
 let tourLineResizeObserver: ResizeObserver | null = null;
 
+/**
+ * Returns extra "loop-closing" connection pairs for tours where a spot is visited multiple times.
+ * Given the full ordered spot_ids list (may contain duplicates, e.g. [a, b, c, a]) and the
+ * array of unique spot IDs as rendered in the DOM (e.g. [a, b, c]), this returns [fromIdx, toIdx]
+ * pairs (indices into domSpotIds) for edges in the route that are not covered by the primary
+ * adjacent-pair path — i.e. the returning segments from the last occurrence back to the first.
+ *
+ * Example: spot_ids=[a,b,c,a], domSpotIds=[a,b,c]
+ *   Primary edges: a→b (0→1), b→c (1→2) — already drawn.
+ *   Extra edge: c→a (2→0) — returned here as [[2, 0]].
+ */
+function buildLoopSegments(spotIds: number[], domSpotIds: number[]): [number, number][] {
+  const domIndex = new Map<number, number>();
+  domSpotIds.forEach((id, i) => {
+    if (!domIndex.has(id)) domIndex.set(id, i);
+  });
+  // Build sequence of DOM indices for the full route (unique spots only)
+  const routeIndices = spotIds.map((id) => domIndex.get(id) ?? -1).filter((i) => i >= 0);
+  // Collect edges not covered by the primary i→i+1 adjacency path
+  const segments: [number, number][] = [];
+  for (let i = 0; i < routeIndices.length - 1; i++) {
+    const from = routeIndices[i];
+    const to = routeIndices[i + 1];
+    if (to < from || to !== from + 1) {
+      segments.push([from, to]);
+    }
+  }
+  return segments;
+}
+
 function getTourCols(excursionId: number): number {
   const w = tourWrapWidths.get(excursionId) ?? 0;
   if (w >= 1200) return 4;
@@ -1534,9 +1564,24 @@ function recomputeTourLine(excursionId: number) {
       const controlY = (p1.y + p2.y) / 2;
       d += ` Q ${controlX} ${controlY} ${p2.x} ${p2.y}`;
     }
+    // Loop-closing arcs on the right side for tours where a spot appears multiple times
+    const excursion1col = excursionsStore.excursions.find((e) => e.id === excursionId);
+    if (excursion1col) {
+      const domSpotIds = spotEls.map((el) => Number(el.dataset.spotId));
+      const RIGHT_X = TOUR_LINE_WIDTH + 10;
+      for (const [fromIdx, toIdx] of buildLoopSegments(excursion1col.spot_ids, domSpotIds)) {
+        const startY = dots[fromIdx]?.y;
+        const endY = dots[toIdx]?.y;
+        if (startY == null || endY == null) continue;
+        const arcExtent = Math.min(48, Math.max(24, Math.abs(endY - startY) * 0.25));
+        const ctrlX = RIGHT_X + arcExtent;
+        d += ` M ${RIGHT_X} ${startY} C ${ctrlX} ${startY}, ${ctrlX} ${endY}, ${RIGHT_X} ${endY}`;
+        dots.push({ x: RIGHT_X, y: startY }, { x: RIGHT_X, y: endY });
+      }
+    }
     tourLines.set(excursionId, {
       width: TOUR_LINE_WIDTH,
-      height: dots[dots.length - 1].y,
+      height: Math.max(...dots.map((d) => d.y)),
       pathD: d,
       dots,
     });
@@ -1612,6 +1657,26 @@ function recomputeTourLine(excursionId: number) {
         dots.push({ x: endX, y: endY });
         d += ` M ${startX} ${startY} C ${ctrlX} ${startY}, ${ctrlX} ${endY}, ${endX} ${endY}`;
       }
+    }
+  }
+  // Loop-closing arcs on the right side for tours where a spot appears multiple times
+  const excursionMultiCol = excursionsStore.excursions.find((e) => e.id === excursionId);
+  if (excursionMultiCol) {
+    const domSpotIds = spotEls.map((el) => Number(el.dataset.spotId));
+    const rightEdge = Math.max(wrapEl.clientWidth, 100);
+    for (const [fromIdx, toIdx] of buildLoopSegments(excursionMultiCol.spot_ids, domSpotIds)) {
+      const a = spotBoxes[fromIdx];
+      const b = spotBoxes[toIdx];
+      if (!a || !b) continue;
+      const startX = a.right;
+      const startY = a.cy;
+      const endX = b.right;
+      const endY = b.cy;
+      const arcExtent = Math.min(48, Math.max(24, Math.abs(endY - startY) * 0.25));
+      const ctrlX = rightEdge + arcExtent;
+      dots.push({ x: startX, y: startY });
+      dots.push({ x: endX, y: endY });
+      d += ` M ${startX} ${startY} C ${ctrlX} ${startY}, ${ctrlX} ${endY}, ${endX} ${endY}`;
     }
   }
 
@@ -3603,6 +3668,7 @@ async function deleteEditingSpot() {
                             <SpotCard
                               :ref="(el) => setSpotRef(cell.spot.id, el)"
                               class="staggered-spot"
+                              :data-spot-id="cell.spot.id"
                               :style="[
                                 {
                                   '--stagger-idx': cell.globalIndex,
