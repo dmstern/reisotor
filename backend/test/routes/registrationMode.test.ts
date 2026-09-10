@@ -76,6 +76,19 @@ describe('registration mode: restricted', () => {
     });
     expect(upload.statusCode).toBe(403);
     expect(upload.json()).toEqual({ error: 'Eingeschränkter Modus - Kein Datei-Upload möglich' });
+
+    const imageUpload = await app.inject({
+      method: 'POST',
+      url: '/api/images',
+      headers: { cookie },
+      payload: {
+        data: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+      },
+    });
+    expect(imageUpload.statusCode).toBe(403);
+    expect(imageUpload.json()).toEqual({
+      error: 'Eingeschränkter Modus - Kein Datei-Upload möglich',
+    });
   });
 
   it('allows only one self-created trip for restricted users', async () => {
