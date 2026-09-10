@@ -670,6 +670,7 @@ function openCalendarConfirmDone() {
               v-model="unplannedDoneDate"
               type="date"
               class="popover-date-input"
+              aria-label="Datum des Besuchs"
               @keyup.enter="submitUnplannedDone"
             />
             <div class="popover-buttons">

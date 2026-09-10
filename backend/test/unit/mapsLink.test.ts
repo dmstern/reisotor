@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   fetchPlacePreview,
+  isSafeUrl,
   parseLatLngFromText,
   resolveLatLng,
   tilePreviewUrl,
@@ -223,5 +224,115 @@ describe('fetchPlacePreview', () => {
 
     await expect(fetchPlacePreview(null)).resolves.toEqual({ name: null, imageUrl: null });
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('prevents redirect SSRF by not following redirects to internal/private targets', async () => {
+    const fetchMock = vi.fn((url: string) => {
+      if (url === 'https://maps.app.goo.gl/redirect-attack') {
+        return Promise.resolve({
+          url: 'https://maps.app.goo.gl/redirect-attack',
+          status: 302,
+          headers: {
+            get: (h: string) =>
+              h.toLowerCase() === 'location' ? 'http://127.0.0.1:8080/secret' : null,
+          },
+          text: () => Promise.resolve(''),
+        });
+      }
+      if (url.includes('127.0.0.1')) {
+        throw new Error('SSRF vulnerability: fetch was called on loopback address!');
+      }
+      return Promise.resolve({
+        url,
+        headers: { get: () => null },
+        text: () => Promise.resolve(''),
+      });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const result = await fetchPlacePreview('https://maps.app.goo.gl/redirect-attack');
+    expect(result).toEqual({ name: null, imageUrl: null });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://maps.app.goo.gl/redirect-attack',
+      expect.anything()
+    );
+  });
+});
+
+describe('isSafeUrl', () => {
+  it('rejects loopback addresses', () => {
+    expect(isSafeUrl('http://localhost')).toBe(false);
+    expect(isSafeUrl('http://localhost:3000')).toBe(false);
+    expect(isSafeUrl('http://127.0.0.1')).toBe(false);
+    expect(isSafeUrl('http://127.0.0.1:3000/api')).toBe(false);
+    expect(isSafeUrl('http://127.0.0.2')).toBe(false);
+    expect(isSafeUrl('http://[::1]')).toBe(false);
+    expect(isSafeUrl('http://[::]')).toBe(false);
+  });
+
+  it('rejects private IPv4 ranges', () => {
+    expect(isSafeUrl('http://10.0.0.1')).toBe(false);
+    expect(isSafeUrl('http://10.255.255.255')).toBe(false);
+    expect(isSafeUrl('http://172.16.0.1')).toBe(false);
+    expect(isSafeUrl('http://172.31.255.255')).toBe(false);
+    expect(isSafeUrl('http://192.168.0.1')).toBe(false);
+    expect(isSafeUrl('http://192.168.1.1')).toBe(false);
+  });
+
+  it('rejects special and internal IPv4 ranges', () => {
+    expect(isSafeUrl('http://0.0.0.0')).toBe(false);
+    expect(isSafeUrl('http://169.254.169.254/latest/meta-data')).toBe(false);
+    expect(isSafeUrl('http://100.64.0.1')).toBe(false); // Carrier-grade NAT
+    expect(isSafeUrl('http://100.127.255.255')).toBe(false);
+    expect(isSafeUrl('http://198.18.0.1')).toBe(false); // Benchmarking
+    expect(isSafeUrl('http://224.0.0.1')).toBe(false); // Multicast
+    expect(isSafeUrl('http://240.0.0.1')).toBe(false); // Reserved
+    expect(isSafeUrl('http://255.255.255.255')).toBe(false); // Broadcast
+  });
+
+  it('rejects private, link-local and mapped IPv6 ranges', () => {
+    expect(isSafeUrl('http://[fe80::1]')).toBe(false);
+    expect(isSafeUrl('http://[fc00::1]')).toBe(false);
+    expect(isSafeUrl('http://[fd12:3456::1]')).toBe(false);
+    expect(isSafeUrl('http://[fec0::1]')).toBe(false);
+    // IPv4-mapped IPv6
+    expect(isSafeUrl('http://[::ffff:127.0.0.1]')).toBe(false);
+    expect(isSafeUrl('http://[::ffff:7f00:1]')).toBe(false);
+    expect(isSafeUrl('http://[::ffff:169.254.169.254]')).toBe(false);
+    expect(isSafeUrl('http://[::ffff:a9fe:a9fe]')).toBe(false);
+    expect(isSafeUrl('http://[::ffff:10.0.0.1]')).toBe(false);
+    expect(isSafeUrl('http://[::ffff:192.168.1.1]')).toBe(false);
+  });
+
+  it('rejects single-label intranet hostnames and internal suffixes', () => {
+    expect(isSafeUrl('http://router')).toBe(false);
+    expect(isSafeUrl('http://printer/status')).toBe(false);
+    expect(isSafeUrl('http://nas.local')).toBe(false);
+    expect(isSafeUrl('http://server.internal')).toBe(false);
+    expect(isSafeUrl('http://gateway.lan')).toBe(false);
+    expect(isSafeUrl('http://device.home.arpa')).toBe(false);
+  });
+
+  it('rejects wildcard DNS rebinding domains', () => {
+    expect(isSafeUrl('http://127.0.0.1.nip.io')).toBe(false);
+    expect(isSafeUrl('http://localtest.me')).toBe(false);
+    expect(isSafeUrl('http://localtest.me:3000')).toBe(false);
+    expect(isSafeUrl('http://test.sslip.io')).toBe(false);
+  });
+
+  it('rejects non-http schemes and URLs with credentials', () => {
+    expect(isSafeUrl('file:///etc/passwd')).toBe(false);
+    expect(isSafeUrl('gopher://localhost:11211')).toBe(false);
+    expect(isSafeUrl('javascript:alert(1)')).toBe(false);
+    expect(isSafeUrl('http://admin:secret@maps.google.com')).toBe(false);
+    expect(isSafeUrl('not a url')).toBe(false);
+  });
+
+  it('allows valid public Google and Apple Maps URLs', () => {
+    expect(isSafeUrl('https://maps.google.com/?q=48.1,16.2')).toBe(true);
+    expect(isSafeUrl('https://maps.app.goo.gl/abc123xyz')).toBe(true);
+    expect(isSafeUrl('https://www.google.com/maps/@48.2082,16.3738,15z')).toBe(true);
+    expect(isSafeUrl('https://maps.apple.com/?coordinate=48.2082,16.3738')).toBe(true);
   });
 });
