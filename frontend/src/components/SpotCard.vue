@@ -25,6 +25,7 @@ import Input from './primitives/Input.vue';
 import PickerMenu from './primitives/PickerMenu.vue';
 import Card from './primitives/Card.vue';
 import DetailRow from './primitives/DetailRow.vue';
+import PolaroidPhoto from './primitives/PolaroidPhoto.vue';
 import WeatherIcon from './WeatherIcon.vue';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
@@ -370,66 +371,75 @@ function openCalendarConfirmDone() {
 
 <template>
   <Card class="spot-card" :class="{ expanded, 'new-highlight': highlighted }" @click="onCardClick">
-    <div class="image" :style="spot.image_url ? { backgroundImage: `url(${spot.image_url})` } : {}">
-      <AppIcon
-        v-if="!spot.image_url"
-        class="placeholder"
-        :size="35"
-        :icon="spotCategoryMeta(spot.category).tabler"
-        group="categories"
-      />
-
-      <!-- Expanded Cover Overlay: Halbdunkles Gradient-Overlay mit Edit-Button -->
-      <Transition name="overlay-fade">
-        <div v-if="expanded" class="image-expanded-overlay">
-          <div class="overlay-top-row">
-            <EditButton floating class="overlay-edit-btn" @click="emit('edit', spot)" />
-          </div>
-        </div>
-      </Transition>
-
-      <!-- Collapsed Zustand: Passives Status-Badge unten rechts (#106) -->
-      <span
-        v-if="!expanded && (scheduledDate || totalItemsCount > 0 || isSpotDone || dayWeather)"
-        class="status"
-        :class="{
-          planned: (scheduledDate || totalItemsCount > 0) && !isSpotDone && !isSpotPartiallyDone,
-          'status-done': isSpotDone || isSpotPartiallyDone,
-        }"
-      >
+    <PolaroidPhoto
+      class="image"
+      :class="{ 'is-expanded': expanded }"
+      :image-url="spot.image_url"
+      :alt="spot.title"
+      :show-chin="!expanded"
+      :caption="spot.title"
+    >
+      <template #placeholder>
         <AppIcon
-          class="status-icon"
-          :size="14"
-          :icon="
-            isSpotDone || isSpotPartiallyDone
-              ? ACTION_ICONS.done
-              : scheduledDate || totalItemsCount > 0
-                ? FORM_FIELD_ICONS.date
-                : ACTION_ICONS.today
-          "
-          group="actions"
+          class="placeholder"
+          :size="35"
+          :icon="spotCategoryMeta(spot.category).tabler"
+          group="categories"
         />
-        <span class="status-text">
-          <template v-if="totalItemsCount > 1">
-            <template v-if="allItemsDone">Besucht an {{ totalItemsCount }} Tagen</template>
-            <template v-else-if="doneItemsCount > 0">
-              {{ doneItemsCount }} von {{ totalItemsCount }} Tagen besucht
+      </template>
+      <template #overlay>
+        <!-- Expanded Cover Overlay: Halbdunkles Gradient-Overlay mit Edit-Button -->
+        <Transition name="overlay-fade">
+          <div v-if="expanded" class="image-expanded-overlay">
+            <div class="overlay-top-row">
+              <EditButton floating class="overlay-edit-btn" @click="emit('edit', spot)" />
+            </div>
+          </div>
+        </Transition>
+
+        <!-- Collapsed Zustand: Passives Status-Badge unten rechts (#106) -->
+        <span
+          v-if="!expanded && (scheduledDate || totalItemsCount > 0 || isSpotDone || dayWeather)"
+          class="status"
+          :class="{
+            planned: (scheduledDate || totalItemsCount > 0) && !isSpotDone && !isSpotPartiallyDone,
+            'status-done': isSpotDone || isSpotPartiallyDone,
+          }"
+        >
+          <AppIcon
+            class="status-icon"
+            :size="14"
+            :icon="
+              isSpotDone || isSpotPartiallyDone
+                ? ACTION_ICONS.done
+                : scheduledDate || totalItemsCount > 0
+                  ? FORM_FIELD_ICONS.date
+                  : ACTION_ICONS.today
+            "
+            group="actions"
+          />
+          <span class="status-text">
+            <template v-if="totalItemsCount > 1">
+              <template v-if="allItemsDone">Besucht an {{ totalItemsCount }} Tagen</template>
+              <template v-else-if="doneItemsCount > 0">
+                {{ doneItemsCount }} von {{ totalItemsCount }} Tagen besucht
+              </template>
+              <template v-else>Geplant an {{ totalItemsCount }} Tagen</template>
             </template>
-            <template v-else>Geplant an {{ totalItemsCount }} Tagen</template>
-          </template>
-          <template v-else-if="isSpotDone && scheduledDate">
-            Besucht am {{ plannedDateLabel }}
-          </template>
-          <template v-else-if="isSpotDone">Gemacht</template>
-          <template v-else-if="scheduledDate">Geplant für {{ plannedDateLabel }}</template>
-          <template v-else>Aktuelles Wetter</template>
-          <template v-if="dayWeather && scheduledDaysCount <= 1">
-            · <WeatherIcon :code="dayWeather.weatherCode" :size="14" />
-            {{ Math.round(dayWeather.tempMax) }}°</template
-          >
+            <template v-else-if="isSpotDone && scheduledDate">
+              Besucht am {{ plannedDateLabel }}
+            </template>
+            <template v-else-if="isSpotDone">Gemacht</template>
+            <template v-else-if="scheduledDate">Geplant für {{ plannedDateLabel }}</template>
+            <template v-else>Aktuelles Wetter</template>
+            <template v-if="dayWeather && scheduledDaysCount <= 1">
+              · <WeatherIcon :code="dayWeather.weatherCode" :size="14" />
+              {{ Math.round(dayWeather.tempMax) }}°</template
+            >
+          </span>
         </span>
-      </span>
-    </div>
+      </template>
+    </PolaroidPhoto>
 
     <!-- Gleitende Badge-Gruppe: Ein einziges Element, das nahtlos zwischen Body und Cover-Ecke gleitet -->
     <div class="card-badge-group">
@@ -807,18 +817,26 @@ function openCalendarConfirmDone() {
 }
 
 .image {
-  height: 120px;
-  background: var(--color-primary-tint) center/cover no-repeat;
+  /* PolaroidPhoto übernimmt die Rahmendarstellung – hier nur Layout und Custom-Property-Werte */
   display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  transition: height 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  flex-direction: column;
+  width: 100%;
+  box-sizing: border-box;
+  --polaroid-padding: 6px;
+  --polaroid-chin-height: 34px;
+  /* border-radius top: stimmt mit dem Card-Radius überein */
   border-radius: var(--radius-md-squircle) var(--radius-md-squircle) 0 0;
   corner-shape: squircle;
+  transition: --polaroid-chin-height 0.3s ease;
 }
 
-.spot-card.expanded .image {
+/* Im expanded Zustand entfernen wir den chin (showChin=false) und erhöhen die Foto-Rahmenhöhe */
+.image :deep(.polaroid-photo-frame) {
+  height: 120px;
+  transition: height 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.image.is-expanded :deep(.polaroid-photo-frame) {
   height: 200px;
 }
 
@@ -868,14 +886,14 @@ function openCalendarConfirmDone() {
 
 .placeholder {
   font-size: 2.2rem;
+  color: var(--color-text-muted);
   transition:
     opacity 0.3s ease,
     transform 0.3s ease;
 }
 
-.spot-card.expanded .placeholder {
-  position: absolute;
-  opacity: 0.15;
+.image.is-expanded :deep(.polaroid-placeholder) .placeholder {
+  opacity: 0.25;
   transform: scale(1.8);
   pointer-events: none;
 }

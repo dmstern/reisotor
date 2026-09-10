@@ -20,6 +20,7 @@ import SpotImageCollage from './SpotImageCollage.vue';
 import PendingSyncBadge from './PendingSyncBadge.vue';
 import AppIcon from './AppIcon.vue';
 import Card from './primitives/Card.vue';
+import PolaroidPhoto from './primitives/PolaroidPhoto.vue';
 import Button from './primitives/Button.vue';
 import Input from './primitives/Input.vue';
 import PickerMenu from './primitives/PickerMenu.vue';
@@ -395,38 +396,35 @@ function onSpotDrop(event: DragEvent) {
             :title="`${resolvedStations.length} Stationen`"
             aria-hidden="true"
           >
-            <div
+            <PolaroidPhoto
               v-for="(st, idx) in polaroidStations"
               :key="st.key"
               class="polaroid-tile"
-              :style="polaroidStyle(idx, polaroidStations.length)"
+              :image-url="st.imageUrl"
+              :show-chin="true"
+              :caption="st.title"
+              :style="{
+                ...polaroidStyle(idx, polaroidStations.length),
+                '--polaroid-padding': '3px',
+                '--polaroid-chin-height': '10px',
+              }"
+              :alt="''"
             >
-              <div class="polaroid-photo-frame">
-                <img
-                  v-if="st.imageUrl"
-                  :src="st.imageUrl"
-                  class="polaroid-photo"
-                  alt=""
-                  loading="lazy"
-                />
+              <template #placeholder>
                 <div
-                  v-else
-                  class="polaroid-placeholder"
+                  class="polaroid-placeholder-colored"
                   :style="{ backgroundColor: st.color || 'var(--color-primary-tint)' }"
                 >
                   <AppIcon :icon="st.tabler" :size="16" group="categories" />
                 </div>
-              </div>
-              <div class="polaroid-chin">
-                <span class="polaroid-caption">{{ st.title }}</span>
-              </div>
-              <span
+              </template>
+              <template
                 v-if="idx === polaroidStations.length - 1 && extraStationCount > 0"
-                class="polaroid-badge"
+                #overlay
               >
-                +{{ extraStationCount }}
-              </span>
-            </div>
+                <span class="polaroid-badge">+{{ extraStationCount }}</span>
+              </template>
+            </PolaroidPhoto>
           </div>
 
           <div class="tour-stations-meta" v-if="!expanded">
@@ -1422,66 +1420,22 @@ function onSpotDrop(event: DragEvent) {
 }
 
 .polaroid-tile {
+  /* Positionierung innerhalb des gestapelten Stapels – visuelle Styles kommen von PolaroidPhoto */
   position: absolute;
   top: 2px;
   left: 3px;
   width: 52px;
   height: 62px;
-  background: #ffffff;
-  border-radius: var(--radius-sm-squircle, 6px);
-  corner-shape: squircle;
-  padding: 3px 3px 10px 3px;
-  box-sizing: border-box;
-  box-shadow:
-    0 4px 10px rgba(0, 0, 0, 0.16),
-    0 1px 3px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  display: flex;
-  flex-direction: column;
-  transform-origin: center bottom;
-  transition:
-    transform 0.35s cubic-bezier(0.34, 1.3, 0.64, 1),
-    box-shadow 0.25s ease,
-    opacity 0.25s ease;
-  user-select: none;
   pointer-events: none;
 }
 
-:root[data-theme='dark'] .polaroid-tile {
-  background: #f1f5f9;
-  border-color: rgba(255, 255, 255, 0.15);
-  box-shadow:
-    0 4px 12px rgba(0, 0, 0, 0.45),
-    0 1px 3px rgba(0, 0, 0, 0.25);
+/* Mini-Polaroid Chin-Text soll winzig sein (0.45rem statt Standard 0.72rem) */
+.polaroid-tile :deep(.polaroid-caption) {
+  font-size: 0.45rem;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) .polaroid-tile {
-    background: #f1f5f9;
-    border-color: rgba(255, 255, 255, 0.15);
-    box-shadow:
-      0 4px 12px rgba(0, 0, 0, 0.45),
-      0 1px 3px rgba(0, 0, 0, 0.25);
-  }
-}
-
-.polaroid-photo-frame {
-  width: 100%;
-  height: 40px;
-  border-radius: 3px;
-  overflow: hidden;
-  position: relative;
-  background: var(--color-surface-sunken);
-}
-
-.polaroid-photo {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.polaroid-placeholder {
+/* Farbige Placeholder-Fläche mit weißem Icon für kategorisierte Spots ohne Bild */
+.polaroid-placeholder-colored {
   width: 100%;
   height: 100%;
   display: flex;
@@ -1490,30 +1444,9 @@ function onSpotDrop(event: DragEvent) {
   color: #ffffff;
 }
 
-.polaroid-placeholder :deep(svg) {
+.polaroid-placeholder-colored :deep(svg) {
   color: #ffffff;
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
-}
-
-.polaroid-chin {
-  height: 9px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  padding: 0 1px;
-  margin-top: 1px;
-}
-
-.polaroid-caption {
-  font-size: 0.45rem;
-  font-weight: 700;
-  color: #334155;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-  line-height: 1;
 }
 
 .polaroid-badge {
