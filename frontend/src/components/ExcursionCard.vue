@@ -697,7 +697,7 @@ function onSpotDrop(event: DragEvent) {
   width: 110px;
   flex-shrink: 0;
   align-self: stretch;
-  border-radius: var(--radius-md-squircle);
+  border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   overflow: hidden;
   background: var(--color-primary-tint) center/cover no-repeat;
