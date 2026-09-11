@@ -14,6 +14,15 @@ import { useTripStore } from '../stores/trip';
 import AppIcon from './AppIcon.vue';
 import UnseenDot from './primitives/UnseenDot.vue';
 
+const props = withDefaults(
+  defineProps<{
+    embedded?: boolean;
+  }>(),
+  {
+    embedded: false,
+  }
+);
+
 const _auth = useAuthStore();
 const _router = useRouter();
 const route = useRoute();
@@ -35,6 +44,11 @@ const isTop = computed(() =>
 let resizeObserver: ResizeObserver | null = null;
 
 function updateOffset() {
+  if (props.embedded) {
+    document.documentElement.style.setProperty('--navbar-offset', '0px');
+    document.documentElement.style.setProperty('--navbar-bottom-offset', '0px');
+    return;
+  }
   const height = navEl.value ? navEl.value.getBoundingClientRect().height : 0;
   // Die schwebende "Liquid Glass"-Pille (mobile-bottom, siehe CSS unten) hat zusätzlich zu ihrer
   // eigenen Höhe noch einen Rand-Abstand zum Viewport-Rand (var(--space-3)) - der muss mit in den
@@ -124,6 +138,8 @@ onMounted(() => {
 
 onUnmounted(() => {
   resizeObserver?.disconnect();
+  document.documentElement.style.setProperty('--navbar-offset', '0px');
+  document.documentElement.style.setProperty('--navbar-bottom-offset', '0px');
 });
 
 watch(isTop, updateOffset);
@@ -175,7 +191,11 @@ function onLinkClick(event: MouseEvent) {
   <nav
     ref="navEl"
     class="navbar"
-    :class="[`mobile-${navPosition.mobile}`, `desktop-${navPosition.desktop}`]"
+    :class="[
+      props.embedded ? 'embedded' : '',
+      !props.embedded ? `mobile-${navPosition.mobile}` : '',
+      !props.embedded ? `desktop-${navPosition.desktop}` : '',
+    ]"
   >
     <div class="links" ref="linksEl">
       <!-- Gleitende Hervorhebung hinter den Links (siehe updateHighlight() oben) - ein einzelnes
@@ -291,6 +311,48 @@ function onLinkClick(event: MouseEvent) {
    Rand-Abstand auf allen Seiten nimmt der Geste dort die Angriffsfläche. .page reserviert dafür
    zusätzlichen Randabstand (siehe style.css, --navbar-bottom-offset), sonst würde die schwebende
    Pille am unteren Seitenende Inhalt überlagern. */
+.navbar.embedded {
+  position: static;
+  top: auto;
+  left: auto;
+  right: auto;
+  bottom: auto;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  max-width: 100%;
+  z-index: 1;
+}
+
+.navbar.embedded .links {
+  align-items: center;
+}
+
+.navbar.embedded .link {
+  flex-direction: row;
+  padding: 4px 10px;
+  font-size: 0.82rem;
+  border-radius: 999px;
+  corner-shape: round;
+}
+
+.navbar.mobile-top {
+  position: sticky;
+  top: var(--app-header-height, 56px);
+  margin: var(--space-1) var(--space-3);
+  border-radius: 999px;
+  border: 1px solid var(--color-surface-glass-border);
+  background: var(--color-surface-glass);
+  backdrop-filter: var(--backdrop-blur-md);
+  -webkit-backdrop-filter: var(--backdrop-blur-md);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
 .navbar.mobile-bottom {
   position: fixed;
   top: auto;
@@ -401,36 +463,41 @@ function onLinkClick(event: MouseEvent) {
     display: none;
   }
 
-  .navbar.mobile-bottom {
-    /* Mobile Einstellung gilt hier nicht mehr – Desktop-Einstellung übernimmt. Setzt auch die
-       schwebende "Liquid Glass"-Optik von oben zurück (bewusst nur ein Mobil-Phänomen, siehe
-       dortiger Kommentar - auf Desktop gibt es weder die Wisch-Zurück-Geste noch den knappen
-       Platz, der dort das Problem war). */
+  .navbar.desktop-top {
     position: sticky;
-    top: var(--app-header-height, 56px);
-    left: 0;
-    right: 0;
-    bottom: auto;
-    padding-top: var(--space-2);
-    padding-bottom: var(--space-2);
-    border-top: none;
-    border-bottom: 1px solid var(--color-border);
-    border-left: none;
-    border-right: none;
-    border-radius: 0;
-    background: var(--color-surface);
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
+    top: calc(var(--app-header-height, 56px) + var(--space-2));
+    left: 50%;
+    transform: translateX(-50%);
+    width: fit-content;
+    max-width: calc(100vw - 32px);
+    border: 1px solid var(--color-surface-glass-border);
+    border-radius: 999px;
+    background: var(--color-surface-glass);
+    backdrop-filter: var(--backdrop-blur-md);
+    -webkit-backdrop-filter: var(--backdrop-blur-md);
+    box-shadow:
+      0 4px 20px rgba(0, 0, 0, 0.15),
+      inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    padding: 4px var(--space-2);
+    z-index: 10;
   }
 
   .navbar.desktop-bottom {
     position: fixed;
     top: auto;
-    bottom: 0;
-    border-top: 1px solid var(--color-border);
-    border-bottom: none;
-    box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.18);
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: var(--space-3);
+    border: 1px solid var(--color-surface-glass-border);
+    border-radius: 999px;
+    background: var(--color-surface-glass);
+    backdrop-filter: var(--backdrop-blur-md);
+    -webkit-backdrop-filter: var(--backdrop-blur-md);
+    box-shadow:
+      0 4px 20px rgba(0, 0, 0, 0.15),
+      inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    padding: 4px var(--space-2);
+    z-index: 10;
   }
 
   .link {

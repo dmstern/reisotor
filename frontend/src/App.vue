@@ -9,6 +9,7 @@ import { useLiveSyncStore } from './stores/liveSync';
 import { useLocationSharingStore } from './stores/locationSharing';
 import { useTrackRecordingStore } from './stores/trackRecording';
 import { useIsDesktop } from './composables/useIsDesktop';
+import { useNavPositionStore } from './stores/navPosition';
 import { SECTION_ICON_DEFS } from './utils/sectionIcons';
 import { prefetchTripDataForOffline } from './utils/offlinePrefetch';
 import { useBuildInfoStore } from './stores/buildInfo';
@@ -27,6 +28,7 @@ const auth = useAuthStore();
 const tripStore = useTripStore();
 const budgetStore = useBudgetStore();
 const drawers = useDrawersStore();
+const navPosition = useNavPositionStore();
 const isDesktop = useIsDesktop();
 
 const buildInfoStore = useBuildInfoStore();
@@ -142,7 +144,9 @@ const firstLoadDone = ref(
          Nutzer wird per Watcher oben nach /trips geleitet) bzw. auf der Urlaubsverwaltung selbst
          ergibt eine Domänen-Navigation keinen Sinn - Header (für Logout/Einstellungen) bleibt trotzdem
          immer sichtbar, siehe #75. -->
-    <NavBar v-if="showTripNav" />
+    <!-- Desktop-Oben ist direkt in den AppHeader gedockt (Floating Island). Auf Mobil oder
+         bei Position "unten" wird NavBar weiterhin hier gerendert. -->
+    <NavBar v-if="showTripNav && !(isDesktop && navPosition.desktop === 'top')" />
     <div class="app-shell">
       <!-- Kalender nur auf Desktop als Schublade gemountet – auf Mobil ersetzt dieselbe Komponente
            stattdessen als eigenständige Seite (/calendar, siehe router/index.ts) den Hauptinhalt.
