@@ -66,7 +66,6 @@ import CoverImagePicker from '../components/CoverImagePicker.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import FileAttachments from '../components/FileAttachments.vue';
 import DraftStatusBar from '../components/DraftStatusBar.vue';
-import EditButton from '../components/EditButton.vue';
 import LegTransportModal from '../components/LegTransportModal.vue';
 import RichTextEditor from '../components/RichTextEditor.vue';
 import { isEmptyRichText } from '../utils/richText';
@@ -1490,8 +1489,7 @@ interface TourLineData {
   pathD: string;
   dots: { x: number; y: number }[];
 }
-const TOUR_LINE_X = 10;
-const TOUR_LINE_WIDTH = 20;
+
 const tourLines = reactive(new Map<number, TourLineData>());
 const tourWrapRefs = new Map<number, HTMLElement>();
 const tourWrapWidths = reactive(new Map<number, number>());
@@ -1566,47 +1564,6 @@ function recomputeTourLine(excursionId: number) {
     return;
   }
 
-  const cols = getTourCols(excursionId);
-
-  if (cols === 1) {
-    const dots = spotEls.map((item) => ({
-      x: TOUR_LINE_X,
-      y: item.offsetTop + item.offsetHeight / 2,
-    }));
-    const points = [{ x: TOUR_LINE_X, y: 0 }, ...dots];
-    let d = `M ${points[0].x} ${points[0].y}`;
-    for (let i = 0; i < points.length - 1; i++) {
-      const p1 = points[i];
-      const p2 = points[i + 1];
-      const dy = p2.y - p1.y;
-      const controlX = (p1.x + p2.x) / 2 - dy * 0.15;
-      const controlY = (p1.y + p2.y) / 2;
-      d += ` Q ${controlX} ${controlY} ${p2.x} ${p2.y}`;
-    }
-    // Loop-closing arcs on the right side for tours where a spot appears multiple times
-    const excursion1col = excursionsStore.excursions.find((e) => e.id === excursionId);
-    if (excursion1col) {
-      const domSpotIds = spotEls.map((el) => Number(el.dataset.spotId));
-      const RIGHT_X = TOUR_LINE_WIDTH + 10;
-      for (const [fromIdx, toIdx] of buildLoopSegments(excursion1col.spot_ids, domSpotIds)) {
-        const startY = dots[fromIdx]?.y;
-        const endY = dots[toIdx]?.y;
-        if (startY == null || endY == null) continue;
-        const arcExtent = Math.min(48, Math.max(24, Math.abs(endY - startY) * 0.25));
-        const ctrlX = RIGHT_X + arcExtent;
-        d += ` M ${RIGHT_X} ${startY} C ${ctrlX} ${startY}, ${ctrlX} ${endY}, ${RIGHT_X} ${endY}`;
-        dots.push({ x: RIGHT_X, y: startY }, { x: RIGHT_X, y: endY });
-      }
-    }
-    tourLines.set(excursionId, {
-      width: TOUR_LINE_WIDTH,
-      height: Math.max(...dots.map((d) => d.y)),
-      pathD: d,
-      dots,
-    });
-    return;
-  }
-
   const wrapRect = wrapEl.getBoundingClientRect();
   const spotBoxes = spotEls.map((el) => {
     const r = el.getBoundingClientRect();
@@ -1615,6 +1572,7 @@ function recomputeTourLine(excursionId: number) {
     return {
       x,
       y,
+      top: y,
       width: r.width,
       height: r.height,
       cx: x + r.width / 2,
@@ -1633,57 +1591,53 @@ function recomputeTourLine(excursionId: number) {
     const isSameRow = Math.abs(a.cy - b.cy) < Math.min(a.height, b.height) * 0.75;
 
     if (isSameRow) {
+      // Horizontal in derselben Zeile (direkt durch den horizontalen Teilstrecken-Verbinder)
       if (a.cx < b.cx) {
-        // LTR
+        // LTR (von links nach rechts)
         const startX = a.right;
         const startY = a.cy;
         const endX = b.x;
         const endY = b.cy;
         dots.push({ x: startX, y: startY });
         dots.push({ x: endX, y: endY });
-        d += ` M ${startX} ${startY} L ${endX} ${endY}`;
+        const dx = endX - startX;
+        const wave = 6;
+        d += ` M ${startX} ${startY} C ${startX + dx * 0.35} ${startY - wave}, ${endX - dx * 0.35} ${endY + wave}, ${endX} ${endY}`;
       } else {
-        // RTL
+        // RTL (von rechts nach links)
         const startX = a.x;
         const startY = a.cy;
         const endX = b.right;
         const endY = b.cy;
         dots.push({ x: startX, y: startY });
         dots.push({ x: endX, y: endY });
-        d += ` M ${startX} ${startY} L ${endX} ${endY}`;
+        const dx = endX - startX;
+        const wave = 6;
+        d += ` M ${startX} ${startY} C ${startX + dx * 0.35} ${startY - wave}, ${endX - dx * 0.35} ${endY + wave}, ${endX} ${endY}`;
       }
     } else {
-      // Row break
-      const isRightBreak = a.cx > wrapEl.clientWidth * 0.4;
-      if (isRightBreak) {
-        const startX = a.right;
-        const startY = a.cy;
-        const endX = b.right;
-        const endY = b.cy;
-        const arcExtent = Math.min(36, Math.max(20, (b.cy - a.cy) * 0.2));
-        const ctrlX = Math.max(startX, endX) + arcExtent;
-        dots.push({ x: startX, y: startY });
-        dots.push({ x: endX, y: endY });
-        d += ` M ${startX} ${startY} C ${ctrlX} ${startY}, ${ctrlX} ${endY}, ${endX} ${endY}`;
-      } else {
-        const startX = a.x;
-        const startY = a.cy;
-        const endX = b.x;
-        const endY = b.cy;
-        const arcExtent = Math.min(36, Math.max(20, (b.cy - a.cy) * 0.2));
-        const ctrlX = Math.min(startX, endX) - arcExtent;
-        dots.push({ x: startX, y: startY });
-        dots.push({ x: endX, y: endY });
-        d += ` M ${startX} ${startY} C ${ctrlX} ${startY}, ${ctrlX} ${endY}, ${endX} ${endY}`;
-      }
+      // Zeilenumbruch bzw. untereinander: a ist oben, b ist unten
+      // Direkte Verbindung ZWISCHEN den Cards von a.bottom zu b.top durch den Teilstrecken-Button
+      const startX = a.cx;
+      const startY = a.bottom;
+      const endX = b.cx;
+      const endY = b.top;
+      dots.push({ x: startX, y: startY });
+      dots.push({ x: endX, y: endY });
+      const dy = endY - startY;
+      const wave = Math.min(10, Math.max(5, Math.abs(dy) * 0.12));
+      const isFromLtr = a.cx > wrapEl.clientWidth * 0.4;
+      const waveDir = isFromLtr ? 1 : -1;
+      d += ` M ${startX} ${startY} C ${startX + waveDir * wave} ${startY + dy * 0.35}, ${endX - waveDir * wave} ${endY - dy * 0.35}, ${endX} ${endY}`;
     }
   }
+
   // Loop-closing arcs on the right side for tours where a spot appears multiple times
-  const excursionMultiCol = excursionsStore.excursions.find((e) => e.id === excursionId);
-  if (excursionMultiCol) {
+  const excursion = excursionsStore.excursions.find((e) => e.id === excursionId);
+  if (excursion) {
     const domSpotIds = spotEls.map((el) => Number(el.dataset.spotId));
     const rightEdge = Math.max(wrapEl.clientWidth, 100);
-    for (const [fromIdx, toIdx] of buildLoopSegments(excursionMultiCol.spot_ids, domSpotIds)) {
+    for (const [fromIdx, toIdx] of buildLoopSegments(excursion.spot_ids, domSpotIds)) {
       const a = spotBoxes[fromIdx];
       const b = spotBoxes[toIdx];
       if (!a || !b) continue;
@@ -1763,16 +1717,6 @@ function getLegDuration(leg: ExcursionLeg): string | null {
   return mins != null ? formatTravelDuration(mins) : null;
 }
 
-function hasLegDetails(leg: ExcursionLeg): boolean {
-  return !!(
-    leg.checkin_info ||
-    leg.seat ||
-    leg.luggage ||
-    leg.ticket_link ||
-    (leg.amount != null && leg.paid_by_user_id)
-  );
-}
-
 function getTourLayover(
   excursion: Excursion,
   items: Array<{ spot: Spot }>,
@@ -1786,13 +1730,6 @@ function getTourLayover(
   const outLeg = getTourLeg(excursion, currSpotId, nextSpotId);
   if (!inLeg?.arrival_time || !outLeg?.departure_time) return null;
   return travelDurationMinutes(inLeg.arrival_time, outLeg.departure_time);
-}
-
-const expandedLegKey = ref<string | null>(null);
-
-function toggleLegExpanded(key: string, excursionId: number) {
-  expandedLegKey.value = expandedLegKey.value === key ? null : key;
-  nextTick(() => recomputeTourLine(excursionId));
 }
 
 const editingCardLeg = ref<{
@@ -3647,6 +3584,14 @@ async function deleteEditingSpot() {
                     'is-tour': grp.excursion,
                     'single-col': grp.excursion && getTourCols(grp.excursion.id) === 1,
                   }"
+                  :style="{
+                    '--tour-theme-color': grp.excursion?.role
+                      ? 'var(--color-travel)'
+                      : 'var(--color-tour)',
+                    '--tour-theme-tint': grp.excursion?.role
+                      ? 'var(--color-travel-tint)'
+                      : 'var(--color-tour-tint)',
+                  }"
                   :ref="(el) => grp.excursion && setTourWrapRef(grp.excursion.id, el)"
                 >
                   <svg
@@ -3662,7 +3607,7 @@ async function deleteEditingSpot() {
                       :key="i"
                       :cx="dot.x"
                       :cy="dot.y"
-                      r="5"
+                      r="4.5"
                     />
                   </svg>
 
@@ -3757,7 +3702,7 @@ async function deleteEditingSpot() {
                             <!-- Teilstrecke existiert -->
                             <div
                               v-if="cell.leg"
-                              class="tour-leg-pill is-vertical"
+                              class="tour-leg-pill is-horizontal-leg"
                               tabindex="0"
                               role="button"
                               :title="getLegTooltip(cell.leg, cell.fromSpot, cell.toSpot)"
@@ -3793,24 +3738,27 @@ async function deleteEditingSpot() {
                             <button
                               v-else
                               type="button"
-                              class="tour-leg-add-btn is-vertical"
+                              class="tour-leg-add-btn is-horizontal-leg"
                               title="Teilstrecke erfassen"
                               :aria-label="`Teilstrecke zwischen ${cell.fromSpot.title} und ${cell.toSpot.title} erfassen`"
                               @click.stop="
                                 openCardLegModal(grp.excursion, cell.fromSpot, cell.toSpot)
                               "
                             >
+                              <span v-if="cell.isRtl" class="leg-pill-arrow" aria-hidden="true"
+                                >←</span
+                              >
                               <AppIcon :icon="ACTION_ICONS.add" :size="12" group="actions" />
                               <span class="leg-add-text">Teilstrecke</span>
-                              <span class="leg-pill-arrow" aria-hidden="true">
-                                {{ cell.isRtl ? '←' : '→' }}
-                              </span>
+                              <span v-if="!cell.isRtl" class="leg-pill-arrow" aria-hidden="true"
+                                >→</span
+                              >
                             </button>
                           </div>
                         </template>
                       </div>
 
-                      <!-- Zeilenumbruch-Verbinder (Quer / U-Turn am Kantenrand) -->
+                      <!-- Zeilenumbruch-Verbinder (Zentriert zwischen den Kacheln auf der gestrichelten Linie) -->
                       <div
                         v-if="row.rowBreak"
                         class="tour-row-break"
@@ -3819,169 +3767,22 @@ async function deleteEditingSpot() {
                           { 'single-col': getTourCols(grp.excursion.id) === 1 },
                         ]"
                       >
-                        <!-- Teilstrecke existiert -->
-                        <div
-                          v-if="row.rowBreak.leg"
-                          :key="`leg-${row.rowBreak.fromSpot.id}-${row.rowBreak.toSpot.id}`"
-                          class="tour-leg-card"
-                          :class="{
-                            'is-expanded':
-                              expandedLegKey ===
-                              `${grp.excursion.id}-${row.rowBreak.fromSpot.id}-${row.rowBreak.toSpot.id}`,
-                          }"
-                          tabindex="0"
-                          role="button"
-                          :aria-expanded="
-                            expandedLegKey ===
-                            `${grp.excursion.id}-${row.rowBreak.fromSpot.id}-${row.rowBreak.toSpot.id}`
-                          "
-                          @click="
-                            toggleLegExpanded(
-                              `${grp.excursion.id}-${row.rowBreak.fromSpot.id}-${row.rowBreak.toSpot.id}`,
-                              grp.excursion.id
-                            )
-                          "
-                          @keydown.enter.self="
-                            toggleLegExpanded(
-                              `${grp.excursion.id}-${row.rowBreak.fromSpot.id}-${row.rowBreak.toSpot.id}`,
-                              grp.excursion.id
-                            )
-                          "
-                          @keydown.space.self.prevent="
-                            toggleLegExpanded(
-                              `${grp.excursion.id}-${row.rowBreak.fromSpot.id}-${row.rowBreak.toSpot.id}`,
-                              grp.excursion.id
-                            )
-                          "
-                        >
-                          <EditButton
-                            v-if="
-                              expandedLegKey ===
-                              `${grp.excursion.id}-${row.rowBreak.fromSpot.id}-${row.rowBreak.toSpot.id}`
-                            "
-                            floating
-                            @click="
-                              openCardLegModal(
-                                grp.excursion,
+                        <div class="tour-row-break-inner">
+                          <!-- Teilstrecke existiert -->
+                          <div
+                            v-if="row.rowBreak.leg"
+                            :key="`leg-${row.rowBreak.fromSpot.id}-${row.rowBreak.toSpot.id}`"
+                            class="tour-leg-pill is-row-break"
+                            tabindex="0"
+                            role="button"
+                            :title="
+                              getLegTooltip(
+                                row.rowBreak.leg,
                                 row.rowBreak.fromSpot,
                                 row.rowBreak.toSpot
                               )
                             "
-                          />
-                          <div class="tour-leg-header">
-                            <span
-                              v-if="getTourCols(grp.excursion.id) > 1"
-                              class="tour-leg-direction-indicator"
-                              aria-hidden="true"
-                            >
-                              ↓
-                            </span>
-                            <span class="tour-leg-type">
-                              {{ travelTypeIcon(row.rowBreak.leg.transport_type ?? null) }}
-                              {{ row.rowBreak.leg.transport_type || 'Teilstrecke' }}
-                            </span>
-                            <span
-                              v-if="
-                                row.rowBreak.leg.departure_time || row.rowBreak.leg.arrival_time
-                              "
-                              class="tour-leg-times"
-                            >
-                              <AppIcon
-                                :icon="FORM_FIELD_ICONS.time"
-                                :size="13"
-                                group="formFields"
-                              />
-                              {{ row.rowBreak.leg.departure_time || '?' }}–{{
-                                row.rowBreak.leg.arrival_time || '?'
-                              }}
-                              Uhr
-                              <span
-                                v-if="getLegDuration(row.rowBreak.leg)"
-                                class="tour-leg-duration"
-                              >
-                                ({{ getLegDuration(row.rowBreak.leg) }})
-                              </span>
-                            </span>
-                            <span v-if="row.rowBreak.leg.amount != null" class="tour-leg-cost">
-                              {{ row.rowBreak.leg.amount.toFixed(2).replace('.', ',') }} €
-                            </span>
-                          </div>
-
-                          <div
-                            class="tour-leg-accordion"
-                            :class="{
-                              'is-expanded':
-                                expandedLegKey ===
-                                `${grp.excursion.id}-${row.rowBreak.fromSpot.id}-${row.rowBreak.toSpot.id}`,
-                            }"
-                            :inert="
-                              expandedLegKey !==
-                              `${grp.excursion.id}-${row.rowBreak.fromSpot.id}-${row.rowBreak.toSpot.id}`
-                            "
-                          >
-                            <div class="tour-leg-accordion-inner accordion-stagger">
-                              <div v-if="hasLegDetails(row.rowBreak.leg)" class="tour-leg-details">
-                                <span v-if="row.rowBreak.leg.checkin_info" class="tour-leg-detail">
-                                  <AppIcon
-                                    :icon="FORM_FIELD_ICONS.time"
-                                    :size="12"
-                                    group="formFields"
-                                  />
-                                  {{ row.rowBreak.leg.checkin_info }}
-                                </span>
-                                <span v-if="row.rowBreak.leg.seat" class="tour-leg-detail">
-                                  Sitz: {{ row.rowBreak.leg.seat }}
-                                </span>
-                                <span v-if="row.rowBreak.leg.luggage" class="tour-leg-detail">
-                                  Gepäck: {{ row.rowBreak.leg.luggage }}
-                                </span>
-                                <a
-                                  v-if="row.rowBreak.leg.ticket_link"
-                                  :href="row.rowBreak.leg.ticket_link"
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  class="tour-leg-link"
-                                  @click.stop
-                                >
-                                  <AppIcon
-                                    :icon="FORM_FIELD_ICONS.link"
-                                    :size="12"
-                                    group="formFields"
-                                  />
-                                  Ticket/Buchung
-                                </a>
-                                <span
-                                  v-if="
-                                    row.rowBreak.leg.amount != null &&
-                                    row.rowBreak.leg.paid_by_user_id
-                                  "
-                                  class="tour-leg-detail"
-                                >
-                                  bezahlt von
-                                  {{ creatorLabel(row.rowBreak.leg.paid_by_user_id ?? null) }}
-                                </span>
-                              </div>
-                              <p v-if="row.rowBreak.leg.note" class="tour-leg-note">
-                                {{ row.rowBreak.leg.note }}
-                              </p>
-                              <FileAttachments
-                                v-if="row.rowBreak.leg.id"
-                                domain="excursion_legs"
-                                :entity-id="row.rowBreak.leg.id"
-                                :editable="false"
-                                @click.stop
-                              />
-                            </div>
-                          </div>
-                        </div>
-
-                        <!-- Keine Teilstrecke am Umbruch erfasst -->
-                        <div v-else class="tour-leg-add-wrap">
-                          <button
-                            type="button"
-                            class="tour-leg-add-btn"
-                            title="Teilstrecke erfassen"
-                            aria-label="Teilstrecke erfassen"
+                            :aria-label="`Teilstrecke von ${row.rowBreak.fromSpot.title} nach ${row.rowBreak.toSpot.title} bearbeiten`"
                             @click.stop="
                               openCardLegModal(
                                 grp.excursion,
@@ -3989,17 +3790,62 @@ async function deleteEditingSpot() {
                                 row.rowBreak.toSpot
                               )
                             "
+                            @keydown.enter.self="
+                              openCardLegModal(
+                                grp.excursion,
+                                row.rowBreak.fromSpot,
+                                row.rowBreak.toSpot
+                              )
+                            "
+                            @keydown.space.self.prevent="
+                              openCardLegModal(
+                                grp.excursion,
+                                row.rowBreak.fromSpot,
+                                row.rowBreak.toSpot
+                              )
+                            "
                           >
-                            <span
-                              v-if="getTourCols(grp.excursion.id) > 1"
-                              class="tour-leg-direction-indicator"
-                              aria-hidden="true"
-                            >
-                              ↓
+                            <span class="leg-pill-arrow" aria-hidden="true">↓</span>
+                            <span class="leg-pill-icon">
+                              {{ travelTypeIcon(row.rowBreak.leg.transport_type ?? null) }}
                             </span>
-                            <AppIcon :icon="ACTION_ICONS.add" :size="12" group="actions" />
-                            <span>Teilstrecke erfassen</span>
-                          </button>
+                            <span v-if="row.rowBreak.leg.transport_type" class="leg-pill-type">
+                              {{ row.rowBreak.leg.transport_type }}
+                            </span>
+                            <span v-if="getLegDuration(row.rowBreak.leg)" class="leg-pill-duration">
+                              {{ getLegDuration(row.rowBreak.leg) }}
+                            </span>
+                            <span
+                              v-else-if="row.rowBreak.leg.departure_time"
+                              class="leg-pill-duration"
+                            >
+                              {{ row.rowBreak.leg.departure_time }}
+                            </span>
+                            <span v-if="row.rowBreak.leg.amount != null" class="leg-pill-cost">
+                              {{ row.rowBreak.leg.amount.toFixed(2).replace('.', ',') }} €
+                            </span>
+                          </div>
+
+                          <!-- Keine Teilstrecke am Umbruch erfasst -->
+                          <div v-else class="tour-leg-add-wrap">
+                            <button
+                              type="button"
+                              class="tour-leg-add-btn is-row-break"
+                              title="Teilstrecke erfassen"
+                              :aria-label="`Teilstrecke zwischen ${row.rowBreak.fromSpot.title} und ${row.rowBreak.toSpot.title} erfassen`"
+                              @click.stop="
+                                openCardLegModal(
+                                  grp.excursion,
+                                  row.rowBreak.fromSpot,
+                                  row.rowBreak.toSpot
+                                )
+                              "
+                            >
+                              <span class="leg-pill-arrow" aria-hidden="true">↓</span>
+                              <AppIcon :icon="ACTION_ICONS.add" :size="12" group="actions" />
+                              <span class="leg-add-text">Teilstrecke erfassen</span>
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -5021,45 +4867,165 @@ async function deleteEditingSpot() {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
-  padding-top: 154px;
+  justify-content: center;
   position: relative;
   z-index: 2;
-  padding-left: 6px;
-  padding-right: 6px;
+  padding: 0 4px;
 }
 
-/* Hochkante Pill-Karte für vorhandene Teilstrecke */
-.tour-leg-pill.is-vertical {
+/* Zeilenumbruch-Verbinder im Schlangen-Layout */
+.tour-row-break {
   display: flex;
-  flex-direction: column;
+  width: 100%;
+  position: relative;
+  z-index: 2;
+  margin: var(--space-2) 0;
+}
+
+.tour-row-break.align-right {
+  justify-content: flex-end;
+}
+
+.tour-row-break.align-left {
+  justify-content: flex-start;
+}
+
+.tour-row-break-inner {
+  width: calc(
+    (100% - (var(--tour-cols, 1) - 1) * var(--tour-conn-width, 76px)) / var(--tour-cols, 1)
+  );
+  max-width: calc(
+    (100% - (var(--tour-cols, 1) - 1) * var(--tour-conn-width, 76px)) / var(--tour-cols, 1)
+  );
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.tour-row-break.single-col .tour-row-break-inner {
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Teilstrecken-Pill für vorhandene Teilstrecken */
+.tour-leg-pill {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 2px;
-  padding: 8px 6px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
   box-shadow: var(--shadow-xs);
   cursor: pointer;
+  outline: none;
   transition:
     transform 0.15s ease,
     border-color 0.15s ease,
-    box-shadow 0.15s ease;
+    box-shadow 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.tour-leg-pill:hover,
+.tour-leg-pill:focus-visible {
+  transform: translateY(-2px);
+  border-color: var(--tour-theme-color, var(--color-primary));
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+.tour-leg-pill.is-horizontal-leg {
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 6px;
+  border-radius: var(--radius-md);
   width: 100%;
   max-width: 68px;
   text-align: center;
 }
 
-.tour-leg-pill.is-vertical:hover {
+.tour-leg-pill.is-row-break {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: 6px 14px;
+  border-radius: var(--radius-pill, 9999px);
+  max-width: 90%;
+  text-align: center;
+}
+
+/* Button für noch nicht erfasste Teilstrecke */
+.tour-leg-add-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed var(--color-border);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-xs);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  outline: none;
+  transition:
+    transform 0.15s ease,
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.tour-leg-add-btn:hover,
+.tour-leg-add-btn:focus-visible {
+  background: var(--tour-theme-tint, var(--color-surface-hover));
+  border-color: var(--tour-theme-color, var(--color-primary));
+  color: var(--tour-theme-color, var(--color-primary));
   transform: translateY(-2px);
-  border-color: var(--color-primary);
   box-shadow: var(--shadow-sm);
 }
 
+.tour-leg-add-btn.is-horizontal-leg {
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 3px;
+  width: 100%;
+  max-width: 68px;
+  border-radius: var(--radius-md);
+  text-align: center;
+}
+
+.tour-leg-add-btn.is-row-break {
+  flex-direction: row;
+  gap: 6px;
+  padding: 5px 14px;
+  border-radius: var(--radius-pill, 9999px);
+}
+
+.tour-leg-add-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
 .leg-pill-icon {
-  font-size: 1.15rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
   line-height: 1;
+  color: var(--tour-theme-color, var(--color-primary));
+}
+
+.leg-pill-arrow {
+  font-size: 0.75rem;
+  font-weight: bold;
+  color: var(--tour-theme-color, var(--color-primary));
+  line-height: 1;
+  opacity: 0.85;
+}
+
+.leg-pill-type {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-text);
+  line-height: 1.15;
+  white-space: nowrap;
 }
 
 .leg-pill-duration {
@@ -5071,100 +5037,18 @@ async function deleteEditingSpot() {
 }
 
 .leg-pill-cost {
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   font-weight: 700;
-  color: var(--color-primary);
+  color: var(--tour-theme-color, var(--color-primary));
   line-height: 1.1;
   white-space: nowrap;
-}
-
-.leg-pill-arrow {
-  font-size: 0.75rem;
-  font-weight: bold;
-  color: var(--color-primary);
-  line-height: 1;
-  opacity: 0.85;
-}
-
-/* Hochkanter Add-Button für noch nicht erfasste Teilstrecke */
-.tour-leg-add-btn.is-vertical {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  padding: 8px 4px;
-  width: 100%;
-  max-width: 60px;
-  border: 1px dashed var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-xs);
-  color: var(--color-text-muted);
-  cursor: pointer;
-  transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease,
-    box-shadow 0.15s ease;
-}
-
-.tour-leg-add-btn.is-vertical:hover {
-  background: var(--color-surface);
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-  box-shadow: var(--shadow-sm);
 }
 
 .leg-add-text {
   font-size: 0.65rem;
   font-weight: 500;
   line-height: 1.1;
-  text-align: center;
-}
-
-/* Zeilenumbruch-Verbinder (Quer / U-Turn am Kantenrand) */
-.tour-row-break {
-  display: flex;
-  width: 100%;
-  position: relative;
-  z-index: 2;
-  margin: var(--space-1) 0;
-}
-
-.tour-row-break.align-right {
-  justify-content: flex-end;
-}
-
-.tour-row-break.align-left {
-  justify-content: flex-start;
-}
-
-.tour-row-break:not(.single-col) .tour-leg-card,
-.tour-row-break:not(.single-col) .tour-leg-add-wrap {
-  width: calc(
-    (100% - (var(--tour-cols, 1) - 1) * var(--tour-conn-width, 76px)) / var(--tour-cols, 1)
-  );
-  max-width: calc(
-    (100% - (var(--tour-cols, 1) - 1) * var(--tour-conn-width, 76px)) / var(--tour-cols, 1)
-  );
-  margin: 0;
-}
-
-.tour-row-break.single-col .tour-leg-card,
-.tour-row-break.single-col .tour-leg-add-wrap {
-  width: 100%;
-  max-width: 100%;
-}
-
-.tour-leg-direction-indicator {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--color-primary);
-  font-weight: bold;
-  font-size: 0.9rem;
-  margin-right: 4px;
+  white-space: nowrap;
 }
 
 .tour-station-list {
@@ -5184,15 +5068,17 @@ async function deleteEditingSpot() {
 
 .tour-station-line path {
   fill: none;
-  stroke: var(--color-primary);
+  stroke: var(--tour-theme-color, var(--color-primary));
   stroke-width: 3;
   stroke-dasharray: 6 6;
+  transition: stroke 0.2s ease;
 }
 
 .tour-station-line circle {
-  fill: var(--color-primary);
+  fill: var(--tour-theme-color, var(--color-primary));
   stroke: var(--color-surface);
   stroke-width: 2;
+  transition: fill 0.2s ease;
 }
 
 .tour-layover-wrap {
@@ -5214,61 +5100,6 @@ async function deleteEditingSpot() {
   border: 1px solid var(--color-border);
 }
 
-.tour-leg-card {
-  position: relative;
-  margin-left: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-left: 3px solid var(--color-primary);
-  border-radius: var(--radius-sm);
-  box-shadow: var(--shadow-xs);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  cursor: pointer;
-  scroll-margin-top: calc(var(--space-2) + var(--category-nav-clearance, 48px));
-  transition:
-    background-color 0.2s ease,
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-.tour-leg-add-wrap {
-  display: flex;
-  justify-content: center;
-  margin: calc(var(--space-1) * -1) 0;
-  margin-left: var(--space-2);
-  position: relative;
-  scroll-margin-top: calc(var(--space-2) + var(--category-nav-clearance, 48px));
-}
-
-.tour-leg-add-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  font-size: 0.75rem;
-  font-weight: 500;
-  padding: 4px 12px;
-  border-radius: var(--radius-pill, 9999px);
-  background: var(--color-surface-sunken);
-  color: var(--color-text-muted);
-  border: 1px dashed var(--color-border);
-  cursor: pointer;
-  transition:
-    background-color 0.2s ease,
-    color 0.2s ease,
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-.tour-leg-add-btn:hover {
-  background: var(--color-surface);
-  color: var(--color-primary);
-  border-color: var(--color-primary);
-  box-shadow: var(--shadow-xs);
-}
-
 .empty-state-wrap {
   display: flex;
   flex-direction: column;
@@ -5279,143 +5110,6 @@ async function deleteEditingSpot() {
 
 .empty-state-wrap .empty {
   padding: 0;
-}
-
-/* Leichte gestrichelte Linien zur visuellen Verbindung mit den Stationen oben und unten */
-.tour-leg-card::before,
-.tour-leg-card::after {
-  content: '';
-  position: absolute;
-  left: 20px;
-  width: 0;
-  border-left: 2px dashed var(--color-border);
-  pointer-events: none;
-  z-index: 0;
-  transition: border-color 0.2s ease;
-}
-
-.tour-leg-card::before {
-  top: -8px;
-  height: 8px;
-}
-
-.tour-leg-card::after {
-  bottom: -8px;
-  height: 8px;
-}
-
-.tour-leg-card:hover {
-  background: var(--color-surface);
-  border-color: var(--color-border);
-  border-left-color: var(--color-primary);
-  box-shadow: var(--shadow-sm);
-}
-
-.tour-leg-card:hover::before,
-.tour-leg-card:hover::after,
-.tour-leg-card.is-expanded::before,
-.tour-leg-card.is-expanded::after {
-  border-left-color: var(--color-primary);
-}
-
-.tour-leg-card.is-expanded {
-  background: var(--color-surface);
-  border-color: var(--color-border);
-  border-left-color: var(--color-primary);
-  box-shadow: var(--shadow-sm);
-}
-
-.tour-leg-card.is-expanded .tour-leg-header {
-  padding-left: 32px;
-  min-height: 28px;
-}
-
-.tour-leg-accordion {
-  display: grid;
-  grid-template-rows: 0fr;
-  transition: grid-template-rows 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.tour-leg-accordion.is-expanded {
-  grid-template-rows: 1fr;
-}
-
-.tour-leg-accordion-inner {
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  padding-top: var(--space-2);
-  border-top: 1px dashed var(--color-border-subtle);
-  margin-top: var(--space-1);
-}
-
-.tour-leg-header {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  font-size: 0.8125rem;
-  transition: padding-left 0.2s ease;
-}
-
-.tour-leg-type {
-  font-weight: 600;
-  color: var(--color-text);
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-}
-
-.tour-leg-times {
-  color: var(--color-text-muted);
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.tour-leg-duration {
-  color: var(--color-text-subtle);
-  font-size: 0.75rem;
-}
-
-.tour-leg-cost {
-  margin-left: auto;
-  font-weight: 600;
-  color: var(--color-primary);
-  font-size: 0.8125rem;
-}
-
-.tour-leg-details {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: 0.75rem;
-  color: var(--color-text-muted);
-}
-
-.tour-leg-detail {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.tour-leg-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--color-primary);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
-.tour-leg-note {
-  font-size: 0.75rem;
-  color: var(--color-text-muted);
-  margin: 0;
-  white-space: pre-wrap;
-  font-style: italic;
 }
 
 /* Auf schmalen .spots-col-Breiten (Bottom-Sheet auf Mobil, ODER auf Desktop, wenn der Anfasser sehr
