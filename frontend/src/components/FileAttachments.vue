@@ -5,6 +5,7 @@ import type { Attachment, AttachmentDomain } from '../api/types';
 import { compressImage } from '../utils/imageCompression';
 import { readAsDataUrl } from '../utils/fileUpload';
 import Button from './primitives/Button.vue';
+import PolaroidStack from './primitives/PolaroidStack.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { useAuthStore } from '../stores/auth';
 import AttachmentPreviewModal from './AttachmentPreviewModal.vue';
@@ -38,8 +39,8 @@ const previewOpen = ref(false);
 const previewIndex = ref(0);
 const fileInputRef = ref<HTMLInputElement | null>(null);
 
-function openPreview(index: number) {
-  previewIndex.value = index;
+function openPreview(index?: number) {
+  previewIndex.value = typeof index === 'number' ? index : 0;
   previewOpen.value = true;
 }
 
@@ -90,8 +91,13 @@ async function remove(attachment: Attachment) {
        leeren "Anhänge"-Überschrift ohne Inhalt und ohne Möglichkeit, etwas hinzuzufügen. -->
   <div v-if="editable || attachments.length" class="file-attachments">
     <h4 class="heading">Anhänge</h4>
+    <!-- Im Ansichtsmodus: verspielter Polaroid-Stapel mit Büroklammer -->
+    <div v-if="!editable && attachments.length" class="attachments-polaroid-wrap">
+      <PolaroidStack :items="attachments" clipped @click="(idx) => openPreview(idx)" />
+    </div>
+    <!-- Im Bearbeiten-Modus: Thumbnails mit Direkt-Löschen-Badges -->
     <AttachmentThumbnails
-      v-if="attachments.length"
+      v-else-if="attachments.length"
       :items="attachments"
       :editable="editable"
       remove-title="Anhang löschen"
@@ -104,6 +110,8 @@ async function remove(attachment: Attachment) {
       v-model="previewOpen"
       :attachments="attachments"
       :initial-index="previewIndex"
+      :editable="editable"
+      @remove="(index) => remove(attachments[index])"
     />
     <p v-if="editable && auth.user?.restricted" class="hint">
       Eingeschränkter Modus - Kein Datei-Upload möglich
@@ -143,6 +151,10 @@ async function remove(attachment: Attachment) {
   font-size: 0.85rem;
   color: var(--color-text-muted);
   margin-bottom: var(--space-2);
+}
+
+.attachments-polaroid-wrap {
+  padding: 4px 0 6px 4px;
 }
 
 .file-input-hidden {

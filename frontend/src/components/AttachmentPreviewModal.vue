@@ -23,12 +23,14 @@ const props = withDefaults(
     modelValue: boolean;
     attachments: (Attachment | AttachmentPreviewItem | string)[];
     initialIndex?: number;
+    editable?: boolean;
   }>(),
-  { initialIndex: 0 }
+  { initialIndex: 0, editable: false }
 );
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void;
+  (e: 'remove', index: number): void;
 }>();
 
 const currentIndex = ref(props.initialIndex);
@@ -137,6 +139,15 @@ function download(attachment: AttachmentPreviewItem | null) {
   link.click();
   document.body.removeChild(link);
 }
+
+function onRemoveCurrent() {
+  emit('remove', currentIndex.value);
+  if (props.attachments.length <= 1) {
+    emit('update:modelValue', false);
+  } else if (currentIndex.value >= props.attachments.length - 1) {
+    currentIndex.value = Math.max(0, props.attachments.length - 2);
+  }
+}
 </script>
 
 <template>
@@ -202,6 +213,14 @@ function download(attachment: AttachmentPreviewItem | null) {
       </div>
 
       <div class="preview-actions">
+        <Button
+          v-if="editable"
+          variant="danger"
+          :icon="ACTION_ICONS.delete"
+          @click="onRemoveCurrent"
+        >
+          Löschen
+        </Button>
         <Button
           variant="primary"
           :icon="ACTION_ICONS.download"
@@ -308,6 +327,7 @@ function download(attachment: AttachmentPreviewItem | null) {
 .preview-actions {
   display: flex;
   justify-content: flex-end;
+  gap: var(--space-2);
   margin-top: var(--space-4);
   padding-top: var(--space-2);
   border-top: 1px solid var(--color-border);
