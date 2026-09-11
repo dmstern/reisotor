@@ -23,6 +23,8 @@ import Card from './primitives/Card.vue';
 import Button from './primitives/Button.vue';
 import Input from './primitives/Input.vue';
 import PickerMenu from './primitives/PickerMenu.vue';
+import PolaroidStack from './primitives/PolaroidStack.vue';
+import FileAttachments from './FileAttachments.vue';
 import WeatherIcon from './WeatherIcon.vue';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
@@ -146,12 +148,6 @@ const travelDuration = computed(() => {
   return minutes == null ? null : formatTravelDuration(minutes);
 });
 
-// Polaroid-Kacheln für die Spots der Tour im collapsed Zustand (#235)
-const polaroidStations = computed(() => resolvedStations.value.slice(0, 4));
-const extraStationCount = computed(() =>
-  Math.max(0, resolvedStations.value.length - polaroidStations.value.length)
-);
-
 const stationsSummaryText = computed(() => {
   if (!resolvedStations.value.length) return null;
   if (resolvedStations.value.length === 1) {
@@ -164,22 +160,6 @@ const stationsSummaryText = computed(() => {
   const stopText = stopCount === 1 ? '1 Zwischenstopp' : `${stopCount} Zwischenstopps`;
   return `${resolvedStations.value[0].title} → ${resolvedStations.value[resolvedStations.value.length - 1].title} · ${stopText}`;
 });
-
-function polaroidStyle(idx: number, total: number) {
-  if (total === 1) {
-    return {
-      transform: 'rotate(-2deg) translate(0px, 0px)',
-      zIndex: 1,
-    };
-  }
-  const angles = [-8, 6, -3, 7];
-  const xOffsets = [-6, 4, 1, 6];
-  const yOffsets = [2, -2, 1, 0];
-  return {
-    transform: `rotate(${angles[idx % angles.length]}deg) translate(${xOffsets[idx % xOffsets.length]}px, ${yOffsets[idx % yOffsets.length]}px)`,
-    zIndex: idx + 1,
-  };
-}
 
 // Einplanen per Zeige-/Touch-Drag am eigenen Anfasser (📅 Einplanen) statt am gesamten Card-Root:
 // natives HTML5-draggable/dragstart wurde ersetzt, da es auf Touch-Geräten (v. a. Android Chrome)
@@ -299,6 +279,7 @@ function onSpotDrop(event: DragEvent) {
       'new-highlight': highlighted,
       expanded,
       'has-role': !!excursion.role,
+      'is-travel': !!excursion.role,
     }"
     @click="onCardClick"
     @dragover.prevent
@@ -389,45 +370,14 @@ function onSpotDrop(event: DragEvent) {
           :class="{ 'is-fanned-out': expanded }"
         >
           <!-- Polaroid-Stapel: Mini-Polaroids im collapsed Zustand, morpht beim Aufklappen -->
-          <div
+          <PolaroidStack
             class="tour-polaroid-stack"
-            :class="{ 'has-multiple': polaroidStations.length > 1 }"
+            :items="resolvedStations"
+            :expanded="expanded"
+            :interactive="false"
             :title="`${resolvedStations.length} Stationen`"
             aria-hidden="true"
-          >
-            <div
-              v-for="(st, idx) in polaroidStations"
-              :key="st.key"
-              class="polaroid-tile"
-              :style="polaroidStyle(idx, polaroidStations.length)"
-            >
-              <div class="polaroid-photo-frame">
-                <img
-                  v-if="st.imageUrl"
-                  :src="st.imageUrl"
-                  class="polaroid-photo"
-                  alt=""
-                  loading="lazy"
-                />
-                <div
-                  v-else
-                  class="polaroid-placeholder"
-                  :style="{ backgroundColor: st.color || 'var(--color-primary-tint)' }"
-                >
-                  <AppIcon :icon="st.tabler" :size="16" group="categories" />
-                </div>
-              </div>
-              <div class="polaroid-chin">
-                <span class="polaroid-caption">{{ st.title }}</span>
-              </div>
-              <span
-                v-if="idx === polaroidStations.length - 1 && extraStationCount > 0"
-                class="polaroid-badge"
-              >
-                +{{ extraStationCount }}
-              </span>
-            </div>
-          </div>
+          />
 
           <div class="tour-stations-meta" v-if="!expanded">
             <p v-if="routeLabel" class="route">{{ routeLabel }}</p>
@@ -478,6 +428,11 @@ function onSpotDrop(event: DragEvent) {
             :content="excursion.note"
             :format="excursion.note_format"
           />
+        </div>
+
+        <!-- Tour-Anhänge (Dateien / Tickets / Buchungen) - nur im aufgeklappten Zustand laden -->
+        <div v-if="expanded" class="tour-attachments-wrap">
+          <FileAttachments domain="ideas" :entity-id="excursion.id" :editable="false" />
         </div>
 
         <div class="links" v-if="hasMappedStations">
@@ -661,6 +616,11 @@ function onSpotDrop(event: DragEvent) {
    den (weiterhin als Grid angezeigten) Spots unterscheidbar. Bild als schmale, feste Miniatur
    links statt großem Banner oben, damit es bei voller Breite nicht unnötig gestreckt wirkt. */
 .excursion-card {
+  --excursion-theme-color: var(--color-tour);
+  --excursion-theme-dark: var(--color-tour-dark);
+  --excursion-theme-tint: var(--color-tour-tint);
+  --excursion-theme-border: var(--color-tour-border);
+
   position: relative;
   z-index: 1;
   isolation: isolate;
@@ -671,7 +631,7 @@ function onSpotDrop(event: DragEvent) {
   min-height: 120px;
   border-width: var(--ui-border-width, 1px);
   border-style: solid;
-  border-color: var(--color-tour-border);
+  border-color: var(--excursion-theme-border);
   background: var(--color-surface);
   cursor: pointer;
   overflow: hidden;
@@ -682,8 +642,16 @@ function onSpotDrop(event: DragEvent) {
     box-shadow 0.15s ease;
 }
 
+.excursion-card.is-travel,
+.excursion-card.has-role {
+  --excursion-theme-color: var(--color-travel);
+  --excursion-theme-dark: var(--color-travel-dark);
+  --excursion-theme-tint: var(--color-travel-tint);
+  --excursion-theme-border: var(--color-travel-border);
+}
+
 .excursion-card:hover {
-  border-color: var(--color-tour);
+  border-color: var(--excursion-theme-color);
   box-shadow: var(--shadow-sm);
 }
 
@@ -708,7 +676,11 @@ function onSpotDrop(event: DragEvent) {
 .tour-accent-bar {
   width: 32px;
   flex-shrink: 0;
-  background: linear-gradient(180deg, var(--color-tour) 0%, var(--color-tour-dark) 100%);
+  background: linear-gradient(
+    180deg,
+    var(--excursion-theme-color) 0%,
+    var(--excursion-theme-dark) 100%
+  );
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -756,8 +728,8 @@ function onSpotDrop(event: DragEvent) {
 
 /* Spot per Drag&Drop aus der Spots-Sicht darauf ablegen (SpotCard.vue ist die Drag-Quelle). */
 .excursion-card.drop-target {
-  border-color: var(--color-tour);
-  background: var(--color-tour-tint);
+  border-color: var(--excursion-theme-color);
+  background: var(--excursion-theme-tint);
 }
 
 /* Ersetzt den früheren ExcursionDetailDialog.vue-Modal-Dialog (#92): die Karte wächst an Ort und
@@ -767,8 +739,8 @@ function onSpotDrop(event: DragEvent) {
    unterscheidbar bleiben. */
 .excursion-card.expanded {
   border-style: solid;
-  border-color: var(--color-tour);
-  background: var(--color-tour-tint);
+  border-color: var(--excursion-theme-color);
+  background: var(--excursion-theme-tint);
 }
 
 .image {
@@ -810,9 +782,9 @@ function onSpotDrop(event: DragEvent) {
   letter-spacing: 0.04em;
   padding: 1px 7px;
   border-radius: 999px;
-  background: var(--color-tour-tint);
-  color: var(--color-tour);
-  border: 1px solid var(--color-tour-border);
+  background: var(--excursion-theme-tint);
+  color: var(--excursion-theme-color);
+  border: 1px solid var(--excursion-theme-border);
 }
 
 .placeholder {
@@ -1157,7 +1129,7 @@ function onSpotDrop(event: DragEvent) {
 
 .done-toggle:hover {
   background: var(--color-surface);
-  border-color: var(--color-tour);
+  border-color: var(--excursion-theme-color);
   color: var(--color-text);
 }
 
@@ -1176,7 +1148,7 @@ function onSpotDrop(event: DragEvent) {
 .done-toggle.status-done {
   color: var(--color-success);
   font-weight: 600;
-  background: var(--color-tour-tint);
+  background: var(--excursion-theme-tint);
   border-color: var(--color-success);
 }
 
@@ -1421,156 +1393,22 @@ function onSpotDrop(event: DragEvent) {
   overflow: visible;
 }
 
-.tour-polaroid-stack {
-  position: relative;
-  width: 58px;
-  height: 68px;
-  flex-shrink: 0;
-  cursor: pointer;
-  perspective: 600px;
-}
-
-.polaroid-tile {
-  position: absolute;
-  top: 2px;
-  left: 3px;
-  width: 52px;
-  height: 62px;
-  background: #ffffff;
-  border-radius: var(--radius-sm-squircle, 6px);
-  corner-shape: squircle;
-  padding: 3px 3px 10px 3px;
-  box-sizing: border-box;
-  box-shadow:
-    0 4px 10px rgba(0, 0, 0, 0.16),
-    0 1px 3px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  display: flex;
-  flex-direction: column;
-  transform-origin: center bottom;
-  transition:
-    transform 0.35s cubic-bezier(0.34, 1.3, 0.64, 1),
-    box-shadow 0.25s ease,
-    opacity 0.25s ease;
-  user-select: none;
-  pointer-events: none;
-}
-
-:root[data-theme='dark'] .polaroid-tile {
-  background: #2a2825;
-  border-color: rgba(255, 255, 255, 0.16);
-  box-shadow:
-    0 4px 12px rgba(0, 0, 0, 0.45),
-    0 1px 3px rgba(0, 0, 0, 0.25);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) .polaroid-tile {
-    background: #2a2825;
-    border-color: rgba(255, 255, 255, 0.16);
-    box-shadow:
-      0 4px 12px rgba(0, 0, 0, 0.45),
-      0 1px 3px rgba(0, 0, 0, 0.25);
-  }
-}
-
-:root[data-theme='dark'] .polaroid-caption {
-  color: #f2efe9;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) .polaroid-caption {
-    color: #f2efe9;
-  }
-}
-
-.polaroid-photo-frame {
-  width: 100%;
-  height: 40px;
-  border-radius: 3px;
-  overflow: hidden;
-  position: relative;
-  background: var(--color-surface-sunken);
-}
-
-.polaroid-photo {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.polaroid-placeholder {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #ffffff;
-}
-
-.polaroid-placeholder :deep(svg) {
-  color: #ffffff;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
-}
-
-.polaroid-chin {
-  height: 9px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  padding: 0 1px;
-  margin-top: 1px;
-}
-
-.polaroid-caption {
-  font-size: 0.45rem;
-  font-weight: 700;
-  color: #334155;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-  line-height: 1;
-}
-
-.polaroid-badge {
-  position: absolute;
-  top: -4px;
-  right: -4px;
-  background: var(--color-tour);
-  color: #ffffff;
-  font-size: 0.55rem;
-  font-weight: 800;
-  padding: 1px 5px;
-  border-radius: 999px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-  border: 1.5px solid #ffffff;
-}
-
 /* Hover-Effekt auf der Collapsed Card: Sanftes Auffächern der Polaroids */
-.excursion-card:not(.expanded):hover .polaroid-tile:nth-child(1) {
+.excursion-card:not(.expanded):hover :deep(.polaroid-tile:nth-child(1)) {
   transform: rotate(-12deg) translate(-7px, 2px) scale(1.02);
 }
-.excursion-card:not(.expanded):hover .polaroid-tile:nth-child(2) {
+.excursion-card:not(.expanded):hover :deep(.polaroid-tile:nth-child(2)) {
   transform: rotate(8deg) translate(6px, -2px) scale(1.02);
 }
-.excursion-card:not(.expanded):hover .polaroid-tile:nth-child(3) {
+.excursion-card:not(.expanded):hover :deep(.polaroid-tile:nth-child(3)) {
   transform: rotate(-4deg) translate(2px, 0px) scale(1.03);
 }
-.excursion-card:not(.expanded):hover .polaroid-tile:nth-child(4) {
+.excursion-card:not(.expanded):hover :deep(.polaroid-tile:nth-child(4)) {
   transform: rotate(11deg) translate(9px, -1px) scale(1.03);
 }
 
-/* Morph-Animation beim Aufklappen */
-.tour-stations-preview.is-fanned-out .polaroid-tile {
-  transform: translateY(32px) rotate(0deg) scale(1.15) !important;
-  opacity: 0;
-  pointer-events: none;
-  transition:
-    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-    opacity 0.22s ease;
+.tour-attachments-wrap {
+  margin-top: var(--space-2);
 }
 
 .tour-stations-meta {
