@@ -616,8 +616,13 @@ function openCalendarConfirmDone() {
 
       <!-- Untere Zeile (Footer): Anhänge links, Social Actions rechts (nutzt beide Ecken optimal aus) -->
       <div class="card-footer-row" :class="{ 'is-expanded': expanded }">
-        <div class="card-attachments-wrap" :class="{ 'is-expanded': expanded }" :inert="!expanded">
-          <FileAttachments domain="spots" :entity-id="spot.id" :editable="false" />
+        <div class="card-attachments-wrap" :class="{ 'is-expanded': expanded }">
+          <FileAttachments
+            domain="spots"
+            :entity-id="spot.id"
+            :editable="false"
+            :collapsed="!expanded"
+          />
         </div>
 
         <div class="card-social-actions" :class="{ 'is-expanded': expanded }">
@@ -1044,6 +1049,7 @@ function openCalendarConfirmDone() {
 }
 
 .spot-card:not(.expanded) .body {
+  position: static;
   overflow: hidden;
   justify-content: flex-start;
 }
@@ -1238,7 +1244,14 @@ function openCalendarConfirmDone() {
 }
 
 .spot-card:not(.expanded) .card-attachments-wrap {
-  display: none;
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 4;
+}
+
+.spot-card:not(.expanded) .card-attachments-wrap :deep(.file-attachments) {
+  margin-top: 0;
 }
 
 .card-attachments-wrap :deep(.file-attachments) {
@@ -1519,6 +1532,11 @@ function openCalendarConfirmDone() {
 
   .spot-card:not(.expanded) .card-title {
     font-size: 0.92rem;
+  }
+
+  .spot-card:not(.expanded) .card-attachments-wrap {
+    top: 10px;
+    left: 10px;
   }
 
   /* Badge-Gruppe: Auf collapsed im Body-Bereich neben dem Titel, auf expanded im Cover */
