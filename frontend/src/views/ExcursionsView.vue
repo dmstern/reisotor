@@ -1567,7 +1567,7 @@ function recomputeTourLine(excursionId: number) {
     const cardRect = tourCardEl.getBoundingClientRect();
     const cardBottom = cardRect.bottom - wrapRect.top;
     const firstSpot = spotBoxes[0];
-    const hOffset = 20;
+    const hOffset = 32;
     const startX = firstSpot.cx - hOffset;
     const startY = cardBottom;
     const endX = firstSpot.cx + hOffset;
@@ -1592,8 +1592,9 @@ function recomputeTourLine(excursionId: number) {
     const isSameRow = Math.abs(a.cy - b.cy) < Math.min(a.height, b.height) * 0.75;
 
     if (isSameRow) {
-      // Horizontal in derselben Zeile: Startpunkt weiter oben als Endpunkt
-      const vOffset = 16;
+      // Horizontal in derselben Zeile: Startpunkt deutlich weiter oben als Endpunkt,
+      // damit die gestrichelte Verbindungslinie nicht vom mittig sitzenden Teilstrecken-Button überdeckt wird.
+      const vOffset = 54;
       const isLtr = a.cx < b.cx;
       const startX = isLtr ? a.right : a.x;
       const startY = a.cy - vOffset;
@@ -1610,7 +1611,7 @@ function recomputeTourLine(excursionId: number) {
     } else {
       // Zeilenumbruch bzw. untereinander: a ist oben, b ist unten
       // Vertikal: Startpunkt weiter links als Endpunkt
-      const hOffset = 20;
+      const hOffset = 32;
       const startX = a.cx - hOffset;
       const startY = a.bottom;
       const endX = b.cx + hOffset;

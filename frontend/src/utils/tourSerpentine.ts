@@ -198,7 +198,7 @@ export function computeTourLoopPath(
     );
 
     if (!hasObstacle) {
-      const hOffset = 20;
+      const hOffset = 32;
       const startX = a.cx - hOffset;
       const startY = a.top;
       const endX = b.cx + hOffset;
