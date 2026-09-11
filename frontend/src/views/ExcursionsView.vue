@@ -1585,6 +1585,28 @@ function recomputeTourLine(excursionId: number) {
   const dots: { x: number; y: number }[] = [];
   let d = '';
 
+  // Gestrichelte Verbindungslinie von der Tour-Card zur ersten Spot-Card
+  const groupEl = wrapEl.closest('.category-group');
+  const tourCardEl = groupEl?.querySelector<HTMLElement>('.tour-group-card');
+  if (tourCardEl && spotBoxes.length > 0) {
+    const cardRect = tourCardEl.getBoundingClientRect();
+    const cardBottom = cardRect.bottom - wrapRect.top;
+    const firstSpot = spotBoxes[0];
+    const startX = firstSpot.cx;
+    const startY = cardBottom;
+    const endX = firstSpot.cx;
+    const endY = firstSpot.top;
+
+    if (endY > startY) {
+      dots.push({ x: startX, y: startY });
+      dots.push({ x: endX, y: endY });
+
+      const dy = endY - startY;
+      const wave = Math.min(6, Math.max(3, dy * 0.12));
+      d += ` M ${startX} ${startY} C ${startX + wave} ${startY + dy * 0.35}, ${endX - wave} ${endY - dy * 0.35}, ${endX} ${endY}`;
+    }
+  }
+
   for (let i = 0; i < spotBoxes.length - 1; i++) {
     const a = spotBoxes[i];
     const b = spotBoxes[i + 1];
@@ -1670,10 +1692,22 @@ function setTourWrapRef(excursionId: number, el: Element | ComponentPublicInstan
   // auslöst: eine Endlosschleife, die den Tab einfriert. Nur bei tatsächlichem Element-Wechsel
   // (Mount/Unmount/Ersetzung) neu beobachten/berechnen.
   if (domEl === previous) return;
-  if (previous) tourLineResizeObserver?.unobserve(previous);
+  if (previous) {
+    tourLineResizeObserver?.unobserve(previous);
+    const prevCard = previous
+      .closest('.category-group')
+      ?.querySelector<HTMLElement>('.tour-group-card');
+    if (prevCard) tourLineResizeObserver?.unobserve(prevCard);
+  }
   if (domEl instanceof HTMLElement) {
     tourWrapRefs.set(excursionId, domEl);
     tourLineResizeObserver?.observe(domEl);
+    const tourCardEl = domEl
+      .closest('.category-group')
+      ?.querySelector<HTMLElement>('.tour-group-card');
+    if (tourCardEl) {
+      tourLineResizeObserver?.observe(tourCardEl);
+    }
     const initialWidth = Math.round(domEl.clientWidth);
     if (tourWrapWidths.get(excursionId) !== initialWidth) {
       tourWrapWidths.set(excursionId, initialWidth);
@@ -1689,18 +1723,33 @@ function setTourWrapRef(excursionId: number, el: Element | ComponentPublicInstan
 onMounted(() => {
   tourLineResizeObserver = new ResizeObserver((entries) => {
     for (const entry of entries) {
-      const id = [...tourWrapRefs.entries()].find(([, el]) => el === entry.target)?.[0];
+      const id = [...tourWrapRefs.entries()].find(([, el]) => {
+        if (el === entry.target) return true;
+        const tourCardEl = el
+          .closest('.category-group')
+          ?.querySelector<HTMLElement>('.tour-group-card');
+        return tourCardEl === entry.target;
+      })?.[0];
       if (id != null) {
-        const newWidth = Math.round(entry.contentRect.width);
-        if (tourWrapWidths.get(id) !== newWidth) {
-          tourWrapWidths.set(id, newWidth);
-          nextTick(() => recomputeTourLine(id));
+        const wrapEl = tourWrapRefs.get(id);
+        if (wrapEl) {
+          const newWidth = Math.round(wrapEl.clientWidth);
+          if (tourWrapWidths.get(id) !== newWidth) {
+            tourWrapWidths.set(id, newWidth);
+            nextTick(() => recomputeTourLine(id));
+          }
         }
         recomputeTourLine(id);
       }
     }
   });
-  for (const [_id, el] of tourWrapRefs) tourLineResizeObserver.observe(el);
+  for (const [_id, el] of tourWrapRefs) {
+    tourLineResizeObserver.observe(el);
+    const tourCardEl = el
+      .closest('.category-group')
+      ?.querySelector<HTMLElement>('.tour-group-card');
+    if (tourCardEl) tourLineResizeObserver.observe(tourCardEl);
+  }
 });
 onUnmounted(() => tourLineResizeObserver?.disconnect());
 
@@ -1833,10 +1882,16 @@ watch(spotGroups, () =>
 // Nur für Touren verwendet (groupMode === 'tours').
 const expandedExcursionId = ref<number | null>(null);
 
-watch(expandedExcursionId, (newId) => {
+watch(expandedExcursionId, (newId, oldId) => {
   if (newId != null) {
     nextTick(() => recomputeTourLine(newId));
     setTimeout(() => recomputeTourLine(newId), 320);
+    setTimeout(() => recomputeTourLine(newId), 420);
+  }
+  if (oldId != null) {
+    nextTick(() => recomputeTourLine(oldId));
+    setTimeout(() => recomputeTourLine(oldId), 320);
+    setTimeout(() => recomputeTourLine(oldId), 420);
   }
 });
 
