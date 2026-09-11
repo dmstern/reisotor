@@ -1451,86 +1451,56 @@ function openCalendarConfirmDone() {
    wie ExcursionCard.vue (festes Vorschaubild links, Rest daneben). Container-Query statt @media:
    reagiert auf die tatsächliche Breite von .spots-col (container-type dort in ExcursionsView.vue),
    nicht auf die Fenster-/Viewport-Breite – greift dadurch auch, wenn man auf Desktop den Anfasser
-   zwischen Spots-Liste und Karte weit zur Karte hin zieht, nicht nur auf echtem Mobil. */
+   zwischen Spots-Liste und Karte weit zur Karte hin zieht, nicht nur auf echtem Mobil.
+
+   NEU: Statt Side-by-Side (64px-Thumbnail links) + Morph zum vollen Banner wird auf beiden
+   Zuständen (collapsed/expanded) konsistent das Polaroid-Layout (Bild oben, Text darunter)
+   beibehalten — nur kompakter (schmalerer Rahmen, kürzeres Bild, kleinere Schrift). */
 @container spots-col (max-width: 480px) {
   .spot-card {
-    padding: 0 !important;
+    padding: 6px 6px 10px 6px;
   }
 
   .spot-card:not(.expanded) {
     height: auto;
   }
 
-  /* Bild ist absolut am Kopf positioniert und morpht flüssig von der linken 64px-Miniatur
-     zum vollen 160px-Banner oben */
+  /* Bild bleibt im normalen Fluss (kein position: absolute), nur kompakter */
   .image {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 160px;
-    border-radius: var(--radius-md-squircle) var(--radius-md-squircle) 0 0;
-    corner-shape: squircle;
-    overflow: hidden;
-    /* Beim Aufklappen: Bild morpht sofort (Stufe 1) */
-    transition:
-      width 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s,
-      height 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s,
-      border-radius 0.32s ease 0s;
+    height: 100px;
+    transition: height 0.3s cubic-bezier(0.32, 0.72, 0, 1);
   }
 
   .spot-card.expanded .image {
-    width: 100%;
     height: 160px;
-    border-radius: var(--radius-md-squircle) var(--radius-md-squircle) 0 0;
   }
 
-  .spot-card:not(.expanded) .image {
-    width: 64px;
-    height: 100%;
-    border-radius: var(--radius-md-squircle) 0 0 var(--radius-md-squircle);
-    corner-shape: squircle;
-    /* Beim Zuklappen: Bild wartet kurz, bis das Akkordeon eingefahren ist (Stufe 2) */
-    transition:
-      width 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s,
-      height 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s,
-      border-radius 0.28s ease 0.12s;
-  }
-
-  /* Der Inhalt (Titel, Aktionen, Akkordeon) sitzt im normalen Layout-Fluss und gleitet
-     beim Aufklappen unter das 160px-Banner bzw. beim Zuklappen wieder neben die 64px-Miniatur */
   .body {
-    position: relative;
-    z-index: 1;
-    margin-left: 0;
-    margin-top: 160px;
-    padding: 10px 14px 12px 14px;
-    min-width: 0;
-    /* Beim Aufklappen: gleitet sofort nach unten (Stufe 1) */
-    transition:
-      margin-left 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s,
-      margin-top 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s,
-      padding 0.32s ease 0s;
+    padding: 6px var(--space-2) 4px var(--space-2);
   }
 
   .spot-card:not(.expanded) .body {
-    margin-left: 64px;
-    margin-top: 0;
-    padding: 6px var(--space-2);
     min-height: 64px;
-    justify-content: center;
     gap: 2px;
     overflow: hidden;
-    /* Beim Zuklappen: wartet synchron mit dem Bild auf das Akkordeon (Stufe 2) */
-    transition:
-      margin-left 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s,
-      margin-top 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s,
-      padding 0.28s ease 0.12s;
   }
 
   .spot-card:not(.expanded) .card-title-block {
     margin-bottom: 0;
-    padding-right: 125px;
+    padding-right: 90px;
+  }
+
+  .spot-card:not(.expanded) .card-title {
+    font-size: 0.92rem;
+  }
+
+  /* Badge-Gruppe: Auf collapsed im Body-Bereich neben dem Titel, auf expanded im Cover */
+  .spot-card:not(.expanded) .card-badge-group {
+    top: calc(6px + 100px + var(--space-1));
+    right: calc(6px + var(--space-1));
+    transition:
+      top 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.08s,
+      right 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.08s;
   }
 
   .spot-card:not(.expanded) .card-badge-group :deep(.category-chip) {
@@ -1540,24 +1510,15 @@ function openCalendarConfirmDone() {
     white-space: nowrap;
   }
 
-  .spot-card:not(.expanded) .card-badge-group {
-    top: 8px;
-    right: var(--space-2);
-    transition:
-      top 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s,
-      right 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s;
-  }
-
   .spot-card.expanded .card-badge-group {
-    top: var(--space-3);
-    right: var(--space-3);
+    top: calc(6px + var(--space-2));
+    right: calc(6px + var(--space-2));
     transition:
       top 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s,
       right 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s;
   }
 
-  /* Anders als zuvor bleibt .links (der "Auf Karte anzeigen"-Button) hier bewusst sichtbar (#109),
-     morpht aber flüssig zwischen Kreis-Icon und voller Pille mit Textlabel. */
+  /* «Auf Karte anzeigen»-Button: Morph zwischen Icon-Circle und voller Pille */
   .spot-card:not(.expanded) .links {
     margin: 0;
   }
