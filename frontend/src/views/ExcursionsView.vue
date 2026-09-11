@@ -4869,7 +4869,14 @@ async function deleteEditingSpot() {
 }
 
 .tour-station-accordion-inner {
+  min-height: 0;
   overflow: hidden;
+  transition: overflow 0s 0s;
+}
+
+.tour-station-accordion.is-expanded .tour-station-accordion-inner {
+  overflow: visible;
+  transition: overflow 0s 0.4s allow-discrete;
 }
 
 .tour-station-accordion .staggered-spot {
@@ -4885,6 +4892,22 @@ async function deleteEditingSpot() {
   opacity: 1;
   transform: translateY(0) scale(1);
   transition-delay: calc(var(--stagger-idx) * 50ms + 50ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tour-station-accordion {
+    transition: none;
+  }
+  .tour-station-accordion-inner,
+  .tour-station-accordion.is-expanded .tour-station-accordion-inner {
+    transition: none;
+  }
+  .tour-station-accordion .staggered-spot,
+  .tour-station-accordion.is-expanded .staggered-spot {
+    transition: none;
+    transform: none;
+    opacity: 1;
+  }
 }
 
 /* Serpentine / Schlangen-Layout für Tour-Stationen (#394) */
