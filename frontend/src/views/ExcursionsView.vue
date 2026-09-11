@@ -4350,7 +4350,7 @@ async function deleteEditingSpot() {
 
     .map-col {
       position: fixed;
-      top: calc(var(--app-header-height, 56px) + var(--navbar-offset, 0px));
+      top: 0;
       bottom: var(--navbar-bottom-offset, 0px);
       left: 0;
       right: 0;

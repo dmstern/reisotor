@@ -1839,8 +1839,8 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
    unten) nur noch die Variablen überschreiben müssen statt jede top-Regel einzeln. */
 .fit-btn {
   position: absolute;
-  top: var(--fit-btn-inset);
-  right: var(--fit-btn-inset);
+  top: var(--fit-btn-top-inset, var(--fit-btn-inset));
+  right: var(--fit-btn-right-inset, var(--fit-btn-inset));
   z-index: 1000;
   width: var(--fit-btn-size);
   height: var(--fit-btn-size);
@@ -1861,19 +1861,19 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
 }
 
 .location-btn {
-  top: calc(var(--fit-btn-inset) + var(--fit-btn-step));
+  top: calc(var(--fit-btn-top-inset, var(--fit-btn-inset)) + var(--fit-btn-step));
 }
 
 .offline-download-btn {
-  top: calc(var(--fit-btn-inset) + 2 * var(--fit-btn-step));
+  top: calc(var(--fit-btn-top-inset, var(--fit-btn-inset)) + 2 * var(--fit-btn-step));
 }
 
 .share-location-btn {
-  top: calc(var(--fit-btn-inset) + 3 * var(--fit-btn-step));
+  top: calc(var(--fit-btn-top-inset, var(--fit-btn-inset)) + 3 * var(--fit-btn-step));
 }
 
 .record-btn {
-  top: calc(var(--fit-btn-inset) + 4 * var(--fit-btn-step));
+  top: calc(var(--fit-btn-top-inset, var(--fit-btn-inset)) + 4 * var(--fit-btn-step));
 }
 
 /* Gleiche Akzentfarbe, solange die jeweilige Funktion aktiv ist/läuft - dieselbe wie z. B.
@@ -2121,6 +2121,8 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
          für den größeren Durchmesser: 44px (dasselbe "großer runder Icon-Button"-Maß wie
          DashboardView.vue's .tile-icon) statt der auf Mobil aus Platznot nötigen 34px. */
       --fit-btn-size: 44px;
+      --fit-btn-top-inset: calc(var(--app-header-height, 56px) + var(--space-4));
+      --fit-btn-right-inset: var(--space-4);
     }
 
     .fit-btn {
@@ -2153,7 +2155,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
     }
 
     :deep(.leaflet-top) {
-      top: var(--space-4) !important;
+      top: calc(var(--app-header-height, 56px) + var(--space-4)) !important;
     }
 
     :deep(.leaflet-left .leaflet-control) {
