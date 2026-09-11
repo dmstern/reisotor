@@ -16,8 +16,9 @@ import type { IconDef } from './icon';
 // Tabler-Icons hier bewusst dieselben Komponenten wie SECTION_ICON_DEFS.packing/excursions/todo/
 // travel (sectionIcons.ts), damit App-weite Bereichs- und Kalender-Kategorie-Icons für dasselbe
 // Konzept nicht auseinanderlaufen.
-// Zentrale Single Source of Truth für die Tour-Farbe (Konsistenz mit CSS-Variable --color-tour).
+// Zentrale Single Source of Truth für die Tour- und Reise-Farben (Konsistenz mit CSS-Variablen --color-tour und --color-travel).
 export const TOUR_COLOR = '#eb6834';
+export const TRAVEL_COLOR = '#1baf7a';
 
 export const SCHEDULE_CATEGORY_META: Record<
   ScheduleCategory,
@@ -50,7 +51,7 @@ export const SCHEDULE_CATEGORY_META: Record<
   },
   travel: {
     icon: '✈️',
-    color: '#1baf7a',
+    color: TRAVEL_COLOR,
     label: 'Reise',
     tabler: { id: 'plane', emoji: '✈️', outline: IconPlane, filled: IconPlaneFilled },
   },

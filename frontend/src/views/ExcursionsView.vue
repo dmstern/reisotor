@@ -629,6 +629,13 @@ function getTourDate(title: string): string | null {
   return tour?.date ?? null;
 }
 
+function isTourTravel(title: string): boolean {
+  const tour = excursionsStore.excursions.find(
+    (e) => e.title.toLowerCase() === title.trim().toLowerCase()
+  );
+  return !!tour?.role;
+}
+
 function removeTourTitle(title: string) {
   if (editingSpot.value !== null) {
     editSpotForm.value.tourTitles = editSpotForm.value.tourTitles.filter((t) => t !== title);
@@ -3401,15 +3408,20 @@ async function deleteEditingSpot() {
                     "
                     class="assign-chips"
                   >
-                    <!-- Tour-Chips: orange (--color-tour) -->
+                    <!-- Tour-Chips (orange) & Reise-Chips (grün) -->
                     <span
                       v-for="title in activeSpotForm.tourTitles"
                       :key="'tour-' + title"
-                      class="assign-chip assign-chip--tour tour-chip"
+                      class="assign-chip tour-chip"
+                      :class="isTourTravel(title) ? 'assign-chip--travel' : 'assign-chip--tour'"
                     >
                       <span class="assign-chip-action">
                         <AppIcon
-                          :icon="SECTION_ICON_DEFS.excursions"
+                          :icon="
+                            isTourTravel(title)
+                              ? SECTION_ICON_DEFS.travel
+                              : SECTION_ICON_DEFS.excursions
+                          "
                           :size="12"
                           group="navigation"
                         />
@@ -3423,8 +3435,8 @@ async function deleteEditingSpot() {
                       <button
                         type="button"
                         class="assign-chip-remove"
-                        :aria-label="`Von Tour '${title}' entfernen`"
-                        title="Von Tour entfernen"
+                        :aria-label="`Von '${title}' entfernen`"
+                        title="Entfernen"
                         @click="removeTourTitle(title)"
                       >
                         <AppIcon :icon="ACTION_ICONS.close" :size="11" group="actions" />
@@ -5937,6 +5949,13 @@ async function deleteEditingSpot() {
   background: var(--color-tour-tint);
   border-color: var(--color-tour-border);
   color: var(--color-tour);
+}
+
+/* Reise-Chip: grün (Zentrale Reise-Farbe --color-travel / SCHEDULE_CATEGORY_META.travel.color) */
+.assign-chip--travel {
+  background: var(--color-travel-tint);
+  border-color: var(--color-travel-border);
+  color: var(--color-travel);
 }
 
 /* Termin-Chip: grau (Farbe aus dem Kalender, SCHEDULE_CATEGORY_META.other.color) */
