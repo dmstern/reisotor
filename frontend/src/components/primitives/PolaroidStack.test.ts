@@ -1,5 +1,6 @@
+// @vitest-environment jsdom
 import { describe, it, expect } from 'vitest';
-import { createApp, h, type Component } from 'vue';
+import { createApp, h, nextTick, type Component } from 'vue';
 import { createPinia } from 'pinia';
 import { renderToString } from 'vue/server-renderer';
 import PolaroidStack from './PolaroidStack.vue';
@@ -18,7 +19,7 @@ describe('PolaroidStack primitive', () => {
   it('renders nothing when items array is empty', async () => {
     const app = createTestApp(PolaroidStack, { items: [] });
     const html = await renderToString(app);
-    expect(html).toBe('<!---->');
+    expect(html).toMatch(/<!--(?:v-if)?-->/);
   });
 
   it('renders a single photo polaroid without paperclip when clipped is false', async () => {
@@ -98,7 +99,7 @@ describe('PolaroidStack primitive', () => {
     expect(html).toContain('+2');
   });
 
-  it('renders station items with category icon and background color', async () => {
+  it('renders station items with category icon and background color when imageUrl is missing', async () => {
     const app = createTestApp(PolaroidStack, {
       items: [
         {
@@ -113,6 +114,74 @@ describe('PolaroidStack primitive', () => {
     expect(html).toContain('polaroid-placeholder');
     expect(html).toContain('Café Lisboa');
     expect(html).toContain('background-color:#e67e22');
+    expect(html).not.toContain('<img');
+  });
+
+  it('renders station items with spot cover image when imageUrl is provided', async () => {
+    const app = createTestApp(PolaroidStack, {
+      items: [
+        {
+          key: 10,
+          title: 'Café Lisboa',
+          imageUrl: 'https://example.com/cafe.jpg',
+          tabler: ACTION_ICONS.done,
+          color: '#e67e22',
+        },
+      ],
+    });
+    const html = await renderToString(app);
+    expect(html).toContain('polaroid-photo');
+    expect(html).toContain('src="https://example.com/cafe.jpg"');
+    expect(html).toContain('Café Lisboa');
+    expect(html).not.toContain('polaroid-placeholder');
+  });
+
+  it('renders station items with spot cover image even when URL has no file extension', async () => {
+    const app = createTestApp(PolaroidStack, {
+      items: [
+        {
+          key: 11,
+          title: 'Belém Tower',
+          imageUrl: 'https://picsum.photos/400/300',
+          tabler: ACTION_ICONS.done,
+          color: '#10b981',
+        },
+      ],
+    });
+    const html = await renderToString(app);
+    expect(html).toContain('polaroid-photo');
+    expect(html).toContain('src="https://picsum.photos/400/300"');
+    expect(html).toContain('Belém Tower');
+    expect(html).not.toContain('polaroid-placeholder');
+  });
+
+  it('falls back to category icon if spot cover image fails to load', async () => {
+    const root = document.createElement('div');
+    document.body.appendChild(root);
+    const app = createTestApp(PolaroidStack, {
+      items: [
+        {
+          key: 12,
+          title: 'Belém Tower',
+          imageUrl: 'https://example.com/broken.jpg',
+          tabler: ACTION_ICONS.done,
+          color: '#10b981',
+        },
+      ],
+    });
+    app.mount(root);
+    const img = root.querySelector('img.polaroid-photo') as HTMLImageElement;
+    expect(img).not.toBeNull();
+    expect(root.querySelector('.polaroid-placeholder')).toBeNull();
+
+    // Image loading fails -> triggers @error
+    img.dispatchEvent(new Event('error'));
+    await nextTick();
+
+    expect(root.querySelector('img.polaroid-photo')).toBeNull();
+    expect(root.querySelector('.polaroid-placeholder')).not.toBeNull();
+    app.unmount();
+    root.remove();
   });
 
   it('stacks items with first item on top (highest z-index)', async () => {
