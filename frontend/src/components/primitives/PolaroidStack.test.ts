@@ -45,7 +45,7 @@ describe('PolaroidStack primitive', () => {
     expect(html).toContain('is-clipped');
   });
 
-  it('renders document placeholder for PDF attachment', async () => {
+  it('renders DIN A4 document sheet with dog-ear and print lines for PDF attachment', async () => {
     const app = createTestApp(PolaroidStack, {
       items: [
         {
@@ -58,9 +58,33 @@ describe('PolaroidStack primitive', () => {
       clipped: true,
     });
     const html = await renderToString(app);
-    expect(html).toContain('polaroid-doc-placeholder');
+    expect(html).toContain('polaroid-tile is-doc');
+    expect(html).toContain('doc-sheet');
+    expect(html).toContain('doc-dogear');
+    expect(html).toContain('doc-print-lines');
     expect(html).toContain('PDF');
     expect(html).toContain('Bestaetigung.pdf');
+    expect(html).toContain('clipped-on-doc');
+  });
+
+  it('renders mixed stack with both photo polaroid and document sheet', async () => {
+    const app = createTestApp(PolaroidStack, {
+      items: [
+        'https://example.com/photo.jpg',
+        {
+          id: 2,
+          original_name: 'Tickets.pdf',
+          mime_type: 'application/pdf',
+          url: '/api/uploads/tickets.pdf',
+        },
+      ],
+      clipped: true,
+    });
+    const html = await renderToString(app);
+    expect(html).toContain('polaroid-tile is-photo');
+    expect(html).toContain('polaroid-tile is-doc');
+    expect(html).toContain('doc-sheet');
+    expect(html).toContain('Tickets.pdf');
   });
 
   it('renders overflow badge (+N) when items exceed maxVisible', async () => {

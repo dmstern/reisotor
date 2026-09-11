@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import AppIcon from '../AppIcon.vue';
-import { ACTION_ICONS } from '../../utils/actionIcons';
+import FileFormatGraphic from './FileFormatGraphic.vue';
 import type { IconDef } from '../../utils/icon';
 import type { IconGroup } from '../../stores/iconStyle';
 import type { Attachment } from '../../api/types';
@@ -25,7 +25,9 @@ export interface NormalizedPolaroid {
   title: string;
   imageUrl: string | null;
   isImage: boolean;
+  isDocument: boolean;
   fileExt: string;
+  mimeType?: string;
   tabler?: IconDef;
   iconGroup?: IconGroup;
   color?: string;
@@ -87,6 +89,7 @@ function normalize(item: PolaroidInputItem, index: number): NormalizedPolaroid {
       title: isImg ? `Bild ${index + 1}` : 'Anhang',
       imageUrl: item,
       isImage: isImg,
+      isDocument: !isImg,
       fileExt: fileExtension(item),
     };
   }
@@ -100,13 +103,17 @@ function normalize(item: PolaroidInputItem, index: number): NormalizedPolaroid {
     (raw.imageUrl ? `Bild ${index + 1}` : `Anhang ${index + 1}`);
   const url = (raw.url as string) || (raw.imageUrl as string) || null;
   const isImg = checkIsImage(raw, url);
+  const isDoc = !isImg && !raw.tabler;
+  const mimeType = (raw.mime_type as string) || (raw.mimeType as string) || undefined;
 
   return {
     key,
     title,
     imageUrl: url,
     isImage: isImg,
+    isDocument: isDoc,
     fileExt: fileExtension(title),
+    mimeType,
     tabler: raw.tabler as IconDef | undefined,
     iconGroup: raw.iconGroup as IconGroup | undefined,
     color: raw.color as string | undefined,
@@ -181,34 +188,85 @@ function handleClick(e: Event) {
       v-for="(tile, idx) in visibleItems"
       :key="tile.key"
       class="polaroid-tile"
+      :class="{
+        'is-doc': tile.isDocument,
+        'is-photo': !tile.isDocument,
+      }"
       :style="polaroidTileStyle(idx, visibleItems.length)"
     >
-      <div class="polaroid-photo-frame">
-        <img
-          v-if="tile.imageUrl && tile.isImage"
-          :src="tile.imageUrl"
-          class="polaroid-photo"
-          :alt="tile.title"
-          loading="lazy"
-        />
-        <!-- Station-Placeholder (Icons & Farbhintergrund) -->
-        <div
-          v-else-if="tile.tabler"
-          class="polaroid-placeholder"
-          :style="{ backgroundColor: tile.color || 'var(--color-primary-tint)' }"
-        >
-          <AppIcon :icon="tile.tabler" :size="16" :group="tile.iconGroup || 'categories'" />
+      <!-- ============================================== -->
+      <!-- FALL A: Fotos oder Stationen -> Polaroid-Stil -->
+      <!-- ============================================== -->
+      <template v-if="!tile.isDocument">
+        <div class="polaroid-photo-frame">
+          <img
+            v-if="tile.imageUrl && tile.isImage"
+            :src="tile.imageUrl"
+            class="polaroid-photo"
+            :alt="tile.title"
+            loading="lazy"
+          />
+          <!-- Station-Placeholder (Icons & Farbhintergrund) -->
+          <div
+            v-else-if="tile.tabler"
+            class="polaroid-placeholder"
+            :style="{ backgroundColor: tile.color || 'var(--color-primary-tint)' }"
+          >
+            <AppIcon :icon="tile.tabler" :size="16" :group="tile.iconGroup || 'categories'" />
+          </div>
         </div>
-        <!-- Dokument-Placeholder (PDFs, Dokumente etc.) -->
-        <div v-else class="polaroid-doc-placeholder">
-          <AppIcon :icon="ACTION_ICONS.attachment" :size="16" group="actions" />
-          <span class="polaroid-doc-ext">{{ tile.fileExt }}</span>
-        </div>
-      </div>
 
-      <div class="polaroid-chin">
-        <span class="polaroid-caption">{{ tile.title }}</span>
-      </div>
+        <div class="polaroid-chin">
+          <span class="polaroid-caption">{{ tile.title }}</span>
+        </div>
+      </template>
+
+      <!-- ============================================== -->
+      <!-- FALL B: Dokumente -> Ausgedruckter DIN-A4-Zettel -->
+      <!-- ============================================== -->
+      <template v-else>
+        <div class="doc-sheet polaroid-doc-placeholder">
+          <!-- Gefaltetes Eselsohr (Dog-ear) oben rechts -->
+          <div class="doc-dogear" aria-hidden="true">
+            <svg
+              viewBox="0 0 8 8"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              class="doc-dogear-svg"
+            >
+              <path d="M 0 0 L 8 8 H 0 Z" fill="rgba(0, 0, 0, 0.16)" />
+              <path
+                d="M 0 0 L 8 8 H 1 A 1 1 0 0 1 0 7 Z"
+                fill="#e2e8f0"
+                stroke="rgba(0, 0, 0, 0.08)"
+                stroke-width="0.5"
+              />
+            </svg>
+          </div>
+
+          <!-- Bunte, realistische Datei-Format-Grafik (SVG) -->
+          <div class="doc-badge-wrap">
+            <FileFormatGraphic
+              :extension="tile.fileExt"
+              :mime-type="tile.mimeType"
+              :filename="tile.title"
+              :size="size === 'md' ? 28 : 22"
+            />
+          </div>
+
+          <!-- Gedruckte Text-Simulationszeilen (Print Skeleton) -->
+          <div class="doc-print-lines" aria-hidden="true">
+            <span class="doc-line line-1" />
+            <span class="doc-line line-2" />
+            <span class="doc-line line-3" />
+          </div>
+
+          <!-- Titel / Dateiname am unteren Zettelrand -->
+          <div class="doc-footer">
+            <span class="doc-title" :title="tile.title">{{ tile.title }}</span>
+          </div>
+        </div>
+      </template>
 
       <!-- Badge für weitere Stationen / Anhänge (+N) -->
       <span
@@ -222,6 +280,7 @@ function handleClick(e: Event) {
       <div
         v-if="clipped && idx === visibleItems.length - 1"
         class="polaroid-paperclip-wrap"
+        :class="{ 'clipped-on-doc': tile.isDocument }"
         aria-hidden="true"
       >
         <svg
@@ -373,29 +432,136 @@ function handleClick(e: Event) {
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
 }
 
-.polaroid-doc-placeholder {
+/* ==========================================================================
+   DIN-A4-Zettel (Dokumente, PDFs, Spreadsheets etc.)
+   ========================================================================== */
+.polaroid-tile.is-doc {
+  width: 44px;
+  height: 62px;
+  left: 7px;
+  top: 2px;
+  padding: 0;
+  border-radius: 2px;
+  corner-shape: auto;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  box-shadow:
+    0 4px 10px rgba(0, 0, 0, 0.18),
+    0 1px 3px rgba(0, 0, 0, 0.12);
+  overflow: visible;
+}
+
+/* Im Dark Mode: Realistisches helles Papier auf dem dunklen Untergrund */
+:root[data-theme='dark'] .polaroid-tile.is-doc {
+  background: #f8fafc;
+  border-color: rgba(255, 255, 255, 0.22);
+  box-shadow:
+    0 4px 14px rgba(0, 0, 0, 0.55),
+    0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .polaroid-tile.is-doc {
+    background: #f8fafc;
+    border-color: rgba(255, 255, 255, 0.22);
+    box-shadow:
+      0 4px 14px rgba(0, 0, 0, 0.55),
+      0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+}
+
+.doc-sheet {
+  position: relative;
   width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
+  padding: 4px 3px 3px 3px;
+  box-sizing: border-box;
+}
+
+/* Eselsohr (Dog-ear) in der oberen rechten Ecke */
+.doc-dogear {
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  width: 8px;
+  height: 8px;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.doc-dogear-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.doc-badge-wrap {
+  margin-top: 1px;
+  display: flex;
+  align-items: center;
   justify-content: center;
-  background: var(--color-hover, rgba(0, 0, 0, 0.04));
-  color: var(--color-primary, #0284c7);
-  gap: 1px;
 }
 
-.polaroid-doc-placeholder :deep(svg) {
-  color: var(--color-primary, #0284c7);
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.15));
+/* Gedruckte Zeilen auf dem Zettel (Print Skeleton) */
+.doc-print-lines {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 100%;
+  margin-top: 3px;
+  pointer-events: none;
 }
 
-.polaroid-doc-ext {
-  font-size: 0.52rem;
-  font-weight: 800;
+.doc-line {
+  height: 1.5px;
+  background: rgba(0, 0, 0, 0.16);
+  border-radius: 1px;
+}
+
+.doc-line.line-1 {
+  width: 80%;
+}
+
+.doc-line.line-2 {
+  width: 90%;
+}
+
+.doc-line.line-3 {
+  width: 60%;
+}
+
+/* Footer mit Dateiname auf dem Papier */
+.doc-footer {
+  width: 100%;
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  height: 10px;
+  padding: 0 1px;
+}
+
+.doc-title {
+  font-size: 0.44rem;
+  font-weight: 700;
+  color: #1e293b;
   line-height: 1;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  text-align: center;
+  font-family: inherit;
+}
+
+/* Büroklammer leicht nach innen versetzt bei Dokumenten */
+.polaroid-paperclip-wrap.clipped-on-doc {
+  left: 4px;
 }
 
 .polaroid-chin {
@@ -508,5 +674,43 @@ function handleClick(e: Event) {
   left: 8px;
   width: 16px;
   height: 32px;
+}
+
+.polaroid-stack--md .polaroid-tile.is-doc {
+  width: 58px;
+  height: 82px;
+  left: 9px;
+  top: 3px;
+  border-radius: 3px;
+}
+
+.polaroid-stack--md .doc-sheet {
+  padding: 6px 4px 4px 4px;
+}
+
+.polaroid-stack--md .doc-dogear {
+  width: 10px;
+  height: 10px;
+}
+
+.polaroid-stack--md .doc-print-lines {
+  margin-top: 4px;
+  gap: 2.5px;
+}
+
+.polaroid-stack--md .doc-line {
+  height: 2px;
+}
+
+.polaroid-stack--md .doc-footer {
+  height: 12px;
+}
+
+.polaroid-stack--md .doc-title {
+  font-size: 0.52rem;
+}
+
+.polaroid-stack--md .polaroid-paperclip-wrap.clipped-on-doc {
+  left: 6px;
 }
 </style>

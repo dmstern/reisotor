@@ -98,6 +98,13 @@ export const PhotoStackWithClip: Story = {
   },
 };
 
+export const DocumentPrintoutWithClip: Story = {
+  args: {
+    items: [samplePdf],
+    clipped: true,
+  },
+};
+
 export const MixedAttachmentsWithClip: Story = {
   args: {
     items: [samplePhoto1, samplePdf, sampleDoc, samplePhoto2],
