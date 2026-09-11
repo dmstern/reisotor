@@ -803,21 +803,15 @@ async function onImportFileSelected(event: Event) {
       <div class="card">
         <h2>Navigation</h2>
         <p class="hint intro-hint">
-          Position der Navigationsleiste, getrennt für Desktop und mobile Bedienung.
+          Position der Navigationsleiste für Desktop-Bildschirme (auf Mobilgeräten und schmaleren
+          Bildschirmen wird die Leiste stets am unteren Bildschirmrand platziert).
         </p>
         <div class="nav-position-row">
           <label for="auto-id-1788301151989-29">
             Desktop
             <Select id="auto-id-1788301151989-29" v-model="navPosition.desktop">
-              <option value="top">Oben</option>
-              <option value="bottom">Unten</option>
-            </Select>
-          </label>
-          <label for="auto-id-1788301151989-30">
-            Mobil
-            <Select id="auto-id-1788301151989-30" v-model="navPosition.mobile">
-              <option value="top">Oben</option>
-              <option value="bottom">Unten</option>
+              <option value="top">Oben (im Header)</option>
+              <option value="bottom">Unten (schwebend)</option>
             </Select>
           </label>
         </div>

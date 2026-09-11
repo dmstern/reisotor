@@ -20,16 +20,19 @@ import AppIcon from './AppIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { DEMO_MODE } from '../demo/isDemoMode';
 
+import { useHeaderNavFits } from '../composables/useHeaderNavFits';
+
 const auth = useAuthStore();
 const tripStore = useTripStore();
 const connectivity = useConnectivityStore();
 const navPosition = useNavPositionStore();
 const isDesktop = useIsDesktop();
+const headerNavFits = useHeaderNavFits();
 const route = useRoute();
 
 const showTripNav = computed(() => tripStore.currentTripId != null && route.name !== 'trips');
 const showDockedNav = computed(
-  () => isDesktop.value && navPosition.desktop === 'top' && showTripNav.value
+  () => isDesktop.value && headerNavFits.value && navPosition.desktop === 'top' && showTripNav.value
 );
 
 // Der Header ist nur noch 56px hoch, solange die Statuszeile (Offline-/PWA-Update-Hinweis) leer
@@ -262,9 +265,16 @@ const profileTitle = computed(() => {
   display: inline-flex;
   align-items: center;
   max-width: 900px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
   opacity: 1;
   transform: scale(1);
   transform-origin: left center;
+}
+
+.docked-nav::-webkit-scrollbar {
+  display: none;
 }
 
 .nav-dock-enter-active,
@@ -303,7 +313,7 @@ const profileTitle = computed(() => {
   font-size: 1.1rem;
 }
 
-@media (max-width: 950px) {
+@media (max-width: 1200px) {
   .wordmark {
     display: none;
   }
