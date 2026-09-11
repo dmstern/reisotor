@@ -240,10 +240,14 @@ const profileTitle = computed(() => {
   box-shadow:
     0 4px 20px rgba(0, 0, 0, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.15);
-  padding: 3px 4px;
+  padding: var(--space-2);
   pointer-events: auto;
   max-width: 100%;
   position: relative;
+}
+
+.floating-island.has-nav {
+  margin-top: var(--space-3);
 }
 
 .switcher {

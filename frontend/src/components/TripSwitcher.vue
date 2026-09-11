@@ -227,6 +227,10 @@ function openMembers(trip: Trip) {
   border-color: color-mix(in srgb, var(--color-primary) 35%, transparent);
 }
 
+.trip-switcher.is-docked {
+  margin: 0 5px;
+}
+
 .trip-switcher.is-docked .switcher-btn {
   padding: 5px 12px;
   font-size: 0.82rem;
