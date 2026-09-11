@@ -1329,26 +1329,26 @@ function onSpotDrop(event: DragEvent) {
     margin: 2px 0;
   }
 
-  .tour-polaroid-stack {
+  :deep(.tour-polaroid-stack) {
     width: 46px;
     height: 56px;
   }
 
-  .polaroid-tile {
+  :deep(.tour-polaroid-stack .polaroid-tile) {
     width: 42px;
     height: 52px;
     padding: 2px 2px 8px 2px;
   }
 
-  .polaroid-photo-frame {
+  :deep(.tour-polaroid-stack .polaroid-photo-frame) {
     height: 34px;
   }
 
-  .polaroid-chin {
+  :deep(.tour-polaroid-stack .polaroid-chin) {
     height: 8px;
   }
 
-  .polaroid-caption {
+  :deep(.tour-polaroid-stack .polaroid-caption) {
     font-size: 0.4rem;
   }
 

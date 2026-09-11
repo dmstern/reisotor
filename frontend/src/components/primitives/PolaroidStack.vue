@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import AppIcon from '../AppIcon.vue';
 import FileFormatGraphic from './FileFormatGraphic.vue';
 import type { IconDef } from '../../utils/icon';
@@ -59,6 +59,12 @@ const emit = defineEmits<{
   (e: 'click', index: number): void;
 }>();
 
+const failedImageUrls = ref<Record<string, boolean>>({});
+
+function onImageError(url: string) {
+  failedImageUrls.value[url] = true;
+}
+
 function fileExtension(name: string): string {
   const dotIdx = name.lastIndexOf('.');
   if (dotIdx === -1) return 'DATEI';
@@ -70,17 +76,29 @@ function fileExtension(name: string): string {
 
 function checkIsImage(item: Record<string, unknown>, url: string | null): boolean {
   if (!url) return false;
+  // Explizit als Bild-URL übergeben (z. B. Station mit Spot-Cover-Image oder direktes imageUrl-Feld)
+  if (Boolean(item.imageUrl || item.image_url)) return true;
   const mime = item.mime_type || item.mimeType;
-  if (typeof mime === 'string' && mime.startsWith('image/')) {
-    return true;
+  if (typeof mime === 'string') {
+    if (mime.startsWith('image/')) return true;
+    if (mime !== 'application/octet-stream' && mime !== 'binary/octet-stream') {
+      return false;
+    }
   }
   if (url.startsWith('data:image/')) return true;
+  if (/\.(jpe?g|png|webp|gif|svg|avif)(\?.*)?$/i.test(url)) return true;
   const name =
     (typeof item.original_name === 'string' && item.original_name) ||
     (typeof item.filename === 'string' && item.filename) ||
-    (typeof item.title === 'string' && item.title) ||
-    url;
-  return /\.(jpe?g|png|webp|gif|svg|avif)(\?.*)?$/i.test(name);
+    '';
+  if (/\.(jpe?g|png|webp|gif|svg|avif)(\?.*)?$/i.test(name)) return true;
+  if (
+    typeof item.title === 'string' &&
+    /\.(jpe?g|png|webp|gif|svg|avif)(\?.*)?$/i.test(item.title)
+  ) {
+    return true;
+  }
+  return false;
 }
 
 function normalize(item: PolaroidInputItem, index: number): NormalizedPolaroid {
@@ -102,8 +120,8 @@ function normalize(item: PolaroidInputItem, index: number): NormalizedPolaroid {
     (raw.title as string) ||
     (raw.original_name as string) ||
     (raw.filename as string) ||
-    (raw.imageUrl ? `Bild ${index + 1}` : `Anhang ${index + 1}`);
-  const url = (raw.url as string) || (raw.imageUrl as string) || null;
+    (raw.imageUrl || raw.image_url ? `Bild ${index + 1}` : `Anhang ${index + 1}`);
+  const url = (raw.url as string) || (raw.imageUrl as string) || (raw.image_url as string) || null;
   const isImg = checkIsImage(raw, url);
   const isDoc = !isImg && !raw.tabler;
   const mimeType = (raw.mime_type as string) || (raw.mimeType as string) || undefined;
@@ -211,11 +229,12 @@ function handleClick(e: Event) {
       <template v-if="!tile.isDocument">
         <div class="polaroid-photo-frame">
           <img
-            v-if="tile.imageUrl && tile.isImage"
+            v-if="tile.imageUrl && tile.isImage && !failedImageUrls[tile.imageUrl]"
             :src="tile.imageUrl"
             class="polaroid-photo"
             :alt="tile.title"
             loading="lazy"
+            @error="tile.imageUrl && onImageError(tile.imageUrl)"
           />
           <!-- Station-Placeholder (Icons & Farbhintergrund) -->
           <div
