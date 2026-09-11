@@ -287,23 +287,6 @@ function onSpotDrop(event: DragEvent) {
     @dragleave="onSpotDragLeave"
     @drop.prevent="onSpotDrop"
   >
-    <!-- Akzentbalken an der abgerundeten linken Kante mit Rollen-/Rucksack-Icon -->
-    <div
-      class="tour-accent-bar"
-      :title="excursion.role ? TRAVEL_ROLE_META[excursion.role].label : 'Tour / Ausflug'"
-      aria-hidden="true"
-    >
-      <div class="tour-accent-badge">
-        <AppIcon
-          :icon="
-            excursion.role ? TRAVEL_ROLE_META[excursion.role].tabler : SECTION_ICON_DEFS.excursions
-          "
-          group="categories"
-          :size="14"
-        />
-      </div>
-      <span class="tour-bar-label">{{ excursion.role ? 'REISE' : 'TOUR' }}</span>
-    </div>
     <div class="tour-card-main">
       <div
         class="tour-image"
@@ -680,52 +663,6 @@ function onSpotDrop(event: DragEvent) {
 
 .excursion-accordion-inner {
   overflow: hidden;
-}
-
-/* Akzentbalken an der abgerundeten linken Kante */
-.tour-accent-bar {
-  width: 32px;
-  flex-shrink: 0;
-  background: linear-gradient(
-    180deg,
-    var(--excursion-theme-color) 0%,
-    var(--excursion-theme-dark) 100%
-  );
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  padding-top: var(--space-2);
-  gap: 8px;
-  border-radius: var(--radius-md-squircle) 0 0 var(--radius-md-squircle);
-  corner-shape: squircle;
-  user-select: none;
-  z-index: 1;
-}
-
-.tour-accent-badge {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.25);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #ffffff;
-  flex-shrink: 0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-}
-
-.tour-bar-label {
-  writing-mode: vertical-lr;
-  transform: rotate(180deg);
-  font-size: 0.6rem;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.95);
-  opacity: 0.9;
-  margin-top: 2px;
 }
 
 .tour-card-main {
@@ -1331,10 +1268,6 @@ function onSpotDrop(event: DragEvent) {
 }
 
 @container spots-col (max-width: 480px) {
-  .tour-accent-bar {
-    width: 26px;
-  }
-
   .tour-card-main {
     padding: 8px 10px 8px 8px;
     gap: 8px;
