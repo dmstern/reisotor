@@ -1879,6 +1879,7 @@ const expandedExcursionId = ref<number | null>(null);
 watch(expandedExcursionId, (newId) => {
   if (newId != null) {
     nextTick(() => recomputeTourLine(newId));
+    setTimeout(() => recomputeTourLine(newId), 320);
   }
 });
 
@@ -4955,10 +4956,12 @@ async function deleteEditingSpot() {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
+  padding-top: 154px;
   position: relative;
   z-index: 2;
-  padding: 0 6px;
+  padding-left: 6px;
+  padding-right: 6px;
 }
 
 /* Hochkante Pill-Karte für vorhandene Teilstrecke */
@@ -5028,21 +5031,24 @@ async function deleteEditingSpot() {
   padding: 8px 4px;
   width: 100%;
   max-width: 60px;
-  border: 1px dashed var(--color-border-subtle);
+  border: 1px dashed var(--color-border);
   border-radius: var(--radius-md);
-  background: var(--color-surface-sunken);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-xs);
   color: var(--color-text-muted);
   cursor: pointer;
   transition:
     background-color 0.15s ease,
     border-color 0.15s ease,
-    color 0.15s ease;
+    color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .tour-leg-add-btn.is-vertical:hover {
   background: var(--color-surface);
   border-color: var(--color-primary);
   color: var(--color-primary);
+  box-shadow: var(--shadow-sm);
 }
 
 .leg-add-text {
