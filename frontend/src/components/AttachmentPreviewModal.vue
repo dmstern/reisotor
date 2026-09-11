@@ -4,7 +4,7 @@ import type { Attachment } from '../api/types';
 import Modal from './Modal.vue';
 import Button from './primitives/Button.vue';
 import IconButton from './primitives/IconButton.vue';
-import AppIcon from './AppIcon.vue';
+import FileFormatGraphic from './primitives/FileFormatGraphic.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { formatFileSize } from '../utils/fileUpload';
 import { DEMO_MODE } from '../demo/isDemoMode';
@@ -187,14 +187,16 @@ function onRemoveCurrent() {
             />
           </div>
           <div v-else class="unsupported-wrapper">
-            <AppIcon
-              :icon="ACTION_ICONS.attachment"
-              :size="48"
-              group="actions"
+            <FileFormatGraphic
+              :filename="currentAttachment.original_name || currentAttachment.filename"
+              :mime-type="currentAttachment.mime_type"
+              :size="56"
               class="unsupported-icon"
             />
             <p class="unsupported-title">Keine Vorschau verfügbar</p>
-            <p class="unsupported-hint">Für diesen Dateityp ist keine Vorschau verfügbar.</p>
+            <p class="unsupported-hint">
+              Für diesen Dateityp ist keine direkte Bild-Vorschau verfügbar.
+            </p>
             <p class="unsupported-filename">
               {{ currentAttachment.original_name }}
             </p>

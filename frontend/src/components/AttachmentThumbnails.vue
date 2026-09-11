@@ -2,8 +2,8 @@
 import { computed } from 'vue';
 import type { Attachment } from '../api/types';
 import type { AttachmentPreviewItem } from './AttachmentPreviewModal.vue';
-import AppIcon from './AppIcon.vue';
 import IconButton from './primitives/IconButton.vue';
+import FileFormatGraphic from './primitives/FileFormatGraphic.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { formatFileSize } from '../utils/fileUpload';
 
@@ -52,15 +52,6 @@ function isImage(item: AttachmentPreviewItem): boolean {
   const name = item.original_name || item.filename || '';
   return /\.(jpe?g|png|webp|gif|svg|avif)$/i.test(name) || item.url.startsWith('data:image/');
 }
-
-function fileExtension(name: string): string {
-  const dotIdx = name.lastIndexOf('.');
-  if (dotIdx === -1) return 'DATEI';
-  return name
-    .slice(dotIdx + 1)
-    .toUpperCase()
-    .slice(0, 4);
-}
 </script>
 
 <template>
@@ -85,8 +76,11 @@ function fileExtension(name: string): string {
           loading="lazy"
         />
         <div v-else class="thumb-doc">
-          <AppIcon :icon="ACTION_ICONS.attachment" :size="22" group="actions" />
-          <span class="thumb-doc-ext">{{ fileExtension(item.original_name || '') }}</span>
+          <FileFormatGraphic
+            :filename="item.original_name"
+            :mime-type="item.mime_type"
+            :size="30"
+          />
           <span class="thumb-doc-name">{{ item.original_name }}</span>
         </div>
         <span class="screenreader-only">{{ item.original_name }}</span>
