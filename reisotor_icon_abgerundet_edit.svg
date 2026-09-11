@@ -5,7 +5,7 @@
    height="500"
    version="1.1"
    id="svg13"
-   sodipodi:docname="reisotor_icon_abgerundet_edit_without-bg.svg"
+   sodipodi:docname="reisotor_icon_abgerundet_edit.svg"
    inkscape:version="1.4.4 (dcaf3e7d9e, 2026-05-05)"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
@@ -493,7 +493,7 @@
   <!-- App Icon Background (Squircle) -->
   <!-- Map Pin Glow (Mit runder Spitze) -->
   <rect
-     style="display:none;fill:url(#linearGradient82);fill-rule:nonzero;stroke-width:0;stroke-dasharray:none"
+     style="fill:url(#linearGradient82);fill-rule:nonzero;stroke-width:0;stroke-dasharray:none"
      id="rect80"
      width="500.66812"
      height="501.65433"
