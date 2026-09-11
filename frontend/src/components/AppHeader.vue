@@ -243,6 +243,7 @@ const profileTitle = computed(() => {
   padding: var(--space-2);
   pointer-events: auto;
   max-width: 100%;
+  min-width: 0;
   position: relative;
 }
 
@@ -253,6 +254,12 @@ const profileTitle = computed(() => {
 .switcher {
   display: inline-flex;
   align-items: center;
+  min-width: 0;
+  max-width: 100%;
+  flex-shrink: 1;
+}
+
+.floating-island.has-nav .switcher {
   flex-shrink: 0;
 }
 

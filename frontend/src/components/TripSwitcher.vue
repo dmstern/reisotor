@@ -194,6 +194,8 @@ function openMembers(trip: Trip) {
 .trip-switcher {
   position: relative;
   display: inline-flex;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .switcher-btn {
@@ -208,9 +210,9 @@ function openMembers(trip: Trip) {
   font-weight: 600;
   color: var(--color-primary-dark);
   cursor: pointer;
-  max-width: 40vw;
+  max-width: min(100%, 280px);
   /* Ohne min-width:0 verweigert der Button als Flex-Kind das
-     Schrumpfen unter die Content-Breite von .trip-name (white-space:nowrap) - max-width:40vw
+     Schrumpfen unter die Content-Breite von .trip-name (white-space:nowrap) - max-width
      greift dann nicht mehr zuverlässig, sobald .switcher selbst durch weitere Header-Icons
      auf schmalen Viewports enger wird. min-width:0 lässt .trip-name's Ellipsis wie
      vorgesehen greifen. */
@@ -220,6 +222,14 @@ function openMembers(trip: Trip) {
     border-color 0.15s ease,
     color 0.15s ease,
     transform 0.15s ease;
+}
+
+@media (max-width: 450px) {
+  .switcher-btn {
+    padding: 5px 10px;
+    gap: 4px;
+    font-size: 0.8rem;
+  }
 }
 
 .switcher-btn:hover {
@@ -238,6 +248,7 @@ function openMembers(trip: Trip) {
 }
 
 .trip-name {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
