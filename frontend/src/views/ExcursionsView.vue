@@ -1567,9 +1567,10 @@ function recomputeTourLine(excursionId: number) {
     const cardRect = tourCardEl.getBoundingClientRect();
     const cardBottom = cardRect.bottom - wrapRect.top;
     const firstSpot = spotBoxes[0];
-    const startX = firstSpot.cx;
+    const hOffset = 20;
+    const startX = firstSpot.cx - hOffset;
     const startY = cardBottom;
-    const endX = firstSpot.cx;
+    const endX = firstSpot.cx + hOffset;
     const endY = firstSpot.top;
 
     if (endY > startY) {
@@ -1577,8 +1578,11 @@ function recomputeTourLine(excursionId: number) {
       dots.push({ x: endX, y: endY });
 
       const dy = endY - startY;
-      const wave = Math.min(6, Math.max(3, dy * 0.12));
-      d += ` M ${startX} ${startY} C ${startX + wave} ${startY + dy * 0.35}, ${endX - wave} ${endY - dy * 0.35}, ${endX} ${endY}`;
+      const cp1X = startX;
+      const cp1Y = startY + dy * 0.45;
+      const cp2X = endX;
+      const cp2Y = endY - dy * 0.45;
+      d += ` M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`;
     }
   }
 
@@ -1588,44 +1592,37 @@ function recomputeTourLine(excursionId: number) {
     const isSameRow = Math.abs(a.cy - b.cy) < Math.min(a.height, b.height) * 0.75;
 
     if (isSameRow) {
-      // Horizontal in derselben Zeile (direkt durch den horizontalen Teilstrecken-Verbinder)
-      if (a.cx < b.cx) {
-        // LTR (von links nach rechts)
-        const startX = a.right;
-        const startY = a.cy;
-        const endX = b.x;
-        const endY = b.cy;
-        dots.push({ x: startX, y: startY });
-        dots.push({ x: endX, y: endY });
-        const dx = endX - startX;
-        const wave = 6;
-        d += ` M ${startX} ${startY} C ${startX + dx * 0.35} ${startY - wave}, ${endX - dx * 0.35} ${endY + wave}, ${endX} ${endY}`;
-      } else {
-        // RTL (von rechts nach links)
-        const startX = a.x;
-        const startY = a.cy;
-        const endX = b.right;
-        const endY = b.cy;
-        dots.push({ x: startX, y: startY });
-        dots.push({ x: endX, y: endY });
-        const dx = endX - startX;
-        const wave = 6;
-        d += ` M ${startX} ${startY} C ${startX + dx * 0.35} ${startY - wave}, ${endX - dx * 0.35} ${endY + wave}, ${endX} ${endY}`;
-      }
+      // Horizontal in derselben Zeile: Startpunkt weiter oben als Endpunkt
+      const vOffset = 16;
+      const isLtr = a.cx < b.cx;
+      const startX = isLtr ? a.right : a.x;
+      const startY = a.cy - vOffset;
+      const endX = isLtr ? b.x : b.right;
+      const endY = b.cy + vOffset;
+      dots.push({ x: startX, y: startY });
+      dots.push({ x: endX, y: endY });
+      const dx = endX - startX;
+      const cp1X = startX + dx * 0.45;
+      const cp1Y = startY;
+      const cp2X = endX - dx * 0.45;
+      const cp2Y = endY;
+      d += ` M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`;
     } else {
       // Zeilenumbruch bzw. untereinander: a ist oben, b ist unten
-      // Direkte Verbindung ZWISCHEN den Cards von a.bottom zu b.top durch den Teilstrecken-Button
-      const startX = a.cx;
+      // Vertikal: Startpunkt weiter links als Endpunkt
+      const hOffset = 20;
+      const startX = a.cx - hOffset;
       const startY = a.bottom;
-      const endX = b.cx;
+      const endX = b.cx + hOffset;
       const endY = b.top;
       dots.push({ x: startX, y: startY });
       dots.push({ x: endX, y: endY });
       const dy = endY - startY;
-      const wave = Math.min(10, Math.max(5, Math.abs(dy) * 0.12));
-      const isFromLtr = a.cx > wrapEl.clientWidth * 0.4;
-      const waveDir = isFromLtr ? 1 : -1;
-      d += ` M ${startX} ${startY} C ${startX + waveDir * wave} ${startY + dy * 0.35}, ${endX - waveDir * wave} ${endY - dy * 0.35}, ${endX} ${endY}`;
+      const cp1X = startX;
+      const cp1Y = startY + dy * 0.45;
+      const cp2X = endX;
+      const cp2Y = endY - dy * 0.45;
+      d += ` M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`;
     }
   }
 

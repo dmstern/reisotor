@@ -222,10 +222,10 @@ describe('computeTourLoopPath', () => {
 
     const result = computeTourLoopPath(spot4, spot1, [spot1, spot4], 500);
 
-    // Starts at top edge of spot 4 (cx=120, top=240)
-    expect(result.dots[0]).toEqual({ x: 120, y: 240 });
-    // Ends at bottom edge of spot 1 (cx=120, bottom=170)
-    expect(result.dots[1]).toEqual({ x: 120, y: 170 });
+    // Starts at top edge of spot 4 (cx=120 - 20 = 100, top=240)
+    expect(result.dots[0]).toEqual({ x: 100, y: 240 });
+    // Ends at bottom edge of spot 1 (cx=120 + 20 = 140, bottom=170)
+    expect(result.dots[1]).toEqual({ x: 140, y: 170 });
   });
 
   it('uses under-row U-curve when spots are in the same row with empty space below', () => {

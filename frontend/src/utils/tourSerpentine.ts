@@ -198,15 +198,15 @@ export function computeTourLoopPath(
     );
 
     if (!hasObstacle) {
-      const startX = a.cx;
+      const hOffset = 20;
+      const startX = a.cx - hOffset;
       const startY = a.top;
-      const endX = b.cx;
+      const endX = b.cx + hOffset;
       const endY = b.bottom;
       dots.push({ x: startX, y: startY });
       dots.push({ x: endX, y: endY });
       const dy = endY - startY;
-      const wave = Math.min(10, Math.max(5, Math.abs(dy) * 0.12));
-      d = ` M ${startX} ${startY} C ${startX - wave} ${startY + dy * 0.35}, ${endX + wave} ${endY - dy * 0.35}, ${endX} ${endY}`;
+      d = ` M ${startX} ${startY} C ${startX} ${startY + dy * 0.45}, ${endX} ${endY - dy * 0.45}, ${endX} ${endY}`;
       return { d, dots };
     }
   }
