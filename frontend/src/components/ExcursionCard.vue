@@ -1448,8 +1448,8 @@ function onSpotDrop(event: DragEvent) {
 }
 
 :root[data-theme='dark'] .polaroid-tile {
-  background: #f1f5f9;
-  border-color: rgba(255, 255, 255, 0.15);
+  background: #2a2825;
+  border-color: rgba(255, 255, 255, 0.16);
   box-shadow:
     0 4px 12px rgba(0, 0, 0, 0.45),
     0 1px 3px rgba(0, 0, 0, 0.25);
@@ -1457,11 +1457,21 @@ function onSpotDrop(event: DragEvent) {
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) .polaroid-tile {
-    background: #f1f5f9;
-    border-color: rgba(255, 255, 255, 0.15);
+    background: #2a2825;
+    border-color: rgba(255, 255, 255, 0.16);
     box-shadow:
       0 4px 12px rgba(0, 0, 0, 0.45),
       0 1px 3px rgba(0, 0, 0, 0.25);
+  }
+}
+
+:root[data-theme='dark'] .polaroid-caption {
+  color: #f2efe9;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .polaroid-caption {
+    color: #f2efe9;
   }
 }
 

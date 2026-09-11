@@ -369,7 +369,12 @@ function openCalendarConfirmDone() {
 </script>
 
 <template>
-  <Card class="spot-card" :class="{ expanded, 'new-highlight': highlighted }" @click="onCardClick">
+  <Card
+    variant="polaroid"
+    class="spot-card"
+    :class="{ expanded, 'new-highlight': highlighted }"
+    @click="onCardClick"
+  >
     <div class="image" :style="spot.image_url ? { backgroundImage: `url(${spot.image_url})` } : {}">
       <AppIcon
         v-if="!spot.image_url"
@@ -788,22 +793,20 @@ function openCalendarConfirmDone() {
   position: relative;
   z-index: 1;
   isolation: isolate;
-  padding: 0;
+  padding: 8px 8px 14px 8px;
   display: flex;
   flex-direction: column;
   cursor: pointer;
-  border-width: var(--ui-border-width, 1px);
-  border-style: solid;
-  border-color: var(--color-border);
-  transition:
-    border-color 0.15s ease,
-    background 0.15s ease;
   scroll-margin-top: calc(var(--space-2) + var(--category-nav-clearance));
+}
+
+.spot-card:not(.expanded) {
+  height: 268px;
+  box-sizing: border-box;
 }
 
 .spot-card.expanded {
   border-color: var(--color-primary);
-  background: var(--color-primary-tint);
 }
 
 .image {
@@ -814,8 +817,10 @@ function openCalendarConfirmDone() {
   justify-content: center;
   position: relative;
   transition: height 0.3s cubic-bezier(0.32, 0.72, 0, 1);
-  border-radius: var(--radius-md-squircle) var(--radius-md-squircle) 0 0;
+  border-radius: calc(var(--radius-md-squircle) - 4px);
   corner-shape: squircle;
+  overflow: hidden;
+  flex-shrink: 0;
 }
 
 .spot-card.expanded .image {
@@ -1011,16 +1016,16 @@ function openCalendarConfirmDone() {
 
 /* Auf Desktop (> 480px): Collapsed im Body unter dem 120px-Bild, Expanded im Cover-Overlay */
 .spot-card:not(.expanded) .card-badge-group {
-  top: calc(120px + var(--space-3));
-  right: var(--space-3);
+  top: calc(8px + 120px + var(--space-2));
+  right: calc(8px + var(--space-2));
   transition:
     top 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s,
     right 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s;
 }
 
 .spot-card.expanded .card-badge-group {
-  top: var(--space-3);
-  right: var(--space-3);
+  top: calc(8px + var(--space-2));
+  right: calc(8px + var(--space-2));
   transition:
     top 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s,
     right 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s;
@@ -1052,10 +1057,17 @@ function openCalendarConfirmDone() {
 .body {
   position: relative;
   z-index: 2;
-  padding: var(--space-3);
+  padding: var(--space-2) var(--space-1) 0 var(--space-1);
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
+  flex: 1;
+  min-height: 0;
+}
+
+.spot-card:not(.expanded) .body {
+  overflow: hidden;
+  justify-content: flex-start;
 }
 
 /* Einheitlicher Card-Titel: gleitet beim Expandieren nahtlos vom Body in den Cover-Header */
@@ -1341,6 +1353,14 @@ function openCalendarConfirmDone() {
    nicht auf die Fenster-/Viewport-Breite – greift dadurch auch, wenn man auf Desktop den Anfasser
    zwischen Spots-Liste und Karte weit zur Karte hin zieht, nicht nur auf echtem Mobil. */
 @container spots-col (max-width: 480px) {
+  .spot-card {
+    padding: 0 !important;
+  }
+
+  .spot-card:not(.expanded) {
+    height: auto;
+  }
+
   /* Bild ist absolut am Kopf positioniert und morpht flüssig von der linken 64px-Miniatur
      zum vollen 160px-Banner oben */
   .image {

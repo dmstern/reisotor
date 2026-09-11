@@ -9,7 +9,7 @@ const meta: Meta<typeof Card> = {
   argTypes: {
     variant: {
       control: 'select',
-      options: ['default', 'muted', 'flat', 'elevated', 'tile'],
+      options: ['default', 'muted', 'flat', 'elevated', 'tile', 'polaroid'],
     },
     condensed: { control: 'boolean' },
     expanded: { control: 'boolean' },
@@ -183,6 +183,27 @@ export const Highlighted: Story = {
       <Card v-bind="args" style="max-width: 400px;">
         <h3 style="margin: 0 0 8px;">Frisch aktualisierte Karte</h3>
         <p style="margin: 0;">Farblicher Akzent-Rand (.new-highlight) markiert Echtzeit-Updates von Mitreisenden.</p>
+      </Card>
+    `,
+  }),
+};
+
+export const Polaroid: Story = {
+  args: {
+    variant: 'polaroid',
+    bannerUrl:
+      'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&auto=format&fit=crop',
+    bannerPosition: 'top',
+  },
+  render: (args) => ({
+    components: { Card },
+    setup() {
+      return { args };
+    },
+    template: `
+      <Card v-bind="args" style="max-width: 280px;">
+        <h3 style="margin: 0 0 4px; font-size: 1rem; color: #1e293b;">Strand von Elafonisi</h3>
+        <p style="margin: 0; font-size: 0.8rem; color: #64748b;">Kreta, Griechenland</p>
       </Card>
     `,
   }),

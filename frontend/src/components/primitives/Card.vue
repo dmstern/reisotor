@@ -15,8 +15,9 @@ const props = withDefaults(
      * - 'flat': Flacher Rand ohne Schatten
      * - 'elevated': Erhöhter Schatten (shadow-md) für schwebende Overlays
      * - 'tile': Dashboard-Kachel mit leicht transparentem Hintergrund, schwebendem Kreis-Icon & Hover-Lift
+     * - 'polaroid': Authentische Polaroid-Fotokarte mit breitem weißem Papierrahmen, tiefem Schatten & Vintage-Haptik
      */
-    variant?: 'default' | 'muted' | 'flat' | 'elevated' | 'tile';
+    variant?: 'default' | 'muted' | 'flat' | 'elevated' | 'tile' | 'polaroid';
     /** Ob die Karte sich im komprimierten/kompakten Zustand befindet. */
     condensed?: boolean;
     /** Ob die Karte sich im aufgeklappten Zustand befindet (Invers zu condensed). */
@@ -264,6 +265,46 @@ function handleCardKeydown(event: KeyboardEvent) {
   box-shadow:
     0 4px 12px rgba(0, 0, 0, 0.06),
     0 12px 28px rgba(0, 0, 0, 0.08);
+}
+
+.card--polaroid {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: var(--radius-md-squircle);
+  corner-shape: squircle;
+  box-shadow:
+    0 3px 6px rgba(0, 0, 0, 0.08),
+    0 10px 24px rgba(0, 0, 0, 0.12);
+  padding: 8px 8px 14px 8px;
+  transition:
+    transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.2s ease;
+}
+
+.card--polaroid:hover {
+  transform: translateY(-3px) rotate(0.4deg);
+  box-shadow:
+    0 6px 14px rgba(0, 0, 0, 0.1),
+    0 16px 36px rgba(0, 0, 0, 0.16);
+}
+
+:root[data-theme='dark'] .card--polaroid {
+  background: #2a2825;
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow:
+    0 4px 10px rgba(0, 0, 0, 0.4),
+    0 14px 32px rgba(0, 0, 0, 0.5);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .card--polaroid {
+    background: #2a2825;
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow:
+      0 4px 10px rgba(0, 0, 0, 0.4),
+      0 14px 32px rgba(0, 0, 0, 0.5);
+  }
 }
 
 .card--tile {
