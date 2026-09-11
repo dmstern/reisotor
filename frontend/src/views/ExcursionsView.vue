@@ -1207,12 +1207,24 @@ function excursionForGroupTitle(title: string): Excursion | null {
 // läuft die scrollenden Vorfahren selbst hoch – landet also automatisch in .spots-col, sobald die
 // Container-Query (≥720px) diese Spalte selbst scrollen lässt, sonst in der normalen Seite.
 // Ziel kann sowohl eine reine Überschrift (Kategorie-Gruppierung) als auch eine ExcursionCard
-// (Touren-Gruppierung, siehe excursionForGroupTitle oben) sein - el.$el löst dafür wie bei
+function resolveDomElement(el: Element | ComponentPublicInstance | null): HTMLElement | null {
+  if (!el) return null;
+  if (el instanceof HTMLElement) return el;
+  let dom: Node | null = '$el' in el ? (el.$el as Node | null) : null;
+  while (dom && !(dom instanceof HTMLElement)) {
+    dom = dom.nextSibling;
+  }
+  return dom instanceof HTMLElement ? dom : null;
+}
+
+// categoryRefs merkt sich das DOM-Element zu jeder Kategorie-Gruppe. Das Element kann entweder
+// ein nativer Header (h2.category-header, bei Standard-Gruppierung) oder eine ExcursionCard
+// (Touren-Gruppierung, siehe excursionForGroupTitle oben) sein - resolveDomElement löst dafür wie bei
 // setSpotRef unten auf das tatsächliche DOM-Element der Komponente auf.
 const categoryRefs = new Map<string, HTMLElement>();
 function setCategoryRef(category: string, el: Element | ComponentPublicInstance | null) {
-  const domEl = el && '$el' in el ? (el.$el as HTMLElement) : (el as HTMLElement | null);
-  if (domEl instanceof HTMLElement) categoryRefs.set(category, domEl);
+  const domEl = resolveDomElement(el);
+  if (domEl) categoryRefs.set(category, domEl);
   else categoryRefs.delete(category);
 }
 // Ref auf die eingebettete Karte (TripMap.vue): scrollToCategory() lässt bei Klick auf eine
@@ -1438,8 +1450,8 @@ function _nudgeRepaint() {
 
 const spotRefs = new Map<number, HTMLElement>();
 function setSpotRef(id: number, el: Element | ComponentPublicInstance | null) {
-  const domEl = el && '$el' in el ? (el.$el as HTMLElement) : (el as HTMLElement | null);
-  if (domEl instanceof HTMLElement) spotRefs.set(id, domEl);
+  const domEl = resolveDomElement(el);
+  if (domEl) spotRefs.set(id, domEl);
   else spotRefs.delete(id);
 }
 function scrollToSpot(id: number) {
