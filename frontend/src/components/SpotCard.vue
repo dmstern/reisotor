@@ -769,6 +769,7 @@ function openCalendarConfirmDone() {
 
 .spot-card:not(.expanded) {
   height: 268px;
+  min-height: 268px;
 }
 
 .spot-card.expanded {
@@ -1056,6 +1057,10 @@ function openCalendarConfirmDone() {
   pointer-events: auto;
 }
 
+.spot-card:not(.expanded) .card-title-block {
+  margin-bottom: 2px;
+}
+
 .spot-card.expanded .card-title-block {
   transform: translateY(calc(-100% - var(--space-3) * 2));
   margin-bottom: -44px;
@@ -1105,19 +1110,25 @@ function openCalendarConfirmDone() {
   flex-wrap: wrap;
 }
 
-/* Spot-Notiz: Fließender Übergang zwischen 1-2-zeiligem Teaser und kompakter 2-3-zeiliger Höhe (#235) */
+/* Spot-Notiz: Fließender Übergang zwischen 1-zeiligem Teaser und kompakter 2-3-zeiliger Höhe (#235) */
 .spot-note-container {
   display: block;
   position: relative;
   margin-top: 2px;
   overflow: hidden;
+  flex-shrink: 0;
+  min-height: 1.4em;
   transition:
     max-height 0.35s cubic-bezier(0.32, 0.72, 0, 1),
     margin 0.25s ease;
 }
 
+.spot-card:not(.expanded) .spot-note-container {
+  margin-top: 0;
+}
+
 .spot-note-container:not(.is-expanded) {
-  max-height: 2.8em;
+  max-height: 1.5em;
 }
 
 .spot-note-container.is-expanded {
@@ -1135,7 +1146,7 @@ function openCalendarConfirmDone() {
 .note.is-clamped {
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 0.8125rem;
@@ -1151,7 +1162,7 @@ function openCalendarConfirmDone() {
 .note.is-clamped :deep(.richtext) {
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 1;
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -1206,8 +1217,7 @@ function openCalendarConfirmDone() {
 }
 
 .spot-card:not(.expanded) .card-footer-row {
-  position: static;
-  margin-top: 0;
+  display: contents;
 }
 
 .card-attachments-wrap {
@@ -1313,6 +1323,8 @@ function openCalendarConfirmDone() {
 }
 
 .spot-card:not(.expanded) .card-actions {
+  gap: 6px;
+  margin-top: 2px;
   padding-right: 48px;
 }
 
