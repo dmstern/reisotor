@@ -62,14 +62,28 @@ type Story = StoryObj<typeof AttachmentThumbnails>;
 
 export const Default: Story = {};
 
+export const Stacked: Story = {
+  args: {
+    fanned: false,
+  },
+};
+
+export const Fanned: Story = {
+  args: {
+    fanned: true,
+  },
+};
+
 export const ReadOnly: Story = {
   args: {
     editable: false,
+    fanned: true,
   },
 };
 
 export const StringUrls: Story = {
   args: {
+    fanned: true,
     items: [
       'https://picsum.photos/400/400?1',
       'https://picsum.photos/400/400?2',

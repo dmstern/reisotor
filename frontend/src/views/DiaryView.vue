@@ -85,11 +85,26 @@ const editFileInputRef = ref<HTMLInputElement | null>(null);
 const diaryPreviewOpen = ref(false);
 const diaryPreviewImages = ref<string[]>([]);
 const diaryPreviewIndex = ref(0);
+const diaryPreviewEditable = ref(false);
+const diaryPreviewOnRemove = ref<((idx: number) => void) | null>(null);
 
-function openDiaryPreview(images: string[], index: number) {
+function openDiaryPreview(
+  images: string[],
+  index: number,
+  editable = false,
+  onRemove?: (idx: number) => void
+) {
   diaryPreviewImages.value = images;
   diaryPreviewIndex.value = index;
+  diaryPreviewEditable.value = editable;
+  diaryPreviewOnRemove.value = onRemove ?? null;
   diaryPreviewOpen.value = true;
+}
+
+function handleDiaryPreviewRemove(index: number) {
+  if (diaryPreviewOnRemove.value) {
+    diaryPreviewOnRemove.value(index);
+  }
 }
 
 // Entwurfs-Zwischenspeicherung (siehe composables/useDraftAutosave.ts) - images/excursion_ids/
@@ -576,7 +591,7 @@ function showEntryDayOnMap(entry: DiaryEntry) {
           :items="form.images"
           remove-title="Bild entfernen"
           remove-aria-label="Bild entfernen"
-          @click="(idx) => openDiaryPreview(form.images, idx)"
+          @click="(idx) => openDiaryPreview(form.images, idx, true, (i) => removeImage(form, i))"
           @remove="(idx) => removeImage(form, idx)"
         />
         <fieldset v-if="excursionsStore.excursions.length" class="excursion-picker">
@@ -847,7 +862,9 @@ function showEntryDayOnMap(entry: DiaryEntry) {
           :items="editForm.images"
           remove-title="Bild entfernen"
           remove-aria-label="Bild entfernen"
-          @click="(idx) => openDiaryPreview(editForm.images, idx)"
+          @click="
+            (idx) => openDiaryPreview(editForm.images, idx, true, (i) => removeImage(editForm, i))
+          "
           @remove="(idx) => removeImage(editForm, idx)"
         />
         <fieldset v-if="excursionsStore.excursions.length" class="excursion-picker">
@@ -952,6 +969,8 @@ function showEntryDayOnMap(entry: DiaryEntry) {
       v-model="diaryPreviewOpen"
       :attachments="diaryPreviewImages"
       :initial-index="diaryPreviewIndex"
+      :editable="diaryPreviewEditable"
+      @remove="handleDiaryPreviewRemove"
     />
   </div>
   <ViewLoadingState v-else />

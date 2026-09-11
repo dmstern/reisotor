@@ -64,6 +64,17 @@ watch(
   }
 );
 
+watch(
+  () => props.attachments.length,
+  (newLen) => {
+    if (newLen === 0) {
+      emit('update:modelValue', false);
+    } else if (currentIndex.value >= newLen) {
+      currentIndex.value = Math.max(0, newLen - 1);
+    }
+  }
+);
+
 onUnmounted(() => {
   window.removeEventListener('keydown', onKeydown);
 });
@@ -141,11 +152,13 @@ function download(attachment: AttachmentPreviewItem | null) {
 }
 
 function onRemoveCurrent() {
-  emit('remove', currentIndex.value);
-  if (props.attachments.length <= 1) {
+  const currentLen = props.attachments.length;
+  const removeIdx = currentIndex.value;
+  emit('remove', removeIdx);
+  if (currentLen <= 1) {
     emit('update:modelValue', false);
-  } else if (currentIndex.value >= props.attachments.length - 1) {
-    currentIndex.value = Math.max(0, props.attachments.length - 2);
+  } else if (removeIdx >= currentLen - 1) {
+    currentIndex.value = Math.max(0, currentLen - 2);
   }
 }
 </script>
@@ -223,13 +236,15 @@ function onRemoveCurrent() {
         >
           Löschen
         </Button>
-        <Button
-          variant="primary"
-          :icon="ACTION_ICONS.download"
-          @click="download(currentAttachment)"
-        >
-          Herunterladen
-        </Button>
+        <div class="preview-actions-right">
+          <Button
+            variant="primary"
+            :icon="ACTION_ICONS.download"
+            @click="download(currentAttachment)"
+          >
+            Herunterladen
+          </Button>
+        </div>
       </div>
     </div>
   </Modal>
@@ -328,10 +343,17 @@ function onRemoveCurrent() {
 
 .preview-actions {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
   gap: var(--space-2);
   margin-top: var(--space-4);
   padding-top: var(--space-2);
   border-top: 1px solid var(--color-border);
+}
+
+.preview-actions-right {
+  margin-left: auto;
+  display: flex;
+  gap: var(--space-2);
 }
 </style>

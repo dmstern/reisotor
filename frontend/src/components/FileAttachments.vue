@@ -132,14 +132,21 @@ async function onFilesSelected(event: Event) {
 }
 
 async function remove(attachment: Attachment) {
-  await api.delete(`/attachments/${attachment.id}`);
+  if (!attachment) return;
+  const previous = [...attachments.value];
   attachments.value = attachments.value.filter((a) => a.id !== attachment.id);
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(
-      new CustomEvent('attachments-changed', {
-        detail: { domain: props.domain, entityId: props.entityId },
-      })
-    );
+  try {
+    await api.delete(`/attachments/${attachment.id}`);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('attachments-changed', {
+          detail: { domain: props.domain, entityId: props.entityId },
+        })
+      );
+    }
+  } catch {
+    attachments.value = previous;
+    error.value = 'Fehler beim Löschen des Anhangs.';
   }
 }
 </script>
