@@ -149,12 +149,12 @@ function polaroidTileStyle(idx: number, total: number) {
       zIndex: 1,
     };
   }
-  const angles = [-8, 6, -3, 7];
-  const xOffsets = [-6, 4, 1, 6];
-  const yOffsets = [2, -2, 1, 0];
+  const angles = [-2, 6, -7, 8];
+  const xOffsets = [0, 4, -5, 6];
+  const yOffsets = [0, -1, 2, 1];
   return {
     transform: `rotate(${angles[idx % angles.length]}deg) translate(${xOffsets[idx % xOffsets.length]}px, ${yOffsets[idx % yOffsets.length]}px)`,
-    zIndex: idx + 1,
+    zIndex: total - idx,
   };
 }
 
@@ -269,16 +269,13 @@ function handleClick(e: Event) {
       </template>
 
       <!-- Badge für weitere Stationen / Anhänge (+N) -->
-      <span
-        v-if="idx === visibleItems.length - 1 && calculatedExtraCount > 0"
-        class="polaroid-badge"
-      >
+      <span v-if="idx === 0 && calculatedExtraCount > 0" class="polaroid-badge">
         +{{ calculatedExtraCount }}
       </span>
 
       <!-- Büroklammer (Paperclip) auf der obersten Karte angeheftet -->
       <div
-        v-if="clipped && idx === visibleItems.length - 1"
+        v-if="clipped && idx === 0"
         class="polaroid-paperclip-wrap"
         :class="{ 'clipped-on-doc': tile.isDocument }"
         aria-hidden="true"
@@ -353,7 +350,7 @@ function handleClick(e: Event) {
   outline: none;
 }
 
-.polaroid-stack.is-interactive:focus-visible .polaroid-tile:last-child {
+.polaroid-stack.is-interactive:focus-visible .polaroid-tile:first-child {
   box-shadow:
     0 0 0 2px var(--color-background, #ffffff),
     0 0 0 4px var(--color-primary, #3b82f6);
@@ -631,16 +628,16 @@ function handleClick(e: Event) {
 
 /* Hover-Effekt: Sanftes Auffächern */
 .polaroid-stack.is-interactive:hover .polaroid-tile:nth-child(1) {
-  transform: rotate(-12deg) translate(-7px, 2px) scale(1.02);
+  transform: rotate(-2deg) translate(0px, 0px) scale(1.02);
 }
 .polaroid-stack.is-interactive:hover .polaroid-tile:nth-child(2) {
-  transform: rotate(8deg) translate(6px, -2px) scale(1.02);
+  transform: rotate(10deg) translate(8px, -2px) scale(1.01);
 }
 .polaroid-stack.is-interactive:hover .polaroid-tile:nth-child(3) {
-  transform: rotate(-4deg) translate(2px, 0px) scale(1.03);
+  transform: rotate(-12deg) translate(-9px, 2px) scale(1.01);
 }
 .polaroid-stack.is-interactive:hover .polaroid-tile:nth-child(4) {
-  transform: rotate(11deg) translate(9px, -1px) scale(1.03);
+  transform: rotate(14deg) translate(12px, -1px) scale(1.01);
 }
 
 /* Morph-Animation beim Aufklappen */

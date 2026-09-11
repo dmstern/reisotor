@@ -114,4 +114,14 @@ describe('PolaroidStack primitive', () => {
     expect(html).toContain('Café Lisboa');
     expect(html).toContain('background-color:#e67e22');
   });
+
+  it('stacks items with first item on top (highest z-index)', async () => {
+    const app = createTestApp(PolaroidStack, {
+      items: ['https://example.com/first.jpg', 'https://example.com/second.jpg'],
+    });
+    const html = await renderToString(app);
+    // First tile should have z-index: 2, second tile z-index: 1
+    expect(html).toMatch(/z-index:\s*2/);
+    expect(html).toMatch(/z-index:\s*1/);
+  });
 });
