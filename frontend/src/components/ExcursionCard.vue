@@ -470,11 +470,11 @@ function onSpotDrop(event: DragEvent) {
           </p>
         </template>
 
-        <!-- Tour-Notiz: Im collapsed Zustand 1-2-zeilig mit Ellipsis, klappt beim Aufklappen weich auf (#235) -->
+        <!-- Tour-Notiz: Trunkiert mit Ellipsis sowohl im collapsed als auch im expanded Zustand (#235) -->
         <div v-if="excursion.note" class="tour-note-container" :class="{ 'is-expanded': expanded }">
           <RichTextDisplay
-            class="note"
-            :class="{ 'is-clamped': !expanded }"
+            class="note is-clamped"
+            :class="{ 'is-expanded': expanded }"
             :content="excursion.note"
             :format="excursion.note_format"
           />
@@ -1317,7 +1317,7 @@ function onSpotDrop(event: DragEvent) {
 }
 
 .tour-note-container.is-expanded {
-  max-height: 2000px;
+  max-height: 4.5em;
 }
 
 .note {
@@ -1339,12 +1339,21 @@ function onSpotDrop(event: DragEvent) {
   color: var(--color-text-muted);
 }
 
+.note.is-clamped.is-expanded {
+  -webkit-line-clamp: 3;
+  color: var(--color-text);
+}
+
 .note.is-clamped :deep(.richtext) {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.note.is-clamped.is-expanded :deep(.richtext) {
+  -webkit-line-clamp: 3;
 }
 
 .note.is-clamped :deep(p),
@@ -1712,14 +1721,26 @@ function onSpotDrop(event: DragEvent) {
     max-height: 1.4em;
   }
 
+  .tour-note-container.is-expanded {
+    max-height: 2.8em;
+  }
+
   .note.is-clamped {
     -webkit-line-clamp: 1;
     font-size: 0.78rem;
     line-height: 1.3;
   }
 
+  .note.is-clamped.is-expanded {
+    -webkit-line-clamp: 2;
+  }
+
   .note.is-clamped :deep(.richtext) {
     -webkit-line-clamp: 1;
+  }
+
+  .note.is-clamped.is-expanded :deep(.richtext) {
+    -webkit-line-clamp: 2;
   }
 }
 

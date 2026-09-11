@@ -428,6 +428,16 @@ function openCalendarConfirmDone() {
           </div>
         </Transition>
       </div>
+      <!-- Spot-Notiz: Trunkiert mit Ellipsis sowohl im collapsed als auch im expanded Zustand (#235) -->
+      <div v-if="spot.note" class="spot-note-container" :class="{ 'is-expanded': expanded }">
+        <RichTextDisplay
+          class="note is-clamped"
+          :class="{ 'is-expanded': expanded }"
+          :content="spot.note"
+          :format="spot.note_format"
+        />
+      </div>
+
       <!-- Eigene, explizite Aktion statt am Aufklappen dranzuhängen (#109, siehe onShowOnMap im
            Script) – in Mini- UND aufgeklappter Karte sichtbar (Textlabel schrumpft im Kompakt-Modus
            auf reines Icon, siehe @container-Regel unten), gleiche Konvention wie
@@ -487,12 +497,6 @@ function openCalendarConfirmDone() {
               >
             </DetailRow>
           </template>
-          <RichTextDisplay
-            v-if="spot.note"
-            class="note"
-            :content="spot.note"
-            :format="spot.note_format"
-          />
         </div>
       </div>
 
@@ -1091,8 +1095,70 @@ function openCalendarConfirmDone() {
   flex-wrap: wrap;
 }
 
+/* Spot-Notiz: Fließender Übergang zwischen 1-2-zeiligem Teaser und kompakter 2-3-zeiliger Höhe (#235) */
+.spot-note-container {
+  display: block;
+  position: relative;
+  margin-top: 2px;
+  overflow: hidden;
+  transition:
+    max-height 0.35s cubic-bezier(0.32, 0.72, 0, 1),
+    margin 0.25s ease;
+}
+
+.spot-note-container:not(.is-expanded) {
+  max-height: 2.8em;
+}
+
+.spot-note-container.is-expanded {
+  max-height: 4.5em;
+}
+
 .note {
   overflow-wrap: anywhere;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--color-text);
+  transition: color 0.2s ease;
+}
+
+.note.is-clamped {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  color: var(--color-text-muted);
+}
+
+.note.is-clamped.is-expanded {
+  -webkit-line-clamp: 3;
+  color: var(--color-text);
+}
+
+.note.is-clamped :deep(.richtext) {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.note.is-clamped.is-expanded :deep(.richtext) {
+  -webkit-line-clamp: 3;
+}
+
+.note.is-clamped :deep(p),
+.note.is-clamped :deep(div) {
+  display: inline;
+  margin: 0;
+}
+
+.note.is-clamped :deep(p + p::before),
+.note.is-clamped :deep(div + div::before) {
+  content: ' ';
 }
 
 .contact-text :deep(br:last-child) {
@@ -1459,6 +1525,32 @@ function openCalendarConfirmDone() {
     margin-top: 0;
   }
 
+  .spot-note-container:not(.is-expanded) {
+    max-height: 1.4em;
+  }
+
+  .spot-note-container.is-expanded {
+    max-height: 2.8em;
+  }
+
+  .note.is-clamped {
+    -webkit-line-clamp: 1;
+    font-size: 0.78rem;
+    line-height: 1.3;
+  }
+
+  .note.is-clamped.is-expanded {
+    -webkit-line-clamp: 2;
+  }
+
+  .note.is-clamped :deep(.richtext) {
+    -webkit-line-clamp: 1;
+  }
+
+  .note.is-clamped.is-expanded :deep(.richtext) {
+    -webkit-line-clamp: 2;
+  }
+
   .mobile-only-accordion {
     display: grid;
     grid-template-rows: 0fr;
@@ -1546,7 +1638,8 @@ function openCalendarConfirmDone() {
   .show-on-map-btn,
   .show-on-map-btn .btn-label,
   .spot-accordion-inner > *,
-  .mobile-only-accordion-inner > * {
+  .mobile-only-accordion-inner > *,
+  .spot-note-container {
     transition: none !important;
   }
 }
