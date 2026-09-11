@@ -1176,12 +1176,26 @@ function openCalendarConfirmDone() {
   z-index: 2;
 }
 
+.spot-card:not(.expanded) .card-actions-wrapper {
+  position: static;
+}
+
 .card-social-actions {
   display: flex;
   align-items: center;
   gap: var(--space-1);
   margin-left: auto;
   flex-shrink: 0;
+}
+
+/* Im zugeklappten Zustand sitzt der Like-Button absolut unten rechts im Card-Body,
+   damit mehrzeilige Aktionen ihn nicht nach unten aus dem sichtbaren Bereich schieben (#383) */
+.spot-card:not(.expanded) .card-social-actions {
+  position: absolute;
+  bottom: 8px;
+  right: var(--space-1);
+  margin-left: 0;
+  z-index: 3;
 }
 
 .like-btn,
@@ -1237,6 +1251,10 @@ function openCalendarConfirmDone() {
   align-items: center;
   gap: var(--space-2);
   margin-top: var(--space-1);
+}
+
+.spot-card:not(.expanded) .card-actions {
+  padding-right: 48px;
 }
 
 /* #161: ohne eigenes margin-top rückte MapsAppPicker.vue's "In Karten-App öffnen"-Button direkt an
@@ -1521,8 +1539,9 @@ function openCalendarConfirmDone() {
     margin: 0;
   }
 
-  .spot-card:not(.expanded) .social-row {
-    margin-top: 0;
+  .spot-card:not(.expanded) .card-social-actions {
+    bottom: 6px;
+    right: var(--space-2);
   }
 
   .spot-note-container:not(.is-expanded) {
