@@ -41,7 +41,7 @@ export const CountFormat: Story = {
     label: 'Erreichte Orte',
     spent: 8,
     target: 12,
-    color: '#2a7f74',
+    color: '#9141AC',
     format: 'count',
   },
 };

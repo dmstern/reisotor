@@ -47,7 +47,7 @@ const props = withDefaults(
     bannerAlt: '',
     bannerPosition: 'auto',
     highlight: false,
-    tileColor: '#2a7f74',
+    tileColor: '#9141AC',
     tag: 'div',
   }
 );

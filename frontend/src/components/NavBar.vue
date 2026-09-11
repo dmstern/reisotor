@@ -281,7 +281,7 @@ function onLinkClick(event: MouseEvent) {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 2px 6px;
+  padding: var(--space-2) var(--space-3);
   gap: 1px;
   border-radius: 999px;
   corner-shape: round;

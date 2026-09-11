@@ -5177,7 +5177,7 @@ async function deleteEditingSpot() {
    eigentlichen Inhalts-Cards darunter unterordnet) statt frei im Seitenfluss stehender Buttons -
    fasst Gruppieren/Sortieren/Filtern als ein zusammengehöriges, klar abgegrenztes Werkzeug
    optisch zusammen (Nutzer-Feedback: wirkte vorher "gebastelt"). */
-/* --color-primary-tint (leichtes Markengrün) statt des neutralen --color-hover: dieser Bereich ist
+/* --color-primary-tint (leichte Markenfarbe) statt des neutralen --color-hover: dieser Bereich ist
    ein Steuerungs-/Werkzeug-Element (Gruppieren/Sortieren/Filtern), keine Dateninhalt-Fläche - siehe
    DESIGN.md, Abschnitt "Farben" für die Unterscheidung Steuerungselement (leicht eingefärbt) vs.
    Karte mit Dateninhalt (weiß/--color-surface, z. B. SpotCard.vue). */

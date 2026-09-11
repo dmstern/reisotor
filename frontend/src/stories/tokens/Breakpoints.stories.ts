@@ -51,7 +51,7 @@ export const InteractiveViewportVisualizer: Story = {
             label: 'Desktop Standard (Breakpoint)',
             query: '@media (min-width: 800px)',
             icon: '🖥️',
-            color: '#2a7f74',
+            color: '#9141AC',
             mode: 'desktop',
             desc: 'Top Header + feste Sidebar-Drawers + Multi-Column Kachel-Grids.',
           };
@@ -88,9 +88,9 @@ export const InteractiveViewportVisualizer: Story = {
       const breakpointBars = [
         { label: 'Mobil Schmal', width: 480, query: '< 480px', color: '#c1503f' },
         { label: 'Medium / Kalender', width: 700, query: '≥ 700px', color: '#1e96d1' },
-        { label: 'Desktop Standard', width: 800, query: '≥ 800px', color: '#2a7f74' },
+        { label: 'Desktop Standard', width: 800, query: '≥ 800px', color: '#9141AC' },
         { label: 'Breite Tabellen', width: 900, query: '≥ 900px', color: '#5b6ee1' },
-        { label: 'Standard Page', width: 960, query: '.page 960px', color: '#3da296' },
+        { label: 'Standard Page', width: 960, query: '.page 960px', color: '#c061cb' },
         { label: 'Wide Multi-Column', width: 1400, query: '1400px', color: '#3f8f5c' },
       ];
 

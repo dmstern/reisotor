@@ -127,9 +127,9 @@ anlegen, nicht als lokaler Wert in der Komponente.
 | `--color-border-strong`    | Eingabefelder, Selects, Secondary-Buttons    | `#d5cabc`  | `#4a453c` |
 | `--color-text`             | Primäre Textfarbe                            | `#2b2a28`  | `#f2efe9` |
 | `--color-text-muted`       | Gedämpfter Fließtext & Untertitel            | `#726e66`  | `#a8a29a` |
-| `--color-primary`          | Marken-Grün (Haupt-Buttons & Fokus)          | `#2a7f74`  | `#3da296` |
-| `--color-primary-dark`     | Hover-Status für Marken-Grün                 | `#1f6059`  | `#7dd0c1` |
-| `--color-primary-tint`     | Leichter Grünton für Steuerungen & Badges    | `#eaf3f1`  | `#1c2e2a` |
+| `--color-primary`          | Marken-Farbe (Haupt-Buttons & Fokus)         | `#9141ac`  | `#c061cb` |
+| `--color-primary-dark`     | Hover-Status für Marken-Farbe                | `#7b3793`  | `#c974d2` |
+| `--color-primary-tint`     | Leichter Akzentton für Steuerungen & Badges  | `#f6eff9`  | `#352538` |
 | `--color-hover`            | Hover-Hintergrund & Muted-Surface            | `#f4f1ec`  | `#2a2823` |
 | `--color-accent`           | Echtzeit-Updates / Aufmerksamkeits-Akzent    | `#e08e45`  | `#f0a05a` |
 | `--color-danger`           | Gefahr / Löschen / Warnungen                 | `#c1503f`  | `#e0685a` |
@@ -157,12 +157,12 @@ klar benannte Variable anlegen statt eine bestehende zweitzuverwenden.
 
 **Steuerungselement vs. Dateninhalt**: Flächen, die ein Werkzeug/eine Steuerung sind (Gruppieren-/
 Sortieren-/Filtern-Leiste, Kategorie-/Touren-Navigationsleiste – der Nutzer interagiert mit der
-Fläche selbst, sie zeigt keinen eigenen Inhalt) bekommen `--color-primary-tint` (das leichte
-Markengrün) als Hintergrund statt des neutralen `--color-hover`/`--color-surface` – macht sie auf
+Fläche selbst, sie zeigt keinen eigenen Inhalt) bekommen `--color-primary-tint` (die leichte
+Markenfarbe) als Hintergrund statt des neutralen `--color-hover`/`--color-surface` – macht sie auf
 einen Blick als "das ist Bedienung" erkennbar. Flächen, die Dateninhalt zeigen (Spot-/Ausflugs-Cards,
 Listenzeilen – der Inhalt selbst ist relevant, nicht die Fläche als Werkzeug) bleiben bei
 `--color-surface` (weiß/hell in Light Mode). Beispiel: `ExcursionsView.vue`s `.filter-bar`
-(Steuerung, grün) vs. `SpotCard.vue`/`ExcursionCard.vue` (Dateninhalt, weiß).
+(Steuerung, getönt) vs. `SpotCard.vue`/`ExcursionCard.vue` (Dateninhalt, weiß).
 
 Bewusste Ausnahme: `ExcursionsView.vue`s `.category-nav` nutzt trotz Steuerungselement-Charakter
 keinen eigenständigen Grünton, sondern passt sich transparent an den jeweils dahinterliegenden

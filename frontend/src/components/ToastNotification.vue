@@ -68,7 +68,7 @@ const { toasts, removeToast } = useToast();
 }
 
 .toast-item.toast-info {
-  border-left: 4px solid var(--color-primary, #2a7f74);
+  border-left: 4px solid var(--color-primary, #9141ac);
 }
 
 .toast-item.toast-success {

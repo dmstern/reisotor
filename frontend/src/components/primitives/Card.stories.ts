@@ -28,7 +28,7 @@ const meta: Meta<typeof Card> = {
     expandable: false,
     bannerPosition: 'auto',
     highlight: false,
-    tileColor: '#2a7f74',
+    tileColor: '#9141AC',
   },
 };
 
@@ -101,7 +101,7 @@ export const Elevated: Story = {
 export const DashboardTile: Story = {
   args: {
     variant: 'tile',
-    tileColor: '#2a7f74',
+    tileColor: '#9141AC',
     tileIcon: SECTION_ICON_DEFS.calendar,
   },
   render: (args) => ({

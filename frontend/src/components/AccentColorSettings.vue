@@ -90,7 +90,7 @@ function resetColor() {
         size="sm"
         @click="resetColor"
       >
-        <AppIcon :icon="ACTION_ICONS.refresh" :size="14" group="actions" /> Standard (Türkis)
+        <AppIcon :icon="ACTION_ICONS.refresh" :size="14" group="actions" /> Standard (Violett)
       </Button>
     </div>
 

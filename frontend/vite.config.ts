@@ -132,7 +132,7 @@ export default defineConfig({
           // Start von Home-Bildschirm/Taskleiste aus.
           background_color: '#EAF6F4',
           // style.css's --color-primary (Light-Mode).
-          theme_color: '#2a7f74',
+          theme_color: '#9141AC',
           icons: [
             { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
             { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },

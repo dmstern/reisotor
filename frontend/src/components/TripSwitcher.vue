@@ -238,7 +238,7 @@ function openMembers(trip: Trip) {
 }
 
 .trip-switcher.is-docked {
-  margin: 0 5px;
+  margin: 0 var(--space-2);
 }
 
 .trip-switcher.is-docked .switcher-btn {
