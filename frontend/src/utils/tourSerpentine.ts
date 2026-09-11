@@ -135,3 +135,191 @@ export function buildTourSerpentineRows(
 
   return rows;
 }
+
+export interface TourSpotBox {
+  x: number;
+  y: number;
+  top: number;
+  bottom: number;
+  right: number;
+  width: number;
+  height: number;
+  cx: number;
+  cy: number;
+}
+
+/**
+ * Ermittelt zusätzliche Kanten für Teilstrecken/Rückwege, wenn ein Spot mehrfach in der Tour vorkommt
+ * (z. B. Start = Ziel: [1, 2, 3, 1] -> Kante 3 -> 1).
+ */
+export function buildLoopSegments(spotIds: number[], domSpotIds: number[]): [number, number][] {
+  const domIndex = new Map<number, number>();
+  domSpotIds.forEach((id, i) => {
+    if (!domIndex.has(id)) domIndex.set(id, i);
+  });
+  const routeIndices = spotIds.map((id) => domIndex.get(id) ?? -1).filter((i) => i >= 0);
+  const segments: [number, number][] = [];
+  for (let i = 0; i < routeIndices.length - 1; i++) {
+    const from = routeIndices[i];
+    const to = routeIndices[i + 1];
+    if (to < from || to !== from + 1) {
+      segments.push([from, to]);
+    }
+  }
+  return segments;
+}
+
+/**
+ * Berechnet den SVG-Pfad und die Ankerpunkte für eine Zirkel-/Rückweglinie zwischen Spot a und b.
+ * Wählt dabei immer den kürzesten, unversperrten Weg zur Ziel-Karte (bspw. links aus der letzten Card
+ * heraus und geschwungen zur ersten Card hoch), statt starr hinter Zwischenkarten zu verschwinden.
+ */
+export function computeTourLoopPath(
+  a: TourSpotBox,
+  b: TourSpotBox,
+  allBoxes: TourSpotBox[],
+  wrapWidth: number
+): { d: string; dots: { x: number; y: number }[] } {
+  const dots: { x: number; y: number }[] = [];
+  let d = '';
+
+  const isSameCol = Math.abs(a.cx - b.cx) < 40;
+  const isSameRow = Math.abs(a.cy - b.cy) < 40;
+
+  // Fall 1: Gleiche Spalte und a liegt unter b (vertikal direkt nach oben)
+  if (isSameCol && a.top > b.bottom) {
+    const hasObstacle = allBoxes.some(
+      (box) =>
+        box !== a &&
+        box !== b &&
+        Math.abs(box.cx - a.cx) < 40 &&
+        box.bottom > b.bottom + 10 &&
+        box.top < a.top - 10
+    );
+
+    if (!hasObstacle) {
+      const startX = a.cx;
+      const startY = a.top;
+      const endX = b.cx;
+      const endY = b.bottom;
+      dots.push({ x: startX, y: startY });
+      dots.push({ x: endX, y: endY });
+      const dy = endY - startY;
+      const wave = Math.min(10, Math.max(5, Math.abs(dy) * 0.12));
+      d = ` M ${startX} ${startY} C ${startX - wave} ${startY + dy * 0.35}, ${endX + wave} ${endY - dy * 0.35}, ${endX} ${endY}`;
+      return { d, dots };
+    }
+  }
+
+  // Fall 2: a liegt rechts unterhalb von b (a.cx > b.cx und a.cy > b.cy)
+  // Kürzester Weg: Links aus a heraus, durch den leeren Raum geschwungen und von unten an b
+  if (a.cx > b.cx + 20 && a.cy > b.cy + 20) {
+    const hasObstacleInBCol = allBoxes.some(
+      (box) =>
+        box !== a &&
+        box !== b &&
+        box.cx < a.x &&
+        box.bottom > b.bottom + 10 &&
+        box.top < a.bottom + 10
+    );
+
+    if (!hasObstacleInBCol) {
+      const startX = a.x;
+      const startY = a.cy;
+      const endX = b.cx;
+      const endY = b.bottom;
+      dots.push({ x: startX, y: startY });
+      dots.push({ x: endX, y: endY });
+      const dx = startX - endX;
+      const dy = startY - endY;
+      const cp1X = startX - dx * 0.45;
+      const cp1Y = startY;
+      const cp2X = endX;
+      const cp2Y = endY + dy * 0.45;
+      d = ` M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`;
+      return { d, dots };
+    }
+  }
+
+  // Fall 3: a liegt links unterhalb von b (a.cx < b.cx und a.cy > b.cy)
+  if (a.cx < b.cx - 20 && a.cy > b.cy + 20) {
+    const hasObstacleInBCol = allBoxes.some(
+      (box) =>
+        box !== a &&
+        box !== b &&
+        box.cx > a.right &&
+        box.bottom > b.bottom + 10 &&
+        box.top < a.bottom + 10
+    );
+
+    if (!hasObstacleInBCol) {
+      const startX = a.right;
+      const startY = a.cy;
+      const endX = b.cx;
+      const endY = b.bottom;
+      dots.push({ x: startX, y: startY });
+      dots.push({ x: endX, y: endY });
+      const dx = endX - startX;
+      const dy = startY - endY;
+      const cp1X = startX + dx * 0.45;
+      const cp1Y = startY;
+      const cp2X = endX;
+      const cp2Y = endY + dy * 0.45;
+      d = ` M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`;
+      return { d, dots };
+    }
+  }
+
+  // Fall 4: Gleiche Zeile (z. B. 3 Spalten, alle Kacheln in Zeile 0)
+  if (isSameRow) {
+    const hasObstacleBelow = allBoxes.some(
+      (box) =>
+        box !== a &&
+        box !== b &&
+        box.top >= Math.min(a.bottom, b.bottom) - 10 &&
+        box.top <= Math.max(a.bottom, b.bottom) + 80 &&
+        box.right > Math.min(a.x, b.x) &&
+        box.x < Math.max(a.right, b.right)
+    );
+
+    if (!hasObstacleBelow) {
+      const startX = a.cx;
+      const startY = a.bottom;
+      const endX = b.cx;
+      const endY = b.bottom;
+      dots.push({ x: startX, y: startY });
+      dots.push({ x: endX, y: endY });
+      const dropY =
+        Math.max(a.bottom, b.bottom) + Math.min(60, Math.max(30, Math.abs(a.cx - b.cx) * 0.15));
+      d = ` M ${startX} ${startY} C ${startX} ${dropY}, ${endX} ${dropY}, ${endX} ${endY}`;
+      return { d, dots };
+    }
+  }
+
+  // Fall 5: Außenbogen (Fallback, wenn Innenraum blockiert oder einspaltig)
+  const isCloserToLeft = Math.max(a.cx, b.cx) < wrapWidth * 0.4;
+  if (isCloserToLeft) {
+    const startX = a.x;
+    const startY = a.cy;
+    const endX = b.x;
+    const endY = b.cy;
+    const arcExtent = Math.min(48, Math.max(24, Math.abs(endY - startY) * 0.25));
+    const ctrlX = Math.max(0, Math.min(a.x, b.x) - arcExtent);
+    dots.push({ x: startX, y: startY });
+    dots.push({ x: endX, y: endY });
+    d = ` M ${startX} ${startY} C ${ctrlX} ${startY}, ${ctrlX} ${endY}, ${endX} ${endY}`;
+    return { d, dots };
+  }
+
+  const rightEdge = Math.max(wrapWidth, 100);
+  const startX = a.right;
+  const startY = a.cy;
+  const endX = b.right;
+  const endY = b.cy;
+  const arcExtent = Math.min(48, Math.max(24, Math.abs(endY - startY) * 0.25));
+  const ctrlX = rightEdge + arcExtent;
+  dots.push({ x: startX, y: startY });
+  dots.push({ x: endX, y: endY });
+  d = ` M ${startX} ${startY} C ${ctrlX} ${startY}, ${ctrlX} ${endY}, ${endX} ${endY}`;
+  return { d, dots };
+}

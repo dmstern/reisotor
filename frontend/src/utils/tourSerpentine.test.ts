@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { Excursion, ExcursionLeg, Spot } from '../api/types';
-import { buildTourSerpentineRows } from './tourSerpentine';
+import {
+  buildTourSerpentineRows,
+  buildLoopSegments,
+  computeTourLoopPath,
+  type TourSpotBox,
+} from './tourSerpentine';
 
 function makeSpot(id: number, title = `Spot ${id}`): Spot {
   return {
@@ -154,5 +159,99 @@ describe('buildTourSerpentineRows', () => {
     }
 
     expect(rows[0].rowBreak?.leg?.transport_type).toBe('Bus');
+  });
+});
+
+describe('buildLoopSegments', () => {
+  it('returns empty array when route has no returning segments', () => {
+    expect(buildLoopSegments([1, 2, 3], [1, 2, 3])).toEqual([]);
+  });
+
+  it('detects round trip loop from last spot back to first', () => {
+    expect(buildLoopSegments([1, 2, 3, 1], [1, 2, 3])).toEqual([[2, 0]]);
+  });
+
+  it('detects intermediate loop back to an earlier spot', () => {
+    expect(buildLoopSegments([1, 2, 3, 2, 4], [1, 2, 3, 4])).toEqual([
+      [2, 1],
+      [1, 3],
+    ]);
+  });
+});
+
+describe('computeTourLoopPath', () => {
+  function makeBox(x: number, y: number, width = 200, height = 150): TourSpotBox {
+    return {
+      x,
+      y,
+      top: y,
+      bottom: y + height,
+      right: x + width,
+      width,
+      height,
+      cx: x + width / 2,
+      cy: y + height / 2,
+    };
+  }
+
+  it('takes the shortest interior path (exits left, curves up into bottom) when spot 3 returns to spot 1 in 2-column layout', () => {
+    // Spot 1: row 0, col 0 (top-left)
+    const spot1 = makeBox(20, 20); // x:20..220, y:20..170, cx:120, cy:95, bottom:170
+    // Spot 2: row 0, col 1 (top-right)
+    const spot2 = makeBox(260, 20); // x:260..460, y:20..170, cx:360, cy:95, bottom:170
+    // Spot 3: row 1, col 1 (bottom-right)
+    const spot3 = makeBox(260, 240); // x:260..460, y:240..390, cx:360, cy:315, bottom:390
+    // Col 0, row 1 is EMPTY
+
+    const result = computeTourLoopPath(spot3, spot1, [spot1, spot2, spot3], 500);
+
+    // Starts at left edge of spot 3 (x=260, cy=315)
+    expect(result.dots[0]).toEqual({ x: 260, y: 315 });
+    // Ends at bottom edge of spot 1 (cx=120, bottom=170)
+    expect(result.dots[1]).toEqual({ x: 120, y: 170 });
+    // Path moves left and up, entering spot 1 from below
+    expect(result.d).toContain('M 260 315');
+    expect(result.d).toContain('120 170');
+  });
+
+  it('connects directly upward when last spot is directly below first spot with no card in between', () => {
+    // Spot 1: row 0, col 0
+    const spot1 = makeBox(20, 20);
+    // Spot 4: row 1, col 0 (directly below spot 1)
+    const spot4 = makeBox(20, 240);
+
+    const result = computeTourLoopPath(spot4, spot1, [spot1, spot4], 500);
+
+    // Starts at top edge of spot 4 (cx=120, top=240)
+    expect(result.dots[0]).toEqual({ x: 120, y: 240 });
+    // Ends at bottom edge of spot 1 (cx=120, bottom=170)
+    expect(result.dots[1]).toEqual({ x: 120, y: 170 });
+  });
+
+  it('uses under-row U-curve when spots are in the same row with empty space below', () => {
+    // Spot 1: col 0, row 0
+    const spot1 = makeBox(20, 20);
+    // Spot 2: col 1, row 0
+    const spot2 = makeBox(260, 20);
+    // Spot 3: col 2, row 0
+    const spot3 = makeBox(500, 20);
+
+    const result = computeTourLoopPath(spot3, spot1, [spot1, spot2, spot3], 800);
+
+    expect(result.dots[0]).toEqual({ x: 600, y: 170 }); // spot3 cx, bottom
+    expect(result.dots[1]).toEqual({ x: 120, y: 170 }); // spot1 cx, bottom
+  });
+
+  it('falls back to outer side arc when cards are in single column with obstacle in between', () => {
+    // Single column: spot 1, spot 2, spot 3 vertically stacked
+    const spot1 = makeBox(20, 20);
+    const spot2 = makeBox(20, 200); // obstacle in between
+    const spot3 = makeBox(20, 380);
+
+    const result = computeTourLoopPath(spot3, spot1, [spot1, spot2, spot3], 240);
+
+    // Fallback side arc along the side
+    expect(result.dots).toHaveLength(2);
+    expect(result.d).toContain('C');
   });
 });
