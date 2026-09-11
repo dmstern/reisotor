@@ -305,36 +305,32 @@ function onSpotDrop(event: DragEvent) {
       <span class="tour-bar-label">{{ excursion.role ? 'REISE' : 'TOUR' }}</span>
     </div>
     <div class="tour-card-main">
-      <div class="tour-image-wrap">
-        <div class="tour-polaroid-frame">
-          <div
-            class="image-inner"
-            :style="displayImage ? { backgroundImage: `url(${displayImage})` } : {}"
-          >
-            <SpotImageCollage v-if="showCollage" :images="fallbackImages" />
-            <AppIcon
-              v-else-if="!displayImage"
-              class="placeholder"
-              :size="30"
-              :icon="
-                excursion.role
-                  ? travelTypeIconDef(excursion.transport_type)
-                  : SECTION_ICON_DEFS.excursions
-              "
-              group="categories"
-            />
-          </div>
+      <div
+        class="tour-image"
+        :style="displayImage ? { backgroundImage: `url(${displayImage})` } : {}"
+      >
+        <SpotImageCollage v-if="showCollage" :images="fallbackImages" />
+        <AppIcon
+          v-else-if="!displayImage"
+          class="placeholder"
+          :size="30"
+          :icon="
+            excursion.role
+              ? travelTypeIconDef(excursion.transport_type)
+              : SECTION_ICON_DEFS.excursions
+          "
+          group="categories"
+        />
 
-          <!-- Floating Edit-Button im aufgeklappten Zustand -->
-          <Transition name="fade">
-            <EditButton
-              v-if="expanded"
-              floating
-              class="tour-polaroid-edit-btn"
-              @click="emit('edit', excursion)"
-            />
-          </Transition>
-        </div>
+        <!-- Floating Edit-Button im aufgeklappten Zustand -->
+        <Transition name="fade">
+          <EditButton
+            v-if="expanded"
+            floating
+            class="tour-image-edit-btn"
+            @click="emit('edit', excursion)"
+          />
+        </Transition>
       </div>
 
       <div class="body">
@@ -760,63 +756,12 @@ function onSpotDrop(event: DragEvent) {
   background: var(--excursion-theme-tint);
 }
 
-.tour-image-wrap {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-}
-
-.tour-polaroid-frame {
-  width: 105px;
-  height: 112px;
+.tour-image {
+  width: 110px;
   flex-shrink: 0;
-  background: #ffffff;
+  align-self: stretch;
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
-  padding: 5px 5px 14px 5px;
-  box-sizing: border-box;
-  box-shadow:
-    0 3px 10px rgba(0, 0, 0, 0.12),
-    0 1px 3px rgba(0, 0, 0, 0.08);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  transition:
-    transform 0.22s cubic-bezier(0.34, 1.4, 0.64, 1),
-    box-shadow 0.2s ease;
-}
-
-:root[data-theme='dark'] .tour-polaroid-frame {
-  background: #2a2825;
-  border-color: rgba(255, 255, 255, 0.16);
-  box-shadow:
-    0 4px 12px rgba(0, 0, 0, 0.45),
-    0 1px 3px rgba(0, 0, 0, 0.25);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) .tour-polaroid-frame {
-    background: #2a2825;
-    border-color: rgba(255, 255, 255, 0.16);
-    box-shadow:
-      0 4px 12px rgba(0, 0, 0, 0.45),
-      0 1px 3px rgba(0, 0, 0, 0.25);
-  }
-}
-
-.excursion-card:hover .tour-polaroid-frame {
-  box-shadow:
-    0 5px 14px rgba(0, 0, 0, 0.16),
-    0 2px 4px rgba(0, 0, 0, 0.1);
-  transform: rotate(-0.75deg) scale(1.02);
-}
-
-.image-inner {
-  width: 100%;
-  flex: 1;
-  border-radius: var(--radius-sm);
   overflow: hidden;
   background: var(--color-primary-tint) center/cover no-repeat;
   display: flex;
@@ -847,7 +792,7 @@ function onSpotDrop(event: DragEvent) {
   opacity: 0.7;
 }
 
-.tour-polaroid-edit-btn {
+.tour-image-edit-btn {
   position: absolute;
   top: 6px;
   left: 6px;
@@ -1395,14 +1340,12 @@ function onSpotDrop(event: DragEvent) {
     gap: 8px;
   }
 
-  .tour-polaroid-frame {
+  .tour-image {
     width: 76px;
-    height: 82px;
-    padding: 4px 4px 10px 4px;
     border-radius: var(--radius-sm-squircle);
   }
 
-  .tour-polaroid-frame .placeholder {
+  .tour-image .placeholder {
     font-size: 1.5rem;
   }
 
@@ -1506,7 +1449,6 @@ function onSpotDrop(event: DragEvent) {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .tour-polaroid-frame,
   .body,
   .excursion-accordion,
   .status,
