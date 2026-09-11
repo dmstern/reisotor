@@ -4884,6 +4884,8 @@ async function deleteEditingSpot() {
   min-height: 0;
   overflow: hidden;
   transition: overflow 0s 0s;
+  box-sizing: border-box;
+  max-width: 100%;
 }
 
 .tour-station-accordion.is-expanded .tour-station-accordion-inner {
@@ -4929,6 +4931,8 @@ async function deleteEditingSpot() {
   gap: var(--space-3);
   padding: var(--space-2) 12px 24px 12px;
   width: 100%;
+  box-sizing: border-box;
+  max-width: 100%;
 }
 
 .tour-serpentine-row-wrap {
@@ -4936,6 +4940,7 @@ async function deleteEditingSpot() {
   flex-direction: column;
   gap: var(--space-2);
   width: 100%;
+  box-sizing: border-box;
 }
 
 .tour-serpentine-row {
@@ -4943,6 +4948,7 @@ async function deleteEditingSpot() {
   align-items: stretch;
   gap: 0;
   width: 100%;
+  box-sizing: border-box;
   position: relative;
 }
 

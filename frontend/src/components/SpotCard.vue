@@ -500,7 +500,7 @@ function openCalendarConfirmDone() {
         </div>
       </div>
 
-      <div class="card-actions-wrapper">
+      <div class="card-actions-wrapper" :class="{ 'is-expanded': expanded }">
         <div class="mobile-only-accordion" :class="{ 'is-expanded': expanded }" :inert="!expanded">
           <div class="mobile-only-accordion-inner accordion-stagger">
             <div class="card-actions">
@@ -601,6 +601,13 @@ function openCalendarConfirmDone() {
             />
           </div>
         </div>
+      </div>
+
+      <!-- Untere Zeile (Footer): Anhänge links, Social Actions rechts (nutzt beide Ecken optimal aus) -->
+      <div class="card-footer-row" :class="{ 'is-expanded': expanded }">
+        <div class="card-attachments-wrap" :class="{ 'is-expanded': expanded }" :inert="!expanded">
+          <FileAttachments domain="spots" :entity-id="spot.id" :editable="false" />
+        </div>
 
         <div class="card-social-actions" :class="{ 'is-expanded': expanded }">
           <Transition name="comment-pop">
@@ -652,11 +659,6 @@ function openCalendarConfirmDone() {
             @submit="(content) => emit('submit-comment', content)"
             @remove="(id) => emit('remove-comment', id)"
           />
-        </div>
-      </div>
-      <div class="spot-accordion" :class="{ 'is-expanded': expanded }" :inert="!expanded">
-        <div class="spot-accordion-inner accordion-stagger">
-          <FileAttachments domain="spots" :entity-id="spot.id" :editable="false" />
         </div>
       </div>
 
@@ -761,11 +763,12 @@ function openCalendarConfirmDone() {
   flex-direction: column;
   cursor: pointer;
   scroll-margin-top: calc(var(--space-2) + var(--category-nav-clearance));
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .spot-card:not(.expanded) {
   height: 268px;
-  box-sizing: border-box;
 }
 
 .spot-card.expanded {
@@ -1024,6 +1027,8 @@ function openCalendarConfirmDone() {
   gap: var(--space-1);
   flex: 1;
   min-height: 0;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .spot-card:not(.expanded) .body {
@@ -1053,7 +1058,11 @@ function openCalendarConfirmDone() {
 
 .spot-card.expanded .card-title-block {
   transform: translateY(calc(-100% - var(--space-3) * 2));
-  margin-bottom: -32px;
+  margin-bottom: -44px;
+}
+
+.spot-card.expanded .card-title-block:has(.card-title-meta) {
+  margin-bottom: -56px;
 }
 
 .card-title {
@@ -1168,16 +1177,60 @@ function openCalendarConfirmDone() {
 .card-actions-wrapper {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
   gap: var(--space-2);
-  margin-top: auto;
   position: relative;
   z-index: 2;
+  width: 100%;
 }
 
 .spot-card:not(.expanded) .card-actions-wrapper {
   position: static;
+  margin-top: auto;
+}
+
+.spot-card.expanded .card-actions-wrapper {
+  margin-top: 0;
+}
+
+.card-footer-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-top: auto;
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.spot-card:not(.expanded) .card-footer-row {
+  position: static;
+  margin-top: 0;
+}
+
+.card-attachments-wrap {
+  min-width: 0;
+  flex: 1;
+}
+
+.spot-card:not(.expanded) .card-attachments-wrap {
+  display: none;
+}
+
+.card-attachments-wrap :deep(.file-attachments) {
+  margin-top: var(--space-1);
+}
+
+.card-attachments-wrap :deep(.heading) {
+  margin-bottom: 2px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.card-attachments-wrap :deep(.attachments-polaroid-wrap) {
+  padding: 2px 0 2px 2px;
 }
 
 .card-social-actions {
@@ -1251,6 +1304,11 @@ function openCalendarConfirmDone() {
   align-items: center;
   gap: var(--space-2);
   margin-top: var(--space-1);
+}
+
+.spot-card.expanded .card-actions {
+  margin-top: 0;
+  width: 100%;
 }
 
 .spot-card:not(.expanded) .card-actions {
@@ -1445,7 +1503,7 @@ function openCalendarConfirmDone() {
     z-index: 1;
     margin-left: 0;
     margin-top: 160px;
-    padding: var(--space-3);
+    padding: 10px 14px 12px 14px;
     min-width: 0;
     /* Beim Aufklappen: gleitet sofort nach unten (Stufe 1) */
     transition:
