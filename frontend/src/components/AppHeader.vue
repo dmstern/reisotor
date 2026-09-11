@@ -248,7 +248,7 @@ const profileTitle = computed(() => {
 }
 
 .floating-island.has-nav {
-  margin-top: var(--space-3);
+  margin-top: var(--space-4);
 }
 
 .switcher {
