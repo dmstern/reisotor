@@ -328,6 +328,8 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
     await page.goto('/excursions');
     await page.getByRole('button', { name: 'Touren' }).click();
     const tourCard = page.locator('.excursion-card', { hasText: tourTitle });
+    // Titel anklicken zum Aufklappen (analog zu spotCard unten), da Aktionen in der kompakten Zeilen-Ansicht erst nach dem Aufklappen sichtbar sind
+    await tourCard.locator('h3').click();
     await expect(tourCard.locator('.status.status-done')).toBeVisible();
 
     await page.goto('/excursions');
@@ -340,18 +342,16 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
     );
   });
 
-  test.describe('Status-Badges ragen auf schmalen Breiten nicht über das Vorschaubild hinaus', () => {
+  test.describe('Status-Button ragt auf schmalen Breiten nicht über die Karte hinaus', () => {
     test.use({ viewport: VIEWPORTS.mobile });
 
-    // Regressionstest für einen bereits einmal gefixten Bug (siehe SpotCard.vue's .status/
-    // .status-text): in der kompakten, nicht aufgeklappten Kartenzeile (@container spots-col
-    // (max-width: 480px)) schrumpft .image auf 64px - die Status-Pille (Icon+Text) war dort
-    // strukturell breiter als ihr eigener Positionierungs-Kontext und lief in den Titel/
-    // Kategorie-Bereich daneben hinein. Seit #106 gibt es nur noch EIN gemeinsames Datums-/
-    // Status-Badge statt zweier gleichzeitig sichtbarer Chips (das alte separate
-    // "Gemacht"-Badge entfiel) - die verlangt ihr eigenes Datum, daher hier erst planen, dann
-    // erst als gemacht markieren (Reihenfolge ist seit #106 verpflichtend).
-    test('gemachter Spot: das Status-Badge bleibt innerhalb von .image', async ({ page }) => {
+    // Regressionstest: In der kompakten, nicht-expandierten Kartenansicht ist der Status mit
+    // dem Action-Button verschmolzen (.done-toggle) und liegt im Body (nicht mehr als separates Badge auf .image).
+    // Auf schmalen Breiten (Mobile) darf der Status-Button nicht aus der Karte herausragen, und
+    // auf .image darf kein doppeltes Badge mehr liegen.
+    test('gemachter Spot: einheitlicher Status-Button liegt in der Karte und Bild hat kein separates Badge', async ({
+      page,
+    }) => {
       const marker = `E2E-StatusOverflow-${Date.now()}`;
       const spotTitle = `Überlauf-Check ${marker}`;
 
@@ -379,10 +379,14 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
       await page.goto('/excursions');
       const spotCard = page.locator('.spot-card', { hasText: spotTitle });
       // NICHT aufklappen - die kompakte, nicht-expandierte Kartenzeile ist genau der Fall, in dem
-      // der Bug auftrat (.spot-card.expanded nutzt weiterhin die volle Pillen-Darstellung).
+      // der Status-Button sichtbar ist.
       await expect(spotCard).toBeVisible();
       const image = spotCard.locator('.image');
-      await expectWithinBox(spotCard.locator('.status.status-done'), image);
+      await expect(image.locator('.status')).toHaveCount(0);
+      const statusBtn = spotCard.locator('.done-toggle.status-done');
+      await expect(statusBtn).toBeVisible();
+      await expect(statusBtn).toContainText('Besucht am');
+      await expectWithinBox(statusBtn, spotCard);
     });
   });
 });
