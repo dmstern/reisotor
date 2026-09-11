@@ -392,48 +392,6 @@ function openCalendarConfirmDone() {
           </div>
         </div>
       </Transition>
-
-      <!-- Collapsed Zustand: Passives Status-Badge unten rechts (#106) -->
-      <span
-        v-if="!expanded && (scheduledDate || totalItemsCount > 0 || isSpotDone || dayWeather)"
-        class="status"
-        :class="{
-          planned: (scheduledDate || totalItemsCount > 0) && !isSpotDone && !isSpotPartiallyDone,
-          'status-done': isSpotDone || isSpotPartiallyDone,
-        }"
-      >
-        <AppIcon
-          class="status-icon"
-          :size="14"
-          :icon="
-            isSpotDone || isSpotPartiallyDone
-              ? ACTION_ICONS.done
-              : scheduledDate || totalItemsCount > 0
-                ? FORM_FIELD_ICONS.date
-                : ACTION_ICONS.today
-          "
-          group="actions"
-        />
-        <span class="status-text">
-          <template v-if="totalItemsCount > 1">
-            <template v-if="allItemsDone">Besucht an {{ totalItemsCount }} Tagen</template>
-            <template v-else-if="doneItemsCount > 0">
-              {{ doneItemsCount }} von {{ totalItemsCount }} Tagen besucht
-            </template>
-            <template v-else>Geplant an {{ totalItemsCount }} Tagen</template>
-          </template>
-          <template v-else-if="isSpotDone && scheduledDate">
-            Besucht am {{ plannedDateLabel }}
-          </template>
-          <template v-else-if="isSpotDone">Gemacht</template>
-          <template v-else-if="scheduledDate">Geplant für {{ plannedDateLabel }}</template>
-          <template v-else>Aktuelles Wetter</template>
-          <template v-if="dayWeather && scheduledDaysCount <= 1">
-            · <WeatherIcon :code="dayWeather.weatherCode" :size="14" />
-            {{ Math.round(dayWeather.tempMax) }}°</template
-          >
-        </span>
-      </span>
     </div>
 
     <!-- Gleitende Badge-Gruppe: Ein einziges Element, das nahtlos zwischen Body und Cover-Ecke gleitet -->
@@ -559,23 +517,24 @@ function openCalendarConfirmDone() {
               >
                 <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" /> Einplanen
               </button>
-              <!-- Verschmolzener Status-Button (Geplant-Status + Gemacht-Checkbox) -->
+              <!-- Verschmolzener Status-Button (Geplant-Status + Gemacht-Checkbox) – in beiden Zuständen -->
               <button
                 v-if="!isAccommodation"
                 type="button"
                 class="done-toggle"
                 :class="{
-                  status:
-                    expanded &&
-                    !!(scheduledDate || totalItemsCount > 0 || isSpotDone || isSpotPartiallyDone),
-                  planned:
-                    expanded &&
-                    !!(
-                      (scheduledDate || totalItemsCount > 0) &&
-                      !isSpotDone &&
-                      !isSpotPartiallyDone
-                    ),
-                  'status-done': expanded && (isSpotDone || isSpotPartiallyDone),
+                  status: !!(
+                    scheduledDate ||
+                    totalItemsCount > 0 ||
+                    isSpotDone ||
+                    isSpotPartiallyDone
+                  ),
+                  planned: !!(
+                    (scheduledDate || totalItemsCount > 0) &&
+                    !isSpotDone &&
+                    !isSpotPartiallyDone
+                  ),
+                  'status-done': isSpotDone || isSpotPartiallyDone,
                   active: isSpotDone,
                 }"
                 :aria-pressed="isSpotDone"
@@ -976,13 +935,11 @@ function openCalendarConfirmDone() {
 
 .status-text {
   display: inline-block;
-  max-width: 240px;
   opacity: 1;
   overflow: hidden;
   white-space: nowrap;
-  transition:
-    max-width 0.3s cubic-bezier(0.32, 0.72, 0, 1),
-    opacity 0.2s ease;
+  text-overflow: ellipsis;
+  transition: opacity 0.2s ease 0.14s;
 }
 
 .status.planned,
@@ -1500,47 +1457,6 @@ function openCalendarConfirmDone() {
 
   .spot-card:not(.expanded) .social-row {
     margin-top: 0;
-  }
-
-  /* Status-Pille schrumpft in der Miniatur zum runden Icon-Kreis und morpht zur Pille */
-  .status {
-    /* Beim Aufklappen: Text entfaltet sich erst, wenn das Banner bereits Breite gewonnen hat */
-    transition:
-      width 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.08s,
-      height 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.08s,
-      padding 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.08s,
-      gap 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.08s,
-      border-radius 0.28s ease 0.08s;
-  }
-
-  .status-text {
-    transition:
-      max-width 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s,
-      opacity 0.2s ease 0.14s;
-  }
-
-  .spot-card:not(.expanded) .status {
-    width: 22px;
-    height: 22px;
-    padding: 0;
-    gap: 0;
-    justify-content: center;
-    border-radius: 50%;
-    /* Beim Zuklappen: Pille schrumpft sofort zum Kreis, bevor das Bild nach links gleitet */
-    transition:
-      width 0.2s cubic-bezier(0.32, 0.72, 0, 1) 0s,
-      height 0.2s cubic-bezier(0.32, 0.72, 0, 1) 0s,
-      padding 0.2s cubic-bezier(0.32, 0.72, 0, 1) 0s,
-      gap 0.2s cubic-bezier(0.32, 0.72, 0, 1) 0s,
-      border-radius 0.2s ease 0s;
-  }
-
-  .spot-card:not(.expanded) .status-text {
-    max-width: 0;
-    opacity: 0;
-    transition:
-      max-width 0.18s cubic-bezier(0.32, 0.72, 0, 1) 0s,
-      opacity 0.14s ease 0s;
   }
 
   .mobile-only-accordion {
