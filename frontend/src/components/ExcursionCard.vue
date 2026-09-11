@@ -1393,18 +1393,33 @@ function onSpotDrop(event: DragEvent) {
   overflow: visible;
 }
 
-/* Hover-Effekt auf der Collapsed Card: Sanftes Auffächern der Polaroids */
-.excursion-card:not(.expanded):hover :deep(.polaroid-tile:nth-child(1)) {
-  transform: rotate(-12deg) translate(-7px, 2px) scale(1.02);
+/* Hover-Effekt auf der Collapsed Card: Sanftes Auffächern der Station-Polaroids (#235) */
+.excursion-card:not(.expanded):hover :deep(.tour-polaroid-stack .polaroid-tile) {
+  transform: var(--tile-fanned-transform);
 }
-.excursion-card:not(.expanded):hover :deep(.polaroid-tile:nth-child(2)) {
-  transform: rotate(8deg) translate(6px, -2px) scale(1.02);
+
+.excursion-card:not(.expanded):hover :deep(.tour-polaroid-stack .polaroid-tile:first-child) {
+  box-shadow:
+    0 6px 14px rgba(0, 0, 0, 0.2),
+    0 2px 5px rgba(0, 0, 0, 0.12);
 }
-.excursion-card:not(.expanded):hover :deep(.polaroid-tile:nth-child(3)) {
-  transform: rotate(-4deg) translate(2px, 0px) scale(1.03);
+
+:root[data-theme='dark']
+  .excursion-card:not(.expanded):hover
+  :deep(.tour-polaroid-stack .polaroid-tile:first-child) {
+  box-shadow:
+    0 6px 16px rgba(0, 0, 0, 0.55),
+    0 2px 5px rgba(0, 0, 0, 0.3);
 }
-.excursion-card:not(.expanded):hover :deep(.polaroid-tile:nth-child(4)) {
-  transform: rotate(11deg) translate(9px, -1px) scale(1.03);
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light'])
+    .excursion-card:not(.expanded):hover
+    :deep(.tour-polaroid-stack .polaroid-tile:first-child) {
+    box-shadow:
+      0 6px 16px rgba(0, 0, 0, 0.55),
+      0 2px 5px rgba(0, 0, 0, 0.3);
+  }
 }
 
 .tour-attachments-wrap {

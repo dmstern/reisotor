@@ -124,4 +124,22 @@ describe('PolaroidStack primitive', () => {
     expect(html).toMatch(/z-index:\s*2/);
     expect(html).toMatch(/z-index:\s*1/);
   });
+
+  it('defines --tile-base-transform and --tile-fanned-transform CSS custom properties for fanning', async () => {
+    const app = createTestApp(PolaroidStack, {
+      items: ['https://example.com/photo1.jpg', 'https://example.com/photo2.jpg'],
+    });
+    const html = await renderToString(app);
+    expect(html).toContain('--tile-base-transform');
+    expect(html).toContain('--tile-fanned-transform');
+  });
+
+  it('renders .is-fanned class when fanned prop is true', async () => {
+    const app = createTestApp(PolaroidStack, {
+      items: ['https://example.com/photo.jpg'],
+      fanned: true,
+    });
+    const html = await renderToString(app);
+    expect(html).toContain('is-fanned');
+  });
 });

@@ -40,6 +40,7 @@ const props = withDefaults(
     clipped?: boolean;
     interactive?: boolean;
     expanded?: boolean;
+    fanned?: boolean;
     title?: string;
     size?: 'sm' | 'md';
     extraCount?: number;
@@ -49,6 +50,7 @@ const props = withDefaults(
     clipped: false,
     interactive: true,
     expanded: false,
+    fanned: false,
     size: 'sm',
   }
 );
@@ -145,15 +147,23 @@ const stackTooltip = computed(() => {
 function polaroidTileStyle(idx: number, total: number) {
   if (total === 1) {
     return {
-      transform: 'rotate(-2deg) translate(0px, 0px)',
+      '--tile-base-transform': 'rotate(-2deg) translate(0px, 0px)',
+      '--tile-fanned-transform': 'rotate(-1deg) translate(0px, -2px) scale(1.03)',
       zIndex: 1,
     };
   }
   const angles = [-2, 6, -7, 8];
   const xOffsets = [0, 4, -5, 6];
   const yOffsets = [0, -1, 2, 1];
+
+  const fannedAngles = [-3, 11, -13, 15];
+  const fannedX = [-2, 9, -10, 13];
+  const fannedY = [-2, -1, 2, 1];
+  const fannedScale = [1.02, 1.01, 1.01, 1.01];
+
   return {
-    transform: `rotate(${angles[idx % angles.length]}deg) translate(${xOffsets[idx % xOffsets.length]}px, ${yOffsets[idx % yOffsets.length]}px)`,
+    '--tile-base-transform': `rotate(${angles[idx % angles.length]}deg) translate(${xOffsets[idx % xOffsets.length]}px, ${yOffsets[idx % yOffsets.length]}px)`,
+    '--tile-fanned-transform': `rotate(${fannedAngles[idx % fannedAngles.length]}deg) translate(${fannedX[idx % fannedX.length]}px, ${fannedY[idx % fannedY.length]}px) scale(${fannedScale[idx % fannedScale.length]})`,
     zIndex: total - idx,
   };
 }
@@ -177,6 +187,7 @@ function handleClick(e: Event) {
         'has-multiple': visibleItems.length > 1,
         'is-interactive': interactive,
         'is-expanded': expanded,
+        'is-fanned': fanned,
         'is-clipped': clipped,
       },
     ]"
@@ -374,10 +385,11 @@ function handleClick(e: Event) {
   display: flex;
   flex-direction: column;
   transform-origin: center bottom;
+  transform: var(--tile-base-transform);
   transition:
-    transform 0.35s cubic-bezier(0.34, 1.3, 0.64, 1),
-    box-shadow 0.25s ease,
-    opacity 0.25s ease;
+    transform 0.28s cubic-bezier(0.34, 1.4, 0.64, 1),
+    box-shadow 0.22s ease,
+    opacity 0.22s ease;
   user-select: none;
 }
 
@@ -626,18 +638,33 @@ function handleClick(e: Event) {
   filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.25));
 }
 
-/* Hover-Effekt: Sanftes Auffächern */
-.polaroid-stack.is-interactive:hover .polaroid-tile:nth-child(1) {
-  transform: rotate(-2deg) translate(0px, 0px) scale(1.02);
+/* Hover- & Fächer-Effekt: Sanftes Auffächern bei interaktiven Stapeln oder gesteuert */
+.polaroid-stack.is-interactive:hover .polaroid-tile,
+.polaroid-stack.is-fanned .polaroid-tile {
+  transform: var(--tile-fanned-transform, var(--tile-base-transform));
 }
-.polaroid-stack.is-interactive:hover .polaroid-tile:nth-child(2) {
-  transform: rotate(10deg) translate(8px, -2px) scale(1.01);
+
+.polaroid-stack.is-interactive:hover .polaroid-tile:first-child,
+.polaroid-stack.is-fanned .polaroid-tile:first-child {
+  box-shadow:
+    0 6px 14px rgba(0, 0, 0, 0.2),
+    0 2px 5px rgba(0, 0, 0, 0.12);
 }
-.polaroid-stack.is-interactive:hover .polaroid-tile:nth-child(3) {
-  transform: rotate(-12deg) translate(-9px, 2px) scale(1.01);
+
+:root[data-theme='dark'] .polaroid-stack.is-interactive:hover .polaroid-tile:first-child,
+:root[data-theme='dark'] .polaroid-stack.is-fanned .polaroid-tile:first-child {
+  box-shadow:
+    0 6px 16px rgba(0, 0, 0, 0.55),
+    0 2px 5px rgba(0, 0, 0, 0.3);
 }
-.polaroid-stack.is-interactive:hover .polaroid-tile:nth-child(4) {
-  transform: rotate(14deg) translate(12px, -1px) scale(1.01);
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .polaroid-stack.is-interactive:hover .polaroid-tile:first-child,
+  :root:not([data-theme='light']) .polaroid-stack.is-fanned .polaroid-tile:first-child {
+    box-shadow:
+      0 6px 16px rgba(0, 0, 0, 0.55),
+      0 2px 5px rgba(0, 0, 0, 0.3);
+  }
 }
 
 /* Morph-Animation beim Aufklappen */

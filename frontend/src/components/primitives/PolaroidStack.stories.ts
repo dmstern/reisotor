@@ -70,12 +70,14 @@ const meta: Meta<typeof PolaroidStack> = {
   argTypes: {
     clipped: { control: 'boolean' },
     interactive: { control: 'boolean' },
+    fanned: { control: 'boolean' },
     size: { control: 'select', options: ['sm', 'md'] },
     maxVisible: { control: 'number' },
   },
   args: {
     clipped: true,
     interactive: true,
+    fanned: false,
     size: 'sm',
     maxVisible: 4,
   },
@@ -95,6 +97,14 @@ export const PhotoStackWithClip: Story = {
   args: {
     items: [samplePhoto1, samplePhoto2, samplePhoto3],
     clipped: true,
+  },
+};
+
+export const FannedOutStack: Story = {
+  args: {
+    items: [samplePhoto1, samplePhoto2, samplePhoto3],
+    clipped: true,
+    fanned: true,
   },
 };
 
