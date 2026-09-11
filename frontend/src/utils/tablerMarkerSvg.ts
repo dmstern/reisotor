@@ -56,6 +56,8 @@ import ticketOutline from '@tabler/icons/outline/ticket.svg?raw';
 import ticketFilled from '@tabler/icons/filled/ticket.svg?raw';
 import compassOutline from '@tabler/icons/outline/compass.svg?raw';
 import compassFilled from '@tabler/icons/filled/compass.svg?raw';
+import bikeOutline from '@tabler/icons/outline/bike.svg?raw';
+import bikeFilled from '@tabler/icons/filled/bike.svg?raw';
 
 const RAW_SVG: Record<string, { outline: string; filled?: string }> = {
   'tools-kitchen-2': { outline: toolsKitchen2Outline, filled: toolsKitchen2Filled },
@@ -85,6 +87,7 @@ const RAW_SVG: Record<string, { outline: string; filled?: string }> = {
   plane: { outline: planeOutline, filled: planeFilled },
   car: { outline: carOutline, filled: carFilled },
   ship: { outline: shipOutline },
+  bike: { outline: bikeOutline, filled: bikeFilled },
   ticket: { outline: ticketOutline, filled: ticketFilled },
   compass: { outline: compassOutline, filled: compassFilled },
 };
