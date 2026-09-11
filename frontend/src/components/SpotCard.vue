@@ -1076,6 +1076,7 @@ function openCalendarConfirmDone() {
   transform: translateY(calc(-100% - var(--space-3) * 2));
   margin-bottom: -44px;
   padding-left: calc(var(--space-3) - var(--space-1));
+  padding-right: calc(var(--space-3) - var(--space-1));
 }
 
 .spot-card.expanded .card-title-block:has(.card-title-meta) {
