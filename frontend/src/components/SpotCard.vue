@@ -551,17 +551,28 @@ function openCalendarConfirmDone() {
                 <template v-if="totalItemsCount > 1">
                   <template v-if="allItemsDone">
                     <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
-                    <span class="status-text">Besucht an {{ totalItemsCount }} Tagen</span>
+                    <span class="status-text">
+                      <template v-if="expanded">Besucht an {{ totalItemsCount }} Tagen</template>
+                      <template v-else>{{ totalItemsCount }}x besucht</template>
+                    </span>
                   </template>
                   <template v-else-if="doneItemsCount > 0">
                     <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
                     <span class="status-text">
-                      Besucht an {{ doneItemsCount }} von {{ totalItemsCount }} Tagen
+                      <template v-if="expanded">
+                        Besucht an {{ doneItemsCount }} von {{ totalItemsCount }} Tagen
+                      </template>
+                      <template v-else>
+                        {{ doneItemsCount }}/{{ totalItemsCount }} x besucht
+                      </template>
                     </span>
                   </template>
                   <template v-else>
                     <AppIcon :icon="ACTION_ICONS.notDone" :size="14" group="actions" />
-                    <span class="status-text">Geplant an {{ totalItemsCount }} Tagen</span>
+                    <span class="status-text">
+                      <template v-if="expanded">Geplant an {{ totalItemsCount }} Tagen</template>
+                      <template v-else>{{ totalItemsCount }}x geplant</template>
+                    </span>
                   </template>
                 </template>
                 <template v-else-if="isSpotDone">
@@ -1362,6 +1373,9 @@ function openCalendarConfirmDone() {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   background: var(--color-hover);
   border: 1px solid var(--color-border);
   border-radius: 999px;
