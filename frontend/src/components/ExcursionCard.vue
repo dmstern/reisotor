@@ -305,63 +305,77 @@ function onSpotDrop(event: DragEvent) {
       <span class="tour-bar-label">{{ excursion.role ? 'REISE' : 'TOUR' }}</span>
     </div>
     <div class="tour-card-main">
-      <div class="image" :style="displayImage ? { backgroundImage: `url(${displayImage})` } : {}">
-        <SpotImageCollage v-if="showCollage" :images="fallbackImages" />
-        <AppIcon
-          v-else-if="!displayImage"
-          class="placeholder"
-          :size="35"
-          :icon="
-            excursion.role
-              ? travelTypeIconDef(excursion.transport_type)
-              : SECTION_ICON_DEFS.excursions
-          "
-          group="categories"
-        />
-
-        <!-- Expanded Cover Overlay: Halbdunkles Gradient-Overlay mit Edit-Button -->
-        <Transition name="overlay-fade">
-          <div v-if="expanded" class="image-expanded-overlay">
-            <div class="overlay-top-row">
-              <EditButton floating class="overlay-edit-btn" @click="emit('edit', excursion)" />
-            </div>
+      <div class="tour-image-wrap">
+        <div class="tour-polaroid-frame">
+          <div
+            class="image-inner"
+            :style="displayImage ? { backgroundImage: `url(${displayImage})` } : {}"
+          >
+            <SpotImageCollage v-if="showCollage" :images="fallbackImages" />
+            <AppIcon
+              v-else-if="!displayImage"
+              class="placeholder"
+              :size="30"
+              :icon="
+                excursion.role
+                  ? travelTypeIconDef(excursion.transport_type)
+                  : SECTION_ICON_DEFS.excursions
+              "
+              group="categories"
+            />
           </div>
-        </Transition>
-      </div>
 
-      <!-- Gleitende Badge-Gruppe: Ein einziges Element, das nahtlos zwischen Body und Cover-Ecke gleitet -->
-      <div class="card-badge-group">
-        <span v-if="excursion.role" class="role-badge">
-          <AppIcon :icon="TRAVEL_ROLE_META[excursion.role].tabler" :size="14" group="categories" />
-          {{ TRAVEL_ROLE_META[excursion.role].label }}
-        </span>
-        <span v-else class="tour-type-badge" title="Tour / Ausflug">
-          <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="12" group="categories" /> Tour
-        </span>
-        <PendingSyncBadge v-if="excursion._pending" />
+          <!-- Floating Edit-Button im aufgeklappten Zustand -->
+          <Transition name="fade">
+            <EditButton
+              v-if="expanded"
+              floating
+              class="tour-polaroid-edit-btn"
+              @click="emit('edit', excursion)"
+            />
+          </Transition>
+        </div>
       </div>
 
       <div class="body">
-        <!-- Einheitlicher Card-Titel: gleitet beim Expandieren nahtlos vom Body in den Cover-Header -->
-        <div class="card-title-block">
-          <h3 class="card-title" :title="excursion.title">{{ excursion.title }}</h3>
-          <Transition name="fade">
-            <div
-              v-if="
-                expanded &&
-                (creatorLabel || routeLabel || resolvedStations.length || travelDuration)
-              "
-              class="card-title-meta"
-            >
-              <span v-if="creatorLabel" class="overlay-author">Von {{ creatorLabel }}</span>
-              <span v-if="routeLabel" class="overlay-submeta">{{ routeLabel }}</span>
-              <span v-else-if="resolvedStations.length" class="overlay-submeta">
-                {{ resolvedStations.length }}
-                {{ resolvedStations.length === 1 ? 'Station' : 'Stationen' }}
-              </span>
-              <span v-if="travelDuration" class="overlay-submeta">· {{ travelDuration }}</span>
-            </div>
-          </Transition>
+        <div class="card-header-row">
+          <div class="card-title-block">
+            <h3 class="card-title" :title="excursion.title">{{ excursion.title }}</h3>
+            <Transition name="fade">
+              <div
+                v-if="
+                  expanded &&
+                  (creatorLabel || routeLabel || resolvedStations.length || travelDuration)
+                "
+                class="card-title-meta"
+              >
+                <span v-if="creatorLabel" class="overlay-author">Von {{ creatorLabel }}</span>
+                <span v-if="routeLabel" class="overlay-submeta">
+                  <template v-if="creatorLabel">· </template>{{ routeLabel }}
+                </span>
+                <span v-else-if="resolvedStations.length" class="overlay-submeta">
+                  <template v-if="creatorLabel">· </template>{{ resolvedStations.length }}
+                  {{ resolvedStations.length === 1 ? 'Station' : 'Stationen' }}
+                </span>
+                <span v-if="travelDuration" class="overlay-submeta">· {{ travelDuration }}</span>
+              </div>
+            </Transition>
+          </div>
+
+          <div class="card-badge-group">
+            <span v-if="excursion.role" class="role-badge">
+              <AppIcon
+                :icon="TRAVEL_ROLE_META[excursion.role].tabler"
+                :size="14"
+                group="categories"
+              />
+              {{ TRAVEL_ROLE_META[excursion.role].label }}
+            </span>
+            <span v-else class="tour-type-badge" title="Tour / Ausflug">
+              <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="12" group="categories" /> Tour
+            </span>
+            <PendingSyncBadge v-if="excursion._pending" />
+          </div>
         </div>
         <!-- Stationen-Vorschau mit Polaroid-Stapel (#235) -->
         <div
@@ -722,8 +736,11 @@ function onSpotDrop(event: DragEvent) {
   flex: 1;
   min-width: 0;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: stretch;
   position: relative;
+  padding: 10px 14px 10px 10px;
+  gap: 12px;
 }
 
 /* Spot per Drag&Drop aus der Spots-Sicht darauf ablegen (SpotCard.vue ist die Drag-Quelle). */
@@ -743,36 +760,73 @@ function onSpotDrop(event: DragEvent) {
   background: var(--excursion-theme-tint);
 }
 
-.image {
-  position: absolute;
-  top: 0;
-  left: 0;
+.tour-image-wrap {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.tour-polaroid-frame {
+  width: 105px;
+  height: 112px;
+  flex-shrink: 0;
+  background: #ffffff;
+  border-radius: var(--radius-md-squircle);
+  corner-shape: squircle;
+  padding: 5px 5px 14px 5px;
+  box-sizing: border-box;
+  box-shadow:
+    0 3px 10px rgba(0, 0, 0, 0.12),
+    0 1px 3px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transition:
+    transform 0.22s cubic-bezier(0.34, 1.4, 0.64, 1),
+    box-shadow 0.2s ease;
+}
+
+:root[data-theme='dark'] .tour-polaroid-frame {
+  background: #2a2825;
+  border-color: rgba(255, 255, 255, 0.16);
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.45),
+    0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .tour-polaroid-frame {
+    background: #2a2825;
+    border-color: rgba(255, 255, 255, 0.16);
+    box-shadow:
+      0 4px 12px rgba(0, 0, 0, 0.45),
+      0 1px 3px rgba(0, 0, 0, 0.25);
+  }
+}
+
+.excursion-card:hover .tour-polaroid-frame {
+  box-shadow:
+    0 5px 14px rgba(0, 0, 0, 0.16),
+    0 2px 4px rgba(0, 0, 0, 0.1);
+  transform: rotate(-0.75deg) scale(1.02);
+}
+
+.image-inner {
   width: 100%;
-  height: 200px;
+  flex: 1;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
   background: var(--color-primary-tint) center/cover no-repeat;
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
-  border-radius: 0;
-  /* Beim Aufklappen: Bild morpht sofort zum Vollbild-Banner oben (Stufe 1) */
-  transition:
-    width 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s,
-    height 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s;
-}
-
-.excursion-card:not(.expanded) .image {
-  width: 140px;
-  height: 100%;
-  /* Beim Zuklappen: Bild wartet kurz auf Akkordeon (Stufe 2) */
-  transition:
-    width 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s,
-    height 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s;
+  position: relative;
 }
 
 .tour-type-badge {
   flex-shrink: 0;
-  margin-left: auto;
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -788,140 +842,45 @@ function onSpotDrop(event: DragEvent) {
 }
 
 .placeholder {
-  font-size: 2.5rem;
-  transition:
-    opacity 0.3s ease,
-    transform 0.3s ease;
+  font-size: 2rem;
+  color: var(--excursion-theme-color);
+  opacity: 0.7;
 }
 
-.excursion-card.expanded .placeholder {
+.tour-polaroid-edit-btn {
   position: absolute;
-  opacity: 0.15;
-  transform: scale(1.8);
-  pointer-events: none;
-}
-
-.overlay-fade-enter-active {
-  transition: opacity 0.28s cubic-bezier(0.32, 0.72, 0, 1);
-}
-.overlay-fade-leave-active {
-  transition: opacity 0.2s ease;
-}
-.overlay-fade-enter-from,
-.overlay-fade-leave-to {
-  opacity: 0;
-}
-
-/* Expanded Cover Overlay: Halbdunkles Gradient-Overlay mit Titel, Kategorie/Rolle und Metadaten */
-.image-expanded-overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: var(--space-3);
-  background: linear-gradient(
-    180deg,
-    rgba(0, 0, 0, 0.5) 0%,
-    rgba(0, 0, 0, 0.15) 35%,
-    rgba(0, 0, 0, 0.85) 100%
-  );
-  border-radius: inherit;
-  pointer-events: none;
-  z-index: 1;
-}
-
-.image-expanded-overlay > * {
-  pointer-events: auto;
-}
-
-.overlay-top-row {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-}
-
-.overlay-edit-btn {
-  animation: editBtnSlideIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) 0.08s both;
-}
-
-@keyframes editBtnSlideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.overlay-author {
-  font-weight: 600;
-}
-
-.overlay-submeta {
-  opacity: 0.85;
+  top: 6px;
+  left: 6px;
+  z-index: 2;
 }
 
 .body {
   position: relative;
   z-index: 2;
-  padding: var(--space-3);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
+  flex: 1;
   min-width: 0;
-  box-sizing: border-box;
-  margin-left: 0;
-  margin-top: 200px;
-  /* Beim Aufklappen: gleitet sofort nach unten (Stufe 1) */
-  transition:
-    margin-left 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s,
-    margin-top 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s,
-    padding 0.32s ease 0s;
-}
-
-.excursion-card:not(.expanded) .body {
-  margin-left: 140px;
-  margin-top: 0;
-  min-height: 120px;
-  overflow: hidden;
-  /* Beim Zuklappen: wartet synchron mit Bild auf Akkordeon (Stufe 2) */
-  transition:
-    margin-left 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s,
-    margin-top 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s,
-    padding 0.28s ease 0.12s;
-}
-
-/* Einheitlicher Card-Titel: gleitet beim Expandieren nahtlos vom Body in den Cover-Header */
-.card-title-block {
-  position: relative;
-  z-index: 2;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  margin-bottom: var(--space-1);
-  padding-right: 52px;
-  transform: translate3d(0, 0, 0);
-  transition:
-    transform 0.32s cubic-bezier(0.32, 0.72, 0, 1),
-    margin-bottom 0.32s cubic-bezier(0.32, 0.72, 0, 1);
-  pointer-events: none;
+  gap: 6px;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
-.excursion-card.has-role .card-title-block {
-  padding-right: 74px;
+.card-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+  width: 100%;
 }
 
-.card-title-block > * {
-  pointer-events: auto;
-}
-
-.excursion-card.expanded .card-title-block {
-  transform: translateY(calc(-100% - var(--space-3) * 2));
-  margin-bottom: -28px;
-  padding-right: 90px;
+.card-title-block {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .card-title {
@@ -930,23 +889,18 @@ function onSpotDrop(event: DragEvent) {
   font-weight: 700;
   line-height: 1.3;
   color: var(--color-text);
-  flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   transition:
-    color 0.28s ease,
-    font-size 0.32s cubic-bezier(0.32, 0.72, 0, 1),
-    line-height 0.32s cubic-bezier(0.32, 0.72, 0, 1),
-    text-shadow 0.28s ease;
+    font-size 0.2s ease,
+    color 0.2s ease;
 }
 
 .excursion-card.expanded .card-title {
-  color: #ffffff;
-  font-size: 1.25rem;
-  line-height: 1.25;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+  font-size: 1.125rem;
+  line-height: 1.3;
   white-space: normal;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -958,55 +912,24 @@ function onSpotDrop(event: DragEvent) {
   align-items: center;
   gap: var(--space-2);
   font-size: 0.8125rem;
-  color: rgba(255, 255, 255, 0.9);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+  color: var(--color-text-muted);
   flex-wrap: wrap;
+  margin-top: 2px;
 }
 
-/* Card Badge Group: gleitet sanft zwischen Body und Cover-Ecke */
+.overlay-author {
+  font-weight: 600;
+}
+
+.overlay-submeta {
+  opacity: 0.9;
+}
+
 .card-badge-group {
-  position: absolute;
-  z-index: 4;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  pointer-events: none;
-  top: var(--space-3);
-  right: var(--space-3);
-  transition:
-    top 0.32s cubic-bezier(0.32, 0.72, 0, 1),
-    right 0.32s cubic-bezier(0.32, 0.72, 0, 1);
-}
-
-.card-badge-group > * {
-  pointer-events: auto;
-}
-
-.excursion-card.expanded .card-badge-group .role-badge,
-.excursion-card.expanded .card-badge-group .tour-type-badge {
-  background: rgba(0, 0, 0, 0.55) !important;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.3) !important;
-  color: #ffffff !important;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
-}
-
-.excursion-card.expanded .card-badge-group .role-badge :deep(.app-icon),
-.excursion-card.expanded .card-badge-group .tour-type-badge :deep(.app-icon),
-.excursion-card.expanded .card-badge-group .role-badge :deep(svg),
-.excursion-card.expanded .card-badge-group .tour-type-badge :deep(svg) {
-  color: #ffffff !important;
-}
-
-.card-badge-group .role-badge,
-.card-badge-group .tour-type-badge {
-  transition:
-    background 0.3s ease,
-    border-color 0.3s ease,
-    color 0.3s ease,
-    box-shadow 0.3s ease;
+  gap: var(--space-1);
 }
 
 .show-on-map-btn {
@@ -1289,7 +1212,7 @@ function onSpotDrop(event: DragEvent) {
 }
 
 .tour-note-container.is-expanded {
-  max-height: 4.5em;
+  max-height: 500px;
 }
 
 .note {
@@ -1312,7 +1235,8 @@ function onSpotDrop(event: DragEvent) {
 }
 
 .note.is-clamped.is-expanded {
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: unset;
+  display: block;
   color: var(--color-text);
 }
 
@@ -1325,7 +1249,8 @@ function onSpotDrop(event: DragEvent) {
 }
 
 .note.is-clamped.is-expanded :deep(.richtext) {
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: unset;
+  display: block;
 }
 
 .note.is-clamped :deep(p),
@@ -1462,60 +1387,41 @@ function onSpotDrop(event: DragEvent) {
 
 @container spots-col (max-width: 480px) {
   .tour-accent-bar {
-    width: 28px;
+    width: 26px;
   }
 
-  .excursion-card:not(.expanded) {
-    min-height: 64px;
+  .tour-card-main {
+    padding: 8px 10px 8px 8px;
+    gap: 8px;
   }
 
-  .excursion-card:not(.expanded) .image {
-    width: 64px;
-    height: 100%;
-    border-radius: 0;
+  .tour-polaroid-frame {
+    width: 76px;
+    height: 82px;
+    padding: 4px 4px 10px 4px;
+    border-radius: var(--radius-sm-squircle);
   }
 
-  .excursion-card.expanded .image {
-    width: 100%;
-    height: 160px;
+  .tour-polaroid-frame .placeholder {
+    font-size: 1.5rem;
   }
 
-  .excursion-card:not(.expanded) .body {
-    margin-left: 64px;
-    margin-top: 0;
-    min-height: 64px;
-    padding: 6px var(--space-2);
-    justify-content: flex-start;
-    gap: 2px;
-    overflow: hidden;
-    height: 100%;
+  .card-title {
+    font-size: 0.9rem;
+  }
+
+  .excursion-card.expanded .card-title {
+    font-size: 1rem;
   }
 
   .role-badge {
-    font-size: 0.72rem;
-    padding: 1px 7px;
+    font-size: 0.7rem;
+    padding: 1px 6px;
   }
 
-  .excursion-card:not(.expanded) .card-badge-group {
-    top: 8px;
-    right: var(--space-2);
-    transition:
-      top 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s,
-      right 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s;
-  }
-
-  .excursion-card.expanded .card-badge-group {
-    top: var(--space-3);
-    right: var(--space-3);
-    transition:
-      top 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s,
-      right 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s;
-  }
-
-  .excursion-card.expanded .body {
-    margin-left: 0;
-    margin-top: 160px;
-    padding: var(--space-3);
+  .tour-type-badge {
+    font-size: 0.65rem;
+    padding: 1px 6px;
   }
 
   .excursion-card:not(.expanded) .show-on-map-btn {
@@ -1575,7 +1481,7 @@ function onSpotDrop(event: DragEvent) {
   }
 
   .tour-note-container.is-expanded {
-    max-height: 2.8em;
+    max-height: 300px;
   }
 
   .note.is-clamped {
@@ -1585,7 +1491,8 @@ function onSpotDrop(event: DragEvent) {
   }
 
   .note.is-clamped.is-expanded {
-    -webkit-line-clamp: 2;
+    -webkit-line-clamp: unset;
+    display: block;
   }
 
   .note.is-clamped :deep(.richtext) {
@@ -1593,12 +1500,13 @@ function onSpotDrop(event: DragEvent) {
   }
 
   .note.is-clamped.is-expanded :deep(.richtext) {
-    -webkit-line-clamp: 2;
+    -webkit-line-clamp: unset;
+    display: block;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .image,
+  .tour-polaroid-frame,
   .body,
   .excursion-accordion,
   .status,
