@@ -1728,6 +1728,7 @@ onMounted(() => {
         const newWidth = Math.round(entry.contentRect.width);
         if (tourWrapWidths.get(id) !== newWidth) {
           tourWrapWidths.set(id, newWidth);
+          nextTick(() => recomputeTourLine(id));
         }
         recomputeTourLine(id);
       }
@@ -4364,6 +4365,7 @@ async function deleteEditingSpot() {
 .spots-col-body {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   /* Verhindert, dass der Browser die Scrollposition beim Auf-/Zuklappen einer Spot-Karte (SpotCard.vue,
      ändert ihre Höhe drastisch) eigenmächtig "korrigiert" (CSS Scroll Anchoring, standardmäßig an) -
      kollidiert hier mit der View-Transition (#90, siehe animateSpotExpand() im Script): während die
@@ -4515,6 +4517,7 @@ async function deleteEditingSpot() {
     .spots-col-body {
       flex: 1;
       overflow-y: auto;
+      overflow-x: hidden;
       padding: var(--space-3);
     }
 
@@ -4822,6 +4825,7 @@ async function deleteEditingSpot() {
 
 .group {
   margin-bottom: var(--space-4);
+  min-width: 0;
 }
 
 .group h3 {
@@ -4863,6 +4867,8 @@ async function deleteEditingSpot() {
   position: relative;
   margin-left: 8px;
   margin-right: 8px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .tour-station-wrap.is-tour.single-col {
@@ -4874,6 +4880,7 @@ async function deleteEditingSpot() {
   display: grid;
   grid-template-rows: 0fr;
   transition: grid-template-rows 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 0;
 }
 
 .tour-station-accordion.is-expanded {
@@ -4882,6 +4889,8 @@ async function deleteEditingSpot() {
 
 .tour-station-accordion-inner {
   min-height: 0;
+  min-width: 0;
+  width: 100%;
   overflow: hidden;
   transition: overflow 0s 0s;
   box-sizing: border-box;
@@ -4933,6 +4942,7 @@ async function deleteEditingSpot() {
   width: 100%;
   box-sizing: border-box;
   max-width: 100%;
+  min-width: 0;
 }
 
 .tour-serpentine-row-wrap {
@@ -4941,6 +4951,7 @@ async function deleteEditingSpot() {
   gap: var(--space-2);
   width: 100%;
   box-sizing: border-box;
+  min-width: 0;
 }
 
 .tour-serpentine-row {
@@ -4950,6 +4961,7 @@ async function deleteEditingSpot() {
   width: 100%;
   box-sizing: border-box;
   position: relative;
+  min-width: 0;
 }
 
 .tour-serpentine-row.is-ltr {
