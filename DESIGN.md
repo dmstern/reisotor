@@ -136,6 +136,7 @@ anlegen, nicht als lokaler Wert in der Komponente.
 | `--color-success`          | Erfolg / Fertig-Status                       | `#3f8f5c`  | `#5cb37e` |
 | `--color-scheduled`        | Geplant (Kalender & Streifen)                | `#1e96d1`  | `#52b8ea` |
 | `--color-tour`             | Touren / Ausflüge (Kacheln, Kalender, Spots) | `#eb6834`  | `#f08254` |
+| `--color-travel`           | Reisen / Etappen (Kacheln, Kalender, Chips)  | `#1baf7a`  | `#2ecb91` |
 | `--color-highlight`        | Highlight-Fläche für Notizen                 | `#fff4e8`  | `#332a1c` |
 | `--color-accent-secondary` | Sekundärer Akzent (Indigo)                   | `#5b6ee1`  | `#8b98f0` |
 
@@ -657,6 +658,7 @@ unerwünschte Vererbungen in Spezialfällen (z. B. ungerahmte Inputs in `QuickAd
 - **`UnseenDot.vue`**: Diskreter Indikator-Punkt für ungesehene bzw. geänderte Inhalte aus dem Echtzeit-Sync.
 - **`WeatherAlertCard.vue`**: Dedizierte Komponente (`frontend/src/components/WeatherAlertCard.vue`) für Wetterwarnungen (`warning`, `danger`).
 - **`FormField.vue`**: Einheitlicher Feld-Wrapper für Anlege- und Bearbeiten-Formulare (Icon + Label).
+- **`PolaroidStack.vue`**: Generisches Primitive (`frontend/src/components/primitives/PolaroidStack.vue`) für gestapelte Mini-Polaroid-Kacheln mit verspieltem Drehwinkel-Versatz (`[-8°, 6°, -3°, 7°]`), Squircle-Fotoframe und Hover-Auffächerung. Wird sowohl für Tour-Stationen in eingeklappten Tour-Karten (`ExcursionCard.vue`) als auch für Dateianhänge an Spots, Touren, Notizen und Tagebucheinträgen verwendet. Bei Anhängen wird optional eine filigrane Büroklammer (`clipped: true`) oben links angeheftet. Bei mehr als 4 Elementen erscheint automatisch ein abgerundetes `+N`-Zählerbadge. Klick-Interaktion öffnet standardmäßig die Lightbox-Galerie (`AttachmentPreviewModal.vue`).
 
 Reine Beschriftung eines Textfelds per HTML-`placeholder` verschwindet, sobald das Feld einen Wert
 trägt – wer einen bereits ausgefüllten Dialog erneut öffnet (Bearbeiten) sieht dann nicht mehr, wofür
