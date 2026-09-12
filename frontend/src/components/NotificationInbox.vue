@@ -9,6 +9,7 @@ import { usePwaInstallStore } from '../stores/pwaInstall';
 import IconButton from './primitives/IconButton.vue';
 import Button from './primitives/Button.vue';
 import AppIcon from './AppIcon.vue';
+import UnseenDot from './primitives/UnseenDot.vue';
 import PwaInstallDialog from './PwaInstallDialog.vue';
 import type { NotificationItem } from '../api/types';
 import { notificationTarget } from '../utils/notificationTarget';
@@ -29,18 +30,25 @@ const showInstallDialog = ref(false);
 
 const BELL_ICON = { id: 'bell', emoji: '🔔', outline: IconBell, filled: IconBellFilled };
 
-// Dringende System-Updates (wie ein bereitstehendes PWA-Update) fließen in den Unread-Badge der Glocke
-// ein, damit Nutzer:innen sofort auf die Aktualisierung aufmerksam werden.
-const totalUnreadCount = computed(() => {
-  return notifications.unreadCount + (pwaUpdate.needRefresh ? 1 : 0);
-});
-
 const hasSystemNotices = computed(() => {
   return (
     pwaUpdate.needRefresh ||
     pwaUpdate.offlineReady ||
     (!pwaInstall.isStandalone && !pwaInstall.dismissed)
   );
+});
+
+// Ungelesene Aktivitäten zeigen einen Zähler-Badge. Liegen stattdessen System-Benachrichtigungen
+// (Update verfügbar, Offline-Bereitschaft, App-Installation) vor, lenkt der rote Punkt (UnseenDot)
+// Nutzer:innen zur Glocke.
+const bellAriaLabel = computed(() => {
+  if (notifications.unreadCount > 0) {
+    return `Benachrichtigungen (${notifications.unreadCount} ungelesen)`;
+  }
+  if (hasSystemNotices.value) {
+    return 'Benachrichtigungen (Neuigkeiten verfügbar)';
+  }
+  return 'Benachrichtigungen';
 });
 
 function openInstallDialog() {
@@ -98,17 +106,14 @@ function markAllRead() {
         shape="circle"
         :icon="BELL_ICON"
         title="Benachrichtigungen"
-        :aria-label="
-          totalUnreadCount > 0
-            ? `Benachrichtigungen (${totalUnreadCount} ungelesen)`
-            : 'Benachrichtigungen'
-        "
+        :aria-label="bellAriaLabel"
         class="bell-btn"
         @click="toggle"
       />
-      <span v-if="totalUnreadCount > 0" class="unread-badge" aria-hidden="true">{{
-        totalUnreadCount > 9 ? '9+' : totalUnreadCount
+      <span v-if="notifications.unreadCount > 0" class="unread-badge" aria-hidden="true">{{
+        notifications.unreadCount > 9 ? '9+' : notifications.unreadCount
       }}</span>
+      <UnseenDot v-else-if="hasSystemNotices" class="bell-dot" aria-label="Neuigkeiten verfügbar" />
     </div>
 
     <template v-if="open">
@@ -253,6 +258,13 @@ function markAllRead() {
 .bell-btn-wrap {
   position: relative;
   display: inline-flex;
+}
+
+.bell-btn-wrap :deep(.bell-dot),
+.bell-dot {
+  top: 5px;
+  right: 5px;
+  pointer-events: none;
 }
 
 .unread-badge {
