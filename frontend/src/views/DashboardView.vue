@@ -21,7 +21,12 @@ import { useWeatherProviderStore, WEATHER_MODEL_OPTIONS } from '../stores/weathe
 import { useHomeCurrencyStore } from '../stores/homeCurrency';
 import { useUiSettingsStore } from '../stores/uiSettings';
 import { useDashboardConfigStore } from '../stores/dashboardConfig';
-import { WIDGET_COLORS, SECURITY_TILE_COLOR, TRASH_TILE_COLOR } from '../utils/widgetColors';
+import {
+  WIDGET_COLORS,
+  SECURITY_TILE_COLOR,
+  TRASH_TILE_COLOR,
+  TILE_SHADOW_ALPHA,
+} from '../utils/widgetColors';
 import { buildAllEntries } from '../utils/calendarEntries';
 import { SCHEDULE_CATEGORY_META } from '../utils/scheduleCategory';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
@@ -722,6 +727,7 @@ function formatWeekdayDate(d: string) {
           :style="{
             background: `${WIDGET_COLORS.get('schedule')}0d`,
             borderColor: WIDGET_COLORS.get('schedule'),
+            '--tile-shadow': `${WIDGET_COLORS.get('schedule')}${TILE_SHADOW_ALPHA}`,
           }"
           @click="drawers.openCalendar()"
         >
@@ -731,6 +737,7 @@ function formatWeekdayDate(d: string) {
             :style="{
               background: `${WIDGET_COLORS.get('schedule')}26`,
               borderColor: WIDGET_COLORS.get('schedule'),
+              '--tile-icon-shadow': `${WIDGET_COLORS.get('schedule')}26`,
             }"
             :icon="SECTION_ICON_DEFS.calendar"
             group="navigation"
@@ -760,6 +767,7 @@ function formatWeekdayDate(d: string) {
           :style="{
             background: `${WIDGET_COLORS.get('packing')}0d`,
             borderColor: WIDGET_COLORS.get('packing'),
+            '--tile-shadow': `${WIDGET_COLORS.get('packing')}${TILE_SHADOW_ALPHA}`,
           }"
         >
           <AppIcon
@@ -768,6 +776,7 @@ function formatWeekdayDate(d: string) {
             :style="{
               background: `${WIDGET_COLORS.get('packing')}26`,
               borderColor: WIDGET_COLORS.get('packing'),
+              '--tile-icon-shadow': `${WIDGET_COLORS.get('packing')}26`,
             }"
             :icon="SECTION_ICON_DEFS.packing"
             group="navigation"
@@ -796,6 +805,7 @@ function formatWeekdayDate(d: string) {
           :style="{
             background: `${WIDGET_COLORS.get('budget')}0d`,
             borderColor: WIDGET_COLORS.get('budget'),
+            '--tile-shadow': `${WIDGET_COLORS.get('budget')}${TILE_SHADOW_ALPHA}`,
           }"
         >
           <AppIcon
@@ -804,6 +814,7 @@ function formatWeekdayDate(d: string) {
             :style="{
               background: `${WIDGET_COLORS.get('budget')}26`,
               borderColor: WIDGET_COLORS.get('budget'),
+              '--tile-icon-shadow': `${WIDGET_COLORS.get('budget')}26`,
             }"
             :icon="SECTION_ICON_DEFS.budget"
             group="navigation"
@@ -826,6 +837,7 @@ function formatWeekdayDate(d: string) {
           :style="{
             background: `${WIDGET_COLORS.get('shopping')}0d`,
             borderColor: WIDGET_COLORS.get('shopping'),
+            '--tile-shadow': `${WIDGET_COLORS.get('shopping')}${TILE_SHADOW_ALPHA}`,
           }"
         >
           <AppIcon
@@ -834,6 +846,7 @@ function formatWeekdayDate(d: string) {
             :style="{
               background: `${WIDGET_COLORS.get('shopping')}26`,
               borderColor: WIDGET_COLORS.get('shopping'),
+              '--tile-icon-shadow': `${WIDGET_COLORS.get('shopping')}26`,
             }"
             :icon="SECTION_ICON_DEFS.shopping"
             group="navigation"
@@ -857,6 +870,7 @@ function formatWeekdayDate(d: string) {
           :style="{
             background: `${WIDGET_COLORS.get('todo')}0d`,
             borderColor: WIDGET_COLORS.get('todo'),
+            '--tile-shadow': `${WIDGET_COLORS.get('todo')}${TILE_SHADOW_ALPHA}`,
           }"
         >
           <AppIcon
@@ -865,6 +879,7 @@ function formatWeekdayDate(d: string) {
             :style="{
               background: `${WIDGET_COLORS.get('todo')}26`,
               borderColor: WIDGET_COLORS.get('todo'),
+              '--tile-icon-shadow': `${WIDGET_COLORS.get('todo')}26`,
             }"
             :icon="SECTION_ICON_DEFS.todo"
             group="navigation"
@@ -888,6 +903,7 @@ function formatWeekdayDate(d: string) {
           :style="{
             background: `${WIDGET_COLORS.get('travel')}0d`,
             borderColor: WIDGET_COLORS.get('travel'),
+            '--tile-shadow': `${WIDGET_COLORS.get('travel')}${TILE_SHADOW_ALPHA}`,
           }"
         >
           <AppIcon
@@ -896,6 +912,7 @@ function formatWeekdayDate(d: string) {
             :style="{
               background: `${WIDGET_COLORS.get('travel')}26`,
               borderColor: WIDGET_COLORS.get('travel'),
+              '--tile-icon-shadow': `${WIDGET_COLORS.get('travel')}26`,
             }"
             :icon="SECTION_ICON_DEFS.travel"
             group="navigation"
@@ -924,6 +941,7 @@ function formatWeekdayDate(d: string) {
           :style="{
             background: `${WIDGET_COLORS.get('accommodation')}0d`,
             borderColor: WIDGET_COLORS.get('accommodation'),
+            '--tile-shadow': `${WIDGET_COLORS.get('accommodation')}${TILE_SHADOW_ALPHA}`,
           }"
         >
           <AppIcon
@@ -932,6 +950,7 @@ function formatWeekdayDate(d: string) {
             :style="{
               background: `${WIDGET_COLORS.get('accommodation')}26`,
               borderColor: WIDGET_COLORS.get('accommodation'),
+              '--tile-icon-shadow': `${WIDGET_COLORS.get('accommodation')}26`,
             }"
             :icon="ACCOMMODATION_ICON"
             group="navigation"
@@ -956,6 +975,7 @@ function formatWeekdayDate(d: string) {
           :style="{
             background: `${WIDGET_COLORS.get('diary')}0d`,
             borderColor: WIDGET_COLORS.get('diary'),
+            '--tile-shadow': `${WIDGET_COLORS.get('diary')}${TILE_SHADOW_ALPHA}`,
           }"
         >
           <AppIcon
@@ -964,6 +984,7 @@ function formatWeekdayDate(d: string) {
             :style="{
               background: `${WIDGET_COLORS.get('diary')}26`,
               borderColor: WIDGET_COLORS.get('diary'),
+              '--tile-icon-shadow': `${WIDGET_COLORS.get('diary')}26`,
             }"
             :icon="SECTION_ICON_DEFS.diary"
             group="navigation"
@@ -987,6 +1008,7 @@ function formatWeekdayDate(d: string) {
           :style="{
             background: `${WIDGET_COLORS.get('notes')}0d`,
             borderColor: WIDGET_COLORS.get('notes'),
+            '--tile-shadow': `${WIDGET_COLORS.get('notes')}${TILE_SHADOW_ALPHA}`,
           }"
         >
           <AppIcon
@@ -995,6 +1017,7 @@ function formatWeekdayDate(d: string) {
             :style="{
               background: `${WIDGET_COLORS.get('notes')}26`,
               borderColor: WIDGET_COLORS.get('notes'),
+              '--tile-icon-shadow': `${WIDGET_COLORS.get('notes')}26`,
             }"
             :icon="SECTION_ICON_DEFS.notes"
             group="navigation"
@@ -1015,12 +1038,17 @@ function formatWeekdayDate(d: string) {
           :style="{
             background: `${SECURITY_TILE_COLOR}0d`,
             borderColor: SECURITY_TILE_COLOR,
+            '--tile-shadow': `${SECURITY_TILE_COLOR}${TILE_SHADOW_ALPHA}`,
           }"
         >
           <AppIcon
             class="tile-icon"
             :size="18"
-            :style="{ background: `${SECURITY_TILE_COLOR}26`, borderColor: SECURITY_TILE_COLOR }"
+            :style="{
+              background: `${SECURITY_TILE_COLOR}26`,
+              borderColor: SECURITY_TILE_COLOR,
+              '--tile-icon-shadow': `${SECURITY_TILE_COLOR}26`,
+            }"
             :icon="SECURITY_CHECK_ICON"
             group="navigation"
             :color="SECURITY_TILE_COLOR"
@@ -1037,12 +1065,17 @@ function formatWeekdayDate(d: string) {
           :style="{
             background: `${TRASH_TILE_COLOR}0d`,
             borderColor: TRASH_TILE_COLOR,
+            '--tile-shadow': `${TRASH_TILE_COLOR}${TILE_SHADOW_ALPHA}`,
           }"
         >
           <AppIcon
             class="tile-icon"
             :size="18"
-            :style="{ background: `${TRASH_TILE_COLOR}26`, borderColor: TRASH_TILE_COLOR }"
+            :style="{
+              background: `${TRASH_TILE_COLOR}26`,
+              borderColor: TRASH_TILE_COLOR,
+              '--tile-icon-shadow': `${TRASH_TILE_COLOR}26`,
+            }"
             :icon="ACTION_ICONS.delete"
             group="navigation"
             :color="TRASH_TILE_COLOR"
@@ -1308,6 +1341,7 @@ function formatWeekdayDate(d: string) {
   position: relative;
   text-decoration: none;
   color: inherit;
+  box-shadow: 0 2px 6px var(--tile-shadow, var(--shadow-sm));
   transition:
     transform 0.15s ease,
     box-shadow 0.15s ease;
@@ -1318,7 +1352,7 @@ function formatWeekdayDate(d: string) {
 
 .tile:hover {
   transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 8px 24px var(--tile-shadow, var(--shadow-md));
 }
 
 .tile-btn {
@@ -1334,7 +1368,7 @@ function formatWeekdayDate(d: string) {
   height: 44px;
   border-radius: 50%;
   border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 2px 6px var(--tile-icon-shadow, var(--shadow-sm));
   display: flex;
   align-items: center;
   justify-content: center;

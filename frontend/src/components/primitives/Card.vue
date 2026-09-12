@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue';
 import type { IconDef } from '../../utils/icon';
 import AppIcon from '../AppIcon.vue';
+import { TILE_SHADOW_ALPHA } from '../../utils/widgetColors';
 
 /**
  * Surface-Primitive für alle Karten im Reisotor (SpotCard, ExcursionCard, BudgetPotCard,
@@ -34,6 +35,8 @@ const props = withDefaults(
     highlight?: boolean;
     /** Akzentfarbe für die 'tile'-Variante (Hex oder CSS var). */
     tileColor?: string;
+    /** Alpha-Hex für den Box-Shadow der 'tile'-Variante (Standard: TILE_SHADOW_ALPHA aus widgetColors.ts). */
+    tileShadowAlpha?: string;
     /** IconDef für das runde Schwebelogo der 'tile'-Variante. */
     tileIcon?: IconDef;
     /** HTML-Tag für das Card-Wurzelelement (Standard: 'div', z. B. 'section', 'li'). */
@@ -48,6 +51,7 @@ const props = withDefaults(
     bannerPosition: 'auto',
     highlight: false,
     tileColor: '#9141AC',
+    tileShadowAlpha: TILE_SHADOW_ALPHA,
     tag: 'div',
   }
 );
@@ -139,6 +143,9 @@ function handleCardKeydown(event: KeyboardEvent) {
         ? {
             background: tileColor.startsWith('#') ? `${tileColor}0d` : tileColor,
             borderColor: tileColor,
+            '--tile-shadow': tileColor.startsWith('#')
+              ? `${tileColor}${tileShadowAlpha}`
+              : tileColor,
           }
         : undefined
     "
@@ -155,6 +162,9 @@ function handleCardKeydown(event: KeyboardEvent) {
       :style="{
         background: tileColor.startsWith('#') ? `${tileColor}26` : 'var(--color-primary-tint)',
         borderColor: tileColor,
+        '--tile-icon-shadow': tileColor.startsWith('#')
+          ? `${tileColor}26`
+          : 'var(--color-primary-tint)',
       }"
     >
       <slot name="tile-icon">
@@ -311,6 +321,7 @@ function handleCardKeydown(event: KeyboardEvent) {
 
 .card--tile {
   position: relative;
+  box-shadow: 0 2px 6px var(--tile-shadow, var(--shadow-sm));
   transition:
     transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
     box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
@@ -319,7 +330,7 @@ function handleCardKeydown(event: KeyboardEvent) {
 
 .card--tile:hover {
   transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 8px 24px var(--tile-shadow, var(--shadow-md));
 }
 
 .card-tile-icon {
@@ -331,7 +342,7 @@ function handleCardKeydown(event: KeyboardEvent) {
   height: 44px;
   border-radius: 50%;
   border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 2px 6px var(--tile-icon-shadow, var(--shadow-sm));
   display: flex;
   align-items: center;
   justify-content: center;
