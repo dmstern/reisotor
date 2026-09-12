@@ -112,6 +112,13 @@ const router = createRouter({
       }),
     },
     {
+      path: '/trip/:tripId/accommodation',
+      redirect: (to) => ({
+        path: `/trip/${to.params.tripId}/excursions`,
+        query: { ...to.query, category: 'Unterkunft' },
+      }),
+    },
+    {
       path: '/trip/:tripId/budget',
       name: 'budget',
       component: () => import('../views/BudgetView.vue'),
@@ -155,6 +162,13 @@ const router = createRouter({
       redirect: (to) => ({
         path: '/excursions',
         query: { ...to.query, group: 'tours', tourRole: 'arrival,departure,onward' },
+      }),
+    },
+    {
+      path: '/accommodation',
+      redirect: (to) => ({
+        path: '/excursions',
+        query: { ...to.query, category: 'Unterkunft' },
       }),
     },
     { path: '/budget', name: 'legacy-budget', component: () => import('../views/BudgetView.vue') },

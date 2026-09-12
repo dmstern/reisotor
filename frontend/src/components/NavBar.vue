@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import { useAuthStore } from '../stores/auth';
+import { useRoute } from 'vue-router';
 import { useNavConfigStore } from '../stores/navConfig';
 import { useLiveSyncStore } from '../stores/liveSync';
-import { useIsDesktop } from '../composables/useIsDesktop';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { NAV_LINKS, type NavLinkDef } from '../utils/navLinks';
 import { NAV_LINK_COLORS } from '../utils/widgetColors';
@@ -22,13 +20,10 @@ const props = withDefaults(
   }
 );
 
-const _auth = useAuthStore();
-const _router = useRouter();
 const route = useRoute();
 const navConfig = useNavConfigStore();
 const liveSync = useLiveSyncStore();
 const tripStore = useTripStore();
-const isDesktop = useIsDesktop();
 const iconStyle = useIconStyleStore();
 
 // Schubladen (Drawer.vue) kleben ebenfalls "oben" fest und müssen wissen, wie viel Platz die
@@ -76,13 +71,26 @@ const isTravelActive = computed(() => {
   return roles.includes('arrival') || roles.includes('departure') || roles.includes('onward');
 });
 
+const isAccommodationActive = computed(() => {
+  if (!route.path.includes('/excursions')) return false;
+  const category = route.query.category;
+  if (!category) return false;
+  const categories = (Array.isArray(category) ? category.join(',') : String(category)).split(',');
+  return categories.includes('Unterkunft');
+});
+
 function isLinkActive(link: NavLinkDef): boolean {
+  if (link.key === 'accommodation') {
+    return isAccommodationActive.value;
+  }
   if (link.key === 'travel') {
     return isTravelActive.value;
   }
   if (link.key === 'excursions') {
     const travelVisible = visibleLinks.value.some((l) => l.key === 'travel');
     if (travelVisible && isTravelActive.value) return false;
+    const accommodationVisible = visibleLinks.value.some((l) => l.key === 'accommodation');
+    if (accommodationVisible && isAccommodationActive.value) return false;
     return route.path.includes('/excursions');
   }
   const targetPath = tripStore.currentTripId
@@ -99,6 +107,15 @@ function getLinkTarget(link: NavLinkDef) {
     return {
       path: basePath,
       query: { group: 'tours', tourRole: 'arrival,departure,onward' },
+    };
+  }
+  if (link.key === 'accommodation') {
+    const basePath = tripStore.currentTripId
+      ? `/trip/${tripStore.currentTripId}/excursions`
+      : '/excursions';
+    return {
+      path: basePath,
+      query: { category: 'Unterkunft' },
     };
   }
   return tripStore.currentTripId ? `/trip/${tripStore.currentTripId}${link.to}` : link.to;

@@ -928,6 +928,11 @@ function applyRouteQuery() {
 
   if (q.category) {
     categoryFilter.value = String(q.category).split(',').filter(Boolean);
+    if (q.group !== 'tours') {
+      groupMode.value = 'category';
+    }
+  } else {
+    categoryFilter.value = [];
   }
   if (q.status) {
     statusFilter.value = String(q.status)
@@ -935,6 +940,8 @@ function applyRouteQuery() {
       .filter((s): s is 'planned' | 'unplanned' | 'done' =>
         ['planned', 'unplanned', 'done'].includes(s)
       );
+  } else {
+    statusFilter.value = [];
   }
 
   nextTick(() => {

@@ -897,11 +897,11 @@ function formatWeekdayDate(d: string) {
              ExcursionsView.vue's hashHighlightId-Verdrahtung). -->
         <router-link
           v-else-if="key === 'accommodation'"
-          :to="
-            currentOrNextAccommodation
-              ? `/trip/${tripId}/excursions#spot-${currentOrNextAccommodation.id}`
-              : `/trip/${tripId}/excursions`
-          "
+          :to="{
+            path: `/trip/${tripId}/excursions`,
+            query: { category: 'Unterkunft' },
+            hash: currentOrNextAccommodation ? `#spot-${currentOrNextAccommodation.id}` : undefined,
+          }"
           class="card tile"
           :style="{ background: `${WIDGET_COLORS.get('accommodation')}0d` }"
         >

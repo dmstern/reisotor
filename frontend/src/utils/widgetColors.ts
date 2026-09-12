@@ -41,6 +41,7 @@ export const NAV_LINK_COLORS = new Map<string, string>([
   ['listen', '#e87ba4'],
   ['excursions', '#008300'],
   ['travel', WIDGET_COLORS.get('travel')!],
+  ['accommodation', WIDGET_COLORS.get('accommodation')!],
   ['budget', WIDGET_COLORS.get('budget')!],
   ['diary', WIDGET_COLORS.get('diary')!],
   ['notes', WIDGET_COLORS.get('notes')!],

@@ -1,5 +1,6 @@
 import { SECTION_ICON_DEFS } from './sectionIcons';
 import { ACTION_ICONS } from './actionIcons';
+import { ACCOMMODATION_ICON } from './dashboardTiles';
 import type { IconDef } from './icon';
 import type { LiveDomain } from '../stores/liveSync';
 
@@ -42,6 +43,14 @@ export const NAV_LINKS: NavLinkDef[] = [
     label: 'An-/Abreise',
     icon: SECTION_ICON_DEFS.travel,
     domains: ['ideas'],
+    defaultVisible: false,
+  },
+  {
+    key: 'accommodation',
+    to: '/accommodation',
+    label: 'Unterkunft',
+    icon: ACCOMMODATION_ICON,
+    domains: ['spots'],
     defaultVisible: false,
   },
   {
