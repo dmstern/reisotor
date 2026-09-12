@@ -12,8 +12,6 @@ import NavBar from './NavBar.vue';
 import PresenceAvatars from './PresenceAvatars.vue';
 import NotificationInbox from './NotificationInbox.vue';
 import TrackRecordingIndicator from './TrackRecordingIndicator.vue';
-import PwaUpdatePrompt from './PwaUpdatePrompt.vue';
-import PwaInstallHint from './PwaInstallHint.vue';
 import LoadingIndicator from './LoadingIndicator.vue';
 import DemoModeBanner from './DemoModeBanner.vue';
 import AppIcon from './AppIcon.vue';
@@ -35,10 +33,10 @@ const showDockedNav = computed(
   () => isDesktop.value && headerNavFits.value && navPosition.desktop === 'top' && showTripNav.value
 );
 
-// Der Header ist nur noch 56px hoch, solange die Statuszeile (Offline-/PWA-Update-Hinweis) leer
-// ist – NavBar.vue klebt direkt darunter per position:sticky mit einem fest verdrahteten "top"-Wert
-// und muss deshalb die tatsächliche, veränderliche Höhe kennen (analog zu NavBar.vue's eigenem
-// --navbar-offset-Muster), sonst würde sie beim Scrollen unter dem dann höheren Header verschwinden.
+// Der Header ist standardmäßig 56px hoch (bzw. höher im Demo-Modus durch den DemoModeBanner) –
+// NavBar.vue klebt direkt darunter per position:sticky mit einem fest verdrahteten "top"-Wert
+// und muss deshalb die tatsächliche Höhe kennen (analog zu NavBar.vue's eigenem
+// --navbar-offset-Muster).
 const headerEl = ref<HTMLElement | null>(null);
 let resizeObserver: ResizeObserver | null = null;
 
@@ -78,19 +76,6 @@ const profileTitle = computed(() => {
 <template>
   <header ref="headerEl" class="app-header">
     <DemoModeBanner v-if="DEMO_MODE" />
-    <!-- Eigene Zeile ÜBER der Icon-Zeile statt zwischen TripSwitcher und den Icons rechts
-         eingereiht: der TripSwitcher-Button wächst mit dem Urlaubsnamen und schrumpft nicht
-         zuverlässig (siehe .switcher-btn in TripSwitcher.vue), wodurch ein hier eingereihter Pill
-         auf schmalen Viewports vom TripSwitcher überlagert statt danebengestellt wurde. -->
-    <div class="status-row">
-      <TrackRecordingIndicator />
-      <PwaUpdatePrompt />
-      <PwaInstallHint />
-    </div>
-    <!-- Bewusst AUSSERHALB von .status-row: LoadingIndicator.vue rendert seit dem Wechsel auf einen
-         freischwebenden Toast (position:fixed, blitzt bei JEDEM Request kurz auf/ab) nicht mehr am
-         Layout beteiligt - eine Verschachtelung in der Statuszeile würde nur suggerieren, dass er
-         (wie Offline-/PWA-Update-Hinweis) Teil von deren dauerhaftem Layout wäre. -->
     <LoadingIndicator />
     <div class="header-row">
       <router-link to="/" class="brand">
@@ -117,6 +102,7 @@ const profileTitle = computed(() => {
       </div>
 
       <div class="header-actions">
+        <TrackRecordingIndicator />
         <PresenceAvatars />
         <NotificationInbox />
         <router-link
@@ -168,17 +154,6 @@ const profileTitle = computed(() => {
   box-shadow: none;
   box-sizing: border-box;
   pointer-events: none;
-}
-
-.status-row {
-  display: flex;
-  justify-content: center;
-  gap: var(--space-2);
-  pointer-events: auto;
-}
-
-.status-row:has(.pwa-pill) {
-  padding: 6px var(--space-4) 0;
 }
 
 .header-row {

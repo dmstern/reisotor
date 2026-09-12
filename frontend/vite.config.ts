@@ -95,7 +95,7 @@ export default defineConfig({
     // (Web-Push-Handler, siehe dortiger Kommentar) erhalten bleibt und nur um Workbox-Precaching
     // ERWEITERT statt komplett ersetzt wird (siehe self.__WB_MANIFEST-Import in sw.js selbst).
     // Die Landingpage (landing-main.ts) registriert keinen Service Worker (kein
-    // PwaUpdatePrompt.vue-Import) und braucht kein App-Manifest - Plugin dort komplett weglassen
+    // stores/pwaUpdate.ts-Import) und braucht kein App-Manifest - Plugin dort komplett weglassen
     // statt eines für sie irreführenden sw.js/manifest.webmanifest im Build-Output.
     buildTarget !== 'landing' &&
       VitePWA({

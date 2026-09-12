@@ -109,7 +109,7 @@ onUnmounted(() => window.removeEventListener('reisotor:session-expired', onSessi
 // Wärmt den Offline-Daten-Cache (api/offline.ts) für den aktuellen Urlaub im Hintergrund vor -
 // sonst bleiben Views, die DashboardView.vue selbst nicht lädt (Touren, Reise-Orte, Budget-
 // Kategorien/Überweisungen, Likes/Kommentare), erst nach einem einmaligen Online-Besuch offline
-// nutzbar, obwohl die "App ist jetzt offline verfügbar"-Meldung (PwaUpdatePrompt.vue) das
+// nutzbar, obwohl die "App ist jetzt offline verfügbar"-Meldung (NotificationInbox.vue) das
 // Gegenteil suggeriert. Läuft bei jedem Urlaubswechsel erneut (eigener Cache-Key pro trip_id).
 watch(
   () => tripStore.currentTripId,

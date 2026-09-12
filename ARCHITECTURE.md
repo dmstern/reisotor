@@ -134,8 +134,9 @@ vite.config.ts`) erweitert denselben `public/sw.js` (statt ihn zu ersetzen) um
   **kein** Runtime-Caching von `/api/*` in dieser Schicht — bleibt exklusiv Aufgabe der Daten-Ebene
   oben, um nicht zwei konkurrierende Caches für dieselben Daten zu haben. `devOptions.enabled` ist
   im Dev-Server bewusst `false` — echtes Testen dieser Schicht braucht einen Produktions-Build
-  (siehe `e2e/tests/offline-app-shell.spec.ts`). `components/PwaUpdatePrompt.vue` zeigt einen
-  Hinweis, wenn eine neue Version bereitsteht bzw. einmalig, dass die App jetzt offline nutzbar ist.
+  (siehe `e2e/tests/offline-app-shell.spec.ts`). `components/NotificationInbox.vue` (gespeist aus
+  `stores/pwaUpdate.ts`) zeigt einen Hinweis, wenn eine neue Version bereitsteht bzw. einmalig,
+  dass die App jetzt offline nutzbar ist.
 
 ## Anhänge
 
