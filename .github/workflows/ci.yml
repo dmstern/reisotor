@@ -155,7 +155,7 @@ jobs:
             backend/node_modules
             frontend/node_modules
             e2e/node_modules
-          key: node-modules-jammy-v1-${{ hashFiles('backend/package-lock.json', 'frontend/package-lock.json', 'e2e/package-lock.json') }}
+          key: node-modules-jammy-node22-v1-${{ hashFiles('backend/package-lock.json', 'frontend/package-lock.json', 'e2e/package-lock.json') }}
 
       - name: Install backend dependencies
         if: steps.node-modules-cache.outputs.cache-hit != 'true'
