@@ -21,7 +21,7 @@ import { useWeatherProviderStore, WEATHER_MODEL_OPTIONS } from '../stores/weathe
 import { useHomeCurrencyStore } from '../stores/homeCurrency';
 import { useUiSettingsStore } from '../stores/uiSettings';
 import { useDashboardConfigStore } from '../stores/dashboardConfig';
-import { WIDGET_COLORS, SECURITY_TILE_COLOR } from '../utils/widgetColors';
+import { WIDGET_COLORS, SECURITY_TILE_COLOR, TRASH_TILE_COLOR } from '../utils/widgetColors';
 import { buildAllEntries } from '../utils/calendarEntries';
 import { SCHEDULE_CATEGORY_META } from '../utils/scheduleCategory';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
@@ -80,6 +80,8 @@ const accommodations = computed(() => spotsStore.spots.filter((s) => s.category 
 const diaryEntries = ref<DiaryEntry[]>([]);
 const notes = ref<Note[]>([]);
 const users = ref<User[]>([]);
+const trashEntries = ref<{ id: number }[]>([]);
+const trashCount = computed(() => trashEntries.value.length);
 const loading = ref(true);
 
 const weatherDays = ref<DailyWeather[] | null>(null);
@@ -220,7 +222,7 @@ const regionShowsExchange = computed(
 
 onMounted(async () => {
   try {
-    const [scheduleRes, todosRes, packingRes, shoppingRes, diaryRes, notesRes, usersRes] =
+    const [scheduleRes, todosRes, packingRes, shoppingRes, diaryRes, notesRes, usersRes, trashRes] =
       await Promise.all([
         api.get<ScheduleItem[]>(`/schedule?trip_id=${tripId}`),
         api.get<TodoItem[]>(`/todos?trip_id=${tripId}`),
@@ -229,6 +231,7 @@ onMounted(async () => {
         api.get<DiaryEntry[]>(`/diary?trip_id=${tripId}`),
         api.get<Note[]>(`/notes?trip_id=${tripId}`),
         api.get<User[]>(`/trips/${tripId}/members`),
+        api.get<{ id: number }[]>(`/trash?trip_id=${tripId}`),
         spotsStore.load(),
         budgetStore.load(),
       ]);
@@ -239,6 +242,7 @@ onMounted(async () => {
     diaryEntries.value = diaryRes;
     notes.value = notesRes;
     users.value = usersRes;
+    trashEntries.value = trashRes;
   } catch {
     // Offline und (noch) kein Cache-Eintrag für mindestens einen der Endpunkte - Seite soll trotzdem
     // rendern (ggf. mit leeren/vorherigen Daten) statt durch das v-if="!loading" unten für immer
@@ -420,14 +424,24 @@ function formatWeekdayDate(d: string) {
       "
       :class="{ 'has-image': trip?.image_url }"
     >
-      <Button
-        variant="secondary"
-        class="banner-edit-btn"
-        title="Urlaub bearbeiten"
-        @click="jumpToTrip"
-      >
-        <AppIcon :icon="ACTION_ICONS.edit" :size="14" group="actions" /> Bearbeiten
-      </Button>
+      <div class="banner-actions">
+        <Button
+          variant="secondary"
+          class="banner-action-btn"
+          title="Papierkorb öffnen"
+          :to="`/trip/${tripId}/trash`"
+        >
+          <AppIcon :icon="ACTION_ICONS.delete" :size="14" group="actions" /> Papierkorb
+        </Button>
+        <Button
+          variant="secondary"
+          class="banner-action-btn"
+          title="Urlaub bearbeiten"
+          @click="jumpToTrip"
+        >
+          <AppIcon :icon="ACTION_ICONS.edit" :size="14" group="actions" /> Bearbeiten
+        </Button>
+      </div>
       <h1>{{ trip?.name || 'Euer Urlaub' }}</h1>
       <p v-if="trip?.destination">
         <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" />
@@ -984,6 +998,28 @@ function formatWeekdayDate(d: string) {
           <h3>Sicherheits-Check</h3>
           <p>Der Reisotor scannt eure Reiseregion 🤖🔍</p>
         </router-link>
+
+        <!-- Papierkorb -->
+        <router-link
+          v-else-if="key === 'trash'"
+          :to="`/trip/${tripId}/trash`"
+          class="card tile"
+          :style="{ background: `${TRASH_TILE_COLOR}0d` }"
+        >
+          <AppIcon
+            class="tile-icon"
+            :size="18"
+            :style="{ background: `${TRASH_TILE_COLOR}26`, borderColor: TRASH_TILE_COLOR }"
+            :icon="ACTION_ICONS.delete"
+            group="navigation"
+            :color="TRASH_TILE_COLOR"
+          />
+          <h3>Papierkorb</h3>
+          <p v-if="trashCount > 0">
+            {{ trashCount }} gelöschte{{ trashCount === 1 ? 's Objekt' : ' Objekte' }}
+          </p>
+          <p v-else>Der Papierkorb ist leer</p>
+        </router-link>
       </template>
     </div>
   </div>
@@ -1022,24 +1058,31 @@ function formatWeekdayDate(d: string) {
   color: #fff;
 }
 
-.banner-edit-btn {
+.banner-actions {
   position: absolute;
   top: var(--space-3);
   right: var(--space-3);
-  font-size: 0.8rem;
-  padding: 4px 10px;
+  display: flex;
+  gap: var(--space-2);
   /* Bei stark eingeschränktem .app-main (z. B. beide Schubladen gleichzeitig offen auf einem nur
      mäßig breiten Desktop-Viewport, siehe narrowDesktop-Fall in layout-overlap.spec.ts) schrumpft
      die Hero-Card teils auf eine Breite unter der intrinsischen Button-Breite – ohne max-width ragt
-     der (per position:absolute von der Kartenbreite unabhängige) Button dann links aus der Card. */
+     die (per position:absolute von der Kartenbreite unabhängige) Leiste dann links aus der Card. */
   max-width: calc(100% - 2 * var(--space-3));
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.banner-action-btn {
+  font-size: 0.8rem;
+  padding: 4px 10px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   box-shadow: none;
 }
 
-.banner-edit-btn:hover {
+.banner-action-btn:hover {
   box-shadow: var(--shadow-sm);
 }
 
@@ -1048,14 +1091,14 @@ function formatWeekdayDate(d: string) {
    Bild deshalb ein fester halbtransparenter dunkler Chip mit weißer Schrift, unabhängig vom
    jeweiligen Bildmotiv immer gut lesbar (gleiches Muster wie die schwebenden Bearbeiten-/
    Löschen-Buttons auf Karten-Vorschaubildern). */
-.hero.has-image .banner-edit-btn {
+.hero.has-image .banner-action-btn {
   background: rgba(20, 20, 18, 0.55);
   color: #fff;
   border-color: rgba(255, 255, 255, 0.5);
   box-shadow: none;
 }
 
-.hero.has-image .banner-edit-btn:hover {
+.hero.has-image .banner-action-btn:hover {
   background: rgba(20, 20, 18, 0.75);
   box-shadow: var(--shadow-sm);
 }

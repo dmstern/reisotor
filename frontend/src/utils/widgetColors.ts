@@ -23,6 +23,9 @@ export const WIDGET_COLORS = assignCategoryColors([
 // (assignCategoryColors sortiert alphabetisch neu). Teal passend zum Reisotor-Roboter-Logo.
 export const SECURITY_TILE_COLOR = '#4FB3A9';
 
+// Eigene feste Farbe für den Papierkorb (gelöschte/archivierte Objekte): dezentes Schiefergrau.
+export const TRASH_TILE_COLOR = '#8c8c8c';
+
 // Analoge Farbzuordnung für die NavBar (siehe stores/iconStyle.ts's navColored-Einstellung,
 // components/NavBar.vue) - bewusst eine EIGENE assignCategoryColors()-Zuweisung statt WIDGET_COLORS
 // direkt mit den Nav-Keys wiederzuverwenden (die Nav-Linkliste hat einen anderen, kleineren
@@ -41,4 +44,5 @@ export const NAV_LINK_COLORS = new Map<string, string>([
   ['budget', WIDGET_COLORS.get('budget')!],
   ['diary', WIDGET_COLORS.get('diary')!],
   ['notes', WIDGET_COLORS.get('notes')!],
+  ['trash', TRASH_TILE_COLOR],
 ]);

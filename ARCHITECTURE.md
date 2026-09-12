@@ -149,8 +149,8 @@ werden per eigener Cleanup-Routine entfernt.
 
 Lese-Routen filtern `deleted_at IS NULL`. `routes/trash.ts` listet/restauriert/purged endgültig.
 Frontend zeigt beim Löschen zuerst ein 60-Sekunden-Rückgängig-Fenster direkt an der Listenstelle
-(`useUndoableDelete.ts`-Composable + `UndoDeleteRow.vue`-Platzhalter), danach ist der Eintrag nur
-noch über die eigene `TrashView.vue` (Profil/Avatar-Menü) wiederherstellbar.
+(`useUndoableDelete.ts`-Composable + `UndoDeleteRow.vue`-Platzhalter), danach ist der Eintrag über
+die eigene `TrashView.vue` (Trip-Dashboard bzw. optionales NavBar-Item) wiederherstellbar.
 
 ## Kalender-Einstellungen & Querverweis-Hervorhebung
 

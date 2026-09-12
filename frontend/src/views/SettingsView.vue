@@ -10,7 +10,6 @@ import { useRoute, useRouter } from 'vue-router';
 import { api, ApiError } from '../api/client';
 import type { User } from '../api/types';
 import { useAuthStore } from '../stores/auth';
-import { useTripStore } from '../stores/trip';
 import { useConnectivityStore } from '../stores/connectivity';
 import { useBuildInfoStore } from '../stores/buildInfo';
 import { useNavPositionStore } from '../stores/navPosition';
@@ -78,7 +77,6 @@ import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import type { IconDef } from '../utils/icon';
 
 const auth = useAuthStore();
-const tripStore = useTripStore();
 const connectivity = useConnectivityStore();
 const router = useRouter();
 const route = useRoute();
@@ -117,7 +115,12 @@ const ALL_TABS: { key: Tab; label: string; icon: IconDef; adminOnly?: boolean }[
   },
   { key: 'trip', label: 'Reise-Anzeige', icon: FORM_FIELD_ICONS.date },
   { key: 'notifications', label: 'Benachrichtigungen', icon: BELL_ICON },
-  { key: 'data', label: 'Daten', icon: { id: 'database', emoji: '🗄️', outline: IconDatabase } },
+  {
+    key: 'data',
+    label: 'Daten',
+    icon: { id: 'database', emoji: '🗄️', outline: IconDatabase },
+    adminOnly: true,
+  },
   {
     key: 'about',
     label: 'Über',
@@ -857,9 +860,9 @@ async function onImportFileSelected(event: Event) {
               >
                 <AppIcon :icon="ACTION_ICONS.chevronDown" :size="14" group="actions" />
               </IconButton>
-              <label for="auto-id-1788301175449-27" class="nav-config-visible">
+              <label :for="'nav-visible-' + entry.key" class="nav-config-visible">
                 <Checkbox
-                  id="auto-id-1788301175449-27"
+                  :id="'nav-visible-' + entry.key"
                   :checked="entry.visible"
                   :aria-label="`${navLinkLabel(entry.key)} in der Navigation anzeigen`"
                   @change="
@@ -888,6 +891,7 @@ async function onImportFileSelected(event: Event) {
             v-for="(entry, index) in dashboardConfig.entries"
             :key="entry.key"
             class="dashboard-config-row"
+            :class="{ disabled: !entry.visible }"
           >
             <AppIcon
               v-if="dashboardTileIcon(entry.key)"
@@ -919,9 +923,9 @@ async function onImportFileSelected(event: Event) {
               >
                 <AppIcon :icon="ACTION_ICONS.chevronDown" :size="14" group="actions" />
               </IconButton>
-              <label for="auto-id-1788301175449-28" class="nav-config-visible">
+              <label :for="'dashboard-tile-visible-' + entry.key" class="nav-config-visible">
                 <Checkbox
-                  id="auto-id-1788301175449-28"
+                  :id="'dashboard-tile-visible-' + entry.key"
                   :checked="entry.visible"
                   :aria-label="`${dashboardTileLabel(entry.key)} auf dem Dashboard anzeigen`"
                   @change="
@@ -1140,20 +1144,6 @@ async function onImportFileSelected(event: Event) {
     </template>
 
     <template v-if="activeTab === 'data'">
-      <div class="card">
-        <h2><AppIcon :icon="ACTION_ICONS.delete" group="navigation" :size="20" /> Papierkorb</h2>
-        <p class="hint intro-hint">
-          Gelöschte Termine, Ausflüge, Spots und mehr bleiben eine Weile hier erhalten und lassen
-          sich wiederherstellen.
-        </p>
-        <Button
-          variant="card-action"
-          :to="tripStore.currentTripId ? `/trip/${tripStore.currentTripId}/trash` : '/trash'"
-        >
-          Papierkorb öffnen
-        </Button>
-      </div>
-
       <div class="card" v-if="auth.user?.is_admin">
         <h2>Datensicherung</h2>
         <p>

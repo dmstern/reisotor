@@ -1,4 +1,5 @@
 import { SECTION_ICON_DEFS } from './sectionIcons';
+import { ACTION_ICONS } from './actionIcons';
 import type { IconDef } from './icon';
 import type { LiveDomain } from '../stores/liveSync';
 
@@ -52,4 +53,11 @@ export const NAV_LINKS: NavLinkDef[] = [
   },
   { key: 'diary', to: '/diary', label: 'Tagebuch', icon: SECTION_ICON_DEFS.diary, domain: 'diary' },
   { key: 'notes', to: '/notes', label: 'Notizen', icon: SECTION_ICON_DEFS.notes, domain: 'notes' },
+  {
+    key: 'trash',
+    to: '/trash',
+    label: 'Papierkorb',
+    icon: ACTION_ICONS.delete,
+    defaultVisible: false,
+  },
 ];
