@@ -644,7 +644,10 @@ unerwünschte Vererbungen in Spezialfällen (z. B. ungerahmte Inputs in `QuickAd
   Squircle-Eckenrundung) und unterstützt sowohl Booleans als auch Array-Bindungen (`v-model`) sowie `checked`-Props.
 - **`Card.vue`**: Basis-Fläche für Spots, Touren, Budget-Töpfe, Notizen und Fokus-Panels. Unterstützt
   `variant` (`default`, `muted` für hinterlegte Flächen, `flat` ohne Schatten, `elevated` mit verstärktem Schatten `var(--shadow-md)`,
-  `tile` für Dashboard-Kacheln). **Zustände:** `condensed` ist ein **Zustand/Prop** (komprimiertes Padding & schmale Miniatur-Banner links),
+  `tile` für Dashboard-Kacheln, `polaroid` für authentische Polaroid-Fotokarten mit breitem Rahmen, tiefem Schatten & Vintage-Haptik).
+  **Polaroid-Stil & Drehung**: `.card--polaroid` (in `SpotCard.vue`) wird in der Ruheposition ganz leicht schräg rotiert platziert (`--card-rotate`, z. B. `-1.1°` bis `+0.95°` mit stabiler ID-Verteilung), um eine natürliche, fototisch-artige Anordnung zu erzeugen. Beim Aufklappen (`expanded`) richtet sich die Karte auf `0deg` gerade aus.
+  **Optischer Hover-Lift ("Anheben")**: Anklickbare Karten (`interactive: true`, `expandable: true`, `ExcursionCard.vue` sowie `.card--polaroid` / `SpotCard.vue`) heben sich beim Hovern spürbar optisch an: sie schweben nach oben (`translateY(-4px)`), skalieren leicht an (`scale(1.015)` bzw. `scale(1.02)`), vertiefen ihren `box-shadow` (`var(--shadow-md)` bzw. tiefer Fotokontaktschatten) und erhöhen den `z-index`, um sich sauber über Nachbarkarten zu legen. Bei Polaroid-Karten entspannt sich zusätzlich der Drehwinkel leicht. Bei `:active` federn sie tastbar zurück (`scale(0.99)`). Im aufgeklappten Zustand (`expanded`) entfällt der Hover-Lift, um die Interaktion mit Innen-Elementen ruhig zu halten.
+  **Zustände:** `condensed` ist ein **Zustand/Prop** (komprimiertes Padding & schmale Miniatur-Banner links),
   der per `expandable` Prop interaktiv per Klick in die volle/aufgeklappte Ansicht wechselt (`#expanded` Slot, analog zu `SpotCard.vue`/`ExcursionCard.vue` in der Karten-View).
   Echtzeit-Highlighting (`highlight` prop / `.new-highlight`).
 - **`Badge.vue` & Indikatoren**: `.badge` als leichtgewichtiger Chip für Zustände (`.badge--primary`,

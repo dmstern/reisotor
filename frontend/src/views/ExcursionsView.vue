@@ -4794,7 +4794,8 @@ async function deleteEditingSpot() {
 .tour-station-accordion .staggered-spot {
   transition:
     opacity 0.35s ease,
-    transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   opacity: 0;
   transform: translateY(-24px) scale(0.95);
   transition-delay: calc((var(--stagger-total) - var(--stagger-idx) - 1) * 25ms);
@@ -4878,6 +4879,10 @@ async function deleteEditingSpot() {
   flex-direction: column;
   position: relative;
   z-index: 2;
+}
+
+.tour-spot-cell:hover {
+  z-index: 6;
 }
 
 .tour-spot-cell .staggered-spot {

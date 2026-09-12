@@ -366,6 +366,15 @@ function openCalendarConfirmDone() {
   unplannedPopoverOpen.value = false;
   drawers.startPendingSchedule('spot', props.spot.id, 'confirm-done');
 }
+
+// Subtile, deterministische Drehung für den authentischen Polaroid-Look (z. B. -1.1° bis +0.95°)
+// Bleibt stabil pro Spot-ID, damit die Kärtchen beim Sortieren/Filtern nicht hin- und herwackeln.
+const ROTATION_ANGLES = [-0.85, 0.75, -0.6, 0.95, -1.1, 0.65];
+const cardRotation = computed(() => {
+  if (props.expanded) return '0deg';
+  const angle = ROTATION_ANGLES[Math.abs(props.spot.id) % ROTATION_ANGLES.length];
+  return `${angle}deg`;
+});
 </script>
 
 <template>
@@ -373,6 +382,7 @@ function openCalendarConfirmDone() {
     variant="polaroid"
     class="spot-card"
     :class="{ expanded, 'new-highlight': highlighted }"
+    :style="{ '--card-rotate': cardRotation }"
     @click="onCardClick"
   >
     <div class="image" :style="spot.image_url ? { backgroundImage: `url(${spot.image_url})` } : {}">
@@ -783,6 +793,10 @@ function openCalendarConfirmDone() {
   width: 100%;
 }
 
+.spot-card:hover {
+  z-index: 5;
+}
+
 .spot-card:not(.expanded) {
   height: 268px;
   min-height: 268px;
@@ -790,6 +804,7 @@ function openCalendarConfirmDone() {
 
 .spot-card.expanded {
   border-color: var(--color-primary);
+  transform: translateY(0) rotate(0deg) scale(1);
 }
 
 .image {
@@ -1713,6 +1728,7 @@ function openCalendarConfirmDone() {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .spot-card,
   .image,
   .body,
   .spot-accordion,
@@ -1725,6 +1741,7 @@ function openCalendarConfirmDone() {
   .mobile-only-accordion-inner > *,
   .spot-note-container {
     transition: none !important;
+    transform: none !important;
   }
 }
 

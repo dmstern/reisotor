@@ -630,9 +630,10 @@ function onSpotDrop(event: DragEvent) {
   overflow: hidden;
   scroll-margin-top: calc(var(--space-2) + var(--category-nav-clearance, 48px));
   transition:
-    border-color 0.15s ease,
-    background 0.15s ease,
-    box-shadow 0.15s ease;
+    border-color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .excursion-card.is-travel,
@@ -643,9 +644,19 @@ function onSpotDrop(event: DragEvent) {
   --excursion-theme-border: var(--color-travel-border);
 }
 
-.excursion-card:hover {
+.excursion-card:not(.expanded):hover {
+  transform: translateY(-4px) scale(1.015);
   border-color: var(--excursion-theme-color);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md);
+  z-index: 5;
+}
+
+.excursion-card:not(.expanded):active {
+  transform: translateY(0) scale(0.99);
+}
+
+.excursion-card.expanded {
+  transform: translateY(0) scale(1);
 }
 
 .excursion-accordion {
@@ -1382,6 +1393,7 @@ function onSpotDrop(event: DragEvent) {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .excursion-card,
   .body,
   .excursion-accordion,
   .status,
