@@ -2109,62 +2109,82 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
   color: var(--color-text) !important;
 }
 
-/* Desktop: solange Spots-Drawer und Kalender-Drawer nebeneinander passen, schwebt der
-   Tage-Streifen als Pille und die Zoom-Buttons sitzen rechts neben den Drawers.
-   Spiegelt exakt die Schwelle (500px in .app-main unter @media (min-width: 800px)) aus
-   ExcursionsView.vue UND deren isSheetOverlayMode-JS-Spiegelung, sonst schalten beide Bereiche
-   bei unterschiedlichen Breiten um. */
+/* Desktop: Die Karte ist auf Desktop stets vollflächig über die gesamte Bildschirmbreite.
+   Die Kartenwerkzeuge (.fit-btn) und Zoom-Buttons nutzen auf Desktop größere Maße und Insets,
+   um unter dem schwebenden Header zu liegen.
+   Die Zoom-Buttons sitzen rechts neben den Drawers: im Side-by-Side-Modus rechts neben beiden Drawers,
+   im Sheet-Overlay-Modus (wenn z. B. der Kalender auf Zwischengrößen ausgeklappt ist) direkt rechts
+   neben der Kalender-Schublade. */
 @media (min-width: 800px) {
-  @container app-main (min-width: 500px) {
-    .map-wrap {
-      /* Eckenabstand/Lücke sind schon auf Mobil (.map-wrap oben) auf Apples Maß, hier reicht der Platz zusätzlich
-         für den größeren Durchmesser: 44px (dasselbe "großer runder Icon-Button"-Maß wie
-         DashboardView.vue's .tile-icon) statt der auf Mobil aus Platznot nötigen 34px. */
-      --fit-btn-size: 44px;
-      --fit-btn-top-inset: calc(var(--app-header-height, 56px) + var(--space-4));
-      --fit-btn-right-inset: var(--space-4);
-    }
+  .map-wrap {
+    /* Eckenabstand/Lücke sind schon auf Mobil (.map-wrap oben) auf Apples Maß, hier reicht der Platz zusätzlich
+       für den größeren Durchmesser: 44px (dasselbe "großer runder Icon-Button"-Maß wie
+       DashboardView.vue's .tile-icon) statt der auf Mobil aus Platznot nötigen 34px. */
+    --fit-btn-size: 44px;
+    --fit-btn-top-inset: calc(var(--app-header-height, 56px) + var(--space-4));
+    --fit-btn-right-inset: var(--space-4);
+  }
 
-    .fit-btn {
-      font-size: 1.2rem;
-    }
+  .fit-btn {
+    font-size: 1.2rem;
+  }
 
-    /* Auf Desktop schwebt der day-strip als zentrierte Pille im verfügbaren Kartenbereich (neben dem Drawer) */
-    .day-strip {
-      left: calc(var(--calendar-offset, 0px) + var(--spots-col-width, 400px));
-      right: 0;
-      margin: 0 auto;
-      width: fit-content;
-      max-width: calc(100vw - var(--calendar-offset, 0px) - var(--spots-col-width, 400px) - 40px);
-      border-radius: 999px;
-      bottom: 24px;
-      padding: 8px 16px;
-    }
+  :deep(.leaflet-top) {
+    top: calc(var(--app-header-height, 56px) + var(--space-4)) !important;
+  }
 
-    /* Zoom-Buttons rechts neben den Drawer schieben */
-    :deep(.leaflet-left) {
-      /* Nutzt die dynamische Margin (drawer-tab-width bei geschlossenem Kalender, 2*space-4 bei offenem) 
-         für korrekte Platzierung rechts neben der Spots-Schublade. */
-      left: min(
-        calc(
+  :deep(.leaflet-left .leaflet-control) {
+    margin-left: 0 !important;
+  }
+
+  :deep(.leaflet-top .leaflet-control) {
+    margin-top: 0 !important;
+  }
+
+  /* Zoom-Buttons rechts neben den/die Drawer schieben:
+     Im Standard-Desktop-Modus (Spots-Drawer als Spalte) rechts neben beide Drawer */
+  :deep(.leaflet-left) {
+    /* Nutzt die dynamische Margin (drawer-tab-width bei geschlossenem Kalender, 2*space-4 bei offenem) 
+       für korrekte Platzierung rechts neben der Spots-Schublade. */
+    left: min(
+      calc(
+        var(--calendar-margin, var(--drawer-tab-width)) + var(--calendar-offset, 0px) +
+          var(--spots-col-width, 400px) + var(--space-4) + var(--space-3)
+      ),
+      calc(100vw - 60px)
+    ) !important;
+  }
+
+  /* Im Sheet-Overlay-Modus (Spots-Drawer ist ein Bottom-Sheet) nur rechts neben den Kalender-Drawer */
+  .karte.sheet-overlay-mode :deep(.leaflet-left) {
+    left: min(
+      calc(
+        var(--calendar-margin, var(--drawer-tab-width)) + var(--calendar-offset, 0px) +
+          var(--space-4)
+      ),
+      calc(100vw - 60px)
+    ) !important;
+  }
+
+  /* Auf Desktop schwebt der day-strip als zentrierte Pille im verfügbaren Kartenbereich (neben dem Drawer) */
+  .day-strip {
+    left: calc(
+      var(--calendar-margin, var(--drawer-tab-width)) + var(--calendar-offset, 0px) +
+        var(--spots-col-width, 400px) + var(--space-4)
+    );
+    right: 0;
+    margin: 0 auto;
+    width: fit-content;
+    max-width: calc(
+      100vw -
+        (
           var(--calendar-margin, var(--drawer-tab-width)) + var(--calendar-offset, 0px) +
-            var(--spots-col-width, 400px) + var(--space-4) + var(--space-3)
-        ),
-        calc(100vw - 60px)
-      ) !important;
-    }
-
-    :deep(.leaflet-top) {
-      top: calc(var(--app-header-height, 56px) + var(--space-4)) !important;
-    }
-
-    :deep(.leaflet-left .leaflet-control) {
-      margin-left: 0 !important;
-    }
-
-    :deep(.leaflet-top .leaflet-control) {
-      margin-top: 0 !important;
-    }
+            var(--spots-col-width, 400px) + var(--space-4) + 40px
+        )
+    );
+    border-radius: 999px;
+    bottom: calc(var(--navbar-bottom-offset, 0px) + 24px);
+    padding: 8px 16px;
   }
 }
 </style>

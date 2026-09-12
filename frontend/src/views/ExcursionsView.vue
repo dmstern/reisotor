@@ -980,7 +980,7 @@ function updateRouteQuery() {
     newEntries.some(([k, v]) => route.query[k] !== v);
 
   if (isDiff) {
-    router.replace({ query: newQuery });
+    router.replace({ query: newQuery, hash: route.hash });
   }
 }
 
@@ -2186,15 +2186,6 @@ const currentSheetHeightPx = computed(
   () => sheetDragHeightPx.value ?? sheetHeightPx(sheetState.value)
 );
 
-// isDesktop (window.matchMedia, siehe useIsDesktop.ts) reicht hier NICHT: ob .spots-col als Sheet-
-// Overlay über der Karte liegt oder als eigene Spalte daneben, entscheidet weiter unten im CSS ein
-// @container app-main (min-width: 720px)-Query gegen die tatsächlich gerenderte Breite von
-// .app-main - die kann schmaler als das Fenster sein (z. B. bei geöffneter Kalender-Schublade), auch
-// bei Fensterbreiten oberhalb der isDesktop-Schwelle von 800px. Ohne dieses eigene Signal wurde
-// mapCoveredBottomPx in genau dieser Konstellation fälschlich auf 0 gezwungen, obwohl das Sheet
-// weiterhin als Overlay rendert - fokussierte Punkte/Routen landeten dann zu weit unten, teils
-// hinter der Sheet-Kante.
-const appMainWidth = ref<number | null>(null);
 const spotsColRightPx = ref(0);
 let appMainResizeObserver: ResizeObserver | null = null;
 let spotsColResizeObserver: ResizeObserver | null = null;
@@ -2202,8 +2193,7 @@ let spotsColResizeObserver: ResizeObserver | null = null;
 onMounted(() => {
   const appMainEl = document.querySelector('.app-main');
   if (appMainEl) {
-    appMainResizeObserver = new ResizeObserver((entries) => {
-      appMainWidth.value = entries[0]?.contentRect.width ?? null;
+    appMainResizeObserver = new ResizeObserver(() => {
       updateSpotsColRight();
     });
     appMainResizeObserver.observe(appMainEl);
@@ -2229,27 +2219,28 @@ onUnmounted(() => {
   window.removeEventListener('resize', updateSpotsColRight);
 });
 
-// Desktop- vs. Mobil-Modus: solange Spots-Drawer und Kalender-Drawer nebeneinander passen, sind
-// wir im Desktop-Modus und die vollflächige Karte wird über die gesamte Bildschirmbreite angezeigt.
-// Auf Mobil (<800px) ist die Spots-Liste immer ein Bottom-Sheet-Overlay. Auf Desktop (≥800px)
-// reicht der Platz für beide Schubladen nebeneinander, solange die Restbreite von .app-main
-// mindestens die Standardbreite des Spots-Drawers inklusive Puffer aufnehmen kann (gespiegelt in
-// der @container app-main (min-width: 500px)-Regel unten).
-const availableAppMainWidth = computed(() => {
-  if (appMainWidth.value !== null) return appMainWidth.value;
-  const calWidth = isDesktop.value && drawers.calendarOpen ? drawers.calendarWidth + 44 : 0;
-  return window.innerWidth - calWidth;
-});
-const isSheetOverlayMode = computed(() => {
-  if (!isDesktop.value) return true;
-  return availableAppMainWidth.value < 500;
-});
+// Mobil vs. Desktop: Auf Mobil (<800px) ist die Spots-Liste ein Bottom-Sheet-Overlay über der Karte.
+// Auf Desktop (≥800px) ist der Spots-Drawer permanent als eigenständige Spalte sichtbar,
+// unabhängig davon, ob oder wie weit der Kalender-Drawer geöffnet ist.
+const isSheetOverlayMode = computed(() => !isDesktop.value);
 const mapCoveredBottomPx = computed(() =>
   isSheetOverlayMode.value ? currentSheetHeightPx.value : 0
 );
-const mapCoveredLeftPx = computed(() => (isSheetOverlayMode.value ? 0 : spotsColRightPx.value));
+const mapCoveredLeftPx = computed(() => (!isDesktop.value ? 0 : spotsColRightPx.value));
 
 watch([isSheetOverlayMode, spotsColWidth, tripMapRef], () => nextTick(updateSpotsColRight));
+watch(
+  isSheetOverlayMode,
+  (overlay) => {
+    if (!overlay) {
+      if (sheetState.value === 'collapsed') {
+        sheetState.value = 'partial';
+      }
+      clearSheetHeightOverride();
+    }
+  },
+  { immediate: true }
+);
 watch(
   () => [drawers.calendarOpen, drawers.calendarWidth],
   () => {
@@ -2549,7 +2540,11 @@ async function deleteEditingSpot() {
       <AppIcon :icon="SECTION_ICON_DEFS.map" :size="22" group="navigation" /> Karte
     </h1>
     <div class="layout" :style="{ '--spots-col-width': spotsColWidth + 'px' }">
-      <div ref="sheetEl" class="spots-col" :class="[sheetState, { dragging: sheetDragging }]">
+      <div
+        ref="sheetEl"
+        class="spots-col"
+        :class="[isSheetOverlayMode ? sheetState : null, { dragging: sheetDragging }]"
+      >
         <div class="sheet-handle-row">
           <IconButton
             variant="secondary"
@@ -4081,6 +4076,7 @@ async function deleteEditingSpot() {
      Dadurch liegt der zugeklappte Drawer immer oberhalb der unteren NavBar und wird nie von ihr verdeckt (#303). */
   bottom: calc(var(--space-2) + var(--navbar-bottom-offset, 0px));
   z-index: 5;
+  pointer-events: auto;
   display: flex;
   flex-direction: column;
   background: var(--color-surface);
@@ -4314,111 +4310,118 @@ async function deleteEditingSpot() {
    geöffneten Schubladen auf Desktop liegt) macht ein enges 2-Spalten-Grid weniger Sinn als eine
    große Karte mit Sheet darüber. Die feinere "wie schmal darf .spots-col selbst werden"-Frage
    (Kompakt-Zeile, Ein-Spalten-Raster) bleibt weiterhin ein separates @container(spots-col)-Query. */
-/* Desktop: solange Spots-Drawer und Kalender-Drawer nebeneinander passen (≥500px in .app-main),
-   sind wir im Desktop-Modus. Die Karte (.map-col) ist auf Desktop stets vollflächig über die
-   gesamte Bildschirmbreite (position:fixed von left:0 bis right:0), sodass hinter der schwebenden
+/* Desktop: Die Karte (.map-col) ist auf Desktop stets vollflächig über die gesamte
+   Bildschirmbreite (position:fixed von left:0 bis right:0), sodass hinter der schwebenden
    Kalender-Schublade nie ein grauer Hintergrund entsteht, sondern die Karte durchgängig sichtbar
-   bleibt. */
+   bleibt – unabhängig davon, wie breit der Kalender ausgeklappt ist.
+   Die Spots-Spalte (.spots-col) ist auf Desktop stets permanent sichtbar und schwebt links im
+   Hauptbereich (.app-main), ausgerichtet an derselben Ober- und Unterkante wie die Kalender-Schublade
+   (top: var(--space-4), bottom: calc(var(--navbar-bottom-offset) + var(--space-4))).
+   Das mobile Bottom-Sheet (inkl. Anfasser und Ein-/Ausklappstufen) greift nur auf Mobilgeräten (<800px). */
 @media (min-width: 800px) {
-  @container app-main (min-width: 500px) {
-    /* .page bleibt wie auf Mobil absolute und vollbild, Karte füllt den Bereich aus */
-    .page {
-      max-width: none;
-      margin: 0;
-      padding: 0;
-      position: relative;
-    }
+  /* .page bleibt wie auf Mobil absolute und vollbild, Karte füllt den Bereich aus */
+  .page {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    position: relative;
+  }
 
-    /* Auf Desktop ist der Titel visuell ausgeblendet, bleibt aber für Screenreader lesbar */
-    .page-title {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
-      overflow: hidden;
-      clip: rect(0, 0, 0, 0);
-      white-space: nowrap;
-      border-width: 0;
-    }
+  /* Auf Desktop ist der Titel visuell ausgeblendet, bleibt aber für Screenreader lesbar */
+  .page-title {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
 
-    .layout {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-    }
+  .layout {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
 
-    .map-col {
-      position: fixed;
-      top: 0;
-      bottom: var(--navbar-bottom-offset, 0px);
-      left: 0;
-      right: 0;
-      z-index: 1;
-      pointer-events: auto;
-    }
+  .map-col {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1;
+    pointer-events: auto;
+  }
 
-    .spots-col {
-      position: absolute;
-      left: var(--space-4);
-      top: var(--space-4);
-      bottom: var(--space-4);
-      height: auto;
-      max-height: none;
-      z-index: 5;
-      background: var(--color-surface);
-      border-radius: var(--radius-md-squircle);
-      box-shadow: var(--shadow-md);
-      width: var(--spots-col-width);
-      max-width: calc(100% - var(--space-4) * 2);
-      min-width: min(var(--spots-col-width), 280px);
-      pointer-events: auto;
+  .spots-col,
+  .spots-col.collapsed,
+  .spots-col.partial,
+  .spots-col.full {
+    position: absolute;
+    left: var(--space-4);
+    top: var(--space-4);
+    bottom: calc(var(--navbar-bottom-offset, 0px) + var(--space-4));
+    height: auto;
+    max-height: none;
+    z-index: 5;
+    background: var(--color-surface);
+    border-radius: var(--radius-md-squircle);
+    corner-shape: squircle;
+    box-shadow: var(--shadow-md);
+    width: var(--spots-col-width);
+    /* Hält mindestens 84px Freiraum am rechten Rand von .app-main frei (entspricht den
+       Kartenwerkzeugen .fit-btn: 44px Button + 24px var(--space-4) Rand + 16px Abstand),
+       sodass .spots-col die Bedienelemente auf schmalen Desktop-Bildschirmen bei ausgeklapptem
+       Kalender nie überlagert. */
+    max-width: calc(100% - var(--space-4) - 84px);
+    min-width: min(var(--spots-col-width), 280px);
+    pointer-events: auto;
 
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 
-      /* Override mobile transforms and bottom offsets */
-      transform: none;
-      transition: none;
-    }
+    /* Override mobile transforms and bottom offsets */
+    transform: none;
+    transition: none;
+  }
 
-    /* .spots-col ist auf Desktop undurchsichtig, keine speziellen Hintergrundanpassungen nötig. */
-    .spots-col .category-nav-wrap {
-      background: var(--color-surface);
-      --category-nav-bg: var(--color-surface);
-    }
+  /* .spots-col ist auf Desktop undurchsichtig, keine speziellen Hintergrundanpassungen nötig. */
+  .spots-col .category-nav-wrap {
+    background: var(--color-surface);
+    --category-nav-bg: var(--color-surface);
+  }
 
-    .sheet-handle-row {
-      display: none;
-    }
+  .sheet-handle-row {
+    display: none;
+  }
 
-    .spots-col-body {
-      flex: 1;
-      overflow-y: auto;
-      overflow-x: hidden;
-      padding: var(--space-3);
-    }
+  .spots-col-body,
+  .spots-col.collapsed .spots-col-body,
+  .spots-col.partial .spots-col-body,
+  .spots-col.full .spots-col-body {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: var(--space-3);
+    touch-action: auto;
+  }
 
-    .spots-col.collapsed .spots-col-body,
-    .spots-col.partial .spots-col-body {
-      overflow-y: auto;
-      touch-action: auto;
-    }
-
-    .col-resize-handle {
-      display: flex;
-      position: absolute;
-      left: calc(
-        var(--space-4) + min(var(--spots-col-width), calc(100% - var(--space-4) * 2)) +
-          (var(--space-4) - var(--drawer-handle-gap, 12px)) / 2
-      );
-      top: var(--space-4);
-      bottom: var(--space-4);
-      height: auto;
-      z-index: 10;
-      pointer-events: auto;
-    }
+  .col-resize-handle {
+    display: flex;
+    position: absolute;
+    left: calc(
+      var(--space-4) + min(var(--spots-col-width), calc(100% - var(--space-4) - 84px)) +
+        (var(--space-4) - var(--drawer-handle-gap, 12px)) / 2
+    );
+    top: var(--space-4);
+    bottom: calc(var(--navbar-bottom-offset, 0px) + var(--space-4));
+    height: auto;
+    z-index: 10;
+    pointer-events: auto;
   }
 }
 
