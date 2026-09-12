@@ -495,10 +495,10 @@
   <rect
      style="fill:url(#linearGradient82);fill-rule:nonzero;stroke-width:0;stroke-dasharray:none"
      id="rect80"
-     width="500.66812"
-     height="501.65433"
-     x="1.103448"
-     y="0.41379473" />
+     width="500"
+     height="500"
+     x="0"
+     y="0" />
   <path
      d="m 137.48175,201.26687 a 120,120 0 1 1 240,0 c 0,110 -90,190 -105,205 q -15,15 -30,0 c -15,-15 -105,-95 -105,-205 z"
      fill="url(#mainGrad)"

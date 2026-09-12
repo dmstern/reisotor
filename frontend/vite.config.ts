@@ -128,9 +128,9 @@ export default defineConfig({
           display: 'standalone',
           orientation: 'any',
           categories: ['travel', 'productivity'],
-          // Kreis-Hintergrundfarbe des Logos (reisotor_logo.svg) - Splashscreen-Hintergrund beim
+          // Hintergrundfarbe des App-Icons - Splashscreen-Hintergrund beim
           // Start von Home-Bildschirm/Taskleiste aus.
-          background_color: '#EAF6F4',
+          background_color: '#35003F',
           // style.css's --color-primary (Light-Mode).
           theme_color: '#9141AC',
           icons: [

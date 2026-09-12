@@ -130,7 +130,8 @@ Zwei bewusst getrennte, nicht überlappende Schichten:
 vite.config.ts`) erweitert denselben `public/sw.js` (statt ihn zu ersetzen) um
   Workbox-Precaching für das komplette Bundle, damit die App auch ohne jedes Netz überhaupt lädt.
   Macht die App auf iOS/Android/Desktop als Icon installierbar (PNG-/Maskable-Icons unter
-  `public/icons/`, erzeugt von `scripts/generate-icons.mjs` aus `reisotor_logo.svg`). Bewusst
+  `public/icons/`, erzeugt von `scripts/generate-icons.mjs` aus
+  `reisotor_icon_abgerundet_edit.svg`). Bewusst
   **kein** Runtime-Caching von `/api/*` in dieser Schicht — bleibt exklusiv Aufgabe der Daten-Ebene
   oben, um nicht zwei konkurrierende Caches für dieselben Daten zu haben. `devOptions.enabled` ist
   im Dev-Server bewusst `false` — echtes Testen dieser Schicht braucht einen Produktions-Build
