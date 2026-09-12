@@ -54,7 +54,7 @@ test('clicking a travel entry in the calendar jumps to and highlights the matchi
   await page.locator(`.day[data-date="${todayIso}"]`).click();
   await page.locator('.day-detail .items .item', { hasText: title }).click();
 
-  await expect(page).toHaveURL(new RegExp(`/excursions#excursion-\\d+$`));
+  await expect(page).toHaveURL(new RegExp(`/excursions(?:\\?.*)?#excursion-\\d+$`));
   const travelCard = page.locator('.excursion-card', { hasText: title });
   await expect(travelCard).toBeVisible();
   await expect(travelCard).toHaveClass(/new-highlight/);
