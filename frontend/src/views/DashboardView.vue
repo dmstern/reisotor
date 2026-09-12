@@ -719,7 +719,10 @@ function formatWeekdayDate(d: string) {
           v-if="key === 'calendar'"
           type="button"
           class="card tile tile-btn"
-          :style="{ background: `${WIDGET_COLORS.get('schedule')}0d` }"
+          :style="{
+            background: `${WIDGET_COLORS.get('schedule')}0d`,
+            borderColor: WIDGET_COLORS.get('schedule'),
+          }"
           @click="drawers.openCalendar()"
         >
           <AppIcon
@@ -754,7 +757,10 @@ function formatWeekdayDate(d: string) {
           v-else-if="key === 'packing'"
           :to="`/trip/${tripId}/listen?tab=packing`"
           class="card tile"
-          :style="{ background: `${WIDGET_COLORS.get('packing')}0d` }"
+          :style="{
+            background: `${WIDGET_COLORS.get('packing')}0d`,
+            borderColor: WIDGET_COLORS.get('packing'),
+          }"
         >
           <AppIcon
             class="tile-icon"
@@ -787,7 +793,10 @@ function formatWeekdayDate(d: string) {
           v-else-if="key === 'budget'"
           :to="`/trip/${tripId}/budget`"
           class="card tile"
-          :style="{ background: `${WIDGET_COLORS.get('budget')}0d` }"
+          :style="{
+            background: `${WIDGET_COLORS.get('budget')}0d`,
+            borderColor: WIDGET_COLORS.get('budget'),
+          }"
         >
           <AppIcon
             class="tile-icon"
@@ -814,7 +823,10 @@ function formatWeekdayDate(d: string) {
           v-else-if="key === 'shopping'"
           :to="`/trip/${tripId}/listen?tab=shopping`"
           class="card tile"
-          :style="{ background: `${WIDGET_COLORS.get('shopping')}0d` }"
+          :style="{
+            background: `${WIDGET_COLORS.get('shopping')}0d`,
+            borderColor: WIDGET_COLORS.get('shopping'),
+          }"
         >
           <AppIcon
             class="tile-icon"
@@ -842,7 +854,10 @@ function formatWeekdayDate(d: string) {
           v-else-if="key === 'todo'"
           :to="`/trip/${tripId}/listen?tab=todo`"
           class="card tile"
-          :style="{ background: `${WIDGET_COLORS.get('todo')}0d` }"
+          :style="{
+            background: `${WIDGET_COLORS.get('todo')}0d`,
+            borderColor: WIDGET_COLORS.get('todo'),
+          }"
         >
           <AppIcon
             class="tile-icon"
@@ -870,7 +885,10 @@ function formatWeekdayDate(d: string) {
           v-else-if="key === 'travel'"
           :to="`/trip/${tripId}/excursions?group=tours&tourRole=arrival,departure,onward`"
           class="card tile"
-          :style="{ background: `${WIDGET_COLORS.get('travel')}0d` }"
+          :style="{
+            background: `${WIDGET_COLORS.get('travel')}0d`,
+            borderColor: WIDGET_COLORS.get('travel'),
+          }"
         >
           <AppIcon
             class="tile-icon"
@@ -903,7 +921,10 @@ function formatWeekdayDate(d: string) {
             hash: currentOrNextAccommodation ? `#spot-${currentOrNextAccommodation.id}` : undefined,
           }"
           class="card tile"
-          :style="{ background: `${WIDGET_COLORS.get('accommodation')}0d` }"
+          :style="{
+            background: `${WIDGET_COLORS.get('accommodation')}0d`,
+            borderColor: WIDGET_COLORS.get('accommodation'),
+          }"
         >
           <AppIcon
             class="tile-icon"
@@ -932,7 +953,10 @@ function formatWeekdayDate(d: string) {
           v-else-if="key === 'diary'"
           :to="`/trip/${tripId}/diary`"
           class="card tile"
-          :style="{ background: `${WIDGET_COLORS.get('diary')}0d` }"
+          :style="{
+            background: `${WIDGET_COLORS.get('diary')}0d`,
+            borderColor: WIDGET_COLORS.get('diary'),
+          }"
         >
           <AppIcon
             class="tile-icon"
@@ -960,7 +984,10 @@ function formatWeekdayDate(d: string) {
           v-else-if="key === 'notes'"
           :to="`/trip/${tripId}/notes`"
           class="card tile"
-          :style="{ background: `${WIDGET_COLORS.get('notes')}0d` }"
+          :style="{
+            background: `${WIDGET_COLORS.get('notes')}0d`,
+            borderColor: WIDGET_COLORS.get('notes'),
+          }"
         >
           <AppIcon
             class="tile-icon"
@@ -985,7 +1012,10 @@ function formatWeekdayDate(d: string) {
           v-else-if="key === 'securityCheck'"
           to="/security-check"
           class="card tile"
-          :style="{ background: `${SECURITY_TILE_COLOR}0d` }"
+          :style="{
+            background: `${SECURITY_TILE_COLOR}0d`,
+            borderColor: SECURITY_TILE_COLOR,
+          }"
         >
           <AppIcon
             class="tile-icon"
@@ -1004,7 +1034,10 @@ function formatWeekdayDate(d: string) {
           v-else-if="key === 'trash'"
           :to="`/trip/${tripId}/trash`"
           class="card tile"
-          :style="{ background: `${TRASH_TILE_COLOR}0d` }"
+          :style="{
+            background: `${TRASH_TILE_COLOR}0d`,
+            borderColor: TRASH_TILE_COLOR,
+          }"
         >
           <AppIcon
             class="tile-icon"
@@ -1307,6 +1340,8 @@ function formatWeekdayDate(d: string) {
   justify-content: center;
   font-size: 1.4rem;
   padding: 0.5rem;
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
 }
 
 .tile h3 {

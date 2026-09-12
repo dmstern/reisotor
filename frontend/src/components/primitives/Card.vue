@@ -136,7 +136,10 @@ function handleCardKeydown(event: KeyboardEvent) {
     ]"
     :style="
       variant === 'tile' && tileColor
-        ? { background: tileColor.startsWith('#') ? `${tileColor}0d` : tileColor }
+        ? {
+            background: tileColor.startsWith('#') ? `${tileColor}0d` : tileColor,
+            borderColor: tileColor,
+          }
         : undefined
     "
     :role="expandable ? 'button' : undefined"
@@ -332,6 +335,8 @@ function handleCardKeydown(event: KeyboardEvent) {
   display: flex;
   align-items: center;
   justify-content: center;
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
 }
 
 /* Expandable Interactive Card (Karten-View Spot/Tour Verhalten) */
