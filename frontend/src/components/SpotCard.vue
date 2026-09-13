@@ -1028,7 +1028,15 @@ const cardRotation = computed(() => {
     background 0.3s ease,
     border-color 0.3s ease,
     color 0.3s ease,
-    box-shadow 0.3s ease;
+    box-shadow 0.3s ease,
+    backdrop-filter 0.3s ease,
+    -webkit-backdrop-filter 0.3s ease;
+}
+
+.spot-card.expanded .card-badge-group :deep(.category-chip) {
+  box-shadow: var(--shadow-sm);
+  -webkit-backdrop-filter: blur(4px) brightness(80%);
+  backdrop-filter: blur(4px) brightness(80%);
 }
 
 .body {
@@ -1692,7 +1700,9 @@ const cardRotation = computed(() => {
   .show-on-map-btn .btn-label,
   .spot-accordion-inner > *,
   .mobile-only-accordion-inner > *,
-  .spot-note-container {
+  .spot-note-container,
+  .card-badge-group,
+  .card-badge-group :deep(.category-chip) {
     transition: none !important;
     transform: none !important;
   }
