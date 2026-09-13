@@ -18,6 +18,7 @@ const trip: Trip = {
   lng: null,
   image_url: null,
   packing_category_required: 1,
+  weather_model: 'ecmwf_ifs025',
 };
 
 function makeScheduleItem(overrides: Partial<ScheduleItem> = {}): ScheduleItem {

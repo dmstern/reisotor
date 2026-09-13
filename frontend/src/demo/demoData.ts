@@ -71,6 +71,7 @@ export const DEMO_TRIP = {
   lng: -9.1393,
   image_url: demoTripBanner,
   packing_category_required: 0,
+  weather_model: 'ecmwf_ifs025',
 };
 
 export const DEMO_SPOTS: Spot[] = [

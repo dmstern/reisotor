@@ -16,11 +16,6 @@ import {
   WEEK_START_OPTIONS,
   DATE_FORMAT_OPTIONS,
 } from './calendarSettings';
-import {
-  useWeatherProviderStore,
-  type WeatherModel,
-  WEATHER_MODEL_OPTIONS,
-} from './weatherProvider';
 import { useHomeCurrencyStore, type HomeCurrency, HOME_CURRENCY_OPTIONS } from './homeCurrency';
 
 const SHOW_ACTIVITY_TOASTS_KEY = 'reisotor-show-activity-toasts';
@@ -242,7 +237,6 @@ export interface StoredAppSettings {
     weekStart?: WeekStart;
     dateFormat?: DateFormatOption;
   };
-  weatherModel?: WeatherModel;
   homeCurrency?: HomeCurrency;
   hideCompletedPacking?: boolean;
   hideCompletedTodos?: boolean;
@@ -288,7 +282,6 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
     const navCfgStore = useNavConfigStore();
     const dashCfgStore = useDashboardConfigStore();
     const calSettingsStore = useCalendarSettingsStore();
-    const weatherStore = useWeatherProviderStore();
     const homeCurrStore = useHomeCurrencyStore();
 
     api
@@ -314,7 +307,6 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
             weekStart: calSettingsStore.weekStart,
             dateFormat: calSettingsStore.dateFormat,
           },
-          weatherModel: weatherStore.model,
           homeCurrency: homeCurrStore.currency,
           hideCompletedPacking: hideCompletedPacking.value,
           hideCompletedTodos: hideCompletedTodos.value,
@@ -335,7 +327,6 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
       const navCfgStore = useNavConfigStore();
       const dashCfgStore = useDashboardConfigStore();
       const calSettingsStore = useCalendarSettingsStore();
-      const weatherStore = useWeatherProviderStore();
       const homeCurrStore = useHomeCurrencyStore();
 
       if (stored.theme && THEME_MODE_OPTIONS.some((o) => o.value === stored.theme)) {
@@ -412,12 +403,6 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
         ) {
           calSettingsStore.dateFormat = stored.calendarSettings.dateFormat;
         }
-      }
-      if (
-        stored.weatherModel &&
-        WEATHER_MODEL_OPTIONS.some((o) => o.value === stored.weatherModel)
-      ) {
-        weatherStore.model = stored.weatherModel;
       }
       if (
         stored.homeCurrency &&
@@ -511,7 +496,6 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
   const navCfgStore = useNavConfigStore();
   const dashCfgStore = useDashboardConfigStore();
   const calSettingsStore = useCalendarSettingsStore();
-  const weatherStore = useWeatherProviderStore();
   const homeCurrStore = useHomeCurrencyStore();
 
   watch(
@@ -542,10 +526,6 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
   );
   watch(
     () => calSettingsStore.dateFormat,
-    () => persist()
-  );
-  watch(
-    () => weatherStore.model,
     () => persist()
   );
   watch(

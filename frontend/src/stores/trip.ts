@@ -14,6 +14,7 @@ export interface TripFormData {
   lng?: number;
   image_url?: string;
   packing_category_required?: boolean;
+  weather_model?: string;
 }
 
 export const useTripStore = defineStore('trip', () => {
@@ -31,6 +32,7 @@ export const useTripStore = defineStore('trip', () => {
   // gesprungen werden soll. TripSwitcher beobachtet das und öffnet dafür sein Edit-Modal
   // (Architekturregel Batch 3: Fremdobjekte springen zur Ursprungssicht statt inline editierbar zu sein).
   const editTripRequestId = ref(0);
+  const editTripInitialTab = ref<'general' | 'settings'>('general');
 
   const currentTrip = computed(() => trips.value.find((t) => t.id === currentTripId.value) ?? null);
 
@@ -113,7 +115,8 @@ export const useTripStore = defineStore('trip', () => {
     editTripRequestId.value = 0;
   }
 
-  function requestEditTrip() {
+  function requestEditTrip(tab: 'general' | 'settings' = 'general') {
+    editTripInitialTab.value = tab;
     editTripRequestId.value++;
   }
 
@@ -150,6 +153,7 @@ export const useTripStore = defineStore('trip', () => {
     currentTrip,
     loaded,
     editTripRequestId,
+    editTripInitialTab,
     loadTrips,
     ensureLoaded,
     hasTrip,

@@ -116,6 +116,7 @@ describe('Router Deeplinks & Navigation Guards', () => {
         lng: null,
         image_url: null,
         packing_category_required: 0,
+        weather_model: 'ecmwf_ifs025',
       },
     ];
     tripStore.loaded = true;
@@ -144,6 +145,7 @@ describe('Router Deeplinks & Navigation Guards', () => {
         lng: null,
         image_url: null,
         packing_category_required: 0,
+        weather_model: 'ecmwf_ifs025',
       },
     ];
     tripStore.loaded = true;
@@ -170,6 +172,7 @@ describe('Router Deeplinks & Navigation Guards', () => {
         lng: null,
         image_url: null,
         packing_category_required: 0,
+        weather_model: 'ecmwf_ifs025',
       },
     ];
     tripStore.currentTripId = 42;
