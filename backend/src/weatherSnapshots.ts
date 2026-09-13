@@ -11,6 +11,7 @@ interface TripRow {
   lng: number;
   start_date: string;
   end_date: string;
+  weather_model?: string | null;
 }
 
 interface OpenMeteoResponse {
@@ -155,6 +156,9 @@ async function snapshotTripWeather(trip: TripRow, today: string) {
       past_days: String(pastDays),
       forecast_days: '1',
     });
+    if (trip.weather_model) {
+      params.set('models', trip.weather_model);
+    }
     const res = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`);
     if (!res.ok) throw new Error(`Open-Meteo request failed (${res.status})`);
     const data = (await res.json()) as OpenMeteoResponse;
@@ -183,7 +187,7 @@ async function snapshotTripWeather(trip: TripRow, today: string) {
  *  CHECK_INTERVAL_MS später) neu geholt. */
 export async function refreshTripWeatherSnapshots(tripId: number) {
   const trip = db
-    .prepare('SELECT id, lat, lng, start_date, end_date FROM trips WHERE id = ?')
+    .prepare('SELECT id, lat, lng, start_date, end_date, weather_model FROM trips WHERE id = ?')
     .get(tripId) as TripRow | undefined;
   if (!trip || trip.lat == null || trip.lng == null || !trip.start_date || !trip.end_date) return;
   await snapshotTripWeather(trip, todayUtcDateStr());
@@ -199,7 +203,7 @@ export async function recordWeatherSnapshots() {
   const today = todayUtcDateStr();
   const trips = db
     .prepare(
-      `SELECT id, lat, lng, start_date, end_date FROM trips
+      `SELECT id, lat, lng, start_date, end_date, weather_model FROM trips
        WHERE lat IS NOT NULL AND lng IS NOT NULL
          AND start_date IS NOT NULL AND start_date != ''
          AND end_date IS NOT NULL AND end_date != ''

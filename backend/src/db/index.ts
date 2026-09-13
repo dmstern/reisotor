@@ -1330,7 +1330,8 @@ if (startDateCol && startDateCol.notnull === 1) {
       image_url TEXT,
       country_code TEXT,
       country_name TEXT,
-      packing_category_required INTEGER NOT NULL DEFAULT 1
+      packing_category_required INTEGER NOT NULL DEFAULT 1,
+      weather_model TEXT NOT NULL DEFAULT 'ecmwf_ifs025'
     )
   `);
   const oldCols = (db.prepare('PRAGMA table_info(trips)').all() as { name: string }[]).map(
@@ -1349,6 +1350,7 @@ if (startDateCol && startDateCol.notnull === 1) {
     'country_code',
     'country_name',
     'packing_category_required',
+    'weather_model',
   ].filter((col) => oldCols.includes(col));
   const colsStr = targetCols.join(', ');
   db.exec(`
@@ -1359,6 +1361,11 @@ if (startDateCol && startDateCol.notnull === 1) {
   db.exec('ALTER TABLE trips_new RENAME TO trips');
   db.exec('PRAGMA foreign_keys = ON');
 }
+
+// Bevorzugtes Wettermodell (Open-Meteo-Modell wie 'ecmwf_ifs025', 'icon_seamless', 'gfs_seamless',
+// 'jma_seamless' etc.) pro Urlaub statt globalem User-Setting - sorgt dafür, dass alle
+// Urlauber:innen dieselbe Vorhersage sehen und erlaubt die Wahl regional optimierter Wetterdienste.
+ensureColumn('trips', 'weather_model', "TEXT NOT NULL DEFAULT 'ecmwf_ifs025'");
 
 // Format der Freitext-/Notizfelder, die früher als reiner Markdown-ähnlicher Text galten und über
 // utils/richText.ts gerendert wurden - der neue WYSIWYG-Editor (RichTextEditor.vue) schreibt

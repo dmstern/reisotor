@@ -26,6 +26,7 @@ interface TripBody {
   lng?: number;
   image_url?: string;
   packing_category_required?: boolean;
+  weather_model?: string;
 }
 
 export const tripsRoutes: FastifyPluginAsync = async (app) => {
@@ -79,9 +80,10 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
       image_url = tilePreviewUrl(lat, lng);
     }
     const packingCategoryRequired = req.body.packing_category_required !== false ? 1 : 0;
+    const weatherModel = req.body.weather_model?.trim() || 'ecmwf_ifs025';
     const result = db
       .prepare(
-        'INSERT INTO trips (name, destination, start_date, end_date, maps_link, lat, lng, image_url, packing_category_required) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        'INSERT INTO trips (name, destination, start_date, end_date, maps_link, lat, lng, image_url, packing_category_required, weather_model) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
       )
       .run(
         name,
@@ -92,7 +94,8 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
         lat ?? null,
         lng ?? null,
         image_url ?? null,
-        packingCategoryRequired
+        packingCategoryRequired,
+        weatherModel
       );
     const tripId = result.lastInsertRowid as number;
     // Neu angelegter Urlaub ist zunächst nur für die anlegende Person sichtbar – weitere
@@ -109,8 +112,10 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
 
   app.put<{ Params: { id: string }; Body: TripBody }>('/trips/:id', async (req, reply) => {
     if (!requireTripMember(reply, req.params.id, req.session.userId)) return;
-    const existing = db.prepare('SELECT lat, lng FROM trips WHERE id = ?').get(req.params.id) as
-      { lat: number | null; lng: number | null } | undefined;
+    const existing = db
+      .prepare('SELECT lat, lng, weather_model FROM trips WHERE id = ?')
+      .get(req.params.id) as
+      { lat: number | null; lng: number | null; weather_model: string | null } | undefined;
     if (!existing) return reply.code(404).send({ error: 'Nicht gefunden' });
 
     const { name, destination, start_date, end_date, maps_link } = req.body;
@@ -146,9 +151,14 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
       roundCoord(lat) !== roundCoord(existing.lat) || roundCoord(lng) !== roundCoord(existing.lng);
 
     const packingCategoryRequired = req.body.packing_category_required !== false ? 1 : 0;
+    const weatherModel = req.body.weather_model?.trim() || existing.weather_model || 'ecmwf_ifs025';
+    const weatherModelChanged = Boolean(
+      req.body.weather_model && req.body.weather_model.trim() !== existing.weather_model
+    );
+
     const result = db
       .prepare(
-        'UPDATE trips SET name = ?, destination = ?, start_date = ?, end_date = ?, maps_link = ?, lat = ?, lng = ?, image_url = ?, packing_category_required = ? WHERE id = ?'
+        'UPDATE trips SET name = ?, destination = ?, start_date = ?, end_date = ?, maps_link = ?, lat = ?, lng = ?, image_url = ?, packing_category_required = ?, weather_model = ? WHERE id = ?'
       )
       .run(
         name,
@@ -160,19 +170,20 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
         lng ?? null,
         image_url ?? null,
         packingCategoryRequired,
+        weatherModel,
         req.params.id
       );
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
 
-    // Ändert sich der Ort, sind zuvor gespeicherte Wetter-Ist-Werte vergangener Tage
-    // (trip_weather_snapshots, siehe weatherSnapshots.ts) noch zum alten Ort gehörig und damit
-    // falsch - sie werden gelöscht und asynchron (nicht blockierend für diese Response) neu geholt.
-    if (locationChanged) {
+    // Ändert sich der Ort oder das Wettermodell, sind zuvor gespeicherte Wetter-Ist-Werte vergangener Tage
+    // (trip_weather_snapshots, siehe weatherSnapshots.ts) noch zum alten Stand gehörig und damit
+    // falsch - sie werden gelöscht und asynchron neu geholt.
+    if (locationChanged || weatherModelChanged) {
       db.prepare('DELETE FROM trip_weather_snapshots WHERE trip_id = ?').run(req.params.id);
       refreshTripWeatherSnapshots(Number(req.params.id)).catch((err) =>
         app.log.error(
           err,
-          `weatherSnapshots: refresh after location change failed for trip ${req.params.id}`
+          `weatherSnapshots: refresh after location/model change failed for trip ${req.params.id}`
         )
       );
     }
