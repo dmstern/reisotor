@@ -18,6 +18,8 @@ import { useToast } from '../composables/useToast';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
 import { sortWithDoneLast } from '../composables/useCheckedSort';
 import { usePersistedRef } from '../composables/usePersistedRef';
+import { useUiSettingsStore } from '../stores/uiSettings';
+import CompletedToggle from '../components/CompletedToggle.vue';
 import AppIcon from '../components/AppIcon.vue';
 import Button from '../components/primitives/Button.vue';
 import Checkbox from '../components/primitives/Checkbox.vue';
@@ -30,6 +32,7 @@ import type { IconDef } from '../utils/icon';
 
 const tripStore = useTripStore();
 const liveSync = useLiveSyncStore();
+const uiSettings = useUiSettingsStore();
 const tripId = tripStore.currentTripId as number;
 const items = ref<ShoppingItem[]>([]);
 const { showToast } = useToast();
@@ -131,9 +134,13 @@ interface Group {
 }
 
 const groupedItems = computed<Group[]>(() => {
+  const visibleItems = uiSettings.hideCompletedShopping
+    ? items.value.filter((i) => !isChecked(i))
+    : items.value;
+
   if (groupBy.value === 'shop') {
     const groups = new Map<string, ShoppingItem[]>();
-    for (const item of items.value) {
+    for (const item of visibleItems) {
       const key = item.shop?.trim() || UNASSIGNED_SHOP;
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key)!.push(item);
@@ -155,7 +162,7 @@ const groupedItems = computed<Group[]>(() => {
         key: 'before',
         label: PERIOD_META.before,
         items: sortWithDoneLast(
-          items.value.filter((i) => i.period === 'before'),
+          visibleItems.filter((i) => i.period === 'before'),
           isChecked
         ),
       },
@@ -163,7 +170,7 @@ const groupedItems = computed<Group[]>(() => {
         key: 'during',
         label: PERIOD_META.during,
         items: sortWithDoneLast(
-          items.value.filter((i) => i.period === 'during'),
+          visibleItems.filter((i) => i.period === 'during'),
           isChecked
         ),
       },
@@ -171,7 +178,7 @@ const groupedItems = computed<Group[]>(() => {
         key: 'none',
         label: 'Ohne Zeitraum',
         items: sortWithDoneLast(
-          items.value.filter((i) => !i.period),
+          visibleItems.filter((i) => !i.period),
           isChecked
         ),
       },
@@ -183,7 +190,7 @@ const groupedItems = computed<Group[]>(() => {
     key: `user-${u.id}`,
     label: `${u.avatar} ${u.username}`,
     items: sortWithDoneLast(
-      items.value.filter((i) => i.assigned_to_user_id === u.id),
+      visibleItems.filter((i) => i.assigned_to_user_id === u.id),
       isChecked
     ),
   }));
@@ -191,7 +198,7 @@ const groupedItems = computed<Group[]>(() => {
     key: 'unassigned',
     label: 'Nicht zugewiesen',
     items: sortWithDoneLast(
-      items.value.filter((i) => i.assigned_to_user_id == null),
+      visibleItems.filter((i) => i.assigned_to_user_id == null),
       isChecked
     ),
   };
@@ -391,6 +398,7 @@ async function quickAddToGroup(group: Group, label: string) {
           <option value="period">nach Zeitraum</option>
         </Select>
       </div>
+      <CompletedToggle v-model="uiSettings.hideCompletedShopping" />
     </div>
 
     <div class="groups-grid">
@@ -481,7 +489,11 @@ async function quickAddToGroup(group: Group, label: string) {
               </div>
             </CheckableListItem>
             <li v-if="!group.items.length" :key="`${group.key}-empty`" class="empty">
-              Noch keine Einträge.
+              {{
+                uiSettings.hideCompletedShopping
+                  ? 'Keine offenen Einträge.'
+                  : 'Noch keine Einträge.'
+              }}
             </li>
           </TransitionGroup>
         </div>

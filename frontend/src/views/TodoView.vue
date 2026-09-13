@@ -20,6 +20,8 @@ import PendingSyncBadge from '../components/PendingSyncBadge.vue';
 import { useToast } from '../composables/useToast';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
 import { usePersistedRef } from '../composables/usePersistedRef';
+import { useUiSettingsStore } from '../stores/uiSettings';
+import CompletedToggle from '../components/CompletedToggle.vue';
 import AppIcon from '../components/AppIcon.vue';
 import Button from '../components/primitives/Button.vue';
 import Checkbox from '../components/primitives/Checkbox.vue';
@@ -31,6 +33,7 @@ import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 
 const tripStore = useTripStore();
 const liveSync = useLiveSyncStore();
+const uiSettings = useUiSettingsStore();
 const route = useRoute();
 const tripId = tripStore.currentTripId as number;
 const items = ref<TodoItem[]>([]);
@@ -137,8 +140,9 @@ function userLabel(id: number | null) {
 }
 
 function sortItems(list: TodoItem[]) {
+  const visible = uiSettings.hideCompletedTodos ? list.filter((i) => !i.done) : list;
   return sortWithDoneLast(
-    list,
+    visible,
     (i) => !!i.done,
     (a, b) => {
       if (sortBy.value === 'due_date') {
@@ -361,6 +365,7 @@ function isOverdue(item: TodoItem) {
           <option v-if="users.length > 1" value="assignee">nach Bearbeiter:in</option>
         </Select>
       </div>
+      <CompletedToggle v-model="uiSettings.hideCompletedTodos" />
     </div>
 
     <div class="groups-grid">
@@ -444,7 +449,9 @@ function isOverdue(item: TodoItem) {
               </div>
             </CheckableListItem>
             <li v-if="!group.items.length" :key="`${group.key}-empty`" class="empty">
-              Noch keine Aufgaben.
+              {{
+                uiSettings.hideCompletedTodos ? 'Keine offenen Aufgaben.' : 'Noch keine Aufgaben.'
+              }}
             </li>
           </TransitionGroup>
         </div>

@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory, createMemoryHistory } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import { useIconStyleStore } from '../stores/iconStyle';
+import { useUiSettingsStore } from '../stores/uiSettings';
 // Statisch (nicht dynamisch wie die übrigen Routen) importiert: App.vue bindet dieselbe Komponente
 // bereits statisch für die Desktop-Kalender-Schublade ein – ein zusätzlicher dynamischer Import
 // hier würde sie nur unnötig erneut anfordern (Vite kann sie ohnehin nicht in einen separaten Chunk
@@ -190,6 +191,7 @@ router.beforeEach(async (to) => {
   // den Push-Präferenzen.
   if (auth.user) {
     useIconStyleStore().load();
+    useUiSettingsStore().load();
   }
 
   if (to.name !== 'login' && !auth.user) {

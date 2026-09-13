@@ -32,6 +32,9 @@ const GLASS_OPACITY_KEY = 'reisotor-glass-opacity';
 const GLASS_BLUR_KEY = 'reisotor-glass-blur';
 const PRIMARY_COLOR_KEY = 'reisotor-primary-color';
 const BORDER_WIDTH_KEY = 'reisotor-border-width';
+const HIDE_COMPLETED_PACKING_KEY = 'reisotor-hide-completed-packing';
+const HIDE_COMPLETED_TODOS_KEY = 'reisotor-hide-completed-todos';
+const HIDE_COMPLETED_SHOPPING_KEY = 'reisotor-hide-completed-shopping';
 
 export type GlassStyle = 'glass' | 'frosted' | 'opaque' | 'custom';
 
@@ -185,6 +188,18 @@ function loadBorderWidth(): number {
   return DEFAULT_BORDER_WIDTH;
 }
 
+function loadHideCompletedPacking(): boolean {
+  return safeLocalStorageGet(HIDE_COMPLETED_PACKING_KEY) === 'true';
+}
+
+function loadHideCompletedTodos(): boolean {
+  return safeLocalStorageGet(HIDE_COMPLETED_TODOS_KEY) === 'true';
+}
+
+function loadHideCompletedShopping(): boolean {
+  return safeLocalStorageGet(HIDE_COMPLETED_SHOPPING_KEY) === 'true';
+}
+
 export function applyGlassStyle(style: GlassStyle, opacity: number, blur: number) {
   if (typeof document === 'undefined') return;
   const { opacity: op, blur: bl } = computeGlassCssValues(style, opacity, blur);
@@ -229,6 +244,9 @@ export interface StoredAppSettings {
   };
   weatherModel?: WeatherModel;
   homeCurrency?: HomeCurrency;
+  hideCompletedPacking?: boolean;
+  hideCompletedTodos?: boolean;
+  hideCompletedShopping?: boolean;
 }
 
 // Persistierte App-Einstellungen am User-Datensatz (Issue #324).
@@ -239,6 +257,10 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
   const showVacationCountdown = ref(loadShowVacationCountdown());
   const showHomeWeatherFullTrip = ref(loadShowHomeWeatherFullTrip());
   const toastTimeout = ref<number>(loadToastTimeout());
+
+  const hideCompletedPacking = ref(loadHideCompletedPacking());
+  const hideCompletedTodos = ref(loadHideCompletedTodos());
+  const hideCompletedShopping = ref(loadHideCompletedShopping());
 
   const glassStyle = ref<GlassStyle>(loadGlassStyle());
   const glassOpacity = ref<number>(loadGlassOpacity());
@@ -294,6 +316,9 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
           },
           weatherModel: weatherStore.model,
           homeCurrency: homeCurrStore.currency,
+          hideCompletedPacking: hideCompletedPacking.value,
+          hideCompletedTodos: hideCompletedTodos.value,
+          hideCompletedShopping: hideCompletedShopping.value,
         } satisfies StoredAppSettings,
       })
       .catch(() => {});
@@ -400,6 +425,15 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
       ) {
         homeCurrStore.currency = stored.homeCurrency;
       }
+      if (typeof stored.hideCompletedPacking === 'boolean') {
+        hideCompletedPacking.value = stored.hideCompletedPacking;
+      }
+      if (typeof stored.hideCompletedTodos === 'boolean') {
+        hideCompletedTodos.value = stored.hideCompletedTodos;
+      }
+      if (typeof stored.hideCompletedShopping === 'boolean') {
+        hideCompletedShopping.value = stored.hideCompletedShopping;
+      }
 
       apply();
     } catch {
@@ -429,6 +463,18 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
   });
   watch(toastTimeout, (v) => {
     safeLocalStorageSet(TOAST_TIMEOUT_KEY, String(v));
+    persist();
+  });
+  watch(hideCompletedPacking, (v) => {
+    safeLocalStorageSet(HIDE_COMPLETED_PACKING_KEY, String(v));
+    persist();
+  });
+  watch(hideCompletedTodos, (v) => {
+    safeLocalStorageSet(HIDE_COMPLETED_TODOS_KEY, String(v));
+    persist();
+  });
+  watch(hideCompletedShopping, (v) => {
+    safeLocalStorageSet(HIDE_COMPLETED_SHOPPING_KEY, String(v));
     persist();
   });
 
@@ -512,6 +558,9 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
     showVacationCountdown,
     showHomeWeatherFullTrip,
     toastTimeout,
+    hideCompletedPacking,
+    hideCompletedTodos,
+    hideCompletedShopping,
     glassStyle,
     glassOpacity,
     glassBlur,
