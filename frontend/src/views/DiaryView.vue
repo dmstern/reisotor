@@ -740,74 +740,77 @@ function showEntryDayOnMap(entry: DiaryEntry) {
           />
         </div>
 
-        <SocialRow
-          :like-count="likesFor(entry.id).length"
-          :liked="likedByMe(entry.id)"
-          :comment-count="commentsFor(entry.id).length"
-          @toggle-like="toggleLike(entry.id)"
-          @toggle-comments="toggleComments(entry.id)"
-        />
-
-        <div class="excursion-links">
-          <div
-            v-if="weatherForEntry(entry)"
-            class="diary-weather"
-            :title="weatherCodeMeta(weatherForEntry(entry)!.weatherCode).label"
-          >
-            <WeatherIcon
-              class="weather-icon"
-              :size="16"
-              :code="weatherForEntry(entry)!.weatherCode"
-            />
-            <span class="weather-temp"
-              >{{ Math.round(weatherForEntry(entry)!.tempMax) }}° /
-              {{ Math.round(weatherForEntry(entry)!.tempMin) }}°</span
+        <div class="card-actions-wrapper">
+          <div class="excursion-links">
+            <div
+              v-if="weatherForEntry(entry)"
+              class="diary-weather"
+              :title="weatherCodeMeta(weatherForEntry(entry)!.weatherCode).label"
             >
+              <WeatherIcon
+                class="weather-icon"
+                :size="16"
+                :code="weatherForEntry(entry)!.weatherCode"
+              />
+              <span class="weather-temp"
+                >{{ Math.round(weatherForEntry(entry)!.tempMax) }}° /
+                {{ Math.round(weatherForEntry(entry)!.tempMin) }}°</span
+              >
+            </div>
+            <Button type="button" variant="card-action" @click="showEntryDayOnMap(entry)">
+              <AppIcon :icon="SECTION_ICON_DEFS.map" :size="14" group="navigation" /> Tag auf Karte
+              anzeigen
+            </Button>
+            <Button
+              v-for="ex in excursionsForEntry(entry)"
+              :key="ex.id"
+              type="button"
+              class="excursion-chip"
+              @click="drawers.openMapForExcursion(ex.id)"
+            >
+              <span
+                class="excursion-chip-img"
+                :style="ex.image_url ? { backgroundImage: `url(${ex.image_url})` } : {}"
+              >
+                <AppIcon
+                  v-if="!ex.image_url"
+                  :icon="SECTION_ICON_DEFS.excursions"
+                  :size="16"
+                  group="navigation"
+                />
+              </span>
+              <span class="excursion-chip-title">{{ ex.title }}</span>
+            </Button>
+            <Button
+              v-for="spot in spotsForEntry(entry)"
+              :key="spot.id"
+              type="button"
+              class="excursion-chip"
+              @click="drawers.openMapAt(`spot-${spot.id}`)"
+            >
+              <span
+                class="excursion-chip-img"
+                :style="spot.image_url ? { backgroundImage: `url(${spot.image_url})` } : {}"
+              >
+                <AppIcon
+                  v-if="!spot.image_url"
+                  :icon="spotCategoryMeta(spot.category).tabler"
+                  :size="16"
+                  group="categories"
+                />
+              </span>
+              <span class="excursion-chip-title">{{ spot.title }}</span>
+            </Button>
           </div>
-          <Button type="button" variant="card-action" @click="showEntryDayOnMap(entry)">
-            <AppIcon :icon="SECTION_ICON_DEFS.map" :size="14" group="navigation" /> Tag auf Karte
-            anzeigen
-          </Button>
-          <Button
-            v-for="ex in excursionsForEntry(entry)"
-            :key="ex.id"
-            type="button"
-            class="excursion-chip"
-            @click="drawers.openMapForExcursion(ex.id)"
-          >
-            <span
-              class="excursion-chip-img"
-              :style="ex.image_url ? { backgroundImage: `url(${ex.image_url})` } : {}"
-            >
-              <AppIcon
-                v-if="!ex.image_url"
-                :icon="SECTION_ICON_DEFS.excursions"
-                :size="16"
-                group="navigation"
-              />
-            </span>
-            <span class="excursion-chip-title">{{ ex.title }}</span>
-          </Button>
-          <Button
-            v-for="spot in spotsForEntry(entry)"
-            :key="spot.id"
-            type="button"
-            class="excursion-chip"
-            @click="drawers.openMapAt(`spot-${spot.id}`)"
-          >
-            <span
-              class="excursion-chip-img"
-              :style="spot.image_url ? { backgroundImage: `url(${spot.image_url})` } : {}"
-            >
-              <AppIcon
-                v-if="!spot.image_url"
-                :icon="spotCategoryMeta(spot.category).tabler"
-                :size="16"
-                group="categories"
-              />
-            </span>
-            <span class="excursion-chip-title">{{ spot.title }}</span>
-          </Button>
+
+          <SocialRow
+            :like-count="likesFor(entry.id).length"
+            :liked="likedByMe(entry.id)"
+            :comment-count="commentsFor(entry.id).length"
+            :comments-open="openComments.has(entry.id)"
+            @toggle-like="toggleLike(entry.id)"
+            @toggle-comments="toggleComments(entry.id)"
+          />
         </div>
 
         <Comments
@@ -1108,16 +1111,23 @@ function showEntryDayOnMap(entry: DiaryEntry) {
   font-weight: 600;
 }
 
-/* Verknüpfte Ausflüge am unteren Rand der Kachel (nach dem Inhalt, vor den Kommentaren) – Bild +
-   Titel wie bei anderen "Sprung"-Links in der App (Architekturregel: nur Sprung-Button, kein
-   Inline-Entfernen hier). */
+/* Aktionsleiste am unteren Rand der Kachel (Ausflugslinks links, Social-Actions rechts) */
+.card-actions-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-border);
+}
+
 .excursion-links {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: var(--space-2);
-  margin: var(--space-2) 0;
-  padding-top: var(--space-2);
-  border-top: 1px solid var(--color-border);
 }
 
 .excursion-chip {
