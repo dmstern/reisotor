@@ -199,7 +199,6 @@ const profileTitle = computed(() => {
 }
 
 .header-row {
-  height: 56px;
   display: flex;
   align-items: center;
   gap: var(--space-2);
@@ -266,7 +265,7 @@ const profileTitle = computed(() => {
 }
 
 .floating-island.has-nav {
-  margin-top: var(--space-4);
+  margin-top: var(--space-2);
 }
 
 .switcher {
