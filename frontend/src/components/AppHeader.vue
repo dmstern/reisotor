@@ -209,7 +209,7 @@ const profileTitle = computed(() => {
 }
 
 .brand {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: var(--space-2);
   text-decoration: none;
@@ -217,7 +217,18 @@ const profileTitle = computed(() => {
   flex-shrink: 0;
   pointer-events: auto;
   border-radius: 999px;
-  transition: opacity 0.15s ease;
+  background: var(--color-surface-glass);
+  backdrop-filter: var(--backdrop-blur-md);
+  -webkit-backdrop-filter: var(--backdrop-blur-md);
+  border: 1px solid var(--color-surface-glass-border);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.25),
+    0 1px 3px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  padding: 4px 12px 4px 5px;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
 }
 
 .brand:hover {
@@ -323,11 +334,21 @@ const profileTitle = computed(() => {
 }
 
 .header-actions {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: 4px;
   flex-shrink: 0;
   pointer-events: auto;
+  border-radius: 999px;
+  background: var(--color-surface-glass);
+  backdrop-filter: var(--backdrop-blur-md);
+  -webkit-backdrop-filter: var(--backdrop-blur-md);
+  border: 1px solid var(--color-surface-glass-border);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.25),
+    0 1px 3px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  padding: 3px 6px;
 }
 
 .logo {
@@ -344,6 +365,9 @@ const profileTitle = computed(() => {
 @media (max-width: 1200px) {
   .wordmark {
     display: none;
+  }
+  .brand:not(:has(.env-badge)) {
+    padding: 4px;
   }
 }
 
