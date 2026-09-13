@@ -29,6 +29,10 @@ const activePresets = computed(() => {
     : PASTEL_PRIMARY_COLOR_PRESETS;
 });
 
+const isDefault = computed(() => {
+  return uiSettings.primaryColor.toLowerCase() === DEFAULT_PRIMARY_COLOR.toLowerCase();
+});
+
 function resetColor() {
   uiSettings.primaryColor = DEFAULT_PRIMARY_COLOR;
 }
@@ -36,7 +40,21 @@ function resetColor() {
 
 <template>
   <Card>
-    <h2>Akzentfarbe</h2>
+    <div class="card-header-row">
+      <h2>Akzentfarbe</h2>
+      <Button
+        variant="ghost"
+        size="sm"
+        :icon="ACTION_ICONS.restore"
+        :disabled="isDefault"
+        aria-label="Auf Standard zurücksetzen"
+        :title="isDefault ? 'Bereits auf Standard-Farbe' : 'Auf Standard zurücksetzen'"
+        class="card-reset-btn"
+        @click="resetColor"
+      >
+        <span class="card-reset-btn-label">Zurücksetzen</span>
+      </Button>
+    </div>
     <p class="hint">
       Wähle deine persönliche Haupt-Akzentfarbe für Buttons, aktive Toggles, Links und Icons.
     </p>
@@ -68,7 +86,7 @@ function resetColor() {
       </button>
     </div>
 
-    <!-- Eigene Farbe (Color Picker) & Reset -->
+    <!-- Eigene Farbe (Color Picker) -->
     <div class="color-picker-row">
       <label for="accent-color-picker" class="picker-label">
         <span class="picker-title">Eigene Farbe wählen</span>
@@ -82,16 +100,6 @@ function resetColor() {
           <span class="hex-code">{{ uiSettings.primaryColor.toUpperCase() }}</span>
         </div>
       </label>
-
-      <Button
-        v-if="uiSettings.primaryColor.toLowerCase() !== DEFAULT_PRIMARY_COLOR.toLowerCase()"
-        type="button"
-        variant="secondary"
-        size="sm"
-        @click="resetColor"
-      >
-        <AppIcon :icon="ACTION_ICONS.refresh" :size="14" group="actions" /> Standard (Violett)
-      </Button>
     </div>
 
     <!-- Live Demo Vorschau -->
@@ -266,5 +274,24 @@ function resetColor() {
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   box-shadow: var(--shadow-sm);
+}
+
+.card-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.card-header-row h2 {
+  margin: 0;
+}
+
+@media (max-width: 420px) {
+  .card-reset-btn-label {
+    display: none;
+  }
 }
 </style>

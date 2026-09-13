@@ -5,6 +5,8 @@ export type NavPosition = 'top' | 'bottom';
 
 const DESKTOP_KEY = 'reisotor-nav-position-desktop';
 
+export const DEFAULT_DESKTOP_NAV_POSITION: NavPosition = 'top';
+
 function loadPosition(key: string, defaultValue: NavPosition): NavPosition {
   const stored = localStorage.getItem(key);
   if (stored === 'top' || stored === 'bottom') return stored;
@@ -16,10 +18,14 @@ function loadPosition(key: string, defaultValue: NavPosition): NavPosition {
 export const useNavPositionStore = defineStore('navPosition', () => {
   // Auf Desktop kann die Leiste wahlweise im Header ('top') oder schwebend unten ('bottom') sein.
   // Auf Mobile ist sie stets am unteren Rand ('bottom', daumenfreundlich wie bei nativen Apps).
-  const desktop = ref<NavPosition>(loadPosition(DESKTOP_KEY, 'top'));
+  const desktop = ref<NavPosition>(loadPosition(DESKTOP_KEY, DEFAULT_DESKTOP_NAV_POSITION));
   const mobile = ref<NavPosition>('bottom');
+
+  function reset() {
+    desktop.value = DEFAULT_DESKTOP_NAV_POSITION;
+  }
 
   watch(desktop, (v) => localStorage.setItem(DESKTOP_KEY, v));
 
-  return { desktop, mobile };
+  return { desktop, mobile, reset };
 });

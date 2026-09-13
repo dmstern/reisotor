@@ -20,13 +20,13 @@ export const WEATHER_MODEL_OPTIONS = [
 export type WeatherModel = (typeof WEATHER_MODEL_OPTIONS)[number]['value'];
 
 const STORAGE_KEY = 'reisotor-weather-model';
-const DEFAULT_MODEL: WeatherModel = 'ecmwf_ifs025';
+export const DEFAULT_WEATHER_MODEL: WeatherModel = 'ecmwf_ifs025';
 
 function loadModel(): WeatherModel {
   const stored = localStorage.getItem(STORAGE_KEY);
   return WEATHER_MODEL_OPTIONS.some((o) => o.value === stored)
     ? (stored as WeatherModel)
-    : DEFAULT_MODEL;
+    : DEFAULT_WEATHER_MODEL;
 }
 
 // Geräte-/Browser-UI-Einstellung (wie der Dark-Mode-Toggle in stores/theme.ts bzw. die
@@ -35,7 +35,11 @@ function loadModel(): WeatherModel {
 export const useWeatherProviderStore = defineStore('weatherProvider', () => {
   const model = ref<WeatherModel>(loadModel());
 
+  function reset() {
+    model.value = DEFAULT_WEATHER_MODEL;
+  }
+
   watch(model, (v) => localStorage.setItem(STORAGE_KEY, v));
 
-  return { model };
+  return { model, reset };
 });

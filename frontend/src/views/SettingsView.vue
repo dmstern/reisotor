@@ -12,6 +12,7 @@ import type { User } from '../api/types';
 import { useAuthStore } from '../stores/auth';
 import { useConnectivityStore } from '../stores/connectivity';
 import { useBuildInfoStore } from '../stores/buildInfo';
+import { useThemeStore } from '../stores/theme';
 import { useNavPositionStore } from '../stores/navPosition';
 import { useNavConfigStore } from '../stores/navConfig';
 import { NAV_LINKS } from '../utils/navLinks';
@@ -84,6 +85,7 @@ const navPosition = useNavPositionStore();
 const navConfig = useNavConfigStore();
 const _isDesktop = useIsDesktop();
 const dashboardConfig = useDashboardConfigStore();
+const theme = useThemeStore();
 
 // Themengruppen statt einer langen, gleichrangigen Karten-Liste (Nutzer-Feedback) - gleiches Muster
 // wie ListenView.vue (Packliste/Einkauf/ToDo): aktiver Tab steckt im Query-Param, nicht im Pfad
@@ -341,6 +343,79 @@ async function setDomainPreference(
   enabled: boolean
 ) {
   await notificationPrefs.update({ [domain]: enabled });
+}
+
+// Reset-to-default Hilfslogik für Einstellungs-Kacheln
+const isThemeDefault = computed(() => theme.mode === 'system');
+function resetTheme() {
+  theme.reset();
+}
+
+const isNavDefault = computed(() => {
+  if (navPosition.desktop !== 'top') return false;
+  const defaults = NAV_LINKS.map((l) => ({ key: l.key, visible: l.defaultVisible ?? true }));
+  if (navConfig.entries.length !== defaults.length) return false;
+  return navConfig.entries.every(
+    (e, i) => e.key === defaults[i].key && e.visible === defaults[i].visible
+  );
+});
+function resetNav() {
+  navPosition.reset();
+  navConfig.reset();
+}
+
+const isDashboardDefault = computed(() => {
+  const defaults = DASHBOARD_TILES.map((t) => ({ key: t.key, visible: true }));
+  if (dashboardConfig.entries.length !== defaults.length) return false;
+  return dashboardConfig.entries.every(
+    (e, i) => e.key === defaults[i].key && e.visible === defaults[i].visible
+  );
+});
+function resetDashboard() {
+  dashboardConfig.reset();
+}
+
+const isVacationCountdownDefault = computed(() => !uiSettings.showVacationCountdown);
+function resetVacationCountdown() {
+  uiSettings.showVacationCountdown = false;
+}
+
+const isCalendarDefault = computed(
+  () => calendarSettings.weekStart === 'monday' && calendarSettings.dateFormat === 'de'
+);
+function resetCalendar() {
+  calendarSettings.reset();
+}
+
+const isWeatherDefault = computed(
+  () => weatherProvider.model === 'ecmwf_ifs025' && !uiSettings.showHomeWeatherFullTrip
+);
+function resetWeather() {
+  weatherProvider.reset();
+  uiSettings.showHomeWeatherFullTrip = false;
+}
+
+const isHomeCurrencyDefault = computed(() => homeCurrency.currency === 'EUR');
+function resetHomeCurrency() {
+  homeCurrency.reset();
+}
+
+const isToastsDefault = computed(
+  () => uiSettings.showActivityToasts === true && uiSettings.toastTimeout === 5
+);
+function resetToasts() {
+  uiSettings.showActivityToasts = true;
+  uiSettings.toastTimeout = 5;
+}
+
+const isPushDefault = computed(() => {
+  if (!pushEnabled.value) return true;
+  return pushLevelValue.value === 'balanced';
+});
+async function resetPush() {
+  if (pushEnabled.value) {
+    await selectPushLevel('balanced');
+  }
 }
 
 const exporting = ref(false);
@@ -791,7 +866,23 @@ async function onImportFileSelected(event: Event) {
 
     <template v-if="activeTab === 'app'">
       <div class="card">
-        <h2>Darstellung</h2>
+        <div class="card-header-row">
+          <h2>Darstellung</h2>
+          <Button
+            variant="ghost"
+            size="sm"
+            :icon="ACTION_ICONS.restore"
+            :disabled="isThemeDefault"
+            aria-label="Auf Standard zurücksetzen"
+            :title="
+              isThemeDefault ? 'Bereits auf Standard-Darstellung' : 'Auf Standard zurücksetzen'
+            "
+            class="card-reset-btn"
+            @click="resetTheme"
+          >
+            <span class="card-reset-btn-label">Zurücksetzen</span>
+          </Button>
+        </div>
         <ThemeModeSelect variant="block" />
       </div>
 
@@ -804,7 +895,21 @@ async function onImportFileSelected(event: Event) {
       <IconStyleSettings />
 
       <div class="card">
-        <h2>Navigation</h2>
+        <div class="card-header-row">
+          <h2>Navigation</h2>
+          <Button
+            variant="ghost"
+            size="sm"
+            :icon="ACTION_ICONS.restore"
+            :disabled="isNavDefault"
+            aria-label="Auf Standard zurücksetzen"
+            :title="isNavDefault ? 'Bereits auf Standard-Navigation' : 'Auf Standard zurücksetzen'"
+            class="card-reset-btn"
+            @click="resetNav"
+          >
+            <span class="card-reset-btn-label">Zurücksetzen</span>
+          </Button>
+        </div>
         <p class="hint intro-hint">
           Position der Navigationsleiste für Desktop-Bildschirme (auf Mobilgeräten und schmaleren
           Bildschirmen wird die Leiste stets am unteren Bildschirmrand platziert).
@@ -876,9 +981,27 @@ async function onImportFileSelected(event: Event) {
       </div>
 
       <div class="card">
-        <h2>
-          <AppIcon :icon="DASHBOARD_TILES_ICON" group="navigation" :size="20" /> Dashboard-Kacheln
-        </h2>
+        <div class="card-header-row">
+          <h2>
+            <AppIcon :icon="DASHBOARD_TILES_ICON" group="navigation" :size="20" /> Dashboard-Kacheln
+          </h2>
+          <Button
+            variant="ghost"
+            size="sm"
+            :icon="ACTION_ICONS.restore"
+            :disabled="isDashboardDefault"
+            aria-label="Auf Standard zurücksetzen"
+            :title="
+              isDashboardDefault
+                ? 'Bereits auf Standard-Dashboard-Kacheln'
+                : 'Auf Standard zurücksetzen'
+            "
+            class="card-reset-btn"
+            @click="resetDashboard"
+          >
+            <span class="card-reset-btn-label">Zurücksetzen</span>
+          </Button>
+        </div>
         <p class="hint nav-config-hint">Reihenfolge und Sichtbarkeit der Dashboard-Kacheln.</p>
         <!-- Eigene dashboard-config-list/-row-Klassen statt der optisch identischen nav-config-list/
              -row oben (gleiche CSS-Regeln per Komma-Selektor, siehe dort) - sonst würden e2e-
@@ -942,9 +1065,27 @@ async function onImportFileSelected(event: Event) {
       </div>
 
       <div class="card">
-        <h2>
-          <AppIcon :icon="ACTION_ICONS.vacation" group="navigation" :size="20" /> Urlaubs-Hinweis
-        </h2>
+        <div class="card-header-row">
+          <h2>
+            <AppIcon :icon="ACTION_ICONS.vacation" group="navigation" :size="20" /> Urlaubs-Hinweis
+          </h2>
+          <Button
+            variant="ghost"
+            size="sm"
+            :icon="ACTION_ICONS.restore"
+            :disabled="isVacationCountdownDefault"
+            aria-label="Auf Standard zurücksetzen"
+            :title="
+              isVacationCountdownDefault
+                ? 'Bereits auf Standard-Urlaubs-Hinweis'
+                : 'Auf Standard zurücksetzen'
+            "
+            class="card-reset-btn"
+            @click="resetVacationCountdown"
+          >
+            <span class="card-reset-btn-label">Zurücksetzen</span>
+          </Button>
+        </div>
         <p class="hint intro-hint">
           Der Hinweis im Dashboard-Header während des laufenden Urlaubs zeigt standardmäßig immer
           denselben Text - kann hier stattdessen auf einen Countdown der verbleibenden Urlaubstage
@@ -959,9 +1100,27 @@ async function onImportFileSelected(event: Event) {
 
     <div v-if="activeTab === 'trip'" class="grid settings-grid">
       <div id="calendar-settings" class="card">
-        <h2>
-          <AppIcon :icon="SECTION_ICON_DEFS.calendar" group="navigation" :size="20" /> Kalender
-        </h2>
+        <div class="card-header-row">
+          <h2>
+            <AppIcon :icon="SECTION_ICON_DEFS.calendar" group="navigation" :size="20" /> Kalender
+          </h2>
+          <Button
+            variant="ghost"
+            size="sm"
+            :icon="ACTION_ICONS.restore"
+            :disabled="isCalendarDefault"
+            aria-label="Auf Standard zurücksetzen"
+            :title="
+              isCalendarDefault
+                ? 'Bereits auf Standard-Kalender-Einstellungen'
+                : 'Auf Standard zurücksetzen'
+            "
+            class="card-reset-btn"
+            @click="resetCalendar"
+          >
+            <span class="card-reset-btn-label">Zurücksetzen</span>
+          </Button>
+        </div>
         <p class="hint intro-hint">
           Wochenanfang und Zahlenformat für Datumsanzeigen in der ganzen App.
         </p>
@@ -995,7 +1154,25 @@ async function onImportFileSelected(event: Event) {
 
       <!-- id als Sprungziel für den "Anbieter wechseln"-Link im Wetter-Widget (DashboardView.vue) -->
       <div id="weather-provider-settings" class="card">
-        <h2><AppIcon :icon="WEATHER_SECTION_ICON" group="navigation" :size="20" /> Wetter</h2>
+        <div class="card-header-row">
+          <h2><AppIcon :icon="WEATHER_SECTION_ICON" group="navigation" :size="20" /> Wetter</h2>
+          <Button
+            variant="ghost"
+            size="sm"
+            :icon="ACTION_ICONS.restore"
+            :disabled="isWeatherDefault"
+            aria-label="Auf Standard zurücksetzen"
+            :title="
+              isWeatherDefault
+                ? 'Bereits auf Standard-Wetter-Einstellungen'
+                : 'Auf Standard zurücksetzen'
+            "
+            class="card-reset-btn"
+            @click="resetWeather"
+          >
+            <span class="card-reset-btn-label">Zurücksetzen</span>
+          </Button>
+        </div>
         <p class="hint intro-hint">
           Wettervorhersage über Open-Meteo, das mehrere echte Wetterdienste bündelt. Zeigt eine
           Vorhersage abweichende Werte gegenüber anderen Wetter-Apps (z. B. Apple Weather), lässt
@@ -1021,9 +1198,25 @@ async function onImportFileSelected(event: Event) {
 
       <!-- id als Sprungziel, analog zu #weather-provider-settings oben -->
       <div id="home-currency-settings" class="card">
-        <h2>
-          <AppIcon :icon="ACTION_ICONS.currency" group="navigation" :size="20" /> Heimatwährung
-        </h2>
+        <div class="card-header-row">
+          <h2>
+            <AppIcon :icon="ACTION_ICONS.currency" group="navigation" :size="20" /> Heimatwährung
+          </h2>
+          <Button
+            variant="ghost"
+            size="sm"
+            :icon="ACTION_ICONS.restore"
+            :disabled="isHomeCurrencyDefault"
+            aria-label="Auf Standard zurücksetzen"
+            :title="
+              isHomeCurrencyDefault ? 'Bereits auf Standard-Währung' : 'Auf Standard zurücksetzen'
+            "
+            class="card-reset-btn"
+            @click="resetHomeCurrency"
+          >
+            <span class="card-reset-btn-label">Zurücksetzen</span>
+          </Button>
+        </div>
         <p class="hint intro-hint">
           Wird im Dashboard genutzt, um bei Urlauben mit abweichender Landeswährung den aktuellen
           Wechselkurs anzuzeigen.
@@ -1045,7 +1238,23 @@ async function onImportFileSelected(event: Event) {
 
     <template v-if="activeTab === 'notifications'">
       <div class="card">
-        <h2><AppIcon :icon="BELL_ICON" group="navigation" :size="20" /> Meldungen</h2>
+        <div class="card-header-row">
+          <h2><AppIcon :icon="BELL_ICON" group="navigation" :size="20" /> Meldungen</h2>
+          <Button
+            variant="ghost"
+            size="sm"
+            :icon="ACTION_ICONS.restore"
+            :disabled="isToastsDefault"
+            aria-label="Auf Standard zurücksetzen"
+            :title="
+              isToastsDefault ? 'Bereits auf Standard-Meldungen' : 'Auf Standard zurücksetzen'
+            "
+            class="card-reset-btn"
+            @click="resetToasts"
+          >
+            <span class="card-reset-btn-label">Zurücksetzen</span>
+          </Button>
+        </div>
         <p class="hint intro-hint">
           Kurze Meldungen, die bei jedem Laden/Speichern/Löschen kurz unten am Bildschirmrand
           aufblitzen (z. B. "Speichert…"), damit klar wird, dass die App gerade tatsächlich mit dem
@@ -1076,7 +1285,24 @@ async function onImportFileSelected(event: Event) {
       </div>
 
       <div class="card">
-        <h2><AppIcon :icon="BELL_ICON" group="navigation" :size="20" /> Push-Benachrichtigungen</h2>
+        <div class="card-header-row">
+          <h2>
+            <AppIcon :icon="BELL_ICON" group="navigation" :size="20" /> Push-Benachrichtigungen
+          </h2>
+          <Button
+            v-if="pushSupported"
+            variant="ghost"
+            size="sm"
+            :icon="ACTION_ICONS.restore"
+            :disabled="isPushDefault"
+            aria-label="Auf Standard zurücksetzen"
+            :title="isPushDefault ? 'Bereits auf Standard-Push-Stufe' : 'Auf Standard zurücksetzen'"
+            class="card-reset-btn"
+            @click="resetPush"
+          >
+            <span class="card-reset-btn-label">Zurücksetzen</span>
+          </Button>
+        </div>
         <p class="hint" v-if="!pushSupported">
           Push-Benachrichtigungen werden von diesem Browser nicht unterstützt.
         </p>
@@ -1278,6 +1504,12 @@ async function onImportFileSelected(event: Event) {
 
 .card-header-row h2 {
   margin: 0;
+}
+
+@media (max-width: 420px) {
+  .card-reset-btn-label {
+    display: none;
+  }
 }
 
 .users-table-wrapper {

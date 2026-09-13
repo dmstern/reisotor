@@ -18,13 +18,13 @@ export const HOME_CURRENCY_OPTIONS = [
 export type HomeCurrency = (typeof HOME_CURRENCY_OPTIONS)[number]['value'];
 
 const STORAGE_KEY = 'reisotor-home-currency';
-const DEFAULT_CURRENCY: HomeCurrency = 'EUR';
+export const DEFAULT_HOME_CURRENCY: HomeCurrency = 'EUR';
 
 function loadCurrency(): HomeCurrency {
   const stored = localStorage.getItem(STORAGE_KEY);
   return HOME_CURRENCY_OPTIONS.some((o) => o.value === stored)
     ? (stored as HomeCurrency)
-    : DEFAULT_CURRENCY;
+    : DEFAULT_HOME_CURRENCY;
 }
 
 // Geräte-/Browser-UI-Einstellung (wie stores/weatherProvider.ts/stores/theme.ts) statt Account-
@@ -33,7 +33,11 @@ function loadCurrency(): HomeCurrency {
 export const useHomeCurrencyStore = defineStore('homeCurrency', () => {
   const currency = ref<HomeCurrency>(loadCurrency());
 
+  function reset() {
+    currency.value = DEFAULT_HOME_CURRENCY;
+  }
+
   watch(currency, (v) => localStorage.setItem(STORAGE_KEY, v));
 
-  return { currency };
+  return { currency, reset };
 });

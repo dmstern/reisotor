@@ -80,11 +80,41 @@ const allGroupsValue = computed(() => {
 const navColorRelevant = computed(() => iconStyle.groups.navigation === 'icons');
 const weatherColorRelevant = computed(() => iconStyle.groups.weather === 'icons');
 const categoriesColorRelevant = computed(() => iconStyle.groups.categories === 'icons');
+
+const isDefault = computed(() => {
+  const g = iconStyle.groups;
+  const v = iconStyle.variants;
+  return (
+    g.navigation === 'icons' &&
+    g.categories === 'emoji' &&
+    g.weather === 'icons' &&
+    v.navigation === 'outline' &&
+    v.categories === 'outline' &&
+    v.weather === 'outline' &&
+    iconStyle.navColored &&
+    iconStyle.colorizeWeather &&
+    iconStyle.colorizeCategories
+  );
+});
 </script>
 
 <template>
   <Card>
-    <h2>Icons</h2>
+    <div class="card-header-row">
+      <h2>Icons</h2>
+      <Button
+        variant="ghost"
+        size="sm"
+        :icon="ACTION_ICONS.restore"
+        :disabled="isDefault"
+        aria-label="Auf Standard zurücksetzen"
+        :title="isDefault ? 'Bereits auf Standard-Icon-Einstellungen' : 'Auf Standard zurücksetzen'"
+        class="card-reset-btn"
+        @click="iconStyle.resetToDefaults()"
+      >
+        <span class="card-reset-btn-label">Zurücksetzen</span>
+      </Button>
+    </div>
     <p class="hint">
       Emoji oder Symbole für Navigation, Kategorien und Wetter – dein Profilbild bleibt davon
       unberührt. Formularfelder und Aktionen/Buttons zeigen immer Symbole.
@@ -206,11 +236,6 @@ const categoriesColorRelevant = computed(() => iconStyle.groups.categories === '
         </label>
       </template>
     </div>
-
-    <Button variant="secondary" class="reset-button" @click="iconStyle.resetToDefaults()">
-      <AppIcon :icon="ACTION_ICONS.refresh" :size="16" group="actions" />
-      Auf Standard-Einstellungen zurücksetzen
-    </Button>
   </Card>
 </template>
 
@@ -321,12 +346,22 @@ const categoriesColorRelevant = computed(() => iconStyle.groups.categories === '
   opacity: 0.7;
 }
 
-.reset-button {
-  display: inline-flex;
+.card-header-row {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
   gap: var(--space-2);
-  margin-top: var(--space-4);
-  padding: var(--space-2) var(--space-3);
-  font-size: 0.85rem;
+  margin-bottom: var(--space-3);
+}
+
+.card-header-row h2 {
+  margin: 0;
+}
+
+@media (max-width: 420px) {
+  .card-reset-btn-label {
+    display: none;
+  }
 }
 </style>
