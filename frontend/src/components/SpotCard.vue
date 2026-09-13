@@ -448,11 +448,8 @@ const cardRotation = computed(() => {
         />
       </div>
 
-      <!-- Eigene, explizite Aktion statt am Aufklappen dranzuhängen (#109, siehe onShowOnMap im
-           Script) – in Mini- UND aufgeklappter Karte sichtbar (Textlabel schrumpft im Kompakt-Modus
-           auf reines Icon, siehe @container-Regel unten), gleiche Konvention wie
-           ExcursionCard.vue's "Auf Karte anzeigen"-Button. -->
-      <div class="links" v-if="spot.lat != null && spot.lng != null">
+      <!-- Eigene, explizite Aktionen (#109, #381) – nur im aufgeklappten Zustand sichtbar -->
+      <div class="map-actions" v-if="expanded && spot.lat != null && spot.lng != null">
         <Button
           variant="card-action"
           class="show-on-map-btn"
@@ -463,6 +460,13 @@ const cardRotation = computed(() => {
           <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" />
           <span class="btn-label">Auf Karte anzeigen</span>
         </Button>
+        <MapsAppPicker
+          :lat="spot.lat"
+          :lng="spot.lng"
+          :title="spot.title"
+          :maps-link="spot.maps_link"
+          @click.stop
+        />
       </div>
 
       <div class="spot-accordion" :class="{ 'is-expanded': expanded }" :inert="!expanded">
@@ -521,7 +525,7 @@ const cardRotation = computed(() => {
                 @dragstart="onDragStart"
               />
               <button
-                v-if="!isAccommodation && !scheduledDate"
+                v-if="!isAccommodation"
                 type="button"
                 class="calendar-drag-handle"
                 aria-label="Auf Kalender ziehen zum spontanen Einplanen"
@@ -589,7 +593,7 @@ const cardRotation = computed(() => {
                   <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
                   <span class="status-text">
                     <template v-if="scheduledDate">Besucht am {{ plannedDateLabel }}</template>
-                    <template v-else>Gemacht</template>
+                    <template v-else>Besucht</template>
                     <template v-if="dayWeather && scheduledDaysCount <= 1">
                       · <WeatherIcon :code="dayWeather.weatherCode" :size="14" />
                       {{ Math.round(dayWeather.tempMax) }}°
@@ -608,18 +612,10 @@ const cardRotation = computed(() => {
                 </template>
                 <template v-else>
                   <AppIcon :icon="ACTION_ICONS.notDone" :size="14" group="actions" />
-                  <span>Als gemacht markieren</span>
+                  <span>Besucht</span>
                 </template>
               </button>
             </div>
-            <MapsAppPicker
-              v-if="spot.lat != null && spot.lng != null"
-              :lat="spot.lat"
-              :lng="spot.lng"
-              :title="spot.title"
-              :maps-link="spot.maps_link"
-              @click.stop
-            />
           </div>
         </div>
       </div>
@@ -798,8 +794,8 @@ const cardRotation = computed(() => {
 }
 
 .spot-card:not(.expanded) {
-  height: 268px;
-  min-height: 268px;
+  height: auto;
+  min-height: 0;
 }
 
 .spot-card.expanded {
@@ -1027,21 +1023,6 @@ const cardRotation = computed(() => {
     right 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s;
 }
 
-.spot-card.expanded .card-badge-group :deep(.category-chip) {
-  background: rgba(0, 0, 0, 0.55) !important;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.3) !important;
-  color: #ffffff !important;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
-}
-
-.spot-card.expanded .card-badge-group :deep(.category-chip .app-icon),
-.spot-card.expanded .card-badge-group :deep(.category-chip svg) {
-  color: #ffffff !important;
-}
-
 .card-badge-group :deep(.category-chip) {
   transition:
     background 0.3s ease,
@@ -1233,6 +1214,11 @@ const cardRotation = computed(() => {
   width: 100%;
 }
 
+.mobile-only-accordion,
+.mobile-only-accordion-inner {
+  display: contents; /* Auf Desktop komplett durchlässig */
+}
+
 .spot-card:not(.expanded) .card-actions-wrapper {
   position: static;
   margin-top: auto;
@@ -1373,10 +1359,12 @@ const cardRotation = computed(() => {
   padding-right: 48px;
 }
 
-/* #161: ohne eigenes margin-top rückte MapsAppPicker.vue's "In Maps-App öffnen"-Button direkt an
-   .card-actions (den "Tour zuordnen"-Chip) heran - zu wenig Abstand zwischen den beiden Zeilen. */
-.maps-picker {
-  margin-top: var(--space-3);
+.map-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: 2px;
 }
 
 /* Zwei Anfasser statt des gesamten Card-Roots als Drag-Quelle: .excursion-drag-handle (natives
@@ -1523,6 +1511,7 @@ const cardRotation = computed(() => {
 
   .spot-card:not(.expanded) {
     height: auto;
+    min-height: 0;
   }
 
   /* Bild bleibt im normalen Fluss (kein position: absolute), nur kompakter */
@@ -1583,47 +1572,6 @@ const cardRotation = computed(() => {
       right 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s;
   }
 
-  /* «Auf Karte anzeigen»-Button: Morph zwischen Icon-Circle und voller Pille */
-  .spot-card:not(.expanded) .links {
-    margin: 0;
-  }
-
-  .show-on-map-btn {
-    transition:
-      width 0.28s cubic-bezier(0.32, 0.72, 0, 1),
-      height 0.28s cubic-bezier(0.32, 0.72, 0, 1),
-      border-radius 0.28s ease,
-      padding 0.28s ease;
-  }
-
-  .show-on-map-btn .btn-label {
-    display: inline-block;
-    max-width: 140px;
-    opacity: 1;
-    overflow: hidden;
-    white-space: nowrap;
-    transition:
-      max-width 0.28s cubic-bezier(0.32, 0.72, 0, 1),
-      opacity 0.2s ease,
-      margin 0.28s ease;
-  }
-
-  .spot-card:not(.expanded) .show-on-map-btn {
-    width: 22px;
-    height: 22px;
-    min-width: 22px;
-    padding: 0;
-    gap: 0;
-    justify-content: center;
-    border-radius: 50%;
-  }
-
-  .spot-card:not(.expanded) .show-on-map-btn .btn-label {
-    max-width: 0;
-    opacity: 0;
-    margin: 0;
-  }
-
   .spot-card:not(.expanded) .card-social-actions {
     bottom: 6px;
     right: var(--space-2);
@@ -1673,6 +1621,7 @@ const cardRotation = computed(() => {
   }
 
   .mobile-only-accordion-inner {
+    display: block;
     overflow: hidden;
   }
 
@@ -1692,11 +1641,6 @@ const cardRotation = computed(() => {
     transform: translateY(0) scale(1);
     transition-delay: calc(var(--stagger-idx, 0) * 35ms + 140ms);
   }
-}
-
-.mobile-only-accordion,
-.mobile-only-accordion-inner {
-  display: contents; /* Auf Desktop komplett durchlässig */
 }
 
 .spot-accordion {
