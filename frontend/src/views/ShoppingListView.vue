@@ -539,13 +539,6 @@ async function quickAddToGroup(group: Group, label: string) {
 </template>
 
 <style scoped>
-/* Mehr Breite als der globale .page-Rahmen (960px), damit die Gruppen auf Desktop tatsächlich
-   nebeneinander Platz haben (siehe .groups-grid unten) – exakt dasselbe Muster wie
-   PackingListView.vue's .packing-page/.lists-grid. */
-.shopping-page {
-  max-width: 1400px;
-}
-
 .add-form {
   display: flex;
   flex-wrap: wrap;
@@ -624,7 +617,6 @@ async function quickAddToGroup(group: Group, label: string) {
 
 .group-quick-add {
   margin-bottom: var(--space-2);
-  padding: var(--space-1) var(--space-2);
 }
 
 .group-quick-add :deep(select) {

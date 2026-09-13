@@ -396,13 +396,6 @@ async function quickAdd(list: ListGroup, label: string) {
 </template>
 
 <style scoped>
-/* Mehr Breite als der globale .page-Rahmen (960px), damit die Listen auf Desktop tatsächlich
-   nebeneinander Platz haben (siehe .lists-grid unten) statt trotz Mehrspaltigkeit schmal
-   zusammengequetscht zu wirken. */
-.packing-page {
-  max-width: 1400px;
-}
-
 .filter-row {
   display: flex;
   align-items: center;
@@ -414,7 +407,6 @@ async function quickAdd(list: ListGroup, label: string) {
 
 :deep(.quick-add-row) {
   margin-bottom: var(--space-3);
-  padding: var(--space-2) var(--space-3);
 }
 
 .pack-quick-extra {
