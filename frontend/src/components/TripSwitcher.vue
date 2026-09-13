@@ -172,6 +172,7 @@ function openMembers(trip: Trip) {
     >
       <TripForm
         :location-error="tripFormLocationError"
+        :initial-tab="tripStore.editTripInitialTab"
         :initial="
           editingTrip
             ? {
@@ -182,6 +183,7 @@ function openMembers(trip: Trip) {
                 maps_link: editingTrip.maps_link ?? '',
                 image_url: editingTrip.image_url ?? '',
                 packing_category_required: editingTrip.packing_category_required !== 0,
+                weather_model: editingTrip.weather_model ?? 'ecmwf_ifs025',
               }
             : undefined
         "

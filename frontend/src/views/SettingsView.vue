@@ -20,7 +20,6 @@ import { NAV_LINKS } from '../utils/navLinks';
 import { useDashboardConfigStore } from '../stores/dashboardConfig';
 import { DASHBOARD_TILES } from '../utils/dashboardTiles';
 import { useIsDesktop } from '../composables/useIsDesktop';
-import { useWeatherProviderStore, WEATHER_MODEL_OPTIONS } from '../stores/weatherProvider';
 import { useHomeCurrencyStore, HOME_CURRENCY_OPTIONS } from '../stores/homeCurrency';
 import {
   useCalendarSettingsStore,
@@ -155,7 +154,6 @@ function dashboardTileLabel(key: string) {
 function dashboardTileIcon(key: string) {
   return DASHBOARD_TILES.find((t) => t.key === key)?.icon ?? null;
 }
-const weatherProvider = useWeatherProviderStore();
 const homeCurrency = useHomeCurrencyStore();
 const calendarSettings = useCalendarSettingsStore();
 const uiSettings = useUiSettingsStore();
@@ -388,11 +386,8 @@ function resetCalendar() {
   calendarSettings.reset();
 }
 
-const isWeatherDefault = computed(
-  () => weatherProvider.model === 'ecmwf_ifs025' && !uiSettings.showHomeWeatherFullTrip
-);
+const isWeatherDefault = computed(() => !uiSettings.showHomeWeatherFullTrip);
 function resetWeather() {
-  weatherProvider.reset();
   uiSettings.showHomeWeatherFullTrip = false;
 }
 
@@ -1175,22 +1170,10 @@ async function onImportFileSelected(event: Event) {
           </Button>
         </div>
         <p class="hint intro-hint">
-          Wettervorhersage über Open-Meteo, das mehrere echte Wetterdienste bündelt. Zeigt eine
-          Vorhersage abweichende Werte gegenüber anderen Wetter-Apps (z. B. Apple Weather), lässt
-          sich hier ein anderer Anbieter ausprobieren.
+          Passe an, ob das Wetter an deinem Heimatort im Dashboard eingeblendet werden soll. Das
+          bevorzugte Wettermodell für das Reiseziel (z. B. ECMWF, ICON oder JMA) wird direkt in den
+          Einstellungen des jeweiligen Urlaubs festgelegt.
         </p>
-        <label for="auto-id-1788301151989-36" class="weather-provider-label">
-          Wettermodell
-          <Select id="auto-id-1788301151989-36" v-model="weatherProvider.model">
-            <option
-              v-for="option in WEATHER_MODEL_OPTIONS"
-              :key="option.value"
-              :value="option.value"
-            >
-              {{ option.label }}
-            </option>
-          </Select>
-        </label>
         <CheckboxCard
           id="auto-id-1788301175449-30"
           v-model="uiSettings.showHomeWeatherFullTrip"

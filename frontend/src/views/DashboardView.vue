@@ -595,13 +595,14 @@ function formatWeekdayDate(d: string) {
           <p v-if="DEMO_MODE" class="weather-source static">
             Demo-Wetterdaten (keine echte Vorhersage)
           </p>
-          <router-link
+          <button
             v-else
-            to="/settings?tab=trip#weather-provider-settings"
+            type="button"
             class="weather-source"
+            @click="tripStore.requestEditTrip('settings')"
           >
             Quelle: Open-Meteo ({{ weatherModelLabel }}) · Anbieter wechseln
-          </router-link>
+          </button>
         </template>
       </template>
       <p v-else class="hint">
@@ -1303,6 +1304,11 @@ function formatWeekdayDate(d: string) {
   color: var(--color-text-muted);
   text-decoration: underline;
   text-decoration-style: dotted;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
 }
 
 .weather-source:hover {
