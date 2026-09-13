@@ -60,47 +60,51 @@ function onDragStart(event: DragEvent) {
       <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="14" group="navigation" /> Tour zuordnen
     </button>
     <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
-    <div class="options-backdrop" v-if="open" @click="open = false" />
-    <div class="options-popup" v-if="open">
-      <div class="popup-head">
-        <span class="popup-title">Touren zuordnen</span>
+    <Transition name="fade">
+      <div class="options-backdrop" v-if="open" @click="open = false" />
+    </Transition>
+    <Transition name="dropdown-unfold">
+      <div class="options-popup" v-if="open">
+        <div class="popup-head">
+          <span class="popup-title">Touren zuordnen</span>
+        </div>
+        <ul class="tour-list">
+          <li v-if="!tours.length" class="empty">Noch keine Touren angelegt</li>
+          <li
+            v-for="tour in tours"
+            :key="tour.id"
+            class="tour-item"
+            :class="{ selected: tour.assigned }"
+          >
+            <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
+            <label class="tour-item-label">
+              <Checkbox :checked="tour.assigned" @change="handleToggle(tour.id)" />
+              <span class="tour-name">{{ tour.title }}</span>
+            </label>
+          </li>
+        </ul>
+        <form class="create-tour-form" @submit.prevent="handleCreate">
+          <!-- eslint-disable-next-line vuejs-accessibility/form-control-has-label -->
+          <input
+            v-model="newTourTitle"
+            type="text"
+            class="create-tour-input"
+            placeholder="Neue Tour…"
+            @click.stop
+          />
+          <button
+            type="submit"
+            class="create-btn"
+            :disabled="!newTourTitle.trim()"
+            title="Neue Tour erstellen & Spot zuordnen"
+            aria-label="Neue Tour erstellen"
+            @click.stop
+          >
+            <AppIcon :icon="ACTION_ICONS.add" :size="13" group="actions" />
+          </button>
+        </form>
       </div>
-      <ul class="tour-list">
-        <li v-if="!tours.length" class="empty">Noch keine Touren angelegt</li>
-        <li
-          v-for="tour in tours"
-          :key="tour.id"
-          class="tour-item"
-          :class="{ selected: tour.assigned }"
-        >
-          <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
-          <label class="tour-item-label">
-            <Checkbox :checked="tour.assigned" @change="handleToggle(tour.id)" />
-            <span class="tour-name">{{ tour.title }}</span>
-          </label>
-        </li>
-      </ul>
-      <form class="create-tour-form" @submit.prevent="handleCreate">
-        <!-- eslint-disable-next-line vuejs-accessibility/form-control-has-label -->
-        <input
-          v-model="newTourTitle"
-          type="text"
-          class="create-tour-input"
-          placeholder="Neue Tour…"
-          @click.stop
-        />
-        <button
-          type="submit"
-          class="create-btn"
-          :disabled="!newTourTitle.trim()"
-          title="Neue Tour erstellen & Spot zuordnen"
-          aria-label="Neue Tour erstellen"
-          @click.stop
-        >
-          <AppIcon :icon="ACTION_ICONS.add" :size="13" group="actions" />
-        </button>
-      </form>
-    </div>
+    </Transition>
   </div>
 </template>
 
@@ -169,6 +173,7 @@ function onDragStart(event: DragEvent) {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
+  transform-origin: top left;
 }
 
 .popup-head {
