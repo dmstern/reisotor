@@ -348,6 +348,7 @@ async function quickAdd(list: ListGroup, label: string) {
     <Modal
       :model-value="editingItem !== null"
       title="Gegenstand bearbeiten"
+      full-height
       @update:model-value="(v) => !v && (editingItem = null)"
     >
       <form class="edit-form" @submit.prevent="submitEdit">
@@ -388,7 +389,10 @@ async function quickAdd(list: ListGroup, label: string) {
             </option>
           </Select>
         </FormField>
-        <Button type="submit">Speichern</Button>
+        <div class="actions-row">
+          <div class="spacer"></div>
+          <Button type="submit">Speichern</Button>
+        </div>
       </form>
     </Modal>
   </div>

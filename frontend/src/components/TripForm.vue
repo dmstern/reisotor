@@ -307,7 +307,8 @@ function onSubmit() {
       </Card>
     </div>
 
-    <div class="form-actions">
+    <div class="actions-row">
+      <div class="spacer"></div>
       <Button type="submit">{{ submitLabel ?? 'Speichern' }}</Button>
     </div>
   </form>
@@ -480,10 +481,14 @@ label,
   margin-top: 0;
 }
 
-.form-actions {
+.actions-row {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
   gap: var(--space-2);
   margin-top: var(--space-2);
+}
+
+.spacer {
+  flex: 1;
 }
 </style>

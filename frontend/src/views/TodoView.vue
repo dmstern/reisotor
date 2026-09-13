@@ -461,6 +461,7 @@ function isOverdue(item: TodoItem) {
     <Modal
       :model-value="editingItem !== null"
       title="Aufgabe bearbeiten"
+      full-height
       @update:model-value="(v) => !v && closeEditForm()"
     >
       <form class="edit-form" @submit.prevent="submitEdit">
@@ -489,7 +490,10 @@ function isOverdue(item: TodoItem) {
           <Input :id="id" v-model="editForm.note" type="text" placeholder="Notiz (optional)" />
         </FormField>
         <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />
-        <Button type="submit">Speichern</Button>
+        <div class="actions-row">
+          <div class="spacer"></div>
+          <Button type="submit">Speichern</Button>
+        </div>
       </form>
     </Modal>
   </div>

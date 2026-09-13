@@ -308,6 +308,7 @@ const categoryColors = computed(() => {
       <Modal
         :model-value="showNewBudgetForm"
         title="Budget anlegen"
+        full-height
         @update:model-value="(v) => !v && closeNewBudgetForm()"
       >
         <form class="new-budget-form" @submit.prevent="addBudget">
@@ -356,7 +357,10 @@ const categoryColors = computed(() => {
             <AppIcon :icon="ACTION_ICONS.private" :size="14" group="actions" /> Nur
             {{ budgetStore.userName(Number(newBudgetForm.owner_id)) }} sieht diesen Topf danach.
           </p>
-          <Button type="submit">Anlegen</Button>
+          <div class="actions-row">
+            <div class="spacer"></div>
+            <Button type="submit">Anlegen</Button>
+          </div>
         </form>
       </Modal>
 
@@ -386,6 +390,7 @@ const categoryColors = computed(() => {
       <Modal
         :model-value="showExpenseForm"
         title="Bezahlung eintragen"
+        full-height
         @update:model-value="(v) => !v && closeExpenseForm()"
       >
         <form class="add-form" @submit.prevent="submitExpense">
@@ -441,7 +446,10 @@ const categoryColors = computed(() => {
             :status="newExpenseDraft.status.value"
             :restored="newExpenseDraft.restored.value"
           />
-          <Button type="submit">Eintragen</Button>
+          <div class="actions-row">
+            <div class="spacer"></div>
+            <Button type="submit">Eintragen</Button>
+          </div>
         </form>
       </Modal>
 
@@ -465,6 +473,7 @@ const categoryColors = computed(() => {
       <Modal
         :model-value="showTransferForm"
         title="Überweisung eintragen"
+        full-height
         @update:model-value="(v) => !v && closeTransferForm()"
       >
         <form class="add-form" @submit.prevent="submitTransfer">
@@ -500,7 +509,10 @@ const categoryColors = computed(() => {
           <FormField icon="note" label="Notiz">
             <Input v-model="transferForm.note" type="text" placeholder="Notiz (optional)" />
           </FormField>
-          <Button type="submit">Eintragen</Button>
+          <div class="actions-row">
+            <div class="spacer"></div>
+            <Button type="submit">Eintragen</Button>
+          </div>
         </form>
       </Modal>
 
@@ -510,6 +522,7 @@ const categoryColors = computed(() => {
     <Modal
       :model-value="editingExpense !== null"
       title="Bezahlung bearbeiten"
+      full-height
       @update:model-value="(v) => !v && closeEditExpenseForm()"
     >
       <form class="add-form" @submit.prevent="submitEditExpense">
@@ -561,13 +574,16 @@ const categoryColors = computed(() => {
         <FormField icon="note" label="Notiz">
           <Input v-model="editExpenseForm.note" type="text" placeholder="Notiz (optional)" />
         </FormField>
+        <FileAttachments v-if="editingExpense" domain="budget" :entity-id="editingExpense.id" />
         <DraftStatusBar
           :status="editExpenseDraft.status.value"
           :restored="editExpenseDraft.restored.value"
         />
-        <Button type="submit">Speichern</Button>
+        <div class="actions-row">
+          <div class="spacer"></div>
+          <Button type="submit">Speichern</Button>
+        </div>
       </form>
-      <FileAttachments v-if="editingExpense" domain="budget" :entity-id="editingExpense.id" />
     </Modal>
   </div>
   <ViewLoadingState v-else />

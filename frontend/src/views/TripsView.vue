@@ -92,6 +92,7 @@ function openMembers(trip: Trip) {
     <Modal
       :model-value="showForm"
       :title="editingTrip ? 'Urlaub bearbeiten' : 'Neuen Urlaub anlegen'"
+      full-height
       @update:model-value="(v) => !v && closeForm()"
     >
       <TripForm
