@@ -1495,11 +1495,18 @@ function onFocusSpotFromMap(spotId: number) {
 // abbilden. Gleiche Bogen-Idee wie utils/mapRoute.ts's arcPoints() (Kontrollpunkt senkrecht zur
 // Verbindungslinie versetzt, proportional zum Segmentabstand), hier auf Bildschirm-Pixel statt
 // Geo-Koordinaten angewandt.
+interface TourArrow {
+  x: number;
+  y: number;
+  angle: number;
+}
+
 interface TourLineData {
   width: number;
   height: number;
   pathD: string;
   dots: { x: number; y: number }[];
+  arrows: TourArrow[];
 }
 
 const tourLines = reactive(new Map<number, TourLineData>());
@@ -1565,6 +1572,7 @@ function recomputeTourLine(excursionId: number) {
   });
 
   const dots: { x: number; y: number }[] = [];
+  const arrows: TourArrow[] = [];
   let d = '';
 
   // Gestrichelte Verbindungslinie von der Tour-Card zur ersten Spot-Card
@@ -1608,13 +1616,14 @@ function recomputeTourLine(excursionId: number) {
       const endX = isLtr ? b.x : b.right;
       const endY = b.cy + vOffset;
       dots.push({ x: startX, y: startY });
-      dots.push({ x: endX, y: endY });
       const dx = endX - startX;
       const cp1X = startX + dx * 0.45;
       const cp1Y = startY;
       const cp2X = endX - dx * 0.45;
       const cp2Y = endY;
       d += ` M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`;
+      const angle = Math.atan2(endY - cp2Y, endX - cp2X) * (180 / Math.PI);
+      arrows.push({ x: endX, y: endY, angle });
     } else {
       // Zeilenumbruch bzw. untereinander: a ist oben, b ist unten
       // Vertikal: Startpunkt weiter links als Endpunkt
@@ -1624,13 +1633,14 @@ function recomputeTourLine(excursionId: number) {
       const endX = b.cx + hOffset;
       const endY = b.top;
       dots.push({ x: startX, y: startY });
-      dots.push({ x: endX, y: endY });
       const dy = endY - startY;
       const cp1X = startX;
       const cp1Y = startY + dy * 0.45;
       const cp2X = endX;
       const cp2Y = endY - dy * 0.45;
       d += ` M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`;
+      const angle = Math.atan2(endY - cp2Y, endX - cp2X) * (180 / Math.PI);
+      arrows.push({ x: endX, y: endY, angle });
     }
   }
 
@@ -1653,6 +1663,7 @@ function recomputeTourLine(excursionId: number) {
     height: Math.max(wrapEl.clientHeight, spotBoxes[spotBoxes.length - 1]?.bottom ?? 200),
     pathD: d.trim(),
     dots,
+    arrows,
   });
 }
 
@@ -3627,10 +3638,17 @@ async function deleteEditingSpot() {
                     <path :d="tourLines.get(grp.excursion.id)!.pathD" />
                     <circle
                       v-for="(dot, i) in tourLines.get(grp.excursion.id)!.dots"
-                      :key="i"
+                      :key="'dot-' + i"
                       :cx="dot.x"
                       :cy="dot.y"
                       r="4.5"
+                    />
+                    <polygon
+                      v-for="(arrow, i) in tourLines.get(grp.excursion.id)!.arrows"
+                      :key="'arrow-' + i"
+                      class="tour-station-arrow"
+                      points="0,0 -8,-4.5 -8,4.5"
+                      :transform="`translate(${arrow.x}, ${arrow.y}) rotate(${arrow.angle})`"
                     />
                   </svg>
 
@@ -5136,6 +5154,14 @@ async function deleteEditingSpot() {
   fill: var(--tour-theme-color, var(--color-primary));
   stroke: var(--color-surface);
   stroke-width: 2;
+  transition: fill 0.2s ease;
+}
+
+.tour-station-arrow {
+  fill: var(--tour-theme-color, var(--color-primary));
+  stroke: var(--color-surface);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
   transition: fill 0.2s ease;
 }
 
