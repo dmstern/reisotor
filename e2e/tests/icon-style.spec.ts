@@ -244,9 +244,7 @@ test.describe('Icon-Stil: Emoji/Symbole', () => {
     // Der Reset-Button (group="actions") zeigt trotz gespeichertem 'emoji' ein SVG-Icon
     // (AppIcon.vue setzt app-icon-tabler/-emoji unabhängig von einer per Aufrufer übergebenen
     // class, siehe dortiger Kommentar zu den Root-Klassen).
-    const resetButton = iconsCard.locator('button', {
-      hasText: 'Auf Standard-Einstellungen zurücksetzen',
-    });
+    const resetButton = iconsCard.locator('.card-reset-btn');
     await expect(resetButton.locator('.app-icon-tabler')).toBeVisible();
     expect(await resetButton.locator('.app-icon-emoji').count()).toBe(0);
   });
@@ -293,9 +291,7 @@ test.describe('Icon-Stil: Emoji/Symbole', () => {
     await iconsCard.locator('.all-groups-row .segmented-option', { hasText: 'Emoji' }).click();
     await expect.poll(async () => (await getIconSettings(page)).groups?.navigation).toBe('emoji');
 
-    await iconsCard
-      .locator('button', { hasText: 'Auf Standard-Einstellungen zurücksetzen' })
-      .click();
+    await iconsCard.locator('.card-reset-btn').click();
 
     await expect
       .poll(async () => {
