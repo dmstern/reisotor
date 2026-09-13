@@ -310,7 +310,12 @@ async function remove(id: number) {
         <RichTextEditor v-model="editForm.content" />
         <FileAttachments v-if="editingNote" domain="notes" :entity-id="editingNote.id" />
         <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />
-        <Button type="submit">{{ editingNote?.is_draft ? 'Veröffentlichen' : 'Speichern' }}</Button>
+        <div class="actions-row">
+          <div class="spacer"></div>
+          <Button type="submit">{{
+            editingNote?.is_draft ? 'Veröffentlichen' : 'Speichern'
+          }}</Button>
+        </div>
       </form>
     </Modal>
   </div>

@@ -276,6 +276,29 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   min-height: 120px;
 }
 
+/* Fixierte Aktions-Leiste ("Speichern", "Löschen" etc.) am unteren Rand scrollbarer Dialog-Formulare:
+   Bleibt beim Scrollen am unteren Rand stehen, sodass Aktionen immer direkt erreichbar sind
+   (z. B. wenn nur der Titel oben geändert wird), während der Formularinhalt dahinter scrollt. */
+.modal.full-height .modal-body :slotted(form) .actions-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  position: sticky;
+  bottom: -4px;
+  margin-left: -4px;
+  margin-right: -4px;
+  margin-bottom: -4px;
+  margin-top: var(--space-3);
+  padding: var(--space-3) 4px var(--space-1);
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  z-index: 10;
+}
+
+.modal.full-height .modal-body :slotted(form) .actions-row .spacer {
+  flex: 1;
+}
+
 .modal-head {
   display: flex;
   justify-content: space-between;

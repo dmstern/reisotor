@@ -687,7 +687,10 @@ function showEntryDayOnMap(entry: DiaryEntry) {
           </template>
         </fieldset>
         <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
-        <Button type="submit">Eintragen</Button>
+        <div class="actions-row">
+          <div class="spacer"></div>
+          <Button type="submit">Eintragen</Button>
+        </div>
       </form>
     </Modal>
 
@@ -960,9 +963,12 @@ function showEntryDayOnMap(entry: DiaryEntry) {
           </template>
         </fieldset>
         <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />
-        <Button type="submit">{{
-          editingEntry?.is_draft ? 'Veröffentlichen' : 'Speichern'
-        }}</Button>
+        <div class="actions-row">
+          <div class="spacer"></div>
+          <Button type="submit">{{
+            editingEntry?.is_draft ? 'Veröffentlichen' : 'Speichern'
+          }}</Button>
+        </div>
       </form>
     </Modal>
     <AttachmentPreviewModal

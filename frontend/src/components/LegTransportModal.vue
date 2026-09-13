@@ -142,6 +142,7 @@ function onDelete() {
     :model-value="modelValue"
     :title="modalTitle"
     size="md"
+    full-height
     @update:model-value="(val) => emit('update:modelValue', val)"
   >
     <form class="leg-form" @submit.prevent="onSave">
@@ -310,9 +311,6 @@ function onDelete() {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  margin-top: var(--space-2);
-  padding-top: var(--space-2);
-  border-top: 1px solid var(--color-border);
 }
 
 .spacer {

@@ -4610,9 +4610,6 @@ async function deleteEditingSpot() {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  margin-top: var(--space-2);
-  padding-top: var(--space-2);
-  border-top: 1px solid var(--color-border);
 }
 
 .spacer {

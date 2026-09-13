@@ -1143,6 +1143,7 @@ function formatDate(date: string) {
     <Modal
       :model-value="showAddForm"
       title="Termin anlegen"
+      full-height
       @update:model-value="(v) => !v && closeAddForm()"
     >
       <form class="edit-form" @submit.prevent="addItem">
@@ -1233,13 +1234,17 @@ function formatDate(date: string) {
           </div>
         </fieldset>
         <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
-        <Button type="submit">Hinzufügen</Button>
+        <div class="actions-row">
+          <div class="spacer"></div>
+          <Button type="submit">Hinzufügen</Button>
+        </div>
       </form>
     </Modal>
 
     <Modal
       :model-value="editingItem !== null"
       title="Termin bearbeiten"
+      full-height
       @update:model-value="(v) => !v && closeEditForm()"
     >
       <form class="edit-form" @submit.prevent="submitEdit">
@@ -1738,9 +1743,6 @@ function formatDate(date: string) {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  margin-top: var(--space-2);
-  padding-top: var(--space-2);
-  border-top: 1px solid var(--color-border);
 }
 
 .spacer {
