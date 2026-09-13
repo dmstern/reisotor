@@ -1150,6 +1150,10 @@ const cardRotation = computed(() => {
   margin-top: 0;
 }
 
+.spot-card.expanded .spot-note-container {
+  margin-top: var(--space-2);
+}
+
 .spot-note-container:not(.is-expanded) {
   max-height: 1.5em;
 }
