@@ -193,14 +193,13 @@ test.describe('Touren-Reihenfolge-Editor: Reihenfolge + Mehrfachbesuch direkt in
     const tourCard = page.locator('.excursion-card', { hasText: tourTitle });
     await expect(tourCard).toBeVisible();
 
-    // Klick auf die Tour-Karte visualisiert die Tour auf der Karte (kein extra Touren-View nötig).
+    // Klick auf den Titel klappt die Tour-Karte auf, "Auf Karte anzeigen" visualisiert die Tour auf der Karte.
+    await tourCard.locator('h3').click();
+    await expect(tourCard).toHaveClass(/expanded/);
     await tourCard.locator('.btn--card-action', { hasText: 'Auf Karte anzeigen' }).click();
     await expect(page.locator('.focus-banner', { hasText: tourTitle })).toBeVisible();
 
-    // Bearbeiten-Button ist erst in der aufgeklappten Karte sichtbar (#143, analog zu
-    // SpotCard.vue) - Klick auf den Titel klappt sie auf, bevor der Button erreichbar ist.
-    await tourCard.locator('h3').click();
-    await expect(tourCard).toHaveClass(/expanded/);
+    // Bearbeiten-Button ist in der aufgeklappten Karte erreichbar.
     await tourCard.getByRole('button', { name: 'Bearbeiten' }).click();
     const editModal = page.locator('.modal', { hasText: 'Tour bearbeiten' });
     await editModal.locator('.collapsible-toggle', { hasText: 'Stationen & Route' }).click();

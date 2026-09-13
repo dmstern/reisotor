@@ -96,6 +96,8 @@ for (const [viewportName, viewport] of Object.entries({
       await page.locator('.header h2').getByRole('button', { name: 'Touren' }).click();
       const card = page.locator('.excursion-card', { hasText: excursion.title });
       await expect(card).toBeVisible();
+      await card.locator('h3').click();
+      await expect(card).toHaveClass(/expanded/);
       await card.getByRole('button', { name: 'Auf Karte anzeigen' }).click();
       await page.waitForTimeout(400);
 
