@@ -129,6 +129,24 @@ function onDragStart(event: DragEvent) {
   cursor: grabbing;
 }
 
+.tour-assign-btn::before {
+  content: '';
+  flex-shrink: 0;
+  width: 6px;
+  height: 12px;
+  background-image:
+    radial-gradient(circle, currentColor 1px, transparent 1.3px),
+    radial-gradient(circle, currentColor 1px, transparent 1.3px);
+  background-size:
+    3px 4px,
+    3px 4px;
+  background-position:
+    0 0,
+    3px 0;
+  background-repeat: repeat-y, repeat-y;
+  opacity: 0.6;
+}
+
 .options-backdrop {
   position: fixed;
   inset: 0;
