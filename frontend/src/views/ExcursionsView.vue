@@ -5304,7 +5304,7 @@ async function deleteEditingSpot() {
   flex-direction: column;
   gap: var(--space-1);
   margin: 0;
-  padding: var(--space-1-5) var(--space-2) var(--space-2);
+  padding: var(--space-2);
   list-style: none;
 }
 
@@ -5315,10 +5315,11 @@ async function deleteEditingSpot() {
   background: var(--color-surface);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
+  transition: box-shadow 0.15s ease;
 }
 
 .track-row.active {
-  outline: 2px solid var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary);
 }
 
 .track-row-main {
