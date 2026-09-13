@@ -296,11 +296,20 @@ Größenordnungen hinweg – neue Übergänge an einer dieser drei orientieren, 
 ease-in-out`, ergänzt um ein leichtes Scale/Translate am `.modal` selbst. Diese globalen Klassen
   verwenden statt einer lokalen, komponenteneigenen Transition – neue Listen/Modals/Ein-Ausblend-
   Stellen binden sich an `name="list"`/`name="fade"` an, statt eigene Timings zu erfinden.
+- **Dropdowns & Popovers (Auffalten per `scaleY`)**: `0.22s cubic-bezier(0.16, 1, 0.3, 1)` beim Öffnen,
+  `0.15s ease-in` beim Schließen. Zentral in `frontend/src/style.css` als `.dropdown-unfold` bzw.
+  `.dropdown-unfold-center` (für horizontal zentriert ausgerichtete Menüs wie `TripSwitcher.vue`) sowie
+  in `PickerMenu.vue` (`popover-unfold` mit `origin`-Prop) hinterlegt. Startet gestaucht und leicht
+  angehoben (`scaleY(0.68) scaleX(0.94) translateY(-6px)` bzw. invertiert für Menüs, die nach oben
+  aufgehen) bei `opacity: 0` und faltet sich sanft aus dem Anker-Ursprung (`transform-origin`). Alle
+  Dropdowns und Popovers (`PickerMenu`, `NotificationInbox`, `TripSwitcher`, `Combobox`) folgen diesem
+  einheitlichen Muster.
 - **Größere Bewegungen** (Drawer/Schublade rein-/rausfahren): `0.25s`–`0.3s ease` – etwas länger als
-  die anderen beiden Stufen, weil die zurückgelegte Strecke selbst größer ist.
+  die anderen Stufen, weil die zurückgelegte Strecke selbst größer ist.
 
-Durchgehend `ease`/`ease-in-out`, nie eine "bouncy"/Spring-artige Easing-Funktion – passt zum
-insgesamt eher zurückhaltenden, nativen App-Gefühl statt auffälliger Spielereien.
+Durchgehend `ease`/`ease-in-out` bzw. saubere Bezier-Kurven (`cubic-bezier(0.16, 1, 0.3, 1)`), nie eine
+"bouncy"/Spring-artige Easing-Funktion – passt zum insgesamt eher zurückhaltenden, nativen App-Gefühl
+statt auffälliger Spielereien. Alle Übergänge respektieren `@media (prefers-reduced-motion: reduce)`.
 
 **Landet ein Element durch eine Interaktion woanders als vorher, muss die Bewegung selbst animiert
 sein** – nicht nur der Endzustand hübsch gestylt. Das schließt scheinbar "nur strukturelle" Wechsel

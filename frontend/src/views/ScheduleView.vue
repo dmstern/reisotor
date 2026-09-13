@@ -1094,7 +1094,11 @@ function formatDate(date: string) {
               </Button>
               <Teleport to="body">
                 <template v-if="calendarPickerKey === entry.key">
-                  <PickerMenu :style="calendarPickerStyle" @close="calendarPickerKey = null">
+                  <PickerMenu
+                    :style="calendarPickerStyle"
+                    origin="top-left"
+                    @close="calendarPickerKey = null"
+                  >
                     <DropdownItem
                       :icon="ACTION_ICONS.apple"
                       label="Apple/iPhone"

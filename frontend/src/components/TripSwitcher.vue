@@ -97,16 +97,19 @@ function openMembers(trip: Trip) {
       <AppIcon :icon="ACTION_ICONS.chevronDown" :size="12" group="actions" class="caret" />
     </button>
 
-    <template v-if="open">
+    <Transition name="fade">
       <div
+        v-if="open"
         class="backdrop"
         role="button"
         tabindex="0"
         @click="close"
         @keydown.enter.prevent="close"
         @keydown.space.prevent="close"
-      ></div>
-      <div class="dropdown">
+      />
+    </Transition>
+    <Transition name="dropdown-unfold-center">
+      <div v-if="open" class="dropdown">
         <div
           v-for="trip in tripStore.trips"
           :key="trip.id"
@@ -160,7 +163,7 @@ function openMembers(trip: Trip) {
           >Alle Urlaube verwalten</router-link
         >
       </div>
-    </template>
+    </Transition>
 
     <Modal
       :model-value="showForm"
@@ -272,6 +275,7 @@ function openMembers(trip: Trip) {
      "left:0" würde das Dropdown daher am Wrapper-Rand statt unter dem Button positionieren. */
   left: 50%;
   transform: translateX(-50%);
+  transform-origin: top center;
   min-width: 240px;
   background: var(--color-surface);
   border: 1px solid var(--color-border-strong);

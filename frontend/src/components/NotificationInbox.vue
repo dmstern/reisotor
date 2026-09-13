@@ -116,8 +116,9 @@ function markAllRead() {
       <UnseenDot v-else-if="hasSystemNotices" class="bell-dot" aria-label="Neuigkeiten verfügbar" />
     </div>
 
-    <template v-if="open">
+    <Transition name="fade">
       <div
+        v-if="open"
         class="backdrop"
         role="button"
         tabindex="0"
@@ -125,8 +126,10 @@ function markAllRead() {
         @click="close"
         @keydown.enter.prevent="close"
         @keydown.space.prevent="close"
-      ></div>
-      <div class="dropdown">
+      />
+    </Transition>
+    <Transition name="dropdown-unfold">
+      <div v-if="open" class="dropdown">
         <div class="dropdown-header">
           <span class="dropdown-title">Benachrichtigungen</span>
           <button
@@ -244,7 +247,7 @@ function markAllRead() {
           </p>
         </div>
       </div>
-    </template>
+    </Transition>
     <PwaInstallDialog v-model="showInstallDialog" />
   </div>
 </template>
@@ -305,6 +308,7 @@ function markAllRead() {
   position: fixed;
   top: var(--app-header-height, 56px);
   right: var(--space-4);
+  transform-origin: top right;
   width: min(360px, calc(100vw - 2 * var(--space-4)));
   max-height: min(70vh, 480px);
   background: var(--color-surface);
