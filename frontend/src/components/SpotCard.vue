@@ -1058,6 +1058,10 @@ const cardRotation = computed(() => {
   justify-content: flex-start;
 }
 
+.spot-card.expanded .body {
+  gap: var(--space-2);
+}
+
 /* Einheitlicher Card-Titel: gleitet beim Expandieren nahtlos vom Body in den Cover-Header */
 .card-title-block {
   position: relative;
@@ -1084,13 +1088,13 @@ const cardRotation = computed(() => {
 
 .spot-card.expanded .card-title-block {
   transform: translateY(calc(-100% - var(--space-3) * 2));
-  margin-bottom: -44px;
+  margin-bottom: -24px;
   padding-left: calc(var(--space-3) - var(--space-1));
   padding-right: calc(var(--space-3) - var(--space-1));
 }
 
 .spot-card.expanded .card-title-block:has(.card-title-meta) {
-  margin-bottom: -56px;
+  margin-bottom: -44px;
 }
 
 .card-title {
@@ -1151,7 +1155,7 @@ const cardRotation = computed(() => {
 }
 
 .spot-card.expanded .spot-note-container {
-  margin-top: var(--space-2);
+  margin-top: 0;
 }
 
 .spot-note-container:not(.is-expanded) {
