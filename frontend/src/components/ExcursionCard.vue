@@ -797,6 +797,7 @@ function onSpotDrop(event: DragEvent) {
   white-space: normal;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
 }
 
@@ -1120,6 +1121,7 @@ function onSpotDrop(event: DragEvent) {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 0.8125rem;
@@ -1129,6 +1131,7 @@ function onSpotDrop(event: DragEvent) {
 
 .note.is-clamped.is-expanded {
   -webkit-line-clamp: unset;
+  line-clamp: unset;
   display: block;
   color: var(--color-text);
 }
@@ -1137,12 +1140,14 @@ function onSpotDrop(event: DragEvent) {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .note.is-clamped.is-expanded :deep(.richtext) {
   -webkit-line-clamp: unset;
+  line-clamp: unset;
   display: block;
 }
 
@@ -1373,21 +1378,25 @@ function onSpotDrop(event: DragEvent) {
 
   .note.is-clamped {
     -webkit-line-clamp: 1;
+    line-clamp: 1;
     font-size: 0.78rem;
     line-height: 1.3;
   }
 
   .note.is-clamped.is-expanded {
     -webkit-line-clamp: unset;
+    line-clamp: unset;
     display: block;
   }
 
   .note.is-clamped :deep(.richtext) {
     -webkit-line-clamp: 1;
+    line-clamp: 1;
   }
 
   .note.is-clamped.is-expanded :deep(.richtext) {
     -webkit-line-clamp: unset;
+    line-clamp: unset;
     display: block;
   }
 }

@@ -1130,6 +1130,7 @@ const cardRotation = computed(() => {
   white-space: normal;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
 }
 
@@ -1180,6 +1181,7 @@ const cardRotation = computed(() => {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 1;
+  line-clamp: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 0.8125rem;
@@ -1189,6 +1191,7 @@ const cardRotation = computed(() => {
 
 .note.is-clamped.is-expanded {
   -webkit-line-clamp: 3;
+  line-clamp: 3;
   color: var(--color-text);
 }
 
@@ -1196,12 +1199,14 @@ const cardRotation = computed(() => {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 1;
+  line-clamp: 1;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .note.is-clamped.is-expanded :deep(.richtext) {
   -webkit-line-clamp: 3;
+  line-clamp: 3;
 }
 
 .note.is-clamped :deep(p),
@@ -1634,20 +1639,24 @@ const cardRotation = computed(() => {
 
   .note.is-clamped {
     -webkit-line-clamp: 1;
+    line-clamp: 1;
     font-size: 0.78rem;
     line-height: 1.3;
   }
 
   .note.is-clamped.is-expanded {
     -webkit-line-clamp: 2;
+    line-clamp: 2;
   }
 
   .note.is-clamped :deep(.richtext) {
     -webkit-line-clamp: 1;
+    line-clamp: 1;
   }
 
   .note.is-clamped.is-expanded :deep(.richtext) {
     -webkit-line-clamp: 2;
+    line-clamp: 2;
   }
 
   .mobile-only-accordion {

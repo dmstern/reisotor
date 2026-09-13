@@ -108,7 +108,12 @@ export default defineConfig({
           // Fonts/Logo/Icons zusätzlich zu den von Vite selbst erzeugten Haupt-Bundles precachen -
           // ohne diese explizite Liste würden nur JS/CSS/index.html erfasst, nicht die unter
           // public/ liegenden statischen Assets.
-          globPatterns: ['**/*.{js,css,html}', 'icons/*.png', 'fonts/*.woff2', 'reisotor-icon-circle.svg'],
+          globPatterns: [
+            '**/*.{js,css,html}',
+            'icons/*.png',
+            'fonts/*.woff2',
+            'reisotor-icon-circle.svg',
+          ],
         },
         registerType: 'prompt',
         devOptions: {
