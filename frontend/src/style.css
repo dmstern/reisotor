@@ -207,6 +207,11 @@
   --space-5: 32px;
   --space-6: 48px;
 
+  /* Standard-Inhaltsbreite für Desktop (.page): 1400px füllt FullHD (1920px) bei geöffnetem
+     Kalender-Drawer (~400px) ideal mit ausgewogenen ~56px Seitenrändern aus. Auf Ultra-Wide /
+     Hi-Res Displays (WQHD / 4K) wird sie über @media responsiv auf 1600px bzw. 1920px skaliert. */
+  --page-max-width: 1400px;
+
   /* Dynamische UI-Größen für positionsabhängige Berechnungen (z.B. in TripMap.vue) */
   --drawer-tab-width: 32px;
 
@@ -259,6 +264,18 @@
     --radius-md-squircle: calc(var(--radius-md) * 1.75);
     --radius-lg-squircle: calc(var(--radius-lg) * 1.75);
     --radius-xl-squircle: calc(var(--radius-xl) * 1.75);
+  }
+}
+
+@media (min-width: 2200px) {
+  :root {
+    --page-max-width: 1600px;
+  }
+}
+
+@media (min-width: 3200px) {
+  :root {
+    --page-max-width: 1920px;
   }
 }
 
@@ -448,6 +465,12 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+body.resizing-col,
+body.resizing-col * {
+  user-select: none !important;
+  cursor: col-resize !important;
+}
+
 #app {
   min-height: 100vh;
 }
@@ -500,7 +523,7 @@ button {
 /* ========================================================================= */
 
 .page {
-  max-width: 960px;
+  max-width: var(--page-max-width);
   margin: 0 auto;
   padding: var(--space-4);
   /* --navbar-bottom-offset (NavBar.vue) bildet nur die eigene Höhe der NavBar ab (0px, wenn sie oben

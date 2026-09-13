@@ -24,6 +24,18 @@ defineEmits<{
 <style scoped>
 .resize-handle {
   width: var(--drawer-handle-gap, 12px);
+  position: relative;
+}
+
+/* Unsichtbare Erweiterung der Greifzone für leichtere Bedienung */
+.resize-handle::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -6px;
+  right: -6px;
+  cursor: col-resize;
 }
 
 .resize-grip {

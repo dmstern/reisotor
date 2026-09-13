@@ -1234,6 +1234,7 @@ function showEntryDayOnMap(entry: DiaryEntry) {
 }
 
 .content {
+  max-width: 75ch;
   margin: 0 0 var(--space-2);
   overflow-wrap: anywhere;
 }

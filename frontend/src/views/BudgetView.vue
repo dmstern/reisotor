@@ -574,13 +574,6 @@ const categoryColors = computed(() => {
 </template>
 
 <style scoped>
-/* Mehr Breite als der globale .page-Rahmen, damit die Budget-Töpfe auf Desktop tatsächlich
-   nebeneinander Platz haben (siehe .pot-grid unten) - dasselbe Muster wie ShoppingListView.vue/
-   PackingListView.vue. */
-.budget-page {
-  max-width: 1400px;
-}
-
 .overview-card {
   margin-bottom: var(--space-4);
 }
