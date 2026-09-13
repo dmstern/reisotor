@@ -305,6 +305,11 @@ function onSpotDrop(event: DragEvent) {
           group="categories"
         />
 
+        <!-- Floating Paperclip Badge im eingeklappten Zustand (#396 Pattern) -->
+        <div v-if="!expanded" class="tour-collapsed-attachments">
+          <FileAttachments domain="ideas" :entity-id="excursion.id" :editable="false" collapsed />
+        </div>
+
         <!-- Floating Edit-Button im aufgeklappten Zustand -->
         <Transition name="fade">
           <EditButton
@@ -745,6 +750,17 @@ function onSpotDrop(event: DragEvent) {
   top: 6px;
   left: 6px;
   z-index: 2;
+}
+
+.tour-collapsed-attachments {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 3;
+}
+
+.tour-collapsed-attachments :deep(.file-attachments) {
+  margin-top: 0;
 }
 
 .body {
