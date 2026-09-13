@@ -5255,9 +5255,9 @@ async function deleteEditingSpot() {
 .tracks-list {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-1);
   margin: 0;
-  padding: 0 var(--space-2) var(--space-2);
+  padding: var(--space-1-5) var(--space-2) var(--space-2);
   list-style: none;
 }
 
