@@ -1680,6 +1680,12 @@ function formatDate(date: string) {
   background: var(--color-bg);
 }
 
+.collapsible-fieldset:not(:has(.collapsible-content)) {
+  border-color: transparent;
+  background: transparent;
+  padding: 0;
+}
+
 .collapsible-fieldset legend {
   padding: 0 var(--space-1);
   margin: 0;

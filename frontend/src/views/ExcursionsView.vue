@@ -4628,6 +4628,13 @@ async function deleteEditingSpot() {
   background: var(--color-bg);
 }
 
+.collapsible-fieldset:not(:has(.collapsible-content)) {
+  border-color: transparent;
+  background: transparent;
+  padding: 0;
+  margin: var(--space-1) 0;
+}
+
 .collapsible-fieldset legend {
   padding: 0 var(--space-1);
   margin: 0;
@@ -4659,7 +4666,31 @@ async function deleteEditingSpot() {
 }
 
 .collapsible-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
   margin-top: var(--space-2);
+}
+
+.location-fieldset .collapsible-content {
+  gap: var(--space-4, 16px);
+}
+
+.location-fieldset .hint {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.location-fieldset .checkbox-option {
+  padding: var(--space-1-5, 6px) 0;
+  line-height: 1.45;
+}
+
+.location-fieldset :deep(.form-field),
+.location-fieldset .form-field {
+  margin-top: var(--space-2);
+  margin-bottom: var(--space-2);
+  gap: var(--space-2);
 }
 
 .track-warning-modal .track-warning-intro {
