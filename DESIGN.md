@@ -654,6 +654,11 @@ unerwünschte Vererbungen in Spezialfällen (z. B. ungerahmte Inputs in `QuickAd
 - **`Checkbox.vue`**: Checkbox-Primitive für alle Abhake- und Auswahl-Interaktionen der App (ToDo, Packliste,
   Einkauf, Einstellungen etc.). Kapselt die Reisotor-Custom-Häkchen-Optik (`appearance: none`, SVG-Häkchen,
   Squircle-Eckenrundung) und unterstützt sowohl Booleans als auch Array-Bindungen (`v-model`) sowie `checked`-Props.
+- **`CheckboxCard.vue`**: Taktiles Einstellungs- und Optionen-Primitive (`frontend/src/components/primitives/CheckboxCard.vue`)
+  für Checkboxen mit Label und optionaler Beschreibung/Icon. Bietet eine großzügige, moderne Kachel-Fläche (`variant="card"`
+  mit Squircle-Radius, Hover-Lift, zarter Akzent-Einfärbung im aktiven Zustand sowie zuverlässigen vertikalen Abständen,
+  die Ankleben an Nachbarelemente verhindern) oder eine flache Zeile (`variant="row"` für kompakte Dialoge). Die gesamte
+  Kachelfläche ist als `<label>` interaktiv anklickbar.
 - **`Card.vue`**: Basis-Fläche für Spots, Touren, Budget-Töpfe, Notizen und Fokus-Panels. Unterstützt
   `variant` (`default`, `muted` für hinterlegte Flächen, `flat` ohne Schatten, `elevated` mit verstärktem Schatten `var(--shadow-md)`,
   `tile` für Dashboard-Kacheln, `polaroid` für authentische Polaroid-Fotokarten mit breitem Rahmen, tiefem Schatten & Vintage-Haptik).

@@ -5,6 +5,7 @@ import Button from './primitives/Button.vue';
 import IconButton from './primitives/IconButton.vue';
 import Input from './primitives/Input.vue';
 import Checkbox from './primitives/Checkbox.vue';
+import CheckboxCard from './primitives/CheckboxCard.vue';
 import FormField from './FormField.vue';
 import PasswordInput from './PasswordInput.vue';
 import AppIcon from './AppIcon.vue';
@@ -146,12 +147,12 @@ async function submit() {
         </div>
       </div>
 
-      <div class="field checkbox-field">
-        <label for="create-is-admin" class="checkbox-label">
-          <Checkbox id="create-is-admin" v-model="isAdmin" />
-          <span>Als Administrator:in anlegen</span>
-        </label>
-      </div>
+      <CheckboxCard
+        id="create-is-admin"
+        v-model="isAdmin"
+        label="Als Administrator:in anlegen"
+        description="Ermöglicht das Anlegen und Verwalten von weiteren Nutzerkonten."
+      />
 
       <p v-if="error" class="error-msg">{{ error }}</p>
 
@@ -213,18 +214,6 @@ async function submit() {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
-}
-
-.checkbox-field {
-  margin-top: var(--space-1);
-}
-
-.checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  cursor: pointer;
-  font-size: 0.9rem;
 }
 
 .error-msg {

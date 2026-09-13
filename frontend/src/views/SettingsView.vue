@@ -4,6 +4,7 @@ import IconButton from '../components/primitives/IconButton.vue';
 import Badge from '../components/primitives/Badge.vue';
 import Select from '../components/primitives/Select.vue';
 import Checkbox from '../components/primitives/Checkbox.vue';
+import CheckboxCard from '../components/primitives/CheckboxCard.vue';
 import Input from '../components/primitives/Input.vue';
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -1087,14 +1088,14 @@ async function onImportFileSelected(event: Event) {
           </Button>
         </div>
         <p class="hint intro-hint">
-          Der Hinweis im Dashboard-Header während des laufenden Urlaubs zeigt standardmäßig immer
-          denselben Text - kann hier stattdessen auf einen Countdown der verbleibenden Urlaubstage
-          umgeschaltet werden.
+          Passe das Verhalten des Hinweises im Dashboard-Header während eines laufenden Urlaubs an.
         </p>
-        <label for="auto-id-1788301175449-29" class="checkbox-option">
-          <Checkbox id="auto-id-1788301175449-29" v-model="uiSettings.showVacationCountdown" />
-          Verbleibende Urlaubstage anzeigen statt festem Hinweis
-        </label>
+        <CheckboxCard
+          id="auto-id-1788301175449-29"
+          v-model="uiSettings.showVacationCountdown"
+          label="Verbleibende Urlaubstage anzeigen statt festem Hinweis"
+          description="Zählt die verbleibenden Tage im Dashboard-Header herunter (z. B. 'Noch 3 Tage Urlaub!'), anstatt eines statischen Grußtextes."
+        />
       </div>
     </template>
 
@@ -1190,10 +1191,12 @@ async function onImportFileSelected(event: Event) {
             </option>
           </Select>
         </label>
-        <label for="auto-id-1788301175449-30" class="checkbox-option">
-          <Checkbox id="auto-id-1788301175449-30" v-model="uiSettings.showHomeWeatherFullTrip" />
-          Wetter zuhause für den ganzen Urlaub zeigen (statt nur gegen Ende)
-        </label>
+        <CheckboxCard
+          id="auto-id-1788301175449-30"
+          v-model="uiSettings.showHomeWeatherFullTrip"
+          label="Wetter zuhause für den ganzen Urlaub zeigen"
+          description="Blendet die Heimtwetter-Kachel permanent während des gesamten Urlaubs ein (statt erst gegen Ende der Reise)."
+        />
       </div>
 
       <!-- id als Sprungziel, analog zu #weather-provider-settings oben -->
@@ -1262,14 +1265,16 @@ async function onImportFileSelected(event: Event) {
           ausschalten - der dauerhafte Offline-/Update-Hinweis oben im Header bleibt davon
           unberührt.
         </p>
-        <label for="auto-id-1788301175449-31" class="checkbox-option">
-          <Checkbox id="auto-id-1788301175449-31" v-model="uiSettings.showActivityToasts" />
-          Detaillierte Lade-/Speicher-Meldungen anzeigen
-        </label>
+        <CheckboxCard
+          id="auto-id-1788301175449-31"
+          v-model="uiSettings.showActivityToasts"
+          label="Detaillierte Lade-/Speicher-Meldungen anzeigen"
+          description="Schaltet die kurzen Toast-Meldungen am Bildschirmrand bei Lade- und Speichervorgängen ein oder aus."
+        />
         <label
           for="auto-id-1788301175449-32"
           class="weather-provider-label"
-          style="margin-top: var(--space-3)"
+          style="margin-top: var(--space-4)"
         >
           Anzeigedauer von Toast-Benachrichtigungen
           <Select id="auto-id-1788301175449-32" v-model.number="uiSettings.toastTimeout">
@@ -1605,10 +1610,13 @@ h3 {
 
 .checkbox-option {
   display: flex;
+  flex-direction: row;
   align-items: center;
   gap: var(--space-2);
   font-size: 0.9rem;
+  font-weight: normal;
   cursor: pointer;
+  margin: var(--space-2) 0;
 }
 
 .emoji-scroll {
@@ -1755,7 +1763,7 @@ h3 {
   max-width: 320px;
 }
 
-label,
+label:not(.checkbox-card):not(.checkbox-option):not(.nav-config-visible):not(.card-header-row *),
 .field {
   display: flex;
   flex-direction: column;
