@@ -108,7 +108,7 @@ export default defineConfig({
           // Fonts/Logo/Icons zusätzlich zu den von Vite selbst erzeugten Haupt-Bundles precachen -
           // ohne diese explizite Liste würden nur JS/CSS/index.html erfasst, nicht die unter
           // public/ liegenden statischen Assets.
-          globPatterns: ['**/*.{js,css,html}', 'icons/*.png', 'fonts/*.woff2', 'reisotor_logo.svg'],
+          globPatterns: ['**/*.{js,css,html}', 'icons/*.png', 'fonts/*.woff2', 'reisotor-icon-circle.svg'],
         },
         registerType: 'prompt',
         devOptions: {
@@ -117,7 +117,7 @@ export default defineConfig({
           // App-Shell ist ein reines Produktions-Build-Feature.
           enabled: false,
         },
-        includeAssets: ['reisotor_logo.svg', 'fonts/*.woff2'],
+        includeAssets: ['reisotor-icon-circle.svg', 'fonts/*.woff2'],
         manifest: {
           name: 'Reisotor',
           short_name: 'Reisotor',

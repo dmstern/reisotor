@@ -90,7 +90,7 @@ const profileTitle = computed(() => {
     <LoadingIndicator />
     <div class="header-row">
       <router-link to="/" class="brand">
-        <img src="/reisotor_logo.svg" alt="Reisotor Logo" class="logo" />
+        <img src="/reisotor-icon-circle.svg" alt="Reisotor Logo" class="logo" />
         <span class="wordmark">Reisotor</span>
         <span
           v-if="isNonProd"

@@ -5,7 +5,7 @@
    height="500"
    version="1.1"
    id="svg13"
-   sodipodi:docname="reisotor_icon_abgerundet_edit-circle.svg"
+   sodipodi:docname="reisotor-icon-circle.svg"
    inkscape:version="1.4.4 (dcaf3e7d9e, 2026-05-05)"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
@@ -21,9 +21,9 @@
      inkscape:pageopacity="0.0"
      inkscape:pagecheckerboard="true"
      inkscape:deskcolor="#d1d1d1"
-     inkscape:zoom="1.3670731"
-     inkscape:cx="256.02142"
-     inkscape:cy="278.69761"
+     inkscape:zoom="0.48333333"
+     inkscape:cx="-60"
+     inkscape:cy="159.31035"
      inkscape:window-width="2560"
      inkscape:window-height="1371"
      inkscape:window-x="0"
@@ -191,7 +191,7 @@
        x2="370"
        y2="256.24976"
        gradientUnits="userSpaceOnUse"
-       gradientTransform="translate(2.1627996,-15.637369)" />
+       gradientTransform="translate(2.1627996,0.91435526)" />
     <filter
        inkscape:label="Velvet Bumps"
        inkscape:menu="Bumps"
@@ -199,7 +199,7 @@
        style="color-interpolation-filters:sRGB"
        id="filter55"
        x="-0.103"
-       y="-0.07434576"
+       y="-0.074345761"
        width="1.206"
        height="1.1586163">
       <feGaussianBlur
@@ -291,9 +291,9 @@
        inkscape:label="Drop Shadow"
        id="filter71"
        x="-0.146"
-       y="-0.17009709"
+       y="-0.25028572"
        width="1.2920001"
-       height="1.372233">
+       height="1.5477143">
       <feFlood
          result="flood"
          in="SourceGraphic"
@@ -333,26 +333,6 @@
        x2="426.75787"
        y2="47.425484"
        gradientTransform="matrix(0.87824971,0,0,1.1386283,7.48175,-8.7331288)"
-       gradientUnits="userSpaceOnUse" />
-    <linearGradient
-       inkscape:collect="always"
-       xlink:href="#mainGrad"
-       id="linearGradient78"
-       x1="361.94489"
-       y1="125.77882"
-       x2="383.41113"
-       y2="98.946007"
-       gradientTransform="scale(0.67082039,1.490712)"
-       gradientUnits="userSpaceOnUse" />
-    <linearGradient
-       inkscape:collect="always"
-       xlink:href="#mainGrad"
-       id="linearGradient79"
-       x1="188.4474"
-       y1="205.75714"
-       x2="219.80087"
-       y2="166.56531"
-       gradientTransform="scale(1.2247449,0.81649658)"
        gradientUnits="userSpaceOnUse" />
     <linearGradient
        inkscape:collect="always"
@@ -511,6 +491,338 @@
        y2="477.91199"
        gradientUnits="userSpaceOnUse"
        gradientTransform="matrix(1.0954111,0,0,1.1468735,-23.852783,-36.718374)" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#mainGrad"
+       id="linearGradient79"
+       x1="188.4474"
+       y1="205.75714"
+       x2="219.80087"
+       y2="166.56531"
+       gradientTransform="matrix(1.2247449,0,0,0.81649658,-0.20000163,-84.751724)"
+       gradientUnits="userSpaceOnUse" />
+    <filter
+       inkscape:label="Velvet Bumps"
+       inkscape:menu="Bumps"
+       inkscape:menu-tooltip="Gives Smooth Bumps velvet like"
+       style="color-interpolation-filters:sRGB"
+       id="filter90-5"
+       x="-0.3"
+       y="-0.3"
+       width="1.6"
+       height="1.6">
+      <feGaussianBlur
+         stdDeviation="1"
+         result="result3"
+         id="feGaussianBlur89-3" />
+      <feBlend
+         in2="result3"
+         result="result5"
+         mode="screen"
+         in="SourceGraphic"
+         id="feBlend89-5" />
+      <feGaussianBlur
+         stdDeviation="1"
+         result="result7"
+         id="feGaussianBlur90-6" />
+      <feConvolveMatrix
+         order="3 3"
+         kernelMatrix="2 0 0 1 1 -1 0 0 -2 "
+         targetX="1"
+         targetY="1"
+         result="result8"
+         id="feConvolveMatrix90-2" />
+      <feBlend
+         mode="darken"
+         in="result7"
+         result="result6"
+         in2="result8"
+         id="feBlend90-9" />
+    </filter>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#mainGrad"
+       id="linearGradient78"
+       x1="361.94489"
+       y1="125.77882"
+       x2="383.41113"
+       y2="98.946007"
+       gradientTransform="matrix(0.67082039,0,0,1.490712,-0.20000163,-84.751724)"
+       gradientUnits="userSpaceOnUse" />
+    <filter
+       inkscape:label="Velvet Bumps"
+       inkscape:menu="Bumps"
+       inkscape:menu-tooltip="Gives Smooth Bumps velvet like"
+       style="color-interpolation-filters:sRGB"
+       id="filter92-7"
+       x="-0.8"
+       y="-0.24"
+       width="2.6"
+       height="1.48">
+      <feGaussianBlur
+         stdDeviation="1"
+         result="result3"
+         id="feGaussianBlur91-0" />
+      <feBlend
+         in2="result3"
+         result="result5"
+         mode="screen"
+         in="SourceGraphic"
+         id="feBlend91-9" />
+      <feGaussianBlur
+         stdDeviation="1"
+         result="result7"
+         id="feGaussianBlur92-3" />
+      <feConvolveMatrix
+         order="3 3"
+         kernelMatrix="2 0 0 1 1 -1 0 0 -2 "
+         targetX="1"
+         targetY="1"
+         result="result8"
+         id="feConvolveMatrix92-6" />
+      <feBlend
+         mode="darken"
+         in="result7"
+         result="result6"
+         in2="result8"
+         id="feBlend92-0" />
+    </filter>
+    <radialGradient
+       id="blueHighlight"
+       cx="129.6"
+       cy="100"
+       r="74"
+       fx="144.4"
+       fy="92.599998"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(2.5,0,0,2.5,-120.5,417.5)">
+      <stop
+         offset="0%"
+         stop-color="rgb(40, 120, 220)"
+         stop-opacity="0.8"
+         id="stop11" />
+      <stop
+         offset="30%"
+         stop-color="rgb(20, 70, 160)"
+         stop-opacity="0.5"
+         id="stop12" />
+      <stop
+         offset="100%"
+         stop-color="rgb(0, 0, 0)"
+         stop-opacity="0"
+         id="stop13" />
+    </radialGradient>
+    <radialGradient
+       id="tealHighlight"
+       cx="70.400002"
+       cy="137"
+       r="66.599998"
+       fx="55.6"
+       fy="151.8"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(2.5,0,0,2.5,-120.5,417.5)">
+      <stop
+         offset="0%"
+         stop-color="rgb(0, 180, 160)"
+         stop-opacity="0.6"
+         id="stop14" />
+      <stop
+         offset="40%"
+         stop-color="rgb(0, 80, 100)"
+         stop-opacity="0.2"
+         id="stop15" />
+      <stop
+         offset="100%"
+         stop-color="rgb(0, 0, 0)"
+         stop-opacity="0"
+         id="stop16" />
+    </radialGradient>
+    <radialGradient
+       id="glassBase"
+       cx="92.599998"
+       cy="92.599998"
+       r="81.400002"
+       fx="92.599998"
+       fy="92.599998"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(2.5,0,0,2.5,-120.5,417.5)">
+      <stop
+         offset="0%"
+         stop-color="#020815"
+         id="stop7" />
+      <stop
+         offset="50%"
+         stop-color="#051225"
+         id="stop8" />
+      <stop
+         offset="80%"
+         stop-color="#0a2540"
+         id="stop9" />
+      <stop
+         offset="100%"
+         stop-color="#051525"
+         id="stop10" />
+    </radialGradient>
+    <linearGradient
+       id="rimInnerGrad"
+       x1="21"
+       y1="179"
+       x2="179"
+       y2="21"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(2.5,0,0,2.5,-120.5,417.5)">
+      <stop
+         offset="0%"
+         stop-color="#050505"
+         id="stop5-9" />
+      <stop
+         offset="100%"
+         stop-color="#2a2a2a"
+         id="stop6" />
+    </linearGradient>
+    <linearGradient
+       id="rimGrad"
+       x1="43.000001"
+       y1="5"
+       x2="157"
+       y2="195"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(2.5,0,0,2.5,-120.5,417.5)">
+      <stop
+         offset="0%"
+         stop-color="#4a4a4a"
+         id="stop1-2" />
+      <stop
+         offset="20%"
+         stop-color="#2a2a2a"
+         id="stop2-0" />
+      <stop
+         offset="80%"
+         stop-color="#1a1a1a"
+         id="stop3-2" />
+      <stop
+         offset="100%"
+         stop-color="#0a0a0a"
+         id="stop4-3" />
+    </linearGradient>
+    <linearGradient
+       id="rimGrad-7"
+       x1="43"
+       y1="5"
+       x2="157"
+       y2="195"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(2.5,0,0,2.5,-120.5,417.5)">
+      <stop
+         offset="0%"
+         stop-color="#4a4a4a"
+         id="stop1-2-5" />
+      <stop
+         offset="20%"
+         stop-color="#2a2a2a"
+         id="stop2-0-9" />
+      <stop
+         offset="80%"
+         stop-color="#1a1a1a"
+         id="stop3-2-2" />
+      <stop
+         offset="100%"
+         stop-color="#0a0a0a"
+         id="stop4-3-2" />
+    </linearGradient>
+    <linearGradient
+       id="rimInnerGrad-8"
+       x1="21"
+       y1="179"
+       x2="179"
+       y2="21"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(2.5,0,0,2.5,-120.5,417.5)">
+      <stop
+         offset="0%"
+         stop-color="#050505"
+         id="stop5-9-9" />
+      <stop
+         offset="100%"
+         stop-color="#2a2a2a"
+         id="stop6-7" />
+    </linearGradient>
+    <radialGradient
+       id="glassBase-3"
+       cx="92.599998"
+       cy="92.599998"
+       r="81.400002"
+       fx="92.599998"
+       fy="92.599998"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(2.5,0,0,2.5,-120.5,417.5)">
+      <stop
+         offset="0%"
+         stop-color="#020815"
+         id="stop7-6" />
+      <stop
+         offset="50%"
+         stop-color="#051225"
+         id="stop8-1" />
+      <stop
+         offset="80%"
+         stop-color="#0a2540"
+         id="stop9-2" />
+      <stop
+         offset="100%"
+         stop-color="#051525"
+         id="stop10-9" />
+    </radialGradient>
+    <radialGradient
+       id="tealHighlight-3"
+       cx="70.400002"
+       cy="137"
+       r="66.599998"
+       fx="55.599998"
+       fy="151.8"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(2.5,0,0,2.5,-120.5,417.5)">
+      <stop
+         offset="0%"
+         stop-color="rgb(0, 180, 160)"
+         stop-opacity="0.6"
+         id="stop14-1" />
+      <stop
+         offset="40%"
+         stop-color="rgb(0, 80, 100)"
+         stop-opacity="0.2"
+         id="stop15-9" />
+      <stop
+         offset="100%"
+         stop-color="rgb(0, 0, 0)"
+         stop-opacity="0"
+         id="stop16-4" />
+    </radialGradient>
+    <radialGradient
+       id="blueHighlight-7"
+       cx="129.60001"
+       cy="100"
+       r="74"
+       fx="144.39999"
+       fy="92.599998"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(2.5,0,0,2.5,-120.5,417.5)">
+      <stop
+         offset="0%"
+         stop-color="rgb(40, 120, 220)"
+         stop-opacity="0.8"
+         id="stop11-8" />
+      <stop
+         offset="30%"
+         stop-color="rgb(20, 70, 160)"
+         stop-opacity="0.5"
+         id="stop12-4" />
+      <stop
+         offset="100%"
+         stop-color="rgb(0, 0, 0)"
+         stop-opacity="0"
+         id="stop13-5" />
+    </radialGradient>
   </defs>
   <!-- App Icon Background (Squircle) -->
   <!-- Map Pin Glow (Mit runder Spitze) -->
@@ -520,7 +832,8 @@
      width="500.66812"
      height="501.65433"
      x="1.103448"
-     y="0.41379473" />
+     y="0.41379473"
+     inkscape:label="bg full" />
   <path
      style="display:inline;opacity:1;fill:url(#linearGradient10);fill-opacity:0.791139;stroke-width:1.19083"
      id="path2"
@@ -533,7 +846,8 @@
      sodipodi:end="3.4076673"
      sodipodi:open="true"
      sodipodi:arc-type="arc"
-     d="M 13.020797,170.3705 A 250,250 0 0 1 326.17963,11.889388 250,250 0 0 1 489.1918,322.7137 250,250 0 0 1 180.76757,490.22254 250,250 0 0 1 8.797379,184.26344" />
+     d="M 13.020797,170.3705 A 250,250 0 0 1 326.17963,11.889388 250,250 0 0 1 489.1918,322.7137 250,250 0 0 1 180.76757,490.22254 250,250 0 0 1 8.797379,184.26344"
+     inkscape:label="bg circle" />
   <path
      d="m 137.48175,201.26687 a 120,120 0 1 1 240,0 c 0,110 -90,190 -105,205 q -15,15 -30,0 c -15,-15 -105,-95 -105,-205 z"
      fill="url(#mainGrad)"
@@ -546,31 +860,13 @@
      id="path10"
      style="display:inline;fill:url(#linearGradient15);filter:url(#filter55)"
      inkscape:label="pin"
-     d="M 243.97335,74.641928 A 120,120 0 0 0 132.1628,194.36263 c 0,110 90,190 105,205 10,10 20,10 30,0 15,-15 105,-95 105,-205 A 120,120 0 0 0 243.97335,74.641928 Z m 8.18945,41.720702 a 78,78 0 0 1 78,78 78,78 0 0 1 -78,78 78,78 0 0 1 -78,-78 78,78 0 0 1 78,-78 z" />
+     d="M 243.97335,91.193652 A 120,120 0 0 0 132.1628,210.91435 c 0,110 90,190 105,205 10,10 20,10 30,0 15,-15 105,-95 105,-205 A 120,120 0 0 0 243.97335,91.193652 Z m 8.18945,41.720698 a 78,78 0 0 1 78,78 78,78 0 0 1 -78,78 78,78 0 0 1 -78,-78 78,78 0 0 1 78,-78 z" />
   <!-- Inner Circle with Noise -->
   <!-- Robot Head Elements -->
   <g
      id="robot-group"
      style="display:inline;filter:url(#filter71)"
-     transform="translate(2.1627926,-15.637369)">
-    <rect
-       x="247"
-       y="155"
-       width="6"
-       height="20"
-       rx="3"
-       fill="url(#mainGrad)"
-       filter="url(#inset-highlight)"
-       id="rect10"
-       style="fill:url(#linearGradient78);filter:url(#filter92)" />
-    <circle
-       cx="250"
-       cy="150"
-       r="8"
-       fill="url(#mainGrad)"
-       filter="url(#inset-highlight)"
-       id="circle11"
-       style="fill:url(#linearGradient79);filter:url(#filter90)" />
+     transform="translate(2.1627926,-3.2235758)">
     <rect
        x="190"
        y="175"
@@ -586,13 +882,167 @@
        cy="214.02319"
        r="10.5"
        fill="#ffffff"
-       id="circle12" />
+       id="circle12"
+       style="display:none" />
     <circle
        cx="259.63873"
        cy="213.65746"
        r="10.5"
        fill="#ffffff"
-       id="circle13" />
+       id="circle13"
+       style="display:none" />
+    <g
+       id="g1"
+       transform="matrix(0.05700606,0,0,0.05700606,253.60939,171.922)">
+      <g
+         inkscape:groupmode="layer"
+         id="layer2"
+         inkscape:label="Auge">
+        <circle
+           cx="129.5"
+           cy="667.5"
+           r="237.5"
+           fill="url(#rimGrad)"
+           id="circle16"
+           style="fill:url(#rimGrad);stroke-width:2.5" />
+        <circle
+           cx="129.5"
+           cy="667.5"
+           r="197.5"
+           fill="url(#rimInnerGrad)"
+           id="circle17"
+           style="fill:url(#rimInnerGrad);stroke-width:2.5" />
+        <circle
+           cx="129.5"
+           cy="667.5"
+           r="185"
+           fill="url(#glassBase)"
+           id="circle18"
+           style="fill:url(#glassBase);stroke-width:2.5" />
+        <circle
+           cx="129.5"
+           cy="667.5"
+           r="105"
+           fill="#01040a"
+           id="circle19"
+           style="stroke-width:2.5" />
+        <circle
+           cx="122"
+           cy="662.5"
+           r="105"
+           fill="#030814"
+           id="circle20"
+           style="stroke-width:2.5" />
+        <circle
+           cx="129.5"
+           cy="667.5"
+           r="185"
+           fill="url(#tealHighlight)"
+           id="circle21"
+           style="fill:url(#tealHighlight);stroke-width:2.5" />
+        <circle
+           cx="129.5"
+           cy="667.5"
+           r="185"
+           fill="url(#blueHighlight)"
+           id="circle22"
+           style="fill:url(#blueHighlight);stroke-width:2.5" />
+        <path
+           d="m 154.5,497.5 a 162.5,162.5 0 0 1 145,120 185,185 0 0 0 -170,-135 z"
+           fill="#ffffff"
+           fill-opacity="0.08"
+           id="path22"
+           style="stroke-width:2.5" />
+      </g>
+    </g>
+    <g
+       id="g1-3"
+       transform="matrix(0.05700606,0,0,0.05700606,216.26549,171.69803)">
+      <g
+         inkscape:groupmode="layer"
+         id="layer2-6"
+         inkscape:label="Auge">
+        <circle
+           cx="129.5"
+           cy="667.5"
+           r="237.5"
+           fill="url(#rimGrad)"
+           id="circle16-1"
+           style="fill:url(#rimGrad-7);stroke-width:2.5" />
+        <circle
+           cx="129.5"
+           cy="667.5"
+           r="197.5"
+           fill="url(#rimInnerGrad)"
+           id="circle17-0"
+           style="fill:url(#rimInnerGrad-8);stroke-width:2.5" />
+        <circle
+           cx="129.5"
+           cy="667.5"
+           r="185"
+           fill="url(#glassBase)"
+           id="circle18-6"
+           style="fill:url(#glassBase-3);stroke-width:2.5" />
+        <circle
+           cx="129.5"
+           cy="667.5"
+           r="105"
+           fill="#01040a"
+           id="circle19-3"
+           style="stroke-width:2.5" />
+        <circle
+           cx="122"
+           cy="662.5"
+           r="105"
+           fill="#030814"
+           id="circle20-2"
+           style="stroke-width:2.5" />
+        <circle
+           cx="129.5"
+           cy="667.5"
+           r="185"
+           fill="url(#tealHighlight)"
+           id="circle21-0"
+           style="fill:url(#tealHighlight-3);stroke-width:2.5" />
+        <circle
+           cx="129.5"
+           cy="667.5"
+           r="185"
+           fill="url(#blueHighlight)"
+           id="circle22-6"
+           style="fill:url(#blueHighlight-7);stroke-width:2.5" />
+        <path
+           d="m 154.5,497.5 a 162.5,162.5 0 0 1 145,120 185,185 0 0 0 -170,-135 z"
+           fill="#ffffff"
+           fill-opacity="0.08"
+           id="path22-1"
+           style="stroke-width:2.5" />
+      </g>
+    </g>
+  </g>
+  <g
+     inkscape:groupmode="layer"
+     id="layer1"
+     inkscape:label="antenne"
+     transform="translate(1.0972347,2.5602142)">
+    <rect
+       x="246.79999"
+       y="70.248276"
+       width="6"
+       height="20"
+       rx="3"
+       fill="url(#mainGrad)"
+       filter="url(#inset-highlight)"
+       id="rect10"
+       style="display:inline;fill:url(#linearGradient78);filter:url(#filter92-7)" />
+    <circle
+       cx="249.79999"
+       cy="65.248276"
+       r="8"
+       fill="url(#mainGrad)"
+       filter="url(#inset-highlight)"
+       id="circle11"
+       style="display:inline;fill:url(#linearGradient79);filter:url(#filter90-5)" />
   </g>
   <!-- Logo Text -->
 </svg>
