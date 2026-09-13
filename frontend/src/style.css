@@ -584,49 +584,65 @@ button {
 }
 
 /* Globale Transition für Dropdown- und Popover-Menüs (organisches Auffalten per scaleY) */
+@keyframes dropdown-unfold {
+  0% {
+    opacity: 0;
+    transform: scaleY(0.68) scaleX(0.94) translateY(-6px);
+  }
+  100% {
+    opacity: 1;
+    transform: scaleY(1) scaleX(1) translateY(0);
+  }
+}
+
+@keyframes dropdown-fold {
+  0% {
+    opacity: 1;
+    transform: scaleY(1) scaleX(1) translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: scaleY(0.85) scaleX(0.96) translateY(-4px);
+  }
+}
+
 .dropdown-unfold-enter-active {
-  transition:
-    opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: dropdown-unfold 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .dropdown-unfold-leave-active {
-  transition:
-    opacity 0.15s ease-in,
-    transform 0.15s ease-in;
-}
-
-.dropdown-unfold-enter-from {
-  opacity: 0;
-  transform: scaleY(0.68) scaleX(0.94) translateY(-6px);
-}
-
-.dropdown-unfold-leave-to {
-  opacity: 0;
-  transform: scaleY(0.85) scaleX(0.96) translateY(-4px);
+  animation: dropdown-fold 0.15s ease-in forwards;
 }
 
 /* Horizontal zentrierte Dropdown-Variante (z. B. TripSwitcher mit transform: translateX(-50%)) */
+@keyframes dropdown-unfold-center {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) scaleY(0.68) scaleX(0.94) translateY(-6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) scaleY(1) scaleX(1) translateY(0);
+  }
+}
+
+@keyframes dropdown-fold-center {
+  0% {
+    opacity: 1;
+    transform: translateX(-50%) scaleY(1) scaleX(1) translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) scaleY(0.85) scaleX(0.96) translateY(-4px);
+  }
+}
+
 .dropdown-unfold-center-enter-active {
-  transition:
-    opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: dropdown-unfold-center 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .dropdown-unfold-center-leave-active {
-  transition:
-    opacity 0.15s ease-in,
-    transform 0.15s ease-in;
-}
-
-.dropdown-unfold-center-enter-from {
-  opacity: 0;
-  transform: translateX(-50%) scaleY(0.68) scaleX(0.94) translateY(-6px);
-}
-
-.dropdown-unfold-center-leave-to {
-  opacity: 0;
-  transform: translateX(-50%) scaleY(0.85) scaleX(0.96) translateY(-4px);
+  animation: dropdown-fold-center 0.15s ease-in forwards;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -634,17 +650,8 @@ button {
   .dropdown-unfold-leave-active,
   .dropdown-unfold-center-enter-active,
   .dropdown-unfold-center-leave-active {
+    animation: none;
     transition: opacity 0.1s ease;
-  }
-  .dropdown-unfold-enter-from,
-  .dropdown-unfold-leave-to {
-    opacity: 0;
-    transform: none;
-  }
-  .dropdown-unfold-center-enter-from,
-  .dropdown-unfold-center-leave-to {
-    opacity: 0;
-    transform: translateX(-50%);
   }
 }
 
