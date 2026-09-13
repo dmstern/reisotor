@@ -256,7 +256,7 @@ const profileTitle = computed(() => {
   -webkit-backdrop-filter: var(--backdrop-blur-md);
   border: 1px solid var(--color-surface-glass-border);
   box-shadow:
-    0 4px 20px rgba(0, 0, 0, 0.1),
+    0 4px 16px rgba(0, 0, 0, 0.3),
     inset 0 1px 0 rgba(255, 255, 255, 0.15);
   padding: var(--space-1);
   pointer-events: auto;
