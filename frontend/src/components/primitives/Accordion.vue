@@ -43,7 +43,20 @@ withDefaults(defineProps<Props>(), {
 }
 
 .accordion-inner {
+  min-height: 0;
   overflow: hidden;
+  visibility: hidden;
+  transition:
+    overflow 0s 0.35s,
+    visibility 0s 0.35s;
+}
+
+.accordion.is-expanded .accordion-inner {
+  overflow: visible;
+  visibility: visible;
+  transition:
+    overflow 0s 0.35s allow-discrete,
+    visibility 0s 0s;
 }
 
 /* Gestaffeltes Auffächern von Kindelementen im Akkordion (Stagger-Effekt) */
@@ -128,6 +141,10 @@ withDefaults(defineProps<Props>(), {
 
 @media (prefers-reduced-motion: reduce) {
   .accordion {
+    transition: none;
+  }
+  .accordion-inner,
+  .accordion.is-expanded .accordion-inner {
     transition: none;
   }
   :deep(.accordion-stagger > *),

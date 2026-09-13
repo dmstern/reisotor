@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import Button from './primitives/Button.vue';
+import Accordion from './primitives/Accordion.vue';
 
 // Wiederverwendbare "Papierlisten"-Inline-Add-Zeile: im Ruhezustand nur ein dezentes "+" und eine
 // dünne Linie statt eines vollen Formularfelds, damit gruppierte Listen (Einkauf, ToDo, Packliste)
@@ -62,24 +63,28 @@ function onBlur(event: FocusEvent) {
         @focus="focused = true"
         @blur="onBlur"
       />
-      <Button
-        v-if="expanded"
-        type="submit"
-        class="submit-btn"
-        :disabled="!label.trim()"
-        aria-label="Hinzufügen"
-        title="Hinzufügen"
-      >
-        +
-      </Button>
+      <Transition name="fade">
+        <Button
+          v-if="expanded"
+          type="submit"
+          class="submit-btn"
+          :disabled="!label.trim()"
+          aria-label="Hinzufügen"
+          title="Hinzufügen"
+        >
+          +
+        </Button>
+      </Transition>
     </div>
     <!-- Eigene, volle Zeile statt Teil von .main-row: die Zusatzfelder (Kategorie/Shop/Zeitraum/…)
          sollen bei wenig Platz (Mobil, offene Tastatur) sauber untereinander umbrechen statt sich
          mit Eingabefeld/Absenden-Button eine einzige Flex-Zeile zu teilen und dabei unvorhersehbar
-         mittendrin umzubrechen. -->
-    <div class="extra-fields" v-if="expanded">
-      <slot name="extra" />
-    </div>
+         mittendrin umzubrechen. Mittels Accordion sanft animiert ein-/ausklappen. -->
+    <Accordion v-if="$slots.extra" :expanded="expanded" class="extra-fields-accordion">
+      <div class="extra-fields">
+        <slot name="extra" />
+      </div>
+    </Accordion>
   </form>
 </template>
 
@@ -87,7 +92,6 @@ function onBlur(event: FocusEvent) {
 .quick-add-row {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
   padding: 4px 2px;
 }
 
@@ -145,6 +149,11 @@ function onBlur(event: FocusEvent) {
   border-bottom-color: var(--color-primary);
 }
 
+.extra-fields-accordion {
+  min-width: 0;
+  width: 100%;
+}
+
 .extra-fields {
   display: flex;
   align-items: center;
@@ -154,6 +163,29 @@ function onBlur(event: FocusEvent) {
   /* Leichter Einzug statt bündig mit dem Rand, damit die Zusatzfelder optisch weiter unter dem
      Eingabefeld (statt unter dem "+"-Icon davor) beginnen. */
   margin-left: 22px;
+  padding-top: var(--space-2);
+  padding-bottom: 2px;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.quick-add-row.expanded .extra-fields {
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1) 0.05s,
+    transform 0.3s cubic-bezier(0.16, 1, 0.3, 1) 0.05s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .extra-fields {
+    transition: none;
+    transform: none;
+    opacity: 1;
+  }
 }
 
 .extra-fields :deep(select),
