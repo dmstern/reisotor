@@ -3,11 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" type="image/svg+xml" href="/reisotor_logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="/reisotor-icon-circle.svg" />
     <!-- iOS Safari unterstützt kein SVG für apple-touch-icon (nur PNG) - ohne diesen Tag fällt
          "Zum Home-Bildschirm hinzufügen" auf einen automatisch generierten Screenshot-Icon zurück. -->
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
-    <meta name="theme-color" content="#2a7f74" />
+    <meta name="theme-color" content="#9141AC" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -30,7 +30,7 @@
         align-items: center;
         justify-content: center;
         gap: 20px;
-        background: linear-gradient(160deg, #eaf6f4, #faf8f5 60%);
+        background: linear-gradient(160deg, #f6eff9, #faf8f5 60%);
         transition: opacity 0.25s ease;
       }
       #splash img {
@@ -42,7 +42,7 @@
         width: 24px;
         height: 24px;
         border: 3px solid rgba(0, 0, 0, 0.12);
-        border-top-color: #2a7f74;
+        border-top-color: #9141ac;
         border-radius: 50%;
         animation: splash-spin 0.7s linear infinite;
       }
@@ -66,11 +66,11 @@
       }
       @media (prefers-color-scheme: dark) {
         #splash {
-          background: linear-gradient(160deg, #1f3634, #181715 60%);
+          background: linear-gradient(160deg, #352538, #181715 60%);
         }
         #splash .splash-spinner {
           border-color: rgba(255, 255, 255, 0.16);
-          border-top-color: #3da296;
+          border-top-color: #c061cb;
         }
       }
       @media (prefers-reduced-motion: reduce) {
@@ -83,7 +83,7 @@
   </head>
   <body>
     <div id="splash">
-      <img src="/reisotor_logo.svg" alt="" width="96" height="96" />
+      <img src="/reisotor-icon-circle.svg" alt="" width="96" height="96" />
       <span class="splash-spinner" aria-hidden="true"></span>
     </div>
     <div id="app"></div>

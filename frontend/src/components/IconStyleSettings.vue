@@ -14,6 +14,7 @@ import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
 import Card from './primitives/Card.vue';
 import Checkbox from './primitives/Checkbox.vue';
+import CheckboxCard from './primitives/CheckboxCard.vue';
 import SegmentedToggle from './SegmentedToggle.vue';
 
 // Issue #74: die Bereichseinstellungen sind der zentrale, immer sichtbare Teil dieser Karte
@@ -80,11 +81,41 @@ const allGroupsValue = computed(() => {
 const navColorRelevant = computed(() => iconStyle.groups.navigation === 'icons');
 const weatherColorRelevant = computed(() => iconStyle.groups.weather === 'icons');
 const categoriesColorRelevant = computed(() => iconStyle.groups.categories === 'icons');
+
+const isDefault = computed(() => {
+  const g = iconStyle.groups;
+  const v = iconStyle.variants;
+  return (
+    g.navigation === 'icons' &&
+    g.categories === 'emoji' &&
+    g.weather === 'icons' &&
+    v.navigation === 'outline' &&
+    v.categories === 'outline' &&
+    v.weather === 'outline' &&
+    iconStyle.navColored &&
+    iconStyle.colorizeWeather &&
+    iconStyle.colorizeCategories
+  );
+});
 </script>
 
 <template>
   <Card>
-    <h2>Icons</h2>
+    <div class="card-header-row">
+      <h2>Icons</h2>
+      <Button
+        variant="ghost"
+        size="sm"
+        :icon="ACTION_ICONS.restore"
+        :disabled="isDefault"
+        aria-label="Auf Standard zurücksetzen"
+        :title="isDefault ? 'Bereits auf Standard-Icon-Einstellungen' : 'Auf Standard zurücksetzen'"
+        class="card-reset-btn"
+        @click="iconStyle.resetToDefaults()"
+      >
+        <span class="card-reset-btn-label">Zurücksetzen</span>
+      </Button>
+    </div>
     <p class="hint">
       Emoji oder Symbole für Navigation, Kategorien und Wetter – dein Profilbild bleibt davon
       unberührt. Formularfelder und Aktionen/Buttons zeigen immer Symbole.
@@ -155,62 +186,32 @@ const categoriesColorRelevant = computed(() => iconStyle.groups.categories === '
             "
           />
         </div>
-        <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
-        <label
+        <CheckboxCard
           v-if="group.value === 'navigation'"
+          v-model="iconStyle.navColored"
           class="colorize-row"
+          label="Icons in der Navigation einfärben"
+          :description="`Nutzt dieselben Akzentfarben wie die Dashboard-Kacheln – wirkt sich nur aus, wenn die Navigation auf Symbole steht (aktuell${navColorRelevant ? '' : ' nicht'} der Fall).`"
           :class="{ dimmed: !navColorRelevant }"
-        >
-          <Checkbox v-model="iconStyle.navColored" />
-          <span>
-            Icons in der Navigation einfärben
-            <span class="hint">
-              Nutzt dieselben Akzentfarben wie die Dashboard-Kacheln – wirkt sich nur aus, wenn die
-              Navigation auf Symbole steht (aktuell{{ navColorRelevant ? '' : ' nicht' }} der Fall).
-            </span>
-          </span>
-        </label>
-        <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
-        <label
+        />
+        <CheckboxCard
           v-if="group.value === 'weather'"
+          v-model="iconStyle.colorizeWeather"
           class="colorize-row"
+          label="Wetter-Icons passend einfärben"
+          :description="`Sonne gelb, Wolken grau, Regen blau, Blitze gelb, … – wirkt sich nur aus, wenn Wetter auf Symbole steht (aktuell${weatherColorRelevant ? '' : ' nicht'} der Fall).`"
           :class="{ dimmed: !weatherColorRelevant }"
-        >
-          <Checkbox v-model="iconStyle.colorizeWeather" />
-          <span>
-            Wetter-Icons passend einfärben
-            <span class="hint">
-              Sonne gelb, Wolken grau, Regen blau, Blitze gelb, … – wirkt sich nur aus, wenn Wetter
-              auf Symbole steht (aktuell{{ weatherColorRelevant ? '' : ' nicht' }} der Fall).
-            </span>
-          </span>
-        </label>
-        <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
-        <label
+        />
+        <CheckboxCard
           v-if="group.value === 'categories'"
+          v-model="iconStyle.colorizeCategories"
           class="colorize-row"
+          label="Kategorie-Icons einfärben"
+          :description="`Färbt die Icons in Kategorie-Überschriften und der Kategorie-Navigation in derselben Akzentfarbe wie die bunten Kategorie-Badges (die sind immer eingefärbt) – wirkt sich nur aus, wenn Kategorien auf Symbole stehen (aktuell${categoriesColorRelevant ? '' : ' nicht'} der Fall).`"
           :class="{ dimmed: !categoriesColorRelevant }"
-        >
-          <Checkbox v-model="iconStyle.colorizeCategories" />
-          <span>
-            Kategorie-Icons einfärben
-            <span class="hint">
-              Färbt die Icons in Kategorie-Überschriften und der Kategorie-Navigation in derselben
-              Akzentfarbe wie die bunten Kategorie-Badges (die sind immer eingefärbt) – wirkt sich
-              nur aus, wenn Kategorien auf Symbole stehen (aktuell{{
-                categoriesColorRelevant ? '' : ' nicht'
-              }}
-              der Fall).
-            </span>
-          </span>
-        </label>
+        />
       </template>
     </div>
-
-    <Button variant="secondary" class="reset-button" @click="iconStyle.resetToDefaults()">
-      <AppIcon :icon="ACTION_ICONS.refresh" :size="16" group="actions" />
-      Auf Standard-Einstellungen zurücksetzen
-    </Button>
   </Card>
 </template>
 
@@ -299,34 +300,26 @@ const categoriesColorRelevant = computed(() => iconStyle.groups.categories === '
   }
 }
 
-.colorize-row {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-2);
-  margin: var(--space-1) 0 var(--space-2) 0;
-  cursor: pointer;
-}
-
-.colorize-row input {
-  margin-top: 3px;
-  flex-shrink: 0;
-}
-
-.colorize-row .hint {
-  display: block;
-  margin-top: 2px;
-}
-
 .colorize-row.dimmed {
-  opacity: 0.7;
+  opacity: 0.6;
 }
 
-.reset-button {
-  display: inline-flex;
+.card-header-row {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
   gap: var(--space-2);
-  margin-top: var(--space-4);
-  padding: var(--space-2) var(--space-3);
-  font-size: 0.85rem;
+  margin-bottom: var(--space-3);
+}
+
+.card-header-row h2 {
+  margin: 0;
+}
+
+@media (max-width: 420px) {
+  .card-reset-btn-label {
+    display: none;
+  }
 }
 </style>

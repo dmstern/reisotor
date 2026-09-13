@@ -16,8 +16,8 @@ export type DateFormatOption = (typeof DATE_FORMAT_OPTIONS)[number]['value'];
 
 const WEEK_START_KEY = 'reisotor-week-start';
 const DATE_FORMAT_KEY = 'reisotor-date-format';
-const DEFAULT_WEEK_START: WeekStart = 'monday';
-const DEFAULT_DATE_FORMAT: DateFormatOption = 'de';
+export const DEFAULT_WEEK_START: WeekStart = 'monday';
+export const DEFAULT_DATE_FORMAT: DateFormatOption = 'de';
 
 function loadWeekStart(): WeekStart {
   const stored = localStorage.getItem(WEEK_START_KEY);
@@ -40,8 +40,13 @@ export const useCalendarSettingsStore = defineStore('calendarSettings', () => {
   const weekStart = ref<WeekStart>(loadWeekStart());
   const dateFormat = ref<DateFormatOption>(loadDateFormat());
 
+  function reset() {
+    weekStart.value = DEFAULT_WEEK_START;
+    dateFormat.value = DEFAULT_DATE_FORMAT;
+  }
+
   watch(weekStart, (v) => localStorage.setItem(WEEK_START_KEY, v));
   watch(dateFormat, (v) => localStorage.setItem(DATE_FORMAT_KEY, v));
 
-  return { weekStart, dateFormat };
+  return { weekStart, dateFormat, reset };
 });

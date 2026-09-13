@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./reisotor_logo.svg" alt="Reisotor Logo" width="120" />
+  <img src="./reisotor-icon-circle.svg" alt="Reisotor Logo" width="120" />
 </p>
 
 # 🎒🤖 Reisotor

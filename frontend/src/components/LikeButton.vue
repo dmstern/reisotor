@@ -10,7 +10,7 @@ const emit = defineEmits<{ (e: 'toggle'): void }>();
 <template>
   <Button
     type="button"
-    variant="secondary"
+    variant="ghost"
     size="sm"
     class="like-btn"
     :class="{ liked }"
@@ -19,14 +19,26 @@ const emit = defineEmits<{ (e: 'toggle'): void }>();
     @click.stop="emit('toggle')"
   >
     <AppIcon :icon="liked ? ACTION_ICONS.liked : ACTION_ICONS.unliked" :size="15" group="actions" />
-    {{ count || '' }}
+    <span v-if="count > 0" class="social-count">{{ count }}</span>
   </Button>
 </template>
 
 <style scoped>
+.like-btn {
+  color: var(--color-text-muted);
+}
+
 .like-btn.liked {
-  border-color: var(--color-like-border);
   color: var(--color-like);
+}
+
+.like-btn.liked:hover {
   background: var(--color-like-tint);
+}
+
+.social-count {
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-left: 2px;
 }
 </style>

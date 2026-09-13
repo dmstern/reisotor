@@ -199,6 +199,7 @@ function clearFilters() {
         <template v-if="filterMenuOpen">
           <PickerMenu
             class="filter-popover-menu"
+            origin="top-right"
             :style="filterMenuStyle"
             @close="filterMenuOpen = false"
           >
@@ -292,6 +293,7 @@ function clearFilters() {
         <template v-if="sortMenuOpen">
           <PickerMenu
             class="sort-popover-menu"
+            origin="top-right"
             :style="sortMenuStyle"
             @close="sortMenuOpen = false"
           >

@@ -126,3 +126,31 @@ export const UnsupportedType: Story = {
     `,
   }),
 };
+
+export const Editable: Story = {
+  args: {
+    editable: true,
+  },
+  render: (args) => ({
+    components: { AttachmentPreviewModal },
+    setup() {
+      const isOpen = ref(args.modelValue);
+      const items = ref([...args.attachments]);
+      function onRemove(index: number) {
+        items.value.splice(index, 1);
+      }
+      return { args, isOpen, items, onRemove };
+    },
+    template: `
+      <div>
+        <button type="button" @click="isOpen = true">Vorschau mit Löschen-Button öffnen</button>
+        <AttachmentPreviewModal
+          v-model="isOpen"
+          :attachments="items"
+          :editable="true"
+          @remove="onRemove"
+        />
+      </div>
+    `,
+  }),
+};

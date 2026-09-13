@@ -275,18 +275,21 @@ async function remove(id: number) {
           </div>
         </div>
         <RichTextDisplay class="content" :content="note.content" :format="note.content_format" />
-        <p class="meta">
-          {{ authorLabel(note.created_by) }} ·
-          {{ formatDate(note.updated_at ?? note.created_at) }}
-        </p>
         <FileAttachments domain="notes" :entity-id="note.id" :editable="false" />
-        <SocialRow
-          :like-count="likesFor(note.id).length"
-          :liked="likedByMe(note.id)"
-          :comment-count="commentsFor(note.id).length"
-          @toggle-like="toggleLike(note.id)"
-          @toggle-comments="toggleComments(note.id)"
-        />
+        <div class="note-footer">
+          <p class="meta">
+            {{ authorLabel(note.created_by) }} ·
+            {{ formatDate(note.updated_at ?? note.created_at) }}
+          </p>
+          <SocialRow
+            :like-count="likesFor(note.id).length"
+            :liked="likedByMe(note.id)"
+            :comment-count="commentsFor(note.id).length"
+            :comments-open="openComments.has(note.id)"
+            @toggle-like="toggleLike(note.id)"
+            @toggle-comments="toggleComments(note.id)"
+          />
+        </div>
         <Comments
           v-if="openComments.has(note.id)"
           :comments="commentItemsFor(note.id)"
@@ -310,7 +313,12 @@ async function remove(id: number) {
         <RichTextEditor v-model="editForm.content" />
         <FileAttachments v-if="editingNote" domain="notes" :entity-id="editingNote.id" />
         <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />
-        <Button type="submit">{{ editingNote?.is_draft ? 'Veröffentlichen' : 'Speichern' }}</Button>
+        <div class="actions-row">
+          <div class="spacer"></div>
+          <Button type="submit">{{
+            editingNote?.is_draft ? 'Veröffentlichen' : 'Speichern'
+          }}</Button>
+        </div>
       </form>
     </Modal>
   </div>
@@ -342,6 +350,15 @@ async function remove(id: number) {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+}
+
+.note-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: auto;
 }
 
 .note-head {

@@ -21,6 +21,7 @@ export function useTripEditor() {
     maps_link: '',
     image_url: '',
     packing_category_required: true,
+    weather_model: 'ecmwf_ifs025',
   });
 
   const tripForm = ref<TripFormData>(emptyTripForm());
@@ -61,6 +62,7 @@ export function useTripEditor() {
       maps_link: trip.maps_link ?? '',
       image_url: trip.image_url ?? '',
       packing_category_required: trip.packing_category_required !== 0,
+      weather_model: trip.weather_model ?? 'ecmwf_ifs025',
     };
     pendingFixTripId.value = null;
     tripFormLocationError.value = false;

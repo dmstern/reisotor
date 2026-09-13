@@ -23,4 +23,18 @@ describe('tablerMarkerSvg', () => {
     const svg = tablerMarkerSvg('coffee', 'filled', 32);
     expect(svg).toContain('icons-tabler-outline');
   });
+
+  it('renders curated travel icons for walk and bike', () => {
+    const walkSvg = tablerMarkerSvg('walk', 'outline', 28);
+    expect(walkSvg).toContain('width="28"');
+    expect(walkSvg).toContain('icons-tabler-outline');
+
+    const bikeOutline = tablerMarkerSvg('bike', 'outline', 28);
+    expect(bikeOutline).toContain('width="28"');
+    expect(bikeOutline).toContain('icons-tabler-outline');
+
+    const bikeFilled = tablerMarkerSvg('bike', 'filled', 28);
+    expect(bikeFilled).toContain('width="28"');
+    expect(bikeFilled).toContain('icons-tabler-filled');
+  });
 });

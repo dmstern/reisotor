@@ -16,11 +16,6 @@ import {
   WEEK_START_OPTIONS,
   DATE_FORMAT_OPTIONS,
 } from './calendarSettings';
-import {
-  useWeatherProviderStore,
-  type WeatherModel,
-  WEATHER_MODEL_OPTIONS,
-} from './weatherProvider';
 import { useHomeCurrencyStore, type HomeCurrency, HOME_CURRENCY_OPTIONS } from './homeCurrency';
 
 const SHOW_ACTIVITY_TOASTS_KEY = 'reisotor-show-activity-toasts';
@@ -32,13 +27,16 @@ const GLASS_OPACITY_KEY = 'reisotor-glass-opacity';
 const GLASS_BLUR_KEY = 'reisotor-glass-blur';
 const PRIMARY_COLOR_KEY = 'reisotor-primary-color';
 const BORDER_WIDTH_KEY = 'reisotor-border-width';
+const HIDE_COMPLETED_PACKING_KEY = 'reisotor-hide-completed-packing';
+const HIDE_COMPLETED_TODOS_KEY = 'reisotor-hide-completed-todos';
+const HIDE_COMPLETED_SHOPPING_KEY = 'reisotor-hide-completed-shopping';
 
 export type GlassStyle = 'glass' | 'frosted' | 'opaque' | 'custom';
 
 export const VIBRANT_PRIMARY_COLOR_PRESETS = [
   { name: 'Türkis', hex: '#2a7f74' },
   { name: 'Ozeanblau', hex: '#2563eb' },
-  { name: 'Violett', hex: '#7c3aed' },
+  { name: 'Violett', hex: '#9141AC' },
   { name: 'Smaragd', hex: '#059669' },
   { name: 'Rubin', hex: '#e11d48' },
   { name: 'Bernstein', hex: '#d97706' },
@@ -70,7 +68,7 @@ export const PRIMARY_COLOR_PRESETS = [
   ...PASTEL_PRIMARY_COLOR_PRESETS,
 ];
 
-export const DEFAULT_PRIMARY_COLOR = '#2a7f74';
+export const DEFAULT_PRIMARY_COLOR = '#9141AC';
 export const DEFAULT_BORDER_WIDTH = 1;
 export const DEFAULT_TOAST_TIMEOUT = 5; // Sekunden
 
@@ -185,6 +183,18 @@ function loadBorderWidth(): number {
   return DEFAULT_BORDER_WIDTH;
 }
 
+function loadHideCompletedPacking(): boolean {
+  return safeLocalStorageGet(HIDE_COMPLETED_PACKING_KEY) === 'true';
+}
+
+function loadHideCompletedTodos(): boolean {
+  return safeLocalStorageGet(HIDE_COMPLETED_TODOS_KEY) === 'true';
+}
+
+function loadHideCompletedShopping(): boolean {
+  return safeLocalStorageGet(HIDE_COMPLETED_SHOPPING_KEY) === 'true';
+}
+
 export function applyGlassStyle(style: GlassStyle, opacity: number, blur: number) {
   if (typeof document === 'undefined') return;
   const { opacity: op, blur: bl } = computeGlassCssValues(style, opacity, blur);
@@ -227,8 +237,10 @@ export interface StoredAppSettings {
     weekStart?: WeekStart;
     dateFormat?: DateFormatOption;
   };
-  weatherModel?: WeatherModel;
   homeCurrency?: HomeCurrency;
+  hideCompletedPacking?: boolean;
+  hideCompletedTodos?: boolean;
+  hideCompletedShopping?: boolean;
 }
 
 // Persistierte App-Einstellungen am User-Datensatz (Issue #324).
@@ -239,6 +251,10 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
   const showVacationCountdown = ref(loadShowVacationCountdown());
   const showHomeWeatherFullTrip = ref(loadShowHomeWeatherFullTrip());
   const toastTimeout = ref<number>(loadToastTimeout());
+
+  const hideCompletedPacking = ref(loadHideCompletedPacking());
+  const hideCompletedTodos = ref(loadHideCompletedTodos());
+  const hideCompletedShopping = ref(loadHideCompletedShopping());
 
   const glassStyle = ref<GlassStyle>(loadGlassStyle());
   const glassOpacity = ref<number>(loadGlassOpacity());
@@ -266,7 +282,6 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
     const navCfgStore = useNavConfigStore();
     const dashCfgStore = useDashboardConfigStore();
     const calSettingsStore = useCalendarSettingsStore();
-    const weatherStore = useWeatherProviderStore();
     const homeCurrStore = useHomeCurrencyStore();
 
     api
@@ -292,8 +307,10 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
             weekStart: calSettingsStore.weekStart,
             dateFormat: calSettingsStore.dateFormat,
           },
-          weatherModel: weatherStore.model,
           homeCurrency: homeCurrStore.currency,
+          hideCompletedPacking: hideCompletedPacking.value,
+          hideCompletedTodos: hideCompletedTodos.value,
+          hideCompletedShopping: hideCompletedShopping.value,
         } satisfies StoredAppSettings,
       })
       .catch(() => {});
@@ -310,7 +327,6 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
       const navCfgStore = useNavConfigStore();
       const dashCfgStore = useDashboardConfigStore();
       const calSettingsStore = useCalendarSettingsStore();
-      const weatherStore = useWeatherProviderStore();
       const homeCurrStore = useHomeCurrencyStore();
 
       if (stored.theme && THEME_MODE_OPTIONS.some((o) => o.value === stored.theme)) {
@@ -389,16 +405,19 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
         }
       }
       if (
-        stored.weatherModel &&
-        WEATHER_MODEL_OPTIONS.some((o) => o.value === stored.weatherModel)
-      ) {
-        weatherStore.model = stored.weatherModel;
-      }
-      if (
         stored.homeCurrency &&
         HOME_CURRENCY_OPTIONS.some((o) => o.value === stored.homeCurrency)
       ) {
         homeCurrStore.currency = stored.homeCurrency;
+      }
+      if (typeof stored.hideCompletedPacking === 'boolean') {
+        hideCompletedPacking.value = stored.hideCompletedPacking;
+      }
+      if (typeof stored.hideCompletedTodos === 'boolean') {
+        hideCompletedTodos.value = stored.hideCompletedTodos;
+      }
+      if (typeof stored.hideCompletedShopping === 'boolean') {
+        hideCompletedShopping.value = stored.hideCompletedShopping;
       }
 
       apply();
@@ -429,6 +448,18 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
   });
   watch(toastTimeout, (v) => {
     safeLocalStorageSet(TOAST_TIMEOUT_KEY, String(v));
+    persist();
+  });
+  watch(hideCompletedPacking, (v) => {
+    safeLocalStorageSet(HIDE_COMPLETED_PACKING_KEY, String(v));
+    persist();
+  });
+  watch(hideCompletedTodos, (v) => {
+    safeLocalStorageSet(HIDE_COMPLETED_TODOS_KEY, String(v));
+    persist();
+  });
+  watch(hideCompletedShopping, (v) => {
+    safeLocalStorageSet(HIDE_COMPLETED_SHOPPING_KEY, String(v));
     persist();
   });
 
@@ -465,7 +496,6 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
   const navCfgStore = useNavConfigStore();
   const dashCfgStore = useDashboardConfigStore();
   const calSettingsStore = useCalendarSettingsStore();
-  const weatherStore = useWeatherProviderStore();
   const homeCurrStore = useHomeCurrencyStore();
 
   watch(
@@ -499,10 +529,6 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
     () => persist()
   );
   watch(
-    () => weatherStore.model,
-    () => persist()
-  );
-  watch(
     () => homeCurrStore.currency,
     () => persist()
   );
@@ -512,6 +538,9 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
     showVacationCountdown,
     showHomeWeatherFullTrip,
     toastTimeout,
+    hideCompletedPacking,
+    hideCompletedTodos,
+    hideCompletedShopping,
     glassStyle,
     glassOpacity,
     glassBlur,

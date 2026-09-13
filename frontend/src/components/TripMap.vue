@@ -944,9 +944,15 @@ function renderMarkers() {
   for (const point of visiblePoints.value) {
     const latlng: L.LatLngExpression = [point.lat, point.lng];
     latLngs.push(latlng);
-    L.marker(latlng, { icon: iconFor(point) })
+    const marker = L.marker(latlng, { icon: iconFor(point), title: point.title })
       .addTo(markersLayer)
       .on('click', () => handlePointClick(point));
+    marker.bindTooltip(point.title, {
+      direction: 'top',
+      offset: [0, -18],
+      opacity: 0.95,
+      className: 'map-marker-tooltip',
+    });
   }
 
   // Ausflug-Fokus hat Vorrang vor mapFocusKey (schließen sich laut drawers-Store ohnehin
@@ -1833,8 +1839,8 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
    unten) nur noch die Variablen überschreiben müssen statt jede top-Regel einzeln. */
 .fit-btn {
   position: absolute;
-  top: var(--fit-btn-inset);
-  right: var(--fit-btn-inset);
+  top: var(--fit-btn-top-inset, var(--fit-btn-inset));
+  right: var(--fit-btn-right-inset, var(--fit-btn-inset));
   z-index: 1000;
   width: var(--fit-btn-size);
   height: var(--fit-btn-size);
@@ -1855,19 +1861,19 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
 }
 
 .location-btn {
-  top: calc(var(--fit-btn-inset) + var(--fit-btn-step));
+  top: calc(var(--fit-btn-top-inset, var(--fit-btn-inset)) + var(--fit-btn-step));
 }
 
 .offline-download-btn {
-  top: calc(var(--fit-btn-inset) + 2 * var(--fit-btn-step));
+  top: calc(var(--fit-btn-top-inset, var(--fit-btn-inset)) + 2 * var(--fit-btn-step));
 }
 
 .share-location-btn {
-  top: calc(var(--fit-btn-inset) + 3 * var(--fit-btn-step));
+  top: calc(var(--fit-btn-top-inset, var(--fit-btn-inset)) + 3 * var(--fit-btn-step));
 }
 
 .record-btn {
-  top: calc(var(--fit-btn-inset) + 4 * var(--fit-btn-step));
+  top: calc(var(--fit-btn-top-inset, var(--fit-btn-inset)) + 4 * var(--fit-btn-step));
 }
 
 /* Gleiche Akzentfarbe, solange die jeweilige Funktion aktiv ist/läuft - dieselbe wie z. B.
@@ -1963,7 +1969,13 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
 }
 
 @media screen and (min-width: 720px) {
-  .focus-banner,
+  .focus-banner {
+    bottom: calc(54px + var(--space-2));
+    right: var(--space-3);
+    top: unset;
+    left: unset;
+  }
+
   .tile-download-pill {
     bottom: var(--space-4);
     right: var(--space-4);
@@ -2097,60 +2109,82 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
   color: var(--color-text) !important;
 }
 
-/* Desktop: solange Spots-Drawer und Kalender-Drawer nebeneinander passen, schwebt der
-   Tage-Streifen als Pille und die Zoom-Buttons sitzen rechts neben den Drawers.
-   Spiegelt exakt die Schwelle (500px in .app-main unter @media (min-width: 800px)) aus
-   ExcursionsView.vue UND deren isSheetOverlayMode-JS-Spiegelung, sonst schalten beide Bereiche
-   bei unterschiedlichen Breiten um. */
+/* Desktop: Die Karte ist auf Desktop stets vollflächig über die gesamte Bildschirmbreite.
+   Die Kartenwerkzeuge (.fit-btn) und Zoom-Buttons nutzen auf Desktop größere Maße und Insets,
+   um unter dem schwebenden Header zu liegen.
+   Die Zoom-Buttons sitzen rechts neben den Drawers: im Side-by-Side-Modus rechts neben beiden Drawers,
+   im Sheet-Overlay-Modus (wenn z. B. der Kalender auf Zwischengrößen ausgeklappt ist) direkt rechts
+   neben der Kalender-Schublade. */
 @media (min-width: 800px) {
-  @container app-main (min-width: 500px) {
-    .map-wrap {
-      /* Eckenabstand/Lücke sind schon auf Mobil (.map-wrap oben) auf Apples Maß, hier reicht der Platz zusätzlich
-         für den größeren Durchmesser: 44px (dasselbe "großer runder Icon-Button"-Maß wie
-         DashboardView.vue's .tile-icon) statt der auf Mobil aus Platznot nötigen 34px. */
-      --fit-btn-size: 44px;
-    }
+  .map-wrap {
+    /* Eckenabstand/Lücke sind schon auf Mobil (.map-wrap oben) auf Apples Maß, hier reicht der Platz zusätzlich
+       für den größeren Durchmesser: 44px (dasselbe "großer runder Icon-Button"-Maß wie
+       DashboardView.vue's .tile-icon) statt der auf Mobil aus Platznot nötigen 34px. */
+    --fit-btn-size: 44px;
+    --fit-btn-top-inset: calc(var(--app-header-height, 56px) + var(--space-4));
+    --fit-btn-right-inset: var(--space-4);
+  }
 
-    .fit-btn {
-      font-size: 1.2rem;
-    }
+  .fit-btn {
+    font-size: 1.2rem;
+  }
 
-    /* Auf Desktop schwebt der day-strip als zentrierte Pille im verfügbaren Kartenbereich (neben dem Drawer) */
-    .day-strip {
-      left: calc(var(--calendar-offset, 0px) + var(--spots-col-width, 400px));
-      right: 0;
-      margin: 0 auto;
-      width: fit-content;
-      max-width: calc(100vw - var(--calendar-offset, 0px) - var(--spots-col-width, 400px) - 40px);
-      border-radius: 999px;
-      bottom: 24px;
-      padding: 8px 16px;
-    }
+  :deep(.leaflet-top) {
+    top: calc(var(--app-header-height, 56px) + var(--space-4)) !important;
+  }
 
-    /* Zoom-Buttons rechts neben den Drawer schieben */
-    :deep(.leaflet-left) {
-      /* Nutzt die dynamische Margin (drawer-tab-width bei geschlossenem Kalender, 2*space-4 bei offenem) 
-         für korrekte Platzierung rechts neben der Spots-Schublade. */
-      left: min(
-        calc(
+  :deep(.leaflet-left .leaflet-control) {
+    margin-left: 0 !important;
+  }
+
+  :deep(.leaflet-top .leaflet-control) {
+    margin-top: 0 !important;
+  }
+
+  /* Zoom-Buttons rechts neben den/die Drawer schieben:
+     Im Standard-Desktop-Modus (Spots-Drawer als Spalte) rechts neben beide Drawer */
+  :deep(.leaflet-left) {
+    /* Nutzt die dynamische Margin (drawer-tab-width bei geschlossenem Kalender, 2*space-4 bei offenem) 
+       für korrekte Platzierung rechts neben der Spots-Schublade. */
+    left: min(
+      calc(
+        var(--calendar-margin, var(--drawer-tab-width)) + var(--calendar-offset, 0px) +
+          var(--spots-col-width, 400px) + var(--space-4) + var(--space-3)
+      ),
+      calc(100vw - 60px)
+    ) !important;
+  }
+
+  /* Im Sheet-Overlay-Modus (Spots-Drawer ist ein Bottom-Sheet) nur rechts neben den Kalender-Drawer */
+  .karte.sheet-overlay-mode :deep(.leaflet-left) {
+    left: min(
+      calc(
+        var(--calendar-margin, var(--drawer-tab-width)) + var(--calendar-offset, 0px) +
+          var(--space-4)
+      ),
+      calc(100vw - 60px)
+    ) !important;
+  }
+
+  /* Auf Desktop schwebt der day-strip als zentrierte Pille im verfügbaren Kartenbereich (neben dem Drawer) */
+  .day-strip {
+    left: calc(
+      var(--calendar-margin, var(--drawer-tab-width)) + var(--calendar-offset, 0px) +
+        var(--spots-col-width, 400px) + var(--space-4)
+    );
+    right: 0;
+    margin: 0 auto;
+    width: fit-content;
+    max-width: calc(
+      100vw -
+        (
           var(--calendar-margin, var(--drawer-tab-width)) + var(--calendar-offset, 0px) +
-            var(--spots-col-width, 400px) + var(--space-4) + var(--space-3)
-        ),
-        calc(100vw - 60px)
-      ) !important;
-    }
-
-    :deep(.leaflet-top) {
-      top: var(--space-4) !important;
-    }
-
-    :deep(.leaflet-left .leaflet-control) {
-      margin-left: 0 !important;
-    }
-
-    :deep(.leaflet-top .leaflet-control) {
-      margin-top: 0 !important;
-    }
+            var(--spots-col-width, 400px) + var(--space-4) + 40px
+        )
+    );
+    border-radius: 999px;
+    bottom: calc(var(--navbar-bottom-offset, 0px) + 24px);
+    padding: 8px 16px;
   }
 }
 </style>
@@ -2173,5 +2207,34 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
     transform: scale(1.6);
     opacity: 0;
   }
+}
+
+.leaflet-tooltip.map-marker-tooltip {
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  box-shadow: var(--shadow-sm);
+  padding: 4px 8px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.leaflet-tooltip.map-marker-tooltip::before {
+  border-top-color: var(--color-surface);
+}
+
+:root[data-theme='dark'] .leaflet-tooltip.map-marker-tooltip {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+
+:root[data-theme='dark'] .leaflet-tooltip.map-marker-tooltip::before {
+  border-top-color: var(--color-surface);
 }
 </style>

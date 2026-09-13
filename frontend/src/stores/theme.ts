@@ -37,11 +37,13 @@ export const THEME_MODE_OPTIONS = [
 export type ThemeMode = (typeof THEME_MODE_OPTIONS)[number]['value'];
 
 const STORAGE_KEY = 'reisotor-theme';
-const DEFAULT_MODE: ThemeMode = 'system';
+export const DEFAULT_THEME_MODE: ThemeMode = 'system';
 
 function loadMode(): ThemeMode {
   const stored = localStorage.getItem(STORAGE_KEY);
-  return THEME_MODE_OPTIONS.some((o) => o.value === stored) ? (stored as ThemeMode) : DEFAULT_MODE;
+  return THEME_MODE_OPTIONS.some((o) => o.value === stored)
+    ? (stored as ThemeMode)
+    : DEFAULT_THEME_MODE;
 }
 
 export const useThemeStore = defineStore('theme', () => {
@@ -62,6 +64,10 @@ export const useThemeStore = defineStore('theme', () => {
     }
   }
 
+  function reset() {
+    mode.value = DEFAULT_THEME_MODE;
+  }
+
   function init() {
     apply();
     watch(mode, (m) => {
@@ -77,5 +83,5 @@ export const useThemeStore = defineStore('theme', () => {
     });
   }
 
-  return { mode, isDark, init };
+  return { mode, isDark, reset, init };
 });

@@ -132,13 +132,14 @@ test.describe.serial('Offline-App-Shell (Workbox-Precaching)', () => {
       execSync('npm run build', { cwd: frontendDir, stdio: 'pipe' });
 
       // Normale Navigation (kein page.goto auf eine neue URL, echtes Reload) - der Browser prüft
-      // dabei von sich aus auf eine neue Service-Worker-Version, unabhängig von unserem eigenen
-      // Popping in PwaUpdatePrompt.vue.
+      // dabei von sich aus auf eine neue Service-Worker-Version.
       // Timeout bewusst großzügig (30s statt der Playwright-Default-5s): der execSync('npm run
       // build') direkt davor konkurriert auf einem gemeinsam genutzten CI-Runner um CPU/IO mit
       // dem Playwright-Browser-Prozess, wodurch die Service-Worker-Update-Erkennung nach dem
       // reload() spürbar länger dauern kann als lokal.
       await page.reload();
+      // Die Update-Pille sitzt jetzt in der Benachrichtigungs-Inbox (NotificationInbox.vue)
+      await page.locator('.bell-btn').click();
       await expect(page.locator('.pwa-pill.update')).toBeVisible({ timeout: 30_000 });
 
       // Der eigentliche Kern des Bugs: ohne den sw.js-Fix passiert nach diesem Klick nichts, das

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import { useRouter } from 'vue-router';
+import { useTripStore } from '../stores/trip';
 import Modal from './Modal.vue';
 import WeatherIcon from './WeatherIcon.vue';
 import AppIcon from './AppIcon.vue';
@@ -30,7 +30,7 @@ const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void;
 }>();
 
-const router = useRouter();
+const tripStore = useTripStore();
 const weatherProvider = useWeatherProviderStore();
 const hourlyList = ref<HourlyWeather[]>([]);
 const loading = ref(false);
@@ -68,7 +68,7 @@ function close() {
 
 function goToSettings() {
   close();
-  router.push('/settings');
+  tripStore.requestEditTrip('settings');
 }
 
 function formatDate(dateStr: string) {
@@ -144,7 +144,7 @@ function formatDate(dateStr: string) {
         </div>
         <Button variant="secondary" size="sm" class="model-btn" @click="goToSettings">
           <AppIcon :icon="ACTION_ICONS.filterSettings" :size="14" group="actions" /> Modell in
-          Einstellungen ändern
+          Urlaubs-Einstellungen ändern
         </Button>
       </div>
     </div>

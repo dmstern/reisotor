@@ -14,20 +14,25 @@ export const PageContainerWidths: Story = {
     setup() {
       const containers = [
         {
-          name: 'Standard Page (.page)',
-          width: '960px',
+          name: 'Standard Page (.page / --page-max-width)',
+          width: '1400px',
           usage:
-            'Standard für einspaltige Lesbarkeit (Tagebuch, Notizen, Einstellungen, Dashboard)',
+            'App-weiter Standard für Desktop (Dashboard, Notizen, Tagebuch, Budget, Listen, Einstellungen)',
         },
         {
-          name: 'Wide Page (Multi-Column)',
-          width: '1400px',
-          usage: 'Für breite Tabellen & mehrspaltige Übersichten (BudgetView, ListenView)',
+          name: 'WQHD Page Scale (@media >= 2200px)',
+          width: '1600px',
+          usage: 'Automatische Skalierung für 1440p-Displays (bis zu 6 Spalten)',
+        },
+        {
+          name: '4K Ultra-Wide Scale (@media >= 3200px)',
+          width: '1920px',
+          usage: 'Automatische Skalierung für 2160p-Displays (bis zu 8 Spalten)',
         },
         {
           name: 'Full-Split Page (Karte + Split)',
           width: '1600px',
-          usage: 'Maximale Desktop-Breite für Karte & Spot-Listen Split-Screen (ExcursionsView)',
+          usage: 'Desktop-Breite für Karte & Spot-Listen Split-Screen (ExcursionsView)',
         },
         {
           name: 'Breiter Dialog / Modal',

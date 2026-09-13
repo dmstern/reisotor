@@ -115,7 +115,7 @@ test('MapsAppPicker dropdown is not clipped by the modal', async ({ page }) => {
   await page.getByRole('button', { name: 'Hinzufügen', exact: true }).click();
 
   await page.locator('.item', { hasText: 'MapsAppPicker Regressionstest' }).click();
-  await page.getByRole('button', { name: 'In Karten-App öffnen' }).click();
+  await page.getByRole('button', { name: 'In Maps-App öffnen' }).click();
 
   // Playwrights toBeVisible() berücksichtigt overflow-Clipping durch Vorfahren-Elemente — genau
   // das war der ursprüngliche Bug (Menü unsichtbar im overflow-y:auto des Modals).

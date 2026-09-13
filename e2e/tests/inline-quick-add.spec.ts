@@ -22,15 +22,15 @@ test('quick-adding into a shopping group creates the item pre-filled with that g
   await expect(input).toBeVisible();
 
   // Im Ruhezustand nur das dezente Label-Feld, keine Zusatzfelder sichtbar.
-  await expect(quickAdd.locator('select')).toHaveCount(0);
+  await expect(quickAdd.locator('select')).toBeHidden();
 
   await input.click();
   await expect(input).toBeFocused();
 
   // groupBy ist 'buyer' - Zusatzfelder für die jeweils anderen Dimensionen (Shop-
   // Combobox + Zeitraum-Select), aber kein Bearbeiter:innen-Select (das ist ja schon die Gruppe).
-  await expect(quickAdd.locator('select')).toHaveCount(1);
-  await expect(quickAdd.locator('.combobox')).toHaveCount(1);
+  await expect(quickAdd.locator('select')).toBeVisible();
+  await expect(quickAdd.locator('.combobox')).toBeVisible();
 
   await input.fill('E2E Quick-Add Einkauf');
   await input.press('Enter');

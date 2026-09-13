@@ -13,6 +13,8 @@ withDefaults(
     wide?: boolean;
     /** Positionierungs-Modus: 'fixed' (Standard) oder 'absolute' */
     position?: 'fixed' | 'absolute';
+    /** Ausrichtungs-Ursprung für die Auffalt-Animation: 'top' (Standard), 'top-left', 'top-right', 'bottom', 'bottom-left', 'bottom-right' */
+    origin?: 'top' | 'top-left' | 'top-right' | 'bottom' | 'bottom-left' | 'bottom-right';
     /** Z-Index für das Menü-Fenster */
     zIndex?: number;
     /** Z-Index für den Backdrop */
@@ -24,6 +26,7 @@ withDefaults(
     backdrop: true,
     wide: false,
     position: 'fixed',
+    origin: 'top',
     zIndex: 1001,
     backdropZIndex: 1000,
     role: 'menu',
@@ -69,6 +72,7 @@ onUnmounted(() => {
         'picker-menu-wide': wide,
         'picker-menu--absolute': position === 'absolute',
       },
+      origin ? `picker-menu--origin-${origin}` : undefined,
       $attrs.class,
     ]"
     :style="[$attrs.style as any, { zIndex }]"
@@ -80,10 +84,42 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+@keyframes picker-backdrop-fade {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
 .picker-backdrop {
   position: fixed;
   inset: 0;
   background: transparent;
+  animation: picker-backdrop-fade 0.15s ease;
+}
+
+@keyframes popover-unfold {
+  0% {
+    opacity: 0;
+    transform: scaleY(0.68) scaleX(0.94) translateY(-6px);
+  }
+  100% {
+    opacity: 1;
+    transform: scaleY(1) scaleX(1) translateY(0);
+  }
+}
+
+@keyframes popover-unfold-up {
+  0% {
+    opacity: 0;
+    transform: scaleY(0.68) scaleX(0.94) translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: scaleY(1) scaleX(1) translateY(0);
+  }
 }
 
 .picker-menu {
@@ -99,6 +135,40 @@ onUnmounted(() => {
   flex-direction: column;
   gap: 2px;
   box-sizing: border-box;
+  transform-origin: top center;
+  animation: popover-unfold 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.picker-menu--origin-top-left {
+  transform-origin: top left;
+}
+
+.picker-menu--origin-top-right {
+  transform-origin: top right;
+}
+
+.picker-menu--origin-bottom {
+  transform-origin: bottom center;
+  animation-name: popover-unfold-up;
+}
+
+.picker-menu--origin-bottom-left {
+  transform-origin: bottom left;
+  animation-name: popover-unfold-up;
+}
+
+.picker-menu--origin-bottom-right {
+  transform-origin: bottom right;
+  animation-name: popover-unfold-up;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .picker-backdrop {
+    animation: none;
+  }
+  .picker-menu {
+    animation: none;
+  }
 }
 
 .picker-menu--absolute {

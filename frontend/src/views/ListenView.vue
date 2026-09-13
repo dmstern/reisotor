@@ -64,7 +64,7 @@ function selectTab(tab: string) {
 
 <style scoped>
 .tab-bar-wrap {
-  max-width: 1400px;
+  max-width: var(--page-max-width);
   margin: 0 auto;
   padding: var(--space-3) var(--space-4) 0;
 }

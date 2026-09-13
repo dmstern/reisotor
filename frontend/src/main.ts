@@ -5,6 +5,7 @@ import router from './router';
 import { useThemeStore } from './stores/theme';
 import { useUiSettingsStore } from './stores/uiSettings';
 import { usePwaInstallStore } from './stores/pwaInstall';
+import { usePwaUpdateStore } from './stores/pwaUpdate';
 import './style.css';
 
 // Vor dem ersten Render anwenden, damit die Seite nicht kurz im falschen Theme aufblitzt.
@@ -15,6 +16,7 @@ useUiSettingsStore().init();
 // So früh wie möglich, damit das beforeinstallprompt-Event (siehe stores/pwaInstall.ts) sicher
 // abgefangen wird, auch wenn es der Browser schon direkt beim Laden feuert.
 usePwaInstallStore().init();
+usePwaUpdateStore().init();
 
 const app = createApp(App);
 app.use(pinia);
@@ -42,7 +44,7 @@ if (splash) {
 }
 
 // Service-Worker-Registrierung läuft jetzt über vite-plugin-pwa's virtual:pwa-register-Modul (siehe
-// components/PwaUpdatePrompt.vue, in App.vue gemountet) statt eines manuellen
+// stores/pwaUpdate.ts, dort per init() gestartet) statt eines manuellen
 // navigator.serviceWorker.register() hier – registriert weiterhin denselben public/sw.js unter
 // demselben Scope, navigator.serviceWorker.ready (siehe utils/push.ts) bleibt unverändert erfüllt.
 

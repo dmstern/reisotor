@@ -12,7 +12,12 @@ withDefaults(
 </script>
 
 <template>
-  <span class="unseen-dot" :class="`unseen-dot--${placement}`" :aria-label="ariaLabel" />
+  <span
+    class="unseen-dot"
+    :class="`unseen-dot--${placement}`"
+    role="status"
+    :aria-label="ariaLabel"
+  />
 </template>
 
 <style scoped>

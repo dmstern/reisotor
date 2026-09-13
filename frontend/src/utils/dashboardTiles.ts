@@ -1,5 +1,6 @@
 import { IconBed, IconBedFilled, IconShieldCheck, IconShieldCheckFilled } from '@tabler/icons-vue';
 import { SECTION_ICON_DEFS } from './sectionIcons';
+import { ACTION_ICONS } from './actionIcons';
 import type { IconDef } from './icon';
 
 export interface DashboardTileDef {
@@ -41,4 +42,5 @@ export const DASHBOARD_TILES: DashboardTileDef[] = [
   { key: 'diary', label: 'Tagebuch', icon: SECTION_ICON_DEFS.diary },
   { key: 'notes', label: 'Notizen', icon: SECTION_ICON_DEFS.notes },
   { key: 'securityCheck', label: 'Sicherheits-Check', icon: SECURITY_CHECK_ICON },
+  { key: 'trash', label: 'Papierkorb', icon: ACTION_ICONS.delete },
 ];

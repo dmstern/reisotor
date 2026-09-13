@@ -37,6 +37,6 @@ test.describe('Unterkunft-Spot: Aktionen, die für eine Unterkunft keinen Sinn e
     const actions = spotCard.locator('.card-actions');
     await expect(actions).toContainText('Tour zuordnen');
     await expect(actions).not.toContainText('Einplanen');
-    await expect(actions).not.toContainText('Als gemacht markieren');
+    await expect(actions).not.toContainText('Besucht');
   });
 });

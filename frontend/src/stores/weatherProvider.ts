@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
-import { ref, watch } from 'vue';
+import { computed } from 'vue';
+import { useTripStore } from './trip';
 
 // Open-Meteo bündelt mehrere echte nationale Wetterdienste hinter einer API (models-Parameter,
 // siehe utils/weather.ts) – "Wetteranbieter wechseln" bedeutet hier also, welches dieser Modelle
@@ -19,23 +20,20 @@ export const WEATHER_MODEL_OPTIONS = [
 
 export type WeatherModel = (typeof WEATHER_MODEL_OPTIONS)[number]['value'];
 
-const STORAGE_KEY = 'reisotor-weather-model';
-const DEFAULT_MODEL: WeatherModel = 'ecmwf_ifs025';
+export const DEFAULT_WEATHER_MODEL: WeatherModel = 'ecmwf_ifs025';
 
-function loadModel(): WeatherModel {
-  const stored = localStorage.getItem(STORAGE_KEY);
-  return WEATHER_MODEL_OPTIONS.some((o) => o.value === stored)
-    ? (stored as WeatherModel)
-    : DEFAULT_MODEL;
-}
-
-// Geräte-/Browser-UI-Einstellung (wie der Dark-Mode-Toggle in stores/theme.ts bzw. die
-// Navigationsposition in stores/navPosition.ts) statt Account-Daten: bewusst nur lokal in
-// localStorage gehalten, nicht am User-Datensatz im Backend.
+// Das Wettermodell wird pro Urlaub in trips.weather_model gespeichert, damit alle
+// Mitreisenden dieselbe Wettervorhersage sehen. Dieser Store stellt das Modell des aktuell
+// ausgewählten Urlaubs reaktiv für alle Vorhersage-Komponenten bereit.
 export const useWeatherProviderStore = defineStore('weatherProvider', () => {
-  const model = ref<WeatherModel>(loadModel());
+  const tripStore = useTripStore();
 
-  watch(model, (v) => localStorage.setItem(STORAGE_KEY, v));
+  const model = computed<WeatherModel>(() => {
+    const tripModel = tripStore.currentTrip?.weather_model;
+    return WEATHER_MODEL_OPTIONS.some((o) => o.value === tripModel)
+      ? (tripModel as WeatherModel)
+      : DEFAULT_WEATHER_MODEL;
+  });
 
   return { model };
 });

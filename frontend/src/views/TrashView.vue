@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
+import { useRoute } from 'vue-router';
 import { api } from '../api/client';
 import type { User } from '../api/types';
 import { useTripStore } from '../stores/trip';
@@ -21,8 +22,12 @@ interface TrashEntry {
   data: Record<string, unknown>;
 }
 
+const route = useRoute();
 const tripStore = useTripStore();
-const tripId = computed(() => tripStore.currentTripId as number);
+const tripId = computed(() => Number(route.params.tripId) || (tripStore.currentTripId as number));
+const currentTrip = computed(
+  () => tripStore.trips.find((t) => t.id === tripId.value) || tripStore.currentTrip
+);
 const entries = ref<TrashEntry[]>([]);
 const users = ref<User[]>([]);
 const loading = ref(true);
@@ -43,6 +48,7 @@ const TYPE_ICON: Record<string, IconDef> = {
   shopping_item: SECTION_ICON_DEFS.shopping,
   note: SECTION_ICON_DEFS.notes,
   diary_entry: SECTION_ICON_DEFS.diary,
+  location_track: SECTION_ICON_DEFS.map,
 };
 
 function userLabel(id: unknown) {
@@ -65,6 +71,8 @@ function titleFor(entry: TrashEntry): string {
     case 'budget_item':
     case 'todo':
       return (d.title as string) || '(ohne Titel)';
+    case 'location_track':
+      return (d.title as string) || 'Standort-Aufzeichnung';
     case 'packing_item':
     case 'shopping_item':
       return (d.label as string) || '(ohne Titel)';
@@ -130,8 +138,11 @@ async function restore(entry: TrashEntry) {
   <div class="page" v-if="!loading">
     <h1><AppIcon :icon="ACTION_ICONS.delete" :size="24" group="navigation" /> Papierkorb</h1>
     <p class="hint">
-      Gelöschte Termine, Ausflüge, Spots und mehr bleiben hier eine Weile erhalten, bevor sie
-      endgültig entfernt werden – hier lassen sie sich jederzeit wiederherstellen.
+      Gelöschte Termine, Ausflüge, Spots und mehr<template v-if="currentTrip?.name">
+        aus „{{ currentTrip.name }}“</template
+      >
+      bleiben hier eine Weile erhalten, bevor sie endgültig entfernt werden – hier lassen sie sich
+      jederzeit wiederherstellen.
     </p>
     <p v-if="error" class="error">{{ error }}</p>
 

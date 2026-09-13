@@ -80,7 +80,7 @@ export function resolveStation(
       tabler: meta.tabler,
       color: meta.color,
       category: spot.category ?? 'Sonstiges',
-      imageUrl: spot.image_url,
+      imageUrl: spot.image_url || null,
       lat: spot.lat,
       lng: spot.lng,
       mapsLink: spot.maps_link,

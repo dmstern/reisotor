@@ -26,13 +26,13 @@ export const ColorPalette: Story = {
         {
           name: 'Marke & Steuerung',
           tokens: [
-            { var: '--color-primary', name: 'Marken-Grün', light: '#2a7f74', dark: '#3da296' },
-            { var: '--color-primary-dark', name: 'Hover-Grün', light: '#1f6059', dark: '#7dd0c1' },
+            { var: '--color-primary', name: 'Marken-Farbe', light: '#9141AC', dark: '#c061cb' },
+            { var: '--color-primary-dark', name: 'Hover-Farbe', light: '#7b3793', dark: '#c974d2' },
             {
               var: '--color-primary-tint',
-              name: 'Leichter Grünton',
-              light: '#eaf3f1',
-              dark: '#1c2e2a',
+              name: 'Leichter Akzentton',
+              light: '#f6eff9',
+              dark: '#352538',
             },
             { var: '--color-hover', name: 'Hover-Fläche', light: '#f4f1ec', dark: '#2a2823' },
           ],

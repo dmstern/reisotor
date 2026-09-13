@@ -23,7 +23,7 @@ test('deleting an item shows a toast notification and removes the item', async (
   await expect(page.locator('.check', { hasText: 'E2E Undo-Test-Aufgabe' })).toHaveCount(0);
 });
 
-test('the trash view (reachable via profile/avatar) lists a deleted item and restores it', async ({
+test('the trash view (reachable via trip dashboard) lists a deleted item and restores it', async ({
   page,
 }) => {
   await page.goto('/todo');
@@ -35,13 +35,14 @@ test('the trash view (reachable via profile/avatar) lists a deleted item and res
   await page.waitForTimeout(300); // Transition-Group-Übergang abwarten (0.2s, siehe style.css)
   await expect(page.locator('.check', { hasText: 'E2E Papierkorb-Test-Aufgabe' })).toHaveCount(0);
 
-  // Erreichbarkeit über das Einstellungsmenü (Klick auf den Avatar -> Einstellungen -> "Daten"-Tab ->
-  // Papierkorb-Karte).
-  await page.locator('.profile-link').click();
-  await expect(page).toHaveURL(/\/settings$/);
-  await page.getByRole('tab', { name: 'Daten' }).click();
-  await page.getByRole('link', { name: 'Papierkorb öffnen' }).click();
-  await expect(page).toHaveURL(/\/trash$/);
+  // Erreichbarkeit über das Trip-Dashboard (Übersicht -> Kachel auf dem Dashboard)
+  await page.getByRole('link', { name: 'Übersicht' }).click();
+  await expect(page).toHaveURL(/\/trip\/\d+$/);
+
+  const trashTile = page.locator('a.tile[href$="/trash"]');
+  await expect(trashTile).toBeVisible();
+  await trashTile.click();
+  await expect(page).toHaveURL(/\/trip\/\d+\/trash$/);
 
   const trashRow = page.locator('.trash-row', { hasText: 'E2E Papierkorb-Test-Aufgabe' });
   await expect(trashRow).toBeVisible();
@@ -50,4 +51,20 @@ test('the trash view (reachable via profile/avatar) lists a deleted item and res
 
   await page.goto('/todo');
   await expect(page.locator('li.row', { hasText: 'E2E Papierkorb-Test-Aufgabe' })).toBeVisible();
+});
+
+test('the trash nav-item can be enabled in settings and used for navigation', async ({ page }) => {
+  await page.goto('/settings?tab=app');
+  const navRow = page.locator('.nav-config-row', { hasText: 'Papierkorb' });
+  await expect(navRow).toBeVisible();
+  const checkbox = navRow.getByRole('checkbox');
+  await expect(checkbox).not.toBeChecked();
+  await checkbox.check();
+  await expect(checkbox).toBeChecked();
+
+  // Papierkorb-Link ist nun in der NavBar sichtbar und navigiert zum Trip-Papierkorb
+  const navLink = page.locator('nav.navbar a.link[href$="/trash"]');
+  await expect(navLink).toBeVisible();
+  await navLink.click();
+  await expect(page).toHaveURL(/\/trip\/\d+\/trash$/);
 });

@@ -4,7 +4,7 @@ import type { Attachment } from '../api/types';
 import Modal from './Modal.vue';
 import Button from './primitives/Button.vue';
 import IconButton from './primitives/IconButton.vue';
-import AppIcon from './AppIcon.vue';
+import FileFormatGraphic from './primitives/FileFormatGraphic.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { formatFileSize } from '../utils/fileUpload';
 import { DEMO_MODE } from '../demo/isDemoMode';
@@ -23,12 +23,14 @@ const props = withDefaults(
     modelValue: boolean;
     attachments: (Attachment | AttachmentPreviewItem | string)[];
     initialIndex?: number;
+    editable?: boolean;
   }>(),
-  { initialIndex: 0 }
+  { initialIndex: 0, editable: false }
 );
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void;
+  (e: 'remove', index: number): void;
 }>();
 
 const currentIndex = ref(props.initialIndex);
@@ -58,6 +60,17 @@ watch(
       window.addEventListener('keydown', onKeydown);
     } else {
       window.removeEventListener('keydown', onKeydown);
+    }
+  }
+);
+
+watch(
+  () => props.attachments.length,
+  (newLen) => {
+    if (newLen === 0) {
+      emit('update:modelValue', false);
+    } else if (currentIndex.value >= newLen) {
+      currentIndex.value = Math.max(0, newLen - 1);
     }
   }
 );
@@ -137,6 +150,17 @@ function download(attachment: AttachmentPreviewItem | null) {
   link.click();
   document.body.removeChild(link);
 }
+
+function onRemoveCurrent() {
+  const currentLen = props.attachments.length;
+  const removeIdx = currentIndex.value;
+  emit('remove', removeIdx);
+  if (currentLen <= 1) {
+    emit('update:modelValue', false);
+  } else if (removeIdx >= currentLen - 1) {
+    currentIndex.value = Math.max(0, currentLen - 2);
+  }
+}
 </script>
 
 <template>
@@ -176,14 +200,16 @@ function download(attachment: AttachmentPreviewItem | null) {
             />
           </div>
           <div v-else class="unsupported-wrapper">
-            <AppIcon
-              :icon="ACTION_ICONS.attachment"
-              :size="48"
-              group="actions"
+            <FileFormatGraphic
+              :filename="currentAttachment.original_name || currentAttachment.filename"
+              :mime-type="currentAttachment.mime_type"
+              :size="56"
               class="unsupported-icon"
             />
             <p class="unsupported-title">Keine Vorschau verfügbar</p>
-            <p class="unsupported-hint">Für diesen Dateityp ist keine Vorschau verfügbar.</p>
+            <p class="unsupported-hint">
+              Für diesen Dateityp ist keine direkte Bild-Vorschau verfügbar.
+            </p>
             <p class="unsupported-filename">
               {{ currentAttachment.original_name }}
             </p>
@@ -203,12 +229,22 @@ function download(attachment: AttachmentPreviewItem | null) {
 
       <div class="preview-actions">
         <Button
-          variant="primary"
-          :icon="ACTION_ICONS.download"
-          @click="download(currentAttachment)"
+          v-if="editable"
+          variant="danger"
+          :icon="ACTION_ICONS.delete"
+          @click="onRemoveCurrent"
         >
-          Herunterladen
+          Löschen
         </Button>
+        <div class="preview-actions-right">
+          <Button
+            variant="primary"
+            :icon="ACTION_ICONS.download"
+            @click="download(currentAttachment)"
+          >
+            Herunterladen
+          </Button>
+        </div>
       </div>
     </div>
   </Modal>
@@ -307,9 +343,17 @@ function download(attachment: AttachmentPreviewItem | null) {
 
 .preview-actions {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
   margin-top: var(--space-4);
   padding-top: var(--space-2);
   border-top: 1px solid var(--color-border);
+}
+
+.preview-actions-right {
+  margin-left: auto;
+  display: flex;
+  gap: var(--space-2);
 }
 </style>

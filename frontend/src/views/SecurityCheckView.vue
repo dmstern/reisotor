@@ -1,9 +1,8 @@
 <script setup lang="ts">
 // Reiner Spaß-Gimmick ohne echte Funktion (auf Wunsch): der Reisotor (dasselbe Roboter-Motiv wie im
-// App-Logo, siehe public/reisotor_logo.svg – hier als animiertes Inline-SVG statt statischem Bild,
-// damit einzelne Teile per CSS animiert werden können) "scannt" die Urlaubsregion und erklärt am
-// Ende immer alles für total sicher. Ergebnisse/Meldungen sind rein zufällig ausgewählte Spaßtexte,
-// keine echte Datenquelle/Bewertung.
+// App-Logo, siehe ReisotorRobot.vue – als animiertes Inline-SVG mit Wall-E/EVE-Vibe und Kamera-Linsen-Augen)
+// "scannt" die Urlaubsregion und erklärt am Ende immer alles für total sicher. Ergebnisse/Meldungen sind rein
+// zufällig ausgewählte Spaßtexte, keine echte Datenquelle/Bewertung.
 import { computed, onUnmounted, ref } from 'vue';
 import { useTripStore } from '../stores/trip';
 import ReisotorRobot from '../components/ReisotorRobot.vue';

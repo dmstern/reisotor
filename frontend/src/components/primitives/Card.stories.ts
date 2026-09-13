@@ -9,11 +9,12 @@ const meta: Meta<typeof Card> = {
   argTypes: {
     variant: {
       control: 'select',
-      options: ['default', 'muted', 'flat', 'elevated', 'tile'],
+      options: ['default', 'muted', 'flat', 'elevated', 'tile', 'polaroid'],
     },
     condensed: { control: 'boolean' },
     expanded: { control: 'boolean' },
     expandable: { control: 'boolean' },
+    interactive: { control: 'boolean' },
     bannerUrl: { control: 'text' },
     bannerPosition: {
       control: 'select',
@@ -26,9 +27,10 @@ const meta: Meta<typeof Card> = {
     variant: 'default',
     condensed: false,
     expandable: false,
+    interactive: false,
     bannerPosition: 'auto',
     highlight: false,
-    tileColor: '#2a7f74',
+    tileColor: '#9141AC',
   },
 };
 
@@ -101,7 +103,7 @@ export const Elevated: Story = {
 export const DashboardTile: Story = {
   args: {
     variant: 'tile',
-    tileColor: '#2a7f74',
+    tileColor: '#9141AC',
     tileIcon: SECTION_ICON_DEFS.calendar,
   },
   render: (args) => ({
@@ -184,6 +186,77 @@ export const Highlighted: Story = {
         <h3 style="margin: 0 0 8px;">Frisch aktualisierte Karte</h3>
         <p style="margin: 0;">Farblicher Akzent-Rand (.new-highlight) markiert Echtzeit-Updates von Mitreisenden.</p>
       </Card>
+    `,
+  }),
+};
+
+export const Interactive: Story = {
+  args: {
+    interactive: true,
+  },
+  render: (args) => ({
+    components: { Card },
+    setup() {
+      return { args };
+    },
+    template: `
+      <Card v-bind="args" style="max-width: 400px;">
+        <h3 style="margin: 0 0 8px;">Anklickbare Karte (Hover-Lift)</h3>
+        <p style="margin: 0;">Beim Drüberfahren hebt sich die Karte leicht an (translateY, Skalierung auf 1.015 und verstärkter Schatten).</p>
+      </Card>
+    `,
+  }),
+};
+
+export const Polaroid: Story = {
+  args: {
+    variant: 'polaroid',
+    bannerUrl:
+      'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&auto=format&fit=crop',
+    bannerPosition: 'top',
+  },
+  render: (args) => ({
+    components: { Card },
+    setup() {
+      return { args };
+    },
+    template: `
+      <Card v-bind="args" style="max-width: 280px;">
+        <h3 style="margin: 0 0 4px; font-size: 1rem; color: #1e293b;">Strand von Elafonisi</h3>
+        <p style="margin: 0; font-size: 0.8rem; color: #64748b;">Kreta, Griechenland</p>
+      </Card>
+    `,
+  }),
+};
+
+export const PolaroidGallery: Story = {
+  args: {
+    variant: 'polaroid',
+  },
+  render: (args) => ({
+    components: { Card },
+    setup() {
+      const photos = [
+        { title: 'Strand von Elafonisi', subtitle: 'Kreta, Griechenland' },
+        { title: 'Altstadt Chania', subtitle: 'Hafenpromenade' },
+        { title: 'Balos Lagune', subtitle: 'Türkises Wasser' },
+      ];
+      return { args, photos };
+    },
+    template: `
+      <div style="display: flex; gap: 24px; padding: 24px;">
+        <Card
+          v-for="(p, i) in photos"
+          :key="i"
+          v-bind="args"
+          interactive
+          style="width: 200px;"
+        >
+          <div style="height: 120px; background: var(--color-primary-tint); border-radius: 4px; margin-bottom: 8px;" />
+          <h4 style="margin: 0 0 4px; font-size: 0.95rem;">{{ p.title }}</h4>
+          <p style="margin: 0; font-size: 0.75rem; color: var(--color-text-muted);">{{ p.subtitle }}</p>
+        </Card>
+      </div>
     `,
   }),
 };

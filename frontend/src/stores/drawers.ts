@@ -7,7 +7,7 @@ const CALENDAR_WIDTH_KEY = 'reisotor-drawer-calendar-width';
 
 export const DEFAULT_DRAWER_WIDTH = 360;
 export const MIN_DRAWER_WIDTH = 280;
-export const MAX_DRAWER_WIDTH = 640;
+export const MAX_DRAWER_WIDTH = 860;
 
 function isDesktop() {
   return window.matchMedia('(min-width: 800px)').matches;

@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory, createMemoryHistory } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import { useIconStyleStore } from '../stores/iconStyle';
+import { useUiSettingsStore } from '../stores/uiSettings';
 // Statisch (nicht dynamisch wie die übrigen Routen) importiert: App.vue bindet dieselbe Komponente
 // bereits statisch für die Desktop-Kalender-Schublade ein – ein zusätzlicher dynamischer Import
 // hier würde sie nur unnötig erneut anfordern (Vite kann sie ohnehin nicht in einen separaten Chunk
@@ -112,6 +113,13 @@ const router = createRouter({
       }),
     },
     {
+      path: '/trip/:tripId/accommodation',
+      redirect: (to) => ({
+        path: `/trip/${to.params.tripId}/excursions`,
+        query: { ...to.query, category: 'Unterkunft' },
+      }),
+    },
+    {
       path: '/trip/:tripId/budget',
       name: 'budget',
       component: () => import('../views/BudgetView.vue'),
@@ -157,6 +165,13 @@ const router = createRouter({
         query: { ...to.query, group: 'tours', tourRole: 'arrival,departure,onward' },
       }),
     },
+    {
+      path: '/accommodation',
+      redirect: (to) => ({
+        path: '/excursions',
+        query: { ...to.query, category: 'Unterkunft' },
+      }),
+    },
     { path: '/budget', name: 'legacy-budget', component: () => import('../views/BudgetView.vue') },
     { path: '/notes', name: 'legacy-notes', component: () => import('../views/NotesView.vue') },
     { path: '/diary', name: 'legacy-diary', component: () => import('../views/DiaryView.vue') },
@@ -176,6 +191,7 @@ router.beforeEach(async (to) => {
   // den Push-Präferenzen.
   if (auth.user) {
     useIconStyleStore().load();
+    useUiSettingsStore().load();
   }
 
   if (to.name !== 'login' && !auth.user) {

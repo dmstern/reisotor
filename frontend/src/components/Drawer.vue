@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, watch, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, watch, ref } from 'vue';
 import { MAX_DRAWER_WIDTH, MIN_DRAWER_WIDTH, useDrawersStore } from '../stores/drawers';
 import AppIcon from './AppIcon.vue';
 import ResizeHandle from './ResizeHandle.vue';
@@ -98,14 +98,27 @@ watch(
 const resizing = ref(false);
 let startX = 0;
 let startWidth = 0;
+let activeTarget: HTMLElement | null = null;
+let activePointerId: number | null = null;
 
 function onResizeStart(event: PointerEvent) {
   if (event.button !== 0) return;
   resizing.value = true;
   startX = event.clientX;
   startWidth = props.width;
+  activePointerId = event.pointerId;
+  activeTarget = (event.currentTarget as HTMLElement) ?? (event.target as HTMLElement);
+  if (activeTarget?.setPointerCapture && activePointerId !== null) {
+    try {
+      activeTarget.setPointerCapture(activePointerId);
+    } catch {
+      // Ignorieren falls vom Browser nicht unterstützt
+    }
+  }
+  document.body.classList.add('resizing-col');
   window.addEventListener('pointermove', onResizeMove);
   window.addEventListener('pointerup', onResizeEnd);
+  window.addEventListener('pointercancel', onResizeEnd);
   event.preventDefault();
 }
 
@@ -119,10 +132,26 @@ function onResizeMove(event: PointerEvent) {
 }
 
 function onResizeEnd() {
+  if (!resizing.value) return;
   resizing.value = false;
+  if (activeTarget && activePointerId !== null) {
+    try {
+      activeTarget.releasePointerCapture(activePointerId);
+    } catch {
+      // Ignorieren falls nicht mehr gekoppelt
+    }
+    activePointerId = null;
+    activeTarget = null;
+  }
+  document.body.classList.remove('resizing-col');
   window.removeEventListener('pointermove', onResizeMove);
   window.removeEventListener('pointerup', onResizeEnd);
+  window.removeEventListener('pointercancel', onResizeEnd);
 }
+
+onBeforeUnmount(() => {
+  onResizeEnd();
+});
 </script>
 
 <template>
@@ -473,6 +502,7 @@ function onResizeEnd() {
     top: calc(var(--app-header-height, 56px) + var(--navbar-offset, 0px) + var(--space-4));
     bottom: calc(var(--navbar-bottom-offset, 0px) + var(--space-4));
     width: var(--drawer-handle-gap);
+    z-index: 20;
   }
   .drawer.left .resize-handle {
     left: calc(

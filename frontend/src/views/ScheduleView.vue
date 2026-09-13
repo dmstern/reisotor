@@ -1052,7 +1052,7 @@ function formatDate(date: string) {
           @keydown.enter.prevent="openEntry(entry)"
           @keydown.space.prevent="openEntry(entry)"
         >
-          <div>
+          <div class="item-main">
             <Checkbox
               v-if="entry.kind === 'todo'"
               class="category-icon"
@@ -1091,10 +1091,15 @@ function formatDate(date: string) {
                 @click.stop="toggleCalendarPicker(entry.key, $event)"
               >
                 <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" />
+                <span class="calendar-btn-label">In meinen Kalender</span>
               </Button>
               <Teleport to="body">
                 <template v-if="calendarPickerKey === entry.key">
-                  <PickerMenu :style="calendarPickerStyle" @close="calendarPickerKey = null">
+                  <PickerMenu
+                    :style="calendarPickerStyle"
+                    origin="top-right"
+                    @close="calendarPickerKey = null"
+                  >
                     <DropdownItem
                       :icon="ACTION_ICONS.apple"
                       label="Apple/iPhone"
@@ -1143,6 +1148,7 @@ function formatDate(date: string) {
     <Modal
       :model-value="showAddForm"
       title="Termin anlegen"
+      full-height
       @update:model-value="(v) => !v && closeAddForm()"
     >
       <form class="edit-form" @submit.prevent="addItem">
@@ -1233,13 +1239,17 @@ function formatDate(date: string) {
           </div>
         </fieldset>
         <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
-        <Button type="submit">Hinzufügen</Button>
+        <div class="actions-row">
+          <div class="spacer"></div>
+          <Button type="submit">Hinzufügen</Button>
+        </div>
       </form>
     </Modal>
 
     <Modal
       :model-value="editingItem !== null"
       title="Termin bearbeiten"
+      full-height
       @update:model-value="(v) => !v && closeEditForm()"
     >
       <form class="edit-form" @submit.prevent="submitEdit">
@@ -1572,6 +1582,11 @@ function formatDate(date: string) {
   margin-top: var(--space-3);
 }
 
+.day-detail {
+  container-type: inline-size;
+  container-name: day-detail;
+}
+
 .day-detail h3 {
   color: var(--color-primary-dark);
   margin-top: 0;
@@ -1608,6 +1623,13 @@ function formatDate(date: string) {
   border-left: 3px solid transparent;
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
+}
+
+.item-main {
+  min-width: 0;
+  flex: 1;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .item.clickable {
@@ -1650,8 +1672,25 @@ function formatDate(date: string) {
 
 .calendar-btn {
   padding: 4px 8px;
-  font-size: 0.9rem;
-  line-height: 1;
+  font-size: 0.82rem;
+  font-weight: 500;
+  line-height: 1.2;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.calendar-btn-label {
+  display: none;
+}
+
+@container day-detail (min-width: 320px) {
+  .calendar-btn {
+    padding: 4px 10px;
+  }
+
+  .calendar-btn-label {
+    display: inline;
+  }
 }
 
 .edit-form {
@@ -1678,6 +1717,12 @@ function formatDate(date: string) {
   padding: var(--space-2) var(--space-3) var(--space-3);
   margin: var(--space-1) 0;
   background: var(--color-bg);
+}
+
+.collapsible-fieldset:not(:has(.collapsible-content)) {
+  border-color: transparent;
+  background: transparent;
+  padding: 0;
 }
 
 .collapsible-fieldset legend {
@@ -1732,9 +1777,6 @@ function formatDate(date: string) {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  margin-top: var(--space-2);
-  padding-top: var(--space-2);
-  border-top: 1px solid var(--color-border);
 }
 
 .spacer {

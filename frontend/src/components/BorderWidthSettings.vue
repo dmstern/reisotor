@@ -16,6 +16,10 @@ const BORDER_PRESET_OPTIONS = [
   { value: '4', label: '4px' },
 ];
 
+const isDefault = computed(() => {
+  return uiSettings.borderWidth === DEFAULT_BORDER_WIDTH;
+});
+
 const currentPresetValue = computed(() => {
   const widthStr = String(uiSettings.borderWidth);
   return BORDER_PRESET_OPTIONS.some((o) => o.value === widthStr) ? widthStr : '';
@@ -24,7 +28,21 @@ const currentPresetValue = computed(() => {
 
 <template>
   <Card>
-    <h2>Rahmendicke (Borders)</h2>
+    <div class="card-header-row">
+      <h2>Rahmendicke (Borders)</h2>
+      <Button
+        variant="ghost"
+        size="sm"
+        :icon="ACTION_ICONS.restore"
+        :disabled="isDefault"
+        aria-label="Auf Standard zurücksetzen"
+        :title="isDefault ? 'Bereits auf Standard-Rahmendicke' : 'Auf Standard zurücksetzen'"
+        class="card-reset-btn"
+        @click="uiSettings.borderWidth = DEFAULT_BORDER_WIDTH"
+      >
+        <span class="card-reset-btn-label">Zurücksetzen</span>
+      </Button>
+    </div>
     <p class="hint">
       Passe die Rahmendicke für Karten, Panels, Formularfelder und Buttons an (0 bis 10 Pixel).
     </p>
@@ -68,17 +86,6 @@ const currentPresetValue = computed(() => {
           Beispiel-Button
         </Button>
       </div>
-    </div>
-
-    <div v-if="uiSettings.borderWidth !== DEFAULT_BORDER_WIDTH" class="reset-row">
-      <Button
-        type="button"
-        variant="secondary"
-        size="sm"
-        @click="uiSettings.borderWidth = DEFAULT_BORDER_WIDTH"
-      >
-        <AppIcon :icon="ACTION_ICONS.refresh" :size="14" group="actions" /> Standard (1px)
-      </Button>
     </div>
   </Card>
 </template>
@@ -147,9 +154,22 @@ const currentPresetValue = computed(() => {
   color: var(--color-text);
 }
 
-.reset-row {
-  margin-top: var(--space-3);
+.card-header-row {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.card-header-row h2 {
+  margin: 0;
+}
+
+@media (max-width: 420px) {
+  .card-reset-btn-label {
+    display: none;
+  }
 }
 </style>

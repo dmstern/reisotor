@@ -34,13 +34,13 @@ export const ZIndexHierarchy: Story = {
           zIndex: 'z-index: 100',
           name: 'Floating Action Buttons (FABs)',
           desc: 'Schwebende runde Bearbeiten-/Löschen-Buttons über Fotos & Karten.',
-          color: '#2a7f74',
+          color: '#9141AC',
         },
         {
           zIndex: 'z-index: 10',
           name: 'Sticky Header & Nav (NavBar.vue)',
           desc: 'Obere Navigationsleiste & fixierte Kategorie-Filter.',
-          color: '#3da296',
+          color: '#c061cb',
         },
         {
           zIndex: 'z-index: 1',

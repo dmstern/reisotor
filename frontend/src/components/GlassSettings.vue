@@ -8,7 +8,9 @@ import {
 } from '../stores/uiSettings';
 import SegmentedToggle from './SegmentedToggle.vue';
 import AppIcon from './AppIcon.vue';
+import Button from './primitives/Button.vue';
 import Card from './primitives/Card.vue';
+import { ACTION_ICONS } from '../utils/actionIcons';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 
 const uiSettings = useUiSettingsStore();
@@ -27,6 +29,18 @@ function selectPreset(val: string) {
     uiSettings.glassBlur = preset.blur;
     uiSettings.glassStyle = style;
   }
+}
+
+const isDefault = computed(() => {
+  return (
+    uiSettings.glassStyle === 'glass' &&
+    uiSettings.glassOpacity === 55 &&
+    uiSettings.glassBlur === 6
+  );
+});
+
+function resetGlass() {
+  selectPreset('glass');
 }
 
 function onSliderChange() {
@@ -52,17 +66,29 @@ const previewStyle = computed(() => {
     uiSettings.glassBlur
   );
   return {
-    background: `rgb(255 255 255 / ${opacity})`,
-    backdropFilter: `blur(${blur}px) saturate(180%)`,
-    webkitBackdropFilter: `blur(${blur}px) saturate(180%)`,
-    border: `1px solid rgb(232 226 217 / ${Math.min(1, opacity * 0.9)})`,
+    '--preview-glass-opacity': String(opacity),
+    '--preview-glass-blur': `${blur}px`,
   };
 });
 </script>
 
 <template>
   <Card>
-    <h2>Glass-Effekt & Transparenz</h2>
+    <div class="card-header-row">
+      <h2>Glass-Effekt & Transparenz</h2>
+      <Button
+        variant="ghost"
+        size="sm"
+        :icon="ACTION_ICONS.restore"
+        :disabled="isDefault"
+        aria-label="Auf Standard zurücksetzen"
+        :title="isDefault ? 'Bereits auf Standard-Glas-Effekt' : 'Auf Standard zurücksetzen'"
+        class="card-reset-btn"
+        @click="resetGlass"
+      >
+        <span class="card-reset-btn-label">Zurücksetzen</span>
+      </Button>
+    </div>
     <p class="hint">
       Passe das Erscheinungsbild der schwebenden Navigationsleiste und Overlays an. Wähle zwischen
       Klassischem Glas, mattem Milchglas (Frosted), komplett blickdicht (Solide) oder passe die
@@ -120,31 +146,22 @@ const previewStyle = computed(() => {
     <!-- Interaktiver Live-Vorschau-Kasten -->
     <div class="preview-stage">
       <div class="preview-bg-content">
+        <!-- 1-2 Zeilen über der Navigationsleiste -->
         <div class="bg-row header-row">
-          <span class="preview-tag warning">🔥 Extreme Hitze 36°C</span>
-          <span class="preview-tag success">✓ Budget im Grünen</span>
           <span class="preview-badge">🏖️ Sommerurlaub 2026</span>
+          <span class="preview-tag success">☀️ 28°C Sonnig</span>
         </div>
         <div class="bg-row text-row">
-          <span>🏝️ Strandpromenade • 🍕 Trattoria Bella • 🚲 E-Bike Tour 14:00 Uhr</span>
+          <span>📍 Strandpromenade • 🍕 Trattoria Bella • 🚲 14:00 E-Bike Tour</span>
         </div>
-        <div class="bg-row text-row text-row-sub">
-          <span>🧳 Packliste: Sonnencreme, Badehose, Reisepass, Kamera 📸</span>
+
+        <!-- Bunte Inhalte direkt hinter der schwebenden Leiste zur Visualisierung von Opazität & Blur -->
+        <div class="bg-row text-row underlay-row">
+          <span>🏰 Torre de Belém • 🥐 Pastéis de Nata • 🍷 Vinho Verde</span>
         </div>
-        <div class="bg-row icon-pattern-row">
-          <span>✈️ 🗺️ 🏨 🧭 🌊 ☀️ 🌴 🍹 🎒 🧗 ⛵ 🚴 📍 🎟️ 📸</span>
-        </div>
-        <div class="bg-row text-row pill-underlay-text">
-          <span>📍 Lisboa • 🏰 Torre de Belém • 🥐 Pastéis de Nátas • 🍷 Vinho Verde</span>
-        </div>
-        <div class="bg-row icon-pattern-row pill-underlay-icons">
-          <span>🏖️ 🍕 🍷 🥐 ⛵ 🚴 🏖️ 🍕 🍷 🥐 ⛵ 🚴</span>
-        </div>
-        <div class="bg-row text-row pill-underlay-text">
-          <span>🍕 Trattoria Bella • ☀️ Sonnenschein 28°C • 🗺️ Stadtplan</span>
-        </div>
-        <div class="bg-row icon-pattern-row pill-underlay-icons">
-          <span>✈️ 🗺️ 🏨 🧭 🌊 ☀️ 🌴 🍹 🎒 🧗 ⛵ 🚴 📍 🎟️ 📸</span>
+        <div class="bg-row underlay-sub">
+          <span class="preview-tag warning">📸 Fotospot</span>
+          <span class="text-row">🗺️ Altstadt-Tour • 🎒 4/6 gepackt</span>
         </div>
       </div>
 
@@ -219,7 +236,7 @@ const previewStyle = computed(() => {
 .preview-stage {
   position: relative;
   margin-top: var(--space-4);
-  padding: var(--space-3);
+  padding: var(--space-3) var(--space-3) var(--space-4);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   background: linear-gradient(135deg, #fef3c7 0%, #dbeafe 50%, #fce7f3 100%);
@@ -228,7 +245,7 @@ const previewStyle = computed(() => {
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  min-height: 220px;
+  min-height: 165px;
 }
 
 :root[data-theme='dark'] .preview-stage {
@@ -245,57 +262,46 @@ const previewStyle = computed(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-2);
   width: 100%;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--color-text);
   text-align: center;
   pointer-events: none;
   user-select: none;
+  padding-top: 2px;
 }
 
 .bg-row {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: var(--space-2);
   flex-wrap: wrap;
-  line-height: 1.3;
+  line-height: 1.4;
 }
 
 .text-row {
   color: var(--color-text);
-  font-size: 0.82rem;
-}
-
-.text-row-sub {
-  color: var(--color-text-muted);
-  font-size: 0.78rem;
-}
-
-.pill-underlay-text {
-  font-weight: 700;
-  color: var(--color-primary-dark);
   font-size: 0.85rem;
+}
+
+.underlay-row {
+  font-weight: 600;
+  color: var(--color-primary-dark);
+  font-size: 0.88rem;
   margin-top: 2px;
 }
 
-.pill-underlay-icons {
-  font-size: 1.25rem;
-  letter-spacing: 0.15em;
-  opacity: 1;
-}
-
-.icon-pattern-row {
-  font-size: 1.15rem;
-  letter-spacing: 0.15em;
-  opacity: 0.9;
-  margin-top: 2px;
+.underlay-sub {
+  font-size: 0.8rem;
 }
 
 .preview-tag {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   padding: 2px 8px;
   border-radius: 999px;
   font-size: 0.72rem;
@@ -323,7 +329,7 @@ const previewStyle = computed(() => {
 
 .preview-glass-pill {
   position: absolute;
-  bottom: 16px;
+  bottom: 14px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -332,11 +338,29 @@ const previewStyle = computed(() => {
   padding: 10px 24px;
   border-radius: 999px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
+  background: rgb(255 255 255 / var(--preview-glass-opacity, 0.85));
+  border: 1px solid rgb(232 226 217 / calc(var(--preview-glass-opacity, 0.85) * 0.9));
+  backdrop-filter: blur(var(--preview-glass-blur, 12px)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--preview-glass-blur, 12px)) saturate(180%);
   transition:
     background 0.2s ease,
+    border-color 0.2s ease,
     backdrop-filter 0.2s ease;
   z-index: 2;
   white-space: nowrap;
+}
+
+:root[data-theme='dark'] .preview-glass-pill,
+[data-theme='dark'] .preview-glass-pill {
+  background: rgb(35 34 32 / var(--preview-glass-opacity, 0.85));
+  border-color: rgb(56 53 47 / calc(var(--preview-glass-opacity, 0.85) * 0.9));
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .preview-glass-pill {
+    background: rgb(35 34 32 / var(--preview-glass-opacity, 0.85));
+    border-color: rgb(56 53 47 / calc(var(--preview-glass-opacity, 0.85) * 0.9));
+  }
 }
 
 .preview-pill-item {
@@ -350,5 +374,24 @@ const previewStyle = computed(() => {
 
 .preview-pill-item.active {
   color: var(--color-primary);
+}
+
+.card-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.card-header-row h2 {
+  margin: 0;
+}
+
+@media (max-width: 420px) {
+  .card-reset-btn-label {
+    display: none;
+  }
 }
 </style>

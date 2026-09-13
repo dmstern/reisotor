@@ -5,10 +5,12 @@ import type { PackingItem, User } from '../api/types';
 import { useAuthStore } from '../stores/auth';
 import { useTripStore } from '../stores/trip';
 import { useLiveSyncStore } from '../stores/liveSync';
+import { useUiSettingsStore } from '../stores/uiSettings';
 import PackingItemRow from '../components/PackingItem.vue';
 import Modal from '../components/Modal.vue';
 import Combobox from '../components/Combobox.vue';
 import QuickAddRow from '../components/QuickAddRow.vue';
+import CompletedToggle from '../components/CompletedToggle.vue';
 import FormField from '../components/FormField.vue';
 import Button from '../components/primitives/Button.vue';
 import Select from '../components/primitives/Select.vue';
@@ -21,6 +23,7 @@ import { isFullyPacked } from '../utils/packing';
 const auth = useAuthStore();
 const tripStore = useTripStore();
 const liveSync = useLiveSyncStore();
+const uiSettings = useUiSettingsStore();
 const tripId = tripStore.currentTripId as number;
 const items = ref<PackingItem[]>([]);
 const { showToast } = useToast();
@@ -149,8 +152,11 @@ interface CategoryGroup {
 // innerhalb "Kleidung") – Gegenstände ohne Unterkategorie laufen ohne eigene Zwischenüberschrift
 // direkt unter der Kategorie mit (leerer subcategory-Schlüssel sortiert alphabetisch zuerst).
 function groupByCategory(listItems: PackingItem[]): CategoryGroup[] {
+  const visibleItems = uiSettings.hideCompletedPacking
+    ? listItems.filter((i) => !isFullyPacked(i))
+    : listItems;
   const catMap = new Map<string, PackingItem[]>();
-  for (const item of listItems) {
+  for (const item of visibleItems) {
     const key = item.category?.trim() || 'Sonstiges';
     if (!catMap.has(key)) catMap.set(key, []);
     catMap.get(key)!.push(item);
@@ -169,9 +175,11 @@ function groupByCategory(listItems: PackingItem[]): CategoryGroup[] {
         .map(([subcategory, subItems]) => ({
           subcategory: subcategory || null,
           items: sortWithDoneLast(subItems, isFullyPacked),
-        }));
+        }))
+        .filter((sub) => sub.items.length > 0);
       return { category, subgroups };
-    });
+    })
+    .filter((catGroup) => catGroup.subgroups.length > 0);
 }
 
 // Fortschritt zählt jetzt Exemplare statt Zeilen (ein Gegenstand mit Anzahl 5 zählt für den
@@ -256,6 +264,10 @@ async function quickAdd(list: ListGroup, label: string) {
   <div class="page packing-page" v-if="!loading">
     <h1>Packliste</h1>
 
+    <div class="filter-row">
+      <CompletedToggle v-model="uiSettings.hideCompletedPacking" />
+    </div>
+
     <div class="lists-grid">
       <section class="list-section" v-for="list in lists" :key="list.key">
         <div class="list-header">
@@ -324,6 +336,12 @@ async function quickAdd(list: ListGroup, label: string) {
           </template>
         </div>
         <p v-if="!list.items.length" class="empty">Noch keine Gegenstände auf dieser Liste.</p>
+        <p
+          v-else-if="uiSettings.hideCompletedPacking && !groupByCategory(list.items).length"
+          class="empty"
+        >
+          Alle Gegenstände eingepackt.
+        </p>
       </section>
     </div>
 
@@ -378,16 +396,17 @@ async function quickAdd(list: ListGroup, label: string) {
 </template>
 
 <style scoped>
-/* Mehr Breite als der globale .page-Rahmen (960px), damit die Listen auf Desktop tatsächlich
-   nebeneinander Platz haben (siehe .lists-grid unten) statt trotz Mehrspaltigkeit schmal
-   zusammengequetscht zu wirken. */
-.packing-page {
-  max-width: 1400px;
+.filter-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+  font-size: 0.9rem;
 }
 
 :deep(.quick-add-row) {
   margin-bottom: var(--space-3);
-  padding: var(--space-2) var(--space-3);
 }
 
 .pack-quick-extra {

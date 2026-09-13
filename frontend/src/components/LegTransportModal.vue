@@ -91,18 +91,19 @@ const modalTitle = computed(() => {
   return `Teilstrecke: ${fromName} → ${toName}`;
 });
 
-const hasExistingData = computed(() => {
-  if (!props.leg) return false;
-  return !!(
-    props.leg.transport_type ||
-    props.leg.departure_time ||
-    props.leg.arrival_time ||
-    props.leg.checkin_info ||
-    props.leg.seat ||
-    props.leg.luggage ||
-    props.leg.ticket_link ||
-    props.leg.note ||
-    props.leg.amount
+const canDelete = computed(() => {
+  return (
+    props.leg != null ||
+    !!(
+      form.value.departure_time ||
+      form.value.arrival_time ||
+      form.value.checkin_info ||
+      form.value.seat ||
+      form.value.luggage ||
+      form.value.ticket_link ||
+      form.value.note ||
+      form.value.amount
+    )
   );
 });
 
@@ -141,6 +142,7 @@ function onDelete() {
     :model-value="modelValue"
     :title="modalTitle"
     size="md"
+    full-height
     @update:model-value="(val) => emit('update:modelValue', val)"
   >
     <form class="leg-form" @submit.prevent="onSave">
@@ -236,10 +238,17 @@ function onDelete() {
       </p>
 
       <div class="actions-row">
-        <Button v-if="hasExistingData" type="button" variant="danger" size="sm" @click="onDelete">
-          <AppIcon :icon="ACTION_ICONS.delete" :size="14" group="actions" /> Löschen
-        </Button>
         <div class="spacer"></div>
+        <Button
+          v-if="canDelete"
+          type="button"
+          variant="danger"
+          size="sm"
+          :icon="ACTION_ICONS.delete"
+          @click="onDelete"
+        >
+          Löschen
+        </Button>
         <Button type="button" variant="ghost" @click="emit('update:modelValue', false)">
           Abbrechen
         </Button>
@@ -302,9 +311,6 @@ function onDelete() {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  margin-top: var(--space-2);
-  padding-top: var(--space-2);
-  border-top: 1px solid var(--color-border);
 }
 
 .spacer {

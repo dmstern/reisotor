@@ -101,7 +101,7 @@ defineOptions({
       class="combobox-caret"
       :class="{ open }"
     />
-    <Transition name="fade">
+    <Transition name="dropdown-unfold">
       <ul class="options" v-if="open && filteredOptions.length" role="listbox">
         <li
           v-for="option in filteredOptions"
@@ -190,6 +190,7 @@ defineOptions({
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   box-shadow: var(--shadow-md);
+  transform-origin: top center;
 }
 
 .options li {

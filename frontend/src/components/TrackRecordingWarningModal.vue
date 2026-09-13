@@ -4,6 +4,7 @@ import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
 import ButtonGroup from './primitives/ButtonGroup.vue';
 import Checkbox from './primitives/Checkbox.vue';
+import CheckboxCard from './primitives/CheckboxCard.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { usePersistedRef } from '../composables/usePersistedRef';
 
@@ -55,10 +56,12 @@ function handleConfirm() {
           </p>
         </div>
       </div>
-      <label for="auto-id-1788301175439-10" class="checkbox-option warning-dismiss">
-        <Checkbox id="auto-id-1788301175439-10" v-model="trackWarningDismissed" />
-        Diesen Hinweis nicht mehr anzeigen
-      </label>
+      <CheckboxCard
+        id="auto-id-1788301175439-10"
+        v-model="trackWarningDismissed"
+        label="Diesen Hinweis nicht mehr anzeigen"
+        variant="card"
+      />
       <ButtonGroup>
         <Button type="button" variant="secondary" @click="close"> Abbrechen </Button>
         <Button type="button" @click="handleConfirm"> Aufzeichnung starten </Button>
@@ -97,19 +100,5 @@ function handleConfirm() {
   font-size: 0.88rem;
   line-height: 1.45;
   color: var(--color-text-muted);
-}
-
-.track-warning-modal .warning-dismiss {
-  margin-top: var(--space-2);
-  font-size: 0.85rem;
-  color: var(--color-text-muted);
-}
-
-.checkbox-option {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: 0.85rem;
-  cursor: pointer;
 }
 </style>
