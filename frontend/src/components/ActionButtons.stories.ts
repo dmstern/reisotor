@@ -36,7 +36,7 @@ export const AllActionButtons: Story = {
         <!-- Floating Over Image Buttons -->
         <div>
           <h4 style="margin: 0 0 12px;">Floating Action Buttons (über Bildern)</h4>
-          <div style="position: relative; width: 220px; height: 120px; background: linear-gradient(135deg, #1e96d1, #2a7f74); border-radius: var(--radius-md-squircle); padding: 12px;">
+          <div style="position: relative; width: 220px; height: 120px; background: linear-gradient(135deg, #1e96d1, #9141AC); border-radius: var(--radius-md-squircle); padding: 12px;">
             <EditButton floating />
             <DeleteButton floating style="top: 8px; right: 8px;" />
             <span style="position: absolute; bottom: 12px; left: 12px; color: white; font-weight: bold; font-size: 0.85rem;">Strand Elafonisi</span>

@@ -7,7 +7,7 @@ import { ACTION_ICONS } from '../utils/actionIcons';
 // Läuft eine Standort-Aufzeichnung (stores/trackRecording.ts), soll das app-weit sichtbar sein –
 // nicht nur, solange TripMap.vue gerade gemountet ist (dort startet/stoppt man die Aufzeichnung,
 // aber sie soll auch aus jeder anderen View heraus erkennbar, pausierbar UND beendbar bleiben).
-// Gleiche Stelle im Header wie OfflineIndicator.vue (.status-row, AppHeader.vue). Zentraler Ort für
+// Sitzt im Header (.header-actions, AppHeader.vue). Zentraler Ort für
 // Pause/Fortsetzen (statt z. B. auf der Karte) - Stromsparen bei einem längeren Aufenthalt an einem
 // Ort soll unabhängig davon möglich sein, welche View gerade offen ist.
 const trackRecording = useTrackRecordingStore();

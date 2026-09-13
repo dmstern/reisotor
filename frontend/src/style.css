@@ -95,7 +95,7 @@
   --color-border: #e8e2d9;
   --color-text: #2b2a28;
   --color-text-muted: #726e66;
-  --color-primary: #2a7f74;
+  --color-primary: #9141ac;
   --color-primary-dark: color-mix(in srgb, var(--color-primary) 85%, black);
   --color-accent: #e08e45;
   --color-warning: #d97706;
@@ -130,6 +130,14 @@
   --color-tour-tint: rgba(235, 104, 52, 0.1);
   --color-tour-border: rgba(235, 104, 52, 0.35);
 
+  /* Reise-/Etappen-Farben (Single Source of Truth für Reise-Kacheln, Kalender-Einträge
+     und Reise-Chips – Konsistenz mit utils/scheduleCategory.ts):
+     Grün für Reisen (#1baf7a in Light, #2ecb91 in Dark) */
+  --color-travel: #1baf7a;
+  --color-travel-dark: #158f64;
+  --color-travel-tint: rgba(27, 175, 122, 0.1);
+  --color-travel-border: rgba(27, 175, 122, 0.35);
+
   /* Abwärtskompatible Aliase */
   --color-tour-accent: var(--color-tour);
   --color-tour-accent-dark: var(--color-tour-dark);
@@ -138,6 +146,10 @@
   --color-calendar-tour: var(--color-tour);
   --color-calendar-tour-tint: var(--color-tour-tint);
   --color-calendar-tour-border: var(--color-tour-border);
+
+  --color-calendar-travel: var(--color-travel);
+  --color-calendar-travel-tint: var(--color-travel-tint);
+  --color-calendar-travel-border: var(--color-travel-border);
 
   /* #95 "Eingabe Elemente cleanup": Buttons/Inputs/Selects/Dropdowns bekommen app-weit einen ganz
      leicht kräftigeren Rahmen als das bisherige --color-border (das bleibt für dezentere Trennlinien
@@ -263,7 +275,7 @@
     --color-border: #38352f;
     --color-text: #f2efe9;
     --color-text-muted: #a8a29a;
-    --color-primary: #3da296;
+    --color-primary: #c061cb;
     --color-primary-dark: color-mix(in srgb, var(--color-primary) 85%, white);
     --color-accent: #f0a05a;
     --color-warning: #f59e0b;
@@ -291,6 +303,10 @@
     --color-tour-dark: #eb6834;
     --color-tour-tint: rgba(240, 130, 84, 0.16);
     --color-tour-border: rgba(240, 130, 84, 0.4);
+    --color-travel: #2ecb91;
+    --color-travel-dark: #1baf7a;
+    --color-travel-tint: rgba(46, 203, 145, 0.16);
+    --color-travel-border: rgba(46, 203, 145, 0.4);
     --color-scheduled: #52b8ea;
     --color-scheduled-tint: rgba(82, 184, 234, 0.14);
     --color-calendar-appointment: #a8a8a4;
@@ -317,7 +333,7 @@
   --color-border: #38352f;
   --color-text: #f2efe9;
   --color-text-muted: #a8a29a;
-  --color-primary: #3da296;
+  --color-primary: #c061cb;
   --color-primary-dark: color-mix(in srgb, var(--color-primary) 85%, white);
   --color-accent: #f0a05a;
   --color-danger: #e0685a;
@@ -344,6 +360,10 @@
   --color-tour-dark: #eb6834;
   --color-tour-tint: rgba(240, 130, 84, 0.16);
   --color-tour-border: rgba(240, 130, 84, 0.4);
+  --color-travel: #2ecb91;
+  --color-travel-dark: #1baf7a;
+  --color-travel-tint: rgba(46, 203, 145, 0.16);
+  --color-travel-border: rgba(46, 203, 145, 0.4);
   --color-calendar-appointment: #a8a8a4;
   --color-calendar-appointment-tint: rgba(168, 168, 164, 0.16);
   --color-calendar-appointment-border: rgba(168, 168, 164, 0.4);
@@ -367,8 +387,8 @@
   --color-border: #e8e2d9;
   --color-text: #2b2a28;
   --color-text-muted: #726e66;
-  --color-primary: #2a7f74;
-  --color-primary-dark: #1f6059;
+  --color-primary: #9141ac;
+  --color-primary-dark: color-mix(in srgb, var(--color-primary) 85%, black);
   --color-accent: #e08e45;
   --color-warning: #d97706;
   --color-danger: #c1503f;
@@ -378,7 +398,7 @@
   --color-warning-tint: #fffbeb;
   --color-warning-dark: #b45309;
   --color-success: #3f8f5c;
-  --color-primary-tint: #eaf3f1;
+  --color-primary-tint: color-mix(in srgb, var(--color-primary) 14%, var(--color-surface));
   --color-hover: #f4f1ec;
   --color-highlight: #fff4e8;
   --color-highlight-border: #f0d3ac;
@@ -388,6 +408,10 @@
   --color-tour-dark: #d95826;
   --color-tour-tint: rgba(235, 104, 52, 0.1);
   --color-tour-border: rgba(235, 104, 52, 0.35);
+  --color-travel: #1baf7a;
+  --color-travel-dark: #158f64;
+  --color-travel-tint: rgba(27, 175, 122, 0.1);
+  --color-travel-border: rgba(27, 175, 122, 0.35);
   --color-border-strong: #d5cabc;
   --color-button-edge: rgba(0, 0, 0, 0.16);
   --color-scheduled: #1e96d1;

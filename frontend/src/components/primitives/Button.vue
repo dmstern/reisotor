@@ -221,7 +221,7 @@ const btnClasses = computed(() => [
 
 /* Secondary Button: Schatten erst beim Hovern (Feedback #4) */
 .btn--secondary {
-  background: transparent;
+  background: var(--color-hover);
   color: var(--color-primary);
   border: var(--ui-border-width, 1px) solid var(--color-border-strong);
   box-shadow: none;

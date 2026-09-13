@@ -48,6 +48,12 @@ import { formatDurationShort } from '../utils/trackGeometry';
 import { usePersistedRef } from '../composables/usePersistedRef';
 import { useIsDesktop } from '../composables/useIsDesktop';
 import { hashHighlightId } from '../utils/hashHighlight';
+import {
+  buildTourSerpentineRows,
+  buildLoopSegments,
+  computeTourLoopPath,
+  type TourSerpentineRow,
+} from '../utils/tourSerpentine';
 import SpotCard from '../components/SpotCard.vue';
 import ExcursionCard from '../components/ExcursionCard.vue';
 import SegmentedToggle from '../components/SegmentedToggle.vue';
@@ -65,7 +71,6 @@ import CoverImagePicker from '../components/CoverImagePicker.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import FileAttachments from '../components/FileAttachments.vue';
 import DraftStatusBar from '../components/DraftStatusBar.vue';
-import EditButton from '../components/EditButton.vue';
 import LegTransportModal from '../components/LegTransportModal.vue';
 import RichTextEditor from '../components/RichTextEditor.vue';
 import { isEmptyRichText } from '../utils/richText';
@@ -494,6 +499,8 @@ const emptySpotForm = () => ({
   // Touren, denen dieser Spot zugeordnet ist – Titel statt Ids, siehe TourAssignPicker.vue/
   // syncSpotTours() unten (creatable: ein neuer Titel legt beim Speichern eine neue Tour an).
   tourTitles: [] as string[],
+  // Direktes Kalender-Datum bei Neuanlage
+  scheduledDate: '',
 });
 const spotForm = ref(emptySpotForm());
 const spotMapsLinkResolved = ref<boolean | null>(null);
@@ -624,6 +631,13 @@ function getTourDate(title: string): string | null {
     (e) => e.title.toLowerCase() === title.trim().toLowerCase()
   );
   return tour?.date ?? null;
+}
+
+function isTourTravel(title: string): boolean {
+  const tour = excursionsStore.excursions.find(
+    (e) => e.title.toLowerCase() === title.trim().toLowerCase()
+  );
+  return !!tour?.role;
 }
 
 function removeTourTitle(title: string) {
@@ -914,6 +928,11 @@ function applyRouteQuery() {
 
   if (q.category) {
     categoryFilter.value = String(q.category).split(',').filter(Boolean);
+    if (q.group !== 'tours') {
+      groupMode.value = 'category';
+    }
+  } else {
+    categoryFilter.value = [];
   }
   if (q.status) {
     statusFilter.value = String(q.status)
@@ -921,6 +940,8 @@ function applyRouteQuery() {
       .filter((s): s is 'planned' | 'unplanned' | 'done' =>
         ['planned', 'unplanned', 'done'].includes(s)
       );
+  } else {
+    statusFilter.value = [];
   }
 
   nextTick(() => {
@@ -966,7 +987,7 @@ function updateRouteQuery() {
     newEntries.some(([k, v]) => route.query[k] !== v);
 
   if (isDiff) {
-    router.replace({ query: newQuery });
+    router.replace({ query: newQuery, hash: route.hash });
   }
 }
 
@@ -986,6 +1007,22 @@ function itemDone(item: SpotsGroupItem): boolean {
 }
 
 const searchQuery = ref('');
+
+const hasActiveFilters = computed(() => {
+  return (
+    searchQuery.value.trim().length > 0 ||
+    categoryFilter.value.length > 0 ||
+    statusFilter.value.length > 0 ||
+    tourRoleFilter.value.length > 0
+  );
+});
+
+function clearAllFilters() {
+  searchQuery.value = '';
+  categoryFilter.value = [];
+  statusFilter.value = [];
+  tourRoleFilter.value = [];
+}
 
 const allSpotItems = computed<SpotsGroupItem[]>(() =>
   spotsStore.spots.map((spot): SpotsGroupItem => ({ kind: 'spot', spot }))
@@ -1181,12 +1218,24 @@ function excursionForGroupTitle(title: string): Excursion | null {
 // läuft die scrollenden Vorfahren selbst hoch – landet also automatisch in .spots-col, sobald die
 // Container-Query (≥720px) diese Spalte selbst scrollen lässt, sonst in der normalen Seite.
 // Ziel kann sowohl eine reine Überschrift (Kategorie-Gruppierung) als auch eine ExcursionCard
-// (Touren-Gruppierung, siehe excursionForGroupTitle oben) sein - el.$el löst dafür wie bei
+function resolveDomElement(el: Element | ComponentPublicInstance | null): HTMLElement | null {
+  if (!el) return null;
+  if (el instanceof HTMLElement) return el;
+  let dom: Node | null = '$el' in el ? (el.$el as Node | null) : null;
+  while (dom && !(dom instanceof HTMLElement)) {
+    dom = dom.nextSibling;
+  }
+  return dom instanceof HTMLElement ? dom : null;
+}
+
+// categoryRefs merkt sich das DOM-Element zu jeder Kategorie-Gruppe. Das Element kann entweder
+// ein nativer Header (h2.category-header, bei Standard-Gruppierung) oder eine ExcursionCard
+// (Touren-Gruppierung, siehe excursionForGroupTitle oben) sein - resolveDomElement löst dafür wie bei
 // setSpotRef unten auf das tatsächliche DOM-Element der Komponente auf.
 const categoryRefs = new Map<string, HTMLElement>();
 function setCategoryRef(category: string, el: Element | ComponentPublicInstance | null) {
-  const domEl = el && '$el' in el ? (el.$el as HTMLElement) : (el as HTMLElement | null);
-  if (domEl instanceof HTMLElement) categoryRefs.set(category, domEl);
+  const domEl = resolveDomElement(el);
+  if (domEl) categoryRefs.set(category, domEl);
   else categoryRefs.delete(category);
 }
 // Ref auf die eingebettete Karte (TripMap.vue): scrollToCategory() lässt bei Klick auf eine
@@ -1412,8 +1461,8 @@ function _nudgeRepaint() {
 
 const spotRefs = new Map<number, HTMLElement>();
 function setSpotRef(id: number, el: Element | ComponentPublicInstance | null) {
-  const domEl = el && '$el' in el ? (el.$el as HTMLElement) : (el as HTMLElement | null);
-  if (domEl instanceof HTMLElement) spotRefs.set(id, domEl);
+  const domEl = resolveDomElement(el);
+  if (domEl) spotRefs.set(id, domEl);
   else spotRefs.delete(id);
 }
 function scrollToSpot(id: number) {
@@ -1452,39 +1501,157 @@ interface TourLineData {
   pathD: string;
   dots: { x: number; y: number }[];
 }
-const TOUR_LINE_X = 10;
-const TOUR_LINE_WIDTH = 20;
+
 const tourLines = reactive(new Map<number, TourLineData>());
 const tourWrapRefs = new Map<number, HTMLElement>();
+const tourWrapWidths = reactive(new Map<number, number>());
 let tourLineResizeObserver: ResizeObserver | null = null;
+
+function getTourCols(excursionId: number): number {
+  const w = tourWrapWidths.get(excursionId) ?? 0;
+  if (w >= 1200) return 4;
+  if (w >= 880) return 3;
+  if (w >= 560) return 2;
+  return 1;
+}
+
+function getTourRows(excursion: Excursion, items: Array<{ spot: Spot }>): TourSerpentineRow[] {
+  const cols = getTourCols(excursion.id);
+  return buildTourSerpentineRows(items, cols, excursion, getTourLeg);
+}
+
+function getLegTooltip(leg: ExcursionLeg, fromSpot: Spot, toSpot: Spot): string {
+  const parts: string[] = [];
+  if (leg.transport_type) parts.push(leg.transport_type);
+  if (leg.departure_time || leg.arrival_time) {
+    parts.push(`${leg.departure_time || '?'}–${leg.arrival_time || '?'} Uhr`);
+  }
+  const dur = getLegDuration(leg);
+  if (dur) parts.push(`(${dur})`);
+  if (leg.amount != null) parts.push(`${leg.amount.toFixed(2).replace('.', ',')} €`);
+  parts.push(`• Von: ${fromSpot.title} → Nach: ${toSpot.title}`);
+  parts.push('• Klicken zum Bearbeiten');
+  return parts.join(' ');
+}
 
 function recomputeTourLine(excursionId: number) {
   const wrapEl = tourWrapRefs.get(excursionId);
-  const listEl = wrapEl?.querySelector<HTMLElement>(':scope > .tour-station-list');
-  const items = listEl
-    ? (Array.from(listEl.children).filter((el) =>
-        el.classList.contains('staggered-spot')
-      ) as HTMLElement[])
-    : [];
-  if (!items.length) {
+  if (!wrapEl) {
     tourLines.delete(excursionId);
     return;
   }
-  const dots = items.map((item) => ({ x: TOUR_LINE_X, y: item.offsetTop + item.offsetHeight / 2 }));
-  const points = [{ x: TOUR_LINE_X, y: 0 }, ...dots];
-  let d = `M ${points[0].x} ${points[0].y}`;
-  for (let i = 0; i < points.length - 1; i++) {
-    const p1 = points[i];
-    const p2 = points[i + 1];
-    const dy = p2.y - p1.y;
-    const controlX = (p1.x + p2.x) / 2 - dy * 0.15;
-    const controlY = (p1.y + p2.y) / 2;
-    d += ` Q ${controlX} ${controlY} ${p2.x} ${p2.y}`;
+  const spotEls = Array.from(wrapEl.querySelectorAll<HTMLElement>('.staggered-spot'));
+  if (!spotEls.length) {
+    tourLines.delete(excursionId);
+    return;
   }
+
+  const wrapRect = wrapEl.getBoundingClientRect();
+  const spotBoxes = spotEls.map((el) => {
+    const r = el.getBoundingClientRect();
+    const x = r.left - wrapRect.left;
+    const y = r.top - wrapRect.top;
+    return {
+      x,
+      y,
+      top: y,
+      width: r.width,
+      height: r.height,
+      cx: x + r.width / 2,
+      cy: y + r.height / 2,
+      right: x + r.width,
+      bottom: y + r.height,
+    };
+  });
+
+  const dots: { x: number; y: number }[] = [];
+  let d = '';
+
+  // Gestrichelte Verbindungslinie von der Tour-Card zur ersten Spot-Card
+  const groupEl = wrapEl.closest('.category-group');
+  const tourCardEl = groupEl?.querySelector<HTMLElement>('.tour-group-card');
+  if (tourCardEl && spotBoxes.length > 0) {
+    const cardRect = tourCardEl.getBoundingClientRect();
+    const cardBottom = cardRect.bottom - wrapRect.top;
+    const firstSpot = spotBoxes[0];
+    const hOffset = 32;
+    const startX = firstSpot.cx - hOffset;
+    const startY = cardBottom;
+    const endX = firstSpot.cx + hOffset;
+    const endY = firstSpot.top;
+
+    if (endY > startY) {
+      dots.push({ x: startX, y: startY });
+      dots.push({ x: endX, y: endY });
+
+      const dy = endY - startY;
+      const cp1X = startX;
+      const cp1Y = startY + dy * 0.45;
+      const cp2X = endX;
+      const cp2Y = endY - dy * 0.45;
+      d += ` M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`;
+    }
+  }
+
+  for (let i = 0; i < spotBoxes.length - 1; i++) {
+    const a = spotBoxes[i];
+    const b = spotBoxes[i + 1];
+    const isSameRow = Math.abs(a.cy - b.cy) < Math.min(a.height, b.height) * 0.75;
+
+    if (isSameRow) {
+      // Horizontal in derselben Zeile: Startpunkt deutlich weiter oben als Endpunkt,
+      // damit die gestrichelte Verbindungslinie nicht vom mittig sitzenden Teilstrecken-Button überdeckt wird.
+      const vOffset = 54;
+      const isLtr = a.cx < b.cx;
+      const startX = isLtr ? a.right : a.x;
+      const startY = a.cy - vOffset;
+      const endX = isLtr ? b.x : b.right;
+      const endY = b.cy + vOffset;
+      dots.push({ x: startX, y: startY });
+      dots.push({ x: endX, y: endY });
+      const dx = endX - startX;
+      const cp1X = startX + dx * 0.45;
+      const cp1Y = startY;
+      const cp2X = endX - dx * 0.45;
+      const cp2Y = endY;
+      d += ` M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`;
+    } else {
+      // Zeilenumbruch bzw. untereinander: a ist oben, b ist unten
+      // Vertikal: Startpunkt weiter links als Endpunkt
+      const hOffset = 32;
+      const startX = a.cx - hOffset;
+      const startY = a.bottom;
+      const endX = b.cx + hOffset;
+      const endY = b.top;
+      dots.push({ x: startX, y: startY });
+      dots.push({ x: endX, y: endY });
+      const dy = endY - startY;
+      const cp1X = startX;
+      const cp1Y = startY + dy * 0.45;
+      const cp2X = endX;
+      const cp2Y = endY - dy * 0.45;
+      d += ` M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`;
+    }
+  }
+
+  // Zirkel-/Rückweglinien für Touren, bei denen ein Spot mehrfach besucht wird
+  const excursion = excursionsStore.excursions.find((e) => e.id === excursionId);
+  if (excursion) {
+    const domSpotIds = spotEls.map((el) => Number(el.dataset.spotId));
+    for (const [fromIdx, toIdx] of buildLoopSegments(excursion.spot_ids, domSpotIds)) {
+      const a = spotBoxes[fromIdx];
+      const b = spotBoxes[toIdx];
+      if (!a || !b) continue;
+      const loop = computeTourLoopPath(a, b, spotBoxes, wrapEl.clientWidth);
+      d += loop.d;
+      dots.push(...loop.dots);
+    }
+  }
+
   tourLines.set(excursionId, {
-    width: TOUR_LINE_WIDTH,
-    height: dots[dots.length - 1].y,
-    pathD: d,
+    width: Math.max(wrapEl.clientWidth, 100),
+    height: Math.max(wrapEl.clientHeight, spotBoxes[spotBoxes.length - 1]?.bottom ?? 200),
+    pathD: d.trim(),
     dots,
   });
 }
@@ -1498,13 +1665,30 @@ function setTourWrapRef(excursionId: number, el: Element | ComponentPublicInstan
   // auslöst: eine Endlosschleife, die den Tab einfriert. Nur bei tatsächlichem Element-Wechsel
   // (Mount/Unmount/Ersetzung) neu beobachten/berechnen.
   if (domEl === previous) return;
-  if (previous) tourLineResizeObserver?.unobserve(previous);
+  if (previous) {
+    tourLineResizeObserver?.unobserve(previous);
+    const prevCard = previous
+      .closest('.category-group')
+      ?.querySelector<HTMLElement>('.tour-group-card');
+    if (prevCard) tourLineResizeObserver?.unobserve(prevCard);
+  }
   if (domEl instanceof HTMLElement) {
     tourWrapRefs.set(excursionId, domEl);
     tourLineResizeObserver?.observe(domEl);
+    const tourCardEl = domEl
+      .closest('.category-group')
+      ?.querySelector<HTMLElement>('.tour-group-card');
+    if (tourCardEl) {
+      tourLineResizeObserver?.observe(tourCardEl);
+    }
+    const initialWidth = Math.round(domEl.clientWidth);
+    if (tourWrapWidths.get(excursionId) !== initialWidth) {
+      tourWrapWidths.set(excursionId, initialWidth);
+    }
     nextTick(() => recomputeTourLine(excursionId));
   } else {
     tourWrapRefs.delete(excursionId);
+    tourWrapWidths.delete(excursionId);
     tourLines.delete(excursionId);
   }
 }
@@ -1512,11 +1696,33 @@ function setTourWrapRef(excursionId: number, el: Element | ComponentPublicInstan
 onMounted(() => {
   tourLineResizeObserver = new ResizeObserver((entries) => {
     for (const entry of entries) {
-      const id = [...tourWrapRefs.entries()].find(([, el]) => el === entry.target)?.[0];
-      if (id != null) recomputeTourLine(id);
+      const id = [...tourWrapRefs.entries()].find(([, el]) => {
+        if (el === entry.target) return true;
+        const tourCardEl = el
+          .closest('.category-group')
+          ?.querySelector<HTMLElement>('.tour-group-card');
+        return tourCardEl === entry.target;
+      })?.[0];
+      if (id != null) {
+        const wrapEl = tourWrapRefs.get(id);
+        if (wrapEl) {
+          const newWidth = Math.round(wrapEl.clientWidth);
+          if (tourWrapWidths.get(id) !== newWidth) {
+            tourWrapWidths.set(id, newWidth);
+            nextTick(() => recomputeTourLine(id));
+          }
+        }
+        recomputeTourLine(id);
+      }
     }
   });
-  for (const [_id, el] of tourWrapRefs) tourLineResizeObserver.observe(el);
+  for (const [_id, el] of tourWrapRefs) {
+    tourLineResizeObserver.observe(el);
+    const tourCardEl = el
+      .closest('.category-group')
+      ?.querySelector<HTMLElement>('.tour-group-card');
+    if (tourCardEl) tourLineResizeObserver.observe(tourCardEl);
+  }
 });
 onUnmounted(() => tourLineResizeObserver?.disconnect());
 
@@ -1533,16 +1739,6 @@ function getLegDuration(leg: ExcursionLeg): string | null {
   return mins != null ? formatTravelDuration(mins) : null;
 }
 
-function hasLegDetails(leg: ExcursionLeg): boolean {
-  return !!(
-    leg.checkin_info ||
-    leg.seat ||
-    leg.luggage ||
-    leg.ticket_link ||
-    (leg.amount != null && leg.paid_by_user_id)
-  );
-}
-
 function getTourLayover(
   excursion: Excursion,
   items: Array<{ spot: Spot }>,
@@ -1556,13 +1752,6 @@ function getTourLayover(
   const outLeg = getTourLeg(excursion, currSpotId, nextSpotId);
   if (!inLeg?.arrival_time || !outLeg?.departure_time) return null;
   return travelDurationMinutes(inLeg.arrival_time, outLeg.departure_time);
-}
-
-const expandedLegKey = ref<string | null>(null);
-
-function toggleLegExpanded(key: string, excursionId: number) {
-  expandedLegKey.value = expandedLegKey.value === key ? null : key;
-  nextTick(() => recomputeTourLine(excursionId));
 }
 
 const editingCardLeg = ref<{
@@ -1666,9 +1855,16 @@ watch(spotGroups, () =>
 // Nur für Touren verwendet (groupMode === 'tours').
 const expandedExcursionId = ref<number | null>(null);
 
-watch(expandedExcursionId, (newId) => {
+watch(expandedExcursionId, (newId, oldId) => {
   if (newId != null) {
     nextTick(() => recomputeTourLine(newId));
+    setTimeout(() => recomputeTourLine(newId), 320);
+    setTimeout(() => recomputeTourLine(newId), 420);
+  }
+  if (oldId != null) {
+    nextTick(() => recomputeTourLine(oldId));
+    setTimeout(() => recomputeTourLine(oldId), 320);
+    setTimeout(() => recomputeTourLine(oldId), 420);
   }
 });
 
@@ -1997,15 +2193,6 @@ const currentSheetHeightPx = computed(
   () => sheetDragHeightPx.value ?? sheetHeightPx(sheetState.value)
 );
 
-// isDesktop (window.matchMedia, siehe useIsDesktop.ts) reicht hier NICHT: ob .spots-col als Sheet-
-// Overlay über der Karte liegt oder als eigene Spalte daneben, entscheidet weiter unten im CSS ein
-// @container app-main (min-width: 720px)-Query gegen die tatsächlich gerenderte Breite von
-// .app-main - die kann schmaler als das Fenster sein (z. B. bei geöffneter Kalender-Schublade), auch
-// bei Fensterbreiten oberhalb der isDesktop-Schwelle von 800px. Ohne dieses eigene Signal wurde
-// mapCoveredBottomPx in genau dieser Konstellation fälschlich auf 0 gezwungen, obwohl das Sheet
-// weiterhin als Overlay rendert - fokussierte Punkte/Routen landeten dann zu weit unten, teils
-// hinter der Sheet-Kante.
-const appMainWidth = ref<number | null>(null);
 const spotsColRightPx = ref(0);
 let appMainResizeObserver: ResizeObserver | null = null;
 let spotsColResizeObserver: ResizeObserver | null = null;
@@ -2013,8 +2200,7 @@ let spotsColResizeObserver: ResizeObserver | null = null;
 onMounted(() => {
   const appMainEl = document.querySelector('.app-main');
   if (appMainEl) {
-    appMainResizeObserver = new ResizeObserver((entries) => {
-      appMainWidth.value = entries[0]?.contentRect.width ?? null;
+    appMainResizeObserver = new ResizeObserver(() => {
       updateSpotsColRight();
     });
     appMainResizeObserver.observe(appMainEl);
@@ -2040,27 +2226,28 @@ onUnmounted(() => {
   window.removeEventListener('resize', updateSpotsColRight);
 });
 
-// Desktop- vs. Mobil-Modus: solange Spots-Drawer und Kalender-Drawer nebeneinander passen, sind
-// wir im Desktop-Modus und die vollflächige Karte wird über die gesamte Bildschirmbreite angezeigt.
-// Auf Mobil (<800px) ist die Spots-Liste immer ein Bottom-Sheet-Overlay. Auf Desktop (≥800px)
-// reicht der Platz für beide Schubladen nebeneinander, solange die Restbreite von .app-main
-// mindestens die Standardbreite des Spots-Drawers inklusive Puffer aufnehmen kann (gespiegelt in
-// der @container app-main (min-width: 500px)-Regel unten).
-const availableAppMainWidth = computed(() => {
-  if (appMainWidth.value !== null) return appMainWidth.value;
-  const calWidth = isDesktop.value && drawers.calendarOpen ? drawers.calendarWidth + 44 : 0;
-  return window.innerWidth - calWidth;
-});
-const isSheetOverlayMode = computed(() => {
-  if (!isDesktop.value) return true;
-  return availableAppMainWidth.value < 500;
-});
+// Mobil vs. Desktop: Auf Mobil (<800px) ist die Spots-Liste ein Bottom-Sheet-Overlay über der Karte.
+// Auf Desktop (≥800px) ist der Spots-Drawer permanent als eigenständige Spalte sichtbar,
+// unabhängig davon, ob oder wie weit der Kalender-Drawer geöffnet ist.
+const isSheetOverlayMode = computed(() => !isDesktop.value);
 const mapCoveredBottomPx = computed(() =>
   isSheetOverlayMode.value ? currentSheetHeightPx.value : 0
 );
-const mapCoveredLeftPx = computed(() => (isSheetOverlayMode.value ? 0 : spotsColRightPx.value));
+const mapCoveredLeftPx = computed(() => (!isDesktop.value ? 0 : spotsColRightPx.value));
 
 watch([isSheetOverlayMode, spotsColWidth, tripMapRef], () => nextTick(updateSpotsColRight));
+watch(
+  isSheetOverlayMode,
+  (overlay) => {
+    if (!overlay) {
+      if (sheetState.value === 'collapsed') {
+        sheetState.value = 'partial';
+      }
+      clearSheetHeightOverride();
+    }
+  },
+  { immediate: true }
+);
 watch(
   () => [drawers.calendarOpen, drawers.calendarWidth],
   () => {
@@ -2102,6 +2289,44 @@ watch(
     (drawers.mapFocusExcursionId != null ? `excursion-${drawers.mapFocusExcursionId}` : null),
   (focus) => {
     if (focus != null && sheetState.value === 'collapsed') sheetState.value = 'partial';
+  }
+);
+
+const dayFocusHighlightedIds = ref<Set<number>>(new Set());
+
+watch(
+  () => drawers.mapFocusDate,
+  (date) => {
+    dayFocusHighlightedIds.value = new Set();
+    if (date) {
+      const matchingExcursions = excursionsStore.excursions.filter((e) => e.date === date);
+      const matchingSpotIds = scheduleStore.items
+        .filter((s) => s.date === date && s.spot_id != null)
+        .map((s) => s.spot_id as number);
+
+      const next = new Set<number>();
+      for (const e of matchingExcursions) {
+        next.add(e.id);
+      }
+      for (const sid of matchingSpotIds) {
+        next.add(sid);
+      }
+      dayFocusHighlightedIds.value = next;
+
+      nextTick(() => {
+        if (groupMode.value === 'tours' && matchingExcursions.length > 0) {
+          const firstExcursion = matchingExcursions[0];
+          const catRef = categoryRefs.get(`tour-${firstExcursion.id}`);
+          if (catRef) {
+            catRef.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            return;
+          }
+        }
+        if (matchingSpotIds.length > 0) {
+          scrollToSpot(matchingSpotIds[0]);
+        }
+      });
+    }
   }
 );
 
@@ -2241,6 +2466,14 @@ async function addSpot() {
     return;
   }
   await syncSpotTours(result.id, spotForm.value.tourTitles);
+  if (spotForm.value.scheduledDate) {
+    await scheduleStore.create({
+      trip_id: tripId,
+      date: spotForm.value.scheduledDate,
+      title: result.title,
+      spot_id: result.id,
+    });
+  }
   closeSpotForm();
 }
 
@@ -2266,6 +2499,7 @@ function startEditSpot(spot: Spot) {
     amount: spot.amount != null ? String(spot.amount) : '',
     paid_by_user_id: spot.paid_by_user_id != null ? String(spot.paid_by_user_id) : '',
     tourTitles: tourTitlesFor(spot.id),
+    scheduledDate: spotScheduledDates.value.get(spot.id) ?? '',
   };
   editSpotMapsLinkResolved.value = null;
   editSpotManualPin.value = null;
@@ -2313,7 +2547,11 @@ async function deleteEditingSpot() {
       <AppIcon :icon="SECTION_ICON_DEFS.map" :size="22" group="navigation" /> Karte
     </h1>
     <div class="layout" :style="{ '--spots-col-width': spotsColWidth + 'px' }">
-      <div ref="sheetEl" class="spots-col" :class="[sheetState, { dragging: sheetDragging }]">
+      <div
+        ref="sheetEl"
+        class="spots-col"
+        :class="[isSheetOverlayMode ? sheetState : null, { dragging: sheetDragging }]"
+      >
         <div class="sheet-handle-row">
           <IconButton
             variant="secondary"
@@ -2442,6 +2680,27 @@ async function deleteEditingSpot() {
             </h2>
             <div class="header-actions">
               <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                class="record-button"
+                :class="{ recording: trackRecording.recording }"
+                :title="trackRecording.recording ? 'Aufzeichnung beenden' : 'Weg aufzeichnen'"
+                :aria-label="trackRecording.recording ? 'Aufzeichnung beenden' : 'Weg aufzeichnen'"
+                @click="onRecordButtonClick"
+              >
+                <AppIcon
+                  :icon="
+                    trackRecording.recording ? ACTION_ICONS.recordStop : ACTION_ICONS.recordStart
+                  "
+                  :size="14"
+                  group="actions"
+                />
+                <span class="record-button__label">
+                  {{ trackRecording.recording ? 'Beenden' : 'Aufzeichnen' }}
+                </span>
+              </Button>
+              <Button
                 class="add-button"
                 :aria-label="groupMode === 'tours' ? 'Neue Tour' : 'Neuer Spot'"
                 @click="groupMode === 'tours' ? openExcursionForm() : (showSpotForm = true)"
@@ -2456,33 +2715,12 @@ async function deleteEditingSpot() {
                 </span>
               </Button>
             </div>
-            <!-- Zweiter Einstiegspunkt zum ⏺️/⏹️-Button auf TripMap.vue (Start dort mit Sichtbarkeits-
-               Auswahl/Tour-Kopplung): der Karten-Button steckt in einer bereits vollen
-               Button-Spalte, die auf Mobil beim Standard-Sheet-Zustand teils vom Bottom-Sheet
-               verdeckt wird (siehe dortiger CSS-Kommentar zu .share-location-btn) - "Standort
-               aufzeichnen" ist aber gerade das unterwegs/mobil wichtigste neue Kern-Feature, braucht
-               daher einen immer erreichbaren zweiten Zugang (siehe DESIGN.md, Abschnitt "Desktop UND
-               Mobile"). Startet direkt privat/ungekoppelt statt eines eigenen Menüs - Teilen/Tour-
-               Kopplung bleiben über den Karten-Button bzw. den Sichtbarkeits-Umschalter in der
-               Aufzeichnungen-Liste erreichbar. -->
           </div>
-          <div class="subheader">
-            <Button
-              type="button"
-              variant="secondary"
-              class="record-button"
-              :class="{ recording: trackRecording.recording }"
-              @click="onRecordButtonClick"
-            >
-              <AppIcon
-                :icon="
-                  trackRecording.recording ? ACTION_ICONS.recordStop : ACTION_ICONS.recordStart
-                "
-                :size="15"
-                group="actions"
-              />
-              {{ trackRecording.recording ? 'Aufzeichnung beenden' : 'Weg Aufzeichnen' }}
-            </Button>
+          <div class="subheader" v-if="trackRecording.recording">
+            <div class="active-recording-banner">
+              <span class="recording-pulse-dot" aria-hidden="true"></span>
+              <span class="recording-banner-text">Standortaufzeichnung aktiv</span>
+            </div>
           </div>
 
           <!-- Standort-Aufzeichnungen (stores/tracks.ts): eigene, geteilte und mit anderen geteilte
@@ -3114,6 +3352,15 @@ async function deleteEditingSpot() {
                         </template>
                       </Teleport>
                     </div>
+                    <div v-else class="new-spot-schedule-row">
+                      <FormField icon="date" label="Direkt für Datum einplanen (optional)">
+                        <Input
+                          type="date"
+                          v-model="spotForm.scheduledDate"
+                          placeholder="Datum auswählen"
+                        />
+                      </FormField>
+                    </div>
 
                     <!-- Tour zuordnen (Combobox, in beiden Modi: Neu + Edit) -->
                     <TourAssignPicker
@@ -3134,15 +3381,20 @@ async function deleteEditingSpot() {
                     "
                     class="assign-chips"
                   >
-                    <!-- Tour-Chips: orange (--color-tour) -->
+                    <!-- Tour-Chips (orange) & Reise-Chips (grün) -->
                     <span
                       v-for="title in activeSpotForm.tourTitles"
                       :key="'tour-' + title"
-                      class="assign-chip assign-chip--tour tour-chip"
+                      class="assign-chip tour-chip"
+                      :class="isTourTravel(title) ? 'assign-chip--travel' : 'assign-chip--tour'"
                     >
                       <span class="assign-chip-action">
                         <AppIcon
-                          :icon="SECTION_ICON_DEFS.excursions"
+                          :icon="
+                            isTourTravel(title)
+                              ? SECTION_ICON_DEFS.travel
+                              : SECTION_ICON_DEFS.excursions
+                          "
                           :size="12"
                           group="navigation"
                         />
@@ -3156,8 +3408,8 @@ async function deleteEditingSpot() {
                       <button
                         type="button"
                         class="assign-chip-remove"
-                        :aria-label="`Von Tour '${title}' entfernen`"
-                        title="Von Tour entfernen"
+                        :aria-label="`Von '${title}' entfernen`"
+                        title="Entfernen"
                         @click="removeTourTitle(title)"
                       >
                         <AppIcon :icon="ACTION_ICONS.close" :size="11" group="actions" />
@@ -3312,7 +3564,9 @@ async function deleteEditingSpot() {
               :ref="(el) => setCategoryRef(grp.category, el)"
               class="tour-group-card"
               :excursion="grp.excursion"
-              :highlighted="highlightedIds.has(grp.excursion.id)"
+              :highlighted="
+                highlightedIds.has(grp.excursion.id) || dayFocusHighlightedIds.has(grp.excursion.id)
+              "
               :creator-label="creatorLabel(grp.excursion.created_by)"
               :like-count="excursionLikesFor(grp.excursion.id).length"
               :liked="excursionLikedByMe(grp.excursion.id)"
@@ -3349,7 +3603,18 @@ async function deleteEditingSpot() {
               <div class="tour-station-accordion-inner">
                 <div
                   class="tour-station-wrap"
-                  :class="{ 'is-tour': grp.excursion }"
+                  :class="{
+                    'is-tour': grp.excursion,
+                    'single-col': grp.excursion && getTourCols(grp.excursion.id) === 1,
+                  }"
+                  :style="{
+                    '--tour-theme-color': grp.excursion?.role
+                      ? 'var(--color-travel)'
+                      : 'var(--color-tour)',
+                    '--tour-theme-tint': grp.excursion?.role
+                      ? 'var(--color-travel-tint)'
+                      : 'var(--color-tour-tint)',
+                  }"
                   :ref="(el) => grp.excursion && setTourWrapRef(grp.excursion.id, el)"
                 >
                   <svg
@@ -3365,21 +3630,262 @@ async function deleteEditingSpot() {
                       :key="i"
                       :cx="dot.x"
                       :cy="dot.y"
-                      r="5"
+                      r="4.5"
                     />
                   </svg>
-                  <TransitionGroup
-                    tag="div"
-                    name="list"
-                    :class="grp.excursion ? 'tour-station-list' : 'grid cards'"
+
+                  <!-- Touren: Schlangen-Layout (Serpentine / S-Kurve) mit adaptiver Spaltenanzahl -->
+                  <div
+                    v-if="grp.excursion"
+                    class="tour-serpentine-wrap"
+                    :style="{
+                      '--tour-cols': getTourCols(grp.excursion.id),
+                      '--tour-conn-width': '76px',
+                    }"
                   >
+                    <div
+                      v-for="row in getTourRows(grp.excursion, grp.items)"
+                      :key="`row-${grp.excursion.id}-${row.rowIndex}`"
+                      class="tour-serpentine-row-wrap"
+                    >
+                      <div
+                        class="tour-serpentine-row"
+                        :class="{
+                          'is-rtl': row.isRtl,
+                          'is-ltr': !row.isRtl,
+                          'single-col': getTourCols(grp.excursion.id) === 1,
+                        }"
+                      >
+                        <template v-for="cell in row.cells" :key="cell.key">
+                          <!-- Spot-Kachel -->
+                          <div v-if="cell.type === 'spot'" class="tour-spot-cell">
+                            <SpotCard
+                              :ref="(el) => setSpotRef(cell.spot.id, el)"
+                              class="staggered-spot"
+                              :data-spot-id="cell.spot.id"
+                              :style="[
+                                {
+                                  '--stagger-idx': cell.globalIndex,
+                                  '--stagger-total': grp.items.length,
+                                },
+                              ]"
+                              :spot="cell.spot"
+                              :highlighted="
+                                highlightedIds.has(cell.spot.id) ||
+                                dayFocusHighlightedIds.has(cell.spot.id)
+                              "
+                              :expanded="expandedSpotId === cell.spot.id"
+                              :scheduled-date="spotScheduledDates.get(cell.spot.id) ?? null"
+                              :creator-label="creatorLabel(cell.spot.created_by)"
+                              :payer-label="creatorLabel(cell.spot.paid_by_user_id)"
+                              :like-count="spotsStore.likeCountFor(cell.spot.id)"
+                              :liked="spotsStore.likedByMe(cell.spot.id, auth.user?.id)"
+                              :comments="spotCommentItemsFor(cell.spot.id)"
+                              :group-mode="groupMode"
+                              :tour-options="allTourTitles"
+                              :has-multiple-members="users.length > 1"
+                              @edit="startEditSpot"
+                              @toggle-like="toggleSpotLike(cell.spot.id)"
+                              @submit-comment="
+                                (content) => submitSpotComment(cell.spot.id, content)
+                              "
+                              @remove-comment="removeSpotComment"
+                              @open="onSpotCardOpen(cell.spot)"
+                              @close="onSpotCardClose"
+                              @show-on-map="onSpotShowOnMap(cell.spot)"
+                              @assign-tour="(title) => assignSpotToTourTitle(cell.spot.id, title)"
+                            />
+                            <!-- Umsteige-/Aufenthaltszeit (falls Zwischenstation) -->
+                            <div
+                              v-if="
+                                cell.globalIndex > 0 &&
+                                cell.globalIndex < grp.items.length - 1 &&
+                                getTourLayover(grp.excursion, grp.items, cell.globalIndex) != null
+                              "
+                              class="tour-layover-wrap"
+                            >
+                              <span class="tour-layover-badge">
+                                ⏱️
+                                {{
+                                  formatTravelDuration(
+                                    getTourLayover(grp.excursion, grp.items, cell.globalIndex)!
+                                  )
+                                }}
+                                Umstiegszeit
+                              </span>
+                            </div>
+                          </div>
+
+                          <!-- Horizontaler Teilstrecken-Verbinder ("hochkant" zwischen 2 Kacheln) -->
+                          <div
+                            v-else-if="cell.type === 'leg-horizontal'"
+                            class="tour-leg-connector is-horizontal"
+                            :class="{ 'is-rtl': cell.isRtl }"
+                          >
+                            <!-- Teilstrecke existiert -->
+                            <div
+                              v-if="cell.leg"
+                              class="tour-leg-pill is-horizontal-leg"
+                              tabindex="0"
+                              role="button"
+                              :title="getLegTooltip(cell.leg, cell.fromSpot, cell.toSpot)"
+                              :aria-label="`Teilstrecke von ${cell.fromSpot.title} nach ${cell.toSpot.title} bearbeiten`"
+                              @click.stop="
+                                openCardLegModal(grp.excursion, cell.fromSpot, cell.toSpot)
+                              "
+                              @keydown.enter.self="
+                                openCardLegModal(grp.excursion, cell.fromSpot, cell.toSpot)
+                              "
+                              @keydown.space.self.prevent="
+                                openCardLegModal(grp.excursion, cell.fromSpot, cell.toSpot)
+                              "
+                            >
+                              <span class="leg-pill-icon">
+                                {{ travelTypeIcon(cell.leg.transport_type ?? null) }}
+                              </span>
+                              <span v-if="getLegDuration(cell.leg)" class="leg-pill-duration">
+                                {{ getLegDuration(cell.leg) }}
+                              </span>
+                              <span v-else-if="cell.leg.departure_time" class="leg-pill-duration">
+                                {{ cell.leg.departure_time }}
+                              </span>
+                              <span v-if="cell.leg.amount != null" class="leg-pill-cost">
+                                {{ cell.leg.amount.toFixed(2).replace('.', ',') }} €
+                              </span>
+                              <span class="leg-pill-arrow" aria-hidden="true">
+                                {{ cell.isRtl ? '←' : '→' }}
+                              </span>
+                            </div>
+
+                            <!-- Keine Teilstrecke erfasst -> kleiner Add-Button -->
+                            <button
+                              v-else
+                              type="button"
+                              class="tour-leg-add-btn is-horizontal-leg"
+                              title="Teilstrecke erfassen"
+                              :aria-label="`Teilstrecke zwischen ${cell.fromSpot.title} und ${cell.toSpot.title} erfassen`"
+                              @click.stop="
+                                openCardLegModal(grp.excursion, cell.fromSpot, cell.toSpot)
+                              "
+                            >
+                              <span v-if="cell.isRtl" class="leg-pill-arrow" aria-hidden="true"
+                                >←</span
+                              >
+                              <AppIcon :icon="ACTION_ICONS.add" :size="12" group="actions" />
+                              <span class="leg-add-text">Teilstrecke</span>
+                              <span v-if="!cell.isRtl" class="leg-pill-arrow" aria-hidden="true"
+                                >→</span
+                              >
+                            </button>
+                          </div>
+                        </template>
+                      </div>
+
+                      <!-- Zeilenumbruch-Verbinder (Zentriert zwischen den Kacheln auf der gestrichelten Linie) -->
+                      <div
+                        v-if="row.rowBreak"
+                        class="tour-row-break"
+                        :class="[
+                          'align-' + row.rowBreak.alignSide,
+                          { 'single-col': getTourCols(grp.excursion.id) === 1 },
+                        ]"
+                      >
+                        <div class="tour-row-break-inner">
+                          <!-- Teilstrecke existiert -->
+                          <div
+                            v-if="row.rowBreak.leg"
+                            :key="`leg-${row.rowBreak.fromSpot.id}-${row.rowBreak.toSpot.id}`"
+                            class="tour-leg-pill is-row-break"
+                            tabindex="0"
+                            role="button"
+                            :title="
+                              getLegTooltip(
+                                row.rowBreak.leg,
+                                row.rowBreak.fromSpot,
+                                row.rowBreak.toSpot
+                              )
+                            "
+                            :aria-label="`Teilstrecke von ${row.rowBreak.fromSpot.title} nach ${row.rowBreak.toSpot.title} bearbeiten`"
+                            @click.stop="
+                              openCardLegModal(
+                                grp.excursion,
+                                row.rowBreak.fromSpot,
+                                row.rowBreak.toSpot
+                              )
+                            "
+                            @keydown.enter.self="
+                              openCardLegModal(
+                                grp.excursion,
+                                row.rowBreak.fromSpot,
+                                row.rowBreak.toSpot
+                              )
+                            "
+                            @keydown.space.self.prevent="
+                              openCardLegModal(
+                                grp.excursion,
+                                row.rowBreak.fromSpot,
+                                row.rowBreak.toSpot
+                              )
+                            "
+                          >
+                            <span class="leg-pill-arrow" aria-hidden="true">↓</span>
+                            <span class="leg-pill-icon">
+                              {{ travelTypeIcon(row.rowBreak.leg.transport_type ?? null) }}
+                            </span>
+                            <span v-if="row.rowBreak.leg.transport_type" class="leg-pill-type">
+                              {{ row.rowBreak.leg.transport_type }}
+                            </span>
+                            <span v-if="getLegDuration(row.rowBreak.leg)" class="leg-pill-duration">
+                              {{ getLegDuration(row.rowBreak.leg) }}
+                            </span>
+                            <span
+                              v-else-if="row.rowBreak.leg.departure_time"
+                              class="leg-pill-duration"
+                            >
+                              {{ row.rowBreak.leg.departure_time }}
+                            </span>
+                            <span v-if="row.rowBreak.leg.amount != null" class="leg-pill-cost">
+                              {{ row.rowBreak.leg.amount.toFixed(2).replace('.', ',') }} €
+                            </span>
+                          </div>
+
+                          <!-- Keine Teilstrecke am Umbruch erfasst -->
+                          <div v-else class="tour-leg-add-wrap">
+                            <button
+                              type="button"
+                              class="tour-leg-add-btn is-row-break"
+                              title="Teilstrecke erfassen"
+                              :aria-label="`Teilstrecke zwischen ${row.rowBreak.fromSpot.title} und ${row.rowBreak.toSpot.title} erfassen`"
+                              @click.stop="
+                                openCardLegModal(
+                                  grp.excursion,
+                                  row.rowBreak.fromSpot,
+                                  row.rowBreak.toSpot
+                                )
+                              "
+                            >
+                              <span class="leg-pill-arrow" aria-hidden="true">↓</span>
+                              <AppIcon :icon="ACTION_ICONS.add" :size="12" group="actions" />
+                              <span class="leg-add-text">Teilstrecke erfassen</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Nicht-Touren (z. B. "Ohne Tour"): Standard-Grid -->
+                  <TransitionGroup v-else tag="div" name="list" class="grid cards">
                     <template v-for="(item, index) in grp.items" :key="`spot-${item.spot.id}`">
                       <SpotCard
                         :ref="(el) => setSpotRef(item.spot.id, el)"
                         class="staggered-spot"
                         :style="[{ '--stagger-idx': index, '--stagger-total': grp.items.length }]"
                         :spot="item.spot"
-                        :highlighted="highlightedIds.has(item.spot.id)"
+                        :highlighted="
+                          highlightedIds.has(item.spot.id) ||
+                          dayFocusHighlightedIds.has(item.spot.id)
+                        "
                         :expanded="expandedSpotId === item.spot.id"
                         :scheduled-date="spotScheduledDates.get(item.spot.id) ?? null"
                         :creator-label="creatorLabel(item.spot.created_by)"
@@ -3399,327 +3905,6 @@ async function deleteEditingSpot() {
                         @show-on-map="onSpotShowOnMap(item.spot)"
                         @assign-tour="(title) => assignSpotToTourTitle(item.spot.id, title)"
                       />
-                      <!-- Umsteige-/Aufenthaltszeit an Zwischenstationen -->
-                      <div
-                        v-if="
-                          grp.excursion &&
-                          index > 0 &&
-                          index < grp.items.length - 1 &&
-                          getTourLayover(grp.excursion, grp.items, index) != null
-                        "
-                        :key="`layover-${item.spot.id}-${index}`"
-                        class="tour-layover-wrap"
-                      >
-                        <span class="tour-layover-badge">
-                          ⏱️
-                          {{
-                            formatTravelDuration(getTourLayover(grp.excursion, grp.items, index)!)
-                          }}
-                          Umstiegszeit
-                        </span>
-                      </div>
-                      <!-- Teilstrecke zwischen dieser und der nächsten Station -->
-                      <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
-                      <div
-                        v-if="
-                          grp.excursion &&
-                          index < grp.items.length - 1 &&
-                          getTourLeg(grp.excursion, item.spot.id, grp.items[index + 1].spot.id)
-                        "
-                        :key="`leg-${item.spot.id}-${grp.items[index + 1].spot.id}`"
-                        class="tour-leg-card"
-                        :class="{
-                          'is-expanded':
-                            expandedLegKey ===
-                            `${grp.excursion.id}-${item.spot.id}-${grp.items[index + 1].spot.id}`,
-                        }"
-                        tabindex="0"
-                        role="button"
-                        :aria-expanded="
-                          expandedLegKey ===
-                          `${grp.excursion.id}-${item.spot.id}-${grp.items[index + 1].spot.id}`
-                        "
-                        @click="
-                          toggleLegExpanded(
-                            `${grp.excursion.id}-${item.spot.id}-${grp.items[index + 1].spot.id}`,
-                            grp.excursion.id
-                          )
-                        "
-                        @keydown.enter.self="
-                          toggleLegExpanded(
-                            `${grp.excursion.id}-${item.spot.id}-${grp.items[index + 1].spot.id}`,
-                            grp.excursion.id
-                          )
-                        "
-                        @keydown.space.self.prevent="
-                          toggleLegExpanded(
-                            `${grp.excursion.id}-${item.spot.id}-${grp.items[index + 1].spot.id}`,
-                            grp.excursion.id
-                          )
-                        "
-                      >
-                        <EditButton
-                          v-if="
-                            expandedLegKey ===
-                            `${grp.excursion.id}-${item.spot.id}-${grp.items[index + 1].spot.id}`
-                          "
-                          floating
-                          @click="
-                            openCardLegModal(grp.excursion, item.spot, grp.items[index + 1].spot)
-                          "
-                        />
-                        <div class="tour-leg-header">
-                          <span class="tour-leg-type">
-                            {{
-                              travelTypeIcon(
-                                getTourLeg(
-                                  grp.excursion,
-                                  item.spot.id,
-                                  grp.items[index + 1].spot.id
-                                )!.transport_type ?? null
-                              )
-                            }}
-                            {{
-                              getTourLeg(grp.excursion, item.spot.id, grp.items[index + 1].spot.id)!
-                                .transport_type || 'Teilstrecke'
-                            }}
-                          </span>
-                          <span
-                            v-if="
-                              getTourLeg(grp.excursion, item.spot.id, grp.items[index + 1].spot.id)!
-                                .departure_time ||
-                              getTourLeg(grp.excursion, item.spot.id, grp.items[index + 1].spot.id)!
-                                .arrival_time
-                            "
-                            class="tour-leg-times"
-                          >
-                            <AppIcon :icon="FORM_FIELD_ICONS.time" :size="13" group="formFields" />
-                            {{
-                              getTourLeg(grp.excursion, item.spot.id, grp.items[index + 1].spot.id)!
-                                .departure_time || '?'
-                            }}–{{
-                              getTourLeg(grp.excursion, item.spot.id, grp.items[index + 1].spot.id)!
-                                .arrival_time || '?'
-                            }}
-                            Uhr
-                            <span
-                              v-if="
-                                getLegDuration(
-                                  getTourLeg(
-                                    grp.excursion,
-                                    item.spot.id,
-                                    grp.items[index + 1].spot.id
-                                  )!
-                                )
-                              "
-                              class="tour-leg-duration"
-                            >
-                              ({{
-                                getLegDuration(
-                                  getTourLeg(
-                                    grp.excursion,
-                                    item.spot.id,
-                                    grp.items[index + 1].spot.id
-                                  )!
-                                )
-                              }})
-                            </span>
-                          </span>
-                          <span
-                            v-if="
-                              getTourLeg(grp.excursion, item.spot.id, grp.items[index + 1].spot.id)!
-                                .amount != null
-                            "
-                            class="tour-leg-cost"
-                          >
-                            {{
-                              getTourLeg(grp.excursion, item.spot.id, grp.items[index + 1].spot.id)!
-                                .amount!.toFixed(2)
-                                .replace('.', ',')
-                            }}
-                            €
-                          </span>
-                        </div>
-                        <div
-                          class="tour-leg-accordion"
-                          :class="{
-                            'is-expanded':
-                              expandedLegKey ===
-                              `${grp.excursion.id}-${item.spot.id}-${grp.items[index + 1].spot.id}`,
-                          }"
-                          :inert="
-                            expandedLegKey !==
-                            `${grp.excursion.id}-${item.spot.id}-${grp.items[index + 1].spot.id}`
-                          "
-                        >
-                          <div class="tour-leg-accordion-inner accordion-stagger">
-                            <div
-                              v-if="
-                                hasLegDetails(
-                                  getTourLeg(
-                                    grp.excursion,
-                                    item.spot.id,
-                                    grp.items[index + 1].spot.id
-                                  )!
-                                )
-                              "
-                              class="tour-leg-details"
-                            >
-                              <span
-                                v-if="
-                                  getTourLeg(
-                                    grp.excursion,
-                                    item.spot.id,
-                                    grp.items[index + 1].spot.id
-                                  )!.checkin_info
-                                "
-                                class="tour-leg-detail"
-                              >
-                                <AppIcon
-                                  :icon="FORM_FIELD_ICONS.time"
-                                  :size="12"
-                                  group="formFields"
-                                />
-                                {{
-                                  getTourLeg(
-                                    grp.excursion,
-                                    item.spot.id,
-                                    grp.items[index + 1].spot.id
-                                  )!.checkin_info
-                                }}
-                              </span>
-                              <span
-                                v-if="
-                                  getTourLeg(
-                                    grp.excursion,
-                                    item.spot.id,
-                                    grp.items[index + 1].spot.id
-                                  )!.seat
-                                "
-                                class="tour-leg-detail"
-                              >
-                                Sitz:
-                                {{
-                                  getTourLeg(
-                                    grp.excursion,
-                                    item.spot.id,
-                                    grp.items[index + 1].spot.id
-                                  )!.seat
-                                }}
-                              </span>
-                              <span
-                                v-if="
-                                  getTourLeg(
-                                    grp.excursion,
-                                    item.spot.id,
-                                    grp.items[index + 1].spot.id
-                                  )!.luggage
-                                "
-                                class="tour-leg-detail"
-                              >
-                                Gepäck:
-                                {{
-                                  getTourLeg(
-                                    grp.excursion,
-                                    item.spot.id,
-                                    grp.items[index + 1].spot.id
-                                  )!.luggage
-                                }}
-                              </span>
-                              <a
-                                v-if="
-                                  getTourLeg(
-                                    grp.excursion,
-                                    item.spot.id,
-                                    grp.items[index + 1].spot.id
-                                  )!.ticket_link
-                                "
-                                :href="
-                                  getTourLeg(
-                                    grp.excursion,
-                                    item.spot.id,
-                                    grp.items[index + 1].spot.id
-                                  )!.ticket_link!
-                                "
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                class="tour-leg-link"
-                                @click.stop
-                              >
-                                <AppIcon
-                                  :icon="FORM_FIELD_ICONS.link"
-                                  :size="12"
-                                  group="formFields"
-                                />
-                                Ticket/Buchung
-                              </a>
-                              <span
-                                v-if="
-                                  getTourLeg(
-                                    grp.excursion,
-                                    item.spot.id,
-                                    grp.items[index + 1].spot.id
-                                  )!.amount != null &&
-                                  getTourLeg(
-                                    grp.excursion,
-                                    item.spot.id,
-                                    grp.items[index + 1].spot.id
-                                  )!.paid_by_user_id
-                                "
-                                class="tour-leg-detail"
-                              >
-                                bezahlt von
-                                {{
-                                  creatorLabel(
-                                    getTourLeg(
-                                      grp.excursion,
-                                      item.spot.id,
-                                      grp.items[index + 1].spot.id
-                                    )!.paid_by_user_id ?? null
-                                  )
-                                }}
-                              </span>
-                            </div>
-                            <p
-                              v-if="
-                                getTourLeg(
-                                  grp.excursion,
-                                  item.spot.id,
-                                  grp.items[index + 1].spot.id
-                                )!.note
-                              "
-                              class="tour-leg-note"
-                            >
-                              {{
-                                getTourLeg(
-                                  grp.excursion,
-                                  item.spot.id,
-                                  grp.items[index + 1].spot.id
-                                )!.note
-                              }}
-                            </p>
-                            <FileAttachments
-                              v-if="
-                                getTourLeg(
-                                  grp.excursion,
-                                  item.spot.id,
-                                  grp.items[index + 1].spot.id
-                                )!.id
-                              "
-                              domain="excursion_legs"
-                              :entity-id="
-                                getTourLeg(
-                                  grp.excursion,
-                                  item.spot.id,
-                                  grp.items[index + 1].spot.id
-                                )!.id!
-                              "
-                              :editable="false"
-                              @click.stop
-                            />
-                          </div>
-                        </div>
-                      </div>
                     </template>
                   </TransitionGroup>
                 </div>
@@ -3748,13 +3933,26 @@ async function deleteEditingSpot() {
               Bearbeiten eines Spots über "Tour zuordnen".
             </p>
           </section>
-          <p v-if="!spotGroups.length" class="empty">
-            <template v-if="groupMode === 'tours' && tourRoleFilter.length">
-              Keine An- oder Abreise mit diesem Filter gefunden.
-            </template>
-            <template v-else-if="groupMode === 'tours'"> Noch keine Touren angelegt. </template>
-            <template v-else> Noch keine Spots angelegt. </template>
-          </p>
+          <div v-if="!spotGroups.length" class="empty-state-wrap">
+            <p class="empty">
+              <template v-if="hasActiveFilters">
+                Keine {{ groupMode === 'tours' ? 'Touren' : 'Spots' }} für die aktuellen Filter oder
+                Suchbegriffe gefunden.
+              </template>
+              <template v-else-if="groupMode === 'tours'"> Noch keine Touren angelegt. </template>
+              <template v-else> Noch keine Spots angelegt. </template>
+            </p>
+            <Button
+              v-if="hasActiveFilters"
+              variant="secondary"
+              size="sm"
+              class="clear-filters-btn"
+              @click="clearAllFilters"
+            >
+              <AppIcon :icon="ACTION_ICONS.close" :size="13" group="actions" />
+              <span>Filter zurücksetzen</span>
+            </Button>
+          </div>
 
           <!-- Hinweis-Modal für Standort-Aufzeichnung (#230) -->
           <TrackRecordingWarningModal
@@ -3885,6 +4083,7 @@ async function deleteEditingSpot() {
      Dadurch liegt der zugeklappte Drawer immer oberhalb der unteren NavBar und wird nie von ihr verdeckt (#303). */
   bottom: calc(var(--space-2) + var(--navbar-bottom-offset, 0px));
   z-index: 5;
+  pointer-events: auto;
   display: flex;
   flex-direction: column;
   background: var(--color-surface);
@@ -3973,12 +4172,14 @@ async function deleteEditingSpot() {
 }
 
 @container spots-col (max-width: 450px) {
-  .add-button {
+  .add-button,
+  .record-button {
     padding: var(--btn-padding-y, 11px);
     border-radius: 999px;
   }
 
-  .add-button__label {
+  .add-button__label,
+  .record-button__label {
     display: none;
   }
 }
@@ -4046,6 +4247,7 @@ async function deleteEditingSpot() {
 .spots-col-body {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   /* Verhindert, dass der Browser die Scrollposition beim Auf-/Zuklappen einer Spot-Karte (SpotCard.vue,
      ändert ihre Höhe drastisch) eigenmächtig "korrigiert" (CSS Scroll Anchoring, standardmäßig an) -
      kollidiert hier mit der View-Transition (#90, siehe animateSpotExpand() im Script): während die
@@ -4115,110 +4317,118 @@ async function deleteEditingSpot() {
    geöffneten Schubladen auf Desktop liegt) macht ein enges 2-Spalten-Grid weniger Sinn als eine
    große Karte mit Sheet darüber. Die feinere "wie schmal darf .spots-col selbst werden"-Frage
    (Kompakt-Zeile, Ein-Spalten-Raster) bleibt weiterhin ein separates @container(spots-col)-Query. */
-/* Desktop: solange Spots-Drawer und Kalender-Drawer nebeneinander passen (≥500px in .app-main),
-   sind wir im Desktop-Modus. Die Karte (.map-col) ist auf Desktop stets vollflächig über die
-   gesamte Bildschirmbreite (position:fixed von left:0 bis right:0), sodass hinter der schwebenden
+/* Desktop: Die Karte (.map-col) ist auf Desktop stets vollflächig über die gesamte
+   Bildschirmbreite (position:fixed von left:0 bis right:0), sodass hinter der schwebenden
    Kalender-Schublade nie ein grauer Hintergrund entsteht, sondern die Karte durchgängig sichtbar
-   bleibt. */
+   bleibt – unabhängig davon, wie breit der Kalender ausgeklappt ist.
+   Die Spots-Spalte (.spots-col) ist auf Desktop stets permanent sichtbar und schwebt links im
+   Hauptbereich (.app-main), ausgerichtet an derselben Ober- und Unterkante wie die Kalender-Schublade
+   (top: var(--space-4), bottom: calc(var(--navbar-bottom-offset) + var(--space-4))).
+   Das mobile Bottom-Sheet (inkl. Anfasser und Ein-/Ausklappstufen) greift nur auf Mobilgeräten (<800px). */
 @media (min-width: 800px) {
-  @container app-main (min-width: 500px) {
-    /* .page bleibt wie auf Mobil absolute und vollbild, Karte füllt den Bereich aus */
-    .page {
-      max-width: none;
-      margin: 0;
-      padding: 0;
-      position: relative;
-    }
+  /* .page bleibt wie auf Mobil absolute und vollbild, Karte füllt den Bereich aus */
+  .page {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    position: relative;
+  }
 
-    /* Auf Desktop ist der Titel visuell ausgeblendet, bleibt aber für Screenreader lesbar */
-    .page-title {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
-      overflow: hidden;
-      clip: rect(0, 0, 0, 0);
-      white-space: nowrap;
-      border-width: 0;
-    }
+  /* Auf Desktop ist der Titel visuell ausgeblendet, bleibt aber für Screenreader lesbar */
+  .page-title {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
 
-    .layout {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-    }
+  .layout {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
 
-    .map-col {
-      position: fixed;
-      top: calc(var(--app-header-height, 56px) + var(--navbar-offset, 0px));
-      bottom: var(--navbar-bottom-offset, 0px);
-      left: 0;
-      right: 0;
-      z-index: 1;
-      pointer-events: auto;
-    }
+  .map-col {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1;
+    pointer-events: auto;
+  }
 
-    .spots-col {
-      position: absolute;
-      left: var(--space-4);
-      top: var(--space-4);
-      bottom: var(--space-4);
-      height: auto;
-      max-height: none;
-      z-index: 5;
-      background: var(--color-surface);
-      border-radius: var(--radius-md-squircle);
-      box-shadow: var(--shadow-md);
-      width: var(--spots-col-width);
-      max-width: calc(100% - var(--space-4) * 2);
-      min-width: min(var(--spots-col-width), 280px);
-      pointer-events: auto;
+  .spots-col,
+  .spots-col.collapsed,
+  .spots-col.partial,
+  .spots-col.full {
+    position: absolute;
+    left: var(--space-4);
+    top: var(--space-4);
+    bottom: calc(var(--navbar-bottom-offset, 0px) + var(--space-4));
+    height: auto;
+    max-height: none;
+    z-index: 5;
+    background: var(--color-surface);
+    border-radius: var(--radius-md-squircle);
+    corner-shape: squircle;
+    box-shadow: var(--shadow-md);
+    width: var(--spots-col-width);
+    /* Hält mindestens 84px Freiraum am rechten Rand von .app-main frei (entspricht den
+       Kartenwerkzeugen .fit-btn: 44px Button + 24px var(--space-4) Rand + 16px Abstand),
+       sodass .spots-col die Bedienelemente auf schmalen Desktop-Bildschirmen bei ausgeklapptem
+       Kalender nie überlagert. */
+    max-width: calc(100% - var(--space-4) - 84px);
+    min-width: min(var(--spots-col-width), 280px);
+    pointer-events: auto;
 
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 
-      /* Override mobile transforms and bottom offsets */
-      transform: none;
-      transition: none;
-    }
+    /* Override mobile transforms and bottom offsets */
+    transform: none;
+    transition: none;
+  }
 
-    /* .spots-col ist auf Desktop undurchsichtig, keine speziellen Hintergrundanpassungen nötig. */
-    .spots-col .category-nav-wrap {
-      background: var(--color-surface);
-      --category-nav-bg: var(--color-surface);
-    }
+  /* .spots-col ist auf Desktop undurchsichtig, keine speziellen Hintergrundanpassungen nötig. */
+  .spots-col .category-nav-wrap {
+    background: var(--color-surface);
+    --category-nav-bg: var(--color-surface);
+  }
 
-    .sheet-handle-row {
-      display: none;
-    }
+  .sheet-handle-row {
+    display: none;
+  }
 
-    .spots-col-body {
-      flex: 1;
-      overflow-y: auto;
-      padding: var(--space-3);
-    }
+  .spots-col-body,
+  .spots-col.collapsed .spots-col-body,
+  .spots-col.partial .spots-col-body,
+  .spots-col.full .spots-col-body {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: var(--space-3);
+    touch-action: auto;
+  }
 
-    .spots-col.collapsed .spots-col-body,
-    .spots-col.partial .spots-col-body {
-      overflow-y: auto;
-      touch-action: auto;
-    }
-
-    .col-resize-handle {
-      display: flex;
-      position: absolute;
-      left: calc(
-        var(--space-4) + min(var(--spots-col-width), calc(100% - var(--space-4) * 2)) +
-          (var(--space-4) - var(--drawer-handle-gap, 12px)) / 2
-      );
-      top: var(--space-4);
-      bottom: var(--space-4);
-      height: auto;
-      z-index: 10;
-      pointer-events: auto;
-    }
+  .col-resize-handle {
+    display: flex;
+    position: absolute;
+    left: calc(
+      var(--space-4) + min(var(--spots-col-width), calc(100% - var(--space-4) - 84px)) +
+        (var(--space-4) - var(--drawer-handle-gap, 12px)) / 2
+    );
+    top: var(--space-4);
+    bottom: calc(var(--navbar-bottom-offset, 0px) + var(--space-4));
+    height: auto;
+    z-index: 10;
+    pointer-events: auto;
   }
 }
 
@@ -4304,12 +4514,59 @@ async function deleteEditingSpot() {
   gap: var(--space-2);
 }
 
+.record-button {
+  gap: var(--space-1);
+}
+
 /* Gleicher Rec-Ton wie TrackRecordingIndicator.vue's .recording-pill, damit "läuft gerade" app-weit
    dieselbe Farbe trägt. */
 .header-actions button.recording {
   background: var(--color-danger);
   border-color: var(--color-danger);
   color: #fff;
+}
+
+.subheader {
+  display: flex;
+  flex-direction: column;
+}
+
+.active-recording-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 6px 12px;
+  background: color-mix(in srgb, var(--color-danger) 10%, var(--color-surface));
+  border: 1px solid color-mix(in srgb, var(--color-danger) 30%, var(--color-border));
+  border-radius: var(--radius-sm);
+  color: var(--color-danger);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  margin-top: var(--space-2);
+}
+
+.recording-pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--color-danger);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-danger) 70%, transparent);
+  animation: recording-pulse 1.5s infinite;
+}
+
+@keyframes recording-pulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-danger) 70%, transparent);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--color-danger) 0%, transparent);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-danger) 0%, transparent);
+  }
 }
 
 .hint {
@@ -4457,6 +4714,7 @@ async function deleteEditingSpot() {
 
 .group {
   margin-bottom: var(--space-4);
+  min-width: 0;
 }
 
 .group h3 {
@@ -4496,13 +4754,22 @@ async function deleteEditingSpot() {
 .tour-station-wrap.is-tour {
   display: block;
   position: relative;
+  margin-left: 8px;
+  margin-right: 8px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.tour-station-wrap.is-tour.single-col {
   margin-left: 18px;
+  margin-right: 0;
 }
 
 .tour-station-accordion {
   display: grid;
   grid-template-rows: 0fr;
   transition: grid-template-rows 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 0;
 }
 
 .tour-station-accordion.is-expanded {
@@ -4510,22 +4777,314 @@ async function deleteEditingSpot() {
 }
 
 .tour-station-accordion-inner {
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
   overflow: hidden;
+  transition: overflow 0s 0s;
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+.tour-station-accordion.is-expanded .tour-station-accordion-inner {
+  overflow: visible;
+  transition: overflow 0s 0.4s allow-discrete;
 }
 
 .tour-station-accordion .staggered-spot {
   transition:
-    opacity 0.4s ease,
-    transform 0.4s ease;
+    opacity 0.35s ease,
+    transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   opacity: 0;
-  transform: translateY(-20px) scale(0.97);
-  transition-delay: calc((var(--stagger-total) - var(--stagger-idx) - 1) * 30ms);
+  transform: translateY(-24px) scale(0.95);
+  transition-delay: calc((var(--stagger-total) - var(--stagger-idx) - 1) * 25ms);
 }
 
 .tour-station-accordion.is-expanded .staggered-spot {
   opacity: 1;
   transform: translateY(0) scale(1);
-  transition-delay: calc(var(--stagger-idx) * 50ms);
+  transition-delay: calc(var(--stagger-idx) * 50ms + 50ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tour-station-accordion {
+    transition: none;
+  }
+  .tour-station-accordion-inner,
+  .tour-station-accordion.is-expanded .tour-station-accordion-inner {
+    transition: none;
+  }
+  .tour-station-accordion .staggered-spot,
+  .tour-station-accordion.is-expanded .staggered-spot {
+    transition: none;
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/* Serpentine / Schlangen-Layout für Tour-Stationen (#394) */
+.tour-serpentine-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-2) 12px 24px 12px;
+  width: 100%;
+  box-sizing: border-box;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.tour-serpentine-row-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.tour-serpentine-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  width: 100%;
+  box-sizing: border-box;
+  position: relative;
+  min-width: 0;
+}
+
+.tour-serpentine-row.is-ltr {
+  flex-direction: row;
+  justify-content: flex-start;
+}
+
+.tour-serpentine-row.is-rtl {
+  flex-direction: row-reverse;
+  justify-content: flex-start;
+}
+
+/* Spot-Kachel-Zelle im Schlangen-Layout */
+.tour-spot-cell {
+  flex: 0 0
+    calc((100% - (var(--tour-cols, 1) - 1) * var(--tour-conn-width, 76px)) / var(--tour-cols, 1));
+  width: calc(
+    (100% - (var(--tour-cols, 1) - 1) * var(--tour-conn-width, 76px)) / var(--tour-cols, 1)
+  );
+  max-width: calc(
+    (100% - (var(--tour-cols, 1) - 1) * var(--tour-conn-width, 76px)) / var(--tour-cols, 1)
+  );
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 2;
+}
+
+.tour-spot-cell:hover {
+  z-index: 6;
+}
+
+.tour-spot-cell .staggered-spot {
+  width: 100%;
+}
+
+/* 1-Spalten-Modus: Spanne 100% */
+.tour-serpentine-row.single-col .tour-spot-cell {
+  flex: 0 0 100%;
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Horizontaler Teilstrecken-Verbinder ("hochkant" zwischen 2 Kacheln) */
+.tour-leg-connector.is-horizontal {
+  flex: 0 0 var(--tour-conn-width, 76px);
+  width: var(--tour-conn-width, 76px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 2;
+  padding: 0 4px;
+}
+
+/* Zeilenumbruch-Verbinder im Schlangen-Layout */
+.tour-row-break {
+  display: flex;
+  width: 100%;
+  position: relative;
+  z-index: 2;
+  margin: var(--space-2) 0;
+}
+
+.tour-row-break.align-right {
+  justify-content: flex-end;
+}
+
+.tour-row-break.align-left {
+  justify-content: flex-start;
+}
+
+.tour-row-break-inner {
+  width: calc(
+    (100% - (var(--tour-cols, 1) - 1) * var(--tour-conn-width, 76px)) / var(--tour-cols, 1)
+  );
+  max-width: calc(
+    (100% - (var(--tour-cols, 1) - 1) * var(--tour-conn-width, 76px)) / var(--tour-cols, 1)
+  );
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.tour-row-break.single-col .tour-row-break-inner {
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Teilstrecken-Pill für vorhandene Teilstrecken */
+.tour-leg-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-xs);
+  cursor: pointer;
+  outline: none;
+  transition:
+    transform 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.tour-leg-pill:hover,
+.tour-leg-pill:focus-visible {
+  transform: translateY(-2px);
+  border-color: var(--tour-theme-color, var(--color-primary));
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+.tour-leg-pill.is-horizontal-leg {
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 6px;
+  border-radius: var(--radius-md);
+  width: 100%;
+  max-width: 68px;
+  text-align: center;
+}
+
+.tour-leg-pill.is-row-break {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: 6px 14px;
+  border-radius: var(--radius-pill, 9999px);
+  max-width: 90%;
+  text-align: center;
+}
+
+/* Button für noch nicht erfasste Teilstrecke */
+.tour-leg-add-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed var(--color-border);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-xs);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  outline: none;
+  transition:
+    transform 0.15s ease,
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.tour-leg-add-btn:hover,
+.tour-leg-add-btn:focus-visible {
+  background: var(--tour-theme-tint, var(--color-surface-hover));
+  border-color: var(--tour-theme-color, var(--color-primary));
+  color: var(--tour-theme-color, var(--color-primary));
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.tour-leg-add-btn.is-horizontal-leg {
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 3px;
+  width: 100%;
+  max-width: 68px;
+  border-radius: var(--radius-md);
+  text-align: center;
+}
+
+.tour-leg-add-btn.is-row-break {
+  flex-direction: row;
+  gap: 6px;
+  padding: 5px 14px;
+  border-radius: var(--radius-pill, 9999px);
+}
+
+.tour-leg-add-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+.leg-pill-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: var(--tour-theme-color, var(--color-primary));
+}
+
+.leg-pill-arrow {
+  font-size: 0.75rem;
+  font-weight: bold;
+  color: var(--tour-theme-color, var(--color-primary));
+  line-height: 1;
+  opacity: 0.85;
+}
+
+.leg-pill-type {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-text);
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.leg-pill-duration {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.leg-pill-cost {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--tour-theme-color, var(--color-primary));
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.leg-add-text {
+  font-size: 0.65rem;
+  font-weight: 500;
+  line-height: 1.1;
+  white-space: nowrap;
 }
 
 .tour-station-list {
@@ -4545,15 +5104,17 @@ async function deleteEditingSpot() {
 
 .tour-station-line path {
   fill: none;
-  stroke: var(--color-primary);
+  stroke: var(--tour-theme-color, var(--color-primary));
   stroke-width: 3;
   stroke-dasharray: 6 6;
+  transition: stroke 0.2s ease;
 }
 
 .tour-station-line circle {
-  fill: var(--color-primary);
+  fill: var(--tour-theme-color, var(--color-primary));
   stroke: var(--color-surface);
   stroke-width: 2;
+  transition: fill 0.2s ease;
 }
 
 .tour-layover-wrap {
@@ -4575,160 +5136,16 @@ async function deleteEditingSpot() {
   border: 1px solid var(--color-border);
 }
 
-.tour-leg-card {
-  position: relative;
-  margin-left: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-left: 3px solid var(--color-primary);
-  border-radius: var(--radius-sm);
-  box-shadow: var(--shadow-xs);
+.empty-state-wrap {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
-  cursor: pointer;
-  transition:
-    background-color 0.2s ease,
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-/* Leichte gestrichelte Linien zur visuellen Verbindung mit den Stationen oben und unten */
-.tour-leg-card::before,
-.tour-leg-card::after {
-  content: '';
-  position: absolute;
-  left: 20px;
-  width: 0;
-  border-left: 2px dashed var(--color-border);
-  pointer-events: none;
-  z-index: 0;
-  transition: border-color 0.2s ease;
-}
-
-.tour-leg-card::before {
-  top: -8px;
-  height: 8px;
-}
-
-.tour-leg-card::after {
-  bottom: -8px;
-  height: 8px;
-}
-
-.tour-leg-card:hover {
-  background: var(--color-surface);
-  border-color: var(--color-border);
-  border-left-color: var(--color-primary);
-  box-shadow: var(--shadow-sm);
-}
-
-.tour-leg-card:hover::before,
-.tour-leg-card:hover::after,
-.tour-leg-card.is-expanded::before,
-.tour-leg-card.is-expanded::after {
-  border-left-color: var(--color-primary);
-}
-
-.tour-leg-card.is-expanded {
-  background: var(--color-surface);
-  border-color: var(--color-border);
-  border-left-color: var(--color-primary);
-  box-shadow: var(--shadow-sm);
-}
-
-.tour-leg-card.is-expanded .tour-leg-header {
-  padding-left: 32px;
-  min-height: 28px;
-}
-
-.tour-leg-accordion {
-  display: grid;
-  grid-template-rows: 0fr;
-  transition: grid-template-rows 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.tour-leg-accordion.is-expanded {
-  grid-template-rows: 1fr;
-}
-
-.tour-leg-accordion-inner {
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  padding-top: var(--space-2);
-  border-top: 1px dashed var(--color-border-subtle);
-  margin-top: var(--space-1);
-}
-
-.tour-leg-header {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  font-size: 0.8125rem;
-  transition: padding-left 0.2s ease;
-}
-
-.tour-leg-type {
-  font-weight: 600;
-  color: var(--color-text);
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-}
-
-.tour-leg-times {
-  color: var(--color-text-muted);
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.tour-leg-duration {
-  color: var(--color-text-subtle);
-  font-size: 0.75rem;
-}
-
-.tour-leg-cost {
-  margin-left: auto;
-  font-weight: 600;
-  color: var(--color-primary);
-  font-size: 0.8125rem;
-}
-
-.tour-leg-details {
-  display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
-  font-size: 0.75rem;
-  color: var(--color-text-muted);
+  padding: var(--space-4);
 }
 
-.tour-leg-detail {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.tour-leg-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--color-primary);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
-.tour-leg-note {
-  font-size: 0.75rem;
-  color: var(--color-text-muted);
-  margin: 0;
-  white-space: pre-wrap;
-  font-style: italic;
+.empty-state-wrap .empty {
+  padding: 0;
 }
 
 /* Auf schmalen .spots-col-Breiten (Bottom-Sheet auf Mobil, ODER auf Desktop, wenn der Anfasser sehr
@@ -4775,7 +5192,7 @@ async function deleteEditingSpot() {
    eigentlichen Inhalts-Cards darunter unterordnet) statt frei im Seitenfluss stehender Buttons -
    fasst Gruppieren/Sortieren/Filtern als ein zusammengehöriges, klar abgegrenztes Werkzeug
    optisch zusammen (Nutzer-Feedback: wirkte vorher "gebastelt"). */
-/* --color-primary-tint (leichtes Markengrün) statt des neutralen --color-hover: dieser Bereich ist
+/* --color-primary-tint (leichte Markenfarbe) statt des neutralen --color-hover: dieser Bereich ist
    ein Steuerungs-/Werkzeug-Element (Gruppieren/Sortieren/Filtern), keine Dateninhalt-Fläche - siehe
    DESIGN.md, Abschnitt "Farben" für die Unterscheidung Steuerungselement (leicht eingefärbt) vs.
    Karte mit Dateninhalt (weiß/--color-surface, z. B. SpotCard.vue). */
@@ -5062,7 +5479,7 @@ async function deleteEditingSpot() {
      ist die gängige Lösung dafür. */
   top: -1px;
   padding-top: 1px;
-  z-index: 2;
+  z-index: 10;
   margin-bottom: var(--space-3);
 
   /* Die Leiste auf die volle Breite der Schublade aufziehen, um auch das seitliche Scroll-Padding
@@ -5292,6 +5709,13 @@ async function deleteEditingSpot() {
   background: var(--color-tour-tint);
   border-color: var(--color-tour-border);
   color: var(--color-tour);
+}
+
+/* Reise-Chip: grün (Zentrale Reise-Farbe --color-travel / SCHEDULE_CATEGORY_META.travel.color) */
+.assign-chip--travel {
+  background: var(--color-travel-tint);
+  border-color: var(--color-travel-border);
+  color: var(--color-travel);
 }
 
 /* Termin-Chip: grau (Farbe aus dem Kalender, SCHEDULE_CATEGORY_META.other.color) */

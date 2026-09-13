@@ -37,6 +37,7 @@ import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import AttachmentPreviewModal from '../components/AttachmentPreviewModal.vue';
 import AttachmentThumbnails from '../components/AttachmentThumbnails.vue';
+import PolaroidStack from '../components/primitives/PolaroidStack.vue';
 import { useToast } from '../composables/useToast';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
 
@@ -84,11 +85,26 @@ const editFileInputRef = ref<HTMLInputElement | null>(null);
 const diaryPreviewOpen = ref(false);
 const diaryPreviewImages = ref<string[]>([]);
 const diaryPreviewIndex = ref(0);
+const diaryPreviewEditable = ref(false);
+const diaryPreviewOnRemove = ref<((idx: number) => void) | null>(null);
 
-function openDiaryPreview(images: string[], index: number) {
+function openDiaryPreview(
+  images: string[],
+  index: number,
+  editable = false,
+  onRemove?: (idx: number) => void
+) {
   diaryPreviewImages.value = images;
   diaryPreviewIndex.value = index;
+  diaryPreviewEditable.value = editable;
+  diaryPreviewOnRemove.value = onRemove ?? null;
   diaryPreviewOpen.value = true;
+}
+
+function handleDiaryPreviewRemove(index: number) {
+  if (diaryPreviewOnRemove.value) {
+    diaryPreviewOnRemove.value(index);
+  }
 }
 
 // Entwurfs-Zwischenspeicherung (siehe composables/useDraftAutosave.ts) - images/excursion_ids/
@@ -575,7 +591,7 @@ function showEntryDayOnMap(entry: DiaryEntry) {
           :items="form.images"
           remove-title="Bild entfernen"
           remove-aria-label="Bild entfernen"
-          @click="(idx) => openDiaryPreview(form.images, idx)"
+          @click="(idx) => openDiaryPreview(form.images, idx, true, (i) => removeImage(form, i))"
           @remove="(idx) => removeImage(form, idx)"
         />
         <fieldset v-if="excursionsStore.excursions.length" class="excursion-picker">
@@ -713,17 +729,12 @@ function showEntryDayOnMap(entry: DiaryEntry) {
         <DraftBadge v-if="entry.is_draft" />
         <RichTextDisplay class="content" :content="entry.content" :format="entry.content_format" />
 
-        <div class="gallery" v-if="entry.images.length">
-          <button
-            v-for="(img, i) in entry.images"
-            :key="i"
-            type="button"
-            class="gallery-item-btn"
-            :aria-label="`Bild ${i + 1} vergrößern`"
-            @click="openDiaryPreview(entry.images, i)"
-          >
-            <img :src="img" :alt="`Bild ${i + 1}`" loading="lazy" />
-          </button>
+        <div class="diary-polaroid-wrap" v-if="entry.images.length">
+          <PolaroidStack
+            :items="entry.images"
+            clipped
+            @click="(idx) => openDiaryPreview(entry.images, idx)"
+          />
         </div>
 
         <SocialRow
@@ -851,7 +862,9 @@ function showEntryDayOnMap(entry: DiaryEntry) {
           :items="editForm.images"
           remove-title="Bild entfernen"
           remove-aria-label="Bild entfernen"
-          @click="(idx) => openDiaryPreview(editForm.images, idx)"
+          @click="
+            (idx) => openDiaryPreview(editForm.images, idx, true, (i) => removeImage(editForm, i))
+          "
           @remove="(idx) => removeImage(editForm, idx)"
         />
         <fieldset v-if="excursionsStore.excursions.length" class="excursion-picker">
@@ -956,6 +969,8 @@ function showEntryDayOnMap(entry: DiaryEntry) {
       v-model="diaryPreviewOpen"
       :attachments="diaryPreviewImages"
       :initial-index="diaryPreviewIndex"
+      :editable="diaryPreviewEditable"
+      @remove="handleDiaryPreviewRemove"
     />
   </div>
   <ViewLoadingState v-else />
@@ -1220,38 +1235,8 @@ function showEntryDayOnMap(entry: DiaryEntry) {
   font-size: 0.78rem;
 }
 
-.gallery {
-  display: flex;
-  gap: var(--space-2);
-  overflow-x: auto;
-  margin-bottom: var(--space-2);
-}
-
-.gallery-item-btn {
-  background: none;
-  border: none;
-  padding: 0;
-  margin: 0;
-  cursor: pointer;
-  display: flex;
-  flex-shrink: 0;
-  box-shadow: none;
-  border-radius: var(--radius-sm);
-  transition:
-    transform 0.15s ease,
-    opacity 0.15s ease;
-}
-
-.gallery-item-btn:hover {
-  transform: scale(1.02);
-  opacity: 0.92;
-}
-
-.gallery img {
-  height: 140px;
-  width: auto;
-  border-radius: var(--radius-sm);
-  object-fit: cover;
-  flex-shrink: 0;
+.diary-polaroid-wrap {
+  margin: var(--space-2) 0;
+  padding: 4px 0 6px 4px;
 }
 </style>

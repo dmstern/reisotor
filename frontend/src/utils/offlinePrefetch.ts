@@ -1,6 +1,6 @@
 import { api } from '../api/client';
 
-// "App ist jetzt offline verfügbar" (siehe PwaUpdatePrompt.vue) bezieht sich eigentlich nur auf die
+// "App ist jetzt offline verfügbar" (siehe NotificationInbox.vue) bezieht sich eigentlich nur auf die
 // App-Shell (Workbox-Precaching, siehe vite.config.ts) - der Daten-Cache in api/offline.ts füllt
 // sich sonst rein opportunistisch, GET für GET, während man online durch die App klickt. Ohne
 // diese Liste blieben Views, die DashboardView.vue selbst nicht für seine eigenen Kacheln braucht

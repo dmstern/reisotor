@@ -46,7 +46,7 @@ registerRoute(
   })
 );
 
-// PwaUpdatePrompt.vue's "Neu laden"-Button ruft vite-plugin-pwa's updateSW(true) auf, das genau
+// NotificationInbox.vue's (stores/pwaUpdate.ts) "Neu laden"-Button ruft vite-plugin-pwa's updateSW(true) auf, das genau
 // diese Nachricht an den WARTENDEN (neuen) Service Worker schickt, um ihn sofort zu aktivieren statt
 // auf das natürliche Ende aller offenen Tabs zu warten. Bei der generateSW-Strategie fügt
 // vite-plugin-pwa diesen Listener automatisch ein - bei injectManifest (dieser Datei, siehe

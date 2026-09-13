@@ -1,40 +1,42 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { useRoute } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
+import { useTripStore } from '../stores/trip';
 import { useConnectivityStore } from '../stores/connectivity';
 import { useNavPositionStore } from '../stores/navPosition';
 import { useBuildInfoStore } from '../stores/buildInfo';
 import { useIsDesktop } from '../composables/useIsDesktop';
 import TripSwitcher from './TripSwitcher.vue';
+import NavBar from './NavBar.vue';
 import PresenceAvatars from './PresenceAvatars.vue';
 import NotificationInbox from './NotificationInbox.vue';
 import TrackRecordingIndicator from './TrackRecordingIndicator.vue';
-import PwaUpdatePrompt from './PwaUpdatePrompt.vue';
-import PwaInstallHint from './PwaInstallHint.vue';
 import LoadingIndicator from './LoadingIndicator.vue';
 import DemoModeBanner from './DemoModeBanner.vue';
 import AppIcon from './AppIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { DEMO_MODE } from '../demo/isDemoMode';
 
-const auth = useAuthStore();
-const connectivity = useConnectivityStore();
+import { useHeaderNavFits } from '../composables/useHeaderNavFits';
 
-// Steht die NavBar (per Einstellung, siehe stores/navPosition.ts) gerade NICHT direkt unter
-// dem Header (sondern unten am Viewport-Rand), fehlt der Header sonst komplett ohne den kräftigeren
-// Schatten, der ihn vom scrollenden Inhalt abhebt (siehe .app-header-Kommentar unten) – die NavBar
-// selbst bekommt in dem Fall ja ihren eigenen, nach oben gerichteten Schatten. Gleiche
-// Desktop/Mobil-Weiche wie NavBar.vue's isTop.
+const auth = useAuthStore();
+const tripStore = useTripStore();
+const connectivity = useConnectivityStore();
 const navPosition = useNavPositionStore();
 const isDesktop = useIsDesktop();
-const navBarIsBottom = computed(() =>
-  isDesktop.value ? navPosition.desktop === 'bottom' : navPosition.mobile === 'bottom'
+const headerNavFits = useHeaderNavFits();
+const route = useRoute();
+
+const showTripNav = computed(() => tripStore.currentTripId != null && route.name !== 'trips');
+const showDockedNav = computed(
+  () => isDesktop.value && headerNavFits.value && navPosition.desktop === 'top' && showTripNav.value
 );
 
-// Der Header ist nur noch 56px hoch, solange die Statuszeile (Offline-/PWA-Update-Hinweis) leer
-// ist – NavBar.vue klebt direkt darunter per position:sticky mit einem fest verdrahteten "top"-Wert
-// und muss deshalb die tatsächliche, veränderliche Höhe kennen (analog zu NavBar.vue's eigenem
-// --navbar-offset-Muster), sonst würde sie beim Scrollen unter dem dann höheren Header verschwinden.
+// Der Header ist standardmäßig 56px hoch (bzw. höher im Demo-Modus durch den DemoModeBanner) –
+// NavBar.vue klebt direkt darunter per position:sticky mit einem fest verdrahteten "top"-Wert
+// und muss deshalb die tatsächliche Höhe kennen (analog zu NavBar.vue's eigenem
+// --navbar-offset-Muster).
 const headerEl = ref<HTMLElement | null>(null);
 let resizeObserver: ResizeObserver | null = null;
 
@@ -43,14 +45,24 @@ function updateHeaderHeight() {
   document.documentElement.style.setProperty('--app-header-height', `${height}px`);
 }
 
+const isScrolled = ref(false);
+
+function onScroll() {
+  isScrolled.value = window.scrollY > 4;
+}
+
 onMounted(() => {
   resizeObserver = new ResizeObserver(updateHeaderHeight);
   if (headerEl.value) resizeObserver.observe(headerEl.value);
   updateHeaderHeight();
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
 });
 
 onUnmounted(() => {
   resizeObserver?.disconnect();
+  window.removeEventListener('scroll', onScroll);
 });
 
 // Frontend wird identisch für Staging und Produktion gebaut (siehe
@@ -72,25 +84,13 @@ const profileTitle = computed(() => {
 </script>
 
 <template>
-  <header ref="headerEl" class="app-header" :class="{ 'nav-bottom': navBarIsBottom }">
+  <header ref="headerEl" class="app-header" :class="{ 'is-scrolled': isScrolled }">
+    <div class="header-backdrop" aria-hidden="true"></div>
     <DemoModeBanner v-if="DEMO_MODE" />
-    <!-- Eigene Zeile ÜBER der Icon-Zeile statt zwischen TripSwitcher und den Icons rechts
-         eingereiht: der TripSwitcher-Button wächst mit dem Urlaubsnamen und schrumpft nicht
-         zuverlässig (siehe .switcher-btn in TripSwitcher.vue), wodurch ein hier eingereihter Pill
-         auf schmalen Viewports vom TripSwitcher überlagert statt danebengestellt wurde. -->
-    <div class="status-row">
-      <TrackRecordingIndicator />
-      <PwaUpdatePrompt />
-      <PwaInstallHint />
-    </div>
-    <!-- Bewusst AUSSERHALB von .status-row: LoadingIndicator.vue rendert seit dem Wechsel auf einen
-         freischwebenden Toast (position:fixed, blitzt bei JEDEM Request kurz auf/ab) nicht mehr am
-         Layout beteiligt - eine Verschachtelung in der Statuszeile würde nur suggerieren, dass er
-         (wie Offline-/PWA-Update-Hinweis) Teil von deren dauerhaftem Layout wäre. -->
     <LoadingIndicator />
     <div class="header-row">
       <router-link to="/" class="brand">
-        <img src="/reisotor_logo.svg" alt="Reisotor Logo" class="logo" />
+        <img src="/reisotor-icon-circle.svg" alt="Reisotor Logo" class="logo" />
         <span class="wordmark">Reisotor</span>
         <span
           v-if="isNonProd"
@@ -99,38 +99,53 @@ const profileTitle = computed(() => {
           >DEV</span
         >
       </router-link>
-      <TripSwitcher class="switcher" />
-      <PresenceAvatars />
-      <NotificationInbox />
-      <router-link
-        to="/settings"
-        class="profile-link"
-        :class="{
-          'is-online': connectivity.isOnline && !connectivity.syncing && !connectivity.checking,
-          'is-offline': !connectivity.isOnline,
-          'is-retrying': connectivity.syncing || connectivity.checking,
-        }"
-        :title="profileTitle"
-      >
-        <div class="avatar-wrapper">
-          <span class="avatar">{{ auth.user?.avatar || '👤' }}</span>
-          <div v-if="!connectivity.isOnline" class="offline-badge" title="Offline">
-            <AppIcon :icon="ACTION_ICONS.offline" :size="12" group="actions" />
-          </div>
-          <div
-            v-else-if="connectivity.pendingCount > 0"
-            class="pending-badge"
-            :title="`${connectivity.pendingCount} ausstehende Synchronisation(en)`"
-          >
-            <AppIcon
-              :icon="ACTION_ICONS.syncPending"
-              :size="11"
-              group="actions"
-              :class="{ 'is-spinning': connectivity.syncing }"
-            />
-          </div>
+
+      <div class="header-center">
+        <div class="floating-island" :class="{ 'has-nav': showDockedNav }">
+          <TripSwitcher class="switcher" :docked="showDockedNav" />
+          <Transition name="nav-dock">
+            <div v-if="showDockedNav" class="docked-nav">
+              <div class="dock-divider" aria-hidden="true"></div>
+              <NavBar embedded />
+            </div>
+          </Transition>
         </div>
-      </router-link>
+      </div>
+
+      <div class="header-actions">
+        <TrackRecordingIndicator />
+        <PresenceAvatars />
+        <NotificationInbox />
+        <router-link
+          to="/settings"
+          class="profile-link"
+          :class="{
+            'is-online': connectivity.isOnline && !connectivity.syncing && !connectivity.checking,
+            'is-offline': !connectivity.isOnline,
+            'is-retrying': connectivity.syncing || connectivity.checking,
+          }"
+          :title="profileTitle"
+        >
+          <div class="avatar-wrapper">
+            <span class="avatar">{{ auth.user?.avatar || '👤' }}</span>
+            <div v-if="!connectivity.isOnline" class="offline-badge" title="Offline">
+              <AppIcon :icon="ACTION_ICONS.offline" :size="12" group="actions" />
+            </div>
+            <div
+              v-else-if="connectivity.pendingCount > 0"
+              class="pending-badge"
+              :title="`${connectivity.pendingCount} ausstehende Synchronisation(en)`"
+            >
+              <AppIcon
+                :icon="ACTION_ICONS.syncPending"
+                :size="11"
+                group="actions"
+                :class="{ 'is-spinning': connectivity.syncing }"
+              />
+            </div>
+          </div>
+        </router-link>
+      </div>
     </div>
   </header>
 </template>
@@ -145,39 +160,42 @@ const profileTitle = computed(() => {
      verliert gegen eine Schublade mit höherem Context-z-index, obwohl der Dropdown-Inhalt optisch
      weit darüber liegen soll. Bleibt unterhalb von Modal.vue (z-index:100). */
   z-index: 25;
-  background: var(--color-surface);
-  border-bottom: 1px solid var(--color-border);
-  /* Bewusst kein eigener Schlagschatten, solange die NavBar direkt darunter klebt: die bekommt dann
-     den deutlich sichtbaren Schatten, der den fixen Kopfbereich vom scrollenden Inhalt abhebt (siehe
-     NavBar.vue) – zwei Schatten kurz hintereinander wirkten redundant/unruhig. Die Trennlinie
-     (border-bottom) reicht hier weiterhin als dezente Abgrenzung. Steht die NavBar per
-     Einstellung dagegen unten (.nav-bottom unten), übernimmt der Header selbst genau
-     denselben Schatten – sonst fehlt er komplett, weil dann nichts mehr direkt darunter klebt. */
+  background: transparent;
+  border-bottom: none;
+  box-shadow: none;
   box-sizing: border-box;
+  pointer-events: none;
 }
 
-/* Gleicher Schattenwert wie NavBar.vue's Default-.navbar-Schatten (reines Schwarz mit fester
-   Opacity statt --shadow-sm/md-Tokens, bleibt so in beiden Themes gleich gut sichtbar). */
-.app-header.nav-bottom {
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
+/* Subtiler Farbverlauf ins Transparente mit Backdrop-Blur hinter den frei schwebenden Nav-Items
+   (Logo, TripSwitcher, Avatar, Notifications): im nicht-gescrollten Zustand unsichtbar (opacity: 0),
+   damit die Elemente weiterhin frei im Raum schweben. Beim Scrollen wird der Hintergrund sanft
+   eingeblendet, sodass unter den Header wandernde Texte/Karten weich weichgezeichnet werden,
+   ohne dass eine harte Box-Kante entsteht. */
+.header-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: -16px;
+  pointer-events: none;
+  z-index: 0;
+  background: linear-gradient(
+    to bottom,
+    var(--color-bg) 0%,
+    color-mix(in srgb, var(--color-bg) 85%, transparent) 55%,
+    transparent 100%
+  );
+  backdrop-filter: var(--backdrop-blur-md);
+  -webkit-backdrop-filter: var(--backdrop-blur-md);
+  mask-image: linear-gradient(to bottom, black 0%, black 50%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 50%, transparent 100%);
+  opacity: 0;
+  transition: opacity 0.25s ease;
 }
 
-/* Statuszeile (Offline-/PWA-Update-Hinweis) bekommt eine eigene volle Zeile über der Icon-Zeile
-   statt zwischen TripSwitcher und den Icons rechts eingereiht zu werden – der TripSwitcher-Button
-   wächst mit dem Urlaubsnamen und schrumpft nicht zuverlässig (siehe .switcher-btn in
-   TripSwitcher.vue), ein hier eingereihter Pill wurde dadurch auf schmalen Viewports vom
-   TripSwitcher überlagert statt danebengestellt. :has() statt eines eigenen "zeig überhaupt
-   etwas?"-Flags: Offline-/PWA-Zustand kommt aus zwei unabhängigen Stores, die Zeile soll aber ohne
-   zusätzliche Kopplung einfach nur dann Platz beanspruchen, wenn eine der beiden Kind-Komponenten
-   tatsächlich einen Pill rendert. */
-.status-row {
-  display: flex;
-  justify-content: center;
-  gap: var(--space-2);
-}
-
-.status-row:has(.pwa-pill) {
-  padding: 6px var(--space-4) 0;
+.app-header.is-scrolled .header-backdrop {
+  opacity: 1;
 }
 
 .header-row {
@@ -187,6 +205,8 @@ const profileTitle = computed(() => {
   gap: var(--space-2);
   padding: 0 var(--space-4);
   box-sizing: border-box;
+  position: relative;
+  z-index: 1;
 }
 
 .brand {
@@ -196,6 +216,13 @@ const profileTitle = computed(() => {
   text-decoration: none;
   width: fit-content;
   flex-shrink: 0;
+  pointer-events: auto;
+  border-radius: 999px;
+  transition: opacity 0.15s ease;
+}
+
+.brand:hover {
+  opacity: 0.85;
 }
 
 .env-badge {
@@ -209,11 +236,99 @@ const profileTitle = computed(() => {
   line-height: 1.4;
 }
 
-.switcher {
+.header-center {
   flex: 1;
   min-width: 0;
   display: flex;
   justify-content: center;
+  align-items: center;
+  pointer-events: none;
+}
+
+/* Die schwebende "Liquid Glass"-Insel im Header. Vereint den TripSwitcher und bei ausgewählter Reise
+   auf Desktop die Haupt-Navigation zu einem organisch verschmolzenen Pill-Container. */
+.floating-island {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  background: var(--color-surface-glass);
+  backdrop-filter: var(--backdrop-blur-md);
+  -webkit-backdrop-filter: var(--backdrop-blur-md);
+  border: 1px solid var(--color-surface-glass-border);
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  padding: var(--space-1);
+  pointer-events: auto;
+  max-width: 100%;
+  min-width: 0;
+  position: relative;
+}
+
+.floating-island.has-nav {
+  margin-top: var(--space-4);
+}
+
+.switcher {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  max-width: 100%;
+  flex-shrink: 1;
+}
+
+.floating-island.has-nav .switcher {
+  flex-shrink: 0;
+}
+
+.dock-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--color-border-strong);
+  margin: 0 4px;
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+
+.docked-nav {
+  display: inline-flex;
+  align-items: center;
+  max-width: 900px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  opacity: 1;
+  transform: scale(1);
+  transform-origin: left center;
+}
+
+.docked-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.nav-dock-enter-active,
+.nav-dock-leave-active {
+  transition:
+    max-width 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.nav-dock-enter-from,
+.nav-dock-leave-to {
+  max-width: 0 !important;
+  opacity: 0 !important;
+  transform: scale(0.96) !important;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+  pointer-events: auto;
 }
 
 .logo {
@@ -227,10 +342,7 @@ const profileTitle = computed(() => {
   font-size: 1.1rem;
 }
 
-/* Unter 800px (derselbe Mobil/Desktop-Umbruch wie NavBar.vue/App.vue) reicht der Platz zwischen
-   Logo, TripSwitcher und den Buttons rechts nicht mehr für den Schriftzug – er würde sich mit dem
-   TripSwitcher überlagern. Logo (und ein evtl. DEV-Badge) bleiben als kompakte Marke stehen. */
-@media (max-width: 799px) {
+@media (max-width: 1200px) {
   .wordmark {
     display: none;
   }

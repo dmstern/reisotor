@@ -9,6 +9,8 @@ import { useLiveSyncStore } from './stores/liveSync';
 import { useLocationSharingStore } from './stores/locationSharing';
 import { useTrackRecordingStore } from './stores/trackRecording';
 import { useIsDesktop } from './composables/useIsDesktop';
+import { useHeaderNavFits } from './composables/useHeaderNavFits';
+import { useNavPositionStore } from './stores/navPosition';
 import { SECTION_ICON_DEFS } from './utils/sectionIcons';
 import { prefetchTripDataForOffline } from './utils/offlinePrefetch';
 import { useBuildInfoStore } from './stores/buildInfo';
@@ -27,7 +29,9 @@ const auth = useAuthStore();
 const tripStore = useTripStore();
 const budgetStore = useBudgetStore();
 const drawers = useDrawersStore();
+const navPosition = useNavPositionStore();
 const isDesktop = useIsDesktop();
+const headerNavFits = useHeaderNavFits();
 
 const buildInfoStore = useBuildInfoStore();
 buildInfoStore.load();
@@ -105,7 +109,7 @@ onUnmounted(() => window.removeEventListener('reisotor:session-expired', onSessi
 // Wärmt den Offline-Daten-Cache (api/offline.ts) für den aktuellen Urlaub im Hintergrund vor -
 // sonst bleiben Views, die DashboardView.vue selbst nicht lädt (Touren, Reise-Orte, Budget-
 // Kategorien/Überweisungen, Likes/Kommentare), erst nach einem einmaligen Online-Besuch offline
-// nutzbar, obwohl die "App ist jetzt offline verfügbar"-Meldung (PwaUpdatePrompt.vue) das
+// nutzbar, obwohl die "App ist jetzt offline verfügbar"-Meldung (NotificationInbox.vue) das
 // Gegenteil suggeriert. Läuft bei jedem Urlaubswechsel erneut (eigener Cache-Key pro trip_id).
 watch(
   () => tripStore.currentTripId,
@@ -142,7 +146,10 @@ const firstLoadDone = ref(
          Nutzer wird per Watcher oben nach /trips geleitet) bzw. auf der Urlaubsverwaltung selbst
          ergibt eine Domänen-Navigation keinen Sinn - Header (für Logout/Einstellungen) bleibt trotzdem
          immer sichtbar, siehe #75. -->
-    <NavBar v-if="showTripNav" />
+    <!-- Desktop-Oben ist direkt in den AppHeader gedockt (Floating Island), sofern der Bildschirm
+         breit genug ist (≥1024px). Auf Mobil, Zwischengrößen oder bei Position "unten" wird
+         NavBar weiterhin hier schwebend gerendert. -->
+    <NavBar v-if="showTripNav && !(isDesktop && headerNavFits && navPosition.desktop === 'top')" />
     <div class="app-shell">
       <!-- Kalender nur auf Desktop als Schublade gemountet – auf Mobil ersetzt dieselbe Komponente
            stattdessen als eigenständige Seite (/calendar, siehe router/index.ts) den Hauptinhalt.

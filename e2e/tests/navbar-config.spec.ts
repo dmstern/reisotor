@@ -53,3 +53,43 @@ test('reordering nav entries in SettingsView changes their order in the NavBar',
   await page.goto('/settings?tab=app');
   await page.locator('.nav-config-row').first().getByLabel('Nach unten verschieben').click();
 });
+
+test('enabling accommodation nav entry in SettingsView adds it to the NavBar and filters by category', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await expect(page.locator('nav.navbar a', { hasText: 'Unterkunft' })).toHaveCount(0);
+
+  // Klick auf Unterkunft-Kachel im Dashboard
+  await page.locator('.tile', { hasText: 'Unterkunft' }).click();
+  await expect(page).toHaveURL(/category=Unterkunft/);
+  // Bei ausgeblendeter Unterkunft bleibt "Karte" aktiv
+  await expect(page.locator('nav.navbar a.link.active', { hasText: 'Karte' })).toBeVisible();
+
+  // Unterkunft in Navigationseinstellungen aktivieren
+  await page.goto('/settings?tab=app');
+  const accRow = page.locator('.nav-config-row', { hasText: 'Unterkunft' });
+  await accRow.locator('input[type="checkbox"]').check();
+
+  await page.goto('/');
+  const accNavLink = page.locator('nav.navbar a', { hasText: 'Unterkunft' });
+  await expect(accNavLink).toBeVisible();
+
+  // Klick auf Unterkunft in der NavBar
+  await accNavLink.click();
+  await expect(page).toHaveURL(/category=Unterkunft/);
+  await expect(page.locator('nav.navbar a.link.active', { hasText: 'Unterkunft' })).toBeVisible();
+  await expect(page.locator('.filter-chip', { hasText: 'Unterkunft' })).toBeVisible();
+
+  // Klick auf "Karte" in der NavBar setzt den Filter zurück
+  await page.locator('nav.navbar a', { hasText: 'Karte' }).click();
+  await expect(page.locator('nav.navbar a.link.active', { hasText: 'Karte' })).toBeVisible();
+  await expect(page.locator('.filter-chip', { hasText: 'Unterkunft' })).toHaveCount(0);
+
+  // Aufräumen: wieder deaktivieren
+  await page.goto('/settings?tab=app');
+  await page
+    .locator('.nav-config-row', { hasText: 'Unterkunft' })
+    .locator('input[type="checkbox"]')
+    .uncheck();
+});

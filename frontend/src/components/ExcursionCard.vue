@@ -14,7 +14,6 @@ import { useDrawersStore } from '../stores/drawers';
 import { useTripStore } from '../stores/trip';
 import { useWeatherProviderStore } from '../stores/weatherProvider';
 import EditButton from './EditButton.vue';
-import SocialRow from './SocialRow.vue';
 import Comments, { type CommentItem } from './Comments.vue';
 import RichTextDisplay from './RichTextDisplay.vue';
 import SpotImageCollage from './SpotImageCollage.vue';
@@ -24,7 +23,8 @@ import Card from './primitives/Card.vue';
 import Button from './primitives/Button.vue';
 import Input from './primitives/Input.vue';
 import PickerMenu from './primitives/PickerMenu.vue';
-import DetailRow from './primitives/DetailRow.vue';
+import PolaroidStack from './primitives/PolaroidStack.vue';
+import FileAttachments from './FileAttachments.vue';
 import WeatherIcon from './WeatherIcon.vue';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
@@ -148,6 +148,19 @@ const travelDuration = computed(() => {
   return minutes == null ? null : formatTravelDuration(minutes);
 });
 
+const stationsSummaryText = computed(() => {
+  if (!resolvedStations.value.length) return null;
+  if (resolvedStations.value.length === 1) {
+    return resolvedStations.value[0].title;
+  }
+  if (resolvedStations.value.length === 2) {
+    return `${resolvedStations.value[0].title} → ${resolvedStations.value[1].title}`;
+  }
+  const stopCount = resolvedStations.value.length - 2;
+  const stopText = stopCount === 1 ? '1 Zwischenstopp' : `${stopCount} Zwischenstopps`;
+  return `${resolvedStations.value[0].title} → ${resolvedStations.value[resolvedStations.value.length - 1].title} · ${stopText}`;
+});
+
 // Einplanen per Zeige-/Touch-Drag am eigenen Anfasser (📅 Einplanen) statt am gesamten Card-Root:
 // natives HTML5-draggable/dragstart wurde ersetzt, da es auf Touch-Geräten (v. a. Android Chrome)
 // nicht zuverlässig funktioniert. onStart öffnet die Kalender-Schublade automatisch, damit die
@@ -261,37 +274,29 @@ function onSpotDrop(event: DragEvent) {
 <template>
   <Card
     class="excursion-card"
-    :class="{ 'drop-target': spotDragOverCount > 0, 'new-highlight': highlighted, expanded }"
+    :class="{
+      'drop-target': spotDragOverCount > 0,
+      'new-highlight': highlighted,
+      expanded,
+      'has-role': !!excursion.role,
+      'is-travel': !!excursion.role,
+    }"
     @click="onCardClick"
     @dragover.prevent
     @dragenter.prevent="onSpotDragEnter"
     @dragleave="onSpotDragLeave"
     @drop.prevent="onSpotDrop"
   >
-    <!-- Akzentbalken an der abgerundeten linken Kante mit Rollen-/Rucksack-Icon -->
-    <div
-      class="tour-accent-bar"
-      :title="excursion.role ? TRAVEL_ROLE_META[excursion.role].label : 'Tour / Ausflug'"
-      aria-hidden="true"
-    >
-      <div class="tour-accent-badge">
-        <AppIcon
-          :icon="
-            excursion.role ? TRAVEL_ROLE_META[excursion.role].tabler : SECTION_ICON_DEFS.excursions
-          "
-          group="categories"
-          :size="14"
-        />
-      </div>
-      <span class="tour-bar-label">{{ excursion.role ? 'REISE' : 'TOUR' }}</span>
-    </div>
     <div class="tour-card-main">
-      <div class="image" :style="displayImage ? { backgroundImage: `url(${displayImage})` } : {}">
+      <div
+        class="tour-image"
+        :style="displayImage ? { backgroundImage: `url(${displayImage})` } : {}"
+      >
         <SpotImageCollage v-if="showCollage" :images="fallbackImages" />
         <AppIcon
           v-else-if="!displayImage"
           class="placeholder"
-          :size="35"
+          :size="30"
           :icon="
             excursion.role
               ? travelTypeIconDef(excursion.transport_type)
@@ -300,115 +305,127 @@ function onSpotDrop(event: DragEvent) {
           group="categories"
         />
 
-        <!-- Expanded Cover Overlay: Halbdunkles Gradient-Overlay mit Edit-Button -->
-        <Transition name="overlay-fade">
-          <div v-if="expanded" class="image-expanded-overlay">
-            <div class="overlay-top-row">
-              <EditButton floating class="overlay-edit-btn" @click="emit('edit', excursion)" />
-            </div>
-          </div>
+        <!-- Floating Edit-Button im aufgeklappten Zustand -->
+        <Transition name="fade">
+          <EditButton
+            v-if="expanded"
+            floating
+            class="tour-image-edit-btn"
+            @click="emit('edit', excursion)"
+          />
         </Transition>
-
-        <!-- Collapsed Zustand: Passives Status-Badge unten rechts (#106) -->
-        <span
-          v-if="!expanded"
-          class="status"
-          :class="{ planned: excursion.date && !excursion.done, 'status-done': excursion.done }"
-        >
-          <template v-if="excursion.done && excursion.date">
-            <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
-            <span class="status-text">
-              Gemacht am {{ statusDateLabel
-              }}<template v-if="weatherSummary">
-                · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
-                {{ weatherSummary.tempLabel }}</template
-              >
-            </span>
-          </template>
-          <template v-else-if="excursion.done">
-            <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
-            <span class="status-text">Gemacht</span>
-          </template>
-          <template v-else-if="excursion.date">
-            <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="actions" />
-            <span class="status-text">
-              Geplant für {{ statusDateLabel
-              }}<template v-if="weatherSummary">
-                · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
-                {{ weatherSummary.tempLabel }}</template
-              >
-            </span>
-          </template>
-          <template v-else>
-            <AppIcon :icon="ACTION_ICONS.today" :size="14" group="actions" />
-            <span class="status-text">In Planung</span>
-          </template>
-        </span>
-      </div>
-
-      <!-- Gleitende Badge-Gruppe: Ein einziges Element, das nahtlos zwischen Body und Cover-Ecke gleitet -->
-      <div class="card-badge-group">
-        <span v-if="excursion.role" class="role-badge">
-          <AppIcon :icon="TRAVEL_ROLE_META[excursion.role].tabler" :size="14" group="categories" />
-          {{ TRAVEL_ROLE_META[excursion.role].label }}
-        </span>
-        <span v-else class="tour-type-badge" title="Tour / Ausflug">
-          <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="12" group="categories" /> Tour
-        </span>
-        <PendingSyncBadge v-if="excursion._pending" />
       </div>
 
       <div class="body">
-        <!-- Einheitlicher Card-Titel: gleitet beim Expandieren nahtlos vom Body in den Cover-Header -->
-        <div class="card-title-block">
-          <h3 class="card-title" :title="excursion.title">{{ excursion.title }}</h3>
-          <Transition name="fade">
-            <div
-              v-if="
-                expanded &&
-                (creatorLabel || routeLabel || resolvedStations.length || travelDuration)
-              "
-              class="card-title-meta"
-            >
-              <span v-if="creatorLabel" class="overlay-author">Von {{ creatorLabel }}</span>
-              <span v-if="routeLabel" class="overlay-submeta">{{ routeLabel }}</span>
-              <span v-else-if="resolvedStations.length" class="overlay-submeta">
-                {{ resolvedStations.length }}
-                {{ resolvedStations.length === 1 ? 'Station' : 'Stationen' }}
-              </span>
-              <span v-if="travelDuration" class="overlay-submeta">· {{ travelDuration }}</span>
-            </div>
-          </Transition>
-        </div>
-        <p v-if="!expanded && routeLabel" class="route">{{ routeLabel }}</p>
-        <p
-          v-if="
-            !expanded &&
-            (excursion.role || excursion.legs?.length) &&
-            (excursion.departure_time || excursion.arrival_time)
-          "
-          class="departure-arrival"
-        >
-          <AppIcon :icon="FORM_FIELD_ICONS.time" :size="14" group="formFields" />
-          <span v-if="excursion.departure_time"
-            >{{ excursion.departure_time
-            }}<span v-if="excursion.arrival_time">–{{ excursion.arrival_time }}</span> Uhr</span
-          >
-          <span v-if="travelDuration" class="duration">({{ travelDuration }})</span>
-        </p>
-
-        <div class="excursion-accordion" :class="{ 'is-expanded': expanded }" :inert="!expanded">
-          <div class="excursion-accordion-inner accordion-stagger">
-            <DetailRow v-if="creatorLabel && !expanded" label="Von">
-              {{ creatorLabel }}
-            </DetailRow>
-            <RichTextDisplay
-              v-if="excursion.note"
-              class="note"
-              :content="excursion.note"
-              :format="excursion.note_format"
-            />
+        <div class="card-header-row">
+          <div class="card-title-block">
+            <h3 class="card-title" :title="excursion.title">{{ excursion.title }}</h3>
+            <Transition name="fade">
+              <div
+                v-if="
+                  expanded &&
+                  (creatorLabel || routeLabel || resolvedStations.length || travelDuration)
+                "
+                class="card-title-meta"
+              >
+                <span v-if="creatorLabel" class="overlay-author">Von {{ creatorLabel }}</span>
+                <span v-if="routeLabel" class="overlay-submeta">
+                  <template v-if="creatorLabel">· </template>{{ routeLabel }}
+                </span>
+                <span v-else-if="resolvedStations.length" class="overlay-submeta">
+                  <template v-if="creatorLabel">· </template>{{ resolvedStations.length }}
+                  {{ resolvedStations.length === 1 ? 'Station' : 'Stationen' }}
+                </span>
+                <span v-if="travelDuration" class="overlay-submeta">· {{ travelDuration }}</span>
+              </div>
+            </Transition>
           </div>
+
+          <div class="card-badge-group">
+            <span v-if="excursion.role" class="role-badge">
+              <AppIcon
+                :icon="TRAVEL_ROLE_META[excursion.role].tabler"
+                :size="14"
+                group="categories"
+              />
+              {{ TRAVEL_ROLE_META[excursion.role].label }}
+            </span>
+            <span v-else class="tour-type-badge" title="Tour / Ausflug">
+              <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="12" group="categories" /> Tour
+            </span>
+            <PendingSyncBadge v-if="excursion._pending" />
+          </div>
+        </div>
+        <!-- Stationen-Vorschau mit Polaroid-Stapel (#235) -->
+        <div
+          v-if="resolvedStations.length"
+          class="tour-stations-preview"
+          :class="{ 'is-fanned-out': expanded }"
+        >
+          <!-- Polaroid-Stapel: Mini-Polaroids im collapsed Zustand, morpht beim Aufklappen -->
+          <PolaroidStack
+            class="tour-polaroid-stack"
+            :items="resolvedStations"
+            :expanded="expanded"
+            :interactive="false"
+            :title="`${resolvedStations.length} Stationen`"
+            aria-hidden="true"
+          />
+
+          <div class="tour-stations-meta" v-if="!expanded">
+            <p v-if="routeLabel" class="route">{{ routeLabel }}</p>
+            <p v-else-if="stationsSummaryText" class="route tour-stations-summary">
+              {{ stationsSummaryText }}
+            </p>
+            <p
+              v-if="
+                (excursion.role || excursion.legs?.length) &&
+                (excursion.departure_time || excursion.arrival_time)
+              "
+              class="departure-arrival"
+            >
+              <AppIcon :icon="FORM_FIELD_ICONS.time" :size="14" group="formFields" />
+              <span v-if="excursion.departure_time"
+                >{{ excursion.departure_time
+                }}<span v-if="excursion.arrival_time">–{{ excursion.arrival_time }}</span> Uhr</span
+              >
+              <span v-if="travelDuration" class="duration">({{ travelDuration }})</span>
+            </p>
+          </div>
+        </div>
+
+        <template v-else>
+          <p v-if="!expanded && routeLabel" class="route">{{ routeLabel }}</p>
+          <p
+            v-if="
+              !expanded &&
+              (excursion.role || excursion.legs?.length) &&
+              (excursion.departure_time || excursion.arrival_time)
+            "
+            class="departure-arrival"
+          >
+            <AppIcon :icon="FORM_FIELD_ICONS.time" :size="14" group="formFields" />
+            <span v-if="excursion.departure_time"
+              >{{ excursion.departure_time
+              }}<span v-if="excursion.arrival_time">–{{ excursion.arrival_time }}</span> Uhr</span
+            >
+            <span v-if="travelDuration" class="duration">({{ travelDuration }})</span>
+          </p>
+        </template>
+
+        <!-- Tour-Notiz: Trunkiert mit Ellipsis sowohl im collapsed als auch im expanded Zustand (#235) -->
+        <div v-if="excursion.note" class="tour-note-container" :class="{ 'is-expanded': expanded }">
+          <RichTextDisplay
+            class="note is-clamped"
+            :class="{ 'is-expanded': expanded }"
+            :content="excursion.note"
+            :format="excursion.note_format"
+          />
+        </div>
+
+        <!-- Tour-Anhänge (Dateien / Tickets / Buchungen) - nur im aufgeklappten Zustand laden -->
+        <div v-if="expanded" class="tour-attachments-wrap">
+          <FileAttachments domain="ideas" :entity-id="excursion.id" :editable="false" />
         </div>
 
         <div class="links" v-if="hasMappedStations">
@@ -423,62 +440,101 @@ function onSpotDrop(event: DragEvent) {
             <span class="btn-label">Auf Karte anzeigen</span>
           </Button>
         </div>
-        <div class="card-actions">
-          <button
-            v-if="!excursion.date"
-            type="button"
-            class="calendar-drag-handle"
-            aria-label="Auf Kalender ziehen zum Einplanen"
-            title="Auf Kalender ziehen zum Einplanen"
-            @pointerdown="onPointerDown"
-            @click.stop
-          >
-            <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" /> Einplanen
-          </button>
-          <!-- Verschmolzener Status-Button (Geplant-Status + Gemacht-Checkbox) -->
-          <button
-            type="button"
-            class="done-toggle"
-            :class="{
-              status: expanded && !!(excursion.date || excursion.done),
-              planned: expanded && !!(excursion.date && !excursion.done),
-              'status-done': expanded && !!excursion.done,
-              active: !!excursion.done,
-            }"
-            :aria-pressed="!!excursion.done"
-            :aria-label="
-              excursion.done ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'
-            "
-            :title="excursion.done ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'"
-            @click.stop="onToggleDone"
-          >
-            <template v-if="excursion.done">
-              <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
-              <span class="status-text">
-                <template v-if="excursion.date">Gemacht am {{ statusDateLabel }}</template>
-                <template v-else>Gemacht</template>
-                <template v-if="weatherSummary">
-                  · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
-                  {{ weatherSummary.tempLabel }}
-                </template>
-              </span>
-            </template>
-            <template v-else-if="excursion.date">
-              <AppIcon :icon="ACTION_ICONS.notDone" :size="14" group="actions" />
-              <span class="status-text">
-                Geplant für {{ statusDateLabel }}
-                <template v-if="weatherSummary">
-                  · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
-                  {{ weatherSummary.tempLabel }}
-                </template>
-              </span>
-            </template>
-            <template v-else>
-              <AppIcon :icon="ACTION_ICONS.notDone" :size="14" group="actions" />
-              <span>Als gemacht markieren</span>
-            </template>
-          </button>
+        <div class="card-actions-wrapper">
+          <div class="card-actions">
+            <button
+              v-if="!excursion.date"
+              type="button"
+              class="calendar-drag-handle"
+              aria-label="Auf Kalender ziehen zum Einplanen"
+              title="Auf Kalender ziehen zum Einplanen"
+              @pointerdown="onPointerDown"
+              @click.stop
+            >
+              <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" /> Einplanen
+            </button>
+            <!-- Verschmolzener Status-Button (Geplant-Status + Gemacht-Checkbox) – in beiden Zuständen -->
+            <button
+              type="button"
+              class="done-toggle"
+              :class="{
+                status: !!(excursion.date || excursion.done),
+                planned: !!(excursion.date && !excursion.done),
+                'status-done': !!excursion.done,
+                active: !!excursion.done,
+              }"
+              :aria-pressed="!!excursion.done"
+              :aria-label="
+                excursion.done ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'
+              "
+              :title="excursion.done ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'"
+              @click.stop="onToggleDone"
+            >
+              <template v-if="excursion.done">
+                <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
+                <span class="status-text">
+                  <template v-if="excursion.date">Gemacht am {{ statusDateLabel }}</template>
+                  <template v-else>Gemacht</template>
+                  <template v-if="weatherSummary">
+                    · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
+                    {{ weatherSummary.tempLabel }}
+                  </template>
+                </span>
+              </template>
+              <template v-else-if="excursion.date">
+                <AppIcon :icon="ACTION_ICONS.notDone" :size="14" group="actions" />
+                <span class="status-text">
+                  Geplant für {{ statusDateLabel }}
+                  <template v-if="weatherSummary">
+                    · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
+                    {{ weatherSummary.tempLabel }}
+                  </template>
+                </span>
+              </template>
+              <template v-else>
+                <AppIcon :icon="ACTION_ICONS.notDone" :size="14" group="actions" />
+                <span>Als gemacht markieren</span>
+              </template>
+            </button>
+          </div>
+
+          <div class="card-social-actions" :class="{ 'is-expanded': expanded }">
+            <Transition name="comment-pop">
+              <Button
+                v-if="expanded"
+                type="button"
+                variant="ghost"
+                size="sm"
+                class="comment-btn"
+                :class="{ 'has-comments': comments.length > 0, active: showComments }"
+                aria-label="Kommentare anzeigen"
+                :title="comments.length ? `${comments.length} Kommentare` : 'Kommentar schreiben'"
+                @click.stop="showComments = !showComments"
+              >
+                <AppIcon :icon="ACTION_ICONS.comment" :size="15" group="actions" />
+                <span v-if="comments.length > 0" class="social-count">{{ comments.length }}</span>
+              </Button>
+            </Transition>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              class="like-btn"
+              :class="{ liked }"
+              :aria-label="liked ? 'Gefällt mir nicht mehr' : 'Gefällt mir'"
+              :title="liked ? 'Gefällt mir nicht mehr' : 'Gefällt mir'"
+              @click.stop="emit('toggle-like')"
+            >
+              <AppIcon
+                :icon="liked ? ACTION_ICONS.liked : ACTION_ICONS.unliked"
+                :size="15"
+                group="actions"
+              />
+              <span v-if="likeCount > 0" class="social-count">{{ likeCount }}</span>
+            </Button>
+          </div>
         </div>
+
         <Teleport to="body">
           <div v-if="dragging" class="drag-ghost" :style="ghostStyle ?? {}">
             <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" />
@@ -528,16 +584,12 @@ function onSpotDrop(event: DragEvent) {
           </PickerMenu>
         </Teleport>
 
-        <div class="excursion-accordion" :class="{ 'is-expanded': expanded }" :inert="!expanded">
+        <div
+          class="excursion-accordion"
+          :class="{ 'is-expanded': expanded && showComments }"
+          :inert="!expanded || !showComments"
+        >
           <div class="excursion-accordion-inner accordion-stagger">
-            <SocialRow
-              class="social-row"
-              :like-count="likeCount"
-              :liked="liked"
-              :comment-count="comments.length"
-              @toggle-like="emit('toggle-like')"
-              @toggle-comments="showComments = !showComments"
-            />
             <Comments
               v-if="showComments"
               :comments="comments"
@@ -547,27 +599,6 @@ function onSpotDrop(event: DragEvent) {
             />
           </div>
         </div>
-
-        <Transition name="fade">
-          <Button
-            v-if="!expanded"
-            type="button"
-            variant="ghost"
-            size="sm"
-            class="mini-like-btn"
-            :class="{ liked }"
-            :aria-label="liked ? 'Gefällt mir nicht mehr' : 'Gefällt mir'"
-            :title="liked ? 'Gefällt mir nicht mehr' : 'Gefällt mir'"
-            @click.stop="emit('toggle-like')"
-          >
-            <AppIcon
-              :icon="liked ? ACTION_ICONS.liked : ACTION_ICONS.unliked"
-              :size="15"
-              group="actions"
-            />
-            <span v-if="likeCount > 0" class="mini-like-count">{{ likeCount }}</span>
-          </Button>
-        </Transition>
       </div>
     </div>
   </Card>
@@ -578,7 +609,14 @@ function onSpotDrop(event: DragEvent) {
    den (weiterhin als Grid angezeigten) Spots unterscheidbar. Bild als schmale, feste Miniatur
    links statt großem Banner oben, damit es bei voller Breite nicht unnötig gestreckt wirkt. */
 .excursion-card {
+  --excursion-theme-color: var(--color-tour);
+  --excursion-theme-dark: var(--color-tour-dark);
+  --excursion-theme-tint: var(--color-tour-tint);
+  --excursion-theme-border: var(--color-tour-border);
+
   position: relative;
+  z-index: 1;
+  isolation: isolate;
   padding: 0;
   display: flex;
   flex-direction: row;
@@ -586,19 +624,39 @@ function onSpotDrop(event: DragEvent) {
   min-height: 120px;
   border-width: var(--ui-border-width, 1px);
   border-style: solid;
-  border-color: var(--color-tour-border);
+  border-color: var(--excursion-theme-border);
   background: var(--color-surface);
   cursor: pointer;
   overflow: hidden;
+  scroll-margin-top: calc(var(--space-2) + var(--category-nav-clearance, 48px));
   transition:
-    border-color 0.15s ease,
-    background 0.15s ease,
-    box-shadow 0.15s ease;
+    border-color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.excursion-card:hover {
-  border-color: var(--color-tour);
-  box-shadow: var(--shadow-sm);
+.excursion-card.is-travel,
+.excursion-card.has-role {
+  --excursion-theme-color: var(--color-travel);
+  --excursion-theme-dark: var(--color-travel-dark);
+  --excursion-theme-tint: var(--color-travel-tint);
+  --excursion-theme-border: var(--color-travel-border);
+}
+
+.excursion-card:not(.expanded):hover {
+  transform: translateY(-1px) scale(1.005);
+  border-color: var(--excursion-theme-color);
+  box-shadow: var(--shadow-md);
+  z-index: 5;
+}
+
+.excursion-card:not(.expanded):active {
+  transform: translateY(0) scale(0.99);
+}
+
+.excursion-card.expanded {
+  transform: translateY(0) scale(1);
 }
 
 .excursion-accordion {
@@ -618,60 +676,21 @@ function onSpotDrop(event: DragEvent) {
   overflow: hidden;
 }
 
-/* Akzentbalken an der abgerundeten linken Kante */
-.tour-accent-bar {
-  width: 32px;
-  flex-shrink: 0;
-  background: linear-gradient(180deg, var(--color-tour) 0%, var(--color-tour-dark) 100%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  padding-top: var(--space-2);
-  gap: 8px;
-  border-radius: var(--radius-md-squircle) 0 0 var(--radius-md-squircle);
-  corner-shape: squircle;
-  user-select: none;
-  z-index: 1;
-}
-
-.tour-accent-badge {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.25);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #ffffff;
-  flex-shrink: 0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-}
-
-.tour-bar-label {
-  writing-mode: vertical-lr;
-  transform: rotate(180deg);
-  font-size: 0.6rem;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.95);
-  opacity: 0.9;
-  margin-top: 2px;
-}
-
 .tour-card-main {
   flex: 1;
   min-width: 0;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: stretch;
   position: relative;
+  padding: 10px 14px 10px 10px;
+  gap: 12px;
 }
 
 /* Spot per Drag&Drop aus der Spots-Sicht darauf ablegen (SpotCard.vue ist die Drag-Quelle). */
 .excursion-card.drop-target {
-  border-color: var(--color-tour);
-  background: var(--color-tour-tint);
+  border-color: var(--excursion-theme-color);
+  background: var(--excursion-theme-tint);
 }
 
 /* Ersetzt den früheren ExcursionDetailDialog.vue-Modal-Dialog (#92): die Karte wächst an Ort und
@@ -681,40 +700,26 @@ function onSpotDrop(event: DragEvent) {
    unterscheidbar bleiben. */
 .excursion-card.expanded {
   border-style: solid;
-  border-color: var(--color-tour);
-  background: var(--color-tour-tint);
+  border-color: var(--excursion-theme-color);
+  background: var(--excursion-theme-tint);
 }
 
-.image {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 200px;
+.tour-image {
+  width: 110px;
+  flex-shrink: 0;
+  align-self: stretch;
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  overflow: hidden;
   background: var(--color-primary-tint) center/cover no-repeat;
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
-  border-radius: 0;
-  /* Beim Aufklappen: Bild morpht sofort zum Vollbild-Banner oben (Stufe 1) */
-  transition:
-    width 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s,
-    height 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s;
-}
-
-.excursion-card:not(.expanded) .image {
-  width: 140px;
-  height: 100%;
-  /* Beim Zuklappen: Bild wartet kurz auf Akkordeon (Stufe 2) */
-  transition:
-    width 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s,
-    height 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s;
+  position: relative;
 }
 
 .tour-type-badge {
   flex-shrink: 0;
-  margin-left: auto;
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -724,142 +729,51 @@ function onSpotDrop(event: DragEvent) {
   letter-spacing: 0.04em;
   padding: 1px 7px;
   border-radius: 999px;
-  background: var(--color-tour-tint);
-  color: var(--color-tour);
-  border: 1px solid var(--color-tour-border);
+  background: var(--excursion-theme-tint);
+  color: var(--excursion-theme-color);
+  border: 1px solid var(--excursion-theme-border);
 }
 
 .placeholder {
-  font-size: 2.5rem;
-  transition:
-    opacity 0.3s ease,
-    transform 0.3s ease;
+  font-size: 2rem;
+  color: var(--excursion-theme-color);
+  opacity: 0.7;
 }
 
-.excursion-card.expanded .placeholder {
+.tour-image-edit-btn {
   position: absolute;
-  opacity: 0.15;
-  transform: scale(1.8);
-  pointer-events: none;
-}
-
-.overlay-fade-enter-active {
-  transition: opacity 0.28s cubic-bezier(0.32, 0.72, 0, 1);
-}
-.overlay-fade-leave-active {
-  transition: opacity 0.2s ease;
-}
-.overlay-fade-enter-from,
-.overlay-fade-leave-to {
-  opacity: 0;
-}
-
-/* Expanded Cover Overlay: Halbdunkles Gradient-Overlay mit Titel, Kategorie/Rolle und Metadaten */
-.image-expanded-overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: var(--space-3);
-  background: linear-gradient(
-    180deg,
-    rgba(0, 0, 0, 0.5) 0%,
-    rgba(0, 0, 0, 0.15) 35%,
-    rgba(0, 0, 0, 0.85) 100%
-  );
-  border-radius: inherit;
-  pointer-events: none;
-  z-index: 1;
-}
-
-.image-expanded-overlay > * {
-  pointer-events: auto;
-}
-
-.overlay-top-row {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-}
-
-.overlay-edit-btn {
-  animation: editBtnSlideIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) 0.08s both;
-}
-
-@keyframes editBtnSlideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.overlay-author {
-  font-weight: 600;
-}
-
-.overlay-submeta {
-  opacity: 0.85;
+  top: 6px;
+  left: 6px;
+  z-index: 2;
 }
 
 .body {
   position: relative;
   z-index: 2;
-  padding: var(--space-3);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
+  flex: 1;
   min-width: 0;
-  box-sizing: border-box;
-  margin-left: 0;
-  margin-top: 200px;
-  /* Beim Aufklappen: gleitet sofort nach unten (Stufe 1) */
-  transition:
-    margin-left 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s,
-    margin-top 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s,
-    padding 0.32s ease 0s;
-}
-
-.excursion-card:not(.expanded) .body {
-  margin-left: 140px;
-  margin-top: 0;
-  min-height: 120px;
-  overflow: hidden;
-  /* Beim Zuklappen: wartet synchron mit Bild auf Akkordeon (Stufe 2) */
-  transition:
-    margin-left 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s,
-    margin-top 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s,
-    padding 0.28s ease 0.12s;
-}
-
-/* Einheitlicher Card-Titel: gleitet beim Expandieren nahtlos vom Body in den Cover-Header */
-.card-title-block {
-  position: relative;
-  z-index: 2;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  margin-bottom: var(--space-1);
-  padding-right: 70px;
-  transform: translate3d(0, 0, 0);
-  transition:
-    transform 0.32s cubic-bezier(0.32, 0.72, 0, 1),
-    margin-bottom 0.32s cubic-bezier(0.32, 0.72, 0, 1);
-  pointer-events: none;
+  gap: 6px;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
-.card-title-block > * {
-  pointer-events: auto;
+.card-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+  width: 100%;
 }
 
-.excursion-card.expanded .card-title-block {
-  transform: translateY(calc(-100% - var(--space-3) * 2));
-  margin-bottom: -28px;
-  padding-right: 90px;
+.card-title-block {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .card-title {
@@ -868,26 +782,22 @@ function onSpotDrop(event: DragEvent) {
   font-weight: 700;
   line-height: 1.3;
   color: var(--color-text);
-  flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   transition:
-    color 0.28s ease,
-    font-size 0.32s cubic-bezier(0.32, 0.72, 0, 1),
-    line-height 0.32s cubic-bezier(0.32, 0.72, 0, 1),
-    text-shadow 0.28s ease;
+    font-size 0.2s ease,
+    color 0.2s ease;
 }
 
 .excursion-card.expanded .card-title {
-  color: #ffffff;
-  font-size: 1.25rem;
-  line-height: 1.25;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+  font-size: 1.125rem;
+  line-height: 1.3;
   white-space: normal;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
 }
 
@@ -896,45 +806,24 @@ function onSpotDrop(event: DragEvent) {
   align-items: center;
   gap: var(--space-2);
   font-size: 0.8125rem;
-  color: rgba(255, 255, 255, 0.9);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+  color: var(--color-text-muted);
   flex-wrap: wrap;
+  margin-top: 2px;
 }
 
-/* Card Badge Group: gleitet sanft zwischen Body und Cover-Ecke */
+.overlay-author {
+  font-weight: 600;
+}
+
+.overlay-submeta {
+  opacity: 0.9;
+}
+
 .card-badge-group {
-  position: absolute;
-  z-index: 4;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  pointer-events: none;
-  top: var(--space-3);
-  right: var(--space-3);
-  transition:
-    top 0.32s cubic-bezier(0.32, 0.72, 0, 1),
-    right 0.32s cubic-bezier(0.32, 0.72, 0, 1);
-}
-
-.card-badge-group > * {
-  pointer-events: auto;
-}
-
-.excursion-card.expanded .card-badge-group .role-badge,
-.excursion-card.expanded .card-badge-group .tour-type-badge {
-  background: rgba(0, 0, 0, 0.45) !important;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.25) !important;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
-}
-
-.card-badge-group .role-badge,
-.card-badge-group .tour-type-badge {
-  transition:
-    background 0.3s ease,
-    border-color 0.3s ease,
-    box-shadow 0.3s ease;
+  gap: var(--space-1);
 }
 
 .show-on-map-btn {
@@ -984,14 +873,11 @@ function onSpotDrop(event: DragEvent) {
 
 .status-text {
   display: inline-block;
-  max-width: 260px;
   opacity: 1;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  transition:
-    max-width 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s,
-    opacity 0.2s ease 0.14s;
+  transition: opacity 0.2s ease 0.14s;
 }
 
 .status.planned,
@@ -1060,7 +946,7 @@ function onSpotDrop(event: DragEvent) {
 
 .done-toggle:hover {
   background: var(--color-surface);
-  border-color: var(--color-tour);
+  border-color: var(--excursion-theme-color);
   color: var(--color-text);
 }
 
@@ -1079,7 +965,7 @@ function onSpotDrop(event: DragEvent) {
 .done-toggle.status-done {
   color: var(--color-success);
   font-weight: 600;
-  background: var(--color-tour-tint);
+  background: var(--excursion-theme-tint);
   border-color: var(--color-success);
 }
 
@@ -1131,20 +1017,70 @@ function onSpotDrop(event: DragEvent) {
   box-shadow: var(--shadow-md);
 }
 
-.social-row {
-  margin-top: var(--space-2);
+.card-actions-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: auto;
+  position: relative;
+  z-index: 2;
 }
 
-.mini-like-btn {
-  position: absolute;
-  bottom: var(--space-2);
-  right: var(--space-2);
-  z-index: 1;
+.card-social-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.like-btn,
+.comment-btn {
   color: var(--color-text-muted);
 }
 
-.mini-like-btn.liked {
+.like-btn.liked {
   color: var(--color-like);
+}
+
+.like-btn.liked:hover {
+  background: var(--color-like-tint);
+}
+
+.comment-btn.active,
+.comment-btn.has-comments {
+  color: var(--color-primary);
+}
+
+.social-count {
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-left: 2px;
+}
+
+.comment-pop-enter-active,
+.comment-pop-leave-active {
+  transition:
+    opacity 0.2s cubic-bezier(0.32, 0.72, 0, 1),
+    transform 0.2s cubic-bezier(0.32, 0.72, 0, 1),
+    max-width 0.25s cubic-bezier(0.32, 0.72, 0, 1);
+  overflow: hidden;
+}
+
+.comment-pop-enter-from,
+.comment-pop-leave-to {
+  opacity: 0;
+  max-width: 0;
+  transform: scale(0.85) translateX(6px);
+}
+
+.comment-pop-enter-to,
+.comment-pop-leave-from {
+  opacity: 1;
+  max-width: 65px;
+  transform: scale(1) translateX(0);
 }
 
 .links {
@@ -1154,8 +1090,76 @@ function onSpotDrop(event: DragEvent) {
   margin-top: 4px;
 }
 
+/* Tour-Notiz: Fließender Übergang zwischen 1-2-zeiligem Teaser und voller Höhe (#235) */
+.tour-note-container {
+  display: block;
+  position: relative;
+  margin-top: 2px;
+  overflow: hidden;
+  transition:
+    max-height 0.35s cubic-bezier(0.32, 0.72, 0, 1),
+    margin 0.25s ease;
+}
+
+.tour-note-container:not(.is-expanded) {
+  max-height: 2.8em;
+}
+
+.tour-note-container.is-expanded {
+  max-height: 500px;
+}
+
 .note {
   overflow-wrap: anywhere;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--color-text);
+  transition: color 0.2s ease;
+}
+
+.note.is-clamped {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  color: var(--color-text-muted);
+}
+
+.note.is-clamped.is-expanded {
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+  display: block;
+  color: var(--color-text);
+}
+
+.note.is-clamped :deep(.richtext) {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.note.is-clamped.is-expanded :deep(.richtext) {
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+  display: block;
+}
+
+.note.is-clamped :deep(p),
+.note.is-clamped :deep(div) {
+  display: inline;
+  margin: 0;
+}
+
+.note.is-clamped :deep(p + p::before),
+.note.is-clamped :deep(div + div::before) {
+  content: ' ';
 }
 
 .role-badge {
@@ -1191,6 +1195,77 @@ function onSpotDrop(event: DragEvent) {
   color: var(--color-text-muted);
 }
 
+/* Stationen-Vorschau mit Polaroid-Stapel (#235) */
+.tour-stations-preview {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: var(--space-1) 0;
+  position: relative;
+  transition:
+    max-height 0.35s cubic-bezier(0.32, 0.72, 0, 1),
+    margin 0.35s ease,
+    opacity 0.25s ease;
+}
+
+.tour-stations-preview.is-fanned-out {
+  max-height: 0;
+  margin: 0;
+  opacity: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+
+/* Hover-Effekt auf der Collapsed Card: Sanftes Auffächern der Station-Polaroids (#235) */
+.excursion-card:not(.expanded):hover :deep(.tour-polaroid-stack .polaroid-tile) {
+  transform: var(--tile-fanned-transform);
+}
+
+.excursion-card:not(.expanded):hover :deep(.tour-polaroid-stack .polaroid-tile:first-child) {
+  box-shadow:
+    0 6px 14px rgba(0, 0, 0, 0.2),
+    0 2px 5px rgba(0, 0, 0, 0.12);
+}
+
+:root[data-theme='dark']
+  .excursion-card:not(.expanded):hover
+  :deep(.tour-polaroid-stack .polaroid-tile:first-child) {
+  box-shadow:
+    0 6px 16px rgba(0, 0, 0, 0.55),
+    0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light'])
+    .excursion-card:not(.expanded):hover
+    :deep(.tour-polaroid-stack .polaroid-tile:first-child) {
+    box-shadow:
+      0 6px 16px rgba(0, 0, 0, 0.55),
+      0 2px 5px rgba(0, 0, 0, 0.3);
+  }
+}
+
+.tour-attachments-wrap {
+  margin-top: var(--space-2);
+}
+
+.tour-stations-meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tour-stations-summary {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+}
+
 .excursion-accordion-inner > * {
   transition:
     opacity 0.2s ease 0s,
@@ -1209,84 +1284,36 @@ function onSpotDrop(event: DragEvent) {
 }
 
 @container spots-col (max-width: 480px) {
-  .tour-accent-bar {
-    width: 28px;
+  .tour-card-main {
+    padding: 8px 10px 8px 8px;
+    gap: 8px;
   }
 
-  .excursion-card:not(.expanded) {
-    min-height: 64px;
+  .tour-image {
+    width: 76px;
+    border-radius: var(--radius-sm-squircle);
   }
 
-  .excursion-card:not(.expanded) .image {
-    width: 64px;
-    height: 100%;
-    border-radius: 0;
+  .tour-image .placeholder {
+    font-size: 1.5rem;
   }
 
-  .excursion-card.expanded .image {
-    width: 100%;
-    height: 160px;
+  .card-title {
+    font-size: 0.9rem;
   }
 
-  .excursion-card:not(.expanded) .body {
-    margin-left: 64px;
-    margin-top: 0;
-    min-height: 64px;
-    padding: 6px var(--space-2);
-    justify-content: flex-start;
-    gap: 2px;
-    overflow: hidden;
-    height: 100%;
+  .excursion-card.expanded .card-title {
+    font-size: 1rem;
   }
 
   .role-badge {
-    font-size: 0.72rem;
-    padding: 1px 7px;
+    font-size: 0.7rem;
+    padding: 1px 6px;
   }
 
-  .excursion-card:not(.expanded) .card-badge-group {
-    top: 8px;
-    right: var(--space-2);
-    transition:
-      top 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s,
-      right 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.12s;
-  }
-
-  .excursion-card.expanded .card-badge-group {
-    top: var(--space-3);
-    right: var(--space-3);
-    transition:
-      top 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s,
-      right 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s;
-  }
-
-  .excursion-card.expanded .body {
-    margin-left: 0;
-    margin-top: 160px;
-    padding: var(--space-3);
-  }
-
-  .excursion-card:not(.expanded) .status {
-    width: 22px;
-    height: 22px;
-    padding: 0;
-    gap: 0;
-    justify-content: center;
-    border-radius: 50%;
-    transition:
-      width 0.2s cubic-bezier(0.32, 0.72, 0, 1) 0s,
-      height 0.2s cubic-bezier(0.32, 0.72, 0, 1) 0s,
-      padding 0.2s cubic-bezier(0.32, 0.72, 0, 1) 0s,
-      gap 0.2s cubic-bezier(0.32, 0.72, 0, 1) 0s,
-      border-radius 0.2s ease 0s;
-  }
-
-  .excursion-card:not(.expanded) .status-text {
-    max-width: 0;
-    opacity: 0;
-    transition:
-      max-width 0.18s cubic-bezier(0.32, 0.72, 0, 1) 0s,
-      opacity 0.14s ease 0s;
+  .tour-type-badge {
+    font-size: 0.65rem;
+    padding: 1px 6px;
   }
 
   .excursion-card:not(.expanded) .show-on-map-btn {
@@ -1312,18 +1339,83 @@ function onSpotDrop(event: DragEvent) {
   .excursion-card:not(.expanded) .card-actions {
     display: none;
   }
+
+  .tour-stations-preview {
+    gap: var(--space-2);
+    margin: 2px 0;
+  }
+
+  :deep(.tour-polaroid-stack) {
+    width: 46px;
+    height: 56px;
+  }
+
+  :deep(.tour-polaroid-stack .polaroid-tile) {
+    width: 42px;
+    height: 52px;
+    padding: 2px 2px 8px 2px;
+  }
+
+  :deep(.tour-polaroid-stack .polaroid-photo-frame) {
+    height: 34px;
+  }
+
+  :deep(.tour-polaroid-stack .polaroid-chin) {
+    height: 8px;
+  }
+
+  :deep(.tour-polaroid-stack .polaroid-caption) {
+    font-size: 0.4rem;
+  }
+
+  .tour-note-container:not(.is-expanded) {
+    max-height: 1.4em;
+  }
+
+  .tour-note-container.is-expanded {
+    max-height: 300px;
+  }
+
+  .note.is-clamped {
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+    font-size: 0.78rem;
+    line-height: 1.3;
+  }
+
+  .note.is-clamped.is-expanded {
+    -webkit-line-clamp: unset;
+    line-clamp: unset;
+    display: block;
+  }
+
+  .note.is-clamped :deep(.richtext) {
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+  }
+
+  .note.is-clamped.is-expanded :deep(.richtext) {
+    -webkit-line-clamp: unset;
+    line-clamp: unset;
+    display: block;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .image,
+  .excursion-card,
   .body,
   .excursion-accordion,
   .status,
   .status-text,
   .show-on-map-btn,
   .show-on-map-btn .btn-label,
-  .excursion-accordion-inner > * {
-    transition: none !important;
+  .excursion-accordion-inner > *,
+  .polaroid-tile,
+  .tour-stations-preview,
+  .tour-stations-preview.is-fanned-out .polaroid-tile,
+  .tour-note-container {
+    transform: none !important;
+    transition: opacity 0.15s ease !important;
   }
 }
 

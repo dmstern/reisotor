@@ -12,9 +12,17 @@ import { renderRichText } from '../utils/richText';
 // v-html, kostet nichts an einer einzelnen Stelle statt X Views einzeln absichern zu müssen.
 const props = defineProps<{ content: string; format?: string | null }>();
 
-const html = computed(() =>
-  props.format === 'html' ? DOMPurify.sanitize(props.content) : renderRichText(props.content)
-);
+// Wenn format='html', direkt durch DOMPurify sanitizen und als HTML rendern.
+// Fallback: Wenn das Format nicht explizit 'html' ist, aber der Inhalt offensichtlich HTML ist
+// (beginnt mit '<'), wird Content-Sniffing als letzter Ausweg angewendet - das tritt auf, wenn
+// Notizen im WYSIWYG-Editor geschrieben wurden, bevor note_format-Tracking für Touren eingeführt
+// wurde (DB-Default war 'legacy'). Ohne diesen Fallback würden die <p>-Tags als Rohtext angezeigt.
+const html = computed(() => {
+  if (props.format === 'html' || props.content.trimStart().startsWith('<')) {
+    return DOMPurify.sanitize(props.content);
+  }
+  return renderRichText(props.content);
+});
 </script>
 
 <template>

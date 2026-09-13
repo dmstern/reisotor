@@ -130,12 +130,14 @@ Zwei bewusst getrennte, nicht überlappende Schichten:
 vite.config.ts`) erweitert denselben `public/sw.js` (statt ihn zu ersetzen) um
   Workbox-Precaching für das komplette Bundle, damit die App auch ohne jedes Netz überhaupt lädt.
   Macht die App auf iOS/Android/Desktop als Icon installierbar (PNG-/Maskable-Icons unter
-  `public/icons/`, erzeugt von `scripts/generate-icons.mjs` aus `reisotor_logo.svg`). Bewusst
+  `public/icons/`, erzeugt von `scripts/generate-icons.mjs` aus
+  `reisotor_icon_abgerundet_edit.svg`). Bewusst
   **kein** Runtime-Caching von `/api/*` in dieser Schicht — bleibt exklusiv Aufgabe der Daten-Ebene
   oben, um nicht zwei konkurrierende Caches für dieselben Daten zu haben. `devOptions.enabled` ist
   im Dev-Server bewusst `false` — echtes Testen dieser Schicht braucht einen Produktions-Build
-  (siehe `e2e/tests/offline-app-shell.spec.ts`). `components/PwaUpdatePrompt.vue` zeigt einen
-  Hinweis, wenn eine neue Version bereitsteht bzw. einmalig, dass die App jetzt offline nutzbar ist.
+  (siehe `e2e/tests/offline-app-shell.spec.ts`). `components/NotificationInbox.vue` (gespeist aus
+  `stores/pwaUpdate.ts`) zeigt einen Hinweis, wenn eine neue Version bereitsteht bzw. einmalig,
+  dass die App jetzt offline nutzbar ist.
 
 ## Anhänge
 
@@ -148,8 +150,8 @@ werden per eigener Cleanup-Routine entfernt.
 
 Lese-Routen filtern `deleted_at IS NULL`. `routes/trash.ts` listet/restauriert/purged endgültig.
 Frontend zeigt beim Löschen zuerst ein 60-Sekunden-Rückgängig-Fenster direkt an der Listenstelle
-(`useUndoableDelete.ts`-Composable + `UndoDeleteRow.vue`-Platzhalter), danach ist der Eintrag nur
-noch über die eigene `TrashView.vue` (Profil/Avatar-Menü) wiederherstellbar.
+(`useUndoableDelete.ts`-Composable + `UndoDeleteRow.vue`-Platzhalter), danach ist der Eintrag über
+die eigene `TrashView.vue` (Trip-Dashboard bzw. optionales NavBar-Item) wiederherstellbar.
 
 ## Kalender-Einstellungen & Querverweis-Hervorhebung
 

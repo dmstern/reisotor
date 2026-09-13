@@ -33,22 +33,14 @@ async function focusDayViaCalendar(page: Page, viewportName: string) {
 }
 
 // Regressionstest für einen bereits mehrfach aufgetretenen UX-Bug (TripMap.vue's centerOnPoint()/
-// fitBoundsWithCoveredBottom()): die Spots-Schublade (.spots-col) rendert als Bottom-Sheet ÜBER dem
-// unteren Teil der Karte, sobald ExcursionsView.vue's CSS-Container-Query (@container app-main
-// (min-width: 900px)) nicht greift - das ist NICHT dasselbe wie "Fenster ist schmal genug für
-// Mobile" (useIsDesktop.ts's window.matchMedia(min-width:800px)): bei mittleren Fensterbreiten
-// (>800px, aber .app-main <900px, z. B. bei geöffneter Kalender-Schublade) rendert das Sheet
-// weiterhin als Overlay, obwohl useIsDesktop bereits "Desktop" meldet. Ein fokussierter Punkt/
-// Ausschnitt darf deshalb nicht im Zentrum des GESAMTEN Karten-Containers landen, sondern muss im
-// Zentrum der tatsächlich sichtbaren (nicht überlagerten) Fläche erscheinen - siehe
-// ExcursionsView.vue's mapCoveredBottomPx/isSheetOverlayMode (ResizeObserver auf .app-main statt
-// window.matchMedia) für den Fix. Deckt beide Layout-Modi ab, in denen das Sheet überlagern kann
-// (VIEWPORTS.mobile, VIEWPORTS.narrowDesktop - Letzteres reproduziert exakt die Schwellen-
-// Diskrepanz, s. o.), sowie alle vier Fokus-Arten (Einzel-Spot, "Alle anzeigen", Ausflug/Tour,
-// Tag).
+// fitBoundsWithCoveredBottom()): auf Mobilgeräten (< 800px) rendert die Spots-Schublade (.spots-col)
+// als Bottom-Sheet ÜBER dem unteren Teil der Karte. Auf Desktop-Breiten (≥ 800px) schwebt sie dagegen
+// permanent als Seitenspalte links. Ein fokussierter Punkt/Ausschnitt auf Mobilgeräten darf deshalb
+// nicht im Zentrum des GESAMTEN Karten-Containers landen, sondern muss im Zentrum der tatsächlich
+// sichtbaren (nicht überlagerten) Fläche erscheinen - siehe ExcursionsView.vue's mapCoveredBottomPx
+// und TripMap.vue's centerOnPoint/fitBoundsWithCoveredBottom für den Fix.
 for (const [viewportName, viewport] of Object.entries({
   mobile: VIEWPORTS.mobile,
-  narrowDesktop: VIEWPORTS.narrowDesktop,
 })) {
   test.describe(`Karten-Fokus berücksichtigt die Spots-Schublade (${viewportName})`, () => {
     test.use({ viewport });
@@ -96,9 +88,8 @@ for (const [viewportName, viewport] of Object.entries({
       const sheet = page.locator('.spots-col');
       await expect(sheet).toBeVisible();
 
-      // Sortieren/Filtern stecken auf echten mobilen Breiten standardmäßig hinter "⚙️ Anzeige &
-      // Filter" (siehe ExcursionsView.vue) - bei narrowDesktop bleibt der Umschalter per @media
-      // (nicht @container) unsichtbar, dort ist die Zeile schon offen. Der Spots-/Touren-Umschalter
+      // Sortieren/Filtern stecken auf mobilen Breiten standardmäßig hinter "⚙️ Anzeige &
+      // Filter" (siehe ExcursionsView.vue). Der Spots-/Touren-Umschalter
       // selbst sitzt seit #155 direkt neben der Überschrift, ist davon unabhängig immer erreichbar.
       const filterToggle = page.locator('.filter-toggle-row');
       if (await filterToggle.isVisible()) await filterToggle.click();

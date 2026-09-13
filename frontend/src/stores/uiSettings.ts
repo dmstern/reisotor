@@ -38,7 +38,7 @@ export type GlassStyle = 'glass' | 'frosted' | 'opaque' | 'custom';
 export const VIBRANT_PRIMARY_COLOR_PRESETS = [
   { name: 'Türkis', hex: '#2a7f74' },
   { name: 'Ozeanblau', hex: '#2563eb' },
-  { name: 'Violett', hex: '#7c3aed' },
+  { name: 'Violett', hex: '#9141AC' },
   { name: 'Smaragd', hex: '#059669' },
   { name: 'Rubin', hex: '#e11d48' },
   { name: 'Bernstein', hex: '#d97706' },
@@ -70,7 +70,7 @@ export const PRIMARY_COLOR_PRESETS = [
   ...PASTEL_PRIMARY_COLOR_PRESETS,
 ];
 
-export const DEFAULT_PRIMARY_COLOR = '#2a7f74';
+export const DEFAULT_PRIMARY_COLOR = '#9141AC';
 export const DEFAULT_BORDER_WIDTH = 1;
 export const DEFAULT_TOAST_TIMEOUT = 5; // Sekunden
 

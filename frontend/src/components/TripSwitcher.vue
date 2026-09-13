@@ -17,6 +17,15 @@ import DropdownItem from './primitives/DropdownItem.vue';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
+const props = withDefaults(
+  defineProps<{
+    docked?: boolean;
+  }>(),
+  {
+    docked: false,
+  }
+);
+
 const tripStore = useTripStore();
 const auth = useAuthStore();
 const open = ref(false);
@@ -82,7 +91,7 @@ function openMembers(trip: Trip) {
 </script>
 
 <template>
-  <div class="trip-switcher">
+  <div class="trip-switcher" :class="{ 'is-docked': props.docked }">
     <button type="button" class="switcher-btn" @click="toggle">
       <span class="trip-name">{{ tripStore.currentTrip?.name ?? 'Urlaub wählen' }}</span>
       <AppIcon :icon="ACTION_ICONS.chevronDown" :size="12" group="actions" class="caret" />
@@ -184,6 +193,9 @@ function openMembers(trip: Trip) {
 <style scoped>
 .trip-switcher {
   position: relative;
+  display: inline-flex;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .switcher-btn {
@@ -191,25 +203,52 @@ function openMembers(trip: Trip) {
   align-items: center;
   gap: 6px;
   background: var(--color-primary-tint);
-  border: none;
-  border-radius: var(--radius-sm-squircle);
-  padding: 6px 12px;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 22%, transparent);
+  border-radius: 999px;
+  padding: 6px 14px;
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--color-primary-dark);
   cursor: pointer;
-  max-width: 40vw;
-  /* Ohne min-width:0 verweigert der Button als Flex-Kind von .switcher (AppHeader.vue) das
-     Schrumpfen unter die Content-Breite von .trip-name (white-space:nowrap) - max-width:40vw
-     greift dann nicht mehr zuverlässig, sobald .switcher selbst (flex:1) durch weitere Header-Icons
-     (z. B. NotificationInbox.vue's Glocke) auf schmalen Viewports enger wird, wodurch der Button
-     sichtbar über seine eigene Box hinaus in die Nachbar-Icons hineinragte (#97-Regression in
-     layout-overlap.spec.ts). min-width:0 lässt .trip-name's Ellipsis (siehe dort) stattdessen wie
+  max-width: min(100%, 280px);
+  /* Ohne min-width:0 verweigert der Button als Flex-Kind das
+     Schrumpfen unter die Content-Breite von .trip-name (white-space:nowrap) - max-width
+     greift dann nicht mehr zuverlässig, sobald .switcher selbst durch weitere Header-Icons
+     auf schmalen Viewports enger wird. min-width:0 lässt .trip-name's Ellipsis wie
      vorgesehen greifen. */
   min-width: 0;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease;
+}
+
+@media (max-width: 450px) {
+  .switcher-btn {
+    padding: 5px 10px;
+    gap: 4px;
+    font-size: 0.8rem;
+  }
+}
+
+.switcher-btn:hover {
+  background: color-mix(in srgb, var(--color-primary) 18%, transparent);
+  border-color: color-mix(in srgb, var(--color-primary) 35%, transparent);
+}
+
+.trip-switcher.is-docked {
+  margin: 0 var(--space-2);
+}
+
+.trip-switcher.is-docked .switcher-btn {
+  padding: 5px 12px;
+  font-size: 0.82rem;
+  max-width: 180px;
 }
 
 .trip-name {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

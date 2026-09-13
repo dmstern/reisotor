@@ -95,7 +95,7 @@ export default defineConfig({
     // (Web-Push-Handler, siehe dortiger Kommentar) erhalten bleibt und nur um Workbox-Precaching
     // ERWEITERT statt komplett ersetzt wird (siehe self.__WB_MANIFEST-Import in sw.js selbst).
     // Die Landingpage (landing-main.ts) registriert keinen Service Worker (kein
-    // PwaUpdatePrompt.vue-Import) und braucht kein App-Manifest - Plugin dort komplett weglassen
+    // stores/pwaUpdate.ts-Import) und braucht kein App-Manifest - Plugin dort komplett weglassen
     // statt eines für sie irreführenden sw.js/manifest.webmanifest im Build-Output.
     buildTarget !== 'landing' &&
       VitePWA({
@@ -108,7 +108,12 @@ export default defineConfig({
           // Fonts/Logo/Icons zusätzlich zu den von Vite selbst erzeugten Haupt-Bundles precachen -
           // ohne diese explizite Liste würden nur JS/CSS/index.html erfasst, nicht die unter
           // public/ liegenden statischen Assets.
-          globPatterns: ['**/*.{js,css,html}', 'icons/*.png', 'fonts/*.woff2', 'reisotor_logo.svg'],
+          globPatterns: [
+            '**/*.{js,css,html}',
+            'icons/*.png',
+            'fonts/*.woff2',
+            'reisotor-icon-circle.svg',
+          ],
         },
         registerType: 'prompt',
         devOptions: {
@@ -117,7 +122,7 @@ export default defineConfig({
           // App-Shell ist ein reines Produktions-Build-Feature.
           enabled: false,
         },
-        includeAssets: ['reisotor_logo.svg', 'fonts/*.woff2'],
+        includeAssets: ['reisotor-icon-circle.svg', 'fonts/*.woff2'],
         manifest: {
           name: 'Reisotor',
           short_name: 'Reisotor',
@@ -128,11 +133,11 @@ export default defineConfig({
           display: 'standalone',
           orientation: 'any',
           categories: ['travel', 'productivity'],
-          // Kreis-Hintergrundfarbe des Logos (reisotor_logo.svg) - Splashscreen-Hintergrund beim
+          // Hintergrundfarbe des App-Icons - Splashscreen-Hintergrund beim
           // Start von Home-Bildschirm/Taskleiste aus.
-          background_color: '#EAF6F4',
+          background_color: '#35003F',
           // style.css's --color-primary (Light-Mode).
-          theme_color: '#2a7f74',
+          theme_color: '#9141AC',
           icons: [
             { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
             { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },

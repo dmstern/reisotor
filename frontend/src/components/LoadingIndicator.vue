@@ -14,9 +14,8 @@ import type { IconDef } from '../utils/icon';
 // REQUEST_TIMEOUT_MS in api/client.ts) wirkte die App bis zu 8s wie eingefroren.
 //
 // Bewusst ein eigener, freischwebender Toast (position:fixed, siehe .toast-pill) statt eines
-// Header-Pills wie bei OfflineIndicator.vue/PwaUpdatePrompt.vue: Letztere sind dauerhafte Zustände,
-// die als Teil der Statuszeile zum Layout gehören dürfen. Dieser Indikator blinkt dagegen bei JEDEM
-// noch so kurzen Request auf/ab - als Flex-Kind der Statuszeile ließ das den Header spürbar
+// Elements in der Header-Zeile: Dieser Indikator blinkt bei JEDEM
+// noch so kurzen Request auf/ab - als Flex-Kind der Headerzeile ließe das den Header spürbar
 // "wackeln" (Zeilenhöhe sprang ständig). Ein fixed-positionierter Toast nimmt am Layout gar nicht
 // teil, kann also beliebig oft erscheinen/verschwinden, ohne irgendetwas zu verschieben.
 const activity = useRequestActivityStore();

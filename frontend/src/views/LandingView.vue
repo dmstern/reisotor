@@ -43,7 +43,7 @@ const features = [
 <template>
   <div class="landing">
     <header class="hero">
-      <img src="/reisotor_logo.svg" alt="" width="120" height="120" class="hero-logo" />
+      <img src="/reisotor-icon-circle.svg" alt="" width="120" height="120" class="hero-logo" />
       <h1>Reisotor</h1>
       <p class="tagline">
         Euren Urlaub gemeinsam planen – Kalender, Budget, Packlisten und Ausflüge an einem Ort.

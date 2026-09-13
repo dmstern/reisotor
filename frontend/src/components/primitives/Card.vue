@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue';
 import type { IconDef } from '../../utils/icon';
 import AppIcon from '../AppIcon.vue';
+import { TILE_SHADOW_ALPHA } from '../../utils/widgetColors';
 
 /**
  * Surface-Primitive für alle Karten im Reisotor (SpotCard, ExcursionCard, BudgetPotCard,
@@ -15,14 +16,17 @@ const props = withDefaults(
      * - 'flat': Flacher Rand ohne Schatten
      * - 'elevated': Erhöhter Schatten (shadow-md) für schwebende Overlays
      * - 'tile': Dashboard-Kachel mit leicht transparentem Hintergrund, schwebendem Kreis-Icon & Hover-Lift
+     * - 'polaroid': Authentische Polaroid-Fotokarte mit breitem weißem Papierrahmen, tiefem Schatten & Vintage-Haptik
      */
-    variant?: 'default' | 'muted' | 'flat' | 'elevated' | 'tile';
+    variant?: 'default' | 'muted' | 'flat' | 'elevated' | 'tile' | 'polaroid';
     /** Ob die Karte sich im komprimierten/kompakten Zustand befindet. */
     condensed?: boolean;
     /** Ob die Karte sich im aufgeklappten Zustand befindet (Invers zu condensed). */
     expanded?: boolean;
     /** Ob die Karte interaktiv per Klick aufklappbar/zuklappbar ist (wie SpotCard/ExcursionCard in der Karten-View). */
     expandable?: boolean;
+    /** Ob die Karte generell interaktiv/anklickbar ist (Hover-Lift & Pointer). */
+    interactive?: boolean;
     /** Optionale URL für ein Bild-Banner der Karte. */
     bannerUrl?: string;
     /** Alt-Text für das Bild-Banner. */
@@ -33,6 +37,8 @@ const props = withDefaults(
     highlight?: boolean;
     /** Akzentfarbe für die 'tile'-Variante (Hex oder CSS var). */
     tileColor?: string;
+    /** Alpha-Hex für den Box-Shadow der 'tile'-Variante (Standard: TILE_SHADOW_ALPHA aus widgetColors.ts). */
+    tileShadowAlpha?: string;
     /** IconDef für das runde Schwebelogo der 'tile'-Variante. */
     tileIcon?: IconDef;
     /** HTML-Tag für das Card-Wurzelelement (Standard: 'div', z. B. 'section', 'li'). */
@@ -43,10 +49,12 @@ const props = withDefaults(
     condensed: undefined,
     expanded: undefined,
     expandable: false,
+    interactive: false,
     bannerAlt: '',
     bannerPosition: 'auto',
     highlight: false,
-    tileColor: '#2a7f74',
+    tileColor: '#9141AC',
+    tileShadowAlpha: TILE_SHADOW_ALPHA,
     tag: 'div',
   }
 );
@@ -115,7 +123,6 @@ function handleCardKeydown(event: KeyboardEvent) {
 </script>
 
 <template>
-  <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
   <component
     :is="tag"
     class="card"
@@ -129,6 +136,7 @@ function handleCardKeydown(event: KeyboardEvent) {
           (props.condensed !== undefined || props.expanded !== undefined || props.expandable) &&
           isExpanded,
         'card--expandable': expandable,
+        'card--interactive': interactive,
         'new-highlight': highlight,
         'card--has-banner': bannerUrl || $slots.banner,
         'card--banner-left': (bannerUrl || $slots.banner) && effectiveBannerPosition === 'left',
@@ -136,11 +144,17 @@ function handleCardKeydown(event: KeyboardEvent) {
     ]"
     :style="
       variant === 'tile' && tileColor
-        ? { background: tileColor.startsWith('#') ? `${tileColor}0d` : tileColor }
+        ? {
+            background: tileColor.startsWith('#') ? `${tileColor}0d` : tileColor,
+            borderColor: tileColor,
+            '--tile-shadow': tileColor.startsWith('#')
+              ? `${tileColor}${tileShadowAlpha}`
+              : tileColor,
+          }
         : undefined
     "
-    :role="expandable ? 'button' : undefined"
-    :tabindex="expandable ? 0 : undefined"
+    :role="expandable || interactive ? 'button' : undefined"
+    :tabindex="expandable || interactive ? 0 : undefined"
     :aria-expanded="expandable ? isExpanded : undefined"
     @click="handleCardClick"
     @keydown="handleCardKeydown"
@@ -152,6 +166,9 @@ function handleCardKeydown(event: KeyboardEvent) {
       :style="{
         background: tileColor.startsWith('#') ? `${tileColor}26` : 'var(--color-primary-tint)',
         borderColor: tileColor,
+        '--tile-icon-shadow': tileColor.startsWith('#')
+          ? `${tileColor}26`
+          : 'var(--color-primary-tint)',
       }"
     >
       <slot name="tile-icon">
@@ -215,6 +232,7 @@ function handleCardKeydown(event: KeyboardEvent) {
 
 <style>
 .card {
+  isolation: isolate;
   background: var(--color-surface);
   border: var(--ui-border-width, 1px) solid var(--color-border);
   border-radius: var(--radius-md-squircle);
@@ -265,17 +283,104 @@ function handleCardKeydown(event: KeyboardEvent) {
     0 12px 28px rgba(0, 0, 0, 0.08);
 }
 
+.card--polaroid {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: var(--radius-md-squircle);
+  corner-shape: squircle;
+  box-shadow:
+    0 3px 6px rgba(0, 0, 0, 0.08),
+    0 10px 24px rgba(0, 0, 0, 0.12);
+  padding: 8px 8px 14px 8px;
+  transform: rotate(var(--card-rotate, -0.75deg));
+  transform-origin: center center;
+  transition:
+    transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.2s ease;
+}
+
+/* Subtile Fächer-Drehung für Geschwister-Polaroids ohne explizites --card-rotate (z. B. in Storybook/Listen) */
+.card--polaroid:nth-child(2n) {
+  --card-rotate: 0.75deg;
+}
+.card--polaroid:nth-child(3n) {
+  --card-rotate: -0.6deg;
+}
+.card--polaroid:nth-child(4n) {
+  --card-rotate: 0.95deg;
+}
+.card--polaroid:nth-child(5n) {
+  --card-rotate: -1.1deg;
+}
+.card--polaroid:nth-child(6n) {
+  --card-rotate: 0.65deg;
+}
+
+.card--polaroid:not(.card--expanded):not(.expanded):hover {
+  transform: translateY(-4px) rotate(calc(var(--card-rotate, -0.75deg) * 0.4)) scale(1.02);
+  box-shadow:
+    0 8px 18px rgba(0, 0, 0, 0.1),
+    0 20px 42px rgba(0, 0, 0, 0.18);
+  z-index: 5;
+}
+
+.card--polaroid:not(.card--expanded):not(.expanded):active {
+  transform: translateY(0) rotate(var(--card-rotate, -0.75deg)) scale(0.99);
+}
+
+.card--polaroid.card--expanded,
+.card--polaroid.expanded {
+  transform: translateY(0) rotate(0deg) scale(1);
+}
+
+:root[data-theme='dark'] .card--polaroid {
+  background: #2a2825;
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow:
+    0 4px 10px rgba(0, 0, 0, 0.4),
+    0 14px 32px rgba(0, 0, 0, 0.5);
+}
+
+:root[data-theme='dark'] .card--polaroid:not(.card--expanded):not(.expanded):hover {
+  box-shadow:
+    0 8px 20px rgba(0, 0, 0, 0.5),
+    0 24px 48px rgba(0, 0, 0, 0.65);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .card--polaroid {
+    background: #2a2825;
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow:
+      0 4px 10px rgba(0, 0, 0, 0.4),
+      0 14px 32px rgba(0, 0, 0, 0.5);
+  }
+
+  :root:not([data-theme='light']) .card--polaroid:not(.card--expanded):not(.expanded):hover {
+    box-shadow:
+      0 8px 20px rgba(0, 0, 0, 0.5),
+      0 24px 48px rgba(0, 0, 0, 0.65);
+  }
+}
+
 .card--tile {
   position: relative;
+  box-shadow: 0 2px 6px var(--tile-shadow, var(--shadow-sm));
   transition:
-    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   margin-top: 18px;
 }
 
 .card--tile:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+  transform: translateY(-4px) scale(1.015);
+  box-shadow: 0 8px 24px var(--tile-shadow, var(--shadow-md));
+  z-index: 5;
+}
+
+.card--tile:active {
+  transform: translateY(0) scale(0.99);
 }
 
 .card-tile-icon {
@@ -287,36 +392,43 @@ function handleCardKeydown(event: KeyboardEvent) {
   height: 44px;
   border-radius: 50%;
   border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 2px 6px var(--tile-icon-shadow, var(--shadow-sm));
   display: flex;
   align-items: center;
   justify-content: center;
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
 }
 
-/* Expandable Interactive Card (Karten-View Spot/Tour Verhalten) */
-.card--expandable {
+/* Expandable & Interactive Card (Hover-Lift & Skalierung) */
+.card--expandable,
+.card--interactive {
   cursor: pointer;
   user-select: none;
   transition:
-    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1),
     border-color 0.2s ease,
     background 0.2s ease;
 }
 
-.card--expandable:hover {
-  transform: translateY(-2px);
+.card--expandable:not(.card--expanded):hover,
+.card--interactive:not(.card--expanded):hover {
+  transform: translateY(-4px) scale(1.015);
   border-color: var(--color-primary-dark);
   box-shadow: var(--shadow-md);
+  z-index: 5;
 }
 
-.card--expandable:active {
-  transform: scale(0.98) translateY(0);
+.card--expandable:not(.card--expanded):active,
+.card--interactive:not(.card--expanded):active {
+  transform: translateY(0) scale(0.99);
 }
 
 .card--expandable.card--expanded {
   border-color: var(--color-primary);
   box-shadow: var(--shadow-md);
+  transform: translateY(0) scale(1);
 }
 
 /* Condensed (Kompakter Zustand) */
@@ -421,6 +533,17 @@ function handleCardKeydown(event: KeyboardEvent) {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .card--polaroid,
+  .card--expandable,
+  .card--interactive,
+  .card--tile {
+    transition: none !important;
+    transform: none !important;
   }
 }
 </style>

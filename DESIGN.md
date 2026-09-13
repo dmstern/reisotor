@@ -127,15 +127,16 @@ anlegen, nicht als lokaler Wert in der Komponente.
 | `--color-border-strong`    | Eingabefelder, Selects, Secondary-Buttons    | `#d5cabc`  | `#4a453c` |
 | `--color-text`             | Primäre Textfarbe                            | `#2b2a28`  | `#f2efe9` |
 | `--color-text-muted`       | Gedämpfter Fließtext & Untertitel            | `#726e66`  | `#a8a29a` |
-| `--color-primary`          | Marken-Grün (Haupt-Buttons & Fokus)          | `#2a7f74`  | `#3da296` |
-| `--color-primary-dark`     | Hover-Status für Marken-Grün                 | `#1f6059`  | `#7dd0c1` |
-| `--color-primary-tint`     | Leichter Grünton für Steuerungen & Badges    | `#eaf3f1`  | `#1c2e2a` |
+| `--color-primary`          | Marken-Farbe (Haupt-Buttons & Fokus)         | `#9141ac`  | `#c061cb` |
+| `--color-primary-dark`     | Hover-Status für Marken-Farbe                | `#7b3793`  | `#c974d2` |
+| `--color-primary-tint`     | Leichter Akzentton für Steuerungen & Badges  | `#f6eff9`  | `#352538` |
 | `--color-hover`            | Hover-Hintergrund & Muted-Surface            | `#f4f1ec`  | `#2a2823` |
 | `--color-accent`           | Echtzeit-Updates / Aufmerksamkeits-Akzent    | `#e08e45`  | `#f0a05a` |
 | `--color-danger`           | Gefahr / Löschen / Warnungen                 | `#c1503f`  | `#e0685a` |
 | `--color-success`          | Erfolg / Fertig-Status                       | `#3f8f5c`  | `#5cb37e` |
 | `--color-scheduled`        | Geplant (Kalender & Streifen)                | `#1e96d1`  | `#52b8ea` |
 | `--color-tour`             | Touren / Ausflüge (Kacheln, Kalender, Spots) | `#eb6834`  | `#f08254` |
+| `--color-travel`           | Reisen / Etappen (Kacheln, Kalender, Chips)  | `#1baf7a`  | `#2ecb91` |
 | `--color-highlight`        | Highlight-Fläche für Notizen                 | `#fff4e8`  | `#332a1c` |
 | `--color-accent-secondary` | Sekundärer Akzent (Indigo)                   | `#5b6ee1`  | `#8b98f0` |
 
@@ -156,12 +157,12 @@ klar benannte Variable anlegen statt eine bestehende zweitzuverwenden.
 
 **Steuerungselement vs. Dateninhalt**: Flächen, die ein Werkzeug/eine Steuerung sind (Gruppieren-/
 Sortieren-/Filtern-Leiste, Kategorie-/Touren-Navigationsleiste – der Nutzer interagiert mit der
-Fläche selbst, sie zeigt keinen eigenen Inhalt) bekommen `--color-primary-tint` (das leichte
-Markengrün) als Hintergrund statt des neutralen `--color-hover`/`--color-surface` – macht sie auf
+Fläche selbst, sie zeigt keinen eigenen Inhalt) bekommen `--color-primary-tint` (die leichte
+Markenfarbe) als Hintergrund statt des neutralen `--color-hover`/`--color-surface` – macht sie auf
 einen Blick als "das ist Bedienung" erkennbar. Flächen, die Dateninhalt zeigen (Spot-/Ausflugs-Cards,
 Listenzeilen – der Inhalt selbst ist relevant, nicht die Fläche als Werkzeug) bleiben bei
 `--color-surface` (weiß/hell in Light Mode). Beispiel: `ExcursionsView.vue`s `.filter-bar`
-(Steuerung, grün) vs. `SpotCard.vue`/`ExcursionCard.vue` (Dateninhalt, weiß).
+(Steuerung, getönt) vs. `SpotCard.vue`/`ExcursionCard.vue` (Dateninhalt, weiß).
 
 Bewusste Ausnahme: `ExcursionsView.vue`s `.category-nav` nutzt trotz Steuerungselement-Charakter
 keinen eigenständigen Grünton, sondern passt sich transparent an den jeweils dahinterliegenden
@@ -643,7 +644,10 @@ unerwünschte Vererbungen in Spezialfällen (z. B. ungerahmte Inputs in `QuickAd
   Squircle-Eckenrundung) und unterstützt sowohl Booleans als auch Array-Bindungen (`v-model`) sowie `checked`-Props.
 - **`Card.vue`**: Basis-Fläche für Spots, Touren, Budget-Töpfe, Notizen und Fokus-Panels. Unterstützt
   `variant` (`default`, `muted` für hinterlegte Flächen, `flat` ohne Schatten, `elevated` mit verstärktem Schatten `var(--shadow-md)`,
-  `tile` für Dashboard-Kacheln). **Zustände:** `condensed` ist ein **Zustand/Prop** (komprimiertes Padding & schmale Miniatur-Banner links),
+  `tile` für Dashboard-Kacheln, `polaroid` für authentische Polaroid-Fotokarten mit breitem Rahmen, tiefem Schatten & Vintage-Haptik).
+  **Polaroid-Stil & Drehung**: `.card--polaroid` (in `SpotCard.vue`) wird in der Ruheposition ganz leicht schräg rotiert platziert (`--card-rotate`, z. B. `-1.1°` bis `+0.95°` mit stabiler ID-Verteilung), um eine natürliche, fototisch-artige Anordnung zu erzeugen. Beim Aufklappen (`expanded`) richtet sich die Karte auf `0deg` gerade aus.
+  **Optischer Hover-Lift ("Anheben")**: Anklickbare Karten (`interactive: true`, `expandable: true`, `ExcursionCard.vue` sowie `.card--polaroid` / `SpotCard.vue`) heben sich beim Hovern spürbar optisch an: sie schweben nach oben (`translateY(-4px)`), skalieren leicht an (`scale(1.015)` bzw. `scale(1.02)`), vertiefen ihren `box-shadow` (`var(--shadow-md)` bzw. tiefer Fotokontaktschatten) und erhöhen den `z-index`, um sich sauber über Nachbarkarten zu legen. Bei Polaroid-Karten entspannt sich zusätzlich der Drehwinkel leicht. Bei `:active` federn sie tastbar zurück (`scale(0.99)`). Im aufgeklappten Zustand (`expanded`) entfällt der Hover-Lift, um die Interaktion mit Innen-Elementen ruhig zu halten.
+  **Zustände:** `condensed` ist ein **Zustand/Prop** (komprimiertes Padding & schmale Miniatur-Banner links),
   der per `expandable` Prop interaktiv per Klick in die volle/aufgeklappte Ansicht wechselt (`#expanded` Slot, analog zu `SpotCard.vue`/`ExcursionCard.vue` in der Karten-View).
   Echtzeit-Highlighting (`highlight` prop / `.new-highlight`).
 - **`Badge.vue` & Indikatoren**: `.badge` als leichtgewichtiger Chip für Zustände (`.badge--primary`,
@@ -654,9 +658,12 @@ unerwünschte Vererbungen in Spezialfällen (z. B. ungerahmte Inputs in `QuickAd
 - **`DetailRow.vue`**: Standardisierte Schlüssel-Wert-Zeile mit Icon, Label und Wert für Detailansichten, Modals und Listen.
 - **`EmptyState.vue`**: Einheitlicher Leerzustand mit Icon, Titel, Beschreibung und optionaler Aktions-Schaltfläche.
 - **`Kicker.vue`**: Kleiner Eyebrow-/Kicker-Text (`.kicker`) oberhalb von Hauptüberschriften.
-- **`UnseenDot.vue`**: Diskreter Indikator-Punkt für ungesehene bzw. geänderte Inhalte aus dem Echtzeit-Sync.
+- **`UnseenDot.vue`**: Diskreter Indikator-Punkt (roter Punkt) für ungesehene bzw. geänderte Inhalte aus dem Echtzeit-Sync sowie anstehende System-Benachrichtigungen in der Benachrichtigungs-Inbox.
 - **`WeatherAlertCard.vue`**: Dedizierte Komponente (`frontend/src/components/WeatherAlertCard.vue`) für Wetterwarnungen (`warning`, `danger`).
 - **`FormField.vue`**: Einheitlicher Feld-Wrapper für Anlege- und Bearbeiten-Formulare (Icon + Label).
+- **`PolaroidStack.vue`**: Generisches Primitive (`frontend/src/components/primitives/PolaroidStack.vue`) für gestapelte Mini-Polaroid-Kacheln und ausgedruckte DIN-A4-Zettel mit verspieltem Drehwinkel-Versatz (`[-2°, 6°, -7°, 8°]`), Squircle-Fotoframe bzw. gefalztem Eselsohr (Dog-ear) und taktiler Hover-Auffächerung (`--tile-base-transform` / `--tile-fanned-transform`). Bei anklickbaren Stapeln (`interactive: true`, z. B. Dateianhänge oder Tagebuch-Fotos) fächern sich die Kärtchen beim Drüberfahren mit der Maus geschmeidig auf; bei Tour-Kacheln (`ExcursionCard.vue`) fächert sich der Stations-Stapel bereits beim Hovern über die Tour-Karte auf (`.excursion-card:not(.expanded):hover`). Die Stapelreihenfolge platziert das erste Element (`items[0]`) nach vorn (`z-index: total - idx`), sodass die oberste sichtbare Karte immer dem ersten Element im Klick-/Vorschaudialog entspricht. Fotos und Stationen erscheinen als Polaroid mit Fotorahmen und Kinn; Dokumente (PDFs, Word, Excel etc.) erscheinen als authentischer, schlanker DIN-A4-Zettel mit gedruckten Textzeilen und bunten Dateiformat-Vektorgrafiken. Bei Anhängen wird optional eine filigrane Büroklammer (`clipped: true`) oben links auf der obersten Karte angeheftet. Bei mehr als 4 Elementen erscheint automatisch ein abgerundetes `+N`-Zählerbadge. Klick-Interaktion öffnet standardmäßig die Lightbox-Galerie (`AttachmentPreviewModal.vue`).
+- **`FileAttachments.vue`**: Kapselt Datei-Anhänge für Reise-/Spot-/Tour-/Notiz-Entitäten. Im regulären Ansichtsmodus (`editable: false`) wird der verspielte `PolaroidStack` mit Büroklammer und Hover-Fächerung gerendert. Im eingeklappten Zustand (`collapsed: true`, z. B. auf eingeklappten Polaroid-Spot-Karten in `SpotCard.vue`) wird statt des vollen Stapels ein kompaktes, frosted-glass Büroklammer-Badge mit Anzahl (`📎 N`) in der oberen linken Ecke des Bildes angezeigt. Ein Klick auf das Badge öffnet direkt die Lightbox-Vorschau (`AttachmentPreviewModal.vue`), ohne die Spot-Karte aufzuklappen.
+- **`FileFormatGraphic.vue`**: Wiederverwendbare Vektorgrafik-Primitive (`frontend/src/components/primitives/FileFormatGraphic.vue`) für realistische, farbenfrohe Dateiformat-Grafiken mit Farbverläufen, Glanzkante, gefalteter Ecke und Formats-Emblemen (PDF in Adobe-Rot, DOC/Word in Königsblau, XLS/Excel in Smaragdgrün, PPT in Orange, TXT in Schiefergrau, ZIP in Amber-Gold, Audio in Violett sowie generische Formate). Wird in `PolaroidStack.vue`, `AttachmentThumbnails.vue` und `AttachmentPreviewModal.vue` verwendet.
 
 Reine Beschriftung eines Textfelds per HTML-`placeholder` verschwindet, sobald das Feld einen Wert
 trägt – wer einen bereits ausgefüllten Dialog erneut öffnet (Bearbeiten) sieht dann nicht mehr, wofür
