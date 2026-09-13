@@ -3768,14 +3768,8 @@ async function deleteEditingSpot() {
                                 openCardLegModal(grp.excursion, cell.fromSpot, cell.toSpot)
                               "
                             >
-                              <span v-if="cell.isRtl" class="leg-pill-arrow" aria-hidden="true"
-                                >←</span
-                              >
                               <AppIcon :icon="ACTION_ICONS.add" :size="12" group="actions" />
                               <span class="leg-add-text">Teilstrecke</span>
-                              <span v-if="!cell.isRtl" class="leg-pill-arrow" aria-hidden="true"
-                                >→</span
-                              >
                             </button>
                           </div>
                         </template>
@@ -3864,7 +3858,6 @@ async function deleteEditingSpot() {
                                 )
                               "
                             >
-                              <span class="leg-pill-arrow" aria-hidden="true">↓</span>
                               <AppIcon :icon="ACTION_ICONS.add" :size="12" group="actions" />
                               <span class="leg-add-text">Teilstrecke erfassen</span>
                             </button>
