@@ -285,5 +285,35 @@ describe('trips routes', () => {
         advisory: null,
       });
     });
+
+    it('sets default weather_model ecmwf_ifs025 or stores explicitly passed weather_model and updates it', async () => {
+      const defaultRes = await app.inject({
+        method: 'POST',
+        url: '/api/trips',
+        headers: { cookie },
+        payload: { name: 'Default Model Trip' },
+      });
+      expect(defaultRes.statusCode).toBe(201);
+      expect(defaultRes.json().weather_model).toBe('ecmwf_ifs025');
+
+      const customRes = await app.inject({
+        method: 'POST',
+        url: '/api/trips',
+        headers: { cookie },
+        payload: { name: 'Custom Model Trip', weather_model: 'icon_seamless' },
+      });
+      expect(customRes.statusCode).toBe(201);
+      const tripId = customRes.json().id;
+      expect(customRes.json().weather_model).toBe('icon_seamless');
+
+      const updateRes = await app.inject({
+        method: 'PUT',
+        url: `/api/trips/${tripId}`,
+        headers: { cookie },
+        payload: { name: 'Custom Model Trip', weather_model: 'jma_seamless' },
+      });
+      expect(updateRes.statusCode).toBe(200);
+      expect(updateRes.json().weather_model).toBe('jma_seamless');
+    });
   });
 });
