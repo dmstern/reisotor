@@ -378,11 +378,12 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
 
       await page.goto('/excursions');
       const spotCard = page.locator('.spot-card', { hasText: spotTitle });
-      // NICHT aufklappen - die kompakte, nicht-expandierte Kartenzeile ist genau der Fall, in dem
-      // der Status-Button sichtbar ist.
       await expect(spotCard).toBeVisible();
       const image = spotCard.locator('.image');
       await expect(image.locator('.status')).toHaveCount(0);
+      // Aufklappen: Aktionen wie der Status-Button sind erst nach dem Aufklappen der Karte sichtbar
+      await spotCard.locator('h3').click();
+      await expect(spotCard).toHaveClass(/expanded/);
       const statusBtn = spotCard.locator('.done-toggle.status-done');
       await expect(statusBtn).toBeVisible();
       await expect(statusBtn).toContainText('Besucht am');
