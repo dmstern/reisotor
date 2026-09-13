@@ -428,7 +428,7 @@ function onSpotDrop(event: DragEvent) {
           <FileAttachments domain="ideas" :entity-id="excursion.id" :editable="false" />
         </div>
 
-        <div class="links" v-if="hasMappedStations">
+        <div class="links" v-if="hasMappedStations && expanded">
           <Button
             variant="card-action"
             class="show-on-map-btn"
@@ -1314,26 +1314,6 @@ function onSpotDrop(event: DragEvent) {
   .tour-type-badge {
     font-size: 0.65rem;
     padding: 1px 6px;
-  }
-
-  .excursion-card:not(.expanded) .show-on-map-btn {
-    width: 22px;
-    height: 22px;
-    min-width: 22px;
-    padding: 0;
-    gap: 0;
-    justify-content: center;
-    border-radius: 50%;
-  }
-
-  .excursion-card:not(.expanded) .show-on-map-btn .btn-label {
-    max-width: 0;
-    opacity: 0;
-    margin: 0;
-  }
-
-  .excursion-card:not(.expanded) .links {
-    margin: 0;
   }
 
   .excursion-card:not(.expanded) .card-actions {
