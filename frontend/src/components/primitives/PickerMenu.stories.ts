@@ -53,7 +53,7 @@ export const Wide: Story = {
       <div style="position: relative; width: 300px; height: 200px;">
         <PickerMenu v-bind="args" wide>
           <DropdownItem :icon="ACTION_ICONS.fitAll" label="Alle eingetragenen Orte auf der Karte anzeigen" />
-          <DropdownItem :icon="FORM_FIELD_ICONS.maps" icon-group="formFields" label="In externer Karten-App öffnen" />
+          <DropdownItem :icon="ACTION_ICONS.mapsApp" label="In Maps-App öffnen" />
           <DropdownItem :icon="ACTION_ICONS.share" label="Mit Mitreisenden teilen" />
         </PickerMenu>
       </div>

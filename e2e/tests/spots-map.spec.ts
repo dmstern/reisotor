@@ -118,8 +118,8 @@ test.describe('Spots-Karte: Kategorie-Filter wird zuverlässig auf die Marker an
     await card.click();
     await expect(card).toHaveClass(/expanded/);
 
-    // Button "In Karten-App öffnen" klicken
-    const mapsBtn = card.getByRole('button', { name: 'In Karten-App öffnen' });
+    // Button "In Maps-App öffnen" klicken
+    const mapsBtn = card.getByRole('button', { name: 'In Maps-App öffnen' });
     await expect(mapsBtn).toBeVisible();
     await mapsBtn.click();
 

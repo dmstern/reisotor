@@ -1373,7 +1373,7 @@ const cardRotation = computed(() => {
   padding-right: 48px;
 }
 
-/* #161: ohne eigenes margin-top rückte MapsAppPicker.vue's "In Karten-App öffnen"-Button direkt an
+/* #161: ohne eigenes margin-top rückte MapsAppPicker.vue's "In Maps-App öffnen"-Button direkt an
    .card-actions (den "Tour zuordnen"-Chip) heran - zu wenig Abstand zwischen den beiden Zeilen. */
 .maps-picker {
   margin-top: var(--space-3);

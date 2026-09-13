@@ -101,6 +101,7 @@ import {
   IconDotsVertical,
   IconSend,
   IconSendFilled,
+  IconMapPinShare,
 } from '@tabler/icons-vue';
 import type { IconDef } from './icon';
 
@@ -184,7 +185,8 @@ export type ActionIconKey =
   | 'sparkles'
   | 'share'
   | 'browserMenu'
-  | 'send';
+  | 'send'
+  | 'mapsApp';
 
 export const ACTION_ICONS: Record<ActionIconKey, IconDef> = {
   edit: { id: 'pencil', emoji: '✏️', outline: IconPencil, filled: IconPencilFilled },
@@ -329,4 +331,5 @@ export const ACTION_ICONS: Record<ActionIconKey, IconDef> = {
   share: { id: 'share', emoji: '⬆️', outline: IconShare },
   browserMenu: { id: 'dots-vertical', emoji: '⋮', outline: IconDotsVertical },
   send: { id: 'send', emoji: '✈️', outline: IconSend, filled: IconSendFilled },
+  mapsApp: { id: 'map-pin-share', emoji: '📍', outline: IconMapPinShare },
 };

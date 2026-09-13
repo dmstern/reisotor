@@ -62,7 +62,7 @@ onUnmounted(() => {
 <template>
   <div class="maps-picker" @click.stop>
     <Button ref="buttonRef" variant="card-action" @click="toggle($event)">
-      <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" /> In Karten-App öffnen ↗
+      <AppIcon :icon="ACTION_ICONS.mapsApp" :size="14" group="actions" /> In Maps-App öffnen
     </Button>
     <Teleport to="body">
       <PickerMenu v-if="open" class="maps-picker-menu" :style="menuStyle" @close="close">
