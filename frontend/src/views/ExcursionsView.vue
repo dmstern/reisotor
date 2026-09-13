@@ -91,6 +91,7 @@ import PickerMenu from '../components/primitives/PickerMenu.vue';
 import Accordion from '../components/primitives/Accordion.vue';
 import Select from '../components/primitives/Select.vue';
 import Checkbox from '../components/primitives/Checkbox.vue';
+import CheckboxCard from '../components/primitives/CheckboxCard.vue';
 import Input from '../components/primitives/Input.vue';
 import { useToast } from '../composables/useToast';
 import { isAutoCreatedUnmodifiedScheduleItem } from '../utils/scheduleSpotUnlink';
@@ -3152,11 +3153,14 @@ async function deleteEditingSpot() {
                   <p class="hint">
                     Wird für die Position auf der Karte und ggf. das Wetter vor Ort verwendet.
                   </p>
-                  <label class="checkbox-option" for="spotFormIsHome">
-                    <Checkbox id="spotFormIsHome" v-model="activeSpotForm.is_home" />
-                    <AppIcon :icon="ACTION_ICONS.home" :size="14" group="actions" /> Heimat-Seite
-                    (z. B. der heimische Flughafen/Bahnhof/Zuhause für Reise-Etappen)
-                  </label>
+                  <CheckboxCard
+                    id="spotFormIsHome"
+                    v-model="activeSpotForm.is_home"
+                    variant="muted"
+                    :icon="ACTION_ICONS.home"
+                    label="Heimat-Seite"
+                    description="z. B. der heimische Flughafen/Bahnhof/Zuhause für Reise-Etappen"
+                  />
                   <FormField icon="maps" label="Maps-Link (Google/Apple)">
                     <Input
                       v-model="activeSpotForm.maps_link"
