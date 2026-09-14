@@ -201,6 +201,9 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: var(--shadow-md);
+  transition:
+    height 0.35s cubic-bezier(0.34, 1.2, 0.64, 1),
+    max-height 0.35s ease;
 }
 
 .modal.size-sm {

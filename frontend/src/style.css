@@ -76,6 +76,7 @@
 
 :root {
   color-scheme: light;
+  interpolate-size: allow-keywords;
   --drawer-handle-gap: 12px;
   /* Von NavBar.vue live per ResizeObserver gepflegt: tatsächliche Höhe der NavBar, wenn sie
      (je nach Breakpoint/Einstellung) oben klebt – 0px, wenn sie unten fixiert ist. Schubladen
