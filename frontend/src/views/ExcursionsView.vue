@@ -24,7 +24,11 @@ import type {
   User,
 } from '../api/types';
 import { deriveTravelItems } from '../utils/deriveTravelItems';
-import { formatTravelDuration, travelDurationMinutes } from '../utils/travelDuration';
+import {
+  formatTravelDuration,
+  formatTravelDurationParts,
+  travelDurationMinutes,
+} from '../utils/travelDuration';
 import {
   TRAVEL_ROLE_META,
   TRAVEL_ROLE_OPTIONS,
@@ -1752,6 +1756,11 @@ function getTourLeg(
 function getLegDuration(leg: ExcursionLeg): string | null {
   const mins = travelDurationMinutes(leg.departure_time ?? null, leg.arrival_time ?? null);
   return mins != null ? formatTravelDuration(mins) : null;
+}
+
+function getLegDurationParts(leg: ExcursionLeg): string[] | null {
+  const mins = travelDurationMinutes(leg.departure_time ?? null, leg.arrival_time ?? null);
+  return mins != null ? formatTravelDurationParts(mins) : null;
 }
 
 function getTourLayover(
@@ -3768,11 +3777,17 @@ async function deleteEditingSpot() {
                               <span class="leg-pill-icon">
                                 {{ travelTypeIcon(cell.leg.transport_type ?? null) }}
                               </span>
-                              <span v-if="getLegDuration(cell.leg)" class="leg-pill-duration">
-                                {{ getLegDuration(cell.leg) }}
+                              <span v-if="getLegDurationParts(cell.leg)" class="leg-pill-duration">
+                                <span
+                                  v-for="(part, pIdx) in getLegDurationParts(cell.leg)"
+                                  :key="pIdx"
+                                  class="leg-duration-part"
+                                >
+                                  {{ part }}
+                                </span>
                               </span>
                               <span v-else-if="cell.leg.departure_time" class="leg-pill-duration">
-                                {{ cell.leg.departure_time }}
+                                <span class="leg-duration-part">{{ cell.leg.departure_time }}</span>
                               </span>
                               <span v-if="cell.leg.amount != null" class="leg-pill-cost">
                                 {{ cell.leg.amount.toFixed(2).replace('.', ',') }} €
@@ -3850,14 +3865,25 @@ async function deleteEditingSpot() {
                             <span v-if="row.rowBreak.leg.transport_type" class="leg-pill-type">
                               {{ row.rowBreak.leg.transport_type }}
                             </span>
-                            <span v-if="getLegDuration(row.rowBreak.leg)" class="leg-pill-duration">
-                              {{ getLegDuration(row.rowBreak.leg) }}
+                            <span
+                              v-if="getLegDurationParts(row.rowBreak.leg)"
+                              class="leg-pill-duration"
+                            >
+                              <span
+                                v-for="(part, pIdx) in getLegDurationParts(row.rowBreak.leg)"
+                                :key="pIdx"
+                                class="leg-duration-part"
+                              >
+                                {{ part }}
+                              </span>
                             </span>
                             <span
                               v-else-if="row.rowBreak.leg.departure_time"
                               class="leg-pill-duration"
                             >
-                              {{ row.rowBreak.leg.departure_time }}
+                              <span class="leg-duration-part">{{
+                                row.rowBreak.leg.departure_time
+                              }}</span>
                             </span>
                             <span v-if="row.rowBreak.leg.amount != null" class="leg-pill-cost">
                               {{ row.rowBreak.leg.amount.toFixed(2).replace('.', ',') }} €
@@ -5100,10 +5126,20 @@ async function deleteEditingSpot() {
 }
 
 .leg-pill-duration {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  column-gap: 4px;
+  row-gap: 1px;
   font-size: 0.72rem;
   font-weight: 600;
   color: var(--color-text-muted);
   line-height: 1.15;
+  text-align: center;
+}
+
+.leg-duration-part {
   white-space: nowrap;
 }
 

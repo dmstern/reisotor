@@ -22,3 +22,11 @@ export function formatTravelDuration(minutes: number): string {
   if (m === 0) return `${h} Std.`;
   return `${h} Std. ${m} Min.`;
 }
+
+export function formatTravelDurationParts(minutes: number): string[] {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h === 0) return [`${m}\u00A0Min.`];
+  if (m === 0) return [`${h}\u00A0Std.`];
+  return [`${h}\u00A0Std.`, `${m}\u00A0Min.`];
+}
