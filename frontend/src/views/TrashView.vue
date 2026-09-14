@@ -7,6 +7,7 @@ import { useTripStore } from '../stores/trip';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import AppIcon from '../components/AppIcon.vue';
 import Button from '../components/primitives/Button.vue';
+import EmptyState from '../components/primitives/EmptyState.vue';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import type { IconDef } from '../utils/icon';
@@ -169,7 +170,10 @@ async function restore(entry: TrashEntry) {
         </Button>
       </li>
     </TransitionGroup>
-    <p v-if="!entries.length" class="empty">Der Papierkorb ist leer.</p>
+    <EmptyState v-if="!entries.length">
+      <AppIcon :icon="ACTION_ICONS.delete" :size="32" group="actions" />
+      <p>Der Papierkorb ist leer.</p>
+    </EmptyState>
   </div>
   <ViewLoadingState v-else />
 </template>
