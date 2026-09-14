@@ -2085,30 +2085,6 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
   background-color: var(--color-surface) !important;
 }
 
-/* Dezenter Copyright-Hinweis wie bei Google Maps (ohne Kasten, nur Text mit leichtem Halo-Effekt
-   für Lesbarkeit auf beliebigen Kartenuntergründen) */
-:deep(.leaflet-control-attribution) {
-  background: transparent !important;
-  color: var(--color-text) !important;
-  text-shadow:
-    -1px -1px 0 var(--color-surface),
-    1px -1px 0 var(--color-surface),
-    -1px 1px 0 var(--color-surface),
-    1px 1px 0 var(--color-surface),
-    0 0 4px var(--color-surface) !important;
-  font-size: 0.7rem;
-  opacity: 0.7;
-  transition: opacity 0.2s ease;
-}
-
-:deep(.leaflet-control-attribution:hover) {
-  opacity: 1;
-}
-
-:deep(.leaflet-control-attribution a) {
-  color: var(--color-text) !important;
-}
-
 /* Desktop: Die Karte ist auf Desktop stets vollflächig über die gesamte Bildschirmbreite.
    Die Kartenwerkzeuge (.fit-btn) und Zoom-Buttons nutzen auf Desktop größere Maße und Insets,
    um unter dem schwebenden Header zu liegen.

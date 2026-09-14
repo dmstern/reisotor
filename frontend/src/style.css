@@ -790,3 +790,31 @@ p + .btn {
 .animate-cascade-children > *:nth-child(25) {
   animation-delay: 1440ms;
 }
+
+/*
+  Globale Anpassung der Leaflet-Attribution:
+  Transparent, dezent und passend zu Dark/Light-Mode, anstatt der hart codierten,
+  hellen Hintergrundbox. Ursprünglich in TripMap.vue definiert, nun global, damit
+  auch Mini-Karten (wie im LocationPicker) identisch und unscheinbar aussehen.
+*/
+.leaflet-control-attribution {
+  background: transparent !important;
+  color: var(--color-text) !important;
+  text-shadow:
+    -1px -1px 0 var(--color-surface),
+    1px -1px 0 var(--color-surface),
+    -1px 1px 0 var(--color-surface),
+    1px 1px 0 var(--color-surface),
+    0 0 4px var(--color-surface) !important;
+  font-size: 0.7rem;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.leaflet-control-attribution:hover {
+  opacity: 1;
+}
+
+.leaflet-control-attribution a {
+  color: var(--color-text) !important;
+}
