@@ -529,14 +529,16 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
       paid_by_user_id
     );
 
-    const effectiveDepTime =
-      departure_time || legs?.find((l) => !!l.departure_time)?.departure_time || null;
-    const effectiveArrTime =
-      arrival_time ||
-      [...(legs ?? [])].reverse().find((l) => !!l.arrival_time)?.arrival_time ||
-      null;
-    const effectiveTransportType =
-      transport_type || legs?.find((l) => !!l.transport_type)?.transport_type || null;
+    const hasLegs = Array.isArray(legs) && legs.length > 0;
+    const effectiveDepTime = hasLegs
+      ? legs.find((l) => !!l.departure_time)?.departure_time || null
+      : departure_time || null;
+    const effectiveArrTime = hasLegs
+      ? [...legs].reverse().find((l) => !!l.arrival_time)?.arrival_time || null
+      : arrival_time || null;
+    const effectiveTransportType = hasLegs
+      ? legs.find((l) => !!l.transport_type)?.transport_type || null
+      : transport_type || null;
 
     const result = insertIdeaStmt.run(
       trip_id,
@@ -608,14 +610,16 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
       paid_by_user_id
     );
 
-    const effectiveDepTime =
-      departure_time || legs?.find((l) => !!l.departure_time)?.departure_time || null;
-    const effectiveArrTime =
-      arrival_time ||
-      [...(legs ?? [])].reverse().find((l) => !!l.arrival_time)?.arrival_time ||
-      null;
-    const effectiveTransportType =
-      transport_type || legs?.find((l) => !!l.transport_type)?.transport_type || null;
+    const hasLegs = Array.isArray(legs) && legs.length > 0;
+    const effectiveDepTime = hasLegs
+      ? legs.find((l) => !!l.departure_time)?.departure_time || null
+      : departure_time || null;
+    const effectiveArrTime = hasLegs
+      ? [...legs].reverse().find((l) => !!l.arrival_time)?.arrival_time || null
+      : arrival_time || null;
+    const effectiveTransportType = hasLegs
+      ? legs.find((l) => !!l.transport_type)?.transport_type || null
+      : transport_type || null;
 
     const result = updateIdeaStmt.run(
       title,

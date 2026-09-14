@@ -33,7 +33,7 @@ import { formatDate as formatDateShared, toLocalDateString } from '../utils/date
 import { computePopoverPosition } from '../utils/popoverPosition';
 import { TRAVEL_ROLE_META } from '../utils/travelRole';
 import { travelTypeIconDef } from '../utils/travelTypeIcon';
-import { formatTravelDuration, travelDurationMinutes } from '../utils/travelDuration';
+import { formatTravelDuration, tourTotalDurationMinutes } from '../utils/travelDuration';
 
 const props = defineProps<{
   excursion: Excursion;
@@ -140,11 +140,28 @@ const routeLabel = computed(() => {
   const stopText = stopCount === 1 ? '1 Zwischenstopp' : `${stopCount} Zwischenstopps`;
   return `${resolvedStations.value[0].title} → ${resolvedStations.value[resolvedStations.value.length - 1].title} · ${stopText}`;
 });
+const effectiveDepartureTime = computed(() => {
+  if (props.excursion.legs && props.excursion.legs.length > 0) {
+    return (
+      props.excursion.legs.find((l) => !!l.departure_time)?.departure_time ||
+      props.excursion.departure_time
+    );
+  }
+  return props.excursion.departure_time;
+});
+
+const effectiveArrivalTime = computed(() => {
+  if (props.excursion.legs && props.excursion.legs.length > 0) {
+    return (
+      [...props.excursion.legs].reverse().find((l) => !!l.arrival_time)?.arrival_time ||
+      props.excursion.arrival_time
+    );
+  }
+  return props.excursion.arrival_time;
+});
+
 const travelDuration = computed(() => {
-  const minutes = travelDurationMinutes(
-    props.excursion.departure_time,
-    props.excursion.arrival_time
-  );
+  const minutes = tourTotalDurationMinutes(props.excursion);
   return minutes == null ? null : formatTravelDuration(minutes);
 });
 
@@ -385,14 +402,14 @@ function onSpotDrop(event: DragEvent) {
             <p
               v-if="
                 (excursion.role || excursion.legs?.length) &&
-                (excursion.departure_time || excursion.arrival_time)
+                (effectiveDepartureTime || effectiveArrivalTime)
               "
               class="departure-arrival"
             >
               <AppIcon :icon="FORM_FIELD_ICONS.time" :size="14" group="formFields" />
-              <span v-if="excursion.departure_time"
-                >{{ excursion.departure_time
-                }}<span v-if="excursion.arrival_time">–{{ excursion.arrival_time }}</span> Uhr</span
+              <span v-if="effectiveDepartureTime"
+                >{{ effectiveDepartureTime
+                }}<span v-if="effectiveArrivalTime">–{{ effectiveArrivalTime }}</span> Uhr</span
               >
               <span v-if="travelDuration" class="duration">({{ travelDuration }})</span>
             </p>
@@ -405,14 +422,14 @@ function onSpotDrop(event: DragEvent) {
             v-if="
               !expanded &&
               (excursion.role || excursion.legs?.length) &&
-              (excursion.departure_time || excursion.arrival_time)
+              (effectiveDepartureTime || effectiveArrivalTime)
             "
             class="departure-arrival"
           >
             <AppIcon :icon="FORM_FIELD_ICONS.time" :size="14" group="formFields" />
-            <span v-if="excursion.departure_time"
-              >{{ excursion.departure_time
-              }}<span v-if="excursion.arrival_time">–{{ excursion.arrival_time }}</span> Uhr</span
+            <span v-if="effectiveDepartureTime"
+              >{{ effectiveDepartureTime
+              }}<span v-if="effectiveArrivalTime">–{{ effectiveArrivalTime }}</span> Uhr</span
             >
             <span v-if="travelDuration" class="duration">({{ travelDuration }})</span>
           </p>

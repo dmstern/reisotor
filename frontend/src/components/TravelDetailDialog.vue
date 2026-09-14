@@ -1,7 +1,12 @@
 <script setup lang="ts">
 import type { TravelItem } from '../api/types';
 import { linkLabel } from '../utils/linkLabel';
-import { formatTravelDuration, travelDurationMinutes } from '../utils/travelDuration';
+import {
+  formatTravelDuration,
+  travelDurationMinutes,
+  tourTotalDurationMinutes,
+} from '../utils/travelDuration';
+import { useExcursionsStore } from '../stores/excursions';
 import { travelTypeIconDef } from '../utils/travelTypeIcon';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
@@ -27,12 +32,18 @@ defineProps<{
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void;
   (e: 'edit'): void;
+  (e: 'delete'): void;
   (e: 'show-on-map-from'): void;
   (e: 'show-on-map-to'): void;
 }>();
 
+const excursionsStore = useExcursionsStore();
+
 function travelDuration(item: TravelItem) {
-  const minutes = travelDurationMinutes(item.departure_time, item.arrival_time);
+  const excursion = excursionsStore.excursions.find((e) => e.id === item.id);
+  const minutes = excursion
+    ? tourTotalDurationMinutes(excursion)
+    : travelDurationMinutes(item.departure_time, item.arrival_time);
   return minutes == null ? null : formatTravelDuration(minutes);
 }
 </script>
