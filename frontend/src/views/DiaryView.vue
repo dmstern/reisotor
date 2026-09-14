@@ -703,7 +703,9 @@ function showEntryDayOnMap(entry: DiaryEntry) {
         :class="{ 'new-highlight': highlightedIds.has(entry.id) }"
       >
         <header class="entry-head">
-          <span class="avatar">{{ entry.author_avatar ?? author(entry.author_id)?.avatar ?? '❓' }}</span>
+          <span class="avatar">{{
+            entry.author_avatar ?? author(entry.author_id)?.avatar ?? '❓'
+          }}</span>
           <div class="entry-meta">
             <strong>{{ entry.author_username ?? author(entry.author_id)?.username ?? '?' }}</strong>
             <span class="date">
