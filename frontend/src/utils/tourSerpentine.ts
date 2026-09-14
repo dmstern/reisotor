@@ -169,19 +169,24 @@ export function buildLoopSegments(spotIds: number[], domSpotIds: number[]): [num
   return segments;
 }
 
+export interface TourLoopPathResult {
+  d: string;
+  dots: { x: number; y: number }[];
+  arrow: { x: number; y: number; angle: number };
+}
+
 /**
- * Berechnet den SVG-Pfad und die Ankerpunkte für eine Zirkel-/Rückweglinie zwischen Spot a und b.
- * Wählt dabei immer den kürzesten, unversperrten Weg zur Ziel-Karte (bspw. links aus der letzten Card
- * heraus und geschwungen zur ersten Card hoch), statt starr hinter Zwischenkarten zu verschwinden.
+ * Berechnet den SVG-Pfad, Ankerpunkte und Pfeilspitze für eine Zirkel-/Rückweglinie zwischen Spot a und b.
+ * Wählt dabei immer den kürzesten, unversperrten Weg zur Ziel-Karte (bspw. unterhalb der Hinweg-Kacheln
+ * entlang direkt zum Ausgangs-Spot hoch), statt starr hinter Zwischenkarten zu verschwinden.
  */
 export function computeTourLoopPath(
   a: TourSpotBox,
   b: TourSpotBox,
   allBoxes: TourSpotBox[],
   wrapWidth: number
-): { d: string; dots: { x: number; y: number }[] } {
+): TourLoopPathResult {
   const dots: { x: number; y: number }[] = [];
-  let d = '';
 
   const isSameCol = Math.abs(a.cx - b.cx) < 40;
   const isSameRow = Math.abs(a.cy - b.cy) < 40;
@@ -204,73 +209,104 @@ export function computeTourLoopPath(
       const endX = b.cx + hOffset;
       const endY = b.bottom;
       dots.push({ x: startX, y: startY });
-      dots.push({ x: endX, y: endY });
       const dy = endY - startY;
-      d = ` M ${startX} ${startY} C ${startX} ${startY + dy * 0.45}, ${endX} ${endY - dy * 0.45}, ${endX} ${endY}`;
-      return { d, dots };
+      const cp1X = startX;
+      const cp1Y = startY + dy * 0.45;
+      const cp2X = endX;
+      const cp2Y = endY - dy * 0.45;
+      const d = ` M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`;
+      const angle = Math.atan2(endY - cp2Y, endX - cp2X) * (180 / Math.PI);
+      return { d, dots, arrow: { x: endX, y: endY, angle } };
     }
   }
 
-  // Fall 2: a liegt rechts unterhalb von b (a.cx > b.cx und a.cy > b.cy)
-  // Kürzester Weg: Links aus a heraus, durch den leeren Raum geschwungen und von unten an b
+  // Fall 2: a liegt rechts unterhalb von b (a.cx > b.cx + 20 und a.cy > b.cy + 20)
+  // Kürzester Weg: Links aus a heraus, unterhalb der Hinweg-Karten entlang und von unten an b
   if (a.cx > b.cx + 20 && a.cy > b.cy + 20) {
-    const hasObstacleInBCol = allBoxes.some(
+    // Liegt ein Hindernis direkt unterhalb von b (in Spalte b) vor a.cy?
+    const hasObstacleBelowB = allBoxes.some(
       (box) =>
         box !== a &&
         box !== b &&
-        box.cx < a.x &&
-        box.bottom > b.bottom + 10 &&
-        box.top < a.bottom + 10
+        Math.abs(box.cx - b.cx) < b.width * 0.5 &&
+        box.top < a.cy &&
+        box.bottom > b.bottom
     );
 
-    if (!hasObstacleInBCol) {
+    // Liegt ein Hindernis in Zeile a zwischen b.cx und a.x?
+    const hasObstacleInRowA = allBoxes.some(
+      (box) =>
+        box !== a &&
+        box !== b &&
+        box.cx > b.cx + b.width * 0.5 &&
+        box.cx < a.x - 10 &&
+        box.bottom > a.top + 10 &&
+        box.top < a.bottom - 10
+    );
+
+    if (!hasObstacleBelowB && !hasObstacleInRowA) {
       const startX = a.x;
       const startY = a.cy;
       const endX = b.cx;
       const endY = b.bottom;
       dots.push({ x: startX, y: startY });
-      dots.push({ x: endX, y: endY });
+
       const dx = startX - endX;
       const dy = startY - endY;
-      const cp1X = startX - dx * 0.45;
+      // Der Pfad läuft horizontal unterhalb der Hinweg-Karten nach links bis zur Spalte von b
+      // und biegt erst dort geschmeidig nach oben in b.bottom ein.
+      const cp1X = Math.max(endX + 60, startX - dx * 0.55);
       const cp1Y = startY;
       const cp2X = endX;
-      const cp2Y = endY + dy * 0.45;
-      d = ` M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`;
-      return { d, dots };
+      const cp2Y = Math.min(startY, endY + Math.max(40, dy * 0.45));
+      const d = ` M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`;
+      const angle = Math.atan2(endY - cp2Y, endX - cp2X) * (180 / Math.PI);
+      return { d, dots, arrow: { x: endX, y: endY, angle } };
     }
   }
 
-  // Fall 3: a liegt links unterhalb von b (a.cx < b.cx und a.cy > b.cy)
+  // Fall 3: a liegt links unterhalb von b (a.cx < b.cx - 20 und a.cy > b.cy + 20)
+  // Rechts aus a heraus, unterhalb der Kacheln entlang und von unten an b
   if (a.cx < b.cx - 20 && a.cy > b.cy + 20) {
-    const hasObstacleInBCol = allBoxes.some(
+    const hasObstacleBelowB = allBoxes.some(
       (box) =>
         box !== a &&
         box !== b &&
-        box.cx > a.right &&
-        box.bottom > b.bottom + 10 &&
-        box.top < a.bottom + 10
+        Math.abs(box.cx - b.cx) < b.width * 0.5 &&
+        box.top < a.cy &&
+        box.bottom > b.bottom
     );
 
-    if (!hasObstacleInBCol) {
+    const hasObstacleInRowA = allBoxes.some(
+      (box) =>
+        box !== a &&
+        box !== b &&
+        box.cx < b.cx - b.width * 0.5 &&
+        box.cx > a.right + 10 &&
+        box.bottom > a.top + 10 &&
+        box.top < a.bottom - 10
+    );
+
+    if (!hasObstacleBelowB && !hasObstacleInRowA) {
       const startX = a.right;
       const startY = a.cy;
       const endX = b.cx;
       const endY = b.bottom;
       dots.push({ x: startX, y: startY });
-      dots.push({ x: endX, y: endY });
+
       const dx = endX - startX;
       const dy = startY - endY;
-      const cp1X = startX + dx * 0.45;
+      const cp1X = Math.min(endX - 60, startX + dx * 0.55);
       const cp1Y = startY;
       const cp2X = endX;
-      const cp2Y = endY + dy * 0.45;
-      d = ` M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`;
-      return { d, dots };
+      const cp2Y = Math.min(startY, endY + Math.max(40, dy * 0.45));
+      const d = ` M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`;
+      const angle = Math.atan2(endY - cp2Y, endX - cp2X) * (180 / Math.PI);
+      return { d, dots, arrow: { x: endX, y: endY, angle } };
     }
   }
 
-  // Fall 4: Gleiche Zeile (z. B. 3 Spalten, alle Kacheln in Zeile 0)
+  // Fall 4: Gleiche Zeile (z. B. alle Kacheln in Zeile 0, Tour kehrt zum Start zurück)
   if (isSameRow) {
     const hasObstacleBelow = allBoxes.some(
       (box) =>
@@ -288,16 +324,17 @@ export function computeTourLoopPath(
       const endX = b.cx;
       const endY = b.bottom;
       dots.push({ x: startX, y: startY });
-      dots.push({ x: endX, y: endY });
       const dropY =
         Math.max(a.bottom, b.bottom) + Math.min(60, Math.max(30, Math.abs(a.cx - b.cx) * 0.15));
-      d = ` M ${startX} ${startY} C ${startX} ${dropY}, ${endX} ${dropY}, ${endX} ${endY}`;
-      return { d, dots };
+      const d = ` M ${startX} ${startY} C ${startX} ${dropY}, ${endX} ${dropY}, ${endX} ${endY}`;
+      const angle = Math.atan2(endY - dropY, endX - endX) * (180 / Math.PI);
+      return { d, dots, arrow: { x: endX, y: endY, angle } };
     }
   }
 
   // Fall 5: Außenbogen (Fallback, wenn Innenraum blockiert oder einspaltig)
-  const isCloserToLeft = Math.max(a.cx, b.cx) < wrapWidth * 0.4;
+  // Wenn b auf der linken Bildschirmhälfte liegt (z. B. Start-Spot bei col 0), stets über die linke Seite führen!
+  const isCloserToLeft = b.cx < wrapWidth * 0.5;
   if (isCloserToLeft) {
     const startX = a.x;
     const startY = a.cy;
@@ -306,12 +343,12 @@ export function computeTourLoopPath(
     const arcExtent = Math.min(48, Math.max(24, Math.abs(endY - startY) * 0.25));
     const ctrlX = Math.max(0, Math.min(a.x, b.x) - arcExtent);
     dots.push({ x: startX, y: startY });
-    dots.push({ x: endX, y: endY });
-    d = ` M ${startX} ${startY} C ${ctrlX} ${startY}, ${ctrlX} ${endY}, ${endX} ${endY}`;
-    return { d, dots };
+    const d = ` M ${startX} ${startY} C ${ctrlX} ${startY}, ${ctrlX} ${endY}, ${endX} ${endY}`;
+    const angle = Math.atan2(endY - endY, endX - ctrlX) * (180 / Math.PI);
+    return { d, dots, arrow: { x: endX, y: endY, angle } };
   }
 
-  const rightEdge = Math.max(wrapWidth, 100);
+  const rightEdge = Math.max(wrapWidth, Math.max(a.right, b.right) + 20);
   const startX = a.right;
   const startY = a.cy;
   const endX = b.right;
@@ -319,7 +356,7 @@ export function computeTourLoopPath(
   const arcExtent = Math.min(48, Math.max(24, Math.abs(endY - startY) * 0.25));
   const ctrlX = rightEdge + arcExtent;
   dots.push({ x: startX, y: startY });
-  dots.push({ x: endX, y: endY });
-  d = ` M ${startX} ${startY} C ${ctrlX} ${startY}, ${ctrlX} ${endY}, ${endX} ${endY}`;
-  return { d, dots };
+  const d = ` M ${startX} ${startY} C ${ctrlX} ${startY}, ${ctrlX} ${endY}, ${endX} ${endY}`;
+  const angle = Math.atan2(endY - endY, endX - ctrlX) * (180 / Math.PI);
+  return { d, dots, arrow: { x: endX, y: endY, angle } };
 }

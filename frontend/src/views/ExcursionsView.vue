@@ -1656,6 +1656,9 @@ function recomputeTourLine(excursionId: number) {
       const loop = computeTourLoopPath(a, b, spotBoxes, wrapEl.clientWidth);
       d += loop.d;
       dots.push(...loop.dots);
+      if (loop.arrow) {
+        arrows.push(loop.arrow);
+      }
     }
   }
 
