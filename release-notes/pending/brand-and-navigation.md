@@ -1,3 +1,4 @@
 - **Schwebende Navigation**: Die Navigationsleiste schwebt als elegante Leiste am oberen Bildschirmrand und blendet beim Scrollen einen sanften Weichzeichner ein.
 - **Neues Design & Roboter-Maskottchen**: Moderner lila Markenauftritt, neues App-Icon und ein lebendig animierter Roboter, der dich beim Login, Sicherheits-Check, Passwort-Ändern (mit charmanter Guck-Guck-Geste) und Startbildschirm begleitet.
 - **Benachrichtigungen für App-Updates**: Hinweise zu neuen Versionen und Installationen erscheinen dezent in der Benachrichtigungs-Glocke statt störender Banner.
+- **Verfeinerte Aufzeichnungs-Pille**: Symmetrisch geschwungene Steuer-Buttons mit konzentrischer Rundung, harmonischen Abständen und perfekt vertikal ausgerichteter Zeitanzeige.

@@ -75,16 +75,23 @@ const elapsedLabel = computed(() => {
     >
       <AppIcon
         :icon="trackRecording.paused ? ACTION_ICONS.play : ACTION_ICONS.pause"
-        :size="13"
+        :size="12"
         group="actions"
       />
     </button>
     <span class="recording-pill-label">
       <template v-if="trackRecording.paused">
-        <AppIcon :icon="ACTION_ICONS.pause" :size="13" group="actions" /> Pausiert
+        <AppIcon :icon="ACTION_ICONS.pause" :size="12" group="actions" class="recording-icon" />
+        <span class="recording-status-text">Pausiert</span>
       </template>
       <template v-else>
-        <AppIcon :icon="ACTION_ICONS.recordStart" :size="13" group="actions" /> {{ elapsedLabel }}
+        <AppIcon
+          :icon="ACTION_ICONS.recordStart"
+          :size="12"
+          group="actions"
+          class="recording-icon"
+        />
+        <span class="recording-time">{{ elapsedLabel }}</span>
       </template>
     </span>
     <button
@@ -94,7 +101,7 @@ const elapsedLabel = computed(() => {
       aria-label="Aufzeichnung beenden"
       @click="trackRecording.stop()"
     >
-      <AppIcon :icon="ACTION_ICONS.recordStop" :size="13" group="actions" />
+      <AppIcon :icon="ACTION_ICONS.recordStop" :size="12" group="actions" />
     </button>
   </div>
 </template>
@@ -110,16 +117,17 @@ const elapsedLabel = computed(() => {
 .recording-pill {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: 7px;
   font-size: 0.75rem;
   font-weight: 600;
   color: #fff;
   background: var(--color-danger);
-  padding: 2px 2px 2px 8px;
+  padding: 4px;
   border-radius: 999px;
-  line-height: 1.3;
+  line-height: 1;
   white-space: nowrap;
   flex-shrink: 0;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
 }
 
 /* Etwas gedämpfter während der Pause - macht den Zustand zusätzlich zum Text/Icon auf einen Blick
@@ -129,29 +137,53 @@ const elapsedLabel = computed(() => {
 }
 
 .recording-pill-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
   font-variant-numeric: tabular-nums;
-  padding: 2px 2px;
+  font-feature-settings: 'tnum' 1;
+  line-height: 1;
+  padding: 0 3px;
+}
+
+.recording-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.recording-time,
+.recording-status-text {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
 }
 
 .recording-pill-btn {
   flex-shrink: 0;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 22px;
   height: 22px;
   padding: 0;
   border: none;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.22);
   border-radius: 50%;
-  corner-shape: round;
   color: #fff;
-  font-size: 0.7rem;
-  line-height: 1;
   cursor: pointer;
+  transition:
+    background 0.15s ease,
+    transform 0.1s ease;
 }
 
 .recording-pill-btn:hover {
-  background: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.38);
+}
+
+.recording-pill-btn:active {
+  transform: scale(0.92);
 }
 </style>
