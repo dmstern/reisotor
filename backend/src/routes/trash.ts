@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify';
-import { db } from '../db/index.js';
+import { db, TRASH_TABLES, hardDeleteTrashItems } from '../db/index.js';
 import { requireTripMember } from '../tripAccess.js';
 import { recordActivity } from '../activity.js';
 
@@ -207,4 +207,45 @@ export const trashRoutes: FastifyPluginAsync = async (app) => {
       return db.prepare(`SELECT * FROM ${config.table} WHERE id = ?`).get(req.params.id);
     }
   );
+
+  app.delete<{ Params: { type: string; id: string } }>('/trash/:type/:id', async (req, reply) => {
+    const config = TRASH_CONFIG.find((c) => c.type === req.params.type);
+    if (!config) return reply.code(400).send({ error: 'Unbekannter Objekttyp' });
+
+    const existingRow = db
+      .prepare(`SELECT trip_id FROM ${config.table} WHERE id = ? AND deleted_at IS NOT NULL`)
+      .get(req.params.id) as { trip_id: number } | undefined;
+
+    if (!existingRow) return reply.code(404).send({ error: 'Nicht gefunden oder nicht gelöscht' });
+    if (!requireTripMember(reply, existingRow.trip_id, req.session.userId)) return;
+    if (config.checkVisible && !config.checkVisible(req.params.id, req.session.userId)) {
+      return reply.code(403).send({ error: 'Kein Zugriff auf dieses Objekt' });
+    }
+
+    // table is validated by TRASH_CONFIG which maps to TRASH_TABLES
+    hardDeleteTrashItems(config.table as (typeof TRASH_TABLES)[number], [Number(req.params.id)]);
+    return { success: true };
+  });
+
+  app.delete<{ Querystring: { trip_id?: string } }>('/trash', async (req, reply) => {
+    if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
+    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
+    const tripId = req.query.trip_id;
+
+    for (const config of TRASH_CONFIG) {
+      // Find all items that are soft deleted for this trip in this table
+      const rows = config.listQuery
+        ? config.listQuery(tripId, req.session.userId)
+        : (db
+            .prepare(`SELECT id FROM ${config.table} WHERE trip_id = ? AND deleted_at IS NOT NULL`)
+            .all(tripId) as { id: number }[]);
+
+      const ids = rows.map((r) => (r as { id: number }).id);
+      if (ids.length) {
+        hardDeleteTrashItems(config.table as (typeof TRASH_TABLES)[number], ids);
+      }
+    }
+
+    return { success: true };
+  });
 };

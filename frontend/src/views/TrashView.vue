@@ -33,6 +33,8 @@ const entries = ref<TrashEntry[]>([]);
 const users = ref<User[]>([]);
 const loading = ref(true);
 const restoringKey = ref<string | null>(null);
+const deletingKey = ref<string | null>(null);
+const emptyingTrash = ref(false);
 const error = ref('');
 
 // Dieselben Icons wie in der NavBar/den jeweiligen Fachsichten (siehe App.vue/NavBar.vue), damit
@@ -92,6 +94,13 @@ function formatDeletedAt(iso: string) {
   return dateFormatter.format(new Date(iso));
 }
 
+function daysRemaining(iso: string): number {
+  const deletedAt = new Date(iso).getTime();
+  const expiresAt = deletedAt + 30 * 24 * 60 * 60 * 1000;
+  const remainingMs = expiresAt - Date.now();
+  return Math.max(0, Math.ceil(remainingMs / (24 * 60 * 60 * 1000)));
+}
+
 async function load() {
   if (tripId.value == null) return;
   try {
@@ -133,22 +142,78 @@ async function restore(entry: TrashEntry) {
     restoringKey.value = null;
   }
 }
+
+async function permanentlyDelete(entry: TrashEntry) {
+  if (
+    !confirm(
+      'Dieses Element wirklich endgültig löschen? Diese Aktion kann nicht rückgängig gemacht werden.'
+    )
+  )
+    return;
+
+  error.value = '';
+  const key = keyOf(entry);
+  deletingKey.value = key;
+  try {
+    await api.delete(`/trash/${entry.type}/${entry.id}`);
+    entries.value = entries.value.filter((e) => keyOf(e) !== key);
+  } catch {
+    error.value = 'Löschen fehlgeschlagen. Bitte erneut versuchen.';
+  } finally {
+    deletingKey.value = null;
+  }
+}
+
+async function emptyTrash() {
+  if (
+    !confirm(
+      'Möchtest du den gesamten Papierkorb für diesen Urlaub endgültig leeren? Diese Aktion kann nicht rückgängig gemacht werden.'
+    )
+  )
+    return;
+
+  error.value = '';
+  emptyingTrash.value = true;
+  try {
+    await api.delete(`/trash?trip_id=${tripId.value}`);
+    entries.value = [];
+  } catch {
+    error.value = 'Papierkorb konnte nicht geleert werden.';
+  } finally {
+    emptyingTrash.value = false;
+  }
+}
 </script>
 
 <template>
   <div class="page" v-if="!loading">
-    <h1><AppIcon :icon="ACTION_ICONS.delete" :size="24" group="navigation" /> Papierkorb</h1>
+    <div class="header-row">
+      <h1><AppIcon :icon="ACTION_ICONS.delete" :size="24" group="navigation" /> Papierkorb</h1>
+      <Button
+        v-if="entries.length > 0"
+        variant="danger"
+        :disabled="emptyingTrash"
+        @click="emptyTrash"
+      >
+        <AppIcon :icon="ACTION_ICONS.delete" :size="14" group="actions" /> Leeren
+      </Button>
+    </div>
     <p class="hint">
       Gelöschte Termine, Ausflüge, Spots und mehr<template v-if="currentTrip?.name">
         aus „{{ currentTrip.name }}“</template
       >
-      bleiben hier eine Weile erhalten, bevor sie endgültig entfernt werden – hier lassen sie sich
-      jederzeit wiederherstellen.
+      bleiben hier für <strong>30 Tage</strong> erhalten, bevor sie automatisch endgültig gelöscht
+      werden. In dieser Zeit lassen sie sich jederzeit wiederherstellen.
     </p>
     <p v-if="error" class="error">{{ error }}</p>
 
     <TransitionGroup tag="ul" name="list" class="trash-list">
-      <li class="card trash-row" v-for="entry in entries" :key="keyOf(entry)">
+      <li
+        class="card trash-row"
+        :class="{ 'is-loading': restoringKey === keyOf(entry) || deletingKey === keyOf(entry) }"
+        v-for="entry in entries"
+        :key="keyOf(entry)"
+      >
         <span class="trash-icon"
           ><AppIcon
             :icon="TYPE_ICON[entry.type] ?? ACTION_ICONS.delete"
@@ -158,16 +223,28 @@ async function restore(entry: TrashEntry) {
         <div class="trash-info">
           <span class="trash-title">{{ titleFor(entry) }}</span>
           <span class="trash-meta"
-            >{{ entry.label }} · Gelöscht am {{ formatDeletedAt(entry.deletedAt) }}</span
+            >{{ entry.label }} · Gelöscht am {{ formatDeletedAt(entry.deletedAt) }} (Noch
+            {{ daysRemaining(entry.deletedAt) }} Tage)</span
           >
         </div>
-        <Button
-          variant="card-action"
-          :disabled="restoringKey === keyOf(entry)"
-          @click="restore(entry)"
-        >
-          <AppIcon :icon="ACTION_ICONS.restore" :size="14" group="actions" /> Wiederherstellen
-        </Button>
+        <div class="trash-actions">
+          <Button
+            variant="ghost"
+            class="text-danger"
+            :disabled="restoringKey === keyOf(entry) || deletingKey === keyOf(entry)"
+            @click="permanentlyDelete(entry)"
+            title="Endgültig löschen"
+          >
+            <AppIcon :icon="ACTION_ICONS.delete" :size="18" group="actions" />
+          </Button>
+          <Button
+            variant="card-action"
+            :disabled="restoringKey === keyOf(entry) || deletingKey === keyOf(entry)"
+            @click="restore(entry)"
+          >
+            <AppIcon :icon="ACTION_ICONS.restore" :size="14" group="actions" /> Wiederherstellen
+          </Button>
+        </div>
       </li>
     </TransitionGroup>
     <EmptyState v-if="!entries.length">
@@ -179,6 +256,14 @@ async function restore(entry: TrashEntry) {
 </template>
 
 <style scoped>
+.header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
 .trash-list {
   display: flex;
   flex-direction: column;
@@ -190,6 +275,21 @@ async function restore(entry: TrashEntry) {
   display: flex;
   align-items: center;
   gap: var(--space-3);
+}
+
+.trash-row.is-loading {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.trash-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.text-danger {
+  color: var(--color-danger);
 }
 
 .trash-icon {
