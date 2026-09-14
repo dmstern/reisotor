@@ -220,6 +220,10 @@ function onDragStart(event: DragEvent) {
 const { dragging, ghostStyle, onPointerDown } = usePointerDrag({
   onStart: () => {
     drawers.calendarOpen = true;
+    document.body.classList.add('is-dragging-calendar');
+  },
+  onEnd: () => {
+    document.body.classList.remove('is-dragging-calendar');
   },
   onDrop: (targetEl) => {
     const dayEl = targetEl?.closest<HTMLElement>('[data-date]');

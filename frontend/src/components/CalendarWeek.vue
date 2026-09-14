@@ -258,6 +258,22 @@ function onDrop(event: DragEvent, date: string) {
   outline-offset: -2px;
 }
 
+/* Leucht-Effekt, wenn der "Einplanen"-Anfasser einer SpotCard gerade gezogen wird (#drag) */
+:global(body.is-dragging-calendar) .day {
+  background: var(--color-scheduled-tint);
+  border-color: color-mix(in srgb, var(--color-scheduled) 40%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-scheduled) 20%, transparent);
+}
+
+:global(body.is-dragging-calendar) .day.in-trip {
+  background: color-mix(in srgb, var(--color-scheduled) 12%, var(--color-surface));
+}
+
+:global(body.is-dragging-calendar) .day:hover {
+  background: color-mix(in srgb, var(--color-scheduled) 20%, var(--color-surface));
+  transform: translateY(-1px);
+}
+
 /* Führende/nachfolgende Tage aus dem Vor-/Folgemonat in der echten Monatsansicht (siehe otherMonth
    oben) – gedämpft statt ausgeblendet, damit z. B. ein Termin am Monatsübergang trotzdem sichtbar
    und antippbar bleibt, nur eben erkennbar als "nicht der aktuell im Fokus stehende Monat". */

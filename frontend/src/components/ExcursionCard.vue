@@ -642,6 +642,18 @@ function onSpotDrop(event: DragEvent) {
     transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* Leucht-Effekt, wenn der "Tour zuordnen"-Anfasser einer SpotCard gerade gezogen wird (#drag) */
+:global(body.is-dragging-tour) .excursion-card {
+  background: var(--excursion-theme-tint);
+  border-color: color-mix(in srgb, var(--excursion-theme-color) 40%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--excursion-theme-color) 20%, transparent);
+}
+
+:global(body.is-dragging-tour) .excursion-card:hover {
+  background: color-mix(in srgb, var(--excursion-theme-color) 20%, var(--color-surface));
+  transform: translateY(-1px);
+}
+
 .excursion-card.is-travel,
 .excursion-card.has-role {
   --excursion-theme-color: var(--color-travel);

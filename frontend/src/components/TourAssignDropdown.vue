@@ -40,7 +40,12 @@ function handleCreate() {
 }
 
 function onDragStart(event: DragEvent) {
+  document.body.classList.add('is-dragging-tour');
   emit('dragstart', event);
+}
+
+function onDragEnd(event: DragEvent) {
+  document.body.classList.remove('is-dragging-tour');
 }
 </script>
 
@@ -57,6 +62,7 @@ function onDragStart(event: DragEvent) {
       aria-label="Tour zuordnen oder auf eine Tour ziehen"
       @click="open = !open"
       @dragstart="onDragStart"
+      @dragend="onDragEnd"
     >
       <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="14" group="navigation" /> Tour zuordnen
     </button>
