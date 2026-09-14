@@ -62,9 +62,10 @@ function openMembers(trip: Trip) {
 
     <div v-if="tripStore.trips.length > 0" class="trip-list">
       <Card
-        v-for="trip in tripStore.trips"
+        v-for="(trip, index) in tripStore.trips"
         :key="trip.id"
-        class="trip-card"
+        class="trip-card animate-cascade"
+        :style="{ '--stagger-delay': `${index * 60}ms` }"
         interactive
         @click="selectTrip(trip.id)"
       >

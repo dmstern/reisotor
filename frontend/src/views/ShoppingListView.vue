@@ -402,7 +402,12 @@ async function quickAddToGroup(group: Group, label: string) {
     </div>
 
     <div class="groups-grid">
-      <section class="group-section" v-for="group in groupedItems" :key="group.key">
+      <section
+        class="group-section animate-cascade"
+        v-for="(group, index) in groupedItems"
+        :key="group.key"
+        :style="{ '--stagger-delay': `${index * 60}ms` }"
+      >
         <h2>
           <AppIcon v-if="group.iconDef" :icon="group.iconDef" :size="18" group="categories" />
           {{ group.label }}

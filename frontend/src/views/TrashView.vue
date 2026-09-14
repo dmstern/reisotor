@@ -209,10 +209,11 @@ async function emptyTrash() {
 
     <TransitionGroup tag="ul" name="list" class="trash-list">
       <li
-        class="card trash-row"
+        class="card trash-row animate-cascade"
         :class="{ 'is-loading': restoringKey === keyOf(entry) || deletingKey === keyOf(entry) }"
-        v-for="entry in entries"
+        v-for="(entry, index) in entries"
         :key="keyOf(entry)"
+        :style="{ '--stagger-delay': `${index * 60}ms` }"
       >
         <span class="trash-icon"
           ><AppIcon

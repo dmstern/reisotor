@@ -696,9 +696,10 @@ function showEntryDayOnMap(entry: DiaryEntry) {
 
     <TransitionGroup tag="div" name="list" class="entries">
       <article
-        v-for="entry in entries"
+        v-for="(entry, index) in entries"
         :key="entry.id"
-        class="card entry"
+        class="card entry animate-cascade"
+        :style="{ '--stagger-delay': `${index * 60}ms` }"
         :class="{ 'new-highlight': highlightedIds.has(entry.id) }"
       >
         <header class="entry-head">

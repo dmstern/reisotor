@@ -1206,12 +1206,13 @@ function formatDate(date: string) {
 
       <TransitionGroup tag="ul" name="list" class="items">
         <li
-          v-for="entry in dayEntries"
+          v-for="(entry, index) in dayEntries"
           :key="entry.key"
-          class="item clickable"
+          class="item clickable animate-cascade"
           role="button"
           tabindex="0"
           :style="{
+            '--stagger-delay': `${index * 40}ms`,
             '--entry-cat-color': SCHEDULE_CATEGORY_META[entry.category].color,
             borderLeftColor: SCHEDULE_CATEGORY_META[entry.category].color,
           }"

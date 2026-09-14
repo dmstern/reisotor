@@ -720,7 +720,7 @@ function formatWeekdayDate(d: string) {
          "🧩 Dashboard-Kacheln"-Einstellung, 1:1 nach dem Muster der NavBar-Konfiguration/
          navConfig.ts) - jede Kachel behält ihre bisherige, unveränderte Markup/Logik, nur die
          Reihenfolge/Sichtbarkeit ist jetzt datengetrieben statt fest im Template verdrahtet. */-->
-    <div class="grid cards">
+    <div class="grid cards animate-cascade-children">
       <template v-for="key in visibleTileKeys" :key="key">
         <!-- Kalender: Desktop-Schublade bzw. Mobil-Seite /calendar (siehe drawers.openCalendar()),
              kein eigener router-link nötig, da die Kachel je nach Breite unterschiedlich navigieren muss -->

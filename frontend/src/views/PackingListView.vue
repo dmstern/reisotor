@@ -269,7 +269,12 @@ async function quickAdd(list: ListGroup, label: string) {
     </div>
 
     <div class="lists-grid">
-      <section class="list-section" v-for="list in lists" :key="list.key">
+      <section
+        class="list-section animate-cascade"
+        v-for="(list, index) in lists"
+        :key="list.key"
+        :style="{ '--stagger-delay': `${index * 60}ms` }"
+      >
         <div class="list-header">
           <h2 v-if="users.length > 1">{{ list.title }}</h2>
           <span class="progress"
