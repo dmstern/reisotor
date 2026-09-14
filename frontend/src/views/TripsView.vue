@@ -12,6 +12,7 @@ import DeleteButton from '../components/DeleteButton.vue';
 import TripMembersDialog from '../components/TripMembersDialog.vue';
 import AppIcon from '../components/AppIcon.vue';
 import Button from '../components/primitives/Button.vue';
+import Card from '../components/primitives/Card.vue';
 import IconButton from '../components/primitives/IconButton.vue';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
@@ -60,11 +61,17 @@ function openMembers(trip: Trip) {
     </div>
 
     <div v-if="tripStore.trips.length > 0" class="trip-list">
-      <div v-for="trip in tripStore.trips" :key="trip.id" class="card trip-card">
-        <button type="button" class="trip-select" @click="selectTrip(trip.id)">
+      <Card
+        v-for="trip in tripStore.trips"
+        :key="trip.id"
+        class="trip-card"
+        interactive
+        @click="selectTrip(trip.id)"
+      >
+        <button type="button" class="trip-select" @click.stop="selectTrip(trip.id)">
           {{ trip.name }}
         </button>
-        <div class="row-actions">
+        <div class="row-actions" @click.stop>
           <IconButton
             size="md"
             :icon="FORM_FIELD_ICONS.visibility"
@@ -75,7 +82,7 @@ function openMembers(trip: Trip) {
           <EditButton small @click="openEdit(trip)" />
           <DeleteButton small @click="onDelete(trip)" />
         </div>
-      </div>
+      </Card>
     </div>
 
     <div v-else class="card empty-state">
