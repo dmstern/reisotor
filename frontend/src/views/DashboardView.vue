@@ -56,6 +56,17 @@ import WeatherIcon from '../components/WeatherIcon.vue';
 import WeatherDayDetailDialog from '../components/WeatherDayDetailDialog.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { DEMO_MODE } from '../demo/isDemoMode';
+import DashboardNotesPreview from '../components/dashboard/DashboardNotesPreview.vue';
+import DashboardTrashPreview from '../components/dashboard/DashboardTrashPreview.vue';
+import DashboardAccommodationPreview from '../components/dashboard/DashboardAccommodationPreview.vue';
+import DashboardDiaryPreview from '../components/dashboard/DashboardDiaryPreview.vue';
+import DashboardSuitcasePreview from '../components/dashboard/DashboardSuitcasePreview.vue';
+import DashboardShoppingPreview from '../components/dashboard/DashboardShoppingPreview.vue';
+import DashboardTodoPreview from '../components/dashboard/DashboardTodoPreview.vue';
+import DashboardBudgetPreview from '../components/dashboard/DashboardBudgetPreview.vue';
+import DashboardTravelPreview from '../components/dashboard/DashboardTravelPreview.vue';
+import DashboardCalendarPreview from '../components/dashboard/DashboardCalendarPreview.vue';
+import DashboardSecurityPreview from '../components/dashboard/DashboardSecurityPreview.vue';
 
 const auth = useAuthStore();
 const tripStore = useTripStore();
@@ -737,6 +748,7 @@ function formatWeekdayDate(d: string) {
             :color="WIDGET_COLORS.get('schedule')"
           />
           <h3>Kalender</h3>
+          <DashboardCalendarPreview :upcoming="upcomingEntries" />
           <ul v-if="upcomingEntries.length" class="mini-list">
             <li v-for="entry in upcomingEntries" :key="entry.key">
               <span
@@ -776,6 +788,7 @@ function formatWeekdayDate(d: string) {
             :color="WIDGET_COLORS.get('packing')"
           />
           <h3>Packliste</h3>
+          <DashboardSuitcasePreview :packed="packingTotal.checked" :total="packingTotal.total" />
           <BudgetMeter
             label="Gepackt"
             format="count"
@@ -814,6 +827,10 @@ function formatWeekdayDate(d: string) {
             :color="WIDGET_COLORS.get('budget')"
           />
           <h3>Budget</h3>
+          <DashboardBudgetPreview
+            :spent="budgetStore.totalSpent"
+            :target="budgetStore.grandTotal"
+          />
           <BudgetMeter
             label="Ausgegeben"
             :spent="budgetStore.totalSpent"
@@ -846,6 +863,10 @@ function formatWeekdayDate(d: string) {
             :color="WIDGET_COLORS.get('shopping')"
           />
           <h3>Einkaufsliste</h3>
+          <DashboardShoppingPreview
+            :checked="shoppingProgress.checked"
+            :total="shoppingProgress.total"
+          />
           <BudgetMeter
             label="Gekauft"
             format="count"
@@ -879,6 +900,11 @@ function formatWeekdayDate(d: string) {
             :color="WIDGET_COLORS.get('todo')"
           />
           <h3>ToDo</h3>
+          <DashboardTodoPreview
+            :todos="todos"
+            :done="todoProgress.done"
+            :total="todoProgress.total"
+          />
           <BudgetMeter
             label="Erledigt"
             format="count"
@@ -912,6 +938,7 @@ function formatWeekdayDate(d: string) {
             :color="WIDGET_COLORS.get('travel')"
           />
           <h3>Reise</h3>
+          <DashboardTravelPreview :next-item="nextTravelItem" :count="travelItems.length" />
           <p v-if="nextTravelItem">
             {{ formatDate(nextTravelItem.date!) }} — {{ nextTravelItem.title }}
           </p>
@@ -950,6 +977,7 @@ function formatWeekdayDate(d: string) {
             :color="WIDGET_COLORS.get('accommodation')"
           />
           <h3>Unterkunft</h3>
+          <DashboardAccommodationPreview :accommodation="currentOrNextAccommodation" />
           <p v-if="currentOrNextAccommodation">
             {{ currentOrNextAccommodation.title
             }}<span v-if="currentOrNextAccommodation.start_date">
@@ -984,6 +1012,7 @@ function formatWeekdayDate(d: string) {
             :color="WIDGET_COLORS.get('diary')"
           />
           <h3>Tagebuch</h3>
+          <DashboardDiaryPreview :entries="diaryEntries" :latest-entry="latestDiaryEntry" />
           <p v-if="diaryEntries.length">
             {{ diaryEntries.length }} {{ diaryEntries.length === 1 ? 'Eintrag' : 'Einträge'
             }}<span v-if="latestDiaryEntry">
@@ -1017,6 +1046,7 @@ function formatWeekdayDate(d: string) {
             :color="WIDGET_COLORS.get('notes')"
           />
           <h3>Notizen</h3>
+          <DashboardNotesPreview :notes="notes" />
           <p v-if="notes.length">
             {{ notes.length }} {{ notes.length === 1 ? 'Notiz' : 'Notizen' }}
           </p>
@@ -1047,6 +1077,7 @@ function formatWeekdayDate(d: string) {
             :color="SECURITY_TILE_COLOR"
           />
           <h3>Sicherheits-Check</h3>
+          <DashboardSecurityPreview :destination="trip?.destination" />
           <p>Der Reisotor scannt eure Reiseregion 🤖🔍</p>
         </router-link>
 
@@ -1074,6 +1105,7 @@ function formatWeekdayDate(d: string) {
             :color="TRASH_TILE_COLOR"
           />
           <h3>Papierkorb</h3>
+          <DashboardTrashPreview :count="trashCount" />
           <p v-if="trashCount > 0">
             {{ trashCount }} gelöschte{{ trashCount === 1 ? 's Objekt' : ' Objekte' }}
           </p>
@@ -1386,6 +1418,12 @@ function formatWeekdayDate(d: string) {
 .tile > p {
   text-align: center;
   font-size: 0.88rem;
+  margin-top: auto;
+  padding-top: 2px;
+}
+
+.tile :deep(.budget-meter) {
+  margin-top: auto;
 }
 
 .mini-list {
