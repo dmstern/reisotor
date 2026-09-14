@@ -6,6 +6,7 @@ import FormField from './FormField.vue';
 import Button from './primitives/Button.vue';
 import Select from './primitives/Select.vue';
 import Input from './primitives/Input.vue';
+import CollapsibleFieldset from './primitives/CollapsibleFieldset.vue';
 import AppIcon from './AppIcon.vue';
 import FileAttachments from './FileAttachments.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
@@ -89,6 +90,17 @@ const modalTitle = computed(() => {
   const fromName = props.fromSpot?.title || 'Start';
   const toName = props.toSpot?.title || 'Ziel';
   return `Teilstrecke: ${fromName} → ${toName}`;
+});
+
+const hasOptionalData = computed(() => {
+  return !!(
+    form.value.checkin_info ||
+    form.value.seat ||
+    form.value.luggage ||
+    form.value.ticket_link ||
+    form.value.amount ||
+    form.value.note
+  );
 });
 
 const canDelete = computed(() => {
@@ -179,57 +191,63 @@ function onDelete() {
         </FormField>
       </div>
 
-      <FormField icon="note" label="Vorher da sein / Treffpunkt">
-        <Input
-          v-model="form.checkin_info"
-          type="text"
-          placeholder="z. B. Gleis 4 / 2 Std. vorher am Flughafen"
-        />
-      </FormField>
-
-      <div class="row">
-        <FormField icon="note" label="Sitzplatz">
-          <Input v-model="form.seat" type="text" placeholder="z. B. Wagen 21, Platz 44" />
-        </FormField>
-        <FormField icon="note" label="Gepäck">
+      <CollapsibleFieldset label="Optionale Angaben" :open-initial="hasOptionalData">
+        <FormField icon="note" label="Vorher da sein / Treffpunkt">
           <Input
-            v-model="form.luggage"
+            v-model="form.checkin_info"
             type="text"
-            placeholder="z. B. 1x Koffer 23kg, Handgepäck"
+            placeholder="z. B. Gleis 4 / 2 Std. vorher am Flughafen"
           />
         </FormField>
-      </div>
 
-      <FormField icon="link" label="Buchungslink / Ticket-URL">
-        <Input v-model="form.ticket_link" type="url" placeholder="https://..." />
-      </FormField>
+        <div class="row">
+          <FormField icon="note" label="Sitzplatz">
+            <Input v-model="form.seat" type="text" placeholder="z. B. Wagen 21, Platz 44" />
+          </FormField>
+          <FormField icon="note" label="Gepäck">
+            <Input
+              v-model="form.luggage"
+              type="text"
+              placeholder="z. B. 1x Koffer 23kg, Handgepäck"
+            />
+          </FormField>
+        </div>
 
-      <div class="row">
-        <FormField icon="amount" label="Ticketkosten (€)">
+        <FormField icon="link" label="Buchungslink / Ticket-URL">
+          <Input v-model="form.ticket_link" type="url" placeholder="https://..." />
+        </FormField>
+
+        <div class="row">
+          <FormField icon="amount" label="Ticketkosten (€)">
+            <Input
+              v-model="form.amount"
+              type="number"
+              step="0.01"
+              min="0"
+              placeholder="z. B. 49.90"
+            />
+          </FormField>
+          <FormField v-if="users.length > 1" icon="shared" label="Bezahlt von">
+            <Select v-model="form.paid_by_user_id">
+              <option value="">– wählen –</option>
+              <option v-for="u in users" :key="u.id" :value="String(u.id)">
+                {{ u.avatar }} {{ u.username }}
+              </option>
+            </Select>
+          </FormField>
+        </div>
+        <p v-if="users.length > 1 && form.amount && !form.paid_by_user_id" class="hint">
+          Ohne Zahler:in wird der Betrag nicht in der Budgetplanung berücksichtigt.
+        </p>
+
+        <FormField icon="note" label="Notiz zur Teilstrecke">
           <Input
-            v-model="form.amount"
-            type="number"
-            step="0.01"
-            min="0"
-            placeholder="z. B. 49.90"
+            v-model="form.note"
+            type="text"
+            placeholder="Tipps zum Umstieg, Buchungscode etc."
           />
         </FormField>
-        <FormField v-if="users.length > 1" icon="shared" label="Bezahlt von">
-          <Select v-model="form.paid_by_user_id">
-            <option value="">– wählen –</option>
-            <option v-for="u in users" :key="u.id" :value="String(u.id)">
-              {{ u.avatar }} {{ u.username }}
-            </option>
-          </Select>
-        </FormField>
-      </div>
-      <p v-if="users.length > 1 && form.amount && !form.paid_by_user_id" class="hint">
-        Ohne Zahler:in wird der Betrag nicht in der Budgetplanung berücksichtigt.
-      </p>
-
-      <FormField icon="note" label="Notiz zur Teilstrecke">
-        <Input v-model="form.note" type="text" placeholder="Tipps zum Umstieg, Buchungscode etc." />
-      </FormField>
+      </CollapsibleFieldset>
 
       <FileAttachments v-if="leg?.id" domain="excursion_legs" :entity-id="leg.id" />
       <p v-else class="attachments-hint">
