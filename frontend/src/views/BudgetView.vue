@@ -265,259 +265,295 @@ const categoryColors = computed(() => {
 
 <template>
   <div class="page budget-page" v-if="!loading">
-    <h1>Budget</h1>
-
-    <Card class="overview-card">
-      <BudgetMeter
-        label="Budget"
-        :spent="budgetStore.totalSpent"
-        :target="budgetStore.grandTotal"
-        color="var(--color-primary-dark)"
-      />
-      <!-- BudgetMeter zeigt den Überzug-Fall (⚠️ X € über Budget) schon selbst an - hier nur den
-           positiven Rest-Fall ergänzen, den BudgetMeter (auch anderswo für Packliste/Einkaufsliste/
-           ToDo genutzt, siehe DashboardView.vue) bewusst nicht kennt. -->
-      <p v-if="budgetStore.grandTotal > 0 && budgetStore.remaining >= 0" class="remaining-line">
-        Noch übrig: <strong>{{ budgetStore.remaining.toFixed(2) }} €</strong>
-      </p>
-    </Card>
-
-    <BudgetSettlementCard
-      v-if="budgetStore.users.length > 1"
-      @use-suggestion="useSettlementSuggestion"
-    />
-
-    <!-- Budgets -->
-    <Card>
-      <div class="header">
-        <h2>Budgets</h2>
-        <Button @click="showNewBudgetForm = true"
-          ><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Budget anlegen</Button
+    <div class="budget-header-bar">
+      <div class="title-wrap">
+        <h1>Budget</h1>
+        <span
+          v-if="budgetStore.grandTotal > 0"
+          class="budget-kpi-pill"
+          :class="{ 'is-over': budgetStore.remaining < 0 }"
         >
+          <span class="pill-dot" aria-hidden="true"></span>
+          <span v-if="budgetStore.remaining < 0">
+            {{ Math.abs(budgetStore.remaining).toFixed(2) }} € über Budget
+          </span>
+          <span v-else>
+            {{ Math.round((budgetStore.totalSpent / budgetStore.grandTotal) * 100) }}% ausgeschöpft
+          </span>
+        </span>
       </div>
-      <p v-if="budgetStore.users.length > 1" class="hint">
-        Ganz einfach: ein Topf mit nur einer Gesamtsumme. Oder detaillierter: in Kategorien
-        aufteilen, um daraus ein Gesamtbudget zusammenzustellen. Geteilte Töpfe sehen alle
-        Mitreisenden, private Töpfe nur die gewählte Person.
-      </p>
-      <p v-else class="hint">
-        Ganz einfach: ein Topf mit nur einer Gesamtsumme. Oder detaillierter: in Kategorien
-        aufteilen, um daraus ein Gesamtbudget zusammenzustellen.
-      </p>
+    </div>
 
-      <Modal
-        :model-value="showNewBudgetForm"
-        title="Budget anlegen"
-        full-height
-        @update:model-value="(v) => !v && closeNewBudgetForm()"
-      >
-        <form class="new-budget-form" @submit.prevent="addBudget">
-          <FormField icon="title" label="Name">
-            <Input
-              v-model="newBudgetForm.name"
-              type="text"
-              placeholder="Name (z. B. Souvenirs)"
-              required
-            />
-          </FormField>
-          <FormField
-            v-if="budgetStore.users.length > 1"
-            icon="visibility"
-            label="Sichtbarkeit"
-            v-slot="{ id }"
-          >
-            <Select :id="id" v-model="newBudgetForm.kind">
-              <option value="shared">Geteilt (alle sehen ihn)</option>
-              <option value="personal">Privat (nur eine Person sieht ihn)</option>
-            </Select>
-          </FormField>
-          <FormField
-            v-if="budgetStore.users.length > 1 && newBudgetForm.kind === 'personal'"
-            icon="person"
-            label="Person"
-            v-slot="{ id }"
-          >
-            <Select :id="id" v-model="newBudgetForm.owner_id" required>
-              <option value="" disabled>Nutzer:in wählen…</option>
-              <option v-for="u in budgetStore.users" :key="u.id" :value="String(u.id)">
-                {{ u.avatar }} {{ u.username }}
-              </option>
-            </Select>
-          </FormField>
-          <FormField icon="amount" label="Gesamtziel (optional)">
-            <Input
-              v-model="newBudgetForm.target_amount"
-              type="number"
-              inputmode="decimal"
-              step="0.01"
-              placeholder="Gesamtziel € (optional)"
-            />
-          </FormField>
-          <p v-if="showsPrivacyHint" class="privacy-hint">
-            <AppIcon :icon="ACTION_ICONS.private" :size="14" group="actions" /> Nur
-            {{ budgetStore.userName(Number(newBudgetForm.owner_id)) }} sieht diesen Topf danach.
-          </p>
-          <div class="actions-row">
-            <div class="spacer"></div>
-            <Button type="submit">Anlegen</Button>
-          </div>
-        </form>
-      </Modal>
-
-      <TransitionGroup tag="div" name="list" class="pot-grid">
-        <BudgetPotCard
-          v-for="budget in budgetStore.budgets"
-          :key="budget.id"
-          :budget="budget"
-          :category-colors="categoryColors"
+    <!-- Summary Row: Gesamt-Übersicht & Wer schuldet wem? nebeneinander auf Desktop -->
+    <div class="budget-summary-grid" :class="{ 'single-col': budgetStore.users.length <= 1 }">
+      <Card class="overview-card">
+        <div class="overview-header">
+          <h2>Gesamt-Übersicht</h2>
+          <span class="overview-count-badge" v-if="budgetStore.expenses.length">
+            {{ budgetStore.expenses.length }}
+            {{ budgetStore.expenses.length === 1 ? 'Ausgabe' : 'Ausgaben' }}
+          </span>
+        </div>
+        <BudgetMeter
+          label="Budget"
+          :spent="budgetStore.totalSpent"
+          :target="budgetStore.grandTotal"
+          color="var(--color-primary-dark)"
         />
-        <p v-if="!budgetStore.budgets.length" key="empty" class="empty">
-          Noch keine Budgets angelegt.
+        <!-- BudgetMeter zeigt den Überzug-Fall (⚠️ X € über Budget) schon selbst an - hier nur den
+             positiven Rest-Fall ergänzen, den BudgetMeter (auch anderswo für Packliste/Einkaufsliste/
+             ToDo genutzt, siehe DashboardView.vue) bewusst nicht kennt. -->
+        <p v-if="budgetStore.grandTotal > 0 && budgetStore.remaining >= 0" class="remaining-line">
+          Noch übrig: <strong>{{ budgetStore.remaining.toFixed(2) }} €</strong>
         </p>
-      </TransitionGroup>
-    </Card>
+      </Card>
 
-    <!-- Bezahlungen -->
-    <Card>
-      <div class="header">
-        <h2>Bezahlungen</h2>
-        <Button @click="showExpenseForm = true"
-          ><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Bezahlung
-          eintragen</Button
-        >
-      </div>
-
-      <Modal
-        :model-value="showExpenseForm"
-        title="Bezahlung eintragen"
-        full-height
-        @update:model-value="(v) => !v && closeExpenseForm()"
-      >
-        <form class="add-form" @submit.prevent="submitExpense">
-          <FormField icon="title" label="Titel">
-            <Input v-model="expenseForm.title" type="text" placeholder="Titel" required />
-          </FormField>
-          <FormField icon="category" label="Kategorie" v-slot="{ id }">
-            <Combobox
-              :id="id"
-              v-model="expenseForm.category"
-              :options="budgetStore.expenseCategories"
-              placeholder="Kategorie"
-            />
-          </FormField>
-          <FormField icon="amount" label="Betrag">
-            <Input
-              v-model="expenseForm.amount"
-              type="number"
-              inputmode="decimal"
-              step="0.01"
-              placeholder="Betrag"
-              required
-            />
-          </FormField>
-          <FormField
-            v-if="budgetStore.users.length > 1"
-            icon="shared"
-            label="Bezahlt von"
-            v-slot="{ id }"
-          >
-            <Select :id="id" v-model="expenseForm.paid_by_user_id" required>
-              <option value="" disabled>Bezahlt von…</option>
-              <option v-for="u in budgetStore.users" :key="u.id" :value="String(u.id)">
-                {{ u.avatar }} {{ u.username }}
-              </option>
-            </Select>
-          </FormField>
-          <FormField icon="pot" label="Budget-Topf" v-slot="{ id }">
-            <Select :id="id" v-model="expenseForm.budget_id">
-              <option value="">Kein Budget</option>
-              <option v-for="b in budgetStore.budgets" :key="b.id" :value="String(b.id)">
-                {{ b.name }} ({{ budgetStore.budgetLabel(b) }})
-              </option>
-            </Select>
-          </FormField>
-          <FormField icon="date" label="Datum">
-            <Input v-model="expenseForm.date" type="date" />
-          </FormField>
-          <FormField icon="note" label="Notiz">
-            <Input v-model="expenseForm.note" type="text" placeholder="Notiz (optional)" />
-          </FormField>
-          <DraftStatusBar
-            :status="newExpenseDraft.status.value"
-            :restored="newExpenseDraft.restored.value"
-          />
-          <div class="actions-row">
-            <div class="spacer"></div>
-            <Button type="submit">Eintragen</Button>
-          </div>
-        </form>
-      </Modal>
-
-      <BudgetExpenseList
-        :highlighted-ids="highlightedIds"
-        :auto-source-for="autoSourceFor"
-        @edit="startEditExpense"
+      <BudgetSettlementCard
+        v-if="budgetStore.users.length > 1"
+        @use-suggestion="useSettlementSuggestion"
       />
-    </Card>
+    </div>
 
-    <!-- Überweisungen -->
-    <Card v-if="budgetStore.users.length > 1">
-      <div class="header">
-        <h2>Überweisungen</h2>
-        <Button @click="showTransferForm = true"
-          ><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Überweisung
-          eintragen</Button
-        >
+    <!-- Main Content Grid: Linke Spalte Budgets/Töpfe, Rechte Spalte Bezahlungen & Überweisungen -->
+    <div class="budget-main-grid">
+      <!-- Linke Spalte: Budgets / Töpfe -->
+      <div class="budget-col-pots">
+        <Card class="pots-card">
+          <div class="header">
+            <h2>Budgets</h2>
+            <Button @click="showNewBudgetForm = true"
+              ><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Budget
+              anlegen</Button
+            >
+          </div>
+          <p v-if="budgetStore.users.length > 1" class="hint">
+            Ganz einfach: ein Topf mit nur einer Gesamtsumme. Oder detaillierter: in Kategorien
+            aufteilen, um daraus ein Gesamtbudget zusammenzustellen. Geteilte Töpfe sehen alle
+            Mitreisenden, private Töpfe nur die gewählte Person.
+          </p>
+          <p v-else class="hint">
+            Ganz einfach: ein Topf mit nur einer Gesamtsumme. Oder detaillierter: in Kategorien
+            aufteilen, um daraus ein Gesamtbudget zusammenzustellen.
+          </p>
+
+          <Modal
+            :model-value="showNewBudgetForm"
+            title="Budget anlegen"
+            full-height
+            @update:model-value="(v) => !v && closeNewBudgetForm()"
+          >
+            <form class="new-budget-form" @submit.prevent="addBudget">
+              <FormField icon="title" label="Name">
+                <Input
+                  v-model="newBudgetForm.name"
+                  type="text"
+                  placeholder="Name (z. B. Souvenirs)"
+                  required
+                />
+              </FormField>
+              <FormField
+                v-if="budgetStore.users.length > 1"
+                icon="visibility"
+                label="Sichtbarkeit"
+                v-slot="{ id }"
+              >
+                <Select :id="id" v-model="newBudgetForm.kind">
+                  <option value="shared">Geteilt (alle sehen ihn)</option>
+                  <option value="personal">Privat (nur eine Person sieht ihn)</option>
+                </Select>
+              </FormField>
+              <FormField
+                v-if="budgetStore.users.length > 1 && newBudgetForm.kind === 'personal'"
+                icon="person"
+                label="Person"
+                v-slot="{ id }"
+              >
+                <Select :id="id" v-model="newBudgetForm.owner_id" required>
+                  <option value="" disabled>Nutzer:in wählen…</option>
+                  <option v-for="u in budgetStore.users" :key="u.id" :value="String(u.id)">
+                    {{ u.avatar }} {{ u.username }}
+                  </option>
+                </Select>
+              </FormField>
+              <FormField icon="amount" label="Gesamtziel (optional)">
+                <Input
+                  v-model="newBudgetForm.target_amount"
+                  type="number"
+                  inputmode="decimal"
+                  step="0.01"
+                  placeholder="Gesamtziel € (optional)"
+                />
+              </FormField>
+              <p v-if="showsPrivacyHint" class="privacy-hint">
+                <AppIcon :icon="ACTION_ICONS.private" :size="14" group="actions" /> Nur
+                {{ budgetStore.userName(Number(newBudgetForm.owner_id)) }} sieht diesen Topf danach.
+              </p>
+              <div class="actions-row">
+                <div class="spacer"></div>
+                <Button type="submit">Anlegen</Button>
+              </div>
+            </form>
+          </Modal>
+
+          <TransitionGroup tag="div" name="list" class="pot-grid">
+            <BudgetPotCard
+              v-for="budget in budgetStore.budgets"
+              :key="budget.id"
+              :budget="budget"
+              :category-colors="categoryColors"
+            />
+            <p v-if="!budgetStore.budgets.length" key="empty" class="empty">
+              Noch keine Budgets angelegt.
+            </p>
+          </TransitionGroup>
+        </Card>
       </div>
 
-      <Modal
-        :model-value="showTransferForm"
-        title="Überweisung eintragen"
-        full-height
-        @update:model-value="(v) => !v && closeTransferForm()"
-      >
-        <form class="add-form" @submit.prevent="submitTransfer">
-          <FormField icon="person" label="Von" v-slot="{ id }">
-            <Select :id="id" v-model="transferForm.from_user_id" required>
-              <option value="" disabled>Von…</option>
-              <option v-for="u in budgetStore.users" :key="u.id" :value="String(u.id)">
-                {{ u.avatar }} {{ u.username }}
-              </option>
-            </Select>
-          </FormField>
-          <FormField icon="person" label="An" v-slot="{ id }">
-            <Select :id="id" v-model="transferForm.to_user_id" required>
-              <option value="" disabled>An…</option>
-              <option v-for="u in budgetStore.users" :key="u.id" :value="String(u.id)">
-                {{ u.avatar }} {{ u.username }}
-              </option>
-            </Select>
-          </FormField>
-          <FormField icon="amount" label="Betrag">
-            <Input
-              v-model="transferForm.amount"
-              type="number"
-              inputmode="decimal"
-              step="0.01"
-              placeholder="Betrag"
-              required
-            />
-          </FormField>
-          <FormField icon="date" label="Datum">
-            <Input v-model="transferForm.date" type="date" />
-          </FormField>
-          <FormField icon="note" label="Notiz">
-            <Input v-model="transferForm.note" type="text" placeholder="Notiz (optional)" />
-          </FormField>
-          <div class="actions-row">
-            <div class="spacer"></div>
-            <Button type="submit">Eintragen</Button>
+      <!-- Rechte Spalte: Bezahlungen & Überweisungen -->
+      <div class="budget-col-transactions">
+        <!-- Bezahlungen -->
+        <Card class="expenses-card">
+          <div class="header">
+            <h2>Bezahlungen</h2>
+            <Button @click="showExpenseForm = true"
+              ><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Bezahlung
+              eintragen</Button
+            >
           </div>
-        </form>
-      </Modal>
 
-      <BudgetTransferList :highlighted-ids="highlightedIds" />
-    </Card>
+          <Modal
+            :model-value="showExpenseForm"
+            title="Bezahlung eintragen"
+            full-height
+            @update:model-value="(v) => !v && closeExpenseForm()"
+          >
+            <form class="add-form" @submit.prevent="submitExpense">
+              <FormField icon="title" label="Titel">
+                <Input v-model="expenseForm.title" type="text" placeholder="Titel" required />
+              </FormField>
+              <FormField icon="category" label="Kategorie" v-slot="{ id }">
+                <Combobox
+                  :id="id"
+                  v-model="expenseForm.category"
+                  :options="budgetStore.expenseCategories"
+                  placeholder="Kategorie"
+                />
+              </FormField>
+              <FormField icon="amount" label="Betrag">
+                <Input
+                  v-model="expenseForm.amount"
+                  type="number"
+                  inputmode="decimal"
+                  step="0.01"
+                  placeholder="Betrag"
+                  required
+                />
+              </FormField>
+              <FormField
+                v-if="budgetStore.users.length > 1"
+                icon="shared"
+                label="Bezahlt von"
+                v-slot="{ id }"
+              >
+                <Select :id="id" v-model="expenseForm.paid_by_user_id" required>
+                  <option value="" disabled>Bezahlt von…</option>
+                  <option v-for="u in budgetStore.users" :key="u.id" :value="String(u.id)">
+                    {{ u.avatar }} {{ u.username }}
+                  </option>
+                </Select>
+              </FormField>
+              <FormField icon="pot" label="Budget-Topf" v-slot="{ id }">
+                <Select :id="id" v-model="expenseForm.budget_id">
+                  <option value="">Kein Budget</option>
+                  <option v-for="b in budgetStore.budgets" :key="b.id" :value="String(b.id)">
+                    {{ b.name }} ({{ budgetStore.budgetLabel(b) }})
+                  </option>
+                </Select>
+              </FormField>
+              <FormField icon="date" label="Datum">
+                <Input v-model="expenseForm.date" type="date" />
+              </FormField>
+              <FormField icon="note" label="Notiz">
+                <Input v-model="expenseForm.note" type="text" placeholder="Notiz (optional)" />
+              </FormField>
+              <DraftStatusBar
+                :status="newExpenseDraft.status.value"
+                :restored="newExpenseDraft.restored.value"
+              />
+              <div class="actions-row">
+                <div class="spacer"></div>
+                <Button type="submit">Eintragen</Button>
+              </div>
+            </form>
+          </Modal>
+
+          <BudgetExpenseList
+            :highlighted-ids="highlightedIds"
+            :auto-source-for="autoSourceFor"
+            @edit="startEditExpense"
+          />
+        </Card>
+
+        <!-- Überweisungen -->
+        <Card v-if="budgetStore.users.length > 1" class="transfers-card">
+          <div class="header">
+            <h2>Überweisungen</h2>
+            <Button @click="showTransferForm = true"
+              ><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Überweisung
+              eintragen</Button
+            >
+          </div>
+
+          <Modal
+            :model-value="showTransferForm"
+            title="Überweisung eintragen"
+            full-height
+            @update:model-value="(v) => !v && closeTransferForm()"
+          >
+            <form class="add-form" @submit.prevent="submitTransfer">
+              <FormField icon="person" label="Von" v-slot="{ id }">
+                <Select :id="id" v-model="transferForm.from_user_id" required>
+                  <option value="" disabled>Von…</option>
+                  <option v-for="u in budgetStore.users" :key="u.id" :value="String(u.id)">
+                    {{ u.avatar }} {{ u.username }}
+                  </option>
+                </Select>
+              </FormField>
+              <FormField icon="person" label="An" v-slot="{ id }">
+                <Select :id="id" v-model="transferForm.to_user_id" required>
+                  <option value="" disabled>An…</option>
+                  <option v-for="u in budgetStore.users" :key="u.id" :value="String(u.id)">
+                    {{ u.avatar }} {{ u.username }}
+                  </option>
+                </Select>
+              </FormField>
+              <FormField icon="amount" label="Betrag">
+                <Input
+                  v-model="transferForm.amount"
+                  type="number"
+                  inputmode="decimal"
+                  step="0.01"
+                  placeholder="Betrag"
+                  required
+                />
+              </FormField>
+              <FormField icon="date" label="Datum">
+                <Input v-model="transferForm.date" type="date" />
+              </FormField>
+              <FormField icon="note" label="Notiz">
+                <Input v-model="transferForm.note" type="text" placeholder="Notiz (optional)" />
+              </FormField>
+              <div class="actions-row">
+                <div class="spacer"></div>
+                <Button type="submit">Eintragen</Button>
+              </div>
+            </form>
+          </Modal>
+
+          <BudgetTransferList :highlighted-ids="highlightedIds" />
+        </Card>
+      </div>
+    </div>
 
     <Modal
       :model-value="editingExpense !== null"
@@ -590,8 +626,111 @@ const categoryColors = computed(() => {
 </template>
 
 <style scoped>
+.budget-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.budget-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.title-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.title-wrap h1 {
+  margin: 0;
+}
+
+.budget-kpi-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: var(--radius-full, 9999px);
+  background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface));
+  color: var(--color-primary-dark);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 25%, transparent);
+  animation: pill-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.budget-kpi-pill.is-over {
+  background: color-mix(in srgb, var(--color-danger) 12%, var(--color-surface));
+  color: var(--color-danger);
+  border-color: color-mix(in srgb, var(--color-danger) 25%, transparent);
+}
+
+.pill-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+@keyframes pill-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Summary Grid (Top Row) */
+.budget-summary-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+  align-items: stretch;
+}
+
+@media (min-width: 960px) {
+  .budget-summary-grid:not(.single-col) {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  }
+}
+
 .overview-card {
-  margin-bottom: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  margin-bottom: 0;
+}
+
+.overview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-1);
+}
+
+.overview-header h2 {
+  font-size: 1.05rem;
+  color: var(--color-primary-dark);
+  margin: 0;
+}
+
+.overview-count-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  background: var(--color-hover);
+  padding: 2px 8px;
+  border-radius: var(--radius-full, 9999px);
+  border: 1px solid var(--color-border);
 }
 
 .overview-card :deep(.meter-head) {
@@ -602,14 +741,43 @@ const categoryColors = computed(() => {
   height: 14px;
 }
 
+.overview-footer {
+  margin-top: var(--space-1);
+}
+
 .remaining-line {
   margin: var(--space-1) 0 0;
   font-size: 0.9rem;
   color: var(--color-success);
 }
 
-.budget-page > .card {
-  margin-bottom: var(--space-4);
+/* Main Content Grid */
+.budget-main-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+  align-items: start;
+}
+
+@media (min-width: 1040px) {
+  .budget-main-grid {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  }
+}
+
+@media (min-width: 1500px) {
+  .budget-main-grid {
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    gap: var(--space-5);
+  }
+}
+
+.budget-col-pots,
+.budget-col-transactions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
 }
 
 .budget-page :deep(h2) {
@@ -650,6 +818,16 @@ const categoryColors = computed(() => {
   gap: var(--space-3);
 }
 
+/* Auf Desktop / breitem Monitor können Pots innerhalb der Card mehrspaltig sein */
+@media (min-width: 768px) {
+  .pot-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+    align-items: start;
+    gap: var(--space-3);
+  }
+}
+
 .add-form {
   display: flex;
   flex-wrap: wrap;
@@ -674,16 +852,52 @@ const categoryColors = computed(() => {
   text-align: center;
 }
 
-/* Desktop: Budget-Töpfe nebeneinander statt untereinander, um den vorhandenen Platz besser zu
-   nutzen - auto-fit/minmax statt einer festen Spaltenzahl. Gleicher Breakpoint wie
-   ShoppingListView.vue/PackingListView.vue (bei 800px wären die Karten mit Meter + Kategorie-Zeilen
-   zu eng). */
-@media (min-width: 900px) {
-  .pot-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-    align-items: start;
-    gap: var(--space-4);
+/* Cards animation on view mount */
+.overview-card,
+.settlement-card,
+.pots-card,
+.expenses-card,
+.transfers-card {
+  animation: card-appear 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.settlement-card {
+  animation-delay: 70ms;
+}
+
+.pots-card {
+  animation-delay: 130ms;
+}
+
+.expenses-card {
+  animation-delay: 190ms;
+}
+
+.transfers-card {
+  animation-delay: 250ms;
+}
+
+@keyframes card-appear {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .budget-kpi-pill,
+  .overview-card,
+  .settlement-card,
+  .pots-card,
+  .expenses-card,
+  .transfers-card {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
   }
 }
 </style>

@@ -115,12 +115,13 @@ function updateAllocationAmount(category: string, value: string) {
     </label>
 
     <template v-if="!isSimpleMode || allocations.length">
-      <div class="category-row" v-for="a in allocations" :key="a.id">
+      <div class="category-row" v-for="(a, idx) in allocations" :key="a.id">
         <BudgetMeter
           :label="a.category"
           :spent="store.spentFor(budget, a.category)"
           :target="a.amount"
           :color="categoryColors.get(a.category) ?? '#8a8a86'"
+          :delay="(idx + 1) * 45"
         />
         <div class="category-edit">
           <!-- eslint-disable-next-line vuejs-accessibility/form-control-has-label -->
@@ -173,6 +174,16 @@ function updateAllocationAmount(category: string, value: string) {
      der äußeren "Budgets"-Karte (siehe BudgetView.vue) - zwei volle Karten-Paddings ineinander
      ließen auf schmalen Mobilbreiten zu wenig Platz für die Meter-Beschriftungen. */
   padding: var(--space-3);
+  transition:
+    transform 0.2s cubic-bezier(0.34, 1.4, 0.64, 1),
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.pot-card:hover {
+  transform: translateY(-1.5px);
+  box-shadow: var(--shadow-sm);
+  border-color: color-mix(in srgb, var(--color-primary) 20%, var(--color-border));
 }
 
 .pot-head {

@@ -12,13 +12,15 @@ const store = useBudgetStore();
 </script>
 
 <template>
-  <Card>
+  <Card class="settlement-card">
     <h2>Wer schuldet wem?</h2>
 
-    <p v-if="!store.settlementSuggestions.length" class="settled">
-      <AppIcon :icon="ACTION_ICONS.done" :size="15" group="actions" /> Ausgeglichen – niemand
-      schuldet aktuell etwas.
-    </p>
+    <div v-if="!store.settlementSuggestions.length" class="settled-banner">
+      <span class="settled-icon-wrap" aria-hidden="true">
+        <AppIcon :icon="ACTION_ICONS.done" :size="16" group="actions" />
+      </span>
+      <span class="settled-text">Ausgeglichen – niemand schuldet aktuell etwas.</span>
+    </div>
 
     <ul v-else class="suggestion-list">
       <li v-for="(s, i) in store.settlementSuggestions" :key="i" class="suggestion-row">
@@ -27,16 +29,21 @@ const store = useBudgetStore();
           {{ store.userAvatar(s.to.id) }} <strong>{{ s.to.username }}</strong> noch
           <strong class="debt-amount">{{ s.amount.toFixed(2) }} €</strong>
         </span>
-        <Button variant="secondary" class="settle-btn" @click="$emit('use-suggestion', s)">
-          Als Überweisung eintragen</Button
+        <Button
+          variant="secondary"
+          size="sm"
+          class="settle-btn"
+          @click="$emit('use-suggestion', s)"
         >
+          Als Überweisung eintragen
+        </Button>
       </li>
     </ul>
 
     <ul class="balance-list">
-      <li v-for="b in store.balances" :key="b.user.id">
-        <span>{{ b.user.avatar }} {{ b.user.username }}</span>
-        <span :class="b.net >= 0 ? 'positive' : 'negative'">
+      <li v-for="b in store.balances" :key="b.user.id" class="balance-row">
+        <span class="balance-user">{{ b.user.avatar }} {{ b.user.username }}</span>
+        <span :class="b.net >= 0 ? 'positive' : 'negative'" class="balance-pill">
           {{ b.net >= 0 ? 'bekommt' : 'schuldet' }} {{ Math.abs(b.net).toFixed(2) }} €
         </span>
       </li>
@@ -50,9 +57,30 @@ const store = useBudgetStore();
 </template>
 
 <style scoped>
-.settled {
+.settled-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  margin: var(--space-2) 0;
+  background: color-mix(in srgb, var(--color-success) 10%, var(--color-surface));
+  border: 1px solid color-mix(in srgb, var(--color-success) 25%, transparent);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
   color: var(--color-success);
   font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.settled-icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--color-success) 20%, transparent);
+  flex-shrink: 0;
 }
 
 .suggestion-list {
@@ -70,10 +98,21 @@ const store = useBudgetStore();
   justify-content: space-between;
   flex-wrap: wrap;
   gap: var(--space-2);
-  padding: var(--space-2);
+  padding: var(--space-2) var(--space-3);
   background: var(--color-hover);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
+  transition:
+    transform 0.2s cubic-bezier(0.34, 1.4, 0.64, 1),
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.suggestion-row:hover {
+  transform: translateY(-1.5px);
+  box-shadow: var(--shadow-sm);
+  border-color: color-mix(in srgb, var(--color-accent) 40%, var(--color-border));
 }
 
 .suggestion-text {
@@ -83,6 +122,7 @@ const store = useBudgetStore();
 
 .debt-amount {
   color: var(--color-accent);
+  font-weight: 700;
 }
 
 .settle-btn {
@@ -96,24 +136,42 @@ const store = useBudgetStore();
   margin: var(--space-2) 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
-.balance-list li {
+.balance-row {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   font-size: 0.9rem;
-  padding: 4px 0;
+  padding: 4px var(--space-2);
+  border-radius: var(--radius-sm);
+  transition: background 0.15s ease;
 }
 
-.positive {
+.balance-row:hover {
+  background: var(--color-hover);
+}
+
+.balance-user {
+  font-weight: 500;
+}
+
+.balance-pill {
+  font-size: 0.84rem;
+  padding: 2px 8px;
+  border-radius: var(--radius-full, 9999px);
+  font-weight: 600;
+}
+
+.balance-pill.positive {
   color: var(--color-success);
-  font-weight: 600;
+  background: color-mix(in srgb, var(--color-success) 12%, transparent);
 }
 
-.negative {
+.balance-pill.negative {
   color: var(--color-danger);
-  font-weight: 600;
+  background: color-mix(in srgb, var(--color-danger) 12%, transparent);
 }
 
 .hint {
