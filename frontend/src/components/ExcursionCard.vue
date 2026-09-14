@@ -590,11 +590,7 @@ function onSpotDrop(event: DragEvent) {
           </PickerMenu>
         </Teleport>
 
-        <div
-          class="excursion-accordion"
-          :class="{ 'is-expanded': expanded && showComments }"
-          :inert="!expanded || !showComments"
-        >
+        <div class="excursion-accordion" :class="{ 'is-expanded': expanded && showComments }">
           <div class="excursion-accordion-inner accordion-stagger">
             <Comments
               v-if="showComments"
@@ -680,14 +676,20 @@ function onSpotDrop(event: DragEvent) {
 .excursion-accordion {
   display: grid;
   grid-template-rows: 0fr;
+  visibility: hidden;
   /* Beim Zuklappen sofort zusammenfalten (Stufe 1) */
-  transition: grid-template-rows 0.22s cubic-bezier(0.32, 0.72, 0, 1) 0s;
+  transition:
+    grid-template-rows 0.22s cubic-bezier(0.32, 0.72, 0, 1) 0s,
+    visibility 0s linear 0.22s;
 }
 
 .excursion-accordion.is-expanded {
   grid-template-rows: 1fr;
+  visibility: visible;
   /* Beim Aufklappen nach Bild-Morph entfalten (Stufe 2) */
-  transition: grid-template-rows 0.35s cubic-bezier(0.32, 0.72, 0, 1) 0.14s;
+  transition:
+    grid-template-rows 0.35s cubic-bezier(0.32, 0.72, 0, 1) 0.14s,
+    visibility 0s linear 0.14s;
 }
 
 .excursion-accordion-inner {

@@ -477,7 +477,7 @@ const cardRotation = computed(() => {
         />
       </div>
 
-      <div class="spot-accordion" :class="{ 'is-expanded': expanded }" :inert="!expanded">
+      <div class="spot-accordion" :class="{ 'is-expanded': expanded }">
         <div class="spot-accordion-inner accordion-stagger">
           <DetailRow v-if="creatorLabel && !expanded" label="Von">
             {{ creatorLabel }}
@@ -523,7 +523,7 @@ const cardRotation = computed(() => {
       </div>
 
       <div class="card-actions-wrapper" :class="{ 'is-expanded': expanded }">
-        <div class="mobile-only-accordion" :class="{ 'is-expanded': expanded }" :inert="!expanded">
+        <div class="mobile-only-accordion" :class="{ 'is-expanded': expanded }">
           <div class="mobile-only-accordion-inner accordion-stagger">
             <div class="card-actions">
               <TourAssignDropdown
@@ -696,11 +696,7 @@ const cardRotation = computed(() => {
         </div>
       </div>
 
-      <div
-        class="spot-accordion"
-        :class="{ 'is-expanded': expanded && showComments }"
-        :inert="!expanded || !showComments"
-      >
+      <div class="spot-accordion" :class="{ 'is-expanded': expanded && showComments }">
         <div class="spot-accordion-inner accordion-stagger">
           <Comments
             v-if="showComments"
@@ -852,11 +848,18 @@ const cardRotation = computed(() => {
 .spot-accordion {
   display: grid;
   grid-template-rows: 0fr;
-  transition: grid-template-rows 0.3s ease;
+  visibility: hidden;
+  transition:
+    grid-template-rows 0.3s ease,
+    visibility 0s linear 0.3s;
 }
 
 .spot-accordion.is-expanded {
   grid-template-rows: 1fr;
+  visibility: visible;
+  transition:
+    grid-template-rows 0.3s ease,
+    visibility 0s linear 0s;
 }
 
 .spot-accordion-inner {
@@ -1748,14 +1751,20 @@ const cardRotation = computed(() => {
   .mobile-only-accordion {
     display: grid;
     grid-template-rows: 0fr;
+    visibility: hidden;
     /* Beim Zuklappen: faltet sich sofort zusammen (Stufe 1) */
-    transition: grid-template-rows 0.22s cubic-bezier(0.32, 0.72, 0, 1) 0s;
+    transition:
+      grid-template-rows 0.22s cubic-bezier(0.32, 0.72, 0, 1) 0s,
+      visibility 0s linear 0.22s;
   }
 
   .mobile-only-accordion.is-expanded {
     grid-template-rows: 1fr;
+    visibility: visible;
     /* Beim Aufklappen: entfaltet sich nach Bild-Morph (Stufe 2) */
-    transition: grid-template-rows 0.35s cubic-bezier(0.32, 0.72, 0, 1) 0.14s;
+    transition:
+      grid-template-rows 0.35s cubic-bezier(0.32, 0.72, 0, 1) 0.14s,
+      visibility 0s linear 0.14s;
   }
 
   .mobile-only-accordion-inner {
@@ -1787,14 +1796,20 @@ const cardRotation = computed(() => {
 .spot-accordion {
   display: grid;
   grid-template-rows: 0fr;
+  visibility: hidden;
   /* Beim Zuklappen sofort zusammenfalten (Stufe 1) */
-  transition: grid-template-rows 0.22s cubic-bezier(0.32, 0.72, 0, 1) 0s;
+  transition:
+    grid-template-rows 0.22s cubic-bezier(0.32, 0.72, 0, 1) 0s,
+    visibility 0s linear 0.22s;
 }
 
 .spot-accordion.is-expanded {
   grid-template-rows: 1fr;
+  visibility: visible;
   /* Beim Aufklappen nach dem Bild-Morph entfalten (Stufe 2) */
-  transition: grid-template-rows 0.35s cubic-bezier(0.32, 0.72, 0, 1) 0.14s;
+  transition:
+    grid-template-rows 0.35s cubic-bezier(0.32, 0.72, 0, 1) 0.14s,
+    visibility 0s linear 0.14s;
 }
 
 .spot-accordion-inner {
