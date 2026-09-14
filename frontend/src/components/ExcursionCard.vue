@@ -711,7 +711,7 @@ function onSpotDrop(event: DragEvent) {
 }
 
 .tour-image {
-  width: 110px;
+  width: 140px;
   flex-shrink: 0;
   align-self: stretch;
   border-radius: var(--radius-sm-squircle);
