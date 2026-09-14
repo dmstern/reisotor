@@ -692,6 +692,9 @@ function onSpotDrop(event: DragEvent) {
 
 .excursion-accordion-inner {
   overflow: hidden;
+  /* Verhindert Abschneiden des Fokus-Rahmens */
+  padding: 3px;
+  margin: -3px;
 }
 
 .tour-card-main {

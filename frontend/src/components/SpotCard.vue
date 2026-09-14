@@ -861,6 +861,9 @@ const cardRotation = computed(() => {
 
 .spot-accordion-inner {
   overflow: hidden;
+  /* Verhindert Abschneiden des Fokus-Rahmens */
+  padding: 3px;
+  margin: -3px;
 }
 
 .slide-fade-enter-active,
@@ -1758,6 +1761,9 @@ const cardRotation = computed(() => {
   .mobile-only-accordion-inner {
     display: block;
     overflow: hidden;
+    /* Verhindert Abschneiden des Fokus-Rahmens */
+    padding: 3px;
+    margin: -3px;
   }
 
   .mobile-only-accordion-inner > * {
@@ -1793,6 +1799,9 @@ const cardRotation = computed(() => {
 
 .spot-accordion-inner {
   overflow: hidden;
+  /* Verhindert Abschneiden des Fokus-Rahmens */
+  padding: 3px;
+  margin: -3px;
 }
 
 /* Einfaden und gestaffeltes Auffächern für die Inhalte */
