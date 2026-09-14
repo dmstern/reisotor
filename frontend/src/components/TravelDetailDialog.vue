@@ -5,6 +5,7 @@ import { formatTravelDuration, travelDurationMinutes } from '../utils/travelDura
 import { travelTypeIconDef } from '../utils/travelTypeIcon';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
+import { formatDate as formatDateShared } from '../utils/dateFormat';
 import DetailModal from './DetailModal.vue';
 import MapsAppPicker from './MapsAppPicker.vue';
 import FileAttachments from './FileAttachments.vue';
@@ -42,8 +43,22 @@ function travelDuration(item: TravelItem) {
     @update:model-value="(v) => emit('update:modelValue', v)"
     :title="item.title"
     :placeholder-icon="travelTypeIconDef(item.type)"
+    :category-label="item.type || 'Reise'"
+    :category-icon="travelTypeIconDef(item.type)"
+    theme-color="var(--color-travel)"
+    theme-tint="var(--color-travel-tint)"
     @edit="emit('edit')"
   >
+    <template #meta>
+      <span v-if="item.date" class="detail-badge">
+        <AppIcon :icon="FORM_FIELD_ICONS.date" :size="12" group="formFields" />
+        {{ formatDateShared(item.date) }}
+      </span>
+      <span v-if="travelDuration(item)" class="detail-badge">
+        <AppIcon :icon="ACTION_ICONS.duration" :size="12" group="actions" />
+        {{ travelDuration(item) }}
+      </span>
+    </template>
     <DetailRow v-if="item.from_location || item.to_location" label="Strecke">
       {{ item.from_location || '?' }} → {{ item.to_location || '?' }}
     </DetailRow>
@@ -131,7 +146,10 @@ function travelDuration(item: TravelItem) {
 .detail-actions {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: var(--space-2);
   margin-top: var(--space-3);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-border);
 }
 </style>

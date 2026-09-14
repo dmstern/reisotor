@@ -41,6 +41,7 @@ import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { spotCategoryMeta } from '../utils/spotCategory';
+import { travelTypeIconDef } from '../utils/travelTypeIcon';
 import { parseLatLngFromMapsLink } from '../utils/googleMaps';
 import { buildAllEntries } from '../utils/calendarEntries';
 import {
@@ -892,6 +893,120 @@ const viewingEntry = computed(() =>
     : null
 );
 
+const viewingLinkedSpot = computed(() => {
+  const spotId = viewingEntry.value?.spotId ?? viewingItem.value?.spot_id;
+  if (spotId == null) return null;
+  return spotsStore.spots.find((s) => s.id === spotId) ?? null;
+});
+
+const viewingLinkedExcursion = computed(() => {
+  const ideaId = viewingEntry.value?.ideaId ?? viewingItem.value?.idea_id;
+  if (ideaId == null) return null;
+  return excursionsStore.excursions.find((e) => e.id === ideaId) ?? null;
+});
+
+const viewingImageUrl = computed(() => {
+  if (viewingLinkedSpot.value?.image_url) {
+    return viewingLinkedSpot.value.image_url;
+  }
+  if (viewingLinkedExcursion.value?.image_url) {
+    return viewingLinkedExcursion.value.image_url;
+  }
+  return null;
+});
+
+const viewingCollageImages = computed<string[]>(() => {
+  if (viewingImageUrl.value) return [];
+  if (viewingLinkedExcursion.value?.spot_ids?.length) {
+    const urls: string[] = [];
+    for (const spotId of viewingLinkedExcursion.value.spot_ids) {
+      const spot = spotsStore.spots.find((s) => s.id === spotId);
+      if (spot?.image_url && !urls.includes(spot.image_url)) {
+        urls.push(spot.image_url);
+      }
+    }
+    return urls;
+  }
+  return [];
+});
+
+const viewingCategoryInfo = computed(() => {
+  if (viewingLinkedSpot.value) {
+    const meta = spotCategoryMeta(viewingLinkedSpot.value.category);
+    return {
+      label: viewingLinkedSpot.value.category || 'Ort',
+      icon: viewingEntry.value?.iconDef ?? meta.tabler,
+      themeColor: meta.color,
+      themeTint: undefined as string | undefined,
+    };
+  }
+  if (viewingLinkedExcursion.value) {
+    if (viewingLinkedExcursion.value.role) {
+      return {
+        label: viewingLinkedExcursion.value.transport_type || 'Reise',
+        icon: travelTypeIconDef(viewingLinkedExcursion.value.transport_type),
+        themeColor: 'var(--color-travel)',
+        themeTint: 'var(--color-travel-tint)',
+      };
+    }
+    return {
+      label: 'Tour',
+      icon: viewingEntry.value?.iconDef ?? SCHEDULE_CATEGORY_META.excursion.tabler,
+      themeColor: 'var(--color-tour)',
+      themeTint: 'var(--color-tour-tint)',
+    };
+  }
+  if (viewingEntry.value) {
+    const meta =
+      SCHEDULE_CATEGORY_META[viewingEntry.value.category] ?? SCHEDULE_CATEGORY_META.other;
+    return {
+      label: meta.label,
+      icon: viewingEntry.value.iconDef ?? meta.tabler,
+      themeColor: meta.color,
+      themeTint: undefined as string | undefined,
+    };
+  }
+  return {
+    label: 'Termin',
+    icon: SCHEDULE_CATEGORY_META.other.tabler,
+    themeColor: SCHEDULE_CATEGORY_META.other.color,
+    themeTint: undefined as string | undefined,
+  };
+});
+
+const viewingWeatherEntry = computed(() => {
+  if (!viewingItem.value?.date) return null;
+  const entries = weatherEntriesFor(viewingItem.value.date);
+  return entries.length > 0 ? entries[0] : null;
+});
+
+const viewingEffectiveCoords = computed(() => {
+  if (viewingItem.value?.lat != null && viewingItem.value?.lng != null) {
+    return {
+      lat: viewingItem.value.lat,
+      lng: viewingItem.value.lng,
+      mapsLink: viewingItem.value.maps_link,
+      title: viewingItem.value.title,
+    };
+  }
+  if (viewingLinkedSpot.value?.lat != null && viewingLinkedSpot.value?.lng != null) {
+    return {
+      lat: viewingLinkedSpot.value.lat,
+      lng: viewingLinkedSpot.value.lng,
+      mapsLink: viewingLinkedSpot.value.maps_link,
+      title: viewingLinkedSpot.value.title,
+    };
+  }
+  return null;
+});
+
+const weekdayShortFormatter = new Intl.DateTimeFormat('de-DE', { weekday: 'short' });
+
+function formatViewingDate(dateStr: string) {
+  const d = new Date(`${dateStr}T00:00:00`);
+  return `${weekdayShortFormatter.format(d)}, ${formatDateShared(dateStr)}`;
+}
+
 function linkedTitleFor(entry: CalendarEntry | null): string | null {
   if (!entry) return null;
   if (entry.spotId != null)
@@ -1371,22 +1486,35 @@ function formatDate(date: string) {
       :model-value="viewingItem !== null"
       @update:model-value="(v) => !v && (viewingItem = null)"
       :title="viewingItem?.title ?? ''"
-      :placeholder-icon="
-        viewingEntry
-          ? (viewingEntry.iconDef ?? SCHEDULE_CATEGORY_META[viewingEntry.category].tabler)
-          : undefined
-      "
+      :image-url="viewingImageUrl"
+      :collage-images="viewingCollageImages"
+      :placeholder-icon="viewingCategoryInfo.icon"
+      :category-label="viewingCategoryInfo.label"
+      :category-icon="viewingCategoryInfo.icon"
+      :theme-color="viewingCategoryInfo.themeColor"
+      :theme-tint="viewingCategoryInfo.themeTint"
       @edit="editViewingItem"
     >
       <template #meta>
+        <span v-if="viewingItem" class="detail-badge">
+          <AppIcon :icon="FORM_FIELD_ICONS.date" :size="12" group="formFields" />
+          {{ formatViewingDate(viewingItem.date) }}
+        </span>
+        <span
+          v-if="
+            viewingWeatherEntry &&
+            (viewingWeatherEntry.weather.tempMax !== 0 || viewingWeatherEntry.weather.tempMin !== 0)
+          "
+          class="detail-badge weather-badge"
+        >
+          <WeatherIcon :code="viewingWeatherEntry.weather.weatherCode" :size="13" />
+          {{ Math.round(viewingWeatherEntry.weather.tempMax) }}° /
+          {{ Math.round(viewingWeatherEntry.weather.tempMin) }}°
+        </span>
         <Badge v-if="viewingItem?.auto_created" variant="primary" size="sm">
           <AppIcon :icon="ACTION_ICONS.sparkles" :size="12" group="actions" />
           Automatisch angelegt
         </Badge>
-        <span v-if="viewingItem" class="detail-badge">
-          <AppIcon :icon="FORM_FIELD_ICONS.date" :size="12" group="formFields" />
-          {{ formatDate(viewingItem.date) }}
-        </span>
       </template>
       <DetailRow v-if="viewingItem?.time" label="Zeit">
         <AppIcon :icon="FORM_FIELD_ICONS.time" :size="14" group="formFields" /> {{ viewingItem.time
@@ -1446,13 +1574,25 @@ function formatDate(date: string) {
         :entity-id="viewingItem.id"
         :editable="false"
       />
-      <div v-if="viewingItem?.lat != null && viewingItem?.lng != null" class="detail-actions">
+      <div v-if="viewingEffectiveCoords || viewingEntry" class="detail-actions">
         <MapsAppPicker
-          :lat="viewingItem.lat"
-          :lng="viewingItem.lng"
-          :title="viewingItem.title"
-          :maps-link="viewingItem.maps_link"
+          v-if="viewingEffectiveCoords"
+          :lat="viewingEffectiveCoords.lat"
+          :lng="viewingEffectiveCoords.lng"
+          :title="viewingEffectiveCoords.title"
+          :maps-link="viewingEffectiveCoords.mapsLink"
         />
+        <Button
+          v-if="viewingEntry"
+          variant="card-action"
+          class="calendar-btn"
+          title="Zum eigenen Kalender hinzufügen"
+          aria-label="Zum eigenen Kalender hinzufügen"
+          @click.stop="toggleCalendarPicker(viewingEntry.key, $event)"
+        >
+          <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" />
+          <span class="calendar-btn-label">In meinen Kalender</span>
+        </Button>
       </div>
     </DetailModal>
   </div>
@@ -1821,5 +1961,28 @@ function formatDate(date: string) {
 .linked-entity-chevron {
   margin-left: var(--space-1);
   opacity: 0.6;
+}
+
+.detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-border);
+}
+
+.detail-actions .calendar-btn {
+  padding: 5px 12px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.detail-actions .calendar-btn .calendar-btn-label {
+  display: inline;
 }
 </style>
