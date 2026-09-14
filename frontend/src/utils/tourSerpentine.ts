@@ -333,8 +333,9 @@ export function computeTourLoopPath(
   }
 
   // Fall 5: Außenbogen (Fallback, wenn Innenraum blockiert oder einspaltig)
-  // Wenn b auf der linken Bildschirmhälfte liegt (z. B. Start-Spot bei col 0), stets über die linke Seite führen!
-  const isCloserToLeft = b.cx < wrapWidth * 0.5;
+  // Wenn b auf der linken Bildschirmhälfte oder mittig liegt (z.B. Start-Spot bei col 0 oder einspaltiges Layout),
+  // stets über die linke Seite führen! Einspaltig = exakt mittig (0.5), daher kleiner-gleich mit leichtem Puffer.
+  const isCloserToLeft = b.cx <= wrapWidth * 0.5 + 20;
   if (isCloserToLeft) {
     const startX = a.x;
     const startY = a.cy;
