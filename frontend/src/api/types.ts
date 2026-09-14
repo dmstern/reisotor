@@ -223,6 +223,8 @@ export interface ExcursionComment {
   id: number;
   idea_id: number;
   author_id: number;
+  author_username?: string;
+  author_avatar?: string;
   content: string;
   created_at: string;
 }
@@ -340,6 +342,8 @@ export interface SpotComment {
   id: number;
   spot_id: number;
   author_id: number;
+  author_username?: string;
+  author_avatar?: string;
   content: string;
   created_at: string;
 }
@@ -442,6 +446,8 @@ export interface NoteComment {
   id: number;
   note_id: number;
   author_id: number;
+  author_username?: string;
+  author_avatar?: string;
   content: string;
   created_at: string;
 }
@@ -450,6 +456,8 @@ export interface DiaryEntry {
   id: number;
   trip_id: number;
   author_id: number;
+  author_username?: string;
+  author_avatar?: string;
   title: string | null;
   content: string;
   content_format: string;
@@ -481,6 +489,8 @@ export interface DiaryComment {
   id: number;
   entry_id: number;
   author_id: number;
+  author_username?: string;
+  author_avatar?: string;
   content: string;
   created_at: string;
 }

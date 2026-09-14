@@ -318,8 +318,8 @@ function commentsFor(entryId: number) {
 function commentItemsFor(entryId: number) {
   return commentsFor(entryId).map((c) => ({
     id: c.id,
-    avatar: author(c.author_id)?.avatar ?? '❓',
-    username: author(c.author_id)?.username ?? '?',
+    avatar: c.author_avatar ?? author(c.author_id)?.avatar ?? '❓',
+    username: c.author_username ?? author(c.author_id)?.username ?? '?',
     content: c.content,
     canRemove: c.author_id === auth.user?.id,
   }));
@@ -703,9 +703,9 @@ function showEntryDayOnMap(entry: DiaryEntry) {
         :class="{ 'new-highlight': highlightedIds.has(entry.id) }"
       >
         <header class="entry-head">
-          <span class="avatar">{{ author(entry.author_id)?.avatar ?? '❓' }}</span>
+          <span class="avatar">{{ entry.author_avatar ?? author(entry.author_id)?.avatar ?? '❓' }}</span>
           <div class="entry-meta">
-            <strong>{{ author(entry.author_id)?.username ?? '?' }}</strong>
+            <strong>{{ entry.author_username ?? author(entry.author_id)?.username ?? '?' }}</strong>
             <span class="date">
               {{ formatDate(entry.date) }}
               <span v-if="coEditorsFor(entry).length" class="edited-by">
