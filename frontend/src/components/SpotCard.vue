@@ -23,12 +23,14 @@ import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
 import Input from './primitives/Input.vue';
 import PickerMenu from './primitives/PickerMenu.vue';
+import Badge from './primitives/Badge.vue';
 import Card from './primitives/Card.vue';
 import DetailRow from './primitives/DetailRow.vue';
 import WeatherIcon from './WeatherIcon.vue';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { formatDate as formatDateShared, toLocalDateString } from '../utils/dateFormat';
+import { formatTravelDuration } from '../utils/travelDuration';
 import { computePopoverPosition } from '../utils/popoverPosition';
 
 const props = defineProps<{
@@ -58,6 +60,8 @@ const props = defineProps<{
   // Alle bestehenden Tour-Titel, fürs "Tour zuordnen"-Dropdown (TourAssignDropdown.vue).
   tourOptions: string[];
   hasMultipleMembers?: boolean;
+  /** Umsteige-/Aufenthaltszeit in Minuten, wenn die Station Teil einer Tour ist (#396) */
+  layoverMinutes?: number | null;
 }>();
 
 const isAccommodation = computed(() => props.spot.category === 'Unterkunft');
@@ -381,7 +385,7 @@ const cardRotation = computed(() => {
   <Card
     variant="polaroid"
     class="spot-card"
-    :class="{ expanded, 'new-highlight': highlighted }"
+    :class="{ expanded, 'new-highlight': highlighted, 'has-layover': layoverMinutes != null }"
     :style="{ '--card-rotate': cardRotation }"
     @click="onCardClick"
   >
@@ -621,15 +625,34 @@ const cardRotation = computed(() => {
         </div>
       </div>
 
-      <!-- Untere Zeile (Footer): Anhänge links, Social Actions rechts (nutzt beide Ecken optimal aus) -->
-      <div class="card-footer-row" :class="{ 'is-expanded': expanded }">
-        <div class="card-attachments-wrap" :class="{ 'is-expanded': expanded }">
-          <FileAttachments
-            domain="spots"
-            :entity-id="spot.id"
-            :editable="false"
-            :collapsed="!expanded"
-          />
+      <!-- Untere Zeile (Footer): Umsteigezeit/Anhänge links, Social Actions rechts (nutzt beide Ecken optimal aus) -->
+      <div
+        class="card-footer-row"
+        :class="{ 'is-expanded': expanded, 'has-layover': layoverMinutes != null }"
+      >
+        <div class="card-footer-left" :class="{ 'is-expanded': expanded }">
+          <div class="card-attachments-wrap" :class="{ 'is-expanded': expanded }">
+            <FileAttachments
+              domain="spots"
+              :entity-id="spot.id"
+              :editable="false"
+              :collapsed="!expanded"
+            />
+          </div>
+
+          <Badge
+            v-if="layoverMinutes != null"
+            variant="default"
+            size="sm"
+            class="spot-layover-badge"
+            :class="{ 'is-expanded': expanded }"
+            :title="`Umsteigezeit an dieser Station: ${formatTravelDuration(layoverMinutes)}`"
+          >
+            <AppIcon :icon="ACTION_ICONS.duration" :size="12" group="actions" />
+            <span class="spot-layover-text"
+              >{{ formatTravelDuration(layoverMinutes) }} Umstieg</span
+            >
+          </Badge>
         </div>
 
         <div class="card-social-actions" :class="{ 'is-expanded': expanded }">
@@ -1257,8 +1280,59 @@ const cardRotation = computed(() => {
   box-sizing: border-box;
 }
 
+.card-footer-left {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  min-width: 0;
+  flex: 1;
+}
+
+.spot-card:not(.expanded) .card-footer-left {
+  display: contents;
+}
+
 .spot-card:not(.expanded) .card-footer-row {
   display: contents;
+}
+
+/* Wenn eine Station eine Umsteige-/Aufenthaltszeit hat (#396), bilden Umsteige-Badge links
+   und Like-Button rechts eine gemeinsame, verlässliche Footer-Fluchtlinie am Boden der Karte */
+.spot-card.has-layover:not(.expanded) .card-footer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1);
+  margin-top: auto;
+  padding-top: var(--space-1);
+  width: 100%;
+}
+
+.spot-card.has-layover:not(.expanded) .card-social-actions {
+  position: static;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.spot-card.has-layover:not(.expanded) .card-actions {
+  padding-right: 0;
+}
+
+.spot-layover-badge {
+  flex-shrink: 1;
+  min-width: 0;
+  max-width: calc(100% - 48px);
+}
+
+.spot-card.expanded .spot-layover-badge {
+  margin-bottom: 2px;
+}
+
+.spot-layover-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .card-attachments-wrap {

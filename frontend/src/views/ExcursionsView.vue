@@ -3718,6 +3718,11 @@ async function deleteEditingSpot() {
                               :group-mode="groupMode"
                               :tour-options="allTourTitles"
                               :has-multiple-members="users.length > 1"
+                              :layover-minutes="
+                                cell.globalIndex > 0 && cell.globalIndex < grp.items.length - 1
+                                  ? getTourLayover(grp.excursion, grp.items, cell.globalIndex)
+                                  : null
+                              "
                               @edit="startEditSpot"
                               @toggle-like="toggleSpotLike(cell.spot.id)"
                               @submit-comment="
@@ -3729,25 +3734,6 @@ async function deleteEditingSpot() {
                               @show-on-map="onSpotShowOnMap(cell.spot)"
                               @assign-tour="(title) => assignSpotToTourTitle(cell.spot.id, title)"
                             />
-                            <!-- Umsteige-/Aufenthaltszeit (falls Zwischenstation) -->
-                            <div
-                              v-if="
-                                cell.globalIndex > 0 &&
-                                cell.globalIndex < grp.items.length - 1 &&
-                                getTourLayover(grp.excursion, grp.items, cell.globalIndex) != null
-                              "
-                              class="tour-layover-wrap"
-                            >
-                              <span class="tour-layover-badge">
-                                ⏱️
-                                {{
-                                  formatTravelDuration(
-                                    getTourLayover(grp.excursion, grp.items, cell.globalIndex)!
-                                  )
-                                }}
-                                Umstiegszeit
-                              </span>
-                            </div>
                           </div>
 
                           <!-- Horizontaler Teilstrecken-Verbinder ("hochkant" zwischen 2 Kacheln) -->
@@ -5194,25 +5180,6 @@ async function deleteEditingSpot() {
   stroke-width: 1.5;
   stroke-linejoin: round;
   transition: fill 0.2s ease;
-}
-
-.tour-layover-wrap {
-  display: flex;
-  justify-content: center;
-  margin: calc(var(--space-1) * -1) 0;
-}
-
-.tour-layover-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  font-size: 0.75rem;
-  font-weight: 600;
-  padding: 2px 10px;
-  border-radius: var(--radius-sm);
-  background: var(--color-surface-sunken);
-  color: var(--color-text-muted);
-  border: 1px solid var(--color-border);
 }
 
 .empty-state-wrap {
