@@ -161,6 +161,33 @@ function onRemoveCurrent() {
     currentIndex.value = Math.max(0, currentLen - 2);
   }
 }
+
+// --- Swipe Logic for Mobile ---
+const touchStartX = ref(0);
+const touchEndX = ref(0);
+
+function onTouchStart(e: TouchEvent) {
+  if (props.attachments.length <= 1) return;
+  touchStartX.value = e.changedTouches[0].screenX;
+}
+
+function onTouchEnd(e: TouchEvent) {
+  if (props.attachments.length <= 1) return;
+  touchEndX.value = e.changedTouches[0].screenX;
+  handleSwipe();
+}
+
+function handleSwipe() {
+  const SWIPE_THRESHOLD = 40;
+  if (touchEndX.value < touchStartX.value - SWIPE_THRESHOLD) {
+    // Wisch nach links -> nächstes Bild
+    next();
+  }
+  if (touchEndX.value > touchStartX.value + SWIPE_THRESHOLD) {
+    // Wisch nach rechts -> vorheriges Bild
+    prev();
+  }
+}
 </script>
 
 <template>
@@ -180,7 +207,7 @@ function onRemoveCurrent() {
         </span>
       </div>
 
-      <div class="preview-stage">
+      <div class="preview-stage" @touchstart="onTouchStart" @touchend="onTouchEnd">
         <IconButton
           v-if="attachments.length > 1"
           variant="ghost"
@@ -271,6 +298,7 @@ function onRemoveCurrent() {
   justify-content: center;
   gap: var(--space-2);
   min-height: 200px;
+  touch-action: pan-y pinch-zoom;
 }
 
 .nav-btn {
