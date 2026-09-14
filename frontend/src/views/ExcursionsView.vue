@@ -3777,9 +3777,6 @@ async function deleteEditingSpot() {
                               <span v-if="cell.leg.amount != null" class="leg-pill-cost">
                                 {{ cell.leg.amount.toFixed(2).replace('.', ',') }} €
                               </span>
-                              <span class="leg-pill-arrow" aria-hidden="true">
-                                {{ cell.isRtl ? '←' : '→' }}
-                              </span>
                             </div>
 
                             <!-- Keine Teilstrecke erfasst -> kleiner Add-Button -->
@@ -3847,7 +3844,6 @@ async function deleteEditingSpot() {
                               )
                             "
                           >
-                            <span class="leg-pill-arrow" aria-hidden="true">↓</span>
                             <span class="leg-pill-icon">
                               {{ travelTypeIcon(row.rowBreak.leg.transport_type ?? null) }}
                             </span>
@@ -5093,14 +5089,6 @@ async function deleteEditingSpot() {
   font-size: 1.1rem;
   line-height: 1;
   color: var(--tour-theme-color, var(--color-primary));
-}
-
-.leg-pill-arrow {
-  font-size: 0.75rem;
-  font-weight: bold;
-  color: var(--tour-theme-color, var(--color-primary));
-  line-height: 1;
-  opacity: 0.85;
 }
 
 .leg-pill-type {
