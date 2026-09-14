@@ -269,6 +269,8 @@ async function emptyTrash() {
   flex-direction: column;
   gap: var(--space-2);
   margin-top: var(--space-3);
+  padding: 0;
+  list-style: none;
 }
 
 .trash-row {
