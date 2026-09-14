@@ -2,7 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { api } from '../api/client';
-import type { TodoItem, TodoPriority, User } from '../api/types';
+import type { TodoItem, TodoPriority, User, Period } from '../api/types';
 import { useTripStore } from '../stores/trip';
 import { useLiveSyncStore } from '../stores/liveSync';
 import { PERIOD_META, computePeriod } from '../utils/period';
@@ -67,6 +67,7 @@ const emptyForm = () => ({
   title: '',
   assigned_to_user_id: lastAssignee.value,
   due_date: '',
+  period: '' as Period | '',
   priority: 'medium' as TodoPriority,
   note: '',
 });
@@ -75,12 +76,34 @@ const emptyForm = () => ({
 // hergeleitet statt manuell abgefragt – ToDo-Einträge haben dafür (anders als die Einkaufsliste)
 // immer ein Datum.
 function periodFor(item: TodoItem) {
-  return computePeriod(item.due_date, tripStore.currentTrip);
+  if (item.due_date) {
+    return computePeriod(item.due_date, tripStore.currentTrip);
+  }
+  return item.period || null;
 }
 const newForm = ref(emptyForm());
 
 const editingItem = ref<TodoItem | null>(null);
 const editForm = ref(emptyForm());
+
+watch(
+  () => newForm.value.due_date,
+  (newVal, oldVal) => {
+    if (newVal && !oldVal && newForm.value.period) {
+      showToast({ message: 'Das genaue Datum ersetzt den groben Zeitraum.', type: 'info' });
+      newForm.value.period = '';
+    }
+  }
+);
+watch(
+  () => editForm.value.due_date,
+  (newVal, oldVal) => {
+    if (newVal && !oldVal && editForm.value.period) {
+      showToast({ message: 'Das genaue Datum ersetzt den groben Zeitraum.', type: 'info' });
+      editForm.value.period = '';
+    }
+  }
+);
 
 // Entwurfs-Zwischenspeicherung (siehe composables/useDraftAutosave.ts) - das Create-Formular ist
 // hier (anders als bei den meisten anderen Domänen) immer sichtbar statt in einem Modal, daher
@@ -208,11 +231,15 @@ const progress = computed(() => {
 });
 
 function toBody(f: ReturnType<typeof emptyForm>) {
+  // Wenn ein Fälligkeitsdatum explizit gesetzt ist, hat es immer Vorrang und
+  // der manuell ausgewählte grobe Zeitraum wird verworfen, um Inkonsistenzen zu vermeiden.
+  const isPeriodValid = !f.due_date;
   return {
     trip_id: tripId,
     title: f.title.trim(),
     assigned_to_user_id: f.assigned_to_user_id ? Number(f.assigned_to_user_id) : undefined,
     due_date: f.due_date || undefined,
+    period: isPeriodValid && f.period ? f.period : undefined,
     priority: f.priority,
     note: f.note || undefined,
   };
@@ -243,10 +270,14 @@ async function quickAddToGroup(group: Group, label: string) {
       : lastAssignee.value
         ? Number(lastAssignee.value)
         : undefined;
+
+  const period = groupBy.value === 'period' && group.key !== 'none' ? group.key : undefined;
+
   const created = await api.post<TodoItem>('/todos', {
     trip_id: tripId,
     title: label.trim(),
     assigned_to_user_id,
+    period,
     priority: quickAddPriority.value,
   });
   items.value.push(created);
@@ -272,6 +303,7 @@ function startEdit(item: TodoItem) {
     title: item.title,
     assigned_to_user_id: item.assigned_to_user_id != null ? String(item.assigned_to_user_id) : '',
     due_date: item.due_date ?? '',
+    period: (item.period as Period | '') ?? '',
     priority: item.priority,
     note: item.note ?? '',
   };
@@ -330,6 +362,14 @@ function isOverdue(item: TodoItem) {
       </FormField>
       <FormField icon="date" label="Fällig" v-slot="{ id }">
         <Input :id="id" v-model="newForm.due_date" type="date" />
+      </FormField>
+      <FormField icon="period" label="Zeitraum" v-slot="{ id }">
+        <Select :id="id" v-model="newForm.period" :disabled="!!newForm.due_date">
+          <option value="">(Nach Datum / Ohne)</option>
+          <option v-for="(label, key) in PERIOD_META" :key="key" :value="key">
+            {{ label }}
+          </option>
+        </Select>
       </FormField>
       <FormField icon="priority" label="Priorität" v-slot="{ id }">
         <Select :id="id" v-model="newForm.priority">
@@ -483,6 +523,14 @@ function isOverdue(item: TodoItem) {
         </FormField>
         <FormField icon="date" label="Fällig" v-slot="{ id }">
           <Input :id="id" v-model="editForm.due_date" type="date" />
+        </FormField>
+        <FormField icon="period" label="Zeitraum" v-slot="{ id }">
+          <Select :id="id" v-model="editForm.period" :disabled="!!editForm.due_date">
+            <option value="">(Nach Datum / Ohne)</option>
+            <option v-for="(label, key) in PERIOD_META" :key="key" :value="key">
+              {{ label }}
+            </option>
+          </Select>
         </FormField>
         <FormField icon="priority" label="Priorität" v-slot="{ id }">
           <Select :id="id" v-model="editForm.priority">

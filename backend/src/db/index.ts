@@ -124,6 +124,7 @@ CREATE TABLE IF NOT EXISTS todo_items (
   title TEXT NOT NULL,
   assigned_to_user_id INTEGER REFERENCES users(id),
   due_date TEXT,
+  period TEXT,
   priority TEXT NOT NULL DEFAULT 'medium',
   note TEXT,
   done INTEGER DEFAULT 0
@@ -1769,3 +1770,4 @@ if (ideasWithTransport.length > 0) {
     }
   }
 }
+ensureColumn('todo_items', 'period', 'TEXT');

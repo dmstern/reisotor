@@ -409,6 +409,7 @@ export interface TodoItem {
   title: string;
   assigned_to_user_id: number | null;
   due_date: string | null;
+  period?: Period | null;
   priority: TodoPriority;
   note: string | null;
   done: 0 | 1;
