@@ -686,19 +686,23 @@ p + .btn {
 }
 
 /* Globale Kaskaden-Erscheinungsanimation für View-Elemente (Karten, Listen-Einträge) */
-@keyframes cascade-down {
-  from {
+@keyframes cascade-up-bounce {
+  0% {
     opacity: 0;
-    transform: translateY(-16px);
+    transform: translateY(20px) scale(0.95);
   }
-  to {
+  65% {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(-2px) scale(1.015);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
 .animate-cascade {
-  animation: cascade-down 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: cascade-up-bounce 0.52s cubic-bezier(0.34, 1.35, 0.64, 1) both;
   animation-delay: var(--stagger-delay, 0ms);
 }
 
@@ -709,7 +713,7 @@ p + .btn {
   }
 }
 .animate-cascade-children > * {
-  animation: cascade-down 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: cascade-up-bounce 0.52s cubic-bezier(0.34, 1.35, 0.64, 1) both;
 }
 .animate-cascade-children > *:nth-child(1) {
   animation-delay: 0ms;
