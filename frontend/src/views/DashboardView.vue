@@ -433,14 +433,6 @@ function formatWeekdayDate(d: string) {
         <Button
           variant="secondary"
           class="banner-action-btn"
-          title="Papierkorb öffnen"
-          :to="`/trip/${tripId}/trash`"
-        >
-          <AppIcon :icon="ACTION_ICONS.delete" :size="14" group="actions" /> Papierkorb
-        </Button>
-        <Button
-          variant="secondary"
-          class="banner-action-btn"
           title="Urlaub bearbeiten"
           @click="jumpToTrip"
         >
