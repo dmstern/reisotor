@@ -2110,12 +2110,6 @@ function formatDate(date: string) {
   flex: 1 1 100%;
 }
 
-.actions-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
 .spacer {
   flex: 1;
 }

@@ -284,6 +284,7 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
    (z. B. wenn nur der Titel oben geändert wird), während der Formularinhalt dahinter scrollt. */
 .modal.full-height .modal-body :slotted(form) .actions-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
   position: sticky;

@@ -4632,12 +4632,6 @@ async function deleteEditingSpot() {
   min-width: 140px;
 }
 
-.actions-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
 .spacer {
   flex: 1;
 }

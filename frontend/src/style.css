@@ -818,3 +818,24 @@ p + .btn {
 .leaflet-control-attribution a {
   color: var(--color-text) !important;
 }
+
+/* Globale Action-Row (z.B. für Buttons am Ende eines Formulars in Modals) */
+.actions-row {
+  display: flex;
+  flex-wrap: wrap; /* Verhindert horizontales Überlaufen, wenn viele Buttons auf Mobile gezeigt werden */
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.actions-row .spacer {
+  flex: 1;
+}
+
+@media (max-width: 600px) {
+  /* Blendet Abbrechen-Buttons auf Mobile aus, um Platz für Speichern/Löschen zu schaffen.
+     Das Modal lässt sich weiterhin über das Schließen-X rechts oben beenden. */
+  .actions-row .btn-cancel,
+  .button-group .btn-cancel {
+    display: none !important;
+  }
+}

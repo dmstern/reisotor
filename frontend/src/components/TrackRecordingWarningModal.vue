@@ -63,7 +63,9 @@ function handleConfirm() {
         variant="card"
       />
       <ButtonGroup>
-        <Button type="button" variant="secondary" @click="close"> Abbrechen </Button>
+        <Button type="button" variant="secondary" class="btn-cancel" @click="close">
+          Abbrechen
+        </Button>
         <Button type="button" @click="handleConfirm"> Aufzeichnung starten </Button>
       </ButtonGroup>
     </div>

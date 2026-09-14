@@ -267,7 +267,12 @@ function onDelete() {
         >
           Löschen
         </Button>
-        <Button type="button" variant="ghost" @click="emit('update:modelValue', false)">
+        <Button
+          type="button"
+          variant="ghost"
+          class="btn-cancel"
+          @click="emit('update:modelValue', false)"
+        >
           Abbrechen
         </Button>
         <Button type="submit" variant="primary"> Übernehmen </Button>
@@ -323,12 +328,6 @@ function onDelete() {
   font-size: 0.8125rem;
   color: var(--color-text-muted);
   font-style: italic;
-}
-
-.actions-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
 }
 
 .spacer {

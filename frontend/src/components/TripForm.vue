@@ -479,13 +479,6 @@ label,
   margin-top: 0;
 }
 
-.actions-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  margin-top: var(--space-2);
-}
-
 .spacer {
   flex: 1;
 }
