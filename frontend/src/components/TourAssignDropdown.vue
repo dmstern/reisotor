@@ -50,6 +50,7 @@ function onDragStart(event: DragEvent) {
     <button
       type="button"
       class="tour-assign-btn"
+      :class="{ 'is-open': open }"
       draggable="true"
       :aria-expanded="open"
       title="Klicken zum Zuordnen / Auf Tour ziehen"
@@ -119,18 +120,33 @@ function onDragStart(event: DragEvent) {
   align-items: center;
   gap: 6px;
   background: var(--color-hover);
-  border: none;
+  border: 1px solid var(--color-border);
   border-radius: 999px;
   corner-shape: round;
   padding: 3px 10px 3px 8px;
   font-size: 0.72rem;
+  font-weight: 500;
   color: var(--color-text-muted);
   cursor: grab;
   user-select: none;
+  touch-action: none;
+  transition:
+    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease,
+    box-shadow 0.2s ease;
 }
 
 .tour-assign-btn:active {
   cursor: grabbing;
+  transform: scale(0.95) translateY(0);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.tour-assign-btn:focus-visible {
+  outline: 2px solid var(--color-tour);
+  outline-offset: 2px;
 }
 
 .tour-assign-btn::before {
@@ -148,7 +164,38 @@ function onDragStart(event: DragEvent) {
     0 0,
     3px 0;
   background-repeat: repeat-y, repeat-y;
-  opacity: 0.6;
+  opacity: 0.65;
+  transition:
+    transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 0.18s ease;
+  transform-origin: center center;
+}
+
+.tour-assign-btn :deep(.app-icon) {
+  flex-shrink: 0;
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform-origin: center bottom;
+}
+
+.tour-assign-btn:hover,
+.tour-assign-btn.is-open {
+  background: var(--color-tour-tint);
+  border-color: var(--color-tour-border);
+  color: var(--color-tour);
+  transform: translateY(-1.5px);
+  box-shadow:
+    0 4px 12px -2px color-mix(in srgb, var(--color-tour) 22%, transparent),
+    0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+.tour-assign-btn:hover::before,
+.tour-assign-btn.is-open::before {
+  opacity: 1;
+  transform: scale(1.25);
+}
+
+.tour-assign-btn:hover :deep(.app-icon) {
+  transform: translateY(-0.5px) rotate(-8deg) scale(1.15);
 }
 
 .options-backdrop {
