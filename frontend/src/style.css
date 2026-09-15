@@ -594,6 +594,19 @@ button {
   box-sizing: border-box;
 }
 
+/* In Multi-Column-Layouts (.masonry) erzeugt position: absolute einen Containing Block über alle
+   Spalten hinweg, wodurch gelöschte Karten quer über alle Spalten flackern.
+   Daher für .masonry statisch halten und sanft ausblenden/herunterskalieren (TRK3-04). */
+.masonry .list-leave-active {
+  position: static;
+  width: auto;
+}
+
+.masonry .list-leave-to {
+  opacity: 0;
+  transform: scale(0.95);
+}
+
 .fade-enter-active,
 .fade-leave-active {
   transition:

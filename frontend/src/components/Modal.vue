@@ -206,6 +206,16 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
     max-height 0.35s ease;
 }
 
+@media (max-width: 600px) {
+  .overlay {
+    padding: 12px;
+  }
+
+  .modal {
+    padding: var(--space-3);
+  }
+}
+
 .modal.size-sm {
   max-width: 360px;
 }
@@ -314,5 +324,19 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   margin: 0;
   font-size: 1.1rem;
   color: var(--color-primary-dark);
+}
+
+.close-btn {
+  position: relative;
+}
+
+.close-btn::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
 }
 </style>
