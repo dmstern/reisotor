@@ -1995,10 +1995,18 @@ function sheetHeightPx(state: SheetState): number {
   const headerHeight = parseFloat(rootStyle.getPropertyValue('--app-header-height')) || 56;
   const navbarOffset = parseFloat(rootStyle.getPropertyValue('--navbar-offset')) || 0;
   const navbarBottomOffset = parseFloat(rootStyle.getPropertyValue('--navbar-bottom-offset')) || 0;
+
+  // In der CSS-Klasse .full ist bottom = 0.
+  // In .collapsed und .partial ist bottom = var(--space-2) + var(--navbar-bottom-offset).
+  // Damit die Schublade oben nicht in den Header ragt, muss ihre maximale Höhe
+  // um diesen bottom-Abstand reduziert werden.
+  const bottomOffset = state === 'full' ? 0 : 8 + navbarBottomOffset;
+
   const maxAvailable = Math.max(
     160,
-    window.innerHeight - headerHeight - navbarOffset - navbarBottomOffset - 8
+    window.innerHeight - headerHeight - navbarOffset - 8 - bottomOffset
   );
+
   // 64px statt der früheren 96px: die Pille zeigt jetzt nur noch die Anfasser-Zeile (siehe
   // .spots-col.collapsed CSS), kein Rest von .spots-col-body ragt mehr hinein.
   if (state === 'collapsed') return Math.min(64, maxAvailable);
@@ -4047,7 +4055,9 @@ async function deleteEditingSpot() {
    harte opake Fläche dahinter entsteht. */
 .page {
   position: relative;
-  height: calc(100vh - var(--app-header-height, 56px) - var(--navbar-offset, 0px));
+  /* Mobil: Karte soll unter den schwebenden Header ragen */
+  margin-top: calc(-1 * var(--app-header-height, 56px));
+  height: calc(100vh - var(--navbar-offset, 0px));
   overflow: hidden;
   padding: 0;
 }
@@ -4089,7 +4099,7 @@ async function deleteEditingSpot() {
      konsistent mit .page, statt dieselbe Formel ein zweites Mal zu duplizieren. Reine CSS-Rechnung,
      nicht die JS-Berechnung in sheetHeightPx() – die greift nur während eines aktiven Ziehens/beim
      Einrasten, nicht für diesen ruhenden Grundzustand. */
-  --sheet-max-height: calc(100% - 8px);
+  --sheet-max-height: calc(100% - var(--app-header-height, 56px) - 8px);
   /* Feste Randbreite als Skalierungsfaktor statt echter Breitenänderung (left/right/width) - ein
      schwankender Layout-Breite hatte SpotCard.vue/ExcursionCard.vue's Titelzeile (~16px zwischen
      eingeklappt/ausgefahren) knapp an ihrer Umbruch-Schwelle vorbei-/dagegenlaufen lassen, je
@@ -4255,6 +4265,17 @@ async function deleteEditingSpot() {
    im Script). */
 .sheet-step-btn {
   flex-shrink: 0;
+  position: relative;
+}
+
+.sheet-step-btn::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
 }
 
 .sheet-grip {
@@ -4358,6 +4379,8 @@ async function deleteEditingSpot() {
     margin: 0;
     padding: 0;
     position: relative;
+    /* Desktop: Wieder normale Höhe, da margin-top=0 */
+    height: calc(100vh - var(--app-header-height, 56px) - var(--navbar-offset, 0px));
   }
 
   /* Auf Desktop ist der Titel visuell ausgeblendet, bleibt aber für Screenreader lesbar */
@@ -5057,7 +5080,7 @@ async function deleteEditingSpot() {
 
 .tour-leg-add-btn:hover,
 .tour-leg-add-btn:focus-visible {
-  background: var(--tour-theme-tint, var(--color-surface-hover));
+  background: var(--tour-theme-tint, var(--color-hover));
   border-color: var(--tour-theme-color, var(--color-primary));
   color: var(--tour-theme-color, var(--color-primary));
   transform: translateY(-2px);
