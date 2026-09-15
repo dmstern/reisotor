@@ -1554,6 +1554,23 @@ function getLegTooltip(leg: ExcursionLeg, fromSpot: Spot, toSpot: Spot): string 
   return parts.join(' ');
 }
 
+function getBezierAngle(
+  t: number,
+  p0x: number,
+  p0y: number,
+  p1x: number,
+  p1y: number,
+  p2x: number,
+  p2y: number,
+  p3x: number,
+  p3y: number
+) {
+  const mt = 1 - t;
+  const dx = 3 * mt * mt * (p1x - p0x) + 6 * mt * t * (p2x - p1x) + 3 * t * t * (p3x - p2x);
+  const dy = 3 * mt * mt * (p1y - p0y) + 6 * mt * t * (p2y - p1y) + 3 * t * t * (p3y - p2y);
+  return Math.atan2(dy, dx) * (180 / Math.PI);
+}
+
 function recomputeTourLine(excursionId: number) {
   const wrapEl = tourWrapRefs.get(excursionId);
   if (!wrapEl) {
@@ -1635,8 +1652,7 @@ function recomputeTourLine(excursionId: number) {
       const cp2X = endX - dx * 0.45;
       const cp2Y = endY;
       d += ` M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`;
-      const angle = Math.atan2(endY - cp2Y, endX - cp2X) * (180 / Math.PI);
-      arrows.push({ x: endX, y: endY, angle });
+      dots.push({ x: endX, y: endY });
     } else {
       // Zeilenumbruch bzw. untereinander: a ist oben, b ist unten
       // Vertikal: Startpunkt weiter links als Endpunkt
@@ -1652,8 +1668,7 @@ function recomputeTourLine(excursionId: number) {
       const cp2X = endX;
       const cp2Y = endY - dy * 0.45;
       d += ` M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`;
-      const angle = Math.atan2(endY - cp2Y, endX - cp2X) * (180 / Math.PI);
-      arrows.push({ x: endX, y: endY, angle });
+      dots.push({ x: endX, y: endY });
     }
   }
 
@@ -1668,9 +1683,6 @@ function recomputeTourLine(excursionId: number) {
       const loop = computeTourLoopPath(a, b, spotBoxes, wrapEl.clientWidth);
       d += loop.d;
       dots.push(...loop.dots);
-      if (loop.arrow) {
-        arrows.push(loop.arrow);
-      }
     }
   }
 
@@ -3703,20 +3715,33 @@ async function deleteEditingSpot() {
                     :height="tourLines.get(grp.excursion.id)!.height"
                     aria-hidden="true"
                   >
-                    <path :d="tourLines.get(grp.excursion.id)!.pathD" />
+                    <defs>
+                      <linearGradient
+                        :id="'tour-gradient-' + grp.excursion.id"
+                        gradientUnits="userSpaceOnUse"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        :y2="tourLines.get(grp.excursion.id)!.height"
+                      >
+                        <stop
+                          offset="0%"
+                          stop-color="var(--tour-theme-color, var(--color-primary))"
+                        />
+                        <stop offset="100%" stop-color="var(--color-primary)" />
+                      </linearGradient>
+                    </defs>
+                    <path
+                      :d="tourLines.get(grp.excursion.id)!.pathD"
+                      :style="{ stroke: `url(#tour-gradient-${grp.excursion.id})` }"
+                    />
                     <circle
                       v-for="(dot, i) in tourLines.get(grp.excursion.id)!.dots"
                       :key="'dot-' + i"
                       :cx="dot.x"
                       :cy="dot.y"
                       r="4.5"
-                    />
-                    <path
-                      v-for="(arrow, i) in tourLines.get(grp.excursion.id)!.arrows"
-                      :key="'arrow-' + i"
-                      class="tour-station-arrow"
-                      d="M -10 -8 L 0 0 L -10 8"
-                      :transform="`translate(${arrow.x}, ${arrow.y}) rotate(${arrow.angle})`"
+                      :style="{ fill: `url(#tour-gradient-${grp.excursion.id})` }"
                     />
                   </svg>
 
@@ -5240,15 +5265,6 @@ async function deleteEditingSpot() {
   stroke: var(--color-surface);
   stroke-width: 2;
   transition: fill 0.2s ease;
-}
-
-.tour-station-arrow {
-  fill: none;
-  stroke: var(--tour-theme-color, var(--color-primary));
-  stroke-width: 3;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  transition: stroke 0.2s ease;
 }
 
 .empty-state-wrap {

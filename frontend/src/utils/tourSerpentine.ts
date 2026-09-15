@@ -172,7 +172,6 @@ export function buildLoopSegments(spotIds: number[], domSpotIds: number[]): [num
 export interface TourLoopPathResult {
   d: string;
   dots: { x: number; y: number }[];
-  arrow: { x: number; y: number; angle: number };
 }
 
 /**
@@ -216,7 +215,8 @@ export function computeTourLoopPath(
       const cp2Y = endY - dy * 0.45;
       const d = ` M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`;
       const angle = Math.atan2(endY - cp2Y, endX - cp2X) * (180 / Math.PI);
-      return { d, dots, arrow: { x: endX, y: endY, angle } };
+      dots.push({ x: endX, y: endY });
+      return { d, dots };
     }
   }
 
@@ -261,7 +261,8 @@ export function computeTourLoopPath(
       const cp2Y = Math.min(startY, endY + Math.max(40, dy * 0.45));
       const d = ` M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`;
       const angle = Math.atan2(endY - cp2Y, endX - cp2X) * (180 / Math.PI);
-      return { d, dots, arrow: { x: endX, y: endY, angle } };
+      dots.push({ x: endX, y: endY });
+      return { d, dots };
     }
   }
 
@@ -302,7 +303,8 @@ export function computeTourLoopPath(
       const cp2Y = Math.min(startY, endY + Math.max(40, dy * 0.45));
       const d = ` M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`;
       const angle = Math.atan2(endY - cp2Y, endX - cp2X) * (180 / Math.PI);
-      return { d, dots, arrow: { x: endX, y: endY, angle } };
+      dots.push({ x: endX, y: endY });
+      return { d, dots };
     }
   }
 
@@ -328,7 +330,8 @@ export function computeTourLoopPath(
         Math.max(a.bottom, b.bottom) + Math.min(60, Math.max(30, Math.abs(a.cx - b.cx) * 0.15));
       const d = ` M ${startX} ${startY} C ${startX} ${dropY}, ${endX} ${dropY}, ${endX} ${endY}`;
       const angle = Math.atan2(endY - dropY, endX - endX) * (180 / Math.PI);
-      return { d, dots, arrow: { x: endX, y: endY, angle } };
+      dots.push({ x: endX, y: endY });
+      return { d, dots };
     }
   }
 
@@ -341,12 +344,21 @@ export function computeTourLoopPath(
     const startY = a.cy;
     const endX = b.x;
     const endY = b.cy;
-    const arcExtent = Math.min(48, Math.max(24, Math.abs(endY - startY) * 0.25));
-    const ctrlX = Math.max(0, Math.min(a.x, b.x) - arcExtent);
+
     dots.push({ x: startX, y: startY });
-    const d = ` M ${startX} ${startY} C ${ctrlX} ${startY}, ${ctrlX} ${endY}, ${endX} ${endY}`;
-    const angle = Math.atan2(endY - endY, endX - ctrlX) * (180 / Math.PI);
-    return { d, dots, arrow: { x: endX, y: endY, angle } };
+
+    // Abgerundete Knicke statt langgezogener Bezier-Kurve
+    const hOffset = Math.min(80, Math.max(56, Math.abs(endY - startY) * 0.15));
+    const ctrlX = Math.max(4, Math.min(a.x, b.x) - hOffset);
+    const dirY = Math.sign(endY - startY) || 1;
+
+    const rStart = Math.min(16, Math.abs(startX - ctrlX), Math.abs(endY - startY) / 2);
+    const rEnd = Math.min(16, Math.abs(endX - ctrlX), Math.abs(endY - startY) / 2);
+
+    const d = ` M ${startX} ${startY} L ${ctrlX + rStart} ${startY} Q ${ctrlX} ${startY}, ${ctrlX} ${startY + dirY * rStart} L ${ctrlX} ${endY - dirY * rEnd} Q ${ctrlX} ${endY}, ${ctrlX + rEnd} ${endY} L ${endX} ${endY}`;
+
+    dots.push({ x: endX, y: endY });
+    return { d, dots };
   }
 
   const rightEdge = Math.max(wrapWidth, Math.max(a.right, b.right) + 20);
@@ -354,10 +366,18 @@ export function computeTourLoopPath(
   const startY = a.cy;
   const endX = b.right;
   const endY = b.cy;
-  const arcExtent = Math.min(48, Math.max(24, Math.abs(endY - startY) * 0.25));
-  const ctrlX = rightEdge + arcExtent;
+
   dots.push({ x: startX, y: startY });
-  const d = ` M ${startX} ${startY} C ${ctrlX} ${startY}, ${ctrlX} ${endY}, ${endX} ${endY}`;
-  const angle = Math.atan2(endY - endY, endX - ctrlX) * (180 / Math.PI);
-  return { d, dots, arrow: { x: endX, y: endY, angle } };
+
+  const hOffset = Math.min(80, Math.max(56, Math.abs(endY - startY) * 0.15));
+  const ctrlX = rightEdge + hOffset;
+  const dirY = Math.sign(endY - startY) || 1;
+
+  const rStart = Math.min(16, Math.abs(startX - ctrlX), Math.abs(endY - startY) / 2);
+  const rEnd = Math.min(16, Math.abs(endX - ctrlX), Math.abs(endY - startY) / 2);
+
+  const d = ` M ${startX} ${startY} L ${ctrlX - rStart} ${startY} Q ${ctrlX} ${startY}, ${ctrlX} ${startY + dirY * rStart} L ${ctrlX} ${endY - dirY * rEnd} Q ${ctrlX} ${endY}, ${ctrlX - rEnd} ${endY} L ${endX} ${endY}`;
+
+  dots.push({ x: endX, y: endY });
+  return { d, dots };
 }

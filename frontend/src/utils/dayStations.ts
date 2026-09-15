@@ -69,7 +69,7 @@ export function buildDayStations(
   function arrivesNextDay(t: TravelItem) {
     return !!t.departure_time && !!t.arrival_time && t.arrival_time < t.departure_time;
   }
-  
+
   // Calculate the previous date
   const d = new Date(date);
   d.setDate(d.getDate() - 1);
@@ -79,14 +79,14 @@ export function buildDayStations(
   const startsToday = travelItems
     .filter((t) => t.date === date)
     .sort((a, b) => (a.departure_time ?? '').localeCompare(b.departure_time ?? ''));
-    
+
   // Etappen, die GESTERN starteten, aber HEUTE ankommen (Mitternachts-Übergang)
   const arrivesToday = travelItems
     .filter((t) => t.date === prevDate && arrivesNextDay(t))
     .sort((a, b) => (a.arrival_time ?? '').localeCompare(b.arrival_time ?? ''));
 
   let previousTravelKey: string | null = null;
-  
+
   // 1. Zuerst die Ankünfte von gestern Nacht
   for (const t of arrivesToday) {
     const to = resolveStation(travelEndpointKey(t, 'to'), spots, travelItems);

@@ -208,7 +208,6 @@ describe('computeTourLoopPath', () => {
     // Starts at left edge of spot 3 (x=260, cy=315)
     expect(result.dots[0]).toEqual({ x: 260, y: 315 });
     // Arrowhead points upward into bottom edge of spot 1 (cx=120, bottom=170)
-    expect(result.arrow).toEqual({ x: 120, y: 170, angle: -90 });
     // Path moves left and up, entering spot 1 from below
     expect(result.d).toContain('M 260 315');
     expect(result.d).toContain('120 170');
@@ -225,7 +224,6 @@ describe('computeTourLoopPath', () => {
     // Starts at top edge of spot 4 (cx=120 - 32 = 88, top=240)
     expect(result.dots[0]).toEqual({ x: 88, y: 240 });
     // Arrowhead points straight up into bottom of spot 1 (cx=120 + 32 = 152, bottom=170)
-    expect(result.arrow).toEqual({ x: 152, y: 170, angle: -90 });
   });
 
   it('uses under-row U-curve when spots are in the same row with empty space below', () => {
@@ -239,7 +237,6 @@ describe('computeTourLoopPath', () => {
     const result = computeTourLoopPath(spot3, spot1, [spot1, spot2, spot3], 800);
 
     expect(result.dots[0]).toEqual({ x: 600, y: 170 }); // spot3 cx, bottom
-    expect(result.arrow).toEqual({ x: 120, y: 170, angle: -90 });
   });
 
   it('routes under row 0 cards to start spot in 4-column layout even when row 0 cards have varying heights', () => {
@@ -260,7 +257,6 @@ describe('computeTourLoopPath', () => {
     // Starts at left edge of spot 5 in row 1
     expect(result.dots[0]).toEqual({ x: 740, y: 440 });
     // Arrowhead points upward into bottom of spot 1
-    expect(result.arrow).toEqual({ x: 120, y: 170, angle: -90 });
     // Must NOT use right-hand outer arc (which would cross behind cards in row 0)
     expect(result.d).toContain('M 740 440');
     expect(result.d).toContain('120 170');
@@ -276,7 +272,6 @@ describe('computeTourLoopPath', () => {
 
     // Fallback side arc along the side with arrow pointing into spot 1
     expect(result.dots).toHaveLength(1);
-    expect(result.arrow).toBeDefined();
     expect(result.d).toContain('Q');
   });
 });
