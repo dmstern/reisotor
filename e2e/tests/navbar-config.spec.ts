@@ -38,7 +38,7 @@ test('reordering nav entries in SettingsView changes their order in the NavBar',
   expect(newFirstLabel).not.toBe(initialFirstLabel);
 
   await page.goto('/');
-  // :visible schließt den Kalender-Link aus (.mobile-page-link, per CSS nur <800px sichtbar,
+  // :visible schließt den Kalender-Link aus (.mobile-page-link, per CSS nur <1024px sichtbar,
   // Playwright läuft hier auf einem breiteren Default-Viewport, er bleibt aber im DOM vorhanden). Erst auf das
   // erste sichtbare Nav-Icon warten, damit allTextContents() nicht auf einer noch leeren/im Aufbau
   // befindlichen NavBar landet (allTextContents() selbst wartet nicht wie expect() automatisch).
