@@ -2239,7 +2239,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
         var(--calendar-margin, var(--drawer-tab-width)) + var(--calendar-offset, 0px) +
           var(--spots-col-width, 400px) + var(--space-4) + var(--space-3)
       ),
-      calc(100vw - 140px)
+      calc(100vw - 380px + var(--space-3))
     ) !important;
   }
 
@@ -2250,7 +2250,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
         var(--calendar-margin, var(--drawer-tab-width)) + var(--calendar-offset, 0px) +
           var(--space-4)
       ),
-      calc(100vw - 140px)
+      calc(100vw - 380px + var(--space-3))
     ) !important;
   }
 
@@ -2261,13 +2261,13 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
         var(--calendar-margin, var(--drawer-tab-width)) + var(--calendar-offset, 0px) +
           var(--spots-col-width, 400px) + var(--space-4)
       ),
-      calc(100vw - 240px)
+      calc(100vw - 380px)
     );
     right: 0;
     margin: 0 auto;
     width: fit-content;
     max-width: max(
-      320px,
+      400px,
       calc(
         100vw -
           (

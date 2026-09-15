@@ -1920,7 +1920,7 @@ function loadSpotsColWidth(): number {
   const stored = Number(localStorage.getItem(SPOTS_COL_WIDTH_KEY));
   const maxAllowed =
     typeof window !== 'undefined'
-      ? Math.min(MAX_SPOTS_COL_WIDTH, window.innerWidth - 160)
+      ? Math.min(MAX_SPOTS_COL_WIDTH, window.innerWidth - 400)
       : MAX_SPOTS_COL_WIDTH;
 
   // Zwinge den gespeicherten Wert in die gültigen Grenzen, damit beim Neuladen
@@ -1962,7 +1962,7 @@ function onColResizeMove(event: PointerEvent) {
   const delta = event.clientX - colStartX;
   const maxAllowed =
     typeof window !== 'undefined'
-      ? Math.min(MAX_SPOTS_COL_WIDTH, window.innerWidth - 160)
+      ? Math.min(MAX_SPOTS_COL_WIDTH, window.innerWidth - 400)
       : MAX_SPOTS_COL_WIDTH;
   spotsColWidth.value = Math.min(maxAllowed, Math.max(MIN_SPOTS_COL_WIDTH, colStartWidth + delta));
   updateSpotsColRight();
@@ -4437,11 +4437,10 @@ async function deleteEditingSpot() {
     corner-shape: squircle;
     box-shadow: var(--shadow-md);
     width: var(--spots-col-width);
-    /* Hält mindestens 130px Freiraum am rechten Rand von .app-main frei (entspricht den
-       Kartenwerkzeugen .fit-btn: 44px Button + 24px var(--space-4) Rand + 16px Abstand +
-       ca. 40px für die Zoom-Buttons der Karte), sodass .spots-col die Bedienelemente auf
-       schmalen Desktop-Bildschirmen bei ausgeklapptem Drawer nie überlagert. */
-    max-width: calc(100% - var(--space-4) - 130px);
+    /* Hält mindestens 380px Freiraum am rechten Rand von .app-main frei,
+       damit nicht nur die Floating- und Zoom-Buttons Platz haben, sondern auch der
+       Day-Strip unten rechts breit genug bleiben kann. */
+    max-width: calc(100% - var(--space-4) - 380px);
     min-width: min(var(--spots-col-width), 280px);
     pointer-events: auto;
 
