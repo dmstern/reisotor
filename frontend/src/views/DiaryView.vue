@@ -8,6 +8,8 @@ import { useExcursionsStore } from '../stores/excursions';
 import { useSpotsStore } from '../stores/spots';
 import { useScheduleStore } from '../stores/schedule';
 import { useDrawersStore } from '../stores/drawers';
+import { deriveTravelItems } from '../utils/deriveTravelItems';
+import { buildDayStations } from '../utils/dayStations';
 import { useLiveSyncStore } from '../stores/liveSync';
 import { useWeatherProviderStore } from '../stores/weatherProvider';
 import { isEmptyRichText } from '../utils/richText';
@@ -48,6 +50,7 @@ const excursionsStore = useExcursionsStore();
 const spotsStore = useSpotsStore();
 const scheduleStore = useScheduleStore();
 const drawers = useDrawersStore();
+const travelItems = computed(() => deriveTravelItems(excursionsStore.excursions, spotsStore.spots));
 const liveSync = useLiveSyncStore();
 const weatherProvider = useWeatherProviderStore();
 const trip = computed(() => tripStore.currentTrip);
@@ -530,6 +533,19 @@ async function removeComment(id: number) {
   comments.value = comments.value.filter((c) => c.id !== id);
 }
 
+function hasMapContent(entry: DiaryEntry): boolean {
+  if (entry.spot_ids && entry.spot_ids.length > 0) return true;
+  if (entry.excursion_ids && entry.excursion_ids.length > 0) return true;
+  const stations = buildDayStations(
+    entry.date,
+    scheduleStore.items,
+    excursionsStore.excursions,
+    travelItems.value,
+    spotsStore.spots
+  );
+  return stations.length > 0;
+}
+
 // Neuer Button (#216): den Tag des Eintrags (inkl. aller an diesem Tag geplanten Touren/Spots) auf
 // der Karte zeigen - gleiches Muster wie ScheduleView.vue's "Tag auf Karte anzeigen".
 function showEntryDayOnMap(entry: DiaryEntry) {
@@ -764,7 +780,12 @@ function showEntryDayOnMap(entry: DiaryEntry) {
                 {{ Math.round(weatherForEntry(entry)!.tempMin) }}°</span
               >
             </div>
-            <Button type="button" variant="card-action" @click="showEntryDayOnMap(entry)">
+            <Button
+              type="button"
+              variant="card-action"
+              v-if="hasMapContent(entry)"
+              @click="showEntryDayOnMap(entry)"
+            >
               <AppIcon :icon="SECTION_ICON_DEFS.map" :size="14" group="navigation" /> Tag auf Karte
               anzeigen
             </Button>

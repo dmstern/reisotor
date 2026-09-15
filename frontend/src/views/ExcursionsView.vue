@@ -2343,11 +2343,13 @@ function onSpotShowOnMap(spot: Spot) {
 // eingeklapptem Sheet wäre sie dann aber unsichtbar, deshalb hier automatisch mindestens
 // "angeschnitten" aufklappen.
 watch(
-  () =>
-    drawers.mapFocusDate ??
-    (drawers.mapFocusExcursionId != null ? `excursion-${drawers.mapFocusExcursionId}` : null),
-  (focus) => {
-    if (focus != null && sheetState.value === 'collapsed') sheetState.value = 'partial';
+  () => [drawers.mapFocusDate, drawers.mapFocusExcursionId, drawers.mapFocusKey],
+  ([date, excId, key]) => {
+    if (date != null || excId != null || key != null) {
+      if (sheetState.value === 'collapsed' || sheetState.value === 'full') {
+        sheetState.value = 'partial';
+      }
+    }
   }
 );
 
