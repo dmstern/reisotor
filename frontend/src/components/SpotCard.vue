@@ -548,11 +548,12 @@ const cardRotation = computed(() => {
                   excursionContext &&
                   (!excursionContext.hasDestination || excursionContext.isDestination)
                 "
+                key="btn-destination"
                 type="button"
                 class="spot-destination-toggle"
                 :class="{ 'is-active': excursionContext.isDestination }"
                 title="Als Ziel der Tour markieren (für Hin-/Rückweg-Farbverlauf)"
-                @click.stop="emit('toggle-destination')"
+                @click.stop="$emit('toggle-destination')"
               >
                 <AppIcon
                   :icon="DESTINATION_ICON"
@@ -564,6 +565,7 @@ const cardRotation = computed(() => {
               </button>
               <button
                 v-if="!isAccommodation"
+                key="btn-calendar"
                 type="button"
                 class="calendar-drag-handle"
                 :class="{ dragging }"
@@ -577,6 +579,7 @@ const cardRotation = computed(() => {
               <!-- Verschmolzener Status-Button (Geplant-Status + Gemacht-Checkbox) – in beiden Zuständen -->
               <button
                 v-if="!isAccommodation"
+                key="btn-done"
                 type="button"
                 class="done-toggle"
                 :class="{

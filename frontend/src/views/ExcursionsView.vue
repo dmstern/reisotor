@@ -469,6 +469,7 @@ async function deleteEditingExcursion() {
 async function toggleExcursionDestination(excursion: Excursion, spotId: number) {
   const newDest = excursion.destination_spot_id === spotId ? null : spotId;
   const payload = {
+    trip_id: excursion.trip_id,
     title: excursion.title,
     image_url: excursion.image_url ?? undefined,
     note: excursion.note ?? undefined,
@@ -2994,7 +2995,7 @@ async function deleteEditingSpot() {
               </FormField>
               <FormField icon="tour" label="Rolle (optional)">
                 <Select v-model="activeExcursionForm.role">
-                  <option value="">– Normaler Ausflug –</option>
+                  <option value="">🎒 – Normaler Ausflug –</option>
                   <option v-for="r in TRAVEL_ROLE_OPTIONS" :key="r" :value="r">
                     {{ TRAVEL_ROLE_META[r].icon }} {{ TRAVEL_ROLE_META[r].label }} ({{
                       TRAVEL_ROLE_META[r].hint

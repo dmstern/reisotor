@@ -7,6 +7,7 @@ import { useTripStore } from './trip';
 import { useLiveSyncStore } from './liveSync';
 import { useToast } from '../composables/useToast';
 export interface ExcursionFormData {
+  trip_id?: number;
   title: string;
   image_url?: string;
   note?: string;
