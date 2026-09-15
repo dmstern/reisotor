@@ -3775,11 +3775,10 @@ async function deleteEditingSpot() {
                       <linearGradient
                         v-if="tourLines.get(grp.excursion.id)!.hinwegPath"
                         :id="`tour-gradient-hin-${grp.excursion.id}`"
-                        gradientUnits="userSpaceOnUse"
                         x1="0"
-                        :y1="tourLines.get(grp.excursion.id)!.hinwegPath!.y1"
+                        y1="0"
                         x2="0"
-                        :y2="tourLines.get(grp.excursion.id)!.hinwegPath!.y2"
+                        y2="1"
                       >
                         <stop
                           offset="0%"
@@ -3790,11 +3789,10 @@ async function deleteEditingSpot() {
                       <linearGradient
                         v-if="tourLines.get(grp.excursion.id)!.rueckwegPath"
                         :id="`tour-gradient-rueck-${grp.excursion.id}`"
-                        gradientUnits="userSpaceOnUse"
                         x1="0"
-                        :y1="tourLines.get(grp.excursion.id)!.rueckwegPath!.y1"
+                        y1="0"
                         x2="0"
-                        :y2="tourLines.get(grp.excursion.id)!.rueckwegPath!.y2"
+                        y2="1"
                       >
                         <stop
                           offset="0%"
