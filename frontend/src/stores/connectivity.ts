@@ -61,6 +61,7 @@ export const useConnectivityStore = defineStore('connectivity', () => {
     if (syncing.value || pendingCount.value === 0) return;
     syncing.value = true;
     const initialCount = pendingCount.value;
+    const startTime = Date.now();
     try {
       const drained = await flushOutbox(sendRaw);
       pendingCount.value = getOutboxLength();
@@ -68,6 +69,11 @@ export const useConnectivityStore = defineStore('connectivity', () => {
         useLiveSyncStore().refreshAll();
       }
     } finally {
+      const elapsed = Date.now() - startTime;
+      const minDuration = 800; // Mindestdauer, um UI-Flackern ("Zappeln") zu verhindern
+      if (elapsed < minDuration) {
+        await new Promise((resolve) => setTimeout(resolve, minDuration - elapsed));
+      }
       syncing.value = false;
     }
   }
@@ -89,6 +95,7 @@ export const useConnectivityStore = defineStore('connectivity', () => {
   async function checkNow() {
     if (checking.value) return;
     checking.value = true;
+    const startTime = Date.now();
     try {
       await fetchWithTimeout('/api/auth/me', { credentials: 'include' });
       setOnline(true);
@@ -96,6 +103,11 @@ export const useConnectivityStore = defineStore('connectivity', () => {
     } catch {
       setOnline(false);
     } finally {
+      const elapsed = Date.now() - startTime;
+      const minDuration = 800; // Mindestdauer, um UI-Flackern ("Zappeln") zu verhindern
+      if (elapsed < minDuration) {
+        await new Promise((resolve) => setTimeout(resolve, minDuration - elapsed));
+      }
       checking.value = false;
     }
   }
