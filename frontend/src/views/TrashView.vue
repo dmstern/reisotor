@@ -242,8 +242,10 @@ async function emptyTrash() {
             variant="card-action"
             :disabled="restoringKey === keyOf(entry) || deletingKey === keyOf(entry)"
             @click="restore(entry)"
+            title="Wiederherstellen"
           >
-            <AppIcon :icon="ACTION_ICONS.restore" :size="14" group="actions" /> Wiederherstellen
+            <AppIcon :icon="ACTION_ICONS.restore" :size="14" group="actions" />
+            <span class="hide-on-mobile">Wiederherstellen</span>
           </Button>
         </div>
       </li>
@@ -323,5 +325,11 @@ async function emptyTrash() {
 
 .error {
   color: var(--color-danger);
+}
+
+@media (max-width: 600px) {
+  .hide-on-mobile {
+    display: none;
+  }
 }
 </style>
