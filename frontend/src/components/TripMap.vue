@@ -285,6 +285,16 @@ function toggleMapOrientation() {
 // verdeckt). Gleiches Teleport-Popover-Muster wie shareMenuOpen/recordMenuOpen unten (eigene Kopie
 // statt geteilter Komponente, da scoped styles nicht komponentenübergreifend gelten).
 const focusMenuOpen = ref(false);
+const isFocusBannerExpanded = ref(false);
+
+function clearFocus() {
+  if (focusedExcursion.value) {
+    drawers.mapFocusExcursionId = null;
+  } else if (drawers.mapFocusDate) {
+    drawers.mapFocusDate = null;
+  }
+  isFocusBannerExpanded.value = false;
+}
 const focusButtonRef = ref<HTMLButtonElement | null>(null);
 const focusMenuStyle = ref({ top: '0px', left: '0px' });
 
@@ -1731,23 +1741,29 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
           @click="dismissTileDownloadResult"
         />
       </div>
-      <div class="focus-banner" v-if="focusedExcursion">
-        <span
-          ><AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="14" group="navigation" />
-          {{ focusedExcursion.title }}</span
+      <div
+        class="focus-banner"
+        :class="{ 'is-expanded': isFocusBannerExpanded }"
+        v-if="focusedExcursion || drawers.mapFocusDate"
+      >
+        <button
+          class="focus-banner-toggle-btn"
+          @click="isFocusBannerExpanded = !isFocusBannerExpanded"
         >
-        <Button variant="card-action" @click="drawers.mapFocusExcursionId = null">
-          <AppIcon :icon="ACTION_ICONS.close" :size="14" group="actions" /> Fokus verlassen
-        </Button>
-      </div>
-      <div class="focus-banner" v-else-if="drawers.mapFocusDate">
-        <span
-          ><AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" />
-          {{ formatDate(drawers.mapFocusDate) }}</span
-        >
-        <Button variant="card-action" @click="drawers.mapFocusDate = null">
-          <AppIcon :icon="ACTION_ICONS.close" :size="14" group="actions" /> Fokus verlassen
-        </Button>
+          <AppIcon
+            :icon="focusedExcursion ? SECTION_ICON_DEFS.excursions : FORM_FIELD_ICONS.period"
+            :size="18"
+            :group="focusedExcursion ? 'navigation' : 'formFields'"
+          />
+        </button>
+        <div class="focus-banner-content">
+          <span>{{
+            focusedExcursion ? focusedExcursion.title : formatDate(drawers.mapFocusDate!)
+          }}</span>
+          <Button variant="card-action" @click="clearFocus">
+            <AppIcon :icon="ACTION_ICONS.close" :size="14" group="actions" /> Fokus verlassen
+          </Button>
+        </div>
       </div>
     </div>
 
@@ -1810,16 +1826,14 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
 }
 
 .map-wrap {
-  /* Eckenabstand/Lücke über --space-3/--space-2 (statt der alten 10px/6px), auf Mobil wie auf
-     Desktop einheitlich - nur der Durchmesser selbst bleibt auf Mobil kleiner (@container weiter
-     unten hebt ihn auf Desktop auf Apples 44px an, siehe dort). Der Stapel selbst wurde von
-     vormals 9 Einzel-Buttons auf 5 verkürzt (Nutzer-Feedback: zu lang/unübersichtlich, einzelne
-     Buttons rutschten hinter das Bottom-Sheet) - die vier Fokus-Buttons (Alle/Urlaubsort/
-     Unterkünfte/Tourziele) sowie Standort-Sprung + Ausrichtungs-Umschalter leben jetzt hinter je
-     einem Popover-Trigger (.focus-btn/.location-btn), siehe deren Klick-Handler im Script. */
-  --fit-btn-size: 34px;
+  /* Eckenabstand/Lücke über --space-3/--space-2, auf Mobil wie auf Desktop einheitlich.
+     Touch-Targets halten stets mindestens 44px x 44px gemäß DESIGN.md §7.1 und WCAG 2.5.5 ein.
+     Der Stapel umfasst 5 Buttons hinter Popover-Triggern (.focus-btn/.location-btn). */
+  --fit-btn-size: 44px;
   --fit-btn-gap: var(--space-2);
   --fit-btn-inset: var(--space-3);
+  /* Berücksichtigt den schwebenden AppHeader auf Mobil (Karte ragt jetzt darunter) */
+  --fit-btn-top-inset: calc(var(--app-header-height, 56px) + var(--space-3));
   --fit-btn-step: calc(var(--fit-btn-size) + var(--fit-btn-gap));
   position: absolute;
   inset: 0;
@@ -1842,8 +1856,10 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
   top: var(--fit-btn-top-inset, var(--fit-btn-inset));
   right: var(--fit-btn-right-inset, var(--fit-btn-inset));
   z-index: 1000;
-  width: var(--fit-btn-size);
-  height: var(--fit-btn-size);
+  width: var(--fit-btn-size) !important;
+  height: var(--fit-btn-size) !important;
+  min-width: var(--fit-btn-size) !important;
+  min-height: var(--fit-btn-size) !important;
   padding: 0;
   border-radius: 50%;
   corner-shape: round;
@@ -1930,7 +1946,8 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
    Button-Spalte hätte dort keinen Platz. */
 .tile-download-pill {
   position: absolute;
-  top: 56px;
+  /* Unterhalb des Focus-Banners platziert (welcher jetzt dynamisch unter dem Header sitzt) */
+  top: calc(var(--fit-btn-top-inset, var(--space-3)) + 52px);
   left: var(--space-3);
   z-index: 1000;
   display: flex;
@@ -1949,31 +1966,102 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
 
 .focus-banner {
   position: absolute;
-  top: var(--space-3);
+  /* Berücksichtigt den schwebenden AppHeader auf Mobil (Karte ragt darunter) */
+  top: var(--fit-btn-top-inset, var(--space-3));
   left: var(--space-3);
   bottom: unset;
   right: unset;
   z-index: 1000;
   display: flex;
   align-items: center;
-  gap: var(--space-2);
   background: var(--color-surface);
   border: 2px solid var(--color-primary);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  padding: 6px 10px;
+  color: var(--color-primary-dark);
   font-size: 0.85rem;
   font-weight: 600;
-  color: var(--color-primary-dark);
-  max-width: calc(100% - 60px);
+  overflow: hidden;
+
+  /* Initial-Zustand Mobil: Runder Icon-Button */
+  border-radius: 999px;
+  corner-shape: round;
+  padding: 2px; /* Dünnes Padding für runden Icon-Button */
+  width: 44px;
+  height: 44px;
+  /* Schatten wie bei Floating Buttons (.btn--floating) */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+
+  transition: all 0.3s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
-@media screen and (min-width: 720px) {
+.focus-banner.is-expanded {
+  width: auto;
+  max-width: calc(100% - 60px);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  padding: 4px 10px 4px 4px;
+}
+
+.focus-banner-toggle-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-primary-dark);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background-color 0.2s;
+}
+
+.focus-banner-toggle-btn:active {
+  background: var(--color-hover);
+}
+
+.focus-banner-content {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  /* Erst sichtbar, wenn expanded (oder Desktop) */
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.2s,
+    visibility 0.2s;
+  /* Staucht sich nicht zusammen, während Breite animiert */
+  white-space: nowrap;
+}
+
+.focus-banner.is-expanded .focus-banner-content {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 0.1s; /* Wartet kurz auf die Breiten-Animation */
+}
+
+@media screen and (min-width: 800px) {
   .focus-banner {
     bottom: calc(54px + var(--space-2));
     right: var(--space-3);
     top: unset;
     left: unset;
+    /* Auf Desktop immer ausgeklappt */
+    width: auto;
+    max-width: calc(100% - 60px);
+    border-radius: var(--radius-sm-squircle);
+    corner-shape: squircle;
+    padding: 6px 10px 6px 4px;
+    height: auto;
+  }
+
+  .focus-banner-content {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .focus-banner-toggle-btn {
+    pointer-events: none; /* Kein Klick auf Desktop */
   }
 
   .tile-download-pill {
@@ -2026,6 +2114,21 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
   margin-bottom: var(--space-2);
 }
 
+.day-strip :deep(.day-chip) {
+  position: relative;
+}
+
+.day-strip :deep(.day-chip)::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  min-width: 44px;
+  width: 100%;
+  height: 44px;
+  transform: translate(-50%, -50%);
+}
+
 /* Die OpenStreetMap-Kacheln selbst kennen keinen Dark Mode – ein Farb-Invert nur auf der
    Kachel-Ebene (nicht auf Markern/Popups) sorgt für eine abgedunkelte Karte statt eines
    grellen weißen Rechtecks im ansonsten dunklen UI. */
@@ -2062,13 +2165,19 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
   background-color: var(--color-surface) !important;
 }
 
+@media screen and (max-width: 799px) {
+  :deep(.leaflet-control-zoom) {
+    display: none !important;
+  }
+}
+
 :deep(.leaflet-bar a) {
   background-color: var(--color-surface) !important;
   color: var(--color-text) !important;
   border-bottom: 1px solid var(--color-border) !important;
-  width: 34px !important;
-  height: 34px !important;
-  line-height: 34px !important;
+  width: 44px !important;
+  height: 44px !important;
+  line-height: 44px !important;
 }
 
 :deep(.leaflet-bar a:hover) {
@@ -2085,17 +2194,19 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
   background-color: var(--color-surface) !important;
 }
 
+:deep(.leaflet-top) {
+  /* Berücksichtigt den schwebenden AppHeader auf Mobil (Karte ragt jetzt darunter) */
+  top: calc(var(--app-header-height, 56px) + var(--space-3)) !important;
+}
+
 /* Desktop: Die Karte ist auf Desktop stets vollflächig über die gesamte Bildschirmbreite.
-   Die Kartenwerkzeuge (.fit-btn) und Zoom-Buttons nutzen auf Desktop größere Maße und Insets,
+   Die Kartenwerkzeuge (.fit-btn) und Zoom-Buttons nutzen auf Desktop größere Insets,
    um unter dem schwebenden Header zu liegen.
    Die Zoom-Buttons sitzen rechts neben den Drawers: im Side-by-Side-Modus rechts neben beiden Drawers,
    im Sheet-Overlay-Modus (wenn z. B. der Kalender auf Zwischengrößen ausgeklappt ist) direkt rechts
    neben der Kalender-Schublade. */
 @media (min-width: 800px) {
   .map-wrap {
-    /* Eckenabstand/Lücke sind schon auf Mobil (.map-wrap oben) auf Apples Maß, hier reicht der Platz zusätzlich
-       für den größeren Durchmesser: 44px (dasselbe "großer runder Icon-Button"-Maß wie
-       DashboardView.vue's .tile-icon) statt der auf Mobil aus Platznot nötigen 34px. */
     --fit-btn-size: 44px;
     --fit-btn-top-inset: calc(var(--app-header-height, 56px) + var(--space-4));
     --fit-btn-right-inset: var(--space-4);
