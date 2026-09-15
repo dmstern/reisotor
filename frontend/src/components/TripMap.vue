@@ -1982,10 +1982,11 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
   overflow: hidden;
 
   /* Initial-Zustand Mobil: Runder Icon-Button */
-  border-radius: 999px;
+  border-radius: var(--radius-pill, 999px);
   corner-shape: round;
-  padding: 2px; /* Dünnes Padding für runden Icon-Button */
-  width: 44px;
+  padding: 4px; /* Gleichmäßiges Padding für den Kreis */
+  width: auto;
+  max-width: 44px; /* Limitiert die Breite auf den Button */
   height: 44px;
   /* Schatten wie bei Floating Buttons (.btn--floating) */
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -1994,11 +1995,11 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
 }
 
 .focus-banner.is-expanded {
-  width: auto;
   max-width: calc(100% - 60px);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  padding: 4px 10px 4px 4px;
+  /* Behalte die runde Pillenform bei, damit der linke Button perfekt reinpasst */
+  border-radius: var(--radius-pill, 999px);
+  corner-shape: round;
+  padding: 4px 14px 4px 4px;
 }
 
 .focus-banner-toggle-btn {
@@ -2049,10 +2050,10 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
     /* Auf Desktop immer ausgeklappt */
     width: auto;
     max-width: calc(100% - 60px);
-    border-radius: var(--radius-sm-squircle);
-    corner-shape: squircle;
-    padding: 6px 10px 6px 4px;
-    height: auto;
+    border-radius: var(--radius-pill, 999px);
+    corner-shape: round;
+    padding: 4px 14px 4px 4px;
+    height: 44px;
   }
 
   .focus-banner-content {
