@@ -3806,30 +3806,35 @@ async function deleteEditingSpot() {
                       v-if="tourLines.get(grp.excursion.id)!.hinwegPath"
                       :d="tourLines.get(grp.excursion.id)!.hinwegPath!.d"
                       fill="none"
-                      :stroke="`url(#tour-gradient-hin-${grp.excursion.id})`"
-                      stroke-width="2"
+                      :style="{ stroke: `url(#tour-gradient-hin-${grp.excursion.id})` }"
+                      stroke-width="3"
                       stroke-dasharray="6,6"
+                      stroke-linecap="round"
                     />
                     <path
                       v-if="tourLines.get(grp.excursion.id)!.rueckwegPath"
                       :d="tourLines.get(grp.excursion.id)!.rueckwegPath!.d"
                       fill="none"
-                      :stroke="`url(#tour-gradient-rueck-${grp.excursion.id})`"
-                      stroke-width="2"
+                      :style="{ stroke: `url(#tour-gradient-rueck-${grp.excursion.id})` }"
+                      stroke-width="3"
                       stroke-dasharray="6,6"
+                      stroke-linecap="round"
                     />
 
                     <circle
                       v-for="(dot, i) in tourLines.get(grp.excursion.id)!.dots"
-                      :key="i"
+                      :key="'dot-' + i"
                       :cx="dot.x"
                       :cy="dot.y"
-                      r="3.5"
-                      :fill="
-                        dot.isEnd
-                          ? 'var(--color-primary)'
-                          : 'var(--tour-theme-color, var(--color-primary))'
-                      "
+                      r="4.5"
+                      :style="{
+                        fill:
+                          i === tourLines.get(grp.excursion.id)!.dots.length - 1
+                            ? 'var(--color-primary)'
+                            : 'var(--tour-theme-color, var(--color-primary))',
+                        stroke: 'var(--color-surface)',
+                        strokeWidth: '2px',
+                      }"
                     />
                   </svg>
 
@@ -5350,16 +5355,12 @@ async function deleteEditingSpot() {
 
 .tour-station-line path {
   fill: none;
-  stroke: var(--tour-theme-color, var(--color-primary));
   stroke-width: 3;
   stroke-dasharray: 6 6;
   transition: stroke 0.2s ease;
 }
 
 .tour-station-line circle {
-  fill: var(--tour-theme-color, var(--color-primary));
-  stroke: var(--color-surface);
-  stroke-width: 2;
   transition: fill 0.2s ease;
 }
 
