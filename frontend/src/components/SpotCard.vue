@@ -544,6 +544,7 @@ const cardRotation = computed(() => {
               />
               <button
                 v-if="
+                  expanded &&
                   excursionContext &&
                   (!excursionContext.hasDestination || excursionContext.isDestination)
                 "
