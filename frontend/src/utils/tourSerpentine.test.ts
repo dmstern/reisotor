@@ -271,7 +271,7 @@ describe('computeTourLoopPath', () => {
     const result = computeTourLoopPath(spot3, spot1, [spot1, spot2, spot3], 240);
 
     // Fallback side arc along the side with arrow pointing into spot 1
-    expect(result.dots).toHaveLength(1);
+    expect(result.dots).toHaveLength(2);
     expect(result.d).toContain('Q');
   });
 });
