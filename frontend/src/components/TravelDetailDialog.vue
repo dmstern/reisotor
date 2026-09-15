@@ -78,7 +78,8 @@ function travelDuration(item: TravelItem) {
       {{ item.date || '' }}
       <span v-if="item.departure_time">
         · {{ item.departure_time
-        }}<span v-if="item.arrival_time">–{{ item.arrival_time }}</span> Uhr
+        }}<template v-if="item.arrival_time">&ndash;{{ item.arrival_time }}</template
+        >&nbsp;Uhr
       </span>
       <span v-if="travelDuration(item)"> ({{ travelDuration(item) }})</span>
     </DetailRow>

@@ -406,11 +406,15 @@ function onSpotDrop(event: DragEvent) {
               "
               class="departure-arrival"
             >
-              <AppIcon :icon="FORM_FIELD_ICONS.time" :size="14" group="formFields" />
-              <span v-if="effectiveDepartureTime"
-                >{{ effectiveDepartureTime
-                }}<span v-if="effectiveArrivalTime">–{{ effectiveArrivalTime }}</span> Uhr</span
-              >
+              <span class="time-block" v-if="effectiveDepartureTime">
+                <AppIcon :icon="FORM_FIELD_ICONS.time" :size="14" group="formFields" />
+                {{ effectiveDepartureTime
+                }}<template v-if="effectiveArrivalTime">&ndash;{{ effectiveArrivalTime }}</template
+                >&nbsp;Uhr
+              </span>
+              <span class="time-block" v-else>
+                <AppIcon :icon="FORM_FIELD_ICONS.time" :size="14" group="formFields" />
+              </span>
               <span v-if="travelDuration" class="duration">({{ travelDuration }})</span>
             </p>
           </div>
@@ -426,11 +430,15 @@ function onSpotDrop(event: DragEvent) {
             "
             class="departure-arrival"
           >
-            <AppIcon :icon="FORM_FIELD_ICONS.time" :size="14" group="formFields" />
-            <span v-if="effectiveDepartureTime"
-              >{{ effectiveDepartureTime
-              }}<span v-if="effectiveArrivalTime">–{{ effectiveArrivalTime }}</span> Uhr</span
-            >
+            <span class="time-block" v-if="effectiveDepartureTime">
+              <AppIcon :icon="FORM_FIELD_ICONS.time" :size="14" group="formFields" />
+              {{ effectiveDepartureTime
+              }}<template v-if="effectiveArrivalTime">&ndash;{{ effectiveArrivalTime }}</template
+              >&nbsp;Uhr
+            </span>
+            <span class="time-block" v-else>
+              <AppIcon :icon="FORM_FIELD_ICONS.time" :size="14" group="formFields" />
+            </span>
             <span v-if="travelDuration" class="duration">({{ travelDuration }})</span>
           </p>
         </template>
@@ -1284,14 +1292,23 @@ function onSpotDrop(event: DragEvent) {
 .departure-arrival {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 4px;
   margin: 0;
   font-size: 0.85rem;
   color: var(--color-text-muted);
 }
 
+.time-block {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
 .duration {
   color: var(--color-text-muted);
+  white-space: nowrap;
 }
 
 /* Stationen-Vorschau mit Polaroid-Stapel (#235) */
@@ -1313,6 +1330,10 @@ function onSpotDrop(event: DragEvent) {
   opacity: 0;
   pointer-events: none;
   overflow: visible;
+}
+
+.tour-polaroid-stack {
+  margin-right: 6px;
 }
 
 /* Hover-Effekt auf der Collapsed Card: Sanftes Auffächern der Station-Polaroids (#235) */
@@ -1427,6 +1448,7 @@ function onSpotDrop(event: DragEvent) {
   :deep(.tour-polaroid-stack) {
     width: 46px;
     height: 56px;
+    margin-right: 4px;
   }
 
   :deep(.tour-polaroid-stack .polaroid-tile) {

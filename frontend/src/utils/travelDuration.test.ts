@@ -26,16 +26,16 @@ describe('travelDuration', () => {
 
   describe('formatTravelDuration', () => {
     it('formats minutes only', () => {
-      expect(formatTravelDuration(45)).toBe('45 Min.');
+      expect(formatTravelDuration(45)).toBe('45\u00A0Min.');
     });
 
     it('formats hours only', () => {
-      expect(formatTravelDuration(120)).toBe('2 Std.');
+      expect(formatTravelDuration(120)).toBe('2\u00A0Std.');
     });
 
     it('formats hours and minutes', () => {
-      expect(formatTravelDuration(165)).toBe('2 Std. 45 Min.');
-      expect(formatTravelDuration(1023)).toBe('17 Std. 3 Min.');
+      expect(formatTravelDuration(165)).toBe('2\u00A0Std. 45\u00A0Min.');
+      expect(formatTravelDuration(1023)).toBe('17\u00A0Std. 3\u00A0Min.');
     });
   });
 
