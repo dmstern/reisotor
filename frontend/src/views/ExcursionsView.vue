@@ -52,12 +52,7 @@ import { formatDurationShort } from '../utils/trackGeometry';
 import { usePersistedRef } from '../composables/usePersistedRef';
 import { useIsDesktop } from '../composables/useIsDesktop';
 import { hashHighlightId } from '../utils/hashHighlight';
-import {
-  buildTourSerpentineRows,
-  buildLoopSegments,
-  computeTourLoopPath,
-  type TourSerpentineRow,
-} from '../utils/tourSerpentine';
+import { buildTourSerpentineRows, type TourSerpentineRow } from '../utils/tourSerpentine';
 import SpotCard from '../components/SpotCard.vue';
 import ExcursionCard from '../components/ExcursionCard.vue';
 import SegmentedToggle from '../components/SegmentedToggle.vue';
@@ -1146,15 +1141,12 @@ const spotGroups = computed(() => {
         ? excursionForGroupTitle(key)
         : null;
     if (excursion) {
-      const order = new Map<number, number>();
-      excursion.spot_ids.forEach((id, idx) => {
-        if (!order.has(id)) order.set(id, idx);
+      const orderedList: SpotsGroupItem[] = [];
+      excursion.spot_ids.forEach((id) => {
+        const item = list.find((i) => i.kind === 'spot' && i.spot.id === id);
+        if (item) orderedList.push(item);
       });
-      list.sort((a, b) => {
-        const ai = a.kind === 'spot' ? (order.get(a.spot.id) ?? Infinity) : Infinity;
-        const bi = b.kind === 'spot' ? (order.get(b.spot.id) ?? Infinity) : Infinity;
-        return ai - bi;
-      });
+      groups.set(key, orderedList);
     } else {
       list.sort((a, b) => {
         if (sortMode.value === 'date') {
@@ -1517,9 +1509,8 @@ interface TourArrow {
 interface TourLineData {
   width: number;
   height: number;
-  pathD: string;
-  dots: { x: number; y: number }[];
-  arrows: TourArrow[];
+  segments: { d: string; x1: number; y1: number; x2: number; y2: number }[];
+  dots: { x: number; y: number; isEnd: boolean }[];
 }
 
 const tourLines = reactive(new Map<number, TourLineData>());
@@ -1601,9 +1592,8 @@ function recomputeTourLine(excursionId: number) {
     };
   });
 
-  const dots: { x: number; y: number }[] = [];
-  const arrows: TourArrow[] = [];
-  let d = '';
+  const dots: { x: number; y: number; isEnd: boolean }[] = [];
+  const segments: { d: string; x1: number; y1: number; x2: number; y2: number }[] = [];
 
   // Gestrichelte Verbindungslinie von der Tour-Card zur ersten Spot-Card
   const groupEl = wrapEl.closest('.category-group');
@@ -1619,15 +1609,21 @@ function recomputeTourLine(excursionId: number) {
     const endY = firstSpot.top;
 
     if (endY > startY) {
-      dots.push({ x: startX, y: startY });
-      dots.push({ x: endX, y: endY });
+      dots.push({ x: startX, y: startY, isEnd: false });
+      dots.push({ x: endX, y: endY, isEnd: true });
 
       const dy = endY - startY;
       const cp1X = startX;
       const cp1Y = startY + dy * 0.45;
       const cp2X = endX;
       const cp2Y = endY - dy * 0.45;
-      d += ` M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`;
+      segments.push({
+        d: ` M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`,
+        x1: startX,
+        y1: startY,
+        x2: endX,
+        y2: endY,
+      });
     }
   }
 
@@ -1645,14 +1641,20 @@ function recomputeTourLine(excursionId: number) {
       const startY = a.cy - vOffset;
       const endX = isLtr ? b.x : b.right;
       const endY = b.cy + vOffset;
-      dots.push({ x: startX, y: startY });
+      dots.push({ x: startX, y: startY, isEnd: false });
       const dx = endX - startX;
       const cp1X = startX + dx * 0.45;
       const cp1Y = startY;
       const cp2X = endX - dx * 0.45;
       const cp2Y = endY;
-      d += ` M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`;
-      dots.push({ x: endX, y: endY });
+      segments.push({
+        d: ` M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`,
+        x1: startX,
+        y1: startY,
+        x2: endX,
+        y2: endY,
+      });
+      dots.push({ x: endX, y: endY, isEnd: true });
     } else {
       // Zeilenumbruch bzw. untereinander: a ist oben, b ist unten
       // Vertikal: Startpunkt weiter links als Endpunkt
@@ -1661,37 +1663,28 @@ function recomputeTourLine(excursionId: number) {
       const startY = a.bottom;
       const endX = b.cx + hOffset;
       const endY = b.top;
-      dots.push({ x: startX, y: startY });
+      dots.push({ x: startX, y: startY, isEnd: false });
       const dy = endY - startY;
       const cp1X = startX;
       const cp1Y = startY + dy * 0.45;
       const cp2X = endX;
       const cp2Y = endY - dy * 0.45;
-      d += ` M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`;
-      dots.push({ x: endX, y: endY });
-    }
-  }
-
-  // Zirkel-/Rückweglinien für Touren, bei denen ein Spot mehrfach besucht wird
-  const excursion = excursionsStore.excursions.find((e) => e.id === excursionId);
-  if (excursion) {
-    const domSpotIds = spotEls.map((el) => Number(el.dataset.spotId));
-    for (const [fromIdx, toIdx] of buildLoopSegments(excursion.spot_ids, domSpotIds)) {
-      const a = spotBoxes[fromIdx];
-      const b = spotBoxes[toIdx];
-      if (!a || !b) continue;
-      const loop = computeTourLoopPath(a, b, spotBoxes, wrapEl.clientWidth);
-      d += loop.d;
-      dots.push(...loop.dots);
+      segments.push({
+        d: ` M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`,
+        x1: startX,
+        y1: startY,
+        x2: endX,
+        y2: endY,
+      });
+      dots.push({ x: endX, y: endY, isEnd: true });
     }
   }
 
   tourLines.set(excursionId, {
     width: Math.max(wrapEl.clientWidth, 100),
     height: Math.max(wrapEl.clientHeight, spotBoxes[spotBoxes.length - 1]?.bottom ?? 200),
-    pathD: d.trim(),
+    segments,
     dots,
-    arrows,
   });
 }
 
@@ -3715,33 +3708,42 @@ async function deleteEditingSpot() {
                     :height="tourLines.get(grp.excursion.id)!.height"
                     aria-hidden="true"
                   >
-                    <defs>
-                      <linearGradient
-                        :id="'tour-gradient-' + grp.excursion.id"
-                        gradientUnits="userSpaceOnUse"
-                        x1="0"
-                        y1="0"
-                        x2="0"
-                        :y2="tourLines.get(grp.excursion.id)!.height"
-                      >
-                        <stop
-                          offset="0%"
-                          stop-color="var(--tour-theme-color, var(--color-primary))"
-                        />
-                        <stop offset="100%" stop-color="var(--color-primary)" />
-                      </linearGradient>
-                    </defs>
-                    <path
-                      :d="tourLines.get(grp.excursion.id)!.pathD"
-                      :style="{ stroke: `url(#tour-gradient-${grp.excursion.id})` }"
-                    />
+                    <g
+                      v-for="(seg, i) in tourLines.get(grp.excursion.id)!.segments"
+                      :key="'seg-' + i"
+                    >
+                      <defs>
+                        <linearGradient
+                          :id="`tour-gradient-${grp.excursion.id}-${i}`"
+                          gradientUnits="userSpaceOnUse"
+                          :x1="seg.x1"
+                          :y1="seg.y1"
+                          :x2="seg.x2"
+                          :y2="seg.y2"
+                        >
+                          <stop
+                            offset="0%"
+                            stop-color="var(--tour-theme-color, var(--color-primary))"
+                          />
+                          <stop offset="100%" stop-color="var(--color-primary)" />
+                        </linearGradient>
+                      </defs>
+                      <path
+                        :d="seg.d"
+                        :style="{ stroke: `url(#tour-gradient-${grp.excursion.id}-${i})` }"
+                      />
+                    </g>
                     <circle
                       v-for="(dot, i) in tourLines.get(grp.excursion.id)!.dots"
                       :key="'dot-' + i"
                       :cx="dot.x"
                       :cy="dot.y"
                       r="4.5"
-                      :style="{ fill: `url(#tour-gradient-${grp.excursion.id})` }"
+                      :style="{
+                        fill: dot.isEnd
+                          ? 'var(--color-primary)'
+                          : 'var(--tour-theme-color, var(--color-primary))',
+                      }"
                     />
                   </svg>
 
