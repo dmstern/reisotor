@@ -1649,12 +1649,14 @@ const cardRotation = computed(() => {
 /* Virtuelle Touch-Targets (mind. 44px Höhe gemäß DESIGN.md §7.1 / WCAG 2.5.5) */
 .calendar-drag-handle,
 .done-toggle,
+.spot-destination-toggle,
 :deep(.tour-assign-btn) {
   position: relative;
 }
 
 .calendar-drag-handle::after,
 .done-toggle::after,
+.spot-destination-toggle::after,
 :deep(.tour-assign-btn)::after {
   content: '';
   position: absolute;
@@ -1663,6 +1665,15 @@ const cardRotation = computed(() => {
   inset-inline: 0;
   height: 44px;
   min-height: 44px;
+}
+
+@media (pointer: fine) {
+  .calendar-drag-handle::after,
+  .done-toggle::after,
+  .spot-destination-toggle::after,
+  :deep(.tour-assign-btn)::after {
+    display: none;
+  }
 }
 
 /* Schwebt während des Drags am Zeiger, per Teleport außerhalb der Karte (sonst würde sie beim
