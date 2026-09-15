@@ -1636,7 +1636,9 @@ h3 {
 }
 
 .username-form {
-  margin-bottom: var(--space-3);
+  margin-bottom: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
 }
 
 .nav-position-row {
@@ -1804,6 +1806,18 @@ label:not(.checkbox-card):not(.checkbox-option):not(.nav-config-visible):not(.ca
 
 .account-header {
   align-items: flex-start;
+  margin-bottom: var(--space-4);
+}
+
+@media (max-width: 600px) {
+  .account-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .logout-btn {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 .user-info {
