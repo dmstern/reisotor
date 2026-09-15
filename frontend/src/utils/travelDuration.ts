@@ -18,7 +18,67 @@ export function travelDurationMinutes(
 export function formatTravelDuration(minutes: number): string {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
-  if (h === 0) return `${m} Min.`;
-  if (m === 0) return `${h} Std.`;
-  return `${h} Std. ${m} Min.`;
+  if (h === 0) return `${m}\u00A0Min.`;
+  if (m === 0) return `${h}\u00A0Std.`;
+  return `${h}\u00A0Std. ${m}\u00A0Min.`;
+}
+
+export function formatTravelDurationParts(minutes: number): string[] {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h === 0) return [`${m}\u00A0Min.`];
+  if (m === 0) return [`${h}\u00A0Std.`];
+  return [`${h}\u00A0Std.`, `${m}\u00A0Min.`];
+}
+
+export function tourTotalDurationMinutes(excursion: {
+  departure_time?: string | null;
+  arrival_time?: string | null;
+  legs?: { departure_time?: string | null; arrival_time?: string | null }[];
+}): number | null {
+  const legs = excursion.legs;
+  if (!legs || legs.length === 0) {
+    return travelDurationMinutes(excursion.departure_time || null, excursion.arrival_time || null);
+  }
+
+  let totalMinutes = 0;
+  let lastTime: string | null = null;
+  let hasAnyDuration = false;
+
+  for (const leg of legs) {
+    const dep = leg.departure_time;
+    const arr = leg.arrival_time;
+
+    if (dep) {
+      if (lastTime) {
+        const wait = travelDurationMinutes(lastTime, dep);
+        if (wait != null) totalMinutes += wait;
+      }
+      if (arr) {
+        const dur = travelDurationMinutes(dep, arr);
+        if (dur != null) {
+          totalMinutes += dur;
+          hasAnyDuration = true;
+        }
+        lastTime = arr;
+      } else {
+        lastTime = dep;
+      }
+    } else if (arr) {
+      if (lastTime) {
+        const dur = travelDurationMinutes(lastTime, arr);
+        if (dur != null) {
+          totalMinutes += dur;
+          hasAnyDuration = true;
+        }
+      }
+      lastTime = arr;
+    }
+  }
+
+  if (!hasAnyDuration && totalMinutes === 0) {
+    return travelDurationMinutes(excursion.departure_time || null, excursion.arrival_time || null);
+  }
+
+  return totalMinutes;
 }

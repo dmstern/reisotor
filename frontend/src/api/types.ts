@@ -199,6 +199,7 @@ export interface Excursion {
   // (Anreise/Abreise/Weiterreise). role gesetzt => mindestens zwei spot_ids (Von/Nach), alle anderen
   // Felder bleiben bei einer normalen Tour null.
   role: IdeaRole | null;
+  destination_spot_id: number | null;
   transport_type: string | null;
   departure_time: string | null;
   arrival_time: string | null;
@@ -223,6 +224,8 @@ export interface ExcursionComment {
   id: number;
   idea_id: number;
   author_id: number;
+  author_username?: string;
+  author_avatar?: string;
   content: string;
   created_at: string;
 }
@@ -340,6 +343,8 @@ export interface SpotComment {
   id: number;
   spot_id: number;
   author_id: number;
+  author_username?: string;
+  author_avatar?: string;
   content: string;
   created_at: string;
 }
@@ -409,6 +414,7 @@ export interface TodoItem {
   title: string;
   assigned_to_user_id: number | null;
   due_date: string | null;
+  period?: Period | null;
   priority: TodoPriority;
   note: string | null;
   done: 0 | 1;
@@ -441,6 +447,8 @@ export interface NoteComment {
   id: number;
   note_id: number;
   author_id: number;
+  author_username?: string;
+  author_avatar?: string;
   content: string;
   created_at: string;
 }
@@ -449,6 +457,8 @@ export interface DiaryEntry {
   id: number;
   trip_id: number;
   author_id: number;
+  author_username?: string;
+  author_avatar?: string;
   title: string | null;
   content: string;
   content_format: string;
@@ -480,6 +490,8 @@ export interface DiaryComment {
   id: number;
   entry_id: number;
   author_id: number;
+  author_username?: string;
+  author_avatar?: string;
   content: string;
   created_at: string;
 }

@@ -24,7 +24,11 @@ import type {
   User,
 } from '../api/types';
 import { deriveTravelItems } from '../utils/deriveTravelItems';
-import { formatTravelDuration, travelDurationMinutes } from '../utils/travelDuration';
+import {
+  formatTravelDuration,
+  formatTravelDurationParts,
+  travelDurationMinutes,
+} from '../utils/travelDuration';
 import {
   TRAVEL_ROLE_META,
   TRAVEL_ROLE_OPTIONS,
@@ -90,7 +94,7 @@ import _DropdownItem from '../components/primitives/DropdownItem.vue';
 import PickerMenu from '../components/primitives/PickerMenu.vue';
 import Accordion from '../components/primitives/Accordion.vue';
 import Select from '../components/primitives/Select.vue';
-import Checkbox from '../components/primitives/Checkbox.vue';
+import CheckboxCard from '../components/primitives/CheckboxCard.vue';
 import Input from '../components/primitives/Input.vue';
 import { useToast } from '../composables/useToast';
 import { isAutoCreatedUnmodifiedScheduleItem } from '../utils/scheduleSpotUnlink';
@@ -174,6 +178,15 @@ function setPageTitleRef(el: Element | ComponentPublicInstance | null) {
     pageTitleObserver.observe(el);
   }
 }
+
+onUnmounted(() => {
+  drawers.mapFocusKey = null;
+  drawers.mapFocusExcursionId = null;
+  drawers.mapFocusDate = null;
+  drawers.mapFocusTrackId = null;
+  sheetState.value = 'collapsed';
+});
+
 onUnmounted(() => {
   pageTitleObserver?.disconnect();
   categoryNavObserver?.disconnect();
@@ -354,6 +367,7 @@ const emptyExcursionForm = () => ({
   date: '',
   spot_ids: [] as number[],
   role: '' as IdeaRole | '',
+  destination_spot_id: null as number | null,
   legs: [] as ExcursionLeg[],
 });
 const excursionForm = ref(emptyExcursionForm());
@@ -394,6 +408,7 @@ function tourPayload(form: ReturnType<typeof emptyExcursionForm>) {
     date: form.date || undefined,
     spot_ids: form.spot_ids,
     role: form.role ? form.role : null,
+    destination_spot_id: form.destination_spot_id,
     legs: form.legs,
   };
 }
@@ -417,6 +432,7 @@ function startEditExcursion(excursion: Excursion) {
     date: excursion.date ?? '',
     spot_ids: [...excursion.spot_ids],
     role: excursion.role ?? '',
+    destination_spot_id: excursion.destination_spot_id ?? null,
     legs: excursion.legs ? excursion.legs.map((l) => ({ ...l })) : [],
   };
 }
@@ -450,8 +466,22 @@ async function deleteEditingExcursion() {
   closeEditExcursionForm();
 }
 
-// Spot per Drag&Drop aus der Spots-Liste auf eine Tour-Karte fallen lassen (ExcursionCard.vue ist
-// die Drop-Zone, emittiert die abgelegte Spot-Id, siehe SpotCard.vue's "🎒 Auf Tour ziehen"-Anfasser).
+async function toggleExcursionDestination(excursion: Excursion, spotId: number) {
+  const newDest = excursion.destination_spot_id === spotId ? null : spotId;
+  const payload = {
+    trip_id: excursion.trip_id,
+    title: excursion.title,
+    image_url: excursion.image_url ?? undefined,
+    note: excursion.note ?? undefined,
+    note_format: 'html' as const,
+    date: excursion.date ?? undefined,
+    spot_ids: excursion.spot_ids,
+    role: excursion.role ?? null,
+    destination_spot_id: newDest,
+    legs: excursion.legs,
+  };
+  await excursionsStore.update(excursion.id, payload);
+}
 async function addSpotToExcursion(excursionId: number, spotId: number) {
   const excursion = excursionsStore.excursions.find((e) => e.id === excursionId);
   if (!excursion) return;
@@ -1504,9 +1534,9 @@ interface TourArrow {
 interface TourLineData {
   width: number;
   height: number;
-  pathD: string;
-  dots: { x: number; y: number }[];
-  arrows: TourArrow[];
+  hinwegPath: { d: string; y1: number; y2: number } | null;
+  rueckwegPath: { d: string; y1: number; y2: number } | null;
+  dots: { x: number; y: number; isEnd: boolean }[];
 }
 
 const tourLines = reactive(new Map<number, TourLineData>());
@@ -1541,6 +1571,23 @@ function getLegTooltip(leg: ExcursionLeg, fromSpot: Spot, toSpot: Spot): string 
   return parts.join(' ');
 }
 
+function getBezierAngle(
+  t: number,
+  p0x: number,
+  p0y: number,
+  p1x: number,
+  p1y: number,
+  p2x: number,
+  p2y: number,
+  p3x: number,
+  p3y: number
+) {
+  const mt = 1 - t;
+  const dx = 3 * mt * mt * (p1x - p0x) + 6 * mt * t * (p2x - p1x) + 3 * t * t * (p3x - p2x);
+  const dy = 3 * mt * mt * (p1y - p0y) + 6 * mt * t * (p2y - p1y) + 3 * t * t * (p3y - p2y);
+  return Math.atan2(dy, dx) * (180 / Math.PI);
+}
+
 function recomputeTourLine(excursionId: number) {
   const wrapEl = tourWrapRefs.get(excursionId);
   if (!wrapEl) {
@@ -1571,9 +1618,16 @@ function recomputeTourLine(excursionId: number) {
     };
   });
 
-  const dots: { x: number; y: number }[] = [];
-  const arrows: TourArrow[] = [];
-  let d = '';
+  const dots: { x: number; y: number; isEnd: boolean }[] = [];
+  const hinwegSegments: { d: string; y1: number; y2: number }[] = [];
+  const rueckwegSegments: { d: string; y1: number; y2: number }[] = [];
+
+  const excursion = excursionsStore.excursions.find((e) => e.id === excursionId);
+  let destinationIndex = -1;
+  if (excursion && excursion.destination_spot_id != null) {
+    const domSpotIds = spotEls.map((el) => Number(el.dataset.spotId));
+    destinationIndex = domSpotIds.indexOf(excursion.destination_spot_id);
+  }
 
   // Gestrichelte Verbindungslinie von der Tour-Card zur ersten Spot-Card
   const groupEl = wrapEl.closest('.category-group');
@@ -1589,15 +1643,19 @@ function recomputeTourLine(excursionId: number) {
     const endY = firstSpot.top;
 
     if (endY > startY) {
-      dots.push({ x: startX, y: startY });
-      dots.push({ x: endX, y: endY });
+      dots.push({ x: startX, y: startY, isEnd: false });
+      dots.push({ x: endX, y: endY, isEnd: true });
 
       const dy = endY - startY;
       const cp1X = startX;
       const cp1Y = startY + dy * 0.45;
       const cp2X = endX;
       const cp2Y = endY - dy * 0.45;
-      d += ` M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`;
+      hinwegSegments.push({
+        d: ` M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`,
+        y1: startY,
+        y2: endY,
+      });
     }
   }
 
@@ -1615,15 +1673,20 @@ function recomputeTourLine(excursionId: number) {
       const startY = a.cy - vOffset;
       const endX = isLtr ? b.x : b.right;
       const endY = b.cy + vOffset;
-      dots.push({ x: startX, y: startY });
+      dots.push({ x: startX, y: startY, isEnd: false });
       const dx = endX - startX;
       const cp1X = startX + dx * 0.45;
       const cp1Y = startY;
       const cp2X = endX - dx * 0.45;
       const cp2Y = endY;
-      d += ` M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`;
-      const angle = Math.atan2(endY - cp2Y, endX - cp2X) * (180 / Math.PI);
-      arrows.push({ x: endX, y: endY, angle });
+      const segment = {
+        d: ` M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`,
+        y1: startY,
+        y2: endY,
+      };
+      if (destinationIndex !== -1 && i >= destinationIndex) rueckwegSegments.push(segment);
+      else hinwegSegments.push(segment);
+      dots.push({ x: endX, y: endY, isEnd: true });
     } else {
       // Zeilenumbruch bzw. untereinander: a ist oben, b ist unten
       // Vertikal: Startpunkt weiter links als Endpunkt
@@ -1632,38 +1695,59 @@ function recomputeTourLine(excursionId: number) {
       const startY = a.bottom;
       const endX = b.cx + hOffset;
       const endY = b.top;
-      dots.push({ x: startX, y: startY });
+      dots.push({ x: startX, y: startY, isEnd: false });
       const dy = endY - startY;
       const cp1X = startX;
       const cp1Y = startY + dy * 0.45;
       const cp2X = endX;
       const cp2Y = endY - dy * 0.45;
-      d += ` M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`;
-      const angle = Math.atan2(endY - cp2Y, endX - cp2X) * (180 / Math.PI);
-      arrows.push({ x: endX, y: endY, angle });
+      const segment = {
+        d: ` M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`,
+        y1: startY,
+        y2: endY,
+      };
+      if (destinationIndex !== -1 && i >= destinationIndex) rueckwegSegments.push(segment);
+      else hinwegSegments.push(segment);
+      dots.push({ x: endX, y: endY, isEnd: true });
     }
   }
 
   // Zirkel-/Rückweglinien für Touren, bei denen ein Spot mehrfach besucht wird
-  const excursion = excursionsStore.excursions.find((e) => e.id === excursionId);
-  if (excursion) {
+  if (excursion && spotBoxes.length > 0) {
     const domSpotIds = spotEls.map((el) => Number(el.dataset.spotId));
-    for (const [fromIdx, toIdx] of buildLoopSegments(excursion.spot_ids, domSpotIds)) {
+    const loops = buildLoopSegments(excursion.spot_ids, domSpotIds);
+    for (const [fromIdx, toIdx] of loops) {
       const a = spotBoxes[fromIdx];
       const b = spotBoxes[toIdx];
       if (!a || !b) continue;
       const loop = computeTourLoopPath(a, b, spotBoxes, wrapEl.clientWidth);
-      d += loop.d;
-      dots.push(...loop.dots);
+      const segment = {
+        d: loop.d,
+        y1: loop.dots[0].y,
+        y2: loop.dots[1].y,
+      };
+      if (destinationIndex !== -1 && fromIdx >= destinationIndex) rueckwegSegments.push(segment);
+      else hinwegSegments.push(segment);
+      dots.push({ x: loop.dots[0].x, y: loop.dots[0].y, isEnd: false });
+      dots.push({ x: loop.dots[1].x, y: loop.dots[1].y, isEnd: true });
     }
   }
 
+  function combineSegments(segs: { d: string; y1: number; y2: number }[]) {
+    if (segs.length === 0) return null;
+    return {
+      d: segs.map((s) => s.d).join(' '),
+      y1: segs[0].y1,
+      y2: segs[segs.length - 1].y2,
+    };
+  }
+
   tourLines.set(excursionId, {
-    width: Math.max(wrapEl.clientWidth, 100),
-    height: Math.max(wrapEl.clientHeight, spotBoxes[spotBoxes.length - 1]?.bottom ?? 200),
-    pathD: d.trim(),
+    width: wrapEl.scrollWidth,
+    height: wrapEl.scrollHeight,
+    hinwegPath: combineSegments(hinwegSegments),
+    rueckwegPath: combineSegments(rueckwegSegments),
     dots,
-    arrows,
   });
 }
 
@@ -1748,6 +1832,11 @@ function getTourLeg(
 function getLegDuration(leg: ExcursionLeg): string | null {
   const mins = travelDurationMinutes(leg.departure_time ?? null, leg.arrival_time ?? null);
   return mins != null ? formatTravelDuration(mins) : null;
+}
+
+function getLegDurationParts(leg: ExcursionLeg): string[] | null {
+  const mins = travelDurationMinutes(leg.departure_time ?? null, leg.arrival_time ?? null);
+  return mins != null ? formatTravelDurationParts(mins) : null;
 }
 
 function getTourLayover(
@@ -1905,9 +1994,17 @@ const DEFAULT_SPOTS_COL_WIDTH = 380;
 
 function loadSpotsColWidth(): number {
   const stored = Number(localStorage.getItem(SPOTS_COL_WIDTH_KEY));
-  return Number.isFinite(stored) && stored >= MIN_SPOTS_COL_WIDTH && stored <= MAX_SPOTS_COL_WIDTH
-    ? stored
-    : DEFAULT_SPOTS_COL_WIDTH;
+  const maxAllowed =
+    typeof window !== 'undefined'
+      ? Math.min(MAX_SPOTS_COL_WIDTH, window.innerWidth - 400)
+      : MAX_SPOTS_COL_WIDTH;
+
+  // Zwinge den gespeicherten Wert in die gültigen Grenzen, damit beim Neuladen
+  // auf einem kleineren Bildschirm der Drawer nicht sofort wieder alles überlagert.
+  if (Number.isFinite(stored) && stored >= MIN_SPOTS_COL_WIDTH) {
+    return Math.min(stored, maxAllowed);
+  }
+  return Math.min(DEFAULT_SPOTS_COL_WIDTH, maxAllowed);
 }
 const spotsColWidth = ref(loadSpotsColWidth());
 watch(spotsColWidth, (v) => localStorage.setItem(SPOTS_COL_WIDTH_KEY, String(v)));
@@ -1939,10 +2036,10 @@ function updateSpotsColRight() {
 function onColResizeMove(event: PointerEvent) {
   if (!resizingCol.value) return;
   const delta = event.clientX - colStartX;
-  spotsColWidth.value = Math.min(
-    MAX_SPOTS_COL_WIDTH,
-    Math.max(MIN_SPOTS_COL_WIDTH, colStartWidth + delta)
-  );
+  const availableWidth =
+    appMainWidth.value || (typeof window !== 'undefined' ? window.innerWidth : 1024);
+  const maxAllowed = Math.min(MAX_SPOTS_COL_WIDTH, availableWidth - 380 - 16);
+  spotsColWidth.value = Math.min(maxAllowed, Math.max(MIN_SPOTS_COL_WIDTH, colStartWidth + delta));
   updateSpotsColRight();
 }
 function onColResizeEnd() {
@@ -1982,10 +2079,18 @@ function sheetHeightPx(state: SheetState): number {
   const headerHeight = parseFloat(rootStyle.getPropertyValue('--app-header-height')) || 56;
   const navbarOffset = parseFloat(rootStyle.getPropertyValue('--navbar-offset')) || 0;
   const navbarBottomOffset = parseFloat(rootStyle.getPropertyValue('--navbar-bottom-offset')) || 0;
+
+  // In der CSS-Klasse .full ist bottom = 0.
+  // In .collapsed und .partial ist bottom = var(--space-2) + var(--navbar-bottom-offset).
+  // Damit die Schublade oben nicht in den Header ragt, muss ihre maximale Höhe
+  // um diesen bottom-Abstand reduziert werden.
+  const bottomOffset = state === 'full' ? 0 : 8 + navbarBottomOffset;
+
   const maxAvailable = Math.max(
     160,
-    window.innerHeight - headerHeight - navbarOffset - navbarBottomOffset - 8
+    window.innerHeight - headerHeight - navbarOffset - 8 - bottomOffset
   );
+
   // 64px statt der früheren 96px: die Pille zeigt jetzt nur noch die Anfasser-Zeile (siehe
   // .spots-col.collapsed CSS), kein Rest von .spots-col-body ragt mehr hinein.
   if (state === 'collapsed') return Math.min(64, maxAvailable);
@@ -2204,14 +2309,31 @@ const currentSheetHeightPx = computed(
   () => sheetDragHeightPx.value ?? sheetHeightPx(sheetState.value)
 );
 
-const spotsColRightPx = ref(0);
+const appMainWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024);
+const spotsColRightPx = ref(
+  typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches
+    ? spotsColWidth.value + 16
+    : 0
+);
 let appMainResizeObserver: ResizeObserver | null = null;
 let spotsColResizeObserver: ResizeObserver | null = null;
+
+function onWindowResize() {
+  const appMainEl = document.querySelector('.app-main');
+  if (appMainEl) {
+    appMainWidth.value = appMainEl.clientWidth;
+  }
+  updateSpotsColRight();
+}
 
 onMounted(() => {
   const appMainEl = document.querySelector('.app-main');
   if (appMainEl) {
-    appMainResizeObserver = new ResizeObserver(() => {
+    appMainWidth.value = appMainEl.clientWidth;
+    appMainResizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        appMainWidth.value = entry.contentRect.width;
+      }
       updateSpotsColRight();
     });
     appMainResizeObserver.observe(appMainEl);
@@ -2222,7 +2344,7 @@ onMounted(() => {
     });
     spotsColResizeObserver.observe(sheetEl.value);
   }
-  window.addEventListener('resize', updateSpotsColRight);
+  window.addEventListener('resize', onWindowResize);
   updateSpotsColRight();
   nextTick(() => {
     updateSpotsColRight();
@@ -2234,17 +2356,20 @@ onMounted(() => {
 onUnmounted(() => {
   appMainResizeObserver?.disconnect();
   spotsColResizeObserver?.disconnect();
-  window.removeEventListener('resize', updateSpotsColRight);
+  window.removeEventListener('resize', onWindowResize);
 });
 
-// Mobil vs. Desktop: Auf Mobil (<800px) ist die Spots-Liste ein Bottom-Sheet-Overlay über der Karte.
-// Auf Desktop (≥800px) ist der Spots-Drawer permanent als eigenständige Spalte sichtbar,
-// unabhängig davon, ob oder wie weit der Kalender-Drawer geöffnet ist.
-const isSheetOverlayMode = computed(() => !isDesktop.value);
+// Mobil vs. Desktop: Auf Mobil (<1024px) ist die Spots-Liste ein Bottom-Sheet-Overlay über der Karte.
+// Auf Desktop (≥1024px) ist der Spots-Drawer als eigenständige Spalte sichtbar, sofern der
+// Hauptarbeitsbereich (.app-main) mindestens 720px breit ist. Schrumpft .app-main unter 720px
+// (z. B. wenn auf einem 1024px–1180px Viewport der Kalender geöffnet wird), greift der
+// Container-Query-Fallback: die Spots-Liste schaltet auf das schwebende Bottom-Sheet um,
+// damit Karte und Bedienelemente stets kollisionsfrei und großzügig nutzbar bleiben.
+const isSheetOverlayMode = computed(() => !isDesktop.value || appMainWidth.value < 720);
 const mapCoveredBottomPx = computed(() =>
   isSheetOverlayMode.value ? currentSheetHeightPx.value : 0
 );
-const mapCoveredLeftPx = computed(() => (!isDesktop.value ? 0 : spotsColRightPx.value));
+const mapCoveredLeftPx = computed(() => (isSheetOverlayMode.value ? 0 : spotsColRightPx.value));
 
 watch([isSheetOverlayMode, spotsColWidth, tripMapRef], () => nextTick(updateSpotsColRight));
 watch(
@@ -2295,11 +2420,13 @@ function onSpotShowOnMap(spot: Spot) {
 // eingeklapptem Sheet wäre sie dann aber unsichtbar, deshalb hier automatisch mindestens
 // "angeschnitten" aufklappen.
 watch(
-  () =>
-    drawers.mapFocusDate ??
-    (drawers.mapFocusExcursionId != null ? `excursion-${drawers.mapFocusExcursionId}` : null),
-  (focus) => {
-    if (focus != null && sheetState.value === 'collapsed') sheetState.value = 'partial';
+  () => [drawers.mapFocusDate, drawers.mapFocusExcursionId, drawers.mapFocusKey],
+  ([date, excId, key]) => {
+    if (date != null || excId != null || key != null) {
+      if (sheetState.value === 'collapsed' || sheetState.value === 'full') {
+        sheetState.value = 'partial';
+      }
+    }
   }
 );
 
@@ -2557,7 +2684,13 @@ async function deleteEditingSpot() {
     <h1 class="page-title" :ref="setPageTitleRef">
       <AppIcon :icon="SECTION_ICON_DEFS.map" :size="22" group="navigation" /> Karte
     </h1>
-    <div class="layout" :style="{ '--spots-col-width': spotsColWidth + 'px' }">
+    <div
+      class="layout"
+      :style="{
+        '--spots-col-width': spotsColWidth + 'px',
+        '--spots-col-right-px': `${spotsColRightPx}px`,
+      }"
+    >
       <div
         ref="sheetEl"
         class="spots-col"
@@ -2862,7 +2995,7 @@ async function deleteEditingSpot() {
               </FormField>
               <FormField icon="tour" label="Rolle (optional)">
                 <Select v-model="activeExcursionForm.role">
-                  <option value="">– Normaler Ausflug –</option>
+                  <option value="">🎒 – Normaler Ausflug –</option>
                   <option v-for="r in TRAVEL_ROLE_OPTIONS" :key="r" :value="r">
                     {{ TRAVEL_ROLE_META[r].icon }} {{ TRAVEL_ROLE_META[r].label }} ({{
                       TRAVEL_ROLE_META[r].hint
@@ -2925,6 +3058,7 @@ async function deleteEditingSpot() {
                   <SpotOrderPicker
                     v-model="activeExcursionForm.spot_ids"
                     v-model:legs="activeExcursionForm.legs"
+                    v-model:destination="activeExcursionForm.destination_spot_id"
                     :spots="spotsStore.spots"
                     :like-count="spotsStore.likeCountFor"
                     :users="users"
@@ -3152,11 +3286,14 @@ async function deleteEditingSpot() {
                   <p class="hint">
                     Wird für die Position auf der Karte und ggf. das Wetter vor Ort verwendet.
                   </p>
-                  <label class="checkbox-option" for="spotFormIsHome">
-                    <Checkbox id="spotFormIsHome" v-model="activeSpotForm.is_home" />
-                    <AppIcon :icon="ACTION_ICONS.home" :size="14" group="actions" /> Heimat-Seite
-                    (z. B. der heimische Flughafen/Bahnhof/Zuhause für Reise-Etappen)
-                  </label>
+                  <CheckboxCard
+                    id="spotFormIsHome"
+                    v-model="activeSpotForm.is_home"
+                    variant="muted"
+                    :icon="ACTION_ICONS.home"
+                    label="Heimat-Seite"
+                    description="z. B. der heimische Flughafen/Bahnhof/Zuhause für Reise-Etappen"
+                  />
                   <FormField icon="maps" label="Maps-Link (Google/Apple)">
                     <Input
                       v-model="activeSpotForm.maps_link"
@@ -3635,20 +3772,70 @@ async function deleteEditingSpot() {
                     :height="tourLines.get(grp.excursion.id)!.height"
                     aria-hidden="true"
                   >
-                    <path :d="tourLines.get(grp.excursion.id)!.pathD" />
+                    <defs>
+                      <linearGradient
+                        v-if="tourLines.get(grp.excursion.id)!.hinwegPath"
+                        :id="`tour-gradient-hin-${grp.excursion.id}`"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="0%"
+                          stop-color="var(--tour-theme-color, var(--color-primary))"
+                        />
+                        <stop offset="100%" stop-color="var(--color-primary)" />
+                      </linearGradient>
+                      <linearGradient
+                        v-if="tourLines.get(grp.excursion.id)!.rueckwegPath"
+                        :id="`tour-gradient-rueck-${grp.excursion.id}`"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="0%"
+                          stop-color="var(--tour-theme-color, var(--color-primary))"
+                        />
+                        <stop offset="100%" stop-color="var(--color-primary)" />
+                      </linearGradient>
+                    </defs>
+
+                    <path
+                      v-if="tourLines.get(grp.excursion.id)!.hinwegPath"
+                      :d="tourLines.get(grp.excursion.id)!.hinwegPath!.d"
+                      fill="none"
+                      :style="{ stroke: `url(#tour-gradient-hin-${grp.excursion.id})` }"
+                      stroke-width="3"
+                      stroke-dasharray="6,6"
+                      stroke-linecap="round"
+                    />
+                    <path
+                      v-if="tourLines.get(grp.excursion.id)!.rueckwegPath"
+                      :d="tourLines.get(grp.excursion.id)!.rueckwegPath!.d"
+                      fill="none"
+                      :style="{ stroke: `url(#tour-gradient-rueck-${grp.excursion.id})` }"
+                      stroke-width="3"
+                      stroke-dasharray="6,6"
+                      stroke-linecap="round"
+                    />
+
                     <circle
                       v-for="(dot, i) in tourLines.get(grp.excursion.id)!.dots"
                       :key="'dot-' + i"
                       :cx="dot.x"
                       :cy="dot.y"
                       r="4.5"
-                    />
-                    <polygon
-                      v-for="(arrow, i) in tourLines.get(grp.excursion.id)!.arrows"
-                      :key="'arrow-' + i"
-                      class="tour-station-arrow"
-                      points="0,0 -8,-4.5 -8,4.5"
-                      :transform="`translate(${arrow.x}, ${arrow.y}) rotate(${arrow.angle})`"
+                      :style="{
+                        fill:
+                          i === tourLines.get(grp.excursion.id)!.dots.length - 1
+                            ? 'var(--color-primary)'
+                            : 'var(--tour-theme-color, var(--color-primary))',
+                        stroke: 'var(--color-surface)',
+                        strokeWidth: '2px',
+                      }"
                     />
                   </svg>
 
@@ -3688,6 +3875,14 @@ async function deleteEditingSpot() {
                                 },
                               ]"
                               :spot="cell.spot"
+                              :excursion-context="{
+                                id: grp.excursion.id,
+                                isDestination: grp.excursion.destination_spot_id === cell.spot.id,
+                                hasDestination: grp.excursion.destination_spot_id != null,
+                              }"
+                              @toggle-destination="
+                                toggleExcursionDestination(grp.excursion, cell.spot.id)
+                              "
                               :highlighted="
                                 highlightedIds.has(cell.spot.id) ||
                                 dayFocusHighlightedIds.has(cell.spot.id)
@@ -3702,6 +3897,11 @@ async function deleteEditingSpot() {
                               :group-mode="groupMode"
                               :tour-options="allTourTitles"
                               :has-multiple-members="users.length > 1"
+                              :layover-minutes="
+                                cell.globalIndex > 0 && cell.globalIndex < grp.items.length - 1
+                                  ? getTourLayover(grp.excursion, grp.items, cell.globalIndex)
+                                  : null
+                              "
                               @edit="startEditSpot"
                               @toggle-like="toggleSpotLike(cell.spot.id)"
                               @submit-comment="
@@ -3713,25 +3913,6 @@ async function deleteEditingSpot() {
                               @show-on-map="onSpotShowOnMap(cell.spot)"
                               @assign-tour="(title) => assignSpotToTourTitle(cell.spot.id, title)"
                             />
-                            <!-- Umsteige-/Aufenthaltszeit (falls Zwischenstation) -->
-                            <div
-                              v-if="
-                                cell.globalIndex > 0 &&
-                                cell.globalIndex < grp.items.length - 1 &&
-                                getTourLayover(grp.excursion, grp.items, cell.globalIndex) != null
-                              "
-                              class="tour-layover-wrap"
-                            >
-                              <span class="tour-layover-badge">
-                                ⏱️
-                                {{
-                                  formatTravelDuration(
-                                    getTourLayover(grp.excursion, grp.items, cell.globalIndex)!
-                                  )
-                                }}
-                                Umstiegszeit
-                              </span>
-                            </div>
                           </div>
 
                           <!-- Horizontaler Teilstrecken-Verbinder ("hochkant" zwischen 2 Kacheln) -->
@@ -3761,17 +3942,20 @@ async function deleteEditingSpot() {
                               <span class="leg-pill-icon">
                                 {{ travelTypeIcon(cell.leg.transport_type ?? null) }}
                               </span>
-                              <span v-if="getLegDuration(cell.leg)" class="leg-pill-duration">
-                                {{ getLegDuration(cell.leg) }}
+                              <span v-if="getLegDurationParts(cell.leg)" class="leg-pill-duration">
+                                <span
+                                  v-for="(part, pIdx) in getLegDurationParts(cell.leg)"
+                                  :key="pIdx"
+                                  class="leg-duration-part"
+                                >
+                                  {{ part }}
+                                </span>
                               </span>
                               <span v-else-if="cell.leg.departure_time" class="leg-pill-duration">
-                                {{ cell.leg.departure_time }}
+                                <span class="leg-duration-part">{{ cell.leg.departure_time }}</span>
                               </span>
                               <span v-if="cell.leg.amount != null" class="leg-pill-cost">
                                 {{ cell.leg.amount.toFixed(2).replace('.', ',') }} €
-                              </span>
-                              <span class="leg-pill-arrow" aria-hidden="true">
-                                {{ cell.isRtl ? '←' : '→' }}
                               </span>
                             </div>
 
@@ -3840,21 +4024,31 @@ async function deleteEditingSpot() {
                               )
                             "
                           >
-                            <span class="leg-pill-arrow" aria-hidden="true">↓</span>
                             <span class="leg-pill-icon">
                               {{ travelTypeIcon(row.rowBreak.leg.transport_type ?? null) }}
                             </span>
                             <span v-if="row.rowBreak.leg.transport_type" class="leg-pill-type">
                               {{ row.rowBreak.leg.transport_type }}
                             </span>
-                            <span v-if="getLegDuration(row.rowBreak.leg)" class="leg-pill-duration">
-                              {{ getLegDuration(row.rowBreak.leg) }}
+                            <span
+                              v-if="getLegDurationParts(row.rowBreak.leg)"
+                              class="leg-pill-duration"
+                            >
+                              <span
+                                v-for="(part, pIdx) in getLegDurationParts(row.rowBreak.leg)"
+                                :key="pIdx"
+                                class="leg-duration-part"
+                              >
+                                {{ part }}
+                              </span>
                             </span>
                             <span
                               v-else-if="row.rowBreak.leg.departure_time"
                               class="leg-pill-duration"
                             >
-                              {{ row.rowBreak.leg.departure_time }}
+                              <span class="leg-duration-part">{{
+                                row.rowBreak.leg.departure_time
+                              }}</span>
                             </span>
                             <span v-if="row.rowBreak.leg.amount != null" class="leg-pill-cost">
                               {{ row.rowBreak.leg.amount.toFixed(2).replace('.', ',') }} €
@@ -3999,8 +4193,8 @@ async function deleteEditingSpot() {
           :status-filter="statusFilter"
           :tour-role-filter="tourRoleFilter"
           :covered-bottom-px="mapCoveredBottomPx"
-          :covered-left-px="mapCoveredLeftPx"
           :sheet-overlay-mode="isSheetOverlayMode"
+          :covered-left-px="mapCoveredLeftPx"
           @focus-spot="onFocusSpotFromMap"
           @focus-excursion="onFocusExcursionFromMap"
           @edit-excursion="startEditExcursion"
@@ -4032,7 +4226,9 @@ async function deleteEditingSpot() {
    harte opake Fläche dahinter entsteht. */
 .page {
   position: relative;
-  height: calc(100vh - var(--app-header-height, 56px) - var(--navbar-offset, 0px));
+  /* Mobil: Karte soll unter den schwebenden Header ragen */
+  margin-top: calc(-1 * var(--app-header-height, 56px));
+  height: calc(100vh - var(--navbar-offset, 0px));
   overflow: hidden;
   padding: 0;
 }
@@ -4074,7 +4270,7 @@ async function deleteEditingSpot() {
      konsistent mit .page, statt dieselbe Formel ein zweites Mal zu duplizieren. Reine CSS-Rechnung,
      nicht die JS-Berechnung in sheetHeightPx() – die greift nur während eines aktiven Ziehens/beim
      Einrasten, nicht für diesen ruhenden Grundzustand. */
-  --sheet-max-height: calc(100% - 8px);
+  --sheet-max-height: calc(100% - var(--app-header-height, 56px) - 8px);
   /* Feste Randbreite als Skalierungsfaktor statt echter Breitenänderung (left/right/width) - ein
      schwankender Layout-Breite hatte SpotCard.vue/ExcursionCard.vue's Titelzeile (~16px zwischen
      eingeklappt/ausgefahren) knapp an ihrer Umbruch-Schwelle vorbei-/dagegenlaufen lassen, je
@@ -4240,6 +4436,17 @@ async function deleteEditingSpot() {
    im Script). */
 .sheet-step-btn {
   flex-shrink: 0;
+  position: relative;
+}
+
+.sheet-step-btn::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
 }
 
 .sheet-grip {
@@ -4334,15 +4541,18 @@ async function deleteEditingSpot() {
    bleibt – unabhängig davon, wie breit der Kalender ausgeklappt ist.
    Die Spots-Spalte (.spots-col) ist auf Desktop stets permanent sichtbar und schwebt links im
    Hauptbereich (.app-main), ausgerichtet an derselben Ober- und Unterkante wie die Kalender-Schublade
-   (top: var(--space-4), bottom: calc(var(--navbar-bottom-offset) + var(--space-4))).
-   Das mobile Bottom-Sheet (inkl. Anfasser und Ein-/Ausklappstufen) greift nur auf Mobilgeräten (<800px). */
-@media (min-width: 800px) {
+    (top: var(--space-4), bottom: calc(var(--navbar-bottom-offset) + var(--space-4))).
+    Das mobile Bottom-Sheet (inkl. Anfasser und Ein-/Ausklappstufen) greift auf Mobilgeräten (<1024px)
+    sowie auf Desktop-Geräten (≥1024px) bei schmalem .app-main Container (<720px, z. B. bei geöffnetem Kalender). */
+@media (min-width: 1024px) {
   /* .page bleibt wie auf Mobil absolute und vollbild, Karte füllt den Bereich aus */
   .page {
     max-width: none;
     margin: 0;
     padding: 0;
     position: relative;
+    /* Desktop: Wieder normale Höhe, da margin-top=0 */
+    height: calc(100vh - var(--app-header-height, 56px) - var(--navbar-offset, 0px));
   }
 
   /* Auf Desktop ist der Titel visuell ausgeblendet, bleibt aber für Screenreader lesbar */
@@ -4374,72 +4584,78 @@ async function deleteEditingSpot() {
     pointer-events: auto;
   }
 
-  .spots-col,
-  .spots-col.collapsed,
-  .spots-col.partial,
-  .spots-col.full {
-    position: absolute;
-    left: var(--space-4);
-    top: var(--space-4);
-    bottom: calc(var(--navbar-bottom-offset, 0px) + var(--space-4));
-    height: auto;
-    max-height: none;
-    z-index: 5;
-    background: var(--color-surface);
-    border-radius: var(--radius-md-squircle);
-    corner-shape: squircle;
-    box-shadow: var(--shadow-md);
-    width: var(--spots-col-width);
-    /* Hält mindestens 84px Freiraum am rechten Rand von .app-main frei (entspricht den
-       Kartenwerkzeugen .fit-btn: 44px Button + 24px var(--space-4) Rand + 16px Abstand),
-       sodass .spots-col die Bedienelemente auf schmalen Desktop-Bildschirmen bei ausgeklapptem
-       Kalender nie überlagert. */
-    max-width: calc(100% - var(--space-4) - 84px);
-    min-width: min(var(--spots-col-width), 280px);
-    pointer-events: auto;
-
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-
-    /* Override mobile transforms and bottom offsets */
-    transform: none;
-    transition: none;
+  /* Volle Höhe im Sheet-Fallback auf Desktop unterhalb des Headers */
+  .spots-col {
+    --sheet-max-height: calc(100% - 8px);
   }
 
-  /* .spots-col ist auf Desktop undurchsichtig, keine speziellen Hintergrundanpassungen nötig. */
-  .spots-col .category-nav-wrap {
-    background: var(--color-surface);
-    --category-nav-bg: var(--color-surface);
-  }
+  @container app-main (min-width: 720px) {
+    .spots-col,
+    .spots-col.collapsed,
+    .spots-col.partial,
+    .spots-col.full {
+      position: absolute;
+      left: var(--space-4);
+      top: var(--space-4);
+      bottom: calc(var(--navbar-bottom-offset, 0px) + var(--space-4));
+      height: auto;
+      max-height: none;
+      z-index: 5;
+      background: var(--color-surface);
+      border-radius: var(--radius-md-squircle);
+      corner-shape: squircle;
+      box-shadow: var(--shadow-md);
+      width: var(--spots-col-width);
+      /* Hält mindestens 380px Freiraum am rechten Rand von .app-main frei,
+         damit nicht nur die Floating- und Zoom-Buttons Platz haben, sondern auch der
+         Day-Strip unten rechts breit genug bleiben kann. */
+      max-width: calc(100% - var(--space-4) - 380px);
+      min-width: min(var(--spots-col-width), 280px);
+      pointer-events: auto;
 
-  .sheet-handle-row {
-    display: none;
-  }
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
 
-  .spots-col-body,
-  .spots-col.collapsed .spots-col-body,
-  .spots-col.partial .spots-col-body,
-  .spots-col.full .spots-col-body {
-    flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding: var(--space-3);
-    touch-action: auto;
-  }
+      /* Override mobile transforms and bottom offsets */
+      transform: none;
+      transition: none;
+    }
 
-  .col-resize-handle {
-    display: flex;
-    position: absolute;
-    left: calc(
-      var(--space-4) + min(var(--spots-col-width), calc(100% - var(--space-4) - 84px)) +
-        (var(--space-4) - var(--drawer-handle-gap, 12px)) / 2
-    );
-    top: var(--space-4);
-    bottom: calc(var(--navbar-bottom-offset, 0px) + var(--space-4));
-    height: auto;
-    z-index: 10;
-    pointer-events: auto;
+    /* .spots-col ist auf Desktop undurchsichtig, keine speziellen Hintergrundanpassungen nötig. */
+    .spots-col .category-nav-wrap {
+      background: var(--color-surface);
+      --category-nav-bg: var(--color-surface);
+    }
+
+    .sheet-handle-row {
+      display: none;
+    }
+
+    .spots-col-body,
+    .spots-col.collapsed .spots-col-body,
+    .spots-col.partial .spots-col-body,
+    .spots-col.full .spots-col-body {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: var(--space-3);
+      touch-action: auto;
+    }
+
+    .col-resize-handle {
+      display: flex;
+      position: absolute;
+      left: calc(
+        var(--space-4) + min(var(--spots-col-width), calc(100% - var(--space-4) - 380px)) +
+          (var(--space-4) - var(--drawer-handle-gap, 12px)) / 2
+      );
+      top: var(--space-4);
+      bottom: calc(var(--navbar-bottom-offset, 0px) + var(--space-4));
+      height: auto;
+      z-index: 10;
+      pointer-events: auto;
+    }
   }
 }
 
@@ -4615,12 +4831,6 @@ async function deleteEditingSpot() {
 .edit-form .row > * {
   flex: 1;
   min-width: 140px;
-}
-
-.actions-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
 }
 
 .spacer {
@@ -5048,7 +5258,7 @@ async function deleteEditingSpot() {
 
 .tour-leg-add-btn:hover,
 .tour-leg-add-btn:focus-visible {
-  background: var(--tour-theme-tint, var(--color-surface-hover));
+  background: var(--tour-theme-tint, var(--color-hover));
   border-color: var(--tour-theme-color, var(--color-primary));
   color: var(--tour-theme-color, var(--color-primary));
   transform: translateY(-2px);
@@ -5088,14 +5298,6 @@ async function deleteEditingSpot() {
   color: var(--tour-theme-color, var(--color-primary));
 }
 
-.leg-pill-arrow {
-  font-size: 0.75rem;
-  font-weight: bold;
-  color: var(--tour-theme-color, var(--color-primary));
-  line-height: 1;
-  opacity: 0.85;
-}
-
 .leg-pill-type {
   font-size: 0.72rem;
   font-weight: 600;
@@ -5105,10 +5307,20 @@ async function deleteEditingSpot() {
 }
 
 .leg-pill-duration {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  column-gap: 4px;
+  row-gap: 1px;
   font-size: 0.72rem;
   font-weight: 600;
   color: var(--color-text-muted);
   line-height: 1.15;
+  text-align: center;
+}
+
+.leg-duration-part {
   white-space: nowrap;
 }
 
@@ -5144,44 +5356,13 @@ async function deleteEditingSpot() {
 
 .tour-station-line path {
   fill: none;
-  stroke: var(--tour-theme-color, var(--color-primary));
   stroke-width: 3;
   stroke-dasharray: 6 6;
   transition: stroke 0.2s ease;
 }
 
 .tour-station-line circle {
-  fill: var(--tour-theme-color, var(--color-primary));
-  stroke: var(--color-surface);
-  stroke-width: 2;
   transition: fill 0.2s ease;
-}
-
-.tour-station-arrow {
-  fill: var(--tour-theme-color, var(--color-primary));
-  stroke: var(--color-surface);
-  stroke-width: 1.5;
-  stroke-linejoin: round;
-  transition: fill 0.2s ease;
-}
-
-.tour-layover-wrap {
-  display: flex;
-  justify-content: center;
-  margin: calc(var(--space-1) * -1) 0;
-}
-
-.tour-layover-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  font-size: 0.75rem;
-  font-weight: 600;
-  padding: 2px 10px;
-  border-radius: var(--radius-sm);
-  background: var(--color-surface-sunken);
-  color: var(--color-text-muted);
-  border: 1px solid var(--color-border);
 }
 
 .empty-state-wrap {

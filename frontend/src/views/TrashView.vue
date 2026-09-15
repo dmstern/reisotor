@@ -7,6 +7,7 @@ import { useTripStore } from '../stores/trip';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import AppIcon from '../components/AppIcon.vue';
 import Button from '../components/primitives/Button.vue';
+import EmptyState from '../components/primitives/EmptyState.vue';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import type { IconDef } from '../utils/icon';
@@ -32,6 +33,8 @@ const entries = ref<TrashEntry[]>([]);
 const users = ref<User[]>([]);
 const loading = ref(true);
 const restoringKey = ref<string | null>(null);
+const deletingKey = ref<string | null>(null);
+const emptyingTrash = ref(false);
 const error = ref('');
 
 // Dieselben Icons wie in der NavBar/den jeweiligen Fachsichten (siehe App.vue/NavBar.vue), damit
@@ -91,6 +94,13 @@ function formatDeletedAt(iso: string) {
   return dateFormatter.format(new Date(iso));
 }
 
+function daysRemaining(iso: string): number {
+  const deletedAt = new Date(iso).getTime();
+  const expiresAt = deletedAt + 30 * 24 * 60 * 60 * 1000;
+  const remainingMs = expiresAt - Date.now();
+  return Math.max(0, Math.ceil(remainingMs / (24 * 60 * 60 * 1000)));
+}
+
 async function load() {
   if (tripId.value == null) return;
   try {
@@ -132,22 +142,79 @@ async function restore(entry: TrashEntry) {
     restoringKey.value = null;
   }
 }
+
+async function permanentlyDelete(entry: TrashEntry) {
+  if (
+    !confirm(
+      'Dieses Element wirklich endgültig löschen? Diese Aktion kann nicht rückgängig gemacht werden.'
+    )
+  )
+    return;
+
+  error.value = '';
+  const key = keyOf(entry);
+  deletingKey.value = key;
+  try {
+    await api.delete(`/trash/${entry.type}/${entry.id}`);
+    entries.value = entries.value.filter((e) => keyOf(e) !== key);
+  } catch {
+    error.value = 'Löschen fehlgeschlagen. Bitte erneut versuchen.';
+  } finally {
+    deletingKey.value = null;
+  }
+}
+
+async function emptyTrash() {
+  if (
+    !confirm(
+      'Möchtest du den gesamten Papierkorb für diesen Urlaub endgültig leeren? Diese Aktion kann nicht rückgängig gemacht werden.'
+    )
+  )
+    return;
+
+  error.value = '';
+  emptyingTrash.value = true;
+  try {
+    await api.delete(`/trash?trip_id=${tripId.value}`);
+    entries.value = [];
+  } catch {
+    error.value = 'Papierkorb konnte nicht geleert werden.';
+  } finally {
+    emptyingTrash.value = false;
+  }
+}
 </script>
 
 <template>
   <div class="page" v-if="!loading">
-    <h1><AppIcon :icon="ACTION_ICONS.delete" :size="24" group="navigation" /> Papierkorb</h1>
+    <div class="header-row">
+      <h1><AppIcon :icon="ACTION_ICONS.delete" :size="24" group="navigation" /> Papierkorb</h1>
+      <Button
+        v-if="entries.length > 0"
+        variant="danger"
+        :disabled="emptyingTrash"
+        @click="emptyTrash"
+      >
+        <AppIcon :icon="ACTION_ICONS.delete" :size="14" group="actions" /> Leeren
+      </Button>
+    </div>
     <p class="hint">
       Gelöschte Termine, Ausflüge, Spots und mehr<template v-if="currentTrip?.name">
         aus „{{ currentTrip.name }}“</template
       >
-      bleiben hier eine Weile erhalten, bevor sie endgültig entfernt werden – hier lassen sie sich
-      jederzeit wiederherstellen.
+      bleiben hier für <strong>30 Tage</strong> erhalten, bevor sie automatisch endgültig gelöscht
+      werden. In dieser Zeit lassen sie sich jederzeit wiederherstellen.
     </p>
     <p v-if="error" class="error">{{ error }}</p>
 
     <TransitionGroup tag="ul" name="list" class="trash-list">
-      <li class="card trash-row" v-for="entry in entries" :key="keyOf(entry)">
+      <li
+        class="card trash-row animate-cascade"
+        :class="{ 'is-loading': restoringKey === keyOf(entry) || deletingKey === keyOf(entry) }"
+        v-for="(entry, index) in entries"
+        :key="keyOf(entry)"
+        :style="{ '--stagger-delay': `${index * 60}ms` }"
+      >
         <span class="trash-icon"
           ><AppIcon
             :icon="TYPE_ICON[entry.type] ?? ACTION_ICONS.delete"
@@ -157,35 +224,77 @@ async function restore(entry: TrashEntry) {
         <div class="trash-info">
           <span class="trash-title">{{ titleFor(entry) }}</span>
           <span class="trash-meta"
-            >{{ entry.label }} · Gelöscht am {{ formatDeletedAt(entry.deletedAt) }}</span
+            >{{ entry.label }} · Gelöscht am {{ formatDeletedAt(entry.deletedAt) }} (Noch
+            {{ daysRemaining(entry.deletedAt) }} Tage)</span
           >
         </div>
-        <Button
-          variant="card-action"
-          :disabled="restoringKey === keyOf(entry)"
-          @click="restore(entry)"
-        >
-          <AppIcon :icon="ACTION_ICONS.restore" :size="14" group="actions" /> Wiederherstellen
-        </Button>
+        <div class="trash-actions">
+          <Button
+            variant="ghost"
+            class="text-danger"
+            :disabled="restoringKey === keyOf(entry) || deletingKey === keyOf(entry)"
+            @click="permanentlyDelete(entry)"
+            title="Endgültig löschen"
+          >
+            <AppIcon :icon="ACTION_ICONS.delete" :size="18" group="actions" />
+          </Button>
+          <Button
+            variant="card-action"
+            :disabled="restoringKey === keyOf(entry) || deletingKey === keyOf(entry)"
+            @click="restore(entry)"
+            title="Wiederherstellen"
+          >
+            <AppIcon :icon="ACTION_ICONS.restore" :size="14" group="actions" />
+            <span class="hide-on-mobile">Wiederherstellen</span>
+          </Button>
+        </div>
       </li>
     </TransitionGroup>
-    <p v-if="!entries.length" class="empty">Der Papierkorb ist leer.</p>
+    <EmptyState v-if="!entries.length">
+      <AppIcon :icon="ACTION_ICONS.delete" :size="32" group="actions" />
+      <p>Der Papierkorb ist leer.</p>
+    </EmptyState>
   </div>
   <ViewLoadingState v-else />
 </template>
 
 <style scoped>
+.header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
 .trash-list {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
   margin-top: var(--space-3);
+  padding: 0;
+  list-style: none;
 }
 
 .trash-row {
   display: flex;
   align-items: center;
   gap: var(--space-3);
+}
+
+.trash-row.is-loading {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.trash-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.text-danger {
+  color: var(--color-danger);
 }
 
 .trash-icon {
@@ -216,5 +325,11 @@ async function restore(entry: TrashEntry) {
 
 .error {
   color: var(--color-danger);
+}
+
+@media (max-width: 600px) {
+  .hide-on-mobile {
+    display: none;
+  }
 }
 </style>

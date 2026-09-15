@@ -4,6 +4,8 @@ import type { ScheduleItem, Spot } from '../api/types';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { parseContact } from '../utils/contact';
 import { fetchMergedWeather, type DailyWeather } from '../utils/weather';
+import { IconFlag, IconFlagFilled } from '@tabler/icons-vue';
+import type { IconDef } from '../utils/icon';
 import { usePointerDrag } from '../composables/usePointerDrag';
 import { useExcursionsStore } from '../stores/excursions';
 import { useScheduleStore } from '../stores/schedule';
@@ -23,12 +25,14 @@ import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
 import Input from './primitives/Input.vue';
 import PickerMenu from './primitives/PickerMenu.vue';
+import Badge from './primitives/Badge.vue';
 import Card from './primitives/Card.vue';
 import DetailRow from './primitives/DetailRow.vue';
 import WeatherIcon from './WeatherIcon.vue';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { formatDate as formatDateShared, toLocalDateString } from '../utils/dateFormat';
+import { formatTravelDuration } from '../utils/travelDuration';
 import { computePopoverPosition } from '../utils/popoverPosition';
 
 const props = defineProps<{
@@ -47,6 +51,7 @@ const props = defineProps<{
   // abgeleitet (analog zu Excursion.date), da mehrere Karten sich denselben Stand teilen müssen.
   scheduledDate: string | null;
   highlighted?: boolean;
+  excursionContext?: { id: number; isDestination: boolean; hasDestination: boolean };
   /** Nur für Kategorie "Unterkunft" mit gesetztem paid_by_user_id relevant (siehe
    *  Migrationskommentar in db/index.ts). */
   payerLabel?: string | null;
@@ -58,6 +63,8 @@ const props = defineProps<{
   // Alle bestehenden Tour-Titel, fürs "Tour zuordnen"-Dropdown (TourAssignDropdown.vue).
   tourOptions: string[];
   hasMultipleMembers?: boolean;
+  /** Umsteige-/Aufenthaltszeit in Minuten, wenn die Station Teil einer Tour ist (#396) */
+  layoverMinutes?: number | null;
 }>();
 
 const isAccommodation = computed(() => props.spot.category === 'Unterkunft');
@@ -66,6 +73,12 @@ function formatAccommodationDate(d: string | null) {
   if (!d) return null;
   return formatDateShared(d);
 }
+const DESTINATION_ICON: IconDef = {
+  id: 'flag',
+  emoji: '🏁',
+  outline: IconFlag,
+  filled: IconFlagFilled,
+};
 const emit = defineEmits<{
   (e: 'edit', spot: Spot): void;
   (e: 'toggle-like'): void;
@@ -73,6 +86,7 @@ const emit = defineEmits<{
   (e: 'remove-comment', id: number): void;
   (e: 'open', spot: Spot): void;
   (e: 'close'): void;
+  (e: 'toggle-destination'): void;
   // Sofort-Zuordnung über TourAssignDropdown.vue (#106, siehe Template) – ersetzt den früheren
   // Tap-Alternative-Mechanismus (Umschalten auf Touren-Gruppierung + manuelles Ablegen), da es
   // jetzt keine Tour-Drawer/-Karten mehr braucht, um eine Zuordnung vorzunehmen.
@@ -216,6 +230,10 @@ function onDragStart(event: DragEvent) {
 const { dragging, ghostStyle, onPointerDown } = usePointerDrag({
   onStart: () => {
     drawers.calendarOpen = true;
+    document.body.classList.add('is-dragging-calendar');
+  },
+  onEnd: () => {
+    document.body.classList.remove('is-dragging-calendar');
   },
   onDrop: (targetEl) => {
     const dayEl = targetEl?.closest<HTMLElement>('[data-date]');
@@ -381,7 +399,7 @@ const cardRotation = computed(() => {
   <Card
     variant="polaroid"
     class="spot-card"
-    :class="{ expanded, 'new-highlight': highlighted }"
+    :class="{ expanded, 'new-highlight': highlighted, 'has-layover': layoverMinutes != null }"
     :style="{ '--card-rotate': cardRotation }"
     @click="onCardClick"
   >
@@ -469,7 +487,7 @@ const cardRotation = computed(() => {
         />
       </div>
 
-      <div class="spot-accordion" :class="{ 'is-expanded': expanded }" :inert="!expanded">
+      <div class="spot-accordion" :class="{ 'is-expanded': expanded }">
         <div class="spot-accordion-inner accordion-stagger">
           <DetailRow v-if="creatorLabel && !expanded" label="Von">
             {{ creatorLabel }}
@@ -515,7 +533,7 @@ const cardRotation = computed(() => {
       </div>
 
       <div class="card-actions-wrapper" :class="{ 'is-expanded': expanded }">
-        <div class="mobile-only-accordion" :class="{ 'is-expanded': expanded }" :inert="!expanded">
+        <div class="mobile-only-accordion" :class="{ 'is-expanded': expanded }">
           <div class="mobile-only-accordion-inner accordion-stagger">
             <div class="card-actions">
               <TourAssignDropdown
@@ -525,9 +543,32 @@ const cardRotation = computed(() => {
                 @dragstart="onDragStart"
               />
               <button
+                v-if="
+                  expanded &&
+                  excursionContext &&
+                  (!excursionContext.hasDestination || excursionContext.isDestination)
+                "
+                key="btn-destination"
+                type="button"
+                class="spot-destination-toggle"
+                :class="{ 'is-active': excursionContext.isDestination }"
+                title="Als Ziel der Tour markieren (für Hin-/Rückweg-Farbverlauf)"
+                @click.stop="$emit('toggle-destination')"
+              >
+                <AppIcon
+                  :icon="DESTINATION_ICON"
+                  :size="14"
+                  group="formFields"
+                  :filled="excursionContext.isDestination"
+                />
+                Ziel der Tour
+              </button>
+              <button
                 v-if="!isAccommodation"
+                key="btn-calendar"
                 type="button"
                 class="calendar-drag-handle"
+                :class="{ dragging }"
                 aria-label="Auf Kalender ziehen zum spontanen Einplanen"
                 title="Auf Kalender ziehen zum spontanen Einplanen"
                 @pointerdown="onPointerDown"
@@ -538,6 +579,7 @@ const cardRotation = computed(() => {
               <!-- Verschmolzener Status-Button (Geplant-Status + Gemacht-Checkbox) – in beiden Zuständen -->
               <button
                 v-if="!isAccommodation"
+                key="btn-done"
                 type="button"
                 class="done-toggle"
                 :class="{
@@ -560,7 +602,7 @@ const cardRotation = computed(() => {
                   isSpotDone ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'
                 "
                 :title="isSpotDone ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'"
-                @click.stop="onToggleDone"
+                @click.stop="expanded ? onToggleDone($event) : onCardClick()"
               >
                 <template v-if="totalItemsCount > 1">
                   <template v-if="allItemsDone">
@@ -620,15 +662,34 @@ const cardRotation = computed(() => {
         </div>
       </div>
 
-      <!-- Untere Zeile (Footer): Anhänge links, Social Actions rechts (nutzt beide Ecken optimal aus) -->
-      <div class="card-footer-row" :class="{ 'is-expanded': expanded }">
-        <div class="card-attachments-wrap" :class="{ 'is-expanded': expanded }">
-          <FileAttachments
-            domain="spots"
-            :entity-id="spot.id"
-            :editable="false"
-            :collapsed="!expanded"
-          />
+      <!-- Untere Zeile (Footer): Umsteigezeit/Anhänge links, Social Actions rechts (nutzt beide Ecken optimal aus) -->
+      <div
+        class="card-footer-row"
+        :class="{ 'is-expanded': expanded, 'has-layover': layoverMinutes != null }"
+      >
+        <div class="card-footer-left" :class="{ 'is-expanded': expanded }">
+          <div class="card-attachments-wrap" :class="{ 'is-expanded': expanded }">
+            <FileAttachments
+              domain="spots"
+              :entity-id="spot.id"
+              :editable="false"
+              :collapsed="!expanded"
+            />
+          </div>
+
+          <Badge
+            v-if="layoverMinutes != null"
+            variant="default"
+            size="sm"
+            class="spot-layover-badge"
+            :class="{ 'is-expanded': expanded }"
+            :title="`Umsteigezeit an dieser Station: ${formatTravelDuration(layoverMinutes)}`"
+          >
+            <AppIcon :icon="ACTION_ICONS.duration" :size="12" group="actions" />
+            <span class="spot-layover-text"
+              >{{ formatTravelDuration(layoverMinutes) }} Umstieg</span
+            >
+          </Badge>
         </div>
 
         <div class="card-social-actions" :class="{ 'is-expanded': expanded }">
@@ -668,11 +729,7 @@ const cardRotation = computed(() => {
         </div>
       </div>
 
-      <div
-        class="spot-accordion"
-        :class="{ 'is-expanded': expanded && showComments }"
-        :inert="!expanded || !showComments"
-      >
+      <div class="spot-accordion" :class="{ 'is-expanded': expanded && showComments }">
         <div class="spot-accordion-inner accordion-stagger">
           <Comments
             v-if="showComments"
@@ -824,15 +881,25 @@ const cardRotation = computed(() => {
 .spot-accordion {
   display: grid;
   grid-template-rows: 0fr;
-  transition: grid-template-rows 0.3s ease;
+  visibility: hidden;
+  transition:
+    grid-template-rows 0.3s ease,
+    visibility 0s linear 0.3s;
 }
 
 .spot-accordion.is-expanded {
   grid-template-rows: 1fr;
+  visibility: visible;
+  transition:
+    grid-template-rows 0.3s ease,
+    visibility 0s linear 0s;
 }
 
 .spot-accordion-inner {
   overflow: hidden;
+  /* Verhindert Abschneiden des Fokus-Rahmens */
+  padding: 3px;
+  margin: -3px;
 }
 
 .slide-fade-enter-active,
@@ -1256,8 +1323,59 @@ const cardRotation = computed(() => {
   box-sizing: border-box;
 }
 
+.card-footer-left {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  min-width: 0;
+  flex: 1;
+}
+
+.spot-card:not(.expanded) .card-footer-left {
+  display: contents;
+}
+
 .spot-card:not(.expanded) .card-footer-row {
   display: contents;
+}
+
+/* Wenn eine Station eine Umsteige-/Aufenthaltszeit hat (#396), bilden Umsteige-Badge links
+   und Like-Button rechts eine gemeinsame, verlässliche Footer-Fluchtlinie am Boden der Karte */
+.spot-card.has-layover:not(.expanded) .card-footer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1);
+  margin-top: auto;
+  padding-top: var(--space-1);
+  width: 100%;
+}
+
+.spot-card.has-layover:not(.expanded) .card-social-actions {
+  position: static;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.spot-card.has-layover:not(.expanded) .card-actions {
+  padding-right: 0;
+}
+
+.spot-layover-badge {
+  flex-shrink: 1;
+  min-width: 0;
+  max-width: calc(100% - 48px);
+}
+
+.spot-card.expanded .spot-layover-badge {
+  margin-bottom: 2px;
+}
+
+.spot-layover-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .card-attachments-wrap {
@@ -1383,27 +1501,95 @@ const cardRotation = computed(() => {
   margin-top: 2px;
 }
 
-/* Zwei Anfasser statt des gesamten Card-Roots als Drag-Quelle: .excursion-drag-handle (natives
-   HTML5-DnD, siehe onDragStart im Script) und .calendar-drag-handle (Pointer-Events, siehe
-   usePointerDrag-Wiring). touch-action:none beim Kalender-Anfasser verhindert, dass der Browser
-   das Ziehen als Seiten-Scroll interpretiert (beim nativen DnD-Anfasser übernimmt das der Browser
-   selbst). Das ::before-Punkte-Raster macht beide auf einen Blick als Zieh-Griff statt als
+/* Eigener Anfasser statt des gesamten Card-Roots als Drag-Quelle: .calendar-drag-handle (Pointer-Events,
+   siehe usePointerDrag-Wiring). touch-action:none verhindert, dass der Browser das Ziehen als
+   Seiten-Scroll interpretiert. Das ::before-Punkte-Raster macht ihn auf einen Blick als Zieh-Griff statt als
    normalen Button erkennbar. */
-.calendar-drag-handle,
-.excursion-drag-handle {
+.calendar-drag-handle {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   background: var(--color-hover);
-  border: none;
+  border: 1px solid var(--color-border);
   border-radius: 999px;
   corner-shape: round;
   padding: 3px 10px 3px 8px;
   font-size: 0.72rem;
+  font-weight: 500;
   color: var(--color-text-muted);
   cursor: grab;
+  touch-action: none;
   -webkit-user-select: none;
   user-select: none;
+  transition:
+    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease,
+    box-shadow 0.2s ease;
+}
+
+.calendar-drag-handle:active,
+.calendar-drag-handle.dragging {
+  cursor: grabbing;
+  transform: scale(0.95) translateY(0);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.calendar-drag-handle.dragging {
+  opacity: 0.55;
+}
+
+.calendar-drag-handle:focus-visible {
+  outline: 2px solid var(--color-scheduled);
+  outline-offset: 2px;
+}
+
+.calendar-drag-handle::before {
+  content: '';
+  flex-shrink: 0;
+  width: 6px;
+  height: 12px;
+  background-image:
+    radial-gradient(circle, currentColor 1px, transparent 1.3px),
+    radial-gradient(circle, currentColor 1px, transparent 1.3px);
+  background-size:
+    3px 4px,
+    3px 4px;
+  background-position:
+    0 0,
+    3px 0;
+  background-repeat: repeat-y, repeat-y;
+  opacity: 0.65;
+  transition:
+    transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 0.18s ease;
+  transform-origin: center center;
+}
+
+.calendar-drag-handle :deep(.app-icon) {
+  flex-shrink: 0;
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform-origin: center bottom;
+}
+
+.calendar-drag-handle:hover {
+  background: var(--color-scheduled-tint);
+  border-color: color-mix(in srgb, var(--color-scheduled) 40%, transparent);
+  color: var(--color-scheduled);
+  transform: translateY(-1.5px);
+  box-shadow:
+    0 4px 12px -2px color-mix(in srgb, var(--color-scheduled) 22%, transparent),
+    0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+.calendar-drag-handle:hover::before {
+  opacity: 1;
+  transform: scale(1.25);
+}
+
+.calendar-drag-handle:hover :deep(.app-icon) {
+  transform: translateY(-0.5px) rotate(8deg) scale(1.15);
 }
 
 /* Verschmolzener Status-Toggle (Geplant-Status + Gemacht-Checkbox) */
@@ -1460,32 +1646,34 @@ const cardRotation = computed(() => {
   right: auto;
 }
 
-.calendar-drag-handle {
-  touch-action: none;
+/* Virtuelle Touch-Targets (mind. 44px Höhe gemäß DESIGN.md §7.1 / WCAG 2.5.5) */
+.calendar-drag-handle,
+.done-toggle,
+.spot-destination-toggle,
+:deep(.tour-assign-btn) {
+  position: relative;
 }
 
-.calendar-drag-handle::before,
-.excursion-drag-handle::before {
+.calendar-drag-handle::after,
+.done-toggle::after,
+.spot-destination-toggle::after,
+:deep(.tour-assign-btn)::after {
   content: '';
-  flex-shrink: 0;
-  width: 6px;
-  height: 12px;
-  background-image:
-    radial-gradient(circle, currentColor 1px, transparent 1.3px),
-    radial-gradient(circle, currentColor 1px, transparent 1.3px);
-  background-size:
-    3px 4px,
-    3px 4px;
-  background-position:
-    0 0,
-    3px 0;
-  background-repeat: repeat-y, repeat-y;
-  opacity: 0.6;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  inset-inline: 0;
+  height: 44px;
+  min-height: 44px;
 }
 
-.calendar-drag-handle:active,
-.excursion-drag-handle:active {
-  cursor: grabbing;
+@media (pointer: fine) {
+  .calendar-drag-handle::after,
+  .done-toggle::after,
+  .spot-destination-toggle::after,
+  :deep(.tour-assign-btn)::after {
+    display: none;
+  }
 }
 
 /* Schwebt während des Drags am Zeiger, per Teleport außerhalb der Karte (sonst würde sie beim
@@ -1626,19 +1814,32 @@ const cardRotation = computed(() => {
   .mobile-only-accordion {
     display: grid;
     grid-template-rows: 0fr;
+    visibility: hidden;
     /* Beim Zuklappen: faltet sich sofort zusammen (Stufe 1) */
-    transition: grid-template-rows 0.22s cubic-bezier(0.32, 0.72, 0, 1) 0s;
+    transition:
+      grid-template-rows 0.22s cubic-bezier(0.32, 0.72, 0, 1) 0s,
+      visibility 0s linear 0.22s;
   }
 
   .mobile-only-accordion.is-expanded {
     grid-template-rows: 1fr;
+    visibility: visible;
     /* Beim Aufklappen: entfaltet sich nach Bild-Morph (Stufe 2) */
-    transition: grid-template-rows 0.35s cubic-bezier(0.32, 0.72, 0, 1) 0.14s;
+    transition:
+      grid-template-rows 0.35s cubic-bezier(0.32, 0.72, 0, 1) 0.14s,
+      visibility 0s linear 0.14s;
   }
 
   .mobile-only-accordion-inner {
     display: block;
     overflow: hidden;
+    /* Verhindert Abschneiden des Fokus-Rahmens */
+    padding: 3px;
+    margin: -3px;
+  }
+
+  .mobile-only-accordion.is-expanded .mobile-only-accordion-inner {
+    overflow: visible;
   }
 
   .mobile-only-accordion-inner > * {
@@ -1662,18 +1863,27 @@ const cardRotation = computed(() => {
 .spot-accordion {
   display: grid;
   grid-template-rows: 0fr;
+  visibility: hidden;
   /* Beim Zuklappen sofort zusammenfalten (Stufe 1) */
-  transition: grid-template-rows 0.22s cubic-bezier(0.32, 0.72, 0, 1) 0s;
+  transition:
+    grid-template-rows 0.22s cubic-bezier(0.32, 0.72, 0, 1) 0s,
+    visibility 0s linear 0.22s;
 }
 
 .spot-accordion.is-expanded {
   grid-template-rows: 1fr;
+  visibility: visible;
   /* Beim Aufklappen nach dem Bild-Morph entfalten (Stufe 2) */
-  transition: grid-template-rows 0.35s cubic-bezier(0.32, 0.72, 0, 1) 0.14s;
+  transition:
+    grid-template-rows 0.35s cubic-bezier(0.32, 0.72, 0, 1) 0.14s,
+    visibility 0s linear 0.14s;
 }
 
 .spot-accordion-inner {
   overflow: hidden;
+  /* Verhindert Abschneiden des Fokus-Rahmens */
+  padding: 3px;
+  margin: -3px;
 }
 
 /* Einfaden und gestaffeltes Auffächern für die Inhalte */
@@ -1803,7 +2013,7 @@ const cardRotation = computed(() => {
 }
 
 .date-check-item:hover {
-  background: var(--color-surface-hover, var(--color-surface-raised));
+  background: var(--color-hover);
   border-color: var(--color-border-hover, var(--color-primary));
 }
 
@@ -1827,5 +2037,32 @@ const cardRotation = computed(() => {
 .date-check-status {
   font-size: 0.75rem;
   opacity: 0.8;
+}
+</style>
+
+<style scoped>
+.spot-destination-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 6px 10px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm-squircle);
+  transition: all 0.2s ease;
+}
+.spot-destination-toggle:hover {
+  background: var(--color-background);
+  color: var(--color-text);
+  border-color: var(--color-text-muted);
+}
+.spot-destination-toggle.is-active {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+  background: var(--color-primary-tint);
 }
 </style>

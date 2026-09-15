@@ -17,6 +17,14 @@ const { toasts, removeToast } = useToast();
         >
           <div class="toast-content">
             <span class="toast-message">{{ toast.message }}</span>
+            <RouterLink
+              v-if="toast.action"
+              :to="toast.action.to"
+              class="toast-action"
+              @click="removeToast(toast.id)"
+            >
+              {{ toast.action.label }}
+            </RouterLink>
           </div>
           <button
             type="button"
@@ -87,6 +95,22 @@ const { toasts, removeToast } = useToast();
   flex: 1;
   min-width: 0;
   word-break: break-word;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.toast-action {
+  font-weight: 600;
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  align-self: flex-start;
+  margin-top: 2px;
+}
+
+.toast-action:hover {
+  text-decoration: none;
 }
 
 .toast-close {

@@ -7,6 +7,7 @@ import type { DayWeatherEntry } from '../utils/dayWeather';
 import { toLocalDateString } from '../utils/dateFormat';
 import { ACCOMMODATION_ICON } from '../utils/dashboardTiles';
 import AppIcon from './AppIcon.vue';
+import WeatherIcon from './WeatherIcon.vue';
 
 interface Day {
   date: string;
@@ -21,7 +22,13 @@ interface Day {
   otherMonth?: boolean;
 }
 
-defineProps<{ days: Day[]; selectedDate: string | null }>();
+const props = defineProps<{
+  days: Day[];
+  selectedDate: string | null;
+  tripStartDate?: string | null;
+  tripEndDate?: string | null;
+}>();
+
 const emit = defineEmits<{
   (e: 'select', date: string): void;
   (e: 'drop-excursion', date: string, excursionId: number): void;
@@ -39,6 +46,19 @@ function weekday(date: string) {
 
 function isToday(date: string) {
   return date === toLocalDateString(new Date());
+}
+
+function isInTrip(date: string) {
+  if (!props.tripStartDate || !props.tripEndDate) return false;
+  return date >= props.tripStartDate && date <= props.tripEndDate;
+}
+
+function isTripStart(date: string) {
+  return props.tripStartDate != null && date === props.tripStartDate;
+}
+
+function isTripEnd(date: string) {
+  return props.tripEndDate != null && date === props.tripEndDate;
 }
 
 // Zähler statt Boolean pro Tag: dragenter/dragleave feuern beim Überqueren verschachtelter
@@ -77,6 +97,9 @@ function onDrop(event: DragEvent, date: string) {
       :class="{
         active: day.date === selectedDate,
         today: isToday(day.date),
+        'in-trip': isInTrip(day.date),
+        'trip-start': isTripStart(day.date),
+        'trip-end': isTripEnd(day.date),
         'drag-over': isDragOver(day.date),
         'other-month': day.otherMonth,
       }"
@@ -89,23 +112,28 @@ function onDrop(event: DragEvent, date: string) {
       @drop.prevent="onDrop($event, day.date)"
     >
       <div class="day-head">
-        <span class="weekday">{{ weekday(day.date) }}</span>
-        <span class="num">{{ dayNumber(day.date) }}</span>
-        <div class="day-weather-row" v-if="day.weatherEntries.length">
-          <span
-            v-for="entry in day.weatherEntries"
-            :key="entry.key"
-            class="day-weather"
-            :title="`${entry.label}: ${weatherCodeMeta(entry.weather.weatherCode).label}`"
-          >
-            <AppIcon :icon="entry.tabler" :size="10" group="categories" />
-            {{ Math.round(entry.weather.tempMax) }}°
-          </span>
+        <!-- Weekday bleibt für Screen-Reader und E2E-Tests vorhanden, wird aber für Sehende
+             durch die übergeordnete Wochentagszeile (ScheduleView) ersetzt -->
+        <span class="weekday sr-only">{{ weekday(day.date) }}</span>
+        <div class="day-badge-wrap">
+          <span class="num">{{ dayNumber(day.date) }}</span>
+          <div class="day-weather-row" v-if="day.weatherEntries.length">
+            <span
+              v-for="entry in day.weatherEntries"
+              :key="entry.key"
+              class="day-weather"
+              :title="`${entry.label}: ${weatherCodeMeta(entry.weather.weatherCode).label}`"
+            >
+              <WeatherIcon :code="entry.weather.weatherCode" :size="11" />
+              <span>{{ Math.round(entry.weather.tempMax) }}°</span>
+            </span>
+          </div>
         </div>
       </div>
 
       <div class="acc-bar" v-for="acc in day.accommodations" :key="acc.id" :title="acc.title">
-        <AppIcon :icon="ACCOMMODATION_ICON" :size="10" group="categories" /> {{ acc.title }}
+        <AppIcon :icon="ACCOMMODATION_ICON" :size="10" group="categories" />
+        <span class="acc-bar-title">{{ acc.title }}</span>
       </div>
 
       <div class="items">
@@ -114,7 +142,9 @@ function onDrop(event: DragEvent, date: string) {
           v-for="entry in day.entries.slice(0, 3)"
           :key="entry.key"
           :title="entry.title"
-          :style="{ borderLeftColor: SCHEDULE_CATEGORY_META[entry.category].color }"
+          :style="{
+            '--item-cat-color': SCHEDULE_CATEGORY_META[entry.category].color,
+          }"
         >
           <span v-if="entry.time" class="time">{{ entry.time }}</span>
           <!-- Rein visuell (nicht klickbar, pointer-events:none): diese kompakte Zelle ist selbst
@@ -136,7 +166,7 @@ function onDrop(event: DragEvent, date: string) {
             :size="10"
             group="categories"
           />
-          {{ entry.title }}
+          <span class="item-line-title">{{ entry.title }}</span>
         </div>
         <div class="more" v-if="day.entries.length > 3">+{{ day.entries.length - 3 }} mehr</div>
       </div>
@@ -146,6 +176,7 @@ function onDrop(event: DragEvent, date: string) {
 
 <style scoped>
 .week {
+  container-type: inline-size;
   display: grid;
   /* minmax(0, 1fr) statt nur 1fr: ohne das explizite Minimum von 0 verhindert die intrinsische
      Mindestbreite von unumbrochenem Text (z. B. langer Termin-Titel) das gleichmäßige
@@ -157,32 +188,69 @@ function onDrop(event: DragEvent, date: string) {
 }
 
 .day {
+  position: relative;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
-  padding: 6px 4px;
+  padding: 5px 4px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   color: var(--color-text);
   cursor: pointer;
   min-height: 64px;
   min-width: 0;
   overflow: hidden;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast);
 }
 
 .day:hover {
   background: var(--color-hover);
+  transform: translateY(-1px);
 }
 
-.day.today .num {
-  color: var(--color-accent);
+.day.in-trip {
+  background: color-mix(in srgb, var(--color-primary) 5%, var(--color-surface));
+}
+
+.day.in-trip:hover {
+  background: color-mix(in srgb, var(--color-primary) 9%, var(--color-surface));
+}
+
+/* Urlaubs-Streifen am unteren Rand der Zelle */
+.day.in-trip::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--color-primary);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.day.in-trip.trip-start::after {
+  left: 3px;
+  border-top-left-radius: 3px;
+  border-bottom-left-radius: 3px;
+}
+
+.day.in-trip.trip-end::after {
+  right: 3px;
+  border-top-right-radius: 3px;
+  border-bottom-right-radius: 3px;
 }
 
 .day.active {
   background: var(--color-primary-tint);
   border-color: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--color-primary);
 }
 
 .day.drag-over {
@@ -191,50 +259,146 @@ function onDrop(event: DragEvent, date: string) {
   outline-offset: -2px;
 }
 
+/* Leucht-Effekt, wenn der "Einplanen"-Anfasser einer SpotCard gerade gezogen wird (#drag) */
+:global(body.is-dragging-calendar) .day {
+  background: var(--color-scheduled-tint);
+  border-color: color-mix(in srgb, var(--color-scheduled) 40%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-scheduled) 20%, transparent);
+}
+
+:global(body.is-dragging-calendar) .day.in-trip {
+  background: color-mix(in srgb, var(--color-scheduled) 12%, var(--color-surface));
+}
+
+:global(body.is-dragging-calendar) .day:hover {
+  background: color-mix(in srgb, var(--color-scheduled) 20%, var(--color-surface));
+  transform: translateY(-1px);
+}
+
 /* Führende/nachfolgende Tage aus dem Vor-/Folgemonat in der echten Monatsansicht (siehe otherMonth
    oben) – gedämpft statt ausgeblendet, damit z. B. ein Termin am Monatsübergang trotzdem sichtbar
    und antippbar bleibt, nur eben erkennbar als "nicht der aktuell im Fokus stehende Monat". */
 .day.other-month {
-  opacity: 0.45;
+  opacity: 0.38;
 }
 
 .day-head {
   display: flex;
   flex-direction: column;
-  align-items: center;
   line-height: 1.1;
 }
 
-.weekday {
-  font-size: 0.6rem;
-  text-transform: uppercase;
-  color: var(--color-text-muted);
+.weekday.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.day-badge-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2px;
+  min-height: 22px;
+}
+
+@container (max-width: 480px) {
+  .day-badge-wrap {
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .day-weather-row {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .day-badge-wrap {
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .day-weather-row {
+    justify-content: center;
+  }
+}
+
+@container (max-width: 360px) {
+  .day {
+    padding: 4px 2px;
+  }
+}
+
+@media (max-width: 360px) {
+  .day {
+    padding: 4px 2px;
+  }
 }
 
 .num {
-  font-size: 0.95rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 3px;
+  border-radius: var(--radius-pill);
+  font-size: 0.88rem;
   font-weight: 600;
+  color: var(--color-text);
+  line-height: 1;
+}
+
+.day.today .num {
+  background: var(--color-primary);
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .day-weather-row {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 0 3px;
+  align-items: center;
+  gap: 2px;
 }
 
 .day-weather {
-  font-size: 0.52rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  font-size: 0.62rem;
+  font-weight: 600;
   color: var(--color-text-muted);
   white-space: nowrap;
+  line-height: 1;
 }
 
 .acc-bar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
   background: var(--color-accent-secondary-bg);
   color: var(--color-accent-secondary);
-  font-size: 0.55rem;
+  font-size: 0.58rem;
+  font-weight: 600;
   border-radius: 4px;
-  padding: 1px 3px;
+  padding: 1px 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.25;
+}
+
+.acc-bar-title {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -243,18 +407,29 @@ function onDrop(event: DragEvent, date: string) {
 .items {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 2px;
 }
 
 .item-line {
-  font-size: 0.6rem;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.62rem;
   background: var(--color-hover);
-  border-radius: 4px;
-  border-left: 3px solid transparent;
+  border-radius: 3px;
+  border-left: 2.5px solid var(--item-cat-color, var(--color-primary));
   padding: 1px 3px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  line-height: 1.25;
+}
+
+.item-line-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .item-checkbox {
@@ -293,20 +468,24 @@ function onDrop(event: DragEvent, date: string) {
 
 .time {
   color: var(--color-primary-dark);
-  font-weight: 600;
+  font-weight: 700;
   margin-right: 2px;
+  flex-shrink: 0;
 }
 
 .more {
-  font-size: 0.55rem;
+  font-size: 0.58rem;
+  font-weight: 600;
   color: var(--color-text-muted);
   padding: 0 3px;
+  text-align: right;
 }
 
 @media (min-width: 700px) {
   .day {
     min-height: 84px;
-    padding: 8px 6px;
+    padding: 7px 6px;
+    gap: 4px;
   }
 
   .item-line,

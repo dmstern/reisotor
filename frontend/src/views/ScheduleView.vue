@@ -11,6 +11,7 @@ import { useScheduleStore } from '../stores/schedule';
 import { useDrawersStore } from '../stores/drawers';
 import { useLiveSyncStore } from '../stores/liveSync';
 import { useWeatherProviderStore } from '../stores/weatherProvider';
+import { useCalendarSettingsStore } from '../stores/calendarSettings';
 import CalendarWeek from '../components/CalendarWeek.vue';
 import SegmentedToggle from '../components/SegmentedToggle.vue';
 import Modal from '../components/Modal.vue';
@@ -41,6 +42,7 @@ import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { spotCategoryMeta } from '../utils/spotCategory';
+import { travelTypeIconDef } from '../utils/travelTypeIcon';
 import { parseLatLngFromMapsLink } from '../utils/googleMaps';
 import { buildAllEntries } from '../utils/calendarEntries';
 import {
@@ -50,7 +52,7 @@ import {
   triggerIcsDownload,
 } from '../utils/calendarExport';
 import { useToast } from '../composables/useToast';
-import { fetchWeatherForecast, type DailyWeather } from '../utils/weather';
+import { fetchWeatherForecast, weatherCodeMeta, type DailyWeather } from '../utils/weather';
 import {
   collectWeatherLocations,
   dayWeatherEntries,
@@ -892,6 +894,120 @@ const viewingEntry = computed(() =>
     : null
 );
 
+const viewingLinkedSpot = computed(() => {
+  const spotId = viewingEntry.value?.spotId ?? viewingItem.value?.spot_id;
+  if (spotId == null) return null;
+  return spotsStore.spots.find((s) => s.id === spotId) ?? null;
+});
+
+const viewingLinkedExcursion = computed(() => {
+  const ideaId = viewingEntry.value?.ideaId ?? viewingItem.value?.idea_id;
+  if (ideaId == null) return null;
+  return excursionsStore.excursions.find((e) => e.id === ideaId) ?? null;
+});
+
+const viewingImageUrl = computed(() => {
+  if (viewingLinkedSpot.value?.image_url) {
+    return viewingLinkedSpot.value.image_url;
+  }
+  if (viewingLinkedExcursion.value?.image_url) {
+    return viewingLinkedExcursion.value.image_url;
+  }
+  return null;
+});
+
+const viewingCollageImages = computed<string[]>(() => {
+  if (viewingImageUrl.value) return [];
+  if (viewingLinkedExcursion.value?.spot_ids?.length) {
+    const urls: string[] = [];
+    for (const spotId of viewingLinkedExcursion.value.spot_ids) {
+      const spot = spotsStore.spots.find((s) => s.id === spotId);
+      if (spot?.image_url && !urls.includes(spot.image_url)) {
+        urls.push(spot.image_url);
+      }
+    }
+    return urls;
+  }
+  return [];
+});
+
+const viewingCategoryInfo = computed(() => {
+  if (viewingLinkedSpot.value) {
+    const meta = spotCategoryMeta(viewingLinkedSpot.value.category);
+    return {
+      label: viewingLinkedSpot.value.category || 'Ort',
+      icon: viewingEntry.value?.iconDef ?? meta.tabler,
+      themeColor: meta.color,
+      themeTint: undefined as string | undefined,
+    };
+  }
+  if (viewingLinkedExcursion.value) {
+    if (viewingLinkedExcursion.value.role) {
+      return {
+        label: viewingLinkedExcursion.value.transport_type || 'Reise',
+        icon: travelTypeIconDef(viewingLinkedExcursion.value.transport_type),
+        themeColor: 'var(--color-travel)',
+        themeTint: 'var(--color-travel-tint)',
+      };
+    }
+    return {
+      label: 'Tour',
+      icon: viewingEntry.value?.iconDef ?? SCHEDULE_CATEGORY_META.excursion.tabler,
+      themeColor: 'var(--color-tour)',
+      themeTint: 'var(--color-tour-tint)',
+    };
+  }
+  if (viewingEntry.value) {
+    const meta =
+      SCHEDULE_CATEGORY_META[viewingEntry.value.category] ?? SCHEDULE_CATEGORY_META.other;
+    return {
+      label: meta.label,
+      icon: viewingEntry.value.iconDef ?? meta.tabler,
+      themeColor: meta.color,
+      themeTint: undefined as string | undefined,
+    };
+  }
+  return {
+    label: 'Termin',
+    icon: SCHEDULE_CATEGORY_META.other.tabler,
+    themeColor: SCHEDULE_CATEGORY_META.other.color,
+    themeTint: undefined as string | undefined,
+  };
+});
+
+const viewingWeatherEntry = computed(() => {
+  if (!viewingItem.value?.date) return null;
+  const entries = weatherEntriesFor(viewingItem.value.date);
+  return entries.length > 0 ? entries[0] : null;
+});
+
+const viewingEffectiveCoords = computed(() => {
+  if (viewingItem.value?.lat != null && viewingItem.value?.lng != null) {
+    return {
+      lat: viewingItem.value.lat,
+      lng: viewingItem.value.lng,
+      mapsLink: viewingItem.value.maps_link,
+      title: viewingItem.value.title,
+    };
+  }
+  if (viewingLinkedSpot.value?.lat != null && viewingLinkedSpot.value?.lng != null) {
+    return {
+      lat: viewingLinkedSpot.value.lat,
+      lng: viewingLinkedSpot.value.lng,
+      mapsLink: viewingLinkedSpot.value.maps_link,
+      title: viewingLinkedSpot.value.title,
+    };
+  }
+  return null;
+});
+
+const weekdayShortFormatter = new Intl.DateTimeFormat('de-DE', { weekday: 'short' });
+
+function formatViewingDate(dateStr: string) {
+  const d = new Date(`${dateStr}T00:00:00`);
+  return `${weekdayShortFormatter.format(d)}, ${formatDateShared(dateStr)}`;
+}
+
 function linkedTitleFor(entry: CalendarEntry | null): string | null {
   if (!entry) return null;
   if (entry.spotId != null)
@@ -927,6 +1043,22 @@ async function deleteEditingItem() {
   closeEditForm();
 }
 
+const calendarSettings = useCalendarSettingsStore();
+const weekdayHeaders = computed(() =>
+  calendarSettings.weekStart === 'sunday'
+    ? ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa']
+    : ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
+);
+
+function isToday(dateStr: string) {
+  return dateStr === toLocalDateString(new Date());
+}
+
+function isTripDate(dateStr: string) {
+  if (!trip.value?.start_date || !trip.value?.end_date) return false;
+  return dateStr >= trip.value.start_date && dateStr <= trip.value.end_date;
+}
+
 function formatDay(date: string) {
   return new Date(date).toLocaleDateString('de-DE', {
     weekday: 'long',
@@ -958,56 +1090,66 @@ function formatDate(date: string) {
     </div>
 
     <div class="calendar-toolbar">
-      <div class="granularity-row">
-        <SegmentedToggle
-          v-model="granularity"
-          :options="[
-            { value: 'week', label: 'Woche' },
-            { value: 'twoWeeks', label: '2 Wochen' },
-            { value: 'month', label: 'Monat' },
-          ]"
-        />
+      <div class="toolbar-nav-row">
+        <div class="pager">
+          <IconButton
+            variant="ghost"
+            size="sm"
+            :disabled="!canGoPrev"
+            :icon="ACTION_ICONS.scrollLeft"
+            aria-label="Vorherige Wochen"
+            title="Vorherige Wochen"
+            @click="prevPage"
+          />
+          <span class="range-label">{{ visibleRangeLabel }}</span>
+          <IconButton
+            variant="ghost"
+            size="sm"
+            :disabled="!canGoNext"
+            :icon="ACTION_ICONS.scrollRight"
+            aria-label="Nächste Wochen"
+            title="Nächste Wochen"
+            @click="nextPage"
+          />
+        </div>
+        <div class="granularity-wrap">
+          <SegmentedToggle
+            v-model="granularity"
+            :options="[
+              { value: 'week', label: 'Woche' },
+              { value: 'twoWeeks', label: '2 Wochen' },
+              { value: 'month', label: 'Monat' },
+            ]"
+          />
+        </div>
       </div>
-      <div class="pager">
-        <IconButton
-          variant="ghost"
-          size="sm"
-          :disabled="!canGoPrev"
-          :icon="ACTION_ICONS.scrollLeft"
-          aria-label="Vorherige Wochen"
-          title="Vorherige Wochen"
-          @click="prevPage"
-        />
-        <span class="range-label">{{ visibleRangeLabel }}</span>
-        <IconButton
-          variant="ghost"
-          size="sm"
-          :disabled="!canGoNext"
-          :icon="ACTION_ICONS.scrollRight"
-          aria-label="Nächste Wochen"
-          title="Nächste Wochen"
-          @click="nextPage"
-        />
-      </div>
-      <div class="jump-row">
-        <Button variant="secondary" @click="jumpToToday">
-          <AppIcon :icon="ACTION_ICONS.today" :size="14" group="actions" /> Heute
+
+      <div class="toolbar-actions-row">
+        <div class="jump-row">
+          <Button variant="secondary" size="sm" @click="jumpToToday">
+            <AppIcon :icon="ACTION_ICONS.today" :size="14" group="actions" /> Heute
+          </Button>
+          <Button variant="secondary" size="sm" v-if="trip" @click="goToTripDates">
+            <AppIcon :icon="ACTION_ICONS.vacation" :size="14" group="actions" /> Urlaub
+          </Button>
+        </div>
+        <Button size="sm" @click="openAddForm">
+          <AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Neu
         </Button>
-        <Button variant="secondary" v-if="trip" @click="goToTripDates">
-          <AppIcon :icon="ACTION_ICONS.vacation" :size="14" group="actions" /> Urlaub
-        </Button>
-        <Button @click="openAddForm"
-          ><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Neu</Button
-        >
       </div>
     </div>
 
     <div class="card weeks">
+      <div class="calendar-weekday-headers" aria-hidden="true">
+        <span v-for="h in weekdayHeaders" :key="h" class="weekday-col-header">{{ h }}</span>
+      </div>
       <CalendarWeek
         v-for="week in visibleWeeks"
         :key="week[0]?.date"
         :days="week"
         :selected-date="selectedDate"
+        :trip-start-date="trip?.start_date"
+        :trip-end-date="trip?.end_date"
         @select="selectDay"
         @drop-excursion="onDropExcursion"
       />
@@ -1015,63 +1157,101 @@ function formatDate(date: string) {
 
     <div class="card day-detail" v-if="selectedDate">
       <div class="day-detail-head">
-        <h3>{{ formatDay(selectedDate) }}</h3>
+        <div class="day-detail-title-group">
+          <h3>{{ formatDay(selectedDate) }}</h3>
+          <Badge v-if="isToday(selectedDate)" variant="accent" size="sm">Heute</Badge>
+          <Badge v-else-if="isTripDate(selectedDate)" variant="primary" size="sm">Urlaubstag</Badge>
+        </div>
         <div class="day-detail-actions">
-          <Button variant="card-action" @click="showDayOnMap">
+          <Button variant="card-action" size="sm" @click="showDayOnMap">
             <AppIcon :icon="SECTION_ICON_DEFS.map" :size="14" group="navigation" /> Tag auf Karte
             anzeigen
           </Button>
         </div>
       </div>
 
-      <p v-for="entry in selectedDateWeatherEntries" :key="entry.key" class="day-weather-note">
-        <AppIcon :icon="entry.tabler" :size="15" group="categories" /> {{ entry.label }}:
-        <WeatherIcon :code="entry.weather.weatherCode" :size="15" />
-        {{ Math.round(entry.weather.tempMax) }}° / {{ Math.round(entry.weather.tempMin) }}°
-        <span v-if="entry.weather.precipitationProbability != null">
-          · <AppIcon :icon="ACTION_ICONS.rain" :size="13" group="actions" />{{
-            entry.weather.precipitationProbability
-          }}%
-        </span>
-      </p>
+      <div
+        class="day-meta-bar"
+        v-if="selectedDateWeatherEntries.length || dayAccommodations.length"
+      >
+        <div
+          v-for="entry in selectedDateWeatherEntries"
+          :key="entry.key"
+          class="day-meta-pill weather-pill"
+          :title="`${entry.label}: ${weatherCodeMeta(entry.weather.weatherCode).label}`"
+        >
+          <WeatherIcon :code="entry.weather.weatherCode" :size="16" />
+          <span class="meta-label">{{ entry.label }}:</span>
+          <span class="temp-range">
+            <strong>{{ Math.round(entry.weather.tempMax) }}°</strong>
+            <span class="temp-min"> / {{ Math.round(entry.weather.tempMin) }}°</span>
+          </span>
+          <span v-if="entry.weather.precipitationProbability != null" class="rain-prob">
+            · <AppIcon :icon="ACTION_ICONS.rain" :size="12" group="actions" />
+            {{ entry.weather.precipitationProbability }}%
+          </span>
+        </div>
 
-      <p v-for="acc in dayAccommodations" :key="acc.id" class="acc-note">
-        <AppIcon :icon="spotCategoryMeta('Unterkunft').tabler" :size="14" group="categories" />
-        Unterkunft: {{ acc.title }}
-      </p>
+        <div
+          v-for="acc in dayAccommodations"
+          :key="acc.id"
+          class="day-meta-pill acc-pill"
+          :title="`Unterkunft: ${acc.title}`"
+        >
+          <AppIcon :icon="spotCategoryMeta('Unterkunft').tabler" :size="14" group="categories" />
+          <span class="meta-label">Unterkunft:</span>
+          <strong>{{ acc.title }}</strong>
+        </div>
+      </div>
 
       <TransitionGroup tag="ul" name="list" class="items">
         <li
-          v-for="entry in dayEntries"
+          v-for="(entry, index) in dayEntries"
           :key="entry.key"
-          class="item clickable"
+          class="item clickable animate-cascade"
           role="button"
           tabindex="0"
-          :style="{ borderLeftColor: SCHEDULE_CATEGORY_META[entry.category].color }"
+          :style="{
+            '--stagger-delay': `${index * 40}ms`,
+            '--entry-cat-color': SCHEDULE_CATEGORY_META[entry.category].color,
+            borderLeftColor: SCHEDULE_CATEGORY_META[entry.category].color,
+          }"
           @click="openEntry(entry)"
           @keydown.enter.prevent="openEntry(entry)"
           @keydown.space.prevent="openEntry(entry)"
         >
-          <div class="item-main">
+          <div class="item-leading">
             <Checkbox
               v-if="entry.kind === 'todo'"
-              class="category-icon"
+              class="todo-checkbox"
               aria-label="Erledigt"
               :checked="entryDone(entry)"
               @click.stop="toggleTodoDone(entry.todoId!)"
             />
-            <AppIcon
-              v-else
-              class="category-icon"
-              :size="16"
-              :icon="entry.iconDef ?? SCHEDULE_CATEGORY_META[entry.category].tabler"
-              group="categories"
-              :title="SCHEDULE_CATEGORY_META[entry.category].label"
-            />
-            <strong v-if="entry.time">{{ entry.time }}</strong>
-            <span class="title">{{ entry.title }}</span>
+            <div v-else class="item-cat-icon" :title="SCHEDULE_CATEGORY_META[entry.category].label">
+              <AppIcon
+                :size="16"
+                :icon="entry.iconDef ?? SCHEDULE_CATEGORY_META[entry.category].tabler"
+                group="categories"
+              />
+            </div>
+          </div>
+
+          <div class="item-main">
+            <div class="item-header-line">
+              <span v-if="entry.time" class="item-time-badge">
+                <AppIcon :icon="FORM_FIELD_ICONS.time" :size="11" group="formFields" />
+                {{ entry.time }}<template v-if="entry.endTime"> – {{ entry.endTime }}</template>
+              </span>
+              <span class="item-category-pill">
+                {{ SCHEDULE_CATEGORY_META[entry.category].label }}
+              </span>
+            </div>
+            <div class="title" :class="{ 'todo-done': entry.kind === 'todo' && entryDone(entry) }">
+              {{ entry.title }}
+            </div>
             <p v-if="entry.location" class="location">
-              <AppIcon :icon="FORM_FIELD_ICONS.location" :size="13" group="formFields" />
+              <AppIcon :icon="FORM_FIELD_ICONS.location" :size="12" group="formFields" />
               {{ entry.location }}
             </p>
             <RichTextDisplay
@@ -1081,17 +1261,19 @@ function formatDate(date: string) {
               class="note"
             />
           </div>
+
           <div class="item-actions">
             <div class="calendar-export">
               <Button
                 variant="secondary"
+                size="sm"
                 class="calendar-btn"
                 title="Zum eigenen Kalender hinzufügen"
                 aria-label="Zum eigenen Kalender hinzufügen"
                 @click.stop="toggleCalendarPicker(entry.key, $event)"
               >
                 <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" />
-                <span class="calendar-btn-label">In meinen Kalender</span>
+                <span class="calendar-btn-label">In Kalender</span>
               </Button>
               <Teleport to="body">
                 <template v-if="calendarPickerKey === entry.key">
@@ -1131,12 +1313,6 @@ function formatDate(date: string) {
                 </template>
               </Teleport>
             </div>
-            <!-- Architekturregel: Fremdobjekte (Urlaub-Stammdaten, ToDos, Reise-Einträge) sind hier
-                 nur lesend/verknüpfend darstellbar – Bearbeitung passiert in der Ursprungssicht.
-                 Mit einem Spot/einer Tour verknüpfte Termine sind dagegen ganz normale, editierbare
-                 Termine (kind bleibt 'schedule') – Klick auf die Karte öffnet für sie wie für jeden
-                 anderen Termin den Anzeige-Dialog (inkl. Löschen-Button dort), kein eigener
-                 Schnell-Entfernen-Button hier nötig. -->
           </div>
         </li>
         <EmptyState v-if="!dayEntries.length" key="empty" tag="li">
@@ -1371,22 +1547,35 @@ function formatDate(date: string) {
       :model-value="viewingItem !== null"
       @update:model-value="(v) => !v && (viewingItem = null)"
       :title="viewingItem?.title ?? ''"
-      :placeholder-icon="
-        viewingEntry
-          ? (viewingEntry.iconDef ?? SCHEDULE_CATEGORY_META[viewingEntry.category].tabler)
-          : undefined
-      "
+      :image-url="viewingImageUrl"
+      :collage-images="viewingCollageImages"
+      :placeholder-icon="viewingCategoryInfo.icon"
+      :category-label="viewingCategoryInfo.label"
+      :category-icon="viewingCategoryInfo.icon"
+      :theme-color="viewingCategoryInfo.themeColor"
+      :theme-tint="viewingCategoryInfo.themeTint"
       @edit="editViewingItem"
     >
       <template #meta>
+        <span v-if="viewingItem" class="detail-badge">
+          <AppIcon :icon="FORM_FIELD_ICONS.date" :size="12" group="formFields" />
+          {{ formatViewingDate(viewingItem.date) }}
+        </span>
+        <span
+          v-if="
+            viewingWeatherEntry &&
+            (viewingWeatherEntry.weather.tempMax !== 0 || viewingWeatherEntry.weather.tempMin !== 0)
+          "
+          class="detail-badge weather-badge"
+        >
+          <WeatherIcon :code="viewingWeatherEntry.weather.weatherCode" :size="13" />
+          {{ Math.round(viewingWeatherEntry.weather.tempMax) }}° /
+          {{ Math.round(viewingWeatherEntry.weather.tempMin) }}°
+        </span>
         <Badge v-if="viewingItem?.auto_created" variant="primary" size="sm">
           <AppIcon :icon="ACTION_ICONS.sparkles" :size="12" group="actions" />
           Automatisch angelegt
         </Badge>
-        <span v-if="viewingItem" class="detail-badge">
-          <AppIcon :icon="FORM_FIELD_ICONS.date" :size="12" group="formFields" />
-          {{ formatDate(viewingItem.date) }}
-        </span>
       </template>
       <DetailRow v-if="viewingItem?.time" label="Zeit">
         <AppIcon :icon="FORM_FIELD_ICONS.time" :size="14" group="formFields" /> {{ viewingItem.time
@@ -1446,13 +1635,25 @@ function formatDate(date: string) {
         :entity-id="viewingItem.id"
         :editable="false"
       />
-      <div v-if="viewingItem?.lat != null && viewingItem?.lng != null" class="detail-actions">
+      <div v-if="viewingEffectiveCoords || viewingEntry" class="detail-actions">
         <MapsAppPicker
-          :lat="viewingItem.lat"
-          :lng="viewingItem.lng"
-          :title="viewingItem.title"
-          :maps-link="viewingItem.maps_link"
+          v-if="viewingEffectiveCoords"
+          :lat="viewingEffectiveCoords.lat"
+          :lng="viewingEffectiveCoords.lng"
+          :title="viewingEffectiveCoords.title"
+          :maps-link="viewingEffectiveCoords.mapsLink"
         />
+        <Button
+          v-if="viewingEntry"
+          variant="card-action"
+          class="calendar-btn"
+          title="Zum eigenen Kalender hinzufügen"
+          aria-label="Zum eigenen Kalender hinzufügen"
+          @click.stop="toggleCalendarPicker(viewingEntry.key, $event)"
+        >
+          <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" />
+          <span class="calendar-btn-label">In meinen Kalender</span>
+        </Button>
       </div>
     </DetailModal>
   </div>
@@ -1485,6 +1686,25 @@ function formatDate(date: string) {
   padding: var(--space-2);
 }
 
+.calendar-weekday-headers {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: var(--space-1);
+  margin-bottom: 4px;
+  padding: 0 4px;
+  text-align: center;
+}
+
+.weekday-col-header {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+  padding: 2px 0;
+  line-height: 1.2;
+}
+
 .pending-schedule-banner {
   display: flex;
   flex-wrap: wrap;
@@ -1513,61 +1733,68 @@ function formatDate(date: string) {
   gap: var(--space-2);
 }
 
-.granularity-row {
+.toolbar-nav-row {
   display: flex;
-  justify-content: center;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.granularity-wrap {
+  display: flex;
+  justify-content: flex-end;
 }
 
 .pager {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-}
-
-.page-btn {
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  font-size: 1.1rem;
-  line-height: 1;
-  border-radius: 50%;
-  corner-shape: round;
-  flex-shrink: 0;
-}
-
-.page-btn:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
+  gap: var(--space-1);
 }
 
 .range-label {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
-  min-width: 100px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--color-text);
+  min-width: 105px;
   text-align: center;
+}
+
+.toolbar-actions-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  flex-wrap: wrap;
 }
 
 .jump-row {
   display: flex;
-  justify-content: center;
-  gap: var(--space-2);
+  align-items: center;
+  gap: var(--space-1);
   flex-wrap: wrap;
 }
 
 .day-detail-head {
   display: flex;
   justify-content: space-between;
-  /* flex-start statt center: der Tagesname kann in der (ggf. schmal gezogenen) Kalender-Schublade
-     auf mehrere Zeilen umbrechen ("Sonntag, 16. August") - bei center-Ausrichtung rückte der Button
-     dadurch optisch bis auf wenige Pixel an die letzte umgebrochene Zeile heran, obwohl der
-     horizontale gap eigentlich stimmt (Issue #69: "zu wenig Abstand zwischen Button und Text").
-     flex-start hält den Button auf Höhe der ersten Zeile, mit klarem Abstand zu allen Zeilen
-     darunter. */
   align-items: flex-start;
   gap: var(--space-2);
   margin-bottom: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.day-detail-title-group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.day-detail-title-group h3 {
+  color: var(--color-primary-dark);
+  margin: 0;
+  font-size: 1.15rem;
 }
 
 .day-detail-actions,
@@ -1587,21 +1814,63 @@ function formatDate(date: string) {
   container-name: day-detail;
 }
 
-.day-detail h3 {
-  color: var(--color-primary-dark);
-  margin-top: 0;
+.day-meta-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
 }
 
-.acc-note {
+.day-meta-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 0.82rem;
+  border: 1px solid var(--color-border);
+  background: var(--color-hover);
+  color: var(--color-text);
+}
+
+.day-meta-pill.weather-pill {
+  background: color-mix(in srgb, var(--color-primary) 6%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--color-primary) 20%, transparent);
+}
+
+.day-meta-pill.acc-pill {
+  background: var(--color-accent-secondary-bg);
+  border-color: color-mix(in srgb, var(--color-accent-secondary) 25%, transparent);
   color: var(--color-accent-secondary);
-  font-weight: 600;
-  margin: 0 0 var(--space-2);
 }
 
-.day-weather-note {
+.meta-label {
+  font-weight: 500;
   color: var(--color-text-muted);
-  font-weight: 600;
-  margin: 0 0 var(--space-2);
+}
+
+.day-meta-pill.acc-pill .meta-label {
+  color: var(--color-accent-secondary);
+  opacity: 0.85;
+}
+
+.temp-range {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+}
+
+.temp-min {
+  color: var(--color-text-muted);
+  font-weight: normal;
+}
+
+.rain-prob {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
 }
 
 .items {
@@ -1615,14 +1884,54 @@ function formatDate(date: string) {
 
 .item {
   display: flex;
-  justify-content: space-between;
   align-items: flex-start;
   gap: var(--space-2);
-  padding: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-left: 3px solid transparent;
+  border-left: 3px solid var(--entry-cat-color, var(--color-primary));
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.item.clickable {
+  cursor: pointer;
+}
+
+.item.clickable:hover {
+  background: var(--color-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.item-leading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.item-cat-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-xs-squircle, 6px);
+  corner-shape: squircle;
+  background: color-mix(in srgb, var(--entry-cat-color) 12%, var(--color-surface));
+  color: var(--entry-cat-color);
+  flex-shrink: 0;
+}
+
+.todo-checkbox {
+  margin-top: 2px;
 }
 
 .item-main {
@@ -1632,31 +1941,58 @@ function formatDate(date: string) {
   overflow-wrap: break-word;
 }
 
-.item.clickable {
-  cursor: pointer;
+.item-header-line {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: 3px;
+  flex-wrap: wrap;
 }
 
-.item.clickable:hover {
-  background: var(--color-hover);
+.item-time-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--color-primary-dark);
+  background: var(--color-primary-tint);
+  padding: 1px 6px;
+  border-radius: 4px;
+  line-height: 1.25;
 }
 
-.category-icon {
-  margin-right: 4px;
+.item-category-pill {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  line-height: 1.25;
 }
 
-.title {
-  margin-left: var(--space-2);
+.item .title {
+  font-weight: 600;
+  font-size: 0.94rem;
+  color: var(--color-text);
+  line-height: 1.3;
 }
 
-.location {
-  margin: 4px 0 0;
-  font-size: 0.85rem;
+.item .title.todo-done {
+  text-decoration: line-through;
   color: var(--color-text-muted);
 }
 
-.note {
+.item .location {
+  margin: 3px 0 0;
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.item .note {
   margin: 4px 0 0;
-  font-size: 0.9rem;
+  font-size: 0.86rem;
 }
 
 .empty {
@@ -1668,6 +2004,7 @@ function formatDate(date: string) {
   gap: 4px;
   flex-shrink: 0;
   align-items: center;
+  padding-top: 1px;
 }
 
 .calendar-btn {
@@ -1683,7 +2020,7 @@ function formatDate(date: string) {
   display: none;
 }
 
-@container day-detail (min-width: 320px) {
+@container day-detail (min-width: 440px) {
   .calendar-btn {
     padding: 4px 10px;
   }
@@ -1773,12 +2110,6 @@ function formatDate(date: string) {
   flex: 1 1 100%;
 }
 
-.actions-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
 .spacer {
   flex: 1;
 }
@@ -1821,5 +2152,28 @@ function formatDate(date: string) {
 .linked-entity-chevron {
   margin-left: var(--space-1);
   opacity: 0.6;
+}
+
+.detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-border);
+}
+
+.detail-actions .calendar-btn {
+  padding: 5px 12px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.detail-actions .calendar-btn .calendar-btn-label {
+  display: inline;
 }
 </style>

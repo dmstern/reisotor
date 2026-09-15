@@ -110,7 +110,7 @@ async function removeTransfer(id: number) {
   font-size: 0.78rem;
   color: var(--color-text-muted);
   background: var(--color-hover);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 2px 8px;
 }
 

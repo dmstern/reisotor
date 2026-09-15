@@ -56,6 +56,17 @@ import WeatherIcon from '../components/WeatherIcon.vue';
 import WeatherDayDetailDialog from '../components/WeatherDayDetailDialog.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { DEMO_MODE } from '../demo/isDemoMode';
+import DashboardNotesPreview from '../components/dashboard/DashboardNotesPreview.vue';
+import DashboardTrashPreview from '../components/dashboard/DashboardTrashPreview.vue';
+import DashboardAccommodationPreview from '../components/dashboard/DashboardAccommodationPreview.vue';
+import DashboardDiaryPreview from '../components/dashboard/DashboardDiaryPreview.vue';
+import DashboardSuitcasePreview from '../components/dashboard/DashboardSuitcasePreview.vue';
+import DashboardShoppingPreview from '../components/dashboard/DashboardShoppingPreview.vue';
+import DashboardTodoPreview from '../components/dashboard/DashboardTodoPreview.vue';
+import DashboardBudgetPreview from '../components/dashboard/DashboardBudgetPreview.vue';
+import DashboardTravelPreview from '../components/dashboard/DashboardTravelPreview.vue';
+import DashboardCalendarPreview from '../components/dashboard/DashboardCalendarPreview.vue';
+import DashboardSecurityPreview from '../components/dashboard/DashboardSecurityPreview.vue';
 
 const auth = useAuthStore();
 const tripStore = useTripStore();
@@ -429,25 +440,19 @@ function formatWeekdayDate(d: string) {
       "
       :class="{ 'has-image': trip?.image_url }"
     >
-      <div class="banner-actions">
-        <Button
-          variant="secondary"
-          class="banner-action-btn"
-          title="Papierkorb öffnen"
-          :to="`/trip/${tripId}/trash`"
-        >
-          <AppIcon :icon="ACTION_ICONS.delete" :size="14" group="actions" /> Papierkorb
-        </Button>
-        <Button
-          variant="secondary"
-          class="banner-action-btn"
-          title="Urlaub bearbeiten"
-          @click="jumpToTrip"
-        >
-          <AppIcon :icon="ACTION_ICONS.edit" :size="14" group="actions" /> Bearbeiten
-        </Button>
+      <div class="hero-header">
+        <h1>{{ trip?.name || 'Euer Urlaub' }}</h1>
+        <div class="banner-actions">
+          <Button
+            variant="secondary"
+            class="banner-action-btn"
+            title="Urlaub bearbeiten"
+            @click="jumpToTrip"
+          >
+            <AppIcon :icon="ACTION_ICONS.edit" :size="14" group="actions" /> Bearbeiten
+          </Button>
+        </div>
       </div>
-      <h1>{{ trip?.name || 'Euer Urlaub' }}</h1>
       <p v-if="trip?.destination">
         <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" />
         {{ trip.destination }}
@@ -717,7 +722,7 @@ function formatWeekdayDate(d: string) {
          "🧩 Dashboard-Kacheln"-Einstellung, 1:1 nach dem Muster der NavBar-Konfiguration/
          navConfig.ts) - jede Kachel behält ihre bisherige, unveränderte Markup/Logik, nur die
          Reihenfolge/Sichtbarkeit ist jetzt datengetrieben statt fest im Template verdrahtet. */-->
-    <div class="grid cards">
+    <div class="grid cards animate-cascade-children">
       <template v-for="key in visibleTileKeys" :key="key">
         <!-- Kalender: Desktop-Schublade bzw. Mobil-Seite /calendar (siehe drawers.openCalendar()),
              kein eigener router-link nötig, da die Kachel je nach Breite unterschiedlich navigieren muss -->
@@ -745,6 +750,7 @@ function formatWeekdayDate(d: string) {
             :color="WIDGET_COLORS.get('schedule')"
           />
           <h3>Kalender</h3>
+          <DashboardCalendarPreview :upcoming="upcomingEntries" />
           <ul v-if="upcomingEntries.length" class="mini-list">
             <li v-for="entry in upcomingEntries" :key="entry.key">
               <span
@@ -784,6 +790,7 @@ function formatWeekdayDate(d: string) {
             :color="WIDGET_COLORS.get('packing')"
           />
           <h3>Packliste</h3>
+          <DashboardSuitcasePreview :packed="packingTotal.checked" :total="packingTotal.total" />
           <BudgetMeter
             label="Gepackt"
             format="count"
@@ -822,6 +829,10 @@ function formatWeekdayDate(d: string) {
             :color="WIDGET_COLORS.get('budget')"
           />
           <h3>Budget</h3>
+          <DashboardBudgetPreview
+            :spent="budgetStore.totalSpent"
+            :target="budgetStore.grandTotal"
+          />
           <BudgetMeter
             label="Ausgegeben"
             :spent="budgetStore.totalSpent"
@@ -854,6 +865,10 @@ function formatWeekdayDate(d: string) {
             :color="WIDGET_COLORS.get('shopping')"
           />
           <h3>Einkaufsliste</h3>
+          <DashboardShoppingPreview
+            :checked="shoppingProgress.checked"
+            :total="shoppingProgress.total"
+          />
           <BudgetMeter
             label="Gekauft"
             format="count"
@@ -887,6 +902,11 @@ function formatWeekdayDate(d: string) {
             :color="WIDGET_COLORS.get('todo')"
           />
           <h3>ToDo</h3>
+          <DashboardTodoPreview
+            :todos="todos"
+            :done="todoProgress.done"
+            :total="todoProgress.total"
+          />
           <BudgetMeter
             label="Erledigt"
             format="count"
@@ -920,6 +940,7 @@ function formatWeekdayDate(d: string) {
             :color="WIDGET_COLORS.get('travel')"
           />
           <h3>Reise</h3>
+          <DashboardTravelPreview :next-item="nextTravelItem" :count="travelItems.length" />
           <p v-if="nextTravelItem">
             {{ formatDate(nextTravelItem.date!) }} — {{ nextTravelItem.title }}
           </p>
@@ -958,6 +979,7 @@ function formatWeekdayDate(d: string) {
             :color="WIDGET_COLORS.get('accommodation')"
           />
           <h3>Unterkunft</h3>
+          <DashboardAccommodationPreview :accommodation="currentOrNextAccommodation" />
           <p v-if="currentOrNextAccommodation">
             {{ currentOrNextAccommodation.title
             }}<span v-if="currentOrNextAccommodation.start_date">
@@ -992,6 +1014,7 @@ function formatWeekdayDate(d: string) {
             :color="WIDGET_COLORS.get('diary')"
           />
           <h3>Tagebuch</h3>
+          <DashboardDiaryPreview :entries="diaryEntries" :latest-entry="latestDiaryEntry" />
           <p v-if="diaryEntries.length">
             {{ diaryEntries.length }} {{ diaryEntries.length === 1 ? 'Eintrag' : 'Einträge'
             }}<span v-if="latestDiaryEntry">
@@ -1025,6 +1048,7 @@ function formatWeekdayDate(d: string) {
             :color="WIDGET_COLORS.get('notes')"
           />
           <h3>Notizen</h3>
+          <DashboardNotesPreview :notes="notes" />
           <p v-if="notes.length">
             {{ notes.length }} {{ notes.length === 1 ? 'Notiz' : 'Notizen' }}
           </p>
@@ -1055,6 +1079,7 @@ function formatWeekdayDate(d: string) {
             :color="SECURITY_TILE_COLOR"
           />
           <h3>Sicherheits-Check</h3>
+          <DashboardSecurityPreview :destination="trip?.destination" />
           <p>Der Reisotor scannt eure Reiseregion 🤖🔍</p>
         </router-link>
 
@@ -1082,6 +1107,7 @@ function formatWeekdayDate(d: string) {
             :color="TRASH_TILE_COLOR"
           />
           <h3>Papierkorb</h3>
+          <DashboardTrashPreview :count="trashCount" />
           <p v-if="trashCount > 0">
             {{ trashCount }} gelöschte{{ trashCount === 1 ? 's Objekt' : ' Objekte' }}
           </p>
@@ -1125,17 +1151,25 @@ function formatWeekdayDate(d: string) {
   color: #fff;
 }
 
+.hero-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.hero-header h1 {
+  margin: 0;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
 .banner-actions {
-  position: absolute;
-  top: var(--space-3);
-  right: var(--space-3);
   display: flex;
   gap: var(--space-2);
-  /* Bei stark eingeschränktem .app-main (z. B. beide Schubladen gleichzeitig offen auf einem nur
-     mäßig breiten Desktop-Viewport, siehe narrowDesktop-Fall in layout-overlap.spec.ts) schrumpft
-     die Hero-Card teils auf eine Breite unter der intrinsischen Button-Breite – ohne max-width ragt
-     die (per position:absolute von der Kartenbreite unabhängige) Leiste dann links aus der Card. */
-  max-width: calc(100% - 2 * var(--space-3));
+  flex-shrink: 0;
   flex-wrap: wrap;
   justify-content: flex-end;
 }
@@ -1394,6 +1428,12 @@ function formatWeekdayDate(d: string) {
 .tile > p {
   text-align: center;
   font-size: 0.88rem;
+  margin-top: auto;
+  padding-top: 2px;
+}
+
+.tile :deep(.budget-meter) {
+  margin-top: auto;
 }
 
 .mini-list {

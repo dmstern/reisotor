@@ -33,7 +33,7 @@ import { formatDate as formatDateShared, toLocalDateString } from '../utils/date
 import { computePopoverPosition } from '../utils/popoverPosition';
 import { TRAVEL_ROLE_META } from '../utils/travelRole';
 import { travelTypeIconDef } from '../utils/travelTypeIcon';
-import { formatTravelDuration, travelDurationMinutes } from '../utils/travelDuration';
+import { formatTravelDuration, tourTotalDurationMinutes } from '../utils/travelDuration';
 
 const props = defineProps<{
   excursion: Excursion;
@@ -140,11 +140,28 @@ const routeLabel = computed(() => {
   const stopText = stopCount === 1 ? '1 Zwischenstopp' : `${stopCount} Zwischenstopps`;
   return `${resolvedStations.value[0].title} → ${resolvedStations.value[resolvedStations.value.length - 1].title} · ${stopText}`;
 });
+const effectiveDepartureTime = computed(() => {
+  if (props.excursion.legs && props.excursion.legs.length > 0) {
+    return (
+      props.excursion.legs.find((l) => !!l.departure_time)?.departure_time ||
+      props.excursion.departure_time
+    );
+  }
+  return props.excursion.departure_time;
+});
+
+const effectiveArrivalTime = computed(() => {
+  if (props.excursion.legs && props.excursion.legs.length > 0) {
+    return (
+      [...props.excursion.legs].reverse().find((l) => !!l.arrival_time)?.arrival_time ||
+      props.excursion.arrival_time
+    );
+  }
+  return props.excursion.arrival_time;
+});
+
 const travelDuration = computed(() => {
-  const minutes = travelDurationMinutes(
-    props.excursion.departure_time,
-    props.excursion.arrival_time
-  );
+  const minutes = tourTotalDurationMinutes(props.excursion);
   return minutes == null ? null : formatTravelDuration(minutes);
 });
 
@@ -305,6 +322,11 @@ function onSpotDrop(event: DragEvent) {
           group="categories"
         />
 
+        <!-- Floating Paperclip Badge im eingeklappten Zustand (#396 Pattern) -->
+        <div v-if="!expanded" class="tour-collapsed-attachments">
+          <FileAttachments domain="ideas" :entity-id="excursion.id" :editable="false" collapsed />
+        </div>
+
         <!-- Floating Edit-Button im aufgeklappten Zustand -->
         <Transition name="fade">
           <EditButton
@@ -380,15 +402,19 @@ function onSpotDrop(event: DragEvent) {
             <p
               v-if="
                 (excursion.role || excursion.legs?.length) &&
-                (excursion.departure_time || excursion.arrival_time)
+                (effectiveDepartureTime || effectiveArrivalTime)
               "
               class="departure-arrival"
             >
-              <AppIcon :icon="FORM_FIELD_ICONS.time" :size="14" group="formFields" />
-              <span v-if="excursion.departure_time"
-                >{{ excursion.departure_time
-                }}<span v-if="excursion.arrival_time">–{{ excursion.arrival_time }}</span> Uhr</span
-              >
+              <span class="time-block" v-if="effectiveDepartureTime">
+                <AppIcon :icon="FORM_FIELD_ICONS.time" :size="14" group="formFields" />
+                {{ effectiveDepartureTime
+                }}<template v-if="effectiveArrivalTime">&ndash;{{ effectiveArrivalTime }}</template
+                >&nbsp;Uhr
+              </span>
+              <span class="time-block" v-else>
+                <AppIcon :icon="FORM_FIELD_ICONS.time" :size="14" group="formFields" />
+              </span>
               <span v-if="travelDuration" class="duration">({{ travelDuration }})</span>
             </p>
           </div>
@@ -400,15 +426,19 @@ function onSpotDrop(event: DragEvent) {
             v-if="
               !expanded &&
               (excursion.role || excursion.legs?.length) &&
-              (excursion.departure_time || excursion.arrival_time)
+              (effectiveDepartureTime || effectiveArrivalTime)
             "
             class="departure-arrival"
           >
-            <AppIcon :icon="FORM_FIELD_ICONS.time" :size="14" group="formFields" />
-            <span v-if="excursion.departure_time"
-              >{{ excursion.departure_time
-              }}<span v-if="excursion.arrival_time">–{{ excursion.arrival_time }}</span> Uhr</span
-            >
+            <span class="time-block" v-if="effectiveDepartureTime">
+              <AppIcon :icon="FORM_FIELD_ICONS.time" :size="14" group="formFields" />
+              {{ effectiveDepartureTime
+              }}<template v-if="effectiveArrivalTime">&ndash;{{ effectiveArrivalTime }}</template
+              >&nbsp;Uhr
+            </span>
+            <span class="time-block" v-else>
+              <AppIcon :icon="FORM_FIELD_ICONS.time" :size="14" group="formFields" />
+            </span>
             <span v-if="travelDuration" class="duration">({{ travelDuration }})</span>
           </p>
         </template>
@@ -446,6 +476,7 @@ function onSpotDrop(event: DragEvent) {
               v-if="!excursion.date"
               type="button"
               class="calendar-drag-handle"
+              :class="{ dragging }"
               aria-label="Auf Kalender ziehen zum Einplanen"
               title="Auf Kalender ziehen zum Einplanen"
               @pointerdown="onPointerDown"
@@ -584,11 +615,7 @@ function onSpotDrop(event: DragEvent) {
           </PickerMenu>
         </Teleport>
 
-        <div
-          class="excursion-accordion"
-          :class="{ 'is-expanded': expanded && showComments }"
-          :inert="!expanded || !showComments"
-        >
+        <div class="excursion-accordion" :class="{ 'is-expanded': expanded && showComments }">
           <div class="excursion-accordion-inner accordion-stagger">
             <Comments
               v-if="showComments"
@@ -636,6 +663,18 @@ function onSpotDrop(event: DragEvent) {
     transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* Leucht-Effekt, wenn der "Tour zuordnen"-Anfasser einer SpotCard gerade gezogen wird (#drag) */
+:global(body.is-dragging-tour) .excursion-card {
+  background: var(--excursion-theme-tint);
+  border-color: color-mix(in srgb, var(--excursion-theme-color) 40%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--excursion-theme-color) 20%, transparent);
+}
+
+:global(body.is-dragging-tour) .excursion-card:hover {
+  background: color-mix(in srgb, var(--excursion-theme-color) 20%, var(--color-surface));
+  transform: translateY(-1px);
+}
+
 .excursion-card.is-travel,
 .excursion-card.has-role {
   --excursion-theme-color: var(--color-travel);
@@ -662,18 +701,27 @@ function onSpotDrop(event: DragEvent) {
 .excursion-accordion {
   display: grid;
   grid-template-rows: 0fr;
+  visibility: hidden;
   /* Beim Zuklappen sofort zusammenfalten (Stufe 1) */
-  transition: grid-template-rows 0.22s cubic-bezier(0.32, 0.72, 0, 1) 0s;
+  transition:
+    grid-template-rows 0.22s cubic-bezier(0.32, 0.72, 0, 1) 0s,
+    visibility 0s linear 0.22s;
 }
 
 .excursion-accordion.is-expanded {
   grid-template-rows: 1fr;
+  visibility: visible;
   /* Beim Aufklappen nach Bild-Morph entfalten (Stufe 2) */
-  transition: grid-template-rows 0.35s cubic-bezier(0.32, 0.72, 0, 1) 0.14s;
+  transition:
+    grid-template-rows 0.35s cubic-bezier(0.32, 0.72, 0, 1) 0.14s,
+    visibility 0s linear 0.14s;
 }
 
 .excursion-accordion-inner {
   overflow: hidden;
+  /* Verhindert Abschneiden des Fokus-Rahmens */
+  padding: 3px;
+  margin: -3px;
 }
 
 .tour-card-main {
@@ -705,7 +753,7 @@ function onSpotDrop(event: DragEvent) {
 }
 
 .tour-image {
-  width: 110px;
+  width: 140px;
   flex-shrink: 0;
   align-self: stretch;
   border-radius: var(--radius-sm-squircle);
@@ -745,6 +793,17 @@ function onSpotDrop(event: DragEvent) {
   top: 6px;
   left: 6px;
   z-index: 2;
+}
+
+.tour-collapsed-attachments {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 3;
+}
+
+.tour-collapsed-attachments :deep(.file-attachments) {
+  margin-top: 0;
 }
 
 .body {
@@ -912,16 +971,23 @@ function onSpotDrop(event: DragEvent) {
   align-items: center;
   gap: 6px;
   background: var(--color-hover);
-  border: none;
+  border: 1px solid var(--color-border);
   border-radius: 999px;
   corner-shape: round;
   padding: 3px 10px 3px 8px;
   font-size: 0.72rem;
+  font-weight: 500;
   color: var(--color-text-muted);
   cursor: grab;
   touch-action: none;
   -webkit-user-select: none;
   user-select: none;
+  transition:
+    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease,
+    box-shadow 0.2s ease;
 }
 
 /* Verschmolzener Status-Toggle (Geplant-Status + Gemacht-Checkbox) */
@@ -975,6 +1041,22 @@ function onSpotDrop(event: DragEvent) {
   right: auto;
 }
 
+.calendar-drag-handle:active,
+.calendar-drag-handle.dragging {
+  cursor: grabbing;
+  transform: scale(0.95) translateY(0);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.calendar-drag-handle.dragging {
+  opacity: 0.55;
+}
+
+.calendar-drag-handle:focus-visible {
+  outline: 2px solid var(--color-scheduled);
+  outline-offset: 2px;
+}
+
 .calendar-drag-handle::before {
   content: '';
   flex-shrink: 0;
@@ -990,11 +1072,36 @@ function onSpotDrop(event: DragEvent) {
     0 0,
     3px 0;
   background-repeat: repeat-y, repeat-y;
-  opacity: 0.6;
+  opacity: 0.65;
+  transition:
+    transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 0.18s ease;
+  transform-origin: center center;
 }
 
-.calendar-drag-handle:active {
-  cursor: grabbing;
+.calendar-drag-handle :deep(.app-icon) {
+  flex-shrink: 0;
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform-origin: center bottom;
+}
+
+.calendar-drag-handle:hover {
+  background: var(--color-scheduled-tint);
+  border-color: color-mix(in srgb, var(--color-scheduled) 40%, transparent);
+  color: var(--color-scheduled);
+  transform: translateY(-1.5px);
+  box-shadow:
+    0 4px 12px -2px color-mix(in srgb, var(--color-scheduled) 22%, transparent),
+    0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+.calendar-drag-handle:hover::before {
+  opacity: 1;
+  transform: scale(1.25);
+}
+
+.calendar-drag-handle:hover :deep(.app-icon) {
+  transform: translateY(-0.5px) rotate(8deg) scale(1.15);
 }
 
 /* Schwebt während des Drags am Zeiger, per Teleport außerhalb der Karte (sonst würde sie beim
@@ -1185,14 +1292,23 @@ function onSpotDrop(event: DragEvent) {
 .departure-arrival {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 4px;
   margin: 0;
   font-size: 0.85rem;
   color: var(--color-text-muted);
 }
 
+.time-block {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
 .duration {
   color: var(--color-text-muted);
+  white-space: nowrap;
 }
 
 /* Stationen-Vorschau mit Polaroid-Stapel (#235) */
@@ -1214,6 +1330,10 @@ function onSpotDrop(event: DragEvent) {
   opacity: 0;
   pointer-events: none;
   overflow: visible;
+}
+
+.tour-polaroid-stack {
+  margin-right: 6px;
 }
 
 /* Hover-Effekt auf der Collapsed Card: Sanftes Auffächern der Station-Polaroids (#235) */
@@ -1328,6 +1448,7 @@ function onSpotDrop(event: DragEvent) {
   :deep(.tour-polaroid-stack) {
     width: 46px;
     height: 56px;
+    margin-right: 4px;
   }
 
   :deep(.tour-polaroid-stack .polaroid-tile) {

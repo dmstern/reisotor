@@ -8,6 +8,8 @@ import { useExcursionsStore } from '../stores/excursions';
 import { useSpotsStore } from '../stores/spots';
 import { useScheduleStore } from '../stores/schedule';
 import { useDrawersStore } from '../stores/drawers';
+import { deriveTravelItems } from '../utils/deriveTravelItems';
+import { buildDayStations } from '../utils/dayStations';
 import { useLiveSyncStore } from '../stores/liveSync';
 import { useWeatherProviderStore } from '../stores/weatherProvider';
 import { isEmptyRichText } from '../utils/richText';
@@ -48,6 +50,7 @@ const excursionsStore = useExcursionsStore();
 const spotsStore = useSpotsStore();
 const scheduleStore = useScheduleStore();
 const drawers = useDrawersStore();
+const travelItems = computed(() => deriveTravelItems(excursionsStore.excursions, spotsStore.spots));
 const liveSync = useLiveSyncStore();
 const weatherProvider = useWeatherProviderStore();
 const trip = computed(() => tripStore.currentTrip);
@@ -318,8 +321,8 @@ function commentsFor(entryId: number) {
 function commentItemsFor(entryId: number) {
   return commentsFor(entryId).map((c) => ({
     id: c.id,
-    avatar: author(c.author_id)?.avatar ?? '❓',
-    username: author(c.author_id)?.username ?? '?',
+    avatar: c.author_avatar ?? author(c.author_id)?.avatar ?? '❓',
+    username: c.author_username ?? author(c.author_id)?.username ?? '?',
     content: c.content,
     canRemove: c.author_id === auth.user?.id,
   }));
@@ -530,6 +533,19 @@ async function removeComment(id: number) {
   comments.value = comments.value.filter((c) => c.id !== id);
 }
 
+function hasMapContent(entry: DiaryEntry): boolean {
+  if (entry.spot_ids && entry.spot_ids.length > 0) return true;
+  if (entry.excursion_ids && entry.excursion_ids.length > 0) return true;
+  const stations = buildDayStations(
+    entry.date,
+    scheduleStore.items,
+    excursionsStore.excursions,
+    travelItems.value,
+    spotsStore.spots
+  );
+  return stations.length > 0;
+}
+
 // Neuer Button (#216): den Tag des Eintrags (inkl. aller an diesem Tag geplanten Touren/Spots) auf
 // der Karte zeigen - gleiches Muster wie ScheduleView.vue's "Tag auf Karte anzeigen".
 function showEntryDayOnMap(entry: DiaryEntry) {
@@ -620,12 +636,16 @@ function showEntryDayOnMap(entry: DiaryEntry) {
           </legend>
           <template v-if="showExcursionPicker">
             <label
-              for="auto-id-1788301175444-19"
+              :for="`diary-excursion-${ex.id}`"
               v-for="ex in pickerExcursions(form.date)"
               :key="ex.id"
               class="excursion-option"
             >
-              <Checkbox id="auto-id-1788301175444-19" :value="ex.id" v-model="form.excursion_ids" />
+              <Checkbox
+                :id="`diary-excursion-${ex.id}`"
+                :value="ex.id"
+                v-model="form.excursion_ids"
+              />
               <span class="excursion-option-title">{{ ex.title }}</span>
               <span v-if="ex.date === form.date" class="excursion-option-badge recommended"
                 ><AppIcon :icon="ACTION_ICONS.recommended" :size="13" group="actions" /> Empfohlen –
@@ -696,15 +716,18 @@ function showEntryDayOnMap(entry: DiaryEntry) {
 
     <TransitionGroup tag="div" name="list" class="entries">
       <article
-        v-for="entry in entries"
+        v-for="(entry, index) in entries"
         :key="entry.id"
-        class="card entry"
+        class="card entry animate-cascade"
+        :style="{ '--stagger-delay': `${index * 60}ms` }"
         :class="{ 'new-highlight': highlightedIds.has(entry.id) }"
       >
         <header class="entry-head">
-          <span class="avatar">{{ author(entry.author_id)?.avatar ?? '❓' }}</span>
+          <span class="avatar">{{
+            entry.author_avatar ?? author(entry.author_id)?.avatar ?? '❓'
+          }}</span>
           <div class="entry-meta">
-            <strong>{{ author(entry.author_id)?.username ?? '?' }}</strong>
+            <strong>{{ entry.author_username ?? author(entry.author_id)?.username ?? '?' }}</strong>
             <span class="date">
               {{ formatDate(entry.date) }}
               <span v-if="coEditorsFor(entry).length" class="edited-by">
@@ -757,7 +780,12 @@ function showEntryDayOnMap(entry: DiaryEntry) {
                 {{ Math.round(weatherForEntry(entry)!.tempMin) }}°</span
               >
             </div>
-            <Button type="button" variant="card-action" @click="showEntryDayOnMap(entry)">
+            <Button
+              type="button"
+              variant="card-action"
+              v-if="hasMapContent(entry)"
+              @click="showEntryDayOnMap(entry)"
+            >
               <AppIcon :icon="SECTION_ICON_DEFS.map" :size="14" group="navigation" /> Tag auf Karte
               anzeigen
             </Button>
@@ -765,6 +793,7 @@ function showEntryDayOnMap(entry: DiaryEntry) {
               v-for="ex in excursionsForEntry(entry)"
               :key="ex.id"
               type="button"
+              variant="ghost"
               class="excursion-chip"
               @click="drawers.openMapForExcursion(ex.id)"
             >
@@ -785,6 +814,7 @@ function showEntryDayOnMap(entry: DiaryEntry) {
               v-for="spot in spotsForEntry(entry)"
               :key="spot.id"
               type="button"
+              variant="ghost"
               class="excursion-chip"
               @click="drawers.openMapAt(`spot-${spot.id}`)"
             >
@@ -1106,7 +1136,7 @@ function showEntryDayOnMap(entry: DiaryEntry) {
 .excursion-option-badge.recommended {
   background: var(--color-primary-tint);
   padding: 2px 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   corner-shape: round;
   font-weight: 600;
 }
@@ -1136,7 +1166,7 @@ function showEntryDayOnMap(entry: DiaryEntry) {
   gap: var(--space-2);
   background: var(--color-hover);
   border: none;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   corner-shape: round;
   padding: 4px 12px 4px 4px;
   font-size: 0.82rem;
@@ -1169,7 +1199,7 @@ function showEntryDayOnMap(entry: DiaryEntry) {
   align-items: center;
   gap: 4px;
   background: var(--color-hover);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   corner-shape: round;
   padding: 4px 12px;
   font-size: 0.82rem;

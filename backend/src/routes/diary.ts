@@ -20,6 +20,8 @@ interface EntryRow {
   created_at: string;
   updated_at: string | null;
   is_draft: number;
+  author_username?: string;
+  author_avatar?: string;
 }
 
 interface EntryBody {
@@ -48,7 +50,9 @@ const recordEditorStmt = db.prepare(
    ON CONFLICT(entry_id, user_id) DO UPDATE SET edited_at = excluded.edited_at`
 );
 
-const selectEntryByIdStmt = db.prepare('SELECT * FROM diary_entries WHERE id = ?');
+const selectEntryByIdStmt = db.prepare(
+  'SELECT e.*, u.username as author_username, u.avatar as author_avatar FROM diary_entries e LEFT JOIN users u ON e.author_id = u.id WHERE e.id = ?'
+);
 const selectEntryTripIdByIdStmt = db.prepare('SELECT id, trip_id FROM diary_entries WHERE id = ?');
 const deleteDiaryEntryStmt = db.prepare('UPDATE diary_entries SET deleted_at = ? WHERE id = ?');
 
@@ -63,7 +67,9 @@ const insertDiaryLikeStmt = db.prepare(
 const insertDiaryCommentStmt = db.prepare(
   'INSERT INTO diary_comments (entry_id, author_id, content, created_at) VALUES (?, ?, ?, ?)'
 );
-const selectDiaryCommentByIdStmt = db.prepare('SELECT * FROM diary_comments WHERE id = ?');
+const selectDiaryCommentByIdStmt = db.prepare(
+  'SELECT diary_comments.*, users.username as author_username, users.avatar as author_avatar FROM diary_comments LEFT JOIN users ON diary_comments.author_id = users.id WHERE diary_comments.id = ?'
+);
 const selectDiaryCommentWithTripStmt = db.prepare(
   `SELECT diary_comments.id, diary_comments.author_id, diary_entries.trip_id FROM diary_comments
    JOIN diary_entries ON diary_entries.id = diary_comments.entry_id
@@ -179,7 +185,7 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
     // Entwürfe (is_draft) sind rein persönlich (#89) - nur für die eigene author_id sichtbar.
     const rows = db
       .prepare(
-        'SELECT * FROM diary_entries WHERE trip_id = ? AND deleted_at IS NULL AND (is_draft = 0 OR author_id = ?) ORDER BY date DESC, created_at DESC, id DESC'
+        'SELECT e.*, u.username as author_username, u.avatar as author_avatar FROM diary_entries e LEFT JOIN users u ON e.author_id = u.id WHERE e.trip_id = ? AND e.deleted_at IS NULL AND (e.is_draft = 0 OR e.author_id = ?) ORDER BY e.date DESC, e.created_at DESC, e.id DESC'
       )
       .all(req.query.trip_id, req.session.userId) as EntryRow[];
     const entryIds = rows.map((r) => r.id);
@@ -216,7 +222,7 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
     if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
     return db
       .prepare(
-        `SELECT diary_comments.* FROM diary_comments
+        `SELECT diary_comments.*, u.username as author_username, u.avatar as author_avatar FROM diary_comments LEFT JOIN users u ON diary_comments.author_id = u.id
          JOIN diary_entries ON diary_entries.id = diary_comments.entry_id
          WHERE diary_entries.trip_id = ?
          ORDER BY diary_comments.created_at ASC, diary_comments.id ASC`

@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import Modal from './Modal.vue';
 import Button from './primitives/Button.vue';
 import PasswordInput from './PasswordInput.vue';
+import ReisotorRobot from './ReisotorRobot.vue';
 import AppIcon from './AppIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { api, ApiError } from '../api/client';
@@ -13,8 +14,15 @@ const auth = useAuthStore();
 const currentPassword = ref('');
 const newPassword = ref('');
 const confirmPassword = ref('');
+const currentVisible = ref(false);
+const newVisible = ref(false);
+const confirmVisible = ref(false);
 const submitting = ref(false);
 const error = ref('');
+
+const anyPasswordVisible = computed(
+  () => currentVisible.value || newVisible.value || confirmVisible.value
+);
 
 async function onSubmit() {
   error.value = '';
@@ -56,6 +64,9 @@ async function onSubmit() {
 
 <template>
   <Modal :model-value="true" hide-header>
+    <div class="robot-header">
+      <ReisotorRobot :covering-eyes="anyPasswordVisible" size="90px" />
+    </div>
     <div class="modal-head-custom">
       <h2>
         <AppIcon :icon="ACTION_ICONS.warning" :size="18" group="actions" />
@@ -74,6 +85,7 @@ async function onSubmit() {
         <PasswordInput
           id="current-pass"
           v-model="currentPassword"
+          v-model:visible="currentVisible"
           placeholder="Aktuelles Passwort"
           required
           autocomplete="current-password"
@@ -86,6 +98,7 @@ async function onSubmit() {
         <PasswordInput
           id="new-pass"
           v-model="newPassword"
+          v-model:visible="newVisible"
           placeholder="Mindestens 6 Zeichen"
           required
           autocomplete="new-password"
@@ -98,6 +111,7 @@ async function onSubmit() {
         <PasswordInput
           id="confirm-pass"
           v-model="confirmPassword"
+          v-model:visible="confirmVisible"
           placeholder="Neues Passwort wiederholen"
           required
           autocomplete="new-password"
@@ -117,12 +131,19 @@ async function onSubmit() {
 </template>
 
 <style scoped>
+.robot-header {
+  display: flex;
+  justify-content: center;
+  margin-bottom: var(--space-2);
+}
+
 .modal-head-custom h2 {
   margin: 0 0 var(--space-3) 0;
   font-size: 1.15rem;
   color: var(--color-primary-dark);
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: var(--space-2);
 }
 

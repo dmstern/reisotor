@@ -16,7 +16,7 @@ const belemDay = seeded.scheduleItems.find(
 const excursion = seeded.ideas.find((i: { title: string }) => i.title === 'Sightseeing-Tag Belém');
 
 test.beforeEach(async ({ page }) => {
-  // Die Kalender-Schublade ist auf Desktop-Viewports (>= 800px, siehe stores/drawers.ts
+  // Die Kalender-Schublade ist auf Desktop-Viewports (>= 1024px, siehe stores/drawers.ts
   // isDesktop()) standardmäßig bereits offen — kein Klick auf die Dashboard-Kachel nötig.
   await page.goto('/');
   await expect(

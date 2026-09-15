@@ -402,7 +402,12 @@ async function quickAddToGroup(group: Group, label: string) {
     </div>
 
     <div class="groups-grid">
-      <section class="group-section" v-for="group in groupedItems" :key="group.key">
+      <section
+        class="group-section animate-cascade"
+        v-for="(group, index) in groupedItems"
+        :key="group.key"
+        :style="{ '--stagger-delay': `${index * 60}ms` }"
+      >
         <h2>
           <AppIcon v-if="group.iconDef" :icon="group.iconDef" :size="18" group="categories" />
           {{ group.label }}
@@ -483,10 +488,10 @@ async function quickAddToGroup(group: Group, label: string) {
                   {{ u.avatar }} {{ u.username }}
                 </option>
               </Select>
-              <div class="row-actions">
+              <template #actions>
                 <EditButton small @click="startEdit(item)" />
                 <DeleteButton small @click="remove(item.id)" />
-              </div>
+              </template>
             </CheckableListItem>
             <li v-if="!group.items.length" :key="`${group.key}-empty`" class="empty">
               {{
@@ -503,6 +508,7 @@ async function quickAddToGroup(group: Group, label: string) {
     <Modal
       :model-value="editingItem !== null"
       title="Artikel bearbeiten"
+      full-height
       @update:model-value="(v) => !v && closeEditForm()"
     >
       <form class="edit-form" @submit.prevent="submitEdit">
@@ -531,7 +537,10 @@ async function quickAddToGroup(group: Group, label: string) {
           <Input :id="id" v-model="editForm.note" type="text" placeholder="Notiz (optional)" />
         </FormField>
         <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />
-        <Button type="submit">Speichern</Button>
+        <div class="actions-row">
+          <div class="spacer"></div>
+          <Button type="submit">Speichern</Button>
+        </div>
       </form>
     </Modal>
   </div>
@@ -627,7 +636,7 @@ async function quickAddToGroup(group: Group, label: string) {
   font-size: 0.78rem;
   color: var(--color-text-muted);
   background: var(--color-hover);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 2px 8px;
 }
 

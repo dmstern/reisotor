@@ -1,6 +1,11 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, watch, ref } from 'vue';
-import { MAX_DRAWER_WIDTH, MIN_DRAWER_WIDTH, useDrawersStore } from '../stores/drawers';
+import { computed, nextTick, onBeforeUnmount, onMounted, watch, ref } from 'vue';
+import {
+  MAX_DRAWER_WIDTH,
+  MAX_DRAWER_WIDTH_COMPACT,
+  MIN_DRAWER_WIDTH,
+  useDrawersStore,
+} from '../stores/drawers';
 import AppIcon from './AppIcon.vue';
 import ResizeHandle from './ResizeHandle.vue';
 import IconButton from './primitives/IconButton.vue';
@@ -93,6 +98,21 @@ watch(
   }
 );
 
+// Fensterbreite zur Deckelung auf Zwischengrößen (<1280px max 320px, ab 1280px max 860px)
+const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1280);
+function onWindowResize() {
+  windowWidth.value = window.innerWidth;
+}
+onMounted(() => {
+  window.addEventListener('resize', onWindowResize);
+});
+
+function getMaxWidth(): number {
+  return windowWidth.value < 1280 ? MAX_DRAWER_WIDTH_COMPACT : MAX_DRAWER_WIDTH;
+}
+
+const effectiveWidth = computed(() => Math.min(getMaxWidth(), props.width));
+
 // Anfasser zum Grösser-/Kleinerziehen der Schublade (Pointer Events statt separater Maus-/Touch-
 // Handler, damit derselbe Code auch auf Tablets funktioniert).
 const resizing = ref(false);
@@ -105,7 +125,7 @@ function onResizeStart(event: PointerEvent) {
   if (event.button !== 0) return;
   resizing.value = true;
   startX = event.clientX;
-  startWidth = props.width;
+  startWidth = effectiveWidth.value;
   activePointerId = event.pointerId;
   activeTarget = (event.currentTarget as HTMLElement) ?? (event.target as HTMLElement);
   if (activeTarget?.setPointerCapture && activePointerId !== null) {
@@ -127,7 +147,7 @@ function onResizeMove(event: PointerEvent) {
   const delta = event.clientX - startX;
   // Linke Schublade: nach rechts ziehen vergrößert. Rechte Schublade: nach links ziehen vergrößert.
   const signedDelta = props.side === 'left' ? delta : -delta;
-  const next = Math.min(MAX_DRAWER_WIDTH, Math.max(MIN_DRAWER_WIDTH, startWidth + signedDelta));
+  const next = Math.min(getMaxWidth(), Math.max(MIN_DRAWER_WIDTH, startWidth + signedDelta));
   emit('update:width', next);
 }
 
@@ -151,6 +171,7 @@ function onResizeEnd() {
 
 onBeforeUnmount(() => {
   onResizeEnd();
+  window.removeEventListener('resize', onWindowResize);
 });
 </script>
 
@@ -158,7 +179,7 @@ onBeforeUnmount(() => {
   <div
     class="drawer"
     :class="[side, { open, maximized, resizing }]"
-    :style="{ '--drawer-width': `${width}px` }"
+    :style="{ '--drawer-width': `${effectiveWidth}px` }"
   >
     <div
       class="drawer-backdrop"
@@ -419,7 +440,7 @@ onBeforeUnmount(() => {
 /* Desktop: Panel wird echtes Flex-Geschwisterelement (schiebt den Arbeitsbereich zur Seite),
    kein Overlay/Backdrop mehr. App.vue setzt display:flex auf den umgebenden .app-shell-Container;
    die Reihenfolge der Flex-Kinder (Tab vs. Panel) steuert `order` statt DOM-Reihenfolge. */
-@media (min-width: 800px) {
+@media (min-width: 1024px) {
   .drawer {
     display: flex;
     align-items: stretch;

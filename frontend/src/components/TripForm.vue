@@ -9,6 +9,7 @@ import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
 import Card from './primitives/Card.vue';
 import Checkbox from './primitives/Checkbox.vue';
+import CheckboxCard from './primitives/CheckboxCard.vue';
 import Input from './primitives/Input.vue';
 import Select from './primitives/Select.vue';
 import { IconCloud } from '@tabler/icons-vue';
@@ -295,19 +296,17 @@ function onSubmit() {
         </label>
       </Card>
 
-      <Card class="settings-card">
-        <div class="settings-card-header">
-          <AppIcon :icon="SECTION_ICON_DEFS.packing" :size="18" group="navigation" />
-          <span class="field-label">Packliste</span>
-        </div>
-        <label for="auto-id-1788301175440-16" class="checkbox-label">
-          <Checkbox id="auto-id-1788301175440-16" v-model="form.packing_category_required" />
-          Kategorie in der Packliste ist Pflichtfeld
-        </label>
-      </Card>
+      <CheckboxCard
+        id="trip-packing-category-required"
+        v-model="form.packing_category_required"
+        :icon="SECTION_ICON_DEFS.packing"
+        label="Kategorie in der Packliste ist Pflichtfeld"
+        description="Beim Anlegen neuer Packlisten-Einträge muss eine Kategorie ausgewählt werden"
+      />
     </div>
 
-    <div class="form-actions">
+    <div class="actions-row">
+      <div class="spacer"></div>
       <Button type="submit">{{ submitLabel ?? 'Speichern' }}</Button>
     </div>
   </form>
@@ -448,11 +447,13 @@ label,
 
 .dates-row {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-2);
 }
 
 .dates-row label {
-  flex: 1;
+  flex: 1 1 130px;
+  min-width: 130px;
 }
 
 .checkbox-label {
@@ -480,10 +481,7 @@ label,
   margin-top: 0;
 }
 
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--space-2);
-  margin-top: var(--space-2);
+.spacer {
+  flex: 1;
 }
 </style>

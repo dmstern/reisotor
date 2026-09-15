@@ -191,7 +191,7 @@ const firstLoadDone = ref(
   container: app-main / inline-size;
 }
 
-@media (min-width: 800px) {
+@media (min-width: 1024px) {
   .app-shell {
     display: flex;
     /* stretch (nicht flex-start!): .drawer muss die volle Höhe von .app-main erreichen, sonst hat

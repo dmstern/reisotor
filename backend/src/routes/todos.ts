@@ -8,6 +8,7 @@ interface TodoBody {
   title: string;
   assigned_to_user_id?: number | null;
   due_date?: string;
+  period?: 'before' | 'during' | null;
   priority?: 'low' | 'medium' | 'high';
   note?: string;
   done?: boolean;
@@ -25,18 +26,20 @@ export const todosRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.post<{ Body: TodoBody }>('/todos', async (req, reply) => {
-    const { trip_id, title, assigned_to_user_id, due_date, priority, note, done } = req.body;
+    const { trip_id, title, assigned_to_user_id, due_date, period, priority, note, done } =
+      req.body;
     if (!requireTripMember(reply, trip_id, req.session.userId)) return;
     const result = db
       .prepare(
-        `INSERT INTO todo_items (trip_id, title, assigned_to_user_id, due_date, priority, note, done)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`
+        `INSERT INTO todo_items (trip_id, title, assigned_to_user_id, due_date, period, priority, note, done)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
       )
       .run(
         trip_id,
         title,
         assigned_to_user_id ?? null,
         due_date ?? null,
+        period ?? null,
         priority ?? 'medium',
         note ?? null,
         done ? 1 : 0
@@ -59,16 +62,17 @@ export const todosRoutes: FastifyPluginAsync = async (app) => {
     if (!existingItem) return reply.code(404).send({ error: 'Nicht gefunden' });
     if (!requireTripMember(reply, existingItem.trip_id, req.session.userId)) return;
 
-    const { title, assigned_to_user_id, due_date, priority, note, done } = req.body;
+    const { title, assigned_to_user_id, due_date, period, priority, note, done } = req.body;
     const result = db
       .prepare(
-        `UPDATE todo_items SET title = ?, assigned_to_user_id = ?, due_date = ?, priority = ?, note = ?, done = ?
+        `UPDATE todo_items SET title = ?, assigned_to_user_id = ?, due_date = ?, period = ?, priority = ?, note = ?, done = ?
          WHERE id = ?`
       )
       .run(
         title,
         assigned_to_user_id ?? null,
         due_date ?? null,
+        period ?? null,
         priority ?? 'medium',
         note ?? null,
         done ? 1 : 0,

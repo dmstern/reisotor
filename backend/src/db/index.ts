@@ -124,6 +124,7 @@ CREATE TABLE IF NOT EXISTS todo_items (
   title TEXT NOT NULL,
   assigned_to_user_id INTEGER REFERENCES users(id),
   due_date TEXT,
+  period TEXT,
   priority TEXT NOT NULL DEFAULT 'medium',
   note TEXT,
   done INTEGER DEFAULT 0
@@ -1121,6 +1122,32 @@ const ATTACHMENT_DOMAIN_BY_TABLE: Partial<Record<(typeof TRASH_TABLES)[number], 
   budget_items: 'budget',
 };
 
+export function hardDeleteTrashItems(table: (typeof TRASH_TABLES)[number], ids: number[]) {
+  if (!ids.length) return;
+
+  const attachmentDomain = ATTACHMENT_DOMAIN_BY_TABLE[table];
+  if (attachmentDomain) {
+    purgeAttachmentsForEntities(attachmentDomain, ids);
+    if (table === 'ideas') {
+      const placeholders = ids.map(() => '?').join(',');
+      const legRows = db
+        .prepare(`SELECT id FROM excursion_legs WHERE idea_id IN (${placeholders})`)
+        .all(...ids) as { id: number }[];
+      if (legRows.length) {
+        purgeAttachmentsForEntities(
+          'excursion_legs',
+          legRows.map((r) => r.id)
+        );
+      }
+    }
+  }
+
+  const placeholders = ids.map(() => '?').join(',');
+  db.prepare(`DELETE FROM ${table} WHERE id IN (${placeholders}) AND deleted_at IS NOT NULL`).run(
+    ...ids
+  );
+}
+
 // Endgültiges Aufräumen (optional, siehe AGENTS.md-Auftrag "kein Muss"): Objekte, die länger als
 // 30 Tage im Papierkorb liegen, werden beim Backend-Start hart gelöscht. budget_transfers hat kein
 // trip_id (siehe CREATE TABLE oben), braucht daher keinen Join/Backfill – deleted_at reicht für den
@@ -1130,31 +1157,15 @@ const ATTACHMENT_DOMAIN_BY_TABLE: Partial<Record<(typeof TRASH_TABLES)[number], 
 export function purgeOldTrash(maxAgeDays = 30) {
   const cutoff = new Date(Date.now() - maxAgeDays * 24 * 60 * 60 * 1000).toISOString();
   for (const table of TRASH_TABLES) {
-    const attachmentDomain = ATTACHMENT_DOMAIN_BY_TABLE[table];
-    if (attachmentDomain) {
-      const staleRows = db
-        .prepare(`SELECT id FROM ${table} WHERE deleted_at IS NOT NULL AND deleted_at < ?`)
-        .all(cutoff) as { id: number }[];
-      if (staleRows.length) {
-        purgeAttachmentsForEntities(
-          attachmentDomain,
-          staleRows.map((r) => r.id)
-        );
-        if (table === 'ideas') {
-          const placeholders = staleRows.map(() => '?').join(',');
-          const legRows = db
-            .prepare(`SELECT id FROM excursion_legs WHERE idea_id IN (${placeholders})`)
-            .all(...staleRows.map((r) => r.id)) as { id: number }[];
-          if (legRows.length) {
-            purgeAttachmentsForEntities(
-              'excursion_legs',
-              legRows.map((r) => r.id)
-            );
-          }
-        }
-      }
+    const staleRows = db
+      .prepare(`SELECT id FROM ${table} WHERE deleted_at IS NOT NULL AND deleted_at < ?`)
+      .all(cutoff) as { id: number }[];
+    if (staleRows.length) {
+      hardDeleteTrashItems(
+        table,
+        staleRows.map((r) => r.id)
+      );
     }
-    db.prepare(`DELETE FROM ${table} WHERE deleted_at IS NOT NULL AND deleted_at < ?`).run(cutoff);
   }
 }
 purgeOldTrash();
@@ -1508,6 +1519,7 @@ if (!hasAdmin) {
 // sich beim Löschen gegenseitig die Ausgabe wegreißen. Budget-Sync/Anhänge/Kalender-Verknüpfung auf
 // das neue Modell umstellen und travel_items danach entfernen: #176.
 ensureColumn('ideas', 'role', 'TEXT');
+ensureColumn('ideas', 'destination_spot_id', 'INTEGER REFERENCES spots(id) ON DELETE SET NULL');
 ensureColumn('ideas', 'transport_type', 'TEXT');
 ensureColumn('ideas', 'departure_time', 'TEXT');
 ensureColumn('ideas', 'arrival_time', 'TEXT');
@@ -1759,3 +1771,4 @@ if (ideasWithTransport.length > 0) {
     }
   }
 }
+ensureColumn('todo_items', 'period', 'TEXT');

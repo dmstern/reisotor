@@ -33,8 +33,8 @@ async function focusDayViaCalendar(page: Page, viewportName: string) {
 }
 
 // Regressionstest für einen bereits mehrfach aufgetretenen UX-Bug (TripMap.vue's centerOnPoint()/
-// fitBoundsWithCoveredBottom()): auf Mobilgeräten (< 800px) rendert die Spots-Schublade (.spots-col)
-// als Bottom-Sheet ÜBER dem unteren Teil der Karte. Auf Desktop-Breiten (≥ 800px) schwebt sie dagegen
+// fitBoundsWithCoveredBottom()): auf Mobilgeräten (< 1024px) rendert die Spots-Schublade (.spots-col)
+// als Bottom-Sheet ÜBER dem unteren Teil der Karte. Auf Desktop-Breiten (≥ 1024px) schwebt sie dagegen
 // permanent als Seitenspalte links. Ein fokussierter Punkt/Ausschnitt auf Mobilgeräten darf deshalb
 // nicht im Zentrum des GESAMTEN Karten-Containers landen, sondern muss im Zentrum der tatsächlich
 // sichtbaren (nicht überlagerten) Fläche erscheinen - siehe ExcursionsView.vue's mapCoveredBottomPx

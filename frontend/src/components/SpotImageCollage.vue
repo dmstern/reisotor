@@ -1,10 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 
-// Fallback-Bild für Ausflüge ohne eigenes Bild, aber mit mehreren bebilderten Stationen: statt nur
-// das erste Spot-Bild zu zeigen (sieht dann wie ein normaler Spot aus), eine kleine Foto-Collage
-// aus bis zu 4 Stationsbildern – macht auf einen Blick erkennbar "das ist ein Ausflug mit mehreren
-// Orten", nicht ein einzelner Spot.
 const props = defineProps<{ images: string[] }>();
 const shown = computed(() => props.images.slice(0, 4));
 const extraCount = computed(() => Math.max(0, props.images.length - 4));
@@ -37,6 +33,7 @@ const extraCount = computed(() => Math.max(0, props.images.length - 4));
 
 .collage.count-2 {
   grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr;
 }
 
 .collage.count-3,
@@ -45,10 +42,25 @@ const extraCount = computed(() => Math.max(0, props.images.length - 4));
   grid-template-rows: 1fr 1fr;
 }
 
-/* Bei genau 3 Bildern: erstes links über die volle Höhe, die anderen beiden rechts gestapelt –
-   klassisches Foto-Mosaik statt einer leeren vierten Zelle. */
+/* Bei genau 3 Bildern auf Desktop: erstes links über die volle Höhe, die anderen beiden rechts gestapelt */
 .collage.count-3 .tile:first-child {
   grid-row: 1 / span 2;
+}
+
+@container spots-col (max-width: 480px) {
+  /* Bei knapper Breite (Mobile/schmaler Drawer) ist das Tour-Thumbnail sehr hochkant. 
+     Damit bei 2 Bildern keine extrem schmalen Streifen entstehen, stapeln wir sie vertikal. */
+  .collage.count-2 {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr 1fr;
+  }
+
+  /* Bei 3 Bildern drehen wir das Mosaik um: Erstes Bild über die volle Breite oben, 
+     die anderen beiden unten nebeneinander. Sonst wäre das linke Bild ein winziger Streifen. */
+  .collage.count-3 .tile:first-child {
+    grid-row: 1;
+    grid-column: 1 / span 2;
+  }
 }
 
 .tile {

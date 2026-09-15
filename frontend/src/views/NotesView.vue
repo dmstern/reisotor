@@ -260,9 +260,10 @@ async function remove(id: number) {
 
     <TransitionGroup tag="div" name="list" class="masonry cards">
       <Card
-        v-for="note in notes"
+        v-for="(note, index) in notes"
         :key="note.id"
-        class="note-card"
+        class="note-card animate-cascade"
+        :style="{ '--stagger-delay': `${index * 60}ms` }"
         :highlight="highlightedIds.has(note.id)"
       >
         <div class="note-head">
@@ -344,6 +345,16 @@ async function remove(id: number) {
 
 .cards {
   column-width: 240px;
+}
+
+.cards :deep(.list-leave-active) {
+  position: static;
+  width: auto;
+}
+
+.cards :deep(.list-leave-to) {
+  opacity: 0;
+  transform: scale(0.95);
 }
 
 .note-card {

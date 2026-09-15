@@ -269,7 +269,12 @@ async function quickAdd(list: ListGroup, label: string) {
     </div>
 
     <div class="lists-grid">
-      <section class="list-section" v-for="list in lists" :key="list.key">
+      <section
+        class="list-section animate-cascade"
+        v-for="(list, index) in lists"
+        :key="list.key"
+        :style="{ '--stagger-delay': `${index * 60}ms` }"
+      >
         <div class="list-header">
           <h2 v-if="users.length > 1">{{ list.title }}</h2>
           <span class="progress"
@@ -298,9 +303,9 @@ async function quickAdd(list: ListGroup, label: string) {
                 placeholder="Unterkategorie (optional)"
                 size="sm"
               />
-              <label for="auto-id-1788301175448-25" class="qty-field quick-add-qty">
+              <label :for="`quick-add-qty-${list.key}`" class="qty-field quick-add-qty">
                 <Input
-                  id="auto-id-1788301175448-25"
+                  :id="`quick-add-qty-${list.key}`"
                   v-model.number="quickAddQuantities[list.key]"
                   type="number"
                   inputmode="numeric"
@@ -348,6 +353,7 @@ async function quickAdd(list: ListGroup, label: string) {
     <Modal
       :model-value="editingItem !== null"
       title="Gegenstand bearbeiten"
+      full-height
       @update:model-value="(v) => !v && (editingItem = null)"
     >
       <form class="edit-form" @submit.prevent="submitEdit">
@@ -388,7 +394,10 @@ async function quickAdd(list: ListGroup, label: string) {
             </option>
           </Select>
         </FormField>
-        <Button type="submit">Speichern</Button>
+        <div class="actions-row">
+          <div class="spacer"></div>
+          <Button type="submit">Speichern</Button>
+        </div>
       </form>
     </Modal>
   </div>

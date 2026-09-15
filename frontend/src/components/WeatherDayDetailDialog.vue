@@ -118,22 +118,78 @@ function formatDate(dateStr: string) {
       </div>
 
       <!-- Stündlicher Verlauf -->
-      <div class="hourly-section">
-        <h3>Tagesverlauf</h3>
-        <div v-if="loading" class="hourly-loading">Lade Verlauf...</div>
-        <div v-else-if="hourlyList.length" class="hourly-grid">
-          <div v-for="h in hourlyList" :key="h.time" class="hourly-item">
-            <span class="time">{{ h.time }}</span>
-            <WeatherIcon :code="h.weatherCode" :size="20" />
-            <span class="temp">{{ h.temp }}°</span>
-            <span
-              v-if="h.precipitationProbability != null && h.precipitationProbability > 0"
-              class="rain"
-              >{{ h.precipitationProbability }}%</span
-            >
-          </div>
+      <div class="hourly-section" :class="{ 'is-loading': loading }">
+        <div class="hourly-header">
+          <h3>Tagesverlauf</h3>
+          <Transition name="badge-fade">
+            <span v-if="loading" class="hourly-loading-badge" role="status" aria-live="polite">
+              <span class="pulse-indicator" aria-hidden="true">
+                <span class="pulse-ring"></span>
+                <span class="pulse-dot"></span>
+              </span>
+              <span>Lade Verlauf…</span>
+            </span>
+          </Transition>
         </div>
-        <div v-else class="hourly-empty">Kein stündlicher Verlauf verfügbar.</div>
+
+        <div class="hourly-stage">
+          <Transition name="hourly-swap" mode="out-in">
+            <!-- Loading Skeleton Grid (6 Kacheln wie die Zielansicht) -->
+            <div
+              v-if="loading"
+              key="skeleton"
+              class="hourly-grid skeleton-grid"
+              aria-busy="true"
+              aria-label="Lade stündlichen Wetterverlauf"
+            >
+              <div
+                v-for="idx in 6"
+                :key="idx"
+                class="hourly-item skeleton-item"
+                :style="{ '--index': idx - 1 }"
+              >
+                <div class="skeleton-shimmer"></div>
+                <div class="skeleton-bar skeleton-time"></div>
+                <div class="skeleton-icon-placeholder"></div>
+                <div class="skeleton-bar skeleton-temp"></div>
+                <div class="skeleton-bar skeleton-rain"></div>
+              </div>
+            </div>
+
+            <!-- Geladene Kacheln mit sanft-schlangigem Hereingleiten -->
+            <div
+              v-else-if="hourlyList.length"
+              key="list"
+              class="hourly-grid"
+              role="region"
+              aria-label="Stündlicher Wetterverlauf"
+            >
+              <div
+                v-for="(h, idx) in hourlyList"
+                :key="h.time"
+                class="hourly-item loaded-item"
+                :style="{
+                  '--index': idx,
+                  '--dir': idx % 2 === 0 ? -1 : 1,
+                }"
+              >
+                <span class="time">{{ h.time }}</span>
+                <WeatherIcon :code="h.weatherCode" :size="20" />
+                <span class="temp">{{ h.temp }}°</span>
+                <span
+                  v-if="h.precipitationProbability != null && h.precipitationProbability > 0"
+                  class="rain"
+                  title="Regenwahrscheinlichkeit"
+                  >{{ h.precipitationProbability }}%</span
+                >
+                <span v-else class="rain rain-placeholder" aria-hidden="true">&nbsp;</span>
+              </div>
+            </div>
+
+            <!-- Leerer Zustand -->
+            <div v-else key="empty" class="hourly-empty">Kein stündlicher Verlauf verfügbar.</div>
+          </Transition>
+        </div>
       </div>
 
       <!-- Modell-Hinweis & Einstellungen (Issue #133) -->
@@ -229,9 +285,96 @@ function formatDate(dateStr: string) {
   color: var(--color-primary-dark);
 }
 
-.hourly-section h3 {
-  font-size: 0.95rem;
+.hourly-section {
+  display: flex;
+  flex-direction: column;
+  transition: min-height 0.35s cubic-bezier(0.34, 1.2, 0.64, 1);
+  min-height: 110px;
+}
+
+@media (max-width: 480px) {
+  .hourly-section {
+    min-height: 190px;
+  }
+}
+
+.hourly-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: var(--space-2);
+}
+
+.hourly-header h3 {
+  font-size: 0.95rem;
+  margin-bottom: 0;
+}
+
+.hourly-loading-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-primary-dark);
+  background: var(--color-primary-tint);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full, 9999px);
+  padding: 2px 8px;
+}
+
+.pulse-indicator {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 8px;
+  height: 8px;
+}
+
+.pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--color-primary);
+}
+
+.pulse-ring {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background-color: var(--color-primary);
+  opacity: 0.75;
+  animation: radar-ping 1.6s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes radar-ping {
+  75%,
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+.badge-fade-enter-active,
+.badge-fade-leave-active {
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+.badge-fade-enter-from,
+.badge-fade-leave-to {
+  opacity: 0;
+  transform: scale(0.92);
+}
+
+.hourly-stage {
+  position: relative;
+  width: 100%;
 }
 
 .hourly-grid {
@@ -255,6 +398,124 @@ function formatDate(dateStr: string) {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   padding: 8px 4px;
+  min-height: 76px;
+  transition:
+    transform 0.2s cubic-bezier(0.34, 1.2, 0.64, 1),
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.hourly-item.loaded-item {
+  animation: hourly-snake-in 0.52s cubic-bezier(0.34, 1.35, 0.64, 1) both;
+  animation-delay: calc(var(--index, 0) * 55ms);
+}
+
+.hourly-item.loaded-item:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: var(--shadow-sm);
+  border-color: var(--color-primary-light, var(--color-border));
+}
+
+@keyframes hourly-snake-in {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) translateX(calc(var(--dir, 1) * 7px))
+      rotate(calc(var(--dir, 1) * 2.8deg)) scale(0.92);
+  }
+  65% {
+    opacity: 1;
+    transform: translateY(-2px) translateX(calc(var(--dir, 1) * -1px))
+      rotate(calc(var(--dir, 1) * -0.5deg)) scale(1.015);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) translateX(0) rotate(0deg) scale(1);
+  }
+}
+
+/* Skeleton Kacheln während des Ladens */
+.skeleton-item {
+  position: relative;
+  overflow: hidden;
+  border-style: dashed;
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+.skeleton-shimmer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.15) 35%,
+    rgba(255, 255, 255, 0.35) 50%,
+    rgba(255, 255, 255, 0.15) 65%,
+    transparent 100%
+  );
+  transform: translateX(-100%);
+  animation: shimmer-sweep 1.8s infinite;
+  animation-delay: calc(var(--index, 0) * 110ms);
+  pointer-events: none;
+}
+
+[data-theme='dark'] .skeleton-shimmer,
+:root:not([data-theme='light']) .skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.03) 35%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.03) 65%,
+    transparent 100%
+  );
+}
+
+@keyframes shimmer-sweep {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.skeleton-bar {
+  background: var(--color-hover);
+  border-radius: var(--radius-sm);
+}
+
+.skeleton-time {
+  width: 28px;
+  height: 10px;
+}
+
+.skeleton-icon-placeholder {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--color-hover);
+}
+
+.skeleton-temp {
+  width: 22px;
+  height: 12px;
+}
+
+.skeleton-rain {
+  width: 24px;
+  height: 8px;
+  opacity: 0.5;
+}
+
+.hourly-swap-enter-active,
+.hourly-swap-leave-active {
+  transition: opacity 0.18s ease;
+}
+
+.hourly-swap-enter-from,
+.hourly-swap-leave-to {
+  opacity: 0;
 }
 
 .time {
@@ -270,14 +531,31 @@ function formatDate(dateStr: string) {
 .rain {
   font-size: 0.7rem;
   color: #3b82f6;
+  min-height: 14px;
+  line-height: 14px;
+  white-space: nowrap;
 }
 
-.hourly-loading,
+.rain.rain-placeholder {
+  visibility: hidden;
+  user-select: none;
+}
+
 .hourly-empty {
   font-size: 0.85rem;
   color: var(--color-text-muted);
   text-align: center;
   padding: var(--space-3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse-ring,
+  .skeleton-shimmer,
+  .hourly-item.loaded-item {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
 }
 
 .model-info-box {

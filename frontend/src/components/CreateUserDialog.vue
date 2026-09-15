@@ -156,8 +156,11 @@ async function submit() {
 
       <p v-if="error" class="error-msg">{{ error }}</p>
 
-      <div class="actions">
-        <Button type="button" variant="secondary" @click="close">Abbrechen</Button>
+      <div class="actions-row">
+        <div class="spacer"></div>
+        <Button type="button" variant="secondary" class="btn-cancel" @click="close"
+          >Abbrechen</Button
+        >
         <Button type="submit" variant="primary" :disabled="submitting">
           <template v-if="submitting">Speichere…</template>
           <template v-else>
@@ -220,12 +223,5 @@ async function submit() {
   color: var(--color-danger);
   font-size: 0.85rem;
   margin: 0;
-}
-
-.actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--space-2);
-  margin-top: var(--space-2);
 }
 </style>

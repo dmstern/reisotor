@@ -201,6 +201,19 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: var(--shadow-md);
+  transition:
+    height 0.35s cubic-bezier(0.34, 1.2, 0.64, 1),
+    max-height 0.35s ease;
+}
+
+@media (max-width: 600px) {
+  .overlay {
+    padding: 12px;
+  }
+
+  .modal {
+    padding: var(--space-3);
+  }
 }
 
 .modal.size-sm {
@@ -281,6 +294,7 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
    (z. B. wenn nur der Titel oben geändert wird), während der Formularinhalt dahinter scrollt. */
 .modal.full-height .modal-body :slotted(form) .actions-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
   position: sticky;
@@ -310,5 +324,19 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   margin: 0;
   font-size: 1.1rem;
   color: var(--color-primary-dark);
+}
+
+.close-btn {
+  position: relative;
+}
+
+.close-btn::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
 }
 </style>

@@ -183,10 +183,10 @@ const tallyGroups = computed<number[]>(() => {
       </button>
     </div>
 
-    <div class="row-actions">
+    <template #actions>
       <EditButton small @click="emit('edit', item)" />
       <DeleteButton small @click="emit('remove', item.id)" />
-    </div>
+    </template>
   </CheckableListItem>
 </template>
 

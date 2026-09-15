@@ -90,3 +90,99 @@ describe('ideas.date -> schedule_items Backfill-Migration', () => {
     expect(scheduleRow?.done).toBe(1);
   });
 });
+
+describe('ideas -> excursion_legs Transport-Backfill', () => {
+  let dbPath: string | undefined;
+
+  beforeEach(() => {
+    vi.resetModules();
+  });
+
+  afterEach(() => {
+    delete process.env.DB_PATH;
+    if (dbPath) rmSync(path.dirname(dbPath), { recursive: true, force: true });
+  });
+
+  it('überträgt Transport-Felder einer Tour auf einen neuen excursion_legs-Eintrag (Issue #361)', async () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'reisotor-migration-test-legs-'));
+    dbPath = path.join(dir, 'legacy.sqlite');
+
+    const legacy = new Database(dbPath);
+    legacy.exec(`
+      CREATE TABLE users (id INTEGER PRIMARY KEY, email TEXT NOT NULL, password TEXT NOT NULL);
+      CREATE TABLE trips (id INTEGER PRIMARY KEY, name TEXT NOT NULL, start_date TEXT NOT NULL, end_date TEXT NOT NULL);
+      CREATE TABLE budget_items (id INTEGER PRIMARY KEY, trip_id INTEGER);
+      CREATE TABLE ideas (
+        id INTEGER PRIMARY KEY,
+        trip_id INTEGER,
+        title TEXT NOT NULL,
+        role TEXT,
+        transport_type TEXT,
+        departure_time TEXT,
+        arrival_time TEXT,
+        checkin_info TEXT,
+        seat TEXT,
+        luggage TEXT,
+        ticket_link TEXT,
+        amount REAL,
+        paid_by_user_id INTEGER,
+        budget_expense_id INTEGER
+      );
+      CREATE TABLE spots (id INTEGER PRIMARY KEY, trip_id INTEGER, title TEXT NOT NULL);
+      CREATE TABLE excursion_spots (idea_id INTEGER, spot_id INTEGER, position INTEGER);
+    `);
+
+    legacy
+      .prepare(`INSERT INTO users (id, email, password) VALUES (1, 'test@test.com', 'test')`)
+      .run();
+    legacy
+      .prepare(
+        `INSERT INTO trips (id, name, start_date, end_date) VALUES (1, 'Urlaub', '2026-08-01', '2026-08-14')`
+      )
+      .run();
+    legacy.prepare(`INSERT INTO budget_items (id, trip_id) VALUES (99, 1)`).run();
+    legacy
+      .prepare(
+        `
+      INSERT INTO ideas (
+        id, trip_id, title, role, transport_type, departure_time, arrival_time,
+        checkin_info, seat, luggage, ticket_link, amount, paid_by_user_id, budget_expense_id
+      ) VALUES (
+        42, 1, 'Hinfahrt', 'arrival', 'Zug', '10:00', '14:00',
+        'Gleis 9', 'Wagen 2 Platz 14', '1 Koffer', 'http://ticket', 49.90, 1, 99
+      )
+    `
+      )
+      .run();
+    legacy
+      .prepare(`INSERT INTO spots (id, trip_id, title) VALUES (10, 1, 'Start'), (11, 1, 'Ziel')`)
+      .run();
+    legacy
+      .prepare(
+        `INSERT INTO excursion_spots (idea_id, spot_id, position) VALUES (42, 10, 0), (42, 11, 1)`
+      )
+      .run();
+
+    legacy.close();
+
+    process.env.DB_PATH = dbPath;
+    const { db } = await import('../../src/db/index.js');
+
+    const legRow = db.prepare('SELECT * FROM excursion_legs WHERE idea_id = 42').get() as any;
+
+    expect(legRow).toBeDefined();
+    expect(legRow.position).toBe(0);
+    expect(legRow.from_spot_id).toBe(10);
+    expect(legRow.to_spot_id).toBe(11);
+    expect(legRow.transport_type).toBe('Zug');
+    expect(legRow.departure_time).toBe('10:00');
+    expect(legRow.arrival_time).toBe('14:00');
+    expect(legRow.checkin_info).toBe('Gleis 9');
+    expect(legRow.seat).toBe('Wagen 2 Platz 14');
+    expect(legRow.luggage).toBe('1 Koffer');
+    expect(legRow.ticket_link).toBe('http://ticket');
+    expect(legRow.amount).toBe(49.9);
+    expect(legRow.paid_by_user_id).toBe(1);
+    expect(legRow.budget_expense_id).toBe(99);
+  });
+});

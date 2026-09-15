@@ -139,7 +139,7 @@ function removeTour(title: string) {
   align-items: center;
   gap: 6px;
   background: var(--color-hover);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 2px 6px 2px 10px;
   font-size: 0.82rem;
 }
@@ -164,7 +164,7 @@ function removeTour(title: string) {
   background: var(--color-primary-tint);
   color: var(--color-primary-dark);
   border: 1px solid var(--color-border-strong);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 2px 8px;
   font-size: 0.75rem;
   font-weight: 600;

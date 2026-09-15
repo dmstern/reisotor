@@ -305,6 +305,7 @@ export const DEMO_EXCURSIONS: Excursion[] = [
     seat: null,
     ticket_link: null,
     budget_expense_id: null,
+    destination_spot_id: null,
   },
   {
     id: 2,
@@ -328,6 +329,7 @@ export const DEMO_EXCURSIONS: Excursion[] = [
     seat: '12A, 12B',
     ticket_link: null,
     budget_expense_id: null,
+    destination_spot_id: null,
   },
   {
     id: 3,
@@ -351,6 +353,7 @@ export const DEMO_EXCURSIONS: Excursion[] = [
     seat: '14C, 14D',
     ticket_link: null,
     budget_expense_id: null,
+    destination_spot_id: null,
   },
   {
     id: 4,
@@ -374,6 +377,7 @@ export const DEMO_EXCURSIONS: Excursion[] = [
     seat: null,
     ticket_link: null,
     budget_expense_id: null,
+    destination_spot_id: null,
   },
   {
     id: 5,
@@ -397,6 +401,7 @@ export const DEMO_EXCURSIONS: Excursion[] = [
     seat: null,
     ticket_link: null,
     budget_expense_id: null,
+    destination_spot_id: null,
   },
 ];
 

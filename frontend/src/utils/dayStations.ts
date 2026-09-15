@@ -65,16 +65,30 @@ export function buildDayStations(
   // Ort. Vorher explizit nach Abflugzeit sortiert (nicht die Erstellungsreihenfolge aus der API,
   // ORDER BY date, id), da die aufeinanderfolgende-Duplikat-Erkennung von der tatsächlichen
   // Reihenfolge der Etappen abhängt.
-  const todaysTravel = travelItems
+  // Helper to determine if arrival is on the next day
+  function arrivesNextDay(t: TravelItem) {
+    return !!t.departure_time && !!t.arrival_time && t.arrival_time < t.departure_time;
+  }
+
+  // Calculate the previous date
+  const d = new Date(date);
+  d.setDate(d.getDate() - 1);
+  const prevDate = d.toISOString().split('T')[0];
+
+  // Etappen, die HEUTE starten
+  const startsToday = travelItems
     .filter((t) => t.date === date)
     .sort((a, b) => (a.departure_time ?? '').localeCompare(b.departure_time ?? ''));
+
+  // Etappen, die GESTERN starteten, aber HEUTE ankommen (Mitternachts-Übergang)
+  const arrivesToday = travelItems
+    .filter((t) => t.date === prevDate && arrivesNextDay(t))
+    .sort((a, b) => (a.arrival_time ?? '').localeCompare(b.arrival_time ?? ''));
+
   let previousTravelKey: string | null = null;
-  for (const t of todaysTravel) {
-    const from = resolveStation(travelEndpointKey(t, 'from'), spots, travelItems);
-    if (from && from.key !== previousTravelKey) {
-      timed.push({ time: t.departure_time, station: from });
-      previousTravelKey = from.key;
-    }
+
+  // 1. Zuerst die Ankünfte von gestern Nacht
+  for (const t of arrivesToday) {
     const to = resolveStation(travelEndpointKey(t, 'to'), spots, travelItems);
     if (to) {
       timed.push({
@@ -89,6 +103,33 @@ export function buildDayStations(
         },
       });
       previousTravelKey = to.key;
+    }
+  }
+
+  // 2. Dann die Abflüge/Reisen von heute
+  for (const t of startsToday) {
+    const from = resolveStation(travelEndpointKey(t, 'from'), spots, travelItems);
+    if (from && from.key !== previousTravelKey) {
+      timed.push({ time: t.departure_time, station: from });
+      previousTravelKey = from.key;
+    }
+    const to = resolveStation(travelEndpointKey(t, 'to'), spots, travelItems);
+    if (to) {
+      // Wenn die Ankunft erst morgen ist, hier (heute) NICHT die Ankunfts-Station anzeigen
+      if (!arrivesNextDay(t)) {
+        timed.push({
+          time: t.arrival_time ?? t.departure_time,
+          station: {
+            ...to,
+            connector: {
+              icon: travelTypeIcon(t.type, '📍'),
+              tabler: travelTypeIconDef(t.type),
+              label: t.title,
+            },
+          },
+        });
+        previousTravelKey = to.key;
+      }
     }
   }
 

@@ -235,6 +235,20 @@ const profileTitle = computed(() => {
   opacity: 0.85;
 }
 
+.brand {
+  position: relative;
+}
+
+.brand::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 44px;
+  transform: translateY(-50%);
+}
+
 .env-badge {
   font-size: 0.65rem;
   font-weight: 700;
@@ -285,6 +299,20 @@ const profileTitle = computed(() => {
   min-width: 0;
   max-width: 100%;
   flex-shrink: 1;
+}
+
+.switcher :deep(.switcher-btn) {
+  position: relative;
+}
+
+.switcher :deep(.switcher-btn)::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 44px;
+  transform: translateY(-50%);
 }
 
 .floating-island.has-nav .switcher {
@@ -351,6 +379,22 @@ const profileTitle = computed(() => {
   padding: 3px 6px;
 }
 
+.header-actions :deep(.bell-btn),
+.header-actions :deep(.recording-pill-btn) {
+  position: relative;
+}
+
+.header-actions :deep(.bell-btn)::after,
+.header-actions :deep(.recording-pill-btn)::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
+}
+
 .logo {
   width: 32px;
   height: 32px;
@@ -387,6 +431,16 @@ const profileTitle = computed(() => {
   position: relative;
   box-sizing: border-box;
   z-index: 1;
+}
+
+.profile-link::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
 }
 
 .profile-link.is-online {

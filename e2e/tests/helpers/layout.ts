@@ -2,14 +2,12 @@ import { expect, type Locator, type Page } from '@playwright/test';
 
 /** Repräsentative Viewports für die Layout-Overlap-Suite (siehe layout-overlap.spec.ts):
  *  - mobile: fixierte NavBar + Bottom-Sheet-Schubladen (ExcursionsView.vue).
- *  - narrowDesktop: > 800px (useIsDesktop.ts-Schwelle, Drawer.vue mountet), aber < 900px
- *    (ExcursionsView.vue's @container-Schwelle für das Desktop-Sticky-Spalten-Layout) — deckt den
- *    "Desktop-Modus mit stark eingeschränktem .app-main" ab (z. B. beide Schubladen gleichzeitig
- *    offen), der eigene .page-Regeln nutzt (siehe ExcursionsView.vue).
+ *  - narrowDesktop: > 1024px (useIsDesktop.ts-Schwelle, Drawer.vue mountet) — deckt den
+ *    Desktop-Modus mit geöffneter Kalender-Schublade ab.
  *  - desktop: komfortable Breite, beide Schubladen offen ohne Platznot. */
 export const VIEWPORTS = {
   mobile: { width: 390, height: 844 },
-  narrowDesktop: { width: 850, height: 900 },
+  narrowDesktop: { width: 1080, height: 900 },
   desktop: { width: 1280, height: 800 },
 } as const;
 

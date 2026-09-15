@@ -7,6 +7,7 @@ import { useTripStore } from './trip';
 import { useLiveSyncStore } from './liveSync';
 import { useToast } from '../composables/useToast';
 export interface ExcursionFormData {
+  trip_id?: number;
   title: string;
   image_url?: string;
   note?: string;
@@ -16,6 +17,7 @@ export interface ExcursionFormData {
   legs?: ExcursionLeg[];
   // Transportmittel-Kontext (#176) - macht aus einer normalen Tour eine ehemalige Reise-Etappe.
   role?: IdeaRole | null;
+  destination_spot_id?: number | null;
   transport_type?: string | null;
   departure_time?: string | null;
   arrival_time?: string | null;
