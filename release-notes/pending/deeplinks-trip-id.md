@@ -1,1 +1,1 @@
-- **Deeplinks zu Urlauben**: Spezifische Urlaube können nun direkt über URLs wie `/trip/:tripId/...` angesteuert und geteilt werden.
+- 🔗 **Deeplinks zu Urlauben**: Spezifische Urlaube können nun direkt über URLs wie `/trip/:tripId/...` angesteuert und geteilt werden.
