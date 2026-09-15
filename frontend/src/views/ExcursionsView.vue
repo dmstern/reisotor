@@ -1918,9 +1918,17 @@ const DEFAULT_SPOTS_COL_WIDTH = 380;
 
 function loadSpotsColWidth(): number {
   const stored = Number(localStorage.getItem(SPOTS_COL_WIDTH_KEY));
-  return Number.isFinite(stored) && stored >= MIN_SPOTS_COL_WIDTH && stored <= MAX_SPOTS_COL_WIDTH
-    ? stored
-    : DEFAULT_SPOTS_COL_WIDTH;
+  const maxAllowed =
+    typeof window !== 'undefined'
+      ? Math.min(MAX_SPOTS_COL_WIDTH, window.innerWidth - 160)
+      : MAX_SPOTS_COL_WIDTH;
+
+  // Zwinge den gespeicherten Wert in die gültigen Grenzen, damit beim Neuladen
+  // auf einem kleineren Bildschirm der Drawer nicht sofort wieder alles überlagert.
+  if (Number.isFinite(stored) && stored >= MIN_SPOTS_COL_WIDTH) {
+    return Math.min(stored, maxAllowed);
+  }
+  return Math.min(DEFAULT_SPOTS_COL_WIDTH, maxAllowed);
 }
 const spotsColWidth = ref(loadSpotsColWidth());
 watch(spotsColWidth, (v) => localStorage.setItem(SPOTS_COL_WIDTH_KEY, String(v)));
@@ -1952,10 +1960,11 @@ function updateSpotsColRight() {
 function onColResizeMove(event: PointerEvent) {
   if (!resizingCol.value) return;
   const delta = event.clientX - colStartX;
-  spotsColWidth.value = Math.min(
-    MAX_SPOTS_COL_WIDTH,
-    Math.max(MIN_SPOTS_COL_WIDTH, colStartWidth + delta)
-  );
+  const maxAllowed =
+    typeof window !== 'undefined'
+      ? Math.min(MAX_SPOTS_COL_WIDTH, window.innerWidth - 160)
+      : MAX_SPOTS_COL_WIDTH;
+  spotsColWidth.value = Math.min(maxAllowed, Math.max(MIN_SPOTS_COL_WIDTH, colStartWidth + delta));
   updateSpotsColRight();
 }
 function onColResizeEnd() {
@@ -4428,11 +4437,11 @@ async function deleteEditingSpot() {
     corner-shape: squircle;
     box-shadow: var(--shadow-md);
     width: var(--spots-col-width);
-    /* Hält mindestens 84px Freiraum am rechten Rand von .app-main frei (entspricht den
-       Kartenwerkzeugen .fit-btn: 44px Button + 24px var(--space-4) Rand + 16px Abstand),
-       sodass .spots-col die Bedienelemente auf schmalen Desktop-Bildschirmen bei ausgeklapptem
-       Kalender nie überlagert. */
-    max-width: calc(100% - var(--space-4) - 84px);
+    /* Hält mindestens 130px Freiraum am rechten Rand von .app-main frei (entspricht den
+       Kartenwerkzeugen .fit-btn: 44px Button + 24px var(--space-4) Rand + 16px Abstand +
+       ca. 40px für die Zoom-Buttons der Karte), sodass .spots-col die Bedienelemente auf
+       schmalen Desktop-Bildschirmen bei ausgeklapptem Drawer nie überlagert. */
+    max-width: calc(100% - var(--space-4) - 130px);
     min-width: min(var(--spots-col-width), 280px);
     pointer-events: auto;
 

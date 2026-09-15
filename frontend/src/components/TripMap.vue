@@ -2239,7 +2239,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
         var(--calendar-margin, var(--drawer-tab-width)) + var(--calendar-offset, 0px) +
           var(--spots-col-width, 400px) + var(--space-4) + var(--space-3)
       ),
-      calc(100vw - 60px)
+      calc(100vw - 140px)
     ) !important;
   }
 
@@ -2250,25 +2250,31 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
         var(--calendar-margin, var(--drawer-tab-width)) + var(--calendar-offset, 0px) +
           var(--space-4)
       ),
-      calc(100vw - 60px)
+      calc(100vw - 140px)
     ) !important;
   }
 
   /* Auf Desktop schwebt der day-strip als zentrierte Pille im verfügbaren Kartenbereich (neben dem Drawer) */
   .day-strip {
-    left: calc(
-      var(--calendar-margin, var(--drawer-tab-width)) + var(--calendar-offset, 0px) +
-        var(--spots-col-width, 400px) + var(--space-4)
+    left: min(
+      calc(
+        var(--calendar-margin, var(--drawer-tab-width)) + var(--calendar-offset, 0px) +
+          var(--spots-col-width, 400px) + var(--space-4)
+      ),
+      calc(100vw - 240px)
     );
     right: 0;
     margin: 0 auto;
     width: fit-content;
-    max-width: calc(
-      100vw -
-        (
-          var(--calendar-margin, var(--drawer-tab-width)) + var(--calendar-offset, 0px) +
-            var(--spots-col-width, 400px) + var(--space-4) + 40px
-        )
+    max-width: max(
+      320px,
+      calc(
+        100vw -
+          (
+            var(--calendar-margin, var(--drawer-tab-width)) + var(--calendar-offset, 0px) +
+              var(--spots-col-width, 400px) + var(--space-4) + 140px
+          )
+      )
     );
     border-radius: 999px;
     bottom: calc(var(--navbar-bottom-offset, 0px) + 24px);
