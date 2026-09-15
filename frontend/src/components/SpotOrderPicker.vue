@@ -18,18 +18,21 @@ import LegTransportModal from './LegTransportModal.vue';
 const props = withDefaults(
   defineProps<{
     modelValue: number[];
+    destination?: number | null;
     spots: Spot[];
     likeCount: (spotId: number) => number;
     legs?: ExcursionLeg[];
     users?: User[];
   }>(),
   {
+    destination: null,
     legs: () => [],
     users: () => [],
   }
 );
 const emit = defineEmits<{
   (e: 'update:modelValue', value: number[]): void;
+  (e: 'update:destination', value: number | null): void;
   (e: 'update:legs', value: ExcursionLeg[]): void;
 }>();
 
@@ -93,6 +96,16 @@ function removeSpotAt(index: number) {
   next.splice(index, 1);
   selected.value = next;
   cleanupLegsForSpots(next);
+}
+
+function autofillReturnPath() {
+  const destIndex = plannedStations.value.findIndex((s) => s.id === props.destination);
+  if (destIndex === -1) return;
+  const returnSpots = plannedStations.value
+    .slice(0, destIndex)
+    .map((s) => s.id)
+    .reverse();
+  selected.value = [...selected.value, ...returnSpots];
 }
 
 // Drag&Drop-Umsortierung innerhalb der geplanten Liste – rein lokal (kein Component-übergreifendes
@@ -246,6 +259,17 @@ function onDeleteLeg() {
           >
             ⏱️ {{ formatTravelDuration(getLayover(index)!) }} Umstiegszeit
           </span>
+          <label
+            class="destination-toggle"
+            title="Als Ziel der Tour markieren (für Hin-/Rückweg-Farbverlauf)"
+          >
+            <input
+              type="checkbox"
+              :checked="destination === station.id"
+              @change="emit('update:destination', destination === station.id ? null : station.id)"
+            />
+            Ziel
+          </label>
           <button
             type="button"
             class="remove-btn"
@@ -341,6 +365,20 @@ function onDeleteLeg() {
         class="drop-line"
         v-if="draggedIndex !== null && dropIndicatorIndex === plannedStations.length"
       ></div>
+      <button
+        v-if="
+          destination != null &&
+          plannedStations.length > 0 &&
+          destination === plannedStations[plannedStations.length - 1].id &&
+          plannedStations.length >= 2
+        "
+        type="button"
+        class="autofill-return-btn"
+        @click="autofillReturnPath"
+      >
+        <AppIcon :icon="ACTION_ICONS.refresh" :size="14" group="actions" /> Rückweg automatisch
+        ausfüllen
+      </button>
     </fieldset>
 
     <fieldset v-if="addableSpots.length" class="spot-picker">
@@ -614,5 +652,40 @@ function onDeleteLeg() {
   color: var(--color-primary);
   font-weight: 700;
   flex-shrink: 0;
+}
+
+.destination-toggle {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  margin-right: var(--space-2);
+}
+.destination-toggle input {
+  cursor: pointer;
+}
+
+.autofill-return-btn {
+  margin-top: var(--space-2);
+  width: 100%;
+  padding: 6px;
+  background: var(--color-surface);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-sm-squircle);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.85rem;
+  transition: all 0.15s ease;
+}
+.autofill-return-btn:hover {
+  background: var(--color-background);
+  color: var(--color-primary);
+  border-color: var(--color-primary);
 }
 </style>

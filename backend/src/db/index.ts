@@ -1519,6 +1519,7 @@ if (!hasAdmin) {
 // sich beim Löschen gegenseitig die Ausgabe wegreißen. Budget-Sync/Anhänge/Kalender-Verknüpfung auf
 // das neue Modell umstellen und travel_items danach entfernen: #176.
 ensureColumn('ideas', 'role', 'TEXT');
+ensureColumn('ideas', 'destination_spot_id', 'INTEGER REFERENCES spots(id) ON DELETE SET NULL');
 ensureColumn('ideas', 'transport_type', 'TEXT');
 ensureColumn('ideas', 'departure_time', 'TEXT');
 ensureColumn('ideas', 'arrival_time', 'TEXT');

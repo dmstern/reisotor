@@ -56,6 +56,7 @@ interface IdeaBody {
   spot_ids?: number[];
   legs?: ExcursionLegInput[];
   role?: IdeaRole | null;
+  destination_spot_id?: number | null;
   transport_type?: string | null;
   departure_time?: string | null;
   arrival_time?: string | null;
@@ -141,15 +142,15 @@ const selectIdeasByTripStmt = db.prepare(
 const insertIdeaStmt = db.prepare(
   `INSERT INTO ideas (
     trip_id, title, image_url, note, note_format, created_by,
-    role, transport_type, departure_time, arrival_time, checkin_info,
+    role, destination_spot_id, transport_type, departure_time, arrival_time, checkin_info,
     amount, paid_by_user_id, luggage, seat, ticket_link, budget_expense_id
-  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 );
 const selectIdeaByIdStmt = db.prepare('SELECT * FROM ideas WHERE id = ?');
 const selectIdeaAuthStmt = db.prepare('SELECT trip_id, budget_expense_id FROM ideas WHERE id = ?');
 const updateIdeaStmt = db.prepare(
   `UPDATE ideas SET title = ?, image_url = ?, note = ?, note_format = ?,
-    role = ?, transport_type = ?, departure_time = ?, arrival_time = ?, checkin_info = ?,
+    role = ?, destination_spot_id = ?, transport_type = ?, departure_time = ?, arrival_time = ?, checkin_info = ?,
     amount = ?, paid_by_user_id = ?, luggage = ?, seat = ?, ticket_link = ?, budget_expense_id = ?
    WHERE id = ?`
 );
@@ -548,6 +549,7 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
       isHtml ? 'html' : 'legacy',
       req.session.userId,
       role ?? null,
+      req.body.destination_spot_id ?? null,
       effectiveTransportType,
       effectiveDepTime,
       effectiveArrTime,
@@ -627,6 +629,7 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
       note ? (isHtml ? sanitizeHtml(note) : note) : null,
       isHtml ? 'html' : 'legacy',
       role ?? null,
+      req.body.destination_spot_id ?? null,
       effectiveTransportType,
       effectiveDepTime,
       effectiveArrTime,

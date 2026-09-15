@@ -49,6 +49,7 @@ const props = defineProps<{
   // abgeleitet (analog zu Excursion.date), da mehrere Karten sich denselben Stand teilen müssen.
   scheduledDate: string | null;
   highlighted?: boolean;
+  excursionContext?: { id: number; isDestination: boolean };
   /** Nur für Kategorie "Unterkunft" mit gesetztem paid_by_user_id relevant (siehe
    *  Migrationskommentar in db/index.ts). */
   payerLabel?: string | null;
@@ -77,6 +78,7 @@ const emit = defineEmits<{
   (e: 'remove-comment', id: number): void;
   (e: 'open', spot: Spot): void;
   (e: 'close'): void;
+  (e: 'toggle-destination'): void;
   // Sofort-Zuordnung über TourAssignDropdown.vue (#106, siehe Template) – ersetzt den früheren
   // Tap-Alternative-Mechanismus (Umschalten auf Touren-Gruppierung + manuelles Ablegen), da es
   // jetzt keine Tour-Drawer/-Karten mehr braucht, um eine Zuordnung vorzunehmen.
@@ -532,6 +534,18 @@ const cardRotation = computed(() => {
                 @create-tour="onCreateTour"
                 @dragstart="onDragStart"
               />
+              <label
+                v-if="excursionContext"
+                class="spot-destination-toggle"
+                title="Als Ziel der Tour markieren (für Hin-/Rückweg-Farbverlauf)"
+              >
+                <input
+                  type="checkbox"
+                  :checked="excursionContext.isDestination"
+                  @change="emit('toggle-destination')"
+                />
+                Ziel der Tour
+              </label>
               <button
                 v-if="!isAccommodation"
                 type="button"
@@ -1993,5 +2007,25 @@ const cardRotation = computed(() => {
 .date-check-status {
   font-size: 0.75rem;
   opacity: 0.8;
+}
+</style>
+
+<style scoped>
+.spot-destination-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 6px 10px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm-squircle);
+  transition: all 0.2s ease;
+}
+.spot-destination-toggle:hover {
+  background: var(--color-background);
+  border-color: var(--color-text-muted);
 }
 </style>

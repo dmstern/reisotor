@@ -16,6 +16,7 @@ export interface ExcursionFormData {
   legs?: ExcursionLeg[];
   // Transportmittel-Kontext (#176) - macht aus einer normalen Tour eine ehemalige Reise-Etappe.
   role?: IdeaRole | null;
+  destination_spot_id?: number | null;
   transport_type?: string | null;
   departure_time?: string | null;
   arrival_time?: string | null;

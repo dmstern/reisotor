@@ -1650,11 +1650,9 @@ function recomputeTourLine(excursionId: number) {
       const cp1Y = startY + dy * 0.45;
       const cp2X = endX;
       const cp2Y = endY - dy * 0.45;
-      segments.push({
+      hinwegSegments.push({
         d: ` M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`,
-        x1: startX,
         y1: startY,
-        x2: endX,
         y2: endY,
       });
     }
@@ -1680,13 +1678,13 @@ function recomputeTourLine(excursionId: number) {
       const cp1Y = startY;
       const cp2X = endX - dx * 0.45;
       const cp2Y = endY;
-      segments.push({
+      const segment = {
         d: ` M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`,
-        x1: startX,
         y1: startY,
-        x2: endX,
         y2: endY,
-      });
+      };
+      if (destinationIndex !== -1 && i >= destinationIndex) rueckwegSegments.push(segment);
+      else hinwegSegments.push(segment);
       dots.push({ x: endX, y: endY, isEnd: true });
     } else {
       // Zeilenumbruch bzw. untereinander: a ist oben, b ist unten
@@ -1702,13 +1700,13 @@ function recomputeTourLine(excursionId: number) {
       const cp1Y = startY + dy * 0.45;
       const cp2X = endX;
       const cp2Y = endY - dy * 0.45;
-      segments.push({
+      const segment = {
         d: ` M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`,
-        x1: startX,
         y1: startY,
-        x2: endX,
         y2: endY,
-      });
+      };
+      if (destinationIndex !== -1 && i >= destinationIndex) rueckwegSegments.push(segment);
+      else hinwegSegments.push(segment);
       dots.push({ x: endX, y: endY, isEnd: true });
     }
   }
@@ -1734,12 +1732,12 @@ function recomputeTourLine(excursionId: number) {
     }
   }
 
-  function combineSegments(segs: {d: string, y1: number, y2: number}[]) {
+  function combineSegments(segs: { d: string; y1: number; y2: number }[]) {
     if (segs.length === 0) return null;
     return {
-      d: segs.map(s => s.d).join(' '),
+      d: segs.map((s) => s.d).join(' '),
       y1: segs[0].y1,
-      y2: segs[segs.length - 1].y2
+      y2: segs[segs.length - 1].y2,
     };
   }
 
@@ -3773,42 +3771,67 @@ async function deleteEditingSpot() {
                     :height="tourLines.get(grp.excursion.id)!.height"
                     aria-hidden="true"
                   >
-                    <g
-                      v-for="(seg, i) in tourLines.get(grp.excursion.id)!.segments"
-                      :key="'seg-' + i"
-                    >
-                      <defs>
-                        <linearGradient
-                          :id="`tour-gradient-${grp.excursion.id}-${i}`"
-                          gradientUnits="userSpaceOnUse"
-                          :x1="seg.x1"
-                          :y1="seg.y1"
-                          :x2="seg.x2"
-                          :y2="seg.y2"
-                        >
-                          <stop
-                            offset="0%"
-                            stop-color="var(--tour-theme-color, var(--color-primary))"
-                          />
-                          <stop offset="100%" stop-color="var(--color-primary)" />
-                        </linearGradient>
-                      </defs>
-                      <path
-                        :d="seg.d"
-                        :style="{ stroke: `url(#tour-gradient-${grp.excursion.id}-${i})` }"
-                      />
-                    </g>
+                    <defs>
+                      <linearGradient
+                        v-if="tourLines.get(grp.excursion.id)!.hinwegPath"
+                        :id="`tour-gradient-hin-${grp.excursion.id}`"
+                        gradientUnits="userSpaceOnUse"
+                        x1="0"
+                        :y1="tourLines.get(grp.excursion.id)!.hinwegPath!.y1"
+                        x2="0"
+                        :y2="tourLines.get(grp.excursion.id)!.hinwegPath!.y2"
+                      >
+                        <stop
+                          offset="0%"
+                          stop-color="var(--tour-theme-color, var(--color-primary))"
+                        />
+                        <stop offset="100%" stop-color="var(--color-primary)" />
+                      </linearGradient>
+                      <linearGradient
+                        v-if="tourLines.get(grp.excursion.id)!.rueckwegPath"
+                        :id="`tour-gradient-rueck-${grp.excursion.id}`"
+                        gradientUnits="userSpaceOnUse"
+                        x1="0"
+                        :y1="tourLines.get(grp.excursion.id)!.rueckwegPath!.y1"
+                        x2="0"
+                        :y2="tourLines.get(grp.excursion.id)!.rueckwegPath!.y2"
+                      >
+                        <stop
+                          offset="0%"
+                          stop-color="var(--tour-theme-color, var(--color-primary))"
+                        />
+                        <stop offset="100%" stop-color="var(--color-primary)" />
+                      </linearGradient>
+                    </defs>
+
+                    <path
+                      v-if="tourLines.get(grp.excursion.id)!.hinwegPath"
+                      :d="tourLines.get(grp.excursion.id)!.hinwegPath!.d"
+                      fill="none"
+                      :stroke="`url(#tour-gradient-hin-${grp.excursion.id})`"
+                      stroke-width="2"
+                      stroke-dasharray="6,6"
+                    />
+                    <path
+                      v-if="tourLines.get(grp.excursion.id)!.rueckwegPath"
+                      :d="tourLines.get(grp.excursion.id)!.rueckwegPath!.d"
+                      fill="none"
+                      :stroke="`url(#tour-gradient-rueck-${grp.excursion.id})`"
+                      stroke-width="2"
+                      stroke-dasharray="6,6"
+                    />
+
                     <circle
                       v-for="(dot, i) in tourLines.get(grp.excursion.id)!.dots"
-                      :key="'dot-' + i"
+                      :key="i"
                       :cx="dot.x"
                       :cy="dot.y"
-                      r="4.5"
-                      :style="{
-                        fill: dot.isEnd
+                      r="3.5"
+                      :fill="
+                        dot.isEnd
                           ? 'var(--color-primary)'
-                          : 'var(--tour-theme-color, var(--color-primary))',
-                      }"
+                          : 'var(--tour-theme-color, var(--color-primary))'
+                      "
                     />
                   </svg>
 
