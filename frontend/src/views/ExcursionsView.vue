@@ -52,7 +52,12 @@ import { formatDurationShort } from '../utils/trackGeometry';
 import { usePersistedRef } from '../composables/usePersistedRef';
 import { useIsDesktop } from '../composables/useIsDesktop';
 import { hashHighlightId } from '../utils/hashHighlight';
-import { buildTourSerpentineRows, type TourSerpentineRow } from '../utils/tourSerpentine';
+import {
+  buildTourSerpentineRows,
+  buildLoopSegments,
+  computeTourLoopPath,
+  type TourSerpentineRow,
+} from '../utils/tourSerpentine';
 import SpotCard from '../components/SpotCard.vue';
 import ExcursionCard from '../components/ExcursionCard.vue';
 import SegmentedToggle from '../components/SegmentedToggle.vue';
@@ -1141,12 +1146,15 @@ const spotGroups = computed(() => {
         ? excursionForGroupTitle(key)
         : null;
     if (excursion) {
-      const orderedList: SpotsGroupItem[] = [];
-      excursion.spot_ids.forEach((id) => {
-        const item = list.find((i) => i.kind === 'spot' && i.spot.id === id);
-        if (item) orderedList.push(item);
+      const order = new Map<number, number>();
+      excursion.spot_ids.forEach((id, idx) => {
+        if (!order.has(id)) order.set(id, idx);
       });
-      groups.set(key, orderedList);
+      list.sort((a, b) => {
+        const ai = a.kind === 'spot' ? (order.get(a.spot.id) ?? Infinity) : Infinity;
+        const bi = b.kind === 'spot' ? (order.get(b.spot.id) ?? Infinity) : Infinity;
+        return ai - bi;
+      });
     } else {
       list.sort((a, b) => {
         if (sortMode.value === 'date') {
@@ -1680,9 +1688,31 @@ function recomputeTourLine(excursionId: number) {
     }
   }
 
+  // Zirkel-/Rückweglinien für Touren, bei denen ein Spot mehrfach besucht wird
+  const excursion = excursionsStore.excursions.find((e) => e.id === excursionId);
+  if (excursion && spotBoxes.length > 0) {
+    const domSpotIds = spotEls.map((el) => Number(el.dataset.spotId));
+    const loops = buildLoopSegments(excursion.spot_ids, domSpotIds);
+    for (const [fromIdx, toIdx] of loops) {
+      const a = spotBoxes[fromIdx];
+      const b = spotBoxes[toIdx];
+      if (!a || !b) continue;
+      const loop = computeTourLoopPath(a, b, spotBoxes, wrapEl.clientWidth);
+      segments.push({
+        d: loop.d,
+        x1: loop.dots[0].x,
+        y1: loop.dots[0].y,
+        x2: loop.dots[1].x,
+        y2: loop.dots[1].y,
+      });
+      dots.push({ x: loop.dots[0].x, y: loop.dots[0].y, isEnd: false });
+      dots.push({ x: loop.dots[1].x, y: loop.dots[1].y, isEnd: true });
+    }
+  }
+
   tourLines.set(excursionId, {
-    width: Math.max(wrapEl.clientWidth, 100),
-    height: Math.max(wrapEl.clientHeight, spotBoxes[spotBoxes.length - 1]?.bottom ?? 200),
+    width: wrapEl.scrollWidth,
+    height: wrapEl.scrollHeight,
     segments,
     dots,
   });
