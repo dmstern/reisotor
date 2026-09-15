@@ -104,7 +104,7 @@ onMounted(() => {
 
     <section class="screenshots-parallax parallax-wrapper">
       <div class="screenshots-container">
-        <!-- Desktop layer in background -->
+        <!-- Desktop layer in background (Dashboard) -->
         <picture class="screenshot-desktop layer layer-1">
           <source
             srcset="/landing/screenshot-dashboard-dark.png"
@@ -117,8 +117,17 @@ onMounted(() => {
           />
         </picture>
 
+        <!-- Desktop layer in middle (Spots Map) -->
+        <picture class="screenshot-spots layer layer-2">
+          <source
+            srcset="/landing/screenshot-spots-dark.png"
+            media="(prefers-color-scheme: dark)"
+          />
+          <img src="/landing/screenshot-spots-light.png" alt="Reisotor Map" loading="lazy" />
+        </picture>
+
         <!-- Mobile layer in foreground -->
-        <picture class="screenshot-mobile layer layer-2">
+        <picture class="screenshot-mobile layer layer-3">
           <source
             srcset="/landing/screenshot-mobile-dark.png"
             media="(prefers-color-scheme: dark)"
@@ -131,7 +140,7 @@ onMounted(() => {
         </picture>
 
         <!-- Fake polaroids floating on the side -->
-        <div class="polaroid-decor layer layer-3" aria-hidden="true">
+        <div class="polaroid-decor layer layer-4" aria-hidden="true">
           <div class="fake-polaroid p-1">
             <div class="fp-img"><IconMapPin :size="36" color="var(--color-tour)" /></div>
             <div class="fp-chin"></div>
@@ -445,11 +454,22 @@ onMounted(() => {
   z-index: 1;
 }
 
+.screenshot-spots {
+  width: 75%;
+  top: 15%;
+  right: 5%;
+  z-index: 2;
+  border-radius: 12px;
+  box-shadow:
+    var(--shadow-xl),
+    -10px 10px 30px rgba(0, 0, 0, 0.2);
+}
+
 .screenshot-mobile {
   width: 25%;
   bottom: 0;
   right: 2%;
-  z-index: 2;
+  z-index: 3;
   border-radius: 36px;
   box-shadow:
     var(--shadow-lg),
@@ -460,7 +480,7 @@ onMounted(() => {
   width: auto;
   top: 40%;
   left: -2%;
-  z-index: 3;
+  z-index: 4;
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -538,6 +558,11 @@ onMounted(() => {
 @media (max-width: 768px) {
   .screenshots-container {
     height: 350px;
+  }
+  .screenshot-spots {
+    width: 85%;
+    top: 20%;
+    right: 5%;
   }
   .screenshot-mobile {
     width: 35%;
