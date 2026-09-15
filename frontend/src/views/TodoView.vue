@@ -488,10 +488,10 @@ function isOverdue(item: TodoItem) {
                 {{ PERIOD_META[periodFor(item)!] }}
               </span>
               <span v-if="item.note" class="note">{{ item.note }}</span>
-              <div class="row-actions">
+              <template #actions>
                 <EditButton small @click="startEdit(item)" />
                 <DeleteButton small @click="remove(item.id)" />
-              </div>
+              </template>
             </CheckableListItem>
             <li v-if="!group.items.length" :key="`${group.key}-empty`" class="empty">
               {{
@@ -673,13 +673,6 @@ function isOverdue(item: TodoItem) {
 .note {
   font-size: 0.82rem;
   color: var(--color-text-muted);
-}
-
-.row-actions {
-  display: flex;
-  gap: 4px;
-  flex-shrink: 0;
-  margin-left: auto;
 }
 
 .edit-form {

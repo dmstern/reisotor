@@ -347,6 +347,16 @@ async function remove(id: number) {
   column-width: 240px;
 }
 
+.cards :deep(.list-leave-active) {
+  position: static;
+  width: auto;
+}
+
+.cards :deep(.list-leave-to) {
+  opacity: 0;
+  transform: scale(0.95);
+}
+
 .note-card {
   display: flex;
   flex-direction: column;

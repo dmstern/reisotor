@@ -303,9 +303,9 @@ async function quickAdd(list: ListGroup, label: string) {
                 placeholder="Unterkategorie (optional)"
                 size="sm"
               />
-              <label for="auto-id-1788301175448-25" class="qty-field quick-add-qty">
+              <label :for="`quick-add-qty-${list.key}`" class="qty-field quick-add-qty">
                 <Input
-                  id="auto-id-1788301175448-25"
+                  :id="`quick-add-qty-${list.key}`"
                   v-model.number="quickAddQuantities[list.key]"
                   type="number"
                   inputmode="numeric"

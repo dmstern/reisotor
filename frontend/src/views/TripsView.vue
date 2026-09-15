@@ -159,6 +159,7 @@ function openMembers(trip: Trip) {
 
 .trip-select {
   flex: 1;
+  min-width: 0;
   text-align: left;
   background: none;
   border: none;
@@ -167,6 +168,9 @@ function openMembers(trip: Trip) {
   font-weight: 600;
   color: var(--color-text);
   cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .row-actions {

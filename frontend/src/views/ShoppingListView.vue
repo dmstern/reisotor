@@ -488,10 +488,10 @@ async function quickAddToGroup(group: Group, label: string) {
                   {{ u.avatar }} {{ u.username }}
                 </option>
               </Select>
-              <div class="row-actions">
+              <template #actions>
                 <EditButton small @click="startEdit(item)" />
                 <DeleteButton small @click="remove(item.id)" />
-              </div>
+              </template>
             </CheckableListItem>
             <li v-if="!group.items.length" :key="`${group.key}-empty`" class="empty">
               {{
@@ -636,7 +636,7 @@ async function quickAddToGroup(group: Group, label: string) {
   font-size: 0.78rem;
   color: var(--color-text-muted);
   background: var(--color-hover);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 2px 8px;
 }
 
