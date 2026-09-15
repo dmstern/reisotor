@@ -367,6 +367,7 @@ const emptyExcursionForm = () => ({
   date: '',
   spot_ids: [] as number[],
   role: '' as IdeaRole | '',
+  destination_spot_id: null as number | null,
   legs: [] as ExcursionLeg[],
 });
 const excursionForm = ref(emptyExcursionForm());
@@ -407,6 +408,7 @@ function tourPayload(form: ReturnType<typeof emptyExcursionForm>) {
     date: form.date || undefined,
     spot_ids: form.spot_ids,
     role: form.role ? form.role : null,
+    destination_spot_id: form.destination_spot_id,
     legs: form.legs,
   };
 }
@@ -430,6 +432,7 @@ function startEditExcursion(excursion: Excursion) {
     date: excursion.date ?? '',
     spot_ids: [...excursion.spot_ids],
     role: excursion.role ?? '',
+    destination_spot_id: excursion.destination_spot_id ?? null,
     legs: excursion.legs ? excursion.legs.map((l) => ({ ...l })) : [],
   };
 }
@@ -463,8 +466,21 @@ async function deleteEditingExcursion() {
   closeEditExcursionForm();
 }
 
-// Spot per Drag&Drop aus der Spots-Liste auf eine Tour-Karte fallen lassen (ExcursionCard.vue ist
-// die Drop-Zone, emittiert die abgelegte Spot-Id, siehe SpotCard.vue's "🎒 Auf Tour ziehen"-Anfasser).
+async function toggleExcursionDestination(excursion: Excursion, spotId: number) {
+  const newDest = excursion.destination_spot_id === spotId ? null : spotId;
+  const payload = {
+    title: excursion.title,
+    image_url: excursion.image_url ?? undefined,
+    note: excursion.note ?? undefined,
+    note_format: 'html' as const,
+    date: excursion.date ?? undefined,
+    spot_ids: excursion.spot_ids,
+    role: excursion.role ?? null,
+    destination_spot_id: newDest,
+    legs: excursion.legs,
+  };
+  await excursionsStore.update(excursion.id, payload);
+}
 async function addSpotToExcursion(excursionId: number, spotId: number) {
   const excursion = excursionsStore.excursions.find((e) => e.id === excursionId);
   if (!excursion) return;
@@ -1517,7 +1533,8 @@ interface TourArrow {
 interface TourLineData {
   width: number;
   height: number;
-  segments: { d: string; x1: number; y1: number; x2: number; y2: number }[];
+  hinwegPath: { d: string; y1: number; y2: number } | null;
+  rueckwegPath: { d: string; y1: number; y2: number } | null;
   dots: { x: number; y: number; isEnd: boolean }[];
 }
 
@@ -1601,7 +1618,15 @@ function recomputeTourLine(excursionId: number) {
   });
 
   const dots: { x: number; y: number; isEnd: boolean }[] = [];
-  const segments: { d: string; x1: number; y1: number; x2: number; y2: number }[] = [];
+  const hinwegSegments: { d: string; y1: number; y2: number }[] = [];
+  const rueckwegSegments: { d: string; y1: number; y2: number }[] = [];
+
+  const excursion = excursionsStore.excursions.find((e) => e.id === excursionId);
+  let destinationIndex = -1;
+  if (excursion && excursion.destination_spot_id != null) {
+    const domSpotIds = spotEls.map((el) => Number(el.dataset.spotId));
+    destinationIndex = domSpotIds.indexOf(excursion.destination_spot_id);
+  }
 
   // Gestrichelte Verbindungslinie von der Tour-Card zur ersten Spot-Card
   const groupEl = wrapEl.closest('.category-group');
@@ -1689,7 +1714,6 @@ function recomputeTourLine(excursionId: number) {
   }
 
   // Zirkel-/Rückweglinien für Touren, bei denen ein Spot mehrfach besucht wird
-  const excursion = excursionsStore.excursions.find((e) => e.id === excursionId);
   if (excursion && spotBoxes.length > 0) {
     const domSpotIds = spotEls.map((el) => Number(el.dataset.spotId));
     const loops = buildLoopSegments(excursion.spot_ids, domSpotIds);
@@ -1698,22 +1722,32 @@ function recomputeTourLine(excursionId: number) {
       const b = spotBoxes[toIdx];
       if (!a || !b) continue;
       const loop = computeTourLoopPath(a, b, spotBoxes, wrapEl.clientWidth);
-      segments.push({
+      const segment = {
         d: loop.d,
-        x1: loop.dots[0].x,
         y1: loop.dots[0].y,
-        x2: loop.dots[1].x,
         y2: loop.dots[1].y,
-      });
+      };
+      if (destinationIndex !== -1 && fromIdx >= destinationIndex) rueckwegSegments.push(segment);
+      else hinwegSegments.push(segment);
       dots.push({ x: loop.dots[0].x, y: loop.dots[0].y, isEnd: false });
       dots.push({ x: loop.dots[1].x, y: loop.dots[1].y, isEnd: true });
     }
   }
 
+  function combineSegments(segs: {d: string, y1: number, y2: number}[]) {
+    if (segs.length === 0) return null;
+    return {
+      d: segs.map(s => s.d).join(' '),
+      y1: segs[0].y1,
+      y2: segs[segs.length - 1].y2
+    };
+  }
+
   tourLines.set(excursionId, {
     width: wrapEl.scrollWidth,
     height: wrapEl.scrollHeight,
-    segments,
+    hinwegPath: combineSegments(hinwegSegments),
+    rueckwegPath: combineSegments(rueckwegSegments),
     dots,
   });
 }
@@ -3025,6 +3059,7 @@ async function deleteEditingSpot() {
                   <SpotOrderPicker
                     v-model="activeExcursionForm.spot_ids"
                     v-model:legs="activeExcursionForm.legs"
+                    v-model:destination="activeExcursionForm.destination_spot_id"
                     :spots="spotsStore.spots"
                     :like-count="spotsStore.likeCountFor"
                     :users="users"
@@ -3813,6 +3848,13 @@ async function deleteEditingSpot() {
                                 },
                               ]"
                               :spot="cell.spot"
+                              :excursion-context="{
+                                id: grp.excursion.id,
+                                isDestination: grp.excursion.destination_spot_id === cell.spot.id,
+                              }"
+                              @toggle-destination="
+                                toggleExcursionDestination(grp.excursion, cell.spot.id)
+                              "
                               :highlighted="
                                 highlightedIds.has(cell.spot.id) ||
                                 dayFocusHighlightedIds.has(cell.spot.id)

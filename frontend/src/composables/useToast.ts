@@ -5,6 +5,10 @@ export interface ToastOptions {
   message: string;
   type?: 'info' | 'success' | 'warning' | 'error';
   duration?: number;
+  action?: {
+    label: string;
+    to: string | object;
+  };
 }
 
 export interface ToastItem {
@@ -12,6 +16,10 @@ export interface ToastItem {
   message: string;
   type: 'info' | 'success' | 'warning' | 'error';
   duration: number;
+  action?: {
+    label: string;
+    to: string | object;
+  };
 }
 
 const toasts = ref<ToastItem[]>([]);
@@ -29,6 +37,7 @@ export function useToast() {
       message: opts.message,
       type: opts.type ?? 'info',
       duration: opts.duration ?? defaultDuration,
+      action: opts.action,
     };
 
     toasts.value.push(item);

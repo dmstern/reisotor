@@ -11,6 +11,7 @@ import Button from './primitives/Button.vue';
 import AppIcon from './AppIcon.vue';
 import UnseenDot from './primitives/UnseenDot.vue';
 import PwaInstallDialog from './PwaInstallDialog.vue';
+import { useToast } from '../composables/useToast';
 import type { NotificationItem } from '../api/types';
 import { notificationTarget } from '../utils/notificationTarget';
 import { formatDateTime } from '../utils/dateFormat';
@@ -25,6 +26,7 @@ const drawers = useDrawersStore();
 const pwaUpdate = usePwaUpdateStore();
 const pwaInstall = usePwaInstallStore();
 const router = useRouter();
+const { showToast } = useToast();
 const open = ref(false);
 const showInstallDialog = ref(false);
 
@@ -116,6 +118,19 @@ async function selectNotification(n: NotificationItem) {
 
 function markAllRead() {
   notifications.markAllRead();
+}
+
+function dismissPwaInstall() {
+  pwaInstall.dismiss();
+  showToast({
+    message: 'Hinweis ausgeblendet. Du findest die Option jederzeit in den Einstellungen.',
+    type: 'info',
+    duration: 8000,
+    action: {
+      label: 'Zu den Einstellungen',
+      to: { path: '/settings', query: { tab: 'about' } },
+    },
+  });
 }
 </script>
 
@@ -230,7 +245,7 @@ function markAllRead() {
                     :icon="ACTION_ICONS.close"
                     aria-label="Hinweis schließen"
                     title="Hinweis schließen"
-                    @click="pwaInstall.dismiss()"
+                    @click="dismissPwaInstall"
                   />
                 </div>
               </div>
