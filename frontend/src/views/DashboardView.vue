@@ -440,17 +440,19 @@ function formatWeekdayDate(d: string) {
       "
       :class="{ 'has-image': trip?.image_url }"
     >
-      <div class="banner-actions">
-        <Button
-          variant="secondary"
-          class="banner-action-btn"
-          title="Urlaub bearbeiten"
-          @click="jumpToTrip"
-        >
-          <AppIcon :icon="ACTION_ICONS.edit" :size="14" group="actions" /> Bearbeiten
-        </Button>
+      <div class="hero-header">
+        <h1>{{ trip?.name || 'Euer Urlaub' }}</h1>
+        <div class="banner-actions">
+          <Button
+            variant="secondary"
+            class="banner-action-btn"
+            title="Urlaub bearbeiten"
+            @click="jumpToTrip"
+          >
+            <AppIcon :icon="ACTION_ICONS.edit" :size="14" group="actions" /> Bearbeiten
+          </Button>
+        </div>
       </div>
-      <h1>{{ trip?.name || 'Euer Urlaub' }}</h1>
       <p v-if="trip?.destination">
         <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" />
         {{ trip.destination }}
@@ -1149,17 +1151,25 @@ function formatWeekdayDate(d: string) {
   color: #fff;
 }
 
+.hero-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.hero-header h1 {
+  margin: 0;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
 .banner-actions {
-  position: absolute;
-  top: var(--space-3);
-  right: var(--space-3);
   display: flex;
   gap: var(--space-2);
-  /* Bei stark eingeschränktem .app-main (z. B. beide Schubladen gleichzeitig offen auf einem nur
-     mäßig breiten Desktop-Viewport, siehe narrowDesktop-Fall in layout-overlap.spec.ts) schrumpft
-     die Hero-Card teils auf eine Breite unter der intrinsischen Button-Breite – ohne max-width ragt
-     die (per position:absolute von der Kartenbreite unabhängige) Leiste dann links aus der Card. */
-  max-width: calc(100% - 2 * var(--space-3));
+  flex-shrink: 0;
   flex-wrap: wrap;
   justify-content: flex-end;
 }

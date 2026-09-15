@@ -620,12 +620,16 @@ function showEntryDayOnMap(entry: DiaryEntry) {
           </legend>
           <template v-if="showExcursionPicker">
             <label
-              for="auto-id-1788301175444-19"
+              :for="`diary-excursion-${ex.id}`"
               v-for="ex in pickerExcursions(form.date)"
               :key="ex.id"
               class="excursion-option"
             >
-              <Checkbox id="auto-id-1788301175444-19" :value="ex.id" v-model="form.excursion_ids" />
+              <Checkbox
+                :id="`diary-excursion-${ex.id}`"
+                :value="ex.id"
+                v-model="form.excursion_ids"
+              />
               <span class="excursion-option-title">{{ ex.title }}</span>
               <span v-if="ex.date === form.date" class="excursion-option-badge recommended"
                 ><AppIcon :icon="ACTION_ICONS.recommended" :size="13" group="actions" /> Empfohlen –
@@ -768,6 +772,7 @@ function showEntryDayOnMap(entry: DiaryEntry) {
               v-for="ex in excursionsForEntry(entry)"
               :key="ex.id"
               type="button"
+              variant="ghost"
               class="excursion-chip"
               @click="drawers.openMapForExcursion(ex.id)"
             >
@@ -788,6 +793,7 @@ function showEntryDayOnMap(entry: DiaryEntry) {
               v-for="spot in spotsForEntry(entry)"
               :key="spot.id"
               type="button"
+              variant="ghost"
               class="excursion-chip"
               @click="drawers.openMapAt(`spot-${spot.id}`)"
             >
@@ -1109,7 +1115,7 @@ function showEntryDayOnMap(entry: DiaryEntry) {
 .excursion-option-badge.recommended {
   background: var(--color-primary-tint);
   padding: 2px 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   corner-shape: round;
   font-weight: 600;
 }
@@ -1139,7 +1145,7 @@ function showEntryDayOnMap(entry: DiaryEntry) {
   gap: var(--space-2);
   background: var(--color-hover);
   border: none;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   corner-shape: round;
   padding: 4px 12px 4px 4px;
   font-size: 0.82rem;
@@ -1172,7 +1178,7 @@ function showEntryDayOnMap(entry: DiaryEntry) {
   align-items: center;
   gap: 4px;
   background: var(--color-hover);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   corner-shape: round;
   padding: 4px 12px;
   font-size: 0.82rem;
