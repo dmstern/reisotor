@@ -113,6 +113,7 @@ export default defineConfig({
             'icons/*.png',
             'fonts/*.woff2',
             'reisotor-icon-circle.svg',
+            'reisotor-icon-blank.svg',
           ],
         },
         registerType: 'prompt',
@@ -122,7 +123,7 @@ export default defineConfig({
           // App-Shell ist ein reines Produktions-Build-Feature.
           enabled: false,
         },
-        includeAssets: ['reisotor-icon-circle.svg', 'fonts/*.woff2'],
+        includeAssets: ['reisotor-icon-circle.svg', 'reisotor-icon-blank.svg', 'fonts/*.woff2'],
         manifest: {
           name: 'Reisotor',
           short_name: 'Reisotor',

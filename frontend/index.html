@@ -34,8 +34,8 @@
         transition: opacity 0.25s ease;
       }
       #splash img {
-        width: 96px;
-        height: 96px;
+        width: 140px;
+        height: 140px;
         animation: splash-bob 3.2s ease-in-out infinite;
       }
       #splash .splash-spinner {
@@ -53,10 +53,10 @@
       @keyframes splash-bob {
         0%,
         100% {
-          transform: translateY(0);
+          transform: translateY(0) rotate(0deg);
         }
         50% {
-          transform: translateY(-8px);
+          transform: translateY(-8px) rotate(0.6deg);
         }
       }
       @keyframes splash-spin {
@@ -83,7 +83,7 @@
   </head>
   <body>
     <div id="splash">
-      <img src="/reisotor-icon-circle.svg" alt="" width="96" height="96" />
+      <img src="/reisotor-icon-blank.svg" alt="" width="140" height="140" />
       <span class="splash-spinner" aria-hidden="true"></span>
     </div>
     <div id="app"></div>
