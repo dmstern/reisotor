@@ -75,6 +75,32 @@ function tablerIconsOptimizer() {
   };
 }
 
+// Workaround für einen iOS Safari Bug: Bei passwortgeschützten Umgebungen (Basic Auth, oft auf
+// Staging) sendet Safari beim automatischen Hintergrund-Abruf des apple-touch-icon.png keine
+// Zugangsdaten mit. Der Server antwortet mit 401 Unauthorized und iOS nutzt stattdessen nur
+// einen generischen Anfangsbuchstaben als App-Logo auf dem Startbildschirm. 
+// Lösung: Das Icon als Base64-String direkt ins HTML einbetten, damit kein Netzwerkreifzug nötig ist.
+function inlineAppleTouchIcon() {
+  return {
+    name: 'inline-apple-touch-icon',
+    enforce: 'post' as const,
+    transformIndexHtml(html: string) {
+      try {
+        const iconPath = new URL('./public/icons/apple-touch-icon.png', import.meta.url);
+        const iconBuffer = readFileSync(iconPath);
+        const base64 = iconBuffer.toString('base64');
+        return html.replace(
+          /<link\s+rel="apple-touch-icon"\s+href="[^"]+"\s*\/?>/,
+          `<link rel="apple-touch-icon" href="data:image/png;base64,${base64}" />`
+        );
+      } catch (e) {
+        // Fallback falls Datei noch nicht existiert (z. B. vor npm run generate:icons)
+        return html;
+      }
+    }
+  };
+}
+
 export default defineConfig({
   // Nur für die statischen Pages-Builds gesetzt (dist-landing/dist-demo unter
   // <owner>.github.io/reisotor/[demo/]) - der normale Build (echtes Backend-Deploy) bleibt bei '/'.
@@ -88,6 +114,7 @@ export default defineConfig({
         }
       : undefined,
   plugins: [
+    inlineAppleTouchIcon(),
     tablerIconsOptimizer(),
     vue(),
     // Volle PWA (Home-Bildschirm-Icon + Offline-App-Shell): injectManifest statt der
