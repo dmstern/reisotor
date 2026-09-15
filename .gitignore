@@ -21,3 +21,6 @@ e2e/tests/scratch/
 # .github/workflows/ci.yml fuer einen manuellen Deploy, z. B. bei einer GitHub-Actions-
 # Stoerung) - reiner Build-Output wie dist/, nie committen.
 /release
+
+# Temporäre Wegwerf-Skripte/Tests
+scratch/
