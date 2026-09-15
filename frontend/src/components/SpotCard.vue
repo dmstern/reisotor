@@ -4,6 +4,8 @@ import type { ScheduleItem, Spot } from '../api/types';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { parseContact } from '../utils/contact';
 import { fetchMergedWeather, type DailyWeather } from '../utils/weather';
+import { IconFlag, IconFlagFilled } from '@tabler/icons-vue';
+import type { IconDef } from '../utils/icon';
 import { usePointerDrag } from '../composables/usePointerDrag';
 import { useExcursionsStore } from '../stores/excursions';
 import { useScheduleStore } from '../stores/schedule';
@@ -49,7 +51,7 @@ const props = defineProps<{
   // abgeleitet (analog zu Excursion.date), da mehrere Karten sich denselben Stand teilen müssen.
   scheduledDate: string | null;
   highlighted?: boolean;
-  excursionContext?: { id: number; isDestination: boolean };
+  excursionContext?: { id: number; isDestination: boolean; hasDestination: boolean };
   /** Nur für Kategorie "Unterkunft" mit gesetztem paid_by_user_id relevant (siehe
    *  Migrationskommentar in db/index.ts). */
   payerLabel?: string | null;
@@ -71,6 +73,12 @@ function formatAccommodationDate(d: string | null) {
   if (!d) return null;
   return formatDateShared(d);
 }
+const DESTINATION_ICON: IconDef = {
+  id: 'flag',
+  emoji: '🏁',
+  outline: IconFlag,
+  filled: IconFlagFilled,
+};
 const emit = defineEmits<{
   (e: 'edit', spot: Spot): void;
   (e: 'toggle-like'): void;
@@ -534,18 +542,25 @@ const cardRotation = computed(() => {
                 @create-tour="onCreateTour"
                 @dragstart="onDragStart"
               />
-              <label
-                v-if="excursionContext"
+              <button
+                v-if="
+                  excursionContext &&
+                  (!excursionContext.hasDestination || excursionContext.isDestination)
+                "
+                type="button"
                 class="spot-destination-toggle"
+                :class="{ 'is-active': excursionContext.isDestination }"
                 title="Als Ziel der Tour markieren (für Hin-/Rückweg-Farbverlauf)"
+                @click.stop="emit('toggle-destination')"
               >
-                <input
-                  type="checkbox"
-                  :checked="excursionContext.isDestination"
-                  @change="emit('toggle-destination')"
+                <AppIcon
+                  :icon="DESTINATION_ICON"
+                  :size="14"
+                  group="formFields"
+                  :filled="excursionContext.isDestination"
                 />
                 Ziel der Tour
-              </label>
+              </button>
               <button
                 v-if="!isAccommodation"
                 type="button"
@@ -2016,6 +2031,7 @@ const cardRotation = computed(() => {
   align-items: center;
   gap: 6px;
   font-size: 0.8rem;
+  font-weight: 500;
   color: var(--color-text-muted);
   cursor: pointer;
   padding: 6px 10px;
@@ -2026,6 +2042,12 @@ const cardRotation = computed(() => {
 }
 .spot-destination-toggle:hover {
   background: var(--color-background);
+  color: var(--color-text);
   border-color: var(--color-text-muted);
+}
+.spot-destination-toggle.is-active {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+  background: var(--color-primary-tint);
 }
 </style>

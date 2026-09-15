@@ -3872,6 +3872,7 @@ async function deleteEditingSpot() {
                               :excursion-context="{
                                 id: grp.excursion.id,
                                 isDestination: grp.excursion.destination_spot_id === cell.spot.id,
+                                hasDestination: grp.excursion.destination_spot_id != null,
                               }"
                               @toggle-destination="
                                 toggleExcursionDestination(grp.excursion, cell.spot.id)
