@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted } from 'vue';
+import { onMounted, ref } from 'vue';
 import {
   IconCalendarEvent,
   IconCoin,
@@ -55,8 +55,15 @@ const features = [
   },
 ];
 
+const robotPhase = ref<'scanning' | 'idle'>('scanning');
+
 onMounted(() => {
-  if (!CSS.supports('(animation-timeline: view()) and (animation-range: entry)')) {
+  // Lade-Animation nach 2.5 Sekunden beenden
+  setTimeout(() => {
+    robotPhase.value = 'idle';
+  }, 2500);
+
+  if (!CSS.supports('(animation-timeline: view()) and (animation-range: 0% 100%)')) {
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -68,7 +75,10 @@ onMounted(() => {
       { threshold: 0.1 }
     );
 
-    document.querySelectorAll('.scroll-animate').forEach((el) => observer.observe(el));
+    document.querySelectorAll('.scroll-animate, .scrollytelling-bg-text, .layer').forEach((el) => {
+      observer.observe(el);
+      el.classList.add('fallback-mode');
+    });
   }
 });
 </script>
@@ -81,8 +91,13 @@ onMounted(() => {
     <div class="glow-orb orb-3"></div>
 
     <header class="hero scroll-animate">
+      <div class="hero-bg-scroll-container" aria-hidden="true">
+        <div class="scrollytelling-bg-text">
+          PLAN THE TRIP OF YOUR DREAMS TOGETHER · NO STRESS ·
+        </div>
+      </div>
       <div class="hero-robot">
-        <ReisotorRobot size="240px" phase="idle" variant="circle" />
+        <ReisotorRobot size="240px" :phase="robotPhase" variant="circle" interactive />
       </div>
       <h1 class="title">Reisotor</h1>
       <p class="tagline">
@@ -319,6 +334,48 @@ onMounted(() => {
   gap: var(--space-3);
   padding: var(--space-6) var(--space-3);
   margin-top: var(--space-3);
+  position: relative;
+  view-timeline: --hero block;
+}
+
+.hero-bg-scroll-container {
+  position: absolute;
+  top: 10%;
+  left: 0;
+  width: 100%;
+  overflow: hidden;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.04;
+}
+:root[data-theme='dark'] .hero-bg-scroll-container {
+  opacity: 0.08;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .hero-bg-scroll-container {
+    opacity: 0.08;
+  }
+}
+.scrollytelling-bg-text {
+  font-size: 15vw;
+  font-weight: 900;
+  white-space: nowrap;
+  color: var(--color-text);
+}
+@supports ((animation-timeline: view()) and (animation-range: 0% 100%)) {
+  .scrollytelling-bg-text {
+    animation: scrolly-text-pan linear both;
+    animation-timeline: --hero;
+    animation-range: exit;
+  }
+}
+@keyframes scrolly-text-pan {
+  from {
+    transform: translateX(10%);
+  }
+  to {
+    transform: translateX(-60%);
+  }
 }
 
 .hero-robot {
@@ -416,22 +473,25 @@ onMounted(() => {
   margin: 0 8px;
 }
 
-/* Parallax Screenshots */
+/* Parallax Screenshots (Apple-like Scrollytelling) */
 .parallax-wrapper {
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  view-timeline: --screenshots;
 }
 
 .screenshots-container {
-  position: relative;
+  position: sticky;
+  top: 10vh;
   width: 100%;
-  height: 60vw;
+  height: 80vh;
   max-height: 800px;
   min-height: 400px;
   display: flex;
   justify-content: center;
+  align-items: center;
+  perspective: 1200px;
+  overflow: visible;
 }
 
 .layer {
@@ -440,6 +500,8 @@ onMounted(() => {
   overflow: hidden;
   box-shadow: var(--shadow-lg);
   border: 1px solid var(--color-border);
+  transform-style: preserve-3d;
+  will-change: transform, opacity;
 }
 .layer img {
   display: block;
@@ -448,38 +510,33 @@ onMounted(() => {
 }
 
 .screenshot-desktop {
-  width: 85%;
-  top: 5%;
-  left: 5%;
+  width: 80%;
   z-index: 1;
+  transform: translate3d(-5%, -5%, -100px) rotateY(-2deg);
 }
 
 .screenshot-spots {
-  width: 75%;
-  top: 15%;
-  right: 5%;
+  width: 65%;
   z-index: 2;
   border-radius: 12px;
   box-shadow:
     var(--shadow-xl),
     -10px 10px 30px rgba(0, 0, 0, 0.2);
+  transform: translate3d(15%, 5%, 50px) rotateY(3deg);
 }
 
 .screenshot-mobile {
-  width: 25%;
-  bottom: 0;
-  right: 2%;
+  width: 22%;
   z-index: 3;
   border-radius: 36px;
   box-shadow:
     var(--shadow-lg),
     -15px 15px 40px rgba(0, 0, 0, 0.15);
+  transform: translate3d(-25%, 10%, 150px) rotateY(-4deg);
 }
 
 .polaroid-decor {
   width: auto;
-  top: 40%;
-  left: -2%;
   z-index: 4;
   display: flex;
   flex-direction: column;
@@ -487,6 +544,7 @@ onMounted(() => {
   border: none;
   box-shadow: none;
   overflow: visible;
+  transform: translate3d(25%, 15%, 200px) rotateY(5deg);
 }
 
 .fake-polaroid {
@@ -526,54 +584,170 @@ onMounted(() => {
   }
 }
 
-@keyframes parallax {
+@keyframes reveal-layer-1 {
   from {
-    transform: translateY(calc(80px * var(--parallax-dir)));
+    transform: translate3d(0, 150px, -200px) scale(0.8) rotateY(0deg);
+    opacity: 0;
   }
   to {
-    transform: translateY(calc(-80px * var(--parallax-dir)));
+    transform: translate3d(-5%, -5%, -100px) rotateY(-2deg);
+    opacity: 1;
   }
 }
-@supports ((animation-timeline: view()) and (animation-range: entry)) {
+@keyframes reveal-layer-2 {
+  from {
+    transform: translate3d(0, 150px, -150px) scale(0.8) rotateY(0deg);
+    opacity: 0;
+  }
+  to {
+    transform: translate3d(15%, 5%, 50px) rotateY(3deg);
+    opacity: 1;
+  }
+}
+@keyframes reveal-layer-3 {
+  from {
+    transform: translate3d(0, 150px, -100px) scale(0.8) rotateY(0deg);
+    opacity: 0;
+  }
+  to {
+    transform: translate3d(-25%, 10%, 150px) rotateY(-4deg);
+    opacity: 1;
+  }
+}
+@keyframes reveal-layer-4 {
+  from {
+    transform: translate3d(0, 150px, -50px) scale(0.8) rotateY(0deg);
+    opacity: 0;
+  }
+  to {
+    transform: translate3d(25%, 15%, 200px) rotateY(5deg);
+    opacity: 1;
+  }
+}
+
+@supports ((animation-timeline: view()) and (animation-range: 0% 100%)) {
+  .parallax-wrapper {
+    height: 300vh;
+    view-timeline: --screenshots block;
+  }
   .layer-1 {
-    --parallax-dir: -0.2;
-    animation: parallax linear both;
+    animation: reveal-layer-1 linear both;
     animation-timeline: --screenshots;
-    animation-range: entry 0% cover 100%;
+    animation-range: contain 0% contain 25%;
   }
   .layer-2 {
-    --parallax-dir: 0.6;
-    animation: parallax linear both;
+    animation: reveal-layer-2 linear both;
     animation-timeline: --screenshots;
-    animation-range: entry 0% cover 100%;
+    animation-range: contain 20% contain 45%;
   }
   .layer-3 {
-    --parallax-dir: 1.2;
-    animation: parallax linear both;
+    animation: reveal-layer-3 linear both;
     animation-timeline: --screenshots;
-    animation-range: entry 0% cover 100%;
+    animation-range: contain 40% contain 65%;
+  }
+  .layer-4 {
+    animation: reveal-layer-4 linear both;
+    animation-timeline: --screenshots;
+    animation-range: contain 60% contain 85%;
+  }
+}
+
+/* Fallback for browsers without animation-timeline */
+.layer.fallback-mode {
+  opacity: 0;
+  transform: translate3d(0, 150px, -100px) scale(0.8);
+  transition:
+    opacity 0.8s ease,
+    transform 0.8s ease;
+}
+.layer.fallback-visible {
+  opacity: 1;
+}
+.layer-1.fallback-visible {
+  transform: translate3d(-5%, -5%, -100px) rotateY(-2deg);
+}
+.layer-2.fallback-visible {
+  transform: translate3d(15%, 5%, 50px) rotateY(3deg);
+}
+.layer-3.fallback-visible {
+  transform: translate3d(-25%, 10%, 150px) rotateY(-4deg);
+}
+.layer-4.fallback-visible {
+  transform: translate3d(25%, 15%, 200px) rotateY(5deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .layer {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .layer-1 {
+    transform: translate3d(-5%, -5%, 0) !important;
+  }
+  .layer-2 {
+    transform: translate3d(15%, 5%, 0) !important;
+  }
+  .layer-3 {
+    transform: translate3d(-25%, 10%, 0) !important;
+  }
+  .layer-4 {
+    transform: translate3d(25%, 15%, 0) !important;
   }
 }
 
 @media (max-width: 768px) {
+  .parallax-wrapper {
+    height: 150vh;
+  }
   .screenshots-container {
-    height: 350px;
+    height: 50vh;
+  }
+  .screenshot-desktop {
+    width: 95%;
+    transform: translate3d(0, -10%, 0);
   }
   .screenshot-spots {
     width: 85%;
-    top: 20%;
-    right: 5%;
+    transform: translate3d(5%, 10%, 50px);
   }
   .screenshot-mobile {
     width: 35%;
-    right: -10px;
+    transform: translate3d(-30%, 20%, 100px);
   }
   .polaroid-decor {
     display: none;
   }
-  .layer-1 {
-    width: 95%;
-    left: 2.5%;
+
+  @keyframes reveal-layer-1 {
+    from {
+      transform: translate3d(0, 100px, -100px) scale(0.9);
+      opacity: 0;
+    }
+    to {
+      transform: translate3d(0, -10%, 0);
+      opacity: 1;
+    }
+  }
+  @keyframes reveal-layer-2 {
+    from {
+      transform: translate3d(0, 100px, -50px) scale(0.9);
+      opacity: 0;
+    }
+    to {
+      transform: translate3d(5%, 10%, 50px);
+      opacity: 1;
+    }
+  }
+  @keyframes reveal-layer-3 {
+    from {
+      transform: translate3d(0, 100px, 0) scale(0.9);
+      opacity: 0;
+    }
+    to {
+      transform: translate3d(-30%, 20%, 100px);
+      opacity: 1;
+    }
   }
 }
 

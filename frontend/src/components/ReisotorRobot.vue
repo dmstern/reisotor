@@ -10,7 +10,7 @@
 //   Rucksack dockt an Rücken an, stolzer Blick, feuert packingDone).
 import { useId } from 'vue';
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     /** idle: schwebt/blinzelt normal. scanning/done: siehe SecurityCheckView.vue. packing: packt
      *  einmalig Reiseutensilien in den Rucksack und dockt ihn an, siehe SplashScreen.vue. */
@@ -21,12 +21,15 @@ withDefaults(
     size?: string;
     /** Hintergrund-Variante des Logos: blank (transparent), circle (runder Farbverlauf), full (Squircle) */
     variant?: 'blank' | 'circle' | 'full';
+    /** Ob die Augen der Maus folgen sollen (funktioniert nur in Phase 'idle') */
+    interactive?: boolean;
   }>(),
   {
     phase: 'idle',
     coveringEyes: false,
     size: '200px',
     variant: 'blank',
+    interactive: false,
   }
 );
 
@@ -40,6 +43,29 @@ function onAnimationEnd(event: AnimationEvent) {
     emit('packingDone');
   }
 }
+
+// Maus-Tracking für interaktive Augen
+import { ref, onMounted, onUnmounted } from 'vue';
+const pupilOffset = ref({ x: 0, y: 0 });
+
+function onMouseMove(e: MouseEvent) {
+  if (!props.interactive || props.phase !== 'idle' || props.coveringEyes) {
+    pupilOffset.value = { x: 0, y: 0 };
+    return;
+  }
+  // Max. Verschiebung: +/- 45 Einheiten (SVG)
+  const maxShift = 45;
+  const rx = (e.clientX / window.innerWidth - 0.5) * 2;
+  const ry = (e.clientY / window.innerHeight - 0.5) * 2;
+  pupilOffset.value = { x: rx * maxShift, y: ry * maxShift };
+}
+
+onMounted(() => {
+  window.addEventListener('mousemove', onMouseMove);
+});
+onUnmounted(() => {
+  window.removeEventListener('mousemove', onMouseMove);
+});
 </script>
 
 <template>
@@ -512,7 +538,13 @@ function onAnimationEnd(event: AnimationEvent) {
               />
 
               <!-- Pupille & Kern (eigenständig animierbar) -->
-              <g class="pupil-group">
+              <g
+                class="pupil-group"
+                :style="{
+                  transform: `translate(${pupilOffset.x}px, ${pupilOffset.y}px)`,
+                  transition: 'transform 0.1s ease-out',
+                }"
+              >
                 <circle cx="129.5" cy="667.5" r="105" fill="#01040a" stroke-width="2.5" />
                 <circle cx="122" cy="662.5" r="105" fill="#030814" stroke-width="2.5" />
               </g>
@@ -577,7 +609,13 @@ function onAnimationEnd(event: AnimationEvent) {
               />
 
               <!-- Pupille & Kern -->
-              <g class="pupil-group">
+              <g
+                class="pupil-group"
+                :style="{
+                  transform: `translate(${pupilOffset.x}px, ${pupilOffset.y}px)`,
+                  transition: 'transform 0.1s ease-out',
+                }"
+              >
                 <circle cx="129.5" cy="667.5" r="105" fill="#01040a" stroke-width="2.5" />
                 <circle cx="122" cy="662.5" r="105" fill="#030814" stroke-width="2.5" />
               </g>
