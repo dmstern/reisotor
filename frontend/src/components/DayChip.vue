@@ -80,6 +80,17 @@ const dayNum = computed(() => {
   transform: translateY(-1px);
 }
 
+.day-chip::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  min-width: 44px;
+  width: 100%;
+  height: 44px;
+  transform: translate(-50%, -50%);
+}
+
 .day-chip:active {
   transform: scale(0.96);
 }

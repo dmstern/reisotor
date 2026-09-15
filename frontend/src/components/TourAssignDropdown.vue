@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, watch, onUnmounted, nextTick } from 'vue';
 import Checkbox from './primitives/Checkbox.vue';
 import AppIcon from './AppIcon.vue';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
+import { computePopoverPosition } from '../utils/popoverPosition';
 
 export interface TourItem {
   id: number;
@@ -27,6 +28,39 @@ const emit = defineEmits<{
 
 const open = ref(false);
 const newTourTitle = ref('');
+const buttonRef = ref<HTMLButtonElement | null>(null);
+const popupRef = ref<HTMLElement | null>(null);
+const popupStyle = ref<{ top: string; left: string }>({ top: '0px', left: '0px' });
+
+function close() {
+  open.value = false;
+}
+
+async function toggle(event?: MouseEvent) {
+  if (open.value) {
+    close();
+    return;
+  }
+  const triggerEl = buttonRef.value ?? (event?.currentTarget as HTMLElement | undefined) ?? null;
+  if (!triggerEl) return;
+
+  popupStyle.value = computePopoverPosition(triggerEl, {
+    menuWidth: 240,
+    menuHeight: 220,
+    offset: 4,
+  });
+  open.value = true;
+
+  await nextTick();
+  if (popupRef.value && triggerEl) {
+    const rect = popupRef.value.getBoundingClientRect();
+    popupStyle.value = computePopoverPosition(triggerEl, {
+      menuWidth: rect.width,
+      menuHeight: rect.height,
+      offset: 4,
+    });
+  }
+}
 
 function handleToggle(id: number) {
   emit('toggle-tour', id);
@@ -44,15 +78,37 @@ function onDragStart(event: DragEvent) {
   emit('dragstart', event);
 }
 
-function onDragEnd(event: DragEvent) {
+function onDragEnd(_event: DragEvent) {
   document.body.classList.remove('is-dragging-tour');
 }
+
+function onWindowKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape') {
+    close();
+  }
+}
+
+watch(open, (isOpen) => {
+  if (isOpen) {
+    window.addEventListener('resize', close, { passive: true });
+    window.addEventListener('keydown', onWindowKeydown);
+  } else {
+    window.removeEventListener('resize', close);
+    window.removeEventListener('keydown', onWindowKeydown);
+  }
+});
+
+onUnmounted(() => {
+  window.removeEventListener('resize', close);
+  window.removeEventListener('keydown', onWindowKeydown);
+});
 </script>
 
 <template>
   <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
   <div class="tour-assign-dropdown" @click.stop>
     <button
+      ref="buttonRef"
       type="button"
       class="tour-assign-btn"
       :class="{ 'is-open': open }"
@@ -60,58 +116,75 @@ function onDragEnd(event: DragEvent) {
       :aria-expanded="open"
       title="Klicken zum Zuordnen / Auf Tour ziehen"
       aria-label="Tour zuordnen oder auf eine Tour ziehen"
-      @click="open = !open"
+      @click="toggle($event)"
       @dragstart="onDragStart"
       @dragend="onDragEnd"
     >
       <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="14" group="navigation" /> Tour zuordnen
     </button>
-    <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
-    <Transition name="fade">
-      <div class="options-backdrop" v-if="open" @click="open = false" />
-    </Transition>
-    <Transition name="dropdown-unfold">
-      <div class="options-popup" v-if="open">
-        <div class="popup-head">
-          <span class="popup-title">Touren zuordnen</span>
+    <Teleport to="body">
+      <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
+      <Transition name="fade">
+        <div
+          v-if="open"
+          class="options-backdrop tour-assign-backdrop"
+          role="button"
+          tabindex="0"
+          aria-label="Menü schließen"
+          @click="close"
+          @keydown.enter.prevent="close"
+          @keydown.space.prevent="close"
+        />
+      </Transition>
+      <Transition name="dropdown-unfold">
+        <div
+          v-if="open"
+          ref="popupRef"
+          class="options-popup tour-assign-popup"
+          :style="popupStyle"
+          @click.stop
+        >
+          <div class="popup-head">
+            <span class="popup-title">Touren zuordnen</span>
+          </div>
+          <ul class="tour-list">
+            <li v-if="!tours.length" class="empty">Noch keine Touren angelegt</li>
+            <li
+              v-for="tour in tours"
+              :key="tour.id"
+              class="tour-item"
+              :class="{ selected: tour.assigned }"
+            >
+              <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
+              <label class="tour-item-label">
+                <Checkbox :checked="tour.assigned" @change="handleToggle(tour.id)" />
+                <span class="tour-name">{{ tour.title }}</span>
+              </label>
+            </li>
+          </ul>
+          <form class="create-tour-form" @submit.prevent="handleCreate">
+            <!-- eslint-disable-next-line vuejs-accessibility/form-control-has-label -->
+            <input
+              v-model="newTourTitle"
+              type="text"
+              class="create-tour-input"
+              placeholder="Neue Tour…"
+              @click.stop
+            />
+            <button
+              type="submit"
+              class="create-btn"
+              :disabled="!newTourTitle.trim()"
+              title="Neue Tour erstellen & Spot zuordnen"
+              aria-label="Neue Tour erstellen"
+              @click.stop
+            >
+              <AppIcon :icon="ACTION_ICONS.add" :size="13" group="actions" />
+            </button>
+          </form>
         </div>
-        <ul class="tour-list">
-          <li v-if="!tours.length" class="empty">Noch keine Touren angelegt</li>
-          <li
-            v-for="tour in tours"
-            :key="tour.id"
-            class="tour-item"
-            :class="{ selected: tour.assigned }"
-          >
-            <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
-            <label class="tour-item-label">
-              <Checkbox :checked="tour.assigned" @change="handleToggle(tour.id)" />
-              <span class="tour-name">{{ tour.title }}</span>
-            </label>
-          </li>
-        </ul>
-        <form class="create-tour-form" @submit.prevent="handleCreate">
-          <!-- eslint-disable-next-line vuejs-accessibility/form-control-has-label -->
-          <input
-            v-model="newTourTitle"
-            type="text"
-            class="create-tour-input"
-            placeholder="Neue Tour…"
-            @click.stop
-          />
-          <button
-            type="submit"
-            class="create-btn"
-            :disabled="!newTourTitle.trim()"
-            title="Neue Tour erstellen & Spot zuordnen"
-            aria-label="Neue Tour erstellen"
-            @click.stop
-          >
-            <AppIcon :icon="ACTION_ICONS.add" :size="13" group="actions" />
-          </button>
-        </form>
-      </div>
-    </Transition>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
@@ -127,7 +200,7 @@ function onDragEnd(event: DragEvent) {
   gap: 6px;
   background: var(--color-hover);
   border: 1px solid var(--color-border);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   corner-shape: round;
   padding: 3px 10px 3px 8px;
   font-size: 0.72rem;
@@ -207,14 +280,13 @@ function onDragEnd(event: DragEvent) {
 .options-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 99;
+  z-index: 1000;
+  background: transparent;
 }
 
 .options-popup {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  z-index: 100;
+  position: fixed;
+  z-index: 1001;
   min-width: 200px;
   max-width: 280px;
   background: var(--color-surface);

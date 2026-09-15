@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { IconBell, IconBellFilled } from '@tabler/icons-vue';
 import { useNotificationsStore } from '../stores/notifications';
@@ -82,6 +82,27 @@ function close() {
   open.value = false;
 }
 
+function onKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape') {
+    close();
+  }
+}
+
+watch(open, (isOpen) => {
+  if (isOpen) {
+    window.addEventListener('resize', close, { passive: true });
+    window.addEventListener('keydown', onKeydown);
+  } else {
+    window.removeEventListener('resize', close);
+    window.removeEventListener('keydown', onKeydown);
+  }
+});
+
+onUnmounted(() => {
+  window.removeEventListener('resize', close);
+  window.removeEventListener('keydown', onKeydown);
+});
+
 async function selectNotification(n: NotificationItem) {
   notifications.markRead(n.id);
   close();
@@ -116,138 +137,140 @@ function markAllRead() {
       <UnseenDot v-else-if="hasSystemNotices" class="bell-dot" aria-label="Neuigkeiten verfügbar" />
     </div>
 
-    <Transition name="fade">
-      <div
-        v-if="open"
-        class="backdrop"
-        role="button"
-        tabindex="0"
-        aria-label="Benachrichtigungen schließen"
-        @click="close"
-        @keydown.enter.prevent="close"
-        @keydown.space.prevent="close"
-      />
-    </Transition>
-    <Transition name="dropdown-unfold">
-      <div v-if="open" class="dropdown">
-        <div class="dropdown-header">
-          <span class="dropdown-title">Benachrichtigungen</span>
-          <button
-            v-if="notifications.unreadCount > 0"
-            type="button"
-            class="mark-all-btn"
-            title="Alle als gelesen markieren"
-            aria-label="Alle als gelesen markieren"
-            @click="markAllRead"
-          >
-            Alle als gelesen markieren
-          </button>
-        </div>
-        <div class="notification-list">
-          <!-- System-Benachrichtigungen (PWA-Update, Offline-Bereitschaft, App-Installation) -->
-          <div v-if="hasSystemNotices" class="system-notices">
-            <!-- 1. Neues Update verfügbar -->
-            <div v-if="pwaUpdate.needRefresh" class="system-notice update pwa-pill update">
-              <div class="notice-icon update-icon" aria-hidden="true">
-                <AppIcon :icon="ACTION_ICONS.refresh" :size="16" group="actions" />
-              </div>
-              <div class="notice-body">
-                <span class="notice-title">Neues Update verfügbar</span>
-                <span class="notice-desc">Eine neuere Version von Reisotor steht bereit.</span>
-              </div>
-              <button type="button" class="pwa-pill-btn reload-btn" @click="pwaUpdate.reload">
-                Neu laden
-              </button>
-            </div>
-
-            <!-- 2. Offline verfügbar -->
-            <div v-else-if="pwaUpdate.offlineReady" class="system-notice ready pwa-pill ready">
-              <div class="notice-icon ready-icon" aria-hidden="true">
-                <AppIcon :icon="ACTION_ICONS.done" :size="16" group="actions" />
-              </div>
-              <div class="notice-body">
-                <span class="notice-title">Offline verfügbar</span>
-                <span class="notice-desc">Die App lädt jetzt auch ohne Internetverbindung.</span>
-              </div>
-              <IconButton
-                variant="ghost"
-                size="sm"
-                :icon="ACTION_ICONS.close"
-                aria-label="Hinweis schließen"
-                title="Hinweis schließen"
-                class="dismiss-btn"
-                @click="pwaUpdate.dismissOfflineReady"
-              />
-            </div>
-
-            <!-- 3. Als App installierbar -->
-            <div
-              v-if="!pwaInstall.isStandalone && !pwaInstall.dismissed"
-              class="system-notice install pwa-pill install"
+    <Teleport to="body">
+      <Transition name="fade">
+        <div
+          v-if="open"
+          class="backdrop notification-backdrop"
+          role="button"
+          tabindex="0"
+          aria-label="Benachrichtigungen schließen"
+          @click="close"
+          @keydown.enter.prevent="close"
+          @keydown.space.prevent="close"
+        />
+      </Transition>
+      <Transition name="dropdown-unfold">
+        <div v-if="open" class="dropdown notification-dropdown" @click.stop>
+          <div class="dropdown-header">
+            <span class="dropdown-title">Benachrichtigungen</span>
+            <button
+              v-if="notifications.unreadCount > 0"
+              type="button"
+              class="mark-all-btn"
+              title="Alle als gelesen markieren"
+              aria-label="Alle als gelesen markieren"
+              @click="markAllRead"
             >
-              <div class="notice-icon install-icon" aria-hidden="true">
-                <AppIcon :icon="ACTION_ICONS.installApp" :size="16" group="actions" />
+              Alle als gelesen markieren
+            </button>
+          </div>
+          <div class="notification-list">
+            <!-- System-Benachrichtigungen (PWA-Update, Offline-Bereitschaft, App-Installation) -->
+            <div v-if="hasSystemNotices" class="system-notices">
+              <!-- 1. Neues Update verfügbar -->
+              <div v-if="pwaUpdate.needRefresh" class="system-notice update pwa-pill update">
+                <div class="notice-icon update-icon" aria-hidden="true">
+                  <AppIcon :icon="ACTION_ICONS.refresh" :size="16" group="actions" />
+                </div>
+                <div class="notice-body">
+                  <span class="notice-title">Neues Update verfügbar</span>
+                  <span class="notice-desc">Eine neuere Version von Reisotor steht bereit.</span>
+                </div>
+                <button type="button" class="pwa-pill-btn reload-btn" @click="pwaUpdate.reload">
+                  Neu laden
+                </button>
               </div>
-              <div class="notice-body">
-                <span class="notice-title">Als App installierbar</span>
-                <span class="notice-desc">Reisotor zum Startbildschirm hinzufügen.</span>
-              </div>
-              <div class="notice-actions">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  class="pwa-pill-trigger install-btn"
-                  @click="openInstallDialog"
-                >
-                  Installieren
-                </Button>
+
+              <!-- 2. Offline verfügbar -->
+              <div v-else-if="pwaUpdate.offlineReady" class="system-notice ready pwa-pill ready">
+                <div class="notice-icon ready-icon" aria-hidden="true">
+                  <AppIcon :icon="ACTION_ICONS.done" :size="16" group="actions" />
+                </div>
+                <div class="notice-body">
+                  <span class="notice-title">Offline verfügbar</span>
+                  <span class="notice-desc">Die App lädt jetzt auch ohne Internetverbindung.</span>
+                </div>
                 <IconButton
                   variant="ghost"
                   size="sm"
-                  class="pwa-pill-dismiss-btn dismiss-btn"
                   :icon="ACTION_ICONS.close"
                   aria-label="Hinweis schließen"
                   title="Hinweis schließen"
-                  @click="pwaInstall.dismiss()"
+                  class="dismiss-btn"
+                  @click="pwaUpdate.dismissOfflineReady"
                 />
               </div>
+
+              <!-- 3. Als App installierbar -->
+              <div
+                v-if="!pwaInstall.isStandalone && !pwaInstall.dismissed"
+                class="system-notice install pwa-pill install"
+              >
+                <div class="notice-icon install-icon" aria-hidden="true">
+                  <AppIcon :icon="ACTION_ICONS.installApp" :size="16" group="actions" />
+                </div>
+                <div class="notice-body">
+                  <span class="notice-title">Als App installierbar</span>
+                  <span class="notice-desc">Reisotor zum Startbildschirm hinzufügen.</span>
+                </div>
+                <div class="notice-actions">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    class="pwa-pill-trigger install-btn"
+                    @click="openInstallDialog"
+                  >
+                    Installieren
+                  </Button>
+                  <IconButton
+                    variant="ghost"
+                    size="sm"
+                    class="pwa-pill-dismiss-btn dismiss-btn"
+                    :icon="ACTION_ICONS.close"
+                    aria-label="Hinweis schließen"
+                    title="Hinweis schließen"
+                    @click="pwaInstall.dismiss()"
+                  />
+                </div>
+              </div>
             </div>
-          </div>
 
-          <div
-            v-if="hasSystemNotices && notifications.items.length > 0"
-            class="system-divider"
-            aria-hidden="true"
-          ></div>
+            <div
+              v-if="hasSystemNotices && notifications.items.length > 0"
+              class="system-divider"
+              aria-hidden="true"
+            ></div>
 
-          <!-- Aktivitäts-Benachrichtigungen -->
-          <button
-            v-for="n in notifications.items"
-            :key="n.id"
-            type="button"
-            class="notification-row"
-            :class="{ unread: !n.read }"
-            @click="selectNotification(n)"
-          >
-            <span class="row-emoji" aria-hidden="true">{{ DOMAIN_EMOJI[n.domain] ?? '🔔' }}</span>
-            <span class="row-body">
-              <span class="row-text">
-                <strong>{{ n.actor.username }}</strong> hat {{ n.action_label }}
-                <span class="row-domain">· {{ n.domain_label }}</span>
+            <!-- Aktivitäts-Benachrichtigungen -->
+            <button
+              v-for="n in notifications.items"
+              :key="n.id"
+              type="button"
+              class="notification-row"
+              :class="{ unread: !n.read }"
+              @click="selectNotification(n)"
+            >
+              <span class="row-emoji" aria-hidden="true">{{ DOMAIN_EMOJI[n.domain] ?? '🔔' }}</span>
+              <span class="row-body">
+                <span class="row-text">
+                  <strong>{{ n.actor.username }}</strong> hat {{ n.action_label }}
+                  <span class="row-domain">· {{ n.domain_label }}</span>
+                </span>
+                <span class="row-time">{{ formatDateTime(n.created_at) }}</span>
               </span>
-              <span class="row-time">{{ formatDateTime(n.created_at) }}</span>
-            </span>
-            <span v-if="!n.read" class="unread-dot" aria-hidden="true"></span>
-          </button>
-          <p
-            v-if="notifications.loaded && !notifications.items.length && !hasSystemNotices"
-            class="empty"
-          >
-            Keine Benachrichtigungen.
-          </p>
+              <span v-if="!n.read" class="unread-dot" aria-hidden="true"></span>
+            </button>
+            <p
+              v-if="notifications.loaded && !notifications.items.length && !hasSystemNotices"
+              class="empty"
+            >
+              Keine Benachrichtigungen.
+            </p>
+          </div>
         </div>
-      </div>
-    </Transition>
+      </Transition>
+    </Teleport>
     <PwaInstallDialog v-model="showInstallDialog" />
   </div>
 </template>
@@ -295,7 +318,8 @@ function markAllRead() {
 .backdrop {
   position: fixed;
   inset: 0;
-  z-index: 20;
+  z-index: 1000;
+  background: transparent;
 }
 
 /* position:fixed statt (wie TripSwitcher.vue's .dropdown) absolut relativ zum eigenen Wrapper: die
@@ -316,9 +340,16 @@ function markAllRead() {
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   box-shadow: var(--shadow-md);
-  z-index: 21;
+  z-index: 1001;
   display: flex;
   flex-direction: column;
+}
+
+@media (max-width: 600px) {
+  .dropdown {
+    right: var(--space-2);
+    width: min(360px, calc(100vw - 2 * var(--space-2)));
+  }
 }
 
 .dropdown-header {

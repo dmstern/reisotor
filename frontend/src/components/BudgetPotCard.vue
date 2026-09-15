@@ -97,11 +97,11 @@ function updateAllocationAmount(category: string, value: string) {
       color="var(--color-primary-dark)"
     />
 
-    <label for="auto-id-1788301175422-1" class="target-input">
+    <label :for="`budget-target-${budget.id}`" class="target-input">
       Ziel (gesamt, optional)
       <div class="target-input-row">
         <Input
-          id="auto-id-1788301175422-1"
+          :id="`budget-target-${budget.id}`"
           v-model="targetInput"
           type="number"
           step="0.01"
@@ -124,12 +124,12 @@ function updateAllocationAmount(category: string, value: string) {
           :delay="(idx + 1) * 45"
         />
         <div class="category-edit">
-          <!-- eslint-disable-next-line vuejs-accessibility/form-control-has-label -->
           <Input
             type="number"
             step="0.01"
             size="sm"
             class="category-amount-input"
+            :aria-label="`Betrag für Kategorie ${a.category}`"
             :model-value="String(a.amount)"
             @change="updateAllocationAmount(a.category, ($event.target as HTMLInputElement).value)"
           />

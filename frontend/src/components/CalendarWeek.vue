@@ -176,6 +176,7 @@ function onDrop(event: DragEvent, date: string) {
 
 <style scoped>
 .week {
+  container-type: inline-size;
   display: grid;
   /* minmax(0, 1fr) statt nur 1fr: ohne das explizite Minimum von 0 verhindert die intrinsische
      Mindestbreite von unumbrochenem Text (z. B. langer Termin-Titel) das gleichmäßige
@@ -305,6 +306,42 @@ function onDrop(event: DragEvent, date: string) {
   justify-content: space-between;
   gap: 2px;
   min-height: 22px;
+}
+
+@container (max-width: 480px) {
+  .day-badge-wrap {
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .day-weather-row {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .day-badge-wrap {
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .day-weather-row {
+    justify-content: center;
+  }
+}
+
+@container (max-width: 360px) {
+  .day {
+    padding: 4px 2px;
+  }
+}
+
+@media (max-width: 360px) {
+  .day {
+    padding: 4px 2px;
+  }
 }
 
 .num {

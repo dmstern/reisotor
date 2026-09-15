@@ -447,11 +447,13 @@ label,
 
 .dates-row {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-2);
 }
 
 .dates-row label {
-  flex: 1;
+  flex: 1 1 130px;
+  min-width: 130px;
 }
 
 .checkbox-label {

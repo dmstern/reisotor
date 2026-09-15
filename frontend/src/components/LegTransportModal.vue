@@ -291,9 +291,10 @@ function onDelete() {
 .route-summary {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
-  background: var(--color-surface-hover, rgba(0, 0, 0, 0.04));
+  background: var(--color-hover);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   font-size: 0.9rem;
@@ -304,11 +305,17 @@ function onDelete() {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .arrow {
   color: var(--color-text-muted);
   font-weight: 700;
+  flex-shrink: 0;
 }
 
 .row {

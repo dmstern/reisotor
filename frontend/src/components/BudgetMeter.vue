@@ -145,14 +145,14 @@ function fmt(n: number) {
 
 .track {
   height: 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   overflow: hidden;
   position: relative;
 }
 
 .fill {
   height: 100%;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   position: relative;
   overflow: hidden;
   transition:

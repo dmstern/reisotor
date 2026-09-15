@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, onUnmounted, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useTripStore } from '../stores/trip';
 import { useAuthStore } from '../stores/auth';
@@ -31,6 +31,9 @@ const auth = useAuthStore();
 const open = ref(false);
 const showMembers = ref(false);
 const membersTrip = ref<Trip | null>(null);
+const switcherBtnRef = ref<HTMLButtonElement | null>(null);
+const dropdownRef = ref<HTMLElement | null>(null);
+const dropdownStyle = ref<{ top: string; left: string }>({ top: '0px', left: '0px' });
 const {
   showForm,
   editingTrip,
@@ -60,13 +63,60 @@ watch(
 const router = useRouter();
 const route = useRoute();
 
-function toggle() {
-  open.value = !open.value;
+function updateDropdownPosition() {
+  if (!switcherBtnRef.value) return;
+  const rect = switcherBtnRef.value.getBoundingClientRect();
+  const menuWidth = dropdownRef.value?.getBoundingClientRect().width || 260;
+  const padding = 8;
+  const viewportWidth = window.innerWidth;
+
+  const triggerCenter = rect.left + rect.width / 2;
+  let left = triggerCenter - menuWidth / 2;
+  left = Math.max(padding, Math.min(left, viewportWidth - menuWidth - padding));
+
+  const top = rect.bottom + 6;
+
+  dropdownStyle.value = {
+    top: `${Math.round(top)}px`,
+    left: `${Math.round(left)}px`,
+  };
+}
+
+async function toggle() {
+  if (open.value) {
+    close();
+    return;
+  }
+  updateDropdownPosition();
+  open.value = true;
+  await nextTick();
+  updateDropdownPosition();
 }
 
 function close() {
   open.value = false;
 }
+
+function onWindowKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape') {
+    close();
+  }
+}
+
+watch(open, (isOpen) => {
+  if (isOpen) {
+    window.addEventListener('resize', close, { passive: true });
+    window.addEventListener('keydown', onWindowKeydown);
+  } else {
+    window.removeEventListener('resize', close);
+    window.removeEventListener('keydown', onWindowKeydown);
+  }
+});
+
+onUnmounted(() => {
+  window.removeEventListener('resize', close);
+  window.removeEventListener('keydown', onWindowKeydown);
+});
 
 function selectAndClose(id: number) {
   tripStore.selectTrip(id);
@@ -92,78 +142,98 @@ function openMembers(trip: Trip) {
 
 <template>
   <div class="trip-switcher" :class="{ 'is-docked': props.docked }">
-    <button type="button" class="switcher-btn" @click="toggle">
+    <button
+      ref="switcherBtnRef"
+      type="button"
+      class="switcher-btn"
+      title="Urlaub wechseln"
+      aria-label="Urlaub wechseln"
+      :aria-expanded="open"
+      aria-haspopup="true"
+      @click="toggle"
+    >
       <span class="trip-name">{{ tripStore.currentTrip?.name ?? 'Urlaub wählen' }}</span>
       <AppIcon :icon="ACTION_ICONS.chevronDown" :size="12" group="actions" class="caret" />
     </button>
 
-    <Transition name="fade">
-      <div
-        v-if="open"
-        class="backdrop"
-        role="button"
-        tabindex="0"
-        @click="close"
-        @keydown.enter.prevent="close"
-        @keydown.space.prevent="close"
-      />
-    </Transition>
-    <Transition name="dropdown-unfold-center">
-      <div v-if="open" class="dropdown">
+    <Teleport to="body">
+      <Transition name="fade">
         <div
-          v-for="trip in tripStore.trips"
-          :key="trip.id"
-          class="trip-row"
-          :class="{ active: trip.id === tripStore.currentTripId }"
+          v-if="open"
+          class="backdrop trip-switcher-backdrop"
+          role="button"
+          tabindex="0"
+          aria-label="Urlaubsauswahl schließen"
+          @click="close"
+          @keydown.enter.prevent="close"
+          @keydown.space.prevent="close"
+        />
+      </Transition>
+      <Transition name="dropdown-unfold">
+        <div
+          v-if="open"
+          ref="dropdownRef"
+          class="dropdown trip-switcher-dropdown"
+          :style="dropdownStyle"
+          role="menu"
+          aria-label="Urlaube"
+          @click.stop
         >
-          <DropdownItem
-            :label="trip.name"
-            :active="trip.id === tripStore.currentTripId"
-            class="trip-select"
-            @click="selectAndClose(trip.id)"
-          />
-          <div class="row-actions">
-            <IconButton
-              variant="ghost"
-              size="sm"
-              :icon="FORM_FIELD_ICONS.visibility"
-              title="Mitglieder verwalten"
-              aria-label="Mitglieder verwalten"
-              @click="openMembers(trip)"
+          <div
+            v-for="trip in tripStore.trips"
+            :key="trip.id"
+            class="trip-row"
+            :class="{ active: trip.id === tripStore.currentTripId }"
+          >
+            <DropdownItem
+              :label="trip.name"
+              :active="trip.id === tripStore.currentTripId"
+              class="trip-select"
+              @click="selectAndClose(trip.id)"
             />
-            <EditButton
-              small
-              @click="
-                () => {
-                  openEdit(trip);
-                  close();
-                }
-              "
-            />
-            <DeleteButton small @click="onDelete(trip)" />
+            <div class="row-actions">
+              <IconButton
+                variant="ghost"
+                size="sm"
+                :icon="FORM_FIELD_ICONS.visibility"
+                title="Mitglieder verwalten"
+                aria-label="Mitglieder verwalten"
+                @click="openMembers(trip)"
+              />
+              <EditButton
+                small
+                @click="
+                  () => {
+                    openEdit(trip);
+                    close();
+                  }
+                "
+              />
+              <DeleteButton small @click="onDelete(trip)" />
+            </div>
           </div>
+          <p v-if="!tripStore.trips.length" class="empty">Noch keine Urlaube.</p>
+          <Button
+            v-if="!tripCreationBlocked()"
+            type="button"
+            variant="ghost"
+            class="new-trip-btn"
+            @click="
+              () => {
+                openCreate();
+                close();
+              }
+            "
+          >
+            + Neuer Urlaub
+          </Button>
+          <p v-else class="empty">Eingeschränkter Modus - Nur ein Urlaub pro Nutzer</p>
+          <router-link to="/trips" class="manage-trips-btn" @click="close"
+            >Alle Urlaube verwalten</router-link
+          >
         </div>
-        <p v-if="!tripStore.trips.length" class="empty">Noch keine Urlaube.</p>
-        <Button
-          v-if="!tripCreationBlocked()"
-          type="button"
-          variant="ghost"
-          class="new-trip-btn"
-          @click="
-            () => {
-              openCreate();
-              close();
-            }
-          "
-        >
-          + Neuer Urlaub
-        </Button>
-        <p v-else class="empty">Eingeschränkter Modus - Nur ein Urlaub pro Nutzer</p>
-        <router-link to="/trips" class="manage-trips-btn" @click="close"
-          >Alle Urlaube verwalten</router-link
-        >
-      </div>
-    </Transition>
+      </Transition>
+    </Teleport>
 
     <Modal
       :model-value="showForm"
@@ -267,26 +337,24 @@ function openMembers(trip: Trip) {
 .backdrop {
   position: fixed;
   inset: 0;
-  z-index: 20;
+  z-index: 1000;
+  background: transparent;
 }
 
 .dropdown {
-  position: absolute;
-  top: calc(100% + 6px);
-  /* Der Switcher-Wrapper ist über die von AppHeader.vue übergebene .switcher-Klasse (flex:1)
-     deutlich breiter als der Button selbst und zentriert diesen nur per justify-content – ein
-     "left:0" würde das Dropdown daher am Wrapper-Rand statt unter dem Button positionieren. */
-  left: 50%;
-  transform: translateX(-50%);
-  transform-origin: top center;
+  position: fixed;
+  z-index: 1001;
   min-width: 240px;
+  max-width: min(340px, calc(100vw - 16px));
+  max-height: min(70vh, 480px);
+  overflow-y: auto;
+  transform-origin: top center;
   background: var(--color-surface);
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   box-shadow: var(--shadow-md);
   padding: var(--space-2);
-  z-index: 21;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -317,6 +385,7 @@ function openMembers(trip: Trip) {
 
 .trip-select {
   flex: 1;
+  min-width: 0;
   text-align: left;
   background: none;
   border: none;

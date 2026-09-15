@@ -1613,6 +1613,25 @@ const cardRotation = computed(() => {
   right: auto;
 }
 
+/* Virtuelle Touch-Targets (mind. 44px Höhe gemäß DESIGN.md §7.1 / WCAG 2.5.5) */
+.calendar-drag-handle,
+.done-toggle,
+:deep(.tour-assign-btn) {
+  position: relative;
+}
+
+.calendar-drag-handle::after,
+.done-toggle::after,
+:deep(.tour-assign-btn)::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  inset-inline: 0;
+  height: 44px;
+  min-height: 44px;
+}
+
 /* Schwebt während des Drags am Zeiger, per Teleport außerhalb der Karte (sonst würde sie beim
    Öffnen der Kalender-Schublade durch deren Backdrop/Panel überlagert). z-index 60: über dem
    Drawer-Overlay (11/12), unter Modal.vue (100, wird während eines Drags nie gleichzeitig
@@ -1773,6 +1792,10 @@ const cardRotation = computed(() => {
     /* Verhindert Abschneiden des Fokus-Rahmens */
     padding: 3px;
     margin: -3px;
+  }
+
+  .mobile-only-accordion.is-expanded .mobile-only-accordion-inner {
+    overflow: visible;
   }
 
   .mobile-only-accordion-inner > * {
@@ -1946,7 +1969,7 @@ const cardRotation = computed(() => {
 }
 
 .date-check-item:hover {
-  background: var(--color-surface-hover, var(--color-surface-raised));
+  background: var(--color-hover);
   border-color: var(--color-border-hover, var(--color-primary));
 }
 

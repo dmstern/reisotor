@@ -483,7 +483,7 @@ function onDeleteLeg() {
   font-size: 0.75rem;
   font-weight: 600;
   color: var(--color-text-muted);
-  background: var(--color-surface-hover, rgba(0, 0, 0, 0.05));
+  background: var(--color-hover);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   padding: 2px 6px;
