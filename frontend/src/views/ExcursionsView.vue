@@ -178,6 +178,15 @@ function setPageTitleRef(el: Element | ComponentPublicInstance | null) {
     pageTitleObserver.observe(el);
   }
 }
+
+onUnmounted(() => {
+  drawers.mapFocusKey = null;
+  drawers.mapFocusExcursionId = null;
+  drawers.mapFocusDate = null;
+  drawers.mapFocusTrackId = null;
+  sheetState.value = 'collapsed';
+});
+
 onUnmounted(() => {
   pageTitleObserver?.disconnect();
   categoryNavObserver?.disconnect();
@@ -3702,11 +3711,11 @@ async function deleteEditingSpot() {
                       :cy="dot.y"
                       r="4.5"
                     />
-                    <polygon
+                    <path
                       v-for="(arrow, i) in tourLines.get(grp.excursion.id)!.arrows"
                       :key="'arrow-' + i"
                       class="tour-station-arrow"
-                      points="0,0 -8,-4.5 -8,4.5"
+                      d="M -10 -8 L 0 0 L -10 8"
                       :transform="`translate(${arrow.x}, ${arrow.y}) rotate(${arrow.angle})`"
                     />
                   </svg>
@@ -5234,11 +5243,12 @@ async function deleteEditingSpot() {
 }
 
 .tour-station-arrow {
-  fill: var(--tour-theme-color, var(--color-primary));
-  stroke: var(--color-surface);
-  stroke-width: 1.5;
+  fill: none;
+  stroke: var(--tour-theme-color, var(--color-primary));
+  stroke-width: 3;
+  stroke-linecap: round;
   stroke-linejoin: round;
-  transition: fill 0.2s ease;
+  transition: stroke 0.2s ease;
 }
 
 .empty-state-wrap {

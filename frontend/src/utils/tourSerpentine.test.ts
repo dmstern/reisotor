@@ -277,6 +277,6 @@ describe('computeTourLoopPath', () => {
     // Fallback side arc along the side with arrow pointing into spot 1
     expect(result.dots).toHaveLength(1);
     expect(result.arrow).toBeDefined();
-    expect(result.d).toContain('C');
+    expect(result.d).toContain('Q');
   });
 });
