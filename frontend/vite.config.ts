@@ -78,7 +78,7 @@ function tablerIconsOptimizer() {
 // Workaround für einen iOS Safari Bug: Bei passwortgeschützten Umgebungen (Basic Auth, oft auf
 // Staging) sendet Safari beim automatischen Hintergrund-Abruf des apple-touch-icon.png keine
 // Zugangsdaten mit. Der Server antwortet mit 401 Unauthorized und iOS nutzt stattdessen nur
-// einen generischen Anfangsbuchstaben als App-Logo auf dem Startbildschirm. 
+// einen generischen Anfangsbuchstaben als App-Logo auf dem Startbildschirm.
 // Lösung: Das Icon als Base64-String direkt ins HTML einbetten, damit kein Netzwerkreifzug nötig ist.
 function inlineAppleTouchIcon() {
   return {
@@ -93,11 +93,11 @@ function inlineAppleTouchIcon() {
           /<link\s+rel="apple-touch-icon"\s+href="[^"]+"\s*\/?>/,
           `<link rel="apple-touch-icon" href="data:image/png;base64,${base64}" />`
         );
-      } catch (e) {
+      } catch (_e) {
         // Fallback falls Datei noch nicht existiert (z. B. vor npm run generate:icons)
         return html;
       }
-    }
+    },
   };
 }
 
