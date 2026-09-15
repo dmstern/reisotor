@@ -569,7 +569,7 @@ const cardRotation = computed(() => {
                   isSpotDone ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'
                 "
                 :title="isSpotDone ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'"
-                @click.stop="onToggleDone"
+                @click.stop="expanded ? onToggleDone($event) : onCardClick()"
               >
                 <template v-if="totalItemsCount > 1">
                   <template v-if="allItemsDone">

@@ -12,3 +12,5 @@ package-lock.json
 **/package-lock.json
 storybook-static
 **/storybook-static
+venv
+venv/**

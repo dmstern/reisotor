@@ -1270,6 +1270,7 @@ onMounted(async () => {
   map = L.map(mapEl.value, {
     rotate: true,
     rotateControl: false,
+    zoomControl: false,
     touchRotate: true,
     bearing: 0,
     // Explizit statt nur Leaflets Default (der ohnehin schon true ist) - macht die Absicht klar und
@@ -1520,6 +1521,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
     :style="{
       '--calendar-offset': `${calendarOffset}px`,
       '--calendar-margin': calendarMargin,
+      ...(props.coveredLeftPx ? { '--spots-col-right-px': `${props.coveredLeftPx}px` } : {}),
     }"
   >
     <div class="map-wrap">
@@ -2041,12 +2043,25 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
   transition-delay: 0.1s; /* Wartet kurz auf die Breiten-Animation */
 }
 
-@media screen and (min-width: 800px) {
+@media screen and (min-width: 1024px) {
   .focus-banner {
-    bottom: calc(54px + var(--space-2));
-    right: var(--space-3);
-    top: unset;
-    left: unset;
+    /* Wie auf Mobil oben positionieren, unterhalb des Headers */
+    top: calc(var(--app-header-height, 56px) + var(--space-4));
+
+    /* Dynamisch rechts neben den Drawer setzen, analog zum früheren leaflet-left */
+    left: calc(
+      var(
+          --spots-col-right-px,
+          calc(
+            var(--calendar-margin, var(--drawer-tab-width)) + var(--calendar-offset, 0px) +
+              var(--spots-col-width, 400px) + var(--space-4)
+          )
+        ) +
+        var(--space-3)
+    );
+
+    bottom: unset;
+    right: unset;
     /* Auf Desktop immer ausgeklappt */
     width: auto;
     max-width: calc(100% - 60px);
@@ -2054,6 +2069,13 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
     corner-shape: round;
     padding: 4px 14px 4px 4px;
     height: 44px;
+  }
+
+  /* Sheet-Overlay Fallback auf Desktop (wenn Spots-Drawer ein Bottom-Sheet ist) */
+  .karte.sheet-overlay-mode .focus-banner {
+    left: calc(
+      var(--calendar-margin, var(--drawer-tab-width)) + var(--calendar-offset, 0px) + var(--space-4)
+    );
   }
 
   .focus-banner-content {
@@ -2137,8 +2159,8 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
   filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.9);
 }
 
-/* Hintergrund der Karte anpassen, damit beim Nachladen der Kacheln 
-   keine weiße Fläche aufblitzt. var(--color-bg) passt sich automatisch 
+/* Hintergrund der Karte anpassen, damit beim Nachladen der Kacheln
+   keine weiße Fläche aufblitzt. var(--color-bg) passt sich automatisch
    dem aktuellen Theme (Light/Dark) an. */
 .map,
 :deep(.leaflet-container) {
@@ -2166,7 +2188,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
   background-color: var(--color-surface) !important;
 }
 
-@media screen and (max-width: 799px) {
+@media screen and (max-width: 1023px) {
   :deep(.leaflet-control-zoom) {
     display: none !important;
   }
@@ -2206,7 +2228,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
    Die Zoom-Buttons sitzen rechts neben den Drawers: im Side-by-Side-Modus rechts neben beiden Drawers,
    im Sheet-Overlay-Modus (wenn z. B. der Kalender auf Zwischengrößen ausgeklappt ist) direkt rechts
    neben der Kalender-Schublade. */
-@media (min-width: 800px) {
+@media (min-width: 1024px) {
   .map-wrap {
     --fit-btn-size: 44px;
     --fit-btn-top-inset: calc(var(--app-header-height, 56px) + var(--space-4));
@@ -2229,53 +2251,13 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
     margin-top: 0 !important;
   }
 
-  /* Zoom-Buttons rechts neben den/die Drawer schieben:
-     Im Standard-Desktop-Modus (Spots-Drawer als Spalte) rechts neben beide Drawer */
-  :deep(.leaflet-left) {
-    /* Nutzt die dynamische Margin (drawer-tab-width bei geschlossenem Kalender, 2*space-4 bei offenem) 
-       für korrekte Platzierung rechts neben der Spots-Schublade. */
-    left: min(
-      calc(
-        var(--calendar-margin, var(--drawer-tab-width)) + var(--calendar-offset, 0px) +
-          var(--spots-col-width, 400px) + var(--space-4) + var(--space-3)
-      ),
-      calc(100vw - 380px + var(--space-3))
-    ) !important;
-  }
-
-  /* Im Sheet-Overlay-Modus (Spots-Drawer ist ein Bottom-Sheet) nur rechts neben den Kalender-Drawer */
-  .karte.sheet-overlay-mode :deep(.leaflet-left) {
-    left: min(
-      calc(
-        var(--calendar-margin, var(--drawer-tab-width)) + var(--calendar-offset, 0px) +
-          var(--space-4)
-      ),
-      calc(100vw - 380px + var(--space-3))
-    ) !important;
-  }
-
   /* Auf Desktop schwebt der day-strip als zentrierte Pille im verfügbaren Kartenbereich (neben dem Drawer) */
   .day-strip {
-    left: min(
-      calc(
-        var(--calendar-margin, var(--drawer-tab-width)) + var(--calendar-offset, 0px) +
-          var(--spots-col-width, 400px) + var(--space-4)
-      ),
-      calc(100vw - 380px)
-    );
+    left: var(--spots-col-right-px, 400px);
     right: 0;
     margin: 0 auto;
     width: fit-content;
-    max-width: max(
-      400px,
-      calc(
-        100vw -
-          (
-            var(--calendar-margin, var(--drawer-tab-width)) + var(--calendar-offset, 0px) +
-              var(--spots-col-width, 400px) + var(--space-4) + 140px
-          )
-      )
-    );
+    max-width: min(400px, calc(100% - 140px));
     border-radius: 999px;
     bottom: calc(var(--navbar-bottom-offset, 0px) + 24px);
     padding: 8px 16px;

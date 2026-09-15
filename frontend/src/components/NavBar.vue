@@ -228,7 +228,7 @@ function onLinkClick(event: MouseEvent) {
            sinnvoll bedienen (u. a. überlagerte die Lasche dort teils wichtige Inhalte/Buttons) –
            dort deshalb stattdessen als ganz normaler, fest verlinkter Nav-Punkt auf eine eigene
            Seite (/calendar – dieselbe Komponente wie in der Schublade, siehe router/index.ts), nur
-           <800px sichtbar (.mobile-page-link; ab Desktop bleibt es beim bestehenden Nav-Punkt hier,
+           <1024px sichtbar (.mobile-page-link; ab Desktop bleibt es beim bestehenden Nav-Punkt hier,
            Kalender erreicht man dort weiterhin nur über die Lasche). Direkt nach Übersicht. Touren
            haben seit ihrer Verschmelzung in die Spots-Sicht ("Karte", /excursions) keinen eigenen
            Nav-Punkt mehr - Touren anlegen/Spots zuordnen geht bereits direkt dort. -->
@@ -418,7 +418,7 @@ function onLinkClick(event: MouseEvent) {
   font-size: 1.2rem;
 }
 
-@media (min-width: 800px) {
+@media (min-width: 1024px) {
   /* Ab Desktop bleibt es bei den zwei ursprünglichen Nav-Punkten neben "Karte" – Kalender/Touren
      erreicht man dort weiterhin ausschließlich über die seitliche Lasche (Drawer.vue). */
   .mobile-page-link {

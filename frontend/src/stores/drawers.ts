@@ -8,9 +8,17 @@ const CALENDAR_WIDTH_KEY = 'reisotor-drawer-calendar-width';
 export const DEFAULT_DRAWER_WIDTH = 360;
 export const MIN_DRAWER_WIDTH = 280;
 export const MAX_DRAWER_WIDTH = 860;
+export const MAX_DRAWER_WIDTH_COMPACT = 320;
+
+export function getMaxDrawerWidth(): number {
+  if (typeof window !== 'undefined' && window.innerWidth < 1280) {
+    return MAX_DRAWER_WIDTH_COMPACT;
+  }
+  return MAX_DRAWER_WIDTH;
+}
 
 function isDesktop() {
-  return window.matchMedia('(min-width: 800px)').matches;
+  return window.matchMedia('(min-width: 1024px)').matches;
 }
 
 function loadOpen(key: string): boolean {
@@ -23,9 +31,10 @@ function loadOpen(key: string): boolean {
 
 function loadWidth(key: string): number {
   const stored = Number(localStorage.getItem(key));
+  const maxAllowed = getMaxDrawerWidth();
   return Number.isFinite(stored) && stored >= MIN_DRAWER_WIDTH && stored <= MAX_DRAWER_WIDTH
-    ? stored
-    : DEFAULT_DRAWER_WIDTH;
+    ? Math.min(stored, maxAllowed)
+    : Math.min(DEFAULT_DRAWER_WIDTH, maxAllowed);
 }
 
 // Kalender ist keine Nav-Seite mehr, sondern eine global gemountete, in der Breite verstellbare

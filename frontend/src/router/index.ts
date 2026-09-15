@@ -245,7 +245,7 @@ router.beforeEach(async (to) => {
   // Aufruf dieser Mobil-Seiten-Route (z. B. per eingetippter URL, kein Nav-Link dorthin auf
   // Desktop) würde dieselbe Komponente sonst ein zweites Mal unabhängig mounten (doppelte
   // API-Aufrufe, zwei auseinanderlaufende lokale Zustände).
-  if (to.name === 'calendar' && window.matchMedia('(min-width: 800px)').matches) {
+  if (to.name === 'calendar' && window.matchMedia('(min-width: 1024px)').matches) {
     const tripId = to.params.tripId ? String(to.params.tripId) : '';
     return tripId ? { path: `/trip/${tripId}` } : { name: 'trips' };
   }
