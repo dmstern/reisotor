@@ -32,11 +32,30 @@ const showInstallDialog = ref(false);
 
 const BELL_ICON = { id: 'bell', emoji: '🔔', outline: IconBell, filled: IconBellFilled };
 
+const currentVersion = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'unknown';
+const lastSeenVersion = localStorage.getItem('reisotor_last_seen_version');
+const showReleaseNotesNotice = ref(lastSeenVersion !== null && lastSeenVersion !== currentVersion);
+if (lastSeenVersion === null) {
+  localStorage.setItem('reisotor_last_seen_version', currentVersion);
+}
+
+function dismissReleaseNotesNotice() {
+  localStorage.setItem('reisotor_last_seen_version', currentVersion);
+  showReleaseNotesNotice.value = false;
+}
+
+function goToReleaseNotes() {
+  dismissReleaseNotesNotice();
+  close();
+  router.push({ path: '/settings', query: { tab: 'about' } });
+}
+
 const hasSystemNotices = computed(() => {
   return (
     pwaUpdate.needRefresh ||
     pwaUpdate.offlineReady ||
-    (!pwaInstall.isStandalone && !pwaInstall.dismissed)
+    (!pwaInstall.isStandalone && !pwaInstall.dismissed) ||
+    showReleaseNotesNotice.value
   );
 });
 
@@ -246,6 +265,36 @@ function dismissPwaInstall() {
                     aria-label="Hinweis schließen"
                     title="Hinweis schließen"
                     @click="dismissPwaInstall"
+                  />
+                </div>
+              </div>
+
+              <!-- 4. Neu installiert -->
+              <div v-if="showReleaseNotesNotice" class="system-notice update pwa-pill">
+                <div class="notice-icon update-icon" aria-hidden="true">
+                  <AppIcon :icon="ACTION_ICONS.sparkles" :size="16" group="actions" />
+                </div>
+                <div class="notice-body">
+                  <span class="notice-title">v{{ currentVersion }} installiert! 🎉</span>
+                  <span class="notice-desc">Sieh dir an, was neu ist.</span>
+                </div>
+                <div class="notice-actions">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    class="pwa-pill-trigger"
+                    @click="goToReleaseNotes"
+                  >
+                    Ansehen
+                  </Button>
+                  <IconButton
+                    variant="ghost"
+                    size="sm"
+                    class="pwa-pill-dismiss-btn dismiss-btn"
+                    :icon="ACTION_ICONS.close"
+                    aria-label="Hinweis schließen"
+                    title="Hinweis schließen"
+                    @click="dismissReleaseNotesNotice"
                   />
                 </div>
               </div>
