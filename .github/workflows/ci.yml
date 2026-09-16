@@ -248,7 +248,7 @@ jobs:
       - name: Check for uncommitted changes
         run: |
           git status
-          git diff --exit-code || (echo "::error::Screenshots are out of date! Please run 'npm run generate:screenshots' locally and commit the changes." && exit 1)
+          git diff --exit-code || (echo "::error::Screenshots are out of date! Please run 'npm run generate:screenshots:docker' locally to regenerate them using the CI environment, and commit the changes." && exit 1)
 
   e2e-required:
     name: E2E Required

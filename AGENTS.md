@@ -37,7 +37,7 @@ npm run build:backend   # Backend Build (tsc -> backend/dist)
 npm run build:frontend  # Frontend Build (vue-tsc --noEmit + vite build -> frontend/dist)
 npm run build:demo      # Demo-Mode Statik-Build
 npm run build:landing   # Landingpage Statik-Build
-npm run generate:screenshots # Generiert saubere Prod Baseline-Screenshots in Full HD unter docs/screenshots/
+npm run generate:screenshots:docker # Generiert saubere Prod Baseline-Screenshots in Full HD unter docs/screenshots/ (Cross-OS CI kompatibel)
 
 # Backend (Fastify + TypeScript + better-sqlite3, /backend)
 cd backend
@@ -348,9 +348,9 @@ direkt im PR (Body oder Kommentar) — in den relevanten Viewports (mind. mobil 
 Full HD ~1920x1080px, bei reiner Desktop- oder Mobil-Änderung reicht der jeweils betroffene Viewport). Zweck: der
 Nutzer soll das Ergebnis direkt auf GitHub sehen können, bevor überhaupt gemergt/deployt wird.
 
-Technisch: Screenshots werden im Repo zentral unter `docs/screenshots/` abgelegt (organisiert nach View, z. B. `dashboard`, `calendar`, `spots`, `lists`, `budget`, `notes`, `diary`, `settings`, `trips`, `landing`). Dateien folgen dem Schema `docs/screenshots/<view>-desktop-light.png`, `<view>-desktop-dark.png`, `<view>-mobile-light.png`, `<view>-mobile-dark.png` (bzw. gezielten Unter-Element-Bezeichnungen bei Bedarf). Eine vollständige Baseline aller Ansichten in sauberer Produktionsdarstellung (ohne DEV-Badges, orange Border oder PWA-Pills) lässt sich jederzeit per `npm run generate:screenshots` (bzw. über die committete Tool-Spec `e2e/tests/tools/generate-baseline-screenshots.manual.spec.ts`) neu generieren.
+Technisch: Screenshots werden im Repo zentral unter `docs/screenshots/` abgelegt (organisiert nach View, z. B. `dashboard`, `calendar`, `spots`, `lists`, `budget`, `notes`, `diary`, `settings`, `trips`, `landing`). Dateien folgen dem Schema `docs/screenshots/<view>-desktop-light.png`, `<view>-desktop-dark.png`, `<view>-mobile-light.png`, `<view>-mobile-dark.png` (bzw. gezielten Unter-Element-Bezeichnungen bei Bedarf). Eine vollständige Baseline aller Ansichten in sauberer Produktionsdarstellung (ohne DEV-Badges, orange Border oder PWA-Pills) lässt sich jederzeit per `npm run generate:screenshots:docker` neu generieren (dadurch wird sichergestellt, dass das Rendering identisch zur CI-Umgebung ist und der Fail-on-Diff Check auf GitHub nicht fehlschlägt).
 
-Bei UI-Änderungen an einem Bereich MÜSSEN die entsprechenden Screenshots in `docs/screenshots/<filename>.png` (bzw. für alle Ansichten per `npm run generate:screenshots`) IMMER direkt auf dem Feature-Branch aktualisiert und committet werden. Im PR-Body/-Kommentar per Markdown-Bild-Syntax auf die `raw.githubusercontent.com`-/Blob-URL dieser Datei auf dem Feature-Branch verlinken — GitHub rendert das Bild inline und bietet im PR-Diff zusätzlich den automatischen Vorher/Nachher-Bildvergleich. Nach dem Merge bleibt so stets der aktuelle Stand der Dokumentation ohne veraltete PR-Ordner erhalten. Reine Text-/Backend-only-Änderungen brauchen keine Screenshots.
+Bei UI-Änderungen an einem Bereich MÜSSEN die entsprechenden Screenshots in `docs/screenshots/<filename>.png` (bzw. für alle Ansichten per `npm run generate:screenshots:docker`) IMMER direkt auf dem Feature-Branch aktualisiert und committet werden. Im PR-Body/-Kommentar per Markdown-Bild-Syntax auf die `raw.githubusercontent.com`-/Blob-URL dieser Datei auf dem Feature-Branch verlinken — GitHub rendert das Bild inline und bietet im PR-Diff zusätzlich den automatischen Vorher/Nachher-Bildvergleich. Nach dem Merge bleibt so stets der aktuelle Stand der Dokumentation ohne veraltete PR-Ordner erhalten. Reine Text-/Backend-only-Änderungen brauchen keine Screenshots.
 
 **Syntax-Falle:** `![Label](URL)` — die URL NICHT in Backticks setzen (kein ``![Label](`URL`)``).
 Damit rendert GitHub das Bild nicht inline, sondern zeigt nur einen toten Link/Codeblock. Vor dem
