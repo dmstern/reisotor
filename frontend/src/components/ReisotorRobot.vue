@@ -53,11 +53,20 @@ function onMouseMove(e: MouseEvent) {
     pupilOffset.value = { x: 0, y: 0 };
     return;
   }
-  // Die pupil-group ist in ein <g> mit transform="matrix(0.057...)" eingebettet.
-  // Um 45 Einheiten im 500x500 SVG-Raster zu verschieben, müssen wir lokal ca. 45 / 0.057 = 780 Einheiten verschieben!
-  const maxShift = 780;
-  const rx = (e.clientX / window.innerWidth - 0.5) * 2;
-  const ry = (e.clientY / window.innerHeight - 0.5) * 2;
+  // Max. Verschiebung im lokalen <g>-Koordinatensystem (Radius der Linse ist 237, Pupille 105 -> max 132 Einheiten Platz)
+  // Wir nehmen 110, damit die Pupillen sanft am Rand anschlagen und nie das Gesicht verlassen.
+  const maxShift = 110;
+  let rx = (e.clientX / window.innerWidth - 0.5) * 2;
+  let ry = (e.clientY / window.innerHeight - 0.5) * 2;
+  
+  // Vektor-Länge kappen, damit die Pupillen auch in den Bildschirmecken (rx=1, ry=1 -> Länge 1.41)
+  // nicht aus der runden Linse (Radius-Limit 132) herausrutschen!
+  const dist = Math.sqrt(rx * rx + ry * ry);
+  if (dist > 1) {
+    rx /= dist;
+    ry /= dist;
+  }
+  
   pupilOffset.value = { x: rx * maxShift, y: ry * maxShift };
 }
 
@@ -512,17 +521,24 @@ onUnmounted(() => {
           </g>
 
           <!-- Rechtes Auge (vom Betrachter aus rechts, x=261) -->
-          <!-- Äußere Gruppe hält feste Position & Matrix-Skalierung -->
+          <!-- Echtes SVG Linsen-Paar (EVE / Wall-E Mix) -->
           <g class="eye-anchor" transform="matrix(0.057006,0,0,0.057006,253.6094,171.922)">
-            <!-- Innere Gruppe für CSS-Linsenanimationen (Autofokus-Zoom, Tilt, Blinzeln) -->
-            <g class="eye-lens eye-lens-right">
-              <circle
-                cx="129.5"
-                cy="667.5"
-                r="237.5"
-                :fill="`url(#${uid}-rimGrad)`"
-                stroke-width="2.5"
-              />
+            <g
+              class="eye-parallax-group"
+              :style="{
+                transform: `translate(${pupilOffset.x * 0.25}px, ${pupilOffset.y * 0.25}px)`,
+                transition: 'transform 0.1s ease-out',
+              }"
+            >
+              <!-- Innere Gruppe für CSS-Linsenanimationen (Autofokus-Zoom, Tilt, Blinzeln) -->
+              <g class="eye-lens eye-lens-right">
+                <circle
+                  cx="129.5"
+                  cy="667.5"
+                  r="237.5"
+                  :fill="`url(#${uid}-rimGrad)`"
+                  stroke-width="2.5"
+                />
               <circle
                 cx="129.5"
                 cy="667.5"
@@ -582,18 +598,26 @@ onUnmounted(() => {
                 />
               </g>
             </g>
+            </g>
           </g>
 
-          <!-- Linkes Auge (vom Betrachter aus links, x=223.6, asymmetrisch versetzt) -->
+          <!-- Linkes Auge (vom Betrachter aus links, x=224) -->
           <g class="eye-anchor" transform="matrix(0.057006,0,0,0.057006,216.2655,171.698)">
-            <g class="eye-lens eye-lens-left">
-              <circle
-                cx="129.5"
-                cy="667.5"
-                r="237.5"
-                :fill="`url(#${uid}-rimGrad)`"
-                stroke-width="2.5"
-              />
+            <g
+              class="eye-parallax-group"
+              :style="{
+                transform: `translate(${pupilOffset.x * 0.25}px, ${pupilOffset.y * 0.25}px)`,
+                transition: 'transform 0.1s ease-out',
+              }"
+            >
+              <g class="eye-lens eye-lens-left">
+                <circle
+                  cx="129.5"
+                  cy="667.5"
+                  r="237.5"
+                  :fill="`url(#${uid}-rimGrad)`"
+                  stroke-width="2.5"
+                />
               <circle
                 cx="129.5"
                 cy="667.5"
@@ -652,6 +676,7 @@ onUnmounted(() => {
                   d="M -70,495 L 330,450 L 330,820 L -70,820 Z"
                 />
               </g>
+            </g>
             </g>
           </g>
         </g>
