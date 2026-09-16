@@ -42,7 +42,13 @@ const insertUser = db.prepare(
 for (let i = 0; i < users.length; i++) {
   const u = users[i];
   insertUser.run(u.username, bcrypt.hashSync(u.password, 10), u.avatar, i === 0 ? 1 : 0, 0);
-  db.prepare('UPDATE users SET icon_settings = ? WHERE username = ?').run(JSON.stringify({ groups: { navigation: 'icons', categories: 'emoji', weather: 'icons' }, variants: { navigation: 'outline', categories: 'outline', weather: 'outline' } }), u.username);
+  db.prepare('UPDATE users SET icon_settings = ? WHERE username = ?').run(
+    JSON.stringify({
+      groups: { navigation: 'icons', categories: 'emoji', weather: 'icons' },
+      variants: { navigation: 'outline', categories: 'outline', weather: 'outline' },
+    }),
+    u.username
+  );
 }
 const [user1, user2] = users.map(
   (u) => db.prepare('SELECT id FROM users WHERE username = ?').get(u.username) as { id: number }

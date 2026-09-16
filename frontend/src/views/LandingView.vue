@@ -148,10 +148,32 @@ const scrollyFeatures: ScrollyFeature[] = [
 ];
 
 const activeIndex = ref(0);
+const glowOpacities = ref<number[]>(scrollyFeatures.map(() => 0));
+
+const onScrollGlow = () => {
+  const steps = document.querySelectorAll('.scrolly-step');
+  if (!steps.length) return;
+  const viewportCenter = window.innerHeight / 2;
+  
+  const opacities = Array.from(steps).map((step) => {
+    const rect = step.getBoundingClientRect();
+    const stepCenter = rect.top + rect.height / 2;
+    const distance = Math.abs(stepCenter - viewportCenter);
+    const maxDist = window.innerHeight * 0.6; 
+    return Math.max(0, 1 - (distance / maxDist));
+  });
+  
+  glowOpacities.value = opacities;
+};
+
 let stepObserver: IntersectionObserver | null = null;
 let scrollObserver: IntersectionObserver | null = null;
 
 onMounted(() => {
+  window.addEventListener('scroll', onScrollGlow, { passive: true });
+  // Init opacities on mount
+  onScrollGlow();
+
   stepObserver = new IntersectionObserver(
     (entries) => {
       entries.forEach((entry) => {
@@ -193,6 +215,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  window.removeEventListener('scroll', onScrollGlow);
   stepObserver?.disconnect();
   scrollObserver?.disconnect();
 });
@@ -324,11 +347,14 @@ onUnmounted(() => {
               </div>
             </div>
 
-            <!-- Dynamic Ambient Glow -->
+            <!-- Dynamic Ambient Glows (Crossfading) -->
             <div
+              v-for="(feature, idx) in scrollyFeatures"
+              :key="'glow-' + feature.id"
               class="stage-glow"
               :style="{
-                background: `radial-gradient(circle, ${scrollyFeatures[activeIndex]?.color || 'var(--color-primary)'} 0%, transparent 70%)`,
+                background: `radial-gradient(circle, ${feature.color} 0%, transparent 70%)`,
+                '--glow-mix': glowOpacities[idx],
               }"
             ></div>
           </div>
@@ -983,17 +1009,16 @@ onUnmounted(() => {
   position: absolute;
   inset: -20%;
   filter: blur(80px);
-  opacity: 0.25;
+  opacity: calc(0.25 * var(--glow-mix, 0));
   z-index: 1;
   pointer-events: none;
-  transition: background 0.6s ease;
 }
 :root[data-theme='dark'] .stage-glow {
-  opacity: 0.35;
+  opacity: calc(0.35 * var(--glow-mix, 0));
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) .stage-glow {
-    opacity: 0.35;
+    opacity: calc(0.35 * var(--glow-mix, 0));
   }
 }
 
