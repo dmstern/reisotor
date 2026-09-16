@@ -172,10 +172,19 @@ const onScrollGlow = () => {
 let stepObserver: IntersectionObserver | null = null;
 let scrollObserver: IntersectionObserver | null = null;
 
+let packingInterval: ReturnType<typeof setInterval>;
+
 onMounted(() => {
   window.addEventListener('scroll', onScrollGlow, { passive: true });
   // Init opacities on mount
   onScrollGlow();
+  
+  // Alle 60 Sekunden packt der Robo zur Auflockerung wieder seinen Rucksack
+  packingInterval = setInterval(() => {
+    if (robotPhase.value === 'idle') {
+      robotPhase.value = 'pack';
+    }
+  }, 60000);
 
   stepObserver = new IntersectionObserver(
     (entries) => {
@@ -221,6 +230,7 @@ onUnmounted(() => {
   window.removeEventListener('scroll', onScrollGlow);
   stepObserver?.disconnect();
   scrollObserver?.disconnect();
+  clearInterval(packingInterval);
 });
 </script>
 
