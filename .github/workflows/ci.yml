@@ -186,23 +186,87 @@ jobs:
             e2e/test-results
           retention-days: 7
 
+  check-screenshots:
+    name: Check Baseline Screenshots
+    needs: [backend-unit-and-build, frontend-unit-and-build]
+    runs-on: ubuntu-latest
+    container: mcr.microsoft.com/playwright:v1.62.1-jammy
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Mark repo as safe for git (root inside container)
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Download backend build
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-dist
+          path: backend/dist
+
+      - name: Download frontend build
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+
+      - name: Cache container node_modules
+        uses: actions/cache@v4
+        id: node-modules-cache
+        with:
+          path: |
+            backend/node_modules
+            frontend/node_modules
+            e2e/node_modules
+          key: node-modules-jammy-node22-v1-${{ hashFiles('backend/package-lock.json', 'frontend/package-lock.json', 'e2e/package-lock.json') }}
+
+      - name: Install backend dependencies
+        if: steps.node-modules-cache.outputs.cache-hit != 'true'
+        working-directory: backend
+        run: npm ci
+
+      - name: Install frontend dependencies
+        if: steps.node-modules-cache.outputs.cache-hit != 'true'
+        working-directory: frontend
+        run: npm ci
+
+      - name: Install e2e dependencies
+        if: steps.node-modules-cache.outputs.cache-hit != 'true'
+        working-directory: e2e
+        run: npm ci
+
+      - name: Generate Screenshots
+        run: |
+          npm --prefix frontend run build:landing-dist
+          npm --prefix e2e run generate:screenshots
+
+      - name: Check for uncommitted changes
+        run: |
+          git status
+          git diff --exit-code || (echo "::error::Screenshots are out of date! Please run 'npm run generate:screenshots:docker' locally to regenerate them using the CI environment, and commit the changes." && exit 1)
+
   e2e-required:
     name: E2E Required
     if: always()
-    needs: [e2e-tests]
+    needs: [e2e-tests, check-screenshots]
     runs-on: ubuntu-latest
     steps:
       - name: Verify all E2E shards passed
         run: |
-          if [ "${{ needs.e2e-tests.result }}" != "success" ]; then
-            echo "One or more E2E shards did not pass."
+          if [ "${{ needs.e2e-tests.result }}" != "success" ] || [ "${{ needs.check-screenshots.result }}" != "success" ]; then
+            echo "One or more E2E shards or screenshot checks did not pass."
             exit 1
           fi
 
   publish:
     name: Publish Release Asset
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-    needs: [e2e-tests]
+    needs: [e2e-tests, check-screenshots]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

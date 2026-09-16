@@ -5,49 +5,100 @@ import { PNG } from 'pngjs';
 import pixelmatch from 'pixelmatch';
 import { forceFontDisplayBlock, waitForAppReady } from '../helpers/fonts.js';
 
+const LANDING_SYNC_MAP: Record<string, string> = {
+  'dashboard-desktop-light.png': 'screenshot-dashboard-light.png',
+  'dashboard-desktop-dark.png': 'screenshot-dashboard-dark.png',
+  'dashboard-mobile-light.png': 'screenshot-dashboard-mobile-light.png',
+  'dashboard-mobile-dark.png': 'screenshot-dashboard-mobile-dark.png',
+  'tour-desktop-light.png': 'screenshot-tour-light.png',
+  'tour-desktop-dark.png': 'screenshot-tour-dark.png',
+  'tour-mobile-light.png': 'screenshot-tour-mobile-light.png',
+  'tour-mobile-dark.png': 'screenshot-tour-mobile-dark.png',
+  'budget-desktop-light.png': 'screenshot-budget-light.png',
+  'budget-desktop-dark.png': 'screenshot-budget-dark.png',
+  'budget-mobile-light.png': 'screenshot-budget-mobile-light.png',
+  'budget-mobile-dark.png': 'screenshot-budget-mobile-dark.png',
+  'lists-desktop-light.png': 'screenshot-packing-light.png',
+  'lists-desktop-dark.png': 'screenshot-packing-dark.png',
+  'lists-mobile-light.png': 'screenshot-packing-mobile-light.png',
+  'lists-mobile-dark.png': 'screenshot-packing-mobile-dark.png',
+  'diary-desktop-light.png': 'screenshot-diary-light.png',
+  'diary-desktop-dark.png': 'screenshot-diary-dark.png',
+  'diary-mobile-light.png': 'screenshot-diary-mobile-light.png',
+  'diary-mobile-dark.png': 'screenshot-diary-mobile-dark.png',
+  'spots-desktop-light.png': 'screenshot-spots-light.png',
+  'spots-desktop-dark.png': 'screenshot-spots-dark.png',
+};
+
+function syncToLandingIfMapped(screenshotPath: string) {
+  const baseName = path.basename(screenshotPath);
+  const targetLandingName = LANDING_SYNC_MAP[baseName];
+  if (targetLandingName) {
+    const landingPath = path.join(
+      process.cwd(),
+      '..',
+      'frontend',
+      'public',
+      'landing',
+      targetLandingName
+    );
+    fs.mkdirSync(path.dirname(landingPath), { recursive: true });
+    fs.copyFileSync(screenshotPath, landingPath);
+    console.log(`[Synced to landing] ${baseName} -> ${targetLandingName}`);
+  }
+}
+
 async function saveScreenshotIfChanged(
   page: Page,
   screenshotPath: string,
   options: { fullPage?: boolean; maxDiffPixels?: number } = {}
 ): Promise<{ status: 'created' | 'updated' | 'unchanged'; diffPixels?: number }> {
-  const { fullPage = false, maxDiffPixels = 100 } = options;
-  const newBuffer = await page.screenshot({ fullPage });
+  // Erhöhte Toleranz (25.000 Pixel entspricht ca. 1.2% bei Full HD), da Anti-Aliasing
+  // und Font-Rendering zwischen macOS, Fedora und der CI (Ubuntu Jammy) zehntausende
+  // Pixel minimal (Graustufen) abweichen lässt, selbst bei gleicher Fira-Sans-Schriftart.
+  const { fullPage = false, maxDiffPixels = 25000 } = options;
+  const newBuffer = await page.screenshot({ fullPage, animations: 'disabled', caret: 'hide' });
+
+  let result: { status: 'created' | 'updated' | 'unchanged'; diffPixels?: number };
 
   if (!fs.existsSync(screenshotPath)) {
     fs.mkdirSync(path.dirname(screenshotPath), { recursive: true });
     fs.writeFileSync(screenshotPath, newBuffer);
     console.log(`[Created] ${path.basename(screenshotPath)}`);
-    return { status: 'created' };
+    result = { status: 'created' };
+  } else {
+    try {
+      const existingBuffer = fs.readFileSync(screenshotPath);
+      const img1 = PNG.sync.read(existingBuffer);
+      const img2 = PNG.sync.read(newBuffer);
+
+      if (img1.width !== img2.width || img1.height !== img2.height) {
+        fs.writeFileSync(screenshotPath, newBuffer);
+        console.log(`[Updated: dimensions changed] ${path.basename(screenshotPath)}`);
+        result = { status: 'updated' };
+      } else {
+        const numDiffPixels = pixelmatch(img1.data, img2.data, undefined, img1.width, img1.height, {
+          threshold: 0.2,
+        });
+
+        if (numDiffPixels > maxDiffPixels) {
+          fs.writeFileSync(screenshotPath, newBuffer);
+          console.log(`[Updated: ${numDiffPixels} px diff] ${path.basename(screenshotPath)}`);
+          result = { status: 'updated', diffPixels: numDiffPixels };
+        } else {
+          console.log(`[Unchanged: ${numDiffPixels} px diff] ${path.basename(screenshotPath)}`);
+          result = { status: 'unchanged', diffPixels: numDiffPixels };
+        }
+      }
+    } catch {
+      fs.writeFileSync(screenshotPath, newBuffer);
+      console.log(`[Updated: fallback] ${path.basename(screenshotPath)}`);
+      result = { status: 'updated' };
+    }
   }
 
-  try {
-    const existingBuffer = fs.readFileSync(screenshotPath);
-    const img1 = PNG.sync.read(existingBuffer);
-    const img2 = PNG.sync.read(newBuffer);
-
-    if (img1.width !== img2.width || img1.height !== img2.height) {
-      fs.writeFileSync(screenshotPath, newBuffer);
-      console.log(`[Updated: dimensions changed] ${path.basename(screenshotPath)}`);
-      return { status: 'updated' };
-    }
-
-    const numDiffPixels = pixelmatch(img1.data, img2.data, undefined, img1.width, img1.height, {
-      threshold: 0.1,
-    });
-
-    if (numDiffPixels > maxDiffPixels) {
-      fs.writeFileSync(screenshotPath, newBuffer);
-      console.log(`[Updated: ${numDiffPixels} px diff] ${path.basename(screenshotPath)}`);
-      return { status: 'updated', diffPixels: numDiffPixels };
-    } else {
-      console.log(`[Unchanged: ${numDiffPixels} px diff] ${path.basename(screenshotPath)}`);
-      return { status: 'unchanged', diffPixels: numDiffPixels };
-    }
-  } catch {
-    fs.writeFileSync(screenshotPath, newBuffer);
-    console.log(`[Updated: fallback] ${path.basename(screenshotPath)}`);
-    return { status: 'updated' };
-  }
+  syncToLandingIfMapped(screenshotPath);
+  return result;
 }
 
 const VIEWS = [
@@ -55,6 +106,7 @@ const VIEWS = [
   { slug: 'trips', path: '/trips' },
   { slug: 'lists', path: '/listen' },
   { slug: 'spots', path: '/excursions' },
+  { slug: 'tour', path: '/excursions?group=tours#excursion-3' },
   { slug: 'calendar', path: '/calendar' },
   { slug: 'budget', path: '/budget' },
   { slug: 'notes', path: '/notes' },
@@ -70,8 +122,24 @@ const VIEWPORTS = [
 const THEMES = ['light', 'dark'] as const;
 
 test.describe('Generate Clean Production Baseline Screenshots (Full HD)', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.request.put('/api/users/me/icon-settings', {
+      data: {
+        settings: {
+          groups: { navigation: 'icons', categories: 'emoji', weather: 'icons' },
+          variants: { navigation: 'outline', categories: 'outline', weather: 'outline' },
+          navColored: true,
+          colorizeWeather: true,
+          colorizeCategories: true,
+        },
+      },
+    });
+  });
+
   for (const view of VIEWS) {
     test(`Capture screenshots for view: ${view.slug}`, async ({ page }) => {
+      test.setTimeout(90000);
+
       // 1. Intercept trip API calls to set start_date=today, end_date=today+9 (10 days total), and image_url='/demo/lissabon.jpg'
       await page.route('**/api/trips*', async (route) => {
         const response = await route.fetch();
@@ -126,8 +194,62 @@ test.describe('Generate Clean Production Baseline Screenshots (Full HD)', () => 
       for (const vp of VIEWPORTS) {
         await page.setViewportSize({ width: vp.width, height: vp.height });
         await forceFontDisplayBlock(page);
+
+        // Pre-configure localStorage before navigation:
+        // - Close calendar drawer on all non-dashboard desktop views to avoid visual redundancy (Requirement R2)
+        // - Open calendar drawer on dashboard
+        // - Set spots column width to 560px for tour view to showcase the serpentine layout cleanly
+        await page.addInitScript(
+          ({ slug }) => {
+            if (slug !== 'dashboard') {
+              localStorage.setItem('reisotor-drawer-calendar-open', 'false');
+            } else {
+              localStorage.setItem('reisotor-drawer-calendar-open', 'true');
+            }
+            if (slug === 'tour') {
+              localStorage.setItem('reisotor-spots-col-width', '960');
+            }
+          },
+          { slug: view.slug }
+        );
+
         await page.goto(view.path);
         await waitForAppReady(page);
+
+        // Ensure Calendar drawer is closed on non-dashboard desktop views if it was already open
+        if (vp.name === 'desktop' && view.slug !== 'dashboard') {
+          const calendarTab = page.locator('.drawer-tab[aria-label*="Kalender"]');
+          if (
+            (await calendarTab.count()) > 0 &&
+            (await calendarTab.getAttribute('aria-expanded')) === 'true'
+          ) {
+            await calendarTab.click();
+            await page.waitForTimeout(300);
+          }
+        }
+
+        // Tour view specific preparation: trigger map focus on tour & wait for serpentine path & Leaflet settle
+        if (view.slug === 'tour') {
+          const tourCard = page.locator('.tour-group-card').filter({ hasText: 'Panoramatour' });
+          const showOnMapBtn = tourCard.locator('.show-on-map-btn');
+          if (await showOnMapBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
+            await showOnMapBtn.click();
+          }
+          await page
+            .locator('.tour-station-line path')
+            .first()
+            .waitFor({ state: 'visible', timeout: 5000 })
+            .catch(() => {});
+          await page.evaluate(() => {
+            const tourCard = Array.from(document.querySelectorAll('.tour-group-card')).find((el) =>
+              el.textContent?.includes('Panoramatour')
+            );
+            if (tourCard) {
+              tourCard.scrollIntoView({ block: 'start' });
+            }
+          });
+          await page.waitForTimeout(600);
+        }
 
         // Hide dev elements, banners, install/offline pills, and splash overlays for clean marketing screenshots
         await page.addStyleTag({

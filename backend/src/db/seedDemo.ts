@@ -25,14 +25,14 @@ function fmt(date: Date): string {
 
 const users = [
   {
-    username: process.env.SEED_USER1 ?? 'user1',
+    username: process.env.SEED_USER1 ?? 'Elif',
     password: process.env.SEED_PASS1 ?? 'changeme1',
-    avatar: process.env.SEED_AVATAR1 ?? '🧑',
+    avatar: process.env.SEED_AVATAR1 ?? '🦊',
   },
   {
-    username: process.env.SEED_USER2 ?? 'user2',
+    username: process.env.SEED_USER2 ?? 'Amari',
     password: process.env.SEED_PASS2 ?? 'changeme2',
-    avatar: process.env.SEED_AVATAR2 ?? '👩',
+    avatar: process.env.SEED_AVATAR2 ?? '🐼',
   },
 ];
 
@@ -42,6 +42,13 @@ const insertUser = db.prepare(
 for (let i = 0; i < users.length; i++) {
   const u = users[i];
   insertUser.run(u.username, bcrypt.hashSync(u.password, 10), u.avatar, i === 0 ? 1 : 0, 0);
+  db.prepare('UPDATE users SET icon_settings = ? WHERE username = ?').run(
+    JSON.stringify({
+      groups: { navigation: 'icons', categories: 'emoji', weather: 'icons' },
+      variants: { navigation: 'outline', categories: 'outline', weather: 'outline' },
+    }),
+    u.username
+  );
 }
 const [user1, user2] = users.map(
   (u) => db.prepare('SELECT id FROM users WHERE username = ?').get(u.username) as { id: number }
@@ -116,28 +123,31 @@ const accommodationExpenseId = insertExpense.run(
   sharedBudgetId
 ).lastInsertRowid as number;
 
-db.prepare(
-  `INSERT INTO spots
+const hotelAlfamaResult = db
+  .prepare(
+    `INSERT INTO spots
     (trip_id, title, category, note, maps_link, lat, lng, address, start_date, end_date,
      checkin, checkout, contact, amount, paid_by_user_id, budget_expense_id)
    VALUES (?, ?, 'Unterkunft', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-).run(
-  tripId,
-  'Hotel Alfama',
-  'Zentrale Lage im Altstadtviertel Alfama, Klimaanlage vorhanden.',
-  null,
-  LISBON.lat + 0.0015,
-  LISBON.lng + 0.001,
-  'Rua de São Pedro 12, 1100-590 Lisboa',
-  fmt(startDate),
-  fmt(endDate),
-  '15:00',
-  '11:00',
-  'reservas@hotelalfama.example',
-  accommodationAmount,
-  user1.id,
-  accommodationExpenseId
-);
+  )
+  .run(
+    tripId,
+    'Hotel Alfama',
+    'Zentrale Lage im Altstadtviertel Alfama, Klimaanlage vorhanden.',
+    null,
+    38.72,
+    -9.12,
+    'Rua dos Caminhos de Ferro 40, 1100-105 Lisboa',
+    fmt(startDate),
+    fmt(endDate),
+    '15:00',
+    '11:00',
+    'reservas@hotelalfama.example',
+    accommodationAmount,
+    user1.id,
+    accommodationExpenseId
+  );
+const hotelSpotId = hotelAlfamaResult.lastInsertRowid as number;
 
 // --- Weitere Budget-Ausgaben (manuell, ohne Verknüpfung) ---
 insertExpense.run(
@@ -232,9 +242,70 @@ insertShopping.run(tripId, 'Postkarten', null, 0, null, null, null, 'during');
 
 // --- Ausflugsideen & Spots (Karte) ---
 const insertSpot = db.prepare(
-  `INSERT INTO spots (trip_id, title, image_url, category, note, maps_link, lat, lng, created_by)
-   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  `INSERT INTO spots (trip_id, title, image_url, category, note, maps_link, lat, lng, address, created_by)
+   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 );
+
+const santaLuziaLat = 38.713;
+const santaLuziaLng = -9.127;
+const santaLuziaSpotId = insertSpot.run(
+  tripId,
+  'Miradouro de Santa Luzia',
+  tilePreviewUrl(santaLuziaLat, santaLuziaLng),
+  'Aussichtspunkt',
+  'Wunderschöner Panoramablick über die roten Ziegeldächer der Alfama bis zum Tejo.',
+  null,
+  santaLuziaLat,
+  santaLuziaLng,
+  'Largo Santa Luzia, 1100-487 Lisboa',
+  user2.id
+).lastInsertRowid as number;
+
+const casteloLat = 38.718;
+const casteloLng = -9.138;
+const casteloSpotId = insertSpot.run(
+  tripId,
+  'Castelo de São Jorge',
+  tilePreviewUrl(casteloLat, casteloLng),
+  'Sehenswürdigkeit',
+  'Maurische Festung aus dem 11. Jahrhundert mit weitem Blick über ganz Lissabon.',
+  null,
+  casteloLat,
+  casteloLng,
+  'Rua de Santa Cruz do Castelo, 1100-129 Lisboa',
+  user1.id
+).lastInsertRowid as number;
+
+const comercioLat = 38.7055;
+const comercioLng = -9.133;
+const comercioSpotId = insertSpot.run(
+  tripId,
+  'Praça do Comércio',
+  tilePreviewUrl(comercioLat, comercioLng),
+  'Sehenswürdigkeit',
+  'Historischer Hauptplatz direkt am Flussufer mit Triumphbogen.',
+  null,
+  comercioLat,
+  comercioLng,
+  'Praça do Comércio, 1100-148 Lisboa',
+  user1.id
+).lastInsertRowid as number;
+
+const marketLat = 38.7069;
+const marketLng = -9.1459;
+const marketSpotId = insertSpot.run(
+  tripId,
+  'Time Out Market',
+  tilePreviewUrl(marketLat, marketLng),
+  'Restaurant',
+  'Große Markthalle mit vielen Ständen bekannter Lissabonner Restaurants.',
+  null,
+  marketLat,
+  marketLng,
+  'Av. 24 de Julho 49, 1200-479 Lisboa',
+  user2.id
+).lastInsertRowid as number;
+
 const belemLat = 38.6916;
 const belemLng = -9.2159;
 const belemSpotId = insertSpot.run(
@@ -246,23 +317,15 @@ const belemSpotId = insertSpot.run(
   null,
   belemLat,
   belemLng,
+  'Av. Brasília, 1400-038 Lisboa',
   user1.id
 ).lastInsertRowid as number;
 
-const marketLat = 38.7075;
-const marketLng = -9.1459;
-const marketSpotId = insertSpot.run(
-  tripId,
-  'Time Out Market',
-  tilePreviewUrl(marketLat, marketLng),
-  'Restaurant',
-  'Große Markthalle mit vielen Ständen bekannter Lissabonner Restaurants.',
-  null,
-  marketLat,
-  marketLng,
-  user2.id
-).lastInsertRowid as number;
-
+db.prepare('INSERT INTO spot_likes (spot_id, user_id, created_at) VALUES (?, ?, ?)').run(
+  santaLuziaSpotId,
+  user1.id,
+  new Date().toISOString()
+);
 db.prepare('INSERT INTO spot_likes (spot_id, user_id, created_at) VALUES (?, ?, ?)').run(
   belemSpotId,
   user2.id,
@@ -301,6 +364,7 @@ const lisbonAirportSpotId = insertSpot.run(
   null,
   LISBON_AIRPORT.lat,
   LISBON_AIRPORT.lng,
+  null,
   user1.id
 ).lastInsertRowid as number;
 
@@ -377,32 +441,155 @@ insertTravelStation.run(returnIdeaId, lisbonAirportSpotId, 0);
 insertTravelStation.run(returnIdeaId, berlinSpotId, 1);
 insertTravelSchedule.run(tripId, fmt(endDate), 'Rückflug nach Berlin', returnIdeaId);
 
-const ideaResult = db
+const panoramaTourResult = db
   .prepare('INSERT INTO ideas (trip_id, title, image_url, note, created_by) VALUES (?, ?, ?, ?, ?)')
-  .run(tripId, 'Sightseeing-Tag Belém', null, 'Turm + danach im Market essen', user1.id);
-const ideaId = ideaResult.lastInsertRowid as number;
+  .run(
+    tripId,
+    'Panoramatour Alfama & Belém',
+    null,
+    'Rundgang vom Aussichtspunkt über die Burg hinunter zum Tejo und mit der historischen Tram weiter nach Belém.',
+    user1.id
+  );
+const panoramaTourId = panoramaTourResult.lastInsertRowid as number;
+
 const insertStation = db.prepare(
   'INSERT INTO excursion_spots (idea_id, spot_id, position) VALUES (?, ?, ?)'
 );
-insertStation.run(ideaId, belemSpotId, 0);
-insertStation.run(ideaId, marketSpotId, 1);
+insertStation.run(panoramaTourId, hotelSpotId, 0);
+insertStation.run(panoramaTourId, santaLuziaSpotId, 1);
+insertStation.run(panoramaTourId, casteloSpotId, 2);
+insertStation.run(panoramaTourId, comercioSpotId, 3);
+insertStation.run(panoramaTourId, marketSpotId, 4);
+insertStation.run(panoramaTourId, belemSpotId, 5);
+
 // "Geplant" ergibt sich aus einem verknüpften Kalender-Termin statt einer eigenen Datums-Spalte
 // auf dem Ausflug (siehe Kommentar in db/index.ts/routes/ideas.ts).
 db.prepare('INSERT INTO schedule_items (trip_id, date, title, idea_id) VALUES (?, ?, ?, ?)').run(
   tripId,
-  fmt(addDays(startDate, 2)),
-  'Sightseeing-Tag Belém',
-  ideaId
+  fmt(addDays(startDate, 1)),
+  'Panoramatour Alfama & Belém',
+  panoramaTourId
 );
 
 db.prepare('INSERT INTO idea_likes (idea_id, user_id, created_at) VALUES (?, ?, ?)').run(
-  ideaId,
+  panoramaTourId,
   user2.id,
   new Date().toISOString()
 );
 db.prepare(
   'INSERT INTO idea_comments (idea_id, author_id, content, created_at) VALUES (?, ?, ?, ?)'
-).run(ideaId, user2.id, 'Klingt gut, sollten wir früh starten!', new Date().toISOString());
+).run(
+  panoramaTourId,
+  user2.id,
+  'Die Route ist perfekt für den ersten vollen Tag!',
+  new Date().toISOString()
+);
+
+// --- Teilstrecken (excursion_legs) für die Panoramatour ---
+const insertLeg = db.prepare(
+  `INSERT INTO excursion_legs (
+    idea_id, position, from_spot_id, to_spot_id, transport_type, departure_time, arrival_time,
+    seat, note, amount, paid_by_user_id
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+);
+
+// Leg 0: Hotel Alfama -> Miradouro de Santa Luzia
+insertLeg.run(
+  panoramaTourId,
+  0,
+  hotelSpotId,
+  santaLuziaSpotId,
+  'Zu Fuß',
+  '09:30',
+  '09:45',
+  null,
+  'Durch die kleinen Gassen bergauf',
+  null,
+  null
+);
+
+// Leg 1: Miradouro de Santa Luzia -> Castelo de São Jorge
+insertLeg.run(
+  panoramaTourId,
+  1,
+  santaLuziaSpotId,
+  casteloSpotId,
+  'Zu Fuß',
+  '10:30',
+  '10:45',
+  null,
+  'Weiter zur Festungsmauer',
+  null,
+  null
+);
+
+// Leg 2: Castelo de São Jorge -> Praça do Comércio
+insertLeg.run(
+  panoramaTourId,
+  2,
+  casteloSpotId,
+  comercioSpotId,
+  'Straßenbahn',
+  '12:00',
+  '12:20',
+  'Tram 28',
+  'Historische Tram bergab',
+  3.1,
+  user1.id
+);
+
+// Leg 3: Praça do Comércio -> Time Out Market
+insertLeg.run(
+  panoramaTourId,
+  3,
+  comercioSpotId,
+  marketSpotId,
+  'Zu Fuß',
+  '13:30',
+  '13:45',
+  null,
+  'Flaniermeile am Flussufer',
+  null,
+  null
+);
+
+// Leg 4: Time Out Market -> Torre de Belém
+insertLeg.run(
+  panoramaTourId,
+  4,
+  marketSpotId,
+  belemSpotId,
+  'Straßenbahn',
+  '15:15',
+  '15:40',
+  'Linie 15E',
+  'Mit der Tram direkt nach Belém',
+  3.1,
+  user2.id
+);
+
+// Bestehender Ausflug für Belém & Market (wird u. a. von E2E-Tests wie calendar.spec.ts & map-focus-covered-drawer.spec.ts gesucht)
+const belemIdeaResult = db
+  .prepare('INSERT INTO ideas (trip_id, title, image_url, note, created_by) VALUES (?, ?, ?, ?, ?)')
+  .run(tripId, 'Sightseeing-Tag Belém', null, 'Turm + danach im Market essen', user1.id);
+const belemIdeaId = belemIdeaResult.lastInsertRowid as number;
+insertStation.run(belemIdeaId, belemSpotId, 0);
+insertStation.run(belemIdeaId, marketSpotId, 1);
+db.prepare('INSERT INTO schedule_items (trip_id, date, title, idea_id) VALUES (?, ?, ?, ?)').run(
+  tripId,
+  fmt(addDays(startDate, 2)),
+  'Sightseeing-Tag Belém',
+  belemIdeaId
+);
+
+db.prepare('INSERT INTO idea_likes (idea_id, user_id, created_at) VALUES (?, ?, ?)').run(
+  belemIdeaId,
+  user2.id,
+  new Date().toISOString()
+);
+db.prepare(
+  'INSERT INTO idea_comments (idea_id, author_id, content, created_at) VALUES (?, ?, ?, ?)'
+).run(belemIdeaId, user2.id, 'Klingt gut, sollten wir früh starten!', new Date().toISOString());
 
 // --- Tagebuch ---
 const diaryResult = db
@@ -414,7 +601,7 @@ const diaryResult = db
     user1.id,
     'Ankunft in Lissabon',
     'Nach dem Flug direkt ins Hotel und dann noch einen Abendspaziergang durch die Alfama gemacht. Traumhafter Blick vom Miradouro!',
-    JSON.stringify([]),
+    JSON.stringify(['/demo/lissabon.jpg', '/demo/lissabon.jpg', '/demo/lissabon.jpg']),
     new Date().toISOString()
   );
 const diaryEntryId = diaryResult.lastInsertRowid as number;
