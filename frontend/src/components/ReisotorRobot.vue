@@ -54,8 +54,8 @@ function onMouseMove(e: MouseEvent) {
     return;
   }
   // Max. Verschiebung im lokalen <g>-Koordinatensystem (Radius der Linse ist 237, Pupille 105 -> max 132 Einheiten Platz)
-  // Wir nehmen 110, damit die Pupillen sanft am Rand anschlagen und nie das Gesicht verlassen.
-  const maxShift = 110;
+  // Wir nehmen 130, um den Spielraum maximal auszunutzen, bevor es clippt.
+  const maxShift = 130;
   let rx = (e.clientX / window.innerWidth - 0.5) * 2;
   let ry = (e.clientY / window.innerHeight - 0.5) * 2;
   
@@ -526,7 +526,7 @@ onUnmounted(() => {
             <g
               class="eye-parallax-group"
               :style="{
-                transform: `translate(${pupilOffset.x * 0.25}px, ${pupilOffset.y * 0.25}px)`,
+                transform: `translate(${pupilOffset.x * 0.85}px, ${pupilOffset.y * 0.85}px)`,
                 transition: 'transform 0.1s ease-out',
               }"
             >
@@ -606,7 +606,7 @@ onUnmounted(() => {
             <g
               class="eye-parallax-group"
               :style="{
-                transform: `translate(${pupilOffset.x * 0.25}px, ${pupilOffset.y * 0.25}px)`,
+                transform: `translate(${pupilOffset.x * 0.85}px, ${pupilOffset.y * 0.85}px)`,
                 transition: 'transform 0.1s ease-out',
               }"
             >
