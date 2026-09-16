@@ -180,7 +180,7 @@ test.describe('Generate Clean Production Baseline Screenshots (Full HD)', () => 
               localStorage.setItem('reisotor-drawer-calendar-open', 'true');
             }
             if (slug === 'tour') {
-              localStorage.setItem('reisotor-spots-col-width', '560');
+              localStorage.setItem('reisotor-spots-col-width', '960');
             }
           },
           { slug: view.slug }

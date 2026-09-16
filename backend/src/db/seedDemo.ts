@@ -42,6 +42,7 @@ const insertUser = db.prepare(
 for (let i = 0; i < users.length; i++) {
   const u = users[i];
   insertUser.run(u.username, bcrypt.hashSync(u.password, 10), u.avatar, i === 0 ? 1 : 0, 0);
+  db.prepare('UPDATE users SET icon_settings = ? WHERE username = ?').run(JSON.stringify({ groups: { navigation: 'icons', categories: 'emoji', weather: 'icons' }, variants: { navigation: 'outline', categories: 'outline', weather: 'outline' } }), u.username);
 }
 const [user1, user2] = users.map(
   (u) => db.prepare('SELECT id FROM users WHERE username = ?').get(u.username) as { id: number }
@@ -594,7 +595,7 @@ const diaryResult = db
     user1.id,
     'Ankunft in Lissabon',
     'Nach dem Flug direkt ins Hotel und dann noch einen Abendspaziergang durch die Alfama gemacht. Traumhafter Blick vom Miradouro!',
-    JSON.stringify([]),
+    JSON.stringify(['/demo/lissabon.jpg', '/demo/lissabon.jpg', '/demo/lissabon.jpg']),
     new Date().toISOString()
   );
 const diaryEntryId = diaryResult.lastInsertRowid as number;
