@@ -49,6 +49,7 @@ const scrollyFeatures: ScrollyFeature[] = [
       'Gemeinsamer Kalender mit Live-Synchronisation',
       '14-Tage Wettervorhersage für das Reiseziel',
       'Flug- & Unterkunfts-Countdown auf einen Blick',
+      'Schnellzugriffs-Kacheln für Status-Überblick (Budgets, Packliste & Co.)',
     ],
     icon: IconCalendarEvent,
     color: 'var(--color-primary)',
