@@ -835,7 +835,7 @@ onUnmounted(() => {
   corner-shape: squircle;
   border: 1px solid var(--color-border);
   box-shadow:
-    var(--shadow-xl),
+    var(--shadow-lg),
     0 20px 40px -15px rgba(0, 0, 0, 0.12);
   overflow: hidden;
 }
@@ -1166,7 +1166,7 @@ onUnmounted(() => {
   corner-shape: squircle;
   border: 1px solid var(--color-border);
   box-shadow:
-    var(--shadow-xl),
+    var(--shadow-lg),
     -10px 20px 40px -10px rgba(0, 0, 0, 0.2);
   overflow: hidden;
   padding: 4px; /* Simulate bezel */
