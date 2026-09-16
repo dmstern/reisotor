@@ -178,7 +178,7 @@ onMounted(() => {
   window.addEventListener('scroll', onScrollGlow, { passive: true });
   // Init opacities on mount
   onScrollGlow();
-  
+
   // Alle 60 Sekunden packt der Robo zur Auflockerung wieder seinen Rucksack
   packingInterval = setInterval(() => {
     if (robotPhase.value === 'idle') {
@@ -243,7 +243,12 @@ onUnmounted(() => {
 
     <header class="hero">
       <div class="hero-robot">
-        <ReisotorRobot size="240px" :phase="robotPhase" interactive @packing-done="robotPhase = 'idle'" />
+        <ReisotorRobot
+          size="240px"
+          :phase="robotPhase"
+          interactive
+          @packing-done="robotPhase = 'idle'"
+        />
       </div>
       <h1 class="title">Reisotor</h1>
       <p class="tagline">

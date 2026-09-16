@@ -49,7 +49,12 @@ import { ref, onMounted, onUnmounted } from 'vue';
 const pupilOffset = ref({ x: 0, y: 0 });
 
 function onMouseMove(e: MouseEvent) {
-  if (!props.interactive || props.coveringEyes || props.phase === 'scanning' || props.phase === 'done') {
+  if (
+    !props.interactive ||
+    props.coveringEyes ||
+    props.phase === 'scanning' ||
+    props.phase === 'done'
+  ) {
     pupilOffset.value = { x: 0, y: 0 };
     return;
   }
@@ -58,7 +63,7 @@ function onMouseMove(e: MouseEvent) {
   const maxShift = 130;
   let rx = (e.clientX / window.innerWidth - 0.5) * 2;
   let ry = (e.clientY / window.innerHeight - 0.5) * 2;
-  
+
   // Vektor-Länge kappen, damit die Pupillen auch in den Bildschirmecken (rx=1, ry=1 -> Länge 1.41)
   // nicht aus der runden Linse (Radius-Limit 132) herausrutschen!
   const dist = Math.sqrt(rx * rx + ry * ry);
@@ -66,7 +71,7 @@ function onMouseMove(e: MouseEvent) {
     rx /= dist;
     ry /= dist;
   }
-  
+
   pupilOffset.value = { x: rx * maxShift, y: ry * maxShift };
 }
 
@@ -93,7 +98,10 @@ onUnmounted(() => {
     <svg
       viewBox="0 0 500 500"
       class="robot"
-      :class="[phase === 'pack' ? 'packing' : phase, { 'covering-eyes': coveringEyes, 'is-interactive': interactive }]"
+      :class="[
+        phase === 'pack' ? 'packing' : phase,
+        { 'covering-eyes': coveringEyes, 'is-interactive': interactive },
+      ]"
       aria-hidden="true"
     >
       <defs>
@@ -539,65 +547,65 @@ onUnmounted(() => {
                   :fill="`url(#${uid}-rimGrad)`"
                   stroke-width="2.5"
                 />
-              <circle
-                cx="129.5"
-                cy="667.5"
-                r="197.5"
-                :fill="`url(#${uid}-rimInnerGrad)`"
-                stroke-width="2.5"
-              />
-              <circle
-                cx="129.5"
-                cy="667.5"
-                r="185"
-                :fill="`url(#${uid}-glassBase)`"
-                stroke-width="2.5"
-              />
-
-              <!-- Pupille & Kern (eigenständig animierbar) -->
-              <g
-                class="pupil-group"
-                :style="{
-                  transform: `translate(${pupilOffset.x}px, ${pupilOffset.y}px)`,
-                  transition: 'transform 0.1s ease-out',
-                }"
-              >
-                <circle cx="129.5" cy="667.5" r="105" fill="#01040a" stroke-width="2.5" />
-                <circle cx="122" cy="662.5" r="105" fill="#030814" stroke-width="2.5" />
-              </g>
-
-              <!-- Licht- und Reflexionsschichten -->
-              <circle
-                cx="129.5"
-                cy="667.5"
-                r="185"
-                :fill="`url(#${uid}-tealHighlight)`"
-                stroke-width="2.5"
-                class="lens-reflection"
-              />
-              <circle
-                cx="129.5"
-                cy="667.5"
-                r="185"
-                :fill="`url(#${uid}-blueHighlight)`"
-                stroke-width="2.5"
-                class="lens-reflection"
-              />
-              <path
-                d="m 154.5,497.5 a 162.5,162.5 0 0 1 145,120 185,185 0 0 0 -170,-135 z"
-                fill="#ffffff"
-                fill-opacity="0.08"
-                stroke-width="2.5"
-              />
-
-              <!-- Mechanisches Shutter-Lid (für kurzes Idle-Blinzeln) -->
-              <g :clip-path="`url(#${uid}-lens-clip)`">
-                <path
-                  class="shutter-lid shutter-right"
-                  d="M -70,450 L 330,495 L 330,820 L -70,820 Z"
+                <circle
+                  cx="129.5"
+                  cy="667.5"
+                  r="197.5"
+                  :fill="`url(#${uid}-rimInnerGrad)`"
+                  stroke-width="2.5"
                 />
+                <circle
+                  cx="129.5"
+                  cy="667.5"
+                  r="185"
+                  :fill="`url(#${uid}-glassBase)`"
+                  stroke-width="2.5"
+                />
+
+                <!-- Pupille & Kern (eigenständig animierbar) -->
+                <g
+                  class="pupil-group"
+                  :style="{
+                    transform: `translate(${pupilOffset.x}px, ${pupilOffset.y}px)`,
+                    transition: 'transform 0.1s ease-out',
+                  }"
+                >
+                  <circle cx="129.5" cy="667.5" r="105" fill="#01040a" stroke-width="2.5" />
+                  <circle cx="122" cy="662.5" r="105" fill="#030814" stroke-width="2.5" />
+                </g>
+
+                <!-- Licht- und Reflexionsschichten -->
+                <circle
+                  cx="129.5"
+                  cy="667.5"
+                  r="185"
+                  :fill="`url(#${uid}-tealHighlight)`"
+                  stroke-width="2.5"
+                  class="lens-reflection"
+                />
+                <circle
+                  cx="129.5"
+                  cy="667.5"
+                  r="185"
+                  :fill="`url(#${uid}-blueHighlight)`"
+                  stroke-width="2.5"
+                  class="lens-reflection"
+                />
+                <path
+                  d="m 154.5,497.5 a 162.5,162.5 0 0 1 145,120 185,185 0 0 0 -170,-135 z"
+                  fill="#ffffff"
+                  fill-opacity="0.08"
+                  stroke-width="2.5"
+                />
+
+                <!-- Mechanisches Shutter-Lid (für kurzes Idle-Blinzeln) -->
+                <g :clip-path="`url(#${uid}-lens-clip)`">
+                  <path
+                    class="shutter-lid shutter-right"
+                    d="M -70,450 L 330,495 L 330,820 L -70,820 Z"
+                  />
+                </g>
               </g>
-            </g>
             </g>
           </g>
 
@@ -618,65 +626,65 @@ onUnmounted(() => {
                   :fill="`url(#${uid}-rimGrad)`"
                   stroke-width="2.5"
                 />
-              <circle
-                cx="129.5"
-                cy="667.5"
-                r="197.5"
-                :fill="`url(#${uid}-rimInnerGrad)`"
-                stroke-width="2.5"
-              />
-              <circle
-                cx="129.5"
-                cy="667.5"
-                r="185"
-                :fill="`url(#${uid}-glassBase)`"
-                stroke-width="2.5"
-              />
-
-              <!-- Pupille & Kern -->
-              <g
-                class="pupil-group"
-                :style="{
-                  transform: `translate(${pupilOffset.x}px, ${pupilOffset.y}px)`,
-                  transition: 'transform 0.1s ease-out',
-                }"
-              >
-                <circle cx="129.5" cy="667.5" r="105" fill="#01040a" stroke-width="2.5" />
-                <circle cx="122" cy="662.5" r="105" fill="#030814" stroke-width="2.5" />
-              </g>
-
-              <!-- Licht- und Reflexionsschichten -->
-              <circle
-                cx="129.5"
-                cy="667.5"
-                r="185"
-                :fill="`url(#${uid}-tealHighlight)`"
-                stroke-width="2.5"
-                class="lens-reflection"
-              />
-              <circle
-                cx="129.5"
-                cy="667.5"
-                r="185"
-                :fill="`url(#${uid}-blueHighlight)`"
-                stroke-width="2.5"
-                class="lens-reflection"
-              />
-              <path
-                d="m 154.5,497.5 a 162.5,162.5 0 0 1 145,120 185,185 0 0 0 -170,-135 z"
-                fill="#ffffff"
-                fill-opacity="0.08"
-                stroke-width="2.5"
-              />
-
-              <!-- Mechanisches Shutter-Lid (Wall-E typisch gegengleich geneigt für Idle-Blink) -->
-              <g :clip-path="`url(#${uid}-lens-clip)`">
-                <path
-                  class="shutter-lid shutter-left"
-                  d="M -70,495 L 330,450 L 330,820 L -70,820 Z"
+                <circle
+                  cx="129.5"
+                  cy="667.5"
+                  r="197.5"
+                  :fill="`url(#${uid}-rimInnerGrad)`"
+                  stroke-width="2.5"
                 />
+                <circle
+                  cx="129.5"
+                  cy="667.5"
+                  r="185"
+                  :fill="`url(#${uid}-glassBase)`"
+                  stroke-width="2.5"
+                />
+
+                <!-- Pupille & Kern -->
+                <g
+                  class="pupil-group"
+                  :style="{
+                    transform: `translate(${pupilOffset.x}px, ${pupilOffset.y}px)`,
+                    transition: 'transform 0.1s ease-out',
+                  }"
+                >
+                  <circle cx="129.5" cy="667.5" r="105" fill="#01040a" stroke-width="2.5" />
+                  <circle cx="122" cy="662.5" r="105" fill="#030814" stroke-width="2.5" />
+                </g>
+
+                <!-- Licht- und Reflexionsschichten -->
+                <circle
+                  cx="129.5"
+                  cy="667.5"
+                  r="185"
+                  :fill="`url(#${uid}-tealHighlight)`"
+                  stroke-width="2.5"
+                  class="lens-reflection"
+                />
+                <circle
+                  cx="129.5"
+                  cy="667.5"
+                  r="185"
+                  :fill="`url(#${uid}-blueHighlight)`"
+                  stroke-width="2.5"
+                  class="lens-reflection"
+                />
+                <path
+                  d="m 154.5,497.5 a 162.5,162.5 0 0 1 145,120 185,185 0 0 0 -170,-135 z"
+                  fill="#ffffff"
+                  fill-opacity="0.08"
+                  stroke-width="2.5"
+                />
+
+                <!-- Mechanisches Shutter-Lid (Wall-E typisch gegengleich geneigt für Idle-Blink) -->
+                <g :clip-path="`url(#${uid}-lens-clip)`">
+                  <path
+                    class="shutter-lid shutter-left"
+                    d="M -70,495 L 330,450 L 330,820 L -70,820 Z"
+                  />
+                </g>
               </g>
-            </g>
             </g>
           </g>
         </g>
