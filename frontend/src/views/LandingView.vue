@@ -154,15 +154,15 @@ const onScrollGlow = () => {
   const steps = document.querySelectorAll('.scrolly-step');
   if (!steps.length) return;
   const viewportCenter = window.innerHeight / 2;
-  
+
   const opacities = Array.from(steps).map((step) => {
     const rect = step.getBoundingClientRect();
     const stepCenter = rect.top + rect.height / 2;
     const distance = Math.abs(stepCenter - viewportCenter);
-    const maxDist = window.innerHeight * 0.6; 
-    return Math.max(0, 1 - (distance / maxDist));
+    const maxDist = window.innerHeight * 0.6;
+    return Math.max(0, 1 - distance / maxDist);
   });
-  
+
   glowOpacities.value = opacities;
 };
 
@@ -229,16 +229,6 @@ onUnmounted(() => {
     <div class="glow-orb orb-3"></div>
 
     <header class="hero">
-      <div class="hero-bg-scroll-container" aria-hidden="true">
-        <div class="marquee-track">
-          <span class="marquee-item"
-            >PLAN THE TRIP OF YOUR DREAMS TOGETHER · NO STRESS ·&nbsp;</span
-          >
-          <span class="marquee-item" aria-hidden="true"
-            >PLAN THE TRIP OF YOUR DREAMS TOGETHER · NO STRESS ·&nbsp;</span
-          >
-        </div>
-      </div>
       <div class="hero-robot">
         <ReisotorRobot size="240px" phase="pack" />
       </div>
@@ -564,59 +554,6 @@ onUnmounted(() => {
   gap: var(--space-3);
   padding: var(--space-6) var(--space-3);
   margin-top: var(--space-3);
-}
-
-.hero-bg-scroll-container {
-  position: absolute;
-  top: 10%;
-  left: 0;
-  width: 100%;
-  overflow: hidden;
-  z-index: -1;
-  pointer-events: none;
-  opacity: 0.04;
-  user-select: none;
-}
-:root[data-theme='dark'] .hero-bg-scroll-container {
-  opacity: 0.08;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) .hero-bg-scroll-container {
-    opacity: 0.08;
-  }
-}
-
-.marquee-track {
-  display: flex;
-  width: max-content;
-  will-change: transform;
-  animation: marquee-scroll 35s linear infinite;
-}
-
-.marquee-item {
-  flex-shrink: 0;
-  font-size: clamp(4rem, 13vw, 11rem);
-  font-weight: 900;
-  line-height: 1;
-  letter-spacing: -0.02em;
-  white-space: nowrap;
-  color: var(--color-text);
-}
-
-@keyframes marquee-scroll {
-  0% {
-    transform: translate3d(0, 0, 0);
-  }
-  100% {
-    transform: translate3d(-50%, 0, 0);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .marquee-track {
-    animation: none !important;
-    transform: none !important;
-  }
 }
 
 .hero-robot {
