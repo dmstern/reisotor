@@ -49,7 +49,7 @@ import { ref, onMounted, onUnmounted } from 'vue';
 const pupilOffset = ref({ x: 0, y: 0 });
 
 function onMouseMove(e: MouseEvent) {
-  if (!props.interactive || props.phase !== 'idle' || props.coveringEyes) {
+  if (!props.interactive || props.coveringEyes || props.phase === 'scanning' || props.phase === 'done') {
     pupilOffset.value = { x: 0, y: 0 };
     return;
   }
@@ -83,7 +83,7 @@ onUnmounted(() => {
     <svg
       viewBox="0 0 500 500"
       class="robot"
-      :class="[phase === 'pack' ? 'packing' : phase, { 'covering-eyes': coveringEyes }]"
+      :class="[phase === 'pack' ? 'packing' : phase, { 'covering-eyes': coveringEyes, 'is-interactive': interactive }]"
       aria-hidden="true"
     >
       <defs>
@@ -906,6 +906,10 @@ onUnmounted(() => {
   transform-box: fill-box;
   transform-origin: center;
   animation: pupil-look-wander 5.5s ease-in-out infinite;
+}
+
+.robot.is-interactive .pupil-group {
+  animation: none;
 }
 
 @keyframes pupil-look-wander {

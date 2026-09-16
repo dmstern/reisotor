@@ -231,7 +231,7 @@ onUnmounted(() => {
 
     <header class="hero">
       <div class="hero-robot">
-        <ReisotorRobot size="240px" phase="pack" />
+        <ReisotorRobot size="240px" phase="pack" interactive />
       </div>
       <h1 class="title">Reisotor</h1>
       <p class="tagline">
