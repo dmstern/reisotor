@@ -383,23 +383,15 @@ onUnmounted(() => {
 
               <!-- Mobile inline screenshot preview (visible < 768px) -->
               <div class="mobile-screenshot-preview">
-                <div class="device-mockup mini">
-                  <div class="mockup-chrome">
-                    <div class="chrome-controls">
-                      <span class="control-dot dot-close"></span>
-                      <span class="control-dot dot-minimize"></span>
-                      <span class="control-dot dot-expand"></span>
-                    </div>
-                    <div class="chrome-tag">{{ feature.routePill }}</div>
-                  </div>
-                  <div class="mockup-screen">
+                <div class="mobile-device-mockup inline">
+                  <div class="mockup-screen mobile-screen">
                     <picture>
                       <source
-                        :srcset="feature.screenshotDark"
+                        :srcset="feature.screenshotMobileDark"
                         media="(prefers-color-scheme: dark)"
                       />
                       <img
-                        :src="feature.screenshotLight"
+                        :src="feature.screenshotMobileLight"
                         :alt="feature.alt"
                         loading="lazy"
                         class="screenshot-img"
@@ -1011,13 +1003,16 @@ onUnmounted(() => {
     display: block;
     margin-top: var(--space-4);
   }
-  .device-mockup.mini {
+  .mobile-device-mockup.inline {
+    position: relative;
+    bottom: auto;
+    right: auto;
+    width: 100%;
+    max-width: 260px;
+    margin: 0 auto;
     box-shadow: var(--shadow-md);
   }
-  .device-mockup.mini .mockup-screen {
-    aspect-ratio: 16 / 9;
-  }
-  .device-mockup.mini img {
+  .mobile-device-mockup.inline img {
     display: block;
     width: 100%;
     height: 100%;
@@ -1184,7 +1179,7 @@ onUnmounted(() => {
 }
 
 @media (max-width: 767px) {
-  .mobile-device-mockup {
+  .mobile-device-mockup:not(.inline) {
     display: none;
   }
 }
