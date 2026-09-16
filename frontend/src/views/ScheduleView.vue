@@ -1204,13 +1204,14 @@ function formatDate(date: string) {
         </div>
       </div>
 
+        <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
       <TransitionGroup tag="ul" name="list" class="items">
         <li
           v-for="(entry, index) in dayEntries"
           :key="entry.key"
-          class="item clickable animate-cascade"
-          role="button"
-          tabindex="0"
+          class="item clickable animate-cascade" tabindex="0"
+          
+          
           :style="{
             '--stagger-delay': `${index * 40}ms`,
             '--entry-cat-color': SCHEDULE_CATEGORY_META[entry.category].color,
