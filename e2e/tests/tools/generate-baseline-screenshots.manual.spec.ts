@@ -53,7 +53,10 @@ async function saveScreenshotIfChanged(
   screenshotPath: string,
   options: { fullPage?: boolean; maxDiffPixels?: number } = {}
 ): Promise<{ status: 'created' | 'updated' | 'unchanged'; diffPixels?: number }> {
-  const { fullPage = false, maxDiffPixels = 100 } = options;
+  // Erhöhte Toleranz (25.000 Pixel entspricht ca. 1.2% bei Full HD), da Anti-Aliasing
+  // und Font-Rendering zwischen macOS, Fedora und der CI (Ubuntu Jammy) zehntausende
+  // Pixel minimal (Graustufen) abweichen lässt, selbst bei gleicher Fira-Sans-Schriftart.
+  const { fullPage = false, maxDiffPixels = 25000 } = options;
   const newBuffer = await page.screenshot({ fullPage });
 
   let result: { status: 'created' | 'updated' | 'unchanged'; diffPixels?: number };
@@ -75,7 +78,7 @@ async function saveScreenshotIfChanged(
         result = { status: 'updated' };
       } else {
         const numDiffPixels = pixelmatch(img1.data, img2.data, undefined, img1.width, img1.height, {
-          threshold: 0.1,
+          threshold: 0.2,
         });
 
         if (numDiffPixels > maxDiffPixels) {
