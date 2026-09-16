@@ -31,6 +31,8 @@ interface ScrollyFeature {
   iconBg: string;
   screenshotLight: string;
   screenshotDark: string;
+  screenshotMobileLight: string;
+  screenshotMobileDark: string;
   alt: string;
   routePill: string;
 }
@@ -51,6 +53,8 @@ const scrollyFeatures: ScrollyFeature[] = [
     color: 'var(--color-primary)',
     iconBg: 'color-mix(in srgb, var(--color-primary) 15%, transparent)',
     screenshotLight: `${baseUrl}landing/screenshot-dashboard-light.png`,
+    screenshotMobileLight: `${baseUrl}landing/screenshot-dashboard-mobile-light.png`,
+    screenshotMobileDark: `${baseUrl}landing/screenshot-dashboard-mobile-dark.png`,
     screenshotDark: `${baseUrl}landing/screenshot-dashboard-dark.png`,
     alt: 'Reisotor Dashboard mit Kalender und Wetter',
     routePill: 'Dashboard & Kalender',
@@ -70,6 +74,8 @@ const scrollyFeatures: ScrollyFeature[] = [
     color: 'var(--color-tour)',
     iconBg: 'color-mix(in srgb, var(--color-tour) 15%, transparent)',
     screenshotLight: `${baseUrl}landing/screenshot-tour-light.png`,
+    screenshotMobileLight: `${baseUrl}landing/screenshot-tour-mobile-light.png`,
+    screenshotMobileDark: `${baseUrl}landing/screenshot-tour-mobile-dark.png`,
     screenshotDark: `${baseUrl}landing/screenshot-tour-dark.png`,
     alt: 'Reisotor Spots und Tourenansicht mit Routenverlauf',
     routePill: 'Spots & Touren',
@@ -89,6 +95,8 @@ const scrollyFeatures: ScrollyFeature[] = [
     color: 'var(--color-success)',
     iconBg: 'color-mix(in srgb, var(--color-success) 15%, transparent)',
     screenshotLight: `${baseUrl}landing/screenshot-budget-light.png`,
+    screenshotMobileLight: `${baseUrl}landing/screenshot-budget-mobile-light.png`,
+    screenshotMobileDark: `${baseUrl}landing/screenshot-budget-mobile-dark.png`,
     screenshotDark: `${baseUrl}landing/screenshot-budget-dark.png`,
     alt: 'Reisotor Budget und Ausgabenübersicht',
     routePill: 'Budget & Kasse',
@@ -108,6 +116,8 @@ const scrollyFeatures: ScrollyFeature[] = [
     color: 'var(--color-warning)',
     iconBg: 'color-mix(in srgb, var(--color-warning) 15%, transparent)',
     screenshotLight: `${baseUrl}landing/screenshot-packing-light.png`,
+    screenshotMobileLight: `${baseUrl}landing/screenshot-packing-mobile-light.png`,
+    screenshotMobileDark: `${baseUrl}landing/screenshot-packing-mobile-dark.png`,
     screenshotDark: `${baseUrl}landing/screenshot-packing-dark.png`,
     alt: 'Reisotor Packlisten und Einkäufe',
     routePill: 'Packlisten & Einkauf',
@@ -253,6 +263,33 @@ onUnmounted(() => {
                     <source :srcset="feature.screenshotDark" media="(prefers-color-scheme: dark)" />
                     <img
                       :src="feature.screenshotLight"
+                      :alt="feature.alt"
+                      loading="lazy"
+                      class="screenshot-img"
+                    />
+                  </picture>
+                </div>
+              </div>
+            </div>
+
+            
+            <!-- Mobile Device Mockup Overlay -->
+            <div class="mobile-device-mockup">
+              <div class="mockup-screen mobile-screen">
+                <div
+                  v-for="(feature, idx) in scrollyFeatures"
+                  :key="'mobile-' + feature.id"
+                  class="screenshot-frame"
+                  :class="{
+                    'is-active': activeIndex === idx,
+                    'is-prev': activeIndex > idx,
+                    'is-next': activeIndex < idx,
+                  }"
+                >
+                  <picture>
+                    <source :srcset="feature.screenshotMobileDark" media="(prefers-color-scheme: dark)" />
+                    <img
+                      :src="feature.screenshotMobileLight"
                       :alt="feature.alt"
                       loading="lazy"
                       class="screenshot-img"
@@ -1019,7 +1056,9 @@ onUnmounted(() => {
   overflow: hidden;
   border-radius: var(--radius-xl-squircle);
   color: white;
-  margin: var(--space-5) 0;
+  margin: var(--space-6) auto;
+  width: calc(100% - 2 * var(--space-4));
+  max-width: var(--page-max-width);
   box-shadow: var(--shadow-lg);
 }
 
@@ -1127,4 +1166,40 @@ onUnmounted(() => {
 .hint {
   font-size: 0.95rem;
 }
+
+.mobile-device-mockup {
+  position: absolute;
+  z-index: 4;
+  bottom: -40px;
+  right: -30px;
+  width: 25%;
+  min-width: 140px;
+  max-width: 220px;
+  aspect-ratio: 390 / 844;
+  background: var(--color-surface);
+  border-radius: calc(var(--radius-xl-squircle) * 0.8);
+  corner-shape: squircle;
+  border: 1px solid var(--color-border);
+  box-shadow:
+    var(--shadow-xl),
+    -10px 20px 40px -10px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  padding: 4px; /* Simulate bezel */
+}
+
+.mobile-device-mockup .mockup-screen {
+  width: 100%;
+  height: 100%;
+  border-radius: calc(var(--radius-xl-squircle) * 0.7);
+  corner-shape: squircle;
+  overflow: hidden;
+  position: relative;
+}
+
+@media (max-width: 767px) {
+  .mobile-device-mockup {
+    display: none;
+  }
+}
+
 </style>
