@@ -53,8 +53,9 @@ function onMouseMove(e: MouseEvent) {
     pupilOffset.value = { x: 0, y: 0 };
     return;
   }
-  // Max. Verschiebung: +/- 45 Einheiten (SVG)
-  const maxShift = 45;
+  // Die pupil-group ist in ein <g> mit transform="matrix(0.057...)" eingebettet.
+  // Um 45 Einheiten im 500x500 SVG-Raster zu verschieben, müssen wir lokal ca. 45 / 0.057 = 780 Einheiten verschieben!
+  const maxShift = 780;
   const rx = (e.clientX / window.innerWidth - 0.5) * 2;
   const ry = (e.clientY / window.innerHeight - 0.5) * 2;
   pupilOffset.value = { x: rx * maxShift, y: ry * maxShift };
