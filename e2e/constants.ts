@@ -3,9 +3,9 @@
 // die wegwerfbare Test-DB unter e2e/.tmp/, nie für echte Daten. Von playwright.config.ts (webServer
 // env), global-setup.ts (Seed-Aufruf) und tests/auth.setup.ts (Login) gemeinsam importiert, damit
 // sie nicht auseinanderdriften können.
-export const E2E_USERNAME = 'e2e-user1';
+export const E2E_USERNAME = 'Elif';
 export const E2E_PASSWORD = 'e2e-changeme-1';
-export const E2E_USERNAME_2 = 'e2e-user2';
+export const E2E_USERNAME_2 = 'Amari';
 export const E2E_PASSWORD_2 = 'e2e-changeme-2';
 export const E2E_SESSION_SECRET = 'e2e-fixed-secret-not-for-prod-32chars';
 

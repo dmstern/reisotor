@@ -25,14 +25,14 @@ function fmt(date: Date): string {
 
 const users = [
   {
-    username: process.env.SEED_USER1 ?? 'user1',
+    username: process.env.SEED_USER1 ?? 'Elif',
     password: process.env.SEED_PASS1 ?? 'changeme1',
-    avatar: process.env.SEED_AVATAR1 ?? '🧑',
+    avatar: process.env.SEED_AVATAR1 ?? '🦊',
   },
   {
-    username: process.env.SEED_USER2 ?? 'user2',
+    username: process.env.SEED_USER2 ?? 'Amari',
     password: process.env.SEED_PASS2 ?? 'changeme2',
-    avatar: process.env.SEED_AVATAR2 ?? '👩',
+    avatar: process.env.SEED_AVATAR2 ?? '🐼',
   },
 ];
 

@@ -28,16 +28,16 @@ function addDays(days: number): string {
 
 export const DEMO_USER: User = {
   id: 1,
-  username: 'Mika',
-  avatar: '🧑‍🚀',
+  username: 'Elif',
+  avatar: '🦊',
   email: 'mika@example.com',
   is_admin: true,
   must_change_password: false,
 };
 const DEMO_PARTNER: User = {
   id: 2,
-  username: 'Jo',
-  avatar: '🧑‍🎨',
+  username: 'Amari',
+  avatar: '🐼',
   email: 'jo@example.com',
   is_admin: false,
   must_change_password: false,

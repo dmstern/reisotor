@@ -5,6 +5,7 @@ import {
   IconCoin,
   IconListCheck,
   IconMapPin,
+  IconBook,
   IconPlayerPlayFilled,
   IconBrandGithub,
   IconCheck,
@@ -69,6 +70,7 @@ const scrollyFeatures: ScrollyFeature[] = [
       'Visuelle Tour-Pfade mit geschwungenen Verlaufslinien',
       'Kategorisierte Spots mit Notizen & Bewertungen',
       'Offline-fähige Navigation auf der Karte',
+      'An- und Abreise mit Tickets und Umsteigezeiten tracken',
     ],
     icon: IconMapPin,
     color: 'var(--color-tour)',
@@ -121,6 +123,27 @@ const scrollyFeatures: ScrollyFeature[] = [
     screenshotDark: `${baseUrl}landing/screenshot-packing-dark.png`,
     alt: 'Reisotor Packlisten und Einkäufe',
     routePill: 'Packlisten & Einkauf',
+  },
+  {
+    id: 'diary',
+    kicker: 'REISE-TAGEBUCH',
+    title: 'Erinnerungen festhalten und teilen',
+    description:
+      'Dokumentiert eure schönsten Momente. Verknüpft Tagebucheinträge automatisch mit Ausflügen und teilt eure Notizen und Bilder mit der ganzen Gruppe.',
+    highlights: [
+      'Gemeinsames Tagebuch für die Reisegruppe',
+      'Direkte Verknüpfung mit Spots und Touren',
+      'Offline-verfügbar für das Schreiben unterwegs',
+    ],
+    icon: IconBook,
+    color: 'var(--color-accent-secondary)',
+    iconBg: 'color-mix(in srgb, var(--color-accent-secondary) 15%, transparent)',
+    screenshotLight: `${baseUrl}landing/screenshot-diary-light.png`,
+    screenshotMobileLight: `${baseUrl}landing/screenshot-diary-mobile-light.png`,
+    screenshotMobileDark: `${baseUrl}landing/screenshot-diary-mobile-dark.png`,
+    screenshotDark: `${baseUrl}landing/screenshot-diary-dark.png`,
+    alt: 'Reisotor Tagebuch mit Einträgen und Fotos',
+    routePill: 'Tagebuch & Fotos',
   },
 ];
 
@@ -272,7 +295,6 @@ onUnmounted(() => {
               </div>
             </div>
 
-            
             <!-- Mobile Device Mockup Overlay -->
             <div class="mobile-device-mockup">
               <div class="mockup-screen mobile-screen">
@@ -287,7 +309,10 @@ onUnmounted(() => {
                   }"
                 >
                   <picture>
-                    <source :srcset="feature.screenshotMobileDark" media="(prefers-color-scheme: dark)" />
+                    <source
+                      :srcset="feature.screenshotMobileDark"
+                      media="(prefers-color-scheme: dark)"
+                    />
                     <img
                       :src="feature.screenshotMobileLight"
                       :alt="feature.alt"
@@ -1201,5 +1226,4 @@ onUnmounted(() => {
     display: none;
   }
 }
-
 </style>
