@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { onMounted, onUnmounted, ref, type Component } from 'vue';
 import {
   IconCalendarEvent,
   IconCoin,
   IconListCheck,
   IconMapPin,
-  IconWifiOff,
-  IconUsers,
   IconPlayerPlayFilled,
   IconBrandGithub,
+  IconCheck,
+  IconSparkles,
 } from '@tabler/icons-vue';
 import ReisotorRobot from '../components/ReisotorRobot.vue';
 
@@ -16,55 +16,132 @@ const repoUrl = __REPO_URL__;
 const demoUrl = './demo/';
 const storybookUrl = './storybook/';
 
-const features = [
+const baseUrl = import.meta.env.BASE_URL.endsWith('/')
+  ? import.meta.env.BASE_URL
+  : `${import.meta.env.BASE_URL}/`;
+
+interface ScrollyFeature {
+  id: string;
+  kicker: string;
+  title: string;
+  description: string;
+  highlights: string[];
+  icon: Component;
+  color: string;
+  iconBg: string;
+  screenshotLight: string;
+  screenshotDark: string;
+  alt: string;
+  routePill: string;
+}
+
+const scrollyFeatures: ScrollyFeature[] = [
   {
+    id: 'dashboard',
+    kicker: 'ZENTRALE REISEÜBERSICHT',
+    title: 'Alles an einem Ort: Euer Urlaubs-Dashboard',
+    description:
+      'Der gemeinsame Startpunkt für euren Urlaub: Termine, Etappen, Countdown und 14-Tage-Wettervorhersage auf einen Blick. Der integrierte Kalender hält alle Mitreisenden live synchron.',
+    highlights: [
+      'Gemeinsamer Kalender mit Live-Synchronisation',
+      '14-Tage Wettervorhersage für das Reiseziel',
+      'Flug- & Unterkunfts-Countdown auf einen Blick',
+    ],
     icon: IconCalendarEvent,
-    title: 'Gemeinsamer Kalender',
-    text: 'Termine, Ausflüge und Reise-Etappen auf einen Blick – live synchron für alle Mitreisenden.',
     color: 'var(--color-primary)',
+    iconBg: 'color-mix(in srgb, var(--color-primary) 15%, transparent)',
+    screenshotLight: `${baseUrl}landing/screenshot-dashboard-light.png`,
+    screenshotDark: `${baseUrl}landing/screenshot-dashboard-dark.png`,
+    alt: 'Reisotor Dashboard mit Kalender und Wetter',
+    routePill: 'Dashboard & Kalender',
   },
   {
-    icon: IconCoin,
-    title: 'Budget & Kasse',
-    text: 'Wer hat was bezahlt? Gemeinsame und persönliche Töpfe, Ausgaben und Überweisungen im Griff.',
-    color: 'var(--color-success)',
-  },
-  {
-    icon: IconListCheck,
-    title: 'Packlisten & Einkauf',
-    text: 'Nichts vergessen – gemeinsame Listen mit Mengen, Zuständigkeiten und Fortschritt.',
-    color: 'var(--color-warning)',
-  },
-  {
+    id: 'spots',
+    kicker: 'INTERAKTIVE KARTE & ROUTEN',
+    title: 'Spots & Touren mit dynamischem Routen-Verlauf',
+    description:
+      'Unterkünfte, Sehenswürdigkeiten und Ausflugsziele auf der Karte markieren. Die neue Tour-Ansicht verbindet besuchte Stationen mit eleganten Farbverläufen und gestrichelten Linien.',
+    highlights: [
+      'Visuelle Tour-Pfade mit geschwungenen Verlaufslinien',
+      'Kategorisierte Spots mit Notizen & Bewertungen',
+      'Offline-fähige Navigation auf der Karte',
+    ],
     icon: IconMapPin,
-    title: 'Spots & Touren',
-    text: 'Unterkünfte, Sehenswürdigkeiten und Ausflüge sammeln, auf der Karte verorten, einplanen.',
     color: 'var(--color-tour)',
+    iconBg: 'color-mix(in srgb, var(--color-tour) 15%, transparent)',
+    screenshotLight: `${baseUrl}landing/screenshot-tour-light.png`,
+    screenshotDark: `${baseUrl}landing/screenshot-tour-dark.png`,
+    alt: 'Reisotor Spots und Tourenansicht mit Routenverlauf',
+    routePill: 'Spots & Touren',
   },
   {
-    icon: IconWifiOff,
-    title: 'Offline-first',
-    text: 'Als App installierbar, funktioniert auch ohne Netz – Änderungen synchronisieren sich später.',
-    color: 'var(--color-text-muted)',
+    id: 'budget',
+    kicker: 'TRANSPARENTE FINANZEN',
+    title: 'Budget & Ausgaben ohne Tabellen-Chaos',
+    description:
+      'Wer hat was bezahlt? Erfasst Ausgaben in gemeinsamen oder persönlichen Töpfen. Reisotor berechnet den automatischen Schuldenausgleich transparent und ohne Kopfzerbrechen.',
+    highlights: [
+      'Gemeinsame & persönliche Budget-Töpfe',
+      'Automatischer Verrechnungs- und Ausgleichsrechner',
+      'Kategoriestatistiken & Ausgabenverlauf',
+    ],
+    icon: IconCoin,
+    color: 'var(--color-success)',
+    iconBg: 'color-mix(in srgb, var(--color-success) 15%, transparent)',
+    screenshotLight: `${baseUrl}landing/screenshot-budget-light.png`,
+    screenshotDark: `${baseUrl}landing/screenshot-budget-dark.png`,
+    alt: 'Reisotor Budget und Ausgabenübersicht',
+    routePill: 'Budget & Kasse',
   },
   {
-    icon: IconUsers,
-    title: 'Gemeinsam statt einsam',
-    text: 'Ein Urlaub, mehrere Mitglieder – jede:r sieht denselben aktuellen Stand.',
-    color: 'var(--color-like)',
+    id: 'packing',
+    kicker: 'PERFEKT VORBEREITET',
+    title: 'Packlisten & Vorräte gemeinsam abhaken',
+    description:
+      'Nichts vergessen – strukturierte Listen für Kleidung, Dokumente, Reiseapotheke und Vorräte. Weist Gegenstände Personen zu und verfolgt den Packfortschritt in Echtzeit.',
+    highlights: [
+      'Kategorisierte Listen mit Packfortschrittsbalken',
+      'Zuweisung von Gegenständen an Mitreisende',
+      '100% offline nutzbar im Flugzeug und unterwegs',
+    ],
+    icon: IconListCheck,
+    color: 'var(--color-warning)',
+    iconBg: 'color-mix(in srgb, var(--color-warning) 15%, transparent)',
+    screenshotLight: `${baseUrl}landing/screenshot-packing-light.png`,
+    screenshotDark: `${baseUrl}landing/screenshot-packing-dark.png`,
+    alt: 'Reisotor Packlisten und Einkäufe',
+    routePill: 'Packlisten & Einkauf',
   },
 ];
 
-const robotPhase = ref<'scanning' | 'idle'>('scanning');
+const activeIndex = ref(0);
+let stepObserver: IntersectionObserver | null = null;
+let scrollObserver: IntersectionObserver | null = null;
 
 onMounted(() => {
-  // Lade-Animation nach 2.5 Sekunden beenden
-  setTimeout(() => {
-    robotPhase.value = 'idle';
-  }, 2500);
+  stepObserver = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const indexAttr = entry.target.getAttribute('data-index');
+          if (indexAttr !== null) {
+            activeIndex.value = parseInt(indexAttr, 10);
+          }
+        }
+      });
+    },
+    {
+      rootMargin: '-25% 0px -35% 0px',
+      threshold: [0.2, 0.5],
+    }
+  );
+
+  document.querySelectorAll('.scrolly-step').forEach((el) => {
+    stepObserver?.observe(el);
+  });
 
   if (!CSS.supports('(animation-timeline: view()) and (animation-range: 0% 100%)')) {
-    const observer = new IntersectionObserver(
+    scrollObserver = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
@@ -75,11 +152,16 @@ onMounted(() => {
       { threshold: 0.1 }
     );
 
-    document.querySelectorAll('.scroll-animate, .scrollytelling-bg-text, .layer').forEach((el) => {
-      observer.observe(el);
+    document.querySelectorAll('.scroll-animate').forEach((el) => {
+      scrollObserver?.observe(el);
       el.classList.add('fallback-mode');
     });
   }
+});
+
+onUnmounted(() => {
+  stepObserver?.disconnect();
+  scrollObserver?.disconnect();
 });
 </script>
 
@@ -90,14 +172,19 @@ onMounted(() => {
     <div class="glow-orb orb-2"></div>
     <div class="glow-orb orb-3"></div>
 
-    <header class="hero scroll-animate">
+    <header class="hero">
       <div class="hero-bg-scroll-container" aria-hidden="true">
-        <div class="scrollytelling-bg-text">
-          PLAN THE TRIP OF YOUR DREAMS TOGETHER · NO STRESS ·
+        <div class="marquee-track">
+          <span class="marquee-item"
+            >PLAN THE TRIP OF YOUR DREAMS TOGETHER · NO STRESS ·&nbsp;</span
+          >
+          <span class="marquee-item" aria-hidden="true"
+            >PLAN THE TRIP OF YOUR DREAMS TOGETHER · NO STRESS ·&nbsp;</span
+          >
         </div>
       </div>
       <div class="hero-robot">
-        <ReisotorRobot size="240px" :phase="robotPhase" variant="circle" interactive />
+        <ReisotorRobot size="240px" phase="pack" />
       </div>
       <h1 class="title">Reisotor</h1>
       <p class="tagline">
@@ -117,77 +204,134 @@ onMounted(() => {
       </div>
     </header>
 
-    <section class="screenshots-parallax parallax-wrapper">
-      <div class="screenshots-container">
-        <!-- Desktop layer in background (Dashboard) -->
-        <picture class="screenshot-desktop layer layer-1">
-          <source
-            srcset="/landing/screenshot-dashboard-dark.png"
-            media="(prefers-color-scheme: dark)"
-          />
-          <img
-            src="/landing/screenshot-dashboard-light.png"
-            alt="Reisotor-Dashboard"
-            loading="lazy"
-          />
-        </picture>
+    <!-- 2. SEQUENTIAL SCROLLYTELLING SECTION (Apple-Style) -->
+    <section class="scrollytelling-section">
+      <div class="scrolly-header scroll-animate">
+        <div class="scrolly-badge">
+          <IconSparkles :size="16" />
+          <span>ALLES AN EINEM ORT</span>
+        </div>
+        <h2 class="section-title">Reiseplanung neu gedacht</h2>
+        <p class="section-subtitle">
+          Vom ersten Gedanken bis zum Kofferpacken: Reisotor begleitet jeden Schritt eures Urlaubs.
+        </p>
+      </div>
 
-        <!-- Desktop layer in middle (Spots Map) -->
-        <picture class="screenshot-spots layer layer-2">
-          <source
-            srcset="/landing/screenshot-spots-dark.png"
-            media="(prefers-color-scheme: dark)"
-          />
-          <img src="/landing/screenshot-spots-light.png" alt="Reisotor Map" loading="lazy" />
-        </picture>
+      <div class="scrolly-layout">
+        <!-- Sticky Showcase (Desktop / Tablet >= 768px) -->
+        <div class="scrolly-visual-wrapper" aria-hidden="true">
+          <div class="scrolly-stage">
+            <div class="device-mockup">
+              <div class="mockup-chrome">
+                <div class="chrome-controls">
+                  <span class="control-dot dot-close"></span>
+                  <span class="control-dot dot-minimize"></span>
+                  <span class="control-dot dot-expand"></span>
+                </div>
+                <div class="chrome-address-bar">
+                  <span class="address-lock">🔒</span>
+                  <span class="address-domain"
+                    >reisotor.app/{{ scrollyFeatures[activeIndex]?.id }}</span
+                  >
+                </div>
+                <div class="chrome-tag">
+                  {{ scrollyFeatures[activeIndex]?.routePill }}
+                </div>
+              </div>
+              <div class="mockup-screen">
+                <div
+                  v-for="(feature, idx) in scrollyFeatures"
+                  :key="feature.id"
+                  class="screenshot-frame"
+                  :class="{
+                    'is-active': activeIndex === idx,
+                    'is-prev': activeIndex > idx,
+                    'is-next': activeIndex < idx,
+                  }"
+                >
+                  <picture>
+                    <source :srcset="feature.screenshotDark" media="(prefers-color-scheme: dark)" />
+                    <img
+                      :src="feature.screenshotLight"
+                      :alt="feature.alt"
+                      loading="lazy"
+                      class="screenshot-img"
+                    />
+                  </picture>
+                </div>
+              </div>
+            </div>
 
-        <!-- Mobile layer in foreground -->
-        <picture class="screenshot-mobile layer layer-3">
-          <source
-            srcset="/landing/screenshot-mobile-dark.png"
-            media="(prefers-color-scheme: dark)"
-          />
-          <img
-            src="/landing/screenshot-mobile-light.png"
-            alt="Reisotor auf dem Smartphone"
-            loading="lazy"
-          />
-        </picture>
-
-        <!-- Fake polaroids floating on the side -->
-        <div class="polaroid-decor layer layer-4" aria-hidden="true">
-          <div class="fake-polaroid p-1">
-            <div class="fp-img"><IconMapPin :size="36" color="var(--color-tour)" /></div>
-            <div class="fp-chin"></div>
-          </div>
-          <div class="fake-polaroid p-2">
-            <div class="fp-img"><IconListCheck :size="36" color="var(--color-warning)" /></div>
-            <div class="fp-chin"></div>
+            <!-- Dynamic Ambient Glow -->
+            <div
+              class="stage-glow"
+              :style="{
+                background: `radial-gradient(circle, ${scrollyFeatures[activeIndex]?.color || 'var(--color-primary)'} 0%, transparent 70%)`,
+              }"
+            ></div>
           </div>
         </div>
-      </div>
-    </section>
 
-    <section class="features">
-      <h2 class="section-title scroll-animate">Alles für die gemeinsame Reiseplanung</h2>
-      <div class="feature-grid">
-        <div
-          v-for="(feature, idx) in features"
-          :key="feature.title"
-          class="feature-card scroll-animate"
-          :style="{ '--stagger': idx }"
-        >
+        <!-- Scrolling Narrative Steps -->
+        <div class="scrolly-steps">
           <div
-            class="feature-icon"
-            :style="{
-              color: feature.color,
-              '--icon-bg': `color-mix(in srgb, ${feature.color} 15%, transparent)`,
-            }"
+            v-for="(feature, idx) in scrollyFeatures"
+            :key="feature.id"
+            class="scrolly-step"
+            :data-index="idx"
+            :class="{ 'is-active': activeIndex === idx }"
           >
-            <component :is="feature.icon" :size="32" />
+            <div class="step-card">
+              <div class="step-kicker">{{ feature.kicker }}</div>
+              <div class="step-header">
+                <div
+                  class="step-icon"
+                  :style="{
+                    color: feature.color,
+                    background: feature.iconBg,
+                  }"
+                >
+                  <component :is="feature.icon" :size="28" />
+                </div>
+                <h3 class="step-title">{{ feature.title }}</h3>
+              </div>
+              <p class="step-desc">{{ feature.description }}</p>
+              <ul class="step-highlights">
+                <li v-for="point in feature.highlights" :key="point">
+                  <IconCheck :size="18" class="check-icon" :style="{ color: feature.color }" />
+                  <span>{{ point }}</span>
+                </li>
+              </ul>
+
+              <!-- Mobile inline screenshot preview (visible < 768px) -->
+              <div class="mobile-screenshot-preview">
+                <div class="device-mockup mini">
+                  <div class="mockup-chrome">
+                    <div class="chrome-controls">
+                      <span class="control-dot dot-close"></span>
+                      <span class="control-dot dot-minimize"></span>
+                      <span class="control-dot dot-expand"></span>
+                    </div>
+                    <div class="chrome-tag">{{ feature.routePill }}</div>
+                  </div>
+                  <div class="mockup-screen">
+                    <picture>
+                      <source
+                        :srcset="feature.screenshotDark"
+                        media="(prefers-color-scheme: dark)"
+                      />
+                      <img
+                        :src="feature.screenshotLight"
+                        :alt="feature.alt"
+                        loading="lazy"
+                        class="screenshot-img"
+                      />
+                    </picture>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          <h3>{{ feature.title }}</h3>
-          <p>{{ feature.text }}</p>
         </div>
       </div>
     </section>
@@ -247,10 +391,6 @@ onMounted(() => {
     animation-timeline: view();
     animation-range: entry 5% cover 25%;
   }
-
-  .feature-card {
-    animation-range: entry calc(5% + var(--stagger) * 2%) cover calc(25% + var(--stagger) * 2%);
-  }
 }
 
 .scroll-animate {
@@ -276,10 +416,10 @@ onMounted(() => {
 
 .landing {
   position: relative;
-  overflow: hidden;
-  max-width: var(--page-max-width, 1400px);
-  margin: 0 auto;
-  padding: var(--space-4);
+  overflow-x: clip;
+  width: 100%;
+  margin: 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
   gap: 80px;
@@ -327,6 +467,8 @@ onMounted(() => {
 }
 
 .hero {
+  position: relative;
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -334,8 +476,6 @@ onMounted(() => {
   gap: var(--space-3);
   padding: var(--space-6) var(--space-3);
   margin-top: var(--space-3);
-  position: relative;
-  view-timeline: --hero block;
 }
 
 .hero-bg-scroll-container {
@@ -347,6 +487,7 @@ onMounted(() => {
   z-index: -1;
   pointer-events: none;
   opacity: 0.04;
+  user-select: none;
 }
 :root[data-theme='dark'] .hero-bg-scroll-container {
   opacity: 0.08;
@@ -356,25 +497,37 @@ onMounted(() => {
     opacity: 0.08;
   }
 }
-.scrollytelling-bg-text {
-  font-size: 15vw;
+
+.marquee-track {
+  display: flex;
+  width: max-content;
+  will-change: transform;
+  animation: marquee-scroll 35s linear infinite;
+}
+
+.marquee-item {
+  flex-shrink: 0;
+  font-size: clamp(4rem, 13vw, 11rem);
   font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.02em;
   white-space: nowrap;
   color: var(--color-text);
 }
-@supports ((animation-timeline: view()) and (animation-range: 0% 100%)) {
-  .scrollytelling-bg-text {
-    animation: scrolly-text-pan linear both;
-    animation-timeline: --hero;
-    animation-range: exit;
+
+@keyframes marquee-scroll {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
   }
 }
-@keyframes scrolly-text-pan {
-  from {
-    transform: translateX(10%);
-  }
-  to {
-    transform: translateX(-60%);
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none !important;
+    transform: none !important;
   }
 }
 
@@ -473,339 +626,392 @@ onMounted(() => {
   margin: 0 8px;
 }
 
-/* Parallax Screenshots (Apple-like Scrollytelling) */
-.parallax-wrapper {
-  width: 100%;
-  max-width: 1200px;
+/* --- SCROLLYTELLING SECTION (Sequential Apple-Style) --- */
+.scrollytelling-section {
+  position: relative;
+  max-width: min(var(--page-max-width, 1400px), 1600px);
   margin: 0 auto;
+  padding: var(--space-6) var(--space-4);
 }
 
-.screenshots-container {
-  position: sticky;
-  top: 10vh;
-  width: 100%;
-  height: 80vh;
-  max-height: 800px;
-  min-height: 400px;
-  display: flex;
-  justify-content: center;
+.scrolly-header {
+  text-align: center;
+  max-width: 700px;
+  margin: 0 auto var(--space-6) auto;
+}
+
+.scrolly-badge {
+  display: inline-flex;
   align-items: center;
-  perspective: 1200px;
-  overflow: visible;
+  gap: var(--space-1);
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-xs, 0.75rem);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  background: var(--color-primary-tint);
+  color: var(--color-primary);
+  margin-bottom: var(--space-2);
 }
 
-.layer {
-  position: absolute;
-  border-radius: var(--radius-xl-squircle);
-  overflow: hidden;
-  box-shadow: var(--shadow-lg);
-  border: 1px solid var(--color-border);
-  transform-style: preserve-3d;
-  will-change: transform, opacity;
-}
-.layer img {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-
-.screenshot-desktop {
-  width: 80%;
-  z-index: 1;
-  transform: translate3d(-5%, -5%, -100px) rotateY(-2deg);
-}
-
-.screenshot-spots {
-  width: 65%;
-  z-index: 2;
-  border-radius: 12px;
-  box-shadow:
-    var(--shadow-xl),
-    -10px 10px 30px rgba(0, 0, 0, 0.2);
-  transform: translate3d(15%, 5%, 50px) rotateY(3deg);
-}
-
-.screenshot-mobile {
-  width: 22%;
-  z-index: 3;
-  border-radius: 36px;
-  box-shadow:
-    var(--shadow-lg),
-    -15px 15px 40px rgba(0, 0, 0, 0.15);
-  transform: translate3d(-25%, 10%, 150px) rotateY(-4deg);
-}
-
-.polaroid-decor {
-  width: auto;
-  z-index: 4;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  border: none;
-  box-shadow: none;
-  overflow: visible;
-  transform: translate3d(25%, 15%, 200px) rotateY(5deg);
-}
-
-.fake-polaroid {
-  width: 120px;
-  height: 140px;
-  background: #ffffff;
-  padding: 8px 8px 24px 8px;
-  border-radius: var(--radius-sm-squircle, 6px);
-  corner-shape: squircle;
-  box-shadow: var(--shadow-lg);
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  display: flex;
-  flex-direction: column;
-}
-.fp-img {
-  flex: 1;
-  background: var(--color-bg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-}
-.p-1 {
-  transform: rotate(-10deg);
-}
-.p-2 {
-  transform: rotate(14deg) translateX(40px) translateY(-10px);
-}
-:root[data-theme='dark'] .fake-polaroid {
-  background: #2a2825;
-  border-color: rgba(255, 255, 255, 0.1);
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) .fake-polaroid {
-    background: #2a2825;
-    border-color: rgba(255, 255, 255, 0.1);
-  }
-}
-
-@keyframes reveal-layer-1 {
-  from {
-    transform: translate3d(0, 150px, -200px) scale(0.8) rotateY(0deg);
-    opacity: 0;
-  }
-  to {
-    transform: translate3d(-5%, -5%, -100px) rotateY(-2deg);
-    opacity: 1;
-  }
-}
-@keyframes reveal-layer-2 {
-  from {
-    transform: translate3d(0, 150px, -150px) scale(0.8) rotateY(0deg);
-    opacity: 0;
-  }
-  to {
-    transform: translate3d(15%, 5%, 50px) rotateY(3deg);
-    opacity: 1;
-  }
-}
-@keyframes reveal-layer-3 {
-  from {
-    transform: translate3d(0, 150px, -100px) scale(0.8) rotateY(0deg);
-    opacity: 0;
-  }
-  to {
-    transform: translate3d(-25%, 10%, 150px) rotateY(-4deg);
-    opacity: 1;
-  }
-}
-@keyframes reveal-layer-4 {
-  from {
-    transform: translate3d(0, 150px, -50px) scale(0.8) rotateY(0deg);
-    opacity: 0;
-  }
-  to {
-    transform: translate3d(25%, 15%, 200px) rotateY(5deg);
-    opacity: 1;
-  }
-}
-
-@supports ((animation-timeline: view()) and (animation-range: 0% 100%)) {
-  .parallax-wrapper {
-    height: 300vh;
-    view-timeline: --screenshots block;
-  }
-  .layer-1 {
-    animation: reveal-layer-1 linear both;
-    animation-timeline: --screenshots;
-    animation-range: contain 0% contain 25%;
-  }
-  .layer-2 {
-    animation: reveal-layer-2 linear both;
-    animation-timeline: --screenshots;
-    animation-range: contain 20% contain 45%;
-  }
-  .layer-3 {
-    animation: reveal-layer-3 linear both;
-    animation-timeline: --screenshots;
-    animation-range: contain 40% contain 65%;
-  }
-  .layer-4 {
-    animation: reveal-layer-4 linear both;
-    animation-timeline: --screenshots;
-    animation-range: contain 60% contain 85%;
-  }
-}
-
-/* Fallback for browsers without animation-timeline */
-.layer.fallback-mode {
-  opacity: 0;
-  transform: translate3d(0, 150px, -100px) scale(0.8);
-  transition:
-    opacity 0.8s ease,
-    transform 0.8s ease;
-}
-.layer.fallback-visible {
-  opacity: 1;
-}
-.layer-1.fallback-visible {
-  transform: translate3d(-5%, -5%, -100px) rotateY(-2deg);
-}
-.layer-2.fallback-visible {
-  transform: translate3d(15%, 5%, 50px) rotateY(3deg);
-}
-.layer-3.fallback-visible {
-  transform: translate3d(-25%, 10%, 150px) rotateY(-4deg);
-}
-.layer-4.fallback-visible {
-  transform: translate3d(25%, 15%, 200px) rotateY(5deg);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .layer {
-    animation: none !important;
-    opacity: 1 !important;
-    transform: none !important;
-  }
-  .layer-1 {
-    transform: translate3d(-5%, -5%, 0) !important;
-  }
-  .layer-2 {
-    transform: translate3d(15%, 5%, 0) !important;
-  }
-  .layer-3 {
-    transform: translate3d(-25%, 10%, 0) !important;
-  }
-  .layer-4 {
-    transform: translate3d(25%, 15%, 0) !important;
-  }
-}
-
-@media (max-width: 768px) {
-  .parallax-wrapper {
-    height: 150vh;
-  }
-  .screenshots-container {
-    height: 50vh;
-  }
-  .screenshot-desktop {
-    width: 95%;
-    transform: translate3d(0, -10%, 0);
-  }
-  .screenshot-spots {
-    width: 85%;
-    transform: translate3d(5%, 10%, 50px);
-  }
-  .screenshot-mobile {
-    width: 35%;
-    transform: translate3d(-30%, 20%, 100px);
-  }
-  .polaroid-decor {
-    display: none;
-  }
-
-  @keyframes reveal-layer-1 {
-    from {
-      transform: translate3d(0, 100px, -100px) scale(0.9);
-      opacity: 0;
-    }
-    to {
-      transform: translate3d(0, -10%, 0);
-      opacity: 1;
-    }
-  }
-  @keyframes reveal-layer-2 {
-    from {
-      transform: translate3d(0, 100px, -50px) scale(0.9);
-      opacity: 0;
-    }
-    to {
-      transform: translate3d(5%, 10%, 50px);
-      opacity: 1;
-    }
-  }
-  @keyframes reveal-layer-3 {
-    from {
-      transform: translate3d(0, 100px, 0) scale(0.9);
-      opacity: 0;
-    }
-    to {
-      transform: translate3d(-30%, 20%, 100px);
-      opacity: 1;
-    }
-  }
-}
-
-.features {
-  padding: var(--space-4) 0;
-}
 .section-title {
   text-align: center;
   font-size: clamp(2rem, 4vw, 2.8rem);
-  margin-bottom: var(--space-6);
+  margin-bottom: var(--space-2);
   color: var(--color-primary-dark);
 }
-
-.feature-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: var(--space-4);
+:root[data-theme='dark'] .section-title {
+  color: #f0abfc;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .section-title {
+    color: #f0abfc;
+  }
 }
 
-.feature-card {
+.section-subtitle {
+  font-size: clamp(1.05rem, 1.8vw, 1.25rem);
+  color: var(--color-text-muted);
+  line-height: 1.6;
+  margin: 0 auto;
+}
+
+/* Two-column layout */
+.scrolly-layout {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: var(--space-6);
+  position: relative;
+}
+
+.scrolly-steps {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 35vh;
+  padding: 15vh 0 35vh 0;
+  min-width: 0;
+}
+
+.scrolly-step {
+  min-height: 45vh;
+  display: flex;
+  align-items: center;
+}
+
+.step-card {
+  width: 100%;
   background: var(--color-surface-glass);
   backdrop-filter: var(--backdrop-blur-md);
   border: 1px solid var(--color-surface-glass-border);
-  padding: var(--space-5);
   border-radius: var(--radius-xl-squircle);
+  corner-shape: squircle;
+  padding: var(--space-5);
   box-shadow: var(--shadow-sm);
   transition:
-    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 0.2s ease;
-  position: relative;
-  overflow: hidden;
+    opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  opacity: 0.4;
+  transform: scale(0.97);
 }
-.feature-card:hover {
-  transform: translateY(-6px);
+
+.scrolly-step.is-active .step-card {
+  opacity: 1;
+  transform: scale(1);
+  border-color: var(--color-border-strong);
   box-shadow: var(--shadow-lg);
 }
 
-.feature-icon {
-  width: 64px;
-  height: 64px;
+.step-kicker {
+  font-size: var(--font-size-xs, 0.75rem);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-2);
+}
+
+.step-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.step-icon {
+  width: 52px;
+  height: 52px;
   border-radius: var(--radius-lg-squircle);
-  background: var(--icon-bg);
+  corner-shape: squircle;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+}
+
+.step-title {
+  font-size: clamp(1.4rem, 2.2vw, 1.8rem);
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.step-desc {
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: var(--color-text-muted);
   margin-bottom: var(--space-4);
 }
 
-.feature-card h3 {
-  font-size: 1.4rem;
-  margin-bottom: var(--space-2);
-  color: var(--color-text);
-}
-.feature-card p {
-  font-size: 1.05rem;
-  color: var(--color-text-muted);
-  line-height: 1.6;
+.step-highlights {
+  list-style: none;
+  padding: 0;
   margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.step-highlights li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.95rem;
+  color: var(--color-text);
+  font-weight: 500;
+}
+
+.check-icon {
+  flex-shrink: 0;
+}
+
+/* Sticky Showcase Stage (Desktop/Tablet) */
+.scrolly-visual-wrapper {
+  position: sticky;
+  top: 14vh;
+  flex: 1.3;
+  height: calc(100vh - 28vh);
+  max-height: 750px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+
+.scrolly-stage {
+  position: relative;
+  width: 100%;
+}
+
+.device-mockup {
+  position: relative;
+  z-index: 2;
+  background: var(--color-surface);
+  border-radius: var(--radius-xl-squircle);
+  corner-shape: squircle;
+  border: 1px solid var(--color-border);
+  box-shadow:
+    var(--shadow-xl),
+    0 20px 40px -15px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+}
+
+.mockup-chrome {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: var(--color-hover);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.chrome-controls {
+  display: flex;
+  gap: 6px;
+}
+
+.control-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-full);
+}
+
+.dot-close {
+  background: #ff5f56;
+}
+
+.dot-minimize {
+  background: #ffbd2e;
+}
+
+.dot-expand {
+  background: #27c93f;
+}
+
+.chrome-address-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--color-surface);
+  padding: 3px 12px;
+  border-radius: var(--radius-pill);
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+}
+
+.chrome-tag {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.mockup-screen {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.screenshot-frame {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transform: translateY(24px) scale(0.97);
+  transition:
+    opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+  will-change: opacity, transform;
+}
+
+.screenshot-frame.is-active {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+  z-index: 2;
+}
+
+.screenshot-frame.is-prev {
+  opacity: 0;
+  transform: translateY(-24px) scale(0.97);
+  z-index: 1;
+}
+
+.screenshot-frame.is-next {
+  opacity: 0;
+  transform: translateY(24px) scale(0.97);
+  z-index: 1;
+}
+
+.screenshot-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top;
+}
+
+.stage-glow {
+  position: absolute;
+  inset: -20%;
+  filter: blur(80px);
+  opacity: 0.25;
+  z-index: 1;
+  pointer-events: none;
+  transition: background 0.6s ease;
+}
+:root[data-theme='dark'] .stage-glow {
+  opacity: 0.35;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .stage-glow {
+    opacity: 0.35;
+  }
+}
+
+.mobile-screenshot-preview {
+  display: none;
+}
+
+/* Responsiveness */
+@media (min-width: 1920px) {
+  .scrollytelling-section {
+    max-width: 1800px;
+  }
+  .scrolly-visual-wrapper {
+    max-height: 850px;
+  }
+}
+
+@media (max-width: 1023px) and (min-width: 768px) {
+  .scrolly-visual-wrapper {
+    top: 10vh;
+    height: calc(100vh - 20vh);
+    max-height: 600px;
+    flex: 1.1;
+  }
+  .scrolly-steps {
+    gap: 25vh;
+  }
+  .chrome-address-bar {
+    display: none;
+  }
+}
+
+@media (max-width: 767px) {
+  .scrolly-layout {
+    flex-direction: column;
+  }
+  .scrolly-visual-wrapper {
+    display: none;
+  }
+  .scrolly-steps {
+    padding: 0;
+    gap: var(--space-5);
+  }
+  .scrolly-step {
+    min-height: auto;
+  }
+  .step-card {
+    opacity: 1;
+    transform: none;
+    padding: var(--space-4);
+  }
+  .mobile-screenshot-preview {
+    display: block;
+    margin-top: var(--space-4);
+  }
+  .device-mockup.mini {
+    box-shadow: var(--shadow-md);
+  }
+  .device-mockup.mini .mockup-screen {
+    aspect-ratio: 16 / 9;
+  }
+  .device-mockup.mini img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .screenshot-frame {
+    transition: none !important;
+  }
+  .step-card {
+    transition: none !important;
+  }
+  .stage-glow {
+    transition: none !important;
+  }
 }
 
 .cta-band {

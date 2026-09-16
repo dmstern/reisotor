@@ -14,7 +14,7 @@ const props = withDefaults(
   defineProps<{
     /** idle: schwebt/blinzelt normal. scanning/done: siehe SecurityCheckView.vue. packing: packt
      *  einmalig Reiseutensilien in den Rucksack und dockt ihn an, siehe SplashScreen.vue. */
-    phase?: 'idle' | 'scanning' | 'done' | 'packing';
+    phase?: 'idle' | 'scanning' | 'done' | 'packing' | 'pack';
     /** Hält sich mit beiden Armen die Augen zu (z. B. während ein Passwort sichtbar ist). */
     coveringEyes?: boolean;
     /** CSS-Breite; Höhe ergibt sich aus dem quadratischen 500x500 SVG-Seitenverhältnis. */
@@ -83,7 +83,7 @@ onUnmounted(() => {
     <svg
       viewBox="0 0 500 500"
       class="robot"
-      :class="[phase, { 'covering-eyes': coveringEyes }]"
+      :class="[phase === 'pack' ? 'packing' : phase, { 'covering-eyes': coveringEyes }]"
       aria-hidden="true"
     >
       <defs>
