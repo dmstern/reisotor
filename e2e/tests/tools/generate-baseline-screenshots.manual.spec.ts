@@ -8,14 +8,24 @@ import { forceFontDisplayBlock, waitForAppReady } from '../helpers/fonts.js';
 const LANDING_SYNC_MAP: Record<string, string> = {
   'dashboard-desktop-light.png': 'screenshot-dashboard-light.png',
   'dashboard-desktop-dark.png': 'screenshot-dashboard-dark.png',
-  'dashboard-mobile-light.png': 'screenshot-mobile-light.png',
-  'dashboard-mobile-dark.png': 'screenshot-mobile-dark.png',
+  'dashboard-mobile-light.png': 'screenshot-dashboard-mobile-light.png',
+  'dashboard-mobile-dark.png': 'screenshot-dashboard-mobile-dark.png',
   'tour-desktop-light.png': 'screenshot-tour-light.png',
   'tour-desktop-dark.png': 'screenshot-tour-dark.png',
+  'tour-mobile-light.png': 'screenshot-tour-mobile-light.png',
+  'tour-mobile-dark.png': 'screenshot-tour-mobile-dark.png',
   'budget-desktop-light.png': 'screenshot-budget-light.png',
   'budget-desktop-dark.png': 'screenshot-budget-dark.png',
+  'budget-mobile-light.png': 'screenshot-budget-mobile-light.png',
+  'budget-mobile-dark.png': 'screenshot-budget-mobile-dark.png',
   'lists-desktop-light.png': 'screenshot-packing-light.png',
   'lists-desktop-dark.png': 'screenshot-packing-dark.png',
+  'lists-mobile-light.png': 'screenshot-packing-mobile-light.png',
+  'lists-mobile-dark.png': 'screenshot-packing-mobile-dark.png',
+  'diary-desktop-light.png': 'screenshot-diary-light.png',
+  'diary-desktop-dark.png': 'screenshot-diary-dark.png',
+  'diary-mobile-light.png': 'screenshot-diary-mobile-light.png',
+  'diary-mobile-dark.png': 'screenshot-diary-mobile-dark.png',
   'spots-desktop-light.png': 'screenshot-spots-light.png',
   'spots-desktop-dark.png': 'screenshot-spots-dark.png',
 };
@@ -109,6 +119,20 @@ const VIEWPORTS = [
 const THEMES = ['light', 'dark'] as const;
 
 test.describe('Generate Clean Production Baseline Screenshots (Full HD)', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.request.put('/api/users/me/icon-settings', {
+      data: {
+        settings: {
+          groups: { navigation: 'icons', categories: 'emoji', weather: 'icons' },
+          variants: { navigation: 'outline', categories: 'outline', weather: 'outline' },
+          navColored: true,
+          colorizeWeather: true,
+          colorizeCategories: true,
+        },
+      },
+    });
+  });
+
   for (const view of VIEWS) {
     test(`Capture screenshots for view: ${view.slug}`, async ({ page }) => {
       test.setTimeout(90000);
