@@ -30,6 +30,7 @@
     "test:a11y": "npm --prefix e2e run test:a11y",
     "generate:icons": "npm --prefix frontend run generate:icons",
     "generate:screenshots": "npm run build:backend && npm run build:frontend && npm --prefix frontend run build:landing-dist && npm --prefix e2e run generate:screenshots",
+    "generate:screenshots:docker": "docker run --rm -v $(pwd):/work -w /work -e CI=1 mcr.microsoft.com/playwright:v1.62.1-jammy bash -c \"npm ci && npm --prefix backend ci && npm --prefix frontend ci && npm --prefix e2e ci && npm run generate:screenshots\"",
     "test:all": "npm --prefix backend test && npm --prefix frontend test && npm --prefix e2e test",
     "seed": "npm --prefix backend run seed",
     "seed:demo": "npm --prefix backend run seed:demo",
