@@ -57,7 +57,7 @@ async function saveScreenshotIfChanged(
   // und Font-Rendering zwischen macOS, Fedora und der CI (Ubuntu Jammy) zehntausende
   // Pixel minimal (Graustufen) abweichen lässt, selbst bei gleicher Fira-Sans-Schriftart.
   const { fullPage = false, maxDiffPixels = 25000 } = options;
-  const newBuffer = await page.screenshot({ fullPage });
+  const newBuffer = await page.screenshot({ fullPage, animations: 'disabled', caret: 'hide' });
 
   let result: { status: 'created' | 'updated' | 'unchanged'; diffPixels?: number };
 
