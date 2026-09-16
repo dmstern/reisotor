@@ -17,6 +17,8 @@ const repoUrl = __REPO_URL__;
 const demoUrl = './demo/';
 const storybookUrl = './storybook/';
 
+const robotPhase = ref<'pack' | 'idle'>('pack');
+
 const baseUrl = import.meta.env.BASE_URL.endsWith('/')
   ? import.meta.env.BASE_URL
   : `${import.meta.env.BASE_URL}/`;
@@ -231,7 +233,7 @@ onUnmounted(() => {
 
     <header class="hero">
       <div class="hero-robot">
-        <ReisotorRobot size="240px" phase="pack" interactive />
+        <ReisotorRobot size="240px" :phase="robotPhase" interactive @packing-done="robotPhase = 'idle'" />
       </div>
       <h1 class="title">Reisotor</h1>
       <p class="tagline">
