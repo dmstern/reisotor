@@ -82,7 +82,10 @@ async function saveScreenshotIfChanged(
         });
 
         const effectiveMaxDiff =
-          maxDiffPixels ?? (img1.width <= 500 ? 300 : Math.round(img1.width * img1.height * 0.005));
+          maxDiffPixels ??
+          (img1.width <= 500
+            ? Math.max(300, Math.round(img1.width * img1.height * 0.012))
+            : Math.round(img1.width * img1.height * 0.005));
 
         if (numDiffPixels > effectiveMaxDiff) {
           fs.writeFileSync(screenshotPath, newBuffer);
