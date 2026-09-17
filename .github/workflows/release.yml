@@ -6,9 +6,9 @@ name: Release
 # zu einem neuen CHANGELOG.md-Abschnitt zusammen, bumpt die Version in der Root-package.json
 # (einzige Versionsquelle, siehe backend/scripts/generate-build-info.mjs und
 # frontend/vite.config.ts), committet alles auf main und setzt einen Tag (vX.Y.Z). Der Tag-Push
-# ist der EINZIGE Trigger, der ci.yml dazu bringt, auf die echte Produktion (Branch
-# "deploy") zu deployen - ein normaler Push auf main landet weiterhin nur auf Staging (Branch
-# "deploy-staging"), siehe ci.yml.
+# ist der EINZIGE Trigger, der ci.yml dazu bringt, auf die echte Produktion (Release-Asset
+# reisotor-release.tar.gz) zu deployen - ein normaler Push auf main aktualisiert weiterhin nur
+# das Staging-Paket (reisotor-staging.tar.gz auf Tag staging), siehe ci.yml.
 #
 # Auslösbar über den "Run workflow"-Button im Actions-Tab (GitHub-Weboberfläche, unabhängig vom
 # eigenen Rechner) oder programmatisch über die GitHub-API/gh CLI (z. B. aus einer Claude-Code-

@@ -1,9 +1,9 @@
 name: CI
 
 # PRs und Pushes: Unit-Tests, Build-Artefakte für E2E, sharded Playwright-Suite.
-# Nur bei Push/workflow_dispatch (nicht auf PRs): zusätzlich "Publish to deploy branch" — schreibt
-# Frontend + Backend als Commit auf deploy-staging (main) bzw. deploy (Release-Tag). Der Rollout
-# auf den Raspberry Pi passiert NICHT hier, sondern per Cronjob auf dem Server (README.md).
+# Nur bei Push/workflow_dispatch (nicht auf PRs): zusätzlich "Publish Release Asset" — packt
+# Frontend + Backend als reisotor-staging.tar.gz (main) bzw. reisotor-release.tar.gz (Release-Tag).
+# Der Rollout auf den Raspberry Pi passiert per Cronjob auf dem Server (README.md).
 
 on:
   push:
@@ -271,6 +271,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.RELEASE_TOKEN || github.token }}
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -306,11 +308,32 @@ jobs:
           cp backend/package.json backend/package-lock.json release-pack/backend/
           printf '%s %s\n' "${{ github.sha }}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > release-pack/COMMIT
 
+      - name: Extract commit metadata
+        if: startsWith(github.ref, 'refs/tags/v') == false
+        id: meta
+        run: |
+          echo "short_sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          echo "build_time=$(date -u '+%Y-%m-%d %H:%M UTC')" >> "$GITHUB_OUTPUT"
+          echo "commit_msg<<EOF" >> "$GITHUB_OUTPUT"
+          git log -1 --pretty=%s >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
       - name: Create Staging archive
         if: startsWith(github.ref, 'refs/tags/v') == false
         run: |
           cd release-pack
           tar -czf ../reisotor-staging.tar.gz .
+
+      - name: Update Staging git tag and reset Pre-Release
+        if: startsWith(github.ref, 'refs/tags/v') == false
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN || github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -f staging "${{ github.sha }}"
+          git push -f "https://x-access-token:${{ secrets.RELEASE_TOKEN || github.token }}@github.com/${{ github.repository }}.git" refs/tags/staging:refs/tags/staging
+          gh release delete staging --yes || true
 
       - name: Publish Staging Release Asset
         if: startsWith(github.ref, 'refs/tags/v') == false
@@ -318,6 +341,11 @@ jobs:
         with:
           tag_name: staging
           name: 'Staging / Dev Build'
+          body: |
+            Automatischer Staging-Build für Commit [${{ steps.meta.outputs.short_sha }}](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}).
+
+            **Commit**: ${{ steps.meta.outputs.commit_msg }}  
+            **Zeitpunkt**: ${{ steps.meta.outputs.build_time }}
           prerelease: true
           files: reisotor-staging.tar.gz
           token: ${{ secrets.RELEASE_TOKEN || github.token }}
