@@ -397,11 +397,15 @@ function resetHomeCurrency() {
 }
 
 const isToastsDefault = computed(
-  () => uiSettings.showActivityToasts === true && uiSettings.toastTimeout === 5
+  () =>
+    uiSettings.showActivityToasts === true &&
+    uiSettings.toastTimeout === 5 &&
+    uiSettings.showUpdateDialogs === true
 );
 function resetToasts() {
   uiSettings.showActivityToasts = true;
   uiSettings.toastTimeout = 5;
+  uiSettings.showUpdateDialogs = true;
 }
 
 const isPushDefault = computed(() => {
@@ -1226,6 +1230,14 @@ async function exportBackup() {
             </option>
           </Select>
         </label>
+        <div style="margin-top: var(--space-4)">
+          <CheckboxCard
+            id="show-update-dialogs"
+            v-model="uiSettings.showUpdateDialogs"
+            label="Popup-Dialog bei neuen Versionen & Updates anzeigen"
+            description="Öffnet automatisch einen Dialog, sobald ein neues App-Update bereitsteht oder eine neue Version frisch installiert wurde."
+          />
+        </div>
       </div>
 
       <div class="card">
