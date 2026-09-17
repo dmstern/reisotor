@@ -19,6 +19,7 @@ import {
 import { useHomeCurrencyStore, type HomeCurrency, HOME_CURRENCY_OPTIONS } from './homeCurrency';
 
 const SHOW_ACTIVITY_TOASTS_KEY = 'reisotor-show-activity-toasts';
+const SHOW_UPDATE_DIALOGS_KEY = 'reisotor-show-update-dialogs';
 const SHOW_VACATION_COUNTDOWN_KEY = 'reisotor-show-vacation-countdown';
 const SHOW_HOME_WEATHER_FULL_TRIP_KEY = 'reisotor-show-home-weather-full-trip';
 const TOAST_TIMEOUT_KEY = 'reisotor-toast-timeout';
@@ -123,6 +124,11 @@ function loadShowActivityToasts(): boolean {
   return stored === null ? true : stored === 'true';
 }
 
+function loadShowUpdateDialogs(): boolean {
+  const stored = safeLocalStorageGet(SHOW_UPDATE_DIALOGS_KEY);
+  return stored === null ? true : stored === 'true';
+}
+
 function loadShowVacationCountdown(): boolean {
   return safeLocalStorageGet(SHOW_VACATION_COUNTDOWN_KEY) === 'true';
 }
@@ -219,6 +225,7 @@ export function applyBorderWidth(widthPx: number) {
 export interface StoredAppSettings {
   theme?: ThemeMode;
   showActivityToasts?: boolean;
+  showUpdateDialogs?: boolean;
   showVacationCountdown?: boolean;
   showHomeWeatherFullTrip?: boolean;
   toastTimeout?: number;
@@ -248,6 +255,7 @@ export interface StoredAppSettings {
 // pro Account auf dem Server (/users/me/app-settings) & hält sie synchron.
 export const useUiSettingsStore = defineStore('uiSettings', () => {
   const showActivityToasts = ref(loadShowActivityToasts());
+  const showUpdateDialogs = ref(loadShowUpdateDialogs());
   const showVacationCountdown = ref(loadShowVacationCountdown());
   const showHomeWeatherFullTrip = ref(loadShowHomeWeatherFullTrip());
   const toastTimeout = ref<number>(loadToastTimeout());
@@ -289,6 +297,7 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
         settings: {
           theme: themeStore.mode,
           showActivityToasts: showActivityToasts.value,
+          showUpdateDialogs: showUpdateDialogs.value,
           showVacationCountdown: showVacationCountdown.value,
           showHomeWeatherFullTrip: showHomeWeatherFullTrip.value,
           toastTimeout: toastTimeout.value,
@@ -334,6 +343,9 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
       }
       if (typeof stored.showActivityToasts === 'boolean') {
         showActivityToasts.value = stored.showActivityToasts;
+      }
+      if (typeof stored.showUpdateDialogs === 'boolean') {
+        showUpdateDialogs.value = stored.showUpdateDialogs;
       }
       if (typeof stored.showVacationCountdown === 'boolean') {
         showVacationCountdown.value = stored.showVacationCountdown;
@@ -438,6 +450,10 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
     safeLocalStorageSet(SHOW_ACTIVITY_TOASTS_KEY, String(v));
     persist();
   });
+  watch(showUpdateDialogs, (v) => {
+    safeLocalStorageSet(SHOW_UPDATE_DIALOGS_KEY, String(v));
+    persist();
+  });
   watch(showVacationCountdown, (v) => {
     safeLocalStorageSet(SHOW_VACATION_COUNTDOWN_KEY, String(v));
     persist();
@@ -535,6 +551,7 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
 
   return {
     showActivityToasts,
+    showUpdateDialogs,
     showVacationCountdown,
     showHomeWeatherFullTrip,
     toastTimeout,
