@@ -111,4 +111,15 @@ describe('NotificationInbox', () => {
     expect(html).not.toContain('bell-dot');
     expect(html).toContain('aria-label="Benachrichtigungen (1 ungelesen)"');
   });
+
+  it('renders unseen-dot when release notes notice is active', async () => {
+    const pwaInstall = usePwaInstallStore();
+    pwaInstall.isStandalone = true;
+    const pwaUpdate = usePwaUpdateStore();
+    pwaUpdate.showReleaseNotesNotice = true;
+
+    const html = await renderInbox();
+    expect(html).toContain('bell-dot');
+    expect(html).toContain('unseen-dot');
+  });
 });
