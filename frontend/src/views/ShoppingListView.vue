@@ -759,7 +759,7 @@ async function quickAddToGroup(group: Group, label: string) {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: var(--space-2);
+  gap: var(--space-4);
   margin-bottom: var(--space-3);
   font-size: 0.9rem;
 }
@@ -768,7 +768,6 @@ async function quickAddToGroup(group: Group, label: string) {
    .tool-label) - für Konsistenz app-weit hier 1:1 übernommen statt einer eigenen Variante. */
 .tool-row {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
 }
@@ -781,6 +780,43 @@ async function quickAddToGroup(group: Group, label: string) {
   font-weight: 600;
   color: var(--color-text-muted);
   flex-shrink: 0;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .filter-row {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: var(--space-2) var(--space-3);
+    align-items: center;
+  }
+
+  .filter-row .tool-row {
+    display: contents;
+  }
+
+  .filter-row :deep(.select) {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+@container app-main (max-width: 640px) {
+  .filter-row {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: var(--space-2) var(--space-3);
+    align-items: center;
+  }
+
+  .filter-row .tool-row {
+    display: contents;
+  }
+
+  .filter-row :deep(.select) {
+    width: 100%;
+    min-width: 0;
+  }
 }
 
 .groups-grid {

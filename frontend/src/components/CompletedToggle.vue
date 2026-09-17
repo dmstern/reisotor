@@ -34,10 +34,10 @@ const OPTIONS = [
 
 <style scoped>
 .tool-row {
-  display: flex;
-  flex-wrap: wrap;
+  display: inline-flex;
   align-items: center;
   gap: var(--space-2);
+  white-space: nowrap;
 }
 
 .tool-label {
