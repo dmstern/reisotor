@@ -2823,6 +2823,7 @@ async function deleteEditingSpot() {
                 </span>
               </Button>
               <Button
+                size="sm"
                 class="add-button"
                 :aria-label="groupMode === 'tours' ? 'Neue Tour' : 'Neuer Spot'"
                 @click="groupMode === 'tours' ? openExcursionForm() : (showSpotForm = true)"
@@ -4358,16 +4359,56 @@ async function deleteEditingSpot() {
   transition: none;
 }
 
-@container spots-col (max-width: 450px) {
-  .add-button,
-  .record-button {
-    padding: var(--btn-padding-y, 11px);
-    border-radius: 999px;
+/* Auf schmalen Schubladen-Breiten (<= 600px): zweizeiliger Header – oben Titel links & SegmentedToggle rechts,
+   darunter beide Aktions-Buttons gleichmäßig aufgeteilt über die volle Zeilenbreite mit erhaltenem Label (#312). */
+@container spots-col (max-width: 600px) {
+  .header h2 {
+    width: 100%;
   }
 
-  .add-button__label,
-  .record-button__label {
-    display: none;
+  .header h2 .segmented-toggle {
+    margin-left: auto;
+  }
+
+  .header-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-2);
+  }
+
+  .record-button,
+  .add-button {
+    width: 100%;
+    justify-content: center;
+    min-width: 0;
+  }
+}
+
+/* Auf extrem schmalem Drawer (<= 320px) kompaktere Polsterung & kleinere Schrift, damit
+   Titel, Toggle und beide Aktionsbuttons selbst bei 280px ohne Umbruch oder Abschneiden Platz haben. */
+@container spots-col (max-width: 320px) {
+  .header h2 {
+    font-size: 1.15rem;
+    gap: 2px;
+  }
+
+  .header h2 .segmented-toggle {
+    padding: 2px;
+    gap: 1px;
+  }
+
+  .header h2 .segmented-toggle :deep(.segmented-option) {
+    padding: 4px 6px;
+    font-size: 0.78rem;
+    gap: 3px;
+  }
+
+  .record-button,
+  .add-button {
+    padding: 6px 6px;
+    gap: 3px;
+    font-size: 0.8125rem;
   }
 }
 
@@ -4719,13 +4760,24 @@ async function deleteEditingSpot() {
 
 .header-actions {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
 }
 
-.record-button {
+.record-button,
+.add-button {
   gap: var(--space-1);
+  white-space: nowrap;
+}
+
+.record-button__label,
+.add-button__label {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 /* Gleicher Rec-Ton wie TrackRecordingIndicator.vue's .recording-pill, damit "läuft gerade" app-weit
