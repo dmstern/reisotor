@@ -550,7 +550,7 @@ async function exportBackup() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `reisotor-backup-${toLocalDateString(new Date())}.json`;
+    a.download = `reisotor-backup-${toLocalDateString(new Date())}.zip`;
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -559,46 +559,6 @@ async function exportBackup() {
     exportError.value = 'Export fehlgeschlagen. Bitte erneut versuchen.';
   } finally {
     exporting.value = false;
-  }
-}
-
-function triggerImportPicker() {
-  importError.value = '';
-  importResult.value = null;
-  importFileInput.value?.click();
-}
-
-async function onImportFileSelected(event: Event) {
-  const input = event.target as HTMLInputElement;
-  const file = input.files?.[0];
-  input.value = '';
-  if (!file) return;
-
-  importError.value = '';
-  importResult.value = null;
-
-  let payload: unknown;
-  try {
-    payload = JSON.parse(await file.text());
-  } catch {
-    importError.value = 'Datei ist kein gültiges JSON.';
-    return;
-  }
-
-  const confirmed = window.confirm(
-    'Import überschreibt ALLE aktuellen Daten (Urlaub, Kalender, Packlisten, Touren, Unterkünfte, Budget, Nutzer) unwiderruflich mit dem Inhalt der Datei. Fortfahren?'
-  );
-  if (!confirmed) return;
-
-  importing.value = true;
-  try {
-    const result = await api.post<{ imported: Record<string, number> }>('/backup/import', payload);
-    importResult.value = result.imported;
-    window.setTimeout(() => window.location.reload(), 1500);
-  } catch (err) {
-    importError.value = err instanceof ApiError ? err.message : 'Import fehlgeschlagen.';
-  } finally {
-    importing.value = false;
   }
 }
 </script>
@@ -1361,9 +1321,8 @@ async function onImportFileSelected(event: Event) {
       <div class="card" v-if="auth.user?.is_admin">
         <h2>Datensicherung</h2>
         <p>
-          Vor einem Neu-Deployment mit neuen Features könnt ihr hier alle Daten (Urlaub, Kalender,
-          Packlisten, Touren, Unterkünfte, Budget, Nutzer) als JSON-Datei sichern und später
-          wiederherstellen.
+          Vor einem Neu-Deployment mit neuen Features könnt ihr hier alle Daten (inklusive Datenbank
+          und Datei-Anhängen) als ZIP-Datei sichern.
         </p>
 
         <div class="backup-actions">
@@ -1371,35 +1330,16 @@ async function onImportFileSelected(event: Event) {
             <template v-if="exporting">Exportiere…</template>
             <template v-else
               ><AppIcon :icon="ACTION_ICONS.download" :size="14" group="actions" /> Backup
-              exportieren</template
+              exportieren (ZIP)</template
             >
           </Button>
-          <Button class="secondary" :disabled="importing" @click="triggerImportPicker">
-            <template v-if="importing">Importiere…</template>
-            <template v-else
-              ><AppIcon :icon="ACTION_ICONS.upload" :size="14" group="actions" /> Backup
-              importieren</template
-            >
-          </Button>
-          <!-- eslint-disable-next-line vuejs-accessibility/form-control-has-label -->
-          <input
-            ref="importFileInput"
-            type="file"
-            accept="application/json"
-            class="hidden-input"
-            @change="onImportFileSelected"
-          />
         </div>
 
         <p v-if="exportError" class="hint error">{{ exportError }}</p>
-        <p v-if="importError" class="hint error">{{ importError }}</p>
-        <p v-if="importResult" class="hint success">
-          Import erfolgreich ({{ Object.values(importResult).reduce((a, b) => a + b, 0) }}
-          Einträge). Seite wird neu geladen…
-        </p>
-        <p class="hint warning">
-          <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Der Import
-          überschreibt alle aktuellen Daten unwiderruflich.
+        <p class="hint">
+          <AppIcon :icon="ACTION_ICONS.info" :size="14" group="actions" /> Die Wiederherstellung
+          (Import) erfolgt ab sofort manuell auf dem Server, um einen sicheren Austausch der
+          Datenbank (data.sqlite) und der Uploads zu gewährleisten.
         </p>
       </div>
     </template>

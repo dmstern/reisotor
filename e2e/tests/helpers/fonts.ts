@@ -14,7 +14,7 @@ import type { Page } from '@playwright/test';
  *  es auf die Fallback-Schrift ausweicht, und rendert danach zuverlässig mit Fira Sans.
  *  Production-Verhalten (bzw. der Kommentar dort zum bewussten `optional`) bleibt unangetastet. */
 export async function forceFontDisplayBlock(page: Page): Promise<void> {
-  await page.route('**/style.css', async (route) => {
+  await page.route('**/*.css', async (route) => {
     const response = await route.fetch();
     const body = await response.text();
     await route.fulfill({
