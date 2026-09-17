@@ -4344,6 +4344,8 @@ async function deleteEditingSpot() {
 .spots-col.full {
   bottom: 0;
   transform: scaleX(1);
+  border-left: 0;
+  border-right: 0;
   border-radius: var(--radius-lg-squircle) var(--radius-lg-squircle) 0 0;
   height: min(100vh, var(--sheet-max-height));
 
@@ -4381,7 +4383,7 @@ async function deleteEditingSpot() {
      statt oben --space-3 und seitlich --space-4) - selbes Card-Innenabstand-Maß wie SpotCard.vue/
      ExcursionCard.vue u. a. (siehe DESIGN.md, Abschnitt "Abstände") statt
      eines eigens erfundenen asymmetrischen Werts. */
-  padding: var(--space-3) var(--space-4) 0;
+  padding: var(--space-3) var(--space-3) 0;
   /* Gilt für die ganze Zeile (nicht nur .sheet-handle): ein Zug, der knapp neben dem eigentlichen
      Anfasser beginnt (z. B. noch über den Stufen-Buttons), soll trotzdem nicht als Seiten-Scroll/
      Pull-to-Refresh interpretiert werden. */
@@ -4454,7 +4456,7 @@ async function deleteEditingSpot() {
      kann der Browser den falschen Anker wählen und springt sichtbar zu einer völlig anderen Stelle in
      der Liste (#140 - "Details verschwinden", auf Safari/iOS deutlich ausgeprägter als auf Chrome). */
   overflow-anchor: none;
-  padding: 0 var(--space-4) var(--space-3);
+  padding: 0 var(--space-3) var(--space-3);
   /* Live gemessene Höhe der sticky .category-nav-Leiste (Icon+Label-Zeile plus Padding/Trennlinie,
      siehe dortiges CSS), per ResizeObserver im Script (setCategoryNavRef -> categoryNavHeight) als
      Inline-Style-Var auf dieses Element gebunden - der 44px-Wert hier ist nur ein Fallback für den
@@ -4620,7 +4622,7 @@ async function deleteEditingSpot() {
       flex: 1;
       overflow-y: auto;
       overflow-x: hidden;
-      padding: var(--space-4);
+      padding: var(--space-3);
       touch-action: auto;
     }
 
@@ -5059,7 +5061,7 @@ async function deleteEditingSpot() {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  padding: var(--space-2) var(--space-4) 24px var(--space-4);
+  padding: var(--space-2) 12px 24px 12px;
   width: 100%;
   box-sizing: border-box;
   max-width: 100%;
@@ -5324,7 +5326,7 @@ async function deleteEditingSpot() {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  padding: var(--space-2) var(--space-4) 24px var(--space-4);
+  padding: var(--space-2) 12px 24px var(--space-4);
 }
 
 .tour-station-line {
@@ -5701,10 +5703,10 @@ async function deleteEditingSpot() {
 
   /* Die Leiste auf die volle Breite der Schublade aufziehen, um auch das seitliche Scroll-Padding
      abzudecken, falls Inhalte drunterscrollen. */
-  margin-left: calc(var(--space-4) * -1);
-  margin-right: calc(var(--space-4) * -1);
-  padding-left: var(--space-4);
-  padding-right: var(--space-4);
+  margin-left: calc(var(--space-3) * -1);
+  margin-right: calc(var(--space-3) * -1);
+  padding-left: var(--space-3);
+  padding-right: var(--space-3);
 
   /* Eigene Variable statt direkt --color-surface, weil die Desktop-Regel weiter unten
      (.spots-col .category-nav-wrap) sie auf --color-bg umschaltet - Pfeile/Verlauf unten nutzen
@@ -5728,7 +5730,7 @@ async function deleteEditingSpot() {
    damit die drunterscrollenden Karten dort nicht sichtbar werden. */
 .category-nav-wrap.is-stuck {
   box-shadow:
-    0 calc(var(--space-4) * -1) 0 0 var(--category-nav-bg),
+    0 calc(var(--space-3) * -1) 0 0 var(--category-nav-bg),
     var(--shadow-sm);
 }
 
