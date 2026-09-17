@@ -2,6 +2,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { createApp, h, nextTick } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
+import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import ListSettingsMenu from './ListSettingsMenu.vue';
 
 describe('ListSettingsMenu', () => {
@@ -195,6 +196,36 @@ describe('ListSettingsMenu', () => {
     expect(onUpdateSortBy).toHaveBeenCalledWith('priority');
     expect(onUpdateHideCompleted).toHaveBeenCalledWith(false);
     expect(onReset).toHaveBeenCalled();
+    cleanUp();
+  });
+
+  it('renders section icons and item icons with trailing checkmark for active item', async () => {
+    const { container, cleanUp } = mountMenu({
+      groupBy: 'period',
+      defaultGroupBy: 'assignee',
+      groupByOptions: [
+        { value: 'assignee', label: 'nach Bearbeiter:in', icon: FORM_FIELD_ICONS.person },
+        { value: 'period', label: 'nach Zeitraum', icon: FORM_FIELD_ICONS.period },
+      ],
+      hideCompleted: false,
+    });
+
+    const trigger = container.querySelector('.list-settings-trigger') as HTMLButtonElement;
+    trigger.click();
+    await nextTick();
+
+    const sectionIcons = document.body.querySelectorAll('.popover-section-header .section-icon');
+    expect(sectionIcons.length).toBeGreaterThanOrEqual(2);
+
+    const periodBtn = Array.from(
+      document.body.querySelectorAll('.list-settings-popover-menu button.dropdown-item')
+    ).find((b) => b.textContent?.includes('nach Zeitraum'));
+
+    expect(periodBtn).toBeTruthy();
+    expect(periodBtn?.classList.contains('is-active')).toBe(true);
+    expect(periodBtn?.querySelector('.dropdown-item-icon')).toBeTruthy();
+    expect(periodBtn?.querySelector('.dropdown-item-trailing-icon')).toBeTruthy();
+
     cleanUp();
   });
 });

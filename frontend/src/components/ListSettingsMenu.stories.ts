@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3';
+import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import ListSettingsMenu from './ListSettingsMenu.vue';
 
 const meta: Meta<typeof ListSettingsMenu> = {
@@ -9,15 +10,15 @@ const meta: Meta<typeof ListSettingsMenu> = {
     groupBy: 'assignee',
     defaultGroupBy: 'assignee',
     groupByOptions: [
-      { value: 'assignee', label: 'nach Bearbeiter:in' },
-      { value: 'period', label: 'nach Zeitraum' },
+      { value: 'assignee', label: 'nach Bearbeiter:in', icon: FORM_FIELD_ICONS.person },
+      { value: 'period', label: 'nach Zeitraum', icon: FORM_FIELD_ICONS.period },
     ],
     sortBy: 'priority',
     defaultSortBy: 'priority',
     sortByOptions: [
-      { value: 'priority', label: 'nach Priorität' },
-      { value: 'due_date', label: 'nach Datum' },
-      { value: 'assignee', label: 'nach Bearbeiter:in' },
+      { value: 'priority', label: 'nach Priorität', icon: FORM_FIELD_ICONS.priority },
+      { value: 'due_date', label: 'nach Datum', icon: FORM_FIELD_ICONS.date },
+      { value: 'assignee', label: 'nach Bearbeiter:in', icon: FORM_FIELD_ICONS.person },
     ],
     hideCompleted: false,
     hideCompletedLabel: 'Erledigte ausblenden',

@@ -53,10 +53,10 @@ const defaultGroupBy = computed<GroupBy>(() => (users.value.length > 1 ? 'buyer'
 const groupByOptions = computed(() => {
   const opts = [];
   if (users.value.length > 1) {
-    opts.push({ value: 'buyer', label: 'nach Einkäufer:in' });
+    opts.push({ value: 'buyer', label: 'nach Einkäufer:in', icon: FORM_FIELD_ICONS.person });
   }
-  opts.push({ value: 'shop', label: 'nach Shop' });
-  opts.push({ value: 'period', label: 'nach Zeitraum' });
+  opts.push({ value: 'shop', label: 'nach Shop', icon: FORM_FIELD_ICONS.shop });
+  opts.push({ value: 'period', label: 'nach Zeitraum', icon: FORM_FIELD_ICONS.period });
   return opts;
 });
 

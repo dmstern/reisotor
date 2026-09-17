@@ -57,19 +57,19 @@ const defaultSortBy: SortBy = 'priority';
 const groupByOptions = computed(() => {
   const opts = [];
   if (users.value.length > 1) {
-    opts.push({ value: 'assignee', label: 'nach Bearbeiter:in' });
+    opts.push({ value: 'assignee', label: 'nach Bearbeiter:in', icon: FORM_FIELD_ICONS.person });
   }
-  opts.push({ value: 'period', label: 'nach Zeitraum' });
+  opts.push({ value: 'period', label: 'nach Zeitraum', icon: FORM_FIELD_ICONS.period });
   return opts;
 });
 
 const sortByOptions = computed(() => {
   const opts = [
-    { value: 'priority', label: 'nach Priorität' },
-    { value: 'due_date', label: 'nach Datum' },
+    { value: 'priority', label: 'nach Priorität', icon: FORM_FIELD_ICONS.priority },
+    { value: 'due_date', label: 'nach Datum', icon: FORM_FIELD_ICONS.date },
   ];
   if (users.value.length > 1) {
-    opts.push({ value: 'assignee', label: 'nach Bearbeiter:in' });
+    opts.push({ value: 'assignee', label: 'nach Bearbeiter:in', icon: FORM_FIELD_ICONS.person });
   }
   return opts;
 });

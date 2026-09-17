@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed, ref, type ComponentPublicInstance } from 'vue';
 import type { IconDef } from '../utils/icon';
+import type { IconGroup } from '../stores/iconStyle';
 import { ACTION_ICONS } from '../utils/actionIcons';
+import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
 import Badge from './primitives/Badge.vue';
 import DropdownItem from './primitives/DropdownItem.vue';
@@ -12,6 +14,7 @@ export interface ListOption {
   value: string;
   label: string;
   icon?: IconDef;
+  iconGroup?: IconGroup;
 }
 
 const props = withDefaults(
@@ -166,7 +169,10 @@ function resetDefaults() {
       >
         <!-- Anzeige -->
         <template v-if="hideCompleted !== undefined">
-          <div class="popover-section-header">Anzeige</div>
+          <div class="popover-section-header">
+            <AppIcon :icon="ACTION_ICONS.filter" group="actions" :size="12" class="section-icon" />
+            <span>Anzeige</span>
+          </div>
           <div class="popover-options-list">
             <DropdownItem
               multiselect
@@ -179,14 +185,20 @@ function resetDefaults() {
 
         <!-- Gruppieren -->
         <template v-if="groupByOptions && groupByOptions.length > 0">
-          <div class="popover-section-header">Gruppieren nach</div>
+          <div class="popover-section-header">
+            <AppIcon :icon="ACTION_ICONS.group" group="actions" :size="12" class="section-icon" />
+            <span>Gruppieren nach</span>
+          </div>
           <div class="popover-options-list">
             <DropdownItem
               v-for="opt in groupByOptions"
               :key="opt.value"
               :label="opt.label"
               :active="groupBy === opt.value"
-              :icon="groupBy === opt.value ? ACTION_ICONS.done : opt.icon || undefined"
+              :icon="opt.icon || undefined"
+              :icon-group="opt.iconGroup || 'formFields'"
+              :trailing-icon="groupBy === opt.value ? ACTION_ICONS.done : undefined"
+              trailing-icon-group="actions"
               @click="selectGroupBy(opt.value)"
             />
           </div>
@@ -194,14 +206,20 @@ function resetDefaults() {
 
         <!-- Sortieren -->
         <template v-if="sortByOptions && sortByOptions.length > 0">
-          <div class="popover-section-header">Sortieren nach</div>
+          <div class="popover-section-header">
+            <AppIcon :icon="ACTION_ICONS.sort" group="actions" :size="12" class="section-icon" />
+            <span>Sortieren nach</span>
+          </div>
           <div class="popover-options-list">
             <DropdownItem
               v-for="opt in sortByOptions"
               :key="opt.value"
               :label="opt.label"
               :active="sortBy === opt.value"
-              :icon="sortBy === opt.value ? ACTION_ICONS.done : opt.icon || undefined"
+              :icon="opt.icon || undefined"
+              :icon-group="opt.iconGroup || 'formFields'"
+              :trailing-icon="sortBy === opt.value ? ACTION_ICONS.done : undefined"
+              trailing-icon-group="actions"
               @click="selectSortBy(opt.value)"
             />
           </div>
@@ -210,7 +228,8 @@ function resetDefaults() {
         <!-- Reset Button -->
         <div v-if="activeCount > 0" class="popover-footer">
           <button type="button" class="reset-settings-btn" @click="resetDefaults">
-            Standard wiederherstellen
+            <AppIcon :icon="ACTION_ICONS.refresh" group="actions" :size="12" class="reset-icon" />
+            <span>Standard wiederherstellen</span>
           </button>
         </div>
       </PickerMenu>
@@ -249,6 +268,9 @@ function resetDefaults() {
 }
 
 .popover-section-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -257,6 +279,13 @@ function resetDefaults() {
   padding: var(--space-1) var(--space-2) var(--space-1);
   margin-top: var(--space-1);
   border-top: 1px solid var(--color-border);
+}
+
+.section-icon {
+  opacity: 0.75;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 .popover-section-header:first-child {
@@ -279,6 +308,10 @@ function resetDefaults() {
 
 .reset-settings-btn {
   width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   padding: var(--space-1) var(--space-2);
   border: none;
   background: transparent;
@@ -291,6 +324,11 @@ function resetDefaults() {
   transition:
     background 0.15s ease,
     color 0.15s ease;
+}
+
+.reset-icon {
+  opacity: 0.75;
+  flex-shrink: 0;
 }
 
 .reset-settings-btn:hover {
