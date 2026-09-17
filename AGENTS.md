@@ -30,7 +30,8 @@ npm run test            # Backend & Frontend Unit-Tests
 npm run test:backend    # Backend Unit-Tests (vitest run)
 npm run test:frontend   # Frontend Unit-Tests (vitest run)
 npm run test:e2e        # E2E-Tests (playwright test)
-npm run test:a11y       # Accessibility-Tests mit Axe (playwright test tests/accessibility.spec.ts)
+npm run test:a11y          # Accessibility-Tests mit Axe (playwright test tests/accessibility.spec.ts)
+npm run test:a11y:contrast # Accessibility-Tests inkl. Farbkontrast-Prüfung (Axe color-contrast)
 npm run test:all        # Backend + Frontend + E2E Tests
 npm run build           # Backend + Frontend Build
 npm run build:backend   # Backend Build (tsc -> backend/dist)
@@ -279,7 +280,8 @@ Testausgabe landet im Kontextfenster). Lokal stattdessen gezielt einsetzen:
 
 - `npx -y playwright test <pfad-zur-spec>` für eine einzelne, gerade geschriebene/geänderte Spec direkt
   nach dem Schreiben verifizieren.
-- `npm run test:a11y` für Barrierefreiheits-Scans.
+- `npm run test:a11y` für Barrierefreiheits-Scans (ohne `color-contrast`).
+- `npm run test:a11y:contrast` für Barrierefreiheits-Scans inklusive Kontrastprüfung (`CHECK_CONTRAST=1`).
 - Einen CI-E2E-Fehlschlag lokal reproduzieren/debuggen.
 - Eine Wegwerf-Spec unter `e2e/tests/scratch/` für Ad-hoc-Checks/PR-Screenshots (siehe unten).
 
@@ -289,6 +291,7 @@ npm install                       # einmalig
 npx -y playwright install chromium   # einmalig pro (frischer) Umgebung
 npm test                          # komplette Suite, startet/beendet beide Server automatisch
 npm run test:a11y                 # nur Accessibility-Scans (tests/accessibility.spec.ts)
+npm run test:a11y:contrast        # Accessibility-Scans inkl. Kontrastprüfung (CHECK_CONTRAST=1)
 npx -y playwright show-report        # HTML-Report des letzten Laufs
 ```
 
