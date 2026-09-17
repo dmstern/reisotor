@@ -21,7 +21,7 @@ import { useToast } from '../composables/useToast';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
 import { usePersistedRef } from '../composables/usePersistedRef';
 import { useUiSettingsStore } from '../stores/uiSettings';
-import CompletedToggle from '../components/CompletedToggle.vue';
+import ListSettingsMenu from '../components/ListSettingsMenu.vue';
 import AppIcon from '../components/AppIcon.vue';
 import Button from '../components/primitives/Button.vue';
 import Checkbox from '../components/primitives/Checkbox.vue';
@@ -48,10 +48,31 @@ const highlightedIds = ref<Set<number>>(new Set());
 
 type GroupBy = 'assignee' | 'period';
 type SortBy = 'due_date' | 'priority' | 'assignee';
-// Gruppierung/Sortierung bleiben über localStorage auch nach einem Reload/erneuten Besuch erhalten
-// (siehe usePersistedRef.ts).
 const groupBy = usePersistedRef<GroupBy>('reisotor-todo-group-by', 'assignee');
 const sortBy = usePersistedRef<SortBy>('reisotor-todo-sort-by', 'priority');
+
+const defaultGroupBy = computed<GroupBy>(() => (users.value.length > 1 ? 'assignee' : 'period'));
+const defaultSortBy: SortBy = 'priority';
+
+const groupByOptions = computed(() => {
+  const opts = [];
+  if (users.value.length > 1) {
+    opts.push({ value: 'assignee', label: 'nach Bearbeiter:in' });
+  }
+  opts.push({ value: 'period', label: 'nach Zeitraum' });
+  return opts;
+});
+
+const sortByOptions = computed(() => {
+  const opts = [
+    { value: 'priority', label: 'nach Priorität' },
+    { value: 'due_date', label: 'nach Datum' },
+  ];
+  if (users.value.length > 1) {
+    opts.push({ value: 'assignee', label: 'nach Bearbeiter:in' });
+  }
+  return opts;
+});
 
 const PRIORITY_META: Record<TodoPriority, { label: string; icon: string; color: string }> = {
   low: { label: 'Niedrig', icon: '🟢', color: 'var(--color-success)' },
@@ -403,7 +424,16 @@ function isOverdue(item: TodoItem) {
             ></div>
           </div>
         </div>
-        <CompletedToggle v-model="uiSettings.hideCompletedTodos" />
+        <ListSettingsMenu
+          v-model:group-by="groupBy"
+          :group-by-options="groupByOptions"
+          :default-group-by="defaultGroupBy"
+          v-model:sort-by="sortBy"
+          :sort-by-options="sortByOptions"
+          :default-sort-by="defaultSortBy"
+          v-model:hide-completed="uiSettings.hideCompletedTodos"
+          hide-completed-label="Erledigte ausblenden"
+        />
       </div>
     </div>
 
@@ -493,28 +523,6 @@ function isOverdue(item: TodoItem) {
 
       <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
     </form>
-
-    <div class="filter-row">
-      <div class="tool-row">
-        <span class="tool-label"
-          ><AppIcon :icon="ACTION_ICONS.group" :size="14" group="actions" /> Gruppieren</span
-        >
-        <Select v-model="groupBy" aria-label="Gruppieren">
-          <option v-if="users.length > 1" value="assignee">nach Bearbeiter:in</option>
-          <option value="period">nach Zeitraum</option>
-        </Select>
-      </div>
-      <div class="tool-row">
-        <span class="tool-label"
-          ><AppIcon :icon="ACTION_ICONS.sort" :size="14" group="actions" /> Sortieren</span
-        >
-        <Select v-model="sortBy" aria-label="Sortieren">
-          <option value="due_date">nach Datum</option>
-          <option value="priority">nach Priorität</option>
-          <option v-if="users.length > 1" value="assignee">nach Bearbeiter:in</option>
-        </Select>
-      </div>
-    </div>
 
     <div class="groups-grid">
       <section
@@ -713,6 +721,7 @@ function isOverdue(item: TodoItem) {
   flex-direction: column;
   gap: var(--space-2);
   min-width: 0;
+  flex: 1;
 }
 
 .title-with-pill {
@@ -844,113 +853,15 @@ function isOverdue(item: TodoItem) {
   margin-top: var(--space-2);
 }
 
-.filter-row {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--space-4);
-  margin-bottom: var(--space-3);
-  font-size: 0.9rem;
-}
-
-/* Gleiches Muster wie ExcursionsView.vue's Gruppieren/Sortieren/Filtern-Zeile (dort .tool-row/
-   .tool-label) - für Konsistenz app-weit hier 1:1 übernommen statt einer eigenen Variante. */
-.tool-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.tool-label {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-
 @media (max-width: 640px) {
-  .page-header-top {
-    flex-direction: column;
-    align-items: stretch;
-    gap: var(--space-2);
-  }
-
-  .page-title-group {
-    width: 100%;
-  }
-
-  .header-progress-track {
-    max-width: 100%;
-  }
-
-  :deep(.completed-toggle) {
-    align-self: flex-end;
-    margin-left: auto;
-  }
-
   .quick-input-actions {
     margin-left: auto;
-  }
-
-  .filter-row {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: var(--space-2) var(--space-3);
-    align-items: center;
-  }
-
-  .filter-row .tool-row {
-    display: contents;
-  }
-
-  .filter-row :deep(.select) {
-    width: 100%;
-    min-width: 0;
   }
 }
 
 @container app-main (max-width: 640px) {
-  .page-header-top {
-    flex-direction: column;
-    align-items: stretch;
-    gap: var(--space-2);
-  }
-
-  .page-title-group {
-    width: 100%;
-  }
-
-  .header-progress-track {
-    max-width: 100%;
-  }
-
-  :deep(.completed-toggle) {
-    align-self: flex-end;
-    margin-left: auto;
-  }
-
   .quick-input-actions {
     margin-left: auto;
-  }
-
-  .filter-row {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: var(--space-2) var(--space-3);
-    align-items: center;
-  }
-
-  .filter-row .tool-row {
-    display: contents;
-  }
-
-  .filter-row :deep(.select) {
-    width: 100%;
-    min-width: 0;
   }
 }
 

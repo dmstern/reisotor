@@ -19,7 +19,7 @@ import { useDraftAutosave } from '../composables/useDraftAutosave';
 import { sortWithDoneLast } from '../composables/useCheckedSort';
 import { usePersistedRef } from '../composables/usePersistedRef';
 import { useUiSettingsStore } from '../stores/uiSettings';
-import CompletedToggle from '../components/CompletedToggle.vue';
+import ListSettingsMenu from '../components/ListSettingsMenu.vue';
 import AppIcon from '../components/AppIcon.vue';
 import Button from '../components/primitives/Button.vue';
 import Checkbox from '../components/primitives/Checkbox.vue';
@@ -46,8 +46,19 @@ type GroupBy = 'buyer' | 'shop' | 'period';
 // Gruppierung sowie zuletzt gewählter Shop/Zeitraum bleiben über localStorage auch nach einem
 // Reload/erneuten Besuch erhalten (siehe usePersistedRef.ts) - bewusst NICHT nach jedem addItem()
 // zurückgesetzt (anders als Label/Link/Notiz, die je Gegenstand unterschiedlich sind), damit sie beim
-// nächsten Öffnen der Einkaufsliste direkt wieder vorausgewählt sind.
 const groupBy = usePersistedRef<GroupBy>('reisotor-shopping-group-by', 'buyer');
+
+const defaultGroupBy = computed<GroupBy>(() => (users.value.length > 1 ? 'buyer' : 'shop'));
+
+const groupByOptions = computed(() => {
+  const opts = [];
+  if (users.value.length > 1) {
+    opts.push({ value: 'buyer', label: 'nach Einkäufer:in' });
+  }
+  opts.push({ value: 'shop', label: 'nach Shop' });
+  opts.push({ value: 'period', label: 'nach Zeitraum' });
+  return opts;
+});
 
 const newLabel = ref('');
 const newBuyer = ref('');
@@ -399,7 +410,13 @@ async function quickAddToGroup(group: Group, label: string) {
             ></div>
           </div>
         </div>
-        <CompletedToggle v-model="uiSettings.hideCompletedShopping" />
+        <ListSettingsMenu
+          v-model:group-by="groupBy"
+          :group-by-options="groupByOptions"
+          :default-group-by="defaultGroupBy"
+          v-model:hide-completed="uiSettings.hideCompletedShopping"
+          hide-completed-label="Erledigte ausblenden"
+        />
       </div>
     </div>
 
@@ -484,19 +501,6 @@ async function quickAddToGroup(group: Group, label: string) {
 
       <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
     </form>
-
-    <div class="filter-row">
-      <div class="tool-row">
-        <span class="tool-label"
-          ><AppIcon :icon="ACTION_ICONS.group" :size="14" group="actions" /> Gruppieren</span
-        >
-        <Select v-model="groupBy" aria-label="Gruppieren">
-          <option v-if="users.length > 1" value="buyer">nach Einkäufer:in</option>
-          <option value="shop">nach Shop</option>
-          <option value="period">nach Zeitraum</option>
-        </Select>
-      </div>
-    </div>
 
     <div class="groups-grid">
       <section
@@ -689,6 +693,7 @@ async function quickAddToGroup(group: Group, label: string) {
   flex-direction: column;
   gap: var(--space-2);
   min-width: 0;
+  flex: 1;
 }
 
 .title-with-pill {
@@ -820,113 +825,15 @@ async function quickAddToGroup(group: Group, label: string) {
   margin-top: var(--space-2);
 }
 
-.filter-row {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--space-4);
-  margin-bottom: var(--space-3);
-  font-size: 0.9rem;
-}
-
-/* Gleiches Muster wie ExcursionsView.vue's Gruppieren/Sortieren/Filtern-Zeile (dort .tool-row/
-   .tool-label) - für Konsistenz app-weit hier 1:1 übernommen statt einer eigenen Variante. */
-.tool-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.tool-label {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-
 @media (max-width: 640px) {
-  .page-header-top {
-    flex-direction: column;
-    align-items: stretch;
-    gap: var(--space-2);
-  }
-
-  .page-title-group {
-    width: 100%;
-  }
-
-  .header-progress-track {
-    max-width: 100%;
-  }
-
-  :deep(.completed-toggle) {
-    align-self: flex-end;
-    margin-left: auto;
-  }
-
   .quick-input-actions {
     margin-left: auto;
-  }
-
-  .filter-row {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: var(--space-2) var(--space-3);
-    align-items: center;
-  }
-
-  .filter-row .tool-row {
-    display: contents;
-  }
-
-  .filter-row :deep(.select) {
-    width: 100%;
-    min-width: 0;
   }
 }
 
 @container app-main (max-width: 640px) {
-  .page-header-top {
-    flex-direction: column;
-    align-items: stretch;
-    gap: var(--space-2);
-  }
-
-  .page-title-group {
-    width: 100%;
-  }
-
-  .header-progress-track {
-    max-width: 100%;
-  }
-
-  :deep(.completed-toggle) {
-    align-self: flex-end;
-    margin-left: auto;
-  }
-
   .quick-input-actions {
     margin-left: auto;
-  }
-
-  .filter-row {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: var(--space-2) var(--space-3);
-    align-items: center;
-  }
-
-  .filter-row .tool-row {
-    display: contents;
-  }
-
-  .filter-row :deep(.select) {
-    width: 100%;
-    min-width: 0;
   }
 }
 

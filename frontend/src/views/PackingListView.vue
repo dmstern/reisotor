@@ -10,7 +10,7 @@ import PackingItemRow from '../components/PackingItem.vue';
 import Modal from '../components/Modal.vue';
 import Combobox from '../components/Combobox.vue';
 import QuickAddRow from '../components/QuickAddRow.vue';
-import CompletedToggle from '../components/CompletedToggle.vue';
+import ListSettingsMenu from '../components/ListSettingsMenu.vue';
 import FormField from '../components/FormField.vue';
 import Button from '../components/primitives/Button.vue';
 import Select from '../components/primitives/Select.vue';
@@ -296,7 +296,10 @@ async function quickAdd(list: ListGroup, label: string) {
             ></div>
           </div>
         </div>
-        <CompletedToggle v-model="uiSettings.hideCompletedPacking" />
+        <ListSettingsMenu
+          v-model:hide-completed="uiSettings.hideCompletedPacking"
+          hide-completed-label="Gepackte ausblenden"
+        />
       </div>
     </div>
 
@@ -456,6 +459,7 @@ async function quickAdd(list: ListGroup, label: string) {
   flex-direction: column;
   gap: var(--space-2);
   min-width: 0;
+  flex: 1;
 }
 
 .title-with-pill {
@@ -605,48 +609,6 @@ async function quickAdd(list: ListGroup, label: string) {
 
 .empty-card {
   margin-bottom: var(--space-3);
-}
-
-@media (max-width: 640px) {
-  .page-header-top {
-    flex-direction: column;
-    align-items: stretch;
-    gap: var(--space-2);
-  }
-
-  .page-title-group {
-    width: 100%;
-  }
-
-  .header-progress-track {
-    max-width: 100%;
-  }
-
-  :deep(.completed-toggle) {
-    align-self: flex-end;
-    margin-left: auto;
-  }
-}
-
-@container app-main (max-width: 640px) {
-  .page-header-top {
-    flex-direction: column;
-    align-items: stretch;
-    gap: var(--space-2);
-  }
-
-  .page-title-group {
-    width: 100%;
-  }
-
-  .header-progress-track {
-    max-width: 100%;
-  }
-
-  :deep(.completed-toggle) {
-    align-self: flex-end;
-    margin-left: auto;
-  }
 }
 
 /* Desktop: Listen nebeneinander statt untereinander, um den vorhandenen Platz besser zu nutzen

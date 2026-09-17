@@ -66,6 +66,45 @@ describe('computePopoverPosition', () => {
     expect(result.left).toBe('816px');
   });
 
+  it('aligns to right edge of trigger when align is right', () => {
+    const rect = {
+      left: 500,
+      right: 540,
+      top: 200,
+      bottom: 240,
+      width: 40,
+      height: 40,
+    };
+
+    // menuWidth: 200. rect.right: 540. Target left = 540 - 200 = 340.
+    const result = computePopoverPosition(rect, {
+      menuWidth: 200,
+      menuHeight: 100,
+      align: 'right',
+    });
+    expect(result.left).toBe('340px');
+  });
+
+  it('clamps right-aligned popover to left viewport padding if it exceeds left edge', () => {
+    const rect = {
+      left: 20,
+      right: 60,
+      top: 200,
+      bottom: 240,
+      width: 40,
+      height: 40,
+    };
+
+    // menuWidth: 200. rect.right: 60. Target left = 60 - 200 = -140 -> clamped to padding 8
+    const result = computePopoverPosition(rect, {
+      menuWidth: 200,
+      menuHeight: 100,
+      align: 'right',
+      viewportPadding: 8,
+    });
+    expect(result.left).toBe('8px');
+  });
+
   it('clamps to viewport left edge with padding', () => {
     const rect = {
       left: -20,
