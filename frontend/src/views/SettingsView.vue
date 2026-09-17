@@ -171,6 +171,21 @@ const buildTimeFormatter = new Intl.DateTimeFormat('de-DE', {
 function formatBuildTime(iso: string | null) {
   return iso ? buildTimeFormatter.format(new Date(iso)) : 'unbekannt';
 }
+
+const changelogContent = computed(() => {
+  const cl = backendBuildInfo.value?.changelog;
+  if (!cl) return '';
+  if (cl.groups && cl.groups.length > 0) {
+    return cl.groups
+      .map(
+        (g) =>
+          `#### ${g.title}\n\n` +
+          g.notes.map((note) => (note.startsWith('- ') ? note : `- ${note}`)).join('\n')
+      )
+      .join('\n\n');
+  }
+  return cl.notes.map((note) => (note.startsWith('- ') ? note : `- ${note}`)).join('\n');
+});
 // Lokale Bindings statt der globalen __APP_*__-Konstanten direkt im Template: vue-tsc's
 // Template-Typprüfung löst per `define` gebackene Ambient-Globals dort nicht auf (versucht sie
 // stattdessen als Property der Komponenteninstanz zu finden).
@@ -1387,14 +1402,7 @@ async function exportBackup() {
         <div v-if="backendBuildInfo?.changelog">
           <h2><AppIcon :icon="INFO_ICON" group="navigation" :size="20" /> Versions-Info</h2>
           <h3>Was ist neu in v{{ backendBuildInfo.changelog.version }}</h3>
-          <RichTextDisplay
-            class="changelog-notes"
-            :content="
-              backendBuildInfo.changelog.notes
-                .map((note) => (note.startsWith('- ') ? note : `- ${note}`))
-                .join('\n')
-            "
-          />
+          <RichTextDisplay class="changelog-notes" :content="changelogContent" />
         </div>
         <h3>Build-Info</h3>
         <dl class="build-info-list">
@@ -1865,6 +1873,20 @@ label:not(.checkbox-card):not(.checkbox-option):not(.nav-config-visible):not(.ca
 
 .build-info-list dd {
   margin: 0;
+}
+
+.changelog-notes :deep(h4) {
+  margin-top: var(--space-3);
+  margin-bottom: var(--space-1);
+  color: var(--color-primary);
+  font-size: 0.95rem;
+  font-weight: 700;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 2px;
+}
+
+.changelog-notes :deep(h4:first-child) {
+  margin-top: var(--space-1);
 }
 
 .changelog-list {
