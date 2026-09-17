@@ -22,6 +22,8 @@ import ScheduleView from './views/ScheduleView.vue';
 import SplashScreen from './components/SplashScreen.vue';
 import MustChangePasswordModal from './components/MustChangePasswordModal.vue';
 import ToastNotification from './components/ToastNotification.vue';
+import UpdateAvailableModal from './components/UpdateAvailableModal.vue';
+import ChangelogModal from './components/ChangelogModal.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -132,6 +134,8 @@ const firstLoadDone = ref(
 <template>
   <ToastNotification />
   <MustChangePasswordModal v-if="auth.user?.must_change_password" />
+  <UpdateAvailableModal />
+  <ChangelogModal />
   <template v-if="!showNav">
     <router-view />
   </template>
