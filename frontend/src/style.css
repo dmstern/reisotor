@@ -533,6 +533,12 @@ button {
   padding-bottom: calc(var(--navbar-bottom-offset, 88px) + var(--space-4));
 }
 
+@media (max-width: 1023px) {
+  .page {
+    padding-top: var(--space-2);
+  }
+}
+
 .grid {
   display: grid;
   gap: var(--space-3);
