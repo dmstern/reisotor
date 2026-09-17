@@ -38,6 +38,7 @@ const OPTIONS = [
   align-items: center;
   gap: var(--space-2);
   white-space: nowrap;
+  margin-left: auto;
 }
 
 .tool-label {

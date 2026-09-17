@@ -16,6 +16,7 @@ import Button from '../components/primitives/Button.vue';
 import Select from '../components/primitives/Select.vue';
 import Input from '../components/primitives/Input.vue';
 import Badge from '../components/primitives/Badge.vue';
+import EmptyState from '../components/primitives/EmptyState.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import { useToast } from '../composables/useToast';
 import { sortWithDoneLast } from '../composables/useCheckedSort';
@@ -268,32 +269,34 @@ async function quickAdd(list: ListGroup, label: string) {
     <div class="page-header-row">
       <div class="page-header-top">
         <div class="page-title-group">
-          <h1>Packliste</h1>
-          <div class="progress-pill-group">
-            <Badge
-              :variant="
-                overallProgress.packed === overallProgress.total && overallProgress.total > 0
-                  ? 'success'
-                  : 'primary'
-              "
-              size="sm"
-            >
-              {{ overallProgress.packed }}/{{ overallProgress.total }} gepackt
-            </Badge>
-            <span v-if="overallProgress.total > 0" class="progress-percentage">
-              {{ Math.round((overallProgress.packed / overallProgress.total) * 100) }}%
-            </span>
+          <div class="title-with-pill">
+            <h1>Packliste</h1>
+            <div class="progress-pill-group">
+              <Badge
+                :variant="
+                  overallProgress.packed === overallProgress.total && overallProgress.total > 0
+                    ? 'success'
+                    : 'primary'
+                "
+                size="sm"
+              >
+                {{ overallProgress.packed }}/{{ overallProgress.total }} gepackt
+              </Badge>
+              <span v-if="overallProgress.total > 0" class="progress-percentage">
+                {{ Math.round((overallProgress.packed / overallProgress.total) * 100) }}%
+              </span>
+            </div>
+          </div>
+          <div v-if="overallProgress.total > 0" class="header-progress-track" aria-hidden="true">
+            <div
+              class="header-progress-bar"
+              :style="{
+                width: `${Math.round((overallProgress.packed / overallProgress.total) * 100)}%`,
+              }"
+            ></div>
           </div>
         </div>
         <CompletedToggle v-model="uiSettings.hideCompletedPacking" />
-      </div>
-      <div v-if="overallProgress.total > 0" class="header-progress-track" aria-hidden="true">
-        <div
-          class="header-progress-bar"
-          :style="{
-            width: `${Math.round((overallProgress.packed / overallProgress.total) * 100)}%`,
-          }"
-        ></div>
       </div>
     </div>
 
@@ -304,8 +307,8 @@ async function quickAdd(list: ListGroup, label: string) {
         :key="list.key"
         :style="{ '--stagger-delay': `${index * 60}ms` }"
       >
-        <div class="list-header">
-          <h2 v-if="users.length > 1">{{ list.title }}</h2>
+        <div class="list-header" v-if="users.length > 1">
+          <h2>{{ list.title }}</h2>
           <span class="progress"
             >{{ progress(list.items).packed }}/{{ progress(list.items).total }} gepackt</span
           >
@@ -369,13 +372,15 @@ async function quickAdd(list: ListGroup, label: string) {
             </TransitionGroup>
           </template>
         </div>
-        <p v-if="!list.items.length" class="empty">Noch keine Gegenstände auf dieser Liste.</p>
-        <p
+        <div v-if="!list.items.length" class="card empty-card">
+          <EmptyState>Noch keine Gegenstände auf dieser Liste.</EmptyState>
+        </div>
+        <div
           v-else-if="uiSettings.hideCompletedPacking && !groupByCategory(list.items).length"
-          class="empty"
+          class="card empty-card"
         >
-          Alle Gegenstände eingepackt.
-        </p>
+          <EmptyState>Alle Gegenstände eingepackt.</EmptyState>
+        </div>
       </section>
     </div>
 
@@ -448,6 +453,13 @@ async function quickAdd(list: ListGroup, label: string) {
 
 .page-title-group {
   display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.title-with-pill {
+  display: flex;
   align-items: baseline;
   gap: var(--space-3);
   flex-wrap: wrap;
@@ -472,7 +484,6 @@ async function quickAdd(list: ListGroup, label: string) {
   background: var(--color-hover);
   border-radius: var(--radius-pill);
   overflow: hidden;
-  margin-top: var(--space-2);
 }
 
 .header-progress-bar {
@@ -590,6 +601,52 @@ async function quickAdd(list: ListGroup, label: string) {
 
 .empty {
   font-size: 0.9rem;
+}
+
+.empty-card {
+  margin-bottom: var(--space-3);
+}
+
+@media (max-width: 640px) {
+  .page-header-top {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-2);
+  }
+
+  .page-title-group {
+    width: 100%;
+  }
+
+  .header-progress-track {
+    max-width: 100%;
+  }
+
+  :deep(.completed-toggle) {
+    align-self: flex-end;
+    margin-left: auto;
+  }
+}
+
+@container app-main (max-width: 640px) {
+  .page-header-top {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-2);
+  }
+
+  .page-title-group {
+    width: 100%;
+  }
+
+  .header-progress-track {
+    max-width: 100%;
+  }
+
+  :deep(.completed-toggle) {
+    align-self: flex-end;
+    margin-left: auto;
+  }
 }
 
 /* Desktop: Listen nebeneinander statt untereinander, um den vorhandenen Platz besser zu nutzen

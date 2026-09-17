@@ -380,28 +380,30 @@ function isOverdue(item: TodoItem) {
     <div class="page-header-row">
       <div class="page-header-top">
         <div class="page-title-group">
-          <h1>ToDo</h1>
-          <div class="progress-pill-group">
-            <Badge
-              :variant="
-                progress.done === progress.total && progress.total > 0 ? 'success' : 'primary'
-              "
-              size="sm"
-            >
-              {{ progress.done }}/{{ progress.total }} erledigt
-            </Badge>
-            <span v-if="progress.total > 0" class="progress-percentage">
-              {{ Math.round((progress.done / progress.total) * 100) }}%
-            </span>
+          <div class="title-with-pill">
+            <h1>ToDo</h1>
+            <div class="progress-pill-group">
+              <Badge
+                :variant="
+                  progress.done === progress.total && progress.total > 0 ? 'success' : 'primary'
+                "
+                size="sm"
+              >
+                {{ progress.done }}/{{ progress.total }} erledigt
+              </Badge>
+              <span v-if="progress.total > 0" class="progress-percentage">
+                {{ Math.round((progress.done / progress.total) * 100) }}%
+              </span>
+            </div>
+          </div>
+          <div v-if="progress.total > 0" class="header-progress-track" aria-hidden="true">
+            <div
+              class="header-progress-bar"
+              :style="{ width: `${Math.round((progress.done / progress.total) * 100)}%` }"
+            ></div>
           </div>
         </div>
         <CompletedToggle v-model="uiSettings.hideCompletedTodos" />
-      </div>
-      <div v-if="progress.total > 0" class="header-progress-track" aria-hidden="true">
-        <div
-          class="header-progress-bar"
-          :style="{ width: `${Math.round((progress.done / progress.total) * 100)}%` }"
-        ></div>
       </div>
     </div>
 
@@ -700,6 +702,13 @@ function isOverdue(item: TodoItem) {
 
 .page-title-group {
   display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.title-with-pill {
+  display: flex;
   align-items: baseline;
   gap: var(--space-3);
   flex-wrap: wrap;
@@ -724,7 +733,6 @@ function isOverdue(item: TodoItem) {
   background: var(--color-hover);
   border-radius: var(--radius-pill);
   overflow: hidden;
-  margin-top: var(--space-2);
 }
 
 .header-progress-bar {
@@ -810,6 +818,30 @@ function isOverdue(item: TodoItem) {
 }
 
 @media (max-width: 640px) {
+  .page-header-top {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-2);
+  }
+
+  .page-title-group {
+    width: 100%;
+  }
+
+  .header-progress-track {
+    max-width: 100%;
+  }
+
+  :deep(.completed-toggle) {
+    align-self: flex-end;
+    margin-left: auto;
+  }
+
+  .quick-input-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
   .filter-row {
     display: grid;
     grid-template-columns: auto 1fr;
@@ -828,6 +860,30 @@ function isOverdue(item: TodoItem) {
 }
 
 @container app-main (max-width: 640px) {
+  .page-header-top {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-2);
+  }
+
+  .page-title-group {
+    width: 100%;
+  }
+
+  .header-progress-track {
+    max-width: 100%;
+  }
+
+  :deep(.completed-toggle) {
+    align-self: flex-end;
+    margin-left: auto;
+  }
+
+  .quick-input-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
   .filter-row {
     display: grid;
     grid-template-columns: auto 1fr;
