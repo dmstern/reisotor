@@ -118,19 +118,15 @@ const editDraft = useDraftAutosave(
 );
 
 const showNewDetails = ref(false);
-const hasActiveNewDetails = computed(() => {
-  return (
-    !!newForm.value.due_date ||
-    !!newForm.value.note ||
-    newForm.value.priority !== 'medium' ||
-    (newForm.value.assigned_to_user_id !== '' &&
-      newForm.value.assigned_to_user_id !== lastAssignee.value) ||
-    !!newForm.value.period
-  );
-});
-const isNewFormExpanded = computed(() => {
-  return showNewDetails.value || hasActiveNewDetails.value || !!newForm.value.title.trim();
-});
+
+watch(
+  () => newDraft.restored.value,
+  (restored) => {
+    if (restored && (newForm.value.due_date || newForm.value.note)) {
+      showNewDetails.value = true;
+    }
+  }
+);
 
 async function load() {
   try {
@@ -408,16 +404,15 @@ function isOverdue(item: TodoItem) {
             type="button"
             variant="ghost"
             class="details-toggle-btn"
-            :aria-expanded="isNewFormExpanded"
-            @click="showNewDetails = !isNewFormExpanded"
+            :aria-expanded="showNewDetails"
+            @click="showNewDetails = !showNewDetails"
           >
             <AppIcon
-              :icon="isNewFormExpanded ? ACTION_ICONS.chevronUp : ACTION_ICONS.chevronDown"
+              :icon="showNewDetails ? ACTION_ICONS.chevronUp : ACTION_ICONS.chevronDown"
               :size="14"
               group="actions"
             />
             <span>Details</span>
-            <Badge v-if="hasActiveNewDetails" variant="accent" size="sm">Aktiv</Badge>
           </Button>
 
           <Button type="submit" variant="primary" :disabled="!newForm.title.trim()">
@@ -427,7 +422,7 @@ function isOverdue(item: TodoItem) {
       </div>
 
       <!-- Sanft ausklappbare Detail-Felder -->
-      <Accordion :expanded="isNewFormExpanded" :inert-when-closed="false">
+      <Accordion :expanded="showNewDetails" :inert-when-closed="false">
         <div class="form-details-grid">
           <FormField v-if="users.length > 1" icon="person" label="Bearbeiter:in" v-slot="{ id }">
             <Select :id="id" v-model="newForm.assigned_to_user_id">

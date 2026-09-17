@@ -89,14 +89,15 @@ const editDraft = useDraftAutosave(
 );
 
 const showNewDetails = ref(false);
-const hasActiveNewDetails = computed(() => {
-  return (
-    !!newLink.value || !!newNote.value || !!newBuyer.value || !!newShop.value || !!newPeriod.value
-  );
-});
-const isNewFormExpanded = computed(() => {
-  return showNewDetails.value || hasActiveNewDetails.value || !!newLabel.value.trim();
-});
+
+watch(
+  () => newDraft.restored.value,
+  (restored) => {
+    if (restored && (newLink.value || newNote.value)) {
+      showNewDetails.value = true;
+    }
+  }
+);
 
 async function load() {
   try {
@@ -399,16 +400,15 @@ async function quickAddToGroup(group: Group, label: string) {
             type="button"
             variant="ghost"
             class="details-toggle-btn"
-            :aria-expanded="isNewFormExpanded"
-            @click="showNewDetails = !isNewFormExpanded"
+            :aria-expanded="showNewDetails"
+            @click="showNewDetails = !showNewDetails"
           >
             <AppIcon
-              :icon="isNewFormExpanded ? ACTION_ICONS.chevronUp : ACTION_ICONS.chevronDown"
+              :icon="showNewDetails ? ACTION_ICONS.chevronUp : ACTION_ICONS.chevronDown"
               :size="14"
               group="actions"
             />
             <span>Details</span>
-            <Badge v-if="hasActiveNewDetails" variant="accent" size="sm">Aktiv</Badge>
           </Button>
 
           <Button type="submit" variant="primary" :disabled="!newLabel.trim()"> Hinzufügen </Button>
@@ -416,7 +416,7 @@ async function quickAddToGroup(group: Group, label: string) {
       </div>
 
       <!-- Sanft ausklappbare Detail-Felder -->
-      <Accordion :expanded="isNewFormExpanded" :inert-when-closed="false">
+      <Accordion :expanded="showNewDetails" :inert-when-closed="false">
         <div class="form-details-grid">
           <FormField icon="shop" label="Shop" v-slot="{ id }">
             <Combobox
