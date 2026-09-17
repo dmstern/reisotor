@@ -368,7 +368,9 @@ function isOverdue(item: TodoItem) {
         <h1>ToDo</h1>
         <div class="progress-pill-group">
           <Badge
-            :variant="progress.done === progress.total && progress.total > 0 ? 'success' : 'primary'"
+            :variant="
+              progress.done === progress.total && progress.total > 0 ? 'success' : 'primary'
+            "
             size="sm"
           >
             {{ progress.done }}/{{ progress.total }} erledigt
@@ -584,11 +586,7 @@ function isOverdue(item: TodoItem) {
               >
                 {{ userLabel(item.assigned_to_user_id) }}
               </Badge>
-              <Badge
-                v-if="groupBy !== 'period' && periodFor(item)"
-                size="sm"
-                class="period-badge"
-              >
+              <Badge v-if="groupBy !== 'period' && periodFor(item)" size="sm" class="period-badge">
                 <AppIcon :icon="FORM_FIELD_ICONS.period" :size="11" group="formFields" />
                 {{ PERIOD_META[periodFor(item)!] }}
               </Badge>

@@ -26,6 +26,8 @@ import Checkbox from '../components/primitives/Checkbox.vue';
 import CheckableListItem from '../components/primitives/CheckableListItem.vue';
 import Select from '../components/primitives/Select.vue';
 import Input from '../components/primitives/Input.vue';
+import Accordion from '../components/primitives/Accordion.vue';
+import Badge from '../components/primitives/Badge.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import type { IconDef } from '../utils/icon';
@@ -85,6 +87,16 @@ const editDraft = useDraftAutosave(
   editForm,
   computed(() => editingItem.value !== null)
 );
+
+const showNewDetails = ref(false);
+const hasActiveNewDetails = computed(() => {
+  return (
+    !!newLink.value || !!newNote.value || !!newBuyer.value || !!newShop.value || !!newPeriod.value
+  );
+});
+const isNewFormExpanded = computed(() => {
+  return showNewDetails.value || hasActiveNewDetails.value || !!newLabel.value.trim();
+});
 
 async function load() {
   try {
@@ -301,6 +313,7 @@ async function addItem() {
   newLabel.value = '';
   newLink.value = '';
   newNote.value = '';
+  showNewDetails.value = false;
   // Shop/Zeitraum bleiben bewusst stehen (siehe usePersistedRef oben) - praktisch, wenn mehrere
   // Artikel für denselben Shop/Zeitraum hintereinander erfasst werden, und dient gleichzeitig als
   // Vorbelegung fürs nächste Öffnen der Liste.
@@ -347,43 +360,101 @@ async function quickAddToGroup(group: Group, label: string) {
 
 <template>
   <div class="page shopping-page" v-if="!loading">
-    <h1>Einkaufsliste</h1>
-    <p>{{ progress.checked }}/{{ progress.total }} gekauft</p>
+    <div class="page-header-row">
+      <div class="page-title-group">
+        <h1>Einkaufsliste</h1>
+        <div class="progress-pill-group">
+          <Badge
+            :variant="
+              progress.checked === progress.total && progress.total > 0 ? 'success' : 'primary'
+            "
+            size="sm"
+          >
+            {{ progress.checked }}/{{ progress.total }} gekauft
+          </Badge>
+          <span v-if="progress.total > 0" class="progress-percentage">
+            {{ Math.round((progress.checked / progress.total) * 100) }}%
+          </span>
+        </div>
+      </div>
+      <div v-if="progress.total > 0" class="header-progress-track" aria-hidden="true">
+        <div
+          class="header-progress-bar"
+          :style="{ width: `${Math.round((progress.checked / progress.total) * 100)}%` }"
+        ></div>
+      </div>
+    </div>
 
+    <!-- Progressives Schnelleingabe-Formular -->
     <form class="add-form card" @submit.prevent="addItem">
-      <FormField icon="title" label="Artikel" v-slot="{ id }">
-        <Input :id="id" v-model="newLabel" type="text" placeholder="Neuer Artikel" required />
-      </FormField>
-      <FormField icon="shop" label="Shop" v-slot="{ id }">
-        <Combobox
-          :id="id"
-          v-model="newShop"
-          :options="knownShops"
-          placeholder="Shop/Laden (optional)"
-        />
-      </FormField>
-      <FormField v-if="users.length > 1" icon="person" label="Einkäufer:in" v-slot="{ id }">
-        <Select :id="id" v-model="newBuyer">
-          <option value="">Kein:e Einkäufer:in</option>
-          <option v-for="u in users" :key="u.id" :value="String(u.id)">
-            {{ u.avatar }} {{ u.username }}
-          </option>
-        </Select>
-      </FormField>
-      <FormField icon="period" label="Zeitraum" v-slot="{ id }">
-        <Select :id="id" v-model="newPeriod">
-          <option value="">Kein Zeitraum</option>
-          <option value="before">{{ PERIOD_META.before }}</option>
-          <option value="during">{{ PERIOD_META.during }}</option>
-        </Select>
-      </FormField>
-      <FormField icon="link" label="Link" v-slot="{ id }">
-        <Input :id="id" v-model="newLink" type="url" placeholder="Link (optional, z. B. Amazon)" />
-      </FormField>
-      <FormField icon="note" label="Notiz" v-slot="{ id }">
-        <Input :id="id" v-model="newNote" type="text" placeholder="Notiz (optional)" />
-      </FormField>
-      <Button type="submit">Hinzufügen</Button>
+      <div class="quick-input-row">
+        <div class="main-input-wrap">
+          <FormField icon="title" label="Artikel" v-slot="{ id }">
+            <Input :id="id" v-model="newLabel" type="text" placeholder="Neuer Artikel" required />
+          </FormField>
+        </div>
+
+        <div class="quick-input-actions">
+          <Button
+            type="button"
+            variant="ghost"
+            class="details-toggle-btn"
+            :aria-expanded="isNewFormExpanded"
+            @click="showNewDetails = !isNewFormExpanded"
+          >
+            <AppIcon
+              :icon="isNewFormExpanded ? ACTION_ICONS.chevronUp : ACTION_ICONS.chevronDown"
+              :size="14"
+              group="actions"
+            />
+            <span>Details</span>
+            <Badge v-if="hasActiveNewDetails" variant="accent" size="sm">Aktiv</Badge>
+          </Button>
+
+          <Button type="submit" variant="primary" :disabled="!newLabel.trim()"> Hinzufügen </Button>
+        </div>
+      </div>
+
+      <!-- Sanft ausklappbare Detail-Felder -->
+      <Accordion :expanded="isNewFormExpanded" :inert-when-closed="false">
+        <div class="form-details-grid">
+          <FormField icon="shop" label="Shop" v-slot="{ id }">
+            <Combobox
+              :id="id"
+              v-model="newShop"
+              :options="knownShops"
+              placeholder="Shop/Laden (optional)"
+            />
+          </FormField>
+          <FormField v-if="users.length > 1" icon="person" label="Einkäufer:in" v-slot="{ id }">
+            <Select :id="id" v-model="newBuyer">
+              <option value="">Kein:e Einkäufer:in</option>
+              <option v-for="u in users" :key="u.id" :value="String(u.id)">
+                {{ u.avatar }} {{ u.username }}
+              </option>
+            </Select>
+          </FormField>
+          <FormField icon="period" label="Zeitraum" v-slot="{ id }">
+            <Select :id="id" v-model="newPeriod">
+              <option value="">Kein Zeitraum</option>
+              <option value="before">{{ PERIOD_META.before }}</option>
+              <option value="during">{{ PERIOD_META.during }}</option>
+            </Select>
+          </FormField>
+          <FormField icon="link" label="Link" v-slot="{ id }">
+            <Input
+              :id="id"
+              v-model="newLink"
+              type="url"
+              placeholder="Link (optional, z. B. Amazon)"
+            />
+          </FormField>
+          <FormField icon="note" label="Notiz" v-slot="{ id }">
+            <Input :id="id" v-model="newNote" type="text" placeholder="Notiz (optional)" />
+          </FormField>
+        </div>
+      </Accordion>
+
       <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
     </form>
 
@@ -463,27 +534,31 @@ async function quickAddToGroup(group: Group, label: string) {
                 </span>
               </label>
               <PendingSyncBadge v-if="item._pending" />
-              <span v-if="groupBy !== 'shop' && item.shop" class="tag">
-                <AppIcon :icon="FORM_FIELD_ICONS.shop" :size="13" group="formFields" />
+              <Badge v-if="groupBy !== 'shop' && item.shop" size="sm" class="shop-badge">
+                <AppIcon :icon="FORM_FIELD_ICONS.shop" :size="12" group="formFields" />
                 {{ item.shop }}
-              </span>
-              <span v-if="groupBy !== 'period' && item.period" class="tag">
-                <AppIcon :icon="FORM_FIELD_ICONS.period" :size="13" group="formFields" />
+              </Badge>
+              <Badge v-if="groupBy !== 'period' && item.period" size="sm" class="period-badge">
+                <AppIcon :icon="FORM_FIELD_ICONS.period" :size="12" group="formFields" />
                 {{ PERIOD_META[item.period] }}
-              </span>
+              </Badge>
               <a v-if="item.link" :href="item.link" target="_blank" rel="noopener" class="link">
-                <AppIcon :icon="FORM_FIELD_ICONS.link" :size="13" group="formFields" /> Link
+                <AppIcon :icon="FORM_FIELD_ICONS.link" :size="12" group="formFields" /> Link
               </a>
-              <span v-if="item.note" class="note">{{ item.note }}</span>
+              <span v-if="item.note" class="note" :title="item.note">
+                <AppIcon :icon="FORM_FIELD_ICONS.note" :size="12" group="formFields" />
+                {{ item.note }}
+              </span>
               <!-- eslint-disable-next-line vuejs-accessibility/no-onchange -->
               <Select
                 v-if="users.length > 1 && groupBy !== 'buyer'"
                 aria-label="Käufer:in"
                 class="buyer-select"
+                size="sm"
                 :model-value="item.assigned_to_user_id ?? ''"
                 @change="reassign(item, $event)"
               >
-                <option value="">Nicht zugewiesen</option>
+                <option value="">👤 Nicht zugewiesen</option>
                 <option v-for="u in users" :key="u.id" :value="String(u.id)">
                   {{ u.avatar }} {{ u.username }}
                 </option>
@@ -548,39 +623,91 @@ async function quickAddToGroup(group: Group, label: string) {
 </template>
 
 <style scoped>
-.add-form {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
+.page-header-row {
   margin-bottom: var(--space-3);
 }
 
-.add-form .form-field {
+.page-title-group {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.progress-pill-group {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.progress-percentage {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.header-progress-track {
+  width: 100%;
+  max-width: 320px;
+  height: 4px;
+  background: var(--color-hover);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  margin-top: var(--space-2);
+}
+
+.header-progress-bar {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: var(--radius-pill);
+  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Progressives Schnelleingabe-Formular */
+.add-form {
+  margin-bottom: var(--space-4);
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.quick-input-row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.main-input-wrap {
   flex: 1;
-  min-width: 140px;
+  min-width: 220px;
 }
 
-/* Ohne eigenes FormField-Label würde der Absenden-Button, sobald er in derselben umgebrochenen
-   Flex-Zeile wie ein FormField landet, vom Flex-Default align-items:stretch auf dessen (größere)
-   Höhe gezogen (Konsistenz-Prinzip, siehe DESIGN.md). flex-basis:100% erzwingt stattdessen immer
-   eine eigene, volle Zeile - Absenden-Button bekommt so app-weit dieselbe, natürliche Höhe. Auf Mobil
-   ist eine volle Zeile für den primären Absenden-Button zudem ohnehin der übliche, gut antippbare
-   Standard (großer Touch-Target). */
-.add-form button[type='submit'] {
-  flex: 1 1 100%;
+.main-input-wrap :deep(.form-field) {
+  margin-bottom: 0;
 }
 
-/* Auf Desktop wirkte derselbe volle-Breite-Button auf der (bis zu 1400px breiten, siehe .shopping-
-   page oben) Karte überdimensioniert - hier stattdessen normal breit wie jeder andere Button, am
-   Ende der letzten Feld-Zeile ausgerichtet statt in voller Kartenbreite gestreckt. align-self:flex-
-   end statt des geerbten align-items:stretch übernimmt dieselbe Höhen-Absicherung wie oben (Button
-   bleibt bei seiner natürlichen Höhe, nicht auf FormField-Höhe gezogen), nur diesmal ohne die eigene
-   volle Zeile zu erzwingen. */
-@media (min-width: 800px) {
-  .add-form button[type='submit'] {
-    flex: 0 0 auto;
-    align-self: flex-end;
-  }
+.quick-input-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.details-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.form-details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--space-2);
+  padding-top: var(--space-3);
+  border-top: 1px dashed var(--color-border);
+  margin-top: var(--space-2);
 }
 
 .filter-row {
@@ -632,14 +759,6 @@ async function quickAddToGroup(group: Group, label: string) {
   width: auto;
 }
 
-.tag {
-  font-size: 0.78rem;
-  color: var(--color-text-muted);
-  background: var(--color-hover);
-  border-radius: var(--radius-pill);
-  padding: 2px 8px;
-}
-
 .list {
   list-style: none;
   margin: 0;
@@ -655,21 +774,38 @@ async function quickAddToGroup(group: Group, label: string) {
   min-width: 120px;
 }
 
+.shop-badge,
+.period-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 0.82rem;
 }
 
 .note {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 0.82rem;
   color: var(--color-text-muted);
 }
 
 .buyer-select {
-  font-size: 0.82rem;
-  padding: 4px 6px;
-  /* Kompaktes Inline-Select direkt in der Listenzeile (kein Formularfeld) - überschreibt
-     style.css's globale min-height (44px). */
+  font-size: var(--font-size-xs);
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
   min-height: 0;
+  height: auto;
+  line-height: 1.2;
+  background: var(--color-hover);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
 }
 
 .edit-form {
