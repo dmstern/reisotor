@@ -2,10 +2,16 @@ import type { FastifyPluginAsync } from 'fastify';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
+interface ChangelogGroup {
+  title: string;
+  notes: string[];
+}
+
 interface ChangelogEntry {
   version: string;
   date: string;
   notes: string[];
+  groups?: ChangelogGroup[];
 }
 
 interface BuildInfo {

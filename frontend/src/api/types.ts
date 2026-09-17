@@ -31,10 +31,16 @@ export interface Trip {
   owner_restricted?: boolean;
 }
 
+export interface ChangelogGroup {
+  title: string;
+  notes: string[];
+}
+
 export interface ChangelogEntry {
   version: string;
   date: string;
   notes: string[];
+  groups?: ChangelogGroup[];
 }
 
 /** GET /build-info (backend/src/routes/buildInfo.ts). `environment` kommt aus der

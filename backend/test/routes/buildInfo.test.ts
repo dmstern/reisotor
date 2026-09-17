@@ -37,4 +37,28 @@ describe('buildInfo routes', () => {
     expect(body).toHaveProperty('repoUrl');
     expect(body).toHaveProperty('hostingLocation');
   });
+
+  it('returns changelog with optional groups if available', async () => {
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/build-info',
+      headers: { cookie },
+    });
+
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    if (body.changelog) {
+      expect(body.changelog).toHaveProperty('version');
+      expect(body.changelog).toHaveProperty('notes');
+      expect(Array.isArray(body.changelog.notes)).toBe(true);
+      if (body.changelog.groups) {
+        expect(Array.isArray(body.changelog.groups)).toBe(true);
+        for (const group of body.changelog.groups) {
+          expect(group).toHaveProperty('title');
+          expect(group).toHaveProperty('notes');
+          expect(Array.isArray(group.notes)).toBe(true);
+        }
+      }
+    }
+  });
 });
