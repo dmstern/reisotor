@@ -28,6 +28,8 @@ import Checkbox from '../components/primitives/Checkbox.vue';
 import CheckableListItem from '../components/primitives/CheckableListItem.vue';
 import Select from '../components/primitives/Select.vue';
 import Input from '../components/primitives/Input.vue';
+import Accordion from '../components/primitives/Accordion.vue';
+import Badge from '../components/primitives/Badge.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 
@@ -114,6 +116,21 @@ const editDraft = useDraftAutosave(
   editForm,
   computed(() => editingItem.value !== null)
 );
+
+const showNewDetails = ref(false);
+const hasActiveNewDetails = computed(() => {
+  return (
+    !!newForm.value.due_date ||
+    !!newForm.value.note ||
+    newForm.value.priority !== 'medium' ||
+    (newForm.value.assigned_to_user_id !== '' &&
+      newForm.value.assigned_to_user_id !== lastAssignee.value) ||
+    !!newForm.value.period
+  );
+});
+const isNewFormExpanded = computed(() => {
+  return showNewDetails.value || hasActiveNewDetails.value || !!newForm.value.title.trim();
+});
 
 async function load() {
   try {
@@ -251,6 +268,7 @@ async function addItem() {
   items.value.push(created);
   lastAssignee.value = newForm.value.assigned_to_user_id;
   newForm.value = emptyForm();
+  showNewDetails.value = false;
   newDraft.clear();
 }
 
@@ -345,43 +363,106 @@ function isOverdue(item: TodoItem) {
 
 <template>
   <div class="page todo-page" v-if="!loading">
-    <h1>ToDo</h1>
-    <p>{{ progress.done }}/{{ progress.total }} erledigt</p>
+    <div class="page-header-row">
+      <div class="page-title-group">
+        <h1>ToDo</h1>
+        <div class="progress-pill-group">
+          <Badge
+            :variant="progress.done === progress.total && progress.total > 0 ? 'success' : 'primary'"
+            size="sm"
+          >
+            {{ progress.done }}/{{ progress.total }} erledigt
+          </Badge>
+          <span v-if="progress.total > 0" class="progress-percentage">
+            {{ Math.round((progress.done / progress.total) * 100) }}%
+          </span>
+        </div>
+      </div>
+      <div v-if="progress.total > 0" class="header-progress-track" aria-hidden="true">
+        <div
+          class="header-progress-bar"
+          :style="{ width: `${Math.round((progress.done / progress.total) * 100)}%` }"
+        ></div>
+      </div>
+    </div>
 
+    <!-- Progressives Schnelleingabe-Formular -->
     <form class="add-form card" @submit.prevent="addItem">
-      <FormField icon="title" label="Aufgabe" v-slot="{ id }">
-        <Input :id="id" v-model="newForm.title" type="text" placeholder="Neue Aufgabe" required />
-      </FormField>
-      <FormField v-if="users.length > 1" icon="person" label="Bearbeiter:in" v-slot="{ id }">
-        <Select :id="id" v-model="newForm.assigned_to_user_id">
-          <option value="">Nicht zugewiesen</option>
-          <option v-for="u in users" :key="u.id" :value="String(u.id)">
-            {{ u.avatar }} {{ u.username }}
-          </option>
-        </Select>
-      </FormField>
-      <FormField icon="date" label="Fällig" v-slot="{ id }">
-        <Input :id="id" v-model="newForm.due_date" type="date" />
-      </FormField>
-      <FormField icon="period" label="Zeitraum" v-slot="{ id }">
-        <Select :id="id" v-model="newForm.period" :disabled="!!newForm.due_date">
-          <option value="">(Nach Datum / Ohne)</option>
-          <option v-for="(label, key) in PERIOD_META" :key="key" :value="key">
-            {{ label }}
-          </option>
-        </Select>
-      </FormField>
-      <FormField icon="priority" label="Priorität" v-slot="{ id }">
-        <Select :id="id" v-model="newForm.priority">
-          <option v-for="(meta, key) in PRIORITY_META" :key="key" :value="key">
-            {{ meta.icon }} {{ meta.label }}
-          </option>
-        </Select>
-      </FormField>
-      <FormField icon="note" label="Notiz" v-slot="{ id }">
-        <Input :id="id" v-model="newForm.note" type="text" placeholder="Notiz (optional)" />
-      </FormField>
-      <Button type="submit">Hinzufügen</Button>
+      <div class="quick-input-row">
+        <div class="main-input-wrap">
+          <FormField icon="title" label="Aufgabe" v-slot="{ id }">
+            <Input
+              :id="id"
+              v-model="newForm.title"
+              type="text"
+              placeholder="Neue Aufgabe"
+              required
+            />
+          </FormField>
+        </div>
+
+        <div class="quick-input-actions">
+          <Button
+            type="button"
+            variant="ghost"
+            class="details-toggle-btn"
+            :aria-expanded="isNewFormExpanded"
+            @click="showNewDetails = !isNewFormExpanded"
+          >
+            <AppIcon
+              :icon="isNewFormExpanded ? ACTION_ICONS.chevronUp : ACTION_ICONS.chevronDown"
+              :size="14"
+              group="actions"
+            />
+            <span>Details</span>
+            <Badge v-if="hasActiveNewDetails" variant="accent" size="sm">Aktiv</Badge>
+          </Button>
+
+          <Button type="submit" variant="primary" :disabled="!newForm.title.trim()">
+            Hinzufügen
+          </Button>
+        </div>
+      </div>
+
+      <!-- Sanft ausklappbare Detail-Felder -->
+      <Accordion :expanded="isNewFormExpanded" :inert-when-closed="false">
+        <div class="form-details-grid">
+          <FormField v-if="users.length > 1" icon="person" label="Bearbeiter:in" v-slot="{ id }">
+            <Select :id="id" v-model="newForm.assigned_to_user_id">
+              <option value="">Nicht zugewiesen</option>
+              <option v-for="u in users" :key="u.id" :value="String(u.id)">
+                {{ u.avatar }} {{ u.username }}
+              </option>
+            </Select>
+          </FormField>
+
+          <FormField icon="date" label="Fällig" v-slot="{ id }">
+            <Input :id="id" v-model="newForm.due_date" type="date" />
+          </FormField>
+
+          <FormField icon="period" label="Zeitraum" v-slot="{ id }">
+            <Select :id="id" v-model="newForm.period" :disabled="!!newForm.due_date">
+              <option value="">(Nach Datum / Ohne)</option>
+              <option v-for="(label, key) in PERIOD_META" :key="key" :value="key">
+                {{ label }}
+              </option>
+            </Select>
+          </FormField>
+
+          <FormField icon="priority" label="Priorität" v-slot="{ id }">
+            <Select :id="id" v-model="newForm.priority">
+              <option v-for="(meta, key) in PRIORITY_META" :key="key" :value="key">
+                {{ meta.icon }} {{ meta.label }}
+              </option>
+            </Select>
+          </FormField>
+
+          <FormField icon="note" label="Notiz" v-slot="{ id }">
+            <Input :id="id" v-model="newForm.note" type="text" placeholder="Notiz (optional)" />
+          </FormField>
+        </div>
+      </Accordion>
+
       <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
     </form>
 
@@ -464,7 +545,20 @@ function isOverdue(item: TodoItem) {
                 </span>
               </label>
               <PendingSyncBadge v-if="item._pending" />
-              <span class="priority" :title="PRIORITY_META[item.priority].label">
+              <Badge
+                v-if="item.priority === 'high'"
+                variant="danger"
+                size="sm"
+                class="priority-badge"
+                title="Hohe Priorität"
+              >
+                Hoch
+              </Badge>
+              <span
+                v-else
+                class="priority"
+                :title="`Priorität: ${PRIORITY_META[item.priority].label}`"
+              >
                 <AppIcon
                   :icon="ACTION_ICONS.priorityDot"
                   :size="10"
@@ -472,22 +566,36 @@ function isOverdue(item: TodoItem) {
                   group="actions"
                 />
               </span>
-              <span v-if="item.due_date" class="due" :class="{ overdue: isOverdue(item) }">
-                <AppIcon :icon="FORM_FIELD_ICONS.date" :size="13" group="formFields" />
+              <Badge
+                v-if="item.due_date"
+                :variant="isOverdue(item) ? 'danger' : 'default'"
+                size="sm"
+                class="due-badge"
+              >
+                <AppIcon :icon="FORM_FIELD_ICONS.date" :size="11" group="formFields" />
                 {{ formatDate(item.due_date) }}
-              </span>
-              <span
+              </Badge>
+              <Badge
                 v-if="
                   users.length > 1 && groupBy !== 'assignee' && userLabel(item.assigned_to_user_id)
                 "
-                class="assignee"
-                >{{ userLabel(item.assigned_to_user_id) }}</span
+                size="sm"
+                class="assignee-badge"
               >
-              <span v-if="groupBy !== 'period' && periodFor(item)" class="assignee">
-                <AppIcon :icon="FORM_FIELD_ICONS.period" :size="13" group="formFields" />
+                {{ userLabel(item.assigned_to_user_id) }}
+              </Badge>
+              <Badge
+                v-if="groupBy !== 'period' && periodFor(item)"
+                size="sm"
+                class="period-badge"
+              >
+                <AppIcon :icon="FORM_FIELD_ICONS.period" :size="11" group="formFields" />
                 {{ PERIOD_META[periodFor(item)!] }}
+              </Badge>
+              <span v-if="item.note" class="note" :title="item.note">
+                <AppIcon :icon="FORM_FIELD_ICONS.note" :size="11" group="formFields" />
+                {{ item.note }}
               </span>
-              <span v-if="item.note" class="note">{{ item.note }}</span>
               <template #actions>
                 <EditButton small @click="startEdit(item)" />
                 <DeleteButton small @click="remove(item.id)" />
@@ -554,37 +662,91 @@ function isOverdue(item: TodoItem) {
 </template>
 
 <style scoped>
-.add-form {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
+.page-header-row {
   margin-bottom: var(--space-3);
 }
 
-.add-form .form-field {
+.page-title-group {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.progress-pill-group {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.progress-percentage {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.header-progress-track {
+  width: 100%;
+  max-width: 320px;
+  height: 4px;
+  background: var(--color-hover);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  margin-top: var(--space-2);
+}
+
+.header-progress-bar {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: var(--radius-pill);
+  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Progressives Schnelleingabe-Formular */
+.add-form {
+  margin-bottom: var(--space-4);
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.quick-input-row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.main-input-wrap {
   flex: 1;
-  min-width: 140px;
+  min-width: 220px;
 }
 
-/* Ohne eigenes FormField-Label würde der Absenden-Button, sobald er in derselben umgebrochenen
-   Flex-Zeile wie ein FormField landet, vom Flex-Default align-items:stretch auf dessen (größere)
-   Höhe gezogen (Konsistenz-Prinzip, siehe DESIGN.md). flex-basis:100% erzwingt stattdessen immer
-   eine eigene, volle Zeile - Absenden-Button bekommt so app-weit dieselbe, natürliche Höhe. Auf Mobil
-   ist eine volle Zeile für den primären Absenden-Button zudem ohnehin der übliche, gut antippbare
-   Standard (großer Touch-Target). */
-.add-form button[type='submit'] {
-  flex: 1 1 100%;
+.main-input-wrap :deep(.form-field) {
+  margin-bottom: 0;
 }
 
-/* Auf Desktop wirkte derselbe volle-Breite-Button auf der (bis zu 1400px breiten, siehe .todo-page
-   oben) Karte überdimensioniert - hier stattdessen normal breit wie jeder andere Button, am Ende der
-   letzten Feld-Zeile ausgerichtet statt in voller Kartenbreite gestreckt. Gleiche Lösung wie
-   ShoppingListView.vue (dortiger Kommentar für die Begründung von align-self:flex-end). */
-@media (min-width: 800px) {
-  .add-form button[type='submit'] {
-    flex: 0 0 auto;
-    align-self: flex-end;
-  }
+.quick-input-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.details-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.form-details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--space-2);
+  padding-top: var(--space-3);
+  border-top: 1px dashed var(--color-border);
+  margin-top: var(--space-2);
 }
 
 .filter-row {
@@ -652,25 +814,22 @@ function isOverdue(item: TodoItem) {
 }
 
 .priority {
-  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
 }
 
-.due {
-  font-size: 0.82rem;
-  color: var(--color-text-muted);
-}
-
-.due.overdue {
-  color: var(--color-danger);
-  font-weight: 600;
-}
-
-.assignee {
-  font-size: 0.82rem;
-  color: var(--color-text-muted);
+.due-badge,
+.assignee-badge,
+.period-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .note {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 0.82rem;
   color: var(--color-text-muted);
 }
