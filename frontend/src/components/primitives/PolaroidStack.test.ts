@@ -211,4 +211,19 @@ describe('PolaroidStack primitive', () => {
     const html = await renderToString(app);
     expect(html).toContain('is-fanned');
   });
+
+  it('renders original_name as polaroid caption when provided in image item', async () => {
+    const app = createTestApp(PolaroidStack, {
+      items: [
+        {
+          url: 'https://example.com/photo.jpg',
+          original_name: 'IMG_2026_Rom.jpg',
+        },
+      ],
+    });
+    const html = await renderToString(app);
+    expect(html).toContain('polaroid-caption');
+    expect(html).toContain('IMG_2026_Rom.jpg');
+    expect(html).not.toContain('Bild 1');
+  });
 });

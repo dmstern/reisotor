@@ -89,4 +89,93 @@ describe('diary co-editing (#93)', () => {
     });
     expect(deleteByMember.statusCode).toBe(403);
   });
+
+  it('preserves original filename on upload and supports image objects in diary entries', async () => {
+    const user = await register('iris', 'iris@example.com');
+    const tinyPng =
+      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+
+    // 1. Upload mit Dateinamen
+    const uploadRes = await app.inject({
+      method: 'POST',
+      url: '/api/diary/images',
+      headers: { cookie: user.cookie },
+      payload: {
+        data: tinyPng,
+        filename: 'mein_urlaub_2026.png',
+      },
+    });
+    expect(uploadRes.statusCode).toBe(201);
+    const uploadBody = uploadRes.json();
+    expect(uploadBody.url).toMatch(/^\/api\/uploads\/[0-9a-f-]+\.png$/);
+    expect(uploadBody.original_name).toBe('mein_urlaub_2026.png');
+
+    // 2. Pfadbereinigung (Sanitization)
+    const sanitizedRes = await app.inject({
+      method: 'POST',
+      url: '/api/diary/images',
+      headers: { cookie: user.cookie },
+      payload: {
+        data: tinyPng,
+        filename: '../../secret/path/to/camera_roll.png',
+      },
+    });
+    expect(sanitizedRes.statusCode).toBe(201);
+    expect(sanitizedRes.json().original_name).toBe('camera_roll.png');
+
+    // 3. Fallback, falls kein filename übergeben wird
+    const fallbackRes = await app.inject({
+      method: 'POST',
+      url: '/api/diary/images',
+      headers: { cookie: user.cookie },
+      payload: {
+        data: tinyPng,
+      },
+    });
+    expect(fallbackRes.statusCode).toBe(201);
+    expect(fallbackRes.json().original_name).toMatch(/^[0-9a-f-]+\.png$/);
+
+    // 4. Tagebucheintrag mit Bildobjekten und Legacy-String-URLs speichern und abrufen
+    const tripRes = await app.inject({
+      method: 'POST',
+      url: '/api/trips',
+      headers: { cookie: user.cookie },
+      payload: { name: 'Foto Reise', start_date: '2026-04-01', end_date: '2026-04-05' },
+    });
+    const tripId = tripRes.json().id;
+
+    const createRes = await app.inject({
+      method: 'POST',
+      url: '/api/diary',
+      headers: { cookie: user.cookie },
+      payload: {
+        trip_id: tripId,
+        content: '<p>Tagebuch mit Fotos</p>',
+        content_format: 'html',
+        date: '2026-04-01',
+        images: [
+          { url: uploadBody.url, original_name: 'mein_urlaub_2026.png' },
+          '/api/uploads/legacy_string_url.jpg',
+        ],
+      },
+    });
+    expect(createRes.statusCode).toBe(201);
+    const createdEntry = createRes.json();
+    expect(createdEntry.images).toEqual([
+      { url: uploadBody.url, original_name: 'mein_urlaub_2026.png' },
+      '/api/uploads/legacy_string_url.jpg',
+    ]);
+
+    const getRes = await app.inject({
+      method: 'GET',
+      url: `/api/diary?trip_id=${tripId}`,
+      headers: { cookie: user.cookie },
+    });
+    expect(getRes.statusCode).toBe(200);
+    const entries = getRes.json();
+    expect(entries[0].images).toEqual([
+      { url: uploadBody.url, original_name: 'mein_urlaub_2026.png' },
+      '/api/uploads/legacy_string_url.jpg',
+    ]);
+  });
 });
