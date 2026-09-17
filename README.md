@@ -29,7 +29,7 @@ Web-App zur gemeinsamen Reiseplanung – ein zentraler Ort für alles rund um De
 - 🗑️ **Papierkorb**: gelöschte Einträge lassen sich rückgängig machen (60-Sekunden-Fenster direkt an Ort und Stelle) oder später im Papierkorb wiederherstellen
 - 👥 **Mitgliedschaft & Einladung**: offene Registrierung per E-Mail, Zugriff auf einen Urlaub aber nur für eingeladene Mitglieder (Autocomplete-Suche nach Benutzername/E-Mail)
 - ⚙️ **Einstellungen**: Emoji-Avatar, Passwort ändern, Kalender-Einstellungen (Wochenanfang, Datumsformat)
-- 💾 **Backup**: vollständiger Datenexport/-import als JSON
+- 💾 **Backup**: vollständiger Datenexport als ZIP-Archiv (Datenbank + Dateianhänge)
 
 ## Struktur
 
