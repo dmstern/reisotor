@@ -554,16 +554,14 @@ async function quickAddToGroup(group: Group, label: string) {
                   {{ item.note }}
                 </span>
                 <div
-                  v-if="users.length > 1 && groupBy !== 'buyer'"
-                  class="buyer-avatar-picker"
-                  :title="
-                    item.assigned_to_user_id
-                      ? `Käufer:in: ${userName(item.assigned_to_user_id)}`
-                      : 'Käufer:in zuweisen'
+                  v-if="
+                    users.length > 1 && groupBy !== 'buyer' && userAvatar(item.assigned_to_user_id)
                   "
+                  class="buyer-avatar-picker"
+                  :title="`Käufer:in: ${userName(item.assigned_to_user_id)}`"
                 >
                   <span class="avatar-display" aria-hidden="true">
-                    {{ userAvatar(item.assigned_to_user_id) || '👤' }}
+                    {{ userAvatar(item.assigned_to_user_id) }}
                   </span>
                   <!-- eslint-disable-next-line vuejs-accessibility/no-onchange -->
                   <select
@@ -572,7 +570,7 @@ async function quickAddToGroup(group: Group, label: string) {
                     :value="item.assigned_to_user_id ?? ''"
                     @change="reassign(item, $event)"
                   >
-                    <option value="">👤 Nicht zugewiesen</option>
+                    <option value="">Nicht zugewiesen</option>
                     <option v-for="u in users" :key="u.id" :value="String(u.id)">
                       {{ u.avatar }} {{ u.username }}
                     </option>
