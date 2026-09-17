@@ -21,6 +21,7 @@ import PendingSyncBadge from './PendingSyncBadge.vue';
 import AppIcon from './AppIcon.vue';
 import Card from './primitives/Card.vue';
 import Button from './primitives/Button.vue';
+import Badge from './primitives/Badge.vue';
 import Input from './primitives/Input.vue';
 import PickerMenu from './primitives/PickerMenu.vue';
 import PolaroidStack from './primitives/PolaroidStack.vue';
