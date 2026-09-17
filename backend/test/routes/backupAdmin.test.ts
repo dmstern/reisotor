@@ -51,7 +51,7 @@ describe('Backup Admin restrictions (#224)', () => {
       url: '/api/backup/export',
       headers: { cookie: adminCookie },
     });
-    
+
     expect(res.statusCode).toBe(200);
     expect(res.headers['content-type']).toContain('application/zip');
   });
