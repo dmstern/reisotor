@@ -94,18 +94,78 @@ jobs:
           fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
 
           // Seit dem letzten Release gesammelte Endnutzer-Stichpunkte (siehe AGENTS.md,
-          // "Release-Notes-Fragmente") zu einem Changelog-Eintrag zusammenfassen. Jede Datei kann
-          // mehrere "- "-Zeilen enthalten; Dateien ohne erkennbare Stichpunkte tragen nichts bei.
+          // "Release-Notes-Fragmente") nach Themenbereichen gruppiert zu einem Changelog-Eintrag
+          // zusammenfassen. Jede Datei kann mit einer "### "-Überschrift beginnen.
           const pendingDir = 'release-notes/pending';
           const fragmentFiles = fs.readdirSync(pendingDir).filter((f) => f.endsWith('.md'));
-          const notes = fragmentFiles
-            .flatMap((f) => fs.readFileSync(path.join(pendingDir, f), 'utf-8').split('\n'))
-            .map((line) => line.trim())
-            .filter((line) => line.startsWith('- '));
-          if (notes.length === 0) notes.push('- 🛠️ **Verbesserungen unter der Haube**.');
+
+          const SLUG_TITLES = {
+            trips: 'Reisen & Urlaube',
+            'spots-tours': 'Spots & Touren',
+            'floating-calendar-drawer': 'Kalender & Layout',
+            'brand-and-navigation': 'Design & Navigation',
+            'list-animations': 'Listen & Interaktion',
+            weather: 'Wetter',
+            'settings-sync': 'Einstellungen & Synchronisation',
+            'members-admin': 'Mitreisende & Verwaltung',
+            'deeplinks-trip-id': 'Verlinkung & Teilen',
+            'demo-feedback': 'Demo & Feedback',
+          };
+          const GROUP_PRIORITY = [
+            'trips',
+            'spots-tours',
+            'floating-calendar-drawer',
+            'brand-and-navigation',
+            'list-animations',
+            'weather',
+            'settings-sync',
+            'members-admin',
+            'deeplinks-trip-id',
+            'demo-feedback',
+          ];
+
+          fragmentFiles.sort((a, b) => {
+            const slugA = a.replace(/\.md$/, '');
+            const slugB = b.replace(/\.md$/, '');
+            const prioA = GROUP_PRIORITY.indexOf(slugA);
+            const prioB = GROUP_PRIORITY.indexOf(slugB);
+            if (prioA !== -1 && prioB !== -1) return prioA - prioB;
+            if (prioA !== -1) return -1;
+            if (prioB !== -1) return 1;
+            return a.localeCompare(b);
+          });
+
+          const groups = [];
+          for (const f of fragmentFiles) {
+            const slug = f.replace(/\.md$/, '');
+            const content = fs.readFileSync(path.join(pendingDir, f), 'utf-8');
+            const lines = content.split('\n');
+            let title = '';
+            const headingLine = lines.find((l) => /^#{1,6}\s+/.test(l.trim()));
+            if (headingLine) {
+              title = headingLine.trim().replace(/^#{1,6}\s+/, '').trim();
+            } else {
+              title = SLUG_TITLES[slug] || slug.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+            }
+            const notes = lines
+              .map((line) => line.trim())
+              .filter((line) => line.startsWith('- '));
+            if (notes.length > 0) {
+              groups.push({ title, notes });
+            }
+          }
+
+          let body = '';
+          if (groups.length === 0) {
+            body = '- 🛠️ **Verbesserungen unter der Haube**.';
+          } else {
+            body = groups
+              .map((g) => `### ${g.title}\n\n${g.notes.join('\n')}`)
+              .join('\n\n');
+          }
 
           const date = new Date().toISOString().slice(0, 10);
-          const entry = `## [${next}] - ${date}\n\n${notes.join('\n')}\n\n`;
+          const entry = `## [${next}] - ${date}\n\n${body}\n\n`;
           const changelog = fs.readFileSync('CHANGELOG.md', 'utf-8');
           const marker = '\n## [';
           const insertAt = changelog.indexOf(marker);
