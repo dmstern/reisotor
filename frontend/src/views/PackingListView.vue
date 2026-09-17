@@ -15,6 +15,7 @@ import FormField from '../components/FormField.vue';
 import Button from '../components/primitives/Button.vue';
 import Select from '../components/primitives/Select.vue';
 import Input from '../components/primitives/Input.vue';
+import Badge from '../components/primitives/Badge.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import { useToast } from '../composables/useToast';
 import { sortWithDoneLast } from '../composables/useCheckedSort';
@@ -190,6 +191,8 @@ function progress(listItems: PackingItem[]) {
   return { total, packed };
 }
 
+const overallProgress = computed(() => progress(items.value));
+
 async function updateCounts(item: PackingItem, laidOutCount: number, packedCount: number) {
   const updated = await api.put<PackingItem>(`/packing/${item.id}`, {
     category: item.category ?? undefined,
@@ -264,8 +267,33 @@ async function quickAdd(list: ListGroup, label: string) {
   <div class="page packing-page" v-if="!loading">
     <div class="page-header-row">
       <div class="page-header-top">
-        <h1>Packliste</h1>
+        <div class="page-title-group">
+          <h1>Packliste</h1>
+          <div class="progress-pill-group">
+            <Badge
+              :variant="
+                overallProgress.packed === overallProgress.total && overallProgress.total > 0
+                  ? 'success'
+                  : 'primary'
+              "
+              size="sm"
+            >
+              {{ overallProgress.packed }}/{{ overallProgress.total }} gepackt
+            </Badge>
+            <span v-if="overallProgress.total > 0" class="progress-percentage">
+              {{ Math.round((overallProgress.packed / overallProgress.total) * 100) }}%
+            </span>
+          </div>
+        </div>
         <CompletedToggle v-model="uiSettings.hideCompletedPacking" />
+      </div>
+      <div v-if="overallProgress.total > 0" class="header-progress-track" aria-hidden="true">
+        <div
+          class="header-progress-bar"
+          :style="{
+            width: `${Math.round((overallProgress.packed / overallProgress.total) * 100)}%`,
+          }"
+        ></div>
       </div>
     </div>
 
@@ -407,7 +435,7 @@ async function quickAdd(list: ListGroup, label: string) {
 
 <style scoped>
 .page-header-row {
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-3);
 }
 
 .page-header-top {
@@ -416,6 +444,42 @@ async function quickAdd(list: ListGroup, label: string) {
   justify-content: space-between;
   gap: var(--space-3);
   flex-wrap: wrap;
+}
+
+.page-title-group {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.progress-pill-group {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.progress-percentage {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.header-progress-track {
+  width: 100%;
+  max-width: 320px;
+  height: 4px;
+  background: var(--color-hover);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  margin-top: var(--space-2);
+}
+
+.header-progress-bar {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: var(--radius-pill);
+  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 :deep(.quick-add-row) {
