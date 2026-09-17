@@ -166,9 +166,25 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
         version: demoVersion,
         date: new Date().toISOString().slice(0, 10),
         notes: [
-          'Neue Dialoge für verfügbare Updates und Versions-Changelogs',
-          'Einstellungs-Option zum Deaktivieren von Update-Popups',
-          'Verbesserte Offline-Stabilität und Performance',
+          '🔔 **Update-Dialoge**: Neue Dialoge für verfügbare Updates und Versions-Changelogs',
+          '⚙️ **Einstellungen**: Einstellungs-Option zum Deaktivieren von Update-Popups',
+          '⚡ **Performance**: Verbesserte Offline-Stabilität und schnellere Ladezeiten',
+        ],
+        groups: [
+          {
+            title: 'Design & Navigation',
+            notes: [
+              '🔔 **Update-Dialoge**: Neue Dialoge für verfügbare Updates und Versions-Changelogs',
+            ],
+          },
+          {
+            title: 'Einstellungen & Synchronisation',
+            notes: ['⚙️ **Einstellungen**: Einstellungs-Option zum Deaktivieren von Update-Popups'],
+          },
+          {
+            title: 'Leistung & Stabilität',
+            notes: ['⚡ **Performance**: Verbesserte Offline-Stabilität und schnellere Ladezeiten'],
+          },
         ],
       },
       repoUrl: __REPO_URL__,
