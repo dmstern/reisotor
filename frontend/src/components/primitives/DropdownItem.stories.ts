@@ -52,3 +52,13 @@ export const Multiselect: Story = {
     checked: true,
   },
 };
+
+export const WithTrailingIcon: Story = {
+  args: {
+    label: 'nach Zeitraum',
+    icon: FORM_FIELD_ICONS.period,
+    iconGroup: 'formFields',
+    active: true,
+    trailingIcon: ACTION_ICONS.done,
+  },
+};

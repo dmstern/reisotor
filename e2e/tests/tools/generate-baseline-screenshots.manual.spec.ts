@@ -56,7 +56,7 @@ async function saveScreenshotIfChanged(
   // Erhöhte Toleranz (25.000 Pixel entspricht ca. 1.2% bei Full HD), da Anti-Aliasing
   // und Font-Rendering zwischen macOS, Fedora und der CI (Ubuntu Jammy) zehntausende
   // Pixel minimal (Graustufen) abweichen lässt, selbst bei gleicher Fira-Sans-Schriftart.
-  const { fullPage = false, maxDiffPixels = 25000 } = options;
+  const { fullPage = false, maxDiffPixels } = options;
   const newBuffer = await page.screenshot({ fullPage, animations: 'disabled', caret: 'hide' });
 
   let result: { status: 'created' | 'updated' | 'unchanged'; diffPixels?: number };
@@ -81,7 +81,13 @@ async function saveScreenshotIfChanged(
           threshold: 0.2,
         });
 
-        if (numDiffPixels > maxDiffPixels) {
+        const effectiveMaxDiff =
+          maxDiffPixels ??
+          (img1.width <= 500
+            ? Math.max(300, Math.round(img1.width * img1.height * 0.012))
+            : Math.round(img1.width * img1.height * 0.005));
+
+        if (numDiffPixels > effectiveMaxDiff) {
           fs.writeFileSync(screenshotPath, newBuffer);
           console.log(`[Updated: ${numDiffPixels} px diff] ${path.basename(screenshotPath)}`);
           result = { status: 'updated', diffPixels: numDiffPixels };
@@ -292,10 +298,10 @@ test.describe('Generate Clean Production Baseline Screenshots (Full HD)', () => 
   }
 
   test('Capture screenshots for landing page', async ({ page }) => {
-    test.setTimeout(90000);
+    test.setTimeout(180000);
+    await forceFontDisplayBlock(page);
     for (const vp of VIEWPORTS) {
       await page.setViewportSize({ width: vp.width, height: vp.height });
-      await forceFontDisplayBlock(page);
       await page.goto('/landing.html');
       await page.waitForTimeout(500);
 

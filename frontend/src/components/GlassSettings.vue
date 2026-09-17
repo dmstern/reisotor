@@ -34,8 +34,8 @@ function selectPreset(val: string) {
 const isDefault = computed(() => {
   return (
     uiSettings.glassStyle === 'glass' &&
-    uiSettings.glassOpacity === 55 &&
-    uiSettings.glassBlur === 6
+    uiSettings.glassOpacity === 85 &&
+    uiSettings.glassBlur === 12
   );
 });
 
@@ -44,7 +44,7 @@ function resetGlass() {
 }
 
 function onSliderChange() {
-  if (uiSettings.glassOpacity === 55 && uiSettings.glassBlur === 6) {
+  if (uiSettings.glassOpacity === 85 && uiSettings.glassBlur === 12) {
     uiSettings.glassStyle = 'glass';
   } else if (uiSettings.glassOpacity === 80 && uiSettings.glassBlur === 24) {
     uiSettings.glassStyle = 'frosted';

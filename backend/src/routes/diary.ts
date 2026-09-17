@@ -24,12 +24,19 @@ interface EntryRow {
   author_avatar?: string;
 }
 
+interface DiaryImageObject {
+  url: string;
+  original_name?: string;
+}
+
+type DiaryImageInput = string | DiaryImageObject;
+
 interface EntryBody {
   trip_id: number;
   title?: string;
   content: string;
   content_format?: 'html' | 'legacy';
-  images?: string[];
+  images?: DiaryImageInput[];
   excursion_ids?: number[];
   spot_ids?: number[];
   date?: string;
@@ -154,6 +161,7 @@ interface CommentBody {
 
 interface ImageUploadBody {
   data: string;
+  filename?: string;
 }
 
 const ALLOWED_IMAGE_TYPES: Record<string, string> = {
@@ -169,9 +177,17 @@ function serializeEntry(
   spotIds: number[] = [],
   editorIds: number[] = []
 ) {
+  let images: DiaryImageInput[] = [];
+  if (row.images) {
+    try {
+      images = JSON.parse(row.images);
+    } catch {
+      images = [];
+    }
+  }
   return {
     ...row,
-    images: row.images ? (JSON.parse(row.images) as string[]) : [],
+    images,
     excursion_ids: excursionIds,
     spot_ids: spotIds,
     editor_ids: editorIds,
@@ -252,7 +268,18 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
     const filename = `${randomUUID()}.${extension}`;
     await writeFile(path.join(uploadsDir, filename), buffer);
     reply.code(201);
-    return { url: `/api/uploads/${filename}` };
+    const rawName = req.body?.filename
+      ? req.body.filename
+          .split(/[\\/]/)
+          .pop()
+          ?.replace(/[\x00-\x1f\x7f]/g, '')
+          .trim()
+      : '';
+    const originalName = rawName || filename;
+    return {
+      url: `/api/uploads/${filename}`,
+      original_name: originalName,
+    };
   });
 
   app.post<{ Body: EntryBody }>('/diary', async (req, reply) => {

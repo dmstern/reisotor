@@ -162,7 +162,31 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
       version: demoVersion,
       ref: __APP_COMMIT__,
       builtAt: __APP_BUILT_AT__,
-      changelog: null,
+      changelog: {
+        version: demoVersion,
+        date: new Date().toISOString().slice(0, 10),
+        notes: [
+          '🔔 **Update-Dialoge**: Neue Dialoge für verfügbare Updates und Versions-Changelogs',
+          '⚙️ **Einstellungen**: Einstellungs-Option zum Deaktivieren von Update-Popups',
+          '⚡ **Performance**: Verbesserte Offline-Stabilität und schnellere Ladezeiten',
+        ],
+        groups: [
+          {
+            title: 'Design & Navigation',
+            notes: [
+              '🔔 **Update-Dialoge**: Neue Dialoge für verfügbare Updates und Versions-Changelogs',
+            ],
+          },
+          {
+            title: 'Einstellungen & Synchronisation',
+            notes: ['⚙️ **Einstellungen**: Einstellungs-Option zum Deaktivieren von Update-Popups'],
+          },
+          {
+            title: 'Leistung & Stabilität',
+            notes: ['⚡ **Performance**: Verbesserte Offline-Stabilität und schnellere Ladezeiten'],
+          },
+        ],
+      },
       repoUrl: __REPO_URL__,
       hostingLocation: 'GitHub Pages (Demo)',
       environment: 'production',
@@ -200,8 +224,11 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
       issueNumber: 999,
     } as unknown as T;
   }
-  if (path === '/images' && method === 'POST') {
-    return { url: String(body?.data ?? '') } as unknown as T;
+  if ((path === '/images' || path === '/diary/images') && method === 'POST') {
+    return {
+      url: String(body?.data ?? ''),
+      original_name: String(body?.filename ?? 'Bild'),
+    } as unknown as T;
   }
 
   // --- Trip members & region info ---

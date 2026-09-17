@@ -67,7 +67,7 @@ import IconButton from './primitives/IconButton.vue';
 import DropdownItem from './primitives/DropdownItem.vue';
 import PickerMenu from './primitives/PickerMenu.vue';
 import TravelDetailDialog from './TravelDetailDialog.vue';
-import DayChip from './DayChip.vue';
+import DayStrip from './DayStrip.vue';
 import AppIcon from './AppIcon.vue';
 import TrackRecordingWarningModal from './TrackRecordingWarningModal.vue';
 
@@ -1785,17 +1785,14 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
       to="#map-focus-dock"
       :disabled="!isNarrowLayout"
     >
-      <div class="day-strip" v-if="vacationDays.length">
-        <DayChip
-          v-for="day in vacationDays"
-          :key="day"
-          :date="day"
-          :active="drawers.mapFocusDate === day"
-          :has-content="dayHasContent(day)"
-          :title="formatDate(day)"
-          @click="toggleDayFocus(day)"
-        />
-      </div>
+      <DayStrip
+        v-if="vacationDays.length"
+        :days="vacationDays"
+        :active-date="drawers.mapFocusDate"
+        :has-content="dayHasContent"
+        :date-title="formatDate"
+        @select="toggleDayFocus"
+      />
     </Teleport>
 
     <TravelDetailDialog
@@ -2102,7 +2099,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
 }
 
 /* Mobil (Default): schwebt als horizontal scrollbare Leiste über dem unteren Kartenrand (analog zu
-   .focus-spot-list oben, nur unten statt oben verankert). Auf Desktop (@container weiter unten)
+   .focus-spot-list oben, nur unten statt oben verankert). Auf Desktop (@media weiter unten)
    wieder normales Flow-Element unterhalb der Karte. */
 .day-strip {
   position: absolute;
@@ -2110,18 +2107,6 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
   right: 10px;
   bottom: 10px;
   z-index: 1000;
-  display: flex;
-  gap: 6px;
-  overflow-x: auto;
-  padding: 6px;
-  background: var(--color-surface);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  /* --shadow-sm (statt --shadow-md) - dessen 24px-Blur-Radius sprengte das für
-     .focus-spot-list/.map-col/.spots-col-body reservierte Padding (8-16px) und wurde deshalb
-     weiterhin links/rechts abgeschnitten (#158, Folgefeedback). Gleiche Schatten-Stärke wie die
-     übrigen schwebenden Karten hier (.card-Klasse). */
-  box-shadow: var(--shadow-sm);
 }
 
 /* Innerhalb der teleportierten Spots-Schublade (siehe Teleport-Kommentar oben) ist der Streifen
@@ -2129,27 +2114,12 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
    .day-strip, damit diese Regel unabhängig von Deklarationsreihenfolge/@container zuverlässig
    gewinnt (gleiches Prinzip wie DESIGN.md, Abschnitt "Abstände"). */
 #map-focus-dock .day-strip {
-  position: static;
+  position: relative;
   left: auto;
   right: auto;
   bottom: auto;
   z-index: auto;
   margin-bottom: var(--space-2);
-}
-
-.day-strip :deep(.day-chip) {
-  position: relative;
-}
-
-.day-strip :deep(.day-chip)::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  min-width: 44px;
-  width: 100%;
-  height: 44px;
-  transform: translate(-50%, -50%);
 }
 
 /* Die OpenStreetMap-Kacheln selbst kennen keinen Dark Mode – ein Farb-Invert nur auf der
@@ -2259,8 +2229,8 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
     width: fit-content;
     max-width: min(400px, calc(100% - 140px));
     border-radius: 999px;
+    corner-shape: round;
     bottom: calc(var(--navbar-bottom-offset, 0px) + 24px);
-    padding: 8px 16px;
   }
 }
 </style>

@@ -19,13 +19,15 @@ import { useDraftAutosave } from '../composables/useDraftAutosave';
 import { sortWithDoneLast } from '../composables/useCheckedSort';
 import { usePersistedRef } from '../composables/usePersistedRef';
 import { useUiSettingsStore } from '../stores/uiSettings';
-import CompletedToggle from '../components/CompletedToggle.vue';
+import ListSettingsMenu from '../components/ListSettingsMenu.vue';
 import AppIcon from '../components/AppIcon.vue';
 import Button from '../components/primitives/Button.vue';
 import Checkbox from '../components/primitives/Checkbox.vue';
 import CheckableListItem from '../components/primitives/CheckableListItem.vue';
 import Select from '../components/primitives/Select.vue';
 import Input from '../components/primitives/Input.vue';
+import Accordion from '../components/primitives/Accordion.vue';
+import Badge from '../components/primitives/Badge.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import type { IconDef } from '../utils/icon';
@@ -44,8 +46,19 @@ type GroupBy = 'buyer' | 'shop' | 'period';
 // Gruppierung sowie zuletzt gewählter Shop/Zeitraum bleiben über localStorage auch nach einem
 // Reload/erneuten Besuch erhalten (siehe usePersistedRef.ts) - bewusst NICHT nach jedem addItem()
 // zurückgesetzt (anders als Label/Link/Notiz, die je Gegenstand unterschiedlich sind), damit sie beim
-// nächsten Öffnen der Einkaufsliste direkt wieder vorausgewählt sind.
 const groupBy = usePersistedRef<GroupBy>('reisotor-shopping-group-by', 'buyer');
+
+const defaultGroupBy = computed<GroupBy>(() => (users.value.length > 1 ? 'buyer' : 'shop'));
+
+const groupByOptions = computed(() => {
+  const opts = [];
+  if (users.value.length > 1) {
+    opts.push({ value: 'buyer', label: 'nach Einkäufer:in', icon: FORM_FIELD_ICONS.person });
+  }
+  opts.push({ value: 'shop', label: 'nach Shop', icon: FORM_FIELD_ICONS.shop });
+  opts.push({ value: 'period', label: 'nach Zeitraum', icon: FORM_FIELD_ICONS.period });
+  return opts;
+});
 
 const newLabel = ref('');
 const newBuyer = ref('');
@@ -86,6 +99,17 @@ const editDraft = useDraftAutosave(
   computed(() => editingItem.value !== null)
 );
 
+const showNewDetails = ref(false);
+
+watch(
+  () => newDraft.restored.value,
+  (restored) => {
+    if (restored && (newLink.value || newNote.value)) {
+      showNewDetails.value = true;
+    }
+  }
+);
+
 async function load() {
   try {
     const [itemsRes, usersRes] = await Promise.all([
@@ -121,6 +145,18 @@ watch(
 );
 
 const UNASSIGNED_SHOP = 'Ohne Shop';
+
+function userAvatar(id: number | null | undefined) {
+  if (id == null) return null;
+  const u = users.value.find((u) => u.id === id);
+  return u ? u.avatar : null;
+}
+
+function userName(id: number | null | undefined) {
+  if (id == null) return null;
+  const u = users.value.find((u) => u.id === id);
+  return u ? u.username : null;
+}
 
 function isChecked(item: ShoppingItem) {
   return !!item.checked;
@@ -301,6 +337,7 @@ async function addItem() {
   newLabel.value = '';
   newLink.value = '';
   newNote.value = '';
+  showNewDetails.value = false;
   // Shop/Zeitraum bleiben bewusst stehen (siehe usePersistedRef oben) - praktisch, wenn mehrere
   // Artikel für denselben Shop/Zeitraum hintereinander erfasst werden, und dient gleichzeitig als
   // Vorbelegung fürs nächste Öffnen der Liste.
@@ -347,59 +384,123 @@ async function quickAddToGroup(group: Group, label: string) {
 
 <template>
   <div class="page shopping-page" v-if="!loading">
-    <h1>Einkaufsliste</h1>
-    <p>{{ progress.checked }}/{{ progress.total }} gekauft</p>
-
-    <form class="add-form card" @submit.prevent="addItem">
-      <FormField icon="title" label="Artikel" v-slot="{ id }">
-        <Input :id="id" v-model="newLabel" type="text" placeholder="Neuer Artikel" required />
-      </FormField>
-      <FormField icon="shop" label="Shop" v-slot="{ id }">
-        <Combobox
-          :id="id"
-          v-model="newShop"
-          :options="knownShops"
-          placeholder="Shop/Laden (optional)"
+    <div class="page-header-row">
+      <div class="page-header-top">
+        <div class="page-title-group">
+          <div class="title-with-pill">
+            <h1>Einkaufsliste</h1>
+            <div class="progress-pill-group">
+              <Badge
+                :variant="
+                  progress.checked === progress.total && progress.total > 0 ? 'success' : 'primary'
+                "
+                size="sm"
+              >
+                {{ progress.checked }}/{{ progress.total }} gekauft
+              </Badge>
+              <span v-if="progress.total > 0" class="progress-percentage">
+                {{ Math.round((progress.checked / progress.total) * 100) }}%
+              </span>
+            </div>
+          </div>
+          <div v-if="progress.total > 0" class="header-progress-track" aria-hidden="true">
+            <div
+              class="header-progress-bar"
+              :style="{ width: `${Math.round((progress.checked / progress.total) * 100)}%` }"
+            ></div>
+          </div>
+        </div>
+        <ListSettingsMenu
+          v-model:group-by="groupBy"
+          :group-by-options="groupByOptions"
+          :default-group-by="defaultGroupBy"
+          v-model:hide-completed="uiSettings.hideCompletedShopping"
+          hide-completed-label="Erledigte ausblenden"
         />
-      </FormField>
-      <FormField v-if="users.length > 1" icon="person" label="Einkäufer:in" v-slot="{ id }">
-        <Select :id="id" v-model="newBuyer">
-          <option value="">Kein:e Einkäufer:in</option>
-          <option v-for="u in users" :key="u.id" :value="String(u.id)">
-            {{ u.avatar }} {{ u.username }}
-          </option>
-        </Select>
-      </FormField>
-      <FormField icon="period" label="Zeitraum" v-slot="{ id }">
-        <Select :id="id" v-model="newPeriod">
-          <option value="">Kein Zeitraum</option>
-          <option value="before">{{ PERIOD_META.before }}</option>
-          <option value="during">{{ PERIOD_META.during }}</option>
-        </Select>
-      </FormField>
-      <FormField icon="link" label="Link" v-slot="{ id }">
-        <Input :id="id" v-model="newLink" type="url" placeholder="Link (optional, z. B. Amazon)" />
-      </FormField>
-      <FormField icon="note" label="Notiz" v-slot="{ id }">
-        <Input :id="id" v-model="newNote" type="text" placeholder="Notiz (optional)" />
-      </FormField>
-      <Button type="submit">Hinzufügen</Button>
+      </div>
+    </div>
+
+    <!-- Progressives Schnelleingabe-Formular -->
+    <form class="add-form card" @submit.prevent="addItem">
+      <div class="quick-input-row">
+        <div class="main-input-wrap">
+          <FormField icon="title" label="Artikel" v-slot="{ id }">
+            <div class="input-inline-action-wrap">
+              <Input :id="id" v-model="newLabel" type="text" placeholder="Neuer Artikel" required />
+              <Button
+                type="submit"
+                class="inline-submit-btn"
+                variant="primary"
+                size="sm"
+                :icon="ACTION_ICONS.send"
+                :disabled="!newLabel.trim()"
+                aria-label="Hinzufügen"
+                title="Hinzufügen"
+              />
+            </div>
+          </FormField>
+        </div>
+
+        <div class="quick-input-actions">
+          <Button
+            type="button"
+            variant="ghost"
+            class="details-toggle-btn"
+            :aria-expanded="showNewDetails"
+            @click="showNewDetails = !showNewDetails"
+          >
+            <AppIcon
+              :icon="showNewDetails ? ACTION_ICONS.chevronUp : ACTION_ICONS.chevronDown"
+              :size="14"
+              group="actions"
+            />
+            <span>Details</span>
+          </Button>
+        </div>
+      </div>
+
+      <!-- Sanft ausklappbare Detail-Felder -->
+      <Accordion :expanded="showNewDetails" :inert-when-closed="false">
+        <div class="form-details-grid">
+          <FormField icon="shop" label="Shop" v-slot="{ id }">
+            <Combobox
+              :id="id"
+              v-model="newShop"
+              :options="knownShops"
+              placeholder="Shop/Laden (optional)"
+            />
+          </FormField>
+          <FormField v-if="users.length > 1" icon="person" label="Einkäufer:in" v-slot="{ id }">
+            <Select :id="id" v-model="newBuyer">
+              <option value="">Kein:e Einkäufer:in</option>
+              <option v-for="u in users" :key="u.id" :value="String(u.id)">
+                {{ u.avatar }} {{ u.username }}
+              </option>
+            </Select>
+          </FormField>
+          <FormField icon="period" label="Zeitraum" v-slot="{ id }">
+            <Select :id="id" v-model="newPeriod">
+              <option value="">Kein Zeitraum</option>
+              <option value="before">{{ PERIOD_META.before }}</option>
+              <option value="during">{{ PERIOD_META.during }}</option>
+            </Select>
+          </FormField>
+          <FormField icon="link" label="Link" v-slot="{ id }">
+            <Input
+              :id="id"
+              v-model="newLink"
+              type="url"
+              placeholder="Link (optional, z. B. Amazon)"
+            />
+          </FormField>
+          <FormField icon="note" label="Notiz" v-slot="{ id }">
+            <Input :id="id" v-model="newNote" type="text" placeholder="Notiz (optional)" />
+          </FormField>
+        </div>
+      </Accordion>
+
       <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
     </form>
-
-    <div class="filter-row">
-      <div class="tool-row">
-        <span class="tool-label"
-          ><AppIcon :icon="ACTION_ICONS.group" :size="14" group="actions" /> Gruppieren</span
-        >
-        <Select v-model="groupBy" aria-label="Gruppieren">
-          <option v-if="users.length > 1" value="buyer">nach Einkäufer:in</option>
-          <option value="shop">nach Shop</option>
-          <option value="period">nach Zeitraum</option>
-        </Select>
-      </div>
-      <CompletedToggle v-model="uiSettings.hideCompletedShopping" />
-    </div>
 
     <div class="groups-grid">
       <section
@@ -412,38 +513,7 @@ async function quickAddToGroup(group: Group, label: string) {
           <AppIcon v-if="group.iconDef" :icon="group.iconDef" :size="18" group="categories" />
           {{ group.label }}
         </h2>
-        <QuickAddRow
-          class="card group-quick-add"
-          placeholder="Artikel hinzufügen…"
-          @submit="(label) => quickAddToGroup(group, label)"
-        >
-          <template #extra>
-            <Select
-              v-if="users.length > 1 && groupBy !== 'buyer'"
-              v-model="newBuyer"
-              aria-label="Käufer:in"
-              size="sm"
-            >
-              <option value="">Nicht zugewiesen</option>
-              <option v-for="u in users" :key="u.id" :value="String(u.id)">
-                {{ u.avatar }} {{ u.username }}
-              </option>
-            </Select>
-            <Combobox
-              v-if="groupBy !== 'shop'"
-              v-model="newShop"
-              :options="knownShops"
-              placeholder="Shop"
-              size="sm"
-            />
-            <Select v-if="groupBy !== 'period'" v-model="newPeriod" aria-label="Zeitraum" size="sm">
-              <option value="">Zeitraum</option>
-              <option value="before">{{ PERIOD_META.before }}</option>
-              <option value="during">{{ PERIOD_META.during }}</option>
-            </Select>
-          </template>
-        </QuickAddRow>
-        <div class="card">
+        <div class="card group-card">
           <TransitionGroup tag="ul" name="list" class="list">
             <CheckableListItem
               v-for="item in group.items"
@@ -458,36 +528,58 @@ async function quickAddToGroup(group: Group, label: string) {
                   :checked="!!item.checked"
                   @change="toggle(item)"
                 />
-                <span :class="{ 'row__text--done': item.checked, 'text-done': item.checked }">
+                <span
+                  class="item-title"
+                  :class="{ 'row__text--done': item.checked, 'text-done': item.checked }"
+                >
                   {{ item.label }}
                 </span>
               </label>
-              <PendingSyncBadge v-if="item._pending" />
-              <span v-if="groupBy !== 'shop' && item.shop" class="tag">
-                <AppIcon :icon="FORM_FIELD_ICONS.shop" :size="13" group="formFields" />
-                {{ item.shop }}
-              </span>
-              <span v-if="groupBy !== 'period' && item.period" class="tag">
-                <AppIcon :icon="FORM_FIELD_ICONS.period" :size="13" group="formFields" />
-                {{ PERIOD_META[item.period] }}
-              </span>
-              <a v-if="item.link" :href="item.link" target="_blank" rel="noopener" class="link">
-                <AppIcon :icon="FORM_FIELD_ICONS.link" :size="13" group="formFields" /> Link
-              </a>
-              <span v-if="item.note" class="note">{{ item.note }}</span>
-              <!-- eslint-disable-next-line vuejs-accessibility/no-onchange -->
-              <Select
-                v-if="users.length > 1 && groupBy !== 'buyer'"
-                aria-label="Käufer:in"
-                class="buyer-select"
-                :model-value="item.assigned_to_user_id ?? ''"
-                @change="reassign(item, $event)"
-              >
-                <option value="">Nicht zugewiesen</option>
-                <option v-for="u in users" :key="u.id" :value="String(u.id)">
-                  {{ u.avatar }} {{ u.username }}
-                </option>
-              </Select>
+
+              <div class="item-meta">
+                <PendingSyncBadge v-if="item._pending" />
+                <Badge v-if="groupBy !== 'shop' && item.shop" size="sm" class="shop-badge">
+                  <AppIcon :icon="FORM_FIELD_ICONS.shop" :size="12" group="formFields" />
+                  {{ item.shop }}
+                </Badge>
+                <Badge v-if="groupBy !== 'period' && item.period" size="sm" class="period-badge">
+                  <AppIcon :icon="FORM_FIELD_ICONS.period" :size="12" group="formFields" />
+                  {{ PERIOD_META[item.period] }}
+                </Badge>
+                <a v-if="item.link" :href="item.link" target="_blank" rel="noopener" class="link">
+                  <AppIcon :icon="FORM_FIELD_ICONS.link" :size="12" group="formFields" /> Link
+                </a>
+                <span v-if="item.note" class="note" :title="item.note">
+                  <AppIcon :icon="FORM_FIELD_ICONS.note" :size="12" group="formFields" />
+                  {{ item.note }}
+                </span>
+                <div
+                  v-if="users.length > 1 && groupBy !== 'buyer'"
+                  class="buyer-avatar-picker"
+                  :title="
+                    item.assigned_to_user_id
+                      ? `Käufer:in: ${userName(item.assigned_to_user_id)}`
+                      : 'Käufer:in zuweisen'
+                  "
+                >
+                  <span class="avatar-display" aria-hidden="true">
+                    {{ userAvatar(item.assigned_to_user_id) || '👤' }}
+                  </span>
+                  <!-- eslint-disable-next-line vuejs-accessibility/no-onchange -->
+                  <select
+                    class="buyer-native-select"
+                    aria-label="Käufer:in"
+                    :value="item.assigned_to_user_id ?? ''"
+                    @change="reassign(item, $event)"
+                  >
+                    <option value="">👤 Nicht zugewiesen</option>
+                    <option v-for="u in users" :key="u.id" :value="String(u.id)">
+                      {{ u.avatar }} {{ u.username }}
+                    </option>
+                  </select>
+                </div>
+              </div>
+
               <template #actions>
                 <EditButton small @click="startEdit(item)" />
                 <DeleteButton small @click="remove(item.id)" />
@@ -501,6 +593,43 @@ async function quickAddToGroup(group: Group, label: string) {
               }}
             </li>
           </TransitionGroup>
+
+          <QuickAddRow
+            class="group-quick-add"
+            placeholder="Artikel hinzufügen…"
+            @submit="(label) => quickAddToGroup(group, label)"
+          >
+            <template #extra>
+              <Select
+                v-if="users.length > 1 && groupBy !== 'buyer'"
+                v-model="newBuyer"
+                aria-label="Käufer:in"
+                size="sm"
+              >
+                <option value="">Nicht zugewiesen</option>
+                <option v-for="u in users" :key="u.id" :value="String(u.id)">
+                  {{ u.avatar }} {{ u.username }}
+                </option>
+              </Select>
+              <Combobox
+                v-if="groupBy !== 'shop'"
+                v-model="newShop"
+                :options="knownShops"
+                placeholder="Shop"
+                size="sm"
+              />
+              <Select
+                v-if="groupBy !== 'period'"
+                v-model="newPeriod"
+                aria-label="Zeitraum"
+                size="sm"
+              >
+                <option value="">Zeitraum</option>
+                <option value="before">{{ PERIOD_META.before }}</option>
+                <option value="during">{{ PERIOD_META.during }}</option>
+              </Select>
+            </template>
+          </QuickAddRow>
         </div>
       </section>
     </div>
@@ -548,64 +677,165 @@ async function quickAddToGroup(group: Group, label: string) {
 </template>
 
 <style scoped>
-.add-form {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
+.page-header-row {
   margin-bottom: var(--space-3);
 }
 
-.add-form .form-field {
+.page-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.page-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
   flex: 1;
-  min-width: 140px;
 }
 
-/* Ohne eigenes FormField-Label würde der Absenden-Button, sobald er in derselben umgebrochenen
-   Flex-Zeile wie ein FormField landet, vom Flex-Default align-items:stretch auf dessen (größere)
-   Höhe gezogen (Konsistenz-Prinzip, siehe DESIGN.md). flex-basis:100% erzwingt stattdessen immer
-   eine eigene, volle Zeile - Absenden-Button bekommt so app-weit dieselbe, natürliche Höhe. Auf Mobil
-   ist eine volle Zeile für den primären Absenden-Button zudem ohnehin der übliche, gut antippbare
-   Standard (großer Touch-Target). */
-.add-form button[type='submit'] {
-  flex: 1 1 100%;
+.title-with-pill {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  flex-wrap: wrap;
 }
 
-/* Auf Desktop wirkte derselbe volle-Breite-Button auf der (bis zu 1400px breiten, siehe .shopping-
-   page oben) Karte überdimensioniert - hier stattdessen normal breit wie jeder andere Button, am
-   Ende der letzten Feld-Zeile ausgerichtet statt in voller Kartenbreite gestreckt. align-self:flex-
-   end statt des geerbten align-items:stretch übernimmt dieselbe Höhen-Absicherung wie oben (Button
-   bleibt bei seiner natürlichen Höhe, nicht auf FormField-Höhe gezogen), nur diesmal ohne die eigene
-   volle Zeile zu erzwingen. */
-@media (min-width: 800px) {
-  .add-form button[type='submit'] {
-    flex: 0 0 auto;
-    align-self: flex-end;
+.progress-pill-group {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.progress-percentage {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.header-progress-track {
+  width: 100%;
+  max-width: 320px;
+  height: 4px;
+  background: var(--color-hover);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.header-progress-bar {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: var(--radius-pill);
+  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Progressives Schnelleingabe-Formular */
+.add-form {
+  margin-bottom: var(--space-4);
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.quick-input-row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.main-input-wrap {
+  flex: 1;
+  min-width: 160px;
+}
+
+.main-input-wrap :deep(.form-field) {
+  margin-bottom: 0;
+}
+
+.input-inline-action-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.input-inline-action-wrap :deep(.input) {
+  width: 100%;
+  padding-right: 44px;
+}
+
+.inline-submit-btn {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  translate: 0 -50%;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0;
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: none;
+  transition:
+    background 0.15s ease,
+    opacity 0.15s ease,
+    scale 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.inline-submit-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.inline-submit-btn:hover:not(:disabled) {
+  scale: 1.05;
+}
+
+.inline-submit-btn:active:not(:disabled) {
+  scale: 0.95;
+}
+
+.quick-input-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.details-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.form-details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--space-2);
+  padding-top: var(--space-3);
+  border-top: 1px dashed var(--color-border);
+  margin-top: var(--space-2);
+}
+
+@media (max-width: 640px) {
+  .quick-input-actions {
+    margin-left: auto;
   }
 }
 
-.filter-row {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  margin-bottom: var(--space-3);
-  font-size: 0.9rem;
-}
-
-/* Gleiches Muster wie ExcursionsView.vue's Gruppieren/Sortieren/Filtern-Zeile (dort .tool-row/
-   .tool-label) - für Konsistenz app-weit hier 1:1 übernommen statt einer eigenen Variante. */
-.tool-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.tool-label {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
-  flex-shrink: 0;
+@container app-main (max-width: 640px) {
+  .quick-input-actions {
+    margin-left: auto;
+  }
 }
 
 .groups-grid {
@@ -624,20 +854,23 @@ async function quickAddToGroup(group: Group, label: string) {
   margin-bottom: var(--space-2);
 }
 
-.group-quick-add {
-  margin-bottom: var(--space-2);
+.group-card {
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+}
+
+.group-quick-add,
+.group-quick-add.expanded {
+  padding: var(--space-3) 0 0 0;
+  border-top: 1px solid var(--color-border);
+  margin-top: var(--space-2);
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .group-quick-add :deep(select) {
   width: auto;
-}
-
-.tag {
-  font-size: 0.78rem;
-  color: var(--color-text-muted);
-  background: var(--color-hover);
-  border-radius: var(--radius-pill);
-  padding: 2px 8px;
 }
 
 .list {
@@ -651,25 +884,90 @@ async function quickAddToGroup(group: Group, label: string) {
   align-items: center;
   gap: var(--space-2);
   cursor: pointer;
-  flex: 1;
-  min-width: 120px;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.item-title {
+  min-width: 0;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.item-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+  margin-left: auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+:deep(.checkable-list-item__actions),
+:deep(.row-actions) {
+  margin-left: 0;
+}
+
+.shop-badge,
+.period-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 0.82rem;
 }
 
 .note {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 0.82rem;
   color: var(--color-text-muted);
 }
 
-.buyer-select {
-  font-size: 0.82rem;
-  padding: 4px 6px;
-  /* Kompaktes Inline-Select direkt in der Listenzeile (kein Formularfeld) - überschreibt
-     style.css's globale min-height (44px). */
-  min-height: 0;
+.buyer-avatar-picker {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-pill);
+  background: var(--color-hover);
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.buyer-avatar-picker:hover {
+  background: var(--color-surface);
+  border-color: var(--color-border-strong);
+}
+
+.buyer-avatar-picker .avatar-display {
+  font-size: 0.85rem;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.buyer-native-select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
 }
 
 .edit-form {

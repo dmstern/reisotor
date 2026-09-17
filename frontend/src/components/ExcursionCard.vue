@@ -21,6 +21,7 @@ import PendingSyncBadge from './PendingSyncBadge.vue';
 import AppIcon from './AppIcon.vue';
 import Card from './primitives/Card.vue';
 import Button from './primitives/Button.vue';
+import Badge from './primitives/Badge.vue';
 import Input from './primitives/Input.vue';
 import PickerMenu from './primitives/PickerMenu.vue';
 import PolaroidStack from './primitives/PolaroidStack.vue';
@@ -364,17 +365,27 @@ function onSpotDrop(event: DragEvent) {
           </div>
 
           <div class="card-badge-group">
-            <span v-if="excursion.role" class="role-badge">
+            <Badge v-if="excursion.role" variant="primary" class="role-badge">
               <AppIcon
                 :icon="TRAVEL_ROLE_META[excursion.role].tabler"
                 :size="14"
                 group="categories"
               />
               {{ TRAVEL_ROLE_META[excursion.role].label }}
-            </span>
-            <span v-else class="tour-type-badge" title="Tour / Ausflug">
+            </Badge>
+            <Badge
+              v-else
+              variant="custom"
+              class="tour-type-badge"
+              title="Tour / Ausflug"
+              style="
+                --badge-bg: var(--excursion-theme-tint);
+                --badge-color: var(--excursion-theme-color);
+                --badge-border: var(--excursion-theme-border);
+              "
+            >
               <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="12" group="categories" /> Tour
-            </span>
+            </Badge>
             <PendingSyncBadge v-if="excursion._pending" />
           </div>
         </div>
@@ -768,18 +779,8 @@ function onSpotDrop(event: DragEvent) {
 
 .tour-type-badge {
   flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 0.7rem;
-  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  padding: 1px 7px;
-  border-radius: 999px;
-  background: var(--excursion-theme-tint);
-  color: var(--excursion-theme-color);
-  border: 1px solid var(--excursion-theme-border);
 }
 
 .placeholder {
@@ -1272,15 +1273,6 @@ function onSpotDrop(event: DragEvent) {
 .role-badge {
   flex-shrink: 0;
   margin-left: auto;
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--color-primary-dark);
-  background: var(--color-primary-tint);
-  border-radius: var(--radius-pill);
-  padding: 2px 8px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
 }
 
 .route {
@@ -1424,16 +1416,6 @@ function onSpotDrop(event: DragEvent) {
 
   .excursion-card.expanded .card-title {
     font-size: 1rem;
-  }
-
-  .role-badge {
-    font-size: 0.7rem;
-    padding: 1px 6px;
-  }
-
-  .tour-type-badge {
-    font-size: 0.65rem;
-    padding: 1px 6px;
   }
 
   .excursion-card:not(.expanded) .card-actions {

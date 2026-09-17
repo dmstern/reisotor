@@ -30,7 +30,8 @@ npm run test            # Backend & Frontend Unit-Tests
 npm run test:backend    # Backend Unit-Tests (vitest run)
 npm run test:frontend   # Frontend Unit-Tests (vitest run)
 npm run test:e2e        # E2E-Tests (playwright test)
-npm run test:a11y       # Accessibility-Tests mit Axe (playwright test tests/accessibility.spec.ts)
+npm run test:a11y          # Accessibility-Tests mit Axe (playwright test tests/accessibility.spec.ts)
+npm run test:a11y:contrast # Accessibility-Tests inkl. Farbkontrast-Prüfung (Axe color-contrast)
 npm run test:all        # Backend + Frontend + E2E Tests
 npm run build           # Backend + Frontend Build
 npm run build:backend   # Backend Build (tsc -> backend/dist)
@@ -279,7 +280,8 @@ Testausgabe landet im Kontextfenster). Lokal stattdessen gezielt einsetzen:
 
 - `npx -y playwright test <pfad-zur-spec>` für eine einzelne, gerade geschriebene/geänderte Spec direkt
   nach dem Schreiben verifizieren.
-- `npm run test:a11y` für Barrierefreiheits-Scans.
+- `npm run test:a11y` für Barrierefreiheits-Scans (ohne `color-contrast`).
+- `npm run test:a11y:contrast` für Barrierefreiheits-Scans inklusive Kontrastprüfung (`CHECK_CONTRAST=1`).
 - Einen CI-E2E-Fehlschlag lokal reproduzieren/debuggen.
 - Eine Wegwerf-Spec unter `e2e/tests/scratch/` für Ad-hoc-Checks/PR-Screenshots (siehe unten).
 
@@ -289,6 +291,7 @@ npm install                       # einmalig
 npx -y playwright install chromium   # einmalig pro (frischer) Umgebung
 npm test                          # komplette Suite, startet/beendet beide Server automatisch
 npm run test:a11y                 # nur Accessibility-Scans (tests/accessibility.spec.ts)
+npm run test:a11y:contrast        # Accessibility-Scans inkl. Kontrastprüfung (CHECK_CONTRAST=1)
 npx -y playwright show-report        # HTML-Report des letzten Laufs
 ```
 
@@ -395,10 +398,18 @@ Historie und wird gescannt) zwei Dinge:
      ("Was bedeutet das konkret für die Person, die die App nutzt?"). **Absolut KEINE technischen Details**
      wie Komponentennamen (z. B. `Button.vue`), Refactoring-Begriffe, PR-/Issue-Nummern (`#123`), CSS-Klassen,
      Datenbank-Spalten, interne Skripte oder Entwickler-Tools (z. B. Storybook) verwenden!
+   - **Passendes Emoji vor jedem Punkt**: Jeder Stichpunkt MUSS zwingend mit einem thematisch
+     passenden Emoji direkt hinter dem `- ` beginnen (z. B. `- 🔔 **Benachrichtigungen**: ...`,
+     `- 🚀 **Update-Dialog**: ...`, `- ⚙️ **Einstellungen**: ...`), gefolgt von einem Leerzeichen
+     und einem prägnanten, fettgedruckten Stichwort (`**Schlagwort**:`). Dies sorgt für eine
+     lebendige, schnell erfassbare und visuell einheitliche Darstellung im Changelog und im
+     In-App-Changelog-Dialog.
    - **Fragment-Format**: Eine kleine Markdown-Datei unter `release-notes/pending/<kurzer-slug>.md`
-     anlegen oder anpassen, Inhalt ein bis zwei `- `-Stichpunkte in leicht verständlicher Endnutzer-Sprache
-     wie `CHANGELOG.md` (Deutsch).
+     anlegen oder anpassen. Die Datei beginnt mit einer Themen-Zwischenüberschrift (z. B. `### Spots & Touren`
+     oder `### Design & Navigation`), gefolgt von den `- `-Stichpunkten in leicht verständlicher
+     Endnutzer-Sprache wie `CHANGELOG.md` (Deutsch), jeweils mit führendem Emoji. Diese Zwischenüberschriften
+     werden im Changelog und in den In-App-Release-Notes als Gruppen-Titel dargestellt.
    - **Automatischer Fallback**: Gibt es bis zum Release keine gesammelten Fragmente (weil z. B. nur
      interne Verbesserungen, Demo-Daten oder Pipeline-Updates stattfanden), fasst der Release-Workflow
-     den Release-Eintrag automatisch endnutzerfreundlich als `- Verbesserungen unter der Haube.`
+     den Release-Eintrag automatisch endnutzerfreundlich als `- 🛠️ Verbesserungen unter der Haube.`
      zusammen.

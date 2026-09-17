@@ -17,6 +17,7 @@ import FileAttachments from './FileAttachments.vue';
 import RichTextDisplay from './RichTextDisplay.vue';
 import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
+import Badge from './primitives/Badge.vue';
 import DetailRow from './primitives/DetailRow.vue';
 
 // Eigenständige Komponente statt inline in TravelSection.vue, da dieser Dialog auch von anderer Stelle
@@ -61,14 +62,14 @@ function travelDuration(item: TravelItem) {
     @edit="emit('edit')"
   >
     <template #meta>
-      <span v-if="item.date" class="detail-badge">
+      <Badge v-if="item.date">
         <AppIcon :icon="FORM_FIELD_ICONS.date" :size="12" group="formFields" />
         {{ formatDateShared(item.date) }}
-      </span>
-      <span v-if="travelDuration(item)" class="detail-badge">
+      </Badge>
+      <Badge v-if="travelDuration(item)">
         <AppIcon :icon="ACTION_ICONS.duration" :size="12" group="actions" />
         {{ travelDuration(item) }}
-      </span>
+      </Badge>
     </template>
     <DetailRow v-if="item.from_location || item.to_location" label="Strecke">
       {{ item.from_location || '?' }} → {{ item.to_location || '?' }}

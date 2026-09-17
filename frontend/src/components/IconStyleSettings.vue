@@ -13,7 +13,7 @@ import { ACTION_ICONS } from '../utils/actionIcons';
 import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
 import Card from './primitives/Card.vue';
-import Checkbox from './primitives/Checkbox.vue';
+
 import CheckboxCard from './primitives/CheckboxCard.vue';
 import SegmentedToggle from './SegmentedToggle.vue';
 

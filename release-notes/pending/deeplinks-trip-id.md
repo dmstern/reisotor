@@ -1,1 +1,3 @@
+### Verlinkung & Teilen
+
 - 🔗 **Deeplinks zu Urlauben**: Spezifische Urlaube können nun direkt über URLs wie `/trip/:tripId/...` angesteuert und geteilt werden.

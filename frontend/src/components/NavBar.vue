@@ -33,6 +33,10 @@ const iconStyle = useIconStyleStore();
 const navEl = ref<HTMLElement | null>(null);
 let resizeObserver: ResizeObserver | null = null;
 
+const isMapRoute = computed(
+  () => route.path.includes('/excursions') || route.name === 'excursions'
+);
+
 function updateOffset() {
   if (props.embedded) {
     document.documentElement.style.setProperty('--navbar-offset', '0px');
@@ -41,10 +45,14 @@ function updateOffset() {
   }
   const height = navEl.value ? navEl.value.getBoundingClientRect().height : 0;
   // Die schwebende Pille hat zusätzlich zu ihrer eigenen Höhe noch einen Rand-Abstand zum
-  // Viewport-Rand (var(--space-3)) - der muss mit in den reservierten Content-Abstand einfließen,
-  // sonst würde scrollbarer Inhalt optisch bis unter die Pille statt sauber darüber enden.
+  // Viewport-Rand (var(--space-4) bzw. var(--space-3) in der Karten-View) - der muss mit in den
+  // reservierten Content-Abstand einfließen, sonst würde scrollbarer Inhalt optisch bis unter die
+  // Pille statt sauber darüber enden.
+  const isMap = isMapRoute.value;
+  const gapVar = isMap ? '--space-3' : '--space-4';
   const floatingGap =
-    parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--space-3')) || 12;
+    parseFloat(getComputedStyle(document.documentElement).getPropertyValue(gapVar)) ||
+    (isMap ? 12 : 16);
   document.documentElement.style.setProperty('--navbar-offset', '0px');
   document.documentElement.style.setProperty(
     '--navbar-bottom-offset',
@@ -176,7 +184,12 @@ const visibleLinks = computed<NavLinkDef[]>(() =>
 // einfach ein No-Op, da sich die aktive Klasse nicht verschiebt. visibleLinks zusätzlich beobachten,
 // da sich Breite/Position aller Links ändert, sobald Einträge in SettingsView.vue aus-/eingeblendet
 // werden.
-watch([() => route.fullPath, visibleLinks], () => nextTick(updateHighlight));
+watch([() => route.fullPath, visibleLinks], () => {
+  nextTick(() => {
+    updateOffset();
+    updateHighlight();
+  });
+});
 
 function hasUnseenAny(link: NavLinkDef): boolean {
   if (link.domain) return liveSync.hasUnseen(link.domain);
@@ -196,7 +209,11 @@ function onLinkClick(event: MouseEvent) {
 </script>
 
 <template>
-  <nav ref="navEl" class="navbar" :class="props.embedded ? 'embedded' : 'floating-bottom'">
+  <nav
+    ref="navEl"
+    class="navbar"
+    :class="[props.embedded ? 'embedded' : 'floating-bottom', { 'in-map-view': isMapRoute }]"
+  >
     <div class="links" ref="linksEl">
       <!-- Gleitende Hervorhebung hinter den Links (siehe updateHighlight() oben) - ein einzelnes
            Element statt einer Hintergrundfarbe je aktivem .link, damit sich beim Wechseln eine
@@ -315,12 +332,12 @@ function onLinkClick(event: MouseEvent) {
 .navbar.floating-bottom {
   position: fixed;
   top: auto;
-  bottom: var(--space-3);
+  bottom: var(--space-4);
   left: 0;
   right: 0;
   margin-inline: auto;
   width: fit-content;
-  max-width: calc(100vw - 24px);
+  max-width: calc(100vw - var(--space-4) * 2);
   padding: 6px var(--space-2);
   border: 1px solid var(--color-surface-glass-border);
   border-radius: 999px;
@@ -334,6 +351,13 @@ function onLinkClick(event: MouseEvent) {
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: none;
+}
+
+/* In der Karten-View (ExcursionsView): Ausrichtung und Randabstand auf var(--space-3) (12px)
+   belassen, damit die Navbar exakt mit der Breite des Spots Drawers / Sheets übereinstimmt. */
+.navbar.floating-bottom.in-map-view {
+  bottom: var(--space-3);
+  max-width: calc(100vw - 24px);
 }
 
 .navbar.floating-bottom::-webkit-scrollbar {

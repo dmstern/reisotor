@@ -55,6 +55,7 @@ test('a calendar cross-reference to a todo lands on the todo tab with the item h
 }) => {
   await page.goto('/listen?tab=todo');
   await page.getByPlaceholder('Neue Aufgabe').fill('E2E Listen-Merge Querverweis');
+  await page.getByRole('button', { name: 'Details' }).click();
   const todayIso = new Date().toISOString().slice(0, 10);
   await page.locator('input[type="date"]').first().fill(todayIso);
   await page.getByRole('button', { name: 'Hinzufügen', exact: true }).click();

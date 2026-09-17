@@ -30,10 +30,18 @@ const props = withDefaults(
     checked?: boolean;
     /** Wert für Checkbox */
     value?: unknown;
+    /** Optionale IconDef-Definition für nachgestelltes Icon (z. B. Häkchen bei ausgewählter Option) */
+    trailingIcon?: IconDef;
+    /** Icon-Gruppe für nachgestelltes Icon (Standard: 'actions') */
+    trailingIconGroup?: IconGroup;
+    /** Icon-Größe für nachgestelltes Icon in Pixeln (Standard: 14) */
+    trailingIconSize?: number;
   }>(),
   {
     iconGroup: 'actions',
     iconSize: 14,
+    trailingIconGroup: 'actions',
+    trailingIconSize: 14,
     active: false,
     disabled: false,
     multiselect: false,
@@ -102,6 +110,15 @@ function handleClick(event: MouseEvent) {
     <span class="dropdown-item-label">
       <slot>{{ label }}</slot>
     </span>
+    <slot name="trailing">
+      <AppIcon
+        v-if="trailingIcon"
+        :icon="trailingIcon"
+        :group="trailingIconGroup"
+        :size="trailingIconSize"
+        class="dropdown-item-trailing-icon"
+      />
+    </slot>
   </a>
   <button
     v-else
@@ -121,6 +138,15 @@ function handleClick(event: MouseEvent) {
     <span class="dropdown-item-label">
       <slot>{{ label }}</slot>
     </span>
+    <slot name="trailing">
+      <AppIcon
+        v-if="trailingIcon"
+        :icon="trailingIcon"
+        :group="trailingIconGroup"
+        :size="trailingIconSize"
+        class="dropdown-item-trailing-icon"
+      />
+    </slot>
   </button>
 </template>
 
@@ -178,5 +204,14 @@ function handleClick(event: MouseEvent) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.dropdown-item-trailing-icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  color: var(--color-primary);
 }
 </style>

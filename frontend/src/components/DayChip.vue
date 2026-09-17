@@ -36,6 +36,7 @@ const dayNum = computed(() => {
     class="day-chip"
     :class="{ active, 'has-content': hasContent }"
     :title="title"
+    :data-date="date"
     @click="emit('click', $event)"
   >
     <span class="day-chip-weekday">{{ weekday }}</span>

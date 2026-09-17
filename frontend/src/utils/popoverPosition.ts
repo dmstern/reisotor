@@ -9,6 +9,8 @@ export interface PopoverPositionOptions {
   viewportPadding?: number;
   /** Bevorzugte Platzierung ('bottom' | 'top' | 'auto'). Standard: 'auto' */
   placement?: 'bottom' | 'top' | 'auto';
+  /** Horizontale Ausrichtung zum Trigger-Element ('left' | 'right'). Standard: 'left' */
+  align?: 'left' | 'right';
   /** Optionaler Viewport-Override (z. B. für SSR oder Tests) */
   viewport?: { width: number; height: number };
 }
@@ -39,14 +41,17 @@ export function computePopoverPosition(
   const offset = options.offset ?? 6;
   const padding = options.viewportPadding ?? 8;
   const placement = options.placement ?? 'auto';
+  const align = options.align ?? 'left';
 
   const viewportWidth =
     options.viewport?.width ?? (typeof window !== 'undefined' ? window.innerWidth : 1024);
   const viewportHeight =
     options.viewport?.height ?? (typeof window !== 'undefined' ? window.innerHeight : 768);
 
-  // Horizontale Platzierung: links am Button ausrichten, aber an Viewport-Grenzen klemmen
-  const left = Math.max(padding, Math.min(rect.left, viewportWidth - menuWidth - padding));
+  // Horizontale Platzierung: links oder rechts am Button ausrichten, aber an Viewport-Grenzen klemmen
+  const rawTargetLeft =
+    align === 'right' ? (rect.right ?? rect.left + (rect.width ?? 0)) - menuWidth : rect.left;
+  const left = Math.max(padding, Math.min(rawTargetLeft, viewportWidth - menuWidth - padding));
 
   // Vertikaler verbleibender Raum
   const spaceBelow = viewportHeight - rect.bottom - offset - padding;

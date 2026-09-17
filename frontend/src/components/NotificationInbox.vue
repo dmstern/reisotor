@@ -8,6 +8,7 @@ import { usePwaUpdateStore } from '../stores/pwaUpdate';
 import { usePwaInstallStore } from '../stores/pwaInstall';
 import IconButton from './primitives/IconButton.vue';
 import Button from './primitives/Button.vue';
+import Badge from './primitives/Badge.vue';
 import AppIcon from './AppIcon.vue';
 import UnseenDot from './primitives/UnseenDot.vue';
 import PwaInstallDialog from './PwaInstallDialog.vue';
@@ -32,22 +33,9 @@ const showInstallDialog = ref(false);
 
 const BELL_ICON = { id: 'bell', emoji: '🔔', outline: IconBell, filled: IconBellFilled };
 
-const currentVersion = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'unknown';
-const lastSeenVersion = localStorage.getItem('reisotor_last_seen_version');
-const showReleaseNotesNotice = ref(lastSeenVersion !== null && lastSeenVersion !== currentVersion);
-if (lastSeenVersion === null) {
-  localStorage.setItem('reisotor_last_seen_version', currentVersion);
-}
-
-function dismissReleaseNotesNotice() {
-  localStorage.setItem('reisotor_last_seen_version', currentVersion);
-  showReleaseNotesNotice.value = false;
-}
-
-function goToReleaseNotes() {
-  dismissReleaseNotesNotice();
+function openChangelog() {
   close();
-  router.push({ path: '/settings', query: { tab: 'about' } });
+  pwaUpdate.openChangelogDialog();
 }
 
 const hasSystemNotices = computed(() => {
@@ -55,8 +43,12 @@ const hasSystemNotices = computed(() => {
     pwaUpdate.needRefresh ||
     pwaUpdate.offlineReady ||
     (!pwaInstall.isStandalone && !pwaInstall.dismissed) ||
-    showReleaseNotesNotice.value
+    pwaUpdate.showReleaseNotesNotice
   );
+});
+
+const hasUpdateNotice = computed(() => {
+  return pwaUpdate.needRefresh || pwaUpdate.showReleaseNotesNotice;
 });
 
 // Ungelesene Aktivitäten zeigen einen Zähler-Badge. Liegen stattdessen System-Benachrichtigungen
@@ -165,10 +157,20 @@ function dismissPwaInstall() {
         class="bell-btn"
         @click="toggle"
       />
-      <span v-if="notifications.unreadCount > 0" class="unread-badge" aria-hidden="true">{{
-        notifications.unreadCount > 9 ? '9+' : notifications.unreadCount
-      }}</span>
-      <UnseenDot v-else-if="hasSystemNotices" class="bell-dot" aria-label="Neuigkeiten verfügbar" />
+      <Badge
+        v-if="notifications.unreadCount > 0"
+        variant="danger"
+        class="unread-badge"
+        aria-hidden="true"
+        >{{ notifications.unreadCount > 9 ? '9+' : notifications.unreadCount }}</Badge
+      >
+      <UnseenDot
+        v-else-if="hasSystemNotices"
+        class="bell-dot"
+        aria-label="Neuigkeiten verfügbar"
+        :variant="hasUpdateNotice ? 'success' : 'danger'"
+        :sparkle="hasUpdateNotice"
+      />
     </div>
 
     <Teleport to="body">
@@ -270,12 +272,12 @@ function dismissPwaInstall() {
               </div>
 
               <!-- 4. Neu installiert -->
-              <div v-if="showReleaseNotesNotice" class="system-notice update pwa-pill">
+              <div v-if="pwaUpdate.showReleaseNotesNotice" class="system-notice update pwa-pill">
                 <div class="notice-icon update-icon" aria-hidden="true">
                   <AppIcon :icon="ACTION_ICONS.sparkles" :size="16" group="actions" />
                 </div>
                 <div class="notice-body">
-                  <span class="notice-title">v{{ currentVersion }} installiert! 🎉</span>
+                  <span class="notice-title">v{{ pwaUpdate.currentVersion }} installiert! 🎉</span>
                   <span class="notice-desc">Sieh dir an, was neu ist.</span>
                 </div>
                 <div class="notice-actions">
@@ -283,7 +285,7 @@ function dismissPwaInstall() {
                     variant="secondary"
                     size="sm"
                     class="pwa-pill-trigger"
-                    @click="goToReleaseNotes"
+                    @click="openChangelog"
                   >
                     Ansehen
                   </Button>
@@ -294,7 +296,7 @@ function dismissPwaInstall() {
                     :icon="ACTION_ICONS.close"
                     aria-label="Hinweis schließen"
                     title="Hinweis schließen"
-                    @click="dismissReleaseNotesNotice"
+                    @click="pwaUpdate.dismissReleaseNotesNotice"
                   />
                 </div>
               </div>
@@ -364,9 +366,6 @@ function dismissPwaInstall() {
   min-width: 15px;
   height: 15px;
   padding: 0 3px;
-  border-radius: 999px;
-  background: var(--color-danger);
-  color: #fff;
   font-size: 0.62rem;
   font-weight: 700;
   border: 1.5px solid var(--color-surface);

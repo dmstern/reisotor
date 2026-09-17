@@ -8,7 +8,7 @@ import TabBar, { type TabBarItem } from './TabBar.vue';
 import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
 import Card from './primitives/Card.vue';
-import Checkbox from './primitives/Checkbox.vue';
+
 import CheckboxCard from './primitives/CheckboxCard.vue';
 import Input from './primitives/Input.vue';
 import Select from './primitives/Select.vue';
@@ -365,10 +365,16 @@ label,
 }
 
 .hint.success {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   color: var(--color-success);
 }
 
 .hint.error {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   color: var(--color-danger);
 }
 

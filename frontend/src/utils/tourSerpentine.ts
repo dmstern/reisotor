@@ -214,7 +214,7 @@ export function computeTourLoopPath(
       const cp2X = endX;
       const cp2Y = endY - dy * 0.45;
       const d = ` M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`;
-      const angle = Math.atan2(endY - cp2Y, endX - cp2X) * (180 / Math.PI);
+      const _angle = Math.atan2(endY - cp2Y, endX - cp2X) * (180 / Math.PI);
       dots.push({ x: endX, y: endY });
       return { d, dots };
     }
@@ -260,7 +260,7 @@ export function computeTourLoopPath(
       const cp2X = endX;
       const cp2Y = Math.min(startY, endY + Math.max(40, dy * 0.45));
       const d = ` M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`;
-      const angle = Math.atan2(endY - cp2Y, endX - cp2X) * (180 / Math.PI);
+      const _angle = Math.atan2(endY - cp2Y, endX - cp2X) * (180 / Math.PI);
       dots.push({ x: endX, y: endY });
       return { d, dots };
     }
@@ -302,7 +302,7 @@ export function computeTourLoopPath(
       const cp2X = endX;
       const cp2Y = Math.min(startY, endY + Math.max(40, dy * 0.45));
       const d = ` M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`;
-      const angle = Math.atan2(endY - cp2Y, endX - cp2X) * (180 / Math.PI);
+      const _angle = Math.atan2(endY - cp2Y, endX - cp2X) * (180 / Math.PI);
       dots.push({ x: endX, y: endY });
       return { d, dots };
     }
@@ -329,7 +329,7 @@ export function computeTourLoopPath(
       const dropY =
         Math.max(a.bottom, b.bottom) + Math.min(60, Math.max(30, Math.abs(a.cx - b.cx) * 0.15));
       const d = ` M ${startX} ${startY} C ${startX} ${dropY}, ${endX} ${dropY}, ${endX} ${endY}`;
-      const angle = Math.atan2(endY - dropY, endX - endX) * (180 / Math.PI);
+      const _angle = Math.atan2(endY - dropY, endX - endX) * (180 / Math.PI);
       dots.push({ x: endX, y: endY });
       return { d, dots };
     }

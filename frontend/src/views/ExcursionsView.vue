@@ -1525,11 +1525,6 @@ function onFocusSpotFromMap(spotId: number) {
 // abbilden. Gleiche Bogen-Idee wie utils/mapRoute.ts's arcPoints() (Kontrollpunkt senkrecht zur
 // Verbindungslinie versetzt, proportional zum Segmentabstand), hier auf Bildschirm-Pixel statt
 // Geo-Koordinaten angewandt.
-interface TourArrow {
-  x: number;
-  y: number;
-  angle: number;
-}
 
 interface TourLineData {
   width: number;
@@ -1569,23 +1564,6 @@ function getLegTooltip(leg: ExcursionLeg, fromSpot: Spot, toSpot: Spot): string 
   parts.push(`• Von: ${fromSpot.title} → Nach: ${toSpot.title}`);
   parts.push('• Klicken zum Bearbeiten');
   return parts.join(' ');
-}
-
-function getBezierAngle(
-  t: number,
-  p0x: number,
-  p0y: number,
-  p1x: number,
-  p1y: number,
-  p2x: number,
-  p2y: number,
-  p3x: number,
-  p3y: number
-) {
-  const mt = 1 - t;
-  const dx = 3 * mt * mt * (p1x - p0x) + 6 * mt * t * (p2x - p1x) + 3 * t * t * (p3x - p2x);
-  const dy = 3 * mt * mt * (p1y - p0y) + 6 * mt * t * (p2y - p1y) + 3 * t * t * (p3y - p2y);
-  return Math.atan2(dy, dx) * (180 / Math.PI);
 }
 
 function recomputeTourLine(excursionId: number) {
@@ -4366,6 +4344,8 @@ async function deleteEditingSpot() {
 .spots-col.full {
   bottom: 0;
   transform: scaleX(1);
+  border-left: 0;
+  border-right: 0;
   border-radius: var(--radius-lg-squircle) var(--radius-lg-squircle) 0 0;
   height: min(100vh, var(--sheet-max-height));
 
@@ -4457,6 +4437,9 @@ async function deleteEditingSpot() {
 }
 
 .sheet-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 0.78rem;
   font-weight: 600;
   color: var(--color-text-muted);
@@ -5528,6 +5511,12 @@ async function deleteEditingSpot() {
 .track-row-meta {
   font-size: 0.75rem;
   color: var(--color-text-muted);
+}
+
+.track-row-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .track-icon-btn {

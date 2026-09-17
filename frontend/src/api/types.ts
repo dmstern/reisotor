@@ -31,10 +31,16 @@ export interface Trip {
   owner_restricted?: boolean;
 }
 
+export interface ChangelogGroup {
+  title: string;
+  notes: string[];
+}
+
 export interface ChangelogEntry {
   version: string;
   date: string;
   notes: string[];
+  groups?: ChangelogGroup[];
 }
 
 /** GET /build-info (backend/src/routes/buildInfo.ts). `environment` kommt aus der
@@ -453,6 +459,13 @@ export interface NoteComment {
   created_at: string;
 }
 
+export interface DiaryImageItem {
+  url: string;
+  original_name?: string;
+}
+
+export type DiaryImage = string | DiaryImageItem;
+
 export interface DiaryEntry {
   id: number;
   trip_id: number;
@@ -462,7 +475,7 @@ export interface DiaryEntry {
   title: string | null;
   content: string;
   content_format: string;
-  images: string[];
+  images: DiaryImage[];
   /** Frei änderbares Datum des Eintrags (YYYY-MM-DD) - unabhängig von created_at, siehe DiaryView.vue. */
   date: string;
   created_at: string;

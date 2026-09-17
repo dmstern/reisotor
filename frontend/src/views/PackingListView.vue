@@ -10,11 +10,13 @@ import PackingItemRow from '../components/PackingItem.vue';
 import Modal from '../components/Modal.vue';
 import Combobox from '../components/Combobox.vue';
 import QuickAddRow from '../components/QuickAddRow.vue';
-import CompletedToggle from '../components/CompletedToggle.vue';
+import ListSettingsMenu from '../components/ListSettingsMenu.vue';
 import FormField from '../components/FormField.vue';
 import Button from '../components/primitives/Button.vue';
 import Select from '../components/primitives/Select.vue';
 import Input from '../components/primitives/Input.vue';
+import Badge from '../components/primitives/Badge.vue';
+import EmptyState from '../components/primitives/EmptyState.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import { useToast } from '../composables/useToast';
 import { sortWithDoneLast } from '../composables/useCheckedSort';
@@ -190,6 +192,8 @@ function progress(listItems: PackingItem[]) {
   return { total, packed };
 }
 
+const overallProgress = computed(() => progress(items.value));
+
 async function updateCounts(item: PackingItem, laidOutCount: number, packedCount: number) {
   const updated = await api.put<PackingItem>(`/packing/${item.id}`, {
     category: item.category ?? undefined,
@@ -262,10 +266,41 @@ async function quickAdd(list: ListGroup, label: string) {
 
 <template>
   <div class="page packing-page" v-if="!loading">
-    <h1>Packliste</h1>
-
-    <div class="filter-row">
-      <CompletedToggle v-model="uiSettings.hideCompletedPacking" />
+    <div class="page-header-row">
+      <div class="page-header-top">
+        <div class="page-title-group">
+          <div class="title-with-pill">
+            <h1>Packliste</h1>
+            <div class="progress-pill-group">
+              <Badge
+                :variant="
+                  overallProgress.packed === overallProgress.total && overallProgress.total > 0
+                    ? 'success'
+                    : 'primary'
+                "
+                size="sm"
+              >
+                {{ overallProgress.packed }}/{{ overallProgress.total }} gepackt
+              </Badge>
+              <span v-if="overallProgress.total > 0" class="progress-percentage">
+                {{ Math.round((overallProgress.packed / overallProgress.total) * 100) }}%
+              </span>
+            </div>
+          </div>
+          <div v-if="overallProgress.total > 0" class="header-progress-track" aria-hidden="true">
+            <div
+              class="header-progress-bar"
+              :style="{
+                width: `${Math.round((overallProgress.packed / overallProgress.total) * 100)}%`,
+              }"
+            ></div>
+          </div>
+        </div>
+        <ListSettingsMenu
+          v-model:hide-completed="uiSettings.hideCompletedPacking"
+          hide-completed-label="Gepackte ausblenden"
+        />
+      </div>
     </div>
 
     <div class="lists-grid">
@@ -275,8 +310,8 @@ async function quickAdd(list: ListGroup, label: string) {
         :key="list.key"
         :style="{ '--stagger-delay': `${index * 60}ms` }"
       >
-        <div class="list-header">
-          <h2 v-if="users.length > 1">{{ list.title }}</h2>
+        <div class="list-header" v-if="users.length > 1">
+          <h2>{{ list.title }}</h2>
           <span class="progress"
             >{{ progress(list.items).packed }}/{{ progress(list.items).total }} gepackt</span
           >
@@ -340,13 +375,15 @@ async function quickAdd(list: ListGroup, label: string) {
             </TransitionGroup>
           </template>
         </div>
-        <p v-if="!list.items.length" class="empty">Noch keine Gegenstände auf dieser Liste.</p>
-        <p
+        <div v-if="!list.items.length" class="card empty-card">
+          <EmptyState>Noch keine Gegenstände auf dieser Liste.</EmptyState>
+        </div>
+        <div
           v-else-if="uiSettings.hideCompletedPacking && !groupByCategory(list.items).length"
-          class="empty"
+          class="card empty-card"
         >
-          Alle Gegenstände eingepackt.
-        </p>
+          <EmptyState>Alle Gegenstände eingepackt.</EmptyState>
+        </div>
       </section>
     </div>
 
@@ -405,13 +442,59 @@ async function quickAdd(list: ListGroup, label: string) {
 </template>
 
 <style scoped>
-.filter-row {
+.page-header-row {
+  margin-bottom: var(--space-3);
+}
+
+.page-header-top {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
   flex-wrap: wrap;
-  gap: var(--space-4);
-  margin-bottom: var(--space-4);
-  font-size: 0.9rem;
+}
+
+.page-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+  flex: 1;
+}
+
+.title-with-pill {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.progress-pill-group {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.progress-percentage {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.header-progress-track {
+  width: 100%;
+  max-width: 320px;
+  height: 4px;
+  background: var(--color-hover);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.header-progress-bar {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: var(--radius-pill);
+  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 :deep(.quick-add-row) {
@@ -522,6 +605,10 @@ async function quickAdd(list: ListGroup, label: string) {
 
 .empty {
   font-size: 0.9rem;
+}
+
+.empty-card {
+  margin-bottom: var(--space-3);
 }
 
 /* Desktop: Listen nebeneinander statt untereinander, um den vorhandenen Platz besser zu nutzen

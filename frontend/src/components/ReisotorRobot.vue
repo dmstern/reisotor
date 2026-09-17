@@ -301,88 +301,6 @@ onUnmounted(() => {
           </feComponentTransfer>
         </filter>
 
-        <!-- Filter: Velvet Bumps für Pin Body -->
-        <filter
-          :id="`${uid}-filter55`"
-          x="-0.11"
-          y="-0.08"
-          width="1.22"
-          height="1.16"
-          style="color-interpolation-filters: sRGB"
-        >
-          <feGaussianBlur result="result6" stdDeviation="3" in="SourceGraphic" />
-          <feColorMatrix
-            values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 1 0"
-            result="result7"
-            in="SourceGraphic"
-          />
-          <feComposite operator="in" in="result6" in2="result7" result="fbSourceGraphic" />
-          <feColorMatrix
-            result="fbSourceGraphicAlpha"
-            in="fbSourceGraphic"
-            values="0 0 0 -1 0 0 0 0 -1 0 0 0 0 -1 0 0 0 0 1 0"
-          />
-          <feFlood result="flood" in="fbSourceGraphic" flood-opacity="0.45" flood-color="#890092" />
-          <feGaussianBlur result="blur" in="fbSourceGraphic" stdDeviation="5.3" />
-          <feOffset result="offset" in="blur" dx="0" dy="3.3" />
-          <feComposite result="comp1" operator="in" in="flood" in2="offset" />
-          <feComposite result="fbSourceGraphic" operator="over" in="fbSourceGraphic" in2="comp1" />
-          <feColorMatrix
-            result="fbSourceGraphicAlpha"
-            in="fbSourceGraphic"
-            values="0 0 0 -1 0 0 0 0 -1 0 0 0 0 -1 0 0 0 0 1 0"
-          />
-          <feGaussianBlur stdDeviation="1" result="result3" in="fbSourceGraphic" />
-          <feBlend in2="result3" result="result5" mode="screen" in="fbSourceGraphic" />
-          <feGaussianBlur stdDeviation="1" result="result7" />
-          <feConvolveMatrix
-            order="3 3"
-            kernelMatrix="2 0 0 1 1 -1 0 0 -2"
-            targetX="1"
-            targetY="1"
-            result="result8"
-          />
-          <feBlend mode="darken" in="result7" result="result6" in2="result8" />
-        </filter>
-
-        <!-- Filter: Velvet Bumps für Visier -->
-        <filter
-          :id="`${uid}-filter88`"
-          x="-0.04"
-          y="-0.07"
-          width="1.08"
-          height="1.14"
-          style="color-interpolation-filters: sRGB"
-        >
-          <feGaussianBlur stdDeviation="1" result="result3" />
-          <feBlend in2="result3" result="result5" mode="screen" in="SourceGraphic" />
-          <feGaussianBlur stdDeviation="1" result="result7" />
-          <feConvolveMatrix
-            order="3 3"
-            kernelMatrix="2 0 0 1 1 -1 0 0 -2"
-            targetX="1"
-            targetY="1"
-            result="result8"
-          />
-          <feBlend mode="darken" in="result7" result="result6" in2="result8" />
-        </filter>
-
-        <!-- Filter: Drop Shadow für Robot Group -->
-        <filter
-          :id="`${uid}-filter71`"
-          x="-0.15"
-          y="-0.25"
-          width="1.3"
-          height="1.55"
-          style="color-interpolation-filters: sRGB"
-        >
-          <feFlood result="flood" in="SourceGraphic" flood-opacity="0.35" flood-color="#890092" />
-          <feGaussianBlur result="blur" in="SourceGraphic" stdDeviation="5.3" />
-          <feOffset result="offset" in="blur" dx="0" dy="3.3" />
-          <feComposite result="comp1" operator="in" in="flood" in2="offset" />
-          <feComposite result="comp2" operator="over" in="SourceGraphic" in2="comp1" />
-        </filter>
-
         <!-- Clip-Path für die Linsen-Shutter (innerhalb des r=185 Glases) -->
         <clipPath :id="`${uid}-lens-clip`">
           <circle cx="129.5" cy="667.5" r="185" />
@@ -481,7 +399,6 @@ onUnmounted(() => {
         <path
           class="pin-body"
           :fill="`url(#${uid}-linearGradient15)`"
-          :filter="`url(#${uid}-filter55)`"
           d="M 243.97335,91.193652 A 120,120 0 0 0 132.1628,210.91435 c 0,110 90,190 105,205 10,10 20,10 30,0 15,-15 105,-95 105,-205 A 120,120 0 0 0 243.97335,91.193652 Z m 8.18945,41.720698 a 78,78 0 0 1 78,78 78,78 0 0 1 -78,78 78,78 0 0 1 -78,-78 78,78 0 0 1 78,-78 z"
         />
 
@@ -505,11 +422,19 @@ onUnmounted(() => {
         </g>
 
         <!-- Roboter-Kopf mit Visier und Kamera-Linsen -->
-        <g
-          class="robot-head"
-          :filter="`url(#${uid}-filter71)`"
-          transform="translate(2.1628,-3.2236)"
-        >
+        <g class="robot-head" transform="translate(2.1628,-3.2236)">
+          <!-- Kapsel-Visier Schatten -->
+          <rect
+            x="190"
+            y="178"
+            width="120"
+            height="70"
+            rx="35"
+            fill="#200028"
+            opacity="0.4"
+            class="head-visor-shadow"
+          />
+
           <!-- Kapsel-Visier -->
           <rect
             x="190"
@@ -518,7 +443,6 @@ onUnmounted(() => {
             height="70"
             rx="35"
             :fill="`url(#${uid}-linearGradient80)`"
-            :filter="`url(#${uid}-filter88)`"
             class="head-visor"
           />
 

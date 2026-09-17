@@ -116,14 +116,14 @@ function normalize(item: PolaroidInputItem, index: number): NormalizedPolaroid {
 
   const raw = item as unknown as Record<string, unknown>;
   const key = (raw.key as string | number) ?? (raw.id as string | number) ?? `item-${index}`;
+  const url = (raw.url as string) || (raw.imageUrl as string) || (raw.image_url as string) || null;
+  const isImg = checkIsImage(raw, url);
+  const isDoc = !isImg && !raw.tabler;
   const title =
     (raw.title as string) ||
     (raw.original_name as string) ||
     (raw.filename as string) ||
-    (raw.imageUrl || raw.image_url ? `Bild ${index + 1}` : `Anhang ${index + 1}`);
-  const url = (raw.url as string) || (raw.imageUrl as string) || (raw.image_url as string) || null;
-  const isImg = checkIsImage(raw, url);
-  const isDoc = !isImg && !raw.tabler;
+    (isImg ? `Bild ${index + 1}` : `Anhang ${index + 1}`);
   const mimeType = (raw.mime_type as string) || (raw.mimeType as string) || undefined;
 
   return {

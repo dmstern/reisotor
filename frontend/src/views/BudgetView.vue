@@ -25,6 +25,7 @@ import DraftStatusBar from '../components/DraftStatusBar.vue';
 import AppIcon from '../components/AppIcon.vue';
 import Button from '../components/primitives/Button.vue';
 import Card from '../components/primitives/Card.vue';
+import Badge from '../components/primitives/Badge.vue';
 import Input from '../components/primitives/Input.vue';
 import Select from '../components/primitives/Select.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
@@ -289,10 +290,10 @@ const categoryColors = computed(() => {
       <Card class="overview-card">
         <div class="overview-header">
           <h2>Gesamt-Übersicht</h2>
-          <span class="overview-count-badge" v-if="budgetStore.expenses.length">
+          <Badge v-if="budgetStore.expenses.length">
             {{ budgetStore.expenses.length }}
             {{ budgetStore.expenses.length === 1 ? 'Ausgabe' : 'Ausgaben' }}
-          </span>
+          </Badge>
         </div>
         <BudgetMeter
           label="Budget"
@@ -658,7 +659,7 @@ const categoryColors = computed(() => {
   font-size: 0.82rem;
   font-weight: 600;
   padding: 4px 12px;
-  border-radius: var(--radius-full, 9999px);
+  border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface));
   color: var(--color-primary-dark);
   border: 1px solid color-mix(in srgb, var(--color-primary) 25%, transparent);
@@ -721,16 +722,6 @@ const categoryColors = computed(() => {
   font-size: 1.05rem;
   color: var(--color-primary-dark);
   margin: 0;
-}
-
-.overview-count-badge {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
-  background: var(--color-hover);
-  padding: 2px 8px;
-  border-radius: var(--radius-full, 9999px);
-  border: 1px solid var(--color-border);
 }
 
 .overview-card :deep(.meter-head) {
@@ -807,6 +798,9 @@ const categoryColors = computed(() => {
 }
 
 .privacy-hint {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   margin: 0;
   font-size: 0.82rem;
   color: var(--color-text-muted);

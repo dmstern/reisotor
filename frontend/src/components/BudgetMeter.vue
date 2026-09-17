@@ -199,6 +199,9 @@ function fmt(n: number) {
 }
 
 .over-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   margin: 0;
   font-size: 0.78rem;
   color: var(--color-danger);

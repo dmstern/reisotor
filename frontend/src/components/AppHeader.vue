@@ -5,7 +5,6 @@ import { useAuthStore } from '../stores/auth';
 import { useTripStore } from '../stores/trip';
 import { useConnectivityStore } from '../stores/connectivity';
 import { useNavPositionStore } from '../stores/navPosition';
-import { useBuildInfoStore } from '../stores/buildInfo';
 import { useIsDesktop } from '../composables/useIsDesktop';
 import TripSwitcher from './TripSwitcher.vue';
 import NavBar from './NavBar.vue';
@@ -65,15 +64,6 @@ onUnmounted(() => {
   window.removeEventListener('scroll', onScroll);
 });
 
-// Frontend wird identisch für Staging und Produktion gebaut (siehe
-// .github/workflows/ci.yml) – der Unterschied kommt deshalb zur Laufzeit vom Backend
-// (APP_ENV-Env-Var pro Instanz, GET /build-info) statt aus einem Domain-Vergleich, siehe Issue #219.
-const buildInfoStore = useBuildInfoStore();
-buildInfoStore.load();
-const isNonProd = computed(
-  () => buildInfoStore.buildInfo != null && buildInfoStore.buildInfo.environment !== 'production'
-);
-
 const profileTitle = computed(() => {
   if (!connectivity.isOnline) return 'Offline – Einstellungen';
   if (connectivity.pendingCount > 0) {
@@ -89,62 +79,58 @@ const profileTitle = computed(() => {
     <DemoModeBanner v-if="DEMO_MODE" />
     <LoadingIndicator />
     <div class="header-row">
-      <router-link to="/" class="brand">
-        <img src="/reisotor-icon-circle.svg" alt="Reisotor Logo" class="logo" />
-        <span class="wordmark">Reisotor</span>
-        <span
-          v-if="isNonProd"
-          class="env-badge"
-          title="Dev-/Staging-Umgebung, nicht die echte Produktion"
-          >DEV</span
-        >
-      </router-link>
-
-      <div class="header-center">
-        <div class="floating-island" :class="{ 'has-nav': showDockedNav }">
-          <TripSwitcher class="switcher" :docked="showDockedNav" />
-          <Transition name="nav-dock">
-            <div v-if="showDockedNav" class="docked-nav">
-              <div class="dock-divider" aria-hidden="true"></div>
-              <NavBar embedded />
-            </div>
-          </Transition>
-        </div>
-      </div>
-
-      <div class="header-actions">
-        <TrackRecordingIndicator />
-        <PresenceAvatars />
-        <NotificationInbox />
-        <router-link
-          to="/settings"
-          class="profile-link"
-          :class="{
-            'is-online': connectivity.isOnline && !connectivity.syncing && !connectivity.checking,
-            'is-offline': !connectivity.isOnline,
-            'is-retrying': connectivity.syncing || connectivity.checking,
-          }"
-          :title="profileTitle"
-        >
-          <div class="avatar-wrapper">
-            <span class="avatar">{{ auth.user?.avatar || '👤' }}</span>
-            <div v-if="!connectivity.isOnline" class="offline-badge" title="Offline">
-              <AppIcon :icon="ACTION_ICONS.offline" :size="12" group="actions" />
-            </div>
-            <div
-              v-else-if="connectivity.pendingCount > 0"
-              class="pending-badge"
-              :title="`${connectivity.pendingCount} ausstehende Synchronisation(en)`"
-            >
-              <AppIcon
-                :icon="ACTION_ICONS.syncPending"
-                :size="11"
-                group="actions"
-                :class="{ 'is-spinning': connectivity.syncing }"
-              />
-            </div>
-          </div>
+      <div class="header-pill">
+        <router-link to="/" class="brand">
+          <img src="/reisotor-icon-circle.svg" alt="Reisotor Logo" class="logo" />
+          <span class="wordmark">Reisotor</span>
         </router-link>
+
+        <div class="header-center">
+          <div class="floating-island" :class="{ 'has-nav': showDockedNav }">
+            <TripSwitcher class="switcher" :docked="showDockedNav" />
+            <Transition name="nav-dock">
+              <div v-if="showDockedNav" class="docked-nav">
+                <div class="dock-divider" aria-hidden="true"></div>
+                <NavBar embedded />
+              </div>
+            </Transition>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <TrackRecordingIndicator />
+          <PresenceAvatars />
+          <NotificationInbox />
+          <router-link
+            to="/settings"
+            class="profile-link"
+            :class="{
+              'is-online': connectivity.isOnline && !connectivity.syncing && !connectivity.checking,
+              'is-offline': !connectivity.isOnline,
+              'is-retrying': connectivity.syncing || connectivity.checking,
+            }"
+            :title="profileTitle"
+          >
+            <div class="avatar-wrapper">
+              <span class="avatar">{{ auth.user?.avatar || '👤' }}</span>
+              <div v-if="!connectivity.isOnline" class="offline-badge" title="Offline">
+                <AppIcon :icon="ACTION_ICONS.offline" :size="12" group="actions" />
+              </div>
+              <div
+                v-else-if="connectivity.pendingCount > 0"
+                class="pending-badge"
+                :title="`${connectivity.pendingCount} ausstehende Synchronisation(en)`"
+              >
+                <AppIcon
+                  :icon="ACTION_ICONS.syncPending"
+                  :size="11"
+                  group="actions"
+                  :class="{ 'is-spinning': connectivity.syncing }"
+                />
+              </div>
+            </div>
+          </router-link>
+        </div>
       </div>
     </div>
   </header>
@@ -249,15 +235,8 @@ const profileTitle = computed(() => {
   transform: translateY(-50%);
 }
 
-.env-badge {
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  color: #fff;
-  background: var(--color-accent);
-  padding: 2px 7px;
-  border-radius: 999px;
-  line-height: 1.4;
+.header-pill {
+  display: contents;
 }
 
 .header-center {
@@ -410,8 +389,68 @@ const profileTitle = computed(() => {
   .wordmark {
     display: none;
   }
-  .brand:not(:has(.env-badge)) {
+  .brand {
     padding: 4px;
+  }
+}
+
+@media (max-width: 1023px) {
+  .header-row {
+    padding: var(--space-2) var(--space-4) 0;
+  }
+}
+
+@media (max-width: 479px) {
+  .brand {
+    display: inline-flex;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    padding: 0;
+  }
+
+  .header-pill {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    width: 100%;
+    min-width: 0;
+    border-radius: 999px;
+    background: var(--color-surface-glass);
+    backdrop-filter: var(--backdrop-blur-md);
+    -webkit-backdrop-filter: var(--backdrop-blur-md);
+    border: 1px solid var(--color-surface-glass-border);
+    box-shadow:
+      0 4px 16px rgba(0, 0, 0, 0.25),
+      0 1px 3px rgba(0, 0, 0, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    padding: 3px 6px;
+    pointer-events: auto;
+  }
+
+  .header-center {
+    justify-content: flex-start;
+  }
+
+  .floating-island {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    padding: 0;
+  }
+
+  .header-actions {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    padding: 0;
   }
 }
 

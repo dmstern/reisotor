@@ -25,18 +25,88 @@ const env =
 const versionSuffix = env === 'staging' ? '-staging' : env === 'production' ? '' : '-dev';
 const computedVersion = `${pkg.version}${versionSuffix}`;
 
+const SLUG_TITLES = {
+  trips: 'Reisen & Urlaube',
+  'spots-tours': 'Spots & Touren',
+  'floating-calendar-drawer': 'Kalender & Layout',
+  'brand-and-navigation': 'Design & Navigation',
+  'list-animations': 'Listen & Interaktion',
+  weather: 'Wetter',
+  'settings-sync': 'Einstellungen & Synchronisation',
+  'members-admin': 'Mitreisende & Verwaltung',
+  'deeplinks-trip-id': 'Verlinkung & Teilen',
+  'demo-feedback': 'Demo & Feedback',
+};
+
+const GROUP_PRIORITY = [
+  'trips',
+  'spots-tours',
+  'floating-calendar-drawer',
+  'brand-and-navigation',
+  'list-animations',
+  'weather',
+  'settings-sync',
+  'members-admin',
+  'deeplinks-trip-id',
+  'demo-feedback',
+];
+
+function slugToTitle(slug) {
+  if (SLUG_TITLES[slug]) return SLUG_TITLES[slug];
+  return slug
+    .split('-')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
 function readPendingReleaseNotes() {
   const pendingDir = path.join(repoRootDir, 'release-notes', 'pending');
   try {
     const fragmentFiles = readdirSync(pendingDir).filter((f) => f.endsWith('.md'));
-    const notes = fragmentFiles
-      .flatMap((f) => readFileSync(path.join(pendingDir, f), 'utf-8').split('\n'))
-      .map((line) => line.trim())
-      .filter((line) => line.startsWith('- '))
-      .map((line) => line.slice(2).trim());
-    return notes;
+    fragmentFiles.sort((a, b) => {
+      const slugA = a.replace(/\.md$/, '');
+      const slugB = b.replace(/\.md$/, '');
+      const prioA = GROUP_PRIORITY.indexOf(slugA);
+      const prioB = GROUP_PRIORITY.indexOf(slugB);
+      if (prioA !== -1 && prioB !== -1) return prioA - prioB;
+      if (prioA !== -1) return -1;
+      if (prioB !== -1) return 1;
+      return a.localeCompare(b);
+    });
+
+    const groups = [];
+    const allNotes = [];
+
+    for (const f of fragmentFiles) {
+      const slug = f.replace(/\.md$/, '');
+      const content = readFileSync(path.join(pendingDir, f), 'utf-8');
+      const lines = content.split('\n');
+
+      let title = '';
+      const headingLine = lines.find((l) => /^#{1,6}\s+/.test(l.trim()));
+      if (headingLine) {
+        title = headingLine
+          .trim()
+          .replace(/^#{1,6}\s+/, '')
+          .trim();
+      } else {
+        title = slugToTitle(slug);
+      }
+
+      const notes = lines
+        .map((line) => line.trim())
+        .filter((line) => line.startsWith('- '))
+        .map((line) => line.slice(2).trim());
+
+      if (notes.length > 0) {
+        groups.push({ title, notes });
+        allNotes.push(...notes);
+      }
+    }
+
+    return { groups, notes: allNotes };
   } catch {
-    return [];
+    return { groups: [], notes: [] };
   }
 }
 
@@ -58,22 +128,42 @@ function readLatestChangelogEntry() {
   const heading = first?.match(/^## \[(.+?)\] - (\S+)/);
   if (!heading) return null;
   const [, version, date] = heading;
-  const notes = first
-    .split('\n')
-    .map((line) => line.trim())
-    .filter((line) => line.startsWith('- '))
-    .map((line) => line.slice(2).trim());
-  return { version, date, notes };
+
+  const lines = first.split('\n').map((line) => line.trim());
+  const groups = [];
+  const allNotes = [];
+  let currentGroup = null;
+
+  for (const line of lines) {
+    const subHeadingMatch = /^###\s+(.+)$/.exec(line);
+    if (subHeadingMatch) {
+      currentGroup = { title: subHeadingMatch[1].trim(), notes: [] };
+      groups.push(currentGroup);
+    } else if (line.startsWith('- ')) {
+      const note = line.slice(2).trim();
+      allNotes.push(note);
+      if (currentGroup) {
+        currentGroup.notes.push(note);
+      }
+    }
+  }
+
+  const result = { version, date, notes: allNotes };
+  if (groups.length > 0) {
+    result.groups = groups;
+  }
+  return result;
 }
 
 function determineChangelog() {
   if (env === 'staging' || env === 'development') {
-    const pendingNotes = readPendingReleaseNotes();
-    if (pendingNotes.length > 0) {
+    const pending = readPendingReleaseNotes();
+    if (pending.notes.length > 0) {
       return {
         version: computedVersion,
         date: new Date().toISOString().slice(0, 10),
-        notes: pendingNotes,
+        notes: pending.notes,
+        groups: pending.groups,
       };
     }
     const latest = readLatestChangelogEntry();

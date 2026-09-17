@@ -4,6 +4,7 @@ import type { SettlementSuggestion } from '../utils/budgetBalances';
 import { useBudgetStore } from '../stores/budget';
 import AppIcon from './AppIcon.vue';
 import Card from './primitives/Card.vue';
+import Badge from './primitives/Badge.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
 defineEmits<{ (e: 'use-suggestion', suggestion: SettlementSuggestion): void }>();
@@ -43,9 +44,9 @@ const store = useBudgetStore();
     <ul class="balance-list">
       <li v-for="b in store.balances" :key="b.user.id" class="balance-row">
         <span class="balance-user">{{ b.user.avatar }} {{ b.user.username }}</span>
-        <span :class="b.net >= 0 ? 'positive' : 'negative'" class="balance-pill">
+        <Badge :variant="b.net >= 0 ? 'success' : 'danger'">
           {{ b.net >= 0 ? 'bekommt' : 'schuldet' }} {{ Math.abs(b.net).toFixed(2) }} €
-        </span>
+        </Badge>
       </li>
     </ul>
     <p class="hint">
@@ -155,23 +156,6 @@ const store = useBudgetStore();
 
 .balance-user {
   font-weight: 500;
-}
-
-.balance-pill {
-  font-size: 0.84rem;
-  padding: 2px 8px;
-  border-radius: var(--radius-full, 9999px);
-  font-weight: 600;
-}
-
-.balance-pill.positive {
-  color: var(--color-success);
-  background: color-mix(in srgb, var(--color-success) 12%, transparent);
-}
-
-.balance-pill.negative {
-  color: var(--color-danger);
-  background: color-mix(in srgb, var(--color-danger) 12%, transparent);
 }
 
 .hint {

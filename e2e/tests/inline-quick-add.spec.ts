@@ -10,7 +10,11 @@ test('quick-adding into a shopping group creates the item pre-filled with that g
   await expect(page.locator('.shopping-page')).toBeVisible();
 
   // Gruppierung explizit auf 'buyer' (Einkäufer:in) stellen, falls sie durch vorherige Tests im localStorage abweicht.
-  await page.locator('.shopping-page .filter-row select').first().selectOption('buyer');
+  await page.locator('.shopping-page .list-settings-trigger').click();
+  await page
+    .locator('.list-settings-popover-menu button.dropdown-item', { hasText: 'nach Einkäufer:in' })
+    .click();
+  await page.keyboard.press('Escape');
 
   const group = page.locator('.shopping-page .group-section', { hasText: 'Nicht zugewiesen' });
   await expect(group).toBeVisible();
@@ -46,7 +50,12 @@ test('quick-adding into a todo group creates the item assigned to that group’s
   await expect(page.locator('.todo-page')).toBeVisible();
 
   // Gruppierung explizit auf 'assignee' (Bearbeiter:in) stellen.
-  await page.locator('.todo-page .filter-row select').first().selectOption('assignee');
+  await page.locator('.todo-page .list-settings-trigger').click();
+  await page
+    .locator('.list-settings-popover-menu button.dropdown-item', { hasText: 'nach Bearbeiter:in' })
+    .first()
+    .click();
+  await page.keyboard.press('Escape');
 
   const group = page.locator('.todo-page .group-section', { hasText: 'Nicht zugewiesen' });
   await expect(group).toBeVisible();

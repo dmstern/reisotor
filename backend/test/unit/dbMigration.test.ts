@@ -168,7 +168,10 @@ describe('ideas -> excursion_legs Transport-Backfill', () => {
     process.env.DB_PATH = dbPath;
     const { db } = await import('../../src/db/index.js');
 
-    const legRow = db.prepare('SELECT * FROM excursion_legs WHERE idea_id = 42').get() as any;
+    const legRow = db.prepare('SELECT * FROM excursion_legs WHERE idea_id = 42').get() as Record<
+      string,
+      unknown
+    >;
 
     expect(legRow).toBeDefined();
     expect(legRow.position).toBe(0);

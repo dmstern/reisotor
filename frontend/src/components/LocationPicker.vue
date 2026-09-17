@@ -234,6 +234,9 @@ function useOwnLocation() {
 }
 
 .hint {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   margin: 0;
   font-size: 0.8rem;
   color: var(--color-text-muted);

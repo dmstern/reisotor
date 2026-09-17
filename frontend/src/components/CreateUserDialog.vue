@@ -4,7 +4,7 @@ import Modal from './Modal.vue';
 import Button from './primitives/Button.vue';
 import IconButton from './primitives/IconButton.vue';
 import Input from './primitives/Input.vue';
-import Checkbox from './primitives/Checkbox.vue';
+
 import CheckboxCard from './primitives/CheckboxCard.vue';
 import FormField from './FormField.vue';
 import PasswordInput from './PasswordInput.vue';

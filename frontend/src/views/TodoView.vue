@@ -21,13 +21,15 @@ import { useToast } from '../composables/useToast';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
 import { usePersistedRef } from '../composables/usePersistedRef';
 import { useUiSettingsStore } from '../stores/uiSettings';
-import CompletedToggle from '../components/CompletedToggle.vue';
+import ListSettingsMenu from '../components/ListSettingsMenu.vue';
 import AppIcon from '../components/AppIcon.vue';
 import Button from '../components/primitives/Button.vue';
 import Checkbox from '../components/primitives/Checkbox.vue';
 import CheckableListItem from '../components/primitives/CheckableListItem.vue';
 import Select from '../components/primitives/Select.vue';
 import Input from '../components/primitives/Input.vue';
+import Accordion from '../components/primitives/Accordion.vue';
+import Badge from '../components/primitives/Badge.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 
@@ -46,10 +48,31 @@ const highlightedIds = ref<Set<number>>(new Set());
 
 type GroupBy = 'assignee' | 'period';
 type SortBy = 'due_date' | 'priority' | 'assignee';
-// Gruppierung/Sortierung bleiben über localStorage auch nach einem Reload/erneuten Besuch erhalten
-// (siehe usePersistedRef.ts).
 const groupBy = usePersistedRef<GroupBy>('reisotor-todo-group-by', 'assignee');
 const sortBy = usePersistedRef<SortBy>('reisotor-todo-sort-by', 'priority');
+
+const defaultGroupBy = computed<GroupBy>(() => (users.value.length > 1 ? 'assignee' : 'period'));
+const defaultSortBy: SortBy = 'priority';
+
+const groupByOptions = computed(() => {
+  const opts = [];
+  if (users.value.length > 1) {
+    opts.push({ value: 'assignee', label: 'nach Bearbeiter:in', icon: FORM_FIELD_ICONS.person });
+  }
+  opts.push({ value: 'period', label: 'nach Zeitraum', icon: FORM_FIELD_ICONS.period });
+  return opts;
+});
+
+const sortByOptions = computed(() => {
+  const opts = [
+    { value: 'priority', label: 'nach Priorität', icon: FORM_FIELD_ICONS.priority },
+    { value: 'due_date', label: 'nach Datum', icon: FORM_FIELD_ICONS.date },
+  ];
+  if (users.value.length > 1) {
+    opts.push({ value: 'assignee', label: 'nach Bearbeiter:in', icon: FORM_FIELD_ICONS.person });
+  }
+  return opts;
+});
 
 const PRIORITY_META: Record<TodoPriority, { label: string; icon: string; color: string }> = {
   low: { label: 'Niedrig', icon: '🟢', color: 'var(--color-success)' },
@@ -115,6 +138,17 @@ const editDraft = useDraftAutosave(
   computed(() => editingItem.value !== null)
 );
 
+const showNewDetails = ref(false);
+
+watch(
+  () => newDraft.restored.value,
+  (restored) => {
+    if (restored && (newForm.value.due_date || newForm.value.note)) {
+      showNewDetails.value = true;
+    }
+  }
+);
+
 async function load() {
   try {
     const [itemsRes, usersRes] = await Promise.all([
@@ -160,6 +194,18 @@ function userLabel(id: number | null) {
   if (id == null) return null;
   const u = users.value.find((u) => u.id === id);
   return u ? `${u.avatar} ${u.username}` : null;
+}
+
+function userAvatar(id: number | null | undefined) {
+  if (id == null) return null;
+  const u = users.value.find((u) => u.id === id);
+  return u ? u.avatar : null;
+}
+
+function userName(id: number | null | undefined) {
+  if (id == null) return null;
+  const u = users.value.find((u) => u.id === id);
+  return u ? u.username : null;
 }
 
 function sortItems(list: TodoItem[]) {
@@ -251,14 +297,16 @@ async function addItem() {
   items.value.push(created);
   lastAssignee.value = newForm.value.assigned_to_user_id;
   newForm.value = emptyForm();
+  showNewDetails.value = false;
   newDraft.clear();
 }
 
 // Inline-Quick-Add direkt in einer Gruppen-Kopfzeile (siehe QuickAddRow.vue) - die aktuell
-// gruppierte Dimension (Bearbeiter:in oder Zeitraum) ergibt sich aus der Gruppe selbst; Priorität
-// bleibt als kompaktes Zusatzfeld übrig (Fälligkeitsdatum ist bei Zeitraum-Gruppierung nicht sinnvoll
-// frei wählbar, da der Zeitraum selbst daraus abgeleitet wird - siehe periodFor() oben).
+// gruppierte Dimension (Bearbeiter:in oder Zeitraum) ergibt sich aus der Gruppe selbst.
+// Die jeweils andere Dimension (Zuweisung bei Zeitraum-Gruppierung, Zeitraum bei Bearbeiter:innen-Gruppierung)
+// sowie die Priorität stehen als kompakte Zusatzfelder bereit.
 const quickAddPriority = ref<TodoPriority>('medium');
+const quickAddPeriod = ref<Period | ''>('');
 
 async function quickAddToGroup(group: Group, label: string) {
   if (!label.trim()) return;
@@ -271,7 +319,12 @@ async function quickAddToGroup(group: Group, label: string) {
         ? Number(lastAssignee.value)
         : undefined;
 
-  const period = groupBy.value === 'period' && group.key !== 'none' ? group.key : undefined;
+  const period =
+    groupBy.value === 'period'
+      ? group.key === 'before' || group.key === 'during'
+        ? (group.key as Period)
+        : undefined
+      : quickAddPeriod.value || undefined;
 
   const created = await api.post<TodoItem>('/todos', {
     trip_id: tripId,
@@ -345,68 +398,131 @@ function isOverdue(item: TodoItem) {
 
 <template>
   <div class="page todo-page" v-if="!loading">
-    <h1>ToDo</h1>
-    <p>{{ progress.done }}/{{ progress.total }} erledigt</p>
+    <div class="page-header-row">
+      <div class="page-header-top">
+        <div class="page-title-group">
+          <div class="title-with-pill">
+            <h1>ToDo</h1>
+            <div class="progress-pill-group">
+              <Badge
+                :variant="
+                  progress.done === progress.total && progress.total > 0 ? 'success' : 'primary'
+                "
+                size="sm"
+              >
+                {{ progress.done }}/{{ progress.total }} erledigt
+              </Badge>
+              <span v-if="progress.total > 0" class="progress-percentage">
+                {{ Math.round((progress.done / progress.total) * 100) }}%
+              </span>
+            </div>
+          </div>
+          <div v-if="progress.total > 0" class="header-progress-track" aria-hidden="true">
+            <div
+              class="header-progress-bar"
+              :style="{ width: `${Math.round((progress.done / progress.total) * 100)}%` }"
+            ></div>
+          </div>
+        </div>
+        <ListSettingsMenu
+          v-model:group-by="groupBy"
+          :group-by-options="groupByOptions"
+          :default-group-by="defaultGroupBy"
+          v-model:sort-by="sortBy"
+          :sort-by-options="sortByOptions"
+          :default-sort-by="defaultSortBy"
+          v-model:hide-completed="uiSettings.hideCompletedTodos"
+          hide-completed-label="Erledigte ausblenden"
+        />
+      </div>
+    </div>
 
+    <!-- Progressives Schnelleingabe-Formular -->
     <form class="add-form card" @submit.prevent="addItem">
-      <FormField icon="title" label="Aufgabe" v-slot="{ id }">
-        <Input :id="id" v-model="newForm.title" type="text" placeholder="Neue Aufgabe" required />
-      </FormField>
-      <FormField v-if="users.length > 1" icon="person" label="Bearbeiter:in" v-slot="{ id }">
-        <Select :id="id" v-model="newForm.assigned_to_user_id">
-          <option value="">Nicht zugewiesen</option>
-          <option v-for="u in users" :key="u.id" :value="String(u.id)">
-            {{ u.avatar }} {{ u.username }}
-          </option>
-        </Select>
-      </FormField>
-      <FormField icon="date" label="Fällig" v-slot="{ id }">
-        <Input :id="id" v-model="newForm.due_date" type="date" />
-      </FormField>
-      <FormField icon="period" label="Zeitraum" v-slot="{ id }">
-        <Select :id="id" v-model="newForm.period" :disabled="!!newForm.due_date">
-          <option value="">(Nach Datum / Ohne)</option>
-          <option v-for="(label, key) in PERIOD_META" :key="key" :value="key">
-            {{ label }}
-          </option>
-        </Select>
-      </FormField>
-      <FormField icon="priority" label="Priorität" v-slot="{ id }">
-        <Select :id="id" v-model="newForm.priority">
-          <option v-for="(meta, key) in PRIORITY_META" :key="key" :value="key">
-            {{ meta.icon }} {{ meta.label }}
-          </option>
-        </Select>
-      </FormField>
-      <FormField icon="note" label="Notiz" v-slot="{ id }">
-        <Input :id="id" v-model="newForm.note" type="text" placeholder="Notiz (optional)" />
-      </FormField>
-      <Button type="submit">Hinzufügen</Button>
+      <div class="quick-input-row">
+        <div class="main-input-wrap">
+          <FormField icon="title" label="Aufgabe" v-slot="{ id }">
+            <div class="input-inline-action-wrap">
+              <Input
+                :id="id"
+                v-model="newForm.title"
+                type="text"
+                placeholder="Neue Aufgabe"
+                required
+              />
+              <Button
+                type="submit"
+                class="inline-submit-btn"
+                variant="primary"
+                size="sm"
+                :icon="ACTION_ICONS.send"
+                :disabled="!newForm.title.trim()"
+                aria-label="Hinzufügen"
+                title="Hinzufügen"
+              />
+            </div>
+          </FormField>
+        </div>
+
+        <div class="quick-input-actions">
+          <Button
+            type="button"
+            variant="ghost"
+            class="details-toggle-btn"
+            :aria-expanded="showNewDetails"
+            @click="showNewDetails = !showNewDetails"
+          >
+            <AppIcon
+              :icon="showNewDetails ? ACTION_ICONS.chevronUp : ACTION_ICONS.chevronDown"
+              :size="14"
+              group="actions"
+            />
+            <span>Details</span>
+          </Button>
+        </div>
+      </div>
+
+      <!-- Sanft ausklappbare Detail-Felder -->
+      <Accordion :expanded="showNewDetails" :inert-when-closed="false">
+        <div class="form-details-grid">
+          <FormField v-if="users.length > 1" icon="person" label="Bearbeiter:in" v-slot="{ id }">
+            <Select :id="id" v-model="newForm.assigned_to_user_id">
+              <option value="">Nicht zugewiesen</option>
+              <option v-for="u in users" :key="u.id" :value="String(u.id)">
+                {{ u.avatar }} {{ u.username }}
+              </option>
+            </Select>
+          </FormField>
+
+          <FormField icon="date" label="Fällig" v-slot="{ id }">
+            <Input :id="id" v-model="newForm.due_date" type="date" />
+          </FormField>
+
+          <FormField icon="period" label="Zeitraum" v-slot="{ id }">
+            <Select :id="id" v-model="newForm.period" :disabled="!!newForm.due_date">
+              <option value="">(Nach Datum / Ohne)</option>
+              <option v-for="(label, key) in PERIOD_META" :key="key" :value="key">
+                {{ label }}
+              </option>
+            </Select>
+          </FormField>
+
+          <FormField icon="priority" label="Priorität" v-slot="{ id }">
+            <Select :id="id" v-model="newForm.priority">
+              <option v-for="(meta, key) in PRIORITY_META" :key="key" :value="key">
+                {{ meta.icon }} {{ meta.label }}
+              </option>
+            </Select>
+          </FormField>
+
+          <FormField icon="note" label="Notiz" v-slot="{ id }">
+            <Input :id="id" v-model="newForm.note" type="text" placeholder="Notiz (optional)" />
+          </FormField>
+        </div>
+      </Accordion>
+
       <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
     </form>
-
-    <div class="filter-row">
-      <div class="tool-row">
-        <span class="tool-label"
-          ><AppIcon :icon="ACTION_ICONS.group" :size="14" group="actions" /> Gruppieren</span
-        >
-        <Select v-model="groupBy" aria-label="Gruppieren">
-          <option v-if="users.length > 1" value="assignee">nach Bearbeiter:in</option>
-          <option value="period">nach Zeitraum</option>
-        </Select>
-      </div>
-      <div class="tool-row">
-        <span class="tool-label"
-          ><AppIcon :icon="ACTION_ICONS.sort" :size="14" group="actions" /> Sortieren</span
-        >
-        <Select v-model="sortBy" aria-label="Sortieren">
-          <option value="due_date">nach Datum</option>
-          <option value="priority">nach Priorität</option>
-          <option v-if="users.length > 1" value="assignee">nach Bearbeiter:in</option>
-        </Select>
-      </div>
-      <CompletedToggle v-model="uiSettings.hideCompletedTodos" />
-    </div>
 
     <div class="groups-grid">
       <section
@@ -416,31 +532,7 @@ function isOverdue(item: TodoItem) {
         :style="{ '--stagger-delay': `${index * 60}ms` }"
       >
         <h2>{{ group.label }}</h2>
-        <QuickAddRow
-          class="card group-quick-add"
-          placeholder="Aufgabe hinzufügen…"
-          @submit="(label) => quickAddToGroup(group, label)"
-        >
-          <template #extra>
-            <Select
-              v-if="users.length > 1 && groupBy !== 'assignee'"
-              v-model="lastAssignee"
-              aria-label="Zuweisung"
-              size="sm"
-            >
-              <option value="">Nicht zugewiesen</option>
-              <option v-for="u in users" :key="u.id" :value="String(u.id)">
-                {{ u.avatar }} {{ u.username }}
-              </option>
-            </Select>
-            <Select v-model="quickAddPriority" aria-label="Priorität" size="sm">
-              <option v-for="(meta, key) in PRIORITY_META" :key="key" :value="key">
-                {{ meta.icon }} {{ meta.label }}
-              </option>
-            </Select>
-          </template>
-        </QuickAddRow>
-        <div class="card">
+        <div class="card group-card">
           <TransitionGroup tag="ul" name="list" class="list">
             <CheckableListItem
               v-for="item in group.items"
@@ -457,37 +549,61 @@ function isOverdue(item: TodoItem) {
                   @change="toggleDone(item)"
                 />
                 <span
-                  class="title"
+                  class="item-title title"
                   :class="{ 'row__text--done': item.done, 'text-done': item.done }"
                 >
                   {{ item.title }}
                 </span>
               </label>
-              <PendingSyncBadge v-if="item._pending" />
-              <span class="priority" :title="PRIORITY_META[item.priority].label">
-                <AppIcon
-                  :icon="ACTION_ICONS.priorityDot"
-                  :size="10"
-                  :color="PRIORITY_META[item.priority].color"
-                  group="actions"
-                />
-              </span>
-              <span v-if="item.due_date" class="due" :class="{ overdue: isOverdue(item) }">
-                <AppIcon :icon="FORM_FIELD_ICONS.date" :size="13" group="formFields" />
-                {{ formatDate(item.due_date) }}
-              </span>
-              <span
-                v-if="
-                  users.length > 1 && groupBy !== 'assignee' && userLabel(item.assigned_to_user_id)
-                "
-                class="assignee"
-                >{{ userLabel(item.assigned_to_user_id) }}</span
-              >
-              <span v-if="groupBy !== 'period' && periodFor(item)" class="assignee">
-                <AppIcon :icon="FORM_FIELD_ICONS.period" :size="13" group="formFields" />
-                {{ PERIOD_META[periodFor(item)!] }}
-              </span>
-              <span v-if="item.note" class="note">{{ item.note }}</span>
+
+              <div class="item-meta">
+                <PendingSyncBadge v-if="item._pending" />
+                <span v-if="item.note" class="note" :title="item.note">
+                  <AppIcon :icon="FORM_FIELD_ICONS.note" :size="11" group="formFields" />
+                  {{ item.note }}
+                </span>
+                <Badge
+                  v-if="groupBy !== 'period' && periodFor(item)"
+                  size="sm"
+                  class="period-badge"
+                >
+                  <AppIcon :icon="FORM_FIELD_ICONS.period" :size="11" group="formFields" />
+                  {{ PERIOD_META[periodFor(item)!] }}
+                </Badge>
+                <Badge
+                  v-if="item.due_date"
+                  :variant="isOverdue(item) ? 'danger' : 'default'"
+                  size="sm"
+                  class="due-badge"
+                >
+                  <AppIcon :icon="FORM_FIELD_ICONS.date" :size="11" group="formFields" />
+                  {{ formatDate(item.due_date) }}
+                </Badge>
+                <span
+                  v-if="
+                    users.length > 1 &&
+                    groupBy !== 'assignee' &&
+                    userAvatar(item.assigned_to_user_id)
+                  "
+                  class="assignee-avatar-pill"
+                  :title="`Zugewiesen an: ${userName(item.assigned_to_user_id)}`"
+                >
+                  {{ userAvatar(item.assigned_to_user_id) }}
+                </span>
+                <span
+                  class="priority"
+                  :title="`Priorität: ${PRIORITY_META[item.priority].label}`"
+                  :aria-label="`Priorität: ${PRIORITY_META[item.priority].label}`"
+                >
+                  <AppIcon
+                    :icon="ACTION_ICONS.priorityDot"
+                    :size="10"
+                    :color="PRIORITY_META[item.priority].color"
+                    group="actions"
+                  />
+                </span>
+              </div>
+
               <template #actions>
                 <EditButton small @click="startEdit(item)" />
                 <DeleteButton small @click="remove(item.id)" />
@@ -499,6 +615,41 @@ function isOverdue(item: TodoItem) {
               }}
             </li>
           </TransitionGroup>
+
+          <QuickAddRow
+            class="group-quick-add"
+            placeholder="Aufgabe hinzufügen…"
+            @submit="(label) => quickAddToGroup(group, label)"
+          >
+            <template #extra>
+              <Select
+                v-if="users.length > 1 && groupBy !== 'assignee'"
+                v-model="lastAssignee"
+                aria-label="Zuweisung"
+                size="sm"
+              >
+                <option value="">Nicht zugewiesen</option>
+                <option v-for="u in users" :key="u.id" :value="String(u.id)">
+                  {{ u.avatar }} {{ u.username }}
+                </option>
+              </Select>
+              <Select
+                v-if="groupBy !== 'period'"
+                v-model="quickAddPeriod"
+                aria-label="Zeitraum"
+                size="sm"
+              >
+                <option value="">Zeitraum</option>
+                <option value="before">{{ PERIOD_META.before }}</option>
+                <option value="during">{{ PERIOD_META.during }}</option>
+              </Select>
+              <Select v-model="quickAddPriority" aria-label="Priorität" size="sm">
+                <option v-for="(meta, key) in PRIORITY_META" :key="key" :value="key">
+                  {{ meta.icon }} {{ meta.label }}
+                </option>
+              </Select>
+            </template>
+          </QuickAddRow>
         </div>
       </section>
     </div>
@@ -554,62 +705,165 @@ function isOverdue(item: TodoItem) {
 </template>
 
 <style scoped>
-.add-form {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
+.page-header-row {
   margin-bottom: var(--space-3);
 }
 
-.add-form .form-field {
+.page-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.page-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
   flex: 1;
-  min-width: 140px;
 }
 
-/* Ohne eigenes FormField-Label würde der Absenden-Button, sobald er in derselben umgebrochenen
-   Flex-Zeile wie ein FormField landet, vom Flex-Default align-items:stretch auf dessen (größere)
-   Höhe gezogen (Konsistenz-Prinzip, siehe DESIGN.md). flex-basis:100% erzwingt stattdessen immer
-   eine eigene, volle Zeile - Absenden-Button bekommt so app-weit dieselbe, natürliche Höhe. Auf Mobil
-   ist eine volle Zeile für den primären Absenden-Button zudem ohnehin der übliche, gut antippbare
-   Standard (großer Touch-Target). */
-.add-form button[type='submit'] {
-  flex: 1 1 100%;
+.title-with-pill {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  flex-wrap: wrap;
 }
 
-/* Auf Desktop wirkte derselbe volle-Breite-Button auf der (bis zu 1400px breiten, siehe .todo-page
-   oben) Karte überdimensioniert - hier stattdessen normal breit wie jeder andere Button, am Ende der
-   letzten Feld-Zeile ausgerichtet statt in voller Kartenbreite gestreckt. Gleiche Lösung wie
-   ShoppingListView.vue (dortiger Kommentar für die Begründung von align-self:flex-end). */
-@media (min-width: 800px) {
-  .add-form button[type='submit'] {
-    flex: 0 0 auto;
-    align-self: flex-end;
+.progress-pill-group {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.progress-percentage {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.header-progress-track {
+  width: 100%;
+  max-width: 320px;
+  height: 4px;
+  background: var(--color-hover);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.header-progress-bar {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: var(--radius-pill);
+  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Progressives Schnelleingabe-Formular */
+.add-form {
+  margin-bottom: var(--space-4);
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.quick-input-row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.main-input-wrap {
+  flex: 1;
+  min-width: 160px;
+}
+
+.main-input-wrap :deep(.form-field) {
+  margin-bottom: 0;
+}
+
+.input-inline-action-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.input-inline-action-wrap :deep(.input) {
+  width: 100%;
+  padding-right: 44px;
+}
+
+.inline-submit-btn {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  translate: 0 -50%;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0;
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: none;
+  transition:
+    background 0.15s ease,
+    opacity 0.15s ease,
+    scale 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.inline-submit-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.inline-submit-btn:hover:not(:disabled) {
+  scale: 1.05;
+}
+
+.inline-submit-btn:active:not(:disabled) {
+  scale: 0.95;
+}
+
+.quick-input-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.details-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.form-details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--space-2);
+  padding-top: var(--space-3);
+  border-top: 1px dashed var(--color-border);
+  margin-top: var(--space-2);
+}
+
+@media (max-width: 640px) {
+  .quick-input-actions {
+    margin-left: auto;
   }
 }
 
-.filter-row {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--space-4);
-  margin-bottom: var(--space-3);
-  font-size: 0.9rem;
-}
-
-/* Gleiches Muster wie ExcursionsView.vue's Gruppieren/Sortieren/Filtern-Zeile (dort .tool-row/
-   .tool-label) - für Konsistenz app-weit hier 1:1 übernommen statt einer eigenen Variante. */
-.tool-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.tool-label {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
-  flex-shrink: 0;
+@container app-main (max-width: 640px) {
+  .quick-input-actions {
+    margin-left: auto;
+  }
 }
 
 .groups-grid {
@@ -628,8 +882,19 @@ function isOverdue(item: TodoItem) {
   margin-bottom: var(--space-2);
 }
 
-.group-quick-add {
-  margin-bottom: var(--space-2);
+.group-card {
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+}
+
+.group-quick-add,
+.group-quick-add.expanded {
+  padding: var(--space-3) 0 0 0;
+  border-top: 1px solid var(--color-border);
+  margin-top: var(--space-2);
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .group-quick-add :deep(select) {
@@ -647,30 +912,65 @@ function isOverdue(item: TodoItem) {
   align-items: center;
   gap: var(--space-2);
   cursor: pointer;
-  flex: 1;
-  min-width: 140px;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.item-title {
+  min-width: 0;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.item-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+  margin-left: auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+:deep(.checkable-list-item__actions),
+:deep(.row-actions) {
+  margin-left: 0;
 }
 
 .priority {
-  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
 }
 
-.due {
-  font-size: 0.82rem;
-  color: var(--color-text-muted);
+.due-badge,
+.period-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
-.due.overdue {
-  color: var(--color-danger);
-  font-weight: 600;
-}
-
-.assignee {
-  font-size: 0.82rem;
-  color: var(--color-text-muted);
+.assignee-avatar-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-pill);
+  background: var(--color-hover);
+  border: 1px solid var(--color-border);
+  font-size: 0.85rem;
+  line-height: 1;
+  flex-shrink: 0;
 }
 
 .note {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 0.82rem;
   color: var(--color-text-muted);
 }

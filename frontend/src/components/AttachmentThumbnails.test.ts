@@ -79,4 +79,19 @@ describe('AttachmentThumbnails', () => {
     expect(html).toContain('thumbnails-fanned-container');
     expect(html).not.toContain('remove-thumb');
   });
+
+  it('displays original_name instead of generic fallback when provided', async () => {
+    const app = createTestApp(AttachmentThumbnails, {
+      items: [
+        {
+          url: 'https://example.com/photo.jpg',
+          original_name: 'DSC_0042.jpg',
+        },
+      ],
+      fanned: true,
+    });
+    const html = await renderToString(app);
+    expect(html).toContain('DSC_0042.jpg');
+    expect(html).not.toContain('Bild 1');
+  });
 });

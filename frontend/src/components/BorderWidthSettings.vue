@@ -4,7 +4,7 @@ import { useUiSettingsStore, DEFAULT_BORDER_WIDTH } from '../stores/uiSettings';
 import SegmentedToggle from './SegmentedToggle.vue';
 import Button from './primitives/Button.vue';
 import Card from './primitives/Card.vue';
-import AppIcon from './AppIcon.vue';
+
 import { ACTION_ICONS } from '../utils/actionIcons';
 
 const uiSettings = useUiSettingsStore();

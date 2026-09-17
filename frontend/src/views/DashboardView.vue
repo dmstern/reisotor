@@ -447,9 +447,11 @@ function formatWeekdayDate(d: string) {
             variant="secondary"
             class="banner-action-btn"
             title="Urlaub bearbeiten"
+            aria-label="Urlaub bearbeiten"
             @click="jumpToTrip"
           >
-            <AppIcon :icon="ACTION_ICONS.edit" :size="14" group="actions" /> Bearbeiten
+            <AppIcon :icon="ACTION_ICONS.edit" :size="14" group="actions" />
+            <span class="banner-action-label">Bearbeiten</span>
           </Button>
         </div>
       </div>
@@ -1155,7 +1157,6 @@ function formatWeekdayDate(d: string) {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  flex-wrap: wrap;
   gap: var(--space-2);
   margin-bottom: var(--space-3);
 }
@@ -1164,23 +1165,80 @@ function formatWeekdayDate(d: string) {
   margin: 0;
   min-width: 0;
   flex: 1 1 auto;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .banner-actions {
   display: flex;
   gap: var(--space-2);
   flex-shrink: 0;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+  align-items: flex-start;
 }
 
 .banner-action-btn {
+  position: relative;
   font-size: 0.8rem;
   padding: 4px 10px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   box-shadow: none;
+  flex-shrink: 0;
+}
+
+.banner-action-label {
+  display: inline;
+}
+
+@container app-main (max-width: 768px) {
+  .banner-action-label {
+    display: none;
+  }
+
+  .banner-action-btn {
+    padding: 6px;
+    min-width: 32px;
+    min-height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .banner-action-btn::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 44px;
+    height: 44px;
+    transform: translate(-50%, -50%);
+  }
+}
+
+@media (max-width: 768px) {
+  .banner-action-label {
+    display: none;
+  }
+
+  .banner-action-btn {
+    padding: 6px;
+    min-width: 32px;
+    min-height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .banner-action-btn::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 44px;
+    height: 44px;
+    transform: translate(-50%, -50%);
+  }
 }
 
 .banner-action-btn:hover {
@@ -1246,6 +1304,7 @@ function formatWeekdayDate(d: string) {
 
 .weather-section-label {
   display: flex;
+  align-items: center;
   gap: 0.5em;
   margin: 0 0 var(--space-2);
   color: var(--color-text-muted);
@@ -1326,6 +1385,7 @@ function formatWeekdayDate(d: string) {
 
 .weather-rain {
   display: inline-flex;
+  align-items: center;
   gap: 3px;
   font-size: 0.72rem;
   color: var(--color-accent-secondary);
