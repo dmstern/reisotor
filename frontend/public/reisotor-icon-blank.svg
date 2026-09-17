@@ -858,15 +858,24 @@
   <!-- Map Pin Main Body (Mit runder Spitze) -->
   <path
      id="path10"
-     style="display:inline;fill:url(#linearGradient15);filter:url(#filter55)"
+     style="display:inline;fill:url(#linearGradient15)"
      inkscape:label="pin"
      d="M 243.97335,91.193652 A 120,120 0 0 0 132.1628,210.91435 c 0,110 90,190 105,205 10,10 20,10 30,0 15,-15 105,-95 105,-205 A 120,120 0 0 0 243.97335,91.193652 Z m 8.18945,41.720698 a 78,78 0 0 1 78,78 78,78 0 0 1 -78,78 78,78 0 0 1 -78,-78 78,78 0 0 1 78,-78 z" />
   <!-- Inner Circle with Noise -->
   <!-- Robot Head Elements -->
   <g
      id="robot-group"
-     style="display:inline;filter:url(#filter71)"
+     style="display:inline"
      transform="translate(2.1627926,-3.2235758)">
+    <rect
+       x="190"
+       y="178"
+       width="120"
+       height="70"
+       rx="35"
+       fill="#200028"
+       opacity="0.4"
+       id="rect11-shadow" />
     <rect
        x="190"
        y="175"
@@ -874,9 +883,8 @@
        height="70"
        rx="35"
        fill="url(#mainGrad)"
-       filter="url(#inset-highlight)"
        id="rect11"
-       style="display:inline;fill:url(#linearGradient80);fill-rule:nonzero;stroke:none;stroke-width:1;stroke-dasharray:none;stroke-opacity:1;filter:url(#filter88)" />
+       style="display:inline;fill:url(#linearGradient80);fill-rule:nonzero;stroke:none;stroke-width:1;stroke-dasharray:none;stroke-opacity:1" />
     <circle
        cx="218.78233"
        cy="214.02319"
@@ -1032,17 +1040,15 @@
        height="20"
        rx="3"
        fill="url(#mainGrad)"
-       filter="url(#inset-highlight)"
        id="rect10"
-       style="display:inline;fill:url(#linearGradient78);filter:url(#filter92-7)" />
+       style="display:inline;fill:url(#linearGradient78)" />
     <circle
        cx="249.79999"
        cy="65.248276"
        r="8"
        fill="url(#mainGrad)"
-       filter="url(#inset-highlight)"
        id="circle11"
-       style="display:inline;fill:url(#linearGradient79);filter:url(#filter90-5)" />
+       style="display:inline;fill:url(#linearGradient79)" />
   </g>
   <!-- Logo Text -->
 </svg>
