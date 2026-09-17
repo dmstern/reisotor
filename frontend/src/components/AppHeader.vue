@@ -388,6 +388,16 @@ const profileTitle = computed(() => {
   }
 }
 
+@media (max-width: 799px) {
+  .brand {
+    display: none;
+  }
+
+  .header-center {
+    justify-content: flex-start;
+  }
+}
+
 .profile-link {
   display: flex;
   align-items: center;
