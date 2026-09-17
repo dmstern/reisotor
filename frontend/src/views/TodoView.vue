@@ -281,10 +281,11 @@ async function addItem() {
 }
 
 // Inline-Quick-Add direkt in einer Gruppen-Kopfzeile (siehe QuickAddRow.vue) - die aktuell
-// gruppierte Dimension (Bearbeiter:in oder Zeitraum) ergibt sich aus der Gruppe selbst; Priorität
-// bleibt als kompaktes Zusatzfeld übrig (Fälligkeitsdatum ist bei Zeitraum-Gruppierung nicht sinnvoll
-// frei wählbar, da der Zeitraum selbst daraus abgeleitet wird - siehe periodFor() oben).
+// gruppierte Dimension (Bearbeiter:in oder Zeitraum) ergibt sich aus der Gruppe selbst.
+// Die jeweils andere Dimension (Zuweisung bei Zeitraum-Gruppierung, Zeitraum bei Bearbeiter:innen-Gruppierung)
+// sowie die Priorität stehen als kompakte Zusatzfelder bereit.
 const quickAddPriority = ref<TodoPriority>('medium');
+const quickAddPeriod = ref<Period | ''>('');
 
 async function quickAddToGroup(group: Group, label: string) {
   if (!label.trim()) return;
@@ -297,7 +298,12 @@ async function quickAddToGroup(group: Group, label: string) {
         ? Number(lastAssignee.value)
         : undefined;
 
-  const period = groupBy.value === 'period' && group.key !== 'none' ? group.key : undefined;
+  const period =
+    groupBy.value === 'period'
+      ? group.key === 'before' || group.key === 'during'
+        ? (group.key as Period)
+        : undefined
+      : quickAddPeriod.value || undefined;
 
   const created = await api.post<TodoItem>('/todos', {
     trip_id: tripId,
@@ -522,6 +528,16 @@ function isOverdue(item: TodoItem) {
               <option v-for="u in users" :key="u.id" :value="String(u.id)">
                 {{ u.avatar }} {{ u.username }}
               </option>
+            </Select>
+            <Select
+              v-if="groupBy !== 'period'"
+              v-model="quickAddPeriod"
+              aria-label="Zeitraum"
+              size="sm"
+            >
+              <option value="">Zeitraum</option>
+              <option value="before">{{ PERIOD_META.before }}</option>
+              <option value="during">{{ PERIOD_META.during }}</option>
             </Select>
             <Select v-model="quickAddPriority" aria-label="Priorität" size="sm">
               <option v-for="(meta, key) in PRIORITY_META" :key="key" :value="key">
