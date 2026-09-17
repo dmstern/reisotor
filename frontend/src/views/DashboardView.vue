@@ -1246,6 +1246,7 @@ function formatWeekdayDate(d: string) {
 
 .weather-section-label {
   display: flex;
+  align-items: center;
   gap: 0.5em;
   margin: 0 0 var(--space-2);
   color: var(--color-text-muted);
@@ -1326,6 +1327,7 @@ function formatWeekdayDate(d: string) {
 
 .weather-rain {
   display: inline-flex;
+  align-items: center;
   gap: 3px;
   font-size: 0.72rem;
   color: var(--color-accent-secondary);
