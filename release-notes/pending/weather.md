@@ -1,3 +1,5 @@
+### Wetter
+
 - 🌤️ **Wetter-Vorhersage & Warnungen**: Temperaturspannen für Ausflüge mit mehreren Orten, Rückblick auf vergangenes Wetter sowie Warnhinweise bei extremer Hitze, Sturm oder Starkregen.
 - 🕒 **Tagesverlauf**: Stündliche Detailansicht des Wetterverlaufs per Klick auf einen Vorhersage-Tag abrufbar.
 - 📡 **Wettermodell pro Reise**: In den Reise-Einstellungen kann nun gezielt das passendste Vorhersagemodell (z. B. DWD ICON für Mitteleuropa oder weltweite Modelle) ausgewählt werden.

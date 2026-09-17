@@ -1,3 +1,5 @@
+### Spots & Touren
+
 - 🗺️ **Touren & Spots auf der Karte**: Eingeplante Touren erscheinen sofort im Kalender. Neue Vorschläge für An- und Abreise sowie bunte Kategorien erleichtern das Auswählen.
 - 〰️ **Serpentinen-Routen mit Reiserichtung**: Mehrteilige Touren werden mit geschwungenen Verbindungslinien und Richtungspfeilen dargestellt, die die Stationen übersichtlich verknüpfen.
 - 📎 **Haptischer Fotostapel & Dokumenten-Büroklammer**: Fotos und hochgeladene Reisedokumente wie Tickets oder Buchungsbestätigungen werden als ansprechender Polaroid-Stapel mit Format-Kennzeichnung und Büroklammer dargestellt – auch direkt auf zugeklappten Tourenkarten mit Schnell-Vorschau.

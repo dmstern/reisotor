@@ -402,8 +402,10 @@ Historie und wird gescannt) zwei Dinge:
      lebendige, schnell erfassbare und visuell einheitliche Darstellung im Changelog und im
      In-App-Changelog-Dialog.
    - **Fragment-Format**: Eine kleine Markdown-Datei unter `release-notes/pending/<kurzer-slug>.md`
-     anlegen oder anpassen, Inhalt ein bis zwei `- `-Stichpunkte in leicht verständlicher Endnutzer-Sprache
-     wie `CHANGELOG.md` (Deutsch), jeweils mit führendem Emoji.
+     anlegen oder anpassen. Die Datei beginnt mit einer Themen-Zwischenüberschrift (z. B. `### Spots & Touren`
+     oder `### Design & Navigation`), gefolgt von den `- `-Stichpunkten in leicht verständlicher
+     Endnutzer-Sprache wie `CHANGELOG.md` (Deutsch), jeweils mit führendem Emoji. Diese Zwischenüberschriften
+     werden im Changelog und in den In-App-Release-Notes als Gruppen-Titel dargestellt.
    - **Automatischer Fallback**: Gibt es bis zum Release keine gesammelten Fragmente (weil z. B. nur
      interne Verbesserungen, Demo-Daten oder Pipeline-Updates stattfanden), fasst der Release-Workflow
      den Release-Eintrag automatisch endnutzerfreundlich als `- 🛠️ Verbesserungen unter der Haube.`
