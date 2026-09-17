@@ -135,6 +135,18 @@ watch(
 
 const UNASSIGNED_SHOP = 'Ohne Shop';
 
+function userAvatar(id: number | null | undefined) {
+  if (id == null) return null;
+  const u = users.value.find((u) => u.id === id);
+  return u ? u.avatar : null;
+}
+
+function userName(id: number | null | undefined) {
+  if (id == null) return null;
+  const u = users.value.find((u) => u.id === id);
+  return u ? u.username : null;
+}
+
 function isChecked(item: ShoppingItem) {
   return !!item.checked;
 }
@@ -529,40 +541,58 @@ async function quickAddToGroup(group: Group, label: string) {
                   :checked="!!item.checked"
                   @change="toggle(item)"
                 />
-                <span :class="{ 'row__text--done': item.checked, 'text-done': item.checked }">
+                <span
+                  class="item-title"
+                  :class="{ 'row__text--done': item.checked, 'text-done': item.checked }"
+                >
                   {{ item.label }}
                 </span>
               </label>
-              <PendingSyncBadge v-if="item._pending" />
-              <Badge v-if="groupBy !== 'shop' && item.shop" size="sm" class="shop-badge">
-                <AppIcon :icon="FORM_FIELD_ICONS.shop" :size="12" group="formFields" />
-                {{ item.shop }}
-              </Badge>
-              <Badge v-if="groupBy !== 'period' && item.period" size="sm" class="period-badge">
-                <AppIcon :icon="FORM_FIELD_ICONS.period" :size="12" group="formFields" />
-                {{ PERIOD_META[item.period] }}
-              </Badge>
-              <a v-if="item.link" :href="item.link" target="_blank" rel="noopener" class="link">
-                <AppIcon :icon="FORM_FIELD_ICONS.link" :size="12" group="formFields" /> Link
-              </a>
-              <span v-if="item.note" class="note" :title="item.note">
-                <AppIcon :icon="FORM_FIELD_ICONS.note" :size="12" group="formFields" />
-                {{ item.note }}
-              </span>
-              <!-- eslint-disable-next-line vuejs-accessibility/no-onchange -->
-              <Select
-                v-if="users.length > 1 && groupBy !== 'buyer'"
-                aria-label="Käufer:in"
-                class="buyer-select"
-                size="sm"
-                :model-value="item.assigned_to_user_id ?? ''"
-                @change="reassign(item, $event)"
-              >
-                <option value="">👤 Nicht zugewiesen</option>
-                <option v-for="u in users" :key="u.id" :value="String(u.id)">
-                  {{ u.avatar }} {{ u.username }}
-                </option>
-              </Select>
+
+              <div class="item-meta">
+                <PendingSyncBadge v-if="item._pending" />
+                <Badge v-if="groupBy !== 'shop' && item.shop" size="sm" class="shop-badge">
+                  <AppIcon :icon="FORM_FIELD_ICONS.shop" :size="12" group="formFields" />
+                  {{ item.shop }}
+                </Badge>
+                <Badge v-if="groupBy !== 'period' && item.period" size="sm" class="period-badge">
+                  <AppIcon :icon="FORM_FIELD_ICONS.period" :size="12" group="formFields" />
+                  {{ PERIOD_META[item.period] }}
+                </Badge>
+                <a v-if="item.link" :href="item.link" target="_blank" rel="noopener" class="link">
+                  <AppIcon :icon="FORM_FIELD_ICONS.link" :size="12" group="formFields" /> Link
+                </a>
+                <span v-if="item.note" class="note" :title="item.note">
+                  <AppIcon :icon="FORM_FIELD_ICONS.note" :size="12" group="formFields" />
+                  {{ item.note }}
+                </span>
+                <div
+                  v-if="users.length > 1 && groupBy !== 'buyer'"
+                  class="buyer-avatar-picker"
+                  :title="
+                    item.assigned_to_user_id
+                      ? `Käufer:in: ${userName(item.assigned_to_user_id)}`
+                      : 'Käufer:in zuweisen'
+                  "
+                >
+                  <span class="avatar-display" aria-hidden="true">
+                    {{ userAvatar(item.assigned_to_user_id) || '👤' }}
+                  </span>
+                  <!-- eslint-disable-next-line vuejs-accessibility/no-onchange -->
+                  <select
+                    class="buyer-native-select"
+                    aria-label="Käufer:in"
+                    :value="item.assigned_to_user_id ?? ''"
+                    @change="reassign(item, $event)"
+                  >
+                    <option value="">👤 Nicht zugewiesen</option>
+                    <option v-for="u in users" :key="u.id" :value="String(u.id)">
+                      {{ u.avatar }} {{ u.username }}
+                    </option>
+                  </select>
+                </div>
+              </div>
+
               <template #actions>
                 <EditButton small @click="startEdit(item)" />
                 <DeleteButton small @click="remove(item.id)" />
@@ -770,8 +800,24 @@ async function quickAddToGroup(group: Group, label: string) {
   align-items: center;
   gap: var(--space-2);
   cursor: pointer;
-  flex: 1;
-  min-width: 120px;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.item-title {
+  min-width: 0;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.item-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+  margin-left: auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .shop-badge,
@@ -796,16 +842,43 @@ async function quickAddToGroup(group: Group, label: string) {
   color: var(--color-text-muted);
 }
 
-.buyer-select {
-  font-size: var(--font-size-xs);
-  padding: 2px 8px;
+.buyer-avatar-picker {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
   border-radius: var(--radius-pill);
-  min-height: 0;
-  height: auto;
-  line-height: 1.2;
   background: var(--color-hover);
   border: 1px solid var(--color-border);
-  color: var(--color-text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.buyer-avatar-picker:hover {
+  background: var(--color-surface);
+  border-color: var(--color-border-strong);
+}
+
+.buyer-avatar-picker .avatar-display {
+  font-size: 0.85rem;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.buyer-native-select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
 }
 
 .edit-form {

@@ -97,5 +97,6 @@ withDefaults(
   display: flex;
   gap: 4px;
   flex-shrink: 0;
+  margin-left: auto;
 }
 </style>

@@ -175,6 +175,18 @@ function userLabel(id: number | null) {
   return u ? `${u.avatar} ${u.username}` : null;
 }
 
+function userAvatar(id: number | null | undefined) {
+  if (id == null) return null;
+  const u = users.value.find((u) => u.id === id);
+  return u ? u.avatar : null;
+}
+
+function userName(id: number | null | undefined) {
+  if (id == null) return null;
+  const u = users.value.find((u) => u.id === id);
+  return u ? u.username : null;
+}
+
 function sortItems(list: TodoItem[]) {
   const visible = uiSettings.hideCompletedTodos ? list.filter((i) => !i.done) : list;
   return sortWithDoneLast(
@@ -535,60 +547,70 @@ function isOverdue(item: TodoItem) {
                   @change="toggleDone(item)"
                 />
                 <span
-                  class="title"
+                  class="item-title title"
                   :class="{ 'row__text--done': item.done, 'text-done': item.done }"
                 >
                   {{ item.title }}
                 </span>
               </label>
-              <PendingSyncBadge v-if="item._pending" />
-              <Badge
-                v-if="item.priority === 'high'"
-                variant="danger"
-                size="sm"
-                class="priority-badge"
-                title="Hohe Priorität"
-              >
-                Hoch
-              </Badge>
-              <span
-                v-else
-                class="priority"
-                :title="`Priorität: ${PRIORITY_META[item.priority].label}`"
-              >
-                <AppIcon
-                  :icon="ACTION_ICONS.priorityDot"
-                  :size="10"
-                  :color="PRIORITY_META[item.priority].color"
-                  group="actions"
-                />
-              </span>
-              <Badge
-                v-if="item.due_date"
-                :variant="isOverdue(item) ? 'danger' : 'default'"
-                size="sm"
-                class="due-badge"
-              >
-                <AppIcon :icon="FORM_FIELD_ICONS.date" :size="11" group="formFields" />
-                {{ formatDate(item.due_date) }}
-              </Badge>
-              <Badge
-                v-if="
-                  users.length > 1 && groupBy !== 'assignee' && userLabel(item.assigned_to_user_id)
-                "
-                size="sm"
-                class="assignee-badge"
-              >
-                {{ userLabel(item.assigned_to_user_id) }}
-              </Badge>
-              <Badge v-if="groupBy !== 'period' && periodFor(item)" size="sm" class="period-badge">
-                <AppIcon :icon="FORM_FIELD_ICONS.period" :size="11" group="formFields" />
-                {{ PERIOD_META[periodFor(item)!] }}
-              </Badge>
-              <span v-if="item.note" class="note" :title="item.note">
-                <AppIcon :icon="FORM_FIELD_ICONS.note" :size="11" group="formFields" />
-                {{ item.note }}
-              </span>
+
+              <div class="item-meta">
+                <PendingSyncBadge v-if="item._pending" />
+                <Badge
+                  v-if="item.priority === 'high'"
+                  variant="danger"
+                  size="sm"
+                  class="priority-badge"
+                  title="Hohe Priorität"
+                >
+                  Hoch
+                </Badge>
+                <span
+                  v-else
+                  class="priority"
+                  :title="`Priorität: ${PRIORITY_META[item.priority].label}`"
+                >
+                  <AppIcon
+                    :icon="ACTION_ICONS.priorityDot"
+                    :size="10"
+                    :color="PRIORITY_META[item.priority].color"
+                    group="actions"
+                  />
+                </span>
+                <Badge
+                  v-if="item.due_date"
+                  :variant="isOverdue(item) ? 'danger' : 'default'"
+                  size="sm"
+                  class="due-badge"
+                >
+                  <AppIcon :icon="FORM_FIELD_ICONS.date" :size="11" group="formFields" />
+                  {{ formatDate(item.due_date) }}
+                </Badge>
+                <span
+                  v-if="
+                    users.length > 1 &&
+                    groupBy !== 'assignee' &&
+                    userAvatar(item.assigned_to_user_id)
+                  "
+                  class="assignee-avatar-pill"
+                  :title="`Zugewiesen an: ${userName(item.assigned_to_user_id)}`"
+                >
+                  {{ userAvatar(item.assigned_to_user_id) }}
+                </span>
+                <Badge
+                  v-if="groupBy !== 'period' && periodFor(item)"
+                  size="sm"
+                  class="period-badge"
+                >
+                  <AppIcon :icon="FORM_FIELD_ICONS.period" :size="11" group="formFields" />
+                  {{ PERIOD_META[periodFor(item)!] }}
+                </Badge>
+                <span v-if="item.note" class="note" :title="item.note">
+                  <AppIcon :icon="FORM_FIELD_ICONS.note" :size="11" group="formFields" />
+                  {{ item.note }}
+                </span>
+              </div>
+
               <template #actions>
                 <EditButton small @click="startEdit(item)" />
                 <DeleteButton small @click="remove(item.id)" />
@@ -802,8 +824,24 @@ function isOverdue(item: TodoItem) {
   align-items: center;
   gap: var(--space-2);
   cursor: pointer;
-  flex: 1;
-  min-width: 140px;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.item-title {
+  min-width: 0;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.item-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+  margin-left: auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .priority {
@@ -812,11 +850,24 @@ function isOverdue(item: TodoItem) {
 }
 
 .due-badge,
-.assignee-badge,
 .period-badge {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+}
+
+.assignee-avatar-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-pill);
+  background: var(--color-hover);
+  border: 1px solid var(--color-border);
+  font-size: 0.85rem;
+  line-height: 1;
+  flex-shrink: 0;
 }
 
 .note {
