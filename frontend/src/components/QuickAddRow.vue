@@ -188,8 +188,10 @@ function onBlur(event: FocusEvent) {
 .submit-btn {
   position: absolute;
   right: 5px;
-  top: 50%;
-  translate: 0 -50%;
+  top: 0;
+  bottom: 0;
+  margin-block: auto;
+  translate: none;
   width: 32px;
   height: 32px;
   min-width: 32px;
@@ -213,10 +215,13 @@ function onBlur(event: FocusEvent) {
 }
 
 .submit-btn:hover:not(:disabled) {
+  translate: none;
   scale: 1.05;
 }
 
 .submit-btn:active:not(:disabled) {
+  translate: none;
+  transform: none;
   scale: 0.95;
 }
 

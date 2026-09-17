@@ -112,6 +112,10 @@ function submit() {
 .comment-input-wrap .send-btn {
   position: absolute;
   right: 4px;
+  top: 0;
+  bottom: 0;
+  margin-block: auto;
+  translate: none;
   width: 30px;
   height: 30px;
   padding: 0;
@@ -121,10 +125,25 @@ function submit() {
   align-items: center;
   justify-content: center;
   box-shadow: none;
+  transition:
+    background 0.15s ease,
+    opacity 0.15s ease,
+    scale 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .comment-input-wrap .send-btn:disabled {
   opacity: 0.35;
   cursor: default;
+}
+
+.comment-input-wrap .send-btn:hover:not(:disabled) {
+  translate: none;
+  scale: 1.05;
+}
+
+.comment-input-wrap .send-btn:active:not(:disabled) {
+  translate: none;
+  transform: none;
+  scale: 0.95;
 }
 </style>
