@@ -59,6 +59,10 @@ const hasSystemNotices = computed(() => {
   );
 });
 
+const hasUpdateNotice = computed(() => {
+  return pwaUpdate.needRefresh || showReleaseNotesNotice.value;
+});
+
 // Ungelesene Aktivitäten zeigen einen Zähler-Badge. Liegen stattdessen System-Benachrichtigungen
 // (Update verfügbar, Offline-Bereitschaft, App-Installation) vor, lenkt der rote Punkt (UnseenDot)
 // Nutzer:innen zur Glocke.
@@ -168,7 +172,13 @@ function dismissPwaInstall() {
       <span v-if="notifications.unreadCount > 0" class="unread-badge" aria-hidden="true">{{
         notifications.unreadCount > 9 ? '9+' : notifications.unreadCount
       }}</span>
-      <UnseenDot v-else-if="hasSystemNotices" class="bell-dot" aria-label="Neuigkeiten verfügbar" />
+      <UnseenDot
+        v-else-if="hasSystemNotices"
+        class="bell-dot"
+        aria-label="Neuigkeiten verfügbar"
+        :variant="hasUpdateNotice ? 'success' : 'danger'"
+        :sparkle="hasUpdateNotice"
+      />
     </div>
 
     <Teleport to="body">
