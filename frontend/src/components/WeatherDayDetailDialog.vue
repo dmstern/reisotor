@@ -319,7 +319,7 @@ function formatDate(dateStr: string) {
   color: var(--color-primary-dark);
   background: var(--color-primary-tint);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-full, 9999px);
+  border-radius: var(--radius-pill);
   padding: 2px 8px;
 }
 

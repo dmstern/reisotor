@@ -409,7 +409,7 @@ function clearFilters() {
   min-width: 16px;
   height: 16px;
   padding: 0 4px;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-pill);
   background: var(--color-primary);
   color: white;
   font-size: 0.7rem;
