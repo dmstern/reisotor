@@ -798,6 +798,9 @@ const categoryColors = computed(() => {
 }
 
 .privacy-hint {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   margin: 0;
   font-size: 0.82rem;
   color: var(--color-text-muted);
