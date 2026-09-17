@@ -1023,6 +1023,9 @@ function showEntryDayOnMap(entry: DiaryEntry) {
   align-items: center;
   gap: var(--space-2);
   margin-bottom: var(--space-3);
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .add-form {
@@ -1224,6 +1227,8 @@ function showEntryDayOnMap(entry: DiaryEntry) {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+  max-width: 800px;
+  margin: 0 auto;
 }
 
 .entry-head {
@@ -1264,7 +1269,6 @@ function showEntryDayOnMap(entry: DiaryEntry) {
 }
 
 .content {
-  max-width: 75ch;
   margin: 0 0 var(--space-2);
   overflow-wrap: anywhere;
 }
