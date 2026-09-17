@@ -28,9 +28,9 @@ function addDays(days: number): string {
 
 export const DEMO_USER: User = {
   id: 1,
-  username: 'Elif',
+  username: 'Mia',
   avatar: '🦊',
-  email: 'mika@example.com',
+  email: 'mia@example.com',
   is_admin: true,
   must_change_password: false,
 };
