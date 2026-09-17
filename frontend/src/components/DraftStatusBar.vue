@@ -33,6 +33,9 @@ defineProps<{ status: DraftStatus; restored?: boolean }>();
 
 <style scoped>
 .draft-status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   margin: 0;
   padding: 4px 0 0;
   font-size: 0.8rem;
