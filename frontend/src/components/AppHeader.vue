@@ -5,7 +5,6 @@ import { useAuthStore } from '../stores/auth';
 import { useTripStore } from '../stores/trip';
 import { useConnectivityStore } from '../stores/connectivity';
 import { useNavPositionStore } from '../stores/navPosition';
-import { useBuildInfoStore } from '../stores/buildInfo';
 import { useIsDesktop } from '../composables/useIsDesktop';
 import TripSwitcher from './TripSwitcher.vue';
 import NavBar from './NavBar.vue';
@@ -65,15 +64,6 @@ onUnmounted(() => {
   window.removeEventListener('scroll', onScroll);
 });
 
-// Frontend wird identisch für Staging und Produktion gebaut (siehe
-// .github/workflows/ci.yml) – der Unterschied kommt deshalb zur Laufzeit vom Backend
-// (APP_ENV-Env-Var pro Instanz, GET /build-info) statt aus einem Domain-Vergleich, siehe Issue #219.
-const buildInfoStore = useBuildInfoStore();
-buildInfoStore.load();
-const isNonProd = computed(
-  () => buildInfoStore.buildInfo != null && buildInfoStore.buildInfo.environment !== 'production'
-);
-
 const profileTitle = computed(() => {
   if (!connectivity.isOnline) return 'Offline – Einstellungen';
   if (connectivity.pendingCount > 0) {
@@ -92,12 +82,6 @@ const profileTitle = computed(() => {
       <router-link to="/" class="brand">
         <img src="/reisotor-icon-circle.svg" alt="Reisotor Logo" class="logo" />
         <span class="wordmark">Reisotor</span>
-        <span
-          v-if="isNonProd"
-          class="env-badge"
-          title="Dev-/Staging-Umgebung, nicht die echte Produktion"
-          >DEV</span
-        >
       </router-link>
 
       <div class="header-center">
@@ -247,17 +231,6 @@ const profileTitle = computed(() => {
   right: 0;
   height: 44px;
   transform: translateY(-50%);
-}
-
-.env-badge {
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  color: #fff;
-  background: var(--color-accent);
-  padding: 2px 7px;
-  border-radius: 999px;
-  line-height: 1.4;
 }
 
 .header-center {
@@ -410,7 +383,7 @@ const profileTitle = computed(() => {
   .wordmark {
     display: none;
   }
-  .brand:not(:has(.env-badge)) {
+  .brand {
     padding: 4px;
   }
 }
