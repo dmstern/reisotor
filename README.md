@@ -240,6 +240,36 @@ Falls Client und Server im selben lokalen Netz hinter demselben Router hängen, 
 - **`LOCAL_HOST`** in der `.env` setzen (z. B. der lokale Hostname/die lokale IP des Servers) – das Skript probiert diesen zuerst und fällt sonst auf `PUBLIC_HOST` zurück.
 - Alternativ (z. B. per `/etc/hosts`) die öffentliche Domain lokal direkt auf die interne IP des Servers auflösen lassen – dann funktioniert auch der Browser-Zugriff auf die App selbst im Heimnetz ohne Umweg, und `LOCAL_HOST` kann in der `.env` weggelassen werden.
 
+## Backup und Wiederherstellung
+
+Admins können in der Weboberfläche unter **Einstellungen -> Datensicherung** jederzeit ein vollständiges ZIP-Backup herunterladen. Dieses enthält:
+
+1. `data.sqlite` (die komplette Datenbank)
+2. `uploads/` (alle gespeicherten Dateianhänge)
+
+### Backup einspielen (Import)
+
+Da das Einspielen einer kompletten Datenbank während des laufenden Betriebs fehleranfällig ist (offene Verbindungen, schreibende Nutzer), erfolgt der Import manuell auf dem Server:
+
+1. Stoppe den laufenden Backend-Dienst:
+   ```bash
+   sudo systemctl stop reisotor
+   ```
+2. Entpacke das heruntergeladene ZIP-Archiv.
+3. Ersetze die bestehende Datenbank und den Upload-Ordner im Backend-Verzeichnis (z. B. `/home/<nutzer>/reisotor/backend`):
+   ```bash
+   # Sichere ggf. den aktuellen Stand
+   cp data.sqlite data.sqlite.bak
+
+   # Ersetze die Dateien
+   cp /pfad/zum/entpackten/data.sqlite data.sqlite
+   cp -r /pfad/zum/entpackten/uploads/* uploads/
+   ```
+4. Starte den Dienst wieder:
+   ```bash
+   sudo systemctl start reisotor
+   ```
+
 ## Bekannte Stolpersteine
 
 - **Leaflet-Kartenmarker unsichtbar:** Leaflets `Icon.Default._getIconUrl` versucht automatisch, den Bildpfad aus einer CSS-Regel (`.leaflet-default-icon-path`) zu erkennen und stellt diesen den eigentlichen Icon-URLs voran – auch wenn man über `mergeOptions` bereits vollständige, von Vite aufgelöste URLs gesetzt hat. Das Ergebnis war eine doppelt verschachtelte, 404-URL, wodurch der Browser nur das `alt`-Attribut ("marker icon", abgeschnitten zu "mark") anzeigte. Gelöst durch eigene Emoji-`divIcon`s statt der Standard-Icons.
