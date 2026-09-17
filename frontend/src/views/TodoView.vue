@@ -533,40 +533,6 @@ function isOverdue(item: TodoItem) {
       >
         <h2>{{ group.label }}</h2>
         <div class="card group-card">
-          <QuickAddRow
-            class="group-quick-add"
-            placeholder="Aufgabe hinzufügen…"
-            @submit="(label) => quickAddToGroup(group, label)"
-          >
-            <template #extra>
-              <Select
-                v-if="users.length > 1 && groupBy !== 'assignee'"
-                v-model="lastAssignee"
-                aria-label="Zuweisung"
-                size="sm"
-              >
-                <option value="">Nicht zugewiesen</option>
-                <option v-for="u in users" :key="u.id" :value="String(u.id)">
-                  {{ u.avatar }} {{ u.username }}
-                </option>
-              </Select>
-              <Select
-                v-if="groupBy !== 'period'"
-                v-model="quickAddPeriod"
-                aria-label="Zeitraum"
-                size="sm"
-              >
-                <option value="">Zeitraum</option>
-                <option value="before">{{ PERIOD_META.before }}</option>
-                <option value="during">{{ PERIOD_META.during }}</option>
-              </Select>
-              <Select v-model="quickAddPriority" aria-label="Priorität" size="sm">
-                <option v-for="(meta, key) in PRIORITY_META" :key="key" :value="key">
-                  {{ meta.icon }} {{ meta.label }}
-                </option>
-              </Select>
-            </template>
-          </QuickAddRow>
           <TransitionGroup tag="ul" name="list" class="list">
             <CheckableListItem
               v-for="item in group.items"
@@ -649,6 +615,41 @@ function isOverdue(item: TodoItem) {
               }}
             </li>
           </TransitionGroup>
+
+          <QuickAddRow
+            class="group-quick-add"
+            placeholder="Aufgabe hinzufügen…"
+            @submit="(label) => quickAddToGroup(group, label)"
+          >
+            <template #extra>
+              <Select
+                v-if="users.length > 1 && groupBy !== 'assignee'"
+                v-model="lastAssignee"
+                aria-label="Zuweisung"
+                size="sm"
+              >
+                <option value="">Nicht zugewiesen</option>
+                <option v-for="u in users" :key="u.id" :value="String(u.id)">
+                  {{ u.avatar }} {{ u.username }}
+                </option>
+              </Select>
+              <Select
+                v-if="groupBy !== 'period'"
+                v-model="quickAddPeriod"
+                aria-label="Zeitraum"
+                size="sm"
+              >
+                <option value="">Zeitraum</option>
+                <option value="before">{{ PERIOD_META.before }}</option>
+                <option value="during">{{ PERIOD_META.during }}</option>
+              </Select>
+              <Select v-model="quickAddPriority" aria-label="Priorität" size="sm">
+                <option v-for="(meta, key) in PRIORITY_META" :key="key" :value="key">
+                  {{ meta.icon }} {{ meta.label }}
+                </option>
+              </Select>
+            </template>
+          </QuickAddRow>
         </div>
       </section>
     </div>
@@ -889,9 +890,9 @@ function isOverdue(item: TodoItem) {
 
 .group-quick-add,
 .group-quick-add.expanded {
-  padding: 0 0 var(--space-3) 0;
-  border-bottom: 1px solid var(--color-border);
-  margin-bottom: var(--space-1);
+  padding: var(--space-3) 0 0 0;
+  border-top: 1px solid var(--color-border);
+  margin-top: var(--space-2);
   border-radius: 0;
   box-shadow: none;
 }
