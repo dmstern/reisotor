@@ -408,7 +408,19 @@ async function quickAddToGroup(group: Group, label: string) {
       <div class="quick-input-row">
         <div class="main-input-wrap">
           <FormField icon="title" label="Artikel" v-slot="{ id }">
-            <Input :id="id" v-model="newLabel" type="text" placeholder="Neuer Artikel" required />
+            <div class="input-inline-action-wrap">
+              <Input :id="id" v-model="newLabel" type="text" placeholder="Neuer Artikel" required />
+              <Button
+                type="submit"
+                class="inline-submit-btn"
+                variant="primary"
+                size="sm"
+                :icon="ACTION_ICONS.send"
+                :disabled="!newLabel.trim()"
+                aria-label="Hinzufügen"
+                title="Hinzufügen"
+              />
+            </div>
           </FormField>
         </div>
 
@@ -427,8 +439,6 @@ async function quickAddToGroup(group: Group, label: string) {
             />
             <span>Details</span>
           </Button>
-
-          <Button type="submit" variant="primary" :disabled="!newLabel.trim()"> Hinzufügen </Button>
         </div>
       </div>
 
@@ -734,11 +744,58 @@ async function quickAddToGroup(group: Group, label: string) {
 
 .main-input-wrap {
   flex: 1;
-  min-width: 220px;
+  min-width: 160px;
 }
 
 .main-input-wrap :deep(.form-field) {
   margin-bottom: 0;
+}
+
+.input-inline-action-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.input-inline-action-wrap :deep(.input) {
+  width: 100%;
+  padding-right: 44px;
+}
+
+.inline-submit-btn {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  translate: 0 -50%;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0;
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: none;
+  transition:
+    background 0.15s ease,
+    opacity 0.15s ease,
+    scale 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.inline-submit-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.inline-submit-btn:hover:not(:disabled) {
+  scale: 1.05;
+}
+
+.inline-submit-btn:active:not(:disabled) {
+  scale: 0.95;
 }
 
 .quick-input-actions {
@@ -812,8 +869,7 @@ async function quickAddToGroup(group: Group, label: string) {
   }
 
   .quick-input-actions {
-    width: 100%;
-    justify-content: space-between;
+    margin-left: auto;
   }
 
   .filter-row {
@@ -854,8 +910,7 @@ async function quickAddToGroup(group: Group, label: string) {
   }
 
   .quick-input-actions {
-    width: 100%;
-    justify-content: space-between;
+    margin-left: auto;
   }
 
   .filter-row {
