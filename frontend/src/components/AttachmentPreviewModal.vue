@@ -60,6 +60,7 @@ watch(
       window.addEventListener('keydown', onKeydown);
     } else {
       window.removeEventListener('keydown', onKeydown);
+      resetAnimationState();
     }
   }
 );
@@ -67,6 +68,7 @@ watch(
 watch(
   () => props.attachments.length,
   (newLen) => {
+    resetAnimationState();
     if (newLen === 0) {
       emit('update:modelValue', false);
     } else if (currentIndex.value >= newLen) {
@@ -77,6 +79,7 @@ watch(
 
 onUnmounted(() => {
   window.removeEventListener('keydown', onKeydown);
+  resetAnimationState();
 });
 
 function normalizeAttachment(
@@ -104,6 +107,49 @@ const currentAttachment = computed<AttachmentPreviewItem | null>(
   () => normalizedAttachments.value[currentIndex.value] ?? null
 );
 
+const prevAttachment = computed<AttachmentPreviewItem | null>(() => {
+  if (normalizedAttachments.value.length <= 1) return null;
+  const idx =
+    (currentIndex.value - 1 + normalizedAttachments.value.length) %
+    normalizedAttachments.value.length;
+  return normalizedAttachments.value[idx] ?? null;
+});
+
+const nextAttachment = computed<AttachmentPreviewItem | null>(() => {
+  if (normalizedAttachments.value.length <= 1) return null;
+  const idx = (currentIndex.value + 1) % normalizedAttachments.value.length;
+  return normalizedAttachments.value[idx] ?? null;
+});
+
+const visibleSlides = computed(() => {
+  if (normalizedAttachments.value.length <= 1) {
+    return [
+      {
+        slot: 'current',
+        item: currentAttachment.value,
+        ariaHidden: false,
+      },
+    ];
+  }
+  return [
+    {
+      slot: 'prev',
+      item: prevAttachment.value,
+      ariaHidden: true,
+    },
+    {
+      slot: 'current',
+      item: currentAttachment.value,
+      ariaHidden: false,
+    },
+    {
+      slot: 'next',
+      item: nextAttachment.value,
+      ariaHidden: true,
+    },
+  ];
+});
+
 function isImage(attachment: AttachmentPreviewItem | null): boolean {
   if (!attachment) return false;
   if (attachment.mime_type && attachment.mime_type.startsWith('image/')) {
@@ -113,19 +159,102 @@ function isImage(attachment: AttachmentPreviewItem | null): boolean {
   return /\.(jpe?g|png|webp|gif|svg|avif)$/i.test(name) || attachment.url.startsWith('data:image/');
 }
 
+// --- Smoothe & Stabile Swipe- und Slide-Animation ---
+const isDragging = ref(false);
+const isAnimating = ref(false);
+const dragOffset = ref(0);
+const targetOffsetPercent = ref<-200 | -100 | 0>(-100);
+
+let touchStartX = 0;
+let touchStartY = 0;
+let isHorizontalGesture: boolean | null = null;
+let animationTimer: ReturnType<typeof setTimeout> | null = null;
+let activeMouseUpHandler: (() => void) | null = null;
+let activeMouseMoveHandler: ((e: MouseEvent) => void) | null = null;
+
+function clearAnimTimer() {
+  if (animationTimer) {
+    clearTimeout(animationTimer);
+    animationTimer = null;
+  }
+}
+
+function removeActiveMouseDragListeners() {
+  if (activeMouseMoveHandler) {
+    window.removeEventListener('mousemove', activeMouseMoveHandler);
+    activeMouseMoveHandler = null;
+  }
+  if (activeMouseUpHandler) {
+    window.removeEventListener('mouseup', activeMouseUpHandler);
+    activeMouseUpHandler = null;
+  }
+}
+
+function resetAnimationState() {
+  clearAnimTimer();
+  removeActiveMouseDragListeners();
+  isAnimating.value = false;
+  isDragging.value = false;
+  dragOffset.value = 0;
+  targetOffsetPercent.value = -100;
+  isHorizontalGesture = null;
+}
+
+const ANIMATION_DURATION_MS = 280;
+
+function slideTowards(direction: 'next' | 'prev' | 'cancel') {
+  if (isAnimating.value) return;
+  clearAnimTimer();
+
+  const reducedMotion =
+    typeof window !== 'undefined' &&
+    window.matchMedia &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (direction === 'cancel') {
+    if (dragOffset.value === 0) return;
+    isAnimating.value = true;
+    dragOffset.value = 0;
+    targetOffsetPercent.value = -100;
+    animationTimer = setTimeout(
+      () => {
+        isAnimating.value = false;
+      },
+      reducedMotion ? 0 : 220
+    );
+    return;
+  }
+
+  isAnimating.value = true;
+  dragOffset.value = 0;
+  targetOffsetPercent.value = direction === 'next' ? -200 : 0;
+
+  const duration = reducedMotion ? 0 : ANIMATION_DURATION_MS;
+
+  animationTimer = setTimeout(() => {
+    if (direction === 'next') {
+      currentIndex.value = (currentIndex.value + 1) % props.attachments.length;
+    } else {
+      currentIndex.value =
+        (currentIndex.value - 1 + props.attachments.length) % props.attachments.length;
+    }
+    targetOffsetPercent.value = -100;
+    isAnimating.value = false;
+  }, duration);
+}
+
 function prev() {
-  if (props.attachments.length <= 1) return;
-  currentIndex.value =
-    (currentIndex.value - 1 + props.attachments.length) % props.attachments.length;
+  if (props.attachments.length <= 1 || isAnimating.value) return;
+  slideTowards('prev');
 }
 
 function next() {
-  if (props.attachments.length <= 1) return;
-  currentIndex.value = (currentIndex.value + 1) % props.attachments.length;
+  if (props.attachments.length <= 1 || isAnimating.value) return;
+  slideTowards('next');
 }
 
 function onKeydown(e: KeyboardEvent) {
-  if (!props.modelValue || props.attachments.length <= 1) return;
+  if (!props.modelValue || props.attachments.length <= 1 || isAnimating.value) return;
   if (e.key === 'ArrowLeft') {
     e.preventDefault();
     prev();
@@ -152,6 +281,7 @@ function download(attachment: AttachmentPreviewItem | null) {
 }
 
 function onRemoveCurrent() {
+  resetAnimationState();
   const currentLen = props.attachments.length;
   const removeIdx = currentIndex.value;
   emit('remove', removeIdx);
@@ -162,32 +292,141 @@ function onRemoveCurrent() {
   }
 }
 
-// --- Swipe Logic for Mobile ---
-const touchStartX = ref(0);
-const touchEndX = ref(0);
-
+// --- Swipe Logic für Touch-Geräte ---
 function onTouchStart(e: TouchEvent) {
-  if (props.attachments.length <= 1) return;
-  touchStartX.value = e.changedTouches[0].screenX;
+  if (props.attachments.length <= 1 || isAnimating.value) return;
+  if (e.touches.length !== 1) return;
+  if ((e.target as HTMLElement)?.closest('.nav-btn, button, a')) return;
+
+  touchStartX = e.touches[0].clientX;
+  touchStartY = e.touches[0].clientY;
+  isHorizontalGesture = null;
+  dragOffset.value = 0;
+  isDragging.value = true;
 }
 
-function onTouchEnd(e: TouchEvent) {
-  if (props.attachments.length <= 1) return;
-  touchEndX.value = e.changedTouches[0].screenX;
-  handleSwipe();
+function onTouchMove(e: TouchEvent) {
+  if (!isDragging.value || isAnimating.value) return;
+  const currentX = e.touches[0].clientX;
+  const currentY = e.touches[0].clientY;
+  const deltaX = currentX - touchStartX;
+  const deltaY = currentY - touchStartY;
+
+  if (isHorizontalGesture === null) {
+    const absX = Math.abs(deltaX);
+    const absY = Math.abs(deltaY);
+    if (absX > 6 || absY > 6) {
+      if (absX > absY) {
+        isHorizontalGesture = true;
+      } else {
+        isHorizontalGesture = false;
+        isDragging.value = false;
+        return;
+      }
+    } else {
+      return;
+    }
+  }
+
+  if (isHorizontalGesture) {
+    if (e.cancelable) {
+      e.preventDefault();
+    }
+    dragOffset.value = deltaX;
+  }
 }
 
-function handleSwipe() {
-  const SWIPE_THRESHOLD = 40;
-  if (touchEndX.value < touchStartX.value - SWIPE_THRESHOLD) {
-    // Wisch nach links -> nächstes Bild
-    next();
+function onTouchEnd() {
+  if (!isDragging.value) return;
+  isDragging.value = false;
+
+  if (isHorizontalGesture) {
+    const SWIPE_THRESHOLD = 45;
+    if (dragOffset.value < -SWIPE_THRESHOLD) {
+      slideTowards('next');
+    } else if (dragOffset.value > SWIPE_THRESHOLD) {
+      slideTowards('prev');
+    } else {
+      slideTowards('cancel');
+    }
+  } else {
+    dragOffset.value = 0;
   }
-  if (touchEndX.value > touchStartX.value + SWIPE_THRESHOLD) {
-    // Wisch nach rechts -> vorheriges Bild
-    prev();
-  }
+  isHorizontalGesture = null;
 }
+
+function onTouchCancel() {
+  if (isDragging.value) {
+    isDragging.value = false;
+    slideTowards('cancel');
+  }
+  isHorizontalGesture = null;
+}
+
+// --- Maus-Drag-Unterstützung für Desktop ---
+function onMouseDown(e: MouseEvent) {
+  if (props.attachments.length <= 1 || isAnimating.value) return;
+  if (e.button !== 0) return;
+  if ((e.target as HTMLElement)?.closest('.nav-btn, button, a')) return;
+
+  e.preventDefault();
+  removeActiveMouseDragListeners();
+
+  const startX = e.clientX;
+  isDragging.value = true;
+  dragOffset.value = 0;
+
+  activeMouseMoveHandler = (moveEvent: MouseEvent) => {
+    if (!isDragging.value) return;
+    dragOffset.value = moveEvent.clientX - startX;
+  };
+
+  activeMouseUpHandler = () => {
+    removeActiveMouseDragListeners();
+    if (!isDragging.value) return;
+    isDragging.value = false;
+
+    const SWIPE_THRESHOLD = 50;
+    if (dragOffset.value < -SWIPE_THRESHOLD) {
+      slideTowards('next');
+    } else if (dragOffset.value > SWIPE_THRESHOLD) {
+      slideTowards('prev');
+    } else {
+      slideTowards('cancel');
+    }
+  };
+
+  window.addEventListener('mousemove', activeMouseMoveHandler);
+  window.addEventListener('mouseup', activeMouseUpHandler);
+}
+
+const trackStyle = computed(() => {
+  if (props.attachments.length <= 1) {
+    return {
+      transform: 'none',
+      transition: 'none',
+    };
+  }
+
+  if (isDragging.value) {
+    return {
+      transform: `translateX(calc(-100% + ${dragOffset.value}px))`,
+      transition: 'none',
+    };
+  }
+
+  if (isAnimating.value) {
+    return {
+      transform: `translateX(calc(${targetOffsetPercent.value}% + 0px))`,
+      transition: 'transform 0.28s cubic-bezier(0.22, 1, 0.36, 1)',
+    };
+  }
+
+  return {
+    transform: 'translateX(calc(-100% + 0px))',
+    transition: 'none',
+  };
+});
 </script>
 
 <template>
@@ -207,7 +446,15 @@ function handleSwipe() {
         </span>
       </div>
 
-      <div class="preview-stage" @touchstart="onTouchStart" @touchend="onTouchEnd">
+      <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
+      <div
+        class="preview-stage"
+        @touchstart="onTouchStart"
+        @touchmove="onTouchMove"
+        @touchend="onTouchEnd"
+        @touchcancel="onTouchCancel"
+        @mousedown="onMouseDown"
+      >
         <IconButton
           v-if="attachments.length > 1"
           variant="ghost"
@@ -215,31 +462,48 @@ function handleSwipe() {
           :icon="ACTION_ICONS.scrollLeft"
           title="Vorheriger Anhang (Pfeiltaste links)"
           aria-label="Vorheriger Anhang"
+          :disabled="isAnimating"
           @click="prev"
         />
 
-        <div class="preview-content">
-          <div v-if="isImage(currentAttachment)" class="image-wrapper">
-            <img
-              :src="currentAttachment.url"
-              :alt="currentAttachment.original_name"
-              class="preview-img"
-            />
-          </div>
-          <div v-else class="unsupported-wrapper">
-            <FileFormatGraphic
-              :filename="currentAttachment.original_name || currentAttachment.filename"
-              :mime-type="currentAttachment.mime_type"
-              :size="56"
-              class="unsupported-icon"
-            />
-            <p class="unsupported-title">Keine Vorschau verfügbar</p>
-            <p class="unsupported-hint">
-              Für diesen Dateityp ist keine direkte Bild-Vorschau verfügbar.
-            </p>
-            <p class="unsupported-filename">
-              {{ currentAttachment.original_name }}
-            </p>
+        <div
+          class="preview-content"
+          :class="{
+            'is-draggable': attachments.length > 1 && !isAnimating,
+            'is-dragging': isDragging,
+          }"
+        >
+          <div class="slider-track" :style="trackStyle">
+            <div
+              v-for="slide in visibleSlides"
+              :key="slide.slot"
+              class="slider-slide"
+              :aria-hidden="slide.ariaHidden || undefined"
+            >
+              <div v-if="slide.item && isImage(slide.item)" class="image-wrapper">
+                <img
+                  :src="slide.item.url"
+                  :alt="slide.item.original_name"
+                  class="preview-img"
+                  draggable="false"
+                />
+              </div>
+              <div v-else-if="slide.item" class="unsupported-wrapper">
+                <FileFormatGraphic
+                  :filename="slide.item.original_name || slide.item.filename"
+                  :mime-type="slide.item.mime_type"
+                  :size="56"
+                  class="unsupported-icon"
+                />
+                <p class="unsupported-title">Keine Vorschau verfügbar</p>
+                <p class="unsupported-hint">
+                  Für diesen Dateityp ist keine direkte Bild-Vorschau verfügbar.
+                </p>
+                <p class="unsupported-filename">
+                  {{ slide.item.original_name }}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -250,6 +514,7 @@ function handleSwipe() {
           :icon="ACTION_ICONS.scrollRight"
           title="Nächster Anhang (Pfeiltaste rechts)"
           aria-label="Nächster Anhang"
+          :disabled="isAnimating"
           @click="next"
         />
       </div>
@@ -308,12 +573,45 @@ function handleSwipe() {
 .preview-content {
   flex: 1;
   min-width: 0;
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+  border-radius: var(--radius-md-squircle);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
+.preview-content.is-draggable {
+  cursor: grab;
+}
+
+.preview-content.is-dragging {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.slider-track {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  will-change: transform;
+}
+
+.slider-slide {
+  flex: 0 0 100%;
+  width: 100%;
+  min-width: 100%;
+  max-width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
 .image-wrapper {
+  width: 100%;
   max-height: 65vh;
   display: flex;
   align-items: center;
@@ -328,6 +626,14 @@ function handleSwipe() {
   object-fit: contain;
   border-radius: var(--radius-md-squircle);
   display: block;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slider-track {
+    transition: none !important;
+  }
 }
 
 .unsupported-wrapper {
