@@ -43,8 +43,17 @@ const emit = defineEmits<{
     :aria-label="ariaLabel"
     :title="title"
     :icon-only="true"
+    class="icon-btn"
     @click="emit('click', $event)"
   >
     <slot />
   </Button>
 </template>
+
+<style scoped>
+.btn--ghost:not(.btn--circle),
+:deep(.btn--ghost:not(.btn--circle)) {
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+}
+</style>

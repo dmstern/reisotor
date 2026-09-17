@@ -200,8 +200,6 @@ const hasPhoto = computed(() => {
 }
 
 .detail-action-btn {
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
   transition:
     transform 0.15s ease,
     background-color 0.15s ease,
