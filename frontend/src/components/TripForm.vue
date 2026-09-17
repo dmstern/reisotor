@@ -365,10 +365,16 @@ label,
 }
 
 .hint.success {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   color: var(--color-success);
 }
 
 .hint.error {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   color: var(--color-danger);
 }
 

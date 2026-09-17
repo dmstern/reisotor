@@ -38,6 +38,7 @@ withDefaults(
   letter-spacing: 0.02em;
   display: inline-flex;
   align-items: center;
+  gap: 4px;
   flex-shrink: 0;
 }
 </style>

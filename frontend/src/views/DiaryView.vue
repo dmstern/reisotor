@@ -1103,6 +1103,9 @@ function showEntryDayOnMap(entry: DiaryEntry) {
 }
 
 .excursion-option-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   flex: 1;
 }
 
@@ -1127,6 +1130,9 @@ function showEntryDayOnMap(entry: DiaryEntry) {
 }
 
 .excursion-option-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 0.78rem;
   color: var(--color-success);
   white-space: nowrap;

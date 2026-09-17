@@ -1699,6 +1699,9 @@ label:not(.checkbox-card):not(.checkbox-option):not(.nav-config-visible):not(.ca
 }
 
 .hint.success {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   color: var(--color-success);
 }
 

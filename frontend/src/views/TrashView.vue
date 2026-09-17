@@ -267,6 +267,12 @@ async function emptyTrash() {
   gap: var(--space-3);
 }
 
+.header-row h1 {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
 .trash-list {
   display: flex;
   flex-direction: column;
