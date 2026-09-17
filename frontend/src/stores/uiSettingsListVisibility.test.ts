@@ -57,4 +57,28 @@ describe('uiSettings list visibility', () => {
     expect(store.hideCompletedTodos).toBe(false);
     expect(store.hideCompletedShopping).toBe(true);
   });
+
+  it('defaults showUpdateDialogs to true and persists changes', async () => {
+    const store = useUiSettingsStore();
+    expect(store.showUpdateDialogs).toBe(true);
+
+    store.showUpdateDialogs = false;
+    await nextTick();
+    expect(localStorage.getItem('reisotor-show-update-dialogs')).toBe('false');
+
+    store.showUpdateDialogs = true;
+    await nextTick();
+    expect(localStorage.getItem('reisotor-show-update-dialogs')).toBe('true');
+  });
+
+  it('loads showUpdateDialogs from server app-settings', async () => {
+    vi.mocked(api.get).mockResolvedValueOnce({
+      showUpdateDialogs: false,
+    });
+
+    const store = useUiSettingsStore();
+    await store.load();
+
+    expect(store.showUpdateDialogs).toBe(false);
+  });
 });
