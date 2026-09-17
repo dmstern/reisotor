@@ -4435,6 +4435,9 @@ async function deleteEditingSpot() {
 }
 
 .sheet-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 0.78rem;
   font-weight: 600;
   color: var(--color-text-muted);
@@ -5506,6 +5509,12 @@ async function deleteEditingSpot() {
 .track-row-meta {
   font-size: 0.75rem;
   color: var(--color-text-muted);
+}
+
+.track-row-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .track-icon-btn {
