@@ -12,9 +12,12 @@ export const useBuildInfoStore = defineStore('buildInfo', () => {
 
   function load() {
     if (!loadPromise) {
-      loadPromise = api.get<BuildInfo>('/build-info').then((info) => {
-        buildInfo.value = info;
-      });
+      loadPromise = api
+        .get<BuildInfo>('/build-info')
+        .then((info) => {
+          buildInfo.value = info;
+        })
+        .catch(() => {});
     }
     return loadPromise;
   }

@@ -162,7 +162,15 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
       version: demoVersion,
       ref: __APP_COMMIT__,
       builtAt: __APP_BUILT_AT__,
-      changelog: null,
+      changelog: {
+        version: demoVersion,
+        date: new Date().toISOString().slice(0, 10),
+        notes: [
+          'Neue Dialoge für verfügbare Updates und Versions-Changelogs',
+          'Einstellungs-Option zum Deaktivieren von Update-Popups',
+          'Verbesserte Offline-Stabilität und Performance',
+        ],
+      },
       repoUrl: __REPO_URL__,
       hostingLocation: 'GitHub Pages (Demo)',
       environment: 'production',
