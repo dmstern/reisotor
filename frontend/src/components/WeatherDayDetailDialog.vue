@@ -5,6 +5,7 @@ import Modal from './Modal.vue';
 import WeatherIcon from './WeatherIcon.vue';
 import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
+import Badge from './primitives/Badge.vue';
 import WeatherAlertCard from './WeatherAlertCard.vue';
 import {
   detectWeatherAlerts,
@@ -122,13 +123,19 @@ function formatDate(dateStr: string) {
         <div class="hourly-header">
           <h3>Tagesverlauf</h3>
           <Transition name="badge-fade">
-            <span v-if="loading" class="hourly-loading-badge" role="status" aria-live="polite">
+            <Badge
+              v-if="loading"
+              variant="primary"
+              class="hourly-loading-badge"
+              role="status"
+              aria-live="polite"
+            >
               <span class="pulse-indicator" aria-hidden="true">
                 <span class="pulse-ring"></span>
                 <span class="pulse-dot"></span>
               </span>
               <span>Lade Verlauf…</span>
-            </span>
+            </Badge>
           </Transition>
         </div>
 
@@ -311,16 +318,6 @@ function formatDate(dateStr: string) {
 }
 
 .hourly-loading-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: var(--color-primary-dark);
-  background: var(--color-primary-tint);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-pill);
-  padding: 2px 8px;
 }
 
 .pulse-indicator {

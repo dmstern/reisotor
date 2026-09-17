@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useBudgetStore } from '../stores/budget';
 import DeleteButton from './DeleteButton.vue';
+import Badge from './primitives/Badge.vue';
 import { useToast } from '../composables/useToast';
 
 defineProps<{ highlightedIds: Set<number> }>();
@@ -32,7 +33,7 @@ async function removeTransfer(id: number) {
           {{ store.userAvatar(t.to_user_id) }} {{ store.userName(t.to_user_id) }}
         </span>
         <span v-if="t.date || t.note" class="row-meta">
-          <span v-if="t.date" class="tag">{{ t.date }}</span>
+          <Badge v-if="t.date">{{ t.date }}</Badge>
           <span v-if="t.note" class="note">{{ t.note }}</span>
         </span>
       </div>
@@ -104,14 +105,6 @@ async function removeTransfer(id: number) {
   gap: var(--space-2);
   font-size: 0.78rem;
   color: var(--color-text-muted);
-}
-
-.tag {
-  font-size: 0.78rem;
-  color: var(--color-text-muted);
-  background: var(--color-hover);
-  border-radius: var(--radius-pill);
-  padding: 2px 8px;
 }
 
 .note {

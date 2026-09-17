@@ -4,6 +4,7 @@ import { useBudgetStore } from '../stores/budget';
 import EditButton from './EditButton.vue';
 import DeleteButton from './DeleteButton.vue';
 import Button from './primitives/Button.vue';
+import Badge from './primitives/Badge.vue';
 import { useToast } from '../composables/useToast';
 
 defineProps<{
@@ -34,10 +35,11 @@ async function removeExpense(id: number) {
           >{{ e.title }}<span v-if="e.note" class="note"> · {{ e.note }}</span></span
         >
         <span class="row-meta">
-          <span v-if="e.date" class="tag">{{ e.date }}</span>
-          <span v-if="e.category" class="tag">{{ e.category }}</span>
-          <span v-if="store.users.length > 1" class="tag"
-            >{{ store.userAvatar(e.paid_by_user_id) }} {{ store.userName(e.paid_by_user_id) }}</span
+          <Badge v-if="e.date">{{ e.date }}</Badge>
+          <Badge v-if="e.category">{{ e.category }}</Badge>
+          <Badge v-if="store.users.length > 1"
+            >{{ store.userAvatar(e.paid_by_user_id) }}
+            {{ store.userName(e.paid_by_user_id) }}</Badge
           >
         </span>
       </div>
@@ -117,14 +119,6 @@ async function removeExpense(id: number) {
   gap: var(--space-2);
   font-size: 0.78rem;
   color: var(--color-text-muted);
-}
-
-.tag {
-  font-size: 0.78rem;
-  color: var(--color-text-muted);
-  background: var(--color-hover);
-  border-radius: var(--radius-pill);
-  padding: 2px 8px;
 }
 
 .note {

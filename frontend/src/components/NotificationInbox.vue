@@ -8,6 +8,7 @@ import { usePwaUpdateStore } from '../stores/pwaUpdate';
 import { usePwaInstallStore } from '../stores/pwaInstall';
 import IconButton from './primitives/IconButton.vue';
 import Button from './primitives/Button.vue';
+import Badge from './primitives/Badge.vue';
 import AppIcon from './AppIcon.vue';
 import UnseenDot from './primitives/UnseenDot.vue';
 import PwaInstallDialog from './PwaInstallDialog.vue';
@@ -169,9 +170,13 @@ function dismissPwaInstall() {
         class="bell-btn"
         @click="toggle"
       />
-      <span v-if="notifications.unreadCount > 0" class="unread-badge" aria-hidden="true">{{
-        notifications.unreadCount > 9 ? '9+' : notifications.unreadCount
-      }}</span>
+      <Badge
+        v-if="notifications.unreadCount > 0"
+        variant="danger"
+        class="unread-badge"
+        aria-hidden="true"
+        >{{ notifications.unreadCount > 9 ? '9+' : notifications.unreadCount }}</Badge
+      >
       <UnseenDot
         v-else-if="hasSystemNotices"
         class="bell-dot"
@@ -374,9 +379,6 @@ function dismissPwaInstall() {
   min-width: 15px;
   height: 15px;
   padding: 0 3px;
-  border-radius: 999px;
-  background: var(--color-danger);
-  color: #fff;
   font-size: 0.62rem;
   font-weight: 700;
   border: 1.5px solid var(--color-surface);

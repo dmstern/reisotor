@@ -2,7 +2,14 @@
 withDefaults(
   defineProps<{
     variant?:
-      'default' | 'primary' | 'success' | 'danger' | 'accent' | 'warning' | 'accent-secondary';
+      | 'default'
+      | 'primary'
+      | 'success'
+      | 'danger'
+      | 'accent'
+      | 'warning'
+      | 'accent-secondary'
+      | 'custom';
     size?: 'sm' | 'md';
   }>(),
   {
@@ -76,5 +83,11 @@ withDefaults(
   background: var(--color-accent-secondary-bg);
   color: var(--color-accent-secondary);
   border-color: transparent;
+}
+
+.badge--custom {
+  background: var(--badge-bg, var(--color-hover));
+  color: var(--badge-color, var(--color-text));
+  border-color: var(--badge-border, transparent);
 }
 </style>

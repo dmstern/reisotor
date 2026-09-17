@@ -2,6 +2,7 @@
 import { ref, computed, type ComponentPublicInstance } from 'vue';
 import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
+import Badge from './primitives/Badge.vue';
 import DropdownItem from './primitives/DropdownItem.vue';
 import PickerMenu from './primitives/PickerMenu.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
@@ -192,7 +193,9 @@ function clearFilters() {
         class="bar-icon-btn"
         @click="toggleFilterMenu($event)"
       >
-        <span v-if="activeFilterCount > 0" class="active-badge">{{ activeFilterCount }}</span>
+        <Badge v-if="activeFilterCount > 0" variant="primary" class="active-badge">{{
+          activeFilterCount
+        }}</Badge>
       </Button>
 
       <Teleport to="body">
@@ -409,9 +412,6 @@ function clearFilters() {
   min-width: 16px;
   height: 16px;
   padding: 0 4px;
-  border-radius: var(--radius-pill);
-  background: var(--color-primary);
-  color: white;
   font-size: 0.7rem;
   font-weight: 700;
   line-height: 16px;

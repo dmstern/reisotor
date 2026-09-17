@@ -4,6 +4,7 @@ import Modal from './Modal.vue';
 import SpotImageCollage from './SpotImageCollage.vue';
 import AppIcon from './AppIcon.vue';
 import IconButton from './primitives/IconButton.vue';
+import Badge from './primitives/Badge.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import type { IconDef } from '../utils/icon';
 
@@ -73,10 +74,23 @@ const hasPhoto = computed(() => {
         <header class="detail-modal-header">
           <div class="detail-header-badge-wrap">
             <slot name="badge">
-              <span v-if="categoryLabel" class="detail-category-pill">
+              <Badge
+                v-if="categoryLabel"
+                variant="custom"
+                class="detail-category-badge"
+                style="
+                  --badge-bg: var(--detail-theme-tint, var(--color-primary-tint));
+                  --badge-color: var(--detail-theme-color, var(--color-primary));
+                  --badge-border: color-mix(
+                    in srgb,
+                    var(--detail-theme-color, var(--color-primary)) 25%,
+                    transparent
+                  );
+                "
+              >
                 <AppIcon v-if="categoryIcon" :icon="categoryIcon" :size="13" group="categories" />
                 {{ categoryLabel }}
-              </span>
+              </Badge>
             </slot>
           </div>
           <div class="detail-header-actions">
@@ -176,21 +190,6 @@ const hasPhoto = computed(() => {
   align-items: center;
   gap: var(--space-2);
   min-height: 32px;
-}
-
-.detail-category-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  padding: 3px 10px;
-  border-radius: 9999px;
-  background: var(--detail-theme-tint, var(--color-primary-tint));
-  color: var(--detail-theme-color, var(--color-primary));
-  border: 1px solid
-    color-mix(in srgb, var(--detail-theme-color, var(--color-primary)) 25%, transparent);
-  letter-spacing: 0.02em;
 }
 
 .detail-header-actions {
@@ -322,21 +321,6 @@ const hasPhoto = computed(() => {
   gap: var(--space-2);
 }
 
-.detail-meta :deep(.detail-badge),
-.detail-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 0.78rem;
-  font-weight: 500;
-  color: var(--color-text-muted);
-  background: var(--color-hover);
-  padding: 3px 9px;
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  border: 1px solid var(--color-border);
-}
-
 /* 4. Detail-Inhalt */
 .detail-body {
   display: flex;
@@ -367,8 +351,8 @@ const hasPhoto = computed(() => {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
 }
 
-:root[data-theme='dark'] .detail-category-pill {
-  background: color-mix(in srgb, var(--detail-theme-color, var(--color-primary)) 22%, transparent);
+:root[data-theme='dark'] .detail-category-badge {
+  --badge-bg: color-mix(in srgb, var(--detail-theme-color, var(--color-primary)) 22%, transparent);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -394,8 +378,8 @@ const hasPhoto = computed(() => {
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
   }
 
-  :root:not([data-theme='light']) .detail-category-pill {
-    background: color-mix(
+  :root:not([data-theme='light']) .detail-category-badge {
+    --badge-bg: color-mix(
       in srgb,
       var(--detail-theme-color, var(--color-primary)) 22%,
       transparent
