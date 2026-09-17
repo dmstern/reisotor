@@ -3,7 +3,7 @@ import Modal from './Modal.vue';
 import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
 import ButtonGroup from './primitives/ButtonGroup.vue';
-import Checkbox from './primitives/Checkbox.vue';
+
 import CheckboxCard from './primitives/CheckboxCard.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { usePersistedRef } from '../composables/usePersistedRef';

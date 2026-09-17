@@ -260,10 +260,12 @@ function onDeleteLeg() {
             ⏱️ {{ formatTravelDuration(getLayover(index)!) }} Umstiegszeit
           </span>
           <label
+            :for="`dest-toggle-${station.id}`"
             class="destination-toggle"
             title="Als Ziel der Tour markieren (für Hin-/Rückweg-Farbverlauf)"
           >
             <input
+              :id="`dest-toggle-${station.id}`"
               type="checkbox"
               :checked="destination === station.id"
               @change="emit('update:destination', destination === station.id ? null : station.id)"

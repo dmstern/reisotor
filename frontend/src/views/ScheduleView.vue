@@ -1204,8 +1204,8 @@ function formatDate(date: string) {
         </div>
       </div>
 
-      <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
       <TransitionGroup tag="ul" name="list" class="items">
+        <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions, vuejs-accessibility/click-events-have-key-events -->
         <li
           v-for="(entry, index) in dayEntries"
           :key="entry.key"

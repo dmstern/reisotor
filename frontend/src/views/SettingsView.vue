@@ -416,10 +416,6 @@ async function resetPush() {
 
 const exporting = ref(false);
 const exportError = ref('');
-const importing = ref(false);
-const importError = ref('');
-const importResult = ref<Record<string, number> | null>(null);
-const importFileInput = ref<HTMLInputElement | null>(null);
 
 const userList = ref<User[]>([]);
 const loadingUsers = ref(false);
