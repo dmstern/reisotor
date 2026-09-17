@@ -800,6 +800,9 @@ function isOverdue(item: TodoItem) {
 }
 
 .tool-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--color-text-muted);
