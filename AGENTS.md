@@ -395,10 +395,16 @@ Historie und wird gescannt) zwei Dinge:
      ("Was bedeutet das konkret für die Person, die die App nutzt?"). **Absolut KEINE technischen Details**
      wie Komponentennamen (z. B. `Button.vue`), Refactoring-Begriffe, PR-/Issue-Nummern (`#123`), CSS-Klassen,
      Datenbank-Spalten, interne Skripte oder Entwickler-Tools (z. B. Storybook) verwenden!
+   - **Passendes Emoji vor jedem Punkt**: Jeder Stichpunkt MUSS zwingend mit einem thematisch
+     passenden Emoji direkt hinter dem `- ` beginnen (z. B. `- 🔔 **Benachrichtigungen**: ...`,
+     `- 🚀 **Update-Dialog**: ...`, `- ⚙️ **Einstellungen**: ...`), gefolgt von einem Leerzeichen
+     und einem prägnanten, fettgedruckten Stichwort (`**Schlagwort**:`). Dies sorgt für eine
+     lebendige, schnell erfassbare und visuell einheitliche Darstellung im Changelog und im
+     In-App-Changelog-Dialog.
    - **Fragment-Format**: Eine kleine Markdown-Datei unter `release-notes/pending/<kurzer-slug>.md`
      anlegen oder anpassen, Inhalt ein bis zwei `- `-Stichpunkte in leicht verständlicher Endnutzer-Sprache
-     wie `CHANGELOG.md` (Deutsch).
+     wie `CHANGELOG.md` (Deutsch), jeweils mit führendem Emoji.
    - **Automatischer Fallback**: Gibt es bis zum Release keine gesammelten Fragmente (weil z. B. nur
      interne Verbesserungen, Demo-Daten oder Pipeline-Updates stattfanden), fasst der Release-Workflow
-     den Release-Eintrag automatisch endnutzerfreundlich als `- Verbesserungen unter der Haube.`
+     den Release-Eintrag automatisch endnutzerfreundlich als `- 🛠️ Verbesserungen unter der Haube.`
      zusammen.
