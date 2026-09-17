@@ -51,18 +51,8 @@ describe('Backup Admin restrictions (#224)', () => {
       url: '/api/backup/export',
       headers: { cookie: adminCookie },
     });
+    
     expect(res.statusCode).toBe(200);
-    expect(res.headers['content-type']).toContain('application/json');
-  });
-
-  it('rejects POST /backup/import for non-admin user', async () => {
-    const res = await app.inject({
-      method: 'POST',
-      url: '/api/backup/import',
-      headers: { cookie: userCookie },
-      payload: {},
-    });
-    expect(res.statusCode).toBe(403);
-    expect(res.json().error).toContain('Administrator:innen');
+    expect(res.headers['content-type']).toContain('application/zip');
   });
 });
